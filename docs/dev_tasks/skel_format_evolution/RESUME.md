@@ -1,11 +1,13 @@
 # Resume: SKEL Format Evolution
 
-## Current Resume Checkpoint
+## Current Resume Checkpoint (2026-07-03)
 
-Phase 1 is implemented locally on `feature/remove-skel-dart7`: all SKEL files
-that were referenced by examples, tests, or benchmarks have SDF replacements and
-the live test/resource-retriever references have moved off `dart://sample/skel`.
-The converted fixtures are:
+Phase 1 landed on `main` via PR
+[#3065](https://github.com/dartsim/dart/pull/3065), merge commit
+`5dbe995d221` (2026-06-19): all SKEL files that were referenced by examples,
+tests, or benchmarks have SDF replacements and the live
+test/resource-retriever references have moved off `dart://sample/skel`. The
+converted fixtures are:
 
 - `data/skel/test/single_pendulum.skel` -> `data/sdf/test/single_pendulum.sdf`
 - `data/skel/cube.skel` -> `data/sdf/test/cube.sdf`
@@ -30,18 +32,15 @@ can be recovered without adopting the old SKEL YAML direction.
 
 ## Current Branch
 
-`feature/remove-skel-dart7` — local Phase 1 fixture conversion, not pushed.
+`main` — Phase 1 is merged. Start Phase 2 from a fresh branch off current
+`main`.
 
 ## Immediate Next Step
 
-Run the remaining Phase 1 gates if they have not already passed in the current
-session: focused IO read tests, `UNIT_simulation_world_SkeletonLoader`, resource
-retriever tests, `pixi run check-docs-policy`, and `pixi run lint`. After this
-conversion branch lands, pick Phase 2: remove `SkelParser`, `.skel`
-inference/dispatch, SKEL tests, bindings/stubs, and `.skel` sample fixtures.
-Do not delete the whole `data/skel` tree without first preserving or relocating
-non-SKEL mesh assets such as `data/skel/kima/*.dae`, which are still loaded by
-live mesh tests.
+Pick Phase 2: remove `SkelParser`, `.skel` inference/dispatch, SKEL tests,
+bindings/stubs, and `.skel` sample fixtures. Do not delete the whole
+`data/skel` tree without first preserving or relocating non-SKEL mesh assets
+such as `data/skel/kima/*.dae`, which are still loaded by live mesh tests.
 
 ## Context That Would Be Lost
 
@@ -57,11 +56,12 @@ live mesh tests.
 ## How to Resume
 
 ```bash
-git checkout feature/remove-skel-dart7
+git checkout main
+git pull --ff-only origin main
+git checkout -b feature/remove-skel-dart7-phase2
 
 # Inspect the prototype plan (while reflog still holds it):
 git show 1dd83e31586:docs/dev_tasks/skel_format/phase-01-deprecation.md
 ```
 
-Then run the remaining verification gates and prepare the follow-up Phase 2
-removal branch.
+Then start the Phase 2 removal work from this folder's `README.md`.

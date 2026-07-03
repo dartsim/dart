@@ -1,6 +1,19 @@
 # Resume: Unified Newton-Barrier Multibody
 
-## Current Reality (2026-06-14)
+## Current Reality (2026-07-03)
+
+PR [#3013](https://github.com/dartsim/dart/pull/3013)
+(`simx/plan083-worldstep-gpu-candidate-bridge`) merged to `main` on 2026-06-15
+at `3430bdc3097`. The right-sized/paper-scale GPU contact-candidate sweep rows,
+the inter-body and self-surface `World::step` witness packet updates, and the
+GPU slowness root-cause analysis are current mainline evidence. The evidence is
+still deliberately reduced: no production GPU `World::step`, production runtime
+scene filtering, inter-body CCD parity, or top-level speedup claim is proven.
+Use the root-cause doc plus the current `gpu-parity-packet.json` and completion
+audit before continuing PLAN-083 work; older local-only branch instructions
+below are historical.
+
+## Previous Current Reality (2026-06-14)
 
 GPU slowness root-cause (2026-06-14): at maintainer direction the session
 pivoted from witness packets to root-causing the sub-1x GPU speedups. See

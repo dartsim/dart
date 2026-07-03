@@ -35,10 +35,10 @@ changelog, record the reason in the PR checklist or description.
 
 - `main` targets DART 7, so entries normally go under
   `## DART 7` -> `### [DART 7.0.0 (TBD)]`.
-- DART 6 LTS fixes go under the next patch section on the active DART 6
+- DART 6 LTS fixes go under the next release section on the active DART 6
   maintenance branch. Prefer the highest maintained `release-6.*` branch
   advertised by the remote or release-management docs; this checkout currently
-  sees `release-6.19`.
+  sees `release-6.20`.
 - Bug fixes that need both DART 6 LTS and DART 7 should get branch-appropriate
   entries in both PRs.
 - Release packaging replaces `TBD` with the release date and final milestone
@@ -107,6 +107,11 @@ Poor entry shape:
 
 Agents and contributors should make the changelog decision before PR creation,
 then finalize the entry once the PR number exists.
+
+AI workflows should invoke the reusable `dart-changelog` routine when a change
+may need release notes. Direct user calls are uncommon; the routine is mainly a
+shared decision/writing path for PR, docs, issue-fix, resume, and release
+workflows.
 
 1. Decide whether an entry is required using this guide.
 2. If no entry is required, record the reason in the PR description or checklist.

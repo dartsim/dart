@@ -2,6 +2,20 @@
 
 ## Current Status
 
+Merged checkpoint (2026-06-15): PR
+[#3013](https://github.com/dartsim/dart/pull/3013)
+(`simx/plan083-worldstep-gpu-candidate-bridge`) merged to `main` at
+`3430bdc3097`. That PR promoted the right-sized/paper-scale GPU
+contact-candidate sweep rows, the inter-body and self-surface `World::step`
+witness packet updates, and
+[`gpu-slowness-root-cause.md`](../../plans/083-unified-newton-barrier-multibody/gpu-slowness-root-cause.md).
+The root cause remains structural but fixable: sweep/scene rows are dominated by
+tiny bitonic-sort launches, serial prefix sums, FP64 on a 1:64-FP64 laptop GPU,
+and per-call all-pairs buffer allocation. This is still reduced packet and
+analysis evidence only; it does not prove production GPU `World::step`,
+production runtime scene filtering, or a top-level speedup gate. Older
+local-only branch notes below are historical slice snapshots.
+
 Latest `World::step` inter-body candidate witness follow-up (2026-06-14): work
 continues locally on `simx/plan083-worldstep-gpu-candidate-bridge` (local-only,
 no PR), stacked on the milestone checkpoint PR #3000 branch. This slice extends

@@ -1,5 +1,19 @@
 # Unified Newton-Barrier Handoff
 
+## Current Reality (2026-07-03)
+
+PR [#3013](https://github.com/dartsim/dart/pull/3013)
+(`simx/plan083-worldstep-gpu-candidate-bridge`) merged to `main` on 2026-06-15
+at `3430bdc3097`. The latest mainline checkpoint includes the
+right-sized/paper-scale GPU contact-candidate sweep rows, the inter-body and
+self-surface `World::step` witness packet updates, and the GPU slowness
+root-cause analysis. These are reduced packet and analysis evidence only; do
+not claim production GPU `World::step`, production runtime scene filtering,
+inter-body CCD parity, or a top-level speedup gate without new evidence. The
+older local-only branch sections below remain useful history, but current work
+should start from `main`, the current PLAN-083 packet files, and the root-cause
+follow-up list.
+
 ## GPU Contact-Candidate Slowness Root-Cause (2026-06-14)
 
 At maintainer direction, this session pivoted from accumulating reduced witness

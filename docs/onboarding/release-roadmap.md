@@ -5,7 +5,7 @@ API. Python-first APIs are a major part of that direction, layered on a
 refreshed C++23 core. Compatibility for the established DART 6 API lives on the
 active DART 6 LTS maintenance branch instead of blocking the main-branch DART 7
 design. Use the highest maintained `release-6.*` branch advertised by the
-remote; this checkout currently sees `release-6.19`.
+remote; this checkout currently sees `release-6.20`.
 
 ## Compatibility & Deprecation Policy
 
@@ -23,7 +23,10 @@ remote; this checkout currently sees `release-6.19`.
 ## DART 6 LTS: Compatibility Line
 
 - The active DART 6 LTS branch is the newest maintained `release-6.*` branch;
-  at the time this roadmap was updated, that branch is `release-6.19`.
+  at the time this roadmap was updated, that branch is `release-6.20`.
+- The current release milestone for this support lane is `DART 6.20.0`.
+  Remaining fixes that would have gone to a `6.19.x` patch lane are collected
+  there instead of opening a `DART 6.19.4` patch milestone.
 - The pinned gz-physics branch for the current support lane is
   `gz-physics9_9.0.0`, matching the `pixi.toml` Gazebo integration task.
 - Backport critical bug fixes, build fixes, security fixes, and
@@ -59,7 +62,7 @@ in scope for this document update.
 
 | Branch                                         | DART line        | Public API target      | gz-physics pin                         | Backport policy                                              |
 | ---------------------------------------------- | ---------------- | ---------------------- | -------------------------------------- | ------------------------------------------------------------ |
-| Active `release-6.*`, currently `release-6.19` | DART 6 (6.x LTS) | Established DART 6 API | `gz-physics9_9.0.0`                    | Compatibility-critical fixes only (see scope below)          |
+| Active `release-6.*`, currently `release-6.20` | DART 6 (6.x LTS) | Established DART 6 API | `gz-physics9_9.0.0`                    | Compatibility-critical fixes only (see scope below)          |
 | `main`                                         | DART 7 (7.0.0)   | DART 7 clean-break API | `gz-physics9_9.0.0` (migration canary) | DART 7 development; no DART 6 compatibility shims by default |
 
 **Backport scope (DART 6 LTS)**

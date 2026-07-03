@@ -14,10 +14,11 @@ diagnostic instead of a link error — mirroring the existing SDF/URDF
 unavailable paths. The loader itself (`usd::UsdParser`) and its OpenUSD
 dependency are compiled only when the toggle is ON.
 
-## Current Branch
+## Current Branch / PR
 
-`feature/usd-loader-phase1` — branched off `main` (clean). Implementation
-committed for PR to milestone "DART 7.0".
+PR [#3109](https://github.com/dartsim/dart/pull/3109)
+(`feature/usd-loader-phase1`) merged to `main` on 2026-06-20 at
+`fab38a336f7`. Start Phase 2 from current `main`.
 
 ## Current Reality (verified 2026-06-20)
 
@@ -33,7 +34,7 @@ committed for PR to milestone "DART 7.0".
   authored fresh as snake_case under `dart::io`, not ported from the PascalCase
   `dart::utils::UsdParser` prototype.
 
-## What landed this PR (Phase 1 scaffold)
+## What landed in PR #3109 (Phase 1 scaffold)
 
 - `dart_option(DART_BUILD_IO_USD ... OFF)` in the root `CMakeLists.txt`.
 - `cmake/dart_find_pxr.cmake` — snake_case OpenUSD (pxr) finder.
@@ -69,7 +70,8 @@ API-boundary policy.
 ## How to Resume
 
 ```bash
-git checkout feature/usd-loader-phase1   # or main, once this PR has merged
+git checkout main
+git pull --ff-only origin main
 git status && git log -3 --oneline
 
 # Default (toggle OFF) gates — must stay green:

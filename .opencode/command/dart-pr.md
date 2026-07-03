@@ -119,10 +119,10 @@ Use these practices:
    force-push only after explicit maintainer/user approval and only when the
    user requests it or a clear reason exists (removing sensitive content,
    repairing branch history).
-10. Use `docs/onboarding/changelog.md` for the changelog decision. If
-    `CHANGELOG.md` needs the PR number, keep the follow-up changelog commit
-    local until explicit maintainer/user approval is given for the additional
-    push or PR update.
+10. Invoke the `dart-changelog` routine for the changelog decision, entry
+    wording, and PR-link follow-up. If `CHANGELOG.md` needs the PR number, keep
+    the follow-up changelog commit local until explicit maintainer/user approval
+    is given for the additional push or PR update.
 11. Monitor CI: `gh pr checks <PR_NUMBER>`.
 
 ## Output

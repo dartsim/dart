@@ -27,8 +27,8 @@ Fix GitHub issue: $ARGUMENTS
 4. `pixi run lint`, then run the smallest relevant tests; use
    `pixi run test-all` before finalizing when feasible, and also
    `pixi run -e cuda test-all` on Linux hosts with a visible NVIDIA CUDA runtime
-5. Before PR creation, decide whether `CHANGELOG.md` needs an entry using
-   `docs/onboarding/changelog.md` and fill `.github/PULL_REQUEST_TEMPLATE.md`.
+5. Before PR creation, invoke the `dart-changelog` routine to decide whether
+   `CHANGELOG.md` needs an entry, then fill `.github/PULL_REQUEST_TEMPLATE.md`.
 6. After explicit maintainer/user approval, `git push -u origin HEAD && gh pr create --base <target-branch> --milestone "<milestone>"`
 7. **Before PR**: If task used `docs/dev_tasks/<task>/`, remove the folder (include in this PR, not after merge)
 

@@ -10,6 +10,17 @@ Branch/PR details below are historical handoff evidence, not current checkout
 instructions. Live status should be read from the README, the graduation
 criteria, the plan dashboard, and the current code.
 
+## Current Reality (2026-07-03)
+
+PR [#2779](https://github.com/dartsim/dart/pull/2779)
+(`feature/vi-roadmap-followups`) merged to `main` on 2026-05-31 at
+`7e548cbe299`. The C1-C3 contact/friction slice, link-vs-link sphere contact
+hook, serialization, dartpy/demo surface, and graduation-readiness docs are on
+`main`; the live next steps are the maintainer-owned graduation proposal from
+[`graduation-criteria.md`](graduation-criteria.md) or the separate
+arbitrary-geometry contact adapter workstream coordinated with the rigid/deformable
+IPC geometry stack.
+
 ## Last Session Summary (2026-05-30)
 
 Phase A/B were already done. This session executed **Phase C contact & friction**
@@ -36,13 +47,10 @@ items with investigation evidence:
 - **Dedup**: shared spatial-algebra primitives hoisted into a `detail/` header
   (the old SI/VI duplication follow-up is closed).
 
-## Current Branch / PR
+## Merged Checkpoint
 
-- Branch: **`feature/vi-roadmap-followups`**, HEAD `53a6bcef4e2` (31 commits ahead
-  of `origin/main`, 0 behind — kept current).
-- PR: **#2779** — `OPEN`, `MERGEABLE`, `BLOCKED` (awaiting required CI + maintainer
-  review; **do not request merge** — maintainer-owned, and per process the Codex
-  bot must re-review after any silent fix; "no new findings" ≠ approval).
+- Branch: historical **`feature/vi-roadmap-followups`**.
+- PR: **#2779** — `MERGED` to `main` at `7e548cbe299`.
 
 ## Verified (all green)
 
@@ -120,9 +128,10 @@ All four are the task's **own explicit deferrals**, now backed by concrete facts
   across the step's RIQN iterates), so contact converges like frictionless —
   avoids the tangential-regularization stiffness blow-up near `v_t = 0`. Don't
   "fix" it to use the trial config.
-- **Binary format v8 is unreleased** (exists only on this branch/PR), so adding
-  fields/components to it needs **no migration** — there are no old v8 files. Keep
-  folding VI-contact serialization into v8 until the PR merges.
+- **Binary format v8 is DART 7 pre-release state** on `main`, not a released
+  compatibility contract. Adding result-affecting VI/contact fields still needs
+  serializer coverage and deliberate promotion review, but there is no released
+  v8 migration burden yet.
 - **Component categories drive serialization**: `Property`/`State` are serialized
   (PFR field-walk), `Cache` is not. The contact config is `Property`; the duals
   are `State`. `pointLinkIndices` are positions in `structure.links` (NOT
@@ -144,8 +153,8 @@ All four are the task's **own explicit deferrals**, now backed by concrete facts
 ## How to Resume
 
 ```bash
-git checkout feature/vi-roadmap-followups
-git fetch origin main && git merge origin/main --no-edit   # keep current; clean so far
+git checkout main
+git pull --ff-only origin main
 git log --oneline -8
 
 # Build + run the full simulation suite (the gate):
