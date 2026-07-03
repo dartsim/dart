@@ -16,8 +16,10 @@ name: CI Toolchain (Linux)
 
 on:
   push:
+    # Feature-branch validation happens via pull_request; run on push only for
+    # the release lines so PR branches are not built twice per push.
     branches:
-      - "**"
+      - "release-*"
   pull_request:
     branches:
       - "**"
@@ -31,7 +33,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' && !startsWith(github.ref, 'refs/heads/release-') }}
 
 jobs:
   toolchain:
