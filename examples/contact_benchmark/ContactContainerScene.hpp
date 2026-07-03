@@ -67,6 +67,12 @@ constexpr double kDefaultContactContainerJitter = 0.08;
 constexpr double kDefaultContactContainerWallThickness = 0.2;
 constexpr double kDefaultContactContainerDropHeight = 1.75;
 constexpr std::uint32_t kDefaultContactContainerSeed = 3056u;
+// DART's contact model has no rolling resistance, so undamped spheres and
+// cylinders roll indefinitely and keep the shared contact island awake. A
+// small joint-space drag lets a settled pile actually reach the sleep
+// thresholds while leaving the drop and impact dynamics contact-rich.
+constexpr double kDefaultContactContainerLinearDamping = 0.02;
+constexpr double kDefaultContactContainerAngularDamping = 0.1;
 
 struct ContactContainerOptions
 {
@@ -81,6 +87,8 @@ struct ContactContainerOptions
   std::uint32_t seed = kDefaultContactContainerSeed;
   double initialSpeed = 0.0;
   double initialAngularSpeed = 0.0;
+  double linearDamping = kDefaultContactContainerLinearDamping;
+  double angularDamping = kDefaultContactContainerAngularDamping;
   collision::CollisionDetectorPtr collisionDetector;
 };
 
@@ -216,6 +224,18 @@ inline void addContainer(
   const double halfWallHeight = 0.5 * layout.wallHeight;
   const Eigen::Vector4d floorColor(0.45, 0.45, 0.45, 1.0);
   const Eigen::Vector4d wallColor(0.35, 0.35, 0.38, 0.42);
+  const Eigen::Vector4d apronColor(0.55, 0.55, 0.55, 1.0);
+
+  // Outer apron just below the container floor top. Bodies that get ejected
+  // over the walls land and settle here instead of falling forever, which
+  // would otherwise skew velocity statistics and keep sleep states
+  // unreachable. Sharing the container body adds no collision pairs among
+  // the static shapes, and the 1 mm drop avoids z-fighting with the floor.
+  addStaticBox(
+      body,
+      Eigen::Vector3d(4.0 * floorLength, 4.0 * floorWidth, t),
+      Eigen::Vector3d(0.0, 0.0, -0.5 * t - 0.001),
+      apronColor);
 
   addStaticBox(
       body,
@@ -289,6 +309,14 @@ inline void addContainer(
         dynamics::DynamicsAspect>(spec.shape);
     shapeNode->getVisualAspect()->setColor(spec.color);
     detail::setShapeInertia(body, spec.shape, 1.0);
+
+    // FreeJoint generalized coordinates 0-2 are rotational, 3-5 translational.
+    for (std::size_t dof = 0; dof < joint->getNumDofs(); ++dof) {
+      joint->setDampingCoefficient(
+          dof,
+          dof < 3u ? std::max(0.0, options.angularDamping)
+                   : std::max(0.0, options.linearDamping));
+    }
 
     const double x = (static_cast<double>(column)
                       - 0.5 * static_cast<double>(layout.columns - 1u))

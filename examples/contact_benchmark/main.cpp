@@ -66,11 +66,9 @@
 #include <dart/dart.hpp>
 
 #include <osg/Camera>
-#include <osg/Geode>
 #include <osgGA/GUIActionAdapter>
 #include <osgGA/GUIEventAdapter>
 #include <osgGA/GUIEventHandler>
-#include <osgText/Text>
 #include <osgViewer/ViewerBase>
 
 #include <algorithm>
@@ -113,6 +111,10 @@ constexpr double kDefaultGeneratedContainerDropHeight
     = contact_scene::kDefaultContactContainerDropHeight;
 constexpr std::uint32_t kDefaultGeneratedContainerSeed
     = contact_scene::kDefaultContactContainerSeed;
+constexpr double kDefaultGeneratedContainerLinearDamping
+    = contact_scene::kDefaultContactContainerLinearDamping;
+constexpr double kDefaultGeneratedContainerAngularDamping
+    = contact_scene::kDefaultContactContainerAngularDamping;
 constexpr double kDefaultDropHeight = 0.2;
 
 enum class CollisionEngine
@@ -170,6 +172,10 @@ struct Options
   std::uint32_t generatedContainerSeed = kDefaultGeneratedContainerSeed;
   double generatedContainerInitialSpeed = 0.0;
   double generatedContainerInitialAngularSpeed = 0.0;
+  double generatedContainerLinearDamping
+      = kDefaultGeneratedContainerLinearDamping;
+  double generatedContainerAngularDamping
+      = kDefaultGeneratedContainerAngularDamping;
   std::optional<std::string> dumpFinalScenePath;
   std::optional<std::size_t> maxContacts;
   std::optional<std::size_t> maxContactsPerPair;
@@ -312,7 +318,9 @@ void printUsage(const std::string& programName)
       << "  --generate-capsules N     Generate an in-memory capsule-only "
          "scene instead of loading SDF.\n"
       << "  --generate-container N    Generate a dense mixed-shape open-box "
-         "scene for active contact benchmarking.\n"
+         "scene for active contact benchmarking;\n"
+      << "                            defaults contact caps to 20000 total / "
+         "4 per pair unless overridden.\n"
       << "  --generated-spacing X     Center spacing for generated objects; "
          "default 1.1 m.\n"
       << "  --container-layers N      Target vertical layers for "
@@ -336,6 +344,12 @@ void printUsage(const std::string& programName)
       << "  --container-initial-angular-speed V\n"
       << "                            Deterministic initial angular speed for "
          "container bodies.\n"
+      << "  --container-linear-damping C\n"
+      << "                            Joint-space linear drag for container "
+         "bodies; default 0.02.\n"
+      << "  --container-angular-damping C\n"
+      << "                            Joint-space angular drag for container "
+         "bodies (rolling decay); default 0.1.\n"
       << "  --dump-final-scene PATH   Write final collision geometry JSONL "
          "for visual verification.\n";
 }
@@ -565,6 +579,12 @@ Options parseOptions(int argc, char* argv[])
     } else if (arg == "--container-initial-angular-speed") {
       options.generatedContainerInitialAngularSpeed
           = parseNonNegativeDouble(needValue(arg), arg);
+    } else if (arg == "--container-linear-damping") {
+      options.generatedContainerLinearDamping
+          = parseNonNegativeDouble(needValue(arg), arg);
+    } else if (arg == "--container-angular-damping") {
+      options.generatedContainerAngularDamping
+          = parseNonNegativeDouble(needValue(arg), arg);
     } else if (arg == "--dump-final-scene") {
       options.dumpFinalScenePath = needValue(arg);
     } else if (arg == "--max-contacts") {
@@ -616,6 +636,18 @@ Options parseOptions(int argc, char* argv[])
 
   if (options.generateContainer && !options.dropHeightSpecified)
     options.dropHeight = kDefaultGeneratedContainerDropHeight;
+
+  // Match the BM_INTEGRATION_contact_container caps. The world default of
+  // 1000 total contacts overflows when a detector produces very dense
+  // per-pair manifolds (the ODE detector's mesh-based cylinder fallback
+  // reports 100+ contacts per pair); dropped contacts then let bodies
+  // tunnel out of the container.
+  if (options.generateContainer) {
+    if (!options.maxContacts.has_value())
+      options.maxContacts = 20000;
+    if (!options.maxContactsPerPair.has_value())
+      options.maxContactsPerPair = 4;
+  }
 
   if (options.generatedObjects.has_value() && options.sdfPath.has_value()) {
     throw std::invalid_argument(
@@ -785,6 +817,8 @@ contact_scene::ContactContainerOptions makeContactContainerOptions(
   contactOptions.initialSpeed = options.generatedContainerInitialSpeed;
   contactOptions.initialAngularSpeed
       = options.generatedContainerInitialAngularSpeed;
+  contactOptions.linearDamping = options.generatedContainerLinearDamping;
+  contactOptions.angularDamping = options.generatedContainerAngularDamping;
   contactOptions.collisionDetector = makeCollisionDetector(options);
   return contactOptions;
 }
@@ -1501,6 +1535,9 @@ void printWorldSummary(
                 << options.generatedContainerJitter << " m\n";
       std::cout << "  Contact container seed: "
                 << options.generatedContainerSeed << "\n";
+      std::cout << "  Contact container damping: linear "
+                << options.generatedContainerLinearDamping << ", angular "
+                << options.generatedContainerAngularDamping << "\n";
       if (options.generatedContainerInitialSpeed > 0.0) {
         std::cout << "  Contact container initial speed: "
                   << options.generatedContainerInitialSpeed << " m/s\n";
@@ -1528,82 +1565,10 @@ void printWorldSummary(
   std::cout << "  Total Degrees of Freedom (DOFs): " << totalDofs << "\n";
 }
 
-struct CameraPose
-{
-  ::osg::Vec3 eye;
-  ::osg::Vec3 center;
-  ::osg::Vec3 up;
-};
-
-CameraPose computeCameraPose(const dart::simulation::WorldPtr& world)
-{
-  if (!world) {
-    return {
-        ::osg::Vec3(0.0f, -20.0f, 10.0f),
-        ::osg::Vec3(0.0f, 0.0f, 0.0f),
-        ::osg::Vec3(0.0f, 0.0f, 1.0f)};
-  }
-
-  bool hasMobileBody = false;
-  Eigen::Vector3d min = Eigen::Vector3d::Zero();
-  Eigen::Vector3d max = Eigen::Vector3d::Zero();
-
-  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
-    const auto skel = world->getSkeleton(i);
-    if (!skel || !skel->isMobile())
-      continue;
-
-    for (std::size_t j = 0; j < skel->getNumBodyNodes(); ++j) {
-      const auto* body = skel->getBodyNode(j);
-      if (!body)
-        continue;
-
-      const Eigen::Vector3d translation = body->getTransform().translation();
-      if (!hasMobileBody) {
-        min = max = translation;
-        hasMobileBody = true;
-      } else {
-        min = min.cwiseMin(translation);
-        max = max.cwiseMax(translation);
-      }
-    }
-  }
-
-  if (!hasMobileBody) {
-    return {
-        ::osg::Vec3(0.0f, -20.0f, 10.0f),
-        ::osg::Vec3(0.0f, 0.0f, 0.0f),
-        ::osg::Vec3(0.0f, 0.0f, 1.0f)};
-  }
-
-  const Eigen::Vector3d center = 0.5 * (min + max);
-  const Eigen::Vector3d extent = max - min;
-  const double horizontalSpan = std::max(extent.x(), extent.y());
-  const double distance = std::max(10.0, horizontalSpan * 0.9 + 8.0);
-  const double height = std::max(6.0, distance * 0.42);
-
-  return {
-      ::osg::Vec3(
-          static_cast<float>(center.x()),
-          static_cast<float>(center.y() - distance),
-          static_cast<float>(center.z() + height)),
-      ::osg::Vec3(
-          static_cast<float>(center.x()),
-          static_cast<float>(center.y()),
-          static_cast<float>(std::max(0.0, center.z()))),
-      ::osg::Vec3(0.0f, 0.0f, 1.0f)};
-}
-
 void applyCameraPose(
     dart::gui::osg::Viewer& viewer, const dart::simulation::WorldPtr& world)
 {
-  const CameraPose cameraPose = computeCameraPose(world);
-  viewer.getCameraManipulator()->setHomePosition(
-      cameraPose.eye, cameraPose.center, cameraPose.up);
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-  viewer.getCameraManipulator()->home(0.0);
-  viewer.getCamera()->setViewMatrixAsLookAt(
-      cameraPose.eye, cameraPose.center, cameraPose.up);
+  dart::gui::osg::applyDefaultCameraPose(viewer, world);
 }
 
 class ContactBenchmarkGuiWorldNode final
@@ -1621,8 +1586,17 @@ public:
     if (mSleepStateColors)
       enableDynamicVisualColors(world);
 
-    createHud();
     refreshVisualAids();
+  }
+
+  double getSmoothedContacts() const
+  {
+    return mSmoothedContacts;
+  }
+
+  double getSmoothedPairs() const
+  {
+    return mSmoothedPairs;
   }
 
   const Options& getOptions() const
@@ -1678,6 +1652,7 @@ public:
   void customPostRefresh() override
   {
     refreshVisualAids();
+    updateSmoothedStats();
   }
 
   void resetWorld()
@@ -1774,39 +1749,17 @@ private:
     mLowestRealTimeFactor = std::numeric_limits<double>::infinity();
     mHighestRealTimeFactor = 0.0;
     mRefreshTimer.setStartTick();
-  }
-
-  void createHud()
-  {
-    const double guiScale = dart::gui::osg::sanitizeGuiScale(mOptions.guiScale);
-    mHudCamera = dart::gui::osg::createHudCamera(
-        0.0, 1360.0 * guiScale, 0.0, 768.0 * guiScale);
-
-    ::osg::ref_ptr<::osg::Geode> hudGeode = new ::osg::Geode;
-    mHudText = new ::osgText::Text;
-    mHudText->setDataVariance(::osg::Object::DYNAMIC);
-    mHudText->setCharacterSizeMode(::osgText::TextBase::SCREEN_COORDS);
-    mHudText->setCharacterSize(static_cast<float>(18.0 * guiScale));
-    mHudText->setAxisAlignment(::osgText::TextBase::SCREEN);
-    mHudText->setAlignment(::osgText::TextBase::LEFT_TOP);
-    mHudText->setPosition(::osg::Vec3(
-        static_cast<float>(18.0 * guiScale),
-        static_cast<float>(748.0 * guiScale),
-        0.0f));
-    mHudText->setColor(::osg::Vec4(0.02f, 0.02f, 0.02f, 1.0f));
-    mHudText->setBackdropType(::osgText::Text::OUTLINE);
-    mHudText->setBackdropColor(::osg::Vec4(1.0f, 1.0f, 1.0f, 0.85f));
-
-    hudGeode->addDrawable(mHudText);
-    mHudCamera->addChild(hudGeode);
-    addChild(mHudCamera);
+    mSmoothedRealTimeFactor = 0.0;
+    mHasSmoothedRealTimeFactor = false;
+    mHasSmoothedStats = false;
+    mSmoothedContacts = 0.0;
+    mSmoothedPairs = 0.0;
   }
 
   void refreshVisualAids()
   {
     if (mSleepStateColors)
       applySleepStateColors();
-    updateHud();
   }
 
   void applySleepStateColors()
@@ -1814,56 +1767,36 @@ private:
     applySleepStateVisualColors(getWorld());
   }
 
-  void updateHud()
+  // Blend the fast-changing per-refresh stats with an exponential moving
+  // average (about one second of rendered frames) so the status panel stays
+  // readable. Updated once per rendered frame while simulating.
+  void updateSmoothedStats()
   {
+    if (!isSimulating())
+      return;
+
     const auto world = getWorld();
-    if (!world || !mHudText)
+    if (!world)
       return;
 
     const auto contacts = collectContactStats(world);
-    const auto sleep = collectSleepStats(world);
-    const double lowestRtf = std::isfinite(getLowestRealTimeFactor())
-                                 ? getLowestRealTimeFactor()
-                                 : 0.0;
-
-    std::ostringstream out;
-    out << std::fixed << std::setprecision(3);
-    out << "t " << world->getTime() << " s"
-        << "  frame " << world->getSimFrames() << "  RTF "
-        << getLastRealTimeFactor() << " / target " << getTargetRealTimeFactor()
-        << "  lo " << lowestRtf << "  hi " << getHighestRealTimeFactor()
-        << "\n";
-    out << "contacts " << contacts.contacts << "  pairs " << contacts.pairs
-        << "  resting " << sleep.resting << "/" << sleep.mobile
-        << "  candidates " << sleep.candidates << "  disturbed "
-        << sleep.disturbed << "\n";
-    out << "smooth v " << sleep.maxSmoothedLinearSpeed << " m/s"
-        << "  smooth w " << sleep.maxSmoothedAngularSpeed << " rad/s"
-        << "  dwell " << sleep.maxRestDwellTime << " s\n";
-    out << "pipeline DART 6, collision detector "
-        << collisionEngineName(mOptions.collisionEngine);
-    if (mOptions.generatedObjects.has_value()) {
-      out << ", generated "
-          << (mOptions.generateContainer  ? "container "
-              : mOptions.generateCapsules ? "capsules "
-                                          : "objects ")
-          << *mOptions.generatedObjects;
-    }
-    if (mOptions.dropHeight > 0.0)
-      out << ", drop height " << mOptions.dropHeight << " m";
-    out << "\n";
-    out << "r reset to t=0/drop state";
-    if (mSleepStateColors)
-      out << "  colors awake red, candidate yellow, resting blue, static gray";
-
-    mHudText->setText(out.str());
+    const double alpha = 0.02;
+    const auto blend = [&](double smoothed, double instant) {
+      return mHasSmoothedStats ? (1.0 - alpha) * smoothed + alpha * instant
+                               : instant;
+    };
+    mSmoothedContacts
+        = blend(mSmoothedContacts, static_cast<double>(contacts.contacts));
+    mSmoothedPairs = blend(mSmoothedPairs, static_cast<double>(contacts.pairs));
+    mHasSmoothedStats = true;
   }
 
   std::vector<SkeletonInitialState> mInitialStates;
   Options mOptions;
   bool mSleepStateColors = false;
-  ::osg::ref_ptr<::osg::Camera> mHudCamera;
-  ::osg::ref_ptr<::osgText::Text> mHudText;
+  bool mHasSmoothedStats = false;
+  double mSmoothedContacts = 0.0;
+  double mSmoothedPairs = 0.0;
 };
 
 int collisionEngineToIndex(CollisionEngine engine)
@@ -1961,23 +1894,23 @@ public:
 
     const ImGuiIO& io = ImGui::GetIO();
     const float margin = 12.0f * mGuiScale;
-    const float preferredWidth = 380.0f * mGuiScale;
-    const float preferredHeight = 660.0f * mGuiScale;
-    const float minWidth = 280.0f * mGuiScale;
-    const float minHeight = 240.0f * mGuiScale;
-    const float width
-        = std::min(preferredWidth, std::max(minWidth, io.DisplaySize.x));
-    const float height
-        = std::min(preferredHeight, std::max(minHeight, io.DisplaySize.y));
     ImGui::SetNextWindowPos(ImVec2(margin, margin), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(width, height), ImGuiCond_FirstUseEver);
+    // Auto-size the window to its content so no label is clipped and no
+    // scrolling or manual resize is needed; only cap it to the display.
+    ImGui::SetNextWindowSizeConstraints(
+        ImVec2(0.0f, 0.0f),
+        ImVec2(
+            std::max(100.0f, io.DisplaySize.x - 2.0f * margin),
+            std::max(100.0f, io.DisplaySize.y - 2.0f * margin)));
     ImGui::SetNextWindowBgAlpha(0.94f);
 
-    if (!ImGui::Begin("Contact Benchmark")) {
+    if (!ImGui::Begin(
+            "Contact Benchmark", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
       ImGui::End();
       return;
     }
 
+    ImGui::PushItemWidth(200.0f * mGuiScale);
     renderStatus();
     renderSimulationControls();
     renderSceneControls();
@@ -1986,6 +1919,7 @@ public:
       ImGui::Separator();
       ImGui::TextWrapped("%s", mStatusMessage.c_str());
     }
+    ImGui::PopItemWidth();
 
     ImGui::End();
   }
@@ -2138,7 +2072,6 @@ private:
   void renderStatus()
   {
     const auto world = mNode->getWorld();
-    const auto contacts = world ? collectContactStats(world) : ContactStats();
     const auto sleep = world ? collectSleepStats(world) : SleepStats();
 
     if (ImGui::CollapsingHeader("Status", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -2146,17 +2079,52 @@ private:
           "Time %.3f s   Frame %d",
           world ? world->getTime() : 0.0,
           world ? world->getSimFrames() : 0);
+      const double lowestRtf = std::isfinite(mNode->getLowestRealTimeFactor())
+                                   ? mNode->getLowestRealTimeFactor()
+                                   : 0.0;
       ImGui::Text(
-          "RTF %.3f / target %.3f",
-          mNode->getLastRealTimeFactor(),
-          mNode->getTargetRealTimeFactor());
+          "RTF %.2f / target %.2f   (lo %.2f, hi %.2f)",
+          mNode->getSmoothedRealTimeFactor(),
+          mNode->getTargetRealTimeFactor(),
+          lowestRtf,
+          mNode->getHighestRealTimeFactor());
       ImGui::Text(
-          "Contacts %zu   Pairs %zu", contacts.contacts, contacts.pairs);
+          "Contacts %.0f   Pairs %.0f",
+          mNode->getSmoothedContacts(),
+          mNode->getSmoothedPairs());
       ImGui::Text(
-          "Resting %zu / %zu   Candidates %zu",
+          "Resting %zu / %zu   Candidates %zu   Disturbed %zu",
           sleep.resting,
           sleep.mobile,
-          sleep.candidates);
+          sleep.candidates,
+          sleep.disturbed);
+      ImGui::Text(
+          "Smoothed max v %.3f m/s   w %.3f rad/s",
+          sleep.maxSmoothedLinearSpeed,
+          sleep.maxSmoothedAngularSpeed);
+      ImGui::Text("Rest dwell %.2f s", sleep.maxRestDwellTime);
+
+      const Options& options = mNode->getOptions();
+      std::ostringstream pipeline;
+      pipeline << "Pipeline DART 6, collision detector "
+               << collisionEngineName(options.collisionEngine);
+      if (options.generatedObjects.has_value()) {
+        pipeline << ", generated "
+                 << (options.generateContainer  ? "container "
+                     : options.generateCapsules ? "capsules "
+                                                : "objects ")
+                 << *options.generatedObjects;
+      }
+      if (options.dropHeight > 0.0) {
+        pipeline << ", drop height " << std::fixed << std::setprecision(2)
+                 << options.dropHeight << " m";
+      }
+      ImGui::TextWrapped("%s", pipeline.str().c_str());
+      ImGui::TextWrapped("Key R resets to the t=0/drop state.");
+      if (mNode->getSleepStateColors()) {
+        ImGui::TextWrapped(
+            "Colors: awake red, candidate yellow, resting blue, static gray.");
+      }
     }
   }
 
@@ -2171,7 +2139,6 @@ private:
       if (ImGui::Button("Reset"))
         mNode->resetWorld();
 
-      ImGui::SetNextItemWidth(-1.0f);
       if (ImGui::SliderFloat("Target RTF", &mTargetRtf, 0.05f, 4.0f, "%.2f"))
         mNode->setGuiTargetRtf(std::max(0.05, static_cast<double>(mTargetRtf)));
 
@@ -2202,13 +2169,10 @@ private:
     };
 
     mGeneratedObjects = std::clamp(mGeneratedObjects, 1, 10000);
-    ImGui::SetNextItemWidth(-1.0f);
     noteEdit(ImGui::SliderInt("Objects", &mGeneratedObjects, 3, 300));
-    ImGui::SetNextItemWidth(-1.0f);
     noteEdit(ImGui::InputInt("Object count", &mGeneratedObjects, 3, 30));
     mGeneratedObjects = std::clamp(mGeneratedObjects, 1, 10000);
 
-    ImGui::SetNextItemWidth(-1.0f);
     noteEdit(ImGui::SliderFloat(
         "Spacing", &mGeneratedSpacing, 0.6f, 3.0f, "%.2f m"));
     noteEdit(ImGui::Checkbox("Contact container", &mGenerateContainer));
@@ -2218,16 +2182,12 @@ private:
       mGenerateCapsules = false;
     }
     if (mGenerateContainer) {
-      ImGui::SetNextItemWidth(-1.0f);
       noteEdit(ImGui::InputInt("Container layers", &mContainerLayers, 1, 2));
       mContainerLayers = std::clamp(mContainerLayers, 1, 1000);
-      ImGui::SetNextItemWidth(-1.0f);
       noteEdit(ImGui::SliderFloat(
           "Container jitter", &mContainerJitter, 0.0f, 0.35f, "%.2f m"));
-      ImGui::SetNextItemWidth(-1.0f);
       noteEdit(ImGui::SliderFloat(
           "Initial speed", &mContainerInitialSpeed, 0.0f, 4.0f, "%.2f m/s"));
-      ImGui::SetNextItemWidth(-1.0f);
       noteEdit(ImGui::SliderFloat(
           "Initial spin",
           &mContainerInitialAngularSpeed,
@@ -2235,13 +2195,11 @@ private:
           8.0f,
           "%.2f rad/s"));
     }
-    ImGui::SetNextItemWidth(-1.0f);
     noteEdit(
         ImGui::SliderFloat("Drop height", &mDropHeight, 0.0f, 4.0f, "%.2f m"));
 
     static const char* kCollisionItems[]
         = {"default", "dart", "fcl", "bullet", "ode"};
-    ImGui::SetNextItemWidth(-1.0f);
     if (ImGui::Combo("Collision", &mCollisionIndex, kCollisionItems, 5)) {
       if (!collisionEngineAllowsPrimitiveShapes(mCollisionIndex))
         mPrimitiveShapes = false;
@@ -2320,8 +2278,8 @@ void runGui(const dart::simulation::WorldPtr& world, const Options& options)
   ::osg::ref_ptr<ContactBenchmarkGuiWorldNode> node
       = new ContactBenchmarkGuiWorldNode(world, options);
 
-  std::cout << "GUI HUD: RTF, simulation time, contacts, and sleep state. "
-               "Press r to reset to t=0/drop state.\n";
+  std::cout << "GUI status panel: RTF, simulation time, contacts, and sleep "
+               "state. Press r to reset to t=0/drop state.\n";
   std::cout << "GUI target RTF: " << options.guiTargetRtf << "\n";
   std::cout << "GUI scale: " << options.guiScale << "\n";
   std::cout << "GUI starts " << (options.guiStart ? "running" : "paused")
