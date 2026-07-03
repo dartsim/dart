@@ -32,30 +32,30 @@ reading `docs/ai/principles.md`, then load the task-specific docs below. Tools
 that support `@file` references may use them, but the paths below are the
 portable source of truth.
 
-| Task Type                             | Load These Files                                                                                                                                                   |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Any task**                          | This file (auto-loaded), `docs/ai/principles.md`                                                                                                                   |
-| Project direction                     | `docs/ai/north-star.md`                                                                                                                                            |
-| Building                              | `docs/onboarding/building.md`                                                                                                                                      |
-| Testing                               | `docs/onboarding/testing.md`                                                                                                                                       |
-| Contributing                          | `docs/onboarding/contributing.md`, `CONTRIBUTING.md`                                                                                                               |
-| Code style                            | `docs/onboarding/code-style.md`                                                                                                                                    |
-| Architecture                          | `docs/onboarding/architecture.md`, `docs/onboarding/README.md`                                                                                                     |
-| DART 7 architecture vision            | `docs/readthedocs/architecture.md` (multi-physics/solver/backend one-paper), `docs/design/simulation_solver_architecture.md`                                       |
-| Architecture hardening / work packets | `docs/design/dart7_architecture_assessment.md` (verified findings + standing rule), `docs/plans/solver-family-intake.md`, `docs/ai/orchestration.md`               |
-| Public API work                       | `docs/onboarding/api-boundaries.md`                                                                                                                                |
-| Theory/research foundations           | `docs/background/README.md`                                                                                                                                        |
-| CI/CD issues                          | `docs/onboarding/ci-cd.md`                                                                                                                                         |
-| Python bindings                       | `docs/onboarding/python-bindings.md`                                                                                                                               |
-| Model loading                         | `docs/onboarding/io-parsing.md`                                                                                                                                    |
-| Build system                          | `docs/onboarding/build-system.md`                                                                                                                                  |
-| Profiling / performance               | `docs/onboarding/profiling.md`                                                                                                                                     |
-| AI tools                              | `docs/ai/README.md`, `docs/ai/principles.md`, `docs/ai/north-star.md`, `docs/onboarding/ai-tools.md`                                                               |
-| Planning                              | `docs/ai/principles.md`, `docs/ai/north-star.md`, `docs/plans/README.md`, `docs/plans/dashboard.md`, `docs/plans/north-star-roadmap.md`, `docs/ai/verification.md` |
-| PR reviews                            | `docs/onboarding/ai-tools.md` (AI review handling rules)                                                                                                           |
-| Release work                          | `docs/onboarding/release-management.md`                                                                                                                            |
-| Changelog work                        | `docs/onboarding/changelog.md`, `docs/onboarding/release-roadmap.md`, `docs/onboarding/release-management.md`                                                      |
-| Dev tasks                             | `docs/dev_tasks/README.md` (when to create, cleanup rules)                                                                                                         |
+| Task Type                             | Load These Files                                                                                                                                                                              |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Any task**                          | This file (auto-loaded), `docs/ai/principles.md`                                                                                                                                              |
+| Project direction                     | `docs/ai/north-star.md`                                                                                                                                                                       |
+| Building                              | `docs/onboarding/building.md`                                                                                                                                                                 |
+| Testing                               | `docs/onboarding/testing.md`                                                                                                                                                                  |
+| Contributing                          | `docs/onboarding/contributing.md`, `CONTRIBUTING.md`                                                                                                                                          |
+| Code style                            | `docs/onboarding/code-style.md`                                                                                                                                                               |
+| Architecture                          | `docs/onboarding/architecture.md`, `docs/onboarding/README.md`                                                                                                                                |
+| DART 7 architecture vision            | `docs/readthedocs/architecture.md` (multi-physics/solver/backend one-paper), `docs/design/simulation_solver_architecture.md`                                                                  |
+| Architecture hardening / work packets | `docs/design/dart7_architecture_assessment.md` (verified findings + standing rule), `docs/plans/solver-family-intake.md`, `docs/ai/orchestration.md`                                          |
+| Public API work                       | `docs/onboarding/api-boundaries.md`                                                                                                                                                           |
+| Theory/research foundations           | `docs/background/README.md`                                                                                                                                                                   |
+| CI/CD issues                          | `docs/onboarding/ci-cd.md`                                                                                                                                                                    |
+| Python bindings                       | `docs/onboarding/python-bindings.md`                                                                                                                                                          |
+| Model loading                         | `docs/onboarding/io-parsing.md`                                                                                                                                                               |
+| Build system                          | `docs/onboarding/build-system.md`                                                                                                                                                             |
+| Profiling / performance               | `docs/onboarding/profiling.md`                                                                                                                                                                |
+| AI tools                              | `docs/ai/README.md`, `docs/ai/principles.md`, `docs/ai/north-star.md`, `docs/onboarding/ai-tools.md`                                                                                          |
+| Planning                              | `docs/ai/principles.md`, `docs/ai/north-star.md`, `docs/plans/README.md`, `docs/plans/dashboard.md`, `docs/plans/north-star-roadmap.md`, `docs/ai/verification.md`                            |
+| PR reviews                            | `docs/onboarding/ai-tools.md` (AI review handling rules)                                                                                                                                      |
+| Release work                          | `docs/onboarding/release-management.md`                                                                                                                                                       |
+| Changelog work                        | `docs/onboarding/changelog.md`, `docs/onboarding/release-roadmap.md`, `docs/onboarding/release-management.md`; use `/dart-changelog` or `$dart-changelog` for changelog decisions and entries |
+| Dev tasks                             | `docs/dev_tasks/README.md` (when to create, cleanup rules)                                                                                                                                    |
 
 ## AI Workflows And Skills
 
@@ -88,7 +88,7 @@ OpenCode and Codex entrypoints live in `.opencode/command/` and
 - [ ] **`pixi run lint`** — ALWAYS run, even for docs-only changes. CI WILL fail without this.
 - [ ] `pixi run build` — If C++/Python code changed
 - [ ] `pixi run test-unit` — If behavior could be affected
-- [ ] **CHANGELOG.md** — Update according to `docs/onboarding/changelog.md` if adding features, fixing bugs, or making breaking changes
+- [ ] **CHANGELOG.md** — Use `/dart-changelog` or `$dart-changelog` to decide and update according to `docs/onboarding/changelog.md` if adding features, fixing bugs, or making breaking changes
 - [ ] **Dev task cleanup** — If task used `docs/dev_tasks/<task>/`, promote durable artifacts and remove the folder in this PR (not after merge)
 
 Shortcut: `pixi run test-all` runs lint + build + all tests.

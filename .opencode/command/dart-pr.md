@@ -153,10 +153,10 @@ Use these practices:
     branch by default because it invalidates existing CI runs and makes PR
     review/comment history harder to follow. Rebase or force-push only when the
     maintainer explicitly requests it.
-11. Use `docs/onboarding/changelog.md` for the changelog decision. If
-    `CHANGELOG.md` needs the PR number, keep the follow-up changelog commit
-    local until explicit maintainer/user approval is given for the additional
-    push or PR update.
+11. Invoke the `dart-changelog` routine for the changelog decision, entry
+    wording, and PR-link follow-up. If `CHANGELOG.md` needs the PR number, keep
+    the follow-up changelog commit local until explicit maintainer/user approval
+    is given for the additional push or PR update.
 12. Monitor CI:
     ```bash
     gh pr checks <PR_NUMBER>

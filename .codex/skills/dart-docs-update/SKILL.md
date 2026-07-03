@@ -45,7 +45,8 @@ Update documentation: $ARGUMENTS
 4. Update indexes and cross-references that point to changed docs
 5. Use `docs/ai/verification.md` to select the docs-only or AI docs/adapters
    gate set, then run `pixi run lint` before committing
-6. Record the `CHANGELOG.md` decision using `docs/onboarding/changelog.md`.
+6. Invoke the `dart-changelog` routine for the `CHANGELOG.md` decision and any
+   required entry.
 7. Ask for explicit maintainer/user approval before pushing or opening the PR.
    After approval, use `.github/PULL_REQUEST_TEMPLATE.md` and the proper
    milestone.

@@ -98,8 +98,9 @@ Steps:
 
 ## CHANGELOG (After Approved PR Exists)
 
-Use `docs/onboarding/changelog.md` as the source of truth. After the approved PR
-exists, check if `CHANGELOG.md` needs updating:
+Use the `dart-changelog` routine with `docs/onboarding/changelog.md` as the
+source of truth. After the approved PR exists, check if `CHANGELOG.md` needs
+updating:
 
 | Change Type                      | Update CHANGELOG?                    |
 | -------------------------------- | ------------------------------------ |

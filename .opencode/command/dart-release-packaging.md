@@ -27,8 +27,9 @@ Create release packaging PR after explicit maintainer/user approval: $ARGUMENTS
    ```
 4. Bump versions in `package.xml` and `pixi.toml`.
 5. Update version requirements in examples/tutorials if needed.
-6. Add or finalize the `CHANGELOG.md` release section with the release date,
-   milestone link, release summary, and audit from `docs/onboarding/changelog.md`.
+6. Invoke the `dart-changelog` routine in release-audit mode, then add or
+   finalize the `CHANGELOG.md` release section with the release date, milestone
+   link, release summary, and audit from `docs/onboarding/changelog.md`.
 7. Run `pixi run lint` and relevant packaging checks.
 8. Commit as `Packaging <NEW_VERSION>`.
 9. Ask for explicit maintainer/user approval before pushing, creating the PR,

@@ -75,6 +75,12 @@
       "gate_profile": "docs-ai"
     },
     {
+      "name": "dart-changelog",
+      "category": "docs",
+      "status": "active",
+      "gate_profile": "docs-ai"
+    },
+    {
       "name": "dart-plan-update",
       "category": "planning",
       "status": "active",
