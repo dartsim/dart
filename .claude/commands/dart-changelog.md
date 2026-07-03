@@ -46,14 +46,27 @@ If no mode is given, infer the smallest mode that satisfies the caller's need.
    git status --short --branch
    git diff --stat
    git diff --cached --stat
-   BASE_REF="$(gh pr view --json baseRefName --jq .baseRefName 2>/dev/null || echo main)"
+   BASE_REF="$(gh pr view --json baseRefName --jq .baseRefName 2>/dev/null || true)"
+   # If the caller or arguments name a release branch before PR creation, set
+   # BASE_REF to that branch before falling back to automatic inference.
+   if [ -z "$BASE_REF" ]; then
+     CURRENT_BRANCH="$(git branch --show-current)"
+     UPSTREAM_REF="$(git rev-parse --abbrev-ref --symbolic-full-name @{upstream} 2>/dev/null || true)"
+     for REF in "$CURRENT_BRANCH" "${UPSTREAM_REF#origin/}"; do
+       case "$REF" in
+         main|release-*) BASE_REF="$REF"; break ;;
+       esac
+     done
+   fi
+   BASE_REF="${BASE_REF:-main}"
    git fetch origin "$BASE_REF"
    git diff --stat "origin/$BASE_REF...HEAD"
    gh pr diff --name-only 2>/dev/null || true
    gh pr list --head "$(git branch --show-current)"
    ```
    Use the base comparison or PR diff even when the worktree is clean. If a PR,
-   issue, or release is named, inspect that live object before writing.
+   issue, release, or target branch is named, inspect that live object before
+   writing and prefer its base over the `main` fallback.
 2. Read `docs/onboarding/changelog.md` and the relevant `CHANGELOG.md` release
    section. Compare nearby bullets before drafting so wording, section choice,
    and level of detail match the current file.
