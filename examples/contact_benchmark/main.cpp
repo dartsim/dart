@@ -468,6 +468,23 @@ void normalizeGeneratedCapsuleCollisionOptions(Options& options)
   }
 }
 
+// Match the BM_INTEGRATION_contact_container caps for every container scene
+// build (CLI parsing, GUI rebuilds, and the capture-time widget exercise).
+// The world default of 1000 total contacts overflows when a detector produces
+// very dense per-pair manifolds (the ODE detector's mesh-based cylinder
+// fallback reports 100+ contacts per pair); dropped contacts then let bodies
+// tunnel out of the container.
+void normalizeContainerContactCaps(Options& options)
+{
+  if (!options.generateContainer)
+    return;
+
+  if (!options.maxContacts.has_value())
+    options.maxContacts = 20000;
+  if (!options.maxContactsPerPair.has_value())
+    options.maxContactsPerPair = 4;
+}
+
 Options parseOptions(int argc, char* argv[])
 {
   Options options;
@@ -637,17 +654,7 @@ Options parseOptions(int argc, char* argv[])
   if (options.generateContainer && !options.dropHeightSpecified)
     options.dropHeight = kDefaultGeneratedContainerDropHeight;
 
-  // Match the BM_INTEGRATION_contact_container caps. The world default of
-  // 1000 total contacts overflows when a detector produces very dense
-  // per-pair manifolds (the ODE detector's mesh-based cylinder fallback
-  // reports 100+ contacts per pair); dropped contacts then let bodies
-  // tunnel out of the container.
-  if (options.generateContainer) {
-    if (!options.maxContacts.has_value())
-      options.maxContacts = 20000;
-    if (!options.maxContactsPerPair.has_value())
-      options.maxContactsPerPair = 4;
-  }
+  normalizeContainerContactCaps(options);
 
   if (options.generatedObjects.has_value() && options.sdfPath.has_value()) {
     throw std::invalid_argument(
@@ -2042,6 +2049,7 @@ private:
 
     try {
       normalizeGeneratedCapsuleCollisionOptions(options);
+      normalizeContainerContactCaps(options);
       auto newWorld = createGeneratedWorld(options);
       applyOptions(newWorld, options);
       if (options.dropHeight > 0.0 && !options.generateContainer)
