@@ -35,8 +35,9 @@ fi
 # Extract the command and decide whether it is a `git commit` against THIS
 # repository, in one python3 pass. Handles env-var prefixes (quote-aware),
 # wrapper prefixes (command/exec/time/nice/nohup/env), subshell and brace-group
-# openers, backslash-escaped git, `git -C dir commit`, `git -c k=v commit`, and
-# && / || / ; / | command chains; ignores "commit" as a substring elsewhere.
+# openers, backslash-escaped git, `git -C dir commit`, `git -c k=v commit`,
+# hook overrides via `--config-env`, and && / || / ; / | command chains; ignores
+# "commit" as a substring elsewhere.
 verdict=$(printf '%s' "$input" | python3 -c '
 import json
 import os
@@ -52,7 +53,16 @@ except Exception:
 
 cmd = ((data.get("tool_input") or {}).get("command") or "")
 
-OPTS_WITH_ARG = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
+OPTS_WITH_ARG = {
+    "-C",
+    "-c",
+    "--config-env",
+    "--git-dir",
+    "--work-tree",
+    "--namespace",
+    "--exec-path",
+}
+CONFIG_ENV_PREFIX = "--config-env="
 WRAPPERS = {"command", "exec", "time", "nice", "nohup"}
 ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=(?P<value>.*)$")
 
@@ -123,10 +133,20 @@ def is_git_commit(text):
         hooks_path_override = False
         while i < len(tokens):
             t = tokens[i]
+            if t.startswith(CONFIG_ENV_PREFIX):
+                option, _ = strip_outer_quotes(t[len(CONFIG_ENV_PREFIX) :])
+                if option.startswith("core.hooksPath="):
+                    hooks_path_override = True
+                i += 1
+                continue
             if t in OPTS_WITH_ARG:
                 if t == "-C" and i + 1 < len(tokens):
                     target_dir = shell_expand_path_token(tokens[i + 1])
                 if t == "-c" and i + 1 < len(tokens):
+                    option, _ = strip_outer_quotes(tokens[i + 1])
+                    if option.startswith("core.hooksPath="):
+                        hooks_path_override = True
+                if t == "--config-env" and i + 1 < len(tokens):
                     option, _ = strip_outer_quotes(tokens[i + 1])
                     if option.startswith("core.hooksPath="):
                         hooks_path_override = True
