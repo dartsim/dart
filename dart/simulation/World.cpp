@@ -239,13 +239,55 @@ std::vector<char> findShallowSupportedFreeRoots(
   return supported;
 }
 
+struct FreeRootVelocitySnapshot
+{
+  bool valid = false;
+  bool preserveLateralAndTilt = false;
+  Eigen::Vector3d linear = Eigen::Vector3d::Zero();
+  Eigen::Vector3d angular = Eigen::Vector3d::Zero();
+};
+
+std::vector<FreeRootVelocitySnapshot> snapshotFreeRootVelocities(
+    const std::vector<dynamics::SkeletonPtr>& skeletons)
+{
+  std::vector<FreeRootVelocitySnapshot> snapshots(skeletons.size());
+
+  for (std::size_t i = 0; i < skeletons.size(); ++i) {
+    const auto& skeleton = skeletons[i];
+    if (!skeleton || !skeleton->isMobile())
+      continue;
+
+    const auto* rootBody = skeleton->getRootBodyNode();
+    if (rootBody == nullptr)
+      continue;
+
+    const auto* freeJoint
+        = dynamic_cast<const dynamics::FreeJoint*>(rootBody->getParentJoint());
+    if (freeJoint == nullptr)
+      continue;
+
+    auto& snapshot = snapshots[i];
+    snapshot.valid = true;
+    // Keep user-actuated low-speed motion, but do not let prior-step solver
+    // leakage become the next passive baseline.
+    snapshot.preserveLateralAndTilt = skeleton->hasExternalDisturbance();
+    snapshot.linear = rootBody->getLinearVelocity();
+    snapshot.angular = rootBody->getAngularVelocity();
+  }
+
+  return snapshots;
+}
+
 // DART 6 keeps Baumgarte contact correction in the velocity solve by default.
 // On shallow support contacts, small contact-manifold asymmetry can leak that
 // vertical correction into lateral free-root velocity or roll/pitch drift. Keep
-// the observable upward correction and yaw, but remove only tiny lateral/tilt
-// components for roots directly supported by an inactive body.
+// the observable upward correction, yaw, and user-actuated pre-solve
+// lateral/tilt motion, but remove only tiny lateral/tilt deltas introduced by
+// support contacts.
 void suppressShallowSupportedFreeRootDrift(
-    const dynamics::SkeletonPtr& skeleton, const Eigen::Vector3d& gravity)
+    const dynamics::SkeletonPtr& skeleton,
+    const Eigen::Vector3d& gravity,
+    const FreeRootVelocitySnapshot& preSolveVelocity)
 {
   if (!skeleton || !skeleton->isMobile() || gravity.squaredNorm() <= 0.0)
     return;
@@ -265,16 +307,37 @@ void suppressShallowSupportedFreeRootDrift(
 
   Eigen::Vector3d linearVelocity = rootBody->getLinearVelocity();
   const Eigen::Vector3d verticalVelocity = up * linearVelocity.dot(up);
-  if ((linearVelocity - verticalVelocity).norm() <= kRootLinearDriftSpeed) {
+  const Eigen::Vector3d lateralVelocity = linearVelocity - verticalVelocity;
+  const Eigen::Vector3d preSolveVerticalVelocity
+      = up * preSolveVelocity.linear.dot(up);
+  Eigen::Vector3d preSolveLateralVelocity = Eigen::Vector3d::Zero();
+  if (preSolveVelocity.preserveLateralAndTilt)
+    preSolveLateralVelocity
+        = preSolveVelocity.linear - preSolveVerticalVelocity;
+  if (preSolveVelocity.valid && preSolveLateralVelocity.allFinite()
+      && (lateralVelocity - preSolveLateralVelocity).norm()
+             <= kRootLinearDriftSpeed) {
     freeJoint->setLinearVelocity(
-        verticalVelocity, dynamics::Frame::World(), dynamics::Frame::World());
+        verticalVelocity + preSolveLateralVelocity,
+        dynamics::Frame::World(),
+        dynamics::Frame::World());
   }
 
   Eigen::Vector3d angularVelocity = rootBody->getAngularVelocity();
   const Eigen::Vector3d yawVelocity = up * angularVelocity.dot(up);
-  if ((angularVelocity - yawVelocity).norm() <= kRootAngularDriftSpeed) {
+  const Eigen::Vector3d tiltVelocity = angularVelocity - yawVelocity;
+  const Eigen::Vector3d preSolveYawVelocity
+      = up * preSolveVelocity.angular.dot(up);
+  Eigen::Vector3d preSolveTiltVelocity = Eigen::Vector3d::Zero();
+  if (preSolveVelocity.preserveLateralAndTilt)
+    preSolveTiltVelocity = preSolveVelocity.angular - preSolveYawVelocity;
+  if (preSolveVelocity.valid && preSolveTiltVelocity.allFinite()
+      && (tiltVelocity - preSolveTiltVelocity).norm()
+             <= kRootAngularDriftSpeed) {
     freeJoint->setAngularVelocity(
-        yawVelocity, dynamics::Frame::World(), dynamics::Frame::World());
+        yawVelocity + preSolveTiltVelocity,
+        dynamics::Frame::World(),
+        dynamics::Frame::World());
   }
 }
 
@@ -677,6 +740,9 @@ void World::step(bool _resetCommand)
           });
     }
 
+    const std::vector<FreeRootVelocitySnapshot> preSolveFreeRootVelocities
+        = snapshotFreeRootVelocities(mSkeletons);
+
     {
       DART_PROFILE_SCOPED_N("World::step - Solve constraints");
       mConstraintSolver->solve();
@@ -704,7 +770,8 @@ void World::step(bool _resetCommand)
 
             if (i < shallowSupportedFreeRoots.size()
                 && shallowSupportedFreeRoots[i]) {
-              suppressShallowSupportedFreeRootDrift(skel, mGravity);
+              suppressShallowSupportedFreeRootDrift(
+                  skel, mGravity, preSolveFreeRootVelocities[i]);
             }
 
             if (skel->isPositionImpulseApplied()) {
@@ -831,6 +898,9 @@ void World::step(bool _resetCommand)
         });
   }
 
+  const std::vector<FreeRootVelocitySnapshot> preSolveFreeRootVelocities
+      = snapshotFreeRootVelocities(mSkeletons);
+
   // Detect activated constraints and compute constraint impulses
   {
     DART_PROFILE_SCOPED_N("World::step - Solve constraints");
@@ -888,7 +958,8 @@ void World::step(bool _resetCommand)
 
           if (i < shallowSupportedFreeRoots.size()
               && shallowSupportedFreeRoots[i]) {
-            suppressShallowSupportedFreeRootDrift(skel, mGravity);
+            suppressShallowSupportedFreeRootDrift(
+                skel, mGravity, preSolveFreeRootVelocities[i]);
           }
 
           if (!preservingFinalSleepSolve) {

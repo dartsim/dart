@@ -318,6 +318,42 @@ TEST(Issue201, ShallowSupportedFreeRootDoesNotDriftSideways)
 }
 
 //==============================================================================
+// The drift suppression removes only tiny lateral/tilt motion introduced by the
+// contact solve. It must preserve intentional low-speed motion that existed
+// before the shallow support contact was solved.
+TEST(Issue201, ShallowSupportPreservesIntentionalLowSpeedMotion)
+{
+  auto world = simulation::World::create();
+  auto floor = createFloor();
+  floor->setMobile(false);
+  world->addSkeleton(floor);
+
+  const double penetration = 5e-5;
+  auto box = createBox(kBoxSize / 2.0 - penetration);
+  world->addSkeleton(box);
+
+  auto* rootBody = box->getRootBodyNode();
+  ASSERT_NE(rootBody, nullptr);
+  auto* rootJoint = dynamic_cast<FreeJoint*>(rootBody->getParentJoint());
+  ASSERT_NE(rootJoint, nullptr);
+
+  const double lateralSpeed = 5e-6;
+  const double tiltSpeed = 5e-5;
+  rootJoint->setLinearVelocity(
+      Eigen::Vector3d(lateralSpeed, 0.0, 0.0), Frame::World(), Frame::World());
+  rootJoint->setAngularVelocity(
+      Eigen::Vector3d(0.0, tiltSpeed, 0.0), Frame::World(), Frame::World());
+  // Mark this as user-actuated motion rather than passive solver drift.
+  rootJoint->setForce(0, 1e-8);
+
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_NEAR(rootBody->getLinearVelocity().x(), lateralSpeed, 1e-8);
+  EXPECT_NEAR(rootBody->getAngularVelocity().y(), tiltSpeed, 1e-8);
+}
+
+//==============================================================================
 // A shallow contact with the underside of an immobile ceiling is not support:
 // the drift suppression must not clamp legitimate small lateral motion of a
 // free body touching a ceiling or overhang.
