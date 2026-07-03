@@ -9,8 +9,8 @@
 #   * reads the hook JSON from stdin, extracts .tool_input.command
 #   * exits 0 fast for anything that is not a `git commit` invocation
 #   * for a git commit:
-#       - if an executable git pre-commit hook is installed, exit 0 (that hook
-#         enforces; avoid running the gate twice)
+#       - if the executable git pre-commit hook is DART-managed, exit 0 (that
+#         hook enforces; avoid running the gate twice)
 #       - if DART_SKIP_HOOKS=1 (in the environment or as a command prefix),
 #         exit 0 (emergency bypass, same as the git hook)
 #       - if the commit targets another repository (`git -C /other/repo
@@ -40,6 +40,7 @@ verdict=$(printf '%s' "$input" | python3 -c '
 import json
 import os
 import re
+import subprocess
 import sys
 
 try:
@@ -120,10 +121,33 @@ def is_git_commit(text):
             if target_dir:
                 project = os.environ.get("CLAUDE_PROJECT_DIR")
                 try:
-                    if project and os.path.realpath(target_dir) != os.path.realpath(
+                    target_top = subprocess.run(
+                        ["git", "-C", target_dir, "rev-parse", "--show-toplevel"],
+                        capture_output=True,
+                        text=True,
+                    )
+                    project_top = subprocess.run(
+                        ["git", "-C", project, "rev-parse", "--show-toplevel"],
+                        capture_output=True,
+                        text=True,
+                    ) if project else None
+                    if (
                         project
+                        and target_top.returncode == 0
+                        and project_top
+                        and project_top.returncode == 0
+                        and os.path.realpath(target_top.stdout.strip())
+                        != os.path.realpath(project_top.stdout.strip())
                     ):
                         continue  # commit into another repository
+                    if (
+                        project
+                        and target_top.returncode != 0
+                        and not os.path.realpath(target_dir).startswith(
+                            os.path.realpath(project) + os.sep
+                        )
+                    ):
+                        continue  # non-repo path outside this project
                 except OSError:
                     pass
             return True
@@ -142,15 +166,15 @@ fi
 
 repo_root="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
-# If an executable git pre-commit hook is installed, let it enforce; don't
-# double-run. (git only executes hooks with the executable bit set.)
+# If the executable git pre-commit hook is DART-managed, let it enforce; don't
+# double-run. Foreign hooks are not guaranteed to include DART's lint gate.
 hook_path=$(git -C "$repo_root" rev-parse --git-path hooks/pre-commit 2>/dev/null)
 if [ -n "$hook_path" ]; then
     case "$hook_path" in
         /*) : ;;
         *) hook_path="$repo_root/$hook_path" ;;
     esac
-    if [ -x "$hook_path" ]; then
+    if [ -x "$hook_path" ] && grep -q "DART-MANAGED-HOOK" "$hook_path" 2>/dev/null; then
         exit 0
     fi
 fi

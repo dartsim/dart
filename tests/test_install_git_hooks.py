@@ -151,6 +151,19 @@ def test_refuses_when_core_hookspath_is_set(tmp_path):
     assert not (repo / ".githooks" / "pre-commit").exists()
 
 
+def _run_guard(repo: Path, env: dict[str, str], command: str):
+    payload = json.dumps({"tool_input": {"command": command}})
+    run = subprocess.run(
+        [str(GUARD)],
+        cwd=repo,
+        input=payload,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    return run.returncode, run.stderr
+
+
 def _guard_verdict(tmp_path: Path, command: str, extra_env: dict | None = None):
     """Run the guard against a hookless scratch repo in dry-run mode.
 
@@ -163,15 +176,7 @@ def _guard_verdict(tmp_path: Path, command: str, extra_env: dict | None = None):
     )
     if extra_env:
         env.update(extra_env)
-    payload = json.dumps({"tool_input": {"command": command}})
-    run = subprocess.run(
-        [str(GUARD)],
-        input=payload,
-        env=env,
-        capture_output=True,
-        text=True,
-    )
-    return run.returncode, run.stderr
+    return _run_guard(repo, env, command)
 
 
 @pytest.mark.parametrize(
@@ -206,13 +211,53 @@ def test_guard_skips_non_commits_and_bypasses(tmp_path, command):
     assert "would run" not in stderr
 
 
-def test_guard_stands_down_when_executable_hook_installed(tmp_path):
+@pytest.mark.parametrize("use_absolute", [False, True])
+def test_guard_detects_git_c_commits_inside_this_repo(tmp_path, use_absolute):
+    repo, env = _init_repo(tmp_path)
+    docs = repo / "docs"
+    docs.mkdir()
+    target = str(docs) if use_absolute else "docs"
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, f"git -C {target} commit -m x")
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
+def test_guard_skips_git_c_commits_in_another_repo(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, f"git -C {other} commit -m x")
+
+    assert returncode == 0
+    assert "would run" not in stderr
+
+
+def test_guard_runs_when_only_foreign_executable_hook_installed(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    hook = _hook(repo)
+    hook.parent.mkdir(parents=True, exist_ok=True)
+    hook.write_text("#!/bin/sh\nexit 0\n")
+    hook.chmod(0o755)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, "git commit -m x")
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
+def test_guard_stands_down_when_dart_managed_executable_hook_installed(tmp_path):
     repo, env = _init_repo(tmp_path)
     assert _install(repo, env).returncode == 0
     env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
-    payload = json.dumps({"tool_input": {"command": "git commit -m x"}})
-    run = subprocess.run(
-        [str(GUARD)], input=payload, env=env, capture_output=True, text=True
-    )
-    assert run.returncode == 0
-    assert run.stderr == ""
+
+    returncode, stderr = _run_guard(repo, env, "git commit -m x")
+
+    assert returncode == 0
+    assert stderr == ""
