@@ -287,9 +287,10 @@ compatibility remains on the active DART 6 LTS branch._
   humans. ([#2446](https://github.com/dartsim/dart/pull/2446),
   [#2649](https://github.com/dartsim/dart/pull/2649),
   [#3041](https://github.com/dartsim/dart/pull/3041))
-- Extended the `$dart-resume` workflow so targeted dev-task paths and
-  completion/retirement intent trigger the documented completion-audit path
-  without requiring long free-form prompts.
+- Made `$dart-resume` completion-oriented by default for targeted dev tasks,
+  with explicit limited modes, verification-first evidence gathering, progress
+  tracking, and delegation guidance so agents can manage task closeout without
+  long free-form prompts.
 - Clarified DART 6 LTS release routing so remaining `6.19.x` fixes target the
   active `release-6.20` branch and `DART 6.20.0` milestone instead of opening a
   `DART 6.19.4` patch lane.

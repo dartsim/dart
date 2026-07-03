@@ -5,29 +5,53 @@ agent: build
 
 Resume unfinished work: $ARGUMENTS
 
+## Objective
+
+`dart-resume` is a completion-oriented task manager, not a status lookup or a
+single-slice helper by default. Resume the named or reconstructed work, build or
+refresh the execution plan, track progress in the repo-owned task surface, split
+independent work across subagents/sub-sessions when the current AI surface
+supports it, verify every result, and keep going until the whole task is
+complete or a real blocker or approval boundary remains.
+
+Decisions must be evidence-based. Before choosing between meaningful options,
+first improve or define the verification/debugging method so it can catch false
+positives and false negatives. Use repository inspection, focused tests,
+benchmarks, A/B comparisons, GUI or visual evidence, logs, and external resource
+searches as needed to decide from evidence instead of preference.
+
+For a `docs/dev_tasks/<task>` target, full completion means all feasible task
+work is finished, durable decisions and deferred work are promoted, and the
+temporary dev-task folder is removed in the completing change. Do not stop after
+one successful slice unless the user explicitly requested a limited mode.
+
 ## Argument Handling
 
-Use `$ARGUMENTS` to avoid long free-form resume prompts. Interpret arguments in
-this order:
+Use `$ARGUMENTS` to identify the target and any explicit limits. Interpret
+arguments in this order:
 
-1. **Explicit target path**: if an argument names `docs/dev_tasks/<task>` or a
+1. **Explicit limited mode**: if arguments include `status`, `audit-only`,
+   `plan-only`, `slice`, `next-slice`, or `no-subagents`, honor that limit and
+   state it in the plan. Without one of these limiters, do not downscope the
+   session to a single slice.
+2. **Explicit target path**: if an argument names `docs/dev_tasks/<task>` or a
    file under that folder, treat that dev task as the target and read its
    `README.md` and `RESUME.md` after recon. Resolve relative paths from the repo
    root discovered by `git rev-parse --show-toplevel`, not from the launch
    directory.
-2. **Completion intent**: if arguments include words such as `complete`,
-   `finish`, `retire`, `close out`, or `cleanup`, run the completion-audit path
-   for the target dev task. Completion means durable work is promoted and the
-   dev-task folder is removed in the same change; it does not mean "advance one
-   more slice."
-3. **Branch/PR/issue hint**: otherwise, treat arguments as a branch, PR, issue,
+3. **Closeout wording**: words such as `complete`, `finish`, `retire`,
+   `close out`, or `cleanup` are accepted but not required for dev-task
+   completion. Treat `retire` / `close out` as emphasis that the likely end
+   state is durable-doc promotion plus folder removal.
+4. **Branch/PR/issue hint**: otherwise, treat arguments as a branch, PR, issue,
    topic, or free-form resume hint and reconstruct the task from live repo state.
 
 Examples:
 
 ```text
-$dart-resume docs/dev_tasks/skeleton_simulation_mode --complete
-$dart-resume docs/dev_tasks/dart7_core_dynamics_perf_forwardport retire
+$dart-resume docs/dev_tasks/skeleton_simulation_mode
+$dart-resume docs/dev_tasks/dart7_core_dynamics_perf_forwardport
+$dart-resume docs/dev_tasks/dart7_core_dynamics_perf_forwardport --slice
 $dart-resume PR 2991
 ```
 
@@ -62,11 +86,17 @@ Otherwise infer the task from branch name, commits, diffs, issue/PR
 description, and any `docs/dev_tasks/<task>/` state. If the goal is still
 unclear after recon, stop and ask.
 
-For completion-intent arguments, write explicit pass/fail criteria before
-editing:
+Before editing, write explicit pass/fail criteria for the resumed task:
 
-- what exact dev-task folder is being completed;
+- what exact dev-task folder, branch, PR, issue, or topic is being completed;
 - which remaining checklist items, decisions, or evidence must be resolved;
+- how progress will be tracked during this session and across any handoff;
+- which independent subtasks, if any, can be delegated to subagents or separate
+  sessions without creating conflicting edits;
+- which verification/debugging method will make false positives and false
+  negatives unlikely before implementation decisions are made;
+- which A/B tests, benchmarks, resource searches, GUI checks, or textual checks
+  are needed to support consequential decisions;
 - which durable docs will own any surviving decision or deferred work;
 - which verification commands prove the result.
 
@@ -74,10 +104,37 @@ editing:
 
 - Propose a 3-6 step plan before editing.
 - Continue with minimal scope and preserve existing user changes.
+- Verification comes first when the route is uncertain. Define the observable
+  signal, build or select the smallest reproducer/check, run a control vs
+  candidate comparison when possible, and only then choose the implementation
+  path. If the existing verification is weak, improve the check or debugging
+  surface before trusting the result.
+- For text-based behavior, prefer concrete command output, failing/passing
+  tests, focused scripts, logs, structured packets, assertions, and diffable
+  artifacts. For GUI or visual behavior, capture screenshots, rendered assets,
+  pixel/visual comparisons, smoke runs, or videos where the surface supports
+  them; verify both the expected pass path and at least one failure-sensitive
+  condition when practical.
+- When the decision depends on behavior outside the repository, search the
+  relevant upstream docs, papers, issues, standards, or release notes and record
+  the source-backed conclusion in the task docs, durable owner doc, or PR
+  evidence. Prefer primary sources.
+- If the task is large, decompose it into independently verifiable work items.
+  Use available AI-native subagent, sub-session, or parallel-worker support when
+  it can improve quality or throughput without conflicting edits. Validate and
+  integrate every delegated result yourself; repo-tracked docs remain the source
+  of truth even when agent-specific orchestration is available.
+- Keep progress tracking current in the task's `README.md`, `RESUME.md`, or
+  durable owner doc after meaningful progress. If the current session cannot
+  finish because of context, environment, approval, or a real blocker, leave the
+  next session with exact current reality, remaining work, blockers, and gates.
 - For active solver/paper implementations, keep the plan or dev-task resume
   surface explicit about the completed slice, the next missing paper-parity
   gap, and why focused green tests are not a full paper-completion claim.
-- If the task is being completed, run a completion audit before finalizing:
+- Unless an explicit limited mode was requested, do not stop at "one more
+  slice." Continue the plan/execute/verify/update loop until all feasible work
+  is complete or a blocker or approval boundary remains.
+- Run a completion audit before finalizing a dev-task target:
   identify the exact `docs/dev_tasks/<task>/` folder, inspect it for remaining
   plans/evidence/decisions, promote any durable dashboard, evidence matrix, API
   inventory, migration map, long-lived decision, or deferred-but-real work into
