@@ -124,7 +124,10 @@ CTest-gated.
   contact/constraint data, joint limits/control, and sensors. These block the
   matching simulator features and are tracked as co-evolution with the
   DART 7 API effort (PLAN-041 and PLAN-042). The design doc's
-  gap table records the interim approach for each.
+  gap table records the interim approach for each. Do not revive the retired
+  Skeleton/BodyNode `SimulationMode` dev task as a legacy dynamics API; the
+  lifecycle decision now lives in the design doc, with import work routed
+  through the DART 7 World and the editor scene model.
 - Project file format (JSON vs XML) is decided at Phase 5 start (JSON leaning).
 - Stepping thread model (GUI thread vs worker) is decided with responsiveness
   evidence during Phase 4.
