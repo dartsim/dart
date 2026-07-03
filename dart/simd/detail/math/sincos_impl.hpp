@@ -103,7 +103,10 @@ DART_SIMD_INLINE void sincosImplSimd(
 
   VecT xa = abs(x);
   VecT jFloat = xa * VecT::broadcast(fourOverPi);
-  constexpr float maxJ = 16777216.0f;
+  // The Cody-Waite reduction below is accurate for the common small-angle
+  // range, but large float inputs lose too much precision before the
+  // polynomial evaluation. Route those lanes to scalar libm.
+  constexpr float maxJ = 8192.0f;
   MaskT inRange
       = (jFloat >= VecT::broadcast(0.0f)) & (jFloat <= VecT::broadcast(maxJ));
   VecT jSafe = select(inRange, jFloat, VecT::broadcast(0.0f));

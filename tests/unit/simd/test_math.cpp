@@ -431,6 +431,28 @@ TYPED_TEST(MathTest, SinCos)
   }
 }
 
+TYPED_TEST(MathTest, SinCosLargeFloatInputs)
+{
+  using vec_type = typename TestFixture::vec_type;
+  using scalar_type = typename TestFixture::scalar_type;
+  constexpr auto width = TestFixture::width;
+
+  if constexpr (std::is_same_v<scalar_type, float>) {
+    std::vector<scalar_type> data(width);
+    for (std::size_t i = 0; i < width; ++i) {
+      data[i] = (i % 2 == 0) ? scalar_type{-1.0e7f} : scalar_type{1.0e7f};
+    }
+
+    auto v = vec_type::loadu(data.data());
+    auto [s, c] = sincos(v);
+
+    for (std::size_t i = 0; i < width; ++i) {
+      this->expectNear(s[i], std::sin(data[i]));
+      this->expectNear(c[i], std::cos(data[i]));
+    }
+  }
+}
+
 TYPED_TEST(MathTest, Tan)
 {
   using vec_type = typename TestFixture::vec_type;

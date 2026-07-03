@@ -86,17 +86,11 @@
   #define DART_SIMD_SSE42 1
 #endif
 
+// The SVE headers are installed for source parity, but the backend does not
+// yet cover the full Vec operation API in this DART 6 C++17 port.
 #if !defined(DART_SIMD_FORCE_SCALAR)
   #if defined(__ARM_NEON) || defined(__ARM_NEON__)
     #define DART_SIMD_NEON 1
-  #endif
-
-  #if defined(__ARM_FEATURE_SVE)
-    #define DART_SIMD_SVE 1
-  #endif
-
-  #if defined(__ARM_FEATURE_SVE2)
-    #define DART_SIMD_SVE2 1
   #endif
 #endif
 
