@@ -363,6 +363,10 @@
 
 * Tests
 
+  * Preserve every protected `release-*` post-merge CI run by giving
+    release-branch workflow runs a run-specific concurrency group instead of
+    relying on GitHub's single-pending default concurrency queue.
+
   * Stop the coverage CI job from running the full test suite twice (the
     `coverage-report` Pixi task re-ran `build-coverage` through `depends-on`) and
     raise the coverage CTest timeout above the 1500s default, fixing spurious
