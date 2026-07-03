@@ -126,6 +126,87 @@ def test_dashboard_surface_runner_fails_when_output_has_no_rows(tmp_path, monkey
         runner.main(["--surface", "fake", "--output-dir", str(tmp_path)])
 
 
+def test_continue_on_error_preserves_required_surface_failure(
+    tmp_path,
+    monkeypatch,
+):
+    runner = _load_runner_module()
+    monkeypatch.setattr(
+        runner,
+        "BENCHMARK_SPECS",
+        [
+            runner.BenchmarkSpec(
+                surface="broken",
+                target="broken_target",
+                benchmark_filter="BM_Broken$",
+                output_name="broken.json",
+            ),
+            runner.BenchmarkSpec(
+                surface="passing",
+                target="passing_target",
+                benchmark_filter="BM_Passing$",
+                output_name="passing.json",
+            ),
+        ],
+    )
+
+    def fake_run(command, check):
+        output = next(
+            arg.split("=", 1)[1] for arg in command if arg.startswith("--benchmark_out=")
+        )
+        if output.endswith("broken.json"):
+            raise subprocess.CalledProcessError(2, command)
+        Path(output).write_text(
+            json.dumps({"benchmarks": [{"name": "BM_Passing", "real_time": 1.0}]}),
+            encoding="utf-8",
+        )
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    result = runner.main(
+        [
+            "--surface",
+            "broken",
+            "--surface",
+            "passing",
+            "--output-dir",
+            str(tmp_path),
+            "--continue-on-error",
+        ]
+    )
+
+    assert result == 1
+    assert (tmp_path / "passing.json").is_file()
+
+
+def test_optional_surface_failure_is_tolerated(tmp_path, monkeypatch, capsys):
+    runner = _load_runner_module()
+    monkeypatch.setattr(
+        runner,
+        "BENCHMARK_SPECS",
+        [
+            runner.BenchmarkSpec(
+                surface="optional",
+                target="optional_target",
+                benchmark_filter="BM_Optional$",
+                output_name="optional.json",
+                optional=True,
+            )
+        ],
+    )
+
+    def fake_run(command, check):
+        raise subprocess.CalledProcessError(2, command)
+
+    monkeypatch.setattr(runner, "_target_declared", lambda target, build_type: True)
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    result = runner.main(["--surface", "optional", "--output-dir", str(tmp_path)])
+
+    assert result == 0
+    assert "Skipping optional optional" in capsys.readouterr().err
+
+
 def test_dashboard_surface_runner_accepts_output_with_rows(tmp_path, monkeypatch):
     runner = _load_runner_module()
     monkeypatch.setattr(

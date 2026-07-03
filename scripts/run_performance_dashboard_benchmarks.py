@@ -186,7 +186,8 @@ def main(argv: list[str]) -> int:
     specs = _selected_specs(args.surface)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    failures: list[tuple[BenchmarkSpec, str]] = []
+    required_failures: list[tuple[BenchmarkSpec, str]] = []
+    optional_failures: list[tuple[BenchmarkSpec, str]] = []
     for spec in specs:
         if (
             spec.optional
@@ -214,22 +215,37 @@ def main(argv: list[str]) -> int:
         try:
             subprocess.run(command, check=True)
         except subprocess.CalledProcessError as exc:
-            failures.append((spec, f"exit code {exc.returncode}"))
+            failure = (spec, f"exit code {exc.returncode}")
+            if spec.optional:
+                optional_failures.append(failure)
+                continue
+            required_failures.append(failure)
             if not args.continue_on_error:
                 raise
             continue
 
         if not _has_benchmark_rows(output):
             message = f"no benchmark rows in {output}"
-            failures.append((spec, message))
+            failure = (spec, message)
+            if spec.optional:
+                optional_failures.append(failure)
+                continue
+            required_failures.append(failure)
             if not args.continue_on_error:
                 raise SystemExit(
                     f"{spec.surface} benchmark target {spec.target} failed: "
                     f"{message}."
                 )
 
-    if failures:
-        for spec, reason in failures:
+    for spec, reason in optional_failures:
+        print(
+            f"Skipping optional {spec.surface} benchmark target {spec.target}: "
+            f"{reason}.",
+            file=sys.stderr,
+        )
+
+    if required_failures:
+        for spec, reason in required_failures:
             print(
                 f"{spec.surface} benchmark target {spec.target} failed "
                 f"with {reason}.",

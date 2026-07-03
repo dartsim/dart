@@ -97,13 +97,12 @@ jobs:
           pixi run --locked config
 
       - name: Run benchmark surfaces
-        # Tolerate a flaky or not-yet-merged optional surface: publish whatever
-        # produced results. The merge step fails only if no benchmark rows were
-        # produced at all.
+        # Keep running after one required surface fails so the log reports every
+        # required-surface failure. Optional surfaces are tolerated by the runner.
         run: |
           pixi run --locked python \
             scripts/run_performance_dashboard_benchmarks.py \
-            --continue-on-error || true
+            --continue-on-error
 
       - name: Merge benchmark results
         run: |
@@ -120,6 +119,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           gh-pages-branch: gh-pages
           benchmark-data-dir-path: performance/dart6
+          ref: ${{ steps.dart6-branch.outputs.branch }}
           auto-push: ${{ github.event_name == 'schedule' || startsWith(github.ref, 'refs/heads/release-6.') || github.ref == 'refs/heads/main' }}
           # GitHub-hosted runners are noisy; alert on a clear 2x regression
           # and comment on the commit rather than failing the build.
