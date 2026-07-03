@@ -172,7 +172,7 @@ skeleton->computeForwardDynamics();
 Eigen::VectorXd qddot = skeleton->getAccelerations();
 ```
 
-See `dart/dynamics/Skeleton.cpp` for implementation details.
+See `dart/dynamics/skeleton.cpp` for implementation details.
 
 ## Acknowledgements
 

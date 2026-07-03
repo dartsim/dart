@@ -233,12 +233,12 @@ graph TB
     click VIEWER "dart/gui/viewer.hpp" "Open viewer descriptors"
     click DESCRIPTORS "dart/gui/renderable.hpp" "Open renderable descriptors"
     click INTERACTION "dart/gui/interaction.hpp" "Open interaction helpers"
-    click WORLD "dart/simulation/World.hpp" "Open World"
-    click SKELETON "dart/dynamics/Skeleton.hpp" "Open Skeleton"
-    click BODYNODE "dart/dynamics/BodyNode.hpp" "Open BodyNode"
-    click JOINT "dart/dynamics/Joint.hpp" "Open Joint"
-    click COLLISION "dart/collision/CollisionDetector.hpp" "Open CollisionDetector"
-    click CONSTRAINT "dart/constraint/ConstraintSolver.hpp" "Open ConstraintSolver"
+    click WORLD "dart/simulation/world.hpp" "Open World"
+    click SKELETON "dart/dynamics/skeleton.hpp" "Open Skeleton"
+    click BODYNODE "dart/dynamics/body_node.hpp" "Open BodyNode"
+    click JOINT "dart/dynamics/joint.hpp" "Open Joint"
+    click COLLISION "dart/collision/collision_detector.hpp" "Open CollisionDetector"
+    click CONSTRAINT "dart/constraint/constraint_solver.hpp" "Open ConstraintSolver"
 ```
 
 ### Component Explanations
@@ -340,17 +340,17 @@ drawing expressed as DART values instead of renderer types.
 
 ### Component: World (Simulation Core)
 
-**File**: [`World.hpp`](dart/simulation/World.hpp) | [`World.cpp`](dart/simulation/World.cpp)
+**File**: [`World.hpp`](dart/simulation/world.hpp) | [`World.cpp`](dart/simulation/world.cpp)
 
 **Purpose**: Top-level simulation container that manages skeletons, simple frames, time-stepping, and coordinates collision detection and constraint solving.
 
 **Key Elements**:
 
-- [`World::step()`](dart/simulation/World.cpp#L356) - Main simulation loop
-- [`World::addSkeleton()`](dart/simulation/World.cpp#L196) - Register articulated bodies
-- [`World::addSimpleFrame()`](dart/simulation/World.cpp#L241) - Register non-simulated frames
-- [`World::setGravity()`](dart/simulation/World.cpp#L489) - Configure gravity vector
-- [`World::setTimeStep()`](dart/simulation/World.cpp#L505) - Set integration time step
+- [`World::step()`](dart/simulation/world.cpp#L356) - Main simulation loop
+- [`World::addSkeleton()`](dart/simulation/world.cpp#L196) - Register articulated bodies
+- [`World::addSimpleFrame()`](dart/simulation/world.cpp#L241) - Register non-simulated frames
+- [`World::setGravity()`](dart/simulation/world.cpp#L489) - Configure gravity vector
+- [`World::setTimeStep()`](dart/simulation/world.cpp#L505) - Set integration time step
 - Recording support for playback and analysis
 
 **Depends On**:
@@ -362,16 +362,16 @@ drawing expressed as DART values instead of renderer types.
 
 ### Component: Skeleton (Articulated Body System)
 
-**File**: [`Skeleton.hpp`](dart/dynamics/Skeleton.hpp) | [`Skeleton.cpp`](dart/dynamics/Skeleton.cpp)
+**File**: [`Skeleton.hpp`](dart/dynamics/skeleton.hpp) | [`Skeleton.cpp`](dart/dynamics/skeleton.cpp)
 
 **Purpose**: Represents articulated rigid body systems (robots, characters) as a tree of BodyNodes connected by Joints. Manages kinematics, dynamics, and state.
 
 **Key Elements**:
 
-- [`Skeleton::create()`](dart/dynamics/Skeleton.cpp#L148) - Factory for creating skeletons
-- [`Skeleton::createJointAndBodyNodePair<>()`](dart/dynamics/Skeleton.cpp#L521) - Add body to tree
-- [`Skeleton::getMassMatrix()`](dart/dynamics/Skeleton.cpp#L1567) - Compute mass matrix (O(n²))
-- [`Skeleton::getCoriolisAndGravityForces()`](dart/dynamics/Skeleton.cpp#L1624) - Compute C(q,q̇) + g(q) (O(n))
+- [`Skeleton::create()`](dart/dynamics/skeleton.cpp#L148) - Factory for creating skeletons
+- [`Skeleton::createJointAndBodyNodePair<>()`](dart/dynamics/skeleton.cpp#L521) - Add body to tree
+- [`Skeleton::getMassMatrix()`](dart/dynamics/skeleton.cpp#L1567) - Compute mass matrix (O(n²))
+- [`Skeleton::getCoriolisAndGravityForces()`](dart/dynamics/skeleton.cpp#L1624) - Compute C(q,q̇) + g(q) (O(n))
 - Configuration space: generalized positions (q) and velocities (q̇)
 - Support for kinematic trees and closed-loop structures
 
@@ -384,17 +384,17 @@ drawing expressed as DART values instead of renderer types.
 
 ### Component: BodyNode (Rigid Body)
 
-**File**: [`BodyNode.hpp`](dart/dynamics/BodyNode.hpp) | [`BodyNode.cpp`](dart/dynamics/BodyNode.cpp)
+**File**: [`BodyNode.hpp`](dart/dynamics/body_node.hpp) | [`BodyNode.cpp`](dart/dynamics/body_node.cpp)
 
 **Purpose**: Individual rigid body in an articulated system. Manages mass properties, inertia, shapes (collision/visual), and local transformations.
 
 **Key Elements**:
 
-- [`BodyNode::createShapeNodeWith<>()`](dart/dynamics/BodyNode.cpp#L357) - Add shape with aspects
-- [`BodyNode::setMass()`](dart/dynamics/BodyNode.cpp#L545) - Configure mass
-- [`BodyNode::setInertia()`](dart/dynamics/BodyNode.cpp#L580) - Configure inertia tensor
-- [`BodyNode::getWorldTransform()`](dart/dynamics/BodyNode.cpp#L755) - Get global pose
-- [`BodyNode::getJacobian()`](dart/dynamics/BodyNode.cpp#L1143) - Compute Jacobian
+- [`BodyNode::createShapeNodeWith<>()`](dart/dynamics/body_node.cpp#L357) - Add shape with aspects
+- [`BodyNode::setMass()`](dart/dynamics/body_node.cpp#L545) - Configure mass
+- [`BodyNode::setInertia()`](dart/dynamics/body_node.cpp#L580) - Configure inertia tensor
+- [`BodyNode::getWorldTransform()`](dart/dynamics/body_node.cpp#L755) - Get global pose
+- [`BodyNode::getJacobian()`](dart/dynamics/body_node.cpp#L1143) - Compute Jacobian
 
 **Depends On**:
 
@@ -405,19 +405,19 @@ drawing expressed as DART values instead of renderer types.
 
 ### Component: Joint System
 
-**File**: [`Joint.hpp`](dart/dynamics/Joint.hpp) and specialized joint files
+**File**: [`Joint.hpp`](dart/dynamics/joint.hpp) and specialized joint files
 
 **Purpose**: Connects BodyNodes and defines their relative motion constraints. Provides 10+ joint types for various kinematic configurations.
 
 **Key Joint Types**:
 
-- [`RevoluteJoint`](dart/dynamics/RevoluteJoint.hpp) - 1-DOF rotation (1D)
-- [`PrismaticJoint`](dart/dynamics/PrismaticJoint.hpp) - 1-DOF translation (1D)
-- [`FreeJoint`](dart/dynamics/FreeJoint.hpp) - 6-DOF unconstrained (6D)
-- [`BallJoint`](dart/dynamics/BallJoint.hpp) - 3-DOF rotation (3D)
-- [`WeldJoint`](dart/dynamics/WeldJoint.hpp) - 0-DOF fixed (0D)
-- [`UniversalJoint`](dart/dynamics/UniversalJoint.hpp) - 2-DOF rotation (2D)
-- [`EulerJoint`](dart/dynamics/EulerJoint.hpp) - 3-DOF Euler angles (3D)
+- [`RevoluteJoint`](dart/dynamics/revolute_joint.hpp) - 1-DOF rotation (1D)
+- [`PrismaticJoint`](dart/dynamics/prismatic_joint.hpp) - 1-DOF translation (1D)
+- [`FreeJoint`](dart/dynamics/free_joint.hpp) - 6-DOF unconstrained (6D)
+- [`BallJoint`](dart/dynamics/ball_joint.hpp) - 3-DOF rotation (3D)
+- [`WeldJoint`](dart/dynamics/weld_joint.hpp) - 0-DOF fixed (0D)
+- [`UniversalJoint`](dart/dynamics/universal_joint.hpp) - 2-DOF rotation (2D)
+- [`EulerJoint`](dart/dynamics/euler_joint.hpp) - 3-DOF Euler angles (3D)
 
 **Key Features**:
 
@@ -435,7 +435,7 @@ drawing expressed as DART values instead of renderer types.
 
 ### Component: Collision Detection
 
-**File**: [`CollisionDetector.hpp`](dart/collision/CollisionDetector.hpp) | [`CollisionGroup.hpp`](dart/collision/CollisionGroup.hpp)
+**File**: [`CollisionDetector.hpp`](dart/collision/collision_detector.hpp) | [`CollisionGroup.hpp`](dart/collision/collision_group.hpp)
 
 **Purpose**: Pluggable collision detection system supporting multiple backends. Detects collisions between shapes and generates contact points.
 
@@ -448,9 +448,9 @@ drawing expressed as DART values instead of renderer types.
 
 **Key Elements**:
 
-- [`CollisionDetector::detectCollision()`](dart/collision/CollisionDetector.cpp#L84) - Run collision detection
-- [`CollisionGroup`](dart/collision/CollisionGroup.hpp) - Groups shapes for broad-phase optimization
-- [`Contact`](dart/collision/Contact.hpp) - Contact point data structure
+- [`CollisionDetector::detectCollision()`](dart/collision/collision_detector.cpp#L84) - Run collision detection
+- [`CollisionGroup`](dart/collision/collision_group.hpp) - Groups shapes for broad-phase optimization
+- [`Contact`](dart/collision/contact.hpp) - Contact point data structure
 
 **Depends On**:
 
@@ -461,14 +461,14 @@ drawing expressed as DART values instead of renderer types.
 
 ### Component: Constraint Solver
 
-**File**: [`ConstraintSolver.hpp`](dart/constraint/ConstraintSolver.hpp) | [`ConstraintSolver.cpp`](dart/constraint/ConstraintSolver.cpp)
+**File**: [`ConstraintSolver.hpp`](dart/constraint/constraint_solver.hpp) | [`ConstraintSolver.cpp`](dart/constraint/constraint_solver.cpp)
 
 **Purpose**: Resolves constraints (contacts, joint limits, motors) using LCP-based formulation. Computes constraint impulses to satisfy constraint equations.
 
 **Key Elements**:
 
-- [`ConstraintSolver::solve()`](dart/constraint/ConstraintSolver.cpp#L159) - Main constraint solving loop
-- [`ConstraintSolver::addConstraint()`](dart/constraint/ConstraintSolver.cpp#L86) - Register constraint
+- [`ConstraintSolver::solve()`](dart/constraint/constraint_solver.cpp#L159) - Main constraint solving loop
+- [`ConstraintSolver::addConstraint()`](dart/constraint/constraint_solver.cpp#L86) - Register constraint
 - Constraint types: Contact, JointLimit, Motor, Servo, Mimic (MimicMotor or
   Coupler), custom
 - LCP solvers: Dantzig (primary), PGS (fallback)
@@ -548,7 +548,7 @@ sequenceDiagram
 **Key Files**:
 
 - Example: [`examples/demos/scenes/rigid_body.cpp`](../../examples/demos/scenes/rigid_body.cpp)
-- [`World::step()`](dart/simulation/World.cpp#L356)
+- [`World::step()`](dart/simulation/world.cpp#L356)
 - [`RunOptions`](../../dart/gui/viewer.hpp)
 - [`RenderableDescriptor`](../../dart/gui/renderable.hpp)
 
@@ -597,7 +597,7 @@ sequenceDiagram
 
 - Example: [`examples/atlas_puppet/main.cpp`](../../examples/atlas_puppet/main.cpp)
 - [`pickNearestRenderable()`](dart/gui/interaction.hpp#L60)
-- [`IK::solve()`](dart/dynamics/IK.cpp#L142)
+- [`IK::solve()`](dart/dynamics/inverse_kinematics.cpp#L142)
 - [`translateFrameRenderable()`](dart/gui/interaction.hpp#L90)
 
 ---
@@ -642,9 +642,9 @@ sequenceDiagram
 
 **Key Files**:
 
-- [`World::step()`](dart/simulation/World.cpp#L356)
-- [`Skeleton::computeForwardDynamics()`](dart/dynamics/Skeleton.cpp#L2154)
-- [`ConstraintSolver::solve()`](dart/constraint/ConstraintSolver.cpp#L159)
+- [`World::step()`](dart/simulation/world.cpp#L356)
+- [`Skeleton::computeForwardDynamics()`](dart/dynamics/skeleton.cpp#L2154)
+- [`ConstraintSolver::solve()`](dart/constraint/constraint_solver.cpp#L159)
 
 ---
 
@@ -711,8 +711,8 @@ sequenceDiagram
 
 **Key Files**:
 
-- [`dart::io` unified API](dart/io/Read.hpp)
-- Implementation: [`dart/io/Read.cpp`](dart/io/Read.cpp)
+- [`dart::io` unified API](dart/io/read.hpp)
+- Implementation: [`dart/io/read.cpp`](dart/io/read.cpp)
 - Internal parser: [`UrdfParser`](dart/utils/urdf/urdf_parser.hpp)
 - Entry point: [`UrdfParser::parseSkeleton()`](dart/utils/urdf/urdf_parser.cpp)
 - Example: [`examples/atlas_puppet/main.cpp`](../../examples/atlas_puppet/main.cpp)
@@ -765,7 +765,7 @@ sequenceDiagram
 
 ### Entity: Skeleton
 
-**File**: [`Skeleton.hpp`](dart/dynamics/Skeleton.hpp)
+**File**: [`Skeleton.hpp`](dart/dynamics/skeleton.hpp)
 
 **Purpose**: Articulated body system representing a robot or character
 
@@ -793,7 +793,7 @@ sequenceDiagram
 
 ### Entity: BodyNode
 
-**File**: [`BodyNode.hpp`](dart/dynamics/BodyNode.hpp)
+**File**: [`BodyNode.hpp`](dart/dynamics/body_node.hpp)
 
 **Purpose**: Individual rigid body in an articulated system
 
@@ -823,7 +823,7 @@ sequenceDiagram
 
 ### Entity: Joint
 
-**File**: [`Joint.hpp`](dart/dynamics/Joint.hpp)
+**File**: [`Joint.hpp`](dart/dynamics/joint.hpp)
 
 **Purpose**: Kinematic constraint connecting two BodyNodes
 
@@ -853,7 +853,7 @@ sequenceDiagram
 
 ### Entity: Shape
 
-**File**: [`Shape.hpp`](dart/dynamics/Shape.hpp)
+**File**: [`Shape.hpp`](dart/dynamics/shape.hpp)
 
 **Purpose**: Geometric representation for collision detection and visualization
 
@@ -888,7 +888,7 @@ sequenceDiagram
 
 ### Entity: World
 
-**File**: [`World.hpp`](dart/simulation/World.hpp)
+**File**: [`World.hpp`](dart/simulation/world.hpp)
 
 **Purpose**: Top-level simulation container
 
@@ -918,7 +918,7 @@ sequenceDiagram
 
 ### Entity: Contact
 
-**File**: [`Contact.hpp`](dart/collision/Contact.hpp)
+**File**: [`Contact.hpp`](dart/collision/contact.hpp)
 
 **Purpose**: Contact point data from collision detection
 
@@ -945,7 +945,7 @@ sequenceDiagram
 
 ### Entity: Constraint
 
-**File**: [`ConstraintBase.hpp`](dart/constraint/ConstraintBase.hpp)
+**File**: [`ConstraintBase.hpp`](dart/constraint/constraint_base.hpp)
 
 **Purpose**: Abstract base for constraint types
 
@@ -977,7 +977,7 @@ sequenceDiagram
 
 ### Entity: Frame
 
-**File**: [`Frame.hpp`](dart/dynamics/Frame.hpp)
+**File**: [`Frame.hpp`](dart/dynamics/frame.hpp)
 
 **Purpose**: Coordinate frame in the simulation world
 

@@ -28,7 +28,7 @@ front door (`dart::io`) without introducing new nested namespaces, while keeping
 parser-specific customization available via `dart::utils::*` parsers where
 needed. DART 7 is retiring SKEL rather than redesigning it as YAML; migrate
 legacy SKEL assets to URDF, SDF, or MJCF. Unit coverage for the promoted options
-lives in `tests/unit/io/test_Read.cpp`.
+lives in `tests/unit/io/test_read.cpp`.
 
 ## Scope and design decision
 
@@ -61,21 +61,21 @@ namespaces for each format is intentionally avoided.
 
 Source of truth:
 
-- `dart/io/Read.hpp`
-- `dart/io/Read.cpp`
+- `dart/io/read.hpp`
+- `dart/io/read.cpp`
 
 ## Start here next time
 
-- API surface: `dart/io/Read.hpp`
-- Implementation: `dart/io/Read.cpp`
-- Unit coverage for `ReadOptions`: `tests/unit/io/test_Read.cpp`
+- API surface: `dart/io/read.hpp`
+- Implementation: `dart/io/read.cpp`
+- Unit coverage for `ReadOptions`: `tests/unit/io/test_read.cpp`
 
 ## Common usage patterns
 
 ### Load a skeleton with format inference
 
 ```cpp
-#include <dart/io/Read.hpp>
+#include <dart/io/read.hpp>
 
 auto skel = dart::io::readSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 ```

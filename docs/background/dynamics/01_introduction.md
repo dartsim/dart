@@ -69,7 +69,7 @@ In DART, the equations of motion are computed via the `Skeleton` class:
 | Forward dynamics        | `Skeleton::computeForwardDynamics()` | Computes $\ddot{q}$ from $\tau$ |
 | Inverse dynamics        | `Skeleton::computeInverseDynamics()` | Computes $\tau$ from $\ddot{q}$ |
 
-See `dart/dynamics/Skeleton.hpp` for the implementation.
+See `dart/dynamics/skeleton.hpp` for the implementation.
 
 ---
 

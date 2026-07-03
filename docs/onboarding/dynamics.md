@@ -36,7 +36,7 @@ adapter vocabulary before exposing new public `BodyNode` or `Joint` API.
 
 ### 1. Skeleton (`Skeleton.hpp`)
 
-**File Path:** `dart/dynamics/Skeleton.hpp`
+**File Path:** `dart/dynamics/skeleton.hpp`
 
 **Purpose:** The Skeleton class represents a complete articulated rigid body system. It is the top-level container that manages the entire kinematic tree.
 
@@ -78,7 +78,7 @@ adapter vocabulary before exposing new public `BodyNode` or `Joint` API.
 
 ### 2. BodyNode (`BodyNode.hpp`)
 
-**File Path:** `dart/dynamics/BodyNode.hpp`
+**File Path:** `dart/dynamics/body_node.hpp`
 
 **Purpose:** Represents a single rigid body (link) in the articulated system. BodyNodes are hierarchically connected through Joints.
 
@@ -158,7 +158,7 @@ adapter vocabulary before exposing new public `BodyNode` or `Joint` API.
 
 ### 3. Joint (`Joint.hpp`)
 
-**File Path:** `dart/dynamics/Joint.hpp`
+**File Path:** `dart/dynamics/joint.hpp`
 
 **Purpose:** Abstract base class representing a kinematic constraint between two BodyNodes. Defines the degrees of freedom and their constraints.
 
@@ -262,7 +262,7 @@ adapter vocabulary before exposing new public `BodyNode` or `Joint` API.
 
 ### 4. DegreeOfFreedom (`DegreeOfFreedom.hpp`)
 
-**File Path:** `dart/dynamics/DegreeOfFreedom.hpp`
+**File Path:** `dart/dynamics/degree_of_freedom.hpp`
 
 **Purpose:** Proxy class for accessing individual degrees of freedom (generalized coordinates). Provides a unified interface to control single DOFs.
 
@@ -318,7 +318,7 @@ double pos = dof->getPosition();
 
 ### 5. Inertia (`Inertia.hpp`)
 
-**File Path:** `dart/dynamics/Inertia.hpp`
+**File Path:** `dart/dynamics/inertia.hpp`
 
 **Purpose:** Represents the inertial properties of a rigid body (mass, center of mass, moment of inertia).
 
@@ -354,7 +354,7 @@ double pos = dof->getPosition();
 
 ### 6. Shape (`Shape.hpp`)
 
-**File Path:** `dart/dynamics/Shape.hpp`
+**File Path:** `dart/dynamics/shape.hpp`
 
 **Purpose:** Abstract base class for geometric shapes used for collision detection and visualization.
 
@@ -549,9 +549,9 @@ const Eigen::VectorXd& g = skeleton->getGravityForces();
 
 ## MeshShape and TriMesh
 
-**Design Decision:** MeshShape internally uses `dart::math::TriMesh<double>` for mesh representation instead of Assimp's `aiScene*`. This decouples mesh data from the loading library (Assimp), enabling format-agnostic mesh handling. The deprecated `aiScene*` API is maintained for backward compatibility via lazy on-demand conversion while DART 7 clean-break gates are being closed. For Filament rendering, materials/textures are accessed through `getMaterials()` (Assimp-free), while scene graph hierarchy uses the deprecated `getMesh()` only where source formats still require it. See `dart/dynamics/MeshShape.hpp` and `dart/utils/MeshLoader.hpp` for implementation.
+**Design Decision:** MeshShape internally uses `dart::math::TriMesh<double>` for mesh representation instead of Assimp's `aiScene*`. This decouples mesh data from the loading library (Assimp), enabling format-agnostic mesh handling. The deprecated `aiScene*` API is maintained for backward compatibility via lazy on-demand conversion while DART 7 clean-break gates are being closed. For Filament rendering, materials/textures are accessed through `getMaterials()` (Assimp-free), while scene graph hierarchy uses the deprecated `getMesh()` only where source formats still require it. See `dart/dynamics/mesh_shape.hpp` and `dart/utils/mesh_loader.hpp` for implementation.
 
-**PolygonMesh:** `dart::math::PolygonMesh<S>` stores variable-length polygon faces (quads, n-gons) and provides deterministic triangulation via ear clipping. This preserves original mesh topology for rendering/export while the collision layer uses the triangulated `TriMesh`. See `dart/math/PolygonMesh.hpp`.
+**PolygonMesh:** `dart::math::PolygonMesh<S>` stores variable-length polygon faces (quads, n-gons) and provides deterministic triangulation via ear clipping. This preserves original mesh topology for rendering/export while the collision layer uses the triangulated `TriMesh`. See `dart/math/polygon_mesh.hpp`.
 
 ## Summary
 

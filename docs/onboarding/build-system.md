@@ -1,5 +1,9 @@
 # DART Build System Analysis
 
+_How the CMake/pixi build system works internally (targets, options, feature
+wiring). For the practical how-to-build guide, see
+[building.md](building.md)._
+
 **Project:** DART (Dynamic Animation and Robotics Toolkit)
 **Version:** 7.0.0
 **Analysis Date:** 2025-10-19

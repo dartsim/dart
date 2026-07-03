@@ -450,7 +450,7 @@ Examples (Suggested, Unverified):
 
    ```cpp
    #include <gtest/gtest.h>
-   #include "dart/dynamics/All.hpp"
+   #include <dart/all.hpp>
 
    TEST(YourTestSuite, YourTestCase)
    {
@@ -764,7 +764,7 @@ target_link_libraries(bm_yourtest dart-utils benchmark::benchmark)
 
 **Problem:** `M_PI` is not defined by the C++ standard. MSVC does not provide it unless `_USE_MATH_DEFINES` is defined before `<cmath>`, causing compilation failures on Windows CI.
 
-**Solution:** Always use `dart::math::pi` (from `<dart/math/Constants.hpp>`):
+**Solution:** Always use `dart::math::pi` (from `<dart/math/constants.hpp>`):
 
 ```cpp
 // WRONG - fails on Windows MSVC

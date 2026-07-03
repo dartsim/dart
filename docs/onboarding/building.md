@@ -1,5 +1,9 @@
 # Building DART from Source
 
+_How to build DART from source (pixi tasks, options, troubleshooting). For the
+internals of the CMake/pixi build system itself, see
+[build-system.md](build-system.md)._
+
 This guide describes how to build DART from source, including both the C++ library and Python bindings (dartpy).
 
 ## Start here next time

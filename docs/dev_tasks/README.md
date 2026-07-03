@@ -218,15 +218,16 @@ find docs/dev_tasks -maxdepth 2 -type d -print
 
 **Before submitting PRs:**
 
-1. Suggested (Unverified): Run `pixi run test-all` - comprehensive default
-   test suite. On Linux hosts with a visible NVIDIA CUDA runtime, also run
+1. **Required**: Run `pixi run test-all` - the authoritative pre-PR gate per
+   `AGENTS.md`. On Linux hosts with a visible NVIDIA CUDA runtime, also run
    `pixi run -e cuda test-all`.
 2. Fix any failures before pushing
 3. **Important**: If GitHub CI fails but `test-all` passed locally, update `test-all` to catch that failure
 
 **Before committing:**
 
-- Suggested (Unverified): Run `pixi run lint` to catch common issues early
+- **Required**: Run `pixi run lint` before every commit (MANDATORY per
+  `AGENTS.md`; `pixi run install-hooks` enforces it via a pre-commit git hook)
 - Update task status in tracker
 - No author names or ownership attribution
 

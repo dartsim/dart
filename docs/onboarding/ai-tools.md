@@ -2,7 +2,9 @@
 
 This document tracks AI coding assistant compatibility with DART's documentation structure.
 
-> **Last Verified**: May 2026 for command/skill sync and prompt-template migration; January 2025 for other tool assumptions
+> **Last Verified**: 2026-07-03. Command/skill/adapter surfaces are
+> continuously machine-verified by `pixi run check-ai-commands` in CI; per-tool
+> behavior notes below were last hand-checked on that date.
 > **Review Cadence**: Verify when updating tool versions or experiencing unexpected behavior.
 
 ## For Collaborators: Tool Selection
@@ -335,7 +337,8 @@ directly. There is no separate prompt-template folder.
 
 ### Claude Code
 
-**Tested Version**: Claude Code (Jan 2025)
+**Verified**: command/skill surfaces continuously via `pixi run
+check-ai-commands` in CI; behavior notes hand-checked 2026-07
 
 | Feature      | Location                    | Status                             |
 | ------------ | --------------------------- | ---------------------------------- |
@@ -351,7 +354,8 @@ directly. There is no separate prompt-template folder.
 
 ### OpenCode
 
-**Tested Version**: OpenCode 1.x (Jan 2025)
+**Verified**: generated command adapters continuously via `pixi run
+check-ai-commands` in CI; behavior notes hand-checked 2026-07
 
 | Feature      | Location                    | Status                              |
 | ------------ | --------------------------- | ----------------------------------- |
@@ -367,7 +371,8 @@ directly. There is no separate prompt-template folder.
 
 ### Gemini CLI
 
-**Tested Version**: Gemini CLI (Jan 2025)
+**Verified**: manual-reference path only (no generated adapter); behavior notes
+hand-checked 2026-07
 
 | Feature      | Location                    | Status                             |
 | ------------ | --------------------------- | ---------------------------------- |
@@ -464,6 +469,14 @@ Contributors can create personal instruction files that are gitignored:
 ## Handling Automated Reviews
 
 When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter review comments from other AI systems (e.g., Codex bot, GitHub Copilot).
+
+### Independent Review Lane
+
+For substantive code PRs, an independent reviewer session — a human, or a
+separate agent session running `/dart-review-pr` that did not author the
+change — records findings before merge approval. Docs-only and mechanical
+changes are exempt. This complements `@codex review`; it does not replace it.
+`dart-manage-pr` checks this gate in `mode=merge`.
 
 ### Detecting AI-Generated Reviews
 
@@ -758,3 +771,4 @@ when nothing is pending, any check fails, or the head SHA moves.
 | -------- | ------------------------------------------------------------------- |
 | Jan 2025 | Initial setup with Claude Code, OpenCode, Gemini CLI, Codex support |
 | Jan 2025 | Added collaborator guide and maintenance conventions                |
+| Jul 2026 | Refreshed verification metadata to CI-checked adapter sync; added independent review lane |
