@@ -59,7 +59,7 @@ git checkout -b feature/my-awesome-feature
 **Bug fixes must be applied to both the active DART 6 LTS branch AND `main`**
 to ensure fixes are available in both DART 6 and DART 7. Use the highest
 maintained `release-6.*` branch advertised by the upstream remote; this checkout
-currently sees `release-6.19`.
+currently sees `release-6.20`.
 
 1. **Fix on release branch first**:
 
@@ -128,8 +128,8 @@ git push origin feature/my-awesome-feature
 Use the PR template in `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone for the target branch:
 
 - `main`: `DART 7.0` (or the next major milestone)
-- Active DART 6 LTS branch, currently `release-6.19`: branch-matching DART 6.x
-  patch milestone
+- Active DART 6 LTS branch, currently `release-6.20`: branch-matching DART 6.x
+  release milestone
 
 ### Repository Metadata Maintenance
 
@@ -328,7 +328,7 @@ Before submitting your pull request, verify:
 - [ ] PR description includes summary, motivation, and testing notes
 - [ ] PR description uses `.github/PULL_REQUEST_TEMPLATE.md`
 - [ ] Milestone is set for the target branch (`DART 7.0` for `main`,
-      branch-matching DART 6.x patch milestone for the active DART 6 LTS branch)
+      branch-matching DART 6.x release milestone for the active DART 6 LTS branch)
 - [ ] `CHANGELOG.md` is updated according to [changelog.md](changelog.md), or
       the PR records why no entry is needed
 - [ ] Bug fixes that apply to the release line have an active-DART-6-LTS PR

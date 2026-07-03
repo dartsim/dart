@@ -39,7 +39,7 @@
 
 #### Checklist
 
-- [ ] Milestone set (DART 7.0 for `main`, branch-matching DART 6.x patch
+- [ ] Milestone set (DART 7.0 for `main`, branch-matching DART 6.x release
       milestone for the active DART 6 LTS branch)
 - [ ] CHANGELOG.md updated per `docs/onboarding/changelog.md` if required
 - [ ] Add unit tests for new functionality

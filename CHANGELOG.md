@@ -33,7 +33,7 @@ compatibility remains on the active DART 6 LTS branch._
 - `main` targets DART 7. DART 6 API compatibility and bug-fix work belong on
   the active DART 6 LTS branch unless a maintainer explicitly scopes a DART 7
   migration adapter. At the time this section was curated, that branch is
-  `release-6.19`; verify the latest `release-6.*` branch before opening an LTS
+  `release-6.20`; verify the latest `release-6.*` branch before opening an LTS
   maintenance PR.
 - Existing DART 6 consumers should expect source updates for removed deprecated
   APIs, snake_case installed headers, renamed parser APIs, build/config macro
@@ -287,6 +287,9 @@ compatibility remains on the active DART 6 LTS branch._
   humans. ([#2446](https://github.com/dartsim/dart/pull/2446),
   [#2649](https://github.com/dartsim/dart/pull/2649),
   [#3041](https://github.com/dartsim/dart/pull/3041))
+- Clarified DART 6 LTS release routing so remaining `6.19.x` fixes target the
+  active `release-6.20` branch and `DART 6.20.0` milestone instead of opening a
+  `DART 6.19.4` patch lane.
 - Clarified DART's AI task-intake guidance to treat Spec Kit as reference
   material rather than an installed workflow, keeping agent plans, packets,
   dev-task acceptance evidence, and gates in DART-owned docs.
