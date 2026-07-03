@@ -14,6 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from benchmark_display_names import family_of, humanize_name  # noqa: E402
+from merge_benchmark_results import merge as merge_benchmark_results  # noqa: E402
 
 REPO_URL = "https://github.com/dartsim/dart"
 
@@ -31,21 +32,7 @@ def _git(*args: str) -> str:
 
 
 def _load_results(inputs: list[Path]) -> dict:
-    files: list[Path] = []
-    for entry in inputs:
-        if entry.is_dir():
-            files.extend(
-                sorted(p for p in entry.glob("*.json") if p.name != "combined.json")
-            )
-        else:
-            files.append(entry)
-
-    benchmarks: list[dict] = []
-    for path in files:
-        benchmarks.extend(
-            json.loads(path.read_text(encoding="utf-8")).get("benchmarks", [])
-        )
-    return {"benchmarks": benchmarks}
+    return merge_benchmark_results(inputs, aggregate="median", humanize=False)
 
 
 def _to_benches(results: dict) -> list[dict]:

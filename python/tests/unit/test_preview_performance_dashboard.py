@@ -53,8 +53,15 @@ def test_preview_writes_index_and_data(tmp_path):
     runs = data["entries"]["DART 6 Performance"]
     assert len(runs) == 1
     assert runs[0]["tool"] == "googlecpp"
-    bench = runs[0]["benches"][0]
-    assert {"name", "value", "unit", "family"} <= bench.keys()
+    benches = runs[0]["benches"]
+    assert len(benches) == 3
+    assert {bench["name"] for bench in benches} == {
+        "Skel kinematics update corpus - 10 iterations",
+        "Contact inverse dynamics - 4 contacts",
+        "Contact container active step - 60 objects - 0 engine - 1 threads",
+    }
+    assert all("_median" not in bench["name"] for bench in benches)
+    assert all({"name", "value", "unit", "family"} <= bench.keys() for bench in benches)
 
 
 def test_preview_append_accumulates_history(tmp_path):
