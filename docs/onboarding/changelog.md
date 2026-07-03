@@ -108,6 +108,11 @@ Poor entry shape:
 Agents and contributors should make the changelog decision before PR creation,
 then finalize the entry once the PR number exists.
 
+AI workflows should invoke the reusable `dart-changelog` routine when a change
+may need release notes. Direct user calls are uncommon; the routine is mainly a
+shared decision/writing path for PR, docs, issue-fix, resume, and release
+workflows.
+
 1. Decide whether an entry is required using this guide.
 2. If no entry is required, record the reason in the PR description or checklist.
 3. If an entry is required before the PR number exists, draft the entry without

@@ -287,6 +287,9 @@ compatibility remains on the active DART 6 LTS branch._
   humans. ([#2446](https://github.com/dartsim/dart/pull/2446),
   [#2649](https://github.com/dartsim/dart/pull/2649),
   [#3041](https://github.com/dartsim/dart/pull/3041))
+- Made DART AI workflows more completion- and changelog-aware by default, with
+  verification-first `$dart-resume` task management and a reusable
+  `$dart-changelog` routine for consistent release-note decisions and entries.
 - Clarified DART 6 LTS release routing so remaining `6.19.x` fixes target the
   active `release-6.20` branch and `DART 6.20.0` milestone instead of opening a
   `DART 6.19.4` patch lane.

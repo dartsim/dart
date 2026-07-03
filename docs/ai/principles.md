@@ -39,10 +39,14 @@ the owner docs above.
 6. **Goals need evidence.** Turn broad requests into concrete deliverables and
    gates. Work is done only when files, generated artifacts, command output,
    review findings, or PR state directly support the outcome.
-7. **Public paths stay portable.** AI workflows can accelerate work, but every
+7. **Decisions need verification.** Before consequential choices, define or
+   improve the verification/debugging method so false positives and false
+   negatives are unlikely. Use focused A/B tests, benchmarks, resource searches,
+   text logs, GUI/visual evidence, or other concrete checks as needed.
+8. **Public paths stay portable.** AI workflows can accelerate work, but every
    DART workflow must map to tracked docs and `pixi run ...` commands usable
    without a specific AI tool.
-8. **Shared state needs approval.** Local inspection, edits, and verification
+9. **Shared state needs approval.** Local inspection, edits, and verification
    are allowed when the task calls for them. Pushes, PR updates, comments,
    review-thread changes, CI re-triggers, and merges require explicit
    maintainer/user approval.
@@ -57,6 +61,8 @@ Before finalizing substantial AI-assisted work, check:
 - Simplicity: the change is no larger than the current problem requires.
 - Scope: touched files are necessary and unrelated edits are preserved.
 - Source of truth: mutable state has one owner; other surfaces point to it.
+- Decision evidence: consequential choices are backed by a verification/debug
+  method that addresses false-positive and false-negative risk.
 - Public path: workflow guidance maps to tracked docs and `pixi run ...` gates.
 - Evidence: checks, review results, artifacts, or blockers are recorded.
 - Shared-state safety: any external mutation was explicitly approved.
