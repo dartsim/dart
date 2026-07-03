@@ -35,6 +35,11 @@
 #include <dart/simd/config.hpp>
 #include <dart/simd/detail/math/constants.hpp>
 #include <dart/simd/detail/math/polynomial.hpp>
+// DART 7 relies on C++20 ADL finding shiftLeft/shiftRight (and their default
+// template argument) without a prior declaration (P0846); C++17 needs the
+// declarations in scope, so include the generic operations header rather
+// than duplicating the signatures here.
+#include <dart/simd/detail/scalar/operations.hpp>
 #include <dart/simd/fwd.hpp>
 
 #include <algorithm>
@@ -42,24 +47,6 @@
 #include <utility>
 
 #include <cmath>
-
-namespace dart::simd {
-
-template <
-    int N,
-    typename T,
-    std::size_t W,
-    std::enable_if_t<std::is_integral_v<T>, int>>
-Vec<T, W> shiftLeft(const Vec<T, W>& v);
-
-template <
-    int N,
-    typename T,
-    std::size_t W,
-    std::enable_if_t<std::is_integral_v<T>, int>>
-Vec<T, W> shiftRight(const Vec<T, W>& v);
-
-} // namespace dart::simd
 
 namespace dart::simd::detail::math {
 

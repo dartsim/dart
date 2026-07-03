@@ -83,8 +83,17 @@ struct IsVecTrait : std::false_type
 {
 };
 
+// The integral_constant probe keeps V::width inside the SFINAE context: a
+// width member that is not a constant expression must yield false (as the
+// DART 7 concept does), not a hard error.
 template <typename V>
-struct IsVecTrait<V, std::void_t<typename V::scalar_type, decltype(V::width)>>
+struct IsVecTrait<
+    V,
+    std::void_t<
+        typename V::scalar_type,
+        decltype(V::width),
+        std::
+            integral_constant<std::size_t, static_cast<std::size_t>(V::width)>>>
   : std::bool_constant<
         std::is_convertible_v<
             decltype(V::width),
@@ -98,20 +107,20 @@ struct IsVecMaskTrait : std::false_type
 {
 };
 
+// Probes use a non-const lvalue, matching the DART 7 concept's requires(M m):
+// masks with non-const all()/any() must still be detected.
 template <typename M>
 struct IsVecMaskTrait<
     M,
     std::void_t<
         typename M::scalar_type,
         decltype(M::width),
-        decltype(std::declval<const M&>().all()),
-        decltype(std::declval<const M&>().any())>>
+        decltype(std::declval<M&>().all()),
+        decltype(std::declval<M&>().any())>>
   : std::bool_constant<
         std::is_convertible_v<decltype(M::width), std::size_t>
-        && std::is_convertible_v<decltype(std::declval<const M&>().all()), bool>
-        && std::is_convertible_v<
-            decltype(std::declval<const M&>().any()),
-            bool>>
+        && std::is_convertible_v<decltype(std::declval<M&>().all()), bool>
+        && std::is_convertible_v<decltype(std::declval<M&>().any()), bool>>
 {
 };
 

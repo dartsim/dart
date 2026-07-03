@@ -187,6 +187,10 @@ template <typename To, typename From>
 {
 #if defined(__GNUC__) || defined(__clang__)
   return __builtin_popcountll(value);
+#elif defined(_MSC_VER) && defined(DART_SIMD_SSE42)                            \
+    && (defined(_M_X64) || defined(_M_AMD64))
+  // SSE4.2+ targets guarantee POPCNT; <intrin.h> is already included above.
+  return static_cast<int>(__popcnt64(value));
 #else
   int count = 0;
   while (value != 0) {

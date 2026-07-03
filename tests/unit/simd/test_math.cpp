@@ -45,7 +45,7 @@ namespace dart::simd {
 
 namespace {
 template <typename T>
-constexpr T kPi = T(3.141592653589793238462643383279502884L);
+constexpr T kPi = Pi<T>;
 } // namespace
 
 // =============================================================================

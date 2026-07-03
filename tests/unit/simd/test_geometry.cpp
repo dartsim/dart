@@ -39,7 +39,7 @@
 using namespace dart::simd;
 
 namespace {
-constexpr double pi = 3.141592653589793238462643383279502884;
+constexpr double pi = dart::simd::Pi<double>;
 }
 
 class Vector3Test : public ::testing::Test
