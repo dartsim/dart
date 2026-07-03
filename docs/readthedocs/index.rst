@@ -12,8 +12,8 @@ Welcome to DART documentation!
    This site documents **DART 7**, an in-progress redesign that is **not yet
    recommended for production use**. If you need a stable release, use
    **DART 6 LTS**: see the `DART 6 documentation
-   <https://dart.readthedocs.io/en/stable/>`_ and the `release-6.19 branch
-   <https://github.com/dartsim/dart/tree/release-6.19>`_. New to DART 7? Start
+   <https://dart.readthedocs.io/en/stable/>`_ and the `release-6.20 branch
+   <https://github.com/dartsim/dart/tree/release-6.20>`_. New to DART 7? Start
    with the :doc:`user_guide/index`.
 
 Introduction
