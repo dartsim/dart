@@ -263,6 +263,17 @@ def test_guard_stands_down_when_dart_managed_executable_hook_installed(tmp_path)
     assert stderr == ""
 
 
+def test_guard_stands_down_for_unrelated_git_config_with_managed_hook(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, "git -c user.name=DART commit -m x")
+
+    assert returncode == 0
+    assert stderr == ""
+
+
 @pytest.mark.parametrize("flag", ["--no-verify", "-n"])
 def test_guard_runs_for_no_verify_even_with_dart_managed_hook(tmp_path, flag):
     repo, env = _init_repo(tmp_path)
@@ -270,6 +281,21 @@ def test_guard_runs_for_no_verify_even_with_dart_managed_hook(tmp_path, flag):
     env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
 
     returncode, stderr = _run_guard(repo, env, f"git commit {flag} -m x")
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
+def test_guard_runs_for_core_hookspath_override_even_with_dart_managed_hook(
+    tmp_path,
+):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(
+        repo, env, "git -c core.hooksPath=/tmp/empty commit -m x"
+    )
 
     assert returncode == 0
     assert "would run 'pixi run check-lint-quick'" in stderr
