@@ -271,3 +271,98 @@
   gap.
 - Public API naming would leak upstream project names, solver registries, ECS
   storage, or backend resources.
+
+## Progress log
+
+Relocated from the dashboard on 2026-07-03; newest first.
+
+Continue the active
+[`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
+consolidated follow-up on
+`simx/plan083-gpu-contact-candidate-packet` / PR #2978. PR #2960 landed
+implementation-roadmap Phases 3-8; PR #2961 measured the private GPU PSD
+projection packet, added the Fig. 17 barrier-force diagnostic, and aligned
+articulation-only figure rows with landed private diagnostics; PR #2970
+landed runtime wiring for point/fixed and hinge constraints, opt-in BDF-2,
+deformable fixed obstacles, and the reduced hanging-bridge py-demo; PR #2971
+landed reduced CPU packets for lying-flat, hanging-bridge, pulley, umbrella,
+terrain vehicle, ragdoll, nunchaku, nunchaku scaling, windmill, Candy,
+precession, reduced timing-breakdown, reduced Table 2, the sparse equality
+change-of-variable rigid IPC path, and the reduced affine point-triangle
+micro-solve diagnostic; PR #2974 added reduced ABD runtime-step evidence for
+`abd-vs-rigid-cards`, `abd-vs-rigid-wreck`, `abd-chain-8`, `abd-chain-16`,
+and `abd-chain-96`; PR #2976 adds reduced ABD gears/Bullet comparison
+packets without claiming gear assets, Bullet/reference baselines, GPU parity,
+or paper-scale parity. PR #2978 is the single consolidated follow-up for the
+remaining private packet work: it adds point-triangle and edge-edge contact
+stencil parity plus brute-force all-pairs point-triangle and edge-edge
+candidate masks and motion-aware swept-AABB point-triangle/edge-edge
+candidate-list packets with device-side compacted candidate ids and distance
+metadata, compact device-sorted sweep-and-prune broad-phase packets, plus
+compact runtime sweep-buffer endpoint-distance packets, reduced
+scene-owned runtime candidate-buffer packets, and reduced scene-owned
+runtime sweep broad-phase packets, plus reduced combined scene runtime
+sweep-filter and candidate-filter rows extracted from the same DART `World`
+surface,
+endpoint-linear point-triangle/edge-edge CCD/line-search parity plus sampled
+rigid-curved point-triangle/edge-edge CCD/line-search parity plus reduced
+scene-owned runtime point-triangle/edge-edge CCD rows plus a reduced combined
+scene runtime CCD line-search row, scalar
+barrier/friction local-kernel parity
+plus point-triangle
+primitive barrier-gradient and point-triangle/edge-edge/point-edge/point-point
+tangent-stencil parity, point-triangle/point-point/point-edge/edge-edge
+primitive barrier-Hessian parity, point-triangle/point-point/point-edge
+primitive barrier-Hessian PSD-projection parity, reduced scene-owned
+point-triangle, point-edge, point-point, and edge-edge barrier-Hessian runtime
+rows plus a reduced combined all-family scene runtime barrier-Hessian row,
+reduced diagonal assembly/solve plus
+pair-slot off-diagonal sparse-block assembly plus a reduced scene-owned
+sparse off-diagonal surface-edge assembly row plus a reduced scene-owned
+sparse graph construction/assembly row plus a reduced scene-owned nonlinear
+distance-equality assembly row plus a reduced scene-owned nonlinear
+distance-equality solve row plus a reduced scene-owned capped nonlinear
+distance-equality convergence row plus sparse block residual matvec plus a
+reduced scene-owned sparse residual row plus fixed-iteration sparse Jacobi
+solve plus a reduced scene-owned sparse Jacobi row plus capped sparse CG solve
+plus a reduced scene-owned sparse CG row plus bounded reduced direct sparse
+factor solve plus reduced scene-owned bounded direct sparse factor solve plus
+sparse equality-reduced diagonal solve parity plus a reduced scene-owned
+equality-reduced diagonal solve row plus a reduced scene-owned sparse graph
+unique-edge dedup row plus a reduced scene-owned diagonal assembly/solve row,
+reduced hanging-bridge scene
+state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry packets,
+an ABD/FEM coupled micro-solve packet with external surface CCD sidecar
+witnesses, built-in deformable `World::step` self-surface candidate/CCD
+diagnostics in the reduced lying-flat, Candy, and ABD/FEM CPU scene packets,
+and public built-in inter-body/static-rigid/
+moving-rigid surface CCD diagnostics, then serializes those external counters
+into the reduced deformable CPU scene packet rows and adds a dedicated reduced
+external surface CCD CPU diagnostic packet with nonzero inter-body/static-rigid/
+moving-rigid counters, including one mixed reduced `World::step` witness that
+activates all three external families, plus reduced lying-flat
+inter-body/static-rigid/moving-rigid surface CCD witness rows, one reduced
+hanging-bridge inter-body/static-rigid/moving-rigid external CCD sidecar row,
+one reduced pulley inter-body/static-rigid/moving-rigid external CCD sidecar
+row,
+one reduced umbrella inter-body/static-rigid/moving-rigid external CCD sidecar
+row, one reduced terrain vehicle inter-body/static-rigid/moving-rigid
+external CCD sidecar row, one reduced ragdoll inter-body/static-rigid/
+moving-rigid external CCD sidecar row, one reduced precession
+inter-body/static-rigid/moving-rigid external CCD sidecar row, one reduced
+Candy static-rigid/moving-rigid surface CCD witness row, and one reduced
+ABD/FEM external sidecar witness row. Other
+broader figure/demo scene rows still have zero external candidate/check/hit
+counts.
+It still keeps
+production runtime scene filtering, production analytic curved CCD,
+production scene-level line search inside
+`World::step`, full runtime
+sparse Hessian graph construction and assembly beyond the reduced dedup row,
+unbounded production direct/global sparse factorization, production nonlinear equality convergence
+policy/solving, GPU `World::step`, paper-scale assets, full runtime
+affine/FEM coupling, production runtime scene filtering inside `World::step`,
+and accepted reference timings as future evidence. The
+completion audit still records PLAN-083 as incomplete while in-progress
+CPU/GPU/scene limitations remain, so dev-task retirement needs maintainer
+direction before deletion.

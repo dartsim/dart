@@ -55,6 +55,8 @@ DASHBOARD_REQUIRED_FIELDS = (
 )
 DASHBOARD_STATUS_VALUES = {"Proposed", "Active", "Blocked", "Complete", "Parked"}
 DASHBOARD_HORIZON_VALUES = {"Now", "Next", "Later", "Parked"}
+DASHBOARD_ENTRY_MAX_LINES = 40
+DASHBOARD_NEXT_STEP_MAX_LINES = 15
 DOCS_AI_FRONTMATTER_FILES = {
     "README.md",
     "components.md",
@@ -446,6 +448,103 @@ def check_plan_lifecycle(repo_root: Path) -> list[str]:
                 f"field `{repeated_field.group(1)}`"
             )
 
+    return failures
+
+
+def _dashboard_next_step_line_count(block: str) -> int | None:
+    """Count the lines in a dashboard entry's ``- Next step:`` field.
+
+    The field spans from the ``- Next step:`` bullet to the next top-level
+    ``- Field:`` bullet (or the end of the block), trailing blanks excluded.
+    """
+    lines = block.splitlines()
+    start = None
+    for index, line in enumerate(lines):
+        if line.startswith("- Next step:"):
+            start = index
+            break
+    if start is None:
+        return None
+    end = len(lines)
+    for index in range(start + 1, len(lines)):
+        if lines[index].startswith("- "):
+            end = index
+            break
+    span = lines[start:end]
+    while span and not span[-1].strip():
+        span.pop()
+    return len(span)
+
+
+def check_dashboard_structure(repo_root: Path) -> list[str]:
+    """Keep the plan dashboard a bounded operating view.
+
+    Each ``### PLAN-`` entry stays within a line budget, its ``- Next step:``
+    field stays short, and completed plans move to ``docs/plans/archive.md``
+    instead of accumulating in the dashboard.
+    """
+    failures: list[str] = []
+    dashboard = repo_root / "docs" / "plans" / "dashboard.md"
+    if not dashboard.exists():
+        return failures
+
+    text = dashboard.read_text(encoding="utf-8", errors="replace")
+    for match in PLAN_BLOCK_RE.finditer(text):
+        plan_id = match.group("id")
+        block = match.group(0)
+
+        entry_lines = len(block.rstrip().splitlines())
+        if entry_lines > DASHBOARD_ENTRY_MAX_LINES:
+            failures.append(
+                "docs/plans/dashboard.md: "
+                f"{plan_id} entry is {entry_lines} lines; keep each dashboard "
+                f"entry to at most {DASHBOARD_ENTRY_MAX_LINES} lines (move the "
+                "history to the owner plan file's `## Progress log` section)"
+            )
+
+        status_match = re.search(
+            r"^- Status:\s*(?P<status>.+)$", block, re.MULTILINE
+        )
+        if status_match and status_match.group("status").strip() == "Complete":
+            failures.append(
+                "docs/plans/dashboard.md: "
+                f"{plan_id} has `Status: Complete`; move the entry to "
+                "docs/plans/archive.md (the dashboard shows only operating plans)"
+            )
+
+        next_step_lines = _dashboard_next_step_line_count(block)
+        if (
+            next_step_lines is not None
+            and next_step_lines > DASHBOARD_NEXT_STEP_MAX_LINES
+        ):
+            failures.append(
+                "docs/plans/dashboard.md: "
+                f"{plan_id} `Next step` field is {next_step_lines} lines; keep "
+                f"it to at most {DASHBOARD_NEXT_STEP_MAX_LINES} lines (state only "
+                "the current action and relocate history to the owner plan "
+                "file's `## Progress log` section)"
+            )
+
+    return failures
+
+
+def check_plan_archive_shape(repo_root: Path) -> list[str]:
+    """Ensure every archived plan records a completed final status."""
+    failures: list[str] = []
+    archive = repo_root / "docs" / "plans" / "archive.md"
+    if not archive.exists():
+        return failures
+
+    text = archive.read_text(encoding="utf-8", errors="replace")
+    for match in PLAN_BLOCK_RE.finditer(text):
+        plan_id = match.group("id")
+        block = match.group(0)
+        if "**Final status:** Complete" not in block:
+            failures.append(
+                "docs/plans/archive.md: "
+                f"{plan_id} is missing the `**Final status:** Complete` marker "
+                "required for archived plans"
+            )
     return failures
 
 
@@ -1030,6 +1129,8 @@ def main() -> int:
     failures.extend(check_docs_indexes(repo_root))
     failures.extend(check_dev_task_shape(repo_root))
     failures.extend(check_plan_lifecycle(repo_root))
+    failures.extend(check_dashboard_structure(repo_root))
+    failures.extend(check_plan_archive_shape(repo_root))
     failures.extend(check_design_docs_index(repo_root))
     failures.extend(check_ai_doc_frontmatter(repo_root))
     failures.extend(check_papers_catalog(repo_root))

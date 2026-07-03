@@ -38,9 +38,12 @@ Use this lifecycle:
      `docs/design/`;
    - release and compatibility facts go to release, changelog, or
      compatibility owner docs.
-4. Mark the dashboard entry `Complete` only after the durable owner docs,
-   examples, tests, or code hold the result. Completed dashboard entries should
-   point to those durable owner docs, not to an archival numbered plan file.
+4. When a plan completes (durable owner docs, examples, tests, or code hold the
+   result), move its entry out of `dashboard.md` and into
+   [`archive.md`](archive.md) in the same PR, converting it to the
+   `**Final status:** Complete` shape. The dashboard shows only operating
+   (non-`Complete`) plans; archived entries point to durable owner docs, not to
+   an archival numbered plan file.
 5. Remove or consolidate numbered plan files once they no longer guide current
    prioritization. Git history preserves old plan text; `docs/plans/` should
    keep moving.
@@ -63,10 +66,12 @@ they should not own priority, timeline, or active implementation state.
 | File                                                                                                                                                                 | Purpose                                                                |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | [`README.md`](README.md)                                                                                                                                             | Planning rules, structure, and revision workflow                       |
-| [`dashboard.md`](dashboard.md)                                                                                                                                       | Single source of truth for plan operating state                        |
+| [`dashboard.md`](dashboard.md)                                                                                                                                       | Single source of truth for operating (non-`Complete`) plan state       |
+| [`archive.md`](archive.md)                                                                                                                                           | Completed plans moved out of the dashboard, ordered by plan number     |
 | [`north-star-roadmap.md`](north-star-roadmap.md)                                                                                                                     | Strategic framing and sequencing principles                            |
 | [`solver-family-intake.md`](solver-family-intake.md)                                                                                                                 | PLAN-020 solver-family intake checklist for paper/solver work          |
 | [`030-compute-resource-access/`](030-compute-resource-access/)                                                                                                       | PLAN-030 resource-access mission and evaluator contract                |
+| [`030-compute-scalability-roadmap.md`](030-compute-scalability-roadmap.md)                                                                                           | PLAN-030 Phase 6 backlog and relocated compute-scalability progress log |
 | [`035-native-collision-dashboard.md`](035-native-collision-dashboard.md)                                                                                             | Durable native-collision feature/performance dashboard                 |
 | [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)                                                                                 | Durable row-level native-collision coverage matrix sidecar             |
 | [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md)                                                                           | Generated native-collision benchmark evidence manifest                 |
@@ -150,6 +155,13 @@ Dashboard entries may link to either:
 Keep dashboard entries git-history friendly: one plan per block, priority order
 by document order, and one frequently changed field per line.
 
+Keep the dashboard a bounded operating view. Each `### PLAN-` block stays at or
+under 40 lines and its `- Next step:` field at or under 15 lines. When an entry
+outgrows that budget, relocate the historical or evidence narrative into the
+owner numbered plan file under a `## Progress log` section and leave only the
+current next action plus a `History:` pointer in the dashboard. Completed plans
+leave the dashboard entirely for [`archive.md`](archive.md).
+
 When editing:
 
 - update `dashboard.md` for operating state;
@@ -188,8 +200,10 @@ Revise plans when any of these happen:
 - a plan item is split, consolidated, removed, completed, blocked, or parked;
 - a dev task starts or completes and changes roadmap state;
 - a maintainer asks to compare alternatives before changing direction.
-- the dashboard no longer fits on one screen or stops being useful as an
-  operating view.
+- the dashboard stops being useful as an operating view (the entry and
+  next-step size budgets are enforced by the structural checks, so relocate any
+  overflow to the owner plan file's `## Progress log` and move completed entries
+  to `archive.md`).
 - a completed plan still points at a numbered plan file instead of a durable
   owner doc.
 
@@ -279,7 +293,11 @@ The living plan system relies on repository checks instead of manual memory:
   approval-boundary wording.
 - `pixi run check-docs-policy` verifies docs index coverage and active
   `docs/dev_tasks/<task>/` shape, including required `README.md` and
-  `RESUME.md` files.
+  `RESUME.md` files. It also bounds the plan dashboard: each `### PLAN-` entry
+  must stay at or under 40 lines with a `- Next step:` field at or under 15
+  lines, the dashboard must hold no `Status: Complete` entry (completed plans
+  move to [`archive.md`](archive.md)), and every `### PLAN-` section in
+  `archive.md` must record `**Final status:** Complete`.
 - `pixi run sync-ai-commands` regenerates AI adapters from the `.claude/`
   workflow and skill sources before the non-mutating checks run.
 

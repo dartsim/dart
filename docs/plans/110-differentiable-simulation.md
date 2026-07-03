@@ -208,3 +208,32 @@ family.
   the position-Jacobian treatment, or the architecture doc.
 - A maintainer reprioritizes against other DART 7 clean-break work, or promotes
   the deferred GPU/batched/deformable differentiable tracks.
+
+## Progress log
+
+Relocated from the dashboard on 2026-07-03; newest first.
+
+**Scope note (relocated):**
+WS1–WS5 first slices plus the PLAN-080-WS4 boxed-LCP contact
+prerequisite are implemented and verified (FD-of-step validated; default build
+untouched and bitwise-identical when off). That path landed via PR #2761
+(merged 2026-05-30, milestone DART 7.0, CHANGELOG included; the
+`feature/differentiable-simulation` branch was deleted post-merge). Remaining
+for that path is hardening/examples/promotion, not new workstreams. Dojo is
+now tracked as a separate planned evaluation
+track under PLAN-110: maximal-coordinate variational hard-contact NCP/IPM with
+implicit gradients, using Dojo.jl as method evidence and a comparison baseline
+rather than a dependency.
+
+The WS1–WS5 differentiability surface is merged to `main` (PR #2761);
+the remaining work is the hardening/examples/Dojo-spike follow-ups. Run the
+torch-autograd test (`pip install torch`); add the
+standalone worked trajectory-optimization / system-identification example
+programs (the GUI demo and the convergence tests already ship); harden the
+static-friction Dantzig degenerate-pivot warning (shared `dart/math/lcp`, its
+own PR); and extend the deferred parameters/contacts (CENTER_OF_MASS,
+articulated multibody-link contact). After the active path lands, run the
+Dojo de-risking spike from
+[`110-differentiable-simulation/dojo-gap-audit.md`](110-differentiable-simulation/dojo-gap-audit.md)
+before any public API or runtime dependency promise. Track in
+`docs/dev_tasks/differentiable_simulation/`.

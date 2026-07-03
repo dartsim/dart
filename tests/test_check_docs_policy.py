@@ -166,6 +166,141 @@ def test_plan_file_repeating_dashboard_field_is_rejected(tmp_path):
     )
 
 
+def _dashboard_entry(status="Active", next_step="Do the next thing.", extra_gate=0):
+    gate_lines = "".join(f"\n  gate detail line {i}" for i in range(extra_gate))
+    return (
+        "### PLAN-001: Example\n\n"
+        "- Owner doc: [`001-example.md`](001-example.md)\n"
+        f"- Status: {status}\n"
+        "- Horizon: Now\n"
+        "- Dimension: AI-native execution\n"
+        f"- Next step: {next_step}\n"
+        f"- Gate: `pixi run check-docs-policy`{gate_lines}\n"
+    )
+
+
+def test_bounded_dashboard_entry_passes(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "dashboard.md").write_text(_dashboard_entry(), encoding="utf-8")
+
+    assert module.check_dashboard_structure(tmp_path) == []
+
+
+def test_oversized_dashboard_entry_is_rejected(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "dashboard.md").write_text(
+        _dashboard_entry(extra_gate=40), encoding="utf-8"
+    )
+
+    failures = module.check_dashboard_structure(tmp_path)
+
+    assert any(
+        "PLAN-001 entry is" in f and "at most 40 lines" in f for f in failures
+    )
+
+
+def test_oversized_next_step_is_rejected(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    long_next_step = "First line." + "".join(
+        f"\n  continuation line {i}" for i in range(20)
+    )
+    (plans / "dashboard.md").write_text(
+        _dashboard_entry(next_step=long_next_step), encoding="utf-8"
+    )
+
+    failures = module.check_dashboard_structure(tmp_path)
+
+    assert any(
+        "PLAN-001 `Next step` field is" in f and "at most 15 lines" in f
+        for f in failures
+    )
+
+
+def test_dashboard_complete_entry_is_rejected(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "dashboard.md").write_text(
+        _dashboard_entry(status="Complete"), encoding="utf-8"
+    )
+
+    failures = module.check_dashboard_structure(tmp_path)
+
+    assert any(
+        "PLAN-001 has `Status: Complete`" in f and "archive.md" in f
+        for f in failures
+    )
+
+
+def test_archive_entry_requires_final_status_complete(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "archive.md").write_text(
+        "### PLAN-001: Example\n\n"
+        "**Owner doc:** [`001-example.md`](001-example.md)\n\n"
+        "**Outcome:** Shipped.\n",
+        encoding="utf-8",
+    )
+
+    failures = module.check_plan_archive_shape(tmp_path)
+
+    assert any(
+        "PLAN-001 is missing the `**Final status:** Complete` marker" in f
+        for f in failures
+    )
+
+
+def test_archive_entry_with_final_status_passes(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "archive.md").write_text(
+        "### PLAN-001: Example\n\n"
+        "**Final status:** Complete (archived 2026-07-03).\n\n"
+        "**Owner doc:** [`001-example.md`](001-example.md)\n\n"
+        "**Outcome:** Shipped.\n",
+        encoding="utf-8",
+    )
+
+    assert module.check_plan_archive_shape(tmp_path) == []
+
+
+def test_progress_log_prose_does_not_trip_repeats_field(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "003-active.md").write_text(
+        "# Active\n\n## Progress log\n\n"
+        "Relocated from the dashboard on 2026-07-03; newest first.\n\n"
+        "The next step is to keep the gate green; Status and Horizon stay in the "
+        "dashboard, not here.\n",
+        encoding="utf-8",
+    )
+    (plans / "dashboard.md").write_text(
+        """### PLAN-003: Active
+
+- Owner doc: [`003-active.md`](003-active.md)
+- Status: Active
+- Horizon: Now
+- Dimension: AI-native execution
+- Next step: Keep policy current. History: see [`003-active.md`](003-active.md).
+- Gate: `pixi run check-docs-policy`
+""",
+        encoding="utf-8",
+    )
+
+    failures = module.check_plan_lifecycle(tmp_path)
+
+    assert not any("repeats dashboard field" in f for f in failures)
+
+
 def test_markdown_link_resolver_handles_repo_root_relative_and_anchor(tmp_path):
     module = _load_module()
     repo = tmp_path

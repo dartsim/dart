@@ -437,3 +437,25 @@ For implementation PRs, select by touched scope:
   update.
 - A physical move PR conflicts heavily with active solver/model-loading work and
   needs to be split or delayed.
+
+## Progress log
+
+Relocated from the dashboard on 2026-07-03; newest first.
+
+The promoted-header allowlist, strict promotion-surface audit,
+package-contract check, installed-package smoke, World-promotion blocker
+inventory, C++ namespace/target transaction, Python import-layout transaction,
+and source-tree move are now in place: `dart::simulation::World`,
+`dartpy.simulation.World`, and `dartpy.World` point at the ECS-backed facade,
+generated stubs no longer publish `dartpy.simulation_experimental`, and the
+classic Python world is quarantined as `dartpy.gui.RenderWorld`. The urgent
+remaining promotion work is hardening and cleanup: finish stale docs, keep
+the public-header/package/import guards green, add negative smokes for retired
+experimental paths and targets, and keep strict-final World-promotion checks
+green with parity evidence sourced from `release-6.*` branch refs.
+The promoted `World` remains double-backed; public scalar precision selectors
+(`sim.World(dtype=...)`, `sim.World[...]`, scalar-specific aliases, or a public
+C++ scalar-template facade) stay deferred until a separate
+scalar-instantiation plan proves the required ownership, binding,
+serialization, collision, differentiability, package, and migration gates.
+The intended path is DART 7 official API promotion, not a DART 8 middle step.

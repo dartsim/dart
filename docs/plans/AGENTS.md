@@ -22,20 +22,28 @@ implementation trackers.
 - Prefer revising existing initiatives over adding duplicate plan entries.
 - Use stable initiative IDs when renaming, reprioritizing, splitting, or
   consolidating work.
-- Keep `dashboard.md` as the single source of truth for priority, status,
-  horizon, north-star dimension, next step, and gate. Do not repeat those fields
-  in detailed plan files.
+- Keep `dashboard.md` as the single source of truth for the priority, status,
+  horizon, north-star dimension, next step, and gate of operating
+  (non-`Complete`) plans. Do not repeat those fields in detailed plan files.
 - Keep dashboard entries git-history friendly: priority comes from document
   order, and frequently changed fields each get their own line.
+- Keep each dashboard `### PLAN-` entry at or under 40 lines and its
+  `- Next step:` field at or under 15 lines (enforced by
+  `pixi run check-docs-policy`). Relocate overflow history to the owner plan
+  file's `## Progress log` section, leaving only the current next action plus a
+  `History:` pointer.
 - Keep `docs/plans/` flat unless one initiative needs multiple durable planning
   artifacts. Prefer a stable `.md` owner file with sidecar artifacts before
   moving the owner file into a subdirectory. Do not split plans by status,
   horizon, or north-star dimension.
 - Do not use plan docs as a running changelog. Git history records past plan
   shapes; the files should describe the current intended path.
-- Completed dashboard entries should point to durable owner docs outside
-  numbered plan files. If a numbered plan file no longer guides current work,
-  remove it or fold its durable content into the appropriate owner doc.
+- When a plan completes, move its entry from `dashboard.md` to
+  [`archive.md`](archive.md) in the same PR, converting it to the
+  `**Final status:** Complete` shape. Archived entries point to durable owner
+  docs outside numbered plan files. If a numbered plan file no longer guides
+  current work, remove it or fold its durable content into the appropriate
+  owner doc.
 
 ## Verification
 
