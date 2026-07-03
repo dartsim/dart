@@ -9,8 +9,9 @@
 #   * reads the hook JSON from stdin, extracts .tool_input.command
 #   * exits 0 fast for anything that is not a `git commit` invocation
 #   * for a git commit:
-#       - if the executable git pre-commit hook is DART-managed, exit 0 (that
-#         hook enforces; avoid running the gate twice)
+#       - if the executable git pre-commit hook is DART-managed and the commit
+#         is not using --no-verify/-n, exit 0 (that hook enforces; avoid running
+#         the gate twice)
 #       - if DART_SKIP_HOOKS=1 (in the environment or as a command prefix),
 #         exit 0 (emergency bypass, same as the git hook)
 #       - if the commit targets another repository (`git -C /other/repo
@@ -118,6 +119,9 @@ def is_git_commit(text):
                 continue
             break
         if i < len(tokens) and tokens[i].rstrip(")}") == "commit":
+            no_verify = any(
+                t.strip(")}") in {"--no-verify", "-n"} for t in tokens[i + 1 :]
+            )
             if target_dir:
                 project = os.environ.get("CLAUDE_PROJECT_DIR")
                 try:
@@ -150,14 +154,14 @@ def is_git_commit(text):
                         continue  # non-repo path outside this project
                 except OSError:
                     pass
-            return True
-    return False
+            return "commit-no-verify" if no_verify else "commit"
+    return "skip"
 
 
-print("commit" if is_git_commit(cmd) else "skip")
+print(is_git_commit(cmd))
 ')
 
-if [ "$verdict" != "commit" ]; then
+if [ "$verdict" != "commit" ] && [ "$verdict" != "commit-no-verify" ]; then
     if [ -z "$verdict" ]; then
         echo "DART guard: commit detection failed; guard disabled for this call" >&2
     fi
@@ -166,16 +170,19 @@ fi
 
 repo_root="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
-# If the executable git pre-commit hook is DART-managed, let it enforce; don't
-# double-run. Foreign hooks are not guaranteed to include DART's lint gate.
-hook_path=$(git -C "$repo_root" rev-parse --git-path hooks/pre-commit 2>/dev/null)
-if [ -n "$hook_path" ]; then
-    case "$hook_path" in
-        /*) : ;;
-        *) hook_path="$repo_root/$hook_path" ;;
-    esac
-    if [ -x "$hook_path" ] && grep -q "DART-MANAGED-HOOK" "$hook_path" 2>/dev/null; then
-        exit 0
+if [ "$verdict" = "commit" ]; then
+    # If the executable git pre-commit hook is DART-managed, let it enforce;
+    # don't double-run. Foreign hooks are not guaranteed to include DART's lint
+    # gate, and --no-verify/-n bypasses even a DART-managed hook.
+    hook_path=$(git -C "$repo_root" rev-parse --git-path hooks/pre-commit 2>/dev/null)
+    if [ -n "$hook_path" ]; then
+        case "$hook_path" in
+            /*) : ;;
+            *) hook_path="$repo_root/$hook_path" ;;
+        esac
+        if [ -x "$hook_path" ] && grep -q "DART-MANAGED-HOOK" "$hook_path" 2>/dev/null; then
+            exit 0
+        fi
     fi
 fi
 

@@ -261,3 +261,15 @@ def test_guard_stands_down_when_dart_managed_executable_hook_installed(tmp_path)
 
     assert returncode == 0
     assert stderr == ""
+
+
+@pytest.mark.parametrize("flag", ["--no-verify", "-n"])
+def test_guard_runs_for_no_verify_even_with_dart_managed_hook(tmp_path, flag):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, f"git commit {flag} -m x")
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
