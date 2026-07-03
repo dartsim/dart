@@ -116,6 +116,24 @@ pixi run lint
 
 Rule of thumb: run `pixi run lint` before committing so auto-fixes are captured.
 
+#### Git hooks
+
+Run this once per clone to make the lint gate automatic:
+
+```bash
+pixi run install-hooks
+```
+
+It installs a `pre-commit` git hook that runs `pixi run check-lint-quick` (the
+Tier-0 gate) before every commit and blocks the commit if it fails. If you
+already have a `pre-commit` hook it is preserved as `pre-commit.local` and
+chained. The hook works in linked worktrees too. Emergency escape hatch:
+`DART_SKIP_HOOKS=1 git commit ...`.
+
+Claude Code sessions are additionally guarded via `.claude/settings.json`, which
+runs the same gate before any agent-issued `git commit` even if the git hook is
+not installed yet.
+
 ### 6. Push and Create Pull Request
 
 ```bash
