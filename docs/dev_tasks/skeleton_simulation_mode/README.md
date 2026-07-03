@@ -2,7 +2,7 @@
 
 ## Current Status
 
-- [ ] Phase 0: Captured prototype reference and design intent (this PR)
+- [x] Phase 0: Captured prototype reference and design intent.
 - [ ] Phase 1: Decide whether the lifecycle marker lives on the legacy
       `dart::dynamics::Skeleton` / `BodyNode` or only on the experimental
       World's frame storage (PLAN-050)
@@ -75,8 +75,7 @@ removal.
 
 ## Immediate Next Steps
 
-1. Land this dev-task folder so the design is discoverable.
-2. Before any Phase 1 implementation, resolve the legacy-vs-experimental
+1. Before any Phase 1 implementation, resolve the legacy-vs-experimental
    placement question with a short design note here under the
    `01-placement.md` filename, or fold it into the DART 7 World
    onboarding doc if the answer is "experimental only".

@@ -9,10 +9,11 @@ Corpus matrix:
 
 ## Current Status
 
-- Latest follow-up (2026-06-14): PR #3018 (box edge/vertex contact feature-ID
-  coverage) is MERGED to `main` at `6bf7b2e8336`. New unpublished branch
-  `avbd/bounded-regression-coverage` (off merged `main`) bundles three more
-  mutation-verified, non-perf regression guards from the coverage scout:
+- Latest follow-up (2026-06-16): PR
+  [#3022](https://github.com/dartsim/dart/pull/3022) is MERGED to `main` at
+  `65ba05113c6`, landing the bounded regression coverage that was previously
+  unpublished on `avbd/bounded-regression-coverage`: three mutation-verified,
+  non-perf regression guards from the coverage scout:
   `AvbdRigidBlock.RigidContactTangentBasis*` (orthonormal/right-handed contract +
   degenerate-normal `UnitX` fallback for `avbdRigidContactTangentBasis`),
   `VariationalIntegration.AvbdPublicArticulatedBreakForceReArmsAfterReset` (the
@@ -24,14 +25,15 @@ Corpus matrix:
   change. Full suites pass (test_avbd_rigid_block 109, test_variational_integration
   179, test_avbd_constraint 12); `pixi run lint` passes. The AVBD CPU-win, GPU,
   and paper-number gates remain open and no parity is claimed.
+- Earlier follow-up (2026-06-14): PR #3018 (box edge/vertex contact feature-ID
+  coverage) is MERGED to `main` at `6bf7b2e8336`.
 - Earlier follow-up (2026-06-14): PR #3004 is MERGED to `main` at
   `356384967f8`, landing the Spring/Spring Ratio contact-filtering slices, the
   inertia-orientation cleanup, refreshed packets, and the contact-skip
   regressions. The Dantzig allocator regression diagnosed during that work got
   its own fix on `main` (#3011), confirming it was a pre-existing LCP issue
-  rather than an AVBD one. New unpublished branch
-  `avbd/box-contact-feature-id-coverage` (off merged `main`) adds a single
-  `test_avbd_rigid_block` regression,
+  rather than an AVBD one. PR #3018 then landed the single
+  `test_avbd_rigid_block` regression
   `RigidWorldContactSnapshotUsesBoxEdgeAndVertexFeatureIds`, that guards the box
   Face/Edge/Vertex branch of the production contact-snapshot feature-ID path at
   parity with the existing cylinder/mesh/capsule guards. Mutation-verified

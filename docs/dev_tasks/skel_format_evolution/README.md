@@ -4,11 +4,12 @@
 
 - [x] Phase 0: Capture strategic decision + prototype reference.
 - [x] Phase 1: Convert live SKEL fixtures used by examples, tests, and
-      benchmarks to SDF. This branch adds SDF replacements for the referenced
-      `single_pendulum`, `cube`, `shapes`, and `test_shapes` fixtures, moves
+      benchmarks to SDF. PR
+      [#3065](https://github.com/dartsim/dart/pull/3065) landed on `main` at
+      `5dbe995d221`, adding SDF replacements for the referenced
+      `single_pendulum`, `cube`, `shapes`, and `test_shapes` fixtures, moving
       tests and resource retriever coverage off `dart://sample/skel`, and
-      verifies examples/tutorials/python examples/benchmarks have no SKEL file
-      loads.
+      verifying examples/tutorials/python examples have no SKEL fixture loads.
 - [ ] Phase 2: Remove SKEL from DART 7 `main`: parser implementation,
       `dart::io` format inference and dispatch, bindings/stubs, parser-specific
       tests, `.skel` sample fixtures, and user-facing DART 7 docs. Preserve or
@@ -88,24 +89,21 @@ phase up.
 
 ## Immediate Next Steps
 
-1. Finish this Phase 1 conversion branch: run the focused IO/simulation/resource
-   tests, docs policy, and lint.
-2. Start Phase 2 on a follow-up branch: remove `SkelParser`, `.skel`
+1. Start Phase 2 on a fresh branch from current `main`: remove `SkelParser`, `.skel`
    inference/dispatch, parser-specific tests, bindings/stubs, and `.skel`
    sample fixtures. Preserve or move non-SKEL mesh assets such as
    `data/skel/kima/*.dae` before deleting any parent directory.
-3. After SKEL removal is mechanically under control, decide whether Phase 3 is
+2. After SKEL removal is mechanically under control, decide whether Phase 3 is
    a YAML front-end over existing formats or a new DART-owned scene format.
-4. Keep Phase 4 USD work coordinated with
+3. Keep Phase 4 USD work coordinated with
    [`usd_scene_loader/`](../usd_scene_loader/) rather than duplicating that
    loader surface here.
 
 ## Verification Gates
 
-- Phase 1: focused IO/simulation/resource retriever tests for the converted SDF
-  fixtures; `rg` checks proving examples/tests/benchmarks no longer reference
-  `dart://sample/skel` or `data/skel`; `pixi run check-docs-policy`;
-  `pixi run lint`.
+- Phase 1 (landed via PR #3065): focused IO/simulation/resource retriever tests
+  for the converted SDF fixtures; `rg` checks proving examples/tests no longer
+  reference live SKEL fixtures; `pixi run check-docs-policy`; `pixi run lint`.
 - Phase 2: focused tests proving `.skel` no longer dispatches through
   `dart::io`, parser-specific SKEL tests are removed, and the source tree no
   longer ships DART 7 sample `.skel` assets. Existing non-SKEL mesh tests that

@@ -2,9 +2,14 @@
 
 ## Current Status
 
-- [ ] Phase 0: Captured prototype reference and migration requirements (this PR)
-- [ ] Phase 1: Add `dart::io::ModelFormat::Usd` and a snake_case `dart/io/usd/`
-      implementation behind the DART 7 model-loading front door
+- [x] Phase 0: Captured prototype reference and migration requirements.
+- [x] Phase 1: Add `dart::io::ModelFormat::Usd` and a snake_case `dart/io/usd/`
+      implementation scaffold behind the DART 7 model-loading front door. PR
+      [#3109](https://github.com/dartsim/dart/pull/3109) landed the
+      OFF-by-default `DART_BUILD_IO_USD` toggle, `cmake/dart_find_pxr.cmake`,
+      `dart/io/usd/usd_parser.{hpp,cpp}`, `.usda` extension inference, the
+      default OFF-path guard, `data/usd/simple_chain.usda`, and gated ON-path
+      integration coverage.
 - [ ] Phase 2: Map USD prims to DART 7 World shapes/joints (PLAN-050);
       keep the loader behind the API-boundary policy
 - [ ] Phase 3: Filament-backed viewer example (replace the OSG prototype) plus
@@ -48,8 +53,9 @@ SDF / MJCF / SKEL paths.
   retired-OSG policy.
 - **Dependency**: pxr (OpenUSD). Discovery lives in
   `cmake/dart_find_pxr.cmake` (snake_case) and is opt-in via a CMake toggle
-  similar to `DART_BUILD_GUI_FILAMENT`. The prototype's
-  `cmake/DARTFindpxr.cmake` is the starting point but must be renamed.
+  mirroring the real `DART_BUILD_GUI` style. The prototype's
+  `cmake/DARTFindpxr.cmake` informed the fresh snake_case finder, but the
+  current scaffold was authored under `dart::io`.
 - **macOS stability**: the prototype's six diagnostic commits chased a pytest
   abort on macOS without resolving it. Phase 4 must address the root cause
   (likely an OpenUSD plugin-path or fork-safety issue) before the loader is
@@ -58,8 +64,9 @@ SDF / MJCF / SKEL paths.
 ## Prototype Reference
 
 The original prototype lived on the now-deleted `feature/usd-viewer` branch.
-Commit SHAs (recoverable from reflog and `git fsck --unreachable` until natural
-expiry):
+These SHAs are historical references; the prior prototype is no longer reachable
+from this worktree's reflog/fsck state, so do not rely on `git show` succeeding
+unless another clone still has the objects:
 
 - Feature commit: `28bad2773d18ce47bbaef98508d385abe1a8aead`
   ("Add OpenUSD loader and viewer support") — the substantive prototype.
@@ -84,16 +91,18 @@ Files of interest in the prototype: `dart/utils/usd/UsdParser.{cpp,hpp}`,
 
 ## Immediate Next Steps
 
-1. Land this dev-task folder so the work is discoverable.
-2. When a contributor or agent picks Phase 1 up, fork a fresh branch off
-   `main`, port the parser surface into `dart/io/usd/` under the DART 7
-   model-loading API, and adapt the sample data and tests to the snake_case +
-   DART 7 World layout.
+1. Start Phase 2 from current `main` in an OpenUSD-enabled environment: build
+   with `DART_BUILD_IO_USD=ON` and flesh out `usd::UsdParser` beyond the single
+   default-prim link scaffold.
+2. Keep the loader behind the `dart::io` front door and API-boundary policy; do
+   not enable OpenUSD by default or add `pxr` to Pixi as part of the parser
+   semantics slice.
 
 ## Verification Gates
 
-- Phase 1: `pixi run lint`, `pixi run test-unit`, focused USD integration
-  test, `pixi run check-api-boundaries`.
+- Phase 1 (landed via PR #3109): `pixi run lint`, `pixi run test-unit`,
+  focused USD integration test when `DART_BUILD_IO_USD=ON`,
+  `pixi run check-api-boundaries`.
 - Phase 3: GUI smoke runs the USD sample headlessly under the dartsim engine.
 - Phase 4: dartpy unit tests pass on Linux + macOS Pixi environments without
   pytest aborts.

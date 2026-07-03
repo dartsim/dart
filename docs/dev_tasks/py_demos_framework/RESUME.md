@@ -1,5 +1,15 @@
 # Resume: py-demos Framework
 
+## Current Reality (2026-07-03)
+
+PR [#3090](https://github.com/dartsim/dart/pull/3090)
+(`fix/py-demos-selection-regression-guard`) merged to `main` on 2026-06-19 at
+`59d891b6c93`. The scripted-selection regression guard, `rigid_body`
+material-example presets and workflow packet, material-preset replay/capture
+metadata, material-mixing and AVBD showcase routes, and fixed Sequential Impulse
+front-door solver context are all on `main`. The older branch-local validation
+notes below are historical evidence; current M1 work should branch from `main`.
+
 ## Last Session Summary
 
 M0 is complete: 155/155 scenes pass the full-catalog no-crash smoke, tier-2
@@ -178,17 +188,14 @@ rigid solver as fixed baseline context and points users to
 
 ## Current Branch
 
-`fix/py-demos-selection-regression-guard` - branched from current `main` after
-the #3084 merge. It currently contains the scripted-selection integration guard
-plus the `rigid_body` material-example preset, packet, full-packet evidence, and
-material/AVBD-route/fixed-solver-context UI increments, plus material-preset
-labels in replay/capture metrics. Keep any remaining edits narrow, keep the
-dev-task handoff current, and validate the exact default/CUDA py-demos front
-doors before publishing a follow-up PR.
+`main` — the `fix/py-demos-selection-regression-guard` follow-up merged as PR
+#3090. Start any new M1 slice from current `main`.
 
 ## Immediate Next Step
 
-**M1 is in progress.** For this branch, run the focused regression test:
+**M1 is in progress.** Continue broadening the flagship rigid workflow only with
+evidence-backed slices. When touching the merged selection/material/front-door
+paths, keep the focused regression test in the validation set:
 
 ```bash
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
@@ -196,11 +203,11 @@ PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
   python/tests/integration/test_demos_cycle.py::test_rigid_body_scripted_selection_force_drag_is_stable -q
 ```
 
-Then keep the direct default and CUDA front-door commands in the validation set:
+Keep the direct default and CUDA front-door commands in the validation set:
 `pixi run py-demos -- --scene rigid_body --headless --frames 4 --width 640 --height 480 --screenshot /tmp/rigid_body.ppm --scripted-force-drag 1:sphere_0_visual:0,0,0:2`
 and the matching `pixi run -e cuda py-demos` command.
 
-For the material-preset panel increment, also run:
+For material-preset panel changes, also run:
 
 ```bash
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
@@ -214,7 +221,7 @@ PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
   -q
 ```
 
-For the material-example workflow packet increment, also run:
+For material-example workflow packet changes, also run:
 
 ```bash
 PYTHONPATH=build/default/cpp/Release-docking/python:python pixi run python \
@@ -226,9 +233,10 @@ pixi run py-demo-capture -- --rigid-workflow --material-examples-only \
   --dry-run --output-dir /tmp/dart_capture_rigid_material_examples_dry_run
 ```
 
-After this follow-up, continue M1 by using the dedicated contact-baseline packet
-for rigid-body SI vs boxed-LCP visual evidence and the dedicated AVBD showcase
-packet for the modern rigid-constraint track.
+For reviewer-facing evidence, keep using the dedicated contact-baseline packet
+for rigid-body SI vs boxed-LCP visual evidence, the dedicated AVBD showcase
+packet for the modern rigid-constraint track, and the material-example packet
+for friction/restitution examples.
 
 Re-run any M0 guard:
 
@@ -278,12 +286,13 @@ PYTHONPATH=build/cuda/cpp/Release-docking/python:python .pixi/envs/cuda/bin/pyth
 ## How to Resume
 
 ```bash
-git checkout fix/py-demos-selection-regression-guard
+git checkout main
+git pull --ff-only origin main
 git status && git log -3 --oneline
 # Verify build state:
 ls build/cuda/cpp/Release-docking/python/dartpy/_dartpy*.so 2>/dev/null || echo "needs build"
 ```
 
-Then: run the focused scripted-selection regression guard, the default/CUDA
-manual front-door checks, and `pixi run lint` before any commit or approved
-push.
+Then: branch for the next M1 slice, run the focused scripted-selection
+regression guard, the default/CUDA manual front-door checks, and `pixi run lint`
+before any commit or approved push.

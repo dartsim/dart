@@ -1,6 +1,6 @@
 # Resume: AVBD Solver
 
-## Current Resume Handoff (2026-06-14)
+## Current Resume Handoff (2026-07-03)
 
 The user resumed after the previous literal-stop checkpoint by saying
 `continue`. This section is the current handoff snapshot and supersedes the
@@ -18,19 +18,21 @@ profile-build allocator gate is likewise a pre-existing rigid-IPC issue outside
 AVBD scope.
 
 PR #3018 (box edge/vertex contact feature-ID coverage) is also MERGED to `main`
-at `6bf7b2e8336`. The active local follow-up is unpublished branch
-`avbd/bounded-regression-coverage`, based on merged `main`, bundling three more
-mutation-verified non-perf regression tests (tangent-basis contract, articulated
-break re-arm lifecycle, row-inventory replaced-key cold-start). Do not push,
-open a PR, resolve review threads, comment, retrigger reviews, or mutate CI
-without explicit maintainer approval.
+at `6bf7b2e8336`. PR
+[#3022](https://github.com/dartsim/dart/pull/3022) then merged to `main` at
+`65ba05113c6` (2026-06-16), landing the formerly unpublished
+`avbd/bounded-regression-coverage` slice: tangent-basis contract coverage,
+articulated break re-arm lifecycle coverage, and row-inventory replaced-key
+cold-start coverage. There is no active local AVBD follow-up in this checkout
+from that branch state; continue PLAN-104 from current `main` and the open
+CPU-win/GPU/paper-number gates.
 
 Earlier checkpoint: PR #2991 (branch `avbd/source-row-extraction-precheck` into
 `main`) is MERGED at `f6fecbc5bd5` (2026-06-14), carrying the source-row
 coverage and contact-precheck work, the CI-fix commits, the AVBD contact-config
 guard follow-up, and handoff-doc refreshes.
 
-Latest local slice: branch `avbd/bounded-regression-coverage` bundles three
+Merged #3022 slice: branch `avbd/bounded-regression-coverage` bundled three
 mutation-verified, non-perf regression guards selected by a coverage scout, each
 in its own test file with a clean revert and no production code change:
 
