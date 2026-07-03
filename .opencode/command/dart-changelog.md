@@ -38,6 +38,8 @@ Interpret `$ARGUMENTS` as one of these modes when present:
   follow-up local until explicit maintainer/user approval permits a push.
 - `audit`: scan a release section or PR set for missing, duplicate,
   over-detailed, misplaced, or stale entries.
+- `release-audit`: alias for `audit` when the caller is finalizing a release
+  section through `dart-release-packaging`.
 
 If no mode is given, infer the smallest mode that satisfies the caller's need.
 
