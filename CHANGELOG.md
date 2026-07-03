@@ -293,6 +293,7 @@ compatibility remains on the active DART 6 LTS branch._
 - Added a structured `dart-changelog` decision note so Claude, Codex, OpenCode,
   and manual PR authors can record the inspected evidence, target release
   section, entry text, no-entry reason, and PR-link follow-up consistently.
+  ([#3224](https://github.com/dartsim/dart/pull/3224))
 - Clarified DART 6 LTS release routing so remaining `6.19.x` fixes target the
   active `release-6.20` branch and `DART 6.20.0` milestone instead of opening a
   `DART 6.19.4` patch lane.
