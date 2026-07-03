@@ -11,6 +11,14 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "check_docs_policy.py"
 
 
+def test_docs_policy_uses_portable_multi_exception_syntax():
+    source = SCRIPT.read_text(encoding="utf-8")
+
+    assert "except OSError, subprocess.CalledProcessError" not in source
+    assert "GIT_QUERY_ERRORS = (OSError, subprocess.CalledProcessError)" in source
+    assert source.count("except GIT_QUERY_ERRORS:") == 2
+
+
 def _load_module():
     spec = importlib.util.spec_from_file_location("check_docs_policy", SCRIPT)
     assert spec is not None and spec.loader is not None

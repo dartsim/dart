@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 SKIP_DIRS = {".deps", ".git", ".pixi", "build", "external", "node_modules"}
+GIT_QUERY_ERRORS = (OSError, subprocess.CalledProcessError)
 REQUIRED_DOCS_TOP_LEVEL_DIRS = (
     "ai",
     "assets",
@@ -119,7 +120,7 @@ def iter_tracked_files(repo_root: Path, patterns: list[str]) -> list[Path]:
             capture_output=True,
             text=True,
         )
-    except OSError, subprocess.CalledProcessError:
+    except GIT_QUERY_ERRORS:
         files: list[Path] = []
         for pattern in patterns:
             fallback_pattern = pattern.removeprefix(":(glob)")
@@ -1151,7 +1152,7 @@ def _git_last_commit_date(repo_root: Path, repo_relative_path: str) -> str | Non
             capture_output=True,
             text=True,
         )
-    except OSError, subprocess.CalledProcessError:
+    except GIT_QUERY_ERRORS:
         return None
     return result.stdout.strip() or None
 
