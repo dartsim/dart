@@ -20,7 +20,8 @@ mutations: $ARGUMENTS
 - `mode=manage` (default): run the full PR-management loop below to the next
   terminal state.
 - `mode=merge`: maintainer-only. Complete the local pre-merge validation in
-  step 6 and merge a ready PR only after explicit merge approval.
+  step 6 and merge a ready PR only after explicit maintainer/user approval for
+  the merge.
 
 ## Invocation Contract
 
@@ -118,6 +119,8 @@ gh pr checks <PR_NUMBER>
    - Use the `dart-review-pr` workflow for substantive review feedback and the
      automated-review handling in `docs/onboarding/ai-tools.md` (no inline bot
      replies; verify claims locally; apply AI-review fixes silently).
+   - For human reviewers, reply only when a response is useful after a fix or
+     when a question needs clarification.
    - After an approved push that addressed Codex comments on a PR that already
      had a Codex review, post a fresh top-level `@codex review`; that PR comment
      needs explicit maintainer/user approval and must not duplicate an active

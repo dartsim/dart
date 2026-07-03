@@ -801,6 +801,7 @@ def validate_approval_boundary(repo_root: Path) -> list[str]:
         r"\bcreate/update (?:a |the )?.{0,120}(?:PRs?|pull requests?)\b",
         r"\bupdate (?:a |the )?.{0,120}(?:PRs?|pull requests?)\b",
         r"\bupdating (?:a |the )?.{0,120}(?:PRs?|pull requests?)\b",
+        r"\bmerg(?:e|es|ing)\b[^\n;|&]{0,80}\b(?:PRs?|pull requests?)\b",
         r"\b(?:PRs?|pull requests?) update\b",
         r"\bset(?:ting)? (?:the )?.{0,120}milestones?\b",
         r"\brerun(?:ning)? (?:the )?(?:failed )?(?:CI|check|job|jobs|workflow)\b",
@@ -855,6 +856,8 @@ def validate_approval_boundary(repo_root: Path) -> list[str]:
         "update the PR after editing": "PR update prose",
         "PR update after changelog edit": "noun PR update prose",
         "After opening the PR, merge PR": "compound PR mutation prose",
+        "merge a ready PR": "PR merge prose",
+        "merging any bot PR": "bot PR merge prose",
         "Rerunning failed jobs": "gerund CI rerun prose",
         "Merging PR after checks pass": "gerund merge prose",
         "Resolving addressed threads via GraphQL": "gerund thread-resolution prose",
@@ -1220,7 +1223,9 @@ def validate_ai_docs(repo_root: Path) -> bool:
 
         approval_workflows = {
             "dart-backport-pr",
+            "dart-benchmark-packet",
             "dart-branch-cleanup",
+            "dart-changelog",
             "dart-close-issue",
             "dart-deps",
             "dart-docs-update",

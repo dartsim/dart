@@ -32,7 +32,7 @@ Author or refresh a benchmark evidence packet: $ARGUMENTS
 @docs/onboarding/profiling.md
 
 Also read the owning plan file named by the packet (for example
-`docs/plans/<NNN>-<slug>/README.md`) and its packet convention.
+`docs/plans/<NNN>-<slug>.md`) and its packet convention.
 
 ## Workflow
 

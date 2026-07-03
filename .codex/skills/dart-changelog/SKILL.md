@@ -98,7 +98,7 @@ If no mode is given, infer the smallest mode that satisfies the caller's need.
    - typo-only, formatting-only, generated-only, and tiny internal refactors
      usually do not.
 4. When writing, start with the reader-visible outcome, not the implementation
-   chore. Use one concise bullet, merge closely related changes, avoid author
+   chore. Use one concise bullet, combine closely related changes, avoid author
    credits, and avoid one-bullet-per-PR diary style.
 5. Place the entry under the target branch's release section and nearest
    existing category. Do not create a new category for one PR unless the release

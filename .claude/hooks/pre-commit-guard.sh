@@ -9,23 +9,38 @@
 #   * reads the hook JSON from stdin, extracts .tool_input.command
 #   * exits 0 fast for anything that is not a `git commit` invocation
 #   * for a git commit:
-#       - if the git pre-commit hook is installed, exit 0 (that hook enforces;
-#         avoid running the gate twice)
-#       - if DART_SKIP_HOOKS=1, exit 0 (emergency bypass)
+#       - if an executable git pre-commit hook is installed, exit 0 (that hook
+#         enforces; avoid running the gate twice)
+#       - if DART_SKIP_HOOKS=1 (in the environment or as a command prefix),
+#         exit 0 (emergency bypass, same as the git hook)
+#       - if the commit targets another repository (`git -C /other/repo
+#         commit`), exit 0 (not this gate's business)
 #       - otherwise run `pixi run check-lint-quick`; on failure exit 2 with a
 #         concise message (exit 2 blocks the tool call and surfaces stderr)
 #   * DART_HOOK_DRY_RUN=1 prints the command it would run and exits 0 (test aid)
+#   * if python3 is unavailable the guard prints a one-line notice and exits 0
+#     (fail-open: a lint guard must never brick every Bash call)
 #
 # JSON is parsed with python3 (no jq dependency). No heavy subprocess runs
 # unless the command is an actual git commit.
 
 input=$(cat)
 
-# Extract the command and decide whether it is a `git commit` in one python3
-# pass. Handles env-var prefixes, `git -C dir commit`, `git -c k=v commit`, and
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "DART guard: python3 unavailable; commit guard disabled" >&2
+    exit 0
+fi
+
+# Extract the command and decide whether it is a `git commit` against THIS
+# repository, in one python3 pass. Handles env-var prefixes (quote-aware),
+# wrapper prefixes (command/exec/time/nice/nohup/env), subshell and brace-group
+# openers, backslash-escaped git, `git -C dir commit`, `git -c k=v commit`, and
 # && / || / ; / | command chains; ignores "commit" as a substring elsewhere.
 verdict=$(printf '%s' "$input" | python3 -c '
-import sys, json, re
+import json
+import os
+import re
+import sys
 
 try:
     data = json.load(sys.stdin)
@@ -36,51 +51,106 @@ except Exception:
 cmd = ((data.get("tool_input") or {}).get("command") or "")
 
 OPTS_WITH_ARG = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
+WRAPPERS = {"command", "exec", "time", "nice", "nohup"}
+ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=(?P<value>.*)$")
+
+
+def skip_env_prefix(tokens, i):
+    """Skip VAR=value prefixes (quote-aware); return (i, dart_skip_seen)."""
+    bypass = False
+    while i < len(tokens):
+        m = ENV_RE.match(tokens[i])
+        if not m:
+            break
+        if tokens[i] == "DART_SKIP_HOOKS=1":
+            bypass = True
+        value = m.group("value")
+        for quote in ("\"", "'\''"):
+            if value.startswith(quote) and not (
+                len(value) > 1 and value.endswith(quote)
+            ):
+                # quoted value with spaces spans tokens: consume to close quote
+                i += 1
+                while i < len(tokens) and not tokens[i].endswith(quote):
+                    i += 1
+                break
+        i += 1
+    return i, bypass
+
 
 def is_git_commit(text):
     for part in re.split(r"&&|\|\||[;|\n]", text):
+        part = part.strip().lstrip("({").strip()
         tokens = part.split()
-        i = 0
-        skipped = False
-        while i < len(tokens) and re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", tokens[i]):
-            if tokens[i] == "DART_SKIP_HOOKS=1":
-                skipped = True  # command-level bypass, same as the git hook
-            i += 1  # skip VAR=value env prefixes
-        if skipped:
+        i, bypass = skip_env_prefix(tokens, 0)
+        if bypass:
+            continue  # command-level bypass, same as the git hook
+        # unwrap common wrappers: command git commit, time git commit, env X=1 git commit
+        while i < len(tokens):
+            head = tokens[i]
+            if head in WRAPPERS:
+                i += 1
+                continue
+            if head == "env":
+                i += 1
+                while i < len(tokens) and (
+                    tokens[i].startswith("-") or ENV_RE.match(tokens[i])
+                ):
+                    i += 1
+                continue
+            break
+        if i >= len(tokens):
             continue
-        if i >= len(tokens) or tokens[i] != "git":
+        if tokens[i].lstrip("\\") != "git":
             continue
         i += 1
-        while i < len(tokens):  # skip git global options and their args
+        target_dir = None
+        while i < len(tokens):
             t = tokens[i]
             if t in OPTS_WITH_ARG:
+                if t == "-C" and i + 1 < len(tokens):
+                    target_dir = tokens[i + 1].strip("\"'\''")
                 i += 2
                 continue
             if t.startswith("-"):
                 i += 1
                 continue
             break
-        if i < len(tokens) and tokens[i] == "commit":
+        if i < len(tokens) and tokens[i].rstrip(")}") == "commit":
+            if target_dir:
+                project = os.environ.get("CLAUDE_PROJECT_DIR")
+                try:
+                    if project and os.path.realpath(target_dir) != os.path.realpath(
+                        project
+                    ):
+                        continue  # commit into another repository
+                except OSError:
+                    pass
             return True
     return False
+
 
 print("commit" if is_git_commit(cmd) else "skip")
 ')
 
 if [ "$verdict" != "commit" ]; then
+    if [ -z "$verdict" ]; then
+        echo "DART guard: commit detection failed; guard disabled for this call" >&2
+    fi
     exit 0
 fi
 
 repo_root="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
-# If the git pre-commit hook is installed, let it enforce; don't double-run.
+# If an executable git pre-commit hook is installed, let it enforce; don't
+# double-run. (git only executes hooks with the executable bit set.)
 hook_path=$(git -C "$repo_root" rev-parse --git-path hooks/pre-commit 2>/dev/null)
 if [ -n "$hook_path" ]; then
     case "$hook_path" in
         /*) : ;;
         *) hook_path="$repo_root/$hook_path" ;;
     esac
-    if [ -f "$hook_path" ]; then
+    if [ -x "$hook_path" ]; then
         exit 0
     fi
 fi

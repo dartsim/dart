@@ -15,10 +15,14 @@ Idempotently writes ``<git-hooks-dir>/pre-commit`` so every ``git commit`` runs
 * Worktrees are handled via ``git rev-parse --git-path hooks``, which resolves
   to the shared common hooks directory, so a single install covers all linked
   worktrees of the repository.
+* A repository or user with ``core.hooksPath`` set manages hooks elsewhere;
+  the installer refuses rather than write into a shared personal hooks
+  directory.
 * Emergency bypass at commit time: ``DART_SKIP_HOOKS=1 git commit ...``.
 * Verification aid: ``DART_HOOK_DRY_RUN=1`` makes the installed hook print the
-  command it *would* run instead of running it (used by CI/tests to confirm
-  wiring without invoking the full lint).
+  command it *would* run instead of running it, so tests and manual checks can
+  confirm wiring without invoking the full lint (see
+  ``tests/test_install_git_hooks.py``).
 
 Runnable with plain ``python3`` — no third-party imports.
 """
@@ -90,7 +94,28 @@ def run_git(args: list[str]) -> str:
 
 
 def resolve_hooks_dir() -> Path:
-    """Resolve the git hooks directory, honoring worktrees."""
+    """Resolve the git hooks directory, honoring worktrees.
+
+    Refuses when ``core.hooksPath`` is set: ``git rev-parse --git-path hooks``
+    would then resolve to a personal or global hooks directory shared by other
+    repositories, and installing (or relocating a foreign hook) there would
+    affect every repo that uses it.
+    """
+    hooks_path = subprocess.run(
+        ["git", "config", "--get", "core.hooksPath"],
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    if hooks_path:
+        sys.exit(
+            "error: core.hooksPath is set "
+            f"({hooks_path}); refusing to install into a custom hooks\n"
+            "  directory that may be shared across repositories. Add the gate "
+            "to your own\n"
+            "  hook manager (run `pixi run check-lint-quick` from pre-commit), "
+            "or unset\n"
+            "  core.hooksPath and re-run `pixi run install-hooks`."
+        )
     raw = Path(run_git(["rev-parse", "--git-path", "hooks"]))
     if not raw.is_absolute():
         raw = (Path.cwd() / raw).resolve()

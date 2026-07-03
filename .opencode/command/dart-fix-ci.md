@@ -30,9 +30,10 @@ Fix CI failure: $ARGUMENTS
    ```
 4. If a job is still in progress, wait for logs instead of guessing.
 5. Choose where to fix. Check whether an equivalent fix already exists on
-   `main`. For a `release-*` base, branch from the release branch and prefer
-   cherry-picking the proven `main` fix; keep any new fix release-scoped and
-   minimal:
+   `main`. If continuing an existing PR, fetch and check out that PR branch
+   instead of creating a new one. For a `release-*` base, branch from the
+   release branch and prefer cherry-picking the proven `main` fix; keep any new
+   fix release-scoped and minimal:
    ```bash
    git fetch origin <RELEASE_BRANCH>
    git checkout -B fix/<issue>-<release-branch> origin/<RELEASE_BRANCH>
@@ -59,5 +60,6 @@ Fix CI failure: $ARGUMENTS
 - Root cause
 - Fix or rerun action
 - Commands run
+- PR URL, when a PR was created or updated
 - Current CI status
 - Prevention recommendation, if any

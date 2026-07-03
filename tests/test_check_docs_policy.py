@@ -54,7 +54,7 @@ def test_duplicate_id_is_rejected():
     module = _load_module()
     entries = [_entry("PLAN-080"), _entry("PLAN-082"), _entry("PLAN-080")]
     failures = module.check_plan_id_uniqueness(entries)
-    assert any("PLAN-080 identifies 2 dashboard blocks" in f for f in failures)
+    assert any("PLAN-080 identifies 2 plan blocks" in f for f in failures)
 
 
 def test_two_distinct_collisions_are_both_reported():
@@ -694,3 +694,124 @@ def test_north_star_freshness_warns_for_newer_committed_evidence(tmp_path, monke
         "`docs/ai/principles.md` changed on 2026-01-02" in warning
         for warning in warnings
     )
+
+
+def test_dashboard_entry_exactly_at_budget_passes(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    # Base fixture is 8 lines; extra_gate=32 lands exactly on the 40-line budget.
+    (plans / "dashboard.md").write_text(
+        _dashboard_entry(extra_gate=32), encoding="utf-8"
+    )
+
+    assert module.check_dashboard_structure(tmp_path) == []
+
+
+def test_dashboard_entry_one_over_budget_is_rejected(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "dashboard.md").write_text(
+        _dashboard_entry(extra_gate=33), encoding="utf-8"
+    )
+
+    failures = module.check_dashboard_structure(tmp_path)
+
+    assert any("PLAN-001 entry is 41 lines" in f for f in failures)
+
+
+def test_next_step_exactly_at_budget_passes(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    # Bullet line plus 14 continuations lands exactly on the 15-line budget.
+    next_step = "First line." + "".join(f"\n  continuation line {i}" for i in range(14))
+    (plans / "dashboard.md").write_text(
+        _dashboard_entry(next_step=next_step), encoding="utf-8"
+    )
+
+    assert module.check_dashboard_structure(tmp_path) == []
+
+
+def test_next_step_one_over_budget_is_rejected(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    next_step = "First line." + "".join(f"\n  continuation line {i}" for i in range(15))
+    (plans / "dashboard.md").write_text(
+        _dashboard_entry(next_step=next_step), encoding="utf-8"
+    )
+
+    failures = module.check_dashboard_structure(tmp_path)
+
+    assert any("PLAN-001 `Next step` field is 16 lines" in f for f in failures)
+
+
+def test_duplicate_plan_id_across_dashboard_and_archive_is_rejected(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "001-example.md").write_text("# Example\n", encoding="utf-8")
+    (plans / "dashboard.md").write_text(_dashboard_entry(), encoding="utf-8")
+    (plans / "archive.md").write_text(
+        "### PLAN-001: Example\n\n"
+        "**Final status:** Complete (archived 2026-07-03).\n\n"
+        "**Outcome:** Shipped.\n",
+        encoding="utf-8",
+    )
+
+    failures = module.check_plan_lifecycle(tmp_path)
+
+    assert any(
+        "PLAN-001 identifies 2 plan blocks" in f
+        and "docs/plans/archive.md" in f
+        and "docs/plans/dashboard.md" in f
+        for f in failures
+    )
+
+
+def test_duplicate_plan_id_within_archive_is_rejected(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "dashboard.md").write_text(_dashboard_entry(), encoding="utf-8")
+    (plans / "001-example.md").write_text("# Example\n", encoding="utf-8")
+    archive_block = (
+        "### PLAN-050: Done\n\n"
+        "**Final status:** Complete (archived 2026-07-03).\n\n"
+        "**Outcome:** Shipped.\n\n"
+    )
+    (plans / "archive.md").write_text(archive_block * 2, encoding="utf-8")
+
+    failures = module.check_plan_lifecycle(tmp_path)
+
+    assert any("PLAN-050 identifies 2 plan blocks" in f for f in failures)
+
+
+def test_malformed_archive_heading_is_rejected(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "archive.md").write_text(
+        "### PLAN-050 - Done\n\n**Outcome:** Shipped without a final status.\n",
+        encoding="utf-8",
+    )
+
+    failures = module.check_plan_archive_shape(tmp_path)
+
+    assert any("malformed plan heading" in f for f in failures)
+
+
+def test_malformed_dashboard_heading_is_rejected(tmp_path):
+    module = _load_module()
+    plans = tmp_path / "docs" / "plans"
+    plans.mkdir(parents=True)
+    (plans / "dashboard.md").write_text(
+        _dashboard_entry() + "\n#### PLAN-002: Hidden entry\n",
+        encoding="utf-8",
+    )
+
+    failures = module.check_dashboard_structure(tmp_path)
+
+    assert any("malformed plan heading" in f for f in failures)

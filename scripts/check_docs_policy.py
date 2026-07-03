@@ -345,26 +345,33 @@ def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
 
 
 def check_plan_id_uniqueness(entries: list[dict[str, str]]) -> list[str]:
-    """PLAN-091 WP-091.5: each PLAN-ID identifies exactly one dashboard block.
+    """PLAN-091 WP-091.5: each PLAN-ID identifies exactly one plan block.
 
     A colliding ID (two initiatives sharing one ``PLAN-NNN``) makes grep-by-ID
-    ambiguous and breaks the packet-execution harness, so reject it.
+    ambiguous and breaks the packet-execution harness, so reject it. Entries
+    carry a ``source`` file label so collisions across the dashboard and the
+    archive (for example a stale dashboard copy left behind by a partial
+    archive move) are rejected, not just same-file duplicates.
     """
     counts: dict[str, int] = {}
+    sources: dict[str, list[str]] = {}
     order: list[str] = []
     for entry in entries:
         plan_id = entry["id"]
         if plan_id not in counts:
             order.append(plan_id)
+            sources[plan_id] = []
         counts[plan_id] = counts.get(plan_id, 0) + 1
+        sources[plan_id].append(entry.get("source", "docs/plans/dashboard.md"))
     failures: list[str] = []
     for plan_id in order:
         if counts[plan_id] > 1:
+            where = ", ".join(sorted(set(sources[plan_id])))
             failures.append(
-                "docs/plans/dashboard.md: "
-                f"{plan_id} identifies {counts[plan_id]} dashboard blocks; each "
+                f"{where}: "
+                f"{plan_id} identifies {counts[plan_id]} plan blocks; each "
                 "PLAN-ID must identify exactly one initiative (renumber the "
-                "colliding entries onto fresh IDs)"
+                "colliding entries onto fresh IDs, or remove the stale copy)"
             )
     return failures
 
@@ -382,7 +389,15 @@ def check_plan_lifecycle(repo_root: Path) -> list[str]:
     }
     dashboard_text = dashboard.read_text(encoding="utf-8", errors="replace")
     entries = _dashboard_entries(dashboard_text)
-    failures.extend(check_plan_id_uniqueness(entries))
+    unique_entries: list[dict[str, str]] = list(entries)
+    archive = plans_dir / "archive.md"
+    if archive.exists():
+        archive_text = archive.read_text(encoding="utf-8", errors="replace")
+        for match in PLAN_BLOCK_RE.finditer(archive_text):
+            unique_entries.append(
+                {"id": match.group("id"), "source": "docs/plans/archive.md"}
+            )
+    failures.extend(check_plan_id_uniqueness(unique_entries))
 
     referenced_plan_files: set[str] = set()
     for entry in entries:
@@ -489,6 +504,7 @@ def check_dashboard_structure(repo_root: Path) -> list[str]:
         return failures
 
     text = dashboard.read_text(encoding="utf-8", errors="replace")
+    failures.extend(_malformed_plan_headings(text, "docs/plans/dashboard.md"))
     for match in PLAN_BLOCK_RE.finditer(text):
         plan_id = match.group("id")
         block = match.group(0)
@@ -526,6 +542,27 @@ def check_dashboard_structure(repo_root: Path) -> list[str]:
     return failures
 
 
+def _malformed_plan_headings(text: str, rel_path: str) -> list[str]:
+    """Reject plan-block headings that PLAN_BLOCK_RE cannot see.
+
+    Every PLAN rule keys on the strict ``### PLAN-NNN: Title`` heading shape.
+    A near-miss heading (wrong level, separator, digit count, or spacing)
+    would otherwise make the whole entry invisible to those rules, so flag it
+    instead of silently skipping it.
+    """
+    failures: list[str] = []
+    strict = re.compile(r"^### PLAN-\d{3}: \S")
+    loose = re.compile(r"^#{1,6}\s+PLAN-")
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        if loose.match(line) and not strict.match(line):
+            failures.append(
+                f"{rel_path}:{line_number}: malformed plan heading "
+                f"`{line.strip()}`; use `### PLAN-NNN: Title` so the plan "
+                "shape checks can see the entry"
+            )
+    return failures
+
+
 def check_plan_archive_shape(repo_root: Path) -> list[str]:
     """Ensure every archived plan records a completed final status."""
     failures: list[str] = []
@@ -534,6 +571,7 @@ def check_plan_archive_shape(repo_root: Path) -> list[str]:
         return failures
 
     text = archive.read_text(encoding="utf-8", errors="replace")
+    failures.extend(_malformed_plan_headings(text, "docs/plans/archive.md"))
     for match in PLAN_BLOCK_RE.finditer(text):
         plan_id = match.group("id")
         block = match.group(0)
