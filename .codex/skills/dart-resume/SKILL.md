@@ -48,23 +48,26 @@ one successful slice unless the user explicitly requested a limited mode.
 
 ## Argument Handling
 
-Use `$ARGUMENTS` to identify the target and any explicit limits. Interpret
-arguments in this order:
+Use `$ARGUMENTS` to identify the target, explicit scope limits, and execution
+modifiers. Interpret arguments in this order:
 
-1. **Explicit limited mode**: if arguments include `status`, `audit-only`,
-   `plan-only`, `slice`, `next-slice`, or `no-subagents`, honor that limit and
+1. **Explicit scope-limited mode**: if arguments include `status`,
+   `audit-only`, `plan-only`, `slice`, or `next-slice`, honor that limit and
    state it in the plan. Without one of these limiters, do not downscope the
    session to a single slice.
-2. **Explicit target path**: if an argument names `docs/dev_tasks/<task>` or a
+2. **Execution modifiers**: if arguments include `no-subagents`, run serially
+   but keep the same whole-task completion objective. Tool-use modifiers do not
+   limit scope unless paired with an explicit scope-limited mode.
+3. **Explicit target path**: if an argument names `docs/dev_tasks/<task>` or a
    file under that folder, treat that dev task as the target and read its
    `README.md` and `RESUME.md` after recon. Resolve relative paths from the repo
    root discovered by `git rev-parse --show-toplevel`, not from the launch
    directory.
-3. **Closeout wording**: words such as `complete`, `finish`, `retire`,
+4. **Closeout wording**: words such as `complete`, `finish`, `retire`,
    `close out`, or `cleanup` are accepted but not required for dev-task
    completion. Treat `retire` / `close out` as emphasis that the likely end
    state is durable-doc promotion plus folder removal.
-4. **Branch/PR/issue hint**: otherwise, treat arguments as a branch, PR, issue,
+5. **Branch/PR/issue hint**: otherwise, treat arguments as a branch, PR, issue,
    topic, or free-form resume hint and reconstruct the task from live repo state.
 
 Examples:
