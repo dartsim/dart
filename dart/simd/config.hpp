@@ -66,9 +66,15 @@
   #if defined(__AVX512CD__)
     #define DART_SIMD_AVX512CD 1
   #endif
-  #define DART_SIMD_AVX2 1
-  #define DART_SIMD_AVX 1
-  #define DART_SIMD_SSE42 1
+  #if defined(__AVX2__) && defined(__FMA__)
+    #define DART_SIMD_AVX2 1
+  #endif
+  #if defined(__AVX__) || defined(DART_SIMD_AVX2)
+    #define DART_SIMD_AVX 1
+  #endif
+  #if defined(__SSE4_2__) || defined(DART_SIMD_AVX)
+    #define DART_SIMD_SSE42 1
+  #endif
 #elif defined(__AVX2__) && defined(__FMA__)
   #define DART_SIMD_AVX2 1
   #define DART_SIMD_AVX 1
@@ -94,7 +100,7 @@
   #endif
 #endif
 
-#if defined(__FMA__) || defined(DART_SIMD_AVX2)
+#if defined(__FMA__)
   #define DART_SIMD_FMA 1
 #endif
 

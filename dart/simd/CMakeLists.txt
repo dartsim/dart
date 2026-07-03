@@ -69,6 +69,7 @@ target_include_directories(
 # DART 7 declares cxx_std_23 here; the DART 6 port is adapted to C++17 to
 # preserve the LTS toolchain contract for downstream consumers.
 target_compile_features(dart-simd INTERFACE cxx_std_17)
+target_link_libraries(dart-simd INTERFACE Eigen3::Eigen)
 
 # Install headers
 foreach(header ${simd_headers})
