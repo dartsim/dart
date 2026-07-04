@@ -59,6 +59,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 
 using namespace dart;
@@ -342,72 +343,101 @@ void expectBodyInertiaRoundTrips(
       actual.getInertia().getMoment(), kTolerance));
 }
 
-void expectVisualBoxesRoundTrip(
-    const dynamics::BodyNode& expected, const dynamics::BodyNode& actual)
+void expectShapeGeometryRoundTrips(
+    const dynamics::Shape& expected, const dynamics::Shape& actual)
 {
-  ASSERT_EQ(
-      actual.getNumShapeNodesWith<dynamics::VisualAspect>(),
-      expected.getNumShapeNodesWith<dynamics::VisualAspect>());
-
-  for (std::size_t i = 0;
-       i < expected.getNumShapeNodesWith<dynamics::VisualAspect>();
-       ++i) {
-    const auto* expectedNode
-        = expected.getShapeNodeWith<dynamics::VisualAspect>(i);
-    const auto* actualNode = actual.getShapeNodeWith<dynamics::VisualAspect>(i);
-    ASSERT_NE(expectedNode, nullptr);
-    ASSERT_NE(actualNode, nullptr);
-    const auto* expectedVisual = expectedNode->getVisualAspect();
-    const auto* actualVisual = actualNode->getVisualAspect();
-    ASSERT_NE(expectedVisual, nullptr);
-    ASSERT_NE(actualVisual, nullptr);
-
-    const auto* expectedBox = dynamic_cast<const dynamics::BoxShape*>(
-        expectedNode->getShape().get());
-    const auto* actualBox
-        = dynamic_cast<const dynamics::BoxShape*>(actualNode->getShape().get());
-    ASSERT_NE(expectedBox, nullptr);
+  if (const auto* expectedBox
+      = dynamic_cast<const dynamics::BoxShape*>(&expected)) {
+    const auto* actualBox = dynamic_cast<const dynamics::BoxShape*>(&actual);
     ASSERT_NE(actualBox, nullptr);
     EXPECT_TRUE(
         actualBox->getSize().isApprox(expectedBox->getSize(), kTolerance));
+    return;
+  }
+
+  if (const auto* expectedSphere
+      = dynamic_cast<const dynamics::SphereShape*>(&expected)) {
+    const auto* actualSphere
+        = dynamic_cast<const dynamics::SphereShape*>(&actual);
+    ASSERT_NE(actualSphere, nullptr);
+    EXPECT_NEAR(
+        actualSphere->getRadius(), expectedSphere->getRadius(), kTolerance);
+    return;
+  }
+
+  if (const auto* expectedCylinder
+      = dynamic_cast<const dynamics::CylinderShape*>(&expected)) {
+    const auto* actualCylinder
+        = dynamic_cast<const dynamics::CylinderShape*>(&actual);
+    ASSERT_NE(actualCylinder, nullptr);
+    EXPECT_NEAR(
+        actualCylinder->getRadius(), expectedCylinder->getRadius(), kTolerance);
+    EXPECT_NEAR(
+        actualCylinder->getHeight(), expectedCylinder->getHeight(), kTolerance);
+    return;
+  }
+
+  if (const auto* expectedMesh
+      = dynamic_cast<const dynamics::MeshShape*>(&expected)) {
+    const auto* actualMesh = dynamic_cast<const dynamics::MeshShape*>(&actual);
+    ASSERT_NE(actualMesh, nullptr);
+    EXPECT_TRUE(
+        actualMesh->getScale().isApprox(expectedMesh->getScale(), kTolerance));
+    EXPECT_EQ(
+        actualMesh->getMeshUri2().toString(),
+        expectedMesh->getMeshUri2().toString());
+    return;
+  }
+
+  FAIL() << "Unsupported shape type in URDF round-trip assertion: "
+         << expected.getType();
+}
+
+template <class AspectT>
+void expectShapeNodesRoundTrip(
+    const dynamics::BodyNode& expected, const dynamics::BodyNode& actual)
+{
+  ASSERT_EQ(
+      actual.getNumShapeNodesWith<AspectT>(),
+      expected.getNumShapeNodesWith<AspectT>());
+
+  for (std::size_t i = 0; i < expected.getNumShapeNodesWith<AspectT>(); ++i) {
+    const auto* expectedNode = expected.getShapeNodeWith<AspectT>(i);
+    const auto* actualNode = actual.getShapeNodeWith<AspectT>(i);
+    ASSERT_NE(expectedNode, nullptr);
+    ASSERT_NE(actualNode, nullptr);
+    ASSERT_NE(expectedNode->getShape(), nullptr);
+    ASSERT_NE(actualNode->getShape(), nullptr);
+    expectShapeGeometryRoundTrips(
+        *expectedNode->getShape(), *actualNode->getShape());
     EXPECT_TRUE(actualNode->getRelativeTransform().matrix().isApprox(
         expectedNode->getRelativeTransform().matrix(), kTolerance));
-    EXPECT_TRUE(actualVisual->getRGBA().isApprox(
-        expectedVisual->getRGBA(), kColorTolerance))
-        << "actual: " << actualVisual->getRGBA().transpose();
-    EXPECT_EQ(
-        actualVisual->usesDefaultColor(), expectedVisual->usesDefaultColor());
+
+    if constexpr (std::is_same_v<AspectT, dynamics::VisualAspect>) {
+      const auto* expectedVisual = expectedNode->getVisualAspect();
+      const auto* actualVisual = actualNode->getVisualAspect();
+      ASSERT_NE(expectedVisual, nullptr);
+      ASSERT_NE(actualVisual, nullptr);
+
+      EXPECT_TRUE(actualVisual->getRGBA().isApprox(
+          expectedVisual->getRGBA(), kColorTolerance))
+          << "actual: " << actualVisual->getRGBA().transpose();
+      EXPECT_EQ(
+          actualVisual->usesDefaultColor(), expectedVisual->usesDefaultColor());
+    }
   }
 }
 
-void expectCollisionBoxesRoundTrip(
+void expectVisualShapesRoundTrip(
     const dynamics::BodyNode& expected, const dynamics::BodyNode& actual)
 {
-  ASSERT_EQ(
-      actual.getNumShapeNodesWith<dynamics::CollisionAspect>(),
-      expected.getNumShapeNodesWith<dynamics::CollisionAspect>());
+  expectShapeNodesRoundTrip<dynamics::VisualAspect>(expected, actual);
+}
 
-  for (std::size_t i = 0;
-       i < expected.getNumShapeNodesWith<dynamics::CollisionAspect>();
-       ++i) {
-    const auto* expectedNode
-        = expected.getShapeNodeWith<dynamics::CollisionAspect>(i);
-    const auto* actualNode
-        = actual.getShapeNodeWith<dynamics::CollisionAspect>(i);
-    ASSERT_NE(expectedNode, nullptr);
-    ASSERT_NE(actualNode, nullptr);
-
-    const auto* expectedBox = dynamic_cast<const dynamics::BoxShape*>(
-        expectedNode->getShape().get());
-    const auto* actualBox
-        = dynamic_cast<const dynamics::BoxShape*>(actualNode->getShape().get());
-    ASSERT_NE(expectedBox, nullptr);
-    ASSERT_NE(actualBox, nullptr);
-    EXPECT_TRUE(
-        actualBox->getSize().isApprox(expectedBox->getSize(), kTolerance));
-    EXPECT_TRUE(actualNode->getRelativeTransform().matrix().isApprox(
-        expectedNode->getRelativeTransform().matrix(), kTolerance));
-  }
+void expectCollisionShapesRoundTrip(
+    const dynamics::BodyNode& expected, const dynamics::BodyNode& actual)
+{
+  expectShapeNodesRoundTrip<dynamics::CollisionAspect>(expected, actual);
 }
 
 void expectSingleDofJointMetadataRoundTrips(
@@ -576,8 +606,8 @@ TEST(UrdfWriter, RoundTripsExistingJointPropertiesFixture)
     ASSERT_NE(expected, nullptr);
     ASSERT_NE(actual, nullptr);
     expectBodyInertiaRoundTrips(*expected, *actual);
-    expectVisualBoxesRoundTrip(*expected, *actual);
-    expectCollisionBoxesRoundTrip(*expected, *actual);
+    expectVisualShapesRoundTrip(*expected, *actual);
+    expectCollisionShapesRoundTrip(*expected, *actual);
   }
 
   const auto* expectedHinge = dynamic_cast<const dynamics::RevoluteJoint*>(
@@ -648,8 +678,8 @@ TEST(UrdfWriter, RoundTripsExistingIssue838Fixture)
     ASSERT_NE(expected, nullptr);
     ASSERT_NE(actual, nullptr);
     expectBodyInertiaRoundTrips(*expected, *actual);
-    expectVisualBoxesRoundTrip(*expected, *actual);
-    expectCollisionBoxesRoundTrip(*expected, *actual);
+    expectVisualShapesRoundTrip(*expected, *actual);
+    expectCollisionShapesRoundTrip(*expected, *actual);
   }
 
   const auto* fixed
@@ -700,9 +730,63 @@ TEST(UrdfWriter, RoundTripsExistingGroundFixture)
     ASSERT_NE(expected, nullptr);
     ASSERT_NE(actual, nullptr);
     expectBodyInertiaRoundTrips(*expected, *actual);
-    expectVisualBoxesRoundTrip(*expected, *actual);
-    expectCollisionBoxesRoundTrip(*expected, *actual);
+    expectVisualShapesRoundTrip(*expected, *actual);
+    expectCollisionShapesRoundTrip(*expected, *actual);
   }
+}
+
+//==============================================================================
+TEST(UrdfWriter, RoundTripsExistingWamFixture)
+{
+  utils::UrdfParser parser;
+  parser.addPackageDirectory("herb_description", config::dataPath("urdf/wam"));
+
+  const auto original = parser.parseSkeleton("dart://sample/urdf/wam/wam.urdf");
+  ASSERT_NE(original, nullptr);
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  expectContains(writeResult.value(), "name=\"wam\"");
+  expectContains(
+      writeResult.value(),
+      "filename=\"package://herb_description/meshes/wam/wam_base.dae\"");
+  expectContains(
+      writeResult.value(),
+      "filename=\"package://herb_description/meshes/wam/"
+      "wam_base_collision.STL\"");
+
+  const auto reparsed = parser.parseSkeletonString(
+      writeResult.value(), common::Uri("memory://wam_roundtrip.urdf"));
+  ASSERT_NE(reparsed, nullptr);
+
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+  EXPECT_EQ(original->getBodyNode("world"), nullptr);
+  EXPECT_EQ(reparsed->getBodyNode("world"), nullptr);
+
+  for (std::size_t i = 0; i < original->getNumBodyNodes(); ++i) {
+    const auto* expected = original->getBodyNode(i);
+    ASSERT_NE(expected, nullptr);
+    const auto* actual = reparsed->getBodyNode(expected->getName());
+    ASSERT_NE(actual, nullptr) << expected->getName();
+    expectBodyInertiaRoundTrips(*expected, *actual);
+    expectVisualShapesRoundTrip(*expected, *actual);
+    expectCollisionShapesRoundTrip(*expected, *actual);
+  }
+
+  const auto* expectedJoint
+      = dynamic_cast<const dynamics::RevoluteJoint*>(original->getJoint("/j1"));
+  const auto* actualJoint
+      = dynamic_cast<const dynamics::RevoluteJoint*>(reparsed->getJoint("/j1"));
+  ASSERT_NE(expectedJoint, nullptr);
+  ASSERT_NE(actualJoint, nullptr);
+  EXPECT_EQ(actualJoint->getParentBodyNode()->getName(), "/wam_base");
+  EXPECT_EQ(actualJoint->getChildBodyNode()->getName(), "/wam1");
+  EXPECT_TRUE(
+      actualJoint->getAxis().isApprox(expectedJoint->getAxis(), kTolerance));
+  expectSingleDofJointMetadataRoundTrips(*expectedJoint, *actualJoint);
 }
 
 //==============================================================================

@@ -1800,6 +1800,46 @@ Changelog decision:
   verification if a PR is opened.
 - Follow-up: none until an implementation PR exists.
 
+Additional validation for URDF WAM package-mesh fixture coverage:
+
+- Generalized the URDF writer fixture assertions in
+  `tests/integration/io/test_urdf_writer.cpp` so read/write/read coverage can
+  compare supported box, sphere, cylinder, and mesh shape semantics rather than
+  only box fixtures.
+- Added `UrdfWriter.RoundTripsExistingWamFixture`, which loads
+  `data/urdf/wam/wam.urdf` with `UrdfParser` package resolution for
+  `herb_description`, writes it through
+  `UrdfParser::tryWriteSkeletonToString()`, reparses the emitted URDF, and
+  compares the DART skeleton semantics imported from the fixture: root
+  `world` remains an inertial-frame placeholder, body inertias survive,
+  visual/collision package mesh geometry and URIs survive, visual material
+  colors survive, and the `/j1` revolute joint keeps topology, axis, and limit
+  metadata.
+
+Validation commands:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter=UrdfWriter.RoundTripsExistingWamFixture:UrdfWriter.RoundTripsExistingIssue838Fixture:UrdfWriter.RoundTripsExistingGroundFixture:UrdfWriter.RoundTripsExistingJointPropertiesFixture'`
+- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter`
+- `pixi run check-sdf-sdformat-boundary`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_urdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Scope evidence: `CHANGELOG.md` DART 7 IO and Parsing URDF writer bullet
+  already covers package URI meshes, primitive geometry, visual/collision
+  poses, visual colors, and explicit unsupported/lossy diagnostics.
+- Decision: no additional changelog entry. This slice adds fixture-level
+  read/write/read verification for an existing shipped package-mesh URDF robot
+  without adding a new public API or broadening the documented writer contract.
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: record as WAM package-mesh URDF fixture round-trip verification
+  if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
 Changelog decision:
 
 - Mode: draft
