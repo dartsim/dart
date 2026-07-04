@@ -395,6 +395,10 @@ if(DART_SIMULATION_BUILD_TESTS)
       test_diff_paper_experiments
       ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_paper_experiments.cpp
     )
+    dart_add_simulation_test(
+      test_diff_dojo_style_ipm_spike
+      ${CMAKE_CURRENT_SOURCE_DIR}/diff/test_diff_dojo_style_ipm_spike.cpp
+    )
   endif()
 
   if(TARGET ${PROJECT_NAME}-simulation-cuda)

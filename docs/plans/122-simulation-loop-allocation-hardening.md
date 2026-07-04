@@ -168,7 +168,7 @@ post-bake step.
   preallocated at bake or explicitly outside the no-allocation loop.
 - Gates: `pixi run lint`, focused `test_world` differentiable filters, and
   `test_diff_smooth_jacobian` when `DART_BUILD_DIFF=ON`.
-- Dependencies: PLAN-110 and `docs/dev_tasks/differentiable_simulation/`.
+- Dependencies: PLAN-110 and its durable design/gap-audit owner docs.
 
 ### WP-122.6 Loader And Migration Acceptance Gates
 

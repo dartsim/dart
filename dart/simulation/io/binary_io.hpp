@@ -128,7 +128,9 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      multibody solve budget metadata, plus DeactivationState as a
 //      serializable runtime component.
 //   26: World compute accelerator policy serialized after deactivation options.
-constexpr std::uint32_t kBinaryFormatVersion = 26;
+//   27: World differentiable physical-parameter registrations serialized after
+//      the compute accelerator policy.
+constexpr std::uint32_t kBinaryFormatVersion = 27;
 
 //==============================================================================
 // Low-level Binary I/O for POD types
