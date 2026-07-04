@@ -61,7 +61,10 @@
       collision-surface
       friction, slip, restitution, and non-collision-frame friction-direction
       values, non-default visual reflectance, and non-default DART mesh
-      color/alpha render policies now fail with explicit diagnostics. DART
+      color/alpha render policies now fail with explicit diagnostics.
+      Non-finite skeleton gravity, shape poses, inertial data, and joint axes
+      are also covered as writer diagnostics instead of being serialized into
+      malformed SDF. DART
       `SoftBodyNode` writer attempts now fail with a targeted diagnostic
       instead of being serialized as ordinary SDF links with point-mass, spring,
       damping, and soft mesh topology semantics dropped. The
@@ -270,6 +273,8 @@ SKEL-YAML direction just because the prototype once existed.
   NaN position limits on SDF-supported single-axis joints and topology-only ball
   joints now have targeted diagnostics, while infinite limits remain the
   unbounded SDF joint contract.
+  Non-finite skeleton gravity, shape pose, inertial local center-of-mass data,
+  and joint axis inputs now have focused diagnostics coverage.
   Shape-level and body-level
   collision-surface contact bitmask disables, zero-threshold bounce restitution,
   ODE friction

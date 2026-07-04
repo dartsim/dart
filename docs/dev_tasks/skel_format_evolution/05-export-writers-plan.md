@@ -58,7 +58,8 @@ missing mesh URIs, non-finite mesh scales, pre-SDF-1.11 mimic output,
 coupler-style mimic enforcement, non-finite material colors, invalid PBR
 material factors, non-default visual reflectance, non-default DART mesh
 color/alpha render policies, NaN joint position limits, non-finite screw pitch,
-invalid collision-surface
+non-finite skeleton gravity, shape poses, inertial data, or joint axes, invalid
+collision-surface
 friction, slip, restitution, or
 friction-direction frame, unsupported ball-joint metadata, unsupported DART
 `SoftBodyNode` export, and non-finite joint dynamics return `common::Result`

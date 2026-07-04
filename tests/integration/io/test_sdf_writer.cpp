@@ -2626,6 +2626,91 @@ TEST(SdfWriter, UnsupportedVisualReflectanceReturnsError)
 }
 
 //==============================================================================
+TEST(SdfWriter, NonFiniteSkeletonGravityReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("non_finite_skeleton_gravity");
+  auto [rootJoint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  body->setName("body");
+  skeleton->setGravity(
+      Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, -9.81));
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("non-finite skeleton gravity"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, NonFiniteShapePoseReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("non_finite_shape_pose");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  auto* visual = body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "bad_pose_visual");
+  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+  pose.translation().x() = std::numeric_limits<double>::quiet_NaN();
+  visual->setRelativeTransform(pose);
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(result.error().message.find("non-finite pose"), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, NonFiniteInertialDataReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("non_finite_inertial_data");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->setLocalCOM(
+      Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0));
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("non-finite inertial data"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, NonFiniteJointAxisReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("non_finite_joint_axis");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::RevoluteJoint::Properties hingeProperties;
+  hingeProperties.mName = "hinge";
+  hingeProperties.mAxis = Eigen::Vector3d::UnitZ();
+
+  dynamics::BodyNode::Properties tipProperties;
+  tipProperties.mName = "tip";
+
+  auto [hinge, tip]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          base, hingeProperties, tipProperties);
+  (void)tip;
+  hinge->setAxis(
+      Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 1.0));
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(result.error().message.find("non-finite axis"), std::string::npos);
+}
+
+//==============================================================================
 TEST(SdfWriter, NonFiniteJointDynamicsReturnsError)
 {
   auto skeleton = dynamics::Skeleton::create("non_finite_joint_dynamics");

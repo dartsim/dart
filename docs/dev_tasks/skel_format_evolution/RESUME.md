@@ -66,7 +66,8 @@ unsupported coupler-style mimic diagnostics, non-finite visual material
 diagnostics, invalid PBR material diagnostics, unsupported visual reflectance
 diagnostics, non-default DART mesh color/alpha render-policy diagnostics,
 NaN joint position-limit diagnostics, non-finite screw pitch diagnostics,
-invalid collision-surface friction, slip, restitution, and
+non-finite skeleton gravity, shape-pose, inertial-data, and joint-axis
+diagnostics, invalid collision-surface friction, slip, restitution, and
 friction-direction-frame diagnostics, unsupported ball-joint metadata,
 unsupported DART `SoftBodyNode` diagnostics, and non-finite joint dynamics
 diagnostics. This is real Phase 5 progress, but
@@ -849,11 +850,21 @@ Changelog decision:
   No additional separate entry is needed for NaN SDF joint position-limit
   diagnostics because it hardens the same conservative SDF writer contract
   before the implementation PR exists.
+  No additional separate entry is needed for non-finite SDF structural
+  diagnostics because they harden the same conservative SDF writer contract
+  before the implementation PR exists.
 
 Additional validation for NaN SDF joint position-limit diagnostics:
 
 - `git diff --check`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter` (55 tests)
+- `pixi run lint`
+- `pixi run build`
+
+Additional validation for non-finite SDF structural diagnostics:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter` (59 tests)
 - `pixi run lint`
 - `pixi run build`
 
