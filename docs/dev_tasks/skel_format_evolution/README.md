@@ -146,7 +146,8 @@
       write/read/read subset and diagnostics for multiple root trees,
       unsupported joint families, non-identity child joint frames, unbounded
       finite-requiring URDF limits, missing mimic references, and coupler-style
-      mimic enforcement, plus continuous revolute joint dynamics round-trip.
+      mimic enforcement, plus continuous revolute joint dynamics round-trip and
+      targeted DART `SoftBodyNode` diagnostics.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, the URDF writer remains on
       `dart::utils::UrdfParser`, `dart::io` stays read-side, and project/editor

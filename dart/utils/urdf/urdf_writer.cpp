@@ -43,6 +43,7 @@
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
@@ -409,6 +410,13 @@ WriteResult writeLink(
     const dynamics::BodyNode& body,
     const UrdfParser::WriteOptions& options)
 {
+  if (dynamic_cast<const dynamics::SoftBodyNode*>(&body)) {
+    return fail(
+        "Cannot write DART SoftBodyNode [" + body.getName()
+        + "] as URDF link because URDF has no point-mass, spring, damping, "
+          "or soft mesh topology semantics.");
+  }
+
   auto* link = appendElement(doc, robot, "link");
   link->SetAttribute("name", body.getName().c_str());
 

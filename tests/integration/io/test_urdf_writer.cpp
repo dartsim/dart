@@ -39,9 +39,11 @@
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/planar_joint.hpp>
+#include <dart/dynamics/point_mass.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
@@ -508,6 +510,37 @@ TEST(UrdfWriter, UnsupportedPlanarJointReturnsError)
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "PlanarJoint");
   expectContains(result.error().message, "URDF");
+}
+
+//==============================================================================
+TEST(UrdfWriter, SoftBodyNodeReturnsExplicitUnsupportedError)
+{
+  auto skeleton = dynamics::Skeleton::create("soft_body_writer");
+
+  dynamics::SoftBodyNode::UniqueProperties softProperties;
+  softProperties.addPointMass(
+      dynamics::PointMass::Properties(Eigen::Vector3d::Zero(), 0.1));
+  softProperties.addPointMass(
+      dynamics::PointMass::Properties(Eigen::Vector3d(0.1, 0.0, 0.0), 0.1));
+  softProperties.connectPointMasses(0, 1);
+
+  dynamics::BodyNode::Properties bodyProperties;
+  bodyProperties.mName = "soft_body";
+  bodyProperties.mInertia.setMass(0.2);
+  dynamics::SoftBodyNode::Properties bodyNodeProperties(
+      bodyProperties, softProperties);
+
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<
+      dynamics::FreeJoint,
+      dynamics::SoftBodyNode>(
+      nullptr, dynamics::FreeJoint::Properties(), bodyNodeProperties);
+  (void)joint;
+  ASSERT_NE(body, nullptr);
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "DART SoftBodyNode");
+  expectContains(result.error().message, "soft mesh topology");
 }
 
 //==============================================================================
