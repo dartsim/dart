@@ -36,8 +36,11 @@
       `<axis>/<axis2><dynamics>`, `<thread_pitch>`, local `<pose>`, and
       `<diffuse>` values. The writer test now uses a shared IO round-trip
       assertion helper for body, joint, DoF, inertia, and shape comparisons.
-      Broader SDF coverage, URDF export, and project save/load remain open. Add
-      YAML only if a durable project/scene schema is accepted first.
+      Writer APIs stay format-owned for now: the SDF writer remains on
+      `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor
+      save-load belongs to the scene/project layer. Broader SDF coverage, URDF
+      export, and project save/load remain open. Add YAML only if a durable
+      project/scene schema is accepted first.
 
 ## Goal
 
@@ -117,8 +120,9 @@ SKEL-YAML direction just because the prototype once existed.
    [`05-export-writers-plan.md`](05-export-writers-plan.md): extend SDF writer
    coverage beyond the first conservative subset, decide the next writer target
    (URDF or PLAN-101 project save/load), and keep read/write/read tests attached
-   to every expanded contract. YAML can enter that slice only after a durable
-   project/scene schema is accepted.
+   to every expanded contract. Keep writer APIs format-owned unless a later
+   multi-format write API is reviewed. YAML can enter that slice only after a
+   durable project/scene schema is accepted.
 
 ## Verification Gates
 

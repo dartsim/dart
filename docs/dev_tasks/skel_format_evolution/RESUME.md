@@ -49,6 +49,13 @@ in the formatted test-helper list. This closes the Phase 5 comparison-helper
 infrastructure item, but it does not broaden the public writer contract by
 itself.
 
+The writer API home decision is now recorded in
+`docs/onboarding/io-parsing.md` and
+[`05-export-writers-plan.md`](05-export-writers-plan.md): keep export APIs
+format-owned until more than one accepted writer contract exists. The SDF
+writer stays on `dart::utils::SdfParser`, `dart::io` remains read-side, and
+project/editor save-load belongs to the scene/project layer.
+
 Validation for this slice:
 
 - `git diff --check`
@@ -62,6 +69,11 @@ Validation for this slice:
 Additional validation for the comparison-helper refactor:
 
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
+Additional validation for the writer-API-home docs:
+
+- `git diff --check`
+- `pixi run lint`
 
 Changelog decision:
 
@@ -173,9 +185,8 @@ Continue with the remaining real task work: land Phase 2 after maintainer
 approval, then continue Phase 5 from
 [`05-export-writers-plan.md`](05-export-writers-plan.md) by extending SDF writer
 coverage beyond material colors/link gravity mode/passive joint dynamics/screw
-thread pitch/universal and ball topology/local poses, deciding the writer API
-home, or choosing the next accepted writer target (URDF or PLAN-101 project
-save/load).
+thread pitch/universal and ball topology/local poses or choosing the next
+accepted writer target (URDF or PLAN-101 project save/load).
 
 ## Context That Would Be Lost
 

@@ -154,6 +154,14 @@ model format. Use the writer only when the target scene fits the documented
 subset, and expand the round-trip tests before broadening the supported
 contract.
 
+Keep export APIs format-owned until DART has more than one accepted writer
+contract. The current SDF writer therefore lives on
+`dart::utils::SdfParser`, while `dart::io` remains the read-side skeleton front
+door. Do not add `dart::io::writeSkeleton()` or overload `ReadOptions` with
+write policy until there is a reviewed multi-format `WriteOptions` design.
+DART-owned project or editor save/load belongs in the scene/project layer, not
+in interchange-format parser utilities.
+
 ## Notes about Python
 
 The consolidated API is primarily for **C++** (`dart::io`). However, the Python

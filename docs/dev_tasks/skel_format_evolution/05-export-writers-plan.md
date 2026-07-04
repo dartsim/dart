@@ -51,6 +51,12 @@ replacement. The accepted writer scope is:
 4. **MJCF/USD writers** only after their read-side semantics are mature enough
    in DART to define a truthful round-trip contract.
 
+Writer API home is decided for the current DART 7 slice: keep export APIs
+format-owned until more than one accepted writer contract exists. The SDF writer
+therefore stays on `dart::utils::SdfParser`, `dart::io` remains the read-side
+skeleton front door, and project/editor save-load belongs to the scene/project
+layer. The durable rule lives in `docs/onboarding/io-parsing.md`.
+
 ## Implementation Shape
 
 Phase 5 should start with a narrow writer API instead of a single mega-exporter:
@@ -96,7 +102,5 @@ Phase 5 is complete only when code and tests prove the writer contract:
   data round-trip correctly.
 - Decide the next implementation target: URDF writer or PLAN-101 project
   save/load.
-- Decide whether writer APIs live under `dart::io`, parser-specific utility
-  namespaces, or a DART 7 scene/project layer.
 - Keep YAML out of the first implementation target unless a durable
   project/scene schema is accepted first.
