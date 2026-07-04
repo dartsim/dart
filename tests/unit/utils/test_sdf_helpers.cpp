@@ -250,7 +250,7 @@ TEST(SdfDetailHelpers, MissingInputsReturnDefaults)
           .isApprox(Eigen::Isometry3d::Identity()));
 }
 
-TEST(SdfDetailHelpers, ParsesScalarVectorAndPoseFallbackText)
+TEST(SdfDetailHelpers, ParsesExtensionValuesWithSdformatTypedParams)
 {
   const sdf::ElementPtr linkElement = loadLinkElement(R"(
     <count>7</count>

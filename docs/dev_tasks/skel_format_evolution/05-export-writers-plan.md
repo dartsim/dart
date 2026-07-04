@@ -55,7 +55,9 @@ frame annotations are resolved through `sdf::JointAxis::ResolveXyz()`, and
 authored diffuse values are read from `sdf::Material::Diffuse()`. The
 SDF-specific helper surface has been narrowed accordingly: it no longer exposes
 generic XML attribute, string, boolean, vector2/vectorX, or child enumerator
-APIs that duplicate sdformat traversal/parsing.
+APIs that duplicate sdformat traversal/parsing, and the retained DART-extension
+value bridge uses sdformat typed parameters instead of DART-side XML text
+fallback parsing.
 
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.

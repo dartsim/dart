@@ -86,8 +86,10 @@ The SDF detail helper API has been narrowed to that remaining bridge: generic
 XML attribute reads, string reads, vector2/vectorX parsing, child enumeration,
 boolean value parsing, and direct helper tests for those deleted APIs are gone.
 Retained helpers cover only element presence, child lookup, numeric scalar
-reads, vector3/vector3i reads, and pose fallback parsing for the DART-specific
-extension/presence paths.
+reads, vector3/vector3i reads, and pose reads for the DART-specific
+extension/presence paths; remaining extension value conversion goes through
+sdformat typed `Param::Get<T>` instead of serializing XML back to text and
+reparsing it in DART.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -244,6 +246,15 @@ Additional validation for removing the SDF helper boolean parser:
 - `pixi run build`
 - `pixi run test-unit`
 
+Additional validation for removing SDF helper XML text fallback parsing:
+
+- `git diff --check`
+- `pixi run run-cpp-target test_sdf_helpersNone`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit`
+
 Changelog decision:
 
 - Mode: draft
@@ -299,7 +310,11 @@ Changelog decision:
   this parser-side normalization. No additional separate entry is needed for
   SDF material diffuse DOM reads because they keep the same parser-side material
   normalization under the existing DART 7 libsdformat dependency entry while
-  preserving DART's authored/default behavior.
+  preserving DART's authored/default behavior. No additional separate entry is
+  needed for removing the SDF helper XML text fallback parser because it is an
+  internal detail-helper cleanup that moves the existing DART extension bridge
+  onto sdformat typed parameter conversion under the same libsdformat
+  normalization entry.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

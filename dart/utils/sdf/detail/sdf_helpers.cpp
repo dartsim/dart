@@ -34,9 +34,7 @@
 
 #include <dart/common/logging.hpp>
 
-#include <sstream>
 #include <string>
-#include <vector>
 
 #if __has_include(<gz/math/Pose3.hh>)
   #include <gz/math/Pose3.hh>
@@ -51,97 +49,6 @@
 namespace dart::utils::SdfParser::detail {
 
 namespace {
-
-std::string trimCopy(std::string_view text)
-{
-  const auto start = text.find_first_not_of(" \t\r\n");
-  if (start == std::string_view::npos) {
-    return std::string();
-  }
-
-  const auto end = text.find_last_not_of(" \t\r\n");
-  return std::string(text.substr(start, end - start + 1));
-}
-
-std::string getElementText(const ElementPtr& element)
-{
-  if (!element) {
-    return std::string();
-  }
-
-  sdf::Errors errors;
-  const auto serialized = element->ToString(errors, "");
-  if (!errors.empty()) {
-    return std::string();
-  }
-
-  const auto open = serialized.find('>');
-  const auto close = serialized.rfind('<');
-  if (open == std::string::npos || close == std::string::npos
-      || close <= open) {
-    return std::string();
-  }
-
-  return trimCopy(serialized.substr(open + 1, close - open - 1));
-}
-
-std::string getChildElementText(const ElementPtr& parent, std::string_view name)
-{
-  if (!parent || name.empty()) {
-    return std::string();
-  }
-
-  const auto child = getElement(parent, name);
-  return getElementText(child);
-}
-
-std::string getValueText(
-    const ElementPtr& parentElement,
-    std::string_view name,
-    const sdf::ParamPtr& param)
-{
-  const auto directText = getChildElementText(parentElement, name);
-  if (!directText.empty()) {
-    return directText;
-  }
-
-  if (param) {
-    try {
-      std::string text = trimCopy(param->GetAsString());
-      if (text.find('<') == std::string::npos) {
-        return text;
-      }
-    } catch (const std::exception& e) {
-      DART_WARN(
-          "[SdfParser] Failed to parse element <{}> under <{}> as string: {}",
-          name,
-          parentElement ? parentElement->GetName() : "unknown",
-          e.what());
-    }
-  }
-
-  return getChildElementText(parentElement, name);
-}
-
-template <typename T>
-bool parseScalar(std::string_view text, T& value)
-{
-  std::istringstream stream{std::string(text)};
-  stream >> value;
-  return !stream.fail();
-}
-
-template <typename T>
-std::vector<T> parseArray(std::string_view text)
-{
-  std::istringstream stream{std::string(text)};
-  std::vector<T> values;
-  T value{};
-  while (stream >> value) {
-    values.push_back(value);
-  }
-  return values;
-}
 
 sdf::ParamPtr getChildValueParam(
     const ElementPtr& parentElement, std::string_view name)
@@ -164,24 +71,14 @@ sdf::ParamPtr getChildValueParam(
 }
 
 template <typename T>
-bool readScalarParam(const sdf::ParamPtr& param, T& value)
+bool readParamValue(const sdf::ParamPtr& param, T& value)
 {
   if (!param) {
     return false;
   }
 
-  if (param->Get(value)) {
-    return true;
-  }
-
-  std::string text;
-  try {
-    text = param->GetAsString();
-  } catch (const std::exception&) {
-    return false;
-  }
-
-  return parseScalar(text, value);
+  sdf::Errors errors;
+  return param->Get(value, errors) && errors.empty();
 }
 
 Eigen::Vector3d toEigen(const gz::math::Vector3d& vec)
@@ -225,7 +122,7 @@ unsigned int getValueUInt(
     const ElementPtr& parentElement, std::string_view name)
 {
   unsigned int value = 0u;
-  if (readScalarParam(getChildValueParam(parentElement, name), value)) {
+  if (readParamValue(getChildValueParam(parentElement, name), value)) {
     return value;
   }
 
@@ -239,7 +136,7 @@ unsigned int getValueUInt(
 double getValueDouble(const ElementPtr& parentElement, std::string_view name)
 {
   double value = 0.0;
-  if (readScalarParam(getChildValueParam(parentElement, name), value)) {
+  if (readParamValue(getChildValueParam(parentElement, name), value)) {
     return value;
   }
 
@@ -260,26 +157,14 @@ Eigen::Vector3d getValueVector3d(
   }
 
   gz::math::Vector3d vec3;
-  if (param->Get(vec3)) {
+  if (readParamValue(param, vec3)) {
     return toEigen(vec3);
   }
 
-  const auto text = getValueText(parentElement, name, param);
-  if (text.empty()) {
-    return result;
-  }
-
-  const auto values = parseArray<double>(text);
-  if (values.size() >= 3) {
-    result << values[0], values[1], values[2];
-    return result;
-  }
-
   DART_WARN(
-      "[SdfParser] Element <{}> under <{}> expected 3 values but found {}.",
+      "[SdfParser] Failed to parse element <{}> under <{}> as vector3.",
       name,
-      parentElement ? parentElement->GetName() : "unknown",
-      values.size());
+      parentElement ? parentElement->GetName() : "unknown");
   return result;
 }
 
@@ -292,23 +177,17 @@ Eigen::Vector3i getValueVector3i(
     return result;
   }
 
-  const auto text = getValueText(parentElement, name, param);
-  if (text.empty()) {
-    return result;
-  }
-
-  const auto values = parseArray<int>(text);
-  if (values.size() >= 3) {
-    result << values[0], values[1], values[2];
+  gz::math::Vector3d vec3;
+  if (readParamValue(param, vec3)) {
+    result << static_cast<int>(vec3.X()), static_cast<int>(vec3.Y()),
+        static_cast<int>(vec3.Z());
     return result;
   }
 
   DART_WARN(
-      "[SdfParser] Element <{}> under <{}> expected 3 integer values but found "
-      "{}.",
+      "[SdfParser] Failed to parse element <{}> under <{}> as vector3i.",
       name,
-      parentElement ? parentElement->GetName() : "unknown",
-      values.size());
+      parentElement ? parentElement->GetName() : "unknown");
   return result;
 }
 
@@ -321,29 +200,14 @@ Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
   }
 
   gz::math::Pose3d pose;
-  if (param->Get(pose)) {
+  if (readParamValue(param, pose)) {
     return poseToIsometry(pose);
   }
 
-  const auto text = getValueText(parentElement, name, param);
-  if (text.empty()) {
-    return Eigen::Isometry3d::Identity();
-  }
-
-  const auto values = parseArray<double>(text);
-  if (values.size() == 6) {
-    gz::math::Pose3d fallbackPose(
-        gz::math::Vector3d(values[0], values[1], values[2]),
-        gz::math::Quaterniond(values[3], values[4], values[5]));
-    return poseToIsometry(fallbackPose);
-  }
-
   DART_WARN(
-      "[SdfParser] Element <{}> under <{}> expected 6 pose values but found "
-      "{}.",
+      "[SdfParser] Failed to parse element <{}> under <{}> as pose.",
       name,
-      parentElement ? parentElement->GetName() : "unknown",
-      values.size());
+      parentElement ? parentElement->GetName() : "unknown");
   return Eigen::Isometry3d::Identity();
 }
 

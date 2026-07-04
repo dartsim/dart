@@ -64,8 +64,9 @@
       element access.
       The SDF-specific helper layer no longer exposes generic XML attribute,
       string, boolean, vector2/vectorX, or child-enumerator APIs; retained
-      helpers are limited to the small extension/presence fallback bridge still
-      used by the parser.
+      helpers are limited to the small extension/presence bridge still used by
+      the parser, and remaining extension values are converted through
+      sdformat typed parameters rather than XML text reparsing.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor
       save-load belongs to the scene/project layer. Broader SDF coverage, URDF
@@ -200,4 +201,5 @@ SKEL-YAML direction just because the prototype once existed.
   scene from each accepted format, write it back, and compare the re-parsed
   models. SDF helper cleanup is covered by `test_sdf_helpersNone`, which now
   validates only the retained parser bridge instead of the removed generic XML
-  helper APIs, including the removed SDF-specific boolean value parser.
+  helper APIs, including the removed SDF-specific boolean value parser and XML
+  text fallback parser.
