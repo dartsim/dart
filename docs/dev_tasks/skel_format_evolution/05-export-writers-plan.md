@@ -207,8 +207,10 @@ replacement. The accepted writer scope is:
    accepts a versioned schema and round-trip contract.
 3. **URDF writer** for robot-link trees that fit URDF's model constraints. The
    first parser-specific writer slice is in place, including shipped
-   `joint_properties.urdf` read/write/read coverage for revolute and continuous
-   joint limits/dynamics; broader URDF coverage remains open.
+   `joint_properties.urdf`, `issue838.urdf`, and `KR5/ground.urdf`
+   read/write/read coverage for revolute and continuous joint limits/dynamics,
+   visual material colors, parser-normalized root-`world` semantics, and
+   collision boxes; broader URDF coverage remains open.
 4. **MJCF/USD writers** only after their read-side semantics are mature enough
    in DART to define a truthful round-trip contract.
 

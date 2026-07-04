@@ -174,14 +174,16 @@
       coupler mimic offsets, plus missing mesh URIs, relative or host-qualified
       file mesh URIs, and non-finite mesh scales. It also covers continuous
       revolute joint dynamics round-trip, shipped
-      `joint_properties.urdf` read/write/read coverage for revolute and
-      continuous joint limits/dynamics plus visual boxes, visual and collision
-      package mesh URI preservation through `UrdfParser` package resolution,
-      non-positive mass, non-finite local center-of-mass, visual material color,
-      shape pose, joint axis, and asymmetric velocity/effort limit diagnostics,
-      targeted diagnostics for non-default visual reflectance, disabled
-      collision aspects, and collision dynamics metadata that URDF cannot
-      represent, and targeted DART `SoftBodyNode` diagnostics.
+      `joint_properties.urdf`, `issue838.urdf`, and `KR5/ground.urdf`
+      read/write/read coverage for revolute and continuous joint
+      limits/dynamics, visual boxes, global material color references,
+      imported root-`world` frame semantics, and collision boxes, visual and
+      collision package mesh URI preservation through `UrdfParser` package
+      resolution, non-positive mass, non-finite local center-of-mass, visual
+      material color, shape pose, joint axis, and asymmetric velocity/effort
+      limit diagnostics, targeted diagnostics for non-default visual
+      reflectance, disabled collision aspects, and collision dynamics metadata
+      that URDF cannot represent, and targeted DART `SoftBodyNode` diagnostics.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, the URDF writer remains on
       `dart::utils::UrdfParser`, `dart::io` stays read-side, and project/editor
@@ -348,9 +350,12 @@ SKEL-YAML direction just because the prototype once existed.
   limits/dynamics, and sphere/box visual and collision geometry. It does not
   claim SDF sensor or physics metadata preservation.
   URDF shipped-fixture read/write/read coverage now includes
-  `joint_properties.urdf`, proving the current conservative URDF writer
-  preserves revolute and continuous joint topology, axes, finite velocity/effort
-  limits, passive damping/friction metadata, inertias, and visual box geometry.
+  `joint_properties.urdf`, `issue838.urdf`, and `KR5/ground.urdf`, proving the
+  current conservative URDF writer preserves revolute and continuous joint
+  topology, axes, finite velocity/effort limits, passive damping/friction
+  metadata, inertias, visual box geometry, visual material colors imported from
+  global URDF material references, collision box geometry, and parser-normalized
+  root-`world` inertial-frame semantics.
   NaN position limits on SDF-supported single-axis joints and topology-only ball
   joints now have targeted diagnostics, while infinite limits remain the
   unbounded SDF joint contract.

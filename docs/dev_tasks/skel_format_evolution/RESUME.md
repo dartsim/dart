@@ -1762,6 +1762,44 @@ Changelog decision:
 - Entry text: the existing conservative URDF writer bullet now includes
   continuous joint velocity/effort limits.
 
+Additional validation for URDF material and ground fixture coverage:
+
+- Added `UrdfWriter.RoundTripsExistingIssue838Fixture`, which loads
+  `data/urdf/test/issue838.urdf`, writes it through
+  `UrdfParser::tryWriteSkeletonToString()`, reparses the emitted URDF, and
+  compares body inertias, visual box geometry, visual colors imported from
+  global URDF material references, fixed-joint topology, and revolute joint
+  limits.
+- Added `UrdfWriter.RoundTripsExistingGroundFixture`, which loads
+  `data/urdf/KR5/ground.urdf`, writes it through
+  `UrdfParser::tryWriteSkeletonToString()`, reparses the emitted URDF, and
+  compares the DART skeleton semantics imported from the fixture: the root
+  `world` link remains an inertial-frame placeholder rather than a body node,
+  and the `ground_link` inertial, visual box, and collision box semantics
+  survive the writer round trip.
+
+Validation commands:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter=UrdfWriter.RoundTripsExistingIssue838Fixture:UrdfWriter.RoundTripsExistingGroundFixture:UrdfWriter.RoundTripsExistingJointPropertiesFixture'`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_urdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Scope evidence: `CHANGELOG.md` DART 7 IO and Parsing URDF writer bullet
+  already covers visual colors, primitive geometry, visual/collision poses, and
+  explicit unsupported/lossy diagnostics.
+- Decision: no additional changelog entry. This slice adds fixture-level
+  read/write/read verification for existing shipped URDF fixtures without
+  adding a new public API or broadening the documented writer contract.
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: record as URDF material and ground fixture round-trip
+  verification if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
 Changelog decision:
 
 - Mode: draft

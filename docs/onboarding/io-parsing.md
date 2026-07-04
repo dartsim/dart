@@ -250,10 +250,15 @@ poses, box/sphere/cylinder/absolute or package URI mesh geometry for visuals
 and collisions, explicit visual colors, implicit default visual color
 omission, default-RGB alpha overrides, and options for excluding visuals or
 collisions. Shipped-fixture coverage includes
-`data/urdf/test/joint_properties.urdf` through a read/write/read smoke that
-compares body, joint, axis, limit, dynamics, and visual-box semantics. URDF does
-not encode parent-joint metadata for the root link, so root joint name/type are
-supplied by parser defaults on reparse rather than serialized by the writer.
+`data/urdf/test/joint_properties.urdf`, `data/urdf/test/issue838.urdf`, and
+`data/urdf/KR5/ground.urdf` through read/write/read smokes that compare body,
+joint, axis, limit, dynamics, visual-box, visual-material, and collision-box
+semantics. URDF does not encode parent-joint metadata for the root link, so
+root joint name/type are supplied by parser defaults on reparse rather than
+serialized by the writer. URDF files that use a root link named `world` still
+import that link as the inertial frame; writer fixture coverage compares the
+resulting DART `Skeleton` semantics, not preservation of that non-body URDF
+link.
 
 The writer returns `common::Result` and rejects unsupported or lossy DART
 constructs such as multiple root trees, non-identity root placement, unsupported
