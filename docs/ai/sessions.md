@@ -24,6 +24,16 @@ needs design decisions, or has dependencies between steps. Follow
 A separate `TODO.md` is optional and should only be introduced with a checker or
 clear cleanup rule. Otherwise, status belongs in `README.md`.
 
+## Shared Checkouts
+
+When more than one agent or human session works in the same clone, branch
+state can change between commands: a parallel session may move the checkout to
+a different branch or retire local branches mid-flow. Re-verify
+`git branch --show-current` and the expected HEAD before creating a topic
+branch, committing, or any other step that depends on branch state, and
+confirm again after any pause or handoff. Prefer a separate `git worktree` per concurrent lane when
+sessions run simultaneously.
+
 ## Resume Discipline
 
 Update `RESUME.md` after significant progress and before ending a session. It
