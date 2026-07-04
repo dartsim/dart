@@ -25,10 +25,6 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: github-pages-deploy
-  cancel-in-progress: true
-
 jobs:
   package:
     name: Package gh-pages site
@@ -141,6 +137,9 @@ jobs:
       || (github.event_name == 'workflow_dispatch' && inputs.deploy)
       )
     needs: package
+    concurrency:
+      group: github-pages-deploy
+      cancel-in-progress: true
     runs-on: [self-hosted, Linux, X64, dartsim, docker]
     environment:
       name: github-pages

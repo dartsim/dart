@@ -578,9 +578,10 @@ Performance Dashboard publisher completes successfully, it checks out the
 current branch tip, verifies the expected entry points, uploads the whole tree
 as a GitHub Pages artifact, and deploys it through `actions/deploy-pages`.
 The workflow also supports manual dispatch for exceptional historical-docs
-updates. It uses a single `github-pages-deploy` concurrency group with stale
-deploy cancellation, so rapid dashboard updates converge on the latest
-`gh-pages` tip instead of letting old deployments block publication.
+updates. Its deploy job uses a single `github-pages-deploy` concurrency group
+with stale deploy cancellation, so rapid dashboard updates converge on the
+latest `gh-pages` tip without letting failed publisher runs or dry-run manual
+dispatches cancel an active deployment.
 
 Repository Pages settings must use the GitHub Actions source for the deploy
 workflow to own production. If the source is still "Deploy from a branch",
