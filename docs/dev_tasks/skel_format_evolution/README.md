@@ -47,6 +47,10 @@
       resource diagnostics now have focused coverage. The writer test now uses a
       shared IO round-trip assertion helper for body, joint, DoF, inertia, and
       shape comparisons.
+      DART `PlaneShape` and `ConvexMeshShape` writer attempts now fail with
+      targeted diagnostics explaining the missing finite SDF plane size or
+      target URI for generated mesh resources instead of relying on a generic
+      unsupported-shape fallback.
       Parser-side SDF model selection and standard model/link/joint/aspect
       traversal now use libsdformat `sdf::Root`, `sdf::Model`, `sdf::Link`,
       `sdf::Joint`, `sdf::Visual`, and `sdf::Collision` DOM values rather than
@@ -197,7 +201,10 @@ SKEL-YAML direction just because the prototype once existed.
   `WriteOptions`
   visual/collision filtering, the empty mesh URI diagnostic, pre-SDF-1.11 mimic
   diagnostics, and unsupported coupler-style mimic diagnostics, plus targetless
-  relative/generated mesh resource diagnostics. The assertions are factored
+  relative/generated mesh resource diagnostics. Plane-shaped infinite DART
+  geometry and generated convex meshes now have targeted diagnostics for the
+  finite SDF plane-size and destination-URI policy gaps. The assertions are
+  factored
   through
   `tests/helpers/io_round_trip_helpers.hpp` so future writer formats can reuse
   the body, joint, DoF, inertia, and shape comparison helpers. Completion still

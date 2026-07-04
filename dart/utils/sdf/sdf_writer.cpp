@@ -39,11 +39,13 @@
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/capsule_shape.hpp>
 #include <dart/dynamics/cone_shape.hpp>
+#include <dart/dynamics/convex_mesh_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/joint.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/screw_joint.hpp>
@@ -528,6 +530,21 @@ GeometryResult makeGeometry(const dynamics::Shape& shape)
     sdfEllipsoid.SetRadii(toGzVector3(diameters * 0.5));
     geometry.SetType(sdf::GeometryType::ELLIPSOID);
     geometry.SetEllipsoidShape(sdfEllipsoid);
+  } else if (dynamic_cast<const dynamics::PlaneShape*>(&shape)) {
+    return GeometryResult::err(WriteError(
+        "Cannot write DART PlaneShape as SDF plane geometry because DART "
+        "planes do not carry the finite SDF plane size required for "
+        "read/write/read."));
+  } else if (
+      const auto* convexMesh
+      = dynamic_cast<const dynamics::ConvexMeshShape*>(&shape)) {
+    if (!convexMesh->hasValidMesh()) {
+      return GeometryResult::err(WriteError(
+          "Cannot write SDF convex mesh geometry without a valid mesh."));
+    }
+    return GeometryResult::err(WriteError(
+        "Cannot write DART ConvexMeshShape as SDF mesh geometry because the "
+        "writer has no target SDF URI for generated mesh resources."));
   } else if (
       const auto* mesh = dynamic_cast<const dynamics::MeshShape*>(&shape)) {
     const common::Uri& meshUri = mesh->getMeshUri2();

@@ -47,10 +47,11 @@ relative/generated mesh references, including relative or host-qualified file
 URI forms, now return explicit diagnostics until a future file/project writer
 defines a destination URI and resource copy/rewrite policy. It also checks
 `WriteOptions` visual/collision filtering, unsupported-shape diagnostics,
-missing mesh URI diagnostics, pre-SDF-1.11 mimic diagnostics, unsupported
-coupler-style mimic diagnostics, non-finite visual material diagnostics,
-invalid PBR material diagnostics, non-finite screw pitch diagnostics,
-unsupported ball-joint metadata, and
+missing mesh URI diagnostics, DART `PlaneShape` finite-size diagnostics,
+`ConvexMeshShape` generated-resource diagnostics, pre-SDF-1.11 mimic
+diagnostics, unsupported coupler-style mimic diagnostics, non-finite visual
+material diagnostics, invalid PBR material diagnostics, non-finite screw pitch
+diagnostics, unsupported ball-joint metadata, and
 non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
 5 is still open until broader SDF coverage plus the remaining accepted writer
 targets are implemented or durably deferred.
@@ -144,6 +145,14 @@ Additional validation for SDF 1.11 mimic metadata writer coverage:
 Additional validation for targetless relative/generated mesh URI diagnostics:
 
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
+Additional validation for targeted PlaneShape and ConvexMeshShape writer
+diagnostics:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run lint`
+- `pixi run build`
 
 Additional validation for continuous SDF joint read/write/read coverage:
 
@@ -327,7 +336,10 @@ Changelog decision:
   normalization entry. No additional separate entry is needed for removing SDF
   writer serialized-attribute reads because it is an internal implementation
   cleanup that keeps the existing conservative SDF writer behavior while using
-  typed sdformat DOM values to drive the same serialization patch.
+  typed sdformat DOM values to drive the same serialization patch. No
+  additional separate entry is needed for targeted PlaneShape and
+  ConvexMeshShape writer diagnostics because they harden the same conservative
+  SDF writer unsupported-resource contract before the implementation PR exists.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

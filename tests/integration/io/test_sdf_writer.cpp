@@ -43,11 +43,13 @@
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/capsule_shape.hpp>
 #include <dart/dynamics/cone_shape.hpp>
+#include <dart/dynamics/convex_mesh_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/mimic_dof_properties.hpp>
+#include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/pyramid_shape.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
@@ -1035,6 +1037,43 @@ TEST(SdfWriter, UnsupportedShapeReturnsError)
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("Unsupported shape type"), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, PlaneShapeReturnsExplicitUnsupportedError)
+{
+  auto skeleton = dynamics::Skeleton::create("plane_shape");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0),
+      "plane");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("finite SDF plane size"), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, ConvexMeshShapeReturnsGeneratedMeshError)
+{
+  auto skeleton = dynamics::Skeleton::create("convex_mesh_shape");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::ConvexMeshShape>(makeTriangleMesh()),
+      "convex_mesh");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("target SDF URI for generated mesh"),
+      std::string::npos);
 }
 
 //==============================================================================

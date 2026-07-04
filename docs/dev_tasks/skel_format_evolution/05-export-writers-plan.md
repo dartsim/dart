@@ -38,7 +38,9 @@ visual/collision filtering is covered by focused tests. Unsupported constructs,
 missing mesh URIs, pre-SDF-1.11 mimic output, coupler-style mimic enforcement,
 non-finite material colors, invalid PBR material factors, non-finite screw
 pitch, unsupported ball-joint metadata, and non-finite joint dynamics return
-`common::Result` errors instead of being silently dropped.
+`common::Result` errors instead of being silently dropped. DART `PlaneShape`
+and `ConvexMeshShape` now report targeted policy diagnostics for the missing
+finite SDF plane size or destination URI for generated mesh resources.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
