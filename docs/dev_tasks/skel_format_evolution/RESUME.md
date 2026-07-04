@@ -57,8 +57,8 @@ relative/generated mesh references, including relative or host-qualified file
 URI forms, now return explicit diagnostics until a future file/project writer
 defines a destination URI and resource copy/rewrite policy. It also checks
 `WriteOptions` visual/collision filtering, unsupported-shape diagnostics, empty
-SDF version diagnostics, missing mesh URI and non-finite mesh scale diagnostics,
-DART `PlaneShape` finite-size diagnostics, `HeightmapShape`
+or malformed SDF version diagnostics, missing mesh URI and non-finite mesh scale
+diagnostics, DART `PlaneShape` finite-size diagnostics, `HeightmapShape`
 source-URI/resource-policy diagnostics, `ConvexMeshShape` generated-resource
 diagnostics,
 DART-only/generated geometry diagnostics for `PyramidShape`, `ArrowShape`,
@@ -256,13 +256,34 @@ diagnostics:
 - `pixi run lint`
 - `pixi run build`
 
-Additional validation for empty SDF writer version diagnostics:
+Additional validation for SDF writer version diagnostics:
 
 - `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.EmptySdfVersionReturnsError'`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 - `git diff --check`
 - `pixi run lint`
 - `pixi run build`
+
+Additional validation for sdformat-backed malformed SDF writer version
+diagnostics:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.MalformedSdfVersionReturnsSdformatError:SdfWriter.EmptySdfVersionReturnsError'`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: `origin/main`
+- Scope evidence: focused diff in `dart/utils/sdf/sdf_writer.cpp`,
+  `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
+  and this SKEL evolution task folder
+- Decision: no entry required
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: No separate changelog entry is needed because this slice
+  hardens SDF writer version validation inside the existing unreleased
+  conservative SDF writer contract; the DART 7 IO and Parsing entry already
+  covers the writer and explicit unsupported diagnostics.
+- Follow-up: none
 
 Additional validation for multiple root FreeJoint tree SDF writer coverage:
 

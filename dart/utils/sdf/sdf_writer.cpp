@@ -85,6 +85,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <exception>
 #include <map>
 #include <memory>
 #include <optional>
@@ -212,6 +213,50 @@ WriteResult fail(std::string message)
 WriteResult ok()
 {
   return WriteResult::ok();
+}
+
+WriteResult validateSdfVersion(std::string_view version)
+{
+  if (version.empty()) {
+    return fail("SDF version must not be empty.");
+  }
+
+  try {
+    sdf::Root root;
+    root.SetVersion(std::string(version));
+
+    sdf::Model model;
+    model.SetName("version_probe");
+
+    sdf::Link link;
+    link.SetName("version_probe_link");
+    if (!model.AddLink(link)) {
+      return fail("sdformat failed to build SDF version validation model.");
+    }
+
+    root.SetModel(model);
+
+    const sdf::ElementPtr element = root.ToElement();
+    if (!element) {
+      return fail(
+          "sdformat failed to validate SDF version [" + std::string(version)
+          + "].");
+    }
+
+    sdf::Root reparsed;
+    const sdf::Errors errors = reparsed.LoadSdfString(element->ToString(""));
+    if (!errors.empty()) {
+      return fail(
+          "sdformat rejected SDF version [" + std::string(version)
+          + "]: " + errors.front().Message());
+    }
+  } catch (const std::exception& e) {
+    return fail(
+        "sdformat rejected SDF version [" + std::string(version)
+        + "]: " + e.what());
+  }
+
+  return ok();
 }
 
 bool isImplicitRootJoint(const dynamics::Joint& joint)
@@ -1404,9 +1449,10 @@ bool requiresWorldGravity(const dynamics::Skeleton& skeleton)
 common::Result<std::string, common::Error> tryWriteSkeletonToString(
     const dynamics::Skeleton& skeleton, const WriteOptions& options)
 {
-  if (options.version.empty()) {
-    return StringResult::err(WriteError("SDF version must not be empty."));
+  if (auto result = validateSdfVersion(options.version); result.isErr()) {
+    return StringResult::err(result.error());
   }
+
   const Eigen::Vector3d& gravity = skeleton.getGravity();
   if (!isFinite(gravity)) {
     return StringResult::err(

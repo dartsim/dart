@@ -736,6 +736,23 @@ TEST(SdfWriter, EmptySdfVersionReturnsError)
 }
 
 //==============================================================================
+TEST(SdfWriter, MalformedSdfVersionReturnsSdformatError)
+{
+  const auto skeleton = makeRoundTripSkeleton();
+
+  utils::SdfParser::WriteOptions options;
+  options.version = "not-a-version";
+  const auto result
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
+
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find(
+          "sdformat rejected SDF version [not-a-version]"),
+      std::string::npos);
+}
+
+//==============================================================================
 TEST(SdfWriter, PreservesAbsoluteNonFileMeshUris)
 {
   auto retriever = std::make_shared<MapResourceRetriever>();

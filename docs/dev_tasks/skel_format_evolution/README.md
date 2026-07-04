@@ -56,8 +56,8 @@
       through a custom retriever, and URI-backed mesh material variants now have
       writer read/write/read coverage through preserved source mesh URIs. Writer
       options for excluding visuals or
-      collisions, empty SDF version diagnostics, missing mesh URI and non-finite
-      mesh scale diagnostics,
+      collisions, empty or malformed SDF version diagnostics, missing mesh URI
+      and non-finite mesh scale diagnostics,
       pre-SDF-1.11 mimic diagnostics, unsupported coupler-style mimic
       diagnostics, and relative/generated mesh resource diagnostics now have
       focused coverage. NaN joint position limits now fail with explicit
@@ -262,9 +262,9 @@ SKEL-YAML direction just because the prototype once existed.
   variants through preserved source mesh URIs. It also covers sdformat-owned
   ambiguous `.xml` SDF dispatch for root-model and world-contained models,
   `WriteOptions`
-  visual/collision filtering, empty SDF version diagnostics, the empty mesh URI
-  and non-finite mesh scale diagnostics, pre-SDF-1.11 mimic diagnostics, and
-  unsupported coupler-style mimic diagnostics, plus targetless
+  visual/collision filtering, empty or malformed SDF version diagnostics, the
+  empty mesh URI and non-finite mesh scale diagnostics, pre-SDF-1.11 mimic
+  diagnostics, and unsupported coupler-style mimic diagnostics, plus targetless
   relative/generated mesh resource diagnostics. Plane-shaped infinite DART
   geometry, DART heightmaps without source heightmap URIs, and generated convex
   meshes now have targeted diagnostics for the finite SDF plane-size and
