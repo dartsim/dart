@@ -384,7 +384,9 @@ concurrency:
         && !startsWith(github.ref, 'refs/heads/release-') }}
 
 # For workflows with matrix jobs that serialize writes to fixed branches
-# (e.g., update_lockfiles), keep a stable group and request the full queue.
+# (e.g., update_lockfiles) or jobs that use a fixed external resource
+# (e.g., the Docker-backed FreeBSD VM container), keep a stable group and
+# request the full queue.
 concurrency:
   group: ${{ github.workflow }}-${{ matrix.base }}
   queue: max
