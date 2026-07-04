@@ -43,6 +43,9 @@
       resource diagnostics now have focused coverage. The writer test now uses a
       shared IO round-trip assertion helper for body, joint, DoF, inertia, and
       shape comparisons.
+      Parser-side SDF visual/collision/material reads now use libsdformat DOM
+      values for standard names, local poses, geometry, and diffuse colors
+      rather than raw XML-level parsing.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor
       save-load belongs to the scene/project layer. Broader SDF coverage, URDF

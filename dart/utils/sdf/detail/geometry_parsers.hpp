@@ -39,10 +39,17 @@
 
 #include <dart/common/resource_retriever.hpp>
 
+#include <sdf/Geometry.hh>
+
 namespace dart::utils::SdfParser::detail {
 
 DART_UTILS_API dynamics::ShapePtr readGeometryShape(
     const ElementPtr& geometryElement,
+    const common::Uri& baseUri,
+    const common::ResourceRetrieverPtr& retriever);
+
+DART_UTILS_API dynamics::ShapePtr readGeometryShape(
+    const sdf::Geometry& geometry,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 

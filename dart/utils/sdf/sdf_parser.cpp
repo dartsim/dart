@@ -61,8 +61,13 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <gz/math/Color.hh>
+#include <sdf/Collision.hh>
+#include <sdf/Geometry.hh>
 #include <sdf/Link.hh>
+#include <sdf/Material.hh>
 #include <sdf/Model.hh>
+#include <sdf/Visual.hh>
 #include <sdf/sdf.hh>
 
 #include <algorithm>
@@ -118,7 +123,6 @@ using detail::getValueUInt;
 using detail::getValueVector2d;
 using detail::getValueVector3d;
 using detail::getValueVector3i;
-using detail::getValueVectorXd;
 using detail::hasAttribute;
 using detail::hasElement;
 using detail::readGeometryShape;
@@ -126,6 +130,11 @@ using detail::readGeometryShape;
 Eigen::Vector3d toEigenVector3(const gz::math::Vector3d& vector)
 {
   return Eigen::Vector3d(vector.X(), vector.Y(), vector.Z());
+}
+
+Eigen::Vector4d toEigenColor(const gz::math::Color& color)
+{
+  return Eigen::Vector4d(color[0], color[1], color[2], color[3]);
 }
 
 Eigen::Isometry3d toEigenIsometry3(const gz::math::Pose3d& pose)
@@ -262,29 +271,30 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
     const ElementPtr& softBodyNodeElement);
 
 dynamics::ShapePtr readShape(
-    const ElementPtr& _shapelement,
+    const sdf::Geometry* geometry,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& _retriever);
 
 dynamics::ShapeNode* readShapeNode(
     dynamics::BodyNode* bodyNode,
-    const ElementPtr& shapeNodeEle,
+    const sdf::Geometry* geometry,
+    const gz::math::Pose3d& rawPose,
     std::string_view shapeNodeName,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
 void readMaterial(
-    const ElementPtr& materialEle, dynamics::ShapeNode* shapeNode);
+    const sdf::Material& material, dynamics::ShapeNode* shapeNode);
 
 void readVisualizationShapeNode(
     dynamics::BodyNode* bodyNode,
-    const ElementPtr& vizShapeNodeEle,
+    const sdf::Visual& visual,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
 void readCollisionShapeNode(
     dynamics::BodyNode* bodyNode,
-    const ElementPtr& collShapeNodeEle,
+    const sdf::Collision& collision,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
@@ -1203,56 +1213,47 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
 
 //==============================================================================
 dynamics::ShapePtr readShape(
-    const ElementPtr& _shapelement,
+    const sdf::Geometry* geometry,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& _retriever)
 {
-  if (!hasElement(_shapelement, "geometry")) {
+  if (!geometry) {
     DART_WARN("Shape node is missing required <geometry> element.");
     return nullptr;
   }
 
-  const ElementPtr& geometryElement = getElement(_shapelement, "geometry");
-  return readGeometryShape(geometryElement, baseUri, _retriever);
+  return readGeometryShape(*geometry, baseUri, _retriever);
 }
 
 //==============================================================================
 dynamics::ShapeNode* readShapeNode(
     dynamics::BodyNode* bodyNode,
-    const ElementPtr& shapeNodeEle,
+    const sdf::Geometry* geometry,
+    const gz::math::Pose3d& rawPose,
     std::string_view shapeNodeName,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
   DART_ASSERT(bodyNode);
 
-  auto shape = readShape(shapeNodeEle, baseUri, retriever);
+  auto shape = readShape(geometry, baseUri, retriever);
   auto shapeNode = bodyNode->createShapeNode(shape, shapeNodeName);
 
   // Transformation
-  if (hasElement(shapeNodeEle, "pose")) {
-    const Eigen::Isometry3d W
-        = getValueIsometry3dWithExtrinsicRotation(shapeNodeEle, "pose");
-    shapeNode->setRelativeTransform(W);
-  }
+  shapeNode->setRelativeTransform(toEigenIsometry3(rawPose));
 
   return shapeNode;
 }
 
 //==============================================================================
-void readMaterial(const ElementPtr& materialEle, dynamics::ShapeNode* shapeNode)
+void readMaterial(const sdf::Material& material, dynamics::ShapeNode* shapeNode)
 {
   auto visualAspect = shapeNode->getVisualAspect();
-  if (hasElement(materialEle, "diffuse")) {
-    Eigen::VectorXd color = getValueVectorXd(materialEle, "diffuse");
-    if (color.size() == 3) {
-      Eigen::Vector3d color3d = color;
-      visualAspect->setColor(color3d);
-    } else if (color.size() == 4) {
-      Eigen::Vector4d color4d = color;
-      visualAspect->setColor(color4d);
-    } else {
-      DART_ERROR("Unsupported color vector size: {}", color.size());
+  if (const auto materialElement = material.Element()) {
+    const auto [diffuse, hasDiffuse]
+        = materialElement->Get<gz::math::Color>("diffuse", material.Diffuse());
+    if (hasDiffuse) {
+      visualAspect->setColor(toEigenColor(diffuse));
     }
   }
 }
@@ -1260,14 +1261,13 @@ void readMaterial(const ElementPtr& materialEle, dynamics::ShapeNode* shapeNode)
 //==============================================================================
 void readVisualizationShapeNode(
     dynamics::BodyNode* bodyNode,
-    const ElementPtr& vizShapeNodeEle,
+    const sdf::Visual& visual,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
-  std::string visualName = "visual shape";
-  if (hasAttribute(vizShapeNodeEle, "name")) {
-    visualName = getAttributeString(vizShapeNodeEle, "name");
-  } else {
+  std::string visualName = visual.Name();
+  if (visualName.empty()) {
+    visualName = "visual shape";
     DART_WARN(
         "Missing required attribute [name] in <visual> element of <link name = "
         "{}>.",
@@ -1276,7 +1276,8 @@ void readVisualizationShapeNode(
 
   dynamics::ShapeNode* newShapeNode = readShapeNode(
       bodyNode,
-      vizShapeNodeEle,
+      visual.Geom(),
+      visual.RawPose(),
       bodyNode->getName() + " - " + visualName,
       baseUri,
       retriever);
@@ -1284,23 +1285,21 @@ void readVisualizationShapeNode(
   newShapeNode->createVisualAspect();
 
   // Material
-  if (hasElement(vizShapeNodeEle, "material")) {
-    const ElementPtr& materialEle = getElement(vizShapeNodeEle, "material");
-    readMaterial(materialEle, newShapeNode);
+  if (const auto* material = visual.Material()) {
+    readMaterial(*material, newShapeNode);
   }
 }
 
 //==============================================================================
 void readCollisionShapeNode(
     dynamics::BodyNode* bodyNode,
-    const ElementPtr& collShapeNodeEle,
+    const sdf::Collision& collision,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
-  std::string collName = "collision shape";
-  if (hasAttribute(collShapeNodeEle, "name")) {
-    collName = getAttributeString(collShapeNodeEle, "name");
-  } else {
+  std::string collName = collision.Name();
+  if (collName.empty()) {
+    collName = "collision shape";
     DART_WARN(
         "Missing required attribute [name] in <collision> element of <link "
         "name = {}>.",
@@ -1309,7 +1308,8 @@ void readCollisionShapeNode(
 
   dynamics::ShapeNode* newShapeNode = readShapeNode(
       bodyNode,
-      collShapeNodeEle,
+      collision.Geom(),
+      collision.RawPose(),
       bodyNode->getName() + " - " + collName,
       baseUri,
       retriever);
@@ -1325,22 +1325,39 @@ void readAspects(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
-  ElementEnumerator xmlBodies(skeletonElement, "link");
-  while (xmlBodies.next()) {
-    auto bodyElement = xmlBodies.get();
-    auto bodyNodeName = getAttributeString(bodyElement, "name");
-    auto bodyNode = skeleton->getBodyNode(bodyNodeName);
+  sdf::Model model;
+  (void)model.Load(skeletonElement);
+  for (uint64_t linkIndex = 0; linkIndex < model.LinkCount(); ++linkIndex) {
+    const sdf::Link* link = model.LinkByIndex(linkIndex);
+    if (!link) {
+      continue;
+    }
+
+    auto bodyNode = skeleton->getBodyNode(link->Name());
+    if (!bodyNode) {
+      DART_WARN(
+          "[SdfParser] Skipping visual/collision aspects for unknown Link "
+          "[{}].",
+          link->Name());
+      continue;
+    }
 
     // visualization_shape
-    ElementEnumerator vizShapes(bodyElement, "visual");
-    while (vizShapes.next()) {
-      readVisualizationShapeNode(bodyNode, vizShapes.get(), baseUri, retriever);
+    for (uint64_t visualIndex = 0; visualIndex < link->VisualCount();
+         ++visualIndex) {
+      const sdf::Visual* visual = link->VisualByIndex(visualIndex);
+      if (visual) {
+        readVisualizationShapeNode(bodyNode, *visual, baseUri, retriever);
+      }
     }
 
     // collision_shape
-    ElementEnumerator collShapes(bodyElement, "collision");
-    while (collShapes.next()) {
-      readCollisionShapeNode(bodyNode, collShapes.get(), baseUri, retriever);
+    for (uint64_t collisionIndex = 0; collisionIndex < link->CollisionCount();
+         ++collisionIndex) {
+      const sdf::Collision* collision = link->CollisionByIndex(collisionIndex);
+      if (collision) {
+        readCollisionShapeNode(bodyNode, *collision, baseUri, retriever);
+      }
     }
   }
 }

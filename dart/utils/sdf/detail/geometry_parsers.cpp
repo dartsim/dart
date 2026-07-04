@@ -154,6 +154,14 @@ dynamics::ShapePtr readGeometryShape(
 
   sdf::Geometry geometry;
   (void)geometry.Load(geometryElement);
+  return readGeometryShape(geometry, baseUri, retriever);
+}
+
+dynamics::ShapePtr readGeometryShape(
+    const sdf::Geometry& geometry,
+    const common::Uri& baseUri,
+    const common::ResourceRetrieverPtr& retriever)
+{
   switch (geometry.Type()) {
     case sdf::GeometryType::SPHERE:
       return readSphereShape(geometry);

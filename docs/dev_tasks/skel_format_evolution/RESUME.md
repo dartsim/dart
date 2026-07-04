@@ -62,6 +62,11 @@ The model/link body-node reader also now uses libsdformat `sdf::Model` and
 plus inertial mass, center of mass, and inertia tensor values; XML presence
 checks remain only for existing DART diagnostics where sdformat does not expose
 whether a defaulted field was explicitly authored.
+Standard visual and collision shape nodes now traverse libsdformat `sdf::Model`,
+`sdf::Link`, `sdf::Visual`, `sdf::Collision`, `sdf::Geometry`, and
+`sdf::Material` DOM values for shape names, local poses, geometry, and diffuse
+material colors; DART-specific soft body extensions remain on the legacy helper
+path because they are not standard sdformat DOM fields.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -123,6 +128,12 @@ Additional validation for model/link/inertial SDF DOM reads:
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
+Additional validation for visual/collision/material SDF DOM reads:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
 Changelog decision:
 
 - Mode: draft
@@ -148,7 +159,10 @@ Changelog decision:
   diagnostics because it hardens the same SDF writer resource contract before
   the implementation PR exists. No additional entry is needed for continuous SDF
   joint coverage because it broadens the same conservative SDF writer capability
-  before the implementation PR exists.
+  before the implementation PR exists. No additional entry is needed for
+  visual/collision/material SDF DOM reads because they harden the same
+  conservative SDF writer/parser round-trip surface before the implementation PR
+  exists.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

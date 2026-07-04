@@ -521,7 +521,7 @@ TEST(SdfParser, InertialAndMaterialVariantsFromXml)
       <visual name="color_visual">
         <pose>1 2 3 0 0 0</pose>
         <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
-        <material><diffuse>0.2 0.3 0.4</diffuse></material>
+        <material><diffuse>0.2 0.3 0.4 0.7</diffuse></material>
       </visual>
       <collision name="offset_collision">
         <pose>0 0 0.5 0 0 0</pose>
@@ -558,8 +558,12 @@ TEST(SdfParser, InertialAndMaterialVariantsFromXml)
   ASSERT_NE(visual, nullptr);
   EXPECT_TRUE(visual->getRelativeTransform().translation().isApprox(
       Eigen::Vector3d(1.0, 2.0, 3.0)));
-  EXPECT_TRUE(visual->getVisualAspect()->getRGBA().head<3>().isApprox(
-      Eigen::Vector3d(0.2, 0.3, 0.4)));
+  auto visualBox
+      = std::dynamic_pointer_cast<dynamics::BoxShape>(visual->getShape());
+  ASSERT_NE(visualBox, nullptr);
+  EXPECT_TRUE(visualBox->getSize().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+  EXPECT_TRUE(visual->getVisualAspect()->getRGBA().isApprox(
+      Eigen::Vector4d(0.2, 0.3, 0.4, 0.7), 1e-6));
 
   dynamics::ShapeNode* collision = nullptr;
   body->eachShapeNodeWith<dynamics::CollisionAspect>([&](auto* shapeNode) {
@@ -570,7 +574,10 @@ TEST(SdfParser, InertialAndMaterialVariantsFromXml)
   ASSERT_NE(collision, nullptr);
   EXPECT_TRUE(collision->getRelativeTransform().translation().isApprox(
       Eigen::Vector3d(0.0, 0.0, 0.5)));
-  EXPECT_TRUE(collision->getShape()->is<dynamics::SphereShape>());
+  auto collisionSphere
+      = std::dynamic_pointer_cast<dynamics::SphereShape>(collision->getShape());
+  ASSERT_NE(collisionSphere, nullptr);
+  EXPECT_DOUBLE_EQ(collisionSphere->getRadius(), 0.25);
 
   auto* tinyBody = skeleton->getBodyNode("tiny_gravity_off");
   ASSERT_NE(tinyBody, nullptr);
