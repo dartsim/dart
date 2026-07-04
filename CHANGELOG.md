@@ -113,8 +113,12 @@ compatibility remains on the active DART 6 LTS branch._
 - Added runtime replay recording and restore for `World`, enabling deterministic
   frame scrubbing without re-running physics.
 - Added opt-in analytic differentiable simulation, including contact-aware step
-  derivatives, vector-Jacobian products, dartpy/torch bridges, and differentiable
-  rollout helpers.
+  derivatives, vector-Jacobian products, dartpy/torch bridges, differentiable
+  rollout helpers, and torch-free worked trajectory-optimization and
+  system-identification examples, with binary save/load preserving registered
+  differentiable parameters, CI guarding diff-enabled builds, and torch imports
+  remaining safe with legacy dartpy module shims.
+  ([#3244](https://github.com/dartsim/dart/pull/3244))
 - Expanded rigid and articulated simulation with body deactivation, dynamic joint
   constraints, batch semantics, dense-index model identity, and allocation-free
   warmed multibody steps. ([#2939](https://github.com/dartsim/dart/pull/2939),
@@ -208,8 +212,8 @@ compatibility remains on the active DART 6 LTS branch._
 #### Python Bindings
 
 - Expanded dartpy bindings, documentation, autodoc stub handling, and examples
-  around the nanobind surface, while keeping legacy compatibility warnings where
-  migration still needs a bridge.
+  around the nanobind surface, while keeping opt-in legacy compatibility warnings
+  where migration still needs a bridge.
 - Reworked dartpy packaging around `pyproject.toml`, Pixi wheel builds, Windows
   wheels, Python 3.14, and stricter wheel artifact checks.
   ([#2043](https://github.com/dartsim/dart/pull/2043),

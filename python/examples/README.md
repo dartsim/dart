@@ -11,6 +11,9 @@ C++ `dart-demos` (PLAN-102) is now the smaller World-only C++ companion.
   scene modules; this is where new example content lands. High-value DART 6
   concepts that still need World-native ports appear as lightweight
   `Planned World Ports` placeholders.
+- `diff_system_identification.py` and `diff_trajectory_optimization.py` —
+  headless PLAN-110 differentiable-simulation examples. Run them directly from
+  the repo root; each exits 0 with a clear message when `DART_BUILD_DIFF=OFF`.
 - A notebook gallery for Colab (PLAN-012) will live in `python/tutorials/` and
   import the scene modules from `demos/` (single source).
 

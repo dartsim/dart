@@ -1668,6 +1668,46 @@ ContactGradientMode decodeContactGradientMode(std::uint8_t value)
 }
 
 //==============================================================================
+std::uint8_t encodeDifferentiablePhysicalParameter(PhysicalParameter parameter)
+{
+  switch (parameter) {
+    case PhysicalParameter::MASS:
+      return 0u;
+    case PhysicalParameter::INERTIA:
+      return 1u;
+    case PhysicalParameter::FRICTION:
+      return 2u;
+    case PhysicalParameter::CENTER_OF_MASS:
+      DART_SIMULATION_THROW_T(
+          NotImplementedException,
+          "PhysicalParameter::CENTER_OF_MASS is not a supported "
+          "differentiable parameter");
+  }
+
+  DART_SIMULATION_THROW_T( // LCOV_EXCL_LINE
+      InvalidArgumentException, "Differentiable physical parameter is invalid");
+  return 0u;
+}
+
+//==============================================================================
+PhysicalParameter decodeDifferentiablePhysicalParameter(std::uint8_t value)
+{
+  switch (value) {
+    case 0u:
+      return PhysicalParameter::MASS;
+    case 1u:
+      return PhysicalParameter::INERTIA;
+    case 2u:
+      return PhysicalParameter::FRICTION;
+  }
+
+  DART_SIMULATION_THROW_T(
+      InvalidArgumentException,
+      "Serialized World differentiable physical-parameter value is invalid");
+  return PhysicalParameter::MASS;
+}
+
+//==============================================================================
 std::uint8_t encodeComputeAcceleratorPolicy(ComputeAcceleratorPolicy policy)
 {
   switch (policy) {
@@ -8030,6 +8070,30 @@ void World::saveBinary(std::ostream& output) const
 
   io::writePOD(
       output, encodeComputeAcceleratorPolicy(m_computeAcceleratorPolicy));
+
+  using DifferentiableParameter = detail::WorldStorage::DifferentiableParameter;
+  std::vector<
+      DifferentiableParameter,
+      detail::WorldStorage::DifferentiableParameterAllocator>
+      savedDifferentiableParameters{
+          m_storage->differentiableParameters.get_allocator()};
+  savedDifferentiableParameters.reserve(
+      m_storage->differentiableParameters.size());
+  for (const auto& parameter : m_storage->differentiableParameters) {
+    const auto entity = parameter.first;
+    DART_SIMULATION_THROW_T_IF(
+        !entityMap.contains(entity),
+        InvalidOperationException,
+        "World::saveBinary(): differentiable parameter references an entity "
+        "that is not serialized");
+    savedDifferentiableParameters.push_back(parameter);
+  }
+
+  io::writePOD(output, savedDifferentiableParameters.size());
+  for (const auto& [entity, parameter] : savedDifferentiableParameters) {
+    io::writePOD(output, static_cast<std::uint32_t>(entityMap.at(entity)));
+    io::writePOD(output, encodeDifferentiablePhysicalParameter(parameter));
+  }
 }
 
 //==============================================================================
@@ -8172,6 +8236,32 @@ void World::loadBinary(std::istream& input)
       io::readPOD(input, computeAcceleratorPolicy);
       m_computeAcceleratorPolicy
           = decodeComputeAcceleratorPolicy(computeAcceleratorPolicy);
+    }
+
+    if (formatVersion >= 27 && input.peek() != std::char_traits<char>::eof()) {
+      std::size_t differentiableParameterCount = 0;
+      io::readPOD(input, differentiableParameterCount);
+      for (std::size_t i = 0; i < differentiableParameterCount; ++i) {
+        std::uint32_t serializedEntity = 0;
+        std::uint8_t serializedParameter = 0u;
+        io::readPOD(input, serializedEntity);
+        io::readPOD(input, serializedParameter);
+        const auto serializedEntityKey
+            = static_cast<entt::entity>(serializedEntity);
+        DART_SIMULATION_THROW_T_IF(
+            !entityMap.contains(serializedEntityKey),
+            InvalidArgumentException,
+            "Serialized World differentiable parameter references an unknown "
+            "entity");
+        const auto entity = entityMap.at(serializedEntityKey);
+        DART_SIMULATION_THROW_T_IF(
+            !m_storage->registry.all_of<comps::RigidBodyTag>(entity),
+            InvalidArgumentException,
+            "Serialized World differentiable parameter references an entity "
+            "that is not a rigid body");
+        m_storage->differentiableParameters.emplace_back(
+            entity, decodeDifferentiablePhysicalParameter(serializedParameter));
+      }
     }
   }
 
