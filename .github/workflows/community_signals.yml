@@ -26,7 +26,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: community-signals-dashboard
+  group: community-signals-dashboard-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -50,22 +50,34 @@ jobs:
           set -euo pipefail
 
           git fetch --depth=1 origin gh-pages:refs/remotes/origin/gh-pages
-          git worktree add gh-pages-worktree origin/gh-pages
+          git worktree prune
 
-          rm -rf gh-pages-worktree/community-signals
-          mkdir -p gh-pages-worktree/community-signals
-          cp -R build/community-signals/. gh-pages-worktree/community-signals/
-          touch gh-pages-worktree/.nojekyll
+          worktree_parent="$(mktemp -d "${RUNNER_TEMP:-/tmp}/community-signals-gh-pages.XXXXXX")"
+          worktree_dir="${worktree_parent}/worktree"
 
-          git -C gh-pages-worktree config user.name "github-actions[bot]"
-          git -C gh-pages-worktree config user.email \
+          cleanup() {
+            git worktree remove --force "${worktree_dir}" >/dev/null 2>&1 || true
+            rm -rf "${worktree_parent}"
+            git worktree prune
+          }
+          trap cleanup EXIT
+
+          git worktree add "${worktree_dir}" origin/gh-pages
+
+          rm -rf "${worktree_dir}/community-signals"
+          mkdir -p "${worktree_dir}/community-signals"
+          cp -R build/community-signals/. "${worktree_dir}/community-signals/"
+          touch "${worktree_dir}/.nojekyll"
+
+          git -C "${worktree_dir}" config user.name "github-actions[bot]"
+          git -C "${worktree_dir}" config user.email \
             "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C gh-pages-worktree add .nojekyll community-signals
+          git -C "${worktree_dir}" add .nojekyll community-signals
 
-          if git -C gh-pages-worktree diff --cached --quiet; then
+          if git -C "${worktree_dir}" diff --cached --quiet; then
             echo "Community signals dashboard is unchanged."
             exit 0
           fi
 
-          git -C gh-pages-worktree commit -m "Update community signals dashboard"
-          git -C gh-pages-worktree push origin HEAD:gh-pages
+          git -C "${worktree_dir}" commit -m "Update community signals dashboard"
+          git -C "${worktree_dir}" push origin HEAD:gh-pages
