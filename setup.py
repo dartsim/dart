@@ -7,6 +7,7 @@
 import distutils.log
 import os
 import re
+import shlex
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -83,7 +84,7 @@ class CMakeBuild(build_ext):
         # Adding CMake arguments set as environment variable
         # (needed e.g. to build for ARM OSx on conda-forge)
         if "CMAKE_ARGS" in os.environ:
-            cmake_args += [item for item in os.environ["CMAKE_ARGS"].split(" ") if item]
+            cmake_args += shlex.split(os.environ["CMAKE_ARGS"])
 
         # In this example, we pass in the version to C++. You might not need to.
         # type: ignore[attr-defined]
