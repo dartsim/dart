@@ -1024,6 +1024,16 @@ TEST(UrdfWriter, IncludeOptionsControlVisualsAndCollisions)
 }
 
 //==============================================================================
+TEST(UrdfWriter, EmptySkeletonReturnsError)
+{
+  const auto skeleton = dynamics::Skeleton::create("empty");
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "empty Skeleton");
+}
+
+//==============================================================================
 TEST(UrdfWriter, MultipleRootTreesReturnError)
 {
   auto skeleton = dynamics::Skeleton::create("two_roots");

@@ -155,12 +155,13 @@ URDF has no parent-joint element for the root link, so root joint name/type are
 not serialized and are supplied by the parser default when the written text is
 read back.
 `INTEGRATION_io_UrdfWriter` validates a write/read/read round-trip for that
-subset and covers explicit diagnostics for multiple root trees, unsupported
-root joint families, non-identity root placement, unsupported child joint
-families, arbitrary planar axes, non-uniform multi-DoF limit/dynamics metadata,
-non-identity child joint frames, unbounded finite-requiring URDF limits,
-missing mimic references, coupler mimic offsets, missing mesh URIs, relative or
-host-qualified file mesh URIs, and non-finite mesh scales.
+subset and covers explicit diagnostics for empty skeletons, multiple root
+trees, unsupported root joint families, non-identity root placement,
+unsupported child joint families, arbitrary planar axes, non-uniform multi-DoF
+limit/dynamics metadata, non-identity child joint frames,
+unbounded finite-requiring URDF limits, missing mimic references, coupler mimic
+offsets, missing mesh URIs, relative or host-qualified file mesh URIs, and
+non-finite mesh scales.
 Additional coverage proves unbounded revolute DART joints write as URDF
 `continuous` joints and preserve passive dynamics metadata, and that visual and
 collision `package://` mesh URIs serialize and reparse through `UrdfParser`

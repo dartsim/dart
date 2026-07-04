@@ -1179,6 +1179,11 @@ common::Result<std::string, common::Error> UrdfParser::tryWriteSkeletonToString(
 common::Result<std::string, common::Error> UrdfParser::tryWriteSkeletonToString(
     const dynamics::Skeleton& skeleton, const WriteOptions& options)
 {
+  if (skeleton.getNumBodyNodes() == 0) {
+    return StringResult::err(
+        WriteError("Cannot write URDF for an empty Skeleton."));
+  }
+
   if (skeleton.getNumTrees() != 1) {
     return StringResult::err(WriteError(
         "Cannot write URDF for Skeleton [" + skeleton.getName()
@@ -1186,11 +1191,6 @@ common::Result<std::string, common::Error> UrdfParser::tryWriteSkeletonToString(
   }
 
   const auto* root = skeleton.getRootBodyNode();
-  if (!root) {
-    return StringResult::err(
-        WriteError("Cannot write URDF for an empty Skeleton."));
-  }
-
   if (auto result = validateRootJoint(*root); result.isErr()) {
     return StringResult::err(result.error());
   }

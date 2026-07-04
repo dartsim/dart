@@ -153,11 +153,11 @@
       root parent-joint metadata, so root joint name/type are parser-default
       choices on reparse rather than writer output.
       `INTEGRATION_io_UrdfWriter`
-      validates a write/read/read subset and diagnostics for multiple root
-      trees, unsupported root joint families, non-identity root placement,
-      unsupported child joint families, arbitrary planar axes, non-uniform
-      multi-DoF limit/dynamics metadata, non-identity child joint frames,
-      unbounded finite-requiring URDF limits, missing mimic references,
+      validates a write/read/read subset and diagnostics for empty skeletons,
+      multiple root trees, unsupported root joint families, non-identity root
+      placement, unsupported child joint families, arbitrary planar axes,
+      non-uniform multi-DoF limit/dynamics metadata, non-identity child joint
+      frames, unbounded finite-requiring URDF limits, missing mimic references,
       coupler mimic offsets, plus missing mesh URIs, relative or host-qualified
       file mesh URIs, and non-finite mesh scales. It also covers continuous
       revolute joint

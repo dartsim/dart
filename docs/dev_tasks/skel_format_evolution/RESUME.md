@@ -1408,6 +1408,40 @@ Changelog decision:
 - Follow-up: add the implementation PR link after a PR exists and maintainer /
   user approval allows the PR update or follow-up push.
 
+Additional validation for empty URDF writer input diagnostics:
+
+- Control: direct filtered `INTEGRATION_io_UrdfWriter` run with the new
+  `UrdfWriter.EmptySkeletonReturnsError` expectation failed before the writer
+  fix because an empty skeleton returned the generic multiple-root diagnostic:
+  `Cannot write URDF for Skeleton [empty] with multiple root trees.`
+- Intermediate guard-order candidate failed because `Skeleton::getRootBodyNode`
+  throws on empty skeletons before returning a nullable pointer.
+- Focused candidate passed, proving empty skeletons now return the intended
+  structured writer error while multiple-root skeletons keep their existing
+  diagnostic:
+  `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter="UrdfWriter.EmptySkeletonReturnsError:UrdfWriter.MultipleRootTreesReturnError"'`
+- Full writer target passed:
+  `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (37 tests)
+- SDF boundary check passed:
+  `pixi run check-sdf-sdformat-boundary`
+- Local formatting gate passed:
+  `pixi run lint`
+- Build gate passed:
+  `pixi run build`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `dart/utils/urdf/urdf_writer.cpp`,
+  `tests/integration/io/test_urdf_writer.cpp`, and this SKEL evolution task
+  folder.
+- Decision: no additional changelog entry. The existing unreleased DART 7 URDF
+  writer bullet already covers unsupported/lossy construct diagnostics; this
+  slice makes the empty-input structured diagnostic reachable and adds focused
+  regression coverage without adding a new public API.
+- PR-body note: record as URDF writer diagnostic hardening if a PR is opened.
+
 ## Previous Resume Checkpoint (2026-07-03)
 
 Phase 2 is implemented on `feature/remove-skel-dart7-phase2` and awaiting PR
