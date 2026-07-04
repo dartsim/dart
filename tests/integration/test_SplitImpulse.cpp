@@ -447,9 +447,10 @@ TEST(Issue201, CeilingContactDoesNotClampFreeRootVelocity)
     dynamics->setFrictionCoeff(0.0);
     dynamics->setRestitutionCoeff(0.0);
     Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-    // Ceiling underside at z = 1.0.
+    // Ceiling underside at z = 1.0, with the support body origin below the
+    // free root so the relative-height guard alone cannot reject it.
     tf.translation().z() = 1.0 + kFloorHeight / 2.0;
-    pair.first->setTransformFromParentBodyNode(tf);
+    shapeNode->setRelativeTransform(tf);
   }
   ceiling->setMobile(false);
   world->addSkeleton(ceiling);

@@ -209,7 +209,7 @@ std::vector<char> findShallowSupportedFreeRoots(
     if (!normal.allFinite() || normalNorm <= 0.0)
       return;
 
-    const double verticalComponent = std::abs(normal.dot(up)) / normalNorm;
+    const double verticalComponent = normal.dot(up) / normalNorm;
     if (verticalComponent < kSupportNormalMinVerticalComponent)
       return;
 
@@ -236,7 +236,7 @@ std::vector<char> findShallowSupportedFreeRoots(
     markIfSupportedRoot(
         bodyNode1, bodyNode2, contact.normal, contact.penetrationDepth);
     markIfSupportedRoot(
-        bodyNode2, bodyNode1, contact.normal, contact.penetrationDepth);
+        bodyNode2, bodyNode1, -contact.normal, contact.penetrationDepth);
   }
 
   return supported;
