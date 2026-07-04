@@ -94,7 +94,9 @@ jobs:
             UNIT_simd_batch_soa \
             UNIT_simd_dynamic \
             UNIT_simd_geometry \
-            UNIT_simd_math'
+            UNIT_simd_math \
+            UNIT_simd_public_header_dynamic_vector \
+            UNIT_simd_public_header_math'
 
       - name: Run SIMD tests
         run: |

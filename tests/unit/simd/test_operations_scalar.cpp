@@ -35,9 +35,11 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <limits>
 #include <type_traits>
 
 #include <cmath>
+#include <cstdint>
 
 namespace dart::simd {
 
@@ -423,6 +425,14 @@ TEST(HprodSpecificValues, WithZero)
   alignas(64) float data[4] = {2.0f, 0.0f, 5.0f, 7.0f};
   auto v = Vec<float, 4>::load(data);
   EXPECT_FLOAT_EQ(hprod(v), 0.0f);
+}
+
+TEST(OperationsScalarTest, ShiftLeftUsesUnsignedSignedMask)
+{
+  const auto signMask = Vec<std::int32_t, 1>::broadcast(-1);
+  const auto result = shiftLeft<31>(signMask);
+
+  EXPECT_EQ(result[0], std::numeric_limits<std::int32_t>::min());
 }
 
 } // namespace dart::simd

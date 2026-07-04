@@ -422,10 +422,12 @@ template <
     std::enable_if_t<std::is_integral_v<T>, int> = 0>
 [[nodiscard]] DART_SIMD_INLINE Vec<T, W> shiftLeft(const Vec<T, W>& v)
 {
+  using unsigned_type = std::make_unsigned_t<T>;
+
   alignas(64) T vArr[W], rArr[W];
   v.store(vArr);
   for (std::size_t i = 0; i < W; ++i) {
-    rArr[i] = vArr[i] << N;
+    rArr[i] = static_cast<T>(static_cast<unsigned_type>(vArr[i]) << N);
   }
   return Vec<T, W>::load(rArr);
 }
