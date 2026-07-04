@@ -305,3 +305,36 @@ decision), so PLAN-101's `--scene` smoke gate is unaffected.
 without window recreation; the headless cycle smoke renders every registered
 scene; only CLI/headless support programs stay standalone;
 `pixi run lint` and `check-docs-policy` green.
+
+### PLAN-121: AI Docs Knowledge Graph Guardrails
+
+**Final status:** Complete (archived 2026-07-03).
+
+**Owner doc:** durable check registry in
+[`../ai/components.md`](../ai/components.md); implementation in
+`scripts/check_docs_policy.py` with tests in
+`tests/test_check_docs_policy.py`.
+
+**Dimension:** AI-native execution · **Horizon at completion:** Now
+
+**Outcome:** Landed all eight packets: the shared link resolver with
+pilot-scoped internal-link lint (WP-121.1), conservative owner-index
+discoverability (WP-121.2), the docs/ai frontmatter identity pilot
+(WP-121.3) with the strict `type` legend check (WP-121.8), papers-catalog
+validation (WP-121.4), the north-star evidence-freshness advisory
+(WP-121.5), the retrospect compounding rule (WP-121.6), and the
+owner-local `Decision needed` block pattern (WP-121.7). The follow-up
+trigger was resolved on 2026-07-03 after the first clean advisory cycle
+(18 freshness advisories dropped to 0 when the north-star evidence marker
+was re-verified in PR #3228): the deterministic pilot internal-link and
+owner-index discoverability checks were promoted from advisory to blocking
+failures, while north-star evidence freshness stays report-only by design —
+WP-121.5 explicitly excludes blocking CI on git-date freshness, because any
+PR touching a cited evidence path would otherwise fail until a manual
+re-verification bumps the marker.
+
+**Closing evidence:** `pixi run check-docs-policy` blocks pilot broken links
+and undiscoverable pilot docs while keeping a quiet advisory channel;
+`pixi run python -m pytest tests/test_check_docs_policy.py` green;
+mutation-verified promotion (an injected pilot broken link fails the
+checker, reverting it restores exit 0).
