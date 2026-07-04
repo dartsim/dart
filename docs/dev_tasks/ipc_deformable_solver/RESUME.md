@@ -27,8 +27,9 @@ shared distance/barrier/CCD/Newton primitive through PLAN-083
 
 ### Active Slice (2026-07-04): Fig-23 peak-contacts diagnostic
 
-Branch `feature/ipc-deformable-max-contacts-diagnostic` (off clean `main`
-`9d25a59c7b5`; no PR yet). Adds the **peak active-contact-count per step**
+Branch `feature/ipc-deformable-max-contacts-diagnostic`, published as **PR #3257**
+against `main` (branched off `9d25a59c7b5`, then merged current `origin/main`).
+Adds the **peak active-contact-count per step**
 diagnostic — the IPC Fig. 23 "max contacts per step" axis — as
 `DeformableSolverDiagnostics.maxActiveContactCount` (dartpy
 `max_active_contact_count`) plus the internal
@@ -555,10 +556,11 @@ PSD-backend injection). (PR #2747 is another author's.) <- #2760 (GPU-vs-CPU per
 long ago (`74338577982`). The instructions below it about pushing that branch are
 stale — ignore them.
 
-**Current (2026-07-04):** finish verifying the active Fig-23 peak-contacts
-diagnostic slice on `feature/ipc-deformable-max-contacts-diagnostic` (see the
-"Active Slice" block at the top), then push + open the PR only after maintainer
-approval.
+**Current (2026-07-04):** the active Fig-23 peak-contacts diagnostic slice is
+published as **PR #3257** (both `pixi run test-all` and `pixi run -e cuda
+test-all` green; Codex review requested). Next: address any Codex/maintainer
+review feedback and merge after approval; never reply inline to a `[bot]`
+comment.
 
 After that, continue M7 in bounded performance slices: harden matrix-free CG on
 larger contact-heavy meshes and decide the automatic large-mesh selection
