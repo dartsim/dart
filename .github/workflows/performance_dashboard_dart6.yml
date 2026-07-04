@@ -86,8 +86,18 @@ jobs:
             checkout_ref="${GITHUB_SHA}"
             benchmark_ref="${GITHUB_SHA}"
           else
-            checkout_ref="${release_branch}"
-            benchmark_ref="${release_branch}"
+            release_sha=$(
+              git ls-remote --heads \
+                "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" \
+                "refs/heads/${release_branch}" |
+                awk 'NR == 1 { print $1 }'
+            )
+            if [ -z "${release_sha}" ]; then
+              echo "Unable to resolve DART 6 release branch: ${release_branch}" >&2
+              exit 1
+            fi
+            checkout_ref="${release_sha}"
+            benchmark_ref="${release_sha}"
           fi
 
           printf 'branch=%s\n' "${release_branch}" >> "${GITHUB_OUTPUT}"
