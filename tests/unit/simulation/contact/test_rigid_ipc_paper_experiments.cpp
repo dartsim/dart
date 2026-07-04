@@ -1159,8 +1159,13 @@ TEST(RigidIpcPaperExperiments, TwoWallTunnelCubeStaysBetweenWallsFixtureRow)
   EXPECT_TRUE(cube.getTranslation().allFinite());
   EXPECT_TRUE(cube.getLinearVelocity().allFinite());
   EXPECT_GT(cube.getTranslation().x(), startX + 0.1);
-  EXPECT_GT(minBottomZ, -halfGap - 5e-3);
-  EXPECT_LT(maxTopZ, halfGap + 5e-3);
+  // Intersection-free: no cube corner may cross either fixed wall face
+  // (z = +/-halfGap). The penetration tolerance is kept well below the 1 mm
+  // wall gap so a regression that let the cube drift through a wall cannot
+  // pass; in practice the cube holds the full ~1 mm clearance (corners settle
+  // at z = +/-0.5, i.e. 1 mm inside each face).
+  EXPECT_GT(minBottomZ, -halfGap - 2e-4);
+  EXPECT_LT(maxTopZ, halfGap + 2e-4);
   EXPECT_TRUE(sawActiveContact);
 }
 
