@@ -720,6 +720,22 @@ TEST(SdfWriter, WritesModernScrewThreadPitchForSdf110)
 }
 
 //==============================================================================
+TEST(SdfWriter, EmptySdfVersionReturnsError)
+{
+  const auto skeleton = makeRoundTripSkeleton();
+
+  utils::SdfParser::WriteOptions options;
+  options.version.clear();
+  const auto result
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
+
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("SDF version must not be empty"),
+      std::string::npos);
+}
+
+//==============================================================================
 TEST(SdfWriter, PreservesAbsoluteNonFileMeshUris)
 {
   auto retriever = std::make_shared<MapResourceRetriever>();
