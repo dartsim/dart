@@ -1424,6 +1424,7 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
   diagnostics.frictionDissipation = stats.frictionDissipation;
   diagnostics.minActiveContactDistance = stats.minActiveContactDistance;
   diagnostics.convergedActiveContactCount = stats.convergedActiveContactCount;
+  diagnostics.maxActiveContactCount = stats.maxActiveContactCount;
   return diagnostics;
 }
 

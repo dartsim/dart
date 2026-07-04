@@ -210,6 +210,23 @@
         through the opt-in runtime stage. A rotated cube with a large time-step
         velocity toward a fixed wall remains intersection-free, and the stage
         reports a conservative CCD line-search hit.
+  - [x] Add audited two-wall tunnel corridor fixture coverage through the
+        opt-in runtime stage. A unit cube flies down a tight (1 mm) fixed
+        floor/ceiling corridor at high speed, activates rigid IPC contact, stays
+        finite, keeps advancing along the tunnel axis, and stays within the
+        fixed wall clearances. The three-wall, four-wall, and 8K tunnel rows
+        remain planned. Root cause is DART's lagged-friction stiction at their
+        tighter 0.1 mm clearance: the strong barrier normal forces there drive
+        large friction (A/B evidence on 3-walls at 100 m/s over 6 steps: with
+        default friction the cube freezes after the first partial step, ~3 mm
+        total travel with 12 active friction constraints; with
+        `frictionIterations=0` it traverses ~1.1 m intersection-free). The
+        conservative curved-CCD line search additionally caps each step to
+        ~0.18 m at that speed, but that alone still lets the cube traverse, so
+        friction stiction -- not CCD -- is the dominant arrest. The reference
+        solver traverses these tunnels with friction, so the gap is DART's
+        tight-clearance friction robustness (plus dense-contact performance for
+        the 8K walls), not test authoring or anti-tunneling/CCD.
   - [x] Add the first audited tessellated-plane fixture coverage through the
         opt-in runtime stage. A cube falls onto a fixed two-triangle mesh plane,
         activates contact, stays finite, and preserves nonnegative clearance.
@@ -470,6 +487,13 @@
   - [x] Mark the audited 3D tunneling unit-test fixture row
         (`fixtures/3D/unit-tests/tunneling.json`) as implemented after
         high-speed cube-vs-wall conservative line-search coverage landed.
+  - [x] Mark the audited 3D two-wall tunnel unit-test fixture row
+        (`fixtures/3D/unit-tests/tunnel/2-walls.json`) as implemented after
+        two-wall tunnel corridor runtime coverage landed. The three-wall,
+        four-wall, and 8K tunnel variants remain planned: DART's lagged-friction
+        stiction freezes a fast cube at their tighter 0.1 mm clearance (see the
+        Phase 3 note above for the friction-on vs friction-off evidence), and
+        the 8K walls are too slow for a unit test.
   - [x] Mark the audited 3D two-triangle tessellated-plane unit-test fixture row
         (`fixtures/3D/unit-tests/tessellated-plane/two-triangles.json`) as
         implemented after cube-on-two-triangle-plane runtime coverage landed.
