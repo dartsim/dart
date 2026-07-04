@@ -21,7 +21,11 @@ permissions:
   id-token: write
 
 concurrency:
-  group: github-pages-deploy
+  group: >-
+    ${{ github.event_name == 'workflow_run'
+    && github.event.workflow_run.conclusion != 'success'
+    && format('github-pages-deploy-skip-{0}', github.run_id)
+    || 'github-pages-deploy' }}
   cancel-in-progress: >-
     ${{ github.event_name != 'workflow_run'
     || github.event.workflow_run.conclusion == 'success' }}

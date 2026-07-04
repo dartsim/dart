@@ -580,8 +580,9 @@ The workflow also supports manual dispatch for exceptional historical-docs
 updates. It uses a single `github-pages-deploy` concurrency group across
 packaging and deployment, so rapid dashboard updates converge on the latest
 `gh-pages` tip. Only successful publisher runs and manual dispatches can cancel
-stale deployments; failed publisher runs skip packaging and cannot cancel an
-active deployment.
+stale deployments; failed publisher runs use a run-specific no-op concurrency
+group, skip packaging, and cannot cancel or replace a pending successful
+deployment.
 
 Repository Pages settings must use the GitHub Actions source for the deploy
 workflow to own production. If the source is still "Deploy from a branch",
