@@ -1446,6 +1446,9 @@ class DeformableSolverDiagnostics:
     @property
     def converged_active_contact_count(self) -> int: ...
 
+    @property
+    def max_active_contact_count(self) -> int: ...
+
 class ComputeExecutor:
     @property
     def worker_count(self) -> int: ...

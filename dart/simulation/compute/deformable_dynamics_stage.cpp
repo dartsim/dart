@@ -6974,6 +6974,13 @@ void advanceDeformableBody(
                 selfContactFrictionContacts.size());
       }
 
+      // Snapshot the cumulative active-contact counter so the per-iteration
+      // active-set size can be recovered as the delta this objective evaluation
+      // adds. Only this outer-iteration evaluation passes the counter (the
+      // line-search and terminal evaluations pass nullptr), so the delta is
+      // exactly the active barrier set at this iteration for this body.
+      const std::size_t activeContactsBeforeEval
+          = stats.selfContactBarrierActiveContacts;
       const double energy = evaluateDeformableObjective(
           nodeModel,
           model,
@@ -6992,6 +6999,11 @@ void advanceDeformableBody(
           &selfContactFriction,
           femElasticityPtr,
           barrierStiffness);
+      // Peak single-iteration active-set size across the step's bodies (the
+      // IPC Fig. 23 "max contacts per step" axis).
+      stats.maxActiveContactCount = std::max(
+          stats.maxActiveContactCount,
+          stats.selfContactBarrierActiveContacts - activeContactsBeforeEval);
       if (!std::isfinite(energy)) {
         brokeEarly = true;
         break;

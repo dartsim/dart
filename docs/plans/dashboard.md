@@ -192,16 +192,14 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Continue the active
-  [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
-  consolidated follow-up (PR #2978): remaining private packet work for
-  point-triangle/edge-edge contact stencils, broad-phase/candidate/CCD/barrier
-  primitives, sparse assembly and solves, reduced scene-owned rows, and external
-  surface-CCD diagnostics. Production runtime scene filtering, analytic curved
-  CCD, scene-level line search, full sparse Hessian assembly, GPU `World::step`,
-  paper-scale assets, and accepted reference timings remain future evidence; the
-  completion audit still records PLAN-083 as incomplete, so dev-task retirement
-  needs maintainer direction. History: see the progress log in
+- Next step: The temporary dev-task folder was retired (2026-07-04); remaining
+  PLAN-083 work is tracked in the durable sidecars
+  ([`completion-audit.md`](083-unified-newton-barrier-multibody/completion-audit.md),
+  [`paper-deck-manifest.md`](083-unified-newton-barrier-multibody/paper-deck-manifest.md)).
+  Open evidence: production runtime scene filtering, analytic curved CCD,
+  scene-level line search, full sparse Hessian assembly, GPU `World::step`,
+  paper-scale assets, and accepted reference timings. PLAN-083 remains
+  incomplete. History: see the progress log in
   [`083-unified-newton-barrier-multibody.md`](083-unified-newton-barrier-multibody.md).
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped

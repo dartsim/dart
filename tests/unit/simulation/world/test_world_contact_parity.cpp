@@ -46,6 +46,7 @@
 #include <dart/simulation/body/collision_shape.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
+#include <dart/simulation/common/exceptions.hpp>
 #include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/world.hpp>
 
@@ -406,6 +407,12 @@ struct LockedChainRun
   double proximalPosition = 0.0;
 };
 
+struct LockedContactRun
+{
+  double position = 0.0;
+  double velocity = 0.0;
+};
+
 static LockedChainRun runProximalHeldChain(ProximalHold hold)
 {
   sx::World world;
@@ -468,6 +475,54 @@ static LockedChainRun runProximalHeldChain(ProximalHold hold)
   };
 }
 
+static LockedContactRun runLockedLinkContact()
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.001);
+
+  sx::RigidBodyOptions groundOpts;
+  groundOpts.isStatic = true;
+  groundOpts.position = Eigen::Vector3d(0.0, 0.0, -0.05);
+  auto ground = world.addRigidBody("ground", groundOpts);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.05)));
+  ground.setFriction(0.0);
+
+  auto robot = world.addMultibody("locked_contact");
+  auto base = robot.addLink("base");
+
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(0.4, 0.0, 0.03);
+
+  auto link = robot.addLink(
+      "link",
+      base,
+      sx::JointSpec{
+          .name = "hinge",
+          .type = sx::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitY(),
+          .transformFromParent = offset,
+      });
+  link.setMass(0.5);
+  link.setInertia(Eigen::Vector3d(0.1, 0.1, 0.1).asDiagonal());
+  link.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.2, 0.2, 0.06)));
+
+  auto joint = link.getParentJoint();
+  const double initialAngle = 0.25;
+  joint.setPosition(Eigen::VectorXd::Constant(1, initialAngle));
+  joint.setActuatorType(sx::ActuatorType::Locked);
+
+  world.enterSimulationMode();
+  world.step(1);
+
+  return LockedContactRun{
+      .position = joint.getPosition()[0],
+      .velocity = joint.getVelocity()[0],
+  };
+}
+
 //==============================================================================
 // Row 7: Servo actuator
 //
@@ -495,7 +550,8 @@ struct ServoRun
   double massDof = 0.0;
 };
 
-static ServoRun runServo(const ServoCase& c)
+static ServoRun runServoWithEffortLimits(
+    const ServoCase& c, double effortLower, double effortUpper)
 {
   // Gravity-free so the servo's motor is the only thing driving the joint.
   sx::World world;
@@ -524,8 +580,8 @@ static ServoRun runServo(const ServoCase& c)
   joint.setActuatorType(sx::ActuatorType::Servo);
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, c.commandedVelocity));
   joint.setEffortLimits(
-      Eigen::VectorXd::Constant(1, -c.effortLimit),
-      Eigen::VectorXd::Constant(1, c.effortLimit));
+      Eigen::VectorXd::Constant(1, effortLower),
+      Eigen::VectorXd::Constant(1, effortUpper));
 
   world.enterSimulationMode();
   const double massDof = robot.getMassMatrix()(0, 0);
@@ -535,6 +591,11 @@ static ServoRun runServo(const ServoCase& c)
       .velocity = joint.getVelocity()[0],
       .massDof = massDof,
   };
+}
+
+static ServoRun runServo(const ServoCase& c)
+{
+  return runServoWithEffortLimits(c, -c.effortLimit, c.effortLimit);
 }
 
 } // namespace
@@ -745,6 +806,23 @@ TEST(ContactParity, LockedActuatorHoldsRevoluteJoint)
 }
 
 //==============================================================================
+// Test: Locked actuator holds through contact impulses
+//
+// Contact impulses are solved after actuator velocity projection in the split
+// dynamics pipeline. A locked joint must be projected back to zero velocity
+// before position integration so contact response cannot drift the coordinate.
+//==============================================================================
+TEST(ContactParity, LockedActuatorSuppressesContactImpulseDrift)
+{
+  const auto actual = runLockedLinkContact();
+
+  EXPECT_NEAR(actual.position, 0.25, 1e-12)
+      << "Locked joint should not integrate contact-induced velocity";
+  EXPECT_NEAR(actual.velocity, 0.0, 1e-12)
+      << "Locked joint velocity should stay zero after contact solve";
+}
+
+//==============================================================================
 // Test: Locked actuator ignores its own passive and commanded forces
 //
 // The holding constraint on a locked coordinate absorbs any spring, damping, or
@@ -816,6 +894,26 @@ TEST(ContactParity, ServoActuatorSaturatesAtEffortLimit)
       << "Effort-limited servo should not reach the commanded velocity";
   // The implied motor force is exactly the effort limit.
   EXPECT_NEAR(run.velocity * run.massDof / c.timeStep, c.effortLimit, 1e-9);
+}
+
+//==============================================================================
+// Test: Servo rejects one-sided effort limits
+//
+// The boxed-LCP servo solve starts from zero motor impulse, so supported effort
+// bounds must include zero. One-sided public effort ranges are valid joint
+// limits in general, but Servo must reject them before entering Dantzig.
+//==============================================================================
+TEST(ContactParity, ServoActuatorRejectsOneSidedEffortLimits)
+{
+  ServoCase c;
+  c.commandedVelocity = 1.0;
+  c.timeStep = 0.001;
+  c.steps = 1;
+
+  EXPECT_THROW(
+      runServoWithEffortLimits(c, 1.0, 10.0), sx::InvalidOperationException);
+  EXPECT_THROW(
+      runServoWithEffortLimits(c, -10.0, -1.0), sx::InvalidOperationException);
 }
 
 //==============================================================================

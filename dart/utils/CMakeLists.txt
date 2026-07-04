@@ -33,6 +33,36 @@ endif()
 find_package(CURL)
 dart_check_optional_package(CURL "dart-utils HTTP retriever" "libcurl")
 
+function(_dart_strip_msvc_posix_math_link target)
+  if(NOT MSVC OR NOT TARGET "${target}")
+    return()
+  endif()
+
+  get_target_property(_interface_libs "${target}" INTERFACE_LINK_LIBRARIES)
+  if(NOT _interface_libs)
+    return()
+  endif()
+
+  set(_filtered_libs "")
+  foreach(_lib IN LISTS _interface_libs)
+    if(_lib STREQUAL "m" OR _lib STREQUAL "m.lib")
+      continue()
+    endif()
+    list(APPEND _filtered_libs "${_lib}")
+    if(TARGET "${_lib}")
+      _dart_strip_msvc_posix_math_link("${_lib}")
+    endif()
+  endforeach()
+  set_property(
+    TARGET "${target}"
+    PROPERTY INTERFACE_LINK_LIBRARIES "${_filtered_libs}"
+  )
+endfunction()
+
+if(TARGET CURL::libcurl)
+  _dart_strip_msvc_posix_math_link(CURL::libcurl)
+endif()
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
