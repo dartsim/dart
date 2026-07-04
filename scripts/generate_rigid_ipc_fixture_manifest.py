@@ -222,6 +222,24 @@ IMPLEMENTED_FIXTURE_ROWS = {
             "runtime evidence."
         ),
     },
+    "fixtures/3D/unit-tests/tunnel/2-walls.json": {
+        "test": "TwoWallTunnelCubeStaysBetweenWallsFixtureRow",
+        "expected_invariant": (
+            "DART covers the audited 3D two-wall tunnel row: a unit cube flies "
+            "down a tight (1 mm) fixed floor/ceiling corridor at high speed, "
+            "stays finite, keeps advancing along the tunnel axis, and never "
+            "tunnels out through either fixed wall."
+        ),
+        "notes_or_gap": (
+            "Covered by DART-owned two-wall tunnel runtime coverage for the 3D "
+            "unit-test fixture mechanism. The three-wall, four-wall, and 8K "
+            "tunnel rows remain planned: at their tighter 0.1 mm clearance the "
+            "conservative curved-CCD line search limits each step to about the "
+            "separation distance, so a fast cube is arrested rather than "
+            "traversing, and the dense 8K walls are too slow for a unit test "
+            "pending dense-contact performance work."
+        ),
+    },
     "fixtures/3D/unit-tests/erleben/cliff-edges.json": {
         "test": "ErlebenCliffEdgesFixtureRowStaysSeparated",
         "expected_invariant": (
