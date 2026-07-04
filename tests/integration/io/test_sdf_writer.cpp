@@ -2005,6 +2005,105 @@ TEST(SdfWriter, RootBallJointRoundTripsAsParentWorld)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsMultipleRootFreeJointTrees)
+{
+  auto skeleton = dynamics::Skeleton::create("multi_root_writer");
+
+  dynamics::FreeJoint::Properties alphaRootProperties;
+  alphaRootProperties.mName = "alpha_root";
+  alphaRootProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.25, 0.5, 0.75);
+
+  dynamics::BodyNode::Properties alphaProperties;
+  alphaProperties.mName = "alpha";
+  alphaProperties.mInertia.setMass(1.0);
+  alphaProperties.mInertia.setMoment(Eigen::Matrix3d::Identity());
+
+  auto [alphaRoot, alpha]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr, alphaRootProperties, alphaProperties);
+  (void)alphaRoot;
+  alpha->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4)),
+      "alpha_box");
+
+  dynamics::FreeJoint::Properties betaRootProperties;
+  betaRootProperties.mName = "beta_root";
+  betaRootProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(-0.5, 0.25, 1.25);
+
+  dynamics::BodyNode::Properties betaProperties;
+  betaProperties.mName = "beta";
+  betaProperties.mInertia.setMass(0.75);
+  betaProperties.mInertia.setMoment(Eigen::Matrix3d::Identity() * 0.75);
+
+  auto [betaRoot, beta]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr, betaRootProperties, betaProperties);
+  (void)betaRoot;
+  beta->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::SphereShape>(0.35), "beta_sphere");
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  EXPECT_EQ(sdfRoot.Model()->LinkCount(), 2u);
+  EXPECT_EQ(sdfRoot.Model()->JointCount(), 0u);
+  EXPECT_NE(sdfRoot.Model()->LinkByName("alpha"), nullptr);
+  EXPECT_NE(sdfRoot.Model()->LinkByName("beta"), nullptr);
+
+  const auto path = writeTempSdf(writeResult.value(), "multi_root");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_EQ(reparsed->getNumBodyNodes(), 2u);
+  EXPECT_EQ(reparsed->getNumJoints(), 2u);
+
+  const auto* alphaBody = test::requireBodyNode(*reparsed, "alpha");
+  const auto* betaBody = test::requireBodyNode(*reparsed, "beta");
+  ASSERT_NE(alphaBody, nullptr);
+  ASSERT_NE(betaBody, nullptr);
+
+  const auto* alphaJoint
+      = dynamic_cast<const dynamics::FreeJoint*>(alphaBody->getParentJoint());
+  ASSERT_NE(alphaJoint, nullptr);
+  test::expectJointTopology(*alphaJoint, nullptr, alphaBody);
+  EXPECT_VECTOR_NEAR(
+      alphaJoint->getTransformFromParentBodyNode().translation(),
+      Eigen::Vector3d(0.25, 0.5, 0.75),
+      1e-12);
+
+  const auto* betaJoint
+      = dynamic_cast<const dynamics::FreeJoint*>(betaBody->getParentJoint());
+  ASSERT_NE(betaJoint, nullptr);
+  test::expectJointTopology(*betaJoint, nullptr, betaBody);
+  EXPECT_VECTOR_NEAR(
+      betaJoint->getTransformFromParentBodyNode().translation(),
+      Eigen::Vector3d(-0.5, 0.25, 1.25),
+      1e-12);
+
+  const auto* alphaBox
+      = test::requireShape<dynamics::VisualAspect, dynamics::BoxShape>(
+          *alphaBody, 0, 1);
+  ASSERT_NE(alphaBox, nullptr);
+  EXPECT_VECTOR_NEAR(
+      alphaBox->getSize(), Eigen::Vector3d(0.2, 0.3, 0.4), 1e-12);
+
+  const auto* betaSphere
+      = test::requireShape<dynamics::CollisionAspect, dynamics::SphereShape>(
+          *betaBody, 0, 1);
+  ASSERT_NE(betaSphere, nullptr);
+  EXPECT_DOUBLE_EQ(betaSphere->getRadius(), 0.35);
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsCapsuleAndConeGeometry)
 {
   auto skeleton = dynamics::Skeleton::create("capsule_cone_writer");

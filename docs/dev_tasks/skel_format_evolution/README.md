@@ -34,9 +34,10 @@
       stiffness), sdformat-normalized screw thread pitch, SDF 1.11+ axis/axis2
       mimic metadata, universal two-axis joints, continuous revolute joints,
       explicit parent-world root joints for supported SDF joint types,
-      including continuous revolute roots, topology-only ball joints, model
-      self-collision, non-default skeleton gravity through root SDF world
-      gravity, capsule/cone/ellipsoid geometry, visual shadow/hidden state,
+      including continuous revolute roots, multiple root FreeJoint trees,
+      topology-only ball joints, model self-collision, non-default skeleton
+      gravity through root SDF world gravity, capsule/cone/ellipsoid geometry,
+      visual shadow/hidden state,
       explicit visual material colors, PBR metallic/roughness factors, visual
       transparency, shape-level and body-level collision disable bitmasks,
       zero-threshold bounce restitution, and ODE friction/slip
@@ -245,9 +246,9 @@ SKEL-YAML direction just because the prototype once existed.
   joints, two-axis universal joints, SDF 1.11+ axis/axis2 mimic metadata with
   motor enforcement, continuous revolute joints, explicit parent-world root
   joints for supported SDF joint types, including continuous revolute roots,
-  topology-only ball joints, model self-collision, non-default skeleton gravity
-  through root SDF world gravity, plus local root, joint, and shape poses, plus
-  capsule/cone/ellipsoid geometry,
+  multiple root FreeJoint trees, topology-only ball joints, model
+  self-collision, non-default skeleton gravity through root SDF world gravity,
+  plus local root, joint, and shape poses, plus capsule/cone/ellipsoid geometry,
   visual shadow state, zero visibility flags, visual transparency, and absolute
   non-file mesh URI
   preservation through a custom retriever plus URI-backed mesh material

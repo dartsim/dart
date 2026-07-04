@@ -40,8 +40,8 @@ dynamics metadata (damping, Coulomb friction, spring reference, and spring
 stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
 axis/axis2 mimic metadata with motor enforcement, explicit parent-world root
 joints for supported SDF joint types including continuous revolute roots,
-topology-only ball child joints, model self-collision, local
-root/joint/shape poses, visual
+multiple root FreeJoint trees, topology-only ball child joints, model
+self-collision, local root/joint/shape poses, visual
 shadow/hidden state, explicit
 visual material colors, PBR metallic/roughness factors, collision-surface
 contact disable bitmasks for both shape-level and body-level DART collision
@@ -239,6 +239,40 @@ Additional validation for collision-surface friction-direction and slip
 diagnostics:
 
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
+Additional validation for multiple root FreeJoint tree SDF writer coverage:
+
+- Focused candidate passed without production writer changes, proving the
+  current sdformat `sdf::Model` link representation preserves multiple
+  unjointed root links and re-parses them as DART root FreeJoint trees.
+
+  ```bash
+  pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsMultipleRootFreeJointTrees'
+  ```
+
+- Full writer target and local gates passed.
+
+  ```bash
+  git diff --check
+  pixi run run-cpp-target INTEGRATION_io_SdfWriter
+  pixi run lint
+  pixi run build
+  ```
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: `origin/main`
+- Scope evidence: focused diff in `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder
+- Decision: no entry required
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: No separate changelog entry is needed because this slice adds
+  focused read/write/read coverage and documentation for the existing DART 7 IO
+  and Parsing SDF writer contract; it does not add a new public writer API or
+  new serialization behavior.
+- Follow-up: none
 
 Changelog decision:
 
