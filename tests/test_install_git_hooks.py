@@ -385,6 +385,30 @@ def test_guard_does_not_preserve_failed_cd_cwd_for_or_chain(tmp_path):
     assert "would run" not in stderr
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        "cat <<'EOF'\ngit commit -m example\nEOF",
+        'cat <<"EOF"\ngit commit -m example\nEOF',
+        "cat <<-EOF\n\tgit commit -m example\n\tEOF",
+    ],
+)
+def test_guard_ignores_git_commit_inside_heredoc_body(tmp_path, command):
+    returncode, stderr = _guard_verdict(tmp_path, command)
+
+    assert returncode == 0
+    assert "would run" not in stderr
+
+
+def test_guard_detects_git_commit_after_heredoc_body(tmp_path):
+    command = "cat <<'EOF'\ngit commit -m example\nEOF\ngit commit -m real"
+
+    returncode, stderr = _guard_verdict(tmp_path, command)
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
 def test_guard_runs_when_only_foreign_executable_hook_installed(tmp_path):
     repo, env = _init_repo(tmp_path)
     hook = _hook(repo)

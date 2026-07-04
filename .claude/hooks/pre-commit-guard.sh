@@ -113,6 +113,7 @@ ENV_OPTS_NO_ARG_PREFIXES = (
 )
 COMMIT_SHORT_OPTS_WITH_ATTACHED_ARG = {"m", "F", "c", "C", "S", "t", "u", "U"}
 ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=(?P<value>.*)$")
+HEREDOC_RE = re.compile(r"(?<!<)<<-?\s*(?P<word>\"[^\"]+\"|'\''[^'\'']+'\''|\\?\S+)")
 
 
 def record_env_assignment(env, token):
@@ -170,7 +171,33 @@ def is_hooks_path_override(option):
     return bool(sep) and key.lower() == "core.hookspath"
 
 
+def heredoc_delimiters(line):
+    delimiters = []
+    for match in HEREDOC_RE.finditer(line):
+        word = match.group("word")
+        if len(word) >= 2 and word[0] == word[-1] and word[0] in "\"'\''":
+            word = word[1:-1]
+        if word.startswith("\\"):
+            word = word[1:]
+        delimiters.append(word)
+    return delimiters
+
+
+def strip_heredoc_bodies(text):
+    stripped = []
+    pending = []
+    for line in text.splitlines():
+        if pending:
+            if line.strip() == pending[0]:
+                pending.pop(0)
+            continue
+        stripped.append(line)
+        pending.extend(heredoc_delimiters(line))
+    return "\n".join(stripped)
+
+
 def split_shell_segments(text):
+    text = strip_heredoc_bodies(text)
     pieces = re.split(r"(&&|\|\||[;|\n])", text)
     for index in range(0, len(pieces), 2):
         part = pieces[index]
