@@ -95,21 +95,23 @@ stable across #3226/#3230/#3241.
 
 ### S1 — `BM_INTEGRATION_contact_container` (3-rep means)
 
-| Scenario (objects/engine/threads) | cpu ms/iter | sim_s/s (≈RTF) | contacts | resting/mobile |
-| --- | ---: | ---: | ---: | --- |
-| 60 / dart / 1 | 412 | 0.486 | 96 | 0/60 |
-| 60 / dart / 16 | 430 | 0.465 | 96 | 0/60 |
-| 60 / ode / 1 | 1540 | 0.130 | 249 | 0/60 |
-| 60 / ode / 16 | 1464 | 0.137 | 249 | 0/60 |
-| 120 / dart / 1 | 4677 | 0.043 | 272 | 0/120 |
-| 120 / dart / 16 | 4607 | 0.043 | 272 | 0/120 |
-| 120 / ode / 1 | 6844 | 0.029 | 542 | 0/120 |
-| 120 / ode / 16 | 6784 | 0.030 | 542 | 0/120 |
+| Scenario (objects/engine/threads) | cpu ms/iter | sim_s/s (≈RTF) | Contacts (cap) | Pairs | Resting | Finite | Hash |
+| --- | ---: | ---: | ---: | ---: | --- | --- | --- |
+| 60 / dart / 1 | 412 | 0.486 | 96 (false) | 87 | 0/60 | true | `0xbe5900b3cf874742` |
+| 60 / dart / 16 | 430 | 0.465 | 96 (false) | 87 | 0/60 | true | `0xbe5900b3cf874742` |
+| 60 / ode / 1 | 1540 | 0.130 | 249 (false) | 86 | 0/60 | true | `0x54680005ed76f66` |
+| 60 / ode / 16 | 1464 | 0.137 | 249 (false) | 86 | 0/60 | true | `0x54680005ed76f66` |
+| 120 / dart / 1 | 4677 | 0.043 | 272 (false) | 204 | 0/120 | true | `0x2757590b13e917ee` |
+| 120 / dart / 16 | 4607 | 0.043 | 272 (false) | 204 | 0/120 | true | `0x2757590b13e917ee` |
+| 120 / ode / 1 | 6844 | 0.029 | 542 (false) | 200 | 0/120 | true | `0x7dd44240329b6f4f` |
+| 120 / ode / 16 | 6784 | 0.030 | 542 (false) | 200 | 0/120 | true | `0x7dd44240329b6f4f` |
 
 60→120 objects costs ~11.4x (native) — super-quadratic scaling; threads
 are flat in both engines; ODE emits ~2x the contacts of native
 (physically different profiles; hashes only comparable within one
-detector).
+detector). S1 hash/pair/finite guard columns come from matching 200-step
+`contact_benchmark --generate-container` captures; timing columns remain the
+3-rep Google Benchmark means.
 
 ### S2–S6 guard rows (canonical commands above)
 
