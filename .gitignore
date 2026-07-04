@@ -12,6 +12,9 @@ build/
 .build/
 
 # Vim swap files
+# Stray compiled gettext catalogs at repo root
+/*.mo
+
 *.swp
 *.swo
 

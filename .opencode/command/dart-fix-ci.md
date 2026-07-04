@@ -1,5 +1,6 @@
 ---
 description: debug and fix failing CI checks
+argument-hint: "<pr-number|run-id>"
 agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->

@@ -44,6 +44,14 @@
 
 * Build
 
+  * Harden the release-branch contributor workflow: `pixi run install-hooks`
+    installs a pre-commit hook running the lint gate (with a tracked Claude
+    Code commit guard as fallback), `check-ai-commands` now runs inside
+    `pixi run check-lint` so the AI workflow adapters are CI-enforced, the
+    workflow commands carry the structural metadata validated on `main`, and
+    the `dart-changelog` routine is available for backport changelog
+    decisions.
+
   * Replace the vendored `dart/external/convhull_3d` implementation with a
     DART-owned native `dart/math/detail/ConvexHull.hpp` implementation used by
     `math::computeConvexHull3D`, while keeping the legacy implementation only

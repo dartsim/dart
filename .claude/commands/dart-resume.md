@@ -1,5 +1,6 @@
 ---
 description: continue work from a previous session
+argument-hint: "[branch-or-task]"
 agent: build
 ---
 
@@ -14,7 +15,9 @@ Resume unfinished work: $ARGUMENTS
 @docs/onboarding/ci-cd.md
 @docs/onboarding/contributing.md
 
-## Step 1: Recon (no changes)
+## Workflow
+
+### Step 1: Recon (no changes)
 
 ```bash
 git rev-parse --show-toplevel
@@ -24,13 +27,13 @@ gh pr list --head "$(git branch --show-current)"
 gh pr status
 ```
 
-## Step 2: Reconstruct
+### Step 2: Reconstruct
 
 Infer the task from branch name, commits, diffs, issue/PR description, and any
 `docs/dev_tasks/<task>/` state. If the goal is still unclear after recon, stop
 and ask.
 
-## Step 3: Continue
+### Step 3: Continue
 
 - Propose a 3-6 step plan before editing.
 - Continue with minimal scope and preserve existing user changes.
@@ -74,3 +77,10 @@ and ask.
 
 No destructive git commands (`reset --hard`, dropping stashes, deleting branches)
 without explicit maintainer/user approval.
+
+## Output
+
+- Reconstructed task and current branch state
+- Plan followed and files changed
+- Verification commands run and their results
+- Remaining work and anything held for explicit maintainer/user approval before push/PR update

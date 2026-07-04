@@ -1,5 +1,6 @@
 ---
 description: review a PR or address review feedback
+argument-hint: "<pr-number> [address]"
 agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
@@ -15,7 +16,9 @@ Review or respond to PR: $ARGUMENTS
 @docs/onboarding/code-style.md
 @docs/onboarding/ai-tools.md (for AI-generated review handling)
 
-## To Review
+## Workflow
+
+### To Review
 
 ```bash
 gh pr view $1 && gh pr diff $1
@@ -23,7 +26,7 @@ gh pr view $1 && gh pr diff $1
 
 Check: code style, tests, docs, focused commits
 
-## To Address Feedback
+### To Address Feedback
 
 ```bash
 gh pr view $1 --comments
@@ -86,3 +89,9 @@ activity signal or submitted review, do not post a duplicate trigger.
     approves a policy bypass
 
 Full iterative loop: `docs/onboarding/ai-tools.md` § "Autonomous Review-Fix-Monitor Loop"
+
+## Output
+
+- Review findings ordered by severity, or the feedback addressed
+- Verification commands run for addressed feedback
+- Any external mutation left pending explicit approval

@@ -1,5 +1,6 @@
 ---
 description: fix a DART bug reported through gz-physics or Gazebo
+argument-hint: "<issue-or-repro>"
 agent: build
 ---
 

@@ -1,5 +1,6 @@
 ---
 description: perform a behavior-preserving mechanical refactor
+argument-hint: "<refactor-description>"
 agent: build
 ---
 

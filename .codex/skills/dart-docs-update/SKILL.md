@@ -50,3 +50,9 @@ Update documentation: $ARGUMENTS
 7. Ask for explicit maintainer/user approval before pushing or opening the PR.
    After approval, push with the same local and remote topic-branch name, use
    `.github/PULL_REQUEST_TEMPLATE.md`, and set the proper milestone.
+
+## Output
+
+- Docs changed and why
+- Verification commands run (docs/AI checks) and their results
+- Any external mutation left pending explicit approval

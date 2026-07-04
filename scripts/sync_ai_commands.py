@@ -30,6 +30,7 @@ CODEX_NAME_LIMIT = 100
 CODEX_DESC_LIMIT = 500
 MAX_SKILL_LINES = 500
 MAX_COMMAND_LINES = 200
+REQUIRED_COMMAND_SECTIONS = ("Required Reading", "Workflow", "Output")
 CAPABILITY_SCHEMA_VERSION = 1
 CAPABILITY_STATUS_VALUES = {"active", "deprecated", "parked", "proposed"}
 CAPABILITY_WORKFLOW_GATE_PROFILE_VALUES = {
@@ -385,6 +386,103 @@ def validate_style_and_budget(repo_root: Path) -> bool:
     return True
 
 
+def command_structure_errors(path_label: str, content: str) -> list[str]:
+    """Return structural errors for one command's frontmatter and sections."""
+    errors: list[str] = []
+
+    meta = parse_command_frontmatter(content)
+    if not meta.get("argument-hint"):
+        errors.append(
+            f"{path_label}: missing non-empty `argument-hint` frontmatter key"
+        )
+
+    positions: dict[str, int] = {}
+    in_fence = False
+    for index, line in enumerate(content.splitlines()):
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        heading = re.match(r"^##\s+(.+?)\s*$", line)
+        if not heading:
+            continue
+        title = heading.group(1).strip()
+        if title in REQUIRED_COMMAND_SECTIONS and title not in positions:
+            positions[title] = index
+
+    for section in REQUIRED_COMMAND_SECTIONS:
+        if section not in positions:
+            errors.append(f"{path_label}: missing required `## {section}` section")
+
+    if all(section in positions for section in REQUIRED_COMMAND_SECTIONS):
+        order = [positions[section] for section in REQUIRED_COMMAND_SECTIONS]
+        if order != sorted(order):
+            errors.append(
+                f"{path_label}: sections must appear in order "
+                "## Required Reading, ## Workflow, ## Output"
+            )
+
+    return errors
+
+
+def validate_command_structure(repo_root: Path) -> bool:
+    """Require consistent section structure and argument hints in commands."""
+    errors: list[str] = []
+
+    good = (
+        '---\nargument-hint: "<x>"\n---\n\n## Required Reading\n\n'
+        "## Workflow\n\n## Output\n"
+    )
+    if command_structure_errors("internal command-structure self-check", good):
+        errors.append(
+            "internal command-structure self-check failed: valid command was flagged"
+        )
+
+    bad_order = "---\n---\n\n## Workflow\n\n## Required Reading\n\n## Output\n"
+    order_errors = command_structure_errors("internal", bad_order)
+    if not any("argument-hint" in error for error in order_errors):
+        errors.append(
+            "internal command-structure self-check failed: missing argument-hint "
+            "was not detected"
+        )
+    if not any("order" in error for error in order_errors):
+        errors.append(
+            "internal command-structure self-check failed: out-of-order sections "
+            "were not detected"
+        )
+
+    bad_missing = (
+        '---\nargument-hint: "<x>"\n---\n\n## Required Reading\n\n## Workflow\n'
+    )
+    if not any(
+        "## Output" in error
+        for error in command_structure_errors("internal", bad_missing)
+    ):
+        errors.append(
+            "internal command-structure self-check failed: missing Output section "
+            "was not detected"
+        )
+
+    for command_path in sorted((repo_root / ".claude" / "commands").glob("*.md")):
+        errors.extend(
+            command_structure_errors(
+                display_path(command_path), command_path.read_text()
+            )
+        )
+
+    if errors:
+        for error in errors:
+            print(f"  STRUCTURE ERROR: {error}")
+        return False
+
+    print(
+        "  OK: commands declare argument hints and the Required Reading, "
+        "Workflow, and Output sections in order"
+    )
+    return True
+
+
 def parse_workflow_rows(workflow_content: str) -> dict[str, list[str]]:
     """Extract user-invoked workflow table rows keyed by capability name."""
     rows: dict[str, list[str]] = {}
@@ -703,6 +801,7 @@ def validate_approval_boundary(repo_root: Path) -> list[str]:
         r"\bcreate/update (?:a |the )?.{0,120}(?:PRs?|pull requests?)\b",
         r"\bupdate (?:a |the )?.{0,120}(?:PRs?|pull requests?)\b",
         r"\bupdating (?:a |the )?.{0,120}(?:PRs?|pull requests?)\b",
+        r"\bmerg(?:e|es|ing)\b[^\n;|&]{0,80}\b(?:PRs?|pull requests?)\b",
         r"\b(?:PRs?|pull requests?) update\b",
         r"\bset(?:ting)? (?:the )?.{0,120}milestones?\b",
         r"\brerun(?:ning)? (?:the )?(?:failed )?(?:CI|check|job|jobs|workflow)\b",
@@ -757,6 +856,8 @@ def validate_approval_boundary(repo_root: Path) -> list[str]:
         "update the PR after editing": "PR update prose",
         "PR update after changelog edit": "noun PR update prose",
         "After opening the PR, merge PR": "compound PR mutation prose",
+        "merge a ready PR": "PR merge prose",
+        "merging any bot PR": "bot PR merge prose",
         "Rerunning failed jobs": "gerund CI rerun prose",
         "Merging PR after checks pass": "gerund merge prose",
         "Resolving addressed threads via GraphQL": "gerund thread-resolution prose",
@@ -1122,14 +1223,16 @@ def validate_ai_docs(repo_root: Path) -> bool:
 
         approval_workflows = {
             "dart-backport-pr",
+            "dart-benchmark-packet",
             "dart-branch-cleanup",
+            "dart-changelog",
             "dart-close-issue",
+            "dart-deps",
             "dart-docs-update",
             "dart-downstream-fix",
             "dart-fix-ci",
             "dart-fix-issue",
             "dart-manage-pr",
-            "dart-merge-pr",
             "dart-mechanical-refactor",
             "dart-new-task",
             "dart-next",
@@ -1479,6 +1582,11 @@ def sync_all(check_only: bool = False) -> bool:
 
     print("Skill and command style:")
     if not validate_style_and_budget(repo_root):
+        all_synced = False
+    print()
+
+    print("Command structure:")
+    if not validate_command_structure(repo_root):
         all_synced = False
     print()
 

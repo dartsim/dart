@@ -211,7 +211,6 @@ gh pr checks <PR_NUMBER>
 Report:
 
 - PR number, URL, base, head, draft state, milestone, and merge status.
-- CI summary: passing, failing, pending, or skipped checks.
-- Review summary and whether `@codex review` was triggered.
+- CI summary, review summary, and whether `@codex review` was triggered.
 - Commits pushed, merge action, and branch cleanup action.
 - Remaining blockers or next action.
