@@ -126,11 +126,21 @@ UI-visible changes, and PLAN checkboxes updated.
 
 ## Phase 4 — py-demos (PR)
 
-- [ ] Verify dartpy binding coverage (ImGuiViewer/widget, WorldNode hooks,
-      InteractiveFrame, captureScreen) — evidence file.
-- [ ] Runner + registry mirroring C++ id/category scheme; port python
-      examples as scenes; graceful degradation notes where bindings missing.
+- [x] Verify dartpy binding coverage — `EVIDENCE-dartpy-bindings.md`.
+      Outcome: ImGui is unreachable from pure Python (no ImGuiWidget
+      trampoline, no imgui module) and the task directive forbids new
+      bindings for demos → py-demos is a keyboard-navigated runner
+      (instruction-text overlay + terminal catalog), not an ImGui workspace.
+- [ ] Runner + registry mirroring C++ id/category scheme; scenes as
+      RealTimeWorldNode subclasses; switch via addWorldNode/
+      setWorldNodeActive; `--shot` capture mode.
+- [ ] Port python examples as scenes; graceful degradation notes where
+      bindings missing.
 - [ ] Smoke: import + headless capture via dartpy.
+- [ ] Side-fix decision: `python/examples/atlas_puppet/main.py:552` calls
+      unbound `SupportPolygonVisual` → broken today (pre-existing). Either
+      bind the class (separate small PR, legit bugfix) or drop the call when
+      porting.
 
 ## Phase 5 — Cleanup (PR)
 
