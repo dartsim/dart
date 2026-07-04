@@ -21,7 +21,7 @@ DEFAULT_GPU_PACKET = PLAN_DIR / "gpu-parity-packet.json"
 REQUIRED_AUDIT_PHRASES = {
     "Verdict: NOT COMPLETE.",
     "Temporary dev-task folder retired",
-    "dev-task folder remains active",
+    "dev-task folder is retired",
     "Maintainer Decision Required",
 }
 

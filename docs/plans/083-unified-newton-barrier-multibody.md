@@ -79,8 +79,9 @@
 - First implementation designs:
   [`083-unified-newton-barrier-multibody/primitive-promotion-slice.md`](083-unified-newton-barrier-multibody/primitive-promotion-slice.md),
   [`083-unified-newton-barrier-multibody/abd-first-slice-design.md`](083-unified-newton-barrier-multibody/abd-first-slice-design.md)
-- Active implementation tracker:
-  [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
+- Completion audit and remaining-work tracker:
+  [`083-unified-newton-barrier-multibody/completion-audit.md`](083-unified-newton-barrier-multibody/completion-audit.md)
+  (the temporary dev-task folder was retired on 2026-07-04)
 - Examples policy:
   [`103-examples-strategy.md`](103-examples-strategy.md)
 
@@ -225,8 +226,9 @@
 1. Use the PLAN-083 sidecar manifest to drive status changes for every unified
    paper/deck figure, unit-test row, benchmark row, comparison row, and py-demos
    target category.
-2. Continue the active
-   [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/):
+2. Drive remaining PLAN-083 work from the durable sidecars (the
+   [`paper-deck-manifest.md`](083-unified-newton-barrier-multibody/paper-deck-manifest.md)
+   and [`completion-audit.md`](083-unified-newton-barrier-multibody/completion-audit.md)):
    promote the first ABD benchmark packet from smoke shape to a comparison
    manifest row now that affine barrier and friction primitive derivative
    oracles are stable.
@@ -244,9 +246,10 @@
    [`ppf-contact-solver-intake.md`](083-unified-newton-barrier-multibody/ppf-contact-solver-intake.md)
    before promoting any cubic-barrier, strain-limit, ACCD, or public API
    change.
-6. Keep dev-task status, resume context, and implementation gates synchronized
-   with this owner plan until the active task can be retired into durable
-   design, plan, benchmark, and example artifacts.
+6. Keep the durable plan sidecars, benchmark packets, and implementation gates
+   synchronized with this owner plan. The temporary dev-task folder was retired
+   on 2026-07-04, so remaining work is tracked here and in the sidecars, not in
+   `docs/dev_tasks/`.
 
 ## Non-Goals
 
@@ -276,9 +279,18 @@
 
 Relocated from the dashboard on 2026-07-03; newest first.
 
-Continue the active
-[`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
-consolidated follow-up on
+2026-07-04: retired the temporary
+`docs/dev_tasks/unified_newton_barrier_multibody/` working folder (README,
+RESUME, HANDOFF) by maintainer decision. PLAN-083 stays Active and NOT COMPLETE;
+every remaining blocker is now owned by this plan file, the
+[`dashboard.md`](dashboard.md) PLAN-083 entry, and the plan sidecars
+([`completion-audit.md`](083-unified-newton-barrier-multibody/completion-audit.md),
+[`paper-deck-manifest.md`](083-unified-newton-barrier-multibody/paper-deck-manifest.md),
+and [`gpu-slowness-root-cause.md`](083-unified-newton-barrier-multibody/gpu-slowness-root-cause.md),
+plus siblings). The PLAN-083 benchmark scripts (`scripts/*plan083*`) and tests
+(`tests/*plan083*`) are unchanged by the retirement.
+
+The consolidated follow-up work was tracked on
 `simx/plan083-gpu-contact-candidate-packet` / PR #2978. PR #2960 landed
 implementation-roadmap Phases 3-8; PR #2961 measured the private GPU PSD
 projection packet, added the Fig. 17 barrier-force diagnostic, and aligned
@@ -364,5 +376,5 @@ policy/solving, GPU `World::step`, paper-scale assets, full runtime
 affine/FEM coupling, production runtime scene filtering inside `World::step`,
 and accepted reference timings as future evidence. The
 completion audit still records PLAN-083 as incomplete while in-progress
-CPU/GPU/scene limitations remain, so dev-task retirement needs maintainer
-direction before deletion.
+CPU/GPU/scene limitations remain. (Superseded 2026-07-04: the dev-task folder
+was retired; see the newest progress-log entry above.)
