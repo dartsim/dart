@@ -27,6 +27,17 @@
 
 input=$(cat)
 
+# Fast path: a git commit invocation always contains the literal substring
+# "commit" in tool_input.command (the subcommand token itself; JSON escaping
+# cannot alter it), so anything without it can be skipped before spawning the
+# python3 tokenizer (measured ~70 ms per spawn, paid on every Bash tool call).
+# Commands that merely mention "commit" still fall through to the tokenizer,
+# which classifies them correctly.
+case "$input" in
+    *commit*) ;;
+    *) exit 0 ;;
+esac
+
 if ! command -v python3 >/dev/null 2>&1; then
     echo "DART guard: python3 unavailable; commit guard disabled" >&2
     exit 0

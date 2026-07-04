@@ -3,8 +3,10 @@
 This document tracks AI coding assistant compatibility with DART's documentation structure.
 
 > **Last Verified**: 2026-07-03. Command/skill/adapter surfaces are
-> continuously machine-verified by `pixi run check-ai-commands` in CI; per-tool
-> behavior notes below were last hand-checked on that date.
+> continuously machine-verified by `pixi run check-ai-commands` in CI. Claude
+> Code behavior notes were exercised live on that date; OpenCode, Codex, and
+> Gemini notes were verified against repository configuration and generated
+> adapters, not live tool runs.
 > **Review Cadence**: Verify when updating tool versions or experiencing unexpected behavior.
 
 ## For Collaborators: Tool Selection
