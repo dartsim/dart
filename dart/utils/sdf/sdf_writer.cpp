@@ -231,8 +231,11 @@ WriteResult writeGeometry(
            << "</length></cylinder>\n";
   } else if (
       const auto* mesh = dynamic_cast<const dynamics::MeshShape*>(&shape)) {
-    const auto uri = mesh->getMeshUri2().toString();
-    if (uri.empty()) {
+    const common::Uri& meshUri = mesh->getMeshUri2();
+    const auto uri = meshUri.toString();
+    const bool isEmptyFileUri = meshUri.mScheme.get_value_or("file") == "file"
+                                && meshUri.getFilesystemPath().empty();
+    if (uri.empty() || isEmptyFileUri) {
       return fail("Cannot write SDF mesh geometry without a mesh URI.");
     }
     const Eigen::Vector3d& scale = mesh->getScale();

@@ -616,6 +616,43 @@ f 1 2 3
 }
 
 //==============================================================================
+TEST(SdfWriter, IncludeOptionsControlVisualAndCollisionEntries)
+{
+  auto skeleton = dynamics::Skeleton::create("writer_options");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "visible_box");
+  body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::SphereShape>(0.5), "collision_sphere");
+
+  utils::SdfParser::WriteOptions options;
+  options.includeVisuals = false;
+
+  const auto noVisuals
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
+  ASSERT_TRUE(noVisuals.isOk()) << noVisuals.error().message;
+  EXPECT_EQ(noVisuals.value().find("<visual "), std::string::npos);
+  EXPECT_NE(
+      noVisuals.value().find("<collision name=\"collision_sphere\">"),
+      std::string::npos);
+
+  options.includeVisuals = true;
+  options.includeCollisions = false;
+
+  const auto noCollisions
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
+  ASSERT_TRUE(noCollisions.isOk()) << noCollisions.error().message;
+  EXPECT_NE(
+      noCollisions.value().find("<visual name=\"visible_box\">"),
+      std::string::npos);
+  EXPECT_EQ(noCollisions.value().find("<collision "), std::string::npos);
+}
+
+//==============================================================================
 TEST(SdfWriter, RootWeldRoundTripsWithFixedRootOption)
 {
   auto skeleton = dynamics::Skeleton::create("root_weld_writer");
@@ -677,6 +714,25 @@ TEST(SdfWriter, UnsupportedShapeReturnsError)
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("Unsupported shape type"), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, MeshWithoutUriReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("missing_mesh_uri");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::MeshShape>(
+          Eigen::Vector3d::Ones(), makeTriangleMesh()),
+      "mesh_without_uri");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("without a mesh URI"), std::string::npos);
 }
 
 //==============================================================================

@@ -35,9 +35,10 @@
       material colors now round-trip as SDF `<gravity>`,
       `<axis>/<axis2><dynamics>`, `<thread_pitch>`, local `<pose>`, and
       `<diffuse>` values. Absolute non-file mesh URIs now have writer
-      read/write/read coverage through a custom retriever. The writer test now
-      uses a shared IO round-trip assertion helper for body, joint, DoF,
-      inertia, and shape comparisons.
+      read/write/read coverage through a custom retriever. Writer options for
+      excluding visuals or collisions and missing mesh URI diagnostics now have
+      focused coverage. The writer test now uses a shared IO round-trip
+      assertion helper for body, joint, DoF, inertia, and shape comparisons.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor
       save-load belongs to the scene/project layer. Broader SDF coverage, URDF
@@ -155,7 +156,8 @@ SKEL-YAML direction just because the prototype once existed.
   metadata plus screw thread pitch for supported single-axis joints, two-axis
   universal joints, topology-only ball joints, plus local root, joint, and shape
   poses, plus absolute non-file mesh URI preservation through a custom
-  retriever. The assertions are factored through
+  retriever. It also covers `WriteOptions` visual/collision filtering and the
+  empty mesh URI diagnostic. The assertions are factored through
   `tests/helpers/io_round_trip_helpers.hpp` so future writer formats can reuse
   the body, joint, DoF, inertia, and shape comparison helpers. Completion still
   requires broader accepted-format writer APIs and round-trip tests that load a

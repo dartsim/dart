@@ -150,11 +150,12 @@ inertial parameters, local joint/shape poses, and box/sphere/cylinder/mesh
 visual or collision geometry with explicit visual material colors. The
 round-trip coverage includes absolute non-file mesh URI preservation through a
 custom retriever; relative/generated resource path policy remains future
-contract work. Ball joint limits and dynamics are reported as unsupported
-instead of being silently dropped. It is not a general project save/load format
-and does not make YAML a model format. Use the writer only when the target scene
-fits the documented subset, and expand the round-trip tests before broadening
-the supported contract.
+contract work. `WriteOptions` can exclude visual or collision entries. Missing
+mesh URIs, ball joint limits, and ball joint dynamics are reported as
+unsupported instead of being silently dropped. It is not a general project
+save/load format and does not make YAML a model format. Use the writer only when
+the target scene fits the documented subset, and expand the round-trip tests
+before broadening the supported contract.
 
 Keep export APIs format-owned until DART has more than one accepted writer
 contract. The current SDF writer therefore lives on

@@ -37,7 +37,8 @@ joint dynamics metadata (damping, Coulomb friction, spring reference, and spring
 stiffness), screw thread pitch, topology-only ball child joints, local
 root/joint/shape poses, explicit visual material colors, and absolute non-file
 mesh URI preservation through a custom retriever. It also checks
-unsupported-shape diagnostics, non-finite visual material diagnostics,
+`WriteOptions` visual/collision filtering, unsupported-shape diagnostics,
+missing mesh URI diagnostics, non-finite visual material diagnostics,
 non-finite screw pitch diagnostics, unsupported ball-joint metadata, and
 non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
 5 is still open until broader SDF coverage plus the remaining accepted writer
@@ -80,6 +81,10 @@ Additional validation for absolute non-file mesh URI writer coverage:
 
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
+Additional validation for writer options and missing mesh URI diagnostics:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
 Changelog decision:
 
 - Mode: draft
@@ -96,7 +101,9 @@ Changelog decision:
   entry is needed for the comparison-helper refactor because it only changes
   test infrastructure and task handoff docs. No additional changelog entry is
   needed for the absolute non-file mesh URI coverage because it only strengthens
-  test evidence for the existing SDF writer entry.
+  test evidence for the existing SDF writer entry. No additional entry is needed
+  for writer-option and missing-mesh-URI coverage because it hardens the same
+  existing writer surface before the implementation PR exists.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

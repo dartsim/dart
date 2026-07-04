@@ -23,9 +23,10 @@ child joints, link gravity mode, inertial parameters, local joint/shape poses,
 box/sphere/cylinder/mesh visual or collision geometry, and explicit visual
 material colors as SDF `<diffuse>` values. Absolute non-file mesh URI
 preservation is covered through a custom retriever-backed write/read test.
-Unsupported constructs, non-finite material colors, non-finite screw pitch,
-unsupported ball-joint metadata, and non-finite joint dynamics return
-`common::Result` errors instead of being silently dropped.
+`WriteOptions` visual/collision filtering is covered by focused tests.
+Unsupported constructs, missing mesh URIs, non-finite material colors,
+non-finite screw pitch, unsupported ball-joint metadata, and non-finite joint
+dynamics return `common::Result` errors instead of being silently dropped.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
