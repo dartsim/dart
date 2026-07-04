@@ -66,8 +66,9 @@ non-finite skeleton gravity, shape poses, inertial data, or joint axes, invalid
 collision-surface
 friction, slip, restitution, or
 friction-direction frame, unsupported ball-joint metadata, unsupported DART
-`SoftBodyNode` export, and non-finite joint dynamics return `common::Result`
-errors instead of being silently dropped.
+child `FreeJoint`, `EulerJoint`, `PlanarJoint`, `TranslationalJoint2D`,
+`TranslationalJoint`, `SoftBodyNode` export, and non-finite joint dynamics
+return `common::Result` errors instead of being silently dropped.
 DART `PlaneShape`, `HeightmapShape`, and `ConvexMeshShape` now report targeted
 policy diagnostics for the missing finite SDF plane size, source heightmap
 URI/resource policy, or destination URI for generated mesh resources.

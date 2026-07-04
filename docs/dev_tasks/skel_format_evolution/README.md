@@ -68,7 +68,10 @@
       color/alpha render policies now fail with explicit diagnostics.
       Non-finite skeleton gravity, shape poses, inertial data, and joint axes
       are also covered as writer diagnostics instead of being serialized into
-      malformed SDF. DART
+      malformed SDF. Unsupported child `FreeJoint`, `EulerJoint`,
+      `PlanarJoint`, `TranslationalJoint2D`, and `TranslationalJoint` writer
+      attempts now fail with targeted diagnostics instead of relying on the
+      generic unsupported-joint fallback. DART
       `SoftBodyNode` writer attempts now fail with a targeted diagnostic
       instead of being serialized as ordinary SDF links with point-mass, spring,
       damping, and soft mesh topology semantics dropped. The
@@ -282,7 +285,9 @@ SKEL-YAML direction just because the prototype once existed.
   joints now have targeted diagnostics, while infinite limits remain the
   unbounded SDF joint contract.
   Non-finite skeleton gravity, shape pose, inertial local center-of-mass data,
-  and joint axis inputs now have focused diagnostics coverage.
+  joint axis inputs, and unsupported child `FreeJoint`, `EulerJoint`,
+  `PlanarJoint`, `TranslationalJoint2D`, and `TranslationalJoint` families now
+  have focused diagnostics coverage.
   Shape-level and body-level
   collision-surface contact bitmask disables, zero-threshold bounce restitution,
   ODE friction

@@ -49,12 +49,14 @@
 #include <dart/dynamics/convex_mesh_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
+#include <dart/dynamics/euler_joint.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/mimic_dof_properties.hpp>
 #include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
+#include <dart/dynamics/planar_joint.hpp>
 #include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/point_cloud_shape.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
@@ -64,6 +66,8 @@
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
+#include <dart/dynamics/translational_joint.hpp>
+#include <dart/dynamics/translational_joint2_d.hpp>
 #include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/voxel_grid_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
@@ -91,6 +95,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -430,6 +435,37 @@ dynamics::SkeletonPtr makeRoundTripSkeleton()
       std::make_shared<dynamics::SphereShape>(0.05), "ball_tip_collision");
 
   return skeleton;
+}
+
+template <typename JointType>
+void expectUnsupportedChildJointError(
+    std::string_view skeletonName,
+    std::string_view jointName,
+    std::string_view expectedSnippet)
+{
+  auto skeleton = dynamics::Skeleton::create(std::string(skeletonName));
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  typename JointType::Properties jointProperties;
+  jointProperties.mName = std::string(jointName);
+
+  dynamics::BodyNode::Properties tipProperties;
+  tipProperties.mName = "tip";
+
+  auto [joint, tip] = skeleton->createJointAndBodyNodePair<JointType>(
+      base, jointProperties, tipProperties);
+  (void)joint;
+  (void)tip;
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find(std::string(expectedSnippet)),
+      std::string::npos)
+      << result.error().message;
 }
 
 } // namespace
@@ -2336,6 +2372,51 @@ TEST(SdfWriter, RoundTripsMixedImplicitAndParentWorldRoots)
           *pendulumBody, 0, 1);
   ASSERT_NE(pendulumSphere, nullptr);
   EXPECT_DOUBLE_EQ(pendulumSphere->getRadius(), 0.25);
+}
+
+//==============================================================================
+TEST(SdfWriter, ChildFreeJointReturnsExplicitUnsupportedError)
+{
+  expectUnsupportedChildJointError<dynamics::FreeJoint>(
+      "unsupported_child_free_joint",
+      "floating_child",
+      "DART FreeJoint [floating_child] as an SDF child joint");
+}
+
+//==============================================================================
+TEST(SdfWriter, EulerJointReturnsExplicitUnsupportedError)
+{
+  expectUnsupportedChildJointError<dynamics::EulerJoint>(
+      "unsupported_euler_joint",
+      "euler_child",
+      "SDF has no Euler-axis-order joint primitive");
+}
+
+//==============================================================================
+TEST(SdfWriter, PlanarJointReturnsExplicitUnsupportedError)
+{
+  expectUnsupportedChildJointError<dynamics::PlanarJoint>(
+      "unsupported_planar_joint",
+      "planar_child",
+      "SDF has no planar joint primitive");
+}
+
+//==============================================================================
+TEST(SdfWriter, TranslationalJoint2DReturnsExplicitUnsupportedError)
+{
+  expectUnsupportedChildJointError<dynamics::TranslationalJoint2D>(
+      "unsupported_translational_2d_joint",
+      "slide_2d_child",
+      "SDF has no two-axis translational joint primitive");
+}
+
+//==============================================================================
+TEST(SdfWriter, TranslationalJointReturnsExplicitUnsupportedError)
+{
+  expectUnsupportedChildJointError<dynamics::TranslationalJoint>(
+      "unsupported_translational_joint",
+      "slide_3d_child",
+      "SDF has no three-axis translational joint primitive");
 }
 
 //==============================================================================

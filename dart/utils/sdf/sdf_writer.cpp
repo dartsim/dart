@@ -43,12 +43,14 @@
 #include <dart/dynamics/convex_mesh_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
+#include <dart/dynamics/euler_joint.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/joint.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
+#include <dart/dynamics/planar_joint.hpp>
 #include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/point_cloud_shape.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
@@ -58,6 +60,8 @@
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
+#include <dart/dynamics/translational_joint.hpp>
+#include <dart/dynamics/translational_joint2_d.hpp>
 #include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/voxel_grid_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
@@ -584,6 +588,41 @@ sdf::JointType jointType(const dynamics::Joint& joint)
     return sdf::JointType::BALL;
   }
   return sdf::JointType::INVALID;
+}
+
+std::optional<std::string> unsupportedSdfJointReason(
+    const dynamics::Joint& joint)
+{
+  if (dynamic_cast<const dynamics::FreeJoint*>(&joint)) {
+    return "DART FreeJoint [" + std::string(joint.getName())
+           + "] as an SDF child joint because SDF has no child joint "
+             "primitive that preserves DART's 6-DoF free joint state; only "
+             "root FreeJoint placement is represented as an unjointed model "
+             "link";
+  }
+  if (dynamic_cast<const dynamics::EulerJoint*>(&joint)) {
+    return "DART EulerJoint [" + std::string(joint.getName())
+           + "] as SDF because SDF has no Euler-axis-order joint primitive "
+             "that preserves DART's three rotational coordinates";
+  }
+  if (dynamic_cast<const dynamics::PlanarJoint*>(&joint)) {
+    return "DART PlanarJoint [" + std::string(joint.getName())
+           + "] as SDF because SDF has no planar joint primitive that "
+             "preserves DART's two translational coordinates plus one "
+             "rotational coordinate";
+  }
+  if (dynamic_cast<const dynamics::TranslationalJoint2D*>(&joint)) {
+    return "DART TranslationalJoint2D [" + std::string(joint.getName())
+           + "] as SDF because SDF has no two-axis translational joint "
+             "primitive";
+  }
+  if (dynamic_cast<const dynamics::TranslationalJoint*>(&joint)) {
+    return "DART TranslationalJoint [" + std::string(joint.getName())
+           + "] as SDF because SDF has no three-axis translational joint "
+             "primitive";
+  }
+
+  return std::nullopt;
 }
 
 std::optional<Eigen::Vector3d> singleDofJointAxis(const dynamics::Joint& joint)
@@ -1373,6 +1412,9 @@ WriteResult buildJoint(
 
   const sdf::JointType type = jointType(joint);
   if (type == sdf::JointType::INVALID) {
+    if (const auto reason = unsupportedSdfJointReason(joint)) {
+      return fail("Cannot write " + *reason + ".");
+    }
     return fail(
         "Unsupported joint type for SDF writing: "
         + std::string(joint.getType()) + " [" + joint.getName() + "].");
