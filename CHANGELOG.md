@@ -118,6 +118,7 @@ compatibility remains on the active DART 6 LTS branch._
   system-identification examples, with binary save/load preserving registered
   differentiable parameters, CI guarding diff-enabled builds, and torch imports
   remaining safe with legacy dartpy module shims.
+  ([#3244](https://github.com/dartsim/dart/pull/3244))
 - Expanded rigid and articulated simulation with body deactivation, dynamic joint
   constraints, batch semantics, dense-index model identity, and allocation-free
   warmed multibody steps. ([#2939](https://github.com/dartsim/dart/pull/2939),
