@@ -24,8 +24,12 @@
   under `--max-contacts-per-pair 4` — hashes are not comparable to the
   uncapped probe) and g3000 (scoping-doc scale row). ODE rows are only
   valid with `--max-contacts-per-pair 4`.
-- Raw outputs, JSONL scene dumps, and host metadata:
-  `.omc/artifacts/native-collision-phase0/` (local, git-ignored).
+- Raw evidence: the committed appendix
+  [05-artifacts.md](05-artifacts.md) carries the host metadata, every
+  row's raw final summary, the capture driver, the tolerance analyzer,
+  and SHA-256 digests of the 17 JSONL scene dumps. The full dumps stay
+  local under `.omc/artifacts/native-collision-phase0/` (git-ignored);
+  the digests pin the exact artifacts for the phase-6 comparison.
 
 ## Row matrix
 
@@ -151,8 +155,8 @@ packet's rows, re-captured on the flip PR's parent for drift control):
 
 1. Performance: native RTF ≥ FCL on every row above, and ≥ the in-tree
    `dart` detector on the active rows where it currently leads (g120,
-   g3000, S3) — speed-only wins that alter contact/resting profiles are
-   rejected.
+   S4-900, g3000, S3 — every active row except S5-90, where FCL leads) —
+   speed-only wins that alter contact/resting profiles are rejected.
 2. Correctness: finite state and no cap hit on every row; run-to-run
    hash determinism; position drift vs FCL within the `dart` detector's
    demonstrated band (≤ 1e-3 m max on active scenes, ≤ 1e-5 m settled);

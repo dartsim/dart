@@ -23,17 +23,17 @@ Every workstream except the **native collision port** is complete:
 
 ## Next step
 
-**Phase 0 — baseline evidence packet** (in flight 2026-07-04): capture the
-A/B matrix on `release-6.20` head across `dart`/`fcl`/`bullet`/`ode`
-(+ `default` continuity row) using the canonical guard-scene protocol in
-`../dart6_performance_generalization/01-baseline-evidence.md` (S2/S3/S4/S5
-plus this lane's g120/g3000 delta rows, `--max-contacts-per-pair 4`, scene
-dumps), then record the packet as `05-phase0-baseline-packet.md` with an
-explicit "native default allowed/not allowed" verdict. Cross-reference the
-perf lane's WP-PG.01 packet (PR #3263) instead of duplicating its cells.
+**Phase 0 is captured.** The baseline packet lives in
+[05-phase0-baseline-packet.md](05-phase0-baseline-packet.md) (raw
+evidence: [05-artifacts.md](05-artifacts.md)), recorded at
+`release-6.20` = `b5b2a5bee77` with the verdict "native default NOT
+allowed at this tip" and the phase-6 acceptance envelope. Do **not**
+re-capture it; consume it.
 
-Phase 1 (native core skeleton, C++17, no EnTT, internal-only, FCL stays
-default) starts only after the phase-0 packet is reviewed.
+**Next: phase 1 — native core skeleton** (C++17, no EnTT, internal-only,
+FCL stays default) per `03`'s phased plan, once the packet's review PR
+has landed. Deterministic unit tests are part of the phase-1 deliverable;
+gz gate before merge.
 
 ## Standing constraints
 
