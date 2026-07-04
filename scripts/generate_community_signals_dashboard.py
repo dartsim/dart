@@ -147,11 +147,15 @@ def _date(value: str | None) -> str:
     return parsed.date().isoformat()
 
 
+def _display_month_day_year(parsed: dt.datetime) -> str:
+    return f"{parsed.strftime('%b')} {parsed.day}, {parsed.strftime('%Y')}"
+
+
 def _month_day_year(value: str | None) -> str:
     parsed = _parse_iso(value)
     if parsed is None:
         return "unavailable"
-    return parsed.strftime("%b %-d, %Y")
+    return _display_month_day_year(parsed)
 
 
 def _number(value: Any | None) -> str:
@@ -611,7 +615,7 @@ def render_html(data: dict[str, Any]) -> str:
     sources = data["sources"]
     generated = _parse_iso(data["generated_at"])
     generated_text = (
-        generated.strftime("%b %-d, %Y %H:%M UTC")
+        f"{_display_month_day_year(generated)} {generated.strftime('%H:%M UTC')}"
         if generated
         else data["generated_at"]
     )
