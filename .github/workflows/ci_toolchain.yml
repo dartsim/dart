@@ -32,7 +32,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Protected release branches should finish every post-merge validation run.
+  # GitHub's default concurrency queue keeps only one pending run, so use a
+  # run-specific group on release refs while keeping PR/topic refs cancellable.
+  group: >-
+    ${{ startsWith(github.ref, 'refs/heads/release-')
+        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
+        || format('{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: ${{ github.event_name != 'schedule' && !startsWith(github.ref, 'refs/heads/release-') }}
 
 jobs:
