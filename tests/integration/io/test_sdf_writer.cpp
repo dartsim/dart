@@ -50,6 +50,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <memory>
 
 using namespace dart;
@@ -101,6 +102,7 @@ dynamics::SkeletonPtr makeRoundTripSkeleton()
       std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.4, 0.5, 0.6)),
       "base_box");
   baseShape->setRelativeTranslation(Eigen::Vector3d(0.1, 0.0, 0.0));
+  baseShape->getVisualAspect()->setRGBA(Eigen::Vector4d(0.2, 0.4, 0.6, 0.8));
 
   dynamics::RevoluteJoint::Properties hingeProperties;
   hingeProperties.mName = "hinge";
@@ -183,6 +185,17 @@ void expectVectorNear(
   EXPECT_NEAR(actual.z(), expected.z(), tolerance);
 }
 
+void expectVectorNear(
+    const Eigen::Vector4d& actual,
+    const Eigen::Vector4d& expected,
+    double tolerance)
+{
+  EXPECT_NEAR(actual.x(), expected.x(), tolerance);
+  EXPECT_NEAR(actual.y(), expected.y(), tolerance);
+  EXPECT_NEAR(actual.z(), expected.z(), tolerance);
+  EXPECT_NEAR(actual.w(), expected.w(), tolerance);
+}
+
 } // namespace
 
 //==============================================================================
@@ -195,6 +208,13 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   EXPECT_NE(
       writeResult.value().find("<model name=\"writer_roundtrip\">"),
+      std::string::npos);
+  EXPECT_NE(
+      writeResult.value().find(
+          "<diffuse>0.20000000000000001 "
+          "0.40000000000000002 "
+          "0.59999999999999998 "
+          "0.80000000000000004</diffuse>"),
       std::string::npos);
 
   const auto path = writeTempSdf(writeResult.value(), "roundtrip");
@@ -258,6 +278,12 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
       base->getShapeNodeWith<dynamics::VisualAspect>(0)->getShape().get());
   ASSERT_NE(baseBox, nullptr);
   expectVectorNear(baseBox->getSize(), Eigen::Vector3d(0.4, 0.5, 0.6), 1e-12);
+  expectVectorNear(
+      base->getShapeNodeWith<dynamics::VisualAspect>(0)
+          ->getVisualAspect()
+          ->getRGBA(),
+      Eigen::Vector4d(0.2, 0.4, 0.6, 0.8),
+      1e-12);
 
   ASSERT_EQ(tip->getNumShapeNodesWith<dynamics::VisualAspect>(), 1u);
   ASSERT_EQ(tip->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
@@ -352,4 +378,26 @@ TEST(SdfWriter, UnsupportedShapeReturnsError)
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("Unsupported shape type"), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, NonFiniteMaterialColorReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("non_finite_material");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  auto* visual = body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "bad_material");
+  visual->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(0.1, std::numeric_limits<double>::quiet_NaN(), 0.3, 1.0));
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("non-finite material color"),
+      std::string::npos);
 }

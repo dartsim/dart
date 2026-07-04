@@ -17,9 +17,10 @@ The first implementation slice adds
 `dart::utils::SdfParser::tryWriteSkeletonToString()`, a parser-specific SDF
 string writer for a conservative `Skeleton` subset. It writes BodyNode links,
 root FreeJoint/WeldJoint placement, revolute/prismatic/weld child joints,
-inertial parameters, and box/sphere/cylinder/mesh visual or collision geometry.
-Unsupported constructs return `common::Result` errors instead of being silently
-dropped.
+inertial parameters, box/sphere/cylinder/mesh visual or collision geometry, and
+explicit visual material colors as SDF `<diffuse>` values. Unsupported
+constructs and non-finite material colors return `common::Result` errors
+instead of being silently dropped.
 
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.
@@ -81,8 +82,8 @@ Phase 5 is complete only when code and tests prove the writer contract:
 ## Open Work
 
 - Extend the SDF writer contract beyond the first conservative subset when
-  tests can prove additional joints, shapes, materials, resource URI handling,
-  or world-level data round-trip correctly.
+  tests can prove additional joints, shapes, mesh material variants, resource
+  URI handling, or world-level data round-trip correctly.
 - Decide the next implementation target: URDF writer or PLAN-101 project
   save/load.
 - Factor a shared comparison helper for read/write/read tests before future

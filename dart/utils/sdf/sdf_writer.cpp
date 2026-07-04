@@ -112,6 +112,12 @@ std::string formatVector3(const Eigen::Vector3d& value)
          + formatDouble(value.z());
 }
 
+std::string formatVector4(const Eigen::Vector4d& value)
+{
+  return formatDouble(value.x()) + " " + formatDouble(value.y()) + " "
+         + formatDouble(value.z()) + " " + formatDouble(value.w());
+}
+
 bool isFinite(const Eigen::Isometry3d& transform)
 {
   return transform.matrix().allFinite();
@@ -123,6 +129,11 @@ bool isFinite(const Eigen::Matrix3d& matrix)
 }
 
 bool isFinite(const Eigen::Vector3d& vector)
+{
+  return vector.allFinite();
+}
+
+bool isFinite(const Eigen::Vector4d& vector)
 {
   return vector.allFinite();
 }
@@ -225,6 +236,29 @@ WriteResult writeGeometry(
   return ok();
 }
 
+WriteResult writeMaterial(
+    std::ostream& stream, const dynamics::ShapeNode& shapeNode, int depth)
+{
+  const auto* visualAspect = shapeNode.getVisualAspect();
+  if (!visualAspect || visualAspect->usesDefaultColor()) {
+    return ok();
+  }
+
+  const Eigen::Vector4d color = visualAspect->getRGBA();
+  if (!isFinite(color)) {
+    return fail(
+        "Cannot write SDF visual [" + shapeNode.getName()
+        + "] with a non-finite material color.");
+  }
+
+  stream << indent(depth) << "<material>\n";
+  stream << indent(depth + 1) << "<diffuse>" << formatVector4(color)
+         << "</diffuse>\n";
+  stream << indent(depth) << "</material>\n";
+
+  return ok();
+}
+
 WriteResult writeShapeNode(
     std::ostream& stream,
     const dynamics::ShapeNode& shapeNode,
@@ -250,6 +284,12 @@ WriteResult writeShapeNode(
   stream << indent(depth + 1) << "<pose>" << formatPose(pose) << "</pose>\n";
   if (auto result = writeGeometry(stream, *shape, depth + 1); result.isErr()) {
     return result;
+  }
+  if (tag == "visual") {
+    if (auto result = writeMaterial(stream, shapeNode, depth + 1);
+        result.isErr()) {
+      return result;
+    }
   }
   stream << indent(depth) << "</" << tag << ">\n";
 
