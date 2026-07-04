@@ -67,6 +67,16 @@ WRAPPERS = {"command", "exec", "time", "nice", "nohup"}
 ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=(?P<value>.*)$")
 
 
+def is_dart_skip_assignment(token):
+    m = ENV_RE.match(token)
+    if not m or not token.startswith("DART_SKIP_HOOKS="):
+        return False
+    value = m.group("value")
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'\''":
+        value = value[1:-1]
+    return value == "1"
+
+
 def skip_env_prefix(tokens, i):
     """Skip VAR=value prefixes (quote-aware); return (i, dart_skip_seen)."""
     bypass = False
@@ -74,7 +84,7 @@ def skip_env_prefix(tokens, i):
         m = ENV_RE.match(tokens[i])
         if not m:
             break
-        if tokens[i] == "DART_SKIP_HOOKS=1":
+        if is_dart_skip_assignment(tokens[i]):
             bypass = True
         value = m.group("value")
         for quote in ("\"", "'\''"):
@@ -118,12 +128,21 @@ def is_git_commit(text):
                 continue
             if head == "env":
                 i += 1
-                while i < len(tokens) and (
-                    tokens[i].startswith("-") or ENV_RE.match(tokens[i])
-                ):
-                    i += 1
+                while i < len(tokens):
+                    if tokens[i].startswith("-"):
+                        i += 1
+                        continue
+                    next_i, env_bypass = skip_env_prefix(tokens, i)
+                    if next_i == i:
+                        break
+                    bypass = bypass or env_bypass
+                    i = next_i
+                if bypass:
+                    break
                 continue
             break
+        if bypass:
+            continue
         if i >= len(tokens):
             continue
         if tokens[i].lstrip("\\") != "git":

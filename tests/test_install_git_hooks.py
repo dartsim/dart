@@ -218,6 +218,7 @@ def _guard_verdict(tmp_path: Path, command: str, extra_env: dict | None = None):
         "git commit -m x",
         "command git commit -m x",
         "env A=1 git commit -m x",
+        "env DART_SKIP_HOOKS=0 git commit -m x",
         "(git commit -m x)",
         'FOO="a b" git commit -m x',
         "pixi run lint && git commit -m x",
@@ -235,6 +236,8 @@ def test_guard_detects_commit_forms(tmp_path, command):
         "git log --grep commit",
         "echo commit",
         "DART_SKIP_HOOKS=1 git commit -m x",
+        "env DART_SKIP_HOOKS=1 git commit -m x",
+        'env DART_SKIP_HOOKS="1" git commit -m x',
         "git -C /somewhere/else commit -m x",
     ],
 )
