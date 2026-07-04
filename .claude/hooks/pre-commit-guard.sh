@@ -79,6 +79,7 @@ CONFIG_ENV_PREFIX = "--config-env="
 WRAPPERS = {"command", "exec", "time", "nice", "nohup"}
 SHELL_CONTROL_PREFIXES = {"!", "if", "then", "else", "elif", "while", "until", "do"}
 SHELL_GROUP_OPENERS = {"(", "{"}
+CWD_UNCERTAIN_PREFIXES = {"then", "else", "elif", "do"}
 ENV_OPTS_WITH_ARG = {
     "-C",
     "--chdir",
@@ -197,6 +198,14 @@ def skip_shell_prefixes(tokens, i):
     return i
 
 
+def segment_allows_cwd_update(tokens):
+    for token in tokens:
+        if token in SHELL_GROUP_OPENERS:
+            continue
+        return command_word(token) not in CWD_UNCERTAIN_PREFIXES
+    return True
+
+
 def heredoc_delimiters(line):
     delimiters = []
     for match in HEREDOC_RE.finditer(line):
@@ -285,8 +294,14 @@ def shell_cd_target(tokens, i, current_cwd):
     return shell_expand_path_token(target, current_cwd)
 
 
-def maybe_update_shell_cwd(tokens, i, current_cwd, separator, subshell_like):
-    if subshell_like or separator not in {"&&", ";", "\n"}:
+def maybe_update_shell_cwd(
+    tokens, i, current_cwd, separator, subshell_like, cwd_update_allowed
+):
+    if (
+        not cwd_update_allowed
+        or subshell_like
+        or separator not in {"&&", ";", "\n"}
+    ):
         return current_cwd
     return shell_cd_target(tokens, i, current_cwd) or current_cwd
 
@@ -318,6 +333,7 @@ def is_git_commit(text):
             tokens = shlex.split(part)
         except ValueError:
             tokens = part.split()
+        cwd_update_allowed = segment_allows_cwd_update(tokens)
         command_env = {}
         i, bypass = skip_env_prefix(tokens, 0, command_env)
         i = skip_shell_prefixes(tokens, i)
@@ -396,7 +412,12 @@ def is_git_commit(text):
             continue
         if command_word(tokens[i]) != "git":
             current_cwd = maybe_update_shell_cwd(
-                tokens, i, current_cwd, separator, subshell_like
+                tokens,
+                i,
+                current_cwd,
+                separator,
+                subshell_like,
+                cwd_update_allowed,
             )
             continue
         i += 1

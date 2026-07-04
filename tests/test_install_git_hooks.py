@@ -440,6 +440,29 @@ def test_guard_skips_conditional_cd_commit_in_another_repo(tmp_path):
 
 
 @pytest.mark.parametrize(
+    "command_template",
+    [
+        "if false; then cd {other}; fi; git commit -m x",
+        "if false\nthen cd {other}\nfi\ngit commit -m x",
+    ],
+)
+def test_guard_does_not_preserve_conditional_branch_cd_cwd(
+    tmp_path, command_template
+):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    command = command_template.format(other=other)
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
+@pytest.mark.parametrize(
     "command",
     [
         "cat <<'EOF'\ngit commit -m example\nEOF",
