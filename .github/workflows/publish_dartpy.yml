@@ -38,14 +38,15 @@ permissions:
 concurrency:
   # Include the event name so a manual workflow_dispatch (used to publish a
   # release) is not cancelled by the push-triggered build of the same ref, and
-  # vice versa. Protected release branches should also finish every post-merge
-  # validation run, so use a run-specific group on release refs while keeping
-  # same-event runs on other refs cancellable.
+  # vice versa. Protected release branch push validations should also finish
+  # every post-merge run, so use a run-specific group only for release push
+  # events while keeping manual publish dispatches and other same-event runs
+  # cancellable.
   group: >-
-    ${{ startsWith(github.ref, 'refs/heads/release-')
+    ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-')
         && format('{0}-{1}-{2}-{3}', github.workflow, github.ref, github.event_name, github.run_id)
         || format('{0}-{1}-{2}', github.workflow, github.ref, github.event_name) }}
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/heads/release-') }}
+  cancel-in-progress: ${{ !(github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-')) }}
 
 # This workflow will install Python dependencies, run tests and lint with a
 # variety of Python versions. For more information see:
