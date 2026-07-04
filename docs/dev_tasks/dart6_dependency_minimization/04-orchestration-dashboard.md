@@ -134,12 +134,13 @@ before treating it as an open/active PR.)_
 2. **Shared hot files:** `pixi.toml` / `pixi.lock` are touched by multiple lanes —
    **merge `origin/release-6.20` before pushing**, never rebase a published PR branch
    (per `AGENTS.md` / `02`).
-3. **CI health (2026-07-04):** two known branch-level failures — macOS arm64
-   `-Werror` in `tests/unit/simd/test_config.cpp` and the `Publish dartpy`
-   Black preflight — have a maintainer fix open as **#3267**. Until it lands,
-   those failures on the release-6.20 push matrix are pre-existing, not
-   regressions from lane PRs. The June coverage/Debug/API-doc flakes resolved
-   after #3120.
+3. **CI health (2026-07-04):** the known branch-level failures (macOS arm64
+   SIMD `-Werror`, dartpy format preflight, shallow-support/SIMD rows) were
+   fixed by **#3267/#3272/#3273, all merged 2026-07-04**. Residual red rows
+   should be triaged against base-push history before blaming PR content:
+   Windows `Install`-step and coverage `Build with coverage` failures
+   reproduced on base pushes, and FreeBSD ssh exit-8 / runner `Setup pixi`
+   failures are infra flakes that clear on re-run.
 4. **Native-collision lane: plan before port.** The #3056 performance stack is
    useful evidence, but the DART 7 native port/default-flip is still unstarted
    on DART 6.20. Do not treat `feature/native-occupancy-grid` or
