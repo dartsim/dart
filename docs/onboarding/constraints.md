@@ -220,6 +220,19 @@ solve()
   `Skeleton::integratePositions(dt, velocityChanges)` without changing
   velocities.
 
+**Constraint hot-path scratch and caches:**
+
+- Contact LCP assembly repeatedly visits per-contact state, so
+  `ContactConstraint` may cache private values whose lifetime is exactly the
+  created constraint: raw `Skeleton` pointers, body reactivity, fixed-size
+  spatial normals, and the friction tangent basis.
+- Contact-pair counting scratch must stay local to each
+  `ConstraintSolver::updateConstraints()` call so a nested solver cannot reset
+  it. Do not use shared `static`, `thread_local`, or shared-frame-allocator
+  containers because `ContactSurfaceHandler::createConstraint()` can re-enter
+  another solver on the same thread while the outer solver is still creating
+  contacts.
+
 ### 3. ConstrainedGroup
 
 **File:** `dart/constraint/constrained_group.hpp`
