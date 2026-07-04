@@ -202,7 +202,8 @@ How any session — human or agent — finds work and avoids collisions:
 - Scope mismatch: the executor stops and returns the packet with what was
   found; the orchestrator re-cuts it.
 - Gate failure the packet cannot explain: treat as a finding, not a fixup —
-  report back rather than patching around it.
+  report back rather than patching around it (the packet-scoped case of the
+  root-cause axiom in `docs/ai/principles.md`).
 - Conflicting instructions between a packet and an owner doc: the owner doc
   wins; report the conflict so the packet (or the doc) is corrected.
 - Anything touching shared state beyond the local clone follows the safety
