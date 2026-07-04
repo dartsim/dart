@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "helpers/io_round_trip_helpers.hpp"
+
 #include "dart/utils/sdf/sdf_parser.hpp"
 #include "dart/utils/sdf/sdf_writer.hpp"
 
@@ -256,27 +258,6 @@ dynamics::SkeletonPtr makeRoundTripSkeleton()
   return skeleton;
 }
 
-void expectVectorNear(
-    const Eigen::Vector3d& actual,
-    const Eigen::Vector3d& expected,
-    double tolerance)
-{
-  EXPECT_NEAR(actual.x(), expected.x(), tolerance);
-  EXPECT_NEAR(actual.y(), expected.y(), tolerance);
-  EXPECT_NEAR(actual.z(), expected.z(), tolerance);
-}
-
-void expectVectorNear(
-    const Eigen::Vector4d& actual,
-    const Eigen::Vector4d& expected,
-    double tolerance)
-{
-  EXPECT_NEAR(actual.x(), expected.x(), tolerance);
-  EXPECT_NEAR(actual.y(), expected.y(), tolerance);
-  EXPECT_NEAR(actual.z(), expected.z(), tolerance);
-  EXPECT_NEAR(actual.w(), expected.w(), tolerance);
-}
-
 } // namespace
 
 //==============================================================================
@@ -335,13 +316,13 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
   EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
 
-  const auto* base = reparsed->getBodyNode("base");
-  const auto* tip = reparsed->getBodyNode("tip");
-  const auto* slider = reparsed->getBodyNode("slider");
-  const auto* fixed = reparsed->getBodyNode("fixed");
-  const auto* screwTip = reparsed->getBodyNode("screw_tip");
-  const auto* universalTip = reparsed->getBodyNode("universal_tip");
-  const auto* ballTip = reparsed->getBodyNode("ball_tip");
+  const auto* base = test::requireBodyNode(*reparsed, "base");
+  const auto* tip = test::requireBodyNode(*reparsed, "tip");
+  const auto* slider = test::requireBodyNode(*reparsed, "slider");
+  const auto* fixed = test::requireBodyNode(*reparsed, "fixed");
+  const auto* screwTip = test::requireBodyNode(*reparsed, "screw_tip");
+  const auto* universalTip = test::requireBodyNode(*reparsed, "universal_tip");
+  const auto* ballTip = test::requireBodyNode(*reparsed, "ball_tip");
   ASSERT_NE(base, nullptr);
   ASSERT_NE(tip, nullptr);
   ASSERT_NE(slider, nullptr);
@@ -350,178 +331,146 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   ASSERT_NE(universalTip, nullptr);
   ASSERT_NE(ballTip, nullptr);
 
-  const auto* root
-      = dynamic_cast<const dynamics::FreeJoint*>(reparsed->getJoint("root"));
+  const auto* root = test::requireJoint<dynamics::FreeJoint>(*reparsed, "root");
   ASSERT_NE(root, nullptr);
-  EXPECT_EQ(root->getParentBodyNode(), nullptr);
-  EXPECT_EQ(root->getChildBodyNode(), base);
-  expectVectorNear(
+  test::expectJointTopology(*root, nullptr, base);
+  EXPECT_VECTOR_NEAR(
       root->getTransformFromParentBodyNode().translation(),
       Eigen::Vector3d(0.25, -0.5, 1.0),
       1e-12);
 
-  EXPECT_NEAR(base->getMass(), 2.5, 1e-12);
-  expectVectorNear(
-      base->getLocalCOM(), Eigen::Vector3d(0.01, 0.02, 0.03), 1e-12);
+  Eigen::Matrix3d baseMoment;
+  baseMoment << 0.2, 0.01, 0.02, 0.01, 0.3, 0.03, 0.02, 0.03, 0.4;
+  test::expectBodyInertia(
+      *base, 2.5, Eigen::Vector3d(0.01, 0.02, 0.03), baseMoment, 1e-12);
 
-  const auto baseMoment = base->getInertia().getMoment();
-  EXPECT_NEAR(baseMoment(0, 0), 0.2, 1e-12);
-  EXPECT_NEAR(baseMoment(1, 1), 0.3, 1e-12);
-  EXPECT_NEAR(baseMoment(2, 2), 0.4, 1e-12);
-  EXPECT_NEAR(baseMoment(0, 1), 0.01, 1e-12);
-  EXPECT_NEAR(baseMoment(0, 2), 0.02, 1e-12);
-  EXPECT_NEAR(baseMoment(1, 2), 0.03, 1e-12);
-
-  const auto* hinge = dynamic_cast<const dynamics::RevoluteJoint*>(
-      reparsed->getJoint("hinge"));
+  const auto* hinge
+      = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, "hinge");
   ASSERT_NE(hinge, nullptr);
-  EXPECT_EQ(hinge->getParentBodyNode(), base);
-  EXPECT_EQ(hinge->getChildBodyNode(), tip);
-  expectVectorNear(
+  test::expectJointTopology(*hinge, base, tip);
+  EXPECT_VECTOR_NEAR(
       hinge->getTransformFromParentBodyNode().translation(),
       Eigen::Vector3d(0.0, 0.0, 0.8),
       1e-12);
-  expectVectorNear(
+  EXPECT_VECTOR_NEAR(
       hinge->getTransformFromChildBodyNode().translation(),
       Eigen::Vector3d(0.0, 0.0, -0.2),
       1e-12);
-  expectVectorNear(hinge->getAxis(), Eigen::Vector3d::UnitZ(), 1e-12);
-  EXPECT_NEAR(hinge->getPositionLowerLimit(0), -1.25, 1e-12);
-  EXPECT_NEAR(hinge->getPositionUpperLimit(0), 1.5, 1e-12);
-  EXPECT_NEAR(hinge->getDampingCoefficient(0), 0.25, 1e-12);
-  EXPECT_NEAR(hinge->getCoulombFriction(0), 0.125, 1e-12);
-  EXPECT_NEAR(hinge->getRestPosition(0), -0.5, 1e-12);
-  EXPECT_NEAR(hinge->getSpringStiffness(0), 3.75, 1e-12);
+  EXPECT_VECTOR_NEAR(hinge->getAxis(), Eigen::Vector3d::UnitZ(), 1e-12);
+  test::expectDofPositionLimits(*hinge, 0, -1.25, 1.5, 1e-12);
+  test::expectDofDynamics(*hinge, 0, 0.25, 0.125, -0.5, 3.75, 1e-12);
 
-  const auto* sliderJoint = dynamic_cast<const dynamics::PrismaticJoint*>(
-      reparsed->getJoint("slider_joint"));
+  const auto* sliderJoint
+      = test::requireJoint<dynamics::PrismaticJoint>(*reparsed, "slider_joint");
   ASSERT_NE(sliderJoint, nullptr);
-  EXPECT_EQ(sliderJoint->getParentBodyNode(), tip);
-  EXPECT_EQ(sliderJoint->getChildBodyNode(), slider);
-  expectVectorNear(sliderJoint->getAxis(), Eigen::Vector3d::UnitX(), 1e-12);
-  EXPECT_NEAR(sliderJoint->getPositionLowerLimit(0), 0.1, 1e-12);
-  EXPECT_NEAR(sliderJoint->getPositionUpperLimit(0), 0.9, 1e-12);
+  test::expectJointTopology(*sliderJoint, tip, slider);
+  EXPECT_VECTOR_NEAR(sliderJoint->getAxis(), Eigen::Vector3d::UnitX(), 1e-12);
+  test::expectDofPositionLimits(*sliderJoint, 0, 0.1, 0.9, 1e-12);
 
-  const auto* fixedJoint = dynamic_cast<const dynamics::WeldJoint*>(
-      reparsed->getJoint("fixed_tip"));
+  const auto* fixedJoint
+      = test::requireJoint<dynamics::WeldJoint>(*reparsed, "fixed_tip");
   ASSERT_NE(fixedJoint, nullptr);
-  EXPECT_EQ(fixedJoint->getParentBodyNode(), slider);
-  EXPECT_EQ(fixedJoint->getChildBodyNode(), fixed);
+  test::expectJointTopology(*fixedJoint, slider, fixed);
   EXPECT_FALSE(fixed->getGravityMode());
 
-  const auto* screwJoint = dynamic_cast<const dynamics::ScrewJoint*>(
-      reparsed->getJoint("screw_drive"));
+  const auto* screwJoint
+      = test::requireJoint<dynamics::ScrewJoint>(*reparsed, "screw_drive");
   ASSERT_NE(screwJoint, nullptr);
-  EXPECT_EQ(screwJoint->getParentBodyNode(), fixed);
-  EXPECT_EQ(screwJoint->getChildBodyNode(), screwTip);
-  expectVectorNear(screwJoint->getAxis(), Eigen::Vector3d::UnitY(), 1e-12);
+  test::expectJointTopology(*screwJoint, fixed, screwTip);
+  EXPECT_VECTOR_NEAR(screwJoint->getAxis(), Eigen::Vector3d::UnitY(), 1e-12);
   EXPECT_NEAR(screwJoint->getPitch(), 0.25, 1e-12);
-  EXPECT_NEAR(screwJoint->getPositionLowerLimit(0), -0.75, 1e-12);
-  EXPECT_NEAR(screwJoint->getPositionUpperLimit(0), 0.75, 1e-12);
-  EXPECT_NEAR(screwJoint->getDampingCoefficient(0), 0.2, 1e-12);
-  EXPECT_NEAR(screwJoint->getCoulombFriction(0), 0.05, 1e-12);
-  EXPECT_NEAR(screwJoint->getRestPosition(0), 0.1, 1e-12);
-  EXPECT_NEAR(screwJoint->getSpringStiffness(0), 1.5, 1e-12);
+  test::expectDofPositionLimits(*screwJoint, 0, -0.75, 0.75, 1e-12);
+  test::expectDofDynamics(*screwJoint, 0, 0.2, 0.05, 0.1, 1.5, 1e-12);
 
-  const auto* universalJoint = dynamic_cast<const dynamics::UniversalJoint*>(
-      reparsed->getJoint("universal_shoulder"));
+  const auto* universalJoint = test::requireJoint<dynamics::UniversalJoint>(
+      *reparsed, "universal_shoulder");
   ASSERT_NE(universalJoint, nullptr);
-  EXPECT_EQ(universalJoint->getParentBodyNode(), screwTip);
-  EXPECT_EQ(universalJoint->getChildBodyNode(), universalTip);
-  expectVectorNear(universalJoint->getAxis1(), Eigen::Vector3d::UnitX(), 1e-12);
-  expectVectorNear(universalJoint->getAxis2(), Eigen::Vector3d::UnitZ(), 1e-12);
-  EXPECT_NEAR(universalJoint->getPositionLowerLimit(0), -0.4, 1e-12);
-  EXPECT_NEAR(universalJoint->getPositionUpperLimit(0), 0.6, 1e-12);
-  EXPECT_NEAR(universalJoint->getDampingCoefficient(0), 0.3, 1e-12);
-  EXPECT_NEAR(universalJoint->getCoulombFriction(0), 0.06, 1e-12);
-  EXPECT_NEAR(universalJoint->getRestPosition(0), -0.2, 1e-12);
-  EXPECT_NEAR(universalJoint->getSpringStiffness(0), 2.5, 1e-12);
-  EXPECT_NEAR(universalJoint->getPositionLowerLimit(1), -1.25, 1e-12);
-  EXPECT_NEAR(universalJoint->getPositionUpperLimit(1), 1.5, 1e-12);
-  EXPECT_NEAR(universalJoint->getDampingCoefficient(1), 0.45, 1e-12);
-  EXPECT_NEAR(universalJoint->getCoulombFriction(1), 0.08, 1e-12);
-  EXPECT_NEAR(universalJoint->getRestPosition(1), 0.35, 1e-12);
-  EXPECT_NEAR(universalJoint->getSpringStiffness(1), 4.5, 1e-12);
+  test::expectJointTopology(*universalJoint, screwTip, universalTip);
+  EXPECT_VECTOR_NEAR(
+      universalJoint->getAxis1(), Eigen::Vector3d::UnitX(), 1e-12);
+  EXPECT_VECTOR_NEAR(
+      universalJoint->getAxis2(), Eigen::Vector3d::UnitZ(), 1e-12);
+  test::expectDofPositionLimits(*universalJoint, 0, -0.4, 0.6, 1e-12);
+  test::expectDofDynamics(*universalJoint, 0, 0.3, 0.06, -0.2, 2.5, 1e-12);
+  test::expectDofPositionLimits(*universalJoint, 1, -1.25, 1.5, 1e-12);
+  test::expectDofDynamics(*universalJoint, 1, 0.45, 0.08, 0.35, 4.5, 1e-12);
 
-  const auto* ballJoint = dynamic_cast<const dynamics::BallJoint*>(
-      reparsed->getJoint("ball_socket"));
+  const auto* ballJoint
+      = test::requireJoint<dynamics::BallJoint>(*reparsed, "ball_socket");
   ASSERT_NE(ballJoint, nullptr);
-  EXPECT_EQ(ballJoint->getParentBodyNode(), universalTip);
-  EXPECT_EQ(ballJoint->getChildBodyNode(), ballTip);
+  test::expectJointTopology(*ballJoint, universalTip, ballTip);
   EXPECT_EQ(ballJoint->getNumDofs(), 3u);
 
-  ASSERT_EQ(base->getNumShapeNodesWith<dynamics::VisualAspect>(), 1u);
-  ASSERT_EQ(base->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
-  const auto* baseBox = dynamic_cast<const dynamics::BoxShape*>(
-      base->getShapeNodeWith<dynamics::VisualAspect>(0)->getShape().get());
+  const auto* baseBox
+      = test::requireShape<dynamics::VisualAspect, dynamics::BoxShape>(
+          *base, 0, 1);
   ASSERT_NE(baseBox, nullptr);
-  expectVectorNear(baseBox->getSize(), Eigen::Vector3d(0.4, 0.5, 0.6), 1e-12);
-  expectVectorNear(
+  EXPECT_VECTOR_NEAR(baseBox->getSize(), Eigen::Vector3d(0.4, 0.5, 0.6), 1e-12);
+  const auto* baseCollisionBox
+      = test::requireShape<dynamics::CollisionAspect, dynamics::BoxShape>(
+          *base, 0, 1);
+  ASSERT_NE(baseCollisionBox, nullptr);
+  EXPECT_VECTOR_NEAR(
+      baseCollisionBox->getSize(), Eigen::Vector3d(0.4, 0.5, 0.6), 1e-12);
+  EXPECT_VECTOR_NEAR(
       base->getShapeNodeWith<dynamics::VisualAspect>(0)
           ->getRelativeTransform()
           .translation(),
       Eigen::Vector3d(0.1, 0.0, 0.0),
       1e-12);
-  expectVectorNear(
+  EXPECT_VECTOR_NEAR(
       base->getShapeNodeWith<dynamics::VisualAspect>(0)
           ->getVisualAspect()
           ->getRGBA(),
       Eigen::Vector4d(0.2, 0.4, 0.6, 0.8),
       1e-12);
 
-  ASSERT_EQ(tip->getNumShapeNodesWith<dynamics::VisualAspect>(), 1u);
-  ASSERT_EQ(tip->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
-  const auto* tipSphere = dynamic_cast<const dynamics::SphereShape*>(
-      tip->getShapeNodeWith<dynamics::VisualAspect>(0)->getShape().get());
+  const auto* tipSphere
+      = test::requireShape<dynamics::VisualAspect, dynamics::SphereShape>(
+          *tip, 0, 1);
   ASSERT_NE(tipSphere, nullptr);
   EXPECT_NEAR(tipSphere->getRadius(), 0.15, 1e-12);
 
-  const auto* tipCylinder = dynamic_cast<const dynamics::CylinderShape*>(
-      tip->getShapeNodeWith<dynamics::CollisionAspect>(0)->getShape().get());
+  const auto* tipCylinder
+      = test::requireShape<dynamics::CollisionAspect, dynamics::CylinderShape>(
+          *tip, 0, 1);
   ASSERT_NE(tipCylinder, nullptr);
   EXPECT_NEAR(tipCylinder->getRadius(), 0.1, 1e-12);
   EXPECT_NEAR(tipCylinder->getHeight(), 0.3, 1e-12);
 
-  ASSERT_EQ(slider->getNumShapeNodesWith<dynamics::VisualAspect>(), 1u);
-  const auto* sliderMesh = dynamic_cast<const dynamics::MeshShape*>(
-      slider->getShapeNodeWith<dynamics::VisualAspect>(0)->getShape().get());
+  const auto* sliderMesh
+      = test::requireShape<dynamics::VisualAspect, dynamics::MeshShape>(
+          *slider, 0, 1);
   ASSERT_NE(sliderMesh, nullptr);
-  expectVectorNear(
+  EXPECT_VECTOR_NEAR(
       sliderMesh->getScale(), Eigen::Vector3d(0.5, 1.0, 2.0), 1e-12);
   const common::Uri meshUri
       = common::Uri::createFromPath(dart::config::dataPath("obj/BoxSmall.obj"));
   EXPECT_EQ(sliderMesh->getMeshUri2().toString(), meshUri.toString());
 
-  ASSERT_EQ(fixed->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
-  const auto* fixedBox = dynamic_cast<const dynamics::BoxShape*>(
-      fixed->getShapeNodeWith<dynamics::CollisionAspect>(0)->getShape().get());
+  const auto* fixedBox
+      = test::requireShape<dynamics::CollisionAspect, dynamics::BoxShape>(
+          *fixed, 0, 1);
   ASSERT_NE(fixedBox, nullptr);
-  expectVectorNear(fixedBox->getSize(), Eigen::Vector3d(0.1, 0.1, 0.1), 1e-12);
+  EXPECT_VECTOR_NEAR(
+      fixedBox->getSize(), Eigen::Vector3d(0.1, 0.1, 0.1), 1e-12);
 
-  ASSERT_EQ(screwTip->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
-  const auto* screwTipSphere = dynamic_cast<const dynamics::SphereShape*>(
-      screwTip->getShapeNodeWith<dynamics::CollisionAspect>(0)
-          ->getShape()
-          .get());
+  const auto* screwTipSphere
+      = test::requireShape<dynamics::CollisionAspect, dynamics::SphereShape>(
+          *screwTip, 0, 1);
   ASSERT_NE(screwTipSphere, nullptr);
   EXPECT_NEAR(screwTipSphere->getRadius(), 0.08, 1e-12);
 
-  ASSERT_EQ(
-      universalTip->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
   const auto* universalTipCylinder
-      = dynamic_cast<const dynamics::CylinderShape*>(
-          universalTip->getShapeNodeWith<dynamics::CollisionAspect>(0)
-              ->getShape()
-              .get());
+      = test::requireShape<dynamics::CollisionAspect, dynamics::CylinderShape>(
+          *universalTip, 0, 1);
   ASSERT_NE(universalTipCylinder, nullptr);
   EXPECT_NEAR(universalTipCylinder->getRadius(), 0.04, 1e-12);
   EXPECT_NEAR(universalTipCylinder->getHeight(), 0.18, 1e-12);
 
-  ASSERT_EQ(ballTip->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
-  const auto* ballTipSphere = dynamic_cast<const dynamics::SphereShape*>(
-      ballTip->getShapeNodeWith<dynamics::CollisionAspect>(0)
-          ->getShape()
-          .get());
+  const auto* ballTipSphere
+      = test::requireShape<dynamics::CollisionAspect, dynamics::SphereShape>(
+          *ballTip, 0, 1);
   ASSERT_NE(ballTipSphere, nullptr);
   EXPECT_NEAR(ballTipSphere->getRadius(), 0.05, 1e-12);
 }
@@ -565,12 +514,11 @@ TEST(SdfWriter, RootWeldRoundTripsWithFixedRootOption)
   ASSERT_NE(reparsed, nullptr);
   ASSERT_EQ(reparsed->getNumBodyNodes(), 1u);
   ASSERT_EQ(reparsed->getNumJoints(), 1u);
-  const auto* root
-      = dynamic_cast<const dynamics::WeldJoint*>(reparsed->getJoint(0));
+  const auto* root = test::requireJoint<dynamics::WeldJoint>(*reparsed, "root");
   ASSERT_NE(root, nullptr);
-  EXPECT_EQ(root->getParentBodyNode(), nullptr);
-  ASSERT_NE(root->getChildBodyNode(), nullptr);
-  EXPECT_EQ(root->getChildBodyNode()->getName(), "fixed_root");
+  const auto* fixedRoot = test::requireBodyNode(*reparsed, "fixed_root");
+  ASSERT_NE(fixedRoot, nullptr);
+  test::expectJointTopology(*root, nullptr, fixedRoot);
 }
 
 //==============================================================================

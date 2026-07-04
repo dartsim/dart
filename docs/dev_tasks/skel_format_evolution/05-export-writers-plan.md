@@ -26,6 +26,11 @@ material colors, non-finite screw pitch, unsupported ball-joint metadata, and
 non-finite joint dynamics return `common::Result` errors instead of being
 silently dropped.
 
+The SDF writer integration test now uses
+`tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
+inertia, and shape assertions. Future writer tests should extend that helper
+instead of copying SDF-specific ad hoc checks.
+
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.
 
@@ -91,8 +96,6 @@ Phase 5 is complete only when code and tests prove the writer contract:
   data round-trip correctly.
 - Decide the next implementation target: URDF writer or PLAN-101 project
   save/load.
-- Factor a shared comparison helper for read/write/read tests before future
-  formats copy ad hoc assertions.
 - Decide whether writer APIs live under `dart::io`, parser-specific utility
   namespaces, or a DART 7 scene/project layer.
 - Keep YAML out of the first implementation target unless a durable

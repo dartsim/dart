@@ -42,6 +42,13 @@ non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
 5 is still open until broader SDF coverage plus the remaining accepted writer
 targets are implemented or durably deferred.
 
+The SDF writer integration test now uses
+`tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
+inertia, and shape comparisons, and `tests/CMakeLists.txt` includes the helper
+in the formatted test-helper list. This closes the Phase 5 comparison-helper
+infrastructure item, but it does not broaden the public writer contract by
+itself.
+
 Validation for this slice:
 
 - `git diff --check`
@@ -51,6 +58,10 @@ Validation for this slice:
 - `pixi run run-cpp-target test_io_readNone`
 - `pixi run lint`
 - `pixi run build`
+
+Additional validation for the comparison-helper refactor:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
 Changelog decision:
 
@@ -64,7 +75,9 @@ Changelog decision:
   until the implementation PR exists.
 - PR-body note: N/A
 - Follow-up: add the implementation PR link after a PR exists and maintainer /
-  user approval allows the PR update or follow-up push.
+  user approval allows the PR update or follow-up push. No additional changelog
+  entry is needed for the comparison-helper refactor because it only changes
+  test infrastructure and task handoff docs.
 
 ## Previous Resume Checkpoint (2026-07-03)
 
@@ -160,8 +173,9 @@ Continue with the remaining real task work: land Phase 2 after maintainer
 approval, then continue Phase 5 from
 [`05-export-writers-plan.md`](05-export-writers-plan.md) by extending SDF writer
 coverage beyond material colors/link gravity mode/passive joint dynamics/screw
-thread pitch/universal and ball topology/local poses or choosing the next
-accepted writer target (URDF or PLAN-101 project save/load).
+thread pitch/universal and ball topology/local poses, deciding the writer API
+home, or choosing the next accepted writer target (URDF or PLAN-101 project
+save/load).
 
 ## Context That Would Be Lost
 

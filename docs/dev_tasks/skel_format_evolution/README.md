@@ -34,9 +34,10 @@
       universal two-axis joints, topology-only ball joints, and explicit visual
       material colors now round-trip as SDF `<gravity>`,
       `<axis>/<axis2><dynamics>`, `<thread_pitch>`, local `<pose>`, and
-      `<diffuse>` values. Broader SDF coverage, URDF export, and project
-      save/load remain open. Add YAML only if a durable project/scene schema is
-      accepted first.
+      `<diffuse>` values. The writer test now uses a shared IO round-trip
+      assertion helper for body, joint, DoF, inertia, and shape comparisons.
+      Broader SDF coverage, URDF export, and project save/load remain open. Add
+      YAML only if a durable project/scene schema is accepted first.
 
 ## Goal
 
@@ -146,6 +147,9 @@ SKEL-YAML direction just because the prototype once existed.
   link-level gravity mode for gravity-disabled links and passive joint dynamics
   metadata plus screw thread pitch for supported single-axis joints, two-axis
   universal joints, topology-only ball joints, plus local root, joint, and shape
-  poses. Completion still requires broader accepted-format writer APIs and
-  round-trip tests that load a scene from each accepted format, write it back,
-  and compare the re-parsed models.
+  poses. The assertions are factored through
+  `tests/helpers/io_round_trip_helpers.hpp` so future writer formats can reuse
+  the body, joint, DoF, inertia, and shape comparison helpers. Completion still
+  requires broader accepted-format writer APIs and round-trip tests that load a
+  scene from each accepted format, write it back, and compare the re-parsed
+  models.
