@@ -410,6 +410,11 @@
 
 * Tests
 
+  * Preserve every protected `release-*` post-merge CI run by giving
+    release-branch workflow runs a run-specific concurrency group instead of
+    relying on GitHub's single-pending default concurrency queue:
+    [#3233](https://github.com/dartsim/dart/pull/3233)
+
   * Add a DART 6 performance dashboard workflow, local preview tasks, and
     readable benchmark labels for the latest release-branch Google Benchmark
     slice, with optional publication of the contact-container benchmark from
