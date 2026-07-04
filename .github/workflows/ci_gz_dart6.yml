@@ -24,13 +24,15 @@ permissions:
   contents: read
 
 concurrency:
-  # Scheduled DART 6 canaries should not replace pending scheduled runs.
-  # Manual dispatches keep the same group and continue to supersede each other.
+  # Scheduled DART 6 canaries and protected release-branch manual runs should
+  # not replace pending validation.
   group: >-
-    ${{ github.event_name == 'schedule'
+    ${{ (github.event_name == 'schedule' || startsWith(github.ref, 'refs/heads/release-'))
         && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
         || format('{0}-{1}', github.workflow, github.ref) }}
-  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+  cancel-in-progress: >-
+    ${{ github.event_name != 'schedule'
+        && !startsWith(github.ref, 'refs/heads/release-') }}
 
 jobs:
   gz-canary:
