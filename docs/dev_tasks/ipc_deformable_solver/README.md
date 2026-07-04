@@ -363,8 +363,9 @@ DART-owned implementation.
    diagnostic (`maxActiveContactCount`) plus a machine-checkable statistics
    packet (`scripts/write_plan081_deformable_fig23_packet.py` +
    `docs/plans/081-.../fig23_deformable_statistics_corpus.json`, pytest
-   `tests/test_plan081_deformable_fig23_packet.py`) emit the Fig-23-shaped axes
-   over DART-runnable scenes (`paper_scale: false`). Remaining: process
+   `python/tests/unit/test_write_plan081_deformable_fig23_packet.py`) emit the
+   Fig-23-shaped axes over DART-runnable scenes (`paper_scale: false`).
+   Remaining: process
    peak-memory tracking, and the paper-scale scenes + Table-1 CPU comparison
    (blocked on the M4 upstream asset pipeline).
 5. Use the scene corpus manifest to select paper-facing scenes only when their

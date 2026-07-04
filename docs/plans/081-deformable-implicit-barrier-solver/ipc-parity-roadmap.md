@@ -283,7 +283,8 @@ per-scene axes (per-step Newton/CG effort, CG residual, assembled sparse-Hessian
 footprint, per-step wall time, and the active-contact statistics) over the
 DART-runnable scenes: `scripts/write_plan081_deformable_fig23_packet.py` +
 [`fig23_deformable_statistics_corpus.json`](fig23_deformable_statistics_corpus.json),
-validated by `tests/test_plan081_deformable_fig23_packet.py`. It is explicitly
+validated by `python/tests/unit/test_write_plan081_deformable_fig23_packet.py`.
+It is explicitly
 `paper_scale: false` (shape parity, not paper parity).
 
 Remaining M7 work: AMG / multigrid preconditioning for the largest systems,
