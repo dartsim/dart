@@ -23,9 +23,14 @@ the owner docs above.
 1. **Mission before motion.** Read enough context to understand the DART north
    star, current owner docs, and verification bar before substantial work. If a
    request conflicts with those rules, surface the tradeoff before editing.
-2. **Assumptions must be visible.** Do not silently choose between materially
-   different interpretations. State the assumption, ask when the decision is
-   consequential, and record the evidence when the repo answers it.
+2. **Assumptions and unknowns must be surfaced.** Do not silently choose
+   between materially different interpretations: state the assumption, ask when
+   the decision is consequential, and record the evidence when the repo answers
+   it. Before large or ambiguous work, go further and hunt for the unknowns you
+   have not named yet — your prompts, context, and plan are a map, not the
+   territory of the real code and requirements. Surface consequential unknowns
+   up front rather than discovering them mid-implementation;
+   `docs/ai/orchestration.md` owns the method catalog.
 3. **Simplicity is a requirement.** Solve the current DART problem. Do not add
    speculative flexibility, hierarchy, abstraction, or configuration unless it
    removes real complexity or matches an established DART pattern.
@@ -58,6 +63,8 @@ Before finalizing substantial AI-assisted work, check:
 - Objective: deliverables and non-goals are clear.
 - Assumptions: consequential ambiguity was asked about or resolved from
   evidence.
+- Unknowns: material unknowns were surfaced before large work (see
+  `docs/ai/orchestration.md`), not discovered mid-implementation.
 - Simplicity: the change is no larger than the current problem requires.
 - Scope: touched files are necessary and unrelated edits are preserved.
 - Source of truth: mutable state has one owner; other surfaces point to it.
