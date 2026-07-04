@@ -611,7 +611,7 @@ void ConstraintSolver::updateConstraints()
   mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
 
   alignas(std::max_align_t) std::array<std::byte, kContactScratchBufferBytes>
-      contactScratchBuffer{};
+      contactScratchBuffer;
   std::pmr::monotonic_buffer_resource contactScratchResource(
       contactScratchBuffer.data(),
       contactScratchBuffer.size(),
