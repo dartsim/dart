@@ -588,7 +588,8 @@ is blocked:
 - Matrix-free-CG auto-selection: the contact-heavy crossover benchmark + mid-size
   scaled parity regression landed (#3274) as the evidence base; choosing the
   automatic very-large-mesh selection policy itself is a maintainer decision
-  (both solvers stay opt-in until then).
+  (sparse Jacobi-CG remains the automatic path above the dense-direct cap, while
+  matrix-free stays opt-in until then).
 - A genuine avg-contacts-per-step axis needs a new evolving multi-step
   self-contact fixture.
 - Process peak-memory tracking needs a memory-column semantics choice.

@@ -287,7 +287,8 @@ per-step CG iterations, steepest-descent fallbacks, and assembled-Hessian
 footprint, with a mid-size scaled parity regression proving matrix-free matches
 sparse-CG above the dense-direct cap. Remaining hardening: choosing an automatic
 very-large-mesh matrix-free selection policy is a maintainer decision the
-crossover evidence now informs; both solvers stay opt-in until then.
+crossover evidence now informs; sparse Jacobi-CG remains the automatic path
+above the dense-direct cap, while matrix-free stays opt-in until then.
 
 **Fig-23 statistics harness — shape-parity scaffold landed:** the deformable
 solver diagnostics now include the peak active-contact count per step
