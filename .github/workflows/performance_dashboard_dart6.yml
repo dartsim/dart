@@ -43,7 +43,14 @@ permissions:
   contents: write
 
 concurrency:
-  group: dart6-performance-dashboard
+  # Protected release branches should finish every post-merge validation run.
+  # Keep non-push dashboard entrypoints serialized because they publish the same
+  # gh-pages dashboard path, but give release push validations a run-specific
+  # group so GitHub's single-pending concurrency queue cannot drop them.
+  group: >-
+    ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-6.')
+        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
+        || 'dart6-performance-dashboard' }}
   cancel-in-progress: false
 
 jobs:
