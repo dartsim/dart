@@ -1777,13 +1777,7 @@ dynamics::ScrewJoint::Properties readScrewJoint(
     reportMissingElement("readScrewJoint", "axis", "joint", _name);
   }
 
-  // pitch
-  const ElementPtr jointElement = _joint.Element();
-  if (hasElement(jointElement, "thread_pitch")) {
-    newScrewJoint.mPitch = _joint.ThreadPitch();
-  } else if (hasElement(jointElement, "screw_thread_pitch")) {
-    newScrewJoint.mPitch = _joint.ScrewThreadPitch();
-  }
+  newScrewJoint.mPitch = _joint.ScrewThreadPitch();
 
   return newScrewJoint;
 }

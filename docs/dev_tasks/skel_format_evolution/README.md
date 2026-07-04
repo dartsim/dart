@@ -31,8 +31,8 @@
       writer slice is implemented locally for a conservative `Skeleton` subset
       using libsdformat DOM serialization; link gravity mode, passive joint
       dynamics metadata (damping, Coulomb friction, spring reference, and spring
-      stiffness), version-aware screw thread pitch, SDF 1.11+ axis/axis2 mimic
-      metadata, universal two-axis joints, continuous revolute joints,
+      stiffness), sdformat-normalized screw thread pitch, SDF 1.11+ axis/axis2
+      mimic metadata, universal two-axis joints, continuous revolute joints,
       topology-only ball joints, capsule/cone/ellipsoid geometry, and explicit
       visual material colors now round-trip as SDF `<gravity>`,
       `<axis>/<axis2><dynamics>`, `<thread_pitch>`/`<screw_thread_pitch>`,
@@ -52,7 +52,7 @@
       libsdformat DOM values for names, local poses, geometry, and diffuse
       colors. Standard joint reads use DOM values for joint name/type,
       parent/child links, local pose, axis vectors, axis dynamics, finite
-      limits, mimic metadata, and legacy or modern screw pitch values; XML
+      limits, mimic metadata, and sdformat-normalized screw pitch values; XML
       checks remain only where DART needs authored/default presence,
       DART-specific soft-body extension fields, or legacy
       `use_parent_model_frame` compatibility.
@@ -176,7 +176,7 @@ SKEL-YAML direction just because the prototype once existed.
   representative supported `Skeleton` subset and checks unsupported-shape
   diagnostics plus non-finite visual material diagnostics. It also proves
   link-level gravity mode for gravity-disabled links and passive joint dynamics
-  metadata plus version-aware screw thread pitch for supported single-axis
+  metadata plus sdformat-normalized screw thread pitch for supported single-axis
   joints, two-axis universal joints, SDF 1.11+ axis/axis2 mimic metadata with
   motor enforcement, continuous revolute joints, topology-only ball joints,
   plus local root, joint, and shape poses, plus capsule/cone/ellipsoid geometry

@@ -895,11 +895,7 @@ WriteResult buildJoint(
           "Cannot write SDF screw joint [" + joint.getName()
           + "] with a non-finite pitch.");
     }
-    if (isSdfVersionAtLeast(options.version, 1, 10)) {
-      sdfJoint.SetScrewThreadPitch(pitch);
-    } else {
-      sdfJoint.SetThreadPitch(pitch);
-    }
+    sdfJoint.SetScrewThreadPitch(pitch);
   }
   if (const auto* universal
       = dynamic_cast<const dynamics::UniversalJoint*>(&joint)) {

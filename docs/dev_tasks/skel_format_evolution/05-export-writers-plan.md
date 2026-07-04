@@ -21,9 +21,10 @@ mapping and diagnostics. It writes BodyNode links, root FreeJoint/WeldJoint
 placement,
 revolute/continuous/prismatic/weld/screw/universal child joints, passive joint
 dynamics metadata (damping, Coulomb friction, spring reference, and spring
-stiffness), version-aware screw thread pitch (`<thread_pitch>` before SDF 1.10
-and `<screw_thread_pitch>` for SDF 1.10+), topology-only ball child joints,
-SDF 1.11+ mimic metadata for axis/axis2 follower joints with motor
+stiffness), sdformat-normalized screw thread pitch (legacy `<thread_pitch>`
+before SDF 1.10 and modern `<screw_thread_pitch>` for SDF 1.10+),
+topology-only ball child joints, SDF 1.11+ mimic metadata for axis/axis2
+follower joints with motor
 enforcement, link gravity mode, inertial parameters, local joint/shape poses,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry,
 and explicit visual material colors as SDF `<diffuse>` values. Absolute

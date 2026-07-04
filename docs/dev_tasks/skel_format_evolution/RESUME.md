@@ -36,12 +36,12 @@ FreeJoint/WeldJoint placement,
 revolute/continuous/prismatic/weld/screw/universal child joints, inertial data,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh geometry, link gravity mode,
 passive joint dynamics metadata (damping, Coulomb friction, spring reference,
-and spring stiffness), version-aware screw thread pitch, SDF 1.11+ axis/axis2
-mimic metadata with motor enforcement, topology-only ball child joints, local
-root/joint/shape poses, explicit visual material colors, and absolute non-file
-mesh URI preservation through a custom retriever. Continuous SDF joints now parse as
-unbounded DART
-`RevoluteJoint`s, and unbounded DART revolute joints write back as SDF
+and spring stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
+axis/axis2 mimic metadata with motor enforcement, topology-only ball child
+joints, local root/joint/shape poses, explicit visual material colors, and
+absolute non-file mesh URI preservation through a custom retriever. Continuous
+SDF joints now parse as unbounded DART `RevoluteJoint`s, and unbounded DART
+revolute joints write back as SDF
 `continuous` while finite-limit revolute joints stay `revolute`. Targetless
 relative/generated mesh references, including relative or host-qualified file
 URI forms, now return explicit diagnostics until a future file/project writer
@@ -71,11 +71,10 @@ mass, and inertia tensor values. Visual and collision shape nodes traverse
 material colors. Standard SDF joint reads traverse `sdf::Model`, `sdf::Joint`,
 and `sdf::JointAxis` DOM values for joint enumeration, joint name/type,
 parent/child links, local pose, axis vectors, axis dynamics, finite position
-limits, mimic metadata, and legacy `thread_pitch` or modern
-`screw_thread_pitch` screw pitch values. XML helper checks remain only where
-DART preserves authored/default distinctions for existing diagnostics, reads
-DART-specific soft-body extension fields, or supports the legacy
-`use_parent_model_frame` compatibility extension.
+limits, mimic metadata, and sdformat-normalized screw pitch values. XML helper
+checks remain only where DART preserves authored/default distinctions for
+existing diagnostics, reads DART-specific soft-body extension fields, or
+supports the legacy `use_parent_model_frame` compatibility extension.
 The SDF detail helper API has been narrowed to that remaining bridge: generic
 XML attribute reads, string reads, vector2/vectorX parsing, child enumeration,
 and direct helper tests for those deleted APIs are gone. Retained helpers cover
@@ -196,6 +195,15 @@ Additional validation for SDF 1.10+ screw pitch writer output:
 - `pixi run lint`
 - `pixi run build`
 
+Additional validation for sdformat-normalized screw pitch IO:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run run-cpp-target INTEGRATION_io_Read`
+- `pixi run lint`
+- `pixi run build`
+
 Changelog decision:
 
 - Mode: draft
@@ -240,7 +248,9 @@ Changelog decision:
   surface while preserving the existing parser/writer changelog scope. No
   additional entry is needed for SDF 1.10+ screw pitch writer output because it
   hardens the same conservative SDF writer capability before the implementation
-  PR exists.
+  PR exists. No additional separate entry is needed for sdformat-normalized
+  screw pitch IO because it keeps the same parser/writer capability on
+  libsdformat semantics before the implementation PR exists.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

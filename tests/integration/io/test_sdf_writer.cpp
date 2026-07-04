@@ -58,6 +58,9 @@
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <gtest/gtest.h>
+#include <sdf/Joint.hh>
+#include <sdf/Model.hh>
+#include <sdf/Root.hh>
 
 #include <algorithm>
 #include <filesystem>
@@ -388,11 +391,16 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   EXPECT_NE(
       writeResult.value().find("<joint name='hinge' type='revolute'>"),
       std::string::npos);
-  EXPECT_NE(
-      writeResult.value().find("<thread_pitch>0.25</thread_pitch>"),
-      std::string::npos);
+  EXPECT_NE(writeResult.value().find("<thread_pitch>"), std::string::npos);
   EXPECT_EQ(
       writeResult.value().find("<screw_thread_pitch>"), std::string::npos);
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfScrewJoint = sdfRoot.Model()->JointByName("screw_drive");
+  ASSERT_NE(sdfScrewJoint, nullptr);
+  EXPECT_NEAR(sdfScrewJoint->ScrewThreadPitch(), 0.25, 1e-12);
   EXPECT_NE(
       writeResult.value().find(
           "<joint name='universal_shoulder' type='universal'>"),

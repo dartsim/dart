@@ -61,6 +61,7 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <numbers>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -1305,9 +1306,10 @@ TEST(SdfParser, JointTypesParseFromSkeleton)
       dynamic_cast<dynamics::PrismaticJoint*>(
           skeleton->getJoint("prismatic_joint")),
       nullptr);
-  EXPECT_NE(
-      dynamic_cast<dynamics::ScrewJoint*>(skeleton->getJoint("screw_joint")),
-      nullptr);
+  auto* screwJoint
+      = dynamic_cast<dynamics::ScrewJoint*>(skeleton->getJoint("screw_joint"));
+  ASSERT_NE(screwJoint, nullptr);
+  EXPECT_NEAR(screwJoint->getPitch(), -2.0 * std::numbers::pi / 0.2, 1e-12);
   EXPECT_NE(
       dynamic_cast<dynamics::UniversalJoint*>(
           skeleton->getJoint("universal_joint")),
