@@ -46,10 +46,10 @@ fi
 # Extract the command and decide whether it is a `git commit` against THIS
 # repository, in one python3 pass. Handles env-var prefixes (quote-aware),
 # wrapper prefixes (command/exec/time/nice/nohup/env), subshell and brace-group
-# openers, backslash-escaped git, `git -C dir commit`, `git -c k=v commit`,
-# hook overrides via `--config-env` or command-scoped Git config file
-# environment, and && / || / ; / | command chains; ignores "commit" as a
-# substring elsewhere.
+# openers, backslash-escaped/path-qualified git, `git -C dir commit`,
+# `git -c k=v commit`, hook overrides via `--config-env` or command-scoped Git
+# config file environment, and && / || / ; / | command chains; ignores "commit"
+# as a substring elsewhere.
 verdict=$(printf '%s' "$input" | python3 -c '
 import json
 import os
@@ -183,6 +183,10 @@ def is_hooks_path_override(option):
 
 def command_word(token):
     return token.lstrip("({").lstrip("\\")
+
+
+def command_basename(token):
+    return os.path.basename(command_word(token))
 
 
 def skip_shell_prefixes(tokens, i):
@@ -452,7 +456,7 @@ def is_git_commit(text):
             continue
         if i >= len(tokens):
             continue
-        if command_word(tokens[i]) != "git":
+        if command_basename(tokens[i]) != "git":
             current_cwd = maybe_update_shell_cwd(
                 tokens,
                 i,

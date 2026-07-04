@@ -216,6 +216,8 @@ def _guard_verdict(tmp_path: Path, command: str, extra_env: dict | None = None):
     "command",
     [
         "git commit -m x",
+        "/usr/bin/git commit -m x",
+        "command /usr/local/bin/git commit -m x",
         "git -c user.name='DART Bot' commit -m x",
         "command git commit -m x",
         "env A=1 git commit -m x",
@@ -640,6 +642,17 @@ def test_guard_runs_for_env_split_no_verify_even_with_dart_managed_hook(
     env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
 
     returncode, stderr = _run_guard(repo, env, "env -S 'git commit --no-verify -m x'")
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
+def test_guard_runs_for_path_git_no_verify_even_with_dart_managed_hook(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, "/usr/bin/git commit --no-verify -m x")
 
     assert returncode == 0
     assert "would run 'pixi run check-lint-quick'" in stderr
