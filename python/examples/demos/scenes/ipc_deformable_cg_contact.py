@@ -96,7 +96,8 @@ def build() -> SceneSetup:
         diagnostics = world.last_deformable_solver_diagnostics
         builder.text(
             f"solver iters: {diagnostics.solver_iterations} | "
-            f"contacts: {diagnostics.converged_active_contact_count}"
+            f"contacts: {diagnostics.converged_active_contact_count} | "
+            f"peak contacts: {diagnostics.max_active_contact_count}"
         )
         builder.separator()
         bridge.build_diagnostics_panel(builder, context)

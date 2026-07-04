@@ -810,7 +810,10 @@ void defSimPartBodies(nb::module_& m)
           &sim::DeformableSolverDiagnostics::minActiveContactDistance)
       .def_ro(
           "converged_active_contact_count",
-          &sim::DeformableSolverDiagnostics::convergedActiveContactCount);
+          &sim::DeformableSolverDiagnostics::convergedActiveContactCount)
+      .def_ro(
+          "max_active_contact_count",
+          &sim::DeformableSolverDiagnostics::maxActiveContactCount);
 }
 
 } // namespace dart::python_nb
