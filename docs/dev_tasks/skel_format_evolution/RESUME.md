@@ -85,10 +85,10 @@ DART `CollisionAspect` collidable state for the lossless zero-bitmask subset,
 while ODE friction values read through `sdf::Friction` and `sdf::ODE` DOM
 values into DART `DynamicsAspect` friction, slip, and first friction-direction
 fields while preserving defaults for unauthored fields.
-SDF bounce restitution reads through sdformat Element authored flags and typed
-parameter conversion for the `<surface><bounce><restitution_coefficient>`
-schema field because sdformat 16 does not expose a high-level `Bounce` DOM
-class.
+SDF bounce restitution reads through sdformat Element authored flags and direct
+typed `Element::Get<double>` access for the
+`<surface><bounce><restitution_coefficient>` schema field because sdformat 16
+does not expose a high-level `Bounce` DOM class.
 Standard SDF joint reads traverse `sdf::Model`,
 `sdf::Joint`, and `sdf::JointAxis` DOM values for joint enumeration, joint
 name/type,
@@ -335,6 +335,13 @@ Additional validation for visual transparency IO:
 - `pixi run build`
 - `pixi run test-unit`
 
+Additional validation for direct sdformat bounce typed access:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run lint`
+- `pixi run build`
+
 Changelog decision:
 
 - Mode: draft
@@ -424,7 +431,10 @@ Changelog decision:
   separate entry is needed for visual transparency IO because it broadens the
   same conservative SDF writer/parser round-trip capability before the
   implementation PR exists; the existing DART 7 IO and Parsing bullet now
-  includes visual shadow/hidden/transparency state.
+  includes visual shadow/hidden/transparency state. No additional separate
+  entry is needed for direct sdformat bounce typed access because it is an
+  internal parser hardening for the already-covered collision-surface bounce
+  restitution field.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

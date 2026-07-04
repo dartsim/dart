@@ -1276,8 +1276,16 @@ void readCollisionSurface(
   if (hasAuthoredElement(surfaceElement, "bounce")) {
     const ElementPtr bounceElement = getElement(surfaceElement, "bounce");
     if (hasAuthoredElement(bounceElement, "restitution_coefficient")) {
-      dynamicsAspect->setRestitutionCoeff(
-          getValueDouble(bounceElement, "restitution_coefficient"));
+      sdf::Errors errors;
+      const auto [restitution, found]
+          = bounceElement->Get<double>(errors, "restitution_coefficient", 0.0);
+      if (found && errors.empty()) {
+        dynamicsAspect->setRestitutionCoeff(restitution);
+      } else {
+        DART_WARN(
+            "[SdfParser] Failed to parse <restitution_coefficient> under "
+            "<bounce> as double.");
+      }
     }
   }
 
