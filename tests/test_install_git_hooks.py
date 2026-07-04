@@ -222,6 +222,8 @@ def _guard_verdict(tmp_path: Path, command: str, extra_env: dict | None = None):
         "env -u FOO git commit -m x",
         "env --unset=FOO git commit -m x",
         "env -C . git commit -m x",
+        "env -i git commit -m x",
+        "env --ignore-environment git commit -m x",
         "(git commit -m x)",
         'FOO="a b" git commit -m x',
         "pixi run lint && git commit -m x",

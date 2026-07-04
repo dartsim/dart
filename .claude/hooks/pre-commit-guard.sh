@@ -84,6 +84,21 @@ ENV_OPTS_WITH_ARG_PREFIXES = (
     "--argv0=",
 )
 ENV_CHDIR_PREFIX = "--chdir="
+ENV_OPTS_NO_ARG = {
+    "-",
+    "-i",
+    "--ignore-environment",
+    "-v",
+    "--debug",
+    "--ignore-signal",
+    "--default-signal",
+    "--block-signal",
+}
+ENV_OPTS_NO_ARG_PREFIXES = (
+    "--ignore-signal=",
+    "--default-signal=",
+    "--block-signal=",
+)
 ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=(?P<value>.*)$")
 
 
@@ -168,6 +183,12 @@ def is_git_commit(text):
                     if any(
                         t.startswith(prefix)
                         for prefix in ENV_OPTS_WITH_ARG_PREFIXES
+                    ):
+                        i += 1
+                        continue
+                    if t in ENV_OPTS_NO_ARG or any(
+                        t.startswith(prefix)
+                        for prefix in ENV_OPTS_NO_ARG_PREFIXES
                     ):
                         i += 1
                         continue
