@@ -61,11 +61,14 @@
 #include <fmt/ostream.h>
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <ranges>
+#include <vector>
 
 #include <cmath>
+#include <cstdint>
 
 namespace dart {
 namespace constraint {
@@ -89,6 +92,110 @@ collision::CollisionDetectorPtr createDefaultCollisionDetector()
   }
   return collision::DartCollisionDetector::create();
 }
+
+struct ContactPairKey
+{
+  collision::CollisionObject* first = nullptr;
+  collision::CollisionObject* second = nullptr;
+};
+
+ContactPairKey makeContactPairKey(
+    collision::CollisionObject* first, collision::CollisionObject* second)
+{
+  if (std::less<collision::CollisionObject*>{}(second, first)) {
+    std::swap(first, second);
+  }
+  return {first, second};
+}
+
+bool sameContactPair(ContactPairKey lhs, ContactPairKey rhs)
+{
+  return lhs.first == rhs.first && lhs.second == rhs.second;
+}
+
+struct ContactPairCount
+{
+  ContactPairKey key;
+  std::size_t count = 0;
+};
+
+class ContactPairCounter
+{
+public:
+  ContactPairCounter(
+      std::size_t maxContacts, common::FrameAllocator& frameAllocator)
+    : mEntries(common::FrameStlAllocator<ContactPairCount>(frameAllocator))
+  {
+    if (maxContacts == 0) {
+      return;
+    }
+
+    std::size_t capacity = 1;
+    while (capacity < maxContacts * 2) {
+      capacity <<= 1;
+    }
+
+    mEntries.resize(capacity);
+    mMask = capacity - 1;
+  }
+
+  void increment(
+      collision::CollisionObject* first, collision::CollisionObject* second)
+  {
+    ++findOrInsert(makeContactPairKey(first, second)).count;
+  }
+
+  std::size_t count(
+      collision::CollisionObject* first,
+      collision::CollisionObject* second) const
+  {
+    if (mEntries.empty()) {
+      return 1;
+    }
+
+    const auto key = makeContactPairKey(first, second);
+    std::size_t index = hash(key) & mMask;
+    while (true) {
+      const auto& entry = mEntries[index];
+      if (entry.count == 0) {
+        return 1;
+      }
+      if (sameContactPair(entry.key, key)) {
+        return entry.count;
+      }
+      index = (index + 1) & mMask;
+    }
+  }
+
+private:
+  ContactPairCount& findOrInsert(ContactPairKey key)
+  {
+    std::size_t index = hash(key) & mMask;
+    while (true) {
+      auto& entry = mEntries[index];
+      if (entry.count == 0) {
+        entry.key = key;
+        return entry;
+      }
+      if (sameContactPair(entry.key, key)) {
+        return entry;
+      }
+      index = (index + 1) & mMask;
+    }
+  }
+
+  static std::size_t hash(ContactPairKey key)
+  {
+    auto first = reinterpret_cast<std::uintptr_t>(key.first) >> 4;
+    auto second = reinterpret_cast<std::uintptr_t>(key.second) >> 4;
+    return static_cast<std::size_t>(
+        first ^ (second + 0x9e3779b97f4a7c15ULL + (first << 6) + (first >> 2)));
+  }
+
+  std::vector<ContactPairCount, common::FrameStlAllocator<ContactPairCount>>
+      mEntries;
+  std::size_t mMask = 0;
+};
 
 } // namespace
 
@@ -498,31 +605,14 @@ void ConstraintSolver::updateConstraints()
 
   mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
 
-  // Create a mapping of contact pairs to the number of contacts between them
-  using ContactPair
-      = std::pair<collision::CollisionObject*, collision::CollisionObject*>;
-
-  // Compare contact pairs while ignoring their order in the pair.
-  struct ContactPairCompare
-  {
-    ContactPair getSortedPair(const ContactPair& a) const
-    {
-      if (a.first < a.second) {
-        return std::make_pair(a.second, a.first);
-      }
-      return a;
-    }
-
-    bool operator()(const ContactPair& a, const ContactPair& b) const
-    {
-      // Sort each pair and then do a lexicographical comparison
-      return getSortedPair(a) < getSortedPair(b);
-    }
-  };
-
-  std::map<ContactPair, size_t, ContactPairCompare> contactPairMap;
-  mContactPtrs.clear();
-  mContactPtrs.reserve(mCollisionResult.getNumContacts());
+  ContactPairCounter contactPairCounter(
+      mCollisionResult.getNumContacts(), *mFrameAllocator);
+  std::vector<
+      collision::Contact*,
+      common::FrameStlAllocator<collision::Contact*>>
+      contacts{
+          common::FrameStlAllocator<collision::Contact*>(*mFrameAllocator)};
+  contacts.reserve(mCollisionResult.getNumContacts());
 
   // Create new contact constraints
   for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
@@ -576,22 +666,17 @@ void ConstraintSolver::updateConstraints()
               contact,
               mTimeStep));
     } else {
-      // Increment the count of contacts between the two collision objects
-      ++contactPairMap[std::make_pair(
-          contact.collisionObject1, contact.collisionObject2)];
+      contactPairCounter.increment(
+          contact.collisionObject1, contact.collisionObject2);
 
-      mContactPtrs.push_back(&contact);
+      contacts.push_back(&contact);
     }
   }
 
   // Add the new contact constraints to dynamic constraint list
-  for (auto* contact : mContactPtrs) {
-    std::size_t numContacts = 1;
-    auto it = contactPairMap.find(
-        std::make_pair(contact->collisionObject1, contact->collisionObject2));
-    if (it != contactPairMap.end()) {
-      numContacts = it->second;
-    }
+  for (auto* contact : contacts) {
+    const auto numContacts = contactPairCounter.count(
+        contact->collisionObject1, contact->collisionObject2);
 
     auto contactConstraint = mContactSurfaceHandler->createConstraint(
         *contact, numContacts, mTimeStep);
