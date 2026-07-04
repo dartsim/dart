@@ -64,9 +64,10 @@ Source of truth:
 - `dart/io/read.cpp`
 - `dart/utils/sdf/sdf_writer.hpp` for the first parser-specific SDF writer
 - `dart/utils/sdf/` uses libsdformat DOM APIs for SDF structure, model/link,
-  inertial, visual/collision/material, joint topology/pose/axis frame
-  resolution/dynamics/limits, collision-surface contact bitmask, bounce
-  restitution, ODE friction/slip metadata, and supported geometry semantics;
+  inertial, visual/collision/material, visual shadow and visibility metadata,
+  joint topology/pose/axis frame resolution/dynamics/limits,
+  collision-surface contact bitmask, bounce restitution, ODE friction/slip
+  metadata, and supported geometry semantics;
   avoid new raw XML-level SDF parsing when sdformat exposes the value. When
   DART must preserve an authored/default distinction or schema field that the
   high-level DOM class does not expose, use sdformat
@@ -162,9 +163,10 @@ mimic metadata for axis/axis2 follower joints with motor enforcement,
 topology-only ball child joints, link gravity mode, inertial parameters, local
 joint/shape poses, and
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry
-with explicit visual material colors, PBR metallic/roughness factors, and
-collision-surface contact disable bitmasks, zero-threshold bounce restitution,
-and ODE friction/slip metadata. The round-trip coverage includes absolute
+with visual shadow/hidden state, explicit visual material colors, PBR
+metallic/roughness factors, and collision-surface contact disable bitmasks,
+zero-threshold bounce restitution, and ODE friction/slip metadata. The
+round-trip coverage includes absolute
 non-file mesh URI preservation through a custom retriever. Targetless relative
 mesh references and relative or
 host-qualified `file` mesh URIs are rejected because the writer has no

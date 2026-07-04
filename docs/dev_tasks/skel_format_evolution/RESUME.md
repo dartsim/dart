@@ -38,11 +38,12 @@ box/sphere/cylinder/capsule/cone/ellipsoid/mesh geometry, link gravity mode,
 passive joint dynamics metadata (damping, Coulomb friction, spring reference,
 and spring stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
 axis/axis2 mimic metadata with motor enforcement, topology-only ball child
-joints, local root/joint/shape poses, explicit visual material colors, PBR
-metallic/roughness factors, collision-surface contact disable bitmasks,
-zero-threshold bounce restitution, ODE friction coefficients, first friction
-direction, slip compliance, and absolute non-file mesh URI preservation through
-a custom retriever. Continuous SDF joints now parse as unbounded DART
+joints, local root/joint/shape poses, visual shadow/hidden state, explicit
+visual material colors, PBR metallic/roughness factors, collision-surface
+contact disable bitmasks, zero-threshold bounce restitution, ODE friction
+coefficients, first friction direction, slip compliance, and absolute non-file
+mesh URI preservation through a custom retriever. Continuous SDF joints now
+parse as unbounded DART
 `RevoluteJoint`s, and unbounded DART revolute joints write back as SDF
 `continuous` while finite-limit revolute joints stay `revolute`. Targetless
 relative/generated mesh references, including relative or host-qualified file
@@ -72,16 +73,17 @@ Model/link body-node reads use `sdf::Model` and `sdf::Link` DOM values for
 model name/static/pose and link name/gravity/pose plus inertial mass, center of
 mass, and inertia tensor values. Visual and collision shape nodes traverse
 `sdf::Model`, `sdf::Link`, `sdf::Visual`, `sdf::Collision`, `sdf::Geometry`, and
-`sdf::Material` DOM values for shape names, local poses, geometry, and diffuse
-material colors plus `sdf::Pbr` metal workflow factors. Diffuse material values
-now come from `sdf::Material::Diffuse()`; authored/default checks use
-sdformat's `Element::GetExplicitlySetInFile()` signal so absent diffuse colors
-do not reset DART's default visual color. Collision-surface contact bitmasks
-now read through `sdf::Collision`, `sdf::Surface`, and `sdf::Contact` DOM values
-into DART `CollisionAspect` collidable state for the lossless zero-bitmask
-subset, while ODE friction values read through `sdf::Friction` and `sdf::ODE`
-DOM values into DART `DynamicsAspect` friction, slip, and first
-friction-direction fields while preserving defaults for unauthored fields.
+`sdf::Material` DOM values for shape names, local poses, geometry, cast-shadow
+state, zero visibility flags, and diffuse material colors plus `sdf::Pbr` metal
+workflow factors. Diffuse material values now come from
+`sdf::Material::Diffuse()`; authored/default checks use sdformat's
+`Element::GetExplicitlySetInFile()` signal so absent diffuse colors do not
+reset DART's default visual color. Collision-surface contact bitmasks now read
+through `sdf::Collision`, `sdf::Surface`, and `sdf::Contact` DOM values into
+DART `CollisionAspect` collidable state for the lossless zero-bitmask subset,
+while ODE friction values read through `sdf::Friction` and `sdf::ODE` DOM
+values into DART `DynamicsAspect` friction, slip, and first friction-direction
+fields while preserving defaults for unauthored fields.
 SDF bounce restitution reads through sdformat Element authored flags and typed
 parameter conversion for the `<surface><bounce><restitution_coefficient>`
 schema field because sdformat 16 does not expose a high-level `Bounce` DOM
@@ -317,6 +319,12 @@ Additional validation for collision-surface bounce restitution IO:
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
+Additional validation for visual shadow/hidden metadata IO:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
 Changelog decision:
 
 - Mode: draft
@@ -399,6 +407,10 @@ Changelog decision:
   restitution IO because it broadens the same conservative SDF writer/parser
   round-trip capability before the implementation PR exists; the existing DART
   7 IO and Parsing bullet now includes zero-threshold bounce restitution.
+  No additional separate entry is needed for visual shadow/hidden metadata IO
+  because it broadens the same conservative SDF writer/parser round-trip
+  capability before the implementation PR exists; the existing DART 7 IO and
+  Parsing bullet now includes visual shadow/hidden state.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

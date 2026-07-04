@@ -27,9 +27,10 @@ topology-only ball child joints, SDF 1.11+ mimic metadata for axis/axis2
 follower joints with motor
 enforcement, link gravity mode, inertial parameters, local joint/shape poses,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry,
-explicit visual material colors as SDF `<diffuse>` values, and PBR
-metallic/roughness factors as SDF `<pbr><metal>` values. Collision-surface
-contact disable state round-trips through SDF
+visual shadow state as SDF `<cast_shadows>`, hidden visual state as zero-valued
+SDF `<visibility_flags>`, explicit visual material colors as SDF `<diffuse>`
+values, and PBR metallic/roughness factors as SDF `<pbr><metal>` values.
+Collision-surface contact disable state round-trips through SDF
 `<surface><contact><collide_bitmask>` for DART's lossless zero-bitmask subset;
 zero-threshold bounce restitution round-trips through SDF
 `<surface><bounce>` coefficient values; ODE friction coefficients, first
@@ -64,12 +65,14 @@ remain only for that authored/default bridge and DART-specific soft-body
 extension fields; the compatibility boolean value is read through sdformat
 typed element access. Modern `axis/xyz@expressed_in` frame annotations are
 resolved through `sdf::JointAxis::ResolveXyz()`, and authored diffuse values are
-read from `sdf::Material::Diffuse()`. Authored collision-surface contact
-bitmask, bounce restitution, and ODE friction values are read through
+read from `sdf::Material::Diffuse()`. Visual shadow and zero-visibility hidden
+state are read through `sdf::Visual` DOM values. Authored collision-surface
+contact bitmask, bounce restitution, and ODE friction values are read through
 `sdf::Collision`, `sdf::Surface`, `sdf::Contact`, `sdf::Friction`, and
 `sdf::ODE` DOM values plus sdformat Element typed access for the bounce schema
 field that sdformat 16 does not expose as a high-level DOM class. Those values
-map into DART collision and dynamics aspect fields. The SDF-specific helper
+map into DART visual, collision, and dynamics aspect fields. The SDF-specific
+helper
 surface has been narrowed accordingly: it no longer exposes generic XML
 attribute, string, boolean, vector2/vectorX, or child enumerator APIs that
 duplicate sdformat traversal/parsing, and the retained DART-extension value

@@ -66,6 +66,7 @@
 #include <sdf/Model.hh>
 #include <sdf/Root.hh>
 #include <sdf/Surface.hh>
+#include <sdf/Visual.hh>
 
 #include <algorithm>
 #include <filesystem>
@@ -739,6 +740,55 @@ TEST(SdfWriter, IncludeOptionsControlVisualAndCollisionEntries)
       noCollisions.value().find("<visual name='visible_box'>"),
       std::string::npos);
   EXPECT_EQ(noCollisions.value().find("<collision "), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, RoundTripsVisualShadowAndHiddenState)
+{
+  auto skeleton = dynamics::Skeleton::create("visual_metadata_writer");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  auto* shapeNode = body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "quiet_visual");
+  auto* visualAspect = shapeNode->getVisualAspect();
+  ASSERT_NE(visualAspect, nullptr);
+  visualAspect->setShadowed(false);
+  visualAspect->hide();
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfLink = sdfRoot.Model()->LinkByName("body");
+  ASSERT_NE(sdfLink, nullptr);
+  const auto* sdfVisual = sdfLink->VisualByName("quiet_visual");
+  ASSERT_NE(sdfVisual, nullptr);
+  EXPECT_FALSE(sdfVisual->CastShadows());
+  EXPECT_EQ(sdfVisual->VisibilityFlags(), 0u);
+
+  const auto path = writeTempSdf(writeResult.value(), "visual_metadata");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "body");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* reparsedShapeNode
+      = reparsedBody->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(reparsedShapeNode, nullptr);
+  const auto* reparsedVisual = reparsedShapeNode->getVisualAspect();
+  ASSERT_NE(reparsedVisual, nullptr);
+  EXPECT_FALSE(reparsedVisual->getShadowed());
+  EXPECT_TRUE(reparsedVisual->isHidden());
 }
 
 //==============================================================================

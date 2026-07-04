@@ -33,14 +33,16 @@
       dynamics metadata (damping, Coulomb friction, spring reference, and spring
       stiffness), sdformat-normalized screw thread pitch, SDF 1.11+ axis/axis2
       mimic metadata, universal two-axis joints, continuous revolute joints,
-      topology-only ball joints, capsule/cone/ellipsoid geometry, explicit
-      visual material colors, PBR metallic/roughness factors, and collision
-      surface contact disable bitmasks, zero-threshold bounce restitution, and
-      ODE friction/slip metadata now round-trip as SDF `<gravity>`,
+      topology-only ball joints, capsule/cone/ellipsoid geometry, visual
+      shadow/hidden state, explicit visual material colors, PBR
+      metallic/roughness factors, and collision surface contact disable
+      bitmasks, zero-threshold bounce restitution, and ODE friction/slip
+      metadata now round-trip as SDF `<gravity>`,
       `<axis>/<axis2><dynamics>`, `<thread_pitch>`/`<screw_thread_pitch>`,
       `<mimic>`, local
-      `<pose>`, `<capsule>`, `<cone>`, `<ellipsoid>`, `<diffuse>`, and
-      `<pbr><metal>` values plus `<surface><contact><collide_bitmask>` disables
+      `<pose>`, `<capsule>`, `<cone>`, `<ellipsoid>`, `<cast_shadows>`,
+      zero-valued `<visibility_flags>`, `<diffuse>`, and `<pbr><metal>` values
+      plus `<surface><contact><collide_bitmask>` disables
       plus `<surface><bounce>` restitution coefficients and
       `<surface><friction><ode>` `mu`, `mu2`, `fdir1`, `slip1`, and `slip2`.
       Absolute non-file mesh URIs now have writer read/write/read coverage
@@ -60,10 +62,11 @@
       traversal now use libsdformat `sdf::Root`, `sdf::Model`, `sdf::Link`,
       `sdf::Joint`, `sdf::Visual`, and `sdf::Collision` DOM values rather than
       raw XML-level enumeration. Standard visual/collision/material reads use
-      libsdformat DOM values for names, local poses, geometry, diffuse colors,
-      and PBR metal workflow factors; material XML checks only preserve whether
-      diffuse was authored, using sdformat's explicit-authored element flags
-      instead of child-existence probing. Standard joint reads use DOM values
+      libsdformat DOM values for names, local poses, geometry, cast-shadow
+      state, zero visibility flags, diffuse colors, and PBR metal workflow
+      factors; material XML checks only preserve whether diffuse was authored,
+      using sdformat's explicit-authored element flags instead of
+      child-existence probing. Standard joint reads use DOM values
       for joint name/type,
       parent/child links, local pose, axis vectors including
       `axis/xyz@expressed_in` frame resolution, axis dynamics, finite limits,
@@ -204,9 +207,9 @@ SKEL-YAML direction just because the prototype once existed.
   thread pitch for supported single-axis
   joints, two-axis universal joints, SDF 1.11+ axis/axis2 mimic metadata with
   motor enforcement, continuous revolute joints, topology-only ball joints,
-  plus local root, joint, and shape poses, plus capsule/cone/ellipsoid geometry
-  and absolute non-file mesh URI preservation through a custom retriever. It
-  also covers
+  plus local root, joint, and shape poses, plus capsule/cone/ellipsoid geometry,
+  visual shadow state, zero visibility flags, and absolute non-file mesh URI
+  preservation through a custom retriever. It also covers
   `WriteOptions`
   visual/collision filtering, the empty mesh URI diagnostic, pre-SDF-1.11 mimic
   diagnostics, and unsupported coupler-style mimic diagnostics, plus targetless

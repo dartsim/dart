@@ -1335,6 +1335,11 @@ void readVisualizationShapeNode(
       retriever);
 
   newShapeNode->createVisualAspect();
+  auto* visualAspect = newShapeNode->getVisualAspect();
+  visualAspect->setShadowed(visual.CastShadows());
+  if (visual.VisibilityFlags() == 0u) {
+    visualAspect->hide();
+  }
 
   // Material
   if (const auto* material = visual.Material()) {

@@ -760,6 +760,40 @@ TEST(SdfParser, MaterialWithoutDiffusePreservesDefaultColor)
 }
 
 //==============================================================================
+TEST(SdfParser, VisualMetadataReadsShadowAndHiddenState)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/visual_metadata/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="visual_metadata">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+      <visual name="hidden_visual">
+        <cast_shadows>false</cast_shadows>
+        <visibility_flags>0</visibility_flags>
+        <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  auto* visual = body->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visual, nullptr);
+
+  const auto* visualAspect = visual->getVisualAspect();
+  ASSERT_NE(visualAspect, nullptr);
+  EXPECT_FALSE(visualAspect->getShadowed());
+  EXPECT_TRUE(visualAspect->isHidden());
+}
+
+//==============================================================================
 TEST(SdfParser, PlaneGeometryReadsAsThinBox)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();

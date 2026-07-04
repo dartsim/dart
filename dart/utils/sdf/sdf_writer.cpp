@@ -886,6 +886,12 @@ WriteResult addShapeNode(
     sdfVisual.SetName(shapeNode.getName());
     sdfVisual.SetRawPose(toGzPose(pose));
     sdfVisual.SetGeom(geometryResult.value());
+    if (const auto* visualAspect = shapeNode.getVisualAspect()) {
+      sdfVisual.SetCastShadows(visualAspect->getShadowed());
+      if (visualAspect->isHidden()) {
+        sdfVisual.SetVisibilityFlags(0u);
+      }
+    }
     if (auto result = applyMaterial(sdfVisual, shapeNode); result.isErr()) {
       return result;
     }
