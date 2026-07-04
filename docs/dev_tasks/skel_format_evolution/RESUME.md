@@ -77,8 +77,8 @@ the resulting `sdf::Model` DOM through standard model, link, joint, visual,
 collision, and material traversal instead of rediscovering those standard
 children through raw XML-level enumeration.
 `dart::io::readSkeleton()` now also asks sdformat to recognize ambiguous `.xml`
-SDF content before falling back to TinyXML root sniffing for non-SDF URDF/MJCF
-dispatch.
+SDF content, including root-model and world-contained model documents, before
+falling back to TinyXML root sniffing for non-SDF URDF/MJCF dispatch.
 Model/link body-node reads use `sdf::Model` and `sdf::Link` DOM values for
 model name/static/pose and link name/gravity/pose plus inertial mass, center of
 mass, and inertia tensor values. Visual and collision shape nodes traverse
@@ -642,8 +642,16 @@ Changelog decision:
 
 Additional validation for sdformat-based ambiguous `.xml` SDF dispatch:
 
+- Focused candidate for the tightened SDF/non-SDF dispatch split: passed.
+
+  ```bash
+  pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_io_readNone && ./build/default/cpp/Release/bin/test_io_readNone --gtest_filter=ReadUnit.InfersSdfWorldAmbiguousXmlUriWithSdformat'
+  ```
+
 - `cmake --build build/default/cpp/Release --target test_io_readNone -j2`
 - `build/default/cpp/Release/bin/test_io_readNone --gtest_filter='ReadUnit.InfersSdfAmbiguousXmlUriWithSdformat:ReadUnit.ReturnsNullForInvalidAmbiguousXmlContent:ReadUnit.InfersUrdfFromAmbiguousXmlRootBeforeParseFailure'`
+- `pixi run run-cpp-target test_io_readNone`
+- `pixi run run-cpp-target INTEGRATION_io_Read`
 - `pixi run lint`
 - `pixi run build`
 - `pixi run test-unit`
@@ -655,9 +663,10 @@ Changelog decision:
 - Mode: decide
 - Base evidence: `origin/main` inferred for
   `work/skel-format-yaml-decision`; no open PR exists for the branch.
-- Scope evidence: local diff routes ambiguous `.xml` SDF detection in
-  `dart::io::readSkeleton()` through `sdf::Root::LoadSdfString()` and updates
-  the focused read-unit test plus this task handoff.
+- Scope evidence: local diff keeps ambiguous `.xml` SDF detection in
+  `dart::io::readSkeleton()` on `sdf::Root::LoadSdfString()`, separates the
+  TinyXML fallback as URDF/MJCF-only root classification, and adds focused
+  read-unit coverage for world-contained SDF models behind `.xml` URIs.
 - Decision: no entry required
 - Target section: N/A
 - Entry text: N/A

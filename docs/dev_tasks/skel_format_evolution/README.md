@@ -68,7 +68,9 @@
       `dart::io::readSkeleton()`, and standard model/link/joint/aspect traversal
       now use libsdformat `sdf::Root`, `sdf::Model`, `sdf::Link`, `sdf::Joint`,
       `sdf::Visual`, and `sdf::Collision` DOM values rather than raw XML-level
-      enumeration. Standard visual/collision/material reads use libsdformat DOM
+      enumeration. Ambiguous XML dispatch asks sdformat to classify root-model
+      and world-contained SDF documents before the non-SDF URDF/MJCF XML-root
+      fallback runs. Standard visual/collision/material reads use libsdformat DOM
       values for names, local poses, geometry, cast-shadow state, zero
       visibility flags, transparency, diffuse colors, and PBR metal workflow
       factors; material authored/default checks only preserve whether diffuse
@@ -225,7 +227,8 @@ SKEL-YAML direction just because the prototype once existed.
   capsule/cone/ellipsoid geometry,
   visual shadow state, zero visibility flags, visual transparency, and absolute
   non-file mesh URI
-  preservation through a custom retriever. It also covers
+  preservation through a custom retriever. It also covers sdformat-owned
+  ambiguous `.xml` SDF dispatch for root-model and world-contained models,
   `WriteOptions`
   visual/collision filtering, the empty mesh URI diagnostic, pre-SDF-1.11 mimic
   diagnostics, and unsupported coupler-style mimic diagnostics, plus targetless

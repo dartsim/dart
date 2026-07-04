@@ -66,7 +66,9 @@ instead of copying SDF-specific ad hoc checks.
 Parser-side SDF import now uses libsdformat DOM objects for top-level model or
 first-world model selection, world gravity, ambiguous `.xml` SDF dispatch
 through `dart::io::readSkeleton()`, and standard model/link/joint/aspect
-traversal. The remaining authored/default presence checks use sdformat's
+traversal. Ambiguous XML dispatch asks sdformat to classify root-model and
+world-contained SDF documents before the non-SDF URDF/MJCF XML-root fallback
+runs. The remaining authored/default presence checks use sdformat's
 `Element::GetExplicitlySetInFile()` signal with non-mutating direct child
 traversal for standard SDF inertial, material diffuse, legacy
 `use_parent_model_frame`, and joint-axis dynamics/limits. sdformat Element

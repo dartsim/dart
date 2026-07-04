@@ -70,6 +70,8 @@ Source of truth:
   resolution/dynamics/limits,
   collision-surface contact bitmask, bounce restitution, ODE friction/slip
   metadata, and supported geometry semantics;
+  ambiguous XML auto-detection asks `sdf::Root::LoadSdfString()` to recognize
+  SDF before the non-SDF URDF/MJCF root fallback runs;
   avoid raw XML-level SDF parsing when sdformat exposes the value. When
   DART must preserve an authored/default distinction or schema field that the
   high-level DOM class does not expose, use a narrow sdformat `Element` bridge:
