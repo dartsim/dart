@@ -148,9 +148,11 @@
       finite-requiring URDF limits, missing mimic references, and coupler-style
       mimic enforcement, plus missing mesh URIs, relative or host-qualified file
       mesh URIs, and non-finite mesh scales. It also covers continuous revolute
-      joint dynamics round-trip, package mesh URI preservation through
-      `UrdfParser` package resolution, and targeted DART `SoftBodyNode`
-      diagnostics.
+      joint dynamics round-trip, visual and collision package mesh URI
+      preservation through `UrdfParser` package resolution, non-positive mass,
+      non-finite local center-of-mass, visual material color, shape pose, joint
+      axis, and asymmetric velocity/effort limit diagnostics, and targeted DART
+      `SoftBodyNode` diagnostics.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, the URDF writer remains on
       `dart::utils::UrdfParser`, `dart::io` stays read-side, and project/editor

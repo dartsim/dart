@@ -151,11 +151,14 @@ joint families, non-identity child joint frames, unbounded finite-requiring URDF
 limits, missing mimic references, coupler-style mimic enforcement, missing mesh
 URIs, relative or host-qualified file mesh URIs, and non-finite mesh scales.
 Additional coverage proves unbounded revolute DART joints write as URDF
-`continuous` joints and preserve passive dynamics metadata, and that
-`package://` mesh URIs serialize and reparse through `UrdfParser` package
-resolution. DART `SoftBodyNode` export also fails with a targeted diagnostic
-because URDF has no point-mass, spring, damping, or soft mesh topology
-semantics. This first URDF slice also does not complete Phase 5.
+`continuous` joints and preserve passive dynamics metadata, and that visual and
+collision `package://` mesh URIs serialize and reparse through `UrdfParser`
+package resolution. Non-positive mass, non-finite local center-of-mass, visual
+material color, shape pose, joint axis, and asymmetric velocity/effort limits
+now have focused diagnostics coverage. DART `SoftBodyNode` export also fails
+with a targeted diagnostic because URDF has no point-mass, spring, damping, or
+soft mesh topology semantics. This first URDF slice also does not complete
+Phase 5.
 
 ## Decision
 

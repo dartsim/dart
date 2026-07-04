@@ -101,9 +101,12 @@ coupler-style mimic enforcement, plus missing mesh URIs, relative or
 host-qualified file mesh URIs, and non-finite mesh scales. Additional focused
 coverage proves unbounded DART revolute joints write as URDF `continuous`
 joints and preserve passive dynamics metadata through reparse, and proves
-`package://` mesh URIs serialize and reparse through `UrdfParser` package
-resolution. DART `SoftBodyNode` writer attempts also fail with a targeted
-diagnostic instead of being serialized as ordinary URDF links with point-mass,
+visual and collision `package://` mesh URIs serialize and reparse through
+`UrdfParser` package resolution. Non-positive mass, non-finite local
+center-of-mass, visual material color, shape pose, joint axis, and asymmetric
+velocity/effort limits now have focused diagnostics coverage. DART
+`SoftBodyNode` writer attempts also fail with a targeted diagnostic instead of
+being serialized as ordinary URDF links with point-mass,
 spring, damping, and soft mesh topology semantics dropped.
 
 Current SDF audit result: `dart/utils/sdf/` has no TinyXML/raw XML parser path
@@ -1146,6 +1149,23 @@ Additional validation for URDF soft-body writer diagnostics:
 
 - `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter=UrdfWriter.SoftBodyNodeReturnsExplicitUnsupportedError'`
 - `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (15 tests)
+
+Additional validation for URDF collision package meshes and structural
+diagnostics:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter="UrdfWriter.PreservesCollisionPackageMeshUri:UrdfWriter.NonPositiveMassReturnsError:UrdfWriter.NonFiniteLocalComReturnsError:UrdfWriter.NonFiniteVisualMaterialColorReturnsError:UrdfWriter.NonFiniteShapePoseReturnsError:UrdfWriter.AsymmetricVelocityLimitReturnsError:UrdfWriter.AsymmetricEffortLimitReturnsError:UrdfWriter.NonFiniteJointAxisReturnsError"'`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff only adds URDF writer tests and task /
+  onboarding documentation for behavior already in the public URDF writer
+  contract.
+- Decision: no additional changelog entry. The existing DART 7 URDF writer
+  bullet already covers package URI meshes, visual colors, unsupported/lossy
+  construct diagnostics, and invalid mesh resources; this slice hardens
+  coverage without changing the user-visible API or writer behavior.
+- PR-body note: record as test coverage / task progress if a PR is opened.
 
 Changelog decision:
 

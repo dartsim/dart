@@ -234,6 +234,27 @@ dynamics::SkeletonPtr makeVisualMeshSkeleton(
   return skeleton;
 }
 
+dynamics::SkeletonPtr makeCollisionMeshSkeleton(
+    const common::Uri& meshUri,
+    const Eigen::Vector3d& scale = Eigen::Vector3d(0.5, 1.0, 1.5))
+{
+  auto skeleton = dynamics::Skeleton::create("urdf_collision_mesh_writer");
+
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr,
+          dynamics::FreeJoint::Properties(),
+          makeBodyProperties(
+              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)rootJoint;
+
+  base->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::MeshShape>(scale, makeTriangleMesh(), meshUri),
+      "mesh_collision");
+
+  return skeleton;
+}
+
 template <class ShapeT, class AspectT>
 const ShapeT* getFirstShape(const dynamics::BodyNode* body)
 {
@@ -496,6 +517,35 @@ TEST(UrdfWriter, PreservesPackageMeshUri)
 }
 
 //==============================================================================
+TEST(UrdfWriter, PreservesCollisionPackageMeshUri)
+{
+  const common::Uri packageMeshUri("package://writer_pkg/BoxSmall.obj");
+  const auto skeleton = makeCollisionMeshSkeleton(packageMeshUri);
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  expectContains(
+      writeResult.value(), "filename=\"package://writer_pkg/BoxSmall.obj\"");
+  expectContains(writeResult.value(), "<collision");
+
+  utils::UrdfParser parser;
+  parser.addPackageDirectory("writer_pkg", config::dataPath("obj"));
+  const auto reparsed = parser.parseSkeletonString(
+      writeResult.value(), common::Uri("memory://collision_package_mesh.urdf"));
+  ASSERT_NE(reparsed, nullptr);
+
+  const auto* reparsedBase = reparsed->getBodyNode("base");
+  ASSERT_NE(reparsedBase, nullptr);
+  const auto* mesh
+      = getFirstShape<dynamics::MeshShape, dynamics::CollisionAspect>(
+          reparsedBase);
+  ASSERT_NE(mesh, nullptr);
+  EXPECT_EQ(mesh->getMeshUri2().toString(), packageMeshUri.toString());
+  EXPECT_TRUE(mesh->getScale().isApprox(Eigen::Vector3d(0.5, 1.0, 1.5)));
+}
+
+//==============================================================================
 TEST(UrdfWriter, MeshWithoutUriReturnsError)
 {
   const auto skeleton = makeVisualMeshSkeleton(common::Uri());
@@ -528,6 +578,120 @@ TEST(UrdfWriter, NonFiniteMeshScaleReturnsError)
   const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "non-finite scale");
+}
+
+//==============================================================================
+TEST(UrdfWriter, NonPositiveMassReturnsError)
+{
+  const auto skeleton = makeRoundTripSkeleton();
+  auto* base = skeleton->getBodyNode("base");
+  ASSERT_NE(base, nullptr);
+  base->setMass(0.0);
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "URDF link [base]");
+  expectContains(result.error().message, "non-finite or non-positive mass");
+}
+
+//==============================================================================
+TEST(UrdfWriter, NonFiniteLocalComReturnsError)
+{
+  const auto skeleton = makeRoundTripSkeleton();
+  auto* base = skeleton->getBodyNode("base");
+  ASSERT_NE(base, nullptr);
+  base->setLocalCOM(
+      Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0));
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "URDF link [base]");
+  expectContains(result.error().message, "non-finite local center of mass");
+}
+
+//==============================================================================
+TEST(UrdfWriter, NonFiniteVisualMaterialColorReturnsError)
+{
+  const auto skeleton = makeRoundTripSkeleton();
+  auto* base = skeleton->getBodyNode("base");
+  ASSERT_NE(base, nullptr);
+  auto* visual = base->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visual, nullptr);
+  ASSERT_NE(visual->getVisualAspect(), nullptr);
+  visual->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(0.2, std::numeric_limits<double>::quiet_NaN(), 0.6, 1.0));
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "URDF visual [base_box]");
+  expectContains(result.error().message, "non-finite material color");
+}
+
+//==============================================================================
+TEST(UrdfWriter, NonFiniteShapePoseReturnsError)
+{
+  const auto skeleton = makeRoundTripSkeleton();
+  auto* base = skeleton->getBodyNode("base");
+  ASSERT_NE(base, nullptr);
+  auto* visual = base->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visual, nullptr);
+
+  Eigen::Isometry3d pose = visual->getRelativeTransform();
+  pose.translation().x() = std::numeric_limits<double>::quiet_NaN();
+  visual->setRelativeTransform(pose);
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "URDF shape [base_box]");
+  expectContains(result.error().message, "non-finite local pose");
+}
+
+//==============================================================================
+TEST(UrdfWriter, AsymmetricVelocityLimitReturnsError)
+{
+  const auto skeleton = makeRoundTripSkeleton();
+  auto* hinge
+      = dynamic_cast<dynamics::RevoluteJoint*>(skeleton->getJoint("hinge"));
+  ASSERT_NE(hinge, nullptr);
+  hinge->setVelocityLowerLimit(0, -2.0);
+  hinge->setVelocityUpperLimit(0, 3.0);
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "URDF joint [hinge]");
+  expectContains(result.error().message, "asymmetric velocity limits");
+}
+
+//==============================================================================
+TEST(UrdfWriter, AsymmetricEffortLimitReturnsError)
+{
+  const auto skeleton = makeRoundTripSkeleton();
+  auto* hinge
+      = dynamic_cast<dynamics::RevoluteJoint*>(skeleton->getJoint("hinge"));
+  ASSERT_NE(hinge, nullptr);
+  hinge->setForceLowerLimit(0, -4.0);
+  hinge->setForceUpperLimit(0, 5.0);
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "URDF joint [hinge]");
+  expectContains(result.error().message, "asymmetric force/effort limits");
+}
+
+//==============================================================================
+TEST(UrdfWriter, NonFiniteJointAxisReturnsError)
+{
+  const auto skeleton = makeRoundTripSkeleton();
+  auto* hinge
+      = dynamic_cast<dynamics::RevoluteJoint*>(skeleton->getJoint("hinge"));
+  ASSERT_NE(hinge, nullptr);
+  hinge->setAxis(
+      Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 1.0));
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "URDF joint [hinge]");
+  expectContains(result.error().message, "non-finite axis");
 }
 
 //==============================================================================
