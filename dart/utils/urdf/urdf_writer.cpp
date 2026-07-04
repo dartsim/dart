@@ -568,13 +568,6 @@ WriteResult writeJointMimic(
   }
 
   const auto& mimic = mimicProps[0];
-  if (mimic.mConstraintType != dynamics::MimicConstraintType::Motor) {
-    return fail(
-        "Cannot write " + context(joint)
-        + " with a coupler mimic constraint because URDF <mimic> does not "
-          "preserve DART's coupler enforcement mode.");
-  }
-
   if (!isFinite(mimic.mMultiplier) || !isFinite(mimic.mOffset)) {
     return fail(
         "Cannot write " + context(joint)
@@ -605,6 +598,32 @@ WriteResult writeJointMimic(
         + " with mimic reference joint [" + mimic.mReferenceJoint->getName()
         + "] because URDF root links do not serialize parent-joint "
           "metadata.");
+  }
+
+  if (mimic.mConstraintType == dynamics::MimicConstraintType::Coupler) {
+    if (std::abs(mimic.mOffset) > kTolerance) {
+      return fail(
+          "Cannot write " + context(joint)
+          + " with a coupler mimic offset because URDF SimpleTransmission "
+            "does not preserve mimic offsets.");
+    }
+
+    if (mimic.mMultiplier == 0.0) {
+      return fail(
+          "Cannot write " + context(joint)
+          + " with a zero coupler mimic multiplier because URDF "
+            "SimpleTransmission mechanical reductions must be nonzero.");
+    }
+
+    if (mimic.mReferenceJoint->getActuatorType() == dynamics::Joint::MIMIC) {
+      return fail(
+          "Cannot write " + context(joint) + " with mimic reference joint ["
+          + mimic.mReferenceJoint->getName()
+          + "] because URDF SimpleTransmission needs an independent reference "
+            "joint.");
+    }
+
+    return ok();
   }
 
   auto* mimicElement = appendElement(doc, jointElement, "mimic");
@@ -702,6 +721,81 @@ WriteResult writeJoint(
   return ok();
 }
 
+void writeSimpleTransmission(
+    tinyxml2::XMLDocument& doc,
+    tinyxml2::XMLElement& robot,
+    const std::string& name,
+    const std::string& actuatorName,
+    const std::string& jointName,
+    double mechanicalReduction)
+{
+  auto* transmission = appendElement(doc, robot, "transmission");
+  transmission->SetAttribute("name", name.c_str());
+
+  auto* type = appendElement(doc, *transmission, "type");
+  type->SetText("transmission_interface/SimpleTransmission");
+
+  auto* joint = appendElement(doc, *transmission, "joint");
+  joint->SetAttribute("name", jointName.c_str());
+
+  auto* actuator = appendElement(doc, *transmission, "actuator");
+  actuator->SetAttribute("name", actuatorName.c_str());
+
+  auto* reduction = appendElement(doc, *actuator, "mechanicalReduction");
+  reduction->SetText(formatDouble(mechanicalReduction).c_str());
+}
+
+WriteResult writeCouplerTransmissions(
+    tinyxml2::XMLDocument& doc,
+    tinyxml2::XMLElement& robot,
+    const dynamics::Skeleton& skeleton)
+{
+  for (std::size_t i = 0; i < skeleton.getNumJoints(); ++i) {
+    const auto* joint = skeleton.getJoint(i);
+    if (!joint || !joint->hasActuatorType(dynamics::Joint::MIMIC)
+        || joint->getNumDofs() != 1
+        || joint->getActuatorType(0) != dynamics::Joint::MIMIC) {
+      continue;
+    }
+
+    const auto mimicProps = joint->getMimicDofProperties();
+    if (mimicProps.empty()
+        || mimicProps[0].mConstraintType
+               != dynamics::MimicConstraintType::Coupler) {
+      continue;
+    }
+
+    const auto& mimic = mimicProps[0];
+    const auto* reference = mimic.mReferenceJoint;
+    if (!reference) {
+      return fail(
+          "Cannot write " + context(*joint)
+          + " with coupler transmission because no reference joint is "
+            "configured.");
+    }
+
+    const std::string actuatorName = "dart_coupler_" + reference->getName()
+                                     + "_" + joint->getName() + "_actuator";
+    writeSimpleTransmission(
+        doc,
+        robot,
+        "dart_coupler_" + reference->getName() + "_reference_for_"
+            + joint->getName(),
+        actuatorName,
+        reference->getName(),
+        mimic.mMultiplier);
+    writeSimpleTransmission(
+        doc,
+        robot,
+        "dart_coupler_" + joint->getName() + "_follower",
+        actuatorName,
+        joint->getName(),
+        1.0);
+  }
+
+  return ok();
+}
+
 WriteResult validateRootJoint(const dynamics::BodyNode& root)
 {
   const auto* joint = root.getParentJoint();
@@ -786,6 +880,11 @@ common::Result<std::string, common::Error> UrdfParser::tryWriteSkeletonToString(
     if (auto result = writeJoint(doc, *robot, *joint); result.isErr()) {
       return StringResult::err(result.error());
     }
+  }
+
+  if (auto result = writeCouplerTransmissions(doc, *robot, skeleton);
+      result.isErr()) {
+    return StringResult::err(result.error());
   }
 
   tinyxml2::XMLPrinter printer;

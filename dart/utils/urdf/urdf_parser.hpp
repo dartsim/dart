@@ -175,6 +175,7 @@ public:
   /// one root link, root FreeJoint/WeldJoint placement that URDF can preserve,
   /// child revolute/continuous/prismatic/fixed joints whose child link frame
   /// coincides with the joint frame, single-DoF motor-style mimic metadata,
+  /// zero-offset coupler mimic metadata through SimpleTransmission entries,
   /// passive joint dynamics, inertial data, local visual/collision poses, and
   /// box/sphere/cylinder/absolute or package URI mesh geometry. Explicit
   /// visual colors are serialized as URDF materials. Unsupported constructs

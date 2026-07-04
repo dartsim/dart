@@ -148,12 +148,13 @@ with the joint frame, passive damping/friction metadata, single-DoF motor-style
 mimic metadata, inertial data, local
 visual/collision poses, box/sphere/cylinder and absolute or package URI mesh
 geometry, explicit visual colors, implicit default visual color omission,
-default-RGB alpha overrides, and visual/collision include
-options. `INTEGRATION_io_UrdfWriter` validates a write/read/read round-trip for
-that subset and covers explicit diagnostics for multiple root trees, unsupported
+default-RGB alpha overrides, zero-offset coupler mimic metadata through paired
+URDF `SimpleTransmission` entries, and visual/collision include options.
+`INTEGRATION_io_UrdfWriter` validates a write/read/read round-trip for that
+subset and covers explicit diagnostics for multiple root trees, unsupported
 joint families, non-identity child joint frames, unbounded finite-requiring URDF
-limits, missing mimic references, coupler-style mimic enforcement, missing mesh
-URIs, relative or host-qualified file mesh URIs, and non-finite mesh scales.
+limits, missing mimic references, coupler mimic offsets, missing mesh URIs,
+relative or host-qualified file mesh URIs, and non-finite mesh scales.
 Additional coverage proves unbounded revolute DART joints write as URDF
 `continuous` joints and preserve passive dynamics metadata, and that visual and
 collision `package://` mesh URIs serialize and reparse through `UrdfParser`

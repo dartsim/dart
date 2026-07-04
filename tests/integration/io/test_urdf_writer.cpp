@@ -995,9 +995,79 @@ TEST(UrdfWriter, MimicWithoutReferenceReturnsError)
 }
 
 //==============================================================================
-TEST(UrdfWriter, CouplerMimicReturnsError)
+TEST(UrdfWriter, RoundTripsCouplerMimicThroughTransmissions)
 {
   auto skeleton = dynamics::Skeleton::create("coupler_mimic");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr,
+          dynamics::FreeJoint::Properties(),
+          makeBodyProperties(
+              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)rootJoint;
+
+  dynamics::RevoluteJoint::Properties referenceProperties;
+  referenceProperties.mName = "reference_joint";
+  referenceProperties.mAxis = Eigen::Vector3d::UnitZ();
+  auto [referenceJoint, referenceBody]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          base,
+          referenceProperties,
+          makeBodyProperties(
+              "reference_link",
+              1.0,
+              Eigen::Vector3d::Zero(),
+              Eigen::Vector3d::Ones()));
+  setFiniteJointMetadata(referenceJoint, -1.0, 1.0, 2.0, 3.0, 0.0, 0.0);
+
+  dynamics::RevoluteJoint::Properties followerProperties;
+  followerProperties.mName = "follower_joint";
+  followerProperties.mAxis = Eigen::Vector3d::UnitY();
+  auto [followerJoint, followerBody]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          referenceBody,
+          followerProperties,
+          makeBodyProperties(
+              "follower_link",
+              1.0,
+              Eigen::Vector3d::Zero(),
+              Eigen::Vector3d::Ones()));
+  (void)followerBody;
+  setFiniteJointMetadata(followerJoint, -1.0, 1.0, 2.0, 3.0, 0.0, 0.0);
+  followerJoint->setMimicJoint(referenceJoint, 2.0, 0.0);
+  followerJoint->setActuatorType(dynamics::Joint::MIMIC);
+  followerJoint->setUseCouplerConstraint(true);
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  expectContains(writeResult.value(), "<transmission");
+  expectContains(
+      writeResult.value(), "transmission_interface/SimpleTransmission");
+  expectContains(
+      writeResult.value(),
+      "name=\"dart_coupler_reference_joint_follower_joint_actuator\"");
+  EXPECT_EQ(writeResult.value().find("<mimic"), std::string::npos);
+
+  utils::UrdfParser parser;
+  const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
+  ASSERT_NE(reparsed, nullptr);
+
+  const auto* reparsedReference = reparsed->getJoint("reference_joint");
+  ASSERT_NE(reparsedReference, nullptr);
+  const auto* reparsedFollower = reparsed->getJoint("follower_joint");
+  ASSERT_NE(reparsedFollower, nullptr);
+  EXPECT_EQ(reparsedFollower->getActuatorType(), dynamics::Joint::MIMIC);
+  EXPECT_EQ(reparsedFollower->getMimicJoint(), reparsedReference);
+  EXPECT_TRUE(reparsedFollower->isUsingCouplerConstraint());
+  EXPECT_DOUBLE_EQ(reparsedFollower->getMimicMultiplier(), 2.0);
+  EXPECT_DOUBLE_EQ(reparsedFollower->getMimicOffset(), 0.0);
+}
+
+//==============================================================================
+TEST(UrdfWriter, CouplerMimicWithOffsetReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("coupler_mimic_offset");
   auto [rootJoint, base]
       = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
           nullptr,
@@ -1040,5 +1110,6 @@ TEST(UrdfWriter, CouplerMimicReturnsError)
 
   const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
-  expectContains(result.error().message, "coupler mimic constraint");
+  expectContains(result.error().message, "coupler mimic offset");
+  expectContains(result.error().message, "SimpleTransmission");
 }

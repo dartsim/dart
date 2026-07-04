@@ -230,7 +230,8 @@ conservative URDF tree subset. It supports one root link, root FreeJoint or
 WeldJoint metadata that URDF can preserve, child
 revolute/continuous/prismatic/fixed joints whose child link frame coincides
 with the joint frame, passive damping/friction metadata, single-DoF motor-style
-mimic metadata, inertial data, local visual/collision poses,
+mimic metadata, zero-offset coupler mimic metadata serialized as paired
+`SimpleTransmission` entries, inertial data, local visual/collision poses,
 box/sphere/cylinder/absolute or package URI mesh geometry for visuals and
 collisions, explicit visual colors, implicit default visual color omission,
 default-RGB alpha overrides, and options for excluding visuals or collisions.
@@ -239,11 +240,12 @@ The writer returns `common::Result` and rejects unsupported or lossy DART
 constructs such as multiple root trees, non-identity root placement, unsupported
 joint families, non-identity child-to-joint frames, unbounded finite-requiring
 URDF limits, asymmetric velocity/effort limits, missing or non-motor mimic
-references, multi-DoF mimic relationships that URDF cannot name by axis,
-non-finite data, missing mesh URIs, relative or host-qualified file mesh URIs,
-unsupported shapes, and DART `SoftBodyNode` export. Validate any broadened URDF
-surface with write/read/read tests through `UrdfParser`; do not route URDF
-export through `dart::io` until a reviewed multi-format write API exists.
+references, coupler mimic offsets, multi-DoF mimic relationships that URDF
+cannot name by axis, non-finite data, missing mesh URIs, relative or
+host-qualified file mesh URIs, unsupported shapes, and DART `SoftBodyNode`
+export. Validate any broadened URDF surface with write/read/read tests through
+`UrdfParser`; do not route URDF export through `dart::io` until a reviewed
+multi-format write API exists.
 
 ## Notes about Python
 
