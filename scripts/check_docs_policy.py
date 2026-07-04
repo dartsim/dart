@@ -634,12 +634,12 @@ def check_design_docs_index(repo_root: Path) -> list[str]:
 
 
 def check_markdown_internal_links(repo_root: Path) -> list[str]:
-    """Report broken internal links in tracked pilot markdown docs.
+    """Reject broken internal links in tracked pilot markdown docs.
 
-    This is intentionally advisory and pilot-scoped for the first rollout: it
-    catches regressions in the new AI-graph guardrail surfaces without making
-    the existing repository-wide link inventory noisy on every policy run.
-    Fragments are normalized to their owning file; heading anchors are not
+    Pilot-scoped to the AI-graph guardrail surfaces so the existing
+    repository-wide link inventory stays out of scope. Blocking since the
+    PLAN-121 promotion (the pilot inventory reported one clean cycle);
+    fragments are normalized to their owning file; heading anchors are not
     validated yet.
     """
     warnings: list[str] = []
@@ -674,7 +674,11 @@ def check_markdown_internal_links(repo_root: Path) -> list[str]:
 
 
 def check_docs_discoverability(repo_root: Path) -> list[str]:
-    """Report owner-index discoverability gaps for conservative pilot buckets."""
+    """Reject owner-index discoverability gaps for conservative pilot buckets.
+
+    Blocking since the PLAN-121 promotion: a direct pilot-bucket doc must be
+    linked or mentioned from its owner index so agents can discover it.
+    """
     warnings: list[str] = []
     for directory, index in DISCOVERABILITY_INDEXES.items():
         docs_dir = repo_root / directory
@@ -1171,8 +1175,8 @@ def main() -> int:
     failures.extend(check_design_docs_index(repo_root))
     failures.extend(check_ai_doc_frontmatter(repo_root))
     failures.extend(check_papers_catalog(repo_root))
-    warnings.extend(check_markdown_internal_links(repo_root))
-    warnings.extend(check_docs_discoverability(repo_root))
+    failures.extend(check_markdown_internal_links(repo_root))
+    failures.extend(check_docs_discoverability(repo_root))
     warnings.extend(check_north_star_evidence_freshness(repo_root))
 
     if warnings:

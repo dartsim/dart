@@ -44,22 +44,6 @@ its own line so status updates remain git-history friendly.
   through global heap/raw malloc paths on measured hosts; migrated DART 7 paths
   must add the gate before promotion.
 
-### PLAN-121: AI Docs Knowledge Graph Guardrails
-
-- Owner doc:
-  [`121-ai-docs-knowledge-graph.md`](121-ai-docs-knowledge-graph.md)
-- Status: Active
-- Horizon: Now
-- Dimension: AI-native execution
-- Next step: The strict docs/ai `type` legend check (WP-121.8) landed on top of
-  the first guardrail wave. The advisory→blocking flip stays deferred — the
-  north-star freshness channel is not clean (17 advisories on 2026-06-19) — so
-  watch for one clean freshness cycle before promoting any advisory.
-- Gate: `pixi run python -m pytest tests/test_check_docs_policy.py`,
-  `pixi run check-docs-policy`, `pixi run check-ai-commands`, and
-  `pixi run lint` prove the local checker, AI adapter sync, and docs formatting
-  surfaces.
-
 ### PLAN-012: Cloud Dartpy Tutorials
 
 - Owner doc:
