@@ -60,8 +60,9 @@ missing mesh URI diagnostics, DART `PlaneShape` finite-size diagnostics,
 generated-resource diagnostics, pre-SDF-1.11 mimic diagnostics, unsupported
 coupler-style mimic diagnostics, non-finite visual material diagnostics,
 invalid PBR material diagnostics, unsupported visual reflectance diagnostics,
-non-finite screw pitch diagnostics, invalid collision-surface friction/restitution diagnostics, unsupported ball-joint
-metadata, and
+non-default DART mesh color/alpha render-policy diagnostics, non-finite screw
+pitch diagnostics, invalid collision-surface friction/restitution diagnostics,
+unsupported ball-joint metadata, and
 non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
 5 is still open until broader SDF coverage plus the remaining accepted writer
 targets are implemented or durably deferred.
@@ -147,6 +148,10 @@ DART visual reflectance also fails with a targeted diagnostic because the
 current sdformat-backed material mapping preserves diffuse color plus SDF PBR
 metal workflow factors, but has no equivalent DART reflectance field to write
 losslessly.
+Non-default DART `MeshShape` color and alpha modes now fail with targeted
+diagnostics on SDF visual export. sdformat's typed `sdf::Mesh` DOM preserves
+URI, scale, and submesh selection, but not DART's runtime mesh render-policy
+modes, so accepting those meshes would silently drop visual behavior.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -213,6 +218,30 @@ Additional validation for targeted HeightmapShape writer diagnostics:
 - `pixi run build`
 - `pixi run test-unit`
 
+Additional validation for DART mesh render-policy diagnostics:
+
+- Focused control failed before the writer change:
+
+  ```bash
+  pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter="SdfWriter.MeshColorModeReturnsError:SdfWriter.MeshAlphaModeReturnsError"'
+  ```
+
+- Focused candidate passed with the same command.
+
+- Full writer target: passed.
+
+  ```bash
+  pixi run run-cpp-target INTEGRATION_io_SdfWriter
+  ```
+
+- Local gates: passed.
+
+  ```bash
+  pixi run lint
+  pixi run build
+  pixi run test-unit
+  ```
+
 Changelog decision:
 
 - Mode: decide
@@ -223,9 +252,10 @@ Changelog decision:
 - Decision: no entry required
 - Target section: N/A
 - Entry text: N/A
-- PR-body note: No separate changelog entry; this sharpens an unreleased SDF
-  writer diagnostic and is covered by the broader DART 7 SDF writer/export
-  work.
+- PR-body note: No separate changelog entry is needed because this slice
+  tightens explicit unsupported diagnostics under the existing DART 7 IO and
+  Parsing SDF writer entry, which already describes unsupported constructs being
+  reported explicitly.
 - Follow-up: none
 
 Additional validation for body-level collision disable SDF writing:

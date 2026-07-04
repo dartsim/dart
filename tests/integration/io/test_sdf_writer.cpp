@@ -2058,6 +2058,50 @@ TEST(SdfWriter, HostQualifiedFileMeshUriReturnsError)
 }
 
 //==============================================================================
+TEST(SdfWriter, MeshColorModeReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("mesh_color_mode");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  const common::Uri meshUri
+      = common::Uri::createFromPath(dart::config::dataPath("obj/BoxSmall.obj"));
+  auto mesh = std::make_shared<dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), makeTriangleMesh(), meshUri);
+  mesh->setColorMode(dynamics::MeshShape::COLOR_INDEX);
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::move(mesh), "mesh_color_mode");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(result.error().message.find("mesh color mode"), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, MeshAlphaModeReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("mesh_alpha_mode");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  const common::Uri meshUri
+      = common::Uri::createFromPath(dart::config::dataPath("obj/BoxSmall.obj"));
+  auto mesh = std::make_shared<dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), makeTriangleMesh(), meshUri);
+  mesh->setAlphaMode(dynamics::MeshShape::SHAPE_ALPHA);
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::move(mesh), "mesh_alpha_mode");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(result.error().message.find("mesh alpha mode"), std::string::npos);
+}
+
+//==============================================================================
 TEST(SdfWriter, InvalidCollisionSurfaceFrictionReturnsError)
 {
   auto skeleton = dynamics::Skeleton::create("bad_surface_friction");

@@ -831,6 +831,31 @@ WriteResult applyMaterial(
   return ok();
 }
 
+WriteResult validateVisualMeshPolicy(const dynamics::ShapeNode& shapeNode)
+{
+  const auto shape = shapeNode.getShape();
+  const auto* mesh = dynamic_cast<const dynamics::MeshShape*>(shape.get());
+  if (!mesh) {
+    return ok();
+  }
+
+  if (mesh->getColorMode() != dynamics::MeshShape::MATERIAL_COLOR) {
+    return fail(
+        "Cannot write SDF visual [" + shapeNode.getName()
+        + "] with a non-default DART mesh color mode because the SDF mesh "
+          "DOM has no equivalent render-policy field.");
+  }
+
+  if (mesh->getAlphaMode() != dynamics::MeshShape::BLEND) {
+    return fail(
+        "Cannot write SDF visual [" + shapeNode.getName()
+        + "] with a non-default DART mesh alpha mode because the SDF mesh "
+          "DOM has no equivalent render-policy field.");
+  }
+
+  return ok();
+}
+
 WriteResult applyCollisionSurface(
     sdf::Collision& collision, const dynamics::ShapeNode& shapeNode)
 {
@@ -965,6 +990,10 @@ WriteResult addShapeNode(
   }
 
   if (visual) {
+    if (auto result = validateVisualMeshPolicy(shapeNode); result.isErr()) {
+      return result;
+    }
+
     sdf::Visual sdfVisual;
     sdfVisual.SetName(shapeNode.getName());
     sdfVisual.SetRawPose(toGzPose(pose));
