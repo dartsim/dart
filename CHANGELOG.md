@@ -142,7 +142,7 @@ compatibility remains on the active DART 6 LTS branch._
   `math::isNan`/`isInf` plus `Eigen::allFinite()`), `noalias()`
   force-aggregation and contact-normal products, fixed-capacity contact
   spatial-normal storage, and frame-allocator contact-pair counting. Behavior is
-  unchanged.
+  unchanged. ([#3242](https://github.com/dartsim/dart/pull/3242))
 - Fixed per-DoF actuator override storage in `JointProperties` so worlds can
   create and destroy joint properties across translation-unit and
   shared-library boundaries without heap corruption (the override map is now a
