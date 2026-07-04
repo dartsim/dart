@@ -64,7 +64,8 @@ enforcement, non-finite material colors, invalid PBR material factors,
 non-default visual reflectance,
 non-default DART mesh color/alpha render policies, NaN joint position limits,
 non-finite screw pitch,
-non-finite skeleton gravity, shape poses, inertial data, or joint axes, invalid
+non-finite skeleton gravity, shape poses, non-positive body masses, non-finite
+inertial data, or joint axes, invalid
 collision-surface
 friction, slip, restitution, or
 friction-direction frame, unsupported ball-joint metadata, unsupported DART

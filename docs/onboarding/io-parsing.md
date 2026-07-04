@@ -205,7 +205,8 @@ non-default DART mesh color/alpha render policies,
 invalid PBR material factors, non-default visual reflectance, invalid collision
 surface friction, friction direction, or restitution values, NaN joint position
 limits, non-lossless asymmetric or NaN joint effort/velocity limits,
-non-finite skeleton gravity, shape poses, inertial data, joint axes,
+non-finite skeleton gravity, shape poses, non-positive body masses, non-finite
+inertial data, joint axes,
 pre-SDF-1.11 mimic output, coupler-style mimic enforcement, ball joint limits,
 ball joint dynamics, child `FreeJoint`s, DART Euler joints, planar joints,
 and two- or three-axis translational joints, and

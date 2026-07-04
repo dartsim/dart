@@ -71,9 +71,10 @@ diagnostics, invalid PBR material diagnostics, unsupported visual reflectance
 diagnostics, non-default DART mesh color/alpha render-policy diagnostics,
 NaN joint position-limit diagnostics, non-finite screw pitch diagnostics,
 asymmetric or NaN joint effort/velocity limit diagnostics,
-non-finite skeleton gravity, shape-pose, inertial-data, and joint-axis
-diagnostics, invalid collision-surface friction, friction-direction values,
-slip, restitution, and friction-direction-frame diagnostics, unsupported
+non-finite skeleton gravity, shape-pose, non-positive body-mass,
+inertial-data, and joint-axis diagnostics, invalid collision-surface friction,
+friction-direction values, slip, restitution, and friction-direction-frame
+diagnostics, unsupported
 ball-joint metadata, unsupported child `FreeJoint` diagnostics, unsupported
 `EulerJoint`, `PlanarJoint`, `TranslationalJoint2D`, and `TranslationalJoint`
 diagnostics, unsupported DART `SoftBodyNode` diagnostics, and non-finite joint
@@ -1467,6 +1468,39 @@ Changelog decision:
   this slice makes empty-input rejection explicit and covered without adding a
   new public API.
 - PR-body note: record as SDF writer diagnostic hardening if a PR is opened.
+
+Additional validation for non-positive SDF inertial mass diagnostics:
+
+- Control: direct filtered `INTEGRATION_io_SdfWriter` run with the new
+  `SdfWriter.NonPositiveMassReturnsError` expectation failed before the writer
+  fix because the SDF writer succeeded on a zero-mass body.
+- Focused candidate passed, proving non-positive body mass now returns a
+  structured SDF writer error while the existing non-finite inertial-data
+  diagnostic remains distinct:
+  `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter="SdfWriter.NonPositiveMassReturnsError:SdfWriter.NonFiniteInertialDataReturnsError"'`
+- Full writer target passed:
+  `pixi run run-cpp-target INTEGRATION_io_SdfWriter` (78 tests)
+- SDF boundary check passed:
+  `pixi run check-sdf-sdformat-boundary`
+- Broader local gates passed:
+  `pixi run lint`; `pixi run build`; `pixi run test-unit`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in `dart/utils/sdf/sdf_writer.cpp`,
+  `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Scope evidence: `CHANGELOG.md` DART 7 IO and Parsing SDF writer bullet
+  inspected; it already covers the conservative SDF writer and explicit
+  unsupported/invalid construct diagnostics.
+- Decision: no additional changelog entry. This slice prevents zero-mass DART
+  inertial data from serializing through the existing unreleased SDF writer
+  contract and adds focused regression coverage without adding a new public API.
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: record as SDF writer diagnostic hardening if a PR is opened.
+- Follow-up: none until an implementation PR exists.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

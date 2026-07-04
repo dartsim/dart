@@ -1227,17 +1227,22 @@ WriteResult buildLink(
   link.SetEnableGravity(bodyNode.getGravityMode());
 
   const auto& inertia = bodyNode.getInertia();
+  const double mass = inertia.getMass();
   const Eigen::Matrix3d moment = inertia.getMoment();
   const Eigen::Vector3d& com = inertia.getLocalCOM();
-  if (!std::isfinite(inertia.getMass()) || !isFinite(moment)
-      || !isFinite(com)) {
+  if (!std::isfinite(mass) || mass <= 0.0) {
+    return fail(
+        "Cannot write SDF link [" + bodyNode.getName()
+        + "] with non-finite or non-positive mass.");
+  }
+  if (!isFinite(moment) || !isFinite(com)) {
     return fail(
         "Cannot write SDF link [" + bodyNode.getName()
         + "] with non-finite inertial data.");
   }
 
   gz::math::MassMatrix3d massMatrix;
-  if (!massMatrix.SetMass(inertia.getMass())
+  if (!massMatrix.SetMass(mass)
       || !massMatrix.SetInertiaMatrix(
           moment(0, 0),
           moment(1, 1),

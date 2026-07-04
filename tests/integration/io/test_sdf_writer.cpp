@@ -3208,6 +3208,24 @@ TEST(SdfWriter, NonFiniteInertialDataReturnsError)
 }
 
 //==============================================================================
+TEST(SdfWriter, NonPositiveMassReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("non_positive_mass");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->setMass(0.0);
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(result.error().message.find("SDF link [body]"), std::string::npos);
+  EXPECT_NE(
+      result.error().message.find("non-finite or non-positive mass"),
+      std::string::npos);
+}
+
+//==============================================================================
 TEST(SdfWriter, NonFiniteJointAxisReturnsError)
 {
   auto skeleton = dynamics::Skeleton::create("non_finite_joint_axis");
