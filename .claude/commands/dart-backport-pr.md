@@ -1,5 +1,6 @@
 ---
 description: backport a merged main PR to a release branch
+argument-hint: "<pr-number> [release-branch]"
 agent: build
 ---
 
@@ -10,6 +11,7 @@ Backport PR or commits: $ARGUMENTS
 @AGENTS.md
 @docs/onboarding/contributing.md
 @docs/onboarding/release-management.md
+@docs/onboarding/changelog.md
 
 ## Workflow
 
@@ -34,14 +36,23 @@ Backport PR or commits: $ARGUMENTS
    ```
 4. Cherry-pick with provenance: `git cherry-pick -x <COMMIT_HASH>`.
 5. Resolve conflicts minimally; stop and ask if conflicts are broad or change behavior.
-6. Run `pixi run lint` and the smallest relevant release-branch checks.
-7. Ask for explicit maintainer/user approval before pushing or opening the PR.
+6. Run `/dart-changelog decide` or `$dart-changelog decide` against the
+   backport diff and release target before opening the release PR. If an entry
+   is required but needs the backport PR number, draft the decision and keep the
+   finalize/update follow-up local until explicit approval permits another
+   push. Do not skip the changelog decision just because this is a backport.
+7. Run `pixi run lint` and the smallest relevant release-branch checks.
+8. Ask for explicit maintainer/user approval before pushing or opening the PR.
    After approval, open the PR against the release branch with milestone
-   matching that release branch and use the PR template.
+   matching that release branch and use the PR template. If the changelog
+   decision was deferred for the PR number, run `/dart-changelog finalize` or
+   `$dart-changelog finalize` and push the follow-up only after explicit
+   approval.
 
 ## Output
 
 - Backport PR URL
 - Source PR/commit
 - Conflicts resolved, if any
+- Changelog decision and any deferred finalize follow-up
 - Checks run and CI status

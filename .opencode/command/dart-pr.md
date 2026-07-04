@@ -1,5 +1,6 @@
 ---
 description: create a branch, commit, push, and open a DART pull request
+argument-hint: "[title-or-topic]"
 agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
@@ -183,3 +184,10 @@ could be affected), a draft PR is ready to mark ready for human review after
 explicit approval even if hosted CI is still pending. Do not merge until branch
 protection and required checks pass unless a maintainer explicitly approves a
 policy bypass.
+
+## Output
+
+- Branch, target base, and milestone used
+- Commit titles and files included
+- Verification commands run and their results
+- PR URL after approved creation, and the changelog decision

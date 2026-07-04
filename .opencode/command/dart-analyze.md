@@ -1,5 +1,6 @@
 ---
 description: analyze repository evidence without editing
+argument-hint: "<question|path|topic>"
 agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->

@@ -141,7 +141,14 @@ check-lint = { depends-on = [
   "check-lint-cmake",
   "check-lint-py",
   "check-lint-spell",
+  "check-ai-commands",
 ] }
+
+# Tier-0 pre-commit gate (same set as check-lint; named for hook parity with main).
+check-lint-quick = { depends-on = ["check-lint"] }
+
+# One-time setup: install the pre-commit git hook that runs check-lint-quick.
+install-hooks = { cmd = "python scripts/install_git_hooks.py" }
 
 sync-ai-commands = { cmd = "python scripts/sync_ai_commands.py" }
 check-ai-commands = { cmd = "python scripts/sync_ai_commands.py --check" }
