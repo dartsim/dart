@@ -1,5 +1,6 @@
 ---
 description: debug and fix CI failures on a release branch
+argument-hint: "<pr-number|run-id> [release-branch]"
 agent: build
 ---
 
