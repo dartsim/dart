@@ -8608,17 +8608,17 @@
       "topic": "rigid contact correctness regression",
       "priority": "P0",
       "dart_target_type": "test",
-      "expected_invariant": "DART focused test preserves nonnegative clearance, momentum/energy behavior where applicable, and expected restitution or friction outcome.",
+      "expected_invariant": "DART covers the audited 3D two-wall tunnel row: a unit cube flies down a tight (1 mm) fixed floor/ceiling corridor at high speed, stays finite, keeps advancing along the tunnel axis, and never tunnels out through either fixed wall.",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
-      "status": "planned",
-      "dart_artifact": "CTest label rigid_ipc_fixture::2_walls",
+      "status": "implemented",
+      "dart_artifact": "test_rigid_ipc_paper_experiments::RigidIpcPaperExperiments.TwoWallTunnelCubeStaysBetweenWallsFixtureRow",
       "required_assets_or_importer": [
         "meshes/cube.obj",
         "meshes/plane.obj"
       ],
-      "dart_command_or_ctest_or_benchmark": "ctest -L rigid_ipc_fixture::2_walls",
-      "notes_or_gap": "Classified from upstream rigid-ipc path; retire this planned row only after DART has matching code, tests, benchmarks, and evidence."
+      "dart_command_or_ctest_or_benchmark": "pixi run bash -lc 'build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter=RigidIpcPaperExperiments.TwoWallTunnelCubeStaysBetweenWallsFixtureRow'",
+      "notes_or_gap": "Covered by DART-owned two-wall tunnel runtime coverage for the 3D unit-test fixture mechanism. The three-wall, four-wall, and 8K tunnel rows remain planned: at their tighter 0.1 mm clearance the conservative curved-CCD line search limits each step to about the separation distance, so a fast cube is arrested rather than traversing, and the dense 8K walls are too slow for a unit test pending dense-contact performance work."
     },
     {
       "upstream_path": "fixtures/3D/unit-tests/tunnel/3-walls.json",
