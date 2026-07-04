@@ -356,34 +356,33 @@ Guardrails:
 
 **Concurrency configuration:**
 
-CI workflows cancel superseded topic-branch and PR runs, but protected
-validation runs must finish:
+CI workflows cancel superseded branch and PR validations, including protected
+`main` and `release-*` branch pushes. Branch protection only needs the latest
+commit on a ref; preserving obsolete post-merge validations can starve current
+PR checks after a burst of merges. Durable evidence runs are still preserved:
 
-- **main and release branches**: preserve every post-merge validation run
 - **scheduled jobs**: preserve every periodic validation run
+- **manual dispatches and release tags**: preserve each requested validation run
 
-GitHub's default concurrency queue keeps only one pending run per group. Setting
-`cancel-in-progress: false` prevents active-run cancellation, but a newer
-pending run can still replace an older pending run unless the workflow uses an
-explicit multi-pending queue or a run-specific group. Because `queue: max` cannot
-be combined with `cancel-in-progress: true`, shared workflows use run-specific
-groups only for protected refs and schedules while keeping a stable cancellable
-group for topic refs.
+GitHub's default concurrency queue keeps only one pending run per group. Shared
+workflows therefore use stable groups for branch and PR validations so newer
+runs cancel older pending or active work, and run-specific groups only for
+durable schedule/manual/tag evidence.
 
 ```yaml
-# Standard pattern for workflows that should cancel topic refs but preserve
-# protected post-merge and scheduled validation.
+# Standard pattern for workflows that cancel branch/PR validations but preserve
+# scheduled, manual, and release-tag evidence.
 concurrency:
   group: >-
     ${{ (github.event_name == 'schedule'
-         || github.ref == 'refs/heads/main'
-         || startsWith(github.ref, 'refs/heads/release-'))
-        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
-        || format('{0}-{1}', github.workflow, github.ref) }}
+        || github.event_name == 'workflow_dispatch'
+        || startsWith(github.ref, 'refs/tags/v'))
+        && format('{0}-{1}-{2}-{3}', github.workflow, github.ref, github.event_name, github.run_id)
+        || format('{0}-{1}-{2}', github.workflow, github.ref, github.event_name) }}
   cancel-in-progress: >-
     ${{ github.event_name != 'schedule'
-        && github.ref != 'refs/heads/main'
-        && !startsWith(github.ref, 'refs/heads/release-') }}
+        && github.event_name != 'workflow_dispatch'
+        && !startsWith(github.ref, 'refs/tags/v') }}
 
 # For workflows with matrix jobs that serialize writes to fixed branches
 # (e.g., update_lockfiles) or jobs that use a fixed external resource
