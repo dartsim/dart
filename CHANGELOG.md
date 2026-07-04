@@ -202,9 +202,9 @@ compatibility remains on the active DART 6 LTS branch._
   resource-retriever ownership.
 - Added a conservative SDF writer for `Skeleton` round-trips, covering links,
   revolute/prismatic/weld joints with damping/friction/spring metadata, link
-  gravity mode, inertial data, primitive or mesh visual/collision geometry, and
-  explicit visual material colors while reporting unsupported constructs
-  explicitly.
+  gravity mode, local poses, inertial data, primitive or mesh visual/collision
+  geometry, and explicit visual material colors while reporting unsupported
+  constructs explicitly.
 - Improved mesh and asset import behavior across convex meshes, polygon meshes,
   Collada scaling, GLTF PBR materials, empty mesh URIs, and sample robot data.
 

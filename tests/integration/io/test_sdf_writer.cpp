@@ -109,6 +109,8 @@ dynamics::SkeletonPtr makeRoundTripSkeleton()
   hingeProperties.mAxis = Eigen::Vector3d::UnitZ();
   hingeProperties.mT_ParentBodyToJoint.translation()
       = Eigen::Vector3d(0.0, 0.0, 0.8);
+  hingeProperties.mT_ChildBodyToJoint.translation()
+      = Eigen::Vector3d(0.0, 0.0, -0.2);
   hingeProperties.mPositionLowerLimits[0] = -1.25;
   hingeProperties.mPositionUpperLimits[0] = 1.5;
 
@@ -253,6 +255,16 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   ASSERT_NE(slider, nullptr);
   ASSERT_NE(fixed, nullptr);
 
+  const auto* root
+      = dynamic_cast<const dynamics::FreeJoint*>(reparsed->getJoint("root"));
+  ASSERT_NE(root, nullptr);
+  EXPECT_EQ(root->getParentBodyNode(), nullptr);
+  EXPECT_EQ(root->getChildBodyNode(), base);
+  expectVectorNear(
+      root->getTransformFromParentBodyNode().translation(),
+      Eigen::Vector3d(0.25, -0.5, 1.0),
+      1e-12);
+
   EXPECT_NEAR(base->getMass(), 2.5, 1e-12);
   expectVectorNear(
       base->getLocalCOM(), Eigen::Vector3d(0.01, 0.02, 0.03), 1e-12);
@@ -270,6 +282,14 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   ASSERT_NE(hinge, nullptr);
   EXPECT_EQ(hinge->getParentBodyNode(), base);
   EXPECT_EQ(hinge->getChildBodyNode(), tip);
+  expectVectorNear(
+      hinge->getTransformFromParentBodyNode().translation(),
+      Eigen::Vector3d(0.0, 0.0, 0.8),
+      1e-12);
+  expectVectorNear(
+      hinge->getTransformFromChildBodyNode().translation(),
+      Eigen::Vector3d(0.0, 0.0, -0.2),
+      1e-12);
   expectVectorNear(hinge->getAxis(), Eigen::Vector3d::UnitZ(), 1e-12);
   EXPECT_NEAR(hinge->getPositionLowerLimit(0), -1.25, 1e-12);
   EXPECT_NEAR(hinge->getPositionUpperLimit(0), 1.5, 1e-12);
@@ -300,6 +320,12 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
       base->getShapeNodeWith<dynamics::VisualAspect>(0)->getShape().get());
   ASSERT_NE(baseBox, nullptr);
   expectVectorNear(baseBox->getSize(), Eigen::Vector3d(0.4, 0.5, 0.6), 1e-12);
+  expectVectorNear(
+      base->getShapeNodeWith<dynamics::VisualAspect>(0)
+          ->getRelativeTransform()
+          .translation(),
+      Eigen::Vector3d(0.1, 0.0, 0.0),
+      1e-12);
   expectVectorNear(
       base->getShapeNodeWith<dynamics::VisualAspect>(0)
           ->getVisualAspect()

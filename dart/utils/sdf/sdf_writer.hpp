@@ -65,8 +65,8 @@ struct DART_UTILS_API WriteOptions
 /// BodyNode links, root FreeJoint/WeldJoint placement, revolute/prismatic/weld
 /// child joints with passive dynamics metadata (damping, Coulomb friction,
 /// spring reference, and spring stiffness), link gravity mode, inertial
-/// parameters, and box/sphere/cylinder/mesh visual/collision geometry with
-/// explicit visual material colors.
+/// parameters, local joint/shape poses, and box/sphere/cylinder/mesh
+/// visual/collision geometry with explicit visual material colors.
 /// Unsupported constructs return an error instead of being silently dropped.
 common::Result<std::string, common::Error> DART_UTILS_API
 tryWriteSkeletonToString(
