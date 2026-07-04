@@ -35,12 +35,13 @@
       mimic metadata, universal two-axis joints, continuous revolute joints,
       explicit parent-world root joints for supported SDF joint types,
       including continuous revolute roots, topology-only ball joints, model
-      self-collision, capsule/cone/ellipsoid geometry, visual
-      shadow/hidden state, explicit visual material colors, PBR
-      metallic/roughness factors, visual transparency, and collision surface
-      contact disable bitmasks, zero-threshold bounce restitution, and ODE
-      friction/slip
-      metadata now round-trip as SDF `<self_collide>`, `<gravity>`,
+      self-collision, non-default skeleton gravity through root SDF world
+      gravity, capsule/cone/ellipsoid geometry, visual shadow/hidden state,
+      explicit visual material colors, PBR metallic/roughness factors, visual
+      transparency, and collision surface contact disable bitmasks,
+      zero-threshold bounce restitution, and ODE friction/slip
+      metadata now round-trip as SDF `<self_collide>`, root
+      `<world><gravity>`, link `<gravity>`,
       `<axis>/<axis2><dynamics>`, `<thread_pitch>`/`<screw_thread_pitch>`,
       `<mimic>`, local
       `<pose>`, `<capsule>`, `<cone>`, `<ellipsoid>`, `<cast_shadows>`,
@@ -215,8 +216,8 @@ SKEL-YAML direction just because the prototype once existed.
   joints, two-axis universal joints, SDF 1.11+ axis/axis2 mimic metadata with
   motor enforcement, continuous revolute joints, explicit parent-world root
   joints for supported SDF joint types, including continuous revolute roots,
-  topology-only ball joints, model self-collision, plus local root, joint, and
-  shape poses, plus
+  topology-only ball joints, model self-collision, non-default skeleton gravity
+  through root SDF world gravity, plus local root, joint, and shape poses, plus
   capsule/cone/ellipsoid geometry,
   visual shadow state, zero visibility flags, visual transparency, and absolute
   non-file mesh URI
@@ -242,5 +243,5 @@ SKEL-YAML direction just because the prototype once existed.
   of the removed generic parser helper APIs, including non-mutating sdformat child traversal,
   explicit-authored presence checks, and the removed SDF-specific boolean,
   scalar, vector, pose, and text fallback parsers. SDF writer patching of
-  gravity, modern screw pitch, and bounce restitution is covered by
+  disabled link gravity, modern screw pitch, and bounce restitution is covered by
   `INTEGRATION_io_SdfWriter` and now uses direct sdformat child traversal.

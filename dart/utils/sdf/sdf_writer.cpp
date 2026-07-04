@@ -73,6 +73,7 @@
 #include <sdf/Sphere.hh>
 #include <sdf/Surface.hh>
 #include <sdf/Visual.hh>
+#include <sdf/World.hh>
 
 #include <algorithm>
 #include <charconv>
@@ -316,10 +317,25 @@ WriteResult findOrCreateElement(
   return ok();
 }
 
+sdf::ElementPtr findModelElement(const sdf::ElementPtr& rootElement)
+{
+  if (const sdf::ElementPtr modelElement
+      = findChildElement(rootElement, "model")) {
+    return modelElement;
+  }
+
+  const sdf::ElementPtr worldElement = findChildElement(rootElement, "world");
+  if (!worldElement) {
+    return nullptr;
+  }
+
+  return findChildElement(worldElement, "model");
+}
+
 WriteResult preserveFalseLinkGravity(
     const sdf::ElementPtr& rootElement, const sdf::Model& model)
 {
-  const sdf::ElementPtr modelElement = findChildElement(rootElement, "model");
+  const sdf::ElementPtr modelElement = findModelElement(rootElement);
   if (!modelElement) {
     return fail("sdformat failed to serialize the SDF model.");
   }
@@ -380,7 +396,7 @@ WriteResult preserveModernScrewThreadPitch(
     return ok();
   }
 
-  const sdf::ElementPtr modelElement = findChildElement(rootElement, "model");
+  const sdf::ElementPtr modelElement = findModelElement(rootElement);
   if (!modelElement) {
     return fail("sdformat failed to serialize the SDF model.");
   }
@@ -423,7 +439,7 @@ WriteResult preserveCollisionRestitution(
     return ok();
   }
 
-  const sdf::ElementPtr modelElement = findChildElement(rootElement, "model");
+  const sdf::ElementPtr modelElement = findModelElement(rootElement);
   if (!modelElement) {
     return fail("sdformat failed to serialize the SDF model.");
   }
@@ -1278,6 +1294,16 @@ WriteResult buildJoint(
   return ok();
 }
 
+Eigen::Vector3d defaultDartGravity()
+{
+  return Eigen::Vector3d(0.0, 0.0, -9.81);
+}
+
+bool requiresWorldGravity(const dynamics::Skeleton& skeleton)
+{
+  return !skeleton.getGravity().isApprox(defaultDartGravity(), 1e-12);
+}
+
 } // namespace
 
 common::Result<std::string, common::Error> tryWriteSkeletonToString(
@@ -1285,6 +1311,11 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
 {
   if (options.version.empty()) {
     return StringResult::err(WriteError("SDF version must not be empty."));
+  }
+  const Eigen::Vector3d& gravity = skeleton.getGravity();
+  if (!isFinite(gravity)) {
+    return StringResult::err(
+        WriteError("Cannot write SDF with non-finite skeleton gravity."));
   }
 
   std::map<const dynamics::BodyNode*, Eigen::Isometry3d> linkModelPoses;
@@ -1334,7 +1365,25 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
 
   sdf::Root root;
   root.SetVersion(options.version);
-  root.SetModel(model);
+  if (requiresWorldGravity(skeleton)) {
+    sdf::World world;
+    world.SetName(
+        skeleton.getName().empty() ? "default" : skeleton.getName() + "_world");
+    world.SetGravity(toGzVector3(gravity));
+    if (!world.AddModel(model)) {
+      return StringResult::err(WriteError(
+          "Failed to add SDF model [" + skeleton.getName()
+          + "] to world for gravity serialization."));
+    }
+
+    const sdf::Errors errors = root.AddWorld(world);
+    if (!errors.empty()) {
+      return StringResult::err(
+          WriteError("Failed to add SDF world for gravity serialization."));
+    }
+  } else {
+    root.SetModel(model);
+  }
 
   const sdf::ElementPtr element = root.ToElement();
   if (!element) {

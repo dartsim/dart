@@ -67,6 +67,7 @@
 #include <sdf/Root.hh>
 #include <sdf/Surface.hh>
 #include <sdf/Visual.hh>
+#include <sdf/World.hh>
 
 #include <algorithm>
 #include <filesystem>
@@ -787,6 +788,46 @@ TEST(SdfWriter, RoundTripsModelSelfCollision)
 
   ASSERT_NE(reparsed, nullptr);
   EXPECT_TRUE(reparsed->getSelfCollisionCheck());
+}
+
+//==============================================================================
+TEST(SdfWriter, RoundTripsNonDefaultSkeletonGravityThroughWorld)
+{
+  auto skeleton = dynamics::Skeleton::create("gravity_writer");
+  skeleton->setGravity(Eigen::Vector3d(1.0, 2.0, -3.0));
+
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "body_collision");
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_EQ(sdfRoot.WorldCount(), 1u);
+  const auto* sdfWorld = sdfRoot.WorldByIndex(0);
+  ASSERT_NE(sdfWorld, nullptr);
+  EXPECT_DOUBLE_EQ(sdfWorld->Gravity().X(), 1.0);
+  EXPECT_DOUBLE_EQ(sdfWorld->Gravity().Y(), 2.0);
+  EXPECT_DOUBLE_EQ(sdfWorld->Gravity().Z(), -3.0);
+  ASSERT_EQ(sdfWorld->ModelCount(), 1u);
+  ASSERT_NE(sdfWorld->ModelByIndex(0), nullptr);
+  EXPECT_EQ(sdfWorld->ModelByIndex(0)->Name(), "gravity_writer");
+
+  const auto path = writeTempSdf(writeResult.value(), "gravity_world");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_TRUE(reparsed->getGravity().isApprox(Eigen::Vector3d(1.0, 2.0, -3.0)));
 }
 
 //==============================================================================

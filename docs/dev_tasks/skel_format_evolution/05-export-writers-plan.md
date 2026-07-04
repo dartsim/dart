@@ -27,14 +27,16 @@ topology-only ball child joints, SDF 1.11+ mimic metadata for axis/axis2
 follower joints with motor
 enforcement, explicit parent-world root joints for supported SDF joint types
 (revolute, continuous, prismatic, screw, universal, and topology-only ball),
-model self-collision, link gravity mode, inertial parameters, local
-joint/shape poses,
+model self-collision, non-default skeleton gravity through root SDF world
+gravity, link gravity mode, inertial parameters, local joint/shape poses,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry,
 visual shadow state as SDF `<cast_shadows>`, hidden visual state as zero-valued
 SDF `<visibility_flags>`, visual alpha as SDF `<transparency>`, explicit visual
 material colors as SDF `<diffuse>` values, and PBR metallic/roughness factors as
 SDF `<pbr><metal>` values. Model-level self-collision round-trips through SDF
 `<self_collide>`.
+Non-default skeleton gravity writes a root SDF `<world>` with `<gravity>` and
+re-parses through the same `sdf::World` DOM.
 Collision-surface contact disable state round-trips through SDF
 `<surface><contact><collide_bitmask>` for DART's lossless zero-bitmask subset;
 zero-threshold bounce restitution round-trips through SDF
@@ -60,10 +62,10 @@ The SDF writer integration test now uses
 inertia, and shape assertions. Future writer tests should extend that helper
 instead of copying SDF-specific ad hoc checks.
 
-Parser-side SDF import now uses libsdformat DOM objects for top-level model
-selection, ambiguous `.xml` SDF dispatch through `dart::io::readSkeleton()`, and
-standard model/link/joint/aspect traversal. The remaining authored/default
-presence checks use sdformat's
+Parser-side SDF import now uses libsdformat DOM objects for top-level model or
+first-world model selection, world gravity, ambiguous `.xml` SDF dispatch
+through `dart::io::readSkeleton()`, and standard model/link/joint/aspect
+traversal. The remaining authored/default presence checks use sdformat's
 `Element::GetExplicitlySetInFile()` signal with non-mutating direct child
 traversal for standard SDF inertial, material diffuse, legacy
 `use_parent_model_frame`, and joint-axis dynamics/limits. sdformat Element
@@ -164,8 +166,7 @@ Phase 5 is complete only when code and tests prove the writer contract:
   revolute joints, additional sdformat-owned shapes, mesh material variants,
   additional collision-surface fields beyond contact bitmask, zero-threshold
   bounce restitution, and ODE friction/slip, destination-aware resource
-  rewriting, default/world gravity, or other world-level data round-trip
-  correctly.
+  rewriting, or other world-level data beyond gravity round-trip correctly.
 - Decide the next implementation target: URDF writer or PLAN-101 project
   save/load.
 - Keep YAML out of the first implementation target unless a durable

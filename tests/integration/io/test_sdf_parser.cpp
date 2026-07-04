@@ -1776,6 +1776,33 @@ TEST(SdfParser, ModelBooleansParseThroughSdformat)
 }
 
 //==============================================================================
+TEST(SdfParser, WorldModelGravityParsesThroughSdformat)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/world_gravity/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="gravity_world">
+    <gravity>1 2 -3</gravity>
+    <model name="world_gravity_model">
+      <link name="link">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+    </model>
+  </world>
+</sdf>
+  )";
+  retriever->add(uri, modelSdf);
+
+  SdfParser::Options options(retriever);
+  const auto skeleton = SdfParser::readSkeleton(common::Uri(uri), options);
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_EQ(skeleton->getName(), "world_gravity_model");
+  EXPECT_TRUE(skeleton->getGravity().isApprox(Eigen::Vector3d(1.0, 2.0, -3.0)));
+}
+
+//==============================================================================
 TEST(SdfParser, UniversalScrewAndBallJointLimits)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();

@@ -72,6 +72,7 @@
 #include <sdf/Pbr.hh>
 #include <sdf/Surface.hh>
 #include <sdf/Visual.hh>
+#include <sdf/World.hh>
 #include <sdf/sdf.hh>
 
 #include <algorithm>
@@ -2049,14 +2050,41 @@ dynamics::SkeletonPtr readSkeleton(
     return nullptr;
   }
 
+  const sdf::World* world = nullptr;
   const sdf::Model* model = root.Model();
+  if (!model && root.WorldCount() > 0) {
+    if (root.WorldCount() > 1) {
+      DART_WARN(
+          "[SdfParser] [{}] contains multiple <world> elements; loading the "
+          "first world's first model.",
+          uri.toString());
+    }
+
+    world = root.WorldByIndex(0);
+    if (world && world->ModelCount() > 0) {
+      if (world->ModelCount() > 1) {
+        DART_WARN(
+            "[SdfParser] [{}] contains multiple models in world [{}]; loading "
+            "the first model.",
+            uri.toString(),
+            world->Name());
+      }
+      model = world->ModelByIndex(0);
+    }
+  }
+
   if (!model) {
     DART_WARN(
         "[SdfParser] [{}] does not contain a <model> element.", uri.toString());
     return nullptr;
   }
 
-  return readSkeleton(*model, uri, resolvedOptions);
+  auto skeleton = readSkeleton(*model, uri, resolvedOptions);
+  if (skeleton && world) {
+    skeleton->setGravity(toEigenVector3(world->Gravity()));
+  }
+
+  return skeleton;
 }
 
 } // namespace SdfParser

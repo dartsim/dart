@@ -71,8 +71,9 @@ struct DART_UTILS_API WriteOptions
 /// sdformat-normalized screw thread pitch, SDF 1.11+ mimic metadata for
 /// axis/axis2 follower joints
 /// with motor enforcement, topology-only ball child joints, model
-/// self-collision, link gravity mode, inertial parameters, local
-/// joint/shape poses, and
+/// self-collision, non-default skeleton gravity via a root SDF world
+/// <gravity>, link gravity mode, inertial parameters, local joint/shape poses,
+/// and
 /// box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual/collision geometry
 /// with visual shadow/hidden/transparency state, explicit visual material
 /// colors, PBR metallic/roughness factors, and

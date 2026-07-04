@@ -35,8 +35,9 @@ the writer building libsdformat DOM objects and serializing through sdformat.
 FreeJoint/WeldJoint placement,
 revolute/continuous/prismatic/weld/screw/universal child joints, inertial data,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh geometry, link gravity mode,
-passive joint dynamics metadata (damping, Coulomb friction, spring reference,
-and spring stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
+non-default skeleton gravity through root SDF world gravity, passive joint
+dynamics metadata (damping, Coulomb friction, spring reference, and spring
+stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
 axis/axis2 mimic metadata with motor enforcement, explicit parent-world root
 joints for supported SDF joint types including continuous revolute roots,
 topology-only ball child joints, model self-collision, local
@@ -70,9 +71,10 @@ cone, ellipsoid, plane, and mesh shapes into DART shapes; this preserves the
 existing plane-as-thin-box and resource-retrieved mesh behavior without adding
 new raw XML-level parsing.
 The model reader now selects the top-level model through libsdformat
-`sdf::Root::Model()` and carries the resulting `sdf::Model` DOM through standard
-model, link, joint, visual, collision, and material traversal instead of
-rediscovering those standard children through raw XML-level enumeration.
+`sdf::Root::Model()` or the first model in the first `sdf::World`, and carries
+the resulting `sdf::Model` DOM through standard model, link, joint, visual,
+collision, and material traversal instead of rediscovering those standard
+children through raw XML-level enumeration.
 `dart::io::readSkeleton()` now also asks sdformat to recognize ambiguous `.xml`
 SDF content before falling back to TinyXML root sniffing for non-SDF URDF/MJCF
 dispatch.
@@ -118,14 +120,17 @@ converted locally through sdformat typed `Element::Get<T>` calls instead of
 shared DART-side scalar, vector, or pose parsers.
 The SDF writer's post-serialization preservation path now uses typed
 `sdf::Model`, `sdf::Link`, and `sdf::Joint` DOM values for link/joint names,
-gravity modes, and screw pitch values. It still patches sdformat's element tree
-for fields that `Root::ToElement()` omits or emits under the deprecated tag,
-but it no longer reads serialized XML attributes back from that tree, and the
-patch path now finds generated sdformat children by direct child/sibling
-traversal instead of `FindElement` schema lookup.
+disabled link gravity modes, and screw pitch values. It still patches
+sdformat's element tree for fields that `Root::ToElement()` omits or emits
+under the deprecated tag, but it no longer reads serialized XML attributes back
+from that tree, and the patch path now finds generated sdformat children by
+direct child/sibling traversal instead of `FindElement` schema lookup.
 Model-level self-collision now reads through `sdf::Model::SelfCollide()` and
 writes through `sdf::Model::SetSelfCollide()`, with parser and writer coverage
 for SDF `<self_collide>` round-trip.
+Non-default skeleton gravity now reads through `sdf::World::Gravity()` and
+writes through `sdf::World::SetGravity()` by wrapping the model in a root SDF
+`<world>` only when the skeleton gravity differs from DART's default gravity.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -275,6 +280,14 @@ Additional validation for SDF joint-axis expressed-in frame resolution:
 - `pixi run test-unit`
 
 Additional validation for SDF model self-collision IO:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
+
+Additional validation for SDF world gravity IO:
 
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
@@ -505,6 +518,10 @@ Changelog decision:
   it broadens the same conservative SDF writer/parser round-trip capability
   before the implementation PR exists; the existing DART 7 IO and Parsing
   bullet now includes model self-collision state.
+  No additional separate entry is needed for SDF world gravity IO because it
+  broadens the same conservative SDF writer/parser round-trip capability before
+  the implementation PR exists; the existing DART 7 IO and Parsing bullet now
+  includes non-default skeleton gravity through SDF world gravity.
 
 Additional validation for sdformat-based ambiguous `.xml` SDF dispatch:
 
