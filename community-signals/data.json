@@ -81,24 +81,27 @@
       "stars": 49
     }
   ],
-  "errors": [],
+  "errors": [
+    "traffic clones: HTTP 403",
+    "traffic views: HTTP 403"
+  ],
   "gazebo": {
     "dartsim_plugin_files": 41,
     "docs_default_dart": true,
     "package_depends_dart": true,
     "requires_dart_610": true
   },
-  "generated_at": "2026-07-04T02:59:09.013934Z",
+  "generated_at": "2026-07-04T06:59:29.853830Z",
   "packages": {
     "conda": {
-      "combined_gross": 1005253,
-      "dartpy": 240917,
-      "dartsim": 640517,
-      "dartsim-cpp": 123819
+      "combined_gross": 1005282,
+      "dartpy": 240918,
+      "dartsim": 640523,
+      "dartsim-cpp": 123841
     },
-    "homebrew_installs_365d": 18000,
-    "homebrew_on_request_365d": 1452,
-    "pepy_dartpy_all_time": 258170
+    "homebrew_installs_365d": 18006,
+    "homebrew_on_request_365d": 1450,
+    "pepy_dartpy_all_time": 258477
   },
   "since": "2025-07-04",
   "sources": {
@@ -125,12 +128,12 @@
     "contributors_login": 54,
     "contributors_with_anon": 78,
     "created_issues_12m": 28,
-    "created_prs_12m": 1228,
+    "created_prs_12m": 1232,
     "forks": 301,
     "latest_push": "2026-07-04",
     "latest_release": "v6.19.3",
     "latest_release_date": "2026-06-27",
-    "merged_prs_12m": 1149,
+    "merged_prs_12m": 1153,
     "open_issues": 1,
     "open_prs": 3,
     "releases_12m": 16,
@@ -138,12 +141,12 @@
     "watchers": 50
   },
   "traffic": {
-    "available": true,
-    "clone_window": "2026-06-19 to 2026-07-02",
-    "clones": 35461,
-    "unique_cloners": 4286,
-    "unique_visitors": 679,
-    "view_window": "2026-06-19 to 2026-07-02",
-    "views": 3039
+    "available": false,
+    "clone_window": null,
+    "clones": null,
+    "unique_cloners": null,
+    "unique_visitors": null,
+    "view_window": null,
+    "views": null
   }
 }
