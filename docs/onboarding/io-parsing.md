@@ -245,10 +245,11 @@ URDF limits, asymmetric velocity/effort limits, arbitrary planar axes,
 non-uniform multi-DoF limit/dynamics metadata, missing or non-motor mimic
 references, coupler mimic offsets, multi-DoF mimic relationships that URDF
 cannot name by axis, non-finite data, missing mesh URIs, relative or
-host-qualified file mesh URIs, unsupported shapes, and DART `SoftBodyNode`
-export. Validate any broadened URDF surface with write/read/read tests through
-`UrdfParser`; do not route URDF export through `dart::io` until a reviewed
-multi-format write API exists.
+host-qualified file mesh URIs, disabled collision aspects, collision dynamics
+metadata, visual reflectance factors, unsupported shapes, and DART
+`SoftBodyNode` export. Validate any broadened URDF surface with
+write/read/read tests through `UrdfParser`; do not route URDF export through
+`dart::io` until a reviewed multi-format write API exists.
 
 ## Notes about Python
 

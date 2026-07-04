@@ -578,6 +578,14 @@ WriteResult writeMaterial(
     return ok();
   }
 
+  const double reflectance = visualAspect->getReflectance();
+  if (reflectance >= 0.0 || !std::isfinite(reflectance)) {
+    return fail(
+        "Cannot write URDF visual [" + shapeNode.getName()
+        + "] with a DART visual reflectance factor because URDF material has "
+          "no reflectance field.");
+  }
+
   const Eigen::Vector4d rgba = visualAspect->getRGBA();
   if (!rgba.allFinite()) {
     return fail(
@@ -601,6 +609,51 @@ WriteResult writeMaterial(
   return ok();
 }
 
+WriteResult validateCollisionMetadata(const dynamics::ShapeNode& shapeNode)
+{
+  const auto* collisionAspect = shapeNode.getCollisionAspect();
+  if (collisionAspect && !collisionAspect->isCollidable()) {
+    return fail(
+        "Cannot write URDF collision [" + shapeNode.getName()
+        + "] with a disabled DART collision aspect because URDF <collision> "
+          "has no collidable-disable field.");
+  }
+
+  const auto* dynamicsAspect = shapeNode.getDynamicsAspect();
+  if (!dynamicsAspect) {
+    return ok();
+  }
+
+  constexpr double kDefaultFriction = 1.0;
+  constexpr double kDefaultRestitution = 0.0;
+  constexpr double kDefaultSlip = -1.0;
+
+  const Eigen::Vector3d& firstFrictionDirection
+      = dynamicsAspect->getFirstFrictionDirection();
+  const bool hasDefaultDynamics
+      = isSameScalar(
+            dynamicsAspect->getPrimaryFrictionCoeff(), kDefaultFriction)
+        && isSameScalar(
+            dynamicsAspect->getSecondaryFrictionCoeff(), kDefaultFriction)
+        && isSameScalar(
+            dynamicsAspect->getRestitutionCoeff(), kDefaultRestitution)
+        && isSameScalar(
+            dynamicsAspect->getPrimarySlipCompliance(), kDefaultSlip)
+        && isSameScalar(
+            dynamicsAspect->getSecondarySlipCompliance(), kDefaultSlip)
+        && isFinite(firstFrictionDirection)
+        && firstFrictionDirection.isZero(kTolerance)
+        && dynamicsAspect->getFirstFrictionDirectionFrame() == nullptr;
+  if (!hasDefaultDynamics) {
+    return fail(
+        "Cannot write URDF collision [" + shapeNode.getName()
+        + "] with DART collision dynamics metadata because URDF <collision> "
+          "has no surface or contact-dynamics fields.");
+  }
+
+  return ok();
+}
+
 template <class AspectT>
 WriteResult writeShapeNodes(
     tinyxml2::XMLDocument& doc,
@@ -619,6 +672,12 @@ WriteResult writeShapeNodes(
       return fail(
           "Cannot write URDF shape [" + shapeNode->getName()
           + "] with non-finite local pose.");
+    }
+
+    if constexpr (std::is_same_v<AspectT, dynamics::CollisionAspect>) {
+      if (auto result = validateCollisionMetadata(*shapeNode); result.isErr()) {
+        return result;
+      }
     }
 
     auto* element = appendElement(doc, linkElement, elementName);

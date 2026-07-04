@@ -873,6 +873,23 @@ TEST(UrdfWriter, NonFiniteVisualMaterialColorReturnsError)
 }
 
 //==============================================================================
+TEST(UrdfWriter, UnsupportedVisualReflectanceReturnsError)
+{
+  const auto skeleton = makeRoundTripSkeleton();
+  auto* base = skeleton->getBodyNode("base");
+  ASSERT_NE(base, nullptr);
+  auto* visual = base->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visual, nullptr);
+  ASSERT_NE(visual->getVisualAspect(), nullptr);
+  visual->getVisualAspect()->setReflectance(0.4);
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "URDF visual [base_box]");
+  expectContains(result.error().message, "reflectance");
+}
+
+//==============================================================================
 TEST(UrdfWriter, NonFiniteShapePoseReturnsError)
 {
   const auto skeleton = makeRoundTripSkeleton();
@@ -937,6 +954,51 @@ TEST(UrdfWriter, NonFiniteJointAxisReturnsError)
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "URDF joint [hinge]");
   expectContains(result.error().message, "non-finite axis");
+}
+
+//==============================================================================
+TEST(UrdfWriter, DisabledCollisionAspectReturnsError)
+{
+  const auto skeleton = makeRoundTripSkeleton();
+  auto* tip = skeleton->getBodyNode("tip");
+  ASSERT_NE(tip, nullptr);
+  auto* collision = tip->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(collision, nullptr);
+  ASSERT_NE(collision->getCollisionAspect(), nullptr);
+  collision->getCollisionAspect()->setCollidable(false);
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(
+      result.error().message, "URDF collision [tip_cylinder_collision]");
+  expectContains(result.error().message, "collidable");
+}
+
+//==============================================================================
+TEST(UrdfWriter, CollisionDynamicsMetadataReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("urdf_collision_dynamics");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr,
+          dynamics::FreeJoint::Properties(),
+          makeBodyProperties(
+              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)rootJoint;
+
+  auto* collision = base->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4)),
+      "surface_box");
+  ASSERT_NE(collision, nullptr);
+  ASSERT_NE(collision->getDynamicsAspect(), nullptr);
+  collision->getDynamicsAspect()->setRestitutionCoeff(0.25);
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "URDF collision [surface_box]");
+  expectContains(result.error().message, "collision dynamics metadata");
 }
 
 //==============================================================================

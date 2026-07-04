@@ -165,9 +165,12 @@ authored URDF materials, explicit default colors stay authored, and default RGB
 with an alpha override still serializes a material so alpha round-trips.
 Non-positive mass, non-finite local center-of-mass, visual material color,
 shape pose, joint axis, and asymmetric velocity/effort limits now have focused
-diagnostics coverage. DART `SoftBodyNode` export also fails
-with a targeted diagnostic because URDF has no point-mass, spring, damping, or
-soft mesh topology semantics. This first URDF slice also does not complete
+diagnostics coverage. Non-default visual reflectance, disabled DART collision
+aspects, and collision dynamics metadata now fail with targeted diagnostics
+because URDF has no equivalent material reflectance, collidable-disable, or
+surface/contact-dynamics fields. DART `SoftBodyNode` export also fails with a
+targeted diagnostic because URDF has no point-mass, spring, damping, or soft
+mesh topology semantics. This first URDF slice also does not complete
 Phase 5.
 
 ## Decision

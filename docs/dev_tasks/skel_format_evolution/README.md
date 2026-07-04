@@ -160,7 +160,9 @@
       dynamics round-trip, visual and collision package mesh URI preservation
       through `UrdfParser` package resolution, non-positive mass, non-finite
       local center-of-mass, visual material color, shape pose, joint axis, and
-      asymmetric velocity/effort limit diagnostics, and targeted DART
+      asymmetric velocity/effort limit diagnostics, targeted diagnostics for
+      non-default visual reflectance, disabled collision aspects, and
+      collision dynamics metadata that URDF cannot represent, and targeted DART
       `SoftBodyNode` diagnostics.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, the URDF writer remains on

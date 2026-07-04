@@ -112,10 +112,13 @@ Implicit default visual colors now serialize without authored URDF materials,
 explicit default colors stay authored, and default RGB with an alpha override
 still serializes a material so alpha round-trips. Non-positive mass, non-finite
 local center-of-mass, visual material color, shape pose, joint axis, and
-asymmetric velocity/effort limits now have focused diagnostics coverage. DART
-`SoftBodyNode` writer attempts also fail with a targeted diagnostic instead of
-being serialized as ordinary URDF links with point-mass,
-spring, damping, and soft mesh topology semantics dropped.
+asymmetric velocity/effort limits now have focused diagnostics coverage.
+Non-default visual reflectance, disabled DART collision aspects, and collision
+dynamics metadata now fail with targeted diagnostics because URDF has no
+equivalent material reflectance, collidable-disable, or
+surface/contact-dynamics fields. DART `SoftBodyNode` writer attempts also fail
+with a targeted diagnostic instead of being serialized as ordinary URDF links
+with point-mass, spring, damping, and soft mesh topology semantics dropped.
 
 Current SDF audit result: `dart/utils/sdf/` has no TinyXML/raw XML parser path
 for SDF semantics. SDF content loading, ambiguous `.xml` SDF classification,
@@ -1257,6 +1260,37 @@ Changelog decision:
   lossy constructs.
 - Follow-up: none
 
+Additional validation for URDF visual/collision metadata diagnostics:
+
+- Control before the writer change failed because the writer succeeded after
+  dropping non-default DART visual reflectance, disabled collision aspect state,
+  and collision dynamics metadata:
+  `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter="UrdfWriter.UnsupportedVisualReflectanceReturnsError:UrdfWriter.DisabledCollisionAspectReturnsError:UrdfWriter.CollisionDynamicsMetadataReturnsError"'`
+- Focused candidate passed with the same command.
+- Full writer target passed:
+  `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (33 tests)
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: `origin/main` inferred for
+  `work/skel-format-yaml-decision`; no open PR exists for the branch.
+- Scope evidence: current uncommitted diff in
+  `dart/utils/urdf/urdf_writer.cpp`,
+  `tests/integration/io/test_urdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder; nearby
+  `CHANGELOG.md` DART 7 IO and Parsing URDF writer bullet inspected.
+- Decision: no additional changelog entry.
+- Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing existing URDF
+  writer bullet.
+- Entry text: N/A
+- PR-body note: No separate changelog entry is needed because this slice
+  tightens explicit unsupported/lossy diagnostics inside the existing
+  unreleased conservative URDF writer contract; the DART 7 IO and Parsing entry
+  already says the URDF writer reports unsupported or lossy DART constructs
+  explicitly.
+- Follow-up: none
+
 Additional validation for SDF sdformat-boundary lint coverage:
 
 - `pixi run check-sdf-sdformat-boundary`
@@ -1418,9 +1452,9 @@ can be recovered without adopting the old SKEL YAML direction.
 ## Current Branch
 
 `work/skel-format-yaml-decision` — Phase 3 YAML decision, Phase 4 USD
-coordination, Phase 5 export-writer planning, and the first SDF writer slice are
-local on top of the Phase 2 removal commit. The underlying Phase 2 branch
-remains `feature/remove-skel-dart7-phase2`.
+coordination, Phase 5 export-writer planning, and accumulated SDF/URDF writer
+slices are local on top of the Phase 2 removal commit. The underlying Phase 2
+branch remains `feature/remove-skel-dart7-phase2`.
 
 ## Immediate Next Step
 
