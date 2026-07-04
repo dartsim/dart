@@ -236,10 +236,10 @@ constructs such as multiple root trees, non-identity root placement, unsupported
 joint families, non-identity child-to-joint frames, unbounded finite-requiring
 URDF limits, asymmetric velocity/effort limits, missing or non-motor mimic
 references, multi-DoF mimic relationships that URDF cannot name by axis,
-non-finite data, missing or relative mesh URIs, unsupported shapes, and DART
-`SoftBodyNode` export. Validate any broadened URDF surface with write/read/read
-tests through `UrdfParser`; do not route URDF export through `dart::io` until a
-reviewed multi-format write API exists.
+non-finite data, missing mesh URIs, relative or host-qualified file mesh URIs,
+unsupported shapes, and DART `SoftBodyNode` export. Validate any broadened URDF
+surface with write/read/read tests through `UrdfParser`; do not route URDF
+export through `dart::io` until a reviewed multi-format write API exists.
 
 ## Notes about Python
 

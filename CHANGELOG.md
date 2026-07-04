@@ -221,7 +221,7 @@ compatibility remains on the active DART 6 LTS branch._
   single-DoF mimic metadata, inertial data, local visual/collision poses,
   primitive geometry, absolute and package URI meshes, visual colors, and
   explicit diagnostics for unsupported or lossy DART constructs including soft
-  bodies.
+  bodies and invalid mesh resources.
 - Improved mesh and asset import behavior across convex meshes, polygon meshes,
   Collada scaling, GLTF PBR materials, empty mesh URIs, and sample robot data.
 

@@ -314,9 +314,18 @@ WriteResult writeGeometry(
       return fail("Cannot write URDF mesh geometry without a mesh URI.");
     }
 
-    if (!uri.mScheme && (!uri.mPath || !uri.mPath->starts_with('/'))) {
+    const bool hasAbsolutePath = uri.mPath && uri.mPath->starts_with('/');
+    if (!uri.mScheme && !hasAbsolutePath) {
       return fail(
           "Cannot write targetless relative URDF mesh URI [" + uriText + "].");
+    }
+
+    const bool isFileUri = uri.mScheme && *uri.mScheme == "file";
+    const bool hasAuthority = uri.mAuthority && !uri.mAuthority->empty();
+    if (isFileUri && (!hasAbsolutePath || hasAuthority)) {
+      return fail(
+          "Cannot write relative or host-qualified URDF file mesh URI ["
+          + uriText + "] without a destination file policy.");
     }
 
     if (!isFinite(mesh->getScale())) {

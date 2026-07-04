@@ -213,6 +213,27 @@ dynamics::SkeletonPtr makeRoundTripSkeleton()
   return skeleton;
 }
 
+dynamics::SkeletonPtr makeVisualMeshSkeleton(
+    const common::Uri& meshUri,
+    const Eigen::Vector3d& scale = Eigen::Vector3d(0.5, 1.0, 1.5))
+{
+  auto skeleton = dynamics::Skeleton::create("urdf_mesh_writer");
+
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr,
+          dynamics::FreeJoint::Properties(),
+          makeBodyProperties(
+              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)rootJoint;
+
+  base->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::MeshShape>(scale, makeTriangleMesh(), meshUri),
+      "mesh_visual");
+
+  return skeleton;
+}
+
 template <class ShapeT, class AspectT>
 const ShapeT* getFirstShape(const dynamics::BodyNode* body)
 {
@@ -450,21 +471,8 @@ TEST(UrdfWriter, RoundTripsContinuousJointDynamics)
 //==============================================================================
 TEST(UrdfWriter, PreservesPackageMeshUri)
 {
-  auto skeleton = dynamics::Skeleton::create("urdf_package_mesh_writer");
-
-  auto [rootJoint, base]
-      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
-          nullptr,
-          dynamics::FreeJoint::Properties(),
-          makeBodyProperties(
-              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
-  (void)rootJoint;
-
   const common::Uri packageMeshUri("package://writer_pkg/BoxSmall.obj");
-  base->createShapeNodeWith<dynamics::VisualAspect>(
-      std::make_shared<dynamics::MeshShape>(
-          Eigen::Vector3d(0.5, 1.0, 1.5), makeTriangleMesh(), packageMeshUri),
-      "package_mesh_visual");
+  const auto skeleton = makeVisualMeshSkeleton(packageMeshUri);
 
   const auto writeResult
       = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
@@ -485,6 +493,41 @@ TEST(UrdfWriter, PreservesPackageMeshUri)
   ASSERT_NE(mesh, nullptr);
   EXPECT_EQ(mesh->getMeshUri2().toString(), packageMeshUri.toString());
   EXPECT_TRUE(mesh->getScale().isApprox(Eigen::Vector3d(0.5, 1.0, 1.5)));
+}
+
+//==============================================================================
+TEST(UrdfWriter, MeshWithoutUriReturnsError)
+{
+  const auto skeleton = makeVisualMeshSkeleton(common::Uri());
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "without a mesh URI");
+}
+
+//==============================================================================
+TEST(UrdfWriter, RelativeMeshUriReturnsError)
+{
+  const auto skeleton
+      = makeVisualMeshSkeleton(common::Uri("meshes/BoxSmall.obj"));
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(
+      result.error().message, "relative or host-qualified URDF file mesh URI");
+  expectContains(result.error().message, "meshes/BoxSmall.obj");
+}
+
+//==============================================================================
+TEST(UrdfWriter, NonFiniteMeshScaleReturnsError)
+{
+  const auto skeleton = makeVisualMeshSkeleton(
+      common::Uri("package://writer_pkg/BoxSmall.obj"),
+      Eigen::Vector3d(1.0, std::numeric_limits<double>::quiet_NaN(), 1.0));
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "non-finite scale");
 }
 
 //==============================================================================

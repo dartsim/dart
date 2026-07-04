@@ -148,7 +148,8 @@ geometry, visual colors, and visual/collision include
 options. `INTEGRATION_io_UrdfWriter` validates a write/read/read round-trip for
 that subset and covers explicit diagnostics for multiple root trees, unsupported
 joint families, non-identity child joint frames, unbounded finite-requiring URDF
-limits, missing mimic references, and coupler-style mimic enforcement.
+limits, missing mimic references, coupler-style mimic enforcement, missing mesh
+URIs, relative or host-qualified file mesh URIs, and non-finite mesh scales.
 Additional coverage proves unbounded revolute DART joints write as URDF
 `continuous` joints and preserve passive dynamics metadata, and that
 `package://` mesh URIs serialize and reparse through `UrdfParser` package
