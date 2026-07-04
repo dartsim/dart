@@ -61,15 +61,16 @@
       targeted diagnostics explaining the missing finite SDF plane size or
       target URI for generated mesh resources instead of relying on a generic
       unsupported-shape fallback.
-      Parser-side SDF model selection and standard model/link/joint/aspect
-      traversal now use libsdformat `sdf::Root`, `sdf::Model`, `sdf::Link`,
-      `sdf::Joint`, `sdf::Visual`, and `sdf::Collision` DOM values rather than
-      raw XML-level enumeration. Standard visual/collision/material reads use
-      libsdformat DOM values for names, local poses, geometry, cast-shadow
-      state, zero visibility flags, transparency, diffuse colors, and PBR metal
-      workflow factors; material authored/default checks only preserve whether
-      diffuse was authored, using sdformat's explicit-authored element flags
-      instead of child-existence probing. Standard joint reads use DOM values
+      Parser-side SDF model selection, ambiguous `.xml` SDF dispatch through
+      `dart::io::readSkeleton()`, and standard model/link/joint/aspect traversal
+      now use libsdformat `sdf::Root`, `sdf::Model`, `sdf::Link`, `sdf::Joint`,
+      `sdf::Visual`, and `sdf::Collision` DOM values rather than raw XML-level
+      enumeration. Standard visual/collision/material reads use libsdformat DOM
+      values for names, local poses, geometry, cast-shadow state, zero
+      visibility flags, transparency, diffuse colors, and PBR metal workflow
+      factors; material authored/default checks only preserve whether diffuse
+      was authored, using sdformat's explicit-authored element flags instead of
+      child-existence probing. Standard joint reads use DOM values
       for joint name/type,
       parent/child links, local pose, axis vectors including
       `axis/xyz@expressed_in` frame resolution, axis dynamics, finite limits,

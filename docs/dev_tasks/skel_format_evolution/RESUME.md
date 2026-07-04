@@ -72,6 +72,9 @@ The model reader now selects the top-level model through libsdformat
 `sdf::Root::Model()` and carries the resulting `sdf::Model` DOM through standard
 model, link, joint, visual, collision, and material traversal instead of
 rediscovering those standard children through raw XML-level enumeration.
+`dart::io::readSkeleton()` now also asks sdformat to recognize ambiguous `.xml`
+SDF content before falling back to TinyXML root sniffing for non-SDF URDF/MJCF
+dispatch.
 Model/link body-node reads use `sdf::Model` and `sdf::Link` DOM values for
 model name/static/pose and link name/gravity/pose plus inertial mass, center of
 mass, and inertia tensor values. Visual and collision shape nodes traverse
@@ -474,6 +477,33 @@ Changelog decision:
   the implementation PR exists; the existing DART 7 IO and Parsing bullet now
   includes explicit parent-world root joints for supported SDF joint types,
   including continuous revolute roots.
+
+Additional validation for sdformat-based ambiguous `.xml` SDF dispatch:
+
+- `cmake --build build/default/cpp/Release --target test_io_readNone -j2`
+- `build/default/cpp/Release/bin/test_io_readNone --gtest_filter='ReadUnit.InfersSdfAmbiguousXmlUriWithSdformat:ReadUnit.ReturnsNullForInvalidAmbiguousXmlContent:ReadUnit.InfersUrdfFromAmbiguousXmlRootBeforeParseFailure'`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit`
+- `build/default/cpp/Release/bin/INTEGRATION_io_Read`
+- `git diff --check`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: `origin/main` inferred for
+  `work/skel-format-yaml-decision`; no open PR exists for the branch.
+- Scope evidence: local diff routes ambiguous `.xml` SDF detection in
+  `dart::io::readSkeleton()` through `sdf::Root::LoadSdfString()` and updates
+  the focused read-unit test plus this task handoff.
+- Decision: no entry required
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: No additional changelog entry is needed because this is an
+  internal dispatch hardening under the existing DART 7 IO and Parsing
+  libsdformat-normalization entry; valid SDF imports remain on the same public
+  `readSkeleton()` path.
+- Follow-up: none
 
 ## Previous Resume Checkpoint (2026-07-03)
 

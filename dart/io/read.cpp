@@ -42,6 +42,8 @@
 
 #if DART_HAS_SDFORMAT
   #include "dart/utils/sdf/sdf_parser.hpp"
+
+  #include <sdf/Root.hh>
 #endif
 
 #if DART_IO_HAS_URDF
@@ -122,6 +124,23 @@ std::optional<ModelFormat> inferFormatFromExtension(const common::Uri& uri)
   return std::nullopt;
 }
 
+#if DART_HAS_SDFORMAT
+std::optional<ModelFormat> inferSdfFormatWithSdformat(
+    const std::string& content)
+{
+  sdf::Root root;
+  const sdf::Errors errors = root.LoadSdfString(content);
+  (void)errors;
+
+  const auto rootElement = root.Element();
+  if (rootElement && rootElement->GetName() == "sdf") {
+    return ModelFormat::Sdf;
+  }
+
+  return std::nullopt;
+}
+#endif
+
 std::optional<ModelFormat> inferFormatFromXmlRoot(
     const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
 {
@@ -143,6 +162,12 @@ std::optional<ModelFormat> inferFormatFromXmlRoot(
     return std::nullopt;
   }
 
+#if DART_HAS_SDFORMAT
+  if (const auto format = inferSdfFormatWithSdformat(content)) {
+    return format;
+  }
+#endif
+
   tinyxml2::XMLDocument doc;
   const auto result = doc.Parse(content.c_str(), content.size());
   if (result != tinyxml2::XML_SUCCESS) {
@@ -163,9 +188,6 @@ std::optional<ModelFormat> inferFormatFromXmlRoot(
   }
 
   const std::string rootName = root->Name();
-  if (rootName == "sdf") {
-    return ModelFormat::Sdf;
-  }
   if (rootName == "robot") {
     return ModelFormat::Urdf;
   }

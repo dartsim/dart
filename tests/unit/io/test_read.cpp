@@ -227,7 +227,7 @@ TEST(ReadUnit, ReturnsNullForInvalidAmbiguousXmlContent)
 }
 
 //==============================================================================
-TEST(ReadUnit, InfersSdfXmlRootForAmbiguousXmlUri)
+TEST(ReadUnit, InfersSdfAmbiguousXmlUriWithSdformat)
 {
 #if DART_HAS_SDFORMAT
   const auto options = optionsWithContent(
