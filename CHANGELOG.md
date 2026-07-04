@@ -204,8 +204,8 @@ compatibility remains on the active DART 6 LTS branch._
 - Added a conservative SDF writer for `Skeleton` round-trips, covering links,
   revolute/continuous/prismatic/weld/screw/universal joints with
   damping/friction/spring metadata, sdformat-normalized screw thread pitch,
-  topology-only ball joints, explicit parent-world root revolute joints, link
-  gravity mode, local poses, inertial data,
+  topology-only ball joints, explicit parent-world root joints for supported
+  SDF joint types, link gravity mode, local poses, inertial data,
   box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual/collision geometry,
   visual shadow/hidden/transparency state, visual material colors plus PBR
   metallic/roughness factors, and collision surface contact disable bitmasks,

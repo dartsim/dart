@@ -1351,6 +1351,299 @@ TEST(SdfWriter, RootRevoluteJointRoundTripsAsParentWorld)
 }
 
 //==============================================================================
+TEST(SdfWriter, RootPrismaticJointRoundTripsAsParentWorld)
+{
+  auto skeleton = dynamics::Skeleton::create("root_prismatic_writer");
+
+  dynamics::PrismaticJoint::Properties rootProperties;
+  rootProperties.mName = "world_slider";
+  rootProperties.mAxis = Eigen::Vector3d::UnitX();
+  rootProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(-0.1, 0.2, 0.3);
+  rootProperties.mT_ChildBodyToJoint.translation()
+      = Eigen::Vector3d(0.0, -0.05, 0.1);
+  rootProperties.mPositionLowerLimits[0] = -0.4;
+  rootProperties.mPositionUpperLimits[0] = 0.6;
+
+  dynamics::BodyNode::Properties bodyProperties;
+  bodyProperties.mName = "slider";
+  bodyProperties.mInertia.setMass(1.0);
+  bodyProperties.mInertia.setMoment(Eigen::Matrix3d::Identity());
+
+  auto [rootJoint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
+          nullptr, rootProperties, bodyProperties);
+  rootJoint->setDampingCoefficient(0, 0.15);
+  rootJoint->setCoulombFriction(0, 0.03);
+  rootJoint->setRestPosition(0, -0.2);
+  rootJoint->setSpringStiffness(0, 0.9);
+  body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4)),
+      "slider_collision");
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfJoint = sdfRoot.Model()->JointByName("world_slider");
+  ASSERT_NE(sdfJoint, nullptr);
+  EXPECT_EQ(sdfJoint->Type(), sdf::JointType::PRISMATIC);
+  EXPECT_EQ(sdfJoint->ParentName(), "world");
+  EXPECT_EQ(sdfJoint->ChildName(), "slider");
+
+  const auto path = writeTempSdf(writeResult.value(), "root_prismatic");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  ASSERT_EQ(reparsed->getNumBodyNodes(), 1u);
+  ASSERT_EQ(reparsed->getNumJoints(), 1u);
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "slider");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* reparsedJoint
+      = test::requireJoint<dynamics::PrismaticJoint>(*reparsed, "world_slider");
+  ASSERT_NE(reparsedJoint, nullptr);
+  test::expectJointTopology(*reparsedJoint, nullptr, reparsedBody);
+  EXPECT_VECTOR_NEAR(reparsedJoint->getAxis(), Eigen::Vector3d::UnitX(), 1e-12);
+  EXPECT_VECTOR_NEAR(
+      reparsedJoint->getTransformFromParentBodyNode().translation(),
+      Eigen::Vector3d(-0.1, 0.2, 0.3),
+      1e-12);
+  EXPECT_VECTOR_NEAR(
+      reparsedJoint->getTransformFromChildBodyNode().translation(),
+      Eigen::Vector3d(0.0, -0.05, 0.1),
+      1e-12);
+  test::expectDofPositionLimits(*reparsedJoint, 0, -0.4, 0.6, 1e-12);
+  test::expectDofDynamics(*reparsedJoint, 0, 0.15, 0.03, -0.2, 0.9, 1e-12);
+}
+
+//==============================================================================
+TEST(SdfWriter, RootScrewJointRoundTripsAsParentWorld)
+{
+  auto skeleton = dynamics::Skeleton::create("root_screw_writer");
+
+  dynamics::ScrewJoint::Properties rootProperties;
+  rootProperties.mName = "world_screw";
+  rootProperties.mAxis = Eigen::Vector3d::UnitZ();
+  rootProperties.mPitch = 0.35;
+  rootProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.15, -0.25, 0.35);
+  rootProperties.mT_ChildBodyToJoint.translation()
+      = Eigen::Vector3d(0.0, 0.0, -0.08);
+  rootProperties.mPositionLowerLimits[0] = -0.5;
+  rootProperties.mPositionUpperLimits[0] = 0.5;
+
+  dynamics::BodyNode::Properties bodyProperties;
+  bodyProperties.mName = "screw_body";
+  bodyProperties.mInertia.setMass(1.0);
+  bodyProperties.mInertia.setMoment(Eigen::Matrix3d::Identity());
+
+  auto [rootJoint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint>(
+          nullptr, rootProperties, bodyProperties);
+  rootJoint->setDampingCoefficient(0, 0.12);
+  rootJoint->setCoulombFriction(0, 0.02);
+  rootJoint->setRestPosition(0, 0.05);
+  rootJoint->setSpringStiffness(0, 0.7);
+  body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::CylinderShape>(0.1, 0.25),
+      "screw_body_collision");
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfJoint = sdfRoot.Model()->JointByName("world_screw");
+  ASSERT_NE(sdfJoint, nullptr);
+  EXPECT_EQ(sdfJoint->Type(), sdf::JointType::SCREW);
+  EXPECT_EQ(sdfJoint->ParentName(), "world");
+  EXPECT_EQ(sdfJoint->ChildName(), "screw_body");
+  EXPECT_NEAR(sdfJoint->ScrewThreadPitch(), 0.35, 1e-12);
+
+  const auto path = writeTempSdf(writeResult.value(), "root_screw");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  ASSERT_EQ(reparsed->getNumBodyNodes(), 1u);
+  ASSERT_EQ(reparsed->getNumJoints(), 1u);
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "screw_body");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* reparsedJoint
+      = test::requireJoint<dynamics::ScrewJoint>(*reparsed, "world_screw");
+  ASSERT_NE(reparsedJoint, nullptr);
+  test::expectJointTopology(*reparsedJoint, nullptr, reparsedBody);
+  EXPECT_VECTOR_NEAR(reparsedJoint->getAxis(), Eigen::Vector3d::UnitZ(), 1e-12);
+  EXPECT_NEAR(reparsedJoint->getPitch(), 0.35, 1e-12);
+  EXPECT_VECTOR_NEAR(
+      reparsedJoint->getTransformFromParentBodyNode().translation(),
+      Eigen::Vector3d(0.15, -0.25, 0.35),
+      1e-12);
+  EXPECT_VECTOR_NEAR(
+      reparsedJoint->getTransformFromChildBodyNode().translation(),
+      Eigen::Vector3d(0.0, 0.0, -0.08),
+      1e-12);
+  test::expectDofPositionLimits(*reparsedJoint, 0, -0.5, 0.5, 1e-12);
+  test::expectDofDynamics(*reparsedJoint, 0, 0.12, 0.02, 0.05, 0.7, 1e-12);
+}
+
+//==============================================================================
+TEST(SdfWriter, RootUniversalJointRoundTripsAsParentWorld)
+{
+  auto skeleton = dynamics::Skeleton::create("root_universal_writer");
+
+  dynamics::UniversalJoint::Properties rootProperties;
+  rootProperties.mName = "world_universal";
+  rootProperties.mAxis[0] = Eigen::Vector3d::UnitX();
+  rootProperties.mAxis[1] = Eigen::Vector3d::UnitY();
+  rootProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(-0.25, 0.15, 0.45);
+  rootProperties.mT_ChildBodyToJoint.translation()
+      = Eigen::Vector3d(0.05, 0.0, -0.05);
+  rootProperties.mPositionLowerLimits[0] = -0.6;
+  rootProperties.mPositionUpperLimits[0] = 0.7;
+  rootProperties.mPositionLowerLimits[1] = -0.8;
+  rootProperties.mPositionUpperLimits[1] = 0.9;
+
+  dynamics::BodyNode::Properties bodyProperties;
+  bodyProperties.mName = "universal_body";
+  bodyProperties.mInertia.setMass(1.0);
+  bodyProperties.mInertia.setMoment(Eigen::Matrix3d::Identity());
+
+  auto [rootJoint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(
+          nullptr, rootProperties, bodyProperties);
+  rootJoint->setDampingCoefficient(0, 0.21);
+  rootJoint->setCoulombFriction(0, 0.04);
+  rootJoint->setRestPosition(0, -0.3);
+  rootJoint->setSpringStiffness(0, 1.1);
+  rootJoint->setDampingCoefficient(1, 0.31);
+  rootJoint->setCoulombFriction(1, 0.06);
+  rootJoint->setRestPosition(1, 0.4);
+  rootJoint->setSpringStiffness(1, 1.3);
+  body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::SphereShape>(0.2), "universal_body_collision");
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfJoint = sdfRoot.Model()->JointByName("world_universal");
+  ASSERT_NE(sdfJoint, nullptr);
+  EXPECT_EQ(sdfJoint->Type(), sdf::JointType::UNIVERSAL);
+  EXPECT_EQ(sdfJoint->ParentName(), "world");
+  EXPECT_EQ(sdfJoint->ChildName(), "universal_body");
+
+  const auto path = writeTempSdf(writeResult.value(), "root_universal");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  ASSERT_EQ(reparsed->getNumBodyNodes(), 1u);
+  ASSERT_EQ(reparsed->getNumJoints(), 1u);
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "universal_body");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* reparsedJoint = test::requireJoint<dynamics::UniversalJoint>(
+      *reparsed, "world_universal");
+  ASSERT_NE(reparsedJoint, nullptr);
+  test::expectJointTopology(*reparsedJoint, nullptr, reparsedBody);
+  EXPECT_VECTOR_NEAR(
+      reparsedJoint->getAxis1(), Eigen::Vector3d::UnitX(), 1e-12);
+  EXPECT_VECTOR_NEAR(
+      reparsedJoint->getAxis2(), Eigen::Vector3d::UnitY(), 1e-12);
+  EXPECT_VECTOR_NEAR(
+      reparsedJoint->getTransformFromParentBodyNode().translation(),
+      Eigen::Vector3d(-0.25, 0.15, 0.45),
+      1e-12);
+  EXPECT_VECTOR_NEAR(
+      reparsedJoint->getTransformFromChildBodyNode().translation(),
+      Eigen::Vector3d(0.05, 0.0, -0.05),
+      1e-12);
+  test::expectDofPositionLimits(*reparsedJoint, 0, -0.6, 0.7, 1e-12);
+  test::expectDofDynamics(*reparsedJoint, 0, 0.21, 0.04, -0.3, 1.1, 1e-12);
+  test::expectDofPositionLimits(*reparsedJoint, 1, -0.8, 0.9, 1e-12);
+  test::expectDofDynamics(*reparsedJoint, 1, 0.31, 0.06, 0.4, 1.3, 1e-12);
+}
+
+//==============================================================================
+TEST(SdfWriter, RootBallJointRoundTripsAsParentWorld)
+{
+  auto skeleton = dynamics::Skeleton::create("root_ball_writer");
+
+  dynamics::BallJoint::Properties rootProperties;
+  rootProperties.mName = "world_ball";
+  rootProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.2, 0.1, -0.3);
+  rootProperties.mT_ChildBodyToJoint.translation()
+      = Eigen::Vector3d(-0.05, 0.1, 0.0);
+
+  dynamics::BodyNode::Properties bodyProperties;
+  bodyProperties.mName = "ball_body";
+  bodyProperties.mInertia.setMass(1.0);
+  bodyProperties.mInertia.setMoment(Eigen::Matrix3d::Identity());
+
+  auto [rootJoint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(
+          nullptr, rootProperties, bodyProperties);
+  (void)rootJoint;
+  body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::SphereShape>(0.2), "ball_body_collision");
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfJoint = sdfRoot.Model()->JointByName("world_ball");
+  ASSERT_NE(sdfJoint, nullptr);
+  EXPECT_EQ(sdfJoint->Type(), sdf::JointType::BALL);
+  EXPECT_EQ(sdfJoint->ParentName(), "world");
+  EXPECT_EQ(sdfJoint->ChildName(), "ball_body");
+
+  const auto path = writeTempSdf(writeResult.value(), "root_ball");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  ASSERT_EQ(reparsed->getNumBodyNodes(), 1u);
+  ASSERT_EQ(reparsed->getNumJoints(), 1u);
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "ball_body");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* reparsedJoint
+      = test::requireJoint<dynamics::BallJoint>(*reparsed, "world_ball");
+  ASSERT_NE(reparsedJoint, nullptr);
+  test::expectJointTopology(*reparsedJoint, nullptr, reparsedBody);
+  EXPECT_EQ(reparsedJoint->getNumDofs(), 3u);
+  EXPECT_VECTOR_NEAR(
+      reparsedJoint->getTransformFromParentBodyNode().translation(),
+      Eigen::Vector3d(0.2, 0.1, -0.3),
+      1e-12);
+  EXPECT_VECTOR_NEAR(
+      reparsedJoint->getTransformFromChildBodyNode().translation(),
+      Eigen::Vector3d(-0.05, 0.1, 0.0),
+      1e-12);
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsCapsuleAndConeGeometry)
 {
   auto skeleton = dynamics::Skeleton::create("capsule_cone_writer");

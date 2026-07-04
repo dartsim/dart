@@ -213,7 +213,11 @@ bool isImplicitRootJoint(const dynamics::Joint& joint)
 
 bool isExplicitWorldRootJoint(const dynamics::Joint& joint)
 {
-  return dynamic_cast<const dynamics::RevoluteJoint*>(&joint) != nullptr;
+  return dynamic_cast<const dynamics::RevoluteJoint*>(&joint)
+         || dynamic_cast<const dynamics::PrismaticJoint*>(&joint)
+         || dynamic_cast<const dynamics::ScrewJoint*>(&joint)
+         || dynamic_cast<const dynamics::UniversalJoint*>(&joint)
+         || dynamic_cast<const dynamics::BallJoint*>(&joint);
 }
 
 sdf::ElementPtr findChildElement(

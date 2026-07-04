@@ -33,8 +33,8 @@
       dynamics metadata (damping, Coulomb friction, spring reference, and spring
       stiffness), sdformat-normalized screw thread pitch, SDF 1.11+ axis/axis2
       mimic metadata, universal two-axis joints, continuous revolute joints,
-      explicit parent-world root revolute joints, topology-only ball joints,
-      capsule/cone/ellipsoid geometry, visual
+      explicit parent-world root joints for supported SDF joint types,
+      topology-only ball joints, capsule/cone/ellipsoid geometry, visual
       shadow/hidden state, explicit visual material colors, PBR
       metallic/roughness factors, visual transparency, and collision surface
       contact disable bitmasks, zero-threshold bounce restitution, and ODE
@@ -211,8 +211,8 @@ SKEL-YAML direction just because the prototype once existed.
   thread pitch for supported single-axis
   joints, two-axis universal joints, SDF 1.11+ axis/axis2 mimic metadata with
   motor enforcement, continuous revolute joints, explicit parent-world root
-  revolute joints, topology-only ball joints, plus local root, joint, and shape
-  poses, plus capsule/cone/ellipsoid geometry,
+  joints for supported SDF joint types, topology-only ball joints, plus local
+  root, joint, and shape poses, plus capsule/cone/ellipsoid geometry,
   visual shadow state, zero visibility flags, visual transparency, and absolute
   non-file mesh URI
   preservation through a custom retriever. It also covers

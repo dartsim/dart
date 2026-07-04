@@ -38,8 +38,8 @@ box/sphere/cylinder/capsule/cone/ellipsoid/mesh geometry, link gravity mode,
 passive joint dynamics metadata (damping, Coulomb friction, spring reference,
 and spring stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
 axis/axis2 mimic metadata with motor enforcement, explicit parent-world root
-revolute joints, topology-only ball child joints, local root/joint/shape poses,
-visual shadow/hidden state, explicit
+joints for supported SDF joint types, topology-only ball child joints, local
+root/joint/shape poses, visual shadow/hidden state, explicit
 visual material colors, PBR metallic/roughness factors, collision-surface
 contact disable bitmasks, visual transparency, zero-threshold bounce
 restitution, ODE friction
@@ -463,10 +463,10 @@ Changelog decision:
   because it is an internal implementation cleanup that keeps the existing
   conservative SDF writer behavior while avoiding schema lookup in the
   sdformat element patch path.
-  No additional separate entry is needed for explicit parent-world root
-  revolute writing because it broadens the same conservative SDF writer
-  capability before the implementation PR exists; the existing DART 7 IO and
-  Parsing bullet now includes explicit parent-world root revolute joints.
+  No additional separate entry is needed for explicit parent-world root joint
+  writing because it broadens the same conservative SDF writer capability before
+  the implementation PR exists; the existing DART 7 IO and Parsing bullet now
+  includes explicit parent-world root joints for supported SDF joint types.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

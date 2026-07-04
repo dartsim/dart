@@ -63,9 +63,10 @@ struct DART_UTILS_API WriteOptions
 ///
 /// The first writer slice intentionally supports a conservative DART subset:
 /// BodyNode links, root FreeJoint/WeldJoint placement, revolute/prismatic/weld
-/// and screw/universal child joints plus explicit parent-world root revolute
-/// joints with passive dynamics metadata (damping, Coulomb friction, spring
-/// reference, and spring stiffness),
+/// and screw/universal child joints plus explicit parent-world root joints for
+/// supported SDF joint types (revolute, prismatic, screw, universal, and
+/// topology-only ball) with passive dynamics metadata where representable
+/// (damping, Coulomb friction, spring reference, and spring stiffness),
 /// sdformat-normalized screw thread pitch, SDF 1.11+ mimic metadata for
 /// axis/axis2 follower joints
 /// with motor enforcement, topology-only ball child joints, link gravity mode,
