@@ -146,7 +146,14 @@ compatibility remains on the active DART 6 LTS branch._
   commanded velocity like `Velocity`, but bounds the motor impulse by the joint
   effort limits so it saturates like a real motor. When an effort bound binds,
   the coupled velocity-level solve runs as a boxed LCP; otherwise it keeps the
-  unbounded equality solve. `Acceleration` and `Mimic` remain reserved.
+  unbounded equality solve.
+- Added the `Acceleration` joint actuator type to the DART 7 `World`
+  semi-implicit articulated dynamics (C++ `Joint::setCommandAcceleration`, dartpy
+  `command_acceleration`): the joint realizes a commanded acceleration exactly
+  via the same velocity-level constraint (target `qdot + acceleration * dt`),
+  overriding gravity and applied effort. Bumps the simulation binary format to
+  version 28 (the `comps.JointActuation` record gains a `commandAcceleration`
+  field). `Mimic` remains reserved.
 - Fixed retained rigid-IPC solver scratch reuse so lagged-friction objective
   assembly keeps the active barrier Hessian while adding friction and dynamics
   terms.

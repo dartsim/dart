@@ -130,7 +130,12 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //   26: World compute accelerator policy serialized after deactivation options.
 //   27: World differentiable physical-parameter registrations serialized after
 //      the compute accelerator policy.
-constexpr std::uint32_t kBinaryFormatVersion = 27;
+//   28: comps.JointActuation gains a commandAcceleration field (per-coordinate
+//      commanded acceleration for the Acceleration actuator type), appended
+//      after commandVelocity. Clean break: DART 7 has no compatibility debt, so
+//      packets written with the three-field actuation record (versions <= 27)
+//      no longer round-trip comps.JointActuation.
+constexpr std::uint32_t kBinaryFormatVersion = 28;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

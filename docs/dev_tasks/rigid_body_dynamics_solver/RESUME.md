@@ -44,13 +44,22 @@ binds); a dartpy servo test; `test_world` regression green; variational 179/179,
 serialization 55/55 unaffected. Same integrator boundary as `Locked` (default
 semi-implicit only; variational/AVBD fall back to passive).
 
-Remaining reserved actuator modes: **`Acceleration`** (prescribed q̈ via a
-velocity-level target `q̇ + q̈·dt`, needs a new `commandAcceleration` field hence
-a binary-format change) and **`Mimic`**/coupler. The Subsystem A
-friction-cone / warm-start polish remains the maintainer-stated headline
-deferred item (see below); it changes default contact behavior and should land
-as a reviewed, release-6.\* parity-evidenced slice, not an unreviewed autonomous
-one.
+Also landed locally (stacked on the `Servo` branch, separate PR): the
+**`Acceleration`** joint actuator mode. The joint realizes a commanded
+acceleration exactly through the same velocity-level equality machinery with
+target `q̇ + q̈·dt`, overriding gravity and applied effort. Adds a
+`commandAcceleration` field to `comps::JointActuation` (initialized to
+DOF-sized zeros at joint construction — a missed init site was the cause of an
+early test crash) and bumps the simulation binary format to **version 28**
+(clean break: v27 packets no longer round-trip the actuation record). C++
+(`Joint::setCommandAcceleration`) + dartpy (`command_acceleration`) +
+closed-form single/coupled tests + a serialization round-trip.
+
+Remaining reserved actuator mode: **`Mimic`**/coupler (the last unimplemented
+actuator type). The Subsystem A friction-cone / warm-start polish remains the
+maintainer-stated headline deferred item (see below); it changes default contact
+behavior and should land as a reviewed, release-6.\* parity-evidenced slice, not
+an unreviewed autonomous one.
 
 ## Current Reality (2026-06-06)
 
@@ -947,9 +956,11 @@ Grounding (verified in-tree):
 
 ### Smaller deferred items
 
-- **Phase 4:** remaining actuator modes (ACCELERATION) and mimic/coupler — reuse
-  the existing `J M^-1 J^T` equality machinery (LOCKED and SERVO landed
-  2026-07-04; SERVO adds a boxed-LCP path for effort-bounded saturation).
+- **Phase 4:** MIMIC actuator mode / mimic-coupler relations is the last
+  remaining actuator slice — reuse the existing `J M^-1 J^T` equality machinery
+  (LOCKED, SERVO, and ACCELERATION landed 2026-07-04; SERVO adds a boxed-LCP path
+  for effort-bounded saturation, ACCELERATION adds a `commandAcceleration` field
+  and bumps the binary format to v28).
 - **Phase 5:** loop-closure dynamic solving, pluggable integrator/substepping,
   body/COM Jacobians.
 

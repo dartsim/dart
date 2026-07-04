@@ -4542,6 +4542,7 @@ Joint World::createArticulatedPointJoint(
   jointModel.armature = comps::makeJointVector(dof, 0.0);
   jointModel.coulombFriction = comps::makeJointVector(dof, 0.0);
   jointActuation.commandVelocity = comps::makeJointVector(dof, 0.0);
+  jointActuation.commandAcceleration = comps::makeJointVector(dof, 0.0);
 
   const double infinity = std::numeric_limits<double>::infinity();
   jointModel.limits.lower = comps::makeJointVector(dof, -infinity);
@@ -5105,6 +5106,7 @@ Joint World::createRigidBodyPointJoint(
   jointModel.armature = comps::makeJointVector(dof, 0.0);
   jointModel.coulombFriction = comps::makeJointVector(dof, 0.0);
   jointActuation.commandVelocity = comps::makeJointVector(dof, 0.0);
+  jointActuation.commandAcceleration = comps::makeJointVector(dof, 0.0);
 
   const double infinity = std::numeric_limits<double>::infinity();
   jointModel.limits.lower = comps::makeJointVector(dof, -infinity);

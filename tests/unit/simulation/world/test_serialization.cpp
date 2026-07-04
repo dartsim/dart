@@ -367,6 +367,7 @@ void expectBrokenArticulatedPointJointRoundTrips(
   if (expectedDofCount == 1u) {
     joint.setActuatorType(sx::ActuatorType::Velocity);
     joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.25));
+    joint.setCommandAcceleration(Eigen::VectorXd::Constant(1, 0.75));
     joint.setEffortLimits(
         Eigen::VectorXd::Constant(1, -3.0), Eigen::VectorXd::Constant(1, 4.0));
   }
@@ -412,6 +413,8 @@ void expectBrokenArticulatedPointJointRoundTrips(
     EXPECT_EQ(restoredJoint->getActuatorType(), sx::ActuatorType::Velocity);
     EXPECT_TRUE(restoredJoint->getCommandVelocity().isApprox(
         Eigen::VectorXd::Constant(1, 0.25)));
+    EXPECT_TRUE(restoredJoint->getCommandAcceleration().isApprox(
+        Eigen::VectorXd::Constant(1, 0.75)));
     EXPECT_TRUE(restoredJoint->getEffortLowerLimits().isApprox(
         Eigen::VectorXd::Constant(1, -3.0)));
     EXPECT_TRUE(restoredJoint->getEffortUpperLimits().isApprox(

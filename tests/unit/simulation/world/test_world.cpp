@@ -12281,13 +12281,15 @@ TEST(World, MultibodyJointActuatorTypes)
   // The commanded effort is ignored; only the spring acts: qddot = -k x / m.
   EXPECT_NEAR(joint.getAcceleration()[0], -stiffness * 1.0 / mass, 1e-9);
 
-  // A Servo actuator is implemented (effort-bounded velocity servo); with no
-  // command it holds the joint at rest and steps without throwing.
+  // Servo and Acceleration are implemented; with no command they step without
+  // throwing (Servo holds at rest, Acceleration realizes zero acceleration).
   joint.setActuatorType(sx::ActuatorType::Servo);
+  EXPECT_NO_THROW(world.step());
+  joint.setActuatorType(sx::ActuatorType::Acceleration);
   EXPECT_NO_THROW(world.step());
 
   // An actuator type that is not yet implemented is rejected by the dynamics.
-  joint.setActuatorType(sx::ActuatorType::Acceleration);
+  joint.setActuatorType(sx::ActuatorType::Mimic);
   EXPECT_THROW(world.step(), sx::InvalidOperationException);
 }
 
@@ -12376,6 +12378,104 @@ TEST(World, MultibodyJointVelocityActuatorCoupled)
 
   EXPECT_NEAR(joint1.getVelocity()[0], 0.3, 1e-9);
   EXPECT_NEAR(joint2.getVelocity()[0], -0.4, 1e-9);
+}
+
+// Test the Acceleration actuator type: the joint realizes its commanded
+// acceleration exactly in one step, overriding gravity and the applied effort.
+TEST(World, MultibodyJointAccelerationActuatorSingle)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  auto robot = world.addMultibody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(2.0);
+
+  auto joint = carriage.getParentJoint();
+  EXPECT_DOUBLE_EQ(joint.getCommandAcceleration()[0], 0.0);
+  joint.setActuatorType(sx::ActuatorType::Acceleration);
+  const double commandedAcceleration = 3.0;
+  joint.setCommandAcceleration(
+      Eigen::VectorXd::Constant(1, commandedAcceleration));
+  joint.setForce(Eigen::VectorXd::Constant(1, 100.0)); // ignored
+
+  EXPECT_THROW(
+      joint.setCommandAcceleration(Eigen::VectorXd::Zero(2)),
+      sx::InvalidArgumentException);
+
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+  world.step();
+
+  // The realized acceleration equals the command (gravity and effort are
+  // overridden), so the velocity changes by exactly command * dt.
+  EXPECT_NEAR(joint.getAcceleration()[0], commandedAcceleration, 1e-12);
+  EXPECT_NEAR(
+      joint.getVelocity()[0],
+      commandedAcceleration * world.getTimeStep(),
+      1e-12);
+}
+
+// Test the Acceleration actuator under inertial coupling: both joints of a
+// 2-link chain realize their (different) commanded accelerations exactly in one
+// step.
+TEST(World, MultibodyJointAccelerationActuatorCoupled)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("double_pendulum");
+  auto base = robot.addLink("base");
+  Eigen::Isometry3d offset1 = Eigen::Isometry3d::Identity();
+  offset1.translation() = Eigen::Vector3d(0.7, 0.0, 0.0);
+  Eigen::Isometry3d offset2 = Eigen::Isometry3d::Identity();
+  offset2.translation() = Eigen::Vector3d(0.6, 0.0, 0.0);
+
+  sx::JointSpec spec1;
+  spec1.name = "j1";
+  spec1.type = sx::JointType::Revolute;
+  spec1.axis = Eigen::Vector3d::UnitY();
+  spec1.transformFromParent = offset1;
+  auto link1 = robot.addLink("link1", base, spec1);
+  link1.setMass(1.5);
+  link1.setInertia(Eigen::Vector3d(0.05, 0.08, 0.05).asDiagonal());
+
+  sx::JointSpec spec2;
+  spec2.name = "j2";
+  spec2.type = sx::JointType::Revolute;
+  spec2.axis = Eigen::Vector3d::UnitY();
+  spec2.transformFromParent = offset2;
+  auto link2 = robot.addLink("link2", link1, spec2);
+  link2.setMass(1.0);
+  link2.setInertia(Eigen::Vector3d(0.04, 0.06, 0.04).asDiagonal());
+
+  auto joint1 = link1.getParentJoint();
+  auto joint2 = link2.getParentJoint();
+  joint1.setActuatorType(sx::ActuatorType::Acceleration);
+  joint2.setActuatorType(sx::ActuatorType::Acceleration);
+  const double a1 = 1.2;
+  const double a2 = -0.8;
+  joint1.setCommandAcceleration(Eigen::VectorXd::Constant(1, a1));
+  joint2.setCommandAcceleration(Eigen::VectorXd::Constant(1, a2));
+  // Non-zero starting velocities so the coupling (Coriolis) is exercised.
+  joint1.setVelocity(Eigen::VectorXd::Constant(1, 0.5));
+  joint2.setVelocity(Eigen::VectorXd::Constant(1, -0.3));
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step();
+
+  EXPECT_NEAR(joint1.getAcceleration()[0], a1, 1e-9);
+  EXPECT_NEAR(joint2.getAcceleration()[0], a2, 1e-9);
 }
 
 // Test that the public mass matrix and bias forces satisfy the joint-space

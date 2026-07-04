@@ -1182,9 +1182,11 @@ bool computeUnconstrainedMultibodyVelocityInto(
       case comps::ActuatorType::Passive:
       case comps::ActuatorType::Velocity:
       case comps::ActuatorType::Servo:
-        // Passive applies no commanded effort; Velocity and Servo are driven by
-        // a velocity-level constraint solved after the unconstrained step (the
-        // servo's motor impulse is bounded there by the effort limits).
+      case comps::ActuatorType::Acceleration:
+        // Passive applies no commanded effort; Velocity, Servo, and
+        // Acceleration are driven by a velocity-level constraint solved after
+        // the unconstrained step (Velocity/Acceleration to their targets, Servo
+        // bounded there by the effort limits).
         for (std::size_t d = 0; d < dof; ++d) {
           const auto local = static_cast<Eigen::Index>(d);
           const auto global
@@ -1217,7 +1219,7 @@ bool computeUnconstrainedMultibodyVelocityInto(
             InvalidOperationException,
             "Joint actuator type is not yet implemented in the "
             "articulated-body forward dynamics; supported types are Force, "
-            "Passive, Velocity, Servo, and Locked");
+            "Passive, Velocity, Servo, Acceleration, and Locked");
     }
   }
 
@@ -1321,37 +1323,57 @@ bool computeUnconstrainedMultibodyVelocityInto(
     }
     const auto& jointActuation
         = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
-    // Velocity, Servo, and Locked actuators all drive their coordinates through
-    // the same velocity-level constraint: Velocity/Servo to the commanded
-    // velocity and Locked to zero (holding the joint at its current position).
-    // Servo differs only in bounding its motor impulse by the effort limits.
+    // Velocity, Servo, Acceleration, and Locked actuators all drive their
+    // coordinates through the same velocity-level constraint: Velocity/Servo to
+    // the commanded velocity, Acceleration to (qdot + commandAcceleration*dt)
+    // so the realized acceleration equals the command, and Locked to zero
+    // (holding the joint). Servo differs only in bounding its motor impulse by
+    // the effort limits.
     const bool velocityActuated
         = jointActuation.actuatorType == comps::ActuatorType::Velocity;
     const bool servoActuated
         = jointActuation.actuatorType == comps::ActuatorType::Servo;
+    const bool accelerationActuated
+        = jointActuation.actuatorType == comps::ActuatorType::Acceleration;
     const bool lockedActuated
         = jointActuation.actuatorType == comps::ActuatorType::Locked;
-    if (!velocityActuated && !servoActuated && !lockedActuated) {
+    if (!velocityActuated && !servoActuated && !accelerationActuated
+        && !lockedActuated) {
       continue;
     }
     const auto& jointModel
         = registry.get<comps::JointModel>(scratch.tree.jointOf[i]);
-    const bool hasCommand = jointActuation.commandVelocity.size()
-                            == static_cast<Eigen::Index>(dof);
+    const bool hasVelocityCommand = jointActuation.commandVelocity.size()
+                                    == static_cast<Eigen::Index>(dof);
+    const bool hasAccelerationCommand
+        = jointActuation.commandAcceleration.size()
+          == static_cast<Eigen::Index>(dof);
     const bool hasEffortLimits
         = jointModel.limits.effortLower.size() == static_cast<Eigen::Index>(dof)
           && jointModel.limits.effortUpper.size()
                  == static_cast<Eigen::Index>(dof);
     for (std::size_t d = 0; d < dof; ++d) {
       const auto local = static_cast<Eigen::Index>(d);
-      scratch.constrainedDof.push_back(
-          static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d));
-      scratch.constrainedTarget.push_back(
-          lockedActuated ? 0.0
-          : hasCommand   ? jointActuation.commandVelocity[local]
-                         : 0.0);
-      // Velocity/Locked coordinates carry a free (unbounded) impulse; a Servo
-      // coordinate bounds its motor impulse to the effort-limit impulse.
+      const auto global
+          = static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d);
+      scratch.constrainedDof.push_back(global);
+      double target = 0.0;
+      if (lockedActuated) {
+        target = 0.0;
+      } else if (accelerationActuated) {
+        const double command = hasAccelerationCommand
+                                   ? jointActuation.commandAcceleration[local]
+                                   : 0.0;
+        // Realize the commanded acceleration: qdot_next = qdot + a * dt.
+        target = scratch.qdot[global] + command * timeStep;
+      } else {
+        target
+            = hasVelocityCommand ? jointActuation.commandVelocity[local] : 0.0;
+      }
+      scratch.constrainedTarget.push_back(target);
+      // Velocity/Acceleration/Locked coordinates carry a free (unbounded)
+      // impulse; a Servo coordinate bounds its motor impulse to the
+      // effort-limit impulse.
       double lo = -kInfinity;
       double hi = kInfinity;
       if (servoActuated && hasEffortLimits) {
@@ -3901,6 +3923,7 @@ void reserveMultibodyDynamicsRegistryStorage(
         // computeUnconstrainedMultibodyVelocity.
         if (jointActuation.actuatorType == comps::ActuatorType::Velocity
             || jointActuation.actuatorType == comps::ActuatorType::Servo
+            || jointActuation.actuatorType == comps::ActuatorType::Acceleration
             || jointActuation.actuatorType == comps::ActuatorType::Locked) {
           velocityConstraintDofs += static_cast<Eigen::Index>(dof);
         }

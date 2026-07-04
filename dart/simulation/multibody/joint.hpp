@@ -53,10 +53,10 @@ namespace dart::simulation {
 /// effort (only passive spring/damping/friction forces act); `Velocity` drives
 /// the joint to a commanded velocity; `Servo` drives the joint to a commanded
 /// velocity but limits the motor force to the joint effort limits (so it
-/// saturates like a real motor); `Locked` holds the joint rigidly at its
-/// current position. The default semi-implicit dynamics implement these five
-/// modes; `Acceleration` and `Mimic` are reserved and rejected by the forward
-/// dynamics at step time.
+/// saturates like a real motor); `Acceleration` drives the joint to a commanded
+/// acceleration; `Locked` holds the joint rigidly at its current position. The
+/// default semi-implicit dynamics implement these six modes; `Mimic` is
+/// reserved and rejected by the forward dynamics at step time.
 enum class ActuatorType
 {
   Force,
@@ -145,9 +145,10 @@ public:
   /// constraint; `Servo` drives the joint to the same commanded velocity but
   /// bounds its motor impulse by the joint effort limits (see setEffortLimits),
   /// so it saturates instead of reaching the target when the limit binds;
-  /// `Locked` holds the joint rigidly at its current position via the same
-  /// velocity-level constraint (target velocity zero). The remaining modes
-  /// (`Acceleration`, `Mimic`) are not yet implemented and are rejected by the
+  /// `Acceleration` drives the joint to its commanded acceleration (see
+  /// setCommandAcceleration); `Locked` holds the joint rigidly at its current
+  /// position via the same velocity-level constraint (target velocity zero).
+  /// The remaining mode (`Mimic`) is not yet implemented and is rejected by the
   /// default forward dynamics at step time. The opt-in variational integrator
   /// currently implements only `Force` and `Velocity`; other modes fall back to
   /// passive behavior there.
@@ -162,6 +163,19 @@ public:
   /// joint's generalized velocity to this value each step. Values must be
   /// finite, with size equal to getDOFCount().
   void setCommandVelocity(const Eigen::VectorXd& velocity);
+
+  /// Get the commanded target acceleration used by the `Acceleration` actuator
+  /// type.
+  [[nodiscard]] Eigen::VectorXd getCommandAcceleration() const;
+
+  /// Set the commanded target acceleration used by the `Acceleration` actuator
+  /// type.
+  ///
+  /// When the actuator type is `Acceleration`, the forward dynamics drives the
+  /// joint's generalized acceleration to this value each step (realized as the
+  /// velocity target `qdot + acceleration * dt`). Values must be finite, with
+  /// size equal to getDOFCount().
+  void setCommandAcceleration(const Eigen::VectorXd& acceleration);
 
   /// Get the primary joint axis
   ///
