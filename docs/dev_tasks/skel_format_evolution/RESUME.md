@@ -20,6 +20,13 @@ OFF-by-default USD `dart::io` scaffold, and remaining USD loader/viewer/dartpy
 implementation stays in `docs/dev_tasks/usd_scene_loader/` instead of this SKEL
 task.
 
+Phase 5 export-writer planning is recorded locally in
+[`05-export-writers-plan.md`](05-export-writers-plan.md). The plan keeps export
+as a separate implementation phase: choose SDF writer, URDF writer, or PLAN-101
+project save/load first; define deterministic resource handling and comparison
+helpers; and complete the phase only with writer APIs plus read/write/read
+tests. This planning record does not complete Phase 5.
+
 ## Previous Resume Checkpoint (2026-07-03)
 
 Phase 2 is implemented on `feature/remove-skel-dart7-phase2` and awaiting PR
@@ -103,15 +110,16 @@ can be recovered without adopting the old SKEL YAML direction.
 
 ## Current Branch
 
-`work/skel-format-yaml-decision` — Phase 3 YAML decision and Phase 4 USD
-coordination are committed locally on top of the Phase 2 removal commit. The
-underlying Phase 2 branch remains `feature/remove-skel-dart7-phase2`.
+`work/skel-format-yaml-decision` — Phase 3 YAML decision, Phase 4 USD
+coordination, and Phase 5 export-writer planning are committed locally on top of
+the Phase 2 removal commit. The underlying Phase 2 branch remains
+`feature/remove-skel-dart7-phase2`.
 
 ## Immediate Next Step
 
 Continue with the remaining real task work: land Phase 2 after maintainer
-approval, then start Phase 5 export writers as a separate round-trip
-design/implementation slice.
+approval, then implement Phase 5 export writers as a separate round-trip slice
+from [`05-export-writers-plan.md`](05-export-writers-plan.md).
 
 ## Context That Would Be Lost
 
@@ -126,7 +134,8 @@ design/implementation slice.
   complete. The USD task still owns the OpenUSD-enabled loader, viewer, dartpy,
   dependency, and CI work.
 - Export is part of the work, not a follow-up: round-trip enables save /
-  load in the dartsim editor (PLAN-101).
+  load in the dartsim editor (PLAN-101). The current Phase 5 file is a plan,
+  not an implementation-complete gate.
 - The old `feature/skel_yaml` prototype SHA (`1dd83e31586`) is no longer
   reachable in this worktree. Do not depend on it for Phase 3 or Phase 5 unless
   another clone still has the object.
@@ -146,5 +155,6 @@ git status && git log -3 --oneline
 ```
 
 Then continue with the remaining task work. For Phase 5, start from this
-folder's `README.md`, `03-yaml-decision.md`, `04-usd-coordination.md`, and
-current DART 7 requirements, not from the old prototype.
+folder's `README.md`, `03-yaml-decision.md`, `04-usd-coordination.md`,
+`05-export-writers-plan.md`, and current DART 7 requirements, not from the old
+prototype.

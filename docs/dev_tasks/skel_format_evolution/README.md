@@ -26,8 +26,10 @@
       design pressure, while USD loader/viewer/dartpy implementation remains
       owned by [`usd_scene_loader/`](../usd_scene_loader/).
 - [ ] Phase 5: Export writers for accepted portable/project formats so DART can
-      round-trip a scene back to text. Start with URDF/SDF and add YAML only if
-      a durable project/scene schema is accepted first.
+      round-trip a scene back to text. Planning is recorded in
+      [`05-export-writers-plan.md`](05-export-writers-plan.md); implementation
+      remains open. Start with URDF/SDF or project save/load, and add YAML only
+      if a durable project/scene schema is accepted first.
 
 ## Goal
 
@@ -103,8 +105,10 @@ SKEL-YAML direction just because the prototype once existed.
 
 1. Land the Phase 2 removal branch (`feature/remove-skel-dart7-phase2`) after
    review. Add the PR link to the DART 7 changelog entry before merge.
-2. Start Phase 5 as a separate export-writer round-trip design/implementation
-   slice. YAML can enter that slice only after a durable project/scene schema is
+2. Implement Phase 5 from
+   [`05-export-writers-plan.md`](05-export-writers-plan.md): choose the first
+   writer target, define the comparison helper, and add read/write/read tests.
+   YAML can enter that slice only after a durable project/scene schema is
    accepted.
 
 ## Verification Gates
@@ -126,5 +130,7 @@ SKEL-YAML direction just because the prototype once existed.
   [`04-usd-coordination.md`](04-usd-coordination.md): PR #3109 is merged, the
   active `usd_scene_loader/` task owns remaining USD implementation, and this
   task must not duplicate the USD loader/viewer/dartpy surface.
-- Phase 5: round-trip tests that load a scene from each accepted format and
-  write it back, comparing the re-parsed models.
+- Phase 5: planning gate recorded in
+  [`05-export-writers-plan.md`](05-export-writers-plan.md). Completion still
+  requires writer APIs and round-trip tests that load a scene from each
+  accepted format, write it back, and compare the re-parsed models.
