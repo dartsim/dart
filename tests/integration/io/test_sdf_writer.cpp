@@ -2381,6 +2381,29 @@ TEST(SdfWriter, HostQualifiedFileMeshUriReturnsError)
 }
 
 //==============================================================================
+TEST(SdfWriter, NonFiniteMeshScaleReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("non_finite_mesh_scale");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  const common::Uri meshUri
+      = common::Uri::createFromPath(dart::config::dataPath("obj/BoxSmall.obj"));
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::MeshShape>(
+          Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 1.0, 1.0),
+          makeTriangleMesh(),
+          meshUri),
+      "non_finite_mesh_scale");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(result.error().message.find("non-finite scale"), std::string::npos);
+}
+
+//==============================================================================
 TEST(SdfWriter, MeshColorModeReturnsError)
 {
   auto skeleton = dynamics::Skeleton::create("mesh_color_mode");

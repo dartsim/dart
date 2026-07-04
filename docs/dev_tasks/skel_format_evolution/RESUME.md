@@ -56,11 +56,12 @@ relative/generated mesh references, including relative or host-qualified file
 URI forms, now return explicit diagnostics until a future file/project writer
 defines a destination URI and resource copy/rewrite policy. It also checks
 `WriteOptions` visual/collision filtering, unsupported-shape diagnostics,
-missing mesh URI diagnostics, DART `PlaneShape` finite-size diagnostics,
-`HeightmapShape` source-URI/resource-policy diagnostics, `ConvexMeshShape`
-generated-resource diagnostics, DART-only/generated geometry diagnostics for
-`PyramidShape`, `ArrowShape`, `MultiSphereConvexHullShape`, `PointCloudShape`,
-`LineSegmentShape`, and `VoxelGridShape`, pre-SDF-1.11 mimic diagnostics,
+missing mesh URI and non-finite mesh scale diagnostics, DART `PlaneShape`
+finite-size diagnostics, `HeightmapShape` source-URI/resource-policy
+diagnostics, `ConvexMeshShape` generated-resource diagnostics,
+DART-only/generated geometry diagnostics for `PyramidShape`, `ArrowShape`,
+`MultiSphereConvexHullShape`, `PointCloudShape`, `LineSegmentShape`, and
+`VoxelGridShape`, pre-SDF-1.11 mimic diagnostics,
 unsupported coupler-style mimic diagnostics, non-finite visual material
 diagnostics, invalid PBR material diagnostics, unsupported visual reflectance
 diagnostics, non-default DART mesh color/alpha render-policy diagnostics,
@@ -276,6 +277,10 @@ Additional validation for SDF 1.11 mimic metadata writer coverage:
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
 Additional validation for targetless relative/generated mesh URI diagnostics:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
+Additional validation for non-finite mesh scale diagnostics:
 
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
@@ -737,8 +742,11 @@ Changelog decision:
   test evidence for the existing SDF writer entry. No additional entry is needed
   for writer-option and missing-mesh-URI coverage because it hardens the same
   existing writer surface before the implementation PR exists. No additional
-  entry is needed for SDF 1.11 mimic metadata coverage because it broadens the
-  same conservative SDF writer capability before the implementation PR exists.
+  entry is needed for non-finite mesh scale coverage because it hardens the same
+  typed `sdf::Mesh` writer surface before the implementation PR exists. No
+  additional entry is needed for SDF 1.11 mimic metadata coverage because it
+  broadens the same conservative SDF writer capability before the implementation
+  PR exists.
   No additional entry is needed for targetless relative/generated mesh URI
   diagnostics because it hardens the same SDF writer resource contract before
   the implementation PR exists. No additional entry is needed for continuous SDF

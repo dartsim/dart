@@ -53,9 +53,10 @@
       through a custom retriever, and URI-backed mesh material variants now have
       writer read/write/read coverage through preserved source mesh URIs. Writer
       options for excluding visuals or
-      collisions, missing mesh URI diagnostics, pre-SDF-1.11 mimic diagnostics,
-      unsupported coupler-style mimic diagnostics, and relative/generated mesh
-      resource diagnostics now have focused coverage. Invalid collision-surface
+      collisions, missing mesh URI and non-finite mesh scale diagnostics,
+      pre-SDF-1.11 mimic diagnostics, unsupported coupler-style mimic
+      diagnostics, and relative/generated mesh resource diagnostics now have
+      focused coverage. Invalid collision-surface
       friction, slip, restitution, and non-collision-frame friction-direction
       values, non-default visual reflectance, and non-default DART mesh
       color/alpha render policies now fail with explicit diagnostics. DART
@@ -248,9 +249,10 @@ SKEL-YAML direction just because the prototype once existed.
   variants through preserved source mesh URIs. It also covers sdformat-owned
   ambiguous `.xml` SDF dispatch for root-model and world-contained models,
   `WriteOptions`
-  visual/collision filtering, the empty mesh URI diagnostic, pre-SDF-1.11 mimic
-  diagnostics, and unsupported coupler-style mimic diagnostics, plus targetless
-  relative/generated mesh resource diagnostics. Plane-shaped infinite DART
+  visual/collision filtering, the empty mesh URI and non-finite mesh scale
+  diagnostics, pre-SDF-1.11 mimic diagnostics, and unsupported coupler-style
+  mimic diagnostics, plus targetless relative/generated mesh resource
+  diagnostics. Plane-shaped infinite DART
   geometry, DART heightmaps without source heightmap URIs, and generated convex
   meshes now have targeted diagnostics for the finite SDF plane-size and
   destination-URI/resource policy gaps. Non-default DART mesh color/alpha
