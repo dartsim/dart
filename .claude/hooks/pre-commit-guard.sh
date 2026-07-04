@@ -148,6 +148,15 @@ def is_hooks_path_override(option):
     return bool(sep) and key.lower() == "core.hookspath"
 
 
+def split_env_split_string(value):
+    try:
+        return shlex.split(value)
+    except ValueError:
+        if "git" in value and "commit" in value:
+            return ["git", "commit"]
+        return []
+
+
 def shell_expand_path_token(value):
     path, quote = strip_outer_quotes(value)
     if quote != "'\''":
@@ -196,6 +205,16 @@ def is_git_commit(text):
                     if t == "--":
                         i += 1
                         break
+                    if t in {"-S", "--split-string"} and i + 1 < len(tokens):
+                        split_tokens = split_env_split_string(tokens[i + 1])
+                        tokens = tokens[:i] + split_tokens + tokens[i + 2 :]
+                        continue
+                    if t.startswith("--split-string="):
+                        split_tokens = split_env_split_string(
+                            t[len("--split-string=") :]
+                        )
+                        tokens = tokens[:i] + split_tokens + tokens[i + 1 :]
+                        continue
                     if t in ENV_OPTS_WITH_ARG:
                         if t in {"-C", "--chdir"} and i + 1 < len(tokens):
                             command_cwd = shell_expand_path_token(tokens[i + 1])

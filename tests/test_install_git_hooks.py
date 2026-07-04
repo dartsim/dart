@@ -225,6 +225,8 @@ def _guard_verdict(tmp_path: Path, command: str, extra_env: dict | None = None):
         "env -C . git commit -m x",
         "env -i git commit -m x",
         "env --ignore-environment git commit -m x",
+        "env -S 'git commit -m x'",
+        "env --split-string='git commit -m x'",
         "(git commit -m x)",
         'FOO="a b" git commit -m x',
         "pixi run lint && git commit -m x",
@@ -244,6 +246,8 @@ def test_guard_detects_commit_forms(tmp_path, command):
         "DART_SKIP_HOOKS=1 git commit -m x",
         "env DART_SKIP_HOOKS=1 git commit -m x",
         'env DART_SKIP_HOOKS="1" git commit -m x',
+        "env -S 'DART_SKIP_HOOKS=1 git commit -m x'",
+        "env -S 'git log --grep commit'",
         "git -C /somewhere/else commit -m x",
     ],
 )
@@ -312,6 +316,19 @@ def test_guard_skips_env_c_commits_in_another_repo(tmp_path):
     assert "would run" not in stderr
 
 
+def test_guard_skips_env_split_commits_in_another_repo(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, f"env -S 'git -C {other} commit -m x'")
+
+    assert returncode == 0
+    assert "would run" not in stderr
+
+
 def test_guard_expands_git_c_env_var_paths_before_other_repo_skip(tmp_path):
     repo, env = _init_repo(tmp_path)
     other = tmp_path / "other"
@@ -351,6 +368,17 @@ def test_guard_stands_down_when_dart_managed_executable_hook_installed(tmp_path)
     env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
 
     returncode, stderr = _run_guard(repo, env, "git commit -m x")
+
+    assert returncode == 0
+    assert stderr == ""
+
+
+def test_guard_stands_down_for_env_split_with_dart_managed_hook(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, "env -S 'git commit -m x'")
 
     assert returncode == 0
     assert stderr == ""
@@ -398,6 +426,19 @@ def test_guard_runs_for_no_verify_even_with_dart_managed_hook(tmp_path, args):
     env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
 
     returncode, stderr = _run_guard(repo, env, f"git commit {args}")
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
+def test_guard_runs_for_env_split_no_verify_even_with_dart_managed_hook(
+    tmp_path,
+):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, "env -S 'git commit --no-verify -m x'")
 
     assert returncode == 0
     assert "would run 'pixi run check-lint-quick'" in stderr
