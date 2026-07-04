@@ -646,6 +646,41 @@ TEST(SdfParser, CollisionSurfaceOdeFrictionReadsDynamicsAspect)
 }
 
 //==============================================================================
+TEST(SdfParser, CollisionSurfaceContactBitmaskDisablesCollisionAspect)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/collision_bitmask/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="collision_bitmask">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+      <collision name="disabled_collision">
+        <geometry><sphere><radius>0.1</radius></sphere></geometry>
+        <surface>
+          <contact>
+            <collide_bitmask>0</collide_bitmask>
+          </contact>
+        </surface>
+      </collision>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  auto* collision = body->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(collision, nullptr);
+  auto* collisionAspect = collision->getCollisionAspect();
+  ASSERT_NE(collisionAspect, nullptr);
+  EXPECT_FALSE(collisionAspect->isCollidable());
+}
+
+//==============================================================================
 TEST(SdfParser, MaterialWithoutDiffusePreservesDefaultColor)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();

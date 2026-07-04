@@ -39,9 +39,10 @@ passive joint dynamics metadata (damping, Coulomb friction, spring reference,
 and spring stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
 axis/axis2 mimic metadata with motor enforcement, topology-only ball child
 joints, local root/joint/shape poses, explicit visual material colors, PBR
-metallic/roughness factors, collision-surface ODE friction coefficients, first
-friction direction, slip compliance, and absolute non-file mesh URI preservation
-through a custom retriever. Continuous SDF joints now parse as unbounded DART
+metallic/roughness factors, collision-surface contact disable bitmasks, ODE
+friction coefficients, first friction direction, slip compliance, and absolute
+non-file mesh URI preservation through a custom retriever. Continuous SDF joints
+now parse as unbounded DART
 `RevoluteJoint`s, and unbounded DART revolute joints write back as SDF
 `continuous` while finite-limit revolute joints stay `revolute`. Targetless
 relative/generated mesh references, including relative or host-qualified file
@@ -75,9 +76,11 @@ mass, and inertia tensor values. Visual and collision shape nodes traverse
 material colors plus `sdf::Pbr` metal workflow factors. Diffuse material values
 now come from `sdf::Material::Diffuse()`; authored/default checks use
 sdformat's `Element::GetExplicitlySetInFile()` signal so absent diffuse colors
-do not reset DART's default visual color. Collision-surface ODE friction values
-now read through `sdf::Collision`, `sdf::Surface`, `sdf::Friction`, and
-`sdf::ODE` DOM values into DART `DynamicsAspect` friction, slip, and first
+do not reset DART's default visual color. Collision-surface contact bitmasks
+now read through `sdf::Collision`, `sdf::Surface`, and `sdf::Contact` DOM values
+into DART `CollisionAspect` collidable state for the lossless zero-bitmask
+subset, while ODE friction values read through `sdf::Friction` and `sdf::ODE`
+DOM values into DART `DynamicsAspect` friction, slip, and first
 friction-direction fields while preserving defaults for unauthored fields.
 Standard SDF joint reads traverse `sdf::Model`,
 `sdf::Joint`, and `sdf::JointAxis` DOM values for joint enumeration, joint
@@ -295,6 +298,11 @@ Additional validation for collision-surface ODE friction IO:
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
+Additional validation for collision-surface contact bitmask IO:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
 Changelog decision:
 
 - Mode: draft
@@ -369,6 +377,10 @@ Changelog decision:
   because it broadens the same conservative SDF writer/parser round-trip
   capability before the implementation PR exists; the existing DART 7 IO and
   Parsing bullet now includes collision surface ODE friction/slip metadata.
+  No additional separate entry is needed for collision-surface contact bitmask
+  IO because it broadens the same conservative SDF writer/parser round-trip
+  capability before the implementation PR exists; the existing DART 7 IO and
+  Parsing bullet now includes collision surface contact disable bitmasks.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

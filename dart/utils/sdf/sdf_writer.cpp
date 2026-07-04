@@ -651,8 +651,21 @@ WriteResult applyMaterial(
 WriteResult applyCollisionSurface(
     sdf::Collision& collision, const dynamics::ShapeNode& shapeNode)
 {
+  const auto* collisionAspect = shapeNode.getCollisionAspect();
+  const bool writeContact
+      = collisionAspect != nullptr && !collisionAspect->isCollidable();
+
   const auto* dynamicsAspect = shapeNode.getDynamicsAspect();
   if (!dynamicsAspect) {
+    if (writeContact) {
+      sdf::Contact contact;
+      contact.SetCollideBitmask(0u);
+
+      sdf::Surface surface;
+      surface.SetContact(contact);
+      collision.SetSurface(surface);
+    }
+
     return ok();
   }
 
@@ -687,8 +700,10 @@ WriteResult applyCollisionSurface(
   const bool writePrimarySlip = primarySlip >= 0.0 && primarySlip != 0.0;
   const bool writeSecondarySlip = secondarySlip >= 0.0 && secondarySlip != 0.0;
   const bool writeFrictionDirection = !isZero(firstFrictionDirection);
-  if (!writePrimaryFriction && !writeSecondaryFriction && !writePrimarySlip
-      && !writeSecondarySlip && !writeFrictionDirection) {
+  const bool writeFriction = writePrimaryFriction || writeSecondaryFriction
+                             || writePrimarySlip || writeSecondarySlip
+                             || writeFrictionDirection;
+  if (!writeContact && !writeFriction) {
     return ok();
   }
 
@@ -702,28 +717,34 @@ WriteResult applyCollisionSurface(
     }
   }
 
-  sdf::ODE ode;
-  if (writePrimaryFriction) {
-    ode.SetMu(primaryFriction);
-  }
-  if (writeSecondaryFriction) {
-    ode.SetMu2(secondaryFriction);
-  }
-  if (writePrimarySlip) {
-    ode.SetSlip1(primarySlip);
-  }
-  if (writeSecondarySlip) {
-    ode.SetSlip2(secondarySlip);
-  }
-  if (writeFrictionDirection) {
-    ode.SetFdir1(toGzVector3(firstFrictionDirection));
-  }
-
-  sdf::Friction friction;
-  friction.SetODE(ode);
-
   sdf::Surface surface;
-  surface.SetFriction(friction);
+  if (writeContact) {
+    sdf::Contact contact;
+    contact.SetCollideBitmask(0u);
+    surface.SetContact(contact);
+  }
+  if (writeFriction) {
+    sdf::ODE ode;
+    if (writePrimaryFriction) {
+      ode.SetMu(primaryFriction);
+    }
+    if (writeSecondaryFriction) {
+      ode.SetMu2(secondaryFriction);
+    }
+    if (writePrimarySlip) {
+      ode.SetSlip1(primarySlip);
+    }
+    if (writeSecondarySlip) {
+      ode.SetSlip2(secondarySlip);
+    }
+    if (writeFrictionDirection) {
+      ode.SetFdir1(toGzVector3(firstFrictionDirection));
+    }
+
+    sdf::Friction friction;
+    friction.SetODE(ode);
+    surface.SetFriction(friction);
+  }
   collision.SetSurface(surface);
 
   return ok();

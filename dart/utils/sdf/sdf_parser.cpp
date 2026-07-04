@@ -1254,13 +1254,21 @@ void readMaterial(const sdf::Material& material, dynamics::ShapeNode* shapeNode)
 void readCollisionSurface(
     const sdf::Collision& collision, dynamics::ShapeNode* shapeNode)
 {
-  auto dynamicsAspect = shapeNode->getDynamicsAspect();
-  if (!dynamicsAspect) {
+  const sdf::Surface* surface = collision.Surface();
+  if (!surface) {
     return;
   }
 
-  const sdf::Surface* surface = collision.Surface();
-  if (!surface) {
+  auto collisionAspect = shapeNode->getCollisionAspect();
+  if (collisionAspect) {
+    const sdf::Contact* contact = surface->Contact();
+    if (contact && hasAuthoredElement(contact->Element(), "collide_bitmask")) {
+      collisionAspect->setCollidable(contact->CollideBitmask() != 0u);
+    }
+  }
+
+  auto dynamicsAspect = shapeNode->getDynamicsAspect();
+  if (!dynamicsAspect) {
     return;
   }
 

@@ -799,6 +799,53 @@ TEST(SdfWriter, RoundTripsCollisionSurfaceOdeFriction)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsCollisionSurfaceContactBitmask)
+{
+  auto skeleton = dynamics::Skeleton::create("collision_bitmask_writer");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  auto* shapeNode = body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::SphereShape>(0.2), "disabled_surface");
+  auto* collisionAspect = shapeNode->getCollisionAspect();
+  ASSERT_NE(collisionAspect, nullptr);
+  collisionAspect->setCollidable(false);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfLink = sdfRoot.Model()->LinkByName("body");
+  ASSERT_NE(sdfLink, nullptr);
+  const auto* sdfCollision = sdfLink->CollisionByName("disabled_surface");
+  ASSERT_NE(sdfCollision, nullptr);
+  ASSERT_NE(sdfCollision->Surface(), nullptr);
+  ASSERT_NE(sdfCollision->Surface()->Contact(), nullptr);
+  EXPECT_EQ(sdfCollision->Surface()->Contact()->CollideBitmask(), 0u);
+
+  const auto path = writeTempSdf(writeResult.value(), "collision_bitmask");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "body");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* reparsedShapeNode
+      = reparsedBody->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(reparsedShapeNode, nullptr);
+  const auto* reparsedCollision = reparsedShapeNode->getCollisionAspect();
+  ASSERT_NE(reparsedCollision, nullptr);
+  EXPECT_FALSE(reparsedCollision->isCollidable());
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsContinuousRevoluteJoint)
 {
   auto skeleton = dynamics::Skeleton::create("continuous_writer");

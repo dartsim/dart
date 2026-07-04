@@ -28,11 +28,13 @@ follower joints with motor
 enforcement, link gravity mode, inertial parameters, local joint/shape poses,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry,
 explicit visual material colors as SDF `<diffuse>` values, and PBR
-metallic/roughness factors as SDF `<pbr><metal>` values. Collision-surface ODE
-friction coefficients, first friction direction, and slip compliance round-trip
-through SDF `<surface><friction><ode>` values when they are representable in
-DART's collision frame. Absolute non-file mesh URI preservation is covered
-through a custom retriever-backed write/read test.
+metallic/roughness factors as SDF `<pbr><metal>` values. Collision-surface
+contact disable state round-trips through SDF
+`<surface><contact><collide_bitmask>` for DART's lossless zero-bitmask subset;
+ODE friction coefficients, first friction direction, and slip compliance
+round-trip through SDF `<surface><friction><ode>` values when they are
+representable in DART's collision frame. Absolute non-file mesh URI
+preservation is covered through a custom retriever-backed write/read test.
 Targetless relative mesh references and relative or host-qualified `file` mesh
 URIs are rejected because the writer has no destination SDF URI for
 resource resolution or generated asset placement. `WriteOptions`
@@ -60,10 +62,11 @@ remain only for that authored/default bridge and DART-specific soft-body
 extension fields; the compatibility boolean value is read through sdformat
 typed element access. Modern `axis/xyz@expressed_in` frame annotations are
 resolved through `sdf::JointAxis::ResolveXyz()`, and authored diffuse values are
-read from `sdf::Material::Diffuse()`. Authored collision-surface ODE friction
-values are read through `sdf::Collision`, `sdf::Surface`, `sdf::Friction`, and
-`sdf::ODE` DOM values into DART `DynamicsAspect` fields. The SDF-specific helper
-surface has been narrowed accordingly: it no longer exposes generic XML
+read from `sdf::Material::Diffuse()`. Authored collision-surface contact
+bitmask and ODE friction values are read through `sdf::Collision`,
+`sdf::Surface`, `sdf::Contact`, `sdf::Friction`, and `sdf::ODE` DOM values into
+DART collision and dynamics aspect fields. The SDF-specific helper surface has
+been narrowed accordingly: it no longer exposes generic XML
 attribute, string, boolean, vector2/vectorX, or child enumerator APIs that
 duplicate sdformat traversal/parsing, and the retained DART-extension value
 bridge uses sdformat typed parameters instead of DART-side XML text fallback
@@ -142,9 +145,9 @@ Phase 5 is complete only when code and tests prove the writer contract:
 - Extend the SDF writer contract beyond the first conservative subset when
   tests can prove additional joint aliases or edge cases beyond continuous
   revolute joints, additional sdformat-owned shapes, mesh material variants,
-  additional collision-surface fields beyond ODE friction/slip, destination-
-  aware resource rewriting, default/world gravity, or other world-level data
-  round-trip correctly.
+  additional collision-surface fields beyond contact bitmask and ODE
+  friction/slip, destination-aware resource rewriting, default/world gravity,
+  or other world-level data round-trip correctly.
 - Decide the next implementation target: URDF writer or PLAN-101 project
   save/load.
 - Keep YAML out of the first implementation target unless a durable

@@ -35,12 +35,14 @@
       mimic metadata, universal two-axis joints, continuous revolute joints,
       topology-only ball joints, capsule/cone/ellipsoid geometry, explicit
       visual material colors, PBR metallic/roughness factors, and collision
-      surface ODE friction/slip metadata now round-trip as SDF `<gravity>`,
+      surface contact disable bitmasks plus ODE friction/slip metadata now
+      round-trip as SDF `<gravity>`,
       `<axis>/<axis2><dynamics>`, `<thread_pitch>`/`<screw_thread_pitch>`,
       `<mimic>`, local
       `<pose>`, `<capsule>`, `<cone>`, `<ellipsoid>`, `<diffuse>`, and
-      `<pbr><metal>` values plus `<surface><friction><ode>` `mu`, `mu2`,
-      `fdir1`, `slip1`, and `slip2`.
+      `<pbr><metal>` values plus `<surface><contact><collide_bitmask>` disables
+      and `<surface><friction><ode>` `mu`, `mu2`, `fdir1`, `slip1`, and
+      `slip2`.
       Absolute non-file mesh URIs now have writer read/write/read coverage
       through a custom retriever. Writer options for excluding visuals or
       collisions, missing mesh URI diagnostics, pre-SDF-1.11 mimic diagnostics,
@@ -209,9 +211,10 @@ SKEL-YAML direction just because the prototype once existed.
   diagnostics, and unsupported coupler-style mimic diagnostics, plus targetless
   relative/generated mesh resource diagnostics. Plane-shaped infinite DART
   geometry and generated convex meshes now have targeted diagnostics for the
-  finite SDF plane-size and destination-URI policy gaps. Collision-surface ODE
-  friction coefficients, first friction direction, and slip compliance now have
-  read/write/read coverage plus invalid-friction diagnostics. The assertions are
+  finite SDF plane-size and destination-URI policy gaps. Collision-surface
+  contact bitmask disables, ODE friction coefficients, first friction
+  direction, and slip compliance now have read/write/read coverage plus
+  invalid-friction diagnostics. The assertions are
   factored
   through
   `tests/helpers/io_round_trip_helpers.hpp` so future writer formats can reuse
