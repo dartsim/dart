@@ -83,10 +83,13 @@
 - **#3263** `wp-pg-01-baseline-evidence` — perf lane's WP-PG.01 round-2
   baseline packet (full S1–S6 guard matrix at `5bee91ad6be`). This lane's
   phase-0 packet cross-references those cells instead of duplicating them.
-- **#3267** `fix/simd-test-config-unneeded-decl` — maintainer fix for
-  release-6.20 branch CI (macOS arm64 `-Werror` in the SIMD test + Black
-  formatting for `Publish dartpy`). Base CI is red-ish until it lands; don't
-  misread those failures as new-PR regressions.
+- **#3271** `docs/native-collision-phase0-baseline` — this lane's phase-0
+  baseline packet (review in progress).
+- Branch-CI fixes **#3267/#3272/#3273 merged 2026-07-04** (macOS SIMD
+  `-Werror`, dartpy format checks via pixi, shallow-support + SIMD CI).
+  Base failures observed before them (Windows `Install` step, coverage
+  `Build with coverage`) were pre-existing; FreeBSD ssh exit-8 rows are VM
+  flakes. Don't misread any of these as new-PR regressions.
 
 Related remote heads still visible: `feature/native-occupancy-grid`,
 `task/native-collision-performance-exec`, and six `perf/dart6-*` round-1
