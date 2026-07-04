@@ -282,6 +282,14 @@
     guardrails rather than this settled-scene completion claim:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Derive the deactivation final-quiet candidacy gate from the configured
+    sleep thresholds (10% of the linear threshold, 20% of the angular
+    threshold) instead of hardcoded constants, so raising
+    `DeactivationOptions` thresholds for scenes with a higher contact-solver
+    jitter floor actually enables sleeping. Default-threshold behavior is
+    unchanged:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Add a parameterized `contact_benchmark --generate-container` scene with
     GUI scaling and live rebuild controls, plus a matching
     `BM_INTEGRATION_contact_container` benchmark, so active mixed-shape
