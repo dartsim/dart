@@ -579,32 +579,24 @@ stale — ignore them.
 `docs/deformable-linear-solver-selection-accuracy`: the roadmap's stale
 "direct-solve node cap (20k)" is corrected to the verified current architecture
 (dense LDLT below `kProjectedNewtonDenseDirectDofCap` = 128 DoF / ~42 nodes,
-iterative IC-CG above to a 1M-node ceiling, sparse-direct `SimplicialLDLT` kept
+iterative sparse Jacobi-CG above to a 1M-node ceiling, sparse-direct
+`SimplicialLDLT` kept
 out of the allocation-safe loop). Next substantive M7 work needs maintainer
-direction or is blocked: matrix-free-CG auto-selection needs a crossover-policy
-decision (a measurement-only crossover benchmark is the safe precursor); a genuine
-avg-contacts-per-step axis needs a new evolving multi-step self-contact fixture;
-process peak-memory tracking needs a memory-column semantics choice; and the
-Table-1 CPU comparison + 688K-node Fig-22 run are blocked on the M4 asset
-pipeline. Also available: AMG/multigrid preconditioning and on-device GPU assembly
+direction or is blocked:
 
-- solve. Then continue M7: build out the rest of the Fig-23 harness
-  (process peak-memory tracking; an evolving multi-step self-contact fixture for a
-  genuine avg-contacts-per-step axis), then the Table-1 CPU reference comparison
-  (blocked on M4 assets), AMG/multigrid preconditioning, on-device GPU assembly +
-  solve, and the 688K-node Fig-22 run. Matrix-free-CG auto-selection for very large
-  meshes needs a maintainer crossover-policy decision (a measurement-only crossover
-  benchmark is the safe precursor). Dev-task retirement stays maintainer-gated while
-  PLAN-081 is incomplete.
+- Matrix-free-CG auto-selection needs a maintainer crossover-policy decision; a
+  measurement-only crossover benchmark is the safe precursor.
+- A genuine avg-contacts-per-step axis needs a new evolving multi-step
+  self-contact fixture.
+- Process peak-memory tracking needs a memory-column semantics choice.
+- The Table-1 CPU comparison and 688K-node Fig-22 run are blocked on the M4
+  asset pipeline.
+- AMG/multigrid preconditioning and on-device GPU assembly + solve remain
+  available follow-up tracks.
 
-After that, continue M7 in bounded performance slices: harden matrix-free CG on
-larger contact-heavy meshes and decide the automatic large-mesh selection
-policy; build out the rest of the Fig-23 statistics harness (avg contacts/step
-aggregation, peak-memory tracking, then the Table-1 CPU reference comparison);
-then AMG / multigrid preconditioning, on-device GPU assembly + solve, and the
-688K-node Fig. 22 scale run. Codimensional-obstacle friction remains blocked on
-codimensional-obstacle barrier support. Dev-task retirement stays maintainer-
-gated while PLAN-081 is incomplete.
+Codimensional-obstacle friction remains blocked on codimensional-obstacle
+barrier support. Dev-task retirement stays maintainer-gated while PLAN-081 is
+incomplete.
 
 ## Context That Would Be Lost
 
