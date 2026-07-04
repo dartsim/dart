@@ -779,6 +779,70 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsExistingSinglePendulumFixture)
+{
+  const auto original = utils::SdfParser::readSkeleton(
+      common::Uri("dart://sample/sdf/test/single_pendulum.sdf"));
+  ASSERT_NE(original, nullptr);
+  ASSERT_EQ(original->getNumBodyNodes(), 1u);
+  ASSERT_EQ(original->getNumJoints(), 1u);
+  const auto* originalLink = test::requireBodyNode(*original, "link 1");
+  ASSERT_NE(originalLink, nullptr);
+  const auto* originalParentJoint = originalLink->getParentJoint();
+  ASSERT_NE(originalParentJoint, nullptr);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  const auto path
+      = writeTempSdf(writeResult.value(), "existing_single_pendulum");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+  const auto* link = test::requireBodyNode(*reparsed, "link 1");
+  ASSERT_NE(link, nullptr);
+  const auto* parentJoint = link->getParentJoint();
+  ASSERT_NE(parentJoint, nullptr);
+  EXPECT_VECTOR_NEAR(
+      parentJoint->getTransformFromChildBodyNode().translation(),
+      originalParentJoint->getTransformFromChildBodyNode().translation(),
+      1e-12);
+
+  Eigen::Matrix3d expectedMoment = Eigen::Matrix3d::Zero();
+  expectedMoment.diagonal() = Eigen::Vector3d(1.0, 2.0, 3.0);
+  test::expectBodyInertia(
+      *link, 5.0, Eigen::Vector3d::Zero(), expectedMoment, 1e-12);
+
+  const auto* joint
+      = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, "joint 1");
+  ASSERT_NE(joint, nullptr);
+  test::expectJointTopology(*joint, nullptr, link);
+  EXPECT_VECTOR_NEAR(joint->getAxis(), Eigen::Vector3d::UnitZ(), 1e-12);
+  EXPECT_NEAR(joint->getDampingCoefficient(0), 10.0, 1e-12);
+
+  const auto* visualBox
+      = test::requireShape<dynamics::VisualAspect, dynamics::BoxShape>(
+          *link, 0, 1);
+  ASSERT_NE(visualBox, nullptr);
+  EXPECT_VECTOR_NEAR(
+      visualBox->getSize(), Eigen::Vector3d(0.1, 0.2, 0.3), 1e-12);
+
+  const auto* collisionBox
+      = test::requireShape<dynamics::CollisionAspect, dynamics::BoxShape>(
+          *link, 0, 1);
+  ASSERT_NE(collisionBox, nullptr);
+  EXPECT_VECTOR_NEAR(
+      collisionBox->getSize(), Eigen::Vector3d(0.1, 0.2, 0.3), 1e-12);
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsJointAxisVelocityAndEffortLimits)
 {
   dynamics::SkeletonPtr skeleton;

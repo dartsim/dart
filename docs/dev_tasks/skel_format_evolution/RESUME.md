@@ -1511,6 +1511,44 @@ Additional validation for the SDF sdformat routing boundary:
 - Boundary check passed:
   `pixi run check-sdf-sdformat-boundary`
 
+Additional validation for existing SDF fixture read/write/read coverage:
+
+- Added `SdfWriter.RoundTripsExistingSinglePendulumFixture`, which loads
+  `dart://sample/sdf/test/single_pendulum.sdf`, writes it through
+  `SdfParser::tryWriteSkeletonToString()`, reloads the emitted SDF, and
+  compares the body, root joint, inertial, damping, visual box, and collision
+  box semantics against the original parsed skeleton.
+- Initial focused draft caught a bad hand-coded transform-sign expectation for
+  the source SDF; the final test compares original parsed DART semantics to the
+  re-parsed writer output instead of interpreting XML-level pose text itself.
+- Focused fixture test passed:
+  `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsExistingSinglePendulumFixture'`
+- Full writer target passed:
+  `pixi run run-cpp-target INTEGRATION_io_SdfWriter` (79 tests)
+- SDF boundary check passed:
+  `pixi run check-sdf-sdformat-boundary`
+- Broader local gates passed:
+  `pixi run lint`; `pixi run build`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Scope evidence: `CHANGELOG.md` DART 7 IO and Parsing SDF writer bullet
+  inspected; it already covers the conservative SDF writer. The DART 7 Tests,
+  Benchmarks, and Quality Gates section also already records the libsdformat
+  boundary lint/check-lint guard.
+- Decision: no additional changelog entry. This slice adds fixture-level
+  read/write/read verification for an existing shipped SDF sample without
+  adding a new public API or broadening the documented writer contract.
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: record as SDF writer fixture round-trip verification if a PR is
+  opened.
+- Follow-up: none until an implementation PR exists.
+
 ## Previous Resume Checkpoint (2026-07-03)
 
 Phase 2 is implemented on `feature/remove-skel-dart7-phase2` and awaiting PR

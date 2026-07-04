@@ -183,9 +183,11 @@ with visual shadow/hidden/transparency state, explicit visual material colors,
 PBR
 metallic/roughness factors, and collision-surface contact disable bitmasks,
 zero-threshold bounce restitution, and ODE friction/slip metadata. The
-round-trip coverage includes absolute
-non-file mesh URI preservation through a custom retriever plus URI-backed mesh
-material variants through preserved source mesh URIs. Targetless relative
+round-trip coverage includes the shipped `single_pendulum.sdf` fixture through
+a read/write/read smoke that compares body, joint, inertial, and box-geometry
+semantics; absolute non-file mesh URI preservation through a custom retriever;
+and URI-backed mesh material variants through preserved source mesh URIs.
+Targetless relative
 mesh references, URI-less in-memory mesh material variants, and relative or
 host-qualified `file` mesh URIs are rejected because the writer has no
 destination SDF URI for resource resolution or generated asset placement.
