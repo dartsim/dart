@@ -23,7 +23,7 @@
 Make `.usda` / `.usd` scenes loadable through DART's unified IO front door so a
 researcher can drop a USD asset into a DART 7 World and visualize it
 through the maintained Filament renderer, with parity to the existing URDF /
-SDF / MJCF / SKEL paths.
+SDF / MJCF paths.
 
 ## Non-Goals (for early phases)
 

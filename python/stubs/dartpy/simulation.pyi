@@ -2013,13 +2013,11 @@ class SkeletonLoadOptions:
 class ModelFormat(enum.Enum):
     AUTO = 0
 
-    SKEL = 1
+    SDF = 1
 
-    SDF = 2
+    URDF = 2
 
-    URDF = 3
-
-    MJCF = 4
+    MJCF = 3
 
 class RootJointType(enum.Enum):
     FLOATING = 0

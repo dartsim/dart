@@ -76,7 +76,6 @@ def test_utils_stub_sanitized_executes(monkeypatch):
         "dartpy.utils": types.ModuleType("dartpy.utils"),
         "dartpy.utils.MjcfParser": types.ModuleType("dartpy.utils.MjcfParser"),
         "dartpy.utils.SdfParser": types.ModuleType("dartpy.utils.SdfParser"),
-        "dartpy.utils.SkelParser": types.ModuleType("dartpy.utils.SkelParser"),
     }
     modules["dartpy"].common = modules["dartpy.common"]
     modules["dartpy"].dynamics = modules["dartpy.dynamics"]
@@ -104,7 +103,6 @@ def test_utils_stub_all_preserves_parser_exports():
         "DartLoaderRootJointType",
         "MjcfParser",
         "SdfParser",
-        "SkelParser",
     ):
         assert name in public_names
 

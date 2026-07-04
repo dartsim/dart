@@ -1,6 +1,6 @@
 ---
 name: dart-io
-description: "DART IO: URDF, SDF, MJCF, SKEL parsers, and dart::io loading"
+description: "DART IO: URDF, SDF, MJCF parsers, and dart::io loading"
 ---
 
 # DART Model Loading (`dart::io`)
@@ -29,7 +29,6 @@ For module-specific details: `dart/io/AGENTS.md`
 | URDF   | `.urdf`          | ROS robots    |
 | SDF    | `.sdf`, `.world` | Gazebo models |
 | MJCF   | `.xml`           | MuJoCo models |
-| SKEL   | `.skel`          | Legacy DART   |
 
 ## Common Patterns
 

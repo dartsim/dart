@@ -19,7 +19,7 @@ Unified model loading API for URDF, SDF, and MJCF formats.
 - **Unified API**: `dart::io::readSkeleton(path, options)` auto-detects format
 - **ReadOptions**: Package directories, resource retrieval callbacks
 - **Package resolution**: `package://` URIs for ROS compatibility
-- **SKEL removal**: DART 7 is removing legacy SKEL support; use `release-6.*`
+- **SKEL removal**: DART 7 removed legacy SKEL support; use `release-6.*`
   when parity evidence requires old SKEL behavior.
 
 ## Code Patterns
