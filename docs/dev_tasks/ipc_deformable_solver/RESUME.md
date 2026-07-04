@@ -37,9 +37,9 @@ signature change). Surfaced on `BM_DeformableSelfContactBarrierStage` +
 `ipc_deformable_cg_contact` demo; C++ peak-invariant + public-propagation
 regressions. Changelog: no entry (family-level bullet covers it).
 
-### Active Slice: Fig-23 statistics packet — published (PR #3264)
+### Landed Slice: Fig-23 statistics packet — MERGED (PR #3264, `dbe6fcccb1c`)
 
-Branch `feature/ipc-deformable-fig23-statistics-packet`, published as **PR #3264**
+Branch `feature/ipc-deformable-fig23-statistics-packet`, merged as **PR #3264**
 against `main` (off `main` after #3257 merged, then merged current `origin/main`
 incl. #3250). Adds a machine-checkable **Fig-23-shaped statistics packet** that
 distils the `bm_deformable_body` JSON into per-scene Fig-23 axes (per-step
@@ -573,18 +573,29 @@ PSD-backend injection). (PR #2747 is another author's.) <- #2760 (GPU-vs-CPU per
 long ago (`74338577982`). The instructions below it about pushing that branch are
 stale — ignore them.
 
-**Current (2026-07-04):** two M7 slices done this cycle — PR #3257 (peak-contacts
-diagnostic) **merged** (`1819b801228`); PR #3264 (Fig-23 statistics packet)
-**open**, `test-all` 6/6 green, Codex review requested. Next: address any
-Codex/maintainer feedback on #3264 and merge after approval (never reply inline to
-a `[bot]` comment), then continue M7: build out the rest of the Fig-23 harness
-(process peak-memory tracking; an evolving multi-step self-contact fixture for a
-genuine avg-contacts-per-step axis), then the Table-1 CPU reference comparison
-(blocked on M4 assets), AMG/multigrid preconditioning, on-device GPU assembly +
-solve, and the 688K-node Fig-22 run. Matrix-free-CG auto-selection for very large
-meshes needs a maintainer crossover-policy decision (a measurement-only crossover
-benchmark is the safe precursor). Dev-task retirement stays maintainer-gated while
-PLAN-081 is incomplete.
+**Current (2026-07-04):** two M7 slices **merged** this cycle — PR #3257
+(peak-contacts diagnostic, `1819b801228`) and PR #3264 (Fig-23 statistics packet,
+`dbe6fcccb1c`). A third small doc-accuracy slice is in progress on
+`docs/deformable-linear-solver-selection-accuracy`: the roadmap's stale
+"direct-solve node cap (20k)" is corrected to the verified current architecture
+(dense LDLT below `kProjectedNewtonDenseDirectDofCap` = 128 DoF / ~42 nodes,
+iterative IC-CG above to a 1M-node ceiling, sparse-direct `SimplicialLDLT` kept
+out of the allocation-safe loop). Next substantive M7 work needs maintainer
+direction or is blocked: matrix-free-CG auto-selection needs a crossover-policy
+decision (a measurement-only crossover benchmark is the safe precursor); a genuine
+avg-contacts-per-step axis needs a new evolving multi-step self-contact fixture;
+process peak-memory tracking needs a memory-column semantics choice; and the
+Table-1 CPU comparison + 688K-node Fig-22 run are blocked on the M4 asset
+pipeline. Also available: AMG/multigrid preconditioning and on-device GPU assembly
+
+- solve. Then continue M7: build out the rest of the Fig-23 harness
+  (process peak-memory tracking; an evolving multi-step self-contact fixture for a
+  genuine avg-contacts-per-step axis), then the Table-1 CPU reference comparison
+  (blocked on M4 assets), AMG/multigrid preconditioning, on-device GPU assembly +
+  solve, and the 688K-node Fig-22 run. Matrix-free-CG auto-selection for very large
+  meshes needs a maintainer crossover-policy decision (a measurement-only crossover
+  benchmark is the safe precursor). Dev-task retirement stays maintainer-gated while
+  PLAN-081 is incomplete.
 
 After that, continue M7 in bounded performance slices: harden matrix-free CG on
 larger contact-heavy meshes and decide the automatic large-mesh selection

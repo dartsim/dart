@@ -224,9 +224,15 @@ assembly but solves with CG instead of `SimplicialLDLT`, so it never factorizes
 fill-in as the mesh chunks up. The inertia floor + PSD-projected element blocks
 guarantee convergence; a non-converged/non-finite solve falls back to
 steepest descent exactly as the direct path does on an indefinite
-factorization. Meshes above the direct-solve node cap (20k) now take the
-iterative path automatically (effective ceiling raised to 1M nodes) instead of
-degrading to gradient descent. Verified by a regression in which a dropped FEM
+factorization. Systems above the retained dense-direct cap
+(`kProjectedNewtonDenseDirectDofCap` = 128 DoF, ~42 nodes) now take the iterative
+path automatically (effective ceiling 1M nodes) instead of degrading to gradient
+descent. (Current architecture note: the built-in DART 7 World step keeps a dense
+LDLT below that cap and sparse IC-preconditioned CG above it; the Eigen
+sparse-direct `SimplicialLDLT` factorization is intentionally kept out of the
+allocation-safe simulation loop. The historical 20k figure was the earlier
+sparse-direct node cap, since superseded.) Verified by a regression in which a
+dropped FEM
 cube settles identically under both solvers while taking mutually exclusive
 solve paths (CG run never factorizes), with a `cg_solver` py-demo and a
 `BM_DeformableCgBarStep` benchmark mirroring the direct FEM-bar benchmark for
