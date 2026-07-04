@@ -173,8 +173,9 @@ public:
   ///
   /// The first writer slice intentionally supports a conservative URDF tree:
   /// one root link, root FreeJoint/WeldJoint placement that URDF can preserve,
-  /// child revolute/prismatic/fixed joints whose child link frame coincides
-  /// with the joint frame, inertial data, local visual/collision poses, and
+  /// child revolute/continuous/prismatic/fixed joints whose child link frame
+  /// coincides with the joint frame, single-DoF motor-style mimic metadata,
+  /// passive joint dynamics, inertial data, local visual/collision poses, and
   /// box/sphere/cylinder/absolute-URI mesh geometry. Unsupported constructs
   /// return an error instead of being silently dropped.
   static common::Result<std::string, common::Error> tryWriteSkeletonToString(

@@ -89,14 +89,27 @@ or text reparsing for SDF semantics.
 The first URDF writer implementation slice is also local on
 `work/skel-format-yaml-decision`: `dart::utils::UrdfParser` exposes
 `tryWriteSkeletonToString()` for one-root URDF trees with root FreeJoint or
-WeldJoint metadata, child revolute/prismatic/fixed joints, single-DoF
-motor-style mimic metadata, inertial data, local visual/collision poses,
-box/sphere/cylinder/absolute-URI mesh geometry, visual colors, and
+WeldJoint metadata, child revolute/continuous/prismatic/fixed joints, passive
+damping/friction metadata, single-DoF motor-style mimic metadata, inertial
+data, local visual/collision poses, box/sphere/cylinder/absolute-URI mesh
+geometry, visual colors, and
 visual/collision include options. `INTEGRATION_io_UrdfWriter` proves
 write/read/read round-trip for that subset and covers explicit diagnostics for
 multiple root trees, unsupported joint families, non-identity child joint
 frames, unbounded finite-requiring URDF limits, missing mimic references, and
-coupler-style mimic enforcement.
+coupler-style mimic enforcement. Additional focused coverage proves unbounded
+DART revolute joints write as URDF `continuous` joints and preserve passive
+dynamics metadata through reparse.
+
+Current SDF audit result: `dart/utils/sdf/` has no TinyXML/raw XML parser path
+for SDF semantics. SDF content loading, ambiguous `.xml` SDF classification,
+standard model/link/joint/visual/collision/material reads, and writer semantic
+checks stay on libsdformat `sdf::Root` and typed DOM APIs. Remaining
+`sdf::Element` access is the documented bridge for authored/default checks,
+DART extension fields, sdformat fields not exposed by high-level DOM, and
+post-serialization patching where sdformat's DOM omits or legacy-names a value.
+TinyXML remains only in `dart::io` as the non-SDF URDF/MJCF root classifier and
+in the URDF writer, where URDF XML is the target format.
 
 The supported SDF geometry reader paths now load through libsdformat
 `sdf::Geometry` DOM objects before mapping sphere, box, cylinder, capsule,
@@ -1107,7 +1120,12 @@ Additional validation for first URDF writer slice:
 Additional validation for URDF mimic metadata writer coverage:
 
 - `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter=UrdfWriter.RoundTripsMimicMetadata:UrdfWriter.MimicWithoutReferenceReturnsError:UrdfWriter.CouplerMimicReturnsError'`
-- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (9 tests)
+- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (10 tests)
+
+Additional validation for URDF continuous-joint dynamics writer coverage:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter=UrdfWriter.RoundTripsContinuousJointDynamics'`
+- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (10 tests)
 
 Changelog decision:
 
@@ -1139,7 +1157,8 @@ Changelog decision:
   a public parser-owned export API
 - Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing
 - Entry text: the new conservative URDF writer bullet describes the supported
-  first tree subset, single-DoF mimic metadata, and explicit diagnostics.
+  first tree subset, continuous joints, passive dynamics, single-DoF mimic
+  metadata, and explicit diagnostics.
 - PR-body note: N/A
 - Follow-up: add the implementation PR link after a PR exists and maintainer /
   user approval allows the PR update or follow-up push.

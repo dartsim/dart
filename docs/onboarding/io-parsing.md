@@ -224,9 +224,10 @@ in interchange-format parser utilities.
 
 `dart::utils::UrdfParser::tryWriteSkeletonToString` serializes the first
 conservative URDF tree subset. It supports one root link, root FreeJoint or
-WeldJoint metadata that URDF can preserve, child revolute/prismatic/fixed
-joints whose child link frame coincides with the joint frame, single-DoF
-motor-style mimic metadata, inertial data, local visual/collision poses,
+WeldJoint metadata that URDF can preserve, child
+revolute/continuous/prismatic/fixed joints whose child link frame coincides
+with the joint frame, passive damping/friction metadata, single-DoF motor-style
+mimic metadata, inertial data, local visual/collision poses,
 box/sphere/cylinder/absolute-URI mesh geometry, visual colors, and options for
 excluding visuals or collisions.
 

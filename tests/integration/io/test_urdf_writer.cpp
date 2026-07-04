@@ -53,6 +53,7 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -391,6 +392,57 @@ TEST(UrdfWriter, RoundTripsMimicMetadata)
   EXPECT_EQ(reparsedFollower->getMimicJoint(), reparsedReference);
   EXPECT_DOUBLE_EQ(reparsedFollower->getMimicMultiplier(), 2.0);
   EXPECT_DOUBLE_EQ(reparsedFollower->getMimicOffset(), -0.25);
+}
+
+//==============================================================================
+TEST(UrdfWriter, RoundTripsContinuousJointDynamics)
+{
+  auto skeleton = dynamics::Skeleton::create("urdf_continuous_writer");
+
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr,
+          dynamics::FreeJoint::Properties(),
+          makeBodyProperties(
+              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)rootJoint;
+
+  dynamics::RevoluteJoint::Properties hingeProperties;
+  hingeProperties.mName = "continuous_hinge";
+  hingeProperties.mAxis = Eigen::Vector3d::UnitY();
+  auto [hinge, tip]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          base,
+          hingeProperties,
+          makeBodyProperties(
+              "tip", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)tip;
+
+  const double inf = std::numeric_limits<double>::infinity();
+  hinge->setPositionLowerLimit(0, -inf);
+  hinge->setPositionUpperLimit(0, inf);
+  hinge->setDampingCoefficient(0, 0.35);
+  hinge->setCoulombFriction(0, 0.15);
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  expectContains(writeResult.value(), "type=\"continuous\"");
+  expectContains(writeResult.value(), "<dynamics");
+  EXPECT_EQ(writeResult.value().find("<limit"), std::string::npos);
+
+  utils::UrdfParser parser;
+  const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
+  ASSERT_NE(reparsed, nullptr);
+
+  const auto* reparsedHinge = dynamic_cast<const dynamics::RevoluteJoint*>(
+      reparsed->getJoint("continuous_hinge"));
+  ASSERT_NE(reparsedHinge, nullptr);
+  EXPECT_TRUE(reparsedHinge->isCyclic(0));
+  EXPECT_TRUE(
+      reparsedHinge->getAxis().isApprox(Eigen::Vector3d::UnitY(), kTolerance));
+  EXPECT_NEAR(reparsedHinge->getDampingCoefficient(0), 0.35, kTolerance);
+  EXPECT_NEAR(reparsedHinge->getCoulombFriction(0), 0.15, kTolerance);
 }
 
 //==============================================================================
