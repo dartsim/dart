@@ -205,6 +205,17 @@ WriteResult ok()
   return WriteResult::ok();
 }
 
+bool isImplicitRootJoint(const dynamics::Joint& joint)
+{
+  return dynamic_cast<const dynamics::FreeJoint*>(&joint)
+         || dynamic_cast<const dynamics::WeldJoint*>(&joint);
+}
+
+bool isExplicitWorldRootJoint(const dynamics::Joint& joint)
+{
+  return dynamic_cast<const dynamics::RevoluteJoint*>(&joint) != nullptr;
+}
+
 sdf::ElementPtr findChildElement(
     const sdf::ElementPtr& parent, std::string_view name)
 {
@@ -1074,8 +1085,7 @@ WriteResult computeLinkModelPose(
       return result;
     }
   } else if (
-      !dynamic_cast<const dynamics::FreeJoint*>(joint)
-      && !dynamic_cast<const dynamics::WeldJoint*>(joint)) {
+      !isImplicitRootJoint(*joint) && !isExplicitWorldRootJoint(*joint)) {
     return fail(
         "Unsupported SDF root joint type [" + std::string(joint->getType())
         + "] for link [" + bodyNode.getName() + "].");
@@ -1193,7 +1203,14 @@ WriteResult buildJoint(
   const dynamics::BodyNode* parent = joint.getParentBodyNode();
   const dynamics::BodyNode* child = joint.getChildBodyNode();
   if (!parent) {
-    return ok();
+    if (isImplicitRootJoint(joint)) {
+      return ok();
+    }
+    if (!isExplicitWorldRootJoint(joint)) {
+      return fail(
+          "Unsupported SDF root joint type [" + std::string(joint.getType())
+          + "] for explicit parent-world joint [" + joint.getName() + "].");
+    }
   }
   if (!child) {
     return fail(
@@ -1217,7 +1234,7 @@ WriteResult buildJoint(
 
   sdfJoint.SetName(joint.getName());
   sdfJoint.SetType(type);
-  sdfJoint.SetParentName(parent->getName());
+  sdfJoint.SetParentName(parent ? parent->getName() : "world");
   sdfJoint.SetChildName(child->getName());
   sdfJoint.SetRawPose(toGzPose(childToJoint));
 
@@ -1303,7 +1320,7 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
 
   for (std::size_t i = 0; i < skeleton.getNumJoints(); ++i) {
     const auto* joint = skeleton.getJoint(i);
-    if (joint->getParentBodyNode() == nullptr) {
+    if (joint->getParentBodyNode() == nullptr && isImplicitRootJoint(*joint)) {
       continue;
     }
 

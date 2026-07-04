@@ -68,7 +68,7 @@ Source of truth:
   joint topology/pose/axis frame resolution/dynamics/limits,
   collision-surface contact bitmask, bounce restitution, ODE friction/slip
   metadata, and supported geometry semantics;
-  avoid new raw XML-level SDF parsing when sdformat exposes the value. When
+  avoid raw XML-level SDF parsing when sdformat exposes the value. When
   DART must preserve an authored/default distinction or schema field that the
   high-level DOM class does not expose, use sdformat
   `Element::GetExplicitlySetInFile()` with non-mutating direct child traversal
@@ -155,6 +155,7 @@ state. The writer builds libsdformat DOM objects and serializes through
 sdformat; DART owns the `Skeleton`-to-SDF semantic mapping and diagnostics.
 
 The initial writer covers BodyNode links, root FreeJoint/WeldJoint placement,
+explicit parent-world root revolute joints, and
 revolute/continuous/prismatic/weld/screw/universal child joints with passive
 dynamics metadata (damping, Coulomb friction, spring reference, and spring
 stiffness), sdformat-normalized screw thread pitch (legacy `<thread_pitch>`

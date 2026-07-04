@@ -37,8 +37,9 @@ revolute/continuous/prismatic/weld/screw/universal child joints, inertial data,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh geometry, link gravity mode,
 passive joint dynamics metadata (damping, Coulomb friction, spring reference,
 and spring stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
-axis/axis2 mimic metadata with motor enforcement, topology-only ball child
-joints, local root/joint/shape poses, visual shadow/hidden state, explicit
+axis/axis2 mimic metadata with motor enforcement, explicit parent-world root
+revolute joints, topology-only ball child joints, local root/joint/shape poses,
+visual shadow/hidden state, explicit
 visual material colors, PBR metallic/roughness factors, collision-surface
 contact disable bitmasks, visual transparency, zero-threshold bounce
 restitution, ODE friction
@@ -94,10 +95,10 @@ Standard SDF joint reads traverse `sdf::Model`,
 name/type,
 parent/child links, local pose, axis vectors including
 `axis/xyz@expressed_in` frame resolution, axis dynamics, finite position limits,
-mimic metadata, and sdformat-normalized screw pitch values. XML helper checks
-remain only where DART preserves authored/default distinctions for existing
-diagnostics, reads DART-specific soft-body extension fields, or supports the
-legacy `use_parent_model_frame` presence check. Those standard SDF
+mimic metadata, and sdformat-normalized screw pitch values. sdformat Element
+presence checks remain only where DART preserves authored/default distinctions
+for existing diagnostics, reads DART-specific soft-body extension fields, or
+supports the legacy `use_parent_model_frame` presence check. Those standard SDF
 authored/default checks now use sdformat explicit-authored flags and
 non-mutating direct child traversal instead of raw child-existence probing. The
 compatibility boolean value now uses sdformat typed element access rather than
@@ -214,7 +215,7 @@ Additional validation for SDF root/model/link/joint/aspect DOM traversal:
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 - `pixi run run-cpp-target INTEGRATION_io_Read`
 
-Additional validation for pruning the unused SDF XML helper API:
+Additional validation for pruning the unused SDF parser helper API:
 
 - `git diff --check`
 - `pixi run run-cpp-target test_sdf_helpersNone`
@@ -359,6 +360,10 @@ Additional validation for direct SDF writer patch traversal:
 - `pixi run lint`
 - `pixi run build`
 
+Additional validation for explicit parent-world root joint writing:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
 Changelog decision:
 
 - Mode: draft
@@ -398,7 +403,7 @@ Changelog decision:
   PR exists. No additional entry is needed for SDF
   root/model/link/joint/aspect DOM traversal because it hardens the same
   conservative SDF parser/writer round-trip surface before the implementation
-  PR exists. No additional entry is needed for pruning unused SDF XML helper
+  PR exists. No additional entry is needed for pruning unused SDF parser helper
   APIs because this is an internal parser cleanup that narrows the detail helper
   surface while preserving the existing parser/writer changelog scope. No
   additional entry is needed for SDF 1.10+ screw pitch writer output because it
@@ -458,6 +463,10 @@ Changelog decision:
   because it is an internal implementation cleanup that keeps the existing
   conservative SDF writer behavior while avoiding schema lookup in the
   sdformat element patch path.
+  No additional separate entry is needed for explicit parent-world root
+  revolute writing because it broadens the same conservative SDF writer
+  capability before the implementation PR exists; the existing DART 7 IO and
+  Parsing bullet now includes explicit parent-world root revolute joints.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

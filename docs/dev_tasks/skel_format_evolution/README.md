@@ -33,7 +33,8 @@
       dynamics metadata (damping, Coulomb friction, spring reference, and spring
       stiffness), sdformat-normalized screw thread pitch, SDF 1.11+ axis/axis2
       mimic metadata, universal two-axis joints, continuous revolute joints,
-      topology-only ball joints, capsule/cone/ellipsoid geometry, visual
+      explicit parent-world root revolute joints, topology-only ball joints,
+      capsule/cone/ellipsoid geometry, visual
       shadow/hidden state, explicit visual material colors, PBR
       metallic/roughness factors, visual transparency, and collision surface
       contact disable bitmasks, zero-threshold bounce restitution, and ODE
@@ -65,16 +66,16 @@
       raw XML-level enumeration. Standard visual/collision/material reads use
       libsdformat DOM values for names, local poses, geometry, cast-shadow
       state, zero visibility flags, transparency, diffuse colors, and PBR metal
-      workflow factors; material XML checks only preserve whether diffuse was
-      authored, using sdformat's explicit-authored element flags instead of
-      child-existence probing. Standard joint reads use DOM values
+      workflow factors; material authored/default checks only preserve whether
+      diffuse was authored, using sdformat's explicit-authored element flags
+      instead of child-existence probing. Standard joint reads use DOM values
       for joint name/type,
       parent/child links, local pose, axis vectors including
       `axis/xyz@expressed_in` frame resolution, axis dynamics, finite limits,
-      mimic metadata, and sdformat-normalized screw pitch values; XML checks
-      remain only where DART needs authored/default presence, DART-specific
-      soft-body extension fields, or the legacy `use_parent_model_frame`
-      presence check; authored/default checks now use sdformat
+      mimic metadata, and sdformat-normalized screw pitch values; sdformat
+      Element presence checks remain only where DART needs authored/default
+      presence, DART-specific soft-body extension fields, or the legacy
+      `use_parent_model_frame` presence check; authored/default checks now use sdformat
       `Element::GetExplicitlySetInFile()`, and the legacy boolean value itself
       uses sdformat typed element access.
       The SDF-specific helper layer no longer exposes generic XML attribute,
@@ -209,8 +210,9 @@ SKEL-YAML direction just because the prototype once existed.
   links and passive joint dynamics metadata plus sdformat-normalized screw
   thread pitch for supported single-axis
   joints, two-axis universal joints, SDF 1.11+ axis/axis2 mimic metadata with
-  motor enforcement, continuous revolute joints, topology-only ball joints,
-  plus local root, joint, and shape poses, plus capsule/cone/ellipsoid geometry,
+  motor enforcement, continuous revolute joints, explicit parent-world root
+  revolute joints, topology-only ball joints, plus local root, joint, and shape
+  poses, plus capsule/cone/ellipsoid geometry,
   visual shadow state, zero visibility flags, visual transparency, and absolute
   non-file mesh URI
   preservation through a custom retriever. It also covers
@@ -231,9 +233,9 @@ SKEL-YAML direction just because the prototype once existed.
   requires broader accepted-format writer APIs and round-trip tests that load a
   scene from each accepted format, write it back, and compare the re-parsed
   models. SDF helper cleanup is covered by `test_sdf_helpersNone`, which now
-  validates only the retained presence/lookup bridge instead of the removed
-  generic XML helper APIs, including non-mutating sdformat child traversal,
+  validates only the retained sdformat Element presence/lookup bridge instead
+  of the removed generic parser helper APIs, including non-mutating sdformat child traversal,
   explicit-authored presence checks, and the removed SDF-specific boolean,
-  scalar, vector, pose, and XML text fallback parsers. SDF writer patching of
+  scalar, vector, pose, and text fallback parsers. SDF writer patching of
   gravity, modern screw pitch, and bounce restitution is covered by
   `INTEGRATION_io_SdfWriter` and now uses direct sdformat child traversal.

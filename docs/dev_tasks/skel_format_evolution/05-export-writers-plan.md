@@ -25,7 +25,8 @@ stiffness), sdformat-normalized screw thread pitch (legacy `<thread_pitch>`
 before SDF 1.10 and modern `<screw_thread_pitch>` for SDF 1.10+),
 topology-only ball child joints, SDF 1.11+ mimic metadata for axis/axis2
 follower joints with motor
-enforcement, link gravity mode, inertial parameters, local joint/shape poses,
+enforcement, explicit parent-world root revolute joints, link gravity mode,
+inertial parameters, local joint/shape poses,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry,
 visual shadow state as SDF `<cast_shadows>`, hidden visual state as zero-valued
 SDF `<visibility_flags>`, visual alpha as SDF `<transparency>`, explicit visual
@@ -61,10 +62,10 @@ selection and standard model/link/joint/aspect traversal. The remaining
 authored/default presence checks use sdformat's
 `Element::GetExplicitlySetInFile()` signal with non-mutating direct child
 traversal for standard SDF inertial, material diffuse, legacy
-`use_parent_model_frame`, and joint-axis dynamics/limits. XML helper reads
-remain only for that authored/default bridge and DART-specific soft-body
-extension fields; the compatibility boolean value is read through sdformat
-typed element access. Modern `axis/xyz@expressed_in` frame annotations are
+`use_parent_model_frame`, and joint-axis dynamics/limits. sdformat Element
+presence reads remain only for that authored/default bridge and DART-specific
+soft-body extension fields; the compatibility boolean value is read through
+sdformat typed element access. Modern `axis/xyz@expressed_in` frame annotations are
 resolved through `sdf::JointAxis::ResolveXyz()`, and authored diffuse values are
 read from `sdf::Material::Diffuse()`. Visual shadow and zero-visibility hidden
 state are read through `sdf::Visual` DOM values. Authored collision-surface

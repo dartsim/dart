@@ -498,7 +498,7 @@ TEST(SdfParser, DuplicateChildJointKeepsFirstClaim)
 }
 
 //==============================================================================
-TEST(SdfParser, InertialAndMaterialVariantsFromXml)
+TEST(SdfParser, InertialAndMaterialVariantsFromSdfString)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();
   const std::string uri = "memory://pkg/inertial_material/model.sdf";

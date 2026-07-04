@@ -1746,7 +1746,7 @@ static void reportMissingElement(
 Eigen::Vector3d resolveAxisXyz(
     const sdf::JointAxis& axisElement,
     const Eigen::Isometry3d& _parentModelFrame,
-    const ElementPtr& axisXmlElement)
+    const ElementPtr& axisSdfElement)
 {
   gz::math::Vector3d xyz = axisElement.Xyz();
 
@@ -1765,9 +1765,9 @@ Eigen::Vector3d resolveAxisXyz(
   // Legacy Gazebo/SDF files used this extension before SDF gained
   // axis/xyz@expressed_in. Keep it as a compatibility fallback only.
   bool useParentModelFrame = false;
-  if (hasAuthoredElement(axisXmlElement, "use_parent_model_frame")) {
+  if (hasAuthoredElement(axisSdfElement, "use_parent_model_frame")) {
     sdf::Errors errors;
-    const auto [value, found] = axisXmlElement->Get<bool>(
+    const auto [value, found] = axisSdfElement->Get<bool>(
         errors, "use_parent_model_frame", useParentModelFrame);
     if (found && errors.empty()) {
       useParentModelFrame = value;
@@ -1799,14 +1799,14 @@ static bool readAxisElement(
     double& spring_stiffness)
 {
   bool hasFinitePositionLimit = false;
-  const ElementPtr axisXmlElement = axisElement.Element();
+  const ElementPtr axisSdfElement = axisElement.Element();
 
   // xyz
-  axis = resolveAxisXyz(axisElement, _parentModelFrame, axisXmlElement);
+  axis = resolveAxisXyz(axisElement, _parentModelFrame, axisSdfElement);
 
   // dynamics
-  if (hasAuthoredElement(axisXmlElement, "dynamics")) {
-    const ElementPtr& dynamicsElement = getElement(axisXmlElement, "dynamics");
+  if (hasAuthoredElement(axisSdfElement, "dynamics")) {
+    const ElementPtr& dynamicsElement = getElement(axisSdfElement, "dynamics");
 
     // damping
     if (hasAuthoredElement(dynamicsElement, "damping")) {
@@ -1830,8 +1830,8 @@ static bool readAxisElement(
   }
 
   // limit
-  if (hasAuthoredElement(axisXmlElement, "limit")) {
-    const ElementPtr& limitElement = getElement(axisXmlElement, "limit");
+  if (hasAuthoredElement(axisSdfElement, "limit")) {
+    const ElementPtr& limitElement = getElement(axisSdfElement, "limit");
 
     // lower
     if (hasAuthoredElement(limitElement, "lower")) {

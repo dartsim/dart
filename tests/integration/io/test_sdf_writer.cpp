@@ -185,6 +185,20 @@ std::filesystem::path writeTempSdf(std::string_view text, std::string_view name)
   return path;
 }
 
+sdf::ElementPtr getSdfChildElement(
+    const sdf::ElementPtr& parent, const std::string& name)
+{
+  sdf::ElementPtr child = parent ? parent->GetFirstElement() : nullptr;
+  while (child) {
+    if (child->GetName() == name) {
+      return child;
+    }
+    child = child->GetNextElement();
+  }
+
+  return nullptr;
+}
+
 double getSdfDoubleElement(
     const sdf::ElementPtr& parent, const std::string& name)
 {
@@ -988,7 +1002,7 @@ TEST(SdfWriter, RoundTripsCollisionSurfaceBounceRestitution)
   ASSERT_NE(sdfCollision->Surface(), nullptr);
   const auto surfaceElement = sdfCollision->Surface()->Element();
   ASSERT_NE(surfaceElement, nullptr);
-  const auto bounceElement = surfaceElement->FindElement("bounce");
+  const auto bounceElement = getSdfChildElement(surfaceElement, "bounce");
   ASSERT_NE(bounceElement, nullptr);
   EXPECT_DOUBLE_EQ(
       getSdfDoubleElement(bounceElement, "restitution_coefficient"), 0.42);
@@ -1259,6 +1273,81 @@ TEST(SdfWriter, RootWeldRoundTripsWithFixedRootOption)
   const auto* fixedRoot = test::requireBodyNode(*reparsed, "fixed_root");
   ASSERT_NE(fixedRoot, nullptr);
   test::expectJointTopology(*root, nullptr, fixedRoot);
+}
+
+//==============================================================================
+TEST(SdfWriter, RootRevoluteJointRoundTripsAsParentWorld)
+{
+  auto skeleton = dynamics::Skeleton::create("root_revolute_writer");
+
+  dynamics::RevoluteJoint::Properties rootProperties;
+  rootProperties.mName = "world_hinge";
+  rootProperties.mAxis = Eigen::Vector3d::UnitY();
+  rootProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.3, -0.2, 0.5);
+  rootProperties.mT_ChildBodyToJoint.translation()
+      = Eigen::Vector3d(0.0, 0.1, 0.0);
+  rootProperties.mPositionLowerLimits[0] = -0.25;
+  rootProperties.mPositionUpperLimits[0] = 0.75;
+
+  dynamics::BodyNode::Properties bodyProperties;
+  bodyProperties.mName = "pendulum";
+  bodyProperties.mInertia.setMass(1.0);
+  bodyProperties.mInertia.setMoment(Eigen::Matrix3d::Identity());
+
+  auto [rootJoint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          nullptr, rootProperties, bodyProperties);
+  rootJoint->setDampingCoefficient(0, 0.2);
+  rootJoint->setCoulombFriction(0, 0.05);
+  rootJoint->setRestPosition(0, 0.1);
+  rootJoint->setSpringStiffness(0, 1.5);
+  body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::SphereShape>(0.2), "pendulum_collision");
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  EXPECT_NE(
+      writeResult.value().find("<joint name='world_hinge' type='revolute'>"),
+      std::string::npos);
+  EXPECT_NE(
+      writeResult.value().find("<parent>world</parent>"), std::string::npos);
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfJoint = sdfRoot.Model()->JointByName("world_hinge");
+  ASSERT_NE(sdfJoint, nullptr);
+  EXPECT_EQ(sdfJoint->ParentName(), "world");
+  EXPECT_EQ(sdfJoint->ChildName(), "pendulum");
+
+  const auto path = writeTempSdf(writeResult.value(), "root_revolute");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  ASSERT_EQ(reparsed->getNumBodyNodes(), 1u);
+  ASSERT_EQ(reparsed->getNumJoints(), 1u);
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "pendulum");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* reparsedJoint
+      = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, "world_hinge");
+  ASSERT_NE(reparsedJoint, nullptr);
+  test::expectJointTopology(*reparsedJoint, nullptr, reparsedBody);
+  EXPECT_VECTOR_NEAR(reparsedJoint->getAxis(), Eigen::Vector3d::UnitY(), 1e-12);
+  EXPECT_VECTOR_NEAR(
+      reparsedJoint->getTransformFromParentBodyNode().translation(),
+      Eigen::Vector3d(0.3, -0.2, 0.5),
+      1e-12);
+  EXPECT_VECTOR_NEAR(
+      reparsedJoint->getTransformFromChildBodyNode().translation(),
+      Eigen::Vector3d(0.0, 0.1, 0.0),
+      1e-12);
+  test::expectDofPositionLimits(*reparsedJoint, 0, -0.25, 0.75, 1e-12);
+  test::expectDofDynamics(*reparsedJoint, 0, 0.2, 0.05, 0.1, 1.5, 1e-12);
 }
 
 //==============================================================================
