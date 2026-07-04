@@ -32,12 +32,18 @@
 
 #include "dart/gui/osg/Utils.hpp"
 
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/gui/osg/IncludeImGui.hpp"
+#include "dart/gui/osg/TrackballManipulator.hpp"
+#include "dart/gui/osg/Viewer.hpp"
+#include "dart/simulation/World.hpp"
 
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/PolygonMode>
 #include <osg/Texture2D>
+#include <osgGA/CameraManipulator>
 
 #include <algorithm>
 #include <iostream>
@@ -280,6 +286,74 @@ void applyImGuiScale(double scale, double* appliedScale)
 #else
   ImGui::GetIO().FontGlobalScale = static_cast<float>(sanitized);
 #endif
+}
+
+//==============================================================================
+void applyDefaultCameraPose(
+    Viewer& viewer, const std::shared_ptr<simulation::World>& world)
+{
+  ::osg::Vec3 eye(0.0f, -20.0f, 10.0f);
+  ::osg::Vec3 lookAt(0.0f, 0.0f, 0.0f);
+  const ::osg::Vec3 up(0.0f, 0.0f, 1.0f);
+
+  bool hasMobileBody = false;
+  Eigen::Vector3d min = Eigen::Vector3d::Zero();
+  Eigen::Vector3d max = Eigen::Vector3d::Zero();
+  if (world) {
+    for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+      const auto skel = world->getSkeleton(i);
+      if (!skel || !skel->isMobile())
+        continue;
+
+      for (std::size_t j = 0; j < skel->getNumBodyNodes(); ++j) {
+        const auto* body = skel->getBodyNode(j);
+        if (!body)
+          continue;
+
+        const Eigen::Vector3d translation = body->getTransform().translation();
+        if (!hasMobileBody) {
+          min = max = translation;
+          hasMobileBody = true;
+        } else {
+          min = min.cwiseMin(translation);
+          max = max.cwiseMax(translation);
+        }
+      }
+    }
+  }
+
+  if (hasMobileBody) {
+    const Eigen::Vector3d center = 0.5 * (min + max);
+    const Eigen::Vector3d extent = max - min;
+    const double horizontalSpan
+        = std::max({extent.x(), extent.y(), extent.z() * 1.2});
+    const double distance = std::max(10.0, horizontalSpan * 0.9 + 8.0);
+    const double height = std::max(6.0, distance * 0.55);
+
+    // Anchor the +Z-up view above the ground plane looking down at the scene
+    // at roughly 30 degrees, even when stray bodies drag the mobile bounding
+    // box far below the floor or high into the air. Biasing the look-at point
+    // below the bounding-box center keeps the floor and settled bodies framed
+    // instead of the empty air above them.
+    const double lookAtZ = std::clamp(0.6 * center.z(), 0.0, 5.0);
+    eye = ::osg::Vec3(
+        static_cast<float>(center.x()),
+        static_cast<float>(center.y() - distance),
+        static_cast<float>(lookAtZ + height));
+    lookAt = ::osg::Vec3(
+        static_cast<float>(center.x()),
+        static_cast<float>(center.y()),
+        static_cast<float>(lookAtZ));
+  }
+
+  ::osg::ref_ptr<::osgGA::CameraManipulator> manipulator
+      = viewer.getCameraManipulator();
+  if (!manipulator)
+    manipulator = new TrackballManipulator;
+  manipulator->setHomePosition(eye, lookAt, up);
+  viewer.setCameraManipulator(manipulator);
+  manipulator->home(0.0);
+  viewer.getCamera()->setViewMatrixAsLookAt(eye, lookAt, up);
 }
 
 } // namespace dart::gui::osg

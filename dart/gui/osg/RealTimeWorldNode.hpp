@@ -87,6 +87,12 @@ public:
   /// not have had time to reach it.
   double getLastRealTimeFactor() const;
 
+  /// Get an exponentially smoothed real time factor covering roughly the last
+  /// second of refresh cycles. The per-cycle value from
+  /// getLastRealTimeFactor() fluctuates too quickly to read on HUD-style
+  /// displays; this value is meant for such displays.
+  double getSmoothedRealTimeFactor() const;
+
   /// Get the lowest real time factor that has been hit during the simulation.
   double getLowestRealTimeFactor() const;
 
@@ -111,6 +117,12 @@ protected:
 
   /// The RTF that was achieved in the last refresh cycle
   double mLastRealTimeFactor;
+
+  /// Exponentially smoothed RTF for HUD-style displays
+  double mSmoothedRealTimeFactor;
+
+  /// Whether the smoothed RTF has received a sample since the last reset
+  bool mHasSmoothedRealTimeFactor;
 
   /// Amount of simulation time available to spend during refresh
   double mSimTimeBudget;

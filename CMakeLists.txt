@@ -741,6 +741,16 @@ if(DART_VERBOSE)
   message(STATUS "[ Code Formatting ]")
 endif()
 
+if(CLANG_FORMAT_EXECUTABLE)
+  get_filename_component(_clang_format_name "${CLANG_FORMAT_EXECUTABLE}" NAME)
+  if(
+    NOT EXISTS "${CLANG_FORMAT_EXECUTABLE}"
+    OR NOT _clang_format_name STREQUAL "clang-format-14"
+  )
+    unset(CLANG_FORMAT_EXECUTABLE CACHE)
+  endif()
+endif()
+
 find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format-14)
 
 get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)
