@@ -388,12 +388,21 @@ protected:
   /// Constraint group list
   std::vector<ConstrainedGroup> mConstrainedGroups;
 
-  /// Per-group "fully resting" flag, parallel to mConstrainedGroups. An entry
-  /// is true only when every skeleton in that group is a sleep candidate, in
-  /// which case the group's constraint (LCP) solve is skipped and its members
-  /// are frozen. When automatic deactivation is disabled the resting pass is
-  /// skipped entirely, so every entry is false and no group is ever skipped.
+  /// Per-group freeze-eligibility flag, parallel to mConstrainedGroups. An
+  /// entry is true only when every skeleton in that group is a sleep candidate
+  /// and the group's active constraints are safe to skip.
   std::vector<bool> mGroupResting;
+
+  /// Per-group kinematic-candidacy flag, parallel to mConstrainedGroups. This
+  /// is true when every skeleton in the group is already a sleep candidate,
+  /// independent of whether contact penetration has converged enough to freeze
+  /// the group on this exact step.
+  std::vector<bool> mGroupAllSleepCandidates;
+
+  /// Per-group dwell-preservation flag, parallel to mConstrainedGroups. This is
+  /// true for contact-only groups that are close enough to the penetration
+  /// freeze gate to keep solving without discarding already-earned sleep dwell.
+  std::vector<bool> mGroupPreserveSleepCandidates;
 
   /// Scratch arrays for deactivation-aware group solves. These intentionally
   /// use byte storage rather than vector<bool> so parallel group workers can
