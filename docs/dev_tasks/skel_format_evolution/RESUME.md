@@ -65,10 +65,11 @@ DART-only/generated geometry diagnostics for `PyramidShape`, `ArrowShape`,
 unsupported coupler-style mimic diagnostics, non-finite visual material
 diagnostics, invalid PBR material diagnostics, unsupported visual reflectance
 diagnostics, non-default DART mesh color/alpha render-policy diagnostics,
-non-finite screw pitch diagnostics, invalid collision-surface friction, slip,
-restitution, and friction-direction-frame diagnostics, unsupported ball-joint
-metadata, unsupported DART `SoftBodyNode` diagnostics, and non-finite joint
-dynamics diagnostics. This is real Phase 5 progress, but
+NaN joint position-limit diagnostics, non-finite screw pitch diagnostics,
+invalid collision-surface friction, slip, restitution, and
+friction-direction-frame diagnostics, unsupported ball-joint metadata,
+unsupported DART `SoftBodyNode` diagnostics, and non-finite joint dynamics
+diagnostics. This is real Phase 5 progress, but
 Phase 5 is still open until broader SDF coverage plus the remaining accepted
 writer targets are implemented or durably deferred.
 
@@ -845,6 +846,16 @@ Changelog decision:
   No additional separate entry is needed for the targeted ArrowShape writer
   diagnostic because it hardens the same conservative SDF writer
   unsupported-resource contract before the implementation PR exists.
+  No additional separate entry is needed for NaN SDF joint position-limit
+  diagnostics because it hardens the same conservative SDF writer contract
+  before the implementation PR exists.
+
+Additional validation for NaN SDF joint position-limit diagnostics:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter` (55 tests)
+- `pixi run lint`
+- `pixi run build`
 
 Additional validation for sdformat-based ambiguous `.xml` SDF dispatch:
 

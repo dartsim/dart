@@ -2654,6 +2654,34 @@ TEST(SdfWriter, NonFiniteJointDynamicsReturnsError)
 }
 
 //==============================================================================
+TEST(SdfWriter, NaNJointLimitReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("nan_joint_limit");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::RevoluteJoint::Properties hingeProperties;
+  hingeProperties.mName = "hinge";
+  hingeProperties.mAxis = Eigen::Vector3d::UnitZ();
+
+  dynamics::BodyNode::Properties tipProperties;
+  tipProperties.mName = "tip";
+
+  auto [hinge, tip]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          base, hingeProperties, tipProperties);
+  (void)tip;
+  hinge->setPositionLowerLimit(0, std::numeric_limits<double>::quiet_NaN());
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("NaN position limits"), std::string::npos);
+}
+
+//==============================================================================
 TEST(SdfWriter, NonFiniteScrewJointPitchReturnsError)
 {
   auto skeleton = dynamics::Skeleton::create("non_finite_screw_pitch");
@@ -2705,4 +2733,30 @@ TEST(SdfWriter, BallJointDynamicsReturnError)
   EXPECT_NE(
       result.error().message.find("ball joint [ball] with dynamics"),
       std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, NaNBallJointLimitReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("nan_ball_joint_limit");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::BallJoint::Properties ballProperties;
+  ballProperties.mName = "ball";
+
+  dynamics::BodyNode::Properties tipProperties;
+  tipProperties.mName = "tip";
+
+  auto [ball, tip] = skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(
+      base, ballProperties, tipProperties);
+  (void)tip;
+  ball->setPositionLowerLimit(0, std::numeric_limits<double>::quiet_NaN());
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("NaN position limits"), std::string::npos);
 }

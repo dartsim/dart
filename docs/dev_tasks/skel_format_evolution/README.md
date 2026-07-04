@@ -56,7 +56,9 @@
       collisions, missing mesh URI and non-finite mesh scale diagnostics,
       pre-SDF-1.11 mimic diagnostics, unsupported coupler-style mimic
       diagnostics, and relative/generated mesh resource diagnostics now have
-      focused coverage. Invalid collision-surface
+      focused coverage. NaN joint position limits now fail with explicit
+      diagnostics instead of being treated like unbounded SDF limits. Invalid
+      collision-surface
       friction, slip, restitution, and non-collision-frame friction-direction
       values, non-default visual reflectance, and non-default DART mesh
       color/alpha render policies now fail with explicit diagnostics. DART
@@ -265,6 +267,9 @@ SKEL-YAML direction just because the prototype once existed.
   `MultiSphereConvexHullShape`, `PointCloudShape`, `LineSegmentShape`, and
   `VoxelGridShape` now have targeted diagnostics for missing SDF primitives or
   targetless generated-resource policies.
+  NaN position limits on SDF-supported single-axis joints and topology-only ball
+  joints now have targeted diagnostics, while infinite limits remain the
+  unbounded SDF joint contract.
   Shape-level and body-level
   collision-surface contact bitmask disables, zero-threshold bounce restitution,
   ODE friction

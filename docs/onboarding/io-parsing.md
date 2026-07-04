@@ -195,8 +195,9 @@ policy for converting them into SDF-owned mesh or resource data.
 `WriteOptions` can exclude visual or collision entries. Missing mesh URIs,
 non-finite mesh scales, non-default DART mesh color/alpha render policies,
 invalid PBR material factors, non-default visual reflectance, invalid collision
-surface friction or restitution values, pre-SDF-1.11 mimic output,
-coupler-style mimic enforcement, ball joint limits, ball joint dynamics, and
+surface friction or restitution values, NaN joint position limits,
+pre-SDF-1.11 mimic output, coupler-style mimic enforcement, ball joint limits,
+ball joint dynamics, and
 DART `SoftBodyNode` export are reported as unsupported instead of being
 silently dropped. It is not a general project save/load format and does not
 make YAML a model format. Use the writer only when the target scene fits the

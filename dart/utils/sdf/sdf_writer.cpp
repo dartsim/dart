@@ -1231,6 +1231,11 @@ WriteResult configureAxis(
 
   const double lower = joint.getPositionLowerLimit(dofIndex);
   const double upper = joint.getPositionUpperLimit(dofIndex);
+  if (std::isnan(lower) || std::isnan(upper)) {
+    return fail(
+        "Cannot write SDF joint [" + joint.getName()
+        + "] with NaN position limits.");
+  }
   if (std::isfinite(lower)) {
     sdfAxis.SetLower(lower);
   }
@@ -1272,6 +1277,11 @@ WriteResult validateBallJointState(const dynamics::BallJoint& joint)
     const double springReference = joint.getRestPosition(i);
     const double springStiffness = joint.getSpringStiffness(i);
     const auto mimicProps = joint.getMimicDofProperties();
+    if (std::isnan(lower) || std::isnan(upper)) {
+      return fail(
+          "Cannot write SDF ball joint [" + joint.getName()
+          + "] with NaN position limits.");
+    }
     if (!std::isfinite(damping) || !std::isfinite(friction)
         || !std::isfinite(springReference) || !std::isfinite(springStiffness)) {
       return fail(
