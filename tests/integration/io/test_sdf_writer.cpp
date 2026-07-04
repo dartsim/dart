@@ -942,6 +942,71 @@ TEST(SdfWriter, RoundTripsModelSelfCollision)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsModelStaticStateWithImplicitRoot)
+{
+  auto skeleton = dynamics::Skeleton::create("static_model_writer");
+  skeleton->setMobile(false);
+
+  dynamics::FreeJoint::Properties rootProperties;
+  rootProperties.mName = "root";
+  rootProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.2, -0.1, 0.4);
+
+  dynamics::BodyNode::Properties bodyProperties;
+  bodyProperties.mName = "body";
+  bodyProperties.mInertia.setMass(1.0);
+  bodyProperties.mInertia.setMoment(Eigen::Matrix3d::Identity());
+
+  auto [rootJoint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr, rootProperties, bodyProperties);
+  (void)rootJoint;
+  body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4)),
+      "body_collision");
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  EXPECT_TRUE(sdfRoot.Model()->Static());
+  EXPECT_EQ(sdfRoot.Model()->LinkCount(), 1u);
+  EXPECT_EQ(sdfRoot.Model()->JointCount(), 0u);
+
+  const auto path = writeTempSdf(writeResult.value(), "static_model");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_FALSE(reparsed->isMobile());
+  EXPECT_EQ(reparsed->getNumBodyNodes(), 1u);
+  EXPECT_EQ(reparsed->getNumJoints(), 1u);
+
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "body");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* reparsedRoot = dynamic_cast<const dynamics::FreeJoint*>(
+      reparsedBody->getParentJoint());
+  ASSERT_NE(reparsedRoot, nullptr);
+  test::expectJointTopology(*reparsedRoot, nullptr, reparsedBody);
+  EXPECT_VECTOR_NEAR(
+      reparsedRoot->getTransformFromParentBodyNode().translation(),
+      Eigen::Vector3d(0.2, -0.1, 0.4),
+      1e-12);
+
+  const auto* reparsedBox
+      = test::requireShape<dynamics::CollisionAspect, dynamics::BoxShape>(
+          *reparsedBody, 0, 1);
+  ASSERT_NE(reparsedBox, nullptr);
+  EXPECT_VECTOR_NEAR(
+      reparsedBox->getSize(), Eigen::Vector3d(0.2, 0.3, 0.4), 1e-12);
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsNonDefaultSkeletonGravityThroughWorld)
 {
   auto skeleton = dynamics::Skeleton::create("gravity_writer");

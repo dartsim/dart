@@ -41,8 +41,8 @@ stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
 axis/axis2 mimic metadata with motor enforcement, explicit parent-world root
 joints for supported SDF joint types including continuous revolute roots,
 multiple root FreeJoint trees, mixed implicit FreeJoint plus explicit
-parent-world root models, topology-only ball child joints, model
-self-collision, local root/joint/shape poses, visual
+parent-world root models, topology-only ball child joints, model static/mobile
+state, model self-collision, local root/joint/shape poses, visual
 shadow/hidden state, explicit
 visual material colors, PBR metallic/roughness factors, collision-surface
 contact disable bitmasks for both shape-level and body-level DART collision
@@ -143,9 +143,12 @@ under the deprecated tag, but it no longer reads serialized XML attributes back
 from that tree, and the patch path now finds generated sdformat children by
 `Element::FindElement()` child lookup plus sdformat sibling iteration for
 repeated generated children.
-Model-level self-collision now reads through `sdf::Model::SelfCollide()` and
-writes through `sdf::Model::SetSelfCollide()`, with parser and writer coverage
-for SDF `<self_collide>` round-trip.
+Model static/mobile state now reads through `sdf::Model::Static()` and writes
+through `sdf::Model::SetStatic()`, with writer coverage that preserves static
+state through an implicit FreeJoint root. Model-level self-collision now reads
+through `sdf::Model::SelfCollide()` and writes through
+`sdf::Model::SetSelfCollide()`, with parser and writer coverage for SDF
+`<self_collide>` round-trip.
 Non-default skeleton gravity now reads through `sdf::World::Gravity()` and
 writes through `sdf::World::SetGravity()` by wrapping the model in a root SDF
 `<world>` only when the skeleton gravity differs from DART's default gravity.
@@ -656,6 +659,43 @@ Additional validation for SDF model self-collision IO:
 - `git diff --check`
 - `pixi run lint`
 - `pixi run build`
+
+Additional validation for SDF model static/mobile writer coverage:
+
+- Focused implicit-root candidate passed, proving the current sdformat
+  `sdf::Model::Static()` path preserves `Skeleton::isMobile() == false`
+  independently from explicit fixed-root topology. The emitted SDF model has no
+  explicit root joint, and reparse keeps the root as a DART FreeJoint while
+  restoring the non-mobile skeleton state.
+
+  ```bash
+  pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsModelStaticStateWithImplicitRoot'
+  ```
+
+- Full writer target and local gates passed.
+
+  ```bash
+  git diff --check
+  pixi run run-cpp-target INTEGRATION_io_SdfWriter
+  pixi run lint
+  pixi run build
+  ```
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: `origin/main`
+- Scope evidence: focused diff in `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder
+- Decision: no entry required; this adds focused coverage and documentation for
+  existing unreleased SDF writer model-state behavior under the broader DART 7
+  IO and Parsing writer entry.
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: No separate changelog entry is needed because this slice proves
+  existing model static/mobile state preservation and does not add a new public
+  API or serialization surface.
+- Follow-up: none
 
 Additional validation for SDF world gravity IO:
 

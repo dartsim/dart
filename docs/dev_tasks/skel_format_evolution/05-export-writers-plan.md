@@ -28,14 +28,15 @@ follower joints with motor
 enforcement, explicit parent-world root joints for supported SDF joint types
 (revolute, continuous, prismatic, screw, universal, and topology-only ball),
 multiple root FreeJoint trees, mixed implicit FreeJoint plus explicit
-parent-world root models, model self-collision, non-default skeleton gravity
-through root SDF world gravity, link gravity mode, inertial parameters, local
-joint/shape poses,
+parent-world root models, model static/mobile state, model self-collision,
+non-default skeleton gravity through root SDF world gravity, link gravity mode,
+inertial parameters, local joint/shape poses,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry,
 visual shadow state as SDF `<cast_shadows>`, hidden visual state as zero-valued
 SDF `<visibility_flags>`, visual alpha as SDF `<transparency>`, explicit visual
 material colors as SDF `<diffuse>` values, and PBR metallic/roughness factors as
-SDF `<pbr><metal>` values. Model-level self-collision round-trips through SDF
+SDF `<pbr><metal>` values. Model static/mobile state round-trips through SDF
+`<static>`, and model-level self-collision round-trips through SDF
 `<self_collide>`.
 Non-default skeleton gravity writes a root SDF `<world>` with `<gravity>` and
 re-parses through the same `sdf::World` DOM.

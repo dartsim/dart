@@ -36,8 +36,9 @@
       explicit parent-world root joints for supported SDF joint types,
       including continuous revolute roots, multiple root FreeJoint trees, mixed
       implicit FreeJoint plus explicit parent-world root models,
-      topology-only ball joints, model self-collision, non-default skeleton
-      gravity through root SDF world gravity, capsule/cone/ellipsoid geometry,
+      topology-only ball joints, model static/mobile state, model
+      self-collision, non-default skeleton gravity through root SDF world
+      gravity, capsule/cone/ellipsoid geometry,
       visual shadow/hidden state,
       explicit visual material colors, PBR metallic/roughness factors, visual
       transparency, shape-level and body-level collision disable bitmasks,
@@ -250,8 +251,9 @@ SKEL-YAML direction just because the prototype once existed.
   motor enforcement, continuous revolute joints, explicit parent-world root
   joints for supported SDF joint types, including continuous revolute roots,
   multiple root FreeJoint trees, mixed implicit FreeJoint plus explicit
-  parent-world root models, topology-only ball joints, model self-collision,
-  non-default skeleton gravity through root SDF world gravity,
+  parent-world root models, topology-only ball joints, model static/mobile
+  state, model self-collision, non-default skeleton gravity through root SDF
+  world gravity,
   plus local root, joint, and shape poses, plus capsule/cone/ellipsoid geometry,
   visual shadow state, zero visibility flags, visual transparency, and absolute
   non-file mesh URI

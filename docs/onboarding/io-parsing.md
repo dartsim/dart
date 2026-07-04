@@ -170,9 +170,9 @@ dynamics metadata (damping, Coulomb friction, spring reference, and spring
 stiffness), sdformat-normalized screw thread pitch (legacy `<thread_pitch>`
 before SDF 1.10 and modern `<screw_thread_pitch>` for SDF 1.10+), SDF 1.11+
 mimic metadata for axis/axis2 follower joints with motor enforcement,
-topology-only ball child joints, model self-collision state, link gravity mode,
-non-default skeleton gravity through a root SDF `<world><gravity>` value,
-inertial parameters, local joint/shape poses, and
+topology-only ball child joints, model static/mobile and self-collision state,
+link gravity mode, non-default skeleton gravity through a root SDF
+`<world><gravity>` value, inertial parameters, local joint/shape poses, and
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry
 with visual shadow/hidden/transparency state, explicit visual material colors,
 PBR
