@@ -448,7 +448,7 @@ void World::suppressShallowSupportedFreeRootDrift(
   constexpr double kRootLinearLegacyDriftSpeed = 1e-5;
   constexpr double kRootLinearDriftSpeedCap = 2e-4;
   constexpr double kRootLinearDriftFinalQuietRatio = 0.5;
-  double rootLinearDriftSpeed = kRootLinearDriftSpeedCap;
+  double rootLinearDriftSpeed = kRootLinearLegacyDriftSpeed;
   if (mDeactivationOptions.mEnabled) {
     const double finalQuietLinearSpeed = std::max(
         0.0,
