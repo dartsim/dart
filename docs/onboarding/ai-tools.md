@@ -314,6 +314,13 @@ structural AI-component checks owned by `docs/ai/components.md`.
 - Synced files get an auto-generated header (placed AFTER frontmatter to preserve tool parsing)
 - Target directories (`.codex/`, `.opencode/`) are excluded from prettier to prevent re-sync loops
 - Edit source files only; synced files are overwritten on each sync
+- NEW generated files can be silently skipped by plain `git add` when a
+  personal global gitignore excludes a parent directory (for example
+  `.codex`): git cannot re-include files under an excluded directory, and
+  `check-ai-commands` compares disk state, so the local check stays green
+  while CI fails on the missing adapter in a fresh clone. After adding a
+  command or skill, stage new adapter directories with `git add -f` and
+  confirm with `git ls-files .codex/skills/<name>`
 
 **Manual fallback**:
 
