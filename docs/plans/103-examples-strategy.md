@@ -10,7 +10,8 @@
 - Related: PLAN-102 (C++ `dart-demos`, Complete — frozen by this plan),
   PLAN-012 (cloud dartpy tutorials — consumes this plan's scene modules),
   PLAN-101 (`dartsim` editor — a retire-later precondition),
-  [`103-examples-strategy/rigid-body-visual-verification.md`](103-examples-strategy/rigid-body-visual-verification.md).
+  [`103-examples-strategy/rigid-body-visual-verification.md`](103-examples-strategy/rigid-body-visual-verification.md),
+  [`103-examples-strategy/simbicon-walking-notes.md`](103-examples-strategy/simbicon-walking-notes.md).
 - Architecture owner (cross-language examples policy): this file while active;
   the C++ app architecture stays in
   [`../design/demos_app.md`](../design/demos_app.md).
@@ -158,7 +159,11 @@ explicit "not now"):
    replay, variational, differentiable, VBD, and IPC deformable categories.
    Planned rows keep remaining IK, puppet, SIMBICON, operational-space-control,
    and mobile-manipulation gaps visible without preserving legacy DART 6
-   implementations in the catalog. The old
+   implementations in the catalog. The SIMBICON planned row's robustness
+   diagnosis (height-sink vs. structural lateral-balance gap, and the
+   next-attempt options) is durable in
+   [`103-examples-strategy/simbicon-walking-notes.md`](103-examples-strategy/simbicon-walking-notes.md).
+   The old
    collision-sandbox placeholder is retired to the concrete
    `rigid_contact_inspector`, `rigid_collision_query_options`, and
    `rigid_collision_casts` GUI rows.
