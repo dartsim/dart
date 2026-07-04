@@ -328,6 +328,7 @@ compatibility remains on the active DART 6 LTS branch._
 - Preserved protected `main` and scheduled CI validation runs under GitHub
   Actions concurrency by giving protected refs run-specific groups and using
   explicit multi-pending queues for serialized maintenance workflows.
+  ([#3235](https://github.com/dartsim/dart/pull/3235))
 
 ## DART 6
 
