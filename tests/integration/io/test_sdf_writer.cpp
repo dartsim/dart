@@ -99,6 +99,7 @@
 #include <utility>
 #include <vector>
 
+#include <cmath>
 #include <cstring>
 
 using namespace dart;
@@ -225,6 +226,107 @@ std::filesystem::path writeTempSdf(std::string_view text, std::string_view name)
   std::ofstream output(path);
   output << text;
   return path;
+}
+
+std::string bodyNodeName(const dynamics::BodyNode* bodyNode)
+{
+  return bodyNode ? bodyNode->getName() : "world";
+}
+
+void expectDoubleRoundTrips(double actual, double expected, double tolerance)
+{
+  if (std::isfinite(actual) && std::isfinite(expected)) {
+    EXPECT_NEAR(actual, expected, tolerance);
+  } else {
+    EXPECT_EQ(actual, expected);
+  }
+}
+
+void expectBodyInertiaRoundTrips(
+    const dynamics::BodyNode& bodyNode,
+    const dynamics::BodyNode& expected,
+    double tolerance)
+{
+  EXPECT_NEAR(bodyNode.getMass(), expected.getMass(), tolerance);
+  EXPECT_VECTOR_NEAR(bodyNode.getLocalCOM(), expected.getLocalCOM(), tolerance);
+  EXPECT_MATRIX_NEAR(
+      bodyNode.getInertia().getMoment(),
+      expected.getInertia().getMoment(),
+      tolerance);
+}
+
+void expectJointRoundTrips(
+    const dynamics::Joint& joint,
+    const dynamics::Joint& expected,
+    double tolerance)
+{
+  EXPECT_EQ(joint.getType(), expected.getType());
+  EXPECT_EQ(joint.getNumDofs(), expected.getNumDofs());
+  EXPECT_EQ(
+      bodyNodeName(joint.getParentBodyNode()),
+      bodyNodeName(expected.getParentBodyNode()));
+  EXPECT_EQ(
+      bodyNodeName(joint.getChildBodyNode()),
+      bodyNodeName(expected.getChildBodyNode()));
+  EXPECT_MATRIX_NEAR(
+      joint.getTransformFromParentBodyNode().matrix(),
+      expected.getTransformFromParentBodyNode().matrix(),
+      tolerance);
+  EXPECT_MATRIX_NEAR(
+      joint.getTransformFromChildBodyNode().matrix(),
+      expected.getTransformFromChildBodyNode().matrix(),
+      tolerance);
+
+  for (std::size_t i = 0; i < joint.getNumDofs(); ++i) {
+    SCOPED_TRACE(i);
+    expectDoubleRoundTrips(
+        joint.getPositionLowerLimit(i),
+        expected.getPositionLowerLimit(i),
+        tolerance);
+    expectDoubleRoundTrips(
+        joint.getPositionUpperLimit(i),
+        expected.getPositionUpperLimit(i),
+        tolerance);
+    expectDoubleRoundTrips(
+        joint.getVelocityLowerLimit(i),
+        expected.getVelocityLowerLimit(i),
+        tolerance);
+    expectDoubleRoundTrips(
+        joint.getVelocityUpperLimit(i),
+        expected.getVelocityUpperLimit(i),
+        tolerance);
+    expectDoubleRoundTrips(
+        joint.getForceLowerLimit(i), expected.getForceLowerLimit(i), tolerance);
+    expectDoubleRoundTrips(
+        joint.getForceUpperLimit(i), expected.getForceUpperLimit(i), tolerance);
+    expectDoubleRoundTrips(
+        joint.getDampingCoefficient(i),
+        expected.getDampingCoefficient(i),
+        tolerance);
+    expectDoubleRoundTrips(
+        joint.getCoulombFriction(i), expected.getCoulombFriction(i), tolerance);
+    expectDoubleRoundTrips(
+        joint.getRestPosition(i), expected.getRestPosition(i), tolerance);
+    expectDoubleRoundTrips(
+        joint.getSpringStiffness(i), expected.getSpringStiffness(i), tolerance);
+  }
+}
+
+template <class AspectT>
+void expectShapeNodePoseRoundTrips(
+    const dynamics::BodyNode& bodyNode,
+    const dynamics::BodyNode& expected,
+    std::size_t index,
+    double tolerance)
+{
+  const auto* shapeNode = bodyNode.getShapeNodeWith<AspectT>(index);
+  const auto* expectedShapeNode = expected.getShapeNodeWith<AspectT>(index);
+  ASSERT_NE(shapeNode, nullptr);
+  ASSERT_NE(expectedShapeNode, nullptr);
+  EXPECT_MATRIX_NEAR(
+      shapeNode->getRelativeTransform().matrix(),
+      expectedShapeNode->getRelativeTransform().matrix(),
+      tolerance);
 }
 
 sdf::ElementPtr getSdfChildElement(
@@ -938,6 +1040,122 @@ TEST(SdfWriter, RoundTripsConvertedSkelBoxFixtures)
         originalCollisionShapeNode->getRelativeTransform().matrix(),
         1e-12);
   }
+}
+
+//==============================================================================
+TEST(SdfWriter, RoundTripsExistingTwoLinkRevoluteFixture)
+{
+  const auto original = utils::SdfParser::readSkeleton(
+      common::Uri("dart://sample/sdf/test/two_link_revolute_model.sdf"));
+  ASSERT_NE(original, nullptr);
+  ASSERT_EQ(original->getNumBodyNodes(), 2u);
+  ASSERT_EQ(original->getNumJoints(), 2u);
+  const auto* originalBase = test::requireBodyNode(*original, "base");
+  const auto* originalLink = test::requireBodyNode(*original, "link");
+  ASSERT_NE(originalBase, nullptr);
+  ASSERT_NE(originalLink, nullptr);
+  const auto* originalRootJoint = originalBase->getParentJoint();
+  ASSERT_NE(originalRootJoint, nullptr);
+  const auto* originalHinge
+      = test::requireJoint<dynamics::RevoluteJoint>(*original, "hinge");
+  ASSERT_NE(originalHinge, nullptr);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  const auto path
+      = writeTempSdf(writeResult.value(), "existing_two_link_revolute");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+  const auto* base = test::requireBodyNode(*reparsed, "base");
+  const auto* link = test::requireBodyNode(*reparsed, "link");
+  ASSERT_NE(base, nullptr);
+  ASSERT_NE(link, nullptr);
+  expectBodyInertiaRoundTrips(*base, *originalBase, 1e-12);
+  expectBodyInertiaRoundTrips(*link, *originalLink, 1e-12);
+
+  const auto* rootJoint = base->getParentJoint();
+  ASSERT_NE(rootJoint, nullptr);
+  expectJointRoundTrips(*rootJoint, *originalRootJoint, 1e-12);
+
+  const auto* hinge
+      = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, "hinge");
+  ASSERT_NE(hinge, nullptr);
+  expectJointRoundTrips(*hinge, *originalHinge, 1e-12);
+  EXPECT_VECTOR_NEAR(hinge->getAxis(), originalHinge->getAxis(), 1e-12);
+
+  const auto* originalBaseVisualBox
+      = test::requireShape<dynamics::VisualAspect, dynamics::BoxShape>(
+          *originalBase, 0, 1);
+  const auto* baseVisualBox
+      = test::requireShape<dynamics::VisualAspect, dynamics::BoxShape>(
+          *base, 0, 1);
+  ASSERT_NE(originalBaseVisualBox, nullptr);
+  ASSERT_NE(baseVisualBox, nullptr);
+  EXPECT_VECTOR_NEAR(
+      baseVisualBox->getSize(), originalBaseVisualBox->getSize(), 1e-12);
+  expectShapeNodePoseRoundTrips<dynamics::VisualAspect>(
+      *base, *originalBase, 0, 1e-12);
+
+  const auto* originalBaseCollisionBox
+      = test::requireShape<dynamics::CollisionAspect, dynamics::BoxShape>(
+          *originalBase, 0, 1);
+  const auto* baseCollisionBox
+      = test::requireShape<dynamics::CollisionAspect, dynamics::BoxShape>(
+          *base, 0, 1);
+  ASSERT_NE(originalBaseCollisionBox, nullptr);
+  ASSERT_NE(baseCollisionBox, nullptr);
+  EXPECT_VECTOR_NEAR(
+      baseCollisionBox->getSize(), originalBaseCollisionBox->getSize(), 1e-12);
+  expectShapeNodePoseRoundTrips<dynamics::CollisionAspect>(
+      *base, *originalBase, 0, 1e-12);
+
+  const auto* originalLinkVisualCylinder
+      = test::requireShape<dynamics::VisualAspect, dynamics::CylinderShape>(
+          *originalLink, 0, 1);
+  const auto* linkVisualCylinder
+      = test::requireShape<dynamics::VisualAspect, dynamics::CylinderShape>(
+          *link, 0, 1);
+  ASSERT_NE(originalLinkVisualCylinder, nullptr);
+  ASSERT_NE(linkVisualCylinder, nullptr);
+  EXPECT_NEAR(
+      linkVisualCylinder->getRadius(),
+      originalLinkVisualCylinder->getRadius(),
+      1e-12);
+  EXPECT_NEAR(
+      linkVisualCylinder->getHeight(),
+      originalLinkVisualCylinder->getHeight(),
+      1e-12);
+  expectShapeNodePoseRoundTrips<dynamics::VisualAspect>(
+      *link, *originalLink, 0, 1e-12);
+
+  const auto* originalLinkCollisionCylinder
+      = test::requireShape<dynamics::CollisionAspect, dynamics::CylinderShape>(
+          *originalLink, 0, 1);
+  const auto* linkCollisionCylinder
+      = test::requireShape<dynamics::CollisionAspect, dynamics::CylinderShape>(
+          *link, 0, 1);
+  ASSERT_NE(originalLinkCollisionCylinder, nullptr);
+  ASSERT_NE(linkCollisionCylinder, nullptr);
+  EXPECT_NEAR(
+      linkCollisionCylinder->getRadius(),
+      originalLinkCollisionCylinder->getRadius(),
+      1e-12);
+  EXPECT_NEAR(
+      linkCollisionCylinder->getHeight(),
+      originalLinkCollisionCylinder->getHeight(),
+      1e-12);
+  expectShapeNodePoseRoundTrips<dynamics::CollisionAspect>(
+      *link, *originalLink, 0, 1e-12);
 }
 
 //==============================================================================

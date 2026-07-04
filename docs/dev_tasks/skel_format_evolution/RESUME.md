@@ -1581,6 +1581,40 @@ Changelog decision:
   is opened.
 - Follow-up: none until an implementation PR exists.
 
+Additional validation for native two-link revolute SDF fixture coverage:
+
+- Added `SdfWriter.RoundTripsExistingTwoLinkRevoluteFixture`, which loads
+  `dart://sample/sdf/test/two_link_revolute_model.sdf`, writes it through
+  `SdfParser::tryWriteSkeletonToString()`, reloads the emitted SDF, and
+  compares the re-parsed DART semantics against the original parsed skeleton.
+- The test covers a shipped SDF model with a generated root FreeJoint, a child
+  revolute joint, finite axis position/velocity/effort limits, body inertias,
+  and box/cylinder visual and collision geometry. The assertions stay at the
+  DART object and typed shape/joint level, avoiding XML-level SDF parsing.
+- Focused fixture test passed:
+  `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsExistingTwoLinkRevoluteFixture'`
+- Full writer target passed:
+  `pixi run run-cpp-target INTEGRATION_io_SdfWriter` (81 tests)
+- Boundary/lint/build gates passed:
+  `pixi run check-sdf-sdformat-boundary`; `pixi run lint`; `pixi run build`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Scope evidence: `CHANGELOG.md` DART 7 IO and Parsing SDF writer bullet
+  inspected; it already covers the conservative SDF writer, and this slice
+  adds fixture-level read/write/read verification without adding a new public
+  API or broadening the documented writer contract.
+- Decision: no additional changelog entry.
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: record as native two-link SDF fixture round-trip verification
+  if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
 ## Previous Resume Checkpoint (2026-07-03)
 
 Phase 2 is implemented on `feature/remove-skel-dart7-phase2` and awaiting PR
