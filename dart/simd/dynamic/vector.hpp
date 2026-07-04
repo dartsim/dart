@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simd/config.hpp>
+#include <dart/simd/detail/backend.hpp>
 #include <dart/simd/fwd.hpp>
 #include <dart/simd/memory.hpp>
 

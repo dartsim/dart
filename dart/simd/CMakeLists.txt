@@ -7,6 +7,7 @@ set(
   math.hpp
   memory.hpp
   simd.hpp
+  detail/backend.hpp
   # Scalar backend (always available)
   detail/scalar/vec.hpp
   detail/scalar/vec_mask.hpp

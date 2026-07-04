@@ -30,20 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <dart/simd/config.hpp>
-#include <dart/simd/detail/backend.hpp>
-#include <dart/simd/dynamic/matrix.hpp>
 #include <dart/simd/dynamic/vector.hpp>
-#include <dart/simd/eigen/interop.hpp>
-#include <dart/simd/fwd.hpp>
-#include <dart/simd/geometry/batch.hpp>
-#include <dart/simd/geometry/isometry3.hpp>
-#include <dart/simd/geometry/matrix3x3.hpp>
-#include <dart/simd/geometry/matrix4x4.hpp>
-#include <dart/simd/geometry/quaternion.hpp>
-#include <dart/simd/geometry/vector3.hpp>
-#include <dart/simd/geometry/vector4.hpp>
-#include <dart/simd/math.hpp>
-#include <dart/simd/memory.hpp>
+
+#include <gtest/gtest.h>
+
+TEST(SimdPublicHeaderDynamicVector, DirectInclude)
+{
+  dart::simd::DynamicVector<float> a{1.0f, 2.0f, 3.0f, 4.0f};
+  dart::simd::DynamicVector<float> b{2.0f, 3.0f, 4.0f, 5.0f};
+
+  EXPECT_FLOAT_EQ(a.dot(b), 40.0f);
+}

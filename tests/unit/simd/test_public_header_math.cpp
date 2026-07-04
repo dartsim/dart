@@ -30,20 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-
-#include <dart/simd/config.hpp>
-#include <dart/simd/detail/backend.hpp>
-#include <dart/simd/dynamic/matrix.hpp>
-#include <dart/simd/dynamic/vector.hpp>
-#include <dart/simd/eigen/interop.hpp>
-#include <dart/simd/fwd.hpp>
-#include <dart/simd/geometry/batch.hpp>
-#include <dart/simd/geometry/isometry3.hpp>
-#include <dart/simd/geometry/matrix3x3.hpp>
-#include <dart/simd/geometry/matrix4x4.hpp>
-#include <dart/simd/geometry/quaternion.hpp>
-#include <dart/simd/geometry/vector3.hpp>
-#include <dart/simd/geometry/vector4.hpp>
 #include <dart/simd/math.hpp>
-#include <dart/simd/memory.hpp>
+
+#include <gtest/gtest.h>
+
+TEST(SimdPublicHeaderMath, DirectInclude)
+{
+  auto input = dart::simd::Vec4f::broadcast(1.0f);
+  auto result = dart::simd::exp(input);
+
+  EXPECT_GT(result[0], 2.0f);
+}

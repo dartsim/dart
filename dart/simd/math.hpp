@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simd/config.hpp>
+#include <dart/simd/detail/backend.hpp>
 #include <dart/simd/detail/math/constants.hpp>
 #include <dart/simd/detail/math/exp_impl.hpp>
 #include <dart/simd/detail/math/log_impl.hpp>
