@@ -117,11 +117,6 @@ using ElementPtr = sdf::ElementPtr;
 namespace detail = dart::utils::SdfParser::detail;
 
 using detail::getElement;
-using detail::getValueDouble;
-using detail::getValueIsometry3dWithExtrinsicRotation;
-using detail::getValueUInt;
-using detail::getValueVector3d;
-using detail::getValueVector3i;
 using detail::hasAuthoredElement;
 using detail::hasElement;
 using detail::readGeometryShape;
@@ -148,6 +143,76 @@ Eigen::Isometry3d toEigenIsometry3(const gz::math::Pose3d& pose)
   transform.linear() = quaternion.toRotationMatrix();
 
   return transform;
+}
+
+template <typename T>
+T readDartExtensionValue(
+    const ElementPtr& parentElement,
+    std::string_view name,
+    const T& fallback,
+    std::string_view typeName)
+{
+  if (!parentElement || name.empty()) {
+    DART_WARN(
+        "[SdfParser] Failed to parse DART extension element <{}> under <{}> "
+        "as {}.",
+        name,
+        parentElement ? parentElement->GetName() : "unknown",
+        typeName);
+    return fallback;
+  }
+
+  sdf::Errors errors;
+  const auto [value, found]
+      = parentElement->Get<T>(errors, std::string(name), fallback);
+  if (found && errors.empty()) {
+    return value;
+  }
+
+  DART_WARN(
+      "[SdfParser] Failed to parse DART extension element <{}> under <{}> as "
+      "{}.",
+      name,
+      parentElement ? parentElement->GetName() : "unknown",
+      typeName);
+  return fallback;
+}
+
+double readDartExtensionDouble(
+    const ElementPtr& parentElement, std::string_view name)
+{
+  return readDartExtensionValue(parentElement, name, 0.0, "double");
+}
+
+unsigned int readDartExtensionUInt(
+    const ElementPtr& parentElement, std::string_view name)
+{
+  return readDartExtensionValue(parentElement, name, 0u, "unsigned int");
+}
+
+Eigen::Vector3d readDartExtensionVector3d(
+    const ElementPtr& parentElement, std::string_view name)
+{
+  return toEigenVector3(readDartExtensionValue(
+      parentElement, name, gz::math::Vector3d(), "vector3"));
+}
+
+Eigen::Vector3i readDartExtensionVector3i(
+    const ElementPtr& parentElement, std::string_view name)
+{
+  const gz::math::Vector3d vec3 = readDartExtensionValue(
+      parentElement, name, gz::math::Vector3d(), "vector3i");
+  return Eigen::Vector3i(
+      static_cast<int>(vec3.X()),
+      static_cast<int>(vec3.Y()),
+      static_cast<int>(vec3.Z()));
+}
+
+Eigen::Isometry3d readDartExtensionPose(
+    const ElementPtr& parentElement, std::string_view name)
+{
+  return toEigenIsometry3(
+      readDartExtensionValue(parentElement, name, gz::math::Pose3d(), "pose"));
 }
 
 common::ResourceRetrieverPtr getRetriever(
@@ -1132,43 +1197,43 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
         = getElement(softBodyNodeElement, "soft_shape");
 
     // mass
-    double totalMass = getValueDouble(softShapeEle, "total_mass");
+    double totalMass = readDartExtensionDouble(softShapeEle, "total_mass");
 
     // pose
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
     if (hasElement(softShapeEle, "pose")) {
-      T = getValueIsometry3dWithExtrinsicRotation(softShapeEle, "pose");
+      T = readDartExtensionPose(softShapeEle, "pose");
     }
 
     // geometry
     const ElementPtr& geometryEle = getElement(softShapeEle, "geometry");
     if (hasElement(geometryEle, "sphere")) {
       const ElementPtr& sphereEle = getElement(geometryEle, "sphere");
-      const auto radius = getValueDouble(sphereEle, "radius");
-      const auto nSlices = getValueUInt(sphereEle, "num_slices");
-      const auto nStacks = getValueUInt(sphereEle, "num_stacks");
+      const auto radius = readDartExtensionDouble(sphereEle, "radius");
+      const auto nSlices = readDartExtensionUInt(sphereEle, "num_slices");
+      const auto nStacks = readDartExtensionUInt(sphereEle, "num_stacks");
       softProperties = dynamics::SoftBodyNodeHelper::makeSphereProperties(
           radius, nSlices, nStacks, totalMass);
     } else if (hasElement(geometryEle, "box")) {
       const ElementPtr& boxEle = getElement(geometryEle, "box");
-      Eigen::Vector3d size = getValueVector3d(boxEle, "size");
-      Eigen::Vector3i frags = getValueVector3i(boxEle, "frags");
+      Eigen::Vector3d size = readDartExtensionVector3d(boxEle, "size");
+      Eigen::Vector3i frags = readDartExtensionVector3i(boxEle, "frags");
       softProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
           size, T, frags, totalMass);
     } else if (hasElement(geometryEle, "ellipsoid")) {
       const ElementPtr& ellipsoidEle = getElement(geometryEle, "ellipsoid");
-      Eigen::Vector3d size = getValueVector3d(ellipsoidEle, "size");
-      const auto nSlices = getValueUInt(ellipsoidEle, "num_slices");
-      const auto nStacks = getValueUInt(ellipsoidEle, "num_stacks");
+      Eigen::Vector3d size = readDartExtensionVector3d(ellipsoidEle, "size");
+      const auto nSlices = readDartExtensionUInt(ellipsoidEle, "num_slices");
+      const auto nStacks = readDartExtensionUInt(ellipsoidEle, "num_stacks");
       softProperties = dynamics::SoftBodyNodeHelper::makeEllipsoidProperties(
           size, nSlices, nStacks, totalMass);
     } else if (hasElement(geometryEle, "cylinder")) {
       const ElementPtr& ellipsoidEle = getElement(geometryEle, "cylinder");
-      double radius = getValueDouble(ellipsoidEle, "radius");
-      double height = getValueDouble(ellipsoidEle, "height");
-      double nSlices = getValueDouble(ellipsoidEle, "num_slices");
-      double nStacks = getValueDouble(ellipsoidEle, "num_stacks");
-      double nRings = getValueDouble(ellipsoidEle, "num_rings");
+      double radius = readDartExtensionDouble(ellipsoidEle, "radius");
+      double height = readDartExtensionDouble(ellipsoidEle, "height");
+      double nSlices = readDartExtensionDouble(ellipsoidEle, "num_slices");
+      double nStacks = readDartExtensionDouble(ellipsoidEle, "num_stacks");
+      double nRings = readDartExtensionDouble(ellipsoidEle, "num_rings");
       softProperties = dynamics::SoftBodyNodeHelper::makeCylinderProperties(
           radius, height, nSlices, nStacks, nRings, totalMass);
     } else {
@@ -1177,17 +1242,17 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
 
     // kv
     if (hasElement(softShapeEle, "kv")) {
-      softProperties.mKv = getValueDouble(softShapeEle, "kv");
+      softProperties.mKv = readDartExtensionDouble(softShapeEle, "kv");
     }
 
     // ke
     if (hasElement(softShapeEle, "ke")) {
-      softProperties.mKe = getValueDouble(softShapeEle, "ke");
+      softProperties.mKe = readDartExtensionDouble(softShapeEle, "ke");
     }
 
     // damp
     if (hasElement(softShapeEle, "damp")) {
-      softProperties.mDampCoeff = getValueDouble(softShapeEle, "damp");
+      softProperties.mDampCoeff = readDartExtensionDouble(softShapeEle, "damp");
     }
   }
 

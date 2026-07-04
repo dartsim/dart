@@ -37,8 +37,6 @@
 
 #include <dart/utils/export.hpp>
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
 #include <sdf/sdf.hh>
 
 #include <string_view>
@@ -52,17 +50,6 @@ DART_UTILS_API bool hasAuthoredElement(
     const ElementPtr& parent, std::string_view name);
 DART_UTILS_API ElementPtr
 getElement(const ElementPtr& parent, std::string_view name);
-
-DART_UTILS_API unsigned int getValueUInt(
-    const ElementPtr& parentElement, std::string_view name);
-DART_UTILS_API double getValueDouble(
-    const ElementPtr& parentElement, std::string_view name);
-DART_UTILS_API Eigen::Vector3d getValueVector3d(
-    const ElementPtr& parentElement, std::string_view name);
-DART_UTILS_API Eigen::Vector3i getValueVector3i(
-    const ElementPtr& parentElement, std::string_view name);
-DART_UTILS_API Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
-    const ElementPtr& parentElement, std::string_view name);
 
 } // namespace dart::utils::SdfParser::detail
 

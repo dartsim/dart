@@ -78,12 +78,12 @@
       `Element::GetExplicitlySetInFile()`, and the legacy boolean value itself
       uses sdformat typed element access.
       The SDF-specific helper layer no longer exposes generic XML attribute,
-      string, boolean, vector2/vectorX, or child-enumerator APIs; retained
-      helpers are limited to the small extension/presence bridge still used by
-      the parser. That bridge now uses non-mutating sdformat `FindElement`
-      lookup and explicit-authored flags for standard SDF presence checks, and
-      remaining extension values are converted through sdformat typed parameters
-      rather than XML text reparsing.
+      string, boolean, vector2/vectorX, child-enumerator, scalar, vector, or
+      pose parser APIs; retained helpers are limited to presence and lookup.
+      That bridge now uses non-mutating sdformat child traversal and
+      explicit-authored flags for standard SDF presence checks, and remaining
+      DART-specific soft-body extension values are converted locally through
+      sdformat typed `Element::Get<T>` calls rather than XML text reparsing.
       Writer-side preservation of disabled link gravity and SDF 1.10+
       `<screw_thread_pitch>` now derives names and values from typed
       `sdf::Model` / `sdf::Link` / `sdf::Joint` DOM objects instead of reading
@@ -229,7 +229,7 @@ SKEL-YAML direction just because the prototype once existed.
   requires broader accepted-format writer APIs and round-trip tests that load a
   scene from each accepted format, write it back, and compare the re-parsed
   models. SDF helper cleanup is covered by `test_sdf_helpersNone`, which now
-  validates only the retained parser bridge instead of the removed generic XML
-  helper APIs, including non-mutating sdformat element lookup,
-  explicit-authored presence checks, and the removed SDF-specific boolean value
-  parser and XML text fallback parser.
+  validates only the retained presence/lookup bridge instead of the removed
+  generic XML helper APIs, including non-mutating sdformat child traversal,
+  explicit-authored presence checks, and the removed SDF-specific boolean,
+  scalar, vector, pose, and XML text fallback parsers.

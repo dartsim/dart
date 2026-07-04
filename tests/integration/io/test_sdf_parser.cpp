@@ -48,7 +48,6 @@
 #include "dart/dynamics/universal_joint.hpp"
 #include "dart/dynamics/weld_joint.hpp"
 #include "dart/io/read.hpp"
-#include "dart/utils/sdf/detail/sdf_helpers.hpp"
 #include "dart/utils/sdf/sdf_parser.hpp"
 
 #include <dart/all.hpp>

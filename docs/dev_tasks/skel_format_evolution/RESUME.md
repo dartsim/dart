@@ -99,18 +99,18 @@ remain only where DART preserves authored/default distinctions for existing
 diagnostics, reads DART-specific soft-body extension fields, or supports the
 legacy `use_parent_model_frame` presence check. Those standard SDF
 authored/default checks now use sdformat explicit-authored flags and
-non-mutating `FindElement` lookup instead of raw child-existence probing. The
+non-mutating direct child traversal instead of raw child-existence probing. The
 compatibility boolean value now uses sdformat typed element access rather than
 DART's SDF helper layer.
 The SDF detail helper API has been narrowed to that remaining bridge: generic
 XML attribute reads, string reads, vector2/vectorX parsing, child enumeration,
 boolean value parsing, and direct helper tests for those deleted APIs are gone.
-Retained helpers cover only element presence, child lookup, numeric scalar
-reads, vector3/vector3i reads, and pose reads for the DART-specific
-extension/presence paths; standard presence checks use
-`GetExplicitlySetInFile()`, lookup uses `FindElement`, and remaining extension
-value conversion goes through sdformat typed `Param::Get<T>` instead of
-serializing XML back to text and reparsing it in DART.
+Retained helpers now cover only element presence and child lookup; standard
+presence checks use `GetExplicitlySetInFile()`, lookup walks authored child
+elements directly, and
+DART-specific soft-body extension values are converted locally through
+sdformat typed `Element::Get<T>` calls instead of shared DART-side scalar,
+vector, or pose parsers.
 The SDF writer's post-serialization preservation path now uses typed
 `sdf::Model`, `sdf::Link`, and `sdf::Joint` DOM values for link/joint names,
 gravity modes, and screw pitch values. It still patches sdformat's element tree
@@ -342,6 +342,14 @@ Additional validation for direct sdformat bounce typed access:
 - `pixi run lint`
 - `pixi run build`
 
+Additional validation for removing SDF helper value parsers:
+
+- `pixi run run-cpp-target test_sdf_helpersNone`
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run lint`
+- `pixi run build`
+
 Changelog decision:
 
 - Mode: draft
@@ -434,7 +442,9 @@ Changelog decision:
   includes visual shadow/hidden/transparency state. No additional separate
   entry is needed for direct sdformat bounce typed access because it is an
   internal parser hardening for the already-covered collision-surface bounce
-  restitution field.
+  restitution field. No additional separate entry is needed for removing SDF
+  helper value parsers because it is an internal helper-surface narrowing that
+  keeps remaining DART extension parsing on sdformat typed element access.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

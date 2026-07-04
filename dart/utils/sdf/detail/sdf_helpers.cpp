@@ -32,19 +32,7 @@
 
 #include "dart/utils/sdf/detail/sdf_helpers.hpp"
 
-#include <dart/common/logging.hpp>
-
 #include <string>
-
-#if __has_include(<gz/math/Pose3.hh>)
-  #include <gz/math/Pose3.hh>
-  #include <gz/math/Quaternion.hh>
-  #include <gz/math/Vector3.hh>
-#else
-  #include <gz/math9/gz/math/Pose3.hh>
-  #include <gz/math9/gz/math/Quaternion.hh>
-  #include <gz/math9/gz/math/Vector3.hh>
-#endif
 
 namespace dart::utils::SdfParser::detail {
 
@@ -57,45 +45,16 @@ sdf::ElementPtr findChildElement(
     return nullptr;
   }
 
-  return parentElement->FindElement(std::string(name));
-}
-
-sdf::ParamPtr getChildValueParam(
-    const ElementPtr& parentElement, std::string_view name)
-{
-  const auto child = findChildElement(parentElement, name);
-  if (!child) {
-    return nullptr;
+  const std::string nameString(name);
+  ElementPtr childElement = parentElement->GetFirstElement();
+  while (childElement) {
+    if (childElement->GetName() == nameString) {
+      return childElement;
+    }
+    childElement = childElement->GetNextElement();
   }
 
-  return child->GetValue();
-}
-
-template <typename T>
-bool readParamValue(const sdf::ParamPtr& param, T& value)
-{
-  if (!param) {
-    return false;
-  }
-
-  sdf::Errors errors;
-  return param->Get(value, errors) && errors.empty();
-}
-
-Eigen::Vector3d toEigen(const gz::math::Vector3d& vec)
-{
-  return Eigen::Vector3d(vec.X(), vec.Y(), vec.Z());
-}
-
-Eigen::Isometry3d poseToIsometry(const gz::math::Pose3d& pose)
-{
-  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  transform.translation()
-      = Eigen::Vector3d(pose.Pos().X(), pose.Pos().Y(), pose.Pos().Z());
-  Eigen::Quaterniond quat(
-      pose.Rot().W(), pose.Rot().X(), pose.Rot().Y(), pose.Rot().Z());
-  transform.linear() = quat.toRotationMatrix();
-  return transform;
+  return nullptr;
 }
 
 } // namespace
@@ -114,99 +73,6 @@ bool hasAuthoredElement(const ElementPtr& parent, std::string_view name)
 ElementPtr getElement(const ElementPtr& parent, std::string_view name)
 {
   return findChildElement(parent, name);
-}
-
-unsigned int getValueUInt(
-    const ElementPtr& parentElement, std::string_view name)
-{
-  unsigned int value = 0u;
-  if (readParamValue(getChildValueParam(parentElement, name), value)) {
-    return value;
-  }
-
-  DART_WARN(
-      "[SdfParser] Failed to parse element <{}> under <{}> as unsigned int.",
-      name,
-      parentElement ? parentElement->GetName() : "unknown");
-  return 0u;
-}
-
-double getValueDouble(const ElementPtr& parentElement, std::string_view name)
-{
-  double value = 0.0;
-  if (readParamValue(getChildValueParam(parentElement, name), value)) {
-    return value;
-  }
-
-  DART_WARN(
-      "[SdfParser] Failed to parse element <{}> under <{}> as double.",
-      name,
-      parentElement ? parentElement->GetName() : "unknown");
-  return 0.0;
-}
-
-Eigen::Vector3d getValueVector3d(
-    const ElementPtr& parentElement, std::string_view name)
-{
-  Eigen::Vector3d result = Eigen::Vector3d::Zero();
-  const auto param = getChildValueParam(parentElement, name);
-  if (!param) {
-    return result;
-  }
-
-  gz::math::Vector3d vec3;
-  if (readParamValue(param, vec3)) {
-    return toEigen(vec3);
-  }
-
-  DART_WARN(
-      "[SdfParser] Failed to parse element <{}> under <{}> as vector3.",
-      name,
-      parentElement ? parentElement->GetName() : "unknown");
-  return result;
-}
-
-Eigen::Vector3i getValueVector3i(
-    const ElementPtr& parentElement, std::string_view name)
-{
-  Eigen::Vector3i result = Eigen::Vector3i::Zero();
-  const auto param = getChildValueParam(parentElement, name);
-  if (!param) {
-    return result;
-  }
-
-  gz::math::Vector3d vec3;
-  if (readParamValue(param, vec3)) {
-    result << static_cast<int>(vec3.X()), static_cast<int>(vec3.Y()),
-        static_cast<int>(vec3.Z());
-    return result;
-  }
-
-  DART_WARN(
-      "[SdfParser] Failed to parse element <{}> under <{}> as vector3i.",
-      name,
-      parentElement ? parentElement->GetName() : "unknown");
-  return result;
-}
-
-Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
-    const ElementPtr& parentElement, std::string_view name)
-{
-  const auto param = getChildValueParam(parentElement, name);
-  if (!param) {
-    return Eigen::Isometry3d::Identity();
-  }
-
-  gz::math::Pose3d pose;
-  if (readParamValue(param, pose)) {
-    return poseToIsometry(pose);
-  }
-
-  DART_WARN(
-      "[SdfParser] Failed to parse element <{}> under <{}> as pose.",
-      name,
-      parentElement ? parentElement->GetName() : "unknown");
-  return Eigen::Isometry3d::Identity();
 }
 
 } // namespace dart::utils::SdfParser::detail
