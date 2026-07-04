@@ -46,6 +46,7 @@
 // more central interactive behaviors -- are preserved with full parity.
 
 #include "Scenes.hpp"
+#include "ZUp.hpp"
 
 #include <dart/gui/osg/osg.hpp>
 
@@ -133,42 +134,6 @@ void updateContactForces(
   hideContactForcesFrom(state, contacts.size());
 }
 
-//==============================================================================
-// cubes.skel is authored Y-up (ground normal +Y; the .skel file itself embeds
-// <gravity>0 -9.81 0</gravity>), which is why the original examples/rigid_cubes
-// set gravity to (0, -9.81, 0) instead of reorienting the model. dart-demos
-// uses one Z-up convention across every scene (matching DemoScene::cameraHome
-// eye/center/up elsewhere in this file), so the model is reoriented here
-// instead: premultiply every root joint's transform-from-parent by
-// RotX(+90deg) (+Y -> +Z), then set gravity along -Z. Because the geometry and
-// gravity are rotated by the same rigid transform, every joint's generalized
-// coordinates evolve exactly as in the original Y-up world -- only the
-// display frame changes. Ported from DART 7's `reorientWorldToZUp` helper
-// (examples/demos/scenes/z_up.hpp at
-// 1a5469960c2703accb2762e03fe8a6bb1156dc08).
-void reorientWorldToZUp(const dart::simulation::WorldPtr& world)
-{
-  Eigen::Isometry3d rotation = Eigen::Isometry3d::Identity();
-  // clang-format off
-  rotation.linear() << 1.0, 0.0,  0.0,
-                       0.0, 0.0, -1.0,
-                       0.0, 1.0,  0.0;
-  // clang-format on
-
-  for (std::size_t si = 0; si < world->getNumSkeletons(); ++si) {
-    const auto& skeleton = world->getSkeleton(si);
-    for (std::size_t ji = 0; ji < skeleton->getNumJoints(); ++ji) {
-      auto* joint = skeleton->getJoint(ji);
-      if (joint->getParentBodyNode() != nullptr)
-        continue; // only root joints connect to the world frame
-      joint->setTransformFromParentBodyNode(
-          rotation * joint->getTransformFromParentBodyNode());
-    }
-  }
-
-  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
-}
-
 } // namespace
 
 //==============================================================================
@@ -193,9 +158,12 @@ DemoScene makeRigidCubesScene()
 
     DemoSceneSetup setup;
     setup.world = world;
+    // cubes.skel is a compact scene (a 2.5x2.5 ground plate, cubes 0.05-0.1m
+    // across); the original example's eye(5,5,5) leaves the stack a tiny,
+    // distant speck. Frame it tightly around the stack instead.
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(5.0, 5.0, 5.0),
-        ::osg::Vec3d(0.0, 0.0, 0.0),
+        ::osg::Vec3d(1.1, 1.1, 0.55),
+        ::osg::Vec3d(0.0, 0.0, -0.3),
         ::osg::Vec3d(0.0, 0.0, 1.0)};
 
     setup.preStep = [world, state] {

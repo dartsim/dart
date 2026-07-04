@@ -41,6 +41,10 @@ namespace dart_demos {
 /// target, ported from examples/empty.
 [[nodiscard]] DemoScene makeEmptyScene();
 
+/// Visualization > simple_frames: nested SimpleFrames with ellipsoid markers
+/// and an arrow shape, ported from examples/simple_frames.
+[[nodiscard]] DemoScene makeSimpleFramesScene();
+
 /// Rigid Body > boxes: a 5x5x5 grid of boxes dropped onto a ground plane,
 /// ported from examples/boxes.
 [[nodiscard]] DemoScene makeBoxesScene();
@@ -49,6 +53,38 @@ namespace dart_demos {
 /// impulse forces, playback, and contact-force visualization, ported from
 /// examples/rigid_cubes.
 [[nodiscard]] DemoScene makeRigidCubesScene();
+
+/// Rigid Body > rigid_chain: a damped articulated chain loaded from a
+/// skeleton file, ported from examples/rigid_chain.
+[[nodiscard]] DemoScene makeRigidChainScene();
+
+/// Rigid Body > add_delete_skels: spawn and delete dynamic cubes at runtime,
+/// ported from examples/add_delete_skels.
+[[nodiscard]] DemoScene makeAddDeleteSkelsScene();
+
+/// Rigid Body > simulation_event_handler: sensor markers, force/torque
+/// arrows, and body selection, ported from examples/simulation_event_handler.
+[[nodiscard]] DemoScene makeSimulationEventHandlerScene();
+
+/// Rigid Body > rigid_shapes: spawn assorted rigid shapes onto a ground
+/// plane, ported from examples/rigid_shapes.
+[[nodiscard]] DemoScene makeRigidShapesScene();
+
+/// Rigid Body > sleeping: automatic body deactivation across four
+/// independent box-stack solver islands, ported from examples/sleeping.
+[[nodiscard]] DemoScene makeSleepingScene();
+
+/// Constraints & Joints > hardcoded_design: a hand-built revolute chain
+/// driven from the keyboard, ported from examples/hardcoded_design.
+[[nodiscard]] DemoScene makeHardcodedDesignScene();
+
+/// Constraints & Joints > rigid_loop: a chain closed into a loop with a
+/// ball-joint constraint, ported from examples/rigid_loop.
+[[nodiscard]] DemoScene makeRigidLoopScene();
+
+/// Constraints & Joints > box_stacking: stacked boxes comparing Dantzig and
+/// PGS LCP solvers, ported from examples/box_stacking.
+[[nodiscard]] DemoScene makeBoxStackingScene();
 
 } // namespace dart_demos
 

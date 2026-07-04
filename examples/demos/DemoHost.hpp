@@ -240,6 +240,7 @@ private:
   bool mGravityEnabled = true;
   Eigen::Vector3d mSavedGravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   float mTargetRtf = 1.0f;
+  float mTimeStep = 0.001f;
 
   double mGuiScale;
   bool mViewerConfigured = false;

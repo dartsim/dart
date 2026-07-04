@@ -48,7 +48,7 @@ DemoScene makeEmptyScene()
 {
   DemoScene scene;
   scene.id = "empty";
-  scene.title = "Empty World";
+  scene.title = "Empty Scaffold";
   scene.category = "Getting Started";
   scene.summary
       = "A minimal empty world with a draggable InteractiveFrame gizmo.";

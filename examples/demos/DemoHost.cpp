@@ -467,6 +467,11 @@ void DemoHost::installScene(const DemoScene& scene, DemoSceneSetup setup)
   mTargetRtf = 1.0f;
   mWorldNode->setTargetRealTimeFactor(mTargetRtf);
 
+  // Re-read the new world's timestep so the toolbar's Timestep control reflects
+  // the active scene (each scene factory sets its own; e.g. the chain scenes
+  // use 1/2000 s while most others use 1/1000 s).
+  mTimeStep = static_cast<float>(mCurrentWorld->getTimeStep());
+
   mGravityEnabled = mCurrentWorld->getGravity().norm() > 1e-8;
   mSavedGravity = mGravityEnabled ? mCurrentWorld->getGravity()
                                   : Eigen::Vector3d(0.0, 0.0, -9.81);
@@ -762,6 +767,23 @@ bool DemoHost::handleKey(int key)
       return true;
     }
   }
+
+  // Case-insensitive fallback: try the opposite-case alphabetic key so a scene
+  // that binds 'q' still responds to a Shift-held 'Q' (and vice versa). Only
+  // ASCII letters are folded; special keys (arrows, Tab, ...) carry large
+  // osgGA KeySymbol codes and are left untouched.
+  if (key >= 0 && key <= 255 && std::isalpha(static_cast<unsigned char>(key))) {
+    const int lower = std::tolower(static_cast<unsigned char>(key));
+    const int alt = (key == lower)
+                        ? std::toupper(static_cast<unsigned char>(key))
+                        : lower;
+    for (auto& action : mCurrentKeyActions) {
+      if (action.key == alt) {
+        invokeKeyAction(action);
+        return true;
+      }
+    }
+  }
   return false;
 }
 
@@ -842,7 +864,14 @@ void DemoHost::renderToolbar()
     ImGui::TextUnformatted("RTF --");
 
   ImGui::SetNextItemWidth(220.0f * static_cast<float>(mGuiScale));
-  if (ImGui::SliderFloat("Target RTF", &mTargetRtf, 0.1f, 4.0f, "%.2fx")) {
+  if (ImGui::SliderFloat(
+          "Target RTF",
+          &mTargetRtf,
+          0.1f,
+          4.0f,
+          "%.2fx",
+          ImGuiSliderFlags_AlwaysClamp)
+      && std::isfinite(mTargetRtf)) {
     mTargetRtf = std::clamp(mTargetRtf, 0.1f, 4.0f);
     if (mWorldNode)
       mWorldNode->setTargetRealTimeFactor(mTargetRtf);
@@ -855,6 +884,25 @@ void DemoHost::renderToolbar()
       mSavedGravity = mCurrentWorld->getGravity();
       mCurrentWorld->setGravity(Eigen::Vector3d::Zero());
     }
+  }
+
+  // Timestep control. Logarithmic so the 1e-5..1e-2 s range is usable; applied
+  // directly to the active world (the same frame-loop thread ImGui renders on,
+  // matching the Gravity/Target RTF writes above). NaN input is rejected by
+  // keeping the previous value.
+  ImGui::SameLine();
+  ImGui::SetNextItemWidth(200.0f * static_cast<float>(mGuiScale));
+  if (ImGui::SliderFloat(
+          "Timestep",
+          &mTimeStep,
+          1e-5f,
+          1e-2f,
+          "%.5f s",
+          ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_Logarithmic)
+      && std::isfinite(mTimeStep)) {
+    mTimeStep = std::clamp(mTimeStep, 1e-5f, 1e-2f);
+    if (mCurrentWorld)
+      mCurrentWorld->setTimeStep(mTimeStep);
   }
 }
 

@@ -44,8 +44,17 @@ std::vector<DemoScene> makeDemoScenes()
   // docs/dev_tasks/dart6_consolidated_demos/PLAN.md.
   std::vector<DemoScene> scenes;
   scenes.push_back(makeEmptyScene());
+  scenes.push_back(makeSimpleFramesScene());
   scenes.push_back(makeBoxesScene());
   scenes.push_back(makeRigidCubesScene());
+  scenes.push_back(makeRigidChainScene());
+  scenes.push_back(makeAddDeleteSkelsScene());
+  scenes.push_back(makeSimulationEventHandlerScene());
+  scenes.push_back(makeRigidShapesScene());
+  scenes.push_back(makeSleepingScene());
+  scenes.push_back(makeHardcodedDesignScene());
+  scenes.push_back(makeRigidLoopScene());
+  scenes.push_back(makeBoxStackingScene());
   return scenes;
 }
 
