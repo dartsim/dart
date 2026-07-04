@@ -233,11 +233,13 @@ IMPLEMENTED_FIXTURE_ROWS = {
         "notes_or_gap": (
             "Covered by DART-owned two-wall tunnel runtime coverage for the 3D "
             "unit-test fixture mechanism. The three-wall, four-wall, and 8K "
-            "tunnel rows remain planned: at their tighter 0.1 mm clearance the "
-            "conservative curved-CCD line search limits each step to about the "
-            "separation distance, so a fast cube is arrested rather than "
-            "traversing, and the dense 8K walls are too slow for a unit test "
-            "pending dense-contact performance work."
+            "tunnel rows remain planned: at their tighter 0.1 mm clearance "
+            "DART's lagged-friction stiction freezes the fast cube (A/B "
+            "evidence: default friction ~3 mm travel with 12 active friction "
+            "constraints vs frictionIterations=0 ~1.1 m intersection-free "
+            "traversal), not the conservative curved-CCD line search; and the "
+            "dense 8K walls are too slow for a unit test pending dense-contact "
+            "performance work."
         ),
     },
     "fixtures/3D/unit-tests/erleben/cliff-edges.json": {

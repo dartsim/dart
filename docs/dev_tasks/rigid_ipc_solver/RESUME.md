@@ -30,14 +30,21 @@ Delivered a bounded Phase 3/6 runtime-manifest slice:
 - Deferred the three-wall, four-wall, and 8K tunnel rows with evidence. A pre-PR
   adversarial review flagged that a bare `> startX` progress assertion could pass
   a frozen cube; adding a `startX + 0.1` margin then EXPOSED that at the faithful
-  0.1 mm clearance of `3-walls.json`/`4-walls.json` the conservative curved-CCD
-  line search limits each step to about the separation distance, so the cube is
-  arrested (intersection-free but only ~3 mm / ~56 mm of travel) rather than
-  traversing. Loosening the gap would be an overclaim (their fixtures' defining
-  feature is the 0.1 mm tolerance), so those rows stay planned as a
-  conservative-CCD/performance gap. The 8K variant additionally holds active
-  contact against two 8192-triangle walls every step (~minutes/step), too slow
-  for a unit test -- tied to the dense-contact performance work in
+  0.1 mm clearance of `3-walls.json`/`4-walls.json` the fast cube is arrested
+  (intersection-free but only ~3 mm / ~56 mm of travel) rather than traversing.
+  A follow-up A/B diagnostic (3-walls, 100 m/s, 6 steps) pinned the mechanism:
+  with default lagged friction the cube freezes after the first partial step
+  (~3 mm total, 12 active friction constraints); with `frictionIterations=0` it
+  traverses ~1.1 m intersection-free. So the arrest is DART lagged-friction
+  stiction at the strong tight-clearance barrier normal forces -- NOT the
+  conservative curved-CCD line search (which only caps each step to ~0.18 m at
+  that speed, still enough to traverse). An earlier session note mis-attributed
+  this to CCD step-limiting; corrected here and in README/manifest. Loosening the
+  gap or disabling friction would be an overclaim (the fixtures use friction and
+  the 0.1 mm tolerance is their defining feature), so those rows stay planned as
+  a tight-clearance friction-robustness gap. The 8K variant additionally holds
+  active contact against two 8192-triangle walls every step (~minutes/step), too
+  slow for a unit test -- tied to the dense-contact performance work in
   `benchmarks.md`.
 
 Environment note (this checkout): plain `pixi run ninja ...` compiles but fails
