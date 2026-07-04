@@ -224,6 +224,18 @@
     `Icosphere::computeIcosahedron()` by keeping the triangle table local:
     [#3130](https://github.com/dartsim/dart/pull/3130)
 
+* Math
+
+  * Backport the header-only `dart/simd` SIMD abstraction module from DART 7,
+    adapted to C++17. It provides `dart::simd::Vec`/`VecMask` types with
+    compile-time backend dispatch (SSE4.2, AVX, AVX2, AVX-512, NEON, SVE, and
+    a portable scalar fallback), vectorized transcendental math kernels,
+    SIMD-friendly geometry and SoA batch types, aligned-memory helpers, and
+    Eigen interop. The module is a pure addition (new installed
+    `include/dart/simd` headers plus a build-tree-only `dart-simd` INTERFACE
+    target); no existing headers, components, or compile flags change:
+    [#2490](https://github.com/dartsim/dart/pull/2490)
+
 * Simulation
 
   * Added `dart::simulation::WorldConfig`, the `CollisionDetectorType` enum,
