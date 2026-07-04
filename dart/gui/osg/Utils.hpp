@@ -38,9 +38,16 @@
 #include <osg/Matrix>
 
 #include <iosfwd>
+#include <memory>
 #include <string>
 
+namespace dart::simulation {
+class World;
+} // namespace dart::simulation
+
 namespace dart::gui::osg {
+
+class Viewer;
 
 struct GuiScaleOptions
 {
@@ -152,6 +159,13 @@ int scaleWindowExtent(int extent, double scale);
 
 /// Applies common ImGui style and font scaling.
 void applyImGuiScale(double scale, double* appliedScale = nullptr);
+
+/// Computes a +Z-up home pose that frames the world's mobile bodies from
+/// above at roughly 30 degrees and applies it to the viewer's camera and
+/// camera manipulator. The pose stays above the ground plane even when stray
+/// bodies fall far below it, so the view never ends up under the scene.
+void applyDefaultCameraPose(
+    Viewer& viewer, const std::shared_ptr<simulation::World>& world);
 
 } // namespace dart::gui::osg
 
