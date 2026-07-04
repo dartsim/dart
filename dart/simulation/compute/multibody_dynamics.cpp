@@ -2207,6 +2207,34 @@ void enforceMultibodyVelocityLimits(
 }
 
 //==============================================================================
+void projectLockedMultibodyVelocityInto(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    Eigen::VectorXd& nextVelocity)
+{
+  Eigen::Index velocityOffset = 0;
+  for (const auto linkEntity : structure.links) {
+    const auto& link = registry.get<comps::LinkModel>(linkEntity);
+    if (link.parentJoint == entt::null) {
+      continue;
+    }
+
+    const auto& jointModel = registry.get<comps::JointModel>(link.parentJoint);
+    const auto dof = static_cast<Eigen::Index>(jointModel.getDOF());
+    if (dof == 0) {
+      continue;
+    }
+
+    const auto& jointActuation
+        = registry.get<comps::JointActuation>(link.parentJoint);
+    if (jointActuation.actuatorType == comps::ActuatorType::Locked) {
+      nextVelocity.segment(velocityOffset, dof).setZero();
+    }
+    velocityOffset += dof;
+  }
+}
+
+//==============================================================================
 template <typename LinkContactVector>
 void collectMultibodyLinkContactsInto(
     detail::WorldRegistry& registry,
@@ -2337,6 +2365,7 @@ void simulateMultibody(
       linkContacts,
       scratch);
   enforceMultibodyVelocityLimits(registry, structure, scratch.nextVelocity);
+  projectLockedMultibodyVelocityInto(registry, structure, scratch.nextVelocity);
   integrateMultibodyPositions(
       registry, structure, scratch.nextVelocity, timeStep);
 }
@@ -3702,6 +3731,7 @@ void MultibodyPositionStage::execute(
     }
 
     enforceMultibodyVelocityLimits(registry, structure, *nextVelocity);
+    projectLockedMultibodyVelocityInto(registry, structure, *nextVelocity);
     integrateMultibodyPositions(registry, structure, *nextVelocity, timeStep);
 
     if (auto* pendingVelocity

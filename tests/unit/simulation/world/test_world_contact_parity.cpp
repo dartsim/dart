@@ -404,6 +404,12 @@ struct LockedChainRun
   double proximalPosition = 0.0;
 };
 
+struct LockedContactRun
+{
+  double position = 0.0;
+  double velocity = 0.0;
+};
+
 static LockedChainRun runProximalHeldChain(ProximalHold hold)
 {
   sx::World world;
@@ -463,6 +469,54 @@ static LockedChainRun runProximalHeldChain(ProximalHold hold)
       .distalPosition = distal.getPosition()[0],
       .distalVelocity = distal.getVelocity()[0],
       .proximalPosition = proximal.getPosition()[0],
+  };
+}
+
+static LockedContactRun runLockedLinkContact()
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.001);
+
+  sx::RigidBodyOptions groundOpts;
+  groundOpts.isStatic = true;
+  groundOpts.position = Eigen::Vector3d(0.0, 0.0, -0.05);
+  auto ground = world.addRigidBody("ground", groundOpts);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.05)));
+  ground.setFriction(0.0);
+
+  auto robot = world.addMultibody("locked_contact");
+  auto base = robot.addLink("base");
+
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(0.4, 0.0, 0.03);
+
+  auto link = robot.addLink(
+      "link",
+      base,
+      sx::JointSpec{
+          .name = "hinge",
+          .type = sx::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitY(),
+          .transformFromParent = offset,
+      });
+  link.setMass(0.5);
+  link.setInertia(Eigen::Vector3d(0.1, 0.1, 0.1).asDiagonal());
+  link.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.2, 0.2, 0.06)));
+
+  auto joint = link.getParentJoint();
+  const double initialAngle = 0.25;
+  joint.setPosition(Eigen::VectorXd::Constant(1, initialAngle));
+  joint.setActuatorType(sx::ActuatorType::Locked);
+
+  world.enterSimulationMode();
+  world.step(1);
+
+  return LockedContactRun{
+      .position = joint.getPosition()[0],
+      .velocity = joint.getVelocity()[0],
   };
 }
 
@@ -671,6 +725,23 @@ TEST(ContactParity, LockedActuatorHoldsRevoluteJoint)
       << "Locked joint should hold its position under gravity";
   EXPECT_NEAR(joint.getVelocity()[0], 0.0, 1e-10)
       << "Locked joint should keep zero velocity";
+}
+
+//==============================================================================
+// Test: Locked actuator holds through contact impulses
+//
+// Contact impulses are solved after actuator velocity projection in the split
+// dynamics pipeline. A locked joint must be projected back to zero velocity
+// before position integration so contact response cannot drift the coordinate.
+//==============================================================================
+TEST(ContactParity, LockedActuatorSuppressesContactImpulseDrift)
+{
+  const auto actual = runLockedLinkContact();
+
+  EXPECT_NEAR(actual.position, 0.25, 1e-12)
+      << "Locked joint should not integrate contact-induced velocity";
+  EXPECT_NEAR(actual.velocity, 0.0, 1e-12)
+      << "Locked joint velocity should stay zero after contact solve";
 }
 
 //==============================================================================
