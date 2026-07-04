@@ -598,6 +598,49 @@ TEST(SdfParser, InertialAndMaterialVariantsFromXml)
 }
 
 //==============================================================================
+TEST(SdfParser, MaterialWithoutDiffusePreservesDefaultColor)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/pbr_only_material/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="pbr_only_material">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+      <visual name="pbr_visual">
+        <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
+        <material>
+          <pbr>
+            <metal>
+              <metalness>0.4</metalness>
+              <roughness>0.8</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  auto* visual = body->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visual, nullptr);
+
+  const auto* visualAspect = visual->getVisualAspect();
+  ASSERT_NE(visualAspect, nullptr);
+  EXPECT_TRUE(visualAspect->usesDefaultColor());
+  EXPECT_TRUE(visualAspect->getRGBA().isApprox(
+      dynamics::VisualAspect::getDefaultRGBA()));
+  EXPECT_NEAR(visualAspect->getMetallic(), 0.4, 1e-12);
+  EXPECT_NEAR(visualAspect->getRoughness(), 0.8, 1e-12);
+}
+
+//==============================================================================
 TEST(SdfParser, PlaneGeometryReadsAsThinBox)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();

@@ -52,8 +52,9 @@
       `sdf::Joint`, `sdf::Visual`, and `sdf::Collision` DOM values rather than
       raw XML-level enumeration. Standard visual/collision/material reads use
       libsdformat DOM values for names, local poses, geometry, diffuse colors,
-      and PBR metal workflow factors. Standard joint reads use DOM values for
-      joint name/type,
+      and PBR metal workflow factors; material XML checks only preserve whether
+      diffuse was authored. Standard joint reads use DOM values for joint
+      name/type,
       parent/child links, local pose, axis vectors including
       `axis/xyz@expressed_in` frame resolution, axis dynamics, finite limits,
       mimic metadata, and sdformat-normalized screw pitch values; XML checks

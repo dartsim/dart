@@ -69,9 +69,12 @@ model name/static/pose and link name/gravity/pose plus inertial mass, center of
 mass, and inertia tensor values. Visual and collision shape nodes traverse
 `sdf::Model`, `sdf::Link`, `sdf::Visual`, `sdf::Collision`, `sdf::Geometry`, and
 `sdf::Material` DOM values for shape names, local poses, geometry, and diffuse
-material colors plus `sdf::Pbr` metal workflow factors. Standard SDF joint
-reads traverse `sdf::Model`, `sdf::Joint`, and `sdf::JointAxis` DOM values for
-joint enumeration, joint name/type,
+material colors plus `sdf::Pbr` metal workflow factors. Diffuse material values
+now come from `sdf::Material::Diffuse()`; the XML bridge only preserves the
+authored/default distinction so absent diffuse colors do not reset DART's
+default visual color. Standard SDF joint reads traverse `sdf::Model`,
+`sdf::Joint`, and `sdf::JointAxis` DOM values for joint enumeration, joint
+name/type,
 parent/child links, local pose, axis vectors including
 `axis/xyz@expressed_in` frame resolution, axis dynamics, finite position limits,
 mimic metadata, and sdformat-normalized screw pitch values. XML helper checks
@@ -223,6 +226,13 @@ Additional validation for SDF joint-axis expressed-in frame resolution:
 - `pixi run build`
 - `pixi run test-unit`
 
+Additional validation for SDF material diffuse DOM reads:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run lint`
+- `pixi run build`
+
 Changelog decision:
 
 - Mode: draft
@@ -275,7 +285,10 @@ Changelog decision:
   material round-trip coverage before the implementation PR exists. No
   additional separate entry is needed for SDF joint-axis expressed-in frame
   resolution because the existing DART 7 libsdformat dependency entry now covers
-  this parser-side normalization.
+  this parser-side normalization. No additional separate entry is needed for
+  SDF material diffuse DOM reads because they keep the same parser-side material
+  normalization under the existing DART 7 libsdformat dependency entry while
+  preserving DART's authored/default behavior.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

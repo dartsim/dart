@@ -1238,12 +1238,8 @@ dynamics::ShapeNode* readShapeNode(
 void readMaterial(const sdf::Material& material, dynamics::ShapeNode* shapeNode)
 {
   auto visualAspect = shapeNode->getVisualAspect();
-  if (const auto materialElement = material.Element()) {
-    const auto [diffuse, hasDiffuse]
-        = materialElement->Get<gz::math::Color>("diffuse", material.Diffuse());
-    if (hasDiffuse) {
-      visualAspect->setColor(toEigenColor(diffuse));
-    }
+  if (hasElement(material.Element(), "diffuse")) {
+    visualAspect->setColor(toEigenColor(material.Diffuse()));
   }
 
   const sdf::Pbr* pbr = material.PbrMaterial();
