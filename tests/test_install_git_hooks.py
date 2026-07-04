@@ -229,6 +229,9 @@ def _guard_verdict(tmp_path: Path, command: str, extra_env: dict | None = None):
         "env --split-string='git commit -m x'",
         "(git commit -m x)",
         'FOO="a b" git commit -m x',
+        "git com\\mit -m x",
+        'git com"mit" -m x',
+        "git 'com'mit -m x",
         "pixi run lint && git commit -m x",
     ],
 )

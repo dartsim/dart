@@ -27,14 +27,14 @@
 
 input=$(cat)
 
-# Fast path: a git commit invocation always contains the literal substring
-# "commit" in tool_input.command (the subcommand token itself; JSON escaping
-# cannot alter it), so anything without it can be skipped before spawning the
-# python3 tokenizer (measured ~70 ms per spawn, paid on every Bash tool call).
-# Commands that merely mention "commit" still fall through to the tokenizer,
-# which classifies them correctly.
+# Fast path: ordinary non-git/non-commit Bash calls can be skipped before
+# spawning the python3 tokenizer (measured ~70 ms per spawn, paid on every Bash
+# tool call). A real git commit may spell the subcommand through shell quote or
+# backslash removal (`git com\mit`, `git com"mit"`), so the conservative sentinel
+# also falls through when the raw hook JSON contains g-i-t followed by c-o-m-m-i-t
+# in order. False positives still reach the tokenizer, which classifies them.
 case "$input" in
-    *commit*) ;;
+    *commit*|*g*i*t*c*o*m*m*i*t*) ;;
     *) exit 0 ;;
 esac
 
