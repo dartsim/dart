@@ -182,20 +182,6 @@ dynamics::ShapePtr readMeshShape(
 } // namespace
 
 dynamics::ShapePtr readGeometryShape(
-    const ElementPtr& geometryElement,
-    const common::Uri& baseUri,
-    const common::ResourceRetrieverPtr& retriever)
-{
-  if (!geometryElement) {
-    return nullptr;
-  }
-
-  sdf::Geometry geometry;
-  (void)geometry.Load(geometryElement);
-  return readGeometryShape(geometry, baseUri, retriever);
-}
-
-dynamics::ShapePtr readGeometryShape(
     const sdf::Geometry& geometry,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)

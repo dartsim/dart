@@ -11,6 +11,7 @@
 #include <dart/common/uri.hpp>
 
 #include <gtest/gtest.h>
+#include <sdf/Geometry.hh>
 
 #include <string>
 
@@ -73,6 +74,13 @@ sdf::ElementPtr loadGeometryElement(const std::string& geometryContents)
   return detail::getElement(visualElement, "geometry");
 }
 
+sdf::Geometry loadGeometry(const std::string& geometryContents)
+{
+  sdf::Geometry geometry;
+  (void)geometry.Load(loadGeometryElement(geometryContents));
+  return geometry;
+}
+
 } // namespace
 
 TEST(SdfDetailHelpers, ParseVector3d)
@@ -103,7 +111,7 @@ TEST(SdfDetailHelpers, ReadGeometryShapesAndFailures)
   const dart::common::Uri baseUri("file:///tmp/model.sdf");
 
   const auto sphereShape = detail::readGeometryShape(
-      loadGeometryElement(R"(
+      loadGeometry(R"(
         <sphere>
           <radius>0.25</radius>
         </sphere>
@@ -118,7 +126,7 @@ TEST(SdfDetailHelpers, ReadGeometryShapesAndFailures)
   EXPECT_DOUBLE_EQ(sphere->getRadius(), 0.25);
 
   const auto boxShape = detail::readGeometryShape(
-      loadGeometryElement(R"(
+      loadGeometry(R"(
         <box>
           <size>1 2 3</size>
         </box>
@@ -131,7 +139,7 @@ TEST(SdfDetailHelpers, ReadGeometryShapesAndFailures)
   EXPECT_TRUE(box->getSize().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
 
   const auto cylinderShape = detail::readGeometryShape(
-      loadGeometryElement(R"(
+      loadGeometry(R"(
         <cylinder>
           <radius>0.4</radius>
           <length>0.8</length>
@@ -146,7 +154,7 @@ TEST(SdfDetailHelpers, ReadGeometryShapesAndFailures)
   EXPECT_DOUBLE_EQ(cylinder->getHeight(), 0.8);
 
   const auto planeShape = detail::readGeometryShape(
-      loadGeometryElement(R"(
+      loadGeometry(R"(
         <plane>
           <size>2 3</size>
         </plane>
@@ -158,20 +166,17 @@ TEST(SdfDetailHelpers, ReadGeometryShapesAndFailures)
   ASSERT_TRUE(plane);
   EXPECT_TRUE(plane->getSize().isApprox(Eigen::Vector3d(2.0, 3.0, 0.001)));
 
-  EXPECT_EQ(detail::readGeometryShape(nullptr, baseUri, retriever), nullptr);
   EXPECT_EQ(
-      detail::readGeometryShape(
-          loadGeometryElement("<mesh/>"), baseUri, retriever),
+      detail::readGeometryShape(loadGeometry("<mesh/>"), baseUri, retriever),
       nullptr);
   EXPECT_EQ(
       detail::readGeometryShape(
-          loadGeometryElement("<mesh><uri>missing.obj</uri></mesh>"),
+          loadGeometry("<mesh><uri>missing.obj</uri></mesh>"),
           baseUri,
           retriever),
       nullptr);
   EXPECT_EQ(
-      detail::readGeometryShape(loadGeometryElement(""), baseUri, retriever),
-      nullptr);
+      detail::readGeometryShape(sdf::Geometry(), baseUri, retriever), nullptr);
 }
 
 TEST(SdfDetailHelpers, ParsesScalarsVectorsAndPose)
