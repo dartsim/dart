@@ -414,8 +414,12 @@ protected:
     std::size_t mObservedVelocityVersion = 0;
     bool mPreserveLateralVelocity = false;
     bool mPreserveTiltVelocity = false;
+    bool mHasUnsupportedLateralVelocity = false;
+    bool mHasUnsupportedTiltVelocity = false;
     Eigen::Vector3d mLateralVelocity = Eigen::Vector3d::Zero();
     Eigen::Vector3d mTiltVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d mUnsupportedLateralVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d mUnsupportedTiltVelocity = Eigen::Vector3d::Zero();
   };
 
   /// Runs the post-step rest-detection pass: puts quiet mobile skeletons to
@@ -471,7 +475,8 @@ protected:
   /// Clears preserved baselines for skeletons without a shallow support
   /// contact.
   void clearUnsupportedShallowSupportFreeRootVelocityStates(
-      const std::vector<char>& shallowSupportedFreeRoots);
+      const std::vector<char>& shallowSupportedFreeRoots,
+      const std::vector<FreeRootVelocitySnapshot>& preSolveVelocities = {});
 
   /// Records current per-skeleton velocity versions after internal step writes.
   void updateShallowSupportFreeRootVelocityVersions();

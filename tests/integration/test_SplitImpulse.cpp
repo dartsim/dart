@@ -355,6 +355,54 @@ TEST(Issue201, ShallowSupportPreservesIntentionalLowSpeedMotion)
 }
 
 //==============================================================================
+// Low-speed passive motion that existed before the first shallow support
+// contact is also a valid baseline. The suppression must remove only the
+// contact-solve delta, not the pre-contact motion.
+TEST(Issue201, ShallowSupportPreservesPreContactLowSpeedMotion)
+{
+  auto world = simulation::World::create();
+  world->setTimeStep(0.001);
+  auto floor = createFloor();
+  floor->setMobile(false);
+  world->addSkeleton(floor);
+
+  const double initialGap = 5e-5;
+  auto box = createBox(kBoxSize / 2.0 + initialGap);
+  world->addSkeleton(box);
+
+  auto* rootBody = box->getRootBodyNode();
+  ASSERT_NE(rootBody, nullptr);
+  auto* rootJoint = dynamic_cast<FreeJoint*>(rootBody->getParentJoint());
+  ASSERT_NE(rootJoint, nullptr);
+
+  const double lateralSpeed = 5e-6;
+  const double tiltSpeed = 5e-5;
+  rootJoint->setLinearVelocity(
+      Eigen::Vector3d(lateralSpeed, 0.0, -0.04),
+      Frame::World(),
+      Frame::World());
+  rootJoint->setAngularVelocity(
+      Eigen::Vector3d(0.0, tiltSpeed, 0.0), Frame::World(), Frame::World());
+
+  bool sawAirborneStep = false;
+  for (std::size_t i = 0; i < 10; ++i) {
+    world->step();
+    if (world->getLastCollisionResult().getNumContacts() == 0u) {
+      sawAirborneStep = true;
+      continue;
+    }
+
+    if (sawAirborneStep)
+      break;
+  }
+
+  ASSERT_TRUE(sawAirborneStep);
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_NEAR(rootBody->getLinearVelocity().x(), lateralSpeed, 1e-8);
+  EXPECT_NEAR(rootBody->getAngularVelocity().y(), tiltSpeed, 1e-8);
+}
+
+//==============================================================================
 // An explicit velocity edit to zero must clear any previously preserved
 // low-speed baseline for the supported free root.
 TEST(Issue201, ShallowSupportHonorsIntentionalLowSpeedStop)

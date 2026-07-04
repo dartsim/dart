@@ -327,9 +327,15 @@ std::vector<World::FreeRootVelocitySnapshot> World::snapshotFreeRootVelocities()
 
 //==============================================================================
 void World::clearUnsupportedShallowSupportFreeRootVelocityStates(
-    const std::vector<char>& shallowSupportedFreeRoots)
+    const std::vector<char>& shallowSupportedFreeRoots,
+    const std::vector<FreeRootVelocitySnapshot>& preSolveVelocities)
 {
   syncShallowSupportFreeRootVelocityStates();
+
+  const bool canStoreUnsupportedVelocities = mGravity.squaredNorm() > 0.0;
+  Eigen::Vector3d up = Eigen::Vector3d::Zero();
+  if (canStoreUnsupportedVelocities)
+    up = -mGravity.normalized();
 
   for (std::size_t i = 0; i < mShallowSupportFreeRootVelocityStates.size();
        ++i) {
@@ -341,6 +347,31 @@ void World::clearUnsupportedShallowSupportFreeRootVelocityStates(
     state.mPreserveTiltVelocity = false;
     state.mLateralVelocity.setZero();
     state.mTiltVelocity.setZero();
+    state.mHasUnsupportedLateralVelocity = false;
+    state.mHasUnsupportedTiltVelocity = false;
+    state.mUnsupportedLateralVelocity.setZero();
+    state.mUnsupportedTiltVelocity.setZero();
+
+    if (!canStoreUnsupportedVelocities || i >= preSolveVelocities.size())
+      continue;
+
+    const auto& snapshot = preSolveVelocities[i];
+    if (!snapshot.mValid || snapshot.mSkeleton != state.mSkeleton)
+      continue;
+
+    const Eigen::Vector3d verticalVelocity = up * snapshot.mLinear.dot(up);
+    const Eigen::Vector3d lateralVelocity = snapshot.mLinear - verticalVelocity;
+    if (hasFiniteNonzeroVelocity(lateralVelocity)) {
+      state.mHasUnsupportedLateralVelocity = true;
+      state.mUnsupportedLateralVelocity = lateralVelocity;
+    }
+
+    const Eigen::Vector3d yawVelocity = up * snapshot.mAngular.dot(up);
+    const Eigen::Vector3d tiltVelocity = snapshot.mAngular - yawVelocity;
+    if (hasFiniteNonzeroVelocity(tiltVelocity)) {
+      state.mHasUnsupportedTiltVelocity = true;
+      state.mUnsupportedTiltVelocity = tiltVelocity;
+    }
   }
 }
 
@@ -428,6 +459,12 @@ void World::suppressShallowSupportedFreeRootDrift(
     targetLateralVelocity = state.mLateralVelocity;
     targetPreservesLateralVelocity
         = hasFiniteNonzeroVelocity(targetLateralVelocity);
+  } else if (
+      state.mHasUnsupportedLateralVelocity
+      && state.mUnsupportedLateralVelocity.allFinite()) {
+    targetLateralVelocity = state.mUnsupportedLateralVelocity;
+    targetPreservesLateralVelocity
+        = hasFiniteNonzeroVelocity(targetLateralVelocity);
   }
 
   const bool clampedLateralVelocity
@@ -465,6 +502,11 @@ void World::suppressShallowSupportedFreeRootDrift(
   } else if (state.mPreserveTiltVelocity && state.mTiltVelocity.allFinite()) {
     targetTiltVelocity = state.mTiltVelocity;
     targetPreservesTiltVelocity = hasFiniteNonzeroVelocity(targetTiltVelocity);
+  } else if (
+      state.mHasUnsupportedTiltVelocity
+      && state.mUnsupportedTiltVelocity.allFinite()) {
+    targetTiltVelocity = state.mUnsupportedTiltVelocity;
+    targetPreservesTiltVelocity = hasFiniteNonzeroVelocity(targetTiltVelocity);
   }
 
   const bool clampedTiltVelocity
@@ -485,6 +527,11 @@ void World::suppressShallowSupportedFreeRootDrift(
 
   if (restoreCommands)
     restoreVelocityActuatorCommands(*freeJoint, velocityActuatorCommands);
+
+  state.mHasUnsupportedLateralVelocity = false;
+  state.mHasUnsupportedTiltVelocity = false;
+  state.mUnsupportedLateralVelocity.setZero();
+  state.mUnsupportedTiltVelocity.setZero();
 }
 
 //==============================================================================
@@ -886,7 +933,7 @@ void World::step(bool _resetCommand)
         = findShallowSupportedFreeRoots(
             mSkeletons, mConstraintSolver->getLastCollisionResult(), mGravity);
     clearUnsupportedShallowSupportFreeRootVelocityStates(
-        shallowSupportedFreeRoots);
+        shallowSupportedFreeRoots, preSolveFreeRootVelocities);
 
     {
       DART_PROFILE_SCOPED_N("World::step - Integrate positions");
@@ -1052,7 +1099,7 @@ void World::step(bool _resetCommand)
       = findShallowSupportedFreeRoots(
           mSkeletons, mConstraintSolver->getLastCollisionResult(), mGravity);
   clearUnsupportedShallowSupportFreeRootVelocityStates(
-      shallowSupportedFreeRoots);
+      shallowSupportedFreeRoots, preSolveFreeRootVelocities);
 
   {
     DART_PROFILE_SCOPED_N("World::step - Integrate positions");
