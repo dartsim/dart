@@ -143,6 +143,11 @@ def strip_outer_quotes(value):
     return value, ""
 
 
+def is_hooks_path_override(option):
+    key, sep, _ = option.partition("=")
+    return bool(sep) and key.lower() == "core.hookspath"
+
+
 def shell_expand_path_token(value):
     path, quote = strip_outer_quotes(value)
     if quote != "'\''":
@@ -236,7 +241,7 @@ def is_git_commit(text):
             t = tokens[i]
             if t.startswith(CONFIG_ENV_PREFIX):
                 option, _ = strip_outer_quotes(t[len(CONFIG_ENV_PREFIX) :])
-                if option.startswith("core.hooksPath="):
+                if is_hooks_path_override(option):
                     hooks_path_override = True
                 i += 1
                 continue
@@ -245,11 +250,11 @@ def is_git_commit(text):
                     target_dir = shell_expand_path_token(tokens[i + 1])
                 if t == "-c" and i + 1 < len(tokens):
                     option, _ = strip_outer_quotes(tokens[i + 1])
-                    if option.startswith("core.hooksPath="):
+                    if is_hooks_path_override(option):
                         hooks_path_override = True
                 if t == "--config-env" and i + 1 < len(tokens):
                     option, _ = strip_outer_quotes(tokens[i + 1])
-                    if option.startswith("core.hooksPath="):
+                    if is_hooks_path_override(option):
                         hooks_path_override = True
                 i += 2
                 continue
