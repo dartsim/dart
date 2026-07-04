@@ -210,6 +210,18 @@
         through the opt-in runtime stage. A rotated cube with a large time-step
         velocity toward a fixed wall remains intersection-free, and the stage
         reports a conservative CCD line-search hit.
+  - [x] Add audited two-wall tunnel corridor fixture coverage through the
+        opt-in runtime stage. A unit cube flies down a tight (1 mm) fixed
+        floor/ceiling corridor at high speed, activates rigid IPC contact, stays
+        finite, keeps advancing along the tunnel axis, and stays within the
+        fixed wall clearances. The three-wall, four-wall, and 8K tunnel rows
+        remain planned: at their tighter 0.1 mm clearance the conservative
+        curved-CCD line search limits each step to about the separation
+        distance, so a fast cube is arrested (intersection-free but ~3 mm of
+        travel) rather than traversing the channel, and the dense 8K walls are
+        too slow for a unit test pending dense-contact performance work. These
+        are next gaps for the conservative-CCD/performance climb, not
+        test-authoring gaps.
   - [x] Add the first audited tessellated-plane fixture coverage through the
         opt-in runtime stage. A cube falls onto a fixed two-triangle mesh plane,
         activates contact, stays finite, and preserves nonnegative clearance.
@@ -470,6 +482,12 @@
   - [x] Mark the audited 3D tunneling unit-test fixture row
         (`fixtures/3D/unit-tests/tunneling.json`) as implemented after
         high-speed cube-vs-wall conservative line-search coverage landed.
+  - [x] Mark the audited 3D two-wall tunnel unit-test fixture row
+        (`fixtures/3D/unit-tests/tunnel/2-walls.json`) as implemented after
+        two-wall tunnel corridor runtime coverage landed. The three-wall,
+        four-wall, and 8K tunnel variants remain planned: the conservative
+        curved-CCD line search arrests a fast cube at their tighter 0.1 mm
+        clearance, and the 8K walls are too slow for a unit test.
   - [x] Mark the audited 3D two-triangle tessellated-plane unit-test fixture row
         (`fixtures/3D/unit-tests/tessellated-plane/two-triangles.json`) as
         implemented after cube-on-two-triangle-plane runtime coverage landed.
