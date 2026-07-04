@@ -4,6 +4,10 @@ name: DART 6 Performance Dashboard
 # benchmark-action/github-action-benchmark. The action stores history on the
 # gh-pages branch and renders an interactive Chart.js dashboard at
 # https://dartsim.github.io/dart/performance/dart6/.
+#
+# Cron dispatchers must live on the repository default branch. This release
+# workflow exposes workflow_call so a default-branch scheduler can benchmark the
+# active DART 6 release branch while the release branch keeps push/manual runs.
 
 on:
   push:
@@ -22,8 +26,12 @@ on:
       - "scripts/run_cpp_benchmark.py"
       - "scripts/run_performance_dashboard_benchmarks.py"
       - "tests/benchmark/**"
-  schedule:
-    - cron: "45 3 * * 0,3"
+  workflow_call:
+    inputs:
+      release_branch:
+        description: "DART 6 release branch to benchmark; defaults to latest release-6.*"
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       release_branch:
@@ -51,7 +59,7 @@ jobs:
         id: dart6-branch
         shell: bash
         env:
-          REQUESTED_BRANCH: ${{ github.event.inputs.release_branch || '' }}
+          REQUESTED_BRANCH: ${{ inputs.release_branch || github.event.inputs.release_branch || '' }}
         run: |
           set -euo pipefail
 
@@ -120,7 +128,7 @@ jobs:
           gh-pages-branch: gh-pages
           benchmark-data-dir-path: performance/dart6
           ref: ${{ steps.dart6-branch.outputs.branch }}
-          auto-push: ${{ github.event_name == 'schedule' || startsWith(github.ref, 'refs/heads/release-6.') || github.ref == 'refs/heads/main' }}
+          auto-push: ${{ github.event_name == 'workflow_call' || startsWith(github.ref, 'refs/heads/release-6.') }}
           # GitHub-hosted runners are noisy; alert on a clear 2x regression
           # and comment on the commit rather than failing the build.
           alert-threshold: "200%"
