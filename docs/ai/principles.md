@@ -26,11 +26,9 @@ the owner docs above.
 2. **Assumptions and unknowns must be surfaced.** Do not silently choose
    between materially different interpretations: state the assumption, ask when
    the decision is consequential, and record the evidence when the repo answers
-   it. Before large or ambiguous work, go further and hunt for the unknowns you
-   have not named yet — your prompts, context, and plan are a map, not the
-   territory of the real code and requirements. Surface consequential unknowns
-   up front rather than discovering them mid-implementation;
-   `docs/ai/orchestration.md` owns the method catalog.
+   it. Before large or ambiguous work, also hunt for the unknowns you have not
+   named yet and surface them up front rather than mid-implementation;
+   `docs/ai/orchestration.md` owns the methods for doing so.
 3. **Simplicity is a requirement.** Solve the current DART problem. Do not add
    speculative flexibility, hierarchy, abstraction, or configuration unless it
    removes real complexity or matches an established DART pattern.
