@@ -11,13 +11,13 @@ This document focuses on the core implementation in `dart/common/` and how it is
 
 ## Key Headers (Start Here)
 
-- `dart/common/Aspect.hpp`: Base `Aspect` API (`State`, `Properties`, lifecycle hooks)
-- `dart/common/AspectWithVersion.hpp`: Common helpers for Aspects that own State/Properties
-- `dart/common/Composite.hpp`: Host container for Aspects (runtime attach/detach, state/property snapshots)
-- `dart/common/SpecializedForAspect.hpp`: Constant-time access for selected Aspect types
-- `dart/common/RequiresAspect.hpp`: Declares required Aspects (cannot be removed)
+- `dart/common/aspect.hpp`: Base `Aspect` API (`State`, `Properties`, lifecycle hooks)
+- `dart/common/aspect_with_version.hpp`: Common helpers for Aspects that own State/Properties
+- `dart/common/composite.hpp`: Host container for Aspects (runtime attach/detach, state/property snapshots)
+- `dart/common/specialized_for_aspect.hpp`: Constant-time access for selected Aspect types
+- `dart/common/requires_aspect.hpp`: Declares required Aspects (cannot be removed)
 - `dart/common/detail/CompositeData.hpp`: Template machinery for typed State/Properties bundles
-- `dart/common/EmbeddedAspect.hpp`: “Embedded” Aspects that store data inside the Composite
+- `dart/common/embedded_aspect.hpp`: “Embedded” Aspects that store data inside the Composite
 
 ## Core Concepts
 
@@ -54,7 +54,7 @@ The separation exists so systems can snapshot/restore “state” cheaply and so
 
 ### 4) Versioning and cache invalidation
 
-Many DART objects track a version number (see `dart/common/VersionCounter.hpp`). Helpers like `AspectWithVersionedProperties` call `CompositeType::incrementVersion()` when properties change, enabling cache invalidation patterns across the dynamics stack.
+Many DART objects track a version number (see `dart/common/version_counter.hpp`). Helpers like `AspectWithVersionedProperties` call `CompositeType::incrementVersion()` when properties change, enabling cache invalidation patterns across the dynamics stack.
 
 ## Two Ways to Implement an Aspect
 
@@ -68,7 +68,7 @@ Common helpers:
 - `common::AspectWithVersionedProperties` (Properties only + version bump)
 - `common::AspectWithStateAndVersionedProperties` (both)
 
-Example in tree: `dart/dynamics/EndEffector.hpp` defines `dynamics::Support` as:
+Example in tree: `dart/dynamics/end_effector.hpp` defines `dynamics::Support` as:
 
 - a standalone Aspect type attached to `dynamics::EndEffector`
 - with both State and Properties
@@ -80,7 +80,7 @@ Use this when you want the Composite object to “own” the State/Properties fi
 
 The pattern is:
 
-- The Composite inherits `EmbedState`, `EmbedProperties`, or `EmbedStateAndProperties` (from `dart/common/EmbeddedAspect.hpp`).
+- The Composite inherits `EmbedState`, `EmbedProperties`, or `EmbedStateAndProperties` (from `dart/common/embedded_aspect.hpp`).
 - The corresponding Aspect type (e.g., `EmbeddedPropertiesAspect<CompositeT, PropertiesDataT>`) forwards `get/set` of Aspect data to the Composite.
 - When the Aspect is not attached to a Composite yet, it temporarily stores data on the heap; once attached, it pushes the data into the Composite and clears the temporary storage.
 

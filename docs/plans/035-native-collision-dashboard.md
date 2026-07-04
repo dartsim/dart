@@ -116,7 +116,7 @@ true:
 ## Later GUI Debugger Scope
 
 A native collision-pair debugger example is now tracked as
-[`PLAN-037`](dashboard.md#plan-037-native-collision-visual-verification), with
+[`PLAN-037`](archive.md#plan-037-native-collision-visual-verification), with
 durable rendering guidance in
 [`gui-rendering.md`](../onboarding/gui-rendering.md#native-collision-visual-checks).
 That follow-up keeps this completed feature/performance dashboard focused on

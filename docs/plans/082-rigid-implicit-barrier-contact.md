@@ -237,3 +237,28 @@
   promoted earlier than this plan's sequencing.
 - PLAN-083 changes the shared Newton-barrier primitive contract or promotes ABD
   from evaluation to replacement for a rigid IPC responsibility.
+
+## Progress log
+
+Relocated from the dashboard on 2026-07-03; newest first.
+
+Continue the active dev task from fixture replay, comparison
+script ingestion, curved-trajectory CCD/residual/subdivision slices, local
+rigid barrier derivatives, scene-level sparse barrier assembly, and
+conservative line-search feasibility, and barrier/dynamics Newton solve
+scaffolding, first physical dynamics-term construction, opt-in runtime rigid
+IPC stage, same-domain `World` rigid solver selection, and runtime sphere
+triangulation, durable stage diagnostics, and the first activated-contact
+runtime regression plus vertex-vertex line-search CCD, invalid runtime
+geometry rejection, explicit non-converged-result skipping, and
+primitive-family friction potentials, first lagged friction assembly, and
+bounded outer lagged-friction passes into remaining geometry corpus coverage,
+runtime fixture behavior, production convergence criteria, production-ready
+default activation criteria, mixed-domain coupling, rigorous interval
+arithmetic, direct CCD evaluator parity, remaining comparison script
+commands, and full fixture/test/benchmark/visual parity. Keep the
+simultaneous-impact intake as a PLAN-082 sidecar until solver-neutral scenes
+prove a restitution/order-uncertainty gap not already covered by rigid IPC or
+AVBD-style finite-time contact. Coordinate any shared primitive extraction or
+ABD replacement decision through PLAN-083 before changing the rigid IPC
+correctness-oracle role.

@@ -119,7 +119,7 @@ Time integration is no longer a standalone module. `dart::simulation::World::ste
 
 ### 1. ConstraintBase (Base Class)
 
-**File:** `dart/constraint/ConstraintBase.hpp`
+**File:** `dart/constraint/constraint_base.hpp`
 
 **Role:** Abstract base class defining the interface for all constraint types.
 
@@ -159,7 +159,7 @@ struct ConstraintInfo {
 
 ### 2. ConstraintSolver (Main Solver)
 
-**File:** `dart/constraint/ConstraintSolver.hpp`
+**File:** `dart/constraint/constraint_solver.hpp`
 
 **Role:** Central manager for all constraints in a simulation, orchestrating constraint solving.
 
@@ -222,7 +222,7 @@ solve()
 
 ### 3. ConstrainedGroup
 
-**File:** `dart/constraint/ConstrainedGroup.hpp`
+**File:** `dart/constraint/constrained_group.hpp`
 
 **Role:** Represents a group of skeletons that interact through constraints.
 
@@ -236,7 +236,7 @@ solve()
 
 ### 4. LCP Solving Pipeline
 
-**Where:** `dart/constraint/ConstraintSolver.cpp` (`ConstraintSolver::solveConstrainedGroup`)
+**Where:** `dart/constraint/constraint_solver.cpp` (`ConstraintSolver::solveConstrainedGroup`)
 
 **Role:** Build a boxed LCP from active constraints and solve it using the
 unified solver interfaces in `dart/math/lcp/`.
@@ -268,7 +268,7 @@ with boxed complementarity/KKT conditions per row.
 
 #### ContactConstraint
 
-**File:** `dart/constraint/ContactConstraint.hpp`
+**File:** `dart/constraint/contact_constraint.hpp`
 
 **Role:** Handles rigid body contact constraints with friction.
 
@@ -296,7 +296,7 @@ with boxed complementarity/KKT conditions per row.
 
 #### JointConstraint
 
-**File:** `dart/constraint/JointConstraint.hpp`
+**File:** `dart/constraint/joint_constraint.hpp`
 
 **Role:** Handles multiple joint-space constraints (limits, servo motors).
 
@@ -317,7 +317,7 @@ with boxed complementarity/KKT conditions per row.
 
 #### JointLimitConstraint
 
-**File:** `dart/constraint/JointLimitConstraint.hpp`
+**File:** `dart/constraint/joint_limit_constraint.hpp`
 
 **Role:** Specifically handles joint position and velocity limits.
 
@@ -336,7 +336,7 @@ with boxed complementarity/KKT conditions per row.
 
 #### RevoluteJointConstraint
 
-**File:** `dart/constraint/RevoluteJointConstraint.hpp`
+**File:** `dart/constraint/revolute_joint_constraint.hpp`
 
 **Role:** Hinge-style closed-loop constraint between two BodyNodes (or a
 BodyNode and the world) that preserves one rotational DOF about a specified
@@ -350,7 +350,7 @@ axis.
 
 #### ServoMotorConstraint
 
-**File:** `dart/constraint/ServoMotorConstraint.hpp`
+**File:** `dart/constraint/servo_motor_constraint.hpp`
 
 **Role:** Implements servo motor control as a constraint.
 
@@ -365,7 +365,7 @@ axis.
 
 #### CouplerConstraint
 
-**File:** `dart/constraint/CouplerConstraint.hpp`
+**File:** `dart/constraint/coupler_constraint.hpp`
 
 **Role:** Bilaterally enforces a mimic relationship between two joints by
 applying equal-and-opposite impulses. Unlike `MimicMotorConstraint`, both the
@@ -687,14 +687,14 @@ solver.setSecondaryLcpSolver(std::make_shared<dart::math::PgsSolver>());
 
 **Constraint Module:**
 
-- `dart/constraint/ConstraintBase.hpp`
-- `dart/constraint/ConstraintSolver.hpp`
-- `dart/constraint/ConstrainedGroup.hpp`
-- `dart/constraint/ContactConstraint.hpp`
-- `dart/constraint/JointConstraint.hpp`
-- `dart/constraint/RevoluteJointConstraint.hpp`
-- `dart/constraint/JointLimitConstraint.hpp`
-- `dart/constraint/ServoMotorConstraint.hpp`
+- `dart/constraint/constraint_base.hpp`
+- `dart/constraint/constraint_solver.hpp`
+- `dart/constraint/constrained_group.hpp`
+- `dart/constraint/contact_constraint.hpp`
+- `dart/constraint/joint_constraint.hpp`
+- `dart/constraint/revolute_joint_constraint.hpp`
+- `dart/constraint/joint_limit_constraint.hpp`
+- `dart/constraint/servo_motor_constraint.hpp`
 
 **LCP Solvers:**
 

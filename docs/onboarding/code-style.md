@@ -145,7 +145,7 @@ DART now uses snake_case for public headers across the core C++ surface while pr
 namespace dart {
 namespace example {
 
-// Use the following macro (defined in dart/common/SmartPointer.hpp) to declare
+// Use the following macro (defined in dart/common/smart_pointer.hpp) to declare
 // STL "smart" pointers. Pointers should be declared ahead of the class so
 // that the class itself can use the pointers.
 DART_COMMON_DECLARE_SHARED_WEAK(ExampleClass)

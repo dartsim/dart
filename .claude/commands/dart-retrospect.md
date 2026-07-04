@@ -1,5 +1,6 @@
 ---
 description: retrospect on completed work and capture durable lessons
+argument-hint: "<what-was-completed>"
 agent: build
 ---
 

@@ -294,3 +294,28 @@ friction, complete scene-corpus coverage, or full IPC parity.
   method in DART-owned code.
 - PLAN-083 promotes a shared Newton-barrier primitive or ABI that changes this
   plan's variant-local ownership.
+
+## Progress log
+
+Relocated from the dashboard on 2026-07-03; newest first.
+
+Use the PLAN-081 IPC paper/repository gap audit to implement the
+full mesh-backed IPC-class follow-up. Start a dedicated `docs/dev_tasks/`
+folder for that multi-session implementation, then work through
+mesh/material state, scene loading, BE/Newmark integration, PT/EE distance
+derivatives, conservative CCD line search, projected Newton, friction,
+diagnostics, and the complete upstream example/test/benchmark/visual corpus.
+Track Shortest Path to Boundary as a separate self-intersection recovery
+sidecar in
+[`081-deformable-implicit-barrier-solver/spb-gap-audit.md`](081-deformable-implicit-barrier-solver/spb-gap-audit.md):
+first source/code audit, then a standalone tetrahedral query and DCD recovery
+spike before any solver or public API claim.
+Track Penetration-free Projective Dynamics on the GPU as a separate
+GPU-accelerated IPC sidecar in
+[`081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md`](081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md):
+first source/code audit, then a CPU-verifiable projective IPC slice and
+fast-CCD validation before any A-Jacobi, GPU-culling, or speedup claim. Use
+PLAN-083 to decide which distance, barrier, tangent, CCD, friction, PSD,
+sparse-Newton, diagnostics, benchmark, and visual-evidence primitives should
+become shared Newton-barrier infrastructure rather than another
+deformable-local variant.

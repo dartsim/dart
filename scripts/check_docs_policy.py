@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 SKIP_DIRS = {".deps", ".git", ".pixi", "build", "external", "node_modules"}
+GIT_QUERY_ERRORS = (OSError, subprocess.CalledProcessError)
 REQUIRED_DOCS_TOP_LEVEL_DIRS = (
     "ai",
     "assets",
@@ -55,6 +56,8 @@ DASHBOARD_REQUIRED_FIELDS = (
 )
 DASHBOARD_STATUS_VALUES = {"Proposed", "Active", "Blocked", "Complete", "Parked"}
 DASHBOARD_HORIZON_VALUES = {"Now", "Next", "Later", "Parked"}
+DASHBOARD_ENTRY_MAX_LINES = 40
+DASHBOARD_NEXT_STEP_MAX_LINES = 15
 DOCS_AI_FRONTMATTER_FILES = {
     "README.md",
     "components.md",
@@ -117,7 +120,7 @@ def iter_tracked_files(repo_root: Path, patterns: list[str]) -> list[Path]:
             capture_output=True,
             text=True,
         )
-    except OSError, subprocess.CalledProcessError:
+    except GIT_QUERY_ERRORS:
         files: list[Path] = []
         for pattern in patterns:
             fallback_pattern = pattern.removeprefix(":(glob)")
@@ -343,26 +346,33 @@ def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
 
 
 def check_plan_id_uniqueness(entries: list[dict[str, str]]) -> list[str]:
-    """PLAN-091 WP-091.5: each PLAN-ID identifies exactly one dashboard block.
+    """PLAN-091 WP-091.5: each PLAN-ID identifies exactly one plan block.
 
     A colliding ID (two initiatives sharing one ``PLAN-NNN``) makes grep-by-ID
-    ambiguous and breaks the packet-execution harness, so reject it.
+    ambiguous and breaks the packet-execution harness, so reject it. Entries
+    carry a ``source`` file label so collisions across the dashboard and the
+    archive (for example a stale dashboard copy left behind by a partial
+    archive move) are rejected, not just same-file duplicates.
     """
     counts: dict[str, int] = {}
+    sources: dict[str, list[str]] = {}
     order: list[str] = []
     for entry in entries:
         plan_id = entry["id"]
         if plan_id not in counts:
             order.append(plan_id)
+            sources[plan_id] = []
         counts[plan_id] = counts.get(plan_id, 0) + 1
+        sources[plan_id].append(entry.get("source", "docs/plans/dashboard.md"))
     failures: list[str] = []
     for plan_id in order:
         if counts[plan_id] > 1:
+            where = ", ".join(sorted(set(sources[plan_id])))
             failures.append(
-                "docs/plans/dashboard.md: "
-                f"{plan_id} identifies {counts[plan_id]} dashboard blocks; each "
+                f"{where}: "
+                f"{plan_id} identifies {counts[plan_id]} plan blocks; each "
                 "PLAN-ID must identify exactly one initiative (renumber the "
-                "colliding entries onto fresh IDs)"
+                "colliding entries onto fresh IDs, or remove the stale copy)"
             )
     return failures
 
@@ -380,7 +390,15 @@ def check_plan_lifecycle(repo_root: Path) -> list[str]:
     }
     dashboard_text = dashboard.read_text(encoding="utf-8", errors="replace")
     entries = _dashboard_entries(dashboard_text)
-    failures.extend(check_plan_id_uniqueness(entries))
+    unique_entries: list[dict[str, str]] = list(entries)
+    archive = plans_dir / "archive.md"
+    if archive.exists():
+        archive_text = archive.read_text(encoding="utf-8", errors="replace")
+        for match in PLAN_BLOCK_RE.finditer(archive_text):
+            unique_entries.append(
+                {"id": match.group("id"), "source": "docs/plans/archive.md"}
+            )
+    failures.extend(check_plan_id_uniqueness(unique_entries))
 
     referenced_plan_files: set[str] = set()
     for entry in entries:
@@ -446,6 +464,124 @@ def check_plan_lifecycle(repo_root: Path) -> list[str]:
                 f"field `{repeated_field.group(1)}`"
             )
 
+    return failures
+
+
+def _dashboard_next_step_line_count(block: str) -> int | None:
+    """Count the lines in a dashboard entry's ``- Next step:`` field.
+
+    The field spans from the ``- Next step:`` bullet to the next top-level
+    ``- Field:`` bullet (or the end of the block), trailing blanks excluded.
+    """
+    lines = block.splitlines()
+    start = None
+    for index, line in enumerate(lines):
+        if line.startswith("- Next step:"):
+            start = index
+            break
+    if start is None:
+        return None
+    end = len(lines)
+    for index in range(start + 1, len(lines)):
+        if lines[index].startswith("- "):
+            end = index
+            break
+    span = lines[start:end]
+    while span and not span[-1].strip():
+        span.pop()
+    return len(span)
+
+
+def check_dashboard_structure(repo_root: Path) -> list[str]:
+    """Keep the plan dashboard a bounded operating view.
+
+    Each ``### PLAN-`` entry stays within a line budget, its ``- Next step:``
+    field stays short, and completed plans move to ``docs/plans/archive.md``
+    instead of accumulating in the dashboard.
+    """
+    failures: list[str] = []
+    dashboard = repo_root / "docs" / "plans" / "dashboard.md"
+    if not dashboard.exists():
+        return failures
+
+    text = dashboard.read_text(encoding="utf-8", errors="replace")
+    failures.extend(_malformed_plan_headings(text, "docs/plans/dashboard.md"))
+    for match in PLAN_BLOCK_RE.finditer(text):
+        plan_id = match.group("id")
+        block = match.group(0)
+
+        entry_lines = len(block.rstrip().splitlines())
+        if entry_lines > DASHBOARD_ENTRY_MAX_LINES:
+            failures.append(
+                "docs/plans/dashboard.md: "
+                f"{plan_id} entry is {entry_lines} lines; keep each dashboard "
+                f"entry to at most {DASHBOARD_ENTRY_MAX_LINES} lines (move the "
+                "history to the owner plan file's `## Progress log` section)"
+            )
+
+        status_match = re.search(r"^- Status:\s*(?P<status>.+)$", block, re.MULTILINE)
+        if status_match and status_match.group("status").strip() == "Complete":
+            failures.append(
+                "docs/plans/dashboard.md: "
+                f"{plan_id} has `Status: Complete`; move the entry to "
+                "docs/plans/archive.md (the dashboard shows only operating plans)"
+            )
+
+        next_step_lines = _dashboard_next_step_line_count(block)
+        if (
+            next_step_lines is not None
+            and next_step_lines > DASHBOARD_NEXT_STEP_MAX_LINES
+        ):
+            failures.append(
+                "docs/plans/dashboard.md: "
+                f"{plan_id} `Next step` field is {next_step_lines} lines; keep "
+                f"it to at most {DASHBOARD_NEXT_STEP_MAX_LINES} lines (state only "
+                "the current action and relocate history to the owner plan "
+                "file's `## Progress log` section)"
+            )
+
+    return failures
+
+
+def _malformed_plan_headings(text: str, rel_path: str) -> list[str]:
+    """Reject plan-block headings that PLAN_BLOCK_RE cannot see.
+
+    Every PLAN rule keys on the strict ``### PLAN-NNN: Title`` heading shape.
+    A near-miss heading (wrong level, separator, digit count, or spacing)
+    would otherwise make the whole entry invisible to those rules, so flag it
+    instead of silently skipping it.
+    """
+    failures: list[str] = []
+    strict = re.compile(r"^### PLAN-\d{3}: \S")
+    loose = re.compile(r"^#{1,6}\s+PLAN-")
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        if loose.match(line) and not strict.match(line):
+            failures.append(
+                f"{rel_path}:{line_number}: malformed plan heading "
+                f"`{line.strip()}`; use `### PLAN-NNN: Title` so the plan "
+                "shape checks can see the entry"
+            )
+    return failures
+
+
+def check_plan_archive_shape(repo_root: Path) -> list[str]:
+    """Ensure every archived plan records a completed final status."""
+    failures: list[str] = []
+    archive = repo_root / "docs" / "plans" / "archive.md"
+    if not archive.exists():
+        return failures
+
+    text = archive.read_text(encoding="utf-8", errors="replace")
+    failures.extend(_malformed_plan_headings(text, "docs/plans/archive.md"))
+    for match in PLAN_BLOCK_RE.finditer(text):
+        plan_id = match.group("id")
+        block = match.group(0)
+        if "**Final status:** Complete" not in block:
+            failures.append(
+                "docs/plans/archive.md: "
+                f"{plan_id} is missing the `**Final status:** Complete` marker "
+                "required for archived plans"
+            )
     return failures
 
 
@@ -1016,7 +1152,7 @@ def _git_last_commit_date(repo_root: Path, repo_relative_path: str) -> str | Non
             capture_output=True,
             text=True,
         )
-    except OSError, subprocess.CalledProcessError:
+    except GIT_QUERY_ERRORS:
         return None
     return result.stdout.strip() or None
 
@@ -1030,6 +1166,8 @@ def main() -> int:
     failures.extend(check_docs_indexes(repo_root))
     failures.extend(check_dev_task_shape(repo_root))
     failures.extend(check_plan_lifecycle(repo_root))
+    failures.extend(check_dashboard_structure(repo_root))
+    failures.extend(check_plan_archive_shape(repo_root))
     failures.extend(check_design_docs_index(repo_root))
     failures.extend(check_ai_doc_frontmatter(repo_root))
     failures.extend(check_papers_catalog(repo_root))

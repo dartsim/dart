@@ -1,5 +1,6 @@
 ---
 description: update documentation without code changes
+argument-hint: "<topic>"
 agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
@@ -34,3 +35,10 @@ Update documentation: $ARGUMENTS
 7. Ask for explicit maintainer/user approval before pushing or opening the PR.
    After approval, use `.github/PULL_REQUEST_TEMPLATE.md` and the proper
    milestone.
+
+## Output
+
+- Docs and AI workflow sources changed
+- Sync and verification commands run
+- Changelog decision
+- PR readiness, noting any external mutation that was explicitly approved

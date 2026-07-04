@@ -161,7 +161,7 @@ DART uses SI units:
 
 - [`docs/onboarding/dynamics.md`](../../onboarding/dynamics.md) — Code exploration
 - [`docs/readthedocs/topics/control-theory.md`](../../readthedocs/topics/control-theory.md) — Control notation mapping
-- [`dart/dynamics/Skeleton.hpp`](../../../dart/dynamics/Skeleton.hpp) — Source code
+- [`dart/dynamics/skeleton.hpp`](../../../dart/dynamics/skeleton.hpp) — Source code
 
 ---
 

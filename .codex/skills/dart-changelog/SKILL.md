@@ -124,7 +124,7 @@ entry still matches nearby `CHANGELOG.md` style after adding the PR link.
    `CHANGELOG.md` or telling a caller to skip it. The decision must cite the
    diff, PR, issue, release section, or target branch that was inspected.
 5. When writing, start with the reader-visible outcome, not the implementation
-   chore. Use one concise bullet, merge closely related changes, avoid author
+   chore. Use one concise bullet, combine closely related changes, avoid author
    credits, and avoid one-bullet-per-PR diary style.
 6. Place the entry under the target branch's release section and nearest
    existing category. Do not create a new category for one PR unless the release
@@ -148,3 +148,12 @@ validation, PR body, and approval boundary; `dart-changelog` owns the changelog
 decision, wording, placement, evidence-link hygiene, and the pasteable decision
 note that lets Claude, Codex, OpenCode, and manual contributors record the same
 outcome.
+
+## Output
+
+Report:
+
+- the changelog decision note in the Output Contract shape above;
+- the drafted or finalized entry text and its `CHANGELOG.md` placement;
+- gates run (`pixi run lint`, docs-only checks) and their results;
+- any follow-up left local pending explicit maintainer/user approval.

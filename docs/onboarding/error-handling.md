@@ -14,8 +14,8 @@ DART uses a **dual-strategy** error handling approach:
 ## Quick Reference
 
 ```cpp
-#include <dart/common/Exception.hpp>
-#include <dart/common/Result.hpp>
+#include <dart/common/exception.hpp>
+#include <dart/common/result.hpp>
 
 using namespace dart::common;
 
@@ -128,7 +128,7 @@ dart::common::setErrorHandler([](const char* type, const char* msg, auto loc) {
 Use assertions for debug-time invariant checking:
 
 ```cpp
-#include <dart/common/Macros.hpp>
+#include <dart/common/macros.hpp>
 
 DART_ASSERT(mBodyNodes.size() > 0);
 DART_ASSERT(mParentJoint != nullptr, "Parent joint must be set");
@@ -141,7 +141,7 @@ Assertions are **disabled in release builds** (`NDEBUG` defined).
 For non-fatal issues, use logging instead of exceptions:
 
 ```cpp
-#include <dart/common/Logging.hpp>
+#include <dart/common/logging.hpp>
 
 DART_WARN("Deprecated function called, use newFunction() instead");
 DART_ERROR("Failed to load texture, using default");
@@ -247,7 +247,7 @@ When adding numerical assertions to dynamics code, ask:
 
 ### Key Files
 
-- `dart/common/Macros.hpp` — `DART_ASSERT` definition (wraps `assert()`)
-- `dart/common/Logging.hpp` — `DART_WARN`, `DART_WARN_ONCE`, `DART_ERROR`
+- `dart/common/macros.hpp` — `DART_ASSERT` definition (wraps `assert()`)
+- `dart/common/logging.hpp` — `DART_WARN`, `DART_WARN_ONCE`, `DART_ERROR`
 - `dart/math/geometry.cpp` — `math::verifyTransform()`, `math::verifyRotation()`
 - `dart/math/helpers.hpp` — `math::isNan()`, `math::isInf()`

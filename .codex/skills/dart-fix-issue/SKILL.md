@@ -52,3 +52,10 @@ Fix GitHub issue: $ARGUMENTS
 
 PRs to BOTH the active DART 6 LTS branch AND `main`. See
 `docs/onboarding/contributing.md`.
+
+## Output
+
+- Issue number and classification (bug fix, dual-PR, or main-only)
+- Fix summary and regression test added
+- Gates run (lint, focused tests, `pixi run test-all`)
+- PR readiness for each target branch, noting any explicitly approved mutation

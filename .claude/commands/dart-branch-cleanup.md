@@ -1,5 +1,6 @@
 ---
 description: analyze or clean stale repository branches
+argument-hint: "[mode=analyze|action] [branch...]"
 agent: build
 ---
 

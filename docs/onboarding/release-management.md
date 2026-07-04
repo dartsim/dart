@@ -3,12 +3,12 @@
 This guide collects release workflows that are too detailed for a command file.
 Use it with the release workflow commands in `.claude/commands/`:
 
-| Command                    | Use Case                                     |
-| -------------------------- | -------------------------------------------- |
-| `/dart-backport-pr`        | Port a merged `main` fix to a release branch |
-| `/dart-release-ci-fix`     | Fix CI failures on a release branch          |
-| `/dart-release-merge-main` | Merge the active release branch back to main |
-| `/dart-release-packaging`  | Prepare a release version bump and changelog |
+| Command                    | Use Case                                                   |
+| -------------------------- | ---------------------------------------------------------- |
+| `/dart-backport-pr`        | Port a merged `main` fix to a release branch               |
+| `/dart-fix-ci`             | Fix CI failures on any base branch, incl. release branches |
+| `/dart-release-merge-main` | Merge the active release branch back to main               |
+| `/dart-release-packaging`  | Prepare a release version bump and changelog               |
 
 Codex exposes the same workflows as `$dart-*` skills generated from those
 commands. OpenCode receives the same commands through `.opencode/command/`.

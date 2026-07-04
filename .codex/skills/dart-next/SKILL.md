@@ -66,7 +66,7 @@ Interpret `$ARGUMENTS` as optional constraints:
 If constraints conflict or make the task unsafe to select, stop and ask one
 clarifying question.
 
-## Selection Workflow
+## Workflow
 
 1. Inspect local state before choosing work:
    ```bash

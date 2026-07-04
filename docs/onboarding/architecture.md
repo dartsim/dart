@@ -244,7 +244,7 @@ CollisionDetector (Factory)
 
 #### Key Classes:
 
-**1. CollisionDetector** (`dart/collision/CollisionDetector.hpp`)
+**1. CollisionDetector** (`dart/collision/collision_detector.hpp`)
 
 - Abstract base class for all collision engines
 - Factory pattern for runtime backend selection
@@ -255,14 +255,14 @@ CollisionDetector (Factory)
   - `raycast(group, from, to, option, result)` - Ray casting
   - `sphereCast(...)` / `capsuleCast(...)` - Continuous swept queries
 
-**2. CollisionGroup** (`dart/collision/CollisionGroup.hpp`)
+**2. CollisionGroup** (`dart/collision/collision_group.hpp`)
 
 - Manages a collection of collision objects
 - Automatic tracking of BodyNodes/Skeletons
 - Observer pattern to track ShapeFrame destruction
 - Backend-specific implementations (FCL, Bullet, etc.)
 
-**3. Contact** (`dart/collision/Contact.hpp`)
+**3. Contact** (`dart/collision/contact.hpp`)
 
 - Represents a single collision contact:
   - `point` (Vector3d) - Contact point in world frame
@@ -342,7 +342,7 @@ Skeleton (articulated system)
 
 #### Key Classes:
 
-**1. Skeleton** (`dart/dynamics/Skeleton.hpp`)
+**1. Skeleton** (`dart/dynamics/skeleton.hpp`)
 
 - Top-level container for articulated body systems
 - Manages tree structures (supports multiple trees)
@@ -361,7 +361,7 @@ Skeleton (articulated system)
   - `getCoriolisAndGravityForces()` - Get C + G
   - `getConstraintForces()` - Get constraint forces
 
-**2. BodyNode** (`dart/dynamics/BodyNode.hpp`)
+**2. BodyNode** (`dart/dynamics/body_node.hpp`)
 
 - Represents a single rigid body (link) in the system
 - **Physical Properties:**
@@ -381,7 +381,7 @@ Skeleton (articulated system)
   - Parent/child tree structure
   - Attached shapes, markers, end effectors
 
-**3. Joint** (`dart/dynamics/Joint.hpp`)
+**3. Joint** (`dart/dynamics/joint.hpp`)
 
 - Defines kinematic constraints between BodyNodes
 - **Actuator Types:**
@@ -408,19 +408,19 @@ Skeleton (articulated system)
   - Free (6 DOF)
   - Weld (0 DOF - fixed)
 
-**4. DegreeOfFreedom** (`dart/dynamics/DegreeOfFreedom.hpp`)
+**4. DegreeOfFreedom** (`dart/dynamics/degree_of_freedom.hpp`)
 
 - Proxy for accessing a single generalized coordinate
 - Unified interface regardless of joint type
 - Access position, velocity, acceleration, force
 
-**5. Shape** (`dart/dynamics/Shape.hpp`)
+**5. Shape** (`dart/dynamics/shape.hpp`)
 
 - Geometric shapes for collision and visualization
 - Types: Box, Sphere, Cylinder, Capsule, Cone, Mesh, SoftMesh, etc.
 - Provides bounding boxes and volume computation
 
-**6. Inertia** (`dart/dynamics/Inertia.hpp`)
+**6. Inertia** (`dart/dynamics/inertia.hpp`)
 
 - Encapsulates inertial properties:
   - Mass
@@ -487,10 +487,10 @@ Skeleton::getMassMatrix()
 
 **Key Files:**
 
-- Skeleton: `dart/dynamics/Skeleton.hpp`
-- BodyNode: `dart/dynamics/BodyNode.hpp`
-- Joint: `dart/dynamics/Joint.hpp`
-- DegreeOfFreedom: `dart/dynamics/DegreeOfFreedom.hpp`
+- Skeleton: `dart/dynamics/skeleton.hpp`
+- BodyNode: `dart/dynamics/body_node.hpp`
+- Joint: `dart/dynamics/joint.hpp`
+- DegreeOfFreedom: `dart/dynamics/degree_of_freedom.hpp`
 
 ---
 
@@ -509,7 +509,7 @@ ConstraintSolver
 
 #### Key Classes:
 
-**1. ConstraintSolver** (`dart/constraint/ConstraintSolver.hpp`)
+**1. ConstraintSolver** (`dart/constraint/constraint_solver.hpp`)
 
 - Main orchestrator for constraint-based simulation
 - **Responsibilities:**
@@ -524,7 +524,7 @@ ConstraintSolver
   4.  Solve LCP for each group → compute impulses
   5.  Apply impulses to update velocities
 
-**2. ConstraintBase** (`dart/constraint/ConstraintBase.hpp`)
+**2. ConstraintBase** (`dart/constraint/constraint_base.hpp`)
 
 - Abstract base for all constraint types
 - **LCP Interface:**
@@ -536,7 +536,7 @@ ConstraintSolver
 - **Lifecycle:**
   - Created → Updated → LCP solved → Applied → Destroyed
 
-**4. ConstrainedGroup** (`dart/constraint/ConstrainedGroup.hpp`)
+**4. ConstrainedGroup** (`dart/constraint/constrained_group.hpp`)
 
 - Groups skeletons that interact through constraints
 - Enables parallel solving of independent groups
@@ -608,9 +608,9 @@ World::step()
 
 **Key Files:**
 
-- ConstraintSolver: `dart/constraint/ConstraintSolver.hpp`
-- ConstraintBase: `dart/constraint/ConstraintBase.hpp`
-- ContactConstraint: `dart/constraint/ContactConstraint.hpp`
+- ConstraintSolver: `dart/constraint/constraint_solver.hpp`
+- ConstraintBase: `dart/constraint/constraint_base.hpp`
+- ContactConstraint: `dart/constraint/contact_constraint.hpp`
 - LcpSolver implementations: `dart/math/lcp/*`
 
 ---
@@ -632,7 +632,7 @@ World (simulation environment)
 
 #### Key Classes:
 
-**1. World** (`dart/simulation/World.hpp`)
+**1. World** (`dart/simulation/world.hpp`)
 
 - Top-level simulation container
 - **Manages:**
@@ -663,13 +663,14 @@ World (simulation environment)
         └─> Update frame counter
   ```
 
-**2. Recording** (`dart/simulation/Recording.hpp`)
+**2. Replay recording** (built into `dart/simulation/world.hpp`)
 
-- Records simulation state history
+- Records simulation state history directly on the `World` (the DART 6
+  standalone `Recording` class is gone)
 - Methods:
-  - `bake()` - Store current state
-  - `getNumFrames()` - Get number of recorded frames
-  - `getSkeletonPositions(frame)` - Get skeleton state at frame
+  - `setReplayRecordingEnabled(bool)` - Toggle state-history capture
+  - `isReplayRecordingEnabled()` - Query capture state
+  - `clearReplayRecording()` - Drop recorded history
 - Use cases:
   - Playback of simulations
   - Analysis of trajectory data
@@ -683,8 +684,7 @@ DART includes lightweight sensor scaffolding that is updated by the World to kee
 
 **Key Files:**
 
-- World: `dart/simulation/World.hpp`
-- Recording: `dart/simulation/Recording.hpp`
+- World (including replay recording): `dart/simulation/world.hpp`
 
 ---
 
@@ -692,22 +692,26 @@ DART includes lightweight sensor scaffolding that is updated by the World to kee
 
 The main DART header that includes all modules:
 
-**File:** `dart/All.hpp`
+**File:** `dart/all.hpp` (`dart/dart.hpp` forwards to it)
 
 **Includes (in order):**
 
 ```cpp
 #include <dart/config.hpp>         // Build configuration
+#include <dart/export.hpp>         // Export macros
 #include <dart/common/All.hpp>     // Common utilities
 #include <dart/math/All.hpp>       // Math utilities (includes math/optimization)
-#include <dart/optimizer/All.hpp>  // Deprecated aliases forwarding to math/optimization
+#include <dart/optimizer/all.hpp>  // Deprecated aliases forwarding to math/optimization
 #include <dart/collision/All.hpp>  // Collision detection
 #include <dart/constraint/All.hpp> // Constraints
 #include <dart/dynamics/All.hpp>   // Dynamics
 #include <dart/simulation/All.hpp> // Simulation
+#include <dart/sensor/All.hpp>     // Sensors
 ```
 
-Users typically include just `<dart/All.hpp>` to access all functionality.
+The per-module `All.hpp` spellings are generated PascalCase compatibility
+wrappers over the snake_case sources. Users typically include just
+`<dart/all.hpp>` to access all functionality.
 
 ---
 

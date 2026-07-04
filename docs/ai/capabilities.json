@@ -63,10 +63,10 @@
       "gate_profile": "approval-boundary"
     },
     {
-      "name": "dart-merge-pr",
+      "name": "dart-deps",
       "category": "pr",
       "status": "active",
-      "gate_profile": "maintainer-only"
+      "gate_profile": "approval-boundary"
     },
     {
       "name": "dart-docs-update",
@@ -135,10 +135,10 @@
       "gate_profile": "release-gate"
     },
     {
-      "name": "dart-release-ci-fix",
-      "category": "release",
+      "name": "dart-benchmark-packet",
+      "category": "analysis",
       "status": "active",
-      "gate_profile": "reproduction"
+      "gate_profile": "task-specific"
     },
     {
       "name": "dart-release-merge-main",

@@ -1,6 +1,8 @@
 ---
 description: triage a GitHub issue and recommend next action
+argument-hint: "<issue-number>"
 agent: build
+allowed-tools: Read, Grep, Glob, Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(gh pr view:*), Bash(gh pr list:*), Bash(gh issue view:*), Bash(gh search:*)
 ---
 
 Triage issue: $ARGUMENTS

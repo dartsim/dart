@@ -149,7 +149,7 @@ for (auto* bodyNode : skeleton->getBodyNodes()) {
 }
 ```
 
-See `dart/dynamics/Skeleton.hpp` and `dart/dynamics/BodyNode.hpp`.
+See `dart/dynamics/skeleton.hpp` and `dart/dynamics/body_node.hpp`.
 
 ---
 

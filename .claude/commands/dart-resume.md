@@ -1,5 +1,6 @@
 ---
 description: continue work from a previous session
+argument-hint: "[branch-or-task]"
 agent: build
 ---
 
@@ -55,7 +56,6 @@ modifiers. Interpret arguments in this order:
 Examples:
 
 ```text
-$dart-resume docs/dev_tasks/skeleton_simulation_mode
 $dart-resume docs/dev_tasks/dart7_core_dynamics_perf_forwardport
 $dart-resume docs/dev_tasks/dart7_core_dynamics_perf_forwardport --slice
 $dart-resume PR 2991
@@ -71,7 +71,9 @@ $dart-resume PR 2991
 @docs/onboarding/contributing.md
 @docs/onboarding/changelog.md
 
-## Step 1: Recon (no changes)
+## Workflow
+
+### Recon (no changes)
 
 ```bash
 git rev-parse --show-toplevel
@@ -81,7 +83,7 @@ gh pr list --head "$(git branch --show-current)"
 gh pr status
 ```
 
-## Step 2: Reconstruct
+### Reconstruct
 
 If `$ARGUMENTS` names a `docs/dev_tasks/<task>` path, use that folder as the
 target and inspect its `README.md`, `RESUME.md`, and any directly referenced
@@ -110,7 +112,7 @@ Before editing, write explicit pass/fail criteria for the resumed task:
   `dart-changelog` decision will be recorded;
 - which verification commands prove the result.
 
-## Step 3: Continue
+### Continue
 
 - Propose a 3-6 step plan before editing.
 - Continue with minimal scope and preserve existing user changes.
@@ -143,9 +145,6 @@ Before editing, write explicit pass/fail criteria for the resumed task:
 - For active solver/paper implementations, keep the plan or dev-task resume
   surface explicit about the completed slice, the next missing paper-parity
   gap, and why focused green tests are not a full paper-completion claim.
-- Unless an explicit limited mode was requested, do not stop at "one more
-  slice." Continue the plan/execute/verify/update loop until all feasible work
-  is complete or a blocker or approval boundary remains.
 - Run a completion audit before finalizing a dev-task target:
   identify the exact `docs/dev_tasks/<task>/` folder, inspect it for remaining
   plans/evidence/decisions, promote any durable dashboard, evidence matrix, API
@@ -172,24 +171,24 @@ Before editing, write explicit pass/fail criteria for the resumed task:
 - Do not call a dev task complete while `docs/dev_tasks/<task>/` still exists.
   If implementation is done but the folder remains, the remaining work is the
   durable-doc promotion plus folder cleanup.
-- Run `pixi run lint` before committing.
-- Run relevant tests; use `pixi run test-all` before done when feasible, and
-  also `pixi run -e cuda test-all` on Linux hosts with a visible NVIDIA CUDA
-  runtime.
-- Push with `git push -u origin HEAD` and create/update the PR only after
-  explicit maintainer/user approval.
-- For already-published PRs, prefer additive follow-up commits. Amend or
-  force-push only after explicit maintainer/user approval and only when the user
-  explicitly requests it or when there is a clear reason such as removing
-  sensitive content or repairing broken branch history.
-- If an already-published PR needs the latest target branch, use explicit
-  maintainer/user approval to update that published branch by merging the
-  target branch and pushing normally. Do not rebase published PR branches by
-  default because that invalidates existing CI runs and makes PR review/comment
-  history harder to follow. Rebase or force-push only when the maintainer
-  explicitly requests it.
+- Run `pixi run lint` before committing. Run relevant tests; use
+  `pixi run test-all` before done when feasible, and also
+  `pixi run -e cuda test-all` on Linux hosts with a visible NVIDIA CUDA runtime.
+- Merge the latest base branch into any published PR branch before pushing, and
+  follow the base-merge rules in `docs/onboarding/ai-tools.md`. Push with
+  `git push -u origin HEAD` and create or update the PR only after explicit
+  maintainer/user approval, preferring additive follow-up commits.
 
 ## Safety
 
-No destructive git commands (`reset --hard`, dropping stashes, deleting branches)
-without explicit maintainer/user approval.
+No destructive git commands (`reset --hard`, dropping stashes, deleting
+branches) without explicit maintainer/user approval.
+
+## Output
+
+- Reconstructed task and current branch/PR state
+- Plan followed and files changed
+- Verification commands run and their results
+- Completion-audit result: dev-task promotion/cleanup done or the remaining
+  blocker
+- PR readiness, noting any external mutation that was explicitly approved

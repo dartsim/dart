@@ -96,6 +96,10 @@ On Linux hosts with a visible NVIDIA CUDA runtime, also run
 `pixi run -e cuda test-all`; it preserves the CUDA Pixi environment and runs the
 CUDA runtime smoke path automatically when a CUDA device is detected.
 
+**Enforce it once**: run `pixi run install-hooks` a single time to install a
+pre-commit git hook that runs the Tier-0 gate (`check-lint-quick`) automatically;
+`DART_SKIP_HOOKS=1 git commit ...` is the emergency escape hatch.
+
 **Why this exists**: Agents often skip `pixi run lint` when focused on the task. CI will catch issues, but fixing post-push wastes time and CI resources. Run lint locally first—EVERY time.
 
 ## Tool Compatibility

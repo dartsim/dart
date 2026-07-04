@@ -2307,6 +2307,9 @@ api-docs-serve-py = { cmd = """
 verify-full = { cmd = "python scripts/test_all.py" }
 test-all = { depends-on = ["verify-full"] }          # backward-compatible alias
 
+# One-time setup: install the pre-commit git hook that runs check-lint-quick.
+install-hooks = { cmd = "python scripts/install_git_hooks.py" }
+
 # Tier 0 — inner loop: fast lint subset + fast unit tests (long poles skipped).
 check-lint-quick = { depends-on = [
   "check-lint-cpp",

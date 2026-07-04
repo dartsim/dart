@@ -1,5 +1,6 @@
 ---
 description: merge the active release branch back into main
+argument-hint: "[release-branch]"
 agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->

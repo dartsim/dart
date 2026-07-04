@@ -1,5 +1,6 @@
 ---
 description: create a release version bump and changelog PR
+argument-hint: "<new-version>"
 agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->

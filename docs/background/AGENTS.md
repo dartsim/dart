@@ -71,13 +71,13 @@ When explaining concepts, link to the implementing code:
 ```markdown
 The mass matrix is computed by [`Skeleton::getMassMatrix()`][1].
 
-[1]: ../../dart/dynamics/Skeleton.hpp
+[1]: ../../dart/dynamics/skeleton.hpp
 ```
 
 Or use inline references:
 
 ```markdown
-See `dart/dynamics/Skeleton.hpp` for the implementation.
+See `dart/dynamics/skeleton.hpp` for the implementation.
 ```
 
 ## When to Edit These Docs
