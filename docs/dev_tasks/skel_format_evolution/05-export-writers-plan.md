@@ -134,7 +134,10 @@ Future SDF IO work must stay backed by libsdformat. Use typed sdformat DOM
 classes for standard SDF semantics and restrict direct `sdf::Element` access to
 authored/default distinctions, DART extension fields, and schema values not yet
 exposed by the high-level DOM. Do not introduce a DART-owned XML-level SDF
-parser, token scanner, child enumerator, or text reparser.
+parser, token scanner, child enumerator, or text reparser. The
+`pixi run check-sdf-sdformat-boundary` gate now enforces that boundary in
+`dart/utils/sdf` by rejecting TinyXML/raw XML APIs, generic element text parsing,
+and helper-surface expansion beyond authored sdformat element lookup.
 
 The next implementation slice adds
 `dart::utils::UrdfParser::tryWriteSkeletonToString()`, a parser-specific URDF

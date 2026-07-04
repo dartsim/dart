@@ -123,6 +123,10 @@
       `Element::FindElement()`, and converts remaining DART-specific soft-body
       extension values through sdformat typed `Element::Get<T>` calls rather
       than XML text reparsing.
+      A lint/check-lint guard, `pixi run check-sdf-sdformat-boundary`, now
+      rejects TinyXML/raw XML parser APIs and generic SDF element text-parsing
+      helpers in `dart/utils/sdf` so the sdformat boundary is enforced instead
+      of only documented.
       Writer-side preservation of disabled link gravity and SDF 1.10+
       `<screw_thread_pitch>` now derives names and values from typed
       `sdf::Model` / `sdf::Link` / `sdf::Joint` DOM objects instead of reading

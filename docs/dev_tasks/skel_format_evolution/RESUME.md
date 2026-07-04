@@ -122,6 +122,10 @@ DART extension fields, sdformat fields not exposed by high-level DOM, and
 post-serialization patching where sdformat's DOM omits or legacy-names a value.
 TinyXML remains only in `dart::io` as the non-SDF URDF/MJCF root classifier and
 in the URDF writer, where URDF XML is the target format.
+This boundary now has a local lint/check-lint guard:
+`pixi run check-sdf-sdformat-boundary` rejects TinyXML/raw XML parser APIs,
+generic SDF element text parsing, and SDF helper-surface expansion beyond
+authored sdformat element lookup in `dart/utils/sdf`.
 
 The supported SDF geometry reader paths now load through libsdformat
 `sdf::Geometry` DOM objects before mapping sphere, box, cylinder, capsule,
@@ -1183,6 +1187,34 @@ Changelog decision:
   covers URDF writer visual colors and explicit diagnostics for unsupported or
   lossy constructs.
 - Follow-up: none
+
+Additional validation for SDF sdformat-boundary lint coverage:
+
+- `pixi run check-sdf-sdformat-boundary`
+- `pixi run run-cpp-target test_sdf_helpersNone` (3 tests)
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser` (39 tests)
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter` (76 tests)
+- `pixi run lint`
+- `pixi run check-lint`
+- `pixi run build`
+
+Changelog decision:
+
+- Mode: draft
+- Base evidence: `origin/main` inferred for
+  `work/skel-format-yaml-decision`; no open PR exists for the branch.
+- Scope evidence: local diff adds `scripts/check_sdf_sdformat_boundary.py`,
+  wires it into `pixi run lint` / `pixi run check-lint`, and updates IO/task
+  docs to record the sdformat boundary.
+- Decision: entry required because this changes the contributor quality-gate
+  surface.
+- Target section: `CHANGELOG.md` -> DART 7 -> Tests, Benchmarks, and Quality
+  Gates.
+- Entry text: present as the SDF sdformat-boundary lint/check-lint guard
+  bullet, without a PR link until the implementation PR exists.
+- PR-body note: N/A
+- Follow-up: add the implementation PR link after a PR exists and maintainer /
+  user approval allows the PR update or follow-up push.
 
 Changelog decision:
 
