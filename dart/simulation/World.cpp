@@ -127,6 +127,23 @@ CollisionDetectorPtr tryCreateCollisionDetector(CollisionDetectorType type)
   return tryCreateCollisionDetector(toCollisionDetectorKey(type));
 }
 
+const dynamics::BodyNode* getRootBodyNodeIfAny(
+    const dynamics::Skeleton& skeleton)
+{
+  if (skeleton.getNumTrees() == 0u)
+    return nullptr;
+
+  return skeleton.getRootBodyNode();
+}
+
+dynamics::BodyNode* getRootBodyNodeIfAny(dynamics::Skeleton& skeleton)
+{
+  if (skeleton.getNumTrees() == 0u)
+    return nullptr;
+
+  return skeleton.getRootBodyNode();
+}
+
 // Resolves a collision detector for a World constructed from a WorldConfig.
 //
 // Returns nullptr when the requested detector is the default 'fcl' backend so
@@ -195,7 +212,7 @@ std::vector<char> findShallowSupportedFreeRoots(
     if (skeleton == nullptr || !skeleton->isMobile())
       return;
 
-    if (bodyNode != skeleton->getRootBodyNode())
+    if (bodyNode != getRootBodyNodeIfAny(*skeleton))
       return;
 
     const auto* supportSkeleton = supportBodyNode->getSkeletonRawPtr();
@@ -305,7 +322,7 @@ std::vector<World::FreeRootVelocitySnapshot> World::snapshotFreeRootVelocities()
     if (!skeleton || !skeleton->isMobile())
       continue;
 
-    const auto* rootBody = skeleton->getRootBodyNode();
+    const auto* rootBody = getRootBodyNodeIfAny(*skeleton);
     if (rootBody == nullptr)
       continue;
 
@@ -409,7 +426,7 @@ void World::suppressShallowSupportedFreeRootDrift(
   if (!skeleton || !skeleton->isMobile() || gravity.squaredNorm() <= 0.0)
     return;
 
-  auto* rootBody = skeleton->getRootBodyNode();
+  auto* rootBody = getRootBodyNodeIfAny(*skeleton);
   if (rootBody == nullptr)
     return;
 
