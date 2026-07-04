@@ -3312,16 +3312,24 @@ void computeMultibodyLinkWorldJacobianInto(
 Eigen::Vector3d computeMultibodyCenterOfMass(
     detail::WorldRegistry& registry, const comps::MultibodyStructure& structure)
 {
+  MultibodyDynamicsScratch scratch;
+  buildDynamicsTreeInto(
+      registry,
+      structure,
+      scratch.tree,
+      scratch.linkIndexOf,
+      scratch.jointFrameSubspace);
+
   Eigen::Vector3d weighted = Eigen::Vector3d::Zero();
   double totalMass = 0.0;
-  for (const auto linkEntity : structure.links) {
-    const auto& mass = registry.get<comps::LinkModel>(linkEntity).mass;
+  for (std::size_t i = 0; i < structure.links.size(); ++i) {
+    const auto& mass = registry.get<comps::LinkModel>(structure.links[i]).mass;
     if (mass.mass <= 0.0) {
       continue;
     }
-    const auto& cache = registry.get<comps::FrameCache>(linkEntity);
     weighted.noalias()
-        += mass.mass * (cache.worldTransform * mass.localCenterOfMass);
+        += mass.mass
+           * (scratch.tree.links[i].worldTransform * mass.localCenterOfMass);
     totalMass += mass.mass;
   }
   if (totalMass <= 0.0) {

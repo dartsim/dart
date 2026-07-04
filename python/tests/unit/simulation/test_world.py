@@ -7415,7 +7415,8 @@ def test_simulation_center_of_mass_jacobian():
     )
     bob.mass = 3.0
     bob.inertia = ((0.05, 0.0, 0.0), (0.0, 0.05, 0.0), (0.0, 0.0, 0.05))
-    bob.center_of_mass = (0.5, 0.0, 0.0)
+    com_offset = 0.5
+    bob.center_of_mass = (com_offset, 0.0, 0.0)
 
     world.enter_simulation_mode()
 
@@ -7431,6 +7432,15 @@ def test_simulation_center_of_mass_jacobian():
     assert jacobian.shape == (3, 1)
     np.testing.assert_allclose(
         jacobian[:, 0], [0.0, 0.0, -3.0 * radius / total], atol=1e-12
+    )
+
+    # The COM property must reflect direct joint edits even when frame caches
+    # are dirty from setting the joint position after the previous query.
+    bob.parent_joint.position = [np.pi / 2.0]
+    np.testing.assert_allclose(
+        np.asarray(robot.center_of_mass),
+        [0.0, 0.0, -3.0 * radius / total],
+        atol=1e-12,
     )
 
 

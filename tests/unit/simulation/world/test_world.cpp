@@ -13057,6 +13057,16 @@ TEST(World, MultibodyCenterOfMassJacobianSingleLink)
   EXPECT_NEAR(comJacobian(1, 0), 0.0, 1e-12);
   EXPECT_NEAR(
       comJacobian(2, 0), -bobMass * (length + comOffset) / totalMass, 1e-12);
+
+  // Querying COM after a direct joint-position edit must reflect the current
+  // joint state even though the frame cache is dirty.
+  auto joint = bob.getParentJoint();
+  joint.setPosition(Eigen::VectorXd::Constant(1, std::numbers::pi / 2.0));
+  const Eigen::Vector3d rotatedCom = robot.getCenterOfMass();
+  EXPECT_NEAR(rotatedCom.x(), 0.0, 1e-12);
+  EXPECT_NEAR(rotatedCom.y(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      rotatedCom.z(), -bobMass * (length + comOffset) / totalMass, 1e-12);
 }
 
 // The center-of-mass Jacobian predicts the center-of-mass velocity of a
