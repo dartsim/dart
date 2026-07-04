@@ -41,6 +41,10 @@
 /// the contact-velocity hot paths are covered and stay numerically
 /// well-behaved.
 
+#include "dart/collision/collision_group.hpp"
+#include "dart/collision/collision_option.hpp"
+#include "dart/collision/collision_result.hpp"
+#include "dart/collision/dart/dart_collision_detector.hpp"
 #include "dart/constraint/constraint_solver.hpp"
 #include "dart/constraint/contact_surface.hpp"
 #include "dart/dynamics/body_node.hpp"
@@ -51,11 +55,42 @@
 
 #include <gtest/gtest.h>
 
+#include <vector>
+
 using namespace dart;
 using namespace dart::dynamics;
 using namespace dart::constraint;
 
 namespace {
+
+class ExposedConstraintSolver : public ConstraintSolver
+{
+public:
+  using ConstraintSolver::updateConstraints;
+};
+
+class DuplicateFirstContactDetector : public collision::DartCollisionDetector
+{
+public:
+  bool collide(
+      collision::CollisionGroup* group,
+      const collision::CollisionOption& option
+      = collision::CollisionOption(false, 1u, nullptr),
+      collision::CollisionResult* result = nullptr) override
+  {
+    const bool collided
+        = collision::DartCollisionDetector::collide(group, option, result);
+    if (result != nullptr && result->getNumContacts() > 0u) {
+      auto contact = result->getContact(0);
+      result->clear();
+      for (std::size_t i = 0; i < 3; ++i) {
+        contact.point.x() += 1e-6 * static_cast<double>(i);
+        result->addContact(contact);
+      }
+    }
+    return collided;
+  }
+};
 
 /// Counts how many contacts reach contact-constraint creation, i.e. how many
 /// survive the solver's validity filters and are actually solved.
@@ -68,11 +103,41 @@ public:
       double timeStep) const override
   {
     ++mNumContactsCreated;
+    mNumContactsOnCollisionObject.push_back(numContactsOnCollisionObject);
     return DefaultContactSurfaceHandler::createConstraint(
         contact, numContactsOnCollisionObject, timeStep);
   }
 
   mutable int mNumContactsCreated = 0;
+  mutable std::vector<std::size_t> mNumContactsOnCollisionObject;
+};
+
+class ReentrantContactSurfaceHandler : public CountingContactSurfaceHandler
+{
+public:
+  explicit ReentrantContactSurfaceHandler(ExposedConstraintSolver& nestedSolver)
+    : mNestedSolver(&nestedSolver)
+  {
+  }
+
+  ContactConstraintPtr createConstraint(
+      collision::Contact& contact,
+      std::size_t numContactsOnCollisionObject,
+      double timeStep) const override
+  {
+    if (!mDidReenter) {
+      mDidReenter = true;
+      mNestedSolver->updateConstraints();
+    }
+
+    return CountingContactSurfaceHandler::createConstraint(
+        contact, numContactsOnCollisionObject, timeStep);
+  }
+
+  mutable bool mDidReenter = false;
+
+private:
+  ExposedConstraintSolver* mNestedSolver;
 };
 
 /// A dynamic (reactive) sphere body on a FreeJoint at the given position.
@@ -141,5 +206,42 @@ TEST(ContactConstraint, RepeatedContactSolveIsStable)
     ASSERT_NO_FATAL_FAILURE(solver.solve());
     ASSERT_TRUE(bodyA->getVelocities().allFinite());
     ASSERT_TRUE(bodyB->getVelocities().allFinite());
+  }
+}
+
+//==============================================================================
+// A custom contact handler may re-enter another solver while the outer solver
+// is still creating contact constraints. Contact-pair counting must be local to
+// the outer update call so the inner update cannot reset the outer counts.
+TEST(ContactConstraint, ReentrantContactCreationPreservesPairCounts)
+{
+  ExposedConstraintSolver nestedSolver;
+  common::FrameAllocator sharedFrameAllocator;
+  nestedSolver.setFrameAllocator(&sharedFrameAllocator);
+  nestedSolver.setTimeStep(0.001);
+  nestedSolver.addSkeleton(
+      createDynamicSphere("nested_A", 0.1, Eigen::Vector3d(0.0, 0.0, 0.0)));
+  nestedSolver.addSkeleton(
+      createDynamicSphere("nested_B", 0.1, Eigen::Vector3d(0.15, 0.0, 0.0)));
+
+  ExposedConstraintSolver outerSolver;
+  outerSolver.setFrameAllocator(&sharedFrameAllocator);
+  outerSolver.setTimeStep(0.001);
+  outerSolver.setCollisionDetector(
+      std::make_shared<DuplicateFirstContactDetector>());
+  outerSolver.addSkeleton(
+      createDynamicSphere("outer_A", 0.1, Eigen::Vector3d(0.0, 0.0, 0.0)));
+  outerSolver.addSkeleton(
+      createDynamicSphere("outer_B", 0.1, Eigen::Vector3d(0.15, 0.0, 0.0)));
+
+  auto handler = std::make_shared<ReentrantContactSurfaceHandler>(nestedSolver);
+  outerSolver.addContactSurfaceHandler(handler);
+
+  ASSERT_NO_FATAL_FAILURE(outerSolver.updateConstraints());
+
+  ASSERT_TRUE(handler->mDidReenter);
+  ASSERT_EQ(handler->mNumContactsOnCollisionObject.size(), 3u);
+  for (const auto count : handler->mNumContactsOnCollisionObject) {
+    EXPECT_EQ(count, 3u);
   }
 }

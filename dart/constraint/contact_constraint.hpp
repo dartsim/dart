@@ -191,6 +191,14 @@ private:
   /// Second body node
   dynamics::BodyNode* mBodyNodeB;
 
+  /// Cached skeleton raw pointers and reactivity for the two body nodes.
+  /// These values are fixed for the lifetime of a per-step contact constraint
+  /// and are used heavily during LCP assembly.
+  dynamics::Skeleton* mSkeletonA = nullptr;
+  dynamics::Skeleton* mSkeletonB = nullptr;
+  bool mIsReactiveA = false;
+  bool mIsReactiveB = false;
+
   /// Contact between mBodyNode1 and mBodyNode2
   collision::Contact& mContact;
 
@@ -234,6 +242,9 @@ private:
 
   ///
   bool mIsFrictionOn;
+
+  /// ODE-style tangent basis cached at construction when friction is enabled.
+  TangentBasisMatrix mTangentBasis;
 
   /// Index of applied impulse
   std::size_t mAppliedImpulseIndex;

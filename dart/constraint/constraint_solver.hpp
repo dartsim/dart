@@ -364,7 +364,6 @@ protected:
   common::FrameAllocator* mFrameAllocator = nullptr;
 
   /// Persistent containers (reused across steps to avoid per-step allocation)
-  std::vector<collision::Contact*> mContactPtrs;
   std::vector<bool> mImpulseAppliedStates;
   std::vector<ConstraintBasePtr> mPositionConstraints;
 };
