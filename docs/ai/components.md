@@ -129,10 +129,13 @@ lines per `### PLAN-` block and 15 lines per `- Next step:` field), the
 no-`Complete`-entries rule for `docs/plans/dashboard.md` (completed plans move
 to `docs/plans/archive.md`, whose entry shape is also checked), the
 `docs/ai/` frontmatter pilot, and
-the `docs/readthedocs/papers.md` catalog schema. It also reports advisory
-signals for pilot-scoped internal Markdown links, conservative owner-index
-discoverability, and north-star evidence freshness while those checks are in
-their report-only rollout.
+the `docs/readthedocs/papers.md` catalog schema, pilot-scoped internal
+Markdown links, and conservative owner-index discoverability (both promoted
+from advisory to blocking after the PLAN-121 pilot inventory reported a clean
+cycle). North-star evidence freshness remains a report-only advisory by
+design: blocking on git-date freshness would fail unrelated PRs whenever
+cited evidence paths change, so clearing that channel stays a manual,
+owner-doc-governed re-verification step.
 
 Report-only checks still need a quiet default run. Before adding a new advisory
 to a mandatory command, scope it to an owned pilot surface, clean the existing
