@@ -30,11 +30,12 @@ tests. This planning record does not complete Phase 5.
 The first SDF writer implementation slice is now local on
 `work/skel-format-yaml-decision`: `dart::utils::SdfParser` exposes
 `tryWriteSkeletonToString()` for a conservative `Skeleton` subset, with
-`INTEGRATION_io_SdfWriter` proving write/read round-trip for links,
-root placement, revolute joints, inertial data, and primitive geometry. It also
-checks unsupported-shape diagnostics. This is real Phase 5 progress, but Phase 5
-is still open until broader SDF coverage plus the remaining accepted writer
-targets are implemented or durably deferred.
+`INTEGRATION_io_SdfWriter` proving write/read round-trip for links, root
+FreeJoint/WeldJoint placement, revolute/prismatic/weld child joints, inertial
+data, and primitive or mesh geometry. It also checks unsupported-shape
+diagnostics. This is real Phase 5 progress, but Phase 5 is still open until
+broader SDF coverage plus the remaining accepted writer targets are implemented
+or durably deferred.
 
 Validation for this slice:
 

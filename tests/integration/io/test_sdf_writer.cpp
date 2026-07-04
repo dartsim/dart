@@ -33,18 +33,24 @@
 #include "dart/utils/sdf/sdf_parser.hpp"
 #include "dart/utils/sdf/sdf_writer.hpp"
 
+#include <dart/config.hpp>
+
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
 #include <gtest/gtest.h>
 
 #include <filesystem>
 #include <fstream>
+#include <memory>
 
 using namespace dart;
 
@@ -57,6 +63,16 @@ std::filesystem::path writeTempSdf(std::string_view text, std::string_view name)
   std::ofstream output(path);
   output << text;
   return path;
+}
+
+std::shared_ptr<math::TriMesh<double>> makeTriangleMesh()
+{
+  auto mesh = std::make_shared<math::TriMesh<double>>();
+  mesh->addVertex(0.0, 0.0, 0.0);
+  mesh->addVertex(1.0, 0.0, 0.0);
+  mesh->addVertex(0.0, 1.0, 0.0);
+  mesh->addTriangle(0, 1, 2);
+  return mesh;
 }
 
 dynamics::SkeletonPtr makeRoundTripSkeleton()
@@ -111,6 +127,49 @@ dynamics::SkeletonPtr makeRoundTripSkeleton()
       std::make_shared<dynamics::CylinderShape>(0.1, 0.3),
       "tip_cylinder_collision");
 
+  dynamics::PrismaticJoint::Properties sliderProperties;
+  sliderProperties.mName = "slider_joint";
+  sliderProperties.mAxis = Eigen::Vector3d::UnitX();
+  sliderProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.0, 0.2, 0.0);
+  sliderProperties.mPositionLowerLimits[0] = 0.1;
+  sliderProperties.mPositionUpperLimits[0] = 0.9;
+
+  dynamics::BodyNode::Properties sliderBodyProperties;
+  sliderBodyProperties.mName = "slider";
+  sliderBodyProperties.mInertia.setMass(0.75);
+  sliderBodyProperties.mInertia.setMoment(Eigen::Matrix3d::Identity() * 0.75);
+
+  auto [sliderJoint, slider]
+      = skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
+          tip, sliderProperties, sliderBodyProperties);
+  (void)sliderJoint;
+
+  const common::Uri meshUri
+      = common::Uri::createFromPath(dart::config::dataPath("obj/BoxSmall.obj"));
+  slider->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::MeshShape>(
+          Eigen::Vector3d(0.5, 1.0, 2.0), makeTriangleMesh(), meshUri),
+      "slider_mesh_visual");
+
+  dynamics::WeldJoint::Properties weldProperties;
+  weldProperties.mName = "fixed_tip";
+  weldProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.0, 0.0, 0.25);
+
+  dynamics::BodyNode::Properties fixedBodyProperties;
+  fixedBodyProperties.mName = "fixed";
+  fixedBodyProperties.mInertia.setMass(0.25);
+  fixedBodyProperties.mInertia.setMoment(Eigen::Matrix3d::Identity() * 0.25);
+
+  auto [fixedJoint, fixed]
+      = skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
+          slider, weldProperties, fixedBodyProperties);
+  (void)fixedJoint;
+  fixed->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.1, 0.1, 0.1)),
+      "fixed_box_collision");
+
   return skeleton;
 }
 
@@ -150,8 +209,12 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
 
   const auto* base = reparsed->getBodyNode("base");
   const auto* tip = reparsed->getBodyNode("tip");
+  const auto* slider = reparsed->getBodyNode("slider");
+  const auto* fixed = reparsed->getBodyNode("fixed");
   ASSERT_NE(base, nullptr);
   ASSERT_NE(tip, nullptr);
+  ASSERT_NE(slider, nullptr);
+  ASSERT_NE(fixed, nullptr);
 
   EXPECT_NEAR(base->getMass(), 2.5, 1e-12);
   expectVectorNear(
@@ -174,6 +237,21 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   EXPECT_NEAR(hinge->getPositionLowerLimit(0), -1.25, 1e-12);
   EXPECT_NEAR(hinge->getPositionUpperLimit(0), 1.5, 1e-12);
 
+  const auto* sliderJoint = dynamic_cast<const dynamics::PrismaticJoint*>(
+      reparsed->getJoint("slider_joint"));
+  ASSERT_NE(sliderJoint, nullptr);
+  EXPECT_EQ(sliderJoint->getParentBodyNode(), tip);
+  EXPECT_EQ(sliderJoint->getChildBodyNode(), slider);
+  expectVectorNear(sliderJoint->getAxis(), Eigen::Vector3d::UnitX(), 1e-12);
+  EXPECT_NEAR(sliderJoint->getPositionLowerLimit(0), 0.1, 1e-12);
+  EXPECT_NEAR(sliderJoint->getPositionUpperLimit(0), 0.9, 1e-12);
+
+  const auto* fixedJoint = dynamic_cast<const dynamics::WeldJoint*>(
+      reparsed->getJoint("fixed_tip"));
+  ASSERT_NE(fixedJoint, nullptr);
+  EXPECT_EQ(fixedJoint->getParentBodyNode(), slider);
+  EXPECT_EQ(fixedJoint->getChildBodyNode(), fixed);
+
   ASSERT_EQ(base->getNumShapeNodesWith<dynamics::VisualAspect>(), 1u);
   ASSERT_EQ(base->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
   const auto* baseBox = dynamic_cast<const dynamics::BoxShape*>(
@@ -193,6 +271,69 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   ASSERT_NE(tipCylinder, nullptr);
   EXPECT_NEAR(tipCylinder->getRadius(), 0.1, 1e-12);
   EXPECT_NEAR(tipCylinder->getHeight(), 0.3, 1e-12);
+
+  ASSERT_EQ(slider->getNumShapeNodesWith<dynamics::VisualAspect>(), 1u);
+  const auto* sliderMesh = dynamic_cast<const dynamics::MeshShape*>(
+      slider->getShapeNodeWith<dynamics::VisualAspect>(0)->getShape().get());
+  ASSERT_NE(sliderMesh, nullptr);
+  expectVectorNear(
+      sliderMesh->getScale(), Eigen::Vector3d(0.5, 1.0, 2.0), 1e-12);
+  const common::Uri meshUri
+      = common::Uri::createFromPath(dart::config::dataPath("obj/BoxSmall.obj"));
+  EXPECT_EQ(sliderMesh->getMeshUri2().toString(), meshUri.toString());
+
+  ASSERT_EQ(fixed->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
+  const auto* fixedBox = dynamic_cast<const dynamics::BoxShape*>(
+      fixed->getShapeNodeWith<dynamics::CollisionAspect>(0)->getShape().get());
+  ASSERT_NE(fixedBox, nullptr);
+  expectVectorNear(fixedBox->getSize(), Eigen::Vector3d(0.1, 0.1, 0.1), 1e-12);
+}
+
+//==============================================================================
+TEST(SdfWriter, RootWeldRoundTripsWithFixedRootOption)
+{
+  auto skeleton = dynamics::Skeleton::create("root_weld_writer");
+  skeleton->setMobile(false);
+
+  dynamics::WeldJoint::Properties rootProperties;
+  rootProperties.mName = "root";
+  rootProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.2, 0.3, 0.4);
+
+  dynamics::BodyNode::Properties bodyProperties;
+  bodyProperties.mName = "fixed_root";
+  bodyProperties.mInertia.setMass(1.0);
+  bodyProperties.mInertia.setMoment(Eigen::Matrix3d::Identity());
+
+  auto [rootJoint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
+          nullptr, rootProperties, bodyProperties);
+  (void)rootJoint;
+  body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::SphereShape>(0.2), "fixed_root_sphere");
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  EXPECT_NE(
+      writeResult.value().find("<static>true</static>"), std::string::npos);
+
+  const auto path = writeTempSdf(writeResult.value(), "root_weld");
+  const utils::SdfParser::Options options(
+      nullptr, utils::SdfParser::RootJointType::Fixed);
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()), options);
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  ASSERT_EQ(reparsed->getNumBodyNodes(), 1u);
+  ASSERT_EQ(reparsed->getNumJoints(), 1u);
+  const auto* root
+      = dynamic_cast<const dynamics::WeldJoint*>(reparsed->getJoint(0));
+  ASSERT_NE(root, nullptr);
+  EXPECT_EQ(root->getParentBodyNode(), nullptr);
+  ASSERT_NE(root->getChildBodyNode(), nullptr);
+  EXPECT_EQ(root->getChildBodyNode()->getName(), "fixed_root");
 }
 
 //==============================================================================
