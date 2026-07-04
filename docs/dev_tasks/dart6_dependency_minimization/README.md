@@ -7,6 +7,8 @@ This task is for the DART 6.20 support lane.
 - Implementation branch:
   `plan/dart6-dependency-minimization-6.20`, based on
   `origin/release-6.20`.
+- Native-collision planning refresh branch:
+  `plan/dart6-native-collision-port`, based on `origin/release-6.20`.
 - DART 7 reference: use `origin/main` directly, or create a local worktree from
   `origin/main` for comparisons. Do not rely on a developer-specific checkout
   path.
@@ -14,17 +16,20 @@ This task is for the DART 6.20 support lane.
   `origin/main` or remote refs (or your own separate `main` worktree) as
   comparison evidence only.
 
-Evidence was collected on 2026-06-19 after fetching `origin/main`,
-`origin/release-6.20`, and `origin/release-6.19`.
+Evidence was first collected on 2026-06-19 after fetching `origin/main`,
+`origin/release-6.20`, and `origin/release-6.19`. The native-collision port
+evidence in `03-native-collision-port-scoping.md` and the dashboard state in
+`04-orchestration-dashboard.md` were refreshed on 2026-07-03 after fetching
+`origin/main` and `origin/release-6.20`.
 
 ## Current Branch State
 
-- `origin/release-6.20` currently points at `b94cd16f6eb` (`Plan DART 6.20
-  dependency minimization (#3074)`).
-- `package.xml` and `pixi.toml` on `origin/release-6.20` still report version
-  `6.19.2`.
-- DART 6.20 is intentionally using the release lane before the package version
-  metadata bump lands.
+- `origin/release-6.20` currently points at
+  `849f22245b7ef11299fa73074c77d6c50b8dda01`.
+- `package.xml` and `pixi.toml` on `origin/release-6.20` still report a 6.19.x
+  package version (`6.19.3` in the current CMake configure output).
+- DART 6.20 intentionally uses the release lane while package version metadata
+  catches up to the branch/milestone naming.
 
 ## DART 6 Dependency Inventory
 
