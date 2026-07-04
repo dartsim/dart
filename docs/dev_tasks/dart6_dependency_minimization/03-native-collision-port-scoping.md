@@ -223,13 +223,18 @@ Success means **both**:
 ## Immediate work packet
 
 1. Refresh this dashboard and branch state whenever a release-6.20 PR lands.
-2. Unblock/merge #3209 and #3230, or locally carry their benchmark surfaces for
-   a baseline packet.
+2. ~~Unblock/merge #3209 and #3230~~ — **done** (both merged by 2026-07-03,
+   along with #3226/#3227/#3229/#3234).
 3. Re-run the local A/B command above at larger scale (900 and 3000 generated
-   objects, `3k_shapes.sdf`, and the #3209 container workload) with scene dumps.
-4. Write the baseline packet before porting code. It should include command
-   lines, raw benchmark output, hashes, scene-dump tolerances, CPU metadata, and
-   an explicit "native default allowed/not allowed" verdict.
+   objects, `3k_shapes.sdf`, and the #3209 container workload) with scene dumps
+   — **in flight 2026-07-04**; use the canonical guard-scene protocol from
+   `../dart6_performance_generalization/01-baseline-evidence.md` and
+   cross-reference the perf lane's WP-PG.01 packet (#3263) instead of
+   duplicating its cells.
+4. Write the baseline packet before porting code (deliverable:
+   `05-phase0-baseline-packet.md`). It should include command lines, raw
+   benchmark output, hashes, scene-dump tolerances, CPU metadata, and an
+   explicit "native default allowed/not allowed" verdict.
 5. Start Phase 1 only after the baseline packet is reviewed.
 
 ## Recommendation
