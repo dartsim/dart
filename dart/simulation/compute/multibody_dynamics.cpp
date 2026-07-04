@@ -59,6 +59,7 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
+#include <limits>
 #include <new>
 #include <span>
 #include <unordered_map>
@@ -927,6 +928,8 @@ struct MultibodyDynamicsScratch
       linkOwnerMap(makeLinkOwnerMap(allocator)),
       constrainedDof(ConstrainedDofAllocator{allocator}),
       constrainedTarget(ConstrainedTargetAllocator{allocator}),
+      constrainedLo(ConstrainedTargetAllocator{allocator}),
+      constrainedHi(ConstrainedTargetAllocator{allocator}),
       articulated(Matrix6Allocator{allocator}),
       bias(SpatialVectorAllocator{allocator}),
       motionToChild(Matrix6Allocator{allocator}),
@@ -936,7 +939,8 @@ struct MultibodyDynamicsScratch
       jointMatrixInverse(BodyJacobianAllocator{allocator}),
       jointRhs(VectorAllocator{allocator}),
       contactProblem(allocator),
-      bodyJacobian(BodyJacobianAllocator{allocator})
+      bodyJacobian(BodyJacobianAllocator{allocator}),
+      servoDantzig(allocator)
   {
   }
 
@@ -968,6 +972,11 @@ struct MultibodyDynamicsScratch
   LinkOwnerMap linkOwnerMap;
   ConstrainedDofVector constrainedDof;
   ConstrainedTargetVector constrainedTarget;
+  // Per-constrained-DOF impulse bounds. Velocity/Locked coordinates are free
+  // (-/+ infinity); Servo coordinates are bounded to the effort-limit impulse
+  // [effortLower*dt, effortUpper*dt] so the servo saturates at its force limit.
+  ConstrainedTargetVector constrainedLo;
+  ConstrainedTargetVector constrainedHi;
   Matrix6Vector articulated;
   SpatialVectorVector bias;
   Matrix6Vector motionToChild;
@@ -998,6 +1007,15 @@ struct MultibodyDynamicsScratch
   Eigen::VectorXd symmetricForwardWork;                // reusable solve work
   Eigen::VectorXd symmetricUnitRhs;                    // reusable inverse RHS
   Eigen::VectorXd symmetricSolution; // reusable inverse column
+
+  // Boxed velocity-constraint solve, used only when an effort-bounded Servo
+  // actuator is present. Velocity/Locked-only worlds keep the unbounded SPD
+  // solve above (bit-stable); the box-constrained Dantzig path runs only when a
+  // servo coordinate has a finite effort bound, so it never perturbs the
+  // existing equality-actuator behavior.
+  Eigen::VectorXi velocityConstraintFindex; // k, all -1 (no friction coupling)
+  math::DantzigSolver servoSolver;
+  math::DantzigSolver::Scratch servoDantzig;
 };
 
 MultibodyDynamicsScratch& getOrEmplaceMultibodyDynamicsScratch(
@@ -1163,8 +1181,10 @@ bool computeUnconstrainedMultibodyVelocityInto(
         break;
       case comps::ActuatorType::Passive:
       case comps::ActuatorType::Velocity:
-        // Passive applies no commanded effort; Velocity is driven by a
-        // velocity-level constraint solved after the unconstrained step.
+      case comps::ActuatorType::Servo:
+        // Passive applies no commanded effort; Velocity and Servo are driven by
+        // a velocity-level constraint solved after the unconstrained step (the
+        // servo's motor impulse is bounded there by the effort limits).
         for (std::size_t d = 0; d < dof; ++d) {
           const auto local = static_cast<Eigen::Index>(d);
           const auto global
@@ -1197,7 +1217,7 @@ bool computeUnconstrainedMultibodyVelocityInto(
             InvalidOperationException,
             "Joint actuator type is not yet implemented in the "
             "articulated-body forward dynamics; supported types are Force, "
-            "Passive, Velocity, and Locked");
+            "Passive, Velocity, Servo, and Locked");
     }
   }
 
@@ -1280,14 +1300,20 @@ bool computeUnconstrainedMultibodyVelocityInto(
     }
   }
 
-  // Velocity- and Locked-actuated joints: solve a coupled velocity-level
-  // equality constraint that drives the selected coordinates to their target
-  // velocities (the commanded velocity for Velocity, zero for Locked),
-  // lambda = (J M^-1 J^T)^-1 (target - J nextVelocity),
+  // Velocity-, Servo-, and Locked-actuated joints solve a coupled
+  // velocity-level constraint that drives the selected coordinates to their
+  // target velocities (the commanded velocity for Velocity/Servo, zero for
+  // Locked): lambda = (J M^-1 J^T)^-1 (target - J nextVelocity),
   // nextVelocity += M^-1 J^T lambda, where J selects the constrained
-  // coordinates.
+  // coordinates. A Servo coordinate additionally bounds its motor impulse
+  // lambda to the effort-limit impulse [effortLower*dt, effortUpper*dt]; when
+  // any such bound is finite the coupled solve becomes a boxed LCP.
+  constexpr double kInfinity = std::numeric_limits<double>::infinity();
   scratch.constrainedDof.clear();
   scratch.constrainedTarget.clear();
+  scratch.constrainedLo.clear();
+  scratch.constrainedHi.clear();
+  bool anyFiniteServoBound = false;
   for (std::size_t i = 0; i < scratch.tree.links.size(); ++i) {
     const auto dof = scratch.tree.links[i].dof;
     if (dof == 0) {
@@ -1295,25 +1321,48 @@ bool computeUnconstrainedMultibodyVelocityInto(
     }
     const auto& jointActuation
         = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
-    // Velocity and Locked actuators both drive their coordinates through the
-    // same velocity-level equality constraint: Velocity to its commanded
-    // velocity, Locked to zero (holding the joint at its current position).
+    // Velocity, Servo, and Locked actuators all drive their coordinates through
+    // the same velocity-level constraint: Velocity/Servo to the commanded
+    // velocity and Locked to zero (holding the joint at its current position).
+    // Servo differs only in bounding its motor impulse by the effort limits.
     const bool velocityActuated
         = jointActuation.actuatorType == comps::ActuatorType::Velocity;
+    const bool servoActuated
+        = jointActuation.actuatorType == comps::ActuatorType::Servo;
     const bool lockedActuated
         = jointActuation.actuatorType == comps::ActuatorType::Locked;
-    if (!velocityActuated && !lockedActuated) {
+    if (!velocityActuated && !servoActuated && !lockedActuated) {
       continue;
     }
+    const auto& jointModel
+        = registry.get<comps::JointModel>(scratch.tree.jointOf[i]);
+    const bool hasCommand = jointActuation.commandVelocity.size()
+                            == static_cast<Eigen::Index>(dof);
+    const bool hasEffortLimits
+        = jointModel.limits.effortLower.size() == static_cast<Eigen::Index>(dof)
+          && jointModel.limits.effortUpper.size()
+                 == static_cast<Eigen::Index>(dof);
     for (std::size_t d = 0; d < dof; ++d) {
+      const auto local = static_cast<Eigen::Index>(d);
       scratch.constrainedDof.push_back(
           static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d));
       scratch.constrainedTarget.push_back(
           lockedActuated ? 0.0
-          : jointActuation.commandVelocity.size()
-                  == static_cast<Eigen::Index>(dof)
-              ? jointActuation.commandVelocity[static_cast<Eigen::Index>(d)]
-              : 0.0);
+          : hasCommand   ? jointActuation.commandVelocity[local]
+                         : 0.0);
+      // Velocity/Locked coordinates carry a free (unbounded) impulse; a Servo
+      // coordinate bounds its motor impulse to the effort-limit impulse.
+      double lo = -kInfinity;
+      double hi = kInfinity;
+      if (servoActuated && hasEffortLimits) {
+        lo = jointModel.limits.effortLower[local] * timeStep;
+        hi = jointModel.limits.effortUpper[local] * timeStep;
+        if (std::isfinite(lo) || std::isfinite(hi)) {
+          anyFiniteServoBound = true;
+        }
+      }
+      scratch.constrainedLo.push_back(lo);
+      scratch.constrainedHi.push_back(hi);
     }
   }
   if (!scratch.constrainedDof.empty()) {
@@ -1344,12 +1393,38 @@ bool computeUnconstrainedMultibodyVelocityInto(
             scratch.constrainedDof[static_cast<std::size_t>(a)], b);
       }
     }
-    if (!solveSpdSystemInto(
-            scratch.velocityConstraintMatrix,
-            scratch.velocityConstraintResidual,
-            scratch.velocityConstraintLambda,
-            scratch.symmetricFactor,
-            scratch.symmetricForwardWork)) {
+    if (anyFiniteServoBound) {
+      // An effort-bounded Servo coordinate is present: solve the coupled system
+      // as a boxed LCP so servo coordinates saturate at their effort-limit
+      // impulse while free (Velocity/Locked) coordinates still reach their
+      // targets exactly. Velocity/Locked-only worlds keep the SPD solve below,
+      // so this path never perturbs the existing equality-actuator behavior.
+      scratch.velocityConstraintLambda.resize(k);
+      scratch.velocityConstraintFindex.setConstant(k, -1);
+      const Eigen::Map<const Eigen::VectorXd> lo(
+          scratch.constrainedLo.data(), k);
+      const Eigen::Map<const Eigen::VectorXd> hi(
+          scratch.constrainedHi.data(), k);
+      math::LcpOptions options = scratch.servoSolver.getDefaultOptions();
+      options.earlyTermination = true;
+      const auto result = scratch.servoSolver.solve(
+          scratch.velocityConstraintMatrix,
+          scratch.velocityConstraintResidual,
+          lo,
+          hi,
+          scratch.velocityConstraintFindex,
+          scratch.velocityConstraintLambda,
+          scratch.servoDantzig,
+          options);
+      if (!result.succeeded()) {
+        return false;
+      }
+    } else if (!solveSpdSystemInto(
+                   scratch.velocityConstraintMatrix,
+                   scratch.velocityConstraintResidual,
+                   scratch.velocityConstraintLambda,
+                   scratch.symmetricFactor,
+                   scratch.symmetricForwardWork)) {
       return false;
     }
     for (Eigen::Index a = 0; a < k; ++a) {
@@ -3762,6 +3837,8 @@ void reserveMultibodyDynamicsRegistryStorage(
     scratch.linkContacts.reserve(contactCapacity);
     scratch.constrainedDof.reserve(static_cast<std::size_t>(dof));
     scratch.constrainedTarget.reserve(static_cast<std::size_t>(dof));
+    scratch.constrainedLo.reserve(static_cast<std::size_t>(dof));
+    scratch.constrainedHi.reserve(static_cast<std::size_t>(dof));
     scratch.contactProblem.inverseMass.resize(dof, dof);
     scratch.contactProblem.rows.resize(contactCapacity);
     for (auto& row : scratch.contactProblem.rows) {
@@ -3819,9 +3896,11 @@ void reserveMultibodyDynamicsRegistryStorage(
         }
         const auto& jointActuation
             = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
-        // Velocity and Locked actuators both add rows to the velocity-level
-        // equality constraint solved in computeUnconstrainedMultibodyVelocity.
+        // Velocity, Servo, and Locked actuators all add rows to the
+        // velocity-level constraint solved in
+        // computeUnconstrainedMultibodyVelocity.
         if (jointActuation.actuatorType == comps::ActuatorType::Velocity
+            || jointActuation.actuatorType == comps::ActuatorType::Servo
             || jointActuation.actuatorType == comps::ActuatorType::Locked) {
           velocityConstraintDofs += static_cast<Eigen::Index>(dof);
         }

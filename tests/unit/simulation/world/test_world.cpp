@@ -12281,8 +12281,13 @@ TEST(World, MultibodyJointActuatorTypes)
   // The commanded effort is ignored; only the spring acts: qddot = -k x / m.
   EXPECT_NEAR(joint.getAcceleration()[0], -stiffness * 1.0 / mass, 1e-9);
 
-  // An actuator type that is not yet implemented is rejected by the dynamics.
+  // A Servo actuator is implemented (effort-bounded velocity servo); with no
+  // command it holds the joint at rest and steps without throwing.
   joint.setActuatorType(sx::ActuatorType::Servo);
+  EXPECT_NO_THROW(world.step());
+
+  // An actuator type that is not yet implemented is rejected by the dynamics.
+  joint.setActuatorType(sx::ActuatorType::Acceleration);
   EXPECT_THROW(world.step(), sx::InvalidOperationException);
 }
 

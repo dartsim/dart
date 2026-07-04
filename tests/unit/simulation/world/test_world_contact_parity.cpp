@@ -51,6 +51,8 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
+
 #include <cmath>
 #include <cstddef>
 
@@ -466,6 +468,75 @@ static LockedChainRun runProximalHeldChain(ProximalHold hold)
   };
 }
 
+//==============================================================================
+// Row 7: Servo actuator
+//
+// A servo drives the joint to its commanded velocity like the Velocity
+// actuator, but bounds the motor impulse by the joint effort limits, so it
+// saturates instead of reaching the target when the limit binds. A finite
+// effort limit routes the coupled solve through the boxed LCP; an infinite
+// limit keeps the unbounded SPD path (so a servo then behaves like Velocity).
+//==============================================================================
+
+struct ServoCase
+{
+  double commandedVelocity = 2.0;
+  double effortLimit = 1000.0; // symmetric +/- bound on the motor force
+  double mass = 0.5;
+  double lengthOffset = 0.4;
+  Eigen::Vector3d moment = Eigen::Vector3d(0.1, 0.1, 0.1);
+  double timeStep = 0.002;
+  std::size_t steps = 50;
+};
+
+struct ServoRun
+{
+  double velocity = 0.0;
+  double massDof = 0.0;
+};
+
+static ServoRun runServo(const ServoCase& c)
+{
+  // Gravity-free so the servo's motor is the only thing driving the joint.
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(c.timeStep);
+
+  auto robot = world.addMultibody("arm");
+  auto base = robot.addLink("base");
+
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(c.lengthOffset, 0.0, 0.0);
+
+  auto link = robot.addLink(
+      "arm",
+      base,
+      sx::JointSpec{
+          .name = "motor",
+          .type = sx::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitY(),
+          .transformFromParent = offset,
+      });
+  link.setMass(c.mass);
+  link.setInertia(c.moment.asDiagonal());
+
+  auto joint = link.getParentJoint();
+  joint.setActuatorType(sx::ActuatorType::Servo);
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, c.commandedVelocity));
+  joint.setEffortLimits(
+      Eigen::VectorXd::Constant(1, -c.effortLimit),
+      Eigen::VectorXd::Constant(1, c.effortLimit));
+
+  world.enterSimulationMode();
+  const double massDof = robot.getMassMatrix()(0, 0);
+  world.step(c.steps);
+
+  return ServoRun{
+      .velocity = joint.getVelocity()[0],
+      .massDof = massDof,
+  };
+}
+
 } // namespace
 
 //==============================================================================
@@ -718,4 +789,78 @@ TEST(ContactParity, LockedActuatorMatchesZeroVelocityServo)
   EXPECT_NEAR(locked.distalPosition, servo.distalPosition, 1e-12)
       << "Locked should match a zero-command Velocity servo";
   EXPECT_NEAR(locked.distalVelocity, servo.distalVelocity, 1e-12);
+}
+
+//==============================================================================
+// Test: Servo saturates at the effort limit
+//
+// From rest (gravity-free), one step with a tight effort limit and an
+// unreachable commanded velocity: the motor saturates, so the applied impulse
+// is exactly effortLimit*dt and the resulting velocity is that impulse through
+// the 1-DOF inverse mass (1 / massDof). The servo must not reach the command.
+//==============================================================================
+TEST(ContactParity, ServoActuatorSaturatesAtEffortLimit)
+{
+  ServoCase c;
+  c.commandedVelocity = 100.0; // unreachable in a single step
+  c.effortLimit = 0.5;
+  c.timeStep = 0.001;
+  c.steps = 1;
+
+  const auto run = runServo(c);
+
+  const double expected = c.effortLimit * c.timeStep / run.massDof;
+  EXPECT_NEAR(run.velocity, expected, 1e-9)
+      << "Saturated servo velocity should equal effort*dt / massDof";
+  EXPECT_LT(run.velocity, 0.1 * c.commandedVelocity)
+      << "Effort-limited servo should not reach the commanded velocity";
+  // The implied motor force is exactly the effort limit.
+  EXPECT_NEAR(run.velocity * run.massDof / c.timeStep, c.effortLimit, 1e-9);
+}
+
+//==============================================================================
+// Test: Servo reaches its target when the effort limit is ample
+//
+// With a large (but finite) effort limit the bound never binds, so the boxed
+// solve reaches the commanded velocity exactly, like the Velocity actuator.
+//==============================================================================
+TEST(ContactParity, ServoActuatorReachesTargetWithinEffortLimit)
+{
+  ServoCase c;
+  c.commandedVelocity = 2.0;
+  c.effortLimit = 1000.0; // ample; the bound never binds
+  c.timeStep = 0.002;
+  c.steps = 50;
+
+  const auto run = runServo(c);
+
+  EXPECT_NEAR(run.velocity, c.commandedVelocity, 1e-9)
+      << "Servo with ample effort should reach the commanded velocity";
+}
+
+//==============================================================================
+// Test: The boxed servo solve matches the unbounded solve when no bound binds
+//
+// A servo with a finite-but-ample effort limit runs the boxed-LCP path; a servo
+// with an infinite effort limit runs the unbounded SPD path (Velocity-like).
+// With no bound binding they must agree, tying the new boxed path to the
+// already-verified equality solve.
+//==============================================================================
+TEST(ContactParity, ServoBoxedSolveMatchesUnboundedSolve)
+{
+  ServoCase unbounded;
+  unbounded.commandedVelocity = 1.3;
+  unbounded.effortLimit = std::numeric_limits<double>::infinity(); // SPD path
+  unbounded.steps = 40;
+
+  ServoCase boxed = unbounded;
+  boxed.effortLimit = 1000.0; // boxed-LCP path, bound never binds
+
+  const auto a = runServo(unbounded);
+  const auto b = runServo(boxed);
+
+  EXPECT_NEAR(a.velocity, b.velocity, 1e-9)
+      << "Boxed servo solve should match the unbounded solve when no bound "
+         "binds";
+  EXPECT_NEAR(b.velocity, boxed.commandedVelocity, 1e-9);
 }
