@@ -71,6 +71,7 @@
 #include <sdf/Pbr.hh>
 #include <sdf/Root.hh>
 #include <sdf/Sphere.hh>
+#include <sdf/Surface.hh>
 #include <sdf/Visual.hh>
 
 #include <algorithm>
@@ -135,6 +136,11 @@ bool isFinite(const Eigen::Vector3d& vector)
 bool isFinite(const Eigen::Vector4d& vector)
 {
   return vector.allFinite();
+}
+
+bool isZero(const Eigen::Vector3d& vector)
+{
+  return vector.isZero(0.0);
 }
 
 std::optional<std::pair<int, int>> parseSdfMajorMinor(std::string_view version)
@@ -642,6 +648,87 @@ WriteResult applyMaterial(
   return ok();
 }
 
+WriteResult applyCollisionSurface(
+    sdf::Collision& collision, const dynamics::ShapeNode& shapeNode)
+{
+  const auto* dynamicsAspect = shapeNode.getDynamicsAspect();
+  if (!dynamicsAspect) {
+    return ok();
+  }
+
+  constexpr double kDefaultFriction = 1.0;
+
+  const double primaryFriction = dynamicsAspect->getPrimaryFrictionCoeff();
+  const double secondaryFriction = dynamicsAspect->getSecondaryFrictionCoeff();
+  const double primarySlip = dynamicsAspect->getPrimarySlipCompliance();
+  const double secondarySlip = dynamicsAspect->getSecondarySlipCompliance();
+  const Eigen::Vector3d& firstFrictionDirection
+      = dynamicsAspect->getFirstFrictionDirection();
+
+  if (!std::isfinite(primaryFriction) || primaryFriction < 0.0
+      || !std::isfinite(secondaryFriction) || secondaryFriction < 0.0) {
+    return fail(
+        "Cannot write SDF collision [" + shapeNode.getName()
+        + "] with non-finite or negative friction.");
+  }
+  if (!std::isfinite(primarySlip) || !std::isfinite(secondarySlip)) {
+    return fail(
+        "Cannot write SDF collision [" + shapeNode.getName()
+        + "] with non-finite slip compliance.");
+  }
+  if (!isFinite(firstFrictionDirection)) {
+    return fail(
+        "Cannot write SDF collision [" + shapeNode.getName()
+        + "] with a non-finite friction direction.");
+  }
+
+  const bool writePrimaryFriction = primaryFriction != kDefaultFriction;
+  const bool writeSecondaryFriction = secondaryFriction != kDefaultFriction;
+  const bool writePrimarySlip = primarySlip >= 0.0 && primarySlip != 0.0;
+  const bool writeSecondarySlip = secondarySlip >= 0.0 && secondarySlip != 0.0;
+  const bool writeFrictionDirection = !isZero(firstFrictionDirection);
+  if (!writePrimaryFriction && !writeSecondaryFriction && !writePrimarySlip
+      && !writeSecondarySlip && !writeFrictionDirection) {
+    return ok();
+  }
+
+  if (writeFrictionDirection) {
+    const auto* directionFrame
+        = dynamicsAspect->getFirstFrictionDirectionFrame();
+    if (directionFrame != nullptr && directionFrame != &shapeNode) {
+      return fail(
+          "Cannot write SDF collision [" + shapeNode.getName()
+          + "] with a friction direction expressed in a non-collision frame.");
+    }
+  }
+
+  sdf::ODE ode;
+  if (writePrimaryFriction) {
+    ode.SetMu(primaryFriction);
+  }
+  if (writeSecondaryFriction) {
+    ode.SetMu2(secondaryFriction);
+  }
+  if (writePrimarySlip) {
+    ode.SetSlip1(primarySlip);
+  }
+  if (writeSecondarySlip) {
+    ode.SetSlip2(secondarySlip);
+  }
+  if (writeFrictionDirection) {
+    ode.SetFdir1(toGzVector3(firstFrictionDirection));
+  }
+
+  sdf::Friction friction;
+  friction.SetODE(ode);
+
+  sdf::Surface surface;
+  surface.SetFriction(friction);
+  collision.SetSurface(surface);
+
+  return ok();
+}
+
 WriteResult addShapeNode(
     sdf::Link& link, const dynamics::ShapeNode& shapeNode, bool visual)
 {
@@ -681,6 +768,10 @@ WriteResult addShapeNode(
     sdfCollision.SetName(shapeNode.getName());
     sdfCollision.SetRawPose(toGzPose(pose));
     sdfCollision.SetGeom(geometryResult.value());
+    if (auto result = applyCollisionSurface(sdfCollision, shapeNode);
+        result.isErr()) {
+      return result;
+    }
     if (!link.AddCollision(sdfCollision)) {
       return fail(
           "Cannot write duplicate SDF collision [" + shapeNode.getName()

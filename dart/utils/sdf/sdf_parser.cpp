@@ -70,6 +70,7 @@
 #include <sdf/Material.hh>
 #include <sdf/Model.hh>
 #include <sdf/Pbr.hh>
+#include <sdf/Surface.hh>
 #include <sdf/Visual.hh>
 #include <sdf/sdf.hh>
 
@@ -1250,6 +1251,49 @@ void readMaterial(const sdf::Material& material, dynamics::ShapeNode* shapeNode)
 }
 
 //==============================================================================
+void readCollisionSurface(
+    const sdf::Collision& collision, dynamics::ShapeNode* shapeNode)
+{
+  auto dynamicsAspect = shapeNode->getDynamicsAspect();
+  if (!dynamicsAspect) {
+    return;
+  }
+
+  const sdf::Surface* surface = collision.Surface();
+  if (!surface) {
+    return;
+  }
+
+  const sdf::Friction* friction = surface->Friction();
+  if (!friction) {
+    return;
+  }
+
+  const sdf::ODE* ode = friction->ODE();
+  if (!ode) {
+    return;
+  }
+
+  const ElementPtr odeElement = ode->Element();
+  if (hasAuthoredElement(odeElement, "mu")) {
+    dynamicsAspect->setPrimaryFrictionCoeff(ode->Mu());
+  }
+  if (hasAuthoredElement(odeElement, "mu2")) {
+    dynamicsAspect->setSecondaryFrictionCoeff(ode->Mu2());
+  }
+  if (hasAuthoredElement(odeElement, "slip1")) {
+    dynamicsAspect->setPrimarySlipCompliance(ode->Slip1());
+  }
+  if (hasAuthoredElement(odeElement, "slip2")) {
+    dynamicsAspect->setSecondarySlipCompliance(ode->Slip2());
+  }
+  if (hasAuthoredElement(odeElement, "fdir1")) {
+    dynamicsAspect->setFirstFrictionDirection(toEigenVector3(ode->Fdir1()));
+    dynamicsAspect->setFirstFrictionDirectionFrame(nullptr);
+  }
+}
+
+//==============================================================================
 void readVisualizationShapeNode(
     dynamics::BodyNode* bodyNode,
     const sdf::Visual& visual,
@@ -1307,6 +1351,7 @@ void readCollisionShapeNode(
 
   newShapeNode->createCollisionAspect();
   newShapeNode->createDynamicsAspect();
+  readCollisionSurface(collision, newShapeNode);
 }
 
 //==============================================================================

@@ -39,8 +39,9 @@ passive joint dynamics metadata (damping, Coulomb friction, spring reference,
 and spring stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
 axis/axis2 mimic metadata with motor enforcement, topology-only ball child
 joints, local root/joint/shape poses, explicit visual material colors, PBR
-metallic/roughness factors, and absolute non-file mesh URI preservation through
-a custom retriever. Continuous SDF joints now parse as unbounded DART
+metallic/roughness factors, collision-surface ODE friction coefficients, first
+friction direction, slip compliance, and absolute non-file mesh URI preservation
+through a custom retriever. Continuous SDF joints now parse as unbounded DART
 `RevoluteJoint`s, and unbounded DART revolute joints write back as SDF
 `continuous` while finite-limit revolute joints stay `revolute`. Targetless
 relative/generated mesh references, including relative or host-qualified file
@@ -51,7 +52,8 @@ missing mesh URI diagnostics, DART `PlaneShape` finite-size diagnostics,
 `ConvexMeshShape` generated-resource diagnostics, pre-SDF-1.11 mimic
 diagnostics, unsupported coupler-style mimic diagnostics, non-finite visual
 material diagnostics, invalid PBR material diagnostics, non-finite screw pitch
-diagnostics, unsupported ball-joint metadata, and
+diagnostics, invalid collision-surface friction diagnostics, unsupported
+ball-joint metadata, and
 non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
 5 is still open until broader SDF coverage plus the remaining accepted writer
 targets are implemented or durably deferred.
@@ -73,8 +75,11 @@ mass, and inertia tensor values. Visual and collision shape nodes traverse
 material colors plus `sdf::Pbr` metal workflow factors. Diffuse material values
 now come from `sdf::Material::Diffuse()`; authored/default checks use
 sdformat's `Element::GetExplicitlySetInFile()` signal so absent diffuse colors
-do not reset DART's default visual color. Standard SDF joint reads traverse
-`sdf::Model`,
+do not reset DART's default visual color. Collision-surface ODE friction values
+now read through `sdf::Collision`, `sdf::Surface`, `sdf::Friction`, and
+`sdf::ODE` DOM values into DART `DynamicsAspect` friction, slip, and first
+friction-direction fields while preserving defaults for unauthored fields.
+Standard SDF joint reads traverse `sdf::Model`,
 `sdf::Joint`, and `sdf::JointAxis` DOM values for joint enumeration, joint
 name/type,
 parent/child links, local pose, axis vectors including
@@ -284,6 +289,12 @@ Additional validation for sdformat-authored SDF presence checks:
 - `pixi run run-cpp-target test_sdf_helpersNone`
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 
+Additional validation for collision-surface ODE friction IO:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
 Changelog decision:
 
 - Mode: draft
@@ -354,6 +365,10 @@ Changelog decision:
   checks because this is an internal parser hardening that preserves existing
   authored/default behavior while replacing child-existence probing with
   sdformat explicit-authored metadata.
+  No additional separate entry is needed for collision-surface ODE friction IO
+  because it broadens the same conservative SDF writer/parser round-trip
+  capability before the implementation PR exists; the existing DART 7 IO and
+  Parsing bullet now includes collision surface ODE friction/slip metadata.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

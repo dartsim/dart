@@ -598,6 +598,54 @@ TEST(SdfParser, InertialAndMaterialVariantsFromXml)
 }
 
 //==============================================================================
+TEST(SdfParser, CollisionSurfaceOdeFrictionReadsDynamicsAspect)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/collision_surface/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="collision_surface">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+      <collision name="surface_collision">
+        <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.35</mu>
+              <mu2>0.65</mu2>
+              <fdir1>0 1 0</fdir1>
+              <slip1>0.015</slip1>
+              <slip2>0.025</slip2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  auto* collision = body->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(collision, nullptr);
+  auto* dynamicsAspect = collision->getDynamicsAspect();
+  ASSERT_NE(dynamicsAspect, nullptr);
+
+  EXPECT_DOUBLE_EQ(dynamicsAspect->getPrimaryFrictionCoeff(), 0.35);
+  EXPECT_DOUBLE_EQ(dynamicsAspect->getSecondaryFrictionCoeff(), 0.65);
+  EXPECT_TRUE(dynamicsAspect->getFirstFrictionDirection().isApprox(
+      Eigen::Vector3d::UnitY()));
+  EXPECT_EQ(dynamicsAspect->getFirstFrictionDirectionFrame(), nullptr);
+  EXPECT_DOUBLE_EQ(dynamicsAspect->getPrimarySlipCompliance(), 0.015);
+  EXPECT_DOUBLE_EQ(dynamicsAspect->getSecondarySlipCompliance(), 0.025);
+}
+
+//==============================================================================
 TEST(SdfParser, MaterialWithoutDiffusePreservesDefaultColor)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();

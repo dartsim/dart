@@ -60,9 +60,12 @@
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <gtest/gtest.h>
+#include <sdf/Collision.hh>
 #include <sdf/Joint.hh>
+#include <sdf/Link.hh>
 #include <sdf/Model.hh>
 #include <sdf/Root.hh>
+#include <sdf/Surface.hh>
 
 #include <algorithm>
 #include <filesystem>
@@ -728,6 +731,74 @@ TEST(SdfWriter, IncludeOptionsControlVisualAndCollisionEntries)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsCollisionSurfaceOdeFriction)
+{
+  auto skeleton = dynamics::Skeleton::create("surface_writer");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "surface_box");
+  auto* dynamicsAspect = shapeNode->getDynamicsAspect();
+  ASSERT_NE(dynamicsAspect, nullptr);
+  dynamicsAspect->setPrimaryFrictionCoeff(0.25);
+  dynamicsAspect->setSecondaryFrictionCoeff(0.75);
+  dynamicsAspect->setPrimarySlipCompliance(0.015);
+  dynamicsAspect->setSecondarySlipCompliance(0.025);
+  dynamicsAspect->setFirstFrictionDirection(Eigen::Vector3d::UnitY());
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  EXPECT_NE(writeResult.value().find("<surface>"), std::string::npos);
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfLink = sdfRoot.Model()->LinkByName("body");
+  ASSERT_NE(sdfLink, nullptr);
+  const auto* sdfCollision = sdfLink->CollisionByName("surface_box");
+  ASSERT_NE(sdfCollision, nullptr);
+  ASSERT_NE(sdfCollision->Surface(), nullptr);
+  ASSERT_NE(sdfCollision->Surface()->Friction(), nullptr);
+  ASSERT_NE(sdfCollision->Surface()->Friction()->ODE(), nullptr);
+  const auto* ode = sdfCollision->Surface()->Friction()->ODE();
+  EXPECT_DOUBLE_EQ(ode->Mu(), 0.25);
+  EXPECT_DOUBLE_EQ(ode->Mu2(), 0.75);
+  EXPECT_TRUE(
+      Eigen::Vector3d(ode->Fdir1().X(), ode->Fdir1().Y(), ode->Fdir1().Z())
+          .isApprox(Eigen::Vector3d::UnitY()));
+  EXPECT_DOUBLE_EQ(ode->Slip1(), 0.015);
+  EXPECT_DOUBLE_EQ(ode->Slip2(), 0.025);
+
+  const auto path = writeTempSdf(writeResult.value(), "surface_friction");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "body");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* reparsedShapeNode
+      = reparsedBody->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(reparsedShapeNode, nullptr);
+  const auto* reparsedDynamics = reparsedShapeNode->getDynamicsAspect();
+  ASSERT_NE(reparsedDynamics, nullptr);
+  EXPECT_DOUBLE_EQ(reparsedDynamics->getPrimaryFrictionCoeff(), 0.25);
+  EXPECT_DOUBLE_EQ(reparsedDynamics->getSecondaryFrictionCoeff(), 0.75);
+  EXPECT_TRUE(reparsedDynamics->getFirstFrictionDirection().isApprox(
+      Eigen::Vector3d::UnitY()));
+  EXPECT_DOUBLE_EQ(reparsedDynamics->getPrimarySlipCompliance(), 0.015);
+  EXPECT_DOUBLE_EQ(reparsedDynamics->getSecondarySlipCompliance(), 0.025);
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsContinuousRevoluteJoint)
 {
   auto skeleton = dynamics::Skeleton::create("continuous_writer");
@@ -1171,6 +1242,27 @@ TEST(SdfWriter, HostQualifiedFileMeshUriReturnsError)
   EXPECT_NE(
       result.error().message.find("relative or host-qualified file URI"),
       std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, InvalidCollisionSurfaceFrictionReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("bad_surface_friction");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "bad_surface");
+  shapeNode->getDynamicsAspect()->setPrimaryFrictionCoeff(-0.1);
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("negative friction"), std::string::npos);
 }
 
 //==============================================================================

@@ -65,7 +65,8 @@ Source of truth:
 - `dart/utils/sdf/sdf_writer.hpp` for the first parser-specific SDF writer
 - `dart/utils/sdf/` uses libsdformat DOM APIs for SDF structure, model/link,
   inertial, visual/collision/material, joint topology/pose/axis frame
-  resolution/dynamics/limits, and supported geometry semantics; avoid new raw
+  resolution/dynamics/limits, collision-surface ODE friction/slip metadata, and
+  supported geometry semantics; avoid new raw
   XML-level SDF parsing when sdformat exposes the value. When DART must
   preserve an authored/default distinction that the high-level DOM class does
   not expose, use sdformat `Element::GetExplicitlySetInFile()` with
@@ -160,19 +161,19 @@ mimic metadata for axis/axis2 follower joints with motor enforcement,
 topology-only ball child joints, link gravity mode, inertial parameters, local
 joint/shape poses, and
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry
-with explicit visual material colors and PBR metallic/roughness factors. The
-round-trip coverage includes absolute non-file mesh URI preservation through a
-custom retriever. Targetless relative mesh references and relative or
-host-qualified `file` mesh URIs are rejected because the writer has no
-destination SDF URI for resource resolution or generated asset placement.
-`WriteOptions` can exclude visual or collision entries. Missing mesh URIs,
-invalid PBR material factors, pre-SDF-1.11 mimic output, coupler-style mimic
+with explicit visual material colors, PBR metallic/roughness factors, and
+collision-surface ODE friction/slip metadata. The round-trip coverage includes
+absolute non-file mesh URI preservation through a custom retriever. Targetless
+relative mesh references and relative or host-qualified `file` mesh URIs are
+rejected because the writer has no destination SDF URI for resource resolution
+or generated asset placement. `WriteOptions` can exclude visual or collision
+entries. Missing mesh URIs, invalid PBR material factors, invalid collision
+surface friction values, pre-SDF-1.11 mimic output, coupler-style mimic
 enforcement, ball joint limits, and ball joint dynamics are reported as
-unsupported instead of being silently
-dropped. It is not a general project save/load format and does not make YAML a
-model format. Use the writer only when the target scene fits the documented
-subset, and expand the round-trip tests before broadening the supported
-contract.
+unsupported instead of being silently dropped. It is not a general project
+save/load format and does not make YAML a model format. Use the writer only
+when the target scene fits the documented subset, and expand the round-trip
+tests before broadening the supported contract.
 
 Keep export APIs format-owned until DART has more than one accepted writer
 contract. The current SDF writer therefore lives on

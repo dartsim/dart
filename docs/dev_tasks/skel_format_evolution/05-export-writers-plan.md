@@ -28,19 +28,22 @@ follower joints with motor
 enforcement, link gravity mode, inertial parameters, local joint/shape poses,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry,
 explicit visual material colors as SDF `<diffuse>` values, and PBR
-metallic/roughness factors as SDF `<pbr><metal>` values. Absolute
-non-file mesh URI preservation is covered through a custom retriever-backed
-write/read test.
+metallic/roughness factors as SDF `<pbr><metal>` values. Collision-surface ODE
+friction coefficients, first friction direction, and slip compliance round-trip
+through SDF `<surface><friction><ode>` values when they are representable in
+DART's collision frame. Absolute non-file mesh URI preservation is covered
+through a custom retriever-backed write/read test.
 Targetless relative mesh references and relative or host-qualified `file` mesh
 URIs are rejected because the writer has no destination SDF URI for
 resource resolution or generated asset placement. `WriteOptions`
 visual/collision filtering is covered by focused tests. Unsupported constructs,
 missing mesh URIs, pre-SDF-1.11 mimic output, coupler-style mimic enforcement,
 non-finite material colors, invalid PBR material factors, non-finite screw
-pitch, unsupported ball-joint metadata, and non-finite joint dynamics return
-`common::Result` errors instead of being silently dropped. DART `PlaneShape`
-and `ConvexMeshShape` now report targeted policy diagnostics for the missing
-finite SDF plane size or destination URI for generated mesh resources.
+pitch, invalid collision-surface friction, unsupported ball-joint metadata, and
+non-finite joint dynamics return `common::Result` errors instead of being
+silently dropped. DART `PlaneShape` and `ConvexMeshShape` now report targeted
+policy diagnostics for the missing finite SDF plane size or destination URI for
+generated mesh resources.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -57,11 +60,14 @@ remain only for that authored/default bridge and DART-specific soft-body
 extension fields; the compatibility boolean value is read through sdformat
 typed element access. Modern `axis/xyz@expressed_in` frame annotations are
 resolved through `sdf::JointAxis::ResolveXyz()`, and authored diffuse values are
-read from `sdf::Material::Diffuse()`. The SDF-specific helper surface has been
-narrowed accordingly: it no longer exposes generic XML attribute, string,
-boolean, vector2/vectorX, or child enumerator APIs that duplicate sdformat
-traversal/parsing, and the retained DART-extension value bridge uses sdformat
-typed parameters instead of DART-side XML text fallback parsing.
+read from `sdf::Material::Diffuse()`. Authored collision-surface ODE friction
+values are read through `sdf::Collision`, `sdf::Surface`, `sdf::Friction`, and
+`sdf::ODE` DOM values into DART `DynamicsAspect` fields. The SDF-specific helper
+surface has been narrowed accordingly: it no longer exposes generic XML
+attribute, string, boolean, vector2/vectorX, or child enumerator APIs that
+duplicate sdformat traversal/parsing, and the retained DART-extension value
+bridge uses sdformat typed parameters instead of DART-side XML text fallback
+parsing.
 Writer-side preservation of disabled link gravity and schema-preferred SDF
 1.10+ screw pitch still patches sdformat's serialized element tree, but the
 link/joint names and values now come from the typed `sdf::Model`,
@@ -136,8 +142,9 @@ Phase 5 is complete only when code and tests prove the writer contract:
 - Extend the SDF writer contract beyond the first conservative subset when
   tests can prove additional joint aliases or edge cases beyond continuous
   revolute joints, additional sdformat-owned shapes, mesh material variants,
-  destination-aware resource rewriting, default/world gravity, or other
-  world-level data round-trip correctly.
+  additional collision-surface fields beyond ODE friction/slip, destination-
+  aware resource rewriting, default/world gravity, or other world-level data
+  round-trip correctly.
 - Decide the next implementation target: URDF writer or PLAN-101 project
   save/load.
 - Keep YAML out of the first implementation target unless a durable
