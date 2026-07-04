@@ -143,13 +143,14 @@ unsupported constructs produce explicit errors instead of silently dropping
 state.
 
 The initial writer covers BodyNode links, root FreeJoint/WeldJoint placement,
-revolute/prismatic/weld child joints with passive dynamics metadata (damping,
-Coulomb friction, spring reference, and spring stiffness), link gravity mode,
-inertial parameters, local joint/shape poses, and box/sphere/cylinder/mesh
-visual or collision geometry with explicit visual material colors. It is not a
-general project save/load format and does not make YAML a model format. Use the
-writer only when the target scene fits the documented subset, and expand the
-round-trip tests before broadening the supported contract.
+revolute/prismatic/weld/screw child joints with passive dynamics metadata
+(damping, Coulomb friction, spring reference, and spring stiffness), screw
+thread pitch, link gravity mode, inertial parameters, local joint/shape poses,
+and box/sphere/cylinder/mesh visual or collision geometry with explicit visual
+material colors. It is not a general project save/load format and does not make
+YAML a model format. Use the writer only when the target scene fits the
+documented subset, and expand the round-trip tests before broadening the
+supported contract.
 
 ## Notes about Python
 

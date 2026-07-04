@@ -42,6 +42,7 @@
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/screw_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
@@ -178,6 +179,30 @@ dynamics::SkeletonPtr makeRoundTripSkeleton()
       std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.1, 0.1, 0.1)),
       "fixed_box_collision");
 
+  dynamics::ScrewJoint::Properties screwProperties;
+  screwProperties.mName = "screw_drive";
+  screwProperties.mAxis = Eigen::Vector3d::UnitY();
+  screwProperties.mPitch = 0.25;
+  screwProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.2, 0.0, 0.0);
+  screwProperties.mPositionLowerLimits[0] = -0.75;
+  screwProperties.mPositionUpperLimits[0] = 0.75;
+
+  dynamics::BodyNode::Properties screwBodyProperties;
+  screwBodyProperties.mName = "screw_tip";
+  screwBodyProperties.mInertia.setMass(0.3);
+  screwBodyProperties.mInertia.setMoment(Eigen::Matrix3d::Identity() * 0.3);
+
+  auto [screwJoint, screwTip]
+      = skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint>(
+          fixed, screwProperties, screwBodyProperties);
+  screwJoint->setDampingCoefficient(0, 0.2);
+  screwJoint->setCoulombFriction(0, 0.05);
+  screwJoint->setRestPosition(0, 0.1);
+  screwJoint->setSpringStiffness(0, 1.5);
+  screwTip->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::SphereShape>(0.08), "screw_tip_collision");
+
   return skeleton;
 }
 
@@ -218,6 +243,12 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   EXPECT_NE(
       writeResult.value().find("<gravity>false</gravity>"), std::string::npos);
   EXPECT_NE(
+      writeResult.value().find("<joint name=\"screw_drive\" type=\"screw\">"),
+      std::string::npos);
+  EXPECT_NE(
+      writeResult.value().find("<thread_pitch>0.25</thread_pitch>"),
+      std::string::npos);
+  EXPECT_NE(
       writeResult.value().find("<damping>0.25</damping>"), std::string::npos);
   EXPECT_NE(
       writeResult.value().find("<friction>0.125</friction>"),
@@ -250,10 +281,12 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   const auto* tip = reparsed->getBodyNode("tip");
   const auto* slider = reparsed->getBodyNode("slider");
   const auto* fixed = reparsed->getBodyNode("fixed");
+  const auto* screwTip = reparsed->getBodyNode("screw_tip");
   ASSERT_NE(base, nullptr);
   ASSERT_NE(tip, nullptr);
   ASSERT_NE(slider, nullptr);
   ASSERT_NE(fixed, nullptr);
+  ASSERT_NE(screwTip, nullptr);
 
   const auto* root
       = dynamic_cast<const dynamics::FreeJoint*>(reparsed->getJoint("root"));
@@ -314,6 +347,20 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   EXPECT_EQ(fixedJoint->getChildBodyNode(), fixed);
   EXPECT_FALSE(fixed->getGravityMode());
 
+  const auto* screwJoint = dynamic_cast<const dynamics::ScrewJoint*>(
+      reparsed->getJoint("screw_drive"));
+  ASSERT_NE(screwJoint, nullptr);
+  EXPECT_EQ(screwJoint->getParentBodyNode(), fixed);
+  EXPECT_EQ(screwJoint->getChildBodyNode(), screwTip);
+  expectVectorNear(screwJoint->getAxis(), Eigen::Vector3d::UnitY(), 1e-12);
+  EXPECT_NEAR(screwJoint->getPitch(), 0.25, 1e-12);
+  EXPECT_NEAR(screwJoint->getPositionLowerLimit(0), -0.75, 1e-12);
+  EXPECT_NEAR(screwJoint->getPositionUpperLimit(0), 0.75, 1e-12);
+  EXPECT_NEAR(screwJoint->getDampingCoefficient(0), 0.2, 1e-12);
+  EXPECT_NEAR(screwJoint->getCoulombFriction(0), 0.05, 1e-12);
+  EXPECT_NEAR(screwJoint->getRestPosition(0), 0.1, 1e-12);
+  EXPECT_NEAR(screwJoint->getSpringStiffness(0), 1.5, 1e-12);
+
   ASSERT_EQ(base->getNumShapeNodesWith<dynamics::VisualAspect>(), 1u);
   ASSERT_EQ(base->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
   const auto* baseBox = dynamic_cast<const dynamics::BoxShape*>(
@@ -361,6 +408,14 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
       fixed->getShapeNodeWith<dynamics::CollisionAspect>(0)->getShape().get());
   ASSERT_NE(fixedBox, nullptr);
   expectVectorNear(fixedBox->getSize(), Eigen::Vector3d(0.1, 0.1, 0.1), 1e-12);
+
+  ASSERT_EQ(screwTip->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
+  const auto* screwTipSphere = dynamic_cast<const dynamics::SphereShape*>(
+      screwTip->getShapeNodeWith<dynamics::CollisionAspect>(0)
+          ->getShape()
+          .get());
+  ASSERT_NE(screwTipSphere, nullptr);
+  EXPECT_NEAR(screwTipSphere->getRadius(), 0.08, 1e-12);
 }
 
 //==============================================================================
@@ -476,4 +531,31 @@ TEST(SdfWriter, NonFiniteJointDynamicsReturnsError)
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("non-finite dynamics"), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, NonFiniteScrewJointPitchReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("non_finite_screw_pitch");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::ScrewJoint::Properties screwProperties;
+  screwProperties.mName = "screw";
+  screwProperties.mAxis = Eigen::Vector3d::UnitZ();
+
+  dynamics::BodyNode::Properties tipProperties;
+  tipProperties.mName = "tip";
+
+  auto [screw, tip]
+      = skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint>(
+          base, screwProperties, tipProperties);
+  (void)tip;
+  screw->setPitch(std::numeric_limits<double>::quiet_NaN());
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(result.error().message.find("non-finite pitch"), std::string::npos);
 }

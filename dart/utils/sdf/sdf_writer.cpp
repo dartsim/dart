@@ -42,6 +42,7 @@
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/screw_joint.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
@@ -166,6 +167,9 @@ std::string jointTypeName(const dynamics::Joint& joint)
   if (dynamic_cast<const dynamics::PrismaticJoint*>(&joint)) {
     return "prismatic";
   }
+  if (dynamic_cast<const dynamics::ScrewJoint*>(&joint)) {
+    return "screw";
+  }
   return {};
 }
 
@@ -178,6 +182,9 @@ std::optional<Eigen::Vector3d> jointAxis(const dynamics::Joint& joint)
   if (const auto* prismatic
       = dynamic_cast<const dynamics::PrismaticJoint*>(&joint)) {
     return prismatic->getAxis();
+  }
+  if (const auto* screw = dynamic_cast<const dynamics::ScrewJoint*>(&joint)) {
+    return screw->getAxis();
   }
   return std::nullopt;
 }
@@ -526,6 +533,16 @@ WriteResult writeJoint(
          << "</child>\n";
   stream << indent(depth + 1) << "<pose>" << formatPose(childToJoint)
          << "</pose>\n";
+  if (const auto* screw = dynamic_cast<const dynamics::ScrewJoint*>(&joint)) {
+    const double pitch = screw->getPitch();
+    if (!std::isfinite(pitch)) {
+      return fail(
+          "Cannot write SDF screw joint [" + joint.getName()
+          + "] with a non-finite pitch.");
+    }
+    stream << indent(depth + 1) << "<thread_pitch>" << formatDouble(pitch)
+           << "</thread_pitch>\n";
+  }
   if (auto result = writeAxis(stream, joint, depth + 1); result.isErr()) {
     return result;
   }
