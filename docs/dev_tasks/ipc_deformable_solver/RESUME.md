@@ -615,11 +615,27 @@ incomplete.
 
 ## How To Resume
 
-Current slice (2026-07-04) — Fig-23 statistics packet gates (Python-only, no C++ rebuild):
+Current checkpoint (2026-07-04) — maintainer-directed next slice:
 
 ```bash
-git checkout feature/ipc-deformable-fig23-statistics-packet
+git fetch origin main
+git checkout main
+git merge --ff-only origin/main
 git status && git log -3 --oneline
+sed -n '560,610p' docs/dev_tasks/ipc_deformable_solver/RESUME.md
+sed -n '270,295p' docs/plans/081-deformable-implicit-barrier-solver/ipc-parity-roadmap.md
+```
+
+Do not resume a merged feature branch. Open a new branch only after maintainer
+direction chooses one of the currently blocked or policy-gated M7 follow-ups:
+matrix-free-CG auto-selection, avg-contacts-per-step fixture design,
+process-memory column semantics, M4 asset pipeline work, AMG/multigrid
+preconditioning, or on-device GPU assembly + solve.
+
+Prior merged slice (#3264) — Fig-23 statistics packet gates (archived):
+
+```bash
+# git checkout feature/ipc-deformable-fig23-statistics-packet   # merged as dbe6fcccb1c
 pixi run python -m pytest python/tests/unit/test_write_plan081_deformable_fig23_packet.py -q
 pixi run check-lint-py
 # End-to-end against a real benchmark run (proves the manifest matches real counters):
