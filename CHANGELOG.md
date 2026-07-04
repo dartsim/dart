@@ -303,6 +303,12 @@ compatibility remains on the active DART 6 LTS branch._
   and manual PR authors can record the inspected evidence, target release
   section, entry text, no-entry reason, and PR-link follow-up consistently.
   ([#3224](https://github.com/dartsim/dart/pull/3224))
+- Added a public Community Signals docs page and scheduled GitHub Pages
+  dashboard for repository activity, package reach, citation indexes, and
+  downstream freshness, with explicit caveats that the counts are activity
+  signals rather than unique users.
+- Taught CMake linting to skip ignored `.build/` trees so local generated build
+  artifacts cannot block `pixi run lint`.
 - Clarified DART 6 LTS release routing so remaining `6.19.x` fixes target the
   active `release-6.20` branch and `DART 6.20.0` milestone instead of opening a
   `DART 6.19.4` patch lane.

@@ -77,6 +77,9 @@ Project Stats
 
 Track GitHub interest over time with
 `Star History <https://star-history.com/#dartsim/dart&type=date&legend=top-left>`_.
+Repository activity, package reach, citation indexes, and downstream freshness
+are summarized on the :doc:`community signals dashboard
+<community/community_signals>`.
 DART 7 World benchmark history over commits is covered by the
 :doc:`performance dashboard <community/performance_dashboard>`. After the first
 dashboard publication, the hosted benchmark dashboard is available at
@@ -189,5 +192,6 @@ If you use DART in an academic publication, please consider citing this
    :caption: Community
 
    community/who_uses_dart
+   community/community_signals
    community/performance_dashboard
    license
