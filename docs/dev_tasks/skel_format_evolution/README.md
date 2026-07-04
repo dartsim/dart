@@ -58,9 +58,10 @@
       writer test now uses a shared IO round-trip assertion helper for body,
       joint, DoF,
       inertia, and shape comparisons.
-      DART `PlaneShape` and `ConvexMeshShape` writer attempts now fail with
-      targeted diagnostics explaining the missing finite SDF plane size or
-      target URI for generated mesh resources instead of relying on a generic
+      DART `PlaneShape`, `HeightmapShape`, and `ConvexMeshShape` writer
+      attempts now fail with targeted diagnostics explaining the missing finite
+      SDF plane size, source heightmap URI/resource policy, or target URI for
+      generated mesh resources instead of relying on a generic
       unsupported-shape fallback.
       Parser-side SDF model selection, ambiguous `.xml` SDF dispatch through
       `dart::io::readSkeleton()`, and standard model/link/joint/aspect traversal
@@ -182,6 +183,8 @@ SKEL-YAML direction just because the prototype once existed.
    to every expanded contract. Absolute non-file mesh URI preservation is
    covered; targetless relative/generated mesh references are rejected until a
    future file/project writer defines a destination URI and copy/rewrite policy.
+   Heightmap export also needs a source heightmap URI and destination-aware
+   resource policy before DART can use `sdf::Heightmap` DOM serialization.
    Keep writer APIs format-owned unless a later multi-format write API is
    reviewed. YAML can enter that slice only after a durable project/scene schema
    is accepted.
@@ -226,8 +229,9 @@ SKEL-YAML direction just because the prototype once existed.
   visual/collision filtering, the empty mesh URI diagnostic, pre-SDF-1.11 mimic
   diagnostics, and unsupported coupler-style mimic diagnostics, plus targetless
   relative/generated mesh resource diagnostics. Plane-shaped infinite DART
-  geometry and generated convex meshes now have targeted diagnostics for the
-  finite SDF plane-size and destination-URI policy gaps. Collision-surface
+  geometry, DART heightmaps without source heightmap URIs, and generated convex
+  meshes now have targeted diagnostics for the finite SDF plane-size and
+  destination-URI/resource policy gaps. Collision-surface
   contact bitmask disables, zero-threshold bounce restitution, ODE friction
   coefficients, first friction direction, and slip compliance now have
   read/write/read coverage plus invalid-friction/restitution diagnostics. The

@@ -47,6 +47,7 @@
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/mimic_dof_properties.hpp>
 #include <dart/dynamics/plane_shape.hpp>
@@ -1869,6 +1870,30 @@ TEST(SdfWriter, PlaneShapeReturnsExplicitUnsupportedError)
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("finite SDF plane size"), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, HeightmapShapeReturnsSourceUriPolicyError)
+{
+  auto skeleton = dynamics::Skeleton::create("heightmap_shape");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  auto heightmap = std::make_shared<dynamics::HeightmapShaped>();
+  dynamics::HeightmapShaped::HeightField heights(2, 2);
+  heights << 0.0, 0.1, 0.2, 0.3;
+  heightmap->setHeightField(heights);
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::move(heightmap), "heightmap");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("SDF heightmap geometry"), std::string::npos);
+  EXPECT_NE(
+      result.error().message.find("source heightmap URI"), std::string::npos);
 }
 
 //==============================================================================

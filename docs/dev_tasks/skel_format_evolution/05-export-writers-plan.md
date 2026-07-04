@@ -53,9 +53,10 @@ missing mesh URIs, pre-SDF-1.11 mimic output, coupler-style mimic enforcement,
 non-finite material colors, invalid PBR material factors, non-finite screw
 pitch, invalid collision-surface friction or restitution, unsupported
 ball-joint metadata, and non-finite joint dynamics return `common::Result`
-errors instead of being silently dropped. DART `PlaneShape` and
-`ConvexMeshShape` now report targeted policy diagnostics for the missing finite
-SDF plane size or destination URI for generated mesh resources.
+errors instead of being silently dropped. DART `PlaneShape`, `HeightmapShape`,
+and `ConvexMeshShape` now report targeted policy diagnostics for the missing
+finite SDF plane size, source heightmap URI/resource policy, or destination URI
+for generated mesh resources.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -163,10 +164,11 @@ Phase 5 is complete only when code and tests prove the writer contract:
 
 - Extend the SDF writer contract beyond the first conservative subset when
   tests can prove additional joint aliases or edge cases beyond continuous
-  revolute joints, additional sdformat-owned shapes, mesh material variants,
-  additional collision-surface fields beyond contact bitmask, zero-threshold
-  bounce restitution, and ODE friction/slip, destination-aware resource
-  rewriting, or other world-level data beyond gravity round-trip correctly.
+  revolute joints, additional sdformat-owned shapes with complete resource
+  policies such as SDF heightmaps, mesh material variants, additional
+  collision-surface fields beyond contact bitmask, zero-threshold bounce
+  restitution, and ODE friction/slip, destination-aware resource rewriting, or
+  other world-level data beyond gravity round-trip correctly.
 - Decide the next implementation target: URDF writer or PLAN-101 project
   save/load.
 - Keep YAML out of the first implementation target unless a durable

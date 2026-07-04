@@ -43,6 +43,7 @@
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/joint.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
@@ -707,6 +708,14 @@ GeometryResult makeGeometry(const dynamics::Shape& shape)
         "Cannot write DART PlaneShape as SDF plane geometry because DART "
         "planes do not carry the finite SDF plane size required for "
         "read/write/read."));
+  } else if (
+      dynamic_cast<const dynamics::HeightmapShapef*>(&shape)
+      || dynamic_cast<const dynamics::HeightmapShaped*>(&shape)) {
+    return GeometryResult::err(WriteError(
+        "Cannot write DART HeightmapShape as SDF heightmap geometry because "
+        "SDF heightmaps require a source heightmap URI, and the targetless "
+        "string writer has no destination URI or resource policy for generated "
+        "heightmap resources."));
   } else if (
       const auto* convexMesh
       = dynamic_cast<const dynamics::ConvexMeshShape*>(&shape)) {

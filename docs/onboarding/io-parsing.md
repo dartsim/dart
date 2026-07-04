@@ -177,6 +177,9 @@ non-file mesh URI preservation through a custom retriever. Targetless relative
 mesh references and relative or
 host-qualified `file` mesh URIs are rejected because the writer has no
 destination SDF URI for resource resolution or generated asset placement.
+DART `HeightmapShape` is also rejected with a targeted source-URI/resource
+policy diagnostic instead of synthesizing SDF heightmap XML from DART's sampled
+grid.
 `WriteOptions` can exclude visual or collision entries. Missing mesh URIs,
 invalid PBR material factors, invalid collision surface friction or restitution
 values, pre-SDF-1.11 mimic output, coupler-style mimic
