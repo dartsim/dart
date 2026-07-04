@@ -1149,7 +1149,8 @@ def validate_ai_docs(repo_root: Path) -> bool:
                 "internal workflow gate self-check failed: approval-only gate accepted"
             )
 
-        fake_required = extract_required_reading_from_content("""
+        fake_required = extract_required_reading_from_content(
+            """
 ## Required Reading
 
 @AGENTS.md
@@ -1157,7 +1158,8 @@ def validate_ai_docs(repo_root: Path) -> bool:
 @docs/onboarding/extra.md
 
 ## Workflow
-""")
+"""
+        )
         fake_missing = missing_required_reading_errors(
             "docs/ai/workflows.md",
             "dart-fake",
