@@ -1,0 +1,160 @@
+# Plan: DART 6 Consolidated Demos
+
+Phases land as separate focused PRs on topic branches off `origin/release-6.20`.
+Every phase ends with: build green, lint green, headless capture evidence for
+UI-visible changes, and PLAN checkboxes updated.
+
+## Architecture (decided)
+
+- **Host app** `examples/demos/` → executable `dart-demos`:
+  - `dart::gui::osg::ImGuiViewer` + `RealTimeWorldNode`, threading model
+    `SingleThreaded` (repo-established pattern for ImGui apps).
+  - **Scene-as-data registry** (adapted from DART 7 `DemoSceneEntry`):
+    `struct DemoScene { id, title, category, summary, factory }` where
+    `factory` returns a `SceneBundle`-style struct (world, optional custom
+    `WorldNode` hooks as std::function pre/post-step callbacks, per-scene panel
+    render callback, keyboard bindings, camera home, grid/shadow prefs,
+    interactive frames / drag handles to enable).
+  - **Runtime switching**: host owns one window; on switch it deactivates and
+    `removeWorldNode`s the old node, tears down per-scene widgets/attachments/
+    DnD registrations, then lazily builds the new scene inside try/catch.
+    Factory failure → soft-fail to empty world + visible reason in UI (never
+    crash, never trap the user).
+  - **Crash-safety rule**: all world/scene mutations happen on the frame-loop
+    thread; ImGui panel edits write into per-scene state applied in
+    `customPreStep`/between frames. Scene switch requests are queued and
+    executed between frames.
+- **Panels (host chrome, vanilla ImGui 1.92 — no docking)**: programmatic
+  layout against viewport work area; persistent across scene switches:
+  - `Demos` navigator (left): categories in first-appearance order, search
+    filter, current/pending selection state, failure reason surfacing.
+  - `Simulation` toolbar (top): play/pause, single-step, reset scene, target
+    RTF/frequency, timestep, gravity, solver iterations where safe.
+  - `Inspector` (right): scene tree (skeletons → bodies → joints/dofs) with
+    selection; transforms, velocities, joint positions/limits, contact list;
+    per-scene custom controls section.
+  - `Diagnostics` (bottom): log console (capture dart::common logging),
+    stats (RTF smoothed/min/max, FPS, step count, sim time, contacts,
+    bodies/dofs), live profiler summary (text profiler toggle;
+    `DART_BUILD_PROFILE` builds), shadows/grid/wireframe toggles.
+  - `setGuiScale` exposed for hi-dpi; style pass for a high-standard theme
+    (consistent paddings, rounded corners, restrained palette).
+- **Interactions** (host-level, per-scene opt-in):
+  - Drag-force: Tinkertoy pattern generalized — click-pick BodyNode, spring
+    force in pre-step, ArrowShape/LineSegment force visual, magnitude and
+    state surfaced in UI.
+  - Gizmo: `InteractiveFrame` + `enableDragAndDrop` on selected body/frame
+    (translate/rotate/planar).
+  - `BodyNodeDnD` IK-drag where scenes want it.
+- **py-demos** `python/examples/demos/`: dartpy runner mirroring the host
+  (dartpy has ImGuiViewer/ImGuiWidget/WorldNode bindings — verify per feature;
+  degrade gracefully; no new bindings).
+- **CLI**: `--scene <id>`, `--list-scenes`, `--cycle-scenes [frames]`
+  (headless smoke), `--headless --shot <path> [--steps N]` (pbuffer capture,
+  reusing the `examples/sleeping` recipe) for self-verification.
+
+## Phase 0 — Recon & plan (this folder)  [done 2026-07-04]
+
+- [x] DART 7 design doc + current demos/py-demos architecture reviewed.
+- [x] GUI capability map (`EVIDENCE-gui-capabilities.md`).
+- [x] Examples inventory + categorization (`EVIDENCE-examples-inventory.md`).
+- [x] DART 7 historical dart-demos catalog reference notes
+      (`EVIDENCE-dart7-demos.md`) — mine `1a5469960c2` for taxonomy/panels.
+- [x] Verification harness proven (headless pbuffer PNG incl. ImGui panel).
+- [x] Scene port list frozen (below). Port source = in-tree osg examples
+      (already osg-based); `1a5469960c2` supplies ids/categories/summaries.
+
+### Frozen scene catalog (categories → scenes)
+
+- Getting Started: empty, hello_world-scene (KR5 intro; standalone example
+  also kept), simple_frames
+- Visualization: rigid_shapes ("shapes"), drag_and_drop, imgui-reference,
+  heightmap, point_cloud (HAVE_OCTOMAP-gated)
+- Rigid Body: boxes, rigid_cubes, rigid_chain, add_delete_skels,
+  simulation_event_handler, sleeping, box_stacking
+- Constraints & Joints: hardcoded_design, dynamic_joint_constraints,
+  rigid_loop, tinkertoy, human_joint_limits, mixed_chain
+- Control & IK: hybrid_dynamics, joint_constraints, biped_stand,
+  operational_space_control, atlas_puppet, atlas_simbicon, wam_ikfast
+  (ikfast-guarded), hubo_puppet, ssik_ik_gui, contact_inverse_dynamics
+- Soft Bodies: soft_bodies
+- Robots: fetch (MJCF), vehicle
+- Kept standalone (not scenes): hello_world (canonical consumer sample),
+  contact_benchmark (CI-load-bearing), speed_test (console benchmark),
+  cylindrical_constraint (console; may gain a scene later). Deleted: rerun
+  (orphan stub).
+
+## Phase 1 — Host skeleton (PR 1)
+
+- [ ] `examples/demos/` CMake target `dart-demos` (guarded like other GUI
+      examples; builds with `DART_BUILD_GUI_OSG=ON` default env).
+- [ ] Registry + 2–3 seed scenes (e.g. rigid_cubes, hello_world-ish box drop,
+      empty) proving category navigator + lazy factory + soft-fail.
+- [ ] Runtime scene switch with full teardown audit (widgets, attachments,
+      DnD, event handlers, world nodes) — no leaks, no dangling handlers.
+- [ ] Simulation toolbar (play/pause/step/reset) + stats readouts.
+- [ ] CLI: `--scene`, `--list-scenes`, `--cycle-scenes`, `--headless --shot`.
+- [ ] Rapid-switch robustness: cycle all scenes N times headless without
+      crash/leak growth.
+- Acceptance: headless PNGs of navigator + a running scene; cycle smoke exits
+  0; reviewer pass on teardown path.
+
+## Phase 2 — Scene catalog ports (PR series)
+
+- [ ] Port GUI examples as scenes, category by category (list frozen after
+      recon; roughly: rigid/collision, soft bodies, constraints & joints,
+      control & IK, humanoids/locomotion, misc).
+- [ ] Each scene: parity with old example behavior (controllers via pre/post
+      step callbacks, keyboard actions mapped and listed in UI, per-scene
+      panel for its tunables).
+- [ ] Per-scene on-the-fly tunables clamp to safe ranges; fuzz each panel.
+- Acceptance per batch: headless capture of each ported scene; behavior parity
+  notes in PR body.
+
+## Phase 3 — Visual debugging suite (PR series)
+
+- [ ] Log console capturing dart logging + app events, severity filter.
+- [ ] Scene tree + inspector (read-only first; then safe live edits: joint
+      positions when paused, visual aspect toggles).
+- [ ] Contact visualizer (reusable): contact points/normals/force arrows from
+      `getLastCollisionResult`, magnitude-scaled, color-coded.
+- [ ] Drag-force + gizmo interactions host-wide with status surfaced in UI.
+- [ ] Live profiler panel (text profiler summary + reset; Tracy hint when
+      built with `DART_PROFILE_TRACY`).
+- [ ] Stats: RTF (smoothed/min/max), FPS, steps/refresh, counts.
+- [ ] COM/support-polygon toggles for legged scenes.
+
+## Phase 4 — py-demos (PR)
+
+- [ ] Verify dartpy binding coverage (ImGuiViewer/widget, WorldNode hooks,
+      InteractiveFrame, captureScreen) — evidence file.
+- [ ] Runner + registry mirroring C++ id/category scheme; port python
+      examples as scenes; graceful degradation notes where bindings missing.
+- [ ] Smoke: import + headless capture via dartpy.
+
+## Phase 5 — Cleanup (PR)
+
+- [ ] Retire superseded `examples/*` and `python/examples/*` dirs; keep
+      specialized set (minimum `hello_world`; final list evidence-based —
+      console/benchmark/external-dep examples judged individually).
+- [ ] Prove no test/CI/tutorial/doc references break (rg sweep + CI dry run).
+- [ ] Update `examples/README.md` + python examples README to point at demos.
+
+## Phase 6 — Wrap-up
+
+- [ ] CHANGELOG entry; design note `docs/design/` (DART 6 variant) promoting
+      durable architecture facts from this folder.
+- [ ] Final full verification: build, lint, cycle smoke, capture gallery,
+      rapid-switch + panel fuzz robustness pass.
+- [ ] Retire this dev task folder per `docs/dev_tasks/README.md`.
+
+## Verification harness (used throughout)
+
+- `pixi run build` + `pixi run lint` (baseline gates, docs/ai/verification.md).
+- Headless self-check: `DISPLAY=:0` pbuffer capture (recipe in
+  `EVIDENCE-gui-capabilities.md`) — screenshots reviewed by agent before
+  claiming visual work done.
+- Robustness: `--cycle-scenes` smoke, rapid-switch loop, per-panel fuzz of
+  tunables at runtime.
+- Workers: Codex/subagent implementers get one phase-scoped brief per PR;
+  orchestrator reviews diffs + evidence before accepting.
