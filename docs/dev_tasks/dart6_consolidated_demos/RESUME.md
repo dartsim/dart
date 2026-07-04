@@ -1,6 +1,10 @@
 # Resume Instructions
 
-Current phase: Phase 0 (recon) → Phase 1 planning.
+Current phase: Phase 2 (scene ports) — dispatch batches per BRIEF-phase2.md.
+IMPORTANT: batches share build/default/cpp/Release — run implementation
+workers SEQUENTIALLY (build-dir contention corrupts parallel builds; a
+load-84 pileup already happened once). Review every batch's PNGs before
+accepting.
 
 1. Read `README.md` (scope, decisions) and `PLAN.md` (phases, acceptance
    criteria, current checkboxes).

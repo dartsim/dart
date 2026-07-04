@@ -84,20 +84,26 @@ UI-visible changes, and PLAN checkboxes updated.
   cylindrical_constraint (console; may gain a scene later). Deleted: rerun
   (orphan stub).
 
-## Phase 1 — Host skeleton (PR 1)
+## Phase 1 — Host skeleton (PR 1)  [done 2026-07-04]
 
-- [ ] `examples/demos/` CMake target `dart-demos` (guarded like other GUI
-      examples; builds with `DART_BUILD_GUI_OSG=ON` default env).
-- [ ] Registry + 2–3 seed scenes (e.g. rigid_cubes, hello_world-ish box drop,
-      empty) proving category navigator + lazy factory + soft-fail.
-- [ ] Runtime scene switch with full teardown audit (widgets, attachments,
-      DnD, event handlers, world nodes) — no leaks, no dangling handlers.
-- [ ] Simulation toolbar (play/pause/step/reset) + stats readouts.
-- [ ] CLI: `--scene`, `--list-scenes`, `--cycle-scenes`, `--headless --shot`.
-- [ ] Rapid-switch robustness: cycle all scenes N times headless without
-      crash/leak growth.
-- Acceptance: headless PNGs of navigator + a running scene; cycle smoke exits
-  0; reviewer pass on teardown path.
+- [x] `examples/demos/` builds `dart-demos` (registered in
+      examples/CMakeLists.txt; 2560 LOC).
+- [x] Registry + 3 seed scenes (boxes, rigid_cubes with contact-force
+      visuals, empty with gizmo) prove navigator + lazy factory + soft-fail.
+- [x] Transactional runtime switch (factory-before-teardown, guarded hooks
+      disable on first throw, ordered teardown registry).
+- [x] Simulation toolbar (Play/Step/Rebuild/Reset, target-RTF slider,
+      gravity toggle) + Diagnostics stats/log; RTF renders `--` when not
+      free-running.
+- [x] CLI: `--scene`, `--list-scenes`, `--cycle-scenes --frames N` (2x cycle
+      + world-node leak audit), `--headless --shot`.
+- [x] Acceptance: cycle smoke exit 0; headless PNGs of all 3 scenes reviewed
+      by orchestrator (theme/layout verified; rigid_cubes Z-up + RTF display
+      defects found in review and fixed). Implemented by Codex worker;
+      committed as "Add dart-demos consolidated demos host...".
+- Note: Y-up skel worlds need `reorientWorldToZUp` (RigidCubesScene.cpp
+  helper — promote to shared scenes/ helper in Phase 2). rigid_cubes camera
+  framing to tighten in Phase 2 B1.
 
 ## Phase 2 — Scene catalog ports (PR series)
 
@@ -119,6 +125,14 @@ UI-visible changes, and PLAN checkboxes updated.
 - [ ] Contact visualizer (reusable): contact points/normals/force arrows from
       `getLastCollisionResult`, magnitude-scaled, color-coded.
 - [ ] Drag-force + gizmo interactions host-wide with status surfaced in UI.
+- [ ] Prereq library fix (small, separate PR): `InteractiveFrameDnD` leaks
+      its 9 `new InteractiveToolDnD` sub-DnDs (`DragAndDrop.cpp:521-523`,
+      `~InteractiveFrameDnD() = default` in `DragAndDrop.hpp:243`) →
+      repeated gizmo teardown during scene switching leaks. Root-cause fix:
+      out-of-line destructor deleting `mDnDs` (ABI-safe). DART 7 rewrote the
+      GUI, so single release-branch PR (verify no equivalent on main first).
+      Until landed, demos uses SimpleFrameDnD for switchable scenes (worker's
+      Phase 1 mitigation, documented in `DemoScene.hpp`).
 - [ ] Live profiler panel (text profiler summary + reset; Tracy hint when
       built with `DART_PROFILE_TRACY`).
 - [ ] Stats: RTF (smoothed/min/max), FPS, steps/refresh, counts.
