@@ -76,7 +76,8 @@ Source of truth:
   avoid raw XML-level SDF parsing when sdformat exposes the value. When
   DART must preserve an authored/default distinction or schema field that the
   high-level DOM class does not expose, use a narrow sdformat `Element` bridge:
-  `Element::GetExplicitlySetInFile()` for authored/default checks and typed
+  `Element::FindElement()` for non-mutating child lookup,
+  `Element::GetExplicitlySetInFile()` for authored/default checks, and typed
   `Element::Get<T>` conversion for extension values. Do not add DART-side SDF
   XML tokenization, child-existence probing, or text reparsing.
 

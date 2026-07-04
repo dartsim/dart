@@ -238,16 +238,7 @@ sdf::ElementPtr findChildElement(
     return nullptr;
   }
 
-  const std::string nameString(name);
-  sdf::ElementPtr childElement = parent->GetFirstElement();
-  if (!childElement) {
-    return nullptr;
-  }
-  if (childElement->GetName() == nameString) {
-    return childElement;
-  }
-
-  return childElement->GetNextElement(nameString);
+  return parent->FindElement(std::string(name));
 }
 
 sdf::ElementPtr findNextSiblingElement(

@@ -111,8 +111,8 @@ Writer-side preservation of disabled link gravity and schema-preferred SDF
 1.10+ screw pitch still patches sdformat's serialized element tree, but the
 link/joint names and values now come from the typed `sdf::Model`,
 `sdf::Link`, and `sdf::Joint` DOM rather than from serialized XML attributes,
-and required patch targets are found by direct sdformat child traversal instead
-of schema lookup.
+and required patch targets are found by sdformat `Element::FindElement()`
+lookup plus sdformat sibling iteration for repeated generated children.
 The SDF writer tests also keep semantic checks on libsdformat by reparsing
 emitted SDF through `sdf::Root::LoadSdfString()` and inspecting typed DOM
 objects. Serialized XML substring assertions are reserved for element-name

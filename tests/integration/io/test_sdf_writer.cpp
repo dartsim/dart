@@ -225,15 +225,7 @@ std::filesystem::path writeTempSdf(std::string_view text, std::string_view name)
 sdf::ElementPtr getSdfChildElement(
     const sdf::ElementPtr& parent, const std::string& name)
 {
-  sdf::ElementPtr child = parent ? parent->GetFirstElement() : nullptr;
-  while (child) {
-    if (child->GetName() == name) {
-      return child;
-    }
-    child = child->GetNextElement();
-  }
-
-  return nullptr;
+  return parent ? parent->FindElement(name) : nullptr;
 }
 
 double getSdfDoubleElement(

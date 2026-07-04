@@ -45,16 +45,7 @@ sdf::ElementPtr findChildElement(
     return nullptr;
   }
 
-  const std::string nameString(name);
-  ElementPtr childElement = parentElement->GetFirstElement();
-  if (!childElement) {
-    return nullptr;
-  }
-  if (childElement->GetName() == nameString) {
-    return childElement;
-  }
-
-  return childElement->GetNextElement(nameString);
+  return parentElement->FindElement(std::string(name));
 }
 
 } // namespace

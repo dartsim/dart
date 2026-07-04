@@ -122,24 +122,26 @@ presence checks remain only where DART preserves authored/default distinctions
 for existing diagnostics, reads DART-specific soft-body extension fields, or
 supports the legacy `use_parent_model_frame` presence check. Those standard SDF
 authored/default checks now use sdformat explicit-authored flags and
-non-mutating direct child traversal instead of raw child-existence probing. The
-compatibility boolean value now uses sdformat typed element access rather than
-DART's SDF helper layer.
+sdformat `Element::FindElement()` lookup instead of raw child-existence
+probing. The compatibility boolean value now uses sdformat typed element access
+rather than DART's SDF helper layer.
 The SDF detail helper API has been narrowed to that remaining bridge: generic
 XML attribute reads, string reads, vector2/vectorX parsing, child enumeration,
 boolean value parsing, and direct helper tests for those deleted APIs are gone.
 Retained helpers now cover only authored element presence/lookup for fields the
 high-level DOM does not expose; standard presence checks use
-`GetExplicitlySetInFile()`, and DART-specific soft-body extension values are
-converted locally through sdformat typed `Element::Get<T>` calls instead of
-shared DART-side scalar, vector, or pose parsers.
+`Element::FindElement()` plus `GetExplicitlySetInFile()`, and DART-specific
+soft-body extension values are converted locally through sdformat typed
+`Element::Get<T>` calls instead of shared DART-side scalar, vector, or pose
+parsers.
 The SDF writer's post-serialization preservation path now uses typed
 `sdf::Model`, `sdf::Link`, and `sdf::Joint` DOM values for link/joint names,
 disabled link gravity modes, and screw pitch values. It still patches
 sdformat's element tree for fields that `Root::ToElement()` omits or emits
 under the deprecated tag, but it no longer reads serialized XML attributes back
 from that tree, and the patch path now finds generated sdformat children by
-direct child/sibling traversal instead of `FindElement` schema lookup.
+`Element::FindElement()` child lookup plus sdformat sibling iteration for
+repeated generated children.
 Model-level self-collision now reads through `sdf::Model::SelfCollide()` and
 writes through `sdf::Model::SetSelfCollide()`, with parser and writer coverage
 for SDF `<self_collide>` round-trip.
@@ -683,6 +685,14 @@ Additional validation for sdformat-authored SDF presence checks:
 - `pixi run run-cpp-target test_sdf_helpersNone`
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 
+Additional validation for sdformat `Element::FindElement()` lookup bridge:
+
+- `git diff --check`
+- `pixi run run-cpp-target test_sdf_helpersNone`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target test_io_readNone`
+
 Additional validation for collision-surface ODE friction IO:
 
 - `git diff --check`
@@ -831,7 +841,11 @@ Changelog decision:
   No additional separate entry is needed for sdformat-authored SDF presence
   checks because this is an internal parser hardening that preserves existing
   authored/default behavior while replacing child-existence probing with
-  sdformat explicit-authored metadata.
+  sdformat `Element::FindElement()` lookup and explicit-authored metadata.
+  No additional separate entry is needed for replacing DART-side SDF child
+  lookup loops with sdformat `Element::FindElement()` because it is an internal
+  implementation cleanup that preserves the same SDF parser/writer behavior
+  while keeping the remaining bridge on libsdformat APIs.
   No additional separate entry is needed for collision-surface ODE friction IO
   because it broadens the same conservative SDF writer/parser round-trip
   capability before the implementation PR exists; the existing DART 7 IO and
