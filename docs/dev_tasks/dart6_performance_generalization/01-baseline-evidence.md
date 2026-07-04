@@ -95,16 +95,16 @@ stable across #3226/#3230/#3241.
 
 ### S1 — `BM_INTEGRATION_contact_container` (3-rep means)
 
-| Scenario (objects/engine/threads) | cpu ms/iter | sim_s/s (≈RTF) | contacts |
-| --- | ---: | ---: | ---: |
-| 60 / dart / 1 | 412 | 0.486 | 96 |
-| 60 / dart / 16 | 430 | 0.465 | 96 |
-| 60 / ode / 1 | 1540 | 0.130 | 249 |
-| 60 / ode / 16 | 1464 | 0.137 | 249 |
-| 120 / dart / 1 | 4677 | 0.043 | 272 |
-| 120 / dart / 16 | 4607 | 0.043 | 272 |
-| 120 / ode / 1 | 6844 | 0.029 | 542 |
-| 120 / ode / 16 | 6784 | 0.030 | 542 |
+| Scenario (objects/engine/threads) | cpu ms/iter | sim_s/s (≈RTF) | contacts | resting/mobile |
+| --- | ---: | ---: | ---: | --- |
+| 60 / dart / 1 | 412 | 0.486 | 96 | 0/60 |
+| 60 / dart / 16 | 430 | 0.465 | 96 | 0/60 |
+| 60 / ode / 1 | 1540 | 0.130 | 249 | 0/60 |
+| 60 / ode / 16 | 1464 | 0.137 | 249 | 0/60 |
+| 120 / dart / 1 | 4677 | 0.043 | 272 | 0/120 |
+| 120 / dart / 16 | 4607 | 0.043 | 272 | 0/120 |
+| 120 / ode / 1 | 6844 | 0.029 | 542 | 0/120 |
+| 120 / ode / 16 | 6784 | 0.030 | 542 | 0/120 |
 
 60→120 objects costs ~11.4x (native) — super-quadratic scaling; threads
 are flat in both engines; ODE emits ~2x the contacts of native
@@ -113,25 +113,25 @@ detector).
 
 ### S2–S6 guard rows (canonical commands above)
 
-| Row | RTF | Avg step ms | Contacts (cap) | Pairs | Resting | Max pen | Hash |
-| --- | ---: | ---: | ---: | ---: | --- | ---: | --- |
-| S2_dart | 26.84 | 0.037 | 0 (false) | 0 | 3003/3003 | 0 | `0x8ddc9a81f2d28a7f` |
-| S2_fcl | 28.11 | 0.036 | 0 (false) | 0 | 3003/3003 | 0 | `0x266da31836a314a6` |
-| S2_bullet | 6.78 | 0.147 | 0 (false) | 0 | 3003/3003 | 0 | `0x2375f1927218cd43` |
-| S2_ode | 11.16 | 0.090 | 0 (false) | 0 | 3003/3003 | 0 | `0x10f80b0408cede90` |
-| S3_dart | 0.101 | 9.89 | 5005 (false) | 3003 | 0/3003 | 9.3e-09 | `0xcf0ba6eaa97be038` |
-| S3_fcl | 0.085 | 11.78 | 3003 (false) | 3003 | 0/3003 | 9.3e-09 | `0x6088ea0177efa6a` |
-| S3_bullet | 0.087 | 11.47 | 5005 (false) | 3003 | 0/3003 | 3.0e-07 | `0xabf3edd146317478` |
-| S3_ode | 0.0083 | 119.90 | 9009 (false) | 3003 | 0/3003 | 9.3e-09 | `0x4904c09a93a36442` |
-| S4_dart | 0.357 | 2.80 | 1800 (false) | 900 | 600/900 | 1.0e-03 | `0x76205ad68f4293bb` |
-| S4_fcl | 0.266 | 3.76 | 1800 (false) | 900 | 450/900 | 9.8e-04 | `0x7a0974e837912472` |
-| S4_bullet | 0.193 | 5.17 | 2364 (false) | 900 | 269/900 | 1.1e-02 | `0x72bf270cdda36104` |
-| S4_ode | 6.75 | 0.148 | 0 (false) | 0 | 900/900 | 0 | `0x429b65bc5c4a14b6` |
-| S5_dart | 3.69 | 0.271 | 180 (false) | 90 | 60/90 | 1.0e-03 | `0x726d1ff51bdb717` |
-| S5_fcl | 2.26 | 0.443 | 180 (false) | 90 | 45/90 | 7.6e-04 | `0x99bfaef49c254203` |
-| S5_bullet | 1.92 | 0.521 | 210 (false) | 90 | 55/90 | 1.0e-05 | `0xbeb495c1ab0d6ca6` |
-| S5_ode | 82.09 | 0.012 | 0 (false) | 0 | 90/90 | 0 | `0x5f2afc7230ee8d10` |
-| S6_dart | 0.117 | 8.55 | 162 (false) | 137 | 0/71 | **0.3866** | `0x637a8bb6d5e0af64` |
+| Row | RTF | Avg step ms | Contacts (cap) | Pairs | Resting | Finite | Max pen | Hash |
+| --- | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |
+| S2_dart | 26.84 | 0.037 | 0 (false) | 0 | 3003/3003 | true | 0 | `0x8ddc9a81f2d28a7f` |
+| S2_fcl | 28.11 | 0.036 | 0 (false) | 0 | 3003/3003 | true | 0 | `0x266da31836a314a6` |
+| S2_bullet | 6.78 | 0.147 | 0 (false) | 0 | 3003/3003 | true | 0 | `0x2375f1927218cd43` |
+| S2_ode | 11.16 | 0.090 | 0 (false) | 0 | 3003/3003 | true | 0 | `0x10f80b0408cede90` |
+| S3_dart | 0.101 | 9.89 | 5005 (false) | 3003 | 0/3003 | true | 9.3e-09 | `0xcf0ba6eaa97be038` |
+| S3_fcl | 0.085 | 11.78 | 3003 (false) | 3003 | 0/3003 | true | 9.3e-09 | `0x6088ea0177efa6a` |
+| S3_bullet | 0.087 | 11.47 | 5005 (false) | 3003 | 0/3003 | true | 3.0e-07 | `0xabf3edd146317478` |
+| S3_ode | 0.0083 | 119.90 | 9009 (false) | 3003 | 0/3003 | true | 9.3e-09 | `0x4904c09a93a36442` |
+| S4_dart | 0.357 | 2.80 | 1800 (false) | 900 | 600/900 | true | 1.0e-03 | `0x76205ad68f4293bb` |
+| S4_fcl | 0.266 | 3.76 | 1800 (false) | 900 | 450/900 | true | 9.8e-04 | `0x7a0974e837912472` |
+| S4_bullet | 0.193 | 5.17 | 2364 (false) | 900 | 269/900 | true | 1.1e-02 | `0x72bf270cdda36104` |
+| S4_ode | 6.75 | 0.148 | 0 (false) | 0 | 900/900 | true | 0 | `0x429b65bc5c4a14b6` |
+| S5_dart | 3.69 | 0.271 | 180 (false) | 90 | 60/90 | true | 1.0e-03 | `0x726d1ff51bdb717` |
+| S5_fcl | 2.26 | 0.443 | 180 (false) | 90 | 45/90 | true | 7.6e-04 | `0x99bfaef49c254203` |
+| S5_bullet | 1.92 | 0.521 | 210 (false) | 90 | 55/90 | true | 1.0e-05 | `0xbeb495c1ab0d6ca6` |
+| S5_ode | 82.09 | 0.012 | 0 (false) | 0 | 90/90 | true | 0 | `0x5f2afc7230ee8d10` |
+| S6_dart | 0.117 | 8.55 | 162 (false) | 137 | 0/71 | true | **0.3866** | `0x637a8bb6d5e0af64` |
 
 ### Headline findings (round-2 evidence; supersedes the pre-plan smoke run)
 
