@@ -55,10 +55,8 @@ struct NonConstantWidth
 struct RuntimeStaticWidth
 {
   using scalar_type = float;
-  static std::size_t width;
+  [[maybe_unused]] static inline std::size_t width = 4;
 };
-
-std::size_t RuntimeStaticWidth::width = 4;
 
 struct InvalidWidth
 {
