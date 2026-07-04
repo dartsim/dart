@@ -49,9 +49,11 @@ Parser-side SDF import now uses libsdformat DOM objects for top-level model
 selection and standard model/link/joint/aspect traversal. XML helper reads
 remain only for authored/default presence checks, DART-specific soft-body
 extension fields, and the legacy `use_parent_model_frame` compatibility
-extension. The SDF-specific helper surface has been narrowed accordingly: it no
-longer exposes generic XML attribute, string, vector2/vectorX, or child
-enumerator APIs that duplicate sdformat traversal/parsing.
+extension; modern `axis/xyz@expressed_in` frame annotations are resolved through
+`sdf::JointAxis::ResolveXyz()`. The SDF-specific helper surface has been
+narrowed accordingly: it no longer exposes generic XML attribute, string,
+vector2/vectorX, or child enumerator APIs that duplicate sdformat
+traversal/parsing.
 
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.

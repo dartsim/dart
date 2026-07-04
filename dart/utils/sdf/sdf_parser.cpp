@@ -1610,6 +1610,41 @@ static void reportMissingElement(
   DART_ASSERT(0);
 }
 
+Eigen::Vector3d resolveAxisXyz(
+    const sdf::JointAxis& axisElement,
+    const Eigen::Isometry3d& _parentModelFrame,
+    const ElementPtr& axisXmlElement)
+{
+  gz::math::Vector3d xyz = axisElement.Xyz();
+
+  if (!axisElement.XyzExpressedIn().empty()) {
+    const sdf::Errors errors = axisElement.ResolveXyz(xyz);
+    if (errors.empty()) {
+      return toEigenVector3(xyz);
+    }
+
+    DART_WARN(
+        "[SdfParser] Failed to resolve joint axis expressed in frame [{}]; "
+        "falling back to the raw <xyz> value.",
+        axisElement.XyzExpressedIn());
+  }
+
+  // Legacy Gazebo/SDF files used this extension before SDF gained
+  // axis/xyz@expressed_in. Keep it as a compatibility fallback only.
+  bool useParentModelFrame = false;
+  if (hasElement(axisXmlElement, "use_parent_model_frame")) {
+    useParentModelFrame
+        = getValueBool(axisXmlElement, "use_parent_model_frame");
+  }
+
+  Eigen::Vector3d axis = toEigenVector3(xyz);
+  if (useParentModelFrame) {
+    axis = _parentModelFrame.rotation() * axis;
+  }
+
+  return axis;
+}
+
 static bool readAxisElement(
     const sdf::JointAxis& axisElement,
     const Eigen::Isometry3d& _parentModelFrame,
@@ -1625,19 +1660,8 @@ static bool readAxisElement(
   bool hasFinitePositionLimit = false;
   const ElementPtr axisXmlElement = axisElement.Element();
 
-  // use_parent_model_frame
-  bool useParentModelFrame = false;
-  if (hasElement(axisXmlElement, "use_parent_model_frame")) {
-    useParentModelFrame
-        = getValueBool(axisXmlElement, "use_parent_model_frame");
-  }
-
   // xyz
-  Eigen::Vector3d xyz = toEigenVector3(axisElement.Xyz());
-  if (useParentModelFrame) {
-    xyz = _parentModelFrame.rotation() * xyz;
-  }
-  axis = xyz;
+  axis = resolveAxisXyz(axisElement, _parentModelFrame, axisXmlElement);
 
   // dynamics
   if (hasElement(axisXmlElement, "dynamics")) {

@@ -64,9 +64,9 @@ Source of truth:
 - `dart/io/read.cpp`
 - `dart/utils/sdf/sdf_writer.hpp` for the first parser-specific SDF writer
 - `dart/utils/sdf/` uses libsdformat DOM APIs for SDF structure, model/link,
-  inertial, visual/collision/material, joint topology/pose/axis/dynamics/limits,
-  and supported geometry semantics; avoid new raw XML-level SDF parsing when
-  sdformat exposes the value.
+  inertial, visual/collision/material, joint topology/pose/axis frame
+  resolution/dynamics/limits, and supported geometry semantics; avoid new raw
+  XML-level SDF parsing when sdformat exposes the value.
 
 ## Start here next time
 

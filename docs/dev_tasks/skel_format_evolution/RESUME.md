@@ -72,11 +72,12 @@ mass, and inertia tensor values. Visual and collision shape nodes traverse
 material colors plus `sdf::Pbr` metal workflow factors. Standard SDF joint
 reads traverse `sdf::Model`, `sdf::Joint`, and `sdf::JointAxis` DOM values for
 joint enumeration, joint name/type,
-parent/child links, local pose, axis vectors, axis dynamics, finite position
-limits, mimic metadata, and sdformat-normalized screw pitch values. XML helper
-checks remain only where DART preserves authored/default distinctions for
-existing diagnostics, reads DART-specific soft-body extension fields, or
-supports the legacy `use_parent_model_frame` compatibility extension.
+parent/child links, local pose, axis vectors including
+`axis/xyz@expressed_in` frame resolution, axis dynamics, finite position limits,
+mimic metadata, and sdformat-normalized screw pitch values. XML helper checks
+remain only where DART preserves authored/default distinctions for existing
+diagnostics, reads DART-specific soft-body extension fields, or supports the
+legacy `use_parent_model_frame` compatibility extension.
 The SDF detail helper API has been narrowed to that remaining bridge: generic
 XML attribute reads, string reads, vector2/vectorX parsing, child enumeration,
 and direct helper tests for those deleted APIs are gone. Retained helpers cover
@@ -214,6 +215,14 @@ Additional validation for SDF PBR material factor IO:
 - `pixi run lint`
 - `pixi run build`
 
+Additional validation for SDF joint-axis expressed-in frame resolution:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit`
+
 Changelog decision:
 
 - Mode: draft
@@ -263,7 +272,10 @@ Changelog decision:
   libsdformat semantics before the implementation PR exists. No additional
   separate entry is needed for SDF PBR material factors because the existing
   conservative SDF writer changelog bullet now includes broadened visual
-  material round-trip coverage before the implementation PR exists.
+  material round-trip coverage before the implementation PR exists. No
+  additional separate entry is needed for SDF joint-axis expressed-in frame
+  resolution because the existing DART 7 libsdformat dependency entry now covers
+  this parser-side normalization.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

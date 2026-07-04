@@ -54,11 +54,12 @@
       libsdformat DOM values for names, local poses, geometry, diffuse colors,
       and PBR metal workflow factors. Standard joint reads use DOM values for
       joint name/type,
-      parent/child links, local pose, axis vectors, axis dynamics, finite
-      limits, mimic metadata, and sdformat-normalized screw pitch values; XML
-      checks remain only where DART needs authored/default presence,
-      DART-specific soft-body extension fields, or legacy
-      `use_parent_model_frame` compatibility.
+      parent/child links, local pose, axis vectors including
+      `axis/xyz@expressed_in` frame resolution, axis dynamics, finite limits,
+      mimic metadata, and sdformat-normalized screw pitch values; XML checks
+      remain only where DART needs authored/default presence, DART-specific
+      soft-body extension fields, or legacy `use_parent_model_frame`
+      compatibility.
       The SDF-specific helper layer no longer exposes generic XML attribute,
       string, vector2/vectorX, or child-enumerator APIs; retained helpers are
       limited to the small extension/presence fallback bridge still used by the

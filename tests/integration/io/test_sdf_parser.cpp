@@ -839,6 +839,41 @@ TEST(SdfParser, AxisUsesParentModelFrameRotation)
 }
 
 //==============================================================================
+TEST(SdfParser, AxisExpressedInModelFrameUsesSdformatResolution)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/axis_expressed_in/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.10">
+  <model name="axis_expressed_in">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="tip">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="rev_joint" type="revolute">
+      <parent>base</parent>
+      <child>tip</child>
+      <pose>0 0 0 0 0 1.57079632679</pose>
+      <axis>
+        <xyz expressed_in="__model__">1 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint
+      = dynamic_cast<dynamics::RevoluteJoint*>(skeleton->getJoint("rev_joint"));
+  ASSERT_NE(joint, nullptr);
+  EXPECT_TRUE(joint->getAxis().isApprox(Eigen::Vector3d(0.0, -1.0, 0.0), 1e-9));
+}
+
+//==============================================================================
 TEST(SdfParser, JointDynamicsPropertiesFromAxis)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();
