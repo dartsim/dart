@@ -466,23 +466,23 @@ check-dart7-final-world-promotion`.
 - Horizon: Next
 - Dimension: Algorithm extensibility
 - Next step: The WS1–WS5 differentiability surface is merged to `main` (PR #2761);
-  remaining work is hardening/examples plus the Dojo de-risking spike. Run the
-  torch-autograd test (`pip install torch`); add standalone
-  trajectory-optimization / system-identification example programs; harden the
-  static-friction Dantzig degenerate-pivot warning (shared `dart/math/lcp`, its
-  own PR); extend deferred parameters/contacts (CENTER_OF_MASS, articulated
-  multibody-link contact); then run the Dojo spike from
+  remaining work is promotion cleanup plus the Dojo architecture decision.
+  Standalone trajectory-optimization and system-identification example programs
+  now ship; the torch-autograd path, `DART_BUILD_DIFF` on/off CI guard,
+  static-friction Dantzig warning hardening, and scalar Dojo-style central-path
+  spike now ship. Keep deferred parameters/contacts (CENTER_OF_MASS, articulated
+  multibody-link contact) documented, then use the Dojo spike evidence from
   [`110-differentiable-simulation/dojo-gap-audit.md`](110-differentiable-simulation/dojo-gap-audit.md)
-  before any public API or runtime-dependency promise. Track in
-  `docs/dev_tasks/differentiable_simulation/`. History: see the progress log in
+  before any public API or runtime-dependency promise. History: see the progress log in
   [`110-differentiable-simulation.md`](110-differentiable-simulation.md).
 - Gate: differentiability is off by default with bitwise-identical results and
   zero snapshot allocation when off (`test_diff_zero_cost_parity` + on/off
   overhead benchmark against a stated budget); analytic Jacobians agree with
   central finite differences at relative error `< 1e-4` over `h ∈ {1e-5,1e-6,1e-7}`
   on named scenes (Tied-set/boundary configs excluded) before any parity claim;
-  a `DART_BUILD_DIFF` build option with CI on _and_ off and a workflow guard;
-  serialization round-trip (or documented non-serialization) of the
+  a `DART_BUILD_DIFF` build option with CI on _and_ off and a workflow guard
+  (`scripts/check_diff_workflow.py`);
+  serialization round-trip of the
   `differentiable`/`contact_gradient_mode`/parameter-registration state; the
   public surface never exposes the reverse-pass cache, LCP snapshot,
   solver/coupler/backend types, ECS storage, or a tensor framework in the C++
