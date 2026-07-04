@@ -15,23 +15,27 @@
       tests, `.skel` sample fixtures, and user-facing DART 7 docs. The Phase 2
       branch relocates the non-SKEL Kima Collada fixtures from `data/skel/kima/`
       to `data/mesh/kima/` before deleting the legacy `data/skel/` tree.
-- [ ] Phase 3: Optional YAML model/scene format. Decide whether YAML should be
-      a new DART-owned scene format or a front-end over URDF/SDF semantics; do
-      not implement SKEL syntax in YAML.
+- [x] Phase 3: Optional YAML model/scene format. Decision recorded in
+      [`03-yaml-decision.md`](03-yaml-decision.md): do not add YAML as a DART 7
+      `dart::io` model format or as a front-end syntax for URDF/SDF/MJCF. If
+      YAML is revisited, it must be a DART-owned project or scene
+      serialization format with import/export round-trip tests, not SKEL syntax
+      in YAML.
 - [ ] Phase 4: USD support. Coordinate with
       [`usd_scene_loader/`](../usd_scene_loader/) so SKEL evolution and USD
       adoption share design pressure on the unified `dart::io` front door
-- [ ] Phase 5: Export writers for URDF, SDF, and YAML so DART can round-trip
-      a scene back to portable text
+- [ ] Phase 5: Export writers for accepted portable/project formats so DART can
+      round-trip a scene back to text. Start with URDF/SDF and add YAML only if
+      a durable project/scene schema is accepted first.
 
 ## Goal
 
 Close out [issue #496](https://github.com/dartsim/dart/issues/496) (2015
 proposal to convert SKEL XML to YAML) with a decision _not_ to YAML-ify SKEL,
 and instead remove SKEL before the DART 7 release. Invest the same engineering
-budget into verified fixture migration, URDF/SDF/MJCF coverage, optional new
-YAML design, USD adoption, and format-export so DART scenes can leave the
-engine in portable formats.
+budget into verified fixture migration, URDF/SDF/MJCF coverage, the YAML
+non-adoption decision, USD adoption, and format-export so DART scenes can leave
+the engine in portable formats.
 
 ## Non-Goals
 
@@ -39,8 +43,9 @@ engine in portable formats.
   the rationale is in _Key Decisions_ below.
 - Keeping SKEL support in DART 7 for compatibility. Legacy users should stay on
   a `release-6.*` branch until their assets are migrated.
-- Building a YAML schema before deciding its maintenance, export, and
-  interchange contracts. YAML remains optional and must not be SKEL-in-YAML.
+- Building a YAML schema in this task. YAML remains rejected for DART 7
+  `dart::io` unless a future durable project/scene owner accepts its
+  maintenance, export, and round-trip contracts.
 
 ## Key Decisions
 
@@ -48,17 +53,19 @@ engine in portable formats.
   string-based, and has no installed-base outside DART. Industry has converged
   on URDF (ROS), SDF (Gazebo), and MJCF (MuJoCo); DART 7 should not carry a
   DART-only XML format forward.
-- **YAML is optional, but not SKEL YAML**. A YAML front-end over `urdfdom` and
-  `libsdformat` reuses canonical models and authoring ecosystems. A new
-  DART-owned YAML scene format may still be worth evaluating, but it must be a
-  clean DART 7 format with explicit semantics, tests, and export strategy.
+- **YAML is not a DART 7 `dart::io` model format**. Phase 3 rejects
+  `ModelFormat::Yaml`, YAML wrappers over URDF/SDF/MJCF, and any SKEL syntax
+  carryover. If YAML is revisited, it belongs in a durable project/scene
+  serialization design with schema/versioning rules and import/export
+  round-trip tests.
 - **USD is the medium-term scene format**. Pixar / NVIDIA convergence makes
   USD the most likely cross-engine scene format. Loader work is tracked
   separately under [`usd_scene_loader/`](../usd_scene_loader/); SKEL
   evolution should not duplicate that surface.
-- **Export is part of the work**. SDF / URDF / YAML writers turn DART into a
-  round-trip engine rather than read-only, which unblocks save / load in
-  the dartsim editor (PLAN-101) and downstream pipelines like gz-physics.
+- **Export is part of the work**. URDF/SDF writers, plus any accepted
+  DART-owned project/scene writer, turn DART into a round-trip engine rather
+  than read-only, which unblocks save / load in the dartsim editor (PLAN-101)
+  and downstream pipelines like gz-physics.
 
 ## Prototype Reference
 
@@ -95,11 +102,12 @@ SKEL-YAML direction just because the prototype once existed.
 
 1. Land the Phase 2 removal branch (`feature/remove-skel-dart7-phase2`) after
    review. Add the PR link to the DART 7 changelog entry before merge.
-2. Draft a fresh Phase 3 decision record for YAML: front-end over existing
-   formats vs. new DART-owned scene format, with no SKEL syntax carryover.
-3. Keep Phase 4 USD work coordinated with
+2. Keep Phase 4 USD work coordinated with
    [`usd_scene_loader/`](../usd_scene_loader/) rather than duplicating that
    loader surface here.
+3. Start Phase 5 as a separate export-writer round-trip design/implementation
+   slice. YAML can enter that slice only after a durable project/scene schema is
+   accepted.
 
 ## Verification Gates
 
@@ -110,9 +118,12 @@ SKEL-YAML direction just because the prototype once existed.
   `dart::io`, parser-specific SKEL tests are removed, and the source tree no
   longer ships DART 7 sample `.skel` assets. Existing non-SKEL mesh tests now
   load the relocated Kima fixtures from `data/mesh/kima/*.dae`.
-- Phase 3: focused parser tests for any accepted YAML design, including parity
-  with the canonical format it maps to or explicit tests for a new DART-owned
-  schema.
+- Phase 3: decision-only gate recorded in
+  [`03-yaml-decision.md`](03-yaml-decision.md): live issue state, current
+  `dart::io` source/docs, upstream format docs, USD task ownership, and PLAN-101
+  project round-trip evidence all support not implementing a YAML parser now.
+  Any future accepted YAML design needs focused parser, export, and round-trip
+  tests before implementation is considered complete.
 - Phase 4: see `usd_scene_loader/` gates.
-- Phase 5: round-trip tests that load a scene from each format and write it
-  back, comparing the re-parsed models.
+- Phase 5: round-trip tests that load a scene from each accepted format and
+  write it back, comparing the re-parsed models.

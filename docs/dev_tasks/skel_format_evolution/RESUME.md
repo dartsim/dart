@@ -1,6 +1,20 @@
 # Resume: SKEL Format Evolution
 
-## Current Resume Checkpoint (2026-07-03)
+## Current Resume Checkpoint (2026-07-04 UTC)
+
+Phase 3 is decided and committed locally on `work/skel-format-yaml-decision`,
+stacked on the Phase 2 removal branch. The decision record is
+[`03-yaml-decision.md`](03-yaml-decision.md): do not add YAML as a DART 7
+`dart::io` model format, do not build a YAML wrapper over URDF/SDF/MJCF, and do
+not carry SKEL syntax forward. If YAML returns, it must be a DART-owned
+project/scene serialization design with schema/versioning rules plus import,
+export, and round-trip tests.
+
+Phase 2 remains implemented on `feature/remove-skel-dart7-phase2` and awaiting
+PR creation/review/merge. The stacked Phase 3 branch is documentation-only and
+should not be pushed as the Phase 2 removal PR.
+
+## Previous Resume Checkpoint (2026-07-03)
 
 Phase 2 is implemented on `feature/remove-skel-dart7-phase2` and awaiting PR
 creation/review/merge. The branch removes the C++ SKEL parser, `dart::io`
@@ -83,21 +97,24 @@ can be recovered without adopting the old SKEL YAML direction.
 
 ## Current Branch
 
-`feature/remove-skel-dart7-phase2` — Phase 2 removal is implemented locally.
+`work/skel-format-yaml-decision` — Phase 3 YAML decision is committed locally on
+top of the Phase 2 removal commit. The underlying Phase 2 branch remains
+`feature/remove-skel-dart7-phase2`.
 
 ## Immediate Next Step
 
-Land Phase 2, then decide Phase 3: whether YAML should be a front-end over
-existing URDF/SDF semantics or a new DART-owned scene format. Keep Phase 4 USD
-work in `docs/dev_tasks/usd_scene_loader/` and keep Phase 5 export writers as a
-separate round-trip design/implementation slice.
+Continue with the remaining real task work: land Phase 2 after maintainer
+approval, keep Phase 4 USD work in `docs/dev_tasks/usd_scene_loader/`, and
+start Phase 5 export writers as a separate round-trip design/implementation
+slice.
 
 ## Context That Would Be Lost
 
 - The 2015 issue #496 proposed converting SKEL XML to YAML. That proposal is
   rejected here; the rationale lives in `README.md` under _Key Decisions_.
-- YAML, if added, must be a new DART 7 format decision or a front-end over
-  third-party canonical formats, not SKEL syntax in YAML.
+- YAML is rejected as a DART 7 `dart::io` model format and as a front-end over
+  third-party canonical formats. If added later, it must be a DART-owned
+  project/scene serialization format, not SKEL syntax in YAML.
 - USD work is tracked separately under
   [`usd_scene_loader/`](../usd_scene_loader/) — do not duplicate.
 - Export is part of the work, not a follow-up: round-trip enables save /
@@ -109,14 +126,17 @@ separate round-trip design/implementation slice.
 ## How to Resume
 
 ```bash
-git checkout feature/remove-skel-dart7-phase2
+git checkout work/skel-format-yaml-decision
 git status && git log -3 --oneline
+
+# To return to the Phase 2 PR-ready branch:
+# git checkout feature/remove-skel-dart7-phase2
 
 # Optional archaeology only if another clone still has the object:
 # git show 1dd83e31586:docs/dev_tasks/skel_format/phase-02-yaml.md
 # git show 1dd83e31586:docs/dev_tasks/skel_format/phase-04-export.md
 ```
 
-Then finish PR creation/review/merge follow-up for Phase 2. For Phase 3 or
-Phase 5, start from this folder's `README.md` and current DART 7 requirements,
+Then continue with the remaining task work. For Phase 5, start from this
+folder's `README.md`, `03-yaml-decision.md`, and current DART 7 requirements,
 not from the old prototype.
