@@ -9,6 +9,11 @@ These principles apply to AI-assisted work on the DART 6.20 support branch.
 - Treat live GitHub state and current command output as authoritative.
 - Do not rely on stale branch notes when a current checkout or PR can be
   inspected.
+- Before a non-trivial fix, surface your unknowns instead of coding a guess:
+  your plan and notes are a map, not the territory of the real code. Convert
+  consequential unknowns into knowns first — a reproduction, a focused read of
+  the affected code, or an independent blind-spot review — rather than
+  discovering them mid-change.
 
 ## Compatibility First
 

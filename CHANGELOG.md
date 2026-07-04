@@ -52,6 +52,12 @@
     the `dart-changelog` routine is available for backport changelog
     decisions.
 
+  * Add a "surface your unknowns" discipline to the release-branch AI
+    principles (`docs/ai/principles.md`): before a non-trivial fix, convert
+    consequential unknowns into knowns — a reproduction, a focused read of the
+    affected code, or an independent blind-spot review — instead of coding a
+    guess and discovering them mid-change.
+
   * Replace the vendored `dart/external/convhull_3d` implementation with a
     DART-owned native `dart/math/detail/ConvexHull.hpp` implementation used by
     `math::computeConvexHull3D`, while keeping the legacy implementation only
