@@ -328,6 +328,11 @@ compatibility remains on the active DART 6 LTS branch._
   method catalog — blind-spot review, throwaway spike, requirements interview,
   and reference map — each mapped to a public path, so agents resolve unknowns
   before large work instead of encoding guesses into a plan.
+- Added a root-cause discipline to the AI operating docs: `docs/ai/principles.md`
+  now carries an axiom that unexpected failures (failing tests, build errors,
+  regressions, numerical drift) are reproduced as the smallest failing case and
+  fixed at the cause with regression coverage, rather than silenced or patched
+  around, plus a matching principle-audit item.
 
 #### Tests, Benchmarks, and Quality Gates
 
