@@ -1,0 +1,149 @@
+{
+  "citations": {
+    "crossref": 189,
+    "indexed_max": 306,
+    "indexed_min": 189,
+    "openalex": 272,
+    "semantic_scholar": 306,
+    "semantic_scholar_influential": 9
+  },
+  "downstream": [
+    {
+      "age": "within 1 year",
+      "freshness": "current",
+      "label": "Gazebo gz-sim",
+      "pushed_at": "2026-07-02T09:10:05Z",
+      "repo": "gazebosim/gz-sim",
+      "stars": 1403
+    },
+    {
+      "age": "within 1 year",
+      "freshness": "current",
+      "label": "Gazebo gz-physics",
+      "pushed_at": "2026-07-02T03:08:40Z",
+      "repo": "gazebosim/gz-physics",
+      "stars": 89
+    },
+    {
+      "age": "1.3 years ago",
+      "freshness": "older",
+      "label": "RobotDART",
+      "pushed_at": "2025-03-15T10:36:35Z",
+      "repo": "NOSALRO/robot_dart",
+      "stars": 60
+    },
+    {
+      "age": "3.3 years ago",
+      "freshness": "3y+ historical",
+      "label": "gym-dart",
+      "pushed_at": "2023-02-27T08:03:44Z",
+      "repo": "dartsim/gym-dart",
+      "stars": 26
+    },
+    {
+      "age": "3.3 years ago",
+      "freshness": "3y+ historical",
+      "label": "Aikido",
+      "pushed_at": "2023-03-10T20:08:11Z",
+      "repo": "personalrobotics/aikido",
+      "stars": 233
+    },
+    {
+      "age": "within 1 year",
+      "freshness": "current",
+      "label": "Nimble Physics",
+      "pushed_at": "2025-09-14T18:37:46Z",
+      "repo": "keenon/nimblephysics",
+      "stars": 482
+    },
+    {
+      "age": "2.8 years ago",
+      "freshness": "older",
+      "label": "MASS",
+      "pushed_at": "2023-09-19T22:42:33Z",
+      "repo": "lsw9021/MASS",
+      "stars": 630
+    },
+    {
+      "age": "4.8 years ago",
+      "freshness": "3y+ historical",
+      "label": "SimBenchmark",
+      "pushed_at": "2021-09-05T19:45:51Z",
+      "repo": "leggedrobotics/SimBenchmark",
+      "stars": 227
+    },
+    {
+      "age": "7.1 years ago",
+      "freshness": "5y+ historical",
+      "label": "pydart2",
+      "pushed_at": "2019-06-12T14:24:09Z",
+      "repo": "sehoonha/pydart2",
+      "stars": 49
+    }
+  ],
+  "errors": [],
+  "gazebo": {
+    "dartsim_plugin_files": 41,
+    "docs_default_dart": true,
+    "package_depends_dart": true,
+    "requires_dart_610": true
+  },
+  "generated_at": "2026-07-04T02:59:09.013934Z",
+  "packages": {
+    "conda": {
+      "combined_gross": 1005253,
+      "dartpy": 240917,
+      "dartsim": 640517,
+      "dartsim-cpp": 123819
+    },
+    "homebrew_installs_365d": 18000,
+    "homebrew_on_request_365d": 1452,
+    "pepy_dartpy_all_time": 258170
+  },
+  "since": "2025-07-04",
+  "sources": {
+    "anaconda_dartpy": "https://api.anaconda.org/package/conda-forge/dartpy",
+    "anaconda_dartsim": "https://api.anaconda.org/package/conda-forge/dartsim",
+    "anaconda_dartsim_cpp": "https://api.anaconda.org/package/conda-forge/dartsim-cpp",
+    "crossref": "https://api.crossref.org/works/10.21105/joss.00500",
+    "gazebo_physics": "https://gazebosim.org/api/sim/9/physics.html",
+    "github_issues": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Aissue+state%3Aopen",
+    "github_latest_release": "https://api.github.com/repos/dartsim/dart/releases/latest",
+    "github_prs": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+state%3Aopen",
+    "github_repo": "https://api.github.com/repos/dartsim/dart",
+    "github_traffic_docs": "https://docs.github.com/en/rest/metrics/traffic",
+    "gz_physics_cmake": "https://raw.githubusercontent.com/gazebosim/gz-physics/main/CMakeLists.txt",
+    "gz_physics_package": "https://raw.githubusercontent.com/gazebosim/gz-physics/main/package.xml",
+    "gz_physics_tree": "https://api.github.com/repos/gazebosim/gz-physics/git/trees/main?recursive=1",
+    "homebrew_dartsim": "https://formulae.brew.sh/api/formula/dartsim.json",
+    "joss": "https://joss.theoj.org/papers/10.21105/joss.00500",
+    "openalex": "https://api.openalex.org/works/https://doi.org/10.21105/joss.00500",
+    "pepy_dartpy": "https://pepy.tech/project/dartpy",
+    "semantic_scholar": "https://api.semanticscholar.org/graph/v1/paper/DOI:10.21105/joss.00500?fields=title,year,venue,citationCount,influentialCitationCount"
+  },
+  "summary": {
+    "contributors_login": 54,
+    "contributors_with_anon": 78,
+    "created_issues_12m": 28,
+    "created_prs_12m": 1228,
+    "forks": 301,
+    "latest_push": "2026-07-04",
+    "latest_release": "v6.19.3",
+    "latest_release_date": "2026-06-27",
+    "merged_prs_12m": 1149,
+    "open_issues": 1,
+    "open_prs": 3,
+    "releases_12m": 16,
+    "stars": 1160,
+    "watchers": 50
+  },
+  "traffic": {
+    "available": true,
+    "clone_window": "2026-06-19 to 2026-07-02",
+    "clones": 35461,
+    "unique_cloners": 4286,
+    "unique_visitors": 679,
+    "view_window": "2026-06-19 to 2026-07-02",
+    "views": 3039
+  }
+}
