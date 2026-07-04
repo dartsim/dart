@@ -1,14 +1,50 @@
 # Resume: IPC Deformable Solver
 
-## Current Reality (2026-06-06)
+## Current Reality (2026-07-04)
 
-Use this folder's `README.md`, `docs/plans/dashboard.md`, and the current code as
-the live status. The branch/PR handoff sections below are historical evidence
-from prior IPC deformable slices; do not treat their branch names, push
-instructions, or "current branch" language as current checkout state. Current
-deformable work should keep entering through the DART-owned deformable solver
+Live status is this folder's `README.md`, the durable PLAN-081 owner docs
+(`docs/plans/081-deformable-implicit-barrier-solver/ipc-parity-roadmap.md`,
+`ipc-paper-figure-showcase.md`, `ipc-paper-gap-audit.md`,
+`ipc_scene_corpus_manifest.json`), `docs/plans/dashboard.md`, and the current
+code. **All branch/PR handoff sections below (2026-05/06) are historical
+archaeology** — their branch names, "current branch" language, and push
+instructions are stale. In particular, PR #2821 (matrix-free CG + CG
+diagnostics) merged long ago (`74338577982`); `main` is ~400 PRs ahead.
+
+Completion-audit result (this session): the dev task is the active working
+surface for **PLAN-081 (Status: Active, Horizon: Now)** and is **not
+retire-able unilaterally** — the dashboard records that dev-task retirement for
+incomplete IPC-family plans needs maintainer direction, and PLAN-081 is far from
+parity (figure showcase: 24 planned / 3 in-progress / 6 landed /
+3 reference-beaten; M7 scale/perf/GPU, the asset pipeline, and codim obstacles
+remain). Continue in bounded, verifiable M7 slices.
+
+Current deformable work keeps entering through the DART-owned deformable solver
 families, shared Newton-barrier/VBD components, the built-in World schedule, and
-facade-safe `World`/`DeformableBodyOptions`/diagnostics surfaces.
+facade-safe `World`/`DeformableBodyOptions`/diagnostics surfaces. Route any new
+shared distance/barrier/CCD/Newton primitive through PLAN-083
+(`docs/dev_tasks/unified_newton_barrier_multibody/`) before duplicating it here.
+
+### Active Slice (2026-07-04): Fig-23 peak-contacts diagnostic
+
+Branch `feature/ipc-deformable-max-contacts-diagnostic`, published as **PR #3257**
+against `main` (branched off `9d25a59c7b5`, then merged current `origin/main`).
+Adds the **peak active-contact-count per step**
+diagnostic — the IPC Fig. 23 "max contacts per step" axis — as
+`DeformableSolverDiagnostics.maxActiveContactCount` (dartpy
+`max_active_contact_count`) plus the internal
+`DeformableSolverStats.maxActiveContactCount`. It is captured as the delta of the
+existing `selfContactBarrierActiveContacts` counter around the single
+outer-iteration objective evaluation that passes it (the line-search and terminal
+evaluations pass `nullptr`), so there is **no hot-path signature change** and the
+solve is byte-identical. Surfaced on `BM_DeformableSelfContactBarrierStage`
+(`max_active_contacts`) and the `ipc_deformable_cg_contact` py-demo; covered by
+C++ regressions (`SelfContactBarrierReportsConvergedContactDistance` peak
+invariants; far-apart peak == 0) and a public-diagnostics propagation assertion
+in `test_world.cpp`. Changelog decision: **no new entry** (incremental public
+diagnostic on the unreleased DART 7 deformable family already covered by the
+family-level highlight bullet). Verification gates below; push + PR only after
+maintainer approval.
 
 ## Current State (2026-05-31) — PLAN-081 M1–M6 COMPLETE; M7 matrix-free CG in progress
 
@@ -516,17 +552,24 @@ PSD-backend injection). (PR #2747 is another author's.) <- #2760 (GPU-vs-CPU per
 
 ## Immediate Next Step
 
-PR #2821 is the active M7 matrix-free CG slice. The local branch is verified and
-ahead of the hosted PR head; the next approval-gated action is to push the local
-branch, resolve the addressed Codex review thread, and request a fresh Codex
-review. Do not reply inline to the bot review comment.
+**Historical (superseded):** PR #2821 (matrix-free CG + CG diagnostics) merged
+long ago (`74338577982`). The instructions below it about pushing that branch are
+stale — ignore them.
 
-After PR #2821 is updated and reviewed, continue M7 in bounded performance
-slices: harden matrix-free CG on larger contact-heavy meshes, decide the
-automatic large-mesh selection policy, then move to AMG / multigrid
-preconditioning, on-device GPU assembly + solve, and Fig. 22 / Table 1
-reference-comparison runs. Codimensional-obstacle friction remains blocked on
-codimensional-obstacle barrier support.
+**Current (2026-07-04):** the active Fig-23 peak-contacts diagnostic slice is
+published as **PR #3257** (both `pixi run test-all` and `pixi run -e cuda
+test-all` green; Codex review requested). Next: address any Codex/maintainer
+review feedback and merge after approval; never reply inline to a `[bot]`
+comment.
+
+After that, continue M7 in bounded performance slices: harden matrix-free CG on
+larger contact-heavy meshes and decide the automatic large-mesh selection
+policy; build out the rest of the Fig-23 statistics harness (avg contacts/step
+aggregation, peak-memory tracking, then the Table-1 CPU reference comparison);
+then AMG / multigrid preconditioning, on-device GPU assembly + solve, and the
+688K-node Fig. 22 scale run. Codimensional-obstacle friction remains blocked on
+codimensional-obstacle barrier support. Dev-task retirement stays maintainer-
+gated while PLAN-081 is incomplete.
 
 ## Context That Would Be Lost
 
@@ -540,6 +583,22 @@ codimensional-obstacle barrier support.
   any future IPC parity claim.
 
 ## How To Resume
+
+Current slice (2026-07-04) — Fig-23 peak-contacts diagnostic gates:
+
+```bash
+git checkout feature/ipc-deformable-max-contacts-diagnostic
+git status && git log -3 --oneline
+cmake --build build/default/cpp/Release --target test_deformable_body test_world dartpy bm_deformable_body
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.SelfContactBarrier*'
+./build/default/cpp/Release/bin/test_world --gtest_filter='World.DeformableSelfContactFriction*'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.02s --benchmark_filter='BM_DeformableSelfContactBarrierStage'
+pixi run generate-stubs   # then revert unrelated stub churn; keep the max_active_contact_count diff
+pixi run check-api-boundaries
+pixi run lint
+```
+
+Historical (#2821 handoff — superseded, run only for archaeology on that slice):
 
 ```bash
 git checkout feature/ipc-deformable-matrix-free-cg

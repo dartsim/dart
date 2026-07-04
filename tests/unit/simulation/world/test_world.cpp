@@ -8412,6 +8412,13 @@ TEST(World, DeformableSelfContactFrictionProductionGridIsActive)
   EXPECT_EQ(diagnostics.nodeCount, 2u * 11u * 11u);
   EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
   EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
+  // The peak per-step active-contact count (Fig. 23 max-contacts axis) is
+  // surfaced through the public diagnostics; it is a single iteration's active
+  // set, so it never exceeds the cumulative sum over all iterations.
+  EXPECT_GT(diagnostics.maxActiveContactCount, 0u);
+  EXPECT_LE(
+      diagnostics.maxActiveContactCount,
+      diagnostics.selfContactBarrierActiveContacts);
   EXPECT_GT(diagnostics.frictionDissipation, 0.0);
 }
 

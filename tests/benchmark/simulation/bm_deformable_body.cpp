@@ -1749,6 +1749,10 @@ void BM_DeformableSelfContactBarrierStage(benchmark::State& state)
       = static_cast<double>(stats.selfContactBarrierActiveContacts);
   state.counters["converged_active_contacts"]
       = static_cast<double>(stats.convergedActiveContactCount);
+  // Peak single-iteration active contacts (the IPC Fig. 23 "max contacts per
+  // step" axis) for the most recent step.
+  state.counters["max_active_contacts"]
+      = static_cast<double>(stats.maxActiveContactCount);
   state.counters["min_active_contact_distance"]
       = stats.minActiveContactDistance;
   state.counters["solver_iterations"]
