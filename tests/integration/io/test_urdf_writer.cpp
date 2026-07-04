@@ -448,6 +448,46 @@ TEST(UrdfWriter, RoundTripsContinuousJointDynamics)
 }
 
 //==============================================================================
+TEST(UrdfWriter, PreservesPackageMeshUri)
+{
+  auto skeleton = dynamics::Skeleton::create("urdf_package_mesh_writer");
+
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr,
+          dynamics::FreeJoint::Properties(),
+          makeBodyProperties(
+              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)rootJoint;
+
+  const common::Uri packageMeshUri("package://writer_pkg/BoxSmall.obj");
+  base->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::MeshShape>(
+          Eigen::Vector3d(0.5, 1.0, 1.5), makeTriangleMesh(), packageMeshUri),
+      "package_mesh_visual");
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  expectContains(
+      writeResult.value(), "filename=\"package://writer_pkg/BoxSmall.obj\"");
+
+  utils::UrdfParser parser;
+  parser.addPackageDirectory("writer_pkg", config::dataPath("obj"));
+  const auto reparsed = parser.parseSkeletonString(
+      writeResult.value(), common::Uri("memory://package_mesh.urdf"));
+  ASSERT_NE(reparsed, nullptr);
+
+  const auto* reparsedBase = reparsed->getBodyNode("base");
+  ASSERT_NE(reparsedBase, nullptr);
+  const auto* mesh = getFirstShape<dynamics::MeshShape, dynamics::VisualAspect>(
+      reparsedBase);
+  ASSERT_NE(mesh, nullptr);
+  EXPECT_EQ(mesh->getMeshUri2().toString(), packageMeshUri.toString());
+  EXPECT_TRUE(mesh->getScale().isApprox(Eigen::Vector3d(0.5, 1.0, 1.5)));
+}
+
+//==============================================================================
 TEST(UrdfWriter, IncludeOptionsControlVisualsAndCollisions)
 {
   const auto skeleton = makeRoundTripSkeleton();

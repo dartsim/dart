@@ -91,18 +91,19 @@ The first URDF writer implementation slice is also local on
 `tryWriteSkeletonToString()` for one-root URDF trees with root FreeJoint or
 WeldJoint metadata, child revolute/continuous/prismatic/fixed joints, passive
 damping/friction metadata, single-DoF motor-style mimic metadata, inertial
-data, local visual/collision poses, box/sphere/cylinder/absolute-URI mesh
-geometry, visual colors, and
+data, local visual/collision poses, box/sphere/cylinder/absolute or package
+URI mesh geometry, visual colors, and
 visual/collision include options. `INTEGRATION_io_UrdfWriter` proves
 write/read/read round-trip for that subset and covers explicit diagnostics for
 multiple root trees, unsupported joint families, non-identity child joint
 frames, unbounded finite-requiring URDF limits, missing mimic references, and
 coupler-style mimic enforcement. Additional focused coverage proves unbounded
 DART revolute joints write as URDF `continuous` joints and preserve passive
-dynamics metadata through reparse. DART `SoftBodyNode` writer attempts also
-fail with a targeted diagnostic instead of being serialized as ordinary URDF
-links with point-mass, spring, damping, and soft mesh topology semantics
-dropped.
+dynamics metadata through reparse, and proves `package://` mesh URIs serialize
+and reparse through `UrdfParser` package resolution. DART `SoftBodyNode` writer
+attempts also fail with a targeted diagnostic instead of being serialized as
+ordinary URDF links with point-mass, spring, damping, and soft mesh topology
+semantics dropped.
 
 Current SDF audit result: `dart/utils/sdf/` has no TinyXML/raw XML parser path
 for SDF semantics. SDF content loading, ambiguous `.xml` SDF classification,
@@ -1123,17 +1124,22 @@ Additional validation for first URDF writer slice:
 Additional validation for URDF mimic metadata writer coverage:
 
 - `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter=UrdfWriter.RoundTripsMimicMetadata:UrdfWriter.MimicWithoutReferenceReturnsError:UrdfWriter.CouplerMimicReturnsError'`
-- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (11 tests)
+- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (12 tests)
 
 Additional validation for URDF continuous-joint dynamics writer coverage:
 
 - `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter=UrdfWriter.RoundTripsContinuousJointDynamics'`
-- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (11 tests)
+- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (12 tests)
+
+Additional validation for URDF package mesh URI writer coverage:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter=UrdfWriter.PreservesPackageMeshUri'`
+- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (12 tests)
 
 Additional validation for URDF soft-body writer diagnostics:
 
 - `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter=UrdfWriter.SoftBodyNodeReturnsExplicitUnsupportedError'`
-- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (11 tests)
+- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (12 tests)
 
 Changelog decision:
 
@@ -1166,7 +1172,8 @@ Changelog decision:
 - Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing
 - Entry text: the new conservative URDF writer bullet describes the supported
   first tree subset, continuous joints, passive dynamics, single-DoF mimic
-  metadata, soft-body rejection, and explicit diagnostics.
+  metadata, package mesh URI preservation, soft-body rejection, and explicit
+  diagnostics.
 - PR-body note: N/A
 - Follow-up: add the implementation PR link after a PR exists and maintainer /
   user approval allows the PR update or follow-up push.

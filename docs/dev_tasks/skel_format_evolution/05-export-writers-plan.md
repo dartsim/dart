@@ -143,17 +143,18 @@ root tree with root FreeJoint/WeldJoint metadata that URDF can preserve, child
 revolute/continuous/prismatic/fixed joints whose child link frame coincides
 with the joint frame, passive damping/friction metadata, single-DoF motor-style
 mimic metadata, inertial data, local
-visual/collision poses, box/sphere/cylinder and absolute-URI mesh geometry,
-visual colors, and visual/collision include
+visual/collision poses, box/sphere/cylinder and absolute or package URI mesh
+geometry, visual colors, and visual/collision include
 options. `INTEGRATION_io_UrdfWriter` validates a write/read/read round-trip for
 that subset and covers explicit diagnostics for multiple root trees, unsupported
 joint families, non-identity child joint frames, unbounded finite-requiring URDF
 limits, missing mimic references, and coupler-style mimic enforcement.
 Additional coverage proves unbounded revolute DART joints write as URDF
-`continuous` joints and preserve passive dynamics metadata. DART
-`SoftBodyNode` export also fails with a targeted diagnostic because URDF has no
-point-mass, spring, damping, or soft mesh topology semantics. This first URDF
-slice also does not complete Phase 5.
+`continuous` joints and preserve passive dynamics metadata, and that
+`package://` mesh URIs serialize and reparse through `UrdfParser` package
+resolution. DART `SoftBodyNode` export also fails with a targeted diagnostic
+because URDF has no point-mass, spring, damping, or soft mesh topology
+semantics. This first URDF slice also does not complete Phase 5.
 
 ## Decision
 

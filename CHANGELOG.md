@@ -219,8 +219,9 @@ compatibility remains on the active DART 6 LTS branch._
   tree model, covering one-root link trees, root FreeJoint/WeldJoint metadata,
   revolute/continuous/prismatic/fixed child joints, passive joint dynamics,
   single-DoF mimic metadata, inertial data, local visual/collision poses,
-  primitive geometry, absolute-URI meshes, visual colors, and explicit
-  diagnostics for unsupported or lossy DART constructs including soft bodies.
+  primitive geometry, absolute and package URI meshes, visual colors, and
+  explicit diagnostics for unsupported or lossy DART constructs including soft
+  bodies.
 - Improved mesh and asset import behavior across convex meshes, polygon meshes,
   Collada scaling, GLTF PBR materials, empty mesh URIs, and sample robot data.
 

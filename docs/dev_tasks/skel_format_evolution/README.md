@@ -141,13 +141,14 @@
       revolute/continuous/prismatic/fixed joints, passive damping/friction
       metadata, single-DoF motor-style mimic metadata, inertial data, local
       visual/collision poses,
-      box/sphere/cylinder/absolute-URI mesh geometry, visual colors, and
-      visual/collision include options. `INTEGRATION_io_UrdfWriter` validates a
-      write/read/read subset and diagnostics for multiple root trees,
+      box/sphere/cylinder/absolute or package URI mesh geometry, visual colors,
+      and visual/collision include options. `INTEGRATION_io_UrdfWriter`
+      validates a write/read/read subset and diagnostics for multiple root trees,
       unsupported joint families, non-identity child joint frames, unbounded
       finite-requiring URDF limits, missing mimic references, and coupler-style
       mimic enforcement, plus continuous revolute joint dynamics round-trip and
-      targeted DART `SoftBodyNode` diagnostics.
+      package mesh URI preservation through `UrdfParser` package resolution,
+      plus targeted DART `SoftBodyNode` diagnostics.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, the URDF writer remains on
       `dart::utils::UrdfParser`, `dart::io` stays read-side, and project/editor
