@@ -411,6 +411,26 @@ def test_guard_does_not_preserve_failed_cd_cwd_for_or_chain(tmp_path):
     assert "would run" not in stderr
 
 
+@pytest.mark.parametrize(
+    "command_template",
+    [
+        "cd {missing}; git commit -m x",
+        "cd {missing}\ngit commit -m x",
+        "cd {missing} && true; git commit -m x",
+    ],
+)
+def test_guard_does_not_preserve_missing_cd_cwd(tmp_path, command_template):
+    repo, env = _init_repo(tmp_path)
+    missing = tmp_path / "missing"
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    command = command_template.format(missing=missing)
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
 def test_guard_preserves_conditional_cd_cwd_for_relative_commit_paths(tmp_path):
     repo, env = _init_repo(tmp_path)
     (repo / "docs").mkdir()
@@ -480,6 +500,23 @@ def test_guard_ignores_git_commit_inside_heredoc_body(tmp_path, command):
 def test_guard_detects_git_commit_after_heredoc_body(tmp_path):
     command = "cat <<'EOF'\ngit commit -m example\nEOF\ngit commit -m real"
 
+    returncode, stderr = _guard_verdict(tmp_path, command)
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        'echo "<<EOF"\ngit commit -m x',
+        "echo '<<EOF'\ngit commit -m x",
+        'printf "%s\\n" "<<-EOF"\ngit commit -m x',
+    ],
+)
+def test_guard_detects_git_commit_after_quoted_heredoc_marker_text(
+    tmp_path, command
+):
     returncode, stderr = _guard_verdict(tmp_path, command)
 
     assert returncode == 0

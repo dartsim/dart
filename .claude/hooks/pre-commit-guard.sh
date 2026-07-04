@@ -124,7 +124,6 @@ GIT_CONFIG_FILE_ENV = {
     "XDG_CONFIG_HOME",
 }
 ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=(?P<value>.*)$")
-HEREDOC_RE = re.compile(r"(?<!<)<<-?\s*(?P<word>\"[^\"]+\"|'\''[^'\'']+'\''|\\?\S+)")
 
 
 def record_env_assignment(env, token):
@@ -208,13 +207,53 @@ def segment_allows_cwd_update(tokens):
 
 def heredoc_delimiters(line):
     delimiters = []
-    for match in HEREDOC_RE.finditer(line):
-        word = match.group("word")
-        if len(word) >= 2 and word[0] == word[-1] and word[0] in "\"'\''":
-            word = word[1:-1]
-        if word.startswith("\\"):
-            word = word[1:]
-        delimiters.append(word)
+    i = 0
+    quote = ""
+    while i < len(line):
+        ch = line[i]
+        if quote:
+            if quote == "\"" and ch == "\\":
+                i += 2
+                continue
+            if ch == quote:
+                quote = ""
+            i += 1
+            continue
+        if ch in "\"'\''":
+            quote = ch
+            i += 1
+            continue
+        if ch == "\\":
+            i += 2
+            continue
+        if not line.startswith("<<", i) or line.startswith("<<<", i):
+            i += 1
+            continue
+        i += 2
+        if i < len(line) and line[i] == "-":
+            i += 1
+        while i < len(line) and line[i].isspace():
+            i += 1
+        if i >= len(line):
+            break
+        if line[i] in "\"'\''":
+            delimiter_quote = line[i]
+            i += 1
+            start = i
+            while i < len(line) and line[i] != delimiter_quote:
+                i += 1
+            word = line[start:i]
+            if i < len(line):
+                i += 1
+        else:
+            if line[i] == "\\":
+                i += 1
+            start = i
+            while i < len(line) and not line[i].isspace() and line[i] not in ";&|":
+                i += 1
+            word = line[start:i]
+        if word:
+            delimiters.append(word)
     return delimiters
 
 
@@ -303,7 +342,10 @@ def maybe_update_shell_cwd(
         or separator not in {"&&", ";", "\n"}
     ):
         return current_cwd
-    return shell_cd_target(tokens, i, current_cwd) or current_cwd
+    target = shell_cd_target(tokens, i, current_cwd)
+    if not target or not os.path.isdir(target):
+        return current_cwd
+    return target
 
 
 def commit_args_disable_hooks(args):
