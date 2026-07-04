@@ -19,14 +19,16 @@ string writer for a conservative `Skeleton` subset. It writes BodyNode links,
 root FreeJoint/WeldJoint placement, revolute/prismatic/weld/screw/universal
 child joints, passive joint dynamics metadata (damping, Coulomb friction,
 spring reference, and spring stiffness), screw thread pitch, topology-only ball
-child joints, link gravity mode, inertial parameters, local joint/shape poses,
-box/sphere/cylinder/mesh visual or collision geometry, and explicit visual
-material colors as SDF `<diffuse>` values. Absolute non-file mesh URI
+child joints, SDF 1.11+ mimic metadata for axis/axis2 follower joints with
+motor enforcement, link gravity mode, inertial parameters, local joint/shape
+poses, box/sphere/cylinder/mesh visual or collision geometry, and explicit
+visual material colors as SDF `<diffuse>` values. Absolute non-file mesh URI
 preservation is covered through a custom retriever-backed write/read test.
 `WriteOptions` visual/collision filtering is covered by focused tests.
-Unsupported constructs, missing mesh URIs, non-finite material colors,
-non-finite screw pitch, unsupported ball-joint metadata, and non-finite joint
-dynamics return `common::Result` errors instead of being silently dropped.
+Unsupported constructs, missing mesh URIs, pre-SDF-1.11 mimic output,
+coupler-style mimic enforcement, non-finite material colors, non-finite screw
+pitch, unsupported ball-joint metadata, and non-finite joint dynamics return
+`common::Result` errors instead of being silently dropped.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,

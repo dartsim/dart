@@ -145,17 +145,19 @@ state.
 The initial writer covers BodyNode links, root FreeJoint/WeldJoint placement,
 revolute/prismatic/weld/screw/universal child joints with passive dynamics
 metadata (damping, Coulomb friction, spring reference, and spring stiffness),
-screw thread pitch, topology-only ball child joints, link gravity mode,
+screw thread pitch, SDF 1.11+ mimic metadata for axis/axis2 follower joints
+with motor enforcement, topology-only ball child joints, link gravity mode,
 inertial parameters, local joint/shape poses, and box/sphere/cylinder/mesh
 visual or collision geometry with explicit visual material colors. The
 round-trip coverage includes absolute non-file mesh URI preservation through a
 custom retriever; relative/generated resource path policy remains future
 contract work. `WriteOptions` can exclude visual or collision entries. Missing
-mesh URIs, ball joint limits, and ball joint dynamics are reported as
-unsupported instead of being silently dropped. It is not a general project
-save/load format and does not make YAML a model format. Use the writer only when
-the target scene fits the documented subset, and expand the round-trip tests
-before broadening the supported contract.
+mesh URIs, pre-SDF-1.11 mimic output, coupler-style mimic enforcement, ball
+joint limits, and ball joint dynamics are reported as unsupported instead of
+being silently dropped. It is not a general project save/load format and does
+not make YAML a model format. Use the writer only when the target scene fits the
+documented subset, and expand the round-trip tests before broadening the
+supported contract.
 
 Keep export APIs format-owned until DART has more than one accepted writer
 contract. The current SDF writer therefore lives on

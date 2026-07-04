@@ -45,6 +45,7 @@
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/mimic_dof_properties.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/screw_joint.hpp>
@@ -63,6 +64,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <cstring>
 
@@ -650,6 +652,166 @@ TEST(SdfWriter, IncludeOptionsControlVisualAndCollisionEntries)
       noCollisions.value().find("<visual name=\"visible_box\">"),
       std::string::npos);
   EXPECT_EQ(noCollisions.value().find("<collision "), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, RoundTripsMimicMetadataWithSdf111)
+{
+  auto skeleton = dynamics::Skeleton::create("mimic_writer");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::UniversalJoint::Properties referenceProperties;
+  referenceProperties.mName = "reference_joint";
+  referenceProperties.mAxis[0] = Eigen::Vector3d::UnitX();
+  referenceProperties.mAxis[1] = Eigen::Vector3d::UnitY();
+
+  dynamics::BodyNode::Properties referenceBodyProperties;
+  referenceBodyProperties.mName = "reference_link";
+
+  auto [referenceJoint, referenceLink]
+      = skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(
+          base, referenceProperties, referenceBodyProperties);
+  (void)referenceLink;
+
+  dynamics::UniversalJoint::Properties followerProperties;
+  followerProperties.mName = "follower_joint";
+  followerProperties.mAxis[0] = Eigen::Vector3d::UnitZ();
+  followerProperties.mAxis[1] = Eigen::Vector3d::UnitY();
+
+  dynamics::BodyNode::Properties followerBodyProperties;
+  followerBodyProperties.mName = "follower_link";
+
+  auto [followerJoint, followerLink]
+      = skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(
+          referenceLink, followerProperties, followerBodyProperties);
+  (void)followerLink;
+
+  std::vector<dynamics::MimicDofProperties> mimicProps(
+      followerJoint->getNumDofs());
+  mimicProps[1].mReferenceJoint = referenceJoint;
+  mimicProps[1].mReferenceDofIndex = 1u;
+  mimicProps[1].mMultiplier = 0.75;
+  mimicProps[1].mOffset = 0.125;
+  followerJoint->setMimicJointDofs(mimicProps);
+  followerJoint->setActuatorType(dynamics::Joint::MIMIC);
+
+  utils::SdfParser::WriteOptions options;
+  options.version = "1.11";
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  EXPECT_NE(
+      writeResult.value().find(
+          "<mimic joint=\"reference_joint\" axis=\"axis2\">"),
+      std::string::npos);
+  EXPECT_NE(
+      writeResult.value().find("<multiplier>0.75</multiplier>"),
+      std::string::npos);
+  EXPECT_NE(
+      writeResult.value().find("<offset>0.125</offset>"), std::string::npos);
+  EXPECT_NE(
+      writeResult.value().find("<reference>0</reference>"), std::string::npos);
+
+  const auto path = writeTempSdf(writeResult.value(), "mimic");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  const auto* follower = test::requireJoint<dynamics::UniversalJoint>(
+      *reparsed, "follower_joint");
+  ASSERT_NE(follower, nullptr);
+  EXPECT_EQ(follower->getActuatorType(), dynamics::Joint::MIMIC);
+  const auto reparsedMimicProps = follower->getMimicDofProperties();
+  ASSERT_EQ(reparsedMimicProps.size(), 2u);
+  ASSERT_NE(reparsedMimicProps[1].mReferenceJoint, nullptr);
+  EXPECT_EQ(
+      reparsedMimicProps[1].mReferenceJoint->getName(), "reference_joint");
+  EXPECT_EQ(reparsedMimicProps[1].mReferenceDofIndex, 1u);
+  EXPECT_DOUBLE_EQ(reparsedMimicProps[1].mMultiplier, 0.75);
+  EXPECT_DOUBLE_EQ(reparsedMimicProps[1].mOffset, 0.125);
+}
+
+//==============================================================================
+TEST(SdfWriter, MimicMetadataRequiresSdf111)
+{
+  auto skeleton = dynamics::Skeleton::create("mimic_version");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::RevoluteJoint::Properties referenceProperties;
+  referenceProperties.mName = "reference_joint";
+  referenceProperties.mAxis = Eigen::Vector3d::UnitZ();
+  dynamics::BodyNode::Properties referenceBodyProperties;
+  referenceBodyProperties.mName = "reference_link";
+  auto [referenceJoint, referenceLink]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          base, referenceProperties, referenceBodyProperties);
+
+  dynamics::RevoluteJoint::Properties followerProperties;
+  followerProperties.mName = "follower_joint";
+  followerProperties.mAxis = Eigen::Vector3d::UnitY();
+  dynamics::BodyNode::Properties followerBodyProperties;
+  followerBodyProperties.mName = "follower_link";
+  auto [followerJoint, followerLink]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          referenceLink, followerProperties, followerBodyProperties);
+  (void)followerLink;
+
+  followerJoint->setMimicJoint(referenceJoint, 2.0, 0.5);
+  followerJoint->setActuatorType(dynamics::Joint::MIMIC);
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("mimic requires SDF 1.11"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, CouplerMimicReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("mimic_coupler");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::RevoluteJoint::Properties referenceProperties;
+  referenceProperties.mName = "reference_joint";
+  referenceProperties.mAxis = Eigen::Vector3d::UnitZ();
+  dynamics::BodyNode::Properties referenceBodyProperties;
+  referenceBodyProperties.mName = "reference_link";
+  auto [referenceJoint, referenceLink]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          base, referenceProperties, referenceBodyProperties);
+
+  dynamics::RevoluteJoint::Properties followerProperties;
+  followerProperties.mName = "follower_joint";
+  followerProperties.mAxis = Eigen::Vector3d::UnitY();
+  dynamics::BodyNode::Properties followerBodyProperties;
+  followerBodyProperties.mName = "follower_link";
+  auto [followerJoint, followerLink]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          referenceLink, followerProperties, followerBodyProperties);
+  (void)followerLink;
+
+  followerJoint->setMimicJoint(referenceJoint, 2.0, 0.5);
+  followerJoint->setActuatorType(dynamics::Joint::MIMIC);
+  followerJoint->setUseCouplerConstraint(true);
+
+  utils::SdfParser::WriteOptions options;
+  options.version = "1.11";
+  const auto result
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("coupler constraint"), std::string::npos);
 }
 
 //==============================================================================

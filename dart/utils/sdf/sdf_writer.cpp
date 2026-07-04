@@ -50,6 +50,7 @@
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <algorithm>
+#include <charconv>
 #include <iomanip>
 #include <map>
 #include <optional>
@@ -141,6 +142,43 @@ bool isFinite(const Eigen::Vector4d& vector)
   return vector.allFinite();
 }
 
+std::optional<std::pair<int, int>> parseSdfMajorMinor(std::string_view version)
+{
+  const auto dot = version.find('.');
+  if (dot == std::string_view::npos || dot == 0 || dot + 1 >= version.size()) {
+    return std::nullopt;
+  }
+
+  int major = 0;
+  const auto majorResult
+      = std::from_chars(version.data(), version.data() + dot, major);
+  if (majorResult.ec != std::errc{}
+      || majorResult.ptr != version.data() + dot) {
+    return std::nullopt;
+  }
+
+  int minor = 0;
+  const auto minorBegin = version.data() + dot + 1;
+  const auto minorEnd = version.data() + version.size();
+  const auto minorResult = std::from_chars(minorBegin, minorEnd, minor);
+  if (minorResult.ec != std::errc{} || minorResult.ptr != minorEnd) {
+    return std::nullopt;
+  }
+
+  return std::pair{major, minor};
+}
+
+bool isSdfVersionAtLeast(std::string_view version, int major, int minor)
+{
+  const auto parsed = parseSdfMajorMinor(version);
+  if (!parsed) {
+    return false;
+  }
+
+  return parsed->first > major
+         || (parsed->first == major && parsed->second >= minor);
+}
+
 std::string formatPose(const Eigen::Isometry3d& transform)
 {
   const Eigen::Vector3d zyx = math::matrixToEulerZYX(transform.linear());
@@ -195,6 +233,78 @@ std::optional<Eigen::Vector3d> singleDofJointAxis(const dynamics::Joint& joint)
     return screw->getAxis();
   }
   return std::nullopt;
+}
+
+WriteResult writeMimic(
+    std::ostream& stream,
+    const dynamics::Joint& joint,
+    std::size_t dofIndex,
+    const WriteOptions& options,
+    int depth)
+{
+  const auto mimicProps = joint.getMimicDofProperties();
+  if (dofIndex >= mimicProps.size()) {
+    return ok();
+  }
+
+  const auto& mimic = mimicProps[dofIndex];
+  if (mimic.mReferenceJoint == nullptr) {
+    return ok();
+  }
+
+  if (!isSdfVersionAtLeast(options.version, 1, 11)) {
+    return fail(
+        "Cannot write SDF mimic metadata for joint [" + joint.getName()
+        + "] with SDF version [" + options.version
+        + "]; mimic requires SDF 1.11 or newer.");
+  }
+  if (mimic.mConstraintType != dynamics::MimicConstraintType::Motor) {
+    return fail(
+        "Cannot write SDF mimic metadata for joint [" + joint.getName()
+        + "] with a coupler constraint because SDF mimic does not preserve "
+          "DART's coupler enforcement mode.");
+  }
+  if (!std::isfinite(mimic.mMultiplier) || !std::isfinite(mimic.mOffset)) {
+    return fail(
+        "Cannot write SDF mimic metadata for joint [" + joint.getName()
+        + "] with non-finite multiplier or offset.");
+  }
+  if (mimic.mReferenceDofIndex >= mimic.mReferenceJoint->getNumDofs()) {
+    return fail(
+        "Cannot write SDF mimic metadata for joint [" + joint.getName()
+        + "] with a reference DoF outside joint ["
+        + mimic.mReferenceJoint->getName() + "].");
+  }
+  if (mimic.mReferenceDofIndex > 1) {
+    return fail(
+        "Cannot write SDF mimic metadata for joint [" + joint.getName()
+        + "] because SDF mimic can only reference axis or axis2.");
+  }
+
+  const auto jointSkeleton = joint.getSkeleton();
+  const auto referenceSkeleton = mimic.mReferenceJoint->getSkeleton();
+  if (!jointSkeleton || !referenceSkeleton
+      || jointSkeleton.get() != referenceSkeleton.get()) {
+    return fail(
+        "Cannot write SDF mimic metadata for joint [" + joint.getName()
+        + "] because the reference joint [" + mimic.mReferenceJoint->getName()
+        + "] is not in the same Skeleton.");
+  }
+
+  stream << indent(depth) << "<mimic joint=\""
+         << escapeXml(mimic.mReferenceJoint->getName()) << "\"";
+  if (mimic.mReferenceDofIndex == 1) {
+    stream << " axis=\"axis2\"";
+  }
+  stream << ">\n";
+  stream << indent(depth + 1) << "<multiplier>"
+         << formatDouble(mimic.mMultiplier) << "</multiplier>\n";
+  stream << indent(depth + 1) << "<offset>" << formatDouble(mimic.mOffset)
+         << "</offset>\n";
+  stream << indent(depth + 1) << "<reference>0</reference>\n";
+  stream << indent(depth) << "</mimic>\n";
+
+  return ok();
 }
 
 WriteResult writeGeometry(
@@ -441,6 +551,7 @@ WriteResult writeAxis(
     const Eigen::Vector3d& axis,
     std::size_t dofIndex,
     std::string_view tag,
+    const WriteOptions& options,
     int depth)
 {
   if (dofIndex >= joint.getNumDofs()) {
@@ -510,6 +621,11 @@ WriteResult writeAxis(
     stream << indent(depth + 1) << "</dynamics>\n";
   }
 
+  if (auto result = writeMimic(stream, joint, dofIndex, options, depth + 1);
+      result.isErr()) {
+    return result;
+  }
+
   stream << indent(depth) << "</" << tag << ">\n";
   return ok();
 }
@@ -523,11 +639,18 @@ WriteResult validateBallJointState(const dynamics::BallJoint& joint)
     const double friction = joint.getCoulombFriction(i);
     const double springReference = joint.getRestPosition(i);
     const double springStiffness = joint.getSpringStiffness(i);
+    const auto mimicProps = joint.getMimicDofProperties();
     if (!std::isfinite(damping) || !std::isfinite(friction)
         || !std::isfinite(springReference) || !std::isfinite(springStiffness)) {
       return fail(
           "Cannot write SDF ball joint [" + joint.getName()
           + "] with non-finite dynamics.");
+    }
+    if (i < mimicProps.size() && mimicProps[i].mReferenceJoint != nullptr) {
+      return fail(
+          "Cannot write SDF ball joint [" + joint.getName()
+          + "] with mimic metadata because DART's SDF ball joint round-trip "
+            "does not represent axis metadata.");
     }
     if (std::isfinite(lower) || std::isfinite(upper)) {
       return fail(
@@ -548,7 +671,10 @@ WriteResult validateBallJointState(const dynamics::BallJoint& joint)
 }
 
 WriteResult writeJoint(
-    std::ostream& stream, const dynamics::Joint& joint, int depth)
+    std::ostream& stream,
+    const dynamics::Joint& joint,
+    const WriteOptions& options,
+    int depth)
 {
   const dynamics::BodyNode* parent = joint.getParentBodyNode();
   const dynamics::BodyNode* child = joint.getChildBodyNode();
@@ -595,18 +721,31 @@ WriteResult writeJoint(
   }
   if (const auto* universal
       = dynamic_cast<const dynamics::UniversalJoint*>(&joint)) {
-    if (auto result
-        = writeAxis(stream, joint, universal->getAxis1(), 0, "axis", depth + 1);
+    if (auto result = writeAxis(
+            stream,
+            joint,
+            universal->getAxis1(),
+            0,
+            "axis",
+            options,
+            depth + 1);
         result.isErr()) {
       return result;
     }
     if (auto result = writeAxis(
-            stream, joint, universal->getAxis2(), 1, "axis2", depth + 1);
+            stream,
+            joint,
+            universal->getAxis2(),
+            1,
+            "axis2",
+            options,
+            depth + 1);
         result.isErr()) {
       return result;
     }
   } else if (const auto axis = singleDofJointAxis(joint)) {
-    if (auto result = writeAxis(stream, joint, *axis, 0, "axis", depth + 1);
+    if (auto result
+        = writeAxis(stream, joint, *axis, 0, "axis", options, depth + 1);
         result.isErr()) {
       return result;
     }
@@ -657,7 +796,7 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
   }
 
   for (std::size_t i = 0; i < skeleton.getNumJoints(); ++i) {
-    if (auto result = writeJoint(stream, *skeleton.getJoint(i), 2);
+    if (auto result = writeJoint(stream, *skeleton.getJoint(i), options, 2);
         result.isErr()) {
       return StringResult::err(result.error());
     }

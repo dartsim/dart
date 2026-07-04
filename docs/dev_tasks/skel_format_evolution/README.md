@@ -31,14 +31,16 @@
       writer slice is implemented locally for a conservative `Skeleton` subset;
       link gravity mode, passive joint dynamics metadata (damping, Coulomb
       friction, spring reference, and spring stiffness), screw thread pitch,
-      universal two-axis joints, topology-only ball joints, and explicit visual
-      material colors now round-trip as SDF `<gravity>`,
-      `<axis>/<axis2><dynamics>`, `<thread_pitch>`, local `<pose>`, and
-      `<diffuse>` values. Absolute non-file mesh URIs now have writer
-      read/write/read coverage through a custom retriever. Writer options for
-      excluding visuals or collisions and missing mesh URI diagnostics now have
-      focused coverage. The writer test now uses a shared IO round-trip
-      assertion helper for body, joint, DoF, inertia, and shape comparisons.
+      SDF 1.11+ axis/axis2 mimic metadata, universal two-axis joints,
+      topology-only ball joints, and explicit visual material colors now
+      round-trip as SDF `<gravity>`, `<axis>/<axis2><dynamics>`,
+      `<thread_pitch>`, `<mimic>`, local `<pose>`, and `<diffuse>` values.
+      Absolute non-file mesh URIs now have writer read/write/read coverage
+      through a custom retriever. Writer options for excluding visuals or
+      collisions, missing mesh URI diagnostics, pre-SDF-1.11 mimic diagnostics,
+      and unsupported coupler-style mimic diagnostics now have focused
+      coverage. The writer test now uses a shared IO round-trip assertion helper
+      for body, joint, DoF, inertia, and shape comparisons.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor
       save-load belongs to the scene/project layer. Broader SDF coverage, URDF
@@ -154,10 +156,12 @@ SKEL-YAML direction just because the prototype once existed.
   diagnostics plus non-finite visual material diagnostics. It also proves
   link-level gravity mode for gravity-disabled links and passive joint dynamics
   metadata plus screw thread pitch for supported single-axis joints, two-axis
-  universal joints, topology-only ball joints, plus local root, joint, and shape
-  poses, plus absolute non-file mesh URI preservation through a custom
-  retriever. It also covers `WriteOptions` visual/collision filtering and the
-  empty mesh URI diagnostic. The assertions are factored through
+  universal joints, SDF 1.11+ axis/axis2 mimic metadata with motor enforcement,
+  topology-only ball joints, plus local root, joint, and shape poses, plus
+  absolute non-file mesh URI preservation through a custom retriever. It also
+  covers `WriteOptions` visual/collision filtering, the empty mesh URI
+  diagnostic, pre-SDF-1.11 mimic diagnostics, and unsupported coupler-style
+  mimic diagnostics. The assertions are factored through
   `tests/helpers/io_round_trip_helpers.hpp` so future writer formats can reuse
   the body, joint, DoF, inertia, and shape comparison helpers. Completion still
   requires broader accepted-format writer APIs and round-trip tests that load a

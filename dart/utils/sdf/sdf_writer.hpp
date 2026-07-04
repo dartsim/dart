@@ -65,7 +65,8 @@ struct DART_UTILS_API WriteOptions
 /// BodyNode links, root FreeJoint/WeldJoint placement, revolute/prismatic/weld
 /// and screw/universal child joints with passive dynamics metadata (damping,
 /// Coulomb friction, spring reference, and spring stiffness), screw thread
-/// pitch, topology-only ball child joints, link gravity mode, inertial
+/// pitch, SDF 1.11+ mimic metadata for axis/axis2 follower joints with motor
+/// enforcement, topology-only ball child joints, link gravity mode, inertial
 /// parameters, local joint/shape poses, and box/sphere/cylinder/mesh
 /// visual/collision geometry with explicit visual material colors and absolute
 /// non-file mesh URI preservation.
