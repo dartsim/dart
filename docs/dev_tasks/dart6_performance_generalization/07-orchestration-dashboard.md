@@ -36,7 +36,7 @@ Related open queue at last refresh: none blocking (all enablers merged:
 | WP-PG.21 history map/pruning | WS-B | open | — | — |
 | WP-PG.22 version-gated pose push | WS-B | open | — | — |
 | WP-PG.23 ODE manifold reduction | WS-B | blocked (D8) | — | — |
-| WP-PG.30 free-body cache + FD path | WS-C | open | — | — |
+| WP-PG.30 free-body cache + FD path | WS-C | done — PR pending | `wp-pg-30-single-free-body-cache` | A/B: S5 −12.2%, S4 −5.3%, S3 −2.3%, solve-bound rows flat; 8/8 guard hashes bit-identical |
 | WP-PG.31 shallow-support scratch | WS-C | open | — | — |
 | WP-PG.32 frame arena + alloc gate | WS-C | open | — | — |
 | WP-PG.33 SoA integration | WS-C | gated | — | — |
