@@ -59,3 +59,22 @@ reduction now vs WS-F phase 3) — see README "Open decisions".
   branch handoff (prior-art inventory + rejected-experiments list).
   Adversarial plan review applied (sequencing consistency, WP-PG.11
   re-scope, WP-PG.13 premise correction, success criteria added).
+- 2026-07-04: WP-PG.40 claimed and drafted on branch
+  `wp-pg-40-simd-contracts` (worktree, off `origin/release-6.20`).
+  Produced [08-simd-contracts.md](08-simd-contracts.md): D1/D2 proposals
+  awaiting maintainer ratification, plus concrete evidence that (a)
+  `dart::simd`'s own `fmadd`/`fmsub` are not yet bit-identical across the
+  SSE4.2/AVX backends `ci_simd.yml` already builds (no-FMA fallback takes
+  an unfused two-rounding path), and (b) `dart::simd` resolves to its
+  Scalar backend in every default/packaged DART build today (no CI
+  workflow outside `ci_simd.yml` passes ISA flags to the `dart` target),
+  which sharpens D2 considerably. Compile-only prototype at
+  [prototypes/wp_pg_40_cross3_batch.hpp](prototypes/wp_pg_40_cross3_batch.hpp)
+  (+ `_test.cpp`) demonstrates the bit-equality mechanism against the
+  already-merged SoA batch `dart::simd::cross()`; verified with
+  `g++ -fsyntax-only -Wall -Wextra -Werror` under default,
+  `-DDART_SIMD_FORCE_SCALAR`, and `-mavx2 -mfma` — all three pass. No
+  cmake/pixi builds or test executions were run (see the decision doc's
+  "Hard constraints" section); the harness's assertions have not been
+  executed, only compiled. WP-PG.41/42 remain blocked pending D1/D2
+  ratification.

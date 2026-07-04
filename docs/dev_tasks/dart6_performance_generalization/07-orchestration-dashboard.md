@@ -40,7 +40,7 @@ Related open queue at last refresh: none blocking (all enablers merged:
 | WP-PG.31 shallow-support scratch | WS-C | open | — | — |
 | WP-PG.32 frame arena + alloc gate | WS-C | open | — | — |
 | WP-PG.33 SoA integration | WS-C | gated | — | — |
-| WP-PG.40 FP/ISA contracts | WS-D | open | — | — |
+| WP-PG.40 FP/ISA contracts | WS-D | done — PR pending | `wp-pg-40-simd-contracts` | [08-simd-contracts.md](08-simd-contracts.md) |
 | WP-PG.41 batch math seam | WS-D | blocked (PG.40) | — | — |
 | WP-PG.42 SoA broadphase | WS-D | gated (WS-F coord) | — | — |
 
