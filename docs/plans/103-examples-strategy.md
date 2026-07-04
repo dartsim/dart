@@ -10,7 +10,8 @@
 - Related: PLAN-102 (C++ `dart-demos`, Complete — frozen by this plan),
   PLAN-012 (cloud dartpy tutorials — consumes this plan's scene modules),
   PLAN-101 (`dartsim` editor — a retire-later precondition),
-  [`103-examples-strategy/rigid-body-visual-verification.md`](103-examples-strategy/rigid-body-visual-verification.md).
+  [`103-examples-strategy/rigid-body-visual-verification.md`](103-examples-strategy/rigid-body-visual-verification.md),
+  [`103-examples-strategy/simbicon-walking-notes.md`](103-examples-strategy/simbicon-walking-notes.md).
 - Architecture owner (cross-language examples policy): this file while active;
   the C++ app architecture stays in
   [`../design/demos_app.md`](../design/demos_app.md).
@@ -114,16 +115,18 @@ modules notebooks import).
 
 See Decision 5 for the current phase shape. The foundational runner, notebook
 import path, and DART 7 pruning are landed; the
-`docs/dev_tasks/examples_strategy/` tracking folder was retired into this plan.
-Current multi-session evidence packets may use their own temporary dev-task
-folders, but durable results should land under `docs/plans/103-examples-strategy/`.
+`docs/dev_tasks/examples_strategy/` and
+`docs/dev_tasks/py_demos_framework/` tracking folders were retired into this
+plan and its rigid-body sidecar. Current multi-session evidence packets may use
+their own temporary dev-task folders, but durable results should land under
+`docs/plans/103-examples-strategy/`.
 
 ## Acceptance Criteria
 
 - `python -m examples.demos` runs the interactive workspace by default, supports
   headless `--scene`/`--cycle-scenes`/`--frames`/`--screenshot`, lists scenes
-  from an ordered registry, and `pixi run py-demos` works with a pytest-gated
-  Python cycle smoke.
+  from an ordered registry, and `pixi run py-demos` works with pytest-gated
+  cycle, full-catalog smoke, panel, and render guards.
 - Focused scene tests and capture smokes cover behavior that would otherwise
   drift silently; new high-value rows have a clear test/capture owner.
 - The DART 7 World catalog exists as Python scenes or planned rows; the notebook
@@ -137,9 +140,10 @@ folders, but durable results should land under `docs/plans/103-examples-strategy
 ## Gate
 
 See `dashboard.md` PLAN-103. Objective-specific proof: the Python
-runner/workspace headless cycle and capture smokes are green; focused tests own
-scene-specific behavior; the notebook gallery imports (not copies) the scene
-modules; C++ stays smaller with the retire checklist tracked.
+runner/workspace list path, full-catalog `py-demos-smoke`,
+`py-demos-render-smoke`, headless cycle, and capture smokes are green; focused
+tests own scene-specific behavior; the notebook gallery imports (not copies)
+the scene modules; C++ stays smaller with the retire checklist tracked.
 
 ## Retire-Later Checklist (C++ `dart-demos`)
 
@@ -149,13 +153,17 @@ explicit "not now"):
 
 1. **NOT MET.** Python demos cover the DART 7 World surface broadly, but the
    retire decision still needs the high-value planned rows to become usable
-   World-native demos or be explicitly retired. Today the Python registry has
-   151 rows across World rigid body, AVBD source-demo and rigid/articulated
-   constraint rows, planned World ports, robot/control placeholders, Rigid IPC,
-   PLAN-083 placeholders, replay, variational, differentiable, VBD, and IPC
-   deformable categories. Planned rows keep remaining IK, puppet, SIMBICON,
-   operational-space-control, and mobile-manipulation gaps visible without
-   preserving legacy DART 6 implementations in the catalog. The old
+   World-native demos or be explicitly retired. The Python registry spans World
+   rigid body, AVBD source-demo and rigid/articulated constraint rows, planned
+   World ports, robot/control placeholders, Rigid IPC, PLAN-083 placeholders,
+   replay, variational, differentiable, VBD, and IPC deformable categories.
+   Planned rows keep remaining IK, puppet, SIMBICON, operational-space-control,
+   and mobile-manipulation gaps visible without preserving legacy DART 6
+   implementations in the catalog. The SIMBICON planned row's robustness
+   diagnosis (height-sink vs. structural lateral-balance gap, and the
+   next-attempt options) is durable in
+   [`103-examples-strategy/simbicon-walking-notes.md`](103-examples-strategy/simbicon-walking-notes.md).
+   The old
    collision-sandbox placeholder is retired to the concrete
    `rigid_contact_inspector`, `rigid_collision_query_options`, and
    `rigid_collision_casts` GUI rows.
@@ -195,11 +203,17 @@ now" because checklist items 1–3 remain open.
   an ordered registry and a `__main__` CLI (`--scene`/`--cycle-scenes`/
   `--frames`/`--screenshot`/`--list`, plus interactive/headless modes).
   `pixi run py-demos` opens the workspace; the cycle smoke is pytest-gated
-  (`python/tests/integration/test_demos_cycle.py`). The current catalog has 151
-  rows across World rigid body, AVBD source-demo and rigid/articulated
-  constraint rows, planned World ports, robot/control placeholders, Rigid IPC,
-  PLAN-083 placeholders, simulation replay, variational integrators,
-  differentiable scenes, VBD, and IPC deformable.
+  (`python/tests/integration/test_demos_cycle.py`). The current catalog spans
+  World rigid body, AVBD source-demo and rigid/articulated constraint rows,
+  planned World ports, robot/control placeholders, Rigid IPC, PLAN-083
+  placeholders, simulation replay, variational integrators, differentiable
+  scenes, VBD, and IPC deformable.
+- **Catalog stability guard.** The former py-demos framework task established
+  a full-catalog no-crash contract: `scripts/py_demos_smoke.py`,
+  `pixi run py-demos-smoke`, and `pixi run py-demos-render-smoke` exercise the
+  registered catalog's build, step, provider, panel, and real-render paths.
+  Registry tests catch unregistered, duplicate, or ill-formed scene modules, so
+  new scenes must join the ordered catalog intentionally.
 - **DART 7 pruning.** Legacy DART 6 demo implementations and cross-language
   golden parity fixtures were removed from the demo surfaces. High-value missing
   rows appear as planned World-port placeholders until they become usable
@@ -243,7 +257,9 @@ which owns the 36-row user-facing `py-demos` workflow, scene-panel evidence,
 replay/capture coverage, focused tests, deferred API gaps, and capture-first
 related packets. The root README source-checkout path points first to this
 Python-first rigid-body GUI verifier, its workflow docs, and a docked capture
-command before the frozen C++ companion smoke. The temporary working folder was
-retired in the completing PR. Future rigid visual-verification follow-ups should
-update the sidecar, Python demo README, registry/tests, and dashboard instead of
-restoring a working dev-task folder unless a new multi-session task starts.
+command before the frozen C++ companion smoke. The temporary
+`docs/dev_tasks/py_demos_framework/` working folder is retired after its M0/M1
+state moved into this plan, the rigid-body sidecar, the Python demo README,
+tests, and changelog entries. Future rigid visual-verification follow-ups should
+update the sidecar, Python demo README, registry/tests, and dashboard instead
+of restoring a working dev-task folder unless a new multi-session task starts.

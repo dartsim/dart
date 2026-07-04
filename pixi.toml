@@ -269,6 +269,7 @@ lint-phase5-cuda-workflow = { cmd = [
   "python",
   "scripts/check_phase5_cuda_workflow.py",
 ] }
+lint-diff-workflow = { cmd = ["python", "scripts/check_diff_workflow.py"] }
 lint-plan083-gpu-parity-packet = { cmd = [
   "python",
   "scripts/check_plan083_gpu_parity_packet.py",
@@ -320,6 +321,7 @@ lint = { depends-on = [
   "lint-no-gpu-runtime-dependencies",
   "lint-phase5-cuda-benchmark-contract",
   "lint-phase5-cuda-workflow",
+  "lint-diff-workflow",
   "lint-plan083-cpu-scene-corpus",
   "lint-plan083-gpu-parity-packet",
   "lint-plan083-completion-audit",
@@ -405,6 +407,7 @@ check-phase5-cuda-workflow = { cmd = [
   "python",
   "scripts/check_phase5_cuda_workflow.py",
 ] }
+check-diff-workflow = { cmd = ["python", "scripts/check_diff_workflow.py"] }
 check-plan083-gpu-parity-packet = { cmd = [
   "python",
   "scripts/check_plan083_gpu_parity_packet.py",
@@ -465,6 +468,7 @@ check-lint = { depends-on = [
   "check-no-gpu-runtime-dependencies",
   "check-phase5-cuda-benchmark-contract",
   "check-phase5-cuda-workflow",
+  "check-diff-workflow",
   "check-plan083-cpu-scene-corpus",
   "check-plan083-gpu-parity-packet",
   "check-plan083-completion-audit",
