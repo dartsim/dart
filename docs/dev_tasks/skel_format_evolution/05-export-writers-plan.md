@@ -2,7 +2,7 @@
 
 ## Current State
 
-DART 7 `dart::io` is read-only today:
+Before Phase 5 started, DART 7 `dart::io` was read-only:
 
 - `dart::io::readSkeleton()` is the public front door for Skeleton imports.
 - `dart::utils::UrdfParser` exposes file/string parsing, package resolution,
@@ -13,21 +13,30 @@ DART 7 `dart::io` is read-only today:
 - USD read-side work is active in `docs/dev_tasks/usd_scene_loader/`; early USD
   phases are explicitly read-only.
 
-The export gap is therefore real implementation work. This planning note does
-not complete Phase 5.
+The first implementation slice adds
+`dart::utils::SdfParser::tryWriteSkeletonToString()`, a parser-specific SDF
+string writer for a conservative `Skeleton` subset. It writes BodyNode links,
+root FreeJoint/WeldJoint placement, revolute/prismatic/weld child joints,
+inertial parameters, and box/sphere/cylinder/mesh visual or collision geometry.
+Unsupported constructs return `common::Result` errors instead of being silently
+dropped.
+
+The remaining export gap is still real implementation work. This planning note
+and the first SDF writer slice do not complete Phase 5.
 
 ## Decision
 
 Phase 5 should be implemented as a separate round-trip effort, not as a SKEL
 replacement. The accepted writer scope is:
 
-1. **Project/scene save-load** for DART-owned editor state, owned by PLAN-101
+1. **SDF writer** for portable simulation interchange, because SDF can
+   represent worlds/models and already has version/conversion semantics through
+   libsdformat. The first parser-specific writer slice is in place; broader SDF
+   coverage remains open.
+2. **Project/scene save-load** for DART-owned editor state, owned by PLAN-101
    and the dartsim scene model. Current durable GUI docs lean toward JSON for
    tooling simplicity; YAML remains rejected unless a later durable owner
    accepts a versioned schema and round-trip contract.
-2. **SDF writer** for portable simulation interchange, because SDF can represent
-   worlds/models and already has version/conversion semantics through
-   libsdformat.
 3. **URDF writer** for robot-link trees that fit URDF's model constraints.
 4. **MJCF/USD writers** only after their read-side semantics are mature enough
    in DART to define a truthful round-trip contract.
@@ -71,10 +80,13 @@ Phase 5 is complete only when code and tests prove the writer contract:
 
 ## Open Work
 
-- Decide the first implementation target: SDF writer, URDF writer, or PLAN-101
-  project save/load.
-- Define the comparison helper for read/write/read tests so future formats do
-  not copy ad hoc assertions.
+- Extend the SDF writer contract beyond the first conservative subset when
+  tests can prove additional joints, shapes, materials, resource URI handling,
+  or world-level data round-trip correctly.
+- Decide the next implementation target: URDF writer or PLAN-101 project
+  save/load.
+- Factor a shared comparison helper for read/write/read tests before future
+  formats copy ad hoc assertions.
 - Decide whether writer APIs live under `dart::io`, parser-specific utility
   namespaces, or a DART 7 scene/project layer.
 - Keep YAML out of the first implementation target unless a durable

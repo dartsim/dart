@@ -62,12 +62,15 @@ Source of truth:
 
 - `dart/io/read.hpp`
 - `dart/io/read.cpp`
+- `dart/utils/sdf/sdf_writer.hpp` for the first parser-specific SDF writer
 
 ## Start here next time
 
 - API surface: `dart/io/read.hpp`
 - Implementation: `dart/io/read.cpp`
 - Unit coverage for `ReadOptions`: `tests/unit/io/test_read.cpp`
+- SDF writer API: `dart/utils/sdf/sdf_writer.hpp`
+- SDF writer round-trip coverage: `tests/integration/io/test_sdf_writer.cpp`
 
 ## Common usage patterns
 
@@ -130,6 +133,21 @@ Prefer adding an option to `ReadOptions` only when:
 - It does not meaningfully complicate the default/simple usage.
 
 Otherwise, prefer using the underlying parser API directly.
+
+## SDF writing
+
+DART 7's first export surface is parser-specific:
+`dart::utils::SdfParser::tryWriteSkeletonToString`. It serializes a
+conservative `Skeleton` subset to SDF text and returns `common::Result` so
+unsupported constructs produce explicit errors instead of silently dropping
+state.
+
+The initial writer covers BodyNode links, root FreeJoint/WeldJoint placement,
+revolute/prismatic/weld child joints, inertial parameters, and
+box/sphere/cylinder/mesh visual or collision geometry. It is not a general
+project save/load format and does not make YAML a model format. Use the writer
+only when the target scene fits the documented subset, and expand the round-trip
+tests before broadening the supported contract.
 
 ## Notes about Python
 

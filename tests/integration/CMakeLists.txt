@@ -170,6 +170,9 @@ if(TARGET dart-utils)
     if(TARGET dart-io)
       target_link_libraries(INTEGRATION_io_SdfParser dart-io)
     endif()
+
+    dart_add_test("integration" INTEGRATION_io_SdfWriter io/test_sdf_writer.cpp)
+    target_link_libraries(INTEGRATION_io_SdfWriter dart-utils)
   endif()
 endif()
 

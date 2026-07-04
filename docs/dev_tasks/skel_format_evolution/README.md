@@ -27,9 +27,10 @@
       owned by [`usd_scene_loader/`](../usd_scene_loader/).
 - [ ] Phase 5: Export writers for accepted portable/project formats so DART can
       round-trip a scene back to text. Planning is recorded in
-      [`05-export-writers-plan.md`](05-export-writers-plan.md); implementation
-      remains open. Start with URDF/SDF or project save/load, and add YAML only
-      if a durable project/scene schema is accepted first.
+      [`05-export-writers-plan.md`](05-export-writers-plan.md). The first SDF
+      writer slice is implemented locally for a conservative `Skeleton` subset;
+      broader SDF coverage, URDF export, and project save/load remain open. Add
+      YAML only if a durable project/scene schema is accepted first.
 
 ## Goal
 
@@ -105,11 +106,12 @@ SKEL-YAML direction just because the prototype once existed.
 
 1. Land the Phase 2 removal branch (`feature/remove-skel-dart7-phase2`) after
    review. Add the PR link to the DART 7 changelog entry before merge.
-2. Implement Phase 5 from
-   [`05-export-writers-plan.md`](05-export-writers-plan.md): choose the first
-   writer target, define the comparison helper, and add read/write/read tests.
-   YAML can enter that slice only after a durable project/scene schema is
-   accepted.
+2. Continue Phase 5 from
+   [`05-export-writers-plan.md`](05-export-writers-plan.md): extend SDF writer
+   coverage beyond the first conservative subset, decide the next writer target
+   (URDF or PLAN-101 project save/load), and keep read/write/read tests attached
+   to every expanded contract. YAML can enter that slice only after a durable
+   project/scene schema is accepted.
 
 ## Verification Gates
 
@@ -131,6 +133,9 @@ SKEL-YAML direction just because the prototype once existed.
   active `usd_scene_loader/` task owns remaining USD implementation, and this
   task must not duplicate the USD loader/viewer/dartpy surface.
 - Phase 5: planning gate recorded in
-  [`05-export-writers-plan.md`](05-export-writers-plan.md). Completion still
-  requires writer APIs and round-trip tests that load a scene from each
-  accepted format, write it back, and compare the re-parsed models.
+  [`05-export-writers-plan.md`](05-export-writers-plan.md). The first SDF writer
+  slice is covered by `INTEGRATION_io_SdfWriter`, which writes and re-reads a
+  representative supported `Skeleton` subset and checks unsupported-shape
+  diagnostics. Completion still requires broader accepted-format writer APIs
+  and round-trip tests that load a scene from each accepted format, write it
+  back, and compare the re-parsed models.

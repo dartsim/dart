@@ -27,6 +27,40 @@ project save/load first; define deterministic resource handling and comparison
 helpers; and complete the phase only with writer APIs plus read/write/read
 tests. This planning record does not complete Phase 5.
 
+The first SDF writer implementation slice is now local on
+`work/skel-format-yaml-decision`: `dart::utils::SdfParser` exposes
+`tryWriteSkeletonToString()` for a conservative `Skeleton` subset, with
+`INTEGRATION_io_SdfWriter` proving write/read round-trip for links,
+root placement, revolute joints, inertial data, and primitive geometry. It also
+checks unsupported-shape diagnostics. This is real Phase 5 progress, but Phase 5
+is still open until broader SDF coverage plus the remaining accepted writer
+targets are implemented or durably deferred.
+
+Validation for this slice:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_Read`
+- `pixi run run-cpp-target test_io_readNone`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
+Changelog decision:
+
+- Mode: draft
+- Base evidence: `origin/main`
+- Scope evidence: local diff adds the parser-specific SDF writer API,
+  integration round-trip coverage, IO docs, and SKEL-format task handoff.
+- Decision: entry required
+- Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing
+- Entry text: present as the conservative SDF writer bullet, without a PR link
+  until the implementation PR exists.
+- PR-body note: N/A
+- Follow-up: add the implementation PR link after a PR exists and maintainer /
+  user approval allows the PR update or follow-up push.
+
 ## Previous Resume Checkpoint (2026-07-03)
 
 Phase 2 is implemented on `feature/remove-skel-dart7-phase2` and awaiting PR
@@ -111,15 +145,17 @@ can be recovered without adopting the old SKEL YAML direction.
 ## Current Branch
 
 `work/skel-format-yaml-decision` — Phase 3 YAML decision, Phase 4 USD
-coordination, and Phase 5 export-writer planning are committed locally on top of
-the Phase 2 removal commit. The underlying Phase 2 branch remains
-`feature/remove-skel-dart7-phase2`.
+coordination, Phase 5 export-writer planning, and the first SDF writer slice are
+local on top of the Phase 2 removal commit. The underlying Phase 2 branch
+remains `feature/remove-skel-dart7-phase2`.
 
 ## Immediate Next Step
 
 Continue with the remaining real task work: land Phase 2 after maintainer
-approval, then implement Phase 5 export writers as a separate round-trip slice
-from [`05-export-writers-plan.md`](05-export-writers-plan.md).
+approval, then continue Phase 5 from
+[`05-export-writers-plan.md`](05-export-writers-plan.md) by extending SDF writer
+coverage or choosing the next accepted writer target (URDF or PLAN-101 project
+save/load).
 
 ## Context That Would Be Lost
 
@@ -135,7 +171,8 @@ from [`05-export-writers-plan.md`](05-export-writers-plan.md).
   dependency, and CI work.
 - Export is part of the work, not a follow-up: round-trip enables save /
   load in the dartsim editor (PLAN-101). The current Phase 5 file is a plan,
-  not an implementation-complete gate.
+  and the current SDF writer is only the first implementation slice, not an
+  implementation-complete gate.
 - The old `feature/skel_yaml` prototype SHA (`1dd83e31586`) is no longer
   reachable in this worktree. Do not depend on it for Phase 3 or Phase 5 unless
   another clone still has the object.
@@ -144,7 +181,8 @@ from [`05-export-writers-plan.md`](05-export-writers-plan.md).
 
 ```bash
 git checkout work/skel-format-yaml-decision
-git status && git log -3 --oneline
+git status && git log -4 --oneline
+pixi run run-cpp-target INTEGRATION_io_SdfWriter
 
 # To return to the Phase 2 PR-ready branch:
 # git checkout feature/remove-skel-dart7-phase2
