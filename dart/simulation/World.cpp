@@ -77,6 +77,9 @@ namespace {
 using dart::collision::CollisionDetector;
 using dart::collision::CollisionDetectorPtr;
 
+constexpr double kFinalSleepLinearRatio = 0.1;
+constexpr double kFinalSleepAngularRatio = 0.2;
+
 std::string toCollisionDetectorKey(CollisionDetectorType type)
 {
   switch (type) {
@@ -425,10 +428,22 @@ void World::suppressShallowSupportedFreeRootDrift(
   }
 
   const Eigen::Vector3d up = -gravity.normalized();
-  constexpr double kRootLinearDriftSpeed = 1e-5;
+  constexpr double kRootLinearLegacyDriftSpeed = 1e-5;
+  constexpr double kRootLinearDriftSpeedCap = 2e-4;
+  constexpr double kRootLinearDriftFinalQuietRatio = 0.5;
+  double rootLinearDriftSpeed = kRootLinearDriftSpeedCap;
+  if (mDeactivationOptions.mEnabled) {
+    const double finalQuietLinearSpeed = std::max(
+        0.0,
+        kFinalSleepLinearRatio * mDeactivationOptions.mLinearSpeedThreshold);
+    rootLinearDriftSpeed = std::min(
+        kRootLinearDriftSpeedCap,
+        kRootLinearDriftFinalQuietRatio * finalQuietLinearSpeed);
+  }
   constexpr double kRootAngularDriftSpeed = 5e-4;
-  const bool seedFromPreSolve = preSolveVelocity.mVelocityEditedSinceLastStep
-                                || preSolveVelocity.mExternallyDisturbed;
+  const bool preSolveClearsStoredTarget
+      = preSolveVelocity.mVelocityEditedSinceLastStep
+        || preSolveVelocity.mExternallyDisturbed;
   Eigen::VectorXd velocityActuatorCommands;
   bool restoreCommands = false;
 
@@ -449,18 +464,21 @@ void World::suppressShallowSupportedFreeRootDrift(
       = preSolveVelocity.mLinear - preSolveVerticalVelocity;
   Eigen::Vector3d targetLateralVelocity = Eigen::Vector3d::Zero();
   bool targetPreservesLateralVelocity = false;
-  if (seedFromPreSolve) {
-    if (hasFiniteNonzeroVelocity(preSolveLateralVelocity)) {
-      targetLateralVelocity = preSolveLateralVelocity;
-      targetPreservesLateralVelocity = true;
-    }
+  const bool preservePreSolveLateralVelocity
+      = hasFiniteNonzeroVelocity(preSolveLateralVelocity)
+        && (preSolveClearsStoredTarget
+            || preSolveLateralVelocity.norm() > kRootLinearLegacyDriftSpeed);
+  if (preservePreSolveLateralVelocity) {
+    targetLateralVelocity = preSolveLateralVelocity;
+    targetPreservesLateralVelocity = true;
   } else if (
-      state.mPreserveLateralVelocity && state.mLateralVelocity.allFinite()) {
+      !preSolveClearsStoredTarget && state.mPreserveLateralVelocity
+      && state.mLateralVelocity.allFinite()) {
     targetLateralVelocity = state.mLateralVelocity;
     targetPreservesLateralVelocity
         = hasFiniteNonzeroVelocity(targetLateralVelocity);
   } else if (
-      state.mHasUnsupportedLateralVelocity
+      !preSolveClearsStoredTarget && state.mHasUnsupportedLateralVelocity
       && state.mUnsupportedLateralVelocity.allFinite()) {
     targetLateralVelocity = state.mUnsupportedLateralVelocity;
     targetPreservesLateralVelocity
@@ -470,7 +488,7 @@ void World::suppressShallowSupportedFreeRootDrift(
   const bool clampedLateralVelocity
       = targetLateralVelocity.allFinite()
         && (lateralVelocity - targetLateralVelocity).norm()
-               <= kRootLinearDriftSpeed;
+               <= rootLinearDriftSpeed;
   if (clampedLateralVelocity) {
     captureVelocityActuatorCommands();
     freeJoint->setLinearVelocity(
@@ -494,16 +512,18 @@ void World::suppressShallowSupportedFreeRootDrift(
       = preSolveVelocity.mAngular - preSolveYawVelocity;
   Eigen::Vector3d targetTiltVelocity = Eigen::Vector3d::Zero();
   bool targetPreservesTiltVelocity = false;
-  if (seedFromPreSolve) {
+  if (preSolveClearsStoredTarget) {
     if (hasFiniteNonzeroVelocity(preSolveTiltVelocity)) {
       targetTiltVelocity = preSolveTiltVelocity;
       targetPreservesTiltVelocity = true;
     }
-  } else if (state.mPreserveTiltVelocity && state.mTiltVelocity.allFinite()) {
+  } else if (
+      !preSolveClearsStoredTarget && state.mPreserveTiltVelocity
+      && state.mTiltVelocity.allFinite()) {
     targetTiltVelocity = state.mTiltVelocity;
     targetPreservesTiltVelocity = hasFiniteNonzeroVelocity(targetTiltVelocity);
   } else if (
-      state.mHasUnsupportedTiltVelocity
+      !preSolveClearsStoredTarget && state.mHasUnsupportedTiltVelocity
       && state.mUnsupportedTiltVelocity.allFinite()) {
     targetTiltVelocity = state.mUnsupportedTiltVelocity;
     targetPreservesTiltVelocity = hasFiniteNonzeroVelocity(targetTiltVelocity);
@@ -1235,8 +1255,6 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // higher contact-solver jitter floor (e.g. dense mixed-shape piles) widens
   // the gate proportionally instead of being silently overridden by a hidden
   // stricter constant.
-  constexpr double kFinalSleepLinearRatio = 0.1;
-  constexpr double kFinalSleepAngularRatio = 0.2;
   const double finalSleepLinearSpeed = kFinalSleepLinearRatio * linSleep;
   const double finalSleepAngularSpeed = kFinalSleepAngularRatio * angSleep;
   constexpr double kSupportNormalMinVerticalComponent = 0.5;
