@@ -18,7 +18,7 @@ Related open queue at last refresh: none blocking (all enablers merged:
 | WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | open (PG.23 blocked D8; lane re-review at WS-F phase 5) |
 | WS-C dynamics batching | 04-dynamics-batching-lane.md | PG.30–PG.33 | open (PG.33 gated) |
 | WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | open (PG.41/42 blocked on PG.40) |
-| WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (**PG.01 first**) |
+| WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 done; PG.02/PG.03 next; PG.04 blocked D4) |
 | WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; phase 0 evidence harness complete (#3209/#3230 merged); phase 1 not started |
 
 ## Packet board
