@@ -736,6 +736,84 @@ TEST(UrdfWriter, RoundTripsExistingGroundFixture)
 }
 
 //==============================================================================
+TEST(UrdfWriter, ExistingKr5FixtureWithRootPoseReturnsError)
+{
+  utils::UrdfParser parser;
+  const auto original
+      = parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+  ASSERT_NE(original, nullptr);
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_FALSE(result.isOk());
+  expectContains(result.error().message, "root joint [arm_to_world_fixed]");
+  expectContains(result.error().message, "URDF has no root-link pose");
+}
+
+//==============================================================================
+TEST(UrdfWriter, RoundTripsExistingDrchuboFixture)
+{
+  utils::UrdfParser parser;
+  parser.addPackageDirectory("drchubo", config::dataPath("urdf/drchubo"));
+
+  const auto original
+      = parser.parseSkeleton("dart://sample/urdf/drchubo/drchubo.urdf");
+  ASSERT_NE(original, nullptr);
+  ASSERT_GT(original->getNumBodyNodes(), 20u);
+  ASSERT_GT(original->getNumDofs(), 20u);
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  expectContains(writeResult.value(), "name=\"drchubo\"");
+  expectContains(
+      writeResult.value(),
+      "filename=\"package://drchubo/meshes/convhull_Torso_merged.stl\"");
+
+  const auto reparsed = parser.parseSkeletonString(
+      writeResult.value(), common::Uri("memory://drchubo_roundtrip.urdf"));
+  ASSERT_NE(reparsed, nullptr);
+
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+  for (std::size_t i = 0; i < original->getNumBodyNodes(); ++i) {
+    const auto* expected = original->getBodyNode(i);
+    ASSERT_NE(expected, nullptr);
+    const auto* actual = reparsed->getBodyNode(expected->getName());
+    ASSERT_NE(actual, nullptr) << expected->getName();
+    expectBodyInertiaRoundTrips(*expected, *actual);
+    expectVisualShapesRoundTrip(*expected, *actual);
+    expectCollisionShapesRoundTrip(*expected, *actual);
+  }
+
+  for (const char* jointName : {
+           "LSP",
+           "LSR",
+           "TSY",
+           "NK1",
+           "RSP",
+           "RF41",
+       }) {
+    const auto* expectedJoint = dynamic_cast<const dynamics::RevoluteJoint*>(
+        original->getJoint(jointName));
+    const auto* actualJoint = dynamic_cast<const dynamics::RevoluteJoint*>(
+        reparsed->getJoint(jointName));
+    ASSERT_NE(expectedJoint, nullptr) << jointName;
+    ASSERT_NE(actualJoint, nullptr) << jointName;
+    EXPECT_EQ(
+        actualJoint->getParentBodyNode()->getName(),
+        expectedJoint->getParentBodyNode()->getName());
+    EXPECT_EQ(
+        actualJoint->getChildBodyNode()->getName(),
+        expectedJoint->getChildBodyNode()->getName());
+    EXPECT_TRUE(
+        actualJoint->getAxis().isApprox(expectedJoint->getAxis(), kTolerance));
+    expectSingleDofJointMetadataRoundTrips(*expectedJoint, *actualJoint);
+  }
+}
+
+//==============================================================================
 TEST(UrdfWriter, RoundTripsExistingWamFixture)
 {
   utils::UrdfParser parser;

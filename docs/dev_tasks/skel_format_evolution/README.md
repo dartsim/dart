@@ -175,12 +175,15 @@
       file mesh URIs, and non-finite mesh scales. It also covers continuous
       revolute joint dynamics round-trip, shipped
       `joint_properties.urdf`, `issue838.urdf`, `KR5/ground.urdf`, and
-      `wam.urdf`
+      `wam.urdf` plus the package-mesh `drchubo.urdf` robot
       read/write/read coverage for revolute and continuous joint
       limits/dynamics, visual boxes, global material color references,
       imported root-`world` frame semantics, collision boxes, and visual and
       collision package mesh URI preservation through `UrdfParser` package
-      resolution, non-positive mass, non-finite local center-of-mass, visual
+      resolution. The full `KR5 sixx R650.urdf` fixture now has shipped-fixture
+      diagnostic coverage proving its non-identity root-link pose is rejected
+      explicitly. It also covers non-positive mass, non-finite local
+      center-of-mass, visual
       material color, shape pose, joint axis, and asymmetric velocity/effort
       limit diagnostics, targeted diagnostics for non-default visual
       reflectance, disabled collision aspects, and collision dynamics metadata
@@ -351,13 +354,16 @@ SKEL-YAML direction just because the prototype once existed.
   limits/dynamics, and sphere/box visual and collision geometry. It does not
   claim SDF sensor or physics metadata preservation.
   URDF shipped-fixture read/write/read coverage now includes
-  `joint_properties.urdf`, `issue838.urdf`, `KR5/ground.urdf`, and `wam.urdf`,
+  `joint_properties.urdf`, `issue838.urdf`, `KR5/ground.urdf`, `wam.urdf`, and
+  `drchubo.urdf`,
   proving the current conservative URDF writer preserves revolute and
   continuous joint topology, axes, finite velocity/effort limits, passive
   damping/friction metadata, inertias, visual box geometry, visual material
   colors imported from global URDF material references, collision box geometry,
   visual/collision package mesh geometry and URIs, and parser-normalized
-  root-`world` inertial-frame semantics.
+  root-`world` inertial-frame semantics. The full `KR5 sixx R650.urdf` robot
+  remains unsupported because its imported root joint has a non-identity
+  root-link pose, and that shipped fixture now has explicit diagnostic coverage.
   NaN position limits on SDF-supported single-axis joints and topology-only ball
   joints now have targeted diagnostics, while infinite limits remain the
   unbounded SDF joint contract.

@@ -1840,6 +1840,46 @@ Changelog decision:
   if a PR is opened.
 - Follow-up: none until an implementation PR exists.
 
+Additional validation for URDF drchubo and KR5 root-pose fixture coverage:
+
+- Added `UrdfWriter.RoundTripsExistingDrchuboFixture`, which loads
+  `data/urdf/drchubo/drchubo.urdf` with `UrdfParser` package resolution for
+  `drchubo`, writes it through `UrdfParser::tryWriteSkeletonToString()`,
+  reparses the emitted URDF, and compares the DART skeleton semantics imported
+  from the fixture: body inertias, visual/collision package mesh geometry and
+  URIs, visual material colors, and representative revolute joint topology,
+  axes, limits, and dynamics.
+- Added `UrdfWriter.ExistingKr5FixtureWithRootPoseReturnsError`, which loads
+  `data/urdf/KR5/KR5 sixx R650.urdf` and proves the writer rejects its imported
+  non-identity root-link pose with the targeted `URDF has no root-link pose`
+  diagnostic instead of attempting a lossy write.
+- SDF policy check: `pixi run check-sdf-sdformat-boundary` passed before this
+  slice; no SDF code changed, and SDF IO remains bounded to libsdformat rather
+  than DART-side XML parsing.
+
+Validation commands:
+
+- `pixi run check-sdf-sdformat-boundary`
+- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_urdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Scope evidence: `CHANGELOG.md` DART 7 IO and Parsing URDF writer bullet
+  already covers package URI meshes, visual/collision poses, visual colors, and
+  explicit unsupported/lossy diagnostics.
+- Decision: no additional changelog entry. This slice adds fixture-level
+  read/write/read verification plus one shipped-fixture diagnostic without
+  adding a new public API or broadening the documented writer contract.
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: record as drchubo URDF package-mesh round-trip coverage plus
+  KR5 root-pose diagnostic coverage if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
 Changelog decision:
 
 - Mode: draft
