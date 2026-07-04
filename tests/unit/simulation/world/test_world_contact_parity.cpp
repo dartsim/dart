@@ -413,6 +413,12 @@ struct LockedContactRun
   double velocity = 0.0;
 };
 
+struct LockedRigidContactRun
+{
+  double jointVelocity = 0.0;
+  double rigidVelocityZ = 0.0;
+};
+
 static LockedChainRun runProximalHeldChain(ProximalHold hold)
 {
   sx::World world;
@@ -596,6 +602,47 @@ static ServoRun runServoWithEffortLimits(
 static ServoRun runServo(const ServoCase& c)
 {
   return runServoWithEffortLimits(c, -c.effortLimit, c.effortLimit);
+}
+
+static LockedRigidContactRun runLockedPrismaticRigidContact()
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.001);
+
+  auto robot = world.addMultibody("locked_platform");
+  auto base = robot.addLink("base");
+  auto platform = robot.addLink(
+      "platform",
+      base,
+      sx::JointSpec{
+          .name = "slider",
+          .type = sx::JointType::Prismatic,
+          .axis = Eigen::Vector3d::UnitZ(),
+      });
+  platform.setMass(1.0);
+  platform.setInertia(Eigen::Vector3d(0.1, 0.1, 0.1).asDiagonal());
+  platform.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.4, 0.4, 0.1)));
+
+  auto joint = platform.getParentJoint();
+  joint.setActuatorType(sx::ActuatorType::Locked);
+
+  sx::RigidBodyOptions strikerOpts;
+  strikerOpts.mass = 1.0;
+  strikerOpts.position = Eigen::Vector3d(0.0, 0.0, 0.13);
+  strikerOpts.linearVelocity = Eigen::Vector3d(0.0, 0.0, -1.0);
+  auto striker = world.addRigidBody("striker", strikerOpts);
+  striker.setCollisionShape(sx::CollisionShape::makeSphere(0.1));
+  striker.setFriction(0.0);
+
+  world.enterSimulationMode();
+  world.step(1);
+
+  return LockedRigidContactRun{
+      .jointVelocity = joint.getVelocity()[0],
+      .rigidVelocityZ = striker.getLinearVelocity().z(),
+  };
 }
 
 } // namespace
@@ -820,6 +867,24 @@ TEST(ContactParity, LockedActuatorSuppressesContactImpulseDrift)
       << "Locked joint should not integrate contact-induced velocity";
   EXPECT_NEAR(actual.velocity, 0.0, 1e-12)
       << "Locked joint velocity should stay zero after contact solve";
+}
+
+//==============================================================================
+// Test: Locked actuator removes constrained coordinates from contact mass
+//
+// A dynamic rigid body striking a locked prismatic link along the locked
+// coordinate should see an immovable platform. The contact solve must not let
+// the locked coordinate contribute to effective mass and then discard that
+// contribution by projecting the joint velocity afterward.
+//==============================================================================
+TEST(ContactParity, LockedActuatorConstrainsContactEffectiveMass)
+{
+  const auto actual = runLockedPrismaticRigidContact();
+
+  EXPECT_NEAR(actual.jointVelocity, 0.0, 1e-12)
+      << "Locked prismatic coordinate should stay zero";
+  EXPECT_GT(actual.rigidVelocityZ, -0.1)
+      << "Rigid contact response should not be diluted by locked-link mobility";
 }
 
 //==============================================================================
