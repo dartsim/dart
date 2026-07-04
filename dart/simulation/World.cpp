@@ -247,6 +247,19 @@ bool hasFiniteNonzeroVelocity(const Eigen::Vector3d& velocity)
   return velocity.allFinite() && velocity.squaredNorm() > 0.0;
 }
 
+void restoreVelocityActuatorCommands(
+    dynamics::FreeJoint& joint, const Eigen::VectorXd& commands)
+{
+  for (std::size_t i = 0; i < joint.getNumDofs(); ++i) {
+    if (joint.getActuatorType(i) != dynamics::Joint::VELOCITY)
+      continue;
+
+    const auto index = static_cast<Eigen::Index>(i);
+    if (index < commands.size() && joint.getCommand(i) != commands[index])
+      joint.setCommand(i, commands[index]);
+  }
+}
+
 } // namespace
 
 //==============================================================================
@@ -385,6 +398,16 @@ void World::suppressShallowSupportedFreeRootDrift(
   constexpr double kRootAngularDriftSpeed = 5e-4;
   const bool seedFromPreSolve = preSolveVelocity.mVelocityEditedSinceLastStep
                                 || preSolveVelocity.mExternallyDisturbed;
+  Eigen::VectorXd velocityActuatorCommands;
+  bool restoreCommands = false;
+
+  auto captureVelocityActuatorCommands = [&]() {
+    if (restoreCommands)
+      return;
+
+    velocityActuatorCommands = freeJoint->getCommands();
+    restoreCommands = true;
+  };
 
   Eigen::Vector3d linearVelocity = rootBody->getLinearVelocity();
   const Eigen::Vector3d verticalVelocity = up * linearVelocity.dot(up);
@@ -412,6 +435,7 @@ void World::suppressShallowSupportedFreeRootDrift(
         && (lateralVelocity - targetLateralVelocity).norm()
                <= kRootLinearDriftSpeed;
   if (clampedLateralVelocity) {
+    captureVelocityActuatorCommands();
     freeJoint->setLinearVelocity(
         verticalVelocity + targetLateralVelocity,
         dynamics::Frame::World(),
@@ -447,6 +471,7 @@ void World::suppressShallowSupportedFreeRootDrift(
       = targetTiltVelocity.allFinite()
         && (tiltVelocity - targetTiltVelocity).norm() <= kRootAngularDriftSpeed;
   if (clampedTiltVelocity) {
+    captureVelocityActuatorCommands();
     freeJoint->setAngularVelocity(
         yawVelocity + targetTiltVelocity,
         dynamics::Frame::World(),
@@ -457,6 +482,9 @@ void World::suppressShallowSupportedFreeRootDrift(
       = clampedTiltVelocity && targetPreservesTiltVelocity;
   state.mTiltVelocity = state.mPreserveTiltVelocity ? targetTiltVelocity
                                                     : Eigen::Vector3d::Zero();
+
+  if (restoreCommands)
+    restoreVelocityActuatorCommands(*freeJoint, velocityActuatorCommands);
 }
 
 //==============================================================================

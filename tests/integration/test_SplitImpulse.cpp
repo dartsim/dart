@@ -395,6 +395,40 @@ TEST(Issue201, ShallowSupportHonorsIntentionalLowSpeedStop)
 }
 
 //==============================================================================
+// Drift suppression adjusts velocity state, but it must not overwrite
+// persistent user commands for velocity-actuated free-root coordinates.
+TEST(Issue201, ShallowSupportDoesNotMutateVelocityCommands)
+{
+  auto world = simulation::World::create();
+  auto floor = createFloor();
+  floor->setMobile(false);
+  world->addSkeleton(floor);
+
+  const double penetration = 5e-5;
+  auto box = createBox(kBoxSize / 2.0 - penetration);
+  world->addSkeleton(box);
+
+  auto* rootBody = box->getRootBodyNode();
+  ASSERT_NE(rootBody, nullptr);
+  auto* rootJoint = dynamic_cast<FreeJoint*>(rootBody->getParentJoint());
+  ASSERT_NE(rootJoint, nullptr);
+  rootJoint->setActuatorType(Joint::VELOCITY);
+
+  const Eigen::VectorXd expectedCommands = Eigen::VectorXd::Zero(
+      static_cast<Eigen::Index>(rootJoint->getNumDofs()));
+  rootJoint->setCommands(expectedCommands);
+
+  world->step(false);
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  for (std::size_t i = 0; i < rootJoint->getNumDofs(); ++i) {
+    EXPECT_EQ(
+        rootJoint->getCommand(i),
+        expectedCommands[static_cast<Eigen::Index>(i)]);
+  }
+}
+
+//==============================================================================
 // A mobile support that received a solver impulse is waking this step. It must
 // not be treated as an inactive support for shallow-drift suppression.
 TEST(Issue201, ShallowSupportIgnoresImpulseAppliedRestingSupport)
