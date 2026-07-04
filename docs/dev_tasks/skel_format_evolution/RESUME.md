@@ -67,6 +67,13 @@ Standard visual and collision shape nodes now traverse libsdformat `sdf::Model`,
 `sdf::Material` DOM values for shape names, local poses, geometry, and diffuse
 material colors; DART-specific soft body extensions remain on the legacy helper
 path because they are not standard sdformat DOM fields.
+Standard SDF joint reads now traverse libsdformat `sdf::Model`, `sdf::Joint`,
+and `sdf::JointAxis` DOM values for joint enumeration, joint name/type,
+parent/child links, local pose, axis vectors, axis dynamics, finite position
+limits, mimic metadata, and legacy `thread_pitch` or modern
+`screw_thread_pitch` screw pitch values. XML helper checks remain only where
+DART preserves authored/default distinctions for limits and dynamics or the
+legacy `use_parent_model_frame` compatibility extension.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -134,6 +141,10 @@ Additional validation for visual/collision/material SDF DOM reads:
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
+Additional validation for joint SDF DOM reads:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+
 Changelog decision:
 
 - Mode: draft
@@ -162,7 +173,9 @@ Changelog decision:
   before the implementation PR exists. No additional entry is needed for
   visual/collision/material SDF DOM reads because they harden the same
   conservative SDF writer/parser round-trip surface before the implementation PR
-  exists.
+  exists. No additional entry is needed for joint SDF DOM reads because they
+  harden the same conservative SDF writer/parser round-trip surface before the
+  implementation PR exists.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

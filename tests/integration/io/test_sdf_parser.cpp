@@ -1545,7 +1545,7 @@ TEST(SdfParser, UniversalScrewAndBallJointLimits)
           <spring_stiffness>2.0</spring_stiffness>
         </dynamics>
       </axis>
-      <thread_pitch>0.25</thread_pitch>
+      <screw_thread_pitch>0.25</screw_thread_pitch>
     </joint>
     <joint name="universal_joint" type="universal">
       <parent>link1</parent>

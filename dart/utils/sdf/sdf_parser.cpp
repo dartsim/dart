@@ -64,6 +64,8 @@
 #include <gz/math/Color.hh>
 #include <sdf/Collision.hh>
 #include <sdf/Geometry.hh>
+#include <sdf/Joint.hh>
+#include <sdf/JointAxis.hh>
 #include <sdf/Link.hh>
 #include <sdf/Material.hh>
 #include <sdf/Model.hh>
@@ -113,17 +115,13 @@ using ElementPtr = sdf::ElementPtr;
 namespace detail = dart::utils::SdfParser::detail;
 
 using detail::ElementEnumerator;
-using detail::getAttributeString;
 using detail::getElement;
 using detail::getValueBool;
 using detail::getValueDouble;
 using detail::getValueIsometry3dWithExtrinsicRotation;
-using detail::getValueString;
 using detail::getValueUInt;
-using detail::getValueVector2d;
 using detail::getValueVector3d;
 using detail::getValueVector3i;
-using detail::hasAttribute;
 using detail::hasElement;
 using detail::readGeometryShape;
 
@@ -206,8 +204,7 @@ struct SDFJoint
   std::vector<MimicInfo> mimicInfos;
 };
 
-std::vector<SDFJoint::MimicInfo> readMimicElements(
-    const ElementPtr& axisElement);
+std::vector<SDFJoint::MimicInfo> readMimicElements(const sdf::JointAxis& axis);
 
 // Maps the name of a BodyNode to its properties
 using BodyMap = common::aligned_map<std::string, SDFBodyNode>;
@@ -310,37 +307,37 @@ JointMap readAllJoints(
     const BodyMap& sdfBodyNodes);
 
 SDFJoint readJoint(
-    const ElementPtr& jointElement,
+    const sdf::Joint& joint,
     const BodyMap& bodies,
     const Eigen::Isometry3d& skeletonFrame);
 
 dart::dynamics::WeldJoint::Properties readWeldJoint(
-    const ElementPtr& jointElement,
+    const sdf::Joint& joint,
     const Eigen::Isometry3d& parentModelFrame,
     std::string_view name);
 
 dynamics::RevoluteJoint::Properties readRevoluteJoint(
-    const ElementPtr& revoluteJointElement,
+    const sdf::Joint& revoluteJoint,
     const Eigen::Isometry3d& parentModelFrame,
     std::string_view name);
 
 dynamics::PrismaticJoint::Properties readPrismaticJoint(
-    const ElementPtr& jointElement,
+    const sdf::Joint& joint,
     const Eigen::Isometry3d& parentModelFrame,
     std::string_view name);
 
 dynamics::ScrewJoint::Properties readScrewJoint(
-    const ElementPtr& jointElement,
+    const sdf::Joint& joint,
     const Eigen::Isometry3d& parentModelFrame,
     std::string_view name);
 
 dynamics::UniversalJoint::Properties readUniversalJoint(
-    const ElementPtr& jointElement,
+    const sdf::Joint& joint,
     const Eigen::Isometry3d& parentModelFrame,
     std::string_view name);
 
 dynamics::BallJoint::Properties readBallJoint(
-    const ElementPtr& jointElement,
+    const sdf::Joint& joint,
     const Eigen::Isometry3d& parentModelFrame,
     std::string_view name);
 
@@ -1369,9 +1366,15 @@ JointMap readAllJoints(
     const BodyMap& sdfBodyNodes)
 {
   JointMap sdfJoints;
-  ElementEnumerator joints(_skeletonElement, "joint");
-  while (joints.next()) {
-    SDFJoint joint = readJoint(joints.get(), sdfBodyNodes, skeletonFrame);
+  sdf::Model model;
+  (void)model.Load(_skeletonElement);
+  for (uint64_t jointIndex = 0; jointIndex < model.JointCount(); ++jointIndex) {
+    const sdf::Joint* jointDom = model.JointByIndex(jointIndex);
+    if (!jointDom) {
+      continue;
+    }
+
+    SDFJoint joint = readJoint(*jointDom, sdfBodyNodes, skeletonFrame);
 
     if (joint.childName.empty()) {
       DART_ERROR(
@@ -1399,61 +1402,73 @@ JointMap readAllJoints(
   return sdfJoints;
 }
 
-std::vector<SDFJoint::MimicInfo> readMimicElements(
-    const ElementPtr& axisElement)
+std::string_view getSdfJointTypeName(const sdf::JointType type)
 {
-  std::vector<SDFJoint::MimicInfo> mimics;
-  if (!axisElement || !hasElement(axisElement, "mimic")) {
-    return mimics;
+  switch (type) {
+    case sdf::JointType::BALL:
+      return "ball";
+    case sdf::JointType::CONTINUOUS:
+      return "continuous";
+    case sdf::JointType::FIXED:
+      return "fixed";
+    case sdf::JointType::GEARBOX:
+      return "gearbox";
+    case sdf::JointType::PRISMATIC:
+      return "prismatic";
+    case sdf::JointType::REVOLUTE:
+      return "revolute";
+    case sdf::JointType::REVOLUTE2:
+      return "revolute2";
+    case sdf::JointType::SCREW:
+      return "screw";
+    case sdf::JointType::UNIVERSAL:
+      return "universal";
+    case sdf::JointType::INVALID:
+      break;
   }
 
-  const auto mimicElement = getElement(axisElement, "mimic");
-  if (!mimicElement) {
+  return "invalid";
+}
+
+std::vector<SDFJoint::MimicInfo> readMimicElements(const sdf::JointAxis& axis)
+{
+  std::vector<SDFJoint::MimicInfo> mimics;
+  const auto mimic = axis.Mimic();
+  if (!mimic) {
     return mimics;
   }
 
   SDFJoint::MimicInfo info;
-  info.referenceJointName = getAttributeString(mimicElement, "joint");
-  if (hasAttribute(mimicElement, "axis")) {
-    const auto axisAttr = getAttributeString(mimicElement, "axis");
-    info.referenceDof = axisAttr == "axis2" ? 1u : 0u;
-  }
-  info.multiplier = hasElement(mimicElement, "multiplier")
-                        ? getValueDouble(mimicElement, "multiplier")
-                        : 1.0;
-  info.offset = hasElement(mimicElement, "offset")
-                    ? getValueDouble(mimicElement, "offset")
-                    : 0.0;
+  info.referenceJointName = mimic->Joint();
+  info.referenceDof = mimic->Axis() == "axis2" ? 1u : 0u;
+  info.multiplier = mimic->Multiplier();
+  info.offset = mimic->Offset();
   mimics.push_back(info);
 
   return mimics;
 }
 
 SDFJoint readJoint(
-    const ElementPtr& _jointElement,
+    const sdf::Joint& sdfJoint,
     const BodyMap& _sdfBodyNodes,
     const Eigen::Isometry3d& _skeletonFrame)
 {
-  DART_ASSERT(_jointElement != nullptr);
-
   //--------------------------------------------------------------------------
   // Type attribute
-  std::string type = getAttributeString(_jointElement, "type");
-  DART_ASSERT(!type.empty());
-  sdf::Joint sdfJoint;
-  (void)sdfJoint.Load(_jointElement);
   const sdf::JointType sdfType = sdfJoint.Type();
+  std::string type(getSdfJointTypeName(sdfType));
+  DART_ASSERT(!type.empty());
 
   //--------------------------------------------------------------------------
   // Name attribute
-  std::string name = getAttributeString(_jointElement, "name");
+  std::string name = sdfJoint.Name();
 
   //--------------------------------------------------------------------------
   // parent
   BodyMap::const_iterator parent_it = _sdfBodyNodes.end();
 
-  if (hasElement(_jointElement, "parent")) {
-    std::string strParent = getValueString(_jointElement, "parent");
+  if (!sdfJoint.ParentName().empty()) {
+    std::string strParent = sdfJoint.ParentName();
 
     if (strParent != std::string("world")) {
       parent_it = _sdfBodyNodes.find(strParent);
@@ -1476,8 +1491,8 @@ SDFJoint readJoint(
   // child
   BodyMap::const_iterator child_it = _sdfBodyNodes.end();
 
-  if (hasElement(_jointElement, "child")) {
-    std::string strChild = getValueString(_jointElement, "child");
+  if (!sdfJoint.ChildName().empty()) {
+    std::string strChild = sdfJoint.ChildName();
 
     child_it = _sdfBodyNodes.find(strChild);
 
@@ -1502,14 +1517,12 @@ SDFJoint readJoint(
 
   //--------------------------------------------------------------------------
   // Mimic metadata (captured before joint creation)
-  if (hasElement(_jointElement, "axis")) {
-    const ElementPtr& axisElement = getElement(_jointElement, "axis");
-    auto mimics = readMimicElements(axisElement);
+  if (const sdf::JointAxis* axis = sdfJoint.Axis(0)) {
+    auto mimics = readMimicElements(*axis);
     std::ranges::move(mimics, std::back_inserter(newJoint.mimicInfos));
   }
-  if (hasElement(_jointElement, "axis2")) {
-    const ElementPtr& axis2Element = getElement(_jointElement, "axis2");
-    auto mimics = readMimicElements(axis2Element);
+  if (const sdf::JointAxis* axis2 = sdfJoint.Axis(1)) {
+    auto mimics = readMimicElements(*axis2);
     std::ranges::for_each(mimics, [](auto& mimic) {
       mimic.referenceDof = 1u; // axis2 maps to the second DoF
     });
@@ -1528,10 +1541,7 @@ SDFJoint readJoint(
   if (child_it != _sdfBodyNodes.end()) {
     childWorld = child_it->second.initTransform;
   }
-  if (hasElement(_jointElement, "pose")) {
-    childToJoint
-        = getValueIsometry3dWithExtrinsicRotation(_jointElement, "pose");
-  }
+  childToJoint = toEigenIsometry3(sdfJoint.RawPose());
 
   Eigen::Isometry3d parentToJoint
       = parentWorld.inverse() * childWorld * childToJoint;
@@ -1542,36 +1552,36 @@ SDFJoint readJoint(
 
   if (sdfType == sdf::JointType::FIXED || type == std::string("fixed")) {
     newJoint.properties = dynamics::WeldJoint::Properties::createShared(
-        readWeldJoint(_jointElement, parentModelFrame, name));
+        readWeldJoint(sdfJoint, parentModelFrame, name));
   } else if (
       sdfType == sdf::JointType::PRISMATIC
       || type == std::string("prismatic")) {
     newJoint.properties = dynamics::PrismaticJoint::Properties::createShared(
-        readPrismaticJoint(_jointElement, parentModelFrame, name));
+        readPrismaticJoint(sdfJoint, parentModelFrame, name));
   } else if (
       sdfType == sdf::JointType::REVOLUTE
       || sdfType == sdf::JointType::CONTINUOUS
       || type == std::string("revolute")) {
     newJoint.properties = dynamics::RevoluteJoint::Properties::createShared(
-        readRevoluteJoint(_jointElement, parentModelFrame, name));
+        readRevoluteJoint(sdfJoint, parentModelFrame, name));
   } else if (sdfType == sdf::JointType::SCREW || type == std::string("screw")) {
     newJoint.properties = dynamics::ScrewJoint::Properties::createShared(
-        readScrewJoint(_jointElement, parentModelFrame, name));
+        readScrewJoint(sdfJoint, parentModelFrame, name));
   } else if (
       sdfType == sdf::JointType::REVOLUTE2
       || sdfType == sdf::JointType::UNIVERSAL
       || type == std::string("revolute2") || type == std::string("universal")) {
     newJoint.properties = dynamics::UniversalJoint::Properties::createShared(
-        readUniversalJoint(_jointElement, parentModelFrame, name));
+        readUniversalJoint(sdfJoint, parentModelFrame, name));
   } else if (sdfType == sdf::JointType::BALL || type == std::string("ball")) {
     auto ballProperties = dynamics::BallJoint::Properties::createShared();
-    *ballProperties = readBallJoint(_jointElement, parentModelFrame, name);
+    *ballProperties = readBallJoint(sdfJoint, parentModelFrame, name);
     newJoint.properties = ballProperties;
   } else {
     DART_ERROR(
         "Unsupported joint type [{}]. Using [fixed] joint type instead.", type);
     newJoint.properties = dynamics::WeldJoint::Properties::createShared(
-        readWeldJoint(_jointElement, parentModelFrame, name));
+        readWeldJoint(sdfJoint, parentModelFrame, name));
   }
 
   newJoint.type = type;
@@ -1600,7 +1610,7 @@ static void reportMissingElement(
 }
 
 static bool readAxisElement(
-    const ElementPtr& axisElement,
+    const sdf::JointAxis& axisElement,
     const Eigen::Isometry3d& _parentModelFrame,
     Eigen::Vector3d& axis,
     double& lower,
@@ -1612,58 +1622,60 @@ static bool readAxisElement(
     double& spring_stiffness)
 {
   bool hasFinitePositionLimit = false;
+  const ElementPtr axisXmlElement = axisElement.Element();
 
   // use_parent_model_frame
   bool useParentModelFrame = false;
-  if (hasElement(axisElement, "use_parent_model_frame")) {
-    useParentModelFrame = getValueBool(axisElement, "use_parent_model_frame");
+  if (hasElement(axisXmlElement, "use_parent_model_frame")) {
+    useParentModelFrame
+        = getValueBool(axisXmlElement, "use_parent_model_frame");
   }
 
   // xyz
-  Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
+  Eigen::Vector3d xyz = toEigenVector3(axisElement.Xyz());
   if (useParentModelFrame) {
     xyz = _parentModelFrame.rotation() * xyz;
   }
   axis = xyz;
 
   // dynamics
-  if (hasElement(axisElement, "dynamics")) {
-    const ElementPtr& dynamicsElement = getElement(axisElement, "dynamics");
+  if (hasElement(axisXmlElement, "dynamics")) {
+    const ElementPtr& dynamicsElement = getElement(axisXmlElement, "dynamics");
 
     // damping
     if (hasElement(dynamicsElement, "damping")) {
-      damping = getValueDouble(dynamicsElement, "damping");
+      damping = axisElement.Damping();
     }
 
     // friction
     if (hasElement(dynamicsElement, "friction")) {
-      friction = getValueDouble(dynamicsElement, "friction");
+      friction = axisElement.Friction();
     }
 
     // spring reference
     if (hasElement(dynamicsElement, "spring_reference")) {
-      rest = getValueDouble(dynamicsElement, "spring_reference");
+      rest = axisElement.SpringReference();
     }
 
     // spring stiffness
     if (hasElement(dynamicsElement, "spring_stiffness")) {
-      spring_stiffness = getValueDouble(dynamicsElement, "spring_stiffness");
+      spring_stiffness = axisElement.SpringStiffness();
     }
   }
 
   // limit
-  if (hasElement(axisElement, "limit")) {
-    const ElementPtr& limitElement = getElement(axisElement, "limit");
+  if (hasElement(axisXmlElement, "limit")) {
+    const ElementPtr& limitElement = getElement(axisXmlElement, "limit");
 
     // lower
     if (hasElement(limitElement, "lower")) {
-      lower = getValueDouble(limitElement, "lower");
+      lower = axisElement.Lower();
       hasFinitePositionLimit = hasFinitePositionLimit || std::isfinite(lower);
     }
 
     // upper
     if (hasElement(limitElement, "upper")) {
-      upper = getValueDouble(limitElement, "upper");
+      upper = axisElement.Upper();
       hasFinitePositionLimit = hasFinitePositionLimit || std::isfinite(upper);
     }
   }
@@ -1689,29 +1701,23 @@ static bool readAxisElement(
 }
 
 dart::dynamics::WeldJoint::Properties readWeldJoint(
-    const ElementPtr& /*_jointElement*/,
-    const Eigen::Isometry3d&,
-    std::string_view)
+    const sdf::Joint& /*joint*/, const Eigen::Isometry3d&, std::string_view)
 {
   return dynamics::WeldJoint::Properties();
 }
 
 dynamics::RevoluteJoint::Properties readRevoluteJoint(
-    const ElementPtr& _revoluteJointElement,
+    const sdf::Joint& _revoluteJoint,
     const Eigen::Isometry3d& _parentModelFrame,
     std::string_view _name)
 {
-  DART_ASSERT(_revoluteJointElement != nullptr);
-
   dynamics::RevoluteJoint::Properties newRevoluteJoint;
 
   //--------------------------------------------------------------------------
   // axis
-  if (hasElement(_revoluteJointElement, "axis")) {
-    const ElementPtr& axisElement = getElement(_revoluteJointElement, "axis");
-
+  if (const sdf::JointAxis* axisElement = _revoluteJoint.Axis(0)) {
     const bool hasLimitedAxis = readAxisElement(
-        axisElement,
+        *axisElement,
         _parentModelFrame,
         newRevoluteJoint.mAxis,
         newRevoluteJoint.mPositionLowerLimits[0],
@@ -1730,21 +1736,17 @@ dynamics::RevoluteJoint::Properties readRevoluteJoint(
 }
 
 dynamics::PrismaticJoint::Properties readPrismaticJoint(
-    const ElementPtr& _jointElement,
+    const sdf::Joint& _joint,
     const Eigen::Isometry3d& _parentModelFrame,
     std::string_view _name)
 {
-  DART_ASSERT(_jointElement != nullptr);
-
   dynamics::PrismaticJoint::Properties newPrismaticJoint;
 
   //--------------------------------------------------------------------------
   // axis
-  if (hasElement(_jointElement, "axis")) {
-    const ElementPtr& axisElement = getElement(_jointElement, "axis");
-
+  if (const sdf::JointAxis* axisElement = _joint.Axis(0)) {
     const bool hasLimitedAxis = readAxisElement(
-        axisElement,
+        *axisElement,
         _parentModelFrame,
         newPrismaticJoint.mAxis,
         newPrismaticJoint.mPositionLowerLimits[0],
@@ -1763,21 +1765,17 @@ dynamics::PrismaticJoint::Properties readPrismaticJoint(
 }
 
 dynamics::ScrewJoint::Properties readScrewJoint(
-    const ElementPtr& _jointElement,
+    const sdf::Joint& _joint,
     const Eigen::Isometry3d& _parentModelFrame,
     std::string_view _name)
 {
-  DART_ASSERT(_jointElement != nullptr);
-
   dynamics::ScrewJoint::Properties newScrewJoint;
 
   //--------------------------------------------------------------------------
   // axis
-  if (hasElement(_jointElement, "axis")) {
-    const ElementPtr& axisElement = getElement(_jointElement, "axis");
-
+  if (const sdf::JointAxis* axisElement = _joint.Axis(0)) {
     const bool hasLimitedAxis = readAxisElement(
-        axisElement,
+        *axisElement,
         _parentModelFrame,
         newScrewJoint.mAxis,
         newScrewJoint.mPositionLowerLimits[0],
@@ -1793,32 +1791,30 @@ dynamics::ScrewJoint::Properties readScrewJoint(
   }
 
   // pitch
-  if (hasElement(_jointElement, "thread_pitch")) {
-    double pitch = getValueDouble(_jointElement, "thread_pitch");
-    newScrewJoint.mPitch = pitch;
+  const ElementPtr jointElement = _joint.Element();
+  if (hasElement(jointElement, "thread_pitch")) {
+    newScrewJoint.mPitch = _joint.ThreadPitch();
+  } else if (hasElement(jointElement, "screw_thread_pitch")) {
+    newScrewJoint.mPitch = _joint.ScrewThreadPitch();
   }
 
   return newScrewJoint;
 }
 
 dynamics::UniversalJoint::Properties readUniversalJoint(
-    const ElementPtr& _jointElement,
+    const sdf::Joint& _joint,
     const Eigen::Isometry3d& _parentModelFrame,
     std::string_view _name)
 {
-  DART_ASSERT(_jointElement != nullptr);
-
   dynamics::UniversalJoint::Properties newUniversalJoint;
   bool hasLimitedAxis1 = false;
   bool hasLimitedAxis2 = false;
 
   //--------------------------------------------------------------------------
   // axis
-  if (hasElement(_jointElement, "axis")) {
-    const ElementPtr& axisElement = getElement(_jointElement, "axis");
-
+  if (const sdf::JointAxis* axisElement = _joint.Axis(0)) {
     hasLimitedAxis1 = readAxisElement(
-        axisElement,
+        *axisElement,
         _parentModelFrame,
         newUniversalJoint.mAxis[0],
         newUniversalJoint.mPositionLowerLimits[0],
@@ -1834,11 +1830,9 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
 
   //--------------------------------------------------------------------------
   // axis2
-  if (hasElement(_jointElement, "axis2")) {
-    const ElementPtr& axis2Element = getElement(_jointElement, "axis2");
-
+  if (const sdf::JointAxis* axis2Element = _joint.Axis(1)) {
     hasLimitedAxis2 = readAxisElement(
-        axis2Element,
+        *axis2Element,
         _parentModelFrame,
         newUniversalJoint.mAxis[1],
         newUniversalJoint.mPositionLowerLimits[1],
@@ -1859,9 +1853,7 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
 }
 
 dynamics::BallJoint::Properties readBallJoint(
-    const ElementPtr& /*_jointElement*/,
-    const Eigen::Isometry3d&,
-    std::string_view)
+    const sdf::Joint& /*joint*/, const Eigen::Isometry3d&, std::string_view)
 {
   return dynamics::BallJoint::Properties();
 }

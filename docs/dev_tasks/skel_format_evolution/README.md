@@ -45,7 +45,12 @@
       shape comparisons.
       Parser-side SDF visual/collision/material reads now use libsdformat DOM
       values for standard names, local poses, geometry, and diffuse colors
-      rather than raw XML-level parsing.
+      rather than raw XML-level parsing. Parser-side SDF joint reads now use
+      libsdformat DOM values for model joint traversal, joint name/type,
+      parent/child links, local pose, axis vectors, axis dynamics, finite
+      limits, mimic metadata, and legacy or modern screw pitch values; XML
+      checks remain only where DART needs authored/default presence or legacy
+      `use_parent_model_frame` compatibility.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor
       save-load belongs to the scene/project layer. Broader SDF coverage, URDF
