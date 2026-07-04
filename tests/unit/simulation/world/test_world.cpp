@@ -25012,11 +25012,14 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   const Eigen::VectorXd initialTorque = Eigen::VectorXd::LinSpaced(6, 1.5, 2.0);
   const Eigen::VectorXd initialCommandVelocity
       = Eigen::VectorXd::LinSpaced(6, -0.75, -0.25);
+  const Eigen::VectorXd initialCommandAcceleration
+      = Eigen::VectorXd::LinSpaced(6, 0.25, 0.75);
   const double initialBreakForce = 100.0;
   joint.setPosition(initialPosition);
   joint.setVelocity(initialVelocity);
   joint.setForce(initialTorque);
   joint.setCommandVelocity(initialCommandVelocity);
+  joint.setCommandAcceleration(initialCommandAcceleration);
   joint.setBreakForce(initialBreakForce);
 
   auto& registry = sx::detail::registryOf(world);
@@ -25039,6 +25042,7 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   joint.setVelocity(Eigen::VectorXd::Constant(6, -2.0));
   joint.setForce(Eigen::VectorXd::Constant(6, -3.0));
   joint.setCommandVelocity(Eigen::VectorXd::Constant(6, -4.0));
+  joint.setCommandAcceleration(Eigen::VectorXd::Constant(6, -5.0));
   jointState.broken = true;
   linkComponent.externalForce.setZero();
 
@@ -25048,6 +25052,8 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   EXPECT_TRUE(joint.getVelocity().isApprox(initialVelocity));
   EXPECT_TRUE(joint.getForce().isApprox(initialTorque));
   EXPECT_TRUE(joint.getCommandVelocity().isApprox(initialCommandVelocity));
+  EXPECT_TRUE(
+      joint.getCommandAcceleration().isApprox(initialCommandAcceleration));
   EXPECT_DOUBLE_EQ(joint.getBreakForce(), initialBreakForce);
   EXPECT_FALSE(joint.isBroken());
   EXPECT_TRUE(registry.get<sx::comps::LinkControl>(linkEntity)

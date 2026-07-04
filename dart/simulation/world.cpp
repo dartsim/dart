@@ -376,7 +376,8 @@ struct World::ReplayState
         velocity(allocator),
         acceleration(allocator),
         torque(allocator),
-        commandVelocity(allocator)
+        commandVelocity(allocator),
+        commandAcceleration(allocator)
     {
       // Empty.
     }
@@ -388,6 +389,7 @@ struct World::ReplayState
     VectorState acceleration;
     VectorState torque;
     VectorState commandVelocity;
+    VectorState commandAcceleration;
     bool broken = false;
   };
 
@@ -5635,6 +5637,8 @@ void World::prepareDeactivationForStep()
                     || jointActuation->torque.squaredNorm()
                            > disturbanceThresholdSquared
                     || jointActuation->commandVelocity.squaredNorm()
+                           > disturbanceThresholdSquared
+                    || jointActuation->commandAcceleration.squaredNorm()
                            > disturbanceThresholdSquared;
       }
       for (const auto linkEntity : structure.links) {
@@ -5863,6 +5867,8 @@ void World::updateDeactivationAfterStep()
                       || jointActuation->torque.squaredNorm()
                              > disturbanceThresholdSquared
                       || jointActuation->commandVelocity.squaredNorm()
+                             > disturbanceThresholdSquared
+                      || jointActuation->commandAcceleration.squaredNorm()
                              > disturbanceThresholdSquared;
         }
       }
@@ -7373,6 +7379,8 @@ void World::restoreReplayFrame(std::size_t index)
     restoreReplayVector(state.acceleration, jointState.acceleration);
     restoreReplayVector(state.torque, jointActuation.torque);
     restoreReplayVector(state.commandVelocity, jointActuation.commandVelocity);
+    restoreReplayVector(
+        state.commandAcceleration, jointActuation.commandAcceleration);
     jointState.broken = state.broken;
   }
 
@@ -7566,6 +7574,8 @@ void World::recordReplayFrame()
     captureReplayVector(jointState.acceleration, state.acceleration);
     captureReplayVector(jointActuation.torque, state.torque);
     captureReplayVector(jointActuation.commandVelocity, state.commandVelocity);
+    captureReplayVector(
+        jointActuation.commandAcceleration, state.commandAcceleration);
     state.broken = jointState.broken;
     replayFrame.joints.push_back(std::move(state));
   }
