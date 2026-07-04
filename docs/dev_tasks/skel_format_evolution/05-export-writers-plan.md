@@ -83,7 +83,9 @@ XML text fallback parsing.
 Writer-side preservation of disabled link gravity and schema-preferred SDF
 1.10+ screw pitch still patches sdformat's serialized element tree, but the
 link/joint names and values now come from the typed `sdf::Model`,
-`sdf::Link`, and `sdf::Joint` DOM rather than from serialized XML attributes.
+`sdf::Link`, and `sdf::Joint` DOM rather than from serialized XML attributes,
+and required patch targets are found by direct sdformat child traversal instead
+of schema lookup.
 
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.

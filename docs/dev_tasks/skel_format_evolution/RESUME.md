@@ -115,7 +115,9 @@ The SDF writer's post-serialization preservation path now uses typed
 `sdf::Model`, `sdf::Link`, and `sdf::Joint` DOM values for link/joint names,
 gravity modes, and screw pitch values. It still patches sdformat's element tree
 for fields that `Root::ToElement()` omits or emits under the deprecated tag,
-but it no longer reads serialized XML attributes back from that tree.
+but it no longer reads serialized XML attributes back from that tree, and the
+patch path now finds generated sdformat children by direct child/sibling
+traversal instead of `FindElement` schema lookup.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -350,6 +352,13 @@ Additional validation for removing SDF helper value parsers:
 - `pixi run lint`
 - `pixi run build`
 
+Additional validation for direct SDF writer patch traversal:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run lint`
+- `pixi run build`
+
 Changelog decision:
 
 - Mode: draft
@@ -408,7 +417,7 @@ Changelog decision:
   preserving DART's authored/default behavior. No additional separate entry is
   needed for removing the SDF helper XML text fallback parser because it is an
   internal detail-helper cleanup that moves the existing DART extension bridge
-  onto sdformat typed parameter conversion under the same libsdformat
+  onto sdformat typed `Element::Get<T>` access under the same libsdformat
   normalization entry. No additional separate entry is needed for removing SDF
   writer serialized-attribute reads because it is an internal implementation
   cleanup that keeps the existing conservative SDF writer behavior while using
@@ -445,6 +454,10 @@ Changelog decision:
   restitution field. No additional separate entry is needed for removing SDF
   helper value parsers because it is an internal helper-surface narrowing that
   keeps remaining DART extension parsing on sdformat typed element access.
+  No additional separate entry is needed for direct SDF writer patch traversal
+  because it is an internal implementation cleanup that keeps the existing
+  conservative SDF writer behavior while avoiding schema lookup in the
+  sdformat element patch path.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

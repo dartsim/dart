@@ -87,7 +87,9 @@
       Writer-side preservation of disabled link gravity and SDF 1.10+
       `<screw_thread_pitch>` now derives names and values from typed
       `sdf::Model` / `sdf::Link` / `sdf::Joint` DOM objects instead of reading
-      serialized XML attributes back out of sdformat's element tree.
+      serialized XML attributes back out of sdformat's element tree, and its
+      required element-tree patching now uses direct sdformat child traversal
+      instead of schema lookup.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor
       save-load belongs to the scene/project layer. Broader SDF coverage, URDF
@@ -232,4 +234,6 @@ SKEL-YAML direction just because the prototype once existed.
   validates only the retained presence/lookup bridge instead of the removed
   generic XML helper APIs, including non-mutating sdformat child traversal,
   explicit-authored presence checks, and the removed SDF-specific boolean,
-  scalar, vector, pose, and XML text fallback parsers.
+  scalar, vector, pose, and XML text fallback parsers. SDF writer patching of
+  gravity, modern screw pitch, and bounce restitution is covered by
+  `INTEGRATION_io_SdfWriter` and now uses direct sdformat child traversal.

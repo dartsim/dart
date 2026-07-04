@@ -205,13 +205,51 @@ WriteResult ok()
   return WriteResult::ok();
 }
 
+sdf::ElementPtr findChildElement(
+    const sdf::ElementPtr& parent, std::string_view name)
+{
+  if (!parent || name.empty()) {
+    return nullptr;
+  }
+
+  const std::string nameString(name);
+  sdf::ElementPtr childElement = parent->GetFirstElement();
+  while (childElement) {
+    if (childElement->GetName() == nameString) {
+      return childElement;
+    }
+    childElement = childElement->GetNextElement();
+  }
+
+  return nullptr;
+}
+
+sdf::ElementPtr findNextSiblingElement(
+    const sdf::ElementPtr& element, std::string_view name)
+{
+  if (!element || name.empty()) {
+    return nullptr;
+  }
+
+  const std::string nameString(name);
+  sdf::ElementPtr siblingElement = element->GetNextElement();
+  while (siblingElement) {
+    if (siblingElement->GetName() == nameString) {
+      return siblingElement;
+    }
+    siblingElement = siblingElement->GetNextElement();
+  }
+
+  return nullptr;
+}
+
 WriteResult setBoolElement(
     const sdf::ElementPtr& parent,
     std::string_view elementName,
     bool value,
     std::string_view context)
 {
-  sdf::ElementPtr element = parent->FindElement(std::string(elementName));
+  sdf::ElementPtr element = findChildElement(parent, elementName);
   if (!element) {
     element = std::make_shared<sdf::Element>();
     element->SetName(std::string(elementName));
@@ -235,7 +273,7 @@ WriteResult setDoubleElement(
     double value,
     std::string_view context)
 {
-  sdf::ElementPtr element = parent->FindElement(std::string(elementName));
+  sdf::ElementPtr element = findChildElement(parent, elementName);
   if (!element) {
     element = std::make_shared<sdf::Element>();
     element->SetName(std::string(elementName));
@@ -258,7 +296,7 @@ WriteResult findOrCreateElement(
     std::string_view elementName,
     sdf::ElementPtr& element)
 {
-  element = parent->FindElement(std::string(elementName));
+  element = findChildElement(parent, elementName);
   if (element) {
     return ok();
   }
@@ -273,12 +311,12 @@ WriteResult findOrCreateElement(
 WriteResult preserveFalseLinkGravity(
     const sdf::ElementPtr& rootElement, const sdf::Model& model)
 {
-  const sdf::ElementPtr modelElement = rootElement->FindElement("model");
+  const sdf::ElementPtr modelElement = findChildElement(rootElement, "model");
   if (!modelElement) {
     return fail("sdformat failed to serialize the SDF model.");
   }
 
-  sdf::ElementPtr linkElement = modelElement->FindElement("link");
+  sdf::ElementPtr linkElement = findChildElement(modelElement, "link");
   for (uint64_t i = 0; i < model.LinkCount(); ++i) {
     const sdf::Link* link = model.LinkByIndex(i);
     if (!link || !linkElement) {
@@ -286,7 +324,7 @@ WriteResult preserveFalseLinkGravity(
     }
 
     if (link->EnableGravity()) {
-      linkElement = linkElement->GetNextElement("link");
+      linkElement = findNextSiblingElement(linkElement, "link");
       continue;
     }
 
@@ -299,7 +337,7 @@ WriteResult preserveFalseLinkGravity(
       return result;
     }
 
-    linkElement = linkElement->GetNextElement("link");
+    linkElement = findNextSiblingElement(linkElement, "link");
   }
 
   return ok();
@@ -309,16 +347,16 @@ WriteResult setModernScrewThreadPitchElement(
     const sdf::ElementPtr& jointElement, double pitch, std::string_view context)
 {
   sdf::ElementPtr pitchElement
-      = jointElement->FindElement("screw_thread_pitch");
+      = findChildElement(jointElement, "screw_thread_pitch");
   if (!pitchElement) {
-    pitchElement = jointElement->FindElement("thread_pitch");
+    pitchElement = findChildElement(jointElement, "thread_pitch");
     if (pitchElement) {
       pitchElement->SetName("screw_thread_pitch");
     }
   }
 
   while (sdf::ElementPtr legacyElement
-         = jointElement->FindElement("thread_pitch")) {
+         = findChildElement(jointElement, "thread_pitch")) {
     jointElement->RemoveChild(legacyElement);
   }
 
@@ -334,12 +372,12 @@ WriteResult preserveModernScrewThreadPitch(
     return ok();
   }
 
-  const sdf::ElementPtr modelElement = rootElement->FindElement("model");
+  const sdf::ElementPtr modelElement = findChildElement(rootElement, "model");
   if (!modelElement) {
     return fail("sdformat failed to serialize the SDF model.");
   }
 
-  sdf::ElementPtr jointElement = modelElement->FindElement("joint");
+  sdf::ElementPtr jointElement = findChildElement(modelElement, "joint");
   for (uint64_t i = 0; i < model.JointCount(); ++i) {
     const sdf::Joint* joint = model.JointByIndex(i);
     if (!joint || !jointElement) {
@@ -347,7 +385,7 @@ WriteResult preserveModernScrewThreadPitch(
     }
 
     if (joint->Type() != sdf::JointType::SCREW) {
-      jointElement = jointElement->GetNextElement("joint");
+      jointElement = findNextSiblingElement(jointElement, "joint");
       continue;
     }
 
@@ -362,7 +400,7 @@ WriteResult preserveModernScrewThreadPitch(
       return result;
     }
 
-    jointElement = jointElement->GetNextElement("joint");
+    jointElement = findNextSiblingElement(jointElement, "joint");
   }
 
   return ok();
@@ -377,12 +415,12 @@ WriteResult preserveCollisionRestitution(
     return ok();
   }
 
-  const sdf::ElementPtr modelElement = rootElement->FindElement("model");
+  const sdf::ElementPtr modelElement = findChildElement(rootElement, "model");
   if (!modelElement) {
     return fail("sdformat failed to serialize the SDF model.");
   }
 
-  sdf::ElementPtr linkElement = modelElement->FindElement("link");
+  sdf::ElementPtr linkElement = findChildElement(modelElement, "link");
   for (std::size_t i = 0; i < skeleton.getNumBodyNodes(); ++i) {
     const auto* bodyNode = skeleton.getBodyNode(i);
     if (!bodyNode || !linkElement) {
@@ -390,7 +428,8 @@ WriteResult preserveCollisionRestitution(
     }
 
     WriteResult result = ok();
-    sdf::ElementPtr collisionElement = linkElement->FindElement("collision");
+    sdf::ElementPtr collisionElement
+        = findChildElement(linkElement, "collision");
     bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
         [&](const dynamics::ShapeNode* shapeNode) {
           if (result.isErr()) {
@@ -441,13 +480,14 @@ WriteResult preserveCollisionRestitution(
             }
           }
 
-          collisionElement = collisionElement->GetNextElement("collision");
+          collisionElement
+              = findNextSiblingElement(collisionElement, "collision");
         });
     if (result.isErr()) {
       return result;
     }
 
-    linkElement = linkElement->GetNextElement("link");
+    linkElement = findNextSiblingElement(linkElement, "link");
   }
 
   return ok();
