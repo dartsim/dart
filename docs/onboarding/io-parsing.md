@@ -153,7 +153,7 @@ dynamics metadata (damping, Coulomb friction, spring reference, and spring
 stiffness), screw thread pitch, SDF 1.11+ mimic metadata for axis/axis2
 follower joints with motor enforcement, topology-only ball child joints, link
 gravity mode, inertial parameters, local joint/shape poses, and
-box/sphere/cylinder/mesh
+box/sphere/cylinder/ellipsoid/mesh
 visual or collision geometry with explicit visual material colors. The
 round-trip coverage includes absolute non-file mesh URI preservation through a
 custom retriever. Targetless relative mesh references and relative or

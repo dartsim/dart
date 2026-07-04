@@ -24,8 +24,8 @@ dynamics metadata (damping, Coulomb friction, spring reference, and spring
 stiffness), screw thread pitch, topology-only ball child joints, SDF 1.11+
 mimic metadata for axis/axis2 follower joints with motor enforcement, link
 gravity mode, inertial parameters, local joint/shape poses,
-box/sphere/cylinder/mesh visual or collision geometry, and explicit visual
-material colors as SDF `<diffuse>` values. Absolute non-file mesh URI
+box/sphere/cylinder/ellipsoid/mesh visual or collision geometry, and explicit
+visual material colors as SDF `<diffuse>` values. Absolute non-file mesh URI
 preservation is covered through a custom retriever-backed write/read test.
 Targetless relative mesh references and relative or host-qualified `file` mesh
 URIs are rejected because the writer has no destination SDF URI for
@@ -109,9 +109,9 @@ Phase 5 is complete only when code and tests prove the writer contract:
 
 - Extend the SDF writer contract beyond the first conservative subset when
   tests can prove additional joint aliases or edge cases beyond continuous
-  revolute joints, shapes, mesh material variants, destination-aware resource
-  rewriting, default/world gravity, or other world-level data round-trip
-  correctly.
+  revolute joints, additional shapes beyond ellipsoid, mesh material variants,
+  destination-aware resource rewriting, default/world gravity, or other
+  world-level data round-trip correctly.
 - Decide the next implementation target: URDF writer or PLAN-101 project
   save/load.
 - Keep YAML out of the first implementation target unless a durable

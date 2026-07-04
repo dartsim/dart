@@ -37,11 +37,13 @@
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
+#include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 
 #include <sdf/Box.hh>
 #include <sdf/Cylinder.hh>
+#include <sdf/Ellipsoid.hh>
 #include <sdf/Geometry.hh>
 #include <sdf/Mesh.hh>
 #include <sdf/Plane.hh>
@@ -90,6 +92,17 @@ dynamics::ShapePtr readCylinderShape(const sdf::Geometry& geometry)
 
   return std::make_shared<dynamics::CylinderShape>(
       cylinder->Radius(), cylinder->Length());
+}
+
+dynamics::ShapePtr readEllipsoidShape(const sdf::Geometry& geometry)
+{
+  const sdf::Ellipsoid* ellipsoid = geometry.EllipsoidShape();
+  if (!ellipsoid) {
+    return nullptr;
+  }
+
+  return std::make_shared<dynamics::EllipsoidShape>(
+      toEigenVector3(ellipsoid->Radii()) * 2.0);
 }
 
 dynamics::ShapePtr readPlaneShape(const sdf::Geometry& geometry)
@@ -169,6 +182,8 @@ dynamics::ShapePtr readGeometryShape(
       return readBoxShape(geometry);
     case sdf::GeometryType::CYLINDER:
       return readCylinderShape(geometry);
+    case sdf::GeometryType::ELLIPSOID:
+      return readEllipsoidShape(geometry);
     case sdf::GeometryType::PLANE:
       return readPlaneShape(geometry);
     case sdf::GeometryType::MESH:

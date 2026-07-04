@@ -38,6 +38,7 @@
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
+#include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/joint.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
@@ -53,6 +54,7 @@
 #include <sdf/Box.hh>
 #include <sdf/Collision.hh>
 #include <sdf/Cylinder.hh>
+#include <sdf/Ellipsoid.hh>
 #include <sdf/Geometry.hh>
 #include <sdf/Joint.hh>
 #include <sdf/JointAxis.hh>
@@ -396,6 +398,18 @@ GeometryResult makeGeometry(const dynamics::Shape& shape)
     sdfCylinder.SetLength(height);
     geometry.SetType(sdf::GeometryType::CYLINDER);
     geometry.SetCylinderShape(sdfCylinder);
+  } else if (
+      const auto* ellipsoid
+      = dynamic_cast<const dynamics::EllipsoidShape*>(&shape)) {
+    const Eigen::Vector3d& diameters = ellipsoid->getDiameters();
+    if (!isFinite(diameters)) {
+      return GeometryResult::err(WriteError(
+          "Cannot write SDF ellipsoid geometry with non-finite diameters."));
+    }
+    sdf::Ellipsoid sdfEllipsoid;
+    sdfEllipsoid.SetRadii(toGzVector3(diameters * 0.5));
+    geometry.SetType(sdf::GeometryType::ELLIPSOID);
+    geometry.SetEllipsoidShape(sdfEllipsoid);
   } else if (
       const auto* mesh = dynamic_cast<const dynamics::MeshShape*>(&shape)) {
     const common::Uri& meshUri = mesh->getMeshUri2();

@@ -204,7 +204,8 @@ compatibility remains on the active DART 6 LTS branch._
   revolute/continuous/prismatic/weld/screw/universal joints with
   damping/friction/spring metadata, screw thread pitch, topology-only ball
   joints, link gravity mode, local poses, inertial data, primitive or mesh
-  visual/collision geometry, and explicit visual material colors while
+  visual/collision geometry including ellipsoids, and explicit visual material
+  colors while
   reporting unsupported constructs explicitly.
 - Improved mesh and asset import behavior across convex meshes, polygon meshes,
   Collada scaling, GLTF PBR materials, empty mesh URIs, and sample robot data.

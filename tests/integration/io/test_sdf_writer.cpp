@@ -41,6 +41,7 @@
 
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/cone_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
@@ -339,6 +340,10 @@ dynamics::SkeletonPtr makeRoundTripSkeleton()
   universalTip->createShapeNodeWith<dynamics::CollisionAspect>(
       std::make_shared<dynamics::CylinderShape>(0.04, 0.18),
       "universal_tip_collision");
+  universalTip->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::EllipsoidShape>(
+          Eigen::Vector3d(0.12, 0.16, 0.2)),
+      "universal_tip_ellipsoid");
 
   dynamics::BallJoint::Properties ballProperties;
   ballProperties.mName = "ball_socket";
@@ -392,6 +397,7 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   EXPECT_NE(
       writeResult.value().find("<joint name='ball_socket' type='ball'>"),
       std::string::npos);
+  EXPECT_NE(writeResult.value().find("<ellipsoid>"), std::string::npos);
   EXPECT_NE(
       writeResult.value().find("<damping>0.25</damping>"), std::string::npos);
   EXPECT_NE(
@@ -566,6 +572,14 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   ASSERT_NE(universalTipCylinder, nullptr);
   EXPECT_NEAR(universalTipCylinder->getRadius(), 0.04, 1e-12);
   EXPECT_NEAR(universalTipCylinder->getHeight(), 0.18, 1e-12);
+  const auto* universalTipEllipsoid
+      = test::requireShape<dynamics::VisualAspect, dynamics::EllipsoidShape>(
+          *universalTip, 0, 1);
+  ASSERT_NE(universalTipEllipsoid, nullptr);
+  EXPECT_VECTOR_NEAR(
+      universalTipEllipsoid->getDiameters(),
+      Eigen::Vector3d(0.12, 0.16, 0.2),
+      1e-12);
 
   const auto* ballTipSphere
       = test::requireShape<dynamics::CollisionAspect, dynamics::SphereShape>(
@@ -916,8 +930,7 @@ TEST(SdfWriter, UnsupportedShapeReturnsError)
   (void)joint;
   body->setName("body");
   body->createShapeNodeWith<dynamics::VisualAspect>(
-      std::make_shared<dynamics::EllipsoidShape>(Eigen::Vector3d::Ones()),
-      "ellipsoid");
+      std::make_shared<dynamics::ConeShape>(0.5, 1.0), "cone");
 
   const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());

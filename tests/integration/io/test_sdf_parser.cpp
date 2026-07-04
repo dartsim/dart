@@ -627,6 +627,42 @@ TEST(SdfParser, PlaneGeometryReadsAsThinBox)
 }
 
 //==============================================================================
+TEST(SdfParser, EllipsoidGeometryReadsAsEllipsoidShape)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/ellipsoid_geometry/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.11">
+  <model name="ellipsoid_geometry">
+    <link name="link">
+      <inertial><mass>1.0</mass></inertial>
+      <visual name="ellipsoid_visual">
+        <geometry>
+          <ellipsoid>
+            <radii>0.1 0.2 0.3</radii>
+          </ellipsoid>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+  auto* visual = body->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visual, nullptr);
+  const auto ellipsoid
+      = std::dynamic_pointer_cast<dynamics::EllipsoidShape>(visual->getShape());
+  ASSERT_NE(ellipsoid, nullptr);
+  EXPECT_TRUE(
+      ellipsoid->getDiameters().isApprox(Eigen::Vector3d(0.2, 0.4, 0.6)));
+}
+
+//==============================================================================
 TEST(SdfParser, AxisLimitsSetInitialMidpoint)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();

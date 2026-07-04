@@ -38,8 +38,9 @@ primitive or mesh geometry, link gravity mode, passive joint dynamics metadata
 (damping, Coulomb friction, spring reference, and spring stiffness), screw
 thread pitch, SDF 1.11+ axis/axis2 mimic metadata with motor enforcement,
 topology-only ball child joints, local root/joint/shape poses, explicit visual
-material colors, and absolute non-file mesh URI preservation through a custom
-retriever. Continuous SDF joints now parse as unbounded DART
+material colors, ellipsoid geometry, and absolute non-file mesh URI
+preservation through a custom retriever. Continuous SDF joints now parse as
+unbounded DART
 `RevoluteJoint`s, and unbounded DART revolute joints write back as SDF
 `continuous` while finite-limit revolute joints stay `revolute`. Targetless
 relative/generated mesh references, including relative or host-qualified file
@@ -54,9 +55,10 @@ non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
 targets are implemented or durably deferred.
 
 The supported SDF geometry reader paths now load through libsdformat
-`sdf::Geometry` DOM objects before mapping sphere, box, cylinder, plane, and
-mesh shapes into DART shapes; this preserves the existing plane-as-thin-box and
-resource-retrieved mesh behavior without adding new raw XML-level parsing.
+`sdf::Geometry` DOM objects before mapping sphere, box, cylinder, ellipsoid,
+plane, and mesh shapes into DART shapes; this preserves the existing
+plane-as-thin-box and resource-retrieved mesh behavior without adding new raw
+XML-level parsing.
 The model/link body-node reader also now uses libsdformat `sdf::Model` and
 `sdf::Link` DOM values for model name/static/pose and link name/gravity/pose
 plus inertial mass, center of mass, and inertia tensor values; XML presence
@@ -145,6 +147,11 @@ Additional validation for joint SDF DOM reads:
 
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 
+Additional validation for ellipsoid SDF DOM geometry reads and writes:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
 Changelog decision:
 
 - Mode: draft
@@ -175,6 +182,9 @@ Changelog decision:
   conservative SDF writer/parser round-trip surface before the implementation PR
   exists. No additional entry is needed for joint SDF DOM reads because they
   harden the same conservative SDF writer/parser round-trip surface before the
+  implementation PR exists. No additional separate entry is needed for
+  ellipsoid SDF geometry reads and writes because the existing conservative SDF
+  writer changelog bullet now includes the broadened geometry subset before the
   implementation PR exists.
 
 ## Previous Resume Checkpoint (2026-07-03)
