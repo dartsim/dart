@@ -51,6 +51,7 @@
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/screw_joint.hpp>
 #include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
@@ -1051,6 +1052,13 @@ WriteResult buildLink(
     return fail(
         "Cannot write SDF link [" + bodyNode.getName()
         + "] with a non-finite pose.");
+  }
+  if (bodyNode.asSoftBodyNode()) {
+    return fail(
+        "Cannot write DART SoftBodyNode [" + bodyNode.getName()
+        + "] as an SDF link because this writer has no sdformat-backed "
+          "soft-body contract for DART point masses, springs, damping, or "
+          "soft mesh topology.");
   }
 
   link.SetName(bodyNode.getName());

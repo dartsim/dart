@@ -56,7 +56,9 @@
       resource diagnostics now have focused coverage. Invalid collision-surface
       friction and restitution values, non-default visual reflectance, and
       non-default DART mesh color/alpha render policies now fail with explicit
-      diagnostics. The
+      diagnostics. DART `SoftBodyNode` writer attempts now fail with a targeted
+      diagnostic instead of being serialized as ordinary SDF links with
+      point-mass, spring, damping, and soft mesh topology semantics dropped. The
       writer test now uses a shared IO round-trip assertion helper for body,
       joint, DoF,
       inertia, and shape comparisons.
@@ -240,6 +242,9 @@ SKEL-YAML direction just because the prototype once existed.
   destination-URI/resource policy gaps. Non-default DART mesh color/alpha
   render policies now have targeted diagnostics because SDF mesh DOM objects
   preserve URI/scale/submesh selection, not DART's runtime render-policy modes.
+  DART `SoftBodyNode` export now has a targeted diagnostic because this SDF
+  writer has no sdformat-backed contract for DART point masses, springs,
+  damping, or soft mesh topology.
   Shape-level and body-level
   collision-surface contact bitmask disables, zero-threshold bounce restitution,
   ODE friction

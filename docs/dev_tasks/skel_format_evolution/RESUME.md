@@ -62,10 +62,10 @@ coupler-style mimic diagnostics, non-finite visual material diagnostics,
 invalid PBR material diagnostics, unsupported visual reflectance diagnostics,
 non-default DART mesh color/alpha render-policy diagnostics, non-finite screw
 pitch diagnostics, invalid collision-surface friction/restitution diagnostics,
-unsupported ball-joint metadata, and
-non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
-5 is still open until broader SDF coverage plus the remaining accepted writer
-targets are implemented or durably deferred.
+unsupported ball-joint metadata, unsupported DART `SoftBodyNode` diagnostics,
+and non-finite joint dynamics diagnostics. This is real Phase 5 progress, but
+Phase 5 is still open until broader SDF coverage plus the remaining accepted
+writer targets are implemented or durably deferred.
 
 The supported SDF geometry reader paths now load through libsdformat
 `sdf::Geometry` DOM objects before mapping sphere, box, cylinder, capsule,
@@ -152,6 +152,10 @@ Non-default DART `MeshShape` color and alpha modes now fail with targeted
 diagnostics on SDF visual export. sdformat's typed `sdf::Mesh` DOM preserves
 URI, scale, and submesh selection, but not DART's runtime mesh render-policy
 modes, so accepting those meshes would silently drop visual behavior.
+DART `SoftBodyNode` export now fails with a targeted diagnostic before the
+writer builds an `sdf::Link`. This avoids serializing a soft body as an
+ordinary link and dropping DART point-mass, spring, damping, or soft mesh
+topology semantics.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -237,6 +241,48 @@ Additional validation for DART mesh render-policy diagnostics:
 - Local gates: passed.
 
   ```bash
+  pixi run lint
+  pixi run build
+  pixi run test-unit
+  ```
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: `origin/main`
+- Scope evidence: focused diff in `dart/utils/sdf/sdf_writer.cpp`,
+  `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
+  and this SKEL evolution task folder
+- Decision: no entry required
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: No separate changelog entry is needed because this slice
+  tightens explicit unsupported diagnostics under the existing DART 7 IO and
+  Parsing SDF writer entry, which already describes unsupported constructs being
+  reported explicitly.
+- Follow-up: none
+
+Additional validation for DART `SoftBodyNode` writer diagnostics:
+
+- Focused control failed before the writer change because the writer reported a
+  lower-level unsupported shape instead of naming the lost soft-body contract.
+
+  ```bash
+  pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.SoftBodyNodeReturnsExplicitUnsupportedError'
+  ```
+
+- Focused candidate passed with the same command.
+
+- Full writer target: passed.
+
+  ```bash
+  pixi run run-cpp-target INTEGRATION_io_SdfWriter
+  ```
+
+- Local gates: passed.
+
+  ```bash
+  git diff --check
   pixi run lint
   pixi run build
   pixi run test-unit

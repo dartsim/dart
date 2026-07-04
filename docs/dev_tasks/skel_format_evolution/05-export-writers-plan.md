@@ -53,11 +53,11 @@ missing mesh URIs, pre-SDF-1.11 mimic output, coupler-style mimic enforcement,
 non-finite material colors, invalid PBR material factors, non-default visual
 reflectance, non-default DART mesh color/alpha render policies, non-finite
 screw pitch, invalid collision-surface friction or restitution, unsupported
-ball-joint metadata, and non-finite joint dynamics return `common::Result`
-errors instead of being silently dropped. DART `PlaneShape`, `HeightmapShape`,
-and `ConvexMeshShape` now report targeted policy diagnostics for the missing
-finite SDF plane size, source heightmap URI/resource policy, or destination URI
-for generated mesh resources.
+ball-joint metadata, unsupported DART `SoftBodyNode` export, and non-finite
+joint dynamics return `common::Result` errors instead of being silently dropped.
+DART `PlaneShape`, `HeightmapShape`, and `ConvexMeshShape` now report targeted
+policy diagnostics for the missing finite SDF plane size, source heightmap
+URI/resource policy, or destination URI for generated mesh resources.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,

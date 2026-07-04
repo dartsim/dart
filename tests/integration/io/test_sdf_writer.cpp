@@ -56,6 +56,7 @@
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/screw_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
@@ -1897,6 +1898,35 @@ TEST(SdfWriter, UnsupportedShapeReturnsError)
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("Unsupported shape type"), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, SoftBodyNodeReturnsExplicitUnsupportedError)
+{
+  auto skeleton = dynamics::Skeleton::create("soft_body_writer");
+
+  dynamics::SoftBodyNode::UniqueProperties softProperties;
+  softProperties.addPointMass(
+      dynamics::PointMass::Properties(Eigen::Vector3d::Zero(), 0.1));
+  softProperties.addPointMass(
+      dynamics::PointMass::Properties(Eigen::Vector3d(0.1, 0.0, 0.0), 0.1));
+  softProperties.connectPointMasses(0, 1);
+
+  dynamics::BodyNode::Properties bodyProperties;
+  bodyProperties.mName = "soft_body";
+  bodyProperties.mInertia.setMass(0.2);
+  dynamics::SoftBodyNode::Properties properties(bodyProperties, softProperties);
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<
+      dynamics::FreeJoint,
+      dynamics::SoftBodyNode>(
+      nullptr, dynamics::FreeJoint::Properties(), properties);
+  (void)joint;
+  ASSERT_NE(body, nullptr);
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("DART SoftBodyNode"), std::string::npos);
 }
 
 //==============================================================================
