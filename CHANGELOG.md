@@ -207,8 +207,8 @@ compatibility remains on the active DART 6 LTS branch._
   topology-only ball joints, link gravity mode, local poses, inertial data,
   box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual/collision geometry,
   visual material colors plus PBR metallic/roughness factors, and collision
-  surface contact disable bitmasks plus ODE friction/slip metadata while
-  reporting unsupported constructs explicitly.
+  surface contact disable bitmasks, zero-threshold bounce restitution, and ODE
+  friction/slip metadata while reporting unsupported constructs explicitly.
 - Improved mesh and asset import behavior across convex meshes, polygon meshes,
   Collada scaling, GLTF PBR materials, empty mesh URIs, and sample robot data.
 

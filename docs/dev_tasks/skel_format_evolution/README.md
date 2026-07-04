@@ -35,21 +35,22 @@
       mimic metadata, universal two-axis joints, continuous revolute joints,
       topology-only ball joints, capsule/cone/ellipsoid geometry, explicit
       visual material colors, PBR metallic/roughness factors, and collision
-      surface contact disable bitmasks plus ODE friction/slip metadata now
-      round-trip as SDF `<gravity>`,
+      surface contact disable bitmasks, zero-threshold bounce restitution, and
+      ODE friction/slip metadata now round-trip as SDF `<gravity>`,
       `<axis>/<axis2><dynamics>`, `<thread_pitch>`/`<screw_thread_pitch>`,
       `<mimic>`, local
       `<pose>`, `<capsule>`, `<cone>`, `<ellipsoid>`, `<diffuse>`, and
       `<pbr><metal>` values plus `<surface><contact><collide_bitmask>` disables
-      and `<surface><friction><ode>` `mu`, `mu2`, `fdir1`, `slip1`, and
-      `slip2`.
+      plus `<surface><bounce>` restitution coefficients and
+      `<surface><friction><ode>` `mu`, `mu2`, `fdir1`, `slip1`, and `slip2`.
       Absolute non-file mesh URIs now have writer read/write/read coverage
       through a custom retriever. Writer options for excluding visuals or
       collisions, missing mesh URI diagnostics, pre-SDF-1.11 mimic diagnostics,
       unsupported coupler-style mimic diagnostics, and relative/generated mesh
       resource diagnostics now have focused coverage. Invalid collision-surface
-      friction values now fail with explicit diagnostics. The writer test now
-      uses a shared IO round-trip assertion helper for body, joint, DoF,
+      friction and restitution values now fail with explicit diagnostics. The
+      writer test now uses a shared IO round-trip assertion helper for body,
+      joint, DoF,
       inertia, and shape comparisons.
       DART `PlaneShape` and `ConvexMeshShape` writer attempts now fail with
       targeted diagnostics explaining the missing finite SDF plane size or
@@ -212,9 +213,10 @@ SKEL-YAML direction just because the prototype once existed.
   relative/generated mesh resource diagnostics. Plane-shaped infinite DART
   geometry and generated convex meshes now have targeted diagnostics for the
   finite SDF plane-size and destination-URI policy gaps. Collision-surface
-  contact bitmask disables, ODE friction coefficients, first friction
-  direction, and slip compliance now have read/write/read coverage plus
-  invalid-friction diagnostics. The assertions are
+  contact bitmask disables, zero-threshold bounce restitution, ODE friction
+  coefficients, first friction direction, and slip compliance now have
+  read/write/read coverage plus invalid-friction/restitution diagnostics. The
+  assertions are
   factored
   through
   `tests/helpers/io_round_trip_helpers.hpp` so future writer formats can reuse

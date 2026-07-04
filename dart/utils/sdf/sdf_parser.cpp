@@ -1272,6 +1272,15 @@ void readCollisionSurface(
     return;
   }
 
+  const ElementPtr surfaceElement = surface->Element();
+  if (hasAuthoredElement(surfaceElement, "bounce")) {
+    const ElementPtr bounceElement = getElement(surfaceElement, "bounce");
+    if (hasAuthoredElement(bounceElement, "restitution_coefficient")) {
+      dynamicsAspect->setRestitutionCoeff(
+          getValueDouble(bounceElement, "restitution_coefficient"));
+    }
+  }
+
   const sdf::Friction* friction = surface->Friction();
   if (!friction) {
     return;

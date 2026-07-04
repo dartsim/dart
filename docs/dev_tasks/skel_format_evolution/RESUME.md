@@ -39,10 +39,10 @@ passive joint dynamics metadata (damping, Coulomb friction, spring reference,
 and spring stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
 axis/axis2 mimic metadata with motor enforcement, topology-only ball child
 joints, local root/joint/shape poses, explicit visual material colors, PBR
-metallic/roughness factors, collision-surface contact disable bitmasks, ODE
-friction coefficients, first friction direction, slip compliance, and absolute
-non-file mesh URI preservation through a custom retriever. Continuous SDF joints
-now parse as unbounded DART
+metallic/roughness factors, collision-surface contact disable bitmasks,
+zero-threshold bounce restitution, ODE friction coefficients, first friction
+direction, slip compliance, and absolute non-file mesh URI preservation through
+a custom retriever. Continuous SDF joints now parse as unbounded DART
 `RevoluteJoint`s, and unbounded DART revolute joints write back as SDF
 `continuous` while finite-limit revolute joints stay `revolute`. Targetless
 relative/generated mesh references, including relative or host-qualified file
@@ -53,8 +53,8 @@ missing mesh URI diagnostics, DART `PlaneShape` finite-size diagnostics,
 `ConvexMeshShape` generated-resource diagnostics, pre-SDF-1.11 mimic
 diagnostics, unsupported coupler-style mimic diagnostics, non-finite visual
 material diagnostics, invalid PBR material diagnostics, non-finite screw pitch
-diagnostics, invalid collision-surface friction diagnostics, unsupported
-ball-joint metadata, and
+diagnostics, invalid collision-surface friction/restitution diagnostics,
+unsupported ball-joint metadata, and
 non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
 5 is still open until broader SDF coverage plus the remaining accepted writer
 targets are implemented or durably deferred.
@@ -82,6 +82,10 @@ into DART `CollisionAspect` collidable state for the lossless zero-bitmask
 subset, while ODE friction values read through `sdf::Friction` and `sdf::ODE`
 DOM values into DART `DynamicsAspect` friction, slip, and first
 friction-direction fields while preserving defaults for unauthored fields.
+SDF bounce restitution reads through sdformat Element authored flags and typed
+parameter conversion for the `<surface><bounce><restitution_coefficient>`
+schema field because sdformat 16 does not expose a high-level `Bounce` DOM
+class.
 Standard SDF joint reads traverse `sdf::Model`,
 `sdf::Joint`, and `sdf::JointAxis` DOM values for joint enumeration, joint
 name/type,
@@ -303,6 +307,16 @@ Additional validation for collision-surface contact bitmask IO:
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
+Additional validation for collision-surface bounce restitution IO:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
 Changelog decision:
 
 - Mode: draft
@@ -381,6 +395,10 @@ Changelog decision:
   IO because it broadens the same conservative SDF writer/parser round-trip
   capability before the implementation PR exists; the existing DART 7 IO and
   Parsing bullet now includes collision surface contact disable bitmasks.
+  No additional separate entry is needed for collision-surface bounce
+  restitution IO because it broadens the same conservative SDF writer/parser
+  round-trip capability before the implementation PR exists; the existing DART
+  7 IO and Parsing bullet now includes zero-threshold bounce restitution.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

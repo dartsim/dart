@@ -71,9 +71,11 @@ struct DART_UTILS_API WriteOptions
 /// inertial parameters, local joint/shape poses, and
 /// box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual/collision geometry
 /// with explicit visual material colors, PBR metallic/roughness factors, and
-/// absolute non-file mesh URI preservation. Targetless relative mesh references
-/// return an error because this string writer has no destination URI for
-/// resource resolution or generated asset placement.
+/// collision-surface contact disable bitmasks, zero-threshold bounce
+/// restitution, ODE friction/slip metadata, and absolute non-file mesh URI
+/// preservation. Targetless relative mesh references return an error because
+/// this string writer has no destination URI for resource resolution or
+/// generated asset placement.
 /// Unsupported constructs return an error instead of being silently dropped.
 common::Result<std::string, common::Error> DART_UTILS_API
 tryWriteSkeletonToString(

@@ -253,6 +253,23 @@ WriteResult setDoubleElement(
   return ok();
 }
 
+WriteResult findOrCreateElement(
+    const sdf::ElementPtr& parent,
+    std::string_view elementName,
+    sdf::ElementPtr& element)
+{
+  element = parent->FindElement(std::string(elementName));
+  if (element) {
+    return ok();
+  }
+
+  element = std::make_shared<sdf::Element>();
+  element->SetName(std::string(elementName));
+  parent->InsertElement(element);
+  element->SetExplicitlySetInFile(true);
+  return ok();
+}
+
 WriteResult preserveFalseLinkGravity(
     const sdf::ElementPtr& rootElement, const sdf::Model& model)
 {
@@ -346,6 +363,91 @@ WriteResult preserveModernScrewThreadPitch(
     }
 
     jointElement = jointElement->GetNextElement("joint");
+  }
+
+  return ok();
+}
+
+WriteResult preserveCollisionRestitution(
+    const sdf::ElementPtr& rootElement,
+    const dynamics::Skeleton& skeleton,
+    const WriteOptions& options)
+{
+  if (!options.includeCollisions) {
+    return ok();
+  }
+
+  const sdf::ElementPtr modelElement = rootElement->FindElement("model");
+  if (!modelElement) {
+    return fail("sdformat failed to serialize the SDF model.");
+  }
+
+  sdf::ElementPtr linkElement = modelElement->FindElement("link");
+  for (std::size_t i = 0; i < skeleton.getNumBodyNodes(); ++i) {
+    const auto* bodyNode = skeleton.getBodyNode(i);
+    if (!bodyNode || !linkElement) {
+      return fail("sdformat failed to serialize an SDF link.");
+    }
+
+    WriteResult result = ok();
+    sdf::ElementPtr collisionElement = linkElement->FindElement("collision");
+    bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
+        [&](const dynamics::ShapeNode* shapeNode) {
+          if (result.isErr()) {
+            return;
+          }
+          if (!collisionElement) {
+            result = fail("sdformat failed to serialize an SDF collision.");
+            return;
+          }
+
+          const auto* dynamicsAspect = shapeNode->getDynamicsAspect();
+          if (dynamicsAspect) {
+            const double restitution = dynamicsAspect->getRestitutionCoeff();
+            if (restitution != 0.0) {
+              sdf::ElementPtr surfaceElement;
+              result = findOrCreateElement(
+                  collisionElement, "surface", surfaceElement);
+              if (result.isErr()) {
+                return;
+              }
+
+              sdf::ElementPtr bounceElement;
+              result = findOrCreateElement(
+                  surfaceElement, "bounce", bounceElement);
+              if (result.isErr()) {
+                return;
+              }
+
+              const std::string context
+                  = "SDF collision [" + shapeNode->getName() + "] bounce";
+              result = setDoubleElement(
+                  bounceElement,
+                  "restitution_coefficient",
+                  restitution,
+                  context);
+              if (result.isErr()) {
+                return;
+              }
+
+              // DART stores only a restitution coefficient, not SDF's
+              // velocity threshold. A zero threshold preserves the writer's
+              // coefficient behavior for this supported subset.
+              result
+                  = setDoubleElement(bounceElement, "threshold", 0.0, context);
+              if (result.isErr()) {
+                return;
+              }
+            }
+          }
+
+          collisionElement = collisionElement->GetNextElement("collision");
+        });
+    if (result.isErr()) {
+      return result;
+    }
+
+    linkElement = linkElement->GetNextElement("link");
   }
 
   return ok();
@@ -675,6 +777,7 @@ WriteResult applyCollisionSurface(
   const double secondaryFriction = dynamicsAspect->getSecondaryFrictionCoeff();
   const double primarySlip = dynamicsAspect->getPrimarySlipCompliance();
   const double secondarySlip = dynamicsAspect->getSecondarySlipCompliance();
+  const double restitution = dynamicsAspect->getRestitutionCoeff();
   const Eigen::Vector3d& firstFrictionDirection
       = dynamicsAspect->getFirstFrictionDirection();
 
@@ -689,6 +792,11 @@ WriteResult applyCollisionSurface(
         "Cannot write SDF collision [" + shapeNode.getName()
         + "] with non-finite slip compliance.");
   }
+  if (!std::isfinite(restitution) || restitution < 0.0 || restitution > 1.0) {
+    return fail(
+        "Cannot write SDF collision [" + shapeNode.getName()
+        + "] with non-finite or out-of-range restitution.");
+  }
   if (!isFinite(firstFrictionDirection)) {
     return fail(
         "Cannot write SDF collision [" + shapeNode.getName()
@@ -700,10 +808,11 @@ WriteResult applyCollisionSurface(
   const bool writePrimarySlip = primarySlip >= 0.0 && primarySlip != 0.0;
   const bool writeSecondarySlip = secondarySlip >= 0.0 && secondarySlip != 0.0;
   const bool writeFrictionDirection = !isZero(firstFrictionDirection);
+  const bool writeBounce = restitution != 0.0;
   const bool writeFriction = writePrimaryFriction || writeSecondaryFriction
                              || writePrimarySlip || writeSecondarySlip
                              || writeFrictionDirection;
-  if (!writeContact && !writeFriction) {
+  if (!writeContact && !writeFriction && !writeBounce) {
     return ok();
   }
 
@@ -1164,6 +1273,10 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
   }
   if (auto result
       = preserveModernScrewThreadPitch(element, model, options.version);
+      result.isErr()) {
+    return StringResult::err(result.error());
+  }
+  if (auto result = preserveCollisionRestitution(element, skeleton, options);
       result.isErr()) {
     return StringResult::err(result.error());
   }

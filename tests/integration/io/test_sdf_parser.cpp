@@ -681,6 +681,42 @@ TEST(SdfParser, CollisionSurfaceContactBitmaskDisablesCollisionAspect)
 }
 
 //==============================================================================
+TEST(SdfParser, CollisionSurfaceBounceReadsRestitution)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/collision_bounce/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="collision_bounce">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+      <collision name="bouncy_collision">
+        <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
+        <surface>
+          <bounce>
+            <restitution_coefficient>0.42</restitution_coefficient>
+            <threshold>0</threshold>
+          </bounce>
+        </surface>
+      </collision>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  auto* collision = body->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(collision, nullptr);
+  auto* dynamicsAspect = collision->getDynamicsAspect();
+  ASSERT_NE(dynamicsAspect, nullptr);
+  EXPECT_DOUBLE_EQ(dynamicsAspect->getRestitutionCoeff(), 0.42);
+}
+
+//==============================================================================
 TEST(SdfParser, MaterialWithoutDiffusePreservesDefaultColor)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();

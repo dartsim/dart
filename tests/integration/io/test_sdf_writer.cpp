@@ -184,6 +184,17 @@ std::filesystem::path writeTempSdf(std::string_view text, std::string_view name)
   return path;
 }
 
+double getSdfDoubleElement(
+    const sdf::ElementPtr& parent, const std::string& name)
+{
+  sdf::Errors errors;
+  const auto [value, found] = parent->Get<double>(errors, name, 0.0);
+  EXPECT_TRUE(found);
+  EXPECT_TRUE(errors.empty())
+      << (errors.empty() ? "" : errors.front().Message());
+  return value;
+}
+
 std::shared_ptr<math::TriMesh<double>> makeTriangleMesh()
 {
   auto mesh = std::make_shared<math::TriMesh<double>>();
@@ -846,6 +857,60 @@ TEST(SdfWriter, RoundTripsCollisionSurfaceContactBitmask)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsCollisionSurfaceBounceRestitution)
+{
+  auto skeleton = dynamics::Skeleton::create("collision_bounce_writer");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::SphereShape>(0.2), "bouncy_surface");
+  auto* dynamicsAspect = shapeNode->getDynamicsAspect();
+  ASSERT_NE(dynamicsAspect, nullptr);
+  dynamicsAspect->setRestitutionCoeff(0.42);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfLink = sdfRoot.Model()->LinkByName("body");
+  ASSERT_NE(sdfLink, nullptr);
+  const auto* sdfCollision = sdfLink->CollisionByName("bouncy_surface");
+  ASSERT_NE(sdfCollision, nullptr);
+  ASSERT_NE(sdfCollision->Surface(), nullptr);
+  const auto surfaceElement = sdfCollision->Surface()->Element();
+  ASSERT_NE(surfaceElement, nullptr);
+  const auto bounceElement = surfaceElement->FindElement("bounce");
+  ASSERT_NE(bounceElement, nullptr);
+  EXPECT_DOUBLE_EQ(
+      getSdfDoubleElement(bounceElement, "restitution_coefficient"), 0.42);
+  EXPECT_DOUBLE_EQ(getSdfDoubleElement(bounceElement, "threshold"), 0.0);
+
+  const auto path = writeTempSdf(writeResult.value(), "collision_bounce");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "body");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* reparsedShapeNode
+      = reparsedBody->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(reparsedShapeNode, nullptr);
+  const auto* reparsedDynamics = reparsedShapeNode->getDynamicsAspect();
+  ASSERT_NE(reparsedDynamics, nullptr);
+  EXPECT_DOUBLE_EQ(reparsedDynamics->getRestitutionCoeff(), 0.42);
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsContinuousRevoluteJoint)
 {
   auto skeleton = dynamics::Skeleton::create("continuous_writer");
@@ -1310,6 +1375,28 @@ TEST(SdfWriter, InvalidCollisionSurfaceFrictionReturnsError)
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("negative friction"), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, InvalidCollisionSurfaceRestitutionReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("bad_surface_restitution");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "bad_surface");
+  shapeNode->getDynamicsAspect()->setRestitutionCoeff(1.1);
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("out-of-range restitution"),
+      std::string::npos);
 }
 
 //==============================================================================
