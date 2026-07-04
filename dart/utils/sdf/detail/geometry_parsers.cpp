@@ -36,12 +36,16 @@
 #include "dart/common/uri.hpp"
 
 #include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/cone_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 
 #include <sdf/Box.hh>
+#include <sdf/Capsule.hh>
+#include <sdf/Cone.hh>
 #include <sdf/Cylinder.hh>
 #include <sdf/Ellipsoid.hh>
 #include <sdf/Geometry.hh>
@@ -92,6 +96,27 @@ dynamics::ShapePtr readCylinderShape(const sdf::Geometry& geometry)
 
   return std::make_shared<dynamics::CylinderShape>(
       cylinder->Radius(), cylinder->Length());
+}
+
+dynamics::ShapePtr readCapsuleShape(const sdf::Geometry& geometry)
+{
+  const sdf::Capsule* capsule = geometry.CapsuleShape();
+  if (!capsule) {
+    return nullptr;
+  }
+
+  return std::make_shared<dynamics::CapsuleShape>(
+      capsule->Radius(), capsule->Length());
+}
+
+dynamics::ShapePtr readConeShape(const sdf::Geometry& geometry)
+{
+  const sdf::Cone* cone = geometry.ConeShape();
+  if (!cone) {
+    return nullptr;
+  }
+
+  return std::make_shared<dynamics::ConeShape>(cone->Radius(), cone->Length());
 }
 
 dynamics::ShapePtr readEllipsoidShape(const sdf::Geometry& geometry)
@@ -182,6 +207,10 @@ dynamics::ShapePtr readGeometryShape(
       return readBoxShape(geometry);
     case sdf::GeometryType::CYLINDER:
       return readCylinderShape(geometry);
+    case sdf::GeometryType::CAPSULE:
+      return readCapsuleShape(geometry);
+    case sdf::GeometryType::CONE:
+      return readConeShape(geometry);
     case sdf::GeometryType::ELLIPSOID:
       return readEllipsoidShape(geometry);
     case sdf::GeometryType::PLANE:

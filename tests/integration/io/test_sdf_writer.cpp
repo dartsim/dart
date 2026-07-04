@@ -41,6 +41,7 @@
 
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/capsule_shape.hpp>
 #include <dart/dynamics/cone_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
@@ -48,6 +49,7 @@
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/mimic_dof_properties.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
+#include <dart/dynamics/pyramid_shape.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/screw_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
@@ -922,6 +924,50 @@ TEST(SdfWriter, RootWeldRoundTripsWithFixedRootOption)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsCapsuleAndConeGeometry)
+{
+  auto skeleton = dynamics::Skeleton::create("capsule_cone_writer");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::CapsuleShape>(0.2, 0.7), "capsule_visual");
+  body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::ConeShape>(0.3, 0.9), "cone_collision");
+
+  utils::SdfParser::WriteOptions options;
+  options.version = "1.12";
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  EXPECT_NE(writeResult.value().find("<capsule>"), std::string::npos);
+  EXPECT_NE(writeResult.value().find("<cone>"), std::string::npos);
+
+  const auto path = writeTempSdf(writeResult.value(), "capsule_cone");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "body");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* capsule
+      = test::requireShape<dynamics::VisualAspect, dynamics::CapsuleShape>(
+          *reparsedBody, 0, 1);
+  ASSERT_NE(capsule, nullptr);
+  EXPECT_DOUBLE_EQ(capsule->getRadius(), 0.2);
+  EXPECT_DOUBLE_EQ(capsule->getHeight(), 0.7);
+
+  const auto* cone
+      = test::requireShape<dynamics::CollisionAspect, dynamics::ConeShape>(
+          *reparsedBody, 0, 1);
+  ASSERT_NE(cone, nullptr);
+  EXPECT_DOUBLE_EQ(cone->getRadius(), 0.3);
+  EXPECT_DOUBLE_EQ(cone->getHeight(), 0.9);
+}
+
+//==============================================================================
 TEST(SdfWriter, UnsupportedShapeReturnsError)
 {
   auto skeleton = dynamics::Skeleton::create("unsupported_shape");
@@ -930,7 +976,7 @@ TEST(SdfWriter, UnsupportedShapeReturnsError)
   (void)joint;
   body->setName("body");
   body->createShapeNodeWith<dynamics::VisualAspect>(
-      std::make_shared<dynamics::ConeShape>(0.5, 1.0), "cone");
+      std::make_shared<dynamics::PyramidShape>(0.5, 0.75, 1.0), "pyramid");
 
   const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());

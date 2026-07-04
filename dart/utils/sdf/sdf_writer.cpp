@@ -37,6 +37,8 @@
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/cone_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
@@ -52,7 +54,9 @@
 
 #include <gz/math/Inertial.hh>
 #include <sdf/Box.hh>
+#include <sdf/Capsule.hh>
 #include <sdf/Collision.hh>
+#include <sdf/Cone.hh>
 #include <sdf/Cylinder.hh>
 #include <sdf/Ellipsoid.hh>
 #include <sdf/Geometry.hh>
@@ -398,6 +402,33 @@ GeometryResult makeGeometry(const dynamics::Shape& shape)
     sdfCylinder.SetLength(height);
     geometry.SetType(sdf::GeometryType::CYLINDER);
     geometry.SetCylinderShape(sdfCylinder);
+  } else if (
+      const auto* capsule
+      = dynamic_cast<const dynamics::CapsuleShape*>(&shape)) {
+    const double radius = capsule->getRadius();
+    const double height = capsule->getHeight();
+    if (!std::isfinite(radius) || !std::isfinite(height)) {
+      return GeometryResult::err(WriteError(
+          "Cannot write SDF capsule geometry with non-finite dimensions."));
+    }
+    sdf::Capsule sdfCapsule;
+    sdfCapsule.SetRadius(radius);
+    sdfCapsule.SetLength(height);
+    geometry.SetType(sdf::GeometryType::CAPSULE);
+    geometry.SetCapsuleShape(sdfCapsule);
+  } else if (
+      const auto* cone = dynamic_cast<const dynamics::ConeShape*>(&shape)) {
+    const double radius = cone->getRadius();
+    const double height = cone->getHeight();
+    if (!std::isfinite(radius) || !std::isfinite(height)) {
+      return GeometryResult::err(WriteError(
+          "Cannot write SDF cone geometry with non-finite dimensions."));
+    }
+    sdf::Cone sdfCone;
+    sdfCone.SetRadius(radius);
+    sdfCone.SetLength(height);
+    geometry.SetType(sdf::GeometryType::CONE);
+    geometry.SetConeShape(sdfCone);
   } else if (
       const auto* ellipsoid
       = dynamic_cast<const dynamics::EllipsoidShape*>(&shape)) {

@@ -36,6 +36,7 @@
 #include "dart/dynamics/ball_joint.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/capsule_shape.hpp"
+#include "dart/dynamics/cone_shape.hpp"
 #include "dart/dynamics/cylinder_shape.hpp"
 #include "dart/dynamics/ellipsoid_shape.hpp"
 #include "dart/dynamics/free_joint.hpp"
@@ -660,6 +661,60 @@ TEST(SdfParser, EllipsoidGeometryReadsAsEllipsoidShape)
   ASSERT_NE(ellipsoid, nullptr);
   EXPECT_TRUE(
       ellipsoid->getDiameters().isApprox(Eigen::Vector3d(0.2, 0.4, 0.6)));
+}
+
+//==============================================================================
+TEST(SdfParser, CapsuleAndConeGeometryReadAsDartShapes)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/capsule_cone_geometry/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.12">
+  <model name="capsule_cone_geometry">
+    <link name="link">
+      <inertial><mass>1.0</mass></inertial>
+      <visual name="capsule_visual">
+        <geometry>
+          <capsule>
+            <radius>0.2</radius>
+            <length>0.7</length>
+          </capsule>
+        </geometry>
+      </visual>
+      <collision name="cone_collision">
+        <geometry>
+          <cone>
+            <radius>0.3</radius>
+            <length>0.9</length>
+          </cone>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+
+  auto* visual = body->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visual, nullptr);
+  const auto capsule
+      = std::dynamic_pointer_cast<dynamics::CapsuleShape>(visual->getShape());
+  ASSERT_NE(capsule, nullptr);
+  EXPECT_DOUBLE_EQ(capsule->getRadius(), 0.2);
+  EXPECT_DOUBLE_EQ(capsule->getHeight(), 0.7);
+
+  auto* collision = body->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(collision, nullptr);
+  const auto cone
+      = std::dynamic_pointer_cast<dynamics::ConeShape>(collision->getShape());
+  ASSERT_NE(cone, nullptr);
+  EXPECT_DOUBLE_EQ(cone->getRadius(), 0.3);
+  EXPECT_DOUBLE_EQ(cone->getHeight(), 0.9);
 }
 
 //==============================================================================

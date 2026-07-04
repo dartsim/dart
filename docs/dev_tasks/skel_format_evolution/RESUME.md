@@ -34,11 +34,11 @@ the writer building libsdformat DOM objects and serializing through sdformat.
 `INTEGRATION_io_SdfWriter` proves write/read round-trip for links, root
 FreeJoint/WeldJoint placement,
 revolute/continuous/prismatic/weld/screw/universal child joints, inertial data,
-primitive or mesh geometry, link gravity mode, passive joint dynamics metadata
-(damping, Coulomb friction, spring reference, and spring stiffness), screw
-thread pitch, SDF 1.11+ axis/axis2 mimic metadata with motor enforcement,
-topology-only ball child joints, local root/joint/shape poses, explicit visual
-material colors, ellipsoid geometry, and absolute non-file mesh URI
+box/sphere/cylinder/capsule/cone/ellipsoid/mesh geometry, link gravity mode,
+passive joint dynamics metadata (damping, Coulomb friction, spring reference,
+and spring stiffness), screw thread pitch, SDF 1.11+ axis/axis2 mimic metadata
+with motor enforcement, topology-only ball child joints, local root/joint/shape
+poses, explicit visual material colors, and absolute non-file mesh URI
 preservation through a custom retriever. Continuous SDF joints now parse as
 unbounded DART
 `RevoluteJoint`s, and unbounded DART revolute joints write back as SDF
@@ -55,10 +55,10 @@ non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
 targets are implemented or durably deferred.
 
 The supported SDF geometry reader paths now load through libsdformat
-`sdf::Geometry` DOM objects before mapping sphere, box, cylinder, ellipsoid,
-plane, and mesh shapes into DART shapes; this preserves the existing
-plane-as-thin-box and resource-retrieved mesh behavior without adding new raw
-XML-level parsing.
+`sdf::Geometry` DOM objects before mapping sphere, box, cylinder, capsule,
+cone, ellipsoid, plane, and mesh shapes into DART shapes; this preserves the
+existing plane-as-thin-box and resource-retrieved mesh behavior without adding
+new raw XML-level parsing.
 The model reader now selects the top-level model through libsdformat
 `sdf::Root::Model()` and carries the resulting `sdf::Model` DOM through standard
 model, link, joint, visual, collision, and material traversal instead of
@@ -178,6 +178,15 @@ Additional validation for pruning the unused SDF XML helper API:
 - `pixi run lint`
 - `pixi run build`
 
+Additional validation for capsule/cone SDF DOM geometry reads and writes:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run run-cpp-target INTEGRATION_io_Read`
+- `pixi run lint`
+- `pixi run build`
+
 Changelog decision:
 
 - Mode: draft
@@ -211,7 +220,10 @@ Changelog decision:
   implementation PR exists. No additional separate entry is needed for
   ellipsoid SDF geometry reads and writes because the existing conservative SDF
   writer changelog bullet now includes the broadened geometry subset before the
-  implementation PR exists. No additional entry is needed for SDF
+  implementation PR exists. No additional separate entry is needed for
+  capsule/cone SDF geometry reads and writes because they broaden the same
+  sdformat-DOM-backed parser/writer geometry subset before the implementation
+  PR exists. No additional entry is needed for SDF
   root/model/link/joint/aspect DOM traversal because it hardens the same
   conservative SDF parser/writer round-trip surface before the implementation
   PR exists. No additional entry is needed for pruning unused SDF XML helper
