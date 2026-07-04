@@ -576,6 +576,47 @@ TEST(SdfParser, InertialAndMaterialVariantsFromXml)
 }
 
 //==============================================================================
+TEST(SdfParser, PlaneGeometryReadsAsThinBox)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/plane_geometry/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="plane_geometry">
+    <link name="ground">
+      <inertial><mass>1.0</mass></inertial>
+      <visual name="ground_visual">
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>2 3</size>
+          </plane>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("ground");
+  ASSERT_NE(body, nullptr);
+
+  dynamics::ShapeNode* visual = nullptr;
+  body->eachShapeNodeWith<dynamics::VisualAspect>([&](auto* shapeNode) {
+    if (shapeNode->getName() == "ground - ground_visual") {
+      visual = shapeNode;
+    }
+  });
+  ASSERT_NE(visual, nullptr);
+  auto box = std::dynamic_pointer_cast<dynamics::BoxShape>(visual->getShape());
+  ASSERT_NE(box, nullptr);
+  EXPECT_TRUE(box->getSize().isApprox(Eigen::Vector3d(2.0, 3.0, 0.001)));
+}
+
+//==============================================================================
 TEST(SdfParser, AxisLimitsSetInitialMidpoint)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();

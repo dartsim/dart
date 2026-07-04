@@ -53,6 +53,11 @@ non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
 5 is still open until broader SDF coverage plus the remaining accepted writer
 targets are implemented or durably deferred.
 
+The supported SDF geometry reader paths now load through libsdformat
+`sdf::Geometry` DOM objects before mapping sphere, box, cylinder, plane, and
+mesh shapes into DART shapes; this preserves the existing plane-as-thin-box and
+resource-retrieved mesh behavior without adding new raw XML-level parsing.
+
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
 inertia, and shape comparisons, and `tests/CMakeLists.txt` includes the helper
