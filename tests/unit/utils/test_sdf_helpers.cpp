@@ -188,7 +188,6 @@ TEST(SdfDetailHelpers, ParsesScalarsVectorsAndPose)
         <model name='demo_model'>
           <link name='demo_link'>
             <pose>1 2 3 0 0 1.57079632679</pose>
-            <self_collide>true</self_collide>
             <mass>1.5</mass>
             <grid>1 2 3</grid>
           </link>
@@ -208,7 +207,6 @@ TEST(SdfDetailHelpers, ParsesScalarsVectorsAndPose)
   EXPECT_TRUE(detail::hasElement(linkElement, "mass"));
   EXPECT_FALSE(detail::hasElement(linkElement, "does_not_exist"));
 
-  EXPECT_TRUE(detail::getValueBool(linkElement, "self_collide"));
   EXPECT_DOUBLE_EQ(detail::getValueDouble(linkElement, "mass"), 1.5);
 
   const Eigen::Vector3d grid
@@ -239,7 +237,6 @@ TEST(SdfDetailHelpers, MissingInputsReturnDefaults)
   EXPECT_FALSE(detail::hasElement(linkElement, ""));
   EXPECT_EQ(detail::getElement(nullptr, "link"), nullptr);
   EXPECT_EQ(detail::getElement(linkElement, ""), nullptr);
-  EXPECT_FALSE(detail::getValueBool(linkElement, "missing"));
   EXPECT_EQ(detail::getValueUInt(linkElement, "missing"), 0u);
   EXPECT_DOUBLE_EQ(detail::getValueDouble(linkElement, "missing"), 0.0);
   EXPECT_TRUE(
@@ -256,7 +253,6 @@ TEST(SdfDetailHelpers, MissingInputsReturnDefaults)
 TEST(SdfDetailHelpers, ParsesScalarVectorAndPoseFallbackText)
 {
   const sdf::ElementPtr linkElement = loadLinkElement(R"(
-    <enabled>TRUE</enabled>
     <count>7</count>
     <mass>2.5</mass>
     <custom_vector3>1 2 3</custom_vector3>
@@ -264,7 +260,6 @@ TEST(SdfDetailHelpers, ParsesScalarVectorAndPoseFallbackText)
   )");
   ASSERT_TRUE(linkElement);
 
-  EXPECT_TRUE(detail::getValueBool(linkElement, "enabled"));
   EXPECT_EQ(detail::getValueUInt(linkElement, "count"), 7u);
   EXPECT_DOUBLE_EQ(detail::getValueDouble(linkElement, "mass"), 2.5);
 
@@ -281,7 +276,6 @@ TEST(SdfDetailHelpers, ParsesScalarVectorAndPoseFallbackText)
 TEST(SdfDetailHelpers, MalformedScalarVectorAndPoseValuesReturnDefaults)
 {
   const sdf::ElementPtr linkElement = loadLinkElement(R"(
-    <bad_bool>maybe</bad_bool>
     <bad_uint>not_unsigned</bad_uint>
     <bad_double>not_double</bad_double>
     <empty_vector3></empty_vector3>
@@ -293,7 +287,6 @@ TEST(SdfDetailHelpers, MalformedScalarVectorAndPoseValuesReturnDefaults)
   )");
   ASSERT_TRUE(linkElement);
 
-  EXPECT_FALSE(detail::getValueBool(linkElement, "bad_bool"));
   EXPECT_EQ(detail::getValueUInt(linkElement, "bad_uint"), 0u);
   EXPECT_DOUBLE_EQ(detail::getValueDouble(linkElement, "bad_double"), 0.0);
 

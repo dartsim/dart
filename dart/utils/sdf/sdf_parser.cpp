@@ -116,7 +116,6 @@ using ElementPtr = sdf::ElementPtr;
 namespace detail = dart::utils::SdfParser::detail;
 
 using detail::getElement;
-using detail::getValueBool;
 using detail::getValueDouble;
 using detail::getValueIsometry3dWithExtrinsicRotation;
 using detail::getValueUInt;
@@ -1016,13 +1015,6 @@ SDFBodyNode readBodyNode(
   properties.mGravityMode = link.EnableGravity();
 
   //--------------------------------------------------------------------------
-  // self_collide
-  //    if (hasElement(_bodyElement, "self_collide"))
-  //    {
-  //        bool gravityMode = getValueBool(_bodyElement, "self_collide");
-  //    }
-
-  //--------------------------------------------------------------------------
   // transformation
   initTransform = skeletonFrame * toEigenIsometry3(link.RawPose());
 
@@ -1629,8 +1621,16 @@ Eigen::Vector3d resolveAxisXyz(
   // axis/xyz@expressed_in. Keep it as a compatibility fallback only.
   bool useParentModelFrame = false;
   if (hasElement(axisXmlElement, "use_parent_model_frame")) {
-    useParentModelFrame
-        = getValueBool(axisXmlElement, "use_parent_model_frame");
+    sdf::Errors errors;
+    const auto [value, found] = axisXmlElement->Get<bool>(
+        errors, "use_parent_model_frame", useParentModelFrame);
+    if (found && errors.empty()) {
+      useParentModelFrame = value;
+    } else {
+      DART_WARN(
+          "[SdfParser] Failed to parse legacy "
+          "<use_parent_model_frame> for a joint axis as bool.");
+    }
   }
 
   Eigen::Vector3d axis = toEigenVector3(xyz);

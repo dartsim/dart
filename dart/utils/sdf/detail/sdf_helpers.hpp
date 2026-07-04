@@ -51,8 +51,6 @@ DART_UTILS_API bool hasElement(const ElementPtr& parent, std::string_view name);
 DART_UTILS_API ElementPtr
 getElement(const ElementPtr& parent, std::string_view name);
 
-DART_UTILS_API bool getValueBool(
-    const ElementPtr& parentElement, std::string_view name);
 DART_UTILS_API unsigned int getValueUInt(
     const ElementPtr& parentElement, std::string_view name);
 DART_UTILS_API double getValueDouble(

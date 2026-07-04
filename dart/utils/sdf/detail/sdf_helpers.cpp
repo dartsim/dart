@@ -34,12 +34,9 @@
 
 #include <dart/common/logging.hpp>
 
-#include <algorithm>
 #include <sstream>
 #include <string>
 #include <vector>
-
-#include <cctype>
 
 #if __has_include(<gz/math/Pose3.hh>)
   #include <gz/math/Pose3.hh>
@@ -54,15 +51,6 @@
 namespace dart::utils::SdfParser::detail {
 
 namespace {
-
-std::string toLowerCopy(std::string_view text)
-{
-  std::string lower(text);
-  std::ranges::transform(lower, lower.begin(), [](unsigned char c) {
-    return static_cast<char>(std::tolower(c));
-  });
-  return lower;
-}
 
 std::string trimCopy(std::string_view text)
 {
@@ -141,23 +129,6 @@ bool parseScalar(std::string_view text, T& value)
   std::istringstream stream{std::string(text)};
   stream >> value;
   return !stream.fail();
-}
-
-template <>
-bool parseScalar<bool>(std::string_view text, bool& value)
-{
-  const std::string lower = toLowerCopy(text);
-  if (lower == "1" || lower == "true") {
-    value = true;
-    return true;
-  }
-
-  if (lower == "0" || lower == "false") {
-    value = false;
-    return true;
-  }
-
-  return false;
 }
 
 template <typename T>
@@ -248,20 +219,6 @@ ElementPtr getElement(const ElementPtr& parent, std::string_view name)
   }
 
   return parent->GetElement(nameString);
-}
-
-bool getValueBool(const ElementPtr& parentElement, std::string_view name)
-{
-  bool value = false;
-  if (readScalarParam(getChildValueParam(parentElement, name), value)) {
-    return value;
-  }
-
-  DART_WARN(
-      "[SdfParser] Failed to parse element <{}> under <{}> as bool.",
-      name,
-      parentElement ? parentElement->GetName() : "unknown");
-  return false;
 }
 
 unsigned int getValueUInt(

@@ -59,12 +59,13 @@
       `axis/xyz@expressed_in` frame resolution, axis dynamics, finite limits,
       mimic metadata, and sdformat-normalized screw pitch values; XML checks
       remain only where DART needs authored/default presence, DART-specific
-      soft-body extension fields, or legacy `use_parent_model_frame`
-      compatibility.
+      soft-body extension fields, or the legacy `use_parent_model_frame`
+      presence check; the legacy boolean value itself now uses sdformat typed
+      element access.
       The SDF-specific helper layer no longer exposes generic XML attribute,
-      string, vector2/vectorX, or child-enumerator APIs; retained helpers are
-      limited to the small extension/presence fallback bridge still used by the
-      parser.
+      string, boolean, vector2/vectorX, or child-enumerator APIs; retained
+      helpers are limited to the small extension/presence fallback bridge still
+      used by the parser.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor
       save-load belongs to the scene/project layer. Broader SDF coverage, URDF
@@ -199,4 +200,4 @@ SKEL-YAML direction just because the prototype once existed.
   scene from each accepted format, write it back, and compare the re-parsed
   models. SDF helper cleanup is covered by `test_sdf_helpersNone`, which now
   validates only the retained parser bridge instead of the removed generic XML
-  helper APIs.
+  helper APIs, including the removed SDF-specific boolean value parser.

@@ -80,12 +80,14 @@ parent/child links, local pose, axis vectors including
 mimic metadata, and sdformat-normalized screw pitch values. XML helper checks
 remain only where DART preserves authored/default distinctions for existing
 diagnostics, reads DART-specific soft-body extension fields, or supports the
-legacy `use_parent_model_frame` compatibility extension.
+legacy `use_parent_model_frame` presence check. The compatibility boolean value
+now uses sdformat typed element access rather than DART's SDF helper layer.
 The SDF detail helper API has been narrowed to that remaining bridge: generic
 XML attribute reads, string reads, vector2/vectorX parsing, child enumeration,
-and direct helper tests for those deleted APIs are gone. Retained helpers cover
-only element presence, child lookup, scalar reads, vector3/vector3i reads, and
-pose fallback parsing for the DART-specific extension/presence paths.
+boolean value parsing, and direct helper tests for those deleted APIs are gone.
+Retained helpers cover only element presence, child lookup, numeric scalar
+reads, vector3/vector3i reads, and pose fallback parsing for the DART-specific
+extension/presence paths.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -232,6 +234,15 @@ Additional validation for SDF material diffuse DOM reads:
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 - `pixi run lint`
 - `pixi run build`
+
+Additional validation for removing the SDF helper boolean parser:
+
+- `git diff --check`
+- `pixi run run-cpp-target test_sdf_helpersNone`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit`
 
 Changelog decision:
 
