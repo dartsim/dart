@@ -167,9 +167,10 @@ FreeJoint trees, mixed implicit FreeJoint plus explicit parent-world root
 models, and
 revolute/continuous/prismatic/weld/screw/universal child joints with passive
 dynamics metadata (damping, Coulomb friction, spring reference, and spring
-stiffness), sdformat-normalized screw thread pitch (legacy `<thread_pitch>`
-before SDF 1.10 and modern `<screw_thread_pitch>` for SDF 1.10+), SDF 1.11+
-mimic metadata for axis/axis2 follower joints with motor enforcement,
+stiffness), symmetric axis effort and velocity limits,
+sdformat-normalized screw thread pitch (legacy `<thread_pitch>` before SDF
+1.10 and modern `<screw_thread_pitch>` for SDF 1.10+), SDF 1.11+ mimic
+metadata for axis/axis2 follower joints with motor enforcement,
 topology-only ball child joints, model static/mobile and self-collision state,
 link gravity mode, non-default skeleton gravity through a root SDF
 `<world><gravity>` value, inertial parameters, local joint/shape poses, and
@@ -200,7 +201,7 @@ versions, missing mesh URIs, non-finite mesh scales, non-default DART mesh
 color/alpha render policies,
 invalid PBR material factors, non-default visual reflectance, invalid collision
 surface friction, friction direction, or restitution values, NaN joint position
-limits,
+limits, non-lossless asymmetric or NaN joint effort/velocity limits,
 non-finite skeleton gravity, shape poses, inertial data, joint axes,
 pre-SDF-1.11 mimic output, coupler-style mimic enforcement, ball joint limits,
 ball joint dynamics, child `FreeJoint`s, DART Euler joints, planar joints,

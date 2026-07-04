@@ -1467,10 +1467,10 @@ TEST(SdfParser, JointAxisLimitsEffortAndDamping)
   ASSERT_NE(joint, nullptr);
   EXPECT_NEAR(joint->getPositionLowerLimit(0), -1.0, 1e-9);
   EXPECT_NEAR(joint->getPositionUpperLimit(0), 2.0, 1e-9);
-  // SDF parser reads effort/velocity from <limit> but DART's SDF parser
-  // currently only maps position limits and dynamics; velocity/effort limits
-  // remain at defaults (infinity). Verify the position limits and dynamics
-  // properties that ARE parsed.
+  EXPECT_NEAR(joint->getForceLowerLimit(0), -5.5, 1e-9);
+  EXPECT_NEAR(joint->getForceUpperLimit(0), 5.5, 1e-9);
+  EXPECT_NEAR(joint->getVelocityLowerLimit(0), -3.3, 1e-9);
+  EXPECT_NEAR(joint->getVelocityUpperLimit(0), 3.3, 1e-9);
   EXPECT_NEAR(joint->getDampingCoefficient(0), 0.4, 1e-9);
   EXPECT_NEAR(joint->getCoulombFriction(0), 0.2, 1e-9);
 }

@@ -37,8 +37,9 @@ revolute/continuous/prismatic/weld/screw/universal child joints, inertial data,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh geometry, link gravity mode,
 non-default skeleton gravity through root SDF world gravity, passive joint
 dynamics metadata (damping, Coulomb friction, spring reference, and spring
-stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
-axis/axis2 mimic metadata with motor enforcement, explicit parent-world root
+stiffness), symmetric axis effort/velocity limits, sdformat-normalized screw
+thread pitch, SDF 1.11+ axis/axis2 mimic metadata with motor enforcement,
+explicit parent-world root
 joints for supported SDF joint types including continuous revolute roots,
 multiple root FreeJoint trees, mixed implicit FreeJoint plus explicit
 parent-world root models, topology-only ball child joints, model static/mobile
@@ -68,6 +69,7 @@ unsupported coupler-style mimic diagnostics, non-finite visual material
 diagnostics, invalid PBR material diagnostics, unsupported visual reflectance
 diagnostics, non-default DART mesh color/alpha render-policy diagnostics,
 NaN joint position-limit diagnostics, non-finite screw pitch diagnostics,
+asymmetric or NaN joint effort/velocity limit diagnostics,
 non-finite skeleton gravity, shape-pose, inertial-data, and joint-axis
 diagnostics, invalid collision-surface friction, friction-direction values,
 slip, restitution, and friction-direction-frame diagnostics, unsupported
@@ -121,10 +123,12 @@ Standard SDF joint reads traverse `sdf::Model`,
 name/type,
 parent/child links, local pose, axis vectors including
 `axis/xyz@expressed_in` frame resolution, axis dynamics, finite position limits,
-mimic metadata, and sdformat-normalized screw pitch values. sdformat Element
-presence checks remain only where DART preserves authored/default distinctions
-for existing diagnostics, reads DART-specific soft-body extension fields, or
-supports the legacy `use_parent_model_frame` presence check. Those standard SDF
+mimic metadata, sdformat-normalized screw pitch values, and authored
+axis-limit effort/velocity values mapped into symmetric DART force/velocity
+limits. sdformat Element presence checks remain only where DART preserves
+authored/default distinctions for existing diagnostics, reads DART-specific
+soft-body extension fields, or supports the legacy `use_parent_model_frame`
+presence check. Those standard SDF
 authored/default checks now use sdformat explicit-authored flags and
 sdformat `Element::FindElement()` lookup instead of raw child-existence
 probing. The compatibility boolean value now uses sdformat typed element access
@@ -1072,6 +1076,28 @@ Changelog decision:
   writer contract; the DART 7 IO and Parsing entry already says unsupported
   constructs are reported explicitly.
 - Follow-up: none
+
+Additional validation for SDF joint-axis effort/velocity limit IO:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfParser && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfParser --gtest_filter=SdfParser.JointAxisLimitsEffortAndDamping'`
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsJointAxisVelocityAndEffortLimits:SdfWriter.AsymmetricJointVelocityLimitReturnsError:SdfWriter.AsymmetricJointForceLimitReturnsError:SdfWriter.NaNJointVelocityLimitReturnsError:SdfWriter.NaNJointForceLimitReturnsError'`
+
+Changelog decision:
+
+- Mode: draft
+- Base evidence: `origin/main`
+- Scope evidence: focused diff in `dart/utils/sdf/sdf_parser.cpp`,
+  `dart/utils/sdf/sdf_writer.cpp`, `tests/integration/io/test_sdf_parser.cpp`,
+  `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
+  `CHANGELOG.md`, and this SKEL evolution task folder
+- Decision: entry required as a revision to the existing DART 7 SDF writer
+  bullet
+- Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing
+- Entry text: the existing conservative SDF writer bullet now includes
+  symmetric effort/velocity limits; no separate bullet is needed.
+- PR-body note: N/A
+- Follow-up: add the implementation PR link after a PR exists and maintainer /
+  user approval allows the PR update or follow-up push.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

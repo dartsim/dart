@@ -109,6 +109,7 @@ using WriteError = common::Error;
 using WriteResult = common::Result<void, WriteError>;
 using StringResult = common::Result<std::string, WriteError>;
 using GeometryResult = common::Result<sdf::Geometry, WriteError>;
+using AxisLimitResult = common::Result<std::optional<double>, common::Error>;
 
 gz::math::Vector3d toGzVector3(const Eigen::Vector3d& vector)
 {
@@ -705,6 +706,53 @@ WriteResult applyMimic(
           0.0));
 
   return ok();
+}
+
+AxisLimitResult symmetricAbsoluteAxisLimit(
+    const dynamics::Joint& joint,
+    std::size_t dofIndex,
+    double lower,
+    double upper,
+    std::string_view dartName,
+    std::string_view sdfName)
+{
+  const std::string context = "SDF joint [" + joint.getName() + "] DoF ["
+                              + std::to_string(dofIndex) + "]";
+
+  if (std::isnan(lower) || std::isnan(upper)) {
+    return AxisLimitResult::err(WriteError(
+        "Cannot write " + context + " with NaN " + std::string(dartName)
+        + " limits."));
+  }
+
+  const bool lowerIsDefault = std::isinf(lower) && lower < 0.0;
+  const bool upperIsDefault = std::isinf(upper) && upper > 0.0;
+  if (lowerIsDefault && upperIsDefault) {
+    return AxisLimitResult::ok(std::nullopt);
+  }
+
+  if (!std::isfinite(lower) || !std::isfinite(upper)) {
+    return AxisLimitResult::err(WriteError(
+        "Cannot write " + context + " with asymmetric " + std::string(dartName)
+        + " limits because SDF axis " + std::string(sdfName)
+        + " stores a maximum absolute value."));
+  }
+
+  if (lower > upper) {
+    return AxisLimitResult::err(WriteError(
+        "Cannot write " + context + " with invalid " + std::string(dartName)
+        + " limits."));
+  }
+
+  constexpr double kTolerance = 1e-12;
+  if (upper < 0.0 || lower > 0.0 || std::abs(lower + upper) > kTolerance) {
+    return AxisLimitResult::err(WriteError(
+        "Cannot write " + context + " with asymmetric " + std::string(dartName)
+        + " limits because SDF axis " + std::string(sdfName)
+        + " stores a maximum absolute value."));
+  }
+
+  return AxisLimitResult::ok(std::max(std::abs(lower), std::abs(upper)));
 }
 
 GeometryResult makeGeometry(const dynamics::Shape& shape)
@@ -1319,6 +1367,34 @@ WriteResult configureAxis(
   }
   if (std::isfinite(upper)) {
     sdfAxis.SetUpper(upper);
+  }
+
+  const auto velocityLimit = symmetricAbsoluteAxisLimit(
+      joint,
+      dofIndex,
+      joint.getVelocityLowerLimit(dofIndex),
+      joint.getVelocityUpperLimit(dofIndex),
+      "velocity",
+      "velocity");
+  if (velocityLimit.isErr()) {
+    return WriteResult::err(velocityLimit.error());
+  }
+  if (velocityLimit.value()) {
+    sdfAxis.SetMaxVelocity(*velocityLimit.value());
+  }
+
+  const auto effortLimit = symmetricAbsoluteAxisLimit(
+      joint,
+      dofIndex,
+      joint.getForceLowerLimit(dofIndex),
+      joint.getForceUpperLimit(dofIndex),
+      "force/effort",
+      "effort");
+  if (effortLimit.isErr()) {
+    return WriteResult::err(effortLimit.error());
+  }
+  if (effortLimit.value()) {
+    sdfAxis.SetEffort(*effortLimit.value());
   }
 
   const double damping = joint.getDampingCoefficient(dofIndex);

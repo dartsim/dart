@@ -495,6 +495,29 @@ void expectUnsupportedRootJointError(
       << result.error().message;
 }
 
+dynamics::RevoluteJoint* createLimitProbeJoint(
+    dynamics::SkeletonPtr& skeleton, std::string_view skeletonName)
+{
+  skeleton = dynamics::Skeleton::create(std::string(skeletonName));
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::RevoluteJoint::Properties hingeProperties;
+  hingeProperties.mName = "limited_hinge";
+  hingeProperties.mAxis = Eigen::Vector3d::UnitZ();
+
+  dynamics::BodyNode::Properties tipProperties;
+  tipProperties.mName = "tip";
+
+  auto [hinge, tip]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          base, hingeProperties, tipProperties);
+  (void)tip;
+  return hinge;
+}
+
 } // namespace
 
 //==============================================================================
@@ -753,6 +776,46 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
           *ballTip, 0, 1);
   ASSERT_NE(ballTipSphere, nullptr);
   EXPECT_NEAR(ballTipSphere->getRadius(), 0.05, 1e-12);
+}
+
+//==============================================================================
+TEST(SdfWriter, RoundTripsJointAxisVelocityAndEffortLimits)
+{
+  dynamics::SkeletonPtr skeleton;
+  auto* hinge = createLimitProbeJoint(skeleton, "axis_limit_writer");
+  ASSERT_NE(hinge, nullptr);
+  hinge->setVelocityLowerLimit(0, -3.3);
+  hinge->setVelocityUpperLimit(0, 3.3);
+  hinge->setForceLowerLimit(0, -5.5);
+  hinge->setForceUpperLimit(0, 5.5);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfJoint = sdfRoot.Model()->JointByName("limited_hinge");
+  ASSERT_NE(sdfJoint, nullptr);
+  ASSERT_NE(sdfJoint->Axis(0), nullptr);
+  EXPECT_DOUBLE_EQ(sdfJoint->Axis(0)->MaxVelocity(), 3.3);
+  EXPECT_DOUBLE_EQ(sdfJoint->Axis(0)->Effort(), 5.5);
+
+  const auto path = writeTempSdf(writeResult.value(), "axis_limits");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  const auto* reparsedHinge
+      = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, "limited_hinge");
+  ASSERT_NE(reparsedHinge, nullptr);
+  EXPECT_DOUBLE_EQ(reparsedHinge->getVelocityLowerLimit(0), -3.3);
+  EXPECT_DOUBLE_EQ(reparsedHinge->getVelocityUpperLimit(0), 3.3);
+  EXPECT_DOUBLE_EQ(reparsedHinge->getForceLowerLimit(0), -5.5);
+  EXPECT_DOUBLE_EQ(reparsedHinge->getForceUpperLimit(0), 5.5);
 }
 
 //==============================================================================
@@ -3160,6 +3223,70 @@ TEST(SdfWriter, NonFiniteJointAxisReturnsError)
   const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(result.error().message.find("non-finite axis"), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, AsymmetricJointVelocityLimitReturnsError)
+{
+  dynamics::SkeletonPtr skeleton;
+  auto* hinge = createLimitProbeJoint(skeleton, "asymmetric_velocity_limit");
+  ASSERT_NE(hinge, nullptr);
+  hinge->setVelocityLowerLimit(0, -1.0);
+  hinge->setVelocityUpperLimit(0, 2.0);
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("asymmetric velocity limits"),
+      std::string::npos)
+      << result.error().message;
+}
+
+//==============================================================================
+TEST(SdfWriter, AsymmetricJointForceLimitReturnsError)
+{
+  dynamics::SkeletonPtr skeleton;
+  auto* hinge = createLimitProbeJoint(skeleton, "asymmetric_force_limit");
+  ASSERT_NE(hinge, nullptr);
+  hinge->setForceLowerLimit(0, -1.0);
+  hinge->setForceUpperLimit(0, 2.0);
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("asymmetric force/effort limits"),
+      std::string::npos)
+      << result.error().message;
+}
+
+//==============================================================================
+TEST(SdfWriter, NaNJointVelocityLimitReturnsError)
+{
+  dynamics::SkeletonPtr skeleton;
+  auto* hinge = createLimitProbeJoint(skeleton, "nan_velocity_limit");
+  ASSERT_NE(hinge, nullptr);
+  hinge->setVelocityLowerLimit(0, std::numeric_limits<double>::quiet_NaN());
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("NaN velocity limits"), std::string::npos)
+      << result.error().message;
+}
+
+//==============================================================================
+TEST(SdfWriter, NaNJointForceLimitReturnsError)
+{
+  dynamics::SkeletonPtr skeleton;
+  auto* hinge = createLimitProbeJoint(skeleton, "nan_force_limit");
+  ASSERT_NE(hinge, nullptr);
+  hinge->setForceUpperLimit(0, std::numeric_limits<double>::quiet_NaN());
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("NaN force/effort limits"), std::string::npos)
+      << result.error().message;
 }
 
 //==============================================================================

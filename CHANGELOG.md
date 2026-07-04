@@ -205,7 +205,8 @@ compatibility remains on the active DART 6 LTS branch._
   model self-collision state, non-default skeleton gravity through SDF world
   gravity,
   revolute/continuous/prismatic/weld/screw/universal joints with
-  damping/friction/spring metadata, sdformat-normalized screw thread pitch,
+  damping/friction/spring metadata, symmetric effort/velocity limits,
+  sdformat-normalized screw thread pitch,
   topology-only ball joints, explicit parent-world root joints for supported
   SDF joint types including continuous revolute roots, link gravity mode, local
   poses, inertial data,

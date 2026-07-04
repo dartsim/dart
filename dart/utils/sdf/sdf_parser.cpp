@@ -1797,6 +1797,10 @@ static bool readAxisElement(
     Eigen::Vector3d& axis,
     double& lower,
     double& upper,
+    double& velocityLower,
+    double& velocityUpper,
+    double& forceLower,
+    double& forceUpper,
     double& initial,
     double& rest,
     double& damping,
@@ -1847,6 +1851,38 @@ static bool readAxisElement(
       upper = axisElement.Upper();
       hasFinitePositionLimit = hasFinitePositionLimit || std::isfinite(upper);
     }
+
+    // velocity
+    if (hasAuthoredElement(limitElement, "velocity")) {
+      const double maxVelocity = axisElement.MaxVelocity();
+      if (std::isfinite(maxVelocity) && maxVelocity >= 0.0) {
+        velocityLower = -maxVelocity;
+        velocityUpper = maxVelocity;
+      } else if (std::isinf(maxVelocity) && maxVelocity > 0.0) {
+        velocityLower = -math::inf;
+        velocityUpper = math::inf;
+      } else {
+        DART_WARN(
+            "[SdfParser] Ignoring invalid joint axis velocity limit [{}].",
+            maxVelocity);
+      }
+    }
+
+    // effort
+    if (hasAuthoredElement(limitElement, "effort")) {
+      const double effort = axisElement.Effort();
+      if (std::isfinite(effort) && effort >= 0.0) {
+        forceLower = -effort;
+        forceUpper = effort;
+      } else if (std::isinf(effort) && effort > 0.0) {
+        forceLower = -math::inf;
+        forceUpper = math::inf;
+      } else {
+        DART_WARN(
+            "[SdfParser] Ignoring invalid joint axis effort limit [{}].",
+            effort);
+      }
+    }
   }
 
   // If the zero position is out of our limits, we should change the initial
@@ -1891,6 +1927,10 @@ dynamics::RevoluteJoint::Properties readRevoluteJoint(
         newRevoluteJoint.mAxis,
         newRevoluteJoint.mPositionLowerLimits[0],
         newRevoluteJoint.mPositionUpperLimits[0],
+        newRevoluteJoint.mVelocityLowerLimits[0],
+        newRevoluteJoint.mVelocityUpperLimits[0],
+        newRevoluteJoint.mForceLowerLimits[0],
+        newRevoluteJoint.mForceUpperLimits[0],
         newRevoluteJoint.mInitialPositions[0],
         newRevoluteJoint.mRestPositions[0],
         newRevoluteJoint.mDampingCoefficients[0],
@@ -1920,6 +1960,10 @@ dynamics::PrismaticJoint::Properties readPrismaticJoint(
         newPrismaticJoint.mAxis,
         newPrismaticJoint.mPositionLowerLimits[0],
         newPrismaticJoint.mPositionUpperLimits[0],
+        newPrismaticJoint.mVelocityLowerLimits[0],
+        newPrismaticJoint.mVelocityUpperLimits[0],
+        newPrismaticJoint.mForceLowerLimits[0],
+        newPrismaticJoint.mForceUpperLimits[0],
         newPrismaticJoint.mInitialPositions[0],
         newPrismaticJoint.mRestPositions[0],
         newPrismaticJoint.mDampingCoefficients[0],
@@ -1949,6 +1993,10 @@ dynamics::ScrewJoint::Properties readScrewJoint(
         newScrewJoint.mAxis,
         newScrewJoint.mPositionLowerLimits[0],
         newScrewJoint.mPositionUpperLimits[0],
+        newScrewJoint.mVelocityLowerLimits[0],
+        newScrewJoint.mVelocityUpperLimits[0],
+        newScrewJoint.mForceLowerLimits[0],
+        newScrewJoint.mForceUpperLimits[0],
         newScrewJoint.mInitialPositions[0],
         newScrewJoint.mRestPositions[0],
         newScrewJoint.mDampingCoefficients[0],
@@ -1982,6 +2030,10 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
         newUniversalJoint.mAxis[0],
         newUniversalJoint.mPositionLowerLimits[0],
         newUniversalJoint.mPositionUpperLimits[0],
+        newUniversalJoint.mVelocityLowerLimits[0],
+        newUniversalJoint.mVelocityUpperLimits[0],
+        newUniversalJoint.mForceLowerLimits[0],
+        newUniversalJoint.mForceUpperLimits[0],
         newUniversalJoint.mInitialPositions[0],
         newUniversalJoint.mRestPositions[0],
         newUniversalJoint.mDampingCoefficients[0],
@@ -2000,6 +2052,10 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
         newUniversalJoint.mAxis[1],
         newUniversalJoint.mPositionLowerLimits[1],
         newUniversalJoint.mPositionUpperLimits[1],
+        newUniversalJoint.mVelocityLowerLimits[1],
+        newUniversalJoint.mVelocityUpperLimits[1],
+        newUniversalJoint.mForceLowerLimits[1],
+        newUniversalJoint.mForceUpperLimits[1],
         newUniversalJoint.mInitialPositions[1],
         newUniversalJoint.mRestPositions[1],
         newUniversalJoint.mDampingCoefficients[1],

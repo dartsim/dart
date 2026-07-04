@@ -21,8 +21,9 @@ mapping and diagnostics. It writes BodyNode links, root FreeJoint/WeldJoint
 placement,
 revolute/continuous/prismatic/weld/screw/universal child joints, passive joint
 dynamics metadata (damping, Coulomb friction, spring reference, and spring
-stiffness), sdformat-normalized screw thread pitch (legacy `<thread_pitch>`
-before SDF 1.10 and modern `<screw_thread_pitch>` for SDF 1.10+),
+stiffness), symmetric axis effort/velocity limits, sdformat-normalized screw
+thread pitch (legacy `<thread_pitch>` before SDF 1.10 and modern
+`<screw_thread_pitch>` for SDF 1.10+),
 topology-only ball child joints, SDF 1.11+ mimic metadata for axis/axis2
 follower joints with motor
 enforcement, explicit parent-world root joints for supported SDF joint types
@@ -67,8 +68,9 @@ collision-surface
 friction, slip, restitution, or
 friction-direction frame, unsupported ball-joint metadata, unsupported DART
 child `FreeJoint`s, `EulerJoint`, `PlanarJoint`, `TranslationalJoint2D`,
-`TranslationalJoint`, `SoftBodyNode` export, and non-finite joint dynamics
-return `common::Result` errors instead of being silently dropped.
+`TranslationalJoint`, `SoftBodyNode` export, non-finite joint dynamics, and
+non-lossless asymmetric or NaN joint effort/velocity limits return
+`common::Result` errors instead of being silently dropped.
 DART `PlaneShape`, `HeightmapShape`, and `ConvexMeshShape` now report targeted
 policy diagnostics for the missing finite SDF plane size, source heightmap
 URI/resource policy, or destination URI for generated mesh resources.

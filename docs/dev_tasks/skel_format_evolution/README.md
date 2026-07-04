@@ -31,8 +31,9 @@
       writer slice is implemented locally for a conservative `Skeleton` subset
       using libsdformat DOM serialization; link gravity mode, passive joint
       dynamics metadata (damping, Coulomb friction, spring reference, and spring
-      stiffness), sdformat-normalized screw thread pitch, SDF 1.11+ axis/axis2
-      mimic metadata, universal two-axis joints, continuous revolute joints,
+      stiffness), symmetric axis effort/velocity limits,
+      sdformat-normalized screw thread pitch, SDF 1.11+ axis/axis2 mimic
+      metadata, universal two-axis joints, continuous revolute joints,
       explicit parent-world root joints for supported SDF joint types,
       including continuous revolute roots, multiple root FreeJoint trees, mixed
       implicit FreeJoint plus explicit parent-world root models,
@@ -61,7 +62,10 @@
       pre-SDF-1.11 mimic diagnostics, unsupported coupler-style mimic
       diagnostics, and relative/generated mesh resource diagnostics now have
       focused coverage. NaN joint position limits now fail with explicit
-      diagnostics instead of being treated like unbounded SDF limits. Invalid
+      diagnostics instead of being treated like unbounded SDF limits. Symmetric
+      joint-axis effort/velocity limits now have read/write/read coverage, and
+      asymmetric or NaN effort/velocity limits fail with explicit diagnostics
+      because SDF stores those fields as maximum absolute values. Invalid
       collision-surface
       friction, slip, restitution, and non-collision-frame friction-direction
       values, non-default visual reflectance, and non-default DART mesh
@@ -248,11 +252,12 @@ SKEL-YAML direction just because the prototype once existed.
   slice is covered by `INTEGRATION_io_SdfWriter`, which writes and re-reads a
   representative supported `Skeleton` subset and checks unsupported-shape
   diagnostics plus non-finite visual material, invalid PBR material, and
-  unsupported visual reflectance diagnostics. It also proves link-level gravity mode for gravity-disabled
-  links and passive joint dynamics metadata plus sdformat-normalized screw
-  thread pitch for supported single-axis
-  joints, two-axis universal joints, SDF 1.11+ axis/axis2 mimic metadata with
-  motor enforcement, continuous revolute joints, explicit parent-world root
+  unsupported visual reflectance diagnostics. It also proves link-level gravity
+  mode for gravity-disabled links and passive joint dynamics metadata plus
+  symmetric axis effort/velocity limits and sdformat-normalized screw thread
+  pitch for supported single-axis joints, two-axis universal joints, SDF 1.11+
+  axis/axis2 mimic metadata with motor enforcement, continuous revolute joints,
+  explicit parent-world root
   joints for supported SDF joint types, including continuous revolute roots,
   multiple root FreeJoint trees, mixed implicit FreeJoint plus explicit
   parent-world root models, topology-only ball joints, model static/mobile
