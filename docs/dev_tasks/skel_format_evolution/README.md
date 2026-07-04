@@ -109,6 +109,11 @@
       serialized XML attributes back out of sdformat's element tree, and its
       required element-tree patching now uses direct sdformat child traversal
       instead of schema lookup.
+      SDF writer tests validate standard semantics by reparsing emitted SDF
+      through `sdf::Root::LoadSdfString()` and inspecting libsdformat DOM
+      objects; literal XML substring checks are retained only for serialized
+      schema element-name contracts that sdformat normalizes semantically, such
+      as legacy `<thread_pitch>` versus modern `<screw_thread_pitch>`.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor
       save-load belongs to the scene/project layer. Broader SDF coverage, URDF

@@ -71,9 +71,12 @@
 #include <sdf/Collision.hh>
 #include <sdf/Geometry.hh>
 #include <sdf/Joint.hh>
+#include <sdf/JointAxis.hh>
 #include <sdf/Link.hh>
+#include <sdf/Material.hh>
 #include <sdf/Mesh.hh>
 #include <sdf/Model.hh>
+#include <sdf/Pbr.hh>
 #include <sdf/Root.hh>
 #include <sdf/Surface.hh>
 #include <sdf/Visual.hh>
@@ -446,50 +449,66 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   const auto writeResult
       = utils::SdfParser::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
-  EXPECT_NE(
-      writeResult.value().find("<model name='writer_roundtrip'>"),
-      std::string::npos);
-  EXPECT_NE(
-      writeResult.value().find("<gravity>false</gravity>"), std::string::npos);
-  EXPECT_NE(
-      writeResult.value().find("<joint name='screw_drive' type='screw'>"),
-      std::string::npos);
-  EXPECT_NE(
-      writeResult.value().find("<joint name='hinge' type='revolute'>"),
-      std::string::npos);
   EXPECT_NE(writeResult.value().find("<thread_pitch>"), std::string::npos);
   EXPECT_EQ(
       writeResult.value().find("<screw_thread_pitch>"), std::string::npos);
+
   sdf::Root sdfRoot;
   const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
   ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
-  ASSERT_NE(sdfRoot.Model(), nullptr);
-  const auto* sdfScrewJoint = sdfRoot.Model()->JointByName("screw_drive");
+  const auto* sdfModel = sdfRoot.Model();
+  ASSERT_NE(sdfModel, nullptr);
+  EXPECT_EQ(sdfModel->Name(), "writer_roundtrip");
+
+  const auto* sdfFixedLink = sdfModel->LinkByName("fixed");
+  ASSERT_NE(sdfFixedLink, nullptr);
+  EXPECT_FALSE(sdfFixedLink->EnableGravity());
+
+  const auto* sdfHingeJoint = sdfModel->JointByName("hinge");
+  ASSERT_NE(sdfHingeJoint, nullptr);
+  EXPECT_EQ(sdfHingeJoint->Type(), sdf::JointType::REVOLUTE);
+
+  const auto* sdfScrewJoint = sdfModel->JointByName("screw_drive");
   ASSERT_NE(sdfScrewJoint, nullptr);
+  EXPECT_EQ(sdfScrewJoint->Type(), sdf::JointType::SCREW);
   EXPECT_NEAR(sdfScrewJoint->ScrewThreadPitch(), 0.25, 1e-12);
-  EXPECT_NE(
-      writeResult.value().find(
-          "<joint name='universal_shoulder' type='universal'>"),
-      std::string::npos);
-  EXPECT_NE(writeResult.value().find("<axis2>"), std::string::npos);
-  EXPECT_NE(
-      writeResult.value().find("<joint name='ball_socket' type='ball'>"),
-      std::string::npos);
-  EXPECT_NE(writeResult.value().find("<ellipsoid>"), std::string::npos);
-  EXPECT_NE(
-      writeResult.value().find("<damping>0.25</damping>"), std::string::npos);
-  EXPECT_NE(
-      writeResult.value().find("<friction>0.125</friction>"),
-      std::string::npos);
-  EXPECT_NE(
-      writeResult.value().find("<spring_reference>-0.5</spring_reference>"),
-      std::string::npos);
-  EXPECT_NE(
-      writeResult.value().find("<spring_stiffness>3.75</spring_stiffness>"),
-      std::string::npos);
-  EXPECT_NE(writeResult.value().find("<diffuse>"), std::string::npos);
-  EXPECT_NE(writeResult.value().find("<metalness>"), std::string::npos);
-  EXPECT_NE(writeResult.value().find("<roughness>"), std::string::npos);
+
+  const auto* sdfUniversalJoint = sdfModel->JointByName("universal_shoulder");
+  ASSERT_NE(sdfUniversalJoint, nullptr);
+  EXPECT_EQ(sdfUniversalJoint->Type(), sdf::JointType::UNIVERSAL);
+  ASSERT_NE(sdfUniversalJoint->Axis(1), nullptr);
+
+  const auto* sdfBallJoint = sdfModel->JointByName("ball_socket");
+  ASSERT_NE(sdfBallJoint, nullptr);
+  EXPECT_EQ(sdfBallJoint->Type(), sdf::JointType::BALL);
+
+  ASSERT_NE(sdfHingeJoint->Axis(0), nullptr);
+  EXPECT_NEAR(sdfHingeJoint->Axis(0)->Damping(), 0.25, 1e-12);
+  EXPECT_NEAR(sdfHingeJoint->Axis(0)->Friction(), 0.125, 1e-12);
+  EXPECT_NEAR(sdfHingeJoint->Axis(0)->SpringReference(), -0.5, 1e-12);
+  EXPECT_NEAR(sdfHingeJoint->Axis(0)->SpringStiffness(), 3.75, 1e-12);
+
+  const auto* sdfUniversalTip = sdfModel->LinkByName("universal_tip");
+  ASSERT_NE(sdfUniversalTip, nullptr);
+  const auto* sdfEllipsoidVisual
+      = sdfUniversalTip->VisualByName("universal_tip_ellipsoid");
+  ASSERT_NE(sdfEllipsoidVisual, nullptr);
+  ASSERT_NE(sdfEllipsoidVisual->Geom(), nullptr);
+  EXPECT_EQ(sdfEllipsoidVisual->Geom()->Type(), sdf::GeometryType::ELLIPSOID);
+
+  const auto* sdfBase = sdfModel->LinkByName("base");
+  ASSERT_NE(sdfBase, nullptr);
+  const auto* sdfBaseVisual = sdfBase->VisualByName("base_box");
+  ASSERT_NE(sdfBaseVisual, nullptr);
+  const auto* sdfBaseMaterial = sdfBaseVisual->Material();
+  ASSERT_NE(sdfBaseMaterial, nullptr);
+  EXPECT_EQ(sdfBaseMaterial->Diffuse(), gz::math::Color(0.2, 0.4, 0.6, 0.8));
+  ASSERT_NE(sdfBaseMaterial->PbrMaterial(), nullptr);
+  const auto* workflow
+      = sdfBaseMaterial->PbrMaterial()->Workflow(sdf::PbrWorkflowType::METAL);
+  ASSERT_NE(workflow, nullptr);
+  EXPECT_NEAR(workflow->Metalness(), 0.65, 1e-12);
+  EXPECT_NEAR(workflow->Roughness(), 0.35, 1e-12);
 
   const auto path = writeTempSdf(writeResult.value(), "roundtrip");
   const auto reparsed = utils::SdfParser::readSkeleton(
@@ -730,9 +749,19 @@ TEST(SdfWriter, PreservesAbsoluteNonFileMeshUris)
   const auto writeResult
       = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
-  EXPECT_NE(
-      writeResult.value().find("<uri>" + meshUri + "</uri>"),
-      std::string::npos);
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfLink = sdfRoot.Model()->LinkByName("mesh_body");
+  ASSERT_NE(sdfLink, nullptr);
+  const auto* sdfVisual = sdfLink->VisualByName("memory_mesh_visual");
+  ASSERT_NE(sdfVisual, nullptr);
+  ASSERT_NE(sdfVisual->Geom(), nullptr);
+  const auto* sdfMesh = sdfVisual->Geom()->MeshShape();
+  ASSERT_NE(sdfMesh, nullptr);
+  EXPECT_EQ(sdfMesh->Uri(), meshUri);
 
   const std::string modelUri = "memory://pkg/models/writer_roundtrip.sdf";
   retriever->add(modelUri, writeResult.value());
@@ -855,10 +884,16 @@ TEST(SdfWriter, IncludeOptionsControlVisualAndCollisionEntries)
   const auto noVisuals
       = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
   ASSERT_TRUE(noVisuals.isOk()) << noVisuals.error().message;
-  EXPECT_EQ(noVisuals.value().find("<visual "), std::string::npos);
-  EXPECT_NE(
-      noVisuals.value().find("<collision name='collision_sphere'>"),
-      std::string::npos);
+
+  sdf::Root noVisualsRoot;
+  const auto noVisualsErrors = noVisualsRoot.LoadSdfString(noVisuals.value());
+  ASSERT_TRUE(noVisualsErrors.empty()) << noVisualsErrors.front().Message();
+  ASSERT_NE(noVisualsRoot.Model(), nullptr);
+  const auto* noVisualsLink = noVisualsRoot.Model()->LinkByName("body");
+  ASSERT_NE(noVisualsLink, nullptr);
+  EXPECT_EQ(noVisualsLink->VisualCount(), 0u);
+  ASSERT_EQ(noVisualsLink->CollisionCount(), 1u);
+  ASSERT_NE(noVisualsLink->CollisionByName("collision_sphere"), nullptr);
 
   options.includeVisuals = true;
   options.includeCollisions = false;
@@ -866,10 +901,18 @@ TEST(SdfWriter, IncludeOptionsControlVisualAndCollisionEntries)
   const auto noCollisions
       = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
   ASSERT_TRUE(noCollisions.isOk()) << noCollisions.error().message;
-  EXPECT_NE(
-      noCollisions.value().find("<visual name='visible_box'>"),
-      std::string::npos);
-  EXPECT_EQ(noCollisions.value().find("<collision "), std::string::npos);
+
+  sdf::Root noCollisionsRoot;
+  const auto noCollisionsErrors
+      = noCollisionsRoot.LoadSdfString(noCollisions.value());
+  ASSERT_TRUE(noCollisionsErrors.empty())
+      << noCollisionsErrors.front().Message();
+  ASSERT_NE(noCollisionsRoot.Model(), nullptr);
+  const auto* noCollisionsLink = noCollisionsRoot.Model()->LinkByName("body");
+  ASSERT_NE(noCollisionsLink, nullptr);
+  ASSERT_EQ(noCollisionsLink->VisualCount(), 1u);
+  ASSERT_NE(noCollisionsLink->VisualByName("visible_box"), nullptr);
+  EXPECT_EQ(noCollisionsLink->CollisionCount(), 0u);
 }
 
 //==============================================================================
@@ -1013,9 +1056,6 @@ TEST(SdfWriter, RoundTripsVisualTransparency)
   const auto writeResult
       = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
-  EXPECT_NE(
-      writeResult.value().find("<transparency>0.25</transparency>"),
-      std::string::npos);
 
   sdf::Root sdfRoot;
   const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
@@ -1069,7 +1109,6 @@ TEST(SdfWriter, RoundTripsCollisionSurfaceOdeFriction)
   const auto writeResult
       = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
-  EXPECT_NE(writeResult.value().find("<surface>"), std::string::npos);
 
   sdf::Root sdfRoot;
   const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
@@ -1286,10 +1325,14 @@ TEST(SdfWriter, RoundTripsContinuousRevoluteJoint)
   const auto writeResult
       = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
-  EXPECT_NE(
-      writeResult.value().find(
-          "<joint name='continuous_hinge' type='continuous'>"),
-      std::string::npos);
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfJoint = sdfRoot.Model()->JointByName("continuous_hinge");
+  ASSERT_NE(sdfJoint, nullptr);
+  EXPECT_EQ(sdfJoint->Type(), sdf::JointType::CONTINUOUS);
 
   const auto path = writeTempSdf(writeResult.value(), "continuous");
   const auto reparsed = utils::SdfParser::readSkeleton(
@@ -1353,16 +1396,21 @@ TEST(SdfWriter, RoundTripsMimicMetadataWithSdf111)
   const auto writeResult
       = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
-  EXPECT_NE(
-      writeResult.value().find("<mimic joint='reference_joint' axis='axis2'>"),
-      std::string::npos);
-  EXPECT_NE(
-      writeResult.value().find("<multiplier>0.75</multiplier>"),
-      std::string::npos);
-  EXPECT_NE(
-      writeResult.value().find("<offset>0.125</offset>"), std::string::npos);
-  EXPECT_NE(
-      writeResult.value().find("<reference>0</reference>"), std::string::npos);
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfJoint = sdfRoot.Model()->JointByName("follower_joint");
+  ASSERT_NE(sdfJoint, nullptr);
+  ASSERT_NE(sdfJoint->Axis(1), nullptr);
+  const auto mimic = sdfJoint->Axis(1)->Mimic();
+  ASSERT_TRUE(mimic.has_value());
+  EXPECT_EQ(mimic->Joint(), "reference_joint");
+  EXPECT_EQ(mimic->Axis(), "axis2");
+  EXPECT_NEAR(mimic->Multiplier(), 0.75, 1e-12);
+  EXPECT_NEAR(mimic->Offset(), 0.125, 1e-12);
+  EXPECT_NEAR(mimic->Reference(), 0.0, 1e-12);
 
   const auto path = writeTempSdf(writeResult.value(), "mimic");
   const auto reparsed = utils::SdfParser::readSkeleton(
@@ -1489,8 +1537,12 @@ TEST(SdfWriter, RootWeldRoundTripsWithFixedRootOption)
   const auto writeResult
       = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
-  EXPECT_NE(
-      writeResult.value().find("<static>true</static>"), std::string::npos);
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  EXPECT_TRUE(sdfRoot.Model()->Static());
 
   const auto path = writeTempSdf(writeResult.value(), "root_weld");
   const utils::SdfParser::Options options(
@@ -1500,6 +1552,7 @@ TEST(SdfWriter, RootWeldRoundTripsWithFixedRootOption)
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
+  EXPECT_FALSE(reparsed->isMobile());
   ASSERT_EQ(reparsed->getNumBodyNodes(), 1u);
   ASSERT_EQ(reparsed->getNumJoints(), 1u);
   const auto* root = test::requireJoint<dynamics::WeldJoint>(*reparsed, "root");
@@ -1542,11 +1595,6 @@ TEST(SdfWriter, RootRevoluteJointRoundTripsAsParentWorld)
   const auto writeResult
       = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
-  EXPECT_NE(
-      writeResult.value().find("<joint name='world_hinge' type='revolute'>"),
-      std::string::npos);
-  EXPECT_NE(
-      writeResult.value().find("<parent>world</parent>"), std::string::npos);
 
   sdf::Root sdfRoot;
   const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
@@ -1554,6 +1602,7 @@ TEST(SdfWriter, RootRevoluteJointRoundTripsAsParentWorld)
   ASSERT_NE(sdfRoot.Model(), nullptr);
   const auto* sdfJoint = sdfRoot.Model()->JointByName("world_hinge");
   ASSERT_NE(sdfJoint, nullptr);
+  EXPECT_EQ(sdfJoint->Type(), sdf::JointType::REVOLUTE);
   EXPECT_EQ(sdfJoint->ParentName(), "world");
   EXPECT_EQ(sdfJoint->ChildName(), "pendulum");
 
@@ -1970,8 +2019,21 @@ TEST(SdfWriter, RoundTripsCapsuleAndConeGeometry)
   const auto writeResult
       = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
-  EXPECT_NE(writeResult.value().find("<capsule>"), std::string::npos);
-  EXPECT_NE(writeResult.value().find("<cone>"), std::string::npos);
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfLink = sdfRoot.Model()->LinkByName("body");
+  ASSERT_NE(sdfLink, nullptr);
+  const auto* sdfCapsuleVisual = sdfLink->VisualByName("capsule_visual");
+  ASSERT_NE(sdfCapsuleVisual, nullptr);
+  ASSERT_NE(sdfCapsuleVisual->Geom(), nullptr);
+  EXPECT_EQ(sdfCapsuleVisual->Geom()->Type(), sdf::GeometryType::CAPSULE);
+  const auto* sdfConeCollision = sdfLink->CollisionByName("cone_collision");
+  ASSERT_NE(sdfConeCollision, nullptr);
+  ASSERT_NE(sdfConeCollision->Geom(), nullptr);
+  EXPECT_EQ(sdfConeCollision->Geom()->Type(), sdf::GeometryType::CONE);
 
   const auto path = writeTempSdf(writeResult.value(), "capsule_cone");
   const auto reparsed = utils::SdfParser::readSkeleton(

@@ -52,7 +52,7 @@ namespace io {
 /// Supported model formats for reading Skeletons.
 enum class ModelFormat
 {
-  /// Infer from URI (extension / XML root element).
+  /// Infer from URI extension and format-specific content probes.
   Auto = 0,
 
   /// SDF format (.sdf / .world).

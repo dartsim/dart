@@ -106,6 +106,11 @@ link/joint names and values now come from the typed `sdf::Model`,
 `sdf::Link`, and `sdf::Joint` DOM rather than from serialized XML attributes,
 and required patch targets are found by direct sdformat child traversal instead
 of schema lookup.
+The SDF writer tests also keep semantic checks on libsdformat by reparsing
+emitted SDF through `sdf::Root::LoadSdfString()` and inspecting typed DOM
+objects. Serialized XML substring assertions are reserved for element-name
+contracts that sdformat normalizes semantically, such as legacy
+`<thread_pitch>` versus modern `<screw_thread_pitch>`.
 
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.

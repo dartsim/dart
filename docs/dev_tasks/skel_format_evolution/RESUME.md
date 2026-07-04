@@ -181,6 +181,12 @@ inertia, and shape comparisons, and `tests/CMakeLists.txt` includes the helper
 in the formatted test-helper list. This closes the Phase 5 comparison-helper
 infrastructure item, but it does not broaden the public writer contract by
 itself.
+Its SDF semantic assertions now parse the emitted string back through
+`sdf::Root::LoadSdfString()` and inspect libsdformat DOM objects for standard
+model, link, joint, visual, collision, material, mesh, and geometry values.
+Literal XML substring checks remain only for schema element-name contracts that
+sdformat normalizes semantically, such as legacy `<thread_pitch>` versus modern
+`<screw_thread_pitch>`.
 
 The writer API home decision is now recorded in
 `docs/onboarding/io-parsing.md` and
@@ -219,9 +225,10 @@ Additional validation for URI-backed mesh material variant writer coverage:
   lets DART recover submesh material assignments, PBR factors, diffuse colors,
   and texture paths on reparse.
 
-  ```bash
-  pixi run run-cpp-target INTEGRATION_io_SdfWriter
-  ```
+Additional validation for sdformat-backed writer assertions:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
 Changelog decision:
 
