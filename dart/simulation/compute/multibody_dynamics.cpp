@@ -1682,6 +1682,21 @@ bool prepareMultibodyContactDynamicsInto(
   }
 
   inverseMassMatrixColumnsInto(scratch.tree, scratch, problem.inverseMass);
+  for (std::size_t i = 0; i < scratch.tree.links.size(); ++i) {
+    const auto& link = scratch.tree.links[i];
+    if (link.dof == 0 || link.jointEntity == entt::null) {
+      continue;
+    }
+    const auto& jointActuation
+        = registry.get<comps::JointActuation>(link.jointEntity);
+    if (jointActuation.actuatorType != comps::ActuatorType::Locked) {
+      continue;
+    }
+    const auto first = static_cast<Eigen::Index>(link.dofOffset);
+    const auto count = static_cast<Eigen::Index>(link.dof);
+    problem.inverseMass.middleRows(first, count).setZero();
+    problem.inverseMass.middleCols(first, count).setZero();
+  }
 
   linkBodyJacobiansInto(scratch.tree, scratch.bodyJacobian);
   return true;
