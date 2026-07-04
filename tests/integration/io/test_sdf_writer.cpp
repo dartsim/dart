@@ -371,23 +371,26 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
       = utils::SdfParser::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   EXPECT_NE(
-      writeResult.value().find("<model name=\"writer_roundtrip\">"),
+      writeResult.value().find("<model name='writer_roundtrip'>"),
       std::string::npos);
   EXPECT_NE(
       writeResult.value().find("<gravity>false</gravity>"), std::string::npos);
   EXPECT_NE(
-      writeResult.value().find("<joint name=\"screw_drive\" type=\"screw\">"),
+      writeResult.value().find("<joint name='screw_drive' type='screw'>"),
+      std::string::npos);
+  EXPECT_NE(
+      writeResult.value().find("<joint name='hinge' type='revolute'>"),
       std::string::npos);
   EXPECT_NE(
       writeResult.value().find("<thread_pitch>0.25</thread_pitch>"),
       std::string::npos);
   EXPECT_NE(
       writeResult.value().find(
-          "<joint name=\"universal_shoulder\" type=\"universal\">"),
+          "<joint name='universal_shoulder' type='universal'>"),
       std::string::npos);
   EXPECT_NE(writeResult.value().find("<axis2>"), std::string::npos);
   EXPECT_NE(
-      writeResult.value().find("<joint name=\"ball_socket\" type=\"ball\">"),
+      writeResult.value().find("<joint name='ball_socket' type='ball'>"),
       std::string::npos);
   EXPECT_NE(
       writeResult.value().find("<damping>0.25</damping>"), std::string::npos);
@@ -400,13 +403,7 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   EXPECT_NE(
       writeResult.value().find("<spring_stiffness>3.75</spring_stiffness>"),
       std::string::npos);
-  EXPECT_NE(
-      writeResult.value().find(
-          "<diffuse>0.20000000000000001 "
-          "0.40000000000000002 "
-          "0.59999999999999998 "
-          "0.80000000000000004</diffuse>"),
-      std::string::npos);
+  EXPECT_NE(writeResult.value().find("<diffuse>"), std::string::npos);
 
   const auto path = writeTempSdf(writeResult.value(), "roundtrip");
   const auto reparsed = utils::SdfParser::readSkeleton(
@@ -644,7 +641,7 @@ TEST(SdfWriter, IncludeOptionsControlVisualAndCollisionEntries)
   ASSERT_TRUE(noVisuals.isOk()) << noVisuals.error().message;
   EXPECT_EQ(noVisuals.value().find("<visual "), std::string::npos);
   EXPECT_NE(
-      noVisuals.value().find("<collision name=\"collision_sphere\">"),
+      noVisuals.value().find("<collision name='collision_sphere'>"),
       std::string::npos);
 
   options.includeVisuals = true;
@@ -654,9 +651,55 @@ TEST(SdfWriter, IncludeOptionsControlVisualAndCollisionEntries)
       = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
   ASSERT_TRUE(noCollisions.isOk()) << noCollisions.error().message;
   EXPECT_NE(
-      noCollisions.value().find("<visual name=\"visible_box\">"),
+      noCollisions.value().find("<visual name='visible_box'>"),
       std::string::npos);
   EXPECT_EQ(noCollisions.value().find("<collision "), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, RoundTripsContinuousRevoluteJoint)
+{
+  auto skeleton = dynamics::Skeleton::create("continuous_writer");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::RevoluteJoint::Properties hingeProperties;
+  hingeProperties.mName = "continuous_hinge";
+  hingeProperties.mAxis = Eigen::Vector3d::UnitZ();
+  hingeProperties.mPositionLowerLimits[0]
+      = -std::numeric_limits<double>::infinity();
+  hingeProperties.mPositionUpperLimits[0]
+      = std::numeric_limits<double>::infinity();
+
+  dynamics::BodyNode::Properties tipProperties;
+  tipProperties.mName = "tip";
+  auto [hinge, tip]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          base, hingeProperties, tipProperties);
+  (void)hinge;
+  (void)tip;
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  EXPECT_NE(
+      writeResult.value().find(
+          "<joint name='continuous_hinge' type='continuous'>"),
+      std::string::npos);
+
+  const auto path = writeTempSdf(writeResult.value(), "continuous");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  const auto* reparsedHinge = test::requireJoint<dynamics::RevoluteJoint>(
+      *reparsed, "continuous_hinge");
+  ASSERT_NE(reparsedHinge, nullptr);
+  EXPECT_TRUE(reparsedHinge->isCyclic(0));
+  EXPECT_VECTOR_NEAR(reparsedHinge->getAxis(), Eigen::Vector3d::UnitZ(), 1e-12);
 }
 
 //==============================================================================
@@ -709,8 +752,7 @@ TEST(SdfWriter, RoundTripsMimicMetadataWithSdf111)
       = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   EXPECT_NE(
-      writeResult.value().find(
-          "<mimic joint=\"reference_joint\" axis=\"axis2\">"),
+      writeResult.value().find("<mimic joint='reference_joint' axis='axis2'>"),
       std::string::npos);
   EXPECT_NE(
       writeResult.value().find("<multiplier>0.75</multiplier>"),

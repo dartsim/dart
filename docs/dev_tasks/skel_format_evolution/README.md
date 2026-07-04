@@ -28,13 +28,14 @@
 - [ ] Phase 5: Export writers for accepted portable/project formats so DART can
       round-trip a scene back to text. Planning is recorded in
       [`05-export-writers-plan.md`](05-export-writers-plan.md). The first SDF
-      writer slice is implemented locally for a conservative `Skeleton` subset;
-      link gravity mode, passive joint dynamics metadata (damping, Coulomb
-      friction, spring reference, and spring stiffness), screw thread pitch,
-      SDF 1.11+ axis/axis2 mimic metadata, universal two-axis joints,
-      topology-only ball joints, and explicit visual material colors now
-      round-trip as SDF `<gravity>`, `<axis>/<axis2><dynamics>`,
-      `<thread_pitch>`, `<mimic>`, local `<pose>`, and `<diffuse>` values.
+      writer slice is implemented locally for a conservative `Skeleton` subset
+      using libsdformat DOM serialization; link gravity mode, passive joint
+      dynamics metadata (damping, Coulomb friction, spring reference, and spring
+      stiffness), screw thread pitch, SDF 1.11+ axis/axis2 mimic metadata,
+      universal two-axis joints, continuous revolute joints, topology-only ball
+      joints, and explicit visual material colors now round-trip as SDF `<gravity>`,
+      `<axis>/<axis2><dynamics>`, `<thread_pitch>`, `<mimic>`, local `<pose>`,
+      and `<diffuse>` values.
       Absolute non-file mesh URIs now have writer read/write/read coverage
       through a custom retriever. Writer options for excluding visuals or
       collisions, missing mesh URI diagnostics, pre-SDF-1.11 mimic diagnostics,
@@ -160,12 +161,13 @@ SKEL-YAML direction just because the prototype once existed.
   link-level gravity mode for gravity-disabled links and passive joint dynamics
   metadata plus screw thread pitch for supported single-axis joints, two-axis
   universal joints, SDF 1.11+ axis/axis2 mimic metadata with motor enforcement,
-  topology-only ball joints, plus local root, joint, and shape poses, plus
-  absolute non-file mesh URI preservation through a custom retriever. It also
-  covers `WriteOptions` visual/collision filtering, the empty mesh URI
-  diagnostic, pre-SDF-1.11 mimic diagnostics, and unsupported coupler-style
-  mimic diagnostics, plus targetless relative/generated mesh resource
-  diagnostics. The assertions are factored through
+  continuous revolute joints, topology-only ball joints, plus local root, joint,
+  and shape poses, plus absolute non-file mesh URI preservation through a
+  custom retriever. It also covers `WriteOptions` visual/collision filtering,
+  the empty mesh URI diagnostic, pre-SDF-1.11 mimic diagnostics, and
+  unsupported coupler-style mimic diagnostics, plus targetless
+  relative/generated mesh resource diagnostics. The assertions are factored
+  through
   `tests/helpers/io_round_trip_helpers.hpp` so future writer formats can reuse
   the body, joint, DoF, inertia, and shape comparison helpers. Completion still
   requires broader accepted-format writer APIs and round-trip tests that load a

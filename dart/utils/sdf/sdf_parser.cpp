@@ -163,6 +163,7 @@ struct SDFJoint
   std::string parentName;
   std::string childName;
   std::string type;
+  sdf::JointType sdfType = sdf::JointType::INVALID;
   struct MimicInfo
   {
     std::string referenceJointName;
@@ -891,36 +892,45 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
 {
   const std::string& type = joint.type;
 
-  if (std::string("prismatic") == type) {
+  if (joint.sdfType == sdf::JointType::PRISMATIC
+      || std::string("prismatic") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
         parent,
         static_cast<const dynamics::PrismaticJoint::Properties&>(
             *joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  } else if (std::string("revolute") == type) {
+  } else if (
+      joint.sdfType == sdf::JointType::REVOLUTE
+      || joint.sdfType == sdf::JointType::CONTINUOUS
+      || std::string("revolute") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
         parent,
         static_cast<const dynamics::RevoluteJoint::Properties&>(
             *joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  } else if (std::string("screw") == type) {
+  } else if (
+      joint.sdfType == sdf::JointType::SCREW || std::string("screw") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint>(
         parent,
         static_cast<const dynamics::ScrewJoint::Properties&>(*joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
   } else if (
-      std::string("revolute2") == type || std::string("universal") == type) {
+      joint.sdfType == sdf::JointType::REVOLUTE2
+      || joint.sdfType == sdf::JointType::UNIVERSAL
+      || std::string("revolute2") == type || std::string("universal") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(
         parent,
         static_cast<const dynamics::UniversalJoint::Properties&>(
             *joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  } else if (std::string("ball") == type) {
+  } else if (
+      joint.sdfType == sdf::JointType::BALL || std::string("ball") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(
         parent,
         static_cast<const dynamics::BallJoint::Properties&>(*joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  } else if (std::string("fixed") == type) {
+  } else if (
+      joint.sdfType == sdf::JointType::FIXED || std::string("fixed") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
         parent,
         static_cast<const dynamics::WeldJoint::Properties&>(*joint.properties),
@@ -1407,6 +1417,9 @@ SDFJoint readJoint(
   // Type attribute
   std::string type = getAttributeString(_jointElement, "type");
   DART_ASSERT(!type.empty());
+  sdf::Joint sdfJoint;
+  (void)sdfJoint.Load(_jointElement);
+  const sdf::JointType sdfType = sdfJoint.Type();
 
   //--------------------------------------------------------------------------
   // Name attribute
@@ -1462,6 +1475,7 @@ SDFJoint readJoint(
   newJoint.parentName
       = (parent_it == _sdfBodyNodes.end()) ? "" : parent_it->first;
   newJoint.childName = (child_it == _sdfBodyNodes.end()) ? "" : child_it->first;
+  newJoint.sdfType = sdfType;
 
   //--------------------------------------------------------------------------
   // Mimic metadata (captured before joint creation)
@@ -1503,25 +1517,33 @@ SDFJoint readJoint(
   Eigen::Isometry3d parentModelFrame
       = (childWorld * childToJoint).inverse() * _skeletonFrame;
 
-  if (type == std::string("fixed")) {
+  if (sdfType == sdf::JointType::FIXED || type == std::string("fixed")) {
     newJoint.properties = dynamics::WeldJoint::Properties::createShared(
         readWeldJoint(_jointElement, parentModelFrame, name));
-  } else if (type == std::string("prismatic")) {
+  } else if (
+      sdfType == sdf::JointType::PRISMATIC
+      || type == std::string("prismatic")) {
     newJoint.properties = dynamics::PrismaticJoint::Properties::createShared(
         readPrismaticJoint(_jointElement, parentModelFrame, name));
-  } else if (type == std::string("revolute")) {
+  } else if (
+      sdfType == sdf::JointType::REVOLUTE
+      || sdfType == sdf::JointType::CONTINUOUS
+      || type == std::string("revolute")) {
     newJoint.properties = dynamics::RevoluteJoint::Properties::createShared(
         readRevoluteJoint(_jointElement, parentModelFrame, name));
-  } else if (type == std::string("screw")) {
+  } else if (sdfType == sdf::JointType::SCREW || type == std::string("screw")) {
     newJoint.properties = dynamics::ScrewJoint::Properties::createShared(
         readScrewJoint(_jointElement, parentModelFrame, name));
   } else if (
-      type == std::string("revolute2") || type == std::string("universal")) {
+      sdfType == sdf::JointType::REVOLUTE2
+      || sdfType == sdf::JointType::UNIVERSAL
+      || type == std::string("revolute2") || type == std::string("universal")) {
     newJoint.properties = dynamics::UniversalJoint::Properties::createShared(
         readUniversalJoint(_jointElement, parentModelFrame, name));
-  } else if (type == std::string("ball")) {
-    newJoint.properties = dynamics::BallJoint::Properties::createShared(
-        readBallJoint(_jointElement, parentModelFrame, name));
+  } else if (sdfType == sdf::JointType::BALL || type == std::string("ball")) {
+    auto ballProperties = dynamics::BallJoint::Properties::createShared();
+    *ballProperties = readBallJoint(_jointElement, parentModelFrame, name);
+    newJoint.properties = ballProperties;
   } else {
     DART_ERROR(
         "Unsupported joint type [{}]. Using [fixed] joint type instead.", type);

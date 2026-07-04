@@ -1058,6 +1058,41 @@ TEST(SdfParser, JointAxisLimitsEffortAndDamping)
 }
 
 //==============================================================================
+TEST(SdfParser, ContinuousJointParsesAsUnboundedRevolute)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/continuous_joint/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="continuous_joint">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="tip">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="continuous_hinge" type="continuous">
+      <parent>base</parent>
+      <child>tip</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+      </axis>
+    </joint>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint = dynamic_cast<dynamics::RevoluteJoint*>(
+      skeleton->getJoint("continuous_hinge"));
+  ASSERT_NE(joint, nullptr);
+  EXPECT_TRUE(joint->isCyclic(0));
+  EXPECT_TRUE(joint->getAxis().isApprox(Eigen::Vector3d::UnitZ(), 1e-9));
+}
+
+//==============================================================================
 TEST(SdfParser, JointTypesParseFromSkeleton)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();

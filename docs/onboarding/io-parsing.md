@@ -140,18 +140,20 @@ DART 7's first export surface is parser-specific:
 `dart::utils::SdfParser::tryWriteSkeletonToString`. It serializes a
 conservative `Skeleton` subset to SDF text and returns `common::Result` so
 unsupported constructs produce explicit errors instead of silently dropping
-state.
+state. The writer builds libsdformat DOM objects and serializes through
+sdformat; DART owns the `Skeleton`-to-SDF semantic mapping and diagnostics.
 
 The initial writer covers BodyNode links, root FreeJoint/WeldJoint placement,
-revolute/prismatic/weld/screw/universal child joints with passive dynamics
-metadata (damping, Coulomb friction, spring reference, and spring stiffness),
-screw thread pitch, SDF 1.11+ mimic metadata for axis/axis2 follower joints
-with motor enforcement, topology-only ball child joints, link gravity mode,
-inertial parameters, local joint/shape poses, and box/sphere/cylinder/mesh
+revolute/continuous/prismatic/weld/screw/universal child joints with passive
+dynamics metadata (damping, Coulomb friction, spring reference, and spring
+stiffness), screw thread pitch, SDF 1.11+ mimic metadata for axis/axis2
+follower joints with motor enforcement, topology-only ball child joints, link
+gravity mode, inertial parameters, local joint/shape poses, and
+box/sphere/cylinder/mesh
 visual or collision geometry with explicit visual material colors. The
 round-trip coverage includes absolute non-file mesh URI preservation through a
 custom retriever. Targetless relative mesh references and relative or
-host-qualified `file` mesh URIs are rejected because the string writer has no
+host-qualified `file` mesh URIs are rejected because the writer has no
 destination SDF URI for resource resolution or generated asset placement.
 `WriteOptions` can exclude visual or collision entries. Missing mesh URIs,
 pre-SDF-1.11 mimic output, coupler-style mimic enforcement, ball joint limits,

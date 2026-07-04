@@ -30,23 +30,28 @@ tests. This planning record does not complete Phase 5.
 The first SDF writer implementation slice is now local on
 `work/skel-format-yaml-decision`: `dart::utils::SdfParser` exposes
 `tryWriteSkeletonToString()` for a conservative `Skeleton` subset, with
-`INTEGRATION_io_SdfWriter` proving write/read round-trip for links, root
-FreeJoint/WeldJoint placement, revolute/prismatic/weld/screw/universal child
-joints, inertial data, primitive or mesh geometry, link gravity mode, passive
-joint dynamics metadata (damping, Coulomb friction, spring reference, and spring
-stiffness), screw thread pitch, SDF 1.11+ axis/axis2 mimic metadata with motor
-enforcement, topology-only ball child joints, local root/joint/shape poses,
-explicit visual material colors, and absolute non-file mesh URI preservation
-through a custom retriever. Targetless relative/generated mesh references,
-including relative or host-qualified file URI forms, now return explicit
-diagnostics until a future file/project writer defines a destination URI and
-resource copy/rewrite policy. It also checks `WriteOptions` visual/collision
-filtering, unsupported-shape diagnostics, missing mesh URI diagnostics,
-pre-SDF-1.11 mimic diagnostics, unsupported coupler-style mimic diagnostics,
-non-finite visual material diagnostics, non-finite screw pitch diagnostics,
-unsupported ball-joint metadata, and non-finite joint dynamics diagnostics. This
-is real Phase 5 progress, but Phase 5 is still open until broader SDF coverage
-plus the remaining accepted writer targets are implemented or durably deferred.
+the writer building libsdformat DOM objects and serializing through sdformat.
+`INTEGRATION_io_SdfWriter` proves write/read round-trip for links, root
+FreeJoint/WeldJoint placement,
+revolute/continuous/prismatic/weld/screw/universal child joints, inertial data,
+primitive or mesh geometry, link gravity mode, passive joint dynamics metadata
+(damping, Coulomb friction, spring reference, and spring stiffness), screw
+thread pitch, SDF 1.11+ axis/axis2 mimic metadata with motor enforcement,
+topology-only ball child joints, local root/joint/shape poses, explicit visual
+material colors, and absolute non-file mesh URI preservation through a custom
+retriever. Continuous SDF joints now parse as unbounded DART
+`RevoluteJoint`s, and unbounded DART revolute joints write back as SDF
+`continuous` while finite-limit revolute joints stay `revolute`. Targetless
+relative/generated mesh references, including relative or host-qualified file
+URI forms, now return explicit diagnostics until a future file/project writer
+defines a destination URI and resource copy/rewrite policy. It also checks
+`WriteOptions` visual/collision filtering, unsupported-shape diagnostics,
+missing mesh URI diagnostics, pre-SDF-1.11 mimic diagnostics, unsupported
+coupler-style mimic diagnostics, non-finite visual material diagnostics,
+non-finite screw pitch diagnostics, unsupported ball-joint metadata, and
+non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
+5 is still open until broader SDF coverage plus the remaining accepted writer
+targets are implemented or durably deferred.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -97,6 +102,11 @@ Additional validation for targetless relative/generated mesh URI diagnostics:
 
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
+Additional validation for continuous SDF joint read/write/read coverage:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
 Changelog decision:
 
 - Mode: draft
@@ -120,7 +130,9 @@ Changelog decision:
   same conservative SDF writer capability before the implementation PR exists.
   No additional entry is needed for targetless relative/generated mesh URI
   diagnostics because it hardens the same SDF writer resource contract before
-  the implementation PR exists.
+  the implementation PR exists. No additional entry is needed for continuous SDF
+  joint coverage because it broadens the same conservative SDF writer capability
+  before the implementation PR exists.
 
 ## Previous Resume Checkpoint (2026-07-03)
 
@@ -217,8 +229,9 @@ approval, then continue Phase 5 from
 [`05-export-writers-plan.md`](05-export-writers-plan.md) by extending SDF writer
 coverage beyond material colors/link gravity mode/passive joint dynamics/screw
 thread pitch/universal and ball topology/local poses/absolute non-file mesh URI
-preservation/SDF 1.11 mimic metadata/targetless relative mesh diagnostics or
-choosing the next accepted writer target (URDF or PLAN-101 project save/load).
+preservation/SDF 1.11 mimic metadata/targetless relative mesh
+diagnostics/continuous revolute joints or choosing the next accepted writer
+target (URDF or PLAN-101 project save/load).
 
 ## Context That Would Be Lost
 
