@@ -820,12 +820,17 @@ SDF=.deps/gz-sim/examples/worlds/3k_shapes.sdf
   echo "pixi: $(pixi --version)"
 } > "$ART/metadata.txt"
 
+FAILED_ROWS=""
 run_row() {
   local name=$1; shift
   echo "=== ROW $name START $(date -u +%H:%M:%SZ) ==="
   timeout 3600 pixi run "$CB" "$@" > "$ART/$name.out" 2>&1
   local rc=$?
   echo "=== ROW $name EXIT $rc $(date -u +%H:%M:%SZ) ==="
+  if [ "$rc" -ne 0 ]; then
+    FAILED_ROWS="$FAILED_ROWS $name(rc=$rc)"
+  fi
+  return "$rc"
 }
 
 # Continuity row (scoping-doc 2026-07-03 probe rerun, now under the canonical
@@ -863,6 +868,10 @@ for det in dart fcl bullet ode; do
     --quiet --checkpoint 0 --sdf-plane-shapes --collision "$det"
 done
 
+if [ -n "$FAILED_ROWS" ]; then
+  echo "MATRIX_FAILED rows:$FAILED_ROWS"
+  exit 1
+fi
 echo "MATRIX_DONE"
 ```
 
