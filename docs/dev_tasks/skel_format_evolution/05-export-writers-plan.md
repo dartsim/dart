@@ -37,7 +37,7 @@ SDF `<pbr><metal>` values. Model-level self-collision round-trips through SDF
 `<self_collide>`.
 Non-default skeleton gravity writes a root SDF `<world>` with `<gravity>` and
 re-parses through the same `sdf::World` DOM.
-Collision-surface contact disable state round-trips through SDF
+Shape-level and body-level collision disable state round-trips through SDF
 `<surface><contact><collide_bitmask>` for DART's lossless zero-bitmask subset;
 zero-threshold bounce restitution round-trips through SDF
 `<surface><bounce>` coefficient values; ODE friction coefficients, first

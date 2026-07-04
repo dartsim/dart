@@ -44,8 +44,8 @@ topology-only ball child joints, model self-collision, local
 root/joint/shape poses, visual
 shadow/hidden state, explicit
 visual material colors, PBR metallic/roughness factors, collision-surface
-contact disable bitmasks, visual transparency, zero-threshold bounce
-restitution, ODE friction
+contact disable bitmasks for both shape-level and body-level DART collision
+disable state, visual transparency, zero-threshold bounce restitution, ODE friction
 coefficients, first friction direction, slip compliance, and absolute non-file
 mesh URI preservation through a custom retriever. Continuous SDF joints now
 parse as unbounded DART
@@ -98,6 +98,10 @@ SDF bounce restitution reads through sdformat Element authored flags and direct
 typed `Element::Get<double>` access for the
 `<surface><bounce><restitution_coefficient>` schema field because sdformat 16
 does not expose a high-level `Bounce` DOM class.
+DART `BodyNode::setCollidable(false)` now writes per-collision
+`sdf::Contact::SetCollideBitmask(0)` values and re-parses as disabled collision
+aspects. This preserves the effective disabled-collision state through
+sdformat's contact bitmask DOM because SDF has no link-level collidable flag.
 Standard SDF joint reads traverse `sdf::Model`,
 `sdf::Joint`, and `sdf::JointAxis` DOM values for joint enumeration, joint
 name/type,
@@ -216,6 +220,46 @@ Changelog decision:
 - PR-body note: No separate changelog entry; this sharpens an unreleased SDF
   writer diagnostic and is covered by the broader DART 7 SDF writer/export
   work.
+- Follow-up: none
+
+Additional validation for body-level collision disable SDF writing:
+
+- Control: direct filtered `INTEGRATION_io_SdfWriter` run failed before the
+  writer change because the emitted collision kept sdformat's default bitmask
+  `255` and reparsed as collidable.
+- Focused candidate: passed.
+
+  ```bash
+  pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsBodyLevelCollidableAsCollisionBitmask'
+  ```
+
+- Full writer target: passed.
+
+  ```bash
+  pixi run run-cpp-target INTEGRATION_io_SdfWriter
+  ```
+
+- Local gates: passed.
+
+  ```bash
+  pixi run lint
+  pixi run build
+  pixi run test-unit
+  ```
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: `origin/main`
+- Scope evidence: focused diff in `dart/utils/sdf/sdf_writer.cpp`,
+  `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
+  and this SKEL evolution task folder
+- Decision: no entry required
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: No separate changelog entry; this broadens an unreleased SDF
+  writer contact-bitmask subset and is covered by the broader DART 7 SDF
+  writer/export work.
 - Follow-up: none
 
 Additional validation for continuous SDF joint read/write/read coverage:

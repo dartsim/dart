@@ -38,7 +38,7 @@
       self-collision, non-default skeleton gravity through root SDF world
       gravity, capsule/cone/ellipsoid geometry, visual shadow/hidden state,
       explicit visual material colors, PBR metallic/roughness factors, visual
-      transparency, and collision surface contact disable bitmasks,
+      transparency, shape-level and body-level collision disable bitmasks,
       zero-threshold bounce restitution, and ODE friction/slip
       metadata now round-trip as SDF `<self_collide>`, root
       `<world><gravity>`, link `<gravity>`,
@@ -231,8 +231,9 @@ SKEL-YAML direction just because the prototype once existed.
   relative/generated mesh resource diagnostics. Plane-shaped infinite DART
   geometry, DART heightmaps without source heightmap URIs, and generated convex
   meshes now have targeted diagnostics for the finite SDF plane-size and
-  destination-URI/resource policy gaps. Collision-surface
-  contact bitmask disables, zero-threshold bounce restitution, ODE friction
+  destination-URI/resource policy gaps. Shape-level and body-level
+  collision-surface contact bitmask disables, zero-threshold bounce restitution,
+  ODE friction
   coefficients, first friction direction, and slip compliance now have
   read/write/read coverage plus invalid-friction/restitution diagnostics. The
   assertions are

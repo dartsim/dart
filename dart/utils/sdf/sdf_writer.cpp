@@ -827,8 +827,10 @@ WriteResult applyCollisionSurface(
     sdf::Collision& collision, const dynamics::ShapeNode& shapeNode)
 {
   const auto* collisionAspect = shapeNode.getCollisionAspect();
+  const auto* bodyNode = shapeNode.getBodyNodePtr().get();
   const bool writeContact
-      = collisionAspect != nullptr && !collisionAspect->isCollidable();
+      = (bodyNode != nullptr && !bodyNode->isCollidable())
+        || (collisionAspect != nullptr && !collisionAspect->isCollidable());
 
   const auto* dynamicsAspect = shapeNode.getDynamicsAspect();
   if (!dynamicsAspect) {
