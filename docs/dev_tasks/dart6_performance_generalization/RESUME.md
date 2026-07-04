@@ -30,16 +30,15 @@ must not be claimed until their decision or evidence gate lands.
 ```bash
 pixi run lint          # auto-fix
 pixi run check-lint    # verify — matches CI's Check Lint
-pixi run cmake --build build/default/cpp/Release --parallel 8   # capped build
-pixi run test-all
+pixi run cmake --build build/default/cpp/Release --target ALL --parallel 8   # capped build
 DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz   # collision/constraint/solver/header packets
 pixi run test-eigen-overalignment                 # allocation/alignment packets
 # Determinism guard + benchmark evidence: see 01-baseline-evidence.md
 ```
 
 (`DART_PARALLEL_JOBS` is honored by the gz and eigen-overalignment
-scripts; the plain build task runs unbounded `-j`, hence the explicit
-`--parallel 8`.)
+scripts; `pixi run test-all` runs unbounded `cmake --build ... -j`, hence
+the explicit `--parallel 8` build command.)
 
 ## Standing decisions awaiting maintainer
 

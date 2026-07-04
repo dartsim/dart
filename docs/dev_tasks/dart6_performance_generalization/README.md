@@ -110,9 +110,10 @@ gz dartsim plugin subclasses `OdeCollisionDetector` and
 - `pixi run lint` (auto-fix) **plus** `pixi run check-lint` (verify — this
   is what CI enforces; checking only the sub-linter you touched misses
   failures).
-- `DART_PARALLEL_JOBS=8 pixi run test-all` note: the C++ build cap is
-  `cmake --build ... --parallel 8` (the env var is honored by the gz/eigen
-  scripts, not by the build task itself — see RESUME.md).
+- Capped C++ build gate for Codex/release hosts:
+  `pixi run cmake --build build/default/cpp/Release --target ALL --parallel 8`.
+  Do not use `pixi run test-all` as the capped substitute: that task still
+  runs an unbounded `cmake --build ... -j --target ALL` (see `pixi.toml`).
 - `pixi run -e gazebo test-gz` for anything touching collision, constraint,
   solver, `World::step`, or public headers.
 - Determinism guard: `contact_benchmark` final-state hash + contact/pair/
