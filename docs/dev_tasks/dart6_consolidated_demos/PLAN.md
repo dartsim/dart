@@ -111,6 +111,15 @@ UI-visible changes, and PLAN checkboxes updated.
 
 ## Phase 2 — Scene catalog ports (PR series)
 
+- [x] B1 "Rigid & basics" accepted 2026-07-04 (commit 49d1db3): 9 new scenes
+      + shared ZUp.hpp + rigid_cubes/empty reconciliation. Host gains:
+      toolbar Timestep control (1e-5..1e-2 s), case-insensitive key
+      fallback, app-wide AlwaysClamp+isfinite slider convention,
+      dart-collision-bullet linkage (needs --no-as-needed: backend
+      self-registers, no referenced symbols). Review: 9-agent parity pass +
+      orchestrator screenshot pass; 1 blocker (simple_frames framing) + 3
+      majors fixed. 12 scenes total, cycle x2 green.
+
 - [ ] Port GUI examples as scenes, category by category (list frozen after
       recon; roughly: rigid/collision, soft bodies, constraints & joints,
       control & IK, humanoids/locomotion, misc).
