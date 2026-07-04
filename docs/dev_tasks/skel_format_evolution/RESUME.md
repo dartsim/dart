@@ -1728,6 +1728,40 @@ Ada GPU and the CUDA full gate passed.
 The DART 7 changelog has a draft Breaking Changes entry without a PR link; add
 the link after the Phase 2 PR exists.
 
+Additional validation for URDF joint-properties fixture coverage:
+
+- Added `UrdfWriter.RoundTripsExistingJointPropertiesFixture`, which loads
+  `data/urdf/test/joint_properties.urdf`, writes it through
+  `UrdfParser::tryWriteSkeletonToString()`, reparses the emitted URDF, and
+  compares body inertias, visual box geometry, revolute and continuous joint
+  topology, axes, finite velocity/effort limits, and passive damping/friction
+  metadata.
+- Extended the URDF writer to emit `<limit velocity="..." effort="...">` for
+  continuous joints when both symmetric finite metadata fields are present;
+  lower/upper remain omitted for continuous joints, matching URDF's model.
+- SDF policy check: `pixi run check-sdf-sdformat-boundary` passed, so this
+  slice keeps SDF IO on libsdformat and does not add DART-side SDF XML parsing.
+
+Validation commands:
+
+- `pixi run check-sdf-sdformat-boundary`
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter=UrdfWriter.RoundTripsExistingJointPropertiesFixture'`
+- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter`
+- `pixi run lint`
+- `pixi run build`
+
+Changelog decision:
+
+- Mode: draft
+- Base evidence: current local diff extends the unreleased conservative URDF
+  writer contract and adds fixture-level read/write/read coverage.
+- Decision: entry required as a revision to the existing DART 7 URDF writer
+  bullet.
+- Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing existing URDF
+  writer bullet.
+- Entry text: the existing conservative URDF writer bullet now includes
+  continuous joint velocity/effort limits.
+
 Changelog decision:
 
 - Mode: draft

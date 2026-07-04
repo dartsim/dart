@@ -153,14 +153,16 @@
       The first URDF writer slice is also implemented locally on
       `dart::utils::UrdfParser::tryWriteSkeletonToString` for one-root URDF
       trees with identity root FreeJoint/WeldJoint placement validation, child
-      revolute/continuous/prismatic/fixed joints, standard-plane planar and
-      floating child joints with uniform scalar limit/dynamics metadata,
-      passive damping/friction metadata, single-DoF motor-style mimic metadata,
+      revolute/continuous/prismatic/fixed joints, continuous joint
+      velocity/effort limit metadata, standard-plane planar and floating child
+      joints with uniform scalar limit/dynamics metadata, passive
+      damping/friction metadata, single-DoF motor-style mimic metadata,
       zero-offset coupler mimic metadata through paired URDF
-      `SimpleTransmission` entries, inertial data, local visual/collision poses,
-      box/sphere/cylinder/absolute or package URI mesh geometry, explicit
-      visual colors, implicit default visual color omission, default-RGB alpha
-      overrides, and visual/collision include options. URDF does not serialize
+      `SimpleTransmission` entries, inertial data, local visual/collision
+      poses, box/sphere/cylinder/absolute or package URI mesh geometry,
+      explicit visual colors, implicit default visual color omission,
+      default-RGB alpha overrides, and visual/collision include options. URDF
+      does not serialize
       root parent-joint metadata, so root joint name/type are parser-default
       choices on reparse rather than writer output.
       `INTEGRATION_io_UrdfWriter`
@@ -171,14 +173,15 @@
       frames, unbounded finite-requiring URDF limits, missing mimic references,
       coupler mimic offsets, plus missing mesh URIs, relative or host-qualified
       file mesh URIs, and non-finite mesh scales. It also covers continuous
-      revolute joint
-      dynamics round-trip, visual and collision package mesh URI preservation
-      through `UrdfParser` package resolution, non-positive mass, non-finite
-      local center-of-mass, visual material color, shape pose, joint axis, and
-      asymmetric velocity/effort limit diagnostics, targeted diagnostics for
-      non-default visual reflectance, disabled collision aspects, and
-      collision dynamics metadata that URDF cannot represent, and targeted DART
-      `SoftBodyNode` diagnostics.
+      revolute joint dynamics round-trip, shipped
+      `joint_properties.urdf` read/write/read coverage for revolute and
+      continuous joint limits/dynamics plus visual boxes, visual and collision
+      package mesh URI preservation through `UrdfParser` package resolution,
+      non-positive mass, non-finite local center-of-mass, visual material color,
+      shape pose, joint axis, and asymmetric velocity/effort limit diagnostics,
+      targeted diagnostics for non-default visual reflectance, disabled
+      collision aspects, and collision dynamics metadata that URDF cannot
+      represent, and targeted DART `SoftBodyNode` diagnostics.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, the URDF writer remains on
       `dart::utils::UrdfParser`, `dart::io` stays read-side, and project/editor
@@ -344,6 +347,10 @@ SKEL-YAML direction just because the prototype once existed.
   parent-world revolute root, child revolute joint, finite axis
   limits/dynamics, and sphere/box visual and collision geometry. It does not
   claim SDF sensor or physics metadata preservation.
+  URDF shipped-fixture read/write/read coverage now includes
+  `joint_properties.urdf`, proving the current conservative URDF writer
+  preserves revolute and continuous joint topology, axes, finite velocity/effort
+  limits, passive damping/friction metadata, inertias, and visual box geometry.
   NaN position limits on SDF-supported single-axis joints and topology-only ball
   joints now have targeted diagnostics, while infinite limits remain the
   unbounded SDF joint contract.

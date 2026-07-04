@@ -174,14 +174,15 @@ public:
   /// The first writer slice intentionally supports a conservative URDF tree:
   /// one root link with identity FreeJoint/WeldJoint root placement, child
   /// revolute/continuous/prismatic/fixed joints whose child link frame
-  /// coincides with the joint frame, standard-plane planar and floating child
-  /// joints with uniform scalar limit/dynamics metadata, single-DoF motor-style
-  /// mimic metadata, zero-offset coupler mimic metadata through
-  /// SimpleTransmission entries, passive joint dynamics, inertial data, local
-  /// visual/collision poses, and box/sphere/cylinder/absolute or package URI
-  /// mesh geometry. URDF does not serialize parent-joint metadata for the root
-  /// link, so root joint name/type are controlled by parser defaults on
-  /// reparse. Explicit visual colors are serialized as URDF materials.
+  /// coincides with the joint frame, continuous joint velocity/effort limit
+  /// metadata, standard-plane planar and floating child joints with uniform
+  /// scalar limit/dynamics metadata, single-DoF motor-style mimic metadata,
+  /// zero-offset coupler mimic metadata through SimpleTransmission entries,
+  /// passive joint dynamics, inertial data, local visual/collision poses, and
+  /// box/sphere/cylinder/absolute or package URI mesh geometry. URDF does not
+  /// serialize parent-joint metadata for the root link, so root joint name/type
+  /// are controlled by parser defaults on reparse. Explicit visual colors are
+  /// serialized as URDF materials.
   /// Unsupported constructs return an error instead of being silently dropped.
   static common::Result<std::string, common::Error> tryWriteSkeletonToString(
       const dynamics::Skeleton& skeleton);

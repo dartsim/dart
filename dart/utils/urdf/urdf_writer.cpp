@@ -80,8 +80,16 @@ struct LimitAttributes
   double mEffort{0.0};
 };
 
+struct ContinuousLimitAttributes
+{
+  double mVelocity{0.0};
+  double mEffort{0.0};
+};
+
 using JointLimitResult
     = common::Result<std::optional<LimitAttributes>, WriteError>;
+using ContinuousJointLimitResult
+    = common::Result<std::optional<ContinuousLimitAttributes>, WriteError>;
 
 constexpr double kTolerance = 1e-12;
 
@@ -426,6 +434,47 @@ JointLimitResult multiDofJointLimitAttributes(const dynamics::Joint& joint)
           *effortLimit.value()});
 }
 
+ContinuousJointLimitResult continuousJointLimitAttributes(
+    const dynamics::Joint& joint)
+{
+  const auto velocityLimit = symmetricAbsoluteLimit(
+      joint,
+      joint.getVelocityLowerLimit(0),
+      joint.getVelocityUpperLimit(0),
+      "velocity",
+      "velocity");
+  if (velocityLimit.isErr()) {
+    return ContinuousJointLimitResult::err(velocityLimit.error());
+  }
+
+  const auto effortLimit = symmetricAbsoluteLimit(
+      joint,
+      joint.getForceLowerLimit(0),
+      joint.getForceUpperLimit(0),
+      "force/effort",
+      "effort");
+  if (effortLimit.isErr()) {
+    return ContinuousJointLimitResult::err(effortLimit.error());
+  }
+
+  if (!velocityLimit.value() && !effortLimit.value()) {
+    return ContinuousJointLimitResult::ok(std::nullopt);
+  }
+  if (!velocityLimit.value()) {
+    return ContinuousJointLimitResult::err(WriteError(
+        "Cannot write " + context(joint)
+        + " without a finite symmetric URDF velocity limit."));
+  }
+  if (!effortLimit.value()) {
+    return ContinuousJointLimitResult::err(WriteError(
+        "Cannot write " + context(joint)
+        + " without a finite symmetric URDF effort limit."));
+  }
+
+  return ContinuousJointLimitResult::ok(
+      ContinuousLimitAttributes{*velocityLimit.value(), *effortLimit.value()});
+}
+
 void appendLimit(
     tinyxml2::XMLDocument& doc,
     tinyxml2::XMLElement& jointElement,
@@ -434,6 +483,16 @@ void appendLimit(
   auto* limitElement = appendElement(doc, jointElement, "limit");
   setDoubleAttribute(*limitElement, "lower", limit.mLower);
   setDoubleAttribute(*limitElement, "upper", limit.mUpper);
+  setDoubleAttribute(*limitElement, "velocity", limit.mVelocity);
+  setDoubleAttribute(*limitElement, "effort", limit.mEffort);
+}
+
+void appendContinuousLimit(
+    tinyxml2::XMLDocument& doc,
+    tinyxml2::XMLElement& jointElement,
+    const ContinuousLimitAttributes& limit)
+{
+  auto* limitElement = appendElement(doc, jointElement, "limit");
   setDoubleAttribute(*limitElement, "velocity", limit.mVelocity);
   setDoubleAttribute(*limitElement, "effort", limit.mEffort);
 }
@@ -748,6 +807,15 @@ WriteResult writeJointLimit(
     bool continuous)
 {
   if (continuous) {
+    const auto limit = continuousJointLimitAttributes(joint);
+    if (limit.isErr()) {
+      return WriteResult::err(limit.error());
+    }
+
+    if (limit.value()) {
+      appendContinuousLimit(doc, jointElement, *limit.value());
+    }
+
     return ok();
   }
 

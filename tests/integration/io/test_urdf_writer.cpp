@@ -342,6 +342,38 @@ void expectBodyInertiaRoundTrips(
       actual.getInertia().getMoment(), kTolerance));
 }
 
+void expectVisualBoxesRoundTrip(
+    const dynamics::BodyNode& expected, const dynamics::BodyNode& actual)
+{
+  ASSERT_EQ(
+      actual.getNumShapeNodesWith<dynamics::VisualAspect>(),
+      expected.getNumShapeNodesWith<dynamics::VisualAspect>());
+  ASSERT_EQ(
+      actual.getNumShapeNodesWith<dynamics::CollisionAspect>(),
+      expected.getNumShapeNodesWith<dynamics::CollisionAspect>());
+
+  for (std::size_t i = 0;
+       i < expected.getNumShapeNodesWith<dynamics::VisualAspect>();
+       ++i) {
+    const auto* expectedNode
+        = expected.getShapeNodeWith<dynamics::VisualAspect>(i);
+    const auto* actualNode = actual.getShapeNodeWith<dynamics::VisualAspect>(i);
+    ASSERT_NE(expectedNode, nullptr);
+    ASSERT_NE(actualNode, nullptr);
+
+    const auto* expectedBox = dynamic_cast<const dynamics::BoxShape*>(
+        expectedNode->getShape().get());
+    const auto* actualBox
+        = dynamic_cast<const dynamics::BoxShape*>(actualNode->getShape().get());
+    ASSERT_NE(expectedBox, nullptr);
+    ASSERT_NE(actualBox, nullptr);
+    EXPECT_TRUE(
+        actualBox->getSize().isApprox(expectedBox->getSize(), kTolerance));
+    EXPECT_TRUE(actualNode->getRelativeTransform().matrix().isApprox(
+        expectedNode->getRelativeTransform().matrix(), kTolerance));
+  }
+}
+
 const dynamics::VisualAspect* getOnlyVisual(const dynamics::Skeleton& skeleton)
 {
   const auto* base = skeleton.getBodyNode("base");
@@ -449,6 +481,103 @@ TEST(UrdfWriter, RoundTripsSupportedTreeSubset)
   ASSERT_NE(fixed, nullptr);
   EXPECT_EQ(fixed->getParentBodyNode()->getName(), "slider_body");
   EXPECT_EQ(fixed->getChildBodyNode()->getName(), "fixed");
+}
+
+//==============================================================================
+TEST(UrdfWriter, RoundTripsExistingJointPropertiesFixture)
+{
+  utils::UrdfParser parser;
+  const auto original
+      = parser.parseSkeleton("dart://sample/urdf/test/joint_properties.urdf");
+  ASSERT_NE(original, nullptr);
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  expectContains(writeResult.value(), "name=\"testRobot\"");
+  expectContains(writeResult.value(), "type=\"revolute\"");
+  expectContains(writeResult.value(), "type=\"continuous\"");
+  expectContains(writeResult.value(), "<limit");
+  expectContains(writeResult.value(), "<dynamics");
+
+  const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
+  ASSERT_NE(reparsed, nullptr);
+
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+  for (const char* bodyName : {"link_0", "link_1", "link_2"}) {
+    const auto* expected = original->getBodyNode(bodyName);
+    const auto* actual = reparsed->getBodyNode(bodyName);
+    ASSERT_NE(expected, nullptr);
+    ASSERT_NE(actual, nullptr);
+    expectBodyInertiaRoundTrips(*expected, *actual);
+    expectVisualBoxesRoundTrip(*expected, *actual);
+  }
+
+  const auto* expectedHinge = dynamic_cast<const dynamics::RevoluteJoint*>(
+      original->getJoint("0_to_1"));
+  const auto* actualHinge = dynamic_cast<const dynamics::RevoluteJoint*>(
+      reparsed->getJoint("0_to_1"));
+  ASSERT_NE(expectedHinge, nullptr);
+  ASSERT_NE(actualHinge, nullptr);
+  EXPECT_EQ(actualHinge->getParentBodyNode()->getName(), "link_0");
+  EXPECT_EQ(actualHinge->getChildBodyNode()->getName(), "link_1");
+  EXPECT_TRUE(
+      actualHinge->getAxis().isApprox(expectedHinge->getAxis(), kTolerance));
+  EXPECT_NEAR(
+      actualHinge->getPositionLowerLimit(0),
+      expectedHinge->getPositionLowerLimit(0),
+      kTolerance);
+  EXPECT_NEAR(
+      actualHinge->getPositionUpperLimit(0),
+      expectedHinge->getPositionUpperLimit(0),
+      kTolerance);
+  EXPECT_NEAR(
+      actualHinge->getVelocityUpperLimit(0),
+      expectedHinge->getVelocityUpperLimit(0),
+      kTolerance);
+  EXPECT_NEAR(
+      actualHinge->getForceUpperLimit(0),
+      expectedHinge->getForceUpperLimit(0),
+      kTolerance);
+  EXPECT_NEAR(
+      actualHinge->getDampingCoefficient(0),
+      expectedHinge->getDampingCoefficient(0),
+      kTolerance);
+  EXPECT_NEAR(
+      actualHinge->getCoulombFriction(0),
+      expectedHinge->getCoulombFriction(0),
+      kTolerance);
+
+  const auto* expectedContinuous = dynamic_cast<const dynamics::RevoluteJoint*>(
+      original->getJoint("1_to_2"));
+  const auto* actualContinuous = dynamic_cast<const dynamics::RevoluteJoint*>(
+      reparsed->getJoint("1_to_2"));
+  ASSERT_NE(expectedContinuous, nullptr);
+  ASSERT_NE(actualContinuous, nullptr);
+  EXPECT_TRUE(actualContinuous->isCyclic(0));
+  EXPECT_EQ(actualContinuous->getParentBodyNode()->getName(), "link_1");
+  EXPECT_EQ(actualContinuous->getChildBodyNode()->getName(), "link_2");
+  EXPECT_TRUE(actualContinuous->getAxis().isApprox(
+      expectedContinuous->getAxis(), kTolerance));
+  EXPECT_NEAR(
+      actualContinuous->getVelocityUpperLimit(0),
+      expectedContinuous->getVelocityUpperLimit(0),
+      kTolerance);
+  EXPECT_NEAR(
+      actualContinuous->getForceUpperLimit(0),
+      expectedContinuous->getForceUpperLimit(0),
+      kTolerance);
+  EXPECT_NEAR(
+      actualContinuous->getDampingCoefficient(0),
+      expectedContinuous->getDampingCoefficient(0),
+      kTolerance);
+  EXPECT_NEAR(
+      actualContinuous->getCoulombFriction(0),
+      expectedContinuous->getCoulombFriction(0),
+      kTolerance);
 }
 
 //==============================================================================
