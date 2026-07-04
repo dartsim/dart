@@ -577,12 +577,13 @@ stale — ignore them.
 (peak-contacts diagnostic, `1819b801228`), PR #3264 (Fig-23 statistics packet,
 `dbe6fcccb1c`), and PR #3274 (matrix-free-vs-sparse-CG contact-heavy crossover
 benchmark + scaled parity regression, `43dbd91474c`). The doc-accuracy slice
-PR #3269 (branch `docs/deformable-linear-solver-selection-accuracy`, open)
-corrects the roadmap's stale "direct-solve node cap (20k)" to the verified current
-architecture (dense LDLT below `kProjectedNewtonDenseDirectDofCap` = 128 DoF /
-~42 nodes, iterative sparse Jacobi-CG above to a 1M-node ceiling, sparse-direct
-`SimplicialLDLT` kept out of the allocation-safe loop) and records the crossover
-benchmark. Next substantive M7 work needs maintainer direction or is blocked:
+PR #3269 (linear-solver-selection accuracy, `28a91b909d6`) is also merged; it
+corrected the roadmap's stale "direct-solve node cap (20k)" to the verified
+current architecture (dense LDLT below `kProjectedNewtonDenseDirectDofCap` = 128
+DoF / ~42 nodes, iterative sparse Jacobi-CG above to a 1M-node ceiling,
+sparse-direct `SimplicialLDLT` kept out of the allocation-safe loop) and records
+the crossover benchmark. Next substantive M7 work needs maintainer direction or
+is blocked:
 
 - Matrix-free-CG auto-selection: the contact-heavy crossover benchmark + mid-size
   scaled parity regression landed (#3274) as the evidence base; choosing the
