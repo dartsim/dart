@@ -803,8 +803,8 @@ Final State Sums:   position_l1 2.21797e-05 velocity_l1 1.15343e-05 body_transla
 # (S2/S3/S4/S5) and adds the scoping-doc delta rows (g120 incl. `default`
 # detector, g3000). ODE rows valid only with --max-contacts-per-pair 4.
 set -uo pipefail
-cd /home/js/dev/dartsim/dart/task_1
-ART=.omc/artifacts/native-collision-phase0
+cd "$(git rev-parse --show-toplevel)"
+ART=${1:-.omc/artifacts/native-collision-phase0}
 mkdir -p "$ART"
 CB=./build/default/cpp/Release/bin/contact_benchmark
 SDF=.deps/gz-sim/examples/worlds/3k_shapes.sdf
@@ -882,10 +882,20 @@ echo "MATRIX_DONE"
 """Cross-detector scene-dump tolerance analysis for the phase-0 packet."""
 import json
 import math
+import subprocess
 import sys
 from pathlib import Path
 
-ART = Path("/home/js/dev/dartsim/dart/task_1/.omc/artifacts/native-collision-phase0")
+if len(sys.argv) > 1:
+    ART = Path(sys.argv[1])
+else:
+    repo = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    ART = Path(repo) / ".omc/artifacts/native-collision-phase0"
 SCENES = {
     "g120": ["fcl", "default", "dart", "bullet", "ode"],
     "s4-900": ["fcl", "dart", "bullet", "ode"],
