@@ -61,13 +61,17 @@
 #include <fmt/ostream.h>
 
 #include <algorithm>
+#include <array>
 #include <functional>
 #include <iterator>
 #include <memory>
+#include <memory_resource>
 #include <ranges>
+#include <utility>
 #include <vector>
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 
 namespace dart {
@@ -92,6 +96,8 @@ collision::CollisionDetectorPtr createDefaultCollisionDetector()
   }
   return collision::DartCollisionDetector::create();
 }
+
+constexpr std::size_t kContactScratchBufferBytes = 64 * 1024;
 
 struct ContactPairKey
 {
@@ -123,8 +129,8 @@ class ContactPairCounter
 {
 public:
   ContactPairCounter(
-      std::size_t maxContacts, common::FrameAllocator& frameAllocator)
-    : mEntries(common::FrameStlAllocator<ContactPairCount>(frameAllocator))
+      std::size_t maxContacts, std::pmr::memory_resource& memoryResource)
+    : mEntries(&memoryResource)
   {
     if (maxContacts == 0) {
       return;
@@ -192,8 +198,7 @@ private:
         first ^ (second + 0x9e3779b97f4a7c15ULL + (first << 6) + (first >> 2)));
   }
 
-  std::vector<ContactPairCount, common::FrameStlAllocator<ContactPairCount>>
-      mEntries;
+  std::pmr::vector<ContactPairCount> mEntries;
   std::size_t mMask = 0;
 };
 
@@ -605,13 +610,15 @@ void ConstraintSolver::updateConstraints()
 
   mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
 
+  alignas(std::max_align_t) std::array<std::byte, kContactScratchBufferBytes>
+      contactScratchBuffer{};
+  std::pmr::monotonic_buffer_resource contactScratchResource(
+      contactScratchBuffer.data(),
+      contactScratchBuffer.size(),
+      std::pmr::new_delete_resource());
   ContactPairCounter contactPairCounter(
-      mCollisionResult.getNumContacts(), *mFrameAllocator);
-  std::vector<
-      collision::Contact*,
-      common::FrameStlAllocator<collision::Contact*>>
-      contacts{
-          common::FrameStlAllocator<collision::Contact*>(*mFrameAllocator)};
+      mCollisionResult.getNumContacts(), contactScratchResource);
+  std::pmr::vector<collision::Contact*> contacts{&contactScratchResource};
   contacts.reserve(mCollisionResult.getNumContacts());
 
   // Create new contact constraints

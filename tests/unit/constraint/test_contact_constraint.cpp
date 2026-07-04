@@ -216,6 +216,8 @@ TEST(ContactConstraint, RepeatedContactSolveIsStable)
 TEST(ContactConstraint, ReentrantContactCreationPreservesPairCounts)
 {
   ExposedConstraintSolver nestedSolver;
+  common::FrameAllocator sharedFrameAllocator;
+  nestedSolver.setFrameAllocator(&sharedFrameAllocator);
   nestedSolver.setTimeStep(0.001);
   nestedSolver.addSkeleton(
       createDynamicSphere("nested_A", 0.1, Eigen::Vector3d(0.0, 0.0, 0.0)));
@@ -223,6 +225,7 @@ TEST(ContactConstraint, ReentrantContactCreationPreservesPairCounts)
       createDynamicSphere("nested_B", 0.1, Eigen::Vector3d(0.15, 0.0, 0.0)));
 
   ExposedConstraintSolver outerSolver;
+  outerSolver.setFrameAllocator(&sharedFrameAllocator);
   outerSolver.setTimeStep(0.001);
   outerSolver.setCollisionDetector(
       std::make_shared<DuplicateFirstContactDetector>());

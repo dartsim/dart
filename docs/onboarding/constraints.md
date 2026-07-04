@@ -226,11 +226,12 @@ solve()
   `ContactConstraint` may cache private values whose lifetime is exactly the
   created constraint: raw `Skeleton` pointers, body reactivity, fixed-size
   spatial normals, and the friction tangent basis.
-- Contact-pair counting must stay local to `ConstraintSolver::updateConstraints()`
-  and use frame-allocator-backed scratch. Do not use shared `static` or
-  `thread_local` containers because `ContactSurfaceHandler::createConstraint()`
-  can re-enter another solver on the same thread while the outer solver is still
-  creating contacts.
+- Contact-pair counting scratch must stay local to each
+  `ConstraintSolver::updateConstraints()` call so a nested solver cannot reset
+  it. Do not use shared `static`, `thread_local`, or shared-frame-allocator
+  containers because `ContactSurfaceHandler::createConstraint()` can re-enter
+  another solver on the same thread while the outer solver is still creating
+  contacts.
 
 ### 3. ConstrainedGroup
 
