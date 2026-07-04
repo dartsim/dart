@@ -64,6 +64,26 @@ OPTS_WITH_ARG = {
 }
 CONFIG_ENV_PREFIX = "--config-env="
 WRAPPERS = {"command", "exec", "time", "nice", "nohup"}
+ENV_OPTS_WITH_ARG = {
+    "-C",
+    "--chdir",
+    "-f",
+    "--file",
+    "-u",
+    "--unset",
+    "-S",
+    "--split-string",
+    "-a",
+    "--argv0",
+}
+ENV_OPTS_WITH_ARG_PREFIXES = (
+    "--chdir=",
+    "--file=",
+    "--unset=",
+    "--split-string=",
+    "--argv0=",
+)
+ENV_CHDIR_PREFIX = "--chdir="
 ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=(?P<value>.*)$")
 
 
@@ -118,6 +138,7 @@ def is_git_commit(text):
         part = part.strip().lstrip("({").strip()
         tokens = part.split()
         i, bypass = skip_env_prefix(tokens, 0)
+        command_cwd = None
         if bypass:
             continue  # command-level bypass, same as the git hook
         # unwrap common wrappers: command git commit, time git commit, env X=1 git commit
@@ -129,7 +150,25 @@ def is_git_commit(text):
             if head == "env":
                 i += 1
                 while i < len(tokens):
-                    if tokens[i].startswith("-"):
+                    t = tokens[i]
+                    if t == "--":
+                        i += 1
+                        break
+                    if t in ENV_OPTS_WITH_ARG:
+                        if t in {"-C", "--chdir"} and i + 1 < len(tokens):
+                            command_cwd = shell_expand_path_token(tokens[i + 1])
+                        i += 2
+                        continue
+                    if t.startswith(ENV_CHDIR_PREFIX):
+                        command_cwd = shell_expand_path_token(
+                            t[len(ENV_CHDIR_PREFIX) :]
+                        )
+                        i += 1
+                        continue
+                    if any(
+                        t.startswith(prefix)
+                        for prefix in ENV_OPTS_WITH_ARG_PREFIXES
+                    ):
                         i += 1
                         continue
                     next_i, env_bypass = skip_env_prefix(tokens, i)
@@ -175,6 +214,8 @@ def is_git_commit(text):
                 i += 1
                 continue
             break
+        if not target_dir:
+            target_dir = command_cwd
         if i < len(tokens) and tokens[i].rstrip(")}") == "commit":
             no_verify = any(
                 t.strip(")}") in {"--no-verify", "-n"} for t in tokens[i + 1 :]
