@@ -69,7 +69,11 @@ commands at the end.
   chains. **Beyond the paper**: the fixed `dt·M⁻¹` quasi-Newton rate degrades for
   very long chains (an undamped 64-link chain peaked near 456 iterations); depth-`m`
   Anderson acceleration (added here, §A2 of the plan) restores the bounded counts
-  above. See [`README.md`](README.md) and the design doc for details.
+  above. See the
+  [PLAN-084 current state](../084-variational-integrator-solver.md#current-state)
+  and
+  [design doc](../../design/simulation_variational_integrator.md)
+  for details.
 
 ## 3. Performance / linear-time scaling
 

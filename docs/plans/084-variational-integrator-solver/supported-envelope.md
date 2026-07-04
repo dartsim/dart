@@ -55,6 +55,7 @@ stiffness above `~1e4·mg`; (3) a rank-deficient loop-closure family; (4) a
 spherical/floating chain longer than the Anderson-verified range. Reduce `Δt`
 first — it is the single most effective lever and preserves all guarantees.
 
-See also: [`README.md` North Star + Gaps](README.md#north-star),
+See also:
+[`PLAN-084 current state`](../084-variational-integrator-solver.md#current-state),
 [`performance.md`](performance.md) (per-step cost vs DOF),
 [`graduation-criteria.md`](graduation-criteria.md).
