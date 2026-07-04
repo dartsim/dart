@@ -12,7 +12,7 @@
 >   names (a project convention; see the naming note in
 >   `02-default-environment-split.md`).
 >
-> _Last updated: 2026-06-22._
+> _Last updated: 2026-07-03._
 
 ## Lanes & owners
 
@@ -20,8 +20,8 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | **In progress — first PR merged (#3123)**; WIP branches continue |
-| **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Merged (incl. #3118 profiling driver) |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | **Planning refresh / evidence gating**; DART 7 native engine not ported, #3123+ performance stack landed |
+| **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Release stack landed through #3199/#3203; use results as guardrails |
 
 ## PR tracker
 
@@ -63,30 +63,63 @@
   → `MERGED`). Dependency-free primitive plane contacts + finite-shape broadphase pruning —
   **first piece** of the native collision port (the FCL/Bullet/ODE-reduction lever); not yet
   the FCL-optional default-flip.
+- Follow-up #3056 release work has landed through #3199/#3203. This resolves the
+  measured headless-performance path, but it does **not** port DART 7
+  `dart/collision/native/` or make FCL optional.
 
 ### 🔄 Open — monitoring
-**No open dependency-minimization PRs** — the work queue is clear; all tracked dep-min PRs
-have merged (see the merged sections above). Next activity is expected from the
-native-collision-port lane's WIP branches (`feature/native-occupancy-grid`,
-`task/native-collision-performance-exec`).
+Open release-6.20 PRs relevant to native collision planning (checked
+2026-07-03):
+
+- **#3230** `docs/dart6-performance-dashboard` — DART 6 performance dashboard,
+  benchmark-history workflow, display/merge/preview scripts, and bounded
+  benchmark surfaces. Treat as a prerequisite or carry an equivalent local
+  artifact path before claiming durable A/B evidence.
+- **#3229** `backport/2490-to-release-6.20` — C++17 SIMD abstraction backport.
+  Useful for native hot-path optimization, not a correctness prerequisite.
+- **#3209** `perf/contact-rich-benchmark-case` — deterministic contact-rich
+  container workload for `contact_benchmark` and `BM_INTEGRATION_contact_container`.
+  This is a required default-flip gate because it catches contact-count/resting
+  drift that simple RTF rows can hide.
+- **#3227** `fix/gz-physics-joint-detach-6.20` and **#3226**
+  `fix/deactivation-final-quiet-gate` — correctness/performance-adjacent release
+  work. Watch them before interpreting gz-visible collision drift.
+
+Related remote heads still visible: `feature/native-occupancy-grid`,
+`task/native-collision-performance-exec`, `docs/dart6-performance-dashboard`,
+`backport/2490-to-release-6.20`, and `fix/gz-physics-joint-detach-6.20`.
 
 _(Note for automated reviewers: a just-merged PR can briefly still show "Open" on its page
 due to GitHub merge-state lag — confirm via `gh pr view <n> --json state` and `git log`
 before treating it as an open/active PR.)_
 
 ### 🛠️ Native-collision-port lane (the largest dependency lever — FCL/Bullet/ODE)
-- **#3123 merged** — first piece (primitive plane contacts + broadphase pruning).
-- WIP branches (no PR yet): `feature/native-occupancy-grid`, `task/native-collision-performance-exec` — expect follow-up PRs.
-- _Hold each follow-up to `03`'s bar: gz-compat (`pixi run -e gazebo test-gz`), feature/contact parity, evidence-driven perf ≥ Bullet/ODE/FCL. The FCL-optional default-flip (the actual dependency drop) is still ahead._
+- **Current state:** DART 6.20 has performance/collision-enabling work, but no
+  DART 7 native engine port and no FCL-optional default. `release-6.20` still
+  uses FCL as the default detector.
+- **Local planning evidence:** on branch `plan/dart6-native-collision-port`
+  (`849f22245b7e`), `contact_benchmark --generate-objects 120 --steps 300`
+  produced finite rows for `default`, `dart`, `fcl`, `ode`, and `bullet`.
+  The results prove the harness is usable and also prove speed-only ranking is
+  unsafe: ODE was fastest but ended with zero contacts, while default/FCL shared
+  a hash and DART/Bullet had different contact/resting profiles.
+- **Next expected work:** land or locally carry #3209 and #3230; capture a
+  release-6.20 baseline packet; then start the non-default C++17/no-EnTT native
+  core port. Do not flip defaults until `03`'s full A/B packet and gz gate pass.
+- _Hold each follow-up to `03`'s bar: gz-compat (`pixi run -e gazebo test-gz`),
+  feature/contact parity, evidence-driven perf ≥ Bullet/ODE/FCL, and
+  outcome/hash/scene-dump tolerances. The FCL-optional default-flip (the actual
+  dependency drop) is still ahead._
 
 ## Coordination flags / blockers
 
-1. **Base / conflict status** (base `9b0c68a5a82`+, advancing as PRs merge):
-   - **No real conflicts open.** (#3122's earlier `modify/delete` on the deleted
-     GLUT example was resolved by accepting the deletion, as diagnosed.)
-   - Open PRs routinely fall ~1 behind as the base advances; a maintainer merge-up
+1. **Base / conflict status**:
+   - Current planning baseline: `origin/release-6.20` =
+     `849f22245b7ef11299fa73074c77d6c50b8dda01`; `origin/main` =
+     `c0419111df6e0260169867526dcbccce04353e09`.
+   - Open PRs routinely fall behind as the base advances; a maintainer merge-up
      clears it. Exact behind-counts aren't tracked here (too volatile).
-   - All owned by the maintainer.
+   - All remote mutations are owned by the maintainer.
 2. **Shared hot files:** `pixi.toml` / `pixi.lock` are touched by multiple lanes —
    **merge `origin/release-6.20` before pushing**, never rebase a published PR branch
    (per `AGENTS.md` / `02`).
@@ -101,10 +134,11 @@ before treating it as an open/active PR.)_
      this lane only flags it rather than acting. (Coverage logs also show benign
      `Cannot generate a safe runtime search path` RPATH warnings across
      pre-existing targets.)
-4. **Native-collision lane: first PR merged (#3123)** — "dependency-free primitive
-   plane contacts + finite-shape broadphase pruning". The largest dependency lever
-   has begun landing; hold each follow-up to `03`'s gz-compat / parity / perf bar.
-   WIP branches `feature/native-occupancy-grid` + `task/native-collision-performance-exec` continue.
+4. **Native-collision lane: plan before port.** The #3056 performance stack is
+   useful evidence, but the DART 7 native port/default-flip is still unstarted
+   on DART 6.20. Do not treat `feature/native-occupancy-grid` or
+   `task/native-collision-performance-exec` as release-branch PRs unless a live
+   PR exists and is based on `release-6.20`.
 
 ## Effort-level status
 
@@ -123,10 +157,11 @@ before treating it as an open/active PR.)_
 - **Just landed (2026-06-22):** legacy `dart/integration` dead-code removal (#3122);
   native-collision **#3123** (primitive plane contacts + broadphase pruning) — first
   piece of the native collision port.
-- **Open queue: empty** — all dep-min PRs merged; next from the native-collision WIP branches.
-- **Largest remaining win (started, #3123 merged):** native-collision port → makes
-  FCL/Bullet/ODE optional and eventually drops `fcl` from core. The default-flip
-  (the actual dependency drop) is still ahead, via the WIP branches' follow-up PRs.
+- **Open queue: active again** — #3209, #3229, #3230, #3226, and #3227 all affect
+  how native-collision evidence should be gathered or interpreted.
+- **Largest remaining win:** native-collision port → makes FCL/Bullet/ODE
+  optional and eventually drops `fcl` from core. The DART 7 native engine is not
+  yet ported to DART 6.20; default-flip is still a late-phase decision.
 - **Confirmed non-removable standalone:** `boost` (OSG-coupled), core deps
   (Eigen/assimp/fmt/tinyxml2/urdfdom), `octomap` (exported-header contract).
 

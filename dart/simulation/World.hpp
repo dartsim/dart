@@ -398,6 +398,30 @@ public:
   /// \}
 
 protected:
+  struct FreeRootVelocitySnapshot
+  {
+    const dynamics::Skeleton* mSkeleton = nullptr;
+    bool mValid = false;
+    bool mVelocityEditedSinceLastStep = false;
+    bool mExternallyDisturbed = false;
+    Eigen::Vector3d mLinear = Eigen::Vector3d::Zero();
+    Eigen::Vector3d mAngular = Eigen::Vector3d::Zero();
+  };
+
+  struct ShallowSupportFreeRootVelocityState
+  {
+    const dynamics::Skeleton* mSkeleton = nullptr;
+    std::size_t mObservedVelocityVersion = 0;
+    bool mPreserveLateralVelocity = false;
+    bool mPreserveTiltVelocity = false;
+    bool mHasUnsupportedLateralVelocity = false;
+    bool mHasUnsupportedTiltVelocity = false;
+    Eigen::Vector3d mLateralVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d mTiltVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d mUnsupportedLateralVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d mUnsupportedTiltVelocity = Eigen::Vector3d::Zero();
+  };
+
   /// Runs the post-step rest-detection pass: puts quiet mobile skeletons to
   /// sleep after the configured dwell time and wakes skeletons that have begun
   /// moving again. \p disturbedThisStep marks skeletons that were woken or kept
@@ -441,6 +465,28 @@ protected:
 
   /// Invalidates the all-resting fast path cache.
   void invalidateAllRestingKinematicSnapshot();
+
+  /// Synchronizes shallow-support velocity state with mSkeletons.
+  void syncShallowSupportFreeRootVelocityStates();
+
+  /// Captures free-root velocities immediately before the constraint solve.
+  std::vector<FreeRootVelocitySnapshot> snapshotFreeRootVelocities();
+
+  /// Clears preserved baselines for skeletons without a shallow support
+  /// contact.
+  void clearUnsupportedShallowSupportFreeRootVelocityStates(
+      const std::vector<char>& shallowSupportedFreeRoots,
+      const std::vector<FreeRootVelocitySnapshot>& preSolveVelocities = {});
+
+  /// Records current per-skeleton velocity versions after internal step writes.
+  void updateShallowSupportFreeRootVelocityVersions();
+
+  /// Removes tiny shallow-support solver drift from a free-root skeleton.
+  void suppressShallowSupportedFreeRootDrift(
+      const dynamics::SkeletonPtr& skeleton,
+      const Eigen::Vector3d& gravity,
+      const FreeRootVelocitySnapshot& preSolveVelocity,
+      ShallowSupportFreeRootVelocityState& state);
 
   /// Wakes sleeping mobile skeletons after world-level or external kinematic
   /// changes that may invalidate filtered resting contacts.
@@ -513,6 +559,9 @@ protected:
 
   /// Options controlling automatic body deactivation ("sleeping")
   simulation::DeactivationOptions mDeactivationOptions;
+
+  std::vector<ShallowSupportFreeRootVelocityState>
+      mShallowSupportFreeRootVelocityStates;
 
   struct AllRestingKinematicSnapshot
   {
