@@ -43,7 +43,17 @@ permissions:
   contents: write
 
 concurrency:
-  group: dart6-performance-dashboard
+  # Protected release branches should finish every post-merge validation run, so
+  # release push validations use a run-specific group. The benchmark action
+  # fetches gh-pages before writing and retries remote-rejected pushes after
+  # refetching, so concurrent release validations can still publish their
+  # entries without GitHub's single-pending concurrency queue dropping a run.
+  # Keep non-push dashboard entrypoints serialized because they are ad-hoc
+  # publishers for the same gh-pages dashboard path.
+  group: >-
+    ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-6.')
+        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
+        || 'dart6-performance-dashboard' }}
   cancel-in-progress: false
 
 jobs:
@@ -149,6 +159,10 @@ jobs:
           benchmark-data-dir-path: performance/dart6
           ref: ${{ steps.dart6-branch.outputs.benchmark_ref }}
           auto-push: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/heads/release-6.') }}
+          # Keep the default explicit: release push validations rely on the
+          # action fetching gh-pages before writing and retrying remote-rejected
+          # pushes when another release validation publishes first.
+          skip-fetch-gh-pages: false
           # GitHub-hosted runners are noisy; alert on a clear 2x regression
           # and comment on the commit rather than failing the build.
           alert-threshold: "200%"
