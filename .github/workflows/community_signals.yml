@@ -1,0 +1,71 @@
+name: Community Signals Dashboard
+
+# Publishes a compact public dashboard for repository activity, package
+# downloads, citations, and downstream freshness. The generated dashboard is
+# served from GitHub Pages at https://dartsim.github.io/dart/community-signals/.
+#
+# GitHub traffic endpoints may require a fine-grained token with repository
+# Administration read permission. If the default GITHUB_TOKEN cannot read those
+# endpoints, set a DART_STATS_TOKEN repository secret; the dashboard still
+# publishes with traffic marked unavailable when neither token works.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/community_signals.yml"
+      - "docs/readthedocs/community/community_signals.rst"
+      - "docs/readthedocs/index.rst"
+      - "scripts/generate_community_signals_dashboard.py"
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: community-signals-dashboard
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish community signals
+    runs-on: ubuntu-latest
+    env:
+      DART_STATS_GITHUB_TOKEN: ${{ secrets.DART_STATS_TOKEN || github.token }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+
+      - name: Generate dashboard
+        run: |
+          python scripts/generate_community_signals_dashboard.py \
+            --output build/community-signals
+
+      - name: Publish to gh-pages
+        if: github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+
+          git fetch --depth=1 origin gh-pages:refs/remotes/origin/gh-pages
+          git worktree add gh-pages-worktree origin/gh-pages
+
+          rm -rf gh-pages-worktree/community-signals
+          mkdir -p gh-pages-worktree/community-signals
+          cp -R build/community-signals/. gh-pages-worktree/community-signals/
+          touch gh-pages-worktree/.nojekyll
+
+          git -C gh-pages-worktree config user.name "github-actions[bot]"
+          git -C gh-pages-worktree config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C gh-pages-worktree add .nojekyll community-signals
+
+          if git -C gh-pages-worktree diff --cached --quiet; then
+            echo "Community signals dashboard is unchanged."
+            exit 0
+          fi
+
+          git -C gh-pages-worktree commit -m "Update community signals dashboard"
+          git -C gh-pages-worktree push origin HEAD:gh-pages

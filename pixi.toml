@@ -1722,6 +1722,7 @@ bm-dashboard-preview = { cmd = """
     python scripts/preview_performance_dashboard.py .benchmark_results \
       --output-dir build/performance-dashboard
 """ }
+community-signals-dashboard = { cmd = "python scripts/generate_community_signals_dashboard.py --output build/community-signals" }
 bm-collision-check = { depends-on = [
   "bm-collision-check-narrow",
   "bm-collision-check-narrow-adapter",
