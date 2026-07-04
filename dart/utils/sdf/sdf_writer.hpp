@@ -69,7 +69,9 @@ struct DART_UTILS_API WriteOptions
 /// enforcement, topology-only ball child joints, link gravity mode, inertial
 /// parameters, local joint/shape poses, and box/sphere/cylinder/mesh
 /// visual/collision geometry with explicit visual material colors and absolute
-/// non-file mesh URI preservation.
+/// non-file mesh URI preservation. Targetless relative mesh references return
+/// an error because this string writer has no destination URI for resource
+/// resolution or generated asset placement.
 /// Unsupported constructs return an error instead of being silently dropped.
 common::Result<std::string, common::Error> DART_UTILS_API
 tryWriteSkeletonToString(

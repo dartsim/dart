@@ -24,11 +24,14 @@ motor enforcement, link gravity mode, inertial parameters, local joint/shape
 poses, box/sphere/cylinder/mesh visual or collision geometry, and explicit
 visual material colors as SDF `<diffuse>` values. Absolute non-file mesh URI
 preservation is covered through a custom retriever-backed write/read test.
-`WriteOptions` visual/collision filtering is covered by focused tests.
-Unsupported constructs, missing mesh URIs, pre-SDF-1.11 mimic output,
-coupler-style mimic enforcement, non-finite material colors, non-finite screw
-pitch, unsupported ball-joint metadata, and non-finite joint dynamics return
-`common::Result` errors instead of being silently dropped.
+Targetless relative mesh references and relative or host-qualified `file` mesh
+URIs are rejected because the string writer has no destination SDF URI for
+resource resolution or generated asset placement. `WriteOptions`
+visual/collision filtering is covered by focused tests. Unsupported constructs,
+missing mesh URIs, pre-SDF-1.11 mimic output, coupler-style mimic enforcement,
+non-finite material colors, non-finite screw pitch, unsupported ball-joint
+metadata, and non-finite joint dynamics return `common::Result` errors instead
+of being silently dropped.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -68,8 +71,9 @@ Phase 5 should start with a narrow writer API instead of a single mega-exporter:
 - Add writer options separately from `ReadOptions`; do not overload the import
   API with write-only policy.
 - Make unsupported DART constructs explicit diagnostics, not silent drops.
-- Preserve resource URI strategy: mesh paths, `package://` rewriting, and
-  generated relative paths need deterministic rules.
+- Preserve resource URI strategy: targetless string writes should keep rejecting
+  relative/generated mesh references unless a future file/project writer defines
+  a destination URI, copy/rewrite policy, and round-trip tests.
 - Keep project save/load separate from interchange export. Project files may
   include editor IDs, UI/editor metadata, command history seeds, or scene-model
   descriptors that should not appear in URDF/SDF.
@@ -102,7 +106,7 @@ Phase 5 is complete only when code and tests prove the writer contract:
 
 - Extend the SDF writer contract beyond the first conservative subset when
   tests can prove additional joint aliases or edge cases, shapes, mesh material
-  variants, relative/generated resource path policy, default/world gravity, or
+  variants, destination-aware resource rewriting, default/world gravity, or
   other world-level data round-trip correctly.
 - Decide the next implementation target: URDF writer or PLAN-101 project
   save/load.

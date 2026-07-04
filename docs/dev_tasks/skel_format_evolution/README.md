@@ -38,9 +38,10 @@
       Absolute non-file mesh URIs now have writer read/write/read coverage
       through a custom retriever. Writer options for excluding visuals or
       collisions, missing mesh URI diagnostics, pre-SDF-1.11 mimic diagnostics,
-      and unsupported coupler-style mimic diagnostics now have focused
-      coverage. The writer test now uses a shared IO round-trip assertion helper
-      for body, joint, DoF, inertia, and shape comparisons.
+      unsupported coupler-style mimic diagnostics, and relative/generated mesh
+      resource diagnostics now have focused coverage. The writer test now uses a
+      shared IO round-trip assertion helper for body, joint, DoF, inertia, and
+      shape comparisons.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor
       save-load belongs to the scene/project layer. Broader SDF coverage, URDF
@@ -126,9 +127,11 @@ SKEL-YAML direction just because the prototype once existed.
    coverage beyond the first conservative subset, decide the next writer target
    (URDF or PLAN-101 project save/load), and keep read/write/read tests attached
    to every expanded contract. Absolute non-file mesh URI preservation is
-   covered; relative/generated resource path policy remains open. Keep writer
-   APIs format-owned unless a later multi-format write API is reviewed. YAML can
-   enter that slice only after a durable project/scene schema is accepted.
+   covered; targetless relative/generated mesh references are rejected until a
+   future file/project writer defines a destination URI and copy/rewrite policy.
+   Keep writer APIs format-owned unless a later multi-format write API is
+   reviewed. YAML can enter that slice only after a durable project/scene schema
+   is accepted.
 
 ## Verification Gates
 
@@ -161,7 +164,8 @@ SKEL-YAML direction just because the prototype once existed.
   absolute non-file mesh URI preservation through a custom retriever. It also
   covers `WriteOptions` visual/collision filtering, the empty mesh URI
   diagnostic, pre-SDF-1.11 mimic diagnostics, and unsupported coupler-style
-  mimic diagnostics. The assertions are factored through
+  mimic diagnostics, plus targetless relative/generated mesh resource
+  diagnostics. The assertions are factored through
   `tests/helpers/io_round_trip_helpers.hpp` so future writer formats can reuse
   the body, joint, DoF, inertia, and shape comparison helpers. Completion still
   requires broader accepted-format writer APIs and round-trip tests that load a

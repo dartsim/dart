@@ -151,6 +151,19 @@ private:
   std::map<std::string, std::string> mResources;
 };
 
+constexpr std::string_view kTriangleObj = R"(
+o Triangle
+v 0 0 0
+v 1 0 0
+v 0 1 0
+f 1 2 3
+)";
+
+void addTriangleObj(MapResourceRetriever& retriever, std::string_view uri)
+{
+  retriever.add(std::string(uri), std::string(kTriangleObj));
+}
+
 std::filesystem::path writeTempSdf(std::string_view text, std::string_view name)
 {
   const auto path = std::filesystem::temp_directory_path()
@@ -569,15 +582,7 @@ TEST(SdfWriter, PreservesAbsoluteNonFileMeshUris)
 {
   auto retriever = std::make_shared<MapResourceRetriever>();
   const std::string meshUri = "memory://pkg/meshes/writer_triangle.obj";
-  retriever->add(
-      meshUri,
-      R"(
-o Triangle
-v 0 0 0
-v 1 0 0
-v 0 1 0
-f 1 2 3
-)");
+  addTriangleObj(*retriever, meshUri);
 
   auto skeleton = dynamics::Skeleton::create("mesh_uri_roundtrip");
   auto [joint, body]
@@ -895,6 +900,84 @@ TEST(SdfWriter, MeshWithoutUriReturnsError)
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("without a mesh URI"), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, RelativeMeshUriReturnsError)
+{
+  auto retriever = std::make_shared<MapResourceRetriever>();
+  addTriangleObj(*retriever, "meshes/triangle.obj");
+  addTriangleObj(*retriever, "file://meshes/triangle.obj");
+
+  auto skeleton = dynamics::Skeleton::create("relative_mesh_uri");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::MeshShape>(
+          Eigen::Vector3d::Ones(),
+          makeTriangleMesh(),
+          common::Uri::createFromString("meshes/triangle.obj"),
+          retriever),
+      "relative_mesh_uri");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("relative mesh URI"), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, RelativeFileMeshUriReturnsError)
+{
+  auto retriever = std::make_shared<MapResourceRetriever>();
+  addTriangleObj(*retriever, "file:meshes/triangle.obj");
+
+  auto skeleton = dynamics::Skeleton::create("relative_file_mesh_uri");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::MeshShape>(
+          Eigen::Vector3d::Ones(),
+          makeTriangleMesh(),
+          common::Uri::createFromString("file:meshes/triangle.obj"),
+          retriever),
+      "relative_file_mesh_uri");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("relative or host-qualified file URI"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, HostQualifiedFileMeshUriReturnsError)
+{
+  auto retriever = std::make_shared<MapResourceRetriever>();
+  addTriangleObj(*retriever, "file://meshes/triangle.obj");
+
+  auto skeleton = dynamics::Skeleton::create("host_qualified_file_mesh_uri");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::MeshShape>(
+          Eigen::Vector3d::Ones(),
+          makeTriangleMesh(),
+          common::Uri("meshes/triangle.obj"),
+          retriever),
+      "host_qualified_file_mesh_uri");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("relative or host-qualified file URI"),
+      std::string::npos);
 }
 
 //==============================================================================

@@ -37,7 +37,10 @@ joint dynamics metadata (damping, Coulomb friction, spring reference, and spring
 stiffness), screw thread pitch, SDF 1.11+ axis/axis2 mimic metadata with motor
 enforcement, topology-only ball child joints, local root/joint/shape poses,
 explicit visual material colors, and absolute non-file mesh URI preservation
-through a custom retriever. It also checks `WriteOptions` visual/collision
+through a custom retriever. Targetless relative/generated mesh references,
+including relative or host-qualified file URI forms, now return explicit
+diagnostics until a future file/project writer defines a destination URI and
+resource copy/rewrite policy. It also checks `WriteOptions` visual/collision
 filtering, unsupported-shape diagnostics, missing mesh URI diagnostics,
 pre-SDF-1.11 mimic diagnostics, unsupported coupler-style mimic diagnostics,
 non-finite visual material diagnostics, non-finite screw pitch diagnostics,
@@ -90,6 +93,10 @@ Additional validation for SDF 1.11 mimic metadata writer coverage:
 
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
+Additional validation for targetless relative/generated mesh URI diagnostics:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
 Changelog decision:
 
 - Mode: draft
@@ -111,6 +118,9 @@ Changelog decision:
   existing writer surface before the implementation PR exists. No additional
   entry is needed for SDF 1.11 mimic metadata coverage because it broadens the
   same conservative SDF writer capability before the implementation PR exists.
+  No additional entry is needed for targetless relative/generated mesh URI
+  diagnostics because it hardens the same SDF writer resource contract before
+  the implementation PR exists.
 
 ## Previous Resume Checkpoint (2026-07-03)
 
@@ -207,8 +217,8 @@ approval, then continue Phase 5 from
 [`05-export-writers-plan.md`](05-export-writers-plan.md) by extending SDF writer
 coverage beyond material colors/link gravity mode/passive joint dynamics/screw
 thread pitch/universal and ball topology/local poses/absolute non-file mesh URI
-preservation/SDF 1.11 mimic metadata or choosing the next accepted writer target
-(URDF or PLAN-101 project save/load).
+preservation/SDF 1.11 mimic metadata/targetless relative mesh diagnostics or
+choosing the next accepted writer target (URDF or PLAN-101 project save/load).
 
 ## Context That Would Be Lost
 

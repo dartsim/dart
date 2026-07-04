@@ -150,14 +150,16 @@ with motor enforcement, topology-only ball child joints, link gravity mode,
 inertial parameters, local joint/shape poses, and box/sphere/cylinder/mesh
 visual or collision geometry with explicit visual material colors. The
 round-trip coverage includes absolute non-file mesh URI preservation through a
-custom retriever; relative/generated resource path policy remains future
-contract work. `WriteOptions` can exclude visual or collision entries. Missing
-mesh URIs, pre-SDF-1.11 mimic output, coupler-style mimic enforcement, ball
-joint limits, and ball joint dynamics are reported as unsupported instead of
-being silently dropped. It is not a general project save/load format and does
-not make YAML a model format. Use the writer only when the target scene fits the
-documented subset, and expand the round-trip tests before broadening the
-supported contract.
+custom retriever. Targetless relative mesh references and relative or
+host-qualified `file` mesh URIs are rejected because the string writer has no
+destination SDF URI for resource resolution or generated asset placement.
+`WriteOptions` can exclude visual or collision entries. Missing mesh URIs,
+pre-SDF-1.11 mimic output, coupler-style mimic enforcement, ball joint limits,
+and ball joint dynamics are reported as unsupported instead of being silently
+dropped. It is not a general project save/load format and does not make YAML a
+model format. Use the writer only when the target scene fits the documented
+subset, and expand the round-trip tests before broadening the supported
+contract.
 
 Keep export APIs format-owned until DART has more than one accepted writer
 contract. The current SDF writer therefore lives on

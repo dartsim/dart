@@ -179,6 +179,21 @@ bool isSdfVersionAtLeast(std::string_view version, int major, int minor)
          || (parsed->first == major && parsed->second >= minor);
 }
 
+bool hasScheme(const common::Uri& uri, std::string_view scheme)
+{
+  return uri.mScheme && *uri.mScheme == scheme;
+}
+
+bool hasNonEmptyAuthority(const common::Uri& uri)
+{
+  return uri.mAuthority && !uri.mAuthority->empty();
+}
+
+bool hasAbsolutePath(const common::Uri& uri)
+{
+  return uri.mPath && uri.mPath->starts_with('/');
+}
+
 std::string formatPose(const Eigen::Isometry3d& transform)
 {
   const Eigen::Vector3d zyx = math::matrixToEulerZYX(transform.linear());
@@ -343,10 +358,21 @@ WriteResult writeGeometry(
       const auto* mesh = dynamic_cast<const dynamics::MeshShape*>(&shape)) {
     const common::Uri& meshUri = mesh->getMeshUri2();
     const auto uri = meshUri.toString();
-    const bool isEmptyFileUri = meshUri.mScheme.get_value_or("file") == "file"
-                                && meshUri.getFilesystemPath().empty();
-    if (uri.empty() || isEmptyFileUri) {
+    if (uri.empty()
+        || (hasScheme(meshUri, "file")
+            && meshUri.getFilesystemPath().empty())) {
       return fail("Cannot write SDF mesh geometry without a mesh URI.");
+    }
+    if (!meshUri.mScheme) {
+      return fail(
+          "Cannot write SDF mesh geometry with a relative mesh URI because "
+          "the string writer has no target SDF URI for resolving resources.");
+    }
+    if (hasScheme(meshUri, "file")
+        && (hasNonEmptyAuthority(meshUri) || !hasAbsolutePath(meshUri))) {
+      return fail(
+          "Cannot write SDF mesh geometry with a relative or host-qualified "
+          "file URI; use an absolute file URI or a non-file resource URI.");
     }
     const Eigen::Vector3d& scale = mesh->getScale();
     if (!isFinite(scale)) {
