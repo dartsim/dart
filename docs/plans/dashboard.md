@@ -447,12 +447,14 @@ check-dart7-final-world-promotion`.
   through `dartpy.gui.run_demos`; C++ `dart-demos` is the smaller World-only
   companion with matching planned-port placeholders. The old DART 6 demo scenes
   and cross-language golden parity fixtures are removed from the demo surfaces.
-  The `docs/dev_tasks/examples_strategy/` folder is retired; residual follow-ups
-  are tracked in PLAN-103's Landed State + retire-later checklist.
-- Gate: `pixi run py-demos -- --cycle-scenes --headless --frames 1` cycles all
-  scenes (exit 0, with per-scene progress); the notebook imports (not copies)
-  the scene modules; C++ `dart-demos` cycles its World scenes; `pixi run lint`
-  and `check-docs-policy` green.
+  The `docs/dev_tasks/examples_strategy/` and
+  `docs/dev_tasks/py_demos_framework/` folders are retired; residual follow-ups
+  are tracked in PLAN-103's Landed State, rigid-body sidecar, and retire-later
+  checklist.
+- Gate: `pixi run py-demos -- --list`, `pixi run py-demos-smoke`, and
+  `pixi run py-demos-render-smoke` exercise the Python catalog; the headless
+  cycle smoke, notebook import path, and C++ `dart-demos` companion stay green;
+  `pixi run lint` and `check-docs-policy` pass.
 
 ### PLAN-110: Differentiable Simulation
 
