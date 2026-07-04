@@ -105,8 +105,10 @@ claim:
 
 ## Current Next Consolidation Move
 
-The next bounded implementation move remains Phase 2/3 of the active
-`unified_newton_barrier_multibody` dev task:
+The next bounded implementation move remains Phase 2/3 of PLAN-083, now tracked in
+the durable plan file
+[`../083-unified-newton-barrier-multibody.md`](../083-unified-newton-barrier-multibody.md)
+and these sidecars (the temporary dev-task folder was retired on 2026-07-04):
 
 1. Promote the existing `bm_affine_body_dynamics` smoke rows into comparison
    packets linked to the PLAN-083 manifest.
