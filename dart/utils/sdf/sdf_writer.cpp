@@ -1577,6 +1577,11 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
     return StringResult::err(result.error());
   }
 
+  if (skeleton.getNumBodyNodes() == 0) {
+    return StringResult::err(
+        WriteError("Cannot write SDF for an empty Skeleton."));
+  }
+
   const Eigen::Vector3d& gravity = skeleton.getGravity();
   if (!isFinite(gravity)) {
     return StringResult::err(

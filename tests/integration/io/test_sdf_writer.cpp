@@ -846,6 +846,16 @@ TEST(SdfWriter, WritesModernScrewThreadPitchForSdf110)
 }
 
 //==============================================================================
+TEST(SdfWriter, EmptySkeletonReturnsError)
+{
+  const auto skeleton = dynamics::Skeleton::create("empty");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(result.error().message.find("empty Skeleton"), std::string::npos);
+}
+
+//==============================================================================
 TEST(SdfWriter, EmptySdfVersionReturnsError)
 {
   const auto skeleton = makeRoundTripSkeleton();

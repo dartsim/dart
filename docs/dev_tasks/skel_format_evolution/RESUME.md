@@ -58,8 +58,9 @@ relative/generated mesh references, including relative or host-qualified file
 URI forms, now return explicit diagnostics until a future file/project writer
 defines a destination URI and resource copy/rewrite policy. It also checks
 `WriteOptions` visual/collision filtering, unsupported-shape diagnostics, empty
-or malformed SDF version diagnostics, missing mesh URI and non-finite mesh scale
-diagnostics, DART `PlaneShape` finite-size diagnostics, `HeightmapShape`
+skeleton diagnostics, empty or malformed SDF version diagnostics, missing mesh
+URI and non-finite mesh scale diagnostics, DART `PlaneShape` finite-size
+diagnostics, `HeightmapShape`
 source-URI/resource-policy diagnostics, `ConvexMeshShape` generated-resource
 diagnostics,
 DART-only/generated geometry diagnostics for `PyramidShape`, `ArrowShape`,
@@ -1441,6 +1442,31 @@ Changelog decision:
   slice makes the empty-input structured diagnostic reachable and adds focused
   regression coverage without adding a new public API.
 - PR-body note: record as URDF writer diagnostic hardening if a PR is opened.
+
+Additional validation for empty SDF writer input diagnostics:
+
+- Control: direct filtered `INTEGRATION_io_SdfWriter` run with the new
+  `SdfWriter.EmptySkeletonReturnsError` expectation failed before the writer
+  fix because the SDF writer succeeded on an empty skeleton.
+- Focused candidate passed, proving empty skeletons now return a structured
+  writer error while empty SDF version validation remains first:
+  `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter="SdfWriter.EmptySkeletonReturnsError:SdfWriter.EmptySdfVersionReturnsError"'`
+- Full writer target passed:
+  `pixi run run-cpp-target INTEGRATION_io_SdfWriter` (77 tests)
+- SDF boundary check passed:
+  `pixi run check-sdf-sdformat-boundary`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in `dart/utils/sdf/sdf_writer.cpp`,
+  `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Decision: no additional changelog entry. The existing unreleased DART 7 SDF
+  writer bullet already says unsupported constructs are reported explicitly;
+  this slice makes empty-input rejection explicit and covered without adding a
+  new public API.
+- PR-body note: record as SDF writer diagnostic hardening if a PR is opened.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

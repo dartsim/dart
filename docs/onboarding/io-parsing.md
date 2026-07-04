@@ -199,9 +199,9 @@ Generated or DART-native geometry families such as `PyramidShape`,
 `LineSegmentShape`, and `VoxelGridShape` are rejected with targeted diagnostics
 because the current string writer has no destination URI or generated-resource
 policy for converting them into SDF-owned mesh or resource data.
-`WriteOptions` can exclude visual or collision entries. Empty or malformed SDF
-versions, missing mesh URIs, non-finite mesh scales, non-default DART mesh
-color/alpha render policies,
+`WriteOptions` can exclude visual or collision entries. Empty skeletons, empty
+or malformed SDF versions, missing mesh URIs, non-finite mesh scales,
+non-default DART mesh color/alpha render policies,
 invalid PBR material factors, non-default visual reflectance, invalid collision
 surface friction, friction direction, or restitution values, NaN joint position
 limits, non-lossless asymmetric or NaN joint effort/velocity limits,
