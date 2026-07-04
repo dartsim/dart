@@ -68,10 +68,10 @@ diagnostics, invalid PBR material diagnostics, unsupported visual reflectance
 diagnostics, non-default DART mesh color/alpha render-policy diagnostics,
 NaN joint position-limit diagnostics, non-finite screw pitch diagnostics,
 non-finite skeleton gravity, shape-pose, inertial-data, and joint-axis
-diagnostics, invalid collision-surface friction, slip, restitution, and
-friction-direction-frame diagnostics, unsupported ball-joint metadata,
-unsupported DART `SoftBodyNode` diagnostics, and non-finite joint dynamics
-diagnostics. This is real Phase 5 progress, but
+diagnostics, invalid collision-surface friction, friction-direction values,
+slip, restitution, and friction-direction-frame diagnostics, unsupported
+ball-joint metadata, unsupported DART `SoftBodyNode` diagnostics, and
+non-finite joint dynamics diagnostics. This is real Phase 5 progress, but
 Phase 5 is still open until broader SDF coverage plus the remaining accepted
 writer targets are implemented or durably deferred.
 
@@ -245,6 +245,15 @@ Additional validation for collision-surface friction-direction and slip
 diagnostics:
 
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
+Additional validation for non-finite collision-surface friction-direction
+diagnostics:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.NonFiniteCollisionSurfaceFrictionDirectionReturnsError'`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
 
 Additional validation for multiple root FreeJoint tree SDF writer coverage:
 

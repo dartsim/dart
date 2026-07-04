@@ -99,9 +99,11 @@ state are read through `sdf::Visual` DOM values. Authored collision-surface
 contact bitmask, bounce restitution, and ODE friction values are read through
 `sdf::Collision`, `sdf::Surface`, `sdf::Contact`, `sdf::Friction`, and
 `sdf::ODE` DOM values plus sdformat Element typed access for the bounce schema
-field that sdformat 16 does not expose as a high-level DOM class. Visual
-transparency reads use `sdf::Visual::Transparency()`. Those values map into
-DART visual, collision, and dynamics aspect fields. The SDF-specific
+field that sdformat 16 does not expose as a high-level DOM class. Writer
+diagnostics now cover non-finite collision-surface friction directions before
+they can produce malformed SDF. Visual transparency reads use
+`sdf::Visual::Transparency()`. Those values map into DART visual, collision,
+and dynamics aspect fields. The SDF-specific
 helper surface has been narrowed accordingly: it no longer exposes generic XML
 attribute, string, boolean, vector2/vectorX, child enumerator, scalar, vector,
 or pose parser APIs that duplicate sdformat traversal/parsing. Retained helpers

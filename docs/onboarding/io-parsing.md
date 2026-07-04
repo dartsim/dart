@@ -198,7 +198,8 @@ policy for converting them into SDF-owned mesh or resource data.
 `WriteOptions` can exclude visual or collision entries. Missing mesh URIs,
 non-finite mesh scales, non-default DART mesh color/alpha render policies,
 invalid PBR material factors, non-default visual reflectance, invalid collision
-surface friction or restitution values, NaN joint position limits,
+surface friction, friction direction, or restitution values, NaN joint position
+limits,
 non-finite skeleton gravity, shape poses, inertial data, joint axes,
 pre-SDF-1.11 mimic output, coupler-style mimic enforcement, ball joint limits,
 ball joint dynamics, and

@@ -287,7 +287,8 @@ SKEL-YAML direction just because the prototype once existed.
   ODE friction
   coefficients, collision-frame first friction direction, and slip compliance
   now have read/write/read coverage plus invalid friction, slip, restitution,
-  friction-direction frame, and non-default visual-reflectance diagnostics. The
+  friction-direction value/frame, and non-default visual-reflectance
+  diagnostics. The
   assertions are
   factored
   through

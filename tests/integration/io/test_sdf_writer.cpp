@@ -1212,6 +1212,33 @@ TEST(SdfWriter, RoundTripsCollisionSurfaceOdeFriction)
 }
 
 //==============================================================================
+TEST(SdfWriter, NonFiniteCollisionSurfaceFrictionDirectionReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("bad_surface_friction_direction");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "bad_surface");
+  auto* dynamicsAspect = shapeNode->getDynamicsAspect();
+  ASSERT_NE(dynamicsAspect, nullptr);
+  dynamicsAspect->setFirstFrictionDirection(
+      Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0));
+  dynamicsAspect->setFirstFrictionDirectionFrame(shapeNode);
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("non-finite friction direction"),
+      std::string::npos);
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsCollisionSurfaceContactBitmask)
 {
   auto skeleton = dynamics::Skeleton::create("collision_bitmask_writer");
