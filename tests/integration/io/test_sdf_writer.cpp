@@ -391,6 +391,8 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   EXPECT_NE(
       writeResult.value().find("<thread_pitch>0.25</thread_pitch>"),
       std::string::npos);
+  EXPECT_EQ(
+      writeResult.value().find("<screw_thread_pitch>"), std::string::npos);
   EXPECT_NE(
       writeResult.value().find(
           "<joint name='universal_shoulder' type='universal'>"),
@@ -588,6 +590,33 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
           *ballTip, 0, 1);
   ASSERT_NE(ballTipSphere, nullptr);
   EXPECT_NEAR(ballTipSphere->getRadius(), 0.05, 1e-12);
+}
+
+//==============================================================================
+TEST(SdfWriter, WritesModernScrewThreadPitchForSdf110)
+{
+  const auto original = makeRoundTripSkeleton();
+
+  utils::SdfParser::WriteOptions options;
+  options.version = "1.10";
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*original, options);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  EXPECT_NE(
+      writeResult.value().find("<screw_thread_pitch>0.25</screw_thread_pitch>"),
+      std::string::npos);
+  EXPECT_EQ(writeResult.value().find("<thread_pitch>"), std::string::npos);
+
+  const auto path = writeTempSdf(writeResult.value(), "screw_thread_pitch");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  const auto* screwJoint
+      = test::requireJoint<dynamics::ScrewJoint>(*reparsed, "screw_drive");
+  ASSERT_NE(screwJoint, nullptr);
+  EXPECT_NEAR(screwJoint->getPitch(), 0.25, 1e-12);
 }
 
 //==============================================================================

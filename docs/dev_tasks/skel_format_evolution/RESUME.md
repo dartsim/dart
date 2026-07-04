@@ -36,10 +36,10 @@ FreeJoint/WeldJoint placement,
 revolute/continuous/prismatic/weld/screw/universal child joints, inertial data,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh geometry, link gravity mode,
 passive joint dynamics metadata (damping, Coulomb friction, spring reference,
-and spring stiffness), screw thread pitch, SDF 1.11+ axis/axis2 mimic metadata
-with motor enforcement, topology-only ball child joints, local root/joint/shape
-poses, explicit visual material colors, and absolute non-file mesh URI
-preservation through a custom retriever. Continuous SDF joints now parse as
+and spring stiffness), version-aware screw thread pitch, SDF 1.11+ axis/axis2
+mimic metadata with motor enforcement, topology-only ball child joints, local
+root/joint/shape poses, explicit visual material colors, and absolute non-file
+mesh URI preservation through a custom retriever. Continuous SDF joints now parse as
 unbounded DART
 `RevoluteJoint`s, and unbounded DART revolute joints write back as SDF
 `continuous` while finite-limit revolute joints stay `revolute`. Targetless
@@ -162,6 +162,7 @@ Additional validation for SDF root/model/link/joint/aspect DOM traversal:
 - `git diff --check`
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run run-cpp-target INTEGRATION_io_Read`
 - `pixi run lint`
 - `pixi run build`
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
@@ -184,6 +185,14 @@ Additional validation for capsule/cone SDF DOM geometry reads and writes:
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 - `pixi run run-cpp-target INTEGRATION_io_Read`
+- `pixi run lint`
+- `pixi run build`
+
+Additional validation for SDF 1.10+ screw pitch writer output:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 - `pixi run lint`
 - `pixi run build`
 
@@ -228,7 +237,10 @@ Changelog decision:
   conservative SDF parser/writer round-trip surface before the implementation
   PR exists. No additional entry is needed for pruning unused SDF XML helper
   APIs because this is an internal parser cleanup that narrows the detail helper
-  surface while preserving the existing parser/writer changelog scope.
+  surface while preserving the existing parser/writer changelog scope. No
+  additional entry is needed for SDF 1.10+ screw pitch writer output because it
+  hardens the same conservative SDF writer capability before the implementation
+  PR exists.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

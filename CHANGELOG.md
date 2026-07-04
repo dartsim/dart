@@ -202,8 +202,8 @@ compatibility remains on the active DART 6 LTS branch._
   resource-retriever ownership.
 - Added a conservative SDF writer for `Skeleton` round-trips, covering links,
   revolute/continuous/prismatic/weld/screw/universal joints with
-  damping/friction/spring metadata, screw thread pitch, topology-only ball
-  joints, link gravity mode, local poses, inertial data,
+  damping/friction/spring metadata, version-aware screw thread pitch,
+  topology-only ball joints, link gravity mode, local poses, inertial data,
   box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual/collision geometry,
   and explicit visual material colors while
   reporting unsupported constructs explicitly.

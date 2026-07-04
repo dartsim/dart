@@ -220,6 +220,30 @@ WriteResult setBoolElement(
   return ok();
 }
 
+WriteResult setDoubleElement(
+    const sdf::ElementPtr& parent,
+    std::string_view elementName,
+    double value,
+    std::string_view context)
+{
+  sdf::ElementPtr element = parent->FindElement(std::string(elementName));
+  if (!element) {
+    element = std::make_shared<sdf::Element>();
+    element->SetName(std::string(elementName));
+    element->AddValue("double", "0", false);
+    parent->InsertElement(element);
+  }
+
+  if (!element->Set(value)) {
+    return fail(
+        "sdformat failed to serialize " + std::string(context) + " ["
+        + std::string(elementName) + "].");
+  }
+
+  element->SetExplicitlySetInFile(true);
+  return ok();
+}
+
 WriteResult preserveFalseLinkGravity(
     const sdf::ElementPtr& rootElement,
     const std::map<std::string, bool>& linkGravityModes)
@@ -248,6 +272,66 @@ WriteResult preserveFalseLinkGravity(
     // sdformat Element tree before converting to text.
     if (auto result = setBoolElement(
             linkElement, "gravity", false, "SDF link [" + linkName + "]");
+        result.isErr()) {
+      return result;
+    }
+  }
+
+  return ok();
+}
+
+WriteResult setModernScrewThreadPitchElement(
+    const sdf::ElementPtr& jointElement, double pitch, std::string_view context)
+{
+  sdf::ElementPtr pitchElement
+      = jointElement->FindElement("screw_thread_pitch");
+  if (!pitchElement) {
+    pitchElement = jointElement->FindElement("thread_pitch");
+    if (pitchElement) {
+      pitchElement->SetName("screw_thread_pitch");
+    }
+  }
+
+  while (sdf::ElementPtr legacyElement
+         = jointElement->FindElement("thread_pitch")) {
+    jointElement->RemoveChild(legacyElement);
+  }
+
+  return setDoubleElement(jointElement, "screw_thread_pitch", pitch, context);
+}
+
+WriteResult preserveModernScrewThreadPitch(
+    const sdf::ElementPtr& rootElement,
+    const std::map<std::string, double>& screwThreadPitches)
+{
+  if (screwThreadPitches.empty()) {
+    return ok();
+  }
+
+  const sdf::ElementPtr modelElement = rootElement->FindElement("model");
+  if (!modelElement) {
+    return fail("sdformat failed to serialize the SDF model.");
+  }
+
+  for (sdf::ElementPtr jointElement = modelElement->FindElement("joint");
+       jointElement;
+       jointElement = jointElement->GetNextElement("joint")) {
+    const sdf::ParamPtr nameAttr = jointElement->GetAttribute("name");
+    if (!nameAttr) {
+      continue;
+    }
+
+    const std::string jointName = nameAttr->GetAsString();
+    const auto pitch = screwThreadPitches.find(jointName);
+    if (pitch == screwThreadPitches.end()) {
+      continue;
+    }
+
+    // sdformat's Joint DOM stores the modern screw pitch value, but
+    // ToElement() still materializes the deprecated sibling. Keep the value in
+    // the sdformat Element tree and write the schema-preferred SDF 1.10+ name.
+    if (auto result = setModernScrewThreadPitchElement(
+            jointElement, pitch->second, "SDF screw joint [" + jointName + "]");
         result.isErr()) {
       return result;
     }
@@ -811,7 +895,11 @@ WriteResult buildJoint(
           "Cannot write SDF screw joint [" + joint.getName()
           + "] with a non-finite pitch.");
     }
-    sdfJoint.SetThreadPitch(pitch);
+    if (isSdfVersionAtLeast(options.version, 1, 10)) {
+      sdfJoint.SetScrewThreadPitch(pitch);
+    } else {
+      sdfJoint.SetThreadPitch(pitch);
+    }
   }
   if (const auto* universal
       = dynamic_cast<const dynamics::UniversalJoint*>(&joint)) {
@@ -870,6 +958,7 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
   model.SetName(skeleton.getName());
   model.SetStatic(!skeleton.isMobile());
   std::map<std::string, bool> linkGravityModes;
+  std::map<std::string, double> screwThreadPitches;
 
   for (std::size_t i = 0; i < skeleton.getNumBodyNodes(); ++i) {
     const auto* bodyNode = skeleton.getBodyNode(i);
@@ -896,6 +985,10 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
     if (auto result = buildJoint(sdfJoint, *joint, options); result.isErr()) {
       return StringResult::err(result.error());
     }
+    if (const auto* screw = dynamic_cast<const dynamics::ScrewJoint*>(joint);
+        screw && isSdfVersionAtLeast(options.version, 1, 10)) {
+      screwThreadPitches.emplace(joint->getName(), screw->getPitch());
+    }
     if (!model.AddJoint(sdfJoint)) {
       return StringResult::err(WriteError(
           "Cannot write duplicate SDF joint [" + joint->getName() + "]."));
@@ -911,6 +1004,10 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
     return StringResult::err(WriteError("sdformat failed to serialize SDF."));
   }
   if (auto result = preserveFalseLinkGravity(element, linkGravityModes);
+      result.isErr()) {
+    return StringResult::err(result.error());
+  }
+  if (auto result = preserveModernScrewThreadPitch(element, screwThreadPitches);
       result.isErr()) {
     return StringResult::err(result.error());
   }

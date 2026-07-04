@@ -150,9 +150,10 @@ sdformat; DART owns the `Skeleton`-to-SDF semantic mapping and diagnostics.
 The initial writer covers BodyNode links, root FreeJoint/WeldJoint placement,
 revolute/continuous/prismatic/weld/screw/universal child joints with passive
 dynamics metadata (damping, Coulomb friction, spring reference, and spring
-stiffness), screw thread pitch, SDF 1.11+ mimic metadata for axis/axis2
-follower joints with motor enforcement, topology-only ball child joints, link
-gravity mode, inertial parameters, local joint/shape poses, and
+stiffness), version-aware screw thread pitch (`<thread_pitch>` before SDF 1.10
+and `<screw_thread_pitch>` for SDF 1.10+), SDF 1.11+ mimic metadata for
+axis/axis2 follower joints with motor enforcement, topology-only ball child
+joints, link gravity mode, inertial parameters, local joint/shape poses, and
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry
 with explicit visual material colors. The
 round-trip coverage includes absolute non-file mesh URI preservation through a
