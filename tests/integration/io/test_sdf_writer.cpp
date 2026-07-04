@@ -2096,6 +2096,124 @@ TEST(SdfWriter, RoundTripsMultipleRootFreeJointTrees)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsMixedImplicitAndParentWorldRoots)
+{
+  auto skeleton = dynamics::Skeleton::create("mixed_root_writer");
+
+  dynamics::FreeJoint::Properties baseRootProperties;
+  baseRootProperties.mName = "base_root";
+  baseRootProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.4, -0.2, 0.6);
+
+  dynamics::BodyNode::Properties baseProperties;
+  baseProperties.mName = "base";
+  baseProperties.mInertia.setMass(1.25);
+  baseProperties.mInertia.setMoment(Eigen::Matrix3d::Identity() * 1.25);
+
+  auto [baseRoot, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr, baseRootProperties, baseProperties);
+  (void)baseRoot;
+  base->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.3, 0.2, 0.1)),
+      "base_box");
+
+  dynamics::RevoluteJoint::Properties hingeProperties;
+  hingeProperties.mName = "world_hinge";
+  hingeProperties.mAxis = Eigen::Vector3d::UnitY();
+  hingeProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(-0.3, 0.5, 0.25);
+  hingeProperties.mT_ChildBodyToJoint.translation()
+      = Eigen::Vector3d(0.0, -0.1, 0.0);
+  hingeProperties.mPositionLowerLimits[0] = -0.2;
+  hingeProperties.mPositionUpperLimits[0] = 0.8;
+
+  dynamics::BodyNode::Properties pendulumProperties;
+  pendulumProperties.mName = "pendulum";
+  pendulumProperties.mInertia.setMass(0.8);
+  pendulumProperties.mInertia.setMoment(Eigen::Matrix3d::Identity() * 0.8);
+
+  auto [hinge, pendulum]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          nullptr, hingeProperties, pendulumProperties);
+  hinge->setDampingCoefficient(0, 0.14);
+  hinge->setCoulombFriction(0, 0.03);
+  hinge->setRestPosition(0, 0.05);
+  hinge->setSpringStiffness(0, 0.9);
+  pendulum->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::SphereShape>(0.25), "pendulum_sphere");
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  EXPECT_EQ(sdfRoot.Model()->LinkCount(), 2u);
+  EXPECT_EQ(sdfRoot.Model()->JointCount(), 1u);
+  EXPECT_NE(sdfRoot.Model()->LinkByName("base"), nullptr);
+  EXPECT_NE(sdfRoot.Model()->LinkByName("pendulum"), nullptr);
+  const auto* sdfJoint = sdfRoot.Model()->JointByName("world_hinge");
+  ASSERT_NE(sdfJoint, nullptr);
+  EXPECT_EQ(sdfJoint->Type(), sdf::JointType::REVOLUTE);
+  EXPECT_EQ(sdfJoint->ParentName(), "world");
+  EXPECT_EQ(sdfJoint->ChildName(), "pendulum");
+
+  const auto path = writeTempSdf(writeResult.value(), "mixed_root");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_EQ(reparsed->getNumBodyNodes(), 2u);
+  EXPECT_EQ(reparsed->getNumJoints(), 2u);
+
+  const auto* baseBody = test::requireBodyNode(*reparsed, "base");
+  const auto* pendulumBody = test::requireBodyNode(*reparsed, "pendulum");
+  ASSERT_NE(baseBody, nullptr);
+  ASSERT_NE(pendulumBody, nullptr);
+
+  const auto* reparsedBaseRoot
+      = dynamic_cast<const dynamics::FreeJoint*>(baseBody->getParentJoint());
+  ASSERT_NE(reparsedBaseRoot, nullptr);
+  test::expectJointTopology(*reparsedBaseRoot, nullptr, baseBody);
+  EXPECT_VECTOR_NEAR(
+      reparsedBaseRoot->getTransformFromParentBodyNode().translation(),
+      Eigen::Vector3d(0.4, -0.2, 0.6),
+      1e-12);
+
+  const auto* reparsedHinge
+      = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, "world_hinge");
+  ASSERT_NE(reparsedHinge, nullptr);
+  test::expectJointTopology(*reparsedHinge, nullptr, pendulumBody);
+  EXPECT_VECTOR_NEAR(reparsedHinge->getAxis(), Eigen::Vector3d::UnitY(), 1e-12);
+  EXPECT_VECTOR_NEAR(
+      reparsedHinge->getTransformFromParentBodyNode().translation(),
+      Eigen::Vector3d(-0.3, 0.5, 0.25),
+      1e-12);
+  EXPECT_VECTOR_NEAR(
+      reparsedHinge->getTransformFromChildBodyNode().translation(),
+      Eigen::Vector3d(0.0, -0.1, 0.0),
+      1e-12);
+  test::expectDofPositionLimits(*reparsedHinge, 0, -0.2, 0.8, 1e-12);
+  test::expectDofDynamics(*reparsedHinge, 0, 0.14, 0.03, 0.05, 0.9, 1e-12);
+
+  const auto* baseBox
+      = test::requireShape<dynamics::VisualAspect, dynamics::BoxShape>(
+          *baseBody, 0, 1);
+  ASSERT_NE(baseBox, nullptr);
+  EXPECT_VECTOR_NEAR(baseBox->getSize(), Eigen::Vector3d(0.3, 0.2, 0.1), 1e-12);
+
+  const auto* pendulumSphere
+      = test::requireShape<dynamics::CollisionAspect, dynamics::SphereShape>(
+          *pendulumBody, 0, 1);
+  ASSERT_NE(pendulumSphere, nullptr);
+  EXPECT_DOUBLE_EQ(pendulumSphere->getRadius(), 0.25);
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsCapsuleAndConeGeometry)
 {
   auto skeleton = dynamics::Skeleton::create("capsule_cone_writer");

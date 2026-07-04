@@ -27,9 +27,10 @@ topology-only ball child joints, SDF 1.11+ mimic metadata for axis/axis2
 follower joints with motor
 enforcement, explicit parent-world root joints for supported SDF joint types
 (revolute, continuous, prismatic, screw, universal, and topology-only ball),
-multiple root FreeJoint trees, model self-collision, non-default skeleton
-gravity through root SDF world gravity, link gravity mode, inertial parameters,
-local joint/shape poses,
+multiple root FreeJoint trees, mixed implicit FreeJoint plus explicit
+parent-world root models, model self-collision, non-default skeleton gravity
+through root SDF world gravity, link gravity mode, inertial parameters, local
+joint/shape poses,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry,
 visual shadow state as SDF `<cast_shadows>`, hidden visual state as zero-valued
 SDF `<visibility_flags>`, visual alpha as SDF `<transparency>`, explicit visual
