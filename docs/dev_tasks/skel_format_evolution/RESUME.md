@@ -80,6 +80,12 @@ dynamics diagnostics. This is real Phase 5 progress, but Phase 5 is still open
 until broader SDF/URDF coverage plus the remaining accepted writer or project
 targets are implemented or durably deferred.
 
+Current SDF IO rule: keep SDF parsing, dispatch, semantic reads, and writing on
+libsdformat APIs. The retained `sdf::Element` bridge is only for
+authored/default checks, DART extension fields, and schema fields missing from
+the high-level DOM; do not add DART-side XML tokenization, child enumeration,
+or text reparsing for SDF semantics.
+
 The first URDF writer implementation slice is also local on
 `work/skel-format-yaml-decision`: `dart::utils::UrdfParser` exposes
 `tryWriteSkeletonToString()` for one-root URDF trees with root FreeJoint or

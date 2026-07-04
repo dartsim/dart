@@ -130,6 +130,12 @@ contracts that sdformat normalizes semantically, such as legacy
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.
 
+Future SDF IO work must stay backed by libsdformat. Use typed sdformat DOM
+classes for standard SDF semantics and restrict direct `sdf::Element` access to
+authored/default distinctions, DART extension fields, and schema values not yet
+exposed by the high-level DOM. Do not introduce a DART-owned XML-level SDF
+parser, token scanner, child enumerator, or text reparser.
+
 The next implementation slice adds
 `dart::utils::UrdfParser::tryWriteSkeletonToString()`, a parser-specific URDF
 writer for robot-link trees that fit URDF's model constraints. It writes one
