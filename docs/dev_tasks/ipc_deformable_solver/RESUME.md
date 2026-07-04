@@ -23,7 +23,7 @@ Current deformable work keeps entering through the DART-owned deformable solver
 families, shared Newton-barrier/VBD components, the built-in World schedule, and
 facade-safe `World`/`DeformableBodyOptions`/diagnostics surfaces. Route any new
 shared distance/barrier/CCD/Newton primitive through PLAN-083
-(`docs/dev_tasks/unified_newton_barrier_multibody/`) before duplicating it here.
+(`docs/plans/083-unified-newton-barrier-multibody.md`) before duplicating it here.
 
 ### Active Slice (2026-07-04): Fig-23 peak-contacts diagnostic
 
