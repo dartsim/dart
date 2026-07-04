@@ -58,6 +58,12 @@
     affected code, or an independent blind-spot review — instead of coding a
     guess and discovering them mid-change.
 
+  * Add a root-cause discipline to the release-branch AI principles
+    (`docs/ai/principles.md`): fix bugs at the root cause — reproduce the
+    smallest failing case, fix the underlying cause, and add regression
+    coverage — instead of silencing the symptom or widening scope to route
+    around it.
+
   * Replace the vendored `dart/external/convhull_3d` implementation with a
     DART-owned native `dart/math/detail/ConvexHull.hpp` implementation used by
     `math::computeConvexHull3D`, while keeping the legacy implementation only
