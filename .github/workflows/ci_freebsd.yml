@@ -6,8 +6,12 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'schedule' && github.ref != 'refs/heads/main' }}
+  # The Docker-backed FreeBSD harness uses a fixed VM container name
+  # (`dart-freebsd-vm`), so all runs must serialize instead of running in
+  # independent run-specific groups.
+  group: ${{ github.workflow }}-vm-container
+  queue: max
+  cancel-in-progress: false
 
 jobs:
   freebsd:

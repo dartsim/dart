@@ -13,6 +13,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
+  queue: max
   cancel-in-progress: false
 
 jobs:
@@ -47,6 +48,7 @@ jobs:
     needs: discover-base-branches
     concurrency:
       group: ${{ github.workflow }}-${{ matrix.base }}
+      queue: max
       cancel-in-progress: false
     runs-on: ubuntu-latest
     strategy:

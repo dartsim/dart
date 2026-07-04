@@ -23,8 +23,16 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  # Protected main/release-branch runs should not replace pending validation runs.
+  # GitHub's default concurrency queue keeps only one pending run, so use a
+  # run-specific group for preserved refs while keeping PR/topic refs cancellable.
+  group: >-
+    ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-'))
+        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
+        || format('{0}-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: >-
+    ${{ github.ref != 'refs/heads/main'
+        && !startsWith(github.ref, 'refs/heads/release-') }}
 
 jobs:
   simd-x86-levels:

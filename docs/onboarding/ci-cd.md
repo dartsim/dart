@@ -354,21 +354,43 @@ Guardrails:
 
 **Concurrency configuration:**
 
-All CI workflows use concurrency groups to cancel in-progress jobs when new commits are pushed to the same branch, with exceptions:
+CI workflows cancel superseded topic-branch and PR runs, but protected
+validation runs must finish:
 
-- **main branch**: Never cancelled (ensure full test coverage)
-- **scheduled jobs**: Never cancelled (ensure periodic validation completes)
+- **main and release branches**: preserve every post-merge validation run
+- **scheduled jobs**: preserve every periodic validation run
+
+GitHub's default concurrency queue keeps only one pending run per group. Setting
+`cancel-in-progress: false` prevents active-run cancellation, but a newer
+pending run can still replace an older pending run unless the workflow uses an
+explicit multi-pending queue or a run-specific group. Because `queue: max` cannot
+be combined with `cancel-in-progress: true`, shared workflows use run-specific
+groups only for protected refs and schedules while keeping a stable cancellable
+group for topic refs.
 
 ```yaml
-# Standard pattern for push/PR-triggered workflows
+# Standard pattern for workflows that should cancel topic refs but preserve
+# protected post-merge and scheduled validation.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'schedule' && github.ref != 'refs/heads/main' }}
+  group: >-
+    ${{ (github.event_name == 'schedule'
+         || github.ref == 'refs/heads/main'
+         || startsWith(github.ref, 'refs/heads/release-'))
+        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
+        || format('{0}-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: >-
+    ${{ github.event_name != 'schedule'
+        && github.ref != 'refs/heads/main'
+        && !startsWith(github.ref, 'refs/heads/release-') }}
 
-# For workflows with matrix that push to fixed branches (e.g., update_lockfiles)
+# For workflows with matrix jobs that serialize writes to fixed branches
+# (e.g., update_lockfiles) or jobs that use a fixed external resource
+# (e.g., the Docker-backed FreeBSD VM container), keep a stable group and
+# request the full queue.
 concurrency:
   group: ${{ github.workflow }}-${{ matrix.base }}
-  cancel-in-progress: false  # Queue instead of cancel/race
+  queue: max
+  cancel-in-progress: false
 ```
 
 **Maintain full test coverage:**
