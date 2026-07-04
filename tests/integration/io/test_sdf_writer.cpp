@@ -32,6 +32,8 @@
 
 #include "helpers/io_round_trip_helpers.hpp"
 
+#include "dart/common/diagnostics.hpp"
+#include "dart/common/local_resource_retriever.hpp"
 #include "dart/common/resource.hpp"
 #include "dart/common/resource_retriever.hpp"
 #include "dart/utils/sdf/sdf_parser.hpp"
@@ -67,8 +69,10 @@
 
 #include <gtest/gtest.h>
 #include <sdf/Collision.hh>
+#include <sdf/Geometry.hh>
 #include <sdf/Joint.hh>
 #include <sdf/Link.hh>
+#include <sdf/Mesh.hh>
 #include <sdf/Model.hh>
 #include <sdf/Root.hh>
 #include <sdf/Surface.hh>
@@ -81,6 +85,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -181,6 +186,27 @@ f 1 2 3
 void addTriangleObj(MapResourceRetriever& retriever, std::string_view uri)
 {
   retriever.add(std::string(uri), std::string(kTriangleObj));
+}
+
+class MeshShapeConversionHarness final : public dynamics::MeshShape
+{
+public:
+  using dynamics::MeshShape::convertAssimpMesh;
+};
+
+std::shared_ptr<math::TriMesh<double>> loadTriMesh(
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
+{
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = dynamics::MeshShape::loadMesh(uri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  if (!scene) {
+    return nullptr;
+  }
+
+  auto triMesh = MeshShapeConversionHarness::convertAssimpMesh(scene);
+  aiReleaseImport(const_cast<aiScene*>(scene));
+  return triMesh;
 }
 
 std::filesystem::path writeTempSdf(std::string_view text, std::string_view name)
@@ -724,6 +750,89 @@ TEST(SdfWriter, PreservesAbsoluteNonFileMeshUris)
   ASSERT_NE(mesh, nullptr);
   EXPECT_EQ(mesh->getMeshUri2().toString(), meshUri);
   EXPECT_VECTOR_NEAR(mesh->getScale(), Eigen::Vector3d(2.0, 3.0, 4.0), 1e-12);
+}
+
+//==============================================================================
+TEST(SdfWriter, RoundTripsMeshMaterialVariantsThroughUri)
+{
+  const common::Uri meshUri = common::Uri::createFromPath(
+      dart::config::dataPath("gltf/pbr_multi_material.gltf"));
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  auto triMesh = loadTriMesh(meshUri, retriever);
+  ASSERT_NE(triMesh, nullptr);
+
+  auto skeleton = dynamics::Skeleton::create("mesh_material_roundtrip");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("mesh_body");
+  auto mesh = std::make_shared<dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), std::move(triMesh), meshUri, retriever);
+  ASSERT_GE(mesh->getMaterials().size(), 2u);
+  ASSERT_GE(mesh->getSubMeshRanges().size(), 2u);
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::move(mesh), "multi_material_mesh_visual");
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfLink = sdfRoot.Model()->LinkByName("mesh_body");
+  ASSERT_NE(sdfLink, nullptr);
+  const auto* sdfVisual = sdfLink->VisualByName("multi_material_mesh_visual");
+  ASSERT_NE(sdfVisual, nullptr);
+  ASSERT_NE(sdfVisual->Geom(), nullptr);
+  const auto* sdfMesh = sdfVisual->Geom()->MeshShape();
+  ASSERT_NE(sdfMesh, nullptr);
+  EXPECT_EQ(sdfMesh->Uri(), meshUri.toString());
+
+  const auto path
+      = writeTempSdf(writeResult.value(), "mesh_material_roundtrip");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "mesh_body");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* reparsedMesh
+      = test::requireShape<dynamics::VisualAspect, dynamics::MeshShape>(
+          *reparsedBody, 0, 1);
+  ASSERT_NE(reparsedMesh, nullptr);
+
+  ASSERT_GE(reparsedMesh->getSubMeshRanges().size(), 2u);
+  std::set<unsigned int> materialIndices;
+  for (const auto& range : reparsedMesh->getSubMeshRanges()) {
+    materialIndices.insert(range.materialIndex);
+  }
+  EXPECT_TRUE(materialIndices.contains(0u));
+  EXPECT_TRUE(materialIndices.contains(1u));
+
+  ASSERT_GE(reparsedMesh->getMaterials().size(), 2u);
+  const auto* opaqueMaterial = reparsedMesh->getMaterial(0u);
+  const auto* transparentMaterial = reparsedMesh->getMaterial(1u);
+  ASSERT_NE(opaqueMaterial, nullptr);
+  ASSERT_NE(transparentMaterial, nullptr);
+
+  EXPECT_TRUE(opaqueMaterial->diffuse.isApprox(
+      Eigen::Vector4f(0.9f, 0.18f, 0.12f, 1.0f), 1e-6f));
+  EXPECT_FLOAT_EQ(opaqueMaterial->metallicFactor, 0.25f);
+  EXPECT_FLOAT_EQ(opaqueMaterial->roughnessFactor, 0.45f);
+  EXPECT_NE(
+      opaqueMaterial->baseColorTexturePath.find("block.png"),
+      std::string::npos);
+
+  EXPECT_TRUE(transparentMaterial->diffuse.isApprox(
+      Eigen::Vector4f(0.1f, 0.5f, 0.9f, 0.6f), 1e-6f));
+  EXPECT_FLOAT_EQ(transparentMaterial->metallicFactor, 0.8f);
+  EXPECT_FLOAT_EQ(transparentMaterial->roughnessFactor, 0.2f);
+  EXPECT_NE(
+      transparentMaterial->baseColorTexturePath.find("block_hidden.png"),
+      std::string::npos);
 }
 
 //==============================================================================

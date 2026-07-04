@@ -176,8 +176,9 @@ PBR
 metallic/roughness factors, and collision-surface contact disable bitmasks,
 zero-threshold bounce restitution, and ODE friction/slip metadata. The
 round-trip coverage includes absolute
-non-file mesh URI preservation through a custom retriever. Targetless relative
-mesh references and relative or
+non-file mesh URI preservation through a custom retriever plus URI-backed mesh
+material variants through preserved source mesh URIs. Targetless relative
+mesh references, URI-less in-memory mesh material variants, and relative or
 host-qualified `file` mesh URIs are rejected because the writer has no
 destination SDF URI for resource resolution or generated asset placement.
 DART body-level collision disable is represented through per-collision

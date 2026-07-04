@@ -44,10 +44,13 @@ zero-threshold bounce restitution round-trips through SDF
 friction direction, and slip compliance round-trip through SDF
 `<surface><friction><ode>` values when they are representable in DART's
 collision frame. Absolute non-file mesh URI
-preservation is covered through a custom retriever-backed write/read test.
-Targetless relative mesh references and relative or host-qualified `file` mesh
-URIs are rejected because the writer has no destination SDF URI for
-resource resolution or generated asset placement. `WriteOptions`
+preservation is covered through a custom retriever-backed write/read test, and
+URI-backed mesh material variants are covered by a write/read test that
+preserves the source `sdf::Mesh` URI and re-loads the original multi-material
+glTF resource. Targetless relative mesh references, URI-less in-memory mesh
+material variants, and relative or host-qualified `file` mesh URIs are rejected
+because the writer has no destination SDF URI for resource resolution or
+generated asset placement. `WriteOptions`
 visual/collision filtering is covered by focused tests. Unsupported constructs,
 missing mesh URIs, pre-SDF-1.11 mimic output, coupler-style mimic enforcement,
 non-finite material colors, invalid PBR material factors, non-default visual
@@ -173,10 +176,11 @@ Phase 5 is complete only when code and tests prove the writer contract:
 - Extend the SDF writer contract beyond the first conservative subset when
   tests can prove additional joint aliases or edge cases beyond continuous
   revolute joints, additional sdformat-owned shapes with complete resource
-  policies such as SDF heightmaps, mesh material variants, additional
-  collision-surface fields beyond contact bitmask, zero-threshold bounce
-  restitution, and ODE friction/slip, destination-aware resource rewriting, or
-  other world-level data beyond gravity round-trip correctly.
+  policies such as SDF heightmaps, URI-less or generated mesh material
+  variants, additional collision-surface fields beyond the already-covered
+  contact bitmask, zero-threshold bounce restitution, and ODE friction/slip,
+  destination-aware resource rewriting, or other world-level data beyond
+  gravity round-trip correctly.
 - Decide the next implementation target: URDF writer or PLAN-101 project
   save/load.
 - Keep YAML out of the first implementation target unless a durable

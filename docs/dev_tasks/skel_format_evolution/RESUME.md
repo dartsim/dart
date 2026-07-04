@@ -47,7 +47,8 @@ visual material colors, PBR metallic/roughness factors, collision-surface
 contact disable bitmasks for both shape-level and body-level DART collision
 disable state, visual transparency, zero-threshold bounce restitution, ODE friction
 coefficients, first friction direction, slip compliance, and absolute non-file
-mesh URI preservation through a custom retriever. Continuous SDF joints now
+mesh URI preservation through a custom retriever, plus URI-backed mesh material
+variants through preserved source mesh URIs. Continuous SDF joints now
 parse as unbounded DART
 `RevoluteJoint`s, and unbounded DART revolute joints write back as SDF
 `continuous` while finite-limit revolute joints stay `revolute`. Targetless
@@ -166,6 +167,13 @@ point-cloud, line-segment, or occupancy-grid geometry primitives in the
 writer's current contract, and the targetless string writer has no destination
 URI or generated-resource policy for converting those DART-side data
 structures into SDF-owned mesh or resource artifacts.
+URI-backed mesh material variants now have focused read/write/read coverage:
+the writer preserves the `sdf::Mesh` URI, and the reparse uses DART's normal
+mesh resource loader to recover submesh material assignments, PBR factors,
+diffuse colors, and texture paths from the original multi-material glTF asset.
+This does not add SDF XML material synthesis for URI-less or generated
+in-memory mesh materials; those still need a destination-aware file/project
+writer policy.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -203,6 +211,32 @@ Additional validation for the writer-API-home docs:
 Additional validation for absolute non-file mesh URI writer coverage:
 
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
+Additional validation for URI-backed mesh material variant writer coverage:
+
+- Focused coverage passed without writer implementation changes, proving the
+  current sdformat `sdf::Mesh` URI path preserves the source mesh resource and
+  lets DART recover submesh material assignments, PBR factors, diffuse colors,
+  and texture paths on reparse.
+
+  ```bash
+  pixi run run-cpp-target INTEGRATION_io_SdfWriter
+  ```
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: `origin/main`
+- Scope evidence: focused diff in `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder
+- Decision: no entry required
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: No separate changelog entry is needed because this slice adds
+  coverage and documentation for the existing DART 7 IO and Parsing SDF writer
+  and mesh/GLTF material import entries; it does not add a new public writer
+  API or serialization behavior.
+- Follow-up: none
 
 Additional validation for writer options and missing mesh URI diagnostics:
 

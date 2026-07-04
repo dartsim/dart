@@ -50,7 +50,9 @@
       plus `<surface><bounce>` restitution coefficients and
       `<surface><friction><ode>` `mu`, `mu2`, `fdir1`, `slip1`, and `slip2`.
       Absolute non-file mesh URIs now have writer read/write/read coverage
-      through a custom retriever. Writer options for excluding visuals or
+      through a custom retriever, and URI-backed mesh material variants now have
+      writer read/write/read coverage through preserved source mesh URIs. Writer
+      options for excluding visuals or
       collisions, missing mesh URI diagnostics, pre-SDF-1.11 mimic diagnostics,
       unsupported coupler-style mimic diagnostics, and relative/generated mesh
       resource diagnostics now have focused coverage. Invalid collision-surface
@@ -235,7 +237,8 @@ SKEL-YAML direction just because the prototype once existed.
   capsule/cone/ellipsoid geometry,
   visual shadow state, zero visibility flags, visual transparency, and absolute
   non-file mesh URI
-  preservation through a custom retriever. It also covers sdformat-owned
+  preservation through a custom retriever plus URI-backed mesh material
+  variants through preserved source mesh URIs. It also covers sdformat-owned
   ambiguous `.xml` SDF dispatch for root-model and world-contained models,
   `WriteOptions`
   visual/collision filtering, the empty mesh URI diagnostic, pre-SDF-1.11 mimic
