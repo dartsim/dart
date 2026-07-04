@@ -34,8 +34,10 @@
       universal two-axis joints, topology-only ball joints, and explicit visual
       material colors now round-trip as SDF `<gravity>`,
       `<axis>/<axis2><dynamics>`, `<thread_pitch>`, local `<pose>`, and
-      `<diffuse>` values. The writer test now uses a shared IO round-trip
-      assertion helper for body, joint, DoF, inertia, and shape comparisons.
+      `<diffuse>` values. Absolute non-file mesh URIs now have writer
+      read/write/read coverage through a custom retriever. The writer test now
+      uses a shared IO round-trip assertion helper for body, joint, DoF,
+      inertia, and shape comparisons.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor
       save-load belongs to the scene/project layer. Broader SDF coverage, URDF
@@ -120,9 +122,10 @@ SKEL-YAML direction just because the prototype once existed.
    [`05-export-writers-plan.md`](05-export-writers-plan.md): extend SDF writer
    coverage beyond the first conservative subset, decide the next writer target
    (URDF or PLAN-101 project save/load), and keep read/write/read tests attached
-   to every expanded contract. Keep writer APIs format-owned unless a later
-   multi-format write API is reviewed. YAML can enter that slice only after a
-   durable project/scene schema is accepted.
+   to every expanded contract. Absolute non-file mesh URI preservation is
+   covered; relative/generated resource path policy remains open. Keep writer
+   APIs format-owned unless a later multi-format write API is reviewed. YAML can
+   enter that slice only after a durable project/scene schema is accepted.
 
 ## Verification Gates
 
@@ -151,7 +154,8 @@ SKEL-YAML direction just because the prototype once existed.
   link-level gravity mode for gravity-disabled links and passive joint dynamics
   metadata plus screw thread pitch for supported single-axis joints, two-axis
   universal joints, topology-only ball joints, plus local root, joint, and shape
-  poses. The assertions are factored through
+  poses, plus absolute non-file mesh URI preservation through a custom
+  retriever. The assertions are factored through
   `tests/helpers/io_round_trip_helpers.hpp` so future writer formats can reuse
   the body, joint, DoF, inertia, and shape comparison helpers. Completion still
   requires broader accepted-format writer APIs and round-trip tests that load a

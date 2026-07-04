@@ -67,7 +67,8 @@ struct DART_UTILS_API WriteOptions
 /// Coulomb friction, spring reference, and spring stiffness), screw thread
 /// pitch, topology-only ball child joints, link gravity mode, inertial
 /// parameters, local joint/shape poses, and box/sphere/cylinder/mesh
-/// visual/collision geometry with explicit visual material colors.
+/// visual/collision geometry with explicit visual material colors and absolute
+/// non-file mesh URI preservation.
 /// Unsupported constructs return an error instead of being silently dropped.
 common::Result<std::string, common::Error> DART_UTILS_API
 tryWriteSkeletonToString(

@@ -21,10 +21,11 @@ child joints, passive joint dynamics metadata (damping, Coulomb friction,
 spring reference, and spring stiffness), screw thread pitch, topology-only ball
 child joints, link gravity mode, inertial parameters, local joint/shape poses,
 box/sphere/cylinder/mesh visual or collision geometry, and explicit visual
-material colors as SDF `<diffuse>` values. Unsupported constructs, non-finite
-material colors, non-finite screw pitch, unsupported ball-joint metadata, and
-non-finite joint dynamics return `common::Result` errors instead of being
-silently dropped.
+material colors as SDF `<diffuse>` values. Absolute non-file mesh URI
+preservation is covered through a custom retriever-backed write/read test.
+Unsupported constructs, non-finite material colors, non-finite screw pitch,
+unsupported ball-joint metadata, and non-finite joint dynamics return
+`common::Result` errors instead of being silently dropped.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -98,8 +99,8 @@ Phase 5 is complete only when code and tests prove the writer contract:
 
 - Extend the SDF writer contract beyond the first conservative subset when
   tests can prove additional joint aliases or edge cases, shapes, mesh material
-  variants, resource URI handling, default/world gravity, or other world-level
-  data round-trip correctly.
+  variants, relative/generated resource path policy, default/world gravity, or
+  other world-level data round-trip correctly.
 - Decide the next implementation target: URDF writer or PLAN-101 project
   save/load.
 - Keep YAML out of the first implementation target unless a durable

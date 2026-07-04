@@ -32,6 +32,8 @@
 
 #include "helpers/io_round_trip_helpers.hpp"
 
+#include "dart/common/resource.hpp"
+#include "dart/common/resource_retriever.hpp"
 #include "dart/utils/sdf/sdf_parser.hpp"
 #include "dart/utils/sdf/sdf_writer.hpp"
 
@@ -53,14 +55,99 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <map>
 #include <memory>
+#include <string>
+#include <utility>
+
+#include <cstring>
 
 using namespace dart;
 
 namespace {
+
+class StringResource final : public common::Resource
+{
+public:
+  explicit StringResource(std::string data) : mData(std::move(data)) {}
+
+  std::size_t getSize() override
+  {
+    return mData.size();
+  }
+
+  std::size_t tell() override
+  {
+    return mOffset;
+  }
+
+  bool seek(ptrdiff_t offset, SeekType origin) override
+  {
+    ptrdiff_t base = 0;
+    if (origin == SEEKTYPE_CUR) {
+      base = static_cast<ptrdiff_t>(mOffset);
+    } else if (origin == SEEKTYPE_END) {
+      base = static_cast<ptrdiff_t>(mData.size());
+    }
+
+    const ptrdiff_t next = base + offset;
+    if (next < 0 || next > static_cast<ptrdiff_t>(mData.size())) {
+      return false;
+    }
+
+    mOffset = static_cast<std::size_t>(next);
+    return true;
+  }
+
+  std::size_t read(void* buffer, std::size_t size, std::size_t count) override
+  {
+    const std::size_t bytes = size * count;
+    if (bytes == 0) {
+      return 0;
+    }
+
+    const std::size_t available = mData.size() - mOffset;
+    const std::size_t copied = std::min(bytes, available);
+    std::memcpy(buffer, mData.data() + mOffset, copied);
+    mOffset += copied;
+    return copied / size;
+  }
+
+private:
+  std::string mData;
+  std::size_t mOffset{0};
+};
+
+class MapResourceRetriever final : public common::ResourceRetriever
+{
+public:
+  void add(std::string uri, std::string data)
+  {
+    mResources.emplace(std::move(uri), std::move(data));
+  }
+
+  bool exists(const common::Uri& uri) override
+  {
+    return mResources.contains(uri.toString());
+  }
+
+  common::ResourcePtr retrieve(const common::Uri& uri) override
+  {
+    const auto it = mResources.find(uri.toString());
+    if (it == mResources.end()) {
+      return nullptr;
+    }
+
+    return std::make_shared<StringResource>(it->second);
+  }
+
+private:
+  std::map<std::string, std::string> mResources;
+};
 
 std::filesystem::path writeTempSdf(std::string_view text, std::string_view name)
 {
@@ -473,6 +560,59 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
           *ballTip, 0, 1);
   ASSERT_NE(ballTipSphere, nullptr);
   EXPECT_NEAR(ballTipSphere->getRadius(), 0.05, 1e-12);
+}
+
+//==============================================================================
+TEST(SdfWriter, PreservesAbsoluteNonFileMeshUris)
+{
+  auto retriever = std::make_shared<MapResourceRetriever>();
+  const std::string meshUri = "memory://pkg/meshes/writer_triangle.obj";
+  retriever->add(
+      meshUri,
+      R"(
+o Triangle
+v 0 0 0
+v 1 0 0
+v 0 1 0
+f 1 2 3
+)");
+
+  auto skeleton = dynamics::Skeleton::create("mesh_uri_roundtrip");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("mesh_body");
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::MeshShape>(
+          Eigen::Vector3d(2.0, 3.0, 4.0),
+          makeTriangleMesh(),
+          common::Uri(meshUri),
+          retriever),
+      "memory_mesh_visual");
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  EXPECT_NE(
+      writeResult.value().find("<uri>" + meshUri + "</uri>"),
+      std::string::npos);
+
+  const std::string modelUri = "memory://pkg/models/writer_roundtrip.sdf";
+  retriever->add(modelUri, writeResult.value());
+
+  const utils::SdfParser::Options options(retriever);
+  const auto reparsed
+      = utils::SdfParser::readSkeleton(common::Uri(modelUri), options);
+
+  ASSERT_NE(reparsed, nullptr);
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "mesh_body");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* mesh
+      = test::requireShape<dynamics::VisualAspect, dynamics::MeshShape>(
+          *reparsedBody, 0, 1);
+  ASSERT_NE(mesh, nullptr);
+  EXPECT_EQ(mesh->getMeshUri2().toString(), meshUri);
+  EXPECT_VECTOR_NEAR(mesh->getScale(), Eigen::Vector3d(2.0, 3.0, 4.0), 1e-12);
 }
 
 //==============================================================================

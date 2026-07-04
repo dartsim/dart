@@ -35,7 +35,8 @@ FreeJoint/WeldJoint placement, revolute/prismatic/weld/screw/universal child
 joints, inertial data, primitive or mesh geometry, link gravity mode, passive
 joint dynamics metadata (damping, Coulomb friction, spring reference, and spring
 stiffness), screw thread pitch, topology-only ball child joints, local
-root/joint/shape poses, and explicit visual material colors. It also checks
+root/joint/shape poses, explicit visual material colors, and absolute non-file
+mesh URI preservation through a custom retriever. It also checks
 unsupported-shape diagnostics, non-finite visual material diagnostics,
 non-finite screw pitch diagnostics, unsupported ball-joint metadata, and
 non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
@@ -75,6 +76,10 @@ Additional validation for the writer-API-home docs:
 - `git diff --check`
 - `pixi run lint`
 
+Additional validation for absolute non-file mesh URI writer coverage:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
 Changelog decision:
 
 - Mode: draft
@@ -89,7 +94,9 @@ Changelog decision:
 - Follow-up: add the implementation PR link after a PR exists and maintainer /
   user approval allows the PR update or follow-up push. No additional changelog
   entry is needed for the comparison-helper refactor because it only changes
-  test infrastructure and task handoff docs.
+  test infrastructure and task handoff docs. No additional changelog entry is
+  needed for the absolute non-file mesh URI coverage because it only strengthens
+  test evidence for the existing SDF writer entry.
 
 ## Previous Resume Checkpoint (2026-07-03)
 
@@ -185,8 +192,9 @@ Continue with the remaining real task work: land Phase 2 after maintainer
 approval, then continue Phase 5 from
 [`05-export-writers-plan.md`](05-export-writers-plan.md) by extending SDF writer
 coverage beyond material colors/link gravity mode/passive joint dynamics/screw
-thread pitch/universal and ball topology/local poses or choosing the next
-accepted writer target (URDF or PLAN-101 project save/load).
+thread pitch/universal and ball topology/local poses/absolute non-file mesh URI
+preservation or choosing the next accepted writer target (URDF or PLAN-101
+project save/load).
 
 ## Context That Would Be Lost
 
