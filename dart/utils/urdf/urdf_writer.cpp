@@ -360,6 +360,11 @@ WriteResult writeMaterial(
         + "] with non-finite material color.");
   }
 
+  if (visualAspect->usesDefaultColor()
+      && rgba.isApprox(dynamics::VisualAspect::getDefaultRGBA(), kTolerance)) {
+    return ok();
+  }
+
   auto* material = appendElement(doc, visual, "material");
   material->SetAttribute("name", (shapeNode.getName() + "_material").c_str());
   auto* color = appendElement(doc, *material, "color");

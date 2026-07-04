@@ -92,7 +92,8 @@ The first URDF writer implementation slice is also local on
 WeldJoint metadata, child revolute/continuous/prismatic/fixed joints, passive
 damping/friction metadata, single-DoF motor-style mimic metadata, inertial
 data, local visual/collision poses, box/sphere/cylinder/absolute or package
-URI mesh geometry, visual colors, and
+URI mesh geometry, explicit visual colors, implicit default visual color
+omission, default-RGB alpha overrides, and
 visual/collision include options. `INTEGRATION_io_UrdfWriter` proves
 write/read/read round-trip for that subset and covers explicit diagnostics for
 multiple root trees, unsupported joint families, non-identity child joint
@@ -102,9 +103,12 @@ host-qualified file mesh URIs, and non-finite mesh scales. Additional focused
 coverage proves unbounded DART revolute joints write as URDF `continuous`
 joints and preserve passive dynamics metadata through reparse, and proves
 visual and collision `package://` mesh URIs serialize and reparse through
-`UrdfParser` package resolution. Non-positive mass, non-finite local
-center-of-mass, visual material color, shape pose, joint axis, and asymmetric
-velocity/effort limits now have focused diagnostics coverage. DART
+`UrdfParser` package resolution. Implicit default visual colors now serialize
+without authored URDF materials, explicit default colors stay authored, and
+default RGB with an alpha override still serializes a material so alpha
+round-trips. Non-positive mass, non-finite local center-of-mass, visual
+material color, shape pose, joint axis, and asymmetric velocity/effort limits
+now have focused diagnostics coverage. DART
 `SoftBodyNode` writer attempts also fail with a targeted diagnostic instead of
 being serialized as ordinary URDF links with point-mass,
 spring, damping, and soft mesh topology semantics dropped.
@@ -1154,6 +1158,31 @@ Additional validation for URDF collision package meshes and structural
 diagnostics:
 
 - `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter="UrdfWriter.PreservesCollisionPackageMeshUri:UrdfWriter.NonPositiveMassReturnsError:UrdfWriter.NonFiniteLocalComReturnsError:UrdfWriter.NonFiniteVisualMaterialColorReturnsError:UrdfWriter.NonFiniteShapePoseReturnsError:UrdfWriter.AsymmetricVelocityLimitReturnsError:UrdfWriter.AsymmetricEffortLimitReturnsError:UrdfWriter.NonFiniteJointAxisReturnsError"'`
+
+Additional validation for URDF default visual material preservation:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter="UrdfWriter.OmitsImplicitDefaultVisualMaterial:UrdfWriter.PreservesExplicitDefaultVisualMaterial:UrdfWriter.PreservesDefaultVisualAlphaOverride"'`
+- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (26 tests)
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: `origin/main` inferred for
+  `work/skel-format-yaml-decision`; no open PR exists for the branch.
+- Scope evidence: focused diff in `dart/utils/urdf/urdf_writer.cpp`,
+  `dart/utils/urdf/urdf_parser.hpp`,
+  `tests/integration/io/test_urdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Decision: no additional changelog entry.
+- Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing existing URDF
+  writer bullet.
+- Entry text: N/A
+- PR-body note: No separate changelog entry is needed because this slice
+  refines default-material preservation inside the existing unreleased
+  conservative URDF writer contract; the DART 7 IO and Parsing entry already
+  covers URDF writer visual colors and explicit diagnostics for unsupported or
+  lossy constructs.
+- Follow-up: none
 
 Changelog decision:
 

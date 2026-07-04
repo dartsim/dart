@@ -255,6 +255,25 @@ dynamics::SkeletonPtr makeCollisionMeshSkeleton(
   return skeleton;
 }
 
+dynamics::SkeletonPtr makeDefaultVisualSkeleton()
+{
+  auto skeleton = dynamics::Skeleton::create("urdf_default_visual_writer");
+
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr,
+          dynamics::FreeJoint::Properties(),
+          makeBodyProperties(
+              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)rootJoint;
+
+  base->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4)),
+      "default_visual");
+
+  return skeleton;
+}
+
 template <class ShapeT, class AspectT>
 const ShapeT* getFirstShape(const dynamics::BodyNode* body)
 {
@@ -278,6 +297,21 @@ void expectBodyInertiaRoundTrips(
       expected.getLocalCOM().isApprox(actual.getLocalCOM(), kTolerance));
   EXPECT_TRUE(expected.getInertia().getMoment().isApprox(
       actual.getInertia().getMoment(), kTolerance));
+}
+
+const dynamics::VisualAspect* getOnlyVisual(const dynamics::Skeleton& skeleton)
+{
+  const auto* base = skeleton.getBodyNode("base");
+  if (!base || base->getNumShapeNodesWith<dynamics::VisualAspect>() != 1) {
+    return nullptr;
+  }
+
+  const auto* visualNode = base->getShapeNodeWith<dynamics::VisualAspect>(0);
+  if (!visualNode) {
+    return nullptr;
+  }
+
+  return visualNode->getVisualAspect();
 }
 
 } // namespace
@@ -372,6 +406,84 @@ TEST(UrdfWriter, RoundTripsSupportedTreeSubset)
   ASSERT_NE(fixed, nullptr);
   EXPECT_EQ(fixed->getParentBodyNode()->getName(), "slider_body");
   EXPECT_EQ(fixed->getChildBodyNode()->getName(), "fixed");
+}
+
+//==============================================================================
+TEST(UrdfWriter, OmitsImplicitDefaultVisualMaterial)
+{
+  const auto skeleton = makeDefaultVisualSkeleton();
+  const auto* originalVisual = getOnlyVisual(*skeleton);
+  ASSERT_NE(originalVisual, nullptr);
+  EXPECT_TRUE(originalVisual->usesDefaultColor());
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  EXPECT_EQ(writeResult.value().find("<material"), std::string::npos);
+
+  utils::UrdfParser parser;
+  const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
+  ASSERT_NE(reparsed, nullptr);
+  const auto* reparsedVisual = getOnlyVisual(*reparsed);
+  ASSERT_NE(reparsedVisual, nullptr);
+  EXPECT_TRUE(reparsedVisual->usesDefaultColor());
+  EXPECT_TRUE(reparsedVisual->getRGBA().isApprox(
+      dynamics::VisualAspect::getDefaultRGBA(), kColorTolerance));
+}
+
+//==============================================================================
+TEST(UrdfWriter, PreservesExplicitDefaultVisualMaterial)
+{
+  const auto skeleton = makeDefaultVisualSkeleton();
+  auto* base = skeleton->getBodyNode("base");
+  ASSERT_NE(base, nullptr);
+  auto* visualNode = base->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visualNode, nullptr);
+  auto* visual = visualNode->getVisualAspect();
+  ASSERT_NE(visual, nullptr);
+  visual->setRGBA(dynamics::VisualAspect::getDefaultRGBA());
+  ASSERT_FALSE(visual->usesDefaultColor());
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  expectContains(writeResult.value(), "<material");
+  expectContains(writeResult.value(), "rgba=\"0.5 0.5 1 1\"");
+
+  utils::UrdfParser parser;
+  const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
+  ASSERT_NE(reparsed, nullptr);
+  const auto* reparsedVisual = getOnlyVisual(*reparsed);
+  ASSERT_NE(reparsedVisual, nullptr);
+  EXPECT_FALSE(reparsedVisual->usesDefaultColor());
+  EXPECT_TRUE(reparsedVisual->getRGBA().isApprox(
+      dynamics::VisualAspect::getDefaultRGBA(), kColorTolerance));
+}
+
+//==============================================================================
+TEST(UrdfWriter, PreservesDefaultVisualAlphaOverride)
+{
+  const auto skeleton = makeDefaultVisualSkeleton();
+  auto* base = skeleton->getBodyNode("base");
+  ASSERT_NE(base, nullptr);
+  auto* visualNode = base->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visualNode, nullptr);
+  auto* visual = visualNode->getVisualAspect();
+  ASSERT_NE(visual, nullptr);
+  visual->setAlpha(0.35);
+  ASSERT_TRUE(visual->usesDefaultColor());
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  expectContains(writeResult.value(), "<material");
+
+  utils::UrdfParser parser;
+  const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
+  ASSERT_NE(reparsed, nullptr);
+  const auto* reparsedVisual = getOnlyVisual(*reparsed);
+  ASSERT_NE(reparsedVisual, nullptr);
+  EXPECT_NEAR(reparsedVisual->getAlpha(), 0.35, kColorTolerance);
 }
 
 //==============================================================================

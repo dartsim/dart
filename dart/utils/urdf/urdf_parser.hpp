@@ -176,7 +176,8 @@ public:
   /// child revolute/continuous/prismatic/fixed joints whose child link frame
   /// coincides with the joint frame, single-DoF motor-style mimic metadata,
   /// passive joint dynamics, inertial data, local visual/collision poses, and
-  /// box/sphere/cylinder/absolute-URI mesh geometry. Unsupported constructs
+  /// box/sphere/cylinder/absolute or package URI mesh geometry. Explicit
+  /// visual colors are serialized as URDF materials. Unsupported constructs
   /// return an error instead of being silently dropped.
   static common::Result<std::string, common::Error> tryWriteSkeletonToString(
       const dynamics::Skeleton& skeleton);

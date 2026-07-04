@@ -144,7 +144,8 @@ revolute/continuous/prismatic/fixed joints whose child link frame coincides
 with the joint frame, passive damping/friction metadata, single-DoF motor-style
 mimic metadata, inertial data, local
 visual/collision poses, box/sphere/cylinder and absolute or package URI mesh
-geometry, visual colors, and visual/collision include
+geometry, explicit visual colors, implicit default visual color omission,
+default-RGB alpha overrides, and visual/collision include
 options. `INTEGRATION_io_UrdfWriter` validates a write/read/read round-trip for
 that subset and covers explicit diagnostics for multiple root trees, unsupported
 joint families, non-identity child joint frames, unbounded finite-requiring URDF
@@ -153,9 +154,12 @@ URIs, relative or host-qualified file mesh URIs, and non-finite mesh scales.
 Additional coverage proves unbounded revolute DART joints write as URDF
 `continuous` joints and preserve passive dynamics metadata, and that visual and
 collision `package://` mesh URIs serialize and reparse through `UrdfParser`
-package resolution. Non-positive mass, non-finite local center-of-mass, visual
-material color, shape pose, joint axis, and asymmetric velocity/effort limits
-now have focused diagnostics coverage. DART `SoftBodyNode` export also fails
+package resolution. Implicit default visual colors now serialize without
+authored URDF materials, explicit default colors stay authored, and default RGB
+with an alpha override still serializes a material so alpha round-trips.
+Non-positive mass, non-finite local center-of-mass, visual material color,
+shape pose, joint axis, and asymmetric velocity/effort limits now have focused
+diagnostics coverage. DART `SoftBodyNode` export also fails
 with a targeted diagnostic because URDF has no point-mass, spring, damping, or
 soft mesh topology semantics. This first URDF slice also does not complete
 Phase 5.

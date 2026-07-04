@@ -229,7 +229,8 @@ revolute/continuous/prismatic/fixed joints whose child link frame coincides
 with the joint frame, passive damping/friction metadata, single-DoF motor-style
 mimic metadata, inertial data, local visual/collision poses,
 box/sphere/cylinder/absolute or package URI mesh geometry for visuals and
-collisions, visual colors, and options for excluding visuals or collisions.
+collisions, explicit visual colors, implicit default visual color omission,
+default-RGB alpha overrides, and options for excluding visuals or collisions.
 
 The writer returns `common::Result` and rejects unsupported or lossy DART
 constructs such as multiple root trees, non-identity root placement, unsupported

@@ -141,8 +141,10 @@
       revolute/continuous/prismatic/fixed joints, passive damping/friction
       metadata, single-DoF motor-style mimic metadata, inertial data, local
       visual/collision poses,
-      box/sphere/cylinder/absolute or package URI mesh geometry, visual colors,
-      and visual/collision include options. `INTEGRATION_io_UrdfWriter`
+      box/sphere/cylinder/absolute or package URI mesh geometry, explicit
+      visual colors, implicit default visual color omission, default-RGB alpha
+      overrides, and visual/collision include options.
+      `INTEGRATION_io_UrdfWriter`
       validates a write/read/read subset and diagnostics for multiple root trees,
       unsupported joint families, non-identity child joint frames, unbounded
       finite-requiring URDF limits, missing mimic references, and coupler-style
