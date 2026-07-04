@@ -7,6 +7,8 @@ This task is for the DART 6.20 support lane.
 - Implementation branch:
   `plan/dart6-dependency-minimization-6.20`, based on
   `origin/release-6.20`.
+- Native-collision planning refresh branch:
+  `plan/dart6-native-collision-port`, based on `origin/release-6.20`.
 - DART 7 reference: use `origin/main` directly, or create a local worktree from
   `origin/main` for comparisons. Do not rely on a developer-specific checkout
   path.
@@ -14,26 +16,31 @@ This task is for the DART 6.20 support lane.
   `origin/main` or remote refs (or your own separate `main` worktree) as
   comparison evidence only.
 
-Evidence was collected on 2026-06-19 after fetching `origin/main`,
-`origin/release-6.20`, and `origin/release-6.19`.
+Evidence was first collected on 2026-06-19 after fetching `origin/main`,
+`origin/release-6.20`, and `origin/release-6.19`. The native-collision port
+evidence in `03-native-collision-port-scoping.md` and the dashboard state in
+`04-orchestration-dashboard.md` were refreshed on 2026-07-03 after fetching
+`origin/main` and `origin/release-6.20`.
 
 ## Current Branch State
 
-- `origin/release-6.20` currently points at `b94cd16f6eb` (`Plan DART 6.20
-  dependency minimization (#3074)`).
-- `package.xml` and `pixi.toml` on `origin/release-6.20` still report version
-  `6.19.2`.
-- DART 6.20 is intentionally using the release lane before the package version
-  metadata bump lands.
+- `origin/release-6.20` currently points at
+  `849f22245b7ef11299fa73074c77d6c50b8dda01`.
+- `package.xml` and `pixi.toml` on `origin/release-6.20` still report a 6.19.x
+  package version (`6.19.3` in the current CMake configure output).
+- DART 6.20 intentionally uses the release lane while package version metadata
+  catches up to the branch/milestone naming.
 
 ## DART 6 Dependency Inventory
 
-`package.xml` on `release-6.20` lists these package dependencies:
+`package.xml` on `release-6.20` currently lists these package dependencies:
 
 - Required or exported build dependencies: `assimp`, `eigen`, `libfcl-dev`,
   `liburdfdom-dev`, and `tinyxml2`.
 - Optional or component-related package dependencies that are still advertised:
-  `bullet`, `glut`, `libxi-dev`, and `libxmu-dev`.
+  `bullet`.
+- Already removed from the package manifest on this baseline: `glut`,
+  `libxi-dev`, and `libxmu-dev`.
 
 `pixi.toml` on `release-6.20` keeps a broad default environment. The important
 project dependencies include:
@@ -42,20 +49,23 @@ project dependencies include:
   `urdfdom`, `tinyxml2`, and optional `spdlog`.
 - Collision and constraint ecosystem dependencies: `bullet-cpp`, `libode`,
   `octomap`, and `fcl`.
-- GUI dependencies: `openscenegraph`, `freeglut`, OpenGL/GLU packages, and
-  `imgui`.
-- Optimizer dependencies: `ipopt`, `nlopt`, and `pagmo-devel`.
+- GUI dependencies: `openscenegraph`, `imgui`, and the OSG/OpenGL stack pulled
+  through those packages.
+- Already removed from the default Pixi environment on this baseline:
+  `freeglut`, `ipopt`, `nlopt`, and `pagmo-devel`.
 - Test, build, and docs tools: CMake, Ninja, GoogleTest, Google Benchmark,
   Doxygen, Sphinx, pytest, and related Python tooling.
 
 CMake on `release-6.20` makes `fmt`, Eigen, FCL, and Assimp part of the core
-configure/build path. Bullet, ODE, GUI, optimizer backends, OctoMap, and ImGui
-are component or feature surfaces, but the default Pixi environment makes many
-of them available by default.
+configure/build path. Bullet, ODE, GUI, OctoMap, and ImGui are component or
+feature surfaces, but the default Pixi environment still makes many of them
+available by default.
 
 ## DART 6 `dart/external` Inventory
 
-`release-6.20` started with these vendored source trees:
+`release-6.20` started with these vendored source trees; the current baseline
+has retired the top-level `dart/external/` source directory, but the list is
+kept here as historical task context:
 
 - `dart/external/convhull_3d`
 - `dart/external/ikfast`
@@ -65,16 +75,16 @@ of them available by default.
 
 Usage summary:
 
-- `convhull_3d` was included by the math geometry implementation. The first
-  implementation slice replaces it with DART-owned native math detail code.
-- `ikfast` is included by DART's IKFast wrapper, generated WAM examples, and
-  integration tests.
-- `imgui` provides the DART 6 `external-imgui` compatibility component from
+- `convhull_3d` was included by the math geometry implementation and has been
+  replaced by DART-owned native math detail code.
+- `ikfast` moved to DART's dynamics path with a compatibility forwarding
+  header for the old installed include path.
+- `imgui` now provides the DART 6 `external-imgui` compatibility component from
   the system package by default, including headless package builds, and uses a
   DART-patched fetched copy when `DART_USE_SYSTEM_IMGUI` is disabled.
-- `lodepng` is used by the GLUT screenshot path.
-- `odelcpsolver` was included by core constraint, contact, boxed LCP, Dantzig,
-  PGS, and default `World` solver paths.
+- `lodepng` was removed with the GLUT screenshot path.
+- `odelcpsolver` was replaced in production by DART-owned LCP solver code, with
+  legacy ODE code retained only where needed as test baseline material.
 
 ## DART 7 Reference State
 
@@ -146,8 +156,9 @@ Default Pixi/package metadata for optional components
 - Plan: move optional packages out of the default path one at a time only after
   proving the default configure still succeeds and explicit feature/component
   environments keep their tests.
-- Candidates for feature-only treatment before code removal: Bullet, ODE, GUI
-  packages, optimizer packages, and OctoMap.
+- Remaining candidates for feature-only treatment before code removal: Bullet,
+  ODE, GUI packages, and OctoMap. Optimizer packages were already removed from
+  the default environment.
 - Validation: default configure/build, explicit feature configure/build for each
   moved surface, package-component smoke tests, and Gazebo when the change is
   visible to downstream package discovery.
