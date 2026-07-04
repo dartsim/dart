@@ -13,6 +13,50 @@ kinematic obstacles, the performance climb, remaining corpus/parity coverage,
 and articulated-scene support without exposing solver registries, ECS storage,
 external project names, or backend resources in public API.
 
+## Session 2026-07-04: two-wall tunnel fixture row (+ 3/4-wall/8K deferral)
+
+Delivered a bounded Phase 3/6 runtime-manifest slice:
+
+- Added DART-owned runtime coverage for the audited two-wall tunnel unit-test
+  fixture row (`fixtures/3D/unit-tests/tunnel/2-walls.json`) in
+  `RigidIpcPaperExperiments.TwoWallTunnelCubeStaysBetweenWallsFixtureRow`: a unit
+  cube flies down a tight (1 mm) fixed floor/ceiling corridor at high speed,
+  activates rigid IPC contact, stays finite, keeps advancing along the tunnel
+  axis (asserted with a real `startX + 0.1` margin), and stays within the fixed
+  wall clearances (tracked from the cube corners so the invariant is not polluted
+  by native static wall-vs-wall overlaps from the support geometry).
+- Marked that one upstream 3D unit-test fixture row implemented in the generated
+  manifest (planned 339 -> 338, implemented 459 -> 460).
+- Deferred the three-wall, four-wall, and 8K tunnel rows with evidence. A pre-PR
+  adversarial review flagged that a bare `> startX` progress assertion could pass
+  a frozen cube; adding a `startX + 0.1` margin then EXPOSED that at the faithful
+  0.1 mm clearance of `3-walls.json`/`4-walls.json` the conservative curved-CCD
+  line search limits each step to about the separation distance, so the cube is
+  arrested (intersection-free but only ~3 mm / ~56 mm of travel) rather than
+  traversing. Loosening the gap would be an overclaim (their fixtures' defining
+  feature is the 0.1 mm tolerance), so those rows stay planned as a
+  conservative-CCD/performance gap. The 8K variant additionally holds active
+  contact against two 8192-triangle walls every step (~minutes/step), too slow
+  for a unit test -- tied to the dense-contact performance work in
+  `benchmarks.md`.
+
+Environment note (this checkout): plain `pixi run ninja ...` compiles but fails
+at link with `undefined reference to __libc_dlopen_mode@GLIBC_PRIVATE` because
+the conda `ld` shadows the CMake-configured system `/usr/bin/ld`. Build with
+`pixi run bash -c 'PATH=/usr/bin:$PATH ninja -C build/default/cpp/Release <target>'`.
+
+Validation in this slice:
+
+- `pixi run bash -c 'PATH=/usr/bin:$PATH ninja -C build/default/cpp/Release test_rigid_ipc_paper_experiments'`
+- `./build/default/cpp/Release/bin/test_rigid_ipc_paper_experiments --gtest_color=no --gtest_filter='RigidIpcPaperExperiments.TwoWallTunnelCubeStaysBetweenWallsFixtureRow'`
+- `pixi run python scripts/generate_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py --upstream-dir /tmp/rigid-ipc`
+- `pixi run python scripts/check_rigid_ipc_fixture_manifest.py`
+- `pixi run pytest tests/test_rigid_ipc_fixture_manifest_tools.py`
+- `pixi run lint`
+
+No push or PR mutation has been made from this slice.
+
 ## Session 2026-06-01: generic hash-grid source row
 
 Delivered a bounded Phase 2/6 algorithm-manifest slice:

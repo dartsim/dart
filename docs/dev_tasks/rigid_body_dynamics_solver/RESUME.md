@@ -517,7 +517,7 @@ simulation-experimental` (41/41), and `pixi run lint`.
   Baumgarte bias, restitution target, two-sided dynamic-rigid-obstacle coupling)
   out of `solveMultibodyLinkContacts` into a public
   `assembleMultibodyLinkContactProblem(registry, structure, nextVelocity,
-  timeStep, linkContacts)` in `compute/multibody_dynamics.{hpp,cpp}`, returning
+timeStep, linkContacts)` in `compute/multibody_dynamics.{hpp,cpp}`, returning
   `MultibodyLinkContactProblem{rows, inverseMass}` (the joint-space M^-1 the
   unify needs to form `J_i^T M^-1 J_j` cross-coupling). Promoted the anonymous
   `LinkContact`/`ContactRow` to public `LinkContact` / `MultibodyLinkContactRow`,
