@@ -59,8 +59,8 @@ missing mesh URI diagnostics, DART `PlaneShape` finite-size diagnostics,
 `HeightmapShape` source-URI/resource-policy diagnostics, `ConvexMeshShape`
 generated-resource diagnostics, pre-SDF-1.11 mimic diagnostics, unsupported
 coupler-style mimic diagnostics, non-finite visual material diagnostics,
-invalid PBR material diagnostics, non-finite screw pitch diagnostics, invalid
-collision-surface friction/restitution diagnostics, unsupported ball-joint
+invalid PBR material diagnostics, unsupported visual reflectance diagnostics,
+non-finite screw pitch diagnostics, invalid collision-surface friction/restitution diagnostics, unsupported ball-joint
 metadata, and
 non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
 5 is still open until broader SDF coverage plus the remaining accepted writer
@@ -141,6 +141,10 @@ instead of falling through to the generic unsupported-shape path. This is
 intentional: sdformat exposes `sdf::Heightmap`, but DART's in-memory heightmap
 shape does not carry the source heightmap URI that SDF requires, and the current
 targetless string writer has no destination URI or generated-resource policy.
+DART visual reflectance also fails with a targeted diagnostic because the
+current sdformat-backed material mapping preserves diffuse color plus SDF PBR
+metal workflow factors, but has no equivalent DART reflectance field to write
+losslessly.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -260,6 +264,46 @@ Changelog decision:
 - PR-body note: No separate changelog entry; this broadens an unreleased SDF
   writer contact-bitmask subset and is covered by the broader DART 7 SDF
   writer/export work.
+- Follow-up: none
+
+Additional validation for unsupported visual reflectance SDF writing:
+
+- Control: direct filtered `INTEGRATION_io_SdfWriter` run failed before the
+  writer change because `tryWriteSkeletonToString()` succeeded after dropping
+  the non-default DART visual reflectance value.
+- Focused candidate: passed.
+
+  ```bash
+  pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.UnsupportedVisualReflectanceReturnsError'
+  ```
+
+- Full writer target: passed.
+
+  ```bash
+  pixi run run-cpp-target INTEGRATION_io_SdfWriter
+  ```
+
+- Local gates: passed.
+
+  ```bash
+  pixi run lint
+  pixi run build
+  pixi run test-unit
+  ```
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: `origin/main`
+- Scope evidence: focused diff in `dart/utils/sdf/sdf_writer.cpp`,
+  `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
+  and this SKEL evolution task folder
+- Decision: no entry required
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: No separate changelog entry; this hardens an unreleased SDF
+  writer unsupported-material diagnostic and is covered by the broader DART 7
+  SDF writer/export work.
 - Follow-up: none
 
 Additional validation for continuous SDF joint read/write/read coverage:

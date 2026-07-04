@@ -54,7 +54,8 @@
       collisions, missing mesh URI diagnostics, pre-SDF-1.11 mimic diagnostics,
       unsupported coupler-style mimic diagnostics, and relative/generated mesh
       resource diagnostics now have focused coverage. Invalid collision-surface
-      friction and restitution values now fail with explicit diagnostics. The
+      friction and restitution values plus non-default visual reflectance now
+      fail with explicit diagnostics. The
       writer test now uses a shared IO round-trip assertion helper for body,
       joint, DoF,
       inertia, and shape comparisons.
@@ -212,8 +213,8 @@ SKEL-YAML direction just because the prototype once existed.
   [`05-export-writers-plan.md`](05-export-writers-plan.md). The first SDF writer
   slice is covered by `INTEGRATION_io_SdfWriter`, which writes and re-reads a
   representative supported `Skeleton` subset and checks unsupported-shape
-  diagnostics plus non-finite visual material and invalid PBR material
-  diagnostics. It also proves link-level gravity mode for gravity-disabled
+  diagnostics plus non-finite visual material, invalid PBR material, and
+  unsupported visual reflectance diagnostics. It also proves link-level gravity mode for gravity-disabled
   links and passive joint dynamics metadata plus sdformat-normalized screw
   thread pitch for supported single-axis
   joints, two-axis universal joints, SDF 1.11+ axis/axis2 mimic metadata with
@@ -235,7 +236,8 @@ SKEL-YAML direction just because the prototype once existed.
   collision-surface contact bitmask disables, zero-threshold bounce restitution,
   ODE friction
   coefficients, first friction direction, and slip compliance now have
-  read/write/read coverage plus invalid-friction/restitution diagnostics. The
+  read/write/read coverage plus invalid-friction/restitution and non-default
+  visual-reflectance diagnostics. The
   assertions are
   factored
   through

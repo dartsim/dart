@@ -50,8 +50,8 @@ URIs are rejected because the writer has no destination SDF URI for
 resource resolution or generated asset placement. `WriteOptions`
 visual/collision filtering is covered by focused tests. Unsupported constructs,
 missing mesh URIs, pre-SDF-1.11 mimic output, coupler-style mimic enforcement,
-non-finite material colors, invalid PBR material factors, non-finite screw
-pitch, invalid collision-surface friction or restitution, unsupported
+non-finite material colors, invalid PBR material factors, non-default visual
+reflectance, non-finite screw pitch, invalid collision-surface friction or restitution, unsupported
 ball-joint metadata, and non-finite joint dynamics return `common::Result`
 errors instead of being silently dropped. DART `PlaneShape`, `HeightmapShape`,
 and `ConvexMeshShape` now report targeted policy diagnostics for the missing

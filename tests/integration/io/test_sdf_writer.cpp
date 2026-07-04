@@ -2169,6 +2169,26 @@ TEST(SdfWriter, InvalidPbrMaterialFactorReturnsError)
 }
 
 //==============================================================================
+TEST(SdfWriter, UnsupportedVisualReflectanceReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("unsupported_reflectance");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  auto* visual = body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "reflective_visual");
+  visual->getVisualAspect()->setReflectance(0.4);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isErr());
+  EXPECT_NE(writeResult.error().message.find("reflectance"), std::string::npos);
+}
+
+//==============================================================================
 TEST(SdfWriter, NonFiniteJointDynamicsReturnsError)
 {
   auto skeleton = dynamics::Skeleton::create("non_finite_joint_dynamics");

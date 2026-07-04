@@ -777,6 +777,14 @@ WriteResult applyMaterial(
   sdf::Material material;
   bool hasMaterial = false;
 
+  const double reflectance = visualAspect->getReflectance();
+  if (reflectance >= 0.0 || !std::isfinite(reflectance)) {
+    return fail(
+        "Cannot write SDF visual [" + shapeNode.getName()
+        + "] with a DART visual reflectance factor because the SDF material "
+          "mapping has no equivalent reflectance field.");
+  }
+
   if (!visualAspect->usesDefaultColor()) {
     const Eigen::Vector4d color = visualAspect->getRGBA();
     if (!isFinite(color)) {

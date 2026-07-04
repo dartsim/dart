@@ -184,8 +184,8 @@ DART `HeightmapShape` is also rejected with a targeted source-URI/resource
 policy diagnostic instead of synthesizing SDF heightmap XML from DART's sampled
 grid.
 `WriteOptions` can exclude visual or collision entries. Missing mesh URIs,
-invalid PBR material factors, invalid collision surface friction or restitution
-values, pre-SDF-1.11 mimic output, coupler-style mimic
+invalid PBR material factors, non-default visual reflectance, invalid collision
+surface friction or restitution values, pre-SDF-1.11 mimic output, coupler-style mimic
 enforcement, ball joint limits, and ball joint dynamics are reported as
 unsupported instead of being silently dropped. It is not a general project
 save/load format and does not make YAML a model format. Use the writer only
