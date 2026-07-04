@@ -453,6 +453,39 @@ WriteResult writeAxis(
     stream << limit.str();
   }
 
+  const double damping = joint.getDampingCoefficient(0);
+  const double friction = joint.getCoulombFriction(0);
+  const double springReference = joint.getRestPosition(0);
+  const double springStiffness = joint.getSpringStiffness(0);
+  if (!std::isfinite(damping) || !std::isfinite(friction)
+      || !std::isfinite(springReference) || !std::isfinite(springStiffness)) {
+    return fail(
+        "Cannot write SDF joint [" + joint.getName()
+        + "] with non-finite dynamics.");
+  }
+
+  if (damping != 0.0 || friction != 0.0 || springReference != 0.0
+      || springStiffness != 0.0) {
+    stream << indent(depth + 1) << "<dynamics>\n";
+    if (damping != 0.0) {
+      stream << indent(depth + 2) << "<damping>" << formatDouble(damping)
+             << "</damping>\n";
+    }
+    if (friction != 0.0) {
+      stream << indent(depth + 2) << "<friction>" << formatDouble(friction)
+             << "</friction>\n";
+    }
+    if (springReference != 0.0) {
+      stream << indent(depth + 2) << "<spring_reference>"
+             << formatDouble(springReference) << "</spring_reference>\n";
+    }
+    if (springStiffness != 0.0) {
+      stream << indent(depth + 2) << "<spring_stiffness>"
+             << formatDouble(springStiffness) << "</spring_stiffness>\n";
+    }
+    stream << indent(depth + 1) << "</dynamics>\n";
+  }
+
   stream << indent(depth) << "</axis>\n";
   return ok();
 }

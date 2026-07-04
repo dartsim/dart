@@ -17,10 +17,12 @@ The first implementation slice adds
 `dart::utils::SdfParser::tryWriteSkeletonToString()`, a parser-specific SDF
 string writer for a conservative `Skeleton` subset. It writes BodyNode links,
 root FreeJoint/WeldJoint placement, revolute/prismatic/weld child joints,
-link gravity mode, inertial parameters, box/sphere/cylinder/mesh visual or
-collision geometry, and explicit visual material colors as SDF `<diffuse>`
-values. Unsupported constructs and non-finite material colors return
-`common::Result` errors instead of being silently dropped.
+passive joint dynamics metadata (damping, Coulomb friction, spring reference,
+and spring stiffness), link gravity mode, inertial parameters,
+box/sphere/cylinder/mesh visual or collision geometry, and explicit visual
+material colors as SDF `<diffuse>` values. Unsupported constructs, non-finite
+material colors, and non-finite joint dynamics return `common::Result` errors
+instead of being silently dropped.
 
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.

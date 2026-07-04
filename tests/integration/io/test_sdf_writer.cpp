@@ -121,7 +121,10 @@ dynamics::SkeletonPtr makeRoundTripSkeleton()
   auto [hinge, tip]
       = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
           base, hingeProperties, linkProperties);
-  (void)hinge;
+  hinge->setDampingCoefficient(0, 0.25);
+  hinge->setCoulombFriction(0, 0.125);
+  hinge->setRestPosition(0, -0.5);
+  hinge->setSpringStiffness(0, 3.75);
 
   tip->createShapeNodeWith<dynamics::VisualAspect>(
       std::make_shared<dynamics::SphereShape>(0.15), "tip_sphere_visual");
@@ -213,6 +216,17 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   EXPECT_NE(
       writeResult.value().find("<gravity>false</gravity>"), std::string::npos);
   EXPECT_NE(
+      writeResult.value().find("<damping>0.25</damping>"), std::string::npos);
+  EXPECT_NE(
+      writeResult.value().find("<friction>0.125</friction>"),
+      std::string::npos);
+  EXPECT_NE(
+      writeResult.value().find("<spring_reference>-0.5</spring_reference>"),
+      std::string::npos);
+  EXPECT_NE(
+      writeResult.value().find("<spring_stiffness>3.75</spring_stiffness>"),
+      std::string::npos);
+  EXPECT_NE(
       writeResult.value().find(
           "<diffuse>0.20000000000000001 "
           "0.40000000000000002 "
@@ -259,6 +273,10 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   expectVectorNear(hinge->getAxis(), Eigen::Vector3d::UnitZ(), 1e-12);
   EXPECT_NEAR(hinge->getPositionLowerLimit(0), -1.25, 1e-12);
   EXPECT_NEAR(hinge->getPositionUpperLimit(0), 1.5, 1e-12);
+  EXPECT_NEAR(hinge->getDampingCoefficient(0), 0.25, 1e-12);
+  EXPECT_NEAR(hinge->getCoulombFriction(0), 0.125, 1e-12);
+  EXPECT_NEAR(hinge->getRestPosition(0), -0.5, 1e-12);
+  EXPECT_NEAR(hinge->getSpringStiffness(0), 3.75, 1e-12);
 
   const auto* sliderJoint = dynamic_cast<const dynamics::PrismaticJoint*>(
       reparsed->getJoint("slider_joint"));
@@ -404,4 +422,32 @@ TEST(SdfWriter, NonFiniteMaterialColorReturnsError)
   EXPECT_NE(
       result.error().message.find("non-finite material color"),
       std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, NonFiniteJointDynamicsReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("non_finite_joint_dynamics");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::RevoluteJoint::Properties hingeProperties;
+  hingeProperties.mName = "hinge";
+  hingeProperties.mAxis = Eigen::Vector3d::UnitZ();
+
+  dynamics::BodyNode::Properties tipProperties;
+  tipProperties.mName = "tip";
+
+  auto [hinge, tip]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          base, hingeProperties, tipProperties);
+  (void)tip;
+  hinge->setRestPosition(0, std::numeric_limits<double>::quiet_NaN());
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("non-finite dynamics"), std::string::npos);
 }
