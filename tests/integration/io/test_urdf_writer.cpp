@@ -1044,6 +1044,83 @@ TEST(UrdfWriter, MultipleRootTreesReturnError)
 }
 
 //==============================================================================
+TEST(UrdfWriter, IdentityRootWeldWritesRootLinkWithoutParentJointMetadata)
+{
+  auto skeleton = dynamics::Skeleton::create("root_weld_writer");
+
+  dynamics::WeldJoint::Properties rootProperties;
+  rootProperties.mName = "fixed_root";
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
+          nullptr,
+          rootProperties,
+          makeBodyProperties(
+              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)rootJoint;
+  base->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "base_box");
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  EXPECT_EQ(writeResult.value().find("<joint"), std::string::npos);
+  EXPECT_EQ(writeResult.value().find("fixed_root"), std::string::npos);
+
+  utils::UrdfParser::Options options;
+  options.mDefaultRootJointType = utils::UrdfParser::RootJointType::Fixed;
+  utils::UrdfParser parser(options);
+  const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
+  ASSERT_NE(reparsed, nullptr);
+  ASSERT_NE(reparsed->getRootJoint(), nullptr);
+  EXPECT_EQ(
+      reparsed->getRootJoint()->getType(),
+      dynamics::WeldJoint::getStaticType());
+  EXPECT_EQ(reparsed->getRootJoint()->getName(), "rootJoint");
+}
+
+//==============================================================================
+TEST(UrdfWriter, RootJointPlacementReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("root_pose_writer");
+
+  dynamics::FreeJoint::Properties rootProperties;
+  rootProperties.mName = "posed_root";
+  rootProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.1, 0.2, 0.3);
+  skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr,
+      rootProperties,
+      makeBodyProperties(
+          "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "URDF root joint [posed_root]");
+  expectContains(result.error().message, "non-identity placement");
+}
+
+//==============================================================================
+TEST(UrdfWriter, UnsupportedRootJointTypeReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("unsupported_root_joint");
+
+  dynamics::RevoluteJoint::Properties rootProperties;
+  rootProperties.mName = "root_hinge";
+  rootProperties.mAxis = Eigen::Vector3d::UnitZ();
+  skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+      nullptr,
+      rootProperties,
+      makeBodyProperties(
+          "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "URDF root joint [root_hinge]");
+  expectContains(result.error().message, "root links do not carry");
+}
+
+//==============================================================================
 TEST(UrdfWriter, NonUniformPlanarJointLimitsReturnsError)
 {
   auto skeleton = dynamics::Skeleton::create("non_uniform_planar_limits");

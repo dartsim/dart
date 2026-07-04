@@ -88,20 +88,24 @@ or text reparsing for SDF semantics.
 
 The first URDF writer implementation slice is also local on
 `work/skel-format-yaml-decision`: `dart::utils::UrdfParser` exposes
-`tryWriteSkeletonToString()` for one-root URDF trees with root FreeJoint or
-WeldJoint metadata, child revolute/continuous/prismatic/fixed joints,
+`tryWriteSkeletonToString()` for one-root URDF trees with identity root
+FreeJoint or WeldJoint placement validation, child
+revolute/continuous/prismatic/fixed joints,
 standard-plane planar and floating child joints with uniform scalar
 limit/dynamics metadata, passive damping/friction metadata, single-DoF
 motor-style mimic metadata, inertial data, zero-offset coupler mimic metadata
 through paired URDF `SimpleTransmission` entries, local visual/collision poses,
 box/sphere/cylinder/absolute or package URI mesh geometry, explicit visual
 colors, implicit default visual color omission, default-RGB alpha overrides, and
-visual/collision include options. `INTEGRATION_io_UrdfWriter` proves
-write/read/read round-trip for that subset and covers explicit diagnostics for
-multiple root trees, unsupported joint families, arbitrary planar axes,
-non-uniform multi-DoF limit/dynamics metadata, non-identity child joint frames,
-unbounded finite-requiring URDF limits, missing mimic references, coupler mimic
-offsets, plus missing mesh URIs, relative or host-qualified file mesh URIs, and
+visual/collision include options. URDF does not serialize root parent-joint
+metadata, so root joint name/type are parser-default choices on reparse rather
+than writer output. `INTEGRATION_io_UrdfWriter` proves write/read/read
+round-trip for that subset and covers explicit diagnostics for multiple root
+trees, unsupported root joint families, non-identity root placement,
+unsupported child joint families, arbitrary planar axes, non-uniform multi-DoF
+limit/dynamics metadata, non-identity child joint frames, unbounded
+finite-requiring URDF limits, missing mimic references, coupler mimic offsets,
+plus missing mesh URIs, relative or host-qualified file mesh URIs, and
 non-finite mesh scales. Additional focused coverage proves
 unbounded DART revolute joints write as URDF `continuous` joints and preserve
 passive dynamics metadata through reparse, proves visual and collision
@@ -1275,7 +1279,8 @@ Changelog decision:
 - Mode: decide
 - Base evidence: `origin/main` inferred for
   `work/skel-format-yaml-decision`; no open PR exists for the branch.
-- Scope evidence: current uncommitted diff in
+- Scope evidence: local diff committed as
+  `a849cf29b27 Reject lossy URDF writer metadata` in
   `dart/utils/urdf/urdf_writer.cpp`,
   `tests/integration/io/test_urdf_writer.cpp`,
   `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder; nearby
@@ -1290,6 +1295,41 @@ Changelog decision:
   already says the URDF writer reports unsupported or lossy DART constructs
   explicitly.
 - Follow-up: none
+
+Additional validation for URDF root-joint policy coverage:
+
+- Focused root-policy candidate passed, proving the writer accepts identity
+  root `WeldJoint` input as a bare URDF root link, rejects non-identity root
+  placement, and rejects unsupported root joint families instead of silently
+  dropping parent-joint metadata:
+  `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter="UrdfWriter.IdentityRootWeldWritesRootLinkWithoutParentJointMetadata:UrdfWriter.RootJointPlacementReturnsError:UrdfWriter.UnsupportedRootJointTypeReturnsError"'`
+- Full writer target passed:
+  `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` (36 tests)
+- SDF boundary check passed:
+  `pixi run check-sdf-sdformat-boundary`
+- Local formatting gate passed:
+  `pixi run lint`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: `origin/main` inferred for
+  `work/skel-format-yaml-decision`; no open PR exists for the branch.
+- Scope evidence: local diff in `tests/integration/io/test_urdf_writer.cpp`,
+  `dart/utils/urdf/urdf_parser.hpp`, `CHANGELOG.md`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Decision: no additional changelog entry; revise the existing unreleased DART
+  7 URDF writer bullet to say identity root FreeJoint/WeldJoint validation
+  rather than root metadata preservation.
+- Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing existing URDF
+  writer bullet.
+- Entry text: N/A beyond the wording correction in the existing bullet.
+- PR-body note: No separate changelog entry is needed because this slice adds
+  focused root-policy coverage and corrects wording inside the existing
+  unreleased conservative URDF writer entry; it does not add a new public
+  writer API or serialization behavior.
+- Follow-up: add the implementation PR link after a PR exists and maintainer /
+  user approval allows the PR update or follow-up push.
 
 Additional validation for SDF sdformat-boundary lint coverage:
 

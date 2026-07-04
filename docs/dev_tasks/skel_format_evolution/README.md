@@ -141,7 +141,7 @@
       as legacy `<thread_pitch>` versus modern `<screw_thread_pitch>`.
       The first URDF writer slice is also implemented locally on
       `dart::utils::UrdfParser::tryWriteSkeletonToString` for one-root URDF
-      trees with root FreeJoint/WeldJoint metadata, child
+      trees with identity root FreeJoint/WeldJoint placement validation, child
       revolute/continuous/prismatic/fixed joints, standard-plane planar and
       floating child joints with uniform scalar limit/dynamics metadata,
       passive damping/friction metadata, single-DoF motor-style mimic metadata,
@@ -149,14 +149,18 @@
       `SimpleTransmission` entries, inertial data, local visual/collision poses,
       box/sphere/cylinder/absolute or package URI mesh geometry, explicit
       visual colors, implicit default visual color omission, default-RGB alpha
-      overrides, and visual/collision include options.
+      overrides, and visual/collision include options. URDF does not serialize
+      root parent-joint metadata, so root joint name/type are parser-default
+      choices on reparse rather than writer output.
       `INTEGRATION_io_UrdfWriter`
-      validates a write/read/read subset and diagnostics for multiple root trees,
-      unsupported joint families, arbitrary planar axes, non-uniform multi-DoF
-      limit/dynamics metadata, non-identity child joint frames, unbounded
-      finite-requiring URDF limits, missing mimic references, coupler mimic
-      offsets, plus missing mesh URIs, relative or host-qualified file mesh
-      URIs, and non-finite mesh scales. It also covers continuous revolute joint
+      validates a write/read/read subset and diagnostics for multiple root
+      trees, unsupported root joint families, non-identity root placement,
+      unsupported child joint families, arbitrary planar axes, non-uniform
+      multi-DoF limit/dynamics metadata, non-identity child joint frames,
+      unbounded finite-requiring URDF limits, missing mimic references,
+      coupler mimic offsets, plus missing mesh URIs, relative or host-qualified
+      file mesh URIs, and non-finite mesh scales. It also covers continuous
+      revolute joint
       dynamics round-trip, visual and collision package mesh URI preservation
       through `UrdfParser` package resolution, non-positive mass, non-finite
       local center-of-mass, visual material color, shape pose, joint axis, and

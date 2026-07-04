@@ -227,7 +227,7 @@ in interchange-format parser utilities.
 
 `dart::utils::UrdfParser::tryWriteSkeletonToString` serializes the first
 conservative URDF tree subset. It supports one root link, root FreeJoint or
-WeldJoint metadata that URDF can preserve, child
+WeldJoint identity placement validation, child
 revolute/continuous/prismatic/fixed joints whose child link frame coincides
 with the joint frame, standard-plane planar and floating child joints with
 uniform scalar limit/dynamics metadata, passive damping/friction metadata,
@@ -236,7 +236,9 @@ serialized as paired `SimpleTransmission` entries, inertial data, local
 visual/collision poses, box/sphere/cylinder/absolute or package URI mesh
 geometry for visuals and collisions, explicit visual colors, implicit default
 visual color omission, default-RGB alpha overrides, and options for excluding
-visuals or collisions.
+visuals or collisions. URDF does not encode parent-joint metadata for the root
+link, so root joint name/type are supplied by parser defaults on reparse rather
+than serialized by the writer.
 
 The writer returns `common::Result` and rejects unsupported or lossy DART
 constructs such as multiple root trees, non-identity root placement, unsupported

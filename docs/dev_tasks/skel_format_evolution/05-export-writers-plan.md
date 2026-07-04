@@ -142,7 +142,7 @@ and helper-surface expansion beyond authored sdformat element lookup.
 The next implementation slice adds
 `dart::utils::UrdfParser::tryWriteSkeletonToString()`, a parser-specific URDF
 writer for robot-link trees that fit URDF's model constraints. It writes one
-root tree with root FreeJoint/WeldJoint metadata that URDF can preserve, child
+root tree with identity root FreeJoint/WeldJoint placement validation, child
 revolute/continuous/prismatic/fixed joints whose child link frame coincides
 with the joint frame, standard-plane planar and floating child joints with
 uniform scalar limit/dynamics metadata, passive damping/friction metadata,
@@ -151,12 +151,16 @@ poses, box/sphere/cylinder and absolute or package URI mesh geometry, explicit
 visual colors, implicit default visual color omission, default-RGB alpha
 overrides, zero-offset coupler mimic metadata through paired URDF
 `SimpleTransmission` entries, and visual/collision include options.
+URDF has no parent-joint element for the root link, so root joint name/type are
+not serialized and are supplied by the parser default when the written text is
+read back.
 `INTEGRATION_io_UrdfWriter` validates a write/read/read round-trip for that
 subset and covers explicit diagnostics for multiple root trees, unsupported
-joint families, arbitrary planar axes, non-uniform multi-DoF limit/dynamics
-metadata, non-identity child joint frames, unbounded finite-requiring URDF
-limits, missing mimic references, coupler mimic offsets, missing mesh URIs,
-relative or host-qualified file mesh URIs, and non-finite mesh scales.
+root joint families, non-identity root placement, unsupported child joint
+families, arbitrary planar axes, non-uniform multi-DoF limit/dynamics metadata,
+non-identity child joint frames, unbounded finite-requiring URDF limits,
+missing mimic references, coupler mimic offsets, missing mesh URIs, relative or
+host-qualified file mesh URIs, and non-finite mesh scales.
 Additional coverage proves unbounded revolute DART joints write as URDF
 `continuous` joints and preserve passive dynamics metadata, and that visual and
 collision `package://` mesh URIs serialize and reparse through `UrdfParser`
