@@ -70,7 +70,7 @@ struct DART_UTILS_API WriteOptions
 /// with motor enforcement, topology-only ball child joints, link gravity mode,
 /// inertial parameters, local joint/shape poses, and
 /// box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual/collision geometry
-/// with explicit visual material colors and
+/// with explicit visual material colors, PBR metallic/roughness factors, and
 /// absolute non-file mesh URI preservation. Targetless relative mesh references
 /// return an error because this string writer has no destination URI for
 /// resource resolution or generated asset placement.

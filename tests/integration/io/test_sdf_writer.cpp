@@ -216,6 +216,8 @@ dynamics::SkeletonPtr makeRoundTripSkeleton()
       "base_box");
   baseShape->setRelativeTranslation(Eigen::Vector3d(0.1, 0.0, 0.0));
   baseShape->getVisualAspect()->setRGBA(Eigen::Vector4d(0.2, 0.4, 0.6, 0.8));
+  baseShape->getVisualAspect()->setMetallic(0.65);
+  baseShape->getVisualAspect()->setRoughness(0.35);
 
   dynamics::RevoluteJoint::Properties hingeProperties;
   hingeProperties.mName = "hinge";
@@ -422,6 +424,8 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
       writeResult.value().find("<spring_stiffness>3.75</spring_stiffness>"),
       std::string::npos);
   EXPECT_NE(writeResult.value().find("<diffuse>"), std::string::npos);
+  EXPECT_NE(writeResult.value().find("<metalness>"), std::string::npos);
+  EXPECT_NE(writeResult.value().find("<roughness>"), std::string::npos);
 
   const auto path = writeTempSdf(writeResult.value(), "roundtrip");
   const auto reparsed = utils::SdfParser::readSkeleton(
@@ -541,6 +545,18 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
           ->getRGBA(),
       Eigen::Vector4d(0.2, 0.4, 0.6, 0.8),
       1e-6);
+  EXPECT_NEAR(
+      base->getShapeNodeWith<dynamics::VisualAspect>(0)
+          ->getVisualAspect()
+          ->getMetallic(),
+      0.65,
+      1e-12);
+  EXPECT_NEAR(
+      base->getShapeNodeWith<dynamics::VisualAspect>(0)
+          ->getVisualAspect()
+          ->getRoughness(),
+      0.35,
+      1e-12);
 
   const auto* tipSphere
       = test::requireShape<dynamics::VisualAspect, dynamics::SphereShape>(
@@ -1138,6 +1154,32 @@ TEST(SdfWriter, NonFiniteMaterialColorReturnsError)
   EXPECT_NE(
       result.error().message.find("non-finite material color"),
       std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, InvalidPbrMaterialFactorReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("bad_pbr");
+  dynamics::FreeJoint::Properties rootProperties;
+  rootProperties.mName = "root";
+  dynamics::BodyNode::Properties bodyProperties;
+  bodyProperties.mName = "body";
+  bodyProperties.mInertia.setMass(1.0);
+  bodyProperties.mInertia.setMoment(Eigen::Matrix3d::Identity());
+  auto [rootJoint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr, rootProperties, bodyProperties);
+  (void)rootJoint;
+  auto* visual = body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "bad_pbr_visual");
+  visual->getVisualAspect()->setMetallic(
+      std::numeric_limits<double>::quiet_NaN());
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isErr());
+  EXPECT_NE(writeResult.error().message.find("PBR factor"), std::string::npos);
 }
 
 //==============================================================================

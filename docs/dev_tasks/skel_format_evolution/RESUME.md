@@ -38,10 +38,10 @@ box/sphere/cylinder/capsule/cone/ellipsoid/mesh geometry, link gravity mode,
 passive joint dynamics metadata (damping, Coulomb friction, spring reference,
 and spring stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
 axis/axis2 mimic metadata with motor enforcement, topology-only ball child
-joints, local root/joint/shape poses, explicit visual material colors, and
-absolute non-file mesh URI preservation through a custom retriever. Continuous
-SDF joints now parse as unbounded DART `RevoluteJoint`s, and unbounded DART
-revolute joints write back as SDF
+joints, local root/joint/shape poses, explicit visual material colors, PBR
+metallic/roughness factors, and absolute non-file mesh URI preservation through
+a custom retriever. Continuous SDF joints now parse as unbounded DART
+`RevoluteJoint`s, and unbounded DART revolute joints write back as SDF
 `continuous` while finite-limit revolute joints stay `revolute`. Targetless
 relative/generated mesh references, including relative or host-qualified file
 URI forms, now return explicit diagnostics until a future file/project writer
@@ -49,7 +49,8 @@ defines a destination URI and resource copy/rewrite policy. It also checks
 `WriteOptions` visual/collision filtering, unsupported-shape diagnostics,
 missing mesh URI diagnostics, pre-SDF-1.11 mimic diagnostics, unsupported
 coupler-style mimic diagnostics, non-finite visual material diagnostics,
-non-finite screw pitch diagnostics, unsupported ball-joint metadata, and
+invalid PBR material diagnostics, non-finite screw pitch diagnostics,
+unsupported ball-joint metadata, and
 non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
 5 is still open until broader SDF coverage plus the remaining accepted writer
 targets are implemented or durably deferred.
@@ -68,8 +69,9 @@ model name/static/pose and link name/gravity/pose plus inertial mass, center of
 mass, and inertia tensor values. Visual and collision shape nodes traverse
 `sdf::Model`, `sdf::Link`, `sdf::Visual`, `sdf::Collision`, `sdf::Geometry`, and
 `sdf::Material` DOM values for shape names, local poses, geometry, and diffuse
-material colors. Standard SDF joint reads traverse `sdf::Model`, `sdf::Joint`,
-and `sdf::JointAxis` DOM values for joint enumeration, joint name/type,
+material colors plus `sdf::Pbr` metal workflow factors. Standard SDF joint
+reads traverse `sdf::Model`, `sdf::Joint`, and `sdf::JointAxis` DOM values for
+joint enumeration, joint name/type,
 parent/child links, local pose, axis vectors, axis dynamics, finite position
 limits, mimic metadata, and sdformat-normalized screw pitch values. XML helper
 checks remain only where DART preserves authored/default distinctions for
@@ -204,6 +206,14 @@ Additional validation for sdformat-normalized screw pitch IO:
 - `pixi run lint`
 - `pixi run build`
 
+Additional validation for SDF PBR material factor IO:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run lint`
+- `pixi run build`
+
 Changelog decision:
 
 - Mode: draft
@@ -250,7 +260,10 @@ Changelog decision:
   hardens the same conservative SDF writer capability before the implementation
   PR exists. No additional separate entry is needed for sdformat-normalized
   screw pitch IO because it keeps the same parser/writer capability on
-  libsdformat semantics before the implementation PR exists.
+  libsdformat semantics before the implementation PR exists. No additional
+  separate entry is needed for SDF PBR material factors because the existing
+  conservative SDF writer changelog bullet now includes broadened visual
+  material round-trip coverage before the implementation PR exists.
 
 ## Previous Resume Checkpoint (2026-07-03)
 
@@ -345,11 +358,9 @@ remains `feature/remove-skel-dart7-phase2`.
 Continue with the remaining real task work: land Phase 2 after maintainer
 approval, then continue Phase 5 from
 [`05-export-writers-plan.md`](05-export-writers-plan.md) by extending SDF writer
-coverage beyond material colors/link gravity mode/passive joint dynamics/screw
-thread pitch/universal and ball topology/local poses/absolute non-file mesh URI
-preservation/SDF 1.11 mimic metadata/targetless relative mesh
-diagnostics/continuous revolute joints or choosing the next accepted writer
-target (URDF or PLAN-101 project save/load).
+coverage beyond the current material, link, joint, geometry, mimic, pose, and
+resource subset or choosing the next accepted writer target (URDF or PLAN-101
+project save/load).
 
 ## Context That Would Be Lost
 

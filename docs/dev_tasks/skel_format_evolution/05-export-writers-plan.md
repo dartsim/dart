@@ -27,7 +27,8 @@ topology-only ball child joints, SDF 1.11+ mimic metadata for axis/axis2
 follower joints with motor
 enforcement, link gravity mode, inertial parameters, local joint/shape poses,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry,
-and explicit visual material colors as SDF `<diffuse>` values. Absolute
+explicit visual material colors as SDF `<diffuse>` values, and PBR
+metallic/roughness factors as SDF `<pbr><metal>` values. Absolute
 non-file mesh URI preservation is covered through a custom retriever-backed
 write/read test.
 Targetless relative mesh references and relative or host-qualified `file` mesh
@@ -35,9 +36,9 @@ URIs are rejected because the writer has no destination SDF URI for
 resource resolution or generated asset placement. `WriteOptions`
 visual/collision filtering is covered by focused tests. Unsupported constructs,
 missing mesh URIs, pre-SDF-1.11 mimic output, coupler-style mimic enforcement,
-non-finite material colors, non-finite screw pitch, unsupported ball-joint
-metadata, and non-finite joint dynamics return `common::Result` errors instead
-of being silently dropped.
+non-finite material colors, invalid PBR material factors, non-finite screw
+pitch, unsupported ball-joint metadata, and non-finite joint dynamics return
+`common::Result` errors instead of being silently dropped.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,

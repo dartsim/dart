@@ -156,14 +156,15 @@ mimic metadata for axis/axis2 follower joints with motor enforcement,
 topology-only ball child joints, link gravity mode, inertial parameters, local
 joint/shape poses, and
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry
-with explicit visual material colors. The
+with explicit visual material colors and PBR metallic/roughness factors. The
 round-trip coverage includes absolute non-file mesh URI preservation through a
 custom retriever. Targetless relative mesh references and relative or
 host-qualified `file` mesh URIs are rejected because the writer has no
 destination SDF URI for resource resolution or generated asset placement.
 `WriteOptions` can exclude visual or collision entries. Missing mesh URIs,
-pre-SDF-1.11 mimic output, coupler-style mimic enforcement, ball joint limits,
-and ball joint dynamics are reported as unsupported instead of being silently
+invalid PBR material factors, pre-SDF-1.11 mimic output, coupler-style mimic
+enforcement, ball joint limits, and ball joint dynamics are reported as
+unsupported instead of being silently
 dropped. It is not a general project save/load format and does not make YAML a
 model format. Use the writer only when the target scene fits the documented
 subset, and expand the round-trip tests before broadening the supported

@@ -523,7 +523,15 @@ TEST(SdfParser, InertialAndMaterialVariantsFromXml)
       <visual name="color_visual">
         <pose>1 2 3 0 0 0</pose>
         <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
-        <material><diffuse>0.2 0.3 0.4 0.7</diffuse></material>
+        <material>
+          <diffuse>0.2 0.3 0.4 0.7</diffuse>
+          <pbr>
+            <metal>
+              <metalness>0.65</metalness>
+              <roughness>0.35</roughness>
+            </metal>
+          </pbr>
+        </material>
       </visual>
       <collision name="offset_collision">
         <pose>0 0 0.5 0 0 0</pose>
@@ -566,6 +574,8 @@ TEST(SdfParser, InertialAndMaterialVariantsFromXml)
   EXPECT_TRUE(visualBox->getSize().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
   EXPECT_TRUE(visual->getVisualAspect()->getRGBA().isApprox(
       Eigen::Vector4d(0.2, 0.3, 0.4, 0.7), 1e-6));
+  EXPECT_NEAR(visual->getVisualAspect()->getMetallic(), 0.65, 1e-12);
+  EXPECT_NEAR(visual->getVisualAspect()->getRoughness(), 0.35, 1e-12);
 
   dynamics::ShapeNode* collision = nullptr;
   body->eachShapeNodeWith<dynamics::CollisionAspect>([&](auto* shapeNode) {

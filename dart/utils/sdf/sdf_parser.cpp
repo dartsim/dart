@@ -69,6 +69,7 @@
 #include <sdf/Link.hh>
 #include <sdf/Material.hh>
 #include <sdf/Model.hh>
+#include <sdf/Pbr.hh>
 #include <sdf/Visual.hh>
 #include <sdf/sdf.hh>
 
@@ -1244,6 +1245,19 @@ void readMaterial(const sdf::Material& material, dynamics::ShapeNode* shapeNode)
       visualAspect->setColor(toEigenColor(diffuse));
     }
   }
+
+  const sdf::Pbr* pbr = material.PbrMaterial();
+  if (!pbr) {
+    return;
+  }
+
+  const sdf::PbrWorkflow* workflow = pbr->Workflow(sdf::PbrWorkflowType::METAL);
+  if (!workflow) {
+    return;
+  }
+
+  visualAspect->setMetallic(workflow->Metalness());
+  visualAspect->setRoughness(workflow->Roughness());
 }
 
 //==============================================================================

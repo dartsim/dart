@@ -66,6 +66,7 @@
 #include <sdf/Material.hh>
 #include <sdf/Mesh.hh>
 #include <sdf/Model.hh>
+#include <sdf/Pbr.hh>
 #include <sdf/Root.hh>
 #include <sdf/Sphere.hh>
 #include <sdf/Visual.hh>
@@ -569,20 +570,55 @@ WriteResult applyMaterial(
     sdf::Visual& visual, const dynamics::ShapeNode& shapeNode)
 {
   const auto* visualAspect = shapeNode.getVisualAspect();
-  if (!visualAspect || visualAspect->usesDefaultColor()) {
+  if (!visualAspect) {
     return ok();
   }
 
-  const Eigen::Vector4d color = visualAspect->getRGBA();
-  if (!isFinite(color)) {
-    return fail(
-        "Cannot write SDF visual [" + shapeNode.getName()
-        + "] with a non-finite material color.");
+  sdf::Material material;
+  bool hasMaterial = false;
+
+  if (!visualAspect->usesDefaultColor()) {
+    const Eigen::Vector4d color = visualAspect->getRGBA();
+    if (!isFinite(color)) {
+      return fail(
+          "Cannot write SDF visual [" + shapeNode.getName()
+          + "] with a non-finite material color.");
+    }
+
+    material.SetDiffuse(toGzColor(color));
+    hasMaterial = true;
   }
 
-  sdf::Material material;
-  material.SetDiffuse(toGzColor(color));
-  visual.SetMaterial(material);
+  const double metallic = visualAspect->getMetallic();
+  const double roughness = visualAspect->getRoughness();
+  const bool hasMetallic = metallic >= 0.0 || !std::isfinite(metallic);
+  const bool hasRoughness = roughness >= 0.0 || !std::isfinite(roughness);
+  if (hasMetallic || hasRoughness) {
+    if ((hasMetallic && (!std::isfinite(metallic) || metallic > 1.0))
+        || (hasRoughness && (!std::isfinite(roughness) || roughness > 1.0))) {
+      return fail(
+          "Cannot write SDF visual [" + shapeNode.getName()
+          + "] with a non-finite or out-of-range PBR factor.");
+    }
+
+    sdf::PbrWorkflow workflow;
+    workflow.SetType(sdf::PbrWorkflowType::METAL);
+    if (hasMetallic) {
+      workflow.SetMetalness(metallic);
+    }
+    if (hasRoughness) {
+      workflow.SetRoughness(roughness);
+    }
+
+    sdf::Pbr pbr;
+    pbr.SetWorkflow(sdf::PbrWorkflowType::METAL, workflow);
+    material.SetPbrMaterial(pbr);
+    hasMaterial = true;
+  }
+
+  if (hasMaterial) {
+    visual.SetMaterial(material);
+  }
 
   return ok();
 }
