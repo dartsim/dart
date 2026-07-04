@@ -21,7 +21,7 @@
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
 | **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | **Planning refresh / evidence gating**; DART 7 native engine not ported, #3123+ performance stack landed |
-| **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Release stack landed through #3199/#3203; use results as guardrails |
+| **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 planned and packetized in `docs/dev_tasks/dart6_performance_generalization/`** (tracks the native-collision port as its WS-F lane) |
 
 ## PR tracker
 
