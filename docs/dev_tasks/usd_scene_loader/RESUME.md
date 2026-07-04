@@ -1,6 +1,48 @@
 # Resume: OpenUSD Scene Loader
 
-## Last Session Summary
+## Current Reality (verified 2026-07-04)
+
+A resume session re-audited this task against current `main`
+(`0f628d15665`). Findings:
+
+- **Phase 1 is confirmed landed on `main`** (`fab38a336f7`, PR #3109). All
+  scaffold artifacts are present: `dart/io/usd/usd_parser.{hpp,cpp}`,
+  `cmake/dart_find_pxr.cmake`, the `DART_BUILD_IO_USD` toggle, the `read.cpp`
+  front-door guard, `data/usd/simple_chain.usda`, and the unit/integration tests.
+- **The plans this task referenced as in-flight are now complete/archived**
+  (all archived 2026-07-03): PLAN-050 (DART 7 World binding transition),
+  PLAN-060 (backend-hidden GUI), PLAN-090 (Filament renderer performance). The
+  README was refreshed to stop treating them as active: Phase 2 now targets the
+  **stable** `dart::simulation::io::addSkeleton` front door directly, and the
+  viewer work (Phase 3) aligns with the active PLAN-101 dartsim GUI simulator
+  plus `docs/onboarding/gui-rendering.md`.
+- **Phases 2–4 remain blocked** on OpenUSD being in the build env — a recorded
+  separate `pixi.toml` lane — plus the unresolved macOS pytest abort for Phase 4.
+  See the README "Blocker / Approval boundary" and "Open Decisions" sections;
+  a maintainer decision is needed before implementation continues.
+- **Local build-tree caveat:** `build/default/cpp/Release` is stale (configured
+  2026-06-19 with system `/usr/bin/c++`) and its incremental relink now fails
+  against the updated conda toolchain (`@GLIBC_PRIVATE` symbol mismatches and a
+  stale libcurl link interface). This is an environment-drift issue unrelated to
+  the USD code. The OFF-path guard was therefore verified by code inspection plus
+  the fact that #3109 passed CI's clean OFF-path build at merge; a clean local
+  reconfigure (`rm -rf build/default/cpp/Release && pixi run config && pixi run
+build`) is needed before any local build/test will pass again.
+
+## Immediate Next Step
+
+**Decision recorded (2026-07-04): parked.** The maintainer chose to keep this
+folder as the active-but-blocked task surface (see the README "Open Decisions").
+The next actionable step is external to this task: land the OpenUSD build-env
+lane (add `openusd` to a Pixi feature/environment so `DART_BUILD_IO_USD=ON` can
+build). Once that exists, resume Phase 2 — flesh out `usd::UsdParser` beyond the
+single default-prim link and extend `tests/integration/io/test_usd_parser.cpp`.
+Do not write Phase 2 parser code until an OpenUSD-enabled build exists to verify
+it.
+
+---
+
+## Last Session Summary (Phase 1, 2026-06-20)
 
 Landed the Phase 1 **scaffold**: a snake_case `dart/io/usd/` module behind a new
 OFF-by-default `DART_BUILD_IO_USD` CMake toggle. `dart::io::ModelFormat::Usd`,
@@ -20,20 +62,6 @@ PR [#3109](https://github.com/dartsim/dart/pull/3109)
 (`feature/usd-loader-phase1`) merged to `main` on 2026-06-20 at
 `fab38a336f7`. Start Phase 2 from current `main`.
 
-## Current Reality (verified 2026-06-20)
-
-- OpenUSD/pxr is **not** in the build env (no `pxr` in `pixi.toml`, no pxr CMake
-  module before this work), so the toggle must stay OFF by default. Enabling it
-  by default / adding `pxr` to `pixi.toml` is a **separate follow-up slice** (it
-  collides with the `pixi.toml` lane); do not do it here.
-- The owner doc (`README.md`) and earlier resume notes referenced a
-  `DART_BUILD_GUI_FILAMENT` toggle to model on — that option does not exist. The
-  real Filament toggle is `DART_BUILD_GUI`; the USD toggle mirrors it.
-- The prior `feature/usd-viewer` prototype (SHA `28bad2773d1`) is no longer
-  reachable from this worktree (reflog/fsck expired). Phase 1 artifacts were
-  authored fresh as snake_case under `dart::io`, not ported from the PascalCase
-  `dart::utils::UsdParser` prototype.
-
 ## What landed in PR #3109 (Phase 1 scaffold)
 
 - `dart_option(DART_BUILD_IO_USD ... OFF)` in the root `CMakeLists.txt`.
@@ -49,21 +77,16 @@ PR [#3109](https://github.com/dartsim/dart/pull/3109)
   `tests/integration/CMakeLists.txt`) — ON-path end-to-end test, compiled only
   when `DART_BUILD_IO_USD=ON`.
 
-## Immediate Next Step
-
-Phase 2 (PLAN-050): in an OpenUSD-enabled environment, build with
-`DART_BUILD_IO_USD=ON` and flesh out `usd::UsdParser` to map USD prims to DART 7
-`World` shapes/joints (currently it creates a single free-floating link for the
-stage default prim). Keep the loader behind the `dart::io` front door and the
-API-boundary policy.
-
 ## Context That Would Be Lost
 
 - The OFF-path guard is verified by `tests/unit/io/test_read.cpp`
   (`InfersFormatFromUsdExtension`); the ON-path test cannot run locally because
   pxr is absent, so it is correctly gated to compile out when OFF.
+- Enabling OpenUSD by default / adding `pxr` to `pixi.toml` is a **separate
+  follow-up slice** (it collides with the `pixi.toml` lane); it was intentionally
+  not done in the Phase 1 PR.
 - The viewer example must target Filament + the dartsim engine, not OSG
-  (PLAN-060 / PLAN-090 retired OSG). That is Phase 3.
+  (PLAN-060 / PLAN-090, both now archived). That is Phase 3.
 - The prototype's macOS pytest aborts were never root-caused; treat as a Phase 4
   blocker before the loader is enabled by default.
 
@@ -74,7 +97,8 @@ git checkout main
 git pull --ff-only origin main
 git status && git log -3 --oneline
 
-# Default (toggle OFF) gates — must stay green:
+# Default (toggle OFF) gates — must stay green (needs a clean local reconfigure
+# first; see Current Reality):
 pixi run lint
 pixi run build
 pixi run test-unit
@@ -85,4 +109,5 @@ pixi run test-py
 #   cmake -DDART_BUILD_IO_USD=ON ...   # then run INTEGRATION_io_Usd
 ```
 
-Then start Phase 2 from `docs/dev_tasks/usd_scene_loader/README.md`.
+Then read `docs/dev_tasks/usd_scene_loader/README.md` — resolve the Open
+Decisions before starting Phase 2 implementation.
