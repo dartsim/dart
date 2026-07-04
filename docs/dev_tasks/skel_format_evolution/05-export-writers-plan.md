@@ -80,9 +80,10 @@ DART visual, collision, and dynamics aspect fields. The SDF-specific
 helper surface has been narrowed accordingly: it no longer exposes generic XML
 attribute, string, boolean, vector2/vectorX, child enumerator, scalar, vector,
 or pose parser APIs that duplicate sdformat traversal/parsing. Retained helpers
-cover only presence and lookup; remaining DART-specific soft-body extension
-values use local sdformat typed `Element::Get<T>` calls instead of DART-side
-XML text fallback parsing.
+cover only authored element presence/lookup for fields the high-level DOM does
+not expose; remaining DART-specific soft-body extension values use local
+sdformat typed `Element::Get<T>` calls instead of DART-side XML text fallback
+parsing.
 Writer-side preservation of disabled link gravity and schema-preferred SDF
 1.10+ screw pitch still patches sdformat's serialized element tree, but the
 link/joint names and values now come from the typed `sdf::Model`,

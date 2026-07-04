@@ -82,11 +82,12 @@
       uses sdformat typed element access.
       The SDF-specific helper layer no longer exposes generic XML attribute,
       string, boolean, vector2/vectorX, child-enumerator, scalar, vector, or
-      pose parser APIs; retained helpers are limited to presence and lookup.
-      That bridge now uses non-mutating sdformat child traversal and
-      explicit-authored flags for standard SDF presence checks, and remaining
-      DART-specific soft-body extension values are converted locally through
-      sdformat typed `Element::Get<T>` calls rather than XML text reparsing.
+      pose parser APIs; retained helpers are limited to authored sdformat
+      element presence/lookup for fields the high-level DOM does not expose.
+      That bridge uses sdformat explicit-authored flags for standard SDF
+      presence checks, and remaining DART-specific soft-body extension values
+      are converted locally through sdformat typed `Element::Get<T>` calls
+      rather than XML text reparsing.
       Writer-side preservation of disabled link gravity and SDF 1.10+
       `<screw_thread_pitch>` now derives names and values from typed
       `sdf::Model` / `sdf::Link` / `sdf::Joint` DOM objects instead of reading

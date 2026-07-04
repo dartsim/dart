@@ -110,12 +110,11 @@ DART's SDF helper layer.
 The SDF detail helper API has been narrowed to that remaining bridge: generic
 XML attribute reads, string reads, vector2/vectorX parsing, child enumeration,
 boolean value parsing, and direct helper tests for those deleted APIs are gone.
-Retained helpers now cover only element presence and child lookup; standard
-presence checks use `GetExplicitlySetInFile()`, lookup walks authored child
-elements directly, and
-DART-specific soft-body extension values are converted locally through
-sdformat typed `Element::Get<T>` calls instead of shared DART-side scalar,
-vector, or pose parsers.
+Retained helpers now cover only authored element presence/lookup for fields the
+high-level DOM does not expose; standard presence checks use
+`GetExplicitlySetInFile()`, and DART-specific soft-body extension values are
+converted locally through sdformat typed `Element::Get<T>` calls instead of
+shared DART-side scalar, vector, or pose parsers.
 The SDF writer's post-serialization preservation path now uses typed
 `sdf::Model`, `sdf::Link`, and `sdf::Joint` DOM values for link/joint names,
 gravity modes, and screw pitch values. It still patches sdformat's element tree
@@ -364,6 +363,15 @@ Additional validation for direct SDF writer patch traversal:
 - `pixi run lint`
 - `pixi run build`
 
+Additional validation for authored-only sdformat Element bridge narrowing:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `SCCACHE_GHA_ENABLED=false pixi run run-cpp-target test_sdf_helpersNone`
+- `SCCACHE_GHA_ENABLED=false pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run lint`
+- `pixi run build`
+- `git diff --check`
+
 Additional validation for explicit parent-world root joint writing, including
 continuous revolute roots:
 
@@ -472,6 +480,10 @@ Changelog decision:
   because it is an internal implementation cleanup that keeps the existing
   conservative SDF writer behavior while avoiding schema lookup in the
   sdformat element patch path.
+  No additional separate entry is needed for authored-only sdformat Element
+  bridge narrowing because it is an internal helper-surface cleanup that
+  preserves existing SDF parser/writer behavior while keeping SDF semantics on
+  libsdformat DOM and typed access.
   No additional separate entry is needed for explicit parent-world root joint
   writing because it broadens the same conservative SDF writer capability before
   the implementation PR exists; the existing DART 7 IO and Parsing bullet now

@@ -45,11 +45,12 @@ namespace dart::utils::SdfParser::detail {
 
 using ElementPtr = sdf::ElementPtr;
 
-DART_UTILS_API bool hasElement(const ElementPtr& parent, std::string_view name);
+// Use only for authored/default checks that sdformat DOM classes do not expose.
+// Standard SDF values should be read through libsdformat typed DOM APIs.
+DART_UTILS_API ElementPtr
+findAuthoredElement(const ElementPtr& parent, std::string_view name);
 DART_UTILS_API bool hasAuthoredElement(
     const ElementPtr& parent, std::string_view name);
-DART_UTILS_API ElementPtr
-getElement(const ElementPtr& parent, std::string_view name);
 
 } // namespace dart::utils::SdfParser::detail
 

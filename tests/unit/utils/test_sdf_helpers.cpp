@@ -46,12 +46,12 @@ sdf::ElementPtr loadLinkElement(const std::string& linkContents)
     return nullptr;
   }
 
-  const auto modelElement = detail::getElement(sdfElement, "model");
+  const auto modelElement = detail::findAuthoredElement(sdfElement, "model");
   if (!modelElement) {
     return nullptr;
   }
 
-  return detail::getElement(modelElement, "link");
+  return detail::findAuthoredElement(modelElement, "link");
 }
 
 sdf::ElementPtr loadGeometryElement(const std::string& geometryContents)
@@ -67,12 +67,12 @@ sdf::ElementPtr loadGeometryElement(const std::string& geometryContents)
     return nullptr;
   }
 
-  const auto visualElement = detail::getElement(linkElement, "visual");
+  const auto visualElement = detail::findAuthoredElement(linkElement, "visual");
   if (!visualElement) {
     return nullptr;
   }
 
-  return detail::getElement(visualElement, "geometry");
+  return detail::findAuthoredElement(visualElement, "geometry");
 }
 
 sdf::Geometry loadGeometry(const std::string& geometryContents)
@@ -163,13 +163,11 @@ TEST(SdfDetailHelpers, MissingInputsReturnDefaults)
   const sdf::ElementPtr linkElement = loadLinkElement("");
   ASSERT_TRUE(linkElement);
 
-  EXPECT_FALSE(detail::hasElement(nullptr, "link"));
   EXPECT_FALSE(detail::hasAuthoredElement(nullptr, "link"));
-  EXPECT_FALSE(detail::hasElement(linkElement, ""));
   EXPECT_FALSE(detail::hasAuthoredElement(linkElement, ""));
-  EXPECT_EQ(detail::getElement(nullptr, "link"), nullptr);
-  EXPECT_EQ(detail::getElement(linkElement, ""), nullptr);
-  EXPECT_EQ(detail::getElement(linkElement, "missing"), nullptr);
+  EXPECT_EQ(detail::findAuthoredElement(nullptr, "link"), nullptr);
+  EXPECT_EQ(detail::findAuthoredElement(linkElement, ""), nullptr);
+  EXPECT_EQ(detail::findAuthoredElement(linkElement, "missing"), nullptr);
 }
 
 TEST(SdfDetailHelpers, TracksAuthoredElementsWithoutMaterializingDefaults)
@@ -186,13 +184,13 @@ TEST(SdfDetailHelpers, TracksAuthoredElementsWithoutMaterializingDefaults)
   ASSERT_TRUE(linkElement);
   EXPECT_TRUE(detail::hasAuthoredElement(linkElement, "inertial"));
 
-  const auto inertialElement = detail::getElement(linkElement, "inertial");
+  const auto inertialElement
+      = detail::findAuthoredElement(linkElement, "inertial");
   ASSERT_TRUE(inertialElement);
   EXPECT_TRUE(detail::hasAuthoredElement(inertialElement, "mass"));
   EXPECT_FALSE(detail::hasAuthoredElement(inertialElement, "pose"));
   EXPECT_FALSE(detail::hasAuthoredElement(inertialElement, "inertia"));
 
-  EXPECT_FALSE(detail::hasElement(linkElement, "missing"));
-  EXPECT_EQ(detail::getElement(linkElement, "missing"), nullptr);
-  EXPECT_FALSE(detail::hasElement(linkElement, "missing"));
+  EXPECT_EQ(detail::findAuthoredElement(linkElement, "missing"), nullptr);
+  EXPECT_FALSE(detail::hasAuthoredElement(linkElement, "missing"));
 }

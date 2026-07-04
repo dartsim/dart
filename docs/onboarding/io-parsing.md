@@ -70,10 +70,10 @@ Source of truth:
   metadata, and supported geometry semantics;
   avoid raw XML-level SDF parsing when sdformat exposes the value. When
   DART must preserve an authored/default distinction or schema field that the
-  high-level DOM class does not expose, use sdformat
-  `Element::GetExplicitlySetInFile()` with non-mutating direct child traversal
-  and typed `Element::Get<T>` conversion rather than child-existence probing or
-  text reparsing.
+  high-level DOM class does not expose, use a narrow sdformat `Element` bridge:
+  `Element::GetExplicitlySetInFile()` for authored/default checks and typed
+  `Element::Get<T>` conversion for extension values. Do not add DART-side SDF
+  XML tokenization, child-existence probing, or text reparsing.
 
 ## Start here next time
 

@@ -116,9 +116,8 @@ namespace {
 using ElementPtr = sdf::ElementPtr;
 namespace detail = dart::utils::SdfParser::detail;
 
-using detail::getElement;
+using detail::findAuthoredElement;
 using detail::hasAuthoredElement;
-using detail::hasElement;
 using detail::readGeometryShape;
 
 Eigen::Vector3d toEigenVector3(const gz::math::Vector3d& vector)
@@ -1089,8 +1088,8 @@ SDFBodyNode readBodyNode(
   // inertia
   constexpr double kMinReasonableMass = 1e-9; // 1 microgram
   bool massSpecified = false;
-  if (hasAuthoredElement(bodyNodeElement, "inertial")) {
-    const ElementPtr& inertiaElement = getElement(bodyNodeElement, "inertial");
+  if (const ElementPtr inertiaElement
+      = findAuthoredElement(bodyNodeElement, "inertial")) {
     const auto& inertial = link.Inertial();
     const auto& massMatrix = inertial.MassMatrix();
 
@@ -1162,7 +1161,7 @@ SDFBodyNode readBodyNode(
 
   SDFBodyNode sdfBodyNode;
   sdfBodyNode.initTransform = initTransform;
-  if (hasElement(bodyNodeElement, "soft_shape")) {
+  if (findAuthoredElement(bodyNodeElement, "soft_shape")) {
     auto softProperties = readSoftBodyProperties(bodyNodeElement);
 
     sdfBodyNode.properties = dynamics::SoftBodyNode::Properties::createShared(
@@ -1192,48 +1191,49 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
 
   //----------------------------------------------------------------------------
   // Soft properties
-  if (hasElement(softBodyNodeElement, "soft_shape")) {
-    const ElementPtr& softShapeEle
-        = getElement(softBodyNodeElement, "soft_shape");
-
+  if (const ElementPtr softShapeEle
+      = findAuthoredElement(softBodyNodeElement, "soft_shape")) {
     // mass
     double totalMass = readDartExtensionDouble(softShapeEle, "total_mass");
 
     // pose
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-    if (hasElement(softShapeEle, "pose")) {
+    if (hasAuthoredElement(softShapeEle, "pose")) {
       T = readDartExtensionPose(softShapeEle, "pose");
     }
 
     // geometry
-    const ElementPtr& geometryEle = getElement(softShapeEle, "geometry");
-    if (hasElement(geometryEle, "sphere")) {
-      const ElementPtr& sphereEle = getElement(geometryEle, "sphere");
+    const ElementPtr geometryEle
+        = findAuthoredElement(softShapeEle, "geometry");
+    if (const ElementPtr sphereEle
+        = findAuthoredElement(geometryEle, "sphere")) {
       const auto radius = readDartExtensionDouble(sphereEle, "radius");
       const auto nSlices = readDartExtensionUInt(sphereEle, "num_slices");
       const auto nStacks = readDartExtensionUInt(sphereEle, "num_stacks");
       softProperties = dynamics::SoftBodyNodeHelper::makeSphereProperties(
           radius, nSlices, nStacks, totalMass);
-    } else if (hasElement(geometryEle, "box")) {
-      const ElementPtr& boxEle = getElement(geometryEle, "box");
+    } else if (
+        const ElementPtr boxEle = findAuthoredElement(geometryEle, "box")) {
       Eigen::Vector3d size = readDartExtensionVector3d(boxEle, "size");
       Eigen::Vector3i frags = readDartExtensionVector3i(boxEle, "frags");
       softProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
           size, T, frags, totalMass);
-    } else if (hasElement(geometryEle, "ellipsoid")) {
-      const ElementPtr& ellipsoidEle = getElement(geometryEle, "ellipsoid");
+    } else if (
+        const ElementPtr ellipsoidEle
+        = findAuthoredElement(geometryEle, "ellipsoid")) {
       Eigen::Vector3d size = readDartExtensionVector3d(ellipsoidEle, "size");
       const auto nSlices = readDartExtensionUInt(ellipsoidEle, "num_slices");
       const auto nStacks = readDartExtensionUInt(ellipsoidEle, "num_stacks");
       softProperties = dynamics::SoftBodyNodeHelper::makeEllipsoidProperties(
           size, nSlices, nStacks, totalMass);
-    } else if (hasElement(geometryEle, "cylinder")) {
-      const ElementPtr& ellipsoidEle = getElement(geometryEle, "cylinder");
-      double radius = readDartExtensionDouble(ellipsoidEle, "radius");
-      double height = readDartExtensionDouble(ellipsoidEle, "height");
-      double nSlices = readDartExtensionDouble(ellipsoidEle, "num_slices");
-      double nStacks = readDartExtensionDouble(ellipsoidEle, "num_stacks");
-      double nRings = readDartExtensionDouble(ellipsoidEle, "num_rings");
+    } else if (
+        const ElementPtr cylinderEle
+        = findAuthoredElement(geometryEle, "cylinder")) {
+      double radius = readDartExtensionDouble(cylinderEle, "radius");
+      double height = readDartExtensionDouble(cylinderEle, "height");
+      double nSlices = readDartExtensionDouble(cylinderEle, "num_slices");
+      double nStacks = readDartExtensionDouble(cylinderEle, "num_stacks");
+      double nRings = readDartExtensionDouble(cylinderEle, "num_rings");
       softProperties = dynamics::SoftBodyNodeHelper::makeCylinderProperties(
           radius, height, nSlices, nStacks, nRings, totalMass);
     } else {
@@ -1241,17 +1241,17 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
     }
 
     // kv
-    if (hasElement(softShapeEle, "kv")) {
+    if (hasAuthoredElement(softShapeEle, "kv")) {
       softProperties.mKv = readDartExtensionDouble(softShapeEle, "kv");
     }
 
     // ke
-    if (hasElement(softShapeEle, "ke")) {
+    if (hasAuthoredElement(softShapeEle, "ke")) {
       softProperties.mKe = readDartExtensionDouble(softShapeEle, "ke");
     }
 
     // damp
-    if (hasElement(softShapeEle, "damp")) {
+    if (hasAuthoredElement(softShapeEle, "damp")) {
       softProperties.mDampCoeff = readDartExtensionDouble(softShapeEle, "damp");
     }
   }
@@ -1338,8 +1338,8 @@ void readCollisionSurface(
   }
 
   const ElementPtr surfaceElement = surface->Element();
-  if (hasAuthoredElement(surfaceElement, "bounce")) {
-    const ElementPtr bounceElement = getElement(surfaceElement, "bounce");
+  if (const ElementPtr bounceElement
+      = findAuthoredElement(surfaceElement, "bounce")) {
     if (hasAuthoredElement(bounceElement, "restitution_coefficient")) {
       sdf::Errors errors;
       const auto [restitution, found]
@@ -1805,9 +1805,8 @@ static bool readAxisElement(
   axis = resolveAxisXyz(axisElement, _parentModelFrame, axisSdfElement);
 
   // dynamics
-  if (hasAuthoredElement(axisSdfElement, "dynamics")) {
-    const ElementPtr& dynamicsElement = getElement(axisSdfElement, "dynamics");
-
+  if (const ElementPtr dynamicsElement
+      = findAuthoredElement(axisSdfElement, "dynamics")) {
     // damping
     if (hasAuthoredElement(dynamicsElement, "damping")) {
       damping = axisElement.Damping();
@@ -1830,9 +1829,8 @@ static bool readAxisElement(
   }
 
   // limit
-  if (hasAuthoredElement(axisSdfElement, "limit")) {
-    const ElementPtr& limitElement = getElement(axisSdfElement, "limit");
-
+  if (const ElementPtr limitElement
+      = findAuthoredElement(axisSdfElement, "limit")) {
     // lower
     if (hasAuthoredElement(limitElement, "lower")) {
       lower = axisElement.Lower();

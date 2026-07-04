@@ -47,32 +47,27 @@ sdf::ElementPtr findChildElement(
 
   const std::string nameString(name);
   ElementPtr childElement = parentElement->GetFirstElement();
-  while (childElement) {
-    if (childElement->GetName() == nameString) {
-      return childElement;
-    }
-    childElement = childElement->GetNextElement();
+  if (!childElement) {
+    return nullptr;
+  }
+  if (childElement->GetName() == nameString) {
+    return childElement;
   }
 
-  return nullptr;
+  return childElement->GetNextElement(nameString);
 }
 
 } // namespace
 
-bool hasElement(const ElementPtr& parent, std::string_view name)
+ElementPtr findAuthoredElement(const ElementPtr& parent, std::string_view name)
 {
-  return findChildElement(parent, name) != nullptr;
+  const auto child = findChildElement(parent, name);
+  return child && child->GetExplicitlySetInFile() ? child : nullptr;
 }
 
 bool hasAuthoredElement(const ElementPtr& parent, std::string_view name)
 {
-  const auto child = findChildElement(parent, name);
-  return child && child->GetExplicitlySetInFile();
-}
-
-ElementPtr getElement(const ElementPtr& parent, std::string_view name)
-{
-  return findChildElement(parent, name);
+  return findAuthoredElement(parent, name) != nullptr;
 }
 
 } // namespace dart::utils::SdfParser::detail

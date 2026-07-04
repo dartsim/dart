@@ -220,6 +220,8 @@ bool isExplicitWorldRootJoint(const dynamics::Joint& joint)
          || dynamic_cast<const dynamics::BallJoint*>(&joint);
 }
 
+// These helpers only patch sdformat's serialized Element tree for fields that
+// typed DOM does not expose or ToElement() omits/emits under legacy names.
 sdf::ElementPtr findChildElement(
     const sdf::ElementPtr& parent, std::string_view name)
 {
@@ -229,14 +231,14 @@ sdf::ElementPtr findChildElement(
 
   const std::string nameString(name);
   sdf::ElementPtr childElement = parent->GetFirstElement();
-  while (childElement) {
-    if (childElement->GetName() == nameString) {
-      return childElement;
-    }
-    childElement = childElement->GetNextElement();
+  if (!childElement) {
+    return nullptr;
+  }
+  if (childElement->GetName() == nameString) {
+    return childElement;
   }
 
-  return nullptr;
+  return childElement->GetNextElement(nameString);
 }
 
 sdf::ElementPtr findNextSiblingElement(
@@ -246,16 +248,7 @@ sdf::ElementPtr findNextSiblingElement(
     return nullptr;
   }
 
-  const std::string nameString(name);
-  sdf::ElementPtr siblingElement = element->GetNextElement();
-  while (siblingElement) {
-    if (siblingElement->GetName() == nameString) {
-      return siblingElement;
-    }
-    siblingElement = siblingElement->GetNextElement();
-  }
-
-  return nullptr;
+  return element->GetNextElement(std::string(name));
 }
 
 WriteResult setBoolElement(
