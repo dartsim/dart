@@ -1,0 +1,169 @@
+# WS-A — Constraint/LCP pipeline lane
+
+The active-regime wall: profile smoke shows the Dantzig LCP solve scope at
+~66% of step time (caveat: single run, without the `Construct LCP` vs
+solve-proper split — WP-PG.01/WP-PG.10 must record that split before
+committing effort ratios), and every island builds a dense `(3n)^2` A
+matrix via `O(n^2)` unit-impulse ABI passes
+(`BoxedLcpConstraintSolver.cpp:244`). The #3142 direct-assembly fast path
+covers only islands whose contacts all share one reactive body. Round 1
+already parallelized/cached the constraint *build*; this lane attacks
+assembly and solve *structure*, plus the penetration-creep root cause
+that keeps piles active in the first place (WP-PG.15).
+
+Common gates for all packets: the README envelope, the full per-packet
+gate list, and the #3203 evidence table. Determinism bar: bit-identical
+final-state hashes on all guard scenes for default-on packets.
+
+#### WP-PG.10 — LCP pipeline instrumentation and island census
+
+- Status: open
+- Objective: add missing `DART_PROFILE_*` scopes so assembly vs solve vs
+  build split is measurable per island, and emit an island-size histogram
+  (bodies, contacts, LCP rows) from `contact_benchmark --profile` runs.
+- Value: converts the 66% smoke number into per-stage, per-island-size
+  evidence that sizes WP-PG.12/13/14 and arbitrates D3.
+- Scope: profile scopes in `ConstraintSolver.cpp` /
+  `BoxedLcpConstraintSolver.cpp`; a stats counter surfaced through the
+  existing profiler dump; baseline histograms recorded in
+  01-baseline-evidence.md.
+- Non-goals: any behavior change; new public API.
+- Acceptance evidence: histogram + stage-share tables for the five guard
+  scenes; zero hash drift on all detectors.
+- Dependencies: WP-PG.01.
+
+#### WP-PG.11 — Remove per-step RTTI and full scans from the solver
+
+- Status: open
+- Objective: replace per-step `dynamic_cast`/type-check classification
+  with cached type tags/flags where it actually runs every step: (1) the
+  resting-group `dynamic_cast<ContactConstraint>` classification under
+  deactivation (`ConstraintSolver.cpp:2052` — note this win applies to
+  deactivation-ON scenes: S2/S4/S5 rows, not the disable-deactivation
+  rows); (2) the per-active-contact type checks in the build pass
+  (`ConstraintSolver.cpp:1359-1378`). De-prioritized: the
+  `hasCustomContactConstraint` (`:2177`) / `hasSharedNonReactiveDependency`
+  (`:2192`) lambdas run only inside `canSolveGroupsInParallel()`
+  (`:2339-2344`), which is gated behind the opt-in
+  `>=128-group` threaded path — cache their facts only if a threads-on
+  packet shows them in profiles.
+- Value: O(constraints) per-step overhead removed on the default serial
+  path; near-zero behavior risk; default-on.
+- Scope: `dart/constraint/*` cpp + minimal additive header changes
+  (virtual additions only on classes gz does not subclass — verify
+  `ConstraintBase` is not part of the frozen-vtable set before landing;
+  if it is, use a non-virtual flag member instead).
+- Non-goals: changing island composition or solve order.
+- Assumptions: `ConstraintBase` vtable is not subclassed by gz-physics
+  (gz adds `WeldJointConstraint` instances but does not subclass
+  ConstraintBase itself — re-verify in `.deps/gz-physics`).
+- Acceptance evidence: identical hashes/contacts on all guard scenes and
+  detectors; measurable step-time delta on 900/3000-object scenes.
+- Dependencies: WP-PG.01.
+
+#### WP-PG.12 — Generalized direct LCP assembly for single-free-body islands
+
+- Status: open
+- Objective: extend the #3142 direct-assembly path
+  (`BoxedLcpConstraintSolver.cpp:272-383`) to islands whose members are
+  all 6-DoF single-free-body skeletons: build A blockwise from cached
+  spatial Jacobians and per-body 6x6 inverse spatial inertias instead of
+  O(rows) `applyUnitImpulse` ABI passes.
+- Value: containers/piles of free bodies (the gz 3k case and the #3209
+  scene) are exactly this shape; removes the dominant O(n^2) ABI-pass
+  cost in assembly.
+- Scope: `dart/constraint/BoxedLcpConstraintSolver.*` (cpp-first; scratch
+  behind existing solver internals); classification reuses WP-PG.30's
+  cached single-free-body facts if available, else local. Unlike #3142's
+  single-reactive shape, container piles have body–body contacts: the
+  blockwise assembly must fill the off-diagonal coupling blocks between
+  two free bodies — that generalization is the core of this packet.
+- Non-goals: multi-DOF articulated islands; solver algorithm changes.
+- Assumptions/open decisions: direct assembly changes FP rounding vs
+  unit-impulse tests; #3142 precedent shows identical hashes are
+  achievable on guarded scenes — target bit-identical, escalate to D1
+  process if not achievable.
+- Acceptance evidence: full #3203 matrix; hash-identical on guard scenes
+  (or maintainer-approved re-baseline with rationale); ≥ measurable
+  active-scene RTF win at 120/900 objects.
+- Dependencies: WP-PG.01, WP-PG.10; benefits from WP-PG.30.
+
+#### WP-PG.13 — Row-island decomposition within constrained groups
+
+- Status: evidence-gated on WP-PG.10
+- Objective: decompose each assembled Delassus system into independent
+  row-islands (adjacency-based DFS, not dense column scans) and solve
+  each sub-LCP separately; optionally solve sub-LCPs in parallel behind
+  the existing opt-in thread pool.
+- Premise check (from review): `ContactConstraint::uniteSkeletons` skips
+  non-reactive bodies, so 6.20 constrained groups are already
+  contact-graph connected components — a 120-body pile is one component
+  and this packet would no-op there. It pays off only if WP-PG.10's
+  island census shows groups **coarser** than contact connectivity
+  (e.g. via joint constraints or shared reactive bodies). Claim only
+  with that evidence.
+- Value: where groups are coarser than connectivity, smaller dense solves
+  are super-linearly cheaper.
+- Scope: `BoxedLcpConstraintSolver.cpp`; transplant the *idea* of main's
+  `unified_constraint.cpp:302-357/890-966` but with an adjacency
+  structure (main's own dense-scan DFS is O(rows^2) — do not copy).
+- Non-goals: changing Dantzig/PGS internals; default-on parallelism.
+- Acceptance evidence: identical hashes serial; documented determinism
+  for the opt-in parallel path (fixed sub-island ordering, per-island
+  scratch); island-census-backed before/after from WP-PG.10.
+- Dependencies: WP-PG.10; independent of WP-PG.12.
+
+#### WP-PG.14 — Island-size-gated matrix-free solve path (gated, opt-in)
+
+- Status: blocked on D3
+- Objective: for islands above a size threshold, offer a matrix-free
+  sequential-impulse/PGS path over cached Jacobians (no dense (3n)^2 A),
+  as an opt-in `BoxedLcpConstraintSolver` option defaulting to current
+  behavior.
+- Value: removes O(n^2) memory and O(n^2..3) time for very large
+  islands; the only lever that changes the asymptote.
+- Scope: new solver option + implementation; docs; dartpy binding only if
+  trivially additive.
+- Non-goals: changing the default solve; friction-cone semantics changes
+  silently (must be documented as solver-option semantics).
+- Assumptions/open decisions: D3 (opt-in confirmed?); solution
+  non-uniqueness vs Dantzig means hashes differ by construction when the
+  option is enabled — guard scenes run with the option OFF must stay
+  bit-identical.
+- Acceptance evidence: option-off = bit-identical everywhere; option-on
+  evidence table with contacts/resting/finite checks + convergence
+  metrics at 900/3000 objects.
+- Dependencies: D3 (note its revisit trigger in the README: if WP-PG.10
+  confirms solve-proper dominance on single-connected islands, opt-in
+  leaves the primary fixture without a default-on solve remedy — D3 gets
+  re-decided with that evidence), WP-PG.10, WP-PG.13 insights.
+
+#### WP-PG.15 — Penetration creep vs island-rest veto (root cause)
+
+- Status: blocked on D7 — behavior-changing PR class
+- Objective: fix #3209 root-cause finding 2 so compacting piles stop
+  creeping and can sleep: investigate the interaction of the contact
+  error-reduction budget (`DART_MAX_ERV = 1e-3` m/s,
+  `ContactConstraint.cpp:49`; public setter
+  `setMaxErrorReductionVelocity` exists), large-island LCP convergence,
+  and the island-rest veto requiring every contact ≤ 1e-5 m penetration
+  (`kSleepContactPenetrationTolerance`, `ConstraintSolver.cpp:2050`,
+  `World.cpp:1229`). Candidate remedies (per D7): penetration-aware ERV
+  scaling under pile load, convergence budget for large islands, and/or a
+  bounded-penetration rest tolerance with a stability rationale.
+- Value: the largest *general-case* lever in the plan — in real gz scenes
+  (deactivation on), creeping piles currently stay active forever; fixing
+  this converts sustained active-regime cost into settled-regime cost and
+  is the gz-visible closer for reopened #3056 (success criterion 2).
+- Scope: `dart/constraint/ContactConstraint.*`,
+  `ConstraintSolver.cpp` / `World.cpp` rest-veto sites; behavior-changing
+  — carries tolerance rationale, old/new guard rows for ALL detectors,
+  and maintainer re-baseline sign-off per envelope rule 2.
+- Non-goals: solver algorithm swaps (that is WP-PG.14); changing gz-visible
+  default semantics beyond the approved D7 envelope.
+- Acceptance evidence: S6 reproducer ends with bounded `max_penetration`
+  and 71/71 resting under default settings; S2 settled guard stays
+  resting-complete; physical-plausibility note (no pile explosion,
+  finite states) on all guard scenes; gz gate green.
+- Dependencies: D7; WP-PG.01 (S6 baseline rows); informed by WP-PG.10's
+  convergence data.
