@@ -14,6 +14,12 @@ Phase 2 remains implemented on `feature/remove-skel-dart7-phase2` and awaiting
 PR creation/review/merge. The stacked Phase 3 branch is documentation-only and
 should not be pushed as the Phase 2 removal PR.
 
+Phase 4 coordination is also recorded locally in
+[`04-usd-coordination.md`](04-usd-coordination.md): PR #3109 already landed the
+OFF-by-default USD `dart::io` scaffold, and remaining USD loader/viewer/dartpy
+implementation stays in `docs/dev_tasks/usd_scene_loader/` instead of this SKEL
+task.
+
 ## Previous Resume Checkpoint (2026-07-03)
 
 Phase 2 is implemented on `feature/remove-skel-dart7-phase2` and awaiting PR
@@ -97,16 +103,15 @@ can be recovered without adopting the old SKEL YAML direction.
 
 ## Current Branch
 
-`work/skel-format-yaml-decision` — Phase 3 YAML decision is committed locally on
-top of the Phase 2 removal commit. The underlying Phase 2 branch remains
-`feature/remove-skel-dart7-phase2`.
+`work/skel-format-yaml-decision` — Phase 3 YAML decision and Phase 4 USD
+coordination are committed locally on top of the Phase 2 removal commit. The
+underlying Phase 2 branch remains `feature/remove-skel-dart7-phase2`.
 
 ## Immediate Next Step
 
 Continue with the remaining real task work: land Phase 2 after maintainer
-approval, keep Phase 4 USD work in `docs/dev_tasks/usd_scene_loader/`, and
-start Phase 5 export writers as a separate round-trip design/implementation
-slice.
+approval, then start Phase 5 export writers as a separate round-trip
+design/implementation slice.
 
 ## Context That Would Be Lost
 
@@ -117,6 +122,9 @@ slice.
   project/scene serialization format, not SKEL syntax in YAML.
 - USD work is tracked separately under
   [`usd_scene_loader/`](../usd_scene_loader/) — do not duplicate.
+- Phase 4 is a coordination boundary, not a claim that USD implementation is
+  complete. The USD task still owns the OpenUSD-enabled loader, viewer, dartpy,
+  dependency, and CI work.
 - Export is part of the work, not a follow-up: round-trip enables save /
   load in the dartsim editor (PLAN-101).
 - The old `feature/skel_yaml` prototype SHA (`1dd83e31586`) is no longer
@@ -138,5 +146,5 @@ git status && git log -3 --oneline
 ```
 
 Then continue with the remaining task work. For Phase 5, start from this
-folder's `README.md`, `03-yaml-decision.md`, and current DART 7 requirements,
-not from the old prototype.
+folder's `README.md`, `03-yaml-decision.md`, `04-usd-coordination.md`, and
+current DART 7 requirements, not from the old prototype.

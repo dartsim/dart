@@ -21,9 +21,10 @@
       YAML is revisited, it must be a DART-owned project or scene
       serialization format with import/export round-trip tests, not SKEL syntax
       in YAML.
-- [ ] Phase 4: USD support. Coordinate with
-      [`usd_scene_loader/`](../usd_scene_loader/) so SKEL evolution and USD
-      adoption share design pressure on the unified `dart::io` front door
+- [x] Phase 4: USD support coordination. Decision recorded in
+      [`04-usd-coordination.md`](04-usd-coordination.md): this task uses USD as
+      design pressure, while USD loader/viewer/dartpy implementation remains
+      owned by [`usd_scene_loader/`](../usd_scene_loader/).
 - [ ] Phase 5: Export writers for accepted portable/project formats so DART can
       round-trip a scene back to text. Start with URDF/SDF and add YAML only if
       a durable project/scene schema is accepted first.
@@ -60,8 +61,8 @@ the engine in portable formats.
   round-trip tests.
 - **USD is the medium-term scene format**. Pixar / NVIDIA convergence makes
   USD the most likely cross-engine scene format. Loader work is tracked
-  separately under [`usd_scene_loader/`](../usd_scene_loader/); SKEL
-  evolution should not duplicate that surface.
+  separately under [`usd_scene_loader/`](../usd_scene_loader/); Phase 4 records
+  the coordination boundary so SKEL evolution does not duplicate that surface.
 - **Export is part of the work**. URDF/SDF writers, plus any accepted
   DART-owned project/scene writer, turn DART into a round-trip engine rather
   than read-only, which unblocks save / load in the dartsim editor (PLAN-101)
@@ -102,10 +103,7 @@ SKEL-YAML direction just because the prototype once existed.
 
 1. Land the Phase 2 removal branch (`feature/remove-skel-dart7-phase2`) after
    review. Add the PR link to the DART 7 changelog entry before merge.
-2. Keep Phase 4 USD work coordinated with
-   [`usd_scene_loader/`](../usd_scene_loader/) rather than duplicating that
-   loader surface here.
-3. Start Phase 5 as a separate export-writer round-trip design/implementation
+2. Start Phase 5 as a separate export-writer round-trip design/implementation
    slice. YAML can enter that slice only after a durable project/scene schema is
    accepted.
 
@@ -124,6 +122,9 @@ SKEL-YAML direction just because the prototype once existed.
   project round-trip evidence all support not implementing a YAML parser now.
   Any future accepted YAML design needs focused parser, export, and round-trip
   tests before implementation is considered complete.
-- Phase 4: see `usd_scene_loader/` gates.
+- Phase 4: decision-only coordination gate recorded in
+  [`04-usd-coordination.md`](04-usd-coordination.md): PR #3109 is merged, the
+  active `usd_scene_loader/` task owns remaining USD implementation, and this
+  task must not duplicate the USD loader/viewer/dartpy surface.
 - Phase 5: round-trip tests that load a scene from each accepted format and
   write it back, comparing the re-parsed models.
