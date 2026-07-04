@@ -163,7 +163,8 @@ mimic metadata for axis/axis2 follower joints with motor enforcement,
 topology-only ball child joints, link gravity mode, inertial parameters, local
 joint/shape poses, and
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry
-with visual shadow/hidden state, explicit visual material colors, PBR
+with visual shadow/hidden/transparency state, explicit visual material colors,
+PBR
 metallic/roughness factors, and collision-surface contact disable bitmasks,
 zero-threshold bounce restitution, and ODE friction/slip metadata. The
 round-trip coverage includes absolute

@@ -40,7 +40,8 @@ and spring stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
 axis/axis2 mimic metadata with motor enforcement, topology-only ball child
 joints, local root/joint/shape poses, visual shadow/hidden state, explicit
 visual material colors, PBR metallic/roughness factors, collision-surface
-contact disable bitmasks, zero-threshold bounce restitution, ODE friction
+contact disable bitmasks, visual transparency, zero-threshold bounce
+restitution, ODE friction
 coefficients, first friction direction, slip compliance, and absolute non-file
 mesh URI preservation through a custom retriever. Continuous SDF joints now
 parse as unbounded DART
@@ -74,8 +75,8 @@ model name/static/pose and link name/gravity/pose plus inertial mass, center of
 mass, and inertia tensor values. Visual and collision shape nodes traverse
 `sdf::Model`, `sdf::Link`, `sdf::Visual`, `sdf::Collision`, `sdf::Geometry`, and
 `sdf::Material` DOM values for shape names, local poses, geometry, cast-shadow
-state, zero visibility flags, and diffuse material colors plus `sdf::Pbr` metal
-workflow factors. Diffuse material values now come from
+state, zero visibility flags, transparency, and diffuse material colors plus
+`sdf::Pbr` metal workflow factors. Diffuse material values now come from
 `sdf::Material::Diffuse()`; authored/default checks use sdformat's
 `Element::GetExplicitlySetInFile()` signal so absent diffuse colors do not
 reset DART's default visual color. Collision-surface contact bitmasks now read
@@ -325,6 +326,15 @@ Additional validation for visual shadow/hidden metadata IO:
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
+Additional validation for visual transparency IO:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit`
+
 Changelog decision:
 
 - Mode: draft
@@ -410,7 +420,11 @@ Changelog decision:
   No additional separate entry is needed for visual shadow/hidden metadata IO
   because it broadens the same conservative SDF writer/parser round-trip
   capability before the implementation PR exists; the existing DART 7 IO and
-  Parsing bullet now includes visual shadow/hidden state.
+  Parsing bullet now includes visual shadow/hidden state. No additional
+  separate entry is needed for visual transparency IO because it broadens the
+  same conservative SDF writer/parser round-trip capability before the
+  implementation PR exists; the existing DART 7 IO and Parsing bullet now
+  includes visual shadow/hidden/transparency state.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

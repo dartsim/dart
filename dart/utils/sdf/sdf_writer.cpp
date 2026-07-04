@@ -891,6 +891,17 @@ WriteResult addShapeNode(
       if (visualAspect->isHidden()) {
         sdfVisual.SetVisibilityFlags(0u);
       }
+
+      const double alpha = visualAspect->getAlpha();
+      if (alpha != 1.0) {
+        if (!std::isfinite(alpha) || alpha < 0.0 || alpha > 1.0) {
+          return fail(
+              "Cannot write SDF visual [" + shapeNode.getName()
+              + "] with a non-finite or out-of-range visual transparency.");
+        }
+
+        sdfVisual.SetTransparency(static_cast<float>(1.0 - alpha));
+      }
     }
     if (auto result = applyMaterial(sdfVisual, shapeNode); result.isErr()) {
       return result;

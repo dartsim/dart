@@ -792,6 +792,56 @@ TEST(SdfWriter, RoundTripsVisualShadowAndHiddenState)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsVisualTransparency)
+{
+  auto skeleton = dynamics::Skeleton::create("visual_transparency_writer");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  auto* shapeNode = body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "transparent_visual");
+  auto* visualAspect = shapeNode->getVisualAspect();
+  ASSERT_NE(visualAspect, nullptr);
+  visualAspect->setAlpha(0.75);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  EXPECT_NE(
+      writeResult.value().find("<transparency>0.25</transparency>"),
+      std::string::npos);
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfLink = sdfRoot.Model()->LinkByName("body");
+  ASSERT_NE(sdfLink, nullptr);
+  const auto* sdfVisual = sdfLink->VisualByName("transparent_visual");
+  ASSERT_NE(sdfVisual, nullptr);
+  EXPECT_NEAR(sdfVisual->Transparency(), 0.25f, 1e-6);
+
+  const auto path = writeTempSdf(writeResult.value(), "visual_transparency");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "body");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* reparsedShapeNode
+      = reparsedBody->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(reparsedShapeNode, nullptr);
+  const auto* reparsedVisual = reparsedShapeNode->getVisualAspect();
+  ASSERT_NE(reparsedVisual, nullptr);
+  EXPECT_TRUE(reparsedVisual->usesDefaultColor());
+  EXPECT_NEAR(reparsedVisual->getAlpha(), 0.75, 1e-12);
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsCollisionSurfaceOdeFriction)
 {
   auto skeleton = dynamics::Skeleton::create("surface_writer");
@@ -1469,6 +1519,26 @@ TEST(SdfWriter, NonFiniteMaterialColorReturnsError)
   EXPECT_NE(
       result.error().message.find("non-finite material color"),
       std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, InvalidVisualTransparencyReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("bad_visual_transparency");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  auto* visual = body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "bad_transparency");
+  visual->getVisualAspect()->setAlpha(-0.1);
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("visual transparency"), std::string::npos);
 }
 
 //==============================================================================

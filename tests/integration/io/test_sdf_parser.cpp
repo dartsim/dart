@@ -794,6 +794,41 @@ TEST(SdfParser, VisualMetadataReadsShadowAndHiddenState)
 }
 
 //==============================================================================
+TEST(SdfParser, VisualTransparencyReadsAlpha)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/visual_transparency/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="visual_transparency">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+      <visual name="transparent_visual">
+        <transparency>0.25</transparency>
+        <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  auto* visual = body->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visual, nullptr);
+
+  const auto* visualAspect = visual->getVisualAspect();
+  ASSERT_NE(visualAspect, nullptr);
+  EXPECT_TRUE(visualAspect->usesDefaultColor());
+  EXPECT_TRUE(visualAspect->getRGB().isApprox(
+      dynamics::VisualAspect::getDefaultRGBA().head<3>()));
+  EXPECT_NEAR(visualAspect->getAlpha(), 0.75, 1e-12);
+}
+
+//==============================================================================
 TEST(SdfParser, PlaneGeometryReadsAsThinBox)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();

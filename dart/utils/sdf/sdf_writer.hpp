@@ -70,8 +70,8 @@ struct DART_UTILS_API WriteOptions
 /// with motor enforcement, topology-only ball child joints, link gravity mode,
 /// inertial parameters, local joint/shape poses, and
 /// box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual/collision geometry
-/// with visual shadow/hidden state, explicit visual material colors, PBR
-/// metallic/roughness factors, and
+/// with visual shadow/hidden/transparency state, explicit visual material
+/// colors, PBR metallic/roughness factors, and
 /// collision-surface contact disable bitmasks, zero-threshold bounce
 /// restitution, ODE friction/slip metadata, and absolute non-file mesh URI
 /// preservation. Targetless relative mesh references return an error because

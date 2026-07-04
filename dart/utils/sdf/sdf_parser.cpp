@@ -1345,6 +1345,10 @@ void readVisualizationShapeNode(
   if (const auto* material = visual.Material()) {
     readMaterial(*material, newShapeNode);
   }
+
+  if (hasAuthoredElement(visual.Element(), "transparency")) {
+    visualAspect->setAlpha(1.0 - static_cast<double>(visual.Transparency()));
+  }
 }
 
 //==============================================================================
