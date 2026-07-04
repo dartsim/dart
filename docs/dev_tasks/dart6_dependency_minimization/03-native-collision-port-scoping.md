@@ -58,9 +58,9 @@ Live conclusion:
   as historical guardrails, not proof that the full DART 7 native detector is
   ported.
 
-Local A/B probe on this branch (freshly rebuilt `contact_benchmark`, compiler
-cache disabled because the stale build cache pointed to a removed Pixi
-`sccache`):
+Local A/B probe on this branch (freshly rebuilt `contact_benchmark`; stale
+CMake compiler launcher cache entries were cleared because the old build tree
+pointed to a removed Pixi `sccache`):
 
 ```bash
 pixi run ./build/default/cpp/Release/bin/contact_benchmark \
@@ -133,8 +133,10 @@ Minimum evidence packet before implementation starts:
   benchmark.
 - Merge #3230 or carry an equivalent local JSON/HTML capture path so benchmark
   rows are durable and comparable across commits.
-- Fix local build-cache state before running numbers:
-  `DART_DISABLE_COMPILER_CACHE=ON` or a valid `sccache`/`ccache` executable.
+- Fix local build-cache state before running numbers: either configure from a
+  clean build directory, provide a valid `sccache`/`ccache`, or explicitly clear
+  the launcher cache entries with
+  `-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER=`.
 - Record commit SHAs (`origin/release-6.20`, branch head, and any reference
   `origin/main` SHA), compiler, CPU/governor, Pixi environment, exact command
   lines, and whether optional detectors were built.
