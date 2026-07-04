@@ -82,12 +82,22 @@ jobs:
             exit 1
           fi
 
+          if [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF_NAME}" == release-6.* ]]; then
+            checkout_ref="${GITHUB_SHA}"
+            benchmark_ref="${GITHUB_SHA}"
+          else
+            checkout_ref="${release_branch}"
+            benchmark_ref="${release_branch}"
+          fi
+
           printf 'branch=%s\n' "${release_branch}" >> "${GITHUB_OUTPUT}"
+          printf 'checkout_ref=%s\n' "${checkout_ref}" >> "${GITHUB_OUTPUT}"
+          printf 'benchmark_ref=%s\n' "${benchmark_ref}" >> "${GITHUB_OUTPUT}"
 
       - name: Checkout source
         uses: actions/checkout@v6
         with:
-          ref: ${{ steps.dart6-branch.outputs.branch }}
+          ref: ${{ steps.dart6-branch.outputs.checkout_ref }}
 
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.6
@@ -127,8 +137,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           gh-pages-branch: gh-pages
           benchmark-data-dir-path: performance/dart6
-          ref: ${{ steps.dart6-branch.outputs.branch }}
-          auto-push: ${{ github.event_name == 'workflow_call' || startsWith(github.ref, 'refs/heads/release-6.') }}
+          ref: ${{ steps.dart6-branch.outputs.benchmark_ref }}
+          auto-push: ${{ github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/heads/release-6.') }}
           # GitHub-hosted runners are noisy; alert on a clear 2x regression
           # and comment on the commit rather than failing the build.
           alert-threshold: "200%"
