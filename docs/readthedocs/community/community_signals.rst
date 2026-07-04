@@ -9,12 +9,9 @@ Open the dashboard directly:
 `https://dartsim.github.io/dart/community-signals/
 <https://dartsim.github.io/dart/community-signals/>`_
 
-.. raw:: html
-
-   <iframe src="https://dartsim.github.io/dart/community-signals/"
-           title="DART community signals dashboard"
-           width="100%" height="820" loading="lazy"
-           style="border: 1px solid #d0d7de; border-radius: 6px;"></iframe>
+The dashboard is published from GitHub Actions to GitHub Pages. New or updated
+dashboard content appears after the publishing workflow and Pages rebuild have
+completed.
 
 What it tracks
 --------------
