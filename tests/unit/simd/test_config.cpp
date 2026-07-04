@@ -66,6 +66,15 @@ struct InvalidWidth
   static constexpr std::size_t width = 3;
 };
 
+struct EnumWidth
+{
+  using scalar_type = float;
+  enum
+  {
+    width = 4
+  };
+};
+
 struct NonConstMask
 {
   using scalar_type = float;
@@ -104,6 +113,8 @@ static_assert(
     "a runtime static width member must yield false, not a hard error");
 static_assert(
     !is_vec_v<InvalidWidth>, "invalid vector widths must be rejected");
+static_assert(
+    is_vec_v<EnumWidth>, "enum width constants must remain supported");
 static_assert(is_vec_mask_v<VecMask4f>, "VecMask4f must satisfy is_vec_mask_v");
 static_assert(!is_vec_mask_v<int>, "int must not satisfy is_vec_mask_v");
 static_assert(

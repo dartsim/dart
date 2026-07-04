@@ -78,16 +78,17 @@ inline constexpr bool is_valid_width_v
 
 namespace detail {
 
-// Check whether width is static before evaluating its value. MSVC reports a
-// hard error for non-static V::width unless the value probe is staged.
+// Check for non-static width members before evaluating the value. MSVC reports
+// a hard error for non-static V::width unless the value probe is staged, while
+// enum width constants are valid but not addressable.
 template <typename V, typename = void>
-struct HasStaticWidthMember : std::false_type
+struct HasNonStaticWidthMember : std::false_type
 {
 };
 
 template <typename V>
-struct HasStaticWidthMember<V, std::void_t<decltype(&V::width)>>
-  : std::bool_constant<!std::is_member_object_pointer_v<decltype(&V::width)>>
+struct HasNonStaticWidthMember<V, std::void_t<decltype(&V::width)>>
+  : std::is_member_object_pointer<decltype(&V::width)>
 {
 };
 
@@ -95,13 +96,13 @@ template <typename V>
 using StaticWidthConstant
     = std::integral_constant<std::size_t, static_cast<std::size_t>(V::width)>;
 
-template <typename V, typename = void, bool = HasStaticWidthMember<V>::value>
+template <typename V, typename = void, bool = HasNonStaticWidthMember<V>::value>
 struct HasValidStaticWidth : std::false_type
 {
 };
 
 template <typename V>
-struct HasValidStaticWidth<V, std::void_t<StaticWidthConstant<V>>, true>
+struct HasValidStaticWidth<V, std::void_t<StaticWidthConstant<V>>, false>
   : std::bool_constant<
         std::is_convertible_v<
             decltype(V::width),
