@@ -205,7 +205,9 @@ TEST(SdfDetailHelpers, ParsesScalarsVectorsAndPose)
   ASSERT_TRUE(linkElement);
 
   EXPECT_TRUE(detail::hasElement(linkElement, "mass"));
+  EXPECT_TRUE(detail::hasAuthoredElement(linkElement, "mass"));
   EXPECT_FALSE(detail::hasElement(linkElement, "does_not_exist"));
+  EXPECT_FALSE(detail::hasAuthoredElement(linkElement, "does_not_exist"));
 
   EXPECT_DOUBLE_EQ(detail::getValueDouble(linkElement, "mass"), 1.5);
 
@@ -234,9 +236,12 @@ TEST(SdfDetailHelpers, MissingInputsReturnDefaults)
   ASSERT_TRUE(linkElement);
 
   EXPECT_FALSE(detail::hasElement(nullptr, "link"));
+  EXPECT_FALSE(detail::hasAuthoredElement(nullptr, "link"));
   EXPECT_FALSE(detail::hasElement(linkElement, ""));
+  EXPECT_FALSE(detail::hasAuthoredElement(linkElement, ""));
   EXPECT_EQ(detail::getElement(nullptr, "link"), nullptr);
   EXPECT_EQ(detail::getElement(linkElement, ""), nullptr);
+  EXPECT_EQ(detail::getElement(linkElement, "missing"), nullptr);
   EXPECT_EQ(detail::getValueUInt(linkElement, "missing"), 0u);
   EXPECT_DOUBLE_EQ(detail::getValueDouble(linkElement, "missing"), 0.0);
   EXPECT_TRUE(
@@ -248,6 +253,31 @@ TEST(SdfDetailHelpers, MissingInputsReturnDefaults)
   EXPECT_TRUE(
       detail::getValueIsometry3dWithExtrinsicRotation(linkElement, "missing")
           .isApprox(Eigen::Isometry3d::Identity()));
+}
+
+TEST(SdfDetailHelpers, TracksAuthoredElementsWithoutMaterializingDefaults)
+{
+  const sdf::ElementPtr defaultLinkElement = loadLinkElement("");
+  ASSERT_TRUE(defaultLinkElement);
+  EXPECT_FALSE(detail::hasAuthoredElement(defaultLinkElement, "inertial"));
+
+  const sdf::ElementPtr linkElement = loadLinkElement(R"(
+    <inertial>
+      <mass>2.5</mass>
+    </inertial>
+  )");
+  ASSERT_TRUE(linkElement);
+  EXPECT_TRUE(detail::hasAuthoredElement(linkElement, "inertial"));
+
+  const auto inertialElement = detail::getElement(linkElement, "inertial");
+  ASSERT_TRUE(inertialElement);
+  EXPECT_TRUE(detail::hasAuthoredElement(inertialElement, "mass"));
+  EXPECT_FALSE(detail::hasAuthoredElement(inertialElement, "pose"));
+  EXPECT_FALSE(detail::hasAuthoredElement(inertialElement, "inertia"));
+
+  EXPECT_FALSE(detail::hasElement(linkElement, "missing"));
+  EXPECT_EQ(detail::getElement(linkElement, "missing"), nullptr);
+  EXPECT_FALSE(detail::hasElement(linkElement, "missing"));
 }
 
 TEST(SdfDetailHelpers, ParsesExtensionValuesWithSdformatTypedParams)

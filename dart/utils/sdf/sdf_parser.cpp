@@ -121,6 +121,7 @@ using detail::getValueIsometry3dWithExtrinsicRotation;
 using detail::getValueUInt;
 using detail::getValueVector3d;
 using detail::getValueVector3i;
+using detail::hasAuthoredElement;
 using detail::hasElement;
 using detail::readGeometryShape;
 
@@ -1022,13 +1023,13 @@ SDFBodyNode readBodyNode(
   // inertia
   constexpr double kMinReasonableMass = 1e-9; // 1 microgram
   bool massSpecified = false;
-  if (hasElement(bodyNodeElement, "inertial")) {
+  if (hasAuthoredElement(bodyNodeElement, "inertial")) {
     const ElementPtr& inertiaElement = getElement(bodyNodeElement, "inertial");
     const auto& inertial = link.Inertial();
     const auto& massMatrix = inertial.MassMatrix();
 
     // mass
-    if (hasElement(inertiaElement, "mass")) {
+    if (hasAuthoredElement(inertiaElement, "mass")) {
       double mass = massMatrix.Mass();
       if (mass <= 0.0) {
         DART_WARN(
@@ -1052,12 +1053,12 @@ SDFBodyNode readBodyNode(
     }
 
     // offset
-    if (hasElement(inertiaElement, "pose")) {
+    if (hasAuthoredElement(inertiaElement, "pose")) {
       properties.mInertia.setLocalCOM(toEigenVector3(inertial.Pose().Pos()));
     }
 
     // inertia
-    if (hasElement(inertiaElement, "inertia")) {
+    if (hasAuthoredElement(inertiaElement, "inertia")) {
       properties.mInertia.setMoment(
           massMatrix.Ixx(),
           massMatrix.Iyy(),
@@ -1230,7 +1231,7 @@ dynamics::ShapeNode* readShapeNode(
 void readMaterial(const sdf::Material& material, dynamics::ShapeNode* shapeNode)
 {
   auto visualAspect = shapeNode->getVisualAspect();
-  if (hasElement(material.Element(), "diffuse")) {
+  if (hasAuthoredElement(material.Element(), "diffuse")) {
     visualAspect->setColor(toEigenColor(material.Diffuse()));
   }
 
@@ -1620,7 +1621,7 @@ Eigen::Vector3d resolveAxisXyz(
   // Legacy Gazebo/SDF files used this extension before SDF gained
   // axis/xyz@expressed_in. Keep it as a compatibility fallback only.
   bool useParentModelFrame = false;
-  if (hasElement(axisXmlElement, "use_parent_model_frame")) {
+  if (hasAuthoredElement(axisXmlElement, "use_parent_model_frame")) {
     sdf::Errors errors;
     const auto [value, found] = axisXmlElement->Get<bool>(
         errors, "use_parent_model_frame", useParentModelFrame);
@@ -1660,42 +1661,42 @@ static bool readAxisElement(
   axis = resolveAxisXyz(axisElement, _parentModelFrame, axisXmlElement);
 
   // dynamics
-  if (hasElement(axisXmlElement, "dynamics")) {
+  if (hasAuthoredElement(axisXmlElement, "dynamics")) {
     const ElementPtr& dynamicsElement = getElement(axisXmlElement, "dynamics");
 
     // damping
-    if (hasElement(dynamicsElement, "damping")) {
+    if (hasAuthoredElement(dynamicsElement, "damping")) {
       damping = axisElement.Damping();
     }
 
     // friction
-    if (hasElement(dynamicsElement, "friction")) {
+    if (hasAuthoredElement(dynamicsElement, "friction")) {
       friction = axisElement.Friction();
     }
 
     // spring reference
-    if (hasElement(dynamicsElement, "spring_reference")) {
+    if (hasAuthoredElement(dynamicsElement, "spring_reference")) {
       rest = axisElement.SpringReference();
     }
 
     // spring stiffness
-    if (hasElement(dynamicsElement, "spring_stiffness")) {
+    if (hasAuthoredElement(dynamicsElement, "spring_stiffness")) {
       spring_stiffness = axisElement.SpringStiffness();
     }
   }
 
   // limit
-  if (hasElement(axisXmlElement, "limit")) {
+  if (hasAuthoredElement(axisXmlElement, "limit")) {
     const ElementPtr& limitElement = getElement(axisXmlElement, "limit");
 
     // lower
-    if (hasElement(limitElement, "lower")) {
+    if (hasAuthoredElement(limitElement, "lower")) {
       lower = axisElement.Lower();
       hasFinitePositionLimit = hasFinitePositionLimit || std::isfinite(lower);
     }
 
     // upper
-    if (hasElement(limitElement, "upper")) {
+    if (hasAuthoredElement(limitElement, "upper")) {
       upper = axisElement.Upper();
       hasFinitePositionLimit = hasFinitePositionLimit || std::isfinite(upper);
     }

@@ -57,20 +57,24 @@
       raw XML-level enumeration. Standard visual/collision/material reads use
       libsdformat DOM values for names, local poses, geometry, diffuse colors,
       and PBR metal workflow factors; material XML checks only preserve whether
-      diffuse was authored. Standard joint reads use DOM values for joint
-      name/type,
+      diffuse was authored, using sdformat's explicit-authored element flags
+      instead of child-existence probing. Standard joint reads use DOM values
+      for joint name/type,
       parent/child links, local pose, axis vectors including
       `axis/xyz@expressed_in` frame resolution, axis dynamics, finite limits,
       mimic metadata, and sdformat-normalized screw pitch values; XML checks
       remain only where DART needs authored/default presence, DART-specific
       soft-body extension fields, or the legacy `use_parent_model_frame`
-      presence check; the legacy boolean value itself now uses sdformat typed
-      element access.
+      presence check; authored/default checks now use sdformat
+      `Element::GetExplicitlySetInFile()`, and the legacy boolean value itself
+      uses sdformat typed element access.
       The SDF-specific helper layer no longer exposes generic XML attribute,
       string, boolean, vector2/vectorX, or child-enumerator APIs; retained
       helpers are limited to the small extension/presence bridge still used by
-      the parser, and remaining extension values are converted through
-      sdformat typed parameters rather than XML text reparsing.
+      the parser. That bridge now uses non-mutating sdformat `FindElement`
+      lookup and explicit-authored flags for standard SDF presence checks, and
+      remaining extension values are converted through sdformat typed parameters
+      rather than XML text reparsing.
       Writer-side preservation of disabled link gravity and SDF 1.10+
       `<screw_thread_pitch>` now derives names and values from typed
       `sdf::Model` / `sdf::Link` / `sdf::Joint` DOM objects instead of reading
@@ -212,5 +216,6 @@ SKEL-YAML direction just because the prototype once existed.
   scene from each accepted format, write it back, and compare the re-parsed
   models. SDF helper cleanup is covered by `test_sdf_helpersNone`, which now
   validates only the retained parser bridge instead of the removed generic XML
-  helper APIs, including the removed SDF-specific boolean value parser and XML
-  text fallback parser.
+  helper APIs, including non-mutating sdformat element lookup,
+  explicit-authored presence checks, and the removed SDF-specific boolean value
+  parser and XML text fallback parser.

@@ -48,18 +48,20 @@ inertia, and shape assertions. Future writer tests should extend that helper
 instead of copying SDF-specific ad hoc checks.
 
 Parser-side SDF import now uses libsdformat DOM objects for top-level model
-selection and standard model/link/joint/aspect traversal. XML helper reads
-remain only for authored/default presence checks, DART-specific soft-body
-extension fields, material diffuse authored/default preservation, and the
-legacy `use_parent_model_frame` presence check; the compatibility boolean value
-is read through sdformat typed element access. Modern `axis/xyz@expressed_in`
-frame annotations are resolved through `sdf::JointAxis::ResolveXyz()`, and
-authored diffuse values are read from `sdf::Material::Diffuse()`. The
-SDF-specific helper surface has been narrowed accordingly: it no longer exposes
-generic XML attribute, string, boolean, vector2/vectorX, or child enumerator
-APIs that duplicate sdformat traversal/parsing, and the retained DART-extension
-value bridge uses sdformat typed parameters instead of DART-side XML text
-fallback parsing.
+selection and standard model/link/joint/aspect traversal. The remaining
+authored/default presence checks use sdformat's
+`Element::GetExplicitlySetInFile()` signal with non-mutating `FindElement`
+lookups for standard SDF inertial, material diffuse, legacy
+`use_parent_model_frame`, and joint-axis dynamics/limits. XML helper reads
+remain only for that authored/default bridge and DART-specific soft-body
+extension fields; the compatibility boolean value is read through sdformat
+typed element access. Modern `axis/xyz@expressed_in` frame annotations are
+resolved through `sdf::JointAxis::ResolveXyz()`, and authored diffuse values are
+read from `sdf::Material::Diffuse()`. The SDF-specific helper surface has been
+narrowed accordingly: it no longer exposes generic XML attribute, string,
+boolean, vector2/vectorX, or child enumerator APIs that duplicate sdformat
+traversal/parsing, and the retained DART-extension value bridge uses sdformat
+typed parameters instead of DART-side XML text fallback parsing.
 Writer-side preservation of disabled link gravity and schema-preferred SDF
 1.10+ screw pitch still patches sdformat's serialized element tree, but the
 link/joint names and values now come from the typed `sdf::Model`,

@@ -66,7 +66,11 @@ Source of truth:
 - `dart/utils/sdf/` uses libsdformat DOM APIs for SDF structure, model/link,
   inertial, visual/collision/material, joint topology/pose/axis frame
   resolution/dynamics/limits, and supported geometry semantics; avoid new raw
-  XML-level SDF parsing when sdformat exposes the value.
+  XML-level SDF parsing when sdformat exposes the value. When DART must
+  preserve an authored/default distinction that the high-level DOM class does
+  not expose, use sdformat `Element::GetExplicitlySetInFile()` with
+  non-mutating `FindElement` lookup rather than child-existence probing or
+  text reparsing.
 
 ## Start here next time
 

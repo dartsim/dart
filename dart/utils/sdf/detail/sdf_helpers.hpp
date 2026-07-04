@@ -48,6 +48,8 @@ namespace dart::utils::SdfParser::detail {
 using ElementPtr = sdf::ElementPtr;
 
 DART_UTILS_API bool hasElement(const ElementPtr& parent, std::string_view name);
+DART_UTILS_API bool hasAuthoredElement(
+    const ElementPtr& parent, std::string_view name);
 DART_UTILS_API ElementPtr
 getElement(const ElementPtr& parent, std::string_view name);
 

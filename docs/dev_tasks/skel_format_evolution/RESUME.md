@@ -71,9 +71,10 @@ mass, and inertia tensor values. Visual and collision shape nodes traverse
 `sdf::Model`, `sdf::Link`, `sdf::Visual`, `sdf::Collision`, `sdf::Geometry`, and
 `sdf::Material` DOM values for shape names, local poses, geometry, and diffuse
 material colors plus `sdf::Pbr` metal workflow factors. Diffuse material values
-now come from `sdf::Material::Diffuse()`; the XML bridge only preserves the
-authored/default distinction so absent diffuse colors do not reset DART's
-default visual color. Standard SDF joint reads traverse `sdf::Model`,
+now come from `sdf::Material::Diffuse()`; authored/default checks use
+sdformat's `Element::GetExplicitlySetInFile()` signal so absent diffuse colors
+do not reset DART's default visual color. Standard SDF joint reads traverse
+`sdf::Model`,
 `sdf::Joint`, and `sdf::JointAxis` DOM values for joint enumeration, joint
 name/type,
 parent/child links, local pose, axis vectors including
@@ -81,16 +82,20 @@ parent/child links, local pose, axis vectors including
 mimic metadata, and sdformat-normalized screw pitch values. XML helper checks
 remain only where DART preserves authored/default distinctions for existing
 diagnostics, reads DART-specific soft-body extension fields, or supports the
-legacy `use_parent_model_frame` presence check. The compatibility boolean value
-now uses sdformat typed element access rather than DART's SDF helper layer.
+legacy `use_parent_model_frame` presence check. Those standard SDF
+authored/default checks now use sdformat explicit-authored flags and
+non-mutating `FindElement` lookup instead of raw child-existence probing. The
+compatibility boolean value now uses sdformat typed element access rather than
+DART's SDF helper layer.
 The SDF detail helper API has been narrowed to that remaining bridge: generic
 XML attribute reads, string reads, vector2/vectorX parsing, child enumeration,
 boolean value parsing, and direct helper tests for those deleted APIs are gone.
 Retained helpers cover only element presence, child lookup, numeric scalar
 reads, vector3/vector3i reads, and pose reads for the DART-specific
-extension/presence paths; remaining extension value conversion goes through
-sdformat typed `Param::Get<T>` instead of serializing XML back to text and
-reparsing it in DART.
+extension/presence paths; standard presence checks use
+`GetExplicitlySetInFile()`, lookup uses `FindElement`, and remaining extension
+value conversion goes through sdformat typed `Param::Get<T>` instead of
+serializing XML back to text and reparsing it in DART.
 The SDF writer's post-serialization preservation path now uses typed
 `sdf::Model`, `sdf::Link`, and `sdf::Joint` DOM values for link/joint names,
 gravity modes, and screw pitch values. It still patches sdformat's element tree
@@ -274,6 +279,11 @@ Additional validation for removing SDF writer serialized-attribute reads:
 - `git diff --check`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
+Additional validation for sdformat-authored SDF presence checks:
+
+- `pixi run run-cpp-target test_sdf_helpersNone`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+
 Changelog decision:
 
 - Mode: draft
@@ -340,6 +350,10 @@ Changelog decision:
   additional separate entry is needed for targeted PlaneShape and
   ConvexMeshShape writer diagnostics because they harden the same conservative
   SDF writer unsupported-resource contract before the implementation PR exists.
+  No additional separate entry is needed for sdformat-authored SDF presence
+  checks because this is an internal parser hardening that preserves existing
+  authored/default behavior while replacing child-existence probing with
+  sdformat explicit-authored metadata.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

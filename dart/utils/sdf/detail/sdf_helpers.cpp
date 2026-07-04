@@ -50,19 +50,20 @@ namespace dart::utils::SdfParser::detail {
 
 namespace {
 
-sdf::ParamPtr getChildValueParam(
+sdf::ElementPtr findChildElement(
     const ElementPtr& parentElement, std::string_view name)
 {
   if (!parentElement || name.empty()) {
     return nullptr;
   }
 
-  const std::string nameString(name);
-  if (!parentElement->HasElement(nameString)) {
-    return nullptr;
-  }
+  return parentElement->FindElement(std::string(name));
+}
 
-  const auto child = parentElement->GetElement(nameString);
+sdf::ParamPtr getChildValueParam(
+    const ElementPtr& parentElement, std::string_view name)
+{
+  const auto child = findChildElement(parentElement, name);
   if (!child) {
     return nullptr;
   }
@@ -101,21 +102,18 @@ Eigen::Isometry3d poseToIsometry(const gz::math::Pose3d& pose)
 
 bool hasElement(const ElementPtr& parent, std::string_view name)
 {
-  return parent && !name.empty() && parent->HasElement(std::string(name));
+  return findChildElement(parent, name) != nullptr;
+}
+
+bool hasAuthoredElement(const ElementPtr& parent, std::string_view name)
+{
+  const auto child = findChildElement(parent, name);
+  return child && child->GetExplicitlySetInFile();
 }
 
 ElementPtr getElement(const ElementPtr& parent, std::string_view name)
 {
-  if (!parent || name.empty()) {
-    return nullptr;
-  }
-
-  const std::string nameString(name);
-  if (!parent->HasElement(nameString)) {
-    return nullptr;
-  }
-
-  return parent->GetElement(nameString);
+  return findChildElement(parent, name);
 }
 
 unsigned int getValueUInt(
