@@ -365,7 +365,8 @@
 
   * Preserve every protected `release-*` post-merge CI run by giving
     release-branch workflow runs a run-specific concurrency group instead of
-    relying on GitHub's single-pending default concurrency queue.
+    relying on GitHub's single-pending default concurrency queue:
+    [#3233](https://github.com/dartsim/dart/pull/3233)
 
   * Stop the coverage CI job from running the full test suite twice (the
     `coverage-report` Pixi task re-ran `build-coverage` through `depends-on`) and
