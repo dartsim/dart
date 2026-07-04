@@ -14,16 +14,17 @@ on:
     types:
       - completed
   workflow_dispatch:
-    inputs:
-      deploy:
-        description: Deploy the packaged gh-pages artifact
-        type: boolean
-        default: false
 
 permissions:
   contents: read
   pages: write
   id-token: write
+
+concurrency:
+  group: github-pages-deploy
+  cancel-in-progress: >-
+    ${{ github.event_name != 'workflow_run'
+    || github.event.workflow_run.conclusion == 'success' }}
 
 jobs:
   package:
@@ -131,15 +132,8 @@ jobs:
 
   deploy:
     name: Deploy gh-pages site
-    if: >-
-      needs.package.result == 'success'
-      && (github.event_name == 'workflow_run'
-      || (github.event_name == 'workflow_dispatch' && inputs.deploy)
-      )
+    if: needs.package.result == 'success'
     needs: package
-    concurrency:
-      group: github-pages-deploy
-      cancel-in-progress: true
     runs-on: [self-hosted, Linux, X64, dartsim, docker]
     environment:
       name: github-pages
