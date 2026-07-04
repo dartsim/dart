@@ -1357,6 +1357,13 @@ bool computeUnconstrainedMultibodyVelocityInto(
       if (servoActuated && hasEffortLimits) {
         lo = jointModel.limits.effortLower[local] * timeStep;
         hi = jointModel.limits.effortUpper[local] * timeStep;
+        DART_SIMULATION_THROW_T_IF(
+            (std::isfinite(lo) && lo > 0.0) || (std::isfinite(hi) && hi < 0.0),
+            InvalidOperationException,
+            "Servo actuator effort limits must include zero before the "
+            "boxed velocity solve; got [{}, {}] after scaling by dt",
+            lo,
+            hi);
         if (std::isfinite(lo) || std::isfinite(hi)) {
           anyFiniteServoBound = true;
         }
@@ -1399,7 +1406,7 @@ bool computeUnconstrainedMultibodyVelocityInto(
       // impulse while free (Velocity/Locked) coordinates still reach their
       // targets exactly. Velocity/Locked-only worlds keep the SPD solve below,
       // so this path never perturbs the existing equality-actuator behavior.
-      scratch.velocityConstraintLambda.resize(k);
+      scratch.velocityConstraintLambda.setZero(k);
       scratch.velocityConstraintFindex.setConstant(k, -1);
       const Eigen::Map<const Eigen::VectorXd> lo(
           scratch.constrainedLo.data(), k);

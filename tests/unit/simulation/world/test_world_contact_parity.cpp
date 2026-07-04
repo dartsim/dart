@@ -46,6 +46,7 @@
 #include <dart/simulation/body/collision_shape.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
+#include <dart/simulation/common/exceptions.hpp>
 #include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/world.hpp>
 
@@ -549,7 +550,8 @@ struct ServoRun
   double massDof = 0.0;
 };
 
-static ServoRun runServo(const ServoCase& c)
+static ServoRun runServoWithEffortLimits(
+    const ServoCase& c, double effortLower, double effortUpper)
 {
   // Gravity-free so the servo's motor is the only thing driving the joint.
   sx::World world;
@@ -578,8 +580,8 @@ static ServoRun runServo(const ServoCase& c)
   joint.setActuatorType(sx::ActuatorType::Servo);
   joint.setCommandVelocity(Eigen::VectorXd::Constant(1, c.commandedVelocity));
   joint.setEffortLimits(
-      Eigen::VectorXd::Constant(1, -c.effortLimit),
-      Eigen::VectorXd::Constant(1, c.effortLimit));
+      Eigen::VectorXd::Constant(1, effortLower),
+      Eigen::VectorXd::Constant(1, effortUpper));
 
   world.enterSimulationMode();
   const double massDof = robot.getMassMatrix()(0, 0);
@@ -589,6 +591,11 @@ static ServoRun runServo(const ServoCase& c)
       .velocity = joint.getVelocity()[0],
       .massDof = massDof,
   };
+}
+
+static ServoRun runServo(const ServoCase& c)
+{
+  return runServoWithEffortLimits(c, -c.effortLimit, c.effortLimit);
 }
 
 } // namespace
@@ -887,6 +894,26 @@ TEST(ContactParity, ServoActuatorSaturatesAtEffortLimit)
       << "Effort-limited servo should not reach the commanded velocity";
   // The implied motor force is exactly the effort limit.
   EXPECT_NEAR(run.velocity * run.massDof / c.timeStep, c.effortLimit, 1e-9);
+}
+
+//==============================================================================
+// Test: Servo rejects one-sided effort limits
+//
+// The boxed-LCP servo solve starts from zero motor impulse, so supported effort
+// bounds must include zero. One-sided public effort ranges are valid joint
+// limits in general, but Servo must reject them before entering Dantzig.
+//==============================================================================
+TEST(ContactParity, ServoActuatorRejectsOneSidedEffortLimits)
+{
+  ServoCase c;
+  c.commandedVelocity = 1.0;
+  c.timeStep = 0.001;
+  c.steps = 1;
+
+  EXPECT_THROW(
+      runServoWithEffortLimits(c, 1.0, 10.0), sx::InvalidOperationException);
+  EXPECT_THROW(
+      runServoWithEffortLimits(c, -10.0, -1.0), sx::InvalidOperationException);
 }
 
 //==============================================================================
