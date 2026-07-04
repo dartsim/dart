@@ -1220,6 +1220,66 @@ sx::DeformableBodyOptions makeFemCubeBody(
 }
 
 //==============================================================================
+// A solid cellsPerSide^3 FEM cube, unpinned and started just above the ground
+// barrier top (z == 0). Above cellsPerSide == 2 it exceeds the dense-direct DoF
+// cap, so the built-in solve uses the iterative path -- the scaled contact
+// fixture behind the matrix-free-vs-sparse-CG parity regression.
+sx::DeformableBodyOptions makeFemContactCubeGridBody(
+    int cellsPerSide, double youngsModulus)
+{
+  const int cells = std::max(cellsPerSide, 1);
+  const int n = cells + 1;
+  constexpr double h = 0.04;
+  constexpr double kGroundGap = 0.02;
+  const auto nodeIndex = [&](int i, int j, int k) {
+    return static_cast<std::size_t>(i + n * (j + n * k));
+  };
+
+  sx::DeformableBodyOptions options;
+  options.material.density = 1.0e3;
+  options.material.youngsModulus = youngsModulus;
+  options.material.poissonRatio = 0.3;
+  options.material.useFiniteElementElasticity = true;
+
+  for (int k = 0; k < n; ++k) {
+    for (int j = 0; j < n; ++j) {
+      for (int i = 0; i < n; ++i) {
+        options.positions.push_back(
+            Eigen::Vector3d(i * h, j * h, kGroundGap + k * h));
+      }
+    }
+  }
+
+  static constexpr int kCubeTets[6][4]
+      = {{0, 1, 3, 7},
+         {0, 3, 2, 7},
+         {0, 2, 6, 7},
+         {0, 6, 4, 7},
+         {0, 4, 5, 7},
+         {0, 5, 1, 7}};
+  for (int ck = 0; ck < cells; ++ck) {
+    for (int cj = 0; cj < cells; ++cj) {
+      for (int ci = 0; ci < cells; ++ci) {
+        std::array<std::size_t, 8> corner{};
+        for (int b = 0; b < 8; ++b) {
+          corner[static_cast<std::size_t>(b)] = nodeIndex(
+              ci + (b & 1), cj + ((b >> 1) & 1), ck + ((b >> 2) & 1));
+        }
+        for (const auto& tet : kCubeTets) {
+          options.tetrahedra.push_back(
+              sx::DeformableTetrahedron{
+                  corner[static_cast<std::size_t>(tet[0])],
+                  corner[static_cast<std::size_t>(tet[1])],
+                  corner[static_cast<std::size_t>(tet[2])],
+                  corner[static_cast<std::size_t>(tet[3])]});
+        }
+      }
+    }
+  }
+  return options;
+}
+
+//==============================================================================
 // A volumetric FEM cube dropped onto a static ground barrier settles on the
 // barrier surface intersection-free: gravity pulls it down, the IPC clamped-log
 // ground barrier catches it (no node crosses the ground top), and the stable
@@ -4365,6 +4425,116 @@ TEST(DeformableBody, MatrixFreeLinearSolverMatchesSolversOnGroundContact)
     ASSERT_TRUE(matrixFree.positions[i].allFinite());
     expectVectorNear(sparseCg.positions[i], direct.positions[i], 1e-4);
     expectVectorNear(matrixFree.positions[i], direct.positions[i], 1e-4);
+  }
+}
+
+//==============================================================================
+// Scaled contact parity: a mid-size FEM cube (64 nodes = 192 DoF, above the
+// dense-direct DoF cap, so the built-in solve never takes the direct path)
+// settling on a ground barrier reaches the same equilibrium under sparse
+// incomplete-Cholesky CG and matrix-free block-Jacobi CG. This is the scaled
+// evidence behind a future automatic matrix-free selection: as the contact mesh
+// grows past where a dense direct solve is viable, the matrix-free path must
+// still match the sparse-CG reference and keep zero assembled-Hessian
+// footprint.
+TEST(DeformableBody, MatrixFreeLinearSolverMatchesSparseCgOnScaledGroundContact)
+{
+  struct CubeRun
+  {
+    std::vector<Eigen::Vector3d> positions;
+    std::size_t cgSolves = 0;
+    std::size_t matrixFreeSolves = 0;
+    std::size_t numericFactorizations = 0;
+    std::size_t hessianNonZeros = 0;
+    std::size_t hessianStorageBytes = 0;
+    double minZ = std::numeric_limits<double>::infinity();
+  };
+
+  const auto runCube = [](bool matrixFree) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.004);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+    setGroundBarrierPolicy(ground); // top face at z = 0
+
+    // cellsPerSide == 3 -> 64 nodes = 192 DoF, above the 128-DoF dense-direct
+    // cap, so both runs take the sparse iterative path (no direct fallback).
+    auto options = makeFemContactCubeGridBody(3, 1.5e5);
+    options.material.useIterativeLinearSolver = !matrixFree;
+    options.material.useMatrixFreeLinearSolver = matrixFree;
+    auto body = world.addDeformableBody("contact_cube", options);
+
+    compute::SequentialExecutor executor;
+    compute::DeformableDynamicsStage stage;
+    compute::WorldStepPipeline pipeline;
+    pipeline.addStage(stage);
+
+    CubeRun run;
+    // 80 steps is enough to drop the cube, engage the stiff ground barrier, and
+    // settle; the barrier holds every step, so the intersection-free and parity
+    // assertions do not need a longer, slower run.
+    for (int i = 0; i < 80; ++i) {
+      world.step(executor, pipeline);
+      const auto& stats = stage.getLastStats();
+      run.cgSolves += stats.projectedNewtonIterativeSolves;
+      run.matrixFreeSolves += stats.projectedNewtonMatrixFreeSolves;
+      run.numericFactorizations += stats.projectedNewtonNumericFactorizations;
+      run.hessianNonZeros
+          = std::max(run.hessianNonZeros, stats.projectedNewtonHessianNonZeros);
+      run.hessianStorageBytes = std::max(
+          run.hessianStorageBytes, stats.projectedNewtonHessianStorageBytes);
+    }
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      run.positions.push_back(body.getPosition(i));
+      run.minZ = std::min(run.minZ, body.getPosition(i).z());
+    }
+    return run;
+  };
+
+  const CubeRun sparseCg = runCube(/*matrixFree=*/false);
+  const CubeRun matrixFree = runCube(/*matrixFree=*/true);
+
+  // Both take the sparse iterative path (mesh is above the dense-direct cap):
+  // neither factorizes; sparse CG assembles a Hessian while matrix-free does
+  // not.
+  EXPECT_GT(sparseCg.cgSolves, 0u);
+  EXPECT_EQ(sparseCg.numericFactorizations, 0u);
+  EXPECT_GT(sparseCg.hessianNonZeros, 0u);
+  EXPECT_GT(sparseCg.hessianStorageBytes, 0u);
+
+  EXPECT_GT(matrixFree.cgSolves, 0u);
+  EXPECT_EQ(matrixFree.cgSolves, matrixFree.matrixFreeSolves);
+  EXPECT_EQ(matrixFree.numericFactorizations, 0u);
+  EXPECT_EQ(matrixFree.hessianNonZeros, 0u);
+  EXPECT_EQ(matrixFree.hessianStorageBytes, 0u);
+
+  // Both settle intersection-free on the barrier (no node crosses z = 0).
+  EXPECT_GE(sparseCg.minZ, -1e-3);
+  EXPECT_GE(matrixFree.minZ, -1e-3);
+  // ...and both genuinely descend into the barrier activation band (the cube
+  // engages contact rather than free-floating above it), so this is a real
+  // contact-heavy solve, not an elasticity-only one. The cube starts with its
+  // bottom face at z = 0.02 (kGroundGap); settling well below that confirms it
+  // dropped onto and pressed into the barrier.
+  EXPECT_LT(sparseCg.minZ, 0.015);
+  EXPECT_LT(matrixFree.minZ, 0.015);
+
+  // The two preconditioners reach the same settled configuration. Both solve
+  // the same linear system to the same CG residual tolerance each Newton
+  // iteration, so they agree to near machine precision (observed max delta
+  // ~2e-10 over the run); 1e-5 stays comfortably non-flaky while still catching
+  // any genuine matrix-free-vs-sparse-CG divergence (which would be mm-scale).
+  ASSERT_EQ(sparseCg.positions.size(), matrixFree.positions.size());
+  for (std::size_t i = 0; i < sparseCg.positions.size(); ++i) {
+    ASSERT_TRUE(sparseCg.positions[i].allFinite());
+    ASSERT_TRUE(matrixFree.positions[i].allFinite());
+    expectVectorNear(matrixFree.positions[i], sparseCg.positions[i], 1e-5);
   }
 }
 

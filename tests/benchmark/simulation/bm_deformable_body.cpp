@@ -327,6 +327,76 @@ sx::DeformableBodyOptions makeFemCubeOptions(
 }
 
 //==============================================================================
+// A solid cellsPerSide^3 FEM cube, unpinned and started just above a static
+// ground barrier (top face at z == 0). Under gravity it drops and settles on
+// the barrier, so the projected-Newton solve is dominated by the near-singular
+// clamped-log barrier Hessian on the contacting bottom nodes -- the stiff,
+// ill-conditioned regime where the matrix-free block-Jacobi preconditioner and
+// the sparse incomplete-Cholesky preconditioner diverge in CG iterations and
+// per-step cost. This is the contact-heavy fixture behind the matrix-free vs
+// sparse-CG crossover benchmarks; the crossover it measures (per-step time, CG
+// iterations, and fallbacks-to-steepest-descent as the mesh scales) is the
+// evidence a future automatic large-mesh matrix-free selection policy needs.
+sx::DeformableBodyOptions makeFemContactCubeOptions(
+    int cellsPerSide, bool useIterativeSolver, bool useMatrixFreeSolver = false)
+{
+  const int cells = std::max(cellsPerSide, 1);
+  const int n = cells + 1;
+  constexpr double h = 0.04;
+  // Bottom face starts one small gap above the barrier top (z == 0) so the
+  // first steps drive it into the activation band.
+  constexpr double kGroundGap = 0.02;
+
+  sx::DeformableBodyOptions options;
+  options.material.density = 1.0e3;
+  options.material.youngsModulus = 1.5e5;
+  options.material.poissonRatio = 0.3;
+  options.material.useFiniteElementElasticity = true;
+  options.material.useIterativeLinearSolver = useIterativeSolver;
+  options.material.useMatrixFreeLinearSolver = useMatrixFreeSolver;
+
+  for (int k = 0; k < n; ++k) {
+    for (int j = 0; j < n; ++j) {
+      for (int i = 0; i < n; ++i) {
+        options.positions.push_back(
+            Eigen::Vector3d(i * h, j * h, kGroundGap + k * h));
+      }
+    }
+  }
+
+  const auto nodeIndex = [&](int i, int j, int k) {
+    return static_cast<std::size_t>(i + n * (j + n * k));
+  };
+  static constexpr int kCubeTets[6][4]
+      = {{0, 1, 3, 7},
+         {0, 3, 2, 7},
+         {0, 2, 6, 7},
+         {0, 6, 4, 7},
+         {0, 4, 5, 7},
+         {0, 5, 1, 7}};
+  for (int ck = 0; ck < cells; ++ck) {
+    for (int cj = 0; cj < cells; ++cj) {
+      for (int ci = 0; ci < cells; ++ci) {
+        std::array<std::size_t, 8> corner{};
+        for (int b = 0; b < 8; ++b) {
+          corner[static_cast<std::size_t>(b)] = nodeIndex(
+              ci + (b & 1), cj + ((b >> 1) & 1), ck + ((b >> 2) & 1));
+        }
+        for (const auto& tet : kCubeTets) {
+          options.tetrahedra.push_back(
+              {corner[static_cast<std::size_t>(tet[0])],
+               corner[static_cast<std::size_t>(tet[1])],
+               corner[static_cast<std::size_t>(tet[2])],
+               corner[static_cast<std::size_t>(tet[3])]});
+        }
+      }
+    }
+  }
+  // No fixed nodes: the cube is free to fall and rest on the ground barrier.
+  return options;
+}
+
+//==============================================================================
 struct DeformableGridWorld
 {
   DeformableGridWorld(int columns, int rows, bool withGround)
@@ -1271,6 +1341,43 @@ struct DeformableFemCubeWorld
 };
 
 //==============================================================================
+struct DeformableFemContactCubeWorld
+{
+  DeformableFemContactCubeWorld(
+      int cellsPerSide,
+      bool useIterativeSolver,
+      bool useMatrixFreeSolver = false)
+  {
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+    setGroundBarrierPolicy(ground); // top face at z = 0
+
+    body = world.addDeformableBody(
+        "contact_cube",
+        makeFemContactCubeOptions(
+            cellsPerSide, useIterativeSolver, useMatrixFreeSolver));
+    nodeCount = body.getNodeCount();
+    tetrahedronCount = body.getTetrahedronCount();
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      totalMass += body.getMass(i);
+    }
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setTimeStep(0.004);
+    world.enterSimulationMode();
+  }
+
+  sx::World world;
+  sx::DeformableBody body;
+  std::size_t nodeCount = 0;
+  std::size_t tetrahedronCount = 0;
+  double totalMass = 0.0;
+};
+
+//==============================================================================
 // Steps a chunky cellsPerSide^3 FEM cube and records the per-step cost and
 // Newton-iteration count. The cube is run with both the sparse Cholesky direct
 // solve (BM_DeformableCube3dDirectStep) and the incomplete-Cholesky
@@ -1346,6 +1453,80 @@ void BM_DeformableCube3dCgStep(benchmark::State& state)
 void BM_DeformableCube3dMatrixFreeCgStep(benchmark::State& state)
 {
   BM_DeformableCube3dStep(
+      state, /*useIterativeSolver=*/false, /*useMatrixFreeSolver=*/true);
+}
+
+//==============================================================================
+// Contact-heavy matrix-free-vs-sparse-CG crossover: an unpinned FEM cube
+// settles on a static ground barrier, so the projected-Newton solve is
+// dominated by the stiff clamped-log barrier Hessian. Running the same scene
+// under sparse incomplete-Cholesky CG and matrix-free block-Jacobi CG at
+// increasing cube resolutions makes their per-step time, CG iterations, and
+// fallbacks-to-steepest-descent directly comparable on contact -- the evidence
+// a future automatic large-mesh matrix-free selection policy needs. Neither
+// path is the default (both are opt-in), so this measures without changing any
+// production selection.
+void BM_DeformableContactCubeStep(
+    benchmark::State& state, bool useIterativeSolver, bool useMatrixFreeSolver)
+{
+  const auto cellsPerSide = static_cast<int>(state.range(0));
+  DeformableFemContactCubeWorld fixture(
+      cellsPerSide, useIterativeSolver, useMatrixFreeSolver);
+
+  double totalNewtonIterations = 0.0;
+  double totalCgIterations = 0.0;
+  double totalMatrixFreeSolves = 0.0;
+  double totalFallbacks = 0.0;
+  double maxCgError = 0.0;
+  std::size_t maxHessianNonZeros = 0;
+  std::size_t maxHessianStorageBytes = 0;
+  for (auto _ : state) {
+    fixture.world.step();
+    const auto& diagnostics
+        = fixture.world.getLastDeformableSolverDiagnostics();
+    totalNewtonIterations += static_cast<double>(diagnostics.solverIterations);
+    totalCgIterations
+        += static_cast<double>(diagnostics.projectedNewtonIterativeIterations);
+    totalMatrixFreeSolves
+        += static_cast<double>(diagnostics.projectedNewtonMatrixFreeSolves);
+    totalFallbacks += static_cast<double>(diagnostics.projectedNewtonFallbacks);
+    maxCgError
+        = std::max(maxCgError, diagnostics.projectedNewtonIterativeMaxError);
+    maxHessianNonZeros = std::max(
+        maxHessianNonZeros, diagnostics.projectedNewtonHessianNonZeros);
+    maxHessianStorageBytes = std::max(
+        maxHessianStorageBytes, diagnostics.projectedNewtonHessianStorageBytes);
+    benchmark::DoNotOptimize(
+        fixture.body.getPosition(fixture.nodeCount - 1u).z());
+  }
+
+  const auto steps = static_cast<double>(state.iterations());
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["tetrahedra"] = static_cast<double>(fixture.tetrahedronCount);
+  state.counters["total_mass"] = fixture.totalMass;
+  state.counters["newton_iters_per_step"] = totalNewtonIterations / steps;
+  state.counters["cg_iters_per_step"] = totalCgIterations / steps;
+  state.counters["matrix_free_solves_per_step"] = totalMatrixFreeSolves / steps;
+  // Steepest-descent fallbacks per step: the key convergence-regression signal
+  // when a preconditioner cannot carry the stiff-contact solve within the cap.
+  state.counters["fallbacks_per_step"] = totalFallbacks / steps;
+  state.counters["cg_max_error"] = maxCgError;
+  state.counters["hessian_nonzeros"] = static_cast<double>(maxHessianNonZeros);
+  state.counters["hessian_storage_bytes"]
+      = static_cast<double>(maxHessianStorageBytes);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+void BM_DeformableContactCubeCgStep(benchmark::State& state)
+{
+  BM_DeformableContactCubeStep(
+      state, /*useIterativeSolver=*/true, /*useMatrixFreeSolver=*/false);
+}
+
+void BM_DeformableContactCubeMatrixFreeCgStep(benchmark::State& state)
+{
+  BM_DeformableContactCubeStep(
       state, /*useIterativeSolver=*/false, /*useMatrixFreeSolver=*/true);
 }
 
@@ -1847,6 +2028,14 @@ BENCHMARK(BM_DeformableMatrixFreeCgBarStep)->Arg(2)->Arg(8)->Arg(24);
 BENCHMARK(BM_DeformableCube3dDirectStep)->Arg(4)->Arg(6)->Arg(8)->Arg(10);
 BENCHMARK(BM_DeformableCube3dCgStep)->Arg(4)->Arg(6)->Arg(8)->Arg(10);
 BENCHMARK(BM_DeformableCube3dMatrixFreeCgStep)->Arg(4)->Arg(6)->Arg(8);
+// Contact-heavy crossover: same ground-contact cube under sparse IC-CG and
+// matrix-free block-Jacobi CG at increasing resolutions (27/64/125/216 nodes).
+BENCHMARK(BM_DeformableContactCubeCgStep)->Arg(2)->Arg(3)->Arg(4)->Arg(5);
+BENCHMARK(BM_DeformableContactCubeMatrixFreeCgStep)
+    ->Arg(2)
+    ->Arg(3)
+    ->Arg(4)
+    ->Arg(5);
 
 // The 32x16 (512-node) and 48x24 (1152-node) grids exceed the former 256-node
 // dense-solve cap, so they exercise the sparse projected-Newton path; compare
