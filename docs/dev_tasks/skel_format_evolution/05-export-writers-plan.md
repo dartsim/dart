@@ -26,8 +26,8 @@ before SDF 1.10 and modern `<screw_thread_pitch>` for SDF 1.10+),
 topology-only ball child joints, SDF 1.11+ mimic metadata for axis/axis2
 follower joints with motor
 enforcement, explicit parent-world root joints for supported SDF joint types
-(revolute, prismatic, screw, universal, and topology-only ball), link gravity
-mode, inertial parameters, local joint/shape poses,
+(revolute, continuous, prismatic, screw, universal, and topology-only ball),
+link gravity mode, inertial parameters, local joint/shape poses,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry,
 visual shadow state as SDF `<cast_shadows>`, hidden visual state as zero-valued
 SDF `<visibility_flags>`, visual alpha as SDF `<transparency>`, explicit visual

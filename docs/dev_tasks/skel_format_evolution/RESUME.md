@@ -38,8 +38,9 @@ box/sphere/cylinder/capsule/cone/ellipsoid/mesh geometry, link gravity mode,
 passive joint dynamics metadata (damping, Coulomb friction, spring reference,
 and spring stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
 axis/axis2 mimic metadata with motor enforcement, explicit parent-world root
-joints for supported SDF joint types, topology-only ball child joints, local
-root/joint/shape poses, visual shadow/hidden state, explicit
+joints for supported SDF joint types including continuous revolute roots,
+topology-only ball child joints, local root/joint/shape poses, visual
+shadow/hidden state, explicit
 visual material colors, PBR metallic/roughness factors, collision-surface
 contact disable bitmasks, visual transparency, zero-threshold bounce
 restitution, ODE friction
@@ -360,9 +361,14 @@ Additional validation for direct SDF writer patch traversal:
 - `pixi run lint`
 - `pixi run build`
 
-Additional validation for explicit parent-world root joint writing:
+Additional validation for explicit parent-world root joint writing, including
+continuous revolute roots:
 
+- `git diff --check`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run lint`
+- `pixi run build`
 
 Changelog decision:
 
@@ -466,7 +472,8 @@ Changelog decision:
   No additional separate entry is needed for explicit parent-world root joint
   writing because it broadens the same conservative SDF writer capability before
   the implementation PR exists; the existing DART 7 IO and Parsing bullet now
-  includes explicit parent-world root joints for supported SDF joint types.
+  includes explicit parent-world root joints for supported SDF joint types,
+  including continuous revolute roots.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

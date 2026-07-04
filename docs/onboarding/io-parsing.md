@@ -156,7 +156,7 @@ sdformat; DART owns the `Skeleton`-to-SDF semantic mapping and diagnostics.
 
 The initial writer covers BodyNode links, root FreeJoint/WeldJoint placement,
 explicit parent-world root joints for supported SDF joint types (revolute,
-prismatic, screw, universal, and topology-only ball), and
+continuous, prismatic, screw, universal, and topology-only ball), and
 revolute/continuous/prismatic/weld/screw/universal child joints with passive
 dynamics metadata (damping, Coulomb friction, spring reference, and spring
 stiffness), sdformat-normalized screw thread pitch (legacy `<thread_pitch>`
