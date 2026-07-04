@@ -215,6 +215,11 @@ compatibility remains on the active DART 6 LTS branch._
   metallic/roughness factors, and collision surface contact disable bitmasks,
   zero-threshold bounce restitution, and ODE friction/slip metadata while
   reporting unsupported constructs explicitly.
+- Added a conservative URDF writer for `Skeleton` round-trips that fit URDF's
+  tree model, covering one-root link trees, root FreeJoint/WeldJoint metadata,
+  revolute/prismatic/fixed child joints, inertial data, local visual/collision
+  poses, primitive geometry, absolute-URI meshes, visual colors, and explicit
+  diagnostics for unsupported or lossy DART constructs.
 - Improved mesh and asset import behavior across convex meshes, polygon meshes,
   Collada scaling, GLTF PBR materials, empty mesh URIs, and sample robot data.
 

@@ -130,6 +130,18 @@ contracts that sdformat normalizes semantically, such as legacy
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.
 
+The next implementation slice adds
+`dart::utils::UrdfParser::tryWriteSkeletonToString()`, a parser-specific URDF
+writer for robot-link trees that fit URDF's model constraints. It writes one
+root tree with root FreeJoint/WeldJoint metadata that URDF can preserve, child
+revolute/prismatic/fixed joints whose child link frame coincides with the joint
+frame, inertial data, local visual/collision poses, box/sphere/cylinder and
+absolute-URI mesh geometry, visual colors, and visual/collision include
+options. `INTEGRATION_io_UrdfWriter` validates a write/read/read round-trip for
+that subset and covers explicit diagnostics for multiple root trees, unsupported
+joint families, non-identity child joint frames, and unbounded finite-requiring
+URDF limits. This first URDF slice also does not complete Phase 5.
+
 ## Decision
 
 Phase 5 should be implemented as a separate round-trip effort, not as a SKEL
@@ -143,7 +155,9 @@ replacement. The accepted writer scope is:
    and the dartsim scene model. Current durable GUI docs lean toward JSON for
    tooling simplicity; YAML remains rejected unless a later durable owner
    accepts a versioned schema and round-trip contract.
-3. **URDF writer** for robot-link trees that fit URDF's model constraints.
+3. **URDF writer** for robot-link trees that fit URDF's model constraints. The
+   first parser-specific writer slice is in place; broader URDF coverage remains
+   open.
 4. **MJCF/USD writers** only after their read-side semantics are mature enough
    in DART to define a truthful round-trip contract.
 
@@ -201,7 +215,10 @@ Phase 5 is complete only when code and tests prove the writer contract:
   contact bitmask, zero-threshold bounce restitution, and ODE friction/slip,
   destination-aware resource rewriting, or other world-level data beyond
   gravity round-trip correctly.
-- Decide the next implementation target: URDF writer or PLAN-101 project
-  save/load.
+- Extend the URDF writer beyond the first conservative subset only when tests
+  can prove additional URDF-representable constructs round-trip without losing
+  DART semantics.
+- Decide the next implementation target after the first URDF slice: broader
+  URDF coverage, more SDF coverage, or PLAN-101 project save/load.
 - Keep YAML out of the first implementation target unless a durable
   project/scene schema is accepted first.

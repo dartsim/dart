@@ -194,6 +194,9 @@ if(TARGET dart-utils-urdf)
   if(NOT MSVC)
     dart_add_test("integration" INTEGRATION_io_UrdfParser io/test_urdf_parser.cpp)
     target_link_libraries(INTEGRATION_io_UrdfParser dart-utils-urdf)
+
+    dart_add_test("integration" INTEGRATION_io_UrdfWriter io/test_urdf_writer.cpp)
+    target_link_libraries(INTEGRATION_io_UrdfWriter dart-utils-urdf)
   endif()
 
   # Additional IO tests

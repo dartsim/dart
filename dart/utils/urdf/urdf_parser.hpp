@@ -44,6 +44,7 @@
 
 #include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/resource_retriever.hpp>
+#include <dart/common/result.hpp>
 #include <dart/common/uri.hpp>
 
 #include <Eigen/Core>
@@ -126,6 +127,16 @@ public:
     std::vector<TransmissionInfo> mTransmissions;
   };
 
+  /// Options for serializing a Skeleton to URDF.
+  struct DART_UTILS_URDF_API WriteOptions
+  {
+    /// Include ShapeNodes with VisualAspect as <visual> entries.
+    bool includeVisuals{true};
+
+    /// Include ShapeNodes with CollisionAspect as <collision> entries.
+    bool includeCollisions{true};
+  };
+
   /// Returns options
   const Options& getOptions() const;
 
@@ -157,6 +168,21 @@ public:
   /// Parse a text string to produce a Skeleton
   dynamics::SkeletonPtr parseSkeletonString(
       std::string_view urdfString, const common::Uri& baseUri);
+
+  /// Serialize a Skeleton to a URDF string.
+  ///
+  /// The first writer slice intentionally supports a conservative URDF tree:
+  /// one root link, root FreeJoint/WeldJoint placement that URDF can preserve,
+  /// child revolute/prismatic/fixed joints whose child link frame coincides
+  /// with the joint frame, inertial data, local visual/collision poses, and
+  /// box/sphere/cylinder/absolute-URI mesh geometry. Unsupported constructs
+  /// return an error instead of being silently dropped.
+  static common::Result<std::string, common::Error> tryWriteSkeletonToString(
+      const dynamics::Skeleton& skeleton);
+
+  /// Serialize a Skeleton to a URDF string with explicit writer options.
+  static common::Result<std::string, common::Error> tryWriteSkeletonToString(
+      const dynamics::Skeleton& skeleton, const WriteOptions& options);
 
 private:
   using BodyPropPtr = std::shared_ptr<dynamics::BodyNode::Properties>;

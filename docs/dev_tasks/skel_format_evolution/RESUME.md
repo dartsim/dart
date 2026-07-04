@@ -22,10 +22,10 @@ task.
 
 Phase 5 export-writer planning is recorded locally in
 [`05-export-writers-plan.md`](05-export-writers-plan.md). The plan keeps export
-as a separate implementation phase: choose SDF writer, URDF writer, or PLAN-101
-project save/load first; define deterministic resource handling and comparison
-helpers; and complete the phase only with writer APIs plus read/write/read
-tests. This planning record does not complete Phase 5.
+as a separate implementation phase: extend SDF/URDF writer coverage or choose
+PLAN-101 project save/load next; define deterministic resource handling and
+comparison helpers; and complete the phase only with writer APIs plus
+read/write/read tests. This planning record does not complete Phase 5.
 
 The first SDF writer implementation slice is now local on
 `work/skel-format-yaml-decision`: `dart::utils::SdfParser` exposes
@@ -77,8 +77,18 @@ ball-joint metadata, unsupported child `FreeJoint` diagnostics, unsupported
 `EulerJoint`, `PlanarJoint`, `TranslationalJoint2D`, and `TranslationalJoint`
 diagnostics, unsupported DART `SoftBodyNode` diagnostics, and non-finite joint
 dynamics diagnostics. This is real Phase 5 progress, but Phase 5 is still open
-until broader SDF coverage plus the remaining accepted writer targets are
-implemented or durably deferred.
+until broader SDF/URDF coverage plus the remaining accepted writer or project
+targets are implemented or durably deferred.
+
+The first URDF writer implementation slice is also local on
+`work/skel-format-yaml-decision`: `dart::utils::UrdfParser` exposes
+`tryWriteSkeletonToString()` for one-root URDF trees with root FreeJoint or
+WeldJoint metadata, child revolute/prismatic/fixed joints, inertial data, local
+visual/collision poses, box/sphere/cylinder/absolute-URI mesh geometry, visual
+colors, and visual/collision include options. `INTEGRATION_io_UrdfWriter`
+proves write/read/read round-trip for that subset and covers explicit
+diagnostics for multiple root trees, unsupported joint families, non-identity
+child joint frames, and unbounded finite-requiring URDF limits.
 
 The supported SDF geometry reader paths now load through libsdformat
 `sdf::Geometry` DOM objects before mapping sphere, box, cylinder, capsule,
@@ -1082,6 +1092,10 @@ Additional validation for SDF joint-axis effort/velocity limit IO:
 - `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfParser && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfParser --gtest_filter=SdfParser.JointAxisLimitsEffortAndDamping'`
 - `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsJointAxisVelocityAndEffortLimits:SdfWriter.AsymmetricJointVelocityLimitReturnsError:SdfWriter.AsymmetricJointForceLimitReturnsError:SdfWriter.NaNJointVelocityLimitReturnsError:SdfWriter.NaNJointForceLimitReturnsError'`
 
+Additional validation for first URDF writer slice:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter'`
+
 Changelog decision:
 
 - Mode: draft
@@ -1095,6 +1109,24 @@ Changelog decision:
 - Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing
 - Entry text: the existing conservative SDF writer bullet now includes
   symmetric effort/velocity limits; no separate bullet is needed.
+- PR-body note: N/A
+- Follow-up: add the implementation PR link after a PR exists and maintainer /
+  user approval allows the PR update or follow-up push.
+
+Changelog decision:
+
+- Mode: draft
+- Base evidence: `origin/main`
+- Scope evidence: focused diff in `dart/utils/urdf/urdf_parser.hpp`,
+  `dart/utils/urdf/urdf_writer.cpp`,
+  `tests/integration/io/test_urdf_writer.cpp`,
+  `tests/integration/CMakeLists.txt`, `docs/onboarding/io-parsing.md`,
+  `CHANGELOG.md`, and this SKEL evolution task folder
+- Decision: entry required as a new DART 7 URDF writer bullet because this adds
+  a public parser-owned export API
+- Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing
+- Entry text: the new conservative URDF writer bullet describes the supported
+  first tree subset and explicit diagnostics.
 - PR-body note: N/A
 - Follow-up: add the implementation PR link after a PR exists and maintainer /
   user approval allows the PR update or follow-up push.
@@ -1191,10 +1223,9 @@ remains `feature/remove-skel-dart7-phase2`.
 
 Continue with the remaining real task work: land Phase 2 after maintainer
 approval, then continue Phase 5 from
-[`05-export-writers-plan.md`](05-export-writers-plan.md) by extending SDF writer
-coverage beyond the current material, link, joint, geometry, mimic, pose, and
-resource subset or choosing the next accepted writer target (URDF or PLAN-101
-project save/load).
+[`05-export-writers-plan.md`](05-export-writers-plan.md) by extending SDF or
+URDF writer coverage beyond the current conservative subsets or choosing
+PLAN-101 project save/load.
 
 ## Context That Would Be Lost
 

@@ -135,11 +135,21 @@
       objects; literal XML substring checks are retained only for serialized
       schema element-name contracts that sdformat normalizes semantically, such
       as legacy `<thread_pitch>` versus modern `<screw_thread_pitch>`.
+      The first URDF writer slice is also implemented locally on
+      `dart::utils::UrdfParser::tryWriteSkeletonToString` for one-root URDF
+      trees with root FreeJoint/WeldJoint metadata, child
+      revolute/prismatic/fixed joints, inertial data, local visual/collision
+      poses, box/sphere/cylinder/absolute-URI mesh geometry, visual colors, and
+      visual/collision include options. `INTEGRATION_io_UrdfWriter` validates a
+      write/read/read subset and diagnostics for multiple root trees,
+      unsupported joint families, non-identity child joint frames, and
+      unbounded finite-requiring URDF limits.
       Writer APIs stay format-owned for now: the SDF writer remains on
-      `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor
-      save-load belongs to the scene/project layer. Broader SDF coverage, URDF
-      export, and project save/load remain open. Add YAML only if a durable
-      project/scene schema is accepted first.
+      `dart::utils::SdfParser`, the URDF writer remains on
+      `dart::utils::UrdfParser`, `dart::io` stays read-side, and project/editor
+      save-load belongs to the scene/project layer. Broader SDF/URDF coverage
+      and project save/load remain open. Add YAML only if a durable project/scene
+      schema is accepted first.
 
 ## Goal
 
@@ -216,17 +226,16 @@ SKEL-YAML direction just because the prototype once existed.
 1. Land the Phase 2 removal branch (`feature/remove-skel-dart7-phase2`) after
    review. Add the PR link to the DART 7 changelog entry before merge.
 2. Continue Phase 5 from
-   [`05-export-writers-plan.md`](05-export-writers-plan.md): extend SDF writer
-   coverage beyond the first conservative subset, decide the next writer target
-   (URDF or PLAN-101 project save/load), and keep read/write/read tests attached
-   to every expanded contract. Absolute non-file mesh URI preservation is
-   covered; targetless relative/generated mesh references are rejected until a
-   future file/project writer defines a destination URI and copy/rewrite policy.
-   Heightmap export also needs a source heightmap URI and destination-aware
-   resource policy before DART can use `sdf::Heightmap` DOM serialization.
-   Keep writer APIs format-owned unless a later multi-format write API is
-   reviewed. YAML can enter that slice only after a durable project/scene schema
-   is accepted.
+   [`05-export-writers-plan.md`](05-export-writers-plan.md): extend SDF or URDF
+   writer coverage beyond the first conservative subsets, or move to PLAN-101
+   project save/load, and keep read/write/read tests attached to every expanded
+   contract. Absolute non-file mesh URI preservation is covered; targetless
+   relative/generated mesh references are rejected until a future file/project
+   writer defines a destination URI and copy/rewrite policy. Heightmap export
+   also needs a source heightmap URI and destination-aware resource policy before
+   DART can use `sdf::Heightmap` DOM serialization. Keep writer APIs
+   format-owned unless a later multi-format write API is reviewed. YAML can
+   enter that slice only after a durable project/scene schema is accepted.
 
 ## Verification Gates
 
