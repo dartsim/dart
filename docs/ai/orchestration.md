@@ -85,11 +85,47 @@ For small direct changes, it may be implicit in the issue, prompt, and final
 verification evidence.
 
 If an orchestrator or executor cannot name the acceptance evidence before
-editing, the next step is a planning, clarification, or spike packet, not a
-best-effort implementation. If a choice would materially change public API,
+editing, the next step is a planning, clarification, or spike packet (see
+"Discovering unknowns before committing" below), not a best-effort
+implementation. If a choice would materially change public API,
 release compatibility, numerical correctness, benchmark claims, or roadmap
 scope, record an owner-local `Decision needed` block instead of silently
 choosing.
+
+## Discovering unknowns before committing
+
+Specification intake only works when the map matches the territory. Your plan,
+context, and prompts are the map; the real code, tests, and requirements are
+the territory, and the gap between them is the work's unknowns. Before authoring
+or claiming a substantial packet, spend effort converting consequential unknowns
+into knowns instead of encoding guesses into a plan. A packet built on
+unexplored territory is not ready, however precise its wording looks.
+
+Four DART-native methods, each usable without a specific AI tool:
+
+- **Blind-spot review** — an independent pass, in a different session than the
+  one drafting the work, that answers "what is missing, wrong, or unstated
+  here?" against the plan and the code it touches. This is the authoring/review
+  separation above applied before implementation; route it through
+  `dart-analyze` or a read-only reviewer.
+- **Throwaway spike** — a time-boxed prototype on a scratch branch whose output
+  is knowledge, not merged code. Use it to make the territory visible (does the
+  API allow this, where does the real scope land) before the plan hardens, then
+  fold the findings back into the packet and discard the spike.
+- **Requirements interview** — let the agent interview the maintainer to pull
+  out intent, constraints, and non-goals that were never written down, answering
+  the intake questions above from the human rather than from a guess. Reserve it
+  for consequential ambiguity; short instructions in a well-prepared repo need
+  no interview.
+- **Reference map** — ground the work in authoritative references (the
+  `docs/readthedocs/papers.md` catalog via `dart-references`, design docs, or an
+  existing baseline in the code) instead of reconstructing behavior from memory.
+
+Blind-spot review and reference map route through `dart-analyze` and
+`dart-references`; the throwaway spike and the requirements interview are
+intentionally manual (a scratch branch, a conversation) with no dedicated
+workflow. Prefer the lightest method that resolves the unknown, and record what
+it resolved as the packet's assumptions-and-open-decisions evidence.
 
 ## Sizing rules
 
@@ -166,7 +202,8 @@ How any session — human or agent — finds work and avoids collisions:
 - Scope mismatch: the executor stops and returns the packet with what was
   found; the orchestrator re-cuts it.
 - Gate failure the packet cannot explain: treat as a finding, not a fixup —
-  report back rather than patching around it.
+  report back rather than patching around it (the packet-scoped case of the
+  root-cause axiom in `docs/ai/principles.md`).
 - Conflicting instructions between a packet and an owner doc: the owner doc
   wins; report the conflict so the packet (or the doc) is corrected.
 - Anything touching shared state beyond the local clone follows the safety

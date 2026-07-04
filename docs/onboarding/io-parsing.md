@@ -53,6 +53,19 @@ This keeps the common-path API simple while preserving full capability for advan
 The unified API lives in `dart::io` (component library: `dart-io`). Adding new nested
 namespaces for each format is intentionally avoided.
 
+### OpenUSD (`.usda`) is an opt-in format
+
+`dart::io::ModelFormat::Usd` reads textual OpenUSD (`.usda`) stages through the
+same front door. It is **off by default**: the `dart/io/usd/` loader and its
+OpenUSD (pxr) dependency compile only when DART is built with
+`DART_BUILD_IO_USD=ON`. With the toggle off, `readSkeleton` returns a clean
+"USD support is not available" diagnostic, mirroring the SDF/URDF unavailable
+paths, and no OpenUSD dependency is required. `dart/io/usd/` is the one
+intentional snake_case module under `dart/io/` (it postdates the DART 7 snake_case
+migration). Binary Crate (`.usdc`) / packaged (`.usdz`) USD, richer
+USD/USDPhysics prim mapping, a Filament viewer example, and dartpy bindings are
+planned follow-ups; see `dart/io/usd/usd_parser.hpp` for the current scope.
+
 ## Key APIs
 
 - `dart::io::readSkeleton(const common::Uri&, const ReadOptions&)`

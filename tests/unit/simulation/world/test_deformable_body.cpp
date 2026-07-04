@@ -3611,6 +3611,12 @@ TEST(DeformableBody, SelfContactBarrierReportsConvergedContactDistance)
   EXPECT_LE(
       stats.convergedActiveContactCount,
       stats.selfContactBarrierActiveContacts);
+  // The peak single-iteration active-set size (the IPC Fig. 23 "max contacts
+  // per step" axis) is positive whenever self-contact is active, and it is one
+  // term of the cumulative sum so it never exceeds it.
+  EXPECT_GT(stats.maxActiveContactCount, 0u);
+  EXPECT_LE(
+      stats.maxActiveContactCount, stats.selfContactBarrierActiveContacts);
   // The reported closest approach reflects a genuine positive separation: the
   // surfaces are held apart, not pinned together.
   EXPECT_GT(minUpperTriangleHeight(body), 0.0);
@@ -3638,6 +3644,8 @@ TEST(
   const auto& stats = stage.getLastStats();
   EXPECT_EQ(stats.convergedActiveContactCount, 0u);
   EXPECT_EQ(stats.minActiveContactDistance, 0.0);
+  // With no active self-contact, the peak per-step contact load is also zero.
+  EXPECT_EQ(stats.maxActiveContactCount, 0u);
   // The surfaces remain well outside the activation band (d_hat = 2e-2).
   EXPECT_GT(minUpperTriangleHeight(body), 2e-2);
 }
