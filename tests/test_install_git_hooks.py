@@ -351,6 +351,40 @@ def test_guard_expands_git_c_env_var_paths_before_other_repo_skip(tmp_path):
     assert "would run" not in stderr
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        "cd docs && git -C .. commit -m x",
+        "cd docs; git -C .. commit -m x",
+        "cd docs\ngit -C .. commit -m x",
+        "cd docs && env -C .. git commit -m x",
+    ],
+)
+def test_guard_preserves_shell_cwd_for_relative_commit_paths(tmp_path, command):
+    repo, env = _init_repo(tmp_path)
+    (repo / "docs").mkdir()
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
+def test_guard_does_not_preserve_failed_cd_cwd_for_or_chain(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    (repo / "docs").mkdir()
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, f"cd docs || git -C {other} commit -m x")
+
+    assert returncode == 0
+    assert "would run" not in stderr
+
+
 def test_guard_runs_when_only_foreign_executable_hook_installed(tmp_path):
     repo, env = _init_repo(tmp_path)
     hook = _hook(repo)

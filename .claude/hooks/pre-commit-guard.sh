@@ -170,6 +170,14 @@ def is_hooks_path_override(option):
     return bool(sep) and key.lower() == "core.hookspath"
 
 
+def split_shell_segments(text):
+    pieces = re.split(r"(&&|\|\||[;|\n])", text)
+    for index in range(0, len(pieces), 2):
+        part = pieces[index]
+        separator = pieces[index + 1] if index + 1 < len(pieces) else ""
+        yield part, separator
+
+
 def env_config_has_hooks_path_override(env):
     try:
         count = int(env.get("GIT_CONFIG_COUNT", "0"))
@@ -191,11 +199,39 @@ def split_env_split_string(value):
         return []
 
 
-def shell_expand_path_token(value):
+def shell_expand_path_token(value, base_cwd=None):
     path, quote = strip_outer_quotes(value)
     if quote != "'\''":
         path = os.path.expandvars(path)
-    return os.path.expanduser(path)
+    path = os.path.expanduser(path)
+    if base_cwd and path and not os.path.isabs(path):
+        path = os.path.join(base_cwd, path)
+    return os.path.normpath(path)
+
+
+def shell_cd_target(tokens, i, current_cwd):
+    if i >= len(tokens) or tokens[i] != "cd":
+        return None
+    args = tokens[i + 1 :]
+    if args and args[0] == "--":
+        args = args[1:]
+    if len(args) > 1:
+        return None
+    if not args:
+        target = os.environ.get("HOME")
+        if not target:
+            return None
+    else:
+        target = args[0]
+    if target == "-":
+        return None
+    return shell_expand_path_token(target, current_cwd)
+
+
+def maybe_update_shell_cwd(tokens, i, current_cwd, separator, subshell_like):
+    if subshell_like or separator not in {"&&", ";", "\n"}:
+        return current_cwd
+    return shell_cd_target(tokens, i, current_cwd) or current_cwd
 
 
 def commit_args_disable_hooks(args):
@@ -216,8 +252,11 @@ def commit_args_disable_hooks(args):
 
 
 def is_git_commit(text):
-    for part in re.split(r"&&|\|\||[;|\n]", text):
-        part = part.strip().lstrip("({").strip()
+    current_cwd = os.getcwd()
+    for part, separator in split_shell_segments(text):
+        raw_part = part.strip()
+        subshell_like = raw_part.startswith("(")
+        part = raw_part.lstrip("({").strip()
         try:
             tokens = shlex.split(part)
         except ValueError:
@@ -252,12 +291,14 @@ def is_git_commit(text):
                         continue
                     if t in ENV_OPTS_WITH_ARG:
                         if t in {"-C", "--chdir"} and i + 1 < len(tokens):
-                            command_cwd = shell_expand_path_token(tokens[i + 1])
+                            command_cwd = shell_expand_path_token(
+                                tokens[i + 1], current_cwd
+                            )
                         i += 2
                         continue
                     if t.startswith(ENV_CHDIR_PREFIX):
                         command_cwd = shell_expand_path_token(
-                            t[len(ENV_CHDIR_PREFIX) :]
+                            t[len(ENV_CHDIR_PREFIX) :], current_cwd
                         )
                         i += 1
                         continue
@@ -287,6 +328,9 @@ def is_git_commit(text):
         if i >= len(tokens):
             continue
         if tokens[i].lstrip("\\") != "git":
+            current_cwd = maybe_update_shell_cwd(
+                tokens, i, current_cwd, separator, subshell_like
+            )
             continue
         i += 1
         target_dir = None
@@ -301,7 +345,9 @@ def is_git_commit(text):
                 continue
             if t in OPTS_WITH_ARG:
                 if t == "-C" and i + 1 < len(tokens):
-                    target_dir = shell_expand_path_token(tokens[i + 1])
+                    target_dir = shell_expand_path_token(
+                        tokens[i + 1], target_dir or command_cwd or current_cwd
+                    )
                 if t == "-c" and i + 1 < len(tokens):
                     option, _ = strip_outer_quotes(tokens[i + 1])
                     if is_hooks_path_override(option):
@@ -317,7 +363,7 @@ def is_git_commit(text):
                 continue
             break
         if not target_dir:
-            target_dir = command_cwd
+            target_dir = command_cwd or current_cwd
         if i < len(tokens) and tokens[i].rstrip(")}") == "commit":
             if env_config_has_hooks_path_override(command_env):
                 hooks_path_override = True
