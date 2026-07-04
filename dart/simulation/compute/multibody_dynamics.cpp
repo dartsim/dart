@@ -1177,12 +1177,27 @@ bool computeUnconstrainedMultibodyVelocityInto(
                       * jointState.velocity[local];
         }
         break;
+      case comps::ActuatorType::Locked:
+        // A locked joint is held rigidly by a velocity-level equality
+        // constraint (target velocity 0) solved after the unconstrained step,
+        // so no commanded effort or passive spring/damping force is applied to
+        // its coordinates: the constraint reaction supplies whatever holding
+        // force is required. The projected result is provably independent of
+        // any generalized force applied to a fully constrained coordinate, so
+        // zeroing here keeps the "kinematically prescribed" intent explicit and
+        // avoids computing forces the constraint would only cancel.
+        for (std::size_t d = 0; d < dof; ++d) {
+          const auto global
+              = static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d);
+          scratch.appliedForce[global] = 0.0;
+        }
+        break;
       default:
         DART_SIMULATION_THROW_T(
             InvalidOperationException,
             "Joint actuator type is not yet implemented in the "
             "articulated-body forward dynamics; supported types are Force, "
-            "Passive, and Velocity");
+            "Passive, Velocity, and Locked");
     }
   }
 
@@ -1265,9 +1280,10 @@ bool computeUnconstrainedMultibodyVelocityInto(
     }
   }
 
-  // Velocity-actuated joints: solve a coupled velocity-level equality
-  // constraint that drives the selected coordinates to their commanded
-  // velocities, lambda = (J M^-1 J^T)^-1 (target - J nextVelocity),
+  // Velocity- and Locked-actuated joints: solve a coupled velocity-level
+  // equality constraint that drives the selected coordinates to their target
+  // velocities (the commanded velocity for Velocity, zero for Locked),
+  // lambda = (J M^-1 J^T)^-1 (target - J nextVelocity),
   // nextVelocity += M^-1 J^T lambda, where J selects the constrained
   // coordinates.
   scratch.constrainedDof.clear();
@@ -1279,14 +1295,22 @@ bool computeUnconstrainedMultibodyVelocityInto(
     }
     const auto& jointActuation
         = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
-    if (jointActuation.actuatorType != comps::ActuatorType::Velocity) {
+    // Velocity and Locked actuators both drive their coordinates through the
+    // same velocity-level equality constraint: Velocity to its commanded
+    // velocity, Locked to zero (holding the joint at its current position).
+    const bool velocityActuated
+        = jointActuation.actuatorType == comps::ActuatorType::Velocity;
+    const bool lockedActuated
+        = jointActuation.actuatorType == comps::ActuatorType::Locked;
+    if (!velocityActuated && !lockedActuated) {
       continue;
     }
     for (std::size_t d = 0; d < dof; ++d) {
       scratch.constrainedDof.push_back(
           static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d));
       scratch.constrainedTarget.push_back(
-          jointActuation.commandVelocity.size()
+          lockedActuated ? 0.0
+          : jointActuation.commandVelocity.size()
                   == static_cast<Eigen::Index>(dof)
               ? jointActuation.commandVelocity[static_cast<Eigen::Index>(d)]
               : 0.0);
@@ -3795,7 +3819,10 @@ void reserveMultibodyDynamicsRegistryStorage(
         }
         const auto& jointActuation
             = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
-        if (jointActuation.actuatorType == comps::ActuatorType::Velocity) {
+        // Velocity and Locked actuators both add rows to the velocity-level
+        // equality constraint solved in computeUnconstrainedMultibodyVelocity.
+        if (jointActuation.actuatorType == comps::ActuatorType::Velocity
+            || jointActuation.actuatorType == comps::ActuatorType::Locked) {
           velocityConstraintDofs += static_cast<Eigen::Index>(dof);
         }
       }

@@ -378,6 +378,94 @@ static VelocityServoRun runSimulationVelocityServo(const VelocityServoCase& c)
   };
 }
 
+//==============================================================================
+// Row 6: Locked actuator
+//
+// A locked joint is held rigidly at its current position by the same
+// velocity-level equality constraint the Velocity actuator uses, with target
+// velocity zero. The helper below builds a two-link revolute chain whose
+// proximal joint is held (three ways) and whose distal joint is a free Force
+// actuator, so the tests can check that the lock holds and that the rest of the
+// articulated system is unaffected by any spring/damping/effort on the locked
+// coordinate.
+//==============================================================================
+
+enum class ProximalHold
+{
+  Locked,            ///< Locked actuator, no passive parameters
+  LockedWithPassive, ///< Locked actuator plus large spring/damping and effort
+  ZeroVelocityServo, ///< Velocity actuator commanded to zero (the reference)
+};
+
+struct LockedChainRun
+{
+  double distalPosition = 0.0;
+  double distalVelocity = 0.0;
+  double proximalPosition = 0.0;
+};
+
+static LockedChainRun runProximalHeldChain(ProximalHold hold)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.002);
+
+  auto robot = world.addMultibody("arm");
+  auto base = robot.addLink("base");
+
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
+
+  auto link1 = robot.addLink(
+      "l1",
+      base,
+      sx::JointSpec{
+          .name = "proximal",
+          .type = sx::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitY(),
+          .transformFromParent = offset,
+      });
+  link1.setMass(0.7);
+  link1.setInertia(Eigen::Vector3d(0.1, 0.1, 0.1).asDiagonal());
+
+  auto link2 = robot.addLink(
+      "l2",
+      link1,
+      sx::JointSpec{
+          .name = "distal",
+          .type = sx::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitY(),
+          .transformFromParent = offset,
+      });
+  link2.setMass(0.5);
+  link2.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+
+  auto proximal = link1.getParentJoint();
+  proximal.setPosition(Eigen::VectorXd::Constant(1, 0.3));
+  if (hold == ProximalHold::ZeroVelocityServo) {
+    proximal.setActuatorType(sx::ActuatorType::Velocity);
+    proximal.setCommandVelocity(Eigen::VectorXd::Zero(1));
+  } else {
+    proximal.setActuatorType(sx::ActuatorType::Locked);
+  }
+  if (hold == ProximalHold::LockedWithPassive) {
+    // A correct lock must ignore all of these on the locked coordinate.
+    proximal.setSpringStiffness(Eigen::VectorXd::Constant(1, 50.0));
+    proximal.setDampingCoefficient(Eigen::VectorXd::Constant(1, 5.0));
+    proximal.setForce(Eigen::VectorXd::Constant(1, 3.0));
+  }
+
+  world.enterSimulationMode();
+  world.step(150);
+
+  auto distal = link2.getParentJoint();
+  return LockedChainRun{
+      .distalPosition = distal.getPosition()[0],
+      .distalVelocity = distal.getVelocity()[0],
+      .proximalPosition = proximal.getPosition()[0],
+  };
+}
+
 } // namespace
 
 //==============================================================================
@@ -539,4 +627,95 @@ TEST(ContactParity, VelocityServoMotorTracksCommandedVelocity)
 
   EXPECT_NEAR(actual.velocity, c.commandedVelocity, 1e-9)
       << "Velocity joint should track commanded velocity";
+}
+
+//==============================================================================
+// Test: Locked actuator holds a revolute joint under gravity
+//
+// A single revolute pendulum set to a non-zero angle and Locked must neither
+// move nor gain velocity, even though gravity would otherwise swing it down.
+//==============================================================================
+TEST(ContactParity, LockedActuatorHoldsRevoluteJoint)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.002);
+
+  auto robot = world.addMultibody("arm");
+  auto base = robot.addLink("base");
+
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
+
+  auto link = robot.addLink(
+      "arm",
+      base,
+      sx::JointSpec{
+          .name = "shoulder",
+          .type = sx::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitY(),
+          .transformFromParent = offset,
+      });
+  link.setMass(0.5);
+  link.setInertia(Eigen::Vector3d(0.1, 0.1, 0.1).asDiagonal());
+
+  auto joint = link.getParentJoint();
+  const double initialAngle = 0.5;
+  joint.setPosition(Eigen::VectorXd::Constant(1, initialAngle));
+  joint.setActuatorType(sx::ActuatorType::Locked);
+
+  world.enterSimulationMode();
+  world.step(200);
+
+  EXPECT_NEAR(joint.getPosition()[0], initialAngle, 1e-10)
+      << "Locked joint should hold its position under gravity";
+  EXPECT_NEAR(joint.getVelocity()[0], 0.0, 1e-10)
+      << "Locked joint should keep zero velocity";
+}
+
+//==============================================================================
+// Test: Locked actuator ignores its own passive and commanded forces
+//
+// The holding constraint on a locked coordinate absorbs any spring, damping, or
+// commanded effort applied to it, so the rest of the articulated chain must be
+// unaffected. The distal joint's trajectory must be identical whether or not
+// the locked proximal joint carries large passive parameters and an effort
+// command, and the proximal joint must stay put in both runs while the distal
+// joint actually moves (the system is still dynamic).
+//==============================================================================
+TEST(ContactParity, LockedActuatorIgnoresItsOwnPassiveAndCommandedForces)
+{
+  const auto plain = runProximalHeldChain(ProximalHold::Locked);
+  const auto loaded = runProximalHeldChain(ProximalHold::LockedWithPassive);
+
+  EXPECT_NEAR(plain.proximalPosition, 0.3, 1e-10)
+      << "Locked proximal joint should hold its position";
+  EXPECT_NEAR(loaded.proximalPosition, 0.3, 1e-10)
+      << "Locked proximal joint should hold its position with passive loads";
+  EXPECT_NEAR(plain.distalPosition, loaded.distalPosition, 1e-12)
+      << "Distal trajectory must not depend on the locked joint's "
+         "spring/damping/effort";
+  EXPECT_NEAR(plain.distalVelocity, loaded.distalVelocity, 1e-12);
+  EXPECT_GT(std::abs(plain.distalVelocity), 1e-3)
+      << "Distal joint should still swing (the chain is not frozen)";
+}
+
+//==============================================================================
+// Test: Locked matches a zero-command Velocity servo
+//
+// A Locked joint drives its coordinates through the same velocity-level
+// equality constraint the (independently verified) Velocity actuator uses, with
+// target velocity zero. Holding the proximal joint with Locked must therefore
+// produce the same articulated dynamics as commanding a Velocity actuator to
+// zero from the same initial position.
+//==============================================================================
+TEST(ContactParity, LockedActuatorMatchesZeroVelocityServo)
+{
+  const auto locked = runProximalHeldChain(ProximalHold::Locked);
+  const auto servo = runProximalHeldChain(ProximalHold::ZeroVelocityServo);
+
+  EXPECT_NEAR(locked.proximalPosition, servo.proximalPosition, 1e-12);
+  EXPECT_NEAR(locked.distalPosition, servo.distalPosition, 1e-12)
+      << "Locked should match a zero-command Velocity servo";
+  EXPECT_NEAR(locked.distalVelocity, servo.distalVelocity, 1e-12);
 }

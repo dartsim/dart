@@ -152,9 +152,9 @@ enum class ActuatorType
   Force,        ///< Commanded joint effort drives the dynamics (default)
   Passive,      ///< No commanded effort; only passive forces act
   Servo,        ///< Velocity servo to a target (not yet implemented)
-  Velocity,     ///< Prescribed velocity (not yet implemented)
+  Velocity,     ///< Prescribed velocity via a velocity-level constraint
   Acceleration, ///< Prescribed acceleration (not yet implemented)
-  Locked,       ///< Frozen at the current position (not yet implemented)
+  Locked,       ///< Frozen at the current position via a velocity constraint
   Mimic         ///< Follows another joint (not yet implemented)
 };
 
