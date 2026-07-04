@@ -392,9 +392,11 @@ void World::suppressShallowSupportedFreeRootDrift(
       = preSolveVelocity.mLinear - preSolveVerticalVelocity;
   Eigen::Vector3d targetLateralVelocity = Eigen::Vector3d::Zero();
   bool targetPreservesLateralVelocity = false;
-  if (seedFromPreSolve && hasFiniteNonzeroVelocity(preSolveLateralVelocity)) {
-    targetLateralVelocity = preSolveLateralVelocity;
-    targetPreservesLateralVelocity = true;
+  if (seedFromPreSolve) {
+    if (hasFiniteNonzeroVelocity(preSolveLateralVelocity)) {
+      targetLateralVelocity = preSolveLateralVelocity;
+      targetPreservesLateralVelocity = true;
+    }
   } else if (
       state.mPreserveLateralVelocity && state.mLateralVelocity.allFinite()) {
     targetLateralVelocity = state.mLateralVelocity;
@@ -428,9 +430,11 @@ void World::suppressShallowSupportedFreeRootDrift(
       = preSolveVelocity.mAngular - preSolveYawVelocity;
   Eigen::Vector3d targetTiltVelocity = Eigen::Vector3d::Zero();
   bool targetPreservesTiltVelocity = false;
-  if (seedFromPreSolve && hasFiniteNonzeroVelocity(preSolveTiltVelocity)) {
-    targetTiltVelocity = preSolveTiltVelocity;
-    targetPreservesTiltVelocity = true;
+  if (seedFromPreSolve) {
+    if (hasFiniteNonzeroVelocity(preSolveTiltVelocity)) {
+      targetTiltVelocity = preSolveTiltVelocity;
+      targetPreservesTiltVelocity = true;
+    }
   } else if (state.mPreserveTiltVelocity && state.mTiltVelocity.allFinite()) {
     targetTiltVelocity = state.mTiltVelocity;
     targetPreservesTiltVelocity = hasFiniteNonzeroVelocity(targetTiltVelocity);

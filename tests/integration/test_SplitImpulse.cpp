@@ -49,6 +49,8 @@
 
 #include <vector>
 
+#include <cmath>
+
 using namespace dart;
 using namespace dart::dynamics;
 
@@ -350,6 +352,46 @@ TEST(Issue201, ShallowSupportPreservesIntentionalLowSpeedMotion)
   ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
   EXPECT_NEAR(rootBody->getLinearVelocity().x(), lateralSpeed, 1e-8);
   EXPECT_NEAR(rootBody->getAngularVelocity().y(), tiltSpeed, 1e-8);
+}
+
+//==============================================================================
+// An explicit velocity edit to zero must clear any previously preserved
+// low-speed baseline for the supported free root.
+TEST(Issue201, ShallowSupportHonorsIntentionalLowSpeedStop)
+{
+  auto world = simulation::World::create();
+  auto floor = createFloor();
+  floor->setMobile(false);
+  world->addSkeleton(floor);
+
+  const double penetration = 5e-5;
+  auto box = createBox(kBoxSize / 2.0 - penetration);
+  world->addSkeleton(box);
+
+  auto* rootBody = box->getRootBodyNode();
+  ASSERT_NE(rootBody, nullptr);
+  auto* rootJoint = dynamic_cast<FreeJoint*>(rootBody->getParentJoint());
+  ASSERT_NE(rootJoint, nullptr);
+
+  rootJoint->setLinearVelocity(
+      Eigen::Vector3d(5e-6, 0.0, 0.0), Frame::World(), Frame::World());
+  rootJoint->setAngularVelocity(
+      Eigen::Vector3d(0.0, 5e-5, 0.0), Frame::World(), Frame::World());
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_GT(std::abs(rootBody->getLinearVelocity().x()), 0.0);
+  EXPECT_GT(std::abs(rootBody->getAngularVelocity().y()), 0.0);
+
+  rootJoint->setLinearVelocity(
+      Eigen::Vector3d::Zero(), Frame::World(), Frame::World());
+  rootJoint->setAngularVelocity(
+      Eigen::Vector3d::Zero(), Frame::World(), Frame::World());
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_NEAR(rootBody->getLinearVelocity().x(), 0.0, 1e-8);
+  EXPECT_NEAR(rootBody->getAngularVelocity().y(), 0.0, 1e-8);
 }
 
 //==============================================================================
