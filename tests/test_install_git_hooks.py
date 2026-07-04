@@ -216,6 +216,7 @@ def _guard_verdict(tmp_path: Path, command: str, extra_env: dict | None = None):
     "command",
     [
         "git commit -m x",
+        "git -c user.name='DART Bot' commit -m x",
         "command git commit -m x",
         "env A=1 git commit -m x",
         "env DART_SKIP_HOOKS=0 git commit -m x",

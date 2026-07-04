@@ -42,6 +42,7 @@ verdict=$(printf '%s' "$input" | python3 -c '
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 
@@ -169,7 +170,10 @@ def commit_args_disable_hooks(args):
 def is_git_commit(text):
     for part in re.split(r"&&|\|\||[;|\n]", text):
         part = part.strip().lstrip("({").strip()
-        tokens = part.split()
+        try:
+            tokens = shlex.split(part)
+        except ValueError:
+            tokens = part.split()
         i, bypass = skip_env_prefix(tokens, 0)
         command_cwd = None
         if bypass:
