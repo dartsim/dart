@@ -22,13 +22,13 @@ Related open queue at last refresh: none blocking (all enablers merged:
 
 | Packet | Lane | Status | Branch / PR | Evidence |
 | --- | --- | --- | --- | --- |
-| WP-PG.01 baseline packet | WS-E | open | — | — |
+| WP-PG.01 baseline packet | WS-E | done — PR pending | `wp-pg-01-baseline-evidence` | 01-baseline-evidence.md (S1–S6 guard rows, profile splits, prior-art triage) |
 | WP-PG.02 benchmark matrix | WS-E | open | — | — |
 | WP-PG.03 profiling doc | WS-E | open | — | — |
 | WP-PG.04 executor tooling | WS-E | blocked (D4) | — | — |
 | WP-PG.10 LCP instrumentation | WS-A | open | — | — |
 | WP-PG.11 solver RTTI removal | WS-A | open | — | — |
-| WP-PG.12 direct assembly | WS-A | open | — | — |
+| WP-PG.12 direct assembly | WS-A | deprioritized (PG.01 evidence: assembly ≤ ~8%) | — | — |
 | WP-PG.13 row islanding | WS-A | evidence-gated (PG.10 census) | — | — |
 | WP-PG.14 matrix-free path | WS-A | blocked (D3) | — | — |
 | WP-PG.15 creep vs rest-veto | WS-A | blocked (D7) | — | — |

@@ -7,23 +7,31 @@ prior-art inventory in
 [01-baseline-evidence.md](01-baseline-evidence.md) before claiming any
 packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
-## Next packet
+## Next packets
 
-**WP-PG.01 — Round-2 baseline evidence packet**
-([06-infra-evidence-lane.md](06-infra-evidence-lane.md)). Everything else
-depends on it. Branch `wp-pg-01-baseline-evidence` off
-`origin/release-6.20`; capture the exact cell matrix in
-[01-baseline-evidence.md](01-baseline-evidence.md) (canonical commands
-are spelled there, including `pixi run -e gazebo download-gz-sim` for the
-3k scenes); triage the six prior-art branches; commit the guard-row
-tables into that doc; PR title `WP-PG.01: Round-2 baseline evidence
-packet`.
+**WP-PG.01 is captured** (branch `wp-pg-01-baseline-evidence`, PR
+pending) — guard rows, profile splits, and prior-art triage are in
+[01-baseline-evidence.md](01-baseline-evidence.md). Its evidence changed
+priorities: the dense-pile fixture is 88.1% Dantzig solve-proper (D3
+revisit trigger FIRED; WP-PG.12 deprioritized), and the active-3k
+many-islands regime is ~50% integration (WS-C is the lever there).
 
-Available in parallel after (or alongside, in a second session):
-WP-PG.02, WP-PG.03, WP-PG.40 (no deps; resolves D1/D2), then WP-PG.10,
-WP-PG.11, WP-PG.20, WP-PG.22, WP-PG.30, WP-PG.31. Packets marked
-blocked/gated (PG.04, PG.13, PG.14, PG.15, PG.23, PG.33, PG.41, PG.42)
-must not be claimed until their decision or evidence gate lands.
+Claimable now, in priority order:
+
+1. **WP-PG.30/31** (WS-C — highest evidence-backed default-on value:
+   integration/per-skeleton overhead on many-islands scenes; mind the
+   prior-art rejection caveat in the packet).
+2. **WP-PG.11** (WS-A — includes re-measuring the two mined
+   single-reactive commits; hash-preserving).
+3. **WP-PG.20** then **WP-PG.21** (WS-B — the 12x active-3k ODE gap).
+4. **WP-PG.40** (WS-D design packet; resolves D1/D2), **WP-PG.03**,
+   **WP-PG.02**, **WP-PG.22** (independent).
+
+Blocked/gated (do not claim): PG.04 (D4), PG.12 (evidence), PG.13
+(PG.10 census), PG.14 (D3 — now urgent), PG.15 (D7 — now urgent), PG.23
+(D8), PG.33, PG.41, PG.42. **D3 and D7 are the decisions that unblock
+the dense-pile fixture**; everything claimable above serves the
+many-islands and ODE regimes meanwhile.
 
 ## Verify commands (every packet)
 
@@ -42,10 +50,23 @@ the explicit `--parallel 8` build command.)
 
 ## Standing decisions awaiting maintainer
 
-D1 (SIMD FP contract), D2 (ISA delivery), D3 (matrix-free opt-in — see
-revisit trigger), D4 (executor tooling), D5 (ODE lane depth =
-PG.20/21/22), D7 (penetration-creep remediation policy), D8 (manifold
-reduction now vs WS-F phase 3) — see README "Open decisions".
+D1 (SIMD FP contract), D2 (ISA delivery), D3 (matrix-free — **revisit
+trigger fired by WP-PG.01**: solve-proper is 88.1% of the dense-pile
+step), D4 (executor tooling), D5 (ODE lane depth = PG.20/21/22), D7
+(penetration-creep remediation — **S6 confirms 0.387 m penetration,
+0/71 resting at baseline**), D8 (manifold reduction now vs WS-F phase 3)
+— see README "Open decisions". D3 and D7 are now the highest-leverage
+decisions.
+
+## Session log (round-2 execution)
+
+- 2026-07-04: WP-PG.01 executed on `wp-pg-01-baseline-evidence`
+  (`origin/release-6.20` @ `5bee91ad6be`): full S1–S6 matrix captured
+  (zero row failures), profile splits recorded (P1 dense-pile: solve
+  88.1% / assembly 7.4%; P2 active-3k: integration 50.1%), six prior-art
+  branches triaged (two unmerged hash-preserving solver wins queued into
+  WP-PG.11; one branch recommended for deletion), dashboard artifacts
+  generated.
 
 ## Session log
 

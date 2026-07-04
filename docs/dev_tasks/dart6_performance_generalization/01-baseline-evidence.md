@@ -82,37 +82,89 @@ in the pixi config). WP-PG.01 must record the `Construct LCP` vs
 Dantzig-solve-proper split per scene — the round-2 smoke number (below)
 did not separate them.
 
-## Initial probe — `BM_INTEGRATION_contact_container` (pre-plan)
+## Round-2 baseline (WP-PG.01, captured 2026-07-04)
 
-Captured on `origin/release-6.20` @ `fdf89784e8d` (before #3230/#3226;
-S1 is deactivation-disabled by design, so #3226 does not affect these
-rows). Host: 32 CPUs, 5.3 GHz, CPU scaling ENABLED (treat ±5% as noise),
-Release, GCC, 3 repetitions, means:
+Metadata: `origin/release-6.20` @ `5bee91ad6be`; GCC 15.2.0 (Ubuntu),
+Release; Intel i9-13950HX (32 threads), governor **powersave**, CPU
+scaling ENABLED — RTF values are host-relative (treat ±5% as noise);
+**guard values are the hashes, contact/pair counts, resting counts, and
+finite flags**, not the RTF cells. Dashboard tooling artifacts generated
+under `.benchmark_results/` in the same session. The pre-plan probe on
+`fdf89784e8d` matched these S1 rows within noise, so the fixture is
+stable across #3226/#3230/#3241.
 
-| Scenario (objects/engine/threads) | cpu ms/iter | sim_s/s (≈RTF) | contacts | resting/mobile |
-| --- | ---: | ---: | ---: | --- |
-| 60 / dart / 1 | 414 | 0.484 | 96 | 0/60 |
-| 60 / dart / 16 | 436 | 0.459 | 96 | 0/60 |
-| 60 / ode / 1 | 1850 | 0.109 | 249 | 0/60 |
-| 60 / ode / 16 | 1755 | 0.114 | 249 | 0/60 |
-| 120 / dart / 1 | 4793 | 0.042 | 272 | 0/120 |
-| 120 / dart / 16 | 4440 | 0.045 | 272 | 0/120 |
-| 120 / ode / 1 | 6808 | 0.029 | 542 | 0/120 |
-| 120 / ode / 16 | 8278 | 0.025 | 542 | 0/120 |
+### S1 — `BM_INTEGRATION_contact_container` (3-rep means)
 
-Headline findings:
+| Scenario (objects/engine/threads) | cpu ms/iter | sim_s/s (≈RTF) | contacts |
+| --- | ---: | ---: | ---: |
+| 60 / dart / 1 | 412 | 0.486 | 96 |
+| 60 / dart / 16 | 430 | 0.465 | 96 |
+| 60 / ode / 1 | 1540 | 0.130 | 249 |
+| 60 / ode / 16 | 1464 | 0.137 | 249 |
+| 120 / dart / 1 | 4677 | 0.043 | 272 |
+| 120 / dart / 16 | 4607 | 0.043 | 272 |
+| 120 / ode / 1 | 6844 | 0.029 | 542 |
+| 120 / ode / 16 | 6784 | 0.030 | 542 |
 
-- 60→120 objects costs ~11.6x (native) — super-quadratic scaling
-  consistent with dense per-island LCP assembly/solve.
-- Threads are flat (native 1.08x at 120) or negative (ODE 0.85x, cv 17.6%).
-- ODE emits ~2x the contacts of native on the same scene — physically
-  different profiles; hashes are only comparable within one detector.
+60→120 objects costs ~11.4x (native) — super-quadratic scaling; threads
+are flat in both engines; ODE emits ~2x the contacts of native
+(physically different profiles; hashes only comparable within one
+detector).
 
-Profile smoke (active 60-body container, native detector, `--profile`,
-single run): Dantzig LCP solve scope ≈ 66.2% of step time, collision
-≈ 8%. **Caveat**: single run, one scene, and the number is the solver
-scope without the `Construct LCP` split — re-validated by WP-PG.01 and
-per-island histograms by WP-PG.10 before WS-A effort commits.
+### S2–S6 guard rows (canonical commands above)
+
+| Row | RTF | Avg step ms | Contacts (cap) | Pairs | Resting | Max pen | Hash |
+| --- | ---: | ---: | ---: | ---: | --- | ---: | --- |
+| S2_dart | 26.84 | 0.037 | 0 (false) | 0 | 3003/3003 | 0 | `0x8ddc9a81f2d28a7f` |
+| S2_fcl | 28.11 | 0.036 | 0 (false) | 0 | 3003/3003 | 0 | `0x266da31836a314a6` |
+| S2_bullet | 6.78 | 0.147 | 0 (false) | 0 | 3003/3003 | 0 | `0x2375f1927218cd43` |
+| S2_ode | 11.16 | 0.090 | 0 (false) | 0 | 3003/3003 | 0 | `0x10f80b0408cede90` |
+| S3_dart | 0.101 | 9.89 | 5005 (false) | 3003 | 0/3003 | 9.3e-09 | `0xcf0ba6eaa97be038` |
+| S3_fcl | 0.085 | 11.78 | 3003 (false) | 3003 | 0/3003 | 9.3e-09 | `0x6088ea0177efa6a` |
+| S3_bullet | 0.087 | 11.47 | 5005 (false) | 3003 | 0/3003 | 3.0e-07 | `0xabf3edd146317478` |
+| S3_ode | 0.0083 | 119.90 | 9009 (false) | 3003 | 0/3003 | 9.3e-09 | `0x4904c09a93a36442` |
+| S4_dart | 0.357 | 2.80 | 1800 (false) | 900 | 600/900 | 1.0e-03 | `0x76205ad68f4293bb` |
+| S4_fcl | 0.266 | 3.76 | 1800 (false) | 900 | 450/900 | 9.8e-04 | `0x7a0974e837912472` |
+| S4_bullet | 0.193 | 5.17 | 2364 (false) | 900 | 269/900 | 1.1e-02 | `0x72bf270cdda36104` |
+| S4_ode | 6.75 | 0.148 | 0 (false) | 0 | 900/900 | 0 | `0x429b65bc5c4a14b6` |
+| S5_dart | 3.69 | 0.271 | 180 (false) | 90 | 60/90 | 1.0e-03 | `0x726d1ff51bdb717` |
+| S5_fcl | 2.26 | 0.443 | 180 (false) | 90 | 45/90 | 7.6e-04 | `0x99bfaef49c254203` |
+| S5_bullet | 1.92 | 0.521 | 210 (false) | 90 | 55/90 | 1.0e-05 | `0xbeb495c1ab0d6ca6` |
+| S5_ode | 82.09 | 0.012 | 0 (false) | 0 | 90/90 | 0 | `0x5f2afc7230ee8d10` |
+| S6_dart | 0.117 | 8.55 | 162 (false) | 137 | 0/71 | **0.3866** | `0x637a8bb6d5e0af64` |
+
+### Headline findings (round-2 evidence; supersedes the pre-plan smoke run)
+
+1. **The two active regimes have opposite bottlenecks** (profile splits,
+   serial, native detector):
+   - **P1, dense pile** (container 120, one big island):
+     `DantzigBoxedLcpSolver::solve` (solve-proper) = **88.1%** of step
+     time; `Construct LCP` (assembly incl. unit-impulse tests) = only
+     **7.4%** (unit-impulse tests 0.74% — #3142's direct path visible).
+     Consequence: WP-PG.12's assembly optimization has ≤ ~8% headroom on
+     the primary fixture; **the D3 revisit trigger has FIRED** — only a
+     solve-side change (WP-PG.14) or making piles sleep (WP-PG.15/D7)
+     moves the dense-pile fixture materially.
+   - **P2, many small islands** (active 3k, 3003 one-body islands):
+     **integration = 50.1%** of step time (positions 27.9% + velocity
+     22.2%); per-island constraint machinery 21.9% (Construct LCP 10.9%
+     at ~1 µs/island — per-island overhead, solve-proper only 3.7%);
+     collision 7.8%. Consequence: WS-C batching (WP-PG.30/33) and
+     per-island overhead trimming (WP-PG.11 + mined single-reactive
+     commits) are the levers for the many-bodies regime.
+2. **ODE active-3k is ~12x slower than native** (RTF 0.0083 vs 0.101,
+   120 ms/step) — the WS-B lane is worth more than the settled-scene
+   2.4x gap suggested.
+3. **ODE remains physically divergent** on generated scenes: S4/S5 end
+   with 0 contacts and everything resting (vs native 600/900 resting,
+   1800 contacts) — RTF-only comparisons across detectors stay banned.
+4. **Creep confirmed on the round-2 tip** (S6): max penetration grows to
+   0.387 m over 20 s (~19 mm/s), resting stays 0/71 — the WP-PG.15/D7
+   fixture behaves exactly as #3209 documented.
+5. Success criterion 1 (3x on the dense-pile fixture via default-on work)
+   is **not reachable from assembly/build work alone** given finding 1a;
+   it needs D3 (solve-side) and/or D7 (sleep the pile) — flagged for the
+   maintainer alongside those decisions.
 
 ## Prior art — round-1 experiment branches (read before claiming packets)
 
@@ -121,14 +173,23 @@ Six unpushed round-1 experiment branches were published to origin on
 `release-6.20`; none patch-equivalent to merged work; the deepest carries
 the round-1 experiment journal):
 
-| Branch (origin) | What it tries | Recorded outcome |
+Triage (WP-PG.01, 2026-07-04; each branch has exactly one unique code
+commit beyond shared/journal commits):
+
+| Branch (origin) | Unique change | Triage verdict |
 | --- | --- | --- |
-| `perf/dart6-broadphase-cache-refresh` | Refresh native broadphase caches during entry build | not journaled — measure before reuse |
-| `perf/dart6-lazy-dart-shape-cache` | Refresh DART shape caches during broadphase setup | not journaled — measure before reuse |
-| `perf/dart6-broadphase-cache-refresh-order` | Cache refresh ordering stack | not journaled — measure before reuse |
-| `perf/dart6-parallel-pair-flag-resize` | Avoid zeroing parallel collision flags | not journaled — measure before reuse |
-| `perf/dart6-single-reactive-union-reset` | Narrow single-reactive union resets | not journaled — measure before reuse |
-| `perf/dart6-single-reactive-raw-root` | Deepest stack + journal commits | journal below |
+| `perf/dart6-broadphase-cache-refresh` | Move shape-cache refresh into broadphase entry build (clean rebuilt commit + regression test) | **Mine for WP-PG.42** — never benchmarked; collision is only ~8% of active step time, measure first |
+| `perf/dart6-lazy-dart-shape-cache` | Same refresh idea (byte-identical subset of four sibling branches) | **Delete** — measured tie vs parent (RTF 0.1976 vs 0.1894 fresh; 0.1333 vs 0.1332 throttled); journal marks it local-experiment-only |
+| `perf/dart6-broadphase-cache-refresh-order` | Refresh reordering + 60-line stale-shape-cache regression test | **Mine for WP-PG.42** — reordering measured within noise (RTF 0.2484–0.2529); salvage the regression test and the rejected eager-transform note (RTF 0.2449), then deletable |
+| `perf/dart6-parallel-pair-flag-resize` | `assign(pairCount, 0)` → `resize(pairCount)` for the parallel pair-flag buffer | **Mine for WP-PG.31/32** — one-liner still applies verbatim (`DARTCollisionDetector.cpp:1342`); round-1 RTF-neutral (0.2476), hash-stable |
+| `perf/dart6-single-reactive-union-reset` | Reset only the stamped `mUnionIndex` on single-reactive groups instead of the all-skeleton `resetUnion()` scan | **Mine for WP-PG.11** — ~4x reduction in its profile scope, hash-preserving, still unmerged |
+| `perf/dart6-single-reactive-raw-root` | Drop the `mRootSkeleton` shared_ptr assignment on the all-single-reactive path (refcount churn) | **Mine for WP-PG.11** — measured improvement: RTF 0.272 vs 0.245 parent, `buildConstrainedGroups` 67.9 → 40.8 ms, same hash/contacts/pairs — strongest unmerged candidate; also hosts the journal |
+
+Branch-cleanup recommendation (maintainer approval before deletion):
+delete `perf/dart6-lazy-dart-shape-cache` now; delete
+`perf/dart6-broadphase-cache-refresh-order` after WP-PG.42 salvages its
+regression test; keep the rest until their packets record re-measured
+verdicts on the round-2 baseline.
 
 Measured-and-**rejected** round-1 experiments (journal commits
 `72b24654702`, `1afdf2ffdf7`, `b1c89d498b6` on
@@ -149,12 +210,10 @@ new evidence:
 WP-PG.01 includes triaging these branches (mine → record verdicts here →
 propose deletion of dead branches to the maintainer).
 
-## WP-PG.01 baseline packet (to capture on the round-2 branch point)
+## WP-PG.01 status
 
-Recapture the full cell matrix above on `origin/release-6.20` @
-`70b92010311` via the dashboard tooling
-(`pixi run python scripts/run_performance_dashboard_benchmarks.py`) plus
-the scenario-CLI rows, with scene dumps, hashes, profile share splits
-(incl. `Construct LCP` vs solve-proper), and host metadata; record the
-guard rows in this file. This packet is the prerequisite for every other
-packet.
+**Captured** (2026-07-04) on `origin/release-6.20` @ `5bee91ad6be`: full
+cell matrix, scene dumps, profile splits, dashboard artifacts, prior-art
+triage — all recorded above. Zero row failures. The S2–S6 hash column is
+the round-2 determinism reference until a maintainer-approved re-baseline
+(D1/D7/D8 packets record old/new pairs here).
