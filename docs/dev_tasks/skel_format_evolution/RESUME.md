@@ -90,6 +90,11 @@ reads, vector3/vector3i reads, and pose reads for the DART-specific
 extension/presence paths; remaining extension value conversion goes through
 sdformat typed `Param::Get<T>` instead of serializing XML back to text and
 reparsing it in DART.
+The SDF writer's post-serialization preservation path now uses typed
+`sdf::Model`, `sdf::Link`, and `sdf::Joint` DOM values for link/joint names,
+gravity modes, and screw pitch values. It still patches sdformat's element tree
+for fields that `Root::ToElement()` omits or emits under the deprecated tag,
+but it no longer reads serialized XML attributes back from that tree.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -255,6 +260,11 @@ Additional validation for removing SDF helper XML text fallback parsing:
 - `pixi run build`
 - `pixi run test-unit`
 
+Additional validation for removing SDF writer serialized-attribute reads:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
 Changelog decision:
 
 - Mode: draft
@@ -314,7 +324,10 @@ Changelog decision:
   needed for removing the SDF helper XML text fallback parser because it is an
   internal detail-helper cleanup that moves the existing DART extension bridge
   onto sdformat typed parameter conversion under the same libsdformat
-  normalization entry.
+  normalization entry. No additional separate entry is needed for removing SDF
+  writer serialized-attribute reads because it is an internal implementation
+  cleanup that keeps the existing conservative SDF writer behavior while using
+  typed sdformat DOM values to drive the same serialization patch.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

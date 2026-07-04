@@ -67,6 +67,10 @@
       helpers are limited to the small extension/presence bridge still used by
       the parser, and remaining extension values are converted through
       sdformat typed parameters rather than XML text reparsing.
+      Writer-side preservation of disabled link gravity and SDF 1.10+
+      `<screw_thread_pitch>` now derives names and values from typed
+      `sdf::Model` / `sdf::Link` / `sdf::Joint` DOM objects instead of reading
+      serialized XML attributes back out of sdformat's element tree.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor
       save-load belongs to the scene/project layer. Broader SDF coverage, URDF

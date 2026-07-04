@@ -246,25 +246,22 @@ WriteResult setDoubleElement(
 }
 
 WriteResult preserveFalseLinkGravity(
-    const sdf::ElementPtr& rootElement,
-    const std::map<std::string, bool>& linkGravityModes)
+    const sdf::ElementPtr& rootElement, const sdf::Model& model)
 {
   const sdf::ElementPtr modelElement = rootElement->FindElement("model");
   if (!modelElement) {
     return fail("sdformat failed to serialize the SDF model.");
   }
 
-  for (sdf::ElementPtr linkElement = modelElement->FindElement("link");
-       linkElement;
-       linkElement = linkElement->GetNextElement("link")) {
-    const sdf::ParamPtr nameAttr = linkElement->GetAttribute("name");
-    if (!nameAttr) {
-      continue;
+  sdf::ElementPtr linkElement = modelElement->FindElement("link");
+  for (uint64_t i = 0; i < model.LinkCount(); ++i) {
+    const sdf::Link* link = model.LinkByIndex(i);
+    if (!link || !linkElement) {
+      return fail("sdformat failed to serialize an SDF link.");
     }
 
-    const std::string linkName = nameAttr->GetAsString();
-    const auto gravityMode = linkGravityModes.find(linkName);
-    if (gravityMode == linkGravityModes.end() || gravityMode->second) {
+    if (link->EnableGravity()) {
+      linkElement = linkElement->GetNextElement("link");
       continue;
     }
 
@@ -272,10 +269,12 @@ WriteResult preserveFalseLinkGravity(
     // when serializing a freshly built link, so preserve false through the
     // sdformat Element tree before converting to text.
     if (auto result = setBoolElement(
-            linkElement, "gravity", false, "SDF link [" + linkName + "]");
+            linkElement, "gravity", false, "SDF link [" + link->Name() + "]");
         result.isErr()) {
       return result;
     }
+
+    linkElement = linkElement->GetNextElement("link");
   }
 
   return ok();
@@ -303,9 +302,10 @@ WriteResult setModernScrewThreadPitchElement(
 
 WriteResult preserveModernScrewThreadPitch(
     const sdf::ElementPtr& rootElement,
-    const std::map<std::string, double>& screwThreadPitches)
+    const sdf::Model& model,
+    std::string_view version)
 {
-  if (screwThreadPitches.empty()) {
+  if (!isSdfVersionAtLeast(version, 1, 10)) {
     return ok();
   }
 
@@ -314,17 +314,15 @@ WriteResult preserveModernScrewThreadPitch(
     return fail("sdformat failed to serialize the SDF model.");
   }
 
-  for (sdf::ElementPtr jointElement = modelElement->FindElement("joint");
-       jointElement;
-       jointElement = jointElement->GetNextElement("joint")) {
-    const sdf::ParamPtr nameAttr = jointElement->GetAttribute("name");
-    if (!nameAttr) {
-      continue;
+  sdf::ElementPtr jointElement = modelElement->FindElement("joint");
+  for (uint64_t i = 0; i < model.JointCount(); ++i) {
+    const sdf::Joint* joint = model.JointByIndex(i);
+    if (!joint || !jointElement) {
+      return fail("sdformat failed to serialize an SDF joint.");
     }
 
-    const std::string jointName = nameAttr->GetAsString();
-    const auto pitch = screwThreadPitches.find(jointName);
-    if (pitch == screwThreadPitches.end()) {
+    if (joint->Type() != sdf::JointType::SCREW) {
+      jointElement = jointElement->GetNextElement("joint");
       continue;
     }
 
@@ -332,10 +330,14 @@ WriteResult preserveModernScrewThreadPitch(
     // ToElement() still materializes the deprecated sibling. Keep the value in
     // the sdformat Element tree and write the schema-preferred SDF 1.10+ name.
     if (auto result = setModernScrewThreadPitchElement(
-            jointElement, pitch->second, "SDF screw joint [" + jointName + "]");
+            jointElement,
+            joint->ScrewThreadPitch(),
+            "SDF screw joint [" + joint->Name() + "]");
         result.isErr()) {
       return result;
     }
+
+    jointElement = jointElement->GetNextElement("joint");
   }
 
   return ok();
@@ -989,8 +991,6 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
   sdf::Model model;
   model.SetName(skeleton.getName());
   model.SetStatic(!skeleton.isMobile());
-  std::map<std::string, bool> linkGravityModes;
-  std::map<std::string, double> screwThreadPitches;
 
   for (std::size_t i = 0; i < skeleton.getNumBodyNodes(); ++i) {
     const auto* bodyNode = skeleton.getBodyNode(i);
@@ -1004,7 +1004,6 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
       return StringResult::err(WriteError(
           "Cannot write duplicate SDF link [" + bodyNode->getName() + "]."));
     }
-    linkGravityModes.emplace(bodyNode->getName(), bodyNode->getGravityMode());
   }
 
   for (std::size_t i = 0; i < skeleton.getNumJoints(); ++i) {
@@ -1016,10 +1015,6 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
     sdf::Joint sdfJoint;
     if (auto result = buildJoint(sdfJoint, *joint, options); result.isErr()) {
       return StringResult::err(result.error());
-    }
-    if (const auto* screw = dynamic_cast<const dynamics::ScrewJoint*>(joint);
-        screw && isSdfVersionAtLeast(options.version, 1, 10)) {
-      screwThreadPitches.emplace(joint->getName(), screw->getPitch());
     }
     if (!model.AddJoint(sdfJoint)) {
       return StringResult::err(WriteError(
@@ -1035,11 +1030,11 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
   if (!element) {
     return StringResult::err(WriteError("sdformat failed to serialize SDF."));
   }
-  if (auto result = preserveFalseLinkGravity(element, linkGravityModes);
-      result.isErr()) {
+  if (auto result = preserveFalseLinkGravity(element, model); result.isErr()) {
     return StringResult::err(result.error());
   }
-  if (auto result = preserveModernScrewThreadPitch(element, screwThreadPitches);
+  if (auto result
+      = preserveModernScrewThreadPitch(element, model, options.version);
       result.isErr()) {
     return StringResult::err(result.error());
   }
