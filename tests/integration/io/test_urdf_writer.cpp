@@ -113,6 +113,49 @@ void setFiniteJointMetadata(
   joint->setCoulombFriction(0, friction);
 }
 
+void setUniformJointMetadata(
+    dynamics::Joint* joint,
+    double lower,
+    double upper,
+    double velocity,
+    double effort,
+    double damping,
+    double friction)
+{
+  ASSERT_NE(joint, nullptr);
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    joint->setPositionLowerLimit(i, lower);
+    joint->setPositionUpperLimit(i, upper);
+    joint->setVelocityLowerLimit(i, -velocity);
+    joint->setVelocityUpperLimit(i, velocity);
+    joint->setForceLowerLimit(i, -effort);
+    joint->setForceUpperLimit(i, effort);
+    joint->setDampingCoefficient(i, damping);
+    joint->setCoulombFriction(i, friction);
+  }
+}
+
+void expectUniformJointMetadata(
+    const dynamics::Joint& joint,
+    double lower,
+    double upper,
+    double velocity,
+    double effort,
+    double damping,
+    double friction)
+{
+  for (std::size_t i = 0; i < joint.getNumDofs(); ++i) {
+    EXPECT_NEAR(joint.getPositionLowerLimit(i), lower, kTolerance);
+    EXPECT_NEAR(joint.getPositionUpperLimit(i), upper, kTolerance);
+    EXPECT_NEAR(joint.getVelocityLowerLimit(i), -velocity, kTolerance);
+    EXPECT_NEAR(joint.getVelocityUpperLimit(i), velocity, kTolerance);
+    EXPECT_NEAR(joint.getForceLowerLimit(i), -effort, kTolerance);
+    EXPECT_NEAR(joint.getForceUpperLimit(i), effort, kTolerance);
+    EXPECT_NEAR(joint.getDampingCoefficient(i), damping, kTolerance);
+    EXPECT_NEAR(joint.getCoulombFriction(i), friction, kTolerance);
+  }
+}
+
 void expectContains(std::string_view text, std::string_view needle)
 {
   EXPECT_NE(text.find(needle), std::string_view::npos)
@@ -602,6 +645,96 @@ TEST(UrdfWriter, RoundTripsContinuousJointDynamics)
 }
 
 //==============================================================================
+TEST(UrdfWriter, RoundTripsPlanarAndFloatingJoints)
+{
+  auto skeleton = dynamics::Skeleton::create("planar_floating_writer");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr,
+          dynamics::FreeJoint::Properties(),
+          makeBodyProperties(
+              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)rootJoint;
+
+  dynamics::PlanarJoint::Properties planarProperties;
+  planarProperties.mName = "planar_joint";
+  planarProperties.setXYPlane();
+  planarProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.1, 0.2, 0.3);
+  auto [planarJoint, planarBody]
+      = skeleton->createJointAndBodyNodePair<dynamics::PlanarJoint>(
+          base,
+          planarProperties,
+          makeBodyProperties(
+              "planar_link",
+              0.8,
+              Eigen::Vector3d::Zero(),
+              Eigen::Vector3d::Ones()));
+  setUniformJointMetadata(planarJoint, -0.5, 0.75, 1.5, 2.5, 0.3, 0.4);
+
+  dynamics::FreeJoint::Properties floatingProperties;
+  floatingProperties.mName = "floating_joint";
+  floatingProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(-0.2, 0.0, 0.4);
+  auto [floatingJoint, floatingBody]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          planarBody,
+          floatingProperties,
+          makeBodyProperties(
+              "floating_link",
+              0.6,
+              Eigen::Vector3d::Zero(),
+              Eigen::Vector3d::Ones()));
+  (void)floatingBody;
+  setUniformJointMetadata(floatingJoint, -0.25, 0.5, 1.25, 2.25, 0.15, 0.05);
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  expectContains(writeResult.value(), "type=\"planar\"");
+  expectContains(writeResult.value(), "type=\"floating\"");
+  expectContains(writeResult.value(), "xyz=\"0 0 1\"");
+  expectContains(writeResult.value(), "<limit");
+  expectContains(writeResult.value(), "<dynamics");
+
+  utils::UrdfParser parser;
+  const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
+  ASSERT_NE(reparsed, nullptr);
+
+  const auto* reparsedPlanar = dynamic_cast<const dynamics::PlanarJoint*>(
+      reparsed->getJoint("planar_joint"));
+  ASSERT_NE(reparsedPlanar, nullptr);
+  EXPECT_EQ(
+      reparsedPlanar->getParentBodyNode()->getName(), std::string("base"));
+  EXPECT_EQ(
+      reparsedPlanar->getChildBodyNode()->getName(),
+      std::string("planar_link"));
+  EXPECT_EQ(
+      reparsedPlanar->getPlaneType(), dynamics::PlanarJoint::PlaneType::XY);
+  EXPECT_TRUE(reparsedPlanar->getRotationalAxis().isApprox(
+      Eigen::Vector3d::UnitZ(), kTolerance));
+  EXPECT_TRUE(
+      reparsedPlanar->getTransformFromParentBodyNode().translation().isApprox(
+          Eigen::Vector3d(0.1, 0.2, 0.3), kTolerance));
+  expectUniformJointMetadata(*reparsedPlanar, -0.5, 0.75, 1.5, 2.5, 0.3, 0.4);
+
+  const auto* reparsedFloating = dynamic_cast<const dynamics::FreeJoint*>(
+      reparsed->getJoint("floating_joint"));
+  ASSERT_NE(reparsedFloating, nullptr);
+  EXPECT_EQ(
+      reparsedFloating->getParentBodyNode()->getName(),
+      std::string("planar_link"));
+  EXPECT_EQ(
+      reparsedFloating->getChildBodyNode()->getName(),
+      std::string("floating_link"));
+  EXPECT_TRUE(
+      reparsedFloating->getTransformFromParentBodyNode().translation().isApprox(
+          Eigen::Vector3d(-0.2, 0.0, 0.4), kTolerance));
+  expectUniformJointMetadata(
+      *reparsedFloating, -0.25, 0.5, 1.25, 2.25, 0.15, 0.05);
+}
+
+//==============================================================================
 TEST(UrdfWriter, PreservesPackageMeshUri)
 {
   const common::Uri packageMeshUri("package://writer_pkg/BoxSmall.obj");
@@ -849,9 +982,9 @@ TEST(UrdfWriter, MultipleRootTreesReturnError)
 }
 
 //==============================================================================
-TEST(UrdfWriter, UnsupportedPlanarJointReturnsError)
+TEST(UrdfWriter, NonUniformPlanarJointLimitsReturnsError)
 {
-  auto skeleton = dynamics::Skeleton::create("unsupported_planar");
+  auto skeleton = dynamics::Skeleton::create("non_uniform_planar_limits");
   auto [rootJoint, base]
       = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
           nullptr,
@@ -859,16 +992,75 @@ TEST(UrdfWriter, UnsupportedPlanarJointReturnsError)
           makeBodyProperties(
               "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
   (void)rootJoint;
+  auto [planarJoint, planarBody]
+      = skeleton->createJointAndBodyNodePair<dynamics::PlanarJoint>(
+          base,
+          dynamics::PlanarJoint::Properties(),
+          makeBodyProperties(
+              "tip", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)planarBody;
+  planarJoint->setPositionLowerLimit(1, -0.25);
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "non-uniform position lower limits");
+  expectContains(result.error().message, "URDF <limit>");
+}
+
+//==============================================================================
+TEST(UrdfWriter, NonUniformFloatingJointDynamicsReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("non_uniform_floating_dynamics");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr,
+          dynamics::FreeJoint::Properties(),
+          makeBodyProperties(
+              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)rootJoint;
+
+  auto [floatingJoint, floatingBody]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          base,
+          dynamics::FreeJoint::Properties(),
+          makeBodyProperties(
+              "floating",
+              1.0,
+              Eigen::Vector3d::Zero(),
+              Eigen::Vector3d::Ones()));
+  (void)floatingBody;
+  floatingJoint->setDampingCoefficient(0, 0.1);
+  floatingJoint->setDampingCoefficient(1, 0.2);
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "non-uniform damping metadata");
+}
+
+//==============================================================================
+TEST(UrdfWriter, ArbitraryPlanarJointReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("arbitrary_planar");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr,
+          dynamics::FreeJoint::Properties(),
+          makeBodyProperties(
+              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)rootJoint;
+
+  dynamics::PlanarJoint::Properties properties;
+  properties.setArbitraryPlane(
+      Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitZ());
   skeleton->createJointAndBodyNodePair<dynamics::PlanarJoint>(
       base,
-      dynamics::PlanarJoint::Properties(),
+      properties,
       makeBodyProperties(
           "tip", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
 
   const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
-  expectContains(result.error().message, "PlanarJoint");
-  expectContains(result.error().message, "URDF");
+  expectContains(result.error().message, "arbitrary planar axes");
 }
 
 //==============================================================================

@@ -217,11 +217,12 @@ compatibility remains on the active DART 6 LTS branch._
   reporting unsupported constructs explicitly.
 - Added a conservative URDF writer for `Skeleton` round-trips that fit URDF's
   tree model, covering one-root link trees, root FreeJoint/WeldJoint metadata,
-  revolute/continuous/prismatic/fixed child joints, passive joint dynamics,
-  single-DoF mimic metadata, zero-offset coupler mimic transmissions, inertial
-  data, local visual/collision poses, primitive geometry, absolute and package
-  URI meshes, visual colors, and explicit diagnostics for unsupported or lossy
-  DART constructs including soft bodies and invalid mesh resources.
+  revolute/continuous/prismatic/fixed child joints, planar/floating child
+  joints with uniform scalar limits and dynamics, single-DoF mimic metadata,
+  zero-offset coupler mimic transmissions, inertial data, local
+  visual/collision poses, primitive geometry, absolute and package URI meshes,
+  visual colors, and explicit diagnostics for unsupported or lossy DART
+  constructs including soft bodies and invalid mesh resources.
 - Improved mesh and asset import behavior across convex meshes, polygon meshes,
   Collada scaling, GLTF PBR materials, empty mesh URIs, and sample robot data.
 

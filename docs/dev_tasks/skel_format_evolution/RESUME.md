@@ -89,18 +89,20 @@ or text reparsing for SDF semantics.
 The first URDF writer implementation slice is also local on
 `work/skel-format-yaml-decision`: `dart::utils::UrdfParser` exposes
 `tryWriteSkeletonToString()` for one-root URDF trees with root FreeJoint or
-WeldJoint metadata, child revolute/continuous/prismatic/fixed joints, passive
-damping/friction metadata, single-DoF motor-style mimic metadata, inertial
-data, zero-offset coupler mimic metadata through paired URDF
-`SimpleTransmission` entries, local visual/collision poses,
+WeldJoint metadata, child revolute/continuous/prismatic/fixed joints,
+standard-plane planar and floating child joints with uniform scalar
+limit/dynamics metadata, passive damping/friction metadata, single-DoF
+motor-style mimic metadata, inertial data, zero-offset coupler mimic metadata
+through paired URDF `SimpleTransmission` entries, local visual/collision poses,
 box/sphere/cylinder/absolute or package URI mesh geometry, explicit visual
 colors, implicit default visual color omission, default-RGB alpha overrides, and
 visual/collision include options. `INTEGRATION_io_UrdfWriter` proves
 write/read/read round-trip for that subset and covers explicit diagnostics for
-multiple root trees, unsupported joint families, non-identity child joint
-frames, unbounded finite-requiring URDF limits, missing mimic references,
-coupler mimic offsets, plus missing mesh URIs, relative or host-qualified file
-mesh URIs, and non-finite mesh scales. Additional focused coverage proves
+multiple root trees, unsupported joint families, arbitrary planar axes,
+non-uniform multi-DoF limit/dynamics metadata, non-identity child joint frames,
+unbounded finite-requiring URDF limits, missing mimic references, coupler mimic
+offsets, plus missing mesh URIs, relative or host-qualified file mesh URIs, and
+non-finite mesh scales. Additional focused coverage proves
 unbounded DART revolute joints write as URDF `continuous` joints and preserve
 passive dynamics metadata through reparse, proves visual and collision
 `package://` mesh URIs serialize and reparse through `UrdfParser` package
@@ -1196,6 +1198,41 @@ Changelog decision:
   writer bullet.
 - Entry text: the existing conservative URDF writer bullet now includes
   zero-offset coupler mimic transmissions; no separate bullet is needed.
+- PR-body note: N/A
+- Follow-up: add the implementation PR link after a PR exists and maintainer /
+  user approval allows the PR update or follow-up push.
+
+Additional validation for URDF planar/floating joint writer coverage:
+
+- Control before the writer change:
+  `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter=UrdfWriter.UnsupportedPlanarJointReturnsError'`
+- Focused candidate:
+  `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter="UrdfWriter.RoundTripsPlanarAndFloatingJoints:UrdfWriter.NonUniformPlanarJointLimitsReturnsError:UrdfWriter.NonUniformFloatingJointDynamicsReturnsError:UrdfWriter.ArbitraryPlanarJointReturnsError"'`
+- SDF boundary check after maintainer guidance:
+  `pixi run check-sdf-sdformat-boundary`
+- Full writer target: `pixi run run-cpp-target INTEGRATION_io_UrdfWriter`
+- Local gates: `git diff --check`, `pixi run lint`, `pixi run build`,
+  `pixi run test-unit`
+
+Changelog decision:
+
+- Mode: draft
+- Base evidence: `origin/main` inferred for
+  `work/skel-format-yaml-decision`; no open PR exists for the branch.
+- Scope evidence: focused diff in `dart/utils/urdf/urdf_writer.cpp`,
+  `dart/utils/urdf/urdf_parser.hpp`,
+  `tests/integration/io/test_urdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, `CHANGELOG.md`, and this SKEL evolution
+  task folder.
+- Decision: entry required as a revision to the existing DART 7 URDF writer
+  bullet because this broadens the unreleased public parser-owned writer
+  contract to include standard-plane planar and floating child joint output
+  with uniform scalar limit/dynamics metadata.
+- Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing existing URDF
+  writer bullet.
+- Entry text: the existing conservative URDF writer bullet now includes
+  planar/floating child joints with uniform scalar limits and dynamics; no
+  separate bullet is needed.
 - PR-body note: N/A
 - Follow-up: add the implementation PR link after a PR exists and maintainer /
   user approval allows the PR update or follow-up push.

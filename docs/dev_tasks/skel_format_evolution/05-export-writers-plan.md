@@ -144,15 +144,17 @@ The next implementation slice adds
 writer for robot-link trees that fit URDF's model constraints. It writes one
 root tree with root FreeJoint/WeldJoint metadata that URDF can preserve, child
 revolute/continuous/prismatic/fixed joints whose child link frame coincides
-with the joint frame, passive damping/friction metadata, single-DoF motor-style
-mimic metadata, inertial data, local
-visual/collision poses, box/sphere/cylinder and absolute or package URI mesh
-geometry, explicit visual colors, implicit default visual color omission,
-default-RGB alpha overrides, zero-offset coupler mimic metadata through paired
-URDF `SimpleTransmission` entries, and visual/collision include options.
+with the joint frame, standard-plane planar and floating child joints with
+uniform scalar limit/dynamics metadata, passive damping/friction metadata,
+single-DoF motor-style mimic metadata, inertial data, local visual/collision
+poses, box/sphere/cylinder and absolute or package URI mesh geometry, explicit
+visual colors, implicit default visual color omission, default-RGB alpha
+overrides, zero-offset coupler mimic metadata through paired URDF
+`SimpleTransmission` entries, and visual/collision include options.
 `INTEGRATION_io_UrdfWriter` validates a write/read/read round-trip for that
 subset and covers explicit diagnostics for multiple root trees, unsupported
-joint families, non-identity child joint frames, unbounded finite-requiring URDF
+joint families, arbitrary planar axes, non-uniform multi-DoF limit/dynamics
+metadata, non-identity child joint frames, unbounded finite-requiring URDF
 limits, missing mimic references, coupler mimic offsets, missing mesh URIs,
 relative or host-qualified file mesh URIs, and non-finite mesh scales.
 Additional coverage proves unbounded revolute DART joints write as URDF

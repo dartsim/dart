@@ -142,16 +142,18 @@
       The first URDF writer slice is also implemented locally on
       `dart::utils::UrdfParser::tryWriteSkeletonToString` for one-root URDF
       trees with root FreeJoint/WeldJoint metadata, child
-      revolute/continuous/prismatic/fixed joints, passive damping/friction
-      metadata, single-DoF motor-style mimic metadata, zero-offset coupler
-      mimic metadata through paired URDF `SimpleTransmission` entries, inertial
-      data, local visual/collision poses,
+      revolute/continuous/prismatic/fixed joints, standard-plane planar and
+      floating child joints with uniform scalar limit/dynamics metadata,
+      passive damping/friction metadata, single-DoF motor-style mimic metadata,
+      zero-offset coupler mimic metadata through paired URDF
+      `SimpleTransmission` entries, inertial data, local visual/collision poses,
       box/sphere/cylinder/absolute or package URI mesh geometry, explicit
       visual colors, implicit default visual color omission, default-RGB alpha
       overrides, and visual/collision include options.
       `INTEGRATION_io_UrdfWriter`
       validates a write/read/read subset and diagnostics for multiple root trees,
-      unsupported joint families, non-identity child joint frames, unbounded
+      unsupported joint families, arbitrary planar axes, non-uniform multi-DoF
+      limit/dynamics metadata, non-identity child joint frames, unbounded
       finite-requiring URDF limits, missing mimic references, coupler mimic
       offsets, plus missing mesh URIs, relative or host-qualified file mesh
       URIs, and non-finite mesh scales. It also covers continuous revolute joint

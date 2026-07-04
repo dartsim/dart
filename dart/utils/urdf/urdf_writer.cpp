@@ -40,6 +40,7 @@
 #include <dart/dynamics/joint.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/mimic_dof_properties.hpp>
+#include <dart/dynamics/planar_joint.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/shape_node.hpp>
@@ -69,6 +70,18 @@ using WriteError = common::Error;
 using StringResult = common::Result<std::string, WriteError>;
 using WriteResult = common::Result<void, WriteError>;
 using LimitResult = common::Result<std::optional<double>, WriteError>;
+using ScalarResult = common::Result<double, WriteError>;
+
+struct LimitAttributes
+{
+  double mLower{0.0};
+  double mUpper{0.0};
+  double mVelocity{0.0};
+  double mEffort{0.0};
+};
+
+using JointLimitResult
+    = common::Result<std::optional<LimitAttributes>, WriteError>;
 
 constexpr double kTolerance = 1e-12;
 
@@ -136,6 +149,35 @@ bool isIdentity(const Eigen::Isometry3d& transform)
   return transform.matrix().isApprox(Eigen::Matrix4d::Identity(), kTolerance);
 }
 
+bool isSameScalar(double lhs, double rhs)
+{
+  if (std::isnan(lhs) || std::isnan(rhs)) {
+    return false;
+  }
+
+  if (std::isinf(lhs) || std::isinf(rhs)) {
+    return std::isinf(lhs) && std::isinf(rhs)
+           && std::signbit(lhs) == std::signbit(rhs);
+  }
+
+  return std::abs(lhs - rhs) <= kTolerance;
+}
+
+bool isDefaultLowerLimit(double value)
+{
+  return std::isinf(value) && value < 0.0;
+}
+
+bool isDefaultUpperLimit(double value)
+{
+  return std::isinf(value) && value > 0.0;
+}
+
+bool isDefaultLimitPair(double lower, double upper)
+{
+  return isDefaultLowerLimit(lower) && isDefaultUpperLimit(upper);
+}
+
 std::string formatOriginRpy(const Eigen::Isometry3d& transform)
 {
   const Eigen::Vector3d zyx = math::matrixToEulerZYX(transform.linear());
@@ -169,6 +211,68 @@ std::string context(const dynamics::Joint& joint)
 std::string context(const dynamics::BodyNode& body)
 {
   return "URDF link [" + body.getName() + "]";
+}
+
+template <typename Getter>
+ScalarResult uniformLimitValue(
+    const dynamics::Joint& joint, Getter getter, std::string_view label)
+{
+  const double first = getter(0);
+  if (std::isnan(first)) {
+    return ScalarResult::err(WriteError(
+        "Cannot write " + context(joint) + " with NaN " + std::string(label)
+        + " limits."));
+  }
+
+  for (std::size_t i = 1; i < joint.getNumDofs(); ++i) {
+    const double value = getter(i);
+    if (std::isnan(value)) {
+      return ScalarResult::err(WriteError(
+          "Cannot write " + context(joint) + " with NaN " + std::string(label)
+          + " limits."));
+    }
+
+    if (!isSameScalar(value, first)) {
+      return ScalarResult::err(
+          WriteError(
+              "Cannot write " + context(joint) + " with non-uniform "
+              + std::string(label)
+              + " limits because URDF <limit> stores one scalar value for "
+                "multi-DoF joints."));
+    }
+  }
+
+  return ScalarResult::ok(first);
+}
+
+template <typename Getter>
+ScalarResult uniformFiniteDofMetadata(
+    const dynamics::Joint& joint, Getter getter, std::string_view label)
+{
+  const double first = getter(0);
+  if (!isFinite(first)) {
+    return ScalarResult::err(WriteError(
+        "Cannot write " + context(joint) + " with non-finite "
+        + std::string(label) + "."));
+  }
+
+  for (std::size_t i = 1; i < joint.getNumDofs(); ++i) {
+    const double value = getter(i);
+    if (!isFinite(value)) {
+      return ScalarResult::err(WriteError(
+          "Cannot write " + context(joint) + " with non-finite "
+          + std::string(label) + "."));
+    }
+
+    if (!isSameScalar(value, first)) {
+      return ScalarResult::err(WriteError(
+          "Cannot write " + context(joint) + " with non-uniform "
+          + std::string(label)
+          + " because URDF stores one scalar value for multi-DoF joints."));
+    }
+  }
+
+  return ScalarResult::ok(first);
 }
 
 LimitResult symmetricAbsoluteLimit(
@@ -211,6 +315,127 @@ LimitResult symmetricAbsoluteLimit(
   }
 
   return LimitResult::ok(std::max(std::abs(lower), std::abs(upper)));
+}
+
+JointLimitResult multiDofJointLimitAttributes(const dynamics::Joint& joint)
+{
+  const auto lower = uniformLimitValue(
+      joint,
+      [&](std::size_t i) { return joint.getPositionLowerLimit(i); },
+      "position lower");
+  if (lower.isErr()) {
+    return JointLimitResult::err(lower.error());
+  }
+
+  const auto upper = uniformLimitValue(
+      joint,
+      [&](std::size_t i) { return joint.getPositionUpperLimit(i); },
+      "position upper");
+  if (upper.isErr()) {
+    return JointLimitResult::err(upper.error());
+  }
+
+  const auto velocityLower = uniformLimitValue(
+      joint,
+      [&](std::size_t i) { return joint.getVelocityLowerLimit(i); },
+      "velocity lower");
+  if (velocityLower.isErr()) {
+    return JointLimitResult::err(velocityLower.error());
+  }
+
+  const auto velocityUpper = uniformLimitValue(
+      joint,
+      [&](std::size_t i) { return joint.getVelocityUpperLimit(i); },
+      "velocity upper");
+  if (velocityUpper.isErr()) {
+    return JointLimitResult::err(velocityUpper.error());
+  }
+
+  const auto forceLower = uniformLimitValue(
+      joint,
+      [&](std::size_t i) { return joint.getForceLowerLimit(i); },
+      "force/effort lower");
+  if (forceLower.isErr()) {
+    return JointLimitResult::err(forceLower.error());
+  }
+
+  const auto forceUpper = uniformLimitValue(
+      joint,
+      [&](std::size_t i) { return joint.getForceUpperLimit(i); },
+      "force/effort upper");
+  if (forceUpper.isErr()) {
+    return JointLimitResult::err(forceUpper.error());
+  }
+
+  const bool defaultPosition = isDefaultLimitPair(lower.value(), upper.value());
+  const bool defaultVelocity
+      = isDefaultLimitPair(velocityLower.value(), velocityUpper.value());
+  const bool defaultForce
+      = isDefaultLimitPair(forceLower.value(), forceUpper.value());
+
+  if (defaultPosition && defaultVelocity && defaultForce) {
+    return JointLimitResult::ok(std::nullopt);
+  }
+
+  if (!isFinite(lower.value()) || !isFinite(upper.value())) {
+    return JointLimitResult::err(
+        WriteError(
+            "Cannot write " + context(joint)
+            + " with partially unbounded multi-DoF position limits because "
+              "URDF "
+              "<limit> requires finite lower and upper values when authored."));
+  }
+
+  if (lower.value() > upper.value()) {
+    return JointLimitResult::err(WriteError(
+        "Cannot write " + context(joint)
+        + " with invalid multi-DoF position limits."));
+  }
+
+  const auto velocityLimit = symmetricAbsoluteLimit(
+      joint,
+      velocityLower.value(),
+      velocityUpper.value(),
+      "velocity",
+      "velocity");
+  if (velocityLimit.isErr()) {
+    return JointLimitResult::err(velocityLimit.error());
+  }
+  if (!velocityLimit.value()) {
+    return JointLimitResult::err(WriteError(
+        "Cannot write " + context(joint)
+        + " without a finite symmetric URDF velocity limit."));
+  }
+
+  const auto effortLimit = symmetricAbsoluteLimit(
+      joint, forceLower.value(), forceUpper.value(), "force/effort", "effort");
+  if (effortLimit.isErr()) {
+    return JointLimitResult::err(effortLimit.error());
+  }
+  if (!effortLimit.value()) {
+    return JointLimitResult::err(WriteError(
+        "Cannot write " + context(joint)
+        + " without a finite symmetric URDF effort limit."));
+  }
+
+  return JointLimitResult::ok(
+      LimitAttributes{
+          lower.value(),
+          upper.value(),
+          *velocityLimit.value(),
+          *effortLimit.value()});
+}
+
+void appendLimit(
+    tinyxml2::XMLDocument& doc,
+    tinyxml2::XMLElement& jointElement,
+    const LimitAttributes& limit)
+{
+  auto* limitElement = appendElement(doc, jointElement, "limit");
+  setDoubleAttribute(*limitElement, "lower", limit.mLower);
+  setDoubleAttribute(*limitElement, "upper", limit.mUpper);
+  setDoubleAttribute(*limitElement, "velocity", limit.mVelocity);
+  setDoubleAttribute(*limitElement, "effort", limit.mEffort);
 }
 
 WriteResult validateBody(const dynamics::BodyNode& body)
@@ -467,6 +692,23 @@ WriteResult writeJointLimit(
     return ok();
   }
 
+  if (joint.getNumDofs() == 0) {
+    return ok();
+  }
+
+  if (joint.getNumDofs() > 1) {
+    const auto limit = multiDofJointLimitAttributes(joint);
+    if (limit.isErr()) {
+      return WriteResult::err(limit.error());
+    }
+
+    if (limit.value()) {
+      appendLimit(doc, jointElement, *limit.value());
+    }
+
+    return ok();
+  }
+
   const double lower = joint.getPositionLowerLimit(0);
   const double upper = joint.getPositionUpperLimit(0);
   if (!isFinite(lower) || !isFinite(upper)) {
@@ -508,11 +750,11 @@ WriteResult writeJointLimit(
         + " without a finite symmetric URDF effort limit.");
   }
 
-  auto* limit = appendElement(doc, jointElement, "limit");
-  setDoubleAttribute(*limit, "lower", lower);
-  setDoubleAttribute(*limit, "upper", upper);
-  setDoubleAttribute(*limit, "velocity", *velocityLimit.value());
-  setDoubleAttribute(*limit, "effort", *effortLimit.value());
+  appendLimit(
+      doc,
+      jointElement,
+      LimitAttributes{
+          lower, upper, *velocityLimit.value(), *effortLimit.value()});
   return ok();
 }
 
@@ -525,12 +767,34 @@ WriteResult writeJointDynamics(
     return ok();
   }
 
-  const double damping = joint.getDampingCoefficient(0);
-  const double friction = joint.getCoulombFriction(0);
-  if (!isFinite(damping) || !isFinite(friction)) {
-    return fail(
-        "Cannot write " + context(joint)
-        + " with non-finite dynamics metadata.");
+  double damping = joint.getDampingCoefficient(0);
+  double friction = joint.getCoulombFriction(0);
+
+  if (joint.getNumDofs() == 1) {
+    if (!isFinite(damping) || !isFinite(friction)) {
+      return fail(
+          "Cannot write " + context(joint)
+          + " with non-finite dynamics metadata.");
+    }
+  } else {
+    const auto uniformDamping = uniformFiniteDofMetadata(
+        joint,
+        [&](std::size_t i) { return joint.getDampingCoefficient(i); },
+        "damping metadata");
+    if (uniformDamping.isErr()) {
+      return WriteResult::err(uniformDamping.error());
+    }
+
+    const auto uniformFriction = uniformFiniteDofMetadata(
+        joint,
+        [&](std::size_t i) { return joint.getCoulombFriction(i); },
+        "friction metadata");
+    if (uniformFriction.isErr()) {
+      return WriteResult::err(uniformFriction.error());
+    }
+
+    damping = uniformDamping.value();
+    friction = uniformFriction.value();
   }
 
   if (damping == 0.0 && friction == 0.0) {
@@ -685,6 +949,26 @@ WriteResult writeJoint(
       return fail("Cannot write " + context(joint) + " with non-finite axis.");
     }
     axis->SetAttribute("xyz", formatVector3(prismatic->getAxis()).c_str());
+  } else if (
+      const auto* planar = dynamic_cast<const dynamics::PlanarJoint*>(&joint)) {
+    if (planar->getPlaneType() == dynamics::PlanarJoint::PlaneType::ARBITRARY) {
+      return fail(
+          "Cannot write " + context(joint)
+          + " with arbitrary planar axes because URDF planar joints store only "
+            "the plane normal.");
+    }
+
+    const Eigen::Vector3d axis = planar->getRotationalAxis();
+    if (!isFinite(axis) || axis.norm() <= kTolerance) {
+      return fail(
+          "Cannot write " + context(joint) + " with invalid planar axis.");
+    }
+
+    jointElement->SetAttribute("type", "planar");
+    auto* axisElement = appendElement(doc, *jointElement, "axis");
+    axisElement->SetAttribute("xyz", formatVector3(axis.normalized()).c_str());
+  } else if (dynamic_cast<const dynamics::FreeJoint*>(&joint)) {
+    jointElement->SetAttribute("type", "floating");
   } else if (dynamic_cast<const dynamics::WeldJoint*>(&joint)) {
     jointElement->SetAttribute("type", "fixed");
   } else {
@@ -701,11 +985,9 @@ WriteResult writeJoint(
   auto* childElement = appendElement(doc, *jointElement, "child");
   childElement->SetAttribute("link", child->getName().c_str());
 
-  if (joint.getNumDofs() == 1) {
-    if (auto result = writeJointLimit(doc, *jointElement, joint, continuous);
-        result.isErr()) {
-      return result;
-    }
+  if (auto result = writeJointLimit(doc, *jointElement, joint, continuous);
+      result.isErr()) {
+    return result;
   }
 
   if (auto result = writeJointDynamics(doc, *jointElement, joint);
