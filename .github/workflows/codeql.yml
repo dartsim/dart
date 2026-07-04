@@ -37,7 +37,13 @@ permissions:
   security-events: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Protected main-branch and scheduled runs should not replace pending scans.
+  # GitHub's default concurrency queue keeps only one pending run, so use a
+  # run-specific group for preserved refs while keeping PR/topic refs cancellable.
+  group: >-
+    ${{ (github.event_name == 'schedule' || github.ref == 'refs/heads/main')
+        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
+        || format('{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: ${{ github.event_name != 'schedule' && github.ref != 'refs/heads/main' }}
 
 jobs:

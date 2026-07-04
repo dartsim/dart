@@ -325,6 +325,9 @@ compatibility remains on the active DART 6 LTS branch._
   redundant branch-push core tier once a PR is open; branch protection now
   requires the stable aggregate `Wheels` check instead of stale per-leg wheel
   names.
+- Preserved protected `main` and scheduled CI validation runs under GitHub
+  Actions concurrency by giving protected refs run-specific groups and using
+  explicit multi-pending queues for serialized maintenance workflows.
 
 ## DART 6
 
