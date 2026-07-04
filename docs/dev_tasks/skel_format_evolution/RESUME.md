@@ -39,7 +39,8 @@ passive joint dynamics metadata (damping, Coulomb friction, spring reference,
 and spring stiffness), sdformat-normalized screw thread pitch, SDF 1.11+
 axis/axis2 mimic metadata with motor enforcement, explicit parent-world root
 joints for supported SDF joint types including continuous revolute roots,
-topology-only ball child joints, local root/joint/shape poses, visual
+topology-only ball child joints, model self-collision, local
+root/joint/shape poses, visual
 shadow/hidden state, explicit
 visual material colors, PBR metallic/roughness factors, collision-surface
 contact disable bitmasks, visual transparency, zero-threshold bounce
@@ -122,6 +123,9 @@ for fields that `Root::ToElement()` omits or emits under the deprecated tag,
 but it no longer reads serialized XML attributes back from that tree, and the
 patch path now finds generated sdformat children by direct child/sibling
 traversal instead of `FindElement` schema lookup.
+Model-level self-collision now reads through `sdf::Model::SelfCollide()` and
+writes through `sdf::Model::SetSelfCollide()`, with parser and writer coverage
+for SDF `<self_collide>` round-trip.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -269,6 +273,14 @@ Additional validation for SDF joint-axis expressed-in frame resolution:
 - `pixi run lint`
 - `pixi run build`
 - `pixi run test-unit`
+
+Additional validation for SDF model self-collision IO:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
 
 Additional validation for SDF material diffuse DOM reads:
 
@@ -489,6 +501,10 @@ Changelog decision:
   the implementation PR exists; the existing DART 7 IO and Parsing bullet now
   includes explicit parent-world root joints for supported SDF joint types,
   including continuous revolute roots.
+  No additional separate entry is needed for SDF model self-collision IO because
+  it broadens the same conservative SDF writer/parser round-trip capability
+  before the implementation PR exists; the existing DART 7 IO and Parsing
+  bullet now includes model self-collision state.
 
 Additional validation for sdformat-based ambiguous `.xml` SDF dispatch:
 

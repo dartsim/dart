@@ -955,6 +955,10 @@ dynamics::SkeletonPtr makeSkeleton(
   newSkeleton->setMobile(!model.Static());
 
   //--------------------------------------------------------------------------
+  // self-collision attribute
+  newSkeleton->setSelfCollisionCheck(model.SelfCollide());
+
+  //--------------------------------------------------------------------------
   // transformation
   skeletonFrame = toEigenIsometry3(model.RawPose());
 

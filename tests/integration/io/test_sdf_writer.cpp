@@ -757,6 +757,39 @@ TEST(SdfWriter, IncludeOptionsControlVisualAndCollisionEntries)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsModelSelfCollision)
+{
+  auto skeleton = dynamics::Skeleton::create("self_collision_writer");
+  skeleton->enableSelfCollisionCheck();
+
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "body_collision");
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  EXPECT_TRUE(sdfRoot.Model()->SelfCollide());
+
+  const auto path = writeTempSdf(writeResult.value(), "self_collision");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_TRUE(reparsed->getSelfCollisionCheck());
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsVisualShadowAndHiddenState)
 {
   auto skeleton = dynamics::Skeleton::create("visual_metadata_writer");

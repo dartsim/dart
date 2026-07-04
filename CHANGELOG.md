@@ -202,6 +202,7 @@ compatibility remains on the active DART 6 LTS branch._
 - Modernized URDF/SDF/MJCF loading APIs around DART 7 parser names and cleaner
   resource-retriever ownership.
 - Added a conservative SDF writer for `Skeleton` round-trips, covering links,
+  model self-collision state,
   revolute/continuous/prismatic/weld/screw/universal joints with
   damping/friction/spring metadata, sdformat-normalized screw thread pitch,
   topology-only ball joints, explicit parent-world root joints for supported

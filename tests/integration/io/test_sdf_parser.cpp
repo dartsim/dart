@@ -1752,15 +1752,16 @@ f 1 2 3
 }
 
 //==============================================================================
-TEST(SdfParser, StaticModelParsesBooleanValues)
+TEST(SdfParser, ModelBooleansParseThroughSdformat)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();
-  const std::string uri = "memory://pkg/static_bool/model.sdf";
+  const std::string uri = "memory://pkg/model_booleans/model.sdf";
   const std::string modelSdf = R"(
 <?xml version="1.0" ?>
 <sdf version="1.7">
-  <model name="static_bool">
+  <model name="model_booleans">
     <static>TrUe</static>
+    <self_collide>true</self_collide>
     <link name="link">
       <inertial><mass>1.0</mass></inertial>
     </link>
@@ -1771,6 +1772,7 @@ TEST(SdfParser, StaticModelParsesBooleanValues)
   const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
   ASSERT_NE(skeleton, nullptr);
   EXPECT_FALSE(skeleton->isMobile());
+  EXPECT_TRUE(skeleton->getSelfCollisionCheck());
 }
 
 //==============================================================================

@@ -27,12 +27,14 @@ topology-only ball child joints, SDF 1.11+ mimic metadata for axis/axis2
 follower joints with motor
 enforcement, explicit parent-world root joints for supported SDF joint types
 (revolute, continuous, prismatic, screw, universal, and topology-only ball),
-link gravity mode, inertial parameters, local joint/shape poses,
+model self-collision, link gravity mode, inertial parameters, local
+joint/shape poses,
 box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry,
 visual shadow state as SDF `<cast_shadows>`, hidden visual state as zero-valued
 SDF `<visibility_flags>`, visual alpha as SDF `<transparency>`, explicit visual
 material colors as SDF `<diffuse>` values, and PBR metallic/roughness factors as
-SDF `<pbr><metal>` values.
+SDF `<pbr><metal>` values. Model-level self-collision round-trips through SDF
+`<self_collide>`.
 Collision-surface contact disable state round-trips through SDF
 `<surface><contact><collide_bitmask>` for DART's lossless zero-bitmask subset;
 zero-threshold bounce restitution round-trips through SDF

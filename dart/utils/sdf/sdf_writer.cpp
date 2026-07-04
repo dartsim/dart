@@ -1300,6 +1300,7 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
   sdf::Model model;
   model.SetName(skeleton.getName());
   model.SetStatic(!skeleton.isMobile());
+  model.SetSelfCollide(skeleton.getSelfCollisionCheck());
 
   for (std::size_t i = 0; i < skeleton.getNumBodyNodes(); ++i) {
     const auto* bodyNode = skeleton.getBodyNode(i);
