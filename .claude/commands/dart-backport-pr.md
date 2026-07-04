@@ -1,5 +1,6 @@
 ---
 description: backport a merged main PR to a release branch
+argument-hint: "<pr-number> [release-branch]"
 agent: build
 ---
 

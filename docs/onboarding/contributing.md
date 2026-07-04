@@ -21,6 +21,19 @@ Before every commit, run:
 pixi run lint
 ```
 
+Make the lint gate automatic once per clone:
+
+```bash
+pixi run install-hooks
+```
+
+It installs a `pre-commit` git hook that runs `pixi run check-lint-quick`
+before every commit and blocks the commit if it fails. An existing `pre-commit`
+hook is preserved as `pre-commit.local` and chained. Emergency escape hatch:
+`DART_SKIP_HOOKS=1 git commit ...`. Claude Code sessions are additionally
+guarded via the tracked `.claude/settings.json` hook, which runs the same gate
+for agent-issued `git commit` calls even before `install-hooks` has been run.
+
 For C++ or Python changes, also run `pixi run build` and focused tests. For
 Gazebo/gz-physics compatibility surfaces, run:
 

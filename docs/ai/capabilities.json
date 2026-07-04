@@ -51,6 +51,12 @@
       "gate_profile": "docs-ai"
     },
     {
+      "name": "dart-changelog",
+      "category": "docs",
+      "status": "active",
+      "gate_profile": "docs-ai"
+    },
+    {
       "name": "dart-mechanical-refactor",
       "category": "refactor",
       "status": "active",

@@ -1,5 +1,6 @@
 ---
 description: start a feature, bugfix, refactor, docs, build, or test task
+argument-hint: "<task-description>"
 agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
@@ -63,3 +64,9 @@ Read these files first:
 - **DART 7 solver or architecture work**: Do that on `main`, not on the DART
   6.20 support branch. Use this release branch only for compatible maintenance,
   dependency minimization, CI, docs, and backports.
+
+## Output
+
+- Task type, branch, and files changed
+- Verification commands run and their results
+- Remaining steps and anything held for explicit maintainer/user approval before push/PR

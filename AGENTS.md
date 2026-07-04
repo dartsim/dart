@@ -8,7 +8,10 @@ This file provides conventions and tips for agents working in this repository.  
 
 ## Repository Practices
 - Prefer [`rg`](https://github.com/BurntSushi/ripgrep) for searching the code base.
-- Keep commits focused and run the relevant checks before committing.
+- Keep commits focused and run the relevant checks before committing. Run
+  `pixi run install-hooks` once per clone to install the pre-commit hook that
+  runs `pixi run check-lint-quick` automatically (`DART_SKIP_HOOKS=1` is the
+  emergency escape hatch).
 - Follow the style guide in `CONTRIBUTING.md` (two‑space indent, camelCase functions, PascalCase classes, no cuddled braces).
 - For DART 6.20 work, branch from `origin/release-6.20` with a topic branch,
   never by committing directly on `release-*`.
