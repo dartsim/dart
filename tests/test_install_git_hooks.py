@@ -415,6 +415,32 @@ def test_guard_stands_down_for_unrelated_git_config_with_managed_hook(
 
 
 @pytest.mark.parametrize(
+    "command",
+    [
+        (
+            "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name "
+            "GIT_CONFIG_VALUE_0=DART git commit -m x"
+        ),
+        (
+            "env GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name "
+            "GIT_CONFIG_VALUE_0=DART git commit -m x"
+        ),
+    ],
+)
+def test_guard_stands_down_for_unrelated_env_git_config_with_managed_hook(
+    tmp_path, command
+):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 0
+    assert stderr == ""
+
+
+@pytest.mark.parametrize(
     "args",
     [
         "--no-verify -m x",
@@ -511,6 +537,45 @@ def test_guard_runs_for_config_env_hookspath_override_even_with_dart_managed_hoo
     )
 
     returncode, stderr = _run_guard(repo, env, f"git {option} commit -m x")
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        (
+            "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath "
+            "GIT_CONFIG_VALUE_0=/tmp/empty-hooks git commit -m x"
+        ),
+        (
+            "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=Core.HOOKSPATH "
+            "GIT_CONFIG_VALUE_0=/tmp/empty-hooks git commit -m x"
+        ),
+        (
+            "GIT_CONFIG_COUNT=2 GIT_CONFIG_KEY_0=user.name "
+            "GIT_CONFIG_VALUE_0=DART GIT_CONFIG_KEY_1=core.hooksPath "
+            "GIT_CONFIG_VALUE_1=/tmp/empty-hooks git commit -m x"
+        ),
+        (
+            "env GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath "
+            "GIT_CONFIG_VALUE_0=/tmp/empty-hooks git commit -m x"
+        ),
+        (
+            "env -S 'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath "
+            "GIT_CONFIG_VALUE_0=/tmp/empty-hooks git commit -m x'"
+        ),
+    ],
+)
+def test_guard_runs_for_env_hookspath_override_even_with_dart_managed_hook(
+    tmp_path, command
+):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, command)
 
     assert returncode == 0
     assert "would run 'pixi run check-lint-quick'" in stderr

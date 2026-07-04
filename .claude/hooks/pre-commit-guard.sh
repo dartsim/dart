@@ -115,6 +115,15 @@ COMMIT_SHORT_OPTS_WITH_ATTACHED_ARG = {"m", "F", "c", "C", "S", "t", "u", "U"}
 ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=(?P<value>.*)$")
 
 
+def record_env_assignment(env, token):
+    m = ENV_RE.match(token)
+    if not m:
+        return
+    name, _, value = token.partition("=")
+    value, _ = strip_outer_quotes(value)
+    env[name] = value
+
+
 def is_dart_skip_assignment(token):
     m = ENV_RE.match(token)
     if not m or not token.startswith("DART_SKIP_HOOKS="):
@@ -125,13 +134,15 @@ def is_dart_skip_assignment(token):
     return value == "1"
 
 
-def skip_env_prefix(tokens, i):
+def skip_env_prefix(tokens, i, env=None):
     """Skip VAR=value prefixes (quote-aware); return (i, dart_skip_seen)."""
     bypass = False
     while i < len(tokens):
         m = ENV_RE.match(tokens[i])
         if not m:
             break
+        if env is not None:
+            record_env_assignment(env, tokens[i])
         if is_dart_skip_assignment(tokens[i]):
             bypass = True
         value = m.group("value")
@@ -157,6 +168,18 @@ def strip_outer_quotes(value):
 def is_hooks_path_override(option):
     key, sep, _ = option.partition("=")
     return bool(sep) and key.lower() == "core.hookspath"
+
+
+def env_config_has_hooks_path_override(env):
+    try:
+        count = int(env.get("GIT_CONFIG_COUNT", "0"))
+    except ValueError:
+        return False
+    for index in range(count):
+        key = env.get(f"GIT_CONFIG_KEY_{index}", "")
+        if key.lower() == "core.hookspath":
+            return True
+    return False
 
 
 def split_env_split_string(value):
@@ -199,7 +222,8 @@ def is_git_commit(text):
             tokens = shlex.split(part)
         except ValueError:
             tokens = part.split()
-        i, bypass = skip_env_prefix(tokens, 0)
+        command_env = {}
+        i, bypass = skip_env_prefix(tokens, 0, command_env)
         command_cwd = None
         if bypass:
             continue  # command-level bypass, same as the git hook
@@ -249,7 +273,7 @@ def is_git_commit(text):
                     ):
                         i += 1
                         continue
-                    next_i, env_bypass = skip_env_prefix(tokens, i)
+                    next_i, env_bypass = skip_env_prefix(tokens, i, command_env)
                     if next_i == i:
                         break
                     bypass = bypass or env_bypass
@@ -295,6 +319,8 @@ def is_git_commit(text):
         if not target_dir:
             target_dir = command_cwd
         if i < len(tokens) and tokens[i].rstrip(")}") == "commit":
+            if env_config_has_hooks_path_override(command_env):
+                hooks_path_override = True
             no_verify = commit_args_disable_hooks(tokens[i + 1 :])
             if target_dir:
                 project = os.environ.get("CLAUDE_PROJECT_DIR")
