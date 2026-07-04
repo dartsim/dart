@@ -66,14 +66,18 @@ UI-visible changes, and PLAN checkboxes updated.
 
 ### Frozen scene catalog (categories → scenes)
 
-- Getting Started: empty, hello_world-scene (KR5 intro; standalone example
-  also kept), simple_frames
-- Visualization: rigid_shapes ("shapes"), drag_and_drop, imgui-reference,
-  heightmap, point_cloud (HAVE_OCTOMAP-gated)
-- Rigid Body: boxes, rigid_cubes, rigid_chain, add_delete_skels,
-  simulation_event_handler, sleeping, box_stacking
-- Constraints & Joints: hardcoded_design, dynamic_joint_constraints,
-  rigid_loop, tinkertoy, human_joint_limits, mixed_chain
+- Getting Started: empty ("Empty Scaffold"), hello_world-scene (KR5 intro;
+  standalone example also kept)
+- Visualization: simple_frames, drag_and_drop, imgui-reference, heightmap,
+  point_cloud (HAVE_OCTOMAP-gated)
+- Rigid Body: boxes, rigid_cubes, rigid_chain, rigid_shapes,
+  add_delete_skels, simulation_event_handler, sleeping
+- Constraints & Joints: hardcoded_design, box_stacking,
+  dynamic_joint_constraints, rigid_loop, tinkertoy, human_joint_limits,
+  mixed_chain
+  (B1 reconciliation 2026-07-04: category placements follow 1a5469960c2
+  wording per BRIEF-phase2 precedence — rigid_shapes→Rigid Body,
+  box_stacking→Constraints & Joints, simple_frames→Visualization.)
 - Control & IK: hybrid_dynamics, joint_constraints, biped_stand,
   operational_space_control, atlas_puppet, atlas_simbicon, wam_ikfast
   (ikfast-guarded), hubo_puppet, ssik_ik_gui, contact_inverse_dynamics

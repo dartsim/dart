@@ -64,3 +64,12 @@ pixi run lint
 Report per scene: parity notes (what the original did that the port
 does/doesn't), tunables exposed, PNG path. Orchestrator reviews every PNG
 before the batch is accepted.
+
+## Parity baselines (acceptance criteria)
+
+`parity/parity-b{1..4}.json` hold per-scene checklists extracted from the
+original sources (worldSetup, controllers, every key binding, tunables,
+interactions, assets, portRisks). Workers implement against them; the
+orchestrator reviews each batch against them. A port that drops a key
+binding, tunable, or controller behavior without a documented reason fails
+review. `portRisks` entries are mandatory reading before coding a scene.
