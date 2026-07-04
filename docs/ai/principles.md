@@ -53,6 +53,12 @@ the owner docs above.
    are allowed when the task calls for them. Pushes, PR updates, comments,
    review-thread changes, CI re-triggers, and merges require explicit
    maintainer/user approval.
+10. **Failures get root-caused, not patched around.** When something breaks
+    unexpectedly — a failing test, build error, regression, or numerical
+    drift — stop, reproduce the smallest failing case, and fix the cause with
+    regression coverage rather than silencing the symptom. If the cause is
+    outside the current scope, report it back per `docs/ai/orchestration.md`
+    instead of routing around it.
 
 ## Principle Audit
 
@@ -68,6 +74,8 @@ Before finalizing substantial AI-assisted work, check:
 - Source of truth: mutable state has one owner; other surfaces point to it.
 - Decision evidence: consequential choices are backed by a verification/debug
   method that addresses false-positive and false-negative risk.
+- Root cause: any unexpected failure was reproduced and fixed at the cause with
+  regression coverage, not silenced or patched around.
 - Public path: workflow guidance maps to tracked docs and `pixi run ...` gates.
 - Evidence: checks, review results, artifacts, or blockers are recorded.
 - Shared-state safety: any external mutation was explicitly approved.
