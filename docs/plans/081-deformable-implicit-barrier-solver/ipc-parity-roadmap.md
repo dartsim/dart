@@ -275,10 +275,23 @@ FEM cube, while dartpy compares direct and matrix-free contact settling.
 Remaining hardening: larger contact-heavy meshes and deciding when matrix-free
 CG becomes the automatic very-large-mesh path.
 
+**Fig-23 statistics harness — shape-parity scaffold landed:** the deformable
+solver diagnostics now include the peak active-contact count per step
+(`maxActiveContactCount`, the Fig-23 max-contacts axis), and a machine-checkable
+statistics packet distils the `bm_deformable_body` JSON into the Fig-23-shaped
+per-scene axes (per-step Newton/CG effort, CG residual, assembled sparse-Hessian
+footprint, per-step wall time, and the active-contact statistics) over the
+DART-runnable scenes: `scripts/write_plan081_deformable_fig23_packet.py` +
+[`fig23_deformable_statistics_corpus.json`](fig23_deformable_statistics_corpus.json),
+validated by `python/tests/unit/test_write_plan081_deformable_fig23_packet.py`.
+It is explicitly
+`paper_scale: false` (shape parity, not paper parity).
+
 Remaining M7 work: AMG / multigrid preconditioning for the largest systems,
 on-device GPU assembly + solve beyond the current PSD offload, the 688K-node
-Fig-22 scale run, and the profiling-grade per-scene Fig-23 statistics harness
-with the Table-1 CPU comparison against the reference.
+Fig-22 scale run, and the **paper-scale** Fig-23 statistics plus the Table-1 CPU
+comparison against the published IPC reference numbers (both blocked on the M4
+upstream asset pipeline).
 
 ## Honest status
 
