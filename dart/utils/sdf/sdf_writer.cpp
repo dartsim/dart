@@ -1268,6 +1268,9 @@ WriteResult computeLinkModelPose(
     }
   } else if (
       !isImplicitRootJoint(*joint) && !isExplicitWorldRootJoint(*joint)) {
+    if (const auto reason = unsupportedSdfJointReason(*joint)) {
+      return fail("Cannot write root " + *reason + ".");
+    }
     return fail(
         "Unsupported SDF root joint type [" + std::string(joint->getType())
         + "] for link [" + bodyNode.getName() + "].");
@@ -1399,6 +1402,9 @@ WriteResult buildJoint(
       return ok();
     }
     if (!isExplicitWorldRootJoint(joint)) {
+      if (const auto reason = unsupportedSdfJointReason(joint)) {
+        return fail("Cannot write root " + *reason + ".");
+      }
       return fail(
           "Unsupported SDF root joint type [" + std::string(joint.getType())
           + "] for explicit parent-world joint [" + joint.getName() + "].");

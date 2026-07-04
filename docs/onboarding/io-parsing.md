@@ -203,8 +203,8 @@ surface friction, friction direction, or restitution values, NaN joint position
 limits,
 non-finite skeleton gravity, shape poses, inertial data, joint axes,
 pre-SDF-1.11 mimic output, coupler-style mimic enforcement, ball joint limits,
-ball joint dynamics, child `FreeJoint`s, DART Euler, planar, and two- or
-three-axis translational joints, and
+ball joint dynamics, child `FreeJoint`s, DART Euler joints, planar joints,
+and two- or three-axis translational joints, and
 DART `SoftBodyNode` export are reported as unsupported instead of being
 silently dropped. It is not a general project save/load format and does not
 make YAML a model format. Use the writer only when the target scene fits the

@@ -468,6 +468,33 @@ void expectUnsupportedChildJointError(
       << result.error().message;
 }
 
+template <typename JointType>
+void expectUnsupportedRootJointError(
+    std::string_view skeletonName,
+    std::string_view jointName,
+    std::string_view expectedSnippet)
+{
+  auto skeleton = dynamics::Skeleton::create(std::string(skeletonName));
+
+  typename JointType::Properties jointProperties;
+  jointProperties.mName = std::string(jointName);
+
+  dynamics::BodyNode::Properties bodyProperties;
+  bodyProperties.mName = "root_body";
+
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<JointType>(
+      nullptr, jointProperties, bodyProperties);
+  (void)joint;
+  (void)body;
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find(std::string(expectedSnippet)),
+      std::string::npos)
+      << result.error().message;
+}
+
 } // namespace
 
 //==============================================================================
@@ -2381,6 +2408,16 @@ TEST(SdfWriter, ChildFreeJointReturnsExplicitUnsupportedError)
       "unsupported_child_free_joint",
       "floating_child",
       "DART FreeJoint [floating_child] as an SDF child joint");
+}
+
+//==============================================================================
+TEST(SdfWriter, RootEulerJointReturnsExplicitUnsupportedError)
+{
+  expectUnsupportedRootJointError<dynamics::EulerJoint>(
+      "unsupported_root_euler_joint",
+      "euler_root",
+      "root DART EulerJoint [euler_root] as SDF because SDF has no "
+      "Euler-axis-order joint primitive");
 }
 
 //==============================================================================

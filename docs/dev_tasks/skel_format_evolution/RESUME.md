@@ -71,12 +71,12 @@ NaN joint position-limit diagnostics, non-finite screw pitch diagnostics,
 non-finite skeleton gravity, shape-pose, inertial-data, and joint-axis
 diagnostics, invalid collision-surface friction, friction-direction values,
 slip, restitution, and friction-direction-frame diagnostics, unsupported
-ball-joint metadata, unsupported child `FreeJoint`, `EulerJoint`,
-`PlanarJoint`, `TranslationalJoint2D`, and `TranslationalJoint` diagnostics,
-unsupported DART `SoftBodyNode` diagnostics, and non-finite joint dynamics
-diagnostics. This is real Phase 5 progress, but Phase 5 is still open until
-broader SDF coverage plus the remaining accepted writer targets are implemented
-or durably deferred.
+ball-joint metadata, unsupported child `FreeJoint` diagnostics, unsupported
+`EulerJoint`, `PlanarJoint`, `TranslationalJoint2D`, and `TranslationalJoint`
+diagnostics, unsupported DART `SoftBodyNode` diagnostics, and non-finite joint
+dynamics diagnostics. This is real Phase 5 progress, but Phase 5 is still open
+until broader SDF coverage plus the remaining accepted writer targets are
+implemented or durably deferred.
 
 The supported SDF geometry reader paths now load through libsdformat
 `sdf::Geometry` DOM objects before mapping sphere, box, cylinder, capsule,
@@ -1051,7 +1051,7 @@ Changelog decision:
 Additional validation for unsupported DART joint-family SDF writer diagnostics:
 
 - `git diff --check`
-- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.ChildFreeJointReturnsExplicitUnsupportedError:SdfWriter.EulerJointReturnsExplicitUnsupportedError:SdfWriter.PlanarJointReturnsExplicitUnsupportedError:SdfWriter.TranslationalJoint2DReturnsExplicitUnsupportedError:SdfWriter.TranslationalJointReturnsExplicitUnsupportedError'`
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.ChildFreeJointReturnsExplicitUnsupportedError:SdfWriter.RootEulerJointReturnsExplicitUnsupportedError:SdfWriter.EulerJointReturnsExplicitUnsupportedError:SdfWriter.PlanarJointReturnsExplicitUnsupportedError:SdfWriter.TranslationalJoint2DReturnsExplicitUnsupportedError:SdfWriter.TranslationalJointReturnsExplicitUnsupportedError'`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 - `pixi run lint`
 - `pixi run build`
