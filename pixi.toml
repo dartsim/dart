@@ -57,6 +57,8 @@ config = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DCMAKE_C_COMPILER_LAUNCHER= \
+        -DCMAKE_CXX_COMPILER_LAUNCHER= \
         -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -180,6 +182,8 @@ config-py = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DCMAKE_C_COMPILER_LAUNCHER= \
+        -DCMAKE_CXX_COMPILER_LAUNCHER= \
         -DDART_BUILD_DARTPY=ON \
         -DDART_BUILD_PROFILE=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -272,6 +276,8 @@ config-asan = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DCMAKE_C_COMPILER_LAUNCHER= \
+        -DCMAKE_CXX_COMPILER_LAUNCHER= \
         -DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer" \
         -DCMAKE_C_FLAGS="-fsanitize=address -fno-omit-frame-pointer" \
         -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" \
@@ -305,6 +311,8 @@ config-coverage = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DCMAKE_C_COMPILER_LAUNCHER= \
+        -DCMAKE_CXX_COMPILER_LAUNCHER= \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_CODECOV=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -530,6 +538,8 @@ config-install = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+        -DCMAKE_C_COMPILER_LAUNCHER= \
+        -DCMAKE_CXX_COMPILER_LAUNCHER= \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -886,13 +896,41 @@ download-gz-sim = { cmd = """
 
 patch-gz-physics = { cmd = """
     bash -lc '
-    patch_file=$PWD/tools/gazebo/patches/gz-physics8-changed-world-poses.patch
-    if git -C .deps/gz-physics apply --reverse --check "$patch_file" >/dev/null 2>&1; then
-        echo "gz-physics changed-world-poses patch already applied"
-    else
+    set -euo pipefail
+    patch_dir="$PWD/tools/gazebo/patches"
+    applied_marker=".deps/gz-physics/.dart-patches-applied"
+    if [ -f "$applied_marker" ]; then
+        echo "gz-physics patches already applied"
+        exit 0
+    fi
+
+    found_patch=0
+    all_applied=1
+    while IFS= read -r patch_file; do
+        found_patch=1
+        if ! git -C .deps/gz-physics apply --reverse --check "$patch_file" >/dev/null 2>&1; then
+            all_applied=0
+            break
+        fi
+    done < <(find "$patch_dir" -maxdepth 1 -type f -name "*.patch" | sort)
+
+    if [ "$found_patch" -eq 0 ]; then
+        exit 0
+    fi
+
+    if [ "$all_applied" -eq 1 ]; then
+        echo "gz-physics patches already applied"
+        touch "$applied_marker"
+        exit 0
+    fi
+
+    while IFS= read -r patch_file; do
         git -C .deps/gz-physics apply --check "$patch_file"
         git -C .deps/gz-physics apply "$patch_file"
-    fi
+        echo "$patch_file applied"
+    done < <(find "$patch_dir" -maxdepth 1 -type f -name "*.patch" | sort)
+
+    touch "$applied_marker"
     '
 """, depends-on = [
   "download-gz",

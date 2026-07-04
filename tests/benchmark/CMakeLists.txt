@@ -43,3 +43,24 @@ endif()
 
 add_subdirectory(unit)
 add_subdirectory(integration)
+
+# ==============================================================================
+# SIMD benchmarks (header-only dart/simd module; not registered with ctest,
+# mirroring main's tests/benchmark wiring)
+# ==============================================================================
+add_executable(bm_simd simd/bm_simd.cpp)
+target_link_libraries(bm_simd dart-simd Eigen3::Eigen benchmark::benchmark)
+
+add_executable(bm_math simd/bm_math.cpp)
+target_link_libraries(bm_math dart-simd Eigen3::Eigen benchmark::benchmark)
+
+# Enable native SIMD for benchmarks (AVX2, AVX-512, etc. based on CPU)
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
+if(COMPILER_SUPPORTS_MARCH_NATIVE)
+  target_compile_options(bm_simd PRIVATE -march=native)
+  target_compile_options(bm_math PRIVATE -march=native)
+endif()
+
+dart_format_add(simd/bm_simd.cpp)
+dart_format_add(simd/bm_math.cpp)

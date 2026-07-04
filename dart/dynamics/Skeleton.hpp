@@ -1278,6 +1278,9 @@ protected:
   /// Returns the current kinematic version.
   std::size_t getKinematicVersion() const;
 
+  /// Returns the current velocity version.
+  std::size_t getVelocityVersion() const;
+
   /// Global generation counters used by World to avoid rescanning every
   /// skeleton on steady all-resting steps. The per-skeleton validation path is
   /// still used whenever any counter has changed.
@@ -1489,6 +1492,9 @@ protected:
   /// public structural VersionCounter because GenericJoint position setters do
   /// not increment that counter.
   std::size_t mKinematicVersion = 0;
+
+  /// Monotonic counter for joint-velocity changes made through public setters.
+  std::size_t mVelocityVersion = 0;
 
   /// Monotonic counter for user-writable generalized force/command changes.
   std::size_t mExternalDisturbanceVersion = 0;

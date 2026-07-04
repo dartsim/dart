@@ -139,6 +139,15 @@ dart_option(DART_CODECOV "Turn on codecov support" OFF)
 dart_option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF
 )
+# Force the header-only dart/simd module to fall back to its scalar backend
+# regardless of the instruction sets the compiler advertises (used by CI to
+# exercise the scalar code path). Unrelated to DART_ENABLE_SIMD above.
+dart_option(DART_SIMD_FORCE_SCALAR
+  "Force the dart/simd module to use the scalar fallback backend" OFF
+)
+if(DART_SIMD_FORCE_SCALAR)
+  add_compile_definitions(DART_SIMD_FORCE_SCALAR=1)
+endif()
 dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 # GCC and Clang add ANSI-formatted colors when they detect the output medium is a
 # terminal. However, this doesn't work in some cases such as when the makefile is
@@ -730,6 +739,16 @@ add_custom_target(
 if(DART_VERBOSE)
   message(STATUS "")
   message(STATUS "[ Code Formatting ]")
+endif()
+
+if(CLANG_FORMAT_EXECUTABLE)
+  get_filename_component(_clang_format_name "${CLANG_FORMAT_EXECUTABLE}" NAME)
+  if(
+    NOT EXISTS "${CLANG_FORMAT_EXECUTABLE}"
+    OR NOT _clang_format_name STREQUAL "clang-format-14"
+  )
+    unset(CLANG_FORMAT_EXECUTABLE CACHE)
+  endif()
 endif()
 
 find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format-14)
