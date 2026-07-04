@@ -3654,6 +3654,17 @@ void Skeleton::computeForwardDynamics()
   // Note: Articulated Inertias will be updated automatically when
   // getArtInertiaImplicit() is called in BodyNode::updateBiasForce()
 
+  // WP-PG.30 note: unlike computeImpulseForwardDynamics(), this method does
+  // not special-case a single free body. For a one-body root, the backward
+  // and forward recursions below already reduce to exactly one call each of
+  // updateBiasForce()/updateAccelerationFD()/updateTransmittedForceFD()/
+  // updateJointForceFD() (both mChildBodyNodes and the parent-body branch are
+  // already O(1) for a childless root), so a hand-written fast path would
+  // issue the identical call sequence -- no pass is actually removable. Round
+  // 1 measured that trying to trim this exact chain further (skipping the
+  // FreeJoint updateJointForceFD() "no-op") regressed RTF to 0.2497 on
+  // origin/perf/dart6-single-reactive-raw-root, so no second attempt is made
+  // here without new evidence of a genuine reduced-pass opportunity.
   for (auto it = mSkelCache.mBodyNodes.rbegin();
        it != mSkelCache.mBodyNodes.rend();
        ++it)
@@ -4270,6 +4281,36 @@ double Skeleton::computeMaxBodyAngularSpeed() const
 }
 
 //==============================================================================
+FreeJoint* Skeleton::getCachedRootFreeJoint() const
+{
+  const std::size_t version = getVersion();
+  if (mRootFreeJointCacheVersion == version)
+    return mCachedRootFreeJoint;
+
+  // A zero-body skeleton has no root; guard explicitly so this never reaches
+  // getRootJoint()/getRootBodyNode(), which dterr+assert on that case. This
+  // keeps the documented "nullptr if there is no root body" contract true
+  // without ever hitting that log/assert path.
+  FreeJoint* freeJoint = nullptr;
+  if (getNumBodyNodes() > 0) {
+    // getRootJoint() only has a mutable overload backing it (the const
+    // overload const_casts through to it, mirroring the pattern
+    // Skeleton::getRootBodyNode() itself already uses), so this does not
+    // weaken the logical constness of this method.
+    freeJoint
+        = dynamic_cast<FreeJoint*>(const_cast<Skeleton*>(this)->getRootJoint());
+  }
+
+  // Write the pointer before the version stamp: a concurrent same-skeleton
+  // caller (unsupported/UB in-tree, but defensive) then sees either the old
+  // version+pointer or the new version+pointer, never a fresh version paired
+  // with a stale pointer.
+  mCachedRootFreeJoint = freeJoint;
+  mRootFreeJointCacheVersion = version;
+  return mCachedRootFreeJoint;
+}
+
+//==============================================================================
 void Skeleton::computeImpulseForwardDynamics()
 {
   // Skip immobile or 0-dof skeleton
@@ -4279,9 +4320,14 @@ void Skeleton::computeImpulseForwardDynamics()
   if (mSkelCache.mBodyNodes.size() == 1u) {
     auto* bodyNode = mSkelCache.mBodyNodes[0];
     auto* parentJoint = bodyNode->getParentJoint();
-    const auto* freeJoint = dynamic_cast<const FreeJoint*>(parentJoint);
+    // WP-PG.30: the RTTI check below (dynamic_cast<FreeJoint*>) is now
+    // cached per structural version instead of repeated every step; see
+    // getCachedRootFreeJoint(). bodyNode is this skeleton's root here
+    // because mSkelCache.mBodyNodes.size() == 1u, so the cached root joint
+    // is exactly parentJoint's classification.
     const bool useSingleFreeBodyPath
-        = freeJoint != nullptr && bodyNode->getParentBodyNode() == nullptr
+        = getCachedRootFreeJoint() != nullptr
+          && bodyNode->getParentBodyNode() == nullptr
           && bodyNode->getNumChildBodyNodes() == 0u
           && (parentJoint->getActuatorType() == Joint::FORCE
               || parentJoint->getActuatorType() == Joint::PASSIVE);

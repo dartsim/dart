@@ -40,7 +40,6 @@
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
 #include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
@@ -286,13 +285,17 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 
   if (useDirectSingleFreeBody) {
     const auto* parentJoint = directBody->getParentJoint();
-    const auto* freeJoint
-        = dynamic_cast<const dynamics::FreeJoint*>(parentJoint);
+    // WP-PG.30: cached per-skeleton (keyed on structural version) instead of
+    // repeating this dynamic_cast every step; see
+    // Skeleton::getCachedRootFreeJoint(). directBody is directSkeleton's root
+    // whenever getNumBodyNodes() == 1u below, so the cached root joint is
+    // exactly parentJoint's classification.
     useDirectSingleFreeBody
         = directSkeleton != nullptr && directSkeleton->getNumBodyNodes() == 1u
           && directSkeleton->getNumDofs() == 6u
           && directBody->getParentBodyNode() == nullptr
-          && directBody->getNumChildBodyNodes() == 0u && freeJoint != nullptr
+          && directBody->getNumChildBodyNodes() == 0u
+          && directSkeleton->getCachedRootFreeJoint() != nullptr
           && parentJoint != nullptr
           && (parentJoint->getActuatorType() == dynamics::Joint::FORCE
               || parentJoint->getActuatorType() == dynamics::Joint::PASSIVE);
