@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | **Phase 0 executing** (baseline packet capture on `b5b2a5bee77`); plan of record merged (#3234); phases 1–7 ahead |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | **Phase 0 captured** (packet in `05-phase0-baseline-packet.md`, this PR); plan of record merged (#3234); phase 1 next |
 | **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet open as **#3263** (tracks the native-collision port as its WS-F lane, external owner) |
 
 ## PR tracker
@@ -106,17 +106,15 @@ before treating it as an open/active PR.)_
   uses FCL as the default detector — created in *both* `ConstraintSolver`
   constructors (`dart/constraint/ConstraintSolver.cpp:336` and `:353` at
   `b5b2a5bee77`; the `:322`/`:342` refs in `03` predate recent merges).
-- **Phase 0 (executing, 2026-07-04):** all evidence-harness prerequisites are
-  merged (#3209 container workload, #3230 dashboard capture path). The
-  baseline packet is being captured on `b5b2a5bee77` using the canonical
-  guard-scene protocol shared with the perf lane
-  (`../dart6_performance_generalization/01-baseline-evidence.md`), across
-  `dart`/`fcl`/`bullet`/`ode` plus a `default` continuity row, with scene
-  dumps. Deliverable: `05-phase0-baseline-packet.md` with an explicit
-  "native default allowed/not allowed" verdict.
-- **Next after phase 0:** the non-default C++17/no-EnTT native core port
-  (phase 1), only after the packet is reviewed. Do not flip defaults until
-  `03`'s full A/B packet and gz gate pass.
+- **Phase 0 (captured 2026-07-04):** all evidence-harness prerequisites
+  merged (#3209 container workload, #3230 dashboard capture path); the
+  baseline packet is recorded in `05-phase0-baseline-packet.md` (raw
+  evidence: `05-artifacts.md`) on `b5b2a5bee77` with the verdict "native
+  default NOT allowed at this tip" and the phase-6 acceptance envelope.
+  Do not re-capture; consume it.
+- **Next: phase 1** — the non-default C++17/no-EnTT native core port,
+  once this packet's review PR lands. Do not flip defaults until `03`'s
+  full A/B packet and gz gate pass.
 - _Hold each follow-up to `03`'s bar: gz-compat (`pixi run -e gazebo test-gz`),
   feature/contact parity, evidence-driven perf ≥ Bullet/ODE/FCL, and
   outcome/hash/scene-dump tolerances. The FCL-optional default-flip (the actual
@@ -165,8 +163,9 @@ before treating it as an open/active PR.)_
   native-collision **#3123** (primitive plane contacts + broadphase pruning) — first
   piece of the native collision port.
 - **Open queue (2026-07-04):** #3263 (perf-lane WP-PG.01 baseline packet) and
-  #3267 (maintainer branch-CI fix). The former #3209/#3226/#3227/#3229/#3230
-  monitoring queue is fully merged.
+  #3271 (this lane's phase-0 packet, in review). The former
+  #3209/#3226/#3227/#3229/#3230 monitoring queue and the #3267/#3272/#3273
+  branch-CI fixes are all merged.
 - **Largest remaining win:** native-collision port → makes FCL/Bullet/ODE
   optional and eventually drops `fcl` from core. The DART 7 native engine is not
   yet ported to DART 6.20; default-flip is still a late-phase decision.
