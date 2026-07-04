@@ -58,11 +58,17 @@ struct DeactivationOptions
   bool mEnabled = true;
 
   /// Maximum linear speed (m/s) of any body in a skeleton for that skeleton to
-  /// be considered quiet enough to begin sleeping.
+  /// be considered quiet enough to begin sleeping. Becoming a sleep candidate
+  /// additionally requires the smoothed speed to drop below 10% of this value
+  /// (the final-quiet gate), so both bounds scale together when the threshold
+  /// is tuned for scenes with a higher contact-solver jitter floor.
   double mLinearSpeedThreshold = 0.01;
 
   /// Maximum angular speed (rad/s) of any body in a skeleton for that skeleton
-  /// to be considered quiet enough to begin sleeping.
+  /// to be considered quiet enough to begin sleeping. Becoming a sleep
+  /// candidate additionally requires the smoothed speed to drop below 20% of
+  /// this value (the final-quiet gate), so both bounds scale together when the
+  /// threshold is tuned.
   double mAngularSpeedThreshold = 0.05;
 
   /// Duration (seconds) of sustained sub-threshold motion that must elapse
