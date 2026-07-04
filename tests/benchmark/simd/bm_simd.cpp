@@ -44,6 +44,12 @@ using namespace dart::simd;
 
 namespace {
 
+#if defined(__GNUC__) || defined(__clang__)
+  #define DART_BENCHMARK_UNROLL_4 _Pragma("GCC unroll 4")
+#else
+  #define DART_BENCHMARK_UNROLL_4
+#endif
+
 template <typename T>
 aligned_vector<T> generateRandomData(std::size_t size, int seed = 42)
 {
@@ -140,7 +146,7 @@ static void BM_Add_DART_f32(benchmark::State& state)
   using VecT = Vec<float, W>;
 
   for (auto _ : state) {
-#pragma GCC unroll 4
+    DART_BENCHMARK_UNROLL_4
     for (std::size_t i = 0; i < n; i += W) {
       auto a = VecT::load(&data_a[i]);
       auto b = VecT::load(&data_b[i]);
@@ -201,7 +207,7 @@ static void BM_Sub_DART_f32(benchmark::State& state)
   using VecT = Vec<float, W>;
 
   for (auto _ : state) {
-#pragma GCC unroll 4
+    DART_BENCHMARK_UNROLL_4
     for (std::size_t i = 0; i < n; i += W) {
       auto a = VecT::load(&data_a[i]);
       auto b = VecT::load(&data_b[i]);
@@ -262,7 +268,7 @@ static void BM_Mul_DART_f32(benchmark::State& state)
   using VecT = Vec<float, W>;
 
   for (auto _ : state) {
-#pragma GCC unroll 4
+    DART_BENCHMARK_UNROLL_4
     for (std::size_t i = 0; i < n; i += W) {
       auto a = VecT::load(&data_a[i]);
       auto b = VecT::load(&data_b[i]);
@@ -354,7 +360,7 @@ static void BM_Abs_DART_f32(benchmark::State& state)
   using VecT = Vec<float, W>;
 
   for (auto _ : state) {
-#pragma GCC unroll 4
+    DART_BENCHMARK_UNROLL_4
     for (std::size_t i = 0; i < n; i += W) {
       auto v = VecT::load(&data[i]);
       auto r = abs(v);
@@ -411,7 +417,7 @@ static void BM_Sqrt_DART_f32(benchmark::State& state)
   using VecT = Vec<float, W>;
 
   for (auto _ : state) {
-#pragma GCC unroll 4
+    DART_BENCHMARK_UNROLL_4
     for (std::size_t i = 0; i < n; i += W) {
       auto v = VecT::load(&data[i]);
       auto r = sqrt(v);
@@ -686,7 +692,7 @@ static void BM_Round_DART_f32(benchmark::State& state)
   using VecT = Vec<float, W>;
 
   for (auto _ : state) {
-#pragma GCC unroll 4
+    DART_BENCHMARK_UNROLL_4
     for (std::size_t i = 0; i < n; i += W) {
       auto v = VecT::load(&data[i]);
       auto r = round(v);
@@ -742,7 +748,7 @@ static void BM_Max_DART_f32(benchmark::State& state)
   using VecT = Vec<float, W>;
 
   for (auto _ : state) {
-#pragma GCC unroll 4
+    DART_BENCHMARK_UNROLL_4
     for (std::size_t i = 0; i < n; i += W) {
       auto a = VecT::load(&data_a[i]);
       auto b = VecT::load(&data_b[i]);
@@ -1112,7 +1118,7 @@ static void BM_MatVec_DART_f32(benchmark::State& state)
     for (std::size_t row = 0; row < m; ++row) {
       VecT acc = VecT::zero();
       const float* row_ptr = &matrix[row * n];
-#pragma GCC unroll 4
+      DART_BENCHMARK_UNROLL_4
       for (std::size_t j = 0; j < n; j += W) {
         auto mat_val = VecT::load(&row_ptr[j]);
         auto vec_val = VecT::load(&vec[j]);
@@ -1256,7 +1262,7 @@ static void BM_AABBOverlap_DART_f32(benchmark::State& state)
   using VecT = Vec<float, W>;
 
   for (auto _ : state) {
-#pragma GCC unroll 4
+    DART_BENCHMARK_UNROLL_4
     for (std::size_t i = 0; i < n; i += W) {
       // Load AABBs
       auto a_minx = VecT::load(&a_min_x[i]);
@@ -1919,6 +1925,8 @@ BENCHMARK(BM_Vector3Project_Batch_DART_f32)
     ->ReportAggregatesOnly(true)
     ->RangeMultiplier(4)
     ->Range(kMinSize, kMaxSize);
+
+#undef DART_BENCHMARK_UNROLL_4
 
 // =============================================================================
 // Main with info output

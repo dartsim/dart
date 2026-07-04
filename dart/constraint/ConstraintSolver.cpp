@@ -1844,6 +1844,8 @@ void ConstraintSolver::buildConstrainedGroups()
     group.mSingleReactiveSkeleton = nullptr;
   }
   mGroupResting.clear();
+  mGroupAllSleepCandidates.clear();
+  mGroupPreserveSleepCandidates.clear();
 
   // Exit if there is no active constraint
   if (mActiveConstraints.empty()) {
@@ -2040,6 +2042,8 @@ void ConstraintSolver::buildConstrainedGroups()
   if (mDeactivationActive) {
     mHadDeactivationGroups = !mConstrainedGroups.empty();
     mGroupResting.assign(mConstrainedGroups.size(), true);
+    mGroupAllSleepCandidates.assign(mConstrainedGroups.size(), true);
+    mGroupPreserveSleepCandidates.assign(mConstrainedGroups.size(), true);
 
     // Only rigid contact islands whose penetration correction has essentially
     // converged are eligible for automatic sleeping. Other constraints (joint
@@ -2048,6 +2052,8 @@ void ConstraintSolver::buildConstrainedGroups()
     // islands awake preserves existing query semantics when sleeping is enabled
     // by default.
     constexpr double kSleepContactPenetrationTolerance = 1e-5;
+    constexpr double kPreserveSleepCandidatePenetrationTolerance
+        = 10.0 * kSleepContactPenetrationTolerance;
     {
       DART_PROFILE_SCOPED_N("classify resting groups");
       for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i) {
@@ -2058,13 +2064,18 @@ void ConstraintSolver::buildConstrainedGroups()
               = dynamic_cast<const ContactConstraint*>(constraint);
           if (!contact) {
             mGroupResting[i] = false;
+            mGroupPreserveSleepCandidates[i] = false;
             break;
           }
 
           if (contact->getContact().penetrationDepth
               > kSleepContactPenetrationTolerance) {
             mGroupResting[i] = false;
-            break;
+            if (contact->getContact().penetrationDepth
+                > kPreserveSleepCandidatePenetrationTolerance) {
+              mGroupPreserveSleepCandidates[i] = false;
+              break;
+            }
           }
         }
       }
@@ -2072,7 +2083,28 @@ void ConstraintSolver::buildConstrainedGroups()
 
     {
       DART_PROFILE_SCOPED_N("stamp resting islands");
-      // Pass 1: an island rests only if every member is a sleep candidate.
+      bool hasUngroupedAwakeMobileSkeleton = false;
+      for (const auto& skeleton : mSkeletons) {
+        if (!skeleton->isMobile())
+          continue;
+
+        const auto root = ConstraintBase::getRootSkeleton(skeleton);
+        const auto groupIndex = root->mUnionIndex;
+        const bool grouped = groupIndex != invalidUnionIndex
+                             && groupIndex < mGroupResting.size();
+        if (!grouped && !skeleton->isResting()
+            && !skeleton->isSleepCandidate()) {
+          hasUngroupedAwakeMobileSkeleton = true;
+          break;
+        }
+      }
+
+      // Pass 1: an island can freeze only if every member is a sleep candidate.
+      // Keep that kinematic condition separate from constraint/contact
+      // eligibility. A quiet island with slightly unconverged contact
+      // penetration should keep accumulating dwell while the LCP continues to
+      // solve, instead of restarting dwell every time the solver declines to
+      // freeze it.
       for (const auto& skeleton : mSkeletons) {
         const auto root = ConstraintBase::getRootSkeleton(skeleton);
         const auto groupIndex = root->mUnionIndex;
@@ -2080,8 +2112,11 @@ void ConstraintSolver::buildConstrainedGroups()
             || groupIndex >= mGroupResting.size()) {
           continue; // not in any active-constraint island
         }
-        mGroupResting[groupIndex]
-            = mGroupResting[groupIndex] && skeleton->isSleepCandidate();
+
+        const bool sleepCandidate = skeleton->isSleepCandidate();
+        mGroupAllSleepCandidates[groupIndex]
+            = mGroupAllSleepCandidates[groupIndex] && sleepCandidate;
+        mGroupResting[groupIndex] = mGroupResting[groupIndex] && sleepCandidate;
       }
 
       // Pass 2: stamp the island index and keep only already-frozen islands
@@ -2094,9 +2129,18 @@ void ConstraintSolver::buildConstrainedGroups()
         const auto groupIndex = root->mUnionIndex;
         const bool grouped = groupIndex != invalidUnionIndex
                              && groupIndex < mGroupResting.size();
+        const bool groupAllSleepCandidates
+            = grouped && groupIndex < mGroupAllSleepCandidates.size()
+              && mGroupAllSleepCandidates[groupIndex];
         const bool groupCanRest = grouped && mGroupResting[groupIndex];
-        if (grouped && !groupCanRest && skeleton->isSleepCandidate())
+        const bool groupCanPreserveSleepCandidate
+            = groupAllSleepCandidates && !hasUngroupedAwakeMobileSkeleton
+              && groupIndex < mGroupPreserveSleepCandidates.size()
+              && mGroupPreserveSleepCandidates[groupIndex];
+        if (grouped && !groupCanRest && !groupCanPreserveSleepCandidate
+            && skeleton->isSleepCandidate()) {
           skeleton->setSleepCandidate(false);
+        }
         skeleton->setResting(groupCanRest && skeleton->isResting());
         skeleton->setIslandIndex(grouped ? static_cast<int>(groupIndex) : -1);
       }
