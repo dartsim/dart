@@ -65,7 +65,8 @@ Source of truth:
 - `dart/utils/sdf/sdf_writer.hpp` for the first parser-specific SDF writer
 - `pixi run check-sdf-sdformat-boundary` guards the SDF implementation against
   TinyXML/raw XML parser APIs and generic SDF element text parsing in
-  `dart/utils/sdf`
+  `dart/utils/sdf`, and keeps ambiguous `dart::io` SDF auto-detection on
+  libsdformat before the legacy URDF/MJCF XML-root fallback
 - `dart/utils/sdf/` uses libsdformat DOM APIs for SDF structure, model/link
   static and self-collision state, world gravity, inertial,
   visual/collision/material, visual shadow and visibility metadata, joint

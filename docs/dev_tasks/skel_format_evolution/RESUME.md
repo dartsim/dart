@@ -1502,6 +1502,15 @@ Changelog decision:
 - PR-body note: record as SDF writer diagnostic hardening if a PR is opened.
 - Follow-up: none until an implementation PR exists.
 
+Additional validation for the SDF sdformat routing boundary:
+
+- `scripts/check_sdf_sdformat_boundary.py` now also guards
+  `dart/io/read.cpp` so ambiguous XML SDF content is classified with
+  `sdf::Root::LoadSdfString()` before the legacy URDF/MJCF TinyXML root
+  fallback can run.
+- Boundary check passed:
+  `pixi run check-sdf-sdformat-boundary`
+
 ## Previous Resume Checkpoint (2026-07-03)
 
 Phase 2 is implemented on `feature/remove-skel-dart7-phase2` and awaiting PR

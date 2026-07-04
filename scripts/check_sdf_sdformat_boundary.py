@@ -10,6 +10,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SDF_ROOT = REPO_ROOT / "dart" / "utils" / "sdf"
+DART_IO_READ = REPO_ROOT / "dart" / "io" / "read.cpp"
 SOURCE_SUFFIXES = {".cpp", ".hpp", ".h"}
 
 FORBIDDEN_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
@@ -83,6 +84,31 @@ def find_forbidden_xml_usage() -> list[Violation]:
     return violations
 
 
+def line_number(text: str, index: int) -> int:
+    return text.count("\n", 0, index) + 1
+
+
+def find_function_body(text: str, signature: str) -> tuple[int, str] | None:
+    start = text.find(signature)
+    if start == -1:
+        return None
+
+    brace = text.find("{", start)
+    if brace == -1:
+        return None
+
+    depth = 0
+    for index in range(brace, len(text)):
+        if text[index] == "{":
+            depth += 1
+        elif text[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return brace + 1, text[brace + 1 : index]
+
+    return None
+
+
 def find_helper_surface_violations() -> list[Violation]:
     violations: list[Violation] = []
 
@@ -117,8 +143,88 @@ def find_helper_surface_violations() -> list[Violation]:
     return violations
 
 
+def find_dart_io_routing_violations() -> list[Violation]:
+    text = DART_IO_READ.read_text()
+    violations: list[Violation] = []
+
+    sdf_body = find_function_body(
+        text, "std::optional<ModelFormat> inferSdfFormatWithSdformat"
+    )
+    if not sdf_body:
+        violations.append(
+            Violation(
+                DART_IO_READ,
+                1,
+                "dart::io SDF inference must stay owned by libsdformat.",
+                "missing inferSdfFormatWithSdformat",
+            )
+        )
+    else:
+        body_start, body = sdf_body
+        if "sdf::Root root;" not in body or "root.LoadSdfString(content)" not in body:
+            violations.append(
+                Violation(
+                    DART_IO_READ,
+                    line_number(text, body_start),
+                    "dart::io SDF inference must parse candidate SDF with sdf::Root.",
+                    "inferSdfFormatWithSdformat",
+                )
+            )
+
+    ambiguous_body = find_function_body(
+        text, "std::optional<ModelFormat> inferFormatFromAmbiguousContent"
+    )
+    if not ambiguous_body:
+        violations.append(
+            Violation(
+                DART_IO_READ,
+                1,
+                "dart::io ambiguous content inference must keep an SDF sdformat gate.",
+                "missing inferFormatFromAmbiguousContent",
+            )
+        )
+        return violations
+
+    body_start, body = ambiguous_body
+    sdf_call = body.find("inferSdfFormatWithSdformat(content)")
+    xml_call = body.find("inferUrdfOrMjcfFormatFromXmlRoot(uri, content)")
+    if sdf_call == -1:
+        violations.append(
+            Violation(
+                DART_IO_READ,
+                line_number(text, body_start),
+                "dart::io ambiguous XML inference must try libsdformat for SDF.",
+                "inferFormatFromAmbiguousContent",
+            )
+        )
+    if xml_call == -1:
+        violations.append(
+            Violation(
+                DART_IO_READ,
+                line_number(text, body_start),
+                "dart::io ambiguous XML inference must keep the non-SDF XML fallback explicit.",
+                "inferFormatFromAmbiguousContent",
+            )
+        )
+    if sdf_call != -1 and xml_call != -1 and xml_call < sdf_call:
+        violations.append(
+            Violation(
+                DART_IO_READ,
+                line_number(text, body_start + xml_call),
+                "dart::io ambiguous XML inference must classify SDF with sdformat before raw XML root fallback.",
+                "inferUrdfOrMjcfFormatFromXmlRoot(uri, content)",
+            )
+        )
+
+    return violations
+
+
 def main() -> int:
-    violations = find_forbidden_xml_usage() + find_helper_surface_violations()
+    violations = (
+        find_forbidden_xml_usage()
+        + find_helper_surface_violations()
+        + find_dart_io_routing_violations()
+    )
     if violations:
         print(
             "SDF sdformat boundary check failed. Use libsdformat typed DOM APIs "
