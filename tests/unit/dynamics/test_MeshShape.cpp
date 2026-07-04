@@ -360,6 +360,10 @@ TEST(MeshShapeTest, PolygonMeshPreservesQuadFaces)
   auto shape = std::make_shared<dynamics::MeshShape>(
       Eigen::Vector3d::Ones(), scene, fileUri, retriever);
 
+  const auto triMesh = shape->getTriMesh();
+  ASSERT_NE(triMesh, nullptr);
+  EXPECT_EQ(triMesh->getTriangles().size(), 2u);
+
   const auto polygonMesh = shape->getPolygonMesh();
   ASSERT_NE(polygonMesh, nullptr);
   ASSERT_TRUE(polygonMesh->hasFaces());
