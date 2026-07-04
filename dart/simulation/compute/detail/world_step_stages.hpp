@@ -214,6 +214,15 @@ struct DeformableSolverStats
   // loop, not on the line-search hot path.
   double minActiveContactDistance = 0.0;
   std::size_t convergedActiveContactCount = 0;
+  // Peak active self-contact barrier set size in a single outer iteration,
+  // folded (max) across the step's deformable bodies. Unlike
+  // convergedActiveContactCount (the active set at the terminal iterate) and
+  // selfContactBarrierActiveContacts (the sum over every outer iteration), this
+  // is the largest single-iteration active-set load the solver carried during
+  // the step -- the IPC "max contacts per step" axis (Fig. 23 / Table 1). It
+  // never exceeds selfContactBarrierActiveContacts (a single term of that sum)
+  // and is zero for bodies without active self-contact.
+  std::size_t maxActiveContactCount = 0;
 
   void reset() noexcept
   {
