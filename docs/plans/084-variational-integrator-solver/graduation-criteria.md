@@ -2,9 +2,10 @@
 
 When may the variational integrator stop being an _experimental_ `World`
 integration family and become a **supported** DART solver? This file is the
-checklist. It complements the [North Star + Gaps](README.md#north-star); the
-North Star says _where_ we are going, this says _when we have arrived_ well
-enough to commit to API stability and user-facing support.
+checklist. It complements the
+[PLAN-084 current state](../084-variational-integrator-solver.md#current-state);
+the plan says _where_ we are going, this says _when we have arrived_ well enough
+to commit to API stability and user-facing support.
 
 "Supported" in DART means: a stable public surface we will not break without a
 deprecation cycle, CI gates that keep it green, user-facing docs, and a

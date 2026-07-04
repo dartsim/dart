@@ -294,7 +294,7 @@ its own line so status updates remain git-history friendly.
   loop closures, scoped C1-C3 contact/friction, dartpy surface, and supported
   envelope have landed. Continue either by opening the maintainer-owned
   graduation proposal from
-  [`../dev_tasks/variational_integrator_solver/graduation-criteria.md`](../dev_tasks/variational_integrator_solver/graduation-criteria.md)
+  [`084-variational-integrator-solver/graduation-criteria.md`](084-variational-integrator-solver/graduation-criteria.md)
   or by starting the separate arbitrary-geometry contact adapter workstream
   coordinated with the rigid IPC / deformable IPC geometry stack.
 - Gate: The implemented family remains opt-in behind `MultibodyOptions`;

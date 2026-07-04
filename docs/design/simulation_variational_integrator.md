@@ -10,9 +10,9 @@ the **linear-time variational integrator** in the DART 7 simulation
 timeline or status. Sequencing, phase gates, and acceptance criteria live in
 PLAN-084
 (`docs/plans/084-variational-integrator-solver.md` and its `contact-roadmap.md`
-sidecar); the implementation tracker, measured paper-experiment replication, and
-the per-gate evidence live in `docs/dev_tasks/variational_integrator_solver/`
-(`README.md`, `RESUME.md`, `paper-experiment-replication.md`).
+sidecar); measured paper-experiment replication, supported-envelope,
+performance, and graduation evidence live in the PLAN-084 sidecar directory
+(`docs/plans/084-variational-integrator-solver/`).
 
 Companion docs:
 
@@ -109,7 +109,7 @@ subspace `Sᵢ`; parent `λ(i)`; children `σ(i)`.
 This is a fresh implementation in DART's experimental ECS `World`, not a port of
 the author's classic-DART reference (`github.com/jslee02/wafr2016`). It
 reproduces the paper's results (see
-[`../dev_tasks/variational_integrator_solver/paper-experiment-replication.md`](../dev_tasks/variational_integrator_solver/paper-experiment-replication.md))
+[`../plans/084-variational-integrator-solver/paper-experiment-replication.md`](../plans/084-variational-integrator-solver/paper-experiment-replication.md))
 and differs from the paper and its reference code in the following ways. Each
 item names the artifact that verifies it.
 

@@ -20,9 +20,12 @@
     contact, lagged friction, augmented-Lagrangian centering, serialized dual
     state, and a link-vs-link sphere-sphere hook. Arbitrary link geometry and
     the optional C4 hard barrier remain future work.
-  - Current implementation tracking, supported envelope, graduation criteria,
-    and paper-experiment replication live in
-    `docs/dev_tasks/variational_integrator_solver/`.
+  - Durable implementation evidence lives in the PLAN-084 sidecar directory:
+    [`084-variational-integrator-solver/paper-experiment-replication.md`](084-variational-integrator-solver/paper-experiment-replication.md),
+    [`084-variational-integrator-solver/supported-envelope.md`](084-variational-integrator-solver/supported-envelope.md),
+    [`084-variational-integrator-solver/performance.md`](084-variational-integrator-solver/performance.md),
+    and
+    [`084-variational-integrator-solver/graduation-criteria.md`](084-variational-integrator-solver/graduation-criteria.md).
 
 ## Owner Docs
 
@@ -36,8 +39,14 @@
   [`084-variational-integrator-solver/contact-roadmap.md`](084-variational-integrator-solver/contact-roadmap.md)
 - Research catalog entry: `lee-vi-2016` in
   [`../readthedocs/papers.md`](../readthedocs/papers.md)
-- Active implementation tracking: `docs/dev_tasks/variational_integrator_solver/`
-  (created when Phase A1 implementation starts).
+- Paper experiment replication:
+  [`084-variational-integrator-solver/paper-experiment-replication.md`](084-variational-integrator-solver/paper-experiment-replication.md)
+- Supported envelope:
+  [`084-variational-integrator-solver/supported-envelope.md`](084-variational-integrator-solver/supported-envelope.md)
+- Performance characterization:
+  [`084-variational-integrator-solver/performance.md`](084-variational-integrator-solver/performance.md)
+- Graduation criteria:
+  [`084-variational-integrator-solver/graduation-criteria.md`](084-variational-integrator-solver/graduation-criteria.md)
 
 ## Relationship To Other Plans
 
@@ -51,8 +60,8 @@
 
 ## Workstreams (sequenced)
 
-Each phase lands as small verifiable slices; see the dev-task roadmap (once
-created) for slice-level detail.
+Each phase lands as small verifiable slices; this plan and its sidecars own the
+durable state after the implementation dev task retires.
 
 1. **Phase A1 — Fixed-base MVP, correctness-first (implemented).**
    Integration-family selector (pipeline substitution, not stage append); SE(3)
@@ -132,11 +141,36 @@ recorded measurements, mirroring PLAN-080/081 rigor.
 - A phase completes, splits, or is reprioritized against other DART 7
   clean-break work.
 
+## Current State
+
+The former implementation dev task has landed on `main`: the selector, O(n)
+inverse-mass path, floating/spherical support, loop closures, scoped C1-C3
+contact/friction, dartpy/demo surface, supported envelope, performance
+characterization, and paper experiment replication are complete. The sidecars in
+[`084-variational-integrator-solver/`](084-variational-integrator-solver/) are
+the durable evidence for those claims.
+
+Remaining work is deliberately outside the retired implementation task:
+
+- **Graduation proposal:** open a maintainer-owned `PLAN-` entry that links the
+  graduation criteria, supported envelope, and performance evidence, then run
+  the adversarial review before any `experimental -> supported` structural
+  promotion.
+- **Arbitrary link-geometry contact:** start a separate PLAN-scale adapter
+  workstream coordinated with PLAN-081/PLAN-082 to evaluate signed distance and
+  distance gradients at trial configurations inside the VI RIQN loop.
+- **Stretch numerics:** a manifold extension of the exact recursive-Jacobian
+  preconditioner for very long spherical/floating chains. Variable `dt`,
+  GPU/batched execution, and the optional C4 hard IPC barrier remain non-blocking
+  future work.
+
 ## Next Step
 
-Continue from the current dev-task evidence: either open the maintainer-owned
-graduation proposal that links `graduation-criteria.md`, `supported-envelope.md`,
-and `performance.md`, or start the separate arbitrary-geometry contact adapter
-workstream coordinated with the rigid IPC / deformable IPC geometry stack. Do
-not rerun the old Phase A2 de-risking sequence as if the ABI/selector were still
-missing.
+Continue from the durable PLAN-084 evidence: either open the maintainer-owned
+graduation proposal that links
+[`graduation-criteria.md`](084-variational-integrator-solver/graduation-criteria.md),
+[`supported-envelope.md`](084-variational-integrator-solver/supported-envelope.md),
+and [`performance.md`](084-variational-integrator-solver/performance.md), or
+start the separate arbitrary-geometry contact adapter workstream coordinated
+with the rigid IPC / deformable IPC geometry stack. Do not rerun the old Phase
+A2 de-risking sequence as if the ABI/selector were still missing.
