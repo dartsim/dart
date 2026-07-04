@@ -186,6 +186,11 @@ no equivalent link-level collidable flag.
 DART `HeightmapShape` is also rejected with a targeted source-URI/resource
 policy diagnostic instead of synthesizing SDF heightmap XML from DART's sampled
 grid.
+Generated or DART-native geometry families such as `PyramidShape`,
+`MultiSphereConvexHullShape`, `PointCloudShape`, `LineSegmentShape`, and
+`VoxelGridShape` are rejected with targeted diagnostics because the current
+string writer has no destination URI or generated-resource policy for
+converting them into SDF-owned mesh or resource data.
 `WriteOptions` can exclude visual or collision entries. Missing mesh URIs,
 non-default DART mesh color/alpha render policies, invalid PBR material
 factors, non-default visual reflectance, invalid collision surface friction or

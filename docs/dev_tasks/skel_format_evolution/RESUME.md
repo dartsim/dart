@@ -57,8 +57,10 @@ defines a destination URI and resource copy/rewrite policy. It also checks
 `WriteOptions` visual/collision filtering, unsupported-shape diagnostics,
 missing mesh URI diagnostics, DART `PlaneShape` finite-size diagnostics,
 `HeightmapShape` source-URI/resource-policy diagnostics, `ConvexMeshShape`
-generated-resource diagnostics, pre-SDF-1.11 mimic diagnostics, unsupported
-coupler-style mimic diagnostics, non-finite visual material diagnostics,
+generated-resource diagnostics, DART-only/generated geometry diagnostics for
+`PyramidShape`, `MultiSphereConvexHullShape`, `PointCloudShape`,
+`LineSegmentShape`, and `VoxelGridShape`, pre-SDF-1.11 mimic diagnostics,
+unsupported coupler-style mimic diagnostics, non-finite visual material diagnostics,
 invalid PBR material diagnostics, unsupported visual reflectance diagnostics,
 non-default DART mesh color/alpha render-policy diagnostics, non-finite screw
 pitch diagnostics, invalid collision-surface friction/restitution diagnostics,
@@ -156,6 +158,14 @@ DART `SoftBodyNode` export now fails with a targeted diagnostic before the
 writer builds an `sdf::Link`. This avoids serializing a soft body as an
 ordinary link and dropping DART point-mass, spring, damping, or soft mesh
 topology semantics.
+DART-only/generated geometry families such as `PyramidShape`,
+`MultiSphereConvexHullShape`, `PointCloudShape`, `LineSegmentShape`, and
+`VoxelGridShape` now fail with targeted diagnostics instead of the generic
+unsupported-shape fallback. SDF has no direct pyramid, multi-sphere convex-hull,
+point-cloud, line-segment, or occupancy-grid geometry primitives in the
+writer's current contract, and the targetless string writer has no destination
+URI or generated-resource policy for converting those DART-side data
+structures into SDF-owned mesh or resource artifacts.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -283,6 +293,46 @@ Additional validation for DART `SoftBodyNode` writer diagnostics:
 
   ```bash
   git diff --check
+  pixi run lint
+  pixi run build
+  pixi run test-unit
+  ```
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: `origin/main`
+- Scope evidence: focused diff in `dart/utils/sdf/sdf_writer.cpp`,
+  `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
+  and this SKEL evolution task folder
+- Decision: no entry required
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: No separate changelog entry is needed because this slice
+  tightens explicit unsupported diagnostics under the existing DART 7 IO and
+  Parsing SDF writer entry, which already describes unsupported constructs being
+  reported explicitly.
+- Follow-up: none
+
+Additional validation for DART-only/generated geometry diagnostics:
+
+- Focused control failed before the writer change because `PyramidShape`,
+  `PointCloudShape`, `LineSegmentShape`, `VoxelGridShape`, and
+  `MultiSphereConvexHullShape` all reached the generic unsupported-shape
+  fallback instead of naming the missing SDF primitive or generated-resource
+  policy.
+
+  ```bash
+  pixi run run-cpp-target INTEGRATION_io_SdfWriter
+  ```
+
+- Focused candidate passed with the same command.
+
+- Full writer target and local gates passed.
+
+  ```bash
+  git diff --check
+  pixi run run-cpp-target INTEGRATION_io_SdfWriter
   pixi run lint
   pixi run build
   pixi run test-unit

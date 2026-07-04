@@ -45,15 +45,20 @@
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
+#include <dart/dynamics/point_cloud_shape.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
+#include <dart/dynamics/pyramid_shape.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/screw_joint.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/universal_joint.hpp>
+#include <dart/dynamics/voxel_grid_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <gz/math/Inertial.hh>
@@ -717,6 +722,11 @@ GeometryResult makeGeometry(const dynamics::Shape& shape)
         "SDF heightmaps require a source heightmap URI, and the targetless "
         "string writer has no destination URI or resource policy for generated "
         "heightmap resources."));
+  } else if (dynamic_cast<const dynamics::PyramidShape*>(&shape)) {
+    return GeometryResult::err(WriteError(
+        "Cannot write DART PyramidShape as SDF geometry because SDF has no "
+        "pyramid primitive, and the targetless string writer has no "
+        "destination URI or resource policy for generated mesh resources."));
   } else if (
       const auto* convexMesh
       = dynamic_cast<const dynamics::ConvexMeshShape*>(&shape)) {
@@ -727,6 +737,28 @@ GeometryResult makeGeometry(const dynamics::Shape& shape)
     return GeometryResult::err(WriteError(
         "Cannot write DART ConvexMeshShape as SDF mesh geometry because the "
         "writer has no target SDF URI for generated mesh resources."));
+  } else if (
+      dynamic_cast<const dynamics::MultiSphereConvexHullShape*>(&shape)) {
+    return GeometryResult::err(WriteError(
+        "Cannot write DART MultiSphereConvexHullShape as SDF geometry because "
+        "SDF has no multi-sphere convex-hull primitive, and the targetless "
+        "string writer has no destination URI or resource policy for generated "
+        "mesh resources."));
+  } else if (dynamic_cast<const dynamics::PointCloudShape*>(&shape)) {
+    return GeometryResult::err(WriteError(
+        "Cannot write DART PointCloudShape as SDF geometry because SDF has no "
+        "point-cloud geometry primitive, and the targetless string writer has "
+        "no generated-resource policy for converting point data."));
+  } else if (dynamic_cast<const dynamics::LineSegmentShape*>(&shape)) {
+    return GeometryResult::err(WriteError(
+        "Cannot write DART LineSegmentShape as SDF geometry because SDF has "
+        "no line-segment geometry primitive, and the targetless string writer "
+        "has no generated-resource policy for converting line data."));
+  } else if (dynamic_cast<const dynamics::VoxelGridShape*>(&shape)) {
+    return GeometryResult::err(WriteError(
+        "Cannot write DART VoxelGridShape as SDF geometry because SDF has no "
+        "occupancy-grid geometry primitive, and the targetless string writer "
+        "has no generated-resource policy for converting occupancy data."));
   } else if (
       const auto* mesh = dynamic_cast<const dynamics::MeshShape*>(&shape)) {
     const common::Uri& meshUri = mesh->getMeshUri2();

@@ -48,9 +48,12 @@
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/heightmap_shape.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/mimic_dof_properties.hpp>
+#include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
+#include <dart/dynamics/point_cloud_shape.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/pyramid_shape.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
@@ -59,6 +62,7 @@
 #include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/universal_joint.hpp>
+#include <dart/dynamics/voxel_grid_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <gtest/gtest.h>
@@ -1884,9 +1888,9 @@ TEST(SdfWriter, RoundTripsCapsuleAndConeGeometry)
 }
 
 //==============================================================================
-TEST(SdfWriter, UnsupportedShapeReturnsError)
+TEST(SdfWriter, PyramidShapeReturnsGeneratedMeshError)
 {
-  auto skeleton = dynamics::Skeleton::create("unsupported_shape");
+  auto skeleton = dynamics::Skeleton::create("pyramid_shape");
   auto [joint, body]
       = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
   (void)joint;
@@ -1897,7 +1901,101 @@ TEST(SdfWriter, UnsupportedShapeReturnsError)
   const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
-      result.error().message.find("Unsupported shape type"), std::string::npos);
+      result.error().message.find("DART PyramidShape"), std::string::npos);
+  EXPECT_NE(
+      result.error().message.find("generated mesh resources"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, PointCloudShapeReturnsExplicitUnsupportedError)
+{
+  auto skeleton = dynamics::Skeleton::create("point_cloud_shape");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  auto pointCloud = std::make_shared<dynamics::PointCloudShape>();
+  pointCloud->addPoint(Eigen::Vector3d::Zero());
+  pointCloud->addPoint(Eigen::Vector3d::UnitX());
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::move(pointCloud), "point_cloud");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("DART PointCloudShape"), std::string::npos);
+  EXPECT_NE(
+      result.error().message.find("no point-cloud geometry primitive"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, LineSegmentShapeReturnsExplicitUnsupportedError)
+{
+  auto skeleton = dynamics::Skeleton::create("line_segment_shape");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::LineSegmentShape>(
+          Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitX(), 0.01F),
+      "line_segment");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("DART LineSegmentShape"), std::string::npos);
+  EXPECT_NE(
+      result.error().message.find("no line-segment geometry primitive"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, VoxelGridShapeReturnsExplicitUnsupportedError)
+{
+  auto skeleton = dynamics::Skeleton::create("voxel_grid_shape");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::VoxelGridShape>(0.05), "voxel_grid");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("DART VoxelGridShape"), std::string::npos);
+  EXPECT_NE(
+      result.error().message.find("no occupancy-grid geometry primitive"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, MultiSphereConvexHullShapeReturnsGeneratedMeshError)
+{
+  auto skeleton = dynamics::Skeleton::create("multi_sphere_convex_hull_shape");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  const dynamics::MultiSphereConvexHullShape::Spheres spheres
+      = {{0.1, Eigen::Vector3d::Zero()},
+         {0.1, Eigen::Vector3d::UnitX()},
+         {0.1, Eigen::Vector3d::UnitY()}};
+  body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::MultiSphereConvexHullShape>(spheres),
+      "multi_sphere");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("DART MultiSphereConvexHullShape"),
+      std::string::npos);
+  EXPECT_NE(
+      result.error().message.find("generated mesh resources"),
+      std::string::npos);
 }
 
 //==============================================================================
