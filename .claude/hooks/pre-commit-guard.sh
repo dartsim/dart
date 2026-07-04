@@ -99,6 +99,7 @@ ENV_OPTS_NO_ARG_PREFIXES = (
     "--default-signal=",
     "--block-signal=",
 )
+COMMIT_SHORT_OPTS_WITH_ATTACHED_ARG = {"m", "F", "c", "C", "S", "t", "u", "U"}
 ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=(?P<value>.*)$")
 
 
@@ -146,6 +147,23 @@ def shell_expand_path_token(value):
     if quote != "'\''":
         path = os.path.expandvars(path)
     return os.path.expanduser(path)
+
+
+def commit_args_disable_hooks(args):
+    for token in args:
+        t = token.strip(")}")
+        if t == "--":
+            return False
+        if t == "--no-verify" or t == "-n":
+            return True
+        if t.startswith("--") or not t.startswith("-") or t == "-":
+            continue
+        for option in t[1:]:
+            if option == "n":
+                return True
+            if option in COMMIT_SHORT_OPTS_WITH_ATTACHED_ARG:
+                break
+    return False
 
 
 def is_git_commit(text):
@@ -238,9 +256,7 @@ def is_git_commit(text):
         if not target_dir:
             target_dir = command_cwd
         if i < len(tokens) and tokens[i].rstrip(")}") == "commit":
-            no_verify = any(
-                t.strip(")}") in {"--no-verify", "-n"} for t in tokens[i + 1 :]
-            )
+            no_verify = commit_args_disable_hooks(tokens[i + 1 :])
             if target_dir:
                 project = os.environ.get("CLAUDE_PROJECT_DIR")
                 try:
