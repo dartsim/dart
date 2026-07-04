@@ -76,6 +76,8 @@ OPTS_WITH_ARG = {
 }
 CONFIG_ENV_PREFIX = "--config-env="
 WRAPPERS = {"command", "exec", "time", "nice", "nohup"}
+SHELL_CONTROL_PREFIXES = {"!", "if", "then", "else", "elif", "while", "until", "do"}
+SHELL_GROUP_OPENERS = {"(", "{"}
 ENV_OPTS_WITH_ARG = {
     "-C",
     "--chdir",
@@ -171,6 +173,22 @@ def is_hooks_path_override(option):
     return bool(sep) and key.lower() == "core.hookspath"
 
 
+def command_word(token):
+    return token.lstrip("({").lstrip("\\")
+
+
+def skip_shell_prefixes(tokens, i):
+    while i < len(tokens):
+        if tokens[i] in SHELL_GROUP_OPENERS:
+            i += 1
+            continue
+        if command_word(tokens[i]) in SHELL_CONTROL_PREFIXES:
+            i += 1
+            continue
+        break
+    return i
+
+
 def heredoc_delimiters(line):
     delimiters = []
     for match in HEREDOC_RE.finditer(line):
@@ -237,7 +255,7 @@ def shell_expand_path_token(value, base_cwd=None):
 
 
 def shell_cd_target(tokens, i, current_cwd):
-    if i >= len(tokens) or tokens[i] != "cd":
+    if i >= len(tokens) or command_word(tokens[i]) != "cd":
         return None
     args = tokens[i + 1 :]
     if args and args[0] == "--":
@@ -290,12 +308,22 @@ def is_git_commit(text):
             tokens = part.split()
         command_env = {}
         i, bypass = skip_env_prefix(tokens, 0, command_env)
+        i = skip_shell_prefixes(tokens, i)
+        next_i, env_bypass = skip_env_prefix(tokens, i, command_env)
+        bypass = bypass or env_bypass
+        i = next_i
         command_cwd = None
         if bypass:
             continue  # command-level bypass, same as the git hook
         # unwrap common wrappers: command git commit, time git commit, env X=1 git commit
         while i < len(tokens):
-            head = tokens[i]
+            i = skip_shell_prefixes(tokens, i)
+            next_i, env_bypass = skip_env_prefix(tokens, i, command_env)
+            bypass = bypass or env_bypass
+            i = next_i
+            if bypass or i >= len(tokens):
+                break
+            head = command_word(tokens[i])
             if head in WRAPPERS:
                 i += 1
                 continue
@@ -354,7 +382,7 @@ def is_git_commit(text):
             continue
         if i >= len(tokens):
             continue
-        if tokens[i].lstrip("\\") != "git":
+        if command_word(tokens[i]) != "git":
             current_cwd = maybe_update_shell_cwd(
                 tokens, i, current_cwd, separator, subshell_like
             )
@@ -391,7 +419,7 @@ def is_git_commit(text):
             break
         if not target_dir:
             target_dir = command_cwd or current_cwd
-        if i < len(tokens) and tokens[i].rstrip(")}") == "commit":
+        if i < len(tokens) and command_word(tokens[i]).rstrip(")}") == "commit":
             if env_config_has_hooks_path_override(command_env):
                 hooks_path_override = True
             no_verify = commit_args_disable_hooks(tokens[i + 1 :])

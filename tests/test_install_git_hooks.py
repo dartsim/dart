@@ -244,6 +244,23 @@ def test_guard_detects_commit_forms(tmp_path, command):
 @pytest.mark.parametrize(
     "command",
     [
+        "if git diff --cached --quiet; then :; else git commit -m x; fi",
+        "if git diff --cached --quiet; then git commit -m x; fi",
+        "if git diff --cached --quiet\nthen git commit -m x\nfi",
+        "while false; do git commit -m x; done",
+        "if true; then (git commit -m x); fi",
+        "if true; then { git commit -m x; }; fi",
+    ],
+)
+def test_guard_detects_commits_inside_shell_conditionals(tmp_path, command):
+    returncode, stderr = _guard_verdict(tmp_path, command)
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
         "git log --grep commit",
         "echo commit",
         "DART_SKIP_HOOKS=1 git commit -m x",
@@ -256,6 +273,15 @@ def test_guard_detects_commit_forms(tmp_path, command):
 )
 def test_guard_skips_non_commits_and_bypasses(tmp_path, command):
     returncode, stderr = _guard_verdict(tmp_path, command)
+    assert returncode == 0
+    assert "would run" not in stderr
+
+
+def test_guard_respects_skip_assignment_inside_shell_conditionals(tmp_path):
+    command = "if true; then DART_SKIP_HOOKS=1 git commit -m x; fi"
+
+    returncode, stderr = _guard_verdict(tmp_path, command)
+
     assert returncode == 0
     assert "would run" not in stderr
 
@@ -380,6 +406,34 @@ def test_guard_does_not_preserve_failed_cd_cwd_for_or_chain(tmp_path):
     env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
 
     returncode, stderr = _run_guard(repo, env, f"cd docs || git -C {other} commit -m x")
+
+    assert returncode == 0
+    assert "would run" not in stderr
+
+
+def test_guard_preserves_conditional_cd_cwd_for_relative_commit_paths(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    (repo / "docs").mkdir()
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(
+        repo, env, "if cd docs; then git -C .. commit -m x; fi"
+    )
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
+def test_guard_skips_conditional_cd_commit_in_another_repo(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(
+        repo, env, f"if cd {other}; then git commit -m x; fi"
+    )
 
     assert returncode == 0
     assert "would run" not in stderr
