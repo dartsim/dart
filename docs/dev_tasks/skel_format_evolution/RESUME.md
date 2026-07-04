@@ -57,6 +57,11 @@ The supported SDF geometry reader paths now load through libsdformat
 `sdf::Geometry` DOM objects before mapping sphere, box, cylinder, plane, and
 mesh shapes into DART shapes; this preserves the existing plane-as-thin-box and
 resource-retrieved mesh behavior without adding new raw XML-level parsing.
+The model/link body-node reader also now uses libsdformat `sdf::Model` and
+`sdf::Link` DOM values for model name/static/pose and link name/gravity/pose
+plus inertial mass, center of mass, and inertia tensor values; XML presence
+checks remain only for existing DART diagnostics where sdformat does not expose
+whether a defaulted field was explicitly authored.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -109,6 +114,12 @@ Additional validation for targetless relative/generated mesh URI diagnostics:
 
 Additional validation for continuous SDF joint read/write/read coverage:
 
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
+Additional validation for model/link/inertial SDF DOM reads:
+
+- `git diff --check`
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 

@@ -545,6 +545,9 @@ TEST(SdfParser, InertialAndMaterialVariantsFromXml)
   EXPECT_DOUBLE_EQ(body->getMass(), 1e-9);
   EXPECT_TRUE(body->getInertia().getLocalCOM().isApprox(
       Eigen::Vector3d(0.1, 0.2, 0.3)));
+  Eigen::Matrix3d expectedMoment;
+  expectedMoment << 0.4, 0.01, 0.02, 0.01, 0.5, 0.03, 0.02, 0.03, 0.6;
+  EXPECT_TRUE(body->getInertia().getMoment().isApprox(expectedMoment));
 
   dynamics::ShapeNode* visual = nullptr;
   body->eachShapeNodeWith<dynamics::VisualAspect>([&](auto* shapeNode) {

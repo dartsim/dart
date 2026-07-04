@@ -61,6 +61,8 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <sdf/Link.hh>
+#include <sdf/Model.hh>
 #include <sdf/sdf.hh>
 
 #include <algorithm>
@@ -120,6 +122,25 @@ using detail::getValueVectorXd;
 using detail::hasAttribute;
 using detail::hasElement;
 using detail::readGeometryShape;
+
+Eigen::Vector3d toEigenVector3(const gz::math::Vector3d& vector)
+{
+  return Eigen::Vector3d(vector.X(), vector.Y(), vector.Z());
+}
+
+Eigen::Isometry3d toEigenIsometry3(const gz::math::Pose3d& pose)
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = toEigenVector3(pose.Pos());
+
+  const auto& rotation = pose.Rot();
+  Eigen::Quaterniond quaternion(
+      rotation.W(), rotation.X(), rotation.Y(), rotation.Z());
+  quaternion.normalize();
+  transform.linear() = quaternion.toRotationMatrix();
+
+  return transform;
+}
 
 common::ResourceRetrieverPtr getRetriever(
     const common::ResourceRetrieverPtr& retriever);
@@ -857,27 +878,22 @@ dynamics::SkeletonPtr makeSkeleton(
 {
   DART_ASSERT(_skeletonElement != nullptr);
 
+  sdf::Model model;
+  (void)model.Load(_skeletonElement);
+
   dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
 
   //--------------------------------------------------------------------------
   // Name attribute
-  std::string name = getAttributeString(_skeletonElement, "name");
-  newSkeleton->setName(name);
+  newSkeleton->setName(model.Name());
 
   //--------------------------------------------------------------------------
   // immobile attribute
-  if (hasElement(_skeletonElement, "static")) {
-    bool isStatic = getValueBool(_skeletonElement, "static");
-    newSkeleton->setMobile(!isStatic);
-  }
+  newSkeleton->setMobile(!model.Static());
 
   //--------------------------------------------------------------------------
   // transformation
-  if (hasElement(_skeletonElement, "pose")) {
-    Eigen::Isometry3d W
-        = getValueIsometry3dWithExtrinsicRotation(_skeletonElement, "pose");
-    skeletonFrame = W;
-  }
+  skeletonFrame = toEigenIsometry3(model.RawPose());
 
   return newSkeleton;
 }
@@ -988,17 +1004,17 @@ SDFBodyNode readBodyNode(
   dynamics::BodyNode::Properties properties;
   Eigen::Isometry3d initTransform = Eigen::Isometry3d::Identity();
 
+  sdf::Link link;
+  (void)link.Load(bodyNodeElement);
+
   // Name attribute
-  std::string name = getAttributeString(bodyNodeElement, "name");
+  std::string name = link.Name();
   properties.mName = name;
   const std::string bodyName = name;
 
   //--------------------------------------------------------------------------
   // gravity
-  if (hasElement(bodyNodeElement, "gravity")) {
-    bool gravityMode = getValueBool(bodyNodeElement, "gravity");
-    properties.mGravityMode = gravityMode;
-  }
+  properties.mGravityMode = link.EnableGravity();
 
   //--------------------------------------------------------------------------
   // self_collide
@@ -1009,13 +1025,7 @@ SDFBodyNode readBodyNode(
 
   //--------------------------------------------------------------------------
   // transformation
-  if (hasElement(bodyNodeElement, "pose")) {
-    Eigen::Isometry3d W
-        = getValueIsometry3dWithExtrinsicRotation(bodyNodeElement, "pose");
-    initTransform = skeletonFrame * W;
-  } else {
-    initTransform = skeletonFrame;
-  }
+  initTransform = skeletonFrame * toEigenIsometry3(link.RawPose());
 
   //--------------------------------------------------------------------------
   // inertia
@@ -1023,10 +1033,12 @@ SDFBodyNode readBodyNode(
   bool massSpecified = false;
   if (hasElement(bodyNodeElement, "inertial")) {
     const ElementPtr& inertiaElement = getElement(bodyNodeElement, "inertial");
+    const auto& inertial = link.Inertial();
+    const auto& massMatrix = inertial.MassMatrix();
 
     // mass
     if (hasElement(inertiaElement, "mass")) {
-      double mass = getValueDouble(inertiaElement, "mass");
+      double mass = massMatrix.Mass();
       if (mass <= 0.0) {
         DART_WARN(
             "[SdfParser] Link [{}] has non-positive mass [{}]. Clamping to {} "
@@ -1050,24 +1062,18 @@ SDFBodyNode readBodyNode(
 
     // offset
     if (hasElement(inertiaElement, "pose")) {
-      Eigen::Isometry3d T
-          = getValueIsometry3dWithExtrinsicRotation(inertiaElement, "pose");
-      properties.mInertia.setLocalCOM(T.translation());
+      properties.mInertia.setLocalCOM(toEigenVector3(inertial.Pose().Pos()));
     }
 
     // inertia
     if (hasElement(inertiaElement, "inertia")) {
-      const ElementPtr& moiElement = getElement(inertiaElement, "inertia");
-
-      double ixx = getValueDouble(moiElement, "ixx");
-      double iyy = getValueDouble(moiElement, "iyy");
-      double izz = getValueDouble(moiElement, "izz");
-
-      double ixy = getValueDouble(moiElement, "ixy");
-      double ixz = getValueDouble(moiElement, "ixz");
-      double iyz = getValueDouble(moiElement, "iyz");
-
-      properties.mInertia.setMoment(ixx, iyy, izz, ixy, ixz, iyz);
+      properties.mInertia.setMoment(
+          massMatrix.Ixx(),
+          massMatrix.Iyy(),
+          massMatrix.Izz(),
+          massMatrix.Ixy(),
+          massMatrix.Ixz(),
+          massMatrix.Iyz());
     } else if (massSpecified) {
       // Keep the inertia physically meaningful by matching the moment scale
       // to the specified mass; geometry is unknown, so use an isotropic guess.
