@@ -359,6 +359,12 @@ private:
       const comps::MultibodyStructure& structure,
       entt::entity linkEntity,
       Eigen::MatrixXd& result);
+
+  friend DART_SIMULATION_API void computeMultibodyCenterOfMassJacobianInto(
+      MultibodyLinkJacobianScratch& scratch,
+      dart::simulation::detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure,
+      Eigen::MatrixXd& result);
 };
 
 /// Reserve link-Jacobian scratch for the current multibody shape.
@@ -396,6 +402,35 @@ DART_SIMULATION_API void computeMultibodyLinkWorldJacobianInto(
     dart::simulation::detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity,
+    Eigen::MatrixXd& result);
+
+/// Compute the world-frame center of mass of a multibody.
+///
+/// Returns the mass-weighted average of every link's center of mass, expressed
+/// in world coordinates. Uses the current link frame caches, so it reflects the
+/// latest synchronized kinematics. A multibody with zero total mass returns the
+/// origin.
+[[nodiscard]] DART_SIMULATION_API Eigen::Vector3d computeMultibodyCenterOfMass(
+    dart::simulation::detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure);
+
+/// Compute the world-frame center-of-mass Jacobian of a multibody.
+///
+/// The returned 3 x DOF matrix maps the multibody's generalized velocity to the
+/// linear velocity of its center of mass in world axes:
+/// `J_com = (1/M) sum_i m_i J_{com_i}`, where `J_{com_i}` is link i's world
+/// Jacobian shifted from the link origin to the link's center of mass. A
+/// multibody with zero total mass returns a zero matrix.
+[[nodiscard]] DART_SIMULATION_API Eigen::MatrixXd
+computeMultibodyCenterOfMassJacobian(
+    dart::simulation::detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure);
+
+/// Compute a center-of-mass Jacobian into reusable caller-owned storage.
+DART_SIMULATION_API void computeMultibodyCenterOfMassJacobianInto(
+    MultibodyLinkJacobianScratch& scratch,
+    dart::simulation::detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
     Eigen::MatrixXd& result);
 
 /// One contact acting on a single link of a multibody, oriented so the normal

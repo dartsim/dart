@@ -3309,6 +3309,77 @@ void computeMultibodyLinkWorldJacobianInto(
 }
 
 //==============================================================================
+Eigen::Vector3d computeMultibodyCenterOfMass(
+    detail::WorldRegistry& registry, const comps::MultibodyStructure& structure)
+{
+  Eigen::Vector3d weighted = Eigen::Vector3d::Zero();
+  double totalMass = 0.0;
+  for (const auto linkEntity : structure.links) {
+    const auto& mass = registry.get<comps::LinkModel>(linkEntity).mass;
+    if (mass.mass <= 0.0) {
+      continue;
+    }
+    const auto& cache = registry.get<comps::FrameCache>(linkEntity);
+    weighted.noalias()
+        += mass.mass * (cache.worldTransform * mass.localCenterOfMass);
+    totalMass += mass.mass;
+  }
+  if (totalMass <= 0.0) {
+    return Eigen::Vector3d::Zero();
+  }
+  return weighted / totalMass;
+}
+
+//==============================================================================
+void computeMultibodyCenterOfMassJacobianInto(
+    MultibodyLinkJacobianScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    Eigen::MatrixXd& result)
+{
+  reserveMultibodyLinkJacobianScratch(scratch, registry, structure);
+  const auto& storage = scratch.m_impl->scratch;
+  const auto dof = static_cast<Eigen::Index>(storage.tree.dofCount);
+  result.setZero(3, dof);
+
+  double totalMass = 0.0;
+  for (std::size_t i = 0; i < structure.links.size(); ++i) {
+    const auto& mass = registry.get<comps::LinkModel>(structure.links[i]).mass;
+    if (mass.mass <= 0.0) {
+      continue;
+    }
+    // The body Jacobian rows are [angular; linear] in the link frame; rotate
+    // both blocks into world axes (matching computeMultibodyLinkWorldJacobian).
+    const auto& bodyJacobian = storage.bodyJacobian[i];
+    const Eigen::Matrix3d rotation
+        = storage.tree.links[i].worldTransform.linear();
+    const Eigen::Matrix3Xd angular = rotation * bodyJacobian.topRows<3>();
+    const Eigen::Matrix3Xd originLinear
+        = rotation * bodyJacobian.bottomRows<3>();
+    // Shift the linear reference point from the link origin to the link's
+    // center of mass: v_com = v_origin + omega x (R * c) = originLinear -
+    // skew(Rc) * w.
+    const Eigen::Vector3d comOffset = rotation * mass.localCenterOfMass;
+    result.noalias() += mass.mass * (originLinear - skew(comOffset) * angular);
+    totalMass += mass.mass;
+  }
+  if (totalMass > 0.0) {
+    result /= totalMass;
+  }
+}
+
+//==============================================================================
+Eigen::MatrixXd computeMultibodyCenterOfMassJacobian(
+    detail::WorldRegistry& registry, const comps::MultibodyStructure& structure)
+{
+  MultibodyLinkJacobianScratch scratch;
+  Eigen::MatrixXd result;
+  computeMultibodyCenterOfMassJacobianInto(
+      scratch, registry, structure, result);
+  return result;
+}
+
+//==============================================================================
 std::string_view MultibodyForwardDynamicsStage::getName() const noexcept
 {
   return "multibody_forward_dynamics";
