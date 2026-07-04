@@ -27,7 +27,7 @@ permissions:
 
 concurrency:
   group: community-signals-dashboard
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   publish:
