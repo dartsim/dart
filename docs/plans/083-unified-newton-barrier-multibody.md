@@ -290,9 +290,7 @@ and [`gpu-slowness-root-cause.md`](083-unified-newton-barrier-multibody/gpu-slow
 plus siblings). The PLAN-083 benchmark scripts (`scripts/*plan083*`) and tests
 (`tests/*plan083*`) are unchanged by the retirement.
 
-Continue the active
-`docs/dev_tasks/unified_newton_barrier_multibody/`
-consolidated follow-up on
+The consolidated follow-up work was tracked on
 `simx/plan083-gpu-contact-candidate-packet` / PR #2978. PR #2960 landed
 implementation-roadmap Phases 3-8; PR #2961 measured the private GPU PSD
 projection packet, added the Fig. 17 barrier-force diagnostic, and aligned

@@ -61,8 +61,9 @@ Phase 8 tracks the current completion audit in
 [`completion-audit.md`](completion-audit.md), validated by
 `scripts/check_plan083_completion_audit.py`. The audit records that PLAN-083 is
 not complete while planned manifest rows and in-progress CPU/GPU/scene
-limitations remain, and it blocks temporary dev-task retirement pending
-maintainer direction.
+limitations remain. The temporary dev-task folder was retired on 2026-07-04 by
+maintainer decision; the remaining work is now tracked in this plan and its
+sidecars.
 
 ## Cross-Plan Classification Policy
 
