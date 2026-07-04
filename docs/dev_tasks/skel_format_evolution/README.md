@@ -144,11 +144,12 @@
       fixtures (`single_pendulum.sdf`, `cube.sdf`, `shapes.sdf`, and
       `test_shapes.sdf`) plus the native two-link revolute SDF fixture
       (`two_link_revolute_model.sdf`) and the world-contained
-      `issue1193_revolute*.sdf` fixtures, writes them back through
-      `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and
-      compares body, joint, inertial, mobility, gravity, axis-limit, visual
-      geometry, collision geometry, model-pose, and joint-offset semantics of
-      the original parsed skeletons against the re-parsed writer outputs.
+      `issue1193_revolute*.sdf` fixtures plus `force_torque_test.world`, writes
+      them back through `SdfParser::tryWriteSkeletonToString()`, reloads the
+      emitted text, and compares body, joint, inertial, mobility, gravity,
+      axis-limit, joint-dynamics, visual geometry, collision geometry,
+      model-pose, and joint-offset semantics of the original parsed skeletons
+      against the re-parsed writer outputs.
       The first URDF writer slice is also implemented locally on
       `dart::utils::UrdfParser::tryWriteSkeletonToString` for one-root URDF
       trees with identity root FreeJoint/WeldJoint placement validation, child
@@ -337,7 +338,12 @@ SKEL-YAML direction just because the prototype once existed.
   collision geometry without XML-level SDF parsing. It also includes the
   world-contained `issue1193_revolute*.sdf` fixtures, proving sdformat-backed
   model-pose, root transform, child joint-offset, zero-world-gravity, and
-  visual box/sphere semantics survive read/write/read.
+  visual box/sphere semantics survive read/write/read. The shipped
+  `force_torque_test.world` fixture adds read/write/read coverage for the DART
+  skeleton semantics imported from a sensor-bearing world file: explicit
+  parent-world revolute root, child revolute joint, finite axis
+  limits/dynamics, and sphere/box visual and collision geometry. It does not
+  claim SDF sensor or physics metadata preservation.
   NaN position limits on SDF-supported single-axis joints and topology-only ball
   joints now have targeted diagnostics, while infinite limits remain the
   unbounded SDF joint contract.

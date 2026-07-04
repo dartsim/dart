@@ -1653,6 +1653,47 @@ Changelog decision:
   if a PR is opened.
 - Follow-up: none until an implementation PR exists.
 
+Additional validation for force-torque SDF world fixture coverage:
+
+- Added `SdfWriter.RoundTripsExistingForceTorqueWorldFixture`, which covers
+  `dart://sample/sdf/test/force_torque_test.world`.
+- The test reads the shipped world file through libsdformat-backed SDF parsing,
+  writes the parsed in-file model skeleton with
+  `SdfParser::tryWriteSkeletonToString()`, reloads the emitted SDF, and
+  compares DART skeleton semantics instead of XML text.
+- The fixture proves the current writer preserves the DART semantics imported
+  from a sensor-bearing SDF world file: explicit parent-world revolute root,
+  child revolute joint, finite axis limits/dynamics, body inertias, skeleton
+  gravity, visual sphere/box geometry, collision sphere/box geometry, and shape
+  poses. It does not claim SDF sensor or physics metadata preservation because
+  those fields are not part of the imported DART `Skeleton`.
+- Focused fixture test passed:
+  `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsExistingForceTorqueWorldFixture'`
+- Full writer target passed:
+  `pixi run run-cpp-target INTEGRATION_io_SdfWriter` (83 tests)
+- Boundary/lint/build gates passed:
+  `pixi run check-sdf-sdformat-boundary`; `pixi run lint`; `pixi run build`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Scope evidence: `CHANGELOG.md` DART 7 IO and Parsing SDF writer bullet
+  inspected; it already covers the conservative SDF writer and the DART 7
+  Tests, Benchmarks, and Quality Gates section already records the sdformat
+  boundary guard.
+- Decision: no additional changelog entry. This slice adds fixture-level
+  read/write/read verification for an existing shipped SDF world fixture
+  without adding a new public API, broadening the documented writer contract, or
+  claiming preservation for SDF fields outside DART `Skeleton` semantics.
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: record as force-torque SDF world fixture round-trip
+  verification if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
 ## Previous Resume Checkpoint (2026-07-03)
 
 Phase 2 is implemented on `feature/remove-skel-dart7-phase2` and awaiting PR

@@ -132,11 +132,14 @@ Fixture-level coverage now also loads the shipped
 SDF samples converted from legacy SKEL (`single_pendulum.sdf`, `cube.sdf`,
 `shapes.sdf`, and `test_shapes.sdf`) plus the native
 `two_link_revolute_model.sdf` fixture and the world-contained
-`issue1193_revolute*.sdf` fixtures through the normal SDF parser, writes them
-with `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and
-compares body, joint, inertial, mobility, gravity, axis-limit, visual geometry,
-collision geometry, model-pose, and joint-offset semantics between the original
-parsed skeletons and the re-parsed writer outputs.
+`issue1193_revolute*.sdf` fixtures plus `force_torque_test.world` through the
+normal SDF parser, writes them with
+`SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and compares
+body, joint, inertial, mobility, gravity, axis-limit, joint-dynamics, visual
+geometry, collision geometry, model-pose, and joint-offset semantics between
+the original parsed skeletons and the re-parsed writer outputs. The force-torque
+world coverage is limited to DART skeleton semantics imported from the in-file
+model; it does not claim SDF sensor or physics metadata preservation.
 
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.
