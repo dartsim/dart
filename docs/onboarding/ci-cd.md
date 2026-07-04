@@ -85,11 +85,13 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
     configure the tree. Run `pixi run config` (or a pixi task with
     `depends-on = ["config"]`) first; on a fresh checkout or CI runner they
     otherwise fail with `Build directory build/<env>/cpp/<type> does not exist`.
-  - Publishing to `gh-pages` triggers a full legacy Jekyll rebuild over the
-    versioned Doxygen docs, so newly pushed content (such as the performance
-    dashboard at `/performance/`) can take several minutes to appear and 404s
-    during the build. A root `.nojekyll` file makes Pages serve statically
-    (faster, and avoids Jekyll dropping underscore-prefixed Doxygen files).
+  - `gh-pages` stores generated static surfaces such as `/performance/` and
+    `/community-signals/`. `.github/workflows/pages_deploy.yml` packages that
+    branch after successful dashboard publisher runs and deploys it as a Pages
+    artifact; if the repository Pages source is still configured for legacy
+    branch publishing, GitHub's generated `pages-build-deployment` workflow may
+    queue behind hosted runners or cancel older branch builds while `gh-pages`
+    is moving.
 
 ## Common CI Failure Modes
 
@@ -560,6 +562,32 @@ deploy the generated site:
   if they need to inspect the standalone builders.
 - RTD rebuilds automatically whenever `main` changes, keeping the hosted docs in
   sync without deploying from GitHub Actions.
+
+### GitHub Pages Surfaces
+
+GitHub Pages serves generated static dashboards and historical Doxygen snapshots
+from the `gh-pages` branch:
+
+- `/performance/` is updated by `.github/workflows/performance_dashboard.yml`.
+- `/community-signals/` is updated by `.github/workflows/community_signals.yml`.
+- Historical `/v6.*` Doxygen snapshots live on the same branch.
+
+The `gh-pages` branch is the storage surface, but deployment is owned by
+`.github/workflows/pages_deploy.yml`: after the Community Signals or
+Performance Dashboard publisher completes successfully, it checks out the
+current branch tip, verifies the expected entry points, uploads the whole tree
+as a GitHub Pages artifact, and deploys it through `actions/deploy-pages`.
+The workflow also supports manual dispatch for exceptional historical-docs
+updates. It uses a single `github-pages-deploy` concurrency group with stale
+deploy cancellation, so rapid dashboard updates converge on the latest
+`gh-pages` tip instead of letting old deployments block publication.
+
+Repository Pages settings must use the GitHub Actions source for the deploy
+workflow to own production. If the source is still "Deploy from a branch",
+GitHub also creates its legacy `pages-build-deployment` workflow on every
+`gh-pages` push; treat queued or cancelled legacy deployments as stale unless
+the custom `Deploy GitHub Pages` workflow for the current `gh-pages` tip also
+fails.
 
 ## Lint Check Strategy
 

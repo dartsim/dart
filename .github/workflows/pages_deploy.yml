@@ -1,0 +1,151 @@
+name: Deploy GitHub Pages
+
+# Deploys the current gh-pages branch as a static GitHub Pages artifact after
+# the dashboard publishers update it. The branch remains the storage surface
+# for generated dashboards and historical API docs; this workflow owns the
+# Pages deployment step so publishing is observable and stale deploys are
+# cancelled when updates happen close together.
+
+on:
+  workflow_run:
+    workflows:
+      - Community Signals Dashboard
+      - Performance Dashboard
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy the packaged gh-pages artifact
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Package gh-pages site
+    if: >-
+      github.event_name != 'workflow_run'
+      || github.event.workflow_run.conclusion == 'success'
+    runs-on: [self-hosted, Linux, X64, dartsim, docker]
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+
+      - name: Prepare static Pages tree
+        run: |
+          set -euo pipefail
+          touch .nojekyll
+
+          if [ ! -f index.html ] && [ -f index.md ]; then
+            python - <<'PY'
+          from html import escape
+          from pathlib import Path
+          import re
+
+          source = Path("index.md")
+          target = Path("index.html")
+          lines = source.read_text(encoding="utf-8").splitlines()
+          body = []
+          in_list = False
+
+          def close_list():
+              global in_list
+              if in_list:
+                  body.append("</ul>")
+                  in_list = False
+
+          for line in lines:
+              if line.startswith("# "):
+                  close_list()
+                  body.append(f"<h1>{escape(line[2:].strip())}</h1>")
+              elif line.startswith("### "):
+                  close_list()
+                  body.append(f"<h3>{escape(line[4:].strip())}</h3>")
+              elif line.startswith("* "):
+                  if not in_list:
+                      body.append("<ul>")
+                      in_list = True
+                  text = line[2:].strip()
+                  match = re.fullmatch(r"\[([^\]]+)\]\(([^)]+)\)", text)
+                  if match:
+                      label, href = match.groups()
+                      body.append(
+                          f'<li><a href="{escape(href, quote=True)}">'
+                          f"{escape(label)}</a></li>"
+                      )
+                  else:
+                      body.append(f"<li>{escape(text)}</li>")
+              elif line.strip():
+                  close_list()
+                  body.append(f"<p>{escape(line.strip())}</p>")
+
+          close_list()
+
+          html = """<!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>DART API Documentation</title>
+            <style>
+              body {
+                max-width: 960px;
+                margin: 3rem auto;
+                padding: 0 1rem;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                line-height: 1.5;
+              }
+            </style>
+          </head>
+          <body>
+          {body}
+          </body>
+          </html>
+          """.replace("{body}", "\n".join(body))
+
+          target.write_text(html, encoding="utf-8")
+          PY
+          fi
+
+      - name: Verify Pages entry points
+        run: |
+          set -euo pipefail
+          test -f .nojekyll
+          test -f index.html
+          test -f performance/index.html
+          test -f community-signals/index.html
+          test -f community-signals/data.json
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: .
+          include-hidden-files: true
+
+  deploy:
+    name: Deploy gh-pages site
+    if: >-
+      needs.package.result == 'success'
+      && (github.event_name == 'workflow_run'
+      || (github.event_name == 'workflow_dispatch' && inputs.deploy)
+      )
+    needs: package
+    runs-on: [self-hosted, Linux, X64, dartsim, docker]
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
