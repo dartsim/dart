@@ -322,6 +322,12 @@ compatibility remains on the active DART 6 LTS branch._
   material rather than an installed workflow, keeping agent plans, packets,
   dev-task acceptance evidence, and gates in DART-owned docs.
   ([#3054](https://github.com/dartsim/dart/pull/3054))
+- Added a "discover your unknowns before committing" discipline to the AI
+  operating docs: `docs/ai/principles.md` Axiom 2 now covers surfacing unknowns
+  (the map-is-not-the-territory framing) and `docs/ai/orchestration.md` owns a
+  method catalog — blind-spot review, throwaway spike, requirements interview,
+  and reference map — each mapped to a public path, so agents resolve unknowns
+  before large work instead of encoding guesses into a plan.
 
 #### Tests, Benchmarks, and Quality Gates
 

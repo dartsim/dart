@@ -71,6 +71,9 @@ Default to `analyze` if the requested mode is ambiguous.
    maintainer/user approval:
    - `ahead=0`: safe deletion candidate
    - equivalent commits already landed: deletion candidate
+   - no-PR branch whose fix may already be solved differently on the target:
+     confirm supersession with a focused A/B or content check before deciding;
+     superseded is a deletion candidate, otherwise keep or open a follow-up
    - small, current, useful diff: keep or rebase into PR
    - large or unclear diff: document follow-up before action
 8. Ask for explicit maintainer/user approval before pruning refs or deleting any
