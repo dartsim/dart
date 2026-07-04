@@ -32,34 +32,28 @@
 
 #include "dart/utils/sdf/detail/sdf_helpers.hpp"
 
-#include <dart/common/uri.hpp>
+#include <dart/common/logging.hpp>
 
 #include <algorithm>
+#include <sstream>
+#include <string>
+#include <vector>
 
-#include <cmath>
+#include <cctype>
 
-#if __has_include(<gz/math/Quaternion.hh>)
+#if __has_include(<gz/math/Pose3.hh>)
+  #include <gz/math/Pose3.hh>
   #include <gz/math/Quaternion.hh>
+  #include <gz/math/Vector3.hh>
 #else
+  #include <gz/math9/gz/math/Pose3.hh>
   #include <gz/math9/gz/math/Quaternion.hh>
+  #include <gz/math9/gz/math/Vector3.hh>
 #endif
 
 namespace dart::utils::SdfParser::detail {
 
 namespace {
-
-double sanitizeParsedValue(double value)
-{
-  constexpr double roundingScale = 1e6;
-  constexpr double tolerance = 1e-7;
-  const double rounded = std::round(value * roundingScale) / roundingScale;
-  if (std::abs(value - rounded) <= tolerance) {
-    return rounded;
-  }
-  return value;
-}
-
-} // namespace
 
 std::string toLowerCopy(std::string_view text)
 {
@@ -141,19 +135,41 @@ std::string getValueText(
   return getChildElementText(parentElement, name);
 }
 
-sdf::ParamPtr getAttributeParam(
-    const ElementPtr& element, std::string_view attributeName)
+template <typename T>
+bool parseScalar(std::string_view text, T& value)
 {
-  if (!element || attributeName.empty()) {
-    return nullptr;
+  std::istringstream stream{std::string(text)};
+  stream >> value;
+  return !stream.fail();
+}
+
+template <>
+bool parseScalar<bool>(std::string_view text, bool& value)
+{
+  const std::string lower = toLowerCopy(text);
+  if (lower == "1" || lower == "true") {
+    value = true;
+    return true;
   }
 
-  const std::string attributeNameString(attributeName);
-  if (!element->HasAttribute(attributeNameString)) {
-    return nullptr;
+  if (lower == "0" || lower == "false") {
+    value = false;
+    return true;
   }
 
-  return element->GetAttribute(attributeNameString);
+  return false;
+}
+
+template <typename T>
+std::vector<T> parseArray(std::string_view text)
+{
+  std::istringstream stream{std::string(text)};
+  std::vector<T> values;
+  T value{};
+  while (stream >> value) {
+    values.push_back(value);
+  }
+  return values;
 }
 
 sdf::ParamPtr getChildValueParam(
@@ -176,26 +192,30 @@ sdf::ParamPtr getChildValueParam(
   return child->GetValue();
 }
 
+template <typename T>
+bool readScalarParam(const sdf::ParamPtr& param, T& value)
+{
+  if (!param) {
+    return false;
+  }
+
+  if (param->Get(value)) {
+    return true;
+  }
+
+  std::string text;
+  try {
+    text = param->GetAsString();
+  } catch (const std::exception&) {
+    return false;
+  }
+
+  return parseScalar(text, value);
+}
+
 Eigen::Vector3d toEigen(const gz::math::Vector3d& vec)
 {
   return Eigen::Vector3d(vec.X(), vec.Y(), vec.Z());
-}
-
-Eigen::Vector2d toEigen(const gz::math::Vector2d& vec)
-{
-  return Eigen::Vector2d(vec.X(), vec.Y());
-}
-
-Eigen::Vector3i toEigen(const gz::math::Vector3i& vec)
-{
-  return Eigen::Vector3i(vec.X(), vec.Y(), vec.Z());
-}
-
-Eigen::VectorXd colorToVector(const gz::math::Color& color)
-{
-  Eigen::VectorXd result(4);
-  result << color.R(), color.G(), color.B(), color.A();
-  return result;
 }
 
 Eigen::Isometry3d poseToIsometry(const gz::math::Pose3d& pose)
@@ -208,6 +228,8 @@ Eigen::Isometry3d poseToIsometry(const gz::math::Pose3d& pose)
   transform.linear() = quat.toRotationMatrix();
   return transform;
 }
+
+} // namespace
 
 bool hasElement(const ElementPtr& parent, std::string_view name)
 {
@@ -226,72 +248,6 @@ ElementPtr getElement(const ElementPtr& parent, std::string_view name)
   }
 
   return parent->GetElement(nameString);
-}
-
-bool hasAttribute(const ElementPtr& element, std::string_view attributeName)
-{
-  return element && !attributeName.empty()
-         && element->HasAttribute(std::string(attributeName));
-}
-
-std::string getAttributeString(
-    const ElementPtr& element, std::string_view attributeName)
-{
-  if (!element) {
-    DART_ASSERT(false);
-    return std::string();
-  }
-
-  const std::string attributeNameString(attributeName);
-  const auto attribute = getAttributeParam(element, attributeNameString);
-  if (!attribute) {
-    DART_WARN(
-        "[SdfParser] Missing attribute [{}] on <{}>.",
-        attributeNameString,
-        element->GetName());
-    return std::string();
-  }
-
-  std::string value;
-  if (attribute->Get(value)) {
-    return value;
-  }
-
-  try {
-    return attribute->GetAsString();
-  } catch (const std::exception& e) {
-    DART_WARN(
-        "[SdfParser] Failed to parse attribute [{}] on <{}>: {}",
-        attributeNameString,
-        element->GetName(),
-        e.what());
-    return std::string();
-  }
-}
-
-std::string getValueString(
-    const ElementPtr& parentElement, std::string_view name)
-{
-  const auto param = getChildValueParam(parentElement, name);
-  if (!param) {
-    return std::string();
-  }
-
-  std::string value;
-  if (param->Get(value)) {
-    return value;
-  }
-
-  try {
-    return param->GetAsString();
-  } catch (const std::exception& e) {
-    DART_WARN(
-        "[SdfParser] Failed to parse element <{}> under <{}> as string: {}",
-        name,
-        parentElement ? parentElement->GetName() : "unknown",
-        e.what());
-    return std::string();
-  }
 }
 
 bool getValueBool(const ElementPtr& parentElement, std::string_view name)
@@ -335,39 +291,6 @@ double getValueDouble(const ElementPtr& parentElement, std::string_view name)
       name,
       parentElement ? parentElement->GetName() : "unknown");
   return 0.0;
-}
-
-Eigen::Vector2d getValueVector2d(
-    const ElementPtr& parentElement, std::string_view name)
-{
-  Eigen::Vector2d result = Eigen::Vector2d::Zero();
-  const auto param = getChildValueParam(parentElement, name);
-  if (!param) {
-    return result;
-  }
-
-  gz::math::Vector2d vec2;
-  if (param->Get(vec2)) {
-    return toEigen(vec2);
-  }
-
-  const auto text = getValueText(parentElement, name, param);
-  if (text.empty()) {
-    return result;
-  }
-
-  const auto values = parseArray<double>(text);
-  if (values.size() >= 2) {
-    result << values[0], values[1];
-    return result;
-  }
-
-  DART_WARN(
-      "[SdfParser] Element <{}> under <{}> expected 2 values but found {}.",
-      name,
-      parentElement ? parentElement->GetName() : "unknown",
-      values.size());
-  return result;
 }
 
 Eigen::Vector3d getValueVector3d(
@@ -432,40 +355,6 @@ Eigen::Vector3i getValueVector3i(
   return result;
 }
 
-Eigen::VectorXd getValueVectorXd(
-    const ElementPtr& parentElement, std::string_view name)
-{
-  const auto param = getChildValueParam(parentElement, name);
-  if (!param) {
-    return Eigen::VectorXd();
-  }
-
-  const auto text = getValueText(parentElement, name, param);
-  if (!text.empty()) {
-    const auto values = parseArray<double>(text);
-    if (!values.empty()) {
-      Eigen::VectorXd result(values.size());
-      std::ranges::transform(values, result.data(), sanitizeParsedValue);
-      return result;
-    }
-  }
-
-  gz::math::Color color;
-  if (param->Get(color)) {
-    return colorToVector(color);
-  }
-
-  gz::math::Vector3d vec3;
-  if (param->Get(vec3)) {
-    Eigen::VectorXd result(3);
-    result << sanitizeParsedValue(vec3.X()), sanitizeParsedValue(vec3.Y()),
-        sanitizeParsedValue(vec3.Z());
-    return result;
-  }
-
-  return Eigen::VectorXd();
-}
-
 Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
     const ElementPtr& parentElement, std::string_view name)
 {
@@ -499,37 +388,6 @@ Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
       parentElement ? parentElement->GetName() : "unknown",
       values.size());
   return Eigen::Isometry3d::Identity();
-}
-
-ElementEnumerator::ElementEnumerator(
-    const ElementPtr& parentElement, std::string_view name)
-  : mParent(parentElement),
-    mName(std::string(name)),
-    mCurrent(nullptr),
-    mInitialized(false)
-{
-  // Do nothing
-}
-
-bool ElementEnumerator::next()
-{
-  if (!mParent) {
-    return false;
-  }
-
-  if (!mInitialized) {
-    mCurrent = getElement(mParent, mName);
-    mInitialized = true;
-  } else if (mCurrent) {
-    mCurrent = mCurrent->GetNextElement(mName);
-  }
-
-  return static_cast<bool>(mCurrent);
-}
-
-ElementPtr ElementEnumerator::get() const
-{
-  return mCurrent;
 }
 
 } // namespace dart::utils::SdfParser::detail

@@ -55,6 +55,10 @@
       checks remain only where DART needs authored/default presence,
       DART-specific soft-body extension fields, or legacy
       `use_parent_model_frame` compatibility.
+      The SDF-specific helper layer no longer exposes generic XML attribute,
+      string, vector2/vectorX, or child-enumerator APIs; retained helpers are
+      limited to the small extension/presence fallback bridge still used by the
+      parser.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor
       save-load belongs to the scene/project layer. Broader SDF coverage, URDF
@@ -184,4 +188,6 @@ SKEL-YAML direction just because the prototype once existed.
   the body, joint, DoF, inertia, and shape comparison helpers. Completion still
   requires broader accepted-format writer APIs and round-trip tests that load a
   scene from each accepted format, write it back, and compare the re-parsed
-  models.
+  models. SDF helper cleanup is covered by `test_sdf_helpersNone`, which now
+  validates only the retained parser bridge instead of the removed generic XML
+  helper APIs.

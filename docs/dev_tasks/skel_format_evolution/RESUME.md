@@ -76,6 +76,11 @@ limits, mimic metadata, and legacy `thread_pitch` or modern
 DART preserves authored/default distinctions for existing diagnostics, reads
 DART-specific soft-body extension fields, or supports the legacy
 `use_parent_model_frame` compatibility extension.
+The SDF detail helper API has been narrowed to that remaining bridge: generic
+XML attribute reads, string reads, vector2/vectorX parsing, child enumeration,
+and direct helper tests for those deleted APIs are gone. Retained helpers cover
+only element presence, child lookup, scalar reads, vector3/vector3i reads, and
+pose fallback parsing for the DART-specific extension/presence paths.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -163,6 +168,16 @@ Additional validation for SDF root/model/link/joint/aspect DOM traversal:
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 - `pixi run run-cpp-target INTEGRATION_io_Read`
 
+Additional validation for pruning the unused SDF XML helper API:
+
+- `git diff --check`
+- `pixi run run-cpp-target test_sdf_helpersNone`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run run-cpp-target INTEGRATION_io_Read`
+- `pixi run lint`
+- `pixi run build`
+
 Changelog decision:
 
 - Mode: draft
@@ -199,7 +214,9 @@ Changelog decision:
   implementation PR exists. No additional entry is needed for SDF
   root/model/link/joint/aspect DOM traversal because it hardens the same
   conservative SDF parser/writer round-trip surface before the implementation
-  PR exists.
+  PR exists. No additional entry is needed for pruning unused SDF XML helper
+  APIs because this is an internal parser cleanup that narrows the detail helper
+  surface while preserving the existing parser/writer changelog scope.
 
 ## Previous Resume Checkpoint (2026-07-03)
 
