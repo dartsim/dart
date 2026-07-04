@@ -263,6 +263,25 @@ def test_guard_detects_commits_inside_shell_conditionals(tmp_path, command):
 @pytest.mark.parametrize(
     "command",
     [
+        # `&` terminates the preceding command, so the trailing `git commit`
+        # still runs and must route to the gate even when a non-git segment
+        # precedes it. Splitting on `&` must not disturb `&&` handling.
+        "true & git commit -m x",
+        "false & git commit -m x",
+        "a && b & git commit -m x",
+        "git commit -m x &",
+        "git commit -m x & true",
+    ],
+)
+def test_guard_detects_commit_after_background_operator(tmp_path, command):
+    returncode, stderr = _guard_verdict(tmp_path, command)
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
         "git log --grep commit",
         "echo commit",
         "DART_SKIP_HOOKS=1 git commit -m x",
@@ -271,6 +290,10 @@ def test_guard_detects_commits_inside_shell_conditionals(tmp_path, command):
         "env -S 'DART_SKIP_HOOKS=1 git commit -m x'",
         "env -S 'git log --grep commit'",
         "git -C /somewhere/else commit -m x",
+        # A background operator must not turn a non-commit chain into a gate,
+        # and must still honor a DART_SKIP_HOOKS bypass on the commit segment.
+        "true & echo commit",
+        "DART_SKIP_HOOKS=1 git commit -m x & true",
     ],
 )
 def test_guard_skips_non_commits_and_bypasses(tmp_path, command):

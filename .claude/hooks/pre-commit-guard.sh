@@ -48,7 +48,7 @@ fi
 # wrapper prefixes (command/exec/time/nice/nohup/env), subshell and brace-group
 # openers, backslash-escaped/path-qualified git, `git -C dir commit`,
 # `git -c k=v commit`, hook overrides via `--config-env` or command-scoped Git
-# config file environment, and && / || / ; / | command chains; ignores "commit"
+# config file environment, and && / || / & / ; / | command chains; ignores "commit"
 # as a substring elsewhere.
 verdict=$(printf '%s' "$input" | python3 -c '
 import json
@@ -276,7 +276,7 @@ def strip_heredoc_bodies(text):
 
 def split_shell_segments(text):
     text = strip_heredoc_bodies(text)
-    pieces = re.split(r"(&&|\|\||[;|\n])", text)
+    pieces = re.split(r"(&&|\|\||[;&|\n])", text)
     for index in range(0, len(pieces), 2):
         part = pieces[index]
         separator = pieces[index + 1] if index + 1 < len(pieces) else ""
