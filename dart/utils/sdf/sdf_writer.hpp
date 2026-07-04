@@ -63,11 +63,11 @@ struct DART_UTILS_API WriteOptions
 ///
 /// The first writer slice intentionally supports a conservative DART subset:
 /// BodyNode links, root FreeJoint/WeldJoint placement, revolute/prismatic/weld
-/// and screw child joints with passive dynamics metadata (damping, Coulomb
-/// friction, spring reference, and spring stiffness), screw thread pitch, link
-/// gravity mode, inertial parameters, local joint/shape poses, and
-/// box/sphere/cylinder/mesh visual/collision geometry with explicit visual
-/// material colors.
+/// and screw/universal child joints with passive dynamics metadata (damping,
+/// Coulomb friction, spring reference, and spring stiffness), screw thread
+/// pitch, topology-only ball child joints, link gravity mode, inertial
+/// parameters, local joint/shape poses, and box/sphere/cylinder/mesh
+/// visual/collision geometry with explicit visual material colors.
 /// Unsupported constructs return an error instead of being silently dropped.
 common::Result<std::string, common::Error> DART_UTILS_API
 tryWriteSkeletonToString(

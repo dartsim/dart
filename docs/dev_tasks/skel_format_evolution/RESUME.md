@@ -31,12 +31,13 @@ The first SDF writer implementation slice is now local on
 `work/skel-format-yaml-decision`: `dart::utils::SdfParser` exposes
 `tryWriteSkeletonToString()` for a conservative `Skeleton` subset, with
 `INTEGRATION_io_SdfWriter` proving write/read round-trip for links, root
-FreeJoint/WeldJoint placement, revolute/prismatic/weld/screw child joints,
-inertial data, primitive or mesh geometry, link gravity mode, passive joint
-dynamics metadata (damping, Coulomb friction, spring reference, and spring
-stiffness), screw thread pitch, local root/joint/shape poses, and explicit
-visual material colors. It also checks unsupported-shape diagnostics,
-non-finite visual material diagnostics, non-finite screw pitch diagnostics, and
+FreeJoint/WeldJoint placement, revolute/prismatic/weld/screw/universal child
+joints, inertial data, primitive or mesh geometry, link gravity mode, passive
+joint dynamics metadata (damping, Coulomb friction, spring reference, and spring
+stiffness), screw thread pitch, topology-only ball child joints, local
+root/joint/shape poses, and explicit visual material colors. It also checks
+unsupported-shape diagnostics, non-finite visual material diagnostics,
+non-finite screw pitch diagnostics, unsupported ball-joint metadata, and
 non-finite joint dynamics diagnostics. This is real Phase 5 progress, but Phase
 5 is still open until broader SDF coverage plus the remaining accepted writer
 targets are implemented or durably deferred.
@@ -159,8 +160,8 @@ Continue with the remaining real task work: land Phase 2 after maintainer
 approval, then continue Phase 5 from
 [`05-export-writers-plan.md`](05-export-writers-plan.md) by extending SDF writer
 coverage beyond material colors/link gravity mode/passive joint dynamics/screw
-thread pitch/local poses or choosing the next accepted writer target (URDF or
-PLAN-101 project save/load).
+thread pitch/universal and ball topology/local poses or choosing the next
+accepted writer target (URDF or PLAN-101 project save/load).
 
 ## Context That Would Be Lost
 

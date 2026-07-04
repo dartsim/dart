@@ -34,6 +34,7 @@
 
 #include "dart/math/geometry.hpp"
 
+#include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
@@ -45,6 +46,7 @@
 #include <dart/dynamics/screw_joint.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
+#include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <algorithm>
@@ -170,10 +172,16 @@ std::string jointTypeName(const dynamics::Joint& joint)
   if (dynamic_cast<const dynamics::ScrewJoint*>(&joint)) {
     return "screw";
   }
+  if (dynamic_cast<const dynamics::UniversalJoint*>(&joint)) {
+    return "universal";
+  }
+  if (dynamic_cast<const dynamics::BallJoint*>(&joint)) {
+    return "ball";
+  }
   return {};
 }
 
-std::optional<Eigen::Vector3d> jointAxis(const dynamics::Joint& joint)
+std::optional<Eigen::Vector3d> singleDofJointAxis(const dynamics::Joint& joint)
 {
   if (const auto* revolute
       = dynamic_cast<const dynamics::RevoluteJoint*>(&joint)) {
@@ -425,26 +433,32 @@ WriteResult computeLinkModelPose(
 }
 
 WriteResult writeAxis(
-    std::ostream& stream, const dynamics::Joint& joint, int depth)
+    std::ostream& stream,
+    const dynamics::Joint& joint,
+    const Eigen::Vector3d& axis,
+    std::size_t dofIndex,
+    std::string_view tag,
+    int depth)
 {
-  const auto axis = jointAxis(joint);
-  if (!axis) {
-    return ok();
+  if (dofIndex >= joint.getNumDofs()) {
+    return fail(
+        "Cannot write SDF joint [" + joint.getName() + "] " + std::string(tag)
+        + " for missing DoF index " + std::to_string(dofIndex) + ".");
   }
-  if (!isFinite(*axis)) {
+  if (!isFinite(axis)) {
     return fail(
         "Cannot write SDF joint [" + joint.getName()
         + "] with a non-finite axis.");
   }
 
-  stream << indent(depth) << "<axis>\n";
-  stream << indent(depth + 1) << "<xyz>" << formatVector3(*axis) << "</xyz>\n";
+  stream << indent(depth) << "<" << tag << ">\n";
+  stream << indent(depth + 1) << "<xyz>" << formatVector3(axis) << "</xyz>\n";
 
   bool wroteLimit = false;
   std::ostringstream limit;
   limit << indent(depth + 1) << "<limit>\n";
-  const double lower = joint.getPositionLowerLimit(0);
-  const double upper = joint.getPositionUpperLimit(0);
+  const double lower = joint.getPositionLowerLimit(dofIndex);
+  const double upper = joint.getPositionUpperLimit(dofIndex);
   if (std::isfinite(lower)) {
     wroteLimit = true;
     limit << indent(depth + 2) << "<lower>" << formatDouble(lower)
@@ -460,10 +474,10 @@ WriteResult writeAxis(
     stream << limit.str();
   }
 
-  const double damping = joint.getDampingCoefficient(0);
-  const double friction = joint.getCoulombFriction(0);
-  const double springReference = joint.getRestPosition(0);
-  const double springStiffness = joint.getSpringStiffness(0);
+  const double damping = joint.getDampingCoefficient(dofIndex);
+  const double friction = joint.getCoulombFriction(dofIndex);
+  const double springReference = joint.getRestPosition(dofIndex);
+  const double springStiffness = joint.getSpringStiffness(dofIndex);
   if (!std::isfinite(damping) || !std::isfinite(friction)
       || !std::isfinite(springReference) || !std::isfinite(springStiffness)) {
     return fail(
@@ -493,7 +507,40 @@ WriteResult writeAxis(
     stream << indent(depth + 1) << "</dynamics>\n";
   }
 
-  stream << indent(depth) << "</axis>\n";
+  stream << indent(depth) << "</" << tag << ">\n";
+  return ok();
+}
+
+WriteResult validateBallJointState(const dynamics::BallJoint& joint)
+{
+  for (std::size_t i = 0; i < joint.getNumDofs(); ++i) {
+    const double lower = joint.getPositionLowerLimit(i);
+    const double upper = joint.getPositionUpperLimit(i);
+    const double damping = joint.getDampingCoefficient(i);
+    const double friction = joint.getCoulombFriction(i);
+    const double springReference = joint.getRestPosition(i);
+    const double springStiffness = joint.getSpringStiffness(i);
+    if (!std::isfinite(damping) || !std::isfinite(friction)
+        || !std::isfinite(springReference) || !std::isfinite(springStiffness)) {
+      return fail(
+          "Cannot write SDF ball joint [" + joint.getName()
+          + "] with non-finite dynamics.");
+    }
+    if (std::isfinite(lower) || std::isfinite(upper)) {
+      return fail(
+          "Cannot write SDF ball joint [" + joint.getName()
+          + "] with position limits because DART's SDF ball joint "
+            "round-trip does not represent them.");
+    }
+    if (damping != 0.0 || friction != 0.0 || springReference != 0.0
+        || springStiffness != 0.0) {
+      return fail(
+          "Cannot write SDF ball joint [" + joint.getName()
+          + "] with dynamics because DART's SDF ball joint round-trip "
+            "does not represent them.");
+    }
+  }
+
   return ok();
 }
 
@@ -543,8 +590,28 @@ WriteResult writeJoint(
     stream << indent(depth + 1) << "<thread_pitch>" << formatDouble(pitch)
            << "</thread_pitch>\n";
   }
-  if (auto result = writeAxis(stream, joint, depth + 1); result.isErr()) {
-    return result;
+  if (const auto* universal
+      = dynamic_cast<const dynamics::UniversalJoint*>(&joint)) {
+    if (auto result
+        = writeAxis(stream, joint, universal->getAxis1(), 0, "axis", depth + 1);
+        result.isErr()) {
+      return result;
+    }
+    if (auto result = writeAxis(
+            stream, joint, universal->getAxis2(), 1, "axis2", depth + 1);
+        result.isErr()) {
+      return result;
+    }
+  } else if (const auto axis = singleDofJointAxis(joint)) {
+    if (auto result = writeAxis(stream, joint, *axis, 0, "axis", depth + 1);
+        result.isErr()) {
+      return result;
+    }
+  } else if (
+      const auto* ball = dynamic_cast<const dynamics::BallJoint*>(&joint)) {
+    if (auto result = validateBallJointState(*ball); result.isErr()) {
+      return result;
+    }
   }
   stream << indent(depth) << "</joint>\n";
 

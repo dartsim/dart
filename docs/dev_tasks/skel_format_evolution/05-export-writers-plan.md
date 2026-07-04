@@ -16,14 +16,15 @@ Before Phase 5 started, DART 7 `dart::io` was read-only:
 The first implementation slice adds
 `dart::utils::SdfParser::tryWriteSkeletonToString()`, a parser-specific SDF
 string writer for a conservative `Skeleton` subset. It writes BodyNode links,
-root FreeJoint/WeldJoint placement, revolute/prismatic/weld/screw child joints,
-passive joint dynamics metadata (damping, Coulomb friction, spring reference,
-and spring stiffness), screw thread pitch, link gravity mode, inertial
-parameters, local joint/shape poses, box/sphere/cylinder/mesh visual or
-collision geometry, and explicit visual material colors as SDF `<diffuse>`
-values. Unsupported constructs, non-finite material colors, non-finite screw
-pitch, and non-finite joint dynamics return `common::Result` errors instead of
-being silently dropped.
+root FreeJoint/WeldJoint placement, revolute/prismatic/weld/screw/universal
+child joints, passive joint dynamics metadata (damping, Coulomb friction,
+spring reference, and spring stiffness), screw thread pitch, topology-only ball
+child joints, link gravity mode, inertial parameters, local joint/shape poses,
+box/sphere/cylinder/mesh visual or collision geometry, and explicit visual
+material colors as SDF `<diffuse>` values. Unsupported constructs, non-finite
+material colors, non-finite screw pitch, unsupported ball-joint metadata, and
+non-finite joint dynamics return `common::Result` errors instead of being
+silently dropped.
 
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.
@@ -85,9 +86,9 @@ Phase 5 is complete only when code and tests prove the writer contract:
 ## Open Work
 
 - Extend the SDF writer contract beyond the first conservative subset when
-  tests can prove multi-axis joints, additional shapes, mesh material variants,
-  resource URI handling, default/world gravity, or other world-level data
-  round-trip correctly.
+  tests can prove additional joint aliases or edge cases, shapes, mesh material
+  variants, resource URI handling, default/world gravity, or other world-level
+  data round-trip correctly.
 - Decide the next implementation target: URDF writer or PLAN-101 project
   save/load.
 - Factor a shared comparison helper for read/write/read tests before future

@@ -35,6 +35,7 @@
 
 #include <dart/config.hpp>
 
+#include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
@@ -45,6 +46,7 @@
 #include <dart/dynamics/screw_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
+#include <dart/dynamics/universal_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <gtest/gtest.h>
@@ -203,6 +205,54 @@ dynamics::SkeletonPtr makeRoundTripSkeleton()
   screwTip->createShapeNodeWith<dynamics::CollisionAspect>(
       std::make_shared<dynamics::SphereShape>(0.08), "screw_tip_collision");
 
+  dynamics::UniversalJoint::Properties universalProperties;
+  universalProperties.mName = "universal_shoulder";
+  universalProperties.mAxis[0] = Eigen::Vector3d::UnitX();
+  universalProperties.mAxis[1] = Eigen::Vector3d::UnitZ();
+  universalProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.0, 0.1, 0.0);
+  universalProperties.mPositionLowerLimits[0] = -0.4;
+  universalProperties.mPositionUpperLimits[0] = 0.6;
+  universalProperties.mPositionLowerLimits[1] = -1.25;
+  universalProperties.mPositionUpperLimits[1] = 1.5;
+
+  dynamics::BodyNode::Properties universalBodyProperties;
+  universalBodyProperties.mName = "universal_tip";
+  universalBodyProperties.mInertia.setMass(0.2);
+  universalBodyProperties.mInertia.setMoment(Eigen::Matrix3d::Identity() * 0.2);
+
+  auto [universalJoint, universalTip]
+      = skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(
+          screwTip, universalProperties, universalBodyProperties);
+  universalJoint->setDampingCoefficient(0, 0.3);
+  universalJoint->setCoulombFriction(0, 0.06);
+  universalJoint->setRestPosition(0, -0.2);
+  universalJoint->setSpringStiffness(0, 2.5);
+  universalJoint->setDampingCoefficient(1, 0.45);
+  universalJoint->setCoulombFriction(1, 0.08);
+  universalJoint->setRestPosition(1, 0.35);
+  universalJoint->setSpringStiffness(1, 4.5);
+  universalTip->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::CylinderShape>(0.04, 0.18),
+      "universal_tip_collision");
+
+  dynamics::BallJoint::Properties ballProperties;
+  ballProperties.mName = "ball_socket";
+  ballProperties.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.0, -0.1, 0.0);
+
+  dynamics::BodyNode::Properties ballBodyProperties;
+  ballBodyProperties.mName = "ball_tip";
+  ballBodyProperties.mInertia.setMass(0.15);
+  ballBodyProperties.mInertia.setMoment(Eigen::Matrix3d::Identity() * 0.15);
+
+  auto [ballJoint, ballTip]
+      = skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(
+          universalTip, ballProperties, ballBodyProperties);
+  (void)ballJoint;
+  ballTip->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::SphereShape>(0.05), "ball_tip_collision");
+
   return skeleton;
 }
 
@@ -249,6 +299,14 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
       writeResult.value().find("<thread_pitch>0.25</thread_pitch>"),
       std::string::npos);
   EXPECT_NE(
+      writeResult.value().find(
+          "<joint name=\"universal_shoulder\" type=\"universal\">"),
+      std::string::npos);
+  EXPECT_NE(writeResult.value().find("<axis2>"), std::string::npos);
+  EXPECT_NE(
+      writeResult.value().find("<joint name=\"ball_socket\" type=\"ball\">"),
+      std::string::npos);
+  EXPECT_NE(
       writeResult.value().find("<damping>0.25</damping>"), std::string::npos);
   EXPECT_NE(
       writeResult.value().find("<friction>0.125</friction>"),
@@ -282,11 +340,15 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   const auto* slider = reparsed->getBodyNode("slider");
   const auto* fixed = reparsed->getBodyNode("fixed");
   const auto* screwTip = reparsed->getBodyNode("screw_tip");
+  const auto* universalTip = reparsed->getBodyNode("universal_tip");
+  const auto* ballTip = reparsed->getBodyNode("ball_tip");
   ASSERT_NE(base, nullptr);
   ASSERT_NE(tip, nullptr);
   ASSERT_NE(slider, nullptr);
   ASSERT_NE(fixed, nullptr);
   ASSERT_NE(screwTip, nullptr);
+  ASSERT_NE(universalTip, nullptr);
+  ASSERT_NE(ballTip, nullptr);
 
   const auto* root
       = dynamic_cast<const dynamics::FreeJoint*>(reparsed->getJoint("root"));
@@ -361,6 +423,33 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   EXPECT_NEAR(screwJoint->getRestPosition(0), 0.1, 1e-12);
   EXPECT_NEAR(screwJoint->getSpringStiffness(0), 1.5, 1e-12);
 
+  const auto* universalJoint = dynamic_cast<const dynamics::UniversalJoint*>(
+      reparsed->getJoint("universal_shoulder"));
+  ASSERT_NE(universalJoint, nullptr);
+  EXPECT_EQ(universalJoint->getParentBodyNode(), screwTip);
+  EXPECT_EQ(universalJoint->getChildBodyNode(), universalTip);
+  expectVectorNear(universalJoint->getAxis1(), Eigen::Vector3d::UnitX(), 1e-12);
+  expectVectorNear(universalJoint->getAxis2(), Eigen::Vector3d::UnitZ(), 1e-12);
+  EXPECT_NEAR(universalJoint->getPositionLowerLimit(0), -0.4, 1e-12);
+  EXPECT_NEAR(universalJoint->getPositionUpperLimit(0), 0.6, 1e-12);
+  EXPECT_NEAR(universalJoint->getDampingCoefficient(0), 0.3, 1e-12);
+  EXPECT_NEAR(universalJoint->getCoulombFriction(0), 0.06, 1e-12);
+  EXPECT_NEAR(universalJoint->getRestPosition(0), -0.2, 1e-12);
+  EXPECT_NEAR(universalJoint->getSpringStiffness(0), 2.5, 1e-12);
+  EXPECT_NEAR(universalJoint->getPositionLowerLimit(1), -1.25, 1e-12);
+  EXPECT_NEAR(universalJoint->getPositionUpperLimit(1), 1.5, 1e-12);
+  EXPECT_NEAR(universalJoint->getDampingCoefficient(1), 0.45, 1e-12);
+  EXPECT_NEAR(universalJoint->getCoulombFriction(1), 0.08, 1e-12);
+  EXPECT_NEAR(universalJoint->getRestPosition(1), 0.35, 1e-12);
+  EXPECT_NEAR(universalJoint->getSpringStiffness(1), 4.5, 1e-12);
+
+  const auto* ballJoint = dynamic_cast<const dynamics::BallJoint*>(
+      reparsed->getJoint("ball_socket"));
+  ASSERT_NE(ballJoint, nullptr);
+  EXPECT_EQ(ballJoint->getParentBodyNode(), universalTip);
+  EXPECT_EQ(ballJoint->getChildBodyNode(), ballTip);
+  EXPECT_EQ(ballJoint->getNumDofs(), 3u);
+
   ASSERT_EQ(base->getNumShapeNodesWith<dynamics::VisualAspect>(), 1u);
   ASSERT_EQ(base->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
   const auto* baseBox = dynamic_cast<const dynamics::BoxShape*>(
@@ -416,6 +505,25 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
           .get());
   ASSERT_NE(screwTipSphere, nullptr);
   EXPECT_NEAR(screwTipSphere->getRadius(), 0.08, 1e-12);
+
+  ASSERT_EQ(
+      universalTip->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
+  const auto* universalTipCylinder
+      = dynamic_cast<const dynamics::CylinderShape*>(
+          universalTip->getShapeNodeWith<dynamics::CollisionAspect>(0)
+              ->getShape()
+              .get());
+  ASSERT_NE(universalTipCylinder, nullptr);
+  EXPECT_NEAR(universalTipCylinder->getRadius(), 0.04, 1e-12);
+  EXPECT_NEAR(universalTipCylinder->getHeight(), 0.18, 1e-12);
+
+  ASSERT_EQ(ballTip->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
+  const auto* ballTipSphere = dynamic_cast<const dynamics::SphereShape*>(
+      ballTip->getShapeNodeWith<dynamics::CollisionAspect>(0)
+          ->getShape()
+          .get());
+  ASSERT_NE(ballTipSphere, nullptr);
+  EXPECT_NEAR(ballTipSphere->getRadius(), 0.05, 1e-12);
 }
 
 //==============================================================================
@@ -558,4 +666,31 @@ TEST(SdfWriter, NonFiniteScrewJointPitchReturnsError)
   const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(result.error().message.find("non-finite pitch"), std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, BallJointDynamicsReturnError)
+{
+  auto skeleton = dynamics::Skeleton::create("ball_joint_dynamics");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::BallJoint::Properties ballProperties;
+  ballProperties.mName = "ball";
+
+  dynamics::BodyNode::Properties tipProperties;
+  tipProperties.mName = "tip";
+
+  auto [ball, tip] = skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(
+      base, ballProperties, tipProperties);
+  (void)tip;
+  ball->setDampingCoefficient(0, 0.1);
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("ball joint [ball] with dynamics"),
+      std::string::npos);
 }
