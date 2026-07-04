@@ -1159,6 +1159,111 @@ TEST(SdfWriter, RoundTripsExistingTwoLinkRevoluteFixture)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsExistingWorldRevoluteFixtures)
+{
+  const std::vector<std::pair<std::string, std::string>> fixtures = {
+      {"dart://sample/sdf/test/issue1193_revolute_test.sdf",
+       "issue1193_revolute"},
+      {"dart://sample/sdf/test/issue1193_revolute_with_offset_test.sdf",
+       "issue1193_revolute_with_offset"},
+  };
+
+  for (const auto& [uri, name] : fixtures) {
+    SCOPED_TRACE(uri);
+    const auto original = utils::SdfParser::readSkeleton(common::Uri(uri));
+    ASSERT_NE(original, nullptr);
+    ASSERT_EQ(original->getNumBodyNodes(), 2u);
+    ASSERT_EQ(original->getNumJoints(), 2u);
+    const auto* originalLink1 = test::requireBodyNode(*original, "link1");
+    const auto* originalLink2 = test::requireBodyNode(*original, "link2");
+    ASSERT_NE(originalLink1, nullptr);
+    ASSERT_NE(originalLink2, nullptr);
+    const auto* originalRootJoint = originalLink1->getParentJoint();
+    ASSERT_NE(originalRootJoint, nullptr);
+    const auto* originalRevolute
+        = test::requireJoint<dynamics::RevoluteJoint>(*original, "revJoint");
+    ASSERT_NE(originalRevolute, nullptr);
+
+    const auto writeResult
+        = utils::SdfParser::tryWriteSkeletonToString(*original);
+    ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+    const auto path = writeTempSdf(writeResult.value(), name);
+    const auto reparsed = utils::SdfParser::readSkeleton(
+        common::Uri::createFromPath(path.string()));
+    std::filesystem::remove(path);
+
+    ASSERT_NE(reparsed, nullptr);
+    EXPECT_EQ(reparsed->getName(), original->getName());
+    EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+    EXPECT_VECTOR_NEAR(reparsed->getGravity(), original->getGravity(), 1e-12);
+    EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+    EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+    const auto* link1 = test::requireBodyNode(*reparsed, "link1");
+    const auto* link2 = test::requireBodyNode(*reparsed, "link2");
+    ASSERT_NE(link1, nullptr);
+    ASSERT_NE(link2, nullptr);
+    expectBodyInertiaRoundTrips(*link1, *originalLink1, 1e-12);
+    expectBodyInertiaRoundTrips(*link2, *originalLink2, 1e-12);
+
+    const auto* rootJoint = link1->getParentJoint();
+    ASSERT_NE(rootJoint, nullptr);
+    expectJointRoundTrips(*rootJoint, *originalRootJoint, 1e-12);
+
+    const auto* revolute
+        = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, "revJoint");
+    ASSERT_NE(revolute, nullptr);
+    expectJointRoundTrips(*revolute, *originalRevolute, 1e-12);
+    EXPECT_VECTOR_NEAR(revolute->getAxis(), originalRevolute->getAxis(), 1e-12);
+
+    const auto* originalLink1Box
+        = test::requireShape<dynamics::VisualAspect, dynamics::BoxShape>(
+            *originalLink1, 0, 2);
+    const auto* link1Box
+        = test::requireShape<dynamics::VisualAspect, dynamics::BoxShape>(
+            *link1, 0, 2);
+    ASSERT_NE(originalLink1Box, nullptr);
+    ASSERT_NE(link1Box, nullptr);
+    EXPECT_VECTOR_NEAR(link1Box->getSize(), originalLink1Box->getSize(), 1e-12);
+    expectShapeNodePoseRoundTrips<dynamics::VisualAspect>(
+        *link1, *originalLink1, 0, 1e-12);
+
+    const auto* originalLink1Sphere
+        = test::requireShape<dynamics::VisualAspect, dynamics::SphereShape>(
+            *originalLink1, 1, 2);
+    const auto* link1Sphere
+        = test::requireShape<dynamics::VisualAspect, dynamics::SphereShape>(
+            *link1, 1, 2);
+    ASSERT_NE(originalLink1Sphere, nullptr);
+    ASSERT_NE(link1Sphere, nullptr);
+    EXPECT_NEAR(
+        link1Sphere->getRadius(), originalLink1Sphere->getRadius(), 1e-12);
+    expectShapeNodePoseRoundTrips<dynamics::VisualAspect>(
+        *link1, *originalLink1, 1, 1e-12);
+
+    const auto* originalLink2Box
+        = test::requireShape<dynamics::VisualAspect, dynamics::BoxShape>(
+            *originalLink2, 0, 1);
+    const auto* link2Box
+        = test::requireShape<dynamics::VisualAspect, dynamics::BoxShape>(
+            *link2, 0, 1);
+    ASSERT_NE(originalLink2Box, nullptr);
+    ASSERT_NE(link2Box, nullptr);
+    EXPECT_VECTOR_NEAR(link2Box->getSize(), originalLink2Box->getSize(), 1e-12);
+    expectShapeNodePoseRoundTrips<dynamics::VisualAspect>(
+        *link2, *originalLink2, 0, 1e-12);
+
+    EXPECT_EQ(
+        link1->getNumShapeNodesWith<dynamics::CollisionAspect>(),
+        originalLink1->getNumShapeNodesWith<dynamics::CollisionAspect>());
+    EXPECT_EQ(
+        link2->getNumShapeNodesWith<dynamics::CollisionAspect>(),
+        originalLink2->getNumShapeNodesWith<dynamics::CollisionAspect>());
+  }
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsJointAxisVelocityAndEffortLimits)
 {
   dynamics::SkeletonPtr skeleton;

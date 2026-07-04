@@ -131,11 +131,12 @@ contracts that sdformat normalizes semantically, such as legacy
 Fixture-level coverage now also loads the shipped
 SDF samples converted from legacy SKEL (`single_pendulum.sdf`, `cube.sdf`,
 `shapes.sdf`, and `test_shapes.sdf`) plus the native
-`two_link_revolute_model.sdf` fixture through the normal SDF parser, writes
-them with `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and
-compares body, joint, inertial, mobility, axis-limit, visual geometry, and
-collision geometry semantics between the original parsed skeletons and the
-re-parsed writer outputs.
+`two_link_revolute_model.sdf` fixture and the world-contained
+`issue1193_revolute*.sdf` fixtures through the normal SDF parser, writes them
+with `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and
+compares body, joint, inertial, mobility, gravity, axis-limit, visual geometry,
+collision geometry, model-pose, and joint-offset semantics between the original
+parsed skeletons and the re-parsed writer outputs.
 
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.

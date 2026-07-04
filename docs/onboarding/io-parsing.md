@@ -186,11 +186,12 @@ zero-threshold bounce restitution, and ODE friction/slip metadata. The
 round-trip coverage includes the shipped SDF fixtures converted from legacy
 SKEL (`single_pendulum.sdf`, `cube.sdf`, `shapes.sdf`, and
 `test_shapes.sdf`) and the native two-link revolute SDF fixture
-(`two_link_revolute_model.sdf`) through read/write/read smokes that compare
-body, joint, inertial, mobility, axis-limit, box/cylinder geometry, and
-shape-pose semantics; absolute non-file mesh URI preservation through a custom
-retriever; and URI-backed mesh material variants through preserved source mesh
-URIs.
+(`two_link_revolute_model.sdf`) plus world-contained `issue1193_revolute*.sdf`
+fixtures through read/write/read smokes that compare body, joint, inertial,
+mobility, gravity, axis-limit, box/cylinder/sphere geometry, shape-pose,
+model-pose, and joint-offset semantics; absolute non-file mesh URI preservation
+through a custom retriever; and URI-backed mesh material variants through
+preserved source mesh URIs.
 Targetless relative
 mesh references, URI-less in-memory mesh material variants, and relative or
 host-qualified `file` mesh URIs are rejected because the writer has no

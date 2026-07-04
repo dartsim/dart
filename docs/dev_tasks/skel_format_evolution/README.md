@@ -143,11 +143,12 @@
       Existing shipped SDF fixture coverage now loads the converted SKEL
       fixtures (`single_pendulum.sdf`, `cube.sdf`, `shapes.sdf`, and
       `test_shapes.sdf`) plus the native two-link revolute SDF fixture
-      (`two_link_revolute_model.sdf`), writes them back through
+      (`two_link_revolute_model.sdf`) and the world-contained
+      `issue1193_revolute*.sdf` fixtures, writes them back through
       `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and
-      compares body, joint, inertial, mobility, axis-limit, visual geometry,
-      and collision geometry semantics of the original parsed skeletons
-      against the re-parsed writer outputs.
+      compares body, joint, inertial, mobility, gravity, axis-limit, visual
+      geometry, collision geometry, model-pose, and joint-offset semantics of
+      the original parsed skeletons against the re-parsed writer outputs.
       The first URDF writer slice is also implemented locally on
       `dart::utils::UrdfParser::tryWriteSkeletonToString` for one-root URDF
       trees with identity root FreeJoint/WeldJoint placement validation, child
@@ -333,7 +334,10 @@ SKEL-YAML direction just because the prototype once existed.
   `two_link_revolute_model.sdf` sample, proving the current sdformat-backed
   writer preserves a root link, child revolute joint, finite axis
   position/velocity/effort limits, inertias, and box/cylinder visual and
-  collision geometry without XML-level SDF parsing.
+  collision geometry without XML-level SDF parsing. It also includes the
+  world-contained `issue1193_revolute*.sdf` fixtures, proving sdformat-backed
+  model-pose, root transform, child joint-offset, zero-world-gravity, and
+  visual box/sphere semantics survive read/write/read.
   NaN position limits on SDF-supported single-axis joints and topology-only ball
   joints now have targeted diagnostics, while infinite limits remain the
   unbounded SDF joint contract.
