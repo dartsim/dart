@@ -201,8 +201,8 @@ compatibility remains on the active DART 6 LTS branch._
 - Modernized URDF/SDF/MJCF loading APIs around DART 7 parser names and cleaner
   resource-retriever ownership.
 - Added a conservative SDF writer for `Skeleton` round-trips, covering links,
-  revolute/prismatic/weld joints, inertial data, primitive or mesh
-  visual/collision geometry, and explicit visual material colors while
+  revolute/prismatic/weld joints, link gravity mode, inertial data, primitive
+  or mesh visual/collision geometry, and explicit visual material colors while
   reporting unsupported constructs explicitly.
 - Improved mesh and asset import behavior across convex meshes, polygon meshes,
   Collada scaling, GLTF PBR materials, empty mesh URIs, and sample robot data.

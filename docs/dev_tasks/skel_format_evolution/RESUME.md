@@ -32,11 +32,11 @@ The first SDF writer implementation slice is now local on
 `tryWriteSkeletonToString()` for a conservative `Skeleton` subset, with
 `INTEGRATION_io_SdfWriter` proving write/read round-trip for links, root
 FreeJoint/WeldJoint placement, revolute/prismatic/weld child joints, inertial
-data, primitive or mesh geometry, and explicit visual material colors. It also
-checks unsupported-shape diagnostics and non-finite visual material diagnostics.
-This is real Phase 5 progress, but Phase 5 is still open until broader SDF
-coverage plus the remaining accepted writer targets are implemented or durably
-deferred.
+data, primitive or mesh geometry, link gravity mode, and explicit visual
+material colors. It also checks unsupported-shape diagnostics and non-finite
+visual material diagnostics. This is real Phase 5 progress, but Phase 5 is
+still open until broader SDF coverage plus the remaining accepted writer
+targets are implemented or durably deferred.
 
 Validation for this slice:
 
@@ -155,8 +155,8 @@ remains `feature/remove-skel-dart7-phase2`.
 Continue with the remaining real task work: land Phase 2 after maintainer
 approval, then continue Phase 5 from
 [`05-export-writers-plan.md`](05-export-writers-plan.md) by extending SDF writer
-coverage beyond material colors or choosing the next accepted writer target
-(URDF or PLAN-101 project save/load).
+coverage beyond material colors/link gravity mode or choosing the next accepted
+writer target (URDF or PLAN-101 project save/load).
 
 ## Context That Would Be Lost
 

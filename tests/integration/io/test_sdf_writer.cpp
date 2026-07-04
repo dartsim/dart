@@ -168,6 +168,7 @@ dynamics::SkeletonPtr makeRoundTripSkeleton()
       = skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
           slider, weldProperties, fixedBodyProperties);
   (void)fixedJoint;
+  fixed->setGravityMode(false);
   fixed->createShapeNodeWith<dynamics::CollisionAspect>(
       std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.1, 0.1, 0.1)),
       "fixed_box_collision");
@@ -209,6 +210,8 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   EXPECT_NE(
       writeResult.value().find("<model name=\"writer_roundtrip\">"),
       std::string::npos);
+  EXPECT_NE(
+      writeResult.value().find("<gravity>false</gravity>"), std::string::npos);
   EXPECT_NE(
       writeResult.value().find(
           "<diffuse>0.20000000000000001 "
@@ -271,6 +274,7 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   ASSERT_NE(fixedJoint, nullptr);
   EXPECT_EQ(fixedJoint->getParentBodyNode(), slider);
   EXPECT_EQ(fixedJoint->getChildBodyNode(), fixed);
+  EXPECT_FALSE(fixed->getGravityMode());
 
   ASSERT_EQ(base->getNumShapeNodesWith<dynamics::VisualAspect>(), 1u);
   ASSERT_EQ(base->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);

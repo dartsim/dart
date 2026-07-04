@@ -29,9 +29,10 @@
       round-trip a scene back to text. Planning is recorded in
       [`05-export-writers-plan.md`](05-export-writers-plan.md). The first SDF
       writer slice is implemented locally for a conservative `Skeleton` subset;
-      explicit visual material colors now round-trip as SDF `<diffuse>` values.
-      Broader SDF coverage, URDF export, and project save/load remain open. Add
-      YAML only if a durable project/scene schema is accepted first.
+      link gravity mode and explicit visual material colors now round-trip as
+      SDF `<gravity>` and `<diffuse>` values. Broader SDF coverage, URDF
+      export, and project save/load remain open. Add YAML only if a durable
+      project/scene schema is accepted first.
 
 ## Goal
 
@@ -137,7 +138,7 @@ SKEL-YAML direction just because the prototype once existed.
   [`05-export-writers-plan.md`](05-export-writers-plan.md). The first SDF writer
   slice is covered by `INTEGRATION_io_SdfWriter`, which writes and re-reads a
   representative supported `Skeleton` subset and checks unsupported-shape
-  diagnostics plus non-finite visual material diagnostics. Completion still
-  requires broader accepted-format writer APIs and round-trip tests that load a
-  scene from each accepted format, write it back, and compare the re-parsed
-  models.
+  diagnostics plus non-finite visual material diagnostics. It also proves
+  link-level gravity mode for gravity-disabled links. Completion still requires
+  broader accepted-format writer APIs and round-trip tests that load a scene
+  from each accepted format, write it back, and compare the re-parsed models.

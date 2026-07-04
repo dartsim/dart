@@ -313,6 +313,9 @@ WriteResult writeLink(
          << "\">\n";
   stream << indent(depth + 1) << "<pose>" << formatPose(modelPose)
          << "</pose>\n";
+  if (!bodyNode.getGravityMode()) {
+    stream << indent(depth + 1) << "<gravity>false</gravity>\n";
+  }
 
   const auto& inertia = bodyNode.getInertia();
   const Eigen::Matrix3d moment = inertia.getMoment();
