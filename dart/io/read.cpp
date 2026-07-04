@@ -132,8 +132,7 @@ std::optional<ModelFormat> inferSdfFormatWithSdformat(
   const sdf::Errors errors = root.LoadSdfString(content);
   (void)errors;
 
-  const auto rootElement = root.Element();
-  if (rootElement && rootElement->GetName() == "sdf") {
+  if (root.Model() || root.WorldCount() > 0) {
     return ModelFormat::Sdf;
   }
 

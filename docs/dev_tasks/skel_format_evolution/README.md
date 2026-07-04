@@ -69,8 +69,9 @@
       now use libsdformat `sdf::Root`, `sdf::Model`, `sdf::Link`, `sdf::Joint`,
       `sdf::Visual`, and `sdf::Collision` DOM values rather than raw XML-level
       enumeration. Ambiguous XML dispatch asks sdformat to classify root-model
-      and world-contained SDF documents before the non-SDF URDF/MJCF XML-root
-      fallback runs. Standard visual/collision/material reads use libsdformat DOM
+      and world-contained SDF documents via `sdf::Root` model/world APIs before
+      the non-SDF URDF/MJCF XML-root fallback runs. Standard
+      visual/collision/material reads use libsdformat DOM
       values for names, local poses, geometry, cast-shadow state, zero
       visibility flags, transparency, diffuse colors, and PBR metal workflow
       factors; material authored/default checks only preserve whether diffuse

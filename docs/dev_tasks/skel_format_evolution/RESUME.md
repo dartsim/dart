@@ -77,8 +77,10 @@ the resulting `sdf::Model` DOM through standard model, link, joint, visual,
 collision, and material traversal instead of rediscovering those standard
 children through raw XML-level enumeration.
 `dart::io::readSkeleton()` now also asks sdformat to recognize ambiguous `.xml`
-SDF content, including root-model and world-contained model documents, before
-falling back to TinyXML root sniffing for non-SDF URDF/MJCF dispatch.
+SDF content, including root-model and world-contained model documents, by
+loading through `sdf::Root::LoadSdfString()` and classifying through
+`sdf::Root` model/world APIs before falling back to TinyXML root sniffing for
+non-SDF URDF/MJCF dispatch.
 Model/link body-node reads use `sdf::Model` and `sdf::Link` DOM values for
 model name/static/pose and link name/gravity/pose plus inertial mass, center of
 mass, and inertia tensor values. Visual and collision shape nodes traverse
