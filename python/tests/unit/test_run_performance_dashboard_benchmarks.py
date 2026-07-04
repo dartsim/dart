@@ -80,21 +80,15 @@ def test_dashboard_surface_runner_can_select_specific_surface(tmp_path):
     assert "--benchmark_repetitions=2" in result.stdout
 
 
-def test_optional_missing_target_is_skipped(tmp_path, monkeypatch, capsys):
+def test_contact_container_surface_is_required():
     runner = _load_runner_module()
-    monkeypatch.setattr(runner, "_target_declared", lambda target, build_type: False)
 
-    result = runner.main(
-        [
-            "--surface",
-            "contact-container",
-            "--output-dir",
-            str(tmp_path),
-        ]
+    spec = next(
+        spec for spec in runner.BENCHMARK_SPECS if spec.surface == "contact-container"
     )
 
-    assert result == 0
-    assert "Skipping optional contact-container" in capsys.readouterr().out
+    assert spec.target == "BM_INTEGRATION_contact_container"
+    assert not spec.optional
 
 
 def test_dashboard_surface_runner_fails_when_output_has_no_rows(tmp_path, monkeypatch):

@@ -52,15 +52,11 @@ BENCHMARK_SPECS = [
         benchmark_filter="BM_RunBoxes/(2|4|8)$",
         output_name="dashboard_boxes.json",
     ),
-    # PR #3209 adds this target. Treat it as optional so the dashboard can land
-    # before that PR while automatically publishing the richer contact rows once
-    # the benchmark exists on release-6.20.
     BenchmarkSpec(
         surface="contact-container",
         target="BM_INTEGRATION_contact_container",
         benchmark_filter="BM_ContactContainerActive/.*",
         output_name="dashboard_contact_container.json",
-        optional=True,
     ),
 ]
 

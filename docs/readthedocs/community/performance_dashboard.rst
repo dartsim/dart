@@ -32,16 +32,14 @@ on the maintained DART 6 branch:
   dynamics, and contact-aware inverse dynamics rows.
 * **Contact and collision** - stacked-box world-step rows when the Bullet
   collision target is available.
-* **Contact-rich container** - the optional
-  ``BM_ContactContainerActive`` surface from
-  `PR #3209 <https://github.com/dartsim/dart/pull/3209>`_. The dashboard runner
-  skips this target until it exists on the DART 6 branch, then publishes the
-  active DART-native and ODE contact-container rows automatically.
+* **Contact-rich container** - active DART-native and ODE
+  ``BM_ContactContainerActive`` rows from the DART 6 contact-container
+  benchmark.
 
 This dashboard is intentionally separate from the DART 7 World dashboard. DART
 7 tracks experimental ``World::step`` solver-family throughput; DART 6 tracks
 the stable LTS benchmark surfaces available on the current ``release-6.*`` line
-and future contact-rich DART 6 rows as they land.
+including the contact-rich DART 6 rows.
 
 Readable labels
 ---------------
