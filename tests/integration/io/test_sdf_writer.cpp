@@ -41,6 +41,7 @@
 
 #include <dart/config.hpp>
 
+#include <dart/dynamics/arrow_shape.hpp>
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/capsule_shape.hpp>
@@ -2075,6 +2076,27 @@ TEST(SdfWriter, PyramidShapeReturnsGeneratedMeshError)
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("DART PyramidShape"), std::string::npos);
+  EXPECT_NE(
+      result.error().message.find("generated mesh resources"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, ArrowShapeReturnsGeneratedMeshError)
+{
+  auto skeleton = dynamics::Skeleton::create("arrow_shape");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  body->createShapeNodeWith<dynamics::VisualAspect>(
+      std::make_shared<dynamics::ArrowShape>(
+          Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ()),
+      "arrow");
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(result.error().message.find("DART ArrowShape"), std::string::npos);
   EXPECT_NE(
       result.error().message.find("generated mesh resources"),
       std::string::npos);

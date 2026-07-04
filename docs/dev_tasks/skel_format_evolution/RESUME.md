@@ -59,7 +59,7 @@ defines a destination URI and resource copy/rewrite policy. It also checks
 missing mesh URI diagnostics, DART `PlaneShape` finite-size diagnostics,
 `HeightmapShape` source-URI/resource-policy diagnostics, `ConvexMeshShape`
 generated-resource diagnostics, DART-only/generated geometry diagnostics for
-`PyramidShape`, `MultiSphereConvexHullShape`, `PointCloudShape`,
+`PyramidShape`, `ArrowShape`, `MultiSphereConvexHullShape`, `PointCloudShape`,
 `LineSegmentShape`, and `VoxelGridShape`, pre-SDF-1.11 mimic diagnostics,
 unsupported coupler-style mimic diagnostics, non-finite visual material
 diagnostics, invalid PBR material diagnostics, unsupported visual reflectance
@@ -161,10 +161,11 @@ writer builds an `sdf::Link`. This avoids serializing a soft body as an
 ordinary link and dropping DART point-mass, spring, damping, or soft mesh
 topology semantics.
 DART-only/generated geometry families such as `PyramidShape`,
-`MultiSphereConvexHullShape`, `PointCloudShape`, `LineSegmentShape`, and
-`VoxelGridShape` now fail with targeted diagnostics instead of the generic
-unsupported-shape fallback. SDF has no direct pyramid, multi-sphere convex-hull,
-point-cloud, line-segment, or occupancy-grid geometry primitives in the
+`ArrowShape`, `MultiSphereConvexHullShape`, `PointCloudShape`,
+`LineSegmentShape`, and `VoxelGridShape` now fail with targeted diagnostics
+instead of the generic unsupported-shape or mesh-URI fallback. SDF has no direct
+pyramid, arrow, multi-sphere convex-hull, point-cloud, line-segment, or
+occupancy-grid geometry primitives in the
 writer's current contract, and the targetless string writer has no destination
 URI or generated-resource policy for converting those DART-side data
 structures into SDF-owned mesh or resource artifacts.
@@ -383,12 +384,16 @@ Additional validation for DART-only/generated geometry diagnostics:
   `MultiSphereConvexHullShape` all reached the generic unsupported-shape
   fallback instead of naming the missing SDF primitive or generated-resource
   policy.
+- Follow-up coverage added the `ArrowShape` diagnostic because it inherits from
+  `MeshShape` and previously reached the generic missing-URI mesh error instead
+  of naming the missing SDF arrow primitive and generated-resource policy.
 
   ```bash
   pixi run run-cpp-target INTEGRATION_io_SdfWriter
   ```
 
-- Focused candidate passed with the same command.
+- Focused candidates passed with the same command, including the ArrowShape
+  follow-up.
 
 - Full writer target and local gates passed.
 
@@ -829,6 +834,9 @@ Changelog decision:
   broadens the same conservative SDF writer/parser round-trip capability before
   the implementation PR exists; the existing DART 7 IO and Parsing bullet now
   includes non-default skeleton gravity through SDF world gravity.
+  No additional separate entry is needed for the targeted ArrowShape writer
+  diagnostic because it hardens the same conservative SDF writer
+  unsupported-resource contract before the implementation PR exists.
 
 Additional validation for sdformat-based ambiguous `.xml` SDF dispatch:
 

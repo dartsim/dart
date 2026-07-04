@@ -65,10 +65,10 @@ DART `PlaneShape`, `HeightmapShape`, and `ConvexMeshShape` now report targeted
 policy diagnostics for the missing finite SDF plane size, source heightmap
 URI/resource policy, or destination URI for generated mesh resources.
 Additional DART-native geometry families that do not map to an sdformat-owned
-primitive or targetless resource, including `PyramidShape`,
+primitive or targetless resource, including `PyramidShape`, `ArrowShape`,
 `MultiSphereConvexHullShape`, `PointCloudShape`, `LineSegmentShape`, and
 `VoxelGridShape`, also fail with targeted diagnostics instead of falling back to
-generic unsupported-shape errors.
+generic unsupported-shape or mesh-URI errors.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,

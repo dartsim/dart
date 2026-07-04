@@ -34,6 +34,7 @@
 
 #include "dart/math/geometry.hpp"
 
+#include <dart/dynamics/arrow_shape.hpp>
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
@@ -726,6 +727,11 @@ GeometryResult makeGeometry(const dynamics::Shape& shape)
     return GeometryResult::err(WriteError(
         "Cannot write DART PyramidShape as SDF geometry because SDF has no "
         "pyramid primitive, and the targetless string writer has no "
+        "destination URI or resource policy for generated mesh resources."));
+  } else if (dynamic_cast<const dynamics::ArrowShape*>(&shape)) {
+    return GeometryResult::err(WriteError(
+        "Cannot write DART ArrowShape as SDF geometry because SDF has no "
+        "arrow primitive, and the targetless string writer has no "
         "destination URI or resource policy for generated mesh resources."));
   } else if (
       const auto* convexMesh

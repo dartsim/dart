@@ -63,9 +63,10 @@
       instead of being serialized as ordinary SDF links with point-mass, spring,
       damping, and soft mesh topology semantics dropped. The
       SDF writer also rejects DART-only/generated geometry families such as
-      `PyramidShape`, `MultiSphereConvexHullShape`, `PointCloudShape`,
-      `LineSegmentShape`, and `VoxelGridShape` with targeted diagnostics until
-      a destination-aware generated-resource policy exists. The
+      `PyramidShape`, `ArrowShape`, `MultiSphereConvexHullShape`,
+      `PointCloudShape`, `LineSegmentShape`, and `VoxelGridShape` with
+      targeted diagnostics until a destination-aware generated-resource policy
+      exists. The
       writer test now uses a shared IO round-trip assertion helper for body,
       joint, DoF,
       inertia, and shape comparisons.
@@ -258,7 +259,7 @@ SKEL-YAML direction just because the prototype once existed.
   DART `SoftBodyNode` export now has a targeted diagnostic because this SDF
   writer has no sdformat-backed contract for DART point masses, springs,
   damping, or soft mesh topology.
-  DART-only/generated geometry families such as `PyramidShape`,
+  DART-only/generated geometry families such as `PyramidShape`, `ArrowShape`,
   `MultiSphereConvexHullShape`, `PointCloudShape`, `LineSegmentShape`, and
   `VoxelGridShape` now have targeted diagnostics for missing SDF primitives or
   targetless generated-resource policies.
