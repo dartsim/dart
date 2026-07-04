@@ -196,9 +196,12 @@ std::vector<char> findShallowSupportedFreeRoots(
       return;
 
     const auto* supportSkeleton = supportBodyNode->getSkeletonRawPtr();
+    const bool supportRestingAndUnperturbed
+        = supportSkeleton != nullptr && supportSkeleton->isResting()
+          && !supportSkeleton->isImpulseApplied();
     const bool supportInactive = supportSkeleton == nullptr
                                  || !supportSkeleton->isMobile()
-                                 || supportSkeleton->isResting();
+                                 || supportRestingAndUnperturbed;
     if (!supportInactive)
       return;
 

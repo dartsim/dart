@@ -395,6 +395,38 @@ TEST(Issue201, ShallowSupportHonorsIntentionalLowSpeedStop)
 }
 
 //==============================================================================
+// A mobile support that received a solver impulse is waking this step. It must
+// not be treated as an inactive support for shallow-drift suppression.
+TEST(Issue201, ShallowSupportIgnoresImpulseAppliedRestingSupport)
+{
+  auto world = simulation::World::create();
+
+  const double penetration = 5e-5;
+  auto support = createBox(kBoxSize / 2.0);
+  auto box = createBox(1.5 * kBoxSize - penetration);
+  world->addSkeleton(support);
+  world->addSkeleton(box);
+
+  auto* rootBody = box->getRootBodyNode();
+  ASSERT_NE(rootBody, nullptr);
+  auto* rootJoint = dynamic_cast<FreeJoint*>(rootBody->getParentJoint());
+  ASSERT_NE(rootJoint, nullptr);
+
+  const double lateralSpeed = 5e-6;
+  rootJoint->setLinearVelocity(
+      Eigen::Vector3d(lateralSpeed, 0.0, 0.0), Frame::World(), Frame::World());
+  world->reset();
+
+  support->setResting(true);
+  support->setImpulseApplied(true);
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_FALSE(support->isResting());
+  EXPECT_NEAR(rootBody->getLinearVelocity().x(), lateralSpeed, 1e-8);
+}
+
+//==============================================================================
 // A shallow contact with the underside of an immobile ceiling is not support:
 // the drift suppression must not clamp legitimate small lateral motion of a
 // free body touching a ceiling or overhang.
