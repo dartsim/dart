@@ -691,3 +691,37 @@ def test_guard_runs_for_env_hookspath_override_even_with_dart_managed_hook(
 
     assert returncode == 0
     assert "would run 'pixi run check-lint-quick'" in stderr
+
+
+@pytest.mark.parametrize(
+    "command_template",
+    [
+        "GIT_CONFIG_GLOBAL={config} git commit -m x",
+        "GIT_CONFIG_SYSTEM={config} git commit -m x",
+        "env GIT_CONFIG_GLOBAL={config} git commit -m x",
+        "env -S 'GIT_CONFIG_GLOBAL={config} git commit -m x'",
+        "HOME={home} git commit -m x",
+        "env HOME={home} git commit -m x",
+        "XDG_CONFIG_HOME={xdg} git commit -m x",
+    ],
+)
+def test_guard_runs_for_config_file_env_even_with_dart_managed_hook(
+    tmp_path, command_template
+):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    config = tmp_path / "gitconfig"
+    config.write_text("[core]\n\thooksPath = /tmp/empty-hooks\n")
+    home = tmp_path / "home"
+    home.mkdir()
+    (home / ".gitconfig").write_text(config.read_text())
+    xdg = tmp_path / "xdg"
+    (xdg / "git").mkdir(parents=True)
+    (xdg / "git" / "config").write_text(config.read_text())
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    command = command_template.format(config=config, home=home, xdg=xdg)
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 0
+    assert "would run 'pixi run check-lint-quick'" in stderr

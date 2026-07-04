@@ -47,8 +47,9 @@ fi
 # repository, in one python3 pass. Handles env-var prefixes (quote-aware),
 # wrapper prefixes (command/exec/time/nice/nohup/env), subshell and brace-group
 # openers, backslash-escaped git, `git -C dir commit`, `git -c k=v commit`,
-# hook overrides via `--config-env`, and && / || / ; / | command chains; ignores
-# "commit" as a substring elsewhere.
+# hook overrides via `--config-env` or command-scoped Git config file
+# environment, and && / || / ; / | command chains; ignores "commit" as a
+# substring elsewhere.
 verdict=$(printf '%s' "$input" | python3 -c '
 import json
 import os
@@ -114,6 +115,13 @@ ENV_OPTS_NO_ARG_PREFIXES = (
     "--block-signal=",
 )
 COMMIT_SHORT_OPTS_WITH_ATTACHED_ARG = {"m", "F", "c", "C", "S", "t", "u", "U"}
+GIT_CONFIG_FILE_ENV = {
+    "GIT_CONFIG_GLOBAL",
+    "GIT_CONFIG_SYSTEM",
+    "GIT_CONFIG_NOSYSTEM",
+    "HOME",
+    "XDG_CONFIG_HOME",
+}
 ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=(?P<value>.*)$")
 HEREDOC_RE = re.compile(r"(?<!<)<<-?\s*(?P<word>\"[^\"]+\"|'\''[^'\'']+'\''|\\?\S+)")
 
@@ -233,6 +241,10 @@ def env_config_has_hooks_path_override(env):
         if key.lower() == "core.hookspath":
             return True
     return False
+
+
+def env_may_load_hookspath_config(env):
+    return any(name in env for name in GIT_CONFIG_FILE_ENV)
 
 
 def split_env_split_string(value):
@@ -420,7 +432,9 @@ def is_git_commit(text):
         if not target_dir:
             target_dir = command_cwd or current_cwd
         if i < len(tokens) and command_word(tokens[i]).rstrip(")}") == "commit":
-            if env_config_has_hooks_path_override(command_env):
+            if env_config_has_hooks_path_override(command_env) or (
+                env_may_load_hookspath_config(command_env)
+            ):
                 hooks_path_override = True
             no_verify = commit_args_disable_hooks(tokens[i + 1 :])
             if target_dir:
