@@ -41,6 +41,12 @@ The SDF writer integration test now uses
 inertia, and shape assertions. Future writer tests should extend that helper
 instead of copying SDF-specific ad hoc checks.
 
+Parser-side SDF import now uses libsdformat DOM objects for top-level model
+selection and standard model/link/joint/aspect traversal. XML helper reads
+remain only for authored/default presence checks, DART-specific soft-body
+extension fields, and the legacy `use_parent_model_frame` compatibility
+extension.
+
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.
 

@@ -44,13 +44,16 @@
       resource diagnostics now have focused coverage. The writer test now uses a
       shared IO round-trip assertion helper for body, joint, DoF, inertia, and
       shape comparisons.
-      Parser-side SDF visual/collision/material reads now use libsdformat DOM
-      values for standard names, local poses, geometry, and diffuse colors
-      rather than raw XML-level parsing. Parser-side SDF joint reads now use
-      libsdformat DOM values for model joint traversal, joint name/type,
+      Parser-side SDF model selection and standard model/link/joint/aspect
+      traversal now use libsdformat `sdf::Root`, `sdf::Model`, `sdf::Link`,
+      `sdf::Joint`, `sdf::Visual`, and `sdf::Collision` DOM values rather than
+      raw XML-level enumeration. Standard visual/collision/material reads use
+      libsdformat DOM values for names, local poses, geometry, and diffuse
+      colors. Standard joint reads use DOM values for joint name/type,
       parent/child links, local pose, axis vectors, axis dynamics, finite
       limits, mimic metadata, and legacy or modern screw pitch values; XML
-      checks remain only where DART needs authored/default presence or legacy
+      checks remain only where DART needs authored/default presence,
+      DART-specific soft-body extension fields, or legacy
       `use_parent_model_frame` compatibility.
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, `dart::io` stays read-side, and project/editor

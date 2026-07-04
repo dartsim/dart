@@ -59,23 +59,23 @@ The supported SDF geometry reader paths now load through libsdformat
 plane, and mesh shapes into DART shapes; this preserves the existing
 plane-as-thin-box and resource-retrieved mesh behavior without adding new raw
 XML-level parsing.
-The model/link body-node reader also now uses libsdformat `sdf::Model` and
-`sdf::Link` DOM values for model name/static/pose and link name/gravity/pose
-plus inertial mass, center of mass, and inertia tensor values; XML presence
-checks remain only for existing DART diagnostics where sdformat does not expose
-whether a defaulted field was explicitly authored.
-Standard visual and collision shape nodes now traverse libsdformat `sdf::Model`,
-`sdf::Link`, `sdf::Visual`, `sdf::Collision`, `sdf::Geometry`, and
+The model reader now selects the top-level model through libsdformat
+`sdf::Root::Model()` and carries the resulting `sdf::Model` DOM through standard
+model, link, joint, visual, collision, and material traversal instead of
+rediscovering those standard children through raw XML-level enumeration.
+Model/link body-node reads use `sdf::Model` and `sdf::Link` DOM values for
+model name/static/pose and link name/gravity/pose plus inertial mass, center of
+mass, and inertia tensor values. Visual and collision shape nodes traverse
+`sdf::Model`, `sdf::Link`, `sdf::Visual`, `sdf::Collision`, `sdf::Geometry`, and
 `sdf::Material` DOM values for shape names, local poses, geometry, and diffuse
-material colors; DART-specific soft body extensions remain on the legacy helper
-path because they are not standard sdformat DOM fields.
-Standard SDF joint reads now traverse libsdformat `sdf::Model`, `sdf::Joint`,
+material colors. Standard SDF joint reads traverse `sdf::Model`, `sdf::Joint`,
 and `sdf::JointAxis` DOM values for joint enumeration, joint name/type,
 parent/child links, local pose, axis vectors, axis dynamics, finite position
 limits, mimic metadata, and legacy `thread_pitch` or modern
 `screw_thread_pitch` screw pitch values. XML helper checks remain only where
-DART preserves authored/default distinctions for limits and dynamics or the
-legacy `use_parent_model_frame` compatibility extension.
+DART preserves authored/default distinctions for existing diagnostics, reads
+DART-specific soft-body extension fields, or supports the legacy
+`use_parent_model_frame` compatibility extension.
 
 The SDF writer integration test now uses
 `tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
@@ -152,6 +152,17 @@ Additional validation for ellipsoid SDF DOM geometry reads and writes:
 - `pixi run run-cpp-target INTEGRATION_io_SdfParser`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
 
+Additional validation for SDF root/model/link/joint/aspect DOM traversal:
+
+- `git diff --check`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run run-cpp-target INTEGRATION_io_Read`
+
 Changelog decision:
 
 - Mode: draft
@@ -185,7 +196,10 @@ Changelog decision:
   implementation PR exists. No additional separate entry is needed for
   ellipsoid SDF geometry reads and writes because the existing conservative SDF
   writer changelog bullet now includes the broadened geometry subset before the
-  implementation PR exists.
+  implementation PR exists. No additional entry is needed for SDF
+  root/model/link/joint/aspect DOM traversal because it hardens the same
+  conservative SDF parser/writer round-trip surface before the implementation
+  PR exists.
 
 ## Previous Resume Checkpoint (2026-07-03)
 

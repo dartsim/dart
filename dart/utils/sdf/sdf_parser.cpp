@@ -114,7 +114,6 @@ namespace {
 using ElementPtr = sdf::ElementPtr;
 namespace detail = dart::utils::SdfParser::detail;
 
-using detail::ElementEnumerator;
 using detail::getElement;
 using detail::getValueBool;
 using detail::getValueDouble;
@@ -213,7 +212,7 @@ using BodyMap = common::aligned_map<std::string, SDFBodyNode>;
 using JointMap = std::map<std::string, SDFJoint>;
 
 dynamics::SkeletonPtr readSkeleton(
-    const ElementPtr& skeletonElement,
+    const sdf::Model& model,
     const common::Uri& baseUri,
     const ResolvedOptions& options);
 
@@ -243,7 +242,7 @@ NextResult getNextJointAndNodePair(
     const JointMap& sdfJoints);
 
 dynamics::SkeletonPtr makeSkeleton(
-    const ElementPtr& skeletonElement, Eigen::Isometry3d& skeletonFrame);
+    const sdf::Model& model, Eigen::Isometry3d& skeletonFrame);
 
 template <class NodeType>
 std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
@@ -253,13 +252,13 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
     const SDFBodyNode& node);
 
 BodyMap readAllBodyNodes(
-    const ElementPtr& skeletonElement,
+    const sdf::Model& model,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever,
     const Eigen::Isometry3d& skeletonFrame);
 
 SDFBodyNode readBodyNode(
-    const ElementPtr& bodyNodeElement,
+    const sdf::Link& link,
     const Eigen::Isometry3d& skeletonFrame,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
@@ -297,12 +296,12 @@ void readCollisionShapeNode(
 
 void readAspects(
     const dynamics::SkeletonPtr& skeleton,
-    const ElementPtr& skeletonElement,
+    const sdf::Model& model,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
 JointMap readAllJoints(
-    const ElementPtr& skeletonElement,
+    const sdf::Model& model,
     const Eigen::Isometry3d& skeletonFrame,
     const BodyMap& sdfBodyNodes);
 
@@ -665,25 +664,21 @@ bool loadSdfRoot(
 }
 
 dynamics::SkeletonPtr readSkeleton(
-    const ElementPtr& skeletonElement,
+    const sdf::Model& model,
     const common::Uri& baseUri,
     const ResolvedOptions& options)
 {
-  DART_ASSERT(skeletonElement != nullptr);
-
   Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
-  dynamics::SkeletonPtr newSkeleton
-      = makeSkeleton(skeletonElement, skeletonFrame);
+  dynamics::SkeletonPtr newSkeleton = makeSkeleton(model, skeletonFrame);
 
   //--------------------------------------------------------------------------
   // Bodies
-  BodyMap sdfBodyNodes = readAllBodyNodes(
-      skeletonElement, baseUri, options.retriever, skeletonFrame);
+  BodyMap sdfBodyNodes
+      = readAllBodyNodes(model, baseUri, options.retriever, skeletonFrame);
 
   //--------------------------------------------------------------------------
   // Joints
-  JointMap sdfJoints
-      = readAllJoints(skeletonElement, skeletonFrame, sdfBodyNodes);
+  JointMap sdfJoints = readAllJoints(model, skeletonFrame, sdfBodyNodes);
 
   // Iterate through the collected properties and construct the Skeleton from
   // the root nodes downward
@@ -742,7 +737,7 @@ dynamics::SkeletonPtr readSkeleton(
 
   // Read aspects here since aspects cannot be added if the BodyNodes haven't
   // created yet.
-  readAspects(newSkeleton, skeletonElement, baseUri, options.retriever);
+  readAspects(newSkeleton, model, baseUri, options.retriever);
 
   // Set positions to their initial values
   newSkeleton->resetPositions();
@@ -881,13 +876,8 @@ void applyMimicConstraints(
 }
 
 dynamics::SkeletonPtr makeSkeleton(
-    const ElementPtr& _skeletonElement, Eigen::Isometry3d& skeletonFrame)
+    const sdf::Model& model, Eigen::Isometry3d& skeletonFrame)
 {
-  DART_ASSERT(_skeletonElement != nullptr);
-
-  sdf::Model model;
-  (void)model.Load(_skeletonElement);
-
   dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
 
   //--------------------------------------------------------------------------
@@ -974,16 +964,19 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
 
 //==============================================================================
 BodyMap readAllBodyNodes(
-    const ElementPtr& skeletonElement,
+    const sdf::Model& model,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever,
     const Eigen::Isometry3d& skeletonFrame)
 {
-  ElementEnumerator bodies(skeletonElement, "link");
   BodyMap sdfBodyNodes;
-  while (bodies.next()) {
-    SDFBodyNode body
-        = readBodyNode(bodies.get(), skeletonFrame, baseUri, retriever);
+  for (uint64_t linkIndex = 0; linkIndex < model.LinkCount(); ++linkIndex) {
+    const sdf::Link* link = model.LinkByIndex(linkIndex);
+    if (!link) {
+      continue;
+    }
+
+    SDFBodyNode body = readBodyNode(*link, skeletonFrame, baseUri, retriever);
 
     BodyMap::iterator it = sdfBodyNodes.find(body.properties->mName);
     if (it != sdfBodyNodes.end()) {
@@ -1001,18 +994,16 @@ BodyMap readAllBodyNodes(
 
 //===============================================================================
 SDFBodyNode readBodyNode(
-    const ElementPtr& bodyNodeElement,
+    const sdf::Link& link,
     const Eigen::Isometry3d& skeletonFrame,
     const common::Uri& /*baseUri*/,
     const common::ResourceRetrieverPtr& /*retriever*/)
 {
+  const ElementPtr bodyNodeElement = link.Element();
   DART_ASSERT(bodyNodeElement != nullptr);
 
   dynamics::BodyNode::Properties properties;
   Eigen::Isometry3d initTransform = Eigen::Isometry3d::Identity();
-
-  sdf::Link link;
-  (void)link.Load(bodyNodeElement);
 
   // Name attribute
   std::string name = link.Name();
@@ -1318,12 +1309,10 @@ void readCollisionShapeNode(
 //==============================================================================
 void readAspects(
     const dynamics::SkeletonPtr& skeleton,
-    const ElementPtr& skeletonElement,
+    const sdf::Model& model,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
-  sdf::Model model;
-  (void)model.Load(skeletonElement);
   for (uint64_t linkIndex = 0; linkIndex < model.LinkCount(); ++linkIndex) {
     const sdf::Link* link = model.LinkByIndex(linkIndex);
     if (!link) {
@@ -1361,13 +1350,11 @@ void readAspects(
 
 //==============================================================================
 JointMap readAllJoints(
-    const ElementPtr& _skeletonElement,
+    const sdf::Model& model,
     const Eigen::Isometry3d& skeletonFrame,
     const BodyMap& sdfBodyNodes)
 {
   JointMap sdfJoints;
-  sdf::Model model;
-  (void)model.Load(_skeletonElement);
   for (uint64_t jointIndex = 0; jointIndex < model.JointCount(); ++jointIndex) {
     const sdf::Joint* jointDom = model.JointByIndex(jointIndex);
     if (!jointDom) {
@@ -1887,22 +1874,14 @@ dynamics::SkeletonPtr readSkeleton(
     return nullptr;
   }
 
-  const ElementPtr sdfElement = root.Element();
-  if (!sdfElement) {
-    DART_WARN(
-        "[SdfParser] [{}] does not contain a valid <sdf> root element.",
-        uri.toString());
-    return nullptr;
-  }
-
-  const ElementPtr modelElement = getElement(sdfElement, "model");
-  if (!modelElement) {
+  const sdf::Model* model = root.Model();
+  if (!model) {
     DART_WARN(
         "[SdfParser] [{}] does not contain a <model> element.", uri.toString());
     return nullptr;
   }
 
-  return readSkeleton(modelElement, uri, resolvedOptions);
+  return readSkeleton(*model, uri, resolvedOptions);
 }
 
 } // namespace SdfParser
