@@ -1105,6 +1105,7 @@ TEST(SdfWriter, RoundTripsCollisionSurfaceOdeFriction)
   dynamicsAspect->setPrimarySlipCompliance(0.015);
   dynamicsAspect->setSecondarySlipCompliance(0.025);
   dynamicsAspect->setFirstFrictionDirection(Eigen::Vector3d::UnitY());
+  dynamicsAspect->setFirstFrictionDirectionFrame(shapeNode);
 
   const auto writeResult
       = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
@@ -1147,6 +1148,7 @@ TEST(SdfWriter, RoundTripsCollisionSurfaceOdeFriction)
   EXPECT_DOUBLE_EQ(reparsedDynamics->getSecondaryFrictionCoeff(), 0.75);
   EXPECT_TRUE(reparsedDynamics->getFirstFrictionDirection().isApprox(
       Eigen::Vector3d::UnitY()));
+  EXPECT_EQ(reparsedDynamics->getFirstFrictionDirectionFrame(), nullptr);
   EXPECT_DOUBLE_EQ(reparsedDynamics->getPrimarySlipCompliance(), 0.015);
   EXPECT_DOUBLE_EQ(reparsedDynamics->getSecondarySlipCompliance(), 0.025);
 }
@@ -2441,6 +2443,53 @@ TEST(SdfWriter, InvalidCollisionSurfaceRestitutionReturnsError)
   EXPECT_NE(
       result.error().message.find("out-of-range restitution"),
       std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, NonFiniteCollisionSurfaceSlipReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("bad_surface_slip");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "bad_surface");
+  shapeNode->getDynamicsAspect()->setPrimarySlipCompliance(
+      std::numeric_limits<double>::quiet_NaN());
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("non-finite slip compliance"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, NonCollisionFrameFrictionDirectionReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("bad_surface_friction_frame");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "bad_surface");
+  auto* dynamicsAspect = shapeNode->getDynamicsAspect();
+  ASSERT_NE(dynamicsAspect, nullptr);
+  dynamicsAspect->setFirstFrictionDirection(Eigen::Vector3d::UnitX());
+  dynamicsAspect->setFirstFrictionDirectionFrame(dynamics::Frame::World());
+
+  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("non-collision frame"), std::string::npos);
 }
 
 //==============================================================================

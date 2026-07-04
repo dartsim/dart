@@ -42,8 +42,10 @@ Shape-level and body-level collision disable state round-trips through SDF
 zero-threshold bounce restitution round-trips through SDF
 `<surface><bounce>` coefficient values; ODE friction coefficients, first
 friction direction, and slip compliance round-trip through SDF
-`<surface><friction><ode>` values when they are representable in DART's
-collision frame. Absolute non-file mesh URI
+`<surface><friction><ode>` values when the first friction direction is
+representable in the collision frame. Non-finite slip compliance and
+non-collision-frame friction directions fail with targeted diagnostics.
+Absolute non-file mesh URI
 preservation is covered through a custom retriever-backed write/read test, and
 URI-backed mesh material variants are covered by a write/read test that
 preserves the source `sdf::Mesh` URI and re-loads the original multi-material
@@ -55,9 +57,10 @@ visual/collision filtering is covered by focused tests. Unsupported constructs,
 missing mesh URIs, pre-SDF-1.11 mimic output, coupler-style mimic enforcement,
 non-finite material colors, invalid PBR material factors, non-default visual
 reflectance, non-default DART mesh color/alpha render policies, non-finite
-screw pitch, invalid collision-surface friction or restitution, unsupported
-ball-joint metadata, unsupported DART `SoftBodyNode` export, and non-finite
-joint dynamics return `common::Result` errors instead of being silently dropped.
+screw pitch, invalid collision-surface friction, slip, restitution, or
+friction-direction frame, unsupported ball-joint metadata, unsupported DART
+`SoftBodyNode` export, and non-finite joint dynamics return `common::Result`
+errors instead of being silently dropped.
 DART `PlaneShape`, `HeightmapShape`, and `ConvexMeshShape` now report targeted
 policy diagnostics for the missing finite SDF plane size, source heightmap
 URI/resource policy, or destination URI for generated mesh resources.

@@ -61,12 +61,13 @@ missing mesh URI diagnostics, DART `PlaneShape` finite-size diagnostics,
 generated-resource diagnostics, DART-only/generated geometry diagnostics for
 `PyramidShape`, `MultiSphereConvexHullShape`, `PointCloudShape`,
 `LineSegmentShape`, and `VoxelGridShape`, pre-SDF-1.11 mimic diagnostics,
-unsupported coupler-style mimic diagnostics, non-finite visual material diagnostics,
-invalid PBR material diagnostics, unsupported visual reflectance diagnostics,
-non-default DART mesh color/alpha render-policy diagnostics, non-finite screw
-pitch diagnostics, invalid collision-surface friction/restitution diagnostics,
-unsupported ball-joint metadata, unsupported DART `SoftBodyNode` diagnostics,
-and non-finite joint dynamics diagnostics. This is real Phase 5 progress, but
+unsupported coupler-style mimic diagnostics, non-finite visual material
+diagnostics, invalid PBR material diagnostics, unsupported visual reflectance
+diagnostics, non-default DART mesh color/alpha render-policy diagnostics,
+non-finite screw pitch diagnostics, invalid collision-surface friction, slip,
+restitution, and friction-direction-frame diagnostics, unsupported ball-joint
+metadata, unsupported DART `SoftBodyNode` diagnostics, and non-finite joint
+dynamics diagnostics. This is real Phase 5 progress, but
 Phase 5 is still open until broader SDF coverage plus the remaining accepted
 writer targets are implemented or durably deferred.
 
@@ -229,6 +230,26 @@ Additional validation for sdformat-backed writer assertions:
 
 - `git diff --check`
 - `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
+Additional validation for collision-surface friction-direction and slip
+diagnostics:
+
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: `origin/main`
+- Scope evidence: focused diff in `tests/integration/io/test_sdf_writer.cpp`
+  and this SKEL evolution task folder
+- Decision: no entry required
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: No separate changelog entry is needed because this slice adds
+  focused test coverage and task evidence for existing SDF writer surface
+  metadata diagnostics; it does not add a new public writer API or
+  serialization behavior.
+- Follow-up: none
 
 Changelog decision:
 
