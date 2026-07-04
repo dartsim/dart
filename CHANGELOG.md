@@ -233,6 +233,13 @@
     representation:
     [#3145](https://github.com/dartsim/dart/pull/3145)
 
+  * Add `dart::math::PolygonMesh` and `MeshShape::getPolygonMesh()` so mesh
+    imports can preserve quad and n-gon topology for rendering/export while
+    keeping triangulated `TriMesh` data as the collision representation. OSG
+    rendering now triangulates non-triangular Assimp faces through the same
+    ear-clipping path used by `PolygonMesh::triangulate()`:
+    [#3167](https://github.com/dartsim/dart/pull/3167)
+
   * Fix `ArrowShape`'s generated Assimp mesh metadata so cloned arrows and
     refreshed TriMesh views use valid material indices on all supported
     platforms.
