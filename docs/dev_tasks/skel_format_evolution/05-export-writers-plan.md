@@ -141,12 +141,14 @@ The next implementation slice adds
 writer for robot-link trees that fit URDF's model constraints. It writes one
 root tree with root FreeJoint/WeldJoint metadata that URDF can preserve, child
 revolute/prismatic/fixed joints whose child link frame coincides with the joint
-frame, inertial data, local visual/collision poses, box/sphere/cylinder and
-absolute-URI mesh geometry, visual colors, and visual/collision include
+frame, single-DoF motor-style mimic metadata, inertial data, local
+visual/collision poses, box/sphere/cylinder and absolute-URI mesh geometry,
+visual colors, and visual/collision include
 options. `INTEGRATION_io_UrdfWriter` validates a write/read/read round-trip for
 that subset and covers explicit diagnostics for multiple root trees, unsupported
-joint families, non-identity child joint frames, and unbounded finite-requiring
-URDF limits. This first URDF slice also does not complete Phase 5.
+joint families, non-identity child joint frames, unbounded finite-requiring URDF
+limits, missing mimic references, and coupler-style mimic enforcement. This
+first URDF slice also does not complete Phase 5.
 
 ## Decision
 

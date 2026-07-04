@@ -330,6 +330,70 @@ TEST(UrdfWriter, RoundTripsSupportedTreeSubset)
 }
 
 //==============================================================================
+TEST(UrdfWriter, RoundTripsMimicMetadata)
+{
+  auto skeleton = dynamics::Skeleton::create("urdf_mimic_writer");
+
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr,
+          dynamics::FreeJoint::Properties(),
+          makeBodyProperties(
+              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)rootJoint;
+
+  dynamics::RevoluteJoint::Properties referenceProperties;
+  referenceProperties.mName = "reference_joint";
+  referenceProperties.mAxis = Eigen::Vector3d::UnitZ();
+  auto [referenceJoint, referenceBody]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          base,
+          referenceProperties,
+          makeBodyProperties(
+              "reference_link",
+              1.0,
+              Eigen::Vector3d::Zero(),
+              Eigen::Vector3d::Ones()));
+  setFiniteJointMetadata(referenceJoint, -1.0, 1.0, 2.0, 3.0, 0.0, 0.0);
+
+  dynamics::PrismaticJoint::Properties followerProperties;
+  followerProperties.mName = "follower_joint";
+  followerProperties.mAxis = Eigen::Vector3d::UnitX();
+  auto [followerJoint, followerBody]
+      = skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
+          referenceBody,
+          followerProperties,
+          makeBodyProperties(
+              "follower_link",
+              1.0,
+              Eigen::Vector3d::Zero(),
+              Eigen::Vector3d::Ones()));
+  (void)followerBody;
+  setFiniteJointMetadata(followerJoint, -0.5, 0.5, 4.0, 5.0, 0.0, 0.0);
+  followerJoint->setMimicJoint(referenceJoint, 2.0, -0.25);
+  followerJoint->setActuatorType(dynamics::Joint::MIMIC);
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  expectContains(writeResult.value(), "<mimic");
+  expectContains(writeResult.value(), "joint=\"reference_joint\"");
+
+  utils::UrdfParser parser;
+  const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
+  ASSERT_NE(reparsed, nullptr);
+
+  const auto* reparsedReference = reparsed->getJoint("reference_joint");
+  ASSERT_NE(reparsedReference, nullptr);
+  const auto* reparsedFollower = reparsed->getJoint("follower_joint");
+  ASSERT_NE(reparsedFollower, nullptr);
+  EXPECT_EQ(reparsedFollower->getActuatorType(), dynamics::Joint::MIMIC);
+  EXPECT_EQ(reparsedFollower->getMimicJoint(), reparsedReference);
+  EXPECT_DOUBLE_EQ(reparsedFollower->getMimicMultiplier(), 2.0);
+  EXPECT_DOUBLE_EQ(reparsedFollower->getMimicOffset(), -0.25);
+}
+
+//==============================================================================
 TEST(UrdfWriter, IncludeOptionsControlVisualsAndCollisions)
 {
   const auto skeleton = makeRoundTripSkeleton();
@@ -454,4 +518,83 @@ TEST(UrdfWriter, UnboundedPrismaticLimitsReturnError)
   const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "unbounded URDF position limits");
+}
+
+//==============================================================================
+TEST(UrdfWriter, MimicWithoutReferenceReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("mimic_without_reference");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr,
+          dynamics::FreeJoint::Properties(),
+          makeBodyProperties(
+              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)rootJoint;
+
+  dynamics::RevoluteJoint::Properties properties;
+  properties.mName = "follower_joint";
+  properties.mAxis = Eigen::Vector3d::UnitZ();
+  auto [follower, tip]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          base,
+          properties,
+          makeBodyProperties(
+              "tip", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)tip;
+  setFiniteJointMetadata(follower, -1.0, 1.0, 2.0, 3.0, 0.0, 0.0);
+  follower->setActuatorType(dynamics::Joint::MIMIC);
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "no reference joint");
+}
+
+//==============================================================================
+TEST(UrdfWriter, CouplerMimicReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("coupler_mimic");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+          nullptr,
+          dynamics::FreeJoint::Properties(),
+          makeBodyProperties(
+              "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
+  (void)rootJoint;
+
+  dynamics::RevoluteJoint::Properties referenceProperties;
+  referenceProperties.mName = "reference_joint";
+  referenceProperties.mAxis = Eigen::Vector3d::UnitZ();
+  auto [referenceJoint, referenceBody]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          base,
+          referenceProperties,
+          makeBodyProperties(
+              "reference_link",
+              1.0,
+              Eigen::Vector3d::Zero(),
+              Eigen::Vector3d::Ones()));
+  setFiniteJointMetadata(referenceJoint, -1.0, 1.0, 2.0, 3.0, 0.0, 0.0);
+
+  dynamics::RevoluteJoint::Properties followerProperties;
+  followerProperties.mName = "follower_joint";
+  followerProperties.mAxis = Eigen::Vector3d::UnitY();
+  auto [followerJoint, followerBody]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          referenceBody,
+          followerProperties,
+          makeBodyProperties(
+              "follower_link",
+              1.0,
+              Eigen::Vector3d::Zero(),
+              Eigen::Vector3d::Ones()));
+  (void)followerBody;
+  setFiniteJointMetadata(followerJoint, -1.0, 1.0, 2.0, 3.0, 0.0, 0.0);
+  followerJoint->setMimicJoint(referenceJoint, 2.0, 0.5);
+  followerJoint->setActuatorType(dynamics::Joint::MIMIC);
+  followerJoint->setUseCouplerConstraint(true);
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(result.error().message, "coupler mimic constraint");
 }

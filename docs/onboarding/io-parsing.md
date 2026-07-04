@@ -225,17 +225,20 @@ in interchange-format parser utilities.
 `dart::utils::UrdfParser::tryWriteSkeletonToString` serializes the first
 conservative URDF tree subset. It supports one root link, root FreeJoint or
 WeldJoint metadata that URDF can preserve, child revolute/prismatic/fixed
-joints whose child link frame coincides with the joint frame, inertial data,
-local visual/collision poses, box/sphere/cylinder/absolute-URI mesh geometry,
-visual colors, and options for excluding visuals or collisions.
+joints whose child link frame coincides with the joint frame, single-DoF
+motor-style mimic metadata, inertial data, local visual/collision poses,
+box/sphere/cylinder/absolute-URI mesh geometry, visual colors, and options for
+excluding visuals or collisions.
 
 The writer returns `common::Result` and rejects unsupported or lossy DART
 constructs such as multiple root trees, non-identity root placement, unsupported
 joint families, non-identity child-to-joint frames, unbounded finite-requiring
-URDF limits, asymmetric velocity/effort limits, non-finite data, missing or
-relative mesh URIs, and unsupported shapes. Validate any broadened URDF surface
-with write/read/read tests through `UrdfParser`; do not route URDF export
-through `dart::io` until a reviewed multi-format write API exists.
+URDF limits, asymmetric velocity/effort limits, missing or non-motor mimic
+references, multi-DoF mimic relationships that URDF cannot name by axis,
+non-finite data, missing or relative mesh URIs, and unsupported shapes. Validate
+any broadened URDF surface with write/read/read tests through `UrdfParser`; do
+not route URDF export through `dart::io` until a reviewed multi-format write
+API exists.
 
 ## Notes about Python
 

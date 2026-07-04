@@ -39,6 +39,7 @@
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/joint.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/mimic_dof_properties.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/shape_node.hpp>
@@ -520,6 +521,77 @@ WriteResult writeJointDynamics(
   return ok();
 }
 
+WriteResult writeJointMimic(
+    tinyxml2::XMLDocument& doc,
+    tinyxml2::XMLElement& jointElement,
+    const dynamics::Joint& joint)
+{
+  if (!joint.hasActuatorType(dynamics::Joint::MIMIC)) {
+    return ok();
+  }
+
+  if (joint.getNumDofs() != 1
+      || joint.getActuatorType(0) != dynamics::Joint::MIMIC) {
+    return fail(
+        "Cannot write " + context(joint)
+        + " with mimic metadata because URDF <mimic> can only represent one "
+          "dependent DoF.");
+  }
+
+  const auto mimicProps = joint.getMimicDofProperties();
+  if (mimicProps.empty() || mimicProps[0].mReferenceJoint == nullptr) {
+    return fail(
+        "Cannot write " + context(joint)
+        + " with mimic actuator because no reference joint is configured.");
+  }
+
+  const auto& mimic = mimicProps[0];
+  if (mimic.mConstraintType != dynamics::MimicConstraintType::Motor) {
+    return fail(
+        "Cannot write " + context(joint)
+        + " with a coupler mimic constraint because URDF <mimic> does not "
+          "preserve DART's coupler enforcement mode.");
+  }
+
+  if (!isFinite(mimic.mMultiplier) || !isFinite(mimic.mOffset)) {
+    return fail(
+        "Cannot write " + context(joint)
+        + " with non-finite mimic multiplier or offset.");
+  }
+
+  if (mimic.mReferenceDofIndex != 0
+      || mimic.mReferenceJoint->getNumDofs() != 1) {
+    return fail(
+        "Cannot write " + context(joint) + " with mimic reference joint ["
+        + mimic.mReferenceJoint->getName()
+        + "] because URDF <mimic> has no reference DoF selector.");
+  }
+
+  const auto jointSkeleton = joint.getSkeleton();
+  const auto referenceSkeleton = mimic.mReferenceJoint->getSkeleton();
+  if (!jointSkeleton || !referenceSkeleton
+      || jointSkeleton.get() != referenceSkeleton.get()) {
+    return fail(
+        "Cannot write " + context(joint) + " with mimic reference joint ["
+        + mimic.mReferenceJoint->getName()
+        + "] because the reference joint is not in the same Skeleton.");
+  }
+
+  if (!mimic.mReferenceJoint->getParentBodyNode()) {
+    return fail(
+        "Cannot write " + context(joint)
+        + " with mimic reference joint [" + mimic.mReferenceJoint->getName()
+        + "] because URDF root links do not serialize parent-joint "
+          "metadata.");
+  }
+
+  auto* mimicElement = appendElement(doc, jointElement, "mimic");
+  mimicElement->SetAttribute("joint", mimic.mReferenceJoint->getName().c_str());
+  setDoubleAttribute(*mimicElement, "multiplier", mimic.mMultiplier);
+  setDoubleAttribute(*mimicElement, "offset", mimic.mOffset);
+  return ok();
+}
+
 WriteResult writeJoint(
     tinyxml2::XMLDocument& doc,
     tinyxml2::XMLElement& robot,
@@ -600,6 +672,11 @@ WriteResult writeJoint(
     return result;
   }
 
+  if (auto result = writeJointMimic(doc, *jointElement, joint);
+      result.isErr()) {
+    return result;
+  }
+
   return ok();
 }
 
@@ -622,6 +699,13 @@ WriteResult validateRootJoint(const dynamics::BodyNode& root)
     return fail(
         "Cannot write URDF root joint [" + joint->getName()
         + "] with non-identity placement because URDF has no root-link pose.");
+  }
+
+  if (joint->hasActuatorType(dynamics::Joint::MIMIC)) {
+    return fail(
+        "Cannot write URDF root joint [" + joint->getName()
+        + "] with mimic metadata because URDF root links do not serialize "
+          "parent-joint metadata.");
   }
 
   return ok();
