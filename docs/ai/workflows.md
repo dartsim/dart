@@ -24,7 +24,7 @@ supported AI tools.
 | `dart-mechanical-refactor` | `$dart-mechanical-refactor` | `/dart-mechanical-refactor` | `CONTRIBUTING.md`, `docs/onboarding/code-style.md` | `pixi run lint` plus focused build/test proving behavior preservation; external mutations require explicit approval |
 | `dart-downstream-fix` | `$dart-downstream-fix` | `/dart-downstream-fix` | `docs/onboarding/contributing.md`, `docs/onboarding/ci-cd.md` | `pixi run lint`, focused build/test, and regression test when applicable; external mutations require explicit approval |
 | `dart-release-ci-fix` | `$dart-release-ci-fix` | `/dart-release-ci-fix` | `docs/onboarding/ci-cd.md`, `docs/onboarding/release-management.md` | Use local reproduction when possible; external mutations require explicit approval |
-| `dart-backport-pr` | `$dart-backport-pr` | `/dart-backport-pr` | `docs/onboarding/contributing.md`, `docs/onboarding/release-management.md` | Use release-target focused tests plus `pixi run lint`; external mutations require explicit approval |
+| `dart-backport-pr` | `$dart-backport-pr` | `/dart-backport-pr` | `docs/onboarding/contributing.md`, `docs/onboarding/release-management.md`, `docs/onboarding/changelog.md` | Use release-target focused tests plus `pixi run lint`; call `dart-changelog` for the backport decision; external mutations require explicit approval |
 | `dart-branch-cleanup` | `$dart-branch-cleanup` | `/dart-branch-cleanup` | `docs/onboarding/ci-cd.md`, `docs/onboarding/contributing.md` | Read-only analysis unless explicit approval allows branch deletion |
 
 ## Domain Skills
