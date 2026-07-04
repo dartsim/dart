@@ -8,7 +8,7 @@ import pathlib
 import subprocess
 import sys
 
-SKIP_DIRS = {".deps", ".git", ".pixi", "build", "external", "node_modules"}
+SKIP_DIRS = {".build", ".deps", ".git", ".pixi", "build", "external", "node_modules"}
 
 
 def find_cmake_files(root: pathlib.Path) -> list[pathlib.Path]:
