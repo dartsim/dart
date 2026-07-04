@@ -224,6 +224,18 @@
     `Icosphere::computeIcosahedron()` by keeping the triangle table local:
     [#3130](https://github.com/dartsim/dart/pull/3130)
 
+* Math
+
+  * Backport the header-only `dart/simd` SIMD abstraction module from DART 7,
+    adapted to C++17. It provides `dart::simd::Vec`/`VecMask` types with
+    compile-time backend dispatch (SSE4.2, AVX, AVX2, AVX-512, NEON, SVE, and
+    a portable scalar fallback), vectorized transcendental math kernels,
+    SIMD-friendly geometry and SoA batch types, aligned-memory helpers, and
+    Eigen interop. The module is a pure addition (new installed
+    `include/dart/simd` headers plus a build-tree-only `dart-simd` INTERFACE
+    target); no existing headers, components, or compile flags change:
+    [#2490](https://github.com/dartsim/dart/pull/2490)
+
 * Simulation
 
   * Added `dart::simulation::WorldConfig`, the `CollisionDetectorType` enum,
@@ -248,6 +260,12 @@
     or corrupting the LCP solve with NaN/Inf:
     [#3132](https://github.com/dartsim/dart/pull/3132),
     [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
+
+  * Suppress tiny lateral and tilt velocity drift introduced by shallow static
+    support contacts on free-root bodies while preserving DART 6's default
+    Baumgarte upward separation velocity:
+    [#3227](https://github.com/dartsim/dart/pull/3227),
+    [gazebosim/gz-physics#620](https://github.com/gazebosim/gz-physics/issues/620)
 
   * Enable resting-world deactivation by default with wake-aware invalidation
     and fidelity coverage against the always-active path, improving resting
