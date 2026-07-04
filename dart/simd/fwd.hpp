@@ -78,27 +78,47 @@ inline constexpr bool is_valid_width_v
 
 namespace detail {
 
+// Check whether width is static before evaluating its value. MSVC reports a
+// hard error for non-static V::width unless the value probe is staged.
+template <typename V, typename = void>
+struct HasStaticWidthMember : std::false_type
+{
+};
+
+template <typename V>
+struct HasStaticWidthMember<V, std::void_t<decltype(&V::width)>>
+  : std::bool_constant<!std::is_member_object_pointer_v<decltype(&V::width)>>
+{
+};
+
+template <typename V>
+using StaticWidthConstant
+    = std::integral_constant<std::size_t, static_cast<std::size_t>(V::width)>;
+
+template <typename V, typename = void, bool = HasStaticWidthMember<V>::value>
+struct HasValidStaticWidth : std::false_type
+{
+};
+
+template <typename V>
+struct HasValidStaticWidth<V, std::void_t<StaticWidthConstant<V>>, true>
+  : std::bool_constant<
+        std::is_convertible_v<
+            decltype(V::width),
+            std::size_t> && is_valid_width_v<StaticWidthConstant<V>::value>>
+{
+};
+
 template <typename V, typename = void>
 struct IsVecTrait : std::false_type
 {
 };
 
-// The integral_constant probe keeps V::width inside the SFINAE context: a
-// width member that is not a constant expression must yield false (as the
-// DART 7 concept does), not a hard error.
 template <typename V>
-struct IsVecTrait<
-    V,
-    std::void_t<
-        typename V::scalar_type,
-        decltype(V::width),
-        std::
-            integral_constant<std::size_t, static_cast<std::size_t>(V::width)>>>
+struct IsVecTrait<V, std::void_t<typename V::scalar_type>>
   : std::bool_constant<
-        std::is_convertible_v<
-            decltype(V::width),
-            std::
-                size_t> && is_scalar_type_v<typename V::scalar_type> && is_valid_width_v<static_cast<std::size_t>(V::width)>>
+        is_scalar_type_v<
+            typename V::scalar_type> && HasValidStaticWidth<V>::value>
 {
 };
 
