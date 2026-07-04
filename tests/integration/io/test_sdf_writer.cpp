@@ -843,6 +843,104 @@ TEST(SdfWriter, RoundTripsExistingSinglePendulumFixture)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsConvertedSkelBoxFixtures)
+{
+  const std::vector<std::pair<std::string, std::string>> fixtures = {
+      {"dart://sample/sdf/test/cube.sdf", "box"},
+      {"dart://sample/sdf/test/shapes.sdf", "box"},
+      {"dart://sample/sdf/test/test_shapes.sdf", "ground"},
+  };
+
+  for (const auto& [uri, bodyName] : fixtures) {
+    SCOPED_TRACE(uri);
+    const auto original = utils::SdfParser::readSkeleton(common::Uri(uri));
+    ASSERT_NE(original, nullptr);
+    ASSERT_EQ(original->getNumBodyNodes(), 1u);
+    const auto* originalBody = test::requireBodyNode(*original, bodyName);
+    ASSERT_NE(originalBody, nullptr);
+    const auto* originalJoint = originalBody->getParentJoint();
+    ASSERT_NE(originalJoint, nullptr);
+
+    const auto writeResult
+        = utils::SdfParser::tryWriteSkeletonToString(*original);
+    ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+    const auto path = writeTempSdf(writeResult.value(), bodyName);
+    const auto reparsed = utils::SdfParser::readSkeleton(
+        common::Uri::createFromPath(path.string()));
+    std::filesystem::remove(path);
+
+    ASSERT_NE(reparsed, nullptr);
+    EXPECT_EQ(reparsed->getName(), original->getName());
+    EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+    EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+    EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+    const auto* body = test::requireBodyNode(*reparsed, bodyName);
+    ASSERT_NE(body, nullptr);
+    const auto* joint = body->getParentJoint();
+    ASSERT_NE(joint, nullptr);
+    EXPECT_EQ(joint->getType(), originalJoint->getType());
+    EXPECT_VECTOR_NEAR(
+        joint->getTransformFromParentBodyNode().translation(),
+        originalJoint->getTransformFromParentBodyNode().translation(),
+        1e-12);
+    EXPECT_VECTOR_NEAR(
+        joint->getTransformFromChildBodyNode().translation(),
+        originalJoint->getTransformFromChildBodyNode().translation(),
+        1e-12);
+    EXPECT_NEAR(body->getMass(), originalBody->getMass(), 1e-12);
+    EXPECT_VECTOR_NEAR(body->getLocalCOM(), originalBody->getLocalCOM(), 1e-12);
+    EXPECT_MATRIX_NEAR(
+        body->getInertia().getMoment(),
+        originalBody->getInertia().getMoment(),
+        1e-12);
+
+    const auto* originalVisualBox
+        = test::requireShape<dynamics::VisualAspect, dynamics::BoxShape>(
+            *originalBody, 0, 1);
+    const auto* visualBox
+        = test::requireShape<dynamics::VisualAspect, dynamics::BoxShape>(
+            *body, 0, 1);
+    ASSERT_NE(originalVisualBox, nullptr);
+    ASSERT_NE(visualBox, nullptr);
+    EXPECT_VECTOR_NEAR(
+        visualBox->getSize(), originalVisualBox->getSize(), 1e-12);
+    const auto* originalVisualShapeNode
+        = originalBody->getShapeNodeWith<dynamics::VisualAspect>(0);
+    const auto* visualShapeNode
+        = body->getShapeNodeWith<dynamics::VisualAspect>(0);
+    ASSERT_NE(originalVisualShapeNode, nullptr);
+    ASSERT_NE(visualShapeNode, nullptr);
+    EXPECT_MATRIX_NEAR(
+        visualShapeNode->getRelativeTransform().matrix(),
+        originalVisualShapeNode->getRelativeTransform().matrix(),
+        1e-12);
+
+    const auto* originalCollisionBox
+        = test::requireShape<dynamics::CollisionAspect, dynamics::BoxShape>(
+            *originalBody, 0, 1);
+    const auto* collisionBox
+        = test::requireShape<dynamics::CollisionAspect, dynamics::BoxShape>(
+            *body, 0, 1);
+    ASSERT_NE(originalCollisionBox, nullptr);
+    ASSERT_NE(collisionBox, nullptr);
+    EXPECT_VECTOR_NEAR(
+        collisionBox->getSize(), originalCollisionBox->getSize(), 1e-12);
+    const auto* originalCollisionShapeNode
+        = originalBody->getShapeNodeWith<dynamics::CollisionAspect>(0);
+    const auto* collisionShapeNode
+        = body->getShapeNodeWith<dynamics::CollisionAspect>(0);
+    ASSERT_NE(originalCollisionShapeNode, nullptr);
+    ASSERT_NE(collisionShapeNode, nullptr);
+    EXPECT_MATRIX_NEAR(
+        collisionShapeNode->getRelativeTransform().matrix(),
+        originalCollisionShapeNode->getRelativeTransform().matrix(),
+        1e-12);
+  }
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsJointAxisVelocityAndEffortLimits)
 {
   dynamics::SkeletonPtr skeleton;

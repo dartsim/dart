@@ -129,10 +129,12 @@ objects. Serialized XML substring assertions are reserved for element-name
 contracts that sdformat normalizes semantically, such as legacy
 `<thread_pitch>` versus modern `<screw_thread_pitch>`.
 Fixture-level coverage now also loads the shipped
-`data/sdf/test/single_pendulum.sdf` sample through the normal SDF parser, writes
-it with `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and
-compares body, joint, inertial, and box-geometry semantics between the original
-parsed skeleton and the re-parsed writer output.
+SDF samples converted from legacy SKEL (`single_pendulum.sdf`, `cube.sdf`,
+`shapes.sdf`, and `test_shapes.sdf`) through the normal SDF parser, writes them
+with `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and
+compares body, joint, inertial, mobility, visual-box, and collision-box
+semantics between the original parsed skeletons and the re-parsed writer
+outputs.
 
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.

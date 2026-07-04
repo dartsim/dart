@@ -1549,6 +1549,38 @@ Changelog decision:
   opened.
 - Follow-up: none until an implementation PR exists.
 
+Additional validation for the remaining converted SKEL SDF fixtures:
+
+- Added `SdfWriter.RoundTripsConvertedSkelBoxFixtures`, which covers the other
+  shipped SDF fixtures converted from legacy SKEL:
+  `dart://sample/sdf/test/cube.sdf`, `dart://sample/sdf/test/shapes.sdf`, and
+  `dart://sample/sdf/test/test_shapes.sdf`.
+- The test writes each parsed skeleton through
+  `SdfParser::tryWriteSkeletonToString()`, reloads the emitted SDF, and compares
+  skeleton name, mobility, body and joint counts, root-joint type and
+  transforms, body inertia, visual box size/pose, and collision box size/pose
+  against the original parsed skeleton.
+- Focused fixture test passed:
+  `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsConvertedSkelBoxFixtures'`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Scope evidence: `CHANGELOG.md` DART 7 IO and Parsing SDF writer bullet
+  inspected; it already covers the conservative SDF writer and the legacy SKEL
+  conversion/removal entries already cover the fixture migration direction.
+- Decision: no additional changelog entry. This slice extends fixture-level
+  read/write/read verification across the already-shipped converted SDF samples
+  without adding a public API or broadening the writer contract.
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: record as converted SDF fixture round-trip verification if a PR
+  is opened.
+- Follow-up: none until an implementation PR exists.
+
 ## Previous Resume Checkpoint (2026-07-03)
 
 Phase 2 is implemented on `feature/remove-skel-dart7-phase2` and awaiting PR

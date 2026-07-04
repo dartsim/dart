@@ -140,11 +140,13 @@
       objects; literal XML substring checks are retained only for serialized
       schema element-name contracts that sdformat normalizes semantically, such
       as legacy `<thread_pitch>` versus modern `<screw_thread_pitch>`.
-      Existing shipped SDF fixture coverage now loads
-      `data/sdf/test/single_pendulum.sdf`, writes it back through
+      Existing shipped SDF fixture coverage now loads the converted SKEL
+      fixtures (`single_pendulum.sdf`, `cube.sdf`, `shapes.sdf`, and
+      `test_shapes.sdf`), writes them back through
       `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and
-      compares the body, joint, inertial, and box-geometry semantics of the
-      original parsed skeleton against the re-parsed writer output.
+      compares body, joint, inertial, mobility, visual-box, and collision-box
+      semantics of the original parsed skeletons against the re-parsed writer
+      outputs.
       The first URDF writer slice is also implemented locally on
       `dart::utils::UrdfParser::tryWriteSkeletonToString` for one-root URDF
       trees with identity root FreeJoint/WeldJoint placement validation, child

@@ -183,10 +183,12 @@ with visual shadow/hidden/transparency state, explicit visual material colors,
 PBR
 metallic/roughness factors, and collision-surface contact disable bitmasks,
 zero-threshold bounce restitution, and ODE friction/slip metadata. The
-round-trip coverage includes the shipped `single_pendulum.sdf` fixture through
-a read/write/read smoke that compares body, joint, inertial, and box-geometry
-semantics; absolute non-file mesh URI preservation through a custom retriever;
-and URI-backed mesh material variants through preserved source mesh URIs.
+round-trip coverage includes the shipped SDF fixtures converted from legacy
+SKEL (`single_pendulum.sdf`, `cube.sdf`, `shapes.sdf`, and
+`test_shapes.sdf`) through read/write/read smokes that compare body, joint,
+inertial, mobility, and box-geometry semantics; absolute non-file mesh URI
+preservation through a custom retriever; and URI-backed mesh material variants
+through preserved source mesh URIs.
 Targetless relative
 mesh references, URI-less in-memory mesh material variants, and relative or
 host-qualified `file` mesh URIs are rejected because the writer has no
