@@ -4432,7 +4432,7 @@ TEST(DeformableBody, MatrixFreeLinearSolverMatchesSolversOnGroundContact)
 // Scaled contact parity: a mid-size FEM cube (64 nodes = 192 DoF, above the
 // dense-direct DoF cap, so the built-in solve never takes the direct path)
 // settling on a ground barrier reaches the same equilibrium under sparse
-// incomplete-Cholesky CG and matrix-free block-Jacobi CG. This is the scaled
+// Jacobi-preconditioned CG and matrix-free block-Jacobi CG. This is the scaled
 // evidence behind a future automatic matrix-free selection: as the contact mesh
 // grows past where a dense direct solve is viable, the matrix-free path must
 // still match the sparse-CG reference and keep zero assembled-Hessian

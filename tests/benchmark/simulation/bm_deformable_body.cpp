@@ -331,8 +331,8 @@ sx::DeformableBodyOptions makeFemCubeOptions(
 // ground barrier (top face at z == 0). Under gravity it drops and settles on
 // the barrier, so the projected-Newton solve is dominated by the near-singular
 // clamped-log barrier Hessian on the contacting bottom nodes -- the stiff,
-// ill-conditioned regime where the matrix-free block-Jacobi preconditioner and
-// the sparse incomplete-Cholesky preconditioner diverge in CG iterations and
+// ill-conditioned regime where the matrix-free block-Jacobi CG path and the
+// assembled sparse Jacobi-preconditioned CG path diverge in iterations and
 // per-step cost. This is the contact-heavy fixture behind the matrix-free vs
 // sparse-CG crossover benchmarks; the crossover it measures (per-step time, CG
 // iterations, and fallbacks-to-steepest-descent as the mesh scales) is the
@@ -1380,8 +1380,8 @@ struct DeformableFemContactCubeWorld
 //==============================================================================
 // Steps a chunky cellsPerSide^3 FEM cube and records the per-step cost and
 // Newton-iteration count. The cube is run with both the sparse Cholesky direct
-// solve (BM_DeformableCube3dDirectStep) and the incomplete-Cholesky
-// preconditioned conjugate-gradient iterative solve (BM_DeformableCube3dCgStep)
+// solve (BM_DeformableCube3dDirectStep) and the Jacobi-preconditioned sparse
+// conjugate-gradient iterative solve (BM_DeformableCube3dCgStep)
 // at matching cell counts, so the direct-vs-iterative crossover is measurable:
 // the direct solve's 3D fill-in makes its per-step time climb super-linearly
 // with the element count, while the iterative solve stays near O(nnz) and
@@ -1460,7 +1460,7 @@ void BM_DeformableCube3dMatrixFreeCgStep(benchmark::State& state)
 // Contact-heavy matrix-free-vs-sparse-CG crossover: an unpinned FEM cube
 // settles on a static ground barrier, so the projected-Newton solve is
 // dominated by the stiff clamped-log barrier Hessian. Running the same scene
-// under sparse incomplete-Cholesky CG and matrix-free block-Jacobi CG at
+// under sparse Jacobi-preconditioned CG and matrix-free block-Jacobi CG at
 // increasing cube resolutions makes their per-step time, CG iterations, and
 // fallbacks-to-steepest-descent directly comparable on contact -- the evidence
 // a future automatic large-mesh matrix-free selection policy needs. Neither
@@ -2023,12 +2023,12 @@ BENCHMARK(BM_DeformableCgBarStep)->Arg(2)->Arg(8)->Arg(24)->Arg(48);
 BENCHMARK(BM_DeformableMatrixFreeCgBarStep)->Arg(2)->Arg(8)->Arg(24);
 // Chunky 3D cube, direct vs iterative at matching cell counts: the direct
 // solve's per-step time climbs super-linearly with the 3D fill-in while the
-// sparse IC-CG and explicit matrix-free CG rows expose the solve-effort and
+// sparse Jacobi-CG and explicit matrix-free CG rows expose the solve-effort and
 // sparse-Hessian footprint tradeoff.
 BENCHMARK(BM_DeformableCube3dDirectStep)->Arg(4)->Arg(6)->Arg(8)->Arg(10);
 BENCHMARK(BM_DeformableCube3dCgStep)->Arg(4)->Arg(6)->Arg(8)->Arg(10);
 BENCHMARK(BM_DeformableCube3dMatrixFreeCgStep)->Arg(4)->Arg(6)->Arg(8);
-// Contact-heavy crossover: same ground-contact cube under sparse IC-CG and
+// Contact-heavy crossover: same ground-contact cube under sparse Jacobi-CG and
 // matrix-free block-Jacobi CG at increasing resolutions (27/64/125/216 nodes).
 BENCHMARK(BM_DeformableContactCubeCgStep)->Arg(2)->Arg(3)->Arg(4)->Arg(5);
 BENCHMARK(BM_DeformableContactCubeMatrixFreeCgStep)
