@@ -1,0 +1,65 @@
+{
+  "context": {
+    "date": "2026-07-03T08:00:00+00:00",
+    "host_name": "sample-runner",
+    "executable": "build/default/cpp/Release/bin/BM_INTEGRATION_kinematics",
+    "num_cpus": 4,
+    "mhz_per_cpu": 3200,
+    "cpu_scaling_enabled": false,
+    "library_version": "v1.9.5",
+    "library_build_type": "release",
+    "json_schema_version": 1
+  },
+  "benchmarks": [
+    {
+      "name": "BM_Kinematics/10",
+      "run_name": "BM_Kinematics/10",
+      "run_type": "iteration",
+      "repetitions": 3,
+      "threads": 1,
+      "iterations": 100,
+      "real_time": 10.0,
+      "cpu_time": 10.0,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_Kinematics/10_median",
+      "run_name": "BM_Kinematics/10",
+      "run_type": "aggregate",
+      "aggregate_name": "median",
+      "aggregate_unit": "time",
+      "repetitions": 3,
+      "threads": 1,
+      "iterations": 3,
+      "real_time": 10.0,
+      "cpu_time": 10.0,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_ContactInverseDynamics/4",
+      "run_name": "BM_ContactInverseDynamics/4",
+      "run_type": "aggregate",
+      "aggregate_name": "median",
+      "aggregate_unit": "time",
+      "repetitions": 3,
+      "threads": 1,
+      "iterations": 3,
+      "real_time": 25.0,
+      "cpu_time": 25.0,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_ContactContainerActive/60/0/1",
+      "run_name": "BM_ContactContainerActive/60/0/1",
+      "run_type": "aggregate",
+      "aggregate_name": "median",
+      "aggregate_unit": "time",
+      "repetitions": 3,
+      "threads": 1,
+      "iterations": 3,
+      "real_time": 400.0,
+      "cpu_time": 400.0,
+      "time_unit": "ms"
+    }
+  ]
+}

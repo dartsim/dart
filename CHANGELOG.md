@@ -394,6 +394,12 @@
 
 * Tests
 
+  * Add a DART 6 performance dashboard workflow, local preview tasks, and
+    readable benchmark labels for the latest release-branch Google Benchmark
+    slice, with optional publication of the contact-container benchmark from
+    [#3209](https://github.com/dartsim/dart/pull/3209) once that target lands
+    on DART 6.
+
   * Stop the coverage CI job from running the full test suite twice (the
     `coverage-report` Pixi task re-ran `build-coverage` through `depends-on`) and
     raise the coverage CTest timeout above the 1500s default, fixing spurious

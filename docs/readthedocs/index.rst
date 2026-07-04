@@ -29,6 +29,17 @@ Updates
 
 * 2022-12-31: DART version 6.13.0 released.
 
+Project Stats
+-------------
+
+Track GitHub interest over time with
+`Star History <https://star-history.com/#dartsim/dart&type=date&legend=top-left>`_.
+DART 6 benchmark history over commits is covered by the
+:doc:`performance dashboard <community/performance_dashboard>`. After the first
+dashboard publication, the hosted benchmark dashboard is available at
+`dartsim.github.io/dart/performance/dart6/
+<https://dartsim.github.io/dart/performance/dart6/>`_.
+
 Social Media
 ------------
 
@@ -117,4 +128,5 @@ If you use DART in an academic publication, please consider citing this
    :caption: Community
 
    community/who_uses_dart
+   community/performance_dashboard
    license
