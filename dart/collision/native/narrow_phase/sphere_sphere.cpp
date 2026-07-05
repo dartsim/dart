@@ -100,6 +100,13 @@ bool collideSpheresOnAxis(
   return true;
 }
 
+bool spheresOverlap(
+    double dx, double dy, double dz, double radius1, double radius2)
+{
+  const double sumRadii = radius1 + radius2;
+  return dx * dx + dy * dy + dz * dz <= sumRadii * sumRadii;
+}
+
 bool collideSphereCenters(
     const Eigen::Vector3d& center1,
     double radius1,
@@ -108,13 +115,17 @@ bool collideSphereCenters(
     CollisionResult& result,
     const CollisionOption& option)
 {
-  if (result.numContacts() >= option.maxNumContacts) {
-    return false;
-  }
-
   const double dx = center2.x() - center1.x();
   const double dy = center2.y() - center1.y();
   const double dz = center2.z() - center1.z();
+
+  if (!option.enableContact) {
+    return spheresOverlap(dx, dy, dz, radius1, radius2);
+  }
+
+  if (result.numContacts() >= option.maxNumContacts) {
+    return false;
+  }
 
   if (dy == 0.0 && dz == 0.0) {
     return collideSpheresOnAxis(
@@ -178,10 +189,6 @@ bool collideSpheres(
     CollisionResult& result,
     const CollisionOption& option)
 {
-  if (result.numContacts() >= option.maxNumContacts) {
-    return false;
-  }
-
   const auto& translation1 = transform1.translation();
   const auto& translation2 = transform2.translation();
   const double center1X = translation1.x();
@@ -192,6 +199,14 @@ bool collideSpheres(
   const double dz = translation2.z() - center1Z;
   const double radius1 = detail::getRadius(sphere1);
   const double radius2 = detail::getRadius(sphere2);
+
+  if (!option.enableContact) {
+    return spheresOverlap(dx, dy, dz, radius1, radius2);
+  }
+
+  if (result.numContacts() >= option.maxNumContacts) {
+    return false;
+  }
 
   if (dy == 0.0 && dz == 0.0) {
     const double sumRadii = radius1 + radius2;
