@@ -198,8 +198,11 @@ The synthetic two-world coverage proves the named-model selector searches
 sdformat world DOM objects beyond the first world and keeps the selected
 world's gravity without XML-level world/model enumeration.
 
-The remaining export gap is still real implementation work. This planning note
-and the first SDF writer slice do not complete Phase 5.
+The bounded DART 7 Phase 5 export scope is now complete for the accepted
+current writers: parser-specific SDF and URDF `Skeleton` writers, plus the
+already-delivered PLAN-101 scene/project save-load surface. Future writer
+expansion remains valid work, but it is parked behind the durable criteria in
+`docs/onboarding/io-parsing.md` instead of keeping this phase open indefinitely.
 
 Future SDF IO work must stay backed by libsdformat. Use typed sdformat DOM
 classes for standard SDF semantics and restrict direct `sdf::Element` access to
@@ -246,8 +249,10 @@ aspects, and collision dynamics metadata now fail with targeted diagnostics
 because URDF has no equivalent material reflectance, collidable-disable, or
 surface/contact-dynamics fields. DART `SoftBodyNode` export also fails with a
 targeted diagnostic because URDF has no point-mass, spring, damping, or soft
-mesh topology semantics. This first URDF slice also does not complete
-Phase 5.
+mesh topology semantics. Together with the SDF writer and PLAN-101 scene
+project save/load evidence, this closes the current DART 7 Phase 5 writer
+scope; broader URDF work is parked until a new representable contract and
+round-trip tests exist.
 
 ## Decision
 
@@ -256,8 +261,10 @@ replacement. The accepted writer scope is:
 
 1. **SDF writer** for portable simulation interchange, because SDF can
    represent worlds/models and already has version/conversion semantics through
-   libsdformat. The first parser-specific writer slice is in place; broader SDF
-   coverage remains open.
+   libsdformat. The parser-specific writer contract is in place for the
+   conservative DART 7 `Skeleton` subset. Broader SDF coverage is parked behind
+   destination-aware resource policies, libsdformat-backed semantic mappings,
+   and new read/write/read tests.
 2. **Project/scene save-load** for DART-owned editor state is already owned and
    delivered by PLAN-101 and the dartsim scene model, not by the `dart::io`
    interchange writer APIs. The headless engine owns the versioned
@@ -268,7 +275,7 @@ replacement. The accepted writer scope is:
    covering editor save/open/new/recent-project behavior. This project format
    is not YAML and does not reopen SKEL syntax.
 3. **URDF writer** for robot-link trees that fit URDF's model constraints. The
-   first parser-specific writer slice is in place, including shipped
+   parser-specific writer contract is in place, including shipped
    `primitive_geometry.urdf`, `joint_properties.urdf`, `issue838.urdf`,
    `KR5/ground.urdf`, `wam.urdf`, and `drchubo.urdf` plus
    `data/sdf/atlas/atlas_v5_no_head.urdf`
@@ -278,7 +285,9 @@ replacement. The accepted writer scope is:
    and relative meshes across small and robot-scale fixtures. The full
    `KR5 sixx R650.urdf` fixture is
    intentionally covered as a root-pose diagnostic because URDF cannot
-   serialize a non-identity root-link pose; broader URDF coverage remains open.
+   serialize a non-identity root-link pose; broader URDF coverage is parked
+   until tests prove additional URDF-representable constructs round-trip without
+   losing DART semantics.
 4. **MJCF/USD writers** only after their read-side semantics are mature enough
    in DART to define a truthful round-trip contract.
 
@@ -290,7 +299,7 @@ layer. The durable rule lives in `docs/onboarding/io-parsing.md`.
 
 ## Implementation Shape
 
-Phase 5 should start with a narrow writer API instead of a single mega-exporter:
+Phase 5 used narrow writer APIs instead of a single mega-exporter:
 
 - Add writer options separately from `ReadOptions`; do not overload the import
   API with write-only policy.
@@ -311,7 +320,8 @@ Phase 5 should start with a narrow writer API instead of a single mega-exporter:
 
 ## Acceptance Gates
 
-Phase 5 is complete only when code and tests prove the writer contract:
+Phase 5 is complete for the current DART 7 writer scope because code, tests,
+docs, and the changelog now prove the writer contract:
 
 1. A public or intentionally-internal writer API exists for each accepted format.
 2. Focused C++ tests load a representative DART model, write it, re-load it, and
@@ -328,9 +338,9 @@ Phase 5 is complete only when code and tests prove the writer contract:
 7. `CHANGELOG.md` records the user-visible export capability before the
    implementation PR merges.
 
-## Open Work
+## Parked Follow-up Work
 
-- Extend the SDF writer contract beyond the first conservative subset when
+- Extend the SDF writer contract beyond the conservative subset only when
   tests can prove additional joint aliases or edge cases beyond continuous
   revolute joints, additional sdformat-owned shapes with complete resource
   policies such as SDF heightmaps, URI-less or generated mesh material
@@ -341,9 +351,5 @@ Phase 5 is complete only when code and tests prove the writer contract:
 - Extend the URDF writer beyond the first conservative subset only when tests
   can prove additional URDF-representable constructs round-trip without losing
   DART semantics.
-- Treat PLAN-101 project save/load as implemented and verified under the
-  dartsim engine; the remaining Phase 5 implementation choices are broader
-  SDF coverage, broader URDF coverage, or a durable decision to park further
-  writer expansion.
 - Keep YAML out of the first implementation target unless a durable
   project/scene schema is accepted first.

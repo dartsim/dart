@@ -25,10 +25,10 @@
       [`04-usd-coordination.md`](04-usd-coordination.md): this task uses USD as
       design pressure, while USD loader/viewer/dartpy implementation remains
       owned by [`usd_scene_loader/`](../usd_scene_loader/).
-- [ ] Phase 5: Export writers for accepted portable/project formats so DART can
+- [x] Phase 5: Export writers for accepted portable/project formats so DART can
       round-trip a scene back to text. Planning is recorded in
-      [`05-export-writers-plan.md`](05-export-writers-plan.md). The first SDF
-      writer slice is implemented locally for a conservative `Skeleton` subset
+      [`05-export-writers-plan.md`](05-export-writers-plan.md). The SDF writer
+      contract is implemented locally for a conservative `Skeleton` subset
       using libsdformat DOM serialization; link gravity mode, passive joint
       dynamics metadata (damping, Coulomb friction, spring reference, and spring
       stiffness), symmetric axis effort/velocity limits,
@@ -198,7 +198,7 @@
       parent-world revolute roots, child revolute joints, visual-only pendulum
       geometry, and visual/collision pendulum geometry without XML-level SDF
       model enumeration.
-      The first URDF writer slice is also implemented locally on
+      The URDF writer contract is also implemented locally on
       `dart::utils::UrdfParser::tryWriteSkeletonToString` for one-root URDF
       trees with identity root FreeJoint/WeldJoint placement validation, child
       revolute/continuous/prismatic/fixed joints, continuous joint
@@ -246,10 +246,10 @@
       save-load belongs to the scene/project layer. PLAN-101 project save/load
       is already delivered by `dartsim::engine::scene_io` and
       `SimEngine::saveProject()` / `SimEngine::loadProject()` with headless
-      engine and UI project-action coverage; remaining Phase 5 work is broader
-      SDF/URDF writer coverage or a durable decision to park further writer
-      expansion. Add YAML only if a durable project/scene schema is accepted
-      first.
+      engine and UI project-action coverage. Future SDF/URDF writer expansion
+      is parked behind the durable criteria in `docs/onboarding/io-parsing.md`
+      so Phase 5 does not stay open-ended. Add YAML only if a durable
+      project/scene schema is accepted first.
 
 ## Goal
 
@@ -327,19 +327,11 @@ SKEL-YAML direction just because the prototype once existed.
 
 1. Land the Phase 2 removal branch (`feature/remove-skel-dart7-phase2`) after
    review. Add the PR link to the DART 7 changelog entry before merge.
-2. Continue Phase 5 from
-   [`05-export-writers-plan.md`](05-export-writers-plan.md): extend SDF or URDF
-   writer coverage beyond the first conservative subsets, and keep
-   read/write/read tests attached to every expanded contract. PLAN-101 project
-   save/load is already owned and verified by the dartsim engine, so do not
-   reopen it here unless the scene/project schema itself changes. Absolute
-   non-file mesh URI preservation is covered; targetless
-   relative/generated mesh references are rejected until a future file/project
-   writer defines a destination URI and copy/rewrite policy. Heightmap export
-   also needs a source heightmap URI and destination-aware resource policy before
-   DART can use `sdf::Heightmap` DOM serialization. Keep writer APIs
-   format-owned unless a later multi-format write API is reviewed. YAML can
-   enter that slice only after a durable project/scene schema is accepted.
+2. After the Phase 2 PR exists, update the DART 7 changelog's SKEL-removal
+   bullet with the PR link and prepare the dev-task cleanup change. Phase 5 no
+   longer needs local implementation work unless a maintainer reopens writer
+   scope; future SDF/URDF expansion criteria live in
+   `docs/onboarding/io-parsing.md`.
 
 ## Verification Gates
 
@@ -360,9 +352,9 @@ SKEL-YAML direction just because the prototype once existed.
   [`04-usd-coordination.md`](04-usd-coordination.md): PR #3109 is merged, the
   active `usd_scene_loader/` task owns remaining USD implementation, and this
   task must not duplicate the USD loader/viewer/dartpy surface.
-- Phase 5: planning gate recorded in
-  [`05-export-writers-plan.md`](05-export-writers-plan.md). The first SDF writer
-  slice is covered by `INTEGRATION_io_SdfWriter`, which writes and re-reads a
+- Phase 5: bounded writer gate recorded in
+  [`05-export-writers-plan.md`](05-export-writers-plan.md). The SDF writer
+  contract is covered by `INTEGRATION_io_SdfWriter`, which writes and re-reads a
   representative supported `Skeleton` subset and checks unsupported-shape
   diagnostics plus non-finite visual material, invalid PBR material, and
   unsupported visual reflectance diagnostics. It also proves link-level gravity
@@ -497,10 +489,13 @@ SKEL-YAML direction just because the prototype once existed.
   factored
   through
   `tests/helpers/io_round_trip_helpers.hpp` so future writer formats can reuse
-  the body, joint, DoF, inertia, and shape comparison helpers. Completion still
-  requires broader accepted-format writer APIs and round-trip tests that load a
-  scene from each accepted format, write it back, and compare the re-parsed
-  models. SDF helper cleanup is covered by `test_sdf_helpersNone`, which now
+  the body, joint, DoF, inertia, and shape comparison helpers. These gates
+  satisfy the bounded DART 7 Phase 5 writer scope: SDF and URDF have
+  format-owned writer APIs, representative read/write/read coverage, unsupported
+  diagnostics, durable docs in `docs/onboarding/io-parsing.md`, and DART 7
+  changelog bullets. Future writer expansion is parked behind the criteria in
+  `docs/onboarding/io-parsing.md`. SDF helper cleanup is covered by
+  `test_sdf_helpersNone`, which now
   validates only the retained sdformat Element presence/lookup bridge instead
   of the removed generic parser helper APIs, including sdformat
   `Element::FindElement()` lookup, explicit-authored presence checks, and the

@@ -312,7 +312,7 @@ in interchange-format parser utilities.
 
 ## URDF writing
 
-`dart::utils::UrdfParser::tryWriteSkeletonToString` serializes the first
+`dart::utils::UrdfParser::tryWriteSkeletonToString` serializes the
 conservative URDF tree subset. It supports one root link, root FreeJoint or
 WeldJoint identity placement validation, child
 revolute/continuous/prismatic/fixed joints whose child link frame coincides
@@ -353,6 +353,18 @@ metadata, visual reflectance factors, unsupported shapes, and DART
 `SoftBodyNode` export. Validate any broadened URDF surface with
 write/read/read tests through `UrdfParser`; do not route URDF export through
 `dart::io` until a reviewed multi-format write API exists.
+
+## Parked writer expansion criteria
+
+The DART 7 writer surface is intentionally conservative. Future SDF expansion
+needs a tested destination-aware resource policy before accepting targetless
+relative meshes, generated meshes, URI-less mesh material variants, or DART
+heightmaps as emitted SDF resources. Additional SDF world metadata should stay
+on libsdformat DOM APIs and get read/write/read tests that prove the DART
+semantics survive without XML-level parsing. Future URDF expansion should only
+add constructs that URDF can represent without losing DART semantics, with
+focused `UrdfParser` write/read/read tests and explicit diagnostics for
+unsupported cases.
 
 ## Notes about Python
 

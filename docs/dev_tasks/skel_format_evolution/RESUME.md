@@ -20,16 +20,14 @@ OFF-by-default USD `dart::io` scaffold, and remaining USD loader/viewer/dartpy
 implementation stays in `docs/dev_tasks/usd_scene_loader/` instead of this SKEL
 task.
 
-Phase 5 export-writer planning is recorded locally in
-[`05-export-writers-plan.md`](05-export-writers-plan.md). The plan keeps export
-as a separate implementation phase: extend SDF/URDF writer coverage, define
-deterministic resource handling and comparison helpers, and complete the phase
-only with writer APIs plus read/write/read tests. PLAN-101 project save/load is
-now reconciled as already implemented and verified in the dartsim engine scene
-layer, not as the next SKEL export-writer target. This planning record does not
-complete Phase 5.
+Phase 5 is complete for the bounded DART 7 writer scope recorded in
+[`05-export-writers-plan.md`](05-export-writers-plan.md): parser-specific SDF and
+URDF `Skeleton` writers exist with read/write/read coverage, PLAN-101
+project/scene save-load is already implemented in the dartsim engine layer, and
+future SDF/URDF writer expansion is parked behind the durable criteria in
+`docs/onboarding/io-parsing.md`.
 
-The first SDF writer implementation slice is now local on
+The SDF writer implementation is local on
 `work/skel-format-yaml-decision`: `dart::utils::SdfParser` exposes
 `tryWriteSkeletonToString()` for a conservative `Skeleton` subset, with
 the writer building libsdformat DOM objects and serializing through sdformat.
@@ -81,8 +79,10 @@ diagnostics, unsupported
 ball-joint metadata, unsupported child `FreeJoint` diagnostics, unsupported
 `EulerJoint`, `PlanarJoint`, `TranslationalJoint2D`, and `TranslationalJoint`
 diagnostics, unsupported DART `SoftBodyNode` diagnostics, and non-finite joint
-dynamics diagnostics. This is real Phase 5 progress, but Phase 5 is still open
-until broader SDF/URDF coverage is implemented or durably deferred.
+dynamics diagnostics. This closes the current SDF side of the bounded Phase 5
+scope; broader SDF work is durably parked until a destination-aware resource
+policy, libsdformat-backed semantic mappings, and new read/write/read tests are
+accepted.
 
 SDF shipped-fixture writer coverage now includes the native converted SKEL
 fixtures, `quad.sdf`, `two_link_revolute_model.sdf`,
@@ -115,7 +115,7 @@ authored/default checks, DART extension fields, and schema fields missing from
 the high-level DOM; do not add DART-side XML tokenization, child enumeration,
 or text reparsing for SDF semantics.
 
-The first URDF writer implementation slice is also local on
+The URDF writer implementation is also local on
 `work/skel-format-yaml-decision`: `dart::utils::UrdfParser` exposes
 `tryWriteSkeletonToString()` for one-root URDF trees with identity root
 FreeJoint or WeldJoint placement validation, child
@@ -158,6 +158,9 @@ equivalent material reflectance, collidable-disable, or
 surface/contact-dynamics fields. DART `SoftBodyNode` writer attempts also fail
 with a targeted diagnostic instead of being serialized as ordinary URDF links
 with point-mass, spring, damping, and soft mesh topology semantics dropped.
+Together with the SDF writer and PLAN-101 project save/load evidence, this
+closes the current DART 7 Phase 5 writer scope; broader URDF work is parked
+until a new representable contract and focused round-trip tests exist.
 
 Current SDF audit result: `dart/utils/sdf/` has no TinyXML/raw XML parser path
 for SDF semantics. SDF content loading, ambiguous `.xml` SDF classification,
@@ -2583,6 +2586,25 @@ Changelog decision:
   opened.
 - Follow-up: none until an implementation PR exists.
 
+Additional validation for Phase 5 bounded writer closeout:
+
+- Marked Phase 5 complete for the current DART 7 writer scope in this task's
+  README and export-writer plan. Future SDF/URDF writer expansion is parked
+  behind durable criteria in `docs/onboarding/io-parsing.md` instead of keeping
+  the phase open-ended.
+- Existing evidence remains the parser-specific SDF and URDF writer APIs,
+  read/write/read coverage in `INTEGRATION_io_SdfWriter` and
+  `INTEGRATION_io_UrdfWriter`, unsupported-case diagnostics, PLAN-101
+  project/scene save-load coverage in the dartsim engine layer, and the existing
+  DART 7 `CHANGELOG.md` IO/Parsing bullets for SDF and URDF writers.
+- Validation commands for this docs-only closeout:
+  - `git diff --check`
+  - `pixi run check-sdf-sdformat-boundary`
+  - `pixi run lint`
+- Changelog decision: no additional changelog entry. This slice changes task
+  status and durable follow-up criteria only; the unreleased user-visible SDF and
+  URDF writer capabilities already have DART 7 changelog entries.
+
 ## Previous Resume Checkpoint (2026-07-03)
 
 Phase 1 landed on `main` via PR
@@ -2616,18 +2638,16 @@ can be recovered without adopting the old SKEL YAML direction.
 ## Current Branch
 
 `work/skel-format-yaml-decision` — Phase 3 YAML decision, Phase 4 USD
-coordination, Phase 5 export-writer planning, and accumulated SDF/URDF writer
-slices are local on top of the Phase 2 removal commit. The underlying Phase 2
-branch remains `feature/remove-skel-dart7-phase2`.
+coordination, Phase 5 bounded writer-scope closeout, and accumulated SDF/URDF
+writer slices are local on top of the Phase 2 removal commit. The underlying
+Phase 2 branch remains `feature/remove-skel-dart7-phase2`.
 
 ## Immediate Next Step
 
 Continue with the remaining real task work: land Phase 2 after maintainer
-approval, then continue Phase 5 from
-[`05-export-writers-plan.md`](05-export-writers-plan.md) by extending SDF or
-URDF writer coverage beyond the current conservative subsets. PLAN-101 project
-save/load is already owned and verified by the dartsim engine; only revisit it
-here if the scene/project schema itself changes.
+approval, add the resulting PR link to the DART 7 changelog's SKEL-removal
+bullet, and prepare the final dev-task cleanup change. Phase 5 is closed for the
+current DART 7 writer scope unless a maintainer reopens writer scope.
 
 ## Context That Would Be Lost
 
@@ -2641,11 +2661,11 @@ here if the scene/project schema itself changes.
 - Phase 4 is a coordination boundary, not a claim that USD implementation is
   complete. The USD task still owns the OpenUSD-enabled loader, viewer, dartpy,
   dependency, and CI work.
-- Export is part of the work, not a follow-up. SDF/URDF writer round-trip is
+- Export was part of the work, not a follow-up. SDF/URDF writer round-trip is
   the portable interchange path, while dartsim editor save/load is already
-  covered by PLAN-101's project format. The current Phase 5 file is a plan, and
-  the current SDF writer is only the first implementation slice, not an
-  implementation-complete gate.
+  covered by PLAN-101's project format. Phase 5 is complete for the bounded
+  DART 7 writer scope; future SDF/URDF expansion is parked in
+  `docs/onboarding/io-parsing.md`.
 - The old `feature/skel_yaml` prototype SHA (`1dd83e31586`) is no longer
   reachable in this worktree. Do not depend on it for Phase 3 or Phase 5 unless
   another clone still has the object.
@@ -2665,7 +2685,8 @@ pixi run run-cpp-target INTEGRATION_io_SdfWriter
 # git show 1dd83e31586:docs/dev_tasks/skel_format/phase-04-export.md
 ```
 
-Then continue with the remaining task work. For Phase 5, start from this
-folder's `README.md`, `03-yaml-decision.md`, `04-usd-coordination.md`,
-`05-export-writers-plan.md`, and current DART 7 requirements, not from the old
-prototype.
+Then continue with the remaining task work by landing Phase 2 and preparing
+dev-task cleanup. If Phase 5 is reopened later, start from this folder's
+`README.md`, `03-yaml-decision.md`, `04-usd-coordination.md`,
+`05-export-writers-plan.md`, `docs/onboarding/io-parsing.md`, and current
+DART 7 requirements, not from the old prototype.
