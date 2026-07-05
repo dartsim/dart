@@ -11,7 +11,7 @@ description: "DART Retrospect: retrospect on completed work and capture durable 
 
 Use this skill in Codex to run the DART `dart-retrospect` workflow. The editable
 workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Codex skill is a generated Codex adapter entrypoint.
 
 ## Invocation
 

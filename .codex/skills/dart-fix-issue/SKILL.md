@@ -11,7 +11,7 @@ description: "DART Fix Issue: resolve a GitHub issue with a fix and regression t
 
 Use this skill in Codex to run the DART `dart-fix-issue` workflow. The editable
 workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Codex skill is a generated Codex adapter entrypoint.
 
 ## Invocation
 

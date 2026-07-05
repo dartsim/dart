@@ -11,7 +11,7 @@ description: "DART New Team Task: kick off a large team-scale DART task with a d
 
 Use this skill in Codex to run the DART `dart-new-team-task` workflow. The editable
 workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Codex skill is a generated Codex adapter entrypoint.
 
 ## Invocation
 

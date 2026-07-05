@@ -4,10 +4,10 @@
 Different AI coding tools read from different directories:
 - Claude Code: .claude/commands/, .claude/skills/
 - OpenCode: .opencode/command/
-- Codex: .codex/skills/ (domain skills plus command-derived workflow skills)
+- Codex: .codex/skills/ (domain-skill adapters plus workflow skill adapters)
 
 This script keeps them in sync using .claude/ as the current editable source
-for workflow commands and domain skills.
+for workflow sources and domain skills.
 It also verifies that every supported agent has the same effective DART
 capability set, even when tools expose workflows through different UI concepts
 (commands vs skills).
@@ -1118,6 +1118,7 @@ def validate_ai_docs(repo_root: Path) -> bool:
         docs_dir / "verification.md",
         docs_dir / "sessions.md",
         docs_dir / "components.md",
+        docs_dir / "terminology.md",
         docs_dir / "capabilities.json",
     ]
 
@@ -1131,6 +1132,8 @@ def validate_ai_docs(repo_root: Path) -> bool:
         errors.append("AGENTS.md: missing docs/ai/README.md pointer")
     if "docs/ai/principles.md" not in agents_content:
         errors.append("AGENTS.md: missing docs/ai/principles.md pointer")
+    if "docs/ai/terminology.md" not in agents_content:
+        errors.append("AGENTS.md: missing docs/ai/terminology.md pointer")
     if "ai/README.md" not in docs_readme_content:
         errors.append("docs/README.md: missing ai/README.md index link")
 
@@ -1415,7 +1418,7 @@ description: {json.dumps(skill_description)}
 
 Use this skill in Codex to run the DART `{command_name}` workflow. The editable
 workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Codex skill is a generated Codex adapter entrypoint.
 
 ## Invocation
 
@@ -1438,7 +1441,7 @@ def sync_codex_skills(
     target_dir: Path,
     check_only: bool = False,
 ) -> tuple[bool, int, int, int]:
-    """Sync explicit skills plus command-derived workflow skills to Codex."""
+    """Sync domain skills plus workflow skill adapters to Codex."""
     if not skill_source_dir.exists():
         print(f"Source directory not found: {skill_source_dir}")
         return False, -1, 0, 0
@@ -1561,7 +1564,7 @@ def sync_all(check_only: bool = False) -> bool:
         print(f"  Total: {s} synced, {k} unchanged, {o} orphans removed")
     print()
 
-    print("Skills + command workflows (.claude/ -> .codex/skills/):")
+    print("Domain skills + workflow adapters (.claude/ -> .codex/skills/):")
     synced, s, k, o = sync_codex_skills(
         repo_root / ".claude" / "skills",
         repo_root / ".claude" / "commands",
@@ -1597,7 +1600,7 @@ def sync_all(check_only: bool = False) -> bool:
     # Summary
     if check_only:
         if all_synced:
-            print("✓ All AI tool files are in sync")
+            print("✓ All AI adapter entrypoints are in sync")
         else:
             print("✗ Files are out of sync. Run: pixi run sync-ai-commands")
 
