@@ -367,6 +367,45 @@ void expectCylinderShapeRoundTrips(
   expectShapeNodePoseRoundTrips<AspectT>(bodyNode, expected, index, tolerance);
 }
 
+template <class AspectT>
+void expectSphereShapeRoundTrips(
+    const dynamics::BodyNode& bodyNode,
+    const dynamics::BodyNode& expected,
+    std::size_t index,
+    std::size_t expectedCount,
+    double tolerance)
+{
+  const auto* expectedSphere
+      = test::requireShape<AspectT, dynamics::SphereShape>(
+          expected, index, expectedCount);
+  const auto* sphere = test::requireShape<AspectT, dynamics::SphereShape>(
+      bodyNode, index, expectedCount);
+  ASSERT_NE(expectedSphere, nullptr);
+  ASSERT_NE(sphere, nullptr);
+  EXPECT_NEAR(sphere->getRadius(), expectedSphere->getRadius(), tolerance);
+  expectShapeNodePoseRoundTrips<AspectT>(bodyNode, expected, index, tolerance);
+}
+
+void expectVisualColorRoundTrips(
+    const dynamics::BodyNode& bodyNode,
+    const dynamics::BodyNode& expected,
+    std::size_t index,
+    double tolerance)
+{
+  const auto* shapeNode
+      = bodyNode.getShapeNodeWith<dynamics::VisualAspect>(index);
+  const auto* expectedShapeNode
+      = expected.getShapeNodeWith<dynamics::VisualAspect>(index);
+  ASSERT_NE(shapeNode, nullptr);
+  ASSERT_NE(expectedShapeNode, nullptr);
+  ASSERT_NE(shapeNode->getVisualAspect(), nullptr);
+  ASSERT_NE(expectedShapeNode->getVisualAspect(), nullptr);
+  EXPECT_VECTOR_NEAR(
+      shapeNode->getVisualAspect()->getRGBA(),
+      expectedShapeNode->getVisualAspect()->getRGBA(),
+      tolerance);
+}
+
 sdf::ElementPtr getSdfChildElement(
     const sdf::ElementPtr& parent, const std::string& name)
 {
@@ -980,6 +1019,124 @@ TEST(SdfWriter, RoundTripsExistingSinglePendulumFixture)
   ASSERT_NE(collisionBox, nullptr);
   EXPECT_VECTOR_NEAR(
       collisionBox->getSize(), Eigen::Vector3d(0.1, 0.2, 0.3), 1e-12);
+}
+
+//==============================================================================
+TEST(SdfWriter, RoundTripsExistingQuadFixture)
+{
+  const auto original = utils::SdfParser::readSkeleton(
+      common::Uri("dart://sample/sdf/quad.sdf"));
+  ASSERT_NE(original, nullptr);
+  ASSERT_EQ(original->getNumBodyNodes(), 17u);
+  ASSERT_EQ(original->getNumJoints(), 17u);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  const auto path = writeTempSdf(writeResult.value(), "quad");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+  EXPECT_VECTOR_NEAR(reparsed->getGravity(), original->getGravity(), 1e-12);
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+  const auto* originalRootBody = test::requireBodyNode(*original, "Body");
+  const auto* rootBody = test::requireBodyNode(*reparsed, "Body");
+  ASSERT_NE(originalRootBody, nullptr);
+  ASSERT_NE(rootBody, nullptr);
+  const auto* originalRoot = originalRootBody->getParentJoint();
+  const auto* root = rootBody->getParentJoint();
+  ASSERT_NE(originalRoot, nullptr);
+  ASSERT_NE(root, nullptr);
+  expectJointRoundTrips(*root, *originalRoot, 1e-12);
+
+  const std::vector<std::string_view> bodyNames = {
+      "Body",
+      "00FLHip",
+      "01FLThigh",
+      "02FLShin",
+      "03FLFoot",
+      "04FRHip",
+      "05FRThigh",
+      "06FRShin",
+      "07FRFoot",
+      "08BLHip",
+      "09BLThigh",
+      "10BLShin",
+      "11BLFoot",
+      "12BRHip",
+      "13BRThigh",
+      "14BRShin",
+      "15BRFoot",
+  };
+  const std::set<std::string_view> footBodyNames = {
+      "03FLFoot",
+      "07FRFoot",
+      "11BLFoot",
+      "15BRFoot",
+  };
+
+  for (const auto bodyName : bodyNames) {
+    SCOPED_TRACE(bodyName);
+    const auto* originalBody = test::requireBodyNode(*original, bodyName);
+    const auto* body = test::requireBodyNode(*reparsed, bodyName);
+    ASSERT_NE(originalBody, nullptr);
+    ASSERT_NE(body, nullptr);
+    expectBodyInertiaRoundTrips(*body, *originalBody, 1e-12);
+
+    if (footBodyNames.contains(bodyName)) {
+      expectBoxShapeRoundTrips<dynamics::VisualAspect>(
+          *body, *originalBody, 0, 2, 1e-12);
+      expectVisualColorRoundTrips(*body, *originalBody, 0, 1e-6);
+      expectSphereShapeRoundTrips<dynamics::VisualAspect>(
+          *body, *originalBody, 1, 2, 1e-12);
+      expectVisualColorRoundTrips(*body, *originalBody, 1, 1e-6);
+    } else {
+      expectBoxShapeRoundTrips<dynamics::VisualAspect>(
+          *body, *originalBody, 0, 1, 1e-12);
+      expectVisualColorRoundTrips(*body, *originalBody, 0, 1e-6);
+    }
+
+    expectBoxShapeRoundTrips<dynamics::CollisionAspect>(
+        *body, *originalBody, 0, 1, 1e-12);
+  }
+
+  const std::vector<std::string_view> jointNames = {
+      "j_00FLHip",
+      "j_01FLThigh",
+      "j_02FLShin",
+      "j_03FLFoot",
+      "j_04FRHip",
+      "j_05FRThigh",
+      "j_06FRShin",
+      "j_07FRFoot",
+      "j_08BLHip",
+      "j_09BLThigh",
+      "j_10BLShin",
+      "j_11BLFoot",
+      "j_12BRHip",
+      "j_13BRThigh",
+      "j_14BRShin",
+      "j_15BRFoot",
+  };
+
+  for (const auto jointName : jointNames) {
+    SCOPED_TRACE(jointName);
+    const auto* originalJoint
+        = test::requireJoint<dynamics::RevoluteJoint>(*original, jointName);
+    const auto* joint
+        = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, jointName);
+    ASSERT_NE(originalJoint, nullptr);
+    ASSERT_NE(joint, nullptr);
+    expectJointRoundTrips(*joint, *originalJoint, 1e-12);
+    EXPECT_VECTOR_NEAR(joint->getAxis(), originalJoint->getAxis(), 1e-12);
+  }
 }
 
 //==============================================================================

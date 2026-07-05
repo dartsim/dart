@@ -83,7 +83,7 @@ until broader SDF/URDF coverage plus the remaining accepted writer or project
 targets are implemented or durably deferred.
 
 SDF shipped-fixture writer coverage now includes the native converted SKEL
-fixtures, `two_link_revolute_model.sdf`, world-contained
+fixtures, `quad.sdf`, `two_link_revolute_model.sdf`, world-contained
 `issue1193_revolute*.sdf`, `high_version.world`,
 `single_bodynode_skeleton.world`, `test_skeleton_joint.world`, and the
 sensor-bearing `force_torque_test.world` / `force_torque_test2.world` fixtures.
@@ -2003,6 +2003,46 @@ Changelog decision:
 - Entry text: N/A
 - PR-body note: record as drchubo URDF package-mesh round-trip coverage plus
   KR5 root-pose diagnostic coverage if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
+Additional validation for SDF quad root-model fixture coverage:
+
+- Added `SdfWriter.RoundTripsExistingQuadFixture`, which loads
+  `dart://sample/sdf/quad.sdf`, writes it through
+  `SdfParser::tryWriteSkeletonToString()`, reparses the emitted SDF, and
+  compares the DART skeleton semantics imported from the fixture: 17 body
+  nodes, 16 child revolute joints plus the implicit root joint, body inertias,
+  finite joint axis limits, joint topology and axes, repeated visual/collision
+  boxes, foot sphere visuals, shape poses, visual material colors, mobility,
+  and gravity.
+- The test stays on the libsdformat-backed DART SDF parser/writer/reparser
+  path. It does not add XML-level SDF parsing or inspect emitted XML text.
+- Expected source-fixture warnings from libsdformat are the legacy
+  `use_parent_model_frame` element warnings in `quad.sdf`.
+
+Validation commands:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsExistingQuadFixture'`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter` (87 tests)
+- `pixi run check-sdf-sdformat-boundary`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Scope evidence: `CHANGELOG.md` DART 7 IO and Parsing SDF writer bullet
+  already covers the conservative SDF writer, visual material colors, primitive
+  visual/collision geometry, finite effort/velocity limits, and explicit
+  unsupported/lossy diagnostics.
+- Decision: no additional changelog entry. This slice adds fixture-level
+  read/write/read verification for an existing shipped SDF quadruped model
+  without adding a new public API or broadening the documented writer contract.
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: record as quad SDF root-model fixture round-trip verification
+  if a PR is opened.
 - Follow-up: none until an implementation PR exists.
 
 Changelog decision:
