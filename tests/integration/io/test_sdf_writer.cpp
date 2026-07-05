@@ -1495,6 +1495,96 @@ TEST(SdfWriter, RoundTripsExistingSingleBodyWorldFixtures)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsExistingMixedJointWorldFixture)
+{
+  const auto original = utils::SdfParser::readSkeleton(
+      common::Uri("dart://sample/sdf/test/test_skeleton_joint.world"));
+  ASSERT_NE(original, nullptr);
+  ASSERT_EQ(original->getNumBodyNodes(), 5u);
+  ASSERT_EQ(original->getNumJoints(), 5u);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  const auto path = writeTempSdf(writeResult.value(), "mixed_joint_world");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+  EXPECT_VECTOR_NEAR(reparsed->getGravity(), original->getGravity(), 1e-12);
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+  for (std::size_t i = 1; i <= 5; ++i) {
+    const auto bodyName = "link " + std::to_string(i);
+    SCOPED_TRACE(bodyName);
+    const auto* originalBody = test::requireBodyNode(*original, bodyName);
+    const auto* body = test::requireBodyNode(*reparsed, bodyName);
+    ASSERT_NE(originalBody, nullptr);
+    ASSERT_NE(body, nullptr);
+    expectBodyInertiaRoundTrips(*body, *originalBody, 1e-12);
+    expectCylinderShapeRoundTrips<dynamics::VisualAspect>(
+        *body, *originalBody, 0, 1, 1e-12);
+    expectCylinderShapeRoundTrips<dynamics::CollisionAspect>(
+        *body, *originalBody, 0, 1, 1e-12);
+  }
+
+  const auto* originalRootBody = test::requireBodyNode(*original, "link 1");
+  const auto* rootBody = test::requireBodyNode(*reparsed, "link 1");
+  ASSERT_NE(originalRootBody, nullptr);
+  ASSERT_NE(rootBody, nullptr);
+  const auto* originalRoot = originalRootBody->getParentJoint();
+  const auto* root = rootBody->getParentJoint();
+  ASSERT_NE(originalRoot, nullptr);
+  ASSERT_NE(root, nullptr);
+  expectJointRoundTrips(*root, *originalRoot, 1e-12);
+
+  const auto* originalPrismatic = test::requireJoint<dynamics::PrismaticJoint>(
+      *original, "joint_prismatic");
+  const auto* prismatic = test::requireJoint<dynamics::PrismaticJoint>(
+      *reparsed, "joint_prismatic");
+  ASSERT_NE(originalPrismatic, nullptr);
+  ASSERT_NE(prismatic, nullptr);
+  expectJointRoundTrips(*prismatic, *originalPrismatic, 1e-12);
+  EXPECT_VECTOR_NEAR(prismatic->getAxis(), originalPrismatic->getAxis(), 1e-12);
+
+  const auto* originalRevolute = test::requireJoint<dynamics::RevoluteJoint>(
+      *original, "joint_revolute");
+  const auto* revolute = test::requireJoint<dynamics::RevoluteJoint>(
+      *reparsed, "joint_revolute");
+  ASSERT_NE(originalRevolute, nullptr);
+  ASSERT_NE(revolute, nullptr);
+  expectJointRoundTrips(*revolute, *originalRevolute, 1e-12);
+  EXPECT_VECTOR_NEAR(revolute->getAxis(), originalRevolute->getAxis(), 1e-12);
+
+  const auto* originalScrew
+      = test::requireJoint<dynamics::ScrewJoint>(*original, "joint_screw");
+  const auto* screw
+      = test::requireJoint<dynamics::ScrewJoint>(*reparsed, "joint_screw");
+  ASSERT_NE(originalScrew, nullptr);
+  ASSERT_NE(screw, nullptr);
+  expectJointRoundTrips(*screw, *originalScrew, 1e-12);
+  EXPECT_VECTOR_NEAR(screw->getAxis(), originalScrew->getAxis(), 1e-12);
+  EXPECT_NEAR(screw->getPitch(), originalScrew->getPitch(), 1e-12);
+
+  const auto* originalUniversal = test::requireJoint<dynamics::UniversalJoint>(
+      *original, "joint_revolute2");
+  const auto* universal = test::requireJoint<dynamics::UniversalJoint>(
+      *reparsed, "joint_revolute2");
+  ASSERT_NE(originalUniversal, nullptr);
+  ASSERT_NE(universal, nullptr);
+  expectJointRoundTrips(*universal, *originalUniversal, 1e-12);
+  EXPECT_VECTOR_NEAR(
+      universal->getAxis1(), originalUniversal->getAxis1(), 1e-12);
+  EXPECT_VECTOR_NEAR(
+      universal->getAxis2(), originalUniversal->getAxis2(), 1e-12);
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsExistingForceTorqueChainWorldFixture)
 {
   const auto original = utils::SdfParser::readSkeleton(
