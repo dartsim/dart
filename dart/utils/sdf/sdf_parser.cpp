@@ -739,13 +739,25 @@ dynamics::SkeletonPtr readSkeleton(
     const common::Uri& baseUri,
     const ResolvedOptions& options)
 {
+  common::Uri modelBaseUri = baseUri;
+  const std::string modelUriString = model.Uri();
+  if (!modelUriString.empty()) {
+    // Included models carry their source URI; resolve nested relative resources
+    // such as mesh files against that model URI instead of the outer world
+    // file.
+    common::Uri modelUri;
+    if (modelUri.fromStringOrPath(modelUriString)) {
+      modelBaseUri = modelUri;
+    }
+  }
+
   Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
   dynamics::SkeletonPtr newSkeleton = makeSkeleton(model, skeletonFrame);
 
   //--------------------------------------------------------------------------
   // Bodies
   BodyMap sdfBodyNodes
-      = readAllBodyNodes(model, baseUri, options.retriever, skeletonFrame);
+      = readAllBodyNodes(model, modelBaseUri, options.retriever, skeletonFrame);
 
   //--------------------------------------------------------------------------
   // Joints
@@ -808,7 +820,7 @@ dynamics::SkeletonPtr readSkeleton(
 
   // Read aspects here since aspects cannot be added if the BodyNodes haven't
   // created yet.
-  readAspects(newSkeleton, model, baseUri, options.retriever);
+  readAspects(newSkeleton, model, modelBaseUri, options.retriever);
 
   // Set positions to their initial values
   newSkeleton->resetPositions();

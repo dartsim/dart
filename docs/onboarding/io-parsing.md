@@ -69,7 +69,8 @@ Source of truth:
   libsdformat before the legacy URDF/MJCF XML-root fallback
 - `dart/utils/sdf/` uses libsdformat DOM APIs for SDF structure, model/link
   static and self-collision state, named top-level/world model selection, world
-  gravity, inertial,
+  gravity, included model source URIs for relative resource resolution,
+  inertial,
   visual/collision/material, visual shadow and visibility metadata, joint
   topology/pose/axis frame
   resolution/dynamics/limits,
@@ -236,7 +237,10 @@ foot sphere visuals. The root-model issue fixtures cover fixed parent-world
 root semantics, model poses, child revolute and universal joint axes and
 limits, and box/sphere/cylinder visual and collision geometry. The relative
 mesh fixture covers parser-resolved source mesh URI preservation for visual and
-collision mesh geometry. The top-level ground fixture covers imported SDF
+collision mesh geometry, and the top-level include-driver world for that model
+proves included-model relative mesh resources resolve against the included
+model URI and survive writer read/write/read. The top-level ground fixture
+covers imported SDF
 plane-as-DART-box semantics, static world model state, disabled visual shadow
 state, and high ODE friction metadata. The simple world fixtures cover
 high-version SDF input, default-inertial fallback, root-joint semantics,

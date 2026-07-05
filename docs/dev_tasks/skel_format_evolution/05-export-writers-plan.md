@@ -56,7 +56,10 @@ preservation is covered through a custom retriever-backed write/read test, and
 URI-backed mesh material variants are covered by a write/read test that
 preserves the source `sdf::Mesh` URI and re-loads the original multi-material
 glTF resource. A shipped relative-mesh model fixture also proves
-parser-resolved source mesh URIs survive writer read/write/read. Targetless
+parser-resolved source mesh URIs survive writer read/write/read, and the
+top-level include-driver world for that model proves included-model relative
+mesh resources resolve against `sdf::Model::Uri()` and survive writer
+read/write/read. Targetless
 relative mesh references, URI-less in-memory mesh
 material variants, and relative or host-qualified `file` mesh URIs are rejected
 because the writer has no destination SDF URI for resource resolution or
@@ -163,8 +166,10 @@ sphere visuals. The root-model issue fixtures add coverage for fixed
 parent-world root joints recovered through `RootJointType::Fixed`, model poses,
 child revolute axes and limits, parent-world and child universal joints, and
 box/sphere/cylinder visual and collision geometry. The relative mesh fixture
-adds coverage for visual/collision mesh geometry and parser-resolved source
-mesh URI preservation. The top-level `ground.world` fixture adds coverage for
+adds coverage for visual/collision mesh geometry, parser-resolved source mesh
+URI preservation, and the top-level include-driver world path for included
+models with relative mesh resources. The top-level `ground.world` fixture adds
+coverage for
 imported SDF plane-as-DART-box semantics, static world model state, disabled
 visual shadow state, and high ODE friction metadata. The simple world coverage
 includes high-version SDF input, default-inertial fallback, root-joint

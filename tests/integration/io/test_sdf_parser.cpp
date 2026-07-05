@@ -1466,6 +1466,43 @@ f 1 2 3
 }
 
 //==============================================================================
+TEST(SdfParser, IncludedModelRelativeMeshUsesIncludedModelUri)
+{
+  const auto skeleton = SdfParser::readSkeleton(
+      common::Uri(
+          "dart://sample/sdf/test/include_relative_mesh/"
+          "include_relative_mesh.world"));
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_EQ(skeleton->getName(), "relative_mesh_model");
+
+  auto* body = skeleton->getBodyNode("mesh_body");
+  ASSERT_NE(body, nullptr);
+  ASSERT_EQ(body->getNumShapeNodesWith<dynamics::VisualAspect>(), 1u);
+  ASSERT_EQ(body->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
+
+  const auto* visualNode = body->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visualNode, nullptr);
+  const auto visualMesh = std::dynamic_pointer_cast<const dynamics::MeshShape>(
+      visualNode->getShape());
+  ASSERT_NE(visualMesh, nullptr);
+  EXPECT_EQ(
+      visualMesh->getMeshUri2().toString(),
+      "dart://sample/sdf/test/include_relative_mesh/included_model/meshes/"
+      "relative_box.obj");
+
+  const auto* collisionNode
+      = body->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(collisionNode, nullptr);
+  const auto collisionMesh
+      = std::dynamic_pointer_cast<const dynamics::MeshShape>(
+          collisionNode->getShape());
+  ASSERT_NE(collisionMesh, nullptr);
+  EXPECT_EQ(
+      collisionMesh->getMeshUri2().toString(),
+      visualMesh->getMeshUri2().toString());
+}
+
+//==============================================================================
 TEST(SdfParser, MassWithoutInertiaUsesIsotropicTensor)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();

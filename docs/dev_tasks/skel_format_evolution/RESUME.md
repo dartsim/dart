@@ -100,7 +100,10 @@ semantics represented by SDF static model state. The issue fixture coverage
 also includes parent-world and child universal joints from
 `test_issue1596.model`. The relative mesh model coverage compares
 parser-resolved source mesh URIs for visual and collision mesh geometry. The
-top-level `ground.world` coverage compares imported SDF plane-as-DART-box
+top-level include-driver relative mesh world fixture now proves included-model
+relative mesh resources resolve against `sdf::Model::Uri()` rather than the
+outer world URI before writer read/write/read. The top-level `ground.world`
+coverage compares imported SDF plane-as-DART-box
 semantics, static world model state, disabled visual shadow state, and high ODE
 friction metadata. The
 force-torque coverage does not claim SDF sensor or physics metadata
@@ -329,6 +332,29 @@ Additional validation for the writer-API-home docs:
 Additional validation for PLAN-101 project save/load evidence:
 
 - `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target UNIT_dartsim_engine && CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target UNIT_dartsim_ui_ProjectActions && ./build/default/cpp/Release/bin/UNIT_dartsim_engine --gtest_filter="SceneIO.*:SimEngine.ProjectFileRoundTrip:SimEngine.ProjectDirtyStateTracksSavedSceneSnapshot:SimEngine.LoadAndNewProjectResetProjectState:SimEngine.FailedProjectSaveAndLoadPreserveCurrentState:RecorderPlayer.RecordingRoundTripsThroughStream" && ./build/default/cpp/Release/bin/UNIT_dartsim_ui_ProjectActions'`
+
+Additional validation for included SDF model relative mesh resources:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfParser && CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfParser --gtest_filter=SdfParser.IncludedModelRelativeMeshUsesIncludedModelUri && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsExistingRelativeMeshIncludeWorldFixture'`
+
+Changelog decision:
+
+- Mode: draft
+- Base evidence: local diff on `work/skel-format-yaml-decision`, compared
+  against the DART 7 `CHANGELOG.md` IO and Parsing section.
+- Scope evidence: `dart/utils/sdf/sdf_parser.cpp`,
+  `tests/integration/io/test_sdf_parser.cpp`,
+  `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
+  and this SKEL evolution task folder.
+- Decision: entry required.
+- Target section: `CHANGELOG.md` -> `DART 7.0.0 (TBD)` -> `IO and Parsing`.
+- Entry text: Fixed SDF world includes so relative meshes inside included
+  models resolve against the included model URI and survive SDF writer
+  read/write/read round-trips.
+- PR-body note: Record this as an SDF parser resource-base fix plus
+  include-driver world writer round-trip coverage if a PR is opened.
+- Follow-up: add PR link after PR creation, pending explicit approval to push
+  or update the PR.
 
 Additional validation for absolute non-file mesh URI writer coverage:
 

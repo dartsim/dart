@@ -202,6 +202,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Modernized URDF/SDF/MJCF loading APIs around DART 7 parser names, cleaner
   resource-retriever ownership, and parser-specific SDF selection of named
   models from multi-model world files.
+- Fixed SDF world includes so relative meshes inside included models resolve
+  against the included model URI and survive SDF writer read/write/read
+  round-trips.
 - Added a conservative SDF writer for `Skeleton` round-trips, covering links,
   model self-collision state, non-default skeleton gravity through SDF world
   gravity,
