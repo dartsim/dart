@@ -63,7 +63,6 @@
 #include <thread>
 #include <type_traits>
 #include <typeinfo>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -171,27 +170,31 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
   return nullptr;
 }
 
-std::vector<char> findShallowSupportedFreeRoots(
+void findShallowSupportedFreeRoots(
     const std::vector<dynamics::SkeletonPtr>& skeletons,
     const collision::CollisionResult& contacts,
-    const Eigen::Vector3d& gravity)
+    const Eigen::Vector3d& gravity,
+    std::vector<char>& supported)
 {
-  std::vector<char> supported(skeletons.size(), false);
+  supported.clear();
+  supported.resize(skeletons.size(), false);
 
   const double gravityNorm = gravity.norm();
   if (contacts.getNumContacts() == 0u || gravityNorm <= 0.0)
-    return supported;
+    return;
 
   const Eigen::Vector3d up = -gravity / gravityNorm;
   constexpr double kSupportContactPenetrationTolerance = 1e-4;
   constexpr double kSupportNormalMinVerticalComponent = 0.5;
 
-  std::unordered_map<const dynamics::Skeleton*, std::size_t> skeletonToIndex;
-  skeletonToIndex.reserve(skeletons.size());
-  for (std::size_t i = 0; i < skeletons.size(); ++i) {
-    if (skeletons[i])
-      skeletonToIndex.emplace(skeletons[i].get(), i);
-  }
+  const auto findSkeletonIndex
+      = [&](const dynamics::Skeleton* skeleton) -> std::size_t {
+    for (std::size_t i = 0; i < skeletons.size(); ++i) {
+      if (skeletons[i].get() == skeleton)
+        return i;
+    }
+    return skeletons.size();
+  };
 
   auto markIfSupportedRoot = [&](const auto& bodyNode,
                                  const auto& supportBodyNode,
@@ -244,9 +247,9 @@ std::vector<char> findShallowSupportedFreeRoots(
     if (bodyHeightAboveSupport < -kSupportContactPenetrationTolerance)
       return;
 
-    const auto it = skeletonToIndex.find(skeleton);
-    if (it != skeletonToIndex.end())
-      supported[it->second] = true;
+    const auto index = findSkeletonIndex(skeleton);
+    if (index < supported.size())
+      supported[index] = true;
   };
 
   for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
@@ -258,8 +261,6 @@ std::vector<char> findShallowSupportedFreeRoots(
     markIfSupportedRoot(
         bodyNode2, bodyNode1, -contact.normal, contact.penetrationDepth);
   }
-
-  return supported;
 }
 
 bool hasFiniteNonzeroVelocity(const Eigen::Vector3d& velocity)
@@ -365,6 +366,10 @@ void World::reserveMemoryManagerForSimulationShape()
   if (frameAllocator.usableCapacity() < frameReservation)
     (void)frameAllocator.allocate(frameReservation);
   frameAllocator.reset();
+
+  mPreSolveFreeRootVelocityScratch.reserve(numSkeletons);
+  mShallowSupportedFreeRootScratch.reserve(numSkeletons);
+  mDisturbedThisStepScratch.reserve(numSkeletons);
 }
 
 //==============================================================================
@@ -375,6 +380,9 @@ void World::enterSimulationMode()
 
   refreshSkeletonDofIndices();
   syncShallowSupportFreeRootVelocityStates();
+  reserveMemoryManagerForSimulationShape();
+  if (mConstraintSolver)
+    mConstraintSolver->prepareForSimulation();
   reserveMemoryManagerForSimulationShape();
   mSimulationModeStructuralVersion
       = dynamics::Skeleton::getGlobalStructuralVersion();
@@ -420,11 +428,13 @@ void World::syncShallowSupportFreeRootVelocityStates()
 }
 
 //==============================================================================
-std::vector<World::FreeRootVelocitySnapshot> World::snapshotFreeRootVelocities()
+const std::vector<World::FreeRootVelocitySnapshot>&
+World::snapshotFreeRootVelocities()
 {
   syncShallowSupportFreeRootVelocityStates();
 
-  std::vector<FreeRootVelocitySnapshot> snapshots(mSkeletons.size());
+  mPreSolveFreeRootVelocityScratch.clear();
+  mPreSolveFreeRootVelocityScratch.resize(mSkeletons.size());
 
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
     const auto& skeleton = mSkeletons[i];
@@ -441,7 +451,7 @@ std::vector<World::FreeRootVelocitySnapshot> World::snapshotFreeRootVelocities()
       continue;
 
     const auto& state = mShallowSupportFreeRootVelocityStates[i];
-    auto& snapshot = snapshots[i];
+    auto& snapshot = mPreSolveFreeRootVelocityScratch[i];
     snapshot.mSkeleton = skeleton.get();
     snapshot.mValid = true;
     snapshot.mVelocityEditedSinceLastStep
@@ -451,7 +461,7 @@ std::vector<World::FreeRootVelocitySnapshot> World::snapshotFreeRootVelocities()
     snapshot.mAngular = rootBody->getAngularVelocity();
   }
 
-  return snapshots;
+  return mPreSolveFreeRootVelocityScratch;
 }
 
 //==============================================================================
@@ -1077,19 +1087,20 @@ void World::step(bool _resetCommand)
           });
     }
 
-    const std::vector<FreeRootVelocitySnapshot> preSolveFreeRootVelocities
-        = snapshotFreeRootVelocities();
+    const auto& preSolveFreeRootVelocities = snapshotFreeRootVelocities();
 
     {
       DART_PROFILE_SCOPED_N("World::step - Solve constraints");
       mConstraintSolver->solve();
     }
 
-    const std::vector<char> shallowSupportedFreeRoots
-        = findShallowSupportedFreeRoots(
-            mSkeletons, mConstraintSolver->getLastCollisionResult(), mGravity);
+    findShallowSupportedFreeRoots(
+        mSkeletons,
+        mConstraintSolver->getLastCollisionResult(),
+        mGravity,
+        mShallowSupportedFreeRootScratch);
     clearUnsupportedShallowSupportFreeRootVelocityStates(
-        shallowSupportedFreeRoots, preSolveFreeRootVelocities);
+        mShallowSupportedFreeRootScratch, preSolveFreeRootVelocities);
 
     {
       DART_PROFILE_SCOPED_N("World::step - Integrate positions");
@@ -1107,8 +1118,8 @@ void World::step(bool _resetCommand)
               skel->setImpulseApplied(false);
             }
 
-            if (i < shallowSupportedFreeRoots.size()
-                && shallowSupportedFreeRoots[i]) {
+            if (i < mShallowSupportedFreeRootScratch.size()
+                && mShallowSupportedFreeRootScratch[i]) {
               suppressShallowSupportedFreeRootDrift(
                   skel,
                   mGravity,
@@ -1167,7 +1178,8 @@ void World::step(bool _resetCommand)
   // after _resetCommand clears the actuation vectors below. Disturbance
   // tracking is only needed while contact islands exist; unconstrained active
   // scenes cannot sleep.
-  std::vector<char> disturbedThisStep;
+  auto& disturbedThisStep = mDisturbedThisStepScratch;
+  disturbedThisStep.clear();
   const bool trackDisturbances
       = deactivationEnabled
         && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0;
@@ -1242,8 +1254,7 @@ void World::step(bool _resetCommand)
         });
   }
 
-  const std::vector<FreeRootVelocitySnapshot> preSolveFreeRootVelocities
-      = snapshotFreeRootVelocities();
+  const auto& preSolveFreeRootVelocities = snapshotFreeRootVelocities();
 
   // Detect activated constraints and compute constraint impulses
   {
@@ -1251,11 +1262,13 @@ void World::step(bool _resetCommand)
     mConstraintSolver->solve();
   }
 
-  const std::vector<char> shallowSupportedFreeRoots
-      = findShallowSupportedFreeRoots(
-          mSkeletons, mConstraintSolver->getLastCollisionResult(), mGravity);
+  findShallowSupportedFreeRoots(
+      mSkeletons,
+      mConstraintSolver->getLastCollisionResult(),
+      mGravity,
+      mShallowSupportedFreeRootScratch);
   clearUnsupportedShallowSupportFreeRootVelocityStates(
-      shallowSupportedFreeRoots, preSolveFreeRootVelocities);
+      mShallowSupportedFreeRootScratch, preSolveFreeRootVelocities);
 
   {
     DART_PROFILE_SCOPED_N("World::step - Integrate positions");
@@ -1302,8 +1315,8 @@ void World::step(bool _resetCommand)
             skel->setImpulseApplied(false);
           }
 
-          if (i < shallowSupportedFreeRoots.size()
-              && shallowSupportedFreeRoots[i]) {
+          if (i < mShallowSupportedFreeRootScratch.size()
+              && mShallowSupportedFreeRootScratch[i]) {
             suppressShallowSupportedFreeRootDrift(
                 skel,
                 mGravity,

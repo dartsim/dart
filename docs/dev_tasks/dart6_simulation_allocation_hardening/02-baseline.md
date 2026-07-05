@@ -248,3 +248,138 @@ pixi run build-tests PASSED
 pixi run cmake --build build/default/cpp/Release --target INTEGRATION_StepAllocation --parallel PASSED
 ctest --test-dir build/default/cpp/Release -R StepAllocation --output-on-failure PASSED
 ```
+
+## WP-D6M.5 evidence
+
+### Commands run
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target INTEGRATION_StepAllocation UNIT_common_Profile --parallel
+./build/default/cpp/Release/tests/integration/INTEGRATION_StepAllocation '--gtest_filter=WorldSimulationModeMemoryManager.*:StepAllocation.*'
+DART_TEST_ALLOCATION_BACKTRACE=1 ./build/default/cpp/Release/tests/integration/INTEGRATION_StepAllocation --gtest_filter='StepAllocation.ReportsWorldStepAllocationBaseline'
+DART_PROFILE_COLOR=0 ./build/default/cpp/Release/tests/benchmark/integration/boxes_headless 8 2000 500 > /tmp/dart_d6m5_boxes_headless.log
+diff -u <(rg '^step' docs/dev_tasks/dart6_simulation_allocation_hardening/baseline/boxes_headless.log) <(rg '^step' /tmp/dart_d6m5_boxes_headless.log)
+```
+
+### Allocation reporting output
+
+Native DART collision detector scene (`native_dart_boxes`,
+`boxes_per_side=3`, `warmup_steps=50`, `measured_steps=100`,
+`last_step_contacts=108`):
+
+```text
+operator_new_count=0 operator_new_bytes=0
+operator_new_count_per_step=0.000 operator_new_bytes_per_step=0.000
+raw_malloc_count=0 raw_malloc_bytes=0
+raw_malloc_count_per_step=0.000 raw_malloc_bytes_per_step=0.000
+counting_allocator_allocate_count=0 counting_allocator_allocate_bytes=0
+counting_allocator_deallocate_count=0 counting_allocator_deallocate_bytes=0
+counting_allocator_allocate_count_per_step=0.000
+```
+
+Bullet comparison scene (`bullet_boxes`, same shape; external-backend
+comparison, not the strict native gate):
+
+```text
+operator_new_count=0 operator_new_bytes=0
+operator_new_count_per_step=0.000 operator_new_bytes_per_step=0.000
+raw_malloc_count=84 raw_malloc_bytes=133536
+raw_malloc_count_per_step=0.840 raw_malloc_bytes_per_step=1335.360
+counting_allocator_allocate_count=0 counting_allocator_allocate_bytes=0
+counting_allocator_deallocate_count=0 counting_allocator_deallocate_bytes=0
+counting_allocator_allocate_count_per_step=0.000
+```
+
+### Backtrace attribution
+
+With raw malloc-family sampling enabled in the allocation harness, the native
+DART collision scene reported `distinct_sites=0` and `dropped_samples=0`.
+The Bullet comparison retained one raw-malloc site
+(`ConstraintSolver::solveConstrainedGroups`, 84 allocations / 133536 bytes
+over 100 measured steps). Operator-new and World base/counting allocator
+surfaces were zero for both scenes.
+
+### Bit-exactness check
+
+`boxes_headless 8 2000 500` step checkpoints matched
+`baseline/boxes_headless.log` exactly (`diff` output empty).
+
+### Implementation note
+
+The closure removed the measured native residuals by retaining the Dantzig
+LDLT-removal tmp buffer in `DantzigLcpScratch`, reusing World free-root and
+support-detection scratch storage, replacing a per-step support-detection map
+with allocation-free lookup, scanning body external wrenches directly in
+`Skeleton::checkExternalDisturbanceAndReset()`, and bounding profiler frame
+samples so `Profiler::markFrame()` no longer grows during steady-state steps.
+
+## WP-D6M.6 evidence
+
+### Commands run
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target INTEGRATION_StepAllocation --parallel
+./build/default/cpp/Release/tests/integration/INTEGRATION_StepAllocation '--gtest_filter=StepAllocation.Native*:*ExternalBackends*:StepAllocation.AllocationGateRejectsInjectedAllocationMeasurement'
+pixi run cmake --build build/default/cpp/Release --target INTEGRATION_StepAllocation UNIT_common_Profile boxes_headless --parallel
+./build/default/cpp/Release/tests/integration/INTEGRATION_StepAllocation '--gtest_filter=WorldSimulationModeMemoryManager.*:StepAllocation.*'
+ctest --test-dir build/default/cpp/Release -R '(Profile|StepAllocation)' --output-on-failure
+DART_PROFILE_COLOR=0 ./build/default/cpp/Release/tests/benchmark/integration/boxes_headless 8 2000 500 > /tmp/dart_d6m6_boxes_headless.log
+diff -u <(rg '^step' docs/dev_tasks/dart6_simulation_allocation_hardening/baseline/boxes_headless.log) <(rg '^step' /tmp/dart_d6m6_boxes_headless.log)
+pixi run lint
+```
+
+### First-post-bake gate output
+
+Native DART collision strict gates (`boxes_per_side=3`, one measured step,
+`last_step_contacts=108`) assert all three surfaces:
+
+```text
+native_dart_explicit_first_post_bake_gate:
+operator_new_count=0 operator_new_bytes=0
+raw_malloc_count=0 raw_malloc_bytes=0
+counting_allocator_allocate_count=0 counting_allocator_allocate_bytes=0
+
+native_dart_implicit_second_step_gate:
+operator_new_count=0 operator_new_bytes=0
+raw_malloc_count=0 raw_malloc_bytes=0
+counting_allocator_allocate_count=0 counting_allocator_allocate_bytes=0
+```
+
+The raw-malloc-specific native tests reported the same zero values for
+explicit first post-bake and implicit second-step paths on this Linux/glibc
+host. On ASan, codecov, or non-glibc hosts, the raw-malloc gate records a
+GTest skip instead of a pass.
+
+### External-backend compatibility gates
+
+Bullet and ODE are intentionally gated only on the World base allocator
+surface, because the global counters include backend-internal allocation:
+
+```text
+bullet_explicit_first_post_bake_base_gate counting_allocator_allocate_count=0
+ode_explicit_first_post_bake_base_gate counting_allocator_allocate_count=0
+bullet_implicit_second_step_base_gate counting_allocator_allocate_count=0
+ode_implicit_second_step_base_gate counting_allocator_allocate_count=0
+```
+
+The same run recorded nonzero global/raw counts for Bullet and ODE, as
+expected for external-backend compatibility reporting rather than native strict
+gate evidence.
+
+### Verification summary
+
+`WorldSimulationModeMemoryManager.*:StepAllocation.*` passed all 16 tests.
+Focused ctest passed `INTEGRATION_StepAllocation` and `UNIT_common_Profile`.
+The `boxes_headless 8 2000 500` checkpoint diff against
+`baseline/boxes_headless.log` was empty. `pixi run lint` passed.
+
+### Implementation note
+
+The gates initially exposed allocations that the warm reporting test could not
+see: first-step contact/vector double-buffer growth, Dantzig LDLT-removal
+scratch under-reservation, deactivation group scratch, and built-in profiler
+first-visit node allocation. WP-D6M.6 closes those by preparing solver contact
+and group scratch from `World::enterSimulationMode()`, mirroring reusable
+contact-vector capacity, reserving Dantzig scratch to the LDLT removal bound,
+reserving deactivation group scratch, and changing the built-in profiler to use
+a per-thread pre-reserved node arena with `string_view` labels/sources.

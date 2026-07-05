@@ -101,6 +101,9 @@ protected:
   // Documentation inherited.
   void solveConstrainedGroup(ConstrainedGroup& group) override;
 
+  // Documentation inherited.
+  void reserveConstrainedGroupScratch(const ConstrainedGroup& group) override;
+
   // Documentation inherited. Only invoked when split impulse is enabled.
   void solvePositionConstrainedGroup(ConstrainedGroup& group) override;
 

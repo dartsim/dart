@@ -1,0 +1,103 @@
+{
+  "context": {
+    "date": "2026-07-05T12:43:52-07:00",
+    "host_name": "mark26",
+    "executable": "/home/js/dev/dartsim/dart/task_9-mem620/build/default/cpp/Release/bin/BM_INTEGRATION_empty",
+    "num_cpus": 32,
+    "mhz_per_cpu": 5300,
+    "cpu_scaling_enabled": true,
+    "aslr_enabled": false,
+    "caches": [
+      {
+        "type": "Data",
+        "level": 1,
+        "size": 49152,
+        "num_sharing": 2
+      },
+      {
+        "type": "Instruction",
+        "level": 1,
+        "size": 32768,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 2,
+        "size": 2097152,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 3,
+        "size": 37748736,
+        "num_sharing": 32
+      }
+    ],
+    "load_avg": [6.74756,14.5767,16.7822],
+    "library_version": "v1.9.5",
+    "library_build_type": "release",
+    "json_schema_version": 1
+  },
+  "benchmarks": [
+    {
+      "name": "BM_Empty_mean",
+      "family_index": 0,
+      "per_family_instance_index": 0,
+      "run_name": "BM_Empty",
+      "run_type": "aggregate",
+      "repetitions": 5,
+      "threads": 1,
+      "aggregate_name": "mean",
+      "aggregate_unit": "time",
+      "iterations": 5,
+      "real_time": 5.3679104894399630e-10,
+      "cpu_time": 5.3919999999981622e-10,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_Empty_median",
+      "family_index": 0,
+      "per_family_instance_index": 0,
+      "run_name": "BM_Empty",
+      "run_type": "aggregate",
+      "repetitions": 5,
+      "threads": 1,
+      "aggregate_name": "median",
+      "aggregate_unit": "time",
+      "iterations": 5,
+      "real_time": 5.2194809541106227e-10,
+      "cpu_time": 5.4899999999986203e-10,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_Empty_stddev",
+      "family_index": 0,
+      "per_family_instance_index": 0,
+      "run_name": "BM_Empty",
+      "run_type": "aggregate",
+      "repetitions": 5,
+      "threads": 1,
+      "aggregate_name": "stddev",
+      "aggregate_unit": "time",
+      "iterations": 5,
+      "real_time": 3.7808216992022116e-11,
+      "cpu_time": 3.4672755875318242e-11,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_Empty_cv",
+      "family_index": 0,
+      "per_family_instance_index": 0,
+      "run_name": "BM_Empty",
+      "run_type": "aggregate",
+      "repetitions": 5,
+      "threads": 1,
+      "aggregate_name": "cv",
+      "aggregate_unit": "percentage",
+      "iterations": 5,
+      "real_time": 7.0433769464674251e-02,
+      "cpu_time": 6.4304072469083942e-02,
+      "time_unit": "ns"
+    }
+  ]
+}

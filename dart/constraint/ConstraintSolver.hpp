@@ -234,6 +234,10 @@ public:
   /// Solve constraint impulses and apply them to the skeletons
   void solve();
 
+  /// Prepares retained contact, group, and solver scratch for the current
+  /// collision state without applying impulses.
+  void prepareForSimulation();
+
   /// Enable or disable split impulse position correction. Defaults to disabled,
   /// in which case the existing Baumgarte (ERP/ERV) penetration correction in
   /// the velocity solve is preserved unchanged.
@@ -303,6 +307,9 @@ protected:
 
   /// Solve constrained groups
   void solveConstrainedGroups();
+
+  /// Reserve concrete solver scratch for one already-built constrained group.
+  virtual void reserveConstrainedGroupScratch(const ConstrainedGroup& group);
 
   /// Return true if at least one of colliding body is soft body
   bool isSoftContact(

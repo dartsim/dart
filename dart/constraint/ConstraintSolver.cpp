@@ -714,6 +714,29 @@ void ConstraintSolver::solve()
 }
 
 //==============================================================================
+void ConstraintSolver::prepareForSimulation()
+{
+  DART_PROFILE_SCOPED_N("ConstraintSolver::prepareForSimulation");
+
+  constexpr int kPreparationPasses = 2;
+  for (int pass = 0; pass < kPreparationPasses; ++pass) {
+    updateConstraints();
+    buildConstrainedGroups();
+
+    const auto groupCount = mConstrainedGroups.size();
+    mGroupResting.reserve(groupCount);
+    mGroupAllSleepCandidates.reserve(groupCount);
+    mGroupPreserveSleepCandidates.reserve(groupCount);
+    mGroupAlreadyRestingScratch.reserve(groupCount);
+    mGroupSolvedToRestScratch.reserve(groupCount);
+
+    for (const auto& group : mConstrainedGroups) {
+      reserveConstrainedGroupScratch(group);
+    }
+  }
+}
+
+//==============================================================================
 void ConstraintSolver::setFromOtherConstraintSolver(
     const ConstraintSolver& other)
 {
@@ -910,6 +933,8 @@ void ConstraintSolver::updateConstraints()
     mReusableContactConstraints.swap(mContactConstraints);
   } else {
     mContactConstraints.clear();
+    if (mReusableContactConstraints.capacity() < mContactConstraints.capacity())
+      mReusableContactConstraints.reserve(mContactConstraints.capacity());
     mReusableContactConstraints.clear();
   }
 
@@ -2452,6 +2477,13 @@ void ConstraintSolver::solveConstrainedGroups()
       skeleton->setResting(true);
     }
   }
+}
+
+//==============================================================================
+void ConstraintSolver::reserveConstrainedGroupScratch(
+    const ConstrainedGroup& /*group*/)
+{
+  // Base solvers do not own extra per-group scratch.
 }
 
 //==============================================================================

@@ -1,0 +1,30 @@
+date: 2026-07-05T19:43:52Z
+commit: 23ee2b618516bb196aad4ee1f893d6cbc70daa11
+worktree_dirty: yes
+diff_stat:
+   dart/common/detail/profiler.cpp                    | 126 +++++---
+   dart/common/detail/profiler.hpp                    |  10 +
+   dart/constraint/BoxedLcpConstraintSolver.cpp       | 110 +++++--
+   dart/constraint/BoxedLcpConstraintSolver.hpp       |   3 +
+   dart/constraint/ConstraintSolver.cpp               |  32 ++
+   dart/constraint/ConstraintSolver.hpp               |   7 +
+   dart/constraint/DantzigBoxedLcpSolver.cpp          |  39 ++-
+   dart/constraint/DantzigBoxedLcpSolver.hpp          |   5 +
+   dart/dynamics/Skeleton.cpp                         |  26 +-
+   dart/lcpsolver/dantzig/DantzigLcp.cpp              |  16 +-
+   dart/lcpsolver/dantzig/DantzigLcp.hpp              |   5 +
+   dart/simulation/World.cpp                          |  87 +++---
+   dart/simulation/World.hpp                          |   6 +-
+   .../02-baseline.md                                 | 135 ++++++++
+   .../README.md                                      |  68 +++--
+   .../RESUME.md                                      |  37 ++-
+   .../run_baseline.sh                                |   7 +
+   tests/integration/AllocationCounting.cpp           |   5 +
+   tests/integration/AllocationCounting.hpp           |   8 +-
+   tests/integration/CMakeLists.txt                   |   3 +
+   tests/integration/test_StepAllocation.cpp          | 339 +++++++++++++++++++--
+   21 files changed, 892 insertions(+), 182 deletions(-)
+host: Linux 7.0.0-27-generic x86_64 GNU/Linux
+cpu: 13th Gen Intel(R) Core(TM) i9-13950HX
+cores: 32
+governor: powersave

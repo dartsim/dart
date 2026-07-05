@@ -1,0 +1,45 @@
+2026-07-05T12:45:33-07:00
+Running /home/js/dev/dartsim/dart/task_9-mem620/build/default/cpp/Release/bin/BM_INTEGRATION_contact_container
+Run on (32 X 5300 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x16)
+  L1 Instruction 32 KiB (x16)
+  L2 Unified 2048 KiB (x16)
+  L3 Unified 36864 KiB (x1)
+Load Average: 11.12, 13.60, 16.18
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+----------------------------------------------------------------------------------------------------
+Benchmark                                          Time             CPU   Iterations UserCounters...
+----------------------------------------------------------------------------------------------------
+BM_ContactContainerActive/60/0/1_mean            928 ms          928 ms            5 contacts=96 items_per_second=13.0295k/s mobile=60 resting=0 sim_s/s=0.217158/s engine=dart threads=1
+BM_ContactContainerActive/60/0/1_median          904 ms          904 ms            5 contacts=96 items_per_second=13.2704k/s mobile=60 resting=0 sim_s/s=0.221174/s engine=dart threads=1
+BM_ContactContainerActive/60/0/1_stddev         90.8 ms         90.8 ms            5 contacts=0 items_per_second=1.24385k/s mobile=0 resting=0 sim_s/s=0.0207308/s engine=dart threads=1
+BM_ContactContainerActive/60/0/1_cv             9.79 %          9.79 %             5 contacts=0.00% items_per_second=9.55% mobile=0.00% resting=0.00% sim_s/s=9.55% engine=dart threads=1
+BM_ContactContainerActive/60/0/16_mean           883 ms          883 ms            5 contacts=96 items_per_second=13.7301k/s mobile=60 resting=0 sim_s/s=0.228835/s engine=dart threads=16
+BM_ContactContainerActive/60/0/16_median         855 ms          854 ms            5 contacts=96 items_per_second=14.0477k/s mobile=60 resting=0 sim_s/s=0.234128/s engine=dart threads=16
+BM_ContactContainerActive/60/0/16_stddev         103 ms          103 ms            5 contacts=0 items_per_second=1.44001k/s mobile=0 resting=0 sim_s/s=0.0240002/s engine=dart threads=16
+BM_ContactContainerActive/60/0/16_cv           11.71 %         11.71 %             5 contacts=0.00% items_per_second=10.49% mobile=0.00% resting=0.00% sim_s/s=10.49% engine=dart threads=16
+BM_ContactContainerActive/60/1/1_mean           3226 ms         3226 ms            5 contacts=249 items_per_second=3.72715k/s mobile=60 resting=0 sim_s/s=0.0621191/s engine=ode threads=1
+BM_ContactContainerActive/60/1/1_median         3181 ms         3181 ms            5 contacts=249 items_per_second=3.77248k/s mobile=60 resting=0 sim_s/s=0.0628747/s engine=ode threads=1
+BM_ContactContainerActive/60/1/1_stddev          161 ms          161 ms            5 contacts=0 items_per_second=178.115/s mobile=0 resting=0 sim_s/s=2.96859m/s engine=ode threads=1
+BM_ContactContainerActive/60/1/1_cv             4.99 %          4.99 %             5 contacts=0.00% items_per_second=4.78% mobile=0.00% resting=0.00% sim_s/s=4.78% engine=ode threads=1
+BM_ContactContainerActive/60/1/16_mean          2087 ms         2086 ms            5 contacts=249 items_per_second=6.2506k/s mobile=60 resting=0 sim_s/s=0.104177/s engine=ode threads=16
+BM_ContactContainerActive/60/1/16_median        1655 ms         1655 ms            5 contacts=249 items_per_second=7.24958k/s mobile=60 resting=0 sim_s/s=0.120826/s engine=ode threads=16
+BM_ContactContainerActive/60/1/16_stddev         741 ms          741 ms            5 contacts=0 items_per_second=1.78575k/s mobile=0 resting=0 sim_s/s=0.0297624/s engine=ode threads=16
+BM_ContactContainerActive/60/1/16_cv           35.51 %         35.49 %             5 contacts=0.00% items_per_second=28.57% mobile=0.00% resting=0.00% sim_s/s=28.57% engine=ode threads=16
+BM_ContactContainerActive/120/0/1_mean          5183 ms         5182 ms            5 contacts=272 items_per_second=4.63181k/s mobile=120 resting=0 sim_s/s=0.0385984/s engine=dart threads=1
+BM_ContactContainerActive/120/0/1_median        5193 ms         5193 ms            5 contacts=272 items_per_second=4.62159k/s mobile=120 resting=0 sim_s/s=0.0385133/s engine=dart threads=1
+BM_ContactContainerActive/120/0/1_stddev        52.3 ms         52.1 ms            5 contacts=0 items_per_second=46.9878/s mobile=0 resting=0 sim_s/s=391.565u/s engine=dart threads=1
+BM_ContactContainerActive/120/0/1_cv            1.01 %          1.01 %             5 contacts=0.00% items_per_second=1.01% mobile=0.00% resting=0.00% sim_s/s=1.01% engine=dart threads=1
+BM_ContactContainerActive/120/0/16_mean         4594 ms         4592 ms            5 contacts=272 items_per_second=5.22961k/s mobile=120 resting=0 sim_s/s=0.0435801/s engine=dart threads=16
+BM_ContactContainerActive/120/0/16_median       4605 ms         4603 ms            5 contacts=272 items_per_second=5.21393k/s mobile=120 resting=0 sim_s/s=0.0434494/s engine=dart threads=16
+BM_ContactContainerActive/120/0/16_stddev        131 ms          131 ms            5 contacts=0 items_per_second=149.264/s mobile=0 resting=0 sim_s/s=1.24387m/s engine=dart threads=16
+BM_ContactContainerActive/120/0/16_cv           2.86 %          2.86 %             5 contacts=0.00% items_per_second=2.85% mobile=0.00% resting=0.00% sim_s/s=2.85% engine=dart threads=16
+BM_ContactContainerActive/120/1/1_mean          6871 ms         6870 ms            5 contacts=542 items_per_second=3.49712k/s mobile=120 resting=0 sim_s/s=0.0291426/s engine=ode threads=1
+BM_ContactContainerActive/120/1/1_median        6817 ms         6816 ms            5 contacts=542 items_per_second=3.52089k/s mobile=120 resting=0 sim_s/s=0.0293408/s engine=ode threads=1
+BM_ContactContainerActive/120/1/1_stddev         246 ms          246 ms            5 contacts=0 items_per_second=124.353/s mobile=0 resting=0 sim_s/s=1.03627m/s engine=ode threads=1
+BM_ContactContainerActive/120/1/1_cv            3.58 %          3.58 %             5 contacts=0.00% items_per_second=3.56% mobile=0.00% resting=0.00% sim_s/s=3.56% engine=ode threads=1
+BM_ContactContainerActive/120/1/16_mean         6840 ms         6832 ms            5 contacts=542 items_per_second=3.51746k/s mobile=120 resting=0 sim_s/s=0.0293122/s engine=ode threads=16
+BM_ContactContainerActive/120/1/16_median       6798 ms         6797 ms            5 contacts=542 items_per_second=3.53122k/s mobile=120 resting=0 sim_s/s=0.0294268/s engine=ode threads=16
+BM_ContactContainerActive/120/1/16_stddev        286 ms          279 ms            5 contacts=0 items_per_second=138.252/s mobile=0 resting=0 sim_s/s=1.1521m/s engine=ode threads=16
+BM_ContactContainerActive/120/1/16_cv           4.19 %          4.09 %             5 contacts=0.00% items_per_second=3.93% mobile=0.00% resting=0.00% sim_s/s=3.93% engine=ode threads=16

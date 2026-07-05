@@ -134,10 +134,10 @@ private:
 };
 
 /// Enables or disables allocation-site backtrace sampling on the global
-/// operator-new counting surface. Diagnostic aid for attributing per-step
-/// allocations; supported on Linux/glibc only (no-op elsewhere). Enable
-/// before constructing a ScopedHeapAllocationCounter so the unwinder is
-/// primed outside the measured window.
+/// operator-new and raw malloc-family counting surfaces. Diagnostic aid for
+/// attributing per-step allocations; supported on Linux/glibc only (no-op
+/// elsewhere). Enable before constructing counters so the unwinder is primed
+/// outside the measured window.
 void setAllocationBacktraceSamplingEnabled(bool enabled);
 
 /// Clears the aggregated allocation-site table.

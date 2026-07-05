@@ -13,6 +13,13 @@ mkdir -p "$OUT"
 {
   echo "date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "commit: $(git rev-parse HEAD)"
+  if git diff --quiet --ignore-submodules -- && git diff --cached --quiet --ignore-submodules --; then
+    echo "worktree_dirty: no"
+  else
+    echo "worktree_dirty: yes"
+    echo "diff_stat:"
+    git diff --stat | sed 's/^/  /'
+  fi
   echo "host: $(uname -srmo)"
   echo "cpu: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs)"
   echo "cores: $(nproc)"

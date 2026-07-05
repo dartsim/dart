@@ -4108,23 +4108,19 @@ bool Skeleton::checkExternalDisturbanceAndReset(bool _resetCommand)
   bool hasResidualDofForces = false;
   bool hasResidualCommands = false;
 
-  if (nDofs != 0) {
-    // getExternalForces() returns a cached const reference (no allocation).
-    const Eigen::VectorXd& externalForces = getExternalForces();
-    if (externalForces.size() > 0) {
-      hasResidualExternalForces = !externalForces.isZero(0.0);
-      disturbed = externalForces.cwiseAbs().maxCoeff() > tolerance;
-    }
-  }
-
-  if (_resetCommand) {
-    // A body wrench can project to zero generalized force (for example on a
-    // zero-DOF or constrained body) but still needs to honor resetCommand.
-    for (const auto* bodyNode : mSkelCache.mBodyNodes) {
-      if (!bodyNode->getExternalForceLocal().isZero(0.0)) {
+  // Scan body wrenches directly instead of materializing getExternalForces():
+  // the projection cache can allocate when dirty, and this query runs for every
+  // mobile skeleton during rest detection.
+  for (const auto* bodyNode : mSkelCache.mBodyNodes) {
+    const auto& externalForce = bodyNode->getExternalForceLocal();
+    if (!externalForce.isZero(0.0)) {
+      if (_resetCommand)
         hasResidualBodyExternalForces = true;
-        break;
-      }
+      if (nDofs != 0)
+        hasResidualExternalForces = true;
+    }
+    if (nDofs != 0 && externalForce.cwiseAbs().maxCoeff() > tolerance) {
+      disturbed = true;
     }
   }
 
