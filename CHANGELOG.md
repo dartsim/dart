@@ -287,6 +287,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Updated dependency baselines for the DART 7 toolchain, including Eigen 5,
   fmt/spdlog updates, Assimp 6 support, and C++23 standard-library feature
   gates. ([#3005](https://github.com/dartsim/dart/pull/3005))
+- Fixed DART 7 Windows dartpy wheel links against conda-forge libcurl/libpsl
+  metadata by pruning Unix-only `libm` entries from imported MSVC CMake target
+  interfaces. ([#3282](https://github.com/dartsim/dart/pull/3282))
 - Added a `DART_USE_SYSTEM_FMT` CMake option (default ON) that falls back to a
   FetchContent source build of fmt when set OFF, so source and container builds
   keep working when a distro's packaged fmt CMake config is broken; the Alt
