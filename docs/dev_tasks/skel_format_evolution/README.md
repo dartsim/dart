@@ -52,7 +52,9 @@
       zero-valued `<visibility_flags>`, `<transparency>`, `<diffuse>`, and
       `<pbr><metal>` values plus `<surface><contact><collide_bitmask>` disables
       plus `<surface><bounce>` restitution coefficients and
-      `<surface><friction><ode>` `mu`, `mu2`, `fdir1`, `slip1`, and `slip2`.
+      `<surface><friction><ode>` `mu`, `mu2`, `fdir1`, `slip1`, and `slip2`,
+      including a combined collision-surface entry that carries contact,
+      friction/slip, and bounce metadata together.
       Absolute non-file mesh URIs now have writer read/write/read coverage
       through a custom retriever, and URI-backed mesh material variants now have
       writer read/write/read coverage through preserved source mesh URIs. Writer
@@ -414,7 +416,8 @@ SKEL-YAML direction just because the prototype once existed.
   collision-surface contact bitmask disables, zero-threshold bounce restitution,
   ODE friction
   coefficients, collision-frame first friction direction, and slip compliance
-  now have read/write/read coverage plus invalid friction, slip, restitution,
+  now have read/write/read coverage both independently and in a combined
+  collision-surface entry, plus invalid friction, slip, restitution,
   friction-direction value/frame, and non-default visual-reflectance
   diagnostics. The
   assertions are

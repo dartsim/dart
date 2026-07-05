@@ -2750,6 +2750,93 @@ TEST(SdfWriter, RoundTripsCollisionSurfaceBounceRestitution)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsCombinedCollisionSurfaceMetadata)
+{
+  auto skeleton = dynamics::Skeleton::create("combined_surface_writer");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)joint;
+  body->setName("body");
+
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      "combined_surface");
+  auto* collisionAspect = shapeNode->getCollisionAspect();
+  ASSERT_NE(collisionAspect, nullptr);
+  collisionAspect->setCollidable(false);
+  auto* dynamicsAspect = shapeNode->getDynamicsAspect();
+  ASSERT_NE(dynamicsAspect, nullptr);
+  dynamicsAspect->setPrimaryFrictionCoeff(0.2);
+  dynamicsAspect->setSecondaryFrictionCoeff(0.8);
+  dynamicsAspect->setPrimarySlipCompliance(0.01);
+  dynamicsAspect->setSecondarySlipCompliance(0.03);
+  dynamicsAspect->setFirstFrictionDirection(Eigen::Vector3d::UnitX());
+  dynamicsAspect->setFirstFrictionDirectionFrame(shapeNode);
+  dynamicsAspect->setRestitutionCoeff(0.55);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfLink = sdfRoot.Model()->LinkByName("body");
+  ASSERT_NE(sdfLink, nullptr);
+  const auto* sdfCollision = sdfLink->CollisionByName("combined_surface");
+  ASSERT_NE(sdfCollision, nullptr);
+  ASSERT_NE(sdfCollision->Surface(), nullptr);
+  ASSERT_NE(sdfCollision->Surface()->Contact(), nullptr);
+  EXPECT_EQ(sdfCollision->Surface()->Contact()->CollideBitmask(), 0u);
+  ASSERT_NE(sdfCollision->Surface()->Friction(), nullptr);
+  ASSERT_NE(sdfCollision->Surface()->Friction()->ODE(), nullptr);
+  const auto* ode = sdfCollision->Surface()->Friction()->ODE();
+  EXPECT_DOUBLE_EQ(ode->Mu(), 0.2);
+  EXPECT_DOUBLE_EQ(ode->Mu2(), 0.8);
+  EXPECT_TRUE(
+      Eigen::Vector3d(ode->Fdir1().X(), ode->Fdir1().Y(), ode->Fdir1().Z())
+          .isApprox(Eigen::Vector3d::UnitX()));
+  EXPECT_DOUBLE_EQ(ode->Slip1(), 0.01);
+  EXPECT_DOUBLE_EQ(ode->Slip2(), 0.03);
+  const auto surfaceElement = sdfCollision->Surface()->Element();
+  ASSERT_NE(surfaceElement, nullptr);
+  const auto bounceElement = getSdfChildElement(surfaceElement, "bounce");
+  ASSERT_NE(bounceElement, nullptr);
+  EXPECT_DOUBLE_EQ(
+      getSdfDoubleElement(bounceElement, "restitution_coefficient"), 0.55);
+  EXPECT_DOUBLE_EQ(getSdfDoubleElement(bounceElement, "threshold"), 0.0);
+
+  const auto path
+      = writeTempSdf(writeResult.value(), "combined_collision_surface");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  const auto* reparsedBody = test::requireBodyNode(*reparsed, "body");
+  ASSERT_NE(reparsedBody, nullptr);
+  const auto* reparsedShapeNode
+      = reparsedBody->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(reparsedShapeNode, nullptr);
+  const auto* reparsedCollision = reparsedShapeNode->getCollisionAspect();
+  ASSERT_NE(reparsedCollision, nullptr);
+  EXPECT_FALSE(reparsedCollision->isCollidable());
+  const auto* reparsedDynamics = reparsedShapeNode->getDynamicsAspect();
+  ASSERT_NE(reparsedDynamics, nullptr);
+  EXPECT_DOUBLE_EQ(reparsedDynamics->getPrimaryFrictionCoeff(), 0.2);
+  EXPECT_DOUBLE_EQ(reparsedDynamics->getSecondaryFrictionCoeff(), 0.8);
+  EXPECT_TRUE(reparsedDynamics->getFirstFrictionDirection().isApprox(
+      Eigen::Vector3d::UnitX()));
+  EXPECT_EQ(reparsedDynamics->getFirstFrictionDirectionFrame(), nullptr);
+  EXPECT_DOUBLE_EQ(reparsedDynamics->getPrimarySlipCompliance(), 0.01);
+  EXPECT_DOUBLE_EQ(reparsedDynamics->getSecondarySlipCompliance(), 0.03);
+  EXPECT_DOUBLE_EQ(reparsedDynamics->getRestitutionCoeff(), 0.55);
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsContinuousRevoluteJoint)
 {
   auto skeleton = dynamics::Skeleton::create("continuous_writer");

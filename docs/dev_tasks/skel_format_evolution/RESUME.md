@@ -47,9 +47,10 @@ state, model self-collision, local root/joint/shape poses, visual
 shadow/hidden state, explicit
 visual material colors, PBR metallic/roughness factors, collision-surface
 contact disable bitmasks for both shape-level and body-level DART collision
-disable state, visual transparency, zero-threshold bounce restitution, ODE friction
-coefficients, first friction direction, slip compliance, and absolute non-file
-mesh URI preservation through a custom retriever, plus URI-backed mesh material
+disable state, visual transparency, zero-threshold bounce restitution, ODE
+friction coefficients, first friction direction, slip compliance, combined
+collision-surface metadata entries, and absolute non-file mesh URI preservation
+through a custom retriever, plus URI-backed mesh material
 variants through preserved source mesh URIs. Continuous SDF joints now
 parse as unbounded DART
 `RevoluteJoint`s, and unbounded DART revolute joints write back as SDF
@@ -2169,6 +2170,47 @@ Changelog decision:
 - Entry text: N/A
 - PR-body note: record as SDF relative-mesh model fixture round-trip
   verification if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
+Additional validation for combined SDF collision-surface metadata coverage:
+
+- Added `SdfWriter.RoundTripsCombinedCollisionSurfaceMetadata`, which writes one
+  collision carrying disabled-collision bitmask state, ODE friction/slip
+  metadata, collision-frame first friction direction, and bounce restitution.
+- The test validates the emitted SDF with libsdformat `sdf::Root`,
+  `sdf::Surface`, `sdf::Contact`, `sdf::Friction`, and `sdf::ODE` DOM values,
+  using the existing narrow `sdf::Element` bridge only for the bounce schema
+  values that sdformat 16 does not expose through a high-level DOM class.
+- It then reparses the emitted SDF through `SdfParser` and verifies the combined
+  metadata survives as DART collision and dynamics aspects. No XML-level SDF
+  parsing or emitted-text inspection was added.
+
+Validation commands:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsCombinedCollisionSurfaceMetadata'`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run check-sdf-sdformat-boundary`
+- `git diff --check`
+- `pixi run build`
+- `pixi run lint`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Scope evidence: `CHANGELOG.md` DART 7 IO and Parsing SDF writer bullet
+  already covers the conservative SDF writer, collision-surface contact
+  bitmasks, bounce restitution, ODE friction/slip metadata, and explicit
+  unsupported/lossy diagnostics.
+- Decision: no additional changelog entry. This slice adds combined
+  read/write/read verification for an existing unreleased SDF writer contract
+  without adding a new public API or broadening the documented writer contract.
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: record as combined SDF collision-surface metadata verification
+  if a PR is opened.
 - Follow-up: none until an implementation PR exists.
 
 Changelog decision:

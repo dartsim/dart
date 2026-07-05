@@ -182,7 +182,9 @@ box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry
 with visual shadow/hidden/transparency state, explicit visual material colors,
 PBR
 metallic/roughness factors, and collision-surface contact disable bitmasks,
-zero-threshold bounce restitution, and ODE friction/slip metadata. The
+zero-threshold bounce restitution, and ODE friction/slip metadata, including a
+combined surface entry that preserves contact, friction/slip, and bounce
+metadata together. The
 round-trip coverage includes the shipped SDF fixtures converted from legacy
 SKEL (`single_pendulum.sdf`, `cube.sdf`, `shapes.sdf`, and
 `test_shapes.sdf`) and the native two-link revolute SDF fixture

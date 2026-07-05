@@ -47,8 +47,10 @@ zero-threshold bounce restitution round-trips through SDF
 `<surface><bounce>` coefficient values; ODE friction coefficients, first
 friction direction, and slip compliance round-trip through SDF
 `<surface><friction><ode>` values when the first friction direction is
-representable in the collision frame. Non-finite slip compliance and
-non-collision-frame friction directions fail with targeted diagnostics.
+representable in the collision frame. Combined collision-surface coverage
+proves contact bitmask, friction/slip, and bounce metadata survive together in
+one sdformat surface entry. Non-finite slip compliance and non-collision-frame
+friction directions fail with targeted diagnostics.
 Absolute non-file mesh URI
 preservation is covered through a custom retriever-backed write/read test, and
 URI-backed mesh material variants are covered by a write/read test that
