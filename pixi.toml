@@ -206,7 +206,7 @@ wheel-repair-windows-core = { cmd = """
 ] }
 
 wheel-verify-core = { cmd = """
-python scripts/verify_version.py dist/dartpy-*-{{ python_tag }}-*.whl
+python scripts/verify_version.py dist/dartpy-*-{{ python_tag }}-*.whl &&
 python scripts/verify_wheel.py dist/dartpy-*-{{ python_tag }}-*.whl
 """, args = [{ arg = "python_tag" }], env = { PYTHONIOENCODING = "utf-8" } }
 
