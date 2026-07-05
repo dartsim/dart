@@ -89,7 +89,7 @@
   phase-0 packet cross-references those cells instead of duplicating them.
 - **#3271** `docs/native-collision-phase0-baseline` — this lane's phase-0
   baseline packet (recaptured on `1e6a8332a730` after merging
-  `origin/release-6.20` = `949a9c2ff5ed`; current PR head `f1916fd843f9`
+  `origin/release-6.20` = `949a9c2ff5ed`; later merge-up `f1916fd843f9`
   includes #3281's internal-only phase-1 merge).
 - Branch-CI fixes **#3267/#3272/#3273 merged 2026-07-04** (macOS SIMD
   `-Werror`, dartpy format checks via pixi, shallow-support + SIMD CI).

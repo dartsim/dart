@@ -12,7 +12,7 @@
   `1e6a8332a730a994450c14ee8a780780c5e069bb` after merging `origin/release-6.20` =
   `949a9c2ff5ed6309beef0aa1345101d36c813f02` (binaries built at the branch head,
   Release, `--parallel 8` capped build, fresh configure).
-- Current PR head after merging #3281 is
+- This PR later merged #3281 via
   `f1916fd843f931eb7304b9a9dc8089eaf3586b38` on `origin/release-6.20` =
   `135cc8f20765d39040e3e3ae87536dabac8f5401`. The rows below remain pinned
   to the capture SHA above. #3281 is internal-only and kept FCL as the default;
@@ -164,10 +164,10 @@ Readings:
 **Native default: NOT allowed at this tip.** At the capture SHA
 (`1e6a8332a730`), no native engine existed on this phase-0 branch
 (`dart/collision/native/` absent; the in-tree `dart` detector was the old
-limited narrowphase-only detector). The current PR head now includes #3281's
-internal-only native math core, but FCL remains the default and no DART 6
-native detector adapter/default flip exists yet. This is the expected phase-0
-outcome; the packet's purpose is the envelope below.
+limited narrowphase-only detector). This branch now includes #3281's
+internal-only native math core, but FCL remains the default and no DART 6 native
+detector adapter/default flip exists yet. This is the expected phase-0 outcome;
+the packet's purpose is the envelope below.
 
 **Acceptance envelope for the phase-6 default flip** (all against this
 packet's rows, re-captured on the flip PR's parent for drift control):

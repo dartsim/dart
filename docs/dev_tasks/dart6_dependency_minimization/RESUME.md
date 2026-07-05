@@ -35,9 +35,9 @@ the recorded SHA-256 digests or recapture dumps on the flip PR's parent
 and compare within that same recapture.
 
 **Phase 1 has landed as #3281** (C++17, no EnTT, internal-only native math
-core; FCL stays default). Current #3271 head `f1916fd843f9` includes that
-merge. **Next: phase 2 — DART 6 detector adapter**, but only after #3271's
-phase-0 packet is accepted.
+core; FCL stays default). #3271 includes that merge via `f1916fd843f9`.
+**Next: phase 2 — DART 6 detector adapter**, but only after #3271's phase-0
+packet is accepted.
 
 ## Standing constraints
 

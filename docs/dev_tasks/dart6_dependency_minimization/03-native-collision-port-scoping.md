@@ -23,7 +23,7 @@ Refs checked:
 
 - `origin/release-6.20`: `949a9c2ff5ed6309beef0aa1345101d36c813f02`.
 - This phase-0 packet branch after the base merge: `1e6a8332a730a994450c14ee8a780780c5e069bb`.
-- Current PR head after merging #3281: `f1916fd843f931eb7304b9a9dc8089eaf3586b38`
+- This PR later merged #3281 via `f1916fd843f931eb7304b9a9dc8089eaf3586b38`
   on `origin/release-6.20` = `135cc8f20765d39040e3e3ae87536dabac8f5401`.
 - `origin/main`: `5c75381f79a0431909f8c1b0a04fca1fbaa256ed`.
 - Related remote heads: `feature/native-occupancy-grid`,
