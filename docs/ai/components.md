@@ -130,6 +130,8 @@ faster; it must not be the only path.
 - `dart-docs-update` always loads `docs/AGENTS.md` and
   `docs/information-architecture.md` so documentation edits cannot bypass the
   docs placement owner;
+- `dart-new-task` always loads `docs/information-architecture.md` so
+  dev-task cleanup cannot choose a durable owner without the placement matrix;
 - approval-boundary wording around GitHub, CI, branch, and review-thread
   mutations;
 - private-path references in `docs/ai/`.
