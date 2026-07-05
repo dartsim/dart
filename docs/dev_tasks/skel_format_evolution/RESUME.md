@@ -21,7 +21,12 @@ The local merge-validation pass on 2026-07-05 completed:
   `Read.SkelIsNotSupported`;
 - `pixi run run-cpp-target UNIT_dynamics_MeshShape` — 49 passed;
 - `pixi run run-cpp-target test_mesh_loaderNone` — 5 passed;
-- `pixi run lint`.
+- `pixi run lint`;
+- `pixi run build`;
+- `pixi run test-all` — 6/6 phases passed: linting, build, unit tests,
+  simulation tests, Python tests, and documentation;
+- `pixi run -e cuda test-all` — 7/7 phases passed on the host RTX 5000 Ada
+  GPU, including CUDA tests and benchmark smoke.
 
 The sdformat-boundary checker is not part of this Phase 2 branch; it lives on
 the stacked writer branch that owns the SDF IO boundary work. Do not broaden the
