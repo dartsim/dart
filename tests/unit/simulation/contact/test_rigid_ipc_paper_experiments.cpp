@@ -1092,6 +1092,83 @@ TEST(RigidIpcPaperExperiments, HighSpeedCubeDoesNotTunnelThroughWall)
   EXPECT_GT(ipcStage.getLastStats().lineSearchHits, 0u);
 }
 
+TEST(RigidIpcPaperExperiments, TwoWallTunnelCubeStaysBetweenWallsFixtureRow)
+{
+  // fixtures/3D/unit-tests/tunnel/2-walls.json: a unit cube flies down a tight
+  // horizontal corridor (fixed floor and ceiling planes 1.002 apart, ~1 mm
+  // clearance above and below the cube) at high speed. The rigid IPC barrier
+  // must keep the cube intersection-free with both fixed planes while it
+  // advances along the tunnel axis without tunneling out through either wall.
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  constexpr double halfGap = 0.501; // fixed floor/ceiling offset from center
+  constexpr double planeHalfExtent = 5.0;
+
+  sx::RigidBodyOptions floorOptions;
+  floorOptions.isStatic = true;
+  floorOptions.position = Eigen::Vector3d(0.0, 0.0, -halfGap);
+  auto floor = world.addRigidBody("two_wall_tunnel_floor", floorOptions);
+  floor.setCollisionShape(makeTwoTrianglePlaneMesh(planeHalfExtent));
+
+  sx::RigidBodyOptions ceilingOptions;
+  ceilingOptions.isStatic = true;
+  ceilingOptions.position = Eigen::Vector3d(0.0, 0.0, halfGap);
+  auto ceiling = world.addRigidBody("two_wall_tunnel_ceiling", ceilingOptions);
+  ceiling.setCollisionShape(makeTwoTrianglePlaneMesh(planeHalfExtent));
+
+  constexpr double cubeHalfExtent = 0.5;
+  constexpr double startX = -4.0;
+  sx::RigidBodyOptions cubeOptions;
+  cubeOptions.mass = 1.0;
+  cubeOptions.position = Eigen::Vector3d(startX, 0.0, 0.0);
+  cubeOptions.linearVelocity = Eigen::Vector3d(25.0, 0.0, 0.0);
+  auto cube = world.addRigidBody("two_wall_tunnel_cube", cubeOptions);
+  cube.setCollisionShape(
+      sx::CollisionShape::makeBox(
+          {cubeHalfExtent, cubeHalfExtent, cubeHalfExtent}));
+
+  sx::compute::SequentialExecutor executor;
+  sx::compute::RigidIpcContactStage ipcStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(ipcStage);
+
+  bool sawActiveContact = false;
+  double minBottomZ = std::numeric_limits<double>::infinity();
+  double maxTopZ = -std::numeric_limits<double>::infinity();
+  for (int s = 0; s < 15; ++s) {
+    world.step(executor, pipeline);
+    const auto& stats = ipcStage.getLastStats();
+    EXPECT_FALSE(stats.failed) << "step " << s;
+    sawActiveContact = sawActiveContact || stats.activeConstraints > 0u;
+
+    const Eigen::Matrix3d R = cube.getRotation();
+    for (double dx : {-cubeHalfExtent, cubeHalfExtent}) {
+      for (double dy : {-cubeHalfExtent, cubeHalfExtent}) {
+        for (double dz : {-cubeHalfExtent, cubeHalfExtent}) {
+          const Eigen::Vector3d v
+              = cube.getTranslation() + R * Eigen::Vector3d(dx, dy, dz);
+          minBottomZ = std::min(minBottomZ, v.z());
+          maxTopZ = std::max(maxTopZ, v.z());
+        }
+      }
+    }
+  }
+
+  EXPECT_TRUE(cube.getTranslation().allFinite());
+  EXPECT_TRUE(cube.getLinearVelocity().allFinite());
+  EXPECT_GT(cube.getTranslation().x(), startX + 0.1);
+  // Intersection-free: no cube corner may cross either fixed wall face
+  // (z = +/-halfGap). The penetration tolerance is kept well below the 1 mm
+  // wall gap so a regression that let the cube drift through a wall cannot
+  // pass; in practice the cube holds the full ~1 mm clearance (corners settle
+  // at z = +/-0.5, i.e. 1 mm inside each face).
+  EXPECT_GT(minBottomZ, -halfGap - 2e-4);
+  EXPECT_LT(maxTopZ, halfGap + 2e-4);
+  EXPECT_TRUE(sawActiveContact);
+}
+
 TEST(RigidIpcPaperExperiments, CubeSettlesOnTwoTrianglePlaneFixtureRow)
 {
   sx::World world;

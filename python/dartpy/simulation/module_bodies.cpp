@@ -151,6 +151,9 @@ void defSimPartBodies(nb::module_& m)
             return self.getWorldJacobian(link);
           },
           nb::arg("link"))
+      .def_prop_ro("center_of_mass", &sim::Multibody::getCenterOfMass)
+      .def_prop_ro(
+          "center_of_mass_jacobian", &sim::Multibody::getCenterOfMassJacobian)
       .def_prop_ro("is_valid", &sim::Multibody::isValid)
       .def("__repr__", [](const sim::Multibody& self) {
         std::vector<std::pair<std::string, std::string>> fields;

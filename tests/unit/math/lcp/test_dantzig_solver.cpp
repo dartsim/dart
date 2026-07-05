@@ -568,6 +568,51 @@ TEST(DantzigSolver, ScratchUsesProvidedAllocatorForDantzigWorkBuffers)
 }
 
 //==============================================================================
+TEST(DantzigSolver, ScratchMoveAndClearPreserveLdltRemoveBuffer)
+{
+  Eigen::Matrix3d A;
+  A << 4.0, 0.5, 0.0, 0.5, 3.0, 0.25, 0.0, 0.25, 2.5;
+
+  const Eigen::Vector3d target(1.0, 0.2, -0.1);
+  const Eigen::Vector3d b = A * target;
+
+  Eigen::Vector3d lo = Eigen::Vector3d::Zero();
+  Eigen::Vector3d hi;
+  hi << std::numeric_limits<double>::infinity(), 0.5, 0.5;
+  Eigen::Vector3i findex;
+  findex << -1, 0, 0;
+
+  DantzigSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  CountingMemoryAllocator allocator;
+  {
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+    DantzigSolver::Scratch scratch(allocator);
+    ASSERT_TRUE(solver.solve(problem, x, scratch, options).succeeded());
+    ASSERT_FALSE(scratch.lcp.ldltRemoveTmp.empty());
+
+    DantzigSolver::Scratch moved(std::move(scratch));
+    EXPECT_FALSE(moved.lcp.ldltRemoveTmp.empty());
+
+    DantzigSolver::Scratch assigned(allocator);
+    assigned = std::move(moved);
+    EXPECT_FALSE(assigned.lcp.ldltRemoveTmp.empty());
+
+    assigned.clear();
+    EXPECT_TRUE(assigned.lcp.ldltRemoveTmp.empty());
+    EXPECT_EQ(assigned.lcp.state, nullptr);
+    EXPECT_EQ(assigned.lcp.stateCapacity, 0u);
+  }
+
+  EXPECT_EQ(allocator.deallocationCount, allocator.allocationCount);
+  EXPECT_EQ(
+      allocator.alignedDeallocationCount, allocator.alignedAllocationCount);
+}
+
+//==============================================================================
 TEST(DantzigSolver, ReportsInvalidProblemForOutOfRangeFindex)
 {
   DantzigSolver solver;

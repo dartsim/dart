@@ -39,7 +39,6 @@
 #include "dart/utils/composite_resource_retriever.hpp"
 #include "dart/utils/dart_resource_retriever.hpp"
 #include "dart/utils/package_resource_retriever.hpp"
-#include "dart/utils/skel_parser.hpp"
 
 #if DART_HAS_SDFORMAT
   #include "dart/utils/sdf/sdf_parser.hpp"
@@ -102,9 +101,6 @@ std::optional<ModelFormat> inferFormatFromExtension(const common::Uri& uri)
   using enum ModelFormat;
 
   const auto ext = getLowercaseExtension(uri);
-  if (ext == ".skel") {
-    return Skel;
-  }
   if (ext == ".sdf" || ext == ".world") {
     return Sdf;
   }
@@ -167,9 +163,6 @@ std::optional<ModelFormat> inferFormatFromXmlRoot(
   }
 
   const std::string rootName = root->Name();
-  if (rootName == "skel") {
-    return ModelFormat::Skel;
-  }
   if (rootName == "sdf") {
     return ModelFormat::Sdf;
   }
@@ -258,8 +251,6 @@ dynamics::SkeletonPtr readSkeleton(
   }
 
   switch (format) {
-    case Skel:
-      return utils::SkelParser::readSkeleton(uri, resolved.resourceRetriever);
     case Sdf:
 #if DART_HAS_SDFORMAT
     {

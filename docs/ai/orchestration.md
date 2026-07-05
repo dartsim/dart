@@ -24,7 +24,13 @@ from public docs and `pixi run ...` commands without a specific AI tool.
   relevant design docs; turns roadmap intent into bounded work packets;
   keeps packet scope honest against the simplicity axiom; and reviews
   executor output against the packet's acceptance evidence before the work is
-  recorded as done.
+  recorded as done. Team-scale tasks enter through `dart-new-team-task`,
+  which front-loads a decision interview and routes evidence-resolvable
+  uncertainties to spikes and research instead of questions. The
+  orchestrator's strongest model also serves as the oracle: critical
+  decisions, escalations executors cannot resolve, and research synthesis
+  get its deepest reasoning, while routine implementation stays with
+  executors.
 - **Executor** — owns implementation of one packet at a time. The executor
   takes a well-defined packet, makes the local edits, runs the packet's
   gates, records the evidence, and hands back. Executors do not widen scope,

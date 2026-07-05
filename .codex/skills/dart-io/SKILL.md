@@ -1,6 +1,6 @@
 ---
 name: dart-io
-description: "DART IO: URDF, SDF, MJCF, SKEL parsers, and dart::io loading"
+description: "DART IO: URDF, SDF, MJCF parsers, and dart::io loading"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/skills/dart-io/SKILL.md -->
@@ -33,7 +33,6 @@ For module-specific details: `dart/io/AGENTS.md`
 | URDF   | `.urdf`          | ROS robots    |
 | SDF    | `.sdf`, `.world` | Gazebo models |
 | MJCF   | `.xml`           | MuJoCo models |
-| SKEL   | `.skel`          | Legacy DART   |
 
 ## Common Patterns
 

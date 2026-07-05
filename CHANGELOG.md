@@ -86,6 +86,10 @@ compatibility remains on the active DART 6 LTS branch._
   [#2270](https://github.com/dartsim/dart/pull/2270),
   [#2141](https://github.com/dartsim/dart/pull/2141),
   [#2142](https://github.com/dartsim/dart/pull/2142))
+- Removed the legacy SKEL model format from DART 7, including `.skel` sample
+  assets, `SkelParser`, `ModelFormat::Skel`, and dartpy SKEL bindings/stubs;
+  migrate assets to URDF, SDF, or MJCF, or use `release-6.*` for legacy SKEL
+  compatibility. ([#3288](https://github.com/dartsim/dart/pull/3288))
 - Removed GLUT, OpenSceneGraph, Raylib, legacy GUI examples/tutorials, and legacy
   dartpy GUI bindings in favor of the Filament-backed `dart::gui` stack.
   ([#2044](https://github.com/dartsim/dart/pull/2044),
@@ -136,6 +140,30 @@ compatibility remains on the active DART 6 LTS branch._
 - Expanded `World::computeStepMetrics()` so DART 7 metrics include cached
   rigid-contact counts, penetration, solver iterations/residuals, and
   world-frame multibody momentum while remaining a read-only query.
+- Added multibody center-of-mass accessors to the DART 7 `World` (C++
+  `Multibody::getCenterOfMass`/`getCenterOfMassJacobian`, dartpy
+  `center_of_mass`/`center_of_mass_jacobian`): the world-frame center of mass
+  and the 3 x DOF Jacobian mapping the generalized velocity to the
+  center-of-mass velocity, as the mass-weighted aggregate over the multibody's
+  links. Read-only; no step behavior changes.
+- Added the `Locked` joint actuator type to the DART 7 `World` semi-implicit
+  articulated dynamics (C++ and dartpy): a locked joint is held rigidly at its
+  current position through the same velocity-level equality constraint the
+  `Velocity` actuator uses, with target velocity zero, and ignores any commanded
+  effort or passive spring/damping on the locked coordinate.
+- Added the `Servo` joint actuator type to the DART 7 `World` semi-implicit
+  articulated dynamics (C++ and dartpy): a servo drives the joint to its
+  commanded velocity like `Velocity`, but bounds the motor impulse by the joint
+  effort limits so it saturates like a real motor. When an effort bound binds,
+  the coupled velocity-level solve runs as a boxed LCP; otherwise it keeps the
+  unbounded equality solve.
+- Added the `Acceleration` joint actuator type to the DART 7 `World`
+  semi-implicit articulated dynamics (C++ `Joint::setCommandAcceleration`, dartpy
+  `command_acceleration`): the joint realizes a commanded acceleration exactly
+  via the same velocity-level constraint (target `qdot + acceleration * dt`),
+  overriding gravity and applied effort. Bumps the simulation binary format to
+  version 28 (the `comps.JointActuation` record gains a `commandAcceleration`
+  field). `Mimic` remains reserved.
 - Fixed retained rigid-IPC solver scratch reuse so lagged-friction objective
   assembly keeps the active barrier Hessian while adding friction and dynamics
   terms.
@@ -287,6 +315,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Updated dependency baselines for the DART 7 toolchain, including Eigen 5,
   fmt/spdlog updates, Assimp 6 support, and C++23 standard-library feature
   gates. ([#3005](https://github.com/dartsim/dart/pull/3005))
+- Fixed DART 7 Windows dartpy wheel links against conda-forge libcurl/libpsl
+  metadata by pruning Unix-only `libm` entries from imported MSVC CMake target
+  interfaces. ([#3282](https://github.com/dartsim/dart/pull/3282))
 - Added a `DART_USE_SYSTEM_FMT` CMake option (default ON) that falls back to a
   FetchContent source build of fmt when set OFF, so source and container builds
   keep working when a distro's packaged fmt CMake config is broken; the Alt

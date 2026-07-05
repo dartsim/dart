@@ -37,9 +37,9 @@ signature change). Surfaced on `BM_DeformableSelfContactBarrierStage` +
 `ipc_deformable_cg_contact` demo; C++ peak-invariant + public-propagation
 regressions. Changelog: no entry (family-level bullet covers it).
 
-### Active Slice: Fig-23 statistics packet — published (PR #3264)
+### Landed Slice: Fig-23 statistics packet — MERGED (PR #3264, `dbe6fcccb1c`)
 
-Branch `feature/ipc-deformable-fig23-statistics-packet`, published as **PR #3264**
+Branch `feature/ipc-deformable-fig23-statistics-packet`, merged as **PR #3264**
 against `main` (off `main` after #3257 merged, then merged current `origin/main`
 incl. #3250). Adds a machine-checkable **Fig-23-shaped statistics packet** that
 distils the `bm_deformable_body` JSON into per-scene Fig-23 axes (per-step
@@ -573,27 +573,34 @@ PSD-backend injection). (PR #2747 is another author's.) <- #2760 (GPU-vs-CPU per
 long ago (`74338577982`). The instructions below it about pushing that branch are
 stale — ignore them.
 
-**Current (2026-07-04):** two M7 slices done this cycle — PR #3257 (peak-contacts
-diagnostic) **merged** (`1819b801228`); PR #3264 (Fig-23 statistics packet)
-**open**, `test-all` 6/6 green, Codex review requested. Next: address any
-Codex/maintainer feedback on #3264 and merge after approval (never reply inline to
-a `[bot]` comment), then continue M7: build out the rest of the Fig-23 harness
-(process peak-memory tracking; an evolving multi-step self-contact fixture for a
-genuine avg-contacts-per-step axis), then the Table-1 CPU reference comparison
-(blocked on M4 assets), AMG/multigrid preconditioning, on-device GPU assembly +
-solve, and the 688K-node Fig-22 run. Matrix-free-CG auto-selection for very large
-meshes needs a maintainer crossover-policy decision (a measurement-only crossover
-benchmark is the safe precursor). Dev-task retirement stays maintainer-gated while
-PLAN-081 is incomplete.
+**Current (2026-07-04):** three M7 code slices **merged** this cycle — PR #3257
+(peak-contacts diagnostic, `1819b801228`), PR #3264 (Fig-23 statistics packet,
+`dbe6fcccb1c`), and PR #3274 (matrix-free-vs-sparse-CG contact-heavy crossover
+benchmark + scaled parity regression, `43dbd91474c`). The doc-accuracy slice
+PR #3269 (linear-solver-selection accuracy, `28a91b909d6`) is also merged; it
+corrected the roadmap's stale "direct-solve node cap (20k)" to the verified
+current architecture (dense LDLT below `kProjectedNewtonDenseDirectDofCap` = 128
+DoF / ~42 nodes, iterative sparse Jacobi-CG above to a 1M-node ceiling,
+sparse-direct `SimplicialLDLT` kept out of the allocation-safe loop) and records
+the crossover benchmark. Next substantive M7 work needs maintainer direction or
+is blocked:
 
-After that, continue M7 in bounded performance slices: harden matrix-free CG on
-larger contact-heavy meshes and decide the automatic large-mesh selection
-policy; build out the rest of the Fig-23 statistics harness (avg contacts/step
-aggregation, peak-memory tracking, then the Table-1 CPU reference comparison);
-then AMG / multigrid preconditioning, on-device GPU assembly + solve, and the
-688K-node Fig. 22 scale run. Codimensional-obstacle friction remains blocked on
-codimensional-obstacle barrier support. Dev-task retirement stays maintainer-
-gated while PLAN-081 is incomplete.
+- Matrix-free-CG auto-selection: the contact-heavy crossover benchmark + mid-size
+  scaled parity regression landed (#3274) as the evidence base; choosing the
+  automatic very-large-mesh selection policy itself is a maintainer decision
+  (sparse Jacobi-CG remains the automatic path above the dense-direct cap, while
+  matrix-free stays opt-in until then).
+- A genuine avg-contacts-per-step axis needs a new evolving multi-step
+  self-contact fixture.
+- Process peak-memory tracking needs a memory-column semantics choice.
+- The Table-1 CPU comparison and 688K-node Fig-22 run are blocked on the M4
+  asset pipeline.
+- AMG/multigrid preconditioning and on-device GPU assembly + solve remain
+  available follow-up tracks.
+
+Codimensional-obstacle friction remains blocked on codimensional-obstacle
+barrier support. Dev-task retirement stays maintainer-gated while PLAN-081 is
+incomplete.
 
 ## Context That Would Be Lost
 
@@ -608,11 +615,27 @@ gated while PLAN-081 is incomplete.
 
 ## How To Resume
 
-Current slice (2026-07-04) — Fig-23 statistics packet gates (Python-only, no C++ rebuild):
+Current checkpoint (2026-07-04) — maintainer-directed next slice:
 
 ```bash
-git checkout feature/ipc-deformable-fig23-statistics-packet
+git fetch origin main
+git checkout main
+git merge --ff-only origin/main
 git status && git log -3 --oneline
+sed -n '560,610p' docs/dev_tasks/ipc_deformable_solver/RESUME.md
+sed -n '270,295p' docs/plans/081-deformable-implicit-barrier-solver/ipc-parity-roadmap.md
+```
+
+Do not resume a merged feature branch. Open a new branch only after maintainer
+direction chooses one of the currently blocked or policy-gated M7 follow-ups:
+matrix-free-CG auto-selection, avg-contacts-per-step fixture design,
+process-memory column semantics, M4 asset pipeline work, AMG/multigrid
+preconditioning, or on-device GPU assembly + solve.
+
+Prior merged slice (#3264) — Fig-23 statistics packet gates (archived):
+
+```bash
+# git checkout feature/ipc-deformable-fig23-statistics-packet   # merged as dbe6fcccb1c
 pixi run python -m pytest python/tests/unit/test_write_plan081_deformable_fig23_packet.py -q
 pixi run check-lint-py
 # End-to-end against a real benchmark run (proves the manifest matches real counters):

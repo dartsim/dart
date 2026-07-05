@@ -376,7 +376,8 @@ struct World::ReplayState
         velocity(allocator),
         acceleration(allocator),
         torque(allocator),
-        commandVelocity(allocator)
+        commandVelocity(allocator),
+        commandAcceleration(allocator)
     {
       // Empty.
     }
@@ -388,6 +389,7 @@ struct World::ReplayState
     VectorState acceleration;
     VectorState torque;
     VectorState commandVelocity;
+    VectorState commandAcceleration;
     bool broken = false;
   };
 
@@ -4543,6 +4545,7 @@ Joint World::createArticulatedPointJoint(
   jointModel.armature = comps::makeJointVector(dof, 0.0);
   jointModel.coulombFriction = comps::makeJointVector(dof, 0.0);
   jointActuation.commandVelocity = comps::makeJointVector(dof, 0.0);
+  jointActuation.commandAcceleration = comps::makeJointVector(dof, 0.0);
 
   const double infinity = std::numeric_limits<double>::infinity();
   jointModel.limits.lower = comps::makeJointVector(dof, -infinity);
@@ -5106,6 +5109,7 @@ Joint World::createRigidBodyPointJoint(
   jointModel.armature = comps::makeJointVector(dof, 0.0);
   jointModel.coulombFriction = comps::makeJointVector(dof, 0.0);
   jointActuation.commandVelocity = comps::makeJointVector(dof, 0.0);
+  jointActuation.commandAcceleration = comps::makeJointVector(dof, 0.0);
 
   const double infinity = std::numeric_limits<double>::infinity();
   jointModel.limits.lower = comps::makeJointVector(dof, -infinity);
@@ -5633,6 +5637,8 @@ void World::prepareDeactivationForStep()
                     || jointActuation->torque.squaredNorm()
                            > disturbanceThresholdSquared
                     || jointActuation->commandVelocity.squaredNorm()
+                           > disturbanceThresholdSquared
+                    || jointActuation->commandAcceleration.squaredNorm()
                            > disturbanceThresholdSquared;
       }
       for (const auto linkEntity : structure.links) {
@@ -5861,6 +5867,8 @@ void World::updateDeactivationAfterStep()
                       || jointActuation->torque.squaredNorm()
                              > disturbanceThresholdSquared
                       || jointActuation->commandVelocity.squaredNorm()
+                             > disturbanceThresholdSquared
+                      || jointActuation->commandAcceleration.squaredNorm()
                              > disturbanceThresholdSquared;
         }
       }
@@ -6835,6 +6843,19 @@ bool World::captureContactFreeStepDerivativesForFirstMultibody()
       }
       const auto& jointActuation
           = m_storage->registry.get<comps::JointActuation>(link.parentJoint);
+      const bool contributesDofs = jointActuation.torque.size() > 0;
+      DART_SIMULATION_THROW_T_IF(
+          jointActuation.actuatorType == comps::ActuatorType::Locked
+              && contributesDofs,
+          NotImplementedException,
+          "World::step(): differentiable Locked actuators are not supported "
+          "until step derivatives apply the locked velocity projection");
+      DART_SIMULATION_THROW_T_IF(
+          jointActuation.actuatorType == comps::ActuatorType::Acceleration
+              && contributesDofs,
+          NotImplementedException,
+          "World::step(): differentiable Acceleration actuators are not "
+          "supported until step derivatives model commanded acceleration");
       dofCount += static_cast<std::size_t>(jointActuation.torque.size());
     }
     torques.reserve(dofCount);
@@ -7371,6 +7392,8 @@ void World::restoreReplayFrame(std::size_t index)
     restoreReplayVector(state.acceleration, jointState.acceleration);
     restoreReplayVector(state.torque, jointActuation.torque);
     restoreReplayVector(state.commandVelocity, jointActuation.commandVelocity);
+    restoreReplayVector(
+        state.commandAcceleration, jointActuation.commandAcceleration);
     jointState.broken = state.broken;
   }
 
@@ -7564,6 +7587,8 @@ void World::recordReplayFrame()
     captureReplayVector(jointState.acceleration, state.acceleration);
     captureReplayVector(jointActuation.torque, state.torque);
     captureReplayVector(jointActuation.commandVelocity, state.commandVelocity);
+    captureReplayVector(
+        jointActuation.commandAcceleration, state.commandAcceleration);
     state.broken = jointState.broken;
     replayFrame.joints.push_back(std::move(state));
   }

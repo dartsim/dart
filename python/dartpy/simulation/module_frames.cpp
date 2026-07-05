@@ -173,6 +173,12 @@ void defSimPartFrames(nb::module_& m)
           [](sim::Joint& self, const nb::handle& value) {
             self.setCommandVelocity(toVectorX(value));
           })
+      .def_prop_rw(
+          "command_acceleration",
+          &sim::Joint::getCommandAcceleration,
+          [](sim::Joint& self, const nb::handle& value) {
+            self.setCommandAcceleration(toVectorX(value));
+          })
       .def_prop_ro("axis", &sim::Joint::getAxis)
       .def_prop_ro("axis2", &sim::Joint::getAxis2)
       .def_prop_rw("pitch", &sim::Joint::getPitch, &sim::Joint::setPitch)

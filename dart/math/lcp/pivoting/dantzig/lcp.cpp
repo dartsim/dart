@@ -229,6 +229,13 @@ bool SolveLCPWithScratch(
   scratch.reserveState(nSize);
   std::fill_n(scratch.state, nSize, false);
   scratch.rowPointers.resize(nSize);
+  const std::size_t ldltRemoveTmpBytes
+      = LCP<Scalar>::estimate_transfer_i_from_C_to_N_mem_req(n, nskip);
+  DART_ASSERT(ldltRemoveTmpBytes % sizeof(Scalar) == 0);
+  scratch.ldltRemoveTmp.resize(ldltRemoveTmpBytes / sizeof(Scalar));
+  void* ldltRemoveTmp = scratch.ldltRemoveTmp.empty()
+                            ? nullptr
+                            : static_cast<void*>(scratch.ldltRemoveTmp.data());
 
   // create LCP object. note that tmp is set to delta_w to save space, this
   // optimization relies on knowledge of how tmp is used, so be careful!
@@ -492,12 +499,12 @@ bool SolveLCPWithScratch(
           case 5: // keep going
             x[si] = lo[si];
             scratch.state[static_cast<std::size_t>(si)] = false;
-            lcp.transfer_i_from_C_to_N(si, nullptr);
+            lcp.transfer_i_from_C_to_N(si, ldltRemoveTmp);
             break;
           case 6: // keep going
             x[si] = hi[si];
             scratch.state[static_cast<std::size_t>(si)] = true;
-            lcp.transfer_i_from_C_to_N(si, nullptr);
+            lcp.transfer_i_from_C_to_N(si, ldltRemoveTmp);
             break;
         }
 

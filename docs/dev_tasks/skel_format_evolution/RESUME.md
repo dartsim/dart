@@ -1,6 +1,92 @@
 # Resume: SKEL Format Evolution
 
-## Current Resume Checkpoint (2026-07-03)
+## Current Resume Checkpoint (2026-07-05)
+
+Phase 2 is open as PR
+[#3288](https://github.com/dartsim/dart/pull/3288) from
+`feature/remove-skel-dart7-phase2` to `main`. The branch was merged locally
+with current `origin/main` (`4c7f5875ee9`) before PR creation. The original
+merge conflict was in `docs/dev_tasks/usd_scene_loader/README.md`; it was
+resolved by keeping the new OpenUSD blocker/specification-intake text from
+`main` while removing SKEL from the DART 7 parity/front-door wording.
+
+The local merge-validation pass on 2026-07-05 completed:
+
+- lightweight invariants: SKEL parser/source files absent, `data/skel` absent,
+  Kima Collada meshes present under `data/mesh/kima/*.dae`;
+- `pixi run python -m pytest python/tests/unit/test_check_dartpy_import_layout.py python/tests/unit/utils/test_utils_stub_import.py python/tests/unit/test_check_dart7_world_promotion_blockers.py`
+  — 28 passed;
+- `pixi run check-ai-commands`;
+- `pixi run check-dartpy-import-layout`;
+- `pixi run run-cpp-target INTEGRATION_io_Read` — 7 passed, including
+  `Read.SkelIsNotSupported`;
+- `pixi run run-cpp-target UNIT_dynamics_MeshShape` — 49 passed;
+- `pixi run run-cpp-target test_mesh_loaderNone` — 5 passed;
+- `pixi run lint`;
+- `pixi run build`;
+- `pixi run test-all` — 6/6 phases passed: linting, build, unit tests,
+  simulation tests, Python tests, and documentation;
+- `pixi run -e cuda test-all` — 7/7 phases passed on the host RTX 5000 Ada
+  GPU, including CUDA tests and benchmark smoke.
+
+The sdformat-boundary checker is not part of this Phase 2 branch; it lives on
+the stacked writer branch that owns the SDF IO boundary work. Do not broaden the
+Phase 2 removal PR with that later lint machinery.
+
+Immediate next step: monitor PR #3288 review and CI. After Phase 2 lands,
+continue the stacked follow-up branch for Phase 3/4/5 task closeout and final
+dev-task cleanup.
+
+## Previous Resume Checkpoint (2026-07-03)
+
+Phase 2 is implemented on `feature/remove-skel-dart7-phase2` and awaiting PR
+creation/review/merge. The branch removes the C++ SKEL parser, `dart::io`
+`.skel` and `<skel>` inference/dispatch, `ModelFormat::Skel`,
+parser-specific tests, dartpy SKEL bindings/stubs, user-facing SKEL docs, and
+all sample `.skel` fixtures. Non-SKEL Kima Collada meshes were relocated from
+`data/skel/kima/` to `data/mesh/kima/` and the mesh tests were updated to load
+that path.
+
+Phase 2 validation run on the branch:
+
+- `pixi run python -m pytest python/tests/unit/test_check_dartpy_import_layout.py python/tests/unit/utils/test_utils_stub_import.py python/tests/unit/test_check_dart7_world_promotion_blockers.py`
+- `pixi run check-ai-commands`
+- `pixi run check-dartpy-import-layout`
+- `pixi run run-cpp-target INTEGRATION_io_Read`
+- `pixi run run-cpp-target UNIT_dynamics_MeshShape`
+- `pixi run run-cpp-target test_mesh_loaderNone`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit`
+- `pixi run test-py`
+- `pixi run test-all`
+- `CUDAARCHS=89 DART_CUDA_ARCHITECTURES=89 pixi run -e cuda test-all`
+
+The first CUDA full-gate attempt hit a stale/default generated CMake CUDA
+architecture (`compute_52`) before target-level `DART_CUDA_ARCHITECTURES`
+could apply. Clearing `build/cuda/cpp/Release` and setting both
+`CUDAARCHS=89` and `DART_CUDA_ARCHITECTURES=89` matched this host's RTX 5000
+Ada GPU and the CUDA full gate passed.
+
+The DART 7 changelog entry now links to Phase 2 PR #3288.
+
+Changelog decision:
+
+- Mode: draft
+- Base evidence: `origin/main`
+- Scope evidence: `git diff --stat origin/main...HEAD` removes the SKEL parser,
+  `.skel` fixtures, SKEL docs, parser tests, and dartpy SKEL bindings/stubs.
+- Decision: entry required
+- Target section: `CHANGELOG.md` -> DART 7 -> Breaking Changes
+- Entry text: present as the legacy SKEL removal bullet with PR link #3288.
+- Follow-up: none for the Phase 2 changelog link.
+
+Post-commit completion audit cleared stale active-doc references that still
+listed SKEL as a DART 7 model-loading/parser target. The remaining tracked
+SKEL-format references outside this task folder are the DART 7 removal
+changelog entry and historical DART 6 changelog entries.
+
+## Previous Resume Checkpoint (2026-07-03)
 
 Phase 1 landed on `main` via PR
 [#3065](https://github.com/dartsim/dart/pull/3065), merge commit
@@ -14,8 +100,8 @@ converted fixtures are:
 - `data/skel/shapes.skel` -> `data/sdf/test/shapes.sdf`
 - `data/skel/test/test_shapes.skel` -> `data/sdf/test/test_shapes.sdf`
 
-The only remaining `.skel` strings under tests are parser-specific temporary
-paths in `tests/integration/io/test_skel_parser.cpp`; remove those with the
+The only remaining `.skel` strings under tests were parser-specific temporary
+paths in `tests/integration/io/test_skel_parser.cpp`; they were removed with the
 parser in Phase 2.
 
 ## Last Session Summary
@@ -32,15 +118,13 @@ can be recovered without adopting the old SKEL YAML direction.
 
 ## Current Branch
 
-`main` — Phase 1 is merged. Start Phase 2 from a fresh branch off current
-`main`.
+`feature/remove-skel-dart7-phase2` — Phase 2 removal is published as PR #3288
+and merged with current `origin/main` for PR readiness.
 
 ## Immediate Next Step
 
-Pick Phase 2: remove `SkelParser`, `.skel` inference/dispatch, SKEL tests,
-bindings/stubs, and `.skel` sample fixtures. Do not delete the whole
-`data/skel` tree without first preserving or relocating non-SKEL mesh assets
-such as `data/skel/kima/*.dae`, which are still loaded by live mesh tests.
+Monitor PR #3288 review and CI. After Phase 2 lands, continue the stacked
+follow-up branch for Phase 3/4/5 task closeout.
 
 ## Context That Would Be Lost
 
@@ -52,16 +136,21 @@ such as `data/skel/kima/*.dae`, which are still loaded by live mesh tests.
   [`usd_scene_loader/`](../usd_scene_loader/) — do not duplicate.
 - Export is part of the work, not a follow-up: round-trip enables save /
   load in the dartsim editor (PLAN-101).
+- The old `feature/skel_yaml` prototype SHA (`1dd83e31586`) is no longer
+  reachable in this worktree. Do not depend on it for Phase 3 or Phase 5 unless
+  another clone still has the object.
 
 ## How to Resume
 
 ```bash
-git checkout main
-git pull --ff-only origin main
-git checkout -b feature/remove-skel-dart7-phase2
+git checkout feature/remove-skel-dart7-phase2
+git status && git log -3 --oneline
 
-# Inspect the prototype plan (while reflog still holds it):
-git show 1dd83e31586:docs/dev_tasks/skel_format/phase-01-deprecation.md
+# Optional archaeology only if another clone still has the object:
+# git show 1dd83e31586:docs/dev_tasks/skel_format/phase-02-yaml.md
+# git show 1dd83e31586:docs/dev_tasks/skel_format/phase-04-export.md
 ```
 
-Then start the Phase 2 removal work from this folder's `README.md`.
+Then finish PR creation/review/merge follow-up for Phase 2. For Phase 3 or
+Phase 5, continue from the stacked follow-up branch, this folder's `README.md`,
+and current DART 7 requirements, not from the old prototype.
