@@ -573,19 +573,23 @@ PSD-backend injection). (PR #2747 is another author's.) <- #2760 (GPU-vs-CPU per
 long ago (`74338577982`). The instructions below it about pushing that branch are
 stale — ignore them.
 
-**Current (2026-07-04):** two M7 slices **merged** this cycle — PR #3257
-(peak-contacts diagnostic, `1819b801228`) and PR #3264 (Fig-23 statistics packet,
-`dbe6fcccb1c`). A third small doc-accuracy slice is in progress on
-`docs/deformable-linear-solver-selection-accuracy`: the roadmap's stale
-"direct-solve node cap (20k)" is corrected to the verified current architecture
-(dense LDLT below `kProjectedNewtonDenseDirectDofCap` = 128 DoF / ~42 nodes,
-iterative sparse Jacobi-CG above to a 1M-node ceiling, sparse-direct
-`SimplicialLDLT` kept
-out of the allocation-safe loop). Next substantive M7 work needs maintainer
-direction or is blocked:
+**Current (2026-07-04):** three M7 code slices **merged** this cycle — PR #3257
+(peak-contacts diagnostic, `1819b801228`), PR #3264 (Fig-23 statistics packet,
+`dbe6fcccb1c`), and PR #3274 (matrix-free-vs-sparse-CG contact-heavy crossover
+benchmark + scaled parity regression, `43dbd91474c`). The doc-accuracy slice
+PR #3269 (linear-solver-selection accuracy, `28a91b909d6`) is also merged; it
+corrected the roadmap's stale "direct-solve node cap (20k)" to the verified
+current architecture (dense LDLT below `kProjectedNewtonDenseDirectDofCap` = 128
+DoF / ~42 nodes, iterative sparse Jacobi-CG above to a 1M-node ceiling,
+sparse-direct `SimplicialLDLT` kept out of the allocation-safe loop) and records
+the crossover benchmark. Next substantive M7 work needs maintainer direction or
+is blocked:
 
-- Matrix-free-CG auto-selection needs a maintainer crossover-policy decision; a
-  measurement-only crossover benchmark is the safe precursor.
+- Matrix-free-CG auto-selection: the contact-heavy crossover benchmark + mid-size
+  scaled parity regression landed (#3274) as the evidence base; choosing the
+  automatic very-large-mesh selection policy itself is a maintainer decision
+  (sparse Jacobi-CG remains the automatic path above the dense-direct cap, while
+  matrix-free stays opt-in until then).
 - A genuine avg-contacts-per-step axis needs a new evolving multi-step
   self-contact fixture.
 - Process peak-memory tracking needs a memory-column semantics choice.
@@ -611,11 +615,27 @@ incomplete.
 
 ## How To Resume
 
-Current slice (2026-07-04) — Fig-23 statistics packet gates (Python-only, no C++ rebuild):
+Current checkpoint (2026-07-04) — maintainer-directed next slice:
 
 ```bash
-git checkout feature/ipc-deformable-fig23-statistics-packet
+git fetch origin main
+git checkout main
+git merge --ff-only origin/main
 git status && git log -3 --oneline
+sed -n '560,610p' docs/dev_tasks/ipc_deformable_solver/RESUME.md
+sed -n '270,295p' docs/plans/081-deformable-implicit-barrier-solver/ipc-parity-roadmap.md
+```
+
+Do not resume a merged feature branch. Open a new branch only after maintainer
+direction chooses one of the currently blocked or policy-gated M7 follow-ups:
+matrix-free-CG auto-selection, avg-contacts-per-step fixture design,
+process-memory column semantics, M4 asset pipeline work, AMG/multigrid
+preconditioning, or on-device GPU assembly + solve.
+
+Prior merged slice (#3264) — Fig-23 statistics packet gates (archived):
+
+```bash
+# git checkout feature/ipc-deformable-fig23-statistics-packet   # merged as dbe6fcccb1c
 pixi run python -m pytest python/tests/unit/test_write_plan081_deformable_fig23_packet.py -q
 pixi run check-lint-py
 # End-to-end against a real benchmark run (proves the manifest matches real counters):

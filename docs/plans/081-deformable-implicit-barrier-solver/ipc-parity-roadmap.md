@@ -276,10 +276,19 @@ The FEM-bar and chunky 3D cube benchmarks report the same `cg_iters_per_step`,
 block-Jacobi preconditioner and reports `projectedNewtonMatrixFreeSolves`.
 Benchmark rows expose `matrix_free_solves_per_step` plus zero sparse-Hessian
 footprint counters. It is now covered by ground-contact parity regressions: C++
-compares direct sparse, sparse IC-CG, and matrix-free CG on the same contacting
-FEM cube, while dartpy compares direct and matrix-free contact settling.
-Remaining hardening: larger contact-heavy meshes and deciding when matrix-free
-CG becomes the automatic very-large-mesh path.
+compares direct sparse, sparse Jacobi-CG, and matrix-free CG on the same
+contacting FEM cube, while dartpy compares direct and matrix-free contact
+settling.
+A contact-heavy crossover benchmark now measures the trade-off directly:
+`BM_DeformableContactCube{Cg,MatrixFreeCg}Step` runs an unpinned FEM cube
+settling on a stiff ground barrier under both sparse Jacobi-CG and matrix-free
+block-Jacobi CG at increasing resolutions (27/64/125/216 nodes), reporting
+per-step CG iterations, steepest-descent fallbacks, and assembled-Hessian
+footprint, with a mid-size scaled parity regression proving matrix-free matches
+sparse-CG above the dense-direct cap. Remaining hardening: choosing an automatic
+very-large-mesh matrix-free selection policy is a maintainer decision the
+crossover evidence now informs; sparse Jacobi-CG remains the automatic path
+above the dense-direct cap, while matrix-free stays opt-in until then.
 
 **Fig-23 statistics harness — shape-parity scaffold landed:** the deformable
 solver diagnostics now include the peak active-contact count per step
