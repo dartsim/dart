@@ -43,6 +43,90 @@ The 2026-07-05 local stack-refresh validation also passed on
 - `pixi run lint`;
 - `pixi run build`.
 
+## Phase 2 PR Draft (pending approval)
+
+Do not push or open this PR without explicit maintainer/user approval.
+
+Title:
+
+```text
+Remove legacy SKEL format from DART 7
+```
+
+Base/head:
+
+```text
+base: main
+head: feature/remove-skel-dart7-phase2
+milestone: DART 7.0
+```
+
+Body:
+
+```markdown
+## Summary
+
+- Remove the legacy SKEL model format from DART 7 and route users to URDF,
+  SDF, MJCF, or a `release-6.*` branch for old SKEL assets.
+
+## Motivation / Problem
+
+- SKEL is a DART-only legacy XML format. DART 7 should not carry it forward or
+  redesign it as YAML while the maintained interchange paths are URDF, SDF,
+  MJCF, and future project/scene serialization.
+
+## Changes / Key Changes
+
+- Removed `SkelParser`, `ModelFormat::Skel`, `.skel` / `<skel>` format
+  inference, and direct SKEL dispatch from `dart::io`.
+- Removed `.skel` sample assets, parser-specific tests, dartpy bindings/stubs,
+  and user-facing SKEL docs.
+- Moved the non-SKEL Kima Collada meshes from `data/skel/kima/` to
+  `data/mesh/kima/`.
+- Added coverage that `.skel` files are not supported through
+  `dart::io::readSkeleton()`.
+- Updated DART 7 docs and changelog guidance for migrating SKEL assets to URDF,
+  SDF, or MJCF.
+
+## Testing
+
+- `pixi run python -m pytest python/tests/unit/test_check_dartpy_import_layout.py python/tests/unit/utils/test_utils_stub_import.py python/tests/unit/test_check_dart7_world_promotion_blockers.py`
+- `pixi run check-ai-commands`
+- `pixi run check-dartpy-import-layout`
+- `pixi run run-cpp-target INTEGRATION_io_Read`
+- `pixi run run-cpp-target UNIT_dynamics_MeshShape`
+- `pixi run run-cpp-target test_mesh_loaderNone`
+- `pixi run lint`
+- `pixi run build`
+
+## Breaking Changes
+
+- [ ] None
+- Removes DART 7 SKEL loading and the `SkelParser` API. Migrate assets to URDF,
+  SDF, or MJCF, or use the active `release-6.*` branch for legacy SKEL
+  compatibility.
+
+## Related Issues / PRs (backports)
+
+- Closes https://github.com/dartsim/dart/issues/496
+- Phase 1 fixture conversion: https://github.com/dartsim/dart/pull/3065
+
+---
+
+#### Checklist
+
+- [ ] Milestone set (DART 7.0 for `main`, branch-matching DART 6.x release
+      milestone for the active DART 6 LTS branch)
+- [x] CHANGELOG.md updated per `docs/onboarding/changelog.md` if required
+- [x] Add unit tests for new functionality
+- [x] Document new methods and classes
+- [x] Add Python bindings (dartpy) if applicable
+```
+
+After the PR exists, update the SKEL-removal changelog bullet with the PR link
+before merge. That follow-up is also a GitHub/local branch mutation and needs
+explicit maintainer/user approval before pushing.
+
 Phase 3 is decided and committed locally on `work/skel-format-yaml-decision`.
 The decision record is [`03-yaml-decision.md`](03-yaml-decision.md): do not add
 YAML as a DART 7 `dart::io` model format, do not build a YAML wrapper over
