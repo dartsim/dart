@@ -19,6 +19,25 @@ def test_default_build_dir_falls_back_to_ci_defaults():
     assert coverage_report.default_build_dir({}) == Path("build/default/cpp/Debug")
 
 
+def test_default_parallel_jobs_uses_shared_policy(monkeypatch):
+    monkeypatch.setattr(coverage_report, "compute_parallel_jobs", lambda: 7)
+
+    assert coverage_report.default_parallel_jobs() == 7
+    assert coverage_report.parse_args([]).jobs == 7
+
+
+def test_default_parallel_jobs_honors_env_override(monkeypatch):
+    monkeypatch.setenv("DART_PARALLEL_JOBS", "5")
+
+    assert coverage_report.default_parallel_jobs() == 5
+
+
+def test_parse_args_keeps_explicit_jobs_override(monkeypatch):
+    monkeypatch.setattr(coverage_report, "compute_parallel_jobs", lambda: 7)
+
+    assert coverage_report.parse_args(["--jobs", "3"]).jobs == 3
+
+
 def test_delete_excluded_coverage_files_removes_examples_and_tutorials(tmp_path):
     build_dir = tmp_path / "build"
     keep = build_dir / "dart" / "CMakeFiles" / "lib.dir" / "World.cpp.gcda"

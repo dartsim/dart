@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import os
 import subprocess
 import sys
@@ -26,6 +27,20 @@ LCOV_REMOVE_PATTERNS = [
     "*/tutorials/*",
     "*/dart/gui/*",
 ]
+
+
+def _load_compute_parallel_jobs():
+    module_path = Path(__file__).resolve().with_name("parallel_jobs.py")
+    spec = importlib.util.spec_from_file_location("parallel_jobs", module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"failed to load parallel job policy: {module_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.compute_parallel_jobs
+
+
+compute_parallel_jobs = _load_compute_parallel_jobs()
 
 
 def default_build_dir(env: dict[str, str] | None = None) -> Path:
@@ -58,6 +73,10 @@ def collect_gcda_directories(build_dir: Path) -> list[Path]:
 def round_robin_chunks(items: Sequence[Path], chunk_count: int) -> list[list[Path]]:
     chunk_count = max(1, chunk_count)
     return [list(items[index::chunk_count]) for index in range(chunk_count)]
+
+
+def default_parallel_jobs() -> int:
+    return max(1, compute_parallel_jobs())
 
 
 def lcov_capture_command(directories: Sequence[Path], output_file: Path) -> list[str]:
@@ -136,8 +155,8 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument(
         "--jobs",
         type=int,
-        default=int(os.environ.get("DART_PARALLEL_JOBS") or os.cpu_count() or 1),
-        help="Number of parallel lcov capture workers.",
+        default=default_parallel_jobs(),
+        help="Number of parallel lcov capture workers. Defaults to scripts/parallel_jobs.py.",
     )
     parser.add_argument(
         "--output-file",
