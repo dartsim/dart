@@ -1,5 +1,5 @@
 ---
-description: update documentation without code changes
+description: update docs or AI instruction visibility without code changes
 argument-hint: "<topic>"
 agent: build
 ---
@@ -27,7 +27,9 @@ Update documentation: $ARGUMENTS
      and `CHANGELOG.md` when `dart-changelog` requires a release-note entry
    - AI source files: `.claude/commands/**`, `.claude/skills/**`
 3. For AI workflow changes, run `pixi run sync-ai-commands`; do not hand-edit generated `.opencode/` or `.codex/` files
-4. Update indexes and cross-references that point to changed docs
+4. Update indexes and cross-references that point to changed docs. For AI docs,
+   keep always-loaded entrypoints compact: improve owner placement or pointers
+   instead of duplicating procedures.
 5. Use `docs/ai/verification.md` to select the docs-only or AI docs/adapters
    gate set, then run `pixi run lint` before committing
 6. Invoke the `dart-changelog` routine for the `CHANGELOG.md` decision and any

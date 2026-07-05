@@ -336,6 +336,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Made DART AI workflows more completion- and changelog-aware by default, with
   verification-first `$dart-resume` task management and a reusable
   `$dart-changelog` routine for consistent release-note decisions and entries.
+- Clarified AI-native guidance so always-loaded agent rules stay compact,
+  consequential decisions use repo-wide north-star context and proportionate
+  evidence, and in-scope failures are root-caused instead of hidden.
 - Added a canonical AI terminology owner and aligned the workflow, capability,
   skill, command-adapter, generated-adapter, MCP, hook, subagent, and work
   packet language across the AI docs, compatibility guide, sync checks, and
