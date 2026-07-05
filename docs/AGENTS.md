@@ -2,86 +2,55 @@
 
 Agent entry point for DART documentation.
 
-## AI Documentation Architecture
+## Required Reading
 
-```
-DART AI Documentation Structure
-===============================
+Start with:
 
-Root Entry Points
-├── AGENTS.md          ← Concise pointer board and session context table
-├── CLAUDE.md          ← Redirect for Claude Code
-└── GEMINI.md          ← Redirect for Gemini CLI
+1. Root `AGENTS.md`
+2. `docs/README.md`
+3. `docs/information-architecture.md`
+4. The local folder `README.md` or `AGENTS.md` for the surface you are editing
 
-Tool-Specific Commands
-├── .claude/commands/      ← Claude Code (/dart-*)
-├── .opencode/command/     ← OpenCode (/dart-*)
-└── .codex/skills/         ← Codex ($dart-* generated workflow skills)
+For AI-infra docs, also read `docs/ai/principles.md`,
+`docs/ai/terminology.md`, `docs/ai/verification.md`, and
+`docs/ai/components.md`.
 
-Shared Skills
-├── .claude/skills/        ← Claude Code + OpenCode
-└── .codex/skills/         ← Codex (synced)
-    ├── dart-build/SKILL.md
-    ├── dart-ci/SKILL.md
-    ├── dart-contribute/SKILL.md
-    ├── dart-io/SKILL.md
-    ├── dart-python/SKILL.md
-    └── dart-test/SKILL.md
+## Bucket Map
 
-Knowledge Base
-└── docs/
-    ├── ai/                ← AI-native principles, mission, and workflow policy
-    ├── assets/            ← Source-controlled docs assets outside RTD static
-    ├── background/        ← Theory and research foundations
-    ├── design/            ← Durable technical design proposals
-    ├── dev_tasks/         ← Active multi-session task tracking
-    ├── doxygen/           ← C++ API Doxygen inputs
-    ├── plans/             ← Living roadmap, priority, open gaps, and gates
-    ├── onboarding/        ← Developer knowledge base and onboarding
-    │   └── ai-tools.md    ← Tool compatibility notes
-    ├── python_api/        ← Reusable dartpy API module pages
-    └── readthedocs/       ← User documentation
-```
+| Path           | Use for                                                             |
+| -------------- | ------------------------------------------------------------------- |
+| `ai/`          | AI-native principles, terminology, workflows, sessions, and gates   |
+| `assets/`      | Source-controlled docs assets outside RTD `_static/`                |
+| `background/`  | Theory and research foundations                                     |
+| `design/`      | Durable technical rationale and design decisions                    |
+| `dev_tasks/`   | Temporary active multi-session task tracking                        |
+| `doxygen/`     | C++ API Doxygen inputs                                              |
+| `onboarding/`  | Current developer handbook path: build/test/CI/release/API guidance |
+| `plans/`       | Living roadmap, priority, dependencies, gates, and plan lifecycle   |
+| `python_api/`  | Reusable dartpy API module pages                                    |
+| `readthedocs/` | Published user documentation site source                            |
 
-## Quick Navigation
+## Placement Rules
 
-| Directory                          | Purpose                                                 |
-| ---------------------------------- | ------------------------------------------------------- |
-| `ai/`                              | AI-native mission, workflow policy, and verification    |
-| `assets/`                          | Shared docs assets outside RTD `_static/`               |
-| `background/`                      | Theory/research foundations                             |
-| `design/`                          | Durable technical design proposals                      |
-| `dev_tasks/`                       | Active development task tracking                        |
-| `doxygen/`                         | C++ API Doxygen inputs                                  |
-| `onboarding/`                      | Developer knowledge base (architecture, build, testing) |
-| `onboarding/ai-tools.md`           | AI tool compatibility notes                             |
-| `onboarding/api-boundaries.md`     | Public vs internal API policy                           |
-| `onboarding/release-management.md` | Release workflow guidance                               |
-| `plans/`                           | Living roadmap, priority, gaps, gates, and lifecycle    |
-| `python_api/`                      | Reusable dartpy API module pages                        |
-| `readthedocs/`                     | Published user documentation (Sphinx/RST)               |
+- Classify docs by lifecycle first, then audience, then topic.
+- Prefer updating an existing owner doc over adding a new file.
+- Put mutable priority, sequencing, next-step, and gate state in `plans/`, not
+  `design/`.
+- Put active handoff and resume state in `dev_tasks/`; delete the folder when
+  the task completes after durable content is promoted.
+- Put user-facing documentation in `readthedocs/` or root user entrypoints.
+- Keep `onboarding/` as the current handbook path unless a dedicated migration
+  updates all links, workflows, generated adapters, and policy checks together.
 
-## By Task
+See `docs/information-architecture.md` for the full placement matrix and future
+split or rename criteria.
 
-- **Building DART?** → `onboarding/building.md` or load skill `dart-build`
-- **Debugging CI?** → `onboarding/ci-cd.md` or load skill `dart-ci`
-- **Running tests?** → `onboarding/testing.md` or load skill `dart-test`
-- **Loading models?** → `onboarding/io-parsing.md` or load skill `dart-io`
-- **Working on dartpy?** → `onboarding/python-bindings.md` or load skill `dart-python`
-- **Understanding architecture?** → `onboarding/architecture.md`
-- **Writing durable design rationale?** → `design/README.md` +
-  `onboarding/api-boundaries.md`
-- **Understanding theory?** → `background/README.md`
-- **Designing public APIs?** → `onboarding/api-boundaries.md`
-- **Maintaining API docs?** → `onboarding/api-documentation.md`
-- **Revising project plans?** → `plans/README.md` or use `/dart-plan-update`
-- **Choosing next AI work?** → `ai/README.md#choosing-the-next-task` or use
-  `/dart-next` / `$dart-next`
-- **Contributing?** → `onboarding/contributing.md` or load skill `dart-contribute`
-- **Release workflow?** → `onboarding/release-management.md` or use `/dart-release-*`
-- **Adding docs?** → `readthedocs/README.md`
-- **AI tool issues?** → `onboarding/ai-tools.md`
+## Verification
 
-See root `AGENTS.md` for repo-wide guidance.
-Load `docs/ai/principles.md` for compact AI-infra axioms; it is the source of
-truth for principles, while `AGENTS.md` stays a pointer board.
+Use `docs/ai/verification.md` to select gates. For docs-structure or placement
+policy changes, run at least:
+
+- `pixi run lint-md`
+- `pixi run check-lint-md`
+- `pixi run check-docs-policy`
+- `pixi run check-lint-spell`

@@ -340,6 +340,10 @@ compatibility remains on the active DART 6 LTS branch._
   skill, command-adapter, generated-adapter, MCP, hook, subagent, and work
   packet language across the AI docs, compatibility guide, sync checks, and
   generated Codex adapters.
+- Added a documentation information-architecture owner that defines docs bucket
+  lifecycles, keeps `docs/onboarding/` as the current developer-handbook path,
+  and records when future folder splits or renames are justified.
+  ([#3290](https://github.com/dartsim/dart/pull/3290))
 - Added a structured `dart-changelog` decision note so Claude, Codex, OpenCode,
   and manual PR authors can record the inspected evidence, target release
   section, entry text, no-entry reason, and PR-link follow-up consistently.
