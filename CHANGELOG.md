@@ -226,13 +226,15 @@ compatibility remains on the active DART 6 LTS branch._
 
 - Made libsdformat a required dependency so SDF files are normalized through the
   official parser before DART imports them, including modern joint-axis frame
-  annotations such as `<axis><xyz expressed_in=...>`.
+  annotations such as `<axis><xyz expressed_in=...>`:
+  [#3291](https://github.com/dartsim/dart/pull/3291)
 - Modernized URDF/SDF/MJCF loading APIs around DART 7 parser names, cleaner
   resource-retriever ownership, and parser-specific SDF selection of named
-  models from multi-model world files.
+  models from multi-model world files:
+  [#3291](https://github.com/dartsim/dart/pull/3291)
 - Fixed SDF world includes so relative meshes inside included models resolve
   against the included model URI and survive SDF writer read/write/read
-  round-trips.
+  round-trips: [#3291](https://github.com/dartsim/dart/pull/3291)
 - Added a conservative SDF writer for `Skeleton` round-trips, covering links,
   model self-collision state, non-default skeleton gravity through SDF world
   gravity,
@@ -246,7 +248,8 @@ compatibility remains on the active DART 6 LTS branch._
   visual shadow/hidden/transparency state, visual material colors plus PBR
   metallic/roughness factors, and collision surface contact disable bitmasks,
   zero-threshold bounce restitution, and ODE friction/slip metadata while
-  reporting unsupported constructs explicitly.
+  reporting unsupported constructs explicitly:
+  [#3291](https://github.com/dartsim/dart/pull/3291)
 - Added a conservative URDF writer for `Skeleton` round-trips that fit URDF's
   tree model, covering one-root link trees with identity root FreeJoint or
   WeldJoint validation, revolute/continuous/prismatic/fixed child joints,
@@ -256,7 +259,8 @@ compatibility remains on the active DART 6 LTS branch._
   inertial data, local
   visual/collision poses, primitive geometry, absolute and package URI meshes,
   visual colors, and explicit diagnostics for unsupported or lossy DART
-  constructs including soft bodies and invalid mesh resources.
+  constructs including soft bodies and invalid mesh resources:
+  [#3291](https://github.com/dartsim/dart/pull/3291)
 - Improved mesh and asset import behavior across convex meshes, polygon meshes,
   Collada scaling, GLTF PBR materials, empty mesh URIs, and sample robot data.
 
@@ -405,7 +409,7 @@ compatibility remains on the active DART 6 LTS branch._
   gates replacing broad stale test targets.
 - Added a lint/check-lint guard that keeps SDF IO on libsdformat typed DOM APIs
   and rejects TinyXML, raw XML tree, or SDF element text-parsing helpers in
-  `dart/utils/sdf`.
+  `dart/utils/sdf`: [#3291](https://github.com/dartsim/dart/pull/3291)
 - Restored Performance Dashboard benchmark builds in Pixi environments that use
   the host compiler while Conda binutils appear earlier on `PATH`.
 - Sharded the heaviest simulation CTest binaries, tightened CUDA environment
