@@ -216,6 +216,15 @@ StepAllocationMeasurement measureWorldStepAllocations(
     world->step();
   }
 
+  // Opt-in allocation-site attribution: set DART_TEST_ALLOCATION_BACKTRACE
+  // to dump aggregated backtraces of every measured operator-new call.
+  const bool sampleBacktraces
+      = std::getenv("DART_TEST_ALLOCATION_BACKTRACE") != nullptr;
+  if (sampleBacktraces) {
+    dart::test::clearAllocationBacktraces();
+    dart::test::setAllocationBacktraceSamplingEnabled(true);
+  }
+
   dart::test::ScopedHeapAllocationCounter globalCounter;
   dart::test::ScopedRawHeapAllocationCounter rawCounter;
   dart::test::ScopedCountingMemoryAllocatorCounter allocatorCounter(allocator);
@@ -227,6 +236,11 @@ StepAllocationMeasurement measureWorldStepAllocations(
   globalCounter.stop();
   rawCounter.stop();
   allocatorCounter.stop();
+
+  if (sampleBacktraces) {
+    dart::test::setAllocationBacktraceSamplingEnabled(false);
+    dart::test::dumpAllocationBacktraces(std::cout, 25u);
+  }
 
   return {
       globalCounter.snapshot(),

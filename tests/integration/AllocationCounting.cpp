@@ -47,10 +47,22 @@
 #include <atomic>
 #include <limits>
 #include <new>
+#include <ostream>
 #include <string>
 
 #include <cerrno>
 #include <cstdlib>
+#include <cstring>
+
+#if defined(__linux__) && defined(__GLIBC__)
+  #define DART_TEST_HAS_ALLOCATION_BACKTRACE 1
+  #include <cxxabi.h>
+  #include <dlfcn.h>
+  #include <execinfo.h>
+
+  #include <algorithm>
+  #include <vector>
+#endif
 
 namespace {
 
@@ -62,11 +74,104 @@ std::atomic<std::size_t> g_heapAllocationBytes{0u};
 [[maybe_unused]] std::atomic<std::size_t> g_rawHeapAllocationCount{0u};
 [[maybe_unused]] std::atomic<std::size_t> g_rawHeapAllocationBytes{0u};
 
+#if defined(DART_TEST_HAS_ALLOCATION_BACKTRACE)
+
+// Allocation-site aggregation for the operator-new surface. The record path
+// must not allocate: fixed static storage, open addressing, spinlock insert.
+constexpr int kBacktraceCaptureDepth = 14;
+// Skip captureAllocationBacktrace, recordHeapAllocation, and operator new.
+constexpr int kBacktraceSkipFrames = 3;
+constexpr int kBacktraceStoredDepth
+    = kBacktraceCaptureDepth - kBacktraceSkipFrames;
+constexpr std::size_t kBacktraceSlots = 1u << 16;
+
+struct BacktraceSlot
+{
+  std::size_t hash{0u};
+  std::size_t count{0u};
+  std::size_t bytes{0u};
+  int depth{0};
+  void* frames[kBacktraceStoredDepth]{};
+};
+
+BacktraceSlot g_backtraceSlots[kBacktraceSlots];
+std::atomic<bool> g_backtraceSamplingEnabled{false};
+std::atomic<std::size_t> g_backtraceDroppedSamples{0u};
+std::atomic_flag g_backtraceLock = ATOMIC_FLAG_INIT;
+thread_local bool t_inBacktraceCapture = false;
+
+void captureAllocationBacktrace(std::size_t bytes) noexcept
+{
+  if (t_inBacktraceCapture) {
+    return;
+  }
+  t_inBacktraceCapture = true;
+
+  void* rawFrames[kBacktraceCaptureDepth];
+  const int captured = ::backtrace(rawFrames, kBacktraceCaptureDepth);
+  const int depth
+      = captured > kBacktraceSkipFrames ? captured - kBacktraceSkipFrames : 0;
+  if (depth == 0) {
+    t_inBacktraceCapture = false;
+    return;
+  }
+  void** frames = rawFrames + kBacktraceSkipFrames;
+
+  // FNV-1a over the stored frames.
+  std::size_t hash = 1469598103934665603ull;
+  for (int i = 0; i < depth; ++i) {
+    hash ^= reinterpret_cast<std::size_t>(frames[i]);
+    hash *= 1099511628211ull;
+  }
+  if (hash == 0u) {
+    hash = 1u;
+  }
+
+  while (g_backtraceLock.test_and_set(std::memory_order_acquire)) {
+  }
+  std::size_t index = hash & (kBacktraceSlots - 1u);
+  bool stored = false;
+  for (std::size_t probe = 0u; probe < kBacktraceSlots; ++probe) {
+    BacktraceSlot& slot = g_backtraceSlots[index];
+    if (slot.hash == hash && slot.depth == depth) {
+      slot.count += 1u;
+      slot.bytes += bytes;
+      stored = true;
+      break;
+    }
+    if (slot.hash == 0u) {
+      slot.hash = hash;
+      slot.count = 1u;
+      slot.bytes = bytes;
+      slot.depth = depth;
+      for (int i = 0; i < depth; ++i) {
+        slot.frames[i] = frames[i];
+      }
+      stored = true;
+      break;
+    }
+    index = (index + 1u) & (kBacktraceSlots - 1u);
+  }
+  g_backtraceLock.clear(std::memory_order_release);
+
+  if (!stored) {
+    g_backtraceDroppedSamples.fetch_add(1u, std::memory_order_relaxed);
+  }
+  t_inBacktraceCapture = false;
+}
+
+#endif // DART_TEST_HAS_ALLOCATION_BACKTRACE
+
 void recordHeapAllocation(std::size_t bytes) noexcept
 {
   if (g_heapAllocationTrackingEnabled.load(std::memory_order_relaxed)) {
     g_heapAllocationCount.fetch_add(1u, std::memory_order_relaxed);
     g_heapAllocationBytes.fetch_add(bytes, std::memory_order_relaxed);
+#if defined(DART_TEST_HAS_ALLOCATION_BACKTRACE)
+    if (g_backtraceSamplingEnabled.load(std::memory_order_relaxed)) {
+      captureAllocationBacktrace(bytes);
+    }
+#endif
   }
 }
 
@@ -514,5 +619,99 @@ CountingMemoryAllocatorSnapshot ScopedCountingMemoryAllocatorCounter::snapshot()
 {
   return mAllocator.snapshot();
 }
+
+#if defined(DART_TEST_HAS_ALLOCATION_BACKTRACE)
+
+void setAllocationBacktraceSamplingEnabled(bool enabled)
+{
+  if (enabled) {
+    // Prime the libgcc unwinder outside any counting window so its lazy
+    // initialization allocations are not attributed to measured code.
+    void* primeFrames[kBacktraceCaptureDepth];
+    t_inBacktraceCapture = true;
+    ::backtrace(primeFrames, kBacktraceCaptureDepth);
+    t_inBacktraceCapture = false;
+  }
+  g_backtraceSamplingEnabled.store(enabled, std::memory_order_relaxed);
+}
+
+void clearAllocationBacktraces()
+{
+  while (g_backtraceLock.test_and_set(std::memory_order_acquire)) {
+  }
+  for (std::size_t i = 0u; i < kBacktraceSlots; ++i) {
+    g_backtraceSlots[i] = BacktraceSlot{};
+  }
+  g_backtraceLock.clear(std::memory_order_release);
+  g_backtraceDroppedSamples.store(0u, std::memory_order_relaxed);
+}
+
+std::size_t dumpAllocationBacktraces(std::ostream& os, std::size_t topN)
+{
+  struct SiteView
+  {
+    const BacktraceSlot* slot;
+  };
+  std::vector<SiteView> sites;
+  sites.reserve(1024u);
+  for (std::size_t i = 0u; i < kBacktraceSlots; ++i) {
+    if (g_backtraceSlots[i].hash != 0u) {
+      sites.push_back({&g_backtraceSlots[i]});
+    }
+  }
+  std::sort(sites.begin(), sites.end(), [](const auto& a, const auto& b) {
+    return a.slot->count > b.slot->count;
+  });
+
+  const std::size_t shown = std::min(topN, sites.size());
+  os << "[AllocationBacktraces] distinct_sites=" << sites.size()
+     << " dropped_samples="
+     << g_backtraceDroppedSamples.load(std::memory_order_relaxed) << "\n";
+  for (std::size_t s = 0u; s < shown; ++s) {
+    const BacktraceSlot& slot = *sites[s].slot;
+    os << "site#" << s << " count=" << slot.count << " bytes=" << slot.bytes
+       << "\n";
+    const int printDepth = std::min(slot.depth, 8);
+    for (int f = 0; f < printDepth; ++f) {
+      Dl_info info{};
+      os << "  [" << f << "] ";
+      if (::dladdr(slot.frames[f], &info) != 0 && info.dli_fname != nullptr) {
+        const char* base = std::strrchr(info.dli_fname, '/');
+        os << (base != nullptr ? base + 1 : info.dli_fname) << "+0x" << std::hex
+           << (reinterpret_cast<std::size_t>(slot.frames[f])
+               - reinterpret_cast<std::size_t>(info.dli_fbase))
+           << std::dec;
+        if (info.dli_sname != nullptr) {
+          int status = 0;
+          char* demangled
+              = abi::__cxa_demangle(info.dli_sname, nullptr, nullptr, &status);
+          os << " " << (status == 0 && demangled ? demangled : info.dli_sname);
+          std::free(demangled);
+        }
+      } else {
+        os << slot.frames[f];
+      }
+      os << "\n";
+    }
+  }
+  return sites.size();
+}
+
+#else // !DART_TEST_HAS_ALLOCATION_BACKTRACE
+
+void setAllocationBacktraceSamplingEnabled(bool)
+{
+  // Backtrace sampling is unsupported on this platform.
+}
+
+void clearAllocationBacktraces() {}
+
+std::size_t dumpAllocationBacktraces(std::ostream& os, std::size_t)
+{
+  os << "[AllocationBacktraces] unsupported on this platform\n";
+  return 0u;
+}
+
+#endif // DART_TEST_HAS_ALLOCATION_BACKTRACE
 
 } // namespace dart::test

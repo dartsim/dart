@@ -36,6 +36,7 @@
 #include <dart/common/MemoryAllocator.hpp>
 
 #include <atomic>
+#include <iosfwd>
 #include <string>
 
 #include <cstddef>
@@ -131,6 +132,21 @@ private:
   std::atomic<std::size_t> mDeallocationCount{0u};
   std::atomic<std::size_t> mDeallocationBytes{0u};
 };
+
+/// Enables or disables allocation-site backtrace sampling on the global
+/// operator-new counting surface. Diagnostic aid for attributing per-step
+/// allocations; supported on Linux/glibc only (no-op elsewhere). Enable
+/// before constructing a ScopedHeapAllocationCounter so the unwinder is
+/// primed outside the measured window.
+void setAllocationBacktraceSamplingEnabled(bool enabled);
+
+/// Clears the aggregated allocation-site table.
+void clearAllocationBacktraces();
+
+/// Writes the aggregated allocation sites, sorted by descending allocation
+/// count, to `os` (at most `topN` sites). Returns the number of distinct
+/// sites written. Allocates internally; call only outside counting windows.
+std::size_t dumpAllocationBacktraces(std::ostream& os, std::size_t topN);
 
 class ScopedCountingMemoryAllocatorCounter final
 {
