@@ -32,5 +32,6 @@ install(
 # Add subdirectories
 add_subdirectory(dart)
 add_subdirectory(fcl)
+add_subdirectory(native)
 add_subdirectory(ode)
 add_subdirectory(bullet)
