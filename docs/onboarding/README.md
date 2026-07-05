@@ -1,6 +1,13 @@
-# DART Developer Onboarding Guide
+# DART Developer Handbook
 
-## Start here next time
+This directory is the current developer handbook path for DART. It started as
+onboarding material, but now also owns durable contributor, maintainer,
+workflow, release, CI, API-policy, and landed design explanations that help
+humans and AI agents understand the project without rediscovering it from raw
+code. Folder-level placement rules live in
+[`../information-architecture.md`](../information-architecture.md).
+
+## Start Here Next Time
 
 - Building DART? → [building.md](building.md)
 - Running tests? → [testing.md](testing.md)
