@@ -3,10 +3,10 @@
 ## Current Resume Checkpoint (2026-07-05)
 
 `work/skel-format-yaml-decision` is the stacked writer/decision branch. It now
-has `feature/remove-skel-dart7-phase2` merged locally after that Phase 2 branch
-was refreshed on current `origin/main` (`5ec8b6644ad`). Phase 2 still has no
-matching GitHub PR; pushing/opening the PR requires explicit maintainer/user
-approval.
+has `origin/main` merged locally after Phase 2 landed as PR
+[#3288](https://github.com/dartsim/dart/pull/3288) at
+`5c75381f79a`. The remaining branch owns Phase 3/4/5 decision and writer
+closeout work on top of the merged SKEL-removal baseline.
 
 The Phase 2 branch's only merge conflict against `origin/main` was in
 `docs/dev_tasks/usd_scene_loader/README.md`; it was resolved by keeping the new
@@ -34,7 +34,17 @@ pass completed:
 The sdformat-boundary checker is not part of the Phase 2 removal branch; it
 lives on this stacked writer branch, which owns the SDF IO boundary work.
 
-The 2026-07-05 local stack-refresh validation also passed on
+The post-PR-#3288 stack refresh on 2026-07-05 resolved conflicts by keeping the
+sdformat-backed ambiguous SDF XML classifier on this branch, keeping the SDF
+writer integration target, and updating this task to treat PR #3288 as merged.
+Validation for that refresh passed:
+
+- `git diff --check`;
+- `git diff --cached --check`;
+- `pixi run check-sdf-sdformat-boundary`;
+- `pixi run lint`.
+
+The earlier 2026-07-05 local stack-refresh validation also passed on
 `work/skel-format-yaml-decision` after merging the refreshed Phase 2 branch:
 
 - `git diff --check`;
@@ -47,9 +57,10 @@ The 2026-07-05 local stack-refresh validation also passed on
 - `pixi run lint`;
 - `pixi run build`.
 
-## Phase 2 PR Draft (pending approval)
+## Phase 2 PR Record (merged)
 
-Do not push or open this PR without explicit maintainer/user approval.
+PR [#3288](https://github.com/dartsim/dart/pull/3288) merged on 2026-07-05.
+The historical PR body was:
 
 Title:
 
@@ -129,9 +140,7 @@ Body:
 - [x] Add Python bindings (dartpy) if applicable
 ```
 
-After the PR exists, update the SKEL-removal changelog bullet with the PR link
-before merge. That follow-up is also a GitHub/local branch mutation and needs
-explicit maintainer/user approval before pushing.
+The SKEL-removal changelog bullet now links to PR #3288.
 
 Phase 3 is decided and committed locally on `work/skel-format-yaml-decision`.
 The decision record is [`03-yaml-decision.md`](03-yaml-decision.md): do not add
@@ -2765,17 +2774,13 @@ can be recovered without adopting the old SKEL YAML direction.
 
 `work/skel-format-yaml-decision` — Phase 3 YAML decision, Phase 4 USD
 coordination, Phase 5 bounded writer-scope closeout, and accumulated SDF/URDF
-writer slices are local on top of the refreshed Phase 2 removal branch. The
-underlying Phase 2 branch remains `feature/remove-skel-dart7-phase2` and still
-needs an approved push/open PR step.
+writer slices are local on top of merged PR #3288.
 
 ## Immediate Next Step
 
-Push/open the Phase 2 PR only after explicit maintainer/user approval, then add
-the PR link to the DART 7 SKEL-removal changelog bullet before merge. After
-Phase 2 lands, prepare the final dev-task cleanup change. Phase 3, Phase 4, and
-Phase 5 are already recorded on this stacked branch; Phase 5 is closed for the
-current DART 7 writer scope unless a maintainer reopens writer scope.
+Prepare the final dev-task cleanup change. Phase 3, Phase 4, and Phase 5 are
+already recorded on this stacked branch; Phase 5 is closed for the current DART
+7 writer scope unless a maintainer reopens writer scope.
 
 ## Context That Would Be Lost
 
@@ -2805,16 +2810,13 @@ git checkout work/skel-format-yaml-decision
 git status && git log -4 --oneline
 pixi run run-cpp-target INTEGRATION_io_SdfWriter
 
-# To return to the Phase 2 PR-ready branch:
-# git checkout feature/remove-skel-dart7-phase2
-
 # Optional archaeology only if another clone still has the object:
 # git show 1dd83e31586:docs/dev_tasks/skel_format/phase-02-yaml.md
 # git show 1dd83e31586:docs/dev_tasks/skel_format/phase-04-export.md
 ```
 
-Then continue with the remaining task work by landing Phase 2 and preparing
-dev-task cleanup. If Phase 5 is reopened later, start from this folder's
+Then continue with the remaining task work by preparing dev-task cleanup. If
+Phase 5 is reopened later, start from this folder's
 `README.md`, `03-yaml-decision.md`, `04-usd-coordination.md`,
 `05-export-writers-plan.md`, `docs/onboarding/io-parsing.md`, and current
 DART 7 requirements, not from the old prototype.

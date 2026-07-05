@@ -14,7 +14,9 @@
       `dart::io` format inference and dispatch, bindings/stubs, parser-specific
       tests, `.skel` sample fixtures, and user-facing DART 7 docs. The Phase 2
       branch relocates the non-SKEL Kima Collada fixtures from `data/skel/kima/`
-      to `data/mesh/kima/` before deleting the legacy `data/skel/` tree.
+      to `data/mesh/kima/` before deleting the legacy `data/skel/` tree. PR
+      [#3288](https://github.com/dartsim/dart/pull/3288) landed on `main` at
+      `5c75381f79a`.
 - [x] Phase 3: Optional YAML model/scene format. Decision recorded in
       [`03-yaml-decision.md`](03-yaml-decision.md): do not add YAML as a DART 7
       `dart::io` model format or as a front-end syntax for URDF/SDF/MJCF. If
@@ -325,13 +327,11 @@ SKEL-YAML direction just because the prototype once existed.
 
 ## Immediate Next Steps
 
-1. Land the Phase 2 removal branch (`feature/remove-skel-dart7-phase2`) after
-   review. Add the PR link to the DART 7 changelog entry before merge.
-2. After the Phase 2 PR exists, update the DART 7 changelog's SKEL-removal
-   bullet with the PR link and prepare the dev-task cleanup change. Phase 5 no
-   longer needs local implementation work unless a maintainer reopens writer
-   scope; future SDF/URDF expansion criteria live in
-   `docs/onboarding/io-parsing.md`.
+1. Keep the stacked writer/decision branch refreshed on top of the merged
+   Phase 2 baseline (`main` at PR #3288).
+2. Prepare the final dev-task cleanup change. Phase 5 no longer needs local
+   implementation work unless a maintainer reopens writer scope; future SDF/URDF
+   expansion criteria live in `docs/onboarding/io-parsing.md`.
 3. Keep any further USD work coordinated with
    [`usd_scene_loader/`](../usd_scene_loader/) rather than duplicating that
    loader surface here.
