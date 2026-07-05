@@ -112,7 +112,8 @@ its own line so status updates remain git-history friendly.
   articulated link contacts. Continue the remaining Subsystem A polish in
   `docs/dev_tasks/rigid_body_dynamics_solver/`: warm starting, friction-cone
   iteration, and scaling work around the unified contact solve; keep richer
-  model-loading diagnostics, visual/material import, actuator, mimic/coupler,
+  model-loading diagnostics, visual/material import, the remaining reserved
+  actuator modes (`Servo`/`Acceleration`; `Locked` landed), mimic/coupler,
   loop-closure, integrator, and COM-Jacobian work as separate deferred slices.
 - Gate: Each slice keeps focused simulation tests and `check-api-boundaries`
   green, sources DART 6 parity evidence from `release-6.*` branch refs before

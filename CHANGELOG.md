@@ -136,6 +136,12 @@ compatibility remains on the active DART 6 LTS branch._
 - Expanded `World::computeStepMetrics()` so DART 7 metrics include cached
   rigid-contact counts, penetration, solver iterations/residuals, and
   world-frame multibody momentum while remaining a read-only query.
+- Added the `Locked` joint actuator type to the DART 7 `World` semi-implicit
+  articulated dynamics (C++ and dartpy): a locked joint is held rigidly at its
+  current position through the same velocity-level equality constraint the
+  `Velocity` actuator uses, with target velocity zero, and ignores any commanded
+  effort or passive spring/damping on the locked coordinate. `Servo`,
+  `Acceleration`, and `Mimic` remain reserved.
 - Fixed retained rigid-IPC solver scratch reuse so lagged-friction objective
   assembly keeps the active barrier Hessian while adding friction and dynamics
   terms.
