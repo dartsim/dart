@@ -972,9 +972,10 @@ struct MultibodyDynamicsScratch
   LinkOwnerMap linkOwnerMap;
   ConstrainedDofVector constrainedDof;
   ConstrainedTargetVector constrainedTarget;
-  // Per-constrained-DOF impulse bounds. Velocity/Locked coordinates are free
-  // (-/+ infinity); Servo coordinates are bounded to the effort-limit impulse
-  // [effortLower*dt, effortUpper*dt] so the servo saturates at its force limit.
+  // Per-constrained-DOF impulse bounds. Velocity/Acceleration/Locked
+  // coordinates are free (-/+ infinity); Servo coordinates are bounded to the
+  // effort-limit impulse [effortLower*dt, effortUpper*dt] so the servo
+  // saturates at its force limit.
   ConstrainedTargetVector constrainedLo;
   ConstrainedTargetVector constrainedHi;
   Matrix6Vector articulated;
@@ -1013,10 +1014,10 @@ struct MultibodyDynamicsScratch
   Eigen::VectorXd symmetricSolution; // reusable inverse column
 
   // Boxed velocity-constraint solve, used only when an effort-bounded Servo
-  // actuator is present. Velocity/Locked-only worlds keep the unbounded SPD
-  // solve above (bit-stable); the box-constrained Dantzig path runs only when a
-  // servo coordinate has a finite effort bound, so it never perturbs the
-  // existing equality-actuator behavior.
+  // actuator is present. Velocity/Acceleration/Locked-only worlds keep the
+  // unbounded SPD solve above (bit-stable); the box-constrained Dantzig path
+  // runs only when a servo coordinate has a finite effort bound, so it never
+  // perturbs the existing equality-actuator behavior.
   Eigen::VectorXi velocityConstraintFindex; // k, all -1 (no friction coupling)
   math::DantzigSolver servoSolver;
   math::DantzigSolver::Scratch servoDantzig;
@@ -1434,9 +1435,10 @@ bool computeUnconstrainedMultibodyVelocityInto(
     if (anyFiniteServoBound) {
       // An effort-bounded Servo coordinate is present: solve the coupled system
       // as a boxed LCP so servo coordinates saturate at their effort-limit
-      // impulse while free (Velocity/Locked) coordinates still reach their
-      // targets exactly. Velocity/Locked-only worlds keep the SPD solve below,
-      // so this path never perturbs the existing equality-actuator behavior.
+      // impulse while free (Velocity/Acceleration/Locked) coordinates still
+      // reach their targets exactly. Velocity/Acceleration/Locked-only worlds
+      // keep the SPD solve below, so this path never perturbs the existing
+      // equality-actuator behavior.
       scratch.velocityConstraintLambda.setZero(k);
       scratch.velocityConstraintFindex.setConstant(k, -1);
       const Eigen::Map<const Eigen::VectorXd> lo(
@@ -1822,7 +1824,14 @@ void ensureMultibodyLinkContactRowStorage(
 }
 
 //==============================================================================
-bool projectLockedDofsOutOfContactInverseMassInto(
+bool isContactPrescribedActuator(comps::ActuatorType type)
+{
+  return type == comps::ActuatorType::Locked
+         || type == comps::ActuatorType::Acceleration;
+}
+
+//==============================================================================
+bool projectContactPrescribedDofsOutOfContactInverseMassInto(
     const detail::WorldRegistry& registry,
     const DynamicsTree& tree,
     MultibodyDynamicsScratch& scratch,
@@ -1841,7 +1850,7 @@ bool projectLockedDofsOutOfContactInverseMassInto(
     }
     const auto& jointActuation
         = registry.get<comps::JointActuation>(link.jointEntity);
-    if (jointActuation.actuatorType != comps::ActuatorType::Locked) {
+    if (!isContactPrescribedActuator(jointActuation.actuatorType)) {
       continue;
     }
     for (std::size_t d = 0; d < link.dof; ++d) {
@@ -1933,7 +1942,7 @@ bool prepareMultibodyContactDynamicsInto(
   }
 
   inverseMassMatrixColumnsInto(scratch.tree, scratch, problem.inverseMass);
-  if (!projectLockedDofsOutOfContactInverseMassInto(
+  if (!projectContactPrescribedDofsOutOfContactInverseMassInto(
           registry, scratch.tree, scratch, problem.inverseMass)) {
     return false;
   }
@@ -2490,6 +2499,45 @@ void projectLockedMultibodyVelocityInto(
 }
 
 //==============================================================================
+void projectAccelerationMultibodyVelocityInto(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    Eigen::VectorXd& nextVelocity,
+    double timeStep)
+{
+  Eigen::Index velocityOffset = 0;
+  for (const auto linkEntity : structure.links) {
+    const auto& link = registry.get<comps::LinkModel>(linkEntity);
+    if (link.parentJoint == entt::null) {
+      continue;
+    }
+
+    const auto& jointModel = registry.get<comps::JointModel>(link.parentJoint);
+    const auto dof = static_cast<Eigen::Index>(jointModel.getDOF());
+    if (dof == 0) {
+      continue;
+    }
+
+    const auto& jointActuation
+        = registry.get<comps::JointActuation>(link.parentJoint);
+    if (jointActuation.actuatorType == comps::ActuatorType::Acceleration) {
+      const auto& jointState
+          = registry.get<comps::JointState>(link.parentJoint);
+      const bool hasAccelerationCommand
+          = jointActuation.commandAcceleration.size() == dof;
+      for (Eigen::Index d = 0; d < dof; ++d) {
+        const double command = hasAccelerationCommand
+                                   ? jointActuation.commandAcceleration[d]
+                                   : 0.0;
+        nextVelocity[velocityOffset + d]
+            = jointState.velocity[d] + command * timeStep;
+      }
+    }
+    velocityOffset += dof;
+  }
+}
+
+//==============================================================================
 template <typename LinkContactVector>
 void collectMultibodyLinkContactsInto(
     detail::WorldRegistry& registry,
@@ -2619,6 +2667,8 @@ void simulateMultibody(
       timeStep,
       linkContacts,
       scratch);
+  projectAccelerationMultibodyVelocityInto(
+      registry, structure, scratch.nextVelocity, timeStep);
   enforceMultibodyVelocityLimits(registry, structure, scratch.nextVelocity);
   projectLockedMultibodyVelocityInto(registry, structure, scratch.nextVelocity);
   integrateMultibodyPositions(
@@ -3985,6 +4035,8 @@ void MultibodyPositionStage::execute(
       continue;
     }
 
+    projectAccelerationMultibodyVelocityInto(
+        registry, structure, *nextVelocity, timeStep);
     enforceMultibodyVelocityLimits(registry, structure, *nextVelocity);
     projectLockedMultibodyVelocityInto(registry, structure, *nextVelocity);
     integrateMultibodyPositions(registry, structure, *nextVelocity, timeStep);
@@ -4109,8 +4161,8 @@ void reserveMultibodyDynamicsRegistryStorage(
         }
         const auto& jointActuation
             = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
-        // Velocity, Servo, and Locked actuators all add rows to the
-        // velocity-level constraint solved in
+        // Velocity, Servo, Acceleration, and Locked actuators all add rows to
+        // the velocity-level constraint solved in
         // computeUnconstrainedMultibodyVelocity.
         if (jointActuation.actuatorType == comps::ActuatorType::Velocity
             || jointActuation.actuatorType == comps::ActuatorType::Servo

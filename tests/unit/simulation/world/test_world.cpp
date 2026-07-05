@@ -12581,6 +12581,56 @@ TEST(World, MultibodyJointAccelerationActuatorSingle)
       1e-12);
 }
 
+TEST(World, MultibodyJointAccelerationActuatorPreservesCommandThroughContact)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.001);
+
+  auto robot = world.addMultibody("acceleration_platform");
+  auto base = robot.addLink("base");
+  auto platform = robot.addLink(
+      "platform",
+      base,
+      sx::JointSpec{
+          .name = "slider",
+          .type = sx::JointType::Prismatic,
+          .axis = Eigen::Vector3d::UnitZ(),
+      });
+  platform.setMass(1.0);
+  platform.setInertia(Eigen::Vector3d(0.1, 0.1, 0.1).asDiagonal());
+  platform.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.4, 0.4, 0.1)));
+
+  auto joint = platform.getParentJoint();
+  constexpr double commandedAcceleration = 3.0;
+  joint.setActuatorType(sx::ActuatorType::Acceleration);
+  joint.setCommandAcceleration(
+      Eigen::VectorXd::Constant(1, commandedAcceleration));
+
+  sx::RigidBodyOptions strikerOptions;
+  strikerOptions.mass = 1.0;
+  strikerOptions.position = Eigen::Vector3d(0.0, 0.0, 0.13);
+  strikerOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -1.0);
+  auto striker = world.addRigidBody("striker", strikerOptions);
+  striker.setCollisionShape(sx::CollisionShape::makeSphere(0.1));
+  striker.setFriction(0.0);
+
+  world.enterSimulationMode();
+  world.step();
+
+  EXPECT_NEAR(joint.getAcceleration()[0], commandedAcceleration, 1e-12);
+  EXPECT_NEAR(
+      joint.getVelocity()[0],
+      commandedAcceleration * world.getTimeStep(),
+      1e-12);
+  EXPECT_GT(striker.getLinearVelocity().z(), -0.1)
+      << "The striker should see the acceleration-actuated platform as "
+         "prescribed contact mass instead of sharing impulse with the joint";
+}
+
 // Test the Acceleration actuator under inertial coupling: both joints of a
 // 2-link chain realize their (different) commanded accelerations exactly in one
 // step.
