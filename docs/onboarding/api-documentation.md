@@ -144,7 +144,13 @@ GitHub Pages is no longer part of the primary documentation pipeline.
 Historical C++ API builds remain available at their existing
 `https://dartsim.github.io/dart/v6.*` URLs, and the performance dashboard is
 published from the `gh-pages` branch at
-`https://dartsim.github.io/dart/performance/`. User-facing documentation
+`https://dartsim.github.io/dart/performance/`. The Community Signals dashboard
+is published from the same branch at
+`https://dartsim.github.io/dart/community-signals/`.
+
+The `gh-pages` branch stores those generated static surfaces; the
+`Deploy GitHub Pages` workflow packages and deploys the branch tip as a Pages
+artifact after the dashboard publishers complete. User-facing documentation
 changes should still go to Read the Docs unless they specifically maintain one
 of those GitHub Pages surfaces.
 
