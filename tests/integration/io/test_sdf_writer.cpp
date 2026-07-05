@@ -347,6 +347,26 @@ void expectBoxShapeRoundTrips(
   expectShapeNodePoseRoundTrips<AspectT>(bodyNode, expected, index, tolerance);
 }
 
+template <class AspectT>
+void expectCylinderShapeRoundTrips(
+    const dynamics::BodyNode& bodyNode,
+    const dynamics::BodyNode& expected,
+    std::size_t index,
+    std::size_t expectedCount,
+    double tolerance)
+{
+  const auto* expectedCylinder
+      = test::requireShape<AspectT, dynamics::CylinderShape>(
+          expected, index, expectedCount);
+  const auto* cylinder = test::requireShape<AspectT, dynamics::CylinderShape>(
+      bodyNode, index, expectedCount);
+  ASSERT_NE(expectedCylinder, nullptr);
+  ASSERT_NE(cylinder, nullptr);
+  EXPECT_NEAR(cylinder->getRadius(), expectedCylinder->getRadius(), tolerance);
+  EXPECT_NEAR(cylinder->getHeight(), expectedCylinder->getHeight(), tolerance);
+  expectShapeNodePoseRoundTrips<AspectT>(bodyNode, expected, index, tolerance);
+}
+
 sdf::ElementPtr getSdfChildElement(
     const sdf::ElementPtr& parent, const std::string& name)
 {
@@ -1391,6 +1411,87 @@ TEST(SdfWriter, RoundTripsExistingForceTorqueWorldFixture)
       1e-12);
   expectShapeNodePoseRoundTrips<dynamics::CollisionAspect>(
       *link2, *originalLink2, 0, 1e-12);
+}
+
+//==============================================================================
+TEST(SdfWriter, RoundTripsExistingSingleBodyWorldFixtures)
+{
+  struct FixtureCase
+  {
+    std::string_view uri;
+    std::string_view tempName;
+    std::string_view bodyName;
+    enum class ShapeType
+    {
+      Box,
+      Cylinder,
+    } shapeType;
+  };
+
+  const std::vector<FixtureCase> cases = {
+      {"dart://sample/sdf/test/high_version.world",
+       "high_version_world",
+       "base_link",
+       FixtureCase::ShapeType::Box},
+      {"dart://sample/sdf/test/single_bodynode_skeleton.world",
+       "single_bodynode_world",
+       "link 1",
+       FixtureCase::ShapeType::Cylinder},
+  };
+
+  for (const auto& testCase : cases) {
+    SCOPED_TRACE(testCase.uri);
+    const auto original
+        = utils::SdfParser::readSkeleton(common::Uri(testCase.uri));
+    ASSERT_NE(original, nullptr);
+    ASSERT_EQ(original->getNumBodyNodes(), 1u);
+    ASSERT_EQ(original->getNumJoints(), 1u);
+
+    const auto* originalBody
+        = test::requireBodyNode(*original, testCase.bodyName);
+    ASSERT_NE(originalBody, nullptr);
+    const auto* originalRoot = originalBody->getParentJoint();
+    ASSERT_NE(originalRoot, nullptr);
+
+    const auto writeResult
+        = utils::SdfParser::tryWriteSkeletonToString(*original);
+    ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+    const auto path = writeTempSdf(writeResult.value(), testCase.tempName);
+    const auto reparsed = utils::SdfParser::readSkeleton(
+        common::Uri::createFromPath(path.string()));
+    std::filesystem::remove(path);
+
+    ASSERT_NE(reparsed, nullptr);
+    EXPECT_EQ(reparsed->getName(), original->getName());
+    EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+    EXPECT_VECTOR_NEAR(reparsed->getGravity(), original->getGravity(), 1e-12);
+    EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+    EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+    const auto* body = test::requireBodyNode(*reparsed, testCase.bodyName);
+    ASSERT_NE(body, nullptr);
+    expectBodyInertiaRoundTrips(*body, *originalBody, 1e-12);
+
+    const auto* root = body->getParentJoint();
+    ASSERT_NE(root, nullptr);
+    expectJointRoundTrips(*root, *originalRoot, 1e-12);
+
+    switch (testCase.shapeType) {
+      case FixtureCase::ShapeType::Box:
+        expectBoxShapeRoundTrips<dynamics::VisualAspect>(
+            *body, *originalBody, 0, 1, 1e-12);
+        expectBoxShapeRoundTrips<dynamics::CollisionAspect>(
+            *body, *originalBody, 0, 1, 1e-12);
+        break;
+      case FixtureCase::ShapeType::Cylinder:
+        expectCylinderShapeRoundTrips<dynamics::VisualAspect>(
+            *body, *originalBody, 0, 1, 1e-12);
+        expectCylinderShapeRoundTrips<dynamics::CollisionAspect>(
+            *body, *originalBody, 0, 1, 1e-12);
+        break;
+    }
+  }
 }
 
 //==============================================================================

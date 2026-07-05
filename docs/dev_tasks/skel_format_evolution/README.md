@@ -144,8 +144,10 @@
       fixtures (`single_pendulum.sdf`, `cube.sdf`, `shapes.sdf`, and
       `test_shapes.sdf`) plus the native two-link revolute SDF fixture
       (`two_link_revolute_model.sdf`) and the world-contained
-      `issue1193_revolute*.sdf` fixtures plus `force_torque_test.world` and
-      `force_torque_test2.world`, writes them back through
+      `issue1193_revolute*.sdf`, `high_version.world`, and
+      `single_bodynode_skeleton.world` fixtures plus
+      `force_torque_test.world` and `force_torque_test2.world`, writes them back
+      through
       `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and
       compares body, joint, inertial, mobility, gravity, axis-limit,
       joint-dynamics, visual geometry, collision geometry, model-pose, and
@@ -351,6 +353,10 @@ SKEL-YAML direction just because the prototype once existed.
   world-contained `issue1193_revolute*.sdf` fixtures, proving sdformat-backed
   model-pose, root transform, child joint-offset, zero-world-gravity, and
   visual box/sphere semantics survive read/write/read. The shipped
+  `high_version.world` and `single_bodynode_skeleton.world` fixtures add
+  read/write/read coverage for simple world-contained single-body models with
+  high-version SDF input, default-inertial fallback, root-joint semantics,
+  gravity, and box/cylinder visual and collision geometry. The shipped
   `force_torque_test.world` and `force_torque_test2.world` fixtures add
   read/write/read coverage for the DART skeleton semantics imported from
   sensor-bearing world files: explicit parent-world root semantics, child

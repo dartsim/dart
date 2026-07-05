@@ -84,12 +84,13 @@ targets are implemented or durably deferred.
 
 SDF shipped-fixture writer coverage now includes the native converted SKEL
 fixtures, `two_link_revolute_model.sdf`, world-contained
-`issue1193_revolute*.sdf`, and the sensor-bearing
-`force_torque_test.world` / `force_torque_test2.world` fixtures. The
-force-torque fixture tests load through the libsdformat-backed DART SDF parser,
-write with `SdfParser::tryWriteSkeletonToString()`, reparse the emitted SDF,
-and compare imported `Skeleton` semantics only; they do not claim SDF sensor or
-physics metadata preservation.
+`issue1193_revolute*.sdf`, `high_version.world`,
+`single_bodynode_skeleton.world`, and the sensor-bearing `force_torque_test.world`
+/ `force_torque_test2.world` fixtures. These tests load through the
+libsdformat-backed DART SDF parser, write with
+`SdfParser::tryWriteSkeletonToString()`, reparse the emitted SDF, and compare
+imported `Skeleton` semantics only. The force-torque coverage does not claim
+SDF sensor or physics metadata preservation.
 
 Current SDF IO rule: keep SDF parsing, dispatch, semantic reads, and writing on
 libsdformat APIs. The retained `sdf::Element` bridge is only for
@@ -1743,6 +1744,44 @@ Changelog decision:
 - Entry text: N/A
 - PR-body note: record as second force-torque SDF world fixture round-trip
   verification if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
+Additional validation for simple SDF world fixture coverage:
+
+- Added `SdfWriter.RoundTripsExistingSingleBodyWorldFixtures`, which covers
+  `dart://sample/sdf/test/high_version.world` and
+  `dart://sample/sdf/test/single_bodynode_skeleton.world`.
+- The test reads both shipped world files through libsdformat-backed SDF
+  parsing, writes the parsed single-body skeletons with
+  `SdfParser::tryWriteSkeletonToString()`, reloads the emitted SDF through the
+  normal SDF parser, and compares DART skeleton semantics instead of XML text.
+- The fixtures prove the current writer preserves high-version SDF world input,
+  default-inertial fallback, imported root-joint semantics, skeleton gravity,
+  body inertia, and box/cylinder visual and collision geometry plus shape poses.
+- Focused fixture test passed:
+  `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsExistingSingleBodyWorldFixtures'`
+- Full writer target passed:
+  `pixi run run-cpp-target INTEGRATION_io_SdfWriter` (85 tests)
+- Boundary/lint/build gates passed:
+  `pixi run check-sdf-sdformat-boundary`; `pixi run lint`; `pixi run build`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Scope evidence: `CHANGELOG.md` DART 7 IO and Parsing SDF writer bullet
+  inspected; it already covers the conservative SDF writer and the DART 7
+  Tests, Benchmarks, and Quality Gates section already records the sdformat
+  boundary guard.
+- Decision: no additional changelog entry. This slice adds fixture-level
+  read/write/read verification for existing shipped SDF world fixtures without
+  adding a new public API or broadening the documented writer contract.
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: record as simple SDF world fixture round-trip verification if a
+  PR is opened.
 - Follow-up: none until an implementation PR exists.
 
 ## Previous Resume Checkpoint (2026-07-03)
