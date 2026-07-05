@@ -1350,6 +1350,93 @@ macro(dart_find_package _name)
   include(dart_find_${_name_lower})
 endmacro()
 
+#-------------------------------------------------------------------------------
+# Remove Unix-only link libraries from imported targets when building with MSVC.
+# Usage:
+#   dart_prune_msvc_posix_link_libraries(<target>)
+#-------------------------------------------------------------------------------
+function(_dart_link_item_target output_var link_item)
+  set(_link_target "")
+  if(TARGET "${link_item}")
+    set(_link_target "${link_item}")
+  elseif(link_item MATCHES "^\\$<LINK_ONLY:([^>]+)>$")
+    set(_link_only_target "${CMAKE_MATCH_1}")
+    if(TARGET "${_link_only_target}")
+      set(_link_target "${_link_only_target}")
+    endif()
+  endif()
+  set("${output_var}" "${_link_target}" PARENT_SCOPE)
+endfunction()
+
+function(_dart_is_msvc_posix_math_link output_var link_item)
+  set(_link_candidate "${link_item}")
+  if(_link_candidate MATCHES "^\\$<LINK_ONLY:([^>]+)>$")
+    set(_link_candidate "${CMAKE_MATCH_1}")
+  endif()
+  string(TOLOWER "${_link_candidate}" _link_candidate_lower)
+  if(
+    _link_candidate_lower STREQUAL "m"
+    OR _link_candidate_lower STREQUAL "-lm"
+    OR _link_candidate_lower STREQUAL "m.lib"
+  )
+    set("${output_var}" TRUE PARENT_SCOPE)
+  else()
+    set("${output_var}" FALSE PARENT_SCOPE)
+  endif()
+endfunction()
+
+function(dart_prune_msvc_posix_link_libraries target_name)
+  if(NOT MSVC OR NOT TARGET "${target_name}")
+    return()
+  endif()
+
+  get_property(
+    _dart_sanitized_targets
+    GLOBAL
+    PROPERTY DART_MSVC_POSIX_LINK_LIB_SANITIZED_TARGETS
+  )
+  if("${target_name}" IN_LIST _dart_sanitized_targets)
+    return()
+  endif()
+  set_property(
+    GLOBAL
+    APPEND
+    PROPERTY DART_MSVC_POSIX_LINK_LIB_SANITIZED_TARGETS "${target_name}"
+  )
+
+  get_target_property(
+    _dart_link_libraries
+    "${target_name}"
+    INTERFACE_LINK_LIBRARIES
+  )
+  if(NOT _dart_link_libraries)
+    return()
+  endif()
+
+  set(_dart_sanitized_link_libraries "")
+  set(_dart_removed_link FALSE)
+  foreach(_dart_link IN LISTS _dart_link_libraries)
+    _dart_is_msvc_posix_math_link(_dart_is_posix_math "${_dart_link}")
+    if(_dart_is_posix_math)
+      set(_dart_removed_link TRUE)
+      continue()
+    endif()
+
+    list(APPEND _dart_sanitized_link_libraries "${_dart_link}")
+    _dart_link_item_target(_dart_nested_target "${_dart_link}")
+    if(_dart_nested_target)
+      dart_prune_msvc_posix_link_libraries("${_dart_nested_target}")
+    endif()
+  endforeach()
+
+  if(_dart_removed_link)
+    set_target_properties(
+      "${target_name}"
+      PROPERTIES INTERFACE_LINK_LIBRARIES "${_dart_sanitized_link_libraries}"
+    )
+  endif()
+endfunction()
+
 #===============================================================================
 # Library and Target Building
 #===============================================================================
