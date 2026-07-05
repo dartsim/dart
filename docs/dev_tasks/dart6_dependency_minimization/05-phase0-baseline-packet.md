@@ -172,10 +172,11 @@ the packet's purpose is the envelope below.
 **Acceptance envelope for the phase-6 default flip** (all against this
 packet's rows, re-captured on the flip PR's parent for drift control):
 
-1. Performance: native RTF ≥ FCL on every row above, and ≥ the stronger
-   in-tree incumbent (`fcl` or `dart`) for each generated/active row in
-   the same recapture — speed-only wins that alter contact/resting
-   profiles are rejected.
+1. Performance: native RTF ≥ the fastest incumbent detector for each
+   supported row/capability in the same recapture, considering FCL,
+   Bullet, ODE, and the in-tree `dart` detector, unless a
+   maintainer-approved exception is recorded before the default flip.
+   Speed-only wins that alter contact/resting profiles are rejected.
 2. Correctness: finite state and no cap hit on every row; run-to-run
    hash determinism; position drift vs FCL within the `dart` detector's
    demonstrated band (≤ 1e-3 m max on active scenes, ≤ 1e-5 m settled);
