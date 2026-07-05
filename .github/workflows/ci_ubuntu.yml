@@ -50,6 +50,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.6
         with:
           cache: true
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
@@ -93,6 +94,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.6
         with:
           cache: true
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
@@ -136,6 +138,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.6
         with:
           cache: true
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
@@ -179,6 +182,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.6
         with:
           cache: true
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
