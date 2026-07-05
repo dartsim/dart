@@ -391,6 +391,36 @@ TEST(Issue201, ShallowSupportRespectsTunedDeactivationDriftGate)
 }
 
 //==============================================================================
+// Reset-time initial velocities are caller-provided state, even though reset()
+// refreshes the observed velocity version. They should remain valid shallow
+// support targets instead of being classified as solver drift.
+TEST(Issue201, ShallowSupportPreservesResetInitialLowSpeedMotion)
+{
+  auto world = simulation::World::create();
+  auto floor = createFloor();
+  floor->setMobile(false);
+  world->addSkeleton(floor);
+
+  const double penetration = 5e-5;
+  auto box = createBox(kBoxSize / 2.0 - penetration);
+  world->addSkeleton(box);
+
+  auto* rootBody = box->getRootBodyNode();
+  ASSERT_NE(rootBody, nullptr);
+  auto* rootJoint = dynamic_cast<FreeJoint*>(rootBody->getParentJoint());
+  ASSERT_NE(rootJoint, nullptr);
+
+  const double lateralSpeed = 5e-5;
+  rootJoint->setLinearVelocity(
+      Eigen::Vector3d(lateralSpeed, 0.0, 0.0), Frame::World(), Frame::World());
+  world->reset();
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_NEAR(rootBody->getLinearVelocity().x(), lateralSpeed, 1e-8);
+}
+
+//==============================================================================
 // Low-speed passive motion that existed before the first shallow support
 // contact is also a valid baseline. The suppression must remove only the
 // contact-solve delta, not the pre-contact motion.
