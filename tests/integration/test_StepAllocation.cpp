@@ -205,6 +205,7 @@ struct StepAllocationMeasurement
   dart::test::HeapAllocationSnapshot globalHeap;
   dart::test::RawHeapAllocationSnapshot rawHeap;
   dart::test::CountingMemoryAllocatorSnapshot countingAllocator;
+  std::size_t lastStepContacts = 0u;
 };
 
 StepAllocationMeasurement measureWorldStepAllocations(
@@ -230,7 +231,8 @@ StepAllocationMeasurement measureWorldStepAllocations(
   return {
       globalCounter.snapshot(),
       rawCounter.snapshot(),
-      allocatorCounter.snapshot()};
+      allocatorCounter.snapshot(),
+      world->getLastCollisionResult().getNumContacts()};
 }
 
 std::string perStep(std::size_t count)
@@ -261,6 +263,12 @@ void reportMeasurement(
   recordProperty(prefix + "boxes_per_side", kBoxesPerSide);
   recordProperty(prefix + "warmup_steps", kWarmupSteps);
   recordProperty(prefix + "measured_steps", kMeasuredSteps);
+  recordProperty(prefix + "last_step_contacts", measurement.lastStepContacts);
+
+  // Scene validity, not an allocation assertion: the baseline is only
+  // meaningful if the measured window actually exercises contact solving.
+  EXPECT_GT(measurement.lastStepContacts, 0u)
+      << label << " scene produced no contacts in the measured window";
   recordProperty(
       prefix + "operator_new_count", measurement.globalHeap.allocationCount);
   recordProperty(
@@ -310,7 +318,8 @@ void reportMeasurement(
   std::cout << "[StepAllocation] " << label
             << " boxes_per_side=" << kBoxesPerSide
             << " warmup_steps=" << kWarmupSteps
-            << " measured_steps=" << kMeasuredSteps;
+            << " measured_steps=" << kMeasuredSteps
+            << " last_step_contacts=" << measurement.lastStepContacts;
   if (!note.empty()) {
     std::cout << " note=\"" << note << "\"";
   }
@@ -374,7 +383,11 @@ TEST(StepAllocation, RawHeapAllocationCounterDetectsMallocWhenAvailable)
   dart::test::ScopedRawHeapAllocationCounter counter;
   void* allocation = std::malloc(128u);
   ASSERT_NE(allocation, nullptr);
+  // Escape the pointer so builtin-aware optimizers cannot elide the
+  // malloc/free pair, which would make the interposer miss the allocation.
+  g_allocationSink = allocation;
   std::free(allocation);
+  g_allocationSink = nullptr;
   counter.stop();
 
   if (counter.skipped()) {
