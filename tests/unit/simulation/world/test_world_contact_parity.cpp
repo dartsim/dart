@@ -1171,13 +1171,15 @@ TEST(ContactParity, ServoActuatorRejectsOneSidedEffortLimits)
 // Test: Servo reaches its target when the effort limit is ample
 //
 // With a large (but finite) effort limit the bound never binds, so the boxed
-// solve reaches the commanded velocity exactly, like the Velocity actuator.
+// solve reaches the commanded velocity exactly, like the Velocity actuator,
+// even when joint Coulomb friction is nonzero.
 //==============================================================================
 TEST(ContactParity, ServoActuatorReachesTargetWithinEffortLimit)
 {
   ServoCase c;
   c.commandedVelocity = 2.0;
   c.effortLimit = 1000.0; // ample; the bound never binds
+  c.coulombFriction = 1.0;
   c.timeStep = 0.002;
   c.steps = 50;
 
@@ -1200,6 +1202,7 @@ TEST(ContactParity, ServoBoxedSolveMatchesUnboundedSolve)
   ServoCase unbounded;
   unbounded.commandedVelocity = 1.3;
   unbounded.effortLimit = std::numeric_limits<double>::infinity(); // SPD path
+  unbounded.coulombFriction = 0.5;
   unbounded.steps = 40;
 
   ServoCase boxed = unbounded;

@@ -80,14 +80,6 @@ class World:
 ''',
     )
     _write(
-        root / "python" / "stubs" / "dartpy" / "utils" / "SkelParser.pyi",
-        '''
-__all__: list[str] = ["readSkeleton", "read_skeleton"]
-def readSkeleton(*args, **kwargs): ...
-read_skeleton = readSkeleton
-''',
-    )
-    _write(
         root / "python" / "stubs" / "dartpy" / "utils" / "SdfParser.pyi",
         '''
 __all__: list[str] = ["Options", "RootJointType", "readSkeleton", "read_skeleton"]
@@ -144,9 +136,9 @@ def test_static_check_rejects_second_simulation_experimental_module(tmp_path):
 def test_static_check_rejects_python_world_loader_stubs(tmp_path):
     module = _load_module()
     _write_minimal_layout(tmp_path)
-    skel_stub = tmp_path / "python" / "stubs" / "dartpy" / "utils" / "SkelParser.pyi"
-    skel_stub.write_text(
-        skel_stub.read_text(encoding="utf-8")
+    sdf_stub = tmp_path / "python" / "stubs" / "dartpy" / "utils" / "SdfParser.pyi"
+    sdf_stub.write_text(
+        sdf_stub.read_text(encoding="utf-8")
         + "\ndef readWorld(*args, **kwargs): ...\nread_world = readWorld\n",
         encoding="utf-8",
     )

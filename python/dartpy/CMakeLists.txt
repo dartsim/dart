@@ -107,7 +107,6 @@ set(
   utils/module.hpp
   utils/urdf_parser.hpp
   utils/resource_retriever.hpp
-  utils/skel_parser.hpp
   utils/sdf_parser.hpp
   utils/mjcf_parser.hpp
   optimizer/module.hpp
@@ -184,7 +183,6 @@ set(
   utils/module.cpp
   utils/urdf_parser.cpp
   utils/resource_retriever.cpp
-  utils/skel_parser.cpp
   utils/sdf_parser.cpp
   utils/mjcf_parser.cpp
   optimizer/module.cpp

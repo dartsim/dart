@@ -9,7 +9,6 @@ __all__: list[str] = [
     "MjcfParser",
     "PackageResourceRetriever",
     "SdfParser",
-    "SkelParser",
     "UrdfParser",
     "UrdfParserOptions",
     "UrdfParserRootJointType",
@@ -22,7 +21,6 @@ from typing import Any, TypeAlias
 from . import (
     MjcfParser as MjcfParser,
     SdfParser as SdfParser,
-    SkelParser as SkelParser
 )
 import dartpy.common
 import dartpy.dynamics

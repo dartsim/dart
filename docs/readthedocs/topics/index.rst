@@ -19,4 +19,3 @@ below to keep the structure consistent.
    Numerical Methods Primer <numerical-methods>
    Simulation Stability <simulation-stability>
    Inverse Kinematics <../shared/inverse_kinematics/index>
-   SKEL File Format <skel-file-format>
