@@ -7429,6 +7429,59 @@ def test_simulation_multibody_link_world_jacobian():
     )
 
 
+def test_simulation_center_of_mass_jacobian():
+    sx = _simulation()
+
+    # Single revolute pendulum with an offset link center of mass and a
+    # stationary base: closed-form center of mass and its Jacobian.
+    world = sx.World(gravity=(0.0, 0.0, 0.0))
+    robot = world.add_multibody("pendulum")
+    base = robot.add_link("base")
+    base.mass = 1.0
+    length = 1.5
+    offset = np.eye(4)
+    offset[0, 3] = length
+    bob = robot.add_link(
+        "bob",
+        parent=base,
+        joint=sx.JointSpec(
+            name="hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+            transform_from_parent=offset,
+        ),
+    )
+    bob.mass = 3.0
+    bob.inertia = ((0.05, 0.0, 0.0), (0.0, 0.05, 0.0), (0.0, 0.0, 0.05))
+    com_offset = 0.5
+    bob.center_of_mass = (com_offset, 0.0, 0.0)
+
+    world.enter_simulation_mode()
+
+    total = 1.0 + 3.0
+    radius = length + 0.5
+    np.testing.assert_allclose(
+        np.asarray(robot.center_of_mass),
+        [3.0 * radius / total, 0.0, 0.0],
+        atol=1e-12,
+    )
+
+    jacobian = np.asarray(robot.center_of_mass_jacobian)
+    assert jacobian.shape == (3, 1)
+    np.testing.assert_allclose(
+        jacobian[:, 0], [0.0, 0.0, -3.0 * radius / total], atol=1e-12
+    )
+
+    # The COM property must reflect direct joint edits even when frame caches
+    # are dirty from setting the joint position after the previous query.
+    bob.parent_joint.position = [np.pi / 2.0]
+    np.testing.assert_allclose(
+        np.asarray(robot.center_of_mass),
+        [0.0, 0.0, -3.0 * radius / total],
+        atol=1e-12,
+    )
+
+
 def test_simulation_multibody_dynamics_terms_no_dof():
     sx = _simulation()
 
