@@ -246,7 +246,7 @@ void clipToReferenceFace(
 
     candidates.push_back(
         {point - 0.5 * signedDistance * referenceFace.normal,
-         std::max(0.0, sat.penetration)});
+         std::max(0.0, -signedDistance)});
   }
 
   return candidates;

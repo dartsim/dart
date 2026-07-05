@@ -32,6 +32,7 @@
 
 #include <dart/collision/native/narrow_phase/box_box.hpp>
 #include <dart/collision/native/narrow_phase/box_box/contact_reduction.hpp>
+#include <dart/collision/native/narrow_phase/box_box/face_clip.hpp>
 #include <dart/collision/native/narrow_phase/box_box/sat.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 #include <dart/collision/native/types.hpp>
@@ -602,7 +603,14 @@ TEST(BoxBox, Rotated45_Diagonal)
   if (expectedPenetration > 0) {
     EXPECT_TRUE(collided);
     ASSERT_GE(result.numContacts(), 1u);
-    EXPECT_NEAR(result.getContact(0).depth, expectedPenetration, 1e-6);
+    double maxDepth = -std::numeric_limits<double>::infinity();
+    for (std::size_t i = 0; i < result.numContacts(); ++i) {
+      const auto& contact = result.getContact(i);
+      EXPECT_GE(contact.depth, 0.0);
+      EXPECT_LE(contact.depth, expectedPenetration + 1e-6);
+      maxDepth = std::max(maxDepth, contact.depth);
+    }
+    EXPECT_NEAR(maxDepth, expectedPenetration, 1e-6);
   } else {
     EXPECT_FALSE(collided);
   }
@@ -805,7 +813,8 @@ TEST(BoxBox, RotatedFacePatchReductionRespectsContactLimit)
           const auto& contact = result.getContact(i);
           EXPECT_TRUE(contact.normal.isApprox(expectedNormal, 1e-12))
               << label << " normal=" << contact.normal.transpose();
-          EXPECT_NEAR(contact.depth, depth, 1e-12) << label;
+          EXPECT_GE(contact.depth, 0.0) << label;
+          EXPECT_LE(contact.depth, depth + 1e-12) << label;
           expectPointInsideBox(contact.position, boxA, 1e-2, label);
           expectPointInsideBox(contact.position, boxB, 1e-2, label);
           EXPECT_GE(contact.position.z(), expectedContactZ - 1e-12) << label;
@@ -916,7 +925,8 @@ TEST(BoxBox, RotatedSmallBoxOnLargeGroundHasLocalContactPoint)
               ++countedContacts;
               EXPECT_TRUE(contact.position.allFinite());
               EXPECT_TRUE(contact.normal.allFinite());
-              EXPECT_NEAR(contact.depth, 0.01, 1e-9);
+              EXPECT_GE(contact.depth, 0.0);
+              EXPECT_LE(contact.depth, 0.01 + 1e-9);
               EXPECT_GT(contact.normal.z() * normalSign, 0.25)
                   << "position=" << contact.position.transpose()
                   << " normal=" << contact.normal.transpose()
@@ -1013,6 +1023,57 @@ TEST(BoxBox, RotatedBoxOnFlatGroundEmitsFacePatch)
       = (maxPoint.x() - minPoint.x()) * (maxPoint.y() - minPoint.y());
   EXPECT_GT(patchArea, 0.01)
       << "min=" << minPoint.transpose() << " max=" << maxPoint.transpose();
+}
+
+TEST(BoxBox, FacePatchPreservesPerPointPenetrationDepths)
+{
+  const Eigen::Vector3d boxHalfExtents(0.15, 0.15, 0.15);
+  const Eigen::Vector3d groundHalfExtents(5.0, 5.0, 0.05);
+
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.linear() = (Eigen::AngleAxisd(0.005, Eigen::Vector3d::UnitX())
+                    * Eigen::AngleAxisd(-0.004, Eigen::Vector3d::UnitY())
+                    * Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ()))
+                       .toRotationMatrix();
+
+  const Eigen::Vector3d zAxis = Eigen::Vector3d::UnitZ();
+  const double boxRadiusZ
+      = boxHalfExtents.x() * std::abs(zAxis.dot(boxTf.linear().col(0)))
+        + boxHalfExtents.y() * std::abs(zAxis.dot(boxTf.linear().col(1)))
+        + boxHalfExtents.z() * std::abs(zAxis.dot(boxTf.linear().col(2)));
+  const double groundTop = groundHalfExtents.z();
+  const double penetration = 0.01;
+  boxTf.translation()
+      = Eigen::Vector3d(0.0, 0.0, groundTop + boxRadiusZ - penetration);
+
+  const Eigen::Isometry3d groundTf = Eigen::Isometry3d::Identity();
+  const dart::collision::native::box_box::BoxData box{
+      boxTf.translation(), boxHalfExtents, boxTf.rotation()};
+  const dart::collision::native::box_box::BoxData ground{
+      groundTf.translation(), groundHalfExtents, groundTf.rotation()};
+
+  dart::collision::native::box_box::SatResult sat;
+  ASSERT_TRUE(
+      dart::collision::native::box_box::computeBoxBoxSat(box, ground, sat));
+  ASSERT_EQ(sat.axisType, dart::collision::native::box_box::SatAxisType::Face);
+
+  const auto candidates
+      = dart::collision::native::box_box::computeBoxBoxContactCandidates(
+          box, ground, sat);
+  ASSERT_GE(candidates.size(), 3u);
+
+  double minDepth = std::numeric_limits<double>::infinity();
+  double maxDepth = -std::numeric_limits<double>::infinity();
+  for (const auto& candidate : candidates) {
+    EXPECT_TRUE(candidate.position.allFinite());
+    EXPECT_GE(candidate.depth, 0.0);
+    EXPECT_LE(candidate.depth, penetration + 1e-9);
+    minDepth = std::min(minDepth, candidate.depth);
+    maxDepth = std::max(maxDepth, candidate.depth);
+  }
+
+  EXPECT_NEAR(maxDepth, penetration, 1e-8);
+  EXPECT_GT(maxDepth - minDepth, 1e-4);
 }
 
 TEST(BoxBox, SatAxisStableForNearFaceBoxGroundPerturbations)
