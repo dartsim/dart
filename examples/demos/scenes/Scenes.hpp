@@ -35,6 +35,8 @@
 
 #include "../DemoScene.hpp"
 
+#include <dart/config.hpp>
+
 namespace dart_demos {
 
 /// Getting Started > empty: minimal world with an InteractiveFrame gizmo
@@ -149,6 +151,42 @@ namespace dart_demos {
 /// Visualization > heightmap: an interactive procedural heightmap with a
 /// configurable grid, ported from examples/heightmap.
 [[nodiscard]] DemoScene makeHeightmapScene();
+
+/// Control & IK > atlas_puppet: a purely kinematic Atlas whole-body IK
+/// puppet with balance and support-polygon overlays, ported from
+/// examples/atlas_puppet.
+[[nodiscard]] DemoScene makeAtlasPuppetScene();
+
+/// Control & IK > atlas_simbicon: an Atlas humanoid balanced by a SIMBICON
+/// state-machine controller, ported from examples/atlas_simbicon
+/// (multi-file subsystem in scenes/atlas_simbicon/).
+[[nodiscard]] DemoScene makeAtlasSimbiconScene();
+
+/// Control & IK > hubo_puppet: a purely kinematic DRC-Hubo whole-body IK
+/// puppet driven by analytical arm/leg IK, ported from examples/hubo_puppet.
+[[nodiscard]] DemoScene makeHuboPuppetScene();
+
+/// Robots > fetch: a Fetch robot's end effector follows a draggable
+/// interactive target via a welded mocap body, ported from examples/fetch
+/// (MJCF asset).
+[[nodiscard]] DemoScene makeFetchScene();
+
+/// Robots > vehicle: a steerable car driven with servo-controlled steering
+/// and wheel-spin dofs, ported from examples/vehicle.
+[[nodiscard]] DemoScene makeVehicleScene();
+
+#if HAVE_OCTOMAP
+/// Visualization > point_cloud: animated point-cloud and voxel-grid sensor
+/// rendering on a robot, ported from examples/point_cloud. Only
+/// declared/registered when DART was built with octomap support (the same
+/// dart/config.hpp macro dart/dynamics/{PointCloud,VoxelGrid}Shape.hpp are
+/// themselves guarded by).
+[[nodiscard]] DemoScene makePointCloudScene();
+#endif
+
+/// Visualization > drag_and_drop: a gizmo-draggable frame carrying a child
+/// box, plus axis markers, ported from examples/drag_and_drop.
+[[nodiscard]] DemoScene makeDragAndDropScene();
 
 } // namespace dart_demos
 

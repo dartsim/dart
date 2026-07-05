@@ -260,6 +260,15 @@ DemoHost::DemoHost(std::vector<DemoScene> scenes, double guiScale)
 }
 
 //==============================================================================
+DemoHost::~DemoHost()
+{
+  // See the header comment: without this, whichever scene is still active at
+  // process exit leaks its DnD/attachment/event-handler teardowns into the
+  // viewer's own destruction instead of running them first.
+  teardownCurrentScene();
+}
+
+//==============================================================================
 void DemoHost::buildCategories()
 {
   mCategories.clear();

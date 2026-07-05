@@ -113,6 +113,15 @@ class DemoHost
 public:
   DemoHost(std::vector<DemoScene> scenes, double guiScale);
 
+  /// Tears down the active scene (draining every registered teardown --
+  /// drag-and-drop, attachments, event handlers) before the viewer is
+  /// destroyed. Without this, a scene left active at process exit (every
+  /// exit path -- run(), cycleScenes(), runHeadlessShot() -- destroys this
+  /// stack-local host on return) leaks its DnD/attachment/handler
+  /// registrations into the viewer's own teardown, which for some resource
+  /// types (e.g. InteractiveFrameDnD) crashes instead of merely leaking.
+  ~DemoHost();
+
   /// Runs interactively: opens a window and blocks until it is closed.
   /// Returns a process exit code.
   int run();

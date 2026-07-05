@@ -71,13 +71,24 @@ std::vector<DemoScene> makeDemoScenes()
   scenes.push_back(makeSsikIkGuiScene());
 #endif
   scenes.push_back(makeWamIkFastScene());
+  scenes.push_back(makeAtlasPuppetScene());
+  scenes.push_back(makeAtlasSimbiconScene());
+  scenes.push_back(makeHuboPuppetScene());
 
   // Soft Bodies (new category; first appearance here).
   scenes.push_back(makeMixedChainScene());
   scenes.push_back(makeSoftBodiesScene());
 
+  // Robots (new category; first appearance here).
+  scenes.push_back(makeFetchScene());
+  scenes.push_back(makeVehicleScene());
+
   // Visualization (existing category, first introduced by simple_frames).
   scenes.push_back(makeHeightmapScene());
+#if HAVE_OCTOMAP
+  scenes.push_back(makePointCloudScene());
+#endif
+  scenes.push_back(makeDragAndDropScene());
   return scenes;
 }
 

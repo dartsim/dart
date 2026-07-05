@@ -123,6 +123,12 @@ function(dart_demos_collect_scene_srcs out_var)
     "scenes/wam_ikfast/*.hpp"
   )
   list(APPEND _srcs ${_wam_ikfast_srcs})
+  file(
+    GLOB _atlas_simbicon_srcs
+    "scenes/atlas_simbicon/*.cpp"
+    "scenes/atlas_simbicon/*.hpp"
+  )
+  list(APPEND _srcs ${_atlas_simbicon_srcs})
   if(DART_DEMOS_HAVE_TINY_DNN)
     file(
       GLOB _human_joint_limits_srcs
