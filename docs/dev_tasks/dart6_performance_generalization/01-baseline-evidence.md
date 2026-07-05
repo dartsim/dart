@@ -85,7 +85,7 @@ did not separate them.
 ## Round-2 baseline (WP-PG.01, refreshed 2026-07-05)
 
 Metadata: guard rows refreshed on `origin/release-6.20` @
-`b9e6910c066` (PR head `13d0614dabb`); GCC 15.2.0 (Ubuntu), Release;
+`b9e6910c066`; GCC 15.2.0 (Ubuntu), Release;
 Intel i9-13950HX (32 threads), governor **powersave**, CPU scaling
 ENABLED — RTF values are host-relative (treat ±5% as noise, and more
 under visible host load); **guard values are the hashes, contact/pair
