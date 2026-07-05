@@ -81,8 +81,8 @@ contact creation at four sites (verified against `origin/main` @
 The port fixes it (both `collideSpheres` entry points return the boolean
 overlap without touching the result when `enableContact` is false,
 matching box-box's contract) with a regression test, and the same fix is
-dual-PR'd to `main` per the dual-PR policy so the trees stay in sync for
-later phase diffs.
+dual-PR'd to `main` as #3283 per the dual-PR policy so the trees stay in
+sync for later phase diffs.
 
 ## Layout / build integration
 
