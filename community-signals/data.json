@@ -91,19 +91,19 @@
     "package_depends_dart": true,
     "requires_dart_610": true
   },
-  "generated_at": "2026-07-04T06:59:29.853830Z",
+  "generated_at": "2026-07-05T07:37:03.509356Z",
   "packages": {
     "conda": {
-      "combined_gross": 1005282,
-      "dartpy": 240918,
-      "dartsim": 640523,
-      "dartsim-cpp": 123841
+      "combined_gross": 1006707,
+      "dartpy": 241397,
+      "dartsim": 641233,
+      "dartsim-cpp": 124077
     },
-    "homebrew_installs_365d": 18006,
-    "homebrew_on_request_365d": 1450,
-    "pepy_dartpy_all_time": 258477
+    "homebrew_installs_365d": 18018,
+    "homebrew_on_request_365d": 1448,
+    "pepy_dartpy_all_time": 258524
   },
-  "since": "2025-07-04",
+  "since": "2025-07-05",
   "sources": {
     "anaconda_dartpy": "https://api.anaconda.org/package/conda-forge/dartpy",
     "anaconda_dartsim": "https://api.anaconda.org/package/conda-forge/dartsim",
@@ -128,16 +128,16 @@
     "contributors_login": 54,
     "contributors_with_anon": 78,
     "created_issues_12m": 28,
-    "created_prs_12m": 1232,
+    "created_prs_12m": 1269,
     "forks": 301,
-    "latest_push": "2026-07-04",
+    "latest_push": "2026-07-05",
     "latest_release": "v6.19.3",
     "latest_release_date": "2026-06-27",
-    "merged_prs_12m": 1153,
+    "merged_prs_12m": 1179,
     "open_issues": 1,
-    "open_prs": 3,
+    "open_prs": 13,
     "releases_12m": 16,
-    "stars": 1160,
+    "stars": 1161,
     "watchers": 50
   },
   "traffic": {
