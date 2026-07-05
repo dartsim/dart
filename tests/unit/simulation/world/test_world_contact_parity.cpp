@@ -554,6 +554,7 @@ struct ServoCase
 {
   double commandedVelocity = 2.0;
   double effortLimit = 1000.0; // symmetric +/- bound on the motor force
+  double coulombFriction = 0.0;
   double mass = 0.5;
   double lengthOffset = 0.4;
   Eigen::Vector3d moment = Eigen::Vector3d(0.1, 0.1, 0.1);
@@ -599,6 +600,7 @@ static ServoRun runServoWithEffortLimits(
   joint.setEffortLimits(
       Eigen::VectorXd::Constant(1, effortLower),
       Eigen::VectorXd::Constant(1, effortUpper));
+  joint.setCoulombFriction(Eigen::VectorXd::Constant(1, c.coulombFriction));
 
   world.enterSimulationMode();
   const double massDof = robot.getMassMatrix()(0, 0);
@@ -1121,6 +1123,28 @@ TEST(ContactParity, ServoActuatorSaturatesAtEffortLimit)
       << "Effort-limited servo should not reach the commanded velocity";
   // The implied motor force is exactly the effort limit.
   EXPECT_NEAR(run.velocity * run.massDof / c.timeStep, c.effortLimit, 1e-9);
+}
+
+//==============================================================================
+// Test: Servo Coulomb friction can hold against the effort-limited motor
+//
+// Dry friction must see the Servo motor impulse. If the friction limit is
+// larger than the Servo effort limit, stiction should cancel the post-motor
+// velocity and hold the joint at rest.
+//==============================================================================
+TEST(ContactParity, ServoActuatorCoulombFrictionHoldsLimitedMotor)
+{
+  ServoCase c;
+  c.commandedVelocity = 100.0; // unreachable in a single step
+  c.effortLimit = 0.5;
+  c.coulombFriction = 1.0;
+  c.timeStep = 0.001;
+  c.steps = 1;
+
+  const auto run = runServo(c);
+
+  EXPECT_NEAR(run.velocity, 0.0, 1e-12)
+      << "Coulomb friction should hold when it exceeds the Servo effort";
 }
 
 //==============================================================================
