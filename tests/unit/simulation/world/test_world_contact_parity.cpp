@@ -46,10 +46,16 @@
 #include <dart/simulation/body/collision_shape.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
+#include <dart/simulation/common/exceptions.hpp>
+#include <dart/simulation/comps/joint.hpp>
+#include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/world.hpp>
 
 #include <gtest/gtest.h>
+
+#include <limits>
 
 #include <cmath>
 #include <cstddef>
@@ -534,6 +540,129 @@ static LockedContactRun runLockedLinkContact()
   };
 }
 
+//==============================================================================
+// Row 7: Servo actuator
+//
+// A servo drives the joint to its commanded velocity like the Velocity
+// actuator, but bounds the motor impulse by the joint effort limits, so it
+// saturates instead of reaching the target when the limit binds. A finite
+// effort limit routes the coupled solve through the boxed LCP; an infinite
+// limit keeps the unbounded SPD path (so a servo then behaves like Velocity).
+//==============================================================================
+
+struct ServoCase
+{
+  double commandedVelocity = 2.0;
+  double effortLimit = 1000.0; // symmetric +/- bound on the motor force
+  double coulombFriction = 0.0;
+  double mass = 0.5;
+  double lengthOffset = 0.4;
+  Eigen::Vector3d moment = Eigen::Vector3d(0.1, 0.1, 0.1);
+  double timeStep = 0.002;
+  std::size_t steps = 50;
+};
+
+struct ServoRun
+{
+  double velocity = 0.0;
+  double massDof = 0.0;
+};
+
+static ServoRun runServoWithEffortLimits(
+    const ServoCase& c, double effortLower, double effortUpper)
+{
+  // Gravity-free so the servo's motor is the only thing driving the joint.
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(c.timeStep);
+
+  auto robot = world.addMultibody("arm");
+  auto base = robot.addLink("base");
+
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(c.lengthOffset, 0.0, 0.0);
+
+  auto link = robot.addLink(
+      "arm",
+      base,
+      sx::JointSpec{
+          .name = "motor",
+          .type = sx::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitY(),
+          .transformFromParent = offset,
+      });
+  link.setMass(c.mass);
+  link.setInertia(c.moment.asDiagonal());
+
+  auto joint = link.getParentJoint();
+  joint.setActuatorType(sx::ActuatorType::Servo);
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, c.commandedVelocity));
+  joint.setEffortLimits(
+      Eigen::VectorXd::Constant(1, effortLower),
+      Eigen::VectorXd::Constant(1, effortUpper));
+  joint.setCoulombFriction(Eigen::VectorXd::Constant(1, c.coulombFriction));
+
+  world.enterSimulationMode();
+  const double massDof = robot.getMassMatrix()(0, 0);
+  world.step(c.steps);
+
+  return ServoRun{
+      .velocity = joint.getVelocity()[0],
+      .massDof = massDof,
+  };
+}
+
+static ServoRun runServo(const ServoCase& c)
+{
+  return runServoWithEffortLimits(c, -c.effortLimit, c.effortLimit);
+}
+
+static ServoRun runServoWithClearedCommandVector(const ServoCase& c)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(c.timeStep);
+
+  auto robot = world.addMultibody("arm");
+  auto base = robot.addLink("base");
+
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(c.lengthOffset, 0.0, 0.0);
+
+  auto link = robot.addLink(
+      "arm",
+      base,
+      sx::JointSpec{
+          .name = "motor",
+          .type = sx::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitY(),
+          .transformFromParent = offset,
+      });
+  link.setMass(c.mass);
+  link.setInertia(c.moment.asDiagonal());
+
+  auto joint = link.getParentJoint();
+  joint.setActuatorType(sx::ActuatorType::Servo);
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, c.commandedVelocity));
+  joint.setEffortLimits(
+      Eigen::VectorXd::Constant(1, -c.effortLimit),
+      Eigen::VectorXd::Constant(1, c.effortLimit));
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& actuation = registry.get<sx::comps::JointActuation>(
+      sx::detail::toRegistryEntity(joint.getEntity()));
+  actuation.commandVelocity.resize(0);
+
+  world.enterSimulationMode();
+  const double massDof = robot.getMassMatrix()(0, 0);
+  world.step(c.steps);
+
+  return ServoRun{
+      .velocity = joint.getVelocity()[0],
+      .massDof = massDof,
+  };
+}
+
 static LockedRigidContactRun runLockedPrismaticRigidContact()
 {
   sx::World world;
@@ -967,4 +1096,180 @@ TEST(ContactParity, LockedActuatorMatchesZeroVelocityServo)
   EXPECT_NEAR(locked.distalPosition, servo.distalPosition, 1e-12)
       << "Locked should match a zero-command Velocity servo";
   EXPECT_NEAR(locked.distalVelocity, servo.distalVelocity, 1e-12);
+}
+
+//==============================================================================
+// Test: Servo saturates at the effort limit
+//
+// From rest (gravity-free), one step with a tight effort limit and an
+// unreachable commanded velocity: the motor saturates, so the applied impulse
+// is exactly effortLimit*dt and the resulting velocity is that impulse through
+// the 1-DOF inverse mass (1 / massDof). The servo must not reach the command.
+//==============================================================================
+TEST(ContactParity, ServoActuatorSaturatesAtEffortLimit)
+{
+  ServoCase c;
+  c.commandedVelocity = 100.0; // unreachable in a single step
+  c.effortLimit = 0.5;
+  c.timeStep = 0.001;
+  c.steps = 1;
+
+  const auto run = runServo(c);
+
+  const double expected = c.effortLimit * c.timeStep / run.massDof;
+  EXPECT_NEAR(run.velocity, expected, 1e-9)
+      << "Saturated servo velocity should equal effort*dt / massDof";
+  EXPECT_LT(run.velocity, 0.1 * c.commandedVelocity)
+      << "Effort-limited servo should not reach the commanded velocity";
+  // The implied motor force is exactly the effort limit.
+  EXPECT_NEAR(run.velocity * run.massDof / c.timeStep, c.effortLimit, 1e-9);
+}
+
+//==============================================================================
+// Test: Servo Coulomb friction can hold against the effort-limited motor
+//
+// Dry friction must see the Servo motor impulse. If the friction limit is
+// larger than the Servo effort limit, stiction should cancel the post-motor
+// velocity and hold the joint at rest.
+//==============================================================================
+TEST(ContactParity, ServoActuatorCoulombFrictionHoldsLimitedMotor)
+{
+  ServoCase c;
+  c.commandedVelocity = 100.0; // unreachable in a single step
+  c.effortLimit = 0.5;
+  c.coulombFriction = 1.0;
+  c.timeStep = 0.001;
+  c.steps = 1;
+
+  const auto run = runServo(c);
+
+  EXPECT_NEAR(run.velocity, 0.0, 1e-12)
+      << "Coulomb friction should hold when it exceeds the Servo effort";
+}
+
+//==============================================================================
+// Test: Servo friction consumes effort margin
+//
+// A command can be reachable by the frictionless motor impulse but unreachable
+// after paying dry friction. In that case the finite-effort Servo should spend
+// the remaining effort margin and settle at effortLimit - coulombFriction,
+// rather than treating friction as free and reaching the target.
+//==============================================================================
+TEST(ContactParity, ServoActuatorCoulombFrictionConsumesEffortMargin)
+{
+  ServoCase c;
+  c.effortLimit = 2.0;
+  c.coulombFriction = 1.0;
+  c.timeStep = 0.01;
+  c.steps = 1;
+
+  ServoCase probe = c;
+  probe.steps = 0;
+  const double massDof = runServo(probe).massDof;
+  const double effortImpulse = c.effortLimit * c.timeStep;
+  const double frictionImpulse = c.coulombFriction * c.timeStep;
+  c.commandedVelocity = (effortImpulse - 0.5 * frictionImpulse) / massDof;
+
+  const auto run = runServo(c);
+  const double frictionlessCommandImpulse = c.commandedVelocity * run.massDof;
+  ASSERT_LT(frictionlessCommandImpulse, effortImpulse);
+  ASSERT_GT(frictionlessCommandImpulse + frictionImpulse, effortImpulse);
+
+  const double expectedVelocity
+      = (effortImpulse - frictionImpulse) / run.massDof;
+  EXPECT_NEAR(run.velocity, expectedVelocity, 1e-9)
+      << "Servo effort must pay Coulomb friction before tracking";
+  EXPECT_LT(run.velocity, c.commandedVelocity)
+      << "Friction should prevent this finite-effort Servo from reaching the "
+         "frictionless target";
+}
+
+//==============================================================================
+// Test: Servo rejects one-sided effort limits
+//
+// The boxed-LCP servo solve starts from zero motor impulse, so supported effort
+// bounds must include zero. One-sided public effort ranges are valid joint
+// limits in general, but Servo must reject them before entering Dantzig.
+//==============================================================================
+TEST(ContactParity, ServoActuatorRejectsOneSidedEffortLimits)
+{
+  ServoCase c;
+  c.commandedVelocity = 1.0;
+  c.timeStep = 0.001;
+  c.steps = 1;
+
+  EXPECT_THROW(
+      runServoWithEffortLimits(c, 1.0, 10.0), sx::InvalidOperationException);
+  EXPECT_THROW(
+      runServoWithEffortLimits(c, -10.0, -1.0), sx::InvalidOperationException);
+}
+
+//==============================================================================
+// Test: Servo reaches its target when the effort limit is ample
+//
+// With a large (but finite) effort limit the bound never binds, so the boxed
+// solve reaches the commanded velocity exactly, like the Velocity actuator,
+// even when joint Coulomb friction is nonzero.
+//==============================================================================
+TEST(ContactParity, ServoActuatorReachesTargetWithinEffortLimit)
+{
+  ServoCase c;
+  c.commandedVelocity = 2.0;
+  c.effortLimit = 1000.0; // ample; the bound never binds
+  c.coulombFriction = 1.0;
+  c.timeStep = 0.002;
+  c.steps = 50;
+
+  const auto run = runServo(c);
+
+  EXPECT_NEAR(run.velocity, c.commandedVelocity, 1e-9)
+      << "Servo with ample effort should reach the commanded velocity";
+}
+
+//==============================================================================
+// Test: The boxed servo solve matches the unbounded solve when no bound binds
+//
+// A servo with a finite-but-ample effort limit runs the boxed-LCP path; a servo
+// with an infinite effort limit runs the unbounded SPD path (Velocity-like).
+// With no bound binding they must agree, tying the new boxed path to the
+// already-verified equality solve.
+//==============================================================================
+TEST(ContactParity, ServoBoxedSolveMatchesUnboundedSolve)
+{
+  ServoCase unbounded;
+  unbounded.commandedVelocity = 1.3;
+  unbounded.effortLimit = std::numeric_limits<double>::infinity(); // SPD path
+  unbounded.coulombFriction = 0.5;
+  unbounded.steps = 40;
+
+  ServoCase boxed = unbounded;
+  boxed.effortLimit = 1000.0; // boxed-LCP path, bound never binds
+
+  const auto a = runServo(unbounded);
+  const auto b = runServo(boxed);
+
+  EXPECT_NEAR(a.velocity, b.velocity, 1e-9)
+      << "Boxed servo solve should match the unbounded solve when no bound "
+         "binds";
+  EXPECT_NEAR(b.velocity, boxed.commandedVelocity, 1e-9);
+}
+
+//==============================================================================
+// Test: Servo without a command vector defaults to a zero target
+//
+// The public setter always validates and stores a correctly sized command
+// vector. This covers the defensive fallback used for partially populated
+// internal/replay/import state: a missing command vector should behave as a
+// zero-command finite-effort Servo and remain at rest.
+//==============================================================================
+TEST(ContactParity, ServoActuatorMissingCommandVectorDefaultsToZeroTarget)
+{
+  ServoCase c;
+  c.commandedVelocity = 5.0;
+  c.effortLimit = 1000.0;
+  c.steps = 10;
+
+  const auto run = runServoWithClearedCommandVector(c);
+
+  EXPECT_NEAR(run.velocity, 0.0, 1e-12);
 }

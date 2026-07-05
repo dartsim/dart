@@ -7173,6 +7173,41 @@ def test_simulation_locked_actuator_holds_joint():
     np.testing.assert_allclose(np.asarray(joint.velocity), [0.0], atol=1e-10)
 
 
+def test_simulation_servo_actuator_tracks_within_effort():
+    sx = _simulation()
+
+    # Gravity-free single revolute joint. A servo with an ample (finite) effort
+    # limit runs the boxed-LCP solve but never saturates, so it reaches the
+    # commanded velocity exactly.
+    world = sx.World(time_step=0.002, gravity=(0.0, 0.0, 0.0))
+    robot = world.add_multibody("arm")
+    base = robot.add_link("base")
+    offset = np.eye(4)
+    offset[0, 3] = 0.4
+    arm = robot.add_link(
+        "arm",
+        parent=base,
+        joint=sx.JointSpec(
+            name="motor",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+            transform_from_parent=offset,
+        ),
+    )
+    arm.mass = 0.5
+    arm.inertia = ((0.1, 0.0, 0.0), (0.0, 0.1, 0.0), (0.0, 0.0, 0.1))
+
+    joint = arm.parent_joint
+    joint.actuator_type = sx.ActuatorType.SERVO
+    joint.command_velocity = [1.5]
+    joint.set_effort_limits([-1000.0], [1000.0])  # ample: the bound never binds
+
+    world.enter_simulation_mode()
+    world.step(50)
+
+    np.testing.assert_allclose(np.asarray(joint.velocity), [1.5], atol=1e-6)
+
+
 def test_simulation_multibody_dynamics_terms():
     sx = _simulation()
 
@@ -7638,10 +7673,48 @@ def test_simulation_joint_actuator_types():
         -stiffness * 1.0 / mass, abs=1e-9
     )
 
-    # Unimplemented actuator types are rejected by the dynamics.
+    # Servo and Acceleration are implemented; with no command they step without
+    # raising (Servo holds at rest, Acceleration realizes zero acceleration).
     joint.actuator_type = sx.ActuatorType.SERVO
+    world.step()
+    joint.actuator_type = sx.ActuatorType.ACCELERATION
+    world.step()
+
+    # Unimplemented actuator types are rejected by the dynamics.
+    joint.actuator_type = sx.ActuatorType.MIMIC
     with pytest.raises(Exception, match="not yet implemented"):
         world.step()
+
+
+def test_simulation_joint_acceleration_actuator():
+    sx = _simulation()
+
+    # An Acceleration actuator realizes the commanded acceleration exactly in one
+    # step, overriding gravity.
+    world = sx.World(time_step=0.01, gravity=(0.0, 0.0, -9.81))
+    robot = world.add_multibody("slider")
+    base = robot.add_link("base")
+    carriage = robot.add_link(
+        "carriage",
+        parent=base,
+        joint=sx.JointSpec(
+            name="rail", type=sx.JointType.PRISMATIC, axis=(0.0, 0.0, 1.0)
+        ),
+    )
+    carriage.mass = 2.0
+
+    joint = carriage.parent_joint
+    assert joint.command_acceleration.tolist() == pytest.approx([0.0])
+    joint.actuator_type = sx.ActuatorType.ACCELERATION
+    joint.command_acceleration = [3.0]
+
+    world.enter_simulation_mode()
+    world.step()
+
+    np.testing.assert_allclose(np.asarray(joint.acceleration), [3.0], atol=1e-9)
+    np.testing.assert_allclose(
+        np.asarray(joint.velocity), [3.0 * world.time_step], atol=1e-12
+    )
 
 
 def test_simulation_joint_velocity_actuator():
