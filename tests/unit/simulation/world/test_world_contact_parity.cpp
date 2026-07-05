@@ -47,6 +47,9 @@
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
 #include <dart/simulation/common/exceptions.hpp>
+#include <dart/simulation/comps/joint.hpp>
+#include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/world.hpp>
 
@@ -612,6 +615,52 @@ static ServoRun runServo(const ServoCase& c)
   return runServoWithEffortLimits(c, -c.effortLimit, c.effortLimit);
 }
 
+static ServoRun runServoWithClearedCommandVector(const ServoCase& c)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(c.timeStep);
+
+  auto robot = world.addMultibody("arm");
+  auto base = robot.addLink("base");
+
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(c.lengthOffset, 0.0, 0.0);
+
+  auto link = robot.addLink(
+      "arm",
+      base,
+      sx::JointSpec{
+          .name = "motor",
+          .type = sx::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitY(),
+          .transformFromParent = offset,
+      });
+  link.setMass(c.mass);
+  link.setInertia(c.moment.asDiagonal());
+
+  auto joint = link.getParentJoint();
+  joint.setActuatorType(sx::ActuatorType::Servo);
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, c.commandedVelocity));
+  joint.setEffortLimits(
+      Eigen::VectorXd::Constant(1, -c.effortLimit),
+      Eigen::VectorXd::Constant(1, c.effortLimit));
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& actuation = registry.get<sx::comps::JointActuation>(
+      sx::detail::toRegistryEntity(joint.getEntity()));
+  actuation.commandVelocity.resize(0);
+
+  world.enterSimulationMode();
+  const double massDof = robot.getMassMatrix()(0, 0);
+  world.step(c.steps);
+
+  return ServoRun{
+      .velocity = joint.getVelocity()[0],
+      .massDof = massDof,
+  };
+}
+
 static LockedRigidContactRun runLockedPrismaticRigidContact()
 {
   sx::World world;
@@ -1139,4 +1188,24 @@ TEST(ContactParity, ServoBoxedSolveMatchesUnboundedSolve)
       << "Boxed servo solve should match the unbounded solve when no bound "
          "binds";
   EXPECT_NEAR(b.velocity, boxed.commandedVelocity, 1e-9);
+}
+
+//==============================================================================
+// Test: Servo without a command vector defaults to a zero target
+//
+// The public setter always validates and stores a correctly sized command
+// vector. This covers the defensive fallback used for partially populated
+// internal/replay/import state: a missing command vector should behave as a
+// zero-command finite-effort Servo and remain at rest.
+//==============================================================================
+TEST(ContactParity, ServoActuatorMissingCommandVectorDefaultsToZeroTarget)
+{
+  ServoCase c;
+  c.commandedVelocity = 5.0;
+  c.effortLimit = 1000.0;
+  c.steps = 10;
+
+  const auto run = runServoWithClearedCommandVector(c);
+
+  EXPECT_NEAR(run.velocity, 0.0, 1e-12);
 }
