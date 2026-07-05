@@ -44,6 +44,10 @@
 
 * Build
 
+  * Replace the dartpy wheel publishing path with Pixi-managed build,
+    repair, verification, and smoke-test tasks, and retire the legacy DART 6
+    Docker dev/wheel images.
+
   * Harden the release-branch contributor workflow: `pixi run install-hooks`
     installs a pre-commit hook running the lint gate (with a tracked Claude
     Code commit guard as fallback), `check-ai-commands` now runs inside

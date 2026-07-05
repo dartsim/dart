@@ -8,9 +8,6 @@ name: Publish dartpy
       - "release-*"
     tags:
       - "v*.*.*"
-    paths-ignore:
-      - ".github/workflows/cache_*.yml"
-      - "docker/dev/**"
   schedule:
     - cron: "0 10 * * 0,3"
   workflow_dispatch:
@@ -48,10 +45,6 @@ concurrency:
         || format('{0}-{1}-{2}', github.workflow, github.ref, github.event_name) }}
   cancel-in-progress: ${{ !(github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-')) }}
 
-# This workflow will install Python dependencies, run tests and lint with a
-# variety of Python versions. For more information see:
-#   - https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-#   - https://github.com/pypa/cibuildwheel/blob/main/examples/github-deploy.yml
 jobs:
   check_format:
     name: Check format
@@ -68,81 +61,94 @@ jobs:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Check format
-        run: |
-          pixi run black --check --diff .
+        run: pixi run black --check --diff .
 
       - name: Check import
-        run: |
-          pixi run isort --check --diff .
+        run: pixi run isort --check --diff .
 
   build_wheels:
     name: ${{ matrix.os }}-${{ matrix.build }}
     runs-on: ${{ matrix.runner }}
     continue-on-error: ${{ matrix.experimental }}
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Linux wheels require a container engine (docker/podman). Some of our
-          # self-hosted runners do not have docker installed, so run Linux wheel
-          # builds on a GitHub-hosted runner image that includes docker.
-          - os: ubuntu-latest
+          # Linux wheels no longer use a dedicated Docker image. The Pixi wheel
+          # environments provide conda-forge compiler wrappers and a
+          # sysroot_linux-64 2.28 baseline; auditwheel derives the final
+          # manylinux tag from the bundled dependency ABI.
+          - os: linux
             runner: ubuntu-24.04
             build: "cp313-manylinux_x86_64"
+            pixi_env: py313-wheel
             experimental: false
             release_only: false
 
-          - os: ubuntu-latest
+          - os: linux
             runner: ubuntu-24.04
             build: "cp312-manylinux_x86_64"
+            pixi_env: py312-wheel
             experimental: false
             release_only: true
 
-          - os: ubuntu-latest
+          - os: linux
             runner: ubuntu-24.04
             build: "cp311-manylinux_x86_64"
+            pixi_env: py311-wheel
             experimental: false
             release_only: true
 
-          - os: ubuntu-latest
+          - os: linux
             runner: ubuntu-24.04
             build: "cp310-manylinux_x86_64"
+            pixi_env: py310-wheel
             experimental: false
             release_only: true
 
-          # Pin macOS to macos-15 (not macos-latest): Homebrew builds bottles for
-          # the runner OS, and macos-latest migrated to macOS 26, so its 26.0-min
-          # dylibs fail delocate against MACOSX_DEPLOYMENT_TARGET=15.0 below. A
-          # macos-15 runner yields 15.0-min bottles matching the macosx_15_0 wheel.
-          - os: macos-latest
+          # Pin macOS to macos-15 (not macos-latest): dependency packages are
+          # built for the runner OS, and the wheel is repaired by delocate from
+          # the Pixi environment instead of Homebrew.
+          - os: macos
             runner: macos-15
             build: "cp313-macosx_arm64"
+            pixi_env: py313-wheel
             experimental: false
             release_only: false
 
-          - os: macos-latest
+          - os: macos
             runner: macos-15
             build: "cp312-macosx_arm64"
+            pixi_env: py312-wheel
             experimental: false
             release_only: true
 
-          - os: windows-latest
-            runner: windows-latest
+          - os: windows
+            runner: windows-2025-vs2026
             build: "cp313-win_amd64"
+            pixi_env: py313-wheel
             experimental: false
             release_only: false
 
-          - os: windows-latest
-            runner: windows-latest
+          - os: windows
+            runner: windows-2025-vs2026
             build: "cp312-win_amd64"
+            pixi_env: py312-wheel
             experimental: false
             release_only: true
 
     env:
-      CIBW_BUILD: ${{ matrix.build }}
-      CIBW_PRERELEASE_PYTHONS: true
+      CMAKE_BUILD_PARALLEL_LEVEL: 8
+      CMAKE_GENERATOR: ${{ matrix.os == 'windows' && 'Visual Studio 18 2026' || '' }}
+      CMAKE_TOOLCHAIN_FILE: ""
+      DART_PARALLEL_JOBS: 8
       DARTPY_REF: ${{ github.event.inputs.ref || github.ref }}
       DARTPY_CHECKOUT_REF: ${{ github.event.inputs.checkout_ref || github.event.inputs.ref || github.ref }}
+      MACOSX_DEPLOYMENT_TARGET: "15.0"
 
     steps:
       - uses: actions/checkout@v6
@@ -151,7 +157,6 @@ jobs:
 
       - name: Validate publish inputs
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true' }}
-        shell: bash
         run: |
           case "${DARTPY_REF}" in
             v*|refs/tags/v*) ;;
@@ -176,51 +181,61 @@ jobs:
             exit 1
           fi
 
-      - name: Set up pixi (Windows)
-        if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || env.DARTPY_REF == 'refs/heads/main' || env.DARTPY_REF == 'main' || startsWith(env.DARTPY_REF, 'refs/heads/release-') || startsWith(env.DARTPY_REF, 'release-') || startsWith(env.DARTPY_REF, 'refs/tags/v') || startsWith(env.DARTPY_REF, 'v')) }}
+      - name: Decide wheel build
+        id: wheel_gate
+        run: |
+          enabled=false
+          if [ "${{ matrix.release_only }}" = "false" ]; then
+            enabled=true
+          else
+            case "${DARTPY_REF}" in
+              refs/heads/main|main|refs/heads/release-*|release-*|refs/tags/v*|v*)
+                enabled=true
+                ;;
+            esac
+          fi
+          echo "enabled=${enabled}" >> "${GITHUB_OUTPUT}"
+
+      - name: Set up pixi
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os != 'windows' }}
         uses: prefix-dev/setup-pixi@v0.9.6
         with:
-          cache: true
+          cache: false
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+          run-install: false
+
+      - name: Set up pixi (Windows)
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os == 'windows' }}
+        uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          cache: false
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi.exe
+          run-install: false
 
-      - name: Expose pixi dependencies (Windows)
-        if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || env.DARTPY_REF == 'refs/heads/main' || env.DARTPY_REF == 'main' || startsWith(env.DARTPY_REF, 'refs/heads/release-') || startsWith(env.DARTPY_REF, 'release-') || startsWith(env.DARTPY_REF, 'refs/tags/v') || startsWith(env.DARTPY_REF, 'v')) }}
-        shell: pwsh
-        run: |
-          $pixiEnv = Join-Path $env:GITHUB_WORKSPACE ".pixi\envs\default"
-          $pixiLibrary = Join-Path $pixiEnv "Library"
+      - name: Install Pixi wheel environment
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
+        run: pixi install -e ${{ matrix.pixi_env }}
 
-          $pixiEnv | Out-File -FilePath $env:GITHUB_PATH -Append
-          (Join-Path $pixiEnv "Scripts") | Out-File -FilePath $env:GITHUB_PATH -Append
-          (Join-Path $pixiLibrary "bin") | Out-File -FilePath $env:GITHUB_PATH -Append
+      - name: Build wheel
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
+        run: pixi run -e ${{ matrix.pixi_env }} wheel-build
 
-          "CMAKE_PREFIX_PATH=$pixiEnv;$pixiLibrary" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "CMAKE_ARGS=-DCMAKE_PREFIX_PATH=$pixiEnv;$pixiLibrary" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Repair wheel
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
+        run: pixi run -e ${{ matrix.pixi_env }} wheel-repair
 
-      - name: Build wheels
-        if: ${{ matrix.os != 'windows-latest' && (matrix.release_only == false || env.DARTPY_REF == 'refs/heads/main' || env.DARTPY_REF == 'main' || startsWith(env.DARTPY_REF, 'refs/heads/release-') || startsWith(env.DARTPY_REF, 'release-') || startsWith(env.DARTPY_REF, 'refs/tags/v') || startsWith(env.DARTPY_REF, 'v')) }}
-        uses: pypa/cibuildwheel@v3.2.0
-        env:
-          # macOS
-          MACOSX_DEPLOYMENT_TARGET: 15.0
+      - name: Verify wheel
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
+        run: pixi run -e ${{ matrix.pixi_env }} wheel-verify
 
-          # Windows
-          CMAKE_TOOLCHAIN_FILE: ""
-
-      - name: Build wheels (Windows)
-        if: ${{ matrix.os == 'windows-latest' && (matrix.release_only == false || env.DARTPY_REF == 'refs/heads/main' || env.DARTPY_REF == 'main' || startsWith(env.DARTPY_REF, 'refs/heads/release-') || startsWith(env.DARTPY_REF, 'release-') || startsWith(env.DARTPY_REF, 'refs/tags/v') || startsWith(env.DARTPY_REF, 'v')) }}
-        uses: pypa/cibuildwheel@v3.2.0
-        env:
-          # macOS
-          MACOSX_DEPLOYMENT_TARGET: 15.0
-
-          # Windows
-          CMAKE_TOOLCHAIN_FILE: ""
-          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: python -m pip install delvewheel && delvewheel repair -w {dest_dir} {wheel}
+      - name: Test wheel
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
+        run: pixi run -e ${{ matrix.pixi_env }} wheel-test
 
       - uses: actions/upload-artifact@v4
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
         with:
-          path: ./wheelhouse/*.whl
+          path: ./dist/*.whl
           name: ${{ matrix.os }}-${{ matrix.build }}
 
   # TODO: Disabled because installing from source doesn't work when the deps are not
