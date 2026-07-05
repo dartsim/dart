@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import shlex
 import subprocess
@@ -22,6 +23,12 @@ def _cmake_prefix_path(conda_prefix: str) -> str:
     if sys.platform == "win32":
         entries.append(prefix / "Library")
     return ";".join(_cmake_path(entry) for entry in entries)
+
+
+def _cmake_args_env(cmake_args: list[str]) -> str:
+    if sys.platform == "win32":
+        return subprocess.list2cmdline(cmake_args)
+    return shlex.join(cmake_args)
 
 
 def main(argv: list[str]) -> int:
@@ -58,7 +65,8 @@ def main(argv: list[str]) -> int:
     ]
     cmake_args.extend(cmake_host_linker_flags())
 
-    os.environ["CMAKE_ARGS"] = shlex.join(cmake_args)
+    os.environ["DARTPY_CMAKE_ARGS_JSON"] = json.dumps(cmake_args)
+    os.environ["CMAKE_ARGS"] = _cmake_args_env(cmake_args)
 
     Path("dist").mkdir(parents=True, exist_ok=True)
 

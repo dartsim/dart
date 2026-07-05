@@ -5,6 +5,7 @@
 # - https://pybind11.readthedocs.io/en/stable/compiling.html
 
 import distutils.log
+import json
 import os
 import re
 import shlex
@@ -14,6 +15,7 @@ import xml.etree.ElementTree as ET
 from codecs import open  # To use a consistent encoding
 from glob import glob
 from pathlib import Path
+from typing import List
 
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
@@ -35,6 +37,35 @@ with open(os.path.join(dart_root, "README.md"), encoding="utf-8") as f:
 description = "Python API of Dynamic Animation and Robotics Toolkit."
 
 distutils.log.set_verbosity(distutils.log.DEBUG)  # Set DEBUG level
+
+
+def _strip_matching_outer_quotes(value: str) -> str:
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        return value[1:-1]
+    return value
+
+
+def _split_windows_cmake_args(value: str) -> List[str]:
+    return [
+        _strip_matching_outer_quotes(arg) for arg in shlex.split(value, posix=False)
+    ]
+
+
+def _cmake_args_from_env() -> List[str]:
+    dartpy_cmake_args = os.environ.get("DARTPY_CMAKE_ARGS_JSON")
+    if dartpy_cmake_args:
+        args = json.loads(dartpy_cmake_args)
+        if not isinstance(args, list) or not all(isinstance(arg, str) for arg in args):
+            raise ValueError("DARTPY_CMAKE_ARGS_JSON must be a JSON list of strings")
+        return args
+
+    cmake_args = os.environ.get("CMAKE_ARGS")
+    if not cmake_args:
+        return []
+
+    if os.name == "nt":
+        return _split_windows_cmake_args(cmake_args)
+    return shlex.split(cmake_args)
 
 
 # A CMakeExtension needs a sourcedir instead of a file list.
@@ -83,11 +114,7 @@ class CMakeBuild(build_ext):
         build_args = []
         # Adding CMake arguments set as environment variable
         # (needed e.g. to build for ARM OSx on conda-forge)
-        if "CMAKE_ARGS" in os.environ:
-            cmake_args += shlex.split(
-                os.environ["CMAKE_ARGS"],
-                posix=(os.name != "nt"),
-            )
+        cmake_args += _cmake_args_from_env()
 
         # In this example, we pass in the version to C++. You might not need to.
         # type: ignore[attr-defined]
