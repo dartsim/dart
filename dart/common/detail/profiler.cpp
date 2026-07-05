@@ -45,16 +45,16 @@ namespace dart::common::profile {
 
 struct Profiler::ProfileNode
 {
-  std::string label;
-  std::string source;
-  std::string file;
+  std::string_view label;
+  std::string_view file;
   int line{0};
   std::uint64_t callCount{0};
   std::uint64_t inclusiveNs{0};
   std::uint64_t selfNs{0};
   std::uint64_t minNs{std::numeric_limits<std::uint64_t>::max()};
   std::uint64_t maxNs{0};
-  std::vector<std::unique_ptr<ProfileNode>> children;
+  ProfileNode* firstChild{nullptr};
+  ProfileNode* nextSibling{nullptr};
 };
 
 struct Profiler::ActiveScope
@@ -67,8 +67,10 @@ struct Profiler::ActiveScope
 struct Profiler::ThreadRecord
 {
   std::string label;
+  std::string rootLabel;
   std::thread::id id;
   ProfileNode root{};
+  std::vector<ProfileNode> nodes;
   std::vector<ActiveScope> stack;
 };
 
@@ -82,7 +84,10 @@ struct Profiler::Flattened
   std::uint64_t callCount{0};
 };
 
-Profiler::Profiler() : m_frameCount(0), m_frameTimeSumNs(0) {}
+Profiler::Profiler() : m_frameCount(0), m_frameTimeSumNs(0)
+{
+  m_frameSamplesNs.reserve(kMaxFrameSamples);
+}
 
 Profiler& Profiler::instance()
 {
@@ -105,8 +110,10 @@ std::shared_ptr<Profiler::ThreadRecord> Profiler::registerThread()
     std::ostringstream oss;
     oss << record->id;
     record->label = oss.str();
-    record->root.label = "thread " + record->label;
+    record->rootLabel = "thread " + record->label;
+    record->root.label = record->rootLabel;
   }
+  record->nodes.reserve(kInitialThreadNodeCapacity);
 
   {
     std::lock_guard<std::mutex> lock(m_threadRegistryMutex);
@@ -117,29 +124,56 @@ std::shared_ptr<Profiler::ThreadRecord> Profiler::registerThread()
 }
 
 Profiler::ProfileNode* Profiler::findOrCreateChild(
+    Profiler::ThreadRecord& record,
     ProfileNode& parent,
     std::string_view label,
     std::string_view file,
     int line)
 {
-  for (const auto& child : parent.children) {
-    const std::string_view childLabel(child->label.data(), child->label.size());
-    const std::string_view childFile(child->file.data(), child->file.size());
-    if (child->line == line && childLabel == label && childFile == file) {
-      return child.get();
+  for (auto* child = parent.firstChild; child != nullptr;
+       child = child->nextSibling) {
+    if (child->line == line && child->label == label && child->file == file) {
+      return child;
     }
   }
 
-  auto child = std::make_unique<ProfileNode>();
-  child->label = std::string(label);
-  child->file = std::string(file);
-  child->line = line;
-  child->source.reserve(file.size() + 1 + 16);
-  child->source.append(file);
-  child->source.push_back(':');
-  child->source.append(std::to_string(static_cast<long long>(line)));
-  parent.children.push_back(std::move(child));
-  return parent.children.back().get();
+  auto* child = allocateNode(record, label, file, line);
+  if (child == nullptr)
+    return &parent;
+
+  child->nextSibling = parent.firstChild;
+  parent.firstChild = child;
+  return child;
+}
+
+Profiler::ProfileNode* Profiler::allocateNode(
+    Profiler::ThreadRecord& record,
+    std::string_view label,
+    std::string_view file,
+    int line)
+{
+  if (record.nodes.size() == record.nodes.capacity())
+    return nullptr;
+
+  record.nodes.emplace_back();
+  auto& node = record.nodes.back();
+  node.label = label;
+  node.file = file;
+  node.line = line;
+  return &node;
+}
+
+std::string Profiler::sourceText(const ProfileNode& node)
+{
+  if (node.file.empty())
+    return "";
+
+  std::string source;
+  source.reserve(node.file.size() + 1u + 16u);
+  source.append(node.file);
+  source.push_back(':');
+  source.append(std::to_string(static_cast<long long>(node.line)));
+  return source;
 }
 
 void Profiler::pushScope(
@@ -149,7 +183,7 @@ void Profiler::pushScope(
     int line)
 {
   auto* parent = record.stack.empty() ? &record.root : record.stack.back().node;
-  auto* node = findOrCreateChild(*parent, label, file, line);
+  auto* node = findOrCreateChild(record, *parent, label, file, line);
   record.stack.push_back(
       {node, std::chrono::steady_clock::now(), /*childTimeNs=*/0});
 }
@@ -187,7 +221,8 @@ void Profiler::popScope(Profiler::ThreadRecord& record)
 std::uint64_t Profiler::sumInclusiveChildren(const ProfileNode& node)
 {
   std::uint64_t total = 0;
-  for (const auto& child : node.children) {
+  for (auto* child = node.firstChild; child != nullptr;
+       child = child->nextSibling) {
     total += child->inclusiveNs;
   }
   return total;
@@ -206,7 +241,12 @@ void Profiler::markFrame()
             .count());
     m_lastFrameTime = now;
     m_frameTimeSumNs.fetch_add(deltaNs, std::memory_order_relaxed);
-    m_frameSamplesNs.push_back(deltaNs);
+    if (m_frameSamplesNs.size() < kMaxFrameSamples) {
+      m_frameSamplesNs.push_back(deltaNs);
+    } else {
+      m_frameSamplesNs[m_frameSampleCursor] = deltaNs;
+      m_frameSampleCursor = (m_frameSampleCursor + 1u) % kMaxFrameSamples;
+    }
   }
   m_frameCount.fetch_add(1, std::memory_order_relaxed);
 }
@@ -283,7 +323,8 @@ std::size_t Profiler::maxLabelWidth(
     const ProfileNode& node, std::size_t minWidth, std::size_t maxWidth)
 {
   std::size_t width = node.label.size();
-  for (const auto& child : node.children) {
+  for (auto* child = node.firstChild; child != nullptr;
+       child = child->nextSibling) {
     width = std::max(width, maxLabelWidth(*child, minWidth, maxWidth));
   }
   return std::clamp<std::size_t>(width, minWidth, maxWidth);
@@ -357,16 +398,21 @@ void Profiler::collectHotspots(
     const std::string& threadLabel,
     std::vector<Flattened>& out) const
 {
+  if (node.callCount == 0)
+    return;
+
   out.push_back(
       {path,
        threadLabel,
-       node.source,
+       sourceText(node),
        node.inclusiveNs,
        node.selfNs,
        node.callCount});
-  for (const auto& child : node.children) {
-    const auto childPath
-        = path.empty() ? child->label : (path + " > " + child->label);
+  for (auto* child = node.firstChild; child != nullptr;
+       child = child->nextSibling) {
+    const auto childPath = path.empty()
+                               ? std::string(child->label)
+                               : (path + " > " + std::string(child->label));
     collectHotspots(*child, childPath, threadLabel, out);
   }
 }
@@ -380,9 +426,9 @@ void Profiler::printNode(
     std::size_t labelWidth) const
 {
   std::vector<const ProfileNode*> children;
-  children.reserve(node.children.size());
-  for (const auto& child : node.children) {
-    children.push_back(child.get());
+  for (auto* child = node.firstChild; child != nullptr;
+       child = child->nextSibling) {
+    children.push_back(child);
   }
 
   std::sort(
@@ -415,8 +461,9 @@ void Profiler::printNode(
          << "per-call " << formatDurationAligned(avgNs) << ' ' << "calls "
          << std::setw(8) << child->callCount << ' ' << "share "
          << padRight(colorize(formatPercent(pct), color), 6);
-    if (!child->source.empty()) {
-      line << " src " << child->source;
+    const auto source = sourceText(*child);
+    if (!source.empty()) {
+      line << " src " << source;
     }
 
     os << line.str() << '\n';
@@ -490,8 +537,10 @@ void Profiler::printSummary(std::ostream& os)
   // Build hotspot list.
   std::vector<Flattened> hotspots;
   for (const auto& record : threads) {
-    for (const auto& child : record->root.children) {
-      collectHotspots(*child, child->label, record->label, hotspots);
+    for (auto* child = record->root.firstChild; child != nullptr;
+         child = child->nextSibling) {
+      collectHotspots(
+          *child, std::string(child->label), record->label, hotspots);
     }
   }
 
@@ -575,6 +624,7 @@ void Profiler::reset()
   m_frameCount.store(0, std::memory_order_relaxed);
   m_frameTimeSumNs.store(0, std::memory_order_relaxed);
   m_frameSamplesNs.clear();
+  m_frameSampleCursor = 0;
   m_lastFrameTime = {};
 }
 
@@ -585,10 +635,10 @@ void Profiler::clearNode(ProfileNode& node)
   node.selfNs = 0;
   node.minNs = Profiler::kUnsetDuration;
   node.maxNs = 0;
-  for (auto& child : node.children) {
+  for (auto* child = node.firstChild; child != nullptr;
+       child = child->nextSibling) {
     clearNode(*child);
   }
-  node.children.clear();
 }
 
 ProfileScope::ProfileScope(

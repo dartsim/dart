@@ -282,6 +282,13 @@
 
 * Simulation
 
+  * Add World-owned simulation memory management and optional
+    `World::enterSimulationMode()` preparation so DART-owned native-collision
+    same-shape simulation steps can run without steady-state heap allocations
+    after explicit preparation or the implicit first step. The default
+    construction path remains unchanged, and Bullet/ODE backend-internal
+    allocations stay outside the strict native allocation gate.
+
   * Added `dart::simulation::WorldConfig`, the `CollisionDetectorType` enum,
     `World::setCollisionDetector(CollisionDetectorType)` /
     `World::setCollisionDetector(CollisionDetectorPtr)` /

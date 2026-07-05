@@ -378,6 +378,11 @@ void recordRawHeapAllocation(std::size_t bytes) noexcept
   if (g_rawHeapAllocationTrackingEnabled.load(std::memory_order_relaxed)) {
     g_rawHeapAllocationCount.fetch_add(1u, std::memory_order_relaxed);
     g_rawHeapAllocationBytes.fetch_add(bytes, std::memory_order_relaxed);
+  #if defined(DART_TEST_HAS_ALLOCATION_BACKTRACE)
+    if (g_backtraceSamplingEnabled.load(std::memory_order_relaxed)) {
+      captureAllocationBacktrace(bytes);
+    }
+  #endif
   }
 }
 

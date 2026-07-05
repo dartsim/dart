@@ -41,6 +41,9 @@
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif
+#if HAVE_ODE
+  #include "dart/collision/ode/ode.hpp"
+#endif
 
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
@@ -247,17 +250,15 @@ struct StepAllocationMeasurement
   dart::test::HeapAllocationSnapshot globalHeap;
   dart::test::RawHeapAllocationSnapshot rawHeap;
   dart::test::CountingMemoryAllocatorSnapshot countingAllocator;
+  int measuredSteps = 0;
   std::size_t lastStepContacts = 0u;
 };
 
-StepAllocationMeasurement measureWorldStepAllocations(
+StepAllocationMeasurement measureWorldStepsNow(
     const dart::simulation::WorldPtr& world,
-    dart::test::CountingMemoryAllocator& allocator)
+    dart::test::CountingMemoryAllocator& allocator,
+    int measuredSteps)
 {
-  for (int i = 0; i < kWarmupSteps; ++i) {
-    world->step();
-  }
-
   // Opt-in allocation-site attribution: set DART_TEST_ALLOCATION_BACKTRACE
   // to dump aggregated backtraces of every measured operator-new call.
   const bool sampleBacktraces
@@ -271,7 +272,7 @@ StepAllocationMeasurement measureWorldStepAllocations(
   dart::test::ScopedRawHeapAllocationCounter rawCounter;
   dart::test::ScopedCountingMemoryAllocatorCounter allocatorCounter(allocator);
 
-  for (int i = 0; i < kMeasuredSteps; ++i) {
+  for (int i = 0; i < measuredSteps; ++i) {
     world->step();
   }
 
@@ -288,14 +289,26 @@ StepAllocationMeasurement measureWorldStepAllocations(
       globalCounter.snapshot(),
       rawCounter.snapshot(),
       allocatorCounter.snapshot(),
+      measuredSteps,
       world->getLastCollisionResult().getNumContacts()};
 }
 
-std::string perStep(std::size_t count)
+StepAllocationMeasurement measureWorldStepAllocations(
+    const dart::simulation::WorldPtr& world,
+    dart::test::CountingMemoryAllocator& allocator)
+{
+  for (int i = 0; i < kWarmupSteps; ++i) {
+    world->step();
+  }
+
+  return measureWorldStepsNow(world, allocator, kMeasuredSteps);
+}
+
+std::string perStep(std::size_t count, int measuredSteps)
 {
   std::ostringstream os;
   os << std::fixed << std::setprecision(3)
-     << static_cast<double>(count) / static_cast<double>(kMeasuredSteps);
+     << static_cast<double>(count) / static_cast<double>(measuredSteps);
   return os.str();
 }
 
@@ -318,7 +331,7 @@ void reportMeasurement(
 
   recordProperty(prefix + "boxes_per_side", kBoxesPerSide);
   recordProperty(prefix + "warmup_steps", kWarmupSteps);
-  recordProperty(prefix + "measured_steps", kMeasuredSteps);
+  recordProperty(prefix + "measured_steps", measurement.measuredSteps);
   recordProperty(prefix + "last_step_contacts", measurement.lastStepContacts);
 
   // Scene validity, not an allocation assertion: the baseline is only
@@ -331,10 +344,12 @@ void reportMeasurement(
       prefix + "operator_new_bytes", measurement.globalHeap.allocationBytes);
   recordProperty(
       prefix + "operator_new_count_per_step",
-      perStep(measurement.globalHeap.allocationCount));
+      perStep(
+          measurement.globalHeap.allocationCount, measurement.measuredSteps));
   recordProperty(
       prefix + "operator_new_bytes_per_step",
-      perStep(measurement.globalHeap.allocationBytes));
+      perStep(
+          measurement.globalHeap.allocationBytes, measurement.measuredSteps));
 
   recordProperty(
       prefix + "raw_malloc_skipped",
@@ -349,10 +364,12 @@ void reportMeasurement(
         prefix + "raw_malloc_bytes", measurement.rawHeap.allocationBytes);
     recordProperty(
         prefix + "raw_malloc_count_per_step",
-        perStep(measurement.rawHeap.allocationCount));
+        perStep(
+            measurement.rawHeap.allocationCount, measurement.measuredSteps));
     recordProperty(
         prefix + "raw_malloc_bytes_per_step",
-        perStep(measurement.rawHeap.allocationBytes));
+        perStep(
+            measurement.rawHeap.allocationBytes, measurement.measuredSteps));
   }
 
   recordProperty(
@@ -369,12 +386,14 @@ void reportMeasurement(
       measurement.countingAllocator.deallocationBytes);
   recordProperty(
       prefix + "counting_allocator_allocate_count_per_step",
-      perStep(measurement.countingAllocator.allocationCount));
+      perStep(
+          measurement.countingAllocator.allocationCount,
+          measurement.measuredSteps));
 
   std::cout << "[StepAllocation] " << label
             << " boxes_per_side=" << kBoxesPerSide
             << " warmup_steps=" << kWarmupSteps
-            << " measured_steps=" << kMeasuredSteps
+            << " measured_steps=" << measurement.measuredSteps
             << " last_step_contacts=" << measurement.lastStepContacts;
   if (!note.empty()) {
     std::cout << " note=\"" << note << "\"";
@@ -383,9 +402,14 @@ void reportMeasurement(
   std::cout << "  operator_new_count=" << measurement.globalHeap.allocationCount
             << " operator_new_bytes=" << measurement.globalHeap.allocationBytes
             << " operator_new_count_per_step="
-            << perStep(measurement.globalHeap.allocationCount)
+            << perStep(
+                   measurement.globalHeap.allocationCount,
+                   measurement.measuredSteps)
             << " operator_new_bytes_per_step="
-            << perStep(measurement.globalHeap.allocationBytes) << '\n';
+            << perStep(
+                   measurement.globalHeap.allocationBytes,
+                   measurement.measuredSteps)
+            << '\n';
   if (measurement.rawHeap.skipped) {
     std::cout << "  raw_malloc_count=skipped raw_malloc_bytes=skipped reason=\""
               << measurement.rawHeap.skipReason << "\"\n";
@@ -393,9 +417,14 @@ void reportMeasurement(
     std::cout << "  raw_malloc_count=" << measurement.rawHeap.allocationCount
               << " raw_malloc_bytes=" << measurement.rawHeap.allocationBytes
               << " raw_malloc_count_per_step="
-              << perStep(measurement.rawHeap.allocationCount)
+              << perStep(
+                     measurement.rawHeap.allocationCount,
+                     measurement.measuredSteps)
               << " raw_malloc_bytes_per_step="
-              << perStep(measurement.rawHeap.allocationBytes) << '\n';
+              << perStep(
+                     measurement.rawHeap.allocationBytes,
+                     measurement.measuredSteps)
+              << '\n';
   }
   std::cout << "  counting_allocator_allocate_count="
             << measurement.countingAllocator.allocationCount
@@ -406,7 +435,175 @@ void reportMeasurement(
             << " counting_allocator_deallocate_bytes="
             << measurement.countingAllocator.deallocationBytes
             << " counting_allocator_allocate_count_per_step="
-            << perStep(measurement.countingAllocator.allocationCount) << '\n';
+            << perStep(
+                   measurement.countingAllocator.allocationCount,
+                   measurement.measuredSteps)
+            << '\n';
+}
+
+dart::simulation::WorldPtr createStackedBoxesWorld(
+    std::size_t dim,
+    const dart::collision::CollisionDetectorPtr& collisionDetector,
+    const dart::simulation::WorldConfig& config)
+{
+  auto world = dart::simulation::World::create(config);
+  world->setNumSimulationThreads(1u);
+  world->setTimeStep(0.001);
+  world->getConstraintSolver()->setCollisionDetector(collisionDetector);
+
+  std::size_t index = 0u;
+  const double horizontalSpacing = kBoxEdge + 0.05;
+  const double baseOffset = (static_cast<double>(dim) - 1.0) * 0.5;
+  for (std::size_t i = 0u; i < dim; ++i) {
+    for (std::size_t j = 0u; j < dim; ++j) {
+      for (std::size_t k = 0u; k < dim; ++k) {
+        const double x
+            = (static_cast<double>(i) - baseOffset) * horizontalSpacing;
+        const double y
+            = (static_cast<double>(j) - baseOffset) * horizontalSpacing;
+        const double z = 0.5 * kGroundThickness + 0.5 * kBoxEdge
+                         + static_cast<double>(k) * kBoxEdge;
+        const Eigen::Vector3d position(x, y, z);
+        const Eigen::Vector3d size(kBoxEdge, kBoxEdge, kBoxEdge);
+        const Eigen::Vector3d color(
+            static_cast<double>(i + 1u) / static_cast<double>(dim + 1u),
+            static_cast<double>(j + 1u) / static_cast<double>(dim + 1u),
+            static_cast<double>(k + 1u) / static_cast<double>(dim + 1u));
+        world->addSkeleton(createBox(index++, position, size, color));
+      }
+    }
+  }
+
+  world->addSkeleton(createGround());
+
+  return world;
+}
+
+dart::simulation::WorldPtr createCountedStackedBoxesWorld(
+    const std::string& name,
+    const dart::collision::CollisionDetectorPtr& collisionDetector,
+    dart::test::CountingMemoryAllocator& allocator)
+{
+  dart::simulation::WorldConfig config(name);
+  config.baseAllocator = &allocator;
+  return createStackedBoxesWorld(kBoxesPerSide, collisionDetector, config);
+}
+
+enum class PreparationMode
+{
+  Explicit,
+  Implicit,
+};
+
+StepAllocationMeasurement measurePreparedGateScene(
+    const std::string& name,
+    const dart::collision::CollisionDetectorPtr& collisionDetector,
+    PreparationMode mode,
+    dart::test::CountingMemoryAllocator& allocator)
+{
+  auto world
+      = createCountedStackedBoxesWorld(name, collisionDetector, allocator);
+
+  if (mode == PreparationMode::Explicit) {
+    world->enterSimulationMode();
+  } else {
+    EXPECT_FALSE(world->isInSimulationMode());
+    world->step();
+  }
+  EXPECT_TRUE(world->isInSimulationMode());
+
+  return measureWorldStepsNow(world, allocator, 1);
+}
+
+::testing::AssertionResult hasNoGlobalHeapAllocations(
+    const StepAllocationMeasurement& measurement)
+{
+  if (measurement.globalHeap.allocationCount != 0u
+      || measurement.globalHeap.allocationBytes != 0u) {
+    return ::testing::AssertionFailure()
+           << "operator-new allocations: count="
+           << measurement.globalHeap.allocationCount
+           << " bytes=" << measurement.globalHeap.allocationBytes;
+  }
+
+  return ::testing::AssertionSuccess();
+}
+
+::testing::AssertionResult hasNoRawHeapAllocations(
+    const StepAllocationMeasurement& measurement)
+{
+  if (measurement.rawHeap.skipped) {
+    return ::testing::AssertionFailure()
+           << "raw malloc counter skipped: " << measurement.rawHeap.skipReason;
+  }
+
+  if (measurement.rawHeap.allocationCount != 0u
+      || measurement.rawHeap.allocationBytes != 0u) {
+    return ::testing::AssertionFailure()
+           << "raw malloc-family allocations: count="
+           << measurement.rawHeap.allocationCount
+           << " bytes=" << measurement.rawHeap.allocationBytes;
+  }
+
+  return ::testing::AssertionSuccess();
+}
+
+::testing::AssertionResult hasNoCountingAllocatorGrowth(
+    const StepAllocationMeasurement& measurement)
+{
+  if (measurement.countingAllocator.allocationCount != 0u
+      || measurement.countingAllocator.allocationBytes != 0u) {
+    return ::testing::AssertionFailure()
+           << "World base-allocator growth: count="
+           << measurement.countingAllocator.allocationCount
+           << " bytes=" << measurement.countingAllocator.allocationBytes;
+  }
+
+  return ::testing::AssertionSuccess();
+}
+
+void expectNativeGlobalAndBaseAllocatorGate(
+    PreparationMode mode, const std::string& label)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement = measurePreparedGateScene(
+      label, dart::collision::DARTCollisionDetector::create(), mode, allocator);
+  reportMeasurement(label, measurement);
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  EXPECT_TRUE(hasNoGlobalHeapAllocations(measurement));
+  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+}
+
+void expectNativeRawHeapGate(PreparationMode mode, const std::string& label)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement = measurePreparedGateScene(
+      label, dart::collision::DARTCollisionDetector::create(), mode, allocator);
+  reportMeasurement(label, measurement);
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  if (measurement.rawHeap.skipped) {
+    recordProperty(label + "_raw_malloc_skipped", "true");
+    recordProperty(
+        label + "_raw_malloc_skip_reason", measurement.rawHeap.skipReason);
+    GTEST_SKIP() << measurement.rawHeap.skipReason;
+  }
+  EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+}
+
+void expectExternalBackendBaseAllocatorGate(
+    const std::string& label,
+    const dart::collision::CollisionDetectorPtr& collisionDetector,
+    PreparationMode mode)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement
+      = measurePreparedGateScene(label, collisionDetector, mode, allocator);
+  reportMeasurement(
+      label,
+      measurement,
+      "global/raw counters include collision-backend-internal allocations");
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
 }
 
 StepAllocationMeasurement measureScene(
@@ -468,6 +665,106 @@ TEST(StepAllocation, CountingMemoryAllocatorDetectsAllocation)
   EXPECT_EQ(snapshot.allocationBytes, 256u);
   EXPECT_EQ(snapshot.deallocationCount, 1u);
   EXPECT_EQ(snapshot.deallocationBytes, 256u);
+}
+
+TEST(StepAllocation, AllocationGateRejectsInjectedAllocationMeasurement)
+{
+  StepAllocationMeasurement measurement;
+  measurement.measuredSteps = 1;
+
+  measurement.globalHeap.allocationCount = 1u;
+  measurement.globalHeap.allocationBytes = 8u;
+  EXPECT_FALSE(hasNoGlobalHeapAllocations(measurement));
+
+  measurement.globalHeap = {};
+  measurement.rawHeap.allocationCount = 1u;
+  measurement.rawHeap.allocationBytes = 8u;
+  EXPECT_FALSE(hasNoRawHeapAllocations(measurement));
+
+  measurement.rawHeap = {};
+  measurement.countingAllocator.allocationCount = 1u;
+  measurement.countingAllocator.allocationBytes = 8u;
+  EXPECT_FALSE(hasNoCountingAllocatorGrowth(measurement));
+}
+
+TEST(
+    StepAllocation, NativeExplicitFirstPostBakeHasNoGlobalOrBaseAllocatorGrowth)
+{
+  expectNativeGlobalAndBaseAllocatorGate(
+      PreparationMode::Explicit, "native_dart_explicit_first_post_bake_gate");
+}
+
+TEST(StepAllocation, NativeImplicitSecondStepHasNoGlobalOrBaseAllocatorGrowth)
+{
+  expectNativeGlobalAndBaseAllocatorGate(
+      PreparationMode::Implicit, "native_dart_implicit_second_step_gate");
+}
+
+TEST(StepAllocation, NativeExplicitFirstPostBakeHasNoRawMallocWhenAvailable)
+{
+  expectNativeRawHeapGate(
+      PreparationMode::Explicit,
+      "native_dart_explicit_first_post_bake_raw_gate");
+}
+
+TEST(StepAllocation, NativeImplicitSecondStepHasNoRawMallocWhenAvailable)
+{
+  expectNativeRawHeapGate(
+      PreparationMode::Implicit, "native_dart_implicit_second_step_raw_gate");
+}
+
+TEST(
+    StepAllocation,
+    ExternalBackendsExplicitFirstPostBakeDoNotGrowWorldBaseAllocator)
+{
+  bool ranBackend = false;
+
+#if HAVE_BULLET
+  ranBackend = true;
+  expectExternalBackendBaseAllocatorGate(
+      "bullet_explicit_first_post_bake_base_gate",
+      dart::collision::BulletCollisionDetector::create(),
+      PreparationMode::Explicit);
+#endif
+
+#if HAVE_ODE
+  ranBackend = true;
+  expectExternalBackendBaseAllocatorGate(
+      "ode_explicit_first_post_bake_base_gate",
+      dart::collision::OdeCollisionDetector::create(),
+      PreparationMode::Explicit);
+#endif
+
+  if (!ranBackend) {
+    GTEST_SKIP() << "Bullet and ODE collision backends are unavailable";
+  }
+}
+
+TEST(
+    StepAllocation,
+    ExternalBackendsImplicitSecondStepDoNotGrowWorldBaseAllocator)
+{
+  bool ranBackend = false;
+
+#if HAVE_BULLET
+  ranBackend = true;
+  expectExternalBackendBaseAllocatorGate(
+      "bullet_implicit_second_step_base_gate",
+      dart::collision::BulletCollisionDetector::create(),
+      PreparationMode::Implicit);
+#endif
+
+#if HAVE_ODE
+  ranBackend = true;
+  expectExternalBackendBaseAllocatorGate(
+      "ode_implicit_second_step_base_gate",
+      dart::collision::OdeCollisionDetector::create(),
+      PreparationMode::Implicit);
+#endif
+
+  if (!ranBackend) {
+    GTEST_SKIP() << "Bullet and ODE collision backends are unavailable";
+  }
 }
 
 TEST(WorldSimulationModeMemoryManager, ExplicitEnterMatchesImplicitSteps)

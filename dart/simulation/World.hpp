@@ -505,7 +505,7 @@ protected:
   void syncShallowSupportFreeRootVelocityStates();
 
   /// Captures free-root velocities immediately before the constraint solve.
-  std::vector<FreeRootVelocitySnapshot> snapshotFreeRootVelocities();
+  const std::vector<FreeRootVelocitySnapshot>& snapshotFreeRootVelocities();
 
   /// Clears preserved baselines for skeletons without a shallow support
   /// contact.
@@ -624,6 +624,10 @@ protected:
 
   std::vector<ShallowSupportFreeRootVelocityState>
       mShallowSupportFreeRootVelocityStates;
+
+  std::vector<FreeRootVelocitySnapshot> mPreSolveFreeRootVelocityScratch;
+  std::vector<char> mShallowSupportedFreeRootScratch;
+  std::vector<char> mDisturbedThisStepScratch;
 
   struct AllRestingKinematicSnapshot
   {

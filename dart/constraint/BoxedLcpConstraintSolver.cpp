@@ -49,12 +49,53 @@
 #include <array>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 
 #include <cassert>
 #include <cmath>
 
 namespace dart {
 namespace constraint {
+
+namespace {
+
+constexpr std::size_t kInlineConstraintCount = 8;
+constexpr std::size_t kInlineLcpVectorSize = 12;
+constexpr std::size_t kInlineLcpMatrixSize = 192;
+
+struct BoxedLcpThreadScratch
+{
+  std::vector<ConstraintBase*> constraintPtrStorage;
+  std::vector<std::size_t> constraintDimStorage;
+  std::vector<std::size_t> constraintOffsetStorage;
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> lcpA;
+  Eigen::VectorXd lcpX;
+  Eigen::VectorXd lcpB;
+  Eigen::VectorXd lcpW;
+  Eigen::VectorXd lcpLo;
+  Eigen::VectorXd lcpHi;
+  Eigen::VectorXi lcpFIndex;
+};
+
+BoxedLcpThreadScratch& boxedLcpThreadScratch()
+{
+  static thread_local BoxedLcpThreadScratch scratch;
+  return scratch;
+}
+
+bool usesInlineLcpBuffer(std::size_t n, std::size_t matrixSize)
+{
+  return n <= kInlineLcpVectorSize && matrixSize <= kInlineLcpMatrixSize;
+}
+
+void reserveDantzigScratch(const BoxedLcpSolverPtr& solver, std::size_t n)
+{
+  auto dantzigSolver = std::dynamic_pointer_cast<DantzigBoxedLcpSolver>(solver);
+  if (dantzigSolver)
+    dantzigSolver->reserve(n);
+}
+
+} // namespace
 
 //==============================================================================
 BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
@@ -146,6 +187,46 @@ ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getSecondaryBoxedLcpSolver()
 }
 
 //==============================================================================
+void BoxedLcpConstraintSolver::reserveConstrainedGroupScratch(
+    const ConstrainedGroup& group)
+{
+  const auto& constraints = group.mConstraints;
+  const std::size_t numConstraints = constraints.size();
+  if (numConstraints == 0u)
+    return;
+
+  auto& scratch = boxedLcpThreadScratch();
+  if (numConstraints > kInlineConstraintCount) {
+    scratch.constraintPtrStorage.reserve(numConstraints);
+    scratch.constraintDimStorage.reserve(numConstraints);
+    scratch.constraintOffsetStorage.reserve(numConstraints);
+  }
+
+  std::size_t n = 0u;
+  for (const auto& constraint : constraints) {
+    n += constraint->getDimension();
+  }
+
+  if (n == 0u)
+    return;
+
+  const int nSkip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(n));
+  const std::size_t matrixSize = n * static_cast<std::size_t>(nSkip);
+  if (!usesInlineLcpBuffer(n, matrixSize)) {
+    scratch.lcpA.resize(static_cast<Eigen::Index>(n), nSkip);
+    scratch.lcpX.resize(static_cast<Eigen::Index>(n));
+    scratch.lcpB.resize(static_cast<Eigen::Index>(n));
+    scratch.lcpW.resize(static_cast<Eigen::Index>(n));
+    scratch.lcpLo.resize(static_cast<Eigen::Index>(n));
+    scratch.lcpHi.resize(static_cast<Eigen::Index>(n));
+    scratch.lcpFIndex.resize(static_cast<Eigen::Index>(n));
+  }
+
+  reserveDantzigScratch(mBoxedLcpSolver, n);
+  reserveDantzigScratch(mSecondaryBoxedLcpSolver, n);
+}
+
+//==============================================================================
 void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 {
   DART_PROFILE_SCOPED;
@@ -156,14 +237,14 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   if (numConstraints == 0u)
     return;
 
-  constexpr std::size_t kInlineConstraintCount = 8;
   std::array<ConstraintBase*, kInlineConstraintCount> inlineConstraintPtrs;
   std::array<std::size_t, kInlineConstraintCount> inlineConstraintDims;
   std::array<std::size_t, kInlineConstraintCount> inlineConstraintOffsets;
 
-  static thread_local std::vector<ConstraintBase*> constraintPtrStorage;
-  static thread_local std::vector<std::size_t> constraintDimStorage;
-  static thread_local std::vector<std::size_t> constraintOffsetStorage;
+  auto& scratch = boxedLcpThreadScratch();
+  auto& constraintPtrStorage = scratch.constraintPtrStorage;
+  auto& constraintDimStorage = scratch.constraintDimStorage;
+  auto& constraintOffsetStorage = scratch.constraintOffsetStorage;
 
   ConstraintBase** constraintPtrs = nullptr;
   std::size_t* constraintDims = nullptr;
@@ -194,11 +275,8 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     return;
 
   const int nSkip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(n));
-  constexpr std::size_t kInlineLcpVectorSize = 12;
-  constexpr std::size_t kInlineLcpMatrixSize = 192;
   const std::size_t matrixSize = n * static_cast<std::size_t>(nSkip);
-  const bool useInlineLcpBuffer
-      = n <= kInlineLcpVectorSize && matrixSize <= kInlineLcpMatrixSize;
+  const bool useInlineLcpBuffer = usesInlineLcpBuffer(n, matrixSize);
   std::array<double, kInlineLcpMatrixSize> inlineA;
   std::array<double, kInlineLcpVectorSize> inlineX;
   std::array<double, kInlineLcpVectorSize> inlineB;
@@ -215,15 +293,13 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   double* hi = nullptr;
   int* fIndex = nullptr;
 
-  static thread_local Eigen::
-      Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
-          lcpA;
-  static thread_local Eigen::VectorXd lcpX;
-  static thread_local Eigen::VectorXd lcpB;
-  static thread_local Eigen::VectorXd lcpW;
-  static thread_local Eigen::VectorXd lcpLo;
-  static thread_local Eigen::VectorXd lcpHi;
-  static thread_local Eigen::VectorXi lcpFIndex;
+  auto& lcpA = scratch.lcpA;
+  auto& lcpX = scratch.lcpX;
+  auto& lcpB = scratch.lcpB;
+  auto& lcpW = scratch.lcpW;
+  auto& lcpLo = scratch.lcpLo;
+  auto& lcpHi = scratch.lcpHi;
+  auto& lcpFIndex = scratch.lcpFIndex;
 
   if (useInlineLcpBuffer) {
 #if !DART_BUILD_MODE_RELEASE

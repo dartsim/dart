@@ -8,22 +8,31 @@ in DART-owned code, with measured baseline-vs-improved performance evidence.
 
 - [x] Phase 0: Territory scout (DART 6 allocation map, DART 7 porting map,
       benchmark/CI surface) and maintainer decision interview
-- [ ] Phase 1: Evidence foundation — allocation-count test harness port +
+- [x] Phase 1: Evidence foundation — allocation-count test harness port +
       baseline timing/allocation packet (WP-D6M.1, WP-D6M.2)
-- [ ] Phase 2: Runtime port — allocator primitives, World-owned
+- [x] Phase 2: Runtime port — allocator primitives, World-owned
       MemoryManager, optional bake API (WP-D6M.3, WP-D6M.4)
-- [ ] Phase 3: Hot-path closure — solver/step scratch through the memory
-      manager, remaining allocation sites closed (WP-D6M.5)
-- [ ] Phase 4: Gates — first-post-bake allocation gates in ctest (WP-D6M.6)
+- [x] Phase 3: Hot-path closure — solver/step scratch through retained
+      scratch, remaining default rigid/native allocation sites closed
+      (WP-D6M.5)
+- [x] Phase 4: Gates — first-post-bake allocation gates in ctest (WP-D6M.6)
 - [ ] Phase 5: Evidence + close — improved performance packet, gz-physics
       compatibility, changelog, PR body with real numbers, cleanup
       (WP-D6M.7, WP-D6M.8)
+      - WP-D6M.7 evidence docs and changelog draft are present in
+        `03-results.md`, `PR_BODY_DRAFT.md`, and `CHANGELOG.md`.
+      - `pixi run test-all` passed after the zero-DOF body-force reset fix.
+      - Remaining WP-D6M.7 gate: `pixi run -e gazebo test-gz`.
+      - Timing caveat: the allocation contract is proven, but the final
+        Google Benchmark timing packet is mixed. See `03-results.md` before
+        making a broad performance-speedup claim.
 
 ## Goal
 
 Same-shape `World::step()` on `release-6.20` allocates zero heap memory in
-DART-owned code after bake (explicit `World::bake()` or the implicit bake in
-the first `step()`), enforced by CI gates, with measured performance
+DART-owned code after simulation preparation (explicit
+`World::enterSimulationMode()` or the implicit preparation in the first
+`step()`), enforced by CI gates, with measured performance
 improvement reported as baseline-vs-improved numbers in the PR description.
 
 ## Specification Intake
@@ -34,8 +43,9 @@ improvement reported as baseline-vs-improved numbers in the PR description.
   memory architecture, easing future maintenance.
 - **Scope:** `dart/common/` (FrameAllocator port, MemoryManager Frame role,
   FreeListAllocator growth policy), `dart/simulation/World.*` (owned
-  MemoryManager, WorldConfig options, optional `bake()`, per-step snapshot
-  vectors), `dart/constraint/` (solver scratch routing, position-correction
+  MemoryManager, WorldConfig options, optional `enterSimulationMode()`,
+  per-step snapshot vectors), `dart/constraint/` (solver scratch routing,
+  position-correction
   LCP path, soft-contact pooling, contact pool pre-reserve),
   `dart/lcpsolver/` (Dantzig scratch allocator wiring), `tests/`
   (allocation harness + gates), `CHANGELOG.md`, benchmark evidence docs.
@@ -92,10 +102,11 @@ improvement reported as baseline-vs-improved numbers in the PR description.
      API only, default behavior unchanged, bit-identical results; the
      `gazebo` pixi environment tests and `ci_gz_physics.yml` lane are
      required evidence.
-   - `World::bake()` MUST be optional: explicit call only when the user
-     wants to control when preparation happens; without it, the first
-     `step()` performs the bake implicitly and efficiently. Post-bake steps
-     (explicit: from the first step after `bake()`; implicit: from the
+   - The explicit preparation API MUST be optional: explicit call only when the
+     user wants to control when preparation happens; without it, the first
+     `step()` performs preparation implicitly and efficiently. Post-preparation
+     steps (explicit: from the first step after `enterSimulationMode()`;
+     implicit: from the
      second step) must be allocation-free in DART-owned code.
 
 ## Work Packets
@@ -145,18 +156,20 @@ is recorded done. Sequential execution in this worktree (see Assumptions).
 - Gates: `pixi run lint`, `pixi run build`, ctest common tests.
 - Dependencies: none. **Route: Codex.**
 
-#### WP-D6M.4 — World-owned MemoryManager + optional bake API
+#### WP-D6M.4 — World-owned MemoryManager + optional preparation API
 
 - Objective: every `World` owns a `MemoryManager` configured through
   additive `WorldConfig` fields (base allocator injection, free-list initial
-  allocation + growth policy, frame scratch capacity); `World::bake()` is
-  public and optional; first `step()` auto-bakes when not explicitly baked;
+  allocation + growth policy, frame scratch capacity);
+  `World::enterSimulationMode()` is public and optional; first `step()`
+  prepares the world when not explicitly prepared;
   the frame arena resets at each step boundary.
 - Non-goals: no solver scratch migration yet (WP-D6M.5); no change in
   results or defaults for existing users.
-- Evidence: unit tests for explicit-bake, implicit-bake, and re-bake on
-  world shape change; bit-exact `boxes_headless` checkpoints vs baseline;
-  gz-physics-facing API surface unchanged except additions.
+- Evidence: unit tests for explicit preparation, implicit preparation, and
+  re-preparation on world shape change; bit-exact `boxes_headless`
+  checkpoints vs baseline; gz-physics-facing API surface unchanged except
+  additions.
 - Gates: `pixi run lint`, `pixi run build`, ctest simulation tests.
 - Dependencies: WP-D6M.3. **Route: Codex (orchestrator reviews API).**
 
@@ -205,8 +218,13 @@ is recorded done. Sequential execution in this worktree (see Assumptions).
   (raise the dump budget past 200 sites) to attribute the remaining
   ~385/step long tail and fold those sites into this packet.
 - Non-goals: no algorithmic changes; bit-identical simulation results.
-- Evidence: WP-D6M.1 reporting test shows zero post-bake counts on gate
-  scenes; `boxes_headless` checkpoints bit-identical to baseline.
+- Evidence: WP-D6M.1 reporting test shows zero post-bake counts on the
+  native-DART-collision gate scene; `boxes_headless` checkpoints
+  bit-identical to baseline. Bullet comparison remains non-strict: zero
+  operator-new and counting-allocator growth, with a raw-malloc residual in
+  `ConstraintSolver::solveConstrainedGroups()` that WP-D6M.6 should classify
+  under the external-backend compatibility matrix rather than the native strict
+  gate.
 - Gates: `pixi run lint`, `pixi run build`, full `pixi run test`.
 - Dependencies: WP-D6M.4. **Route: Codex (may split 5a/5b on scope
   mismatch).**
@@ -251,7 +269,7 @@ is recorded done. Sequential execution in this worktree (see Assumptions).
 - `boxes_headless` determinism checkpoints bit-identical pre/post change.
 - Baseline-vs-improved benchmark table with host info, repetitions, and
   JSON artifacts for `empty`, `boxes`, `contact_container`.
-- `pixi run test-all` green; `pixi run -e gazebo test` green (gz-physics
+- `pixi run test-all` green; `pixi run -e gazebo test-gz` green (gz-physics
   compatibility); no existing public signature changed.
 - CHANGELOG.md entry for DART 6.20.
 
@@ -260,26 +278,31 @@ is recorded done. Sequential execution in this worktree (see Assumptions).
 - `pixi run lint` — mandatory before every commit.
 - `pixi run build` / `pixi run build-tests` — C++ changes.
 - `pixi run test` — full ctest suite (no test-unit split on this branch).
-- `pixi run -e gazebo test` — downstream gz-physics compatibility proxy.
+- `pixi run -e gazebo test-gz` — downstream gz-physics compatibility proxy.
 - New allocation gates (WP-D6M.6) — the objective-specific evidence.
 
 ## Open Decisions
 
-- None. (Bake API name assumed `World::bake()` per the maintainer's
-  message wording; flag at review if a different name is preferred.)
+- None. The landed explicit preparation API is
+  `World::enterSimulationMode()` because `World::bake()` is already used by
+  recording.
 
 ## Key Decisions
 
 - Strict gates only on native DART collision scenes: global counters cannot
   distinguish DART-owned from backend-internal allocations, so external
   backend scenes are gated on the World-base-allocator surface only.
-- Lazy auto-bake in first `step()` rather than mandatory explicit bake:
-  preserves existing user code and gz-physics behavior unchanged.
+- Lazy automatic preparation in first `step()` rather than mandatory explicit
+  preparation: preserves existing user code and gz-physics behavior unchanged.
 - Sequential packets in one worktree: incremental builds dominate
   wall-clock; parallel mutation lanes would pay cold-build costs and risk
   build-dir contention.
 
 ## Immediate Next Steps
 
-1. Execute WP-D6M.1 (harness port) via Codex.
-2. Record WP-D6M.2 timing baseline (benchmarks already building).
+1. Finish WP-D6M.7 gates: run `pixi run -e gazebo test-gz`.
+2. Decide how to handle the timing caveat in `03-results.md`: either qualify
+   the PR as allocation-hardening with a narrow `boxes_headless` timing win, or
+   implement an exact cheaper implicit-prewarm reservation before claiming a
+   broad performance speedup.
+3. Then run WP-D6M.8 durable-doc promotion and dev-task cleanup.
