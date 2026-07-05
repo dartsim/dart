@@ -1499,6 +1499,27 @@ TEST(UrdfWriter, DisabledCollisionAspectReturnsError)
 }
 
 //==============================================================================
+TEST(UrdfWriter, DisabledBodyCollisionReturnsError)
+{
+  const auto skeleton = makeRoundTripSkeleton();
+  auto* tip = skeleton->getBodyNode("tip");
+  ASSERT_NE(tip, nullptr);
+  ASSERT_TRUE(tip->isCollidable());
+  auto* collision = tip->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(collision, nullptr);
+  ASSERT_NE(collision->getCollisionAspect(), nullptr);
+  ASSERT_TRUE(collision->getCollisionAspect()->isCollidable());
+  tip->setCollidable(false);
+
+  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  expectContains(
+      result.error().message, "URDF collision [tip_cylinder_collision]");
+  expectContains(result.error().message, "BodyNode [tip]");
+  expectContains(result.error().message, "link-level collidable-disable");
+}
+
+//==============================================================================
 TEST(UrdfWriter, CollisionDynamicsMetadataReturnsError)
 {
   auto skeleton = dynamics::Skeleton::create("urdf_collision_dynamics");

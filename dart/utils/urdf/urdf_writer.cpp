@@ -670,6 +670,15 @@ WriteResult writeMaterial(
 
 WriteResult validateCollisionMetadata(const dynamics::ShapeNode& shapeNode)
 {
+  const auto body = shapeNode.getBodyNodePtr();
+  if (body && !body->isCollidable()) {
+    return fail(
+        "Cannot write URDF collision [" + shapeNode.getName()
+        + "] on non-collidable DART BodyNode [" + body->getName()
+        + "] because URDF <collision> has no link-level collidable-disable "
+          "field.");
+  }
+
   const auto* collisionAspect = shapeNode.getCollisionAspect();
   if (collisionAspect && !collisionAspect->isCollidable()) {
     return fail(
