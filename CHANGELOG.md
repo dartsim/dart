@@ -355,6 +355,10 @@ compatibility remains on the active DART 6 LTS branch._
   dashboard for repository activity, package reach, citation indexes, and
   downstream freshness, with explicit caveats that the counts are activity
   signals rather than unique users.
+- Added an explicit GitHub Pages deployment workflow that packages the current
+  `gh-pages` branch as a Pages artifact, so generated dashboards publish from a
+  visible, cancellable deployment job instead of relying on legacy branch-build
+  queue behavior.
 - Taught CMake linting to skip ignored `.build/` trees so local generated build
   artifacts cannot block `pixi run lint`.
 - Clarified DART 6 LTS release routing so remaining `6.19.x` fixes target the
