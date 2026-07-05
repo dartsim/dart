@@ -1286,23 +1286,23 @@ bool computeUnconstrainedMultibodyVelocityInto(
       }
       const auto& jointActuation
           = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
-      if (!shouldApply(jointActuation.actuatorType)) {
-        continue;
-      }
       const auto& jointModel
           = registry.get<comps::JointModel>(scratch.tree.jointOf[i]);
       if (jointModel.coulombFriction.size() != static_cast<Eigen::Index>(dof)) {
         continue;
       }
       for (std::size_t d = 0; d < dof; ++d) {
+        const auto globalDof
+            = static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d);
+        if (!shouldApply(jointActuation.actuatorType, globalDof)) {
+          continue;
+        }
         const double bound
             = jointModel.coulombFriction[static_cast<Eigen::Index>(d)]
               * timeStep;
         if (bound <= 0.0) {
           continue;
         }
-        const auto globalDof
-            = static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d);
         const double effInertia
             = scratch.massAndBias.massMatrix(globalDof, globalDof);
         const double stopImpulse = effInertia * scratch.nextVelocity[globalDof];
@@ -1311,7 +1311,7 @@ bool computeUnconstrainedMultibodyVelocityInto(
       }
     }
   };
-  applyCoulombFrictionTo([](comps::ActuatorType type) {
+  applyCoulombFrictionTo([](comps::ActuatorType type, Eigen::Index) {
     return type != comps::ActuatorType::Locked
            && type != comps::ActuatorType::Servo;
   });
@@ -1465,12 +1465,36 @@ bool computeUnconstrainedMultibodyVelocityInto(
     }
   }
 
-  // Servo is a force-limited motor, not a kinematic prescription. Apply dry
-  // friction after its motor impulse so stiction can hold against a Servo whose
-  // effort limit is smaller than the joint friction limit. Velocity and Locked
-  // actuators intentionally keep their exact kinematic targets.
-  applyCoulombFrictionTo([](comps::ActuatorType type) {
-    return type == comps::ActuatorType::Servo;
+  const auto servoImpulseIsAtFiniteBound = [&](Eigen::Index globalDof) {
+    for (std::size_t a = 0; a < scratch.constrainedDof.size(); ++a) {
+      if (scratch.constrainedDof[a] != globalDof) {
+        continue;
+      }
+      const double impulse
+          = scratch.velocityConstraintLambda[static_cast<Eigen::Index>(a)];
+      const double lo = scratch.constrainedLo[a];
+      const double hi = scratch.constrainedHi[a];
+      double scale = std::max(1.0, std::abs(impulse));
+      if (std::isfinite(lo)) {
+        scale = std::max(scale, std::abs(lo));
+      }
+      if (std::isfinite(hi)) {
+        scale = std::max(scale, std::abs(hi));
+      }
+      const double tolerance = 1e-12 * scale;
+      return (std::isfinite(lo) && impulse <= lo + tolerance)
+             || (std::isfinite(hi) && impulse >= hi - tolerance);
+    }
+    return false;
+  };
+
+  // Servo is a force-limited motor when its effort bound saturates, but an
+  // unsaturated or unbounded Servo is an exact velocity target like Velocity.
+  // Apply dry friction only to saturated Servo coordinates so stiction can hold
+  // against an underpowered motor without weakening ample-effort tracking.
+  applyCoulombFrictionTo([&](comps::ActuatorType type, Eigen::Index globalDof) {
+    return type == comps::ActuatorType::Servo
+           && servoImpulseIsAtFiniteBound(globalDof);
   });
 
   return true;
