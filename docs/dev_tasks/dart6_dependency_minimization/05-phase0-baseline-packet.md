@@ -188,5 +188,6 @@ packet's rows, re-captured on the flip PR's parent for drift control):
    `test-py` runtime, and `DART_PARALLEL_JOBS=8 pixi run -e gazebo
    test-gz` green.
 
-Phase 1 (native core skeleton, C++17, no EnTT, internal-only, FCL stays
-default) is cleared to start once this packet is reviewed.
+Phase 1 (#3281 native core skeleton, C++17, no EnTT, internal-only, FCL
+stays default) has landed. Phase 2 (DART 6 detector adapter) is the next
+implementation step, gated on this packet being reviewed and accepted.
