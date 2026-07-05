@@ -23,6 +23,10 @@ with only stable identity fields: `type` and `owner`. The pilot does not carry
 mutable status, freshness, or relationship lists; those stay in the owner docs,
 the plan dashboard, or generated manifests with an explicit consumer.
 
+AI docs are agent context, not a dumping ground. Keep always-loaded entrypoints
+compact and make rules visible through owner placement, read-order pointers,
+workflow required reading, and generated-adapter sync instead of duplication.
+
 Generated adapter entrypoints are first-class entrypoints for their tools:
 
 - `.codex/skills/` for Codex;

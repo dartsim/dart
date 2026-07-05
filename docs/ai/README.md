@@ -38,6 +38,21 @@ For AI component maintenance or durable AI-infra self-improvement, read
 `docs/ai/verification.md`, and
 `docs/onboarding/ai-tools.md`.
 
+## Visibility And Context Budget
+
+`AGENTS.md`, this read order, and workflow `Required Reading` blocks are the
+visibility contract for agents. Do not copy the same rule into every workflow;
+move it to the owner doc, then add only the pointer needed for the workflow to
+load it.
+
+Always-loaded surfaces such as `AGENTS.md`, `docs/ai/principles.md`, and
+`docs/ai/north-star.md` must stay compact. Put procedures, compatibility
+details, and examples in the owner docs named by those entrypoints.
+
+When a documented rule is missed, use `dart-audit-agent-compliance` to diagnose
+whether the issue is owner placement, weak wording, missing required reading, a
+workflow description, or generated-adapter sync.
+
 ## Choosing The Next Task
 
 Use `$dart-next` in Codex or `/dart-next` in Claude/OpenCode when the goal is

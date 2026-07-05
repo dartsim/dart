@@ -1,6 +1,6 @@
 ---
 name: dart-docs-update
-description: "DART Docs Update: update documentation without code changes"
+description: "DART Docs Update: update docs or AI instruction visibility without code changes"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-docs-update.md -->
@@ -46,7 +46,9 @@ Update documentation: $ARGUMENTS
    - AI source files: `.claude/commands/**`, `.claude/skills/**`
 3. For AI workflow changes, run `pixi run sync-ai-commands`; do not hand-edit generated `.opencode/` or `.codex/` files
 4. Classify new or moved docs by lifecycle first, then audience, then topic,
-   using `docs/information-architecture.md`
+   using `docs/information-architecture.md`. For AI docs, keep always-loaded
+   entrypoints compact: improve owner placement or pointers instead of
+   duplicating procedures.
 5. Update indexes and cross-references that point to changed docs
 6. Use `docs/ai/verification.md` to select the docs-only or AI docs/adapters
    gate set, then run `pixi run lint` before committing
