@@ -1,9 +1,8 @@
 Community Signals
 =================
 
-DART's public activity signals are summarized in a small dashboard that is
-refreshed from GitHub Actions. Read these as project activity and adoption
-signals, not as a de-duplicated user count.
+The Community Signals dashboard is refreshed from GitHub Actions and published
+to GitHub Pages.
 
 Open the dashboard directly:
 `https://dartsim.github.io/dart/community-signals/
