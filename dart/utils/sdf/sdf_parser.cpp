@@ -105,9 +105,11 @@ namespace SdfParser {
 //==============================================================================
 Options::Options(
     common::ResourceRetrieverPtr resourceRetriever,
-    RootJointType defaultRootJointType)
+    RootJointType defaultRootJointType,
+    std::string modelName)
   : mResourceRetriever(std::move(resourceRetriever)),
-    mDefaultRootJointType(defaultRootJointType)
+    mDefaultRootJointType(defaultRootJointType),
+    mModelName(std::move(modelName))
 {
   // Do nothing
 }
@@ -222,6 +224,7 @@ struct ResolvedOptions
 {
   common::ResourceRetrieverPtr retriever;
   RootJointType defaultRootJointType;
+  std::string modelName;
 };
 
 struct TemporaryResourceOwner;
@@ -231,6 +234,7 @@ ResolvedOptions resolveOptions(const Options& options)
   ResolvedOptions resolved;
   resolved.retriever = getRetriever(options.mResourceRetriever);
   resolved.defaultRootJointType = options.mDefaultRootJointType;
+  resolved.modelName = options.mModelName;
   return resolved;
 }
 
@@ -2108,6 +2112,42 @@ dynamics::SkeletonPtr readSkeleton(
 
   const sdf::World* world = nullptr;
   const sdf::Model* model = root.Model();
+  const std::string& requestedModelName = resolvedOptions.modelName;
+  if (model && !requestedModelName.empty()
+      && model->Name() != requestedModelName) {
+    DART_WARN(
+        "[SdfParser] [{}] contains top-level model [{}], not requested model "
+        "[{}].",
+        uri.toString(),
+        model->Name(),
+        requestedModelName);
+    return nullptr;
+  }
+
+  if (!model && root.WorldCount() > 0 && !requestedModelName.empty()) {
+    for (uint64_t i = 0; i < root.WorldCount(); ++i) {
+      const sdf::World* candidateWorld = root.WorldByIndex(i);
+      if (!candidateWorld) {
+        continue;
+      }
+
+      if (const sdf::Model* candidateModel
+          = candidateWorld->ModelByName(requestedModelName)) {
+        world = candidateWorld;
+        model = candidateModel;
+        break;
+      }
+    }
+
+    if (!model) {
+      DART_WARN(
+          "[SdfParser] [{}] does not contain requested model [{}].",
+          uri.toString(),
+          requestedModelName);
+      return nullptr;
+    }
+  }
+
   if (!model && root.WorldCount() > 0) {
     if (root.WorldCount() > 1) {
       DART_WARN(

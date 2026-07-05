@@ -2073,6 +2073,139 @@ TEST(SdfWriter, RoundTripsExistingForceTorqueChainWorldFixture)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsSelectedMimicWorldFixture)
+{
+  utils::SdfParser::Options readOptions;
+  readOptions.mModelName = "pendulum_with_base_mimic_slow_follows_fast";
+  const auto original = utils::SdfParser::readSkeleton(
+      common::Uri("dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf"),
+      readOptions);
+  ASSERT_NE(original, nullptr);
+  EXPECT_EQ(original->getName(), "pendulum_with_base_mimic_slow_follows_fast");
+  ASSERT_EQ(original->getNumBodyNodes(), 3u);
+  ASSERT_EQ(original->getNumJoints(), 3u);
+
+  const auto* originalBase = test::requireBodyNode(*original, "base");
+  const auto* originalSlow = test::requireBodyNode(*original, "slow_link");
+  const auto* originalFast = test::requireBodyNode(*original, "fast_link");
+  ASSERT_NE(originalBase, nullptr);
+  ASSERT_NE(originalSlow, nullptr);
+  ASSERT_NE(originalFast, nullptr);
+
+  const auto* originalRoot = originalBase->getParentJoint();
+  const auto* originalSlowJoint
+      = test::requireJoint<dynamics::RevoluteJoint>(*original, "slow_joint");
+  const auto* originalFastJoint
+      = test::requireJoint<dynamics::RevoluteJoint>(*original, "fast_joint");
+  ASSERT_NE(originalRoot, nullptr);
+  ASSERT_NE(originalSlowJoint, nullptr);
+  ASSERT_NE(originalFastJoint, nullptr);
+  EXPECT_EQ(originalSlowJoint->getActuatorType(), dynamics::Joint::MIMIC);
+  const auto originalMimicProps = originalSlowJoint->getMimicDofProperties();
+  ASSERT_EQ(originalMimicProps.size(), 1u);
+  ASSERT_NE(originalMimicProps[0].mReferenceJoint, nullptr);
+  EXPECT_EQ(
+      originalMimicProps[0].mReferenceJoint->getName(),
+      originalFastJoint->getName());
+  EXPECT_EQ(originalMimicProps[0].mReferenceDofIndex, 0u);
+  EXPECT_DOUBLE_EQ(originalMimicProps[0].mMultiplier, 1.0);
+  EXPECT_DOUBLE_EQ(originalMimicProps[0].mOffset, 0.0);
+
+  utils::SdfParser::WriteOptions writeOptions;
+  writeOptions.version = "1.11";
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*original, writeOptions);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_EQ(sdfRoot.WorldCount(), 1u);
+  const auto* sdfWorld = sdfRoot.WorldByIndex(0);
+  ASSERT_NE(sdfWorld, nullptr);
+  const auto* sdfModel = sdfWorld->ModelByName(original->getName());
+  ASSERT_NE(sdfModel, nullptr);
+  EXPECT_EQ(sdfModel->Name(), original->getName());
+  const auto* sdfSlowJoint = sdfModel->JointByName("slow_joint");
+  ASSERT_NE(sdfSlowJoint, nullptr);
+  ASSERT_NE(sdfSlowJoint->Axis(0), nullptr);
+  const auto sdfMimic = sdfSlowJoint->Axis(0)->Mimic();
+  ASSERT_TRUE(sdfMimic.has_value());
+  EXPECT_EQ(sdfMimic->Joint(), "fast_joint");
+  EXPECT_EQ(sdfMimic->Axis(), "axis");
+  EXPECT_DOUBLE_EQ(sdfMimic->Multiplier(), 1.0);
+  EXPECT_DOUBLE_EQ(sdfMimic->Offset(), 0.0);
+
+  const auto path = writeTempSdf(writeResult.value(), "selected_mimic_world");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+  EXPECT_VECTOR_NEAR(reparsed->getGravity(), original->getGravity(), 1e-12);
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+  const auto* base = test::requireBodyNode(*reparsed, "base");
+  const auto* slow = test::requireBodyNode(*reparsed, "slow_link");
+  const auto* fast = test::requireBodyNode(*reparsed, "fast_link");
+  ASSERT_NE(base, nullptr);
+  ASSERT_NE(slow, nullptr);
+  ASSERT_NE(fast, nullptr);
+  expectBodyInertiaRoundTrips(*base, *originalBase, 1e-12);
+  expectBodyInertiaRoundTrips(*slow, *originalSlow, 1e-12);
+  expectBodyInertiaRoundTrips(*fast, *originalFast, 1e-12);
+
+  const auto* root = base->getParentJoint();
+  const auto* slowJoint
+      = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, "slow_joint");
+  const auto* fastJoint
+      = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, "fast_joint");
+  ASSERT_NE(root, nullptr);
+  ASSERT_NE(slowJoint, nullptr);
+  ASSERT_NE(fastJoint, nullptr);
+  expectJointRoundTrips(*root, *originalRoot, 1e-12);
+  expectJointRoundTrips(*slowJoint, *originalSlowJoint, 1e-12);
+  expectJointRoundTrips(*fastJoint, *originalFastJoint, 1e-12);
+  EXPECT_VECTOR_NEAR(slowJoint->getAxis(), originalSlowJoint->getAxis(), 1e-12);
+  EXPECT_VECTOR_NEAR(fastJoint->getAxis(), originalFastJoint->getAxis(), 1e-12);
+
+  const auto reparsedMimicProps = slowJoint->getMimicDofProperties();
+  ASSERT_EQ(reparsedMimicProps.size(), 1u);
+  ASSERT_NE(reparsedMimicProps[0].mReferenceJoint, nullptr);
+  EXPECT_EQ(reparsedMimicProps[0].mReferenceJoint->getName(), "fast_joint");
+  EXPECT_EQ(reparsedMimicProps[0].mReferenceDofIndex, 0u);
+  EXPECT_DOUBLE_EQ(reparsedMimicProps[0].mMultiplier, 1.0);
+  EXPECT_DOUBLE_EQ(reparsedMimicProps[0].mOffset, 0.0);
+
+  expectCylinderShapeRoundTrips<dynamics::VisualAspect>(
+      *base, *originalBase, 0, 2, 1e-12);
+  expectBoxShapeRoundTrips<dynamics::VisualAspect>(
+      *base, *originalBase, 1, 2, 1e-12);
+  expectCylinderShapeRoundTrips<dynamics::CollisionAspect>(
+      *base, *originalBase, 0, 2, 1e-12);
+  expectBoxShapeRoundTrips<dynamics::CollisionAspect>(
+      *base, *originalBase, 1, 2, 1e-12);
+  constexpr double kFixtureRotationTolerance = 1e-5;
+  for (const auto* body : {slow, fast}) {
+    ASSERT_NE(body, nullptr);
+    const auto* originalBody = original->getBodyNode(body->getName());
+    ASSERT_NE(originalBody, nullptr);
+    SCOPED_TRACE(body->getName());
+    expectCylinderShapeRoundTrips<dynamics::VisualAspect>(
+        *body, *originalBody, 0, 2, kFixtureRotationTolerance);
+    expectCylinderShapeRoundTrips<dynamics::VisualAspect>(
+        *body, *originalBody, 1, 2, 1e-12);
+    expectCylinderShapeRoundTrips<dynamics::CollisionAspect>(
+        *body, *originalBody, 0, 2, kFixtureRotationTolerance);
+    expectCylinderShapeRoundTrips<dynamics::CollisionAspect>(
+        *body, *originalBody, 1, 2, 1e-12);
+  }
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsJointAxisVelocityAndEffortLimits)
 {
   dynamics::SkeletonPtr skeleton;

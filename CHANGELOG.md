@@ -199,8 +199,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Made libsdformat a required dependency so SDF files are normalized through the
   official parser before DART imports them, including modern joint-axis frame
   annotations such as `<axis><xyz expressed_in=...>`.
-- Modernized URDF/SDF/MJCF loading APIs around DART 7 parser names and cleaner
-  resource-retriever ownership.
+- Modernized URDF/SDF/MJCF loading APIs around DART 7 parser names, cleaner
+  resource-retriever ownership, and parser-specific SDF selection of named
+  models from multi-model world files.
 - Added a conservative SDF writer for `Skeleton` round-trips, covering links,
   model self-collision state, non-default skeleton gravity through SDF world
   gravity,

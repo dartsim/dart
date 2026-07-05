@@ -95,9 +95,12 @@
       SDF plane size, source heightmap URI/resource policy, or target URI for
       generated mesh resources instead of relying on a generic
       unsupported-shape fallback.
-      Parser-side SDF model selection, ambiguous `.xml` SDF dispatch through
+      Parser-side SDF model selection, including parser-specific
+      `SdfParser::Options::mModelName` lookup of named world models through
+      `sdf::World::ModelByName()`, ambiguous `.xml` SDF dispatch through
       `dart::io::readSkeleton()`, and standard model/link/joint/aspect traversal
-      now use libsdformat `sdf::Root`, `sdf::Model`, `sdf::Link`, `sdf::Joint`,
+      now use libsdformat `sdf::Root`, `sdf::Model`, `sdf::World`,
+      `sdf::Link`, `sdf::Joint`,
       `sdf::Visual`, and `sdf::Collision` DOM values rather than raw XML-level
       enumeration. Ambiguous XML dispatch asks sdformat to classify root-model
       and world-contained SDF documents via `sdf::Root` model/world APIs before
@@ -155,7 +158,9 @@
       `issue1193_revolute*.sdf`, `high_version.world`, and
       `single_bodynode_skeleton.world` fixtures plus
       `test_skeleton_joint.world`, `force_torque_test.world`, and
-      `force_torque_test2.world`, writes them back through
+      `force_torque_test2.world`, plus the selected
+      `pendulum_with_base_mimic_slow_follows_fast` model from
+      `mimic_fast_slow_pendulums_world.sdf`, writes them back through
       `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and
       compares body, joint, inertial, mobility, gravity, axis-limit,
       joint-dynamics, visual geometry, collision geometry, model-pose, and
@@ -171,7 +176,9 @@
       friction metadata survive writer read/write/read. The force-torque
       world fixture coverage is
       limited to DART skeleton semantics imported from the in-file models; it
-      does not claim SDF sensor or physics metadata preservation.
+      does not claim SDF sensor or physics metadata preservation. The selected
+      mimic world fixture proves the sdformat-backed parser selector can cover
+      a non-first world model while preserving SDF 1.11 axis mimic metadata.
       The first URDF writer slice is also implemented locally on
       `dart::utils::UrdfParser::tryWriteSkeletonToString` for one-root URDF
       trees with identity root FreeJoint/WeldJoint placement validation, child
@@ -399,7 +406,10 @@ SKEL-YAML direction just because the prototype once existed.
   sensor-bearing world files: explicit parent-world root semantics, child
   revolute joints, finite axis limits/dynamics, and sphere/box visual and
   collision geometry across two-link and three-link models. They do not claim
-  SDF sensor or physics metadata preservation.
+  SDF sensor or physics metadata preservation. The shipped
+  `mimic_fast_slow_pendulums_world.sdf` fixture now adds read/write/read
+  coverage for a selected non-first world model with SDF 1.11 axis mimic
+  metadata, using sdformat DOM lookup rather than XML-level model enumeration.
   URDF shipped-fixture read/write/read coverage now includes
   `joint_properties.urdf`, `issue838.urdf`, `KR5/ground.urdf`, `wam.urdf`, and
   `drchubo.urdf`,

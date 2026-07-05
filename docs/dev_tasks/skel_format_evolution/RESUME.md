@@ -2259,6 +2259,54 @@ Changelog decision:
   a PR is opened.
 - Follow-up: none until an implementation PR exists.
 
+Additional validation for selected SDF mimic world model coverage:
+
+- Added parser-specific `SdfParser::Options::mModelName` for named SDF model
+  selection. It uses libsdformat `sdf::Root`/`sdf::World::ModelByName` DOM
+  lookup; empty model names keep the previous top-level / first-world-first-model
+  behavior.
+- Added `SdfParser.SelectsNamedWorldModel` and
+  `SdfParser.MissingNamedWorldModelReturnsNull`.
+- Added `SdfWriter.RoundTripsSelectedMimicWorldFixture`, selecting
+  `pendulum_with_base_mimic_slow_follows_fast` from
+  `dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf`, writing
+  SDF 1.11, validating emitted `sdf::JointAxis::Mimic()` metadata through the
+  libsdformat world/model DOM, and reparsing through `SdfParser`.
+- No XML-level SDF parsing, model enumeration, or emitted-text substring checks
+  were added.
+
+Validation commands:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfParser --gtest_filter=SdfParser.SelectsNamedWorldModel:SdfParser.MissingNamedWorldModelReturnsNull && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsSelectedMimicWorldFixture'`
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run check-sdf-sdformat-boundary`
+- `pixi run build`
+- `pixi run lint`
+- `git diff --check`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in `SdfParser::Options`,
+  `tests/integration/io/test_sdf_parser.cpp`,
+  `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Scope evidence: this slice adds a parser-specific SDF loading option that
+  users can call directly to select named models from multi-model SDF world
+  files; it also broadens fixture-level SDF writer validation for existing
+  SDF 1.11 mimic metadata.
+- Decision: update the existing DART 7 IO and Parsing loading bullet for
+  parser-specific SDF world model selection, and fold the selected mimic
+  fixture coverage into the existing SDF writer documentation rather than
+  adding a separate writer changelog bullet.
+- Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing
+- Entry text: present as the updated URDF/SDF/MJCF loading APIs bullet, without
+  a PR link until an implementation PR exists.
+- PR-body note: record as parser-specific SDF named model selection plus
+  selected mimic world fixture round-trip verification if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
 Changelog decision:
 
 - Mode: draft

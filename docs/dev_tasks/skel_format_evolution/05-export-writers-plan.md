@@ -91,9 +91,11 @@ The SDF writer integration test now uses
 inertia, and shape assertions. Future writer tests should extend that helper
 instead of copying SDF-specific ad hoc checks.
 
-Parser-side SDF import now uses libsdformat DOM objects for top-level model or
-first-world model selection, world gravity, ambiguous `.xml` SDF dispatch
-through `dart::io::readSkeleton()`, and standard model/link/joint/aspect
+Parser-side SDF import now uses libsdformat DOM objects for top-level model,
+first-world model, or parser-requested named world model selection through
+`SdfParser::Options::mModelName` and `sdf::World::ModelByName()`, world
+gravity, ambiguous `.xml` SDF dispatch through `dart::io::readSkeleton()`, and
+standard model/link/joint/aspect
 traversal. Ambiguous XML dispatch asks sdformat to classify root-model and
 world-contained SDF documents before the non-SDF URDF/MJCF XML-root fallback
 runs. The remaining authored/default presence checks use sdformat's
@@ -142,8 +144,10 @@ world-contained
 `issue1193_revolute*.sdf`, `high_version.world`, and
 `single_bodynode_skeleton.world` fixtures plus `test_skeleton_joint.world`,
 `force_torque_test.world`, and `force_torque_test2.world` through the normal
-SDF parser, writes them with `SdfParser::tryWriteSkeletonToString()`, reloads
-the emitted text, and compares body, joint, inertial, mobility, gravity,
+SDF parser, plus the selected `pendulum_with_base_mimic_slow_follows_fast`
+model from `mimic_fast_slow_pendulums_world.sdf`, writes them with
+`SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and compares
+body, joint, inertial, mobility, gravity,
 axis-limit, joint-dynamics, visual geometry, collision geometry, resource URI,
 model-pose, and joint-offset semantics between the original parsed skeletons and the
 re-parsed writer outputs. The `quad.sdf` root-model fixture adds read/write/read
@@ -165,7 +169,9 @@ revolute2/universal joints plus cylinder visual/collision geometry. The
 force-torque world coverage is limited to DART skeleton semantics
 imported from the in-file models, including the three-link/two-joint chain in
 `force_torque_test2.world`; it does not claim SDF sensor or physics metadata
-preservation.
+preservation. The selected mimic world coverage proves SDF 1.11 axis mimic
+metadata on a non-first world model can be selected, written, validated through
+libsdformat DOM, and reparsed without adding XML-level SDF model enumeration.
 
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.

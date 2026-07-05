@@ -68,7 +68,8 @@ Source of truth:
   `dart/utils/sdf`, and keeps ambiguous `dart::io` SDF auto-detection on
   libsdformat before the legacy URDF/MJCF XML-root fallback
 - `dart/utils/sdf/` uses libsdformat DOM APIs for SDF structure, model/link
-  static and self-collision state, world gravity, inertial,
+  static and self-collision state, named top-level/world model selection, world
+  gravity, inertial,
   visual/collision/material, visual shadow and visibility metadata, joint
   topology/pose/axis frame
   resolution/dynamics/limits,
@@ -130,6 +131,24 @@ options.format = dart::io::ModelFormat::Sdf;
 options.sdfDefaultRootJointType = dart::io::RootJointType::Fixed;
 auto skel = dart::io::readSkeleton("dart://sample/sdf/test/box.sdf", options);
 ```
+
+### SDF named world-model selection
+
+When an SDF world contains multiple models, `dart::io::readSkeleton` keeps the
+default SDF parser behavior of loading the first model from the first world.
+Call `dart::utils::SdfParser` directly when a workflow needs a specific model:
+
+```cpp
+dart::utils::SdfParser::Options options;
+options.mModelName = "selected_model";
+auto skel = dart::utils::SdfParser::readSkeleton(
+    dart::common::Uri("file:///path/to/world.sdf"), options);
+```
+
+The selector is intentionally parser-specific. It uses libsdformat DOM lookup
+through `sdf::Root::Model()` and `sdf::World::ModelByName()`; an empty
+`mModelName` preserves the previous top-level-model / first-world-first-model
+behavior.
 
 ### URDF `package://` resolution (parser-specific customization)
 
@@ -196,11 +215,14 @@ top-level `ground.world` fixture, plus world-contained
 `issue1193_revolute*.sdf` fixtures, `high_version.world`,
 `single_bodynode_skeleton.world`, and
 `test_skeleton_joint.world`, plus `force_torque_test.world` /
-`force_torque_test2.world` through read/write/read smokes that
+`force_torque_test2.world`, and the selected
+`pendulum_with_base_mimic_slow_follows_fast` model from
+`mimic_fast_slow_pendulums_world.sdf` through read/write/read smokes that
 compare body, joint, inertial, mobility, gravity, axis-limit, joint-dynamics,
 box/cylinder/sphere/mesh geometry, shape-pose, model-pose, resource URI, and
 joint-offset semantics across simple single-body, quadruped, fixed-root issue,
-relative-mesh, ground-plane, mixed-joint, two-link, and three-link models. The
+relative-mesh, ground-plane, mixed-joint, two-link, three-link, and selected
+world-model mimic cases. The
 quadruped
 fixture covers 17 links, 16 revolute joints, finite axis velocity/effort
 limits, visual material colors, repeated box visual/collision geometry, and
@@ -216,7 +238,10 @@ gravity, and box/cylinder visual and collision geometry. The mixed-joint world
 fixture covers prismatic, revolute, screw, and revolute2/universal joints plus
 cylinder visual and collision geometry. The force-torque world fixture coverage
 is limited to DART skeleton semantics imported from the in-file models and does
-not claim preservation of SDF sensor or physics metadata. The writer also
+not claim preservation of SDF sensor or physics metadata. The selected mimic
+world fixture proves parser-selected non-first world models preserve SDF 1.11
+axis mimic metadata through libsdformat validation and read/write/read. The
+writer also
 covers absolute non-file mesh URI preservation through a custom retriever,
 URI-backed mesh material variants through preserved source mesh URIs, and
 parser-resolved source mesh URIs imported from a shipped relative-mesh SDF

@@ -251,6 +251,74 @@ SkeletonPtr readSkeletonFromSdfString(
 } // namespace
 
 //==============================================================================
+TEST(SdfParser, SelectsNamedWorldModel)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/select_model/world.sdf";
+  retriever->add(
+      uri,
+      R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="world_with_models">
+    <gravity>0 0 -3</gravity>
+    <model name="first_model">
+      <link name="first_link">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+    </model>
+    <model name="selected_model">
+      <link name="selected_link">
+        <inertial><mass>2.0</mass></inertial>
+      </link>
+    </model>
+  </world>
+</sdf>
+ )");
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  options.mModelName = "selected_model";
+
+  const auto skeleton = SdfParser::readSkeleton(common::Uri(uri), options);
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_EQ(skeleton->getName(), "selected_model");
+  EXPECT_NEAR(skeleton->getGravity()[0], 0.0, 1e-12);
+  EXPECT_NEAR(skeleton->getGravity()[1], 0.0, 1e-12);
+  EXPECT_NEAR(skeleton->getGravity()[2], -3.0, 1e-12);
+  ASSERT_EQ(skeleton->getNumBodyNodes(), 1u);
+  EXPECT_NE(skeleton->getBodyNode("selected_link"), nullptr);
+  EXPECT_EQ(skeleton->getBodyNode("first_link"), nullptr);
+}
+
+//==============================================================================
+TEST(SdfParser, MissingNamedWorldModelReturnsNull)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/missing_model/world.sdf";
+  retriever->add(
+      uri,
+      R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="world_with_models">
+    <model name="first_model">
+      <link name="first_link">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+    </model>
+  </world>
+</sdf>
+ )");
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  options.mModelName = "missing_model";
+
+  EXPECT_EQ(SdfParser::readSkeleton(common::Uri(uri), options), nullptr);
+}
+
+//==============================================================================
 TEST(SdfParser, ReadMaterial)
 {
   const common::Uri sdfUri("dart://sample/sdf/quad.sdf");
