@@ -82,32 +82,36 @@ in the pixi config). WP-PG.01 must record the `Construct LCP` vs
 Dantzig-solve-proper split per scene — the round-2 smoke number (below)
 did not separate them.
 
-## Round-2 baseline (WP-PG.01, captured 2026-07-04)
+## Round-2 baseline (WP-PG.01, refreshed 2026-07-05)
 
-Metadata: `origin/release-6.20` @ `5bee91ad6be`; GCC 15.2.0 (Ubuntu),
-Release; Intel i9-13950HX (32 threads), governor **powersave**, CPU
-scaling ENABLED — RTF values are host-relative (treat ±5% as noise);
-**guard values are the hashes, contact/pair counts, resting counts, and
-finite flags**, not the RTF cells. Dashboard tooling artifacts generated
-under `.benchmark_results/` in the same session. The pre-plan probe on
-`fdf89784e8d` matched these S1 rows within noise, so the fixture is
-stable across #3226/#3230/#3241.
+Metadata: guard rows refreshed on `origin/release-6.20` @
+`b9e6910c066` (PR head `13d0614dabb`); GCC 15.2.0 (Ubuntu), Release;
+Intel i9-13950HX (32 threads), governor **powersave**, CPU scaling
+ENABLED — RTF values are host-relative (treat ±5% as noise, and more
+under visible host load); **guard values are the hashes, contact/pair
+counts, resting counts, and finite flags**, not the RTF cells. The
+2026-07-04 `5bee91ad6be` capture generated the original dashboard
+artifacts and profile splits; the 2026-07-05 current-base refresh below
+updates the durable guard rows after #3273 and later release-branch
+merges. The pre-plan probe on `fdf89784e8d` matched the S1 rows within
+noise, so the fixture is stable across #3226/#3230/#3241.
 
 ### S1 — `BM_INTEGRATION_contact_container` (3-rep means)
 
 | Scenario (objects/engine/threads) | cpu ms/iter | sim_s/s (≈RTF) | Contacts (cap) | Pairs | Resting | Finite | Hash |
 | --- | ---: | ---: | ---: | ---: | --- | --- | --- |
-| 60 / dart / 1 | 412 | 0.486 | 96 (false) | 87 | 0/60 | true | `0xbe5900b3cf874742` |
-| 60 / dart / 16 | 430 | 0.465 | 96 (false) | 87 | 0/60 | true | `0xbe5900b3cf874742` |
-| 60 / ode / 1 | 1540 | 0.130 | 249 (false) | 86 | 0/60 | true | `0x54680005ed76f66` |
-| 60 / ode / 16 | 1464 | 0.137 | 249 (false) | 86 | 0/60 | true | `0x54680005ed76f66` |
-| 120 / dart / 1 | 4677 | 0.043 | 272 (false) | 204 | 0/120 | true | `0x2757590b13e917ee` |
-| 120 / dart / 16 | 4607 | 0.043 | 272 (false) | 204 | 0/120 | true | `0x2757590b13e917ee` |
-| 120 / ode / 1 | 6844 | 0.029 | 542 (false) | 200 | 0/120 | true | `0x7dd44240329b6f4f` |
-| 120 / ode / 16 | 6784 | 0.030 | 542 (false) | 200 | 0/120 | true | `0x7dd44240329b6f4f` |
+| 60 / dart / 1 | 466 | 0.429 | 96 (false) | 87 | 0/60 | true | `0xbe5900b3cf874742` |
+| 60 / dart / 16 | 460 | 0.435 | 96 (false) | 87 | 0/60 | true | `0xbe5900b3cf874742` |
+| 60 / ode / 1 | 1789 | 0.112 | 249 (false) | 86 | 0/60 | true | `0x54680005ed76f66` |
+| 60 / ode / 16 | 1783 | 0.112 | 249 (false) | 86 | 0/60 | true | `0x54680005ed76f66` |
+| 120 / dart / 1 | 5552 | 0.036 | 272 (false) | 204 | 0/120 | true | `0x2757590b13e917ee` |
+| 120 / dart / 16 | 5592 | 0.036 | 272 (false) | 204 | 0/120 | true | `0x2757590b13e917ee` |
+| 120 / ode / 1 | 9956 | 0.021 | 542 (false) | 200 | 0/120 | true | `0x7dd44240329b6f4f` |
+| 120 / ode / 16 | 8792 | 0.023 | 542 (false) | 200 | 0/120 | true | `0x7dd44240329b6f4f` |
 
-60→120 objects costs ~11.4x (native) — super-quadratic scaling; threads
-are flat in both engines; ODE emits ~2x the contacts of native
+60→120 objects costs ~11.9x (native) — super-quadratic scaling; threads
+do not provide reliable speedup in either engine; ODE emits ~2x the
+contacts of native
 (physically different profiles; hashes only comparable within one
 detector). The Google Benchmark suite above reports timing/contacts only;
 it does not print pairs/finite/hash, so the S1 hash/pair/finite guard
@@ -133,23 +137,23 @@ Benchmark means from the suite invocation, independent of this CLI capture.
 
 | Row | RTF | Avg step ms | Contacts (cap) | Pairs | Resting | Finite | Max pen | Hash |
 | --- | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |
-| S2_dart | 26.84 | 0.037 | 0 (false) | 0 | 3003/3003 | true | 0 | `0x8ddc9a81f2d28a7f` |
-| S2_fcl | 28.11 | 0.036 | 0 (false) | 0 | 3003/3003 | true | 0 | `0x266da31836a314a6` |
-| S2_bullet | 6.78 | 0.147 | 0 (false) | 0 | 3003/3003 | true | 0 | `0x2375f1927218cd43` |
-| S2_ode | 11.16 | 0.090 | 0 (false) | 0 | 3003/3003 | true | 0 | `0x10f80b0408cede90` |
-| S3_dart | 0.101 | 9.89 | 5005 (false) | 3003 | 0/3003 | true | 9.3e-09 | `0xcf0ba6eaa97be038` |
-| S3_fcl | 0.085 | 11.78 | 3003 (false) | 3003 | 0/3003 | true | 9.3e-09 | `0x6088ea0177efa6a` |
-| S3_bullet | 0.087 | 11.47 | 5005 (false) | 3003 | 0/3003 | true | 3.0e-07 | `0xabf3edd146317478` |
-| S3_ode | 0.0083 | 119.90 | 9009 (false) | 3003 | 0/3003 | true | 9.3e-09 | `0x4904c09a93a36442` |
-| S4_dart | 0.357 | 2.80 | 1800 (false) | 900 | 600/900 | true | 1.0e-03 | `0x76205ad68f4293bb` |
-| S4_fcl | 0.266 | 3.76 | 1800 (false) | 900 | 450/900 | true | 9.8e-04 | `0x7a0974e837912472` |
-| S4_bullet | 0.193 | 5.17 | 2364 (false) | 900 | 269/900 | true | 1.1e-02 | `0x72bf270cdda36104` |
-| S4_ode | 6.75 | 0.148 | 0 (false) | 0 | 900/900 | true | 0 | `0x429b65bc5c4a14b6` |
-| S5_dart | 3.69 | 0.271 | 180 (false) | 90 | 60/90 | true | 1.0e-03 | `0x726d1ff51bdb717` |
-| S5_fcl | 2.26 | 0.443 | 180 (false) | 90 | 45/90 | true | 7.6e-04 | `0x99bfaef49c254203` |
-| S5_bullet | 1.92 | 0.521 | 210 (false) | 90 | 55/90 | true | 1.0e-05 | `0xbeb495c1ab0d6ca6` |
-| S5_ode | 82.09 | 0.012 | 0 (false) | 0 | 90/90 | true | 0 | `0x5f2afc7230ee8d10` |
-| S6_dart | 0.117 | 8.55 | 162 (false) | 137 | 0/71 | true | **0.3866** | `0x637a8bb6d5e0af64` |
+| S2_dart | 29.46 | 0.034 | 0 (false) | 0 | 3003/3003 | true | 0 | `0x8ddc9a81f2d28a7f` |
+| S2_fcl | 30.60 | 0.033 | 0 (false) | 0 | 3003/3003 | true | 0 | `0x266da31836a314a6` |
+| S2_bullet | 8.25 | 0.121 | 0 (false) | 0 | 3003/3003 | true | 0 | `0x2375f1927218cd43` |
+| S2_ode | 13.51 | 0.074 | 0 (false) | 0 | 3003/3003 | true | 0 | `0x10f80b0408cede90` |
+| S3_dart | 0.115 | 8.68 | 5005 (false) | 3003 | 0/3003 | true | 9.3e-09 | `0xcf0ba6eaa97be038` |
+| S3_fcl | 0.102 | 9.79 | 3003 (false) | 3003 | 0/3003 | true | 9.3e-09 | `0x6088ea0177efa6a` |
+| S3_bullet | 0.096 | 10.43 | 5005 (false) | 3003 | 0/3003 | true | 3.0e-07 | `0x22e27960cbabe83e` |
+| S3_ode | 0.0092 | 108.19 | 9009 (false) | 3003 | 0/3003 | true | 9.3e-09 | `0x4904c09a93a36442` |
+| S4_dart | 0.400 | 2.50 | 1800 (false) | 900 | 600/900 | true | 1.0e-03 | `0x76205ad68f4293bb` |
+| S4_fcl | 0.304 | 3.29 | 1800 (false) | 900 | 450/900 | true | 9.8e-04 | `0x7a0974e837912472` |
+| S4_bullet | 0.175 | 5.71 | 2353 (false) | 900 | 269/900 | true | 1.1e-02 | `0x2a5577952e2de925` |
+| S4_ode | 6.72 | 0.149 | 0 (false) | 0 | 900/900 | true | 0 | `0x429b65bc5c4a14b6` |
+| S5_dart | 4.21 | 0.238 | 180 (false) | 90 | 60/90 | true | 1.0e-03 | `0x726d1ff51bdb717` |
+| S5_fcl | 2.83 | 0.353 | 180 (false) | 90 | 45/90 | true | 7.6e-04 | `0x99bfaef49c254203` |
+| S5_bullet | 2.56 | 0.390 | 210 (false) | 90 | 56/90 | true | 1.0e-05 | `0xf78e3bd075780c83` |
+| S5_ode | 87.57 | 0.011 | 0 (false) | 0 | 90/90 | true | 0 | `0x5f2afc7230ee8d10` |
+| S6_dart | 0.0939 | 10.65 | 160 (false) | 139 | 0/71 | true | **0.3624** | `0x6eb6ff3911ac9d04` |
 
 ### Headline findings (round-2 evidence; supersedes the pre-plan smoke run)
 
@@ -170,14 +174,14 @@ Benchmark means from the suite invocation, independent of this CLI capture.
      collision 7.8%. Consequence: WS-C batching (WP-PG.30/33) and
      per-island overhead trimming (WP-PG.11 + mined single-reactive
      commits) are the levers for the many-bodies regime.
-2. **ODE active-3k is ~12x slower than native** (RTF 0.0083 vs 0.101,
-   120 ms/step) — the WS-B lane is worth more than the settled-scene
+2. **ODE active-3k is ~12x slower than native** (RTF 0.0092 vs 0.115,
+   108 ms/step) — the WS-B lane is worth more than the settled-scene
    2.4x gap suggested.
 3. **ODE remains physically divergent** on generated scenes: S4/S5 end
    with 0 contacts and everything resting (vs native 600/900 resting,
    1800 contacts) — RTF-only comparisons across detectors stay banned.
 4. **Creep confirmed on the round-2 tip** (S6): max penetration grows to
-   0.387 m over 20 s (~19 mm/s), resting stays 0/71 — the WP-PG.15/D7
+   0.362 m over 20 s (~18 mm/s), resting stays 0/71 — the WP-PG.15/D7
    fixture behaves exactly as #3209 documented.
 5. Success criterion 1 (3x on the dense-pile fixture via default-on work)
    is **not reachable from assembly/build work alone** given finding 1a;
@@ -230,8 +234,12 @@ propose deletion of dead branches to the maintainer).
 
 ## WP-PG.01 status
 
-**Captured** (2026-07-04) on `origin/release-6.20` @ `5bee91ad6be`: full
-cell matrix, scene dumps, profile splits, dashboard artifacts, prior-art
-triage — all recorded above. Zero row failures. The S2–S6 hash column is
-the round-2 determinism reference until a maintainer-approved re-baseline
-(D1/D7/D8 packets record old/new pairs here).
+**Captured and refreshed**: the original 2026-07-04 capture on
+`origin/release-6.20` @ `5bee91ad6be` recorded the full matrix, scene
+dumps, profile splits, dashboard artifacts, and prior-art triage. The
+2026-07-05 refresh on `origin/release-6.20` @ `b9e6910c066` re-ran the
+S1–S6 guard rows on the current base and updates the durable table above.
+Zero command failures; Bullet S3/S4/S5 and S6 produced changed guard
+hashes/counts relative to the older base and are now the round-2
+determinism reference until a maintainer-approved re-baseline (D1/D7/D8
+packets record old/new pairs here).

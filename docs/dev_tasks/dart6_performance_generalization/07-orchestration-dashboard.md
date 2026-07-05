@@ -5,8 +5,8 @@ file (and RESUME.md) in every PR that claims or completes a packet.
 
 Branch point: `origin/release-6.20` @ `70b92010311` (2026-07-04 plan
 branch point).
-Guard baseline: `origin/release-6.20` @ `5bee91ad6be` (2026-07-04
-WP-PG.01 capture reference).
+Guard baseline: `origin/release-6.20` @ `b9e6910c066` (2026-07-05
+WP-PG.01 current-base guard refresh).
 Related open queue at last refresh: none blocking (all enablers merged:
 #3209, #3226, #3229, #3230, #3234).
 

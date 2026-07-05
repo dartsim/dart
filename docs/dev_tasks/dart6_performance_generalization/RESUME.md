@@ -53,20 +53,21 @@ the explicit `--parallel 8` build command.)
 D1 (SIMD FP contract), D2 (ISA delivery), D3 (matrix-free — **revisit
 trigger fired by WP-PG.01**: solve-proper is 88.1% of the dense-pile
 step), D4 (executor tooling), D5 (ODE lane depth = PG.20/21/22), D7
-(penetration-creep remediation — **S6 confirms 0.387 m penetration,
+(penetration-creep remediation — **S6 confirms 0.362 m penetration,
 0/71 resting at baseline**), D8 (manifold reduction now vs WS-F phase 3)
 — see README "Open decisions". D3 and D7 are now the highest-leverage
 decisions.
 
 ## Session log (round-2 execution)
 
-- 2026-07-04: WP-PG.01 executed on `wp-pg-01-baseline-evidence`
-  (`origin/release-6.20` @ `5bee91ad6be`): full S1–S6 matrix captured
-  (zero row failures), profile splits recorded (P1 dense-pile: solve
-  88.1% / assembly 7.4%; P2 active-3k: integration 50.1%), six prior-art
-  branches triaged (two unmerged hash-preserving solver wins queued into
-  WP-PG.11; one branch recommended for deletion), dashboard artifacts
-  generated.
+- 2026-07-04/05: WP-PG.01 executed on `wp-pg-01-baseline-evidence`:
+  original matrix/profile/dashboard capture on `origin/release-6.20`
+  @ `5bee91ad6be`, then current-base guard refresh on
+  `origin/release-6.20` @ `b9e6910c066`. Full S1–S6 guard matrix is
+  recorded in 01-baseline-evidence.md; profile splits recorded (P1
+  dense-pile: solve 88.1% / assembly 7.4%; P2 active-3k: integration
+  50.1%); six prior-art branches triaged (two unmerged hash-preserving
+  solver wins queued into WP-PG.11; one branch recommended for deletion).
 
 ## Session log
 
