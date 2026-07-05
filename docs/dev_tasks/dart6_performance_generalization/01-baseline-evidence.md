@@ -111,24 +111,23 @@ are flat in both engines; ODE emits ~2x the contacts of native
 (physically different profiles; hashes only comparable within one
 detector). The Google Benchmark suite above reports timing/contacts only;
 it does not print pairs/finite/hash, so the S1 hash/pair/finite guard
-columns come from a separate scripted CLI capture, one per
-`{60, 120} objects × {dart, ode}` cell (4 captures total):
+columns come from separate scripted CLI captures, one per table row
+(`{60, 120} objects × {dart, ode} × {1, 16} threads`; 8 captures total):
 
 ```bash
 pixi run $CB --generate-container <60|120> --steps 200 --checkpoint 0 \
-  --collision <dart|ode> --disable-deactivation --world-threads 1 \
+  --collision <dart|ode> --disable-deactivation --world-threads <1|16> \
   --max-contacts 20000 --max-contacts-per-pair 4 --quiet
 ```
 
 `--disable-deactivation` mirrors the benchmark's fixed deactivation-off
 design; `--max-contacts 20000 --max-contacts-per-pair 4` keeps every S1
 cell's cap-hit flag `false` (measured contacts top out at 542) and matches
-the ODE trimesh-cap caveat above. `--world-threads` does not affect the
-guard values — the table's 1-thread and 16-thread rows already share
-identical hashes per object-count/detector pair — so `--world-threads 1`
-is the canonical capture and the 16-thread rows cite it rather than
-re-running; timing columns remain the 3-rep Google Benchmark means from
-the suite invocation, independent of this CLI capture.
+the ODE trimesh-cap caveat above. The independent 16-thread CLI captures
+match the 1-thread hash/pair/finite values for each object-count/detector
+pair, so the duplicate hashes in the table are measured equivalence rather
+than a reused 1-thread digest. Timing columns remain the 3-rep Google
+Benchmark means from the suite invocation, independent of this CLI capture.
 
 ### S2–S6 guard rows (canonical commands above)
 
