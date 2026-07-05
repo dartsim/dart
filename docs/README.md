@@ -1,14 +1,18 @@
 # DART Documentation
 
-This directory contains documentation for DART users, developers, and contributors.
+This directory contains documentation for DART users, developers, contributors,
+maintainers, and AI agents.
 
 ## For New Contributors
 
-**Start here:** [onboarding/README.md](onboarding/README.md) - Developer
-knowledge base and onboarding guide for architecture, components, and
-workflows.
+**Start here:** [onboarding/README.md](onboarding/README.md) - Current
+developer handbook path for architecture, components, workflows, and durable
+contributor guidance.
 
 ## Documentation Structure
+
+For placement rules, lifecycle boundaries, and future restructure criteria, see
+[information-architecture.md](information-architecture.md).
 
 | Directory                               | Owns                                                                             |
 | --------------------------------------- | -------------------------------------------------------------------------------- |
@@ -18,7 +22,7 @@ workflows.
 | [`design/`](design/README.md)           | Durable technical design proposals and decision rationale                        |
 | [`dev_tasks/`](dev_tasks/README.md)     | Active multi-session implementation task tracking                                |
 | [`doxygen/`](doxygen/)                  | Doxygen inputs consumed by the published C++ API build                           |
-| [`onboarding/`](onboarding/README.md)   | Developer knowledge base, onboarding, architecture, and workflows                |
+| [`onboarding/`](onboarding/README.md)   | Current developer handbook path: build/test/CI/release/API policy and workflows  |
 | [`plans/`](plans/README.md)             | Living roadmap, priority, open gaps, gates, and plan lifecycle                   |
 | [`python_api/`](python_api/index.rst)   | Reusable dartpy API module pages for Sphinx autodoc                              |
 | [`readthedocs/`](readthedocs/README.md) | Published user documentation site source                                         |
@@ -30,6 +34,7 @@ Markdown and owns end-user navigation.
 ## Quick Links by Task
 
 - **New to DART development?** → [onboarding/README.md](onboarding/README.md)
+- **Choosing where docs belong?** → [information-architecture.md](information-architecture.md)
 - **Building from source?** → [onboarding/building.md](onboarding/building.md)
 - **Contributing code?** → [onboarding/contributing.md](onboarding/contributing.md) + [onboarding/code-style.md](onboarding/code-style.md)
 - **Writing release notes?** → [onboarding/changelog.md](onboarding/changelog.md) + [onboarding/release-management.md](onboarding/release-management.md)

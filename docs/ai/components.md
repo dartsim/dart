@@ -74,6 +74,8 @@ Route durable learnings to one owner:
 - AI component mechanics, source surfaces, and structural checks: this file.
 - Tool compatibility and generated-adapter caveats:
   `docs/onboarding/ai-tools.md`.
+- Documentation bucket placement and future restructure criteria:
+  `docs/information-architecture.md`.
 - Reusable user-invoked workflow: `.claude/commands/`, synced to generated
   adapters.
 - Reusable on-demand domain knowledge: `.claude/skills/`, synced to generated
@@ -131,11 +133,11 @@ faster; it must not be the only path.
 
 `pixi run check-docs-policy` also enforces documentation lifecycle rules that
 are outside generated-adapter sync, including docs bucket visibility,
-dev-task shape, plan cleanup invariants, dashboard entry budgets (at most 40
-lines per `### PLAN-` block and 15 lines per `- Next step:` field), the
-no-`Complete`-entries rule for `docs/plans/dashboard.md` (completed plans move
-to `docs/plans/archive.md`, whose entry shape is also checked), the
-`docs/ai/` frontmatter pilot, and
+the root information-architecture owner links, dev-task shape, plan cleanup
+invariants, dashboard entry budgets (at most 40 lines per `### PLAN-` block
+and 15 lines per `- Next step:` field), the no-`Complete`-entries rule for
+`docs/plans/dashboard.md` (completed plans move to `docs/plans/archive.md`,
+whose entry shape is also checked), the `docs/ai/` frontmatter pilot, and
 the `docs/readthedocs/papers.md` catalog schema, pilot-scoped internal
 Markdown links, and conservative owner-index discoverability (both promoted
 from advisory to blocking after the PLAN-121 pilot inventory reported a clean

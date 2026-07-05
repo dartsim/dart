@@ -23,6 +23,7 @@ REQUIRED_DOCS_TOP_LEVEL_DIRS = (
     "python_api",
     "readthedocs",
 )
+DOCS_INFORMATION_ARCHITECTURE = "docs/information-architecture.md"
 
 # These strings have shown up as "footer metadata" in Markdown docs and should
 # not be committed to the repository.
@@ -188,6 +189,30 @@ def check_docs_indexes(repo_root: Path) -> list[str]:
                 failures.append(
                     f"{path.relative_to(repo_root)}: missing `{marker}` entry"
                 )
+
+    return failures
+
+
+def check_docs_information_architecture(repo_root: Path) -> list[str]:
+    """Ensure the docs placement owner exists and stays discoverable."""
+    failures: list[str] = []
+    owner = repo_root / DOCS_INFORMATION_ARCHITECTURE
+    if not owner.exists():
+        return [f"{DOCS_INFORMATION_ARCHITECTURE}: missing docs placement owner"]
+
+    for rel_path in ("docs/README.md", "docs/AGENTS.md"):
+        path = repo_root / rel_path
+        if not path.exists():
+            failures.append(f"{rel_path}: missing docs index")
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if (
+            DOCS_INFORMATION_ARCHITECTURE not in text
+            and "information-architecture.md" not in text
+        ):
+            failures.append(
+                f"{rel_path}: missing `{DOCS_INFORMATION_ARCHITECTURE}` pointer"
+            )
 
     return failures
 
@@ -1170,6 +1195,7 @@ def main() -> int:
     for path in iter_markdown_files(repo_root):
         failures.extend(check_file(path, repo_root))
     failures.extend(check_docs_indexes(repo_root))
+    failures.extend(check_docs_information_architecture(repo_root))
     failures.extend(check_dev_task_shape(repo_root))
     failures.extend(check_plan_lifecycle(repo_root))
     failures.extend(check_dashboard_structure(repo_root))
