@@ -85,6 +85,9 @@
   phase-0 packet cross-references those cells instead of duplicating them.
 - **#3271** `docs/native-collision-phase0-baseline` — this lane's phase-0
   baseline packet (review in progress).
+- **#3281** `feature/native-collision-core` — this lane's **phase-1 port**
+  (native math core, internal-only, no behavior change; all local gates
+  green incl. gz 199/199+4+1 and bit-identical guard-row hashes).
 - Branch-CI fixes **#3267/#3272/#3273 merged 2026-07-04** (macOS SIMD
   `-Werror`, dartpy format checks via pixi, shallow-support + SIMD CI).
   Base failures observed before them (Windows `Install` step, coverage
