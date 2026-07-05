@@ -144,8 +144,9 @@
       fixtures (`single_pendulum.sdf`, `cube.sdf`, `shapes.sdf`, and
       `test_shapes.sdf`) plus the native root-model `quad.sdf` quadruped
       fixture, the native two-link revolute SDF fixture
-      (`two_link_revolute_model.sdf`), and the world-contained
-      `issue1193_revolute*.sdf`, `high_version.world`, and
+      (`two_link_revolute_model.sdf`), the root-model issue fixtures
+      (`test_issue1583.model` and `test_issue1683.model`), and the
+      world-contained `issue1193_revolute*.sdf`, `high_version.world`, and
       `single_bodynode_skeleton.world` fixtures plus
       `test_skeleton_joint.world`, `force_torque_test.world`, and
       `force_torque_test2.world`, writes them back through
@@ -153,7 +154,10 @@
       compares body, joint, inertial, mobility, gravity, axis-limit,
       joint-dynamics, visual geometry, collision geometry, model-pose, and
       joint-offset semantics of the original parsed skeletons against the
-      re-parsed writer outputs. The force-torque world fixture coverage is
+      re-parsed writer outputs. The issue fixture coverage proves fixed
+      parent-world root semantics recovered through `RootJointType::Fixed`,
+      model poses, child revolute axes and limits, and cylinder/box visual
+      geometry. The force-torque world fixture coverage is
       limited to DART skeleton semantics imported from the in-file models; it
       does not claim SDF sensor or physics metadata preservation.
       The first URDF writer slice is also implemented locally on
@@ -357,6 +361,10 @@ SKEL-YAML direction just because the prototype once existed.
   `quad.sdf` fixture adds read/write/read coverage for a root-model quadruped
   with 17 links, 16 revolute joints, finite axis velocity/effort limits, visual
   material colors, box visual/collision geometry, and foot sphere visuals. The
+  shipped `test_issue1583.model` and `test_issue1683.model` fixtures add
+  read/write/read coverage for root-model issue fixtures with fixed
+  parent-world root semantics recovered through `RootJointType::Fixed`, model
+  poses, child revolute axes and limits, and cylinder/box visual geometry. The
   shipped
   `high_version.world` and `single_bodynode_skeleton.world` fixtures add
   read/write/read coverage for simple world-contained single-body models with

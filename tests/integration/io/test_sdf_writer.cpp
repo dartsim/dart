@@ -1354,6 +1354,91 @@ TEST(SdfWriter, RoundTripsExistingTwoLinkRevoluteFixture)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsExistingSimpleJointModelFixtures)
+{
+  struct FixtureCase
+  {
+    std::string_view uri;
+    std::string_view tempName;
+    std::string_view modelName;
+  };
+
+  const std::vector<FixtureCase> cases = {
+      {"dart://sample/sdf/test/test_issue1583.model",
+       "test_issue1583_model",
+       "simple_joint_test"},
+      {"dart://sample/sdf/test/test_issue1683.model",
+       "test_issue1683_model",
+       "simple_joint_test_issue1683"},
+  };
+
+  for (const auto& testCase : cases) {
+    SCOPED_TRACE(testCase.uri);
+    const auto original
+        = utils::SdfParser::readSkeleton(common::Uri(testCase.uri));
+    ASSERT_NE(original, nullptr);
+    ASSERT_EQ(original->getNumBodyNodes(), 2u);
+    ASSERT_EQ(original->getNumJoints(), 2u);
+
+    const auto writeResult
+        = utils::SdfParser::tryWriteSkeletonToString(*original);
+    ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+    const auto path = writeTempSdf(writeResult.value(), testCase.tempName);
+    const utils::SdfParser::Options options(
+        nullptr, utils::SdfParser::RootJointType::Fixed);
+    const auto reparsed = utils::SdfParser::readSkeleton(
+        common::Uri::createFromPath(path.string()), options);
+    std::filesystem::remove(path);
+
+    ASSERT_NE(reparsed, nullptr);
+    EXPECT_EQ(reparsed->getName(), testCase.modelName);
+    EXPECT_EQ(reparsed->getName(), original->getName());
+    EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+    EXPECT_VECTOR_NEAR(reparsed->getGravity(), original->getGravity(), 1e-12);
+    EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+    EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+    const auto* originalBase = test::requireBodyNode(*original, "base");
+    const auto* originalBar = test::requireBodyNode(*original, "bar");
+    const auto* base = test::requireBodyNode(*reparsed, "base");
+    const auto* bar = test::requireBodyNode(*reparsed, "bar");
+    ASSERT_NE(originalBase, nullptr);
+    ASSERT_NE(originalBar, nullptr);
+    ASSERT_NE(base, nullptr);
+    ASSERT_NE(bar, nullptr);
+    expectBodyInertiaRoundTrips(*base, *originalBase, 1e-12);
+    expectBodyInertiaRoundTrips(*bar, *originalBar, 1e-12);
+
+    const auto* originalRoot = originalBase->getParentJoint();
+    const auto* root = base->getParentJoint();
+    ASSERT_NE(originalRoot, nullptr);
+    ASSERT_NE(root, nullptr);
+    expectJointRoundTrips(*root, *originalRoot, 1e-12);
+
+    const auto* originalHinge
+        = test::requireJoint<dynamics::RevoluteJoint>(*original, "j1");
+    const auto* hinge
+        = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, "j1");
+    ASSERT_NE(originalHinge, nullptr);
+    ASSERT_NE(hinge, nullptr);
+    expectJointRoundTrips(*hinge, *originalHinge, 1e-12);
+    EXPECT_VECTOR_NEAR(hinge->getAxis(), originalHinge->getAxis(), 1e-12);
+
+    expectCylinderShapeRoundTrips<dynamics::VisualAspect>(
+        *base, *originalBase, 0, 1, 1e-12);
+    expectBoxShapeRoundTrips<dynamics::VisualAspect>(
+        *bar, *originalBar, 0, 1, 1e-12);
+    EXPECT_EQ(
+        base->getNumShapeNodesWith<dynamics::CollisionAspect>(),
+        originalBase->getNumShapeNodesWith<dynamics::CollisionAspect>());
+    EXPECT_EQ(
+        bar->getNumShapeNodesWith<dynamics::CollisionAspect>(),
+        originalBar->getNumShapeNodesWith<dynamics::CollisionAspect>());
+  }
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsExistingWorldRevoluteFixtures)
 {
   const std::vector<std::pair<std::string, std::string>> fixtures = {
