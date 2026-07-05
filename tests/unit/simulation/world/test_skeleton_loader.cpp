@@ -520,6 +520,31 @@ TEST(SkeletonLoader, TranslatesForceActuatorCommandsAsEffort)
   EXPECT_DOUBLE_EQ(loadedJoint->getForce()[0], 1.25);
 }
 
+TEST(SkeletonLoader, TranslatesServoActuatorCommandsAsVelocity)
+{
+  auto skeleton = dynamics::Skeleton::create("servo_command");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          nullptr,
+          dynamics::RevoluteJoint::Properties(),
+          dynamics::BodyNode::AspectProperties("servo_link"));
+  (void)body;
+  joint->setName("servo_hinge");
+  joint->setActuatorType(dynamics::Joint::SERVO);
+  joint->setVelocity(0, -0.25);
+  joint->setCommand(0, 1.25);
+
+  sx::World world;
+  const sx::Multibody multibody = sx::io::addSkeleton(world, *skeleton);
+
+  auto loadedJoint = multibody.getJoint("servo_hinge");
+  ASSERT_TRUE(loadedJoint.has_value());
+  EXPECT_EQ(loadedJoint->getActuatorType(), sx::ActuatorType::Servo);
+  ASSERT_EQ(loadedJoint->getCommandVelocity().size(), 1);
+  EXPECT_DOUBLE_EQ(loadedJoint->getVelocity()[0], -0.25);
+  EXPECT_DOUBLE_EQ(loadedJoint->getCommandVelocity()[0], 1.25);
+}
+
 TEST(SkeletonLoader, RejectsMimicActuatorBeforeCreatingMultibody)
 {
   auto skeleton = dynamics::Skeleton::create("mimic_command");
