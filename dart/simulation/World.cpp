@@ -448,14 +448,21 @@ void World::suppressShallowSupportedFreeRootDrift(
   constexpr double kRootLinearLegacyDriftSpeed = 1e-5;
   constexpr double kRootLinearDriftSpeedCap = 2e-4;
   constexpr double kRootLinearDriftFinalQuietRatio = 0.5;
-  double rootLinearDriftSpeed = kRootLinearLegacyDriftSpeed;
+  // Use the bounded platform-jitter gate for the legacy always-awake path too.
+  // FreeBSD's VM-backed contact solve can leak a larger cross-axis Baumgarte
+  // component than Linux while still remaining well inside the tiny drift band.
+  // Explicit or pre-contact low-speed motion is still preserved by the target
+  // selection below, so this only expands the contact-solve delta we remove.
+  double rootLinearDriftSpeed = kRootLinearDriftSpeedCap;
   if (mDeactivationOptions.mEnabled) {
     const double finalQuietLinearSpeed = std::max(
         0.0,
         kFinalSleepLinearRatio * mDeactivationOptions.mLinearSpeedThreshold);
     rootLinearDriftSpeed = std::min(
         kRootLinearDriftSpeedCap,
-        kRootLinearDriftFinalQuietRatio * finalQuietLinearSpeed);
+        std::max(
+            kRootLinearLegacyDriftSpeed,
+            kRootLinearDriftFinalQuietRatio * finalQuietLinearSpeed));
   }
   constexpr double kRootAngularDriftSpeed = 5e-4;
   const bool preSolveClearsStoredTarget
@@ -481,10 +488,12 @@ void World::suppressShallowSupportedFreeRootDrift(
       = preSolveVelocity.mLinear - preSolveVerticalVelocity;
   Eigen::Vector3d targetLateralVelocity = Eigen::Vector3d::Zero();
   bool targetPreservesLateralVelocity = false;
+  // Unedited shallow-contact residuals inside the same platform drift band are
+  // contact leakage, not a new intentional baseline.
   const bool preservePreSolveLateralVelocity
       = hasFiniteNonzeroVelocity(preSolveLateralVelocity)
         && (preSolveClearsStoredTarget
-            || preSolveLateralVelocity.norm() > kRootLinearLegacyDriftSpeed);
+            || preSolveLateralVelocity.norm() > rootLinearDriftSpeed);
   if (preservePreSolveLateralVelocity) {
     targetLateralVelocity = preSolveLateralVelocity;
     targetPreservesLateralVelocity = true;
