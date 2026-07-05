@@ -15,6 +15,12 @@
       "gate_profile": "task-specific"
     },
     {
+      "name": "dart-new-team-task",
+      "category": "orchestration",
+      "status": "active",
+      "gate_profile": "task-specific"
+    },
+    {
       "name": "dart-resume",
       "category": "task-lifecycle",
       "status": "active",
