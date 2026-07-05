@@ -1278,36 +1278,43 @@ bool computeUnconstrainedMultibodyVelocityInto(
   // Coulomb (dry) joint friction as a bounded velocity-level impulse: it stops
   // a coordinate when the holding impulse is within the friction bound
   // (stiction) and otherwise opposes motion at the friction magnitude.
-  for (std::size_t i = 0; i < scratch.tree.links.size(); ++i) {
-    const auto dof = scratch.tree.links[i].dof;
-    if (dof == 0) {
-      continue;
-    }
-    const auto& jointActuation
-        = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
-    if (jointActuation.actuatorType == comps::ActuatorType::Locked) {
-      continue;
-    }
-    const auto& jointModel
-        = registry.get<comps::JointModel>(scratch.tree.jointOf[i]);
-    if (jointModel.coulombFriction.size() != static_cast<Eigen::Index>(dof)) {
-      continue;
-    }
-    for (std::size_t d = 0; d < dof; ++d) {
-      const double bound
-          = jointModel.coulombFriction[static_cast<Eigen::Index>(d)] * timeStep;
-      if (bound <= 0.0) {
+  const auto applyCoulombFrictionTo = [&](auto shouldApply) {
+    for (std::size_t i = 0; i < scratch.tree.links.size(); ++i) {
+      const auto dof = scratch.tree.links[i].dof;
+      if (dof == 0) {
         continue;
       }
-      const auto globalDof
-          = static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d);
-      const double effInertia
-          = scratch.massAndBias.massMatrix(globalDof, globalDof);
-      const double stopImpulse = effInertia * scratch.nextVelocity[globalDof];
-      const double frictionImpulse = std::clamp(stopImpulse, -bound, bound);
-      scratch.nextVelocity[globalDof] -= frictionImpulse / effInertia;
+      const auto& jointActuation
+          = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
+      if (!shouldApply(jointActuation.actuatorType)) {
+        continue;
+      }
+      const auto& jointModel
+          = registry.get<comps::JointModel>(scratch.tree.jointOf[i]);
+      if (jointModel.coulombFriction.size() != static_cast<Eigen::Index>(dof)) {
+        continue;
+      }
+      for (std::size_t d = 0; d < dof; ++d) {
+        const double bound
+            = jointModel.coulombFriction[static_cast<Eigen::Index>(d)]
+              * timeStep;
+        if (bound <= 0.0) {
+          continue;
+        }
+        const auto globalDof
+            = static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d);
+        const double effInertia
+            = scratch.massAndBias.massMatrix(globalDof, globalDof);
+        const double stopImpulse = effInertia * scratch.nextVelocity[globalDof];
+        const double frictionImpulse = std::clamp(stopImpulse, -bound, bound);
+        scratch.nextVelocity[globalDof] -= frictionImpulse / effInertia;
+      }
     }
-  }
+  };
+  applyCoulombFrictionTo([](comps::ActuatorType type) {
+    return type != comps::ActuatorType::Locked
+           && type != comps::ActuatorType::Servo;
+  });
 
   // Velocity-, Servo-, and Locked-actuated joints solve a coupled
   // velocity-level constraint that drives the selected coordinates to their
@@ -1457,6 +1464,14 @@ bool computeUnconstrainedMultibodyVelocityInto(
                                         * scratch.velocityConstraintLambda[a];
     }
   }
+
+  // Servo is a force-limited motor, not a kinematic prescription. Apply dry
+  // friction after its motor impulse so stiction can hold against a Servo whose
+  // effort limit is smaller than the joint friction limit. Velocity and Locked
+  // actuators intentionally keep their exact kinematic targets.
+  applyCoulombFrictionTo([](comps::ActuatorType type) {
+    return type == comps::ActuatorType::Servo;
+  });
 
   return true;
 }
