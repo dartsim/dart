@@ -72,6 +72,10 @@
     coverage — instead of silencing the symptom or widening scope to route
     around it.
 
+  * Clarify release-branch AI-native guidance so always-loaded agent rules stay
+    compact, consequential decisions use release-wide context and proportionate
+    evidence, and in-scope failures are root-caused instead of hidden.
+
   * Replace the vendored `dart/external/convhull_3d` implementation with a
     DART-owned native `dart/math/detail/ConvexHull.hpp` implementation used by
     `math::computeConvexHull3D`, while keeping the legacy implementation only
