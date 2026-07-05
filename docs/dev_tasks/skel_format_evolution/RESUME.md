@@ -102,6 +102,8 @@ Body:
 - `pixi run run-cpp-target test_mesh_loaderNone`
 - `pixi run lint`
 - `pixi run build`
+- `pixi run test-all`
+- `pixi run -e cuda test-all`
 
 ## Breaking Changes
 
