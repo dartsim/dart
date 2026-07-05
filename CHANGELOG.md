@@ -150,8 +150,13 @@ compatibility remains on the active DART 6 LTS branch._
   articulated dynamics (C++ and dartpy): a locked joint is held rigidly at its
   current position through the same velocity-level equality constraint the
   `Velocity` actuator uses, with target velocity zero, and ignores any commanded
-  effort or passive spring/damping on the locked coordinate. `Servo`,
-  `Acceleration`, and `Mimic` remain reserved.
+  effort or passive spring/damping on the locked coordinate.
+- Added the `Servo` joint actuator type to the DART 7 `World` semi-implicit
+  articulated dynamics (C++ and dartpy): a servo drives the joint to its
+  commanded velocity like `Velocity`, but bounds the motor impulse by the joint
+  effort limits so it saturates like a real motor. When an effort bound binds,
+  the coupled velocity-level solve runs as a boxed LCP; otherwise it keeps the
+  unbounded equality solve. `Acceleration` and `Mimic` remain reserved.
 - Fixed retained rigid-IPC solver scratch reuse so lagged-friction objective
   assembly keeps the active barrier Hessian while adding friction and dynamics
   terms.

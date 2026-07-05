@@ -10393,6 +10393,80 @@ TEST(World, BakedVelocityActuatedMultibodyStepsDoNotMallocOnHeap)
 #endif
 }
 
+// Effort-bounded Servo actuators use the velocity-constraint boxed-LCP path.
+// The Dantzig wrapper and its low-level pivot scratch must be warmed during
+// enterSimulationMode(), so the first post-bake step does not resize Eigen or
+// Dantzig work buffers.
+TEST(World, BakedServoActuatedMultibodyStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#else
+  namespace sx = dart::simulation;
+
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "finite-effort servo multibodies", [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+        world.setTimeStep(0.005);
+
+        // k == 1: a finite-effort prismatic Servo.
+        auto slider = world.addMultibody("servo_slider");
+        auto sliderBase = slider.addLink("base");
+        sx::JointSpec railSpec;
+        railSpec.name = "rail";
+        railSpec.type = sx::JointType::Prismatic;
+        railSpec.axis = Eigen::Vector3d::UnitZ();
+        auto carriage = slider.addLink("carriage", sliderBase, railSpec);
+        carriage.setMass(2.0);
+        auto rail = carriage.getParentJoint();
+        rail.setActuatorType(sx::ActuatorType::Servo);
+        rail.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.5));
+        rail.setEffortLimits(
+            Eigen::VectorXd::Constant(1, -1000.0),
+            Eigen::VectorXd::Constant(1, 1000.0));
+
+        // k >= 2: a coupled finite-effort Servo solve.
+        auto robot = world.addMultibody("servo_double_pendulum");
+        auto base = robot.addLink("base");
+        Eigen::Isometry3d offset1 = Eigen::Isometry3d::Identity();
+        offset1.translation() = Eigen::Vector3d(0.7, 0.0, 0.0);
+        Eigen::Isometry3d offset2 = Eigen::Isometry3d::Identity();
+        offset2.translation() = Eigen::Vector3d(0.6, 0.0, 0.0);
+
+        sx::JointSpec spec1;
+        spec1.name = "j1";
+        spec1.type = sx::JointType::Revolute;
+        spec1.axis = Eigen::Vector3d::UnitY();
+        spec1.transformFromParent = offset1;
+        auto link1 = robot.addLink("link1", base, spec1);
+        link1.setMass(1.5);
+        link1.setInertia(Eigen::Vector3d(0.05, 0.08, 0.05).asDiagonal());
+
+        sx::JointSpec spec2;
+        spec2.name = "j2";
+        spec2.type = sx::JointType::Revolute;
+        spec2.axis = Eigen::Vector3d::UnitY();
+        spec2.transformFromParent = offset2;
+        auto link2 = robot.addLink("link2", link1, spec2);
+        link2.setMass(1.0);
+        link2.setInertia(Eigen::Vector3d(0.04, 0.06, 0.04).asDiagonal());
+
+        auto joint1 = link1.getParentJoint();
+        auto joint2 = link2.getParentJoint();
+        joint1.setActuatorType(sx::ActuatorType::Servo);
+        joint2.setActuatorType(sx::ActuatorType::Servo);
+        joint1.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.3));
+        joint2.setCommandVelocity(Eigen::VectorXd::Constant(1, -0.4));
+        joint1.setEffortLimits(
+            Eigen::VectorXd::Constant(1, -1000.0),
+            Eigen::VectorXd::Constant(1, 1000.0));
+        joint2.setEffortLimits(
+            Eigen::VectorXd::Constant(1, -1000.0),
+            Eigen::VectorXd::Constant(1, 1000.0));
+      });
+#endif
+}
+
 TEST(World, BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator)
 {
   expectNoWorldBaseAllocatorActivityDuringBakedBoxedLcpSteps(
@@ -12342,8 +12416,13 @@ TEST(World, MultibodyJointActuatorTypes)
   // The commanded effort is ignored; only the spring acts: qddot = -k x / m.
   EXPECT_NEAR(joint.getAcceleration()[0], -stiffness * 1.0 / mass, 1e-9);
 
-  // An actuator type that is not yet implemented is rejected by the dynamics.
+  // A Servo actuator is implemented (effort-bounded velocity servo); with no
+  // command it holds the joint at rest and steps without throwing.
   joint.setActuatorType(sx::ActuatorType::Servo);
+  EXPECT_NO_THROW(world.step());
+
+  // An actuator type that is not yet implemented is rejected by the dynamics.
+  joint.setActuatorType(sx::ActuatorType::Acceleration);
   EXPECT_THROW(world.step(), sx::InvalidOperationException);
 }
 

@@ -7173,6 +7173,41 @@ def test_simulation_locked_actuator_holds_joint():
     np.testing.assert_allclose(np.asarray(joint.velocity), [0.0], atol=1e-10)
 
 
+def test_simulation_servo_actuator_tracks_within_effort():
+    sx = _simulation()
+
+    # Gravity-free single revolute joint. A servo with an ample (finite) effort
+    # limit runs the boxed-LCP solve but never saturates, so it reaches the
+    # commanded velocity exactly.
+    world = sx.World(time_step=0.002, gravity=(0.0, 0.0, 0.0))
+    robot = world.add_multibody("arm")
+    base = robot.add_link("base")
+    offset = np.eye(4)
+    offset[0, 3] = 0.4
+    arm = robot.add_link(
+        "arm",
+        parent=base,
+        joint=sx.JointSpec(
+            name="motor",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+            transform_from_parent=offset,
+        ),
+    )
+    arm.mass = 0.5
+    arm.inertia = ((0.1, 0.0, 0.0), (0.0, 0.1, 0.0), (0.0, 0.0, 0.1))
+
+    joint = arm.parent_joint
+    joint.actuator_type = sx.ActuatorType.SERVO
+    joint.command_velocity = [1.5]
+    joint.set_effort_limits([-1000.0], [1000.0])  # ample: the bound never binds
+
+    world.enter_simulation_mode()
+    world.step(50)
+
+    np.testing.assert_allclose(np.asarray(joint.velocity), [1.5], atol=1e-6)
+
+
 def test_simulation_multibody_dynamics_terms():
     sx = _simulation()
 
@@ -7638,8 +7673,13 @@ def test_simulation_joint_actuator_types():
         -stiffness * 1.0 / mass, abs=1e-9
     )
 
-    # Unimplemented actuator types are rejected by the dynamics.
+    # A Servo actuator is implemented (effort-bounded velocity servo); with no
+    # command it holds the joint at rest and steps without raising.
     joint.actuator_type = sx.ActuatorType.SERVO
+    world.step()
+
+    # Unimplemented actuator types are rejected by the dynamics.
+    joint.actuator_type = sx.ActuatorType.ACCELERATION
     with pytest.raises(Exception, match="not yet implemented"):
         world.step()
 
