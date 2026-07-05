@@ -44,6 +44,10 @@
 
 * Build
 
+  * Replace the dartpy wheel publishing path with Pixi-managed build,
+    repair, verification, and smoke-test tasks, and retire the legacy DART 6
+    Docker dev/wheel images.
+
   * Harden the release-branch contributor workflow: `pixi run install-hooks`
     installs a pre-commit hook running the lint gate (with a tracked Claude
     Code commit guard as fallback), `check-ai-commands` now runs inside
@@ -51,6 +55,10 @@
     workflow commands carry the structural metadata validated on `main`, and
     the `dart-changelog` routine is available for backport changelog
     decisions.
+
+  * Add a release-tailored documentation information architecture owner and
+    route docs-update workflows through it so DART 6.20 agents promote durable
+    task facts by lifecycle before retiring `docs/dev_tasks/` folders.
 
   * Add a "surface your unknowns" discipline to the release-branch AI
     principles (`docs/ai/principles.md`): before a non-trivial fix, convert

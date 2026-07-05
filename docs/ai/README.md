@@ -18,3 +18,6 @@ Editable workflow sources live in `.claude/commands/` and `.claude/skills/`.
 Generated Codex and OpenCode surfaces live in `.codex/skills/` and
 `.opencode/command/`. Run `python scripts/sync_ai_commands.py --check` to
 verify parity.
+
+For documentation placement, use
+[`docs/information-architecture.md`](../information-architecture.md).
