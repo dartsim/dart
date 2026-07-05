@@ -73,11 +73,28 @@ UI-visible changes, and PLAN checkboxes updated.
 - Rigid Body: boxes, rigid_cubes, rigid_chain, rigid_shapes,
   add_delete_skels, simulation_event_handler, sleeping
 - Constraints & Joints: hardcoded_design, box_stacking,
-  dynamic_joint_constraints, rigid_loop, tinkertoy, human_joint_limits,
-  mixed_chain
+  dynamic_joint_constraints, rigid_loop, tinkertoy, human_joint_limits
+  (TinyDNN-gated: DART_DEMOS_HAVE_TINY_DNN; registry omits row when absent)
+- Soft Bodies gains mixed_chain (B2 reconciliation: 1a5469960c2 places it
+  there, not Constraints & Joints as this catalog originally said).
   (B1 reconciliation 2026-07-04: category placements follow 1a5469960c2
   wording per BRIEF-phase2 precedence — rigid_shapes→Rigid Body,
   box_stacking→Constraints & Joints, simple_frames→Visualization.)
+
+### Upstream bugs discovered during B2 porting (track for standalone fixes)
+
+- `examples/human_joint_limits/` does not compile on release-6.20 even with
+  TinyDNN present: includes removed `dart/external/odelcpsolver/lcp.h`
+  (module renamed to dart/lcpsolver/dantzig, `dInfinity` gone) and
+  HumanArmJointLimitConstraint.hpp carries the Leg header's include guard.
+  Port fixed both locally; strengthens the Phase 5 retirement case.
+- `examples/rigid_cubes` (B1 port): keys 3/4 apply raw +-Z world forces,
+  which post-ZUp-reorientation push vertically, not the original's second
+  horizontal axis. Fix in B2 fix round: rotate force vectors via the same
+  mapping ZUp applies to geometry ((fx,fy,fz) -> (fx,-fz,fy)), as
+  JointConstraintsScene did.
+- `examples/tinkertoy` original advertised a [G] gravity toggle in help
+  text but never wired a handler; the port wires it for real (documented).
 - Control & IK: hybrid_dynamics, joint_constraints, biped_stand,
   operational_space_control, atlas_puppet, atlas_simbicon, wam_ikfast
   (ikfast-guarded), hubo_puppet, ssik_ik_gui, contact_inverse_dynamics
@@ -138,6 +155,15 @@ UI-visible changes, and PLAN checkboxes updated.
 - [ ] Contact visualizer (reusable): contact points/normals/force arrows from
       `getLastCollisionResult`, magnitude-scaled, color-coded.
 - [ ] Drag-force + gizmo interactions host-wide with status surfaced in UI.
+- [ ] Second library bug (same PR as below): `DefaultEventHandler::
+      addMouseEventHandler` (`DefaultEventHandler.cpp:237-242`) documents
+      auto-unregister-on-destruction but only wires `handler->addSubject
+      (this)`; the DEH never observes the handler, so
+      `handleDestructionNotification`'s erase never fires → dangling pointer
+      in `mMouseEventHandlers` → UAF on next mouse event after a registered
+      handler dies (found by B2 tinkertoy review). Fix: also `addSubject(
+      _handler)` in addMouseEventHandler. Both fixes land as a separate
+      commit on the topic branch, to be split into their own PR.
 - [ ] Prereq library fix (small, separate PR): `InteractiveFrameDnD` leaks
       its 9 `new InteractiveToolDnD` sub-DnDs (`DragAndDrop.cpp:521-523`,
       `~InteractiveFrameDnD() = default` in `DragAndDrop.hpp:243`) →
