@@ -50,7 +50,7 @@ portable source of truth.
 | Model loading                         | `docs/onboarding/io-parsing.md`                                                                                                                                                               |
 | Build system                          | `docs/onboarding/build-system.md`                                                                                                                                                             |
 | Profiling / performance               | `docs/onboarding/profiling.md`                                                                                                                                                                |
-| AI tools                              | `docs/ai/README.md`, `docs/ai/principles.md`, `docs/ai/north-star.md`, `docs/onboarding/ai-tools.md`                                                                                          |
+| AI tools                              | `docs/ai/README.md`, `docs/ai/principles.md`, `docs/ai/terminology.md`, `docs/ai/north-star.md`, `docs/onboarding/ai-tools.md`                                                                |
 | Planning                              | `docs/ai/principles.md`, `docs/ai/north-star.md`, `docs/plans/README.md`, `docs/plans/dashboard.md`, `docs/plans/north-star-roadmap.md`, `docs/ai/verification.md`                            |
 | PR reviews                            | `docs/onboarding/ai-tools.md` (AI review handling rules)                                                                                                                                      |
 | Release work                          | `docs/onboarding/release-management.md`                                                                                                                                                       |
@@ -59,8 +59,9 @@ portable source of truth.
 
 ## AI Workflows And Skills
 
-Use `/dart-*` commands in Claude Code/OpenCode and generated `$dart-*` skills in
-Codex. `docs/ai/workflows.md` owns the workflow and skill catalog.
+Use `/dart-*` command adapters in Claude Code/OpenCode and generated `$dart-*`
+skill adapters in Codex. `docs/ai/workflows.md` owns the capability catalog;
+`docs/ai/terminology.md` owns the shared terms.
 Use `/dart-next` or `$dart-next` when an agent should select the next bounded
 task from the north star, plan dashboard, dev-task state, issues, PRs, or CI;
 pass `focus=<topic>` to prefer an area without hard-coding the outcome.

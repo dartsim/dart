@@ -11,7 +11,7 @@ description: "DART Triage Issue: triage a GitHub issue and recommend next action
 
 Use this skill in Codex to run the DART `dart-triage-issue` workflow. The editable
 workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Codex skill is a generated Codex adapter entrypoint.
 
 ## Invocation
 

@@ -11,7 +11,7 @@ description: "DART Docs Update: update documentation without code changes"
 
 Use this skill in Codex to run the DART `dart-docs-update` workflow. The editable
 workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Codex skill is a generated Codex adapter entrypoint.
 
 ## Invocation
 

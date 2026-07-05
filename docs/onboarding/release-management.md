@@ -1,7 +1,7 @@
 # DART Release Management
 
 This guide collects release workflows that are too detailed for a command file.
-Use it with the release workflow commands in `.claude/commands/`:
+Use it with the release workflow sources in `.claude/commands/`:
 
 | Command                    | Use Case                                                   |
 | -------------------------- | ---------------------------------------------------------- |
@@ -10,8 +10,9 @@ Use it with the release workflow commands in `.claude/commands/`:
 | `/dart-release-merge-main` | Merge the active release branch back to main               |
 | `/dart-release-packaging`  | Prepare a release version bump and changelog               |
 
-Codex exposes the same workflows as `$dart-*` skills generated from those
-commands. OpenCode receives the same commands through `.opencode/command/`.
+Codex exposes the same workflows as generated `$dart-*` skill adapters from
+those sources. OpenCode receives generated command adapters through
+`.opencode/command/`.
 
 ## Branches and Milestones
 

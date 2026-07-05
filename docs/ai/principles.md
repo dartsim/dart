@@ -6,9 +6,10 @@ owner: self
 # AI Principles
 
 This compact file is loaded for every DART agent session. It owns DART's
-AI-infra axioms. Detailed gates live in `docs/ai/verification.md`; generated
-surface checks live in `docs/ai/components.md`; tool compatibility lives in
-`docs/onboarding/ai-tools.md`.
+AI-infra axioms. Canonical AI-facing terms live in
+`docs/ai/terminology.md`; detailed gates live in `docs/ai/verification.md`;
+generated surface checks live in `docs/ai/components.md`; tool compatibility
+lives in `docs/onboarding/ai-tools.md`.
 
 These principles are informed by common coding-agent failure modes, including
 the guidance collected in
