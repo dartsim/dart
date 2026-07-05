@@ -206,10 +206,12 @@ def check_docs_information_architecture(repo_root: Path) -> list[str]:
             failures.append(f"{rel_path}: missing docs index")
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
-        if (
-            DOCS_INFORMATION_ARCHITECTURE not in text
-            and "information-architecture.md" not in text
-        ):
+        markers = (
+            (DOCS_INFORMATION_ARCHITECTURE,)
+            if rel_path == "AGENTS.md"
+            else (DOCS_INFORMATION_ARCHITECTURE, "information-architecture.md")
+        )
+        if not any(marker in text for marker in markers):
             failures.append(
                 f"{rel_path}: missing `{DOCS_INFORMATION_ARCHITECTURE}` pointer"
             )

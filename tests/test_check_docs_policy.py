@@ -435,6 +435,23 @@ def test_docs_information_architecture_root_pointer_is_required(tmp_path):
     assert any("AGENTS.md: missing" in failure for failure in failures)
 
 
+def test_docs_information_architecture_root_pointer_must_be_repo_relative(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    link = "docs/information-architecture.md"
+    (docs / "information-architecture.md").write_text("# IA\n", encoding="utf-8")
+    (tmp_path / "AGENTS.md").write_text(
+        "See information-architecture.md\n", encoding="utf-8"
+    )
+    (docs / "README.md").write_text(f"See {link}\n", encoding="utf-8")
+    (docs / "AGENTS.md").write_text(f"See {link}\n", encoding="utf-8")
+
+    failures = module.check_docs_information_architecture(tmp_path)
+
+    assert any("AGENTS.md: missing" in failure for failure in failures)
+
+
 def test_docs_ai_frontmatter_pilot_requires_type_and_owner(tmp_path):
     module = _load_module()
     ai_dir = tmp_path / "docs" / "ai"
