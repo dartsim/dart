@@ -182,6 +182,13 @@ DemoScene makeRigidCubesScene()
       state->force = force;
     };
 
+    // Force axes in the reoriented (Z-up) world: keys 1/2 push along world X
+    // (invariant under the reorientation). The original's keys 3/4 pushed along
+    // world +-Z -- a horizontal axis in the Y-up asset, but the vertical axis
+    // after reorientation, which shoved the stack up/down instead of sideways.
+    // Rotate them through the same transform ZUp applies to the geometry
+    // ((fx,fy,fz)->(fx,-fz,fy)), so +-Z maps to -+Y and the push stays
+    // horizontal, matching the original's intent.
     setup.keyActions.push_back(KeyAction{'1', "Force -X", [applyForce] {
                                            applyForce(
                                                Eigen::Vector3d(-500, 0, 0));
@@ -190,13 +197,13 @@ DemoScene makeRigidCubesScene()
                                            applyForce(
                                                Eigen::Vector3d(500, 0, 0));
                                          }});
-    setup.keyActions.push_back(KeyAction{'3', "Force -Z", [applyForce] {
+    setup.keyActions.push_back(KeyAction{'3', "Force +Y", [applyForce] {
                                            applyForce(
-                                               Eigen::Vector3d(0, 0, -500));
+                                               Eigen::Vector3d(0, 500, 0));
                                          }});
-    setup.keyActions.push_back(KeyAction{'4', "Force +Z", [applyForce] {
+    setup.keyActions.push_back(KeyAction{'4', "Force -Y", [applyForce] {
                                            applyForce(
-                                               Eigen::Vector3d(0, 0, 500));
+                                               Eigen::Vector3d(0, -500, 0));
                                          }});
     setup.keyActions.push_back(KeyAction{'v', "Toggle contact forces", [state] {
                                            state->showContactForces

@@ -55,6 +55,21 @@ std::vector<DemoScene> makeDemoScenes()
   scenes.push_back(makeHardcodedDesignScene());
   scenes.push_back(makeRigidLoopScene());
   scenes.push_back(makeBoxStackingScene());
+  scenes.push_back(makeDynamicJointConstraintsScene());
+  scenes.push_back(makeTinkertoyScene());
+#ifdef DART_DEMOS_HAVE_TINY_DNN
+  scenes.push_back(makeHumanJointLimitsScene());
+#endif
+
+  // Control & IK (new category; first appearance here).
+  scenes.push_back(makeJointConstraintsScene());
+
+  // Soft Bodies (new category; first appearance here).
+  scenes.push_back(makeMixedChainScene());
+  scenes.push_back(makeSoftBodiesScene());
+
+  // Visualization (existing category, first introduced by simple_frames).
+  scenes.push_back(makeHeightmapScene());
   return scenes;
 }
 

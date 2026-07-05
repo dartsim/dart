@@ -137,15 +137,14 @@ struct DemoSceneSetup
   bool enableShadows = true;
 
   /// Frames to enable drag-and-drop on (SimpleFrameDnD: unconstrained
-  /// free-drag). Prefer this over Viewer::enableDragAndDrop(InteractiveFrame*)
-  /// (InteractiveFrameDnD) for anything whose world may be torn down at
-  /// runtime: InteractiveFrameDnD creates 9 raw, unowned per-tool sub-DnDs
-  /// that its destructor never deletes, so tearing down the world while one
-  /// is (even transitively) still registered leaves those sub-DnDs observing
-  /// freed entities -- a latent use-after-free the host cannot safely wrap in
-  /// try/catch, since it surfaces during object destruction. An
-  /// InteractiveFrame's gizmo geometry (arrows/rings) renders the same either
-  /// way; only the axis/plane-constrained dragging is traded away.
+  /// free-drag). This is the right tool for a plain SimpleFrame that only needs
+  /// a free-drag. For an InteractiveFrame whose per-axis/plane gizmo tools
+  /// should be draggable, call Viewer::enableDragAndDrop(InteractiveFrame*)
+  /// (InteractiveFrameDnD) from onActivate and release it via
+  /// ctx.addTeardown(disableDragAndDrop) -- that is now safe to tear down at
+  /// runtime (the gui-osg InteractiveFrameDnD destructor deletes the 9 per-tool
+  /// sub-DnDs it allocates), whereas before its defaulted destructor leaked
+  /// them and left them observing freed entities across a scene switch.
   std::vector<dart::dynamics::SimpleFramePtr> dragFrames;
 
   /// Optional hook for anything else a scene needs to register (extra

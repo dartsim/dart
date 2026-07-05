@@ -86,6 +86,39 @@ namespace dart_demos {
 /// PGS LCP solvers, ported from examples/box_stacking.
 [[nodiscard]] DemoScene makeBoxStackingScene();
 
+/// Constraints & Joints > dynamic_joint_constraints: ball, cylindrical, and
+/// weld dynamic joint constraints on three free-flying bodies, ported from
+/// examples/dynamic_joint_constraints.
+[[nodiscard]] DemoScene makeDynamicJointConstraintsScene();
+
+/// Control & IK > joint_constraints: balanced full-body PD control with a
+/// harness constraint, ported from examples/joint_constraints.
+[[nodiscard]] DemoScene makeJointConstraintsScene();
+
+#ifdef DART_DEMOS_HAVE_TINY_DNN
+/// Constraints & Joints > human_joint_limits: a human skeleton with
+/// neural-network joint-limit constraints, ported from
+/// examples/human_joint_limits. Only declared/registered when TinyDNN +
+/// Threads were found at configure time (see examples/demos/CMakeLists.txt).
+[[nodiscard]] DemoScene makeHumanJointLimitsScene();
+#endif
+
+/// Soft Bodies > mixed_chain: apply impulses to a soft link in a mixed
+/// rigid/soft chain, ported from examples/mixed_chain.
+[[nodiscard]] DemoScene makeMixedChainScene();
+
+/// Soft Bodies > soft_bodies: soft-body simulation with recorded-state
+/// playback, ported from examples/soft_bodies.
+[[nodiscard]] DemoScene makeSoftBodiesScene();
+
+/// Constraints & Joints > tinkertoy: interactively assemble jointed
+/// structures from blocks, ported from examples/tinkertoy.
+[[nodiscard]] DemoScene makeTinkertoyScene();
+
+/// Visualization > heightmap: an interactive procedural heightmap with a
+/// configurable grid, ported from examples/heightmap.
+[[nodiscard]] DemoScene makeHeightmapScene();
+
 } // namespace dart_demos
 
 #endif // DART_EXAMPLES_DEMOS_SCENES_SCENES_HPP_

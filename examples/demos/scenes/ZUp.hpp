@@ -44,12 +44,19 @@ namespace dart_demos {
 // osg examples used. dart-demos uses one Z-up convention across every scene
 // (matching DemoScene::cameraHome eye/center/up throughout examples/demos),
 // so such worlds are reoriented here instead: premultiply every root joint's
-// transform-from-parent by RotX(+90deg) (+Y -> +Z), then set gravity along
-// -Z. Because the geometry and gravity are rotated by the same rigid
-// transform, every joint's generalized coordinates evolve exactly as in the
-// original Y-up world -- only the display frame changes. Ported from DART 7's
-// `reorientWorldToZUp` helper (examples/demos/scenes/z_up.hpp at
+// transform-from-parent by RotX(+90deg) (+Y -> +Z), then rotate gravity by the
+// same transform. Because the geometry and gravity are rotated by the same
+// rigid transform, every joint's generalized coordinates evolve exactly as in
+// the original Y-up world -- only the display frame changes. Ported from DART
+// 7's `reorientWorldToZUp` helper (examples/demos/scenes/z_up.hpp at
 // 1a5469960c2703accb2762e03fe8a6bb1156dc08).
+//
+// Assumes a Y-up source world. Gravity is rotated (not hard-coded to -9.81 Z)
+// so the world's own magnitude is preserved: a standard <gravity>0 -9.81
+// 0</...> world still ends up at (0,0,-9.81) exactly (RotX(+90deg)*(0,-9.81,0)
+// == (0,0,-9.81)), so every existing 9.81 caller is unaffected, while a world
+// authored with a different magnitude (e.g. kima_human_edited.skel's -9.8)
+// keeps that magnitude instead of being silently strengthened to 9.81.
 inline void reorientWorldToZUp(const dart::simulation::WorldPtr& world)
 {
   Eigen::Isometry3d rotation = Eigen::Isometry3d::Identity();
@@ -70,7 +77,7 @@ inline void reorientWorldToZUp(const dart::simulation::WorldPtr& world)
     }
   }
 
-  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->setGravity(rotation.linear() * world->getGravity());
 }
 
 } // namespace dart_demos

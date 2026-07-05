@@ -66,22 +66,20 @@ DemoScene makeEmptyScene()
         dart::dynamics::Frame::World());
     setup.world->addSimpleFrame(target);
 
-    // Deliberately drag `target` through the generic SimpleFrame overload
-    // (DemoSceneSetup::dragFrames -> SimpleFrameDnD) rather than the
-    // InteractiveFrame-typed Viewer::enableDragAndDrop() overload
-    // (InteractiveFrameDnD). InteractiveFrameDnD internally creates 9 raw,
-    // unowned sub-DnD objects (one per gizmo tool) that its defaulted
-    // destructor never deletes; each sub-DnD independently observes both its
-    // tool entity and the Viewer. When a scene's World (and thus the
-    // InteractiveFrame's tool shapes) is destroyed on a later scene switch,
-    // those leaked sub-DnDs are left observing freed entities, and the
-    // Viewer's final destruction later crashes when it notifies them. Using
-    // SimpleFrameDnD instead (a single, cleanly-owned observer relationship)
-    // avoids that latent use-after-free entirely; the InteractiveFrame's own
-    // gizmo geometry (arrows/rings) still renders either way -- only the
-    // per-axis/plane-constrained dragging is traded for an unconstrained
-    // free drag.
-    setup.dragFrames.push_back(target);
+    // Drag `target` through the InteractiveFrame-typed
+    // Viewer::enableDragAndDrop() overload (InteractiveFrameDnD) so its
+    // per-axis/plane gizmo tools are usable. InteractiveFrameDnD allocates 9
+    // raw per-tool sub-DnDs; the accompanying gui-osg library fix gives it a
+    // real destructor that deletes them, so it is now safe to tear down on a
+    // scene switch. Registered in onActivate and released via
+    // ctx.addTeardown(disableDragAndDrop), which runs before the world is
+    // destroyed. (DemoSceneSetup::dragFrames / SimpleFrameDnD remains the right
+    // tool for plain SimpleFrames wanting only an unconstrained free-drag.)
+    setup.onActivate = [target](DemoHostContext& ctx) {
+      auto* viewer = ctx.viewer();
+      if (auto* dnd = viewer->enableDragAndDrop(target.get()))
+        ctx.addTeardown([viewer, dnd] { viewer->disableDragAndDrop(dnd); });
+    };
 
     setup.renderPanel = [target] {
       const Eigen::Vector3d p = target->getWorldTransform().translation();
