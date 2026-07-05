@@ -1281,7 +1281,7 @@ bool computeUnconstrainedMultibodyVelocityInto(
   // Coulomb (dry) joint friction as a bounded velocity-level impulse: it stops
   // a coordinate when the holding impulse is within the friction bound
   // (stiction) and otherwise opposes motion at the friction magnitude.
-  const auto applyCoulombFrictionTo = [&](auto shouldApply) {
+  const auto applyCoulombFrictionTo = [&](auto impulseDelta) {
     for (std::size_t i = 0; i < scratch.tree.links.size(); ++i) {
       const auto dof = scratch.tree.links[i].dof;
       if (dof == 0) {
@@ -1297,9 +1297,6 @@ bool computeUnconstrainedMultibodyVelocityInto(
       for (std::size_t d = 0; d < dof; ++d) {
         const auto globalDof
             = static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d);
-        if (!shouldApply(jointActuation.actuatorType, globalDof)) {
-          continue;
-        }
         const double bound
             = jointModel.coulombFriction[static_cast<Eigen::Index>(d)]
               * timeStep;
@@ -1310,14 +1307,19 @@ bool computeUnconstrainedMultibodyVelocityInto(
             = scratch.massAndBias.massMatrix(globalDof, globalDof);
         const double stopImpulse = effInertia * scratch.nextVelocity[globalDof];
         const double frictionImpulse = std::clamp(stopImpulse, -bound, bound);
-        scratch.nextVelocity[globalDof] -= frictionImpulse / effInertia;
+        const double delta = impulseDelta(
+            jointActuation.actuatorType, globalDof, frictionImpulse);
+        scratch.nextVelocity[globalDof] += delta / effInertia;
       }
     }
   };
-  applyCoulombFrictionTo([](comps::ActuatorType type, Eigen::Index) {
-    return type != comps::ActuatorType::Locked
-           && type != comps::ActuatorType::Servo;
-  });
+  applyCoulombFrictionTo(
+      [](comps::ActuatorType type, Eigen::Index, double frictionImpulse) {
+        return type != comps::ActuatorType::Locked
+                       && type != comps::ActuatorType::Servo
+                   ? -frictionImpulse
+                   : 0.0;
+      });
 
   // Velocity-, Servo-, and Locked-actuated joints solve a coupled
   // velocity-level constraint that drives the selected coordinates to their
@@ -1489,7 +1491,8 @@ bool computeUnconstrainedMultibodyVelocityInto(
     }
   }
 
-  const auto servoImpulseIsAtFiniteBound = [&](Eigen::Index globalDof) {
+  const auto servoFrictionImpulseDelta = [&](Eigen::Index globalDof,
+                                             double frictionImpulse) {
     for (std::size_t a = 0; a < scratch.constrainedDof.size(); ++a) {
       if (scratch.constrainedDof[a] != globalDof) {
         continue;
@@ -1506,19 +1509,33 @@ bool computeUnconstrainedMultibodyVelocityInto(
         scale = std::max(scale, std::abs(hi));
       }
       const double tolerance = 1e-12 * scale;
-      return (std::isfinite(lo) && impulse <= lo + tolerance)
-             || (std::isfinite(hi) && impulse >= hi - tolerance);
+      const double impulseWithFriction = impulse + frictionImpulse;
+      if (std::isfinite(lo) && impulseWithFriction < lo - tolerance) {
+        return lo - impulse - frictionImpulse;
+      }
+      if (std::isfinite(hi) && impulseWithFriction > hi + tolerance) {
+        return hi - impulse - frictionImpulse;
+      }
+      if ((std::isfinite(lo) && impulse <= lo + tolerance)
+          || (std::isfinite(hi) && impulse >= hi - tolerance)) {
+        return -frictionImpulse;
+      }
+      return 0.0;
     }
-    return false;
+    return 0.0;
   };
 
-  // Servo is a force-limited motor when its effort bound saturates, but an
-  // unsaturated or unbounded Servo is an exact velocity target like Velocity.
-  // Apply dry friction only to saturated Servo coordinates so stiction can hold
-  // against an underpowered motor without weakening ample-effort tracking.
-  applyCoulombFrictionTo([&](comps::ActuatorType type, Eigen::Index globalDof) {
+  // Servo is a force-limited motor when its finite effort bound saturates, but
+  // an unsaturated or unbounded Servo is an exact velocity target like
+  // Velocity. Include dry friction when the motor is already saturated or when
+  // paying friction would push the total motor impulse past a finite effort
+  // bound; otherwise leave ample-effort tracking exact.
+  applyCoulombFrictionTo([&](comps::ActuatorType type,
+                             Eigen::Index globalDof,
+                             double frictionImpulse) {
     return type == comps::ActuatorType::Servo
-           && servoImpulseIsAtFiniteBound(globalDof);
+               ? servoFrictionImpulseDelta(globalDof, frictionImpulse)
+               : 0.0;
   });
 
   return true;
