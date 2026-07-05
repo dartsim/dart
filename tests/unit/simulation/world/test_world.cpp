@@ -12631,6 +12631,50 @@ TEST(World, MultibodyJointAccelerationActuatorPreservesCommandThroughContact)
          "prescribed contact mass instead of sharing impulse with the joint";
 }
 
+TEST(World, BakedAccelerationActuatorContactStepsDoNotMallocOnHeap)
+{
+#if !defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  GTEST_SKIP() << "raw malloc interposer unavailable on this platform/build";
+#endif
+
+  namespace sx = dart::simulation;
+
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "acceleration actuator prescribed contact rows",
+      [](sx::World& world) {
+        world.setGravity(Eigen::Vector3d::Zero());
+        world.setTimeStep(0.001);
+
+        auto robot = world.addMultibody("acceleration_platform");
+        auto base = robot.addLink("base");
+        auto platform = robot.addLink(
+            "platform",
+            base,
+            sx::JointSpec{
+                .name = "slider",
+                .type = sx::JointType::Prismatic,
+                .axis = Eigen::Vector3d::UnitZ(),
+            });
+        platform.setMass(1.0);
+        platform.setInertia(Eigen::Vector3d(0.1, 0.1, 0.1).asDiagonal());
+        platform.setCollisionShape(
+            sx::CollisionShape::makeBox(Eigen::Vector3d(0.4, 0.4, 0.1)));
+
+        auto joint = platform.getParentJoint();
+        joint.setActuatorType(sx::ActuatorType::Acceleration);
+        joint.setCommandAcceleration(Eigen::VectorXd::Constant(1, 3.0));
+
+        sx::RigidBodyOptions strikerOptions;
+        strikerOptions.mass = 1.0;
+        strikerOptions.position = Eigen::Vector3d(0.0, 0.0, 0.13);
+        strikerOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -1.0);
+        auto striker = world.addRigidBody("striker", strikerOptions);
+        striker.setCollisionShape(sx::CollisionShape::makeSphere(0.1));
+        striker.setFriction(0.0);
+      },
+      /*requireInitialContact=*/true);
+}
+
 // Test the Acceleration actuator under inertial coupling: both joints of a
 // 2-link chain realize their (different) commanded accelerations exactly in one
 // step.

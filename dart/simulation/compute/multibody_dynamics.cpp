@@ -4305,7 +4305,7 @@ void reserveMultibodyDynamicsRegistryStorage(
             || jointActuation.actuatorType == comps::ActuatorType::Locked) {
           velocityConstraintDofs += static_cast<Eigen::Index>(dof);
         }
-        if (jointActuation.actuatorType == comps::ActuatorType::Locked) {
+        if (isContactPrescribedActuator(jointActuation.actuatorType)) {
           lockedConstraintDofs += static_cast<Eigen::Index>(dof);
         }
         if (jointActuation.actuatorType == comps::ActuatorType::Servo) {
