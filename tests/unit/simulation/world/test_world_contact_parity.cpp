@@ -471,6 +471,7 @@ static LockedChainRun runProximalHeldChain(ProximalHold hold)
     // A correct lock must ignore all of these on the locked coordinate.
     proximal.setSpringStiffness(Eigen::VectorXd::Constant(1, 50.0));
     proximal.setDampingCoefficient(Eigen::VectorXd::Constant(1, 5.0));
+    proximal.setCoulombFriction(Eigen::VectorXd::Constant(1, 4.0));
     proximal.setForce(Eigen::VectorXd::Constant(1, 3.0));
   }
 

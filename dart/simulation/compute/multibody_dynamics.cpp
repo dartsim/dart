@@ -1263,6 +1263,11 @@ bool computeUnconstrainedMultibodyVelocityInto(
     if (dof == 0) {
       continue;
     }
+    const auto& jointActuation
+        = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
+    if (jointActuation.actuatorType == comps::ActuatorType::Locked) {
+      continue;
+    }
     const auto& jointModel
         = registry.get<comps::JointModel>(scratch.tree.jointOf[i]);
     if (jointModel.coulombFriction.size() != static_cast<Eigen::Index>(dof)) {
