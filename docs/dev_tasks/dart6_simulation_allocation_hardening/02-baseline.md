@@ -167,3 +167,18 @@ change; one very small existing scope
 crossed the profiler's pre-existing timing-based print threshold after the
 profiler overhead was removed, so the tiny-leaf portion of the text dump is not
 byte-identical.
+
+## Residual attribution after WP-D6M.9 (profiler fix, 2026-07-05)
+
+With the profiler allocation-free, the native-DART-collision scene drops to
+~60 operator-new/step, from exactly two DART-owned sources (backtrace dump,
+100 measured steps):
+
+| Source | allocs/step | bytes/step | Target packet |
+| --- | --- | --- | --- |
+| `World::step` free-root snapshot vectors (`World.cpp` shallow-support feature) | ~29 (+~2 one-shot vectors) | ~2.5 KB | WP-D6M.5 |
+| Dantzig `LCP<double>::transfer_i_from_C_to_N` pivot buffer | ~28 | ~17.6 KB (dominant) | WP-D6M.5 |
+
+No profiler frames remain in the top sites; there is no significant long
+tail. WP-D6M.5 now has a fully attributed, two-source target and can route
+both through the World-owned MemoryManager (WP-D6M.4).
