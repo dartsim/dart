@@ -1096,7 +1096,10 @@ python = "3.10.*"
 
 [feature.py310-wheel.target.linux-64.dependencies]
 auditwheel = ">=6.5.0,<7"
+c-compiler = ">=1.11.0,<2"
+cxx-compiler = ">=1.11.0,<2"
 patchelf = ">=0.17.2,<0.18"
+sysroot_linux-64 = "2.28.*"
 
 [feature.py310-wheel.target.linux-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
@@ -1158,7 +1161,10 @@ python = "3.11.*"
 
 [feature.py311-wheel.target.linux-64.dependencies]
 auditwheel = ">=6.5.0,<7"
+c-compiler = ">=1.11.0,<2"
+cxx-compiler = ">=1.11.0,<2"
 patchelf = ">=0.17.2,<0.18"
+sysroot_linux-64 = "2.28.*"
 
 [feature.py311-wheel.target.linux-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
@@ -1220,7 +1226,10 @@ python = "3.12.*"
 
 [feature.py312-wheel.target.linux-64.dependencies]
 auditwheel = ">=6.5.0,<7"
+c-compiler = ">=1.11.0,<2"
+cxx-compiler = ">=1.11.0,<2"
 patchelf = ">=0.17.2,<0.18"
+sysroot_linux-64 = "2.28.*"
 
 [feature.py312-wheel.target.linux-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }
@@ -1282,7 +1291,10 @@ python = "3.13.*"
 
 [feature.py313-wheel.target.linux-64.dependencies]
 auditwheel = ">=6.5.0,<7"
+c-compiler = ">=1.11.0,<2"
+cxx-compiler = ">=1.11.0,<2"
 patchelf = ">=0.17.2,<0.18"
+sysroot_linux-64 = "2.28.*"
 
 [feature.py313-wheel.target.linux-64.tasks]
 wheel-build = { depends-on = ["wheel-build-core"] }

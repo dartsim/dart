@@ -84,7 +84,10 @@ class CMakeBuild(build_ext):
         # Adding CMake arguments set as environment variable
         # (needed e.g. to build for ARM OSx on conda-forge)
         if "CMAKE_ARGS" in os.environ:
-            cmake_args += shlex.split(os.environ["CMAKE_ARGS"])
+            cmake_args += shlex.split(
+                os.environ["CMAKE_ARGS"],
+                posix=(os.name != "nt"),
+            )
 
         # In this example, we pass in the version to C++. You might not need to.
         # type: ignore[attr-defined]

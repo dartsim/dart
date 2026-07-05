@@ -78,9 +78,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Linux wheels no longer use a dedicated Docker image. Keep the
-          # runner pinned to ubuntu-24.04: newer hosts can expose glibc symbols
-          # beyond auditwheel's current manylinux policy.
+          # Linux wheels no longer use a dedicated Docker image. The Pixi wheel
+          # environments provide conda-forge compiler wrappers and a
+          # sysroot_linux-64 2.28 baseline; auditwheel derives the final
+          # manylinux tag from the bundled dependency ABI.
           - os: linux
             runner: ubuntu-24.04
             build: "cp313-manylinux_x86_64"
