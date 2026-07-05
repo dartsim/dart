@@ -76,3 +76,23 @@ Additive only: new `dart::common::FrameAllocator` and `FrameStlAllocator<T>`;
 new `MemoryManager::Type::Frame` role with `getFrameAllocator()` and
 allocate/deallocate dispatch; new `FreeListAllocator::GrowthPolicy` with
 default `Expand` and opt-in `FixedCapacity`.
+
+## Allocation attribution (backtrace sampling, 2026-07-05)
+
+Command: `DART_TEST_ALLOCATION_BACKTRACE=1 ./build/default/cpp/Release/tests/integration/INTEGRATION_StepAllocation --gtest_filter='StepAllocation.ReportsWorldStepAllocationBaseline'`
+
+Top steady-state operator-new sources on the measured windows (both scenes,
+top-25 sites per scene, 199 distinct sites on the native scene):
+
+| Source | Approx. allocs/step | Share |
+| --- | --- | --- |
+| Built-in text profiler (`Profiler::pushScope`/`findOrCreateChild` string churn; `DART_BUILD_PROFILE=ON` in the default pixi config) | ~5,393 | ~92% |
+| Dantzig LCP `LCP<double>::transfer_i_from_C_to_N` (pivot path) | ~26 | <1% |
+| `World::step` direct (free-root snapshot vectors) | ~29 | <1% |
+| Long tail (sites beyond top-25 dump) | ~385 | ~7% |
+
+Consequences recorded in `README.md`: new packet WP-D6M.9 (allocation-free
+profiler steady state; DART 7 `main` shares the same pattern, so this is
+novel work here, forward-port candidate later), WP-D6M.5 updated with the
+Dantzig pivot site, and a deep-dump pass required to attribute the long
+tail before WP-D6M.5 implementation.

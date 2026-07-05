@@ -160,6 +160,31 @@ is recorded done. Sequential execution in this worktree (see Assumptions).
 - Gates: `pixi run lint`, `pixi run build`, ctest simulation tests.
 - Dependencies: WP-D6M.3. **Route: Codex (orchestrator reviews API).**
 
+#### WP-D6M.9 — Allocation-free built-in profiler steady state
+
+- Objective: the built-in text profiler performs zero heap allocation on
+  warm scope pushes, removing the dominant measured per-step allocation
+  source in default (`-DDART_BUILD_PROFILE=ON`) builds.
+- Evidence basis (backtrace attribution, 2026-07-05): ~92% of measured
+  steady-state allocations (~5,400/step of ~5,835/step) come from
+  `Profiler::pushScope`/`findOrCreateChild` composing `std::string` keys
+  and path strings per push (`dart/common/detail/profiler.cpp`). DART 7
+  `main` has the same pattern, so this is new work, not a port; consider
+  forward-porting later.
+- Scope: `dart/common/detail/profiler.{hpp,cpp}` — replace per-push
+  composed-string child lookup with an allocation-free lookup (small-vector
+  children with `string_view` compare), build path strings lazily at
+  dump/report time, keep first-visit node creation allocations (warm-up).
+- Non-goals: no public API change; no change to report content/format
+  beyond incidental ordering guarantees already unspecified; Tracy backend
+  untouched.
+- Evidence: StepAllocation reporting test shows profiler sites gone
+  (operator-new/step drops accordingly); `boxes_headless` profile dump
+  still prints the same tree (spot-diff); determinism checkpoints
+  unchanged.
+- Gates: `pixi run lint`, `pixi run build`, ctest, reporting-test rerun.
+- Dependencies: WP-D6M.1. **Route: Codex.**
+
 #### WP-D6M.5 — Close remaining hot-path allocation sites
 
 - Objective: same-shape post-bake `World::step()` performs zero DART-owned
@@ -168,12 +193,17 @@ is recorded done. Sequential execution in this worktree (see Assumptions).
   and one-shot temporaries through the frame arena (model:
   `main:dart/simulation/compute/rigid_body_contact_stage.cpp:519-533,827-830`);
   fix `solvePositionConstrainedGroup` fresh Eigen/vector allocations
-  (`dart/constraint/BoxedLcpConstraintSolver.cpp:569-602`); wire
-  `DantzigLcpScratch` through the existing allocator seam
+  (`dart/constraint/BoxedLcpConstraintSolver.cpp:569-602`); close the
+  measured Dantzig pivot allocation in
+  `LCP<double>::transfer_i_from_C_to_N` (~26/step, attribution 2026-07-05)
+  and wire `DantzigLcpScratch` through the existing allocator seam
   (`dart/lcpsolver/dantzig/DantzigLcp.hpp:90`); replace per-step
-  `World.cpp:962,970` (and `:1127,:1136`) snapshot vectors with reused
-  storage; pre-reserve contact-constraint pools at bake; pool
-  `SoftContactConstraint` creation (cheap improvement, ungated).
+  `World.cpp:962,970` (and `:1127,:1136`) snapshot vectors (~29/step
+  measured) with reused storage; pre-reserve contact-constraint pools at
+  bake; pool `SoftContactConstraint` creation (cheap improvement, ungated).
+  Before implementation, rerun the attribution dump with a deep site list
+  (raise the dump budget past 200 sites) to attribute the remaining
+  ~385/step long tail and fold those sites into this packet.
 - Non-goals: no algorithmic changes; bit-identical simulation results.
 - Evidence: WP-D6M.1 reporting test shows zero post-bake counts on gate
   scenes; `boxes_headless` checkpoints bit-identical to baseline.
