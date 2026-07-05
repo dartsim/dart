@@ -545,6 +545,31 @@ TEST(SkeletonLoader, TranslatesServoActuatorCommandsAsVelocity)
   EXPECT_DOUBLE_EQ(loadedJoint->getCommandVelocity()[0], 1.25);
 }
 
+TEST(SkeletonLoader, TranslatesAccelerationActuatorCommandsAsAcceleration)
+{
+  auto skeleton = dynamics::Skeleton::create("acceleration_command");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          nullptr,
+          dynamics::RevoluteJoint::Properties(),
+          dynamics::BodyNode::AspectProperties("acceleration_link"));
+  (void)body;
+  joint->setName("acceleration_hinge");
+  joint->setActuatorType(dynamics::Joint::ACCELERATION);
+  joint->setVelocity(0, -0.25);
+  joint->setCommand(0, 1.25);
+
+  sx::World world;
+  const sx::Multibody multibody = sx::io::addSkeleton(world, *skeleton);
+
+  auto loadedJoint = multibody.getJoint("acceleration_hinge");
+  ASSERT_TRUE(loadedJoint.has_value());
+  EXPECT_EQ(loadedJoint->getActuatorType(), sx::ActuatorType::Acceleration);
+  ASSERT_EQ(loadedJoint->getCommandAcceleration().size(), 1);
+  EXPECT_DOUBLE_EQ(loadedJoint->getVelocity()[0], -0.25);
+  EXPECT_DOUBLE_EQ(loadedJoint->getCommandAcceleration()[0], 1.25);
+}
+
 TEST(SkeletonLoader, RejectsMimicActuatorBeforeCreatingMultibody)
 {
   auto skeleton = dynamics::Skeleton::create("mimic_command");

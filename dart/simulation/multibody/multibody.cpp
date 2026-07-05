@@ -588,6 +588,7 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
   jointModel.armature = comps::makeJointVector(dof, 0.0);
   jointModel.coulombFriction = comps::makeJointVector(dof, 0.0);
   jointActuation.commandVelocity = comps::makeJointVector(dof, 0.0);
+  jointActuation.commandAcceleration = comps::makeJointVector(dof, 0.0);
 
   // Position, velocity, and effort limits default to unbounded.
   const double infinity = std::numeric_limits<double>::infinity();

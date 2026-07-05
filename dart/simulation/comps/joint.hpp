@@ -153,7 +153,7 @@ enum class ActuatorType
   Passive,      ///< No commanded effort; only passive forces act
   Servo,        ///< Velocity servo to a target, bounded by the effort limits
   Velocity,     ///< Prescribed velocity via a velocity-level constraint
-  Acceleration, ///< Prescribed acceleration (not yet implemented)
+  Acceleration, ///< Prescribed acceleration via a velocity-level constraint
   Locked,       ///< Frozen at the current position via a velocity constraint
   Mimic         ///< Follows another joint (not yet implemented)
 };
@@ -318,6 +318,10 @@ struct JointActuation
   /// Commanded target velocity used by the Velocity actuator type (per
   /// generalized coordinate).
   JointVector commandVelocity;
+
+  /// Commanded target acceleration used by the Acceleration actuator type (per
+  /// generalized coordinate).
+  JointVector commandAcceleration;
 };
 
 /// Family-owned AVBD point-joint stiffness sidecar.

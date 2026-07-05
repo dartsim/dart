@@ -319,6 +319,32 @@ TEST(Deactivation, LinkForceWakesSleepingMultibody)
   EXPECT_FALSE(robot.isSleeping());
 }
 
+TEST(Deactivation, CommandAccelerationWakesSleepingMultibody)
+{
+  sx::World world;
+  world.setTimeStep(0.01);
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setDeactivationOptions(fastSleepOptions());
+  auto robot = addPrismaticRobot(world, "robot", Eigen::Vector3d::UnitZ());
+  auto carriage = *robot.getLink("carriage");
+  auto joint = carriage.getParentJoint();
+  joint.setActuatorType(sx::ActuatorType::Acceleration);
+
+  for (int i = 0; i < 6; ++i) {
+    world.step();
+  }
+  ASSERT_TRUE(robot.isSleeping());
+
+  constexpr double commandAcceleration = 3.0;
+  joint.setCommandAcceleration(
+      Eigen::VectorXd::Constant(1, commandAcceleration));
+  world.step();
+
+  EXPECT_FALSE(robot.isSleeping());
+  EXPECT_NEAR(joint.getAcceleration()[0], commandAcceleration, 1e-12);
+  EXPECT_GT(joint.getVelocity()[0], 0.0);
+}
+
 TEST(Deactivation, ContactWithActiveBodyWakesSleepingMultibody)
 {
   sx::World world;

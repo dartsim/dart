@@ -659,6 +659,8 @@ void copyJointState(const dynamics::Joint& source, Joint& target)
   if (sourceActuatorType == dynamics::Joint::VELOCITY
       || sourceActuatorType == dynamics::Joint::SERVO) {
     target.setCommandVelocity(mapJointVector(source, source.getCommands()));
+  } else if (sourceActuatorType == dynamics::Joint::ACCELERATION) {
+    target.setCommandAcceleration(mapJointVector(source, source.getCommands()));
   }
 }
 

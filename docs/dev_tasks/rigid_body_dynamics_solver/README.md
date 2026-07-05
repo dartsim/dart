@@ -43,8 +43,8 @@ solver** under a multi-solver, multi-physics architecture.
       around the unified solve, and separate joint-limit/motor/island slices).
 - [ ] Phase 4: joint features & actuators (started: spring stiffness, rest
       position, damping, effort limits, armature, joint-space Coulomb friction,
-      and Force/Passive/Velocity/Servo/Locked actuator behavior on supported
-      joints; remaining: acceleration actuator mode plus mimic/coupler work).
+      and Force/Passive/Velocity/Servo/Acceleration/Locked actuator behavior on
+      supported joints; remaining: mimic/coupler work).
 - [ ] Phase 5: loop closures & improvements.
 
 ### DART 7 B2 gate — rigid open-chain dynamics parity
