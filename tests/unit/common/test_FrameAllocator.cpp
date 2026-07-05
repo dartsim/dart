@@ -45,6 +45,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 using namespace dart;
 using namespace common;
@@ -171,6 +172,37 @@ TEST(FrameAllocatorTest, RejectsOverflowingRequestsWithoutChangingArena)
   EXPECT_EQ(overflowOnly.used(), 0u);
   EXPECT_EQ(overflowOnly.overflowCount(), 0u);
   EXPECT_EQ(overflowOnly.overflowBytes(), 0u);
+}
+
+//==============================================================================
+TEST(FrameAllocatorTest, TinyCapacityStaysInBounds)
+{
+  // A capacity smaller than the 64-byte arena alignment must not let the fast
+  // path hand back storage past the buffer end. Exercised under ASan by
+  // writing across the whole returned block for a range of tiny capacities.
+  for (size_t capacity :
+       {size_t{1},
+        size_t{8},
+        size_t{16},
+        size_t{32},
+        size_t{48},
+        size_t{63},
+        size_t{64},
+        size_t{65}}) {
+    FrameAllocator allocator(MemoryAllocator::GetDefault(), capacity);
+    EXPECT_LE(allocator.usableCapacity(), allocator.capacity());
+
+    for (int i = 0; i < 8; ++i) {
+      void* p = allocator.allocate(24);
+      ASSERT_NE(p, nullptr) << "capacity=" << capacity;
+      std::memset(p, 0x5A, 24); // ASan catches an out-of-bounds arena pointer.
+
+      void* q = allocator.allocateAligned(24, 128);
+      ASSERT_NE(q, nullptr) << "capacity=" << capacity;
+      EXPECT_EQ(reinterpret_cast<uintptr_t>(q) % 128u, 0u);
+      std::memset(q, 0x3C, 24);
+    }
+  }
 }
 
 //==============================================================================
