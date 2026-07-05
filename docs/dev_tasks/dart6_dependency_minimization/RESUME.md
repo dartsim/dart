@@ -28,8 +28,11 @@ Every workstream except the **native collision port** is complete:
 evidence: [05-artifacts.md](05-artifacts.md)), recorded at branch head
 `1e6a8332a730` after merging `release-6.20` = `949a9c2ff5ed`, with the
 verdict "native default NOT allowed at this tip" and the phase-6 acceptance
-envelope. Do **not** re-capture it unless base/collision behavior changes
-again; consume it.
+envelope. Consume the committed row summaries and verdict for phase-1
+sequencing; do **not** re-run the matrix just to start phase 1. For any
+phase-6/default-flip tolerance gate, retrieve JSONL scene dumps matching
+the recorded SHA-256 digests or recapture dumps on the flip PR's parent
+and compare within that same recapture.
 
 **Next: phase 1 — native core skeleton** (C++17, no EnTT, internal-only,
 FCL stays default) per `03`'s phased plan, once the packet's review PR

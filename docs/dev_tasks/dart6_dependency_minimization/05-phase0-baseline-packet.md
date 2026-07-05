@@ -28,10 +28,14 @@
 - Raw evidence: the committed appendix
   [05-artifacts.md](05-artifacts.md) carries the host metadata, every
   row's raw final summary, the capture driver, the tolerance analyzer,
-  and SHA-256 digests of the 17 JSONL scene dumps. The full dumps stay
-  local under `.omc/artifacts/native-collision-phase0-1e6a8332a730/`
-  (git-ignored); the digests pin the exact artifacts for the phase-6
-  comparison. The driver default remains
+  and SHA-256 digests of the 17 JSONL scene dumps. The full dumps are
+  not committed; they stayed local under
+  `.omc/artifacts/native-collision-phase0-1e6a8332a730/` (git-ignored).
+  The digests can verify a copied/published dump archive, but a clean
+  checkout cannot reproduce the per-body tolerance table from hashes
+  alone. Any phase-6/default-flip PR must either retrieve JSONL dumps
+  matching these digests or recapture dumps on its own parent and use
+  that same recapture for the tolerance gate. The driver default remains
   `.omc/artifacts/native-collision-phase0/` for future recaptures.
 
 ## Row matrix

@@ -1,10 +1,12 @@
 # Phase-0 baseline packet — raw evidence appendix
 
 > Companion to [05-phase0-baseline-packet.md](05-phase0-baseline-packet.md).
-> Committed so the packet's rows are auditable from a clean checkout and
-> reproducible for the phase-6 A/B comparison. Full JSONL scene dumps stay
-> local (17 files, large); their SHA-256 digests below pin the exact
-> artifacts used for the tolerance analysis.
+> Committed so the packet's row summaries, commands, host metadata, and
+> analyzer are auditable from a clean checkout. Full JSONL scene dumps are
+> not committed; their SHA-256 digests below pin the exact local artifacts
+> used for the tolerance table. To reuse the per-body tolerance gate later,
+> retrieve a dump archive matching these digests or recapture dumps on the
+> phase-6/default-flip PR parent and compare within that same recapture.
 
 ## Host metadata
 

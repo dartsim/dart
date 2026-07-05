@@ -117,8 +117,10 @@ before treating it as an open/active PR.)_
   `05-phase0-baseline-packet.md` (raw evidence: `05-artifacts.md`) on
   `1e6a8332a730` after merging `origin/release-6.20` = `949a9c2ff5ed`, with
   the verdict "native default NOT allowed at this tip" and the phase-6
-  acceptance envelope. Do not re-capture unless base/collision behavior
-  changes again; consume it.
+  acceptance envelope. Consume the committed summaries for phase-1
+  sequencing. For the phase-6 tolerance gate, retrieve JSONL dumps matching
+  the recorded SHA-256 digests or recapture dumps on the flip PR's parent
+  and compare within that same recapture.
 - **Next: phase 1** — the non-default C++17/no-EnTT native core port,
   once this packet's review PR lands. Do not flip defaults until `03`'s
   full A/B packet and gz gate pass.
