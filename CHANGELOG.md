@@ -370,6 +370,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Made DART AI workflows more completion- and changelog-aware by default, with
   verification-first `$dart-resume` task management and a reusable
   `$dart-changelog` routine for consistent release-note decisions and entries.
+- Clarified AI-native guidance so always-loaded agent rules stay compact,
+  consequential decisions use repo-wide north-star context and proportionate
+  evidence, and in-scope failures are root-caused instead of hidden.
 - Added a canonical AI terminology owner and aligned the workflow, capability,
   skill, command-adapter, generated-adapter, MCP, hook, subagent, and work
   packet language across the AI docs, compatibility guide, sync checks, and
@@ -378,6 +381,10 @@ compatibility remains on the active DART 6 LTS branch._
   lifecycles, keeps `docs/onboarding/` as the current developer-handbook path,
   and records when future folder splits or renames are justified.
   ([#3290](https://github.com/dartsim/dart/pull/3290))
+- Applied the documentation information architecture to docs-update workflows,
+  generated AI adapters, policy checks, and dev-task cleanup guidance so agents
+  route durable documentation by lifecycle instead of defaulting to the
+  handbook bucket. ([#3294](https://github.com/dartsim/dart/pull/3294))
 - Added a structured `dart-changelog` decision note so Claude, Codex, OpenCode,
   and manual PR authors can record the inspected evidence, target release
   section, entry text, no-entry reason, and PR-link follow-up consistently.

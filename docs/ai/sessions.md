@@ -49,10 +49,12 @@ must contain:
 
 When a dev task completes:
 
-1. Move durable lessons to the relevant developer doc.
+1. Move durable lessons to the owner selected by
+   `docs/information-architecture.md`.
 2. Move any dashboard, evidence matrix, API inventory, migration map, or other
-   artifact that must survive task cleanup to `docs/plans/` or
-   `docs/onboarding/`.
+   artifact that must survive task cleanup to the matching durable bucket, such
+   as `docs/plans/`, `docs/design/`, `docs/onboarding/`, or
+   `docs/readthedocs/`.
 3. Replace dev-task links from durable docs with persistent links, or delete
    the temporary references.
 4. Delete the task folder in the same PR.

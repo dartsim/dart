@@ -352,7 +352,8 @@ Before submitting your pull request, verify:
 - [ ] Bug fixes that apply to the release line have an active-DART-6-LTS PR
       first, then a `main` PR
 - [ ] Any `docs/dev_tasks/<task>/` folder used for tracking is removed after
-      durable notes move to developer docs
+      durable notes move to the owner selected by
+      `docs/information-architecture.md`
 
 ## Getting Help
 
