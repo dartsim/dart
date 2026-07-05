@@ -128,6 +128,16 @@ UI-visible changes, and PLAN checkboxes updated.
 
 ## Phase 2 — Scene catalog ports (PR series)
 
+- [x] B2 "Constraints & soft" accepted 2026-07-04 (commits 9493af236 lib
+      fixes + b07cb32b2 scenes): 7 ports (human_joint_limits TinyDNN-gated,
+      absent here), 18 scenes live, cycle x2 green. Library commit fixes the
+      two gui-osg interaction bugs (mouse-handler unregistration UAF +
+      InteractiveFrameDnD ownership) → tinkertoy/empty now use real
+      InteractiveFrameDnD gizmo dragging; split into own PR at push time.
+      Review: 7-agent pass (1 blocker UAF, 4 majors incl. SPD stale-dt vs
+      new Timestep slider, heightmap NaN persistence, toy2 topology) +
+      screenshot pass (soft_bodies/mixed_chain ZUp+framing) — all fixed by
+      fixer-b2, re-verified by orchestrator.
 - [x] B1 "Rigid & basics" accepted 2026-07-04 (commit 49d1db3): 9 new scenes
       + shared ZUp.hpp + rigid_cubes/empty reconciliation. Host gains:
       toolbar Timestep control (1e-5..1e-2 s), case-insensitive key
