@@ -1,6 +1,0 @@
-date: 2026-07-05T09:49:54Z
-commit: d557fc069fe4419e0037a890fb4a6827be228795
-host: Linux 7.0.0-27-generic x86_64 GNU/Linux
-cpu: 13th Gen Intel(R) Core(TM) i9-13950HX
-cores: 32
-governor: powersave
