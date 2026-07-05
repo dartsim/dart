@@ -280,6 +280,23 @@ void restoreVelocityActuatorCommands(
   }
 }
 
+common::MemoryAllocator& resolveWorldMemoryBaseAllocator(
+    const WorldConfig& config)
+{
+  return config.baseAllocator ? *config.baseAllocator
+                              : common::MemoryAllocator::GetDefault();
+}
+
+common::MemoryManager::Options makeWorldMemoryManagerOptions(
+    const WorldConfig& config)
+{
+  common::MemoryManager::Options options;
+  options.freeListInitialAllocation = config.freeListInitialAllocation;
+  options.freeListGrowthPolicy = config.freeListGrowthPolicy;
+  options.frameAllocatorInitialCapacity = config.frameScratchInitialCapacity;
+  return options;
+}
+
 } // namespace
 
 //==============================================================================
@@ -292,6 +309,98 @@ static bool hasNonzeroGeneralizedVelocity(const dynamics::Skeleton& skel)
   }
 
   return false;
+}
+
+//==============================================================================
+void World::invalidateSimulationMode()
+{
+  mSimulationMode = false;
+  mSimulationModeStructuralVersion = 0;
+}
+
+//==============================================================================
+void World::refreshSkeletonDofIndices()
+{
+  mIndices.clear();
+  mIndices.reserve(mSkeletons.size() + 1u);
+  mIndices.push_back(0);
+
+  for (const auto& skeleton : mSkeletons) {
+    const auto numDofs = skeleton ? skeleton->getNumDofs() : 0u;
+    mIndices.push_back(mIndices.back() + static_cast<int>(numDofs));
+  }
+}
+
+//==============================================================================
+void World::reserveMemoryManagerForSimulationShape()
+{
+  DART_ASSERT(mMemoryManager != nullptr);
+  if (!mMemoryManager)
+    return;
+
+  const std::size_t numSkeletons = mSkeletons.size();
+  const std::size_t numSimpleFrames = mSimpleFrames.size();
+  const std::size_t numDofs
+      = mIndices.empty() ? 0u : static_cast<std::size_t>(mIndices.back());
+  const std::size_t numLastContacts
+      = mConstraintSolver
+            ? mConstraintSolver->getLastCollisionResult().getNumContacts()
+            : 0u;
+  const std::size_t contactCapacity
+      = std::max(numLastContacts, numSkeletons * 4u);
+
+  const std::size_t freeListReservation = std::max(
+      mMemoryManagerFreeListInitialAllocation,
+      4096u + numSkeletons * 4096u + numSimpleFrames * 512u + numDofs * 512u
+          + contactCapacity * 1024u);
+  if (void* memory = mMemoryManager->allocateUsingFree(freeListReservation)) {
+    mMemoryManager->deallocateUsingFree(memory, freeListReservation);
+  }
+
+  auto& frameAllocator = mMemoryManager->getFrameAllocator();
+  const std::size_t frameReservation = std::max(
+      mMemoryManagerFrameScratchInitialCapacity,
+      4096u + numSkeletons * 1024u + numSimpleFrames * 256u + numDofs * 256u
+          + contactCapacity * 512u);
+  if (frameAllocator.usableCapacity() < frameReservation)
+    (void)frameAllocator.allocate(frameReservation);
+  frameAllocator.reset();
+}
+
+//==============================================================================
+void World::enterSimulationMode()
+{
+  if (isInSimulationMode())
+    return;
+
+  refreshSkeletonDofIndices();
+  syncShallowSupportFreeRootVelocityStates();
+  reserveMemoryManagerForSimulationShape();
+  mSimulationModeStructuralVersion
+      = dynamics::Skeleton::getGlobalStructuralVersion();
+  mSimulationMode = true;
+}
+
+//==============================================================================
+bool World::isInSimulationMode() const
+{
+  return mSimulationMode
+         && mSimulationModeStructuralVersion
+                == dynamics::Skeleton::getGlobalStructuralVersion();
+}
+
+//==============================================================================
+common::MemoryManager& World::getMemoryManager()
+{
+  DART_ASSERT(mMemoryManager != nullptr);
+  return *mMemoryManager;
+}
+
+//==============================================================================
+const common::MemoryManager& World::getMemoryManager() const
+{
+  DART_ASSERT(mMemoryManager != nullptr);
+  return *mMemoryManager;
 }
 
 //==============================================================================
@@ -853,6 +962,12 @@ World::World(const WorldConfig& config)
     mTimeStep(0.001),
     mTime(0.0),
     mFrame(0),
+    mMemoryManager(std::make_unique<common::MemoryManager>(
+        resolveWorldMemoryBaseAllocator(config),
+        makeWorldMemoryManagerOptions(config))),
+    mMemoryManagerFreeListInitialAllocation(config.freeListInitialAllocation),
+    mMemoryManagerFrameScratchInitialCapacity(
+        config.frameScratchInitialCapacity),
     mRecording(new Recording(mSkeletons)),
     onNameChanged(mNameChangedSignal)
 {
@@ -999,6 +1114,10 @@ void World::reset()
 void World::step(bool _resetCommand)
 {
   DART_PROFILE_FRAME;
+
+  if (!isInSimulationMode())
+    enterSimulationMode();
+  getMemoryManager().getFrameAllocator().reset();
 
   const bool deactivationEnabled = mDeactivationOptions.mEnabled;
 
@@ -2128,6 +2247,7 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   syncShallowSupportFreeRootVelocityStates();
   invalidateAllRestingKinematicSnapshot();
   wakeRestingSkeletonsForWorldChange();
+  invalidateSimulationMode();
 
   // Update recording
   mRecording->updateNumGenCoords(mSkeletons);
@@ -2178,6 +2298,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
       remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
       mSkeletons.end());
   syncShallowSupportFreeRootVelocityStates();
+  invalidateSimulationMode();
 
   // Disconnect the name change monitor
   mNameConnectionsForSkeletons[index].disconnect();
@@ -2286,6 +2407,8 @@ std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
   _frame->setName(
       mNameMgrForSimpleFrames.issueNewNameAndAdd(_frame->getName(), _frame));
 
+  invalidateSimulationMode();
+
   return _frame->getName();
 }
 
@@ -2320,6 +2443,8 @@ void World::removeSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 
   // Remove from the pointer map
   mSimpleFrameToShared.erase(_frame.get());
+
+  invalidateSimulationMode();
 }
 
 //==============================================================================
@@ -2426,6 +2551,7 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
   mConstraintSolver->setNumSimulationThreads(mNumSimulationThreads);
   invalidateAllRestingKinematicSnapshot();
   wakeRestingSkeletonsForWorldChange();
+  invalidateSimulationMode();
 }
 
 //==============================================================================

@@ -49,6 +49,20 @@ namespace dart::common {
 class MemoryManager final
 {
 public:
+  /// Construction options for the underlying allocator hierarchy.
+  struct Options final
+  {
+    /// Initial bytes reserved for the free-list allocator.
+    size_t freeListInitialAllocation = 1048576 /* 1 MB */;
+
+    /// Whether the free-list allocator may grow after construction.
+    FreeListAllocator::GrowthPolicy freeListGrowthPolicy
+        = FreeListAllocator::GrowthPolicy::Expand;
+
+    /// Initial bytes reserved for the frame allocator.
+    size_t frameAllocatorInitialCapacity = 65536;
+  };
+
   /// Type of the memory allocators
   enum class Type
   {
@@ -67,6 +81,14 @@ public:
   /// used by all the underlying memory allocators.
   explicit MemoryManager(
       MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault());
+
+  /// Constructor
+  ///
+  /// \param[in] baseAllocator: The most low level allocator to be used by all
+  /// the underlying memory allocators.
+  /// \param[in] options: Initial reservation and growth options.
+  explicit MemoryManager(
+      MemoryAllocator& baseAllocator, const Options& options);
 
   /// Destructor
   ~MemoryManager();

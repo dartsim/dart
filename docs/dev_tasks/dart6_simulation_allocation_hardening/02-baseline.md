@@ -182,3 +182,69 @@ With the profiler allocation-free, the native-DART-collision scene drops to
 No profiler frames remain in the top sites; there is no significant long
 tail. WP-D6M.5 now has a fully attributed, two-source target and can route
 both through the World-owned MemoryManager (WP-D6M.4).
+
+## WP-D6M.4 evidence
+
+### Commands run
+
+```bash
+DART_PROFILE_COLOR=0 ./build/default/cpp/Release/tests/benchmark/integration/boxes_headless 8 200 100 > /tmp/dart_d6m4_boxes_before.txt
+pixi run cmake --build build/default/cpp/Release --target INTEGRATION_StepAllocation --parallel
+./build/default/cpp/Release/tests/integration/INTEGRATION_StepAllocation --gtest_filter='WorldSimulationModeMemoryManager.*'
+./build/default/cpp/Release/tests/integration/INTEGRATION_StepAllocation --gtest_filter='StepAllocation.*'
+DART_PROFILE_COLOR=0 ./build/default/cpp/Release/tests/benchmark/integration/boxes_headless 8 200 100 > /tmp/dart_d6m4_boxes_after.txt
+diff -u <(rg '^step' /tmp/dart_d6m4_boxes_before.txt) <(rg '^step' /tmp/dart_d6m4_boxes_after.txt)
+ctest --test-dir build/default/cpp/Release -R StepAllocation --output-on-failure
+pixi run lint
+pixi run cmake --build build/default/cpp/Release --target INTEGRATION_StepAllocation --parallel
+./build/default/cpp/Release/tests/integration/INTEGRATION_StepAllocation --gtest_filter='WorldSimulationModeMemoryManager.*'
+ctest --test-dir build/default/cpp/Release -R StepAllocation --output-on-failure
+pixi run build
+pixi run build-tests
+```
+
+### New test results
+
+```text
+WorldSimulationModeMemoryManager.ExplicitEnterMatchesImplicitSteps PASSED
+WorldSimulationModeMemoryManager.ImplicitFirstStepMatchesExplicitEnter PASSED
+WorldSimulationModeMemoryManager.ShapeChangeInvalidatesAndRebakes PASSED
+WorldSimulationModeMemoryManager.FrameArenaResetsEachStep PASSED
+WorldSimulationModeMemoryManager.BakedWorldBaseAllocatorDoesNotGrow PASSED
+```
+
+The injected-base-allocator test constructs a `WorldConfig` with
+`CountingMemoryAllocator` as the World MemoryManager base allocator, calls
+`enterSimulationMode()`, then runs 10 same-shape steps under
+`ScopedCountingMemoryAllocatorCounter`. The observed and asserted World base
+allocator growth was zero allocations and zero bytes.
+
+### Allocation reporting check
+
+`StepAllocation.ReportsWorldStepAllocationBaseline` still reports the same
+post-WP-D6M.9 steady-state values:
+
+```text
+native_dart_boxes operator_new_count_per_step=56.020 counting_allocator_allocate_count=0
+bullet_boxes operator_new_count_per_step=60.190 counting_allocator_allocate_count=0
+```
+
+### Bit-exactness check
+
+The `boxes_headless 8 200 100` step-checkpoint diff was empty. Both before and
+after runs reported:
+
+```text
+step    100  dofs  3072  posL1 25.377535997306794  posSq 1.2565833038073266  velL1 502.39999999999804  velSq 492.72899199999836
+step    200  dofs  3072  posL1 100.9822719973081  posSq 19.906743941630715  velL1 1004.6719999999947  velSq 1970.9154880000115
+```
+
+### Gate results
+
+```text
+pixi run lint PASSED
+pixi run build PASSED
+pixi run build-tests PASSED
+pixi run cmake --build build/default/cpp/Release --target INTEGRATION_StepAllocation --parallel PASSED
+ctest --test-dir build/default/cpp/Release -R StepAllocation --output-on-failure PASSED
+```

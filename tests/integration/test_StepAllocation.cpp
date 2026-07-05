@@ -188,6 +188,48 @@ dart::simulation::WorldPtr createStackedBoxesWorld(
   return world;
 }
 
+dart::simulation::WorldPtr createFallingBoxWorld(const std::string& name)
+{
+  auto world = dart::simulation::World::create(name);
+  world->setNumSimulationThreads(1u);
+  world->setTimeStep(0.001);
+  world->addSkeleton(createBox(
+      0u,
+      Eigen::Vector3d(0.0, 0.0, 1.0),
+      Eigen::Vector3d(0.2, 0.2, 0.2),
+      Eigen::Vector3d(0.2, 0.4, 0.8)));
+  return world;
+}
+
+void expectWorldStateExactlyEqual(
+    const dart::simulation::World& lhs, const dart::simulation::World& rhs)
+{
+  ASSERT_EQ(lhs.getNumSkeletons(), rhs.getNumSkeletons());
+
+  for (std::size_t i = 0u; i < lhs.getNumSkeletons(); ++i) {
+    const auto lhsSkeleton = lhs.getSkeleton(i);
+    const auto rhsSkeleton = rhs.getSkeleton(i);
+    ASSERT_NE(lhsSkeleton, nullptr);
+    ASSERT_NE(rhsSkeleton, nullptr);
+
+    const Eigen::VectorXd lhsPositions = lhsSkeleton->getPositions();
+    const Eigen::VectorXd rhsPositions = rhsSkeleton->getPositions();
+    ASSERT_EQ(lhsPositions.size(), rhsPositions.size());
+    for (Eigen::Index j = 0; j < lhsPositions.size(); ++j) {
+      EXPECT_EQ(lhsPositions[j], rhsPositions[j])
+          << "position mismatch skeleton=" << i << " dof=" << j;
+    }
+
+    const Eigen::VectorXd lhsVelocities = lhsSkeleton->getVelocities();
+    const Eigen::VectorXd rhsVelocities = rhsSkeleton->getVelocities();
+    ASSERT_EQ(lhsVelocities.size(), rhsVelocities.size());
+    for (Eigen::Index j = 0; j < lhsVelocities.size(); ++j) {
+      EXPECT_EQ(lhsVelocities[j], rhsVelocities[j])
+          << "velocity mismatch skeleton=" << i << " dof=" << j;
+    }
+  }
+}
+
 void installCountingDantzigSolver(
     const dart::simulation::WorldPtr& world,
     dart::test::CountingMemoryAllocator& allocator)
@@ -426,6 +468,118 @@ TEST(StepAllocation, CountingMemoryAllocatorDetectsAllocation)
   EXPECT_EQ(snapshot.allocationBytes, 256u);
   EXPECT_EQ(snapshot.deallocationCount, 1u);
   EXPECT_EQ(snapshot.deallocationBytes, 256u);
+}
+
+TEST(WorldSimulationModeMemoryManager, ExplicitEnterMatchesImplicitSteps)
+{
+  auto explicitWorld = createFallingBoxWorld("explicit_enter_world");
+  auto implicitWorld = createFallingBoxWorld("implicit_enter_world");
+
+  explicitWorld->enterSimulationMode();
+  ASSERT_TRUE(explicitWorld->isInSimulationMode());
+  ASSERT_FALSE(implicitWorld->isInSimulationMode());
+
+  for (int i = 0; i < 20; ++i) {
+    explicitWorld->step();
+    implicitWorld->step();
+  }
+
+  EXPECT_TRUE(implicitWorld->isInSimulationMode());
+  expectWorldStateExactlyEqual(*explicitWorld, *implicitWorld);
+}
+
+TEST(WorldSimulationModeMemoryManager, ImplicitFirstStepMatchesExplicitEnter)
+{
+  auto explicitWorld = createFallingBoxWorld("explicit_first_step_world");
+  auto implicitWorld = createFallingBoxWorld("implicit_first_step_world");
+
+  explicitWorld->enterSimulationMode();
+  explicitWorld->step();
+  implicitWorld->step();
+
+  EXPECT_TRUE(explicitWorld->isInSimulationMode());
+  EXPECT_TRUE(implicitWorld->isInSimulationMode());
+  expectWorldStateExactlyEqual(*explicitWorld, *implicitWorld);
+}
+
+TEST(WorldSimulationModeMemoryManager, ShapeChangeInvalidatesAndRebakes)
+{
+  auto world = createFallingBoxWorld("rebake_world");
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+
+  world->addSkeleton(createBox(
+      1u,
+      Eigen::Vector3d(0.4, 0.0, 1.2),
+      Eigen::Vector3d(0.2, 0.2, 0.2),
+      Eigen::Vector3d(0.8, 0.4, 0.2)));
+  EXPECT_FALSE(world->isInSimulationMode());
+
+  world->step();
+  EXPECT_TRUE(world->isInSimulationMode());
+
+  std::size_t expectedDofs = 0u;
+  for (std::size_t i = 0u; i < world->getNumSkeletons(); ++i)
+    expectedDofs += world->getSkeleton(i)->getNumDofs();
+  EXPECT_EQ(
+      world->getIndex(static_cast<int>(world->getNumSkeletons())),
+      static_cast<int>(expectedDofs));
+
+  const auto frame = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "rebake_frame");
+  world->addSimpleFrame(frame);
+  EXPECT_FALSE(world->isInSimulationMode());
+  world->enterSimulationMode();
+  EXPECT_TRUE(world->isInSimulationMode());
+  world->removeSimpleFrame(frame);
+  EXPECT_FALSE(world->isInSimulationMode());
+}
+
+TEST(WorldSimulationModeMemoryManager, FrameArenaResetsEachStep)
+{
+  auto world = createFallingBoxWorld("frame_arena_reset_world");
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+
+  auto& frameAllocator = world->getMemoryManager().getFrameAllocator();
+  ASSERT_NE(frameAllocator.allocate(128u), nullptr);
+  ASSERT_GT(frameAllocator.used(), 0u);
+  world->step();
+  EXPECT_EQ(frameAllocator.used(), 0u);
+
+  ASSERT_NE(frameAllocator.allocate(256u), nullptr);
+  ASSERT_GT(frameAllocator.used(), 0u);
+  world->step();
+  EXPECT_EQ(frameAllocator.used(), 0u);
+}
+
+TEST(WorldSimulationModeMemoryManager, BakedWorldBaseAllocatorDoesNotGrow)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  dart::simulation::WorldConfig config("counted_allocator_world");
+  config.baseAllocator = &allocator;
+  config.freeListInitialAllocation = 1024u;
+  config.frameScratchInitialCapacity = 4096u;
+
+  auto world = dart::simulation::World::create(config);
+  EXPECT_EQ(&world->getMemoryManager().getBaseAllocator(), &allocator);
+  world->setNumSimulationThreads(1u);
+  world->addSkeleton(createBox(
+      0u,
+      Eigen::Vector3d(0.0, 0.0, 1.0),
+      Eigen::Vector3d(0.2, 0.2, 0.2),
+      Eigen::Vector3d(0.2, 0.6, 0.3)));
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+
+  dart::test::ScopedCountingMemoryAllocatorCounter counter(allocator);
+  for (int i = 0; i < 10; ++i)
+    world->step();
+  counter.stop();
+
+  const auto snapshot = counter.snapshot();
+  EXPECT_EQ(snapshot.allocationCount, 0u);
+  EXPECT_EQ(snapshot.allocationBytes, 0u);
 }
 
 TEST(StepAllocation, ReportsWorldStepAllocationBaseline)

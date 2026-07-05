@@ -47,14 +47,25 @@ MemoryManager& MemoryManager::GetDefault()
 
 //==============================================================================
 MemoryManager::MemoryManager(MemoryAllocator& baseAllocator)
+  : MemoryManager(baseAllocator, Options())
+{
+  // Do nothing
+}
+
+//==============================================================================
+MemoryManager::MemoryManager(
+    MemoryAllocator& baseAllocator, const Options& options)
   : mBaseAllocator(baseAllocator),
-    mFreeListAllocator(mBaseAllocator),
+    mFreeListAllocator(
+        mBaseAllocator,
+        options.freeListInitialAllocation,
+        options.freeListGrowthPolicy),
 #if DART_BUILD_MODE_RELEASE
     mPoolAllocator(mFreeListAllocator),
 #else
     mPoolAllocator(mFreeListAllocator.getInternalAllocator()),
 #endif
-    mFrameAllocator(mBaseAllocator)
+    mFrameAllocator(mBaseAllocator, options.frameAllocatorInitialCapacity)
 {
   // Do nothing
 }
