@@ -2442,6 +2442,37 @@ Changelog decision:
   round-trip verification if a PR is opened.
 - Follow-up: none until an implementation PR exists.
 
+Additional validation for shipped URDF primitive geometry fixture coverage:
+
+- Added `UrdfWriter.RoundTripsExistingPrimitiveGeometryFixture`, loading
+  `dart://sample/urdf/test/primitive_geometry.urdf` through `UrdfParser`,
+  writing the imported skeleton through
+  `UrdfParser::tryWriteSkeletonToString()`, and reparsing the emitted URDF.
+- Coverage proves the parser-selected primitive visual geometry imported into
+  DART (`base_link` with one visual sphere and no collisions) survives
+  write/read/read with body, inertia, visual geometry, and collision-count
+  comparison. It does not claim preservation of the fixture's raw source XML
+  sibling geometry tags beyond the skeleton semantics imported by `UrdfParser`.
+
+Validation commands:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter=UrdfWriter.RoundTripsExistingPrimitiveGeometryFixture'`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_urdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
+  and this SKEL evolution task folder.
+- Scope evidence: this slice broadens shipped-fixture test evidence for the
+  existing parser-specific URDF writer contract, without adding a new public
+  API or user-visible export capability.
+- Decision: no additional changelog entry.
+- Target section: not applicable.
+- PR-body note: record as `primitive_geometry.urdf` URDF writer round-trip
+  verification if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
 ## Previous Resume Checkpoint (2026-07-03)
 
 Phase 1 landed on `main` via PR

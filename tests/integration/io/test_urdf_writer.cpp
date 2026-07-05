@@ -736,6 +736,46 @@ TEST(UrdfWriter, RoundTripsExistingGroundFixture)
 }
 
 //==============================================================================
+TEST(UrdfWriter, RoundTripsExistingPrimitiveGeometryFixture)
+{
+  utils::UrdfParser parser;
+  const auto original
+      = parser.parseSkeleton("dart://sample/urdf/test/primitive_geometry.urdf");
+  ASSERT_NE(original, nullptr);
+
+  ASSERT_EQ(original->getNumBodyNodes(), 1u);
+  const auto* originalBase = original->getBodyNode("base_link");
+  ASSERT_NE(originalBase, nullptr);
+  ASSERT_EQ(originalBase->getNumShapeNodesWith<dynamics::VisualAspect>(), 1u);
+  EXPECT_EQ(
+      originalBase->getNumShapeNodesWith<dynamics::CollisionAspect>(), 0u);
+  const auto* originalSphere
+      = getFirstShape<dynamics::SphereShape, dynamics::VisualAspect>(
+          originalBase);
+  ASSERT_NE(originalSphere, nullptr);
+  EXPECT_NEAR(originalSphere->getRadius(), 1.0, kTolerance);
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  expectContains(writeResult.value(), "name=\"primitive_geometry\"");
+  expectContains(writeResult.value(), "<sphere");
+
+  const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
+  ASSERT_NE(reparsed, nullptr);
+
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+  const auto* reparsedBase = reparsed->getBodyNode("base_link");
+  ASSERT_NE(reparsedBase, nullptr);
+  expectBodyInertiaRoundTrips(*originalBase, *reparsedBase);
+  expectVisualShapesRoundTrip(*originalBase, *reparsedBase);
+  expectCollisionShapesRoundTrip(*originalBase, *reparsedBase);
+}
+
+//==============================================================================
 TEST(UrdfWriter, ExistingKr5FixtureWithRootPoseReturnsError)
 {
   utils::UrdfParser parser;

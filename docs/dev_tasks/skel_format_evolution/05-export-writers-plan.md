@@ -255,11 +255,12 @@ replacement. The accepted writer scope is:
    accepts a versioned schema and round-trip contract.
 3. **URDF writer** for robot-link trees that fit URDF's model constraints. The
    first parser-specific writer slice is in place, including shipped
-   `joint_properties.urdf`, `issue838.urdf`, `KR5/ground.urdf`, and
-   `wam.urdf` plus `drchubo.urdf`
-   read/write/read coverage for revolute and continuous joint limits/dynamics,
-   visual material colors, parser-normalized root-`world` semantics, and
-   visual/collision package meshes. The full `KR5 sixx R650.urdf` fixture is
+   `primitive_geometry.urdf`, `joint_properties.urdf`, `issue838.urdf`,
+   `KR5/ground.urdf`, and `wam.urdf` plus `drchubo.urdf`
+   read/write/read coverage for imported primitive visual geometry, revolute
+   and continuous joint limits/dynamics, visual material colors,
+   parser-normalized root-`world` semantics, and visual/collision package
+   meshes. The full `KR5 sixx R650.urdf` fixture is
    intentionally covered as a root-pose diagnostic because URDF cannot
    serialize a non-identity root-link pose; broader URDF coverage remains open.
 4. **MJCF/USD writers** only after their read-side semantics are mature enough
