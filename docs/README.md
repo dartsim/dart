@@ -10,18 +10,18 @@ workflows.
 
 ## Documentation Structure
 
-| Directory                               | Owns                                                                |
-| --------------------------------------- | ------------------------------------------------------------------- |
-| [`ai/`](ai/README.md)                   | AI-native principles, north star, workflow map, sessions, and gates |
-| [`assets/`](assets/)                    | Source-controlled assets used by repository docs outside RTD static |
-| [`background/`](background/README.md)   | Theory and research foundations derived from preserved source PDFs  |
-| [`design/`](design/README.md)           | Durable technical design proposals and decision rationale           |
-| [`dev_tasks/`](dev_tasks/README.md)     | Active multi-session implementation task tracking                   |
-| [`doxygen/`](doxygen/)                  | Doxygen inputs consumed by the published C++ API build              |
-| [`onboarding/`](onboarding/README.md)   | Developer knowledge base, onboarding, architecture, and workflows   |
-| [`plans/`](plans/README.md)             | Living roadmap, priority, open gaps, gates, and plan lifecycle      |
-| [`python_api/`](python_api/index.rst)   | Reusable dartpy API module pages for Sphinx autodoc                 |
-| [`readthedocs/`](readthedocs/README.md) | Published user documentation site source                            |
+| Directory                               | Owns                                                                             |
+| --------------------------------------- | -------------------------------------------------------------------------------- |
+| [`ai/`](ai/README.md)                   | AI-native principles, terminology, north star, workflow map, sessions, and gates |
+| [`assets/`](assets/)                    | Source-controlled assets used by repository docs outside RTD static              |
+| [`background/`](background/README.md)   | Theory and research foundations derived from preserved source PDFs               |
+| [`design/`](design/README.md)           | Durable technical design proposals and decision rationale                        |
+| [`dev_tasks/`](dev_tasks/README.md)     | Active multi-session implementation task tracking                                |
+| [`doxygen/`](doxygen/)                  | Doxygen inputs consumed by the published C++ API build                           |
+| [`onboarding/`](onboarding/README.md)   | Developer knowledge base, onboarding, architecture, and workflows                |
+| [`plans/`](plans/README.md)             | Living roadmap, priority, open gaps, gates, and plan lifecycle                   |
+| [`python_api/`](python_api/index.rst)   | Reusable dartpy API module pages for Sphinx autodoc                              |
+| [`readthedocs/`](readthedocs/README.md) | Published user documentation site source                                         |
 
 The Markdown developer and agent docs are optimized for GitHub and LLM-friendly
 inspection. The published site under `readthedocs/` is Sphinx/RST plus MyST

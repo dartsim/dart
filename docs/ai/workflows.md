@@ -5,12 +5,14 @@ owner: self
 
 # AI Workflow Map
 
-DART exposes the same effective workflow set across supported AI tools:
+DART exposes the same effective capability set across supported AI tools. A
+capability is the tool-neutral DART unit named `dart-*`; see
+`docs/ai/terminology.md` for the canonical vocabulary.
 
-- Codex uses generated `$dart-*` skills from `.codex/skills/`.
-- Claude Code and OpenCode use `/dart-*` commands for workflows.
-- Domain skills such as `dart-build` and `dart-test` are lightweight pointers to
-  developer docs.
+- Codex uses generated `$dart-*` skill adapters from `.codex/skills/`.
+- Claude Code and OpenCode use `/dart-*` command adapters for workflows.
+- Domain skills such as `dart-build` and `dart-test` are lightweight Agent
+  Skills that point to developer docs.
 - `docs/ai/capabilities.json` owns machine-readable capability status,
   category, and gate profile.
 

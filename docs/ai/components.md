@@ -10,6 +10,7 @@ This document defines how DART maintains AI-facing components.
 ## Ownership Model
 
 `AGENTS.md` is the root pointer board. `docs/ai/` owns durable AI-native policy.
+`docs/ai/terminology.md` owns canonical AI-facing terms.
 `docs/onboarding/ai-tools.md` owns compatibility details. The current editable
 workflow source is `.claude/commands/`, and the current editable domain-skill
 source is `.claude/skills/`.
@@ -22,7 +23,7 @@ with only stable identity fields: `type` and `owner`. The pilot does not carry
 mutable status, freshness, or relationship lists; those stay in the owner docs,
 the plan dashboard, or generated manifests with an explicit consumer.
 
-Generated surfaces are first-class entrypoints for their tools:
+Generated adapter entrypoints are first-class entrypoints for their tools:
 
 - `.codex/skills/` for Codex;
 - `.opencode/command/` for OpenCode.
@@ -60,6 +61,8 @@ Route durable learnings to one owner:
 
 - Cross-session axioms and audit questions: `docs/ai/principles.md`, kept
   compact.
+- Canonical AI-facing terms and migration candidates:
+  `docs/ai/terminology.md`.
 - Gate selection and evidence expectations: `docs/ai/verification.md`.
 - Workflow routing and public paths: `docs/ai/workflows.md`.
 - Machine-readable capability status, category, and gate profile:

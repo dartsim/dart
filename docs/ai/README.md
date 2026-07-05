@@ -31,7 +31,8 @@ For authoring or executing orchestrator-defined work packets, also read
 `docs/ai/orchestration.md`.
 
 For AI component maintenance or durable AI-infra self-improvement, read
-`docs/ai/components.md`, `docs/ai/verification.md`, and
+`docs/ai/terminology.md`, `docs/ai/components.md`,
+`docs/ai/verification.md`, and
 `docs/onboarding/ai-tools.md`.
 
 ## Choosing The Next Task
@@ -57,14 +58,15 @@ still require explicit maintainer/user approval.
 | ----------------------------- | ------------------------------------------------------------------------------------- |
 | `AGENTS.md`                   | Root pointer board and mandatory high-level rules                                     |
 | `docs/ai/principles.md`       | AI-infra axioms and manual audit checklist                                            |
+| `docs/ai/terminology.md`      | Canonical AI-facing terms and migration candidates                                    |
 | `docs/ai/`                    | Durable AI-native mission, workflow map, session rules, and verification expectations |
 | `docs/ai/capabilities.json`   | Machine-readable capability status, category, and gate profile                        |
 | `docs/ai/orchestration.md`    | Orchestrator/executor roles and the work-packet contract                              |
 | `docs/onboarding/ai-tools.md` | Tool compatibility and adapter maintenance details                                    |
-| `.claude/commands/`           | Temporary editable source for DART workflow command bodies                            |
-| `.claude/skills/`             | Editable source for DART domain skills                                                |
-| `.codex/skills/`              | Generated first-class Codex workflow and skill entrypoints                            |
-| `.opencode/command/`          | Generated OpenCode command entrypoints                                                |
+| `.claude/commands/`           | Editable workflow source for DART user-invoked workflow capabilities                  |
+| `.claude/skills/`             | Editable domain-skill source for DART on-demand Agent Skills                          |
+| `.codex/skills/`              | Generated Codex adapter entrypoints for DART workflow and domain-skill capabilities   |
+| `.opencode/command/`          | Generated OpenCode command adapter entrypoints                                        |
 | `scripts/sync_ai_commands.py` | Adapter sync and AI docs consistency checker                                          |
 
 Do not hand-edit generated `.codex/` or `.opencode/` files. Update the source

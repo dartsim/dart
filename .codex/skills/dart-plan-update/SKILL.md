@@ -11,7 +11,7 @@ description: "DART Plan Update: discuss or update DART living plans"
 
 Use this skill in Codex to run the DART `dart-plan-update` workflow. The editable
 workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Codex skill is a generated Codex adapter entrypoint.
 
 ## Invocation
 

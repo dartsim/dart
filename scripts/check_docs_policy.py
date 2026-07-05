@@ -65,6 +65,7 @@ DOCS_AI_FRONTMATTER_FILES = {
     "orchestration.md",
     "principles.md",
     "sessions.md",
+    "terminology.md",
     "verification.md",
     "workflows.md",
 }
@@ -78,6 +79,7 @@ DOCS_AI_TYPE_LEGEND = {
     "ai-session-policy",
     "ai-operating-model",
     "ai-north-star",
+    "ai-terminology",
 }
 DISCOVERABILITY_INDEXES = {
     "docs/ai": "docs/ai/README.md",
