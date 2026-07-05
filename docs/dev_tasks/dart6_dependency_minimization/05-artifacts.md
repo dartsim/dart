@@ -9,25 +9,24 @@
 ## Host metadata
 
 ```
-captured_at_utc: 2026-07-04T18:08:00Z
-head: b5b2a5bee7740ce35f9ee64a598528a9cdd42833
-origin/release-6.20: b5b2a5bee7740ce35f9ee64a598528a9cdd42833
+captured_at_utc: 2026-07-05T17:21:55Z
+head: 1e6a8332a730a994450c14ee8a780780c5e069bb
+origin/release-6.20: 949a9c2ff5ed6309beef0aa1345101d36c813f02
 cpu: 13th Gen Intel(R) Core(TM) i9-13950HX
 governor: powersave
 nproc: 32
 compiler(pixi): c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0
 pixi: pixi 0.72.0
 ```
-
 ## Scene-dump digests (SHA-256)
 
 ```
-3e7c1a83fa983bb9c79ab484cb84902c74b032c295f7c4b924948bea1d2192cf  g120-bullet.jsonl
+e217a13015f9ba920abe1a46c4d29f36b19ff8c91dd828cfd23ad8115f64ae82  g120-bullet.jsonl
 e49f88af35a1cf86ea27cdac4f48c3093f1f133f511f21a42e0ee48e1cb63d75  g120-dart.jsonl
 8c9b6d68a6f8916370e9bb15f38e3e52bf695bdd1e1b90672dfb4936cd6af4b2  g120-default.jsonl
 8c9b6d68a6f8916370e9bb15f38e3e52bf695bdd1e1b90672dfb4936cd6af4b2  g120-fcl.jsonl
 2f55e6965452f7a07416a2fe965e0b941bd84f25366e9c5b7d1d294d123da931  g120-ode.jsonl
-4ce7a13d5f01284dfcc51298f6a93e57f24aa345201dd5d509e7ac6f9700c2a9  g3000-bullet.jsonl
+8d6c253964f711314c7edbfc50554f20852f9d628f82e17e1b95794a75851805  g3000-bullet.jsonl
 5df8a61ed2746561fc4c93b56be61933bbdb37f16891a231628393daf62f8a66  g3000-dart.jsonl
 3883d37c8e2117f3830a95cbb050766d232382e93a8e052af70a383ed97085b7  g3000-fcl.jsonl
 58f18677e5988921f14614296a089f4551a3d9e00f6089574df7970c0b7889ef  g3000-ode.jsonl
@@ -35,12 +34,11 @@ b87c2bcdb1e542a969ebbc41d79be566d491ca392bd4b8e2d36461c271531ede  s2-3ksettled-b
 4f9e6e4c3689b19301f002089426d765fe5bd1f50f72a0bef4b93dddef310eb6  s2-3ksettled-dart.jsonl
 ab9100a4add7f062506fa760cc0ec4318bb6ae51ae47db25bf3599a6d8c708b2  s2-3ksettled-fcl.jsonl
 552c4cb978853647103b93c59657f34fd3b4572b0d427075c6009649ba4b5e7d  s2-3ksettled-ode.jsonl
-f8328b197d3616e5cb6a0941fc8e9778c4fbc1bb852c73fd5a00c3f9ec0925be  s4-900-bullet.jsonl
+eb8c1eca5ed5673b05833e768b81d64c8d7439737cc757a57d2d44e38fdfea56  s4-900-bullet.jsonl
 62be3b522a96b4f7c9b445a7130b2458eada17c17c4e1fd066acaaa70113e2da  s4-900-dart.jsonl
 caee295d33590e05e78ac767fbc32048eb1e5716d6f55908471e8e7016d82ef6  s4-900-fcl.jsonl
 89e9b139b31f00b2ccd958f602828ef8191c26da051dbcb0101c5fec217199a0  s4-900-ode.jsonl
 ```
-
 ## Per-row final summaries (raw benchmark output)
 
 ### g120-default
@@ -52,9 +50,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    0.280773 s
-Real-Time Factor:   1.06848
-Avg Step Time:      0.93591 ms/step
+Wall-Clock Time:    1.43337 s
+Real-Time Factor:   0.209297
+Avg Step Time:      4.77789 ms/step
 Final Contacts:     240
 Final Contact Cap Hit: false
 Final Contact Pairs: 120
@@ -82,9 +80,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    0.112708 s
-Real-Time Factor:   2.66174
-Avg Step Time:      0.375695 ms/step
+Wall-Clock Time:    0.618194 s
+Real-Time Factor:   0.485285
+Avg Step Time:      2.06065 ms/step
 Final Contacts:     240
 Final Contact Cap Hit: false
 Final Contact Pairs: 120
@@ -112,9 +110,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    0.194795 s
-Real-Time Factor:   1.54008
-Avg Step Time:      0.649316 ms/step
+Wall-Clock Time:    0.560896 s
+Real-Time Factor:   0.534858
+Avg Step Time:      1.86965 ms/step
 Final Contacts:     240
 Final Contact Cap Hit: false
 Final Contact Pairs: 120
@@ -142,25 +140,25 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    0.563636 s
-Real-Time Factor:   0.532258
-Avg Step Time:      1.87879 ms/step
+Wall-Clock Time:    0.612872 s
+Real-Time Factor:   0.489499
+Avg Step Time:      2.04291 ms/step
 Final Contacts:     268
 Final Contact Cap Hit: false
 Final Contact Pairs: 120
 Final Over Sleep Tol: 0
 Final Zero Normals:  0
-Final Max Penetration: 9.82731e-06
-Final Resting:      76 / 120 mobile skeletons
-Final Candidates:   76 / 120 mobile skeletons
+Final Max Penetration: 9.99123e-06
+Final Resting:      78 / 120 mobile skeletons
+Final Candidates:   78 / 120 mobile skeletons
 Final Islanded:     120 / 120 mobile skeletons
 Final Disturbed:    0 / 120 mobile skeletons
-Final Max Smoothed Linear Speed: 2.42941e-05
-Final Max Smoothed Angular Speed: 6.5987e-10
+Final Max Smoothed Linear Speed: 5.08999e-06
+Final Max Smoothed Angular Speed: 1.24728e-13
 Final Max Rest Dwell Time: 0.5
 Final State Finite: true
-Final State Hash:   0x55069b7f62a734e6
-Final State Sums:   position_l1 2722 velocity_l1 0.000240956 body_translation_l1 2722 max_abs_velocity 1.81488e-05
+Final State Hash:   0x3508439b0c95d6be
+Final State Sums:   position_l1 2722 velocity_l1 0.000195453 body_translation_l1 2722 max_abs_velocity 4.67027e-06
 ```
 
 ### g120-ode
@@ -172,9 +170,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    0.0156588 s
-Real-Time Factor:   19.1586
-Avg Step Time:      0.052196 ms/step
+Wall-Clock Time:    0.0264457 s
+Real-Time Factor:   11.344
+Avg Step Time:      0.0881525 ms/step
 Final Contacts:     0
 Final Contact Cap Hit: false
 Final Contact Pairs: 0
@@ -202,9 +200,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    0.20514 s
-Real-Time Factor:   1.46242
-Avg Step Time:      0.683799 ms/step
+Wall-Clock Time:    0.254206 s
+Real-Time Factor:   1.18015
+Avg Step Time:      0.847353 ms/step
 Final Contacts:     180
 Final Contact Cap Hit: false
 Final Contact Pairs: 90
@@ -232,9 +230,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    0.119167 s
-Real-Time Factor:   2.51747
-Avg Step Time:      0.397224 ms/step
+Wall-Clock Time:    1.38653 s
+Real-Time Factor:   0.216367
+Avg Step Time:      4.62178 ms/step
 Final Contacts:     180
 Final Contact Cap Hit: false
 Final Contact Pairs: 90
@@ -262,25 +260,25 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    0.288954 s
-Real-Time Factor:   1.03823
-Avg Step Time:      0.963179 ms/step
+Wall-Clock Time:    0.616232 s
+Real-Time Factor:   0.486829
+Avg Step Time:      2.05411 ms/step
 Final Contacts:     210
 Final Contact Cap Hit: false
 Final Contact Pairs: 90
 Final Over Sleep Tol: 0
 Final Zero Normals:  0
-Final Max Penetration: 1.02447e-05
-Final Resting:      55 / 90 mobile skeletons
-Final Candidates:   55 / 90 mobile skeletons
+Final Max Penetration: 9.99123e-06
+Final Resting:      56 / 90 mobile skeletons
+Final Candidates:   56 / 90 mobile skeletons
 Final Islanded:     90 / 90 mobile skeletons
 Final Disturbed:    0 / 90 mobile skeletons
-Final Max Smoothed Linear Speed: 0.000431333
-Final Max Smoothed Angular Speed: 0.000687998
+Final Max Smoothed Linear Speed: 8.76543e-05
+Final Max Smoothed Angular Speed: 0.000120772
 Final Max Rest Dwell Time: 0.5
 Final State Finite: true
-Final State Hash:   0xbeb495c1ab0d6ca6
-Final State Sums:   position_l1 1546.5 velocity_l1 0.000398081 body_translation_l1 1546.5 max_abs_velocity 7.38701e-05
+Final State Hash:   0xf78e3bd075780c83
+Final State Sums:   position_l1 1546.5 velocity_l1 0.000204603 body_translation_l1 1546.5 max_abs_velocity 2.62356e-05
 ```
 
 ### s5-90-ode
@@ -292,9 +290,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    0.00928899 s
-Real-Time Factor:   32.2963
-Avg Step Time:      0.0309633 ms/step
+Wall-Clock Time:    0.00665041 s
+Real-Time Factor:   45.11
+Avg Step Time:      0.022168 ms/step
 Final Contacts:     0
 Final Contact Cap Hit: false
 Final Contact Pairs: 0
@@ -322,9 +320,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    0.970996 s
-Real-Time Factor:   0.308961
-Avg Step Time:      3.23665 ms/step
+Wall-Clock Time:    7.70722 s
+Real-Time Factor:   0.0389245
+Avg Step Time:      25.6907 ms/step
 Final Contacts:     1800
 Final Contact Cap Hit: false
 Final Contact Pairs: 900
@@ -352,9 +350,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    1.19083 s
-Real-Time Factor:   0.251926
-Avg Step Time:      3.96942 ms/step
+Wall-Clock Time:    10.4133 s
+Real-Time Factor:   0.0288092
+Avg Step Time:      34.7111 ms/step
 Final Contacts:     1800
 Final Contact Cap Hit: false
 Final Contact Pairs: 900
@@ -382,25 +380,25 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    2.3225 s
-Real-Time Factor:   0.129171
-Avg Step Time:      7.74166 ms/step
-Final Contacts:     2364
+Wall-Clock Time:    9.22561 s
+Real-Time Factor:   0.0325182
+Avg Step Time:      30.752 ms/step
+Final Contacts:     2353
 Final Contact Cap Hit: false
 Final Contact Pairs: 900
-Final Over Sleep Tol: 22
+Final Over Sleep Tol: 26
 Final Zero Normals:  0
 Final Max Penetration: 0.011297
 Final Resting:      269 / 900 mobile skeletons
 Final Candidates:   269 / 900 mobile skeletons
 Final Islanded:     900 / 900 mobile skeletons
 Final Disturbed:    0 / 900 mobile skeletons
-Final Max Smoothed Linear Speed: 0.0911073
-Final Max Smoothed Angular Speed: 0.140862
+Final Max Smoothed Linear Speed: 0.0349737
+Final Max Smoothed Angular Speed: 0.0703123
 Final Max Rest Dwell Time: 0.5
 Final State Finite: true
-Final State Hash:   0x72bf270cdda36104
-Final State Sums:   position_l1 149115 velocity_l1 1.2992 body_translation_l1 149115 max_abs_velocity 0.173472
+Final State Hash:   0x2a5577952e2de925
+Final State Sums:   position_l1 149115 velocity_l1 0.685046 body_translation_l1 149115 max_abs_velocity 0.0667275
 ```
 
 ### s4-900-ode
@@ -412,9 +410,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    0.0951011 s
-Real-Time Factor:   3.15454
-Avg Step Time:      0.317004 ms/step
+Wall-Clock Time:    0.0954347 s
+Real-Time Factor:   3.14351
+Avg Step Time:      0.318116 ms/step
 Final Contacts:     0
 Final Contact Cap Hit: false
 Final Contact Pairs: 0
@@ -442,9 +440,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    4.28536 s
-Real-Time Factor:   0.0700057
-Avg Step Time:      14.2845 ms/step
+Wall-Clock Time:    29.8716 s
+Real-Time Factor:   0.010043
+Avg Step Time:      99.5719 ms/step
 Final Contacts:     6000
 Final Contact Cap Hit: false
 Final Contact Pairs: 3000
@@ -472,9 +470,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    5.24236 s
-Real-Time Factor:   0.0572262
-Avg Step Time:      17.4745 ms/step
+Wall-Clock Time:    40.1363 s
+Real-Time Factor:   0.00747453
+Avg Step Time:      133.788 ms/step
 Final Contacts:     6000
 Final Contact Cap Hit: false
 Final Contact Pairs: 3000
@@ -502,13 +500,13 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    9.2006 s
-Real-Time Factor:   0.0326066
-Avg Step Time:      30.6687 ms/step
-Final Contacts:     8695
+Wall-Clock Time:    21.6445 s
+Real-Time Factor:   0.0138603
+Avg Step Time:      72.1484 ms/step
+Final Contacts:     8633
 Final Contact Cap Hit: false
 Final Contact Pairs: 3000
-Final Over Sleep Tol: 2256
+Final Over Sleep Tol: 2252
 Final Zero Normals:  0
 Final Max Penetration: 0.439973
 Final Resting:      635 / 3000 mobile skeletons
@@ -519,8 +517,8 @@ Final Max Smoothed Linear Speed: 2.90376
 Final Max Smoothed Angular Speed: 0.884198
 Final Max Rest Dwell Time: 0.5
 Final State Finite: true
-Final State Hash:   0xb18a18cf6549222a
-Final State Sums:   position_l1 1.65194e+06 velocity_l1 848.353 body_translation_l1 1.65193e+06 max_abs_velocity 2.943
+Final State Hash:   0xd49e015847f0a8f
+Final State Sums:   position_l1 1.65194e+06 velocity_l1 819.95 body_translation_l1 1.65193e+06 max_abs_velocity 2.943
 ```
 
 ### g3000-ode
@@ -532,9 +530,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    0.302323 s
-Real-Time Factor:   0.992317
-Avg Step Time:      1.00774 ms/step
+Wall-Clock Time:    0.580585 s
+Real-Time Factor:   0.51672
+Avg Step Time:      1.93528 ms/step
 Final Contacts:     0
 Final Contact Cap Hit: false
 Final Contact Pairs: 0
@@ -562,9 +560,9 @@ World Time Before:  0 s
 World Time After:   3 s
 Frame Delta:        3000 / 3000
 Time Advanced:      true
-Wall-Clock Time:    0.128482 s
-Real-Time Factor:   23.3495
-Avg Step Time:      0.0428275 ms/step
+Wall-Clock Time:    0.422625 s
+Real-Time Factor:   7.0985
+Avg Step Time:      0.140875 ms/step
 Final Contacts:     0
 Final Contact Cap Hit: false
 Final Contact Pairs: 0
@@ -592,9 +590,9 @@ World Time Before:  0 s
 World Time After:   3 s
 Frame Delta:        3000 / 3000
 Time Advanced:      true
-Wall-Clock Time:    0.126451 s
-Real-Time Factor:   23.7246
-Avg Step Time:      0.0421503 ms/step
+Wall-Clock Time:    0.444688 s
+Real-Time Factor:   6.74631
+Avg Step Time:      0.148229 ms/step
 Final Contacts:     0
 Final Contact Cap Hit: false
 Final Contact Pairs: 0
@@ -622,9 +620,9 @@ World Time Before:  0 s
 World Time After:   3 s
 Frame Delta:        3000 / 3000
 Time Advanced:      true
-Wall-Clock Time:    1.20477 s
-Real-Time Factor:   2.4901
-Avg Step Time:      0.401591 ms/step
+Wall-Clock Time:    0.71217 s
+Real-Time Factor:   4.21248
+Avg Step Time:      0.23739 ms/step
 Final Contacts:     0
 Final Contact Cap Hit: false
 Final Contact Pairs: 0
@@ -652,9 +650,9 @@ World Time Before:  0 s
 World Time After:   3 s
 Frame Delta:        3000 / 3000
 Time Advanced:      true
-Wall-Clock Time:    0.289345 s
-Real-Time Factor:   10.3682
-Avg Step Time:      0.0964485 ms/step
+Wall-Clock Time:    0.703499 s
+Real-Time Factor:   4.2644
+Avg Step Time:      0.2345 ms/step
 Final Contacts:     0
 Final Contact Cap Hit: false
 Final Contact Pairs: 0
@@ -682,9 +680,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    2.86119 s
-Real-Time Factor:   0.104852
-Avg Step Time:      9.53728 ms/step
+Wall-Clock Time:    24.4713 s
+Real-Time Factor:   0.0122593
+Avg Step Time:      81.571 ms/step
 Final Contacts:     5005
 Final Contact Cap Hit: false
 Final Contact Pairs: 3003
@@ -712,9 +710,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    4.6217 s
-Real-Time Factor:   0.0649112
-Avg Step Time:      15.4057 ms/step
+Wall-Clock Time:    25.3179 s
+Real-Time Factor:   0.0118493
+Avg Step Time:      84.3931 ms/step
 Final Contacts:     3003
 Final Contact Cap Hit: false
 Final Contact Pairs: 3003
@@ -742,9 +740,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    23.7785 s
-Real-Time Factor:   0.0126165
-Avg Step Time:      79.2616 ms/step
+Wall-Clock Time:    13.152 s
+Real-Time Factor:   0.0228102
+Avg Step Time:      43.84 ms/step
 Final Contacts:     5005
 Final Contact Cap Hit: false
 Final Contact Pairs: 3003
@@ -759,8 +757,8 @@ Final Max Smoothed Linear Speed: 0
 Final Max Smoothed Angular Speed: 0
 Final Max Rest Dwell Time: 0
 Final State Finite: true
-Final State Hash:   0xabf3edd146317478
-Final State Sums:   position_l1 0.000543199 velocity_l1 0.00443988 body_translation_l1 1.13175e+06 max_abs_velocity 2.90666e-06
+Final State Hash:   0x22e27960cbabe83e
+Final State Sums:   position_l1 0.000543338 velocity_l1 0.00443988 body_translation_l1 1.13175e+06 max_abs_velocity 2.90666e-06
 ```
 
 ### s3-3kactive-ode
@@ -772,9 +770,9 @@ World Time Before:  0 s
 World Time After:   0.3 s
 Frame Delta:        300 / 300
 Time Advanced:      true
-Wall-Clock Time:    146.076 s
-Real-Time Factor:   0.00205372
-Avg Step Time:      486.921 ms/step
+Wall-Clock Time:    62.0369 s
+Real-Time Factor:   0.00483583
+Avg Step Time:      206.79 ms/step
 Final Contacts:     9009
 Final Contact Cap Hit: false
 Final Contact Pairs: 3003

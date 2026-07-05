@@ -17,15 +17,17 @@ and turn FCL/Bullet/ODE optional - exactly what DART 7 did (PLAN-035, PRs #2652
 /#2688/#2700). Goal for 6.20: native default that is **gz-compatible**, **feature-
 complete**, and **evidence-driven faster** than Bullet/ODE/FCL.
 
-## Current evidence refresh (2026-07-03)
+## Current evidence refresh (2026-07-05)
 
 Refs checked:
 
-- `origin/release-6.20` and this planning branch: `849f22245b7ef11299fa73074c77d6c50b8dda01`.
-- `origin/main`: `c0419111df6e0260169867526dcbccce04353e09`.
+- `origin/release-6.20`: `949a9c2ff5ed6309beef0aa1345101d36c813f02`.
+- This phase-0 packet branch after the base merge: `1e6a8332a730a994450c14ee8a780780c5e069bb`.
+- `origin/main`: `5c75381f79a0431909f8c1b0a04fca1fbaa256ed`.
 - Related remote heads: `feature/native-occupancy-grid`,
-  `task/native-collision-performance-exec`, `docs/dart6-performance-dashboard`,
-  `backport/2490-to-release-6.20`, `fix/gz-physics-joint-detach-6.20`.
+  `feature/native-collision-core`, `task/native-collision-performance-exec`,
+  `docs/dart6-performance-dashboard`, `backport/2490-to-release-6.20`,
+  `fix/gz-physics-joint-detach-6.20`.
 
 Live conclusion:
 
@@ -226,7 +228,8 @@ Success means **both**:
 2. ~~Unblock/merge #3209 and #3230~~ — **done** (both merged by 2026-07-03,
    along with #3226/#3227/#3229/#3234).
 3. ~~Re-run the local A/B command above at larger scale~~ — **done
-   2026-07-04** (canonical guard-scene protocol from
+   2026-07-04; recaptured 2026-07-05 after the base moved** (canonical
+   guard-scene protocol from
    `../dart6_performance_generalization/01-baseline-evidence.md`,
    cross-referenced against the perf lane's WP-PG.01 packet #3263 instead
    of duplicating its cells).

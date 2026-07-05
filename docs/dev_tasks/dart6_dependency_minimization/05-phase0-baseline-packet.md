@@ -8,11 +8,12 @@
 
 ## Capture context
 
-- Captured 2026-07-04 (UTC) on `origin/release-6.20` =
-  `b5b2a5bee7740ce35f9ee64a598528a9cdd42833` (binaries built at this SHA,
+- Captured 2026-07-05 (UTC) on this PR branch head =
+  `1e6a8332a730a994450c14ee8a780780c5e069bb` after merging `origin/release-6.20` =
+  `949a9c2ff5ed6309beef0aa1345101d36c813f02` (binaries built at the branch head,
   Release, `--parallel 8` capped build, fresh configure).
 - `origin/main` (DART 7 reference) =
-  `dbe6fcccb1c2d42eb6827188cf3d523f0a732285`.
+  `5c75381f79a0431909f8c1b0a04fca1fbaa256ed`.
 - Host: 13th Gen Intel Core i9-13950HX, 32 CPUs, `powersave` governor
   (CPU scaling enabled — RTF cells carry noise; hash/contact/resting
   cells do not). Toolchain: pixi 0.72.0 default env, GCC 15.2.0.
@@ -28,8 +29,10 @@
   [05-artifacts.md](05-artifacts.md) carries the host metadata, every
   row's raw final summary, the capture driver, the tolerance analyzer,
   and SHA-256 digests of the 17 JSONL scene dumps. The full dumps stay
-  local under `.omc/artifacts/native-collision-phase0/` (git-ignored);
-  the digests pin the exact artifacts for the phase-6 comparison.
+  local under `.omc/artifacts/native-collision-phase0-1e6a8332a730/`
+  (git-ignored); the digests pin the exact artifacts for the phase-6
+  comparison. The driver default remains
+  `.omc/artifacts/native-collision-phase0/` for future recaptures.
 
 ## Row matrix
 
@@ -52,42 +55,47 @@ Command shapes (`CB=./build/default/cpp/Release/bin/contact_benchmark`,
 
 | Row | RTF | Avg step (ms) | Contacts (cap hit) | Pairs | Resting | Max pen (m) | Finite | Hash |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
-| g120-default | 1.068 | 0.936 | 240 (false) | 120 | 60/120 | 7.5e-04 | true | `0xe0fe5d6773190ca1` |
-| g120-dart | 2.662 | 0.376 | 240 (false) | 120 | 80/120 | 1.0e-03 | true | `0xbd8a15e877f70822` |
-| g120-fcl | 1.540 | 0.649 | 240 (false) | 120 | 60/120 | 7.5e-04 | true | `0xe0fe5d6773190ca1` |
-| g120-bullet | 0.532 | 1.879 | 268 (false) | 120 | 76/120 | 9.8e-06 | true | `0x55069b7f62a734e6` |
-| g120-ode | 19.159 | 0.052 | 0 (false) | 0 | 120/120 | 0 | true | `0xe52ba4524e3c5db2` |
-| S5-90-dart | 1.462 | 0.684 | 180 (false) | 90 | 60/90 | 1.0e-03 | true | `0x726d1ff51bdb717` |
-| S5-90-fcl | 2.517 | 0.397 | 180 (false) | 90 | 45/90 | 7.6e-04 | true | `0x99bfaef49c254203` |
-| S5-90-bullet | 1.038 | 0.963 | 210 (false) | 90 | 55/90 | 1.0e-05 | true | `0xbeb495c1ab0d6ca6` |
-| S5-90-ode | 32.296 | 0.031 | 0 (false) | 0 | 90/90 | 0 | true | `0x5f2afc7230ee8d10` |
-| S4-900-dart | 0.309 | 3.237 | 1800 (false) | 900 | 600/900 | 1.0e-03 | true | `0x76205ad68f4293bb` |
-| S4-900-fcl | 0.252 | 3.969 | 1800 (false) | 900 | 450/900 | 9.8e-04 | true | `0x7a0974e837912472` |
-| S4-900-bullet | 0.129 | 7.742 | 2364 (false) | 900 | 269/900 | 1.1e-02 | true | `0x72bf270cdda36104` |
-| S4-900-ode | 3.155 | 0.317 | 0 (false) | 0 | 900/900 | 0 | true | `0x429b65bc5c4a14b6` |
-| g3000-dart | 0.070 | 14.28 | 6000 (false) | 3000 | 2000/3000 | 1.1e-03 | true | `0x48680325dda0fd3f` |
-| g3000-fcl | 0.057 | 17.47 | 6000 (false) | 3000 | 1500/3000 | 1.0e-03 | true | `0xe1873605e7be1a9` |
-| g3000-bullet | 0.033 | 30.67 | 8695 (false) | 3000 | 635/3000 | 4.4e-01 | true | `0xb18a18cf6549222a` |
-| g3000-ode | 0.992 | 1.008 | 0 (false) | 0 | 3000/3000 | 0 | true | `0x559483fad1bd256f` |
-| S2-3k-dart | 23.35 | 0.043 | 0 (false) | 0 | 3003/3003 | 0 | true | `0x8ddc9a81f2d28a7f` |
-| S2-3k-fcl | 23.72 | 0.042 | 0 (false) | 0 | 3003/3003 | 0 | true | `0x266da31836a314a6` |
-| S2-3k-bullet | 2.490 | 0.402 | 0 (false) | 0 | 3003/3003 | 0 | true | `0x2375f1927218cd43` |
-| S2-3k-ode | 10.37 | 0.096 | 0 (false) | 0 | 3003/3003 | 0 | true | `0x10f80b0408cede90` |
-| S3-3k-dart | 0.105 | 9.54 | 5005 (false) | 3003 | 0/3003 | 9.3e-09 | true | `0xcf0ba6eaa97be038` |
-| S3-3k-fcl | 0.065 | 15.41 | 3003 (false) | 3003 | 0/3003 | 9.3e-09 | true | `0x6088ea0177efa6a` |
-| S3-3k-bullet | 0.013 | 79.26 | 5005 (false) | 3003 | 0/3003 | 3.0e-07 | true | `0xabf3edd146317478` |
-| S3-3k-ode | 0.002 | 486.9 | 9009 (false) | 3003 | 0/3003 | 9.3e-09 | true | `0x4904c09a93a36442` |
+| g120-default | 0.2093 | 4.778 | 240 (false) | 120 | 60/120 | 7.52e-04 | true | `0xe0fe5d6773190ca1` |
+| g120-dart | 0.4853 | 2.061 | 240 (false) | 120 | 80/120 | 1.00e-03 | true | `0xbd8a15e877f70822` |
+| g120-fcl | 0.5349 | 1.87 | 240 (false) | 120 | 60/120 | 7.52e-04 | true | `0xe0fe5d6773190ca1` |
+| g120-bullet | 0.4895 | 2.043 | 268 (false) | 120 | 78/120 | 9.99e-06 | true | `0x3508439b0c95d6be` |
+| g120-ode | 11.34 | 0.08815 | 0 (false) | 0 | 120/120 | 0 | true | `0xe52ba4524e3c5db2` |
+| S5-90-dart | 1.18 | 0.8474 | 180 (false) | 90 | 60/90 | 1.00e-03 | true | `0x726d1ff51bdb717` |
+| S5-90-fcl | 0.2164 | 4.622 | 180 (false) | 90 | 45/90 | 7.59e-04 | true | `0x99bfaef49c254203` |
+| S5-90-bullet | 0.4868 | 2.054 | 210 (false) | 90 | 56/90 | 9.99e-06 | true | `0xf78e3bd075780c83` |
+| S5-90-ode | 45.11 | 0.02217 | 0 (false) | 0 | 90/90 | 0 | true | `0x5f2afc7230ee8d10` |
+| S4-900-dart | 0.03892 | 25.69 | 1800 (false) | 900 | 600/900 | 1.05e-03 | true | `0x76205ad68f4293bb` |
+| S4-900-fcl | 0.02881 | 34.71 | 1800 (false) | 900 | 450/900 | 9.76e-04 | true | `0x7a0974e837912472` |
+| S4-900-bullet | 0.03252 | 30.75 | 2353 (false) | 900 | 269/900 | 0.0113 | true | `0x2a5577952e2de925` |
+| S4-900-ode | 3.144 | 0.3181 | 0 (false) | 0 | 900/900 | 0 | true | `0x429b65bc5c4a14b6` |
+| g3000-dart | 0.01004 | 99.57 | 6000 (false) | 3000 | 2000/3000 | 1.06e-03 | true | `0x48680325dda0fd3f` |
+| g3000-fcl | 7.47e-03 | 133.8 | 6000 (false) | 3000 | 1500/3000 | 1.04e-03 | true | `0xe1873605e7be1a9` |
+| g3000-bullet | 0.01386 | 72.15 | 8633 (false) | 3000 | 635/3000 | 0.44 | true | `0xd49e015847f0a8f` |
+| g3000-ode | 0.5167 | 1.935 | 0 (false) | 0 | 3000/3000 | 0 | true | `0x559483fad1bd256f` |
+| S2-3k-dart | 7.098 | 0.1409 | 0 (false) | 0 | 3003/3003 | 0 | true | `0x8ddc9a81f2d28a7f` |
+| S2-3k-fcl | 6.746 | 0.1482 | 0 (false) | 0 | 3003/3003 | 0 | true | `0x266da31836a314a6` |
+| S2-3k-bullet | 4.212 | 0.2374 | 0 (false) | 0 | 3003/3003 | 0 | true | `0x2375f1927218cd43` |
+| S2-3k-ode | 4.264 | 0.2345 | 0 (false) | 0 | 3003/3003 | 0 | true | `0x10f80b0408cede90` |
+| S3-3k-dart | 0.01226 | 81.57 | 5005 (false) | 3003 | 0/3003 | 9.32e-09 | true | `0xcf0ba6eaa97be038` |
+| S3-3k-fcl | 0.01185 | 84.39 | 3003 (false) | 3003 | 0/3003 | 9.32e-09 | true | `0x6088ea0177efa6a` |
+| S3-3k-bullet | 0.02281 | 43.84 | 5005 (false) | 3003 | 0/3003 | 2.98e-07 | true | `0x22e27960cbabe83e` |
+| S3-3k-ode | 4.84e-03 | 206.8 | 9009 (false) | 3003 | 0/3003 | 9.32e-09 | true | `0x4904c09a93a36442` |
 
 ## Validity cross-checks
 
+- **Recaptured on branch tip:** the table above was regenerated after
+  merging the latest `origin/release-6.20` (949a9c2ff5ed) into this PR
+  branch and rebuilding the benchmark binary at `1e6a8332a730`. This
+  supersedes the earlier 2026-07-04 `b5b2a5bee77` capture for any
+  phase-6 comparison.
 - **Determinism (run-to-run):** g120-fcl and g120-dart re-runs at the
-  same binary reproduce their hashes bit-exactly.
-- **Determinism (cross-SHA):** the S4 (all four detectors) and S5-dart
-  hashes match the perf lane's WP-PG.01 cells (PR #3263, captured at
-  `5bee91ad6be`) bit-for-bit — the intervening docs + `pixi.lock`
-  commits did not perturb numerics. RTF cells differ between the two
-  packets (governor noise); hash/contact/resting cells are the
-  determinism reference, per the shared protocol.
+  same binary reproduce their hashes bit-exactly (`0xe0fe5d6773190ca1`,
+  `0xbd8a15e877f70822`).
+- **Determinism (cross-SHA):** S4/S5 dart, FCL, and ODE hashes still
+  match the perf lane's WP-PG.01 cells (PR #3263, captured at
+  `5bee91ad6be`) bit-for-bit. Bullet's generated-scene hashes changed
+  after the release-branch solver/resting fixes, so this recaptured
+  packet is the current Bullet baseline for this lane.
 - **`default` ≡ `fcl`:** identical hash and a scene-dump delta of
   exactly zero on g120 — consistent with `FCLCollisionDetector::create()`
   in both `ConstraintSolver` constructors
@@ -99,19 +107,19 @@ Per-mobile-shape final-position distance and resting-flag mismatches:
 
 | Scene | Detector | mean (m) | p95 (m) | max (m) | resting mismatch |
 | --- | --- | ---: | ---: | ---: | ---: |
-| g120 | default | 0 | 0 | 0 | 0 |
-| g120 | dart | 1.1e-05 | 3.9e-05 | 2.5e-04 | 20/120 |
-| g120 | bullet | 2.3e-04 | 7.1e-04 | 7.5e-04 | 60/120 |
-| g120 | ode | 2.3e-04 | 7.1e-04 | 7.5e-04 | 60/120 |
-| S4-900 | dart | 7.4e-06 | 2.8e-05 | 3.6e-04 | 150/900 |
-| S4-900 | bullet | 2.6e-04 | 7.1e-04 | 1.1e-02 | 397/900 |
-| S4-900 | ode | 2.3e-04 | 7.1e-04 | 9.7e-04 | 450/900 |
-| g3000 | dart | 7.4e-06 | 3.1e-05 | 3.6e-04 | 500/3000 |
-| g3000 | bullet | 4.1e-02 | 4.4e-01 | 4.4e-01 | 1313/3000 |
-| g3000 | ode | 2.4e-04 | 7.1e-04 | 1.0e-03 | 1500/3000 |
-| S2-3k | dart | 8.2e-12 | 2.5e-11 | 2.5e-11 | 0 |
-| S2-3k | bullet | 1.8e-06 | 3.4e-06 | 3.4e-06 | 0 |
-| S2-3k | ode | 8.2e-12 | 2.5e-11 | 2.5e-11 | 0 |
+| g120 | default | 0 | 0 | 0 | 0/120 |
+| g120 | dart | 1.13e-05 | 3.90e-05 | 2.53e-04 | 20/120 |
+| g120 | bullet | 2.33e-04 | 7.08e-04 | 7.49e-04 | 62/120 |
+| g120 | ode | 2.33e-04 | 7.09e-04 | 7.50e-04 | 60/120 |
+| S4-900 | dart | 7.44e-06 | 2.85e-05 | 3.60e-04 | 150/900 |
+| S4-900 | bullet | 2.63e-04 | 7.07e-04 | 0.0106 | 397/900 |
+| S4-900 | ode | 2.34e-04 | 7.08e-04 | 9.73e-04 | 450/900 |
+| g3000 | dart | 7.45e-06 | 3.12e-05 | 3.64e-04 | 500/3000 |
+| g3000 | bullet | 0.04034 | 0.4429 | 0.4429 | 1313/3000 |
+| g3000 | ode | 2.35e-04 | 7.12e-04 | 1.05e-03 | 1500/3000 |
+| S2-3k | dart | 8.18e-12 | 2.45e-11 | 2.45e-11 | 0/3003 |
+| S2-3k | bullet | 1.84e-06 | 3.43e-06 | 3.43e-06 | 0/3003 |
+| S2-3k | ode | 8.18e-12 | 2.45e-11 | 2.45e-11 | 0/3003 |
 
 Readings:
 
@@ -145,7 +153,7 @@ Readings:
 ## Verdict
 
 **Native default: NOT allowed at this tip.** No native engine exists on
-`release-6.20` (`dart/collision/native/` absent; the in-tree `dart`
+this phase-0 branch (`dart/collision/native/` absent; the in-tree `dart`
 detector is the old limited narrowphase-only detector). FCL remains the
 default. This is the expected phase-0 outcome; the packet's purpose is
 the envelope below.
@@ -153,10 +161,10 @@ the envelope below.
 **Acceptance envelope for the phase-6 default flip** (all against this
 packet's rows, re-captured on the flip PR's parent for drift control):
 
-1. Performance: native RTF ≥ FCL on every row above, and ≥ the in-tree
-   `dart` detector on the active rows where it currently leads (g120,
-   S4-900, g3000, S3 — every active row except S5-90, where FCL leads) —
-   speed-only wins that alter contact/resting profiles are rejected.
+1. Performance: native RTF ≥ FCL on every row above, and ≥ the stronger
+   in-tree incumbent (`fcl` or `dart`) for each generated/active row in
+   the same recapture — speed-only wins that alter contact/resting
+   profiles are rejected.
 2. Correctness: finite state and no cap hit on every row; run-to-run
    hash determinism; position drift vs FCL within the `dart` detector's
    demonstrated band (≤ 1e-3 m max on active scenes, ≤ 1e-5 m settled);
