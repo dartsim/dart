@@ -571,6 +571,9 @@ from the `gh-pages` branch:
 - `/community-signals/` is updated by `.github/workflows/community_signals.yml`.
 - Historical `/v6.*` Doxygen snapshots live on the same branch.
 
+Community Signals refreshes weekly, on manual dispatch, and when files that own
+the dashboard change. It does not run for unrelated commits to `main`.
+
 The `gh-pages` branch is the storage surface, but deployment is owned by
 `.github/workflows/pages_deploy.yml`: after the Community Signals or
 Performance Dashboard publisher completes successfully, it checks out the

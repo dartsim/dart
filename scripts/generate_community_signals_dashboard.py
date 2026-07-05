@@ -136,6 +136,12 @@ def _sum_conda_downloads(package: str) -> tuple[int | None, str | None]:
     return sum(int(file.get("ndownloads") or 0) for file in files), None
 
 
+def _complete_sum(values: dict[str, int | None]) -> int | None:
+    if any(value is None for value in values.values()):
+        return None
+    return sum(int(value) for value in values.values())
+
+
 def _nested(data: dict[str, Any] | None, path: tuple[str, ...]) -> Any | None:
     current: Any = data
     for key in path:
@@ -463,7 +469,7 @@ def collect() -> dict[str, Any]:
             >= since_dt
         )
 
-    conda_combined = sum(value or 0 for value in conda_downloads.values())
+    conda_combined = _complete_sum(conda_downloads)
     crossref_count = _nested(crossref, ("message", "is-referenced-by-count"))
     openalex_count = _nested(openalex, ("cited_by_count",))
     semantic_scholar_count = _nested(semanticscholar, ("citationCount",))
@@ -710,6 +716,39 @@ def render_html(data: dict[str, Any]) -> str:
             f"{gazebo['dartsim_plugin_files']} plugin source files"
         )
     gazebo_note = "; ".join(gazebo_note_parts) or "source checks unavailable"
+    conda = packages["conda"]
+    conda_dartsim = conda.get("dartsim")
+    conda_combined = conda.get("combined_gross")
+    package_value = (
+        f"{_compact(conda_dartsim)} conda dartsim"
+        if conda_dartsim is not None
+        else "conda unavailable"
+    )
+    conda_gross_note = (
+        f"{_compact(conda_combined)} gross conda artifacts"
+        if conda_combined is not None
+        else "gross conda artifact total unavailable"
+    )
+    package_note = (
+        f"{conda_gross_note}; "
+        f"{_compact(packages['pepy_dartpy_all_time'])} PePy dartpy; "
+        f"{_compact(packages['homebrew_installs_365d'])} Homebrew installs/year"
+    )
+    headline_signals = []
+    if conda_combined is not None:
+        headline_signals.append(
+            f"{_compact(conda_combined)} gross conda artifact downloads"
+        )
+    elif conda_dartsim is not None:
+        headline_signals.append(f"{_compact(conda_dartsim)} conda dartsim downloads")
+    if packages["pepy_dartpy_all_time"] is not None:
+        headline_signals.append(
+            f"{_compact(packages['pepy_dartpy_all_time'])} dartpy downloads"
+        )
+    if google_scholar is not None:
+        headline_signals.append(f"{_number(google_scholar)} Google Scholar citations")
+    headline_signals.append("a public Gazebo dependency path")
+    headline_text = "; ".join(headline_signals)
 
     cards = "\n".join(
         [
@@ -743,10 +782,8 @@ def render_html(data: dict[str, Any]) -> str:
             ),
             _card(
                 "Package reach",
-                f"{_compact(packages['conda']['dartsim'])} conda dartsim",
-                f"{_compact(packages['conda']['combined_gross'])} gross conda artifacts; "
-                f"{_compact(packages['pepy_dartpy_all_time'])} PePy dartpy; "
-                f"{_compact(packages['homebrew_installs_365d'])} Homebrew installs/year",
+                package_value,
+                package_note,
                 [
                     (sources["anaconda_dartsim"], "conda"),
                     (sources["pepy_dartpy"], "PePy"),
@@ -976,10 +1013,7 @@ def render_html(data: dict[str, Any]) -> str:
     <section class="summary-band" aria-label="Interpretation">
       <p class="callout">
         <strong>Readable headline:</strong> DART shows active maintenance and
-        broad public reach: {_compact(packages['conda']['combined_gross'])}
-        gross conda artifact downloads, {_compact(packages['pepy_dartpy_all_time'])}
-        dartpy downloads, {_number(google_scholar)} Google Scholar citations,
-        and a public Gazebo dependency path.
+        broad public reach: {html.escape(headline_text)}.
       </p>
       <p class="callout boundary">
         <strong>Boundary:</strong> these are usage and activity signals, not a
