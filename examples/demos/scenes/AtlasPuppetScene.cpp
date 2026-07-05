@@ -485,9 +485,18 @@ public:
   bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
+    if (ea.getHandled())
+      return false;
+
     const bool down = ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN;
     const bool up = ea.getEventType() == ::osgGA::GUIEventAdapter::KEYUP;
     if (!down && !up)
+      return false;
+
+    // Don't let typing in an ImGui field (e.g. the host's "Search demos..."
+    // box) walk or rotate the puppet -- osgGA delivers key events to every
+    // handler regardless of ImGui focus.
+    if (ImGui::GetIO().WantCaptureKeyboard)
       return false;
 
     if (ea.getKey() == 'r') {
@@ -645,7 +654,7 @@ DemoScene makeAtlasPuppetScene()
         ::osg::Vec3d(0.00, 0.00, 1.00),
         ::osg::Vec3d(-0.20, -0.08, 0.98)};
 
-    setup.onActivate = [state, atlas, world](DemoHostContext& ctx) {
+    setup.onActivate = [state, atlas](DemoHostContext& ctx) {
       auto* viewer = ctx.viewer();
       state->log = [ctx](const std::string& message) {
         ctx.log(message);

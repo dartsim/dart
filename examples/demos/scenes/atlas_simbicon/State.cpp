@@ -97,7 +97,14 @@ State::State(dart::dynamics::SkeletonPtr skeleton, const std::string& name)
 }
 
 //==============================================================================
-State::~State() {}
+State::~State()
+{
+  // The TerminalCondition is allocated with `new` in Controller's state-machine
+  // builders and handed to this State via setTerminalCondition; nothing else in
+  // the chain owns it, so delete it here (it would otherwise leak on every
+  // atlas_simbicon activation and Rebuild/Reset).
+  delete mTerminalCondition;
+}
 
 //==============================================================================
 void State::setName(std::string& name)

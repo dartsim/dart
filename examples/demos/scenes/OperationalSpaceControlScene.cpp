@@ -151,6 +151,9 @@ public:
   bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
+    if (ea.getHandled())
+      return false;
+
     int axis = -1;
     switch (ea.getKey()) {
       case '1':
@@ -165,6 +168,12 @@ public:
       default:
         return false;
     }
+
+    // Don't let typing 1/2/3 in an ImGui field (e.g. the host's "Search
+    // demos..." box) constrain the drag axis -- osgGA delivers key events to
+    // every handler regardless of ImGui focus.
+    if (ImGui::GetIO().WantCaptureKeyboard)
+      return false;
 
     if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
       mState->constrained[axis] = true;

@@ -133,7 +133,15 @@ struct AtlasSimbiconState
 void pushAtlas(
     AtlasSimbiconState& state, double fx, double fz, double force, int frames)
 {
-  state.externalForce = Eigen::Vector3d(fx * force, 0.0, fz * force);
+  // Merge semantics matching the original push helpers (pushForwardAtlas wrote
+  // .x() only, pushLeftAtlas wrote .z() only): each push updates only its own
+  // axis component, so two pushes on different axes within the shared force
+  // window combine into a diagonal force instead of the later push zeroing the
+  // earlier push's axis.
+  if (fx != 0.0)
+    state.externalForce.x() = fx * force;
+  if (fz != 0.0)
+    state.externalForce.z() = fz * force;
   state.forceDuration = frames;
 }
 
@@ -224,6 +232,21 @@ DemoScene makeAtlasSimbiconScene()
       state->worldNode = ctx.worldNode();
       state->viewer = ctx.viewer();
       showShadow(state->worldNode, state->viewer);
+
+      // The Depth-mode and Headlights checkboxes drive viewer-global state
+      // that nothing else in the host resets, so capture the viewer's current
+      // camera mode + headlights and restore exactly those on teardown -- a
+      // scene switch must never leave the whole app stuck in depth mode or
+      // unlit. Also resync the Depth-mode checkbox from the viewer's actual
+      // state so a revisit never shows a desynced control.
+      auto* viewer = state->viewer;
+      const auto priorCameraMode = viewer->getCameraMode();
+      const bool priorHeadlights = viewer->checkHeadlights();
+      state->depthMode = priorCameraMode == dart::gui::osg::CameraMode::DEPTH;
+      ctx.addTeardown([viewer, priorCameraMode, priorHeadlights] {
+        viewer->setCameraMode(priorCameraMode);
+        viewer->switchHeadlights(priorHeadlights);
+      });
     };
 
     setup.keyActions.push_back(KeyAction{'a', "Push forward", [state] {

@@ -1031,9 +1031,18 @@ public:
   bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
+    if (ea.getHandled())
+      return false;
+
     const bool down = ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN;
     const bool up = ea.getEventType() == ::osgGA::GUIEventAdapter::KEYUP;
     if (!down && !up)
+      return false;
+
+    // Don't let typing in an ImGui field (e.g. the host's "Search demos..."
+    // box) move the puppet -- osgGA delivers key events to every handler
+    // regardless of ImGui focus.
+    if (ImGui::GetIO().WantCaptureKeyboard)
       return false;
 
     if (ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Shift_L) {

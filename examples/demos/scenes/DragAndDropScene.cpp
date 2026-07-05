@@ -61,12 +61,14 @@ using dart::dynamics::SimpleFramePtr;
 
 //==============================================================================
 SimpleFramePtr createAxisMarker(
-    const Eigen::Vector3d& position, const Eigen::Vector3d& color)
+    const std::string& name,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& color)
 {
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = position;
 
-  auto marker = std::make_shared<SimpleFrame>(Frame::World(), "marker", tf);
+  auto marker = std::make_shared<SimpleFrame>(Frame::World(), name, tf);
   marker->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2)));
   marker->getVisualAspect(true)->setColor(color);
   return marker;
@@ -101,24 +103,29 @@ DemoScene makeDragAndDropScene()
     world->addSimpleFrame(draggable);
 
     world->addSimpleFrame(createAxisMarker(
-        Eigen::Vector3d(8.0, 0.0, 0.0), Eigen::Vector3d(0.9, 0.0, 0.0)));
+        "X", Eigen::Vector3d(8.0, 0.0, 0.0), Eigen::Vector3d(0.9, 0.0, 0.0)));
     world->addSimpleFrame(createAxisMarker(
-        Eigen::Vector3d(0.0, 8.0, 0.0), Eigen::Vector3d(0.0, 0.9, 0.0)));
+        "Y", Eigen::Vector3d(0.0, 8.0, 0.0), Eigen::Vector3d(0.0, 0.9, 0.0)));
     world->addSimpleFrame(createAxisMarker(
-        Eigen::Vector3d(0.0, 0.0, 8.0), Eigen::Vector3d(0.0, 0.0, 0.9)));
+        "Z", Eigen::Vector3d(0.0, 0.0, 8.0), Eigen::Vector3d(0.0, 0.0, 0.9)));
 
     DemoSceneSetup setup;
     setup.world = world;
+    // The original uses a plain Viewer/WorldNode with no shadow technique.
+    setup.enableShadows = false;
     setup.cameraHome = CameraHome{
         ::osg::Vec3d(20.0, 17.0, 17.0),
         ::osg::Vec3d(0.0, 0.0, 0.0),
         ::osg::Vec3d(0.0, 0.0, 1.0)};
 
-    setup.onActivate = [frame, draggable](DemoHostContext& ctx) {
+    // The red box is a plain SimpleFrame free-drag -- the host's dragFrames
+    // path (SimpleFrameDnD) is the right tool for it. The InteractiveFrame's
+    // gizmo needs InteractiveFrameDnD, which onActivate registers below.
+    setup.dragFrames = {draggable};
+
+    setup.onActivate = [frame](DemoHostContext& ctx) {
       auto* viewer = ctx.viewer();
       if (auto* dnd = viewer->enableDragAndDrop(frame.get()))
-        ctx.addTeardown([viewer, dnd] { viewer->disableDragAndDrop(dnd); });
-      if (auto* dnd = viewer->enableDragAndDrop(draggable.get()))
         ctx.addTeardown([viewer, dnd] { viewer->disableDragAndDrop(dnd); });
     };
 

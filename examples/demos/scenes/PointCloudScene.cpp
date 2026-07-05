@@ -220,6 +220,19 @@ octomap::Pointcloud generatePointCloudOnRobot(
         static_cast<float>(eigenVertex.z()));
   }
 
+  // If the robot has no mesh-shaped visual shape nodes and the attempt cap is
+  // exhausted, fill the remainder with uniform in-box samples rather than
+  // returning a short cloud (see the file comment).
+  const Eigen::Vector3d boxMin = Eigen::Vector3d::Constant(-0.5);
+  const Eigen::Vector3d boxMax = Eigen::Vector3d::Constant(0.5);
+  while (pointCloud.size() < numPoints) {
+    const Eigen::Vector3d point = dart::math::Random::uniform(boxMin, boxMax);
+    pointCloud.push_back(
+        static_cast<float>(point.x()),
+        static_cast<float>(point.y()),
+        static_cast<float>(point.z()));
+  }
+
   return pointCloud;
 }
 
@@ -388,7 +401,7 @@ DemoScene makePointCloudScene()
         ::osg::Vec3d(0.00, 0.00, 0.30),
         ::osg::Vec3d(-0.24, -0.25, 0.94)};
 
-    setup.preStep = [state] {
+    setup.preStep = [state, world] {
       if (!state->update)
         return;
 
@@ -410,14 +423,16 @@ DemoScene makePointCloudScene()
           break;
       }
 
-      constexpr double dt = 0.001;
       constexpr double radius = 1.0;
       const Eigen::Vector3d center(0.0, 0.1, 0.0);
       Eigen::Vector3d sensorPos = center;
       sensorPos[0] = radius * std::sin(state->sensorOrbitTime);
       sensorPos[1] = radius * std::cos(state->sensorOrbitTime);
       sensorPos[2] = 0.5 + 0.25 * std::sin(state->sensorOrbitTime * 2.0);
-      state->sensorOrbitTime += dt;
+      // Advance by the live timestep (the host's Timestep control spans
+      // 1e-5..1e-2 s) rather than the original's hardcoded 0.001 s, so the
+      // orbit still paces at ~1 rad per simulated second across the range.
+      state->sensorOrbitTime += world->getTimeStep();
       state->sensorFrame->setTranslation(sensorPos);
 
       state->pointCloudShape->setPoints(pointCloud);

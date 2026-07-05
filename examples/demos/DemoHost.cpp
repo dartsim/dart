@@ -126,7 +126,16 @@ public:
   bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
+    if (ea.getHandled())
+      return false;
+
     if (ea.getEventType() != ::osgGA::GUIEventAdapter::KEYDOWN)
+      return false;
+
+    // Never let typing in an ImGui field (e.g. the always-visible "Search
+    // demos..." box) trigger a scene key action -- osgGA delivers key events
+    // to every handler regardless of ImGui focus.
+    if (ImGui::GetIO().WantCaptureKeyboard)
       return false;
 
     return mHost->handleKey(ea.getKey());

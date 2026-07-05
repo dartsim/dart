@@ -76,6 +76,7 @@ struct FetchState
 {
   dart::dynamics::BodyNode* mocap = nullptr;
   dart::dynamics::Frame* interactiveFrame = nullptr;
+  bool usedDefaultDetectorFallback = false;
 };
 
 } // namespace
@@ -99,8 +100,11 @@ DemoScene makeFetchScene()
 
     // The original unconditionally requires Bullet; use the same graceful,
     // string-keyed factory check as RigidShapesScene/AddDeleteSkelsScene
-    // instead (see the file comment).
-    if (dart::collision::CollisionDetector::getFactory()->canCreate("bullet")) {
+    // instead (see the file comment). Whether the fallback fired is logged to
+    // Diagnostics from onActivate below.
+    const bool bulletAvailable
+        = dart::collision::CollisionDetector::getFactory()->canCreate("bullet");
+    if (bulletAvailable) {
       world->getConstraintSolver()->setCollisionDetector(
           dart::collision::CollisionDetector::getFactory()->create("bullet"));
     }
@@ -150,6 +154,14 @@ DemoScene makeFetchScene()
       throw std::runtime_error(
           "pick_and_place.xml: missing skeleton 'robot0:mocap'");
 
+    // getConstraint(0) is an unchecked operator[]; guard the index so a
+    // parser/constraint-order change that yields no manual constraints fails
+    // the scene load gracefully instead of dereferencing out of bounds.
+    if (world->getConstraintSolver()->getNumConstraints() < 1)
+      throw std::runtime_error(
+          "pick_and_place.xml: expected a manual WeldJointConstraint but the "
+          "constraint solver reports none");
+
     auto weldJointConstraint
         = std::dynamic_pointer_cast<dart::constraint::WeldJointConstraint>(
             world->getConstraintSolver()->getConstraint(0));
@@ -172,6 +184,7 @@ DemoScene makeFetchScene()
     auto state = std::make_shared<FetchState>();
     state->mocap = mocap->getRootBodyNode();
     state->interactiveFrame = frame.get();
+    state->usedDefaultDetectorFallback = !bulletAvailable;
 
     DemoSceneSetup setup;
     setup.world = world;
@@ -187,7 +200,13 @@ DemoScene makeFetchScene()
           state->interactiveFrame->getTransform());
     };
 
-    setup.onActivate = [frame](DemoHostContext& ctx) {
+    setup.onActivate = [frame, state](DemoHostContext& ctx) {
+      if (state->usedDefaultDetectorFallback)
+        ctx.log(
+            "collision-bullet backend not built; falling back to DART's "
+            "default collision detector. Contact behavior may differ subtly "
+            "from the original's Bullet detector.");
+
       auto* viewer = ctx.viewer();
 
       auto* grid = new dart::gui::osg::GridVisual();
