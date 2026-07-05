@@ -1098,7 +1098,7 @@ world->addSkeleton(robot);
 auto model = dart::io::readSkeleton("path/to/model.sdf");
 ```
 
-> **Note:** DART 7 is removing legacy SKEL support instead of redesigning it as
+> **Note:** DART 7 removed legacy SKEL support instead of redesigning it as
 > YAML. Migrate existing SKEL assets to URDF, SDF, or MJCF; use a `release-6.*`
 > branch when compatibility with old SKEL assets is required.
 

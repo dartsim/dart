@@ -224,7 +224,6 @@ void defSimPartDeformableIo(nb::module_& m)
 
   nb::enum_<dart::io::ModelFormat>(m, "ModelFormat")
       .value("AUTO", dart::io::ModelFormat::Auto)
-      .value("SKEL", dart::io::ModelFormat::Skel)
       .value("SDF", dart::io::ModelFormat::Sdf)
       .value("URDF", dart::io::ModelFormat::Urdf)
       .value("MJCF", dart::io::ModelFormat::Mjcf);

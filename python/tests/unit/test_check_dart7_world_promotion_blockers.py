@@ -37,7 +37,7 @@ def test_current_repo_blockers_are_classified():
 def test_known_loader_reference_is_classified(tmp_path):
     module = _load_module()
     _write(
-        tmp_path / "dart" / "utils" / "skel_parser.cpp",
+        tmp_path / "dart" / "io" / "legacy_world_loader.cpp",
         """
 #include <dart/simulation/world.hpp>
 
@@ -323,7 +323,7 @@ def test_deleted_tracked_files_are_skipped(tmp_path):
 def test_strict_final_fails_on_classified_code_debt(tmp_path):
     module = _load_module()
     _write(
-        tmp_path / "dart" / "utils" / "skel_parser.cpp",
+        tmp_path / "dart" / "io" / "legacy_world_loader.cpp",
         """
 #include <dart/simulation/world.hpp>
 
