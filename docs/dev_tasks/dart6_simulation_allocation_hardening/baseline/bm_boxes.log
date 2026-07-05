@@ -1,0 +1,25 @@
+2026-07-05T02:49:54-07:00
+Running /home/js/dev/dartsim/dart/task_9-mem620/build/default/cpp/Release/bin/BM_INTEGRATION_boxes
+Run on (32 X 5300 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x16)
+  L1 Instruction 32 KiB (x16)
+  L2 Unified 2048 KiB (x16)
+  L3 Unified 36864 KiB (x1)
+Load Average: 21.85, 32.49, 34.23
+***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
+---------------------------------------------------------------
+Benchmark                     Time             CPU   Iterations
+---------------------------------------------------------------
+BM_RunBoxes/2_mean         49.3 ms         49.3 ms            5
+BM_RunBoxes/2_median       46.5 ms         46.5 ms            5
+BM_RunBoxes/2_stddev       7.29 ms         7.29 ms            5
+BM_RunBoxes/2_cv          14.78 %         14.78 %             5
+BM_RunBoxes/4_mean          881 ms          880 ms            5
+BM_RunBoxes/4_median        871 ms          870 ms            5
+BM_RunBoxes/4_stddev       44.6 ms         44.2 ms            5
+BM_RunBoxes/4_cv           5.06 %          5.03 %             5
+BM_RunBoxes/8_mean        10637 ms        10629 ms            5
+BM_RunBoxes/8_median      10721 ms        10714 ms            5
+BM_RunBoxes/8_stddev        272 ms          269 ms            5
+BM_RunBoxes/8_cv           2.56 %          2.53 %             5
