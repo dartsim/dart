@@ -1,0 +1,35 @@
+dart_add_test(
+  "unit"
+  UNIT_collision_native_aabb
+  test_aabb.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_native_types
+  test_types.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_native_shapes
+  test_shapes.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_native_box_box
+  test_box_box.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_native_gjk
+  test_gjk.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_native_gjk_degenerate
+  test_gjk_degenerate.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_native_sphere_sphere
+  test_sphere_sphere.cpp
+)
