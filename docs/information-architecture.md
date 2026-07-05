@@ -17,6 +17,71 @@ without rediscovering the project from raw code:
 The structure optimizes for source-of-truth ownership, low context cost, stable
 links, and clear lifecycle. Folder names are secondary to those properties.
 
+## Current Diagnosis
+
+The original `docs/onboarding/` goal was a wiki-like developer knowledge base:
+humans and AI agents should understand DART from tracked docs instead of
+rediscovering architecture, workflow, and project state from raw code. That
+goal is still correct, but the repository has grown additional doc buckets with
+different lifecycles:
+
+- `docs/ai/` is no longer just another handbook chapter. It owns the agent
+  operating model: principles, terminology, workflow routing, sessions, and
+  verification policy.
+- `docs/background/` is reference material for theory and original-source
+  foundations. It should grow by topic, but it should not become the place for
+  DART-specific architecture decisions.
+- `docs/design/` is durable DART engineering rationale: architecture, API
+  shape, tradeoffs, constraints, and accepted decisions.
+- `docs/plans/` is living roadmap state: priority, dependency, horizon, open
+  gaps, next step, and gates.
+- `docs/dev_tasks/` is temporary implementation handoff state for active
+  multi-session work. Completed knowledge must move out before the task folder
+  is deleted.
+- `docs/readthedocs/`, `docs/doxygen/`, and `docs/python_api/` are published
+  documentation and API-generation inputs, not the internal developer handbook.
+
+The scalable structure is therefore lifecycle-first. Topic-first trees such as
+`docs/physics/`, `docs/rendering/`, or `docs/release/` are tempting, but they
+would mix user guides, theory, design rationale, roadmap state, and task
+handoff in one place. That would increase the context cost for agents and make
+cleanup rules harder to enforce.
+
+## Restructure Decision
+
+The best current structure is to keep the existing top-level buckets, clarify
+their lifecycle boundaries, and treat `docs/onboarding/` as the current
+developer handbook path in prose. Do not perform a broad physical migration in
+the same change as this policy clarification.
+
+Recommended actions:
+
+1. Keep `docs/onboarding/` as the tracked path for durable developer handbook
+   material until a dedicated compatibility migration justifies a rename.
+2. Use `docs/information-architecture.md` as the placement owner instead of
+   scattering placement rules across each directory README.
+3. Keep root pointer boards (`docs/README.md`, `docs/AGENTS.md`, root
+   `AGENTS.md`) short and route readers to this file for placement decisions.
+4. Prefer sidecar subdirectories inside an existing bucket when one initiative
+   outgrows a single file. Add a new top-level folder only when the split meets
+   the criteria below.
+5. Use policy checks to keep the placement owner discoverable, then rely on
+   local folder READMEs and AGENTS files for bucket-specific details.
+
+## Alternatives Considered
+
+| Alternative                                                  | Verdict                 | Reason                                                                                                                                          |
+| ------------------------------------------------------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rename `docs/onboarding/` to `docs/handbook/` immediately    | Defer                   | The name is better, but the current path is referenced by many docs, workflows, skills, and checks. Rename only through a dedicated migration.  |
+| Add `docs/wiki/` or `docs/knowledge/`                        | Reject                  | It would recreate the original ambiguity as a catch-all bucket and compete with handbook, design, background, and plans.                        |
+| Merge `docs/ai/` back into `docs/onboarding/`                | Reject                  | AI workflow policy changes faster and has tool-specific safety rules; it needs a compact agent entrypoint.                                      |
+| Move tool compatibility from `docs/onboarding/` into `ai/`   | Defer unless it narrows | Tool compatibility is partly contributor workflow and partly AI policy. Keep the owner where current workflows point unless it becomes AI-only. |
+| Merge `docs/plans/` and `docs/dev_tasks/`                    | Reject                  | Plans choose and sequence work; dev tasks preserve branch/session handoff. Merging them would blur cleanup rules.                               |
+| Merge `docs/background/` into `docs/design/`                 | Reject                  | Theory/reference material and DART engineering decisions have different attribution, edit, and verification rules.                              |
+| Split `docs/design/` by subsystem at the top level           | Reject for now          | Design docs are still navigable by index. Use sidecar directories for large design families before adding top-level buckets.                    |
+| Move all user-facing material into `docs/readthedocs/`       | Partially accept        | Published user docs belong there, but repo-local contributor and maintainer workflow docs should remain in the handbook.                        |
+| Add `docs/research/` for papers, algorithms, and experiments | Reject for now          | Current homes are clearer: theory in `background`, catalogs in published docs, algorithm decisions in `design`, sequencing in `plans`.          |
+
 ## Conceptual Buckets
 
 | Conceptual bucket     | Current path                        | Audience                  | Lifecycle                     | Owns                                                                 |
