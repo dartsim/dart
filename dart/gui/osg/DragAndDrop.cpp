@@ -535,6 +535,19 @@ InteractiveFrameDnD::InteractiveFrameDnD(
 }
 
 //==============================================================================
+InteractiveFrameDnD::~InteractiveFrameDnD()
+{
+  // The constructor allocates one InteractiveToolDnD per tool with `new` and
+  // stores them here; nothing else owns them, so delete them now. The
+  // InteractiveFrameMouseEvent allocated in the constructor is not deleted
+  // here: it observes the InteractiveFrame and deletes itself when that frame
+  // (or the DefaultEventHandler it registered with) is destroyed.
+  for (DragAndDrop* dnd : mDnDs)
+    delete dnd;
+  mDnDs.clear();
+}
+
+//==============================================================================
 InteractiveFrame* InteractiveFrameDnD::getFrame() const
 {
   return mInteractiveFrame;
