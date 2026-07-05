@@ -6836,7 +6836,8 @@ bool World::captureContactFreeStepDerivativesForFirstMultibody()
       const auto& jointActuation
           = m_storage->registry.get<comps::JointActuation>(link.parentJoint);
       DART_SIMULATION_THROW_T_IF(
-          jointActuation.actuatorType == comps::ActuatorType::Locked,
+          jointActuation.actuatorType == comps::ActuatorType::Locked
+              && jointActuation.torque.size() > 0,
           NotImplementedException,
           "World::step(): differentiable Locked actuators are not supported "
           "until step derivatives apply the locked velocity projection");
