@@ -70,6 +70,7 @@
 #include <ranges>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <typeinfo>
@@ -367,6 +368,7 @@ void expectBrokenArticulatedPointJointRoundTrips(
   if (expectedDofCount == 1u) {
     joint.setActuatorType(sx::ActuatorType::Velocity);
     joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.25));
+    joint.setCommandAcceleration(Eigen::VectorXd::Constant(1, 0.75));
     joint.setEffortLimits(
         Eigen::VectorXd::Constant(1, -3.0), Eigen::VectorXd::Constant(1, 4.0));
   }
@@ -412,6 +414,8 @@ void expectBrokenArticulatedPointJointRoundTrips(
     EXPECT_EQ(restoredJoint->getActuatorType(), sx::ActuatorType::Velocity);
     EXPECT_TRUE(restoredJoint->getCommandVelocity().isApprox(
         Eigen::VectorXd::Constant(1, 0.25)));
+    EXPECT_TRUE(restoredJoint->getCommandAcceleration().isApprox(
+        Eigen::VectorXd::Constant(1, 0.75)));
     EXPECT_TRUE(restoredJoint->getEffortLowerLimits().isApprox(
         Eigen::VectorXd::Constant(1, -3.0)));
     EXPECT_TRUE(restoredJoint->getEffortUpperLimits().isApprox(
@@ -1150,6 +1154,27 @@ TEST(Serialization, RejectsInvalidDifferentiableParameterRegistration)
   EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
 }
 #endif
+
+TEST(Serialization, RejectsLegacyJointActuationComponentRecord)
+{
+  namespace sx = dart::simulation;
+
+  std::stringstream stream;
+  const std::size_t entityCount = 1u;
+  sx::io::writePOD(stream, entityCount);
+  const std::uint32_t serializedId = 0u;
+  sx::io::writePOD(stream, serializedId);
+  const std::size_t componentCount = 1u;
+  sx::io::writePOD(stream, componentCount);
+  sx::io::writeString(stream, sx::comps::JointActuation::getTypeName());
+
+  sx::detail::WorldRegistry registry;
+  sx::io::EntityMap entityMap;
+  EXPECT_THROW(
+      sx::io::SerializerRegistry::instance().loadAllEntities(
+          stream, registry, entityMap, 27u),
+      std::runtime_error);
+}
 
 TEST(Serialization, LegacyV15WorldSolverOptionsLoadBeforeIgnoredPairs)
 {

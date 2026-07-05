@@ -91,7 +91,7 @@ TEST(MeshLoader, LoadPolygonMeshPreservesQuad)
 //==============================================================================
 TEST(MeshLoader, MergesMultipleMeshes)
 {
-  const std::string meshPath = dart::config::dataPath("skel/kima/thorax.dae");
+  const std::string meshPath = dart::config::dataPath("mesh/kima/thorax.dae");
   ASSERT_FALSE(meshPath.empty());
 
   auto loader = std::make_unique<utils::AssimpMeshLoaderd>();

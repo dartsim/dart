@@ -201,6 +201,13 @@ add_custom_target(
   DEPENDS ${integration_tests} ${unit_tests} ${extra_test_targets}
 )
 
+# Build the non-simulation CTest surface without the simulation-only test
+# executables. ASAN uses this to match its ctest -LE simulation runtime filter.
+add_custom_target(
+  tests_no_simulation
+  DEPENDS ${integration_tests} ${unit_tests}
+)
+
 # Add custom target to build all the tests and run the tests
 if(MSVC)
   add_custom_target(
@@ -220,6 +227,7 @@ dart_format_add(
   helpers/gtest_utils.hpp
   helpers/common_helpers.hpp
   helpers/dynamics_helpers.hpp
+  helpers/io_round_trip_helpers.hpp
 )
 
 add_subdirectory(benchmark)

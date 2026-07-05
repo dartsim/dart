@@ -170,19 +170,11 @@ if(TARGET dart-utils)
     if(TARGET dart-io)
       target_link_libraries(INTEGRATION_io_SdfParser dart-io)
     endif()
-  endif()
 
-  dart_add_test("integration" INTEGRATION_io_SkelParser io/test_skel_parser.cpp)
-  target_link_libraries(INTEGRATION_io_SkelParser dart-utils)
-  if(TARGET dart-io)
-    target_link_libraries(INTEGRATION_io_SkelParser dart-io)
-  endif()
-  if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-    target_compile_definitions(
-      INTEGRATION_io_SkelParser
-      PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
-    )
-    dart_force_link_collision_backend(INTEGRATION_io_SkelParser dart-test-reference-fcl)
+    if(TARGET dart-io)
+      dart_add_test("integration" INTEGRATION_io_SdfWriter io/test_sdf_writer.cpp)
+      target_link_libraries(INTEGRATION_io_SdfWriter dart-io)
+    endif()
   endif()
 endif()
 
@@ -204,6 +196,11 @@ if(TARGET dart-utils-urdf)
   if(NOT MSVC)
     dart_add_test("integration" INTEGRATION_io_UrdfParser io/test_urdf_parser.cpp)
     target_link_libraries(INTEGRATION_io_UrdfParser dart-utils-urdf)
+
+    if(TARGET dart-io)
+      dart_add_test("integration" INTEGRATION_io_UrdfWriter io/test_urdf_writer.cpp)
+      target_link_libraries(INTEGRATION_io_UrdfWriter dart-io)
+    endif()
   endif()
 
   # Additional IO tests

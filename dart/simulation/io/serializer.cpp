@@ -429,6 +429,17 @@ void registerAvbdRigidWorldDistanceSpringConfigSerializer(
           AvbdRigidWorldDistanceSpringConfigComponentSerializer>());
 }
 
+void rejectUnsupportedComponentVersion(
+    std::string_view typeName, std::uint32_t formatVersion)
+{
+  if (formatVersion <= 27u
+      && typeName == comps::JointActuation::getTypeName()) {
+    throw std::runtime_error(
+        "Unsupported simulation binary format version: comps.JointActuation "
+        "records from version 27 or older do not include commandAcceleration");
+  }
+}
+
 class CollisionGeometryComponentSerializer final
   : public TypedComponentSerializer<comps::CollisionGeometry>
 {
@@ -676,6 +687,8 @@ void SerializerRegistry::loadAllEntities(
       // Read component type name
       std::string typeName;
       readString(input, typeName);
+
+      rejectUnsupportedComponentVersion(typeName, formatVersion);
 
       // Get serializer for this component type
       auto* serializer = getSerializer(typeName);

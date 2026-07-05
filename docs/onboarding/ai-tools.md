@@ -2,11 +2,11 @@
 
 This document tracks AI coding assistant compatibility with DART's documentation structure.
 
-> **Last Verified**: 2026-07-03. Command/skill/adapter surfaces are
+> **Last Verified**: 2026-07-05. Command/skill/adapter surfaces are
 > continuously machine-verified by `pixi run check-ai-commands` in CI. Claude
-> Code behavior notes were exercised live on that date; OpenCode, Codex, and
-> Gemini notes were verified against repository configuration and generated
-> adapters, not live tool runs.
+> Code and OpenCode terminology notes were checked against current public docs;
+> Codex notes were checked against local `codex-cli 0.142.5` prompt input plus
+> current OpenAI Codex docs. Gemini notes remain a manual-reference path.
 > **Review Cadence**: Verify when updating tool versions or experiencing unexpected behavior.
 
 ## For Collaborators: Tool Selection
@@ -24,7 +24,7 @@ This document tracks AI coding assistant compatibility with DART's documentation
 | --------------- | ---------------------------------------------------------------------------- |
 | **Claude Code** | `CLAUDE.md` auto-loaded; use `/dart-*` commands                              |
 | **OpenCode**    | `AGENTS.md` auto-loaded; use `/dart-*` commands; skills in `.claude/skills/` |
-| **Codex**       | `AGENTS.md` auto-loaded; use `$dart-*` skills in `.codex/skills/`            |
+| **Codex**       | `AGENTS.md` auto-loaded; use generated `$dart-*` skill adapters              |
 | **Gemini CLI**  | Read `GEMINI.md` or `AGENTS.md`; read `.claude/commands/` manually if needed |
 
 ---
@@ -44,18 +44,20 @@ This document tracks AI coding assistant compatibility with DART's documentation
 
 ### Conventions
 
-| Convention                      | Rule                                                                                                |
-| ------------------------------- | --------------------------------------------------------------------------------------------------- |
-| **Pointer board**               | `AGENTS.md` stays concise and points to durable docs                                                |
-| **AI-native policy**            | `docs/ai/` owns AI-infra principles, workflow maps, verification, sessions, and component ownership |
-| **Command naming**              | `dart-` prefix (e.g., `dart-new-task.md`)                                                           |
-| **Skill naming**                | `dart-` prefix (e.g., `dart-build`)                                                                 |
-| **Skill descriptions**          | Start with display name and quote colon values (e.g., `"DART Build: ..."`)                          |
-| **Tool-specific language**      | Use generic terms except in compatibility or routing docs where tool behavior is the subject        |
-| **Placeholders**                | Use `$ARGUMENTS`, `$1`, `$2` for command args                                                       |
-| **Tracked file references**     | Use repo-relative `@file` syntax; home-directory references are only for untracked personal files   |
-| **Workflow source**             | Repeatable workflows currently live in `.claude/commands/` and are generated to Codex/OpenCode      |
-| **Manual public path required** | Every AI workflow must map back to public docs and `pixi run ...` commands for non-AI contributors  |
+| Convention                      | Rule                                                                                                                  |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Pointer board**               | `AGENTS.md` stays concise and points to durable docs                                                                  |
+| **Terminology owner**           | `docs/ai/terminology.md` owns canonical terms such as capability, workflow source, skill, adapter, MCP tool, and hook |
+| **AI-native policy**            | `docs/ai/` owns AI-infra principles, terminology, workflow maps, verification, sessions, and component ownership      |
+| **Capability naming**           | `dart-` prefix for the cross-tool capability name (for example `dart-new-task`)                                       |
+| **Workflow source naming**      | `.claude/commands/dart-<name>.md` while that directory remains the editable workflow source                           |
+| **Domain skill naming**         | `.claude/skills/dart-<name>/SKILL.md` for reusable on-demand Agent Skills                                             |
+| **Skill descriptions**          | Start with display name and quote colon values (e.g., `"DART Build: ..."`)                                            |
+| **Tool-specific language**      | Use generic terms except in compatibility or routing docs where tool behavior is the subject                          |
+| **Placeholders**                | Use `$ARGUMENTS`, `$1`, `$2` for command args                                                                         |
+| **Tracked file references**     | Use repo-relative `@file` syntax; home-directory references are only for untracked personal files                     |
+| **Generated adapters**          | `.codex/` and `.opencode/` files are generated adapter entrypoints, not editable sources                              |
+| **Manual public path required** | Every AI workflow must map back to public docs and `pixi run ...` commands for non-AI contributors                    |
 
 ### @file Import Syntax
 
@@ -90,17 +92,18 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 
 ### File Ownership
 
-| File/Directory                | Purpose                      | When to Update                  |
-| ----------------------------- | ---------------------------- | ------------------------------- |
-| `AGENTS.md`                   | Root pointer board           | When workflows or gates change  |
-| `docs/ai/`                    | Durable AI-native policy     | When AI workflow policy changes |
-| `docs/ai/capabilities.json`   | Capability status/category   | When workflows or skills change |
-| `CLAUDE.md`, `GEMINI.md`      | Redirects only               | Rarely (keep minimal)           |
-| `.claude/commands/`           | Editable workflow source     | When adding workflows           |
-| `.opencode/command/`          | Generated OpenCode commands  | Auto-synced from `.claude/`     |
-| `.claude/skills/`             | Editable domain-skill source | When adding domain knowledge    |
-| `.codex/skills/`              | Generated Codex skills       | Auto-generated from `.claude/`  |
-| `docs/onboarding/ai-tools.md` | Tool compatibility details   | When tool compatibility changes |
+| File/Directory                | Purpose                             | When to Update                                 |
+| ----------------------------- | ----------------------------------- | ---------------------------------------------- |
+| `AGENTS.md`                   | Root pointer board                  | When workflows or gates change                 |
+| `docs/ai/`                    | Durable AI-native policy            | When AI workflow policy changes                |
+| `docs/ai/terminology.md`      | Canonical AI-facing terms           | When names, roles, or adapter structure change |
+| `docs/ai/capabilities.json`   | Capability status/category          | When workflows or skills change                |
+| `CLAUDE.md`, `GEMINI.md`      | Redirects only                      | Rarely (keep minimal)                          |
+| `.claude/commands/`           | Editable workflow source            | When adding workflows                          |
+| `.opencode/command/`          | Generated OpenCode command adapters | Auto-synced from `.claude/`                    |
+| `.claude/skills/`             | Editable domain-skill source        | When adding domain knowledge                   |
+| `.codex/skills/`              | Generated Codex skill adapters      | Auto-generated from `.claude/`                 |
+| `docs/onboarding/ai-tools.md` | Tool compatibility details          | When tool compatibility changes                |
 
 ### Adding a New Command
 
@@ -133,7 +136,7 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 5. Put long background material in `docs/onboarding/*.md`; keep command files concise and action-oriented
 
 Codex does not use project slash-command files directly. The sync script
-generates a first-class Codex skill from each command, so `/dart-fix-ci`
+generates a Codex skill adapter from each workflow source, so `/dart-fix-ci`
 becomes `$dart-fix-ci`.
 
 ### Adding a New Skill
@@ -242,11 +245,11 @@ To add a new DART-specific skill:
 
 Skills work across multiple AI tools through automatic syncing:
 
-| Source              | Target                  | Tool                  |
-| ------------------- | ----------------------- | --------------------- |
-| `.claude/skills/`   | (native)                | Claude Code, OpenCode |
-| `.claude/skills/`   | `.codex/skills/`        | Codex                 |
-| `.claude/commands/` | `.codex/skills/dart-*/` | Codex workflow skills |
+| Source              | Target                  | Tool                          |
+| ------------------- | ----------------------- | ----------------------------- |
+| `.claude/skills/`   | (native)                | Claude Code, OpenCode         |
+| `.claude/skills/`   | `.codex/skills/`        | Codex                         |
+| `.claude/commands/` | `.codex/skills/dart-*/` | Codex workflow skill adapters |
 
 **Sync is automatic** via `pixi run lint` (includes `sync-ai-commands`).
 
@@ -260,10 +263,11 @@ DART skills are original content under BSD 2-Clause license.
 
 ### Keeping Commands and Skills in Sync
 
-Commands and skills exist in multiple directories because tools don't share paths.
-The `.claude/` directory is the current editable source for workflow commands
-and domain skills. Generated Codex/OpenCode files are first-class entrypoints
-for their tools, but they are overwritten by sync.
+Workflow sources, domain skills, and generated adapters exist in multiple
+directories because tools don't share one invocation surface. The `.claude/`
+directory is the current editable source for workflow sources and domain
+skills. Generated Codex/OpenCode files are first-class adapter entrypoints for
+their tools, but they are overwritten by sync.
 
 **Automated sync** (included in `pixi run lint`):
 
@@ -277,17 +281,20 @@ pixi run check-ai-commands  # Check if in sync (CI mode, no changes)
 
 | Source              | Target                  | Purpose                       |
 | ------------------- | ----------------------- | ----------------------------- |
-| `.claude/commands/` | `.opencode/command/`    | OpenCode commands             |
-| `.claude/commands/` | `.codex/skills/dart-*/` | Codex command workflow skills |
-| `.claude/skills/`   | `.codex/skills/`        | Codex domain skills           |
+| `.claude/commands/` | `.opencode/command/`    | OpenCode command adapters     |
+| `.claude/commands/` | `.codex/skills/dart-*/` | Codex workflow skill adapters |
+| `.claude/skills/`   | `.codex/skills/`        | Codex domain-skill adapters   |
 
-Generated Codex skills are first-class Codex entrypoints even when their
-editable workflow source currently lives in `.claude/commands/`.
+Generated Codex skill adapters are adapter entrypoints even when
+their editable workflow source currently lives in `.claude/commands/`.
 
 **Durable AI-native decisions**:
 
 - Keep `AGENTS.md` as the concise pointer board, `docs/ai/` as shared agent
   policy, and this document as the tool-compatibility reference.
+- Keep canonical terms in `docs/ai/terminology.md`; do not re-define
+  capability, workflow source, skill, adapter, MCP tool, hook, or subagent in
+  each workflow.
 - Keep AI-infra axioms and the manual principle audit in
   `docs/ai/principles.md`; link to it from entrypoints and workflows instead of
   restating it.
@@ -295,8 +302,9 @@ editable workflow source currently lives in `.claude/commands/`.
   `pixi run ...` tasks; AI workflows can route work, but must not be the only
   way to complete it.
 - Treat `docs/dev_tasks/<task>/` folders as temporary working state. When the
-  task completes, move only durable decisions into developer docs and delete
-  the task folder in the same PR.
+  task completes, move only durable decisions into the owner selected by
+  `docs/information-architecture.md` and delete the task folder in the same
+  PR.
 
 **Effective capability parity**:
 
@@ -304,7 +312,7 @@ Different tools expose the same workflows differently:
 
 - Claude Code: `.claude/commands/` plus `.claude/skills/`
 - OpenCode: `.opencode/command/` plus `.claude/skills/`
-- Codex: `.codex/skills/` for both domain skills and workflow skills
+- Codex: `.codex/skills/` for both domain-skill and workflow skill adapters
 
 `pixi run check-ai-commands` compares those effective sets and runs the
 structural AI-component checks owned by `docs/ai/components.md`.
@@ -334,11 +342,11 @@ directly. There is no separate prompt-template folder.
 
 ### Review Cadence
 
-| Check                       | Frequency                      |
-| --------------------------- | ------------------------------ |
-| Tool compatibility          | When updating tool versions    |
-| Command/skill functionality | After creating new ones        |
-| Doc accuracy                | Quarterly or when issues arise |
+| Check                    | Frequency                      |
+| ------------------------ | ------------------------------ |
+| Tool compatibility       | When updating tool versions    |
+| Capability functionality | After creating new ones        |
+| Doc accuracy             | Quarterly or when issues arise |
 
 ---
 
@@ -346,7 +354,7 @@ directly. There is no separate prompt-template folder.
 
 ### Claude Code
 
-**Verified**: command/skill surfaces continuously via `pixi run
+**Verified**: capability and adapter surfaces continuously via `pixi run
 check-ai-commands` in CI; behavior notes hand-checked 2026-07
 
 | Feature      | Location                    | Status                             |
@@ -396,13 +404,13 @@ hand-checked 2026-07
 
 ### OpenAI Codex
 
-**Tested Version**: Codex CLI 0.128.x (May 2026)
+**Tested Version**: Codex CLI 0.142.5 (local prompt-input check, 2026-07-05)
 
 | Feature           | Location                   | Status                                |
 | ----------------- | -------------------------- | ------------------------------------- |
 | Instructions      | `AGENTS.md`                | ✅ Primary entry point                |
 | Skills            | `.codex/skills/*/SKILL.md` | ✅ `$dart-*` skills available         |
-| Workflow commands | `.codex/skills/dart-*/`    | ✅ Generated from `.claude/commands/` |
+| Workflow adapters | `.codex/skills/dart-*/`    | ✅ Generated from `.claude/commands/` |
 
 **Notes**:
 
@@ -412,6 +420,10 @@ hand-checked 2026-07
 - Command workflows use the same syntax (e.g., `$dart-fix-ci <arguments>`)
 - Codex CLI slash commands are built-in controls; project workflows are exposed
   through skills instead of repo-local `/dart-*` slash files
+- Current OpenAI docs describe `.agents/skills` as the repository skill
+  convention. This checkout still exposes DART skills from generated
+  `.codex/skills/`; migrate deliberately rather than checking in duplicate
+  skill names under both locations.
 - Full documentation: https://developers.openai.com/codex/
 
 ---
@@ -425,13 +437,13 @@ hand-checked 2026-07
 └── skills/                # Claude + OpenCode skills
     └── dart-*/SKILL.md
 
-.opencode/                 # Generated OpenCode commands
-└── command/               # OpenCode commands
+.opencode/                 # Generated OpenCode command adapters
+└── command/               # OpenCode command adapter entrypoints
     └── dart-*.md
 
-.codex/                    # Generated first-class Codex entrypoints
-└── skills/                # Codex domain + workflow skills
-    └── dart-*/SKILL.md    # Includes command-derived $dart-* workflows
+.codex/                    # Generated Codex adapter entrypoints
+└── skills/                # Codex domain + workflow skill adapters
+    └── dart-*/SKILL.md    # Includes workflow-derived $dart-* adapters
 ```
 
 ---

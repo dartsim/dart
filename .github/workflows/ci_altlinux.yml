@@ -11,17 +11,16 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # Protected release-branch and scheduled runs should not replace pending
-  # validation runs.
-  # GitHub's default concurrency queue keeps only one pending run, so use a
-  # run-specific group for preserved refs while keeping manual runs cancellable.
+  # Preserve scheduled/manual evidence. There are no branch-push validations in
+  # this workflow.
   group: >-
-    ${{ (github.event_name == 'schedule' || startsWith(github.ref, 'refs/heads/release-'))
-        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
-        || format('{0}-{1}', github.workflow, github.ref) }}
+    ${{ (github.event_name == 'schedule'
+        || github.event_name == 'workflow_dispatch')
+        && format('{0}-{1}-{2}-{3}', github.workflow, github.ref, github.event_name, github.run_id)
+        || format('{0}-{1}-{2}', github.workflow, github.ref, github.event_name) }}
   cancel-in-progress: >-
     ${{ github.event_name != 'schedule'
-        && !startsWith(github.ref, 'refs/heads/release-') }}
+        && github.event_name != 'workflow_dispatch' }}
 
 jobs:
   altlinux:

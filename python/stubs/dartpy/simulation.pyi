@@ -494,6 +494,12 @@ class Joint:
     def command_velocity(self, arg: object, /) -> None: ...
 
     @property
+    def command_acceleration(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @command_acceleration.setter
+    def command_acceleration(self, arg: object, /) -> None: ...
+
+    @property
     def axis(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
 
     @property
@@ -1084,6 +1090,12 @@ class Multibody:
     def get_jacobian(self, link: Link) -> Annotated[NDArray[numpy.float64], dict(shape=(None, None), order='F')]: ...
 
     def get_world_jacobian(self, link: Link) -> Annotated[NDArray[numpy.float64], dict(shape=(None, None), order='F')]: ...
+
+    @property
+    def center_of_mass(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def center_of_mass_jacobian(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None, None), order='F')]: ...
 
     @property
     def is_valid(self) -> bool: ...
@@ -2016,13 +2028,11 @@ class SkeletonLoadOptions:
 class ModelFormat(enum.Enum):
     AUTO = 0
 
-    SKEL = 1
+    SDF = 1
 
-    SDF = 2
+    URDF = 2
 
-    URDF = 3
-
-    MJCF = 4
+    MJCF = 3
 
 class RootJointType(enum.Enum):
     FLOATING = 0

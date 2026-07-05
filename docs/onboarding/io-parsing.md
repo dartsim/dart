@@ -3,8 +3,7 @@
 ## Why this exists
 
 DART historically exposed multiple model-loading entry points with inconsistent
-naming and structure (e.g., `SkelParser`, `SdfParser`, `UrdfParser`, and
-legacy loaders).
+naming and structure (e.g., `SdfParser`, `UrdfParser`, and legacy loaders).
 
 For most applications, this made “load a model from a URI” harder than it needed
 to be:
@@ -26,8 +25,8 @@ This unified API and documentation were introduced while addressing issue #604
 component APIs. The DART 7 surface keeps a single, consistent skeleton-loading
 front door (`dart::io`) without introducing new nested namespaces, while keeping
 parser-specific customization available via `dart::utils::*` parsers where
-needed. DART 7 is retiring SKEL rather than redesigning it as YAML; migrate
-legacy SKEL assets to URDF, SDF, or MJCF. Unit coverage for the promoted options
+needed. DART 7 removed SKEL rather than redesigning it as YAML; migrate legacy
+SKEL assets to URDF, SDF, or MJCF. Unit coverage for the promoted options
 lives in `tests/unit/io/test_read.cpp`.
 
 ## Scope and design decision
@@ -37,6 +36,12 @@ lives in `tests/unit/io/test_read.cpp`.
 `dart::io::readSkeleton` is the preferred entry point for new C++ code.
 Internally it delegates to the format-specific parsers in `dart::utils`.
 Whole-world loading is not part of the DART 7 public `dart::io` API.
+
+DART 7 public interchange APIs use `read` / `write` for operations and
+`Reader` / `Writer` for new format-owned actor names. `Parser` is reserved for
+existing syntax-level or compatibility internals, and `Loader` / `Saver` is
+reserved for APIs that mutate destination state, such as adding a model into a
+`simulation::World` or persisting DART-owned project state.
 
 This is intentionally _not_ an attempt to expose every parser-specific knob through one API.
 Instead:
@@ -71,17 +76,48 @@ planned follow-ups; see `dart/io/usd/usd_parser.hpp` for the current scope.
 - `dart::io::readSkeleton(const common::Uri&, const ReadOptions&)`
 - `dart::io::ModelFormat` (format selection or inference)
 - `dart::io::ReadOptions` (common + minimal format-specific options)
+- `dart::io::SdfWriter::tryWriteSkeletonToString(...)`
+- `dart::io::UrdfWriter::tryWriteSkeletonToString(...)`
 
 Source of truth:
 
 - `dart/io/read.hpp`
 - `dart/io/read.cpp`
+- `dart/io/sdf_writer.hpp` for the first format-specific SDF writer
+- `pixi run check-sdf-sdformat-boundary` guards the SDF implementation against
+  TinyXML/raw XML parser APIs and generic SDF element text parsing in
+  `dart/utils/sdf` plus the `dart/io` SDF writer, and keeps ambiguous
+  `dart::io` SDF auto-detection on libsdformat before the legacy URDF/MJCF
+  XML-root fallback
+- `dart/utils/sdf/` uses libsdformat DOM APIs for SDF structure, model/link
+  static and self-collision state, named top-level/world model selection, world
+  gravity, included model source URIs for relative resource resolution,
+  inertial,
+  visual/collision/material, visual shadow and visibility metadata, joint
+  topology/pose/axis frame
+  resolution/dynamics/limits,
+  collision-surface contact bitmask, bounce restitution, ODE friction/slip
+  metadata, and supported geometry semantics;
+  ambiguous XML auto-detection asks `sdf::Root::LoadSdfString()` and the
+  resulting `sdf::Root` model/world API to recognize SDF before the non-SDF
+  URDF/MJCF root fallback runs;
+  avoid raw XML-level SDF parsing when sdformat exposes the value. When
+  DART must preserve an authored/default distinction or schema field that the
+  high-level DOM class does not expose, use a narrow sdformat `Element` bridge:
+  `Element::FindElement()` for non-mutating child lookup,
+  `Element::GetExplicitlySetInFile()` for authored/default checks, and typed
+  `Element::Get<T>` conversion for extension values. Do not add DART-side SDF
+  XML tokenization, child-existence probing, or text reparsing.
 
 ## Start here next time
 
 - API surface: `dart/io/read.hpp`
 - Implementation: `dart/io/read.cpp`
 - Unit coverage for `ReadOptions`: `tests/unit/io/test_read.cpp`
+- SDF writer API: `dart/io/sdf_writer.hpp`
+- SDF writer round-trip coverage: `tests/integration/io/test_sdf_writer.cpp`
+- URDF writer API: `dart/io/urdf_writer.hpp`
+- URDF writer round-trip coverage: `tests/integration/io/test_urdf_writer.cpp`
 
 ## Common usage patterns
 
@@ -121,6 +157,24 @@ options.sdfDefaultRootJointType = dart::io::RootJointType::Fixed;
 auto skel = dart::io::readSkeleton("dart://sample/sdf/test/box.sdf", options);
 ```
 
+### SDF named world-model selection
+
+When an SDF world contains multiple models, `dart::io::readSkeleton` keeps the
+default SDF parser behavior of loading the first model from the first world.
+Call `dart::utils::SdfParser` directly when a workflow needs a specific model:
+
+```cpp
+dart::utils::SdfParser::Options options;
+options.mModelName = "selected_model";
+auto skel = dart::utils::SdfParser::readSkeleton(
+    dart::common::Uri("file:///path/to/world.sdf"), options);
+```
+
+The selector is intentionally parser-specific. It uses libsdformat DOM lookup
+through `sdf::Root::Model()` and `sdf::World::ModelByName()`; an empty
+`mModelName` preserves the previous top-level-model / first-world-first-model
+behavior.
+
 ### URDF `package://` resolution (parser-specific customization)
 
 URDF commonly references meshes/textures via `package://<name>/...`. Register package
@@ -145,9 +199,201 @@ Prefer adding an option to `ReadOptions` only when:
 
 Otherwise, prefer using the underlying parser API directly.
 
+## SDF writing
+
+DART 7's first export surface is format-specific:
+`dart::io::SdfWriter::tryWriteSkeletonToString`. It serializes a
+conservative `Skeleton` subset to SDF text and returns `common::Result` so
+unsupported constructs produce explicit errors instead of silently dropping
+state. The writer builds libsdformat DOM objects and serializes through
+sdformat; DART owns the `Skeleton`-to-SDF semantic mapping and diagnostics.
+
+The initial writer covers BodyNode links, root FreeJoint/WeldJoint placement,
+explicit parent-world root joints for supported SDF joint types (revolute,
+continuous, prismatic, screw, universal, and topology-only ball), multiple root
+FreeJoint trees, mixed implicit FreeJoint plus explicit parent-world root
+models, and
+revolute/continuous/prismatic/weld/screw/universal child joints with passive
+dynamics metadata (damping, Coulomb friction, spring reference, and spring
+stiffness), symmetric axis effort and velocity limits,
+sdformat-normalized screw thread pitch (legacy `<thread_pitch>` before SDF
+1.10 and modern `<screw_thread_pitch>` for SDF 1.10+), SDF 1.11+ mimic
+metadata for axis/axis2 follower joints with motor enforcement,
+topology-only ball child joints, model static/mobile and self-collision state,
+link gravity mode, non-default skeleton gravity through a root SDF
+`<world><gravity>` value, inertial parameters, local joint/shape poses, and
+box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry
+with visual shadow/hidden/transparency state, explicit visual material colors,
+PBR
+metallic/roughness factors, and collision-surface contact disable bitmasks,
+zero-threshold bounce restitution, and ODE friction/slip metadata, including a
+combined surface entry that preserves contact, friction/slip, and bounce
+metadata together. The
+round-trip coverage includes the shipped SDF fixtures converted from legacy
+SKEL (`single_pendulum.sdf`, `cube.sdf`, `shapes.sdf`, and
+`test_shapes.sdf`) and the native two-link revolute SDF fixture
+(`two_link_revolute_model.sdf`), the native root-model quadruped fixture
+(`quad.sdf`), the root-model issue fixtures (`test_issue1583.model`,
+`test_issue1596.model`, and `test_issue1683.model`), the included relative
+mesh model fixture (`include_relative_mesh/included_model/model.sdf`), the
+top-level `ground.world` fixture, plus world-contained
+`issue1193_revolute*.sdf` fixtures, `high_version.world`,
+`single_bodynode_skeleton.world`, and
+`test_skeleton_joint.world`, plus `force_torque_test.world` /
+`force_torque_test2.world`, and the selected
+`model_0_0_1` cube from `issue1624_cubes.sdf`,
+`pendulum_with_base_mimic_slow_follows_fast` model from
+`mimic_fast_slow_pendulums_world.sdf` plus the selected
+`double_pendulum_with_base` model from `double_pendulum*.world` through
+read/write/read smokes, plus a synthetic two-world SDF fixture whose selected
+model lives in the second world, that
+compare body, joint, inertial, mobility, gravity, axis-limit, joint-dynamics,
+box/cylinder/sphere/mesh geometry, shape-pose, model-pose, resource URI, and
+joint-offset semantics across simple single-body, quadruped, fixed-root issue,
+relative-mesh, ground-plane, mixed-joint, two-link, three-link, and selected
+many-model cube, world-model mimic, parent-world double-pendulum, and
+later-world selection
+cases. The
+quadruped
+fixture covers 17 links, 16 revolute joints, finite axis velocity/effort
+limits, visual material colors, repeated box visual/collision geometry, and
+foot sphere visuals. The root-model issue fixtures cover fixed parent-world
+root semantics, model poses, child revolute and universal joint axes and
+limits, and box/sphere/cylinder visual and collision geometry. The relative
+mesh fixture covers parser-resolved source mesh URI preservation for visual and
+collision mesh geometry, and the top-level include-driver world for that model
+proves included-model relative mesh resources resolve against the included
+model URI and survive writer read/write/read. The top-level ground fixture
+covers imported SDF
+plane-as-DART-box semantics, static world model state, disabled visual shadow
+state, and high ODE friction metadata. The simple world fixtures cover
+high-version SDF input, default-inertial fallback, root-joint semantics,
+gravity, and box/cylinder visual and collision geometry. The mixed-joint world
+fixture covers prismatic, revolute, screw, and revolute2/universal joints plus
+cylinder visual and collision geometry. The force-torque world fixture coverage
+is limited to DART skeleton semantics imported from the in-file models and does
+not claim preservation of SDF sensor or physics metadata. The selected mimic
+world fixture proves parser-selected non-first world models preserve SDF 1.11
+axis mimic metadata through libsdformat validation and read/write/read. The
+selected double-pendulum world fixtures prove parser-selected non-first world
+models preserve parent-world revolute roots, child revolute joints, visual-only
+pendulum geometry, and visual/collision pendulum geometry through libsdformat
+DOM validation and read/write/read without XML-level model enumeration. The
+selected `benchmark.world` fixture extends that coverage to a shipped
+many-model benchmark world with unresolved includes and a static plane model,
+proving named in-world model selection stays on libsdformat DOM lookup. The
+selected `issue1624_cubes.sdf` fixture proves parser-selected named models from
+a shipped many-model SDF world preserve model pose, mass/inertia, red visual
+material color, and visual/collision box geometry through typed sdformat DOM
+validation. The
+synthetic two-world fixture proves named-model selection searches world DOM
+objects beyond the first world and preserves the selected world's gravity
+through writer DOM validation and read/write/read. The
+writer also
+covers absolute non-file mesh URI preservation through a custom retriever,
+URI-backed mesh material variants through preserved source mesh URIs, and
+parser-resolved source mesh URIs imported from a shipped relative-mesh SDF
+model.
+Targetless relative
+mesh references, URI-less in-memory mesh material variants, and relative or
+host-qualified `file` mesh URIs are rejected because the writer has no
+destination SDF URI for resource resolution or generated asset placement.
+DART body-level collision disable is represented through per-collision
+`<surface><contact><collide_bitmask>0</collide_bitmask>` entries because SDF has
+no equivalent link-level collidable flag.
+DART `HeightmapShape` is also rejected with a targeted source-URI/resource
+policy diagnostic instead of synthesizing SDF heightmap XML from DART's sampled
+grid.
+Generated or DART-native geometry families such as `PyramidShape`,
+`ArrowShape`, `MultiSphereConvexHullShape`, `PointCloudShape`,
+`LineSegmentShape`, and `VoxelGridShape` are rejected with targeted diagnostics
+because the current string writer has no destination URI or generated-resource
+policy for converting them into SDF-owned mesh or resource data.
+`WriteOptions` can exclude visual or collision entries. Empty skeletons, empty
+or malformed SDF versions, missing mesh URIs, non-finite mesh scales,
+non-default DART mesh color/alpha render policies,
+invalid PBR material factors, non-default visual reflectance, invalid collision
+surface friction, friction direction, or restitution values, NaN joint position
+limits, non-lossless asymmetric or NaN joint effort/velocity limits,
+non-finite skeleton gravity, shape poses, non-positive body masses, non-finite
+inertial data, joint axes,
+pre-SDF-1.11 mimic output, coupler-style mimic enforcement, ball joint limits,
+ball joint dynamics, child `FreeJoint`s, DART Euler joints, planar joints,
+and two- or three-axis translational joints, and
+DART `SoftBodyNode` export are reported as unsupported instead of being
+silently dropped. It is not a general project save/load format and does not
+make YAML a model format. Use the writer only when the target scene fits the
+documented subset, and expand the round-trip tests before broadening the
+supported contract.
+
+Keep export APIs format-owned under the unified `dart::io` namespace until DART
+has more than one accepted writer contract. The current SDF and URDF writers
+therefore live on `dart::io::SdfWriter` and `dart::io::UrdfWriter`. Do not add
+`dart::io::writeSkeleton()` or overload `ReadOptions` with write policy until
+there is a reviewed multi-format `WriteOptions` design. DART-owned project or
+editor save/load belongs in the scene/project layer, not in
+interchange-format parser utilities.
+
+## URDF writing
+
+`dart::io::UrdfWriter::tryWriteSkeletonToString` serializes the
+conservative URDF tree subset. It supports one root link, root FreeJoint or
+WeldJoint identity placement validation, child
+revolute/continuous/prismatic/fixed joints whose child link frame coincides
+with the joint frame, continuous joint velocity/effort limit metadata,
+standard-plane planar and floating child joints with uniform scalar
+limit/dynamics metadata, passive damping/friction metadata, single-DoF
+motor-style mimic metadata, zero-offset coupler mimic metadata serialized as
+paired `SimpleTransmission` entries, inertial data, local visual/collision
+poses, box/sphere/cylinder/absolute or package URI mesh geometry for visuals
+and collisions, explicit visual colors, implicit default visual color
+omission, default-RGB alpha overrides, and options for excluding visuals or
+collisions. Shipped-fixture coverage includes
+`data/urdf/test/primitive_geometry.urdf`,
+`data/urdf/test/joint_properties.urdf`, `data/urdf/test/issue838.urdf`,
+`data/urdf/KR5/ground.urdf`, `data/urdf/wam/wam.urdf`, and
+`data/urdf/drchubo/drchubo.urdf`, plus
+`data/sdf/atlas/atlas_v5_no_head.urdf` through
+read/write/read smokes that compare body, joint, axis, limit, dynamics,
+visual-shape, visual-material, collision-shape, imported primitive geometry,
+relative/package mesh URI semantics, and larger robot topology.
+URDF does not encode parent-joint metadata for the root link, so root joint
+name/type are supplied by parser defaults on reparse rather than serialized by
+the writer. URDF files that use a root link named `world` still import that link
+as the inertial frame; writer fixture coverage compares the resulting DART
+`Skeleton` semantics, not preservation of that non-body URDF link. The full
+`data/urdf/KR5/KR5 sixx R650.urdf` fixture remains intentionally rejected
+because its imported root joint has a non-identity root-link pose.
+
+The writer returns `common::Result` and rejects unsupported or lossy DART
+constructs such as multiple root trees, non-identity root placement, unsupported
+joint families, non-identity child-to-joint frames, unbounded finite-requiring
+URDF limits, asymmetric velocity/effort limits, arbitrary planar axes,
+non-uniform multi-DoF limit/dynamics metadata, missing or non-motor mimic
+references, coupler mimic offsets, multi-DoF mimic relationships that URDF
+cannot name by axis, non-finite data, missing mesh URIs, relative or
+host-qualified file mesh URIs, disabled collision aspects, collision dynamics
+metadata, visual reflectance factors, unsupported shapes, and DART
+`SoftBodyNode` export. Validate any broadened URDF surface with `UrdfWriter`
+output reparsed through `UrdfParser`; do not route URDF export through
+`dart::io` until a reviewed multi-format write API exists.
+
+## Parked writer expansion criteria
+
+The DART 7 writer surface is intentionally conservative. Future SDF expansion
+needs a tested destination-aware resource policy before accepting targetless
+relative meshes, generated meshes, URI-less mesh material variants, or DART
+heightmaps as emitted SDF resources. Additional SDF world metadata should stay
+on libsdformat DOM APIs and get read/write/read tests that prove the DART
+semantics survive without XML-level parsing. Future URDF expansion should only
+add constructs that URDF can represent without losing DART semantics, with
+focused `UrdfParser` write/read/read tests and explicit diagnostics for
+unsupported cases.
+
 ## Notes about Python
 
-The consolidated API is primarily for **C++** (`dart::io`). However, the Python bindings
-(`dartpy`) also expose parsers under `dart.io` (e.g. `dart.io.UrdfParser`). The legacy
-`dart.utils.*` parsers are deprecated and should be avoided in new code. Treat
-SKEL as a DART 6 compatibility format while DART 7 removal work finishes.
+The consolidated API is primarily for **C++** (`dart::io`). However, the Python
+bindings (`dartpy`) also expose parsers under `dart.io` (e.g.
+`dart.io.UrdfParser`). The legacy `dart.utils.*` parsers are deprecated and
+should be avoided in new code. Treat SKEL as a DART 6 compatibility format and
+use a `release-6.*` branch for old SKEL assets.

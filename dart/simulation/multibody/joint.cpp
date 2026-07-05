@@ -372,6 +372,23 @@ void Joint::setCommandVelocity(const Eigen::VectorXd& velocity)
 }
 
 //==============================================================================
+Eigen::VectorXd Joint::getCommandAcceleration() const
+{
+  const auto& jointActuation = getJointActuation(m_world, m_entity);
+  return jointActuation.commandAcceleration;
+}
+
+//==============================================================================
+void Joint::setCommandAcceleration(const Eigen::VectorXd& acceleration)
+{
+  const auto& jointModel = getJointModel(m_world, m_entity);
+  auto& jointActuation = getJointActuation(m_world, m_entity);
+  validateJointStateVector(
+      acceleration, jointModel.getDOF(), "command acceleration");
+  jointActuation.commandAcceleration = acceleration;
+}
+
+//==============================================================================
 Eigen::Vector3d Joint::getAxis() const
 {
   const auto& jointModel = getJointModel(m_world, m_entity);

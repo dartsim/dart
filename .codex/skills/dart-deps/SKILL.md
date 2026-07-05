@@ -11,7 +11,7 @@ description: "DART Deps: triage and shepherd dependency and bot pull requests"
 
 Use this skill in Codex to run the DART `dart-deps` workflow. The editable
 workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Codex skill is a generated Codex adapter entrypoint.
 
 ## Invocation
 

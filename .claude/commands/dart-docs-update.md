@@ -1,5 +1,5 @@
 ---
-description: update documentation without code changes
+description: update docs or AI instruction visibility without code changes
 argument-hint: "<topic>"
 agent: build
 ---
@@ -10,6 +10,8 @@ Update documentation: $ARGUMENTS
 
 @AGENTS.md
 @docs/README.md
+@docs/AGENTS.md
+@docs/information-architecture.md
 @docs/ai/principles.md
 @docs/ai/verification.md
 @docs/onboarding/ai-tools.md
@@ -23,12 +25,16 @@ Update documentation: $ARGUMENTS
      and `CHANGELOG.md` when `dart-changelog` requires a release-note entry
    - AI source files: `.claude/commands/**`, `.claude/skills/**`
 3. For AI workflow changes, run `pixi run sync-ai-commands`; do not hand-edit generated `.opencode/` or `.codex/` files
-4. Update indexes and cross-references that point to changed docs
-5. Use `docs/ai/verification.md` to select the docs-only or AI docs/adapters
+4. Classify new or moved docs by lifecycle first, then audience, then topic,
+   using `docs/information-architecture.md`. For AI docs, keep always-loaded
+   entrypoints compact: improve owner placement or pointers instead of
+   duplicating procedures.
+5. Update indexes and cross-references that point to changed docs
+6. Use `docs/ai/verification.md` to select the docs-only or AI docs/adapters
    gate set, then run `pixi run lint` before committing
-6. Invoke the `dart-changelog` routine for the `CHANGELOG.md` decision and any
+7. Invoke the `dart-changelog` routine for the `CHANGELOG.md` decision and any
    required entry.
-7. Ask for explicit maintainer/user approval before pushing or opening the PR.
+8. Ask for explicit maintainer/user approval before pushing or opening the PR.
    After approval, use `.github/PULL_REQUEST_TEMPLATE.md` and the proper
    milestone.
 

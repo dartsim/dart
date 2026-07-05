@@ -403,6 +403,26 @@ public:
   ///         or is not part of this multibody.
   [[nodiscard]] Eigen::MatrixXd getWorldJacobian(const Link& link) const;
 
+  /// Get the world-frame center of mass of this multibody.
+  ///
+  /// The mass-weighted average of every link's center of mass, in world
+  /// coordinates. Reflects the latest synchronized kinematics. A multibody with
+  /// zero total mass returns the origin.
+  ///
+  /// @return The 3D world-frame center-of-mass position.
+  [[nodiscard]] Eigen::Vector3d getCenterOfMass() const;
+
+  /// Get the world-frame center-of-mass Jacobian of this multibody.
+  ///
+  /// The returned 3 x getDOFCount() matrix maps the generalized velocity to the
+  /// linear velocity of the multibody's center of mass in world axes:
+  /// `J_com = (1/M) sum_i m_i J_{com_i}`, the mass-weighted average of each
+  /// link's center-of-mass Jacobian. A multibody with zero total mass returns a
+  /// zero matrix.
+  ///
+  /// @return The 3 x getDOFCount() center-of-mass Jacobian.
+  [[nodiscard]] Eigen::MatrixXd getCenterOfMassJacobian() const;
+
   /// **EXPERIMENTAL (PLAN-084 Phase C).** Configure compliant ground contact
   /// for the variational integrator: an analytic half-space `{x : n.(x-p0) >=
   /// 0}` with penalty stiffness `k`, optional Coulomb friction `mu`, and

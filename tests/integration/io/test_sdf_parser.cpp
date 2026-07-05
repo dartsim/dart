@@ -36,6 +36,7 @@
 #include "dart/dynamics/ball_joint.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/capsule_shape.hpp"
+#include "dart/dynamics/cone_shape.hpp"
 #include "dart/dynamics/cylinder_shape.hpp"
 #include "dart/dynamics/ellipsoid_shape.hpp"
 #include "dart/dynamics/free_joint.hpp"
@@ -47,7 +48,6 @@
 #include "dart/dynamics/universal_joint.hpp"
 #include "dart/dynamics/weld_joint.hpp"
 #include "dart/io/read.hpp"
-#include "dart/utils/sdf/detail/sdf_helpers.hpp"
 #include "dart/utils/sdf/sdf_parser.hpp"
 
 #include <dart/all.hpp>
@@ -60,6 +60,7 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <numbers>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -248,6 +249,74 @@ SkeletonPtr readSkeletonFromSdfString(
 }
 
 } // namespace
+
+//==============================================================================
+TEST(SdfParser, SelectsNamedWorldModel)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/select_model/world.sdf";
+  retriever->add(
+      uri,
+      R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="world_with_models">
+    <gravity>0 0 -3</gravity>
+    <model name="first_model">
+      <link name="first_link">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+    </model>
+    <model name="selected_model">
+      <link name="selected_link">
+        <inertial><mass>2.0</mass></inertial>
+      </link>
+    </model>
+  </world>
+</sdf>
+ )");
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  options.mModelName = "selected_model";
+
+  const auto skeleton = SdfParser::readSkeleton(common::Uri(uri), options);
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_EQ(skeleton->getName(), "selected_model");
+  EXPECT_NEAR(skeleton->getGravity()[0], 0.0, 1e-12);
+  EXPECT_NEAR(skeleton->getGravity()[1], 0.0, 1e-12);
+  EXPECT_NEAR(skeleton->getGravity()[2], -3.0, 1e-12);
+  ASSERT_EQ(skeleton->getNumBodyNodes(), 1u);
+  EXPECT_NE(skeleton->getBodyNode("selected_link"), nullptr);
+  EXPECT_EQ(skeleton->getBodyNode("first_link"), nullptr);
+}
+
+//==============================================================================
+TEST(SdfParser, MissingNamedWorldModelReturnsNull)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/missing_model/world.sdf";
+  retriever->add(
+      uri,
+      R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="world_with_models">
+    <model name="first_model">
+      <link name="first_link">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+    </model>
+  </world>
+</sdf>
+ )");
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  options.mModelName = "missing_model";
+
+  EXPECT_EQ(SdfParser::readSkeleton(common::Uri(uri), options), nullptr);
+}
 
 //==============================================================================
 TEST(SdfParser, ReadMaterial)
@@ -497,7 +566,7 @@ TEST(SdfParser, DuplicateChildJointKeepsFirstClaim)
 }
 
 //==============================================================================
-TEST(SdfParser, InertialAndMaterialVariantsFromXml)
+TEST(SdfParser, InertialAndMaterialVariantsFromSdfString)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();
   const std::string uri = "memory://pkg/inertial_material/model.sdf";
@@ -521,7 +590,15 @@ TEST(SdfParser, InertialAndMaterialVariantsFromXml)
       <visual name="color_visual">
         <pose>1 2 3 0 0 0</pose>
         <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
-        <material><diffuse>0.2 0.3 0.4</diffuse></material>
+        <material>
+          <diffuse>0.2 0.3 0.4 0.7</diffuse>
+          <pbr>
+            <metal>
+              <metalness>0.65</metalness>
+              <roughness>0.35</roughness>
+            </metal>
+          </pbr>
+        </material>
       </visual>
       <collision name="offset_collision">
         <pose>0 0 0.5 0 0 0</pose>
@@ -545,6 +622,9 @@ TEST(SdfParser, InertialAndMaterialVariantsFromXml)
   EXPECT_DOUBLE_EQ(body->getMass(), 1e-9);
   EXPECT_TRUE(body->getInertia().getLocalCOM().isApprox(
       Eigen::Vector3d(0.1, 0.2, 0.3)));
+  Eigen::Matrix3d expectedMoment;
+  expectedMoment << 0.4, 0.01, 0.02, 0.01, 0.5, 0.03, 0.02, 0.03, 0.6;
+  EXPECT_TRUE(body->getInertia().getMoment().isApprox(expectedMoment));
 
   dynamics::ShapeNode* visual = nullptr;
   body->eachShapeNodeWith<dynamics::VisualAspect>([&](auto* shapeNode) {
@@ -555,8 +635,14 @@ TEST(SdfParser, InertialAndMaterialVariantsFromXml)
   ASSERT_NE(visual, nullptr);
   EXPECT_TRUE(visual->getRelativeTransform().translation().isApprox(
       Eigen::Vector3d(1.0, 2.0, 3.0)));
-  EXPECT_TRUE(visual->getVisualAspect()->getRGBA().head<3>().isApprox(
-      Eigen::Vector3d(0.2, 0.3, 0.4)));
+  auto visualBox
+      = std::dynamic_pointer_cast<dynamics::BoxShape>(visual->getShape());
+  ASSERT_NE(visualBox, nullptr);
+  EXPECT_TRUE(visualBox->getSize().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+  EXPECT_TRUE(visual->getVisualAspect()->getRGBA().isApprox(
+      Eigen::Vector4d(0.2, 0.3, 0.4, 0.7), 1e-6));
+  EXPECT_NEAR(visual->getVisualAspect()->getMetallic(), 0.65, 1e-12);
+  EXPECT_NEAR(visual->getVisualAspect()->getRoughness(), 0.35, 1e-12);
 
   dynamics::ShapeNode* collision = nullptr;
   body->eachShapeNodeWith<dynamics::CollisionAspect>([&](auto* shapeNode) {
@@ -567,12 +653,377 @@ TEST(SdfParser, InertialAndMaterialVariantsFromXml)
   ASSERT_NE(collision, nullptr);
   EXPECT_TRUE(collision->getRelativeTransform().translation().isApprox(
       Eigen::Vector3d(0.0, 0.0, 0.5)));
-  EXPECT_TRUE(collision->getShape()->is<dynamics::SphereShape>());
+  auto collisionSphere
+      = std::dynamic_pointer_cast<dynamics::SphereShape>(collision->getShape());
+  ASSERT_NE(collisionSphere, nullptr);
+  EXPECT_DOUBLE_EQ(collisionSphere->getRadius(), 0.25);
 
   auto* tinyBody = skeleton->getBodyNode("tiny_gravity_off");
   ASSERT_NE(tinyBody, nullptr);
   EXPECT_FALSE(tinyBody->getGravityMode());
   EXPECT_DOUBLE_EQ(tinyBody->getMass(), 1e-9);
+}
+
+//==============================================================================
+TEST(SdfParser, CollisionSurfaceOdeFrictionReadsDynamicsAspect)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/collision_surface/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="collision_surface">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+      <collision name="surface_collision">
+        <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.35</mu>
+              <mu2>0.65</mu2>
+              <fdir1>0 1 0</fdir1>
+              <slip1>0.015</slip1>
+              <slip2>0.025</slip2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  auto* collision = body->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(collision, nullptr);
+  auto* dynamicsAspect = collision->getDynamicsAspect();
+  ASSERT_NE(dynamicsAspect, nullptr);
+
+  EXPECT_DOUBLE_EQ(dynamicsAspect->getPrimaryFrictionCoeff(), 0.35);
+  EXPECT_DOUBLE_EQ(dynamicsAspect->getSecondaryFrictionCoeff(), 0.65);
+  EXPECT_TRUE(dynamicsAspect->getFirstFrictionDirection().isApprox(
+      Eigen::Vector3d::UnitY()));
+  EXPECT_EQ(dynamicsAspect->getFirstFrictionDirectionFrame(), nullptr);
+  EXPECT_DOUBLE_EQ(dynamicsAspect->getPrimarySlipCompliance(), 0.015);
+  EXPECT_DOUBLE_EQ(dynamicsAspect->getSecondarySlipCompliance(), 0.025);
+}
+
+//==============================================================================
+TEST(SdfParser, CollisionSurfaceContactBitmaskDisablesCollisionAspect)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/collision_bitmask/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="collision_bitmask">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+      <collision name="disabled_collision">
+        <geometry><sphere><radius>0.1</radius></sphere></geometry>
+        <surface>
+          <contact>
+            <collide_bitmask>0</collide_bitmask>
+          </contact>
+        </surface>
+      </collision>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  auto* collision = body->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(collision, nullptr);
+  auto* collisionAspect = collision->getCollisionAspect();
+  ASSERT_NE(collisionAspect, nullptr);
+  EXPECT_FALSE(collisionAspect->isCollidable());
+}
+
+//==============================================================================
+TEST(SdfParser, CollisionSurfaceBounceReadsRestitution)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/collision_bounce/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="collision_bounce">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+      <collision name="bouncy_collision">
+        <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
+        <surface>
+          <bounce>
+            <restitution_coefficient>0.42</restitution_coefficient>
+            <threshold>0</threshold>
+          </bounce>
+        </surface>
+      </collision>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  auto* collision = body->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(collision, nullptr);
+  auto* dynamicsAspect = collision->getDynamicsAspect();
+  ASSERT_NE(dynamicsAspect, nullptr);
+  EXPECT_DOUBLE_EQ(dynamicsAspect->getRestitutionCoeff(), 0.42);
+}
+
+//==============================================================================
+TEST(SdfParser, MaterialWithoutDiffusePreservesDefaultColor)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/pbr_only_material/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="pbr_only_material">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+      <visual name="pbr_visual">
+        <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
+        <material>
+          <pbr>
+            <metal>
+              <metalness>0.4</metalness>
+              <roughness>0.8</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  auto* visual = body->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visual, nullptr);
+
+  const auto* visualAspect = visual->getVisualAspect();
+  ASSERT_NE(visualAspect, nullptr);
+  EXPECT_TRUE(visualAspect->usesDefaultColor());
+  EXPECT_TRUE(visualAspect->getRGBA().isApprox(
+      dynamics::VisualAspect::getDefaultRGBA()));
+  EXPECT_NEAR(visualAspect->getMetallic(), 0.4, 1e-12);
+  EXPECT_NEAR(visualAspect->getRoughness(), 0.8, 1e-12);
+}
+
+//==============================================================================
+TEST(SdfParser, VisualMetadataReadsShadowAndHiddenState)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/visual_metadata/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="visual_metadata">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+      <visual name="hidden_visual">
+        <cast_shadows>false</cast_shadows>
+        <visibility_flags>0</visibility_flags>
+        <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  auto* visual = body->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visual, nullptr);
+
+  const auto* visualAspect = visual->getVisualAspect();
+  ASSERT_NE(visualAspect, nullptr);
+  EXPECT_FALSE(visualAspect->getShadowed());
+  EXPECT_TRUE(visualAspect->isHidden());
+}
+
+//==============================================================================
+TEST(SdfParser, VisualTransparencyReadsAlpha)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/visual_transparency/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="visual_transparency">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+      <visual name="transparent_visual">
+        <transparency>0.25</transparency>
+        <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  auto* visual = body->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visual, nullptr);
+
+  const auto* visualAspect = visual->getVisualAspect();
+  ASSERT_NE(visualAspect, nullptr);
+  EXPECT_TRUE(visualAspect->usesDefaultColor());
+  EXPECT_TRUE(visualAspect->getRGB().isApprox(
+      dynamics::VisualAspect::getDefaultRGBA().head<3>()));
+  EXPECT_NEAR(visualAspect->getAlpha(), 0.75, 1e-12);
+}
+
+//==============================================================================
+TEST(SdfParser, PlaneGeometryReadsAsThinBox)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/plane_geometry/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="plane_geometry">
+    <link name="ground">
+      <inertial><mass>1.0</mass></inertial>
+      <visual name="ground_visual">
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>2 3</size>
+          </plane>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("ground");
+  ASSERT_NE(body, nullptr);
+
+  dynamics::ShapeNode* visual = nullptr;
+  body->eachShapeNodeWith<dynamics::VisualAspect>([&](auto* shapeNode) {
+    if (shapeNode->getName() == "ground - ground_visual") {
+      visual = shapeNode;
+    }
+  });
+  ASSERT_NE(visual, nullptr);
+  auto box = std::dynamic_pointer_cast<dynamics::BoxShape>(visual->getShape());
+  ASSERT_NE(box, nullptr);
+  EXPECT_TRUE(box->getSize().isApprox(Eigen::Vector3d(2.0, 3.0, 0.001)));
+}
+
+//==============================================================================
+TEST(SdfParser, EllipsoidGeometryReadsAsEllipsoidShape)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/ellipsoid_geometry/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.11">
+  <model name="ellipsoid_geometry">
+    <link name="link">
+      <inertial><mass>1.0</mass></inertial>
+      <visual name="ellipsoid_visual">
+        <geometry>
+          <ellipsoid>
+            <radii>0.1 0.2 0.3</radii>
+          </ellipsoid>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+  auto* visual = body->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visual, nullptr);
+  const auto ellipsoid
+      = std::dynamic_pointer_cast<dynamics::EllipsoidShape>(visual->getShape());
+  ASSERT_NE(ellipsoid, nullptr);
+  EXPECT_TRUE(
+      ellipsoid->getDiameters().isApprox(Eigen::Vector3d(0.2, 0.4, 0.6)));
+}
+
+//==============================================================================
+TEST(SdfParser, CapsuleAndConeGeometryReadAsDartShapes)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/capsule_cone_geometry/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.12">
+  <model name="capsule_cone_geometry">
+    <link name="link">
+      <inertial><mass>1.0</mass></inertial>
+      <visual name="capsule_visual">
+        <geometry>
+          <capsule>
+            <radius>0.2</radius>
+            <length>0.7</length>
+          </capsule>
+        </geometry>
+      </visual>
+      <collision name="cone_collision">
+        <geometry>
+          <cone>
+            <radius>0.3</radius>
+            <length>0.9</length>
+          </cone>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+
+  auto* visual = body->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visual, nullptr);
+  const auto capsule
+      = std::dynamic_pointer_cast<dynamics::CapsuleShape>(visual->getShape());
+  ASSERT_NE(capsule, nullptr);
+  EXPECT_DOUBLE_EQ(capsule->getRadius(), 0.2);
+  EXPECT_DOUBLE_EQ(capsule->getHeight(), 0.7);
+
+  auto* collision = body->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(collision, nullptr);
+  const auto cone
+      = std::dynamic_pointer_cast<dynamics::ConeShape>(collision->getShape());
+  ASSERT_NE(cone, nullptr);
+  EXPECT_DOUBLE_EQ(cone->getRadius(), 0.3);
+  EXPECT_DOUBLE_EQ(cone->getHeight(), 0.9);
 }
 
 //==============================================================================
@@ -671,6 +1122,41 @@ TEST(SdfParser, AxisUsesParentModelFrameRotation)
       <axis>
         <xyz>1 0 0</xyz>
         <use_parent_model_frame>true</use_parent_model_frame>
+      </axis>
+    </joint>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint
+      = dynamic_cast<dynamics::RevoluteJoint*>(skeleton->getJoint("rev_joint"));
+  ASSERT_NE(joint, nullptr);
+  EXPECT_TRUE(joint->getAxis().isApprox(Eigen::Vector3d(0.0, -1.0, 0.0), 1e-9));
+}
+
+//==============================================================================
+TEST(SdfParser, AxisExpressedInModelFrameUsesSdformatResolution)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/axis_expressed_in/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.10">
+  <model name="axis_expressed_in">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="tip">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="rev_joint" type="revolute">
+      <parent>base</parent>
+      <child>tip</child>
+      <pose>0 0 0 0 0 1.57079632679</pose>
+      <axis>
+        <xyz expressed_in="__model__">1 0 0</xyz>
       </axis>
     </joint>
   </model>
@@ -980,6 +1466,43 @@ f 1 2 3
 }
 
 //==============================================================================
+TEST(SdfParser, IncludedModelRelativeMeshUsesIncludedModelUri)
+{
+  const auto skeleton = SdfParser::readSkeleton(
+      common::Uri(
+          "dart://sample/sdf/test/include_relative_mesh/"
+          "include_relative_mesh.world"));
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_EQ(skeleton->getName(), "relative_mesh_model");
+
+  auto* body = skeleton->getBodyNode("mesh_body");
+  ASSERT_NE(body, nullptr);
+  ASSERT_EQ(body->getNumShapeNodesWith<dynamics::VisualAspect>(), 1u);
+  ASSERT_EQ(body->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
+
+  const auto* visualNode = body->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visualNode, nullptr);
+  const auto visualMesh = std::dynamic_pointer_cast<const dynamics::MeshShape>(
+      visualNode->getShape());
+  ASSERT_NE(visualMesh, nullptr);
+  EXPECT_EQ(
+      visualMesh->getMeshUri2().toString(),
+      "dart://sample/sdf/test/include_relative_mesh/included_model/meshes/"
+      "relative_box.obj");
+
+  const auto* collisionNode
+      = body->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(collisionNode, nullptr);
+  const auto collisionMesh
+      = std::dynamic_pointer_cast<const dynamics::MeshShape>(
+          collisionNode->getShape());
+  ASSERT_NE(collisionMesh, nullptr);
+  EXPECT_EQ(
+      collisionMesh->getMeshUri2().toString(),
+      visualMesh->getMeshUri2().toString());
+}
+
+//==============================================================================
 TEST(SdfParser, MassWithoutInertiaUsesIsotropicTensor)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();
@@ -1049,12 +1572,47 @@ TEST(SdfParser, JointAxisLimitsEffortAndDamping)
   ASSERT_NE(joint, nullptr);
   EXPECT_NEAR(joint->getPositionLowerLimit(0), -1.0, 1e-9);
   EXPECT_NEAR(joint->getPositionUpperLimit(0), 2.0, 1e-9);
-  // SDF parser reads effort/velocity from <limit> but DART's SDF parser
-  // currently only maps position limits and dynamics; velocity/effort limits
-  // remain at defaults (infinity). Verify the position limits and dynamics
-  // properties that ARE parsed.
+  EXPECT_NEAR(joint->getForceLowerLimit(0), -5.5, 1e-9);
+  EXPECT_NEAR(joint->getForceUpperLimit(0), 5.5, 1e-9);
+  EXPECT_NEAR(joint->getVelocityLowerLimit(0), -3.3, 1e-9);
+  EXPECT_NEAR(joint->getVelocityUpperLimit(0), 3.3, 1e-9);
   EXPECT_NEAR(joint->getDampingCoefficient(0), 0.4, 1e-9);
   EXPECT_NEAR(joint->getCoulombFriction(0), 0.2, 1e-9);
+}
+
+//==============================================================================
+TEST(SdfParser, ContinuousJointParsesAsUnboundedRevolute)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/continuous_joint/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="continuous_joint">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="tip">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="continuous_hinge" type="continuous">
+      <parent>base</parent>
+      <child>tip</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+      </axis>
+    </joint>
+  </model>
+</sdf>
+ )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint = dynamic_cast<dynamics::RevoluteJoint*>(
+      skeleton->getJoint("continuous_hinge"));
+  ASSERT_NE(joint, nullptr);
+  EXPECT_TRUE(joint->isCyclic(0));
+  EXPECT_TRUE(joint->getAxis().isApprox(Eigen::Vector3d::UnitZ(), 1e-9));
 }
 
 //==============================================================================
@@ -1128,9 +1686,10 @@ TEST(SdfParser, JointTypesParseFromSkeleton)
       dynamic_cast<dynamics::PrismaticJoint*>(
           skeleton->getJoint("prismatic_joint")),
       nullptr);
-  EXPECT_NE(
-      dynamic_cast<dynamics::ScrewJoint*>(skeleton->getJoint("screw_joint")),
-      nullptr);
+  auto* screwJoint
+      = dynamic_cast<dynamics::ScrewJoint*>(skeleton->getJoint("screw_joint"));
+  ASSERT_NE(screwJoint, nullptr);
+  EXPECT_NEAR(screwJoint->getPitch(), -2.0 * std::numbers::pi / 0.2, 1e-12);
   EXPECT_NE(
       dynamic_cast<dynamics::UniversalJoint*>(
           skeleton->getJoint("universal_joint")),
@@ -1245,109 +1804,6 @@ TEST(SdfParser, InvalidRootJointTypeFallsBackToFreeJoint)
 }
 
 //==============================================================================
-TEST(SdfParser, HelperUtilitiesParseText)
-{
-  using namespace dart::utils::SdfParser::detail;
-  const std::string sdfText = R"(
- <?xml version="1.0" ?>
- <sdf version="1.7">
-   <model name="helper">
-     <link name="link">
-       <pose>1 2 3 0 0 0</pose>
-       <user>1 2 3</user>
-       <size>4 5</size>
-       <custom>0.1 0.2 0.3 0.4</custom>
-       <custom_vec2>6 7</custom_vec2>
-       <custom_vec3>8 9 10</custom_vec3>
-       <custom_vec3i>11 12 13</custom_vec3i>
-       <custom_pose>1 2 3 0.1 0.2 0.3</custom_pose>
-       <bool_flag>true</bool_flag>
-       <false_flag>false</false_flag>
-       <visual name="visual">
-         <geometry>
-           <box><size>0.1 0.2 0.3</size></box>
-         </geometry>
-         <material>
-           <diffuse>0.25 0.5 0.75 1.0</diffuse>
-         </material>
-       </visual>
-     </link>
-   </model>
- </sdf>
-   )";
-
-  sdf::Root root;
-  const auto errors = root.LoadSdfString(sdfText);
-  ASSERT_TRUE(errors.empty());
-  auto modelElement = root.Element()->GetElement("model");
-  ASSERT_NE(modelElement, nullptr);
-  EXPECT_EQ(getAttributeString(modelElement, "name"), "helper");
-  EXPECT_EQ(toLowerCopy("AbC"), "abc");
-  EXPECT_EQ(trimCopy("  value  "), "value");
-
-  auto linkElement = modelElement->GetElement("link");
-  ASSERT_NE(linkElement, nullptr);
-  EXPECT_EQ(getChildElementText(linkElement, "user"), "1 2 3");
-
-  const auto size = getValueVector2d(linkElement, "size");
-  EXPECT_TRUE(size.isApprox(Eigen::Vector2d(4.0, 5.0)));
-
-  const auto customVec2 = getValueVector2d(linkElement, "custom_vec2");
-  EXPECT_TRUE(customVec2.isApprox(Eigen::Vector2d(6.0, 7.0)));
-
-  const auto customVec3 = getValueVector3d(linkElement, "custom_vec3");
-  EXPECT_TRUE(customVec3.isApprox(Eigen::Vector3d(8.0, 9.0, 10.0)));
-
-  const auto vec3i = getValueVector3i(linkElement, "user");
-  EXPECT_TRUE(vec3i == Eigen::Vector3i(1, 2, 3));
-
-  const auto customVec3i = getValueVector3i(linkElement, "custom_vec3i");
-  EXPECT_TRUE(customVec3i == Eigen::Vector3i(11, 12, 13));
-
-  const auto vecxd = getValueVectorXd(linkElement, "custom");
-  ASSERT_EQ(vecxd.size(), 4);
-  EXPECT_DOUBLE_EQ(vecxd[0], 0.1);
-
-  const auto pose
-      = getValueIsometry3dWithExtrinsicRotation(linkElement, "pose");
-  EXPECT_TRUE(pose.translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
-
-  const auto customPose
-      = getValueIsometry3dWithExtrinsicRotation(linkElement, "custom_pose");
-  EXPECT_TRUE(
-      customPose.translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
-
-  EXPECT_TRUE(getValueBool(linkElement, "bool_flag"));
-  EXPECT_FALSE(getValueBool(linkElement, "false_flag"));
-
-  const auto elementText = getElementText(linkElement->GetElement("custom"));
-  EXPECT_EQ(elementText, "0.1 0.2 0.3 0.4");
-
-  auto visualElement = linkElement->GetElement("visual");
-  ASSERT_NE(visualElement, nullptr);
-  auto materialElement = visualElement->GetElement("material");
-  ASSERT_NE(materialElement, nullptr);
-  const auto color = getValueVectorXd(materialElement, "diffuse");
-  ASSERT_EQ(color.size(), 4);
-  EXPECT_DOUBLE_EQ(color[0], 0.25);
-  EXPECT_DOUBLE_EQ(color[2], 0.75);
-
-  bool parsedBool = false;
-  EXPECT_TRUE(parseScalar("true", parsedBool));
-  EXPECT_TRUE(parsedBool);
-  EXPECT_TRUE(parseScalar("false", parsedBool));
-  EXPECT_FALSE(parsedBool);
-
-  ElementEnumerator emptyEnumerator(nullptr, "link");
-  EXPECT_FALSE(emptyEnumerator.next());
-
-  ElementEnumerator visualEnumerator(linkElement, "visual");
-  ASSERT_TRUE(visualEnumerator.next());
-  EXPECT_EQ(visualEnumerator.get(), visualElement);
-  EXPECT_FALSE(visualEnumerator.next());
-}
-
-//==============================================================================
 TEST(SdfParser, CollisionMeshUriAndScale)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();
@@ -1401,15 +1857,16 @@ f 1 2 3
 }
 
 //==============================================================================
-TEST(SdfParser, StaticModelParsesBooleanValues)
+TEST(SdfParser, ModelBooleansParseThroughSdformat)
 {
   auto retriever = std::make_shared<MemoryResourceRetriever>();
-  const std::string uri = "memory://pkg/static_bool/model.sdf";
+  const std::string uri = "memory://pkg/model_booleans/model.sdf";
   const std::string modelSdf = R"(
 <?xml version="1.0" ?>
 <sdf version="1.7">
-  <model name="static_bool">
+  <model name="model_booleans">
     <static>TrUe</static>
+    <self_collide>true</self_collide>
     <link name="link">
       <inertial><mass>1.0</mass></inertial>
     </link>
@@ -1420,6 +1877,34 @@ TEST(SdfParser, StaticModelParsesBooleanValues)
   const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
   ASSERT_NE(skeleton, nullptr);
   EXPECT_FALSE(skeleton->isMobile());
+  EXPECT_TRUE(skeleton->getSelfCollisionCheck());
+}
+
+//==============================================================================
+TEST(SdfParser, WorldModelGravityParsesThroughSdformat)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/world_gravity/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="gravity_world">
+    <gravity>1 2 -3</gravity>
+    <model name="world_gravity_model">
+      <link name="link">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+    </model>
+  </world>
+</sdf>
+  )";
+  retriever->add(uri, modelSdf);
+
+  SdfParser::Options options(retriever);
+  const auto skeleton = SdfParser::readSkeleton(common::Uri(uri), options);
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_EQ(skeleton->getName(), "world_gravity_model");
+  EXPECT_TRUE(skeleton->getGravity().isApprox(Eigen::Vector3d(1.0, 2.0, -3.0)));
 }
 
 //==============================================================================
@@ -1459,7 +1944,7 @@ TEST(SdfParser, UniversalScrewAndBallJointLimits)
           <spring_stiffness>2.0</spring_stiffness>
         </dynamics>
       </axis>
-      <thread_pitch>0.25</thread_pitch>
+      <screw_thread_pitch>0.25</screw_thread_pitch>
     </joint>
     <joint name="universal_joint" type="universal">
       <parent>link1</parent>
@@ -1535,54 +2020,6 @@ TEST(SdfParser, UniversalScrewAndBallJointLimits)
       = dynamic_cast<dynamics::BallJoint*>(skeleton->getJoint("ball_joint"));
   ASSERT_NE(ball, nullptr);
   EXPECT_EQ(ball->getNumDofs(), 3u);
-}
-
-//==============================================================================
-TEST(SdfParser, HelperUtilitiesHandleInvalidValues)
-{
-  using namespace dart::utils::SdfParser::detail;
-  const std::string sdfText = R"(
-<?xml version="1.0" ?>
-<sdf version="1.7">
-  <model name="helper_invalid">
-    <link name="link">
-      <empty />
-      <bool_flag>maybe</bool_flag>
-      <uint_flag>bad</uint_flag>
-      <double_flag>bad</double_flag>
-      <vec2>1</vec2>
-      <vec3>1 2</vec3>
-      <vec3i>1 2</vec3i>
-    </link>
-  </model>
-</sdf>
-  )";
-
-  sdf::Root root;
-  const auto errors = root.LoadSdfString(sdfText);
-  ASSERT_TRUE(errors.empty());
-  auto modelElement = root.Element()->GetElement("model");
-  ASSERT_NE(modelElement, nullptr);
-  auto linkElement = modelElement->GetElement("link");
-  ASSERT_NE(linkElement, nullptr);
-
-  LogCapture capture;
-  EXPECT_TRUE(getElementText(linkElement->GetElement("empty")).empty());
-  EXPECT_TRUE(getAttributeString(linkElement, "missing").empty());
-  EXPECT_FALSE(getValueBool(linkElement, "bool_flag"));
-  EXPECT_EQ(getValueUInt(linkElement, "uint_flag"), 0u);
-  EXPECT_DOUBLE_EQ(getValueDouble(linkElement, "double_flag"), 0.0);
-  EXPECT_TRUE(getValueVector2d(linkElement, "vec2")
-                  .isApprox(Eigen::Vector2d::Zero(), 1e-12));
-  EXPECT_TRUE(getValueVector3d(linkElement, "vec3")
-                  .isApprox(Eigen::Vector3d::Zero(), 1e-12));
-  EXPECT_TRUE(
-      (getValueVector3i(linkElement, "vec3i") == Eigen::Vector3i::Zero()));
-  const auto pose
-      = getValueIsometry3dWithExtrinsicRotation(linkElement, "pose");
-  EXPECT_TRUE(pose.isApprox(Eigen::Isometry3d::Identity(), 1e-12));
-
-  (void)capture.contents();
 }
 
 //==============================================================================

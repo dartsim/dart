@@ -1,5 +1,5 @@
 ---
-description: audit and fix gaps when agents miss documented rules
+description: audit and fix gaps when agents miss or cannot discover documented rules
 argument-hint: "[rule] [where-documented] [actual] [expected]"
 agent: build
 ---

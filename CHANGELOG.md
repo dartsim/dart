@@ -86,6 +86,10 @@ compatibility remains on the active DART 6 LTS branch._
   [#2270](https://github.com/dartsim/dart/pull/2270),
   [#2141](https://github.com/dartsim/dart/pull/2141),
   [#2142](https://github.com/dartsim/dart/pull/2142))
+- Removed the legacy SKEL model format from DART 7, including `.skel` sample
+  assets, `SkelParser`, `ModelFormat::Skel`, and dartpy SKEL bindings/stubs;
+  migrate assets to URDF, SDF, or MJCF, or use `release-6.*` for legacy SKEL
+  compatibility. ([#3288](https://github.com/dartsim/dart/pull/3288))
 - Removed GLUT, OpenSceneGraph, Raylib, legacy GUI examples/tutorials, and legacy
   dartpy GUI bindings in favor of the Filament-backed `dart::gui` stack.
   ([#2044](https://github.com/dartsim/dart/pull/2044),
@@ -136,6 +140,30 @@ compatibility remains on the active DART 6 LTS branch._
 - Expanded `World::computeStepMetrics()` so DART 7 metrics include cached
   rigid-contact counts, penetration, solver iterations/residuals, and
   world-frame multibody momentum while remaining a read-only query.
+- Added multibody center-of-mass accessors to the DART 7 `World` (C++
+  `Multibody::getCenterOfMass`/`getCenterOfMassJacobian`, dartpy
+  `center_of_mass`/`center_of_mass_jacobian`): the world-frame center of mass
+  and the 3 x DOF Jacobian mapping the generalized velocity to the
+  center-of-mass velocity, as the mass-weighted aggregate over the multibody's
+  links. Read-only; no step behavior changes.
+- Added the `Locked` joint actuator type to the DART 7 `World` semi-implicit
+  articulated dynamics (C++ and dartpy): a locked joint is held rigidly at its
+  current position through the same velocity-level equality constraint the
+  `Velocity` actuator uses, with target velocity zero, and ignores any commanded
+  effort or passive spring/damping on the locked coordinate.
+- Added the `Servo` joint actuator type to the DART 7 `World` semi-implicit
+  articulated dynamics (C++ and dartpy): a servo drives the joint to its
+  commanded velocity like `Velocity`, but bounds the motor impulse by the joint
+  effort limits so it saturates like a real motor. When an effort bound binds,
+  the coupled velocity-level solve runs as a boxed LCP; otherwise it keeps the
+  unbounded equality solve.
+- Added the `Acceleration` joint actuator type to the DART 7 `World`
+  semi-implicit articulated dynamics (C++ `Joint::setCommandAcceleration`, dartpy
+  `command_acceleration`): the joint realizes a commanded acceleration exactly
+  via the same velocity-level constraint (target `qdot + acceleration * dt`),
+  overriding gravity and applied effort. Bumps the simulation binary format to
+  version 28 (the `comps.JointActuation` record gains a `commandAcceleration`
+  field). `Mimic` remains reserved.
 - Fixed retained rigid-IPC solver scratch reuse so lagged-friction objective
   assembly keeps the active barrier Hessian while adding friction and dynamics
   terms.
@@ -197,9 +225,43 @@ compatibility remains on the active DART 6 LTS branch._
 #### IO and Parsing
 
 - Made libsdformat a required dependency so SDF files are normalized through the
-  official parser before DART imports them.
-- Modernized URDF/SDF/MJCF loading APIs around DART 7 parser names and cleaner
-  resource-retriever ownership.
+  official parser before DART imports them, including modern joint-axis frame
+  annotations such as `<axis><xyz expressed_in=...>`:
+  [#3291](https://github.com/dartsim/dart/pull/3291)
+- Modernized URDF/SDF/MJCF loading APIs around `dart::io::readSkeleton`,
+  cleaner resource-retriever ownership, format-owned `SdfWriter`/`UrdfWriter`
+  export APIs, and parser-specific SDF selection of named models from
+  multi-model world files:
+  [#3291](https://github.com/dartsim/dart/pull/3291)
+- Fixed SDF world includes so relative meshes inside included models resolve
+  against the included model URI and survive SDF writer read/write/read
+  round-trips: [#3291](https://github.com/dartsim/dart/pull/3291)
+- Added a conservative `SdfWriter` for `Skeleton` round-trips, covering links,
+  model self-collision state, non-default skeleton gravity through SDF world
+  gravity,
+  revolute/continuous/prismatic/weld/screw/universal joints with
+  damping/friction/spring metadata, symmetric effort/velocity limits,
+  sdformat-normalized screw thread pitch,
+  topology-only ball joints, explicit parent-world root joints for supported
+  SDF joint types including continuous revolute roots, link gravity mode, local
+  poses, inertial data,
+  box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual/collision geometry,
+  visual shadow/hidden/transparency state, visual material colors plus PBR
+  metallic/roughness factors, and collision surface contact disable bitmasks,
+  zero-threshold bounce restitution, and ODE friction/slip metadata while
+  reporting unsupported constructs explicitly:
+  [#3291](https://github.com/dartsim/dart/pull/3291)
+- Added a conservative `UrdfWriter` for `Skeleton` round-trips that fit URDF's
+  tree model, covering one-root link trees with identity root FreeJoint or
+  WeldJoint validation, revolute/continuous/prismatic/fixed child joints,
+  continuous joint velocity/effort limits, planar/floating child joints with
+  uniform scalar limits and dynamics, single-DoF mimic metadata, zero-offset
+  coupler mimic transmissions,
+  inertial data, local
+  visual/collision poses, primitive geometry, absolute and package URI meshes,
+  visual colors, and explicit diagnostics for unsupported or lossy DART
+  constructs including soft bodies and invalid mesh resources:
+  [#3291](https://github.com/dartsim/dart/pull/3291)
 - Improved mesh and asset import behavior across convex meshes, polygon meshes,
   Collada scaling, GLTF PBR materials, empty mesh URIs, and sample robot data.
 
@@ -287,6 +349,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Updated dependency baselines for the DART 7 toolchain, including Eigen 5,
   fmt/spdlog updates, Assimp 6 support, and C++23 standard-library feature
   gates. ([#3005](https://github.com/dartsim/dart/pull/3005))
+- Fixed DART 7 Windows dartpy wheel links against conda-forge libcurl/libpsl
+  metadata by pruning Unix-only `libm` entries from imported MSVC CMake target
+  interfaces. ([#3282](https://github.com/dartsim/dart/pull/3282))
 - Added a `DART_USE_SYSTEM_FMT` CMake option (default ON) that falls back to a
   FetchContent source build of fmt when set OFF, so source and container builds
   keep working when a distro's packaged fmt CMake config is broken; the Alt
@@ -305,6 +370,21 @@ compatibility remains on the active DART 6 LTS branch._
 - Made DART AI workflows more completion- and changelog-aware by default, with
   verification-first `$dart-resume` task management and a reusable
   `$dart-changelog` routine for consistent release-note decisions and entries.
+- Clarified AI-native guidance so always-loaded agent rules stay compact,
+  consequential decisions use repo-wide north-star context and proportionate
+  evidence, and in-scope failures are root-caused instead of hidden.
+- Added a canonical AI terminology owner and aligned the workflow, capability,
+  skill, command-adapter, generated-adapter, MCP, hook, subagent, and work
+  packet language across the AI docs, compatibility guide, sync checks, and
+  generated Codex adapters.
+- Added a documentation information-architecture owner that defines docs bucket
+  lifecycles, keeps `docs/onboarding/` as the current developer-handbook path,
+  and records when future folder splits or renames are justified.
+  ([#3290](https://github.com/dartsim/dart/pull/3290))
+- Applied the documentation information architecture to docs-update workflows,
+  generated AI adapters, policy checks, and dev-task cleanup guidance so agents
+  route durable documentation by lifecycle instead of defaulting to the
+  handbook bucket. ([#3294](https://github.com/dartsim/dart/pull/3294))
 - Added a structured `dart-changelog` decision note so Claude, Codex, OpenCode,
   and manual PR authors can record the inspected evidence, target release
   section, entry text, no-entry reason, and PR-link follow-up consistently.
@@ -313,6 +393,10 @@ compatibility remains on the active DART 6 LTS branch._
   dashboard for repository activity, package reach, citation indexes, and
   downstream freshness, with explicit caveats that the counts are activity
   signals rather than unique users.
+- Added an explicit GitHub Pages deployment workflow that packages the current
+  `gh-pages` branch as a Pages artifact, so generated dashboards publish from a
+  visible, cancellable deployment job instead of relying on legacy branch-build
+  queue behavior.
 - Taught CMake linting to skip ignored `.build/` trees so local generated build
   artifacts cannot block `pixi run lint`.
 - Clarified DART 6 LTS release routing so remaining `6.19.x` fixes target the
@@ -339,6 +423,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.
+- Added a lint/check-lint guard that keeps SDF IO on libsdformat typed DOM APIs
+  and rejects TinyXML, raw XML tree, or SDF element text-parsing helpers in
+  `dart/utils/sdf`: [#3291](https://github.com/dartsim/dart/pull/3291)
 - Restored Performance Dashboard benchmark builds in Pixi environments that use
   the host compiler while Conda binutils appear earlier on `PATH`.
 - Sharded the heaviest simulation CTest binaries, tightened CUDA environment

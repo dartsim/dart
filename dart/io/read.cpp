@@ -39,10 +39,11 @@
 #include "dart/utils/composite_resource_retriever.hpp"
 #include "dart/utils/dart_resource_retriever.hpp"
 #include "dart/utils/package_resource_retriever.hpp"
-#include "dart/utils/skel_parser.hpp"
 
 #if DART_HAS_SDFORMAT
   #include "dart/utils/sdf/sdf_parser.hpp"
+
+  #include <sdf/Root.hh>
 #endif
 
 #if DART_IO_HAS_URDF
@@ -102,9 +103,6 @@ std::optional<ModelFormat> inferFormatFromExtension(const common::Uri& uri)
   using enum ModelFormat;
 
   const auto ext = getLowercaseExtension(uri);
-  if (ext == ".skel") {
-    return Skel;
-  }
   if (ext == ".sdf" || ext == ".world") {
     return Sdf;
   }
@@ -126,27 +124,25 @@ std::optional<ModelFormat> inferFormatFromExtension(const common::Uri& uri)
   return std::nullopt;
 }
 
-std::optional<ModelFormat> inferFormatFromXmlRoot(
-    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
+#if DART_HAS_SDFORMAT
+std::optional<ModelFormat> inferSdfFormatWithSdformat(
+    const std::string& content)
 {
-  std::string content;
-  try {
-    content = retriever->readAll(uri);
-  } catch (const std::exception& e) {
-    DART_ERROR(
-        "[dart::io::readSkeleton] Failed reading [{}]: {}",
-        uri.toString(),
-        e.what());
-    return std::nullopt;
+  sdf::Root root;
+  const sdf::Errors errors = root.LoadSdfString(content);
+  (void)errors;
+
+  if (root.Model() || root.WorldCount() > 0) {
+    return ModelFormat::Sdf;
   }
 
-  if (content.empty()) {
-    DART_ERROR(
-        "[dart::io::readSkeleton] Failed reading [{}]: empty content",
-        uri.toString());
-    return std::nullopt;
-  }
+  return std::nullopt;
+}
+#endif
 
+std::optional<ModelFormat> inferUrdfOrMjcfFormatFromXmlRoot(
+    const common::Uri& uri, const std::string& content)
+{
   tinyxml2::XMLDocument doc;
   const auto result = doc.Parse(content.c_str(), content.size());
   if (result != tinyxml2::XML_SUCCESS) {
@@ -167,12 +163,6 @@ std::optional<ModelFormat> inferFormatFromXmlRoot(
   }
 
   const std::string rootName = root->Name();
-  if (rootName == "skel") {
-    return ModelFormat::Skel;
-  }
-  if (rootName == "sdf") {
-    return ModelFormat::Sdf;
-  }
   if (rootName == "robot") {
     return ModelFormat::Urdf;
   }
@@ -183,6 +173,38 @@ std::optional<ModelFormat> inferFormatFromXmlRoot(
   return std::nullopt;
 }
 
+std::optional<ModelFormat> inferFormatFromAmbiguousContent(
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
+{
+  std::string content;
+  try {
+    content = retriever->readAll(uri);
+  } catch (const std::exception& e) {
+    DART_ERROR(
+        "[dart::io::readSkeleton] Failed reading [{}]: {}",
+        uri.toString(),
+        e.what());
+    return std::nullopt;
+  }
+
+  if (content.empty()) {
+    DART_ERROR(
+        "[dart::io::readSkeleton] Failed reading [{}]: empty content",
+        uri.toString());
+    return std::nullopt;
+  }
+
+#if DART_HAS_SDFORMAT
+  // SDF sniffing stays on libsdformat. The TinyXML fallback below is only a
+  // non-SDF root classifier for legacy URDF and MJCF XML entry points.
+  if (const auto format = inferSdfFormatWithSdformat(content)) {
+    return format;
+  }
+#endif
+
+  return inferUrdfOrMjcfFormatFromXmlRoot(uri, content);
+}
+
 std::optional<ModelFormat> inferFormat(
     const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
 {
@@ -190,7 +212,7 @@ std::optional<ModelFormat> inferFormat(
     return ext;
   }
 
-  return inferFormatFromXmlRoot(uri, retriever);
+  return inferFormatFromAmbiguousContent(uri, retriever);
 }
 
 ReadOptions resolveOptions(const ReadOptions& options)
@@ -258,8 +280,6 @@ dynamics::SkeletonPtr readSkeleton(
   }
 
   switch (format) {
-    case Skel:
-      return utils::SkelParser::readSkeleton(uri, resolved.resourceRetriever);
     case Sdf:
 #if DART_HAS_SDFORMAT
     {

@@ -361,14 +361,6 @@ def find_static_violations(root: Path = REPO_ROOT) -> list[Violation]:
         )
 
     removed_world_loader_stubs = {
-        stubs_root
-        / "utils"
-        / "SkelParser.pyi": (
-            "readWorld",
-            "read_world",
-            "readWorldXML",
-            "read_world_xml",
-        ),
         stubs_root / "utils" / "SdfParser.pyi": ("readWorld", "read_world"),
         stubs_root / "utils" / "MjcfParser.pyi": ("readWorld", "read_world"),
         stubs_root
@@ -450,12 +442,6 @@ def find_runtime_violations(require_runtime: bool = False) -> list[Violation]:
     io = getattr(dartpy, "io", None)
     if io is not None:
         removed_world_loader_attrs = {
-            "SkelParser": (
-                "readWorld",
-                "read_world",
-                "readWorldXML",
-                "read_world_xml",
-            ),
             "SdfParser": ("readWorld", "read_world"),
             "MjcfParser": ("readWorld", "read_world"),
         }
