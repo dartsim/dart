@@ -46,6 +46,7 @@
 #include <dart/simulation/detail/entity_conversion.hpp>
 #include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
+#include <dart/simulation/diff/physical_parameter.hpp>
 #include <dart/simulation/frame/fixed_frame.hpp>
 #include <dart/simulation/frame/frame.hpp>
 #include <dart/simulation/frame/free_frame.hpp>
@@ -189,10 +190,12 @@ constexpr std::size_t kIgnoredCollisionPairTailBytes = sizeof(std::size_t);
 constexpr std::size_t kVariationalOptionTailBytes
     = sizeof(std::size_t) + sizeof(double);
 constexpr std::size_t kComputeAcceleratorPolicyTailBytes = sizeof(std::uint8_t);
+constexpr std::size_t kDifferentiableParameterTailBytes = sizeof(std::size_t);
 constexpr std::size_t kWorldOptionTailBytes
     = sizeof(std::uint8_t) + kSolverOptionTailBytes
       + kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
-      + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes;
+      + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes
+      + kDifferentiableParameterTailBytes;
 
 dart::simulation::JointSpec makeJointSpec(
     std::string_view name,
@@ -1087,6 +1090,67 @@ TEST(Serialization, PreservesComplementarityAwareContactGradientMode)
       sx::ContactGradientMode::ComplementarityAware);
 }
 
+#ifdef DART_HAS_DIFF
+TEST(Serialization, PreservesDifferentiableParameterRegistrations)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.differentiable = true;
+  options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
+  options.timeStep = 1e-3;
+  sx::World world1(options);
+
+  sx::RigidBodyOptions bodyOptions;
+  bodyOptions.mass = 2.0;
+  bodyOptions.position = Eigen::Vector3d(0.0, 0.0, 1.0);
+  auto body = world1.addRigidBody("tracked_body", bodyOptions);
+  world1.addDifferentiableParameter(body, sx::PhysicalParameter::MASS);
+  world1.addDifferentiableParameter(body, sx::PhysicalParameter::INERTIA);
+  world1.addDifferentiableParameter(body, sx::PhysicalParameter::FRICTION);
+  ASSERT_EQ(world1.getNumDifferentiableParameters(), 3u);
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  auto restoredBody = world2.getRigidBody("tracked_body");
+  ASSERT_TRUE(restoredBody.has_value());
+  EXPECT_TRUE(world2.isDifferentiable());
+  ASSERT_EQ(world2.getNumDifferentiableParameters(), 3u);
+
+  restoredBody->setForce(Eigen::Vector3d(0.5, -0.3, 0.7));
+  world2.step();
+  const sx::StepDerivatives derivatives = world2.getStepDerivatives();
+  ASSERT_EQ(derivatives.parameterJacobian.rows(), 6);
+  ASSERT_EQ(derivatives.parameterJacobian.cols(), 5);
+  EXPECT_GT(derivatives.parameterJacobian.col(0).norm(), 0.0);
+}
+
+TEST(Serialization, RejectsInvalidDifferentiableParameterRegistration)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.differentiable = true;
+  sx::World world1(options);
+  auto body = world1.addRigidBody("tracked_body");
+  world1.addDifferentiableParameter(body, sx::PhysicalParameter::MASS);
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+  auto corruptRecord = ss.str();
+  ASSERT_GT(corruptRecord.size(), 0u);
+  corruptRecord.back() = static_cast<char>(99);
+
+  std::stringstream input(corruptRecord);
+  sx::World loaded;
+  EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
+}
+#endif
+
 TEST(Serialization, LegacyV15WorldSolverOptionsLoadBeforeIgnoredPairs)
 {
   namespace sx = dart::simulation;
@@ -1136,7 +1200,8 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
 
   const std::size_t solverSuffixBytes
       = kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
-        + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes;
+        + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes
+        + kDifferentiableParameterTailBytes;
   ASSERT_GE(validRecord.size(), solverSuffixBytes + kSolverOptionTailBytes);
   expectInvalidByte(solverSuffixBytes + 4u); // rigid-body solver
   expectInvalidByte(solverSuffixBytes + 3u); // contact solver method
@@ -1153,9 +1218,9 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
           EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
         };
 
-  const std::size_t deactivationOffset = validRecord.size()
-                                         - kComputeAcceleratorPolicyTailBytes
-                                         - kDeactivationOptionTailBytes;
+  const std::size_t deactivationOffset
+      = validRecord.size() - kDifferentiableParameterTailBytes
+        - kComputeAcceleratorPolicyTailBytes - kDeactivationOptionTailBytes;
   const std::size_t toleranceOffset = deactivationOffset - sizeof(double);
   const std::size_t iterationOffset = toleranceOffset - sizeof(std::size_t);
   const std::size_t invalidIterations = 0u;
@@ -1165,8 +1230,9 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
   expectInvalidTailField(
       toleranceOffset, &invalidTolerance, sizeof(invalidTolerance));
 
-  const std::size_t computePolicyOffset
-      = validRecord.size() - kComputeAcceleratorPolicyTailBytes;
+  const std::size_t computePolicyOffset = validRecord.size()
+                                          - kDifferentiableParameterTailBytes
+                                          - kComputeAcceleratorPolicyTailBytes;
   const std::uint8_t invalidComputePolicy = 99u;
   expectInvalidTailField(
       computePolicyOffset, &invalidComputePolicy, sizeof(invalidComputePolicy));
@@ -1213,6 +1279,7 @@ TEST(Serialization, LegacyLoadResetsMissingWorldSolverOptionsToDefaults)
   EXPECT_EQ(
       loaded.getComputeAcceleratorPolicy(),
       sx::ComputeAcceleratorPolicy::CpuOnly);
+  EXPECT_EQ(loaded.getNumDifferentiableParameters(), 0u);
 }
 
 // Test that legacy world records without versioned gravity metadata leave

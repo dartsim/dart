@@ -95,9 +95,10 @@ SKEL-YAML direction just because the prototype once existed.
 
 1. Land the Phase 2 removal branch (`feature/remove-skel-dart7-phase2`) after
    review. Add the PR link to the DART 7 changelog entry before merge.
-2. Draft a fresh Phase 3 decision record for YAML: front-end over existing
-   formats vs. new DART-owned scene format, with no SKEL syntax carryover.
-3. Keep Phase 4 USD work coordinated with
+2. Continue the stacked follow-up branch after Phase 2 lands: Phase 3 records
+   the YAML non-adoption decision, Phase 4 records the USD coordination
+   boundary, and Phase 5 records the bounded writer scope.
+3. Keep any further USD work coordinated with
    [`usd_scene_loader/`](../usd_scene_loader/) rather than duplicating that
    loader surface here.
 

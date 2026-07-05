@@ -84,11 +84,35 @@ Relative to existing work:
 2. Run a Dojo de-risking spike after the current differentiable surface lands:
    implement an internal single-body or planar multibody NCP/IPM toy solve,
    expose no public API, and compare the implicit-gradient result with central
-   finite differences.
+   finite differences. **Status:** the first scalar central-path contact spike
+   now lives in `tests/unit/simulation/diff/test_diff_dojo_style_ipm_spike.cpp`
+   and passes under `DART_BUILD_DIFF=ON`.
 3. If the spike succeeds, decide whether the Dojo path stays under PLAN-110 as a
    second opt-in rigid solver or splits into a new initiative. The split decision
    should depend on how much maximal-coordinate model/state machinery overlaps
    with PLAN-080 and PLAN-082.
+
+## Spike Result (2026-07-04)
+
+The first spike is deliberately test-only. It solves a scalar relaxed normal
+contact equation on a central path,
+`lambda * (free_gap + h * lambda / mass) = mu`, using Newton iterations. The
+test differentiates the converged contact impulse implicitly and checks the
+post-step position gradient with respect to force and mass against central finite
+differences.
+
+Evidence:
+
+- `DART_BUILD_DIFF_OVERRIDE=ON pixi run config`
+- `cmake --build build/default/cpp/Release --target test_diff_dojo_style_ipm_spike`
+- `ctest --test-dir build/default/cpp/Release -R '^test_diff_dojo_style_ipm_spike$' --output-on-failure`
+
+Verdict: the central-path implicit-gradient shape is viable for a small DART-owned
+internal contact solve, but this is not a Dojo-style solver commitment. The next
+decision is architectural: either split the maximal-coordinate/NCP/IPM work into a
+new plan or keep a second rigid solver family under PLAN-110 after maintainer
+review. Until that decision, DART should expose no Dojo-named public API, no
+solver/cache public types, and no Dojo.jl runtime dependency.
 
 ## Acceptance Gate Before Promotion
 

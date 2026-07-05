@@ -17,19 +17,20 @@ ENABLE_LEGACY_MODULES = os.environ.get(_LEGACY_ENV, "1").lower() not in (
     "false",
     "no",
 )
-WARN_ON_LEGACY_MODULES = os.environ.get(_LEGACY_WARN_ENV, "1").lower() not in (
+WARN_ON_LEGACY_MODULES = os.environ.get(_LEGACY_WARN_ENV, "0").lower() not in (
     "0",
     "false",
     "no",
 )
 
 # DART 6 submodules retained only as deprecated compatibility wrappers: their
-# public symbols are flat-promoted to dartpy.*, and reaching them via the
-# submodule path emits a DeprecationWarning. `simulation` is deliberately absent
-# here -- it is the official DART 7 ECS module with its own generated
-# simulation.pyi stub, so dartpy.simulation.World / dartpy.simulation.diff must
-# resolve without a deprecation warning (and not fail under `-W error`), even
-# though the same names are also promoted flat as dartpy.World etc.
+# public symbols are flat-promoted to dartpy.*. Reaching them via the submodule
+# path can emit a DeprecationWarning when DARTPY_WARN_ON_LEGACY_MODULES=1.
+# `simulation` is deliberately absent here -- it is the official DART 7 ECS
+# module with its own generated simulation.pyi stub, so dartpy.simulation.World /
+# dartpy.simulation.diff must resolve without a deprecation warning (and not fail
+# under `-W error`), even though the same names are also promoted flat as
+# dartpy.World etc.
 _LEGACY_MODULES: tuple[str, ...] = (
     "common",
     "math",
@@ -101,12 +102,17 @@ class _LegacyModule(types.ModuleType):
     self.__dict__["_replacement"] = replacement
     self.__dict__["__package__"] = name.rpartition(".")[0]
     self.__dict__["__doc__"] = getattr(target, "__doc__", None)
+    for metadata in ("__file__", "__spec__", "__loader__", "__cached__"):
+      if hasattr(target, metadata):
+        self.__dict__[metadata] = getattr(target, metadata)
     if hasattr(target, "__path__"):
       self.__dict__["__path__"] = getattr(target, "__path__")
     if hasattr(target, "__all__"):
       self.__dict__["__all__"] = getattr(target, "__all__")
 
   def __getattr__(self, item):
+    if item.startswith("__") and item.endswith("__"):
+      return getattr(self._target, item)
     _warn_once(self.__name__, self._replacement)
     return getattr(self._target, item)
 

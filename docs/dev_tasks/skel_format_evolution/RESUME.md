@@ -1,6 +1,37 @@
 # Resume: SKEL Format Evolution
 
-## Current Resume Checkpoint (2026-07-03)
+## Current Resume Checkpoint (2026-07-05)
+
+Phase 2 remains implemented on `feature/remove-skel-dart7-phase2`; no matching
+GitHub PR exists yet. This branch was merged locally with current
+`origin/main` (`5ec8b6644ad`) before PR creation. The only merge conflict was
+in `docs/dev_tasks/usd_scene_loader/README.md`; it was resolved by keeping the
+new OpenUSD blocker/specification-intake text from `main` while removing SKEL
+from the DART 7 parity/front-door wording.
+
+The local merge-validation pass on 2026-07-05 completed:
+
+- lightweight invariants: SKEL parser/source files absent, `data/skel` absent,
+  Kima Collada meshes present under `data/mesh/kima/*.dae`;
+- `pixi run python -m pytest python/tests/unit/test_check_dartpy_import_layout.py python/tests/unit/utils/test_utils_stub_import.py python/tests/unit/test_check_dart7_world_promotion_blockers.py`
+  — 28 passed;
+- `pixi run check-ai-commands`;
+- `pixi run check-dartpy-import-layout`;
+- `pixi run run-cpp-target INTEGRATION_io_Read` — 7 passed, including
+  `Read.SkelIsNotSupported`;
+- `pixi run run-cpp-target UNIT_dynamics_MeshShape` — 49 passed;
+- `pixi run run-cpp-target test_mesh_loaderNone` — 5 passed;
+- `pixi run lint`.
+
+The sdformat-boundary checker is not part of this Phase 2 branch; it lives on
+the stacked writer branch that owns the SDF IO boundary work. Do not broaden the
+Phase 2 removal PR with that later lint machinery.
+
+Immediate next step: after explicit maintainer/user approval, push
+`feature/remove-skel-dart7-phase2`, open the Phase 2 PR against `main`, then add
+the resulting PR link to the DART 7 SKEL-removal changelog bullet before merge.
+
+## Previous Resume Checkpoint (2026-07-03)
 
 Phase 2 is implemented on `feature/remove-skel-dart7-phase2` and awaiting PR
 creation/review/merge. The branch removes the C++ SKEL parser, `dart::io`
@@ -83,14 +114,15 @@ can be recovered without adopting the old SKEL YAML direction.
 
 ## Current Branch
 
-`feature/remove-skel-dart7-phase2` — Phase 2 removal is implemented locally.
+`feature/remove-skel-dart7-phase2` — Phase 2 removal is implemented locally and
+merged with current `origin/main` for PR readiness.
 
 ## Immediate Next Step
 
-Land Phase 2, then decide Phase 3: whether YAML should be a front-end over
-existing URDF/SDF semantics or a new DART-owned scene format. Keep Phase 4 USD
-work in `docs/dev_tasks/usd_scene_loader/` and keep Phase 5 export writers as a
-separate round-trip design/implementation slice.
+Push/open the Phase 2 PR only after explicit maintainer/user approval, then add
+the PR link to the DART 7 SKEL-removal changelog bullet before merge. After
+Phase 2 lands, continue the stacked follow-up branch for Phase 3/4/5 task
+closeout.
 
 ## Context That Would Be Lost
 
@@ -118,5 +150,5 @@ git status && git log -3 --oneline
 ```
 
 Then finish PR creation/review/merge follow-up for Phase 2. For Phase 3 or
-Phase 5, start from this folder's `README.md` and current DART 7 requirements,
-not from the old prototype.
+Phase 5, continue from the stacked follow-up branch, this folder's `README.md`,
+and current DART 7 requirements, not from the old prototype.

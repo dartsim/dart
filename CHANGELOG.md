@@ -117,8 +117,12 @@ compatibility remains on the active DART 6 LTS branch._
 - Added runtime replay recording and restore for `World`, enabling deterministic
   frame scrubbing without re-running physics.
 - Added opt-in analytic differentiable simulation, including contact-aware step
-  derivatives, vector-Jacobian products, dartpy/torch bridges, and differentiable
-  rollout helpers.
+  derivatives, vector-Jacobian products, dartpy/torch bridges, differentiable
+  rollout helpers, and torch-free worked trajectory-optimization and
+  system-identification examples, with binary save/load preserving registered
+  differentiable parameters, CI guarding diff-enabled builds, and torch imports
+  remaining safe with legacy dartpy module shims.
+  ([#3244](https://github.com/dartsim/dart/pull/3244))
 - Expanded rigid and articulated simulation with body deactivation, dynamic joint
   constraints, batch semantics, dense-index model identity, and allocation-free
   warmed multibody steps. ([#2939](https://github.com/dartsim/dart/pull/2939),
@@ -136,6 +140,12 @@ compatibility remains on the active DART 6 LTS branch._
 - Expanded `World::computeStepMetrics()` so DART 7 metrics include cached
   rigid-contact counts, penetration, solver iterations/residuals, and
   world-frame multibody momentum while remaining a read-only query.
+- Added the `Locked` joint actuator type to the DART 7 `World` semi-implicit
+  articulated dynamics (C++ and dartpy): a locked joint is held rigidly at its
+  current position through the same velocity-level equality constraint the
+  `Velocity` actuator uses, with target velocity zero, and ignores any commanded
+  effort or passive spring/damping on the locked coordinate. `Servo`,
+  `Acceleration`, and `Mimic` remain reserved.
 - Fixed retained rigid-IPC solver scratch reuse so lagged-friction objective
   assembly keeps the active barrier Hessian while adding friction and dynamics
   terms.
@@ -206,8 +216,8 @@ compatibility remains on the active DART 6 LTS branch._
 #### Python Bindings
 
 - Expanded dartpy bindings, documentation, autodoc stub handling, and examples
-  around the nanobind surface, while keeping legacy compatibility warnings where
-  migration still needs a bridge.
+  around the nanobind surface, while keeping opt-in legacy compatibility warnings
+  where migration still needs a bridge.
 - Reworked dartpy packaging around `pyproject.toml`, Pixi wheel builds, Windows
   wheels, Python 3.14, and stricter wheel artifact checks.
   ([#2043](https://github.com/dartsim/dart/pull/2043),
@@ -287,6 +297,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Updated dependency baselines for the DART 7 toolchain, including Eigen 5,
   fmt/spdlog updates, Assimp 6 support, and C++23 standard-library feature
   gates. ([#3005](https://github.com/dartsim/dart/pull/3005))
+- Fixed DART 7 Windows dartpy wheel links against conda-forge libcurl/libpsl
+  metadata by pruning Unix-only `libm` entries from imported MSVC CMake target
+  interfaces. ([#3282](https://github.com/dartsim/dart/pull/3282))
 - Added a `DART_USE_SYSTEM_FMT` CMake option (default ON) that falls back to a
   FetchContent source build of fmt when set OFF, so source and container builds
   keep working when a distro's packaged fmt CMake config is broken; the Alt
@@ -322,6 +335,17 @@ compatibility remains on the active DART 6 LTS branch._
   material rather than an installed workflow, keeping agent plans, packets,
   dev-task acceptance evidence, and gates in DART-owned docs.
   ([#3054](https://github.com/dartsim/dart/pull/3054))
+- Added a "discover your unknowns before committing" discipline to the AI
+  operating docs: `docs/ai/principles.md` Axiom 2 now covers surfacing unknowns
+  (the map-is-not-the-territory framing) and `docs/ai/orchestration.md` owns a
+  method catalog — blind-spot review, throwaway spike, requirements interview,
+  and reference map — each mapped to a public path, so agents resolve unknowns
+  before large work instead of encoding guesses into a plan.
+- Added a root-cause discipline to the AI operating docs: `docs/ai/principles.md`
+  now carries an axiom that unexpected failures (failing tests, build errors,
+  regressions, numerical drift) are reproduced as the smallest failing case and
+  fixed at the cause with regression coverage, rather than silenced or patched
+  around, plus a matching principle-audit item.
 
 #### Tests, Benchmarks, and Quality Gates
 
