@@ -187,9 +187,10 @@ round-trip coverage includes the shipped SDF fixtures converted from legacy
 SKEL (`single_pendulum.sdf`, `cube.sdf`, `shapes.sdf`, and
 `test_shapes.sdf`) and the native two-link revolute SDF fixture
 (`two_link_revolute_model.sdf`), the native root-model quadruped fixture
-(`quad.sdf`), the root-model issue fixtures (`test_issue1583.model` and
-`test_issue1683.model`), plus world-contained `issue1193_revolute*.sdf`
-fixtures, `high_version.world`, `single_bodynode_skeleton.world`, and
+(`quad.sdf`), the root-model issue fixtures (`test_issue1583.model`,
+`test_issue1596.model`, and `test_issue1683.model`), plus world-contained
+`issue1193_revolute*.sdf` fixtures, `high_version.world`,
+`single_bodynode_skeleton.world`, and
 `test_skeleton_joint.world`, plus `force_torque_test.world` /
 `force_torque_test2.world` through read/write/read smokes that
 compare body, joint, inertial, mobility, gravity, axis-limit, joint-dynamics,
@@ -199,8 +200,8 @@ two-link, and three-link models. The quadruped fixture covers 17 links, 16
 revolute joints, finite axis velocity/effort limits, visual material colors,
 repeated box visual/collision geometry, and foot sphere visuals. The root-model
 issue fixtures cover fixed parent-world root semantics, model poses, child
-revolute axes and limits, and cylinder/box visual geometry. The simple world
-fixtures cover high-version SDF input,
+revolute and universal joint axes and limits, and box/sphere/cylinder visual
+and collision geometry. The simple world fixtures cover high-version SDF input,
 default-inertial fallback, root-joint semantics, gravity, and box/cylinder
 visual and collision geometry. The mixed-joint world fixture covers prismatic,
 revolute, screw, and revolute2/universal joints plus cylinder visual and

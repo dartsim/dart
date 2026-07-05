@@ -1439,6 +1439,76 @@ TEST(SdfWriter, RoundTripsExistingSimpleJointModelFixtures)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsExistingUniversalJointModelFixture)
+{
+  const auto original = utils::SdfParser::readSkeleton(
+      common::Uri("dart://sample/sdf/test/test_issue1596.model"));
+  ASSERT_NE(original, nullptr);
+  ASSERT_EQ(original->getName(), "model_1");
+  ASSERT_EQ(original->getNumBodyNodes(), 2u);
+  ASSERT_EQ(original->getNumJoints(), 2u);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  const auto path = writeTempSdf(writeResult.value(), "test_issue1596_model");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+  EXPECT_VECTOR_NEAR(reparsed->getGravity(), original->getGravity(), 1e-12);
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+  const auto* originalLink0 = test::requireBodyNode(*original, "link_00");
+  const auto* originalLink1 = test::requireBodyNode(*original, "link_01");
+  const auto* link0 = test::requireBodyNode(*reparsed, "link_00");
+  const auto* link1 = test::requireBodyNode(*reparsed, "link_01");
+  ASSERT_NE(originalLink0, nullptr);
+  ASSERT_NE(originalLink1, nullptr);
+  ASSERT_NE(link0, nullptr);
+  ASSERT_NE(link1, nullptr);
+  expectBodyInertiaRoundTrips(*link0, *originalLink0, 1e-12);
+  expectBodyInertiaRoundTrips(*link1, *originalLink1, 1e-12);
+
+  const auto* originalRoot
+      = test::requireJoint<dynamics::UniversalJoint>(*original, "joint_00");
+  const auto* root
+      = test::requireJoint<dynamics::UniversalJoint>(*reparsed, "joint_00");
+  ASSERT_NE(originalRoot, nullptr);
+  ASSERT_NE(root, nullptr);
+  expectJointRoundTrips(*root, *originalRoot, 1e-12);
+  EXPECT_VECTOR_NEAR(root->getAxis1(), originalRoot->getAxis1(), 1e-12);
+  EXPECT_VECTOR_NEAR(root->getAxis2(), originalRoot->getAxis2(), 1e-12);
+
+  const auto* originalChild
+      = test::requireJoint<dynamics::UniversalJoint>(*original, "joint_01");
+  const auto* child
+      = test::requireJoint<dynamics::UniversalJoint>(*reparsed, "joint_01");
+  ASSERT_NE(originalChild, nullptr);
+  ASSERT_NE(child, nullptr);
+  expectJointRoundTrips(*child, *originalChild, 1e-12);
+  EXPECT_VECTOR_NEAR(child->getAxis1(), originalChild->getAxis1(), 1e-12);
+  EXPECT_VECTOR_NEAR(child->getAxis2(), originalChild->getAxis2(), 1e-12);
+
+  for (const auto* body : {link0, link1}) {
+    const auto* originalBody
+        = test::requireBodyNode(*original, body->getName());
+    ASSERT_NE(originalBody, nullptr);
+    expectBoxShapeRoundTrips<dynamics::VisualAspect>(
+        *body, *originalBody, 0, 2, 1e-12);
+    expectSphereShapeRoundTrips<dynamics::VisualAspect>(
+        *body, *originalBody, 1, 2, 1e-12);
+    expectBoxShapeRoundTrips<dynamics::CollisionAspect>(
+        *body, *originalBody, 0, 1, 1e-12);
+  }
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsExistingWorldRevoluteFixtures)
 {
   const std::vector<std::pair<std::string, std::string>> fixtures = {

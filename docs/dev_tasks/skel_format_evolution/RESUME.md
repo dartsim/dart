@@ -84,7 +84,8 @@ targets are implemented or durably deferred.
 
 SDF shipped-fixture writer coverage now includes the native converted SKEL
 fixtures, `quad.sdf`, `two_link_revolute_model.sdf`,
-`test_issue1583.model`, `test_issue1683.model`, world-contained
+`test_issue1583.model`, `test_issue1596.model`, `test_issue1683.model`,
+world-contained
 `issue1193_revolute*.sdf`, `high_version.world`,
 `single_bodynode_skeleton.world`, `test_skeleton_joint.world`, and the
 sensor-bearing `force_torque_test.world` / `force_torque_test2.world` fixtures.
@@ -92,8 +93,10 @@ These tests load through the libsdformat-backed DART SDF parser, write with
 `SdfParser::tryWriteSkeletonToString()`, reparse the emitted SDF, and compare
 imported `Skeleton` semantics only. The issue fixture coverage uses
 `RootJointType::Fixed` on reparse to recover the fixed parent-world root
-semantics represented by SDF static model state. The force-torque coverage does
-not claim SDF sensor or physics metadata preservation.
+semantics represented by SDF static model state. The issue fixture coverage
+also includes parent-world and child universal joints from
+`test_issue1596.model`. The force-torque coverage does not claim SDF sensor or
+physics metadata preservation.
 
 Current SDF IO rule: keep SDF parsing, dispatch, semantic reads, and writing on
 libsdformat APIs. The retained `sdf::Element` bridge is only for
@@ -2086,6 +2089,43 @@ Changelog decision:
 - Entry text: N/A
 - PR-body note: record as SDF root-model issue fixture round-trip verification
   if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
+Additional validation for SDF universal-joint issue fixture coverage:
+
+- Added `SdfWriter.RoundTripsExistingUniversalJointModelFixture`, which loads
+  `dart://sample/sdf/test/test_issue1596.model`, writes it through
+  `SdfParser::tryWriteSkeletonToString()`, reparses the emitted SDF through the
+  normal `SdfParser` path, and compares the DART skeleton semantics imported
+  from the fixture: model name, mobility, gravity, body inertias, parent-world
+  and child universal joint topology/axes/limits/dynamics, and box/sphere
+  visual plus box collision geometry.
+- The test stays on the libsdformat-backed DART SDF parser/writer/reparser
+  path. It does not add XML-level SDF parsing or inspect emitted XML text.
+
+Validation commands:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsExistingUniversalJointModelFixture'`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter` (89 tests)
+- `pixi run check-sdf-sdformat-boundary`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Scope evidence: `CHANGELOG.md` DART 7 IO and Parsing SDF writer bullet
+  already covers the conservative SDF writer, universal joints, root-joint
+  behavior, primitive visual/collision geometry, finite limits/dynamics, and
+  explicit unsupported/lossy diagnostics.
+- Decision: no additional changelog entry. This slice adds fixture-level
+  read/write/read verification for an existing shipped SDF issue model without
+  adding a new public API or broadening the documented writer contract.
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: record as SDF universal-joint issue fixture round-trip
+  verification if a PR is opened.
 - Follow-up: none until an implementation PR exists.
 
 Changelog decision:
