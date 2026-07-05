@@ -123,6 +123,9 @@ faster; it must not be the only path.
 - `docs/ai/workflows.md` capability rows;
 - public path and gate evidence for each workflow;
 - required-reading entries are represented in each workflow row;
+- `dart-docs-update` always loads `docs/AGENTS.md` and
+  `docs/information-architecture.md` so documentation edits cannot bypass the
+  docs placement owner;
 - approval-boundary wording around GitHub, CI, branch, and review-thread
   mutations;
 - private-path references in `docs/ai/`.

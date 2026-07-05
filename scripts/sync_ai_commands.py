@@ -31,6 +31,10 @@ CODEX_DESC_LIMIT = 500
 MAX_SKILL_LINES = 500
 MAX_COMMAND_LINES = 200
 REQUIRED_COMMAND_SECTIONS = ("Required Reading", "Workflow", "Output")
+DOCS_UPDATE_REQUIRED_READING = (
+    "docs/AGENTS.md",
+    "docs/information-architecture.md",
+)
 CAPABILITY_SCHEMA_VERSION = 1
 CAPABILITY_STATUS_VALUES = {"active", "deprecated", "parked", "proposed"}
 CAPABILITY_WORKFLOW_GATE_PROFILE_VALUES = {
@@ -581,6 +585,16 @@ def missing_required_reading_errors(
         f"{workflow_path_label}: `{name}` missing required reading `{required}`"
         for required in required_reading
         if required != "AGENTS.md" and required not in public_path
+    ]
+
+
+def docs_update_required_reading_errors(command_path: Path) -> list[str]:
+    """Return errors when the docs workflow can bypass placement policy."""
+    required_reading = set(extract_required_reading(command_path))
+    return [
+        f"{display_path(command_path)}: dart-docs-update must require `{required}`"
+        for required in DOCS_UPDATE_REQUIRED_READING
+        if required not in required_reading
     ]
 
 
@@ -1198,13 +1212,16 @@ def validate_ai_docs(repo_root: Path) -> bool:
                     f"{display_path(workflows_path)}: `{name}` missing gate evidence"
                 )
 
+            command_required_reading = extract_required_reading(command_path)
             errors.extend(required_reading_path_errors(repo_root, command_path))
+            if name == "dart-docs-update":
+                errors.extend(docs_update_required_reading_errors(command_path))
             errors.extend(
                 missing_required_reading_errors(
                     display_path(workflows_path),
                     name,
                     public_path,
-                    extract_required_reading(command_path),
+                    command_required_reading,
                 )
             )
 

@@ -3,7 +3,9 @@
 Working documentation for multi-phase development tasks in DART.
 
 > **Key Rule**: `docs/dev_tasks/` is for **working documentation** during active development.
-> When a task completes, the folder is **deleted** (not archived). Key insights go to `docs/onboarding/`.
+> When a task completes, the folder is **deleted** (not archived). Key
+> insights move to the durable owner selected by
+> [`docs/information-architecture.md`](../information-architecture.md).
 
 ## When to Create a dev_tasks Folder
 
@@ -185,14 +187,18 @@ find docs/dev_tasks -maxdepth 2 -type d -print
        Open-ended checklist items such as "continue expanding" need an explicit
        stopping condition or scope cap before cleanup; record the achieved scope
        and move further expansion to the durable follow-up home.
-2. [ ] **Extract key insights** → Add brief section to the existing relevant `docs/onboarding/` (or `docs/design/` / `docs/plans/`) doc
+2. [ ] **Extract key insights** → Add a brief section to the existing durable
+       owner selected by `docs/information-architecture.md`, usually
+       `docs/onboarding/`, `docs/design/`, `docs/plans/`, or
+       `docs/readthedocs/`.
 3. [ ] **Delete the entire folder** → `git rm -r docs/dev_tasks/<task>/`
 4. [ ] **Include in completion PR** → Same PR that finishes the implementation
 
 ### Why This Matters
 
 - `dev_tasks/` is **working documentation** — it has no value after completion
-- Key decisions belong in `docs/onboarding/` where agents will find them
+- Key decisions belong in the durable owner selected by
+  `docs/information-architecture.md`, where agents will find them
 - Orphaned folders confuse future agents and waste context window
 
 **Onboarding docs must stay lean**:

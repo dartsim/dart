@@ -8,7 +8,10 @@ turning a strategic direction into bounded work.
 
 `docs/plans/` is a collection of living planning docs, so it follows the
 plural collection style used by `docs/dev_tasks/`. It is separate from
-`docs/dev_tasks/`:
+`docs/dev_tasks/`. For cross-bucket placement decisions, use
+[`docs/information-architecture.md`](../information-architecture.md).
+
+The plan-specific split is:
 
 - `docs/plans/` records the current strategic path, priority order, open gaps,
   gates, and acceptance criteria.
@@ -24,6 +27,9 @@ plural collection style used by `docs/dev_tasks/`. It is separate from
 Plans are living execution surfaces, not a permanent knowledge base or an
 archive. A plan should help maintainers and agents decide what to tackle next,
 then shrink or disappear after its durable output moves to the right owner.
+Use the placement matrix in
+[`docs/information-architecture.md`](../information-architecture.md) when
+choosing that durable owner.
 
 Use this lifecycle:
 

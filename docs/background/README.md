@@ -4,6 +4,9 @@ Theoretical background materials derived from academic publications by DART's or
 
 > **Note**: These documents explain the mathematical foundations. For code-level exploration,
 > see [`docs/onboarding/`](../onboarding/README.md).
+> For boundaries between theory background, design rationale, plans, and
+> published docs, use
+> [`docs/information-architecture.md`](../information-architecture.md).
 
 ## Attribution
 

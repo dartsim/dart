@@ -302,8 +302,9 @@ their editable workflow source currently lives in `.claude/commands/`.
   `pixi run ...` tasks; AI workflows can route work, but must not be the only
   way to complete it.
 - Treat `docs/dev_tasks/<task>/` folders as temporary working state. When the
-  task completes, move only durable decisions into developer docs and delete
-  the task folder in the same PR.
+  task completes, move only durable decisions into the owner selected by
+  `docs/information-architecture.md` and delete the task folder in the same
+  PR.
 
 **Effective capability parity**:
 

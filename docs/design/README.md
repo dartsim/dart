@@ -7,6 +7,9 @@ that should outlive a particular roadmap sequence.
 Design docs may be revised as evidence changes, but they should not own active
 priority, horizon, next step, gate, or implementation handoff state. Keep those
 fields in `docs/plans/dashboard.md` or `docs/dev_tasks/<task>/`.
+For cross-bucket placement decisions, use
+[`docs/information-architecture.md`](../information-architecture.md); this
+README owns design-specific routing.
 
 The published, single-page synthesis of these design docs — the DART 7
 multi-physics / multi-solver / multi-backend architecture as abstracted pipeline
@@ -50,6 +53,10 @@ rule itself.
 | [`simulation_variational_integrator.md`](simulation_variational_integrator.md)     | Architecture and math rationale for the linear-time variational integrator (discrete-mechanics) integration family (PLAN-084)                                                                                  |
 
 ## Placement Rules
+
+Use [`docs/information-architecture.md`](../information-architecture.md) for
+the full placement matrix. The local rules below describe what this bucket
+should and should not own:
 
 - Put roadmap priority, status, horizon, next step, and gate in
   `docs/plans/dashboard.md`.

@@ -51,7 +51,8 @@ Read these files first:
    active DART 6 LTS branch); follow `.github/PULL_REQUEST_TEMPLATE.md`
 7. **Cleanup** - Before PR: if task used `docs/dev_tasks/<task>/`, first
    promote durable dashboards, evidence matrices, API inventories, migration
-   maps, or long-lived decisions into `docs/plans/` or `docs/onboarding/`.
+   maps, or long-lived decisions into the durable owner selected by
+   `docs/information-architecture.md`.
    Then remove the dev-task folder completely (include the deletion in this PR,
    not after merge).
 

@@ -200,7 +200,7 @@ def check_docs_information_architecture(repo_root: Path) -> list[str]:
     if not owner.exists():
         return [f"{DOCS_INFORMATION_ARCHITECTURE}: missing docs placement owner"]
 
-    for rel_path in ("docs/README.md", "docs/AGENTS.md"):
+    for rel_path in ("AGENTS.md", "docs/README.md", "docs/AGENTS.md"):
         path = repo_root / rel_path
         if not path.exists():
             failures.append(f"{rel_path}: missing docs index")

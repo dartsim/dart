@@ -27,6 +27,9 @@ For multi-session work, also read `docs/ai/sessions.md` and
 For project planning, also read `docs/plans/README.md`,
 `docs/plans/dashboard.md`, and `docs/plans/north-star-roadmap.md`.
 
+For documentation structure or placement work, also read `docs/README.md`,
+`docs/information-architecture.md`, and `docs/AGENTS.md`.
+
 For authoring or executing orchestrator-defined work packets, also read
 `docs/ai/orchestration.md`.
 
