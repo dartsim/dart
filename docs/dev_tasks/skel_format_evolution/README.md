@@ -158,7 +158,8 @@
       `issue1193_revolute*.sdf`, `high_version.world`, and
       `single_bodynode_skeleton.world` fixtures plus
       `test_skeleton_joint.world`, `force_torque_test.world`, and
-      `force_torque_test2.world`, plus the selected
+      `force_torque_test2.world`, plus the selected `model_0_0_1` cube from
+      `issue1624_cubes.sdf`, plus the selected
       `pendulum_with_base_mimic_slow_follows_fast` model from
       `mimic_fast_slow_pendulums_world.sdf` and the selected
       `double_pendulum_with_base` model from `double_pendulum*.world`, writes
@@ -426,6 +427,11 @@ SKEL-YAML direction just because the prototype once existed.
   models with parent-world revolute roots, child revolute joints, visual-only
   pendulum geometry, and visual/collision pendulum geometry, again using
   sdformat DOM lookup rather than XML-level model enumeration.
+  The shipped `issue1624_cubes.sdf` fixture now adds read/write/read coverage
+  for selecting a named cube from a many-model SDF world, preserving model
+  pose, mass/inertia, red visual material color, and visual/collision box
+  geometry through typed sdformat DOM validation without XML-level model
+  enumeration.
   A synthetic two-world SDF fixture now proves named-model selection can skip
   the first world, preserve the selected world's gravity, and round-trip the
   selected model through sdformat DOM validation without XML-level world/model

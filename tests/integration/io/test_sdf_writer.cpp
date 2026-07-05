@@ -73,6 +73,7 @@
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <gtest/gtest.h>
+#include <sdf/Box.hh>
 #include <sdf/Collision.hh>
 #include <sdf/Geometry.hh>
 #include <sdf/Joint.hh>
@@ -2207,6 +2208,103 @@ TEST(SdfWriter, RoundTripsSelectedModelFromSecondWorld)
   expectJointRoundTrips(*root, *originalRoot, 1e-12);
   expectBoxShapeRoundTrips<dynamics::VisualAspect>(
       *body, *originalBody, 0, 1, 1e-12);
+  expectBoxShapeRoundTrips<dynamics::CollisionAspect>(
+      *body, *originalBody, 0, 1, 1e-12);
+}
+
+//==============================================================================
+TEST(SdfWriter, RoundTripsSelectedIssue1624CubeFixture)
+{
+  utils::SdfParser::Options readOptions;
+  readOptions.mModelName = "model_0_0_1";
+  const auto original = utils::SdfParser::readSkeleton(
+      common::Uri("dart://sample/sdf/test/issue1624_cubes.sdf"), readOptions);
+  ASSERT_NE(original, nullptr);
+  EXPECT_EQ(original->getName(), "model_0_0_1");
+  ASSERT_EQ(original->getNumBodyNodes(), 1u);
+  ASSERT_EQ(original->getNumJoints(), 1u);
+  EXPECT_EQ(original->getBodyNode("link"), nullptr);
+
+  const auto* originalBody = test::requireBodyNode(*original, "box_link");
+  ASSERT_NE(originalBody, nullptr);
+  EXPECT_NEAR(originalBody->getMass(), 6.0, 1e-12);
+  const auto* originalRoot = originalBody->getParentJoint();
+  ASSERT_NE(originalRoot, nullptr);
+  ASSERT_EQ(originalBody->getNumShapeNodesWith<dynamics::VisualAspect>(), 1u);
+  ASSERT_EQ(
+      originalBody->getNumShapeNodesWith<dynamics::CollisionAspect>(), 1u);
+  const auto* originalVisualNode
+      = originalBody->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(originalVisualNode, nullptr);
+  ASSERT_NE(originalVisualNode->getVisualAspect(), nullptr);
+  EXPECT_VECTOR_NEAR(
+      originalVisualNode->getVisualAspect()->getRGBA(),
+      Eigen::Vector4d(1.0, 0.0, 0.0, 1.0),
+      1e-6);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  const sdf::Model* sdfModel = sdfRoot.Model();
+  if (!sdfModel) {
+    ASSERT_EQ(sdfRoot.WorldCount(), 1u);
+    const auto* sdfWorld = sdfRoot.WorldByIndex(0);
+    ASSERT_NE(sdfWorld, nullptr);
+    sdfModel = sdfWorld->ModelByName(original->getName());
+  }
+  ASSERT_NE(sdfModel, nullptr);
+  EXPECT_EQ(sdfModel->Name(), original->getName());
+  EXPECT_EQ(sdfModel->ModelCount(), 0u);
+  ASSERT_EQ(sdfModel->LinkCount(), 1u);
+  const auto* sdfLink = sdfModel->LinkByName("box_link");
+  ASSERT_NE(sdfLink, nullptr);
+  ASSERT_EQ(sdfLink->VisualCount(), 1u);
+  const auto* sdfVisual = sdfLink->VisualByIndex(0);
+  ASSERT_NE(sdfVisual, nullptr);
+  ASSERT_NE(sdfVisual->Geom(), nullptr);
+  const auto* visualBox = sdfVisual->Geom()->BoxShape();
+  ASSERT_NE(visualBox, nullptr);
+  EXPECT_DOUBLE_EQ(visualBox->Size().X(), 1.0);
+  EXPECT_DOUBLE_EQ(visualBox->Size().Y(), 1.0);
+  EXPECT_DOUBLE_EQ(visualBox->Size().Z(), 1.0);
+  ASSERT_NE(sdfVisual->Material(), nullptr);
+  EXPECT_EQ(
+      sdfVisual->Material()->Diffuse(), gz::math::Color(1.0, 0.0, 0.0, 1.0));
+  ASSERT_EQ(sdfLink->CollisionCount(), 1u);
+  const auto* sdfCollision = sdfLink->CollisionByIndex(0);
+  ASSERT_NE(sdfCollision, nullptr);
+  ASSERT_NE(sdfCollision->Geom(), nullptr);
+  const auto* collisionBox = sdfCollision->Geom()->BoxShape();
+  ASSERT_NE(collisionBox, nullptr);
+  EXPECT_DOUBLE_EQ(collisionBox->Size().X(), 1.0);
+  EXPECT_DOUBLE_EQ(collisionBox->Size().Y(), 1.0);
+  EXPECT_DOUBLE_EQ(collisionBox->Size().Z(), 1.0);
+
+  const auto path = writeTempSdf(writeResult.value(), "issue1624_cube");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+  EXPECT_VECTOR_NEAR(reparsed->getGravity(), original->getGravity(), 1e-12);
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+  const auto* body = test::requireBodyNode(*reparsed, "box_link");
+  ASSERT_NE(body, nullptr);
+  expectBodyInertiaRoundTrips(*body, *originalBody, 1e-12);
+  const auto* root = body->getParentJoint();
+  ASSERT_NE(root, nullptr);
+  expectJointRoundTrips(*root, *originalRoot, 1e-6);
+  expectBoxShapeRoundTrips<dynamics::VisualAspect>(
+      *body, *originalBody, 0, 1, 1e-12);
+  expectVisualColorRoundTrips(*body, *originalBody, 0, 1e-6);
   expectBoxShapeRoundTrips<dynamics::CollisionAspect>(
       *body, *originalBody, 0, 1, 1e-12);
 }

@@ -2403,6 +2403,45 @@ Changelog decision:
   verification if a PR is opened.
 - Follow-up: none until an implementation PR exists.
 
+Additional validation for selected shipped many-model SDF cube coverage:
+
+- Added `SdfWriter.RoundTripsSelectedIssue1624CubeFixture`, selecting
+  `model_0_0_1` from `dart://sample/sdf/test/issue1624_cubes.sdf` through
+  `SdfParser::Options::mModelName`.
+- The test writes the selected cube through
+  `SdfParser::tryWriteSkeletonToString()`, validates the emitted SDF through
+  typed `sdf::Root` / `sdf::Model` / `sdf::Link` / `sdf::Visual` /
+  `sdf::Collision` / `sdf::Box` DOM lookup, and reparses through `SdfParser`.
+- Coverage proves named model selection can skip the default first model in a
+  shipped many-model SDF world and preserve model pose, mass/inertia, red visual
+  material color, and visual/collision box geometry without XML-level model
+  enumeration or emitted-text substring checks.
+
+Validation commands:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsSelectedIssue1624CubeFixture'`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run check-sdf-sdformat-boundary`
+- `pixi run build`
+- `pixi run lint`
+- `git diff --check`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
+  and this SKEL evolution task folder.
+- Scope evidence: this slice broadens shipped-fixture test evidence for the
+  existing parser-specific SDF named-model selection and unreleased
+  conservative SDF writer contract, without adding a new public API or
+  user-visible export capability.
+- Decision: no additional changelog entry.
+- Target section: not applicable.
+- PR-body note: record as selected `issue1624_cubes.sdf` SDF cube
+  round-trip verification if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
 ## Previous Resume Checkpoint (2026-07-03)
 
 Phase 1 landed on `main` via PR

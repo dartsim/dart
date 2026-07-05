@@ -144,8 +144,9 @@ world-contained
 `issue1193_revolute*.sdf`, `high_version.world`, and
 `single_bodynode_skeleton.world` fixtures plus `test_skeleton_joint.world`,
 `force_torque_test.world`, and `force_torque_test2.world` through the normal
-SDF parser, plus the selected `pendulum_with_base_mimic_slow_follows_fast`
-model from `mimic_fast_slow_pendulums_world.sdf` and the selected
+SDF parser, plus the selected `model_0_0_1` cube from `issue1624_cubes.sdf`,
+the selected `pendulum_with_base_mimic_slow_follows_fast` model from
+`mimic_fast_slow_pendulums_world.sdf`, and the selected
 `double_pendulum_with_base` model from `double_pendulum*.world`, writes them
 with `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and compares
 body, joint, inertial, mobility, gravity,
@@ -180,6 +181,10 @@ The selected double-pendulum world coverage proves parent-world revolute roots,
 child revolute joints, visual-only pendulum geometry, and visual/collision
 pendulum geometry on non-first world models can be selected through the same
 sdformat-backed path and round-tripped without XML-level SDF model enumeration.
+The selected `issue1624_cubes.sdf` coverage proves a named cube can be selected
+from a shipped many-model SDF world while preserving model pose, mass/inertia,
+red visual material color, and visual/collision box geometry through typed
+sdformat DOM validation.
 The synthetic two-world coverage proves the named-model selector searches
 sdformat world DOM objects beyond the first world and keeps the selected
 world's gravity without XML-level world/model enumeration.

@@ -216,6 +216,7 @@ top-level `ground.world` fixture, plus world-contained
 `single_bodynode_skeleton.world`, and
 `test_skeleton_joint.world`, plus `force_torque_test.world` /
 `force_torque_test2.world`, and the selected
+`model_0_0_1` cube from `issue1624_cubes.sdf`,
 `pendulum_with_base_mimic_slow_follows_fast` model from
 `mimic_fast_slow_pendulums_world.sdf` plus the selected
 `double_pendulum_with_base` model from `double_pendulum*.world` through
@@ -225,7 +226,8 @@ compare body, joint, inertial, mobility, gravity, axis-limit, joint-dynamics,
 box/cylinder/sphere/mesh geometry, shape-pose, model-pose, resource URI, and
 joint-offset semantics across simple single-body, quadruped, fixed-root issue,
 relative-mesh, ground-plane, mixed-joint, two-link, three-link, and selected
-world-model mimic, parent-world double-pendulum, and later-world selection
+many-model cube, world-model mimic, parent-world double-pendulum, and
+later-world selection
 cases. The
 quadruped
 fixture covers 17 links, 16 revolute joints, finite axis velocity/effort
@@ -249,6 +251,10 @@ selected double-pendulum world fixtures prove parser-selected non-first world
 models preserve parent-world revolute roots, child revolute joints, visual-only
 pendulum geometry, and visual/collision pendulum geometry through libsdformat
 DOM validation and read/write/read without XML-level model enumeration. The
+selected `issue1624_cubes.sdf` fixture proves parser-selected named models from
+a shipped many-model SDF world preserve model pose, mass/inertia, red visual
+material color, and visual/collision box geometry through typed sdformat DOM
+validation. The
 synthetic two-world fixture proves named-model selection searches world DOM
 objects beyond the first world and preserves the selected world's gravity
 through writer DOM validation and read/write/read. The
