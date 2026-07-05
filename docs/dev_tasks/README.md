@@ -14,6 +14,7 @@ Recommended files:
 - `HANDOFF.md`: optional transfer note when handing work to another agent or
   worktree.
 
-Before completing a task, move durable facts to the right owner: release docs,
-onboarding docs, changelog, compatibility notes, or source comments. Do not
-leave important decisions only in a temporary task folder.
+Before completing a task, move durable facts to the owner selected by
+`docs/information-architecture.md`: published docs, onboarding docs, AI policy,
+API docs, changelog, compatibility notes, or source comments. Do not leave
+important decisions only in a temporary task folder.
