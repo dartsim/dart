@@ -68,8 +68,16 @@ UI-visible changes, and PLAN checkboxes updated.
 
 - Getting Started: empty ("Empty Scaffold"), hello_world-scene (KR5 intro;
   standalone example also kept)
-- Visualization: simple_frames, drag_and_drop, imgui-reference, heightmap,
-  point_cloud (HAVE_OCTOMAP-gated)
+- Visualization: simple_frames, drag_and_drop, heightmap, point_cloud
+  (HAVE_OCTOMAP-gated). imgui-reference DROPPED (B4 decision, accepted):
+  the legacy examples/imgui was a wiring tutorial whose behaviors are all
+  host chrome or existing scenes; its unique bits (headlights, camera-pose
+  readout, depth mode) are Phase 3 host features. examples/imgui retires in
+  Phase 5 with the rest.
+  (B4 notes: atlas_simbicon and vehicle are documented Y-up exceptions —
+  Simbicon balance math hardcodes world-Y up; vehicle dof indices tied to
+  Y-up root axes. ssik_ik_gui is now Python3-gated
+  (DART_DEMOS_HAVE_PYTHON) alongside TinyDNN/octomap/ikfast gating.)
 - Rigid Body: boxes, rigid_cubes, rigid_chain, rigid_shapes,
   add_delete_skels, simulation_event_handler, sleeping
 - Constraints & Joints: hardcoded_design, box_stacking,
