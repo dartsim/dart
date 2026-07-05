@@ -7135,6 +7135,44 @@ def test_simulation_link_center_of_mass_offset():
     assert robot.gravity_forces.tolist() == pytest.approx([-mass * 9.81 * length])
 
 
+def test_simulation_locked_actuator_holds_joint():
+    sx = _simulation()
+
+    # Horizontal revolute pendulum: gravity would swing it down, but a Locked
+    # actuator must hold it at its initial angle with zero velocity.
+    world = sx.World(time_step=0.002)  # default gravity (0, 0, -9.81)
+    robot = world.add_multibody("arm")
+    base = robot.add_link("base")
+    length = 0.4
+    offset = np.eye(4)
+    offset[0, 3] = length
+    arm = robot.add_link(
+        "arm",
+        parent=base,
+        joint=sx.JointSpec(
+            name="shoulder",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+            transform_from_parent=offset,
+        ),
+    )
+    arm.mass = 0.5
+    arm.inertia = ((0.1, 0.0, 0.0), (0.0, 0.1, 0.0), (0.0, 0.0, 0.1))
+
+    joint = arm.parent_joint
+    initial_angle = 0.5
+    joint.position = [initial_angle]
+    joint.actuator_type = sx.ActuatorType.LOCKED
+
+    world.enter_simulation_mode()
+    world.step(200)
+
+    np.testing.assert_allclose(
+        np.asarray(joint.position), [initial_angle], atol=1e-10
+    )
+    np.testing.assert_allclose(np.asarray(joint.velocity), [0.0], atol=1e-10)
+
+
 def test_simulation_multibody_dynamics_terms():
     sx = _simulation()
 

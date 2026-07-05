@@ -1,5 +1,44 @@
 # Resume: Rigid-Body Dynamics Solver
 
+## Current Reality (2026-07-04)
+
+Landed locally on `main` (verified, not yet pushed as a PR): the **`Locked`
+joint actuator mode** in the default semi-implicit articulated dynamics
+(`compute/multibody_dynamics.cpp`). A locked joint is held rigidly at its
+current position by the same velocity-level equality constraint the `Velocity`
+actuator uses, with target velocity zero; the locked coordinate's commanded
+effort and passive spring/damping are ignored (the holding-constraint reaction
+absorbs them — proven independent, and covered by a regression). No new
+serialized state (target velocity is a constant zero), so no binary-format
+change. `ActuatorType::Locked` was already plumbed through the public C++/dartpy
+API and only rejected at step time; the `default:` throw now lists Force,
+Passive, Velocity, and Locked as supported.
+
+Evidence: `test_world_contact_parity` +3 (`LockedActuatorHoldsRevoluteJoint`,
+`LockedActuatorIgnoresItsOwnPassiveAndCommandedForces`,
+`LockedActuatorMatchesZeroVelocityServo`) 8/8; `test_multibody_constraint` 3/3,
+`test_unified_constraint` 26/26, `test_unified_constraint_stage` 2/2,
+`test_world` 424/424; a dartpy test
+(`test_simulation_locked_actuator_holds_joint`). Changelog entry drafted under
+DART 7 → Simulation and Solvers.
+
+Boundary: implemented in the **default semi-implicit** path only. The opt-in
+variational integrator and the AVBD path special-case only `Velocity`; there a
+`Locked` joint currently falls back to passive behavior (pre-existing pattern
+for every non-`Force`/`Velocity` mode, documented in the `setActuatorType`
+API comment). Extending `Locked` (and the other reserved modes) to those paths
+is a separate follow-up.
+
+Remaining reserved actuator modes: **`Servo`** (velocity servo bounded by the
+effort limits — a boxed constraint, not the unbounded equality solve; the
+natural next actuator slice) and **`Acceleration`** (prescribed q̈ via a
+velocity-level target `q̇ + q̈·dt`, needs a new `commandAcceleration` field
+hence a binary-format change), plus **`Mimic`**/coupler. The Subsystem A
+friction-cone / warm-start polish remains the maintainer-stated headline
+deferred item (see below); it changes default contact behavior and should land
+as a reviewed, release-6.\* parity-evidenced slice, not an unreviewed autonomous
+one.
+
 ## Current Reality (2026-06-06)
 
 Use `README.md`, `docs/plans/dashboard.md`, and the current code as the live
@@ -895,8 +934,8 @@ Grounding (verified in-tree):
 
 ### Smaller deferred items
 
-- **Phase 4:** remaining actuator modes (SERVO/ACCELERATION/LOCKED) and
-  mimic/coupler — reuse the existing `J M^-1 J^T` equality machinery.
+- **Phase 4:** remaining actuator modes (SERVO/ACCELERATION) and mimic/coupler —
+  reuse the existing `J M^-1 J^T` equality machinery (LOCKED landed 2026-07-04).
 - **Phase 5:** loop-closure dynamic solving, pluggable integrator/substepping,
   body Jacobians (link body/world Jacobians and the multibody center-of-mass
   position + Jacobian have landed; per-link COM Jacobians remain).
