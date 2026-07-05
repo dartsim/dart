@@ -52,10 +52,9 @@ jobs:
     # host setup. They do not carry the `ubuntu-24.04` label, so pinning it keeps
     # this job on GitHub-hosted runners where the VM action works.
     runs-on: ubuntu-24.04
-    # Advisory: hosted runners lack nested KVM so the VM runs under slower TCG
-    # emulation, and a few tests are known-flaky under emulation. Keep it
-    # non-blocking, as the former job was.
-    continue-on-error: true
+    # Hosted runners lack nested KVM so the VM runs under slower TCG emulation.
+    # Keep the timeout high enough for the slow VM, but do not mask ctest
+    # failures: release validation must go red when the FreeBSD test suite fails.
     timeout-minutes: 120
     steps:
       - name: Checkout
