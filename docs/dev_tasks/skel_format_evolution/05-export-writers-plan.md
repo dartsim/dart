@@ -181,6 +181,10 @@ The selected double-pendulum world coverage proves parent-world revolute roots,
 child revolute joints, visual-only pendulum geometry, and visual/collision
 pendulum geometry on non-first world models can be selected through the same
 sdformat-backed path and round-tripped without XML-level SDF model enumeration.
+The selected `benchmark.world` coverage extends that path to a shipped
+many-model benchmark world with unresolved includes and a static plane model,
+proving a named in-world pendulum model can be selected, validated through
+typed libsdformat DOM, and reparsed without adding XML-level SDF enumeration.
 The selected `issue1624_cubes.sdf` coverage proves a named cube can be selected
 from a shipped many-model SDF world while preserving model pose, mass/inertia,
 red visual material color, and visual/collision box geometry through typed

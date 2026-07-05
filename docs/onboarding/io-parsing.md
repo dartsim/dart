@@ -251,6 +251,9 @@ selected double-pendulum world fixtures prove parser-selected non-first world
 models preserve parent-world revolute roots, child revolute joints, visual-only
 pendulum geometry, and visual/collision pendulum geometry through libsdformat
 DOM validation and read/write/read without XML-level model enumeration. The
+selected `benchmark.world` fixture extends that coverage to a shipped
+many-model benchmark world with unresolved includes and a static plane model,
+proving named in-world model selection stays on libsdformat DOM lookup. The
 selected `issue1624_cubes.sdf` fixture proves parser-selected named models from
 a shipped many-model SDF world preserve model pose, mass/inertia, red visual
 material color, and visual/collision box geometry through typed sdformat DOM

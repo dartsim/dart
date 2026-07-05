@@ -2442,6 +2442,36 @@ Changelog decision:
   round-trip verification if a PR is opened.
 - Follow-up: none until an implementation PR exists.
 
+Additional validation for shipped `benchmark.world` selected-model coverage:
+
+- Extended `SdfWriter.RoundTripsSelectedDoublePendulumWorldFixtures` with
+  `dart://sample/sdf/benchmark.world`, selecting
+  `double_pendulum_with_base10b` through `SdfParser::Options::mModelName`.
+- Coverage proves the SDF parser/writer path can skip unresolved includes and
+  unrelated in-world models, including a static plane model, then write,
+  validate through libsdformat `sdf::Root` / `sdf::World` / `sdf::Model` DOM,
+  and reparse the selected two-link pendulum skeleton without adding XML-level
+  SDF enumeration or text parsing.
+
+Validation command:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsSelectedDoublePendulumWorldFixtures'`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
+  and this SKEL evolution task folder.
+- Scope evidence: this slice broadens shipped-fixture test evidence for the
+  existing sdformat-backed SDF writer contract, without adding a new public API
+  or user-visible export capability.
+- Decision: no additional changelog entry.
+- Target section: not applicable.
+- PR-body note: record as selected `benchmark.world` SDF writer round-trip
+  verification if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
 Additional validation for shipped URDF primitive geometry fixture coverage:
 
 - Added `UrdfWriter.RoundTripsExistingPrimitiveGeometryFixture`, loading

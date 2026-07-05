@@ -1912,28 +1912,35 @@ TEST(SdfWriter, RoundTripsSelectedDoublePendulumWorldFixtures)
   {
     std::string_view uri;
     std::string_view tempName;
+    std::string_view modelName;
     bool hasBase;
   };
 
   const std::vector<FixtureCase> cases = {
       {"dart://sample/sdf/double_pendulum.world",
        "selected_double_pendulum_world",
+       "double_pendulum_with_base",
        false},
       {"dart://sample/sdf/double_pendulum_with_base.world",
        "selected_double_pendulum_with_base_world",
+       "double_pendulum_with_base",
        true},
+      {"dart://sample/sdf/benchmark.world",
+       "selected_benchmark_pendulum_world",
+       "double_pendulum_with_base10b",
+       false},
   };
 
-  utils::SdfParser::Options readOptions;
-  readOptions.mModelName = "double_pendulum_with_base";
   constexpr double kFixtureRotationTolerance = 1e-5;
 
   for (const auto& testCase : cases) {
     SCOPED_TRACE(testCase.uri);
+    utils::SdfParser::Options readOptions;
+    readOptions.mModelName = std::string(testCase.modelName);
     const auto original = utils::SdfParser::readSkeleton(
         common::Uri(testCase.uri), readOptions);
     ASSERT_NE(original, nullptr);
-    EXPECT_EQ(original->getName(), "double_pendulum_with_base");
+    EXPECT_EQ(original->getName(), testCase.modelName);
     EXPECT_VECTOR_NEAR(
         original->getGravity(), Eigen::Vector3d(0.0, 0.0, -9.81), 1e-12);
     EXPECT_EQ(original->getNumBodyNodes(), testCase.hasBase ? 3u : 2u);

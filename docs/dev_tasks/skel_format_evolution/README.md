@@ -428,7 +428,11 @@ SKEL-YAML direction just because the prototype once existed.
   fixtures now add read/write/read coverage for selected non-first world
   models with parent-world revolute roots, child revolute joints, visual-only
   pendulum geometry, and visual/collision pendulum geometry, again using
-  sdformat DOM lookup rather than XML-level model enumeration.
+  sdformat DOM lookup rather than XML-level model enumeration. The shipped
+  `benchmark.world` fixture extends that selected-model coverage to a many-model
+  benchmark world with unresolved includes and a static plane model, proving a
+  named in-world pendulum model can be selected and round-tripped through typed
+  sdformat DOM validation without adding XML-level SDF enumeration.
   The shipped `issue1624_cubes.sdf` fixture now adds read/write/read coverage
   for selecting a named cube from a many-model SDF world, preserving model
   pose, mass/inertia, red visual material color, and visual/collision box
