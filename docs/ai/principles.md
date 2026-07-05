@@ -37,4 +37,5 @@ These principles apply to AI-assisted work on the DART 6.20 support branch.
 - Keep PRs focused. For dependency minimization, prefer one dependency or one
   `dart/external` tree per PR unless a shared mechanical step is required.
 - Use `docs/dev_tasks/<task>/` for multi-session state. Promote durable facts to
-  onboarding, release, or compatibility docs before retiring a task folder.
+  the owner selected by `docs/information-architecture.md` before retiring a
+  task folder.
