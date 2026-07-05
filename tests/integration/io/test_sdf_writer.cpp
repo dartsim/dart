@@ -329,6 +329,24 @@ void expectShapeNodePoseRoundTrips(
       tolerance);
 }
 
+template <class AspectT>
+void expectBoxShapeRoundTrips(
+    const dynamics::BodyNode& bodyNode,
+    const dynamics::BodyNode& expected,
+    std::size_t index,
+    std::size_t expectedCount,
+    double tolerance)
+{
+  const auto* expectedBox = test::requireShape<AspectT, dynamics::BoxShape>(
+      expected, index, expectedCount);
+  const auto* box = test::requireShape<AspectT, dynamics::BoxShape>(
+      bodyNode, index, expectedCount);
+  ASSERT_NE(expectedBox, nullptr);
+  ASSERT_NE(box, nullptr);
+  EXPECT_VECTOR_NEAR(box->getSize(), expectedBox->getSize(), tolerance);
+  expectShapeNodePoseRoundTrips<AspectT>(bodyNode, expected, index, tolerance);
+}
+
 sdf::ElementPtr getSdfChildElement(
     const sdf::ElementPtr& parent, const std::string& name)
 {
@@ -1373,6 +1391,84 @@ TEST(SdfWriter, RoundTripsExistingForceTorqueWorldFixture)
       1e-12);
   expectShapeNodePoseRoundTrips<dynamics::CollisionAspect>(
       *link2, *originalLink2, 0, 1e-12);
+}
+
+//==============================================================================
+TEST(SdfWriter, RoundTripsExistingForceTorqueChainWorldFixture)
+{
+  const auto original = utils::SdfParser::readSkeleton(
+      common::Uri("dart://sample/sdf/test/force_torque_test2.world"));
+  ASSERT_NE(original, nullptr);
+  ASSERT_EQ(original->getNumBodyNodes(), 3u);
+  ASSERT_EQ(original->getNumJoints(), 3u);
+
+  const auto* originalLink1 = test::requireBodyNode(*original, "link1");
+  const auto* originalLink2 = test::requireBodyNode(*original, "link2");
+  const auto* originalLink3 = test::requireBodyNode(*original, "link3");
+  ASSERT_NE(originalLink1, nullptr);
+  ASSERT_NE(originalLink2, nullptr);
+  ASSERT_NE(originalLink3, nullptr);
+
+  const auto* originalRoot = originalLink1->getParentJoint();
+  const auto* originalJoint1
+      = test::requireJoint<dynamics::RevoluteJoint>(*original, "joint1");
+  const auto* originalJoint2
+      = test::requireJoint<dynamics::RevoluteJoint>(*original, "joint2");
+  ASSERT_NE(originalRoot, nullptr);
+  ASSERT_NE(originalJoint1, nullptr);
+  ASSERT_NE(originalJoint2, nullptr);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  const auto path
+      = writeTempSdf(writeResult.value(), "force_torque_chain_world");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+  EXPECT_VECTOR_NEAR(reparsed->getGravity(), original->getGravity(), 1e-12);
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+  const auto* link1 = test::requireBodyNode(*reparsed, "link1");
+  const auto* link2 = test::requireBodyNode(*reparsed, "link2");
+  const auto* link3 = test::requireBodyNode(*reparsed, "link3");
+  ASSERT_NE(link1, nullptr);
+  ASSERT_NE(link2, nullptr);
+  ASSERT_NE(link3, nullptr);
+  expectBodyInertiaRoundTrips(*link1, *originalLink1, 1e-12);
+  expectBodyInertiaRoundTrips(*link2, *originalLink2, 1e-12);
+  expectBodyInertiaRoundTrips(*link3, *originalLink3, 1e-12);
+
+  const auto* root = link1->getParentJoint();
+  const auto* joint1
+      = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, "joint1");
+  const auto* joint2
+      = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, "joint2");
+  ASSERT_NE(root, nullptr);
+  ASSERT_NE(joint1, nullptr);
+  ASSERT_NE(joint2, nullptr);
+  expectJointRoundTrips(*root, *originalRoot, 1e-12);
+  expectJointRoundTrips(*joint1, *originalJoint1, 1e-12);
+  expectJointRoundTrips(*joint2, *originalJoint2, 1e-12);
+  EXPECT_VECTOR_NEAR(joint1->getAxis(), originalJoint1->getAxis(), 1e-12);
+  EXPECT_VECTOR_NEAR(joint2->getAxis(), originalJoint2->getAxis(), 1e-12);
+
+  for (const auto* body : {link1, link2, link3}) {
+    ASSERT_NE(body, nullptr);
+    const auto* originalBody = original->getBodyNode(body->getName());
+    ASSERT_NE(originalBody, nullptr);
+    SCOPED_TRACE(body->getName());
+    expectBoxShapeRoundTrips<dynamics::VisualAspect>(
+        *body, *originalBody, 0, 1, 1e-12);
+    expectBoxShapeRoundTrips<dynamics::CollisionAspect>(
+        *body, *originalBody, 0, 1, 1e-12);
+  }
 }
 
 //==============================================================================

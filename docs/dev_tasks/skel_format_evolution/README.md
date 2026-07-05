@@ -144,12 +144,15 @@
       fixtures (`single_pendulum.sdf`, `cube.sdf`, `shapes.sdf`, and
       `test_shapes.sdf`) plus the native two-link revolute SDF fixture
       (`two_link_revolute_model.sdf`) and the world-contained
-      `issue1193_revolute*.sdf` fixtures plus `force_torque_test.world`, writes
-      them back through `SdfParser::tryWriteSkeletonToString()`, reloads the
-      emitted text, and compares body, joint, inertial, mobility, gravity,
-      axis-limit, joint-dynamics, visual geometry, collision geometry,
-      model-pose, and joint-offset semantics of the original parsed skeletons
-      against the re-parsed writer outputs.
+      `issue1193_revolute*.sdf` fixtures plus `force_torque_test.world` and
+      `force_torque_test2.world`, writes them back through
+      `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and
+      compares body, joint, inertial, mobility, gravity, axis-limit,
+      joint-dynamics, visual geometry, collision geometry, model-pose, and
+      joint-offset semantics of the original parsed skeletons against the
+      re-parsed writer outputs. The force-torque world fixture coverage is
+      limited to DART skeleton semantics imported from the in-file models; it
+      does not claim SDF sensor or physics metadata preservation.
       The first URDF writer slice is also implemented locally on
       `dart::utils::UrdfParser::tryWriteSkeletonToString` for one-root URDF
       trees with identity root FreeJoint/WeldJoint placement validation, child
@@ -348,11 +351,12 @@ SKEL-YAML direction just because the prototype once existed.
   world-contained `issue1193_revolute*.sdf` fixtures, proving sdformat-backed
   model-pose, root transform, child joint-offset, zero-world-gravity, and
   visual box/sphere semantics survive read/write/read. The shipped
-  `force_torque_test.world` fixture adds read/write/read coverage for the DART
-  skeleton semantics imported from a sensor-bearing world file: explicit
-  parent-world revolute root, child revolute joint, finite axis
-  limits/dynamics, and sphere/box visual and collision geometry. It does not
-  claim SDF sensor or physics metadata preservation.
+  `force_torque_test.world` and `force_torque_test2.world` fixtures add
+  read/write/read coverage for the DART skeleton semantics imported from
+  sensor-bearing world files: explicit parent-world root semantics, child
+  revolute joints, finite axis limits/dynamics, and sphere/box visual and
+  collision geometry across two-link and three-link models. They do not claim
+  SDF sensor or physics metadata preservation.
   URDF shipped-fixture read/write/read coverage now includes
   `joint_properties.urdf`, `issue838.urdf`, `KR5/ground.urdf`, `wam.urdf`, and
   `drchubo.urdf`,
