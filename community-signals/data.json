@@ -1,6 +1,9 @@
 {
   "citations": {
     "crossref": 189,
+    "google_scholar": 395,
+    "google_scholar_checked": "2026-07-05",
+    "google_scholar_manual_fallback": false,
     "indexed_max": 306,
     "indexed_min": 189,
     "openalex": 272,
@@ -14,7 +17,7 @@
       "label": "Gazebo gz-sim",
       "pushed_at": "2026-07-02T09:10:05Z",
       "repo": "gazebosim/gz-sim",
-      "stars": 1403
+      "stars": 1404
     },
     {
       "age": "within 1 year",
@@ -33,7 +36,7 @@
       "stars": 60
     },
     {
-      "age": "3.3 years ago",
+      "age": "3.4 years ago",
       "freshness": "3y+ historical",
       "label": "gym-dart",
       "pushed_at": "2023-02-27T08:03:44Z",
@@ -91,16 +94,16 @@
     "package_depends_dart": true,
     "requires_dart_610": true
   },
-  "generated_at": "2026-07-05T07:37:03.509356Z",
+  "generated_at": "2026-07-05T19:55:20.479264Z",
   "packages": {
     "conda": {
-      "combined_gross": 1006707,
-      "dartpy": 241397,
-      "dartsim": 641233,
-      "dartsim-cpp": 124077
+      "combined_gross": 1007975,
+      "dartpy": 241858,
+      "dartsim": 641884,
+      "dartsim-cpp": 124233
     },
-    "homebrew_installs_365d": 18018,
-    "homebrew_on_request_365d": 1448,
+    "homebrew_installs_365d": 18009,
+    "homebrew_on_request_365d": 1445,
     "pepy_dartpy_all_time": 258524
   },
   "since": "2025-07-05",
@@ -110,11 +113,14 @@
     "anaconda_dartsim_cpp": "https://api.anaconda.org/package/conda-forge/dartsim-cpp",
     "crossref": "https://api.crossref.org/works/10.21105/joss.00500",
     "gazebo_physics": "https://gazebosim.org/api/sim/9/physics.html",
+    "github_created_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+created%3A%3E%3D2025-07-05",
     "github_issues": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Aissue+state%3Aopen",
     "github_latest_release": "https://api.github.com/repos/dartsim/dart/releases/latest",
+    "github_merged_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+merged%3A%3E%3D2025-07-05",
     "github_prs": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+state%3Aopen",
     "github_repo": "https://api.github.com/repos/dartsim/dart",
     "github_traffic_docs": "https://docs.github.com/en/rest/metrics/traffic",
+    "google_scholar": "https://scholar.google.com/scholar?q=%22DART%3A+Dynamic+Animation+and+Robotics+Toolkit%22",
     "gz_physics_cmake": "https://raw.githubusercontent.com/gazebosim/gz-physics/main/CMakeLists.txt",
     "gz_physics_package": "https://raw.githubusercontent.com/gazebosim/gz-physics/main/package.xml",
     "gz_physics_tree": "https://api.github.com/repos/gazebosim/gz-physics/git/trees/main?recursive=1",
@@ -128,14 +134,14 @@
     "contributors_login": 54,
     "contributors_with_anon": 78,
     "created_issues_12m": 28,
-    "created_prs_12m": 1269,
+    "created_prs_12m": 1280,
     "forks": 301,
     "latest_push": "2026-07-05",
     "latest_release": "v6.19.3",
     "latest_release_date": "2026-06-27",
-    "merged_prs_12m": 1179,
+    "merged_prs_12m": 1197,
     "open_issues": 1,
-    "open_prs": 13,
+    "open_prs": 6,
     "releases_12m": 16,
     "stars": 1161,
     "watchers": 50
