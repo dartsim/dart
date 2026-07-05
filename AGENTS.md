@@ -44,7 +44,9 @@ These steps configure and compile DART from source in the Codex environment.
 If `pixi` is unavailable, install it from [https://pixi.sh](https://pixi.sh) and ensure the toolchain dependencies in `pixi.toml` are met.  The build system uses CMake and Ninja under the hood, so you can fall back to manual CMake builds if necessary.
 
 ## Additional Notes
-- Documentation lives in `docs/` and `tutorials/`.
+- Documentation lives in `docs/` and `tutorials/`. For docs placement on this
+  release branch, read `docs/README.md`, `docs/information-architecture.md`,
+  and `docs/AGENTS.md`.
 - Examples demonstrating API usage can be found in `examples/`.
 
 ## AI Workflows
