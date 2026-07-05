@@ -1148,6 +1148,43 @@ TEST(ContactParity, ServoActuatorCoulombFrictionHoldsLimitedMotor)
 }
 
 //==============================================================================
+// Test: Servo friction consumes effort margin
+//
+// A command can be reachable by the frictionless motor impulse but unreachable
+// after paying dry friction. In that case the finite-effort Servo should spend
+// the remaining effort margin and settle at effortLimit - coulombFriction,
+// rather than treating friction as free and reaching the target.
+//==============================================================================
+TEST(ContactParity, ServoActuatorCoulombFrictionConsumesEffortMargin)
+{
+  ServoCase c;
+  c.effortLimit = 2.0;
+  c.coulombFriction = 1.0;
+  c.timeStep = 0.01;
+  c.steps = 1;
+
+  ServoCase probe = c;
+  probe.steps = 0;
+  const double massDof = runServo(probe).massDof;
+  const double effortImpulse = c.effortLimit * c.timeStep;
+  const double frictionImpulse = c.coulombFriction * c.timeStep;
+  c.commandedVelocity = (effortImpulse - 0.5 * frictionImpulse) / massDof;
+
+  const auto run = runServo(c);
+  const double frictionlessCommandImpulse = c.commandedVelocity * run.massDof;
+  ASSERT_LT(frictionlessCommandImpulse, effortImpulse);
+  ASSERT_GT(frictionlessCommandImpulse + frictionImpulse, effortImpulse);
+
+  const double expectedVelocity
+      = (effortImpulse - frictionImpulse) / run.massDof;
+  EXPECT_NEAR(run.velocity, expectedVelocity, 1e-9)
+      << "Servo effort must pay Coulomb friction before tracking";
+  EXPECT_LT(run.velocity, c.commandedVelocity)
+      << "Friction should prevent this finite-effort Servo from reaching the "
+         "frictionless target";
+}
+
+//==============================================================================
 // Test: Servo rejects one-sided effort limits
 //
 // The boxed-LCP servo solve starts from zero motor impulse, so supported effort
