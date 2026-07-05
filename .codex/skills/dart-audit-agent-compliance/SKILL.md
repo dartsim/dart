@@ -1,6 +1,6 @@
 ---
 name: dart-audit-agent-compliance
-description: "DART Audit Agent Compliance: audit and fix gaps when agents miss documented rules"
+description: "DART Audit Agent Compliance: audit and fix gaps when agents miss or cannot discover documented rules"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-audit-agent-compliance.md -->
