@@ -20,7 +20,10 @@ def test_default_build_dir_falls_back_to_ci_defaults():
 
 
 def test_default_parallel_jobs_uses_shared_policy(monkeypatch):
-    monkeypatch.setattr(coverage_report, "compute_parallel_jobs", lambda: 7)
+    monkeypatch.delenv("DART_PARALLEL_JOBS", raising=False)
+    monkeypatch.setattr(
+        coverage_report, "_load_compute_parallel_jobs", lambda: lambda: 7
+    )
 
     assert coverage_report.default_parallel_jobs() == 7
     assert coverage_report.parse_args([]).jobs == 7
@@ -28,12 +31,19 @@ def test_default_parallel_jobs_uses_shared_policy(monkeypatch):
 
 def test_default_parallel_jobs_honors_env_override(monkeypatch):
     monkeypatch.setenv("DART_PARALLEL_JOBS", "5")
+    monkeypatch.setattr(
+        coverage_report,
+        "_load_compute_parallel_jobs",
+        lambda: (_ for _ in ()).throw(AssertionError("helper should not load")),
+    )
 
     assert coverage_report.default_parallel_jobs() == 5
 
 
 def test_parse_args_keeps_explicit_jobs_override(monkeypatch):
-    monkeypatch.setattr(coverage_report, "compute_parallel_jobs", lambda: 7)
+    monkeypatch.setattr(
+        coverage_report, "_load_compute_parallel_jobs", lambda: lambda: 7
+    )
 
     assert coverage_report.parse_args(["--jobs", "3"]).jobs == 3
 

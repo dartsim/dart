@@ -43,7 +43,7 @@ def load_dart_dev_env() -> None:
     env_file = Path.home() / ".dart-dev" / "parallelism.env"
     try:
         lines = env_file.read_text(encoding="utf-8").splitlines()
-    except OSError, ValueError:
+    except (OSError, ValueError):  # fmt: skip
         return
 
     for raw in lines:

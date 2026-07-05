@@ -28,8 +28,14 @@ LCOV_REMOVE_PATTERNS = [
     "*/dart/gui/*",
 ]
 
+_COMPUTE_PARALLEL_JOBS = None
+
 
 def _load_compute_parallel_jobs():
+    global _COMPUTE_PARALLEL_JOBS
+    if _COMPUTE_PARALLEL_JOBS is not None:
+        return _COMPUTE_PARALLEL_JOBS
+
     module_path = Path(__file__).resolve().with_name("parallel_jobs.py")
     spec = importlib.util.spec_from_file_location("parallel_jobs", module_path)
     if spec is None or spec.loader is None:
@@ -37,10 +43,19 @@ def _load_compute_parallel_jobs():
 
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.compute_parallel_jobs
+    _COMPUTE_PARALLEL_JOBS = module.compute_parallel_jobs
+    return _COMPUTE_PARALLEL_JOBS
 
 
-compute_parallel_jobs = _load_compute_parallel_jobs()
+def _env_positive_int(name: str) -> int | None:
+    raw = os.environ.get(name)
+    if not raw:
+        return None
+    try:
+        value = int(raw.strip())
+    except ValueError:
+        return None
+    return value if value > 0 else None
 
 
 def default_build_dir(env: dict[str, str] | None = None) -> Path:
@@ -76,7 +91,11 @@ def round_robin_chunks(items: Sequence[Path], chunk_count: int) -> list[list[Pat
 
 
 def default_parallel_jobs() -> int:
-    return max(1, compute_parallel_jobs())
+    override = _env_positive_int("DART_PARALLEL_JOBS")
+    if override:
+        return override
+
+    return max(1, _load_compute_parallel_jobs()())
 
 
 def lcov_capture_command(directories: Sequence[Path], output_file: Path) -> list[str]:
