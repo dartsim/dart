@@ -2363,6 +2363,46 @@ Changelog decision:
   round-trip verification if a PR is opened.
 - Follow-up: none until an implementation PR exists.
 
+Additional validation for selected second-world SDF model coverage:
+
+- Added `SdfWriter.RoundTripsSelectedModelFromSecondWorld`, using a synthetic
+  SDF document with two `<world>` entries and selecting
+  `selected_second_world_model` from the second world through
+  `SdfParser::Options::mModelName`.
+- The test writes the selected model through
+  `SdfParser::tryWriteSkeletonToString()`, validates the emitted SDF through
+  `sdf::Root` / `sdf::World` / `sdf::Model` / `sdf::Link` DOM lookup, and
+  reparses through `SdfParser`.
+- Coverage proves named model selection searches sdformat world DOM objects
+  beyond the first world and preserves the selected world's gravity,
+  visual/collision box geometry, and visual material color without XML-level
+  world/model enumeration or emitted-text substring checks.
+
+Validation commands:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsSelectedModelFromSecondWorld'`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run check-sdf-sdformat-boundary`
+- `pixi run build`
+- `pixi run lint`
+- `git diff --check`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
+  and this SKEL evolution task folder.
+- Scope evidence: this slice broadens test evidence for the existing
+  parser-specific SDF named-model selection and unreleased conservative SDF
+  writer contract, without adding a new public API or user-visible export
+  capability.
+- Decision: no additional changelog entry.
+- Target section: not applicable.
+- PR-body note: record as selected second-world SDF model round-trip
+  verification if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
 ## Previous Resume Checkpoint (2026-07-03)
 
 Phase 1 landed on `main` via PR

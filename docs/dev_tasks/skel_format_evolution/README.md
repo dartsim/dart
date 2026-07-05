@@ -167,7 +167,11 @@
       compares body, joint, inertial, mobility, gravity, axis-limit,
       joint-dynamics, visual geometry, collision geometry, model-pose, and
       joint-offset semantics of the original parsed skeletons against the
-      re-parsed writer outputs. The issue fixture coverage proves fixed
+      re-parsed writer outputs. A synthetic two-world SDF fixture also selects
+      a model from the second world through the same sdformat-backed path and
+      proves the selected world's gravity, visual/collision box geometry, and
+      material color survive writer DOM validation and read/write/read. The
+      issue fixture coverage proves fixed
       parent-world root semantics recovered through `RootJointType::Fixed`,
       model poses, child revolute axes and limits, parent-world and child
       universal joints, and box/sphere/cylinder visual and collision geometry.
@@ -422,6 +426,10 @@ SKEL-YAML direction just because the prototype once existed.
   models with parent-world revolute roots, child revolute joints, visual-only
   pendulum geometry, and visual/collision pendulum geometry, again using
   sdformat DOM lookup rather than XML-level model enumeration.
+  A synthetic two-world SDF fixture now proves named-model selection can skip
+  the first world, preserve the selected world's gravity, and round-trip the
+  selected model through sdformat DOM validation without XML-level world/model
+  enumeration.
   URDF shipped-fixture read/write/read coverage now includes
   `joint_properties.urdf`, `issue838.urdf`, `KR5/ground.urdf`, `wam.urdf`, and
   `drchubo.urdf`,

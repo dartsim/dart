@@ -151,7 +151,10 @@ with `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and comp
 body, joint, inertial, mobility, gravity,
 axis-limit, joint-dynamics, visual geometry, collision geometry, resource URI,
 model-pose, and joint-offset semantics between the original parsed skeletons and the
-re-parsed writer outputs. The `quad.sdf` root-model fixture adds read/write/read
+re-parsed writer outputs. A synthetic two-world SDF fixture selects a model from
+the second world and proves the selected world's gravity, visual/collision box
+geometry, and visual material color survive writer DOM validation and
+read/write/read. The `quad.sdf` root-model fixture adds read/write/read
 coverage
 for a 17-link, 16-revolute-joint quadruped topology with repeated finite
 axis limits, visual material colors, box visual/collision geometry, and foot
@@ -177,6 +180,9 @@ The selected double-pendulum world coverage proves parent-world revolute roots,
 child revolute joints, visual-only pendulum geometry, and visual/collision
 pendulum geometry on non-first world models can be selected through the same
 sdformat-backed path and round-tripped without XML-level SDF model enumeration.
+The synthetic two-world coverage proves the named-model selector searches
+sdformat world DOM objects beyond the first world and keeps the selected
+world's gravity without XML-level world/model enumeration.
 
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.

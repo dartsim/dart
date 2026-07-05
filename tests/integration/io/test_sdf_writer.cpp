@@ -2070,6 +2070,148 @@ TEST(SdfWriter, RoundTripsSelectedDoublePendulumWorldFixtures)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsSelectedModelFromSecondWorld)
+{
+  auto retriever = std::make_shared<MapResourceRetriever>();
+  const std::string uri = "memory://pkg/second_world_selection/world.sdf";
+  retriever->add(
+      uri,
+      R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="first_world">
+    <gravity>0 0 -1</gravity>
+    <model name="first_model">
+      <link name="first_link">
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>1</ixx><iyy>1</iyy><izz>1</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+      </link>
+    </model>
+  </world>
+  <world name="second_world">
+    <gravity>0 1 -4</gravity>
+    <model name="selected_second_world_model">
+      <pose>1 2 3 0.1 0.2 0.3</pose>
+      <link name="selected_link">
+        <pose>0.5 0 0 0 0 0</pose>
+        <inertial>
+          <mass>2.0</mass>
+          <inertia>
+            <ixx>0.2</ixx><iyy>0.3</iyy><izz>0.4</izz>
+            <ixy>0.01</ixy><ixz>0.02</ixz><iyz>0.03</iyz>
+          </inertia>
+        </inertial>
+        <visual name="selected_visual">
+          <pose>0 0 0.1 0 0 0</pose>
+          <geometry>
+            <box><size>0.2 0.3 0.4</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.2 0.4 0.6 0.8</diffuse>
+          </material>
+        </visual>
+        <collision name="selected_collision">
+          <pose>0 0 -0.1 0 0 0</pose>
+          <geometry>
+            <box><size>0.2 0.3 0.4</size></box>
+          </geometry>
+        </collision>
+      </link>
+    </model>
+  </world>
+</sdf>
+)");
+
+  utils::SdfParser::Options readOptions;
+  readOptions.mResourceRetriever = retriever;
+  readOptions.mModelName = "selected_second_world_model";
+  const auto original
+      = utils::SdfParser::readSkeleton(common::Uri(uri), readOptions);
+  ASSERT_NE(original, nullptr);
+  EXPECT_EQ(original->getName(), "selected_second_world_model");
+  EXPECT_VECTOR_NEAR(original->getGravity(), Eigen::Vector3d(0, 1, -4), 1e-12);
+  ASSERT_EQ(original->getNumBodyNodes(), 1u);
+  ASSERT_EQ(original->getNumJoints(), 1u);
+  EXPECT_EQ(original->getBodyNode("first_link"), nullptr);
+
+  const auto* originalBody = test::requireBodyNode(*original, "selected_link");
+  ASSERT_NE(originalBody, nullptr);
+  const auto* originalRoot = originalBody->getParentJoint();
+  ASSERT_NE(originalRoot, nullptr);
+  const auto* originalVisualNode
+      = originalBody->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(originalVisualNode, nullptr);
+  ASSERT_NE(originalVisualNode->getVisualAspect(), nullptr);
+  EXPECT_VECTOR_NEAR(
+      originalVisualNode->getVisualAspect()->getRGBA(),
+      Eigen::Vector4d(0.2, 0.4, 0.6, 0.8),
+      1e-6);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_EQ(sdfRoot.WorldCount(), 1u);
+  const auto* sdfWorld = sdfRoot.WorldByIndex(0);
+  ASSERT_NE(sdfWorld, nullptr);
+  EXPECT_DOUBLE_EQ(sdfWorld->Gravity().X(), 0.0);
+  EXPECT_DOUBLE_EQ(sdfWorld->Gravity().Y(), 1.0);
+  EXPECT_DOUBLE_EQ(sdfWorld->Gravity().Z(), -4.0);
+  const auto* sdfModel = sdfWorld->ModelByName(original->getName());
+  ASSERT_NE(sdfModel, nullptr);
+  EXPECT_EQ(sdfModel->Name(), original->getName());
+  EXPECT_EQ(sdfModel->ModelCount(), 0u);
+  ASSERT_EQ(sdfModel->LinkCount(), 1u);
+  const auto* sdfLink = sdfModel->LinkByName("selected_link");
+  ASSERT_NE(sdfLink, nullptr);
+  ASSERT_EQ(sdfLink->VisualCount(), 1u);
+  const auto* sdfVisual = sdfLink->VisualByIndex(0);
+  ASSERT_NE(sdfVisual, nullptr);
+  ASSERT_NE(sdfVisual->Geom(), nullptr);
+  ASSERT_NE(sdfVisual->Geom()->BoxShape(), nullptr);
+  ASSERT_NE(sdfVisual->Material(), nullptr);
+  EXPECT_EQ(
+      sdfVisual->Material()->Diffuse(), gz::math::Color(0.2, 0.4, 0.6, 0.8));
+  ASSERT_EQ(sdfLink->CollisionCount(), 1u);
+  const auto* sdfCollision = sdfLink->CollisionByIndex(0);
+  ASSERT_NE(sdfCollision, nullptr);
+  ASSERT_NE(sdfCollision->Geom(), nullptr);
+  ASSERT_NE(sdfCollision->Geom()->BoxShape(), nullptr);
+
+  const auto path
+      = writeTempSdf(writeResult.value(), "selected_second_world_model");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+  EXPECT_VECTOR_NEAR(reparsed->getGravity(), original->getGravity(), 1e-12);
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+  const auto* body = test::requireBodyNode(*reparsed, "selected_link");
+  ASSERT_NE(body, nullptr);
+  expectBodyInertiaRoundTrips(*body, *originalBody, 1e-12);
+  const auto* root = body->getParentJoint();
+  ASSERT_NE(root, nullptr);
+  expectJointRoundTrips(*root, *originalRoot, 1e-12);
+  expectBoxShapeRoundTrips<dynamics::VisualAspect>(
+      *body, *originalBody, 0, 1, 1e-12);
+  expectBoxShapeRoundTrips<dynamics::CollisionAspect>(
+      *body, *originalBody, 0, 1, 1e-12);
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsExistingMixedJointWorldFixture)
 {
   const auto original = utils::SdfParser::readSkeleton(
