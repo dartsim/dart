@@ -172,7 +172,7 @@
       `mimic_fast_slow_pendulums_world.sdf` and the selected
       `double_pendulum_with_base` model from `double_pendulum*.world`, writes
       them back through
-      `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and
+      `SdfWriter::tryWriteSkeletonToString()`, reloads the emitted text, and
       compares body, joint, inertial, mobility, gravity, axis-limit,
       joint-dynamics, visual geometry, collision geometry, model-pose, and
       joint-offset semantics of the original parsed skeletons against the
@@ -201,7 +201,7 @@
       geometry, and visual/collision pendulum geometry without XML-level SDF
       model enumeration.
       The URDF writer contract is also implemented locally on
-      `dart::utils::UrdfParser::tryWriteSkeletonToString` for one-root URDF
+      `dart::io::UrdfWriter::tryWriteSkeletonToString` for one-root URDF
       trees with identity root FreeJoint/WeldJoint placement validation, child
       revolute/continuous/prismatic/fixed joints, continuous joint
       velocity/effort limit metadata, standard-plane planar and floating child
@@ -242,9 +242,9 @@
       limit diagnostics, targeted diagnostics for non-default visual
       reflectance, disabled collision aspects, and collision dynamics metadata
       that URDF cannot represent, and targeted DART `SoftBodyNode` diagnostics.
-      Writer APIs stay format-owned for now: the SDF writer remains on
-      `dart::utils::SdfParser`, the URDF writer remains on
-      `dart::utils::UrdfParser`, `dart::io` stays read-side, and project/editor
+      Writer APIs stay format-owned for now under the unified `dart::io`
+      namespace: the SDF writer remains on `dart::io::SdfWriter`, the URDF
+      writer remains on `dart::io::UrdfWriter`, and project/editor
       save-load belongs to the scene/project layer. PLAN-101 project save/load
       is already delivered by `dartsim::engine::scene_io` and
       `SimEngine::saveProject()` / `SimEngine::loadProject()` with headless

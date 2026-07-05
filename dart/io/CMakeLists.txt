@@ -9,6 +9,10 @@ dart_check_dependent_target(${target_name} dart-utils)
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
+if(NOT DART_ENABLE_SDFORMAT)
+  list(REMOVE_ITEM hdrs "${CMAKE_CURRENT_SOURCE_DIR}/sdf_writer.hpp")
+  list(REMOVE_ITEM srcs "${CMAKE_CURRENT_SOURCE_DIR}/sdf_writer.cpp")
+endif()
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs})

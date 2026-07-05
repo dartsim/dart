@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/io/urdf_writer.hpp"
+
 #include "dart/math/geometry.hpp"
-#include "dart/utils/urdf/urdf_parser.hpp"
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
@@ -62,7 +63,7 @@
 #include <cmath>
 
 namespace dart {
-namespace utils {
+namespace io {
 
 namespace {
 
@@ -774,7 +775,7 @@ WriteResult writeLink(
     tinyxml2::XMLDocument& doc,
     tinyxml2::XMLElement& robot,
     const dynamics::BodyNode& body,
-    const UrdfParser::WriteOptions& options)
+    const UrdfWriter::WriteOptions& options)
 {
   if (dynamic_cast<const dynamics::SoftBodyNode*>(&body)) {
     return fail(
@@ -1247,13 +1248,15 @@ WriteResult validateRootJoint(const dynamics::BodyNode& root)
 
 } // namespace
 
-common::Result<std::string, common::Error> UrdfParser::tryWriteSkeletonToString(
+namespace UrdfWriter {
+
+common::Result<std::string, common::Error> tryWriteSkeletonToString(
     const dynamics::Skeleton& skeleton)
 {
   return tryWriteSkeletonToString(skeleton, WriteOptions{});
 }
 
-common::Result<std::string, common::Error> UrdfParser::tryWriteSkeletonToString(
+common::Result<std::string, common::Error> tryWriteSkeletonToString(
     const dynamics::Skeleton& skeleton, const WriteOptions& options)
 {
   if (skeleton.getNumBodyNodes() == 0) {
@@ -1310,5 +1313,7 @@ common::Result<std::string, common::Error> UrdfParser::tryWriteSkeletonToString(
   return StringResult::ok(printer.CStr());
 }
 
-} // namespace utils
+} // namespace UrdfWriter
+
+} // namespace io
 } // namespace dart

@@ -36,8 +36,8 @@
 #include "dart/common/local_resource_retriever.hpp"
 #include "dart/common/resource.hpp"
 #include "dart/common/resource_retriever.hpp"
+#include "dart/io/sdf_writer.hpp"
 #include "dart/utils/sdf/sdf_parser.hpp"
-#include "dart/utils/sdf/sdf_writer.hpp"
 
 #include <dart/config.hpp>
 
@@ -640,7 +640,7 @@ void expectUnsupportedChildJointError(
   (void)joint;
   (void)tip;
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find(std::string(expectedSnippet)),
@@ -667,7 +667,7 @@ void expectUnsupportedRootJointError(
   (void)joint;
   (void)body;
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find(std::string(expectedSnippet)),
@@ -705,8 +705,7 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
 {
   const auto original = makeRoundTripSkeleton();
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   EXPECT_NE(writeResult.value().find("<thread_pitch>"), std::string::npos);
   EXPECT_EQ(
@@ -971,8 +970,7 @@ TEST(SdfWriter, RoundTripsExistingSinglePendulumFixture)
   const auto* originalParentJoint = originalLink->getParentJoint();
   ASSERT_NE(originalParentJoint, nullptr);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   const auto path
@@ -1031,8 +1029,7 @@ TEST(SdfWriter, RoundTripsExistingQuadFixture)
   ASSERT_EQ(original->getNumBodyNodes(), 17u);
   ASSERT_EQ(original->getNumJoints(), 17u);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   const auto path = writeTempSdf(writeResult.value(), "quad");
@@ -1159,8 +1156,7 @@ TEST(SdfWriter, RoundTripsConvertedSkelBoxFixtures)
     const auto* originalJoint = originalBody->getParentJoint();
     ASSERT_NE(originalJoint, nullptr);
 
-    const auto writeResult
-        = utils::SdfParser::tryWriteSkeletonToString(*original);
+    const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
     ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
     const auto path = writeTempSdf(writeResult.value(), bodyName);
@@ -1256,8 +1252,7 @@ TEST(SdfWriter, RoundTripsExistingTwoLinkRevoluteFixture)
       = test::requireJoint<dynamics::RevoluteJoint>(*original, "hinge");
   ASSERT_NE(originalHinge, nullptr);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   const auto path
@@ -1381,8 +1376,7 @@ TEST(SdfWriter, RoundTripsExistingSimpleJointModelFixtures)
     ASSERT_EQ(original->getNumBodyNodes(), 2u);
     ASSERT_EQ(original->getNumJoints(), 2u);
 
-    const auto writeResult
-        = utils::SdfParser::tryWriteSkeletonToString(*original);
+    const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
     ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
     const auto path = writeTempSdf(writeResult.value(), testCase.tempName);
@@ -1449,8 +1443,7 @@ TEST(SdfWriter, RoundTripsExistingUniversalJointModelFixture)
   ASSERT_EQ(original->getNumBodyNodes(), 2u);
   ASSERT_EQ(original->getNumJoints(), 2u);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   const auto path = writeTempSdf(writeResult.value(), "test_issue1596_model");
@@ -1535,8 +1528,7 @@ TEST(SdfWriter, RoundTripsExistingWorldRevoluteFixtures)
         = test::requireJoint<dynamics::RevoluteJoint>(*original, "revJoint");
     ASSERT_NE(originalRevolute, nullptr);
 
-    const auto writeResult
-        = utils::SdfParser::tryWriteSkeletonToString(*original);
+    const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
     ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
     const auto path = writeTempSdf(writeResult.value(), name);
@@ -1633,8 +1625,7 @@ TEST(SdfWriter, RoundTripsExistingForceTorqueWorldFixture)
   ASSERT_NE(originalRoot, nullptr);
   ASSERT_NE(originalHinge, nullptr);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   const auto path = writeTempSdf(writeResult.value(), "force_torque_world");
@@ -1766,8 +1757,7 @@ TEST(SdfWriter, RoundTripsExistingSingleBodyWorldFixtures)
     const auto* originalRoot = originalBody->getParentJoint();
     ASSERT_NE(originalRoot, nullptr);
 
-    const auto writeResult
-        = utils::SdfParser::tryWriteSkeletonToString(*original);
+    const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
     ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
     const auto path = writeTempSdf(writeResult.value(), testCase.tempName);
@@ -1843,8 +1833,7 @@ TEST(SdfWriter, RoundTripsExistingGroundWorldFixture)
   EXPECT_DOUBLE_EQ(originalDynamics->getPrimaryFrictionCoeff(), 100.0);
   EXPECT_DOUBLE_EQ(originalDynamics->getSecondaryFrictionCoeff(), 50.0);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -1963,8 +1952,7 @@ TEST(SdfWriter, RoundTripsSelectedDoublePendulumWorldFixtures)
     ASSERT_NE(originalUpperJoint, nullptr);
     ASSERT_NE(originalLowerJoint, nullptr);
 
-    const auto writeResult
-        = utils::SdfParser::tryWriteSkeletonToString(*original);
+    const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
     ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
     sdf::Root sdfRoot;
@@ -2160,8 +2148,7 @@ TEST(SdfWriter, RoundTripsSelectedModelFromSecondWorld)
       Eigen::Vector4d(0.2, 0.4, 0.6, 0.8),
       1e-6);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -2249,8 +2236,7 @@ TEST(SdfWriter, RoundTripsSelectedIssue1624CubeFixture)
       Eigen::Vector4d(1.0, 0.0, 0.0, 1.0),
       1e-6);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -2325,8 +2311,7 @@ TEST(SdfWriter, RoundTripsExistingMixedJointWorldFixture)
   ASSERT_EQ(original->getNumBodyNodes(), 5u);
   ASSERT_EQ(original->getNumJoints(), 5u);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   const auto path = writeTempSdf(writeResult.value(), "mixed_joint_world");
@@ -2431,8 +2416,7 @@ TEST(SdfWriter, RoundTripsExistingForceTorqueChainWorldFixture)
   ASSERT_NE(originalJoint1, nullptr);
   ASSERT_NE(originalJoint2, nullptr);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   const auto path
@@ -2523,10 +2507,10 @@ TEST(SdfWriter, RoundTripsSelectedMimicWorldFixture)
   EXPECT_DOUBLE_EQ(originalMimicProps[0].mMultiplier, 1.0);
   EXPECT_DOUBLE_EQ(originalMimicProps[0].mOffset, 0.0);
 
-  utils::SdfParser::WriteOptions writeOptions;
+  io::SdfWriter::WriteOptions writeOptions;
   writeOptions.version = "1.11";
   const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original, writeOptions);
+      = io::SdfWriter::tryWriteSkeletonToString(*original, writeOptions);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -2628,8 +2612,7 @@ TEST(SdfWriter, RoundTripsJointAxisVelocityAndEffortLimits)
   hinge->setForceLowerLimit(0, -5.5);
   hinge->setForceUpperLimit(0, 5.5);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -2662,10 +2645,10 @@ TEST(SdfWriter, WritesModernScrewThreadPitchForSdf110)
 {
   const auto original = makeRoundTripSkeleton();
 
-  utils::SdfParser::WriteOptions options;
+  io::SdfWriter::WriteOptions options;
   options.version = "1.10";
   const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original, options);
+      = io::SdfWriter::tryWriteSkeletonToString(*original, options);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   EXPECT_NE(
       writeResult.value().find("<screw_thread_pitch>0.25</screw_thread_pitch>"),
@@ -2689,7 +2672,7 @@ TEST(SdfWriter, EmptySkeletonReturnsError)
 {
   const auto skeleton = dynamics::Skeleton::create("empty");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(result.error().message.find("empty Skeleton"), std::string::npos);
 }
@@ -2699,10 +2682,10 @@ TEST(SdfWriter, EmptySdfVersionReturnsError)
 {
   const auto skeleton = makeRoundTripSkeleton();
 
-  utils::SdfParser::WriteOptions options;
+  io::SdfWriter::WriteOptions options;
   options.version.clear();
   const auto result
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
+      = io::SdfWriter::tryWriteSkeletonToString(*skeleton, options);
 
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
@@ -2715,10 +2698,10 @@ TEST(SdfWriter, MalformedSdfVersionReturnsSdformatError)
 {
   const auto skeleton = makeRoundTripSkeleton();
 
-  utils::SdfParser::WriteOptions options;
+  io::SdfWriter::WriteOptions options;
   options.version = "not-a-version";
   const auto result
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
+      = io::SdfWriter::tryWriteSkeletonToString(*skeleton, options);
 
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
@@ -2747,8 +2730,7 @@ TEST(SdfWriter, PreservesAbsoluteNonFileMeshUris)
           retriever),
       "memory_mesh_visual");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -2803,8 +2785,7 @@ TEST(SdfWriter, RoundTripsMeshMaterialVariantsThroughUri)
   body->createShapeNodeWith<dynamics::VisualAspect>(
       std::move(mesh), "multi_material_mesh_visual");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -2879,11 +2860,11 @@ TEST(SdfWriter, IncludeOptionsControlVisualAndCollisionEntries)
   body->createShapeNodeWith<dynamics::CollisionAspect>(
       std::make_shared<dynamics::SphereShape>(0.5), "collision_sphere");
 
-  utils::SdfParser::WriteOptions options;
+  io::SdfWriter::WriteOptions options;
   options.includeVisuals = false;
 
   const auto noVisuals
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
+      = io::SdfWriter::tryWriteSkeletonToString(*skeleton, options);
   ASSERT_TRUE(noVisuals.isOk()) << noVisuals.error().message;
 
   sdf::Root noVisualsRoot;
@@ -2900,7 +2881,7 @@ TEST(SdfWriter, IncludeOptionsControlVisualAndCollisionEntries)
   options.includeCollisions = false;
 
   const auto noCollisions
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
+      = io::SdfWriter::tryWriteSkeletonToString(*skeleton, options);
   ASSERT_TRUE(noCollisions.isOk()) << noCollisions.error().message;
 
   sdf::Root noCollisionsRoot;
@@ -2930,8 +2911,7 @@ TEST(SdfWriter, RoundTripsModelSelfCollision)
       std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
       "body_collision");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -2973,8 +2953,7 @@ TEST(SdfWriter, RoundTripsModelStaticStateWithImplicitRoot)
       std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4)),
       "body_collision");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3028,8 +3007,7 @@ TEST(SdfWriter, RoundTripsNonDefaultSkeletonGravityThroughWorld)
       std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
       "body_collision");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3071,8 +3049,7 @@ TEST(SdfWriter, RoundTripsVisualShadowAndHiddenState)
   visualAspect->setShadowed(false);
   visualAspect->hide();
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3119,8 +3096,7 @@ TEST(SdfWriter, RoundTripsVisualTransparency)
   ASSERT_NE(visualAspect, nullptr);
   visualAspect->setAlpha(0.75);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3173,8 +3149,7 @@ TEST(SdfWriter, RoundTripsCollisionSurfaceOdeFriction)
   dynamicsAspect->setFirstFrictionDirection(Eigen::Vector3d::UnitY());
   dynamicsAspect->setFirstFrictionDirectionFrame(shapeNode);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3239,7 +3214,7 @@ TEST(SdfWriter, NonFiniteCollisionSurfaceFrictionDirectionReturnsError)
       Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0));
   dynamicsAspect->setFirstFrictionDirectionFrame(shapeNode);
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("non-finite friction direction"),
@@ -3261,8 +3236,7 @@ TEST(SdfWriter, RoundTripsCollisionSurfaceContactBitmask)
   ASSERT_NE(collisionAspect, nullptr);
   collisionAspect->setCollidable(false);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3306,8 +3280,7 @@ TEST(SdfWriter, RoundTripsBodyLevelCollidableAsCollisionBitmask)
   body->createShapeNodeWith<dynamics::CollisionAspect>(
       std::make_shared<dynamics::SphereShape>(0.2), "body_disabled_surface");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3355,8 +3328,7 @@ TEST(SdfWriter, RoundTripsCollisionSurfaceBounceRestitution)
   ASSERT_NE(dynamicsAspect, nullptr);
   dynamicsAspect->setRestitutionCoeff(0.42);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3419,8 +3391,7 @@ TEST(SdfWriter, RoundTripsCombinedCollisionSurfaceMetadata)
   dynamicsAspect->setFirstFrictionDirectionFrame(shapeNode);
   dynamicsAspect->setRestitutionCoeff(0.55);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3504,8 +3475,7 @@ TEST(SdfWriter, RoundTripsContinuousRevoluteJoint)
   (void)hinge;
   (void)tip;
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3571,12 +3541,12 @@ TEST(SdfWriter, RoundTripsMimicMetadataWithSdf111)
   mimicProps[1].mMultiplier = 0.75;
   mimicProps[1].mOffset = 0.125;
   followerJoint->setMimicJointDofs(mimicProps);
-  followerJoint->setActuatorType(dynamics::Joint::MIMIC);
+  followerJoint->setActuatorType(1, dynamics::Joint::MIMIC);
 
-  utils::SdfParser::WriteOptions options;
+  io::SdfWriter::WriteOptions options;
   options.version = "1.11";
   const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
+      = io::SdfWriter::tryWriteSkeletonToString(*skeleton, options);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3585,6 +3555,8 @@ TEST(SdfWriter, RoundTripsMimicMetadataWithSdf111)
   ASSERT_NE(sdfRoot.Model(), nullptr);
   const auto* sdfJoint = sdfRoot.Model()->JointByName("follower_joint");
   ASSERT_NE(sdfJoint, nullptr);
+  ASSERT_NE(sdfJoint->Axis(0), nullptr);
+  EXPECT_FALSE(sdfJoint->Axis(0)->Mimic().has_value());
   ASSERT_NE(sdfJoint->Axis(1), nullptr);
   const auto mimic = sdfJoint->Axis(1)->Mimic();
   ASSERT_TRUE(mimic.has_value());
@@ -3604,6 +3576,7 @@ TEST(SdfWriter, RoundTripsMimicMetadataWithSdf111)
       *reparsed, "follower_joint");
   ASSERT_NE(follower, nullptr);
   EXPECT_EQ(follower->getActuatorType(), dynamics::Joint::MIMIC);
+  EXPECT_EQ(follower->getActuatorType(1), dynamics::Joint::MIMIC);
   const auto reparsedMimicProps = follower->getMimicDofProperties();
   ASSERT_EQ(reparsedMimicProps.size(), 2u);
   ASSERT_NE(reparsedMimicProps[1].mReferenceJoint, nullptr);
@@ -3645,10 +3618,88 @@ TEST(SdfWriter, MimicMetadataRequiresSdf111)
   followerJoint->setMimicJoint(referenceJoint, 2.0, 0.5);
   followerJoint->setActuatorType(dynamics::Joint::MIMIC);
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("mimic requires SDF 1.11"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, IgnoresMimicPropertiesWhenActuatorIsNotMimic)
+{
+  auto skeleton = dynamics::Skeleton::create("stale_mimic_props");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::RevoluteJoint::Properties referenceProperties;
+  referenceProperties.mName = "reference_joint";
+  referenceProperties.mAxis = Eigen::Vector3d::UnitZ();
+  dynamics::BodyNode::Properties referenceBodyProperties;
+  referenceBodyProperties.mName = "reference_link";
+  auto [referenceJoint, referenceLink]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          base, referenceProperties, referenceBodyProperties);
+
+  dynamics::RevoluteJoint::Properties followerProperties;
+  followerProperties.mName = "follower_joint";
+  followerProperties.mAxis = Eigen::Vector3d::UnitY();
+  dynamics::BodyNode::Properties followerBodyProperties;
+  followerBodyProperties.mName = "follower_link";
+  auto [followerJoint, followerLink]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          referenceLink, followerProperties, followerBodyProperties);
+  (void)followerLink;
+
+  followerJoint->setMimicJoint(referenceJoint, 2.0, 0.5);
+  followerJoint->setActuatorType(dynamics::Joint::FORCE);
+
+  io::SdfWriter::WriteOptions options;
+  options.version = "1.11";
+  const auto result
+      = io::SdfWriter::tryWriteSkeletonToString(*skeleton, options);
+  ASSERT_TRUE(result.isOk()) << result.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(result.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  const auto* sdfJoint = sdfRoot.Model()->JointByName("follower_joint");
+  ASSERT_NE(sdfJoint, nullptr);
+  ASSERT_NE(sdfJoint->Axis(0), nullptr);
+  EXPECT_FALSE(sdfJoint->Axis(0)->Mimic().has_value());
+}
+
+//==============================================================================
+TEST(SdfWriter, MimicActuatorWithoutReferenceReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("mimic_without_reference");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::RevoluteJoint::Properties followerProperties;
+  followerProperties.mName = "follower_joint";
+  followerProperties.mAxis = Eigen::Vector3d::UnitY();
+  dynamics::BodyNode::Properties followerBodyProperties;
+  followerBodyProperties.mName = "follower_link";
+  auto [followerJoint, followerLink]
+      = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          base, followerProperties, followerBodyProperties);
+  (void)followerLink;
+
+  followerJoint->setActuatorType(dynamics::Joint::MIMIC);
+
+  io::SdfWriter::WriteOptions options;
+  options.version = "1.11";
+  const auto result
+      = io::SdfWriter::tryWriteSkeletonToString(*skeleton, options);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("MIMIC DoF has no reference joint"),
       std::string::npos);
 }
 
@@ -3684,10 +3735,10 @@ TEST(SdfWriter, CouplerMimicReturnsError)
   followerJoint->setActuatorType(dynamics::Joint::MIMIC);
   followerJoint->setUseCouplerConstraint(true);
 
-  utils::SdfParser::WriteOptions options;
+  io::SdfWriter::WriteOptions options;
   options.version = "1.11";
   const auto result
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
+      = io::SdfWriter::tryWriteSkeletonToString(*skeleton, options);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("coupler constraint"), std::string::npos);
@@ -3716,8 +3767,7 @@ TEST(SdfWriter, RootWeldRoundTripsWithFixedRootOption)
   body->createShapeNodeWith<dynamics::CollisionAspect>(
       std::make_shared<dynamics::SphereShape>(0.2), "fixed_root_sphere");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3774,8 +3824,7 @@ TEST(SdfWriter, RootRevoluteJointRoundTripsAsParentWorld)
   body->createShapeNodeWith<dynamics::CollisionAspect>(
       std::make_shared<dynamics::SphereShape>(0.2), "pendulum_collision");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3848,8 +3897,7 @@ TEST(SdfWriter, RootContinuousRevoluteJointRoundTripsAsParentWorld)
       std::make_shared<dynamics::SphereShape>(0.2),
       "continuous_body_collision");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3921,8 +3969,7 @@ TEST(SdfWriter, RootPrismaticJointRoundTripsAsParentWorld)
       std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4)),
       "slider_collision");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -3994,8 +4041,7 @@ TEST(SdfWriter, RootScrewJointRoundTripsAsParentWorld)
       std::make_shared<dynamics::CylinderShape>(0.1, 0.25),
       "screw_body_collision");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -4074,8 +4120,7 @@ TEST(SdfWriter, RootUniversalJointRoundTripsAsParentWorld)
   body->createShapeNodeWith<dynamics::CollisionAspect>(
       std::make_shared<dynamics::SphereShape>(0.2), "universal_body_collision");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -4144,8 +4189,7 @@ TEST(SdfWriter, RootBallJointRoundTripsAsParentWorld)
   body->createShapeNodeWith<dynamics::CollisionAspect>(
       std::make_shared<dynamics::SphereShape>(0.2), "ball_body_collision");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -4223,8 +4267,7 @@ TEST(SdfWriter, RoundTripsMultipleRootFreeJointTrees)
   beta->createShapeNodeWith<dynamics::CollisionAspect>(
       std::make_shared<dynamics::SphereShape>(0.35), "beta_sphere");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -4330,8 +4373,7 @@ TEST(SdfWriter, RoundTripsMixedImplicitAndParentWorldRoots)
   pendulum->createShapeNodeWith<dynamics::CollisionAspect>(
       std::make_shared<dynamics::SphereShape>(0.25), "pendulum_sphere");
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -4468,10 +4510,10 @@ TEST(SdfWriter, RoundTripsCapsuleAndConeGeometry)
   body->createShapeNodeWith<dynamics::CollisionAspect>(
       std::make_shared<dynamics::ConeShape>(0.3, 0.9), "cone_collision");
 
-  utils::SdfParser::WriteOptions options;
+  io::SdfWriter::WriteOptions options;
   options.version = "1.12";
   const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton, options);
+      = io::SdfWriter::tryWriteSkeletonToString(*skeleton, options);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -4523,7 +4565,7 @@ TEST(SdfWriter, PyramidShapeReturnsGeneratedMeshError)
   body->createShapeNodeWith<dynamics::VisualAspect>(
       std::make_shared<dynamics::PyramidShape>(0.5, 0.75, 1.0), "pyramid");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("DART PyramidShape"), std::string::npos);
@@ -4545,7 +4587,7 @@ TEST(SdfWriter, ArrowShapeReturnsGeneratedMeshError)
           Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ()),
       "arrow");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(result.error().message.find("DART ArrowShape"), std::string::npos);
   EXPECT_NE(
@@ -4567,7 +4609,7 @@ TEST(SdfWriter, PointCloudShapeReturnsExplicitUnsupportedError)
   body->createShapeNodeWith<dynamics::VisualAspect>(
       std::move(pointCloud), "point_cloud");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("DART PointCloudShape"), std::string::npos);
@@ -4589,7 +4631,7 @@ TEST(SdfWriter, LineSegmentShapeReturnsExplicitUnsupportedError)
           Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitX(), 0.01F),
       "line_segment");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("DART LineSegmentShape"), std::string::npos);
@@ -4609,7 +4651,7 @@ TEST(SdfWriter, VoxelGridShapeReturnsExplicitUnsupportedError)
   body->createShapeNodeWith<dynamics::VisualAspect>(
       std::make_shared<dynamics::VoxelGridShape>(0.05), "voxel_grid");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("DART VoxelGridShape"), std::string::npos);
@@ -4634,7 +4676,7 @@ TEST(SdfWriter, MultiSphereConvexHullShapeReturnsGeneratedMeshError)
       std::make_shared<dynamics::MultiSphereConvexHullShape>(spheres),
       "multi_sphere");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("DART MultiSphereConvexHullShape"),
@@ -4667,7 +4709,7 @@ TEST(SdfWriter, SoftBodyNodeReturnsExplicitUnsupportedError)
   (void)joint;
   ASSERT_NE(body, nullptr);
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("DART SoftBodyNode"), std::string::npos);
@@ -4685,7 +4727,7 @@ TEST(SdfWriter, PlaneShapeReturnsExplicitUnsupportedError)
       std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0),
       "plane");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("finite SDF plane size"), std::string::npos);
@@ -4707,7 +4749,7 @@ TEST(SdfWriter, HeightmapShapeReturnsSourceUriPolicyError)
   body->createShapeNodeWith<dynamics::VisualAspect>(
       std::move(heightmap), "heightmap");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("SDF heightmap geometry"), std::string::npos);
@@ -4727,7 +4769,7 @@ TEST(SdfWriter, ConvexMeshShapeReturnsGeneratedMeshError)
       std::make_shared<dynamics::ConvexMeshShape>(makeTriangleMesh()),
       "convex_mesh");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("target SDF URI for generated mesh"),
@@ -4747,7 +4789,7 @@ TEST(SdfWriter, MeshWithoutUriReturnsError)
           Eigen::Vector3d::Ones(), makeTriangleMesh()),
       "mesh_without_uri");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("without a mesh URI"), std::string::npos);
@@ -4773,7 +4815,7 @@ TEST(SdfWriter, RelativeMeshUriReturnsError)
           retriever),
       "relative_mesh_uri");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("relative mesh URI"), std::string::npos);
@@ -4804,8 +4846,7 @@ TEST(SdfWriter, RoundTripsExistingRelativeMeshModelFixture)
   ASSERT_NE(originalVisualMesh, nullptr);
   ASSERT_NE(originalCollisionMesh, nullptr);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   const auto path
@@ -4878,8 +4919,7 @@ TEST(SdfWriter, RoundTripsExistingRelativeMeshIncludeWorldFixture)
   ASSERT_NE(originalVisualMesh, nullptr);
   ASSERT_NE(originalCollisionMesh, nullptr);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   sdf::Root sdfRoot;
@@ -4975,7 +5015,7 @@ TEST(SdfWriter, RelativeFileMeshUriReturnsError)
           retriever),
       "relative_file_mesh_uri");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("relative or host-qualified file URI"),
@@ -5001,7 +5041,7 @@ TEST(SdfWriter, HostQualifiedFileMeshUriReturnsError)
           retriever),
       "host_qualified_file_mesh_uri");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("relative or host-qualified file URI"),
@@ -5026,7 +5066,7 @@ TEST(SdfWriter, NonFiniteMeshScaleReturnsError)
           meshUri),
       "non_finite_mesh_scale");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(result.error().message.find("non-finite scale"), std::string::npos);
 }
@@ -5048,7 +5088,7 @@ TEST(SdfWriter, MeshColorModeReturnsError)
   body->createShapeNodeWith<dynamics::VisualAspect>(
       std::move(mesh), "mesh_color_mode");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(result.error().message.find("mesh color mode"), std::string::npos);
 }
@@ -5070,7 +5110,7 @@ TEST(SdfWriter, MeshAlphaModeReturnsError)
   body->createShapeNodeWith<dynamics::VisualAspect>(
       std::move(mesh), "mesh_alpha_mode");
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(result.error().message.find("mesh alpha mode"), std::string::npos);
 }
@@ -5090,7 +5130,7 @@ TEST(SdfWriter, InvalidCollisionSurfaceFrictionReturnsError)
       "bad_surface");
   shapeNode->getDynamicsAspect()->setPrimaryFrictionCoeff(-0.1);
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("negative friction"), std::string::npos);
@@ -5111,7 +5151,7 @@ TEST(SdfWriter, InvalidCollisionSurfaceRestitutionReturnsError)
       "bad_surface");
   shapeNode->getDynamicsAspect()->setRestitutionCoeff(1.1);
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("out-of-range restitution"),
@@ -5134,7 +5174,7 @@ TEST(SdfWriter, NonFiniteCollisionSurfaceSlipReturnsError)
   shapeNode->getDynamicsAspect()->setPrimarySlipCompliance(
       std::numeric_limits<double>::quiet_NaN());
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("non-finite slip compliance"),
@@ -5159,7 +5199,7 @@ TEST(SdfWriter, NonCollisionFrameFrictionDirectionReturnsError)
   dynamicsAspect->setFirstFrictionDirection(Eigen::Vector3d::UnitX());
   dynamicsAspect->setFirstFrictionDirectionFrame(dynamics::Frame::World());
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("non-collision frame"), std::string::npos);
@@ -5180,7 +5220,7 @@ TEST(SdfWriter, NonFiniteMaterialColorReturnsError)
   visual->getVisualAspect()->setRGBA(
       Eigen::Vector4d(0.1, std::numeric_limits<double>::quiet_NaN(), 0.3, 1.0));
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("non-finite material color"),
@@ -5201,7 +5241,7 @@ TEST(SdfWriter, InvalidVisualTransparencyReturnsError)
       "bad_transparency");
   visual->getVisualAspect()->setAlpha(-0.1);
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("visual transparency"), std::string::npos);
@@ -5227,8 +5267,7 @@ TEST(SdfWriter, InvalidPbrMaterialFactorReturnsError)
   visual->getVisualAspect()->setMetallic(
       std::numeric_limits<double>::quiet_NaN());
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isErr());
   EXPECT_NE(writeResult.error().message.find("PBR factor"), std::string::npos);
 }
@@ -5247,8 +5286,7 @@ TEST(SdfWriter, UnsupportedVisualReflectanceReturnsError)
       "reflective_visual");
   visual->getVisualAspect()->setReflectance(0.4);
 
-  const auto writeResult
-      = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isErr());
   EXPECT_NE(writeResult.error().message.find("reflectance"), std::string::npos);
 }
@@ -5264,7 +5302,7 @@ TEST(SdfWriter, NonFiniteSkeletonGravityReturnsError)
   skeleton->setGravity(
       Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, -9.81));
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("non-finite skeleton gravity"),
@@ -5287,7 +5325,7 @@ TEST(SdfWriter, NonFiniteShapePoseReturnsError)
   pose.translation().x() = std::numeric_limits<double>::quiet_NaN();
   visual->setRelativeTransform(pose);
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(result.error().message.find("non-finite pose"), std::string::npos);
 }
@@ -5303,7 +5341,7 @@ TEST(SdfWriter, NonFiniteInertialDataReturnsError)
   body->setLocalCOM(
       Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0));
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("non-finite inertial data"),
@@ -5320,7 +5358,7 @@ TEST(SdfWriter, NonPositiveMassReturnsError)
   body->setName("body");
   body->setMass(0.0);
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(result.error().message.find("SDF link [body]"), std::string::npos);
   EXPECT_NE(
@@ -5351,7 +5389,7 @@ TEST(SdfWriter, NonFiniteJointAxisReturnsError)
   hinge->setAxis(
       Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 1.0));
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(result.error().message.find("non-finite axis"), std::string::npos);
 }
@@ -5365,7 +5403,7 @@ TEST(SdfWriter, AsymmetricJointVelocityLimitReturnsError)
   hinge->setVelocityLowerLimit(0, -1.0);
   hinge->setVelocityUpperLimit(0, 2.0);
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("asymmetric velocity limits"),
@@ -5382,7 +5420,7 @@ TEST(SdfWriter, AsymmetricJointForceLimitReturnsError)
   hinge->setForceLowerLimit(0, -1.0);
   hinge->setForceUpperLimit(0, 2.0);
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("asymmetric force/effort limits"),
@@ -5398,7 +5436,7 @@ TEST(SdfWriter, NaNJointVelocityLimitReturnsError)
   ASSERT_NE(hinge, nullptr);
   hinge->setVelocityLowerLimit(0, std::numeric_limits<double>::quiet_NaN());
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("NaN velocity limits"), std::string::npos)
@@ -5413,7 +5451,7 @@ TEST(SdfWriter, NaNJointForceLimitReturnsError)
   ASSERT_NE(hinge, nullptr);
   hinge->setForceUpperLimit(0, std::numeric_limits<double>::quiet_NaN());
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("NaN force/effort limits"), std::string::npos)
@@ -5442,7 +5480,7 @@ TEST(SdfWriter, NonFiniteJointDynamicsReturnsError)
   (void)tip;
   hinge->setRestPosition(0, std::numeric_limits<double>::quiet_NaN());
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("non-finite dynamics"), std::string::npos);
@@ -5470,7 +5508,7 @@ TEST(SdfWriter, NaNJointLimitReturnsError)
   (void)tip;
   hinge->setPositionLowerLimit(0, std::numeric_limits<double>::quiet_NaN());
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("NaN position limits"), std::string::npos);
@@ -5498,7 +5536,7 @@ TEST(SdfWriter, NonFiniteScrewJointPitchReturnsError)
   (void)tip;
   screw->setPitch(std::numeric_limits<double>::quiet_NaN());
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(result.error().message.find("non-finite pitch"), std::string::npos);
 }
@@ -5523,10 +5561,66 @@ TEST(SdfWriter, BallJointDynamicsReturnError)
   (void)tip;
   ball->setDampingCoefficient(0, 0.1);
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("ball joint [ball] with dynamics"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, BallJointVelocityLimitReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("ball_joint_velocity_limits");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::BallJoint::Properties ballProperties;
+  ballProperties.mName = "ball";
+
+  dynamics::BodyNode::Properties tipProperties;
+  tipProperties.mName = "tip";
+
+  auto [ball, tip] = skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(
+      base, ballProperties, tipProperties);
+  (void)tip;
+  ball->setVelocityLowerLimit(0, -2.0);
+  ball->setVelocityUpperLimit(0, 2.0);
+
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("ball joint [ball] with velocity limits"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(SdfWriter, BallJointForceLimitReturnsError)
+{
+  auto skeleton = dynamics::Skeleton::create("ball_joint_force_limits");
+  auto [rootJoint, base]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  (void)rootJoint;
+  base->setName("base");
+
+  dynamics::BallJoint::Properties ballProperties;
+  ballProperties.mName = "ball";
+
+  dynamics::BodyNode::Properties tipProperties;
+  tipProperties.mName = "tip";
+
+  auto [ball, tip] = skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(
+      base, ballProperties, tipProperties);
+  (void)tip;
+  ball->setForceLowerLimit(0, -4.0);
+  ball->setForceUpperLimit(0, 4.0);
+
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
+  ASSERT_TRUE(result.isErr());
+  EXPECT_NE(
+      result.error().message.find("ball joint [ball] with force/effort limits"),
       std::string::npos);
 }
 
@@ -5550,7 +5644,7 @@ TEST(SdfWriter, NaNBallJointLimitReturnsError)
   (void)tip;
   ball->setPositionLowerLimit(0, std::numeric_limits<double>::quiet_NaN());
 
-  const auto result = utils::SdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   EXPECT_NE(
       result.error().message.find("NaN position limits"), std::string::npos);

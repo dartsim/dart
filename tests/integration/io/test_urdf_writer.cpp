@@ -31,6 +31,7 @@
  */
 
 #include "dart/config.hpp"
+#include "dart/io/urdf_writer.hpp"
 #include "dart/utils/urdf/urdf_parser.hpp"
 
 #include <dart/dynamics/body_node.hpp>
@@ -489,8 +490,7 @@ TEST(UrdfWriter, RoundTripsSupportedTreeSubset)
 {
   const auto skeleton = makeRoundTripSkeleton();
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "<robot");
   expectContains(writeResult.value(), "urdf_writer_roundtrip");
@@ -584,8 +584,7 @@ TEST(UrdfWriter, RoundTripsExistingJointPropertiesFixture)
       = parser.parseSkeleton("dart://sample/urdf/test/joint_properties.urdf");
   ASSERT_NE(original, nullptr);
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "name=\"testRobot\"");
   expectContains(writeResult.value(), "type=\"revolute\"");
@@ -659,8 +658,7 @@ TEST(UrdfWriter, RoundTripsExistingIssue838Fixture)
       = parser.parseSkeleton("dart://sample/urdf/test/issue838.urdf");
   ASSERT_NE(original, nullptr);
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "name=\"issue838\"");
   expectContains(writeResult.value(), "<material");
@@ -709,8 +707,7 @@ TEST(UrdfWriter, RoundTripsExistingGroundFixture)
       = parser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
   ASSERT_NE(original, nullptr);
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "name=\"ground_skeleton\"");
   expectContains(writeResult.value(), "<collision");
@@ -755,8 +752,7 @@ TEST(UrdfWriter, RoundTripsExistingPrimitiveGeometryFixture)
   ASSERT_NE(originalSphere, nullptr);
   EXPECT_NEAR(originalSphere->getRadius(), 1.0, kTolerance);
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "name=\"primitive_geometry\"");
   expectContains(writeResult.value(), "<sphere");
@@ -783,7 +779,7 @@ TEST(UrdfWriter, ExistingKr5FixtureWithRootPoseReturnsError)
       = parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   ASSERT_NE(original, nullptr);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*original);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_FALSE(result.isOk());
   expectContains(result.error().message, "root joint [arm_to_world_fixed]");
   expectContains(result.error().message, "URDF has no root-link pose");
@@ -801,8 +797,7 @@ TEST(UrdfWriter, RoundTripsExistingDrchuboFixture)
   ASSERT_GT(original->getNumBodyNodes(), 20u);
   ASSERT_GT(original->getNumDofs(), 20u);
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "name=\"drchubo\"");
   expectContains(
@@ -862,8 +857,7 @@ TEST(UrdfWriter, RoundTripsExistingWamFixture)
   const auto original = parser.parseSkeleton("dart://sample/urdf/wam/wam.urdf");
   ASSERT_NE(original, nullptr);
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "name=\"wam\"");
   expectContains(
@@ -922,8 +916,7 @@ TEST(UrdfWriter, RoundTripsExistingAtlasV5NoHeadFixture)
   ASSERT_NE(original->getJoint("back_bkx"), nullptr);
   ASSERT_EQ(original->getJoint("neck_ry"), nullptr);
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*original);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*original);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "name=\"drc_skeleton\"");
   expectContains(writeResult.value(), "<mesh");
@@ -983,8 +976,7 @@ TEST(UrdfWriter, OmitsImplicitDefaultVisualMaterial)
   ASSERT_NE(originalVisual, nullptr);
   EXPECT_TRUE(originalVisual->usesDefaultColor());
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   EXPECT_EQ(writeResult.value().find("<material"), std::string::npos);
 
@@ -1011,8 +1003,7 @@ TEST(UrdfWriter, PreservesExplicitDefaultVisualMaterial)
   visual->setRGBA(dynamics::VisualAspect::getDefaultRGBA());
   ASSERT_FALSE(visual->usesDefaultColor());
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "<material");
   expectContains(writeResult.value(), "rgba=\"0.5 0.5 1 1\"");
@@ -1040,8 +1031,7 @@ TEST(UrdfWriter, PreservesDefaultVisualAlphaOverride)
   visual->setAlpha(0.35);
   ASSERT_TRUE(visual->usesDefaultColor());
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "<material");
 
@@ -1097,8 +1087,7 @@ TEST(UrdfWriter, RoundTripsMimicMetadata)
   followerJoint->setMimicJoint(referenceJoint, 2.0, -0.25);
   followerJoint->setActuatorType(dynamics::Joint::MIMIC);
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "<mimic");
   expectContains(writeResult.value(), "joint=\"reference_joint\"");
@@ -1147,8 +1136,7 @@ TEST(UrdfWriter, RoundTripsContinuousJointDynamics)
   hinge->setDampingCoefficient(0, 0.35);
   hinge->setCoulombFriction(0, 0.15);
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "type=\"continuous\"");
   expectContains(writeResult.value(), "<dynamics");
@@ -1212,8 +1200,7 @@ TEST(UrdfWriter, RoundTripsPlanarAndFloatingJoints)
   (void)floatingBody;
   setUniformJointMetadata(floatingJoint, -0.25, 0.5, 1.25, 2.25, 0.15, 0.05);
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "type=\"planar\"");
   expectContains(writeResult.value(), "type=\"floating\"");
@@ -1264,8 +1251,7 @@ TEST(UrdfWriter, PreservesPackageMeshUri)
   const common::Uri packageMeshUri("package://writer_pkg/BoxSmall.obj");
   const auto skeleton = makeVisualMeshSkeleton(packageMeshUri);
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(
       writeResult.value(), "filename=\"package://writer_pkg/BoxSmall.obj\"");
@@ -1291,8 +1277,7 @@ TEST(UrdfWriter, PreservesCollisionPackageMeshUri)
   const common::Uri packageMeshUri("package://writer_pkg/BoxSmall.obj");
   const auto skeleton = makeCollisionMeshSkeleton(packageMeshUri);
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(
       writeResult.value(), "filename=\"package://writer_pkg/BoxSmall.obj\"");
@@ -1319,7 +1304,7 @@ TEST(UrdfWriter, MeshWithoutUriReturnsError)
 {
   const auto skeleton = makeVisualMeshSkeleton(common::Uri());
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "without a mesh URI");
 }
@@ -1330,7 +1315,7 @@ TEST(UrdfWriter, RelativeMeshUriReturnsError)
   const auto skeleton
       = makeVisualMeshSkeleton(common::Uri("meshes/BoxSmall.obj"));
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(
       result.error().message, "relative or host-qualified URDF file mesh URI");
@@ -1344,7 +1329,7 @@ TEST(UrdfWriter, NonFiniteMeshScaleReturnsError)
       common::Uri("package://writer_pkg/BoxSmall.obj"),
       Eigen::Vector3d(1.0, std::numeric_limits<double>::quiet_NaN(), 1.0));
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "non-finite scale");
 }
@@ -1357,7 +1342,7 @@ TEST(UrdfWriter, NonPositiveMassReturnsError)
   ASSERT_NE(base, nullptr);
   base->setMass(0.0);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "URDF link [base]");
   expectContains(result.error().message, "non-finite or non-positive mass");
@@ -1372,7 +1357,7 @@ TEST(UrdfWriter, NonFiniteLocalComReturnsError)
   base->setLocalCOM(
       Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0));
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "URDF link [base]");
   expectContains(result.error().message, "non-finite local center of mass");
@@ -1390,7 +1375,7 @@ TEST(UrdfWriter, NonFiniteVisualMaterialColorReturnsError)
   visual->getVisualAspect()->setRGBA(
       Eigen::Vector4d(0.2, std::numeric_limits<double>::quiet_NaN(), 0.6, 1.0));
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "URDF visual [base_box]");
   expectContains(result.error().message, "non-finite material color");
@@ -1407,7 +1392,7 @@ TEST(UrdfWriter, UnsupportedVisualReflectanceReturnsError)
   ASSERT_NE(visual->getVisualAspect(), nullptr);
   visual->getVisualAspect()->setReflectance(0.4);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "URDF visual [base_box]");
   expectContains(result.error().message, "reflectance");
@@ -1426,7 +1411,7 @@ TEST(UrdfWriter, NonFiniteShapePoseReturnsError)
   pose.translation().x() = std::numeric_limits<double>::quiet_NaN();
   visual->setRelativeTransform(pose);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "URDF shape [base_box]");
   expectContains(result.error().message, "non-finite local pose");
@@ -1442,7 +1427,7 @@ TEST(UrdfWriter, AsymmetricVelocityLimitReturnsError)
   hinge->setVelocityLowerLimit(0, -2.0);
   hinge->setVelocityUpperLimit(0, 3.0);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "URDF joint [hinge]");
   expectContains(result.error().message, "asymmetric velocity limits");
@@ -1458,7 +1443,7 @@ TEST(UrdfWriter, AsymmetricEffortLimitReturnsError)
   hinge->setForceLowerLimit(0, -4.0);
   hinge->setForceUpperLimit(0, 5.0);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "URDF joint [hinge]");
   expectContains(result.error().message, "asymmetric force/effort limits");
@@ -1474,7 +1459,7 @@ TEST(UrdfWriter, NonFiniteJointAxisReturnsError)
   hinge->setAxis(
       Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 1.0));
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "URDF joint [hinge]");
   expectContains(result.error().message, "non-finite axis");
@@ -1491,7 +1476,7 @@ TEST(UrdfWriter, DisabledCollisionAspectReturnsError)
   ASSERT_NE(collision->getCollisionAspect(), nullptr);
   collision->getCollisionAspect()->setCollidable(false);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(
       result.error().message, "URDF collision [tip_cylinder_collision]");
@@ -1511,7 +1496,7 @@ TEST(UrdfWriter, DisabledBodyCollisionReturnsError)
   ASSERT_TRUE(collision->getCollisionAspect()->isCollidable());
   tip->setCollidable(false);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(
       result.error().message, "URDF collision [tip_cylinder_collision]");
@@ -1540,7 +1525,7 @@ TEST(UrdfWriter, CollisionDynamicsMetadataReturnsError)
   ASSERT_NE(collision->getDynamicsAspect(), nullptr);
   collision->getDynamicsAspect()->setRestitutionCoeff(0.25);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "URDF collision [surface_box]");
   expectContains(result.error().message, "collision dynamics metadata");
@@ -1551,10 +1536,10 @@ TEST(UrdfWriter, IncludeOptionsControlVisualsAndCollisions)
 {
   const auto skeleton = makeRoundTripSkeleton();
 
-  utils::UrdfParser::WriteOptions options;
+  io::UrdfWriter::WriteOptions options;
   options.includeVisuals = false;
   const auto noVisuals
-      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton, options);
+      = io::UrdfWriter::tryWriteSkeletonToString(*skeleton, options);
   ASSERT_TRUE(noVisuals.isOk()) << noVisuals.error().message;
   expectContains(noVisuals.value(), "<collision");
   EXPECT_EQ(noVisuals.value().find("<visual"), std::string::npos);
@@ -1562,7 +1547,7 @@ TEST(UrdfWriter, IncludeOptionsControlVisualsAndCollisions)
   options.includeVisuals = true;
   options.includeCollisions = false;
   const auto noCollisions
-      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton, options);
+      = io::UrdfWriter::tryWriteSkeletonToString(*skeleton, options);
   ASSERT_TRUE(noCollisions.isOk()) << noCollisions.error().message;
   expectContains(noCollisions.value(), "<visual");
   EXPECT_EQ(noCollisions.value().find("<collision"), std::string::npos);
@@ -1573,7 +1558,7 @@ TEST(UrdfWriter, EmptySkeletonReturnsError)
 {
   const auto skeleton = dynamics::Skeleton::create("empty");
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "empty Skeleton");
 }
@@ -1593,7 +1578,7 @@ TEST(UrdfWriter, MultipleRootTreesReturnError)
       makeBodyProperties(
           "root_b", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "multiple root trees");
 }
@@ -1616,8 +1601,7 @@ TEST(UrdfWriter, IdentityRootWeldWritesRootLinkWithoutParentJointMetadata)
       std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
       "base_box");
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   EXPECT_EQ(writeResult.value().find("<joint"), std::string::npos);
   EXPECT_EQ(writeResult.value().find("fixed_root"), std::string::npos);
@@ -1649,7 +1633,7 @@ TEST(UrdfWriter, RootJointPlacementReturnsError)
       makeBodyProperties(
           "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "URDF root joint [posed_root]");
   expectContains(result.error().message, "non-identity placement");
@@ -1669,7 +1653,7 @@ TEST(UrdfWriter, UnsupportedRootJointTypeReturnsError)
       makeBodyProperties(
           "base", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "URDF root joint [root_hinge]");
   expectContains(result.error().message, "root links do not carry");
@@ -1695,7 +1679,7 @@ TEST(UrdfWriter, NonUniformPlanarJointLimitsReturnsError)
   (void)planarBody;
   planarJoint->setPositionLowerLimit(1, -0.25);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "non-uniform position lower limits");
   expectContains(result.error().message, "URDF <limit>");
@@ -1726,7 +1710,7 @@ TEST(UrdfWriter, NonUniformFloatingJointDynamicsReturnsError)
   floatingJoint->setDampingCoefficient(0, 0.1);
   floatingJoint->setDampingCoefficient(1, 0.2);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "non-uniform damping metadata");
 }
@@ -1752,7 +1736,7 @@ TEST(UrdfWriter, ArbitraryPlanarJointReturnsError)
       makeBodyProperties(
           "tip", 1.0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()));
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "arbitrary planar axes");
 }
@@ -1782,7 +1766,7 @@ TEST(UrdfWriter, SoftBodyNodeReturnsExplicitUnsupportedError)
   (void)joint;
   ASSERT_NE(body, nullptr);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "DART SoftBodyNode");
   expectContains(result.error().message, "soft mesh topology");
@@ -1813,7 +1797,7 @@ TEST(UrdfWriter, NonIdentityChildJointFrameReturnsError)
   (void)tip;
   setFiniteJointMetadata(hinge, -1.0, 1.0, 2.0, 3.0, 0.0, 0.0);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "child link frame");
 }
@@ -1845,7 +1829,7 @@ TEST(UrdfWriter, UnboundedPrismaticLimitsReturnError)
   slider->setForceLowerLimit(0, -1.0);
   slider->setForceUpperLimit(0, 1.0);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "unbounded URDF position limits");
 }
@@ -1875,7 +1859,7 @@ TEST(UrdfWriter, MimicWithoutReferenceReturnsError)
   setFiniteJointMetadata(follower, -1.0, 1.0, 2.0, 3.0, 0.0, 0.0);
   follower->setActuatorType(dynamics::Joint::MIMIC);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "no reference joint");
 }
@@ -1924,8 +1908,7 @@ TEST(UrdfWriter, RoundTripsCouplerMimicThroughTransmissions)
   followerJoint->setActuatorType(dynamics::Joint::MIMIC);
   followerJoint->setUseCouplerConstraint(true);
 
-  const auto writeResult
-      = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto writeResult = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "<transmission");
   expectContains(
@@ -1994,7 +1977,7 @@ TEST(UrdfWriter, CouplerMimicWithOffsetReturnsError)
   followerJoint->setActuatorType(dynamics::Joint::MIMIC);
   followerJoint->setUseCouplerConstraint(true);
 
-  const auto result = utils::UrdfParser::tryWriteSkeletonToString(*skeleton);
+  const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
   expectContains(result.error().message, "coupler mimic offset");
   expectContains(result.error().message, "SimpleTransmission");

@@ -30,24 +30,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_SDF_WRITER_HPP_
-#define DART_UTILS_SDF_WRITER_HPP_
-
-#include <dart/utils/export.hpp>
+#ifndef DART_IO_SDF_WRITER_HPP_
+#define DART_IO_SDF_WRITER_HPP_
 
 #include <dart/dynamics/skeleton.hpp>
 
 #include <dart/common/result.hpp>
 
+#include <dart/io/export.hpp>
+
 #include <string>
 
 namespace dart {
-namespace utils {
+namespace io {
 
-namespace SdfParser {
+namespace SdfWriter {
 
 /// Options for serializing a Skeleton to SDF.
-struct DART_UTILS_API WriteOptions
+struct DART_IO_API WriteOptions
 {
   /// SDF version to write on the root <sdf> element.
   std::string version{"1.7"};
@@ -83,14 +83,13 @@ struct DART_UTILS_API WriteOptions
 /// this string writer has no destination URI for resource resolution or
 /// generated asset placement.
 /// Unsupported constructs return an error instead of being silently dropped.
-common::Result<std::string, common::Error> DART_UTILS_API
-tryWriteSkeletonToString(
+common::Result<std::string, common::Error> DART_IO_API tryWriteSkeletonToString(
     const dynamics::Skeleton& skeleton,
     const WriteOptions& options = WriteOptions());
 
-} // namespace SdfParser
+} // namespace SdfWriter
 
-} // namespace utils
+} // namespace io
 } // namespace dart
 
-#endif // DART_UTILS_SDF_WRITER_HPP_
+#endif // DART_IO_SDF_WRITER_HPP_

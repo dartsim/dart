@@ -228,7 +228,7 @@ world-contained
 `single_bodynode_skeleton.world`, `test_skeleton_joint.world`, and the
 sensor-bearing `force_torque_test.world` / `force_torque_test2.world` fixtures.
 These tests load through the libsdformat-backed DART SDF parser, write with
-`SdfParser::tryWriteSkeletonToString()`, reparse the emitted SDF, and compare
+`SdfWriter::tryWriteSkeletonToString()`, reparse the emitted SDF, and compare
 imported `Skeleton` semantics only. The issue fixture coverage uses
 `RootJointType::Fixed` on reparse to recover the fixed parent-world root
 semantics represented by SDF static model state. The issue fixture coverage
@@ -441,8 +441,9 @@ The writer API home decision is now recorded in
 `docs/onboarding/io-parsing.md` and
 [`05-export-writers-plan.md`](05-export-writers-plan.md): keep export APIs
 format-owned until more than one accepted writer contract exists. The SDF
-writer stays on `dart::utils::SdfParser`, `dart::io` remains read-side, and
-project/editor save-load belongs to the scene/project layer.
+writer stays on `dart::io::SdfWriter`, the URDF writer stays on
+`dart::io::UrdfWriter`, and project/editor save-load belongs to the
+scene/project layer.
 
 PLAN-101 project save/load is already delivered by the dartsim engine, not by
 the SKEL replacement path. The durable project format is the versioned
@@ -1141,7 +1142,7 @@ Changelog decision:
 
 - Mode: draft
 - Base evidence: `origin/main`
-- Scope evidence: local diff adds the parser-specific SDF writer API,
+- Scope evidence: local diff adds the format-specific SDF writer API,
   integration round-trip coverage, IO docs, and SKEL-format task handoff.
 - Decision: entry required
 - Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing
@@ -1409,7 +1410,7 @@ Changelog decision:
   `docs/onboarding/io-parsing.md`, `CHANGELOG.md`, and this SKEL evolution
   task folder.
 - Decision: entry required as a revision to the existing DART 7 URDF writer
-  bullet because this broadens the unreleased public parser-owned writer
+  bullet because this broadens the unreleased public format-owned writer
   contract to include zero-offset coupler mimic transmission output.
 - Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing existing URDF
   writer bullet.
@@ -1442,7 +1443,7 @@ Changelog decision:
   `docs/onboarding/io-parsing.md`, `CHANGELOG.md`, and this SKEL evolution
   task folder.
 - Decision: entry required as a revision to the existing DART 7 URDF writer
-  bullet because this broadens the unreleased public parser-owned writer
+  bullet because this broadens the unreleased public format-owned writer
   contract to include standard-plane planar and floating child joint output
   with uniform scalar limit/dynamics metadata.
 - Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing existing URDF
@@ -1608,7 +1609,7 @@ Changelog decision:
   `tests/integration/CMakeLists.txt`, `docs/onboarding/io-parsing.md`,
   `CHANGELOG.md`, and this SKEL evolution task folder
 - Decision: entry required as a new DART 7 URDF writer bullet because this adds
-  a public parser-owned export API
+  a public format-owned export API
 - Target section: `CHANGELOG.md` -> DART 7 -> IO and Parsing
 - Entry text: the new conservative URDF writer bullet describes the supported
   first tree subset, continuous joints, passive dynamics, single-DoF mimic
@@ -1668,7 +1669,7 @@ Additional validation for empty SDF writer input diagnostics:
 Changelog decision:
 
 - Mode: decide
-- Base evidence: current local diff in `dart/utils/sdf/sdf_writer.cpp`,
+- Base evidence: current local diff in `dart/io/sdf_writer.cpp`,
   `tests/integration/io/test_sdf_writer.cpp`,
   `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
 - Decision: no additional changelog entry. The existing unreleased DART 7 SDF
@@ -1696,7 +1697,7 @@ Additional validation for non-positive SDF inertial mass diagnostics:
 Changelog decision:
 
 - Mode: decide
-- Base evidence: current local diff in `dart/utils/sdf/sdf_writer.cpp`,
+- Base evidence: current local diff in `dart/io/sdf_writer.cpp`,
   `tests/integration/io/test_sdf_writer.cpp`,
   `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
 - Scope evidence: `CHANGELOG.md` DART 7 IO and Parsing SDF writer bullet
@@ -1723,7 +1724,7 @@ Additional validation for existing SDF fixture read/write/read coverage:
 
 - Added `SdfWriter.RoundTripsExistingSinglePendulumFixture`, which loads
   `dart://sample/sdf/test/single_pendulum.sdf`, writes it through
-  `SdfParser::tryWriteSkeletonToString()`, reloads the emitted SDF, and
+  `SdfWriter::tryWriteSkeletonToString()`, reloads the emitted SDF, and
   compares the body, root joint, inertial, damping, visual box, and collision
   box semantics against the original parsed skeleton.
 - Initial focused draft caught a bad hand-coded transform-sign expectation for
@@ -1764,7 +1765,7 @@ Additional validation for the remaining converted SKEL SDF fixtures:
   `dart://sample/sdf/test/cube.sdf`, `dart://sample/sdf/test/shapes.sdf`, and
   `dart://sample/sdf/test/test_shapes.sdf`.
 - The test writes each parsed skeleton through
-  `SdfParser::tryWriteSkeletonToString()`, reloads the emitted SDF, and compares
+  `SdfWriter::tryWriteSkeletonToString()`, reloads the emitted SDF, and compares
   skeleton name, mobility, body and joint counts, root-joint type and
   transforms, body inertia, visual box size/pose, and collision box size/pose
   against the original parsed skeleton.
@@ -1793,7 +1794,7 @@ Additional validation for native two-link revolute SDF fixture coverage:
 
 - Added `SdfWriter.RoundTripsExistingTwoLinkRevoluteFixture`, which loads
   `dart://sample/sdf/test/two_link_revolute_model.sdf`, writes it through
-  `SdfParser::tryWriteSkeletonToString()`, reloads the emitted SDF, and
+  `SdfWriter::tryWriteSkeletonToString()`, reloads the emitted SDF, and
   compares the re-parsed DART semantics against the original parsed skeleton.
 - The test covers a shipped SDF model with a generated root FreeJoint, a child
   revolute joint, finite axis position/velocity/effort limits, body inertias,
@@ -1830,7 +1831,7 @@ Additional validation for world-contained SDF revolute fixture coverage:
   `dart://sample/sdf/test/issue1193_revolute_with_offset_test.sdf`.
 - The test reads each world-contained SDF fixture through libsdformat-backed
   SDF parsing, writes the parsed skeleton with
-  `SdfParser::tryWriteSkeletonToString()`, reloads the emitted SDF, and
+  `SdfWriter::tryWriteSkeletonToString()`, reloads the emitted SDF, and
   compares DART semantics instead of XML text.
 - The fixtures prove the current writer preserves model-pose-derived root
   transforms, explicit child joint pose offsets, zero world gravity, revolute
@@ -1867,7 +1868,7 @@ Additional validation for force-torque SDF world fixture coverage:
   `dart://sample/sdf/test/force_torque_test.world`.
 - The test reads the shipped world file through libsdformat-backed SDF parsing,
   writes the parsed in-file model skeleton with
-  `SdfParser::tryWriteSkeletonToString()`, reloads the emitted SDF, and
+  `SdfWriter::tryWriteSkeletonToString()`, reloads the emitted SDF, and
   compares DART skeleton semantics instead of XML text.
 - The fixture proves the current writer preserves the DART semantics imported
   from a sensor-bearing SDF world file: explicit parent-world revolute root,
@@ -1908,7 +1909,7 @@ Additional validation for force-torque SDF chain world fixture coverage:
   covers `dart://sample/sdf/test/force_torque_test2.world`.
 - The test reads the shipped world file through libsdformat-backed SDF parsing,
   writes the parsed in-file `boxes` model skeleton with
-  `SdfParser::tryWriteSkeletonToString()`, reloads the emitted SDF through the
+  `SdfWriter::tryWriteSkeletonToString()`, reloads the emitted SDF through the
   normal SDF parser, and compares DART skeleton semantics instead of XML text.
 - The fixture proves the current writer preserves the DART semantics imported
   from a sensor-bearing three-link/two-joint SDF world file: parent-world root
@@ -1951,7 +1952,7 @@ Additional validation for simple SDF world fixture coverage:
   `dart://sample/sdf/test/single_bodynode_skeleton.world`.
 - The test reads both shipped world files through libsdformat-backed SDF
   parsing, writes the parsed single-body skeletons with
-  `SdfParser::tryWriteSkeletonToString()`, reloads the emitted SDF through the
+  `SdfWriter::tryWriteSkeletonToString()`, reloads the emitted SDF through the
   normal SDF parser, and compares DART skeleton semantics instead of XML text.
 - The fixtures prove the current writer preserves high-version SDF world input,
   default-inertial fallback, imported root-joint semantics, skeleton gravity,
@@ -1987,7 +1988,7 @@ Additional validation for mixed-joint SDF world fixture coverage:
 - Added `SdfWriter.RoundTripsExistingMixedJointWorldFixture`, which covers
   `dart://sample/sdf/test/test_skeleton_joint.world`.
 - The test reads the shipped world file through libsdformat-backed SDF parsing,
-  writes the parsed skeleton with `SdfParser::tryWriteSkeletonToString()`,
+  writes the parsed skeleton with `SdfWriter::tryWriteSkeletonToString()`,
   reloads the emitted SDF through the normal SDF parser, and compares DART
   skeleton semantics instead of XML text.
 - The fixture proves the current writer preserves imported root-joint semantics,
@@ -2055,7 +2056,7 @@ Additional validation for URDF joint-properties fixture coverage:
 
 - Added `UrdfWriter.RoundTripsExistingJointPropertiesFixture`, which loads
   `data/urdf/test/joint_properties.urdf`, writes it through
-  `UrdfParser::tryWriteSkeletonToString()`, reparses the emitted URDF, and
+  `UrdfWriter::tryWriteSkeletonToString()`, reparses the emitted URDF, and
   compares body inertias, visual box geometry, revolute and continuous joint
   topology, axes, finite velocity/effort limits, and passive damping/friction
   metadata.
@@ -2089,13 +2090,13 @@ Additional validation for URDF material and ground fixture coverage:
 
 - Added `UrdfWriter.RoundTripsExistingIssue838Fixture`, which loads
   `data/urdf/test/issue838.urdf`, writes it through
-  `UrdfParser::tryWriteSkeletonToString()`, reparses the emitted URDF, and
+  `UrdfWriter::tryWriteSkeletonToString()`, reparses the emitted URDF, and
   compares body inertias, visual box geometry, visual colors imported from
   global URDF material references, fixed-joint topology, and revolute joint
   limits.
 - Added `UrdfWriter.RoundTripsExistingGroundFixture`, which loads
   `data/urdf/KR5/ground.urdf`, writes it through
-  `UrdfParser::tryWriteSkeletonToString()`, reparses the emitted URDF, and
+  `UrdfWriter::tryWriteSkeletonToString()`, reparses the emitted URDF, and
   compares the DART skeleton semantics imported from the fixture: the root
   `world` link remains an inertial-frame placeholder rather than a body node,
   and the `ground_link` inertial, visual box, and collision box semantics
@@ -2132,7 +2133,7 @@ Additional validation for URDF WAM package-mesh fixture coverage:
 - Added `UrdfWriter.RoundTripsExistingWamFixture`, which loads
   `data/urdf/wam/wam.urdf` with `UrdfParser` package resolution for
   `herb_description`, writes it through
-  `UrdfParser::tryWriteSkeletonToString()`, reparses the emitted URDF, and
+  `UrdfWriter::tryWriteSkeletonToString()`, reparses the emitted URDF, and
   compares the DART skeleton semantics imported from the fixture: root
   `world` remains an inertial-frame placeholder, body inertias survive,
   visual/collision package mesh geometry and URIs survive, visual material
@@ -2167,7 +2168,7 @@ Additional validation for URDF drchubo and KR5 root-pose fixture coverage:
 
 - Added `UrdfWriter.RoundTripsExistingDrchuboFixture`, which loads
   `data/urdf/drchubo/drchubo.urdf` with `UrdfParser` package resolution for
-  `drchubo`, writes it through `UrdfParser::tryWriteSkeletonToString()`,
+  `drchubo`, writes it through `UrdfWriter::tryWriteSkeletonToString()`,
   reparses the emitted URDF, and compares the DART skeleton semantics imported
   from the fixture: body inertias, visual/collision package mesh geometry and
   URIs, visual material colors, and representative revolute joint topology,
@@ -2207,7 +2208,7 @@ Additional validation for SDF quad root-model fixture coverage:
 
 - Added `SdfWriter.RoundTripsExistingQuadFixture`, which loads
   `dart://sample/sdf/quad.sdf`, writes it through
-  `SdfParser::tryWriteSkeletonToString()`, reparses the emitted SDF, and
+  `SdfWriter::tryWriteSkeletonToString()`, reparses the emitted SDF, and
   compares the DART skeleton semantics imported from the fixture: 17 body
   nodes, 16 child revolute joints plus the implicit root joint, body inertias,
   finite joint axis limits, joint topology and axes, repeated visual/collision
@@ -2248,7 +2249,7 @@ Additional validation for SDF root-model issue fixture coverage:
 - Added `SdfWriter.RoundTripsExistingSimpleJointModelFixtures`, which loads
   `dart://sample/sdf/test/test_issue1583.model` and
   `dart://sample/sdf/test/test_issue1683.model`, writes them through
-  `SdfParser::tryWriteSkeletonToString()`, reparses the emitted SDF with
+  `SdfWriter::tryWriteSkeletonToString()`, reparses the emitted SDF with
   `RootJointType::Fixed`, and compares the DART skeleton semantics imported
   from the fixtures: model names, mobility, gravity, body inertias, fixed
   parent-world root joints, child revolute joint topology/axes/limits, and
@@ -2287,7 +2288,7 @@ Additional validation for SDF universal-joint issue fixture coverage:
 
 - Added `SdfWriter.RoundTripsExistingUniversalJointModelFixture`, which loads
   `dart://sample/sdf/test/test_issue1596.model`, writes it through
-  `SdfParser::tryWriteSkeletonToString()`, reparses the emitted SDF through the
+  `SdfWriter::tryWriteSkeletonToString()`, reparses the emitted SDF through the
   normal `SdfParser` path, and compares the DART skeleton semantics imported
   from the fixture: model name, mobility, gravity, body inertias, parent-world
   and child universal joint topology/axes/limits/dynamics, and box/sphere
@@ -2324,7 +2325,7 @@ Additional validation for SDF relative-mesh model fixture coverage:
 
 - Added `SdfWriter.RoundTripsExistingRelativeMeshModelFixture`, which loads
   `dart://sample/sdf/test/include_relative_mesh/included_model/model.sdf`,
-  writes it through `SdfParser::tryWriteSkeletonToString()`, reparses the
+  writes it through `SdfWriter::tryWriteSkeletonToString()`, reparses the
   emitted SDF through the normal `SdfParser` path, and compares the DART
   skeleton semantics imported from the fixture: model name, mobility, gravity,
   body inertia, implicit root joint, visual/collision mesh shape poses, mesh
@@ -2406,7 +2407,7 @@ Additional validation for top-level SDF `ground.world` fixture coverage:
 
 - Added `SdfWriter.RoundTripsExistingGroundWorldFixture`, which loads the
   shipped top-level `dart://sample/sdf/ground.world` fixture through
-  `SdfParser`, writes it with `SdfParser::tryWriteSkeletonToString()`, and
+  `SdfParser`, writes it with `SdfWriter::tryWriteSkeletonToString()`, and
   reparses the emitted SDF through `SdfParser`.
 - The test validates the emitted SDF with libsdformat `sdf::Root`,
   `sdf::Model`, `sdf::Link`, `sdf::Visual`, `sdf::Collision`,
@@ -2516,7 +2517,7 @@ Additional validation for selected SDF double-pendulum world model coverage:
   and `dart://sample/sdf/double_pendulum_with_base.world` through
   `SdfParser::Options::mModelName`.
 - The test writes each selected model back through
-  `SdfParser::tryWriteSkeletonToString()`, validates the emitted model through
+  `SdfWriter::tryWriteSkeletonToString()`, validates the emitted model through
   `sdf::Root` / `sdf::World` / `sdf::Model` DOM lookup, and reparses through
   `SdfParser`.
 - Coverage proves selected non-first world models round-trip parent-world
@@ -2555,7 +2556,7 @@ Additional validation for selected second-world SDF model coverage:
   `selected_second_world_model` from the second world through
   `SdfParser::Options::mModelName`.
 - The test writes the selected model through
-  `SdfParser::tryWriteSkeletonToString()`, validates the emitted SDF through
+  `SdfWriter::tryWriteSkeletonToString()`, validates the emitted SDF through
   `sdf::Root` / `sdf::World` / `sdf::Model` / `sdf::Link` DOM lookup, and
   reparses through `SdfParser`.
 - Coverage proves named model selection searches sdformat world DOM objects
@@ -2594,7 +2595,7 @@ Additional validation for selected shipped many-model SDF cube coverage:
   `model_0_0_1` from `dart://sample/sdf/test/issue1624_cubes.sdf` through
   `SdfParser::Options::mModelName`.
 - The test writes the selected cube through
-  `SdfParser::tryWriteSkeletonToString()`, validates the emitted SDF through
+  `SdfWriter::tryWriteSkeletonToString()`, validates the emitted SDF through
   typed `sdf::Root` / `sdf::Model` / `sdf::Link` / `sdf::Visual` /
   `sdf::Collision` / `sdf::Box` DOM lookup, and reparses through `SdfParser`.
 - Coverage proves named model selection can skip the default first model in a
@@ -2662,7 +2663,7 @@ Additional validation for shipped URDF primitive geometry fixture coverage:
 - Added `UrdfWriter.RoundTripsExistingPrimitiveGeometryFixture`, loading
   `dart://sample/urdf/test/primitive_geometry.urdf` through `UrdfParser`,
   writing the imported skeleton through
-  `UrdfParser::tryWriteSkeletonToString()`, and reparsing the emitted URDF.
+  `UrdfWriter::tryWriteSkeletonToString()`, and reparsing the emitted URDF.
 - Coverage proves the parser-selected primitive visual geometry imported into
   DART (`base_link` with one visual sphere and no collisions) survives
   write/read/read with body, inertia, visual geometry, and collision-count
@@ -2680,7 +2681,7 @@ Changelog decision:
   `tests/integration/io/test_urdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
   and this SKEL evolution task folder.
 - Scope evidence: this slice broadens shipped-fixture test evidence for the
-  existing parser-specific URDF writer contract, without adding a new public
+  existing format-specific URDF writer contract, without adding a new public
   API or user-visible export capability.
 - Decision: no additional changelog entry.
 - Target section: not applicable.
@@ -2692,7 +2693,7 @@ Additional validation for shipped URDF Atlas fixture coverage:
 
 - Added `UrdfWriter.RoundTripsExistingAtlasV5NoHeadFixture`, loading
   `dart://sample/sdf/atlas/atlas_v5_no_head.urdf` through `UrdfParser`, writing
-  the imported skeleton through `UrdfParser::tryWriteSkeletonToString()`, and
+  the imported skeleton through `UrdfWriter::tryWriteSkeletonToString()`, and
   reparsing the emitted URDF from a memory URI.
 - Coverage proves the current conservative URDF writer preserves the shipped
   Atlas fixture's 36 body nodes, 35 DoFs, body inertias, visual/collision mesh
@@ -2712,7 +2713,7 @@ Changelog decision:
   `tests/integration/io/test_urdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
   and this SKEL evolution task folder.
 - Scope evidence: this slice broadens shipped-fixture test evidence for the
-  existing parser-specific URDF writer contract, without adding a new public API
+  existing format-specific URDF writer contract, without adding a new public API
   or user-visible export capability.
 - Decision: no additional changelog entry.
 - Target section: not applicable.
@@ -2727,7 +2728,7 @@ Additional validation for Phase 5 bounded writer closeout:
   README and export-writer plan. Future SDF/URDF writer expansion is parked
   behind durable criteria in `docs/onboarding/io-parsing.md` instead of keeping
   the phase open-ended.
-- Existing evidence remains the parser-specific SDF and URDF writer APIs,
+- Existing evidence remains the format-specific SDF and URDF writer APIs,
   read/write/read coverage in `INTEGRATION_io_SdfWriter` and
   `INTEGRATION_io_UrdfWriter`, unsupported-case diagnostics, PLAN-101
   project/scene save-load coverage in the dartsim engine layer, and the existing

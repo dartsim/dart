@@ -14,7 +14,7 @@ Before Phase 5 started, DART 7 `dart::io` was read-only:
   phases are explicitly read-only.
 
 The first implementation slice adds
-`dart::utils::SdfParser::tryWriteSkeletonToString()`, a parser-specific SDF
+`dart::io::SdfWriter::tryWriteSkeletonToString()`, a format-specific SDF
 writer for a conservative `Skeleton` subset. It builds libsdformat DOM objects
 and serializes through sdformat; DART owns the `Skeleton`-to-SDF semantic
 mapping and diagnostics. It writes BodyNode links, root FreeJoint/WeldJoint
@@ -151,7 +151,7 @@ SDF parser, plus the selected `model_0_0_1` cube from `issue1624_cubes.sdf`,
 the selected `pendulum_with_base_mimic_slow_follows_fast` model from
 `mimic_fast_slow_pendulums_world.sdf`, and the selected
 `double_pendulum_with_base` model from `double_pendulum*.world`, writes them
-with `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and compares
+with `SdfWriter::tryWriteSkeletonToString()`, reloads the emitted text, and compares
 body, joint, inertial, mobility, gravity,
 axis-limit, joint-dynamics, visual geometry, collision geometry, resource URI,
 model-pose, and joint-offset semantics between the original parsed skeletons and the
@@ -199,7 +199,7 @@ sdformat world DOM objects beyond the first world and keeps the selected
 world's gravity without XML-level world/model enumeration.
 
 The bounded DART 7 Phase 5 export scope is now complete for the accepted
-current writers: parser-specific SDF and URDF `Skeleton` writers, plus the
+current writers: format-specific SDF and URDF `Skeleton` writers, plus the
 already-delivered PLAN-101 scene/project save-load surface. Future writer
 expansion remains valid work, but it is parked behind the durable criteria in
 `docs/onboarding/io-parsing.md` instead of keeping this phase open indefinitely.
@@ -214,7 +214,7 @@ parser, token scanner, child enumerator, or text reparser. The
 and helper-surface expansion beyond authored sdformat element lookup.
 
 The next implementation slice adds
-`dart::utils::UrdfParser::tryWriteSkeletonToString()`, a parser-specific URDF
+`dart::io::UrdfWriter::tryWriteSkeletonToString()`, a format-specific URDF
 writer for robot-link trees that fit URDF's model constraints. It writes one
 root tree with identity root FreeJoint/WeldJoint placement validation, child
 revolute/continuous/prismatic/fixed joints whose child link frame coincides
@@ -261,7 +261,7 @@ replacement. The accepted writer scope is:
 
 1. **SDF writer** for portable simulation interchange, because SDF can
    represent worlds/models and already has version/conversion semantics through
-   libsdformat. The parser-specific writer contract is in place for the
+   libsdformat. The format-specific writer contract is in place for the
    conservative DART 7 `Skeleton` subset. Broader SDF coverage is parked behind
    destination-aware resource policies, libsdformat-backed semantic mappings,
    and new read/write/read tests.
@@ -275,7 +275,7 @@ replacement. The accepted writer scope is:
    covering editor save/open/new/recent-project behavior. This project format
    is not YAML and does not reopen SKEL syntax.
 3. **URDF writer** for robot-link trees that fit URDF's model constraints. The
-   parser-specific writer contract is in place, including shipped
+   format-specific writer contract is in place, including shipped
    `primitive_geometry.urdf`, `joint_properties.urdf`, `issue838.urdf`,
    `KR5/ground.urdf`, `wam.urdf`, and `drchubo.urdf` plus
    `data/sdf/atlas/atlas_v5_no_head.urdf`
@@ -292,10 +292,11 @@ replacement. The accepted writer scope is:
    in DART to define a truthful round-trip contract.
 
 Writer API home is decided for the current DART 7 slice: keep export APIs
-format-owned until more than one accepted writer contract exists. The SDF writer
-therefore stays on `dart::utils::SdfParser`, `dart::io` remains the read-side
-skeleton front door, and project/editor save-load belongs to the scene/project
-layer. The durable rule lives in `docs/onboarding/io-parsing.md`.
+format-owned under the unified `dart::io` namespace until more than one accepted
+writer contract exists. The SDF writer therefore stays on
+`dart::io::SdfWriter`, the URDF writer stays on `dart::io::UrdfWriter`, and
+project/editor save-load belongs to the scene/project layer. The durable rule
+lives in `docs/onboarding/io-parsing.md`.
 
 ## Implementation Shape
 

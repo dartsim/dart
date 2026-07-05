@@ -10,6 +10,10 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SDF_ROOT = REPO_ROOT / "dart" / "utils" / "sdf"
+SDF_IO_FILES = (
+    REPO_ROOT / "dart" / "io" / "sdf_writer.cpp",
+    REPO_ROOT / "dart" / "io" / "sdf_writer.hpp",
+)
 DART_IO_READ = REPO_ROOT / "dart" / "io" / "read.cpp"
 SOURCE_SUFFIXES = {".cpp", ".hpp", ".h"}
 
@@ -69,7 +73,7 @@ def iter_sdf_sources() -> list[Path]:
         path
         for path in SDF_ROOT.rglob("*")
         if path.is_file() and path.suffix in SOURCE_SUFFIXES
-    )
+    ) + [path for path in SDF_IO_FILES if path.exists()]
 
 
 def find_forbidden_xml_usage() -> list[Violation]:

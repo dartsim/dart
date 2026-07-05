@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/sdf/sdf_writer.hpp"
+#include "dart/io/sdf_writer.hpp"
 
 #include "dart/math/geometry.hpp"
 
@@ -100,8 +100,8 @@
 #include <cmath>
 
 namespace dart {
-namespace utils {
-namespace SdfParser {
+namespace io {
+namespace SdfWriter {
 
 namespace {
 
@@ -648,14 +648,26 @@ WriteResult applyMimic(
     std::size_t dofIndex,
     const WriteOptions& options)
 {
+  const bool isMimicDof
+      = joint.getActuatorType(dofIndex) == dynamics::Joint::MIMIC;
   const auto mimicProps = joint.getMimicDofProperties();
   if (dofIndex >= mimicProps.size()) {
+    if (isMimicDof) {
+      return fail(
+          "Cannot write SDF mimic metadata for joint [" + joint.getName()
+          + "] because the MIMIC DoF has no reference joint.");
+    }
     return ok();
   }
 
   const auto& mimic = mimicProps[dofIndex];
-  if (mimic.mReferenceJoint == nullptr) {
+  if (!isMimicDof) {
     return ok();
+  }
+  if (mimic.mReferenceJoint == nullptr) {
+    return fail(
+        "Cannot write SDF mimic metadata for joint [" + joint.getName()
+        + "] because the MIMIC DoF has no reference joint.");
   }
 
   if (!isSdfVersionAtLeast(options.version, 1, 11)) {
@@ -1431,6 +1443,26 @@ WriteResult validateBallJointState(const dynamics::BallJoint& joint)
   for (std::size_t i = 0; i < joint.getNumDofs(); ++i) {
     const double lower = joint.getPositionLowerLimit(i);
     const double upper = joint.getPositionUpperLimit(i);
+    const auto velocityLimit = symmetricAbsoluteAxisLimit(
+        joint,
+        i,
+        joint.getVelocityLowerLimit(i),
+        joint.getVelocityUpperLimit(i),
+        "velocity",
+        "velocity");
+    if (velocityLimit.isErr()) {
+      return WriteResult::err(velocityLimit.error());
+    }
+    const auto effortLimit = symmetricAbsoluteAxisLimit(
+        joint,
+        i,
+        joint.getForceLowerLimit(i),
+        joint.getForceUpperLimit(i),
+        "force/effort",
+        "effort");
+    if (effortLimit.isErr()) {
+      return WriteResult::err(effortLimit.error());
+    }
     const double damping = joint.getDampingCoefficient(i);
     const double friction = joint.getCoulombFriction(i);
     const double springReference = joint.getRestPosition(i);
@@ -1457,6 +1489,18 @@ WriteResult validateBallJointState(const dynamics::BallJoint& joint)
       return fail(
           "Cannot write SDF ball joint [" + joint.getName()
           + "] with position limits because DART's SDF ball joint "
+            "round-trip does not represent them.");
+    }
+    if (velocityLimit.value()) {
+      return fail(
+          "Cannot write SDF ball joint [" + joint.getName()
+          + "] with velocity limits because DART's SDF ball joint round-trip "
+            "does not represent them.");
+    }
+    if (effortLimit.value()) {
+      return fail(
+          "Cannot write SDF ball joint [" + joint.getName()
+          + "] with force/effort limits because DART's SDF ball joint "
             "round-trip does not represent them.");
     }
     if (damping != 0.0 || friction != 0.0 || springReference != 0.0
@@ -1680,6 +1724,6 @@ common::Result<std::string, common::Error> tryWriteSkeletonToString(
   return StringResult::ok(element->ToString(""));
 }
 
-} // namespace SdfParser
-} // namespace utils
+} // namespace SdfWriter
+} // namespace io
 } // namespace dart

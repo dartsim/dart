@@ -37,6 +37,12 @@ lives in `tests/unit/io/test_read.cpp`.
 Internally it delegates to the format-specific parsers in `dart::utils`.
 Whole-world loading is not part of the DART 7 public `dart::io` API.
 
+DART 7 public interchange APIs use `read` / `write` for operations and
+`Reader` / `Writer` for new format-owned actor names. `Parser` is reserved for
+existing syntax-level or compatibility internals, and `Loader` / `Saver` is
+reserved for APIs that mutate destination state, such as adding a model into a
+`simulation::World` or persisting DART-owned project state.
+
 This is intentionally _not_ an attempt to expose every parser-specific knob through one API.
 Instead:
 
@@ -70,16 +76,19 @@ planned follow-ups; see `dart/io/usd/usd_parser.hpp` for the current scope.
 - `dart::io::readSkeleton(const common::Uri&, const ReadOptions&)`
 - `dart::io::ModelFormat` (format selection or inference)
 - `dart::io::ReadOptions` (common + minimal format-specific options)
+- `dart::io::SdfWriter::tryWriteSkeletonToString(...)`
+- `dart::io::UrdfWriter::tryWriteSkeletonToString(...)`
 
 Source of truth:
 
 - `dart/io/read.hpp`
 - `dart/io/read.cpp`
-- `dart/utils/sdf/sdf_writer.hpp` for the first parser-specific SDF writer
+- `dart/io/sdf_writer.hpp` for the first format-specific SDF writer
 - `pixi run check-sdf-sdformat-boundary` guards the SDF implementation against
   TinyXML/raw XML parser APIs and generic SDF element text parsing in
-  `dart/utils/sdf`, and keeps ambiguous `dart::io` SDF auto-detection on
-  libsdformat before the legacy URDF/MJCF XML-root fallback
+  `dart/utils/sdf` plus the `dart/io` SDF writer, and keeps ambiguous
+  `dart::io` SDF auto-detection on libsdformat before the legacy URDF/MJCF
+  XML-root fallback
 - `dart/utils/sdf/` uses libsdformat DOM APIs for SDF structure, model/link
   static and self-collision state, named top-level/world model selection, world
   gravity, included model source URIs for relative resource resolution,
@@ -105,8 +114,10 @@ Source of truth:
 - API surface: `dart/io/read.hpp`
 - Implementation: `dart/io/read.cpp`
 - Unit coverage for `ReadOptions`: `tests/unit/io/test_read.cpp`
-- SDF writer API: `dart/utils/sdf/sdf_writer.hpp`
+- SDF writer API: `dart/io/sdf_writer.hpp`
 - SDF writer round-trip coverage: `tests/integration/io/test_sdf_writer.cpp`
+- URDF writer API: `dart/io/urdf_writer.hpp`
+- URDF writer round-trip coverage: `tests/integration/io/test_urdf_writer.cpp`
 
 ## Common usage patterns
 
@@ -190,8 +201,8 @@ Otherwise, prefer using the underlying parser API directly.
 
 ## SDF writing
 
-DART 7's first export surface is parser-specific:
-`dart::utils::SdfParser::tryWriteSkeletonToString`. It serializes a
+DART 7's first export surface is format-specific:
+`dart::io::SdfWriter::tryWriteSkeletonToString`. It serializes a
 conservative `Skeleton` subset to SDF text and returns `common::Result` so
 unsupported constructs produce explicit errors instead of silently dropping
 state. The writer builds libsdformat DOM objects and serializes through
@@ -315,17 +326,17 @@ make YAML a model format. Use the writer only when the target scene fits the
 documented subset, and expand the round-trip tests before broadening the
 supported contract.
 
-Keep export APIs format-owned until DART has more than one accepted writer
-contract. The current SDF writer therefore lives on
-`dart::utils::SdfParser`, while `dart::io` remains the read-side skeleton front
-door. Do not add `dart::io::writeSkeleton()` or overload `ReadOptions` with
-write policy until there is a reviewed multi-format `WriteOptions` design.
-DART-owned project or editor save/load belongs in the scene/project layer, not
-in interchange-format parser utilities.
+Keep export APIs format-owned under the unified `dart::io` namespace until DART
+has more than one accepted writer contract. The current SDF and URDF writers
+therefore live on `dart::io::SdfWriter` and `dart::io::UrdfWriter`. Do not add
+`dart::io::writeSkeleton()` or overload `ReadOptions` with write policy until
+there is a reviewed multi-format `WriteOptions` design. DART-owned project or
+editor save/load belongs in the scene/project layer, not in
+interchange-format parser utilities.
 
 ## URDF writing
 
-`dart::utils::UrdfParser::tryWriteSkeletonToString` serializes the
+`dart::io::UrdfWriter::tryWriteSkeletonToString` serializes the
 conservative URDF tree subset. It supports one root link, root FreeJoint or
 WeldJoint identity placement validation, child
 revolute/continuous/prismatic/fixed joints whose child link frame coincides
@@ -363,8 +374,8 @@ references, coupler mimic offsets, multi-DoF mimic relationships that URDF
 cannot name by axis, non-finite data, missing mesh URIs, relative or
 host-qualified file mesh URIs, disabled collision aspects, collision dynamics
 metadata, visual reflectance factors, unsupported shapes, and DART
-`SoftBodyNode` export. Validate any broadened URDF surface with
-write/read/read tests through `UrdfParser`; do not route URDF export through
+`SoftBodyNode` export. Validate any broadened URDF surface with `UrdfWriter`
+output reparsed through `UrdfParser`; do not route URDF export through
 `dart::io` until a reviewed multi-format write API exists.
 
 ## Parked writer expansion criteria

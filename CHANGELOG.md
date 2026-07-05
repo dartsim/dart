@@ -228,14 +228,15 @@ compatibility remains on the active DART 6 LTS branch._
   official parser before DART imports them, including modern joint-axis frame
   annotations such as `<axis><xyz expressed_in=...>`:
   [#3291](https://github.com/dartsim/dart/pull/3291)
-- Modernized URDF/SDF/MJCF loading APIs around DART 7 parser names, cleaner
-  resource-retriever ownership, and parser-specific SDF selection of named
-  models from multi-model world files:
+- Modernized URDF/SDF/MJCF loading APIs around `dart::io::readSkeleton`,
+  cleaner resource-retriever ownership, format-owned `SdfWriter`/`UrdfWriter`
+  export APIs, and parser-specific SDF selection of named models from
+  multi-model world files:
   [#3291](https://github.com/dartsim/dart/pull/3291)
 - Fixed SDF world includes so relative meshes inside included models resolve
   against the included model URI and survive SDF writer read/write/read
   round-trips: [#3291](https://github.com/dartsim/dart/pull/3291)
-- Added a conservative SDF writer for `Skeleton` round-trips, covering links,
+- Added a conservative `SdfWriter` for `Skeleton` round-trips, covering links,
   model self-collision state, non-default skeleton gravity through SDF world
   gravity,
   revolute/continuous/prismatic/weld/screw/universal joints with
@@ -250,7 +251,7 @@ compatibility remains on the active DART 6 LTS branch._
   zero-threshold bounce restitution, and ODE friction/slip metadata while
   reporting unsupported constructs explicitly:
   [#3291](https://github.com/dartsim/dart/pull/3291)
-- Added a conservative URDF writer for `Skeleton` round-trips that fit URDF's
+- Added a conservative `UrdfWriter` for `Skeleton` round-trips that fit URDF's
   tree model, covering one-root link trees with identity root FreeJoint or
   WeldJoint validation, revolute/continuous/prismatic/fixed child joints,
   continuous joint velocity/effort limits, planar/floating child joints with
