@@ -128,6 +128,16 @@ UI-visible changes, and PLAN checkboxes updated.
 
 ## Phase 2 — Scene catalog ports (PR series)
 
+- [x] B3 "Control & IK" accepted 2026-07-05 (commit "Port batch-3 control
+      and IK scenes"): 6 ports, 24 scenes live, cycle x2 green. Review: 0
+      blockers/5 majors (CID dead slider-regen + NaN paths, ssik OOB index
+      inherited from original, wam free-fall on Step bypassing
+      allowSimulation, ikfast path broken standalone) — all fixed; ikfast
+      path now single-mechanism (demos-owned CMAKE_CURRENT_BINARY_DIR baked
+      into target + compile def, no DART_BINARY_DIR). Screenshot pass found
+      stale biped_stand ±z labels (vectors were right). ssik degrades
+      gracefully without the ssik package; its capture needs a longer
+      timeout (19-arm factory).
 - [x] B2 "Constraints & soft" accepted 2026-07-04 (commits 9493af236 lib
       fixes + b07cb32b2 scenes): 7 ports (human_joint_limits TinyDNN-gated,
       absent here), 18 scenes live, cycle x2 green. Library commit fixes the
