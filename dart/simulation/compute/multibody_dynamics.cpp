@@ -1412,15 +1412,24 @@ bool computeUnconstrainedMultibodyVelocityInto(
           scratch.constrainedLo.data(), k);
       const Eigen::Map<const Eigen::VectorXd> hi(
           scratch.constrainedHi.data(), k);
+      const Eigen::Ref<const Eigen::MatrixXd> matrixRef(
+          scratch.velocityConstraintMatrix);
+      const Eigen::Ref<const Eigen::VectorXd> residualRef(
+          scratch.velocityConstraintResidual);
+      const Eigen::Ref<const Eigen::VectorXd> loRef(lo);
+      const Eigen::Ref<const Eigen::VectorXd> hiRef(hi);
+      const Eigen::Ref<const Eigen::VectorXi> findexRef(
+          scratch.velocityConstraintFindex);
+      Eigen::Ref<Eigen::VectorXd> lambdaRef(scratch.velocityConstraintLambda);
       math::LcpOptions options = scratch.servoSolver.getDefaultOptions();
       options.earlyTermination = true;
       const auto result = scratch.servoSolver.solve(
-          scratch.velocityConstraintMatrix,
-          scratch.velocityConstraintResidual,
-          lo,
-          hi,
-          scratch.velocityConstraintFindex,
-          scratch.velocityConstraintLambda,
+          matrixRef,
+          residualRef,
+          loRef,
+          hiRef,
+          findexRef,
+          lambdaRef,
           scratch.servoDantzig,
           options);
       if (!result.succeeded()) {
@@ -3908,6 +3917,7 @@ void reserveMultibodyDynamicsRegistryStorage(
     reserveDynamicsTreeInverseMassScratch(scratch.tree, scratch);
 
     if (dof > 0) {
+      constexpr double kInfinity = std::numeric_limits<double>::infinity();
       gatherMultibodyVelocityInto(registry, scratch.tree, scratch.qdot);
       computeMassAndBiasInto(
           linkSpan(scratch.tree),
@@ -3941,6 +3951,7 @@ void reserveMultibodyDynamicsRegistryStorage(
       scratch.contactProblem.inverseMass = scratch.velocityMassInverse;
 
       Eigen::Index velocityConstraintDofs = 0;
+      bool anyFiniteServoBound = false;
       for (std::size_t i = 0; i < scratch.tree.links.size(); ++i) {
         const auto dof = scratch.tree.links[i].dof;
         if (dof == 0) {
@@ -3956,6 +3967,23 @@ void reserveMultibodyDynamicsRegistryStorage(
             || jointActuation.actuatorType == comps::ActuatorType::Locked) {
           velocityConstraintDofs += static_cast<Eigen::Index>(dof);
         }
+        if (jointActuation.actuatorType == comps::ActuatorType::Servo) {
+          const auto& jointModel
+              = registry.get<comps::JointModel>(scratch.tree.jointOf[i]);
+          const bool hasEffortLimits = jointModel.limits.effortLower.size()
+                                           == static_cast<Eigen::Index>(dof)
+                                       && jointModel.limits.effortUpper.size()
+                                              == static_cast<Eigen::Index>(dof);
+          if (hasEffortLimits) {
+            for (std::size_t d = 0; d < dof; ++d) {
+              const auto local = static_cast<Eigen::Index>(d);
+              anyFiniteServoBound
+                  = anyFiniteServoBound
+                    || std::isfinite(jointModel.limits.effortLower[local])
+                    || std::isfinite(jointModel.limits.effortUpper[local]);
+            }
+          }
+        }
       }
       if (velocityConstraintDofs > 0) {
         scratch.velocityConstraintMatrix.setIdentity(
@@ -3968,6 +3996,41 @@ void reserveMultibodyDynamicsRegistryStorage(
             scratch.velocityConstraintLambda,
             scratch.symmetricFactor,
             scratch.symmetricForwardWork);
+        if (anyFiniteServoBound) {
+          scratch.velocityConstraintFindex.setConstant(
+              velocityConstraintDofs, -1);
+          scratch.constrainedLo.assign(
+              static_cast<std::size_t>(velocityConstraintDofs), -kInfinity);
+          scratch.constrainedHi.assign(
+              static_cast<std::size_t>(velocityConstraintDofs), kInfinity);
+          scratch.constrainedLo[0] = -1.0;
+          scratch.constrainedHi[0] = 1.0;
+          const Eigen::Map<const Eigen::VectorXd> lo(
+              scratch.constrainedLo.data(), velocityConstraintDofs);
+          const Eigen::Map<const Eigen::VectorXd> hi(
+              scratch.constrainedHi.data(), velocityConstraintDofs);
+          const Eigen::Ref<const Eigen::MatrixXd> matrixRef(
+              scratch.velocityConstraintMatrix);
+          const Eigen::Ref<const Eigen::VectorXd> residualRef(
+              scratch.velocityConstraintResidual);
+          const Eigen::Ref<const Eigen::VectorXd> loRef(lo);
+          const Eigen::Ref<const Eigen::VectorXd> hiRef(hi);
+          const Eigen::Ref<const Eigen::VectorXi> findexRef(
+              scratch.velocityConstraintFindex);
+          Eigen::Ref<Eigen::VectorXd> lambdaRef(
+              scratch.velocityConstraintLambda);
+          math::LcpOptions options = scratch.servoSolver.getDefaultOptions();
+          options.earlyTermination = true;
+          (void)scratch.servoSolver.solve(
+              matrixRef,
+              residualRef,
+              loRef,
+              hiRef,
+              findexRef,
+              lambdaRef,
+              scratch.servoDantzig,
+              options);
+        }
       }
     }
 
