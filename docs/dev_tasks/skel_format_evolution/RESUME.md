@@ -25,7 +25,11 @@ pass completed:
 - `pixi run run-cpp-target UNIT_dynamics_MeshShape` — 49 passed;
 - `pixi run run-cpp-target test_mesh_loaderNone` — 5 passed;
 - `pixi run lint`;
-- `pixi run build`.
+- `pixi run build`;
+- `pixi run test-all` — 6/6 phases passed: linting, build, unit tests,
+  simulation tests, Python tests, and documentation;
+- `pixi run -e cuda test-all` — 7/7 phases passed on the host RTX 5000 Ada
+  GPU, including CUDA tests and benchmark smoke.
 
 The sdformat-boundary checker is not part of the Phase 2 removal branch; it
 lives on this stacked writer branch, which owns the SDF IO boundary work.

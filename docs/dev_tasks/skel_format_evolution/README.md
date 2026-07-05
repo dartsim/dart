@@ -344,7 +344,9 @@ SKEL-YAML direction just because the prototype once existed.
 - Phase 2: focused tests proving `.skel` no longer dispatches through
   `dart::io`, parser-specific SKEL tests are removed, and the source tree no
   longer ships DART 7 sample `.skel` assets. Existing non-SKEL mesh tests now
-  load the relocated Kima fixtures from `data/mesh/kima/*.dae`.
+  load the relocated Kima fixtures from `data/mesh/kima/*.dae`. The refreshed
+  pre-PR evidence also includes `pixi run test-all` and
+  `pixi run -e cuda test-all` on the local CUDA host.
 - Phase 3: decision-only gate recorded in
   [`03-yaml-decision.md`](03-yaml-decision.md): live issue state, current
   `dart::io` source/docs, upstream format docs, USD task ownership, and PLAN-101
