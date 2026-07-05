@@ -819,6 +819,7 @@ SDF=.deps/gz-sim/examples/worlds/3k_shapes.sdf
 } > "$ART/metadata.txt"
 
 FAILED_ROWS=""
+ROW_FAILURE=0
 run_row() {
   local name=$1; shift
   echo "=== ROW $name START $(date -u +%H:%M:%SZ) ==="
@@ -827,8 +828,9 @@ run_row() {
   echo "=== ROW $name EXIT $rc $(date -u +%H:%M:%SZ) ==="
   if [ "$rc" -ne 0 ]; then
     FAILED_ROWS="$FAILED_ROWS $name(rc=$rc)"
+    ROW_FAILURE=1
   fi
-  return "$rc"
+  return 0
 }
 
 # Continuity row (scoping-doc 2026-07-03 probe rerun, now under the canonical
@@ -866,7 +868,9 @@ for det in dart fcl bullet ode; do
     --quiet --checkpoint 0 --sdf-plane-shapes --collision "$det"
 done
 
-if [ -n "$FAILED_ROWS" ]; then
+# Keep collecting rows so MATRIX_FAILED reports every failure, but propagate
+# failure at the end and never print MATRIX_DONE for an incomplete packet.
+if [ "$ROW_FAILURE" -ne 0 ]; then
   echo "MATRIX_FAILED rows:$FAILED_ROWS"
   exit 1
 fi
