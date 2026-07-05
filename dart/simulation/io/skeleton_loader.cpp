@@ -655,8 +655,12 @@ void copyJointState(const dynamics::Joint& source, Joint& target)
                        return source.getCoulombFriction(index);
                      })));
 
-  if (source.getActuatorType() == dynamics::Joint::VELOCITY) {
+  const auto sourceActuatorType = source.getActuatorType();
+  if (sourceActuatorType == dynamics::Joint::VELOCITY
+      || sourceActuatorType == dynamics::Joint::SERVO) {
     target.setCommandVelocity(mapJointVector(source, source.getCommands()));
+  } else if (sourceActuatorType == dynamics::Joint::ACCELERATION) {
+    target.setCommandAcceleration(mapJointVector(source, source.getCommands()));
   }
 }
 
