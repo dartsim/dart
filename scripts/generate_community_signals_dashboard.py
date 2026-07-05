@@ -20,6 +20,12 @@ UTC = dt.timezone.utc
 OWNER = "dartsim"
 REPO = "dart"
 GITHUB_API = "https://api.github.com"
+GOOGLE_SCHOLAR_URL = (
+    "https://scholar.google.com/scholar?"
+    "q=%22DART%3A+Dynamic+Animation+and+Robotics+Toolkit%22"
+)
+GOOGLE_SCHOLAR_FALLBACK_CITATIONS = 395
+GOOGLE_SCHOLAR_FALLBACK_CHECKED = "2026-07-05"
 
 
 def _token() -> str | None:
@@ -36,10 +42,11 @@ def _request(
     token: str | None = None,
     accept: str = "application/json",
     timeout: int = 30,
+    user_agent: str = "dartsim-community-signals",
 ) -> tuple[bytes, dict[str, str]]:
     headers = {
         "Accept": accept,
-        "User-Agent": "dartsim-community-signals",
+        "User-Agent": user_agent,
     }
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -64,8 +71,15 @@ def _text(
     *,
     token: str | None = None,
     timeout: int = 30,
+    user_agent: str = "dartsim-community-signals",
 ) -> str:
-    body, _ = _request(url, token=token, accept="*/*", timeout=timeout)
+    body, _ = _request(
+        url,
+        token=token,
+        accept="*/*",
+        timeout=timeout,
+        user_agent=user_agent,
+    )
     return body.decode("utf-8", errors="replace")
 
 
@@ -180,14 +194,23 @@ def _compact(value: Any | None) -> str:
         return str(value)
     if number >= 1_000_000:
         return f"{number / 1_000_000:.1f}M"
-    if number >= 1_000:
+    if number >= 10_000:
         return f"{number / 1_000:.0f}K"
+    if number >= 1_000:
+        return f"{number / 1_000:.1f}".rstrip("0").rstrip(".") + "K"
     return str(number)
 
 
 def _plain_text(value: str | None) -> str:
     text = re.sub(r"<[^>]+>", " ", value or "")
     return re.sub(r"\s+", " ", text)
+
+
+def _parse_google_scholar_citations(value: str | None) -> int | None:
+    match = re.search(r"Cited by\s+([\d,]+)", _plain_text(value), re.IGNORECASE)
+    if not match:
+        return None
+    return int(match.group(1).replace(",", ""))
 
 
 def _traffic_window(payload: dict[str, Any] | None, key: str) -> str:
@@ -330,6 +353,28 @@ def collect() -> dict[str, Any]:
             "citationCount,influentialCitationCount"
         ),
     )
+    google_scholar_html = capture(
+        "google scholar",
+        lambda: _text(
+            GOOGLE_SCHOLAR_URL,
+            timeout=45,
+            user_agent=(
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+            ),
+        ),
+    )
+    google_scholar_count = _parse_google_scholar_citations(google_scholar_html)
+    google_scholar_checked = now.date().isoformat()
+    google_scholar_manual_fallback = False
+    if google_scholar_count is None:
+        google_scholar_count = GOOGLE_SCHOLAR_FALLBACK_CITATIONS
+        google_scholar_checked = GOOGLE_SCHOLAR_FALLBACK_CHECKED
+        google_scholar_manual_fallback = True
+        errors.append(
+            "google scholar: using manual 2026-07-05 citation check because "
+            "automated extraction was unavailable"
+        )
 
     gazebo_docs = capture(
         "gazebo physics docs",
@@ -433,6 +478,8 @@ def collect() -> dict[str, Any]:
             "github_latest_release": f"{GITHUB_API}/repos/{OWNER}/{REPO}/releases/latest",
             "github_issues": f"{GITHUB_API}/search/issues?q=repo%3A{OWNER}%2F{REPO}+is%3Aissue+state%3Aopen",
             "github_prs": f"{GITHUB_API}/search/issues?q=repo%3A{OWNER}%2F{REPO}+is%3Apr+state%3Aopen",
+            "github_created_prs_12m": f"{GITHUB_API}/search/issues?q=repo%3A{OWNER}%2F{REPO}+is%3Apr+created%3A%3E%3D{since}",
+            "github_merged_prs_12m": f"{GITHUB_API}/search/issues?q=repo%3A{OWNER}%2F{REPO}+is%3Apr+merged%3A%3E%3D{since}",
             "github_traffic_docs": "https://docs.github.com/en/rest/metrics/traffic",
             "anaconda_dartsim": "https://api.anaconda.org/package/conda-forge/dartsim",
             "anaconda_dartpy": "https://api.anaconda.org/package/conda-forge/dartpy",
@@ -443,6 +490,7 @@ def collect() -> dict[str, Any]:
             "crossref": "https://api.crossref.org/works/10.21105/joss.00500",
             "openalex": "https://api.openalex.org/works/https://doi.org/10.21105/joss.00500",
             "semantic_scholar": "https://api.semanticscholar.org/graph/v1/paper/DOI:10.21105/joss.00500?fields=title,year,venue,citationCount,influentialCitationCount",
+            "google_scholar": GOOGLE_SCHOLAR_URL,
             "gazebo_physics": "https://gazebosim.org/api/sim/9/physics.html",
             "gz_physics_package": "https://raw.githubusercontent.com/gazebosim/gz-physics/main/package.xml",
             "gz_physics_cmake": "https://raw.githubusercontent.com/gazebosim/gz-physics/main/CMakeLists.txt",
@@ -540,6 +588,9 @@ def collect() -> dict[str, Any]:
             "semantic_scholar_influential": _nested(
                 semanticscholar, ("influentialCitationCount",)
             ),
+            "google_scholar": google_scholar_count,
+            "google_scholar_checked": google_scholar_checked,
+            "google_scholar_manual_fallback": google_scholar_manual_fallback,
             "indexed_min": min(citation_values) if citation_values else None,
             "indexed_max": max(citation_values) if citation_values else None,
         },
@@ -635,6 +686,18 @@ def render_html(data: dict[str, Any]) -> str:
         if citations["indexed_min"] is not None
         else "unavailable"
     )
+    google_scholar = citations.get("google_scholar")
+    citation_value = (
+        f"{_number(google_scholar)} Google Scholar"
+        if google_scholar is not None
+        else citation_range
+    )
+    citation_note = (
+        f"{citation_range} indexed API range; Scholar checked "
+        f"{citations.get('google_scholar_checked')}"
+        if google_scholar is not None
+        else "indexed citations across Crossref, OpenAlex, and Semantic Scholar"
+    )
     gazebo_note_parts = []
     if gazebo["docs_default_dart"]:
         gazebo_note_parts.append("default physics-engine docs")
@@ -666,23 +729,22 @@ def render_html(data: dict[str, Any]) -> str:
                 sources["github_repo"],
             ),
             _card(
-                "Recent cloning",
-                traffic_value,
-                traffic_note,
-                sources["github_traffic_docs"],
-            ),
-            _card(
-                "Open backlog",
-                f"{_number(summary['open_issues'])} issues / {_number(summary['open_prs'])} PRs",
-                f"{_number(summary['created_prs_12m'])} PRs created since {data['since']}",
+                "PR activity",
+                f"{_compact(summary['created_prs_12m'])} PRs/year",
+                f"{_compact(summary['merged_prs_12m'])} merged; "
+                f"{_number(summary['open_issues'])} issues / "
+                f"{_number(summary['open_prs'])} PRs open",
                 [
-                    (sources["github_issues"], "issues"),
-                    (sources["github_prs"], "PRs"),
+                    (sources["github_created_prs_12m"], "created"),
+                    (sources["github_merged_prs_12m"], "merged"),
+                    (sources["github_issues"], "open issues"),
+                    (sources["github_prs"], "open PRs"),
                 ],
             ),
             _card(
                 "Package reach",
-                f"{_compact(packages['conda']['dartsim'])} conda downloads",
+                f"{_compact(packages['conda']['dartsim'])} conda dartsim",
+                f"{_compact(packages['conda']['combined_gross'])} gross conda artifacts; "
                 f"{_compact(packages['pepy_dartpy_all_time'])} PePy dartpy; "
                 f"{_compact(packages['homebrew_installs_365d'])} Homebrew installs/year",
                 [
@@ -693,9 +755,10 @@ def render_html(data: dict[str, Any]) -> str:
             ),
             _card(
                 "Research citations",
-                citation_range,
-                "indexed citations across Crossref, OpenAlex, and Semantic Scholar",
+                citation_value,
+                citation_note,
                 [
+                    (sources["google_scholar"], "Google Scholar"),
                     (sources["crossref"], "Crossref"),
                     (sources["openalex"], "OpenAlex"),
                     (sources["semantic_scholar"], "Semantic Scholar"),
@@ -718,6 +781,12 @@ def render_html(data: dict[str, Any]) -> str:
                 f"{_number(summary['contributors_with_anon'])} total",
                 "GitHub attribution including anonymous/email-only entries",
                 "https://github.com/dartsim/dart/graphs/contributors",
+            ),
+            _card(
+                "GitHub traffic",
+                traffic_value,
+                traffic_note,
+                sources["github_traffic_docs"],
             ),
         ]
     )
@@ -906,9 +975,11 @@ def render_html(data: dict[str, Any]) -> str:
 
     <section class="summary-band" aria-label="Interpretation">
       <p class="callout">
-        <strong>Readable headline:</strong> DART has active maintenance and
-        thousands of recent activity touchpoints across repository traffic,
-        package ecosystems, citation indexes, and downstream projects.
+        <strong>Readable headline:</strong> DART shows active maintenance and
+        broad public reach: {_compact(packages['conda']['combined_gross'])}
+        gross conda artifact downloads, {_compact(packages['pepy_dartpy_all_time'])}
+        dartpy downloads, {_number(google_scholar)} Google Scholar citations,
+        and a public Gazebo dependency path.
       </p>
       <p class="callout boundary">
         <strong>Boundary:</strong> these are usage and activity signals, not a
@@ -935,8 +1006,10 @@ def render_html(data: dict[str, Any]) -> str:
     <p class="subhead">
       GitHub traffic is collected only when the scheduled workflow has a token
       that can read repository traffic. Package and citation counts come from
-      public APIs and can drift between refreshes. Downstream rows are public
-      evidence examples, not a complete user registry.
+      public APIs and can drift between refreshes. Google Scholar is checked
+      from a title search and may fall back to the dated manual value in
+      data.json if automated extraction is unavailable. Downstream rows are
+      public evidence examples, not a complete user registry.
     </p>
 
     {error_summary}
