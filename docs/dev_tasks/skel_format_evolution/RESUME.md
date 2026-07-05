@@ -2,12 +2,13 @@
 
 ## Current Resume Checkpoint (2026-07-05)
 
-Phase 2 remains implemented on `feature/remove-skel-dart7-phase2`; no matching
-GitHub PR exists yet. This branch was merged locally with current
-`origin/main` (`5ec8b6644ad`) before PR creation. The only merge conflict was
-in `docs/dev_tasks/usd_scene_loader/README.md`; it was resolved by keeping the
-new OpenUSD blocker/specification-intake text from `main` while removing SKEL
-from the DART 7 parity/front-door wording.
+Phase 2 is open as PR
+[#3288](https://github.com/dartsim/dart/pull/3288) from
+`feature/remove-skel-dart7-phase2` to `main`. The branch was merged locally
+with current `origin/main` (`4c7f5875ee9`) before PR creation. The original
+merge conflict was in `docs/dev_tasks/usd_scene_loader/README.md`; it was
+resolved by keeping the new OpenUSD blocker/specification-intake text from
+`main` while removing SKEL from the DART 7 parity/front-door wording.
 
 The local merge-validation pass on 2026-07-05 completed:
 
@@ -32,9 +33,9 @@ The sdformat-boundary checker is not part of this Phase 2 branch; it lives on
 the stacked writer branch that owns the SDF IO boundary work. Do not broaden the
 Phase 2 removal PR with that later lint machinery.
 
-Immediate next step: after explicit maintainer/user approval, push
-`feature/remove-skel-dart7-phase2`, open the Phase 2 PR against `main`, then add
-the resulting PR link to the DART 7 SKEL-removal changelog bullet before merge.
+Immediate next step: monitor PR #3288 review and CI. After Phase 2 lands,
+continue the stacked follow-up branch for Phase 3/4/5 task closeout and final
+dev-task cleanup.
 
 ## Previous Resume Checkpoint (2026-07-03)
 
@@ -67,8 +68,7 @@ could apply. Clearing `build/cuda/cpp/Release` and setting both
 `CUDAARCHS=89` and `DART_CUDA_ARCHITECTURES=89` matched this host's RTX 5000
 Ada GPU and the CUDA full gate passed.
 
-The DART 7 changelog has a draft Breaking Changes entry without a PR link; add
-the link after the Phase 2 PR exists.
+The DART 7 changelog entry now links to Phase 2 PR #3288.
 
 Changelog decision:
 
@@ -78,9 +78,8 @@ Changelog decision:
   `.skel` fixtures, SKEL docs, parser tests, and dartpy SKEL bindings/stubs.
 - Decision: entry required
 - Target section: `CHANGELOG.md` -> DART 7 -> Breaking Changes
-- Entry text: present as the legacy SKEL removal bullet, without a PR link
-  until the Phase 2 PR exists.
-- Follow-up: add the Phase 2 PR link to the same bullet before merge.
+- Entry text: present as the legacy SKEL removal bullet with PR link #3288.
+- Follow-up: none for the Phase 2 changelog link.
 
 Post-commit completion audit cleared stale active-doc references that still
 listed SKEL as a DART 7 model-loading/parser target. The remaining tracked
@@ -119,15 +118,13 @@ can be recovered without adopting the old SKEL YAML direction.
 
 ## Current Branch
 
-`feature/remove-skel-dart7-phase2` — Phase 2 removal is implemented locally and
-merged with current `origin/main` for PR readiness.
+`feature/remove-skel-dart7-phase2` — Phase 2 removal is published as PR #3288
+and merged with current `origin/main` for PR readiness.
 
 ## Immediate Next Step
 
-Push/open the Phase 2 PR only after explicit maintainer/user approval, then add
-the PR link to the DART 7 SKEL-removal changelog bullet before merge. After
-Phase 2 lands, continue the stacked follow-up branch for Phase 3/4/5 task
-closeout.
+Monitor PR #3288 review and CI. After Phase 2 lands, continue the stacked
+follow-up branch for Phase 3/4/5 task closeout.
 
 ## Context That Would Be Lost
 

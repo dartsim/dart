@@ -14,7 +14,8 @@
       `dart::io` format inference and dispatch, bindings/stubs, parser-specific
       tests, `.skel` sample fixtures, and user-facing DART 7 docs. The Phase 2
       branch relocates the non-SKEL Kima Collada fixtures from `data/skel/kima/`
-      to `data/mesh/kima/` before deleting the legacy `data/skel/` tree.
+      to `data/mesh/kima/` before deleting the legacy `data/skel/` tree. PR
+      [#3288](https://github.com/dartsim/dart/pull/3288) is open for review.
 - [ ] Phase 3: Optional YAML model/scene format. Decide whether YAML should be
       a new DART-owned scene format or a front-end over URDF/SDF semantics; do
       not implement SKEL syntax in YAML.
@@ -93,8 +94,8 @@ SKEL-YAML direction just because the prototype once existed.
 
 ## Immediate Next Steps
 
-1. Land the Phase 2 removal branch (`feature/remove-skel-dart7-phase2`) after
-   review. Add the PR link to the DART 7 changelog entry before merge.
+1. Land the Phase 2 removal PR
+   ([#3288](https://github.com/dartsim/dart/pull/3288)) after review and CI.
 2. Continue the stacked follow-up branch after Phase 2 lands: Phase 3 records
    the YAML non-adoption decision, Phase 4 records the USD coordination
    boundary, and Phase 5 records the bounded writer scope.
