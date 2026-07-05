@@ -63,6 +63,14 @@ std::vector<DemoScene> makeDemoScenes()
 
   // Control & IK (new category; first appearance here).
   scenes.push_back(makeJointConstraintsScene());
+  scenes.push_back(makeHybridDynamicsScene());
+  scenes.push_back(makeBipedStandScene());
+  scenes.push_back(makeOperationalSpaceControlScene());
+  scenes.push_back(makeContactInverseDynamicsScene());
+#ifdef DART_DEMOS_HAVE_PYTHON
+  scenes.push_back(makeSsikIkGuiScene());
+#endif
+  scenes.push_back(makeWamIkFastScene());
 
   // Soft Bodies (new category; first appearance here).
   scenes.push_back(makeMixedChainScene());

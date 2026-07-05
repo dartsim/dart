@@ -95,6 +95,37 @@ namespace dart_demos {
 /// harness constraint, ported from examples/joint_constraints.
 [[nodiscard]] DemoScene makeJointConstraintsScene();
 
+/// Control & IK > hybrid_dynamics: velocity-driven sinusoidal gait with a
+/// lockable pelvis harness, ported from examples/hybrid_dynamics.
+[[nodiscard]] DemoScene makeHybridDynamicsScene();
+
+/// Control & IK > biped_stand: SPD-balanced standing biped with an ankle
+/// strategy and push tests, ported from examples/biped_stand.
+[[nodiscard]] DemoScene makeBipedStandScene();
+
+/// Control & IK > operational_space_control: KR5 arm chasing a draggable
+/// target with task-space control, ported from
+/// examples/operational_space_control.
+[[nodiscard]] DemoScene makeOperationalSpaceControlScene();
+
+/// Control & IK > contact_inverse_dynamics: kinematic squat replay solved for
+/// contact-consistent joint torques, ported from
+/// examples/contact_inverse_dynamics.
+[[nodiscard]] DemoScene makeContactInverseDynamicsScene();
+
+#ifdef DART_DEMOS_HAVE_PYTHON
+/// Control & IK > ssik_ik_gui: analytical IK against 19 prebuilt robot arms
+/// via the optional ssik Python package, ported from examples/ssik_ik_gui.
+/// Only declared/registered when Python3 development files were found at
+/// configure time (see examples/demos/CMakeLists.txt).
+[[nodiscard]] DemoScene makeSsikIkGuiScene();
+#endif
+
+/// Control & IK > wam_ikfast: WAM arm posed by IkFast analytical whole-body
+/// IK with draggable body nodes and an IK target, ported from
+/// examples/wam_ikfast.
+[[nodiscard]] DemoScene makeWamIkFastScene();
+
 #ifdef DART_DEMOS_HAVE_TINY_DNN
 /// Constraints & Joints > human_joint_limits: a human skeleton with
 /// neural-network joint-limit constraints, ported from

@@ -4,8 +4,34 @@ set(example_name dart-demos)
 
 project(${example_name})
 
+# Single owner of where the wam_ikfast scene's dlopen'd IK shared library is
+# written: this demos project's own build dir. Used both as the ikfast target's
+# LIBRARY_OUTPUT_DIRECTORY (in scenes/wam_ikfast/ikfast/CMakeLists.txt, which
+# inherits this variable) and as WamIkFastScene.cpp's DART_DEMOS_IKFAST_DIR
+# compile definition, so the two are identical by construction in both the
+# in-source and standalone build paths -- no dependence on DART_BINARY_DIR
+# (which DARTConfig.cmake does not export, so it would be undefined standalone,
+# collapsing the compile definition to "" and the lookup to "/libdartDemosWamIk.so").
+# Defined before the add_subdirectory below so the child scope inherits it.
+set(dart_demos_ikfast_output_dir "${CMAKE_CURRENT_BINARY_DIR}")
+
+# Builds the wam_ikfast scene's dlopen'd analytical-IK shared library. Added
+# unconditionally (no optional-dependency guard): it only depends on `dart`
+# itself (transitively bringing in LAPACK), same as examples/wam_ikfast's own
+# ikfast subdirectory, which this mirrors -- see
+# scenes/wam_ikfast/ikfast/CMakeLists.txt for why it is a standalone copy
+# rather than a dependency on that example.
+add_subdirectory(scenes/wam_ikfast/ikfast)
+
 set(required_components utils-urdf gui-osg)
-set(required_libraries dart dart-utils dart-utils-urdf dart-gui-osg)
+set(
+  required_libraries
+  dart
+  dart-utils
+  dart-utils-urdf
+  dart-gui-osg
+  dart_demos_wam_ikfast
+)
 
 # DynamicJointConstraintsScene.cpp draws its on-screen catalog labels with
 # osgText::Text directly (ported from examples/dynamic_joint_constraints,
@@ -69,6 +95,20 @@ if(TinyDNN_FOUND AND Threads_FOUND)
   set(DART_DEMOS_HAVE_TINY_DNN TRUE)
 endif()
 
+# Optional Python3 embedding for the ssik_ik_gui scene, mirroring
+# examples/ssik_ik_gui/CMakeLists.txt's own optional-dependency guard. The
+# top-level DART configure already searches for Python3 (see
+# cmake/DARTFindDependencies.cmake), so this just re-reads that cached
+# result; when absent, the scene's sources are excluded from the build
+# entirely and the registry (behind the same DART_DEMOS_HAVE_PYTHON
+# definition) omits the row rather than showing a broken one -- the same
+# pattern used above for TinyDNN.
+find_package(Python3 COMPONENTS Interpreter Development QUIET)
+set(DART_DEMOS_HAVE_PYTHON FALSE)
+if(Python3_FOUND)
+  set(DART_DEMOS_HAVE_PYTHON TRUE)
+endif()
+
 # Globs every scene source, including one level of scene subdirectories (for
 # multi-file scenes, e.g. scenes/tinkertoy/), and conditionally adds
 # scenes/human_joint_limits/ only when TinyDNN + Threads were found. Shared by
@@ -77,6 +117,12 @@ function(dart_demos_collect_scene_srcs out_var)
   file(GLOB _srcs "scenes/*.cpp" "scenes/*.hpp")
   file(GLOB _tinkertoy_srcs "scenes/tinkertoy/*.cpp" "scenes/tinkertoy/*.hpp")
   list(APPEND _srcs ${_tinkertoy_srcs})
+  file(
+    GLOB _wam_ikfast_srcs
+    "scenes/wam_ikfast/*.cpp"
+    "scenes/wam_ikfast/*.hpp"
+  )
+  list(APPEND _srcs ${_wam_ikfast_srcs})
   if(DART_DEMOS_HAVE_TINY_DNN)
     file(
       GLOB _human_joint_limits_srcs
@@ -85,11 +131,20 @@ function(dart_demos_collect_scene_srcs out_var)
     )
     list(APPEND _srcs ${_human_joint_limits_srcs})
   endif()
+  if(DART_DEMOS_HAVE_PYTHON)
+    file(
+      GLOB _ssik_ik_gui_srcs
+      "scenes/ssik_ik_gui/*.cpp"
+      "scenes/ssik_ik_gui/*.hpp"
+    )
+    list(APPEND _srcs ${_ssik_ik_gui_srcs})
+  endif()
   set(${out_var} ${_srcs} PARENT_SCOPE)
 endfunction()
 
-# Links the optional TinyDNN + Threads dependency and defines
-# DART_DEMOS_HAVE_TINY_DNN when found. Shared by both build paths below.
+# Links the optional TinyDNN + Threads and Python3 dependencies and defines
+# DART_DEMOS_HAVE_TINY_DNN / DART_DEMOS_HAVE_PYTHON when found. Shared by both
+# build paths below.
 function(dart_demos_configure_scenes_target target)
   if(DART_DEMOS_HAVE_TINY_DNN)
     target_link_libraries(
@@ -98,6 +153,23 @@ function(dart_demos_configure_scenes_target target)
     )
     target_compile_definitions(${target} PUBLIC DART_DEMOS_HAVE_TINY_DNN)
   endif()
+  if(DART_DEMOS_HAVE_PYTHON)
+    target_link_libraries(${target} PUBLIC Python3::Python)
+    target_compile_definitions(${target} PUBLIC DART_DEMOS_HAVE_PYTHON)
+  endif()
+
+  # Bakes in an absolute path to where scenes/wam_ikfast/ikfast's shared
+  # library lands (dart_demos_ikfast_output_dir, the same variable that sets
+  # its LIBRARY_OUTPUT_DIRECTORY) so WamIkFastScene.cpp's SharedLibraryIkFast
+  # lookup does not depend on the running process's current working directory:
+  # dart::common::SharedLibraryManager::load() resolves the name it is given
+  # via std::ifstream(path).good() rather than dlopen()'s own RPATH-aware
+  # search, so a bare filename ("libdartDemosWamIk.so") only resolves when
+  # the process happens to be launched from that directory itself.
+  target_compile_definitions(
+    ${target}
+    PRIVATE DART_DEMOS_IKFAST_DIR="${dart_demos_ikfast_output_dir}"
+  )
 endfunction()
 
 # The scene ports (examples/demos/scenes/*.cpp) live in a subdirectory, so they
