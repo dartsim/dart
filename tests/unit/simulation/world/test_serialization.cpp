@@ -70,6 +70,7 @@
 #include <ranges>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <typeinfo>
@@ -1153,6 +1154,27 @@ TEST(Serialization, RejectsInvalidDifferentiableParameterRegistration)
   EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
 }
 #endif
+
+TEST(Serialization, RejectsLegacyJointActuationComponentRecord)
+{
+  namespace sx = dart::simulation;
+
+  std::stringstream stream;
+  const std::size_t entityCount = 1u;
+  sx::io::writePOD(stream, entityCount);
+  const std::uint32_t serializedId = 0u;
+  sx::io::writePOD(stream, serializedId);
+  const std::size_t componentCount = 1u;
+  sx::io::writePOD(stream, componentCount);
+  sx::io::writeString(stream, sx::comps::JointActuation::getTypeName());
+
+  sx::detail::WorldRegistry registry;
+  sx::io::EntityMap entityMap;
+  EXPECT_THROW(
+      sx::io::SerializerRegistry::instance().loadAllEntities(
+          stream, registry, entityMap, 27u),
+      std::runtime_error);
+}
 
 TEST(Serialization, LegacyV15WorldSolverOptionsLoadBeforeIgnoredPairs)
 {
