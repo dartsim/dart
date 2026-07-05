@@ -173,11 +173,10 @@ before treating it as an open/active PR.)_
 - **Just landed (2026-06-22):** legacy `dart/integration` dead-code removal (#3122);
   native-collision **#3123** (primitive plane contacts + broadphase pruning) — first
   piece of the native collision port.
-- **Open queue (2026-07-05):** #3263 (perf-lane WP-PG.01 baseline packet),
-  #3271 (this lane's phase-0 packet, in review), and #3281 (phase-1 native
-  core skeleton, in review). The former
-  #3209/#3226/#3227/#3229/#3230 monitoring queue and the #3267/#3272/#3273
-  branch-CI fixes are all merged.
+- **Open queue (2026-07-05):** #3263 (perf-lane WP-PG.01 baseline packet) and
+  #3271 (this lane's phase-0 packet, in review). The former #3281
+  phase-1-native-core review, the #3209/#3226/#3227/#3229/#3230 monitoring
+  queue, and the #3267/#3272/#3273 branch-CI fixes are all merged.
 - **Largest remaining win:** native-collision port → makes FCL/Bullet/ODE
   optional and eventually drops `fcl` from core. The DART 7 native engine is not
   yet ported to DART 6.20; default-flip is still a late-phase decision.
