@@ -1807,6 +1807,104 @@ TEST(SdfWriter, RoundTripsExistingSingleBodyWorldFixtures)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsExistingGroundWorldFixture)
+{
+  const auto original = utils::SdfParser::readSkeleton(
+      common::Uri("dart://sample/sdf/ground.world"));
+  ASSERT_NE(original, nullptr);
+  EXPECT_EQ(original->getName(), "ground_plane");
+  EXPECT_FALSE(original->isMobile());
+  ASSERT_EQ(original->getNumBodyNodes(), 1u);
+  ASSERT_EQ(original->getNumJoints(), 1u);
+
+  const auto* originalBody = test::requireBodyNode(*original, "link");
+  ASSERT_NE(originalBody, nullptr);
+  const auto* originalRoot = originalBody->getParentJoint();
+  ASSERT_NE(originalRoot, nullptr);
+  const auto* originalVisualBox
+      = test::requireShape<dynamics::VisualAspect, dynamics::BoxShape>(
+          *originalBody, 0, 1);
+  const auto* originalCollisionBox
+      = test::requireShape<dynamics::CollisionAspect, dynamics::BoxShape>(
+          *originalBody, 0, 1);
+  ASSERT_NE(originalVisualBox, nullptr);
+  ASSERT_NE(originalCollisionBox, nullptr);
+  const auto* originalVisualNode
+      = originalBody->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(originalVisualNode, nullptr);
+  ASSERT_NE(originalVisualNode->getVisualAspect(), nullptr);
+  EXPECT_FALSE(originalVisualNode->getVisualAspect()->getShadowed());
+  const auto* originalCollisionNode
+      = originalBody->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(originalCollisionNode, nullptr);
+  const auto* originalDynamics = originalCollisionNode->getDynamicsAspect();
+  ASSERT_NE(originalDynamics, nullptr);
+  EXPECT_DOUBLE_EQ(originalDynamics->getPrimaryFrictionCoeff(), 100.0);
+  EXPECT_DOUBLE_EQ(originalDynamics->getSecondaryFrictionCoeff(), 50.0);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  sdf::Root sdfRoot;
+  const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+  ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+  ASSERT_NE(sdfRoot.Model(), nullptr);
+  EXPECT_TRUE(sdfRoot.Model()->Static());
+  const auto* sdfLink = sdfRoot.Model()->LinkByName("link");
+  ASSERT_NE(sdfLink, nullptr);
+  const auto* sdfVisual = sdfLink->VisualByName("link - visual");
+  ASSERT_NE(sdfVisual, nullptr);
+  EXPECT_FALSE(sdfVisual->CastShadows());
+  ASSERT_NE(sdfVisual->Geom(), nullptr);
+  ASSERT_NE(sdfVisual->Geom()->BoxShape(), nullptr);
+  const auto* sdfCollision = sdfLink->CollisionByName("link - collision");
+  ASSERT_NE(sdfCollision, nullptr);
+  ASSERT_NE(sdfCollision->Geom(), nullptr);
+  ASSERT_NE(sdfCollision->Geom()->BoxShape(), nullptr);
+  ASSERT_NE(sdfCollision->Surface(), nullptr);
+  ASSERT_NE(sdfCollision->Surface()->Friction(), nullptr);
+  ASSERT_NE(sdfCollision->Surface()->Friction()->ODE(), nullptr);
+  EXPECT_DOUBLE_EQ(sdfCollision->Surface()->Friction()->ODE()->Mu(), 100.0);
+  EXPECT_DOUBLE_EQ(sdfCollision->Surface()->Friction()->ODE()->Mu2(), 50.0);
+
+  const auto path = writeTempSdf(writeResult.value(), "ground_world");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+  EXPECT_VECTOR_NEAR(reparsed->getGravity(), original->getGravity(), 1e-12);
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+  const auto* body = test::requireBodyNode(*reparsed, "link");
+  ASSERT_NE(body, nullptr);
+  expectBodyInertiaRoundTrips(*body, *originalBody, 1e-12);
+  const auto* root = body->getParentJoint();
+  ASSERT_NE(root, nullptr);
+  expectJointRoundTrips(*root, *originalRoot, 1e-12);
+  expectBoxShapeRoundTrips<dynamics::VisualAspect>(
+      *body, *originalBody, 0, 1, 1e-12);
+  expectBoxShapeRoundTrips<dynamics::CollisionAspect>(
+      *body, *originalBody, 0, 1, 1e-12);
+
+  const auto* visualNode = body->getShapeNodeWith<dynamics::VisualAspect>(0);
+  ASSERT_NE(visualNode, nullptr);
+  ASSERT_NE(visualNode->getVisualAspect(), nullptr);
+  EXPECT_FALSE(visualNode->getVisualAspect()->getShadowed());
+  const auto* collisionNode
+      = body->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  ASSERT_NE(collisionNode, nullptr);
+  const auto* dynamics = collisionNode->getDynamicsAspect();
+  ASSERT_NE(dynamics, nullptr);
+  EXPECT_DOUBLE_EQ(dynamics->getPrimaryFrictionCoeff(), 100.0);
+  EXPECT_DOUBLE_EQ(dynamics->getSecondaryFrictionCoeff(), 50.0);
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsExistingMixedJointWorldFixture)
 {
   const auto original = utils::SdfParser::readSkeleton(

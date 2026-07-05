@@ -86,7 +86,8 @@ targets are implemented or durably deferred.
 SDF shipped-fixture writer coverage now includes the native converted SKEL
 fixtures, `quad.sdf`, `two_link_revolute_model.sdf`,
 `test_issue1583.model`, `test_issue1596.model`, `test_issue1683.model`,
-the included relative mesh model fixture, world-contained
+the included relative mesh model fixture, the top-level `ground.world` fixture,
+world-contained
 `issue1193_revolute*.sdf`, `high_version.world`,
 `single_bodynode_skeleton.world`, `test_skeleton_joint.world`, and the
 sensor-bearing `force_torque_test.world` / `force_torque_test2.world` fixtures.
@@ -98,6 +99,9 @@ semantics represented by SDF static model state. The issue fixture coverage
 also includes parent-world and child universal joints from
 `test_issue1596.model`. The relative mesh model coverage compares
 parser-resolved source mesh URIs for visual and collision mesh geometry. The
+top-level `ground.world` coverage compares imported SDF plane-as-DART-box
+semantics, static world model state, disabled visual shadow state, and high ODE
+friction metadata. The
 force-torque coverage does not claim SDF sensor or physics metadata
 preservation.
 
@@ -2211,6 +2215,48 @@ Changelog decision:
 - Entry text: N/A
 - PR-body note: record as combined SDF collision-surface metadata verification
   if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
+Additional validation for top-level SDF `ground.world` fixture coverage:
+
+- Added `SdfWriter.RoundTripsExistingGroundWorldFixture`, which loads the
+  shipped top-level `dart://sample/sdf/ground.world` fixture through
+  `SdfParser`, writes it with `SdfParser::tryWriteSkeletonToString()`, and
+  reparses the emitted SDF through `SdfParser`.
+- The test validates the emitted SDF with libsdformat `sdf::Root`,
+  `sdf::Model`, `sdf::Link`, `sdf::Visual`, `sdf::Collision`,
+  `sdf::Geometry`, `sdf::Surface`, `sdf::Friction`, and `sdf::ODE` DOM values.
+  It does not add XML-level SDF parsing or emitted-text substring checks.
+- The read/write/read assertions cover the DART semantics imported from this
+  world fixture: static model state, plane geometry imported as DART box
+  geometry, disabled visual shadow state, and high ODE friction metadata.
+
+Validation commands:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsExistingGroundWorldFixture'`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run check-sdf-sdformat-boundary`
+- `pixi run build`
+- `pixi run lint`
+- `git diff --check`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_sdf_writer.cpp`,
+  `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
+- Scope evidence: `CHANGELOG.md` DART 7 IO and Parsing SDF writer bullet
+  already covers the conservative SDF writer, collision-surface ODE metadata,
+  visual shadow state, shipped-fixture coverage, and explicit unsupported/lossy
+  diagnostics.
+- Decision: no additional changelog entry. This slice adds fixture-level
+  read/write/read verification for an existing unreleased SDF writer contract
+  without adding a new public API or broadening the documented writer contract.
+- Target section: N/A
+- Entry text: N/A
+- PR-body note: record as `ground.world` SDF fixture round-trip verification if
+  a PR is opened.
 - Follow-up: none until an implementation PR exists.
 
 Changelog decision:

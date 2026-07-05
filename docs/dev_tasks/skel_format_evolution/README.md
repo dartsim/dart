@@ -149,7 +149,8 @@
       (`two_link_revolute_model.sdf`), the root-model issue fixtures
       (`test_issue1583.model`, `test_issue1596.model`, and
       `test_issue1683.model`), the included relative mesh model fixture
-      (`include_relative_mesh/included_model/model.sdf`), and the
+      (`include_relative_mesh/included_model/model.sdf`), the top-level
+      `ground.world` fixture, and the
       world-contained
       `issue1193_revolute*.sdf`, `high_version.world`, and
       `single_bodynode_skeleton.world` fixtures plus
@@ -164,7 +165,10 @@
       model poses, child revolute axes and limits, parent-world and child
       universal joints, and box/sphere/cylinder visual and collision geometry.
       The relative mesh fixture coverage proves parser-resolved source mesh URI
-      preservation for visual and collision mesh geometry. The force-torque
+      preservation for visual and collision mesh geometry. The top-level
+      `ground.world` fixture proves imported SDF plane-as-DART-box semantics,
+      static world model state, disabled visual shadow state, and high ODE
+      friction metadata survive writer read/write/read. The force-torque
       world fixture coverage is
       limited to DART skeleton semantics imported from the in-file models; it
       does not claim SDF sensor or physics metadata preservation.
@@ -377,7 +381,10 @@ SKEL-YAML direction just because the prototype once existed.
   collision geometry. The
   shipped `include_relative_mesh/included_model/model.sdf` fixture adds
   read/write/read coverage for visual/collision mesh geometry with
-  parser-resolved source mesh URI preservation. The
+  parser-resolved source mesh URI preservation. The top-level `ground.world`
+  fixture adds read/write/read coverage for imported SDF plane-as-DART-box
+  semantics, static world model state, disabled visual shadow state, and high
+  ODE friction metadata. The
   shipped
   `high_version.world` and `single_bodynode_skeleton.world` fixtures add
   read/write/read coverage for simple world-contained single-body models with

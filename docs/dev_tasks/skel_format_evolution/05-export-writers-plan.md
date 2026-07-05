@@ -137,7 +137,8 @@ SDF samples converted from legacy SKEL (`single_pendulum.sdf`, `cube.sdf`,
 `shapes.sdf`, and `test_shapes.sdf`) plus the native
 `quad.sdf`, `two_link_revolute_model.sdf`, `test_issue1583.model`,
 `test_issue1596.model`, and `test_issue1683.model` fixtures, the included
-relative mesh model fixture, and the world-contained
+relative mesh model fixture, the top-level `ground.world` fixture, and the
+world-contained
 `issue1193_revolute*.sdf`, `high_version.world`, and
 `single_bodynode_skeleton.world` fixtures plus `test_skeleton_joint.world`,
 `force_torque_test.world`, and `force_torque_test2.world` through the normal
@@ -154,10 +155,12 @@ parent-world root joints recovered through `RootJointType::Fixed`, model poses,
 child revolute axes and limits, parent-world and child universal joints, and
 box/sphere/cylinder visual and collision geometry. The relative mesh fixture
 adds coverage for visual/collision mesh geometry and parser-resolved source
-mesh URI preservation. The simple world coverage includes high-version SDF
-input, default-inertial fallback, root-joint semantics, gravity, and
-box/cylinder geometry. The mixed-joint world coverage adds a shipped fixture
-with prismatic, revolute, screw, and
+mesh URI preservation. The top-level `ground.world` fixture adds coverage for
+imported SDF plane-as-DART-box semantics, static world model state, disabled
+visual shadow state, and high ODE friction metadata. The simple world coverage
+includes high-version SDF input, default-inertial fallback, root-joint
+semantics, gravity, and box/cylinder geometry. The mixed-joint world coverage
+adds a shipped fixture with prismatic, revolute, screw, and
 revolute2/universal joints plus cylinder visual/collision geometry. The
 force-torque world coverage is limited to DART skeleton semantics
 imported from the in-file models, including the three-link/two-joint chain in
