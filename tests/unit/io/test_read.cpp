@@ -227,7 +227,7 @@ TEST(ReadUnit, ReturnsNullForInvalidAmbiguousXmlContent)
 }
 
 //==============================================================================
-TEST(ReadUnit, InfersSdfXmlRootForAmbiguousXmlUri)
+TEST(ReadUnit, InfersSdfAmbiguousXmlUriWithSdformat)
 {
 #if DART_HAS_SDFORMAT
   const auto options = optionsWithContent(
@@ -243,6 +243,28 @@ TEST(ReadUnit, InfersSdfXmlRootForAmbiguousXmlUri)
   const auto skeleton = io::readSkeleton(uri, options);
   ASSERT_NE(skeleton, nullptr);
   EXPECT_EQ(skeleton->getName(), "memory_sdf");
+#endif
+}
+
+//==============================================================================
+TEST(ReadUnit, InfersSdfWorldAmbiguousXmlUriWithSdformat)
+{
+#if DART_HAS_SDFORMAT
+  const auto options = optionsWithContent(
+      R"(<sdf version="1.7">
+           <world name="memory_world">
+             <model name="world_model">
+               <link name="link">
+                 <inertial><mass>1.0</mass></inertial>
+               </link>
+             </model>
+           </world>
+         </sdf>)");
+  const common::Uri uri("memory://world_model.xml");
+
+  const auto skeleton = io::readSkeleton(uri, options);
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_EQ(skeleton->getName(), "world_model");
 #endif
 }
 

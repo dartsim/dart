@@ -170,6 +170,11 @@ if(TARGET dart-utils)
     if(TARGET dart-io)
       target_link_libraries(INTEGRATION_io_SdfParser dart-io)
     endif()
+
+    if(TARGET dart-io)
+      dart_add_test("integration" INTEGRATION_io_SdfWriter io/test_sdf_writer.cpp)
+      target_link_libraries(INTEGRATION_io_SdfWriter dart-io)
+    endif()
   endif()
 endif()
 
@@ -191,6 +196,11 @@ if(TARGET dart-utils-urdf)
   if(NOT MSVC)
     dart_add_test("integration" INTEGRATION_io_UrdfParser io/test_urdf_parser.cpp)
     target_link_libraries(INTEGRATION_io_UrdfParser dart-utils-urdf)
+
+    if(TARGET dart-io)
+      dart_add_test("integration" INTEGRATION_io_UrdfWriter io/test_urdf_writer.cpp)
+      target_link_libraries(INTEGRATION_io_UrdfWriter dart-io)
+    endif()
   endif()
 
   # Additional IO tests

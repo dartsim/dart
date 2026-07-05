@@ -227,6 +227,7 @@ dart_format_add(
   helpers/gtest_utils.hpp
   helpers/common_helpers.hpp
   helpers/dynamics_helpers.hpp
+  helpers/io_round_trip_helpers.hpp
 )
 
 add_subdirectory(benchmark)

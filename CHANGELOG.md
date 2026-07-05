@@ -225,9 +225,43 @@ compatibility remains on the active DART 6 LTS branch._
 #### IO and Parsing
 
 - Made libsdformat a required dependency so SDF files are normalized through the
-  official parser before DART imports them.
-- Modernized URDF/SDF/MJCF loading APIs around DART 7 parser names and cleaner
-  resource-retriever ownership.
+  official parser before DART imports them, including modern joint-axis frame
+  annotations such as `<axis><xyz expressed_in=...>`:
+  [#3291](https://github.com/dartsim/dart/pull/3291)
+- Modernized URDF/SDF/MJCF loading APIs around `dart::io::readSkeleton`,
+  cleaner resource-retriever ownership, format-owned `SdfWriter`/`UrdfWriter`
+  export APIs, and parser-specific SDF selection of named models from
+  multi-model world files:
+  [#3291](https://github.com/dartsim/dart/pull/3291)
+- Fixed SDF world includes so relative meshes inside included models resolve
+  against the included model URI and survive SDF writer read/write/read
+  round-trips: [#3291](https://github.com/dartsim/dart/pull/3291)
+- Added a conservative `SdfWriter` for `Skeleton` round-trips, covering links,
+  model self-collision state, non-default skeleton gravity through SDF world
+  gravity,
+  revolute/continuous/prismatic/weld/screw/universal joints with
+  damping/friction/spring metadata, symmetric effort/velocity limits,
+  sdformat-normalized screw thread pitch,
+  topology-only ball joints, explicit parent-world root joints for supported
+  SDF joint types including continuous revolute roots, link gravity mode, local
+  poses, inertial data,
+  box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual/collision geometry,
+  visual shadow/hidden/transparency state, visual material colors plus PBR
+  metallic/roughness factors, and collision surface contact disable bitmasks,
+  zero-threshold bounce restitution, and ODE friction/slip metadata while
+  reporting unsupported constructs explicitly:
+  [#3291](https://github.com/dartsim/dart/pull/3291)
+- Added a conservative `UrdfWriter` for `Skeleton` round-trips that fit URDF's
+  tree model, covering one-root link trees with identity root FreeJoint or
+  WeldJoint validation, revolute/continuous/prismatic/fixed child joints,
+  continuous joint velocity/effort limits, planar/floating child joints with
+  uniform scalar limits and dynamics, single-DoF mimic metadata, zero-offset
+  coupler mimic transmissions,
+  inertial data, local
+  visual/collision poses, primitive geometry, absolute and package URI meshes,
+  visual colors, and explicit diagnostics for unsupported or lossy DART
+  constructs including soft bodies and invalid mesh resources:
+  [#3291](https://github.com/dartsim/dart/pull/3291)
 - Improved mesh and asset import behavior across convex meshes, polygon meshes,
   Collada scaling, GLTF PBR materials, empty mesh URIs, and sample robot data.
 
@@ -389,6 +423,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.
+- Added a lint/check-lint guard that keeps SDF IO on libsdformat typed DOM APIs
+  and rejects TinyXML, raw XML tree, or SDF element text-parsing helpers in
+  `dart/utils/sdf`: [#3291](https://github.com/dartsim/dart/pull/3291)
 - Restored Performance Dashboard benchmark builds in Pixi environments that use
   the host compiler while Conda binutils appear earlier on `PATH`.
 - Sharded the heaviest simulation CTest binaries, tightened CUDA environment

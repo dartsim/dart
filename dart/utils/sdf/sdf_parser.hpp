@@ -40,6 +40,8 @@
 #include <dart/common/deprecated.hpp>
 #include <dart/common/resource_retriever.hpp>
 
+#include <string>
+
 namespace dart {
 namespace utils {
 
@@ -62,13 +64,21 @@ struct DART_UTILS_API Options
   common::ResourceRetrieverPtr mResourceRetriever;
 
   /// Default root joint type to be used when the parent joint of the root
-  /// link is not specified in the URDF file.
+  /// link is not specified in the SDF model.
   RootJointType mDefaultRootJointType;
+
+  /// Optional model name to load from a world document.
+  ///
+  /// Leave empty to keep the legacy behavior of loading a top-level model, or
+  /// the first model in the first world when the document has no top-level
+  /// model.
+  std::string mModelName;
 
   /// Default constructor
   Options(
       common::ResourceRetrieverPtr resourceRetriever = nullptr,
-      RootJointType defaultRootJointType = RootJointType::Floating);
+      RootJointType defaultRootJointType = RootJointType::Floating,
+      std::string modelName = {});
 };
 
 dynamics::SkeletonPtr DART_UTILS_API
