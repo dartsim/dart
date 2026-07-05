@@ -42,16 +42,16 @@ Live conclusion:
   #3172, #3183, #3188, #3191, #3192, #3194, #3199, #3203). That stack resolves
   the headless-performance issue path, but it is **not** the native-engine port
   and does not by itself make FCL optional.
-- Open release-6.20 work relevant to this plan:
-  - #3209 (`perf/contact-rich-benchmark-case`) adds the deterministic
+- Recently landed release-6.20 work relevant to this plan:
+  - #3209 (`perf/contact-rich-benchmark-case`) added the deterministic
     contact-rich container benchmark needed as a default-flip gate.
-  - #3230 (`docs/dart6-performance-dashboard`) adds the DART 6 performance
+  - #3230 (`docs/dart6-performance-dashboard`) added the DART 6 performance
     dashboard workflow and benchmark-history plumbing.
-  - #3229 (`backport/2490-to-release-6.20`) backports the DART 7 SIMD
+  - #3229 (`backport/2490-to-release-6.20`) backported the DART 7 SIMD
     abstraction to C++17; useful for native hot paths, not a correctness
     prerequisite.
-  - #3226 and #3227 are correctness/performance-adjacent release work and must
-    be watched before interpreting collision-result drift.
+  - #3226 and #3227 landed correctness/performance-adjacent release work to keep
+    in mind when interpreting collision-result drift.
 - Issue #3056 is still open, but its latest maintainer evidence says the DART 6
   performance task was completed by #3199/#3203. Its final benchmark comment is
   still useful as a non-regression guardrail: DART-native was around RTF 65 on
@@ -131,10 +131,9 @@ Shape pairs (box/sphere/capsule/cylinder/plane/mesh/convex), **distance queries*
 
 Minimum evidence packet before implementation starts:
 
-- Merge #3209 or carry an equivalent local patch for the contact-rich container
-  benchmark.
-- Merge #3230 or carry an equivalent local JSON/HTML capture path so benchmark
-  rows are durable and comparable across commits.
+- Use the merged #3209 contact-rich container benchmark.
+- Use the merged #3230 JSON/HTML capture path so benchmark rows are durable and
+  comparable across commits.
 - Fix local build-cache state before running numbers: either configure from a
   clean build directory, provide a valid `sccache`/`ccache`, or explicitly clear
   the launcher cache entries with
@@ -146,13 +145,13 @@ Minimum evidence packet before implementation starts:
 Macro gates:
 
 - `contact_benchmark`: generated 120/900/3000 shape scenes, `3k_shapes.sdf`,
-  SDF PlaneShape mode, and contact-rich container once #3209 lands.
+  SDF PlaneShape mode, and the #3209 contact-rich container.
 - `BM_INTEGRATION_boxes` or successor: parameterized across native/FCL/Bullet/ODE
   instead of hardcoding Bullet.
 - `BM_INTEGRATION_contact_container`: single-threaded and multi-threaded rows
   with contacts/resting/mobile summaries.
-- Gazebo-visible scenes: `pixi run -e gazebo test-gz` plus a small
-  `fix/gz-physics-joint-detach-6.20` regression scene when #3227 lands.
+- Gazebo-visible scenes: `pixi run -e gazebo test-gz` plus the #3227
+  `fix/gz-physics-joint-detach-6.20` regression scene.
 
 Micro gates:
 
@@ -179,7 +178,7 @@ Success means **both**:
 
 ## Phased plan (each phase = its own reviewable PR; gz gate every phase)
 
-0. **Evidence harness and queue cleanup.** Land or unblock #3209 and #3230, decide
+0. **Evidence harness and queue cleanup.** With #3209 and #3230 landed, decide
    whether #3229 is a prerequisite for native optimization, and capture a
    baseline packet on current `release-6.20`. No behavior change.
 1. **Native core skeleton.** Port the pure math/native algorithm core to DART 6
