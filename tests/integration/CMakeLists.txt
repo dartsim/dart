@@ -16,7 +16,10 @@ dart_build_tests(
     test_InverseKinematics.cpp
     test_NameManagement.cpp
     test_Signal.cpp
+    test_StepAllocation.cpp
 )
+target_sources(INTEGRATION_StepAllocation PRIVATE AllocationCounting.cpp)
+dart_format_add(AllocationCounting.cpp AllocationCounting.hpp)
 
 dart_add_test("integration" test_CollisionGroups)
 foreach(collision_engine dart-collision-bullet dart-collision-ode)
@@ -29,6 +32,10 @@ dart_add_test("integration" test_ContactConstraint)
 dart_add_test("integration" test_SplitImpulse)
 if(TARGET dart-collision-bullet)
   target_link_libraries(test_SplitImpulse dart-collision-bullet)
+  target_link_libraries(
+    INTEGRATION_StepAllocation
+    PRIVATE dart-collision-bullet
+  )
 endif()
 dart_add_test("integration" test_IslandDeactivation)
 dart_add_test("integration" test_Issue719)
