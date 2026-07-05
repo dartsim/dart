@@ -160,7 +160,9 @@
       `test_skeleton_joint.world`, `force_torque_test.world`, and
       `force_torque_test2.world`, plus the selected
       `pendulum_with_base_mimic_slow_follows_fast` model from
-      `mimic_fast_slow_pendulums_world.sdf`, writes them back through
+      `mimic_fast_slow_pendulums_world.sdf` and the selected
+      `double_pendulum_with_base` model from `double_pendulum*.world`, writes
+      them back through
       `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and
       compares body, joint, inertial, mobility, gravity, axis-limit,
       joint-dynamics, visual geometry, collision geometry, model-pose, and
@@ -179,6 +181,11 @@
       does not claim SDF sensor or physics metadata preservation. The selected
       mimic world fixture proves the sdformat-backed parser selector can cover
       a non-first world model while preserving SDF 1.11 axis mimic metadata.
+      The selected double-pendulum world fixtures prove the same
+      sdformat-backed parser selector covers non-first world models with
+      parent-world revolute roots, child revolute joints, visual-only pendulum
+      geometry, and visual/collision pendulum geometry without XML-level SDF
+      model enumeration.
       The first URDF writer slice is also implemented locally on
       `dart::utils::UrdfParser::tryWriteSkeletonToString` for one-root URDF
       trees with identity root FreeJoint/WeldJoint placement validation, child
@@ -410,6 +417,11 @@ SKEL-YAML direction just because the prototype once existed.
   `mimic_fast_slow_pendulums_world.sdf` fixture now adds read/write/read
   coverage for a selected non-first world model with SDF 1.11 axis mimic
   metadata, using sdformat DOM lookup rather than XML-level model enumeration.
+  The shipped `double_pendulum.world` and `double_pendulum_with_base.world`
+  fixtures now add read/write/read coverage for selected non-first world
+  models with parent-world revolute roots, child revolute joints, visual-only
+  pendulum geometry, and visual/collision pendulum geometry, again using
+  sdformat DOM lookup rather than XML-level model enumeration.
   URDF shipped-fixture read/write/read coverage now includes
   `joint_properties.urdf`, `issue838.urdf`, `KR5/ground.urdf`, `wam.urdf`, and
   `drchubo.urdf`,

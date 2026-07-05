@@ -145,8 +145,9 @@ world-contained
 `single_bodynode_skeleton.world` fixtures plus `test_skeleton_joint.world`,
 `force_torque_test.world`, and `force_torque_test2.world` through the normal
 SDF parser, plus the selected `pendulum_with_base_mimic_slow_follows_fast`
-model from `mimic_fast_slow_pendulums_world.sdf`, writes them with
-`SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and compares
+model from `mimic_fast_slow_pendulums_world.sdf` and the selected
+`double_pendulum_with_base` model from `double_pendulum*.world`, writes them
+with `SdfParser::tryWriteSkeletonToString()`, reloads the emitted text, and compares
 body, joint, inertial, mobility, gravity,
 axis-limit, joint-dynamics, visual geometry, collision geometry, resource URI,
 model-pose, and joint-offset semantics between the original parsed skeletons and the
@@ -172,6 +173,10 @@ imported from the in-file models, including the three-link/two-joint chain in
 preservation. The selected mimic world coverage proves SDF 1.11 axis mimic
 metadata on a non-first world model can be selected, written, validated through
 libsdformat DOM, and reparsed without adding XML-level SDF model enumeration.
+The selected double-pendulum world coverage proves parent-world revolute roots,
+child revolute joints, visual-only pendulum geometry, and visual/collision
+pendulum geometry on non-first world models can be selected through the same
+sdformat-backed path and round-tripped without XML-level SDF model enumeration.
 
 The remaining export gap is still real implementation work. This planning note
 and the first SDF writer slice do not complete Phase 5.

@@ -1905,6 +1905,171 @@ TEST(SdfWriter, RoundTripsExistingGroundWorldFixture)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsSelectedDoublePendulumWorldFixtures)
+{
+  struct FixtureCase
+  {
+    std::string_view uri;
+    std::string_view tempName;
+    bool hasBase;
+  };
+
+  const std::vector<FixtureCase> cases = {
+      {"dart://sample/sdf/double_pendulum.world",
+       "selected_double_pendulum_world",
+       false},
+      {"dart://sample/sdf/double_pendulum_with_base.world",
+       "selected_double_pendulum_with_base_world",
+       true},
+  };
+
+  utils::SdfParser::Options readOptions;
+  readOptions.mModelName = "double_pendulum_with_base";
+  constexpr double kFixtureRotationTolerance = 1e-5;
+
+  for (const auto& testCase : cases) {
+    SCOPED_TRACE(testCase.uri);
+    const auto original = utils::SdfParser::readSkeleton(
+        common::Uri(testCase.uri), readOptions);
+    ASSERT_NE(original, nullptr);
+    EXPECT_EQ(original->getName(), "double_pendulum_with_base");
+    EXPECT_VECTOR_NEAR(
+        original->getGravity(), Eigen::Vector3d(0.0, 0.0, -9.81), 1e-12);
+    EXPECT_EQ(original->getNumBodyNodes(), testCase.hasBase ? 3u : 2u);
+    EXPECT_EQ(original->getNumJoints(), testCase.hasBase ? 3u : 2u);
+
+    const auto* originalBase
+        = testCase.hasBase ? test::requireBodyNode(*original, "base") : nullptr;
+    const auto* originalUpper = test::requireBodyNode(*original, "upper_link");
+    const auto* originalLower = test::requireBodyNode(*original, "lower_link");
+    ASSERT_NE(originalUpper, nullptr);
+    ASSERT_NE(originalLower, nullptr);
+    if (testCase.hasBase) {
+      ASSERT_NE(originalBase, nullptr);
+    }
+
+    const auto* originalUpperJoint
+        = test::requireJoint<dynamics::RevoluteJoint>(*original, "upper_joint");
+    const auto* originalLowerJoint
+        = test::requireJoint<dynamics::RevoluteJoint>(*original, "lower_joint");
+    ASSERT_NE(originalUpperJoint, nullptr);
+    ASSERT_NE(originalLowerJoint, nullptr);
+
+    const auto writeResult
+        = utils::SdfParser::tryWriteSkeletonToString(*original);
+    ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+    sdf::Root sdfRoot;
+    const auto sdfErrors = sdfRoot.LoadSdfString(writeResult.value());
+    ASSERT_TRUE(sdfErrors.empty()) << sdfErrors.front().Message();
+    const sdf::Model* sdfModel = sdfRoot.Model();
+    if (sdfModel == nullptr) {
+      ASSERT_EQ(sdfRoot.WorldCount(), 1u);
+      const auto* sdfWorld = sdfRoot.WorldByIndex(0);
+      ASSERT_NE(sdfWorld, nullptr);
+      sdfModel = sdfWorld->ModelByName(original->getName());
+    }
+    ASSERT_NE(sdfModel, nullptr);
+    EXPECT_EQ(sdfModel->Name(), original->getName());
+    if (testCase.hasBase) {
+      EXPECT_NE(sdfModel->LinkByName("base"), nullptr);
+    }
+    EXPECT_NE(sdfModel->LinkByName("upper_link"), nullptr);
+    EXPECT_NE(sdfModel->LinkByName("lower_link"), nullptr);
+    EXPECT_NE(sdfModel->JointByName("upper_joint"), nullptr);
+    EXPECT_NE(sdfModel->JointByName("lower_joint"), nullptr);
+
+    const auto path = writeTempSdf(writeResult.value(), testCase.tempName);
+    const auto reparsed = utils::SdfParser::readSkeleton(
+        common::Uri::createFromPath(path.string()));
+    std::filesystem::remove(path);
+
+    ASSERT_NE(reparsed, nullptr);
+    EXPECT_EQ(reparsed->getName(), original->getName());
+    EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+    EXPECT_VECTOR_NEAR(reparsed->getGravity(), original->getGravity(), 1e-12);
+    EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+    EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+    const auto* base
+        = testCase.hasBase ? test::requireBodyNode(*reparsed, "base") : nullptr;
+    const auto* upper = test::requireBodyNode(*reparsed, "upper_link");
+    const auto* lower = test::requireBodyNode(*reparsed, "lower_link");
+    ASSERT_NE(upper, nullptr);
+    ASSERT_NE(lower, nullptr);
+    if (testCase.hasBase) {
+      ASSERT_NE(base, nullptr);
+      ASSERT_NE(originalBase, nullptr);
+      expectBodyInertiaRoundTrips(*base, *originalBase, 1e-12);
+      const auto* originalRoot = originalBase->getParentJoint();
+      const auto* root = base->getParentJoint();
+      ASSERT_NE(originalRoot, nullptr);
+      ASSERT_NE(root, nullptr);
+      expectJointRoundTrips(*root, *originalRoot, kFixtureRotationTolerance);
+      expectCylinderShapeRoundTrips<dynamics::VisualAspect>(
+          *base, *originalBase, 0, 2, 1e-12);
+      expectBoxShapeRoundTrips<dynamics::VisualAspect>(
+          *base, *originalBase, 1, 2, 1e-12);
+      expectCylinderShapeRoundTrips<dynamics::CollisionAspect>(
+          *base, *originalBase, 0, 2, 1e-12);
+      expectBoxShapeRoundTrips<dynamics::CollisionAspect>(
+          *base, *originalBase, 1, 2, 1e-12);
+    }
+
+    expectBodyInertiaRoundTrips(*upper, *originalUpper, 1e-12);
+    expectBodyInertiaRoundTrips(*lower, *originalLower, 1e-12);
+
+    const auto* upperJoint
+        = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, "upper_joint");
+    const auto* lowerJoint
+        = test::requireJoint<dynamics::RevoluteJoint>(*reparsed, "lower_joint");
+    ASSERT_NE(upperJoint, nullptr);
+    ASSERT_NE(lowerJoint, nullptr);
+    EXPECT_EQ(upper->getParentJoint(), upperJoint);
+    EXPECT_EQ(lower->getParentJoint(), lowerJoint);
+    expectJointRoundTrips(
+        *upperJoint, *originalUpperJoint, kFixtureRotationTolerance);
+    expectJointRoundTrips(
+        *lowerJoint, *originalLowerJoint, kFixtureRotationTolerance);
+    EXPECT_VECTOR_NEAR(
+        upperJoint->getAxis(), originalUpperJoint->getAxis(), 1e-12);
+    EXPECT_VECTOR_NEAR(
+        lowerJoint->getAxis(), originalLowerJoint->getAxis(), 1e-12);
+
+    expectCylinderShapeRoundTrips<dynamics::VisualAspect>(
+        *upper, *originalUpper, 0, 3, kFixtureRotationTolerance);
+    expectCylinderShapeRoundTrips<dynamics::VisualAspect>(
+        *upper, *originalUpper, 1, 3, kFixtureRotationTolerance);
+    expectCylinderShapeRoundTrips<dynamics::VisualAspect>(
+        *upper, *originalUpper, 2, 3, kFixtureRotationTolerance);
+    expectCylinderShapeRoundTrips<dynamics::VisualAspect>(
+        *lower, *originalLower, 0, 2, kFixtureRotationTolerance);
+    expectCylinderShapeRoundTrips<dynamics::VisualAspect>(
+        *lower, *originalLower, 1, 2, kFixtureRotationTolerance);
+
+    if (testCase.hasBase) {
+      expectCylinderShapeRoundTrips<dynamics::CollisionAspect>(
+          *upper, *originalUpper, 0, 3, kFixtureRotationTolerance);
+      expectCylinderShapeRoundTrips<dynamics::CollisionAspect>(
+          *upper, *originalUpper, 1, 3, kFixtureRotationTolerance);
+      expectCylinderShapeRoundTrips<dynamics::CollisionAspect>(
+          *upper, *originalUpper, 2, 3, kFixtureRotationTolerance);
+      expectCylinderShapeRoundTrips<dynamics::CollisionAspect>(
+          *lower, *originalLower, 0, 2, kFixtureRotationTolerance);
+      expectCylinderShapeRoundTrips<dynamics::CollisionAspect>(
+          *lower, *originalLower, 1, 2, kFixtureRotationTolerance);
+    } else {
+      EXPECT_EQ(
+          upper->getNumShapeNodesWith<dynamics::CollisionAspect>(),
+          originalUpper->getNumShapeNodesWith<dynamics::CollisionAspect>());
+      EXPECT_EQ(
+          lower->getNumShapeNodesWith<dynamics::CollisionAspect>(),
+          originalLower->getNumShapeNodesWith<dynamics::CollisionAspect>());
+    }
+  }
+}
+
+//==============================================================================
 TEST(SdfWriter, RoundTripsExistingMixedJointWorldFixture)
 {
   const auto original = utils::SdfParser::readSkeleton(

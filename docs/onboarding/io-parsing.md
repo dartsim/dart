@@ -217,12 +217,14 @@ top-level `ground.world` fixture, plus world-contained
 `test_skeleton_joint.world`, plus `force_torque_test.world` /
 `force_torque_test2.world`, and the selected
 `pendulum_with_base_mimic_slow_follows_fast` model from
-`mimic_fast_slow_pendulums_world.sdf` through read/write/read smokes that
+`mimic_fast_slow_pendulums_world.sdf` plus the selected
+`double_pendulum_with_base` model from `double_pendulum*.world` through
+read/write/read smokes that
 compare body, joint, inertial, mobility, gravity, axis-limit, joint-dynamics,
 box/cylinder/sphere/mesh geometry, shape-pose, model-pose, resource URI, and
 joint-offset semantics across simple single-body, quadruped, fixed-root issue,
 relative-mesh, ground-plane, mixed-joint, two-link, three-link, and selected
-world-model mimic cases. The
+world-model mimic and parent-world double-pendulum cases. The
 quadruped
 fixture covers 17 links, 16 revolute joints, finite axis velocity/effort
 limits, visual material colors, repeated box visual/collision geometry, and
@@ -241,6 +243,10 @@ is limited to DART skeleton semantics imported from the in-file models and does
 not claim preservation of SDF sensor or physics metadata. The selected mimic
 world fixture proves parser-selected non-first world models preserve SDF 1.11
 axis mimic metadata through libsdformat validation and read/write/read. The
+selected double-pendulum world fixtures prove parser-selected non-first world
+models preserve parent-world revolute roots, child revolute joints, visual-only
+pendulum geometry, and visual/collision pendulum geometry through libsdformat
+DOM validation and read/write/read without XML-level model enumeration. The
 writer also
 covers absolute non-file mesh URI preservation through a custom retriever,
 URI-backed mesh material variants through preserved source mesh URIs, and

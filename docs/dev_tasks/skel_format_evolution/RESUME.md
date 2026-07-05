@@ -2324,6 +2324,45 @@ listed SKEL as a DART 7 model-loading/parser target. The remaining tracked
 SKEL-format references outside this task folder are the DART 7 removal
 changelog entry and historical DART 6 changelog entries.
 
+Additional validation for selected SDF double-pendulum world model coverage:
+
+- Added `SdfWriter.RoundTripsSelectedDoublePendulumWorldFixtures`, selecting
+  `double_pendulum_with_base` from `dart://sample/sdf/double_pendulum.world`
+  and `dart://sample/sdf/double_pendulum_with_base.world` through
+  `SdfParser::Options::mModelName`.
+- The test writes each selected model back through
+  `SdfParser::tryWriteSkeletonToString()`, validates the emitted model through
+  `sdf::Root` / `sdf::World` / `sdf::Model` DOM lookup, and reparses through
+  `SdfParser`.
+- Coverage proves selected non-first world models round-trip parent-world
+  revolute roots, child revolute joints, visual-only pendulum geometry, and
+  visual/collision pendulum geometry without XML-level model enumeration or
+  emitted-text substring checks.
+
+Validation commands:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_SdfWriter && ./build/default/cpp/Release/bin/INTEGRATION_io_SdfWriter --gtest_filter=SdfWriter.RoundTripsSelectedDoublePendulumWorldFixtures'`
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter`
+- `pixi run check-sdf-sdformat-boundary`
+- `pixi run build`
+- `pixi run lint`
+- `git diff --check`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
+  and this SKEL evolution task folder.
+- Scope evidence: this slice broadens fixture-level SDF writer validation for
+  selected existing world models under the same unreleased conservative SDF
+  writer/parser round-trip contract.
+- Decision: no additional changelog entry.
+- Target section: not applicable.
+- PR-body note: record as selected double-pendulum SDF world fixture
+  round-trip verification if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
 ## Previous Resume Checkpoint (2026-07-03)
 
 Phase 1 landed on `main` via PR
