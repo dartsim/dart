@@ -16,6 +16,7 @@ if(DART_ENABLE_SDFORMAT)
   endif()
   if(TARGET sdformat::sdformat)
     set_property(TARGET sdformat::sdformat PROPERTY IMPORTED_GLOBAL TRUE)
+    dart_prune_msvc_posix_link_libraries(sdformat::sdformat)
   else()
     message(
       FATAL_ERROR
@@ -31,6 +32,9 @@ else()
 endif()
 
 find_package(CURL)
+if(TARGET CURL::libcurl)
+  dart_prune_msvc_posix_link_libraries(CURL::libcurl)
+endif()
 dart_check_optional_package(CURL "dart-utils HTTP retriever" "libcurl")
 
 # Search all header and source files
