@@ -56,6 +56,10 @@
     the `dart-changelog` routine is available for backport changelog
     decisions.
 
+  * Add a release-tailored documentation information architecture owner and
+    route docs-update workflows through it so DART 6.20 agents promote durable
+    task facts by lifecycle before retiring `docs/dev_tasks/` folders.
+
   * Add a "surface your unknowns" discipline to the release-branch AI
     principles (`docs/ai/principles.md`): before a non-trivial fix, convert
     consequential unknowns into knowns — a reproduction, a focused read of the

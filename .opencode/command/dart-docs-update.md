@@ -14,6 +14,8 @@ Update documentation: $ARGUMENTS
 
 @AGENTS.md
 @docs/README.md
+@docs/AGENTS.md
+@docs/information-architecture.md
 @docs/ai/principles.md
 @docs/ai/verification.md
 @docs/onboarding/ai-tools.md
@@ -27,11 +29,13 @@ Update documentation: $ARGUMENTS
    - Regular docs: `docs/**`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`
    - AI source files: `.claude/commands/**`, `.claude/skills/**`
 3. For AI workflow changes, run `pixi run sync-ai-commands`; do not hand-edit generated `.opencode/` or `.codex/` files
-4. Update indexes and cross-references that point to changed docs
-5. Use `docs/ai/verification.md` to select the docs-only or AI docs/adapters
+4. Classify new or moved docs by lifecycle first, then audience, then topic,
+   using `docs/information-architecture.md`
+5. Update indexes and cross-references that point to changed docs
+6. Use `docs/ai/verification.md` to select the docs-only or AI docs/adapters
    gate set, then run `pixi run lint` before committing
-6. Record the `CHANGELOG.md` decision using `docs/onboarding/changelog.md`.
-7. Ask for explicit maintainer/user approval before pushing or opening the PR.
+7. Record the `CHANGELOG.md` decision using `docs/onboarding/changelog.md`.
+8. Ask for explicit maintainer/user approval before pushing or opening the PR.
    After approval, push with the same local and remote topic-branch name, use
    `.github/PULL_REQUEST_TEMPLATE.md`, and set the proper milestone.
 
