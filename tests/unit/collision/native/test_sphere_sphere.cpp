@@ -672,3 +672,39 @@ TEST(SphereSphereBatch, RejectsMalformedInputs)
   EXPECT_THROW(
       collideSpheresBatch(nullShapePairs, results), std::invalid_argument);
 }
+
+TEST(SphereSphere, BinaryCheckReportsHitWithoutContacts)
+{
+  const CollisionOption option = CollisionOption::binaryCheck();
+
+  CollisionResult result;
+  EXPECT_TRUE(collideSpheres(
+      Eigen::Vector3d(0, 0, 0),
+      1.0,
+      Eigen::Vector3d(1.5, 0, 0),
+      1.0,
+      result,
+      option));
+  EXPECT_EQ(result.numContacts(), 0);
+
+  EXPECT_FALSE(collideSpheres(
+      Eigen::Vector3d(0, 0, 0),
+      1.0,
+      Eigen::Vector3d(3, 0, 0),
+      1.0,
+      result,
+      option));
+  EXPECT_EQ(result.numContacts(), 0);
+
+  SphereShape sphere1(1.0);
+  SphereShape sphere2(1.0);
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(0.0, 1.5, 0.0);
+  EXPECT_TRUE(collideSpheres(sphere1, tf1, sphere2, tf2, result, option));
+  EXPECT_EQ(result.numContacts(), 0);
+
+  tf2.translation() = Eigen::Vector3d(0.0, 3.0, 0.0);
+  EXPECT_FALSE(collideSpheres(sphere1, tf1, sphere2, tf2, result, option));
+  EXPECT_EQ(result.numContacts(), 0);
+}

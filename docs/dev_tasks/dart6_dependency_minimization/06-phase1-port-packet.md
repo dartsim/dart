@@ -73,6 +73,17 @@ interface only — the dense field impls stay in phase 3),
 
 Anything else that fails under C++17: stop and record here.
 
+**Documented behavioral deviation (post-review):** DART 7's
+`sphere_sphere.cpp` ignores `CollisionOption::enableContact` and mutates
+the `CollisionResult` on binary checks, unlike `box_box.cpp` which gates
+contact creation at four sites (verified against `origin/main` @
+`dbe6fcccb`). This is an upstream bug surfaced by the phase-1 PR review.
+The port fixes it (both `collideSpheres` entry points return the boolean
+overlap without touching the result when `enableContact` is false,
+matching box-box's contract) with a regression test, and the same fix is
+dual-PR'd to `main` per the dual-PR policy so the trees stay in sync for
+later phase diffs.
+
 ## Layout / build integration
 
 - New dir `dart/collision/native/` mirroring DART 7 subpaths
