@@ -1451,61 +1451,9 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmak
   "config-coverage",
 ], env = { BUILD_TYPE = "Debug" } }
 
-# Note: --rc flag is needed for lcov compatibility with gcc 13+
 coverage-report = { cmd = [
-  "bash",
-  "-lc",
-  """
-set -euo pipefail
-BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE
-PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-# Keep test objects during capture so library headers and templates exercised
-# from tests are counted. The lcov removal pass below filters test source files
-# out of the final report.
-find "$BUILD_DIR" \
-    '(' -path '*/examples/*' -o -path '*/tutorials/*' ')' \
-    '(' -name '*.gcda' -o -name '*.gcno' ')' -delete
-# lcov 1.x capture is single-threaded and takes ~35 minutes over the fully
-# instrumented tree in CI. Distribute the object directories that hold
-# coverage data round-robin across one capture process per job slot, then
-# merge the partial tracefiles. geninfo scans each --directory recursively,
-# so the awk filter prunes directories whose ancestor is already listed;
-# each .gcda is then captured exactly once and the merged tracefile matches
-# a serial capture (lcov -a would otherwise sum nested dirs' counts twice).
-rm -f coverage.chunk.* coverage.gcda_dirs.txt
-find "$BUILD_DIR" -name '*.gcda' -print0 | xargs -0 -r -n 64 dirname | sort -u | awk 'prev == "" || substr($0, 1, length(prev) + 1) != prev "/" { print; prev = $0 }' > coverage.gcda_dirs.txt
-test -s coverage.gcda_dirs.txt
-split -d -n r/${PARALLEL_JOBS} coverage.gcda_dirs.txt coverage.chunk.
-pids=()
-traces=()
-for chunk in coverage.chunk.*; do
-  test -s "$chunk" || continue
-  dirargs=()
-  while IFS= read -r d; do dirargs+=(--directory "$d"); done < "$chunk"
-  out="$chunk.info"
-  lcov --quiet --capture "${dirargs[@]}" --output-file "$out" --rc geninfo_unexecuted_blocks=1 --rc 'lcov_excl_line=LCOV_EXCL_LINE' &
-  pids+=($!)
-  traces+=("$out")
-done
-status=0
-for p in "${pids[@]}"; do wait "$p" || status=1; done
-test "$status" -eq 0
-addargs=()
-for t in "${traces[@]}"; do addargs+=(-a "$t"); done
-lcov "${addargs[@]}" --output-file coverage.info
-rm -f coverage.chunk.* coverage.gcda_dirs.txt
-lcov \
-    --remove coverage.info \
-    '/usr/*' \
-    '*/.pixi/*' \
-    '*/.deps/*' \
-    '*/tests/*' \
-    '*/examples/*' \
-    '*/tutorials/*' \
-    '*/dart/gui/*' \
-    --output-file coverage.info \
-&& lcov --list coverage.info
-""",
+  "python",
+  "scripts/coverage_report.py",
 ], depends-on = [
   "build-coverage",
 ], env = { BUILD_TYPE = "Debug" } }
