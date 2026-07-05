@@ -141,6 +141,12 @@ passive dynamics metadata through reparse, proves visual and collision
 `package://` mesh URIs serialize and reparse through `UrdfParser` package
 resolution, and proves zero-offset DART coupler mimic relationships serialize as
 URDF `SimpleTransmission` groups and reparse with coupler enforcement intact.
+The Atlas `data/sdf/atlas/atlas_v5_no_head.urdf` fixture now has
+read/write/read coverage for a 36-body, 35-DoF shipped robot fixture with
+relative visual/collision meshes, representative revolute joints, fixed camera
+joints, and body/inertia/mesh URI comparisons. This proves the current
+conservative URDF writer handles a larger robot-scale fixture without changing
+the writer contract.
 Implicit default visual colors now serialize without authored URDF materials,
 explicit default colors stay authored, and default RGB with an alpha override
 still serializes a material so alpha round-trips. Non-positive mass, non-finite
@@ -2542,6 +2548,39 @@ Changelog decision:
 - Target section: not applicable.
 - PR-body note: record as `primitive_geometry.urdf` URDF writer round-trip
   verification if a PR is opened.
+- Follow-up: none until an implementation PR exists.
+
+Additional validation for shipped URDF Atlas fixture coverage:
+
+- Added `UrdfWriter.RoundTripsExistingAtlasV5NoHeadFixture`, loading
+  `dart://sample/sdf/atlas/atlas_v5_no_head.urdf` through `UrdfParser`, writing
+  the imported skeleton through `UrdfParser::tryWriteSkeletonToString()`, and
+  reparsing the emitted URDF from a memory URI.
+- Coverage proves the current conservative URDF writer preserves the shipped
+  Atlas fixture's 36 body nodes, 35 DoFs, body inertias, visual/collision mesh
+  geometry and resolved relative mesh URIs, representative revolute joint
+  topology/axes/limits/dynamics, and fixed camera joints through write/read/read.
+  It compares DART skeleton semantics imported by `UrdfParser`; it does not
+  claim preservation of raw URDF-only tags outside that skeleton contract.
+
+Validation command:
+
+- `pixi run bash -lc 'set -euo pipefail; CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_io_UrdfWriter; ./build/default/cpp/Release/bin/INTEGRATION_io_UrdfWriter --gtest_filter=UrdfWriter.RoundTripsExistingAtlasV5NoHeadFixture'`
+
+Changelog decision:
+
+- Mode: decide
+- Base evidence: current local diff in
+  `tests/integration/io/test_urdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
+  and this SKEL evolution task folder.
+- Scope evidence: this slice broadens shipped-fixture test evidence for the
+  existing parser-specific URDF writer contract, without adding a new public API
+  or user-visible export capability.
+- Decision: no additional changelog entry.
+- Target section: not applicable.
+- Entry text: N/A.
+- PR-body note: record as Atlas URDF writer round-trip verification if a PR is
+  opened.
 - Follow-up: none until an implementation PR exists.
 
 ## Previous Resume Checkpoint (2026-07-03)

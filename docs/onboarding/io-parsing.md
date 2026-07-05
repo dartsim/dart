@@ -328,10 +328,11 @@ collisions. Shipped-fixture coverage includes
 `data/urdf/test/primitive_geometry.urdf`,
 `data/urdf/test/joint_properties.urdf`, `data/urdf/test/issue838.urdf`,
 `data/urdf/KR5/ground.urdf`, `data/urdf/wam/wam.urdf`, and
-`data/urdf/drchubo/drchubo.urdf` through
+`data/urdf/drchubo/drchubo.urdf`, plus
+`data/sdf/atlas/atlas_v5_no_head.urdf` through
 read/write/read smokes that compare body, joint, axis, limit, dynamics,
 visual-shape, visual-material, collision-shape, imported primitive geometry,
-and package mesh URI semantics.
+relative/package mesh URI semantics, and larger robot topology.
 URDF does not encode parent-joint metadata for the root link, so root joint
 name/type are supplied by parser defaults on reparse rather than serialized by
 the writer. URDF files that use a root link named `world` still import that link

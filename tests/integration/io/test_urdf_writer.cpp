@@ -908,6 +908,74 @@ TEST(UrdfWriter, RoundTripsExistingWamFixture)
 }
 
 //==============================================================================
+TEST(UrdfWriter, RoundTripsExistingAtlasV5NoHeadFixture)
+{
+  utils::UrdfParser parser;
+  const auto original
+      = parser.parseSkeleton("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
+  ASSERT_NE(original, nullptr);
+  ASSERT_EQ(original->getNumBodyNodes(), 36u);
+  ASSERT_EQ(original->getNumDofs(), 35u);
+  ASSERT_NE(original->getBodyNode("pelvis"), nullptr);
+  ASSERT_NE(original->getBodyNode("l_hand"), nullptr);
+  ASSERT_NE(original->getBodyNode("r_hand"), nullptr);
+  ASSERT_NE(original->getJoint("back_bkx"), nullptr);
+  ASSERT_EQ(original->getJoint("neck_ry"), nullptr);
+
+  const auto writeResult
+      = utils::UrdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+  expectContains(writeResult.value(), "name=\"drc_skeleton\"");
+  expectContains(writeResult.value(), "<mesh");
+
+  const auto reparsed = parser.parseSkeletonString(
+      writeResult.value(), common::Uri("memory://atlas_roundtrip.urdf"));
+  ASSERT_NE(reparsed, nullptr);
+
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+  EXPECT_EQ(reparsed->getNumDofs(), original->getNumDofs());
+
+  for (std::size_t i = 0; i < original->getNumBodyNodes(); ++i) {
+    const auto* expected = original->getBodyNode(i);
+    ASSERT_NE(expected, nullptr);
+    const auto* actual = reparsed->getBodyNode(expected->getName());
+    ASSERT_NE(actual, nullptr) << expected->getName();
+    expectBodyInertiaRoundTrips(*expected, *actual);
+    expectVisualShapesRoundTrip(*expected, *actual);
+    expectCollisionShapesRoundTrip(*expected, *actual);
+  }
+
+  for (const char* jointName :
+       {"back_bkx", "l_leg_kny", "r_leg_hpy", "l_arm_shz", "r_arm_wry2"}) {
+    const auto* expectedJoint = dynamic_cast<const dynamics::RevoluteJoint*>(
+        original->getJoint(jointName));
+    const auto* actualJoint = dynamic_cast<const dynamics::RevoluteJoint*>(
+        reparsed->getJoint(jointName));
+    ASSERT_NE(expectedJoint, nullptr) << jointName;
+    ASSERT_NE(actualJoint, nullptr) << jointName;
+    EXPECT_EQ(
+        actualJoint->getParentBodyNode()->getName(),
+        expectedJoint->getParentBodyNode()->getName());
+    EXPECT_EQ(
+        actualJoint->getChildBodyNode()->getName(),
+        expectedJoint->getChildBodyNode()->getName());
+    EXPECT_TRUE(
+        actualJoint->getAxis().isApprox(expectedJoint->getAxis(), kTolerance));
+    expectSingleDofJointMetadataRoundTrips(*expectedJoint, *actualJoint);
+  }
+
+  const auto* fixedJoint = dynamic_cast<const dynamics::WeldJoint*>(
+      reparsed->getJoint("r_situational_awareness_camera_joint"));
+  ASSERT_NE(fixedJoint, nullptr);
+  EXPECT_EQ(fixedJoint->getParentBodyNode()->getName(), "utorso");
+  EXPECT_EQ(
+      fixedJoint->getChildBodyNode()->getName(),
+      "r_situational_awareness_camera_link");
+}
+
+//==============================================================================
 TEST(UrdfWriter, OmitsImplicitDefaultVisualMaterial)
 {
   const auto skeleton = makeDefaultVisualSkeleton();

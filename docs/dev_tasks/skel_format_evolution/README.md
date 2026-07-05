@@ -223,13 +223,15 @@
       file mesh URIs, and non-finite mesh scales. It also covers continuous
       revolute joint dynamics round-trip, shipped
       `primitive_geometry.urdf`, `joint_properties.urdf`, `issue838.urdf`,
-      `KR5/ground.urdf`, and `wam.urdf` plus the package-mesh `drchubo.urdf`
+      `KR5/ground.urdf`, `wam.urdf`, the package-mesh `drchubo.urdf`, and
+      the Atlas `data/sdf/atlas/atlas_v5_no_head.urdf`
       robot
       read/write/read coverage for revolute and continuous joint
       limits/dynamics, visual boxes, global material color references,
       imported primitive sphere visuals, imported root-`world` frame semantics,
-      collision boxes, and visual and collision package mesh URI preservation
-      through `UrdfParser` package resolution. The full `KR5 sixx R650.urdf`
+      collision boxes, larger robot topology, and visual/collision relative or
+      package mesh URI preservation through `UrdfParser` resource resolution.
+      The full `KR5 sixx R650.urdf`
       fixture now has shipped-fixture
       diagnostic coverage proving its non-identity root-link pose is rejected
       explicitly. It also covers non-positive mass, non-finite local
@@ -463,14 +465,16 @@ SKEL-YAML direction just because the prototype once existed.
   enumeration.
   URDF shipped-fixture read/write/read coverage now includes
   `primitive_geometry.urdf`, `joint_properties.urdf`, `issue838.urdf`,
-  `KR5/ground.urdf`, `wam.urdf`, and `drchubo.urdf`,
+  `KR5/ground.urdf`, `wam.urdf`, `drchubo.urdf`, and the Atlas
+  `data/sdf/atlas/atlas_v5_no_head.urdf` fixture,
   proving the current conservative URDF writer preserves revolute and
   continuous joint topology, axes, finite velocity/effort limits, passive
   damping/friction metadata, inertias, imported primitive sphere visuals,
   visual box geometry, visual material colors imported from global URDF
   material references, collision box geometry, visual/collision package mesh
-  geometry and URIs, and parser-normalized root-`world` inertial-frame
-  semantics. The full `KR5 sixx R650.urdf` robot
+  geometry and URIs, visual/collision relative mesh geometry and URIs, larger
+  robot topology, and parser-normalized root-`world` inertial-frame semantics.
+  The full `KR5 sixx R650.urdf` robot
   remains unsupported because its imported root joint has a non-identity
   root-link pose, and that shipped fixture now has explicit diagnostic coverage.
   NaN position limits on SDF-supported single-axis joints and topology-only ball
