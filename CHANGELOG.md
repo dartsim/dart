@@ -347,6 +347,10 @@ compatibility remains on the active DART 6 LTS branch._
   lifecycles, keeps `docs/onboarding/` as the current developer-handbook path,
   and records when future folder splits or renames are justified.
   ([#3290](https://github.com/dartsim/dart/pull/3290))
+- Applied the documentation information architecture to docs-update workflows,
+  generated AI adapters, policy checks, and dev-task cleanup guidance so agents
+  route durable documentation by lifecycle instead of defaulting to the
+  handbook bucket. ([#3294](https://github.com/dartsim/dart/pull/3294))
 - Added a structured `dart-changelog` decision note so Claude, Codex, OpenCode,
   and manual PR authors can record the inspected evidence, target release
   section, entry text, no-entry reason, and PR-link follow-up consistently.
