@@ -17,3 +17,5 @@ if(HAVE_BULLET)
   dart_add_test("unit" test_BulletContact test_BulletContact.cpp)
   target_link_libraries(test_BulletContact dart-collision-bullet)
 endif()
+
+add_subdirectory(native)
