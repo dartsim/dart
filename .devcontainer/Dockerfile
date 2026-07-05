@@ -5,8 +5,9 @@ ARG PIXI_VERSION=0.59.0
 
 SHELL ["/bin/bash", "-c"]
 
-# Base utilities; pixi manages the toolchain and dependencies.
+# Base utilities and a system compiler; pixi manages project dependencies.
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    build-essential \
     ca-certificates \
     curl \
     git \
