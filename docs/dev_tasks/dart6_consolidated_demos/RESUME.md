@@ -1,9 +1,13 @@
 # Resume Instructions
 
-Current phase: Phase 2 (scene ports). B1 accepted (commit 49d1db3, 12 scenes
-live). B2 ("Constraints & soft": dynamic_joint_constraints,
-joint_constraints, human_joint_limits, mixed_chain, soft_bodies, tinkertoy,
-heightmap) dispatched to a Codex worker 2026-07-04 evening.
+Current phase: Phase 3 (visual debugging suite, BRIEF-phase3.md). Phase 2
+DONE 2026-07-05: all four batches accepted, 31 scenes live. Next in order:
+(1) build dartpy (`pixi run build-py-dev`, long, owns build dir) to unblock
+Phase 4; (2) dispatch Phase 3 per BRIEF-phase3.md (PR-a library fix already
+landed in commit 9493af236 — only the suite remains); (3) Phase 4 py-demos;
+(4) Phase 5 cleanup per EVIDENCE-cleanup-refs.md; (5) Phase 6 wrap.
+NOTE: Claude-agent session limit was hit 2026-07-05 ~03:25 PT (resets
+6:10am PT) — route implementation to Codex workers if it recurs.
 
 ## Orchestration playbook (learned, follow it)
 

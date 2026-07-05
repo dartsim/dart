@@ -134,7 +134,19 @@ UI-visible changes, and PLAN checkboxes updated.
   helper — promote to shared scenes/ helper in Phase 2). rigid_cubes camera
   framing to tighten in Phase 2 B1.
 
-## Phase 2 — Scene catalog ports (PR series)
+## Phase 2 — Scene catalog ports (PR series)  [DONE 2026-07-05]
+
+All four batches accepted; 31 scenes live (33 catalogued: human_joint_limits
+TinyDNN-gated, ssik Python3-gated), cycle x2 green, every scene
+screenshot-reviewed. imgui example dropped (redundant). Host gains across
+Phase 2: Timestep control, case-insensitive keys, AlwaysClamp+isfinite
+slider convention, ImGui keyboard-capture gating (typing in search cannot
+drive scenes), bullet/osgText linkage, InteractiveFrameDnD gizmo dragging.
+
+- [x] B4 "Humanoids & robots" accepted 2026-07-05 (commits 8e4c6aefa11 +
+      hardening follow-up): 7 ports incl. full SIMBICON subsystem; review 0
+      blockers/1 major (viewer-global depth/headlights leak — fixed via
+      capture-restore teardown); first batch with a clean screenshot gate.
 
 - [x] B3 "Control & IK" accepted 2026-07-05 (commit "Port batch-3 control
       and IK scenes"): 6 ports, 24 scenes live, cycle x2 green. Review: 0
