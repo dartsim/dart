@@ -746,6 +746,24 @@ Eigen::MatrixXd Multibody::getWorldJacobian(const Link& link) const
 }
 
 //==============================================================================
+Eigen::Vector3d Multibody::getCenterOfMass() const
+{
+  auto& registry = dart::simulation::detail::registryOf(*m_world);
+  const auto& structure = safeGet<comps::MultibodyStructure>(
+      registry, detail::toRegistryEntity(m_entity));
+  return compute::computeMultibodyCenterOfMass(registry, structure);
+}
+
+//==============================================================================
+Eigen::MatrixXd Multibody::getCenterOfMassJacobian() const
+{
+  auto& registry = dart::simulation::detail::registryOf(*m_world);
+  const auto& structure = safeGet<comps::MultibodyStructure>(
+      registry, detail::toRegistryEntity(m_entity));
+  return compute::computeMultibodyCenterOfMassJacobian(registry, structure);
+}
+
+//==============================================================================
 void Multibody::setGroundContact(
     const Eigen::Vector3d& planeNormal,
     const Eigen::Vector3d& planePoint,

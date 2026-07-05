@@ -13060,6 +13060,136 @@ TEST(World, MultibodyLinkWorldJacobian)
   EXPECT_TRUE(predictedVelocity.isApprox(fdVelocity, 1e-4));
 }
 
+// Closed-form center-of-mass position and Jacobian for a single revolute
+// pendulum with an offset link center of mass and a stationary base.
+TEST(World, MultibodyCenterOfMassJacobianSingleLink)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("pendulum");
+  auto base = robot.addLink("base");
+  const double baseMass = 1.0; // fixed at the origin, center of mass at origin
+  base.setMass(baseMass);
+
+  const double length = 1.5;
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(length, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto bob = robot.addLink("bob", base, spec);
+  const double bobMass = 3.0;
+  const double comOffset = 0.5;
+  bob.setMass(bobMass);
+  bob.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+  bob.setCenterOfMass(Eigen::Vector3d(comOffset, 0.0, 0.0));
+
+  world.enterSimulationMode();
+
+  // At q = 0 the bob center of mass sits at x = length + comOffset. The base is
+  // stationary, so it dampens the weighting but adds no motion.
+  const double totalMass = baseMass + bobMass;
+  const double comX = bobMass * (length + comOffset) / totalMass;
+
+  const Eigen::Vector3d com = robot.getCenterOfMass();
+  EXPECT_NEAR(com.x(), comX, 1e-12);
+  EXPECT_NEAR(com.y(), 0.0, 1e-12);
+  EXPECT_NEAR(com.z(), 0.0, 1e-12);
+
+  // A revolute about Y moves the bob center of mass (at radius
+  // length+comOffset) in -Z; the multibody Jacobian is that mass-weighted by
+  // bobMass/totalMass.
+  const Eigen::MatrixXd comJacobian = robot.getCenterOfMassJacobian();
+  ASSERT_EQ(comJacobian.rows(), 3);
+  ASSERT_EQ(comJacobian.cols(), 1);
+  EXPECT_NEAR(comJacobian(0, 0), 0.0, 1e-12);
+  EXPECT_NEAR(comJacobian(1, 0), 0.0, 1e-12);
+  EXPECT_NEAR(
+      comJacobian(2, 0), -bobMass * (length + comOffset) / totalMass, 1e-12);
+
+  // Querying COM after a direct joint-position edit must reflect the current
+  // joint state even though the frame cache is dirty.
+  auto joint = bob.getParentJoint();
+  joint.setPosition(Eigen::VectorXd::Constant(1, std::numbers::pi / 2.0));
+  const Eigen::Vector3d rotatedCom = robot.getCenterOfMass();
+  EXPECT_NEAR(rotatedCom.x(), 0.0, 1e-12);
+  EXPECT_NEAR(rotatedCom.y(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      rotatedCom.z(), -bobMass * (length + comOffset) / totalMass, 1e-12);
+}
+
+// The center-of-mass Jacobian predicts the center-of-mass velocity of a
+// two-link chain at a nonzero configuration (finite-difference cross-check).
+TEST(World, MultibodyCenterOfMassJacobianMatchesFiniteDifference)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("arm");
+  auto base = robot.addLink("base");
+  base.setMass(0.5);
+
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
+
+  sx::JointSpec spec1;
+  spec1.name = "j1";
+  spec1.type = sx::JointType::Revolute;
+  spec1.axis = Eigen::Vector3d::UnitY();
+  spec1.transformFromParent = offset;
+  auto link1 = robot.addLink("l1", base, spec1);
+  link1.setMass(1.2);
+  link1.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+  link1.setCenterOfMass(Eigen::Vector3d(0.2, 0.1, 0.0));
+
+  sx::JointSpec spec2;
+  spec2.name = "j2";
+  spec2.type = sx::JointType::Revolute;
+  spec2.axis = Eigen::Vector3d::UnitZ();
+  spec2.transformFromParent = offset;
+  auto link2 = robot.addLink("l2", link1, spec2);
+  link2.setMass(0.8);
+  link2.setInertia(Eigen::Vector3d(0.04, 0.04, 0.04).asDiagonal());
+  link2.setCenterOfMass(Eigen::Vector3d(0.15, 0.0, 0.0));
+
+  auto j1 = link1.getParentJoint();
+  auto j2 = link2.getParentJoint();
+  j1.setPosition(Eigen::VectorXd::Constant(1, 0.3));
+  j1.setVelocity(Eigen::VectorXd::Constant(1, 0.7));
+  j2.setPosition(Eigen::VectorXd::Constant(1, -0.4));
+  j2.setVelocity(Eigen::VectorXd::Constant(1, -0.5));
+
+  const double dt = 1e-6;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+
+  const Eigen::MatrixXd comJacobian = robot.getCenterOfMassJacobian();
+  ASSERT_EQ(comJacobian.rows(), 3);
+  ASSERT_EQ(comJacobian.cols(), 2);
+
+  Eigen::VectorXd qdot(2);
+  qdot << 0.7, -0.5;
+  const Eigen::Vector3d predicted = comJacobian * qdot;
+
+  const Eigen::Vector3d com0 = robot.getCenterOfMass();
+  world.step();
+  const Eigen::Vector3d com1 = robot.getCenterOfMass();
+  const Eigen::Vector3d fd = (com1 - com0) / dt;
+
+  // Guard against a degenerate zero-vs-zero match: the center of mass genuinely
+  // moves here.
+  EXPECT_GT(predicted.norm(), 0.05);
+  EXPECT_TRUE(predicted.isApprox(fd, 1e-4))
+      << "predicted=" << predicted.transpose() << " fd=" << fd.transpose();
+}
+
 // Test that the dynamics accessors return empty results for a multibody with no
 // movable degrees of freedom.
 TEST(World, MultibodyDynamicsAccessorsNoDOF)
