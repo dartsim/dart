@@ -53,3 +53,28 @@ def test_dart_docs_update_required_reading_guard_rejects_missing_ia(tmp_path):
     failures = module.docs_update_required_reading_errors(command)
 
     assert any("docs/information-architecture.md" in failure for failure in failures)
+
+
+def test_dart_new_task_required_reading_guard_passes(tmp_path):
+    module = _load_module()
+    command = tmp_path / "dart-new-task.md"
+    _write_command(
+        command,
+        [
+            "AGENTS.md",
+            "docs/dev_tasks/README.md",
+            "docs/information-architecture.md",
+        ],
+    )
+
+    assert module.new_task_required_reading_errors(command) == []
+
+
+def test_dart_new_task_required_reading_guard_rejects_missing_ia(tmp_path):
+    module = _load_module()
+    command = tmp_path / "dart-new-task.md"
+    _write_command(command, ["AGENTS.md", "docs/dev_tasks/README.md"])
+
+    failures = module.new_task_required_reading_errors(command)
+
+    assert any("docs/information-architecture.md" in failure for failure in failures)

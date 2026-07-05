@@ -35,6 +35,7 @@ DOCS_UPDATE_REQUIRED_READING = (
     "docs/AGENTS.md",
     "docs/information-architecture.md",
 )
+NEW_TASK_REQUIRED_READING = ("docs/information-architecture.md",)
 CAPABILITY_SCHEMA_VERSION = 1
 CAPABILITY_STATUS_VALUES = {"active", "deprecated", "parked", "proposed"}
 CAPABILITY_WORKFLOW_GATE_PROFILE_VALUES = {
@@ -594,6 +595,16 @@ def docs_update_required_reading_errors(command_path: Path) -> list[str]:
     return [
         f"{display_path(command_path)}: dart-docs-update must require `{required}`"
         for required in DOCS_UPDATE_REQUIRED_READING
+        if required not in required_reading
+    ]
+
+
+def new_task_required_reading_errors(command_path: Path) -> list[str]:
+    """Return errors when task cleanup can bypass placement policy."""
+    required_reading = set(extract_required_reading(command_path))
+    return [
+        f"{display_path(command_path)}: dart-new-task must require `{required}`"
+        for required in NEW_TASK_REQUIRED_READING
         if required not in required_reading
     ]
 
@@ -1216,6 +1227,8 @@ def validate_ai_docs(repo_root: Path) -> bool:
             errors.extend(required_reading_path_errors(repo_root, command_path))
             if name == "dart-docs-update":
                 errors.extend(docs_update_required_reading_errors(command_path))
+            if name == "dart-new-task":
+                errors.extend(new_task_required_reading_errors(command_path))
             errors.extend(
                 missing_required_reading_errors(
                     display_path(workflows_path),

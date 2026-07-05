@@ -34,6 +34,7 @@ Read these files first:
 @docs/onboarding/contributing.md
 @docs/onboarding/code-style.md
 @docs/dev_tasks/README.md
+@docs/information-architecture.md
 @docs/ai/sessions.md
 @docs/ai/principles.md
 @docs/ai/verification.md
