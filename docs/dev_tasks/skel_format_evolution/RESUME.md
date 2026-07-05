@@ -1,6 +1,6 @@
 # Resume: SKEL Format Evolution
 
-## Current Resume Checkpoint (2026-07-04 UTC)
+## Current Resume Checkpoint (2026-07-05 UTC)
 
 Phase 3 is decided and committed locally on `work/skel-format-yaml-decision`,
 stacked on the Phase 2 removal branch. The decision record is
@@ -22,10 +22,12 @@ task.
 
 Phase 5 export-writer planning is recorded locally in
 [`05-export-writers-plan.md`](05-export-writers-plan.md). The plan keeps export
-as a separate implementation phase: extend SDF/URDF writer coverage or choose
-PLAN-101 project save/load next; define deterministic resource handling and
-comparison helpers; and complete the phase only with writer APIs plus
-read/write/read tests. This planning record does not complete Phase 5.
+as a separate implementation phase: extend SDF/URDF writer coverage, define
+deterministic resource handling and comparison helpers, and complete the phase
+only with writer APIs plus read/write/read tests. PLAN-101 project save/load is
+now reconciled as already implemented and verified in the dartsim engine scene
+layer, not as the next SKEL export-writer target. This planning record does not
+complete Phase 5.
 
 The first SDF writer implementation slice is now local on
 `work/skel-format-yaml-decision`: `dart::utils::SdfParser` exposes
@@ -80,8 +82,7 @@ ball-joint metadata, unsupported child `FreeJoint` diagnostics, unsupported
 `EulerJoint`, `PlanarJoint`, `TranslationalJoint2D`, and `TranslationalJoint`
 diagnostics, unsupported DART `SoftBodyNode` diagnostics, and non-finite joint
 dynamics diagnostics. This is real Phase 5 progress, but Phase 5 is still open
-until broader SDF/URDF coverage plus the remaining accepted writer or project
-targets are implemented or durably deferred.
+until broader SDF/URDF coverage is implemented or durably deferred.
 
 SDF shipped-fixture writer coverage now includes the native converted SKEL
 fixtures, `quad.sdf`, `two_link_revolute_model.sdf`,
@@ -296,6 +297,16 @@ format-owned until more than one accepted writer contract exists. The SDF
 writer stays on `dart::utils::SdfParser`, `dart::io` remains read-side, and
 project/editor save-load belongs to the scene/project layer.
 
+PLAN-101 project save/load is already delivered by the dartsim engine, not by
+the SKEL replacement path. The durable project format is the versioned
+`dartsim-scene` text contract in `dartsim::engine::scene_io`, with
+`SimEngine::saveProject()` / `SimEngine::loadProject()` owning file lifecycle
+state. Existing headless tests cover stable scene serialization, malformed
+input rejection, dirty-state/project-path behavior, failed load/save
+preservation, and UI project actions such as save/open/new/recent-project and
+dirty-replacement guards. This keeps editor metadata out of SDF/URDF
+interchange export and does not introduce YAML or SKEL syntax.
+
 Validation for this slice:
 
 - `git diff --check`
@@ -314,6 +325,10 @@ Additional validation for the writer-API-home docs:
 
 - `git diff --check`
 - `pixi run lint`
+
+Additional validation for PLAN-101 project save/load evidence:
+
+- `pixi run bash -lc 'CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target UNIT_dartsim_engine && CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target UNIT_dartsim_ui_ProjectActions && ./build/default/cpp/Release/bin/UNIT_dartsim_engine --gtest_filter="SceneIO.*:SimEngine.ProjectFileRoundTrip:SimEngine.ProjectDirtyStateTracksSavedSceneSnapshot:SimEngine.LoadAndNewProjectResetProjectState:SimEngine.FailedProjectSaveAndLoadPreserveCurrentState:RecorderPlayer.RecordingRoundTripsThroughStream" && ./build/default/cpp/Release/bin/UNIT_dartsim_ui_ProjectActions'`
 
 Additional validation for absolute non-file mesh URI writer coverage:
 
@@ -2545,8 +2560,9 @@ branch remains `feature/remove-skel-dart7-phase2`.
 Continue with the remaining real task work: land Phase 2 after maintainer
 approval, then continue Phase 5 from
 [`05-export-writers-plan.md`](05-export-writers-plan.md) by extending SDF or
-URDF writer coverage beyond the current conservative subsets or choosing
-PLAN-101 project save/load.
+URDF writer coverage beyond the current conservative subsets. PLAN-101 project
+save/load is already owned and verified by the dartsim engine; only revisit it
+here if the scene/project schema itself changes.
 
 ## Context That Would Be Lost
 
@@ -2560,9 +2576,10 @@ PLAN-101 project save/load.
 - Phase 4 is a coordination boundary, not a claim that USD implementation is
   complete. The USD task still owns the OpenUSD-enabled loader, viewer, dartpy,
   dependency, and CI work.
-- Export is part of the work, not a follow-up: round-trip enables save /
-  load in the dartsim editor (PLAN-101). The current Phase 5 file is a plan,
-  and the current SDF writer is only the first implementation slice, not an
+- Export is part of the work, not a follow-up. SDF/URDF writer round-trip is
+  the portable interchange path, while dartsim editor save/load is already
+  covered by PLAN-101's project format. The current Phase 5 file is a plan, and
+  the current SDF writer is only the first implementation slice, not an
   implementation-complete gate.
 - The old `feature/skel_yaml` prototype SHA (`1dd83e31586`) is no longer
   reachable in this worktree. Do not depend on it for Phase 3 or Phase 5 unless

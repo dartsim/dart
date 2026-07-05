@@ -234,9 +234,13 @@
       Writer APIs stay format-owned for now: the SDF writer remains on
       `dart::utils::SdfParser`, the URDF writer remains on
       `dart::utils::UrdfParser`, `dart::io` stays read-side, and project/editor
-      save-load belongs to the scene/project layer. Broader SDF/URDF coverage
-      and project save/load remain open. Add YAML only if a durable project/scene
-      schema is accepted first.
+      save-load belongs to the scene/project layer. PLAN-101 project save/load
+      is already delivered by `dartsim::engine::scene_io` and
+      `SimEngine::saveProject()` / `SimEngine::loadProject()` with headless
+      engine and UI project-action coverage; remaining Phase 5 work is broader
+      SDF/URDF writer coverage or a durable decision to park further writer
+      expansion. Add YAML only if a durable project/scene schema is accepted
+      first.
 
 ## Goal
 
@@ -274,8 +278,10 @@ the engine in portable formats.
   the coordination boundary so SKEL evolution does not duplicate that surface.
 - **Export is part of the work**. URDF/SDF writers, plus any accepted
   DART-owned project/scene writer, turn DART into a round-trip engine rather
-  than read-only, which unblocks save / load in the dartsim editor (PLAN-101)
-  and downstream pipelines like gz-physics.
+  than read-only. The dartsim editor project path is already covered by
+  PLAN-101 through the headless `dartsim-scene` scene/project format; SDF/URDF
+  writer work remains the portable interchange path for downstream pipelines
+  like gz-physics.
 
 ## Prototype Reference
 
@@ -314,9 +320,11 @@ SKEL-YAML direction just because the prototype once existed.
    review. Add the PR link to the DART 7 changelog entry before merge.
 2. Continue Phase 5 from
    [`05-export-writers-plan.md`](05-export-writers-plan.md): extend SDF or URDF
-   writer coverage beyond the first conservative subsets, or move to PLAN-101
-   project save/load, and keep read/write/read tests attached to every expanded
-   contract. Absolute non-file mesh URI preservation is covered; targetless
+   writer coverage beyond the first conservative subsets, and keep
+   read/write/read tests attached to every expanded contract. PLAN-101 project
+   save/load is already owned and verified by the dartsim engine, so do not
+   reopen it here unless the scene/project schema itself changes. Absolute
+   non-file mesh URI preservation is covered; targetless
    relative/generated mesh references are rejected until a future file/project
    writer defines a destination URI and copy/rewrite policy. Heightmap export
    also needs a source heightmap URI and destination-aware resource policy before

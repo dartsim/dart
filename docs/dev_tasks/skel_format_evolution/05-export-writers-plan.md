@@ -253,10 +253,15 @@ replacement. The accepted writer scope is:
    represent worlds/models and already has version/conversion semantics through
    libsdformat. The first parser-specific writer slice is in place; broader SDF
    coverage remains open.
-2. **Project/scene save-load** for DART-owned editor state, owned by PLAN-101
-   and the dartsim scene model. Current durable GUI docs lean toward JSON for
-   tooling simplicity; YAML remains rejected unless a later durable owner
-   accepts a versioned schema and round-trip contract.
+2. **Project/scene save-load** for DART-owned editor state is already owned and
+   delivered by PLAN-101 and the dartsim scene model, not by the `dart::io`
+   interchange writer APIs. The headless engine owns the versioned
+   `dartsim-scene` text format through `dartsim::engine::scene_io` and
+   `SimEngine::saveProject()` / `SimEngine::loadProject()`, with
+   `UNIT_dartsim_engine` covering stable scene round-trip, parser rejection
+   paths, and project-file lifecycle, and `UNIT_dartsim_ui_ProjectActions`
+   covering editor save/open/new/recent-project behavior. This project format
+   is not YAML and does not reopen SKEL syntax.
 3. **URDF writer** for robot-link trees that fit URDF's model constraints. The
    first parser-specific writer slice is in place, including shipped
    `primitive_geometry.urdf`, `joint_properties.urdf`, `issue838.urdf`,
@@ -288,7 +293,9 @@ Phase 5 should start with a narrow writer API instead of a single mega-exporter:
   a destination URI, copy/rewrite policy, and round-trip tests.
 - Keep project save/load separate from interchange export. Project files may
   include editor IDs, UI/editor metadata, command history seeds, or scene-model
-  descriptors that should not appear in URDF/SDF.
+  descriptors that should not appear in URDF/SDF. Extend the PLAN-101
+  `dartsim::engine::scene_io` contract if editor state changes; do not route
+  editor project state through SKEL, YAML, or `dart::io` interchange writers.
 - Start with read -> write -> read tests on small scenes that exercise links,
   joints, inertial data, visuals, collisions, mesh references, and root-joint
   policy.
@@ -306,9 +313,9 @@ Phase 5 is complete only when code and tests prove the writer contract:
    inertial data, visual geometry, collision geometry, and resource URIs where
    the target format supports them.
 4. Unsupported features return structured errors or clear diagnostics.
-5. Project save/load, if included, has headless PLAN-101 tests for command-safe
-   scene round-trip and does not conflate editor metadata with interchange
-   export.
+5. Project save/load stays in the scene/project layer, has headless PLAN-101
+   tests for command-safe scene round-trip, and does not conflate editor
+   metadata with interchange export.
 6. Documentation explains which DART constructs are representable in each
    format and which are intentionally not.
 7. `CHANGELOG.md` records the user-visible export capability before the
@@ -327,7 +334,9 @@ Phase 5 is complete only when code and tests prove the writer contract:
 - Extend the URDF writer beyond the first conservative subset only when tests
   can prove additional URDF-representable constructs round-trip without losing
   DART semantics.
-- Decide the next implementation target after the first URDF slice: broader
-  URDF coverage, more SDF coverage, or PLAN-101 project save/load.
+- Treat PLAN-101 project save/load as implemented and verified under the
+  dartsim engine; the remaining Phase 5 implementation choices are broader
+  SDF coverage, broader URDF coverage, or a durable decision to park further
+  writer expansion.
 - Keep YAML out of the first implementation target unless a durable
   project/scene schema is accepted first.
