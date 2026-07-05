@@ -416,10 +416,14 @@ protected:
     bool mPreserveTiltVelocity = false;
     bool mHasUnsupportedLateralVelocity = false;
     bool mHasUnsupportedTiltVelocity = false;
+    bool mHasResetLateralVelocity = false;
+    bool mHasResetTiltVelocity = false;
     Eigen::Vector3d mLateralVelocity = Eigen::Vector3d::Zero();
     Eigen::Vector3d mTiltVelocity = Eigen::Vector3d::Zero();
     Eigen::Vector3d mUnsupportedLateralVelocity = Eigen::Vector3d::Zero();
     Eigen::Vector3d mUnsupportedTiltVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d mResetLateralVelocity = Eigen::Vector3d::Zero();
+    Eigen::Vector3d mResetTiltVelocity = Eigen::Vector3d::Zero();
   };
 
   /// Runs the post-step rest-detection pass: puts quiet mobile skeletons to
@@ -480,6 +484,9 @@ protected:
 
   /// Records current per-skeleton velocity versions after internal step writes.
   void updateShallowSupportFreeRootVelocityVersions();
+
+  /// Captures reset-time free-root velocity targets for the next step.
+  void captureResetShallowSupportFreeRootVelocityTargets();
 
   /// Removes tiny shallow-support solver drift from a free-root skeleton.
   void suppressShallowSupportedFreeRootDrift(
