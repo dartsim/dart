@@ -6843,12 +6843,19 @@ bool World::captureContactFreeStepDerivativesForFirstMultibody()
       }
       const auto& jointActuation
           = m_storage->registry.get<comps::JointActuation>(link.parentJoint);
+      const bool contributesDofs = jointActuation.torque.size() > 0;
       DART_SIMULATION_THROW_T_IF(
           jointActuation.actuatorType == comps::ActuatorType::Locked
-              && jointActuation.torque.size() > 0,
+              && contributesDofs,
           NotImplementedException,
           "World::step(): differentiable Locked actuators are not supported "
           "until step derivatives apply the locked velocity projection");
+      DART_SIMULATION_THROW_T_IF(
+          jointActuation.actuatorType == comps::ActuatorType::Acceleration
+              && contributesDofs,
+          NotImplementedException,
+          "World::step(): differentiable Acceleration actuators are not "
+          "supported until step derivatives model commanded acceleration");
       dofCount += static_cast<std::size_t>(jointActuation.torque.size());
     }
     torques.reserve(dofCount);
