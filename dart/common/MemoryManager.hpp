@@ -36,6 +36,7 @@
 #if DART_BUILD_MODE_DEBUG
   #include <mutex>
 #endif
+#include <dart/common/FrameAllocator.hpp>
 #include <dart/common/FreeListAllocator.hpp>
 #include <dart/common/PoolAllocator.hpp>
 
@@ -54,6 +55,7 @@ public:
     Base,
     Free,
     Pool,
+    Frame,
   };
 
   /// Returns the default memory manager
@@ -77,6 +79,9 @@ public:
 
   /// Returns the pool allocator
   [[nodiscard]] PoolAllocator& getPoolAllocator();
+
+  /// Returns the frame allocator
+  [[nodiscard]] FrameAllocator& getFrameAllocator();
 
   /// Allocates \c size bytes of uninitialized storage.
   ///
@@ -180,6 +185,11 @@ private:
   /// The pool allocator.
   PoolAllocator::Debug mPoolAllocator;
 #endif
+
+  /// The frame allocator.
+  /// No debug wrapper: arena semantics are incompatible with per-allocation
+  /// tracking because deallocate() is intentionally a no-op.
+  FrameAllocator mFrameAllocator;
 };
 
 } // namespace dart::common

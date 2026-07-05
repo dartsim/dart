@@ -48,3 +48,31 @@ counting_allocator_allocate_count=0 counting_allocator_allocate_bytes=0
 counting_allocator_deallocate_count=0 counting_allocator_deallocate_bytes=0
 counting_allocator_allocate_count_per_step=0.000
 ```
+
+## WP-D6M.3 evidence
+
+### Commands run
+
+```bash
+pixi run lint
+pixi run build
+pixi run cmake --build build/default/cpp/Release --target UNIT_common_FrameAllocator UNIT_common_FreeListAllocator UNIT_common_MemoryManager --parallel
+(cd build/default/cpp/Release && ctest -R "(FrameAllocator|MemoryManager|FreeListAllocator)" --output-on-failure)
+pixi run build-tests
+```
+
+### Focused ctest summary
+
+```text
+Test #70: UNIT_common_FrameAllocator ....... Passed
+Test #71: UNIT_common_FreeListAllocator .... Passed
+Test #73: UNIT_common_MemoryManager ........ Passed
+100% tests passed, 0 tests failed out of 3
+```
+
+### API surface note
+
+Additive only: new `dart::common::FrameAllocator` and `FrameStlAllocator<T>`;
+new `MemoryManager::Type::Frame` role with `getFrameAllocator()` and
+allocate/deallocate dispatch; new `FreeListAllocator::GrowthPolicy` with
+default `Expand` and opt-in `FixedCapacity`.

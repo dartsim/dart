@@ -50,10 +50,11 @@ MemoryManager::MemoryManager(MemoryAllocator& baseAllocator)
   : mBaseAllocator(baseAllocator),
     mFreeListAllocator(mBaseAllocator),
 #if DART_BUILD_MODE_RELEASE
-    mPoolAllocator(mFreeListAllocator)
+    mPoolAllocator(mFreeListAllocator),
 #else
-    mPoolAllocator(mFreeListAllocator.getInternalAllocator())
+    mPoolAllocator(mFreeListAllocator.getInternalAllocator()),
 #endif
+    mFrameAllocator(mBaseAllocator)
 {
   // Do nothing
 }
@@ -91,6 +92,12 @@ PoolAllocator& MemoryManager::getPoolAllocator()
 }
 
 //==============================================================================
+FrameAllocator& MemoryManager::getFrameAllocator()
+{
+  return mFrameAllocator;
+}
+
+//==============================================================================
 void* MemoryManager::allocate(Type type, size_t bytes)
 {
   switch (type) {
@@ -100,6 +107,8 @@ void* MemoryManager::allocate(Type type, size_t bytes)
       return mFreeListAllocator.allocate(bytes);
     case Type::Pool:
       return mPoolAllocator.allocate(bytes);
+    case Type::Frame:
+      return mFrameAllocator.allocate(bytes);
   }
   return nullptr;
 }
@@ -128,6 +137,9 @@ void MemoryManager::deallocate(Type type, void* pointer, size_t bytes)
       break;
     case Type::Pool:
       mPoolAllocator.deallocate(pointer, bytes);
+      break;
+    case Type::Frame:
+      mFrameAllocator.deallocate(pointer, bytes);
       break;
   }
 }
@@ -169,6 +181,8 @@ void MemoryManager::print(std::ostream& os, int indent) const
   mFreeListAllocator.print(os, indent + 2);
   os << spaces << "pool_allocator:\n";
   mPoolAllocator.print(os, indent + 2);
+  os << spaces << "frame_allocator:\n";
+  mFrameAllocator.print(os, indent + 2);
   os << spaces << "base_allocator:\n";
   mBaseAllocator.print(os, indent + 2);
 }
