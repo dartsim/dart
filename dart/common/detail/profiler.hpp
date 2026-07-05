@@ -103,7 +103,10 @@ private:
   void popScope(ThreadRecord& record);
 
   ProfileNode* findOrCreateChild(
-      ProfileNode& parent, std::string_view label, std::string_view source);
+      ProfileNode& parent,
+      std::string_view label,
+      std::string_view file,
+      int line);
   static std::string padRight(std::string_view text, std::size_t width);
   static bool useColor();
   static std::string colorize(std::string_view text, const char* code);

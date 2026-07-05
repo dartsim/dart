@@ -96,3 +96,74 @@ profiler steady state; DART 7 `main` shares the same pattern, so this is
 novel work here, forward-port candidate later), WP-D6M.5 updated with the
 Dantzig pivot site, and a deep-dump pass required to attribute the long
 tail before WP-D6M.5 implementation.
+
+## WP-D6M.9 evidence
+
+### Commands run
+
+```bash
+DART_PROFILE_COLOR=0 ./build/default/cpp/Release/tests/benchmark/integration/boxes_headless 3 50 25 > /tmp/dart9_boxes_before.txt
+pixi run cmake --build build/default/cpp/Release --target UNIT_common_Profile boxes_headless INTEGRATION_StepAllocation --parallel
+ctest --test-dir build/default/cpp/Release -R "(Profile|StepAllocation)" --output-on-failure
+DART_PROFILE_COLOR=0 ./build/default/cpp/Release/tests/benchmark/integration/boxes_headless 3 50 25 > /tmp/dart9_boxes_after_3.txt
+DART_TEST_ALLOCATION_BACKTRACE=1 ./build/default/cpp/Release/tests/integration/INTEGRATION_StepAllocation --gtest_filter='StepAllocation.ReportsWorldStepAllocationBaseline'
+```
+
+`/tmp/dart9_boxes_before.txt` was captured immediately before the profiler
+storage change; `/tmp/dart9_boxes_after_3.txt` was captured after rebuilding
+the same target.
+
+### Allocation reporting output
+
+Native DART collision detector scene (`native_dart_boxes`,
+`boxes_per_side=3`, `warmup_steps=50`, `measured_steps=100`):
+
+```text
+operator_new_count=5602 operator_new_bytes=1780672
+operator_new_count_per_step=56.020 operator_new_bytes_per_step=17806.720
+raw_malloc_count=8302 raw_malloc_bytes=2558272
+raw_malloc_count_per_step=83.020 raw_malloc_bytes_per_step=25582.720
+counting_allocator_allocate_count=0 counting_allocator_allocate_bytes=0
+counting_allocator_deallocate_count=0 counting_allocator_deallocate_bytes=0
+counting_allocator_allocate_count_per_step=0.000
+```
+
+Bullet collision detector comparison scene (`bullet_boxes`,
+`boxes_per_side=3`, `warmup_steps=50`, `measured_steps=100`; includes
+collision-backend-internal allocations):
+
+```text
+operator_new_count=6019 operator_new_bytes=2043872
+operator_new_count_per_step=60.190 operator_new_bytes_per_step=20438.720
+raw_malloc_count=8803 raw_malloc_bytes=2955008
+raw_malloc_count_per_step=88.030 raw_malloc_bytes_per_step=29550.080
+counting_allocator_allocate_count=0 counting_allocator_allocate_bytes=0
+counting_allocator_deallocate_count=0 counting_allocator_deallocate_bytes=0
+counting_allocator_allocate_count_per_step=0.000
+```
+
+The `operator_new_count_per_step` values dropped from 5835.020 to 56.020 for
+`native_dart_boxes` and from 5831.690 to 60.190 for `bullet_boxes`.
+
+### Backtrace attribution
+
+The post-change backtrace dump reported 6 distinct sampled sites for
+`native_dart_boxes` and 7 for `bullet_boxes`. The former top profiler sites
+(`Profiler::pushScope`, `Profiler::findOrCreateChild`, and
+`std::string::_M_append` under those paths) no longer appeared in the top
+backtrace list. The largest remaining sites were direct `World::step` scratch
+work and Dantzig LCP pivot-path allocations.
+
+### Text-profiler report parity
+
+The before/after `boxes_headless 3 50 25` dumps preserved the same simulation
+checksums at steps 25 and 50 and the same profiler hierarchy for the stable
+per-step scopes: labels, sources, and call counts stayed aligned for the
+printed `World::step`, `ConstraintSolver::solve`, `updateConstraints`,
+collision, Bullet update, and contact-constraint scopes. A sorted tree-label
+comparison showed every pre-change printed label still present after the
+change; one very small existing scope
+(`World::step - Wake resting after world change`, 29 calls, 13.94 us total)
+crossed the profiler's pre-existing timing-based print threshold after the
+profiler overhead was removed, so the tiny-leaf portion of the text dump is not
+byte-identical.
