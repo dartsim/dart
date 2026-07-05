@@ -2417,7 +2417,8 @@ build-asan = { cmd = [
 set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-asan}
 PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
-CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target tests --parallel ${PARALLEL_JOBS}
+ASAN_BUILD_TARGET=${DART_ASAN_BUILD_TARGET:-tests_no_simulation}
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target "${ASAN_BUILD_TARGET}" --parallel "${PARALLEL_JOBS}"
 """,
 ], depends-on = [
   "config-asan",
