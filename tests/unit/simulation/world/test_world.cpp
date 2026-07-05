@@ -4646,6 +4646,37 @@ TEST(World, DifferentiableLockedActuatorThrows)
   EXPECT_THROW(world.step(), sx::NotImplementedException);
 }
 
+TEST(World, DifferentiableLockedFixedJointDoesNotThrow)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.differentiable = true;
+  sx::World world(options);
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("diff_locked_fixed");
+  auto base = robot.addLink("base");
+  sx::JointSpec fixedSpec;
+  fixedSpec.name = "fixed";
+  fixedSpec.type = sx::JointType::Fixed;
+  auto fixedLink = robot.addLink("fixed_link", base, fixedSpec);
+  fixedLink.setMass(1.0);
+  auto fixedJoint = fixedLink.getParentJoint();
+  fixedJoint.setActuatorType(sx::ActuatorType::Locked);
+
+  sx::JointSpec movingSpec;
+  movingSpec.name = "slider";
+  movingSpec.type = sx::JointType::Prismatic;
+  movingSpec.axis = Eigen::Vector3d::UnitZ();
+  auto movingLink = robot.addLink("moving_link", fixedLink, movingSpec);
+  movingLink.setMass(1.0);
+
+  EXPECT_NO_THROW(world.step());
+  const auto derivatives = world.getStepDerivatives();
+  EXPECT_EQ(derivatives.controlJacobian.cols(), 1);
+}
+
 TEST(World, DifferentiableContactFreeStepScratchUsesProvidedAllocator)
 {
   namespace sx = dart::simulation;
