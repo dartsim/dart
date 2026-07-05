@@ -33,8 +33,59 @@
 #include <dart/collision/native/types.hpp>
 
 #include <stdexcept>
+#include <utility>
 
 namespace dart::collision::native {
+
+CollisionResult::CollisionResult(CollisionResult&& other) noexcept
+  : firstContact_(std::move(other.firstContact_)),
+    firstManifold_(std::move(other.firstManifold_)),
+    extraManifolds_(std::move(other.extraManifolds_)),
+    manifoldCount_(other.manifoldCount_),
+    contactCount_(other.contactCount_),
+    firstEntryIsContact_(other.firstEntryIsContact_)
+{
+  manifoldsCache_.clear();
+  flatContactsCache_.clear();
+  invalidateCache();
+
+  other.manifoldCount_ = 0u;
+  other.contactCount_ = 0u;
+  other.firstEntryIsContact_ = false;
+  other.firstManifold_.reset();
+  other.extraManifolds_.clear();
+  other.manifoldsCache_.clear();
+  other.flatContactsCache_.clear();
+  other.invalidateCache();
+}
+
+CollisionResult& CollisionResult::operator=(CollisionResult&& other) noexcept
+{
+  if (this == &other) {
+    return *this;
+  }
+
+  firstContact_ = std::move(other.firstContact_);
+  firstManifold_ = std::move(other.firstManifold_);
+  extraManifolds_ = std::move(other.extraManifolds_);
+  manifoldCount_ = other.manifoldCount_;
+  contactCount_ = other.contactCount_;
+  firstEntryIsContact_ = other.firstEntryIsContact_;
+  manifoldsCache_.clear();
+  flatContactsCache_.clear();
+  invalidateCache();
+
+  other.manifoldCount_ = 0u;
+  other.contactCount_ = 0u;
+  other.firstEntryIsContact_ = false;
+  other.firstManifold_.reset();
+  other.extraManifolds_.clear();
+  other.manifoldsCache_.clear();
+  other.flatContactsCache_.clear();
+  other.invalidateCache();
+
+  return *this;
+}
 
 void CollisionResult::addManifold(ContactManifold manifold)
 {

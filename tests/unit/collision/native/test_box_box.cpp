@@ -31,6 +31,7 @@
  */
 
 #include <dart/collision/native/narrow_phase/box_box.hpp>
+#include <dart/collision/native/narrow_phase/box_box/contact_reduction.hpp>
 #include <dart/collision/native/narrow_phase/box_box/sat.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 #include <dart/collision/native/types.hpp>
@@ -1278,4 +1279,57 @@ TEST(BoxBoxBatch, boxbox_batch_determinism_vs_single)
         option));
     expectCollisionResultExactlyEqual(singleResult, batchResults[i]);
   }
+}
+
+// DART 6 supplementary coverage tests (not ported from DART 7)
+TEST(BoxBox, BinaryCheckShapeOverloadLeavesResultEmpty)
+{
+  BoxShape boxA(Eigen::Vector3d::Ones());
+  BoxShape boxB(Eigen::Vector3d::Ones());
+
+  Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.translation() = Eigen::Vector3d(1.5, 0.25, 0.0);
+
+  CollisionResult result;
+  const CollisionOption option = CollisionOption::binaryCheck();
+  EXPECT_TRUE(collideBoxes(boxA, tfA, boxB, tfB, result, option));
+  EXPECT_EQ(result.numContacts(), 0u);
+  EXPECT_EQ(result.numManifolds(), 0u);
+
+  tfB.translation() = Eigen::Vector3d(3.0, 0.25, 0.0);
+  EXPECT_FALSE(collideBoxes(boxA, tfA, boxB, tfB, result, option));
+  EXPECT_EQ(result.numContacts(), 0u);
+  EXPECT_EQ(result.numManifolds(), 0u);
+}
+
+TEST(BoxBox, ContactReductionDeduplicatesAndBreaksDistanceTiesByDepth)
+{
+  std::vector<box_box::ContactCandidate> candidates{
+      {Eigen::Vector3d::Zero(), 0.1},
+      {Eigen::Vector3d(1e-8, 0.0, 0.0), 0.5},
+      {Eigen::Vector3d(2.0, 0.0, 0.0), 0.2},
+      {Eigen::Vector3d(-2.0, 0.0, 0.0), 0.3},
+  };
+
+  const auto none = box_box::reduceContactCandidates(candidates, 0u);
+  EXPECT_TRUE(none.empty());
+
+  const auto reduced = box_box::reduceContactCandidates(candidates, 2u);
+  ASSERT_EQ(reduced.size(), 2u);
+
+  bool keptMergedDeepest = false;
+  bool keptTieBreaker = false;
+  for (const auto& candidate : reduced) {
+    if (candidate.position.isApprox(Eigen::Vector3d::Zero(), 1e-7)) {
+      EXPECT_DOUBLE_EQ(candidate.depth, 0.5);
+      keptMergedDeepest = true;
+    }
+    if (candidate.position.isApprox(Eigen::Vector3d(-2.0, 0.0, 0.0), 1e-12)) {
+      EXPECT_DOUBLE_EQ(candidate.depth, 0.3);
+      keptTieBreaker = true;
+    }
+  }
+  EXPECT_TRUE(keptMergedDeepest);
+  EXPECT_TRUE(keptTieBreaker);
 }

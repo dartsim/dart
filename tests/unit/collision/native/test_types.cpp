@@ -34,7 +34,10 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 using namespace dart::collision::native;
 
@@ -445,4 +448,167 @@ TEST(ContactType, EnumValues)
   EXPECT_NE(ContactType::Edge, ContactType::Face);
   EXPECT_NE(ContactType::Face, ContactType::Patch);
   EXPECT_NE(ContactType::Patch, ContactType::Unknown);
+}
+
+// DART 6 supplementary coverage tests (not ported from DART 7)
+TEST(ContactManifold, AccessorsAndCompatibilityFailureCases)
+{
+  ContactManifold manifold;
+  EXPECT_THROW(static_cast<void>(manifold.getContact(0)), std::out_of_range);
+
+  ContactPoint cp;
+  cp.normal = Eigen::Vector3d::UnitZ();
+  manifold.addContact(cp);
+
+  manifold.setType(ContactType::Edge);
+  EXPECT_FALSE(manifold.isTypeCompatible());
+  manifold.setType(ContactType::Patch);
+  EXPECT_FALSE(manifold.isTypeCompatible());
+
+  manifold.addContact(cp);
+  manifold.setType(ContactType::Edge);
+  EXPECT_TRUE(manifold.isTypeCompatible());
+  manifold.setType(ContactType::Face);
+  EXPECT_FALSE(manifold.isTypeCompatible());
+  manifold.setType(ContactType::Patch);
+  EXPECT_TRUE(manifold.isTypeCompatible());
+}
+
+TEST(CollisionResult, ManifoldAccessorsAndFactoryOptions)
+{
+  CollisionResult result;
+  EXPECT_THROW(static_cast<void>(result.getManifold(0)), std::out_of_range);
+  EXPECT_TRUE(result.getManifolds().empty());
+
+  ContactManifold manifold;
+  ContactPoint cp;
+  cp.position = Eigen::Vector3d(1.0, 2.0, 3.0);
+  manifold.addContact(cp);
+  result.addManifold(std::move(manifold));
+
+  ASSERT_EQ(result.getManifolds().size(), 1u);
+  EXPECT_EQ(result.getManifold(0).getContact(0).position, cp.position);
+  EXPECT_THROW(static_cast<void>(result.getManifold(1)), std::out_of_range);
+
+  const auto filter = reinterpret_cast<const CollisionFilter*>(0x4);
+  const CollisionOption withFilter = CollisionOption::withFilter(filter);
+  EXPECT_TRUE(withFilter.enableContact);
+  EXPECT_EQ(withFilter.maxNumContacts, 1000u);
+  EXPECT_EQ(withFilter.collisionFilter, filter);
+}
+
+TEST(CollisionResult, MoveInvalidatesContactCaches)
+{
+  CollisionResult source;
+  ContactPoint contact;
+  contact.position = Eigen::Vector3d(1.0, 2.0, 3.0);
+  source.addContact(contact);
+
+  const ContactPoint* sourceCachedContact = &source.getContact(0);
+
+  std::vector<CollisionResult> moved;
+  moved.push_back(std::move(source));
+
+  EXPECT_EQ(source.numContacts(), 0u);
+  EXPECT_EQ(source.numManifolds(), 0u);
+  ASSERT_EQ(moved[0].numContacts(), 1u);
+  EXPECT_EQ(moved[0].getContact(0).position, contact.position);
+  EXPECT_NE(&moved[0].getContact(0), sourceCachedContact);
+
+  CollisionResult assigned;
+  ContactPoint staleContact;
+  staleContact.position = Eigen::Vector3d(-1.0, -2.0, -3.0);
+  assigned.addContact(staleContact);
+  static_cast<void>(assigned.getContact(0));
+
+  assigned = std::move(moved[0]);
+
+  EXPECT_EQ(moved[0].numContacts(), 0u);
+  EXPECT_EQ(moved[0].numManifolds(), 0u);
+  ASSERT_EQ(assigned.numContacts(), 1u);
+  EXPECT_EQ(assigned.getContact(0).position, contact.position);
+}
+
+TEST(QueryResultTypes, ClearAndFactoryHelpersResetState)
+{
+  DistanceResult distance;
+  EXPECT_FALSE(distance.isValid());
+  distance.distance = 0.5;
+  distance.pointOnObject1 = Eigen::Vector3d::Ones();
+  distance.pointOnObject2 = Eigen::Vector3d::Constant(2.0);
+  distance.normal = Eigen::Vector3d::UnitX();
+  distance.object1 = reinterpret_cast<const CollisionObject*>(0x1);
+  distance.object2 = reinterpret_cast<const CollisionObject*>(0x2);
+  EXPECT_TRUE(distance.isValid());
+  distance.clear();
+  EXPECT_FALSE(distance.isValid());
+  EXPECT_EQ(distance.pointOnObject1, Eigen::Vector3d::Zero());
+  EXPECT_EQ(distance.pointOnObject2, Eigen::Vector3d::Zero());
+  EXPECT_EQ(distance.normal, Eigen::Vector3d::UnitZ());
+  EXPECT_EQ(distance.object1, nullptr);
+  EXPECT_EQ(distance.object2, nullptr);
+
+  const DistanceOption unlimitedDistance = DistanceOption::unlimited();
+  EXPECT_TRUE(unlimitedDistance.enableNearestPoints);
+  const DistanceOption boundedDistance = DistanceOption::withUpperBound(3.5);
+  EXPECT_DOUBLE_EQ(boundedDistance.upperBound, 3.5);
+  EXPECT_TRUE(boundedDistance.enableNearestPoints);
+
+  const Ray ray(
+      Eigen::Vector3d(1.0, 2.0, 3.0), Eigen::Vector3d(0.0, 0.0, 2.0), 9.0);
+  EXPECT_EQ(ray.origin, Eigen::Vector3d(1.0, 2.0, 3.0));
+  EXPECT_TRUE(ray.direction.isApprox(Eigen::Vector3d::UnitZ()));
+  EXPECT_DOUBLE_EQ(ray.maxDistance, 9.0);
+  EXPECT_EQ(ray.pointAt(2.5), Eigen::Vector3d(1.0, 2.0, 5.5));
+
+  RaycastResult raycast;
+  raycast.hit = true;
+  raycast.distance = 2.0;
+  raycast.point = Eigen::Vector3d::Ones();
+  raycast.normal = Eigen::Vector3d::UnitX();
+  raycast.object = reinterpret_cast<const CollisionObject*>(0x3);
+  EXPECT_TRUE(raycast.isHit());
+  raycast.clear();
+  EXPECT_FALSE(raycast.isHit());
+  EXPECT_EQ(raycast.distance, std::numeric_limits<double>::max());
+  EXPECT_EQ(raycast.point, Eigen::Vector3d::Zero());
+  EXPECT_EQ(raycast.normal, Eigen::Vector3d::UnitZ());
+  EXPECT_EQ(raycast.object, nullptr);
+
+  const RaycastOption unlimitedRaycast = RaycastOption::unlimited();
+  EXPECT_TRUE(unlimitedRaycast.backfaceCulling);
+  const RaycastOption boundedRaycast = RaycastOption::withMaxDistance(12.0);
+  EXPECT_DOUBLE_EQ(boundedRaycast.maxDistance, 12.0);
+  EXPECT_TRUE(boundedRaycast.backfaceCulling);
+
+  CcdResult ccd;
+  ccd.hit = true;
+  ccd.timeOfImpact = 0.25;
+  ccd.point = Eigen::Vector3d::Ones();
+  ccd.normal = Eigen::Vector3d::UnitX();
+  ccd.object = reinterpret_cast<const CollisionObject*>(0x5);
+  EXPECT_TRUE(ccd.isHit());
+  ccd.clear();
+  EXPECT_FALSE(ccd.isHit());
+  EXPECT_DOUBLE_EQ(ccd.timeOfImpact, 1.0);
+  EXPECT_EQ(ccd.point, Eigen::Vector3d::Zero());
+  EXPECT_EQ(ccd.normal, Eigen::Vector3d::UnitZ());
+  EXPECT_EQ(ccd.object, nullptr);
+
+  const CcdOption standard = CcdOption::standard();
+  EXPECT_DOUBLE_EQ(standard.tolerance, 1e-4);
+  EXPECT_EQ(standard.maxIterations, 32);
+  const CcdOption precise = CcdOption::precise();
+  EXPECT_DOUBLE_EQ(precise.tolerance, 1e-6);
+  EXPECT_EQ(precise.maxIterations, 64);
+
+  CcdPrimitiveResult primitive;
+  primitive.hit = true;
+  primitive.status = CcdPrimitiveStatus::Hit;
+  primitive.timeOfImpact = 0.5;
+  EXPECT_TRUE(primitive.isHit());
+  primitive.clear();
+  EXPECT_FALSE(primitive.isHit());
+  EXPECT_EQ(primitive.status, CcdPrimitiveStatus::Unknown);
+  EXPECT_DOUBLE_EQ(primitive.timeOfImpact, 1.0);
 }

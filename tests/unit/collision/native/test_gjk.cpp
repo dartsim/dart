@@ -853,3 +853,64 @@ TEST(Mpr, ReportsSeparatedAndConcentricCases)
   EXPECT_TRUE(contained.pointOnB.allFinite());
   EXPECT_TRUE(contained.position.allFinite());
 }
+
+// DART 6 supplementary coverage tests (not ported from DART 7)
+TEST(Gjk, InvalidDirectionWarmStartFallsBackToFiniteQuery)
+{
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  auto supportA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
+  auto supportB = makeSphereSupport(Eigen::Vector3d(3.0, 0.0, 0.0), 1.0);
+
+  const GjkResult invalidDirection
+      = Gjk::query(supportA, supportB, Eigen::Vector3d(nan, 0.0, 0.0));
+  EXPECT_FALSE(invalidDirection.intersecting);
+  EXPECT_NEAR(invalidDirection.distance, 1.0, 1e-6);
+  EXPECT_TRUE(invalidDirection.closestPointA.allFinite());
+  EXPECT_TRUE(invalidDirection.closestPointB.allFinite());
+  EXPECT_TRUE(invalidDirection.separationAxis.allFinite());
+
+  GjkSimplex warmStart;
+  SupportPoint unusable;
+  unusable.v = Eigen::Vector3d(nan, nan, nan);
+  unusable.direction = Eigen::Vector3d::Zero();
+  warmStart.push(unusable);
+
+  SupportPoint fallbackToPoint;
+  fallbackToPoint.v = Eigen::Vector3d::UnitY();
+  fallbackToPoint.direction = Eigen::Vector3d::Zero();
+  warmStart.push(fallbackToPoint);
+
+  const GjkResult warmResult = Gjk::query(
+      supportA, supportB, warmStart, Eigen::Vector3d(nan, nan, nan));
+  EXPECT_FALSE(warmResult.intersecting);
+  EXPECT_TRUE(std::isfinite(warmResult.distance));
+  EXPECT_TRUE(warmResult.closestPointA.allFinite());
+  EXPECT_TRUE(warmResult.closestPointB.allFinite());
+  EXPECT_TRUE(warmResult.separationAxis.allFinite());
+  ASSERT_GT(warmResult.simplex.size, 0);
+  for (int i = 0; i < warmResult.simplex.size; ++i) {
+    EXPECT_TRUE(warmResult.simplex.points[i].direction.allFinite());
+    EXPECT_GT(warmResult.simplex.points[i].direction.squaredNorm(), 0.0);
+  }
+}
+
+TEST(Mpr, IntersectCoversRefinedPortalAndDegeneratePortalExits)
+{
+  auto boxA = makeBoxSupport(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
+  auto boxB
+      = makeBoxSupport(Eigen::Vector3d(0.8, 0.4, 0.2), Eigen::Vector3d::Ones());
+
+  EXPECT_TRUE(Mpr::intersect(
+      boxA, boxB, Eigen::Vector3d::Zero(), Eigen::Vector3d(0.8, 0.4, 0.2)));
+
+  const auto zero = makeZeroSupport();
+  const auto touchSupport = makeScriptedSupport(
+      {{-Eigen::Vector3d::UnitX(), -1e-7 * Eigen::Vector3d::UnitX()}});
+  EXPECT_TRUE(Mpr::intersect(
+      touchSupport, zero, Eigen::Vector3d::UnitX(), Eigen::Vector3d::Zero()));
+
+  const auto segmentSupport = makeScriptedSupport(
+      {{-Eigen::Vector3d::UnitX(), -Eigen::Vector3d::UnitX()}});
+  EXPECT_TRUE(Mpr::intersect(
+      segmentSupport, zero, Eigen::Vector3d::UnitX(), Eigen::Vector3d::Zero()));
+}

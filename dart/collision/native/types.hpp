@@ -51,6 +51,11 @@ class DART_COLLISION_NATIVE_API CollisionResult
 {
 public:
   CollisionResult() = default;
+  CollisionResult(CollisionResult&& other) noexcept;
+  CollisionResult& operator=(CollisionResult&& other) noexcept;
+
+  CollisionResult(const CollisionResult&) = delete;
+  CollisionResult& operator=(const CollisionResult&) = delete;
 
   void addContact(const ContactPoint& contact)
   {

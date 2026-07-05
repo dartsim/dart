@@ -708,3 +708,26 @@ TEST(SphereSphere, BinaryCheckReportsHitWithoutContacts)
   EXPECT_FALSE(collideSpheres(sphere1, tf1, sphere2, tf2, result, option));
   EXPECT_EQ(result.numContacts(), 0);
 }
+
+// DART 6 supplementary coverage tests (not ported from DART 7)
+TEST(SphereSphere, ShapeOverloadZAxisAndContactLimit)
+{
+  SphereShape sphere1(1.0);
+  SphereShape sphere2(1.0);
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(0.0, 0.0, 1.5);
+
+  CollisionResult zAxisResult;
+  EXPECT_TRUE(collideSpheres(sphere1, tf1, sphere2, tf2, zAxisResult));
+  ASSERT_EQ(zAxisResult.numContacts(), 1u);
+  EXPECT_NEAR(zAxisResult.getContact(0).normal.z(), -1.0, 1e-10);
+  EXPECT_NEAR(zAxisResult.getContact(0).depth, 0.5, 1e-10);
+
+  CollisionOption capped;
+  capped.maxNumContacts = 0u;
+  CollisionResult cappedResult;
+  EXPECT_FALSE(
+      collideSpheres(sphere1, tf1, sphere2, tf2, cappedResult, capped));
+  EXPECT_EQ(cappedResult.numContacts(), 0u);
+}

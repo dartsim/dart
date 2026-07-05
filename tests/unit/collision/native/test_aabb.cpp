@@ -302,3 +302,32 @@ TEST(Aabb, Transformed_Unbounded)
   EXPECT_TRUE(world.overlaps(
       Aabb(Eigen::Vector3d(-1.0, -1.0, -1.0), Eigen::Vector3d(1.0, 1.0, 1.0))));
 }
+
+// DART 6 supplementary coverage tests (not ported from DART 7)
+TEST(Aabb, ContainsCornersAndOverlapsAtSingleCorner)
+{
+  const Aabb aabb(
+      Eigen::Vector3d(-1.0, -2.0, -3.0), Eigen::Vector3d(4.0, 5.0, 6.0));
+
+  for (const double x : {aabb.min.x(), aabb.max.x()}) {
+    for (const double y : {aabb.min.y(), aabb.max.y()}) {
+      for (const double z : {aabb.min.z(), aabb.max.z()}) {
+        EXPECT_TRUE(aabb.contains(Eigen::Vector3d(x, y, z)));
+      }
+    }
+  }
+
+  EXPECT_FALSE(aabb.contains(Eigen::Vector3d(aabb.min.x() - 1e-9, 0.0, 0.0)));
+  EXPECT_FALSE(aabb.contains(Eigen::Vector3d(0.0, aabb.max.y() + 1e-9, 0.0)));
+  EXPECT_FALSE(aabb.contains(Eigen::Vector3d(0.0, 0.0, aabb.max.z() + 1e-9)));
+
+  const Aabb cornerTouch(
+      Eigen::Vector3d(4.0, 5.0, 6.0), Eigen::Vector3d(7.0, 8.0, 9.0));
+  EXPECT_TRUE(aabb.overlaps(cornerTouch));
+  EXPECT_TRUE(cornerTouch.overlaps(aabb));
+
+  const Aabb cornerSeparated(
+      Eigen::Vector3d(4.0 + 1e-9, 5.0, 6.0), Eigen::Vector3d(7.0, 8.0, 9.0));
+  EXPECT_FALSE(aabb.overlaps(cornerSeparated));
+  EXPECT_FALSE(cornerSeparated.overlaps(aabb));
+}
