@@ -85,11 +85,13 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
     configure the tree. Run `pixi run config` (or a pixi task with
     `depends-on = ["config"]`) first; on a fresh checkout or CI runner they
     otherwise fail with `Build directory build/<env>/cpp/<type> does not exist`.
-  - Publishing to `gh-pages` triggers a full legacy Jekyll rebuild over the
-    versioned Doxygen docs, so newly pushed content (such as the performance
-    dashboard at `/performance/`) can take several minutes to appear and 404s
-    during the build. A root `.nojekyll` file makes Pages serve statically
-    (faster, and avoids Jekyll dropping underscore-prefixed Doxygen files).
+  - `gh-pages` stores generated static surfaces such as `/performance/` and
+    `/community-signals/`. `.github/workflows/pages_deploy.yml` packages that
+    branch after successful dashboard publisher runs and deploys it as a Pages
+    artifact; if the repository Pages source is still configured for legacy
+    branch publishing, GitHub's generated `pages-build-deployment` workflow may
+    queue behind hosted runners or cancel older branch builds while `gh-pages`
+    is moving.
 
 ## Common CI Failure Modes
 
@@ -354,34 +356,33 @@ Guardrails:
 
 **Concurrency configuration:**
 
-CI workflows cancel superseded topic-branch and PR runs, but protected
-validation runs must finish:
+CI workflows cancel superseded branch and PR validations, including protected
+`main` and `release-*` branch pushes. Branch protection only needs the latest
+commit on a ref; preserving obsolete post-merge validations can starve current
+PR checks after a burst of merges. Durable evidence runs are still preserved:
 
-- **main and release branches**: preserve every post-merge validation run
 - **scheduled jobs**: preserve every periodic validation run
+- **manual dispatches and release tags**: preserve each requested validation run
 
-GitHub's default concurrency queue keeps only one pending run per group. Setting
-`cancel-in-progress: false` prevents active-run cancellation, but a newer
-pending run can still replace an older pending run unless the workflow uses an
-explicit multi-pending queue or a run-specific group. Because `queue: max` cannot
-be combined with `cancel-in-progress: true`, shared workflows use run-specific
-groups only for protected refs and schedules while keeping a stable cancellable
-group for topic refs.
+GitHub's default concurrency queue keeps only one pending run per group. Shared
+workflows therefore use stable groups for branch and PR validations so newer
+runs cancel older pending or active work, and run-specific groups only for
+durable schedule/manual/tag evidence.
 
 ```yaml
-# Standard pattern for workflows that should cancel topic refs but preserve
-# protected post-merge and scheduled validation.
+# Standard pattern for workflows that cancel branch/PR validations but preserve
+# scheduled, manual, and release-tag evidence.
 concurrency:
   group: >-
     ${{ (github.event_name == 'schedule'
-         || github.ref == 'refs/heads/main'
-         || startsWith(github.ref, 'refs/heads/release-'))
-        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
-        || format('{0}-{1}', github.workflow, github.ref) }}
+        || github.event_name == 'workflow_dispatch'
+        || startsWith(github.ref, 'refs/tags/v'))
+        && format('{0}-{1}-{2}-{3}', github.workflow, github.ref, github.event_name, github.run_id)
+        || format('{0}-{1}-{2}', github.workflow, github.ref, github.event_name) }}
   cancel-in-progress: >-
     ${{ github.event_name != 'schedule'
-        && github.ref != 'refs/heads/main'
-        && !startsWith(github.ref, 'refs/heads/release-') }}
+        && github.event_name != 'workflow_dispatch'
+        && !startsWith(github.ref, 'refs/tags/v') }}
 
 # For workflows with matrix jobs that serialize writes to fixed branches
 # (e.g., update_lockfiles) or jobs that use a fixed external resource
@@ -560,6 +561,38 @@ deploy the generated site:
   if they need to inspect the standalone builders.
 - RTD rebuilds automatically whenever `main` changes, keeping the hosted docs in
   sync without deploying from GitHub Actions.
+
+### GitHub Pages Surfaces
+
+GitHub Pages serves generated static dashboards and historical Doxygen snapshots
+from the `gh-pages` branch:
+
+- `/performance/` is updated by `.github/workflows/performance_dashboard.yml`.
+- `/community-signals/` is updated by `.github/workflows/community_signals.yml`.
+- Historical `/v6.*` Doxygen snapshots live on the same branch.
+
+Community Signals refreshes weekly, on manual dispatch, and when files that own
+the dashboard change. It does not run for unrelated commits to `main`.
+
+The `gh-pages` branch is the storage surface, but deployment is owned by
+`.github/workflows/pages_deploy.yml`: after the Community Signals or
+Performance Dashboard publisher completes successfully, it checks out the
+current branch tip, verifies the expected entry points, uploads the whole tree
+as a GitHub Pages artifact, and deploys it through `actions/deploy-pages`.
+The workflow also supports manual dispatch for exceptional historical-docs
+updates. It uses a single `github-pages-deploy` concurrency group across
+packaging and deployment, so rapid dashboard updates converge on the latest
+`gh-pages` tip. Only successful publisher runs and manual dispatches can cancel
+stale deployments; failed publisher runs use a run-specific no-op concurrency
+group, skip packaging, and cannot cancel or replace a pending successful
+deployment.
+
+Repository Pages settings must use the GitHub Actions source for the deploy
+workflow to own production. If the source is still "Deploy from a branch",
+GitHub also creates its legacy `pages-build-deployment` workflow on every
+`gh-pages` push; treat queued or cancelled legacy deployments as stale unless
+the custom `Deploy GitHub Pages` workflow for the current `gh-pages` tip also
+fails.
 
 ## Lint Check Strategy
 
