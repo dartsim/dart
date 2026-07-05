@@ -52,7 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.inputs.checkout_ref || github.event.inputs.ref || github.ref }}
+          ref: ${{ github.event.inputs.checkout_ref || github.event.inputs.ref || github.sha }}
 
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.9.6
@@ -147,7 +147,7 @@ jobs:
       CMAKE_TOOLCHAIN_FILE: ""
       DART_PARALLEL_JOBS: 8
       DARTPY_REF: ${{ github.event.inputs.ref || github.ref }}
-      DARTPY_CHECKOUT_REF: ${{ github.event.inputs.checkout_ref || github.event.inputs.ref || github.ref }}
+      DARTPY_CHECKOUT_REF: ${{ github.event.inputs.checkout_ref || github.event.inputs.ref || github.sha }}
       MACOSX_DEPLOYMENT_TARGET: "15.0"
 
     steps:
