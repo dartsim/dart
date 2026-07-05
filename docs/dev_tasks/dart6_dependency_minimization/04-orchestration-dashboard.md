@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | **Phase 0 recaptured on current base** (packet in `05-phase0-baseline-packet.md`, this PR); plan of record merged (#3234); phase 1 next |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | **Phase 0 packet in review** (#3271, recaptured before #3281); phase 1 internal core merged (#3281); phase 2 next after packet acceptance |
 | **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet open as **#3263** (tracks the native-collision port as its WS-F lane, external owner) |
 
 ## PR tracker
@@ -66,6 +66,10 @@
 - Follow-up #3056 release work has landed through #3199/#3203. This resolves the
   measured headless-performance path, but it does **not** port DART 7
   `dart/collision/native/` or make FCL optional.
+- **#3281** native collision math core (merged 2026-07-05, squash commit
+  `135cc8f20765`) — phase-1 internal-only C++17/no-EnTT math core under
+  `dart/collision/native/`; no installed component, no detector adapter, and no
+  default change. Its PR evidence re-ran the phase-0 guard rows bit-identically.
 
 ### ✅ Merged — former monitoring queue (all landed by 2026-07-04)
 
@@ -85,11 +89,8 @@
   phase-0 packet cross-references those cells instead of duplicating them.
 - **#3271** `docs/native-collision-phase0-baseline` — this lane's phase-0
   baseline packet (recaptured on `1e6a8332a730` after merging
-  `origin/release-6.20` = `949a9c2ff5ed`; review in progress).
-- **#3281** `feature/native-collision-core` — this lane's **phase-1 port**
-  (native math core, internal-only, no behavior change; all local gates
-  green incl. gz 199/199+4+1 and bit-identical guard-row hashes; review in
-  progress).
+  `origin/release-6.20` = `949a9c2ff5ed`; current PR head `f1916fd843f9`
+  includes #3281's internal-only phase-1 merge).
 - Branch-CI fixes **#3267/#3272/#3273 merged 2026-07-04** (macOS SIMD
   `-Werror`, dartpy format checks via pixi, shallow-support + SIMD CI).
   Base failures observed before them (Windows `Install` step, coverage
@@ -106,11 +107,12 @@ due to GitHub merge-state lag — confirm via `gh pr view <n> --json state` and 
 before treating it as an open/active PR.)_
 
 ### 🛠️ Native-collision-port lane (the largest dependency lever — FCL/Bullet/ODE)
-- **Current state:** DART 6.20 has performance/collision-enabling work, but no
-  DART 7 native engine port and no FCL-optional default. `release-6.20` still
-  uses FCL as the default detector — created in *both* `ConstraintSolver`
-  constructors (`dart/constraint/ConstraintSolver.cpp:336` and `:353` at
-  `1e6a8332a730`; the `:322`/`:342` refs in `03` predate recent merges).
+- **Current state:** DART 6.20 now contains #3281's internal native math core,
+  but it has no DART 6 detector adapter and no FCL-optional default.
+  `release-6.20` still uses FCL as the default detector — created in *both*
+  `ConstraintSolver` constructors (`dart/constraint/ConstraintSolver.cpp:336`
+  and `:353` at `1e6a8332a730`; the `:322`/`:342` refs in `03` predate recent
+  merges).
 - **Phase 0 (captured 2026-07-04, recaptured 2026-07-05):** all
   evidence-harness prerequisites merged (#3209 container workload, #3230
   dashboard capture path); the baseline packet is recorded in
@@ -121,9 +123,9 @@ before treating it as an open/active PR.)_
   sequencing. For the phase-6 tolerance gate, retrieve JSONL dumps matching
   the recorded SHA-256 digests or recapture dumps on the flip PR's parent
   and compare within that same recapture.
-- **Next: phase 1** — the non-default C++17/no-EnTT native core port,
-  once this packet's review PR lands. Do not flip defaults until `03`'s
-  full A/B packet and gz gate pass.
+- **Next: phase 2** — DART 6 detector adapter work, but only after this
+  phase-0 packet is accepted. Do not flip defaults until `03`'s full A/B
+  packet and gz gate pass.
 - _Hold each follow-up to `03`'s bar: gz-compat (`pixi run -e gazebo test-gz`),
   feature/contact parity, evidence-driven perf ≥ Bullet/ODE/FCL, and
   outcome/hash/scene-dump tolerances. The FCL-optional default-flip (the actual
@@ -133,7 +135,7 @@ before treating it as an open/active PR.)_
 
 1. **Base / conflict status**:
    - Current planning baseline: `origin/release-6.20` =
-     `949a9c2ff5ed6309beef0aa1345101d36c813f02`; `origin/main` =
+     `135cc8f20765d39040e3e3ae87536dabac8f5401`; `origin/main` =
      `5c75381f79a0431909f8c1b0a04fca1fbaa256ed`.
    - Open PRs routinely fall behind as the base advances; a maintainer merge-up
      clears it. Exact behind-counts aren't tracked here (too volatile).

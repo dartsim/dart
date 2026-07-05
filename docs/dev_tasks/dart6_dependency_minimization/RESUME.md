@@ -34,10 +34,10 @@ phase-6/default-flip tolerance gate, retrieve JSONL scene dumps matching
 the recorded SHA-256 digests or recapture dumps on the flip PR's parent
 and compare within that same recapture.
 
-**Next: phase 1 — native core skeleton** (C++17, no EnTT, internal-only,
-FCL stays default) per `03`'s phased plan, once the packet's review PR
-has landed. Deterministic unit tests are part of the phase-1 deliverable;
-gz gate before merge.
+**Phase 1 has landed as #3281** (C++17, no EnTT, internal-only native math
+core; FCL stays default). Current #3271 head `f1916fd843f9` includes that
+merge. **Next: phase 2 — DART 6 detector adapter**, but only after #3271's
+phase-0 packet is accepted.
 
 ## Standing constraints
 
@@ -50,6 +50,7 @@ gz gate before merge.
   origin/release-6.20`.
 - FCL default detector is created in *both* `ConstraintSolver`
   constructors (`dart/constraint/ConstraintSolver.cpp`, lines 336/353 as
-  of `1e6a8332a730`) — the phase-6 flip must change both.
+  of `1e6a8332a730`; still FCL after #3281) — the phase-6 flip must change
+  both.
 - Do not pick up perf-lane packets (WP-PG.*) from this folder; that lane
   has its own owner and dashboard.

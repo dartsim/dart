@@ -23,17 +23,20 @@ Refs checked:
 
 - `origin/release-6.20`: `949a9c2ff5ed6309beef0aa1345101d36c813f02`.
 - This phase-0 packet branch after the base merge: `1e6a8332a730a994450c14ee8a780780c5e069bb`.
+- Current PR head after merging #3281: `f1916fd843f931eb7304b9a9dc8089eaf3586b38`
+  on `origin/release-6.20` = `135cc8f20765d39040e3e3ae87536dabac8f5401`.
 - `origin/main`: `5c75381f79a0431909f8c1b0a04fca1fbaa256ed`.
 - Related remote heads: `feature/native-occupancy-grid`,
-  `feature/native-collision-core`, `task/native-collision-performance-exec`,
+  `task/native-collision-performance-exec`,
   `docs/dart6-performance-dashboard`, `backport/2490-to-release-6.20`,
   `fix/gz-physics-joint-detach-6.20`.
 
 Live conclusion:
 
-- `release-6.20` still has no `dart/collision/native/` port. The DART 6
-  `dart` detector remains the old limited detector; the default path still
-  resolves through FCL.
+- `release-6.20` now contains the #3281 phase-1 internal native math core under
+  `dart/collision/native/`. It still has no DART 6 detector adapter and no
+  default flip: the public `dart` detector remains the old limited detector,
+  and the default path still resolves through FCL.
 - DART 7 source/reference PRs remain #2652 (native default), #2688 (coverage and
   performance superset), and #2700 (native CCD). Use these as reference only;
   do not copy the EnTT/C++23 world plumbing directly into DART 6.
@@ -237,7 +240,9 @@ Success means **both**:
    command lines, raw output, hashes, scene-dump tolerances, CPU
    metadata, and the explicit "native default NOT allowed at this tip"
    verdict plus the phase-6 acceptance envelope.
-5. Start Phase 1 only after the baseline packet is reviewed.
+5. Phase 1 (#3281) has landed as an internal-only, no-default-change math core.
+   Do not start Phase 2/default-adapter work until this phase-0 packet is
+   accepted.
 
 ## Recommendation
 
