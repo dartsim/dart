@@ -11,7 +11,7 @@ description: "DART Mechanical Refactor: perform a behavior-preserving mechanical
 
 Use this skill in Codex to run the DART `dart-mechanical-refactor` workflow. The editable
 workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Codex skill is a generated Codex adapter entrypoint.
 
 ## Invocation
 

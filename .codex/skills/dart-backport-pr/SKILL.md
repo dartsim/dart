@@ -11,7 +11,7 @@ description: "DART Backport PR: backport a merged main PR to a release branch"
 
 Use this skill in Codex to run the DART `dart-backport-pr` workflow. The editable
 workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Codex skill is a generated Codex adapter entrypoint.
 
 ## Invocation
 

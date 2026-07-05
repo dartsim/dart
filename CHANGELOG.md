@@ -324,6 +324,10 @@ compatibility remains on the active DART 6 LTS branch._
 - Made DART AI workflows more completion- and changelog-aware by default, with
   verification-first `$dart-resume` task management and a reusable
   `$dart-changelog` routine for consistent release-note decisions and entries.
+- Added a canonical AI terminology owner and aligned the workflow, capability,
+  skill, command-adapter, generated-adapter, MCP, hook, subagent, and work
+  packet language across the AI docs, compatibility guide, sync checks, and
+  generated Codex adapters.
 - Added a structured `dart-changelog` decision note so Claude, Codex, OpenCode,
   and manual PR authors can record the inspected evidence, target release
   section, entry text, no-entry reason, and PR-link follow-up consistently.
