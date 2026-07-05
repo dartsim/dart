@@ -3,6 +3,8 @@ name: Community Signals Dashboard
 # Publishes a compact public dashboard for repository activity, package
 # downloads, citations, and downstream freshness. The generated dashboard is
 # served from GitHub Pages at https://dartsim.github.io/dart/community-signals/.
+# Refreshes run weekly, manually, and when this dashboard's source files change;
+# unrelated main commits do not run this publisher.
 #
 # GitHub traffic endpoints may require a fine-grained token with repository
 # Administration read permission. If the default GITHUB_TOKEN cannot read those
@@ -19,7 +21,7 @@ on:
       - "docs/readthedocs/index.rst"
       - "scripts/generate_community_signals_dashboard.py"
   schedule:
-    - cron: "17 4 * * *"
+    - cron: "17 4 * * 1"
   workflow_dispatch:
 
 permissions:

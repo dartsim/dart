@@ -114,9 +114,11 @@ rows appear in the merged JSON.
 Setup (maintainers)
 -------------------
 
-The dashboard requires GitHub Pages to serve from the ``gh-pages`` branch
-(Settings -> Pages -> Source: ``gh-pages`` / root). The workflow's
-``contents: write`` permission lets the action create and update that branch.
+The dashboard stores generated files on the ``gh-pages`` branch, and the
+``Deploy GitHub Pages`` workflow publishes that branch tip through GitHub Pages
+artifacts. Repository Pages settings must use GitHub Actions as the source;
+legacy ``gh-pages`` branch publishing can leave dashboard updates queued or
+served from a stale deployment.
 
 Future work
 -----------
