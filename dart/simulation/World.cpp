@@ -370,8 +370,12 @@ void World::clearUnsupportedShallowSupportFreeRootVelocityStates(
     state.mTiltVelocity.setZero();
     state.mHasUnsupportedLateralVelocity = false;
     state.mHasUnsupportedTiltVelocity = false;
+    state.mHasResetLateralVelocity = false;
+    state.mHasResetTiltVelocity = false;
     state.mUnsupportedLateralVelocity.setZero();
     state.mUnsupportedTiltVelocity.setZero();
+    state.mResetLateralVelocity.setZero();
+    state.mResetTiltVelocity.setZero();
 
     if (!canStoreUnsupportedVelocities || i >= preSolveVelocities.size())
       continue;
@@ -406,6 +410,48 @@ void World::updateShallowSupportFreeRootVelocityVersions()
     if (skeleton)
       mShallowSupportFreeRootVelocityStates[i].mObservedVelocityVersion
           = skeleton->getVelocityVersion();
+  }
+}
+
+//==============================================================================
+void World::captureResetShallowSupportFreeRootVelocityTargets()
+{
+  syncShallowSupportFreeRootVelocityStates();
+
+  if (mGravity.squaredNorm() == 0.0)
+    return;
+
+  const Eigen::Vector3d up = -mGravity.normalized();
+  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+    const auto& skeleton = mSkeletons[i];
+    if (!skeleton || !skeleton->isMobile())
+      continue;
+
+    const auto* rootBody = getRootBodyNodeIfAny(*skeleton);
+    if (rootBody == nullptr)
+      continue;
+
+    const auto* freeJoint
+        = dynamic_cast<const dynamics::FreeJoint*>(rootBody->getParentJoint());
+    if (freeJoint == nullptr)
+      continue;
+
+    auto& state = mShallowSupportFreeRootVelocityStates[i];
+    const Eigen::Vector3d linearVelocity = rootBody->getLinearVelocity();
+    const Eigen::Vector3d verticalVelocity = up * linearVelocity.dot(up);
+    const Eigen::Vector3d lateralVelocity = linearVelocity - verticalVelocity;
+    if (hasFiniteNonzeroVelocity(lateralVelocity)) {
+      state.mHasResetLateralVelocity = true;
+      state.mResetLateralVelocity = lateralVelocity;
+    }
+
+    const Eigen::Vector3d angularVelocity = rootBody->getAngularVelocity();
+    const Eigen::Vector3d yawVelocity = up * angularVelocity.dot(up);
+    const Eigen::Vector3d tiltVelocity = angularVelocity - yawVelocity;
+    if (hasFiniteNonzeroVelocity(tiltVelocity)) {
+      state.mHasResetTiltVelocity = true;
+      state.mResetTiltVelocity = tiltVelocity;
+    }
   }
 }
 
@@ -448,10 +494,13 @@ void World::suppressShallowSupportedFreeRootDrift(
   }
 
   const Eigen::Vector3d up = -gravity.normalized();
-  constexpr double kRootLinearLegacyDriftSpeed = 1e-5;
   constexpr double kRootLinearDriftSpeedCap = 2e-4;
   constexpr double kRootLinearDriftFinalQuietRatio = 0.5;
-  double rootLinearDriftSpeed = kRootLinearLegacyDriftSpeed;
+  // Use the configured final-quiet threshold when deactivation is enabled, so
+  // callers can tighten this gate by tuning DeactivationOptions. The legacy
+  // always-awake path has no threshold, so it keeps the bounded platform-jitter
+  // cap that absorbs FreeBSD VM-backed cross-axis Baumgarte leakage.
+  double rootLinearDriftSpeed = kRootLinearDriftSpeedCap;
   if (mDeactivationOptions.mEnabled) {
     const double finalQuietLinearSpeed = std::max(
         0.0,
@@ -484,10 +533,12 @@ void World::suppressShallowSupportedFreeRootDrift(
       = preSolveVelocity.mLinear - preSolveVerticalVelocity;
   Eigen::Vector3d targetLateralVelocity = Eigen::Vector3d::Zero();
   bool targetPreservesLateralVelocity = false;
+  // Unedited shallow-contact residuals inside the same platform drift band are
+  // contact leakage, not a new intentional baseline.
   const bool preservePreSolveLateralVelocity
       = hasFiniteNonzeroVelocity(preSolveLateralVelocity)
         && (preSolveClearsStoredTarget
-            || preSolveLateralVelocity.norm() > kRootLinearLegacyDriftSpeed);
+            || preSolveLateralVelocity.norm() > rootLinearDriftSpeed);
   if (preservePreSolveLateralVelocity) {
     targetLateralVelocity = preSolveLateralVelocity;
     targetPreservesLateralVelocity = true;
@@ -501,6 +552,12 @@ void World::suppressShallowSupportedFreeRootDrift(
       !preSolveClearsStoredTarget && state.mHasUnsupportedLateralVelocity
       && state.mUnsupportedLateralVelocity.allFinite()) {
     targetLateralVelocity = state.mUnsupportedLateralVelocity;
+    targetPreservesLateralVelocity
+        = hasFiniteNonzeroVelocity(targetLateralVelocity);
+  } else if (
+      !preSolveClearsStoredTarget && state.mHasResetLateralVelocity
+      && state.mResetLateralVelocity.allFinite()) {
+    targetLateralVelocity = state.mResetLateralVelocity;
     targetPreservesLateralVelocity
         = hasFiniteNonzeroVelocity(targetLateralVelocity);
   }
@@ -547,6 +604,11 @@ void World::suppressShallowSupportedFreeRootDrift(
       && state.mUnsupportedTiltVelocity.allFinite()) {
     targetTiltVelocity = state.mUnsupportedTiltVelocity;
     targetPreservesTiltVelocity = hasFiniteNonzeroVelocity(targetTiltVelocity);
+  } else if (
+      !preSolveClearsStoredTarget && state.mHasResetTiltVelocity
+      && state.mResetTiltVelocity.allFinite()) {
+    targetTiltVelocity = state.mResetTiltVelocity;
+    targetPreservesTiltVelocity = hasFiniteNonzeroVelocity(targetTiltVelocity);
   }
 
   const bool clampedTiltVelocity
@@ -570,8 +632,12 @@ void World::suppressShallowSupportedFreeRootDrift(
 
   state.mHasUnsupportedLateralVelocity = false;
   state.mHasUnsupportedTiltVelocity = false;
+  state.mHasResetLateralVelocity = false;
+  state.mHasResetTiltVelocity = false;
   state.mUnsupportedLateralVelocity.setZero();
   state.mUnsupportedTiltVelocity.setZero();
+  state.mResetLateralVelocity.setZero();
+  state.mResetTiltVelocity.setZero();
 }
 
 //==============================================================================
@@ -924,6 +990,7 @@ void World::reset()
   invalidateLastStepRestingWorldState();
   clearUnsupportedShallowSupportFreeRootVelocityStates({});
   updateShallowSupportFreeRootVelocityVersions();
+  captureResetShallowSupportFreeRootVelocityTargets();
 
   for (auto& skel : mSkeletons) {
     skel->clearConstraintImpulses();
