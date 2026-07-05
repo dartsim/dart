@@ -239,6 +239,11 @@ void DefaultEventHandler::addMouseEventHandler(MouseEventHandler* handler)
   mMouseEventHandlers.insert(handler);
   handler->mEventHandler = this;
   handler->addSubject(this);
+  // Observe the handler so handleDestructionNotification() erases it from
+  // mMouseEventHandlers when it is destroyed. Without this the set keeps a
+  // dangling pointer after a registered handler dies (the header documents
+  // automatic removal on deletion), and the next mouse event dereferences it.
+  addSubject(handler);
 }
 
 //==============================================================================
