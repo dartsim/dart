@@ -86,6 +86,10 @@ compatibility remains on the active DART 6 LTS branch._
   [#2270](https://github.com/dartsim/dart/pull/2270),
   [#2141](https://github.com/dartsim/dart/pull/2141),
   [#2142](https://github.com/dartsim/dart/pull/2142))
+- Removed the legacy SKEL model format from DART 7, including `.skel` sample
+  assets, `SkelParser`, `ModelFormat::Skel`, and dartpy SKEL bindings/stubs;
+  migrate assets to URDF, SDF, or MJCF, or use `release-6.*` for legacy SKEL
+  compatibility. ([#3288](https://github.com/dartsim/dart/pull/3288))
 - Removed GLUT, OpenSceneGraph, Raylib, legacy GUI examples/tutorials, and legacy
   dartpy GUI bindings in favor of the Filament-backed `dart::gui` stack.
   ([#2044](https://github.com/dartsim/dart/pull/2044),

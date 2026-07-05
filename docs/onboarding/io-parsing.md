@@ -3,8 +3,7 @@
 ## Why this exists
 
 DART historically exposed multiple model-loading entry points with inconsistent
-naming and structure (e.g., `SkelParser`, `SdfParser`, `UrdfParser`, and
-legacy loaders).
+naming and structure (e.g., `SdfParser`, `UrdfParser`, and legacy loaders).
 
 For most applications, this made “load a model from a URI” harder than it needed
 to be:
@@ -26,8 +25,8 @@ This unified API and documentation were introduced while addressing issue #604
 component APIs. The DART 7 surface keeps a single, consistent skeleton-loading
 front door (`dart::io`) without introducing new nested namespaces, while keeping
 parser-specific customization available via `dart::utils::*` parsers where
-needed. DART 7 is retiring SKEL rather than redesigning it as YAML; migrate
-legacy SKEL assets to URDF, SDF, or MJCF. Unit coverage for the promoted options
+needed. DART 7 removed SKEL rather than redesigning it as YAML; migrate legacy
+SKEL assets to URDF, SDF, or MJCF. Unit coverage for the promoted options
 lives in `tests/unit/io/test_read.cpp`.
 
 ## Scope and design decision
@@ -147,7 +146,8 @@ Otherwise, prefer using the underlying parser API directly.
 
 ## Notes about Python
 
-The consolidated API is primarily for **C++** (`dart::io`). However, the Python bindings
-(`dartpy`) also expose parsers under `dart.io` (e.g. `dart.io.UrdfParser`). The legacy
-`dart.utils.*` parsers are deprecated and should be avoided in new code. Treat
-SKEL as a DART 6 compatibility format while DART 7 removal work finishes.
+The consolidated API is primarily for **C++** (`dart::io`). However, the Python
+bindings (`dartpy`) also expose parsers under `dart.io` (e.g.
+`dart.io.UrdfParser`). The legacy `dart.utils.*` parsers are deprecated and
+should be avoided in new code. Treat SKEL as a DART 6 compatibility format and
+use a `release-6.*` branch for old SKEL assets.

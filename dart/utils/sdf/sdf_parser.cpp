@@ -58,7 +58,6 @@
 #include "dart/utils/mesh_loader.hpp"
 #include "dart/utils/sdf/detail/geometry_parsers.hpp"
 #include "dart/utils/sdf/detail/sdf_helpers.hpp"
-#include "dart/utils/skel_parser.hpp"
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>

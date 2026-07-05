@@ -198,7 +198,7 @@ by naming the repo surfaces that were inventoried.
   completing review head.
 - **Indirect simulation / constraint / IO tests**
   Inventory evidence: `INTEGRATION_simulation_World`, contact constraint, split
-  impulse, soft dynamics, skeleton topology, and SDF/SKEL/URDF parser targets
+  impulse, soft dynamics, skeleton topology, and SDF/URDF parser targets
   in the CTest inventory.
   Coverage status: covered by full local `test-all`; Atlas Simbicon ASan
   ownership repair has focused ASan/Release reruns.

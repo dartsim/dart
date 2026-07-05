@@ -55,9 +55,6 @@ enum class ModelFormat
   /// Infer from URI (extension / XML root element).
   Auto = 0,
 
-  /// Legacy DART XML format (.skel), planned for removal before DART 7.
-  Skel,
-
   /// SDF format (.sdf / .world).
   Sdf,
 

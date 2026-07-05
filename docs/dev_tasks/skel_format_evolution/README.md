@@ -10,11 +10,12 @@
       `single_pendulum`, `cube`, `shapes`, and `test_shapes` fixtures, moving
       tests and resource retriever coverage off `dart://sample/skel`, and
       verifying examples/tutorials/python examples have no SKEL fixture loads.
-- [ ] Phase 2: Remove SKEL from DART 7 `main`: parser implementation,
+- [x] Phase 2: Remove SKEL from DART 7 `main`: parser implementation,
       `dart::io` format inference and dispatch, bindings/stubs, parser-specific
-      tests, `.skel` sample fixtures, and user-facing DART 7 docs. Preserve or
-      relocate non-SKEL mesh assets such as `data/skel/kima/*.dae` before
-      deleting any parent directory.
+      tests, `.skel` sample fixtures, and user-facing DART 7 docs. The Phase 2
+      branch relocates the non-SKEL Kima Collada fixtures from `data/skel/kima/`
+      to `data/mesh/kima/` before deleting the legacy `data/skel/` tree. PR
+      [#3288](https://github.com/dartsim/dart/pull/3288) is open for review.
 - [ ] Phase 3: Optional YAML model/scene format. Decide whether YAML should be
       a new DART-owned scene format or a front-end over URDF/SDF semantics; do
       not implement SKEL syntax in YAML.
@@ -63,17 +64,22 @@ engine in portable formats.
 ## Prototype Reference
 
 The original prototype lived on the now-deleted `feature/skel_yaml` branch.
-Tip commit SHA (recoverable from reflog and `git fsck --unreachable` until
-natural expiry):
+Its tip commit was:
 
-- `1dd83e31586 wip` — adds 6 files (1,991 lines total) under
+- `1dd83e31586 wip` — added 6 files (1,991 lines total) under
   `docs/dev_tasks/skel_format/`: `README.md`, `migration-guide.md`,
   `phase-01-deprecation.md`, `phase-02-yaml.md`, `phase-03-usd.md`, and
   `phase-04-export.md`. The detailed phase planning, deprecation timing
   table, YAML library tradeoff matrix, USD schema notes, and export round-
-  trip strategy live there.
+  trip strategy lived there.
 
-To inspect the verbose prototype during a phase pickup:
+Current reality: this worktree no longer has the prototype object in reflog or
+`git fsck --unreachable`; `git show 1dd83e31586:...` fails here. Treat the SHA
+as archaeology only unless another clone still has the object. Phase 3 and Phase
+5 must be decided from current DART 7 requirements and fresh evidence, not by
+assuming the old SKEL-YAML prototype is recoverable.
+
+If another clone still has the object, these paths may be useful context:
 
 ```bash
 git show 1dd83e31586:docs/dev_tasks/skel_format/phase-01-deprecation.md
@@ -83,19 +89,17 @@ git show 1dd83e31586:docs/dev_tasks/skel_format/phase-04-export.md
 git show 1dd83e31586:docs/dev_tasks/skel_format/migration-guide.md
 ```
 
-This compact dev task is the durable strategic frame; the prototype's
-verbose phase docs are reusable seed material for the agent that picks each
-phase up.
+This compact dev task is the durable strategic frame. Do not recreate the old
+SKEL-YAML direction just because the prototype once existed.
 
 ## Immediate Next Steps
 
-1. Start Phase 2 on a fresh branch from current `main`: remove `SkelParser`, `.skel`
-   inference/dispatch, parser-specific tests, bindings/stubs, and `.skel`
-   sample fixtures. Preserve or move non-SKEL mesh assets such as
-   `data/skel/kima/*.dae` before deleting any parent directory.
-2. After SKEL removal is mechanically under control, decide whether Phase 3 is
-   a YAML front-end over existing formats or a new DART-owned scene format.
-3. Keep Phase 4 USD work coordinated with
+1. Land the Phase 2 removal PR
+   ([#3288](https://github.com/dartsim/dart/pull/3288)) after review and CI.
+2. Continue the stacked follow-up branch after Phase 2 lands: Phase 3 records
+   the YAML non-adoption decision, Phase 4 records the USD coordination
+   boundary, and Phase 5 records the bounded writer scope.
+3. Keep any further USD work coordinated with
    [`usd_scene_loader/`](../usd_scene_loader/) rather than duplicating that
    loader surface here.
 
@@ -106,9 +110,10 @@ phase up.
   reference live SKEL fixtures; `pixi run check-docs-policy`; `pixi run lint`.
 - Phase 2: focused tests proving `.skel` no longer dispatches through
   `dart::io`, parser-specific SKEL tests are removed, and the source tree no
-  longer ships DART 7 sample `.skel` assets. Existing non-SKEL mesh tests that
-  load `data/skel/kima/*.dae` must keep passing, either from their current path
-  or after an explicit fixture relocation.
+  longer ships DART 7 sample `.skel` assets. Existing non-SKEL mesh tests now
+  load the relocated Kima fixtures from `data/mesh/kima/*.dae`. The refreshed
+  pre-PR evidence also includes `pixi run test-all` and
+  `pixi run -e cuda test-all` on the local CUDA host.
 - Phase 3: focused parser tests for any accepted YAML design, including parity
   with the canonical format it maps to or explicit tests for a new DART-owned
   schema.

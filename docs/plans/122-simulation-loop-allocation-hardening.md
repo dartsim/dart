@@ -174,7 +174,7 @@ post-bake step.
 
 - Objective: prevent DART 7 model-loading migrations from bypassing the
   no-allocation contract.
-- Scope: URDF, SDF, MJCF, SKEL, USD, and skeleton-loading bridges that build a
+- Scope: URDF, SDF, MJCF, USD, and skeleton-loading bridges that build a
   DART 7 `World`; once a loaded model can be stepped through a DART 7 solver
   family, add a same-shape post-bake allocation gate for at least one imported
   scene in that family.

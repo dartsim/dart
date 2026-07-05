@@ -35,6 +35,8 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <filesystem>
+#include <fstream>
 #include <string_view>
 
 using namespace dart;
@@ -86,6 +88,22 @@ TEST(Read, ConvertedSkelFixturesLoadAsSdf)
     EXPECT_EQ(skeleton->getName(), fixture.expectedName) << fixture.uri;
   }
 #endif
+}
+
+//==============================================================================
+TEST(Read, SkelIsNotSupported)
+{
+  const auto path = std::filesystem::temp_directory_path()
+                    / "dart_io_removed_skel_fixture.skel";
+  {
+    std::ofstream output(path);
+    output << "<skel version=\"1.0\"><world name=\"legacy\" /></skel>";
+  }
+
+  const auto skeleton = io::readSkeleton(path.string());
+  EXPECT_EQ(skeleton, nullptr);
+
+  std::filesystem::remove(path);
 }
 
 //==============================================================================
