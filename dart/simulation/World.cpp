@@ -445,14 +445,12 @@ void World::suppressShallowSupportedFreeRootDrift(
   }
 
   const Eigen::Vector3d up = -gravity.normalized();
-  constexpr double kRootLinearLegacyDriftSpeed = 1e-5;
   constexpr double kRootLinearDriftSpeedCap = 2e-4;
   constexpr double kRootLinearDriftFinalQuietRatio = 0.5;
-  // Use the bounded platform-jitter gate for the legacy always-awake path too.
-  // FreeBSD's VM-backed contact solve can leak a larger cross-axis Baumgarte
-  // component than Linux while still remaining well inside the tiny drift band.
-  // Explicit or pre-contact low-speed motion is still preserved by the target
-  // selection below, so this only expands the contact-solve delta we remove.
+  // Use the configured final-quiet threshold when deactivation is enabled, so
+  // callers can tighten this gate by tuning DeactivationOptions. The legacy
+  // always-awake path has no threshold, so it keeps the bounded platform-jitter
+  // cap that absorbs FreeBSD VM-backed cross-axis Baumgarte leakage.
   double rootLinearDriftSpeed = kRootLinearDriftSpeedCap;
   if (mDeactivationOptions.mEnabled) {
     const double finalQuietLinearSpeed = std::max(
@@ -460,9 +458,7 @@ void World::suppressShallowSupportedFreeRootDrift(
         kFinalSleepLinearRatio * mDeactivationOptions.mLinearSpeedThreshold);
     rootLinearDriftSpeed = std::min(
         kRootLinearDriftSpeedCap,
-        std::max(
-            kRootLinearLegacyDriftSpeed,
-            kRootLinearDriftFinalQuietRatio * finalQuietLinearSpeed));
+        kRootLinearDriftFinalQuietRatio * finalQuietLinearSpeed);
   }
   constexpr double kRootAngularDriftSpeed = 5e-4;
   const bool preSolveClearsStoredTarget
