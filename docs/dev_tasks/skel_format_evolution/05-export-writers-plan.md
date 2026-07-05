@@ -53,7 +53,9 @@ Absolute non-file mesh URI
 preservation is covered through a custom retriever-backed write/read test, and
 URI-backed mesh material variants are covered by a write/read test that
 preserves the source `sdf::Mesh` URI and re-loads the original multi-material
-glTF resource. Targetless relative mesh references, URI-less in-memory mesh
+glTF resource. A shipped relative-mesh model fixture also proves
+parser-resolved source mesh URIs survive writer read/write/read. Targetless
+relative mesh references, URI-less in-memory mesh
 material variants, and relative or host-qualified `file` mesh URIs are rejected
 because the writer has no destination SDF URI for resource resolution or
 generated asset placement. `WriteOptions`
@@ -132,15 +134,15 @@ Fixture-level coverage now also loads the shipped
 SDF samples converted from legacy SKEL (`single_pendulum.sdf`, `cube.sdf`,
 `shapes.sdf`, and `test_shapes.sdf`) plus the native
 `quad.sdf`, `two_link_revolute_model.sdf`, `test_issue1583.model`,
-`test_issue1596.model`, and `test_issue1683.model` fixtures and the
-world-contained
+`test_issue1596.model`, and `test_issue1683.model` fixtures, the included
+relative mesh model fixture, and the world-contained
 `issue1193_revolute*.sdf`, `high_version.world`, and
 `single_bodynode_skeleton.world` fixtures plus `test_skeleton_joint.world`,
 `force_torque_test.world`, and `force_torque_test2.world` through the normal
 SDF parser, writes them with `SdfParser::tryWriteSkeletonToString()`, reloads
 the emitted text, and compares body, joint, inertial, mobility, gravity,
-axis-limit, joint-dynamics, visual geometry, collision geometry, model-pose,
-and joint-offset semantics between the original parsed skeletons and the
+axis-limit, joint-dynamics, visual geometry, collision geometry, resource URI,
+model-pose, and joint-offset semantics between the original parsed skeletons and the
 re-parsed writer outputs. The `quad.sdf` root-model fixture adds read/write/read
 coverage
 for a 17-link, 16-revolute-joint quadruped topology with repeated finite
@@ -148,10 +150,12 @@ axis limits, visual material colors, box visual/collision geometry, and foot
 sphere visuals. The root-model issue fixtures add coverage for fixed
 parent-world root joints recovered through `RootJointType::Fixed`, model poses,
 child revolute axes and limits, parent-world and child universal joints, and
-box/sphere/cylinder visual and collision geometry. The simple world coverage
-includes high-version SDF input, default-inertial fallback, root-joint
-semantics, gravity, and box/cylinder geometry. The mixed-joint world coverage
-adds a shipped fixture with prismatic, revolute, screw, and
+box/sphere/cylinder visual and collision geometry. The relative mesh fixture
+adds coverage for visual/collision mesh geometry and parser-resolved source
+mesh URI preservation. The simple world coverage includes high-version SDF
+input, default-inertial fallback, root-joint semantics, gravity, and
+box/cylinder geometry. The mixed-joint world coverage adds a shipped fixture
+with prismatic, revolute, screw, and
 revolute2/universal joints plus cylinder visual/collision geometry. The
 force-torque world coverage is limited to DART skeleton semantics
 imported from the in-file models, including the three-link/two-joint chain in

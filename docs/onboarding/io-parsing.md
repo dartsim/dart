@@ -188,28 +188,32 @@ SKEL (`single_pendulum.sdf`, `cube.sdf`, `shapes.sdf`, and
 `test_shapes.sdf`) and the native two-link revolute SDF fixture
 (`two_link_revolute_model.sdf`), the native root-model quadruped fixture
 (`quad.sdf`), the root-model issue fixtures (`test_issue1583.model`,
-`test_issue1596.model`, and `test_issue1683.model`), plus world-contained
-`issue1193_revolute*.sdf` fixtures, `high_version.world`,
+`test_issue1596.model`, and `test_issue1683.model`), the included relative
+mesh model fixture (`include_relative_mesh/included_model/model.sdf`), plus
+world-contained `issue1193_revolute*.sdf` fixtures, `high_version.world`,
 `single_bodynode_skeleton.world`, and
 `test_skeleton_joint.world`, plus `force_torque_test.world` /
 `force_torque_test2.world` through read/write/read smokes that
 compare body, joint, inertial, mobility, gravity, axis-limit, joint-dynamics,
-box/cylinder/sphere geometry, shape-pose, model-pose, and joint-offset
-semantics across simple single-body, quadruped, fixed-root issue, mixed-joint,
-two-link, and three-link models. The quadruped fixture covers 17 links, 16
-revolute joints, finite axis velocity/effort limits, visual material colors,
-repeated box visual/collision geometry, and foot sphere visuals. The root-model
-issue fixtures cover fixed parent-world root semantics, model poses, child
-revolute and universal joint axes and limits, and box/sphere/cylinder visual
-and collision geometry. The simple world fixtures cover high-version SDF input,
+box/cylinder/sphere/mesh geometry, shape-pose, model-pose, resource URI, and
+joint-offset semantics across simple single-body, quadruped, fixed-root issue,
+relative-mesh, mixed-joint, two-link, and three-link models. The quadruped
+fixture covers 17 links, 16 revolute joints, finite axis velocity/effort
+limits, visual material colors, repeated box visual/collision geometry, and
+foot sphere visuals. The root-model issue fixtures cover fixed parent-world
+root semantics, model poses, child revolute and universal joint axes and
+limits, and box/sphere/cylinder visual and collision geometry. The relative
+mesh fixture covers parser-resolved source mesh URI preservation for visual and
+collision mesh geometry. The simple world fixtures cover high-version SDF input,
 default-inertial fallback, root-joint semantics, gravity, and box/cylinder
 visual and collision geometry. The mixed-joint world fixture covers prismatic,
 revolute, screw, and revolute2/universal joints plus cylinder visual and
 collision geometry. The force-torque world fixture coverage is limited to DART
 skeleton semantics imported from the in-file models and does not claim
 preservation of SDF sensor or physics metadata. The writer also covers absolute
-non-file mesh URI preservation through a custom retriever and URI-backed mesh
-material variants through preserved source mesh URIs.
+non-file mesh URI preservation through a custom retriever, URI-backed mesh
+material variants through preserved source mesh URIs, and parser-resolved
+source mesh URIs imported from a shipped relative-mesh SDF model.
 Targetless relative
 mesh references, URI-less in-memory mesh material variants, and relative or
 host-qualified `file` mesh URIs are rejected because the writer has no

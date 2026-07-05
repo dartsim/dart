@@ -4050,6 +4050,80 @@ TEST(SdfWriter, RelativeMeshUriReturnsError)
 }
 
 //==============================================================================
+TEST(SdfWriter, RoundTripsExistingRelativeMeshModelFixture)
+{
+  const auto original = utils::SdfParser::readSkeleton(
+      common::Uri(
+          "dart://sample/sdf/test/include_relative_mesh/"
+          "included_model/model.sdf"));
+  ASSERT_NE(original, nullptr);
+  EXPECT_EQ(original->getName(), "relative_mesh_model");
+  ASSERT_EQ(original->getNumBodyNodes(), 1u);
+  ASSERT_EQ(original->getNumJoints(), 1u);
+
+  const auto* originalBody = test::requireBodyNode(*original, "mesh_body");
+  ASSERT_NE(originalBody, nullptr);
+  const auto* originalRoot = originalBody->getParentJoint();
+  ASSERT_NE(originalRoot, nullptr);
+  const auto* originalVisualMesh
+      = test::requireShape<dynamics::VisualAspect, dynamics::MeshShape>(
+          *originalBody, 0, 1);
+  const auto* originalCollisionMesh
+      = test::requireShape<dynamics::CollisionAspect, dynamics::MeshShape>(
+          *originalBody, 0, 1);
+  ASSERT_NE(originalVisualMesh, nullptr);
+  ASSERT_NE(originalCollisionMesh, nullptr);
+
+  const auto writeResult
+      = utils::SdfParser::tryWriteSkeletonToString(*original);
+  ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
+
+  const auto path
+      = writeTempSdf(writeResult.value(), "existing_relative_mesh_model");
+  const auto reparsed = utils::SdfParser::readSkeleton(
+      common::Uri::createFromPath(path.string()));
+  std::filesystem::remove(path);
+
+  ASSERT_NE(reparsed, nullptr);
+  EXPECT_EQ(reparsed->getName(), original->getName());
+  EXPECT_EQ(reparsed->isMobile(), original->isMobile());
+  EXPECT_VECTOR_NEAR(reparsed->getGravity(), original->getGravity(), 1e-12);
+  EXPECT_EQ(reparsed->getNumBodyNodes(), original->getNumBodyNodes());
+  EXPECT_EQ(reparsed->getNumJoints(), original->getNumJoints());
+
+  const auto* body = test::requireBodyNode(*reparsed, "mesh_body");
+  ASSERT_NE(body, nullptr);
+  expectBodyInertiaRoundTrips(*body, *originalBody, 1e-12);
+
+  const auto* root = body->getParentJoint();
+  ASSERT_NE(root, nullptr);
+  expectJointRoundTrips(*root, *originalRoot, 1e-12);
+
+  const auto* visualMesh
+      = test::requireShape<dynamics::VisualAspect, dynamics::MeshShape>(
+          *body, 0, 1);
+  const auto* collisionMesh
+      = test::requireShape<dynamics::CollisionAspect, dynamics::MeshShape>(
+          *body, 0, 1);
+  ASSERT_NE(visualMesh, nullptr);
+  ASSERT_NE(collisionMesh, nullptr);
+  EXPECT_VECTOR_NEAR(
+      visualMesh->getScale(), originalVisualMesh->getScale(), 1e-12);
+  EXPECT_VECTOR_NEAR(
+      collisionMesh->getScale(), originalCollisionMesh->getScale(), 1e-12);
+  EXPECT_EQ(
+      visualMesh->getMeshUri2().toString(),
+      originalVisualMesh->getMeshUri2().toString());
+  EXPECT_EQ(
+      collisionMesh->getMeshUri2().toString(),
+      originalCollisionMesh->getMeshUri2().toString());
+  expectShapeNodePoseRoundTrips<dynamics::VisualAspect>(
+      *body, *originalBody, 0, 1e-12);
+  expectShapeNodePoseRoundTrips<dynamics::CollisionAspect>(
+      *body, *originalBody, 0, 1e-12);
+}
+
+//==============================================================================
 TEST(SdfWriter, RelativeFileMeshUriReturnsError)
 {
   auto retriever = std::make_shared<MapResourceRetriever>();

@@ -146,7 +146,9 @@
       fixture, the native two-link revolute SDF fixture
       (`two_link_revolute_model.sdf`), the root-model issue fixtures
       (`test_issue1583.model`, `test_issue1596.model`, and
-      `test_issue1683.model`), and the world-contained
+      `test_issue1683.model`), the included relative mesh model fixture
+      (`include_relative_mesh/included_model/model.sdf`), and the
+      world-contained
       `issue1193_revolute*.sdf`, `high_version.world`, and
       `single_bodynode_skeleton.world` fixtures plus
       `test_skeleton_joint.world`, `force_torque_test.world`, and
@@ -159,7 +161,9 @@
       parent-world root semantics recovered through `RootJointType::Fixed`,
       model poses, child revolute axes and limits, parent-world and child
       universal joints, and box/sphere/cylinder visual and collision geometry.
-      The force-torque world fixture coverage is
+      The relative mesh fixture coverage proves parser-resolved source mesh URI
+      preservation for visual and collision mesh geometry. The force-torque
+      world fixture coverage is
       limited to DART skeleton semantics imported from the in-file models; it
       does not claim SDF sensor or physics metadata preservation.
       The first URDF writer slice is also implemented locally on
@@ -369,6 +373,9 @@ SKEL-YAML direction just because the prototype once existed.
   `RootJointType::Fixed`, model poses, child revolute axes and limits,
   parent-world and child universal joints, and box/sphere/cylinder visual and
   collision geometry. The
+  shipped `include_relative_mesh/included_model/model.sdf` fixture adds
+  read/write/read coverage for visual/collision mesh geometry with
+  parser-resolved source mesh URI preservation. The
   shipped
   `high_version.world` and `single_bodynode_skeleton.world` fixtures add
   read/write/read coverage for simple world-contained single-body models with
