@@ -136,6 +136,12 @@ compatibility remains on the active DART 6 LTS branch._
 - Expanded `World::computeStepMetrics()` so DART 7 metrics include cached
   rigid-contact counts, penetration, solver iterations/residuals, and
   world-frame multibody momentum while remaining a read-only query.
+- Added multibody center-of-mass accessors to the DART 7 `World` (C++
+  `Multibody::getCenterOfMass`/`getCenterOfMassJacobian`, dartpy
+  `center_of_mass`/`center_of_mass_jacobian`): the world-frame center of mass
+  and the 3 x DOF Jacobian mapping the generalized velocity to the
+  center-of-mass velocity, as the mass-weighted aggregate over the multibody's
+  links. Read-only; no step behavior changes.
 - Added the `Locked` joint actuator type to the DART 7 `World` semi-implicit
   articulated dynamics (C++ and dartpy): a locked joint is held rigidly at its
   current position through the same velocity-level equality constraint the

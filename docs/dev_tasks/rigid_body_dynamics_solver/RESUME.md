@@ -951,7 +951,8 @@ Grounding (verified in-tree):
   the existing `J M^-1 J^T` equality machinery (LOCKED and SERVO landed
   2026-07-04; SERVO adds a boxed-LCP path for effort-bounded saturation).
 - **Phase 5:** loop-closure dynamic solving, pluggable integrator/substepping,
-  body/COM Jacobians.
+  body Jacobians (link body/world Jacobians and the multibody center-of-mass
+  position + Jacobian have landed; per-link COM Jacobians remain).
 
 ## Contact solver — concrete implementation plan (derived from the code)
 
