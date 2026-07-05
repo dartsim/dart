@@ -23,6 +23,8 @@ Read these files first:
 1. **Understand the task** - Parse: goal, constraints, type (feature|bugfix|refactor|docs)
 2. **Assess scope** - Multi-phase or multi-session? Create
    `docs/dev_tasks/<task>/` (see `docs/dev_tasks/README.md` for criteria).
+   Team-scale work (multiple parallel lanes needing orchestrated worker
+   agents) switches to `dart-new-team-task` instead.
    For multi-session, design-heavy, public API, solver/paper, release, or
    cross-module work, fill the dev-task specification intake before editing:
    value, scope, assumptions, traceability, non-goals, acceptance evidence,
