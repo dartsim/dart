@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "paper_scale": false,
+  "limitation_status": "Shape-parity scaffold, not IPC paper parity. The rows cover only scenes DART can run today with the mass-spring/FEM barrier solver; the paper-scale scenes (e.g. Fig. 22, 688K nodes) and the head-to-head IPC Table-1 CPU comparison against the published reference numbers remain blocked on the M4 upstream asset pipeline (no upstream meshes are vendored). This packet proves the Fig. 23 statistics SHAPE (per-scene solver/scaling and contact axes) is emitted and machine-checkable, not that any figure is reproduced.",
+  "invariant_semantics": "Each row's 'invariant' is a human-readable description of scene intent. The machine-checked gates are: metric_fields (present, finite, non-negative), positive_fields (a subset of metric_fields required strictly > 0), and zero_fields (extra counters required present, finite, and exactly 0). Cross-solver equilibrium parity (that direct/CG/matrix-free settle to the SAME configuration) is proven by the C++ regressions in test_deformable_body, not by this packet.",
+  "reference": "docs/plans/081-deformable-implicit-barrier-solver/ipc-paper-figure-showcase.md",
+  "benchmark_binary": "bm_deformable_body",
+  "families": {
+    "solver-scaling": "Contact-free FEM scenes exercising the projected-Newton per-step cost axis (Newton iterations/step, CG iterations/residual, assembled sparse-Hessian footprint) and per-step wall time.",
+    "contact-statistics": "Self-contact barrier scenes exercising the IPC Fig. 23 contact axis (converged and peak active-contact counts, minimum active-contact distance)."
+  },
+  "rows": [
+    {
+      "row_id": "fem-neohookean-bar",
+      "benchmark": "BM_DeformableFemBarStep/24",
+      "scene_id": "fem_neohookean_bar",
+      "family": "solver-scaling",
+      "solver_variant": "sparse-direct",
+      "metric_fields": [
+        "nodes",
+        "newton_iters_per_step",
+        "hessian_nonzeros",
+        "hessian_storage_bytes"
+      ],
+      "positive_fields": [
+        "nodes",
+        "newton_iters_per_step",
+        "hessian_nonzeros",
+        "hessian_storage_bytes"
+      ],
+      "invariant": "Neo-Hookean FEM cantilever on the sparse-direct projected-Newton solver reports a positive per-step Newton-iteration count and a positive assembled sparse-Hessian footprint."
+    },
+    {
+      "row_id": "fem-fcr-bar",
+      "benchmark": "BM_DeformableFcrBarStep/24",
+      "scene_id": "fem_fcr_bar",
+      "family": "solver-scaling",
+      "solver_variant": "sparse-direct",
+      "metric_fields": [
+        "nodes",
+        "newton_iters_per_step",
+        "hessian_nonzeros",
+        "hessian_storage_bytes"
+      ],
+      "positive_fields": [
+        "nodes",
+        "newton_iters_per_step",
+        "hessian_nonzeros",
+        "hessian_storage_bytes"
+      ],
+      "invariant": "Fixed-corotational FEM cantilever (exact analytic FCR Hessian) on the sparse-direct path reports a positive per-step Newton-iteration count and a positive assembled sparse-Hessian footprint."
+    },
+    {
+      "row_id": "fem-cg-bar",
+      "benchmark": "BM_DeformableCgBarStep/24",
+      "scene_id": "fem_neohookean_bar",
+      "family": "solver-scaling",
+      "solver_variant": "iterative-cg",
+      "metric_fields": [
+        "nodes",
+        "newton_iters_per_step",
+        "cg_iters_per_step",
+        "cg_max_error",
+        "hessian_nonzeros",
+        "hessian_storage_bytes"
+      ],
+      "positive_fields": [
+        "nodes",
+        "newton_iters_per_step",
+        "cg_iters_per_step",
+        "hessian_nonzeros",
+        "hessian_storage_bytes"
+      ],
+      "invariant": "The FEM cantilever on the incomplete-Cholesky CG path reports positive per-step CG iterations and a non-negative residual estimate while still assembling the sparse Hessian for the preconditioner (positive footprint)."
+    },
+    {
+      "row_id": "fem-matrix-free-cg-bar",
+      "benchmark": "BM_DeformableMatrixFreeCgBarStep/24",
+      "scene_id": "fem_neohookean_bar",
+      "family": "solver-scaling",
+      "solver_variant": "matrix-free-cg",
+      "metric_fields": [
+        "nodes",
+        "newton_iters_per_step",
+        "cg_iters_per_step",
+        "matrix_free_solves_per_step",
+        "cg_max_error"
+      ],
+      "positive_fields": [
+        "nodes",
+        "newton_iters_per_step",
+        "cg_iters_per_step",
+        "matrix_free_solves_per_step"
+      ],
+      "zero_fields": ["hessian_nonzeros", "hessian_storage_bytes"],
+      "invariant": "The matrix-free CG path applies local Hessian blocks with block-Jacobi preconditioning; it reports positive per-step CG and matrix-free solve counts and, by design, assembles no sparse Hessian (enforced: zero hessian_nonzeros and hessian_storage_bytes)."
+    },
+    {
+      "row_id": "cube3d-direct",
+      "benchmark": "BM_DeformableCube3dDirectStep/8",
+      "scene_id": "fem_chunky_cube_3d",
+      "family": "solver-scaling",
+      "solver_variant": "sparse-direct",
+      "metric_fields": [
+        "nodes",
+        "newton_iters_per_step",
+        "hessian_nonzeros",
+        "hessian_storage_bytes"
+      ],
+      "positive_fields": [
+        "nodes",
+        "newton_iters_per_step",
+        "hessian_nonzeros",
+        "hessian_storage_bytes"
+      ],
+      "invariant": "Solid N^3 FEM cube (wide Hessian bandwidth) on the sparse-direct path reports a positive assembled Hessian footprint that grows with the 3D fill-in; the direct-vs-iterative crossover fixture."
+    },
+    {
+      "row_id": "cube3d-cg",
+      "benchmark": "BM_DeformableCube3dCgStep/8",
+      "scene_id": "fem_chunky_cube_3d",
+      "family": "solver-scaling",
+      "solver_variant": "iterative-cg",
+      "metric_fields": [
+        "nodes",
+        "newton_iters_per_step",
+        "cg_iters_per_step",
+        "cg_max_error",
+        "hessian_nonzeros",
+        "hessian_storage_bytes"
+      ],
+      "positive_fields": [
+        "nodes",
+        "newton_iters_per_step",
+        "cg_iters_per_step",
+        "hessian_nonzeros",
+        "hessian_storage_bytes"
+      ],
+      "invariant": "The chunky 3D cube on the incomplete-Cholesky CG path reports positive per-step CG iterations and a non-negative residual estimate; its per-step cost stays near O(nnz) as the mesh chunks up."
+    },
+    {
+      "row_id": "self-contact-barrier",
+      "benchmark": "BM_DeformableSelfContactBarrierStage/8",
+      "scene_id": "self_contact_folding_surface",
+      "family": "contact-statistics",
+      "solver_variant": "sparse-direct",
+      "metric_fields": [
+        "nodes",
+        "solver_iterations",
+        "converged_active_contacts",
+        "max_active_contacts",
+        "min_active_contact_distance"
+      ],
+      "positive_fields": [
+        "nodes",
+        "solver_iterations",
+        "converged_active_contacts",
+        "max_active_contacts",
+        "min_active_contact_distance"
+      ],
+      "invariant": "A surface folding onto itself keeps a strictly positive minimum active-contact distance (enforced > 0, the IPC intersection-free statistic) with positive converged and peak active-contact counts inside the barrier activation band."
+    }
+  ]
+}

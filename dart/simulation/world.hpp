@@ -229,6 +229,13 @@ struct DeformableSolverDiagnostics
   /// ``convergedActiveContactCount > 0`` (otherwise it is 0).
   double minActiveContactDistance = 0.0;
   std::size_t convergedActiveContactCount = 0;
+  /// Peak active self-contact barrier set size in a single projected-Newton
+  /// outer iteration, folded (max) across the step's bodies. Distinct from
+  /// ``convergedActiveContactCount`` (the active set at the terminal iterate)
+  /// and ``selfContactBarrierActiveContacts`` (the sum over every iteration):
+  /// this is the largest single-iteration contact load the solver carried, the
+  /// IPC "max contacts per step" statistic. Zero without active self-contact.
+  std::size_t maxActiveContactCount = 0;
 };
 
 /// Per-component-storage ECS memory diagnostics. Storage IDs are internal

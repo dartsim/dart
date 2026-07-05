@@ -112,7 +112,8 @@ its own line so status updates remain git-history friendly.
   articulated link contacts. Continue the remaining Subsystem A polish in
   `docs/dev_tasks/rigid_body_dynamics_solver/`: warm starting, friction-cone
   iteration, and scaling work around the unified contact solve; keep richer
-  model-loading diagnostics, visual/material import, actuator, mimic/coupler,
+  model-loading diagnostics, visual/material import, the remaining reserved
+  actuator modes (`Servo`/`Acceleration`; `Locked` landed), mimic/coupler,
   loop-closure, integrator, and COM-Jacobian work as separate deferred slices.
 - Gate: Each slice keeps focused simulation tests and `check-api-boundaries`
   green, sources DART 6 parity evidence from `release-6.*` branch refs before
@@ -190,16 +191,14 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Continue the active
-  [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
-  consolidated follow-up (PR #2978): remaining private packet work for
-  point-triangle/edge-edge contact stencils, broad-phase/candidate/CCD/barrier
-  primitives, sparse assembly and solves, reduced scene-owned rows, and external
-  surface-CCD diagnostics. Production runtime scene filtering, analytic curved
-  CCD, scene-level line search, full sparse Hessian assembly, GPU `World::step`,
-  paper-scale assets, and accepted reference timings remain future evidence; the
-  completion audit still records PLAN-083 as incomplete, so dev-task retirement
-  needs maintainer direction. History: see the progress log in
+- Next step: The temporary dev-task folder was retired (2026-07-04); remaining
+  PLAN-083 work is tracked in the durable sidecars
+  ([`completion-audit.md`](083-unified-newton-barrier-multibody/completion-audit.md),
+  [`paper-deck-manifest.md`](083-unified-newton-barrier-multibody/paper-deck-manifest.md)).
+  Open evidence: production runtime scene filtering, analytic curved CCD,
+  scene-level line search, full sparse Hessian assembly, GPU `World::step`,
+  paper-scale assets, and accepted reference timings. PLAN-083 remains
+  incomplete. History: see the progress log in
   [`083-unified-newton-barrier-multibody.md`](083-unified-newton-barrier-multibody.md).
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
@@ -447,12 +446,14 @@ check-dart7-final-world-promotion`.
   through `dartpy.gui.run_demos`; C++ `dart-demos` is the smaller World-only
   companion with matching planned-port placeholders. The old DART 6 demo scenes
   and cross-language golden parity fixtures are removed from the demo surfaces.
-  The `docs/dev_tasks/examples_strategy/` folder is retired; residual follow-ups
-  are tracked in PLAN-103's Landed State + retire-later checklist.
-- Gate: `pixi run py-demos -- --cycle-scenes --headless --frames 1` cycles all
-  scenes (exit 0, with per-scene progress); the notebook imports (not copies)
-  the scene modules; C++ `dart-demos` cycles its World scenes; `pixi run lint`
-  and `check-docs-policy` green.
+  The `docs/dev_tasks/examples_strategy/` and
+  `docs/dev_tasks/py_demos_framework/` folders are retired; residual follow-ups
+  are tracked in PLAN-103's Landed State, rigid-body sidecar, and retire-later
+  checklist.
+- Gate: `pixi run py-demos -- --list`, `pixi run py-demos-smoke`, and
+  `pixi run py-demos-render-smoke` exercise the Python catalog; the headless
+  cycle smoke, notebook import path, and C++ `dart-demos` companion stay green;
+  `pixi run lint` and `check-docs-policy` pass.
 
 ### PLAN-110: Differentiable Simulation
 
@@ -464,23 +465,23 @@ check-dart7-final-world-promotion`.
 - Horizon: Next
 - Dimension: Algorithm extensibility
 - Next step: The WS1–WS5 differentiability surface is merged to `main` (PR #2761);
-  remaining work is hardening/examples plus the Dojo de-risking spike. Run the
-  torch-autograd test (`pip install torch`); add standalone
-  trajectory-optimization / system-identification example programs; harden the
-  static-friction Dantzig degenerate-pivot warning (shared `dart/math/lcp`, its
-  own PR); extend deferred parameters/contacts (CENTER_OF_MASS, articulated
-  multibody-link contact); then run the Dojo spike from
+  remaining work is promotion cleanup plus the Dojo architecture decision.
+  Standalone trajectory-optimization and system-identification example programs
+  now ship; the torch-autograd path, `DART_BUILD_DIFF` on/off CI guard,
+  static-friction Dantzig warning hardening, and scalar Dojo-style central-path
+  spike now ship. Keep deferred parameters/contacts (CENTER_OF_MASS, articulated
+  multibody-link contact) documented, then use the Dojo spike evidence from
   [`110-differentiable-simulation/dojo-gap-audit.md`](110-differentiable-simulation/dojo-gap-audit.md)
-  before any public API or runtime-dependency promise. Track in
-  `docs/dev_tasks/differentiable_simulation/`. History: see the progress log in
+  before any public API or runtime-dependency promise. History: see the progress log in
   [`110-differentiable-simulation.md`](110-differentiable-simulation.md).
 - Gate: differentiability is off by default with bitwise-identical results and
   zero snapshot allocation when off (`test_diff_zero_cost_parity` + on/off
   overhead benchmark against a stated budget); analytic Jacobians agree with
   central finite differences at relative error `< 1e-4` over `h ∈ {1e-5,1e-6,1e-7}`
   on named scenes (Tied-set/boundary configs excluded) before any parity claim;
-  a `DART_BUILD_DIFF` build option with CI on _and_ off and a workflow guard;
-  serialization round-trip (or documented non-serialization) of the
+  a `DART_BUILD_DIFF` build option with CI on _and_ off and a workflow guard
+  (`scripts/check_diff_workflow.py`);
+  serialization round-trip of the
   `differentiable`/`contact_gradient_mode`/parameter-registration state; the
   public surface never exposes the reverse-pass cache, LCP snapshot,
   solver/coupler/backend types, ECS storage, or a tensor framework in the C++

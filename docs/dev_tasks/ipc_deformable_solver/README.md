@@ -359,7 +359,15 @@ DART-owned implementation.
 4. Build the profiling-grade Fig. 23 statistics surface as the solver scales:
    per-scene avg/max contacts, Newton iterations, CG iterations/residuals,
    assembled Hessian footprint, peak memory, seconds per step, and reference
-   CPU comparison.
+   CPU comparison. A shape-parity scaffold has landed: the peak active-contact
+   diagnostic (`maxActiveContactCount`) plus a machine-checkable statistics
+   packet (`scripts/write_plan081_deformable_fig23_packet.py` +
+   `docs/plans/081-.../fig23_deformable_statistics_corpus.json`, pytest
+   `python/tests/unit/test_write_plan081_deformable_fig23_packet.py`) emit the
+   Fig-23-shaped axes over DART-runnable scenes (`paper_scale: false`).
+   Remaining: process
+   peak-memory tracking, and the paper-scale scenes + Table-1 CPU comparison
+   (blocked on the M4 upstream asset pipeline).
 5. Use the scene corpus manifest to select paper-facing scenes only when their
    prerequisite kernels are present, and attach long-horizon headless Filament
    evidence for every GUI-facing scene rather than committing transient media.

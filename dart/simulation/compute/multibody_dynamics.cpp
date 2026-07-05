@@ -985,6 +985,10 @@ struct MultibodyDynamicsScratch
   Eigen::MatrixXd otherPointJacobian;
   Eigen::VectorXd contactWork;
   Eigen::VectorXd contactImpulseDelta;
+  Eigen::MatrixXd lockedInverseMassBlock;   // k x k locked-coordinate block
+  Eigen::MatrixXd lockedInverseMassColumns; // n x k original locked columns
+  Eigen::MatrixXd lockedInverseMassRhs;     // k x n original locked rows
+  Eigen::MatrixXd lockedInverseMassSolve;   // k x n A_ll^-1 * A_l*
 
   // Persistent buffers for the shared articulated inverse-mass apply and the
   // velocity-actuator constraint solve. Reused across warmed steps so neither
@@ -1177,12 +1181,27 @@ bool computeUnconstrainedMultibodyVelocityInto(
                       * jointState.velocity[local];
         }
         break;
+      case comps::ActuatorType::Locked:
+        // A locked joint is held rigidly by a velocity-level equality
+        // constraint (target velocity 0) solved after the unconstrained step,
+        // so no commanded effort or passive spring/damping force is applied to
+        // its coordinates: the constraint reaction supplies whatever holding
+        // force is required. The projected result is provably independent of
+        // any generalized force applied to a fully constrained coordinate, so
+        // zeroing here keeps the "kinematically prescribed" intent explicit and
+        // avoids computing forces the constraint would only cancel.
+        for (std::size_t d = 0; d < dof; ++d) {
+          const auto global
+              = static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d);
+          scratch.appliedForce[global] = 0.0;
+        }
+        break;
       default:
         DART_SIMULATION_THROW_T(
             InvalidOperationException,
             "Joint actuator type is not yet implemented in the "
             "articulated-body forward dynamics; supported types are Force, "
-            "Passive, and Velocity");
+            "Passive, Velocity, and Locked");
     }
   }
 
@@ -1244,6 +1263,11 @@ bool computeUnconstrainedMultibodyVelocityInto(
     if (dof == 0) {
       continue;
     }
+    const auto& jointActuation
+        = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
+    if (jointActuation.actuatorType == comps::ActuatorType::Locked) {
+      continue;
+    }
     const auto& jointModel
         = registry.get<comps::JointModel>(scratch.tree.jointOf[i]);
     if (jointModel.coulombFriction.size() != static_cast<Eigen::Index>(dof)) {
@@ -1265,9 +1289,10 @@ bool computeUnconstrainedMultibodyVelocityInto(
     }
   }
 
-  // Velocity-actuated joints: solve a coupled velocity-level equality
-  // constraint that drives the selected coordinates to their commanded
-  // velocities, lambda = (J M^-1 J^T)^-1 (target - J nextVelocity),
+  // Velocity- and Locked-actuated joints: solve a coupled velocity-level
+  // equality constraint that drives the selected coordinates to their target
+  // velocities (the commanded velocity for Velocity, zero for Locked),
+  // lambda = (J M^-1 J^T)^-1 (target - J nextVelocity),
   // nextVelocity += M^-1 J^T lambda, where J selects the constrained
   // coordinates.
   scratch.constrainedDof.clear();
@@ -1279,14 +1304,22 @@ bool computeUnconstrainedMultibodyVelocityInto(
     }
     const auto& jointActuation
         = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
-    if (jointActuation.actuatorType != comps::ActuatorType::Velocity) {
+    // Velocity and Locked actuators both drive their coordinates through the
+    // same velocity-level equality constraint: Velocity to its commanded
+    // velocity, Locked to zero (holding the joint at its current position).
+    const bool velocityActuated
+        = jointActuation.actuatorType == comps::ActuatorType::Velocity;
+    const bool lockedActuated
+        = jointActuation.actuatorType == comps::ActuatorType::Locked;
+    if (!velocityActuated && !lockedActuated) {
       continue;
     }
     for (std::size_t d = 0; d < dof; ++d) {
       scratch.constrainedDof.push_back(
           static_cast<Eigen::Index>(scratch.tree.links[i].dofOffset + d));
       scratch.constrainedTarget.push_back(
-          jointActuation.commandVelocity.size()
+          lockedActuated ? 0.0
+          : jointActuation.commandVelocity.size()
                   == static_cast<Eigen::Index>(dof)
               ? jointActuation.commandVelocity[static_cast<Eigen::Index>(d)]
               : 0.0);
@@ -1504,6 +1537,57 @@ bool solveSpdSystemInto(
 }
 
 //==============================================================================
+bool solveSpdMatrixInto(
+    const Eigen::MatrixXd& matrix,
+    const Eigen::MatrixXd& rhs,
+    Eigen::MatrixXd& solution,
+    Eigen::MatrixXd& lowerFactor,
+    Eigen::VectorXd& forwardWork)
+{
+  const Eigen::Index n = matrix.rows();
+  if (matrix.cols() != n || rhs.rows() != n) {
+    return false;
+  }
+  solution.resize(n, rhs.cols());
+  if (n == 0 || rhs.cols() == 0) {
+    return true;
+  }
+  if (n == 1) {
+    const double diagonal = matrix(0, 0);
+    if (diagonal == 0.0) {
+      return false;
+    }
+    solution.row(0) = rhs.row(0) / diagonal;
+    return true;
+  }
+
+  if (!factorSpdLowerInto(matrix, lowerFactor)) {
+    return false;
+  }
+
+  if (forwardWork.size() < n) {
+    forwardWork.resize(n);
+  }
+  for (Eigen::Index column = 0; column < rhs.cols(); ++column) {
+    for (Eigen::Index i = 0; i < n; ++i) {
+      double sum = rhs(i, column);
+      for (Eigen::Index j = 0; j < i; ++j) {
+        sum -= lowerFactor(i, j) * forwardWork[j];
+      }
+      forwardWork[i] = sum / lowerFactor(i, i);
+    }
+    for (Eigen::Index i = n; i-- > 0;) {
+      double sum = forwardWork[i];
+      for (Eigen::Index j = i + 1; j < n; ++j) {
+        sum -= lowerFactor(j, i) * solution(j, column);
+      }
+      solution(i, column) = sum / lowerFactor(i, i);
+    }
+  }
+  return true;
+}
+
+//==============================================================================
 bool invertSpdMatrixInto(
     const Eigen::MatrixXd& matrix,
     Eigen::MatrixXd& inverse,
@@ -1625,6 +1709,84 @@ void ensureMultibodyLinkContactRowStorage(
 }
 
 //==============================================================================
+bool projectLockedDofsOutOfContactInverseMassInto(
+    const detail::WorldRegistry& registry,
+    const DynamicsTree& tree,
+    MultibodyDynamicsScratch& scratch,
+    Eigen::MatrixXd& inverseMass)
+{
+  const auto n = static_cast<Eigen::Index>(tree.dofCount);
+  if (inverseMass.rows() != n || inverseMass.cols() != n) {
+    return false;
+  }
+
+  scratch.constrainedDof.clear();
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    const auto& link = tree.links[i];
+    if (link.dof == 0 || link.jointEntity == entt::null) {
+      continue;
+    }
+    const auto& jointActuation
+        = registry.get<comps::JointActuation>(link.jointEntity);
+    if (jointActuation.actuatorType != comps::ActuatorType::Locked) {
+      continue;
+    }
+    for (std::size_t d = 0; d < link.dof; ++d) {
+      scratch.constrainedDof.push_back(
+          static_cast<Eigen::Index>(link.dofOffset + d));
+    }
+  }
+  const auto k = static_cast<Eigen::Index>(scratch.constrainedDof.size());
+  if (k == 0) {
+    return true;
+  }
+
+  scratch.lockedInverseMassBlock.resize(k, k);
+  scratch.lockedInverseMassColumns.resize(n, k);
+  scratch.lockedInverseMassRhs.resize(k, n);
+  scratch.lockedInverseMassSolve.resize(k, n);
+  for (Eigen::Index a = 0; a < k; ++a) {
+    const Eigen::Index lockedA
+        = scratch.constrainedDof[static_cast<std::size_t>(a)];
+    scratch.lockedInverseMassColumns.col(a) = inverseMass.col(lockedA);
+    scratch.lockedInverseMassRhs.row(a) = inverseMass.row(lockedA);
+    for (Eigen::Index b = 0; b < k; ++b) {
+      const Eigen::Index lockedB
+          = scratch.constrainedDof[static_cast<std::size_t>(b)];
+      scratch.lockedInverseMassBlock(a, b) = inverseMass(lockedA, lockedB);
+    }
+  }
+
+  if (!solveSpdMatrixInto(
+          scratch.lockedInverseMassBlock,
+          scratch.lockedInverseMassRhs,
+          scratch.lockedInverseMassSolve,
+          scratch.symmetricFactor,
+          scratch.symmetricForwardWork)) {
+    return false;
+  }
+
+  for (Eigen::Index row = 0; row < n; ++row) {
+    for (Eigen::Index column = 0; column < n; ++column) {
+      double correction = 0.0;
+      for (Eigen::Index a = 0; a < k; ++a) {
+        correction += scratch.lockedInverseMassColumns(row, a)
+                      * scratch.lockedInverseMassSolve(a, column);
+      }
+      inverseMass(row, column) -= correction;
+    }
+  }
+
+  for (Eigen::Index a = 0; a < k; ++a) {
+    const Eigen::Index locked
+        = scratch.constrainedDof[static_cast<std::size_t>(a)];
+    inverseMass.row(locked).setZero();
+    inverseMass.col(locked).setZero();
+  }
+  return true;
+}
+
+//==============================================================================
 bool prepareMultibodyContactDynamicsInto(
     const detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
@@ -1658,6 +1820,10 @@ bool prepareMultibodyContactDynamicsInto(
   }
 
   inverseMassMatrixColumnsInto(scratch.tree, scratch, problem.inverseMass);
+  if (!projectLockedDofsOutOfContactInverseMassInto(
+          registry, scratch.tree, scratch, problem.inverseMass)) {
+    return false;
+  }
 
   linkBodyJacobiansInto(scratch.tree, scratch.bodyJacobian);
   return true;
@@ -2183,6 +2349,34 @@ void enforceMultibodyVelocityLimits(
 }
 
 //==============================================================================
+void projectLockedMultibodyVelocityInto(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    Eigen::VectorXd& nextVelocity)
+{
+  Eigen::Index velocityOffset = 0;
+  for (const auto linkEntity : structure.links) {
+    const auto& link = registry.get<comps::LinkModel>(linkEntity);
+    if (link.parentJoint == entt::null) {
+      continue;
+    }
+
+    const auto& jointModel = registry.get<comps::JointModel>(link.parentJoint);
+    const auto dof = static_cast<Eigen::Index>(jointModel.getDOF());
+    if (dof == 0) {
+      continue;
+    }
+
+    const auto& jointActuation
+        = registry.get<comps::JointActuation>(link.parentJoint);
+    if (jointActuation.actuatorType == comps::ActuatorType::Locked) {
+      nextVelocity.segment(velocityOffset, dof).setZero();
+    }
+    velocityOffset += dof;
+  }
+}
+
+//==============================================================================
 template <typename LinkContactVector>
 void collectMultibodyLinkContactsInto(
     detail::WorldRegistry& registry,
@@ -2313,6 +2507,7 @@ void simulateMultibody(
       linkContacts,
       scratch);
   enforceMultibodyVelocityLimits(registry, structure, scratch.nextVelocity);
+  projectLockedMultibodyVelocityInto(registry, structure, scratch.nextVelocity);
   integrateMultibodyPositions(
       registry, structure, scratch.nextVelocity, timeStep);
 }
@@ -3678,6 +3873,7 @@ void MultibodyPositionStage::execute(
     }
 
     enforceMultibodyVelocityLimits(registry, structure, *nextVelocity);
+    projectLockedMultibodyVelocityInto(registry, structure, *nextVelocity);
     integrateMultibodyPositions(registry, structure, *nextVelocity, timeStep);
 
     if (auto* pendingVelocity
@@ -3788,6 +3984,7 @@ void reserveMultibodyDynamicsRegistryStorage(
       scratch.contactProblem.inverseMass = scratch.velocityMassInverse;
 
       Eigen::Index velocityConstraintDofs = 0;
+      Eigen::Index lockedConstraintDofs = 0;
       for (std::size_t i = 0; i < scratch.tree.links.size(); ++i) {
         const auto dof = scratch.tree.links[i].dof;
         if (dof == 0) {
@@ -3795,9 +3992,28 @@ void reserveMultibodyDynamicsRegistryStorage(
         }
         const auto& jointActuation
             = registry.get<comps::JointActuation>(scratch.tree.jointOf[i]);
-        if (jointActuation.actuatorType == comps::ActuatorType::Velocity) {
+        // Velocity and Locked actuators both add rows to the velocity-level
+        // equality constraint solved in computeUnconstrainedMultibodyVelocity.
+        if (jointActuation.actuatorType == comps::ActuatorType::Velocity
+            || jointActuation.actuatorType == comps::ActuatorType::Locked) {
           velocityConstraintDofs += static_cast<Eigen::Index>(dof);
         }
+        if (jointActuation.actuatorType == comps::ActuatorType::Locked) {
+          lockedConstraintDofs += static_cast<Eigen::Index>(dof);
+        }
+      }
+      if (lockedConstraintDofs > 0) {
+        scratch.lockedInverseMassBlock.setIdentity(
+            lockedConstraintDofs, lockedConstraintDofs);
+        scratch.lockedInverseMassColumns.setZero(dof, lockedConstraintDofs);
+        scratch.lockedInverseMassRhs.setZero(lockedConstraintDofs, dof);
+        scratch.lockedInverseMassSolve.setZero(lockedConstraintDofs, dof);
+        (void)solveSpdMatrixInto(
+            scratch.lockedInverseMassBlock,
+            scratch.lockedInverseMassRhs,
+            scratch.lockedInverseMassSolve,
+            scratch.symmetricFactor,
+            scratch.symmetricForwardWork);
       }
       if (velocityConstraintDofs > 0) {
         scratch.velocityConstraintMatrix.setIdentity(

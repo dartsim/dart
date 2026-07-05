@@ -1,18 +1,54 @@
 # Resume: SKEL Format Evolution
 
-## Current Resume Checkpoint (2026-07-05 UTC)
+## Current Resume Checkpoint (2026-07-05)
 
-Phase 3 is decided and committed locally on `work/skel-format-yaml-decision`,
-stacked on the Phase 2 removal branch. The decision record is
-[`03-yaml-decision.md`](03-yaml-decision.md): do not add YAML as a DART 7
-`dart::io` model format, do not build a YAML wrapper over URDF/SDF/MJCF, and do
-not carry SKEL syntax forward. If YAML returns, it must be a DART-owned
-project/scene serialization design with schema/versioning rules plus import,
-export, and round-trip tests.
+`work/skel-format-yaml-decision` is the stacked writer/decision branch. It now
+has `feature/remove-skel-dart7-phase2` merged locally after that Phase 2 branch
+was refreshed on current `origin/main` (`5ec8b6644ad`). Phase 2 still has no
+matching GitHub PR; pushing/opening the PR requires explicit maintainer/user
+approval.
 
-Phase 2 remains implemented on `feature/remove-skel-dart7-phase2` and awaiting
-PR creation/review/merge. The stacked Phase 3 branch is documentation-only and
-should not be pushed as the Phase 2 removal PR.
+The Phase 2 branch's only merge conflict against `origin/main` was in
+`docs/dev_tasks/usd_scene_loader/README.md`; it was resolved by keeping the new
+OpenUSD blocker/specification-intake text from `main` while removing SKEL from
+the DART 7 parity/front-door wording. The local 2026-07-05 Phase 2 validation
+pass completed:
+
+- lightweight invariants: SKEL parser/source files absent, `data/skel` absent,
+  Kima Collada meshes present under `data/mesh/kima/*.dae`;
+- `pixi run python -m pytest python/tests/unit/test_check_dartpy_import_layout.py python/tests/unit/utils/test_utils_stub_import.py python/tests/unit/test_check_dart7_world_promotion_blockers.py`
+  — 28 passed;
+- `pixi run check-ai-commands`;
+- `pixi run check-dartpy-import-layout`;
+- `pixi run run-cpp-target INTEGRATION_io_Read` — 7 passed, including
+  `Read.SkelIsNotSupported`;
+- `pixi run run-cpp-target UNIT_dynamics_MeshShape` — 49 passed;
+- `pixi run run-cpp-target test_mesh_loaderNone` — 5 passed;
+- `pixi run lint`;
+- `pixi run build`.
+
+The sdformat-boundary checker is not part of the Phase 2 removal branch; it
+lives on this stacked writer branch, which owns the SDF IO boundary work.
+
+The 2026-07-05 local stack-refresh validation also passed on
+`work/skel-format-yaml-decision` after merging the refreshed Phase 2 branch:
+
+- `git diff --check`;
+- `git diff --cached --check`;
+- `pixi run check-sdf-sdformat-boundary`;
+- `pixi run run-cpp-target INTEGRATION_io_Read` - 7 passed;
+- `pixi run run-cpp-target INTEGRATION_io_SdfParser` - 42 passed;
+- `pixi run run-cpp-target INTEGRATION_io_SdfWriter` - 97 passed;
+- `pixi run run-cpp-target INTEGRATION_io_UrdfWriter` - 45 passed;
+- `pixi run lint`;
+- `pixi run build`.
+
+Phase 3 is decided and committed locally on `work/skel-format-yaml-decision`.
+The decision record is [`03-yaml-decision.md`](03-yaml-decision.md): do not add
+YAML as a DART 7 `dart::io` model format, do not build a YAML wrapper over
+URDF/SDF/MJCF, and do not carry SKEL syntax forward. If YAML returns, it must be
+a DART-owned project/scene serialization design with schema/versioning rules
+plus import, export, and round-trip tests.
 
 Phase 4 coordination is also recorded locally in
 [`04-usd-coordination.md`](04-usd-coordination.md): PR #3109 already landed the
@@ -2639,14 +2675,16 @@ can be recovered without adopting the old SKEL YAML direction.
 
 `work/skel-format-yaml-decision` — Phase 3 YAML decision, Phase 4 USD
 coordination, Phase 5 bounded writer-scope closeout, and accumulated SDF/URDF
-writer slices are local on top of the Phase 2 removal commit. The underlying
-Phase 2 branch remains `feature/remove-skel-dart7-phase2`.
+writer slices are local on top of the refreshed Phase 2 removal branch. The
+underlying Phase 2 branch remains `feature/remove-skel-dart7-phase2` and still
+needs an approved push/open PR step.
 
 ## Immediate Next Step
 
-Continue with the remaining real task work: land Phase 2 after maintainer
-approval, add the resulting PR link to the DART 7 changelog's SKEL-removal
-bullet, and prepare the final dev-task cleanup change. Phase 5 is closed for the
+Push/open the Phase 2 PR only after explicit maintainer/user approval, then add
+the PR link to the DART 7 SKEL-removal changelog bullet before merge. After
+Phase 2 lands, prepare the final dev-task cleanup change. Phase 3, Phase 4, and
+Phase 5 are already recorded on this stacked branch; Phase 5 is closed for the
 current DART 7 writer scope unless a maintainer reopens writer scope.
 
 ## Context That Would Be Lost

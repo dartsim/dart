@@ -56,6 +56,8 @@
   [`../design/differentiable_simulation.md`](../design/differentiable_simulation.md)
 - Feature-by-feature Nimble parity audit + cross-engine API survey:
   [`110-differentiable-simulation/nimble-gap-audit.md`](110-differentiable-simulation/nimble-gap-audit.md)
+- Nimble paper reproduction and performance evidence:
+  [`110-differentiable-simulation/nimble-paper-reproduction-results.md`](110-differentiable-simulation/nimble-paper-reproduction-results.md)
 - Dojo solver gap audit + integration notes:
   [`110-differentiable-simulation/dojo-gap-audit.md`](110-differentiable-simulation/dojo-gap-audit.md)
 - Public facade rules:
@@ -63,8 +65,6 @@
   [`../design/simulation_python_api.md`](../design/simulation_python_api.md)
 - Research references: `werling-2021` and `howell-2022-dojo` in
   [`../readthedocs/papers.md`](../readthedocs/papers.md)
-- Active implementation tracking (transient; durable owners are the design + gap
-  audit): `docs/dev_tasks/differentiable_simulation/`.
 
 ## Dependencies
 
@@ -85,11 +85,11 @@
 ## Workstreams
 
 First slices of workstreams 1-5 are implemented and verified (see the dashboard
-entry and `docs/dev_tasks/differentiable_simulation/`); each keeps
+entry, design doc, Nimble gap audit, and paper reproduction sidecar); each keeps
 `check-api-boundaries` green and is finite-difference-of-step validated. The
-Dojo workstream is unstarted and must begin with the gap audit/spike below, not
-with public API or runtime dependencies. Slice detail for implemented work lives
-in the dev-task roadmap.
+Dojo workstream has its first scalar central-path implicit-gradient spike passing
+under `DART_BUILD_DIFF=ON`, with no public API or runtime dependency. Further
+maximal-coordinate/NCP/IPM work needs a maintainer split decision.
 
 1. **Opt-in seam + contact-free Jacobians** (implemented) — `WorldOptions::differentiable`
    (default false) + `DART_BUILD_DIFF`, nullable-sink snapshot plumbing, the
@@ -125,16 +125,19 @@ in the dev-task roadmap.
    boxed-LCP/Nimble-style path. This stays inside the DART 7 `World`
    multi-solver architecture as an alternate rigid-domain method family with
    DART-owned capability names, not as a `DojoWorld`, public solver registry, or
-   Dojo.jl dependency. The first slice is evidence-only: keep
-   [`dojo-gap-audit.md`](110-differentiable-simulation/dojo-gap-audit.md)
-   current, then run a minimal solver spike before any public API promise.
+   Dojo.jl dependency. The first scalar central-path implicit-gradient spike is
+   evidence-only and is recorded in
+   [`dojo-gap-audit.md`](110-differentiable-simulation/dojo-gap-audit.md); the
+   next step is a maintainer split decision before any public API promise.
 
-Remaining follow-ups (not workstreams): a standalone worked
-trajectory-optimization example program (the system-identification example
-shipped as `python/examples/diff_system_identification.py`), the torch-autograd
-end-to-end test (needs torch in-env), a `DART_BUILD_DIFF` CI job, and minor
-robustness/coverage items — tracked in
-`docs/dev_tasks/differentiable_simulation/`.
+Remaining follow-ups (not workstreams): standalone worked examples now ship
+(`python/examples/diff_system_identification.py` and
+`python/examples/diff_trajectory_optimization.py`), and the torch-autograd
+end-to-end test now passes locally with CPU torch in the DIFF-on build. The
+`DART_BUILD_DIFF` CI contract now ships through the default-OFF parity smoke, the
+focused `build-diff` job, and `scripts/check_diff_workflow.py`. Deferred
+parameter/contact scope and Dojo architecture decisions are tracked in this plan,
+the design doc, and the Dojo gap audit.
 
 This plan must not add a public `World` precision selector as a differentiability
 shortcut. Autodiff-scalar templating may remain an internal smooth-term or spike
@@ -168,8 +171,7 @@ family.
   guard prevents the option being silently dropped (mirroring the CUDA workflow
   guard).
 - **Serialization**: `WorldOptions::differentiable`, `contact_gradient_mode`, and
-  registered differentiable parameters round-trip through serialization, or are
-  explicitly documented as non-serialized.
+  registered differentiable parameters round-trip through serialization.
 - **Examples / docs / changelog**: WS3 ships a runnable trajectory-optimization
   example and WS4 a system-identification example; changelog and migration notes
   accompany any promoted surface.
@@ -188,11 +190,10 @@ family.
 - Architecture invariants held: it is the rigid-body-solver-internal reverse pass,
   the forward single-domain fast path is unchanged, and the public object model is
   not reshaped.
-- Dojo-style work remains an evaluation track until the gap audit is complete and
-  a minimal internal spike proves the maximal-coordinate variational/NCP/IPM
-  step, implicit-gradient solve, finite-difference agreement, and comparison
-  scenes can coexist with the current DART 7 `World` without leaking solver
-  internals or making Dojo.jl a runtime dependency.
+- Dojo-style work remains an evaluation track after the scalar central-path
+  spike. The next decision is whether maximal-coordinate variational/NCP/IPM work
+  stays under PLAN-110 or splits into a new initiative. Until then, avoid leaking
+  solver internals or making Dojo.jl a runtime dependency.
 
 ## Revision Triggers
 
@@ -226,14 +227,12 @@ implicit gradients, using Dojo.jl as method evidence and a comparison baseline
 rather than a dependency.
 
 The WS1–WS5 differentiability surface is merged to `main` (PR #2761);
-the remaining work is the hardening/examples/Dojo-spike follow-ups. Run the
-torch-autograd test (`pip install torch`); add the
-standalone worked trajectory-optimization / system-identification example
-programs (the GUI demo and the convergence tests already ship); harden the
-static-friction Dantzig degenerate-pivot warning (shared `dart/math/lcp`, its
-own PR); and extend the deferred parameters/contacts (CENTER_OF_MASS,
-articulated multibody-link contact). After the active path lands, run the
-Dojo de-risking spike from
+the remaining work is promotion cleanup plus the Dojo architecture decision.
+Standalone worked trajectory-optimization and system-identification example
+programs now ship; the torch-autograd path, `DART_BUILD_DIFF` on/off CI guard,
+static-friction Dantzig warning hardening, and scalar Dojo-style central-path
+spike now ship. Keep the deferred parameters/contacts (CENTER_OF_MASS,
+articulated multibody-link contact) documented, then use the Dojo de-risking
+evidence in
 [`110-differentiable-simulation/dojo-gap-audit.md`](110-differentiable-simulation/dojo-gap-audit.md)
-before any public API or runtime dependency promise. Track in
-`docs/dev_tasks/differentiable_simulation/`.
+before any public API or runtime dependency promise.

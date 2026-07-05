@@ -4623,6 +4623,60 @@ TEST(World, DifferentiableMultibodyTorqueScratchUsesWorldAllocator)
          "the World free-list peak on a same-size follow-up step";
 }
 
+TEST(World, DifferentiableLockedActuatorThrows)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.differentiable = true;
+  sx::World world(options);
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("diff_locked");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "slider";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto link = robot.addLink("link", base, spec);
+  link.setMass(1.0);
+  auto joint = link.getParentJoint();
+  joint.setActuatorType(sx::ActuatorType::Locked);
+
+  EXPECT_THROW(world.step(), sx::NotImplementedException);
+}
+
+TEST(World, DifferentiableLockedFixedJointDoesNotThrow)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.differentiable = true;
+  sx::World world(options);
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("diff_locked_fixed");
+  auto base = robot.addLink("base");
+  sx::JointSpec fixedSpec;
+  fixedSpec.name = "fixed";
+  fixedSpec.type = sx::JointType::Fixed;
+  auto fixedLink = robot.addLink("fixed_link", base, fixedSpec);
+  fixedLink.setMass(1.0);
+  auto fixedJoint = fixedLink.getParentJoint();
+  fixedJoint.setActuatorType(sx::ActuatorType::Locked);
+
+  sx::JointSpec movingSpec;
+  movingSpec.name = "slider";
+  movingSpec.type = sx::JointType::Prismatic;
+  movingSpec.axis = Eigen::Vector3d::UnitZ();
+  auto movingLink = robot.addLink("moving_link", fixedLink, movingSpec);
+  movingLink.setMass(1.0);
+
+  EXPECT_NO_THROW(world.step());
+  const auto derivatives = world.getStepDerivatives();
+  EXPECT_EQ(derivatives.controlJacobian.cols(), 1);
+}
+
 TEST(World, DifferentiableContactFreeStepScratchUsesProvidedAllocator)
 {
   namespace sx = dart::simulation;
@@ -8412,6 +8466,13 @@ TEST(World, DeformableSelfContactFrictionProductionGridIsActive)
   EXPECT_EQ(diagnostics.nodeCount, 2u * 11u * 11u);
   EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
   EXPECT_GT(diagnostics.convergedActiveContactCount, 0u);
+  // The peak per-step active-contact count (Fig. 23 max-contacts axis) is
+  // surfaced through the public diagnostics; it is a single iteration's active
+  // set, so it never exceeds the cumulative sum over all iterations.
+  EXPECT_GT(diagnostics.maxActiveContactCount, 0u);
+  EXPECT_LE(
+      diagnostics.maxActiveContactCount,
+      diagnostics.selfContactBarrierActiveContacts);
   EXPECT_GT(diagnostics.frictionDissipation, 0.0);
 }
 

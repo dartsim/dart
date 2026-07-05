@@ -44,6 +44,7 @@
 #include <dart/math/lcp/lcp_solver.hpp>
 #include <dart/math/lcp/lcp_types.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+#include <dart/math/lcp/projection/pgs_solver.hpp>
 
 #include <dart/common/stl_allocator.hpp>
 
@@ -602,8 +603,20 @@ Eigen::VectorXd solveBoxedLcp(const ContactScene& scene, const ContactTerms& t)
   math::LcpOptions options;
   options.warmStart = false;
   options.validateSolution = false;
+  options.earlyTermination = true;
   const math::LcpProblem problem(t.A, t.b, loBounds, hiBounds, findex);
-  solver.solve(problem, impulse, options);
+  const math::LcpResult result = solver.solve(problem, impulse, options);
+  if (!result.succeeded() || !impulse.allFinite()) {
+    Eigen::VectorXd fallbackImpulse = impulse;
+    math::PgsSolver fallback;
+    math::LcpOptions fallbackOptions = math::LcpOptions::realTime();
+    fallbackOptions.maxIterations = 120;
+    fallbackOptions.relativeTolerance = 1e-6;
+    fallbackOptions.validateSolution = false;
+    fallbackOptions.warmStart = fallbackImpulse.allFinite();
+    fallback.solve(problem, fallbackImpulse, fallbackOptions);
+    impulse = fallbackImpulse;
+  }
   for (Eigen::Index i = 0; i < n; ++i) {
     if (!std::isfinite(impulse[i]) || impulse[i] < 0.0) {
       impulse[i] = 0.0;

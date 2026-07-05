@@ -332,6 +332,9 @@ SKEL-YAML direction just because the prototype once existed.
    longer needs local implementation work unless a maintainer reopens writer
    scope; future SDF/URDF expansion criteria live in
    `docs/onboarding/io-parsing.md`.
+3. Keep any further USD work coordinated with
+   [`usd_scene_loader/`](../usd_scene_loader/) rather than duplicating that
+   loader surface here.
 
 ## Verification Gates
 

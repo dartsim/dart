@@ -30,20 +30,19 @@ autodiff`), and the DART 7 promotion contract.
   to promote it. This document is the affirmative answer and supersedes the
   deferred status for the analytic-gradient method.
 
-Active operating state lives in `docs/plans/dashboard.md` (PLAN-110) and
-`docs/dev_tasks/differentiable_simulation/`. Feature-by-feature parity tracking
-against the Nimble paper and repository lives in
-`docs/plans/110-differentiable-simulation/nimble-gap-audit.md`; the planned
-Dojo-style solver evaluation lives in
+Active operating state lives in `docs/plans/dashboard.md` (PLAN-110).
+Feature-by-feature parity tracking against the Nimble paper and repository
+lives in `docs/plans/110-differentiable-simulation/nimble-gap-audit.md`; Nimble
+paper reproduction/performance evidence lives in
+`docs/plans/110-differentiable-simulation/nimble-paper-reproduction-results.md`;
+the planned Dojo-style solver evaluation lives in
 `docs/plans/110-differentiable-simulation/dojo-gap-audit.md`.
 
-This document was revised after architecture, plan, and API reviews. The
-"prose ran ahead of the code" in two places that those reviews corrected and
-that this revision now states accurately: (1) DART's manifold integrator makes
-the position Jacobian joint-type-dependent, not identity; and (2) the
-experimental contact path is currently sequential-impulse, not a boxed LCP, so
-the analytic _contact_ gradient is undefined until that path becomes an LCP
-solve (PLAN-080 Workstream 4).
+This document was revised after architecture, plan, and API reviews. Those
+reviews corrected two important assumptions that remain part of the contract:
+(1) DART's manifold integrator makes the position Jacobian joint-type-dependent,
+not identity; and (2) analytic contact gradients attach to the boxed-LCP contact
+path, not the default sequential-impulse path.
 
 ## Purpose
 
@@ -67,9 +66,10 @@ PLAN-110 also tracks Dojo (Howell et al., arXiv 2203.00806) as an additional
 differentiable-rigid-body solver reference. Dojo is not the current
 implementation target: it uses a maximal-coordinate variational hard-contact
 NCP with nonlinear friction cones, a custom primal-dual interior-point solver,
-and implicit gradients through a relaxed contact solve. That is a separate
-evaluation track for a possible second opt-in solver family after the
-Nimble-style path lands.
+and implicit gradients through a relaxed contact solve. The first scalar
+central-path implicit-gradient spike now exists as internal-only test evidence;
+full maximal-coordinate/NCP/IPM work remains a separate evaluation track for a
+possible second opt-in solver family.
 
 Architecturally, that means Dojo-style work fits behind the same experimental
 `World` multi-solver facade as the existing rigid solver. It is not a new public
@@ -244,8 +244,10 @@ value). The two parts are treated distinctly:
   scalar-generic autodiff path the dynamics already keeps open (instantiate the
   scalar-generic dynamics on an AD scalar — less work, some overhead); or (c)
   finite-difference-of-dynamics as an interim to unblock WS1 while (a) is built.
-  The contact block stays analytic regardless. This decision is recorded in the
-  dev-task roadmap when WS1 starts.
+  The contact block stays analytic regardless. The implemented first slice uses
+  analytic assembly with finite-difference dynamics terms for the smooth blocks,
+  while the contact solve is differentiated analytically through the boxed-LCP
+  active set.
 
 ### D2 — Opt-in, default off, bitwise-identical when off
 
@@ -544,10 +546,10 @@ differentiable=True)` and the `traj.states` buffer interact with it. This is a
 
 ## Phasing
 
-Historical sequence; slice detail lives in the dev-task roadmap. WS1–WS5 and
-the PLAN-080 boxed-LCP contact prerequisite now have implemented first slices in
-the experimental stack. Keep this list as the dependency map that explains how
-the work landed and what stable promotion must still harden.
+Historical sequence. WS1–WS5 and the PLAN-080 boxed-LCP contact prerequisite now
+have implemented first slices in the experimental stack. Keep this list as the
+dependency map that explains how the work landed and what stable promotion must
+still harden.
 
 0. **Prerequisite (PLAN-080 WS4)**: boxed-LCP contact + joint-limit solve on the
    DART 7 `World`, emitting `{A,b,lo,hi,findex,f}` as first-class outputs.
@@ -569,11 +571,11 @@ the work landed and what stable promotion must still harden.
    escape (no FD gate; gated by a documented optimization-convergence benchmark);
    (5c) pre-contact surrogate (no FD gate; gated by a documented trajectory-opt
    task). Each labeled honestly.
-6. **Dojo-style solver evaluation (planned)** — audit and spike a separate
-   maximal-coordinate variational NCP/IPM solver with implicit gradients,
-   central-path smoothness control, and comparison examples. This starts as
-   internal-only evidence; public API waits for the PLAN-110 split/promotion
-   decision.
+6. **Dojo-style solver evaluation (first spike complete)** — the scalar
+   central-path contact spike validates implicit-gradient plumbing as
+   internal-only evidence. Maximal-coordinate variational NCP/IPM work with
+   nonlinear friction cones, central-path smoothness control, and comparison
+   examples waits for the PLAN-110 split/promotion decision.
 
 ## Stable Promotion Contract
 
@@ -582,7 +584,7 @@ types for state/control/parameter derivatives with no `detail`/ECS/backend
 includes; finite-difference-checked correctness on the named scenes; focused C++
 and Python tests; a named build option (`DART_BUILD_DIFF`) with CI covering on
 _and_ off configurations and a workflow guard so the option cannot be silently
-dropped; serialization round-trip (or documented non-serialization) of
+dropped; serialization round-trip of
 `WorldOptions::differentiable`, `contact_gradient_mode`, and parameter
 registrations; ownership/freshness/unsupported-case docs; dartpy bindings with
 committed stubs; a trajectory-optimization and a system-identification example
@@ -590,10 +592,23 @@ with runnable commands; changelog and migration notes; and a tracked overhead
 benchmark. The zero-cost `differentiable=false` default is part of the contract.
 
 Current experimental status: binary save/load preserves the World-level
-differentiability/contact policy flags, and replay restores registered
-differentiable parameters. Binary serialization of parameter registrations is
-not implemented yet; stable promotion must either add that round-trip or
-document runtime re-registration as the supported restart contract.
+differentiability/contact policy flags and registered differentiable parameters
+(binary format v27); replay also restores registered differentiable parameters.
+Standalone torch-free system-identification and trajectory-optimization examples
+ship under `python/examples/`. Linux CI now keeps explicit build-option coverage:
+the default Release/core paths run the `DART_BUILD_DIFF=OFF` parity smoke, a
+focused `build-diff` job runs the `DART_BUILD_DIFF=ON` C++/Python diff tests, and
+`scripts/check_diff_workflow.py` guards the workflow through `lint`/`check-lint`.
+The optional PyTorch bridge has local CPU-torch evidence: the DIFF-on
+`python/tests/unit/simulation/test_diff.py` suite runs the
+`sx.diff.timestep` autograd gradient test successfully, while the torch-absent
+ImportError guard remains covered in torch-free environments. Static-friction
+degenerate-pivot hardening is also in place for the public BoxedLcp path:
+non-positive Dantzig pivots terminate early and fall back to bounded PGS, and
+the static-friction hold regression passes without the low-level `s<=0` warning.
+The frozen boxed-LCP solve used by contact-gradient/parameter-gradient tests now
+uses the same early-termination and fallback policy, keeping finite-difference
+gradient checks aligned with the forward solver.
 
 ## Deferred Capabilities
 
@@ -608,7 +623,7 @@ document runtime re-registration as the supported restart contract.
 - A public third-party custom-gradient plugin API (needs the deferred ABI/GIL
   design).
 - Public Dojo-style maximal-coordinate/NCP/IPM solver API until the PLAN-110
-  Dojo gap audit and internal spike prove the path.
+  Dojo evidence justifies a split/promotion decision.
 
 ## Design Rationale
 

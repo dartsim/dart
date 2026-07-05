@@ -50,8 +50,11 @@ namespace dart::simulation {
 ///
 /// Describes how a joint is driven during forward dynamics. `Force` (the
 /// default) applies the commanded joint effort; `Passive` applies no commanded
-/// effort (only passive spring/damping/friction forces act). The remaining
-/// modes are reserved and not yet implemented in the forward dynamics.
+/// effort (only passive spring/damping/friction forces act); `Velocity` drives
+/// the joint to a commanded velocity; `Locked` holds the joint rigidly at its
+/// current position. The default semi-implicit dynamics implement these four
+/// modes; `Servo`, `Acceleration`, and `Mimic` are reserved and rejected by the
+/// forward dynamics at step time.
 enum class ActuatorType
 {
   Force,
@@ -137,8 +140,12 @@ public:
   /// `Force` applies the commanded joint effort; `Passive` ignores it (only
   /// passive spring/damping/friction forces act); `Velocity` drives the joint
   /// to its commanded velocity (see setCommandVelocity) via a velocity-level
-  /// constraint. The remaining modes are not yet implemented and are rejected
-  /// by the forward dynamics at step time.
+  /// constraint; `Locked` holds the joint rigidly at its current position via
+  /// the same velocity-level constraint (target velocity zero). The remaining
+  /// modes (`Servo`, `Acceleration`, `Mimic`) are not yet implemented and are
+  /// rejected by the default forward dynamics at step time. The opt-in
+  /// variational integrator currently implements only `Force` and `Velocity`;
+  /// other modes fall back to passive behavior there.
   void setActuatorType(ActuatorType actuatorType);
 
   /// Get the commanded target velocity used by the `Velocity` actuator type.
