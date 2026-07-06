@@ -2019,28 +2019,6 @@ bool findSoftPointFaceContact(
     return best.found;
   }
 
-  for (std::size_t faceIndex = 0u; faceIndex < faceFaces.size() && !stopSearch;
-       ++faceIndex) {
-    addCachedSoftFaceCandidate(
-        pointFirstFaceByPointMass,
-        point,
-        pointInFace,
-        pointBodyOriginInFace,
-        faceRotation,
-        pointMassIndex,
-        faceFaces,
-        faceIndex,
-        pointFaceIndex,
-        stopSearch,
-        best);
-
-    if (best.found && best.penetrationDepth > 0.0)
-      break;
-  }
-
-  if (stopSearch || !best.found || best.penetrationDepth <= 0.0)
-    return best.found;
-
   const auto shouldPruneNode
       = [&](const DARTCollisionObject::CachedSoftFaceBvhNode& node) {
           if (!best.found || best.penetrationDepth <= 0.0)

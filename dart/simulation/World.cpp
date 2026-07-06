@@ -63,7 +63,6 @@
 #include <thread>
 #include <type_traits>
 #include <typeinfo>
-#include <unordered_set>
 #include <vector>
 
 #include <cmath>
@@ -394,6 +393,8 @@ void World::reserveMemoryManagerForSimulationShape()
   mPreSolveFreeRootVelocityScratch.reserve(numSkeletons);
   mShallowSupportedFreeRootScratch.reserve(numSkeletons);
   mDisturbedThisStepScratch.reserve(numSkeletons);
+  mDeepInitialContactSkeletonScratch.reserve(numSkeletons);
+  mSupportedInitialContactSkeletonScratch.reserve(numSkeletons);
 }
 
 //==============================================================================
@@ -1536,18 +1537,28 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
     return bodyHeightAboveSupport >= -kSleepContactPenetrationTolerance;
   };
 
-  std::unordered_set<const dynamics::Skeleton*> deepInitialContactSkeletons;
-  std::unordered_set<const dynamics::Skeleton*>
-      supportedInitialContactSkeletons;
+  auto& deepInitialContactSkeletons = mDeepInitialContactSkeletonScratch;
+  auto& supportedInitialContactSkeletons
+      = mSupportedInitialContactSkeletonScratch;
+  deepInitialContactSkeletons.clear();
+  supportedInitialContactSkeletons.clear();
+  const auto containsSkeleton
+      = [](const std::vector<const dynamics::Skeleton*>& skeletons,
+           const dynamics::Skeleton* skeleton) {
+          return std::find(skeletons.begin(), skeletons.end(), skeleton)
+                 != skeletons.end();
+        };
   if (mFrame == 0) {
     for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
       const auto& contact = contacts.getContact(i);
-      auto markMobileSkeleton = [](auto bodyNode, auto& skeletons) {
+      auto markMobileSkeleton = [&](auto bodyNode, auto& skeletons) {
         if (!bodyNode)
           return;
         const auto* skeleton = bodyNode->getSkeletonRawPtr();
-        if (skeleton != nullptr && skeleton->isMobile())
-          skeletons.insert(skeleton);
+        if (skeleton != nullptr && skeleton->isMobile()) {
+          if (!containsSkeleton(skeletons, skeleton))
+            skeletons.push_back(skeleton);
+        }
       };
 
       const auto bodyNode1 = contact.getBodyNodePtr1();
@@ -1612,11 +1623,9 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
                                 && angSpeed < finalSleepAngularSpeed;
         double dwell = skel->getRestDwellTime() + mTimeStep;
         const bool deepInitialContact
-            = deepInitialContactSkeletons.find(skel.get())
-              != deepInitialContactSkeletons.end();
+            = containsSkeleton(deepInitialContactSkeletons, skel.get());
         const bool supportedInitialContact
-            = supportedInitialContactSkeletons.find(skel.get())
-              != supportedInitialContactSkeletons.end();
+            = containsSkeleton(supportedInitialContactSkeletons, skel.get());
         // The first-frame shortcut credits the full dwell only to bodies that
         // are essentially stationary at load time (pre-settled imported
         // scenes). It deliberately keeps these near-zero fixed bounds instead

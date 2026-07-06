@@ -628,6 +628,9 @@ protected:
   std::vector<FreeRootVelocitySnapshot> mPreSolveFreeRootVelocityScratch;
   std::vector<char> mShallowSupportedFreeRootScratch;
   std::vector<char> mDisturbedThisStepScratch;
+  std::vector<const dynamics::Skeleton*> mDeepInitialContactSkeletonScratch;
+  std::vector<const dynamics::Skeleton*>
+      mSupportedInitialContactSkeletonScratch;
 
   struct AllRestingKinematicSnapshot
   {

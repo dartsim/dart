@@ -942,8 +942,10 @@ void ConstraintSolver::updateConstraints()
     mReusableContactConstraints.clear();
   }
 
-  // Destroy previous soft contact constraints
-  mSoftContactConstraints.clear();
+  // Move previous soft contact constraints into a reuse pool so steady-state
+  // soft contact solving does not allocate one shared object per contact.
+  mReusableSoftContactConstraints.clear();
+  mReusableSoftContactConstraints.swap(mSoftContactConstraints);
 
   // Create a mapping of contact pairs to the number of contacts between them.
   // The scratch table uses open addressing over retained vectors so the
@@ -1158,8 +1160,23 @@ void ConstraintSolver::updateConstraints()
         continue;
 
       if (isSoftContact(bodyNode1, bodyNode2)) {
-        mSoftContactConstraints.push_back(
-            std::make_shared<SoftContactConstraint>(contact, mTimeStep));
+        SoftContactConstraintPtr softContactConstraint;
+        while (!mReusableSoftContactConstraints.empty()) {
+          softContactConstraint
+              = std::move(mReusableSoftContactConstraints.back());
+          mReusableSoftContactConstraints.pop_back();
+          if (softContactConstraint != nullptr)
+            break;
+        }
+
+        if (softContactConstraint != nullptr) {
+          softContactConstraint->reset(contact, mTimeStep);
+        } else {
+          softContactConstraint
+              = std::make_shared<SoftContactConstraint>(contact, mTimeStep);
+        }
+
+        mSoftContactConstraints.push_back(std::move(softContactConstraint));
       } else {
         const std::size_t contactPairIndex = findContactPairIndex(
             contact.collisionObject1,
@@ -1755,6 +1772,7 @@ void ConstraintSolver::updateConstraints()
         mActiveConstraints.push_back(softContactConstraint);
       }
     }
+    mReusableSoftContactConstraints.clear();
   }
 
   //----------------------------------------------------------------------------

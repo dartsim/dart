@@ -355,6 +355,9 @@ protected:
   /// Soft contact constraints those are automatically created
   std::vector<SoftContactConstraintPtr> mSoftContactConstraints;
 
+  /// Previous-step soft contact constraints available for reuse.
+  std::vector<SoftContactConstraintPtr> mReusableSoftContactConstraints;
+
   /// Joint limit constraints those are automatically created
   std::vector<JointConstraintPtr> mJointConstraints;
 

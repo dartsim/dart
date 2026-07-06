@@ -406,6 +406,27 @@ void recordProperty(const std::string& key, const std::string& value)
   ::testing::Test::RecordProperty(key, value);
 }
 
+[[nodiscard]] const char* strictGlobalHeapGateSkipReason()
+{
+#if defined(DART_CODECOV)
+  return "coverage instrumentation can allocate outside DART";
+#elif defined(__SANITIZE_ADDRESS__)
+  return "AddressSanitizer can allocate outside DART";
+#elif defined(__has_feature)
+  #if __has_feature(address_sanitizer)
+  return "AddressSanitizer can allocate outside DART";
+  #elif !defined(__linux__) || !defined(__GLIBC__)
+  return "strict operator-new gate is supported on Linux glibc";
+  #else
+  return "";
+  #endif
+#elif !defined(__linux__) || !defined(__GLIBC__)
+  return "strict operator-new gate is supported on Linux glibc";
+#else
+  return "";
+#endif
+}
+
 void reportMeasurement(
     const std::string& label,
     const StepAllocationMeasurement& measurement,
@@ -778,6 +799,22 @@ StepAllocationMeasurement measureNativeSoftSkelSteadyState(
   return ::testing::AssertionSuccess();
 }
 
+void expectNoGlobalHeapAllocationsWhenReliable(
+    const std::string& label, const StepAllocationMeasurement& measurement)
+{
+  const char* skipReason = strictGlobalHeapGateSkipReason();
+  if (skipReason[0] != '\0') {
+    recordProperty(label + "_operator_new_strict_gate_skipped", "true");
+    recordProperty(label + "_operator_new_strict_gate_skip_reason", skipReason);
+    std::cout << "[StepAllocation] " << label
+              << " operator_new_strict_gate=skipped reason=\"" << skipReason
+              << "\"\n";
+    return;
+  }
+
+  EXPECT_TRUE(hasNoGlobalHeapAllocations(measurement));
+}
+
 void expectNativeGlobalAndBaseAllocatorGate(
     PreparationMode mode, const std::string& label)
 {
@@ -786,7 +823,7 @@ void expectNativeGlobalAndBaseAllocatorGate(
       label, dart::collision::DARTCollisionDetector::create(), mode, allocator);
   reportMeasurement(label, measurement);
   EXPECT_GT(measurement.lastStepContacts, 0u);
-  EXPECT_TRUE(hasNoGlobalHeapAllocations(measurement));
+  expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
   EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
 }
 
@@ -797,7 +834,7 @@ void expectNativeSoftGlobalAndBaseAllocatorGate(
   const auto measurement = measurePreparedSoftGateScene(label, mode, allocator);
   reportMeasurement(label, measurement);
   EXPECT_GT(measurement.lastStepContacts, 0u);
-  EXPECT_TRUE(hasNoGlobalHeapAllocations(measurement));
+  expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
   EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
 }
 
@@ -839,7 +876,7 @@ void expectNativeSoftStackGlobalAndBaseAllocatorGate(const std::string& label)
   reportMeasurement(label, measurement);
   EXPECT_GT(measurement.lastStepContacts, 0u);
   EXPECT_GT(measurement.lastStepSoftSoftContacts, 0u);
-  EXPECT_TRUE(hasNoGlobalHeapAllocations(measurement));
+  expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
   EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
 }
 
@@ -875,7 +912,7 @@ void expectNativeSoftSkelGlobalAndBaseAllocatorGate(
   const auto measurement = measureNativeSoftSkelSteadyState(world, allocator);
   reportMeasurement(
       label, measurement, "native transferred SKEL soft scene", false);
-  EXPECT_TRUE(hasNoGlobalHeapAllocations(measurement));
+  expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
   EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
 }
 
