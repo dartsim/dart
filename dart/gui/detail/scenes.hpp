@@ -126,9 +126,35 @@ enum class ExampleScene
   G1,
 };
 
+/// Parsed camera command-line request. Stored on `AppOptions` and resolved at
+/// scene-setup time (auto-framing needs the scene bounds). `views` holds the
+/// requested canonical view presets in order: empty or a single entry keeps the
+/// single-file capture behavior, while two or more (or a turntable) drive the
+/// multi-view/turntable capture loop. All angles are degrees.
+struct CameraCliOptions
+{
+  std::optional<double> azimuthDegrees;
+  std::optional<double> elevationDegrees;
+  std::optional<double> distance;
+  std::optional<Eigen::Vector3d> target;
+  std::vector<std::string> views;
+  std::optional<int> turntable;
+  bool fit = false;
+  bool distanceExplicit = false;
+  bool provided = false;
+
+  /// True when the request needs the sequential multi-view/turntable capture
+  /// loop rather than a single screenshot.
+  bool multiCapture() const
+  {
+    return views.size() > 1u || turntable.has_value();
+  }
+};
+
 struct AppOptions
 {
   dart::gui::RunOptions run;
+  CameraCliOptions cameraCli;
   std::function<void()> preStep;
   std::function<void()> postStep;
   std::function<void()> preRender;

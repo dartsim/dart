@@ -40,11 +40,14 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <cstdint>
 
 namespace dart::gui {
+
+struct RenderableDescriptor;
 
 struct PickRay
 {
@@ -217,6 +220,31 @@ struct PerspectiveProjection
   double farPlane = 30.0;
 };
 
+/// A world-space bounding sphere over a set of renderables. Produced by
+/// `sceneBoundingSphere` and consumed by `fitOrbitCamera` to auto-frame a
+/// scene. Value type only so it can cross the public GUI boundary.
+struct BoundingSphere
+{
+  Eigen::Vector3d center = Eigen::Vector3d::Zero();
+  double radius = 0.0;
+};
+
+/// Per-view camera overrides resolved onto a base `OrbitCamera`
+/// (modify-not-replace). `preset` (if set) supplies azimuth/elevation from a
+/// named canonical view; the explicit fields then override whichever of
+/// azimuth/elevation/distance/target the caller provided. Angles are degrees
+/// and map directly onto `OrbitCamera` yaw/pitch (see `cameraEye`): azimuth 0
+/// places the eye on the +X side of the target and positive azimuth rotates the
+/// eye toward +Y; elevation is the angle above the XY plane.
+struct OrbitCameraViewOptions
+{
+  std::optional<std::string> preset;
+  std::optional<double> azimuthDegrees;
+  std::optional<double> elevationDegrees;
+  std::optional<double> distance;
+  std::optional<Eigen::Vector3d> target;
+};
+
 DART_GUI_API void normalizeRunOptions(RunOptions& options);
 
 DART_GUI_API bool shouldRequestScreenshot(
@@ -328,6 +356,44 @@ DART_GUI_API PerspectiveProjection makePerspectiveProjection(
     int width,
     int height,
     const ProjectionOptions& options = {});
+
+/// Looks up a canonical camera view preset by name. On success writes the
+/// preset azimuth/elevation (degrees) and returns true. Recognized names:
+/// "three-quarter" (-45, 25), "front" (-90, 0), "side" (0, 0), "top" (-90, 89).
+DART_GUI_API bool orbitCameraViewPreset(
+    std::string_view name, double& azimuthDegrees, double& elevationDegrees);
+
+/// Applies per-view overrides onto `base` (modify-not-replace): if a preset is
+/// named it seeds azimuth/elevation, then any explicit azimuth/elevation map
+/// onto yaw/pitch and any explicit distance/target replace those fields.
+/// Distance auto-fit is intentionally not applied here (it needs scene bounds);
+/// callers combine this with `sceneBoundingSphere`/`fitOrbitCamera` when
+/// framing is requested. An unrecognized preset name is ignored.
+DART_GUI_API OrbitCamera
+applyOrbitCameraView(OrbitCamera base, const OrbitCameraViewOptions& view);
+
+/// Computes a world-space bounding sphere over the union of the per-descriptor
+/// axis-aligned bounding boxes. Returns a small unit-radius sphere at the
+/// origin when the set is empty or degenerate so downstream framing stays
+/// finite.
+DART_GUI_API BoundingSphere
+sceneBoundingSphere(const std::vector<RenderableDescriptor>& descriptors);
+
+/// Builds an `OrbitCamera` that frames `sphere` from the given azimuth and
+/// elevation (degrees). The look-at target is the sphere center and the
+/// distance is `radius / sin(verticalFov / 2)`, so the sphere fits the vertical
+/// field of view.
+///
+/// Convergence follow-up (WP-ASV.4 -> WP-ASV.5): this is the canonical bounds-
+/// fit helper. WP-ASV.5's Python `dart.gui.render(world, camera=None)` path
+/// (python/dartpy/_world_render_bridge.py) currently derives its framing camera
+/// in Python; it should later bind and call this helper instead of keeping a
+/// second copy of the formula.
+DART_GUI_API OrbitCamera fitOrbitCamera(
+    const BoundingSphere& sphere,
+    double verticalFovDegrees,
+    double azimuthDegrees,
+    double elevationDegrees);
 
 } // namespace dart::gui
 

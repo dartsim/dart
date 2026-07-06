@@ -56,7 +56,11 @@ FORBIDDEN_EXTERNAL_INCLUDE_PREFIXES = (
 
 INCLUDE_PATTERN = re.compile(r"^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]")
 SKIPPED_SCAN_DIRS = {
+    ".agents",
+    ".claude",
+    ".codex",
     ".git",
+    ".opencode",
     ".pixi",
     ".pytest_cache",
     "__pycache__",

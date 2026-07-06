@@ -247,9 +247,21 @@ set(dartpy_gui_module_headers gui/module.hpp)
 
 set(dartpy_gui_module_sources gui/module.cpp)
 
-set(dartpy_gui_headers gui/descriptors.hpp gui/panel.hpp gui/viewer.hpp)
+set(
+  dartpy_gui_headers
+  gui/descriptors.hpp
+  gui/offscreen.hpp
+  gui/panel.hpp
+  gui/viewer.hpp
+)
 
-set(dartpy_gui_sources gui/descriptors.cpp gui/panel.cpp gui/viewer.cpp)
+set(
+  dartpy_gui_sources
+  gui/descriptors.cpp
+  gui/offscreen.cpp
+  gui/panel.cpp
+  gui/viewer.cpp
+)
 
 set(
   dartpy_simulation_headers
@@ -444,6 +456,7 @@ foreach(
   _naming.py
   _layout.py
   _simulation_diff.py
+  _scene_dump.py
   _world_render_bridge.py
 )
   configure_file(
@@ -497,6 +510,7 @@ if(DEFINED SKBUILD_PLATLIB_DIR)
       ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_simulation_diff.py
+      ${CMAKE_CURRENT_SOURCE_DIR}/_scene_dump.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_world_render_bridge.py
     DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy"
   )
@@ -508,6 +522,7 @@ elseif(DEFINED PYTHON_SITE_PACKAGES)
       ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_simulation_diff.py
+      ${CMAKE_CURRENT_SOURCE_DIR}/_scene_dump.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_world_render_bridge.py
     DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy"
   )

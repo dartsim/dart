@@ -4,6 +4,7 @@
 
 #if defined(DARTPY_HAS_GUI)
   #include "gui/descriptors.hpp"
+  #include "gui/offscreen.hpp"
   #include "gui/panel.hpp"
   #include "gui/viewer.hpp"
 #endif
@@ -16,6 +17,7 @@ void defGuiModule(nanobind::module_& m)
 {
 #if defined(DARTPY_HAS_GUI)
   defGuiDescriptors(m);
+  defGuiOffscreen(m);
   defGuiPanels(m);
   defGuiViewer(m);
 #endif

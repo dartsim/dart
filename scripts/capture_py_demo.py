@@ -256,21 +256,31 @@ def _default_output_dir(scene: str) -> pathlib.Path:
     return pathlib.Path(tempfile.gettempdir()) / "dart_py_demo_capture" / safe
 
 
+# Camera options ride as an optional 8th field (a mapping, see
+# `_camera_demo_args`) so a spec can request a canonical view, an explicit
+# angle/target/distance, a multi-view set, or a turntable. Bundling the
+# view/views/azimuth/elevation/distance/target/turntable fields into one mapping
+# keeps the existing 5- and 7-field rows byte-for-byte unchanged.
 WorkflowCaptureSpec = (
-    tuple[str, int, int, int, bool] | tuple[str, int, int, int, bool, str, str | None]
+    tuple[str, int, int, int, bool]
+    | tuple[str, int, int, int, bool, str, str | None]
+    | tuple[str, int, int, int, bool, str, str | None, dict | None]
 )
 
 
 def _workflow_spec_fields(
     spec: WorkflowCaptureSpec,
-) -> tuple[str, int, int, int, bool, str, str | None]:
-    if len(spec) not in (5, 7):
-        raise ValueError(f"expected 5- or 7-field workflow spec, got {len(spec)}")
+) -> tuple[str, int, int, int, bool, str, str | None, dict | None]:
+    if len(spec) not in (5, 7, 8):
+        raise ValueError(f"expected 5-, 7-, or 8-field workflow spec, got {len(spec)}")
     scene, frames, width, height, show_ui = spec[:5]
-    scene_state_json = str(spec[5]) if len(spec) == 7 else ""
-    capture_label = spec[6] if len(spec) == 7 else None
+    scene_state_json = str(spec[5]) if len(spec) >= 7 else ""
+    capture_label = spec[6] if len(spec) >= 7 else None
     if capture_label is not None:
         capture_label = str(capture_label)
+    camera = spec[7] if len(spec) == 8 else None
+    if camera is not None and not isinstance(camera, dict):
+        raise ValueError("workflow spec camera field must be a mapping or None")
     return (
         str(scene),
         int(frames),
@@ -279,6 +289,7 @@ def _workflow_spec_fields(
         bool(show_ui),
         scene_state_json,
         capture_label,
+        camera,
     )
 
 
@@ -339,6 +350,25 @@ RIGID_WORKFLOW_RELATED_CAPTURE_SPECS: tuple[WorkflowCaptureSpec, ...] = (
     ("avbd_rigid_spherical_breakable_joint", 72, 960, 540, True),
     ("avbd_rigid_revolute_motor", 72, 960, 540, True),
     ("avbd_rigid_prismatic_motor", 72, 960, 540, True),
+)
+
+
+# Example of a multi-view capture spec: the optional 8th field carries camera
+# options (see `_camera_demo_args`). This one sweeps three canonical angles of
+# the rigid-body baseline in a single viewer process, writing
+# <stem>_front.ppm / <stem>_side.ppm / <stem>_three-quarter.ppm. A turntable
+# spec would instead set {"view": "three-quarter", "turntable": 12}.
+MULTI_VIEW_EXAMPLE_CAPTURE_SPECS: tuple[WorkflowCaptureSpec, ...] = (
+    (
+        "rigid_body",
+        60,
+        960,
+        540,
+        False,
+        "",
+        None,
+        {"views": ("front", "side", "three-quarter")},
+    ),
 )
 
 
@@ -864,6 +894,10 @@ def rigid_workflow_related_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
     return RIGID_WORKFLOW_RELATED_CAPTURE_SPECS
 
 
+def multi_view_example_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
+    return MULTI_VIEW_EXAMPLE_CAPTURE_SPECS
+
+
 def rigid_workflow_contact_baseline_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
     return RIGID_WORKFLOW_CONTACT_BASELINE_CAPTURE_SPECS
 
@@ -1312,6 +1346,112 @@ def _ffmpeg_path() -> str | None:
     return None
 
 
+_CAMERA_VIEW_NAMES = ("three-quarter", "front", "side", "top")
+
+
+def _camera_demo_args(camera: dict | None) -> list[str]:
+    """Translate a camera-options mapping into viewer camera CLI flags.
+
+    Keys (all optional): ``azimuth``/``elevation``/``distance`` (numbers),
+    ``target`` (x,y,z tuple), ``view`` (single preset), ``views`` (comma string
+    or iterable of presets), ``turntable`` (int), ``fit`` (bool). Empty/None
+    yields no flags, so non-camera captures are untouched.
+    """
+
+    if not camera:
+        return []
+    demo_args: list[str] = []
+    azimuth = camera.get("azimuth")
+    if azimuth is not None:
+        demo_args.extend(["--camera-azimuth", f"{float(azimuth):g}"])
+    elevation = camera.get("elevation")
+    if elevation is not None:
+        demo_args.extend(["--camera-elevation", f"{float(elevation):g}"])
+    distance = camera.get("distance")
+    if distance is not None:
+        demo_args.extend(["--camera-distance", f"{float(distance):g}"])
+    target = camera.get("target")
+    if target is not None:
+        demo_args.extend(["--camera-target", _format_vector3(tuple(target))])
+    view = camera.get("view")
+    if view:
+        demo_args.extend(["--view", str(view)])
+    views = camera.get("views")
+    if views:
+        views_value = (
+            views if isinstance(views, str) else ",".join(str(name) for name in views)
+        )
+        demo_args.extend(["--views", views_value])
+    turntable = camera.get("turntable")
+    if turntable is not None:
+        demo_args.extend(["--turntable", str(int(turntable))])
+    if camera.get("fit"):
+        demo_args.append("--fit")
+    return demo_args
+
+
+def _camera_args_from_namespace(args: argparse.Namespace) -> dict:
+    """Collect camera options set on the CLI namespace (empty dict when none)."""
+
+    camera: dict = {}
+    for key, attribute in (
+        ("azimuth", "camera_azimuth"),
+        ("elevation", "camera_elevation"),
+        ("distance", "camera_distance"),
+        ("target", "camera_target"),
+        ("view", "view"),
+        ("views", "views"),
+        ("turntable", "turntable"),
+    ):
+        value = getattr(args, attribute, None)
+        if value is not None and value != "":
+            camera[key] = value
+    if getattr(args, "fit", False):
+        camera["fit"] = True
+    return camera
+
+
+def _camera_is_multi(camera: dict | None) -> bool:
+    """True when the request needs per-view output files (multi-view/turntable)."""
+
+    if not camera:
+        return False
+    if camera.get("turntable") is not None:
+        return True
+    views = camera.get("views")
+    if not views:
+        return False
+    names = (
+        [name for name in views.split(",") if name]
+        if isinstance(views, str)
+        else list(views)
+    )
+    return len(names) > 1
+
+
+def _camera_view_tokens(camera: dict) -> list[str]:
+    """Ordered per-view output tokens matching the C++ screenshot naming."""
+
+    turntable = camera.get("turntable")
+    if turntable is not None:
+        count = int(turntable)
+        pad = max(3, len(str(max(0, count - 1))))
+        return [f"turn{index:0{pad}d}" for index in range(count)]
+    views = camera.get("views")
+    if isinstance(views, str):
+        return [name for name in views.split(",") if name]
+    return [str(name) for name in (views or ())]
+
+
+def _camera_view_output_paths(
+    screenshot: pathlib.Path, camera: dict
+) -> list[pathlib.Path]:
+    return [
+        screenshot.with_name(f"{screenshot.stem}_{token}{screenshot.suffix}")
+        for token in _camera_view_tokens(camera)
+    ]
+
+
 def build_demo_args(
     args: argparse.Namespace, screenshot: pathlib.Path, frames: pathlib.Path
 ) -> list[str]:
@@ -1372,6 +1512,7 @@ def build_demo_args(
         event_log = getattr(args, "event_log", None)
         if event_log is not None and "--scripted-demo-event-log" not in demo_args:
             demo_args.extend(["--scripted-demo-event-log", str(event_log)])
+    demo_args.extend(_camera_demo_args(_camera_args_from_namespace(args)))
     force_drag_pixel = getattr(args, "force_drag_pixel", None)
     if force_drag_pixel is not None:
         demo_args.extend(
@@ -1541,6 +1682,55 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "--output-dir is omitted, use a label-specific default directory."
         ),
     )
+    parser.add_argument(
+        "--camera-azimuth",
+        type=float,
+        default=None,
+        help="Override the orbit yaw (degrees); azimuth 0 looks from +X.",
+    )
+    parser.add_argument(
+        "--camera-elevation",
+        type=float,
+        default=None,
+        help="Override the orbit pitch (degrees above the XY plane).",
+    )
+    parser.add_argument(
+        "--camera-distance",
+        type=float,
+        default=None,
+        help="Override the orbit distance; disables auto-fit for --view.",
+    )
+    parser.add_argument(
+        "--camera-target",
+        type=_parse_vector3,
+        default=None,
+        help="Override the look-at target as <x>,<y>,<z>.",
+    )
+    parser.add_argument(
+        "--view",
+        default=None,
+        choices=_CAMERA_VIEW_NAMES,
+        help="Apply a canonical camera preset (auto-fits distance).",
+    )
+    parser.add_argument(
+        "--views",
+        default=None,
+        help=(
+            "Capture one screenshot per comma-separated preset "
+            "(e.g. front,side,three-quarter); files are named <stem>_<view>.ppm."
+        ),
+    )
+    parser.add_argument(
+        "--turntable",
+        type=int,
+        default=None,
+        help="Capture N frozen-sim frames orbiting 360 degrees as <stem>_turnNNN.ppm.",
+    )
+    parser.add_argument(
+        "--fit",
+        action="store_true",
+        help="Auto-frame the camera distance from the scene bounds.",
+    )
     parser.add_argument("--video", action="store_true")
     parser.add_argument("--fps", type=int, default=24)
     parser.add_argument("--output-dir", type=pathlib.Path)
@@ -1684,7 +1874,7 @@ def _workflow_scene_argv(
     spec: WorkflowCaptureSpec,
     output_dir: pathlib.Path,
 ) -> list[str]:
-    scene, frames, width, height, show_ui, scene_state_json, capture_label = (
+    scene, frames, width, height, show_ui, scene_state_json, capture_label, camera = (
         _workflow_spec_fields(spec)
     )
     scene_output = _workflow_scene_output_dir(output_dir, order, scene)
@@ -1706,6 +1896,7 @@ def _workflow_scene_argv(
         scene_argv.extend(["--scene-state-json", scene_state_json])
     if capture_label:
         scene_argv.extend(["--capture-label", capture_label])
+    scene_argv.extend(_camera_demo_args(camera))
     if args.backend:
         scene_argv.extend(["--backend", args.backend])
     if args.allow_noop:
@@ -1856,7 +2047,7 @@ def _workflow_plan_entries(
         if order < start_row or order > end_row:
             continue
         scene, frames, width, height, show_ui, scene_state_json, capture_label = (
-            _workflow_spec_fields(spec)
+            _workflow_spec_fields(spec)[:7]
         )
         scene_output = _workflow_scene_output_dir(output_dir, order, scene)
         argv = _workflow_scene_argv(args, order, spec, output_dir)
@@ -3962,6 +4153,42 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
     return 1 if solver_identity_missing or scene_metrics_missing else 0
 
 
+def _run_multi_view_capture(
+    args: argparse.Namespace,
+    output_dir: pathlib.Path,
+    screenshot_ppm: pathlib.Path,
+    frames_dir: pathlib.Path,
+    camera: dict,
+) -> int:
+    """Capture multiple camera views/turntable frames in one viewer process.
+
+    Produces one PPM per view (``<stem>_<view>.ppm`` /
+    ``<stem>_turnNNN.ppm``) and verifies each is written and non-blank. The
+    single-file PNG/video/manifest pipeline is intentionally skipped: a
+    multi-view/turntable request is an evidence sweep of per-angle stills, not a
+    single labeled capture.
+    """
+
+    scene_env = _assignment_dict(args.env, "--env")
+    outputs = _camera_view_output_paths(screenshot_ppm, camera)
+    for path in outputs:
+        if path.exists():
+            path.unlink()
+    demo_args = build_demo_args(args, screenshot_ppm, frames_dir)
+    rc = _run_demo_with_env(demo_args, scene_env)
+    if rc != 0:
+        return rc
+    for path in outputs:
+        if not path.is_file():
+            raise SystemExit(f"demo did not write {path}")
+        if not ppm_has_nonzero_pixels(path):
+            raise SystemExit(f"{path} contains only zero-valued pixels")
+    print(f"multi-view capture wrote {len(outputs)} views to {output_dir}:")
+    for path in outputs:
+        print(f"  {path}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     _apply_stable_linux_render_env()
     args = parse_args(sys.argv[1:] if argv is None else argv)
@@ -4027,6 +4254,11 @@ def main(argv: list[str] | None = None) -> int:
     screenshot_png = output_dir / f"{capture_stem}.png"
     frames_dir = output_dir / "frames"
     png_frames_dir = output_dir / "png_frames"
+    camera_options = _camera_args_from_namespace(args)
+    if _camera_is_multi(camera_options):
+        return _run_multi_view_capture(
+            args, output_dir, screenshot_ppm, frames_dir, camera_options
+        )
     manifest = output_dir / "manifest.json"
     events = output_dir / "events.jsonl"
     scene_metrics_events = output_dir / "scene_metrics.jsonl"
