@@ -12,7 +12,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 import image_verdict
-from _image_tools import ImageData, write_png
+from _image_tools import ImageData, read_image, write_png
 
 
 def _contrast_pixels(width: int = 100, height: int = 100) -> bytes:
@@ -48,6 +48,21 @@ def _write_low_contrast_png(path: Path, width: int = 100, height: int = 100) -> 
             offset = (y * width + x) * 3
             pixels[offset : offset + 3] = b"\x60\x60\x60"
     write_png(path, width, height, bytes(pixels))
+
+
+def _corrupt_idat(path: Path) -> None:
+    data = bytearray(path.read_bytes())
+    offset = 8
+    while offset < len(data):
+        length = int.from_bytes(data[offset : offset + 4], "big")
+        kind = data[offset + 4 : offset + 8]
+        if kind == b"IDAT":
+            start = offset + 8
+            data[start : start + length] = b"\x00" * length
+            path.write_bytes(bytes(data))
+            return
+        offset += 12 + length
+    raise AssertionError("test PNG did not contain an IDAT chunk")
 
 
 def test_low_contrast_non_blank_image_passes_unless_contrast_required(
@@ -121,6 +136,26 @@ def test_uniform_clear_color_image_fails_non_blank(tmp_path: Path) -> None:
     assert verdict["checks"]["non_blank"]["pass"] is False
     assert verdict["checks"]["non_blank"]["unique_colors_seen"] == 1
     assert "image contains a single uniform color" in verdict["reasons"]
+
+
+def test_corrupt_png_data_uses_controlled_cli_error(
+    tmp_path: Path, capsys
+) -> None:
+    image = tmp_path / "corrupt.png"
+    write_png(image, 16, 16, bytes((64, 64, 64)) * (16 * 16))
+    _corrupt_idat(image)
+
+    try:
+        read_image(image)
+    except ValueError as exc:
+        assert "invalid PNG image data" in str(exc)
+    else:
+        raise AssertionError("corrupt PNG unexpectedly decoded")
+
+    assert image_verdict.main([str(image)]) == 2
+    output = capsys.readouterr()
+    assert "invalid PNG image data" in output.err
+    assert "Traceback" not in output.err
 
 
 def test_diff_catches_seeded_render_regression(tmp_path: Path) -> None:
