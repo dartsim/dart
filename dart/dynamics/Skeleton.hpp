@@ -56,7 +56,12 @@ class BodyNodeCollisionFilter;
 namespace simulation {
 class World;
 } // namespace simulation
+namespace constraint {
+class BoxedLcpConstraintSolver;
+} // namespace constraint
 namespace dynamics {
+
+class FreeJoint;
 
 /// class Skeleton
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
@@ -1100,6 +1105,7 @@ public:
   friend class EndEffector;
   friend class collision::BodyNodeCollisionFilter;
   friend class simulation::World;
+  friend class constraint::BoxedLcpConstraintSolver;
 
 protected:
   struct DataCache;
@@ -1503,6 +1509,30 @@ protected:
   /// an impossible value so the first query always scans.
   std::size_t mLastQuietExternalDisturbanceVersion
       = static_cast<std::size_t>(-1);
+
+private:
+  /// (WP-PG.30) Structural VersionCounter value this skeleton's root-body
+  /// free-joint classification was last computed for. Initialized to an
+  /// impossible value so the first query always (re)classifies.
+  mutable std::size_t mRootFreeJointCacheVersion = static_cast<std::size_t>(-1);
+
+  /// (WP-PG.30) Cached result of dynamic_cast<FreeJoint*> on the root body
+  /// node's parent joint (nullptr if there is no root body, or its parent
+  /// joint is not a FreeJoint). gz scenes are thousands of single-body
+  /// FreeJoint skeletons, and several hot per-step call sites (this
+  /// Skeleton's own impulse-FD fast path, BoxedLcpConstraintSolver's
+  /// single-reactive-body path, and World's shallow-support machinery) each
+  /// used to repeat this RTTI check every step. It only needs to be
+  /// recomputed when this skeleton's structural version changes, since the
+  /// root body's joint type cannot change without one.
+  mutable FreeJoint* mCachedRootFreeJoint = nullptr;
+
+  /// (WP-PG.30) Returns dynamic_cast<FreeJoint*>(getRootBodyNode()->
+  /// getParentJoint()), refreshing the cache above only if this skeleton's
+  /// structural version has changed since the last call. Private (rather
+  /// than a new public accessor) to keep this packet's public API surface
+  /// unchanged; internal friends read it directly.
+  FreeJoint* getCachedRootFreeJoint() const;
 
 public:
   //--------------------------------------------------------------------------
