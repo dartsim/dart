@@ -463,6 +463,11 @@ public:
     mEntity = tool;
   }
 
+  void stopObservingViewer()
+  {
+    removeSubject(mViewer);
+  }
+
   void update() override
   {
     if (nullptr == mEntity)
@@ -517,10 +522,16 @@ InteractiveFrameDnD::InteractiveFrameDnD(
   mViewer->getDefaultEventHandler()->addMouseEventHandler(
       new InteractiveFrameMouseEvent(frame));
 
-  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i)
-    for (std::size_t j = 0; j < 3; ++j)
-      mDnDs.push_back(new InteractiveToolDnD(
-          viewer, frame, frame->getTool((InteractiveTool::Type)i, j)));
+  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
+    for (std::size_t j = 0; j < 3; ++j) {
+      InteractiveToolDnD* dnd = new InteractiveToolDnD(
+          viewer, frame, frame->getTool((InteractiveTool::Type)i, j));
+      // The parent owns these child DnDs. If they observe the viewer directly,
+      // viewer teardown can delete a child before the parent deletes mDnDs.
+      dnd->stopObservingViewer();
+      mDnDs.push_back(dnd);
+    }
+  }
 
   for (std::size_t i = 0; i < 3; ++i) {
     DragAndDrop* dnd = mDnDs[i];

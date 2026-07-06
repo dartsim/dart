@@ -67,7 +67,8 @@ DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
 //==============================================================================
 DefaultEventHandler::~DefaultEventHandler()
 {
-  // Do nothing
+  while (!mMouseEventHandlers.empty())
+    delete *mMouseEventHandlers.begin();
 }
 
 //==============================================================================
@@ -247,6 +248,24 @@ void DefaultEventHandler::addMouseEventHandler(MouseEventHandler* handler)
 }
 
 //==============================================================================
+void DefaultEventHandler::removeMouseEventHandler(MouseEventHandler* handler)
+{
+  if (nullptr == handler)
+    return;
+
+  const auto it = mMouseEventHandlers.find(handler);
+  if (it == mMouseEventHandlers.end())
+    return;
+
+  mMouseEventHandlers.erase(it);
+  if (handler->mEventHandler == this)
+    handler->mEventHandler = nullptr;
+
+  handler->removeSubject(this);
+  removeSubject(handler);
+}
+
+//==============================================================================
 const std::set<MouseEventHandler*>& DefaultEventHandler::getMouseEventHandlers()
     const
 {
@@ -420,11 +439,16 @@ void DefaultEventHandler::clearButtonEvents()
 void DefaultEventHandler::handleDestructionNotification(
     const dart::common::Subject* _subject)
 {
-  MouseEventHandler* meh = const_cast<MouseEventHandler*>(
-      dynamic_cast<const MouseEventHandler*>(_subject));
-  std::set<MouseEventHandler*>::iterator it = mMouseEventHandlers.find(meh);
-  if (it != mMouseEventHandlers.end())
+  for (auto it = mMouseEventHandlers.begin(); it != mMouseEventHandlers.end();
+       ++it) {
+    MouseEventHandler* handler = *it;
+    if (static_cast<const dart::common::Subject*>(handler) != _subject)
+      continue;
+
+    handler->mEventHandler = nullptr;
     mMouseEventHandlers.erase(it);
+    return;
+  }
 }
 
 } // namespace osg
