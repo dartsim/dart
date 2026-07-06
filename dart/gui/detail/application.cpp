@@ -1115,6 +1115,10 @@ int runGuiBackendApplicationImpl(
   ProfileAccumulator profile;
   PerfHudState perfHud;
   bool frameCaptureSucceeded = true;
+  // Set once the WP-ASV.4 multi-view/turntable capture loop has produced the
+  // per-view screenshots, so the single-shot frame loop and the post-loop
+  // screenshot finalize both stand down.
+  bool multiViewCaptureHandled = false;
   SimulationStepper simulationStepper;
   const auto orbitStartClock = ProfileAccumulator::Clock::now();
   const double demoSceneStartupTimeoutMs = resolveDemoSceneStartupTimeoutMs();
@@ -1226,7 +1230,7 @@ int runGuiBackendApplicationImpl(
     if (appOptions.cameraUpdater) {
       appOptions.cameraUpdater(cameraController.camera);
     }
-    const auto homeCamera = cameraController.camera;
+    auto homeCamera = cameraController.camera;
 
     const bool validateFixtureRequirements = false;
     DartScene dartScene = createDartScene(appOptions);
@@ -1290,8 +1294,195 @@ int runGuiBackendApplicationImpl(
     bool cycleAdvance = false;
     int framesThisScene = 0;
 
-    while (!lifecycle.exitRequested && !lifecycle.sceneSwitchRequested
-           && !cycleAdvance
+    // WP-ASV.4: resolve the camera CLI request onto the scene's base camera
+    // (auto-framing needs the scene bounds, available now that dartScene is
+    // built), and run the sequential multi-view/turntable capture loop when one
+    // was requested. A single view resolves in place and the normal frame loop
+    // below captures it as usual.
+    if (appOptions.cameraCli.provided) {
+      const dart::gui::detail::CameraCliOptions& cameraCli
+          = appOptions.cameraCli;
+      const std::vector<dart::gui::RenderableDescriptor> descriptors
+          = collectSceneRenderables(dartScene);
+      const dart::gui::OrbitCamera baseCamera = cameraController.camera;
+
+      // Resolve one view's OrbitCamera: apply preset + explicit overrides, then
+      // the bounds-fit distance/target when framing is implied (a named view)
+      // or forced (--fit) and no explicit distance was given.
+      const auto resolveView = [&](const std::optional<std::string>& preset)
+          -> dart::gui::OrbitCamera {
+        dart::gui::OrbitCameraViewOptions view;
+        view.preset = preset;
+        view.azimuthDegrees = cameraCli.azimuthDegrees;
+        view.elevationDegrees = cameraCli.elevationDegrees;
+        view.distance = cameraCli.distance;
+        view.target = cameraCli.target;
+        dart::gui::OrbitCamera camera
+            = dart::gui::applyOrbitCameraView(baseCamera, view);
+        const bool fit = !cameraCli.distanceExplicit
+                         && (cameraCli.fit || preset.has_value());
+        if (fit) {
+          constexpr double kRadToDeg = 180.0 / 3.14159265358979323846;
+          const dart::gui::OrbitCamera fitted = dart::gui::fitOrbitCamera(
+              dart::gui::sceneBoundingSphere(descriptors),
+              dart::gui::ProjectionOptions{}.verticalFovDegrees,
+              camera.yaw * kRadToDeg,
+              camera.pitch * kRadToDeg);
+          camera.distance = fitted.distance;
+          if (!cameraCli.target.has_value()) {
+            camera.target = fitted.target;
+          }
+        }
+        return camera;
+      };
+
+      const std::optional<std::string> primaryPreset
+          = cameraCli.views.empty()
+                ? std::nullopt
+                : std::optional<std::string>(cameraCli.views.front());
+
+      const bool runMultiCapture = cameraCli.multiCapture()
+                                   && runOptions.headless
+                                   && !runOptions.screenshotPath.empty();
+
+      if (!runMultiCapture) {
+        // Single view (or an unsupported multi-view request, e.g. windowed):
+        // resolve the primary camera in place for the normal capture loop.
+        cameraController.camera = resolveView(primaryPreset);
+        homeCamera = cameraController.camera;
+      } else {
+        // Build the ordered (token, camera) capture list.
+        std::vector<std::pair<std::string, dart::gui::OrbitCamera>> captures;
+        if (cameraCli.turntable.has_value()) {
+          const dart::gui::OrbitCamera turntableBase
+              = resolveView(primaryPreset);
+          const int count = *cameraCli.turntable;
+          const int pad
+              = std::max(3, static_cast<int>(std::to_string(count - 1).size()));
+          constexpr double kTwoPi = 2.0 * 3.14159265358979323846;
+          for (int f = 0; f < count; ++f) {
+            dart::gui::OrbitCamera camera = turntableBase;
+            camera.yaw = turntableBase.yaw
+                         + kTwoPi * static_cast<double>(f)
+                               / static_cast<double>(count);
+            std::ostringstream token;
+            token << "turn" << std::setw(pad) << std::setfill('0') << f;
+            captures.emplace_back(token.str(), camera);
+          }
+        } else {
+          for (const std::string& viewName : cameraCli.views) {
+            captures.emplace_back(viewName, resolveView(viewName));
+          }
+        }
+
+        // Insert a view token before the screenshot base's extension:
+        // "shot.ppm" -> "shot_front.ppm".
+        const auto insertToken
+            = [](const std::string& base, const std::string& token) {
+                const std::filesystem::path path(base);
+                const std::string extension = path.extension().string();
+                std::filesystem::path stem = path;
+                stem.replace_extension();
+                return stem.string() + "_" + token + extension;
+              };
+
+        // Render one frame and, when capturePath is non-empty, read it back and
+        // save it. The sim advances only when stepSim is true (turntable/multi-
+        // view keep one frozen physical state across all angles). This forces a
+        // rendered frame instead of routing through renderApplicationFrame:
+        // headless software GL reports a pacing skip from beginFrame() on
+        // nearly every frame, and a deterministic offscreen capture must not
+        // gate on that bool (same render+readback+flush order as the offscreen
+        // parity self-check in offscreen_parity.cpp).
+        const auto renderCaptureFrame
+            = [&](bool stepSim, const std::string& capturePath) -> bool {
+          lifecycle.paused = !stepSim;
+          lifecycle.stepOnce = false;
+          dart::gui::ViewportLayoutOptions viewportLayout;
+          viewportLayout.panes[0].camera = cameraController.camera;
+          viewportLayout.panes[0].active = true;
+          const FrameViewport viewport = updateFrameViewport(
+              window,
+              renderContext.views,
+              renderContext.cameras,
+              cameraController,
+              selectionController,
+              imguiIo,
+              runOptions.width,
+              runOptions.height,
+              dartScene.timeStep,
+              /*showUi=*/false,
+              dart::gui::OrbitCameraControlOptions{},
+              viewportLayout);
+          renderContext.activeViewCount = viewport.paneCount;
+          sceneFrameUpdater.update(
+              viewport,
+              /*showUi=*/false,
+              /*uiCapturesMouse=*/false,
+              orbitLight,
+              appOptions.orbitLightPeriodSeconds);
+          setSceneLightsEnabled(*engine, lights, headlightsEnabled);
+          for (auto* view : renderContext.views) {
+            if (view != nullptr) {
+              applyRenderSettings(*view, dartScene.renderSettings);
+            }
+          }
+          // beginFrame()'s return is a pacing hint; ignore it and render
+          // anyway.
+          beginFilamentFrame(renderContext);
+          renderFilamentViews(renderContext, /*overlayView=*/nullptr);
+          if (!capturePath.empty()) {
+            requestScreenshot(
+                renderContext,
+                screenshotCapture,
+                static_cast<std::uint32_t>(viewport.width),
+                static_cast<std::uint32_t>(viewport.height));
+          }
+          endFilamentFrame(renderContext);
+          if (capturePath.empty()) {
+            return true;
+          }
+          std::error_code directoryError;
+          const std::filesystem::path parent
+              = std::filesystem::path(capturePath).parent_path();
+          if (!parent.empty()) {
+            std::filesystem::create_directories(parent, directoryError);
+          }
+          return saveCompletedScreenshotCapture(
+              renderContext, screenshotCapture, capturePath, profile);
+        };
+
+        // Settle the sim once (shared physical state), then freeze it and
+        // capture each view after a short warmup that primes the software GL
+        // pipeline for the new camera.
+        const int settleFrames = std::max(0, runOptions.maxFrames);
+        constexpr int kWarmupFramesPerView = 2;
+        bool captureOk = true;
+        for (int f = 0; f < settleFrames && captureOk; ++f) {
+          captureOk = renderCaptureFrame(/*stepSim=*/true, std::string());
+        }
+        for (const auto& capture : captures) {
+          if (!captureOk) {
+            break;
+          }
+          cameraController.camera = capture.second;
+          for (int w = 0; w < kWarmupFramesPerView && captureOk; ++w) {
+            captureOk = renderCaptureFrame(/*stepSim=*/false, std::string());
+          }
+          if (!captureOk) {
+            break;
+          }
+          captureOk = renderCaptureFrame(
+              /*stepSim=*/false,
+              insertToken(runOptions.screenshotPath, capture.first));
+        }
+        frameCaptureSucceeded = frameCaptureSucceeded && captureOk;
+        multiViewCaptureHandled = true;
+      }
+    }
+
+    while (!multiViewCaptureHandled && !lifecycle.exitRequested
+           && !lifecycle.sceneSwitchRequested && !cycleAdvance
            && shouldContinueApplicationLoop(runOptions.headless, window)) {
       DART_PROFILE_FRAME;
       DART_PROFILE_SCOPED_N("GUI frame");
@@ -1566,12 +1757,17 @@ int runGuiBackendApplicationImpl(
         -1);
   }
 
-  const bool screenshotSucceeded = finalizeScreenshotCapture(
-      renderContext,
-      screenshotCapture,
-      runOptions.screenshotPath,
-      lifecycle.screenshotRequested,
-      profile);
+  // The multi-view/turntable loop already saved each per-view screenshot, so
+  // the single-shot finalize (which targets the un-suffixed --screenshot path)
+  // must stand down.
+  const bool screenshotSucceeded = multiViewCaptureHandled
+                                       ? true
+                                       : finalizeScreenshotCapture(
+                                             renderContext,
+                                             screenshotCapture,
+                                             runOptions.screenshotPath,
+                                             lifecycle.screenshotRequested,
+                                             profile);
 
   // Phase-1 gate of the Filament offscreen-viewport spike: when
   // DART_GUI_OFFSCREEN_PARITY is set, render the live scene to an offscreen
