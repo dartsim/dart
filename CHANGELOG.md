@@ -372,7 +372,9 @@ compatibility remains on the active DART 6 LTS branch._
   `$dart-changelog` routine for consistent release-note decisions and entries.
 - Clarified AI-native guidance so always-loaded agent rules stay compact,
   consequential decisions use repo-wide north-star context and proportionate
-  evidence, and in-scope failures are root-caused instead of hidden.
+  evidence, in-scope failures are root-caused instead of hidden, and AI-infra
+  backports check release-specific workflow surfaces before importing main-only
+  capabilities.
 - Added a canonical AI terminology owner and aligned the workflow, capability,
   skill, command-adapter, generated-adapter, MCP, hook, subagent, and work
   packet language across the AI docs, compatibility guide, sync checks, and
