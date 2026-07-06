@@ -340,6 +340,7 @@ void World::invalidateSimulationMode()
 {
   mSimulationMode = false;
   mSimulationModeStructuralVersion = 0;
+  mSimulationModeCollisionGroup = nullptr;
 }
 
 //==============================================================================
@@ -411,6 +412,9 @@ void World::enterSimulationMode()
   reserveMemoryManagerForSimulationShape();
   mSimulationModeStructuralVersion
       = dynamics::Skeleton::getGlobalStructuralVersion();
+  mSimulationModeCollisionGroup
+      = mConstraintSolver ? mConstraintSolver->getCollisionGroup().get()
+                          : nullptr;
   mSimulationMode = true;
 }
 
@@ -419,7 +423,10 @@ bool World::isInSimulationMode() const
 {
   return mSimulationMode
          && mSimulationModeStructuralVersion
-                == dynamics::Skeleton::getGlobalStructuralVersion();
+                == dynamics::Skeleton::getGlobalStructuralVersion()
+         && mConstraintSolver
+         && mSimulationModeCollisionGroup
+                == mConstraintSolver->getCollisionGroup().get();
 }
 
 //==============================================================================
@@ -2545,7 +2552,11 @@ void World::setCollisionDetector(
     return;
   }
 
+  const auto* previousCollisionGroup
+      = mConstraintSolver->getCollisionGroup().get();
   mConstraintSolver->setCollisionDetector(collisionDetector);
+  if (mConstraintSolver->getCollisionGroup().get() != previousCollisionGroup)
+    invalidateSimulationMode();
 }
 
 //==============================================================================

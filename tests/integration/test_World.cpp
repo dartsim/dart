@@ -535,6 +535,29 @@ TEST(World, TypedSetterToFclKeepsPrimitive)
 }
 
 //==============================================================================
+TEST(World, CollisionDetectorChangeInvalidatesSimulationMode)
+{
+  auto world = World::create();
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+
+  world->setCollisionDetector(collision::DARTCollisionDetector::create());
+  EXPECT_FALSE(world->isInSimulationMode());
+
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+  const auto* preparedCollisionGroup
+      = world->getConstraintSolver()->getCollisionGroup().get();
+
+  world->getConstraintSolver()->setCollisionDetector(
+      collision::DARTCollisionDetector::create());
+  ASSERT_NE(
+      preparedCollisionGroup,
+      world->getConstraintSolver()->getCollisionGroup().get());
+  EXPECT_FALSE(world->isInSimulationMode());
+}
+
+//==============================================================================
 TEST(World, TypedSetterKeepsCurrentWhenDetectorUnavailable)
 {
   ScopedCollisionFactoryDisabler disableDart(
