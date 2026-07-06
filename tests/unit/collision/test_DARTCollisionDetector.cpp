@@ -32,6 +32,7 @@
 
 #include <dart/collision/CollisionFilter.hpp>
 #include <dart/collision/CollisionObject.hpp>
+#include <dart/collision/dart/DARTCollide.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
@@ -59,6 +60,20 @@ namespace {
 // grid internals.
 constexpr double kDuplicateContactTolerance = 3.0e-12;
 constexpr double kDuplicateContactCellSize = 4.0 * kDuplicateContactTolerance;
+
+class TestCollisionObject final : public collision::CollisionObject
+{
+public:
+  TestCollisionObject(
+      collision::CollisionDetector* collisionDetector,
+      const dynamics::ShapeFrame* shapeFrame)
+    : collision::CollisionObject(collisionDetector, shapeFrame)
+  {
+  }
+
+private:
+  void updateEngineData() override {}
+};
 
 struct PlaneSphereGroups
 {
@@ -712,6 +727,41 @@ TEST(DARTCollisionDetector, DetectsNativeSoftMeshPlaneContact)
   }
 
   EXPECT_TRUE(sawSoftContact);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, PublicSoftMeshCollideFallsBackForNonDartObjects)
+{
+  auto groups = makePlaneSoftMeshGroups(0.45);
+  ASSERT_NE(nullptr, groups.softShapeNode);
+
+  TestCollisionObject planeObject(
+      groups.detector.get(), groups.planeFrame.get());
+  TestCollisionObject softObject(groups.detector.get(), groups.softShapeNode);
+
+  collision::CollisionResult primitiveFirstResult;
+  EXPECT_GT(
+      collision::collide(&planeObject, &softObject, primitiveFirstResult), 0);
+  EXPECT_GT(primitiveFirstResult.getNumContacts(), 0u);
+
+  collision::CollisionResult softFirstResult;
+  EXPECT_GT(collision::collide(&softObject, &planeObject, softFirstResult), 0);
+  EXPECT_GT(softFirstResult.getNumContacts(), 0u);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, PublicSoftSoftCollideIgnoresNonDartObjects)
+{
+  auto groups = makeSoftSoftMeshGroups();
+  ASSERT_NE(nullptr, groups.softShapeNode1);
+  ASSERT_NE(nullptr, groups.softShapeNode2);
+
+  TestCollisionObject softObject1(groups.detector.get(), groups.softShapeNode1);
+  TestCollisionObject softObject2(groups.detector.get(), groups.softShapeNode2);
+
+  collision::CollisionResult result;
+  EXPECT_EQ(collision::collide(&softObject1, &softObject2, result), 0);
+  EXPECT_EQ(result.getNumContacts(), 0u);
 }
 
 //==============================================================================

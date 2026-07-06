@@ -1494,7 +1494,10 @@ SoftPointCacheView makeSoftPointCacheView(
   if (object == nullptr || softBodyNode == nullptr)
     return view;
 
-  const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
+  const auto* dartObject = dynamic_cast<const DARTCollisionObject*>(object);
+  if (dartObject == nullptr)
+    return view;
+
   const auto& localVertices = dartObject->getCachedSoftLocalVertices();
   const auto& firstFaceByPointMass
       = dartObject->getCachedSoftFirstFaceByPointMass();
@@ -2187,8 +2190,11 @@ int collideSoftMeshSoftMesh(
     return 0;
   }
 
-  const auto* dartObject0 = static_cast<const DARTCollisionObject*>(o1);
-  const auto* dartObject1 = static_cast<const DARTCollisionObject*>(o2);
+  const auto* dartObject0 = dynamic_cast<const DARTCollisionObject*>(o1);
+  const auto* dartObject1 = dynamic_cast<const DARTCollisionObject*>(o2);
+  if (dartObject0 == nullptr || dartObject1 == nullptr)
+    return 0;
+
   auto numContacts = addSoftPointFaceContacts(
       o1, o2, dartObject0, T0, dartObject1, T1, true, result);
   numContacts += addSoftPointFaceContacts(
