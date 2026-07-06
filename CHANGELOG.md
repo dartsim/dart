@@ -132,6 +132,11 @@
     bounding-box corners:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Speed up DART-native finite-shape broadphase sweeps on AVX-width builds by
+    screening sorted AABB candidate batches with `dart/simd`, while keeping
+    baseline-ISA builds on the scalar sweep path:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Reduce DART-native broadphase setup work by caching local bounds
     center/half-extents and using those cached bounds directly when primitive
     collision objects have an identity linear transform:

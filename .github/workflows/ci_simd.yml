@@ -14,7 +14,9 @@ on:
       - "release-*"
     paths:
       - "dart/simd/**"
+      - "dart/collision/dart/**"
       - "tests/unit/simd/**"
+      - "tests/unit/collision/test_DARTCollisionDetector.cpp"
       - "tests/benchmark/simd/**"
       - ".github/workflows/ci_simd.yml"
   pull_request:
@@ -22,7 +24,9 @@ on:
       - "**"
     paths:
       - "dart/simd/**"
+      - "dart/collision/dart/**"
       - "tests/unit/simd/**"
+      - "tests/unit/collision/test_DARTCollisionDetector.cpp"
       - "tests/benchmark/simd/**"
       - ".github/workflows/ci_simd.yml"
   workflow_dispatch:
@@ -89,7 +93,7 @@ jobs:
             -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
             "$SIMD_CMAKE_FLAGS"'
 
-      - name: Build SIMD tests
+      - name: Build SIMD tests and benchmarks
         run: |
           pixi run bash -c 'cmake --build build/simd --target \
             UNIT_simd_vec_scalar \
@@ -103,8 +107,11 @@ jobs:
             UNIT_simd_geometry \
             UNIT_simd_math \
             UNIT_simd_public_header_dynamic_vector \
-            UNIT_simd_public_header_math'
+            UNIT_simd_public_header_math \
+            bm_simd \
+            bm_math \
+            test_DARTCollisionDetector'
 
       - name: Run SIMD tests
         run: |
-          pixi run bash -c 'ctest --test-dir build/simd -R "UNIT_simd" --output-on-failure'
+          pixi run bash -c 'ctest --test-dir build/simd -R "UNIT_simd|test_DARTCollisionDetector" --output-on-failure'

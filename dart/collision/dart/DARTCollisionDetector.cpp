@@ -47,6 +47,7 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+#include "dart/simd/simd.hpp"
 
 #include <algorithm>
 #include <condition_variable>
@@ -273,6 +274,19 @@ struct BroadphaseEntry
   bool plane{false};
 };
 
+struct SortedBroadphaseBounds
+{
+  std::vector<double> minX;
+  std::vector<double> minY;
+  std::vector<double> minZ;
+  std::vector<double> maxX;
+  std::vector<double> maxY;
+  std::vector<double> maxZ;
+
+  void clear();
+  void update(const std::vector<const BroadphaseEntry*>& sortedEntries);
+};
+
 struct ContactBoundEntry
 {
   Eigen::Vector3d min{Eigen::Vector3d::Zero()};
@@ -285,6 +299,9 @@ constexpr double kContactPointKeyLowerBound = -9223372036854775808.0;
 constexpr double kContactPointKeyUpperBound = 9223372036854775808.0;
 constexpr std::size_t kInvalidContactPointIndex
     = std::numeric_limits<std::size_t>::max();
+constexpr std::size_t kBroadphaseSimdWidth = 4u;
+constexpr bool kUseNativeBroadphaseSimd
+    = dart::simd::preferred_width_v<double> >= kBroadphaseSimdWidth;
 
 struct ContactPointKey
 {
@@ -350,6 +367,8 @@ struct BroadphaseScratch
   std::vector<BroadphaseEntry> otherEntries2;
   std::vector<const BroadphaseEntry*> sortedEntries1;
   std::vector<const BroadphaseEntry*> sortedEntries2;
+  SortedBroadphaseBounds sortedBounds1;
+  SortedBroadphaseBounds sortedBounds2;
   std::vector<BroadphaseEntry> contactBoundFiniteEntries;
   std::vector<ContactBoundEntry> contactBoundEntries;
   std::vector<std::size_t> parallelPairIndices;
@@ -469,6 +488,7 @@ bool processPlanePlanePairs(
 bool processFiniteFinitePairs(
     const std::vector<BroadphaseEntry>& entries,
     std::vector<const BroadphaseEntry*>& sortedEntries,
+    SortedBroadphaseBounds& sortedBounds,
     const CollisionOption& option,
     CollisionResult* result,
     bool& collisionFound,
@@ -478,6 +498,7 @@ bool processFiniteFinitePairs(
     const std::vector<BroadphaseEntry>& entries1,
     const std::vector<BroadphaseEntry>& entries2,
     std::vector<const BroadphaseEntry*>& sortedEntries2,
+    SortedBroadphaseBounds& sortedBounds2,
     const CollisionOption& option,
     CollisionResult* result,
     bool& collisionFound,
@@ -636,6 +657,7 @@ bool DARTCollisionDetector::collide(
   if (processFiniteFinitePairs(
           scratch.finiteEntries1,
           scratch.sortedEntries1,
+          scratch.sortedBounds1,
           option,
           result,
           collisionFound,
@@ -794,6 +816,7 @@ bool DARTCollisionDetector::collide(
           scratch.finiteEntries1,
           scratch.finiteEntries2,
           scratch.sortedEntries2,
+          scratch.sortedBounds2,
           option,
           result,
           collisionFound,
@@ -1316,6 +1339,40 @@ std::size_t ContactPointIndex::findOrCreateBucketIndex(
 }
 
 //==============================================================================
+void SortedBroadphaseBounds::clear()
+{
+  minX.clear();
+  minY.clear();
+  minZ.clear();
+  maxX.clear();
+  maxY.clear();
+  maxZ.clear();
+}
+
+//==============================================================================
+void SortedBroadphaseBounds::update(
+    const std::vector<const BroadphaseEntry*>& sortedEntries)
+{
+  const auto size = sortedEntries.size();
+  minX.resize(size);
+  minY.resize(size);
+  minZ.resize(size);
+  maxX.resize(size);
+  maxY.resize(size);
+  maxZ.resize(size);
+
+  for (std::size_t i = 0u; i < size; ++i) {
+    const auto& entry = *sortedEntries[i];
+    minX[i] = entry.min.x();
+    minY[i] = entry.min.y();
+    minZ[i] = entry.min.z();
+    maxX[i] = entry.max.x();
+    maxY[i] = entry.max.y();
+    maxZ[i] = entry.max.z();
+  }
+}
+
+//==============================================================================
 void BroadphaseScratch::clear()
 {
   broadphaseEntries.clear();
@@ -1327,6 +1384,8 @@ void BroadphaseScratch::clear()
   otherEntries2.clear();
   sortedEntries1.clear();
   sortedEntries2.clear();
+  sortedBounds1.clear();
+  sortedBounds2.clear();
   contactBoundFiniteEntries.clear();
   contactBoundEntries.clear();
   parallelPairIndices.clear();
@@ -1903,6 +1962,54 @@ bool overlaps(const BroadphaseEntry& entry1, const BroadphaseEntry& entry2)
 }
 
 //==============================================================================
+std::uint32_t computeFiniteOverlapMask4(
+    const BroadphaseEntry& entry,
+    const SortedBroadphaseBounds& bounds,
+    std::size_t begin)
+{
+  using Vec4d = dart::simd::Vec<double, kBroadphaseSimdWidth>;
+
+  const auto entryMinX = Vec4d::broadcast(entry.min.x());
+  const auto entryMinY = Vec4d::broadcast(entry.min.y());
+  const auto entryMinZ = Vec4d::broadcast(entry.min.z());
+  const auto entryMaxX = Vec4d::broadcast(entry.max.x());
+  const auto entryMaxY = Vec4d::broadcast(entry.max.y());
+  const auto entryMaxZ = Vec4d::broadcast(entry.max.z());
+
+  const auto candidateMinX = Vec4d::loadu(bounds.minX.data() + begin);
+  const auto candidateMinY = Vec4d::loadu(bounds.minY.data() + begin);
+  const auto candidateMinZ = Vec4d::loadu(bounds.minZ.data() + begin);
+  const auto candidateMaxX = Vec4d::loadu(bounds.maxX.data() + begin);
+  const auto candidateMaxY = Vec4d::loadu(bounds.maxY.data() + begin);
+  const auto candidateMaxZ = Vec4d::loadu(bounds.maxZ.data() + begin);
+
+  const auto overlapMask
+      = (candidateMinX <= entryMaxX) & (candidateMaxX >= entryMinX)
+        & (candidateMinY <= entryMaxY) & (candidateMaxY >= entryMinY)
+        & (candidateMinZ <= entryMaxZ) & (candidateMaxZ >= entryMinZ);
+  return overlapMask.bitmask();
+}
+
+//==============================================================================
+bool processFiniteFinitePair(
+    const BroadphaseEntry& entry1,
+    const BroadphaseEntry& entry2,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    CollisionResult& pairResult)
+{
+  auto* collObj1 = entry1.object;
+  auto* collObj2 = entry2.object;
+  const auto& filter = option.collisionFilter;
+  if (filter && filter->ignoresCollision(collObj1, collObj2))
+    return false;
+
+  return processPair(
+      collObj1, collObj2, option, result, collisionFound, pairResult);
+}
+
+//==============================================================================
 bool contactBoundsOverlap(
     const ContactBoundEntry& entry1,
     const ContactBoundEntry& entry2,
@@ -2309,11 +2416,14 @@ bool processPlanePlanePairs(
 bool processFiniteFinitePairs(
     const std::vector<BroadphaseEntry>& entries,
     std::vector<const BroadphaseEntry*>& sortedEntries,
+    SortedBroadphaseBounds& sortedBounds,
     const CollisionOption& option,
     CollisionResult* result,
     bool& collisionFound,
     CollisionResult& pairResult)
 {
+  DART_PROFILE_SCOPED_N("DART native finite-finite same-group pairs");
+
   sortedEntries.reserve(entries.size());
   for (const auto& entry : entries)
     sortedEntries.push_back(&entry);
@@ -2324,25 +2434,53 @@ bool processFiniteFinitePairs(
       [](const BroadphaseEntry* lhs, const BroadphaseEntry* rhs) {
         return lhs->min.x() < rhs->min.x();
       });
+  if constexpr (kUseNativeBroadphaseSimd) {
+    sortedBounds.update(sortedEntries);
+  }
 
-  const auto& filter = option.collisionFilter;
   for (std::size_t i = 0u; i + 1u < sortedEntries.size(); ++i) {
     const auto& entry1 = *sortedEntries[i];
-    for (std::size_t j = i + 1u; j < sortedEntries.size(); ++j) {
+    std::size_t j = i + 1u;
+    while (j < sortedEntries.size()) {
       const auto& entry2 = *sortedEntries[j];
       if (entry2.min.x() > entry1.max.x())
         break;
 
-      if (!overlaps(entry1, entry2))
-        continue;
+      if constexpr (kUseNativeBroadphaseSimd) {
+        if (j + kBroadphaseSimdWidth <= sortedEntries.size()) {
+          const std::uint32_t overlapMask
+              = computeFiniteOverlapMask4(entry1, sortedBounds, j);
+          for (std::size_t lane = 0u; lane < kBroadphaseSimdWidth; ++lane) {
+            if ((overlapMask & (std::uint32_t{1u} << lane)) == 0u)
+              continue;
 
-      auto* collObj1 = entry1.object;
-      auto* collObj2 = entry2.object;
-      if (filter && filter->ignoresCollision(collObj1, collObj2))
-        continue;
-      if (processPair(
-              collObj1, collObj2, option, result, collisionFound, pairResult)) {
+            if (processFiniteFinitePair(
+                    entry1,
+                    *sortedEntries[j + lane],
+                    option,
+                    result,
+                    collisionFound,
+                    pairResult)) {
+              return true;
+            }
+          }
+          j += kBroadphaseSimdWidth;
+          continue;
+        }
+      }
+
+      if (!overlaps(entry1, entry2))
+        ++j;
+      else if (processFiniteFinitePair(
+                   entry1,
+                   entry2,
+                   option,
+                   result,
+                   collisionFound,
+                   pairResult)) {
         return true;
+      } else {
+        ++j;
       }
     }
   }
@@ -2355,11 +2493,14 @@ bool processFiniteFinitePairs(
     const std::vector<BroadphaseEntry>& entries1,
     const std::vector<BroadphaseEntry>& entries2,
     std::vector<const BroadphaseEntry*>& sortedEntries2,
+    SortedBroadphaseBounds& sortedBounds2,
     const CollisionOption& option,
     CollisionResult* result,
     bool& collisionFound,
     CollisionResult& pairResult)
 {
+  DART_PROFILE_SCOPED_N("DART native finite-finite cross-group pairs");
+
   sortedEntries2.reserve(entries2.size());
   for (const auto& entry : entries2)
     sortedEntries2.push_back(&entry);
@@ -2370,25 +2511,57 @@ bool processFiniteFinitePairs(
       [](const BroadphaseEntry* lhs, const BroadphaseEntry* rhs) {
         return lhs->min.x() < rhs->min.x();
       });
+  if constexpr (kUseNativeBroadphaseSimd) {
+    sortedBounds2.update(sortedEntries2);
+  }
 
-  const auto& filter = option.collisionFilter;
   for (const auto& entry1 : entries1) {
-    for (const auto* entry2Ptr : sortedEntries2) {
+    std::size_t j = 0u;
+    while (j < sortedEntries2.size()) {
+      const auto* entry2Ptr = sortedEntries2[j];
       const auto& entry2 = *entry2Ptr;
-      if (entry2.max.x() < entry1.min.x())
-        continue;
       if (entry2.min.x() > entry1.max.x())
         break;
-      if (!overlaps(entry1, entry2))
-        continue;
 
-      auto* collObj1 = entry1.object;
-      auto* collObj2 = entry2.object;
-      if (filter && filter->ignoresCollision(collObj1, collObj2))
+      if constexpr (kUseNativeBroadphaseSimd) {
+        if (j + kBroadphaseSimdWidth <= sortedEntries2.size()) {
+          const std::uint32_t overlapMask
+              = computeFiniteOverlapMask4(entry1, sortedBounds2, j);
+          for (std::size_t lane = 0u; lane < kBroadphaseSimdWidth; ++lane) {
+            if ((overlapMask & (std::uint32_t{1u} << lane)) == 0u)
+              continue;
+
+            if (processFiniteFinitePair(
+                    entry1,
+                    *sortedEntries2[j + lane],
+                    option,
+                    result,
+                    collisionFound,
+                    pairResult)) {
+              return true;
+            }
+          }
+          j += kBroadphaseSimdWidth;
+          continue;
+        }
+      }
+
+      if (entry2.max.x() < entry1.min.x()) {
+        ++j;
         continue;
-      if (processPair(
-              collObj1, collObj2, option, result, collisionFound, pairResult)) {
+      }
+      if (!overlaps(entry1, entry2))
+        ++j;
+      else if (processFiniteFinitePair(
+                   entry1,
+                   entry2,
+                   option,
+                   result,
+                   collisionFound,
+                   pairResult)) {
         return true;
+      } else {
+        ++j;
       }
     }
   }
