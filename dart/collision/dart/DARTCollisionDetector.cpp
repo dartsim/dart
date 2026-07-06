@@ -1962,7 +1962,7 @@ bool overlaps(const BroadphaseEntry& entry1, const BroadphaseEntry& entry2)
 }
 
 //==============================================================================
-std::uint32_t computeFiniteOverlapMask4(
+[[maybe_unused]] std::uint32_t computeFiniteOverlapMask4(
     const BroadphaseEntry& entry,
     const SortedBroadphaseBounds& bounds,
     std::size_t begin)
