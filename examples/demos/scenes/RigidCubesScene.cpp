@@ -33,17 +33,22 @@
 // Ported from examples/rigid_cubes: a loaded cube-stack skel with directional
 // impulse forces (keys 1-4) and live contact-force visualization (key v).
 //
-// Deviation from the original: the recorded-frame playback mode (key 'p',
-// World::bake()/getRecording()) is intentionally omitted. It relied on
-// customPreRefresh, which runs once per render frame independent of the
-// simulate/pause state; DemoSceneSetup (BRIEF-phase1.md's scene contract)
-// only exposes preStep/postStep, which run once per simulation step and only
-// while the host is not paused. Rather than ship a playback mode that
-// silently freezes whenever Play/Pause is off (unlike the original), it is
-// left out of this port; a preRefresh/postRefresh hook can be added to the
-// contract in a later phase if per-frame (non-stepped) scene logic is needed
-// again. Live force application and live contact-force visualization -- the
-// more central interactive behaviors -- are preserved with full parity.
+// Deviations from the original:
+//  - The recorded-frame playback mode (key 'p', World::bake()/getRecording())
+//    is intentionally omitted. It relied on customPreRefresh, which runs once
+//    per render frame independent of the simulate/pause state; DemoSceneSetup
+//    (BRIEF-phase1.md's scene contract) only exposed preStep/postStep at the
+//    time of this port (once per simulation step, only while running).
+//    Rather than ship a playback mode that silently freezes whenever
+//    Play/Pause is off (unlike the original), it was left out; Phase 3 has
+//    since added DemoSceneSetup::preRefresh, so a playback mode could be
+//    revisited, but that is a separate, larger feature and out of scope here.
+//  - This scene's own bespoke contact-force visualization (key 'v', the
+//    contactFrames/contactArrows/showContactForces machinery) has been
+//    removed: BRIEF-phase3.md #3 extracts exactly this logic into a
+//    reusable host-level facility (DemoHost's ContactVisualizer, toggled in
+//    Diagnostics) that now applies to every scene, not just this one. Force
+//    application (keys 1-4) is unaffected and preserved with full parity.
 
 #include "Scenes.hpp"
 #include "ZUp.hpp"
@@ -62,77 +67,13 @@ namespace dart_demos {
 
 namespace {
 
-constexpr double kLiveContactForceScale = 0.1;
-
 //==============================================================================
-/// Per-instance state captured by this scene's preStep/postStep/key-action
-/// lambdas (one instance per factory() call, i.e. per Rebuild/Reset too).
+/// Per-instance state captured by this scene's preStep/key-action lambdas
+/// (one instance per factory() call, i.e. per Rebuild/Reset too).
 struct RigidCubesState
 {
   Eigen::Vector3d force = Eigen::Vector3d::Zero();
-  bool showContactForces = true;
-  std::vector<dart::dynamics::SimpleFramePtr> contactFrames;
-  std::vector<std::shared_ptr<dart::dynamics::ArrowShape>> contactArrows;
 };
-
-//==============================================================================
-void ensureContactForceVisuals(
-    RigidCubesState& state,
-    const dart::simulation::WorldPtr& world,
-    std::size_t count)
-{
-  while (state.contactFrames.size() < count) {
-    auto frame = std::make_shared<dart::dynamics::SimpleFrame>(
-        dart::dynamics::Frame::World());
-    auto arrow = std::make_shared<dart::dynamics::ArrowShape>(
-        Eigen::Vector3d::Zero(),
-        Eigen::Vector3d::UnitZ() * 0.01,
-        dart::dynamics::ArrowShape::Properties(0.002, 2.0, 0.15),
-        Eigen::Vector4d(0.2, 0.2, 0.8, 1.0));
-
-    frame->setShape(arrow);
-    frame->getVisualAspect(true)->setHidden(true);
-    world->addSimpleFrame(frame);
-
-    state.contactFrames.push_back(frame);
-    state.contactArrows.push_back(arrow);
-  }
-}
-
-//==============================================================================
-void hideContactForcesFrom(RigidCubesState& state, std::size_t start)
-{
-  for (std::size_t i = start; i < state.contactFrames.size(); ++i)
-    state.contactFrames[i]->getVisualAspect(true)->setHidden(true);
-}
-
-//==============================================================================
-void updateContactForces(
-    RigidCubesState& state, const dart::simulation::WorldPtr& world)
-{
-  if (!state.showContactForces) {
-    hideContactForcesFrom(state, 0);
-    return;
-  }
-
-  const auto& result = world->getConstraintSolver()->getLastCollisionResult();
-  const auto& contacts = result.getContacts();
-  ensureContactForceVisuals(state, world, contacts.size());
-
-  for (std::size_t i = 0; i < contacts.size(); ++i) {
-    const Eigen::Vector3d point = contacts[i].point;
-    const Eigen::Vector3d force = kLiveContactForceScale * contacts[i].force;
-    auto* visual = state.contactFrames[i]->getVisualAspect(true);
-    if (force.norm() < 1e-8) {
-      visual->setHidden(true);
-    } else {
-      visual->setHidden(false);
-      state.contactArrows[i]->setPositions(point, point + force);
-    }
-  }
-
-  hideContactForcesFrom(state, contacts.size());
-}
 
 } // namespace
 
@@ -174,10 +115,6 @@ DemoScene makeRigidCubesScene()
       state->force /= 2.0;
     };
 
-    setup.postStep = [world, state] {
-      updateContactForces(*state, world);
-    };
-
     auto applyForce = [state](const Eigen::Vector3d& force) {
       state->force = force;
     };
@@ -205,19 +142,12 @@ DemoScene makeRigidCubesScene()
                                            applyForce(
                                                Eigen::Vector3d(0, -500, 0));
                                          }});
-    setup.keyActions.push_back(KeyAction{'v', "Toggle contact forces", [state] {
-                                           state->showContactForces
-                                               = !state->showContactForces;
-                                         }});
-
     setup.renderPanel = [world, state] {
       ImGui::Text("Skeletons: %zu", world->getNumSkeletons());
-      ImGui::Text(
-          "Contact force visualization: %s",
-          state->showContactForces ? "on" : "off");
       ImGui::TextWrapped(
           "Force keys apply a 500 N impulse to the second skeleton's first "
-          "body, decaying by half each step.");
+          "body, decaying by half each step. Contact forces are visualized "
+          "host-wide via Diagnostics > Contact Visualizer.");
     };
 
     return setup;

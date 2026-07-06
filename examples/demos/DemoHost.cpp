@@ -199,10 +199,13 @@ DemoWorldNode::DemoWorldNode(const dart::simulation::WorldPtr& world)
 
 //==============================================================================
 void DemoWorldNode::setHooks(
-    std::function<void()> preStep, std::function<void()> postStep)
+    std::function<void()> preStep,
+    std::function<void()> postStep,
+    std::function<void()> preRefresh)
 {
   mPreStep = std::move(preStep);
   mPostStep = std::move(postStep);
+  mPreRefresh = std::move(preRefresh);
 }
 
 //==============================================================================
@@ -241,6 +244,25 @@ void DemoWorldNode::customPostStep()
 }
 
 //==============================================================================
+void DemoWorldNode::customPreRefresh()
+{
+  mStepCountAtRefreshStart = mStepCount;
+  invokeHook(mPreRefresh, "preRefresh");
+}
+
+//==============================================================================
+void DemoWorldNode::customPostRefresh()
+{
+  mLastRefreshStepCount = mStepCount - mStepCountAtRefreshStart;
+}
+
+//==============================================================================
+std::size_t DemoWorldNode::getLastRefreshStepCount() const
+{
+  return mLastRefreshStepCount;
+}
+
+//==============================================================================
 void DemoWorldNode::invokeHook(std::function<void()>& hook, const char* name)
 {
   if (!hook)
@@ -266,6 +288,21 @@ DemoHost::DemoHost(std::vector<DemoScene> scenes, double guiScale)
 {
   buildCategories();
   mViewer = new dart::gui::osg::ImGuiViewer();
+
+  // Captures dart::common's dtmsg/dtwarn/dterr output (and any other
+  // std::cout/std::cerr writes) into the same log the host already uses for
+  // its own app-event messages, so the Diagnostics log console shows both
+  // through one severity-filtered, autoscrolling view. Restored (stream
+  // buffers un-redirected) when mLogCapture is destroyed alongside this host.
+  mLogCapture = std::make_unique<LogCapture>(
+      [this](CapturedLogLevel level, const std::string& message) {
+        LogEntry::Level mapped = LogEntry::Level::Info;
+        if (level == CapturedLogLevel::Warning)
+          mapped = LogEntry::Level::Warning;
+        else if (level == CapturedLogLevel::Error)
+          mapped = LogEntry::Level::Error;
+        log(mapped, message);
+      });
 }
 
 //==============================================================================
@@ -315,6 +352,18 @@ void DemoHost::setInitialScene(const std::string& id)
 }
 
 //==============================================================================
+void DemoHost::setDebugSelectBodyName(const std::string& name)
+{
+  mDebugSelectBodyName = name;
+}
+
+//==============================================================================
+void DemoHost::setDebugRecordProfile(bool on)
+{
+  mDebugRecordProfile = on;
+}
+
+//==============================================================================
 std::size_t DemoHost::getActiveWorldNodeCount() const
 {
   return mActiveWorldNodeCount;
@@ -343,7 +392,10 @@ void DemoHost::log(LogEntry::Level level, const std::string& message)
 {
   mLog.push_back(LogEntry{level, message});
 
-  constexpr std::size_t kMaxLogEntries = 300;
+  // A ring buffer of ~2000 entries: generous enough to survive a captured
+  // dtmsg/dtwarn/dterr burst (e.g. a noisy solver) without losing the app's
+  // own recent status messages, while staying bounded.
+  constexpr std::size_t kMaxLogEntries = 2000;
   while (mLog.size() > kMaxLogEntries)
     mLog.pop_front();
 }
@@ -366,6 +418,36 @@ void DemoHost::ensureViewerConfigured()
   mViewer->getImGuiHandler()->addWidget(
       std::make_shared<HostPanelWidget>(this));
   mViewer->addEventHandler(new DemoKeyHandler(this));
+
+  // Host-wide picking: plain left-click selects a body for the Inspector;
+  // Ctrl+left-drag starts a spring-force drag (DragForce owns both, since it
+  // needs the same persistent mouse handler -- see DragForce.hpp).
+  mDragForce.installMouseHandler(
+      mViewer.get(), [this](dart::dynamics::BodyNode* body) {
+        mInspector.setSelection(body);
+      });
+
+  // View-utilities grid attachment: host chrome, persists across scene
+  // switches (unlike a scene's own attachments, which are torn down on
+  // switch via ctx.addTeardown). Off by default -- most scenes already
+  // render their own ground plane/floor.
+  mGridVisual = new dart::gui::osg::GridVisual();
+  mGridVisual->display(false);
+  mViewer->addAttachment(mGridVisual.get());
+}
+
+//==============================================================================
+void DemoHost::applyShadowState()
+{
+  if (!mWorldNode)
+    return;
+
+  if (mShadowsEnabled && mCurrentSceneWantsShadows) {
+    mWorldNode->setShadowTechnique(
+        dart::gui::osg::WorldNode::createDefaultShadowTechnique(mViewer.get()));
+  } else {
+    mWorldNode->setShadowTechnique(nullptr);
+  }
 }
 
 //==============================================================================
@@ -434,6 +516,13 @@ void DemoHost::processPendingSwitch()
 //==============================================================================
 void DemoHost::teardownCurrentScene()
 {
+  // Host-level facilities first: they hold raw BodyNode/DegreeOfFreedom
+  // pointers and SimpleFrame/InteractiveFrame objects that belong to the
+  // world about to be destroyed below.
+  mInspector.reset();
+  mDragForce.reset(mViewer.get());
+  mContactVisualizer.reset();
+
   // Tear down drag-and-drop / attachments / event handlers before the world
   // node and world itself, since these extras may hold raw pointers into
   // objects the world owns (e.g. a SimpleFrame's DnD registration).
@@ -465,16 +554,38 @@ void DemoHost::teardownCurrentScene()
 void DemoHost::installScene(const DemoScene& scene, DemoSceneSetup setup)
 {
   mCurrentWorld = setup.world;
-
-  ::osg::ref_ptr<::osgShadow::ShadowTechnique> shadow;
-  if (setup.enableShadows) {
-    shadow = dart::gui::osg::WorldNode::createDefaultShadowTechnique(
-        mViewer.get());
-  }
+  mDragForce.onSceneInstalled(mCurrentWorld);
+  mContactVisualizer.onSceneInstalled(mCurrentWorld);
+  mCurrentSceneWantsShadows = setup.enableShadows;
 
   mWorldNode = new DemoWorldNode(mCurrentWorld);
-  mWorldNode->setShadowTechnique(shadow);
-  mWorldNode->setHooks(setup.preStep, setup.postStep);
+  applyShadowState();
+
+  // Compose the host-level facilities (joint-slider edits, drag-force/
+  // gizmo spring, contact-visualizer refresh) around the scene's own hooks.
+  // Each facility call is internally exception-safe (never throws), so a
+  // fault in one never disables the scene's own preStep/postStep/preRefresh
+  // the way DemoWorldNode::invokeHook's generic guard would if it were
+  // tripped by host code.
+  mWorldNode->setHooks(
+      [this, scenePreStep = std::move(setup.preStep)] {
+        mInspector.applyQueuedEdits();
+        mDragForce.applyPreStep();
+        if (scenePreStep)
+          scenePreStep();
+      },
+      [this, scenePostStep = std::move(setup.postStep)] {
+        if (scenePostStep)
+          scenePostStep();
+        mContactVisualizer.applyPostStep();
+      },
+      [this, scenePreRefresh = std::move(setup.preRefresh)] {
+        mInspector.applyQueuedEdits();
+        mInspector.updateHighlight(ImGui::GetTime());
+        mDragForce.applyPreRefresh(!mViewer->isSimulating());
+        if (scenePreRefresh)
+          scenePreRefresh();
+      });
   mWorldNode->setHookErrorSink(
       [this](const std::string& hookName, const std::string& reason) {
         log(LogEntry::Level::Error,
@@ -697,6 +808,26 @@ int DemoHost::runHeadlessShot(
     std::cerr << "[headless] demo '" << initial
               << "' failed to start; capturing the fallback state.\n";
   }
+
+  // Hidden debug/test hooks (main.cpp's --debug-select-body/
+  // --debug-record-profile): let a headless capture exercise UI state that
+  // normally requires interactive input, per
+  // docs/dev_tasks/dart6_consolidated_demos/BRIEF-phase3.md's acceptance
+  // criteria (scene tree + inspector with a selection; profiler recording).
+  if (!mDebugSelectBodyName.empty() && mCurrentWorld) {
+    dart::dynamics::BodyNode* found = nullptr;
+    for (std::size_t s = 0; s < mCurrentWorld->getNumSkeletons() && !found;
+         ++s) {
+      found = mCurrentWorld->getSkeleton(s)->getBodyNode(mDebugSelectBodyName);
+    }
+    if (found)
+      mInspector.setSelection(found);
+    else
+      std::cerr << "[headless] --debug-select-body '" << mDebugSelectBodyName
+                << "' not found in demo '" << initial << "'.\n";
+  }
+  if (mDebugRecordProfile)
+    mProfiler.setRecordingForTest(true);
 
   const CameraHome defaultHome{
       ::osg::Vec3d(6.0, 8.0, 4.0),
@@ -922,6 +1053,84 @@ void DemoHost::renderToolbar()
     if (mCurrentWorld)
       mCurrentWorld->setTimeStep(mTimeStep);
   }
+
+  ImGui::SameLine();
+  if (ImGui::Button("View"))
+    ImGui::OpenPopup("##view_menu_popup");
+  if (ImGui::BeginPopup("##view_menu_popup")) {
+    renderViewMenu();
+    ImGui::EndPopup();
+  }
+
+  mDragForce.renderToolbarStatus(mGuiScale);
+}
+
+//==============================================================================
+void DemoHost::renderViewMenu()
+{
+  if (ImGui::Checkbox("Shadows", &mShadowsEnabled))
+    applyShadowState();
+
+  bool gridDisplayed = mGridVisual && mGridVisual->isDisplayed();
+  if (ImGui::Checkbox("Grid", &gridDisplayed) && mGridVisual)
+    mGridVisual->display(gridDisplayed);
+
+  if (mGridVisual) {
+    static const char* const kPlaneNames[] = {"XY", "YZ", "ZX"};
+    int planeIndex = static_cast<int>(mGridVisual->getPlaneType());
+    ImGui::SetNextItemWidth(120.0f * static_cast<float>(mGuiScale));
+    if (ImGui::Combo(
+            "Plane", &planeIndex, kPlaneNames, IM_ARRAYSIZE(kPlaneNames))) {
+      mGridVisual->setPlaneType(
+          static_cast<dart::gui::osg::GridVisual::PlaneType>(planeIndex));
+    }
+
+    float cellSize = static_cast<float>(mGridVisual->getMinorLineStepSize());
+    ImGui::SetNextItemWidth(120.0f * static_cast<float>(mGuiScale));
+    if (ImGui::SliderFloat(
+            "Cell size",
+            &cellSize,
+            0.05f,
+            5.0f,
+            "%.2f m",
+            ImGuiSliderFlags_AlwaysClamp)
+        && std::isfinite(cellSize)) {
+      mGridVisual->setMinorLineStepSize(std::clamp(cellSize, 0.05f, 5.0f));
+    }
+
+    int numCells = static_cast<int>(mGridVisual->getNumCells());
+    ImGui::SetNextItemWidth(120.0f * static_cast<float>(mGuiScale));
+    if (ImGui::SliderInt(
+            "Num cells", &numCells, 2, 100, "%d", ImGuiSliderFlags_AlwaysClamp)
+        && numCells > 0) {
+      mGridVisual->setNumCells(static_cast<std::size_t>(numCells));
+    }
+  }
+
+  ImGui::Separator();
+  bool headlights = mViewer->checkHeadlights();
+  if (ImGui::Checkbox("Headlights", &headlights))
+    mViewer->switchHeadlights(headlights);
+
+  ImGui::Separator();
+  float guiScale = static_cast<float>(mGuiScale);
+  ImGui::SetNextItemWidth(160.0f * static_cast<float>(mGuiScale));
+  if (ImGui::SliderFloat(
+          "GUI scale",
+          &guiScale,
+          0.75f,
+          2.0f,
+          "%.2fx",
+          ImGuiSliderFlags_AlwaysClamp)
+      && std::isfinite(guiScale)) {
+    mGuiScale
+        = dart::gui::osg::sanitizeGuiScale(std::clamp(guiScale, 0.75f, 2.0f));
+    mViewer->getImGuiHandler()->setGuiScale(mGuiScale);
+  }
+
+  ImGui::Separator();
+  if (ImGui::Button("Reset camera"))
+    mViewer->home();
 }
 
 //==============================================================================
@@ -982,8 +1191,39 @@ void DemoHost::renderNavigator()
 }
 
 //==============================================================================
+void DemoHost::renderInspectorSection()
+{
+  if (ImGui::CollapsingHeader("Scene Tree", ImGuiTreeNodeFlags_DefaultOpen)) {
+    ImGui::BeginChild(
+        "##scene_tree_scroll",
+        ImVec2(0.0f, 120.0f * static_cast<float>(mGuiScale)),
+        true);
+    mInspector.renderTree(mCurrentWorld);
+    ImGui::EndChild();
+  }
+
+  if (ImGui::CollapsingHeader("Inspector", ImGuiTreeNodeFlags_DefaultOpen)) {
+    const bool paused = !mViewer->isSimulating();
+    mInspector.renderDetail(paused, getWorldNode());
+
+    if (auto* selected = mInspector.getSelection()) {
+      if (!mDragForce.isGizmoAttached()) {
+        if (ImGui::Button("Attach gizmo"))
+          mDragForce.attachGizmo(selected, mCurrentWorld, mViewer.get());
+      } else if (ImGui::Button("Detach gizmo")) {
+        mDragForce.detachGizmo(mViewer.get());
+      }
+    }
+  }
+
+  ImGui::Separator();
+}
+
+//==============================================================================
 void DemoHost::renderScenePanel()
 {
+  renderInspectorSection();
+
   if (mCurrentRenderPanel) {
     try {
       mCurrentRenderPanel();
@@ -1051,13 +1291,69 @@ void DemoHost::renderDiagnostics()
       numBodies,
       numDofs);
 
+  const std::size_t numContacts
+      = mCurrentWorld ? mCurrentWorld->getLastCollisionResult().getNumContacts()
+                      : std::size_t{0};
+  const std::size_t numConstraints
+      = (mCurrentWorld && mCurrentWorld->getConstraintSolver())
+            ? mCurrentWorld->getConstraintSolver()->getNumConstraints()
+            : std::size_t{0};
+  ImGui::Text(
+      "Contacts %zu   Constraints %zu   Steps/refresh %zu   Timestep %.5f s",
+      numContacts,
+      numConstraints,
+      mWorldNode ? mWorldNode->getLastRefreshStepCount() : std::size_t{0},
+      mCurrentWorld ? mCurrentWorld->getTimeStep() : 0.0);
+
+  ImGui::Separator();
+  if (ImGui::CollapsingHeader(
+          "Contact Visualizer", ImGuiTreeNodeFlags_DefaultOpen)) {
+    mContactVisualizer.renderToggle();
+  }
+
+  ImGui::Separator();
+  if (ImGui::CollapsingHeader("Drag Force", ImGuiTreeNodeFlags_DefaultOpen)) {
+    mDragForce.renderTunables(mGuiScale);
+  }
+
+  ImGui::Separator();
+  if (ImGui::CollapsingHeader("Profiler", ImGuiTreeNodeFlags_DefaultOpen)) {
+    mProfiler.render();
+  }
+
   ImGui::Separator();
   if (ImGui::CollapsingHeader("Log", ImGuiTreeNodeFlags_DefaultOpen)) {
+    ImGui::Checkbox("Info", &mLogShowInfo);
+    ImGui::SameLine();
+    ImGui::Checkbox("Warning", &mLogShowWarning);
+    ImGui::SameLine();
+    ImGui::Checkbox("Error", &mLogShowError);
+    ImGui::SameLine();
+    ImGui::Checkbox("Autoscroll", &mLogAutoscroll);
+    ImGui::SameLine();
+    if (ImGui::Button("Copy")) {
+      std::string joined;
+      for (const auto& entry : mLog) {
+        if ((entry.level == LogEntry::Level::Info && !mLogShowInfo)
+            || (entry.level == LogEntry::Level::Warning && !mLogShowWarning)
+            || (entry.level == LogEntry::Level::Error && !mLogShowError))
+          continue;
+        joined += entry.message;
+        joined += '\n';
+      }
+      ImGui::SetClipboardText(joined.c_str());
+    }
+
     ImGui::BeginChild(
         "##log_scroll",
         ImVec2(0.0f, 100.0f * static_cast<float>(mGuiScale)),
         true);
     for (const auto& entry : mLog) {
+      if ((entry.level == LogEntry::Level::Info && !mLogShowInfo)
+          || (entry.level == LogEntry::Level::Warning && !mLogShowWarning)
+          || (entry.level == LogEntry::Level::Error && !mLogShowError))
+        continue;
+
       ImVec4 color = ImGui::GetStyle().Colors[ImGuiCol_Text];
       if (entry.level == LogEntry::Level::Error)
         color = ImVec4(0.95f, 0.35f, 0.35f, 1.0f);
@@ -1068,7 +1364,7 @@ void DemoHost::renderDiagnostics()
       ImGui::TextWrapped("%s", entry.message.c_str());
       ImGui::PopStyleColor();
     }
-    if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f)
+    if (mLogAutoscroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f)
       ImGui::SetScrollHereY(1.0f);
     ImGui::EndChild();
   }

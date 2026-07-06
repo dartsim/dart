@@ -58,6 +58,13 @@ struct Options
   std::string sceneId;
   int width = 1280;
   int height = 800;
+
+  // Hidden test/debug hooks (undocumented -- not in printUsage()): let a
+  // headless --shot capture exercise UI state that normally requires
+  // interactive input (a body selected in the Inspector; the Profiler
+  // actively recording), per BRIEF-phase3.md's acceptance criteria.
+  std::string debugSelectBody;
+  bool debugRecordProfile = false;
 };
 
 //==============================================================================
@@ -136,6 +143,12 @@ bool parseArgs(int argc, char** argv, Options& opt)
         return false;
       opt.guiScale
           = dart::gui::osg::parseGuiScale(argv[++i], opt.guiScale, &std::cerr);
+    } else if (std::strcmp(a, "--debug-select-body") == 0) {
+      if (!needsValue(i))
+        return false;
+      opt.debugSelectBody = argv[++i];
+    } else if (std::strcmp(a, "--debug-record-profile") == 0) {
+      opt.debugRecordProfile = true;
     } else if (std::strcmp(a, "-h") == 0 || std::strcmp(a, "--help") == 0) {
       printUsage(argv[0]);
       return false;
@@ -160,6 +173,10 @@ int main(int argc, char** argv)
   dart_demos::DemoHost host(dart_demos::makeDemoScenes(), opt.guiScale);
   if (!opt.sceneId.empty())
     host.setInitialScene(opt.sceneId);
+  if (!opt.debugSelectBody.empty())
+    host.setDebugSelectBodyName(opt.debugSelectBody);
+  if (opt.debugRecordProfile)
+    host.setDebugRecordProfile(true);
 
   if (opt.listScenes)
     return host.listScenes();

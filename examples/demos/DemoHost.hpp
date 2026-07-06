@@ -33,11 +33,17 @@
 #ifndef DART_EXAMPLES_DEMOS_DEMOHOST_HPP_
 #define DART_EXAMPLES_DEMOS_DEMOHOST_HPP_
 
+#include "ContactVisualizer.hpp"
 #include "DemoScene.hpp"
+#include "DragForce.hpp"
+#include "Inspector.hpp"
+#include "LogCapture.hpp"
+#include "Profiler.hpp"
 
 #include <dart/gui/osg/osg.hpp>
 
 #include <deque>
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -55,8 +61,14 @@ class DemoWorldNode : public dart::gui::osg::RealTimeWorldNode
 public:
   explicit DemoWorldNode(const dart::simulation::WorldPtr& world);
 
-  /// Installs the active scene's step hooks (either may be empty).
-  void setHooks(std::function<void()> preStep, std::function<void()> postStep);
+  /// Installs the active scene's step hooks (any may be empty). `preRefresh`
+  /// is wired to customPreRefresh() and therefore runs once per rendered
+  /// frame regardless of pause state; preStep/postStep only run while
+  /// simulating (see DemoScene.hpp).
+  void setHooks(
+      std::function<void()> preStep,
+      std::function<void()> postStep,
+      std::function<void()> preRefresh = nullptr);
 
   /// Called (hookName, reason) the first time a hook throws; the host uses
   /// this to log the failure and update the status line.
@@ -73,17 +85,29 @@ public:
   /// refresh() or stepOnce()).
   std::size_t getStepCount() const;
 
+  /// Number of steps taken during the most recently completed refresh()
+  /// call (0 while paused, since refresh() takes no steps then; may be >1
+  /// under real-time catch-up, or 0 on an over-budget refresh with no time
+  /// to spare). stepOnce() does not go through refresh() and does not
+  /// affect this counter.
+  std::size_t getLastRefreshStepCount() const;
+
   // Documentation inherited
   void customPreStep() override;
   void customPostStep() override;
+  void customPreRefresh() override;
+  void customPostRefresh() override;
 
 private:
   void invokeHook(std::function<void()>& hook, const char* name);
 
   std::function<void()> mPreStep;
   std::function<void()> mPostStep;
+  std::function<void()> mPreRefresh;
   std::function<void(const std::string&, const std::string&)> mHookErrorSink;
   std::size_t mStepCount;
+  std::size_t mStepCountAtRefreshStart = 0;
+  std::size_t mLastRefreshStepCount = 0;
 };
 
 //==============================================================================
@@ -151,6 +175,13 @@ public:
   /// start on. An empty id (the default) means "the first scene in the
   /// catalog".
   void setInitialScene(const std::string& id);
+
+  /// Test/debug-only hooks (main.cpp's hidden --debug-* flags) so a headless
+  /// capture can exercise UI state that normally requires interactive input:
+  /// a body selected in the Inspector, and the Profiler actively recording.
+  /// Applied by runHeadlessShot() right after the scene installs.
+  void setDebugSelectBodyName(const std::string& name);
+  void setDebugRecordProfile(bool on);
 
   /// Number of world nodes currently registered with the viewer. Exactly one
   /// whenever a scene is active; used by cycleScenes() as a leak audit.
@@ -222,7 +253,10 @@ private:
   void renderNavigator();
   void renderScenePanel();
   void renderDiagnostics();
+  void renderInspectorSection();
+  void renderViewMenu();
   void invokeKeyAction(KeyAction& action);
+  void applyShadowState();
 
   std::vector<DemoScene> mScenes;
   std::vector<CategoryGroup> mCategories;
@@ -244,16 +278,37 @@ private:
 
   std::string mStatusLine = "No demo loaded yet.";
   std::deque<LogEntry> mLog;
+  std::unique_ptr<LogCapture> mLogCapture;
+  bool mLogShowInfo = true;
+  bool mLogShowWarning = true;
+  bool mLogShowError = true;
+  bool mLogAutoscroll = true;
   char mSearchBuf[128] = {};
+
+  Inspector mInspector;
+  DragForce mDragForce;
+  ContactVisualizer mContactVisualizer;
+  Profiler mProfiler;
 
   bool mGravityEnabled = true;
   Eigen::Vector3d mSavedGravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   float mTargetRtf = 1.0f;
   float mTimeStep = 0.001f;
 
+  // View utilities (toolbar "View" menu). Shadows/grid/headlights/GUI scale
+  // are host chrome that persists across scene switches; mCurrentSceneWants
+  // Shadows tracks the active scene's own DemoSceneSetup::enableShadows so
+  // toggling the host's global mShadowsEnabled can be combined with it.
+  bool mShadowsEnabled = true;
+  bool mCurrentSceneWantsShadows = true;
+  ::osg::ref_ptr<dart::gui::osg::GridVisual> mGridVisual;
+
   double mGuiScale;
   bool mViewerConfigured = false;
   std::string mInitialSceneId;
+
+  std::string mDebugSelectBodyName;
+  bool mDebugRecordProfile = false;
 };
 
 } // namespace dart_demos

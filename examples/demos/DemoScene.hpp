@@ -123,6 +123,15 @@ struct DemoSceneSetup
   /// Called immediately after each simulation step.
   std::function<void()> postStep;
 
+  /// Called once per rendered frame, before the (possible) simulation
+  /// step(s) -- unlike preStep/postStep, this runs even while the
+  /// simulation is paused (it is wired to WorldNode::customPreRefresh(),
+  /// which fires unconditionally at the top of every refresh()). Use this
+  /// for visuals that should keep updating while paused (e.g. recoloring by
+  /// live state, or an aim-line preview); prefer preStep/postStep for
+  /// anything that must only run once per physics step. Optional.
+  std::function<void()> preRefresh;
+
   /// Draws the scene-specific controls the host embeds in its right-hand
   /// panel. Optional.
   std::function<void()> renderPanel;

@@ -51,14 +51,15 @@
 // call and viewer->simulate(true) autostart, and the "Run simulation"
 // checkbox (the host's Simulation toolbar already owns Play/Pause), and the
 // 's' key that printed awake/asleep stats to stdout (the scene panel shows the
-// same awake/asleep counts continuously, and there is no GUI console). Also
-// dropped: customPreRefresh's island-recolor/aim-line-update ran every render
-// frame regardless of pause state; DemoSceneSetup only exposes
-// preStep/postStep (once per simulation step, only while running), so here
-// they run from postStep instead -- like RigidCubesScene's documented
-// omission of its customPreRefresh-based playback mode, the visuals now hold
-// their last state while paused rather than continuing to refresh every
-// frame.
+// same awake/asleep counts continuously, and there is no GUI console).
+// customPreRefresh's island-recolor/aim-line-update ran every render frame
+// regardless of pause state in the original; B1 had to demote this to
+// postStep (once per simulation step, only while running) because
+// DemoSceneSetup did not yet expose a preRefresh hook, so the visuals held
+// their last state while paused. Phase 3 adds DemoSceneSetup::preRefresh
+// (wired to WorldNode::customPreRefresh, which fires every render frame
+// unconditionally); this port now uses it, restoring full parity with the
+// original's always-live recolor/aim-line.
 
 #include "Scenes.hpp"
 
@@ -638,7 +639,7 @@ DemoScene makeSleepingScene()
         ::osg::Vec3d(0.0, 0.0, 1.0),
         ::osg::Vec3d(0.0, 0.0, 1.0)};
 
-    setup.postStep = [world, state] {
+    setup.preRefresh = [world, state] {
       recolorIslands(world, *state);
       updateAimLine(world, *state);
     };
