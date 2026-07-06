@@ -95,7 +95,7 @@ def assemble_sheet(
                 "height": image.height,
                 "label": str(label_start + index) if labels else None,
             }
-            for index, (path, image) in enumerate(zip(inputs, images, strict=True))
+            for index, (path, image) in enumerate(zip(inputs, images))
         ],
     }
 
