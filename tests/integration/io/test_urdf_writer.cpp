@@ -483,6 +483,14 @@ const dynamics::VisualAspect* getOnlyVisual(const dynamics::Skeleton& skeleton)
   return visualNode->getVisualAspect();
 }
 
+void injectMalformedAxisForWriterTest(
+    dynamics::RevoluteJoint& joint, const Eigen::Vector3d& axis)
+{
+  // setAxis() recomputes joint caches and asserts in Debug for NaN axes before
+  // the writer can validate the serialized state.
+  const_cast<Eigen::Vector3d&>(joint.getAxis()) = axis;
+}
+
 } // namespace
 
 //==============================================================================
@@ -1456,7 +1464,8 @@ TEST(UrdfWriter, NonFiniteJointAxisReturnsError)
   auto* hinge
       = dynamic_cast<dynamics::RevoluteJoint*>(skeleton->getJoint("hinge"));
   ASSERT_NE(hinge, nullptr);
-  hinge->setAxis(
+  injectMalformedAxisForWriterTest(
+      *hinge,
       Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 1.0));
 
   const auto result = io::UrdfWriter::tryWriteSkeletonToString(*skeleton);
