@@ -154,10 +154,11 @@ the rest. Full detail in `docs/design/agent_sim_verification.md`.
 
 ## 5. Remaining / follow-up work (prioritized)
 
-None of this blocks the shipped tooling; it extends or hardens it. Each item
-lists a concrete next step and acceptance evidence.
+None of this blocks the shipped tooling; it extends or hardens it. Current
+status is mixed: A, C, D, and E have local follow-up implementation; B still
+needs real blind-judge rows before it has measured research evidence.
 
-### A. dartpy stub regeneration (deferred housekeeping) — NOT done
+### A. dartpy stub regeneration (deferred housekeeping) — DONE locally
 
 New DART 7 public symbols are absent from the committed `.pyi` stubs
 (`StepMetrics`, `dump_scene_json/text`, `OffscreenRenderer`, `RenderedImage`,
@@ -165,13 +166,15 @@ New DART 7 public symbols are absent from the committed `.pyi` stubs
 camera view presets). `python/dartpy/gui/__init__.pyi` got partial updates
 during review, but a clean full pass is owed.
 
-- **Next step:** `pixi run generate-stubs` on a pinned nanobind version, review
-  the diff for ONLY intended symbol additions (reject cross-module drift), and
-  commit. Coordinate with any nanobind bump.
-- **Evidence:** the new public symbols appear in stubs; no unrelated churn;
-  IDEs autocomplete `dart.gui.render` / `world.compute_step_metrics`.
+- **Local evidence:** `pixi run generate-stubs` was run and rejected because it
+  produced broad nanobind formatting/signature churn. The retained patch is
+  minimal: `StepMetrics`, `world.compute_step_metrics()`,
+  `dump_scene_json/text`, and `MultibodyIntegrationFamily` appear in the
+  committed stubs while the pre-existing GUI render stubs stay intact.
+- **Gate:** `python/tests/unit/simulation/test_scene_dump.py` checks the
+  committed stub symbols.
 
-### B. Image A/B round 2 (multi-view + annotations) — NOT done
+### B. Image A/B round 2 (multi-view + annotations) — PARTIAL
 
 Round 1 used a fixed per-scene camera and left round 2 blocked on camera
 control (WP-ASV.4), which is now shipped. Round 2 should measure, with the
@@ -180,35 +183,49 @@ Set-of-Mark-style annotations (numbered bodies, ground-line, contact markers,
 CoM/velocity trails) on vs off — the research predicts annotations recover the
 static-geometry defects images missed in round 1.
 
-- **Next step:** reuse the round-1 harness pattern (blind judges, seeded
-  defects, clean controls) with `--view`/`--turntable` captures and an
-  annotation overlay arm; record results and fold conclusions into
+- **Local progress:** `pixi run image-ab-study` now reduces blind-judge rows
+  into detection deltas and false-positive rates; the durable design doc records
+  the round-2 protocol and makes clear that fixture rows are not research
+  evidence.
+- **Remaining next step:** collect real blind-judge rows over seeded defects and
+  clean controls for single-view, multi-view, turntable, and annotated captures;
+  record results and fold conclusions into
   `docs/onboarding/agent-sim-verification.md`.
-- **Evidence:** measured detection deltas that either confirm or refute the
-  multi-view/annotation hypothesis; updated default-capture recommendation.
+- **Completion evidence still needed:** measured detection deltas that either
+  confirm or refute the multi-view/annotation hypothesis; updated or explicitly
+  reaffirmed default-capture recommendation.
 
-### C. Adopt the verdict/golden tooling in the solver plan gates
+### C. Adopt the verdict/golden tooling in the solver plan gates — DONE locally
 
 Solver plans (PLAN-081/082/083/104) require "headless Filament captures" as
 completion gates. The image-verdict/golden tooling now makes those concrete.
 
-- **Next step:** wire one solver plan's visual gate to `image-verdict` /
-  `render-golden-gate` with a curated golden, as a template the other plans
-  adopt.
+- **Local evidence:** PLAN-083's acceptance criteria now names
+  `pixi run py-demo-capture`, `pixi run image-verdict`, and opt-in
+  backend-local `pixi run render-golden-gate` commands as the visual-gate
+  template.
 
-### D. Scene-dump coverage + a scene-diff verdict
+### D. Scene-dump coverage + a scene-diff verdict — DONE locally
 
 `_scene_dump.py` covers box/sphere/capsule/cylinder/mesh; add remaining shape
 types (cone, plane, heightmap, soft-body) as needed, and consider a
 `dump_scene`-diff verdict (structural JSON diff) analogous to
 `trajectory-compare` for "did the scene I built match the scene I intended".
 
-### E. VLM-in-the-loop verification (research)
+- **Local evidence:** scene dumps defensively serialize cone, heightmap, and
+  soft-body-like fields when those shape objects expose the expected attributes;
+  `pixi run scene-diff` emits a structural JSON verdict for scene dumps.
+
+### E. VLM-in-the-loop verification (research) — DONE locally
 
 The whole point is agent consumption. A natural extension: a helper that
 captures the recommended representation set (text bundle + one 1280 px frame +
 optional grid) and packages it for a VLM verification call. Grounded in the
 WP-ASV.1 memo (Claude 28×28 patch tokens, Set-of-Mark, contact sheets).
+
+- **Local evidence:** `pixi run verification-bundle` packages primary text
+  artifacts, one still frame, an optional grid, hashes, and a provider-neutral
+  review prompt. The helper deliberately stops before model/provider invocation.
 
 ## 6. How to resume / operate
 

@@ -216,7 +216,15 @@
   the packet records that fact instead of fabricating a baseline.
 - Every promoted example family has a py-demos scene, a headless smoke or
   capture command, and long-horizon visual evidence sufficient to inspect
-  contact, articulation, and motion.
+  contact, articulation, and motion. Use the agent-verification visual template
+  from `docs/onboarding/agent-sim-verification.md`: capture the solver scene
+  with `pixi run py-demo-capture -- --scene <scene> --view three-quarter --fit`
+  and gate the resulting still with
+  `pixi run image-verdict -- <capture.png> --metadata plan=PLAN-083`. For
+  stable renderer-regression lanes, curate a backend-local golden with
+  `pixi run render-golden-gate -- --golden tests/fixtures/render_goldens/plan083_<scene>.png --update`
+  and compare it with the same command without `--update`; these PNG goldens
+  stay opt-in and backend-specific, not default CI inputs.
 - Before any commit, run the required gates from `docs/ai/verification.md`;
   implementation slices also keep `pixi run lint`, `pixi run build`, focused
   C++/Python tests, benchmark smoke packets, and `check-api-boundaries` green.

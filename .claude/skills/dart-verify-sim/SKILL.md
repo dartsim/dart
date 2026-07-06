@@ -29,6 +29,8 @@ Text (primary):
 - `world.compute_step_metrics()` — energy/momentum/penetration/contacts/residual
 - `dartpy.dump_scene_json(world)` / `dump_scene_text(world)` — "what is in this
   world?" (glTF/USD-flavored hierarchy + flat index)
+- `pixi run scene-diff` — structural JSON verdict for intended-vs-actual scene
+  dumps
 - `pixi run trajectory-record` / `pixi run trajectory-compare` — per-body TSV +
   contact JSONL; bit-exact or tolerance diff with first-divergence
 
@@ -42,6 +44,8 @@ Visual (corroboration):
 - `pixi run image-verdict` / `image-golden` / `image-sheet` — JSON verdict,
   golden diff, contact sheet (contrast is report-only; `--require-contrast` to
   gate)
+- `pixi run image-ab-study` — blind-judge detection deltas for single-view,
+  multi-view, turntable, and annotated captures
 
 Opt-in:
 
@@ -49,6 +53,8 @@ Opt-in:
   curated locally with `-- --update`; not default CI)
 - `pixi run rerun-trajectory` — rerun.io inspection (opt-in; graceful when
   `rerun-sdk` is absent)
+- `pixi run verification-bundle` — package text evidence plus still/grid images
+  for a provider-neutral VLM or reviewer call
 
 Default capture for agent review: one ~1280 px frame, UI hidden, 3/4 view; add
 a 9-frame grid for motion. Keep images as corroboration, never the sole oracle

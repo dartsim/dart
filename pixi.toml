@@ -1099,6 +1099,12 @@ image-golden = { cmd = ["python", "scripts/image_golden.py"] }
 
 image-sheet = { cmd = ["python", "scripts/image_sheet.py"] }
 
+image-ab-study = { cmd = ["python", "scripts/image_ab_study.py"] }
+
+scene-diff = { cmd = ["python", "scripts/scene_diff.py"] }
+
+verification-bundle = { cmd = ["python", "scripts/verification_bundle.py"] }
+
 # Opt-in golden-image gate: render a canonical scene through dart.gui.render and
 # compare it against a committed, backend-specific golden. Not wired into
 # default CI; regenerate the golden with `-- --update` on the target backend.

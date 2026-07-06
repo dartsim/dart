@@ -5,11 +5,12 @@
 - [x] Core task shipped: PR #3313 → `main` and PR #3314 → `release-6.20`
       merged 2026-07-06 (agent 3D-scene/physics verification tooling on both
       branches).
-- [ ] A. dartpy stub regeneration (deferred housekeeping)
-- [ ] B. Image A/B round 2 (multi-view + annotations)
-- [ ] C. Adopt verdict/golden gates in solver plans
-- [ ] D. Scene-dump shape coverage + scene-diff verdict
-- [ ] E. VLM-in-the-loop verification (research)
+- [x] A. dartpy stub regeneration (deferred housekeeping)
+- [ ] B. Image A/B round 2 (multi-view + annotations) — reducer/protocol
+      landed; real blind-judge rows still needed before a measured conclusion.
+- [x] C. Adopt verdict/golden gates in solver plans
+- [x] D. Scene-dump shape coverage + scene-diff verdict
+- [x] E. VLM-in-the-loop verification (research)
 
 ## Goal
 
@@ -32,3 +33,7 @@ each follow-up with its next step and acceptance evidence).
 
 Delete this folder in the PR that closes items A–E, per
 `docs/dev_tasks/README.md`.
+
+Do not delete it yet: item B still needs the real round-2 blind-judge study
+rows and measured detection deltas. The reducer and durable protocol are in
+place, but fixture/unit-test rows are not research evidence.

@@ -48,6 +48,16 @@ tooling defaults follow: a text bundle (metrics + trajectory + scene JSON) as
 the primary oracle, and a single UI-hidden ~1280 px 3/4-view frame (plus a
 9-frame grid for motion) as corroboration.
 
+Round-2 image studies should keep the same blind-judge protocol but score the
+new camera and annotation arms explicitly: single 3/4 view, multi-view grid,
+turntable samples, and Set-of-Mark-style annotations for body IDs, contact
+markers, ground lines, and motion trails. `pixi run image-ab-study` owns the
+reduction step from blind rows to detection-rate deltas and false-positive
+rates; a row set is research evidence only when it comes from real blind
+judgments over seeded defects and clean controls. The default capture
+recommendation above should change only after those measured deltas beat the
+current single-frame baseline without increasing control false positives.
+
 ## Image-comparison tolerance policy
 
 Golden-image comparison is opt-in, never a default-CI gate (renderer/driver
@@ -79,6 +89,12 @@ pyrender), only rerun.io is built and marketed for automated/VLM use
 single opt-in richer-inspection extra, behind a graceful fallback and never a
 core or wheel dependency; the rest were rejected as human-in-browser or
 redundant with DART's existing Filament/OSG paths.
+
+For external model review, `pixi run verification-bundle` packages the text
+oracle, one still frame, an optional grid, and a provider-neutral prompt into a
+hash-recorded bundle. The helper deliberately stops at packaging: model choice,
+API credentials, and review policy remain outside DART's default gates, and any
+VLM answer must cite the bundled artifact fields it relied on.
 
 ## Dual-branch scope
 

@@ -182,6 +182,14 @@ def _rotation_to_rpy(rotation: Any) -> list[float]:
 
 
 def _shape_size(shape: Any, shape_type: str) -> list[float] | None:
+    explicit_size = _safe_attr(shape, "size")
+    if explicit_size is not None:
+        try:
+            values = _array(explicit_size).reshape(-1)
+        except Exception:  # noqa: BLE001
+            values = np.asarray([])
+        if values.size == 3:
+            return values.astype(float).tolist()
     if shape_type == "box":
         half_extents = _array(_safe_attr(shape, "half_extents"), shape=(3,))
         return (2.0 * half_extents).tolist()
@@ -200,6 +208,12 @@ def _shape_size(shape: Any, shape_type: str) -> list[float] | None:
         # Z size is 2*half_height + 2*radius (matching the full-bbox convention
         # used for box/sphere/mesh, not the bare cylinder segment).
         return [2.0 * radius, 2.0 * radius, 2.0 * half_height + 2.0 * radius]
+    if shape_type == "cone":
+        radius = float(_safe_attr(shape, "radius", 0.0))
+        height = _safe_attr(shape, "height")
+        if height is None:
+            height = 2.0 * float(_safe_attr(shape, "half_height", 0.0))
+        return [2.0 * radius, 2.0 * radius, float(height)]
     vertices = _safe_attr(shape, "vertices")
     if vertices is not None:
         points = np.asarray(vertices, dtype=float)
@@ -228,9 +242,40 @@ def _shape_to_json(shape: Any, body_id: str, index: int) -> dict[str, Any]:
         data["radius"] = float(_safe_attr(shape, "radius", 0.0))
         data["half_height"] = float(_safe_attr(shape, "half_height", 0.0))
         data["height"] = float(_safe_attr(shape, "height", 0.0))
+    elif shape_type == "cone":
+        data["radius"] = float(_safe_attr(shape, "radius", 0.0))
+        height = _safe_attr(shape, "height")
+        half_height = _safe_attr(shape, "half_height")
+        if height is not None:
+            data["height"] = float(height)
+        if half_height is not None:
+            data["half_height"] = float(half_height)
     elif shape_type == "plane":
         data["normal"] = _vector(_safe_attr(shape, "normal"), 3)
         data["offset"] = float(_safe_attr(shape, "offset", 0.0))
+    elif shape_type == "heightmap":
+        heights = _safe_attr(shape, "heights")
+        if heights is not None:
+            height_values = np.asarray(heights, dtype=float)
+            data["height_sample_count"] = int(height_values.size)
+            if height_values.size:
+                data["height_range"] = [
+                    float(np.min(height_values)),
+                    float(np.max(height_values)),
+                ]
+        for name in ("width", "depth", "resolution_x", "resolution_y"):
+            value = _safe_attr(shape, name)
+            if value is not None:
+                data[name] = float(value)
+    elif shape_type in {"soft_body", "softmesh", "soft_mesh"}:
+        vertices = _safe_attr(shape, "vertices")
+        triangles = _safe_attr(shape, "triangles")
+        tetrahedra = _safe_attr(shape, "tetrahedra")
+        data["vertex_count"] = int(len(vertices) if vertices is not None else 0)
+        data["triangle_count"] = int(len(triangles) if triangles is not None else 0)
+        data["tetrahedron_count"] = int(
+            len(tetrahedra) if tetrahedra is not None else 0
+        )
     elif shape_type == "mesh":
         vertices = _safe_attr(shape, "vertices")
         triangles = _safe_attr(shape, "triangles")
