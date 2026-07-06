@@ -431,6 +431,11 @@
     missing from normal camera angles:
     [#3304](https://github.com/dartsim/dart/pull/3304)
 
+  * Extend the C++ `soft_bodies` ImGui/headless widget with live performance
+    stats for physics step time, measured simulation rate, scene size, and
+    contacts:
+    [#3307](https://github.com/dartsim/dart/pull/3307)
+
   * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
     prebuilt IK modules and changing target and solver options online. Every IK
     solution is shown at once as a DART skeleton built from the arm's kinematics

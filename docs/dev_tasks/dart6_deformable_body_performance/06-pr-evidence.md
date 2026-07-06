@@ -314,17 +314,38 @@ simulation memory-management and no-steady-state-allocation preparation path.
 If maintainers require the entry to include the final PR number, add that link
 in a follow-up commit after PR publication.
 
-## GUI examples and local video
+## GUI examples and visual debugging
 
-No new GUI deformable-body example has been added by this branch as of this
-evidence capture. Existing GUI examples remain:
+After rebasing this branch onto PR #3304, the existing C++ `soft_bodies` GUI
+example includes headless capture and a soft-body display widget. This branch
+extends that widget with performance stats so visual debugging can inspect scene
+state and measured step cost in the same screenshot.
+
+Interactive examples:
 
 ```bash
 pixi run ex soft_bodies
 pixi run ex mixed_chain
 ```
 
-Because there is no newly added GUI example in this branch, no new local video
-artifact was captured for this evidence packet. If a WP-DB.09 GUI demo is added
-before PR creation, add its `pixi run ex ...` command and local video path here
-before opening the PR.
+Local visual debugging captures inspected:
+
+```bash
+pixi run ex soft_bodies -- --gui-scale 2 --headless \
+  --shot /tmp/soft_bodies-stats-widget.png \
+  --steps 120 --width 896 --height 768
+./build/default/cpp/Release/bin/soft_bodies --gui-scale 2 --headless \
+  --shot /tmp/soft_bodies-stats-widget-v2.png \
+  --steps 120 --width 896 --height 768
+./build/default/cpp/Release/bin/soft_bodies --gui-scale 1 --headless \
+  --hide-widget --shot /tmp/soft_bodies-clean-scene.png \
+  --steps 30 --width 640 --height 480
+```
+
+The inspected widget capture shows the framed soft-body scene plus frame/time,
+render FPS, target RTF, measured physics step time, measured physics steps/s,
+measured physics RTF, sample count, step-time range, soft-body/point-mass
+counts, skeleton/body-node counts, and current contact count. The clean capture
+keeps the same camera framing with `--hide-widget`.
+
+No new standalone GUI example or local video artifact was added by this branch.

@@ -42,6 +42,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -60,6 +61,38 @@ struct SoftBodyDisplayOptions
   float softMeshAlpha = 0.5f;
   bool showEmbeddedVisuals = true;
 };
+
+struct SoftBodySceneStats
+{
+  std::size_t skeletons = 0;
+  std::size_t bodyNodes = 0;
+  std::size_t softBodies = 0;
+  std::size_t pointMasses = 0;
+};
+
+SoftBodySceneStats collectSoftBodySceneStats(
+    const dart::simulation::WorldPtr& world)
+{
+  SoftBodySceneStats stats;
+  if (!world)
+    return stats;
+
+  stats.skeletons = world->getNumSkeletons();
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const SkeletonPtr& skeleton = world->getSkeleton(i);
+    stats.bodyNodes += skeleton->getNumBodyNodes();
+    for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
+      const auto* softBodyNode = skeleton->getBodyNode(j)->asSoftBodyNode();
+      if (!softBodyNode)
+        continue;
+
+      ++stats.softBodies;
+      stats.pointMasses += softBodyNode->getNumPointMasses();
+    }
+  }
+
+  return stats;
+}
 
 class RecordingWorld : public dart::gui::osg::RealTimeWorldNode
 {
@@ -93,13 +126,58 @@ public:
     mHistory.push_back(slice);
   }
 
+  void customPreStep() override
+  {
+    mStepStart = Clock::now();
+    mStepTimingActive = true;
+  }
+
   void customPostStep() override
   {
+    if (mStepTimingActive) {
+      recordStepDuration(
+          std::chrono::duration<double, std::milli>(Clock::now() - mStepStart)
+              .count());
+      mStepTimingActive = false;
+    }
+
     if (mCurrentIndex < mHistory.size() - 1)
       mHistory.resize(mCurrentIndex + 1);
 
     grabTimeSlice();
     ++mCurrentIndex;
+  }
+
+  void stepAndRecord()
+  {
+    customPreStep();
+    mWorld->step();
+    customPostStep();
+  }
+
+  double getLastStepMs() const
+  {
+    return mLastStepMs;
+  }
+
+  double getSmoothedStepMs() const
+  {
+    return mSmoothedStepMs;
+  }
+
+  double getMinStepMs() const
+  {
+    return mMinStepMs;
+  }
+
+  double getMaxStepMs() const
+  {
+    return mMaxStepMs;
+  }
+
+  std::size_t getMeasuredSteps() const
+  {
+    return mMeasuredSteps;
   }
 
   void moveTo(std::size_t index)
@@ -163,6 +241,33 @@ public:
   History mHistory;
 
   std::size_t mCurrentIndex;
+
+private:
+  using Clock = std::chrono::steady_clock;
+
+  void recordStepDuration(double stepMs)
+  {
+    mLastStepMs = stepMs;
+    if (mMeasuredSteps == 0) {
+      mSmoothedStepMs = stepMs;
+      mMinStepMs = stepMs;
+      mMaxStepMs = stepMs;
+    } else {
+      constexpr double alpha = 0.08;
+      mSmoothedStepMs = (1.0 - alpha) * mSmoothedStepMs + alpha * stepMs;
+      mMinStepMs = std::min(mMinStepMs, stepMs);
+      mMaxStepMs = std::max(mMaxStepMs, stepMs);
+    }
+    ++mMeasuredSteps;
+  }
+
+  Clock::time_point mStepStart;
+  bool mStepTimingActive = false;
+  std::size_t mMeasuredSteps = 0;
+  double mLastStepMs = 0.0;
+  double mSmoothedStepMs = 0.0;
+  double mMinStepMs = 0.0;
+  double mMaxStepMs = 0.0;
 };
 
 class RecordingEventHandler : public osgGA::GUIEventHandler
@@ -226,6 +331,7 @@ struct Options
   int steps = 120;
   int width = 640;
   int height = 480;
+  bool showWidget = true;
   SoftBodyDisplayOptions display;
 };
 
@@ -243,7 +349,8 @@ void printUsage(const char* executable)
             << "  --height H       Headless capture height before --gui-scale "
                "(default 480).\n"
             << "  --soft-alpha A   Soft mesh alpha in [0, 1] (default 0.5).\n"
-            << "  --hide-embedded  Hide embedded rigid visualization shapes.\n";
+            << "  --hide-embedded  Hide embedded rigid visualization shapes.\n"
+            << "  --hide-widget    Hide the ImGui control and stats panel.\n";
 }
 
 Options parseOptions(int argc, char* argv[])
@@ -268,6 +375,8 @@ Options parseOptions(int argc, char* argv[])
           = static_cast<float>(std::clamp(std::atof(argv[++i]), 0.0, 1.0));
     } else if (std::strcmp(argv[i], "--hide-embedded") == 0) {
       options.display.showEmbeddedVisuals = false;
+    } else if (std::strcmp(argv[i], "--hide-widget") == 0) {
+      options.showWidget = false;
     } else {
       forwarded.push_back(argv[i]);
     }
@@ -336,7 +445,11 @@ public:
       RecordingWorld* node,
       dart::simulation::WorldPtr world,
       SoftBodyDisplayOptions* display)
-    : mViewer(viewer), mNode(node), mWorld(std::move(world)), mDisplay(display)
+    : mViewer(viewer),
+      mNode(node),
+      mWorld(std::move(world)),
+      mSceneStats(collectSoftBodySceneStats(mWorld)),
+      mDisplay(display)
   {
   }
 
@@ -347,7 +460,7 @@ public:
     const float margin = 12.0f * guiScale;
     ImGui::SetNextWindowPos(ImVec2(margin, margin), ImGuiCond_Once);
     ImGui::SetNextWindowSize(
-        ImVec2(300.0f * guiScale, 190.0f * guiScale), ImGuiCond_Once);
+        ImVec2(350.0f * guiScale, 315.0f * guiScale), ImGuiCond_Once);
     ImGui::SetNextWindowBgAlpha(0.92f);
     if (!ImGui::Begin(
             "Soft Bodies",
@@ -373,9 +486,41 @@ public:
       applySoftBodiesCameraPose(*mViewer);
 
     ImGui::Separator();
-    ImGui::Text("Time %.3f s", mWorld->getTime());
-    ImGui::SameLine();
-    ImGui::Text("FPS %.0f", ImGui::GetIO().Framerate);
+    const std::size_t contacts
+        = mWorld->getLastCollisionResult().getNumContacts();
+    const double smoothedStepMs = mNode->getSmoothedStepMs();
+    const double simStepsPerSecond
+        = smoothedStepMs > 0.0 ? 1000.0 / smoothedStepMs : 0.0;
+    const double physicsRealTimeFactor
+        = simStepsPerSecond * mWorld->getTimeStep();
+    ImGui::Text(
+        "Frame %d   Time %.3f s", mWorld->getSimFrames(), mWorld->getTime());
+    ImGui::Text(
+        "Render %.0f FPS   target RTF %.2f",
+        ImGui::GetIO().Framerate,
+        mNode->getTargetRealTimeFactor());
+    ImGui::Text(
+        "Physics %.3f ms avg   %.3f ms last",
+        smoothedStepMs,
+        mNode->getLastStepMs());
+    ImGui::Text(
+        "Physics %.1f steps/s   RTF %.2f",
+        simStepsPerSecond,
+        physicsRealTimeFactor);
+    ImGui::Text("Samples %zu", mNode->getMeasuredSteps());
+    ImGui::Text(
+        "Step range %.3f - %.3f ms",
+        mNode->getMinStepMs(),
+        mNode->getMaxStepMs());
+    ImGui::Text(
+        "Soft bodies %zu   points %zu",
+        mSceneStats.softBodies,
+        mSceneStats.pointMasses);
+    ImGui::Text(
+        "Skeletons %zu   body nodes %zu",
+        mSceneStats.skeletons,
+        mSceneStats.bodyNodes);
+    ImGui::Text("Contacts %zu", contacts);
 
     if (changed) {
       styleSoftBodyVisuals(mWorld, *mDisplay);
@@ -400,6 +545,7 @@ private:
   dart::gui::osg::ImGuiViewer* mViewer;
   RecordingWorld* mNode;
   dart::simulation::WorldPtr mWorld;
+  SoftBodySceneStats mSceneStats;
   SoftBodyDisplayOptions* mDisplay;
 };
 
@@ -418,7 +564,6 @@ void applySoftBodiesCameraPose(dart::gui::osg::Viewer& viewer)
 int runHeadless(
     dart::gui::osg::Viewer& viewer,
     RecordingWorld* node,
-    const dart::simulation::WorldPtr& world,
     const Options& options)
 {
   const std::filesystem::path shotPath(options.shotPath);
@@ -503,8 +648,7 @@ int runHeadless(
   }
 
   for (int i = 0; i < std::max(0, options.steps); ++i) {
-    world->step();
-    node->grabTimeSlice();
+    node->stepAndRecord();
   }
 
   applySoftBodiesCameraPose(viewer);
@@ -558,11 +702,13 @@ int main(int argc, char* argv[])
 
   std::cout << viewer->getInstructions() << std::endl;
 
-  if (options.headless)
-    return runHeadless(*viewer, node.get(), world, options);
+  if (options.showWidget) {
+    viewer->getImGuiHandler()->addWidget(std::make_shared<SoftBodiesWidget>(
+        viewer.get(), node.get(), world, &options.display));
+  }
 
-  viewer->getImGuiHandler()->addWidget(std::make_shared<SoftBodiesWidget>(
-      viewer.get(), node.get(), world, &options.display));
+  if (options.headless)
+    return runHeadless(*viewer, node.get(), options);
 
   viewer->setUpViewInWindow(
       0,
