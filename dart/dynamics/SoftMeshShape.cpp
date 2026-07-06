@@ -34,7 +34,6 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/common/Profile.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 
@@ -171,8 +170,6 @@ void SoftMeshShape::_buildMesh()
 
 void SoftMeshShape::update()
 {
-  DART_PROFILE_SCOPED_N("SoftMeshShape::update");
-
   aiVector3D itAIVector3d;
   const auto& pointMasses = mSoftBodyNode->getPointMasses();
   for (std::size_t i = 0; i < pointMasses.size(); ++i) {

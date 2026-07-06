@@ -626,51 +626,24 @@ void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
   DART_ASSERT(_vel != nullptr && "Null pointer is not allowed.");
 
-  if (mDim == 3u) {
-    Eigen::Map<Eigen::Vector3d> vel(_vel);
-    vel.setZero();
+  for (std::size_t i = 0; i < mDim; ++i) {
+    _vel[i] = 0.0;
 
     if (mBodyNode1->getSkeleton()->isImpulseApplied()) {
       if (mPointMass1) {
-        vel.noalias() += mJacobians1.bottomRows<3>().transpose()
-                         * mPointMass1->getBodyVelocityChange();
+        _vel[i] += mJacobians1.col(i).tail<3>().dot(
+            mPointMass1->getBodyVelocityChange());
       } else if (mBodyNode1->isReactive()) {
-        vel.noalias()
-            += mJacobians1.transpose() * mBodyNode1->getBodyVelocityChange();
+        _vel[i] += mJacobians1.col(i).dot(mBodyNode1->getBodyVelocityChange());
       }
     }
 
     if (mBodyNode2->getSkeleton()->isImpulseApplied()) {
       if (mPointMass2) {
-        vel.noalias() += mJacobians2.bottomRows<3>().transpose()
-                         * mPointMass2->getBodyVelocityChange();
+        _vel[i] += mJacobians2.col(i).tail<3>().dot(
+            mPointMass2->getBodyVelocityChange());
       } else if (mBodyNode2->isReactive()) {
-        vel.noalias()
-            += mJacobians2.transpose() * mBodyNode2->getBodyVelocityChange();
-      }
-    }
-  } else {
-    for (std::size_t i = 0; i < mDim; ++i) {
-      _vel[i] = 0.0;
-
-      if (mBodyNode1->getSkeleton()->isImpulseApplied()) {
-        if (mPointMass1) {
-          _vel[i] += mJacobians1.col(i).tail<3>().dot(
-              mPointMass1->getBodyVelocityChange());
-        } else if (mBodyNode1->isReactive()) {
-          _vel[i]
-              += mJacobians1.col(i).dot(mBodyNode1->getBodyVelocityChange());
-        }
-      }
-
-      if (mBodyNode2->getSkeleton()->isImpulseApplied()) {
-        if (mPointMass2) {
-          _vel[i] += mJacobians2.col(i).tail<3>().dot(
-              mPointMass2->getBodyVelocityChange());
-        } else if (mBodyNode2->isReactive()) {
-          _vel[i]
-              += mJacobians2.col(i).dot(mBodyNode2->getBodyVelocityChange());
-        }
+        _vel[i] += mJacobians2.col(i).dot(mBodyNode2->getBodyVelocityChange());
       }
     }
   }
@@ -836,41 +809,20 @@ void SoftContactConstraint::getRelVelocity(double* _vel)
 {
   DART_ASSERT(_vel != nullptr && "Null pointer is not allowed.");
 
-  if (mDim == 3u) {
-    Eigen::Map<Eigen::Vector3d> vel(_vel);
-    vel.setZero();
+  for (std::size_t i = 0; i < mDim; ++i) {
+    _vel[i] = 0.0;
 
-    if (mPointMass1) {
-      vel.noalias() -= mJacobians1.bottomRows<3>().transpose()
-                       * mPointMass1->getBodyVelocity();
-    } else {
-      vel.noalias()
-          -= mJacobians1.transpose() * mBodyNode1->getSpatialVelocity();
-    }
+    if (mPointMass1)
+      _vel[i]
+          -= mJacobians1.col(i).tail<3>().dot(mPointMass1->getBodyVelocity());
+    else
+      _vel[i] -= mJacobians1.col(i).dot(mBodyNode1->getSpatialVelocity());
 
-    if (mPointMass2) {
-      vel.noalias() -= mJacobians2.bottomRows<3>().transpose()
-                       * mPointMass2->getBodyVelocity();
-    } else {
-      vel.noalias()
-          -= mJacobians2.transpose() * mBodyNode2->getSpatialVelocity();
-    }
-  } else {
-    for (std::size_t i = 0; i < mDim; ++i) {
-      _vel[i] = 0.0;
-
-      if (mPointMass1)
-        _vel[i]
-            -= mJacobians1.col(i).tail<3>().dot(mPointMass1->getBodyVelocity());
-      else
-        _vel[i] -= mJacobians1.col(i).dot(mBodyNode1->getSpatialVelocity());
-
-      if (mPointMass2)
-        _vel[i]
-            -= mJacobians2.col(i).tail<3>().dot(mPointMass2->getBodyVelocity());
-      else
-        _vel[i] -= mJacobians2.col(i).dot(mBodyNode2->getSpatialVelocity());
-    }
+    if (mPointMass2)
+      _vel[i]
+          -= mJacobians2.col(i).tail<3>().dot(mPointMass2->getBodyVelocity());
+    else
+      _vel[i] -= mJacobians2.col(i).dot(mBodyNode2->getSpatialVelocity());
   }
 }
 

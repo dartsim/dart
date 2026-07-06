@@ -45,7 +45,6 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/common/Profile.hpp"
 #include "dart/common/String.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
@@ -1251,8 +1250,6 @@ void World::reset()
 //==============================================================================
 void World::step(bool _resetCommand)
 {
-  DART_PROFILE_FRAME;
-
   if (!isInSimulationMode())
     enterSimulationMode();
   getMemoryManager().getFrameAllocator().reset();
@@ -1267,7 +1264,6 @@ void World::step(bool _resetCommand)
 
   if (!deactivationEnabled) {
     {
-      DART_PROFILE_SCOPED_N("World::step - Integrate velocity");
       parallelForIndexRange(
           mSimulationThreadPool.get(),
           mSkeletons.size(),
@@ -1285,7 +1281,6 @@ void World::step(bool _resetCommand)
     const auto& preSolveFreeRootVelocities = snapshotFreeRootVelocities();
 
     {
-      DART_PROFILE_SCOPED_N("World::step - Solve constraints");
       mConstraintSolver->solve();
     }
 
@@ -1299,7 +1294,6 @@ void World::step(bool _resetCommand)
         mShallowSupportedFreeRootScratch, preSolveFreeRootVelocities);
 
     {
-      DART_PROFILE_SCOPED_N("World::step - Integrate positions");
       parallelForIndexRange(
           mSimulationThreadPool.get(),
           mSkeletons.size(),
@@ -1360,7 +1354,6 @@ void World::step(bool _resetCommand)
   }
 
   if (deactivationEnabled && lastStepHadNoContacts && allRestingFastPathReady) {
-    DART_PROFILE_SCOPED_N("World::step - All-resting fast path");
     mTime += mTimeStep;
     mFrame++;
     updateShallowSupportFreeRootVelocityVersions();
@@ -1380,14 +1373,12 @@ void World::step(bool _resetCommand)
       = deactivationEnabled
         && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0;
   {
-    DART_PROFILE_SCOPED_N("World::step - Prepare deactivation");
     if (trackDisturbances)
       disturbedThisStep.assign(mSkeletons.size(), false);
   }
 
   // Integrate velocity for unconstrained skeletons
   {
-    DART_PROFILE_SCOPED_N("World::step - Integrate velocity");
     parallelForIndexRange(
         mSimulationThreadPool.get(),
         mSkeletons.size(),
@@ -1454,7 +1445,6 @@ void World::step(bool _resetCommand)
 
   // Detect activated constraints and compute constraint impulses
   {
-    DART_PROFILE_SCOPED_N("World::step - Solve constraints");
     mConstraintSolver->solve();
   }
 
@@ -1468,7 +1458,6 @@ void World::step(bool _resetCommand)
       mShallowSupportedFreeRootScratch, preSolveFreeRootVelocities);
 
   {
-    DART_PROFILE_SCOPED_N("World::step - Integrate positions");
     parallelForIndexRange(
         mSimulationThreadPool.get(),
         mSkeletons.size(),
@@ -1574,8 +1563,6 @@ void World::step(bool _resetCommand)
 //==============================================================================
 void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 {
-  DART_PROFILE_SCOPED_N("World::step - Rest detection");
-
   const double linSleep = mDeactivationOptions.mLinearSpeedThreshold;
   const double angSleep = mDeactivationOptions.mAngularSpeedThreshold;
   const double scale = mDeactivationOptions.mWakeThresholdScale;
@@ -1828,8 +1815,6 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 //==============================================================================
 bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 {
-  DART_PROFILE_SCOPED_N("all-resting readiness check");
-
   if (snapshotStale)
     *snapshotStale = false;
 
@@ -2257,8 +2242,6 @@ void World::invalidateAllRestingKinematicSnapshot()
 //==============================================================================
 void World::wakeRestingSkeletonsForWorldChange()
 {
-  DART_PROFILE_SCOPED_N("World::step - Wake resting after world change");
-
   for (auto& skel : mSkeletons) {
     if (!skel->isMobile() || !skel->isResting())
       continue;

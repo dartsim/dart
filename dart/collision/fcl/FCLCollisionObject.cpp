@@ -34,7 +34,6 @@
 
 #include "dart/collision/fcl/FCLTypes.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/common/Profile.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
@@ -143,8 +142,6 @@ void FCLCollisionObject::updateEngineData()
     DART_ASSERT(dynamic_cast<const SoftMeshShape*>(shape));
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
 
-    DART_PROFILE_SCOPED_N("FCLCollisionObject::updateSoftMesh");
-
     auto collGeom = const_cast<dart::collision::fcl::CollisionGeometry*>(
         mFCLCollisionObject->collisionGeometry().get());
     DART_ASSERT(
@@ -174,8 +171,6 @@ void FCLCollisionObject::updateEngineData()
     }
 
     if (softMeshChanged) {
-      DART_PROFILE_SCOPED_N("FCLCollisionObject::updateSoftMesh refit");
-
       bvhModel->beginUpdateModel();
       for (std::size_t i = 0; i < pointMasses.size(); ++i) {
         const Eigen::Vector3d& vertex = pointMasses[i]->getLocalPosition();
