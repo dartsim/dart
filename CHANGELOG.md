@@ -282,6 +282,13 @@
 
 * Simulation
 
+  * Add World-owned simulation memory management and optional
+    `World::enterSimulationMode()` preparation so DART-owned native-collision
+    same-shape simulation steps can run without steady-state heap allocations
+    after explicit preparation or the implicit first step. The default
+    construction path remains unchanged, and Bullet/ODE backend-internal
+    allocations stay outside the strict native allocation gate.
+
   * Added `dart::simulation::WorldConfig`, the `CollisionDetectorType` enum,
     `World::setCollisionDetector(CollisionDetectorType)` /
     `World::setCollisionDetector(CollisionDetectorPtr)` /
@@ -434,6 +441,12 @@
     examples (`hello_world`, `cylindrical_constraint`, `speed_test`,
     `contact_benchmark`, and the dartpy `ssik_analytical_ik`):
     [#3301](https://github.com/dartsim/dart/pull/3301)
+
+  * Improve soft-body demo rendering with translucent soft meshes, display
+    controls for embedded visuals, framed/headless capture support through the
+    demo host, and two-sided soft mesh rendering so generated soft-body faces do
+    not look missing from normal camera angles:
+    [#3304](https://github.com/dartsim/dart/pull/3304)
 
   * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
     prebuilt IK modules and changing target and solver options online. Every IK

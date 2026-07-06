@@ -517,8 +517,10 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
     // This skeleton no longer exists, so we should remove all its contents from
     // the CollisionGroup.
     for (const auto& object : source.mObjects)
-      removeShapeFrameInternal(object.second->mFrame, entry.first);
+      removeShapeFrameInternal(object.first, entry.first);
 
+    source.mObjects.clear();
+    source.mChildren.clear();
     return true;
   }
 
@@ -625,11 +627,12 @@ bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
 
   const dynamics::ConstBodyNodePtr bn = source.mSource.lock();
   if (!bn) {
-    // This BodyNode no longer exists, so we should remove all i ts contents
+    // This BodyNode no longer exists, so we should remove all its contents
     // from the CollisionGroup.
     for (const auto& object : source.mObjects)
-      removeShapeFrameInternal(object.second->mFrame, object.first);
+      removeShapeFrameInternal(object.first, entry.first);
 
+    source.mObjects.clear();
     return true;
   }
 

@@ -517,7 +517,17 @@ bool solveLcpWithScratch(
         lcp.pN_plusequals_s_times_qN(w, s, scratch.deltaW.data());
         w[i] += s * scratch.deltaW[static_cast<std::size_t>(i)];
 
-        // void *tmpbuf;
+        const auto transferFromCToN = [&](int index) {
+          const std::size_t tmpBytes
+              = LCP<Scalar>::estimate_transfer_i_from_C_to_N_mem_req(
+                  lcp.numC(), nskip);
+          const std::size_t tmpScalars
+              = (tmpBytes + sizeof(Scalar) - 1u) / sizeof(Scalar);
+          if (scratch.ldltRemoveTmp.size() < tmpScalars)
+            scratch.ldltRemoveTmp.resize(tmpScalars);
+          lcp.transfer_i_from_C_to_N(index, scratch.ldltRemoveTmp.data());
+        };
+
         // switch indexes between sets if necessary
         switch (cmd) {
           case 1: // done
@@ -541,12 +551,12 @@ bool solveLcpWithScratch(
           case 5: // keep going
             x[si] = lo[si];
             scratch.state[static_cast<std::size_t>(si)] = false;
-            lcp.transfer_i_from_C_to_N(si, nullptr);
+            transferFromCToN(si);
             break;
           case 6: // keep going
             x[si] = hi[si];
             scratch.state[static_cast<std::size_t>(si)] = true;
-            lcp.transfer_i_from_C_to_N(si, nullptr);
+            transferFromCToN(si);
             break;
         }
 

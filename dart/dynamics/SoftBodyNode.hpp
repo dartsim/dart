@@ -329,6 +329,10 @@ private:
 
   ///
   void updateInertiaWithPointMass();
+
+  ///
+  void scanPointMassExternalForces(
+      double _tolerance, bool& _hasResidual, bool& _disturbed) const;
 };
 
 class SoftBodyNodeHelper

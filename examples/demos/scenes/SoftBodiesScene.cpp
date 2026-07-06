@@ -66,6 +66,8 @@
 
 #include <dart/dart.hpp>
 
+#include <algorithm>
+#include <array>
 #include <deque>
 #include <memory>
 #include <stdexcept>
@@ -78,9 +80,17 @@ namespace {
 using dart::dynamics::BodyNode;
 using dart::dynamics::Skeleton;
 using dart::dynamics::SkeletonPtr;
+using dart::dynamics::SoftMeshShape;
 using dart::simulation::WorldPtr;
 
 constexpr std::size_t kMaxHistoryFrames = 4000;
+
+//==============================================================================
+struct SoftBodyDisplayOptions
+{
+  float softMeshAlpha = 0.5f;
+  bool showEmbeddedVisuals = true;
+};
 
 //==============================================================================
 struct HistoryState
@@ -100,7 +110,66 @@ struct SoftBodiesState
   std::size_t currentIndex = 0;
   std::size_t framesRecorded = 0;
   dart::gui::osg::ImGuiViewer* viewer = nullptr;
+  dart::gui::osg::WorldNode* worldNode = nullptr;
+  SoftBodyDisplayOptions display;
 };
+
+//==============================================================================
+void styleSoftBodyVisuals(
+    const WorldPtr& world, const SoftBodyDisplayOptions& display)
+{
+  const double alpha = std::clamp<double>(display.softMeshAlpha, 0.0, 1.0);
+  const std::array<Eigen::Vector4d, 5> softBodyColors = {
+      Eigen::Vector4d(0.35, 0.48, 1.00, alpha),
+      Eigen::Vector4d(0.95, 0.45, 0.30, alpha),
+      Eigen::Vector4d(0.30, 0.72, 0.48, alpha),
+      Eigen::Vector4d(0.95, 0.76, 0.28, alpha),
+      Eigen::Vector4d(0.70, 0.45, 0.90, alpha),
+  };
+
+  std::size_t softBodyIndex = 0;
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const SkeletonPtr& skeleton = world->getSkeleton(i);
+    for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
+      auto* softBodyNode = skeleton->getBodyNode(j)->asSoftBodyNode();
+      if (!softBodyNode)
+        continue;
+
+      const Eigen::Vector4d& color
+          = softBodyColors[softBodyIndex % softBodyColors.size()];
+      ++softBodyIndex;
+
+      for (std::size_t k = 0; k < softBodyNode->getNumShapeNodes(); ++k) {
+        auto* shapeNode = softBodyNode->getShapeNode(k);
+        auto* visualAspect = shapeNode->getVisualAspect(false);
+        if (!visualAspect)
+          continue;
+
+        const auto shape = shapeNode->getShape();
+        if (shape && shape->getType() == SoftMeshShape::getStaticType()) {
+          visualAspect->setRGBA(color);
+          visualAspect->show();
+        } else if (display.showEmbeddedVisuals) {
+          visualAspect->show();
+        } else {
+          visualAspect->hide();
+        }
+      }
+    }
+  }
+}
+
+//==============================================================================
+void refreshSoftBodyDisplay(SoftBodiesState& state)
+{
+  if (!state.worldNode)
+    return;
+
+  const bool wasSimulating = state.worldNode->isSimulating();
+  state.worldNode->simulate(false);
+  state.worldNode->refresh();
+  state.worldNode->simulate(wasSimulating);
+}
 
 //==============================================================================
 TimeSlice grabTimeSlice(const WorldPtr& world)
@@ -202,6 +271,7 @@ DemoScene makeSoftBodiesScene()
     reorientWorldToZUp(world);
 
     auto state = std::make_shared<SoftBodiesState>();
+    styleSoftBodyVisuals(world, state->display);
     // Prime frame 0 at build time, as the original's RecordingWorld
     // constructor does, so a fresh (still paused) scene already has a
     // recorded frame to scrub to.
@@ -218,6 +288,7 @@ DemoScene makeSoftBodiesScene()
 
     setup.onActivate = [state](DemoHostContext& ctx) {
       state->viewer = ctx.viewer();
+      state->worldNode = ctx.worldNode();
     };
 
     setup.postStep = [world, state] {
@@ -250,7 +321,24 @@ DemoScene makeSoftBodiesScene()
                       moveTo(world, *state, state->history.size() - 1);
                   }});
 
-    setup.renderPanel = [state] {
+    setup.renderPanel = [world, state] {
+      bool displayChanged = false;
+      ImGui::TextUnformatted("Soft mesh alpha");
+      ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+      displayChanged |= ImGui::SliderFloat(
+          "##soft_mesh_alpha",
+          &state->display.softMeshAlpha,
+          0.0f,
+          1.0f,
+          "%.2f");
+      displayChanged |= ImGui::Checkbox(
+          "Embedded visuals", &state->display.showEmbeddedVisuals);
+      if (displayChanged) {
+        styleSoftBodyVisuals(world, state->display);
+        refreshSoftBodyDisplay(*state);
+      }
+
+      ImGui::Separator();
       ImGui::Text(
           "Playback frame: %zu / %zu",
           state->currentIndex,
