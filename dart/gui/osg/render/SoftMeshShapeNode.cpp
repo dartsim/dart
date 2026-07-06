@@ -107,9 +107,6 @@ void SoftMeshShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
-    return;
-
   extractData(false);
 }
 
@@ -279,13 +276,15 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
   }
 
-  if (mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime) {
+  // VisualAspect color and alpha can change independently from the underlying
+  // SoftMeshShape data-variance flags, so re-read them on every refresh.
+  {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
     mColors->resize(1);
     (*mColors)[0] = color;
     setColorArray(mColors, ::osg::Array::BIND_OVERALL);
+    dirtyDisplayList();
 
     // Set alpha specific properties
     ::osg::StateSet* ss = getOrCreateStateSet();

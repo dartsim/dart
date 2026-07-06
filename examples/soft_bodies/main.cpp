@@ -42,9 +42,11 @@
 
 #include <algorithm>
 #include <array>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <string>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -331,9 +333,10 @@ class SoftBodiesWidget : public dart::gui::osg::ImGuiWidget
 public:
   SoftBodiesWidget(
       dart::gui::osg::ImGuiViewer* viewer,
+      RecordingWorld* node,
       dart::simulation::WorldPtr world,
       SoftBodyDisplayOptions* display)
-    : mViewer(viewer), mWorld(std::move(world)), mDisplay(display)
+    : mViewer(viewer), mNode(node), mWorld(std::move(world)), mDisplay(display)
   {
   }
 
@@ -359,8 +362,10 @@ public:
     if (ImGui::Checkbox("Run simulation", &simulating))
       mViewer->simulate(simulating);
 
+    ImGui::TextUnformatted("Soft mesh alpha");
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
     changed |= ImGui::SliderFloat(
-        "Soft mesh alpha", &mDisplay->softMeshAlpha, 0.0f, 1.0f, "%.2f");
+        "##soft_mesh_alpha", &mDisplay->softMeshAlpha, 0.0f, 1.0f, "%.2f");
     changed
         |= ImGui::Checkbox("Embedded visuals", &mDisplay->showEmbeddedVisuals);
 
@@ -372,14 +377,28 @@ public:
     ImGui::SameLine();
     ImGui::Text("FPS %.0f", ImGui::GetIO().Framerate);
 
-    if (changed)
+    if (changed) {
       styleSoftBodyVisuals(mWorld, *mDisplay);
+      refreshDisplay();
+    }
 
     ImGui::End();
   }
 
 private:
+  void refreshDisplay()
+  {
+    if (!mNode)
+      return;
+
+    const bool wasSimulating = mNode->isSimulating();
+    mNode->simulate(false);
+    mNode->refresh();
+    mNode->simulate(wasSimulating);
+  }
+
   dart::gui::osg::ImGuiViewer* mViewer;
+  RecordingWorld* mNode;
   dart::simulation::WorldPtr mWorld;
   SoftBodyDisplayOptions* mDisplay;
 };
@@ -402,6 +421,35 @@ int runHeadless(
     const dart::simulation::WorldPtr& world,
     const Options& options)
 {
+  const std::filesystem::path shotPath(options.shotPath);
+  std::error_code fileError;
+  const std::filesystem::file_status shotStatus
+      = std::filesystem::status(shotPath, fileError);
+  const bool targetMissing
+      = fileError == std::make_error_code(std::errc::no_such_file_or_directory);
+  if (fileError && !targetMissing) {
+    std::cerr << "[headless] Failed to inspect capture target: "
+              << options.shotPath << "\n";
+    return 1;
+  }
+
+  if (!targetMissing && std::filesystem::exists(shotStatus)) {
+    if (!std::filesystem::is_regular_file(shotStatus)) {
+      std::cerr
+          << "[headless] Capture target exists but is not a regular file: "
+          << options.shotPath << "\n";
+      return 1;
+    }
+
+    fileError.clear();
+    std::filesystem::remove(shotPath, fileError);
+    if (fileError) {
+      std::cerr << "[headless] Failed to remove existing capture target: "
+                << options.shotPath << "\n";
+      return 1;
+    }
+  }
+
   const int width = dart::gui::osg::scaleWindowExtent(
       std::max(1, options.width), options.scale);
   const int height = dart::gui::osg::scaleWindowExtent(
@@ -465,6 +513,15 @@ int runHeadless(
   viewer.captureScreen(options.shotPath);
   viewer.frame();
 
+  fileError.clear();
+  const bool wroteFile = std::filesystem::is_regular_file(shotPath, fileError)
+                         && std::filesystem::file_size(shotPath, fileError) > 0;
+  if (fileError || !wroteFile) {
+    std::cerr << "[headless] Failed to write capture: " << options.shotPath
+              << "\n";
+    return 1;
+  }
+
   std::cout << "[headless] wrote " << options.shotPath << " (" << width << "x"
             << height << ", steps " << std::max(0, options.steps) << ")\n";
   return 0;
@@ -491,11 +548,10 @@ int main(int argc, char* argv[])
 
   osg::ref_ptr<RecordingWorld> node = new RecordingWorld(world);
 
-  node->simulate(true);
-
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
       = new dart::gui::osg::ImGuiViewer();
   viewer->addWorldNode(node);
+  viewer->simulate(true);
   viewer->addEventHandler(new RecordingEventHandler(node));
   viewer->getImGuiHandler()->setGuiScale(options.scale);
   applySoftBodiesCameraPose(*viewer);
@@ -506,7 +562,7 @@ int main(int argc, char* argv[])
     return runHeadless(*viewer, node.get(), world, options);
 
   viewer->getImGuiHandler()->addWidget(std::make_shared<SoftBodiesWidget>(
-      viewer.get(), world, &options.display));
+      viewer.get(), node.get(), world, &options.display));
 
   viewer->setUpViewInWindow(
       0,
