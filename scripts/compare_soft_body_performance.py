@@ -1,0 +1,918 @@
+#!/usr/bin/env python3
+"""Compare soft-body benchmark matrices across git revisions."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+SCENES = {
+    0: "adaptive_deformable",
+    1: "soft_cubes",
+    2: "soft_bodies",
+    3: "soft_open_chain",
+}
+TIME_UNIT_TO_MS = {
+    "ns": 1.0e-6,
+    "us": 1.0e-3,
+    "ms": 1.0,
+    "s": 1.0e3,
+}
+HARNESS_FILES = [
+    Path("tests/benchmark/integration/bm_soft_body.cpp"),
+    Path("tests/benchmark/integration/soft_body_headless.cpp"),
+]
+CHECKSUM_METRICS = [
+    "skelPosL1",
+    "skelPosSq",
+    "skelVelL1",
+    "skelVelSq",
+    "pointPosL1",
+    "pointPosSq",
+    "pointVelL1",
+    "pointVelSq",
+    "pointWorldPosL1",
+    "pointWorldPosSq",
+]
+HARNESS_CMAKE_BLOCK = """
+
+if(TARGET dart-utils)
+  dart_benchmarks(
+    TYPE BM_INTEGRATION
+    SOURCES
+      bm_soft_body.cpp
+    LINK_LIBRARIES
+      dart-utils
+  )
+
+  add_executable(soft_body_headless soft_body_headless.cpp)
+  target_link_libraries(soft_body_headless PRIVATE dart-utils)
+endif()
+"""
+HARNESS_COLLISION_LINK_BLOCK = """
+
+if(TARGET BM_INTEGRATION_soft_body)
+  foreach(soft_body_collision_library dart-collision-bullet dart-collision-ode)
+    if(TARGET ${soft_body_collision_library})
+      target_link_libraries(
+        BM_INTEGRATION_soft_body
+        PRIVATE ${soft_body_collision_library}
+      )
+      target_link_libraries(
+        soft_body_headless
+        PRIVATE ${soft_body_collision_library}
+      )
+    endif()
+  endforeach()
+endif()
+"""
+
+
+@dataclass(frozen=True)
+class Revision:
+    label: str
+    rev: str
+    sha: str
+    source_dir: Path
+    build_dir: Path
+
+
+@dataclass(frozen=True)
+class BenchmarkRow:
+    revision: str
+    detector: str
+    scene: str
+    threads: int
+    cpu_ms: float
+    real_ms: float
+    sim_s_per_s: float | None
+    name: str
+
+
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--current", default="HEAD")
+    parser.add_argument("--parent", default="HEAD^1")
+    parser.add_argument("--base")
+    parser.add_argument("--detectors", default="fcl,dart,bullet,ode")
+    parser.add_argument("--threads", default="1,16")
+    parser.add_argument("--benchmark-min-time", default="0.05s")
+    parser.add_argument("--benchmark-repetitions", default="3")
+    parser.add_argument("--correctness-scenes", default="soft_cubes,soft_bodies")
+    parser.add_argument("--correctness-steps", default="200")
+    parser.add_argument("--correctness-tolerance", type=float, default=0.05)
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--keep-going",
+        action="store_true",
+        help="Continue after an individual detector run fails.",
+    )
+    return parser.parse_args(argv)
+
+
+def run(
+    command: list[str],
+    *,
+    cwd: Path,
+    env: dict[str, str] | None = None,
+    capture_path: Path | None = None,
+) -> subprocess.CompletedProcess[str]:
+    result = subprocess.run(
+        command,
+        cwd=cwd,
+        env=env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if capture_path is not None:
+        capture_path.parent.mkdir(parents=True, exist_ok=True)
+        capture_path.write_text(result.stdout, encoding="utf-8")
+    if result.returncode != 0:
+        raise subprocess.CalledProcessError(
+            result.returncode, command, output=result.stdout
+        )
+    return result
+
+
+def git(root: Path, *args: str) -> str:
+    result = run(["git", *args], cwd=root)
+    return result.stdout.strip()
+
+
+def repo_root() -> Path:
+    return Path(git(Path.cwd(), "rev-parse", "--show-toplevel"))
+
+
+def parse_csv(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def parse_threads(value: str) -> set[int]:
+    return {int(item) for item in parse_csv(value)}
+
+
+def ensure_harness(source_dir: Path, harness_source: Path) -> bool:
+    patched = False
+    for relative in HARNESS_FILES:
+        source = harness_source / relative
+        destination = source_dir / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if not destination.exists() or destination.read_bytes() != source.read_bytes():
+            shutil.copy2(source, destination)
+            patched = True
+
+    cmake_path = source_dir / "tests/benchmark/integration/CMakeLists.txt"
+    cmake_text = cmake_path.read_text(encoding="utf-8")
+    if "bm_soft_body.cpp" not in cmake_text:
+        cmake_path.write_text(cmake_text.rstrip() + HARNESS_CMAKE_BLOCK + "\n")
+        patched = True
+        cmake_text = cmake_path.read_text(encoding="utf-8")
+    if "soft_body_collision_library" not in cmake_text:
+        cmake_path.write_text(
+            cmake_text.rstrip() + HARNESS_COLLISION_LINK_BLOCK + "\n",
+            encoding="utf-8",
+        )
+        patched = True
+    return patched
+
+
+def prepare_revision(
+    root: Path,
+    output_dir: Path,
+    label: str,
+    rev: str,
+    harness_source: Path,
+) -> Revision:
+    sha = git(root, "rev-parse", rev)
+    source_dir = output_dir / "worktrees" / f"{label}-{sha[:12]}"
+    if not source_dir.exists():
+        source_dir.parent.mkdir(parents=True, exist_ok=True)
+        run(["git", "worktree", "add", "--detach", str(source_dir), sha], cwd=root)
+    else:
+        existing = git(source_dir, "rev-parse", "HEAD")
+        if existing != sha:
+            raise SystemExit(
+                f"Existing worktree {source_dir} is at {existing}, expected {sha}."
+            )
+
+    patched = ensure_harness(source_dir, harness_source)
+    build_dir = output_dir / "build" / f"{label}-{sha[:12]}"
+    metadata = {
+        "label": label,
+        "rev": rev,
+        "sha": sha,
+        "source_dir": str(source_dir),
+        "build_dir": str(build_dir),
+        "benchmark_harness_patched": patched,
+    }
+    (output_dir / f"{label}.json").write_text(
+        json.dumps(metadata, indent=2) + "\n", encoding="utf-8"
+    )
+    return Revision(label, rev, sha, source_dir, build_dir)
+
+
+def configure_and_build(revision: Revision) -> tuple[Path, Path]:
+    conda_prefix = os.environ.get("CONDA_PREFIX", "")
+    cmake_command = [
+        "cmake",
+        "-G",
+        "Ninja",
+        "-S",
+        str(revision.source_dir),
+        "-B",
+        str(revision.build_dir),
+        f"-DCMAKE_INSTALL_PREFIX={conda_prefix}",
+        "-DCMAKE_BUILD_TYPE=Release",
+        f"-DCMAKE_PREFIX_PATH={conda_prefix}",
+        "-DCMAKE_C_COMPILER_LAUNCHER=",
+        "-DCMAKE_CXX_COMPILER_LAUNCHER=",
+        "-DDART_BUILD_DARTPY=OFF",
+        "-DDART_BUILD_PROFILE=ON",
+        "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
+        "-DDART_USE_SYSTEM_GOOGLETEST=ON",
+        "-DDART_USE_SYSTEM_IMGUI=ON",
+        "-DDART_USE_SYSTEM_TRACY=ON",
+    ]
+    run(cmake_command, cwd=revision.source_dir)
+    run(
+        [
+            "cmake",
+            "--build",
+            str(revision.build_dir),
+            "--target",
+            "BM_INTEGRATION_soft_body",
+            "soft_body_headless",
+            "--parallel",
+        ],
+        cwd=revision.source_dir,
+    )
+
+    benchmark_candidates = [
+        revision.build_dir / "bin/BM_INTEGRATION_soft_body",
+        revision.build_dir
+        / "tests/benchmark/integration/BM_INTEGRATION_soft_body",
+    ]
+    benchmark_binary = None
+    for candidate in benchmark_candidates:
+        if candidate.exists():
+            benchmark_binary = candidate
+            break
+    if benchmark_binary is None:
+        raise SystemExit(f"BM_INTEGRATION_soft_body binary not found for {revision.label}")
+
+    headless_candidates = [
+        revision.build_dir / "bin/soft_body_headless",
+        revision.build_dir / "tests/benchmark/integration/soft_body_headless",
+    ]
+    headless_binary = None
+    for candidate in headless_candidates:
+        if candidate.exists():
+            headless_binary = candidate
+            break
+    if headless_binary is None:
+        raise SystemExit(f"soft_body_headless binary not found for {revision.label}")
+
+    return benchmark_binary, headless_binary
+
+
+def run_detector(
+    revision: Revision,
+    binary: Path,
+    detector: str,
+    output_dir: Path,
+    min_time: str,
+    repetitions: str,
+) -> tuple[Path | None, str | None]:
+    json_path = output_dir / "raw" / f"{revision.label}-{detector}.json"
+    log_path = output_dir / "logs" / f"{revision.label}-{detector}.log"
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    env = os.environ.copy()
+    env["COLLISION_DETECTOR"] = detector
+    command = [
+        str(binary),
+        "--benchmark_filter=BM_SoftBodyStep/.*",
+        f"--benchmark_min_time={min_time}",
+        f"--benchmark_repetitions={repetitions}",
+        "--benchmark_format=json",
+        f"--benchmark_out={json_path}",
+        "--benchmark_out_format=json",
+    ]
+    try:
+        run(command, cwd=revision.source_dir, env=env, capture_path=log_path)
+    except subprocess.CalledProcessError as exc:
+        return None, exc.output
+    if not json_path.exists():
+        return None, f"missing benchmark JSON: {json_path}"
+    return json_path, None
+
+
+def parse_label(label: str) -> tuple[str | None, str | None, int | None]:
+    scene_match = re.search(r"scene=([^ ]+)", label)
+    detector_match = re.search(r"detector=([^ ]+)", label)
+    threads_match = re.search(r"threads=([0-9]+)", label)
+    return (
+        scene_match.group(1) if scene_match else None,
+        detector_match.group(1) if detector_match else None,
+        int(threads_match.group(1)) if threads_match else None,
+    )
+
+
+def parse_name(name: str) -> tuple[str | None, int | None]:
+    trimmed = re.sub(r"_(mean|median|stddev|cv)$", "", name)
+    parts = trimmed.split("/")
+    if len(parts) < 4:
+        return None, None
+    try:
+        scene = SCENES[int(parts[1])]
+        threads = int(parts[2])
+    except (KeyError, ValueError):
+        return None, None
+    return scene, threads
+
+
+def load_rows(
+    revision: Revision,
+    detector: str,
+    json_path: Path,
+    requested_threads: set[int],
+) -> list[BenchmarkRow]:
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    rows: list[BenchmarkRow] = []
+    for benchmark in data.get("benchmarks", []):
+        run_type = benchmark.get("run_type")
+        if run_type not in {"iteration", "aggregate"}:
+            continue
+        if run_type == "aggregate" and benchmark.get("aggregate_name") != "mean":
+            continue
+        if run_type == "iteration" and int(benchmark.get("repetitions", 1)) != 1:
+            continue
+        if benchmark.get("error_occurred"):
+            continue
+
+        label_scene, label_detector, label_threads = parse_label(
+            benchmark.get("label", "")
+        )
+        name_scene, name_threads = parse_name(benchmark.get("name", ""))
+        scene = label_scene or name_scene
+        threads = label_threads if label_threads is not None else name_threads
+        if scene is None or threads is None or threads not in requested_threads:
+            continue
+
+        unit = benchmark.get("time_unit", "ns")
+        multiplier = TIME_UNIT_TO_MS.get(unit)
+        if multiplier is None:
+            raise SystemExit(f"Unsupported benchmark time unit: {unit}")
+
+        rows.append(
+            BenchmarkRow(
+                revision=revision.label,
+                detector=label_detector or detector,
+                scene=scene,
+                threads=threads,
+                cpu_ms=float(benchmark["cpu_time"]) * multiplier,
+                real_ms=float(benchmark["real_time"]) * multiplier,
+                sim_s_per_s=(
+                    float(benchmark["sim_s/s"])
+                    if "sim_s/s" in benchmark
+                    else None
+                ),
+                name=benchmark.get("name", ""),
+            )
+        )
+    return rows
+
+
+def benchmark_error_message(json_path: Path) -> str | None:
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    messages = {
+        str(benchmark.get("error_message", "benchmark error"))
+        for benchmark in data.get("benchmarks", [])
+        if benchmark.get("error_occurred")
+    }
+    return "; ".join(sorted(messages)) if messages else None
+
+
+def parse_checksum_line(output: str, expected_step: str) -> dict[str, float] | None:
+    for line in output.splitlines():
+        tokens = line.split()
+        if len(tokens) < 4 or tokens[0] != "step" or tokens[1] != expected_step:
+            continue
+
+        values: dict[str, float] = {}
+        index = 2
+        while index + 1 < len(tokens):
+            key = tokens[index]
+            value = tokens[index + 1]
+            try:
+                values[key] = float(value)
+            except ValueError:
+                pass
+            index += 2
+        return values
+    return None
+
+
+def checksums_match(
+    reference: dict[str, float],
+    candidate: dict[str, float],
+    tolerance: float,
+) -> tuple[bool, list[str]]:
+    mismatches = []
+    for metric in CHECKSUM_METRICS:
+        ref_value = reference.get(metric)
+        candidate_value = candidate.get(metric)
+        if ref_value is None or candidate_value is None:
+            mismatches.append(f"{metric}=missing")
+            continue
+
+        allowed = 1.0e-8 + tolerance * max(1.0, abs(ref_value))
+        delta = abs(candidate_value - ref_value)
+        if delta > allowed:
+            mismatches.append(f"{metric} delta {delta:.6g} > {allowed:.6g}")
+    return not mismatches, mismatches
+
+
+def run_headless_checksum(
+    revision: Revision,
+    headless_binary: Path,
+    detector: str,
+    scene: str,
+    steps: str,
+    output_dir: Path,
+) -> tuple[dict[str, float] | None, str]:
+    log_path = (
+        output_dir / "logs" / f"{revision.label}-{detector}-{scene}-headless.log"
+    )
+    env = os.environ.copy()
+    env["COLLISION_DETECTOR"] = detector
+    env["THREADS"] = "1"
+    command = [str(headless_binary), scene, steps, steps]
+    try:
+        result = run(command, cwd=revision.source_dir, env=env, capture_path=log_path)
+    except subprocess.CalledProcessError as exc:
+        return None, exc.output
+
+    checksum = parse_checksum_line(result.stdout, steps)
+    return checksum, result.stdout
+
+
+def evaluate_detector_equivalence(
+    current: Revision,
+    headless_binary: Path,
+    detectors: list[str],
+    scenes: list[str],
+    steps: str,
+    tolerance: float,
+    output_dir: Path,
+) -> tuple[dict[str, dict[str, object]], list[str]]:
+    detector_results: dict[str, dict[str, object]] = {}
+    eligible = []
+    reference_by_scene: dict[str, dict[str, float]] = {}
+
+    for scene in scenes:
+        checksum, output = run_headless_checksum(
+            current, headless_binary, "dart", scene, steps, output_dir
+        )
+        if checksum is None:
+            detector_results["dart"] = {
+                "eligible": False,
+                "reason": f"native reference failed for {scene}",
+                "details": output.splitlines()[-1] if output else "failed",
+            }
+            return detector_results, eligible
+        reference_by_scene[scene] = checksum
+
+    for detector in detectors:
+        if detector == "dart":
+            detector_results[detector] = {
+                "eligible": True,
+                "reason": "native reference",
+                "scenes": scenes,
+            }
+            eligible.append(detector)
+            continue
+
+        detector_ok = True
+        reasons = []
+        for scene in scenes:
+            checksum, output = run_headless_checksum(
+                current, headless_binary, detector, scene, steps, output_dir
+            )
+            if checksum is None:
+                detector_ok = False
+                reasons.append(f"{scene}: failed")
+                continue
+            if "unsupported shape type" in output:
+                detector_ok = False
+                reasons.append(f"{scene}: unsupported soft shape fallback")
+                continue
+
+            matches, mismatches = checksums_match(
+                reference_by_scene[scene], checksum, tolerance
+            )
+            if not matches:
+                detector_ok = False
+                reasons.append(f"{scene}: {'; '.join(mismatches[:3])}")
+
+        detector_results[detector] = {
+            "eligible": detector_ok,
+            "reason": "checksum-equivalent" if detector_ok else "; ".join(reasons),
+            "scenes": scenes,
+        }
+        if detector_ok:
+            eligible.append(detector)
+
+    return detector_results, eligible
+
+
+def row_key(row: BenchmarkRow) -> tuple[str, str, int]:
+    return (row.detector, row.scene, row.threads)
+
+
+def pct_change(new: float, old: float) -> float:
+    return 100.0 * (new - old) / old if old != 0.0 else float("inf")
+
+
+def fmt_float(value: float | None, digits: int = 3) -> str:
+    if value is None:
+        return "n/a"
+    return f"{value:.{digits}f}"
+
+
+def build_comparison(
+    current_rows: dict[tuple[str, str, int], BenchmarkRow],
+    other_rows: dict[tuple[str, str, int], BenchmarkRow],
+    other_label: str,
+) -> list[dict[str, object]]:
+    comparison = []
+    for key in sorted(current_rows):
+        current = current_rows[key]
+        other = other_rows.get(key)
+        if other is None:
+            comparison.append(
+                {
+                    "comparison": f"current_vs_{other_label}",
+                    "detector": key[0],
+                    "scene": key[1],
+                    "threads": key[2],
+                    "missing": other_label,
+                }
+            )
+            continue
+        comparison.append(
+            {
+                "comparison": f"current_vs_{other_label}",
+                "detector": key[0],
+                "scene": key[1],
+                "threads": key[2],
+                "current_cpu_ms": current.cpu_ms,
+                f"{other_label}_cpu_ms": other.cpu_ms,
+                "cpu_change_pct": pct_change(current.cpu_ms, other.cpu_ms),
+                "current_sim_s_per_s": current.sim_s_per_s,
+                f"{other_label}_sim_s_per_s": other.sim_s_per_s,
+            }
+        )
+    return comparison
+
+
+def fastest_rows(
+    current_rows: dict[tuple[str, str, int], BenchmarkRow],
+    detectors: list[str],
+    eligible_detectors: list[str],
+) -> tuple[list[dict[str, object]], list[str]]:
+    by_scene_thread: dict[tuple[str, int], list[BenchmarkRow]] = {}
+    for row in current_rows.values():
+        by_scene_thread.setdefault((row.scene, row.threads), []).append(row)
+
+    rows = []
+    failures = []
+    for (scene, threads), candidates in sorted(by_scene_thread.items()):
+        by_detector = {row.detector: row for row in candidates}
+        eligible_candidates = [
+            row for row in candidates if row.detector in eligible_detectors
+        ]
+        if not eligible_candidates:
+            failures.append(f"{scene}/{threads}: no equivalent detector rows")
+            continue
+
+        winner = min(eligible_candidates, key=lambda row: row.cpu_ms)
+        dart_row = by_detector.get("dart")
+        detector_times = {
+            detector: by_detector[detector].cpu_ms
+            for detector in detectors
+            if detector in by_detector
+        }
+        row = {
+            "scene": scene,
+            "threads": threads,
+            "winner": winner.detector,
+            "winner_cpu_ms": winner.cpu_ms,
+            "native_cpu_ms": dart_row.cpu_ms if dart_row else None,
+            "detectors": detector_times,
+            "eligible_detectors": sorted(
+                detector
+                for detector in detector_times
+                if detector in eligible_detectors
+            ),
+        }
+        rows.append(row)
+        if dart_row is None:
+            failures.append(f"{scene}/{threads}: native detector missing")
+        elif winner.detector != "dart":
+            failures.append(
+                f"{scene}/{threads}: native {dart_row.cpu_ms:.3f} ms, "
+                f"winner {winner.detector} {winner.cpu_ms:.3f} ms"
+            )
+    return rows, failures
+
+
+def write_markdown(
+    output_dir: Path,
+    revisions: list[Revision],
+    comparisons: list[dict[str, object]],
+    fastest: list[dict[str, object]],
+    detector_equivalence: dict[str, dict[str, object]],
+    failures: list[str],
+    run_errors: list[dict[str, str]],
+) -> None:
+    lines = [
+        "# Soft-Body Performance Comparison",
+        "",
+        "## Revisions",
+        "",
+        "| Label | Revision | Commit |",
+        "| --- | --- | --- |",
+    ]
+    for revision in revisions:
+        lines.append(f"| `{revision.label}` | `{revision.rev}` | `{revision.sha}` |")
+
+    lines.extend(
+        [
+            "",
+            "## Current Detector Equivalence",
+            "",
+            "| Detector | Apples-to-apples eligible | Reason |",
+            "| --- | --- | --- |",
+        ]
+    )
+    for detector, result in sorted(detector_equivalence.items()):
+        lines.append(
+            "| `{detector}` | {eligible} | {reason} |".format(
+                detector=detector,
+                eligible="yes" if result.get("eligible") else "no",
+                reason=str(result.get("reason", "")),
+            )
+        )
+
+    for comparison_name in sorted({str(item["comparison"]) for item in comparisons}):
+        lines.extend(
+            [
+                "",
+                f"## {comparison_name.replace('_', ' ')}",
+                "",
+                "| Detector | Scene | Threads | Other CPU ms | Current CPU ms | CPU change | Other sim_s/s | Current sim_s/s |",
+                "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+            ]
+        )
+        for item in comparisons:
+            if item["comparison"] != comparison_name or "missing" in item:
+                continue
+            other_key = "parent_cpu_ms" if "parent_cpu_ms" in item else "base_cpu_ms"
+            other_sim_key = (
+                "parent_sim_s_per_s"
+                if "parent_sim_s_per_s" in item
+                else "base_sim_s_per_s"
+            )
+            lines.append(
+                "| `{detector}` | `{scene}` | {threads} | {other_cpu} | "
+                "{current_cpu} | {change:+.1f}% | {other_sim} | {current_sim} |".format(
+                    detector=item["detector"],
+                    scene=item["scene"],
+                    threads=item["threads"],
+                    other_cpu=fmt_float(float(item[other_key])),
+                    current_cpu=fmt_float(float(item["current_cpu_ms"])),
+                    change=float(item["cpu_change_pct"]),
+                    other_sim=fmt_float(item.get(other_sim_key)),
+                    current_sim=fmt_float(item.get("current_sim_s_per_s")),
+                )
+            )
+
+    lines.extend(
+        [
+            "",
+            "## Current Detector Winners",
+            "",
+            "| Scene | Threads | Winner | Winner CPU ms | Native CPU ms | Eligible detectors | Detector CPU ms |",
+            "| --- | ---: | --- | ---: | ---: | --- | --- |",
+        ]
+    )
+    for item in fastest:
+        detector_summary = ", ".join(
+            f"{detector}={cpu_ms:.3f}"
+            for detector, cpu_ms in sorted(item["detectors"].items())
+        )
+        lines.append(
+            "| `{scene}` | {threads} | `{winner}` | {winner_cpu} | "
+            "{native_cpu} | {eligible} | {detectors} |".format(
+                scene=item["scene"],
+                threads=item["threads"],
+                winner=item["winner"],
+                winner_cpu=fmt_float(float(item["winner_cpu_ms"])),
+                native_cpu=fmt_float(item["native_cpu_ms"]),
+                eligible=", ".join(
+                    f"`{detector}`" for detector in item["eligible_detectors"]
+                ),
+                detectors=detector_summary,
+            )
+        )
+
+    if run_errors:
+        lines.extend(["", "## Run Errors", ""])
+        for error in run_errors:
+            lines.append(
+                f"- `{error['revision']}` `{error['detector']}`: {error['message']}"
+            )
+
+    lines.extend(["", "## Evaluator Verdict", ""])
+    if failures:
+        lines.append("FAIL")
+        for failure in failures:
+            lines.append(f"- {failure}")
+    else:
+        lines.append("PASS")
+
+    (output_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def main(argv: list[str]) -> int:
+    args = parse_args(argv)
+    root = repo_root()
+    output_dir = args.output_dir.resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    detectors = parse_csv(args.detectors)
+    requested_threads = parse_threads(args.threads)
+    revision_specs = [("current", args.current), ("parent", args.parent)]
+    if args.base:
+        revision_specs.append(("base", args.base))
+
+    revisions = [
+        prepare_revision(root, output_dir, label, rev, root)
+        for label, rev in revision_specs
+    ]
+
+    all_rows: dict[str, dict[tuple[str, str, int], BenchmarkRow]] = {}
+    run_errors: list[dict[str, str]] = []
+    current_headless_binary: Path | None = None
+    for revision in revisions:
+        binary, headless_binary = configure_and_build(revision)
+        if revision.label == "current":
+            current_headless_binary = headless_binary
+        revision_rows: dict[tuple[str, str, int], BenchmarkRow] = {}
+        for detector in detectors:
+            json_path, error = run_detector(
+                revision=revision,
+                binary=binary,
+                detector=detector,
+                output_dir=output_dir,
+                min_time=args.benchmark_min_time,
+                repetitions=args.benchmark_repetitions,
+            )
+            if error is not None:
+                run_errors.append(
+                    {
+                        "revision": revision.label,
+                        "detector": detector,
+                        "message": error.splitlines()[-1] if error else "failed",
+                    }
+                )
+                if not args.keep_going:
+                    break
+                continue
+            parsed_rows = load_rows(
+                revision, detector, json_path, requested_threads
+            )
+            if not parsed_rows:
+                error_message = benchmark_error_message(json_path)
+                if error_message:
+                    run_errors.append(
+                        {
+                            "revision": revision.label,
+                            "detector": detector,
+                            "message": error_message,
+                        }
+                    )
+                    continue
+            for row in parsed_rows:
+                revision_rows[row_key(row)] = row
+        all_rows[revision.label] = revision_rows
+
+    if current_headless_binary is None:
+        raise SystemExit("current soft_body_headless binary was not built")
+
+    detector_equivalence, eligible_detectors = evaluate_detector_equivalence(
+        current=revisions[0],
+        headless_binary=current_headless_binary,
+        detectors=detectors,
+        scenes=parse_csv(args.correctness_scenes),
+        steps=args.correctness_steps,
+        tolerance=args.correctness_tolerance,
+        output_dir=output_dir,
+    )
+
+    current_rows = all_rows.get("current", {})
+    comparisons: list[dict[str, object]] = []
+    for other_label in ("parent", "base"):
+        if other_label in all_rows:
+            comparisons.extend(
+                build_comparison(current_rows, all_rows[other_label], other_label)
+            )
+
+    fastest, native_failures = fastest_rows(
+        current_rows, detectors, eligible_detectors
+    )
+    run_error_keys = {
+        (error["revision"], error["detector"]) for error in run_errors
+    }
+    coverage_failures = []
+    for label, rows in all_rows.items():
+        expected_count = 0
+        for detector in detectors:
+            if (label, detector) in run_error_keys:
+                continue
+            expected_count += len(SCENES) * len(requested_threads)
+        if len(rows) < expected_count:
+            coverage_failures.append(
+                f"{label} rows {len(rows)} < expected {expected_count}"
+            )
+
+    failures = [*coverage_failures, *native_failures]
+    summary = {
+        "revisions": [
+            {
+                "label": revision.label,
+                "rev": revision.rev,
+                "sha": revision.sha,
+                "source_dir": str(revision.source_dir),
+                "build_dir": str(revision.build_dir),
+            }
+            for revision in revisions
+        ],
+        "detectors": detectors,
+        "threads": sorted(requested_threads),
+        "rows": {
+            label: [
+                {
+                    "detector": row.detector,
+                    "scene": row.scene,
+                    "threads": row.threads,
+                    "cpu_ms": row.cpu_ms,
+                    "real_ms": row.real_ms,
+                    "sim_s_per_s": row.sim_s_per_s,
+                    "name": row.name,
+                }
+                for row in sorted(rows.values(), key=lambda row: row_key(row))
+            ]
+            for label, rows in all_rows.items()
+        },
+        "comparisons": comparisons,
+        "current_detector_winners": fastest,
+        "detector_equivalence": detector_equivalence,
+        "eligible_detectors": eligible_detectors,
+        "run_errors": run_errors,
+        "failures": failures,
+        "verdict": "pass" if not failures else "fail",
+    }
+    (output_dir / "summary.json").write_text(
+        json.dumps(summary, indent=2) + "\n", encoding="utf-8"
+    )
+    write_markdown(
+        output_dir,
+        revisions,
+        comparisons,
+        fastest,
+        detector_equivalence,
+        failures,
+        run_errors,
+    )
+
+    print(output_dir / "summary.md")
+    if failures:
+        for failure in failures:
+            print(f"FAIL: {failure}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

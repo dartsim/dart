@@ -54,6 +54,7 @@ class DARTCollisionObject : public CollisionObject
 {
 public:
   friend class DARTCollisionDetector;
+  friend class DARTCollisionGroup;
 
   enum class CachedShapeKind
   {

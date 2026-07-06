@@ -45,6 +45,13 @@
 #include <dart/simulation/World.hpp>
 #include <dart/utils/SkelParser.hpp>
 
+#if HAVE_BULLET
+  #include <dart/collision/bullet/bullet.hpp>
+#endif
+#if HAVE_ODE
+  #include <dart/collision/ode/ode.hpp>
+#endif
+
 #include <Eigen/Dense>
 
 #include <array>
@@ -198,10 +205,25 @@ void printChecksum(std::size_t step, const Checksum& checksum)
       checksum.pointWorldPosSq);
 }
 
+void keepOptionalCollisionBackendsLinked()
+{
+#if HAVE_BULLET
+  const auto* bulletType
+      = &dart::collision::BulletCollisionDetector::getStaticType();
+  (void)bulletType;
+#endif
+#if HAVE_ODE
+  const auto* odeType = &dart::collision::OdeCollisionDetector::getStaticType();
+  (void)odeType;
+#endif
+}
+
 } // namespace
 
 int main(int argc, char** argv)
 {
+  keepOptionalCollisionBackendsLinked();
+
   const SceneRef scene = resolveScene(argc > 1 ? argv[1] : nullptr);
   const std::size_t steps = parseSize(argc > 2 ? argv[2] : nullptr, 2000u);
   const std::size_t checkpoint

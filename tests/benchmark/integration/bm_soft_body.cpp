@@ -37,6 +37,13 @@
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
 
+#if HAVE_BULLET
+  #include "dart/collision/bullet/bullet.hpp"
+#endif
+#if HAVE_ODE
+  #include "dart/collision/ode/ode.hpp"
+#endif
+
 #include <benchmark/benchmark.h>
 
 #include <array>
@@ -90,8 +97,22 @@ SceneStats collectSceneStats(const dart::simulation::WorldPtr& world)
   return stats;
 }
 
+void keepOptionalCollisionBackendsLinked()
+{
+#if HAVE_BULLET
+  benchmark::DoNotOptimize(
+      &dart::collision::BulletCollisionDetector::getStaticType());
+#endif
+#if HAVE_ODE
+  benchmark::DoNotOptimize(
+      &dart::collision::OdeCollisionDetector::getStaticType());
+#endif
+}
+
 void BM_SoftBodyStep(benchmark::State& state)
 {
+  keepOptionalCollisionBackendsLinked();
+
   const std::size_t sceneIndex = static_cast<std::size_t>(state.range(0));
   if (sceneIndex >= kScenes.size()) {
     state.SkipWithError("invalid soft-body scene index");

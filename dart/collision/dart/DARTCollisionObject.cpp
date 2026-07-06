@@ -57,6 +57,24 @@ namespace {
 
 constexpr double kSoftFaceCacheEps = 1e-6;
 
+//==============================================================================
+void updateCachedBounds(
+    const Eigen::Vector3d& boundsMin,
+    const Eigen::Vector3d& boundsMax,
+    Eigen::Vector3d& cachedBoundsMin,
+    Eigen::Vector3d& cachedBoundsMax,
+    Eigen::Vector3d& cachedBoundsCenter,
+    Eigen::Vector3d& cachedBoundsHalfExtents,
+    bool& hasFiniteCachedBounds)
+{
+  cachedBoundsMin = boundsMin;
+  cachedBoundsMax = boundsMax;
+  cachedBoundsCenter = 0.5 * (cachedBoundsMin + cachedBoundsMax);
+  cachedBoundsHalfExtents = 0.5 * (cachedBoundsMax - cachedBoundsMin);
+  hasFiniteCachedBounds
+      = cachedBoundsMin.allFinite() && cachedBoundsMax.allFinite();
+}
+
 } // namespace
 
 //==============================================================================
@@ -172,15 +190,18 @@ void DARTCollisionObject::refreshShapeCache()
 {
   const auto shapeFrameVersion = mShapeFrame ? mShapeFrame->getVersion() : 0u;
   const auto currentShape = mShapeFrame ? mShapeFrame->getShape() : nullptr;
-  const bool isSoftMesh
-      = currentShape
-        && currentShape->getType() == dynamics::SoftMeshShape::getStaticType();
+  const bool hasSameShape = mCachedShape == currentShape;
 
-  if (isSoftMesh)
-    const_cast<dynamics::Shape*>(currentShape.get())->refreshData();
-
-  if (mCachedShapeFrameVersion == shapeFrameVersion && !isSoftMesh)
+  if (hasSameShape && mCachedShapeFrameVersion == shapeFrameVersion
+      && mCachedShapeKind != CachedShapeKind::SoftMesh) {
     return;
+  }
+
+  if (hasSameShape && mCachedShapeFrameVersion == shapeFrameVersion
+      && mCachedShapeKind == CachedShapeKind::SoftMesh) {
+    refreshSoftMeshCache();
+    return;
+  }
 
   mCachedShapeFrameVersion = shapeFrameVersion;
   mCachedShape = currentShape;
@@ -226,25 +247,26 @@ void DARTCollisionObject::refreshShapeCache()
     mCachedShapeKind = CachedShapeKind::SoftMesh;
   }
 
-  const auto& localBox = mCachedShape->getBoundingBox();
-  mCachedLocalBoundsMin = localBox.getMin();
-  mCachedLocalBoundsMax = localBox.getMax();
-  mCachedLocalBoundsCenter
-      = 0.5 * (mCachedLocalBoundsMin + mCachedLocalBoundsMax);
-  mCachedLocalBoundsHalfExtents
-      = 0.5 * (mCachedLocalBoundsMax - mCachedLocalBoundsMin);
-  mHasFiniteCachedLocalBounds
-      = mCachedLocalBoundsMin.allFinite() && mCachedLocalBoundsMax.allFinite();
-
-  if (mCachedShapeKind == CachedShapeKind::SoftMesh)
+  if (mCachedShapeKind == CachedShapeKind::SoftMesh) {
     refreshSoftMeshCache();
-  else {
-    mCachedSoftLocalVertices.clear();
-    mCachedSoftFirstFaceByPointMass.clear();
-    mCachedSoftFaces.clear();
-    mCachedSoftFaceBvhNodes.clear();
-    mCachedSoftFaceBvhIndices.clear();
+    return;
   }
+
+  const auto& localBox = mCachedShape->getBoundingBox();
+  updateCachedBounds(
+      localBox.getMin(),
+      localBox.getMax(),
+      mCachedLocalBoundsMin,
+      mCachedLocalBoundsMax,
+      mCachedLocalBoundsCenter,
+      mCachedLocalBoundsHalfExtents,
+      mHasFiniteCachedLocalBounds);
+
+  mCachedSoftLocalVertices.clear();
+  mCachedSoftFirstFaceByPointMass.clear();
+  mCachedSoftFaces.clear();
+  mCachedSoftFaceBvhNodes.clear();
+  mCachedSoftFaceBvhIndices.clear();
 }
 
 //==============================================================================
@@ -255,6 +277,11 @@ void DARTCollisionObject::refreshSoftMeshCache()
   const auto* softBodyNode
       = softMesh != nullptr ? softMesh->getSoftBodyNode() : nullptr;
   if (softBodyNode == nullptr) {
+    mCachedLocalBoundsMin.setZero();
+    mCachedLocalBoundsMax.setZero();
+    mCachedLocalBoundsCenter.setZero();
+    mCachedLocalBoundsHalfExtents.setZero();
+    mHasFiniteCachedLocalBounds = false;
     mCachedSoftLocalVertices.clear();
     mCachedSoftFirstFaceByPointMass.clear();
     mCachedSoftFaces.clear();
@@ -264,15 +291,53 @@ void DARTCollisionObject::refreshSoftMeshCache()
   }
 
   const auto numPointMasses = softBodyNode->getNumPointMasses();
-  mCachedSoftLocalVertices.resize(numPointMasses);
-  mCachedSoftFirstFaceByPointMass.assign(numPointMasses, -1);
+  const bool pointMassCountChanged
+      = mCachedSoftLocalVertices.size() != numPointMasses;
+  bool mustRebuildSoftFaces = pointMassCountChanged;
+  Eigen::Vector3d boundsMin
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d boundsMax
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
 
-  for (std::size_t i = 0u; i < numPointMasses; ++i) {
-    mCachedSoftLocalVertices[i]
-        = softBodyNode->getPointMass(i)->getLocalPosition();
+  if (numPointMasses == 0u) {
+    boundsMin.setZero();
+    boundsMax.setZero();
+  } else {
+    if (pointMassCountChanged)
+      mCachedSoftLocalVertices.resize(numPointMasses);
+
+    for (std::size_t i = 0u; i < numPointMasses; ++i) {
+      const auto* pointMass = softBodyNode->getPointMass(i);
+      const Eigen::Vector3d localPosition
+          = pointMass->getPositions() + pointMass->getRestingPosition();
+      boundsMin = boundsMin.cwiseMin(localPosition);
+      boundsMax = boundsMax.cwiseMax(localPosition);
+      if (!mustRebuildSoftFaces
+          && !mCachedSoftLocalVertices[i].cwiseEqual(localPosition).all()) {
+        mustRebuildSoftFaces = true;
+      }
+      mCachedSoftLocalVertices[i] = localPosition;
+    }
   }
 
   const auto numFaces = softBodyNode->getNumFaces();
+  mustRebuildSoftFaces
+      = mustRebuildSoftFaces || mCachedSoftFaces.size() != numFaces;
+
+  updateCachedBounds(
+      boundsMin,
+      boundsMax,
+      mCachedLocalBoundsMin,
+      mCachedLocalBoundsMax,
+      mCachedLocalBoundsCenter,
+      mCachedLocalBoundsHalfExtents,
+      mHasFiniteCachedLocalBounds);
+
+  if (!mustRebuildSoftFaces)
+    return;
+
+  mCachedSoftFirstFaceByPointMass.assign(numPointMasses, -1);
+
   mCachedSoftFaces.resize(numFaces);
 
   for (std::size_t faceIndex = 0u; faceIndex < numFaces; ++faceIndex) {

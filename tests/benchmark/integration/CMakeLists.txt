@@ -97,4 +97,17 @@ if(TARGET dart-utils)
 
   add_executable(soft_body_headless soft_body_headless.cpp)
   target_link_libraries(soft_body_headless PRIVATE dart-utils)
+
+  foreach(soft_body_collision_library dart-collision-bullet dart-collision-ode)
+    if(TARGET ${soft_body_collision_library})
+      target_link_libraries(
+        BM_INTEGRATION_soft_body
+        PRIVATE ${soft_body_collision_library}
+      )
+      target_link_libraries(
+        soft_body_headless
+        PRIVATE ${soft_body_collision_library}
+      )
+    endif()
+  endforeach()
 endif()

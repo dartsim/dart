@@ -619,7 +619,7 @@ bool DARTCollisionDetector::collide(
     return false;
 
   auto casted = static_cast<DARTCollisionGroup*>(group);
-  casted->updateEngineData();
+  casted->updateEngineDataForCollide();
   const auto& objects = casted->mCollisionObjects;
 
   if (objects.empty())
@@ -767,8 +767,8 @@ bool DARTCollisionDetector::collide(
   auto casted1 = static_cast<DARTCollisionGroup*>(group1);
   auto casted2 = static_cast<DARTCollisionGroup*>(group2);
 
-  casted1->updateEngineData();
-  casted2->updateEngineData();
+  casted1->updateEngineDataForCollide();
+  casted2->updateEngineDataForCollide();
 
   const auto& objects1 = casted1->mCollisionObjects;
   const auto& objects2 = casted2->mCollisionObjects;
