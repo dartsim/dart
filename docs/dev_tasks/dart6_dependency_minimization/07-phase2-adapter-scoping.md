@@ -181,6 +181,13 @@ bool NativeCollisionDetector::collide(
     if (!hit) return true;
     collisionFound = true;
     if (!result) return false;                                          // binary mode: early-out
+    if (!option.enableContact) {                                        // pair-only result mode
+      Contact pairOnly;
+      pairOnly.collisionObject1 = a;                                    // populate result caches
+      pairOnly.collisionObject2 = b;                                    // no point/normal/depth
+      result->addContact(pairOnly);
+      return result->getNumContacts() < option.maxNumContacts;          // global cap reached?
+    }
     if (emitContacts(scratch, a, b, option, *result)) return false;     // global cap reached
     return true;                                                        // keep visiting
   });
@@ -188,7 +195,7 @@ bool NativeCollisionDetector::collide(
 }
 ```
 
-**Contact translation — the gz-required fields** (native `ContactPoint` → DART 6 `Contact`; `addContact` asserts non-null `collisionObject1/2`):
+**Contact / pair translation — the gz-required fields** (native `ContactPoint` → DART 6 `Contact`; `addContact` asserts non-null `collisionObject1/2`):
 ```cpp
 Contact c;
 c.point            = cp.position;                    // world-frame point                [gz-required]
@@ -201,6 +208,14 @@ c.triID1 = cp.featureIndex1; c.triID2 = cp.featureIndex2;   // optional/legacy
 if (!option.allowNegativePenetrationDepthContacts && c.penetrationDepth < 0.0) skip;   // R2
 result.addContact(c);
 ```
+When `option.enableContact == false` but `result != nullptr`, the adapter still
+adds one pair-only `Contact` with just `collisionObject1/2` set. This preserves
+DART's `CollisionResult` contract: `isCollision()` plus body/frame caches record
+the colliding pair, while point/normal/depth remain default because contact
+geometry was disabled. This pair-only path uses the same global
+`option.maxNumContacts` cap and avoids calling `emitContacts()` on an empty
+native scratch result.
+
 `orientNormal` enforces DART 6's convention (**normal from `collisionObject2` toward `collisionObject1`**, per `Contact.hpp`'s field comment). The native dispatcher's canonical/flipped-normal plumbing fixes one order per pair, so the sign is validated **empirically against both `fcl` and `dart`** (§3, R1) and encoded once. Per-pair cap = `option.getEffectiveMaxNumContactsPerPair()` (native lacks this field → truncate `scratch` before emitting); global cap = `option.maxNumContacts` (stop `visitPairs` when reached).
 
 **Cross-group `collide(g1, g2, …)`:** DART 6 semantics = pairs with one object from each group; intra-group pairs NOT checked. Implement as a nested loop over `g1->mCollisionObjects × g2->mCollisionObjects` (each `updateEngineData()` first), same filter + narrowphase + translation. BruteForce is per-group, so a transient combined broadphase is unnecessary in phase 2.
@@ -397,6 +412,6 @@ Three adversarial reviews (gz-compat, cpp17-entt, scope) each returned **SOUND-W
 | 11 | scope | P1 accuracy slips: test path is flat `tests/unit/collision/test_brute_force.cpp` on main; "8 pure virtuals" is 7; `distance.cpp` needs span shim | §4: test relabeled "adapted from main's flat path, relocated to `native/`"; corrected to **7 pure virtuals**; **P8 row now states the span shim** (`distance.cpp` includes `<span>`). |
 | 12 | scope | P3 factory registration had no proof gate (static-init can silently fail to link) | §3/§6 R12: **P3a adds `EXPECT_TRUE(getFactory()->canCreate("native"))`** to `Collision.Factory`. |
 
-**PR-review refinements (#3302).** Three further defects raised on the plan PR are resolved above: (13) the lazy geometry guard now keys on **shape identity + null**, not version alone, so a `ShapeFrame` re-assigned to a fresh shape (version 1) or cleared still rebuilds the native geometry (§1.4); (14) the gate text now spells out the **real Debug build** and **`ctest`** commands, since `pixi run build` is Release-only and `pixi run test-all` only builds (§3, §4); (15) the `@codex review` step is now qualified by the **`docs/onboarding/ai-tools.md` approval boundary** for agent-run PRs (§3).
+**PR-review refinements (#3302).** Four further defects raised on the plan PR are resolved above: (13) the lazy geometry guard now keys on **shape identity + null**, not version alone, so a `ShapeFrame` re-assigned to a fresh shape (version 1) or cleared still rebuilds the native geometry (§1.4); (14) the gate text now spells out the **real Debug build** and **`ctest`** commands, since `pixi run build` is Release-only and `pixi run test-all` only builds (§3, §4); (15) the `@codex review` step is now qualified by the **`docs/onboarding/ai-tools.md` approval boundary** for agent-run PRs (§3); (16) the disabled-contact path now records a pair-only `Contact` when a `CollisionResult` is provided, preserving `isCollision()` and object caches while respecting `maxNumContacts` (§1.5).
 
 **Net:** No fundamental infeasibility survived review. Nothing implicitly requires EnTT, a C++20/23 feature beyond the already-shimmed `std::span`, or a DART-7-only API. The two build-breaking items (non-existent `Shape::computeAabb(tf)`, non-existent `World::setCollisionDetector(const char*)`) are corrected to real `release-6.20` APIs; the PR-slicing bug (sphere-box parity before its collider) is fixed by pulling `sphere_box` into P3b; the reviewability defects (bespoke `narrow_phase` fork, oversized P3) are addressed with explicit gates and a P3a/P3b split. FCL-as-default and zero gz-visible behavior change are preserved and load-bearing on the scope-diff gate.
