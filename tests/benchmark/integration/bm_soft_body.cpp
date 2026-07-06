@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/simulation/World.hpp"
@@ -42,6 +44,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 
 namespace {
 
@@ -99,6 +102,7 @@ void BM_SoftBodyStep(benchmark::State& state)
   const auto threads = static_cast<std::size_t>(state.range(1));
   const auto steps = static_cast<std::size_t>(state.range(2));
   SceneStats finalStats;
+  std::string detectorName;
   double timeStep = 0.0;
 
   for (auto _ : state) {
@@ -109,9 +113,30 @@ void BM_SoftBodyStep(benchmark::State& state)
       return;
     }
 
+    if (const char* detectorEnv = std::getenv("COLLISION_DETECTOR");
+        detectorEnv != nullptr && detectorEnv[0] != '\0') {
+      auto detector = dart::collision::CollisionDetector::getFactory()->create(
+          detectorEnv);
+      if (!detector) {
+        state.SkipWithError("failed to create collision detector");
+        return;
+      }
+      detectorName = detector->getType();
+      world->getConstraintSolver()->setCollisionDetector(std::move(detector));
+    } else if (
+        const auto detector
+        = world->getConstraintSolver()->getCollisionDetector()) {
+      detectorName = detector->getType();
+    } else {
+      detectorName = "none";
+    }
+
     world->setNumSimulationThreads(threads);
     timeStep = world->getTimeStep();
     finalStats = collectSceneStats(world);
+    // Keep one-time lazy collision/simulation preparation out of the measured
+    // loop so rows compare steady-state soft-body stepping.
+    world->step();
     state.ResumeTiming();
 
     for (std::size_t i = 0; i < steps; ++i)
@@ -123,7 +148,7 @@ void BM_SoftBodyStep(benchmark::State& state)
   state.SetItemsProcessed(static_cast<std::int64_t>(
       state.iterations() * steps * finalStats.pointMasses));
   state.SetLabel(
-      std::string("scene=") + scene.name
+      std::string("scene=") + scene.name + " detector=" + detectorName
       + " threads=" + std::to_string(threads));
   state.counters["sim_s/s"] = benchmark::Counter(
       static_cast<double>(state.iterations()) * static_cast<double>(steps)
