@@ -50,6 +50,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <vector>
 
 #include <cassert>
 #include <cmath>
@@ -68,13 +69,13 @@ struct BoxedLcpThreadScratch
   std::vector<ConstraintBase*> constraintPtrStorage;
   std::vector<std::size_t> constraintDimStorage;
   std::vector<std::size_t> constraintOffsetStorage;
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> lcpA;
-  Eigen::VectorXd lcpX;
-  Eigen::VectorXd lcpB;
-  Eigen::VectorXd lcpW;
-  Eigen::VectorXd lcpLo;
-  Eigen::VectorXd lcpHi;
-  Eigen::VectorXi lcpFIndex;
+  std::vector<double> lcpA;
+  std::vector<double> lcpX;
+  std::vector<double> lcpB;
+  std::vector<double> lcpW;
+  std::vector<double> lcpLo;
+  std::vector<double> lcpHi;
+  std::vector<int> lcpFIndex;
 };
 
 BoxedLcpThreadScratch& boxedLcpThreadScratch()
@@ -220,13 +221,13 @@ void BoxedLcpConstraintSolver::reserveConstrainedGroupScratch(
   const int nSkip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(n));
   const std::size_t matrixSize = n * static_cast<std::size_t>(nSkip);
   if (!usesInlineLcpBuffer(n, matrixSize)) {
-    scratch.lcpA.resize(static_cast<Eigen::Index>(n), nSkip);
-    scratch.lcpX.resize(static_cast<Eigen::Index>(n));
-    scratch.lcpB.resize(static_cast<Eigen::Index>(n));
-    scratch.lcpW.resize(static_cast<Eigen::Index>(n));
-    scratch.lcpLo.resize(static_cast<Eigen::Index>(n));
-    scratch.lcpHi.resize(static_cast<Eigen::Index>(n));
-    scratch.lcpFIndex.resize(static_cast<Eigen::Index>(n));
+    scratch.lcpA.reserve(matrixSize);
+    scratch.lcpX.reserve(n);
+    scratch.lcpB.reserve(n);
+    scratch.lcpW.reserve(n);
+    scratch.lcpLo.reserve(n);
+    scratch.lcpHi.reserve(n);
+    scratch.lcpFIndex.reserve(n);
   }
 
   reserveBoxedLcpSolverScratch(mBoxedLcpSolver, n);
@@ -323,18 +324,19 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     hi = inlineHi.data();
     fIndex = inlineFIndex.data();
   } else {
-#if DART_BUILD_MODE_RELEASE
-    lcpA.resize(n, nSkip);
-#else // debug
-    lcpA.setZero(n, nSkip);
-#endif
+    lcpA.resize(matrixSize);
     lcpX.resize(n);
-    lcpX.setZero();
     lcpB.resize(n);
-    lcpW.setZero(n); // set w to 0
+    lcpW.resize(n);
     lcpLo.resize(n);
     lcpHi.resize(n);
-    lcpFIndex.setConstant(n, -1); // set findex to -1
+    lcpFIndex.resize(n);
+#if !DART_BUILD_MODE_RELEASE
+    std::fill_n(lcpA.data(), matrixSize, 0.0);
+#endif
+    std::fill_n(lcpX.data(), n, 0.0);
+    std::fill_n(lcpW.data(), n, 0.0);
+    std::fill_n(lcpFIndex.data(), n, -1);
     a = lcpA.data();
     x = lcpX.data();
     b = lcpB.data();
@@ -391,11 +393,11 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
       std::fill_n(fIndex, n, -1);
     } else {
 #if !DART_BUILD_MODE_RELEASE
-      lcpA.setZero(n, nSkip);
+      std::fill_n(a, matrixSize, 0.0);
 #endif
-      lcpX.setZero();
-      lcpW.setZero();
-      lcpFIndex.setConstant(n, -1);
+      std::fill_n(x, n, 0.0);
+      std::fill_n(w, n, 0.0);
+      std::fill_n(fIndex, n, -1);
     }
   };
 

@@ -2014,7 +2014,7 @@ std::size_t countParallelSoftSoftPairs(
 
 //==============================================================================
 template <std::size_t Width>
-std::uint32_t computeFiniteOverlapMask(
+[[maybe_unused]] std::uint32_t computeFiniteOverlapMask(
     const BroadphaseEntry& entry,
     const SortedBroadphaseBounds& bounds,
     std::size_t begin)

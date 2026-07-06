@@ -56,6 +56,7 @@
 
 #include <algorithm>
 #include <condition_variable>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -197,7 +198,9 @@ void findShallowSupportedFreeRoots(
     const std::vector<dynamics::SkeletonPtr>& skeletons,
     const collision::CollisionResult& contacts,
     const Eigen::Vector3d& gravity,
-    std::vector<char>& supported)
+    std::vector<char>& supported,
+    std::vector<std::pair<const dynamics::Skeleton*, std::size_t>>&
+        skeletonIndexScratch)
 {
   supported.clear();
   supported.resize(skeletons.size(), false);
@@ -210,12 +213,32 @@ void findShallowSupportedFreeRoots(
   constexpr double kSupportContactPenetrationTolerance = 1e-4;
   constexpr double kSupportNormalMinVerticalComponent = 0.5;
 
+  skeletonIndexScratch.clear();
+  skeletonIndexScratch.reserve(skeletons.size());
+  for (std::size_t i = 0; i < skeletons.size(); ++i) {
+    if (skeletons[i])
+      skeletonIndexScratch.emplace_back(skeletons[i].get(), i);
+  }
+  const std::less<const dynamics::Skeleton*> skeletonLess;
+  std::sort(
+      skeletonIndexScratch.begin(),
+      skeletonIndexScratch.end(),
+      [&](const auto& lhs, const auto& rhs) {
+        return skeletonLess(lhs.first, rhs.first);
+      });
+
   const auto findSkeletonIndex
       = [&](const dynamics::Skeleton* skeleton) -> std::size_t {
-    for (std::size_t i = 0; i < skeletons.size(); ++i) {
-      if (skeletons[i].get() == skeleton)
-        return i;
-    }
+    const auto search = std::lower_bound(
+        skeletonIndexScratch.begin(),
+        skeletonIndexScratch.end(),
+        skeleton,
+        [&](const auto& entry, const dynamics::Skeleton* value) {
+          return skeletonLess(entry.first, value);
+        });
+    if (search != skeletonIndexScratch.end() && search->first == skeleton)
+      return search->second;
+
     return skeletons.size();
   };
 
@@ -341,6 +364,15 @@ void World::invalidateSimulationMode()
   mSimulationMode = false;
   mSimulationModeStructuralVersion = 0;
   mSimulationModeCollisionGroup = nullptr;
+  mSimulationModeCollisionGroupVersion = 0;
+  mSimulationModeConstraintSolverThreads = 0;
+  mSimulationModeCollisionEnableContact = false;
+  mSimulationModeCollisionMaxNumContacts = 0;
+  mSimulationModeCollisionMaxNumContactsPerPair = 0;
+  mSimulationModeCollisionAllowNegativePenetrationDepthContacts = false;
+  mSimulationModeCollisionFilter = nullptr;
+  mSimulationModeCollisionFilterTrackable = true;
+  mSimulationModeCollisionFilterRevision = 0;
 }
 
 //==============================================================================
@@ -393,6 +425,7 @@ void World::reserveMemoryManagerForSimulationShape()
 
   mPreSolveFreeRootVelocityScratch.reserve(numSkeletons);
   mShallowSupportedFreeRootScratch.reserve(numSkeletons);
+  mSkeletonIndexScratch.reserve(numSkeletons);
   mDisturbedThisStepScratch.reserve(numSkeletons);
   mDeepInitialContactSkeletonScratch.reserve(numSkeletons);
   mSupportedInitialContactSkeletonScratch.reserve(numSkeletons);
@@ -412,21 +445,78 @@ void World::enterSimulationMode()
   reserveMemoryManagerForSimulationShape();
   mSimulationModeStructuralVersion
       = dynamics::Skeleton::getGlobalStructuralVersion();
-  mSimulationModeCollisionGroup
-      = mConstraintSolver ? mConstraintSolver->getCollisionGroup().get()
-                          : nullptr;
+  if (mConstraintSolver) {
+    const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+    mSimulationModeCollisionGroup = collisionGroup.get();
+    mSimulationModeCollisionGroupVersion
+        = collisionGroup ? collisionGroup->getContentVersion() : 0u;
+    mSimulationModeConstraintSolverThreads
+        = mConstraintSolver->getNumSimulationThreads();
+    const auto& collisionOption = mConstraintSolver->getCollisionOption();
+    mSimulationModeCollisionEnableContact = collisionOption.enableContact;
+    mSimulationModeCollisionMaxNumContacts = collisionOption.maxNumContacts;
+    mSimulationModeCollisionMaxNumContactsPerPair
+        = collisionOption.maxNumContactsPerPair;
+    mSimulationModeCollisionAllowNegativePenetrationDepthContacts
+        = collisionOption.allowNegativePenetrationDepthContacts;
+    mSimulationModeCollisionFilter = collisionOption.collisionFilter.get();
+    mSimulationModeCollisionFilterTrackable
+        = isCollisionFilterSnapshotTrackable(mSimulationModeCollisionFilter);
+    mSimulationModeCollisionFilterRevision
+        = mSimulationModeCollisionFilterTrackable
+              ? getCollisionFilterSnapshotRevision(
+                  mSimulationModeCollisionFilter)
+              : 0u;
+  } else {
+    mSimulationModeCollisionGroup = nullptr;
+    mSimulationModeCollisionGroupVersion = 0;
+    mSimulationModeConstraintSolverThreads = 0;
+    mSimulationModeCollisionEnableContact = false;
+    mSimulationModeCollisionMaxNumContacts = 0;
+    mSimulationModeCollisionMaxNumContactsPerPair = 0;
+    mSimulationModeCollisionAllowNegativePenetrationDepthContacts = false;
+    mSimulationModeCollisionFilter = nullptr;
+    mSimulationModeCollisionFilterTrackable = true;
+    mSimulationModeCollisionFilterRevision = 0;
+  }
   mSimulationMode = true;
 }
 
 //==============================================================================
 bool World::isInSimulationMode() const
 {
+  if (!mSimulationMode || !mConstraintSolver)
+    return false;
+
+  const auto& collisionOption = mConstraintSolver->getCollisionOption();
+  const auto* collisionFilter = collisionOption.collisionFilter.get();
+  const bool collisionFilterTrackable
+      = isCollisionFilterSnapshotTrackable(collisionFilter);
+  const bool collisionFilterUnchanged
+      = mSimulationModeCollisionFilter == collisionFilter
+        && mSimulationModeCollisionFilterTrackable == collisionFilterTrackable
+        && (!collisionFilterTrackable
+            || mSimulationModeCollisionFilterRevision
+                   == getCollisionFilterSnapshotRevision(collisionFilter));
+  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+
   return mSimulationMode
          && mSimulationModeStructuralVersion
                 == dynamics::Skeleton::getGlobalStructuralVersion()
-         && mConstraintSolver
-         && mSimulationModeCollisionGroup
-                == mConstraintSolver->getCollisionGroup().get();
+         && collisionGroup.get() == mSimulationModeCollisionGroup
+         && mSimulationModeCollisionGroupVersion
+                == (collisionGroup ? collisionGroup->getContentVersion() : 0u)
+         && mConstraintSolver->getNumSimulationThreads()
+                == mSimulationModeConstraintSolverThreads
+         && mSimulationModeCollisionEnableContact
+                == collisionOption.enableContact
+         && mSimulationModeCollisionMaxNumContacts
+                == collisionOption.maxNumContacts
+         && mSimulationModeCollisionMaxNumContactsPerPair
+                == collisionOption.maxNumContactsPerPair
+         && mSimulationModeCollisionAllowNegativePenetrationDepthContacts
+                == collisionOption.allowNegativePenetrationDepthContacts
+         && collisionFilterUnchanged;
 }
 
 //==============================================================================
@@ -1113,9 +1203,12 @@ void World::setNumSimulationThreads(std::size_t numThreads)
       numThreads = 1u;
   }
 
+  const auto previousNumSimulationThreads = mNumSimulationThreads;
   mNumSimulationThreads = std::max<std::size_t>(1u, numThreads);
   if (mConstraintSolver)
     mConstraintSolver->setNumSimulationThreads(mNumSimulationThreads);
+  if (mNumSimulationThreads != previousNumSimulationThreads)
+    invalidateSimulationMode();
 
   if (mNumSimulationThreads <= 1u) {
     mSimulationThreadPool.reset();
@@ -1197,7 +1290,8 @@ void World::step(bool _resetCommand)
         mSkeletons,
         mConstraintSolver->getLastCollisionResult(),
         mGravity,
-        mShallowSupportedFreeRootScratch);
+        mShallowSupportedFreeRootScratch,
+        mSkeletonIndexScratch);
     clearUnsupportedShallowSupportFreeRootVelocityStates(
         mShallowSupportedFreeRootScratch, preSolveFreeRootVelocities);
 
@@ -1365,7 +1459,8 @@ void World::step(bool _resetCommand)
       mSkeletons,
       mConstraintSolver->getLastCollisionResult(),
       mGravity,
-      mShallowSupportedFreeRootScratch);
+      mShallowSupportedFreeRootScratch,
+      mSkeletonIndexScratch);
   clearUnsupportedShallowSupportFreeRootVelocityStates(
       mShallowSupportedFreeRootScratch, preSolveFreeRootVelocities);
 

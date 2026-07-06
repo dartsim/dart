@@ -621,6 +621,19 @@ protected:
 
   /// Collision group captured at simulation preparation.
   const collision::CollisionGroup* mSimulationModeCollisionGroup = nullptr;
+  std::size_t mSimulationModeCollisionGroupVersion = 0;
+
+  /// Constraint solver thread count captured at simulation preparation.
+  std::size_t mSimulationModeConstraintSolverThreads = 0;
+
+  /// Collision options captured at simulation preparation.
+  bool mSimulationModeCollisionEnableContact = false;
+  std::size_t mSimulationModeCollisionMaxNumContacts = 0;
+  std::size_t mSimulationModeCollisionMaxNumContactsPerPair = 0;
+  bool mSimulationModeCollisionAllowNegativePenetrationDepthContacts = false;
+  const collision::CollisionFilter* mSimulationModeCollisionFilter = nullptr;
+  bool mSimulationModeCollisionFilterTrackable = true;
+  std::size_t mSimulationModeCollisionFilterRevision = 0;
 
   /// Options controlling automatic body deactivation ("sleeping")
   simulation::DeactivationOptions mDeactivationOptions;
@@ -630,6 +643,8 @@ protected:
 
   std::vector<FreeRootVelocitySnapshot> mPreSolveFreeRootVelocityScratch;
   std::vector<char> mShallowSupportedFreeRootScratch;
+  std::vector<std::pair<const dynamics::Skeleton*, std::size_t>>
+      mSkeletonIndexScratch;
   std::vector<char> mDisturbedThisStepScratch;
   std::vector<const dynamics::Skeleton*> mDeepInitialContactSkeletonScratch;
   std::vector<const dynamics::Skeleton*>
