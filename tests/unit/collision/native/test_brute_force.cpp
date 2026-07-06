@@ -35,8 +35,69 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
+#include <memory>
+#include <vector>
 
 using namespace dart::collision::native;
+
+namespace {
+
+Aabb makeAabb(double min, double max)
+{
+  return Aabb(Eigen::Vector3d(min, min, min), Eigen::Vector3d(max, max, max));
+}
+
+class RecordingBroadPhase : public BroadPhase
+{
+public:
+  void clear() override
+  {
+    ++clearCount;
+    addedIds.clear();
+  }
+
+  void add(std::size_t id, const Aabb&) override
+  {
+    addedIds.push_back(id);
+  }
+
+  void update(std::size_t id, const Aabb&) override
+  {
+    updatedIds.push_back(id);
+  }
+
+  void remove(std::size_t id) override
+  {
+    removedIds.push_back(id);
+  }
+
+  [[nodiscard]] std::vector<BroadPhasePair> queryPairs() const override
+  {
+    return pairs;
+  }
+
+  [[nodiscard]] std::vector<std::size_t> queryOverlapping(
+      const Aabb&) const override
+  {
+    return overlappingIds;
+  }
+
+  [[nodiscard]] std::size_t size() const override
+  {
+    return numObjects;
+  }
+
+  std::vector<BroadPhasePair> pairs;
+  std::vector<std::size_t> overlappingIds;
+  std::vector<std::size_t> addedIds;
+  std::vector<std::size_t> updatedIds;
+  std::vector<std::size_t> removedIds;
+  std::size_t numObjects = 0;
+  int clearCount = 0;
+};
+
+} // namespace
 
 TEST(BruteForceBroadPhase, DefaultConstruction)
 {
@@ -127,6 +188,23 @@ TEST(BruteForceBroadPhase, Remove)
   EXPECT_TRUE(bp.queryPairs().empty());
 }
 
+TEST(BruteForceBroadPhase, RemoveMissingIdPreservesObjectsAndPairs)
+{
+  BruteForceBroadPhase bp;
+
+  bp.add(0, makeAabb(0, 2));
+  bp.add(1, makeAabb(1, 3));
+
+  bp.remove(99);
+
+  EXPECT_EQ(bp.size(), 2);
+
+  auto pairs = bp.queryPairs();
+  ASSERT_EQ(pairs.size(), 1);
+  EXPECT_EQ(pairs[0].first, 0);
+  EXPECT_EQ(pairs[0].second, 1);
+}
+
 TEST(BruteForceBroadPhase, Update)
 {
   BruteForceBroadPhase bp;
@@ -140,6 +218,18 @@ TEST(BruteForceBroadPhase, Update)
 
   auto pairs = bp.queryPairs();
   ASSERT_EQ(pairs.size(), 1);
+}
+
+TEST(BruteForceBroadPhase, UpdateMissingIdDoesNotInsert)
+{
+  BruteForceBroadPhase bp;
+
+  bp.add(0, makeAabb(0, 1));
+
+  bp.update(99, makeAabb(0, 1));
+
+  EXPECT_EQ(bp.size(), 1);
+  EXPECT_TRUE(bp.queryPairs().empty());
 }
 
 TEST(BruteForceBroadPhase, Clear)
@@ -240,6 +330,46 @@ TEST(BruteForceBroadPhase, Touching)
   EXPECT_EQ(pairs.size(), 1);
 }
 
+TEST(BruteForceBroadPhase, VisitPairsStopsWhenVisitorReturnsFalse)
+{
+  BruteForceBroadPhase bp;
+
+  bp.add(3, makeAabb(0, 3));
+  bp.add(1, makeAabb(0, 3));
+  bp.add(2, makeAabb(0, 3));
+
+  std::vector<BroadPhasePair> visited;
+  const bool completed
+      = bp.visitPairs([&](std::size_t first, std::size_t second) {
+          visited.emplace_back(first, second);
+          return false;
+        });
+
+  EXPECT_FALSE(completed);
+  ASSERT_EQ(visited.size(), 1);
+  EXPECT_EQ(visited[0].first, 1);
+  EXPECT_EQ(visited[0].second, 2);
+}
+
+TEST(BruteForceBroadPhase, VisitPairsReturnsTrueAfterAllPairs)
+{
+  BruteForceBroadPhase bp;
+
+  bp.add(3, makeAabb(0, 3));
+  bp.add(1, makeAabb(0, 3));
+  bp.add(2, makeAabb(0, 3));
+
+  std::vector<BroadPhasePair> visited;
+  const bool completed
+      = bp.visitPairs([&](std::size_t first, std::size_t second) {
+          visited.emplace_back(first, second);
+          return true;
+        });
+
+  EXPECT_TRUE(completed);
+  EXPECT_EQ(visited.size(), 3);
+}
+
 TEST(BroadPhaseInterface, Polymorphism)
 {
   std::unique_ptr<BroadPhase> bp = std::make_unique<BruteForceBroadPhase>();
@@ -249,4 +379,147 @@ TEST(BroadPhaseInterface, Polymorphism)
 
   EXPECT_EQ(bp->size(), 2);
   EXPECT_EQ(bp->queryPairs().size(), 1);
+}
+
+TEST(BroadPhaseInterface, DebugNodeReportsLeafOnlyForValidObject)
+{
+  BroadPhaseDebugNode node;
+  EXPECT_FALSE(node.isLeaf());
+
+  node.objectId = 42;
+  EXPECT_TRUE(node.isLeaf());
+}
+
+TEST(BroadPhaseInterface, DebugSnapshotClearResetsAllFields)
+{
+  BroadPhaseDebugSnapshot snapshot;
+  snapshot.nodes.push_back(BroadPhaseDebugNode());
+  snapshot.cells.push_back(BroadPhaseDebugCell());
+  snapshot.endpoints.push_back(BroadPhaseDebugEndpoint());
+  snapshot.candidatePairs.emplace_back(1, 2);
+  snapshot.rootNode = 3;
+  snapshot.numObjects = 4;
+  snapshot.spatialHashCellSize = 5.0;
+  snapshot.hasTreeTopology = true;
+  snapshot.hasSpatialHashCells = true;
+  snapshot.hasSweepEndpoints = true;
+
+  snapshot.clear();
+
+  EXPECT_TRUE(snapshot.nodes.empty());
+  EXPECT_TRUE(snapshot.cells.empty());
+  EXPECT_TRUE(snapshot.endpoints.empty());
+  EXPECT_TRUE(snapshot.candidatePairs.empty());
+  EXPECT_EQ(snapshot.rootNode, BroadPhaseDebugNode::kInvalidIndex);
+  EXPECT_EQ(snapshot.numObjects, 0u);
+  EXPECT_EQ(snapshot.spatialHashCellSize, 0.0);
+  EXPECT_FALSE(snapshot.hasTreeTopology);
+  EXPECT_FALSE(snapshot.hasSpatialHashCells);
+  EXPECT_FALSE(snapshot.hasSweepEndpoints);
+}
+
+TEST(BroadPhaseInterface, DefaultDebugSnapshotUsesPairsAndSize)
+{
+  RecordingBroadPhase bp;
+  bp.pairs = {{7, 9}, {10, 11}};
+  bp.numObjects = 5;
+
+  BroadPhaseDebugSnapshot snapshot;
+  snapshot.nodes.push_back(BroadPhaseDebugNode());
+  bp.buildDebugSnapshot(snapshot);
+
+  EXPECT_TRUE(snapshot.nodes.empty());
+  ASSERT_EQ(snapshot.candidatePairs.size(), 2);
+  EXPECT_EQ(snapshot.candidatePairs[0].first, 7);
+  EXPECT_EQ(snapshot.candidatePairs[0].second, 9);
+  EXPECT_EQ(snapshot.candidatePairs[1].first, 10);
+  EXPECT_EQ(snapshot.candidatePairs[1].second, 11);
+  EXPECT_EQ(snapshot.numObjects, 5u);
+}
+
+TEST(BroadPhaseInterface, DefaultQueryPairsOverloadReplacesOutput)
+{
+  RecordingBroadPhase bp;
+  bp.pairs = {{2, 4}, {6, 8}};
+
+  std::vector<BroadPhasePair> pairs{{99, 100}};
+  bp.BroadPhase::queryPairs(pairs);
+
+  ASSERT_EQ(pairs.size(), 2);
+  EXPECT_EQ(pairs[0].first, 2);
+  EXPECT_EQ(pairs[0].second, 4);
+  EXPECT_EQ(pairs[1].first, 6);
+  EXPECT_EQ(pairs[1].second, 8);
+}
+
+TEST(BroadPhaseInterface, DefaultVisitPairsHonorsVisitorResult)
+{
+  RecordingBroadPhase bp;
+  bp.pairs = {{2, 4}, {6, 8}};
+
+  std::vector<BroadPhasePair> visited;
+  const bool completed
+      = bp.BroadPhase::visitPairs([&](std::size_t first, std::size_t second) {
+          visited.emplace_back(first, second);
+          return first != 2;
+        });
+
+  EXPECT_FALSE(completed);
+  ASSERT_EQ(visited.size(), 1);
+  EXPECT_EQ(visited[0].first, 2);
+  EXPECT_EQ(visited[0].second, 4);
+
+  visited.clear();
+  EXPECT_TRUE(
+      bp.BroadPhase::visitPairs([&](std::size_t first, std::size_t second) {
+        visited.emplace_back(first, second);
+        return true;
+      }));
+  EXPECT_EQ(visited.size(), 2);
+}
+
+TEST(BroadPhaseInterface, DefaultQueryPairsFilteredKeepsMatchingPairs)
+{
+  RecordingBroadPhase bp;
+  bp.pairs = {{1, 2}, {3, 4}, {5, 6}};
+
+  std::vector<BroadPhasePair> pairs{{99, 100}};
+  bp.queryPairsFiltered(
+      pairs, [](std::size_t first, std::size_t) { return first >= 3; });
+
+  ASSERT_EQ(pairs.size(), 2);
+  EXPECT_EQ(pairs[0].first, 3);
+  EXPECT_EQ(pairs[0].second, 4);
+  EXPECT_EQ(pairs[1].first, 5);
+  EXPECT_EQ(pairs[1].second, 6);
+}
+
+TEST(BroadPhaseInterface, DefaultBuildClearsAndAddsMinInputCount)
+{
+  RecordingBroadPhase bp;
+  bp.addedIds.push_back(99);
+
+  const std::array<std::size_t, 3> ids{{10, 20, 30}};
+  const std::array<Aabb, 2> aabbs{{makeAabb(0, 1), makeAabb(1, 2)}};
+
+  bp.build(ids, aabbs);
+
+  EXPECT_EQ(bp.clearCount, 1);
+  ASSERT_EQ(bp.addedIds.size(), 2);
+  EXPECT_EQ(bp.addedIds[0], 10);
+  EXPECT_EQ(bp.addedIds[1], 20);
+}
+
+TEST(BroadPhaseInterface, DefaultUpdateRangeUsesMinInputCount)
+{
+  RecordingBroadPhase bp;
+
+  const std::array<std::size_t, 3> ids{{10, 20, 30}};
+  const std::array<Aabb, 2> aabbs{{makeAabb(0, 1), makeAabb(1, 2)}};
+
+  bp.updateRange(ids, aabbs);
+
+  ASSERT_EQ(bp.updatedIds.size(), 2);
+  EXPECT_EQ(bp.updatedIds[0], 10);
+  EXPECT_EQ(bp.updatedIds[1], 20);
 }
