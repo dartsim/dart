@@ -97,6 +97,7 @@ struct DantzigLcpScratch
       ell(ScalarAllocator{allocator}),
       p(IntAllocator{allocator}),
       C(IntAllocator{allocator}),
+      ldltRemoveTmp(ScalarAllocator{allocator}),
       rowPointers(PointerAllocator{allocator}),
       stateAllocator(allocator)
   {
@@ -115,6 +116,7 @@ struct DantzigLcpScratch
       ell(std::move(other.ell)),
       p(std::move(other.p)),
       C(std::move(other.C)),
+      ldltRemoveTmp(std::move(other.ldltRemoveTmp)),
       rowPointers(std::move(other.rowPointers)),
       stateAllocator(std::move(other.stateAllocator)),
       state(std::exchange(other.state, nullptr)),
@@ -138,6 +140,7 @@ struct DantzigLcpScratch
     moveVectorContents(ell, other.ell);
     moveVectorContents(p, other.p);
     moveVectorContents(C, other.C);
+    moveVectorContents(ldltRemoveTmp, other.ldltRemoveTmp);
     moveVectorContents(rowPointers, other.rowPointers);
 
     if (other.state != nullptr) {
@@ -186,6 +189,7 @@ struct DantzigLcpScratch
   std::vector<Scalar, ScalarAllocator> ell;
   std::vector<int, IntAllocator> p;
   std::vector<int, IntAllocator> C;
+  std::vector<Scalar, ScalarAllocator> ldltRemoveTmp;
   std::vector<Scalar*, PointerAllocator> rowPointers;
   StateAllocator stateAllocator;
   bool* state = nullptr;
@@ -202,6 +206,7 @@ struct DantzigLcpScratch
     ell.clear();
     p.clear();
     C.clear();
+    ldltRemoveTmp.clear();
     rowPointers.clear();
     releaseState();
   }

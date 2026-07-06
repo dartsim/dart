@@ -134,6 +134,34 @@ SkeletonPtr createFreeBox(
 }
 
 //==============================================================================
+SkeletonPtr createFreeSinglePointSoftBody(
+    const std::string& name, const Eigen::Vector3d& position)
+{
+  auto skel = Skeleton::create(name);
+
+  GenericJoint<SE3Space>::Properties jointProps(name + "_joint");
+  BodyNode::Properties bodyProps(
+      BodyNode::AspectProperties(std::string(name + "_body")));
+  bodyProps.mInertia.setMass(1.0);
+  SoftBodyNode::Properties softProps(
+      bodyProps,
+      SoftBodyNodeHelper::makeSinglePointMassProperties(
+          /*_totalMass=*/1.0,
+          /*_vertexStiffness=*/0.0,
+          /*_edgeStiffness=*/0.0,
+          /*_dampingCoeff=*/0.0));
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>(
+      nullptr, jointProps, softProps);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = position;
+  pair.first->setPositions(FreeJoint::convertToPositions(tf));
+
+  return skel;
+}
+
+//==============================================================================
 // Builds an articulated mobile skeleton with two intentionally overlapping
 // collision boxes. The solver resting-contact filter must still honor the
 // skeleton's ordinary self-collision settings when an awake body exists.
@@ -1656,6 +1684,29 @@ TEST(IslandDeactivation, WakeOnGeneralizedForce)
   box->setForce(3, 50.0);
   world->step();
   EXPECT_FALSE(box->isResting()) << "generalized force did not wake the body";
+}
+
+//==============================================================================
+// A point-mass external force on a SoftBodyNode must invalidate the quiet
+// external-force cache and count as a disturbance without materializing the
+// generalized external-force vector.
+TEST(IslandDeactivation, SoftPointMassExternalForceIsDisturbance)
+{
+  auto soft
+      = createFreeSinglePointSoftBody("soft", Eigen::Vector3d(0.0, 0.0, 1.0));
+  ASSERT_EQ(1u, soft->getNumSoftBodyNodes());
+  auto* softBody = soft->getSoftBodyNode(0);
+  ASSERT_TRUE(softBody);
+  ASSERT_EQ(1u, softBody->getNumPointMasses());
+  auto* pointMass = softBody->getPointMass(0);
+  ASSERT_TRUE(pointMass);
+
+  static_cast<void>(soft->getExternalForces());
+  ASSERT_FALSE(soft->hasExternalDisturbance());
+
+  pointMass->addExtForce(Eigen::Vector3d(1.0e-5, 0.0, 0.0), true);
+  EXPECT_TRUE(soft->hasExternalDisturbance())
+      << "point-mass external force did not invalidate quiet disturbance cache";
 }
 
 //==============================================================================

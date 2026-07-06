@@ -32,12 +32,41 @@
 
 #include "TestHelpers.hpp"
 
+#include <dart/common/CAllocator.hpp>
 #include <dart/common/FreeListAllocator.hpp>
 
 #include <gtest/gtest.h>
 
+#include <cstddef>
+
 using namespace dart;
 using namespace common;
+
+namespace {
+
+class CountingMemoryAllocator final : public MemoryAllocator
+{
+public:
+  DART_STRING_TYPE(CountingMemoryAllocator);
+
+  [[nodiscard]] void* allocate(size_t bytes) noexcept override
+  {
+    ++allocationCount;
+    return backing.allocate(bytes);
+  }
+
+  void deallocate(void* pointer, size_t bytes) override
+  {
+    ++deallocationCount;
+    backing.deallocate(pointer, bytes);
+  }
+
+  CAllocator backing;
+  std::size_t allocationCount{0};
+  std::size_t deallocationCount{0};
+};
+
+} // namespace
 
 //==============================================================================
 TEST(FreeListAllocatorTest, Constructors)
@@ -90,4 +119,60 @@ TEST(FreeListAllocatorTest, MemoryLeak)
   EXPECT_FALSE(a.isEmpty());
   // Expect that FreeListAllocator complains that not all the memory is
   // deallocated
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, ExpandIsDefaultGrowthPolicy)
+{
+  FreeListAllocator allocator(MemoryAllocator::GetDefault(), 64);
+  EXPECT_EQ(
+      allocator.getGrowthPolicy(), FreeListAllocator::GrowthPolicy::Expand);
+
+  auto* first = allocator.allocate(64);
+  ASSERT_NE(first, nullptr);
+
+  auto* second = allocator.allocate(16);
+  ASSERT_NE(second, nullptr);
+
+  allocator.deallocate(first, 64);
+  allocator.deallocate(second, 16);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, FixedCapacityDoesNotGrowWhenBlocksAreFull)
+{
+  CountingMemoryAllocator baseAllocator;
+  FreeListAllocator allocator(
+      baseAllocator, 64, FreeListAllocator::GrowthPolicy::FixedCapacity);
+  EXPECT_EQ(
+      allocator.getGrowthPolicy(),
+      FreeListAllocator::GrowthPolicy::FixedCapacity);
+
+  const auto initialBaseAllocations = baseAllocator.allocationCount;
+  auto* first = allocator.allocate(64);
+  ASSERT_NE(first, nullptr);
+  EXPECT_EQ(baseAllocator.allocationCount, initialBaseAllocations);
+
+  EXPECT_EQ(allocator.allocate(16), nullptr);
+  EXPECT_EQ(baseAllocator.allocationCount, initialBaseAllocations);
+
+  allocator.deallocate(first, 64);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, FixedCapacityReusesFreedBlockWithoutGrowing)
+{
+  CountingMemoryAllocator baseAllocator;
+  FreeListAllocator allocator(
+      baseAllocator, 256, FreeListAllocator::GrowthPolicy::FixedCapacity);
+
+  const auto initialBaseAllocations = baseAllocator.allocationCount;
+  void* first = allocator.allocate(32);
+  ASSERT_NE(first, nullptr);
+  allocator.deallocate(first, 32);
+
+  void* second = allocator.allocate(32);
+  EXPECT_EQ(second, first);
+  EXPECT_EQ(baseAllocator.allocationCount, initialBaseAllocations);
+  allocator.deallocate(second, 32);
 }
