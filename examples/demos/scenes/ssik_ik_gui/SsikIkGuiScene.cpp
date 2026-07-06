@@ -541,8 +541,13 @@ DemoScene makeSsikIkGuiScene()
 
       // Purely kinematic: keep the host's global Play button from stepping
       // physics under this scene (restored on teardown).
+      const bool resumeSimulation = viewer->isSimulating();
       viewer->allowSimulation(false);
-      ctx.addTeardown([viewer] { viewer->allowSimulation(true); });
+      ctx.addTeardown([viewer, resumeSimulation] {
+        viewer->allowSimulation(true);
+        if (resumeSimulation)
+          viewer->simulate(true);
+      });
 
       ctx.addAttachment(grid.get());
 

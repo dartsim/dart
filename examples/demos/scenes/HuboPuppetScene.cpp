@@ -1227,8 +1227,13 @@ DemoScene makeHuboPuppetScene()
         ctx.log(message);
       };
 
+      const bool resumeSimulation = viewer->isSimulating();
       viewer->allowSimulation(false);
-      ctx.addTeardown([viewer] { viewer->allowSimulation(true); });
+      ctx.addTeardown([viewer, resumeSimulation] {
+        viewer->allowSimulation(true);
+        if (resumeSimulation)
+          viewer->simulate(true);
+      });
 
       for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i) {
         if (auto* dnd

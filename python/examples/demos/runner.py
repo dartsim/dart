@@ -71,6 +71,7 @@ def _install_scene(viewer, handle):
         else:
             dnds.append(viewer.enableDragAndDrop(spec))
 
+    resume_simulation = viewer.isSimulating() and not handle.allow_simulation
     viewer.allowSimulation(handle.allow_simulation)
 
     for line in handle.instructions:
@@ -80,7 +81,7 @@ def _install_scene(viewer, handle):
         eye, center, up = handle.camera_home
         viewer.setCameraHomePosition(eye, center, up)
 
-    return {"grid": grid, "dnds": dnds}
+    return {"grid": grid, "dnds": dnds, "resume_simulation": resume_simulation}
 
 
 def _uninstall_scene(viewer, handle, state):
@@ -92,6 +93,10 @@ def _uninstall_scene(viewer, handle, state):
     if state["grid"] is not None:
         viewer.removeAttachment(state["grid"])
     viewer.removeWorldNode(handle.node)
+    if not handle.allow_simulation:
+        viewer.allowSimulation(True)
+        if state["resume_simulation"]:
+            viewer.simulate(True)
 
 
 def _run_headless_steps(handle, world, steps):

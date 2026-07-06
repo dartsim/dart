@@ -22,6 +22,11 @@ if(DART_IN_SOURCE_BUILD AND NOT TARGET dart-gui-osg)
   return()
 endif()
 
+if(NOT DART_IN_SOURCE_BUILD)
+  find_package(DART 6.17 REQUIRED COMPONENTS ${required_components} CONFIG)
+  find_package(DART 6.17 QUIET COMPONENTS collision-bullet CONFIG)
+endif()
+
 # Single owner of where the wam_ikfast scene's dlopen'd IK shared library is
 # written: this demos project's own build dir. Used both as the ikfast target's
 # LIBRARY_OUTPUT_DIRECTORY (in scenes/wam_ikfast/ikfast/CMakeLists.txt, which
@@ -35,8 +40,10 @@ set(dart_demos_ikfast_output_dir "${CMAKE_CURRENT_BINARY_DIR}")
 
 # Builds the wam_ikfast scene's dlopen'd analytical-IK shared library. Added
 # unconditionally (no optional-dependency guard): it only depends on `dart`
-# itself (transitively bringing in LAPACK), same as examples/wam_ikfast's own
-# ikfast subdirectory, which this mirrors -- see
+# itself (transitively bringing in LAPACK). Standalone builds discover DART
+# before adding this subdirectory so target usage requirements are available to
+# the generated source, same as examples/wam_ikfast's own ikfast subdirectory,
+# which this mirrors -- see
 # scenes/wam_ikfast/ikfast/CMakeLists.txt for why it is a standalone copy
 # rather than a dependency on that example.
 add_subdirectory(scenes/wam_ikfast/ikfast)
@@ -226,9 +233,6 @@ if(DART_IN_SOURCE_BUILD)
   endif()
   return()
 endif()
-
-find_package(DART 6.17 REQUIRED COMPONENTS ${required_components} CONFIG)
-find_package(DART 6.17 QUIET COMPONENTS collision-bullet CONFIG)
 
 dart_demos_collect_scene_srcs(demos_scene_srcs)
 add_library(dart-demos-scenes STATIC ${demos_scene_srcs})

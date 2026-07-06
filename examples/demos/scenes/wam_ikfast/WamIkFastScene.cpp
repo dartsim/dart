@@ -275,8 +275,13 @@ DemoScene makeWamIkFastScene()
 
       // Purely kinematic: keep the host's global Play button from stepping
       // physics under this scene (restored on teardown).
+      const bool resumeSimulation = viewer->isSimulating();
       viewer->allowSimulation(false);
-      ctx.addTeardown([viewer] { viewer->allowSimulation(true); });
+      ctx.addTeardown([viewer, resumeSimulation] {
+        viewer->allowSimulation(true);
+        if (resumeSimulation)
+          viewer->simulate(true);
+      });
 
       // Force the lazy IkFast dlopen/configure (solveAndApply triggers it) and
       // surface a load failure in the Diagnostics log: without the shared
