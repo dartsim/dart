@@ -9,6 +9,20 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
+**Current claimed packet: WP-PG.42 — SoA broadphase sweep batching**
+([05-simd-enablement-lane.md](05-simd-enablement-lane.md)). Branch
+`wp-pg-42-soa-broadphase-simd` off `origin/release-6.20` carries the
+first production `dart/simd` consumer in DART 6: AVX-width finite
+broadphase candidate screening in the existing DART detector, with
+scalar/SSE/NEON builds preserving the previous scalar sweep shape. The
+standalone WP-PG.40 PR #3270 was closed by maintainer direction; its
+D1/D2 evidence rides with this actual SIMD-kernel PR.
+
+Immediate next step: refresh the local evidence after any edits, including
+the focused detector test, scalar/SSE4.2/AVX/AVX2 SIMD workflow-equivalent
+matrix, contact-container macro rows, and the `--profile` finite-finite
+sweep share now exposed by this branch's text-profiler labels.
+
 **WP-PG.01 is captured** (branch `wp-pg-01-baseline-evidence`, PR
 pending) — guard rows, profile splits, and prior-art triage are in
 [01-baseline-evidence.md](01-baseline-evidence.md). Its evidence changed
@@ -24,14 +38,15 @@ Claimable now, in priority order:
 2. **WP-PG.11** (WS-A — includes re-measuring the two mined
    single-reactive commits; hash-preserving).
 3. **WP-PG.20** then **WP-PG.21** (WS-B — the 12x active-3k ODE gap).
-4. **WP-PG.40** (WS-D design packet; resolves D1/D2), **WP-PG.03**,
-   **WP-PG.02**, **WP-PG.22** (independent).
+4. **WP-PG.03**, **WP-PG.02**, **WP-PG.22** (independent). WP-PG.40 is
+   folded into WP-PG.42 per maintainer direction.
 
 Blocked/gated (do not claim): PG.04 (D4), PG.12 (evidence), PG.13
 (PG.10 census), PG.14 (D3 — now urgent), PG.15 (D7 — now urgent), PG.23
-(D8), PG.33, PG.41, PG.42. **D3 and D7 are the decisions that unblock
-the dense-pile fixture**; everything claimable above serves the
-many-islands and ODE regimes meanwhile.
+(D8), PG.33, PG.41. PG.42 is currently claimed on
+`wp-pg-42-soa-broadphase-simd`. **D3 and D7 are the decisions that unblock
+the dense-pile fixture**; everything claimable above serves the many-islands
+and ODE regimes meanwhile.
 
 ## Verify commands (every packet)
 
@@ -81,3 +96,7 @@ decisions.
   branch handoff (prior-art inventory + rejected-experiments list).
   Adversarial plan review applied (sequencing consistency, WP-PG.11
   re-scope, WP-PG.13 premise correction, success criteria added).
+- 2026-07-05: WP-PG.40 standalone PR #3270 closed per maintainer
+  direction. WP-PG.42 claimed on `wp-pg-42-soa-broadphase-simd`; live
+  WS-F check found #3281 merged only internal native collision math, so
+  this branch remains the DART 6 detector SIMD-consumer path.

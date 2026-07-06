@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/collision/CollisionFilter.hpp>
 #include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 
@@ -89,6 +90,26 @@ PlaneSphereGroups makePlaneSphereGroups(double sphereX1, double sphereX2)
 
   return groups;
 }
+
+class AnchorOnlyCollisionFilter : public collision::CollisionFilter
+{
+public:
+  explicit AnchorOnlyCollisionFilter(const dynamics::ShapeFrame* anchor)
+    : mAnchor(anchor)
+  {
+  }
+
+  bool ignoresCollision(
+      const collision::CollisionObject* object1,
+      const collision::CollisionObject* object2) const override
+  {
+    return object1->getShapeFrame() != mAnchor
+           && object2->getShapeFrame() != mAnchor;
+  }
+
+private:
+  const dynamics::ShapeFrame* mAnchor;
+};
 
 } // namespace
 
@@ -175,6 +196,118 @@ TEST(DARTCollisionDetector, DetectsTranslatedIdentityBounds)
       || (shapeFrame1 == sphereFrame2.get()
           && shapeFrame2 == sphereFrame1.get()));
   EXPECT_GT(contact.penetrationDepth, 0.0);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, BatchedFiniteSweepPreservesCandidateOrder)
+{
+  auto detector = collision::DARTCollisionDetector::create();
+
+  auto anchorFrame
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  anchorFrame->setShape(std::make_shared<dynamics::SphereShape>(1.0));
+  anchorFrame->setTranslation(Eigen::Vector3d::Zero());
+
+  const std::vector<Eigen::Vector3d> candidatePositions{
+      {0.1, 0.0, 0.0},
+      {0.2, 3.5, 0.0},
+      {0.3, -0.25, 0.0},
+      {0.4, 0.0, 3.5},
+      {0.5, 0.3, 0.4},
+      {0.6, -3.5, 0.0},
+      {0.7, 0.0, -0.2},
+      {0.8, 0.0, 3.5},
+  };
+  const std::vector<std::size_t> expectedContactCandidates{0u, 2u, 4u, 6u};
+
+  std::vector<dynamics::SimpleFramePtr> candidateFrames;
+  candidateFrames.reserve(candidatePositions.size());
+  for (const auto& position : candidatePositions) {
+    auto frame = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+    frame->setShape(std::make_shared<dynamics::SphereShape>(1.0));
+    frame->setTranslation(position);
+    candidateFrames.push_back(frame);
+  }
+
+  auto anchorGroup = detector->createCollisionGroup(anchorFrame.get());
+  auto candidateGroup = detector->createCollisionGroup();
+  for (const auto& candidateFrame : candidateFrames)
+    candidateGroup->addShapeFrame(candidateFrame.get());
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  collision::CollisionResult result;
+  ASSERT_TRUE(anchorGroup->collide(candidateGroup.get(), option, &result));
+  ASSERT_EQ(expectedContactCandidates.size(), result.getNumContacts());
+
+  for (std::size_t i = 0u; i < expectedContactCandidates.size(); ++i) {
+    SCOPED_TRACE(i);
+    const auto& contact = result.getContact(i);
+    EXPECT_EQ(anchorFrame.get(), contact.collisionObject1->getShapeFrame());
+    EXPECT_EQ(
+        candidateFrames[expectedContactCandidates[i]].get(),
+        contact.collisionObject2->getShapeFrame());
+    EXPECT_GT(contact.penetrationDepth, 0.0);
+  }
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, BatchedSingleGroupSweepPreservesCandidateOrder)
+{
+  auto detector = collision::DARTCollisionDetector::create();
+
+  auto anchorFrame
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  anchorFrame->setShape(std::make_shared<dynamics::SphereShape>(1.0));
+  anchorFrame->setTranslation(Eigen::Vector3d::Zero());
+
+  const std::vector<Eigen::Vector3d> candidatePositions{
+      {0.1, 0.0, 0.0},
+      {0.2, 3.5, 0.0},
+      {0.3, -0.25, 0.0},
+      {0.4, 0.0, 3.5},
+      {0.5, 0.3, 0.4},
+      {0.6, -3.5, 0.0},
+      {0.7, 0.0, -0.2},
+      {0.8, 0.0, 3.5},
+  };
+  const std::vector<std::size_t> expectedContactCandidates{0u, 2u, 4u, 6u};
+
+  std::vector<dynamics::SimpleFramePtr> candidateFrames;
+  candidateFrames.reserve(candidatePositions.size());
+  for (const auto& position : candidatePositions) {
+    auto frame = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+    frame->setShape(std::make_shared<dynamics::SphereShape>(1.0));
+    frame->setTranslation(position);
+    candidateFrames.push_back(frame);
+  }
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(anchorFrame.get());
+  for (const auto& candidateFrame : candidateFrames)
+    group->addShapeFrame(candidateFrame.get());
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+  option.collisionFilter
+      = std::make_shared<AnchorOnlyCollisionFilter>(anchorFrame.get());
+
+  collision::CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_EQ(expectedContactCandidates.size(), result.getNumContacts());
+
+  for (std::size_t i = 0u; i < expectedContactCandidates.size(); ++i) {
+    SCOPED_TRACE(i);
+    const auto& contact = result.getContact(i);
+    EXPECT_EQ(anchorFrame.get(), contact.collisionObject1->getShapeFrame());
+    EXPECT_EQ(
+        candidateFrames[expectedContactCandidates[i]].get(),
+        contact.collisionObject2->getShapeFrame());
+    EXPECT_GT(contact.penetrationDepth, 0.0);
+  }
 }
 
 //==============================================================================
