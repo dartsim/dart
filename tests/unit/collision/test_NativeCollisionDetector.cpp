@@ -206,3 +206,32 @@ TEST(NativeCollisionDetector, ShapeIdentitySwapRebuildsNativeShape)
       Eigen::Vector3d(-1.0, -2.0, -3.0), nativeObject->getNativeAabb().min);
   EXPECT_EQ(Eigen::Vector3d(1.0, 2.0, 3.0), nativeObject->getNativeAabb().max);
 }
+
+//==============================================================================
+TEST(NativeCollisionDetector, SameTypeShapeSwapRebuildsNativeShape)
+{
+  ExposedNativeCollisionDetector detector;
+  auto frame = makeFrame(std::make_shared<dynamics::SphereShape>(0.5));
+
+  auto object = detector.claimCollisionObject(frame.get());
+  auto* nativeObject
+      = dynamic_cast<ExposedNativeCollisionObject*>(object.get());
+  ASSERT_NE(nullptr, nativeObject);
+  ASSERT_NE(nullptr, nativeObject->getNativeShape());
+  ASSERT_EQ(
+      native::ShapeType::Sphere, nativeObject->getNativeShape()->getType());
+  EXPECT_EQ(
+      Eigen::Vector3d(-0.5, -0.5, -0.5), nativeObject->getNativeAabb().min);
+  EXPECT_EQ(Eigen::Vector3d(0.5, 0.5, 0.5), nativeObject->getNativeAabb().max);
+
+  frame->setShape(std::make_shared<dynamics::SphereShape>(1.25));
+  nativeObject->updateEngineData();
+
+  ASSERT_NE(nullptr, nativeObject->getNativeShape());
+  ASSERT_EQ(
+      native::ShapeType::Sphere, nativeObject->getNativeShape()->getType());
+  EXPECT_EQ(
+      Eigen::Vector3d(-1.25, -1.25, -1.25), nativeObject->getNativeAabb().min);
+  EXPECT_EQ(
+      Eigen::Vector3d(1.25, 1.25, 1.25), nativeObject->getNativeAabb().max);
+}

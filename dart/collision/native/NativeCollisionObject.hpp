@@ -39,15 +39,12 @@
 
 #include <Eigen/Dense>
 
+#include <limits>
 #include <memory>
 
 #include <cstddef>
 
 namespace dart {
-namespace dynamics {
-class Shape;
-} // namespace dynamics
-
 namespace collision {
 
 class NativeCollisionDetector;
@@ -79,7 +76,7 @@ private:
   std::unique_ptr<native::Shape> mNativeShape;
   Eigen::Isometry3d mNativeTransform{Eigen::Isometry3d::Identity()};
   native::Aabb mNativeAabb;
-  const dynamics::Shape* mLastKnownShape{nullptr};
+  std::size_t mLastKnownShapeId{std::numeric_limits<std::size_t>::max()};
   std::size_t mLastKnownShapeVersion{0u};
 };
 

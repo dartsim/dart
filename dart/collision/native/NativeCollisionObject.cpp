@@ -35,8 +35,15 @@
 #include "dart/collision/native/detail/NativeShapeConversion.hpp"
 #include "dart/dynamics/Shape.hpp"
 
+#include <limits>
+
 namespace dart {
 namespace collision {
+namespace {
+
+constexpr std::size_t kNoShapeId = std::numeric_limits<std::size_t>::max();
+
+} // namespace
 
 //==============================================================================
 NativeCollisionObject::NativeCollisionObject(
@@ -70,9 +77,10 @@ void NativeCollisionObject::updateEngineData()
 {
   const auto shape = getShape();
   const auto* shapePtr = shape.get();
+  const std::size_t shapeId = shapePtr ? shapePtr->getID() : kNoShapeId;
   const std::size_t shapeVersion = shapePtr ? shapePtr->getVersion() : 0u;
 
-  if (shapePtr != mLastKnownShape || shapeVersion != mLastKnownShapeVersion)
+  if (shapeId != mLastKnownShapeId || shapeVersion != mLastKnownShapeVersion)
     rebuildNativeShape();
 
   mNativeTransform = getTransform();
@@ -88,16 +96,16 @@ void NativeCollisionObject::updateEngineData()
 void NativeCollisionObject::rebuildNativeShape()
 {
   const auto shape = getShape();
-  mLastKnownShape = shape.get();
-  mLastKnownShapeVersion = mLastKnownShape ? mLastKnownShape->getVersion() : 0u;
+  mLastKnownShapeId = shape ? shape->getID() : kNoShapeId;
+  mLastKnownShapeVersion = shape ? shape->getVersion() : 0u;
 
-  if (!mLastKnownShape) {
+  if (!shape) {
     mNativeShape.reset();
     mNativeAabb = native::Aabb();
     return;
   }
 
-  mNativeShape = detail::NativeShapeConversion::create(*mLastKnownShape);
+  mNativeShape = detail::NativeShapeConversion::create(*shape);
 }
 
 } // namespace collision
