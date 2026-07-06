@@ -119,6 +119,13 @@ bool collideSphereCenters(
   const double dy = center2.y() - center1.y();
   const double dz = center2.z() - center1.z();
 
+  // A zero contact limit short-circuits detection and returns false (see the
+  // CollisionOption::maxNumContacts contract); this must precede the
+  // enableContact binary-check path.
+  if (option.maxNumContacts == 0) {
+    return false;
+  }
+
   if (!option.enableContact) {
     return spheresOverlap(dx, dy, dz, radius1, radius2);
   }
@@ -199,6 +206,13 @@ bool collideSpheres(
   const double dz = translation2.z() - center1Z;
   const double radius1 = detail::getRadius(sphere1);
   const double radius2 = detail::getRadius(sphere2);
+
+  // A zero contact limit short-circuits detection and returns false (see the
+  // CollisionOption::maxNumContacts contract); this must precede the
+  // enableContact binary-check path.
+  if (option.maxNumContacts == 0) {
+    return false;
+  }
 
   if (!option.enableContact) {
     return spheresOverlap(dx, dy, dz, radius1, radius2);
