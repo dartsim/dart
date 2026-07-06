@@ -99,3 +99,23 @@ def test_verification_bundle_rejects_duplicate_filenames(tmp_path: Path) -> None
         assert "duplicate artifact filename" in str(exc)
     else:
         raise AssertionError("expected ValueError")
+
+
+def test_verification_bundle_rejects_generated_filenames(tmp_path: Path) -> None:
+    image = tmp_path / "frame.png"
+    write_png(image, 2, 2, bytes((32, 64, 96)) * 4)
+
+    for filename in ("manifest.json", "vlm_prompt.md"):
+        text = tmp_path / filename
+        text.write_text("{}\n", encoding="utf-8")
+        try:
+            verification_bundle.build_bundle(
+                out_dir=tmp_path / f"bundle-{filename}",
+                question="Check reserved filenames.",
+                text=[text],
+                image=image,
+            )
+        except ValueError as exc:
+            assert "reserved artifact filename" in str(exc)
+        else:
+            raise AssertionError("expected ValueError")

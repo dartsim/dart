@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 SCHEMA_VERSION = "dart.verification_bundle/v1"
+GENERATED_ARTIFACT_NAMES = frozenset({"manifest.json", "vlm_prompt.md"})
 
 
 def _sha256(path: Path) -> str:
@@ -34,6 +35,14 @@ def _copy_artifact(source: Path, destination_dir: Path, role: str) -> dict[str, 
         "bytes": target.stat().st_size,
         "sha256": _sha256(target),
     }
+
+
+def _reserve_artifact_name(name: str, artifact_names: set[str]) -> None:
+    if name in GENERATED_ARTIFACT_NAMES:
+        raise ValueError(f"reserved artifact filename {name!r}")
+    if name in artifact_names:
+        raise ValueError(f"duplicate artifact filename {name!r}")
+    artifact_names.add(name)
 
 
 def _prompt(question: str, artifacts: list[dict[str, Any]]) -> str:
@@ -86,18 +95,12 @@ def build_bundle(
     artifacts: list[dict[str, Any]] = []
     artifact_names: set[str] = set()
     for path in text:
-        if path.name in artifact_names:
-            raise ValueError(f"duplicate artifact filename {path.name!r}")
-        artifact_names.add(path.name)
+        _reserve_artifact_name(path.name, artifact_names)
         artifacts.append(_copy_artifact(path, out_dir, "text-primary"))
-    if image.name in artifact_names:
-        raise ValueError(f"duplicate artifact filename {image.name!r}")
-    artifact_names.add(image.name)
+    _reserve_artifact_name(image.name, artifact_names)
     artifacts.append(_copy_artifact(image, out_dir, "image-still"))
     if grid is not None:
-        if grid.name in artifact_names:
-            raise ValueError(f"duplicate artifact filename {grid.name!r}")
-        artifact_names.add(grid.name)
+        _reserve_artifact_name(grid.name, artifact_names)
         artifacts.append(_copy_artifact(grid, out_dir, "image-grid"))
 
     prompt = _prompt(question, artifacts)
