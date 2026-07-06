@@ -46,6 +46,7 @@
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/simd/simd.hpp"
 
@@ -293,6 +294,12 @@ struct ContactBoundEntry
   Eigen::Vector3d max{Eigen::Vector3d::Zero()};
 };
 
+struct FiniteFinitePair
+{
+  const BroadphaseEntry* entry1{nullptr};
+  const BroadphaseEntry* entry2{nullptr};
+};
+
 constexpr double kContactDuplicateTolerance = 3.0e-12;
 constexpr double kContactPointCellSize = 4.0 * kContactDuplicateTolerance;
 constexpr double kContactPointKeyLowerBound = -9223372036854775808.0;
@@ -372,6 +379,7 @@ struct BroadphaseScratch
   std::vector<BroadphaseEntry> contactBoundFiniteEntries;
   std::vector<ContactBoundEntry> contactBoundEntries;
   std::vector<std::size_t> parallelPairIndices;
+  std::vector<FiniteFinitePair> finiteFinitePairs;
   std::vector<ScratchCollisionResult> parallelPairResults;
   std::vector<char> parallelPairCollisions;
   // Remaining contacts ordered by the same representative-contact priority.
@@ -492,7 +500,9 @@ bool processFiniteFinitePairs(
     const CollisionOption& option,
     CollisionResult* result,
     bool& collisionFound,
-    CollisionResult& pairResult);
+    BroadphaseScratch& scratch,
+    CollisionThreadPool* threadPool,
+    std::size_t numCollisionThreads);
 
 bool processFiniteFinitePairs(
     const std::vector<BroadphaseEntry>& entries1,
@@ -502,7 +512,9 @@ bool processFiniteFinitePairs(
     const CollisionOption& option,
     CollisionResult* result,
     bool& collisionFound,
-    CollisionResult& pairResult);
+    BroadphaseScratch& scratch,
+    CollisionThreadPool* threadPool,
+    std::size_t numCollisionThreads);
 
 } // anonymous namespace
 
@@ -661,7 +673,9 @@ bool DARTCollisionDetector::collide(
           option,
           result,
           collisionFound,
-          scratch.pairResult)) {
+          scratch,
+          mCollisionThreadPool.get(),
+          mNumCollisionThreads)) {
     return true;
   }
 
@@ -820,7 +834,9 @@ bool DARTCollisionDetector::collide(
           option,
           result,
           collisionFound,
-          scratch.pairResult)) {
+          scratch,
+          mCollisionThreadPool.get(),
+          mNumCollisionThreads)) {
     return true;
   }
 
@@ -980,20 +996,21 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
   if (shapeType == dynamics::CapsuleShape::getStaticType())
     return;
 
-  if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
-    const auto& ellipsoid
-        = std::static_pointer_cast<const dynamics::EllipsoidShape>(shape);
+  if (shapeType == dynamics::SoftMeshShape::getStaticType())
+    return;
 
-    if (ellipsoid->isSphere())
-      return;
-  }
+  if (shapeType == dynamics::EllipsoidShape::getStaticType())
+    return;
 
   dterr << "[DARTCollisionDetector] Attempting to create shape type ["
         << shapeType << "] that is not supported "
         << "by DARTCollisionDetector. Currently, only SphereShape, BoxShape, "
-        << "CylinderShape, CapsuleShape, PlaneShape, and EllipsoidShape (only "
-        << "when all the radii are equal) are supported. This shape will "
-           "always get "
+        << "CylinderShape, CapsuleShape, PlaneShape, SoftMeshShape against "
+        << "BoxShape, PlaneShape, SphereShape, EllipsoidShape, or "
+        << "SoftMeshShape, and EllipsoidShape for sphere-compatible primitive "
+        << "pairs or SoftMeshShape point contacts are supported. Unsupported "
+        << "shape pairs are reported at collision time. This shape will always "
+           "get "
         << "penetrated by other "
         << "objects.\n";
 }
@@ -1389,6 +1406,7 @@ void BroadphaseScratch::clear()
   contactBoundFiniteEntries.clear();
   contactBoundEntries.clear();
   parallelPairIndices.clear();
+  finiteFinitePairs.clear();
   pairResult.clear();
   contactPointIndex.clear();
   localContactPoints.clear();
@@ -1706,6 +1724,7 @@ bool hasCachedPlaneCollisionPath(const BroadphaseEntry& finiteEntry)
     case CachedShapeKind::Box:
     case CachedShapeKind::Cylinder:
     case CachedShapeKind::Capsule:
+    case CachedShapeKind::SoftMesh:
       return true;
     case CachedShapeKind::Unknown:
     case CachedShapeKind::Plane:
@@ -1962,6 +1981,38 @@ bool overlaps(const BroadphaseEntry& entry1, const BroadphaseEntry& entry2)
 }
 
 //==============================================================================
+bool isSoftMeshEntry(const BroadphaseEntry& entry)
+{
+  if (entry.object == nullptr)
+    return false;
+
+  const auto* dartObject
+      = static_cast<const DARTCollisionObject*>(entry.object);
+  return dartObject->getCachedShapeKind()
+         == DARTCollisionObject::CachedShapeKind::SoftMesh;
+}
+
+//==============================================================================
+bool isParallelSoftSoftPair(const FiniteFinitePair& pair)
+{
+  return pair.entry1 != nullptr && pair.entry2 != nullptr
+         && isSoftMeshEntry(*pair.entry1) && isSoftMeshEntry(*pair.entry2);
+}
+
+//==============================================================================
+std::size_t countParallelSoftSoftPairs(
+    const std::vector<FiniteFinitePair>& pairs)
+{
+  std::size_t count = 0u;
+  for (const auto& pair : pairs) {
+    if (isParallelSoftSoftPair(pair))
+      ++count;
+  }
+
+  return count;
+}
+
+//==============================================================================
 std::uint32_t computeFiniteOverlapMask4(
     const BroadphaseEntry& entry,
     const SortedBroadphaseBounds& bounds,
@@ -1991,22 +2042,19 @@ std::uint32_t computeFiniteOverlapMask4(
 }
 
 //==============================================================================
-bool processFiniteFinitePair(
+void appendFiniteFiniteCandidatePair(
     const BroadphaseEntry& entry1,
     const BroadphaseEntry& entry2,
     const CollisionOption& option,
-    CollisionResult* result,
-    bool& collisionFound,
-    CollisionResult& pairResult)
+    std::vector<FiniteFinitePair>& pairs)
 {
   auto* collObj1 = entry1.object;
   auto* collObj2 = entry2.object;
   const auto& filter = option.collisionFilter;
   if (filter && filter->ignoresCollision(collObj1, collObj2))
-    return false;
+    return;
 
-  return processPair(
-      collObj1, collObj2, option, result, collisionFound, pairResult);
+  pairs.push_back({&entry1, &entry2});
 }
 
 //==============================================================================
@@ -2413,6 +2461,106 @@ bool processPlanePlanePairs(
 }
 
 //==============================================================================
+bool processFiniteFiniteCandidatePairs(
+    const std::vector<FiniteFinitePair>& pairs,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    BroadphaseScratch& scratch,
+    CollisionThreadPool* threadPool,
+    std::size_t numCollisionThreads)
+{
+  if (pairs.empty())
+    return false;
+
+  constexpr std::size_t kMinParallelSoftSoftPairs = 2u;
+  const bool contactCapCanShortCircuit = option.maxNumContacts < pairs.size();
+  const auto parallelSoftSoftPairCount = countParallelSoftSoftPairs(pairs);
+  const bool canParallelize
+      = result != nullptr && threadPool != nullptr && numCollisionThreads > 1u
+        && parallelSoftSoftPairCount >= kMinParallelSoftSoftPairs
+        && !contactCapCanShortCircuit;
+
+  if (canParallelize) {
+    scratch.prepareParallelPairResults(pairs.size());
+
+    auto collidePairAt = [&](std::size_t workIndex) {
+      auto& pairResult = scratch.parallelPairResults[workIndex];
+      pairResult.clear();
+
+      const auto& pair = pairs[workIndex];
+      if (!isParallelSoftSoftPair(pair) || pair.entry1 == nullptr
+          || pair.entry2 == nullptr || pair.entry1->object == nullptr
+          || pair.entry2->object == nullptr) {
+        scratch.parallelPairCollisions[workIndex] = 0;
+        return;
+      }
+
+      collide(
+          static_cast<DARTCollisionObject*>(pair.entry1->object),
+          static_cast<DARTCollisionObject*>(pair.entry2->object),
+          pairResult);
+      scratch.parallelPairCollisions[workIndex]
+          = pairResult.isCollision() ? 1 : 0;
+    };
+
+    {
+      DART_PROFILE_SCOPED_N("DART native finite-finite soft workers");
+      threadPool->parallelFor(pairs.size(), numCollisionThreads, collidePairAt);
+    }
+
+    {
+      DART_PROFILE_SCOPED_N("DART native finite-finite merge contacts");
+      for (std::size_t workIndex = 0u; workIndex < pairs.size(); ++workIndex) {
+        const auto& pair = pairs[workIndex];
+        if (isParallelSoftSoftPair(pair)) {
+          if (scratch.parallelPairCollisions[workIndex] == 0)
+            continue;
+
+          collisionFound = true;
+          postProcess(
+              pair.entry1->object,
+              pair.entry2->object,
+              option,
+              *result,
+              scratch.parallelPairResults[workIndex]);
+
+          if (shouldStopAfterPair(true, option, result))
+            return true;
+        } else if (processPair(
+                       pair.entry1->object,
+                       pair.entry2->object,
+                       option,
+                       result,
+                       collisionFound,
+                       scratch.pairResult)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  {
+    DART_PROFILE_SCOPED_N("DART native finite-finite serial pairs");
+    for (const auto& pair : pairs) {
+      if (processPair(
+              pair.entry1->object,
+              pair.entry2->object,
+              option,
+              result,
+              collisionFound,
+              scratch.pairResult)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+//==============================================================================
 bool processFiniteFinitePairs(
     const std::vector<BroadphaseEntry>& entries,
     std::vector<const BroadphaseEntry*>& sortedEntries,
@@ -2420,9 +2568,14 @@ bool processFiniteFinitePairs(
     const CollisionOption& option,
     CollisionResult* result,
     bool& collisionFound,
-    CollisionResult& pairResult)
+    BroadphaseScratch& scratch,
+    CollisionThreadPool* threadPool,
+    std::size_t numCollisionThreads)
 {
   DART_PROFILE_SCOPED_N("DART native finite-finite same-group pairs");
+
+  auto& pairs = scratch.finiteFinitePairs;
+  pairs.clear();
 
   sortedEntries.reserve(entries.size());
   for (const auto& entry : entries)
@@ -2454,38 +2607,29 @@ bool processFiniteFinitePairs(
             if ((overlapMask & (std::uint32_t{1u} << lane)) == 0u)
               continue;
 
-            if (processFiniteFinitePair(
-                    entry1,
-                    *sortedEntries[j + lane],
-                    option,
-                    result,
-                    collisionFound,
-                    pairResult)) {
-              return true;
-            }
+            appendFiniteFiniteCandidatePair(
+                entry1, *sortedEntries[j + lane], option, pairs);
           }
           j += kBroadphaseSimdWidth;
           continue;
         }
       }
 
-      if (!overlaps(entry1, entry2))
-        ++j;
-      else if (processFiniteFinitePair(
-                   entry1,
-                   entry2,
-                   option,
-                   result,
-                   collisionFound,
-                   pairResult)) {
-        return true;
-      } else {
-        ++j;
+      if (overlaps(entry1, entry2)) {
+        appendFiniteFiniteCandidatePair(entry1, entry2, option, pairs);
       }
+      ++j;
     }
   }
 
-  return false;
+  return processFiniteFiniteCandidatePairs(
+      pairs,
+      option,
+      result,
+      collisionFound,
+      scratch,
+      threadPool,
+      numCollisionThreads);
 }
 
 //==============================================================================
@@ -2497,9 +2641,14 @@ bool processFiniteFinitePairs(
     const CollisionOption& option,
     CollisionResult* result,
     bool& collisionFound,
-    CollisionResult& pairResult)
+    BroadphaseScratch& scratch,
+    CollisionThreadPool* threadPool,
+    std::size_t numCollisionThreads)
 {
   DART_PROFILE_SCOPED_N("DART native finite-finite cross-group pairs");
+
+  auto& pairs = scratch.finiteFinitePairs;
+  pairs.clear();
 
   sortedEntries2.reserve(entries2.size());
   for (const auto& entry : entries2)
@@ -2531,15 +2680,8 @@ bool processFiniteFinitePairs(
             if ((overlapMask & (std::uint32_t{1u} << lane)) == 0u)
               continue;
 
-            if (processFiniteFinitePair(
-                    entry1,
-                    *sortedEntries2[j + lane],
-                    option,
-                    result,
-                    collisionFound,
-                    pairResult)) {
-              return true;
-            }
+            appendFiniteFiniteCandidatePair(
+                entry1, *sortedEntries2[j + lane], option, pairs);
           }
           j += kBroadphaseSimdWidth;
           continue;
@@ -2550,23 +2692,21 @@ bool processFiniteFinitePairs(
         ++j;
         continue;
       }
-      if (!overlaps(entry1, entry2))
-        ++j;
-      else if (processFiniteFinitePair(
-                   entry1,
-                   entry2,
-                   option,
-                   result,
-                   collisionFound,
-                   pairResult)) {
-        return true;
-      } else {
-        ++j;
+      if (overlaps(entry1, entry2)) {
+        appendFiniteFiniteCandidatePair(entry1, entry2, option, pairs);
       }
+      ++j;
     }
   }
 
-  return false;
+  return processFiniteFiniteCandidatePairs(
+      pairs,
+      option,
+      result,
+      collisionFound,
+      scratch,
+      threadPool,
+      numCollisionThreads);
 }
 
 } // anonymous namespace

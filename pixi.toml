@@ -495,6 +495,30 @@ bm-kinematics = { cmd = """
   "config",
 ], env = { BUILD_TYPE = "Release" } }
 
+bm-soft-body = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target BM_INTEGRATION_soft_body \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/BM_INTEGRATION_soft_body
+""", depends-on = [
+  "config",
+], env = { BUILD_TYPE = "Release" } }
+
+bm-soft-body-headless = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target soft_body_headless \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/tests/benchmark/integration/soft_body_headless {{ scene }} {{ steps }} {{ checkpoint }}
+""", depends-on = [
+  "config",
+], args = [
+  { arg = "scene", default = "soft_bodies" },
+  { arg = "steps", default = "2000" },
+  { arg = "checkpoint", default = "500" },
+], env = { BUILD_TYPE = "Release" } }
+
 bm-dashboard-surfaces = { cmd = "python scripts/run_performance_dashboard_benchmarks.py", depends-on = [
   "config",
 ], env = { BUILD_TYPE = "Release" } }

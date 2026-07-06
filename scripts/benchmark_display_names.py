@@ -10,6 +10,7 @@ FAMILY_BASELINE = "DART 6 benchmark baselines"
 FAMILY_KINEMATICS = "DART 6 kinematics and dynamics"
 FAMILY_INVERSE = "DART 6 inverse dynamics"
 FAMILY_CONTACT = "DART 6 contact and collision"
+FAMILY_DEFORMABLE = "DART 6 deformable bodies"
 FAMILY_OTHER = "Other benchmarks"
 
 
@@ -45,6 +46,11 @@ SURFACES: dict[str, Surface] = {
         "Contact container active step",
         FAMILY_CONTACT,
         ("objects", "engine", "threads"),
+    ),
+    "BM_SoftBodyStep": Surface(
+        "Soft-body world step",
+        FAMILY_DEFORMABLE,
+        ("scene", "threads", "steps"),
     ),
 }
 

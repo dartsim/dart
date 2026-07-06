@@ -664,18 +664,39 @@ template <class BV>
 
   DART_ASSERT(_mesh);
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
-  model->beginModel();
 
-  for (std::size_t i = 0; i < _mesh->mNumFaces; i++) {
-    fcl::Vector3 vertices[3];
-    for (std::size_t j = 0; j < 3; j++) {
-      const aiVector3D& vertex = _mesh->mVertices[_mesh->mFaces[i].mIndices[j]];
-      vertices[j] = fcl::Vector3(vertex.x, vertex.y, vertex.z);
-    }
-    model->addTriangle(vertices[0], vertices[1], vertices[2]);
+  std::vector<fcl::Vector3> vertices;
+  vertices.reserve(_mesh->mNumVertices);
+  for (std::size_t i = 0; i < _mesh->mNumVertices; ++i) {
+    const aiVector3D& vertex = _mesh->mVertices[i];
+    vertices.emplace_back(vertex.x, vertex.y, vertex.z);
   }
 
+  std::vector<::fcl::Triangle> faces;
+  faces.reserve(_mesh->mNumFaces);
+  for (std::size_t i = 0; i < _mesh->mNumFaces; ++i) {
+    const aiFace& face = _mesh->mFaces[i];
+    DART_ASSERT(face.mNumIndices == 3);
+
+    ::fcl::Triangle triangle;
+    triangle.set(
+        static_cast<int>(face.mIndices[0]),
+        static_cast<int>(face.mIndices[1]),
+        static_cast<int>(face.mIndices[2]));
+    faces.push_back(triangle);
+  }
+
+  model->beginModel();
+  model->addSubModel(vertices, faces);
   model->endModel();
+
+  // Allocate FCL's previous-vertex buffer before the model enters the
+  // simulation hot path. Subsequent dynamic updates reuse this storage.
+  model->beginUpdateModel();
+  for (const auto& vertex : vertices)
+    model->updateVertex(vertex);
+  model->endUpdateModel();
+
   return model;
 }
 

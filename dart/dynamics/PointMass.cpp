@@ -724,32 +724,60 @@ void PointMass::init()
 //==============================================================================
 void PointMass::updateTransform() const
 {
+  updateTransform(
+      getState(),
+      mParentSoftBodyNode->mAspectProperties.mPointProps[mIndex],
+      mParentSoftBodyNode->getWorldTransform());
+}
+
+//==============================================================================
+void PointMass::updateTransform(
+    const State& _state,
+    const Properties& _properties,
+    const Eigen::Isometry3d& _parentWorldTransform) const
+{
   // Local translation
-  mX = getPositions() + getRestingPosition();
+  mX = _state.mPositions + _properties.mX0;
   DART_ASSERT(!math::isNan(mX));
 
   // World translation
-  const Eigen::Isometry3d& parentW = mParentSoftBodyNode->getWorldTransform();
-  mW = parentW.translation() + parentW.linear() * mX;
+  mW = _parentWorldTransform.translation()
+       + _parentWorldTransform.linear() * mX;
   DART_ASSERT(!math::isNan(mW));
 }
 
 //==============================================================================
 void PointMass::updateVelocity() const
 {
+  if (mNotifier->needsTransformUpdate())
+    mParentSoftBodyNode->updateTransform();
+
+  updateVelocity(getState(), mParentSoftBodyNode->getSpatialVelocity());
+}
+
+//==============================================================================
+void PointMass::updateVelocity(
+    const State& _state, const Eigen::Vector6d& _parentSpatialVelocity) const
+{
   // v = w(parent) x mX + v(parent) + dq
-  const Eigen::Vector6d& v_parent = mParentSoftBodyNode->getSpatialVelocity();
-  mV = v_parent.head<3>().cross(getLocalPosition()) + v_parent.tail<3>()
-       + getVelocities();
+  mV = _parentSpatialVelocity.head<3>().cross(mX)
+       + _parentSpatialVelocity.tail<3>() + _state.mVelocities;
   DART_ASSERT(!math::isNan(mV));
 }
 
 //==============================================================================
 void PointMass::updatePartialAcceleration() const
 {
+  updatePartialAcceleration(
+      getState(), mParentSoftBodyNode->getSpatialVelocity().head<3>());
+}
+
+//==============================================================================
+void PointMass::updatePartialAcceleration(
+    const State& _state, const Eigen::Vector3d& _parentAngularVelocity) const
+{
   // eta = w(parent) x dq
-  const Eigen::Vector3d& dq = getVelocities();
-  mEta = mParentSoftBodyNode->getSpatialVelocity().head<3>().cross(dq);
+  mEta = _parentAngularVelocity.cross(_state.mVelocities);
   DART_ASSERT(!math::isNan(mEta));
 }
 
@@ -784,24 +812,36 @@ void PointMass::updateTransmittedForceID(
 //==============================================================================
 void PointMass::updateArtInertiaFD(double _timeStep) const
 {
+  updateArtInertiaFD(
+      _timeStep,
+      mParentSoftBodyNode->getDampingCoefficient(),
+      mParentSoftBodyNode->getVertexSpringStiffness());
+}
+
+//==============================================================================
+void PointMass::updateArtInertiaFD(
+    double _timeStep,
+    double _dampingCoefficient,
+    double _vertexSpringStiffness) const
+{
   // Articulated inertia
   // - Do nothing
 
   // Cache data: PsiK and Psi
-  mPsi = 1.0 / getMass();
-  mImplicitPsi
-      = 1.0
-        / (getMass() + _timeStep * mParentSoftBodyNode->getDampingCoefficient()
-           + _timeStep * _timeStep
-                 * mParentSoftBodyNode->getVertexSpringStiffness());
+  const double mass = getMass();
+  const double massSquared = mass * mass;
+  mPsi = 1.0 / mass;
+  mImplicitPsi = 1.0
+                 / (mass + _timeStep * _dampingCoefficient
+                    + _timeStep * _timeStep * _vertexSpringStiffness);
   DART_ASSERT(!math::isNan(mImplicitPsi));
 
   // Cache data: AI_S_Psi
   // - Do nothing
 
   // Cache data: Pi
-  mPi = getMass() - getMass() * getMass() * mPsi;
-  mImplicitPi = getMass() - getMass() * getMass() * mImplicitPsi;
+  mPi = mass - massSquared * mPsi;
+  mImplicitPi = mass - massSquared * mImplicitPsi;
   DART_ASSERT(!math::isNan(mPi));
   DART_ASSERT(!math::isNan(mImplicitPi));
 }
@@ -820,39 +860,98 @@ void PointMass::updateJointForceID(
 //==============================================================================
 void PointMass::updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity)
 {
+  const bool gravityMode = mParentSoftBodyNode->getGravityMode();
+  Eigen::Vector3d localGravity = Eigen::Vector3d::Zero();
+  if (gravityMode) {
+    localGravity = mParentSoftBodyNode->getWorldTransform().linear().transpose()
+                   * _gravity;
+  }
+  updateBiasForceFD(
+      _dt,
+      mParentSoftBodyNode->getSpatialVelocity().head<3>(),
+      localGravity,
+      gravityMode,
+      mParentSoftBodyNode->getVertexSpringStiffness(),
+      mParentSoftBodyNode->getEdgeSpringStiffness(),
+      mParentSoftBodyNode->getDampingCoefficient());
+}
+
+//==============================================================================
+void PointMass::updateBiasForceFD(
+    double _dt,
+    const Eigen::Vector3d& _parentAngularVelocity,
+    const Eigen::Vector3d& _localGravity,
+    bool _gravityMode,
+    double _vertexSpringStiffness,
+    double _edgeSpringStiffness,
+    double _dampingCoefficient)
+{
+  if (mNotifier->needsVelocityUpdate())
+    mParentSoftBodyNode->updateVelocity();
+  if (mNotifier->needsPartialAccelerationUpdate())
+    mParentSoftBodyNode->updatePartialAcceleration();
+  mParentSoftBodyNode->checkArticulatedInertiaUpdate();
+
+  updateBiasForceFD(
+      _dt,
+      _parentAngularVelocity,
+      _localGravity,
+      _gravityMode,
+      _vertexSpringStiffness,
+      _edgeSpringStiffness,
+      _dampingCoefficient,
+      mParentSoftBodyNode->mAspectState.mPointStates,
+      mParentSoftBodyNode->mAspectProperties.mPointProps);
+}
+
+//==============================================================================
+void PointMass::updateBiasForceFD(
+    double _dt,
+    const Eigen::Vector3d& _parentAngularVelocity,
+    const Eigen::Vector3d& _localGravity,
+    bool _gravityMode,
+    double _vertexSpringStiffness,
+    double _edgeSpringStiffness,
+    double _dampingCoefficient,
+    const std::vector<State>& _pointStates,
+    const std::vector<Properties>& _pointProperties)
+{
+  DART_ASSERT(mIndex < _pointStates.size());
+  DART_ASSERT(mIndex < _pointProperties.size());
+
+  const State& state = _pointStates[mIndex];
+  const Properties& properties = _pointProperties[mIndex];
+  const double mass = properties.mMass;
+
   // B = w(parent) x m*v - fext - fgravity
   // - w(parent) x m*v - fext
-  mB = mParentSoftBodyNode->getSpatialVelocity().head<3>().cross(
-           getMass() * getBodyVelocity())
-       - mFext;
+  mB = _parentAngularVelocity.cross(mass * mV) - mFext;
   // - fgravity
-  if (mParentSoftBodyNode->getGravityMode() == true) {
-    mB -= getMass()
-          * (mParentSoftBodyNode->getWorldTransform().linear().transpose()
-             * _gravity);
-  }
+  if (_gravityMode)
+    mB -= mass * _localGravity;
   DART_ASSERT(!math::isNan(mB));
 
-  const State& state = getState();
-
   // Cache data: alpha
-  double kv = mParentSoftBodyNode->getVertexSpringStiffness();
-  double ke = mParentSoftBodyNode->getEdgeSpringStiffness();
-  double kd = mParentSoftBodyNode->getDampingCoefficient();
-  std::size_t nN = getNumConnectedPointMasses();
-  mAlpha = state.mForces - (kv + nN * ke) * getPositions()
-           - (_dt * (kv + nN * ke) + kd) * getVelocities()
-           - getMass() * getPartialAccelerations() - mB;
-  for (std::size_t i = 0; i < getNumConnectedPointMasses(); ++i) {
-    const State& i_state = getConnectedPointMass(i)->getState();
-    mAlpha += ke * (i_state.mPositions + _dt * i_state.mVelocities);
+  const std::vector<std::size_t>& connections
+      = properties.mConnectedPointMassIndices;
+  const std::size_t nN = connections.size();
+  const double springStiffness
+      = _vertexSpringStiffness + nN * _edgeSpringStiffness;
+  mAlpha = state.mForces - springStiffness * state.mPositions
+           - (_dt * springStiffness + _dampingCoefficient) * state.mVelocities
+           - mass * mEta - mB;
+  for (std::size_t i = 0; i < nN; ++i) {
+    const std::size_t connectedIndex = connections[i];
+    DART_ASSERT(connectedIndex < _pointStates.size());
+    const State& i_state = _pointStates[connectedIndex];
+    mAlpha += _edgeSpringStiffness
+              * (i_state.mPositions + _dt * i_state.mVelocities);
   }
   DART_ASSERT(!math::isNan(mAlpha));
 
   // Cache data: beta
   mBeta = mB;
-  mBeta.noalias()
-      += getMass() * (getPartialAccelerations() + getImplicitPsi() * mAlpha);
+  mBeta.noalias() += mass * (mEta + mImplicitPsi * mAlpha);
   DART_ASSERT(!math::isNan(mBeta));
 }
 

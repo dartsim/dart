@@ -86,4 +86,15 @@ if(TARGET dart-utils)
     LINK_LIBRARIES
       dart-utils
   )
+
+  dart_benchmarks(
+    TYPE BM_INTEGRATION
+    SOURCES
+      bm_soft_body.cpp
+    LINK_LIBRARIES
+      dart-utils
+  )
+
+  add_executable(soft_body_headless soft_body_headless.cpp)
+  target_link_libraries(soft_body_headless PRIVATE dart-utils)
 endif()

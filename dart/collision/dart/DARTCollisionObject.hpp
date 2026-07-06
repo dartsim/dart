@@ -41,6 +41,7 @@
 
 #include <limits>
 #include <string>
+#include <vector>
 
 #include <cstddef>
 
@@ -62,7 +63,36 @@ public:
     Box,
     Cylinder,
     Capsule,
+    SoftMesh,
     Plane,
+  };
+
+  struct CachedSoftFace
+  {
+    Eigen::Vector3i indices{Eigen::Vector3i::Constant(-1)};
+    Eigen::Vector3d a{Eigen::Vector3d::Zero()};
+    Eigen::Vector3d edge0{Eigen::Vector3d::Zero()};
+    Eigen::Vector3d edge1{Eigen::Vector3d::Zero()};
+    Eigen::Vector3d normal{Eigen::Vector3d::Zero()};
+    Eigen::Vector3d centroid{Eigen::Vector3d::Zero()};
+    Eigen::Vector3d boundsMin{Eigen::Vector3d::Zero()};
+    Eigen::Vector3d boundsMax{Eigen::Vector3d::Zero()};
+    double planeOffset{0.0};
+    double d00{0.0};
+    double d01{0.0};
+    double d11{0.0};
+    double denom{0.0};
+    bool valid{false};
+  };
+
+  struct CachedSoftFaceBvhNode
+  {
+    Eigen::Vector3d boundsMin{Eigen::Vector3d::Zero()};
+    Eigen::Vector3d boundsMax{Eigen::Vector3d::Zero()};
+    int left{-1};
+    int right{-1};
+    int first{0};
+    int count{0};
   };
 
 protected:
@@ -95,12 +125,26 @@ public:
   /// Return the world transform path used by the DART-native collision backend.
   const Eigen::Isometry3d& getWorldTransformForCollision() const;
 
+  const std::vector<Eigen::Vector3d>& getCachedSoftLocalVertices() const;
+
+  const std::vector<int>& getCachedSoftFirstFaceByPointMass() const;
+
+  const std::vector<CachedSoftFace>& getCachedSoftFaces() const;
+
+  const std::vector<CachedSoftFaceBvhNode>& getCachedSoftFaceBvhNodes() const;
+
+  const std::vector<int>& getCachedSoftFaceBvhIndices() const;
+
 protected:
   // Documentation inherited
   void updateEngineData() override;
 
 private:
   void refreshShapeCache();
+
+  void refreshSoftMeshCache();
+
+  void refreshSoftFaceBvhCache();
 
   dynamics::ConstShapePtr mCachedShape;
   const std::string* mCachedShapeType{nullptr};
@@ -113,6 +157,11 @@ private:
   bool mHasFiniteCachedLocalBounds{false};
   bool mIsCachedPlaneShape{false};
   bool mUseBodyNodeWorldTransform{false};
+  std::vector<Eigen::Vector3d> mCachedSoftLocalVertices;
+  std::vector<int> mCachedSoftFirstFaceByPointMass;
+  std::vector<CachedSoftFace> mCachedSoftFaces;
+  std::vector<CachedSoftFaceBvhNode> mCachedSoftFaceBvhNodes;
+  std::vector<int> mCachedSoftFaceBvhIndices;
 };
 
 } // namespace collision

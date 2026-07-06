@@ -34,10 +34,13 @@
 
 #include "dart/collision/fcl/FCLTypes.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 
 namespace dart {
@@ -140,9 +143,7 @@ void FCLCollisionObject::updateEngineData()
     DART_ASSERT(dynamic_cast<const SoftMeshShape*>(shape));
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
 
-    const aiMesh* mesh = softMeshShape->getAssimpMesh();
-    const_cast<SoftMeshShape*>(softMeshShape)->update();
-    // TODO(JS): update function be called by somewhere out of here.
+    DART_PROFILE_SCOPED_N("FCLCollisionObject::updateSoftMesh");
 
     auto collGeom = const_cast<dart::collision::fcl::CollisionGeometry*>(
         mFCLCollisionObject->collisionGeometry().get());
@@ -151,17 +152,40 @@ void FCLCollisionObject::updateEngineData()
     auto bvhModel
         = static_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom);
 
-    bvhModel->beginUpdateModel();
-    for (auto i = 0u; i < mesh->mNumFaces; ++i) {
-      dart::collision::fcl::Vector3 vertices[3];
-      for (auto j = 0u; j < 3; ++j) {
-        const auto& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
-        vertices[j]
-            = dart::collision::fcl::Vector3(vertex.x, vertex.y, vertex.z);
+    const auto* softBodyNode = softMeshShape->getSoftBodyNode();
+    DART_ASSERT(softBodyNode);
+
+    auto* mesh = const_cast<aiMesh*>(softMeshShape->getAssimpMesh());
+    DART_ASSERT(mesh);
+
+    const auto& pointMasses = softBodyNode->getPointMasses();
+    DART_ASSERT(mesh->mNumVertices == pointMasses.size());
+
+    bool softMeshChanged = false;
+    for (std::size_t i = 0; i < pointMasses.size(); ++i) {
+      const Eigen::Vector3d& vertex = pointMasses[i]->getLocalPosition();
+      const auto& previousVertex = bvhModel->vertices[i];
+
+      if (previousVertex[0] != vertex[0] || previousVertex[1] != vertex[1]
+          || previousVertex[2] != vertex[2]) {
+        softMeshChanged = true;
+        break;
       }
-      bvhModel->updateTriangle(vertices[0], vertices[1], vertices[2]);
     }
-    bvhModel->endUpdateModel();
+
+    if (softMeshChanged) {
+      DART_PROFILE_SCOPED_N("FCLCollisionObject::updateSoftMesh refit");
+
+      bvhModel->beginUpdateModel();
+      for (std::size_t i = 0; i < pointMasses.size(); ++i) {
+        const Eigen::Vector3d& vertex = pointMasses[i]->getLocalPosition();
+
+        mesh->mVertices[i].Set(vertex[0], vertex[1], vertex[2]);
+        bvhModel->updateVertex(
+            dart::collision::fcl::Vector3(vertex[0], vertex[1], vertex[2]));
+      }
+      bvhModel->endUpdateModel();
+    }
   }
 
   mFCLCollisionObject->setTransform(FCLTypes::convertTransform(getTransform()));
