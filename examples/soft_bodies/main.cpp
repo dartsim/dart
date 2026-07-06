@@ -45,6 +45,7 @@
 #include <chrono>
 #include <filesystem>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <string>
 #include <system_error>
@@ -55,6 +56,35 @@
 #include <cstring>
 
 using namespace dart::dynamics;
+
+#ifndef DART_SOFT_BODIES_DEFAULT_SCENE
+  #define DART_SOFT_BODIES_DEFAULT_SCENE "soft_bodies"
+#endif
+
+struct SoftBodyScene
+{
+  const char* name;
+  const char* uri;
+  const char* label;
+};
+
+constexpr std::array<SoftBodyScene, 3> kSoftBodyScenes = {{
+    {"soft_bodies", "dart://sample/skel/softBodies.skel", "Soft bodies"},
+    {"soft_cubes", "dart://sample/skel/soft_cubes.skel", "Soft cubes"},
+    {"soft_open_chain",
+     "dart://sample/skel/soft_open_chain.skel",
+     "Soft open chain"},
+}};
+
+const SoftBodyScene* findSoftBodyScene(const std::string& name)
+{
+  for (const auto& scene : kSoftBodyScenes) {
+    if (name == scene.name)
+      return &scene;
+  }
+
+  return nullptr;
+}
 
 struct SoftBodyDisplayOptions
 {
@@ -182,7 +212,8 @@ public:
 
   void moveTo(std::size_t index)
   {
-    mViewer->simulate(false);
+    if (mViewer)
+      mViewer->simulate(false);
 
     if (mHistory.empty())
       return;
@@ -193,35 +224,56 @@ public:
     std::cout << "Moving to time step #" << index << std::endl;
 
     const TimeSlice& slice = mHistory[index];
-    for (std::size_t i = 0; i < slice.size(); ++i) {
-      const State& state = slice[i];
-      const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
-
-      skeleton->setConfiguration(state.mConfig);
-
-      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
-        BodyNode* bn = skeleton->getBodyNode(j);
-        bn->setCompositeState(state.mAspectStates[j]);
-      }
-    }
-
+    restoreTimeSlice(slice);
     mCurrentIndex = index;
   }
 
   void moveForward(int delta)
   {
-    moveTo(mCurrentIndex + delta);
+    if (delta <= 0 || mHistory.empty())
+      return;
+
+    const std::size_t target = std::min(
+        mHistory.size() - 1, mCurrentIndex + static_cast<std::size_t>(delta));
+    moveTo(target);
   }
 
   void moveBackward(int delta)
   {
-    if (mCurrentIndex > 0)
-      moveTo(mCurrentIndex - delta);
+    if (delta <= 0 || mCurrentIndex == 0)
+      return;
+
+    const std::size_t distance = std::min<std::size_t>(delta, mCurrentIndex);
+    moveTo(mCurrentIndex - distance);
   }
 
   void restart()
   {
-    moveTo(0);
+    resetSimulation();
+  }
+
+  void resetSimulation()
+  {
+    if (!mWorld || mHistory.empty())
+      return;
+
+    const bool wasSimulating
+        = mViewer ? mViewer->isSimulating() : isSimulating();
+    if (mViewer)
+      mViewer->simulate(false);
+    else
+      simulate(false);
+
+    restoreTimeSlice(mHistory.front());
+    mWorld->reset();
+    mHistory.resize(1);
+    mCurrentIndex = 0;
+    resetStepTiming();
+
+    if (mViewer)
+      mViewer->simulate(wasSimulating);
+    else
+      simulate(wasSimulating);
   }
 
   void moveToEnd()
@@ -245,6 +297,21 @@ public:
 private:
   using Clock = std::chrono::steady_clock;
 
+  void restoreTimeSlice(const TimeSlice& slice)
+  {
+    for (std::size_t i = 0; i < slice.size(); ++i) {
+      const State& state = slice[i];
+      const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
+
+      skeleton->setConfiguration(state.mConfig);
+
+      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
+        BodyNode* bn = skeleton->getBodyNode(j);
+        bn->setCompositeState(state.mAspectStates[j]);
+      }
+    }
+  }
+
   void recordStepDuration(double stepMs)
   {
     mLastStepMs = stepMs;
@@ -259,6 +326,24 @@ private:
       mMaxStepMs = std::max(mMaxStepMs, stepMs);
     }
     ++mMeasuredSteps;
+  }
+
+  void resetStepTiming()
+  {
+    mStepTimingActive = false;
+    mMeasuredSteps = 0;
+    mLastStepMs = 0.0;
+    mSmoothedStepMs = 0.0;
+    mMinStepMs = 0.0;
+    mMaxStepMs = 0.0;
+
+    mFirstRefresh = true;
+    mSimTimeBudget = 0.0;
+    mLastRealTimeFactor = 0.0;
+    mSmoothedRealTimeFactor = 0.0;
+    mHasSmoothedRealTimeFactor = false;
+    mLowestRealTimeFactor = std::numeric_limits<double>::infinity();
+    mHighestRealTimeFactor = 0.0;
   }
 
   Clock::time_point mStepStart;
@@ -325,9 +410,10 @@ public:
 struct Options
 {
   double scale = 1.0;
+  std::string sceneName = DART_SOFT_BODIES_DEFAULT_SCENE;
   bool showHelp = false;
   bool headless = false;
-  std::string shotPath = "soft_bodies.png";
+  std::string shotPath;
   int steps = 120;
   int width = 640;
   int height = 480;
@@ -339,9 +425,11 @@ void printUsage(const char* executable)
 {
   dart::gui::osg::printGuiScaleUsage(std::cout, executable);
   std::cout << "\nAdditional options:\n"
+            << "  --scene NAME     Scene to load: soft_bodies, soft_cubes, "
+               "or soft_open_chain.\n"
             << "  --headless       Render off-screen to a PNG and exit.\n"
             << "  --shot PATH      Output PNG path for --headless (default "
-               "soft_bodies.png).\n"
+               "<scene>.png).\n"
             << "  --steps N        Simulation steps before a headless capture "
                "(default 120).\n"
             << "  --width W        Headless capture width before --gui-scale "
@@ -360,7 +448,9 @@ Options parseOptions(int argc, char* argv[])
   std::vector<char*> forwarded;
   forwarded.push_back(argv[0]);
   for (int i = 1; i < argc; ++i) {
-    if (std::strcmp(argv[i], "--headless") == 0) {
+    if (std::strcmp(argv[i], "--scene") == 0 && i + 1 < argc) {
+      options.sceneName = argv[++i];
+    } else if (std::strcmp(argv[i], "--headless") == 0) {
       options.headless = true;
     } else if (std::strcmp(argv[i], "--shot") == 0 && i + 1 < argc) {
       options.shotPath = argv[++i];
@@ -444,11 +534,13 @@ public:
       dart::gui::osg::ImGuiViewer* viewer,
       RecordingWorld* node,
       dart::simulation::WorldPtr world,
+      std::string sceneLabel,
       SoftBodyDisplayOptions* display)
     : mViewer(viewer),
       mNode(node),
       mWorld(std::move(world)),
       mSceneStats(collectSoftBodySceneStats(mWorld)),
+      mSceneLabel(std::move(sceneLabel)),
       mDisplay(display)
   {
   }
@@ -482,6 +574,12 @@ public:
     changed
         |= ImGui::Checkbox("Embedded visuals", &mDisplay->showEmbeddedVisuals);
 
+    if (ImGui::Button("Reset simulation")) {
+      mNode->resetSimulation();
+      styleSoftBodyVisuals(mWorld, *mDisplay);
+      refreshDisplay();
+    }
+    ImGui::SameLine();
     if (ImGui::Button("Reset view"))
       applySoftBodiesCameraPose(*mViewer);
 
@@ -495,6 +593,7 @@ public:
         = simStepsPerSecond * mWorld->getTimeStep();
     ImGui::Text(
         "Frame %d   Time %.3f s", mWorld->getSimFrames(), mWorld->getTime());
+    ImGui::Text("Scene %s", mSceneLabel.c_str());
     ImGui::Text(
         "Render %.0f FPS   target RTF %.2f",
         ImGui::GetIO().Framerate,
@@ -546,6 +645,7 @@ private:
   RecordingWorld* mNode;
   dart::simulation::WorldPtr mWorld;
   SoftBodySceneStats mSceneStats;
+  std::string mSceneLabel;
   SoftBodyDisplayOptions* mDisplay;
 };
 
@@ -681,10 +781,23 @@ int main(int argc, char* argv[])
 
   using namespace dart::dynamics;
 
-  dart::simulation::WorldPtr world = dart::utils::SkelParser::readWorld(
-      "dart://sample/skel/softBodies.skel");
+  const SoftBodyScene* scene = findSoftBodyScene(options.sceneName);
+  if (!scene) {
+    std::cerr << "Unknown soft-body scene '" << options.sceneName << "'. "
+              << "Use one of:";
+    for (const auto& availableScene : kSoftBodyScenes)
+      std::cerr << " " << availableScene.name;
+    std::cerr << "\n";
+    return 1;
+  }
+
+  if (options.shotPath.empty())
+    options.shotPath = std::string(scene->name) + ".png";
+
+  dart::simulation::WorldPtr world
+      = dart::utils::SkelParser::readWorld(scene->uri);
   if (!world) {
-    std::cerr << "Failed to load dart://sample/skel/softBodies.skel\n";
+    std::cerr << "Failed to load " << scene->uri << "\n";
     return 1;
   }
 
@@ -704,7 +817,7 @@ int main(int argc, char* argv[])
 
   if (options.showWidget) {
     viewer->getImGuiHandler()->addWidget(std::make_shared<SoftBodiesWidget>(
-        viewer.get(), node.get(), world, &options.display));
+        viewer.get(), node.get(), world, scene->label, &options.display));
   }
 
   if (options.headless)
