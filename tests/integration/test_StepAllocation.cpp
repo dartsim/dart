@@ -111,6 +111,17 @@ private:
   dart::lcpsolver::dantzig::DantzigLcpScratch<double> mScratch;
 };
 
+class PassThroughCollisionFilter final : public dart::collision::CollisionFilter
+{
+public:
+  bool ignoresCollision(
+      const dart::collision::CollisionObject*,
+      const dart::collision::CollisionObject*) const override
+  {
+    return false;
+  }
+};
+
 dart::dynamics::SkeletonPtr createBox(
     std::size_t index,
     const Eigen::Vector3d& position,
@@ -983,6 +994,32 @@ TEST(WorldSimulationModeMemoryManager, CollisionOptionChangeInvalidatesBake)
       option.collisionFilter.get());
   ASSERT_NE(filter, nullptr);
   filter->addBodyNodePairToBlackList(boxBody, groundBody);
+  EXPECT_FALSE(world->isInSimulationMode());
+
+  world->step();
+  EXPECT_TRUE(world->isInSimulationMode());
+
+  option.collisionFilter = std::make_shared<PassThroughCollisionFilter>();
+  world->enterSimulationMode();
+  EXPECT_TRUE(world->isInSimulationMode());
+
+  option.collisionFilter = std::make_shared<PassThroughCollisionFilter>();
+  EXPECT_FALSE(world->isInSimulationMode());
+}
+
+TEST(WorldSimulationModeMemoryManager, CollisionGroupContentInvalidatesBake)
+{
+  auto world = createFallingBoxWorld("collision_group_content_rebake_world");
+  world->setCollisionDetector(dart::collision::DARTCollisionDetector::create());
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+
+  const auto frame = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "collision_group_rebake_frame");
+  frame->setShape(std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d::Constant(0.1)));
+
+  world->getConstraintSolver()->getCollisionGroup()->addShapeFrame(frame.get());
   EXPECT_FALSE(world->isInSimulationMode());
 
   world->step();

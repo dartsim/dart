@@ -621,6 +621,7 @@ protected:
 
   /// Collision group captured at simulation preparation.
   const collision::CollisionGroup* mSimulationModeCollisionGroup = nullptr;
+  std::size_t mSimulationModeCollisionGroupVersion = 0;
 
   /// Constraint solver thread count captured at simulation preparation.
   std::size_t mSimulationModeConstraintSolverThreads = 0;
@@ -631,6 +632,7 @@ protected:
   std::size_t mSimulationModeCollisionMaxNumContactsPerPair = 0;
   bool mSimulationModeCollisionAllowNegativePenetrationDepthContacts = false;
   const collision::CollisionFilter* mSimulationModeCollisionFilter = nullptr;
+  bool mSimulationModeCollisionFilterTrackable = true;
   std::size_t mSimulationModeCollisionFilterRevision = 0;
 
   /// Options controlling automatic body deactivation ("sleeping")

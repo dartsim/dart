@@ -318,12 +318,14 @@ void World::invalidateSimulationMode()
   mSimulationMode = false;
   mSimulationModeStructuralVersion = 0;
   mSimulationModeCollisionGroup = nullptr;
+  mSimulationModeCollisionGroupVersion = 0;
   mSimulationModeConstraintSolverThreads = 0;
   mSimulationModeCollisionEnableContact = false;
   mSimulationModeCollisionMaxNumContacts = 0;
   mSimulationModeCollisionMaxNumContactsPerPair = 0;
   mSimulationModeCollisionAllowNegativePenetrationDepthContacts = false;
   mSimulationModeCollisionFilter = nullptr;
+  mSimulationModeCollisionFilterTrackable = true;
   mSimulationModeCollisionFilterRevision = 0;
 }
 
@@ -395,8 +397,10 @@ void World::enterSimulationMode()
   mSimulationModeStructuralVersion
       = dynamics::Skeleton::getGlobalStructuralVersion();
   if (mConstraintSolver) {
-    mSimulationModeCollisionGroup
-        = mConstraintSolver->getCollisionGroup().get();
+    const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+    mSimulationModeCollisionGroup = collisionGroup.get();
+    mSimulationModeCollisionGroupVersion
+        = collisionGroup ? collisionGroup->getContentVersion() : 0u;
     mSimulationModeConstraintSolverThreads
         = mConstraintSolver->getNumSimulationThreads();
     const auto& collisionOption = mConstraintSolver->getCollisionOption();
@@ -407,16 +411,23 @@ void World::enterSimulationMode()
     mSimulationModeCollisionAllowNegativePenetrationDepthContacts
         = collisionOption.allowNegativePenetrationDepthContacts;
     mSimulationModeCollisionFilter = collisionOption.collisionFilter.get();
+    mSimulationModeCollisionFilterTrackable
+        = isCollisionFilterSnapshotTrackable(mSimulationModeCollisionFilter);
     mSimulationModeCollisionFilterRevision
-        = getCollisionFilterSnapshotRevision(mSimulationModeCollisionFilter);
+        = mSimulationModeCollisionFilterTrackable
+              ? getCollisionFilterSnapshotRevision(
+                  mSimulationModeCollisionFilter)
+              : 0u;
   } else {
     mSimulationModeCollisionGroup = nullptr;
+    mSimulationModeCollisionGroupVersion = 0;
     mSimulationModeConstraintSolverThreads = 0;
     mSimulationModeCollisionEnableContact = false;
     mSimulationModeCollisionMaxNumContacts = 0;
     mSimulationModeCollisionMaxNumContactsPerPair = 0;
     mSimulationModeCollisionAllowNegativePenetrationDepthContacts = false;
     mSimulationModeCollisionFilter = nullptr;
+    mSimulationModeCollisionFilterTrackable = true;
     mSimulationModeCollisionFilterRevision = 0;
   }
   mSimulationMode = true;
@@ -430,14 +441,22 @@ bool World::isInSimulationMode() const
 
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
   const auto* collisionFilter = collisionOption.collisionFilter.get();
-  if (!isCollisionFilterSnapshotTrackable(collisionFilter))
-    return false;
+  const bool collisionFilterTrackable
+      = isCollisionFilterSnapshotTrackable(collisionFilter);
+  const bool collisionFilterUnchanged
+      = mSimulationModeCollisionFilter == collisionFilter
+        && mSimulationModeCollisionFilterTrackable == collisionFilterTrackable
+        && (!collisionFilterTrackable
+            || mSimulationModeCollisionFilterRevision
+                   == getCollisionFilterSnapshotRevision(collisionFilter));
+  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
 
   return mSimulationMode
          && mSimulationModeStructuralVersion
                 == dynamics::Skeleton::getGlobalStructuralVersion()
-         && mConstraintSolver->getCollisionGroup().get()
-                == mSimulationModeCollisionGroup
+         && collisionGroup.get() == mSimulationModeCollisionGroup
+         && mSimulationModeCollisionGroupVersion
+                == (collisionGroup ? collisionGroup->getContentVersion() : 0u)
          && mConstraintSolver->getNumSimulationThreads()
                 == mSimulationModeConstraintSolverThreads
          && mSimulationModeCollisionEnableContact
@@ -448,9 +467,7 @@ bool World::isInSimulationMode() const
                 == collisionOption.maxNumContactsPerPair
          && mSimulationModeCollisionAllowNegativePenetrationDepthContacts
                 == collisionOption.allowNegativePenetrationDepthContacts
-         && mSimulationModeCollisionFilter == collisionFilter
-         && mSimulationModeCollisionFilterRevision
-                == getCollisionFilterSnapshotRevision(collisionFilter);
+         && collisionFilterUnchanged;
 }
 
 //==============================================================================
