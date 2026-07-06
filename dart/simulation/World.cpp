@@ -319,6 +319,12 @@ void World::invalidateSimulationMode()
   mSimulationModeStructuralVersion = 0;
   mSimulationModeCollisionGroup = nullptr;
   mSimulationModeConstraintSolverThreads = 0;
+  mSimulationModeCollisionEnableContact = false;
+  mSimulationModeCollisionMaxNumContacts = 0;
+  mSimulationModeCollisionMaxNumContactsPerPair = 0;
+  mSimulationModeCollisionAllowNegativePenetrationDepthContacts = false;
+  mSimulationModeCollisionFilter = nullptr;
+  mSimulationModeCollisionFilterRevision = 0;
 }
 
 //==============================================================================
@@ -393,9 +399,25 @@ void World::enterSimulationMode()
         = mConstraintSolver->getCollisionGroup().get();
     mSimulationModeConstraintSolverThreads
         = mConstraintSolver->getNumSimulationThreads();
+    const auto& collisionOption = mConstraintSolver->getCollisionOption();
+    mSimulationModeCollisionEnableContact = collisionOption.enableContact;
+    mSimulationModeCollisionMaxNumContacts = collisionOption.maxNumContacts;
+    mSimulationModeCollisionMaxNumContactsPerPair
+        = collisionOption.maxNumContactsPerPair;
+    mSimulationModeCollisionAllowNegativePenetrationDepthContacts
+        = collisionOption.allowNegativePenetrationDepthContacts;
+    mSimulationModeCollisionFilter = collisionOption.collisionFilter.get();
+    mSimulationModeCollisionFilterRevision
+        = getCollisionFilterSnapshotRevision(mSimulationModeCollisionFilter);
   } else {
     mSimulationModeCollisionGroup = nullptr;
     mSimulationModeConstraintSolverThreads = 0;
+    mSimulationModeCollisionEnableContact = false;
+    mSimulationModeCollisionMaxNumContacts = 0;
+    mSimulationModeCollisionMaxNumContactsPerPair = 0;
+    mSimulationModeCollisionAllowNegativePenetrationDepthContacts = false;
+    mSimulationModeCollisionFilter = nullptr;
+    mSimulationModeCollisionFilterRevision = 0;
   }
   mSimulationMode = true;
 }
@@ -403,14 +425,32 @@ void World::enterSimulationMode()
 //==============================================================================
 bool World::isInSimulationMode() const
 {
+  if (!mSimulationMode || !mConstraintSolver)
+    return false;
+
+  const auto& collisionOption = mConstraintSolver->getCollisionOption();
+  const auto* collisionFilter = collisionOption.collisionFilter.get();
+  if (!isCollisionFilterSnapshotTrackable(collisionFilter))
+    return false;
+
   return mSimulationMode
          && mSimulationModeStructuralVersion
                 == dynamics::Skeleton::getGlobalStructuralVersion()
-         && mConstraintSolver
          && mConstraintSolver->getCollisionGroup().get()
                 == mSimulationModeCollisionGroup
          && mConstraintSolver->getNumSimulationThreads()
-                == mSimulationModeConstraintSolverThreads;
+                == mSimulationModeConstraintSolverThreads
+         && mSimulationModeCollisionEnableContact
+                == collisionOption.enableContact
+         && mSimulationModeCollisionMaxNumContacts
+                == collisionOption.maxNumContacts
+         && mSimulationModeCollisionMaxNumContactsPerPair
+                == collisionOption.maxNumContactsPerPair
+         && mSimulationModeCollisionAllowNegativePenetrationDepthContacts
+                == collisionOption.allowNegativePenetrationDepthContacts
+         && mSimulationModeCollisionFilter == collisionFilter
+         && mSimulationModeCollisionFilterRevision
+                == getCollisionFilterSnapshotRevision(collisionFilter);
 }
 
 //==============================================================================

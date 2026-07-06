@@ -31,6 +31,7 @@
  */
 
 #include "AllocationCounting.hpp"
+#include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/BoxedLcpSolver.hpp"
@@ -942,6 +943,46 @@ TEST(
 
   solver->setCollisionDetector(
       dart::collision::DARTCollisionDetector::create());
+  EXPECT_FALSE(world->isInSimulationMode());
+
+  world->step();
+  EXPECT_TRUE(world->isInSimulationMode());
+}
+
+TEST(WorldSimulationModeMemoryManager, CollisionOptionChangeInvalidatesBake)
+{
+  auto world = createFallingBoxWorld("collision_option_rebake_world");
+  world->addSkeleton(createGround());
+  world->setCollisionDetector(dart::collision::DARTCollisionDetector::create());
+
+  auto* boxBody = world->getSkeleton(0u)->getBodyNode(0u);
+  auto* groundBody = world->getSkeleton(1u)->getBodyNode(0u);
+  auto* solver = world->getConstraintSolver();
+  auto& option = solver->getCollisionOption();
+  option.maxNumContacts = 8u;
+  option.maxNumContactsPerPair = 4u;
+  option.collisionFilter
+      = std::make_shared<dart::collision::BodyNodeCollisionFilter>();
+
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+
+  option.maxNumContacts = 16u;
+  EXPECT_FALSE(world->isInSimulationMode());
+  option.maxNumContacts = 8u;
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+
+  option.collisionFilter
+      = std::make_shared<dart::collision::BodyNodeCollisionFilter>();
+  EXPECT_FALSE(world->isInSimulationMode());
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+
+  auto* filter = dynamic_cast<dart::collision::BodyNodeCollisionFilter*>(
+      option.collisionFilter.get());
+  ASSERT_NE(filter, nullptr);
+  filter->addBodyNodePairToBlackList(boxBody, groundBody);
   EXPECT_FALSE(world->isInSimulationMode());
 
   world->step();

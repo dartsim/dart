@@ -625,6 +625,14 @@ protected:
   /// Constraint solver thread count captured at simulation preparation.
   std::size_t mSimulationModeConstraintSolverThreads = 0;
 
+  /// Collision options captured at simulation preparation.
+  bool mSimulationModeCollisionEnableContact = false;
+  std::size_t mSimulationModeCollisionMaxNumContacts = 0;
+  std::size_t mSimulationModeCollisionMaxNumContactsPerPair = 0;
+  bool mSimulationModeCollisionAllowNegativePenetrationDepthContacts = false;
+  const collision::CollisionFilter* mSimulationModeCollisionFilter = nullptr;
+  std::size_t mSimulationModeCollisionFilterRevision = 0;
+
   /// Options controlling automatic body deactivation ("sleeping")
   simulation::DeactivationOptions mDeactivationOptions;
 
