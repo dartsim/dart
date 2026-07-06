@@ -126,7 +126,10 @@ def read_png_bytes(data: bytes, path: Path | None = None) -> tuple[int, int, byt
 
     channels = {0: 1, 2: 3, 4: 2, 6: 4}[color_type]
     stride = width * channels
-    raw = zlib.decompress(bytes(idat))
+    try:
+        raw = zlib.decompress(bytes(idat))
+    except zlib.error as exc:
+        raise ValueError(f"{label}: invalid PNG image data") from exc
     expected = height * (1 + stride)
     if len(raw) < expected:
         raise ValueError(f"{label}: truncated PNG image data")
