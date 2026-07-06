@@ -43,10 +43,29 @@
 #include <osgGA/GUIEventAdapter>
 
 #include <iostream>
+#include <map>
 
 namespace dart {
 namespace gui {
 namespace osg {
+
+namespace {
+
+using MouseEventHandlerRegistry
+    = std::map<const dart::common::Subject*, MouseEventHandler*>;
+
+MouseEventHandlerRegistry& getMouseEventHandlerRegistry()
+{
+  static MouseEventHandlerRegistry registry;
+  return registry;
+}
+
+const dart::common::Subject* getSubject(MouseEventHandler* handler)
+{
+  return static_cast<const dart::common::Subject*>(handler);
+}
+
+} // namespace
 
 DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
   : mViewer(_viewer),
@@ -67,8 +86,9 @@ DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
 //==============================================================================
 DefaultEventHandler::~DefaultEventHandler()
 {
-  while (!mMouseEventHandlers.empty())
-    delete *mMouseEventHandlers.begin();
+  MouseEventHandlerRegistry& registry = getMouseEventHandlerRegistry();
+  for (MouseEventHandler* handler : mMouseEventHandlers)
+    registry.erase(getSubject(handler));
 }
 
 //==============================================================================
@@ -245,24 +265,7 @@ void DefaultEventHandler::addMouseEventHandler(MouseEventHandler* handler)
   // dangling pointer after a registered handler dies (the header documents
   // automatic removal on deletion), and the next mouse event dereferences it.
   addSubject(handler);
-}
-
-//==============================================================================
-void DefaultEventHandler::removeMouseEventHandler(MouseEventHandler* handler)
-{
-  if (nullptr == handler)
-    return;
-
-  const auto it = mMouseEventHandlers.find(handler);
-  if (it == mMouseEventHandlers.end())
-    return;
-
-  mMouseEventHandlers.erase(it);
-  if (handler->mEventHandler == this)
-    handler->mEventHandler = nullptr;
-
-  handler->removeSubject(this);
-  removeSubject(handler);
+  getMouseEventHandlerRegistry()[getSubject(handler)] = handler;
 }
 
 //==============================================================================
@@ -439,16 +442,13 @@ void DefaultEventHandler::clearButtonEvents()
 void DefaultEventHandler::handleDestructionNotification(
     const dart::common::Subject* _subject)
 {
-  for (auto it = mMouseEventHandlers.begin(); it != mMouseEventHandlers.end();
-       ++it) {
-    MouseEventHandler* handler = *it;
-    if (static_cast<const dart::common::Subject*>(handler) != _subject)
-      continue;
-
-    handler->mEventHandler = nullptr;
-    mMouseEventHandlers.erase(it);
+  MouseEventHandlerRegistry& registry = getMouseEventHandlerRegistry();
+  const auto registryIt = registry.find(_subject);
+  if (registryIt == registry.end())
     return;
-  }
+
+  mMouseEventHandlers.erase(registryIt->second);
+  registry.erase(registryIt);
 }
 
 } // namespace osg
