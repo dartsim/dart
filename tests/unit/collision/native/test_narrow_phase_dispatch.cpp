@@ -36,6 +36,9 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
+#include <stdexcept>
+
 using namespace dart::collision::native;
 
 namespace {
@@ -119,6 +122,127 @@ TEST(NarrowPhaseDispatch, ReturnsFalseForUnroutedPairs)
 
   EXPECT_FALSE(hit);
   EXPECT_EQ(result.numContacts(), 0u);
+}
+
+TEST(NarrowPhaseDispatch, ReturnsFalseForNullShape)
+{
+  SphereShape sphere(1.0);
+
+  CollisionResult result;
+  EXPECT_FALSE(NarrowPhase::collide(
+      nullptr,
+      Eigen::Isometry3d::Identity(),
+      &sphere,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption(),
+      result));
+  EXPECT_FALSE(NarrowPhase::collide(
+      &sphere,
+      Eigen::Isometry3d::Identity(),
+      nullptr,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption(),
+      result));
+  EXPECT_EQ(result.numContacts(), 0u);
+}
+
+TEST(NarrowPhaseDispatch, BatchWithoutHitVectorReturnsAnyHit)
+{
+  SphereShape sphere1(1.0);
+  SphereShape sphere2(1.0);
+  BoxShape box1(Eigen::Vector3d(1.0, 1.0, 1.0));
+  BoxShape box2(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  const std::array<NarrowPhasePair, 2> pairs{{
+      {&sphere1,
+       &sphere2,
+       Eigen::Isometry3d::Identity(),
+       translated(3.0, 0.0, 0.0)},
+      {&box1, &box2, Eigen::Isometry3d::Identity(), translated(0.5, 0.0, 0.0)},
+  }};
+  std::array<CollisionResult, 2> results;
+
+  const bool hit = NarrowPhase::collideBatch(pairs, results, CollisionOption());
+
+  EXPECT_TRUE(hit);
+  EXPECT_EQ(results[0].numContacts(), 0u);
+  EXPECT_GE(results[1].numContacts(), 1u);
+}
+
+TEST(NarrowPhaseDispatch, BatchRecordsPerPairHits)
+{
+  SphereShape sphere1(1.0);
+  SphereShape sphere2(1.0);
+  CapsuleShape capsule(0.5, 2.0);
+
+  const std::array<NarrowPhasePair, 3> pairs{{
+      {&sphere1,
+       &sphere2,
+       Eigen::Isometry3d::Identity(),
+       translated(1.5, 0.0, 0.0)},
+      {&sphere1,
+       &sphere2,
+       Eigen::Isometry3d::Identity(),
+       translated(3.0, 0.0, 0.0)},
+      {&sphere1,
+       &capsule,
+       Eigen::Isometry3d::Identity(),
+       Eigen::Isometry3d::Identity()},
+  }};
+  std::array<CollisionResult, 3> results;
+  std::array<bool, 3> hits{{false, true, true}};
+
+  const bool anyHit
+      = NarrowPhase::collideBatch(pairs, results, hits, CollisionOption());
+
+  EXPECT_TRUE(anyHit);
+  EXPECT_TRUE(hits[0]);
+  EXPECT_FALSE(hits[1]);
+  EXPECT_FALSE(hits[2]);
+  EXPECT_GE(results[0].numContacts(), 1u);
+  EXPECT_EQ(results[1].numContacts(), 0u);
+  EXPECT_EQ(results[2].numContacts(), 0u);
+}
+
+TEST(NarrowPhaseDispatch, BatchRejectsMismatchedOutputSpans)
+{
+  SphereShape sphere1(1.0);
+  SphereShape sphere2(1.0);
+
+  const std::array<NarrowPhasePair, 1> pairs{{
+      {&sphere1,
+       &sphere2,
+       Eigen::Isometry3d::Identity(),
+       translated(1.5, 0.0, 0.0)},
+  }};
+
+  EXPECT_THROW(
+      NarrowPhase::collideBatch(
+          pairs, span<CollisionResult>(), CollisionOption()),
+      std::invalid_argument);
+
+  std::array<CollisionResult, 1> results;
+  EXPECT_THROW(
+      NarrowPhase::collideBatch(
+          pairs, results, span<bool>(), CollisionOption()),
+      std::invalid_argument);
+}
+
+TEST(NarrowPhaseDispatch, BatchRejectsNullShapes)
+{
+  SphereShape sphere(1.0);
+
+  const std::array<NarrowPhasePair, 1> pairs{{
+      {nullptr,
+       &sphere,
+       Eigen::Isometry3d::Identity(),
+       Eigen::Isometry3d::Identity()},
+  }};
+  std::array<CollisionResult, 1> results;
+
+  EXPECT_THROW(
+      NarrowPhase::collideBatch(pairs, results, CollisionOption()),
+      std::invalid_argument);
 }
 
 TEST(NarrowPhaseDispatch, ReportsSupportOnlyForSphereSphereAndBoxBox)
