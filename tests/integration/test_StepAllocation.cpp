@@ -823,6 +823,46 @@ TEST(
   EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
 }
 
+TEST(WorldSimulationModeMemoryManager, ExplicitEnterPreservesCollidingFlags)
+{
+  auto world
+      = dart::simulation::World::create("preserve_colliding_flags_world");
+  world->setNumSimulationThreads(1u);
+  world->getConstraintSolver()->setCollisionDetector(
+      dart::collision::DARTCollisionDetector::create());
+
+  auto ground = createGround();
+  auto box = createBox(
+      0u,
+      Eigen::Vector3d(0.0, 0.0, 0.14),
+      Eigen::Vector3d(0.2, 0.2, 0.2),
+      Eigen::Vector3d(0.2, 0.4, 0.8));
+  auto* groundBody = ground->getBodyNode(0u);
+  auto* boxBody = box->getBodyNode(0u);
+  world->addSkeleton(ground);
+  world->addSkeleton(box);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  ASSERT_FALSE(groundBody->isColliding());
+  ASSERT_FALSE(boxBody->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
+
+  world->enterSimulationMode();
+  EXPECT_TRUE(world->isInSimulationMode());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_FALSE(groundBody->isColliding());
+  EXPECT_FALSE(boxBody->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
+
+  world->step();
+  EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_TRUE(groundBody->isColliding());
+  EXPECT_TRUE(boxBody->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
+}
+
 TEST(WorldSimulationModeMemoryManager, ShapeChangeInvalidatesAndRebakes)
 {
   auto world = createFallingBoxWorld("rebake_world");

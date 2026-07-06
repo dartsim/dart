@@ -56,6 +56,7 @@
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 
@@ -78,6 +79,65 @@ namespace dart {
 namespace constraint {
 
 using namespace dynamics;
+
+struct CollidingStateSnapshot
+{
+  std::vector<std::pair<dynamics::BodyNode*, bool>> bodyNodes;
+  std::vector<std::pair<dynamics::PointMass*, bool>> pointMasses;
+};
+
+CollidingStateSnapshot snapshotCollidingState(
+    const std::vector<dynamics::SkeletonPtr>& skeletons)
+{
+  CollidingStateSnapshot snapshot;
+
+  std::size_t numBodyNodes = 0u;
+  std::size_t numPointMasses = 0u;
+  for (const auto& skeleton : skeletons) {
+    if (!skeleton)
+      continue;
+
+    numBodyNodes += skeleton->getNumBodyNodes();
+    for (auto* bodyNode : skeleton->getBodyNodes()) {
+      if (auto* softBodyNode = bodyNode->asSoftBodyNode())
+        numPointMasses += softBodyNode->getPointMasses().size();
+    }
+  }
+
+  snapshot.bodyNodes.reserve(numBodyNodes);
+  snapshot.pointMasses.reserve(numPointMasses);
+
+  for (const auto& skeleton : skeletons) {
+    if (!skeleton)
+      continue;
+
+    for (auto* bodyNode : skeleton->getBodyNodes()) {
+      DART_SUPPRESS_DEPRECATED_BEGIN
+      snapshot.bodyNodes.emplace_back(bodyNode, bodyNode->isColliding());
+      DART_SUPPRESS_DEPRECATED_END
+
+      if (auto* softBodyNode = bodyNode->asSoftBodyNode()) {
+        for (auto* pointMass : softBodyNode->getPointMasses())
+          snapshot.pointMasses.emplace_back(
+              pointMass, pointMass->isColliding());
+      }
+    }
+  }
+
+  return snapshot;
+}
+
+void restoreCollidingState(const CollidingStateSnapshot& snapshot)
+{
+  for (const auto& [bodyNode, wasColliding] : snapshot.bodyNodes) {
+    DART_SUPPRESS_DEPRECATED_BEGIN
+    bodyNode->setColliding(wasColliding);
+    DART_SUPPRESS_DEPRECATED_END
+  }
+
+  for (const auto& [pointMass, wasColliding] : snapshot.pointMasses)
+    pointMass->setColliding(wasColliding);
+}
 
 //==============================================================================
 template <typename ExactT, typename DynamicT>
@@ -718,6 +778,7 @@ void ConstraintSolver::prepareForSimulation()
 {
   DART_PROFILE_SCOPED_N("ConstraintSolver::prepareForSimulation");
 
+  const auto collidingState = snapshotCollidingState(mSkeletons);
   const auto lastCollisionContacts = mCollisionResult.getContacts();
   constexpr int kPreparationPasses = 2;
   for (int pass = 0; pass < kPreparationPasses; ++pass) {
@@ -728,6 +789,7 @@ void ConstraintSolver::prepareForSimulation()
   mCollisionResult.clear();
   for (const auto& contact : lastCollisionContacts)
     mCollisionResult.addContact(contact);
+  restoreCollidingState(collidingState);
 }
 
 //==============================================================================
