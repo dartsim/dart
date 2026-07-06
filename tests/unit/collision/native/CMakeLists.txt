@@ -38,3 +38,8 @@ dart_add_test(
   UNIT_collision_native_sphere_sphere
   test_sphere_sphere.cpp
 )
+dart_add_test(
+  "unit"
+  UNIT_collision_native_brute_force
+  test_brute_force.cpp
+)
