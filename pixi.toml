@@ -154,8 +154,9 @@ sync-ai-commands = { cmd = "python scripts/sync_ai_commands.py" }
 check-ai-commands = { cmd = "python scripts/sync_ai_commands.py --check" }
 
 # ssik is an optional, PyPI-only analytical IK solver used only by the
-# ssik_ik_gui (C++) and ssik_analytical_ik (Python) examples. It is not a
-# dependency of DART or dartpy; install it on demand with this convenience task.
+# ssik_ik_gui scene (dart-demos, C++) and the ssik_analytical_ik (Python)
+# example. It is not a dependency of DART or dartpy; install it on demand
+# with this convenience task.
 install-ssik = { cmd = "python -m pip install 'ssik>=2.3.0'" }
 
 build = { cmd = """
@@ -212,49 +213,16 @@ py-ex-hello-world = { depends-on = [
   ] },
 ] }
 
-py-ex-hello-world-gui = { depends-on = [
-  { task = "py-ex", args = [
-    "hello_world_gui",
-  ] },
-] }
-
-py-ex-rigid-cubes = { depends-on = [
-  { task = "py-ex", args = [
-    "rigid_cubes",
-  ] },
-] }
-
-py-ex-rigid-chain = { depends-on = [
-  { task = "py-ex", args = [
-    "rigid_chain",
-  ] },
-] }
-
-py-ex-rigid-loop = { depends-on = [{ task = "py-ex", args = ["rigid_loop"] }] }
-
-py-ex-biped-stand = { depends-on = [
-  { task = "py-ex", args = [
-    "biped_stand",
-  ] },
-] }
-
-py-ex-contacts-pointcloud = { depends-on = [
-  { task = "py-ex", args = [
-    "contacts_pointcloud",
-  ] },
-] }
-
-py-ex-drag-and-drop = { depends-on = [
-  { task = "py-ex", args = [
-    "drag_and_drop",
-  ] },
-] }
-
-py-ex-operational-space-control = { depends-on = [
-  { task = "py-ex", args = [
-    "operational_space_control",
-  ] },
-] }
+# py-demos: the consolidated dartpy scene catalog (python/examples/demos),
+# run as `python -m examples.demos` so `examples` resolves as a package;
+# cwd is the `python` directory (the parent of `examples`), mirroring the
+# WORKING_DIRECTORY used by the CMake py_example_demos target. PYTHONPATH
+# must be absolute (via $PIXI_PROJECT_ROOT) since it is resolved relative to
+# this task's cwd, not the workspace root that the other build/$BUILD_TYPE
+# paths above are written against.
+py-demos = { cmd = "python -m examples.demos", cwd = "python", depends-on = [
+  "build-py-dev",
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy" } }
 
 test = { cmd = """
     ctest \
@@ -378,22 +346,6 @@ ex = { cmd = """
   { arg = "example", default = "hello_world" },
 ], env = { BUILD_TYPE = "Release" } }
 
-ex-atlas-puppet = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --target atlas_puppet \
-        --parallel \
-    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/atlas_puppet
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-ex-atlas-simbicon = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --target atlas_simbicon \
-        --parallel \
-    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/atlas_simbicon
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
 ex-hello-world = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -402,10 +354,14 @@ ex-hello-world = { cmd = """
     && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/hello_world
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-py-atlas-puppet = { cmd = """
-    PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PYTHONPATH \
-    python python/examples/atlas_puppet/main.py
-""", depends-on = ["build"], env = { BUILD_TYPE = "Release" } }
+# demos: the consolidated dart-demos scene catalog (examples/demos).
+demos = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target dart-demos \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/dart-demos
+""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 bm = { cmd = """
     cmake \
