@@ -1,6 +1,8 @@
 # AI Principles
 
 These principles apply to AI-assisted work on the DART 6.20 support branch.
+Keep this file short: it spends always-loaded agent context, so put procedures
+and compatibility detail in the owner docs named by `AGENTS.md`.
 
 ## Evidence First
 
@@ -9,13 +11,25 @@ These principles apply to AI-assisted work on the DART 6.20 support branch.
 - Treat live GitHub state and current command output as authoritative.
 - Do not rely on stale branch notes when a current checkout or PR can be
   inspected.
+- Before substantial or consequential work, read enough release-branch context
+  to understand the real invariant: `AGENTS.md`,
+  `docs/information-architecture.md`, owner docs, affected modules and call
+  paths, current release/PR state, and the verification bar. Use that context to
+  choose the smallest compatibility-preserving change, not an ad hoc local
+  patch or special case. Keep context proportionate for tiny fixes.
 - Before a non-trivial fix, surface your unknowns rather than coding a guess:
   your plan is a map, not the territory of the real code. Convert consequential
   unknowns into knowns first — reproduce the bug, read the affected code, or get
   an independent blind-spot review — instead of discovering them mid-change.
-- Fix bugs at the root cause: reproduce the failure as the smallest case, fix
-  the underlying cause, and add regression coverage — do not silence the symptom
-  or widen scope to route around it.
+- Back consequential decisions with proportionate evidence: code inspection,
+  logs, focused tests, benchmarks, source research, or prototypes according to
+  the claim. Do not decide major workflow or compatibility choices from
+  intuition when direct evidence is practical.
+- For unexpected in-scope failures, reproduce the smallest failing case, fix the
+  underlying cause, and add regression coverage. Preserve the real invariant at
+  the right owner doc or module boundary; do not suppress logs, loosen checks,
+  skip cases, or route around symptoms. For pre-existing or external failures,
+  classify them with evidence and report or park them without weakening gates.
 
 ## Compatibility First
 
@@ -37,4 +51,5 @@ These principles apply to AI-assisted work on the DART 6.20 support branch.
 - Keep PRs focused. For dependency minimization, prefer one dependency or one
   `dart/external` tree per PR unless a shared mechanical step is required.
 - Use `docs/dev_tasks/<task>/` for multi-session state. Promote durable facts to
-  onboarding, release, or compatibility docs before retiring a task folder.
+  the owner selected by `docs/information-architecture.md` before retiring a
+  task folder.

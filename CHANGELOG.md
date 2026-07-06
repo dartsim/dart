@@ -44,6 +44,10 @@
 
 * Build
 
+  * Replace the dartpy wheel publishing path with Pixi-managed build,
+    repair, verification, and smoke-test tasks, and retire the legacy DART 6
+    Docker dev/wheel images.
+
   * Harden the release-branch contributor workflow: `pixi run install-hooks`
     installs a pre-commit hook running the lint gate (with a tracked Claude
     Code commit guard as fallback), `check-ai-commands` now runs inside
@@ -51,6 +55,10 @@
     workflow commands carry the structural metadata validated on `main`, and
     the `dart-changelog` routine is available for backport changelog
     decisions.
+
+  * Add a release-tailored documentation information architecture owner and
+    route docs-update workflows through it so DART 6.20 agents promote durable
+    task facts by lifecycle before retiring `docs/dev_tasks/` folders.
 
   * Add a "surface your unknowns" discipline to the release-branch AI
     principles (`docs/ai/principles.md`): before a non-trivial fix, convert
@@ -63,6 +71,10 @@
     smallest failing case, fix the underlying cause, and add regression
     coverage — instead of silencing the symptom or widening scope to route
     around it.
+
+  * Clarify release-branch AI-native guidance so always-loaded agent rules stay
+    compact, consequential decisions use release-wide context and proportionate
+    evidence, and in-scope failures are root-caused instead of hidden.
 
   * Replace the vendored `dart/external/convhull_3d` implementation with a
     DART-owned native `dart/math/detail/ConvexHull.hpp` implementation used by
@@ -232,6 +244,13 @@
     compatibility shims, and route mesh collision backends through the new
     representation:
     [#3145](https://github.com/dartsim/dart/pull/3145)
+
+  * Add `dart::math::PolygonMesh` and `MeshShape::getPolygonMesh()` so mesh
+    imports can preserve quad and n-gon topology for rendering/export while
+    keeping triangulated `TriMesh` data as the collision representation. OSG
+    rendering now triangulates non-triangular Assimp faces through the same
+    ear-clipping path used by `PolygonMesh::triangulate()`:
+    [#3167](https://github.com/dartsim/dart/pull/3167)
 
   * Fix `ArrowShape`'s generated Assimp mesh metadata so cloned arrows and
     refreshed TriMesh views use valid material indices on all supported

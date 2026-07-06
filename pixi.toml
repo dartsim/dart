@@ -10,7 +10,7 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 benchmark = ">=1.9.3,<2"
 black = ">=25.1.0,<26"
 clang-format = ">=14.0.0,<15"
-cmake = ">=4.0.2,<5"
+cmake = ">=4.0.2,<4.3.4"
 codespell = ">=2.4.1,<3"
 doxygen = ">=1.13.2,<2"
 gersemi = ">=0.24.0,<0.25"
@@ -30,6 +30,7 @@ sphinx-intl = "*"
 sphinx_rtd_theme = "*"
 sphinx-tabs = "*"
 taplo = ">=0.9.0,<1"
+wheel = ">=0.45.1,<0.46"
 assimp = ">=5.4.3,<7"
 bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
@@ -174,6 +175,45 @@ build-tests = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_IMGUI=ON" }
+
+wheel-build-core = { cmd = "python scripts/wheel_build.py {{ use_system_imgui }}", args = [
+  { arg = "use_system_imgui", default = "ON" },
+] }
+
+wheel-repair-linux-core = { cmd = """
+    auditwheel repair dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl -w dist/ &&
+    rm dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl
+""", args = [
+  { arg = "python_tag" },
+], env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
+
+wheel-repair-macos-core = { cmd = """
+    delocate-wheel --require-archs {{ arch }} \
+        -w dist/ \
+        -v dist/dartpy-*-{{ python_tag }}-*-macosx_*_{{ arch }}.whl
+""", args = [
+  { arg = "python_tag" },
+  { arg = "arch" },
+], env = { DYLD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME/lib", DELOCATE_LIBRARY_PATH = "$CONDA_PREFIX/lib:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME/lib", CONDA_PREFIX = "$CONDA_PREFIX:$PIXI_PROJECT_ROOT/.pixi/envs/$PIXI_ENVIRONMENT_NAME" } }
+
+wheel-repair-windows-core = { cmd = """
+    rm -rf dist/repaired &&
+    delvewheel repair dist/dartpy-*-{{ python_tag }}-*-win_amd64.whl -w dist/repaired &&
+    rm dist/dartpy-*-{{ python_tag }}-*-win_amd64.whl &&
+    mv dist/repaired/*.whl dist/ &&
+    rm -rf dist/repaired
+""", args = [
+  { arg = "python_tag" },
+] }
+
+wheel-verify-core = { cmd = """
+python scripts/verify_version.py dist/dartpy-*-{{ python_tag }}-*.whl &&
+python scripts/verify_wheel.py dist/dartpy-*-{{ python_tag }}-*.whl
+""", args = [{ arg = "python_tag" }], env = { PYTHONIOENCODING = "utf-8" } }
+
+wheel-test-core = { cmd = "python scripts/test_wheel.py dist/dartpy-*-{{ python_tag }}-*.whl", args = [
+  { arg = "python_tag" },
+], env = { PYTHONIOENCODING = "utf-8" } }
 
 build-py-dev = { cmd = """
     cmake \
@@ -999,6 +1039,270 @@ tracy = { cmd = "tracy-profiler" }
 [feature.profile.target.win-64.tasks]
 tracy = { cmd = "tracy-profiler.exe" }
 
+#======================
+# Feature: Wheel Building
+#======================
+
+[feature.py310-wheel]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+[feature.py310-wheel.dependencies]
+python = "3.10.*"
+
+[feature.py310-wheel.target.linux-64.dependencies]
+auditwheel = ">=6.5.0,<7"
+c-compiler = ">=1.11.0,<2"
+cxx-compiler = ">=1.11.0,<2"
+patchelf = ">=0.17.2,<0.18"
+sysroot_linux-64 = "2.28.*"
+
+[feature.py310-wheel.target.linux-64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-linux-core", args = [
+    "cp310",
+  ] },
+] }
+
+[feature.py310-wheel.target.osx-64.dependencies]
+delocate = ">=0.12.0,<0.14"
+
+[feature.py310-wheel.target.osx-64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-macos-core", args = [
+    "cp310",
+    "x86_64",
+  ] },
+] }
+
+[feature.py310-wheel.target.osx-arm64.dependencies]
+delocate = ">=0.12.0,<0.14"
+
+[feature.py310-wheel.target.osx-arm64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-macos-core", args = [
+    "cp310",
+    "arm64",
+  ] },
+] }
+
+[feature.py310-wheel.target.win-64.dependencies]
+delvewheel = ">=1.10.0,<2"
+
+[feature.py310-wheel.target.win-64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-windows-core", args = [
+    "cp310",
+  ] },
+] }
+
+[feature.py310-wheel.tasks]
+wheel-verify = { depends-on = [
+  { task = "wheel-verify-core", args = [
+    "cp310",
+  ] },
+] }
+wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp310"] }] }
+
+[feature.py311-wheel]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+[feature.py311-wheel.dependencies]
+python = "3.11.*"
+
+[feature.py311-wheel.target.linux-64.dependencies]
+auditwheel = ">=6.5.0,<7"
+c-compiler = ">=1.11.0,<2"
+cxx-compiler = ">=1.11.0,<2"
+patchelf = ">=0.17.2,<0.18"
+sysroot_linux-64 = "2.28.*"
+
+[feature.py311-wheel.target.linux-64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-linux-core", args = [
+    "cp311",
+  ] },
+] }
+
+[feature.py311-wheel.target.osx-64.dependencies]
+delocate = ">=0.12.0,<0.14"
+
+[feature.py311-wheel.target.osx-64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-macos-core", args = [
+    "cp311",
+    "x86_64",
+  ] },
+] }
+
+[feature.py311-wheel.target.osx-arm64.dependencies]
+delocate = ">=0.12.0,<0.14"
+
+[feature.py311-wheel.target.osx-arm64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-macos-core", args = [
+    "cp311",
+    "arm64",
+  ] },
+] }
+
+[feature.py311-wheel.target.win-64.dependencies]
+delvewheel = ">=1.10.0,<2"
+
+[feature.py311-wheel.target.win-64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-windows-core", args = [
+    "cp311",
+  ] },
+] }
+
+[feature.py311-wheel.tasks]
+wheel-verify = { depends-on = [
+  { task = "wheel-verify-core", args = [
+    "cp311",
+  ] },
+] }
+wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp311"] }] }
+
+[feature.py312-wheel]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+[feature.py312-wheel.dependencies]
+python = "3.12.*"
+
+[feature.py312-wheel.target.linux-64.dependencies]
+auditwheel = ">=6.5.0,<7"
+c-compiler = ">=1.11.0,<2"
+cxx-compiler = ">=1.11.0,<2"
+patchelf = ">=0.17.2,<0.18"
+sysroot_linux-64 = "2.28.*"
+
+[feature.py312-wheel.target.linux-64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-linux-core", args = [
+    "cp312",
+  ] },
+] }
+
+[feature.py312-wheel.target.osx-64.dependencies]
+delocate = ">=0.12.0,<0.14"
+
+[feature.py312-wheel.target.osx-64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-macos-core", args = [
+    "cp312",
+    "x86_64",
+  ] },
+] }
+
+[feature.py312-wheel.target.osx-arm64.dependencies]
+delocate = ">=0.12.0,<0.14"
+
+[feature.py312-wheel.target.osx-arm64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-macos-core", args = [
+    "cp312",
+    "arm64",
+  ] },
+] }
+
+[feature.py312-wheel.target.win-64.dependencies]
+delvewheel = ">=1.10.0,<2"
+
+[feature.py312-wheel.target.win-64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-windows-core", args = [
+    "cp312",
+  ] },
+] }
+
+[feature.py312-wheel.tasks]
+wheel-verify = { depends-on = [
+  { task = "wheel-verify-core", args = [
+    "cp312",
+  ] },
+] }
+wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp312"] }] }
+
+[feature.py313-wheel]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+[feature.py313-wheel.dependencies]
+python = "3.13.*"
+
+[feature.py313-wheel.target.linux-64.dependencies]
+auditwheel = ">=6.5.0,<7"
+c-compiler = ">=1.11.0,<2"
+cxx-compiler = ">=1.11.0,<2"
+patchelf = ">=0.17.2,<0.18"
+sysroot_linux-64 = "2.28.*"
+
+[feature.py313-wheel.target.linux-64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-linux-core", args = [
+    "cp313",
+  ] },
+] }
+
+[feature.py313-wheel.target.osx-64.dependencies]
+delocate = ">=0.12.0,<0.14"
+
+[feature.py313-wheel.target.osx-64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-macos-core", args = [
+    "cp313",
+    "x86_64",
+  ] },
+] }
+
+[feature.py313-wheel.target.osx-arm64.dependencies]
+delocate = ">=0.12.0,<0.14"
+
+[feature.py313-wheel.target.osx-arm64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-macos-core", args = [
+    "cp313",
+    "arm64",
+  ] },
+] }
+
+[feature.py313-wheel.target.win-64.dependencies]
+delvewheel = ">=1.10.0,<2"
+
+[feature.py313-wheel.target.win-64.tasks]
+wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-repair = { depends-on = [
+  { task = "wheel-repair-windows-core", args = [
+    "cp313",
+  ] },
+] }
+
+[feature.py313-wheel.tasks]
+wheel-verify = { depends-on = [
+  { task = "wheel-verify-core", args = [
+    "cp313",
+  ] },
+] }
+wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp313"] }] }
+
 #==============
 # Environments
 #==============
@@ -1006,4 +1310,8 @@ tracy = { cmd = "tracy-profiler.exe" }
 [environments]
 default = ["assimp6"]
 gazebo = ["gazebo"]
+py310-wheel = ["assimp6", "py310-wheel"]
+py311-wheel = ["assimp6", "py311-wheel"]
+py312-wheel = ["assimp6", "py312-wheel"]
+py313-wheel = ["assimp6", "py313-wheel"]
 profile = ["profile", "assimp6"]

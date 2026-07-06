@@ -491,9 +491,7 @@ def test_guard_skips_conditional_cd_commit_in_another_repo(tmp_path):
         "if false\nthen cd {other}\nfi\ngit commit -m x",
     ],
 )
-def test_guard_does_not_preserve_conditional_branch_cd_cwd(
-    tmp_path, command_template
-):
+def test_guard_does_not_preserve_conditional_branch_cd_cwd(tmp_path, command_template):
     repo, env = _init_repo(tmp_path)
     other = tmp_path / "other"
     other.mkdir()
@@ -539,9 +537,7 @@ def test_guard_detects_git_commit_after_heredoc_body(tmp_path):
         'printf "%s\\n" "<<-EOF"\ngit commit -m x',
     ],
 )
-def test_guard_detects_git_commit_after_quoted_heredoc_marker_text(
-    tmp_path, command
-):
+def test_guard_detects_git_commit_after_quoted_heredoc_marker_text(tmp_path, command):
     returncode, stderr = _guard_verdict(tmp_path, command)
 
     assert returncode == 0
