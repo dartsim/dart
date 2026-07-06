@@ -100,6 +100,46 @@ def test_cli_does_not_require_boolean_optional_action(
     assert sidecar["tolerance"]["ignore_aa"] is False
 
 
+def test_compare_uses_sidecar_tolerance_and_allows_cli_override(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    baseline = tmp_path / "baseline.png"
+    golden = tmp_path / "golden.png"
+    capture = tmp_path / "capture.png"
+    pixels = bytearray(_write_contrast_png(baseline))
+    assert (
+        image_golden.main(
+            [str(baseline), str(golden), "--update", "--failpercent", "5.0"]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    width = height = 100
+    for y in range(0, 10):
+        for x in range(0, 20):
+            offset = (y * width + x) * 3
+            pixels[offset : offset + 3] = b"\x00\xff\x00"
+    write_png(capture, width, height, bytes(pixels))
+
+    assert image_golden.main([str(capture), str(golden)]) == 0
+    verdict = json.loads(capsys.readouterr().out)
+    assert verdict["thresholds_used"]["diff"]["failpercent"] == 5.0
+    assert (
+        verdict["checks"]["diff"]["pct_pixels_over_threshold"]
+        > image_verdict.DEFAULT_FAILPERCENT
+    )
+
+    assert (
+        image_golden.main(
+            [str(capture), str(golden), "--failpercent", "0.5"]
+        )
+        == 1
+    )
+    verdict = json.loads(capsys.readouterr().out)
+    assert verdict["thresholds_used"]["diff"]["failpercent"] == 0.5
+
+
 def test_compare_catches_seeded_render_regression(tmp_path: Path) -> None:
     golden = tmp_path / "golden.png"
     capture = tmp_path / "capture.png"
