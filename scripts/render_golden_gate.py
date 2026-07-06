@@ -117,14 +117,21 @@ def main(argv: list[str] | None = None) -> int:
             print(f"updated golden {args.golden} ({metadata})")
             return 0
 
-        verdict = image_golden.compare_golden(
-            capture,
-            args.golden,
-            fail=args.fail,
-            failpercent=args.failpercent,
-            retries=args.retries,
-            metadata=metadata,
-        )
+        try:
+            verdict = image_golden.compare_golden(
+                capture,
+                args.golden,
+                fail=args.fail,
+                failpercent=args.failpercent,
+                retries=args.retries,
+                metadata=metadata,
+            )
+        except FileNotFoundError as exc:
+            # Distinct from a visual-regression FAIL (exit 1): a missing golden
+            # means the gate cannot run. Surface it cleanly with exit 2, like
+            # image_golden.py, instead of an uncaught traceback.
+            print(f"render_golden_gate.py: {exc}", file=sys.stderr)
+            return 2
         if args.out is not None:
             args.out.parent.mkdir(parents=True, exist_ok=True)
             args.out.write_text(

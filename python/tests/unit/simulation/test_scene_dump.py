@@ -33,7 +33,11 @@ def test_compute_step_metrics_binding_reports_finite_step_state():
     assert math.isfinite(metrics.total_energy)
     assert np.isfinite(np.asarray(metrics.linear_momentum, dtype=float)).all()
     assert np.isfinite(np.asarray(metrics.angular_momentum, dtype=float)).all()
-    assert metrics.active_contact_count >= 0
+    # The sphere has settled into resting contact on the ground box after 120
+    # steps, so these must reflect real physics -- a stubbed binding returning
+    # all zeros would pass finiteness but fail here.
+    assert metrics.active_contact_count >= 1
+    assert abs(metrics.potential_energy) > 0.0
     assert math.isfinite(metrics.max_penetration_depth)
     assert metrics.max_penetration_depth >= 0.0
     assert metrics.last_step_iterations >= 0
@@ -125,3 +129,20 @@ def test_scene_dump_json_and_text_match_agent_schema():
     assert "body:box rigid body box" in text
     assert "joint:box_slider prismatic joint box_slider" in text
     assert "flat_index:" in text
+
+
+def test_capsule_scene_dump_size_includes_caps():
+    sx = _simulation()
+
+    world = sx.World()
+    body = world.add_rigid_body("cap", position=(0.0, 0.0, 1.0))
+    body.set_collision_shape(sx.CollisionShape.capsule(0.3, 0.5))
+
+    scene = sx.dump_scene_json(world)
+    shape = {b["name"]: b for b in scene["bodies"]}["cap"]["collision_shape"]
+    assert shape["type"] == "capsule"
+    assert shape["radius"] == pytest.approx(0.3)
+    assert shape["half_height"] == pytest.approx(0.5)
+    # Full axial extent includes both hemispherical caps: 2*half_height + 2*radius
+    # (not the bare cylinder segment 2*half_height).
+    assert shape["size"] == pytest.approx([0.6, 0.6, 1.6])

@@ -104,5 +104,12 @@ def test_contact_trace_reports_position_normal_and_depth() -> None:
     assert len(contact["position"]) == 3
     assert len(contact["normal"]) == 3
     assert all(math.isfinite(value) for value in contact["position"])
-    assert all(math.isfinite(value) for value in contact["normal"])
-    assert math.isfinite(contact["depth"])
+    # The contact normal is a unit vector; a wrong-but-finite payload
+    # (e.g. [0,0,0]) would pass a bare finiteness check but fails this.
+    normal_length = math.sqrt(sum(value * value for value in contact["normal"]))
+    assert abs(normal_length - 1.0) < 1.0e-6
+    # Small penetration for a resting box on the ground (the box is 0.1 m tall);
+    # a bogus depth like -5.0 is rejected.
+    assert abs(contact["depth"]) < 0.05
+    # The contact lies near the box/ground interface (z ~ 0), not far away.
+    assert abs(contact["position"][2]) < 0.2

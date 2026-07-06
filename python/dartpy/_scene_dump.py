@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from functools import wraps
 import math
+from functools import wraps
 from typing import Any, Callable
 
 import numpy as np
@@ -108,9 +108,7 @@ def _install_loader_registry(simulation: Any) -> None:
             multibody = _loader(*args, **kwargs)
             if args:
                 world = args[0]
-                _record_name(
-                    _WORLD_MULTIBODY_NAMES, world, _object_name(multibody, "")
-                )
+                _record_name(_WORLD_MULTIBODY_NAMES, world, _object_name(multibody, ""))
             return multibody
 
         try:
@@ -191,10 +189,17 @@ def _shape_size(shape: Any, shape_type: str) -> list[float] | None:
         radius = float(_safe_attr(shape, "radius", 0.0))
         diameter = 2.0 * radius
         return [diameter, diameter, diameter]
-    if shape_type in {"capsule", "cylinder"}:
+    if shape_type == "cylinder":
         radius = float(_safe_attr(shape, "radius", 0.0))
         half_height = float(_safe_attr(shape, "half_height", 0.0))
         return [2.0 * radius, 2.0 * radius, 2.0 * half_height]
+    if shape_type == "capsule":
+        radius = float(_safe_attr(shape, "radius", 0.0))
+        half_height = float(_safe_attr(shape, "half_height", 0.0))
+        # Full axial bounding extent includes the two hemispherical caps, so the
+        # Z size is 2*half_height + 2*radius (matching the full-bbox convention
+        # used for box/sphere/mesh, not the bare cylinder segment).
+        return [2.0 * radius, 2.0 * radius, 2.0 * half_height + 2.0 * radius]
     vertices = _safe_attr(shape, "vertices")
     if vertices is not None:
         points = np.asarray(vertices, dtype=float)
@@ -268,9 +273,7 @@ def _body_to_json(
             "orientation_rpy": orientation_rpy,
             "transform": _matrix(transform, 4, 4),
         },
-        "linear_velocity": _vector(
-            _safe_attr(body, "linear_velocity", np.zeros(3)), 3
-        ),
+        "linear_velocity": _vector(_safe_attr(body, "linear_velocity", np.zeros(3)), 3),
         "angular_velocity": _vector(
             _safe_attr(body, "angular_velocity", np.zeros(3)), 3
         ),
