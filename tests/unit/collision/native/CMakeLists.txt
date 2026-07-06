@@ -20,6 +20,11 @@ dart_add_test(
 )
 dart_add_test(
   "unit"
+  UNIT_collision_native_narrow_phase_dispatch
+  test_narrow_phase_dispatch.cpp
+)
+dart_add_test(
+  "unit"
   UNIT_collision_native_gjk
   test_gjk.cpp
 )

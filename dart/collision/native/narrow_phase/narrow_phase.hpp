@@ -30,47 +30,50 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
-#define DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
+#pragma once
 
-#include <dart/constraint/BoxedLcpSolver.hpp>
+#include <dart/collision/native/detail/span.hpp>
+#include <dart/collision/native/export.hpp>
+#include <dart/collision/native/types.hpp>
 
-#include <cstddef>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
-namespace dart {
-namespace constraint {
+namespace dart::collision::native {
 
-class DantzigBoxedLcpSolver : public BoxedLcpSolver
+enum class ShapeType;
+
+struct DART_COLLISION_NATIVE_API NarrowPhasePair
 {
-public:
-  // Documentation inherited.
-  const std::string& getType() const override;
-
-  /// Returns type for this class
-  static const std::string& getStaticType();
-
-  // Documentation inherited.
-  bool solve(
-      int n,
-      double* A,
-      double* x,
-      double* b,
-      int nub,
-      double* lo,
-      double* hi,
-      int* findex,
-      bool earlyTermination) override;
-
-  /// Reserves the thread-local Dantzig scratch used by solve().
-  void reserve(std::size_t n);
-
-#if DART_BUILD_MODE_DEBUG
-  // Documentation inherited.
-  bool canSolve(int n, const double* A) override;
-#endif
+  const Shape* shapeA;
+  const Shape* shapeB;
+  Eigen::Isometry3d tfA;
+  Eigen::Isometry3d tfB;
 };
 
-} // namespace constraint
-} // namespace dart
+class DART_COLLISION_NATIVE_API NarrowPhase
+{
+public:
+  static bool collide(
+      const Shape* shape1,
+      const Eigen::Isometry3d& tf1,
+      const Shape* shape2,
+      const Eigen::Isometry3d& tf2,
+      const CollisionOption& option,
+      CollisionResult& result);
 
-#endif // DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
+  static bool collideBatch(
+      span<const NarrowPhasePair> pairs,
+      span<CollisionResult> results,
+      const CollisionOption& option = CollisionOption());
+
+  static bool collideBatch(
+      span<const NarrowPhasePair> pairs,
+      span<CollisionResult> results,
+      span<bool> hits,
+      const CollisionOption& option = CollisionOption());
+
+  static bool isSupported(ShapeType type1, ShapeType type2);
+};
+
+} // namespace dart::collision::native

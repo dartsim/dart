@@ -132,6 +132,11 @@
     bounding-box corners:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Speed up DART-native finite-shape broadphase sweeps on AVX-width builds by
+    screening sorted AABB candidate batches with `dart/simd`, while keeping
+    baseline-ISA builds on the scalar sweep path:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Reduce DART-native broadphase setup work by caching local bounds
     center/half-extents and using those cached bounds directly when primitive
     collision objects have an identity linear transform:
@@ -277,6 +282,13 @@
 
 * Simulation
 
+  * Add World-owned simulation memory management and optional
+    `World::enterSimulationMode()` preparation so DART-owned native-collision
+    same-shape simulation steps can run without steady-state heap allocations
+    after explicit preparation or the implicit first step. The default
+    construction path remains unchanged, and Bullet/ODE backend-internal
+    allocations stay outside the strict native allocation gate.
+
   * Added `dart::simulation::WorldConfig`, the `CollisionDetectorType` enum,
     `World::setCollisionDetector(CollisionDetectorType)` /
     `World::setCollisionDetector(CollisionDetectorPtr)` /
@@ -413,6 +425,12 @@
 
 * Examples
 
+  * Improve the C++ `soft_bodies` example with a framed Y-up view, headless PNG
+    capture, translucent soft meshes, display controls for embedded visuals,
+    and two-sided soft mesh rendering so generated soft-body faces do not look
+    missing from normal camera angles:
+    [#3304](https://github.com/dartsim/dart/pull/3304)
+
   * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
     prebuilt IK modules and changing target and solver options online. Every IK
     solution is shown at once as a DART skeleton built from the arm's kinematics
@@ -428,6 +446,16 @@
     [#3092](https://github.com/dartsim/dart/pull/3092)
 
 * GUI
+
+  * Fix `dart::gui::osg` interaction teardown so registered handlers and
+    drag-and-drop tools are released correctly. `DefaultEventHandler::
+    addMouseEventHandler` now observes its handler so the documented
+    auto-unregister-on-destruction actually fires; previously a destroyed
+    `MouseEventHandler` left a dangling pointer in the handler list, a
+    use-after-free on the next mouse event. `InteractiveFrameDnD` now deletes
+    the nine `InteractiveToolDnD` objects it allocates instead of leaking them
+    on every teardown:
+    [#3300](https://github.com/dartsim/dart/pull/3300)
 
   * Add shared `dart-gui-osg` helpers for parsing and applying GUI scale, and
     route ImGui font/style scaling through `ImGuiHandler`:

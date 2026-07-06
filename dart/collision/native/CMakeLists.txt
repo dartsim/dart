@@ -16,6 +16,7 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/gjk.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/gjk_inl.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/mpr.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/narrow_phase.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/sat.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/face_clip.hpp
@@ -31,6 +32,7 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/shapes/shape.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/gjk.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/mpr.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/narrow_phase.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/sat.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/face_clip.cpp
