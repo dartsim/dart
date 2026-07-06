@@ -721,19 +721,9 @@ void ConstraintSolver::prepareForSimulation()
   const auto lastCollisionContacts = mCollisionResult.getContacts();
   constexpr int kPreparationPasses = 2;
   for (int pass = 0; pass < kPreparationPasses; ++pass) {
-    updateConstraints();
+    updateConstraints(false);
     buildConstrainedGroups();
-
-    const auto groupCount = mConstrainedGroups.size();
-    mGroupResting.reserve(groupCount);
-    mGroupAllSleepCandidates.reserve(groupCount);
-    mGroupPreserveSleepCandidates.reserve(groupCount);
-    mGroupAlreadyRestingScratch.reserve(groupCount);
-    mGroupSolvedToRestScratch.reserve(groupCount);
-
-    for (const auto& group : mConstrainedGroups) {
-      reserveConstrainedGroupScratch(group);
-    }
+    reserveConstrainedGroupsScratch();
   }
   mCollisionResult.clear();
   for (const auto& contact : lastCollisionContacts)
@@ -866,7 +856,7 @@ bool ConstraintSolver::checkAndAddConstraint(
 }
 
 //==============================================================================
-void ConstraintSolver::updateConstraints()
+void ConstraintSolver::updateConstraints(bool updateManualConstraints)
 {
   DART_PROFILE_SCOPED;
 
@@ -879,7 +869,7 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   // Update manual constraints
   //----------------------------------------------------------------------------
-  {
+  if (updateManualConstraints) {
     DART_PROFILE_SCOPED_N("update manual constraints");
     for (auto& manualConstraint : mManualConstraints) {
       manualConstraint->update();
@@ -2234,19 +2224,8 @@ void ConstraintSolver::solvePositionConstrainedGroups()
 }
 
 //==============================================================================
-void ConstraintSolver::solveConstrainedGroups()
+bool ConstraintSolver::canSolveConstrainedGroupsInParallel() const
 {
-  DART_PROFILE_SCOPED;
-
-  auto solveGroupAt = [&](std::size_t i) {
-    solveConstrainedGroup(mConstrainedGroups[i]);
-  };
-
-  auto solveGroupsSerial = [&](const auto& solve) {
-    for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i)
-      solve(i);
-  };
-
   auto hasCustomContactConstraint = [&]() {
     for (const auto& group : mConstrainedGroups) {
       for (std::size_t i = 0; i < group.getNumConstraints(); ++i) {
@@ -2417,22 +2396,26 @@ void ConstraintSolver::solveConstrainedGroups()
                || !hasSharedNonReactiveDependency());
   };
 
-  auto warmParallelSolveScratch = [&]() {
-    const std::size_t participantCount = std::min<std::size_t>(
-        mNumSimulationThreads, mConstrainedGroups.size());
-    auto reserveAllGroupScratchForThread = [&](std::size_t) {
-      for (const auto& group : mConstrainedGroups)
-        reserveConstrainedGroupScratch(group);
-    };
+  return canSolveGroupsInParallel();
+}
 
-    mConstraintThreadPool->parallelFor(
-        participantCount, participantCount, reserveAllGroupScratchForThread);
+//==============================================================================
+void ConstraintSolver::solveConstrainedGroups()
+{
+  DART_PROFILE_SCOPED;
+
+  auto solveGroupAt = [&](std::size_t i) {
+    solveConstrainedGroup(mConstrainedGroups[i]);
+  };
+
+  auto solveGroupsSerial = [&](const auto& solve) {
+    for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i)
+      solve(i);
   };
 
   if (!mDeactivationActive) {
-    if (canSolveGroupsInParallel()) {
+    if (canSolveConstrainedGroupsInParallel()) {
       DART_PROFILE_SCOPED_N("parallel solve groups");
-      warmParallelSolveScratch();
       mConstraintThreadPool->parallelFor(
           mConstrainedGroups.size(), mNumSimulationThreads, solveGroupAt);
     } else {
@@ -2473,9 +2456,8 @@ void ConstraintSolver::solveConstrainedGroups()
       mGroupSolvedToRestScratch[i] = 1;
   };
 
-  if (canSolveGroupsInParallel()) {
+  if (canSolveConstrainedGroupsInParallel()) {
     DART_PROFILE_SCOPED_N("parallel solve deactivation groups");
-    warmParallelSolveScratch();
     mConstraintThreadPool->parallelFor(
         mConstrainedGroups.size(),
         mNumSimulationThreads,
@@ -2495,6 +2477,38 @@ void ConstraintSolver::solveConstrainedGroups()
       skeleton->setResting(true);
     }
   }
+}
+
+//==============================================================================
+void ConstraintSolver::reserveConstrainedGroupsScratch()
+{
+  const auto groupCount = mConstrainedGroups.size();
+  mGroupResting.reserve(groupCount);
+  mGroupAllSleepCandidates.reserve(groupCount);
+  mGroupPreserveSleepCandidates.reserve(groupCount);
+  mGroupAlreadyRestingScratch.reserve(groupCount);
+  mGroupSolvedToRestScratch.reserve(groupCount);
+
+  for (const auto& group : mConstrainedGroups) {
+    reserveConstrainedGroupScratch(group);
+  }
+
+  if (!canSolveConstrainedGroupsInParallel()) {
+    return;
+  }
+
+  const std::size_t participantCount
+      = std::min<std::size_t>(mNumSimulationThreads, mConstrainedGroups.size());
+  if (participantCount <= 1u)
+    return;
+
+  auto reserveAllGroupScratchForThread = [&](std::size_t) {
+    for (const auto& group : mConstrainedGroups)
+      reserveConstrainedGroupScratch(group);
+  };
+
+  mConstraintThreadPool->parallelFor(
+      participantCount, participantCount, reserveAllGroupScratchForThread);
 }
 
 //==============================================================================

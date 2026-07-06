@@ -300,13 +300,20 @@ protected:
   bool checkAndAddConstraint(const ConstraintBasePtr& constraint);
 
   /// Update constraints
-  void updateConstraints();
+  void updateConstraints(bool updateManualConstraints = true);
 
   /// Build constrained groupsContact
   void buildConstrainedGroups();
 
   /// Solve constrained groups
   void solveConstrainedGroups();
+
+  /// Returns true when the current constrained groups can be solved in
+  /// parallel.
+  bool canSolveConstrainedGroupsInParallel() const;
+
+  /// Reserve solver scratch for the currently built constrained groups.
+  void reserveConstrainedGroupsScratch();
 
   /// Reserve concrete solver scratch for one already-built constrained group.
   virtual void reserveConstrainedGroupScratch(const ConstrainedGroup& group);

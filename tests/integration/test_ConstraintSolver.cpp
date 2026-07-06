@@ -104,6 +104,50 @@ public:
   }
 };
 
+class CountingManualConstraint final : public constraint::ConstraintBase
+{
+public:
+  CountingManualConstraint()
+  {
+    mDim = 1u;
+  }
+
+  void update() override
+  {
+    ++mNumUpdates;
+  }
+
+  void getInformation(constraint::ConstraintInfo*) override {}
+
+  void applyUnitImpulse(std::size_t) override {}
+
+  void getVelocityChange(double*, bool) override {}
+
+  void excite() override {}
+
+  void unexcite() override {}
+
+  void applyImpulse(double*) override {}
+
+  bool isActive() const override
+  {
+    return false;
+  }
+
+  dynamics::SkeletonPtr getRootSkeleton() const override
+  {
+    return nullptr;
+  }
+
+  std::size_t getNumUpdates() const
+  {
+    return mNumUpdates;
+  }
+
+private:
+  std::size_t mNumUpdates{0u};
+};
+
 class DerivedDantzigBoxedLcpSolver final
   : public constraint::DantzigBoxedLcpSolver
 {
@@ -295,6 +339,11 @@ public:
   void solveGroupsForTest()
   {
     solveConstrainedGroups();
+  }
+
+  void reserveScratchForCurrentGroupsForTest()
+  {
+    reserveConstrainedGroupsScratch();
   }
 
   int getNumSolvedGroups() const
@@ -907,19 +956,39 @@ TEST(ConstraintSolver, DirectSimulationThreadSettingSolvesGroupsInParallel)
 }
 
 //==============================================================================
-TEST(ConstraintSolver, ParallelSolveWarmsScratchOnWorkerThreads)
+TEST(ConstraintSolver, PrepareForSimulationDoesNotUpdateManualConstraints)
+{
+  constraint::BoxedLcpConstraintSolver solver;
+  auto manualConstraint = std::make_shared<CountingManualConstraint>();
+  solver.addConstraint(manualConstraint);
+
+  solver.prepareForSimulation();
+  EXPECT_EQ(0u, manualConstraint->getNumUpdates());
+
+  solver.solve();
+  EXPECT_EQ(1u, manualConstraint->getNumUpdates());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ParallelPreparationWarmsScratchOnWorkerThreads)
 {
   ExposedThreadedConstraintSolver solver;
   solver.setNumSimulationThreads(4);
   solver.addFakeConstrainedGroups(130, 100);
   solver.recordReserveThreadsForTest();
 
+  solver.reserveScratchForCurrentGroupsForTest();
+
+  EXPECT_EQ(0, solver.getNumSolvedGroups());
+  EXPECT_GT(solver.getNumReserveCalls(), 130);
+  EXPECT_GT(solver.getNumReserveThreads(), 1u);
+
+  solver.recordReserveThreadsForTest();
   solver.solveGroupsForTest();
 
   EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
-  EXPECT_GT(solver.getNumReserveCalls(), 130);
-  EXPECT_GT(solver.getNumReserveThreads(), 1u);
+  EXPECT_EQ(0, solver.getNumReserveCalls());
 }
 
 //==============================================================================
