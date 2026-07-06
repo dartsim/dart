@@ -51,9 +51,10 @@ FrameAllocator::FrameAllocator(
   if (mBuffer) {
     const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
     const auto aligned = (addr + 63) & ~uintptr_t{63};
-    char* begin = reinterpret_cast<char*>(aligned);
-    char* end = mBuffer + mCapacity;
-    if (begin < end) {
+    const auto endAddr = addr + mCapacity;
+    if (aligned < endAddr) {
+      char* begin = reinterpret_cast<char*>(aligned);
+      char* end = mBuffer + mCapacity;
       mBegin = begin;
       mCur = begin;
       mEnd = end;
@@ -156,13 +157,19 @@ void FrameAllocator::resetSlow() noexcept
 
   if (mBuffer) {
     const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
-    char* begin = reinterpret_cast<char*>((addr + 63) & ~uintptr_t{63});
+    const auto aligned = (addr + 63) & ~uintptr_t{63};
+    const auto endAddr = addr + mCapacity;
     // Guard the same tiny-buffer case as the constructor: if a failed grow
     // left a buffer too small for a 64-byte-aligned arena, keep the fast-path
     // window empty (mCur == mEnd == mBuffer) instead of letting mBegin exceed
     // mEnd.
-    mBegin = (begin < mEnd) ? begin : mBuffer;
-    mEnd = (begin < mEnd) ? mEnd : mBuffer;
+    if (aligned < endAddr) {
+      mBegin = reinterpret_cast<char*>(aligned);
+      mEnd = mBuffer + mCapacity;
+    } else {
+      mBegin = mBuffer;
+      mEnd = mBuffer;
+    }
   } else {
     mBegin = nullptr;
     mEnd = nullptr;
