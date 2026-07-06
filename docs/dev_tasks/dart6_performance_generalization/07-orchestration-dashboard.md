@@ -3,7 +3,10 @@
 Status board only; packet definitions live in the lane docs. Update this
 file (and RESUME.md) in every PR that claims or completes a packet.
 
-Baseline: `origin/release-6.20` @ `70b92010311` (2026-07-04).
+Branch point: `origin/release-6.20` @ `70b92010311` (2026-07-04 plan
+branch point).
+Guard baseline: `origin/release-6.20` @ `b9e6910c066` (2026-07-05
+WP-PG.01 current-base guard refresh).
 Related open queue at last refresh: none blocking (enablers merged:
 #3209, #3226, #3229, #3230, #3234, #3281). WP-PG.40 standalone PR
 #3270 was closed by maintainer direction and its D1/D2 evidence now rides
@@ -17,20 +20,20 @@ with the first real SIMD-kernel PR.
 | WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | open (PG.23 blocked D8; lane re-review at WS-F phase 5) |
 | WS-C dynamics batching | 04-dynamics-batching-lane.md | PG.30–PG.33 | open (PG.33 gated) |
 | WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | active (PG.40 folded into PG.42; PG.41 waits for PG.10 seam evidence) |
-| WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (**PG.01 first**) |
+| WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 done; PG.02/PG.03 next; PG.04 blocked D4) |
 | WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; phase 1 internal math core merged (#3281); no DART 6 detector adapter or phase-4 broadphase SIMD yet |
 
 ## Packet board
 
 | Packet | Lane | Status | Branch / PR | Evidence |
 | --- | --- | --- | --- | --- |
-| WP-PG.01 baseline packet | WS-E | open | — | — |
+| WP-PG.01 baseline packet | WS-E | done — PR pending | `wp-pg-01-baseline-evidence` | 01-baseline-evidence.md (S1–S6 guard rows, profile splits, prior-art triage) |
 | WP-PG.02 benchmark matrix | WS-E | open | — | — |
 | WP-PG.03 profiling doc | WS-E | open | — | — |
 | WP-PG.04 executor tooling | WS-E | blocked (D4) | — | — |
 | WP-PG.10 LCP instrumentation | WS-A | open | — | — |
 | WP-PG.11 solver RTTI removal | WS-A | open | — | — |
-| WP-PG.12 direct assembly | WS-A | open | — | — |
+| WP-PG.12 direct assembly | WS-A | deprioritized (PG.01 evidence: assembly ≤ ~8%) | — | — |
 | WP-PG.13 row islanding | WS-A | evidence-gated (PG.10 census) | — | — |
 | WP-PG.14 matrix-free path | WS-A | blocked (D3) | — | — |
 | WP-PG.15 creep vs rest-veto | WS-A | blocked (D7) | — | — |
