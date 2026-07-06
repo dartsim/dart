@@ -619,6 +619,12 @@ protected:
   /// Global Skeleton structural version captured at simulation preparation.
   std::size_t mSimulationModeStructuralVersion = 0;
 
+  /// Collision group captured at simulation preparation.
+  const collision::CollisionGroup* mSimulationModeCollisionGroup = nullptr;
+
+  /// Constraint solver thread count captured at simulation preparation.
+  std::size_t mSimulationModeConstraintSolverThreads = 0;
+
   /// Options controlling automatic body deactivation ("sleeping")
   simulation::DeactivationOptions mDeactivationOptions;
 

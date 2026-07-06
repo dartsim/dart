@@ -317,6 +317,8 @@ void World::invalidateSimulationMode()
 {
   mSimulationMode = false;
   mSimulationModeStructuralVersion = 0;
+  mSimulationModeCollisionGroup = nullptr;
+  mSimulationModeConstraintSolverThreads = 0;
 }
 
 //==============================================================================
@@ -386,6 +388,15 @@ void World::enterSimulationMode()
   reserveMemoryManagerForSimulationShape();
   mSimulationModeStructuralVersion
       = dynamics::Skeleton::getGlobalStructuralVersion();
+  if (mConstraintSolver) {
+    mSimulationModeCollisionGroup
+        = mConstraintSolver->getCollisionGroup().get();
+    mSimulationModeConstraintSolverThreads
+        = mConstraintSolver->getNumSimulationThreads();
+  } else {
+    mSimulationModeCollisionGroup = nullptr;
+    mSimulationModeConstraintSolverThreads = 0;
+  }
   mSimulationMode = true;
 }
 
@@ -394,7 +405,12 @@ bool World::isInSimulationMode() const
 {
   return mSimulationMode
          && mSimulationModeStructuralVersion
-                == dynamics::Skeleton::getGlobalStructuralVersion();
+                == dynamics::Skeleton::getGlobalStructuralVersion()
+         && mConstraintSolver
+         && mConstraintSolver->getCollisionGroup().get()
+                == mSimulationModeCollisionGroup
+         && mConstraintSolver->getNumSimulationThreads()
+                == mSimulationModeConstraintSolverThreads;
 }
 
 //==============================================================================
