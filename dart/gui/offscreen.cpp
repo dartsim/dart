@@ -100,6 +100,12 @@ struct OffscreenRenderer::Impl
       throw std::runtime_error(
           "Failed to create a Filament engine for offscreen rendering");
     }
+    if (std::string(context.backendName) == "noop") {
+      destroyContextOnly();
+      throw std::runtime_error(
+          "OffscreenRenderer requires a real Filament backend; resolved noop "
+          "is not supported");
+    }
     if (context.renderer == nullptr || context.swapChain == nullptr
         || context.scene == nullptr || context.view == nullptr
         || context.camera == nullptr) {

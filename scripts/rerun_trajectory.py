@@ -307,30 +307,33 @@ def log_recording(
     return len(frames)
 
 
-def _load_contact_text(args: argparse.Namespace) -> str | None:
-    if args.contact_jsonl is not None:
-        return args.contact_jsonl.read_text(encoding="utf-8")
-    if not args.contacts:
-        return None
+def _load_recording_texts(args: argparse.Namespace) -> tuple[str, str | None]:
     if args.trajectory_tsv is not None:
-        raise ValueError("--contacts with --trajectory-tsv requires --contact-jsonl")
-    if args.steps is None:
-        raise ValueError("--steps is required to record contact events")
-    runner = trajectory_record.resolve_world_runner(
-        scene=args.scene, factory=args.factory
-    )
-    return trajectory_record.record_contact_events(runner, args.steps)
+        trajectory_text = args.trajectory_tsv.read_text(encoding="utf-8")
+        if args.contact_jsonl is not None:
+            return trajectory_text, args.contact_jsonl.read_text(encoding="utf-8")
+        if args.contacts:
+            raise ValueError(
+                "--contacts with --trajectory-tsv requires --contact-jsonl"
+            )
+        return trajectory_text, None
 
-
-def _load_trajectory_text(args: argparse.Namespace) -> str:
-    if args.trajectory_tsv is not None:
-        return args.trajectory_tsv.read_text(encoding="utf-8")
     if args.steps is None:
         raise ValueError("--steps is required unless --trajectory-tsv is used")
+
     runner = trajectory_record.resolve_world_runner(
         scene=args.scene, factory=args.factory
     )
-    return trajectory_record.record_trajectory(runner, args.steps, args.body)
+    if args.contact_jsonl is not None:
+        return (
+            trajectory_record.record_trajectory(runner, args.steps, args.body),
+            args.contact_jsonl.read_text(encoding="utf-8"),
+        )
+    if args.contacts:
+        return trajectory_record.record_trajectory_and_contact_events(
+            runner, args.steps, args.body
+        )
+    return trajectory_record.record_trajectory(runner, args.steps, args.body), None
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -393,8 +396,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
-        trajectory_text = _load_trajectory_text(args)
-        contact_text = _load_contact_text(args)
+        trajectory_text, contact_text = _load_recording_texts(args)
         samples = parse_trajectory_text(trajectory_text)
         contact_events = None
         if contact_text is not None:

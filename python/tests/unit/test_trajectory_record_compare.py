@@ -113,3 +113,23 @@ def test_contact_trace_reports_position_normal_and_depth() -> None:
     assert abs(contact["depth"]) < 0.05
     # The contact lies near the box/ground interface (z ~ 0), not far away.
     assert abs(contact["position"][2]) < 0.2
+
+
+def test_combined_trajectory_and_contact_recording_shares_runner() -> None:
+    runner = trajectory_record.resolve_world_runner(scene="two_body_contact")
+
+    trajectory_text, contact_text = trajectory_record.record_trajectory_and_contact_events(
+        runner, steps=6, bodies=("box",)
+    )
+
+    trajectory_frames = {
+        int(line.split()[0])
+        for line in trajectory_text.splitlines()
+        if line.strip() and not line.startswith("#")
+    }
+    contact_frames = {
+        json.loads(line)["frame"] for line in contact_text.splitlines() if line.strip()
+    }
+    assert trajectory_frames
+    assert contact_frames
+    assert contact_frames <= trajectory_frames

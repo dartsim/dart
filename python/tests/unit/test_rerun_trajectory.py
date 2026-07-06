@@ -90,3 +90,47 @@ def test_save_rrd_smoke_when_rerun_available(tmp_path) -> None:
     assert exit_code == 0
     assert output_path.exists()
     assert output_path.stat().st_size > 0
+
+
+def test_contacts_without_files_record_from_one_runner(monkeypatch) -> None:
+    calls: list[tuple[str, object]] = []
+    runner = object()
+
+    class Args:
+        trajectory_tsv = None
+        contact_jsonl = None
+        contacts = True
+        steps = 4
+        scene = "demo"
+        factory = None
+        body = ["box"]
+
+    def fake_resolve_world_runner(*, scene, factory):
+        assert scene == "demo"
+        assert factory is None
+        calls.append(("resolve", runner))
+        return runner
+
+    def fake_record_trajectory_and_contact_events(active_runner, steps, bodies):
+        assert active_runner is runner
+        assert steps == 4
+        assert bodies == ["box"]
+        calls.append(("combined", active_runner))
+        return _tiny_trajectory_tsv(), "{}\n"
+
+    monkeypatch.setattr(
+        rerun_trajectory.trajectory_record,
+        "resolve_world_runner",
+        fake_resolve_world_runner,
+    )
+    monkeypatch.setattr(
+        rerun_trajectory.trajectory_record,
+        "record_trajectory_and_contact_events",
+        fake_record_trajectory_and_contact_events,
+    )
+
+    trajectory_text, contact_text = rerun_trajectory._load_recording_texts(Args())
+
+    assert trajectory_text == _tiny_trajectory_tsv()
+    assert contact_text == "{}\n"
+    assert calls == [("resolve", runner), ("combined", runner)]

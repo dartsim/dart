@@ -315,6 +315,55 @@ def record_trajectory(
     return "\n".join(lines) + "\n"
 
 
+def record_trajectory_and_contact_events(
+    runner: WorldRunner, steps: int, bodies: Iterable[str] = ()
+) -> tuple[str, str]:
+    if steps < 0:
+        raise ValueError("steps must be non-negative")
+    tracked = discover_bodies(runner.world, bodies)
+    trajectory_lines = _header_lines(runner.scene_id, runner.world)
+    contact_lines: list[str] = []
+    previous_count = 0
+    for _ in range(steps):
+        runner.step_once()
+        contacts = _sorted_contacts(runner.world.collide())
+        count = len(contacts)
+        frame = int(runner.world.frame)
+        time = float(runner.world.time)
+
+        for body in tracked:
+            trajectory_lines.append(_trajectory_row(frame, time, body, count))
+
+        if count == 0 and previous_count == 0:
+            previous_count = 0
+            continue
+        if previous_count == 0 and count > 0:
+            event = "onset"
+        elif previous_count > 0 and count == 0:
+            event = "break"
+        elif previous_count != count:
+            event = "count_change"
+        else:
+            event = "steady"
+        payload = {
+            "schema_version": CONTACT_SCHEMA_VERSION,
+            "scene": runner.scene_id,
+            "frame": frame,
+            "time": time,
+            "event": event,
+            "count": count,
+            "contacts": contacts,
+        }
+        contact_lines.append(json.dumps(payload, sort_keys=True))
+        previous_count = count
+
+    trajectory_text = "\n".join(trajectory_lines) + "\n"
+    contact_text = "\n".join(contact_lines)
+    if contact_text:
+        contact_text += "\n"
+    return trajectory_text, contact_text
+
+
 def record_trajectory_for_scene(
     scene: str, steps: int, bodies: Iterable[str] = ()
 ) -> str:

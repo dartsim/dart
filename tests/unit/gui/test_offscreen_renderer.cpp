@@ -38,6 +38,8 @@
 #include <algorithm>
 
 #include <cstdlib>
+#include <stdexcept>
+#include <string>
 #if !defined(_WIN32)
   #include <dlfcn.h>
 #endif
@@ -91,6 +93,52 @@ bool canOpenLinuxDisplay()
 #endif
 }
 
+void setEnvVar(const char* name, const char* value)
+{
+#if defined(_WIN32)
+  _putenv_s(name, value);
+#else
+  setenv(name, value, 1);
+#endif
+}
+
+void unsetEnvVar(const char* name)
+{
+#if defined(_WIN32)
+  _putenv_s(name, "");
+#else
+  unsetenv(name);
+#endif
+}
+
+class ScopedEnvVar
+{
+public:
+  ScopedEnvVar(const char* name, const char* value)
+    : mName(name)
+  {
+    if (const char* previous = std::getenv(name)) {
+      mHadPrevious = true;
+      mPrevious = previous;
+    }
+    setEnvVar(name, value);
+  }
+
+  ~ScopedEnvVar()
+  {
+    if (mHadPrevious) {
+      setEnvVar(mName.c_str(), mPrevious.c_str());
+    } else {
+      unsetEnvVar(mName.c_str());
+    }
+  }
+
+private:
+  std::string mName;
+  bool mHadPrevious = false;
+  std::string mPrevious;
+};
+
 dart::gui::RenderableDescriptor makeBoxDescriptor()
 {
   dart::gui::RenderableDescriptor descriptor;
@@ -129,6 +177,24 @@ bool hasVisibleContrast(const dart::gui::RenderedImage& image)
 }
 
 } // namespace
+
+TEST(OffscreenRenderer, RejectsNoopBackendFromEnvironment)
+{
+  const ScopedEnvVar backendOverride("DART_FILAMENT_BACKEND", "noop");
+
+  dart::gui::OffscreenRenderOptions options;
+  options.width = 16;
+  options.height = 16;
+  options.renderBackend = "opengl";
+
+  try {
+    dart::gui::OffscreenRenderer renderer(options);
+    FAIL() << "OffscreenRenderer accepted the noop Filament backend";
+  } catch (const std::runtime_error& error) {
+    EXPECT_NE(std::string(error.what()).find("noop"), std::string::npos)
+        << error.what();
+  }
+}
 
 TEST(OffscreenRenderer, RendersDescriptorSceneDeterministically)
 {
