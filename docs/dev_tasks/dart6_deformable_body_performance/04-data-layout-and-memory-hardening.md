@@ -221,8 +221,8 @@ phase-input facade.
 
 ## Rest-detection memory-hardening carryover
 
-After refreshing `origin/dart6-memory-hardening`, this branch ports its narrow
-`Skeleton::checkExternalDisturbanceAndReset()` body-wrench scan:
+After refreshing `origin/dart6-memory-hardening`, this branch first ported its
+narrow `Skeleton::checkExternalDisturbanceAndReset()` body-wrench scan:
 
 - The rest-detection query now scans `BodyNode::getExternalForceLocal()`
   directly instead of materializing `Skeleton::getExternalForces()` when the
@@ -233,8 +233,11 @@ After refreshing `origin/dart6-memory-hardening`, this branch ports its narrow
 
 This is a shared simulation allocation-hardening slice, not the final soft-body
 storage answer. It removes an avoidable projection-cache materialization from a
-per-step quiet/rest query while keeping the existing DART 6 public API.
-`test_SoftDynamics` and `test_DARTCollisionDetector` passed after the carryover.
+per-step quiet/rest query while keeping the existing DART 6 public API. After
+the full `dart6-memory-hardening` stack was merged locally, the conflict
+resolution also preserved that branch's point-mass external-force scan, so
+rest detection stays allocation-aware for both rigid body wrenches and soft
+point-mass forces.
 
 ## `origin/dart6-memory-hardening`
 
@@ -258,19 +261,72 @@ Relevant lessons from that branch:
 
 Decision for this deformable-body branch:
 
-- Do not merge `origin/dart6-memory-hardening` wholesale into
-  `js/dart6-deformable-performance` while this branch is carrying the native
-  deformable-collision slices.
-- Keep the small direct body-wrench scan ported here because it is shared,
-  release-current, and independently tested.
-- Treat it as a required coordination dependency for future allocator/layout
-  work.
-- If that branch lands or is rebased onto current `release-6.20`, soft-body
-  layout work should build on its `World`/`MemoryManager`/`FrameAllocator`
-  surfaces instead of adding an unrelated soft-body allocator path.
-- Before any `PointMass` storage migration, add an allocation-counting soft-body
-  gate modeled on that branch's `test_StepAllocation.cpp`, then use
-  `soft_body_headless` checksums to preserve behavior.
+- Stack on `origin/dart6-memory-hardening` instead of adding an unrelated
+  soft-body allocator path.
+- Use its `World`/`MemoryManager`/`FrameAllocator` surfaces for soft-body
+  allocation gates and later point-mass storage work.
+- If `dart6-memory-hardening` lands before this branch, refresh against the
+  release branch and rerun the soft allocation and checksum gates before
+  claiming the stack resolved cleanly.
+- Keep the timing evidence conservative. The allocator stack is a correctness
+  and per-step allocation hardening dependency; it is not by itself a stable
+  speedup claim.
+
+## Native soft allocation gate
+
+The local branch now adds native soft-body coverage to
+`tests/integration/test_StepAllocation.cpp`. The first test scene builds a
+3x3x3 soft box over a ground box, forces `CollisionDetectorType::Dart`, and
+uses the memory-hardening branch's counted world allocator and frame scratch
+surfaces. A follow-up scene stacks two 3x3x3 soft boxes on the ground so the
+measured window exercises native soft-soft contacts as well as soft-ground
+contacts. A third gate loads `dart://sample/skel/softBodies.skel`, transfers
+the parsed soft skeletons into a counted native world without cloning
+`SoftMeshShape`, and measures a representative SKEL-authored soft-dynamics
+window. That SKEL window has no contacts in the measured range, so it is an
+allocation gate for soft-body stepping rather than a contact-solving gate.
+
+The gate measures both explicit and implicit integration after a warmup:
+
+```bash
+./build/default/cpp/Release/tests/integration/INTEGRATION_StepAllocation --gtest_filter='StepAllocation.*Soft*'
+```
+
+Current result on 2026-07-05:
+
+| Test row | Steps | Contacts | Soft-soft contacts | `operator new` | Raw `malloc` | Base allocator growth |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Soft-box explicit first post-bake step | 1 | 9 | 0 | 0 | 0 | 0 |
+| Soft-box implicit second step | 1 | 9 | 0 | 0 | 0 | 0 |
+| Soft-box explicit first post-bake raw gate | 1 | 9 | 0 | 0 | 0 | 0 |
+| Soft-box implicit second-step raw gate | 1 | 9 | 0 | 0 | 0 | 0 |
+| Soft-stack steady-state gate | 100 | 27 | 18 | 0 | 0 | 0 |
+| Soft-stack steady-state raw gate | 100 | 27 | 18 | 0 | 0 | 0 |
+| `softBodies.skel` steady-state gate | 100 | 0 | 0 | 0 | 0 | 0 |
+| `softBodies.skel` steady-state raw gate | 100 | 0 | 0 | 0 | 0 | 0 |
+
+The implementation changes behind the gate are intentionally local to
+steady-state allocation behavior:
+
+- `SoftContactConstraint` keeps fixed one-contact storage, fixed three-row
+  Jacobian storage, and a fixed 3x2 tangent basis instead of allocating
+  vectors or dynamic Eigen matrices per contact.
+- `ConstraintSolver` reuses soft contact constraints across steps and resets
+  them with the current contact and timestep.
+- `World::updateRestStates()` uses retained scratch vectors for the deep and
+  supported initial-contact skeleton sets, and the reserve path sizes those
+  vectors during simulation preparation.
+- `World::updateAllRestingKinematicSnapshot()` reuses retained snapshot
+  storage and copies generalized positions by scalar index, avoiding
+  per-step temporary `Eigen::VectorXd` allocations for no-contact soft scenes.
+
+This gate proves the current native soft-box contact lane can step without
+heap growth after preparation, and that a small native soft-soft stack can run
+steady-state steps without heap growth after warmup. It also proves the
+representative `softBodies.skel` no-contact soft-dynamics window is heap-free
+after warmup. It does not yet prove contiguous point-mass object storage,
+SIMD-friendly SoA layout, or allocation coverage for `soft_open_chain` and
+contact-heavy SKEL scenes.
 
 ## Candidate implementation sequence
 
@@ -280,9 +336,10 @@ Decision for this deformable-body branch:
 2. Keep existing `PointMass` objects initially, but mirror the hottest phase
    inputs into retained scratch so `updateBiasForce` and `updateArtInertia` can
    be measured as contiguous scalar loops.
-3. Once scalar checksums match, evaluate replacing per-point allocations with a
+3. Extend the native soft allocation gate from the current soft-box,
+   soft-soft stack, and `softBodies.skel` lanes to `soft_open_chain` and
+   contact-heavy SKEL scenes before changing storage ownership.
+4. Once scalar checksums match, evaluate replacing per-point allocations with a
    contiguous object pool or memory-manager-backed block allocation.
-4. Add SIMD kernels only for phases whose memory layout is contiguous and whose
+5. Add SIMD kernels only for phases whose memory layout is contiguous and whose
    FP contract is approved.
-5. Add strict allocation gates for native soft-body scenes once the
-   memory-hardening branch is available on the current release base.

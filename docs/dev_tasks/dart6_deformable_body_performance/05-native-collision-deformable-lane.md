@@ -48,6 +48,11 @@ release-branch target remains to move soft/deformable collision onto
   soft-plane, soft-box, soft-sphere, soft-sphere-like-ellipsoid,
   soft-non-spherical-ellipsoid, and soft-soft vertex-face contacts with
   expected object ordering, normals, penetration, and valid soft triangle IDs.
+- `tests/integration/test_StepAllocation.cpp` now has native soft-box
+  allocation gates for explicit first post-bake and implicit second-step
+  simulation. The current local result is zero `operator new`, zero raw
+  `malloc`, and zero counted base allocator growth on the measured soft contact
+  steps.
 
 ## Harness support
 
@@ -85,6 +90,8 @@ The first WP-DB.08 implementation supports:
   soft-soft candidate pairs in worker-local `CollisionResult`s and merges them
   in the original sweep order to preserve duplicate-contact handling and
   contact-cap behavior,
+- reusable soft contact constraints with fixed one-contact, Jacobian, and
+  tangent-basis storage for the current soft-contact constraint shape,
 - detector selection in `soft_body_headless` for FCL/native comparison.
 
 The contact lane is deliberately limited. It detects point masses that penetrate
@@ -146,6 +153,12 @@ same `drop_box` 200-step FCL/native parity smoke still produced identical
 checksums. A local repeat measured 20.159 ms for FCL and 7.473 ms for native;
 the native row remained dominated by dynamics and object update rather than
 per-point face lookup.
+
+After stacking on `origin/dart6-memory-hardening` and adding the soft contact
+allocation gate, a current 200-step repeat again produced identical FCL/native
+`drop_box` checksums. The same busy-host run measured 48.534 ms for FCL and
+11.977 ms for native. Treat that as current parity and native-path dominance
+evidence, not a stable speedup threshold.
 
 Diagnostic run on a broader soft scene:
 
@@ -250,9 +263,11 @@ deformable backend.
 3. Decide whether the next native soft path should use full triangle-mesh
    collision, adaptive active-vertex contact neighborhoods, or both.
 4. Extend the retained topology/dynamic-vertex adapter toward active
-   neighborhoods and allocation gates for soft-body scenes.
-5. Add allocation gates for native soft-body scenes once the
-   `dart6-memory-hardening` surfaces are available on the current release base.
+   neighborhoods and broader allocation gates for soft-body scenes.
+5. Extend the native soft allocation gates beyond the current soft-box,
+   two-soft-box stack, and `softBodies.skel` no-contact lanes to
+   `soft_open_chain` and contact-heavy SKEL scenes before changing the default
+   deformable collision backend.
 6. Extend parity tests to compare contact counts, representative contact points,
    checksums, and timing between FCL and native on the same soft scenes.
 7. Once parity is green, make the native path the preferred deformable collision
@@ -268,6 +283,8 @@ Native soft/deformable collision should not replace FCL until:
 - native detector rows match or beat FCL on the representative
   `soft_bodies`, `soft_open_chain`, and contact-heavy soft scenes on the same
   host,
+- native soft allocation gates cover the representative soft scene set after
+  simulation preparation, including contact-heavy SKEL windows,
 - unsupported-pair diagnostics are eliminated for the representative soft
   scene set,
 - downstream collision/constraint compatibility gates are run because this
