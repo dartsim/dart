@@ -422,13 +422,14 @@ WorldNode* Viewer::getWorldNode(
 //==============================================================================
 void Viewer::addAttachment(ViewerAttachment* _attachment)
 {
-  Viewer* oldViewer = _attachment->mViewer;
+  ::osg::ref_ptr<ViewerAttachment> attachment = _attachment;
+  Viewer* oldViewer = attachment->mViewer;
   if (oldViewer)
-    oldViewer->removeAttachment(_attachment);
+    oldViewer->removeAttachment(attachment.get());
 
-  _attachment->mViewer = this;
-  mAttachments.insert(_attachment);
-  _attachment->attach(this);
+  attachment->mViewer = this;
+  mAttachments.insert(attachment.get());
+  attachment->attach(this);
 }
 
 //==============================================================================

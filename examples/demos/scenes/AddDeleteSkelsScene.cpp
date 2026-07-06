@@ -129,6 +129,7 @@ DemoScene makeAddDeleteSkelsScene()
         = dart::utils::SkelParser::readWorld("dart://sample/skel/ground.skel");
     if (!world)
       throw std::runtime_error("failed to load dart://sample/skel/ground.skel");
+    world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
     reorientWorldToZUp(world);
 
     // Opportunistically use Bullet if the host links it in (see the file
