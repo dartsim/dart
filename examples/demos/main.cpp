@@ -46,6 +46,14 @@
 namespace {
 
 //==============================================================================
+enum class ParseResult
+{
+  Run,
+  Help,
+  Error
+};
+
+//==============================================================================
 struct Options
 {
   double guiScale = 1.0;
@@ -94,16 +102,15 @@ void printUsage(const char* prog)
 }
 
 //==============================================================================
-/// Parses command-line options. Returns false if the program should exit
-/// immediately (e.g. after --help or on a parse error).
-bool parseArgs(int argc, char** argv, Options& opt)
+/// Parses command-line options.
+ParseResult parseArgs(int argc, char** argv, Options& opt)
 {
   auto needsValue = [&](int i) {
     if (i + 1 >= argc) {
       std::cerr << "Missing value for " << argv[i] << "\n";
-      return false;
+      return ParseResult::Error;
     }
-    return true;
+    return ParseResult::Run;
   };
 
   for (int i = 1; i < argc; ++i) {
@@ -111,54 +118,54 @@ bool parseArgs(int argc, char** argv, Options& opt)
     if (std::strcmp(a, "--list-scenes") == 0) {
       opt.listScenes = true;
     } else if (std::strcmp(a, "--scene") == 0) {
-      if (!needsValue(i))
-        return false;
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
       opt.sceneId = argv[++i];
     } else if (std::strcmp(a, "--cycle-scenes") == 0) {
       opt.cycleScenes = true;
     } else if (std::strcmp(a, "--frames") == 0) {
-      if (!needsValue(i))
-        return false;
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
       opt.cycleFrames = std::stoi(argv[++i]);
     } else if (std::strcmp(a, "--headless") == 0) {
       opt.headless = true;
     } else if (std::strcmp(a, "--shot") == 0) {
-      if (!needsValue(i))
-        return false;
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
       opt.shotPath = argv[++i];
     } else if (std::strcmp(a, "--steps") == 0) {
-      if (!needsValue(i))
-        return false;
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
       opt.steps = std::stoi(argv[++i]);
     } else if (std::strcmp(a, "--width") == 0) {
-      if (!needsValue(i))
-        return false;
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
       opt.width = std::stoi(argv[++i]);
     } else if (std::strcmp(a, "--height") == 0) {
-      if (!needsValue(i))
-        return false;
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
       opt.height = std::stoi(argv[++i]);
     } else if (std::strcmp(a, "--gui-scale") == 0) {
-      if (!needsValue(i))
-        return false;
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
       opt.guiScale
           = dart::gui::osg::parseGuiScale(argv[++i], opt.guiScale, &std::cerr);
     } else if (std::strcmp(a, "--debug-select-body") == 0) {
-      if (!needsValue(i))
-        return false;
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
       opt.debugSelectBody = argv[++i];
     } else if (std::strcmp(a, "--debug-record-profile") == 0) {
       opt.debugRecordProfile = true;
     } else if (std::strcmp(a, "-h") == 0 || std::strcmp(a, "--help") == 0) {
       printUsage(argv[0]);
-      return false;
+      return ParseResult::Help;
     } else {
       std::cerr << "Unknown option: " << a << "\n";
       printUsage(argv[0]);
-      return false;
+      return ParseResult::Error;
     }
   }
-  return true;
+  return ParseResult::Run;
 }
 
 } // namespace
@@ -167,8 +174,11 @@ bool parseArgs(int argc, char** argv, Options& opt)
 int main(int argc, char** argv)
 {
   Options opt;
-  if (!parseArgs(argc, argv, opt))
+  const ParseResult parseResult = parseArgs(argc, argv, opt);
+  if (parseResult == ParseResult::Help)
     return 0;
+  if (parseResult == ParseResult::Error)
+    return 1;
 
   dart_demos::DemoHost host(dart_demos::makeDemoScenes(), opt.guiScale);
   if (!opt.sceneId.empty())

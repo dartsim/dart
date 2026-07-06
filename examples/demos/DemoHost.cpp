@@ -40,10 +40,14 @@
 #include <osgGA/EventQueue>
 
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 
 #include <cctype>
+#include <cerrno>
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 
 namespace dart_demos {
 
@@ -841,12 +845,26 @@ int DemoHost::runHeadlessShot(
   for (int i = 0; i < steps && mWorldNode; ++i)
     mWorldNode->stepOnce();
 
+  errno = 0;
+  if (std::remove(shotPath.c_str()) != 0 && errno != ENOENT) {
+    std::cerr << "[headless] failed to remove stale screenshot '" << shotPath
+              << "': " << std::strerror(errno) << "\n";
+    return 1;
+  }
+
   // Re-pin the view (realize() may have reset it) and draw, then capture.
   mViewer->getCamera()->setViewMatrixAsLookAt(home.eye, home.center, home.up);
   mViewer->frame();
   mViewer->frame();
   mViewer->captureScreen(shotPath);
   mViewer->frame(); // SaveScreen writes the PNG during this frame.
+
+  std::ifstream captured(shotPath, std::ios::binary);
+  if (!captured.good()) {
+    std::cerr << "[headless] failed to write screenshot '" << shotPath
+              << "'.\n";
+    return 1;
+  }
 
   std::cout << "[headless] sim time "
             << (mCurrentWorld ? mCurrentWorld->getTime() : 0.0) << " s; wrote "

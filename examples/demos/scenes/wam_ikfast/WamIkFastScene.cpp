@@ -112,7 +112,7 @@ std::string ikFastLibraryName()
   // bare filename would only resolve when dart-demos happens to be launched
   // from DART_DEMOS_IKFAST_DIR itself (see CMakeLists.txt).
   ss << DART_DEMOS_IKFAST_DIR "/" << DART_SHARED_LIB_PREFIX << "dartDemosWamIk";
-#if (DART_OS_LINUX || DART_OS_MACOS) && DART_BUILD_MODE_DEBUG
+#if (DART_OS_LINUX || DART_OS_MACOS || DART_OS_FREEBSD) && DART_BUILD_MODE_DEBUG
   ss << "d";
 #endif
   ss << "." << DART_SHARED_LIB_EXTENSION;
