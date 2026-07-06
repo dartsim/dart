@@ -458,6 +458,7 @@ foreach(
   _naming.py
   _layout.py
   _simulation_diff.py
+  _scene_dump.py
   _world_render_bridge.py
 )
   configure_file(
@@ -511,6 +512,7 @@ if(DEFINED SKBUILD_PLATLIB_DIR)
       ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_simulation_diff.py
+      ${CMAKE_CURRENT_SOURCE_DIR}/_scene_dump.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_world_render_bridge.py
     DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy"
   )
@@ -522,6 +524,7 @@ elseif(DEFINED PYTHON_SITE_PACKAGES)
       ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_simulation_diff.py
+      ${CMAKE_CURRENT_SOURCE_DIR}/_scene_dump.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_world_render_bridge.py
     DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy"
   )

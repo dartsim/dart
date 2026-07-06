@@ -62,6 +62,20 @@ from ._dartpy import *  # noqa: F401,F403
 
 _alias_extension_submodules()
 _naming.install_aliases(_ext)
+
+
+def _install_scene_dump() -> None:
+    """Attach pure-Python scene dump helpers to ``dartpy.simulation``."""
+
+    simulation = getattr(_ext, "simulation", None)
+    if simulation is None:
+        return
+    from . import _scene_dump as _scene_dump_impl
+
+    _scene_dump_impl.install_scene_dump_helpers(sys.modules[__name__], simulation)
+
+
+_install_scene_dump()
 _layout.install_layout(sys.modules[__name__])
 
 

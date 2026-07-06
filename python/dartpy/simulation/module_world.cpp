@@ -548,6 +548,10 @@ void defSimPartWorld(nb::module_& m)
           "Per-stage wall-clock profile of the most recent step taken while "
           "step profiling was enabled (empty otherwise). Call .summary() for a "
           "compact text breakdown of where the step spent its time.")
+      .def(
+          "compute_step_metrics",
+          &sim::World::computeStepMetrics,
+          "Read-only physical metrics for the World's current state.")
       .def_prop_rw(
           "time_step", &sim::World::getTimeStep, &sim::World::setTimeStep)
       .def_prop_rw("time", &sim::World::getTime, &sim::World::setTime)
