@@ -1083,6 +1083,12 @@ py-demo-capture = { cmd = [
   "build-py-dev-docking",
 ], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python" } }
 
+image-verdict = { cmd = ["python", "scripts/image_verdict.py"] }
+
+image-golden = { cmd = ["python", "scripts/image_golden.py"] }
+
+image-sheet = { cmd = ["python", "scripts/image_sheet.py"] }
+
 py-ex-hello-world-gui = { depends-on = [
   { task = "py-ex", args = [
     "hello_world_gui",
