@@ -2013,26 +2013,27 @@ std::size_t countParallelSoftSoftPairs(
 }
 
 //==============================================================================
-std::uint32_t computeFiniteOverlapMask4(
+template <std::size_t Width>
+std::uint32_t computeFiniteOverlapMask(
     const BroadphaseEntry& entry,
     const SortedBroadphaseBounds& bounds,
     std::size_t begin)
 {
-  using Vec4d = dart::simd::Vec<double, kBroadphaseSimdWidth>;
+  using Vecd = dart::simd::Vec<double, Width>;
 
-  const auto entryMinX = Vec4d::broadcast(entry.min.x());
-  const auto entryMinY = Vec4d::broadcast(entry.min.y());
-  const auto entryMinZ = Vec4d::broadcast(entry.min.z());
-  const auto entryMaxX = Vec4d::broadcast(entry.max.x());
-  const auto entryMaxY = Vec4d::broadcast(entry.max.y());
-  const auto entryMaxZ = Vec4d::broadcast(entry.max.z());
+  const auto entryMinX = Vecd::broadcast(entry.min.x());
+  const auto entryMinY = Vecd::broadcast(entry.min.y());
+  const auto entryMinZ = Vecd::broadcast(entry.min.z());
+  const auto entryMaxX = Vecd::broadcast(entry.max.x());
+  const auto entryMaxY = Vecd::broadcast(entry.max.y());
+  const auto entryMaxZ = Vecd::broadcast(entry.max.z());
 
-  const auto candidateMinX = Vec4d::loadu(bounds.minX.data() + begin);
-  const auto candidateMinY = Vec4d::loadu(bounds.minY.data() + begin);
-  const auto candidateMinZ = Vec4d::loadu(bounds.minZ.data() + begin);
-  const auto candidateMaxX = Vec4d::loadu(bounds.maxX.data() + begin);
-  const auto candidateMaxY = Vec4d::loadu(bounds.maxY.data() + begin);
-  const auto candidateMaxZ = Vec4d::loadu(bounds.maxZ.data() + begin);
+  const auto candidateMinX = Vecd::loadu(bounds.minX.data() + begin);
+  const auto candidateMinY = Vecd::loadu(bounds.minY.data() + begin);
+  const auto candidateMinZ = Vecd::loadu(bounds.minZ.data() + begin);
+  const auto candidateMaxX = Vecd::loadu(bounds.maxX.data() + begin);
+  const auto candidateMaxY = Vecd::loadu(bounds.maxY.data() + begin);
+  const auto candidateMaxZ = Vecd::loadu(bounds.maxZ.data() + begin);
 
   const auto overlapMask
       = (candidateMinX <= entryMaxX) & (candidateMaxX >= entryMinX)
@@ -2624,7 +2625,8 @@ bool processFiniteFinitePairs(
       if constexpr (kUseNativeBroadphaseSimd) {
         if (j + kBroadphaseSimdWidth <= sortedEntries.size()) {
           const std::uint32_t overlapMask
-              = computeFiniteOverlapMask4(entry1, sortedBounds, j);
+              = computeFiniteOverlapMask<kBroadphaseSimdWidth>(
+                  entry1, sortedBounds, j);
           for (std::size_t lane = 0u; lane < kBroadphaseSimdWidth; ++lane) {
             if ((overlapMask & (std::uint32_t{1u} << lane)) == 0u)
               continue;
@@ -2728,7 +2730,8 @@ bool processFiniteFinitePairs(
       if constexpr (kUseNativeBroadphaseSimd) {
         if (j + kBroadphaseSimdWidth <= sortedEntries2.size()) {
           const std::uint32_t overlapMask
-              = computeFiniteOverlapMask4(entry1, sortedBounds2, j);
+              = computeFiniteOverlapMask<kBroadphaseSimdWidth>(
+                  entry1, sortedBounds2, j);
           for (std::size_t lane = 0u; lane < kBroadphaseSimdWidth; ++lane) {
             if ((overlapMask & (std::uint32_t{1u} << lane)) == 0u)
               continue;
