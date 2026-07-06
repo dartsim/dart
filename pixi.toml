@@ -1096,6 +1096,13 @@ trajectory-record = { cmd = [
   "build-py-dev-docking",
 ], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python" } }
 
+rerun-trajectory = { cmd = [
+  "python",
+  "scripts/rerun_trajectory.py",
+], depends-on = [
+  "build-py-dev-docking",
+], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python" } }
+
 trajectory-compare = { cmd = ["python", "scripts/trajectory_compare.py"] }
 
 py-ex-hello-world-gui = { depends-on = [
