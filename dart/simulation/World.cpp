@@ -143,6 +143,30 @@ dynamics::BodyNode* getRootBodyNodeIfAny(dynamics::Skeleton& skeleton)
   return skeleton.getRootBodyNode();
 }
 
+void copySkeletonPositions(
+    const dynamics::Skeleton& skeleton, Eigen::VectorXd& positions)
+{
+  const auto numDofs = static_cast<Eigen::Index>(skeleton.getNumDofs());
+  positions.resize(numDofs);
+  for (Eigen::Index i = 0; i < numDofs; ++i)
+    positions[i] = skeleton.getPosition(static_cast<std::size_t>(i));
+}
+
+bool skeletonPositionsMatch(
+    const dynamics::Skeleton& skeleton, const Eigen::VectorXd& positions)
+{
+  const auto numDofs = static_cast<Eigen::Index>(skeleton.getNumDofs());
+  if (positions.size() != numDofs)
+    return false;
+
+  for (Eigen::Index i = 0; i < numDofs; ++i) {
+    if (skeleton.getPosition(static_cast<std::size_t>(i)) != positions[i])
+      return false;
+  }
+
+  return true;
+}
+
 // Resolves a collision detector for a World constructed from a WorldConfig.
 //
 // Returns nullptr when the requested detector is the default 'fcl' backend so
@@ -1824,10 +1848,8 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 
     if (snapshot.mStructuralVersion != skel->getVersion()
         || snapshot.mKinematicVersion != skel->getKinematicVersion()) {
-      const Eigen::VectorXd positions = skel->getPositions();
       bool kinematicStateUnchanged
-          = positions.size() == snapshot.mPositions.size()
-            && positions.isApprox(snapshot.mPositions, 0.0)
+          = skeletonPositionsMatch(*skel, snapshot.mPositions)
             && snapshot.mBodyTransforms.size() == skel->getNumBodyNodes();
       if (kinematicStateUnchanged) {
         for (std::size_t j = 0; j < skel->getNumBodyNodes(); ++j) {
@@ -1848,7 +1870,7 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 
       snapshot.mStructuralVersion = skel->getVersion();
       snapshot.mKinematicVersion = skel->getKinematicVersion();
-      snapshot.mPositions = positions;
+      copySkeletonPositions(*skel, snapshot.mPositions);
     }
 
     if (!skel->isMobile())
@@ -1882,23 +1904,23 @@ void World::updateAllRestingKinematicSnapshot(bool _resetCommand)
     return;
   }
 
-  mAllRestingKinematicSnapshot.clear();
-  mAllRestingKinematicSnapshot.reserve(mSkeletons.size());
+  mAllRestingKinematicSnapshot.resize(mSkeletons.size());
   mAllRestingSnapshotHasMobileSkeleton = false;
   mAllRestingSnapshotReady = false;
   mAllRestingSnapshotResetCommand = _resetCommand;
 
-  for (const auto& skel : mSkeletons) {
-    AllRestingKinematicSnapshot snapshot;
+  for (std::size_t skelIndex = 0; skelIndex < mSkeletons.size(); ++skelIndex) {
+    const auto& skel = mSkeletons[skelIndex];
+    auto& snapshot = mAllRestingKinematicSnapshot[skelIndex];
     snapshot.mSkeleton = skel.get();
     snapshot.mStructuralVersion = skel->getVersion();
     snapshot.mKinematicVersion = skel->getKinematicVersion();
     snapshot.mNumBodyNodes = skel->getNumBodyNodes();
-    snapshot.mPositions = skel->getPositions();
+    copySkeletonPositions(*skel, snapshot.mPositions);
+    snapshot.mBodyTransforms.clear();
     snapshot.mBodyTransforms.reserve(snapshot.mNumBodyNodes);
     for (std::size_t i = 0; i < snapshot.mNumBodyNodes; ++i)
       snapshot.mBodyTransforms.push_back(skel->getBodyNode(i)->getTransform());
-    mAllRestingKinematicSnapshot.push_back(snapshot);
     mAllRestingSnapshotHasMobileSkeleton
         = mAllRestingSnapshotHasMobileSkeleton || skel->isMobile();
   }
