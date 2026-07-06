@@ -4105,25 +4105,34 @@ bool Skeleton::checkExternalDisturbanceAndReset(bool _resetCommand)
   bool disturbed = false;
   bool hasResidualExternalForces = false;
   bool hasResidualBodyExternalForces = false;
+  bool hasResidualPointMassExternalForces = false;
   bool hasResidualDofForces = false;
   bool hasResidualCommands = false;
 
-  if (nDofs != 0) {
-    // getExternalForces() returns a cached const reference (no allocation).
-    const Eigen::VectorXd& externalForces = getExternalForces();
-    if (externalForces.size() > 0) {
-      hasResidualExternalForces = !externalForces.isZero(0.0);
-      disturbed = externalForces.cwiseAbs().maxCoeff() > tolerance;
-    }
-  }
-
-  if (_resetCommand) {
-    // A body wrench can project to zero generalized force (for example on a
-    // zero-DOF or constrained body) but still needs to honor resetCommand.
-    for (const auto* bodyNode : mSkelCache.mBodyNodes) {
-      if (!bodyNode->getExternalForceLocal().isZero(0.0)) {
+  // Scan body wrenches directly instead of materializing getExternalForces():
+  // the projection cache can allocate when dirty, and this query runs for every
+  // mobile skeleton during rest detection.
+  for (const auto* bodyNode : mSkelCache.mBodyNodes) {
+    const auto& externalForce = bodyNode->getExternalForceLocal();
+    if (!externalForce.isZero(0.0)) {
+      if (_resetCommand)
         hasResidualBodyExternalForces = true;
-        break;
+      if (nDofs != 0)
+        hasResidualExternalForces = true;
+    }
+    if (nDofs != 0 && externalForce.cwiseAbs().maxCoeff() > tolerance) {
+      disturbed = true;
+    }
+
+    if (const auto* softBodyNode = bodyNode->asSoftBodyNode()) {
+      bool hasResidualPointMassForce = false;
+      softBodyNode->scanPointMassExternalForces(
+          tolerance, hasResidualPointMassForce, disturbed);
+      if (hasResidualPointMassForce) {
+        if (_resetCommand)
+          hasResidualPointMassExternalForces = true;
+        if (nDofs != 0)
+          hasResidualExternalForces = true;
       }
     }
   }
@@ -4155,7 +4164,8 @@ bool Skeleton::checkExternalDisturbanceAndReset(bool _resetCommand)
     return true;
 
   if (_resetCommand) {
-    if (hasResidualExternalForces || hasResidualBodyExternalForces) {
+    if (hasResidualExternalForces || hasResidualBodyExternalForces
+        || hasResidualPointMassExternalForces) {
       clearExternalForces();
       // Refresh the projection cache so the quiet version is recorded below,
       // including zero-DOF skeletons whose projection is always empty.

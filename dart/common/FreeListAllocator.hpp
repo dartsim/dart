@@ -58,6 +58,18 @@ class FreeListAllocator : public MemoryAllocator
 public:
   using Debug = MemoryAllocatorDebugger<FreeListAllocator>;
 
+  /// Growth behavior when all reserved blocks are exhausted.
+  enum class GrowthPolicy
+  {
+    /// Allocate more blocks from the base allocator when existing blocks are
+    /// exhausted.
+    Expand,
+
+    /// Use only the initially reserved block and return nullptr when
+    /// exhausted.
+    FixedCapacity,
+  };
+
   /// Constructor
   ///
   /// \param[in] baseAllocator: (optional) Base memory allocator.
@@ -65,6 +77,17 @@ public:
   explicit FreeListAllocator(
       MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault(),
       size_t initialAllocation = 1048576 /* 1 MB */);
+
+  /// Constructor
+  ///
+  /// \param[in] baseAllocator: Base memory allocator.
+  /// \param[in] initialAllocation: Bytes to initially allocate.
+  /// \param[in] growthPolicy: Whether this allocator can grow after the
+  /// initial block is exhausted.
+  explicit FreeListAllocator(
+      MemoryAllocator& baseAllocator,
+      size_t initialAllocation,
+      GrowthPolicy growthPolicy);
 
   /// Destructor
   ~FreeListAllocator() override;
@@ -76,6 +99,9 @@ public:
 
   /// Returns the base allocator
   [[nodiscard]] MemoryAllocator& getBaseAllocator();
+
+  /// Returns the growth policy.
+  [[nodiscard]] GrowthPolicy getGrowthPolicy() const;
 
   // Documentation inherited
   [[nodiscard]] void* allocate(size_t bytes) noexcept override;
@@ -138,6 +164,9 @@ private:
 
   /// The base allocator
   MemoryAllocator& mBaseAllocator;
+
+  /// Whether this allocator can grow after its initial block is exhausted.
+  GrowthPolicy mGrowthPolicy{GrowthPolicy::Expand};
 
   /// Mutex for private variables except the base allocator
   mutable std::mutex mMutex;
