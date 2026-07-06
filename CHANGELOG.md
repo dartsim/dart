@@ -88,7 +88,7 @@ compatibility remains on the active DART 6 LTS branch._
   [#2142](https://github.com/dartsim/dart/pull/2142))
 - Consolidated model-loading APIs from `dart::utils` and `dartpy.utils` into
   `dart::io` and `dartpy.io`; update includes/imports and link against
-  `dart-io` for DART 7 model parsing.
+  `dart-io` for DART 7 model parsing. ([#3312](https://github.com/dartsim/dart/pull/3312))
 - Removed the legacy SKEL model format from DART 7, including `.skel` sample
   assets, `SkelParser`, `ModelFormat::Skel`, and dartpy SKEL bindings/stubs;
   migrate assets to URDF, SDF, or MJCF, or use `release-6.*` for legacy SKEL
