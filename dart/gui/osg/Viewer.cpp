@@ -440,9 +440,9 @@ void Viewer::removeAttachment(ViewerAttachment* _attachment)
   if (it == mAttachments.end())
     return;
 
-  getRootGroup()->removeChild(_attachment);
   _attachment->mViewer = nullptr;
-  mAttachments.erase(_attachment);
+  mAttachments.erase(it);
+  getRootGroup()->removeChild(_attachment);
 }
 
 //==============================================================================

@@ -171,6 +171,16 @@ def cmd_shot(scenes, scene_id, path, steps):
         # EVIDENCE-dartpy-bindings.md) -- so keep pumping frames for a short
         # grace period until the file actually shows up, rather than trust
         # a single extra frame and risk a silently-truncated/missing PNG.
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            print(
+                f"[demos] Failed to remove stale screenshot '{path}': {exc}",
+                file=sys.stderr,
+            )
+            return 1
         viewer.frame()
         viewer.frame()
         viewer.captureScreen(path)
