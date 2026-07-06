@@ -33,6 +33,7 @@
 #include "dart/common/detail/profiler.hpp"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -43,10 +44,50 @@
 
 namespace dart::common::profile {
 
+namespace {
+
+template <std::size_t Capacity>
+struct InlineString
+{
+  void assign(std::string_view value)
+  {
+    length = std::min<std::size_t>(value.size(), Capacity - 1u);
+    std::copy_n(value.data(), length, data.data());
+    data[length] = '\0';
+  }
+
+  [[nodiscard]] std::string_view view() const
+  {
+    return {data.data(), length};
+  }
+
+  [[nodiscard]] bool matches(std::string_view value) const
+  {
+    const auto comparableLength
+        = std::min<std::size_t>(value.size(), Capacity - 1u);
+    return view() == value.substr(0u, comparableLength);
+  }
+
+  [[nodiscard]] bool empty() const
+  {
+    return length == 0u;
+  }
+
+  [[nodiscard]] std::size_t size() const
+  {
+    return length;
+  }
+
+  std::array<char, Capacity> data{};
+  std::size_t length{0};
+};
+
+} // namespace
+
 struct Profiler::ProfileNode
 {
-  std::string_view label;
-  std::string_view file;
+  InlineString<192> label;
+  InlineString<320> file;
   int line{0};
   std::uint64_t callCount{0};
   std::uint64_t inclusiveNs{0};
@@ -111,7 +152,7 @@ std::shared_ptr<Profiler::ThreadRecord> Profiler::registerThread()
     oss << record->id;
     record->label = oss.str();
     record->rootLabel = "thread " + record->label;
-    record->root.label = record->rootLabel;
+    record->root.label.assign(record->rootLabel);
   }
   record->nodes.reserve(kInitialThreadNodeCapacity);
 
@@ -132,7 +173,8 @@ Profiler::ProfileNode* Profiler::findOrCreateChild(
 {
   for (auto* child = parent.firstChild; child != nullptr;
        child = child->nextSibling) {
-    if (child->line == line && child->label == label && child->file == file) {
+    if (child->line == line && child->label.matches(label)
+        && child->file.matches(file)) {
       return child;
     }
   }
@@ -157,8 +199,8 @@ Profiler::ProfileNode* Profiler::allocateNode(
 
   record.nodes.emplace_back();
   auto& node = record.nodes.back();
-  node.label = label;
-  node.file = file;
+  node.label.assign(label);
+  node.file.assign(file);
   node.line = line;
   return &node;
 }
@@ -168,9 +210,10 @@ std::string Profiler::sourceText(const ProfileNode& node)
   if (node.file.empty())
     return "";
 
+  const auto file = node.file.view();
   std::string source;
-  source.reserve(node.file.size() + 1u + 16u);
-  source.append(node.file);
+  source.reserve(file.size() + 1u + 16u);
+  source.append(file);
   source.push_back(':');
   source.append(std::to_string(static_cast<long long>(node.line)));
   return source;
@@ -410,9 +453,9 @@ void Profiler::collectHotspots(
        node.callCount});
   for (auto* child = node.firstChild; child != nullptr;
        child = child->nextSibling) {
-    const auto childPath = path.empty()
-                               ? std::string(child->label)
-                               : (path + " > " + std::string(child->label));
+    const auto childPath
+        = path.empty() ? std::string(child->label.view())
+                       : (path + " > " + std::string(child->label.view()));
     collectHotspots(*child, childPath, threadLabel, out);
   }
 }
@@ -455,7 +498,7 @@ void Profiler::printNode(
 
     std::ostringstream line;
     line << indent << connector
-         << colorize(padRight(child->label, labelWidth), color) << ' '
+         << colorize(padRight(child->label.view(), labelWidth), color) << ' '
          << "total " << formatDurationAligned(child->inclusiveNs) << ' '
          << "self " << formatDurationAligned(child->selfNs) << ' '
          << "per-call " << formatDurationAligned(avgNs) << ' ' << "calls "
@@ -540,7 +583,7 @@ void Profiler::printSummary(std::ostream& os)
     for (auto* child = record->root.firstChild; child != nullptr;
          child = child->nextSibling) {
       collectHotspots(
-          *child, std::string(child->label), record->label, hotspots);
+          *child, std::string(child->label.view()), record->label, hotspots);
     }
   }
 

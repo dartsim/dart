@@ -4105,6 +4105,7 @@ bool Skeleton::checkExternalDisturbanceAndReset(bool _resetCommand)
   bool disturbed = false;
   bool hasResidualExternalForces = false;
   bool hasResidualBodyExternalForces = false;
+  bool hasResidualPointMassExternalForces = false;
   bool hasResidualDofForces = false;
   bool hasResidualCommands = false;
 
@@ -4121,6 +4122,18 @@ bool Skeleton::checkExternalDisturbanceAndReset(bool _resetCommand)
     }
     if (nDofs != 0 && externalForce.cwiseAbs().maxCoeff() > tolerance) {
       disturbed = true;
+    }
+
+    if (const auto* softBodyNode = bodyNode->asSoftBodyNode()) {
+      bool hasResidualPointMassForce = false;
+      softBodyNode->scanPointMassExternalForces(
+          tolerance, hasResidualPointMassForce, disturbed);
+      if (hasResidualPointMassForce) {
+        if (_resetCommand)
+          hasResidualPointMassExternalForces = true;
+        if (nDofs != 0)
+          hasResidualExternalForces = true;
+      }
     }
   }
 
@@ -4151,7 +4164,8 @@ bool Skeleton::checkExternalDisturbanceAndReset(bool _resetCommand)
     return true;
 
   if (_resetCommand) {
-    if (hasResidualExternalForces || hasResidualBodyExternalForces) {
+    if (hasResidualExternalForces || hasResidualBodyExternalForces
+        || hasResidualPointMassExternalForces) {
       clearExternalForces();
       // Refresh the projection cache so the quiet version is recorded below,
       // including zero-DOF skeletons whose projection is always empty.

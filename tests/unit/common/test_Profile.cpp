@@ -34,6 +34,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <sstream>
 #include <string>
 
@@ -126,6 +127,22 @@ TEST_F(ProfileTest, DeduplicatesRepeatedScopeAtSameTreePosition)
 
   EXPECT_EQ(countOccurrences(tree, "dedup-scope"), 1u);
   EXPECT_NE(tree.find("calls        2"), std::string::npos);
+}
+
+TEST_F(ProfileTest, KeepsDynamicScopeNamesAlive)
+{
+  std::string label = "dynamic-scope";
+  std::string file = "dynamic-file.cpp";
+  {
+    ProfileScope scope(label, file, 123);
+  }
+
+  std::fill(label.begin(), label.end(), 'x');
+  std::fill(file.begin(), file.end(), 'y');
+
+  const auto summary = DART_PROFILE_TEXT_SUMMARY();
+  EXPECT_NE(summary.find("dynamic-scope"), std::string::npos);
+  EXPECT_NE(summary.find("dynamic-file.cpp:123"), std::string::npos);
 }
 
 TEST_F(ProfileTest, TextSummaryMacroReturnsString)
