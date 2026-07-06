@@ -238,12 +238,13 @@ per-step quiet/rest query while keeping the existing DART 6 public API.
 
 ## `origin/dart6-memory-hardening`
 
-Live remote check on 2026-07-05:
+Live remote check on 2026-07-05, refreshed after merging the latest
+`origin/release-6.20` into `js/dart6-deformable-performance`:
 
-- tip: `8dc75d67bf0` (`Merge remote-tracking branch 'origin/release-6.20' into
-  dart6-memory-hardening`),
-- merge-base with current `origin/release-6.20`: `b9e6910c066`,
-- current `origin/release-6.20` tip: `b9e6910c066`.
+- tip: `60356be6101` (`Preserve collision result during simulation
+  preparation`),
+- merge-base with current `origin/release-6.20`: `fd6919a9893`,
+- current `origin/release-6.20` tip: `fd6919a9893`.
 
 Relevant lessons from that branch:
 

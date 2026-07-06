@@ -118,9 +118,9 @@ Latest state:
   vertices and first-face metadata instead of scanning faces per point. The
   `drop_box` 200-step FCL/native checksum parity smoke still matched exactly
   after this change.
-- Branch `js/dart6-deformable-performance` is based on `release-6.20` commit
-  `d0d8fa1a495`; local `origin/release-6.20` has advanced, so merge the latest
-  target branch before any PR push.
+- Branch `js/dart6-deformable-performance` now has local implementation commit
+  `09b4e0e5d78` and merge commit `a1c97b3e787`, which merged
+  `origin/release-6.20` tip `fd6919a9893`.
 
 Next steps:
 
@@ -141,6 +141,8 @@ Next steps:
    path before preferring native as the default soft collision backend.
 7. Add allocation gates for native soft-body scenes once the
    `dart6-memory-hardening` surfaces are available on the current release base.
+   As of the latest refresh, `origin/dart6-memory-hardening` is at
+   `60356be6101` and has merge-base `fd6919a9893` with `origin/release-6.20`.
 8. Before creating the PR, capture a same-host baseline-vs-branch performance
    comparison and include newly added GUI example commands plus locally captured
    videos as PR evidence.
