@@ -6,9 +6,17 @@ visual-debugging suite), py-demos (9 scenes), 2 gui-osg library fixes, and
 the scattered examples retired. See PLAN.md for per-phase status and the
 "Open items for the PR" list.
 
-Remaining before merge (needs user/maintainer action, not branch work):
-- Open the PR(s): fill the two CHANGELOG `#XXXX` links; split commit
-  9493af236 (gui-osg library fixes) into its own PR with the compat gate.
+PRs opened 2026-07-05 (both MERGEABLE, no conflicts):
+- #3300 fix/dart6-gui-osg-interaction-teardown -> release-6.20 (library
+  fixes; state BLOCKED = CI/review pending).
+- #3301 feature/dart6-consolidated-demos -> release-6.20 (demos; state
+  BEHIND base — "Update branch" before merge; depends on #3300).
+CHANGELOG links filled (#3300 GUI entry on the fix branch, #3301 Examples
+entry on the demos branch; GUI entry removed from the demos branch to avoid
+a duplicate).
+
+Remaining (maintainer action):
+- Land #3300 first, then update #3301 to base + land.
 - Retire this dev-task folder after merge (durable facts already promoted to
   CHANGELOG + examples/demos/README.md + DemoScene.hpp comments).
 
