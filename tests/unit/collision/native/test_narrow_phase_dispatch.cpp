@@ -140,6 +140,37 @@ TEST(NarrowPhaseDispatch, RoutesSphereBoxInBothOrders)
       -Eigen::Vector3d::UnitZ(), 1e-12));
 }
 
+TEST(NarrowPhaseDispatch, SphereBoxBinaryCheckDoesNotAddContacts)
+{
+  SphereShape sphere(1.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 1.0));
+  CollisionOption option = CollisionOption::binaryCheck();
+
+  CollisionResult sphereFirstResult;
+  const bool sphereFirstHit = NarrowPhase::collide(
+      &sphere,
+      translated(0.0, 0.0, 1.5),
+      &box,
+      Eigen::Isometry3d::Identity(),
+      option,
+      sphereFirstResult);
+
+  EXPECT_TRUE(sphereFirstHit);
+  EXPECT_EQ(sphereFirstResult.numContacts(), 0u);
+
+  CollisionResult boxFirstResult;
+  const bool boxFirstHit = NarrowPhase::collide(
+      &box,
+      Eigen::Isometry3d::Identity(),
+      &sphere,
+      translated(0.0, 0.0, 1.5),
+      option,
+      boxFirstResult);
+
+  EXPECT_TRUE(boxFirstHit);
+  EXPECT_EQ(boxFirstResult.numContacts(), 0u);
+}
+
 TEST(NarrowPhaseDispatch, ReturnsFalseForUnroutedPairs)
 {
   SphereShape sphere(1.0);

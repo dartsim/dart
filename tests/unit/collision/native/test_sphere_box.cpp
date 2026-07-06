@@ -467,6 +467,51 @@ TEST(SphereBox, MaxContactsRespected)
   EXPECT_EQ(result.numContacts(), 0);
 }
 
+TEST(SphereBox, BinaryCheckDoesNotAddContacts)
+{
+  CollisionOption option = CollisionOption::binaryCheck();
+
+  CollisionResult translatedResult;
+  bool translatedHit = collideSphereBox(
+      Eigen::Vector3d(1.5, 0, 0),
+      1.0,
+      Eigen::Vector3d(1, 1, 1),
+      Eigen::Isometry3d::Identity(),
+      translatedResult,
+      option);
+
+  EXPECT_TRUE(translatedHit);
+  EXPECT_EQ(translatedResult.numContacts(), 0u);
+
+  CollisionResult rotatedResult;
+  const Eigen::Isometry3d rotatedBox = makeBoxTransform(
+      Eigen::Vector3d(1.3, 2.7, 6.5),
+      kPi / 3.0,
+      Eigen::Vector3d(1.0, 2.0, 3.0));
+  bool rotatedHit = collideSphereBox(
+      rotatedBox * Eigen::Vector3d(1.5, 0, 0),
+      1.0,
+      Eigen::Vector3d(1, 1, 1),
+      rotatedBox,
+      rotatedResult,
+      option);
+
+  EXPECT_TRUE(rotatedHit);
+  EXPECT_EQ(rotatedResult.numContacts(), 0u);
+
+  CollisionResult separatedResult;
+  bool separatedHit = collideSphereBox(
+      Eigen::Vector3d(5, 0, 0),
+      1.0,
+      Eigen::Vector3d(1, 1, 1),
+      Eigen::Isometry3d::Identity(),
+      separatedResult,
+      option);
+
+  EXPECT_FALSE(separatedHit);
+  EXPECT_EQ(separatedResult.numContacts(), 0u);
+}
+
 TEST(SphereBox, SeparatedAcrossBoxFramesAndSphereOrientations)
 {
   constexpr double sphereRadius = 0.7;

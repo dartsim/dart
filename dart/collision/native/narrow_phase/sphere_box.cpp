@@ -76,6 +76,29 @@ void snapNearBoxBoundary(
   }
 }
 
+bool sphereOverlapsBox(
+    const Eigen::Vector3d& sphereCenter,
+    double sphereRadius,
+    const Eigen::Vector3d& boxHalfExtents,
+    const Eigen::Isometry3d& boxTransform)
+{
+  const Eigen::Vector3d localSphereCenter
+      = boxTransform.linear().transpose()
+        * (sphereCenter - boxTransform.translation());
+
+  const double closestX = std::clamp(
+      localSphereCenter.x(), -boxHalfExtents.x(), boxHalfExtents.x());
+  const double closestY = std::clamp(
+      localSphereCenter.y(), -boxHalfExtents.y(), boxHalfExtents.y());
+  const double closestZ = std::clamp(
+      localSphereCenter.z(), -boxHalfExtents.z(), boxHalfExtents.z());
+
+  const double dx = localSphereCenter.x() - closestX;
+  const double dy = localSphereCenter.y() - closestY;
+  const double dz = localSphereCenter.z() - closestZ;
+  return dx * dx + dy * dy + dz * dz <= sphereRadius * sphereRadius;
+}
+
 bool collideSphereTranslatedBox(
     const Eigen::Vector3d& sphereCenter,
     double sphereRadius,
@@ -290,6 +313,15 @@ bool collideSphereBox(
     CollisionResult& result,
     const CollisionOption& option)
 {
+  if (option.maxNumContacts == 0) {
+    return false;
+  }
+
+  if (!option.enableContact) {
+    return sphereOverlapsBox(
+        sphereCenter, sphereRadius, boxHalfExtents, boxTransform);
+  }
+
   if (result.numContacts() >= option.maxNumContacts) {
     return false;
   }
