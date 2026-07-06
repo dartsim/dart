@@ -372,6 +372,26 @@ private:
   const dynamics::ShapeFrame* mAnchor;
 };
 
+class CountingCollisionFilter : public collision::CollisionFilter
+{
+public:
+  bool ignoresCollision(
+      const collision::CollisionObject*,
+      const collision::CollisionObject*) const override
+  {
+    ++mNumChecks;
+    return false;
+  }
+
+  std::size_t getNumChecks() const
+  {
+    return mNumChecks;
+  }
+
+private:
+  mutable std::size_t mNumChecks = 0u;
+};
+
 } // namespace
 
 //==============================================================================
@@ -569,6 +589,34 @@ TEST(DARTCollisionDetector, BatchedSingleGroupSweepPreservesCandidateOrder)
         contact.collisionObject2->getShapeFrame());
     EXPECT_GT(contact.penetrationDepth, 0.0);
   }
+}
+
+//==============================================================================
+TEST(
+    DARTCollisionDetector, BinaryFiniteSweepShortCircuitsWithoutCollectingPairs)
+{
+  constexpr std::size_t kNumSpheres = 24u;
+
+  auto detector = collision::DARTCollisionDetector::create();
+
+  std::vector<dynamics::SimpleFramePtr> sphereFrames;
+  sphereFrames.reserve(kNumSpheres);
+  for (std::size_t i = 0u; i < kNumSpheres; ++i) {
+    auto frame = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+    frame->setShape(std::make_shared<dynamics::SphereShape>(1.0));
+    frame->setTranslation(Eigen::Vector3d::Zero());
+    sphereFrames.push_back(frame);
+  }
+
+  auto group = detector->createCollisionGroup();
+  for (const auto& sphereFrame : sphereFrames)
+    group->addShapeFrame(sphereFrame.get());
+
+  auto filter = std::make_shared<CountingCollisionFilter>();
+  collision::CollisionOption option(false, 1u, filter);
+
+  EXPECT_TRUE(group->collide(option, nullptr));
+  EXPECT_EQ(1u, filter->getNumChecks());
 }
 
 //==============================================================================

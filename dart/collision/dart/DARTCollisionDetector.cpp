@@ -2058,6 +2058,25 @@ void appendFiniteFiniteCandidatePair(
 }
 
 //==============================================================================
+bool processFiniteFiniteCandidatePair(
+    const BroadphaseEntry& entry1,
+    const BroadphaseEntry& entry2,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    CollisionResult& pairResult)
+{
+  auto* collObj1 = entry1.object;
+  auto* collObj2 = entry2.object;
+  const auto& filter = option.collisionFilter;
+  if (filter && filter->ignoresCollision(collObj1, collObj2))
+    return false;
+
+  return processPair(
+      collObj1, collObj2, option, result, collisionFound, pairResult);
+}
+
+//==============================================================================
 bool contactBoundsOverlap(
     const ContactBoundEntry& entry1,
     const ContactBoundEntry& entry2,
@@ -2576,6 +2595,9 @@ bool processFiniteFinitePairs(
 
   auto& pairs = scratch.finiteFinitePairs;
   pairs.clear();
+  const bool streamPairs = result == nullptr || threadPool == nullptr
+                           || numCollisionThreads <= 1u
+                           || option.maxNumContacts <= 1u;
 
   sortedEntries.reserve(entries.size());
   for (const auto& entry : entries)
@@ -2607,6 +2629,19 @@ bool processFiniteFinitePairs(
             if ((overlapMask & (std::uint32_t{1u} << lane)) == 0u)
               continue;
 
+            if (streamPairs) {
+              if (processFiniteFiniteCandidatePair(
+                      entry1,
+                      *sortedEntries[j + lane],
+                      option,
+                      result,
+                      collisionFound,
+                      scratch.pairResult)) {
+                return true;
+              }
+              continue;
+            }
+
             appendFiniteFiniteCandidatePair(
                 entry1, *sortedEntries[j + lane], option, pairs);
           }
@@ -2616,11 +2651,26 @@ bool processFiniteFinitePairs(
       }
 
       if (overlaps(entry1, entry2)) {
-        appendFiniteFiniteCandidatePair(entry1, entry2, option, pairs);
+        if (streamPairs) {
+          if (processFiniteFiniteCandidatePair(
+                  entry1,
+                  entry2,
+                  option,
+                  result,
+                  collisionFound,
+                  scratch.pairResult)) {
+            return true;
+          }
+        } else {
+          appendFiniteFiniteCandidatePair(entry1, entry2, option, pairs);
+        }
       }
       ++j;
     }
   }
+
+  if (streamPairs)
+    return false;
 
   return processFiniteFiniteCandidatePairs(
       pairs,
@@ -2649,6 +2699,9 @@ bool processFiniteFinitePairs(
 
   auto& pairs = scratch.finiteFinitePairs;
   pairs.clear();
+  const bool streamPairs = result == nullptr || threadPool == nullptr
+                           || numCollisionThreads <= 1u
+                           || option.maxNumContacts <= 1u;
 
   sortedEntries2.reserve(entries2.size());
   for (const auto& entry : entries2)
@@ -2680,6 +2733,19 @@ bool processFiniteFinitePairs(
             if ((overlapMask & (std::uint32_t{1u} << lane)) == 0u)
               continue;
 
+            if (streamPairs) {
+              if (processFiniteFiniteCandidatePair(
+                      entry1,
+                      *sortedEntries2[j + lane],
+                      option,
+                      result,
+                      collisionFound,
+                      scratch.pairResult)) {
+                return true;
+              }
+              continue;
+            }
+
             appendFiniteFiniteCandidatePair(
                 entry1, *sortedEntries2[j + lane], option, pairs);
           }
@@ -2693,11 +2759,26 @@ bool processFiniteFinitePairs(
         continue;
       }
       if (overlaps(entry1, entry2)) {
-        appendFiniteFiniteCandidatePair(entry1, entry2, option, pairs);
+        if (streamPairs) {
+          if (processFiniteFiniteCandidatePair(
+                  entry1,
+                  entry2,
+                  option,
+                  result,
+                  collisionFound,
+                  scratch.pairResult)) {
+            return true;
+          }
+        } else {
+          appendFiniteFiniteCandidatePair(entry1, entry2, option, pairs);
+        }
       }
       ++j;
     }
   }
+
+  if (streamPairs)
+    return false;
 
   return processFiniteFiniteCandidatePairs(
       pairs,
