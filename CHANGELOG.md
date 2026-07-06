@@ -295,6 +295,7 @@ compatibility remains on the active DART 6 LTS branch._
   scene-diff verdicts, blind-judge image-study reduction and round-2 packet
   scoring, solver-plan visual gate templates, and provider-neutral VLM review
   bundles.
+  ([#3320](https://github.com/dartsim/dart/pull/3320))
 - Added visual-verification workflows, screenshot review indexes, UI capture
   guards, runtime scene-switch hardening, and demo panels aimed at debugging
   DART 7 simulation behavior instead of preserving every historical demo detail.
