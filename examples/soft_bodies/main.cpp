@@ -43,13 +43,21 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cstdlib>
 #include <cstring>
 
 using namespace dart::dynamics;
+
+struct SoftBodyDisplayOptions
+{
+  float softMeshAlpha = 0.5f;
+  bool showEmbeddedVisuals = true;
+};
 
 class RecordingWorld : public dart::gui::osg::RealTimeWorldNode
 {
@@ -216,6 +224,7 @@ struct Options
   int steps = 120;
   int width = 640;
   int height = 480;
+  SoftBodyDisplayOptions display;
 };
 
 void printUsage(const char* executable)
@@ -230,7 +239,9 @@ void printUsage(const char* executable)
             << "  --width W        Headless capture width before --gui-scale "
                "(default 640).\n"
             << "  --height H       Headless capture height before --gui-scale "
-               "(default 480).\n";
+               "(default 480).\n"
+            << "  --soft-alpha A   Soft mesh alpha in [0, 1] (default 0.5).\n"
+            << "  --hide-embedded  Hide embedded rigid visualization shapes.\n";
 }
 
 Options parseOptions(int argc, char* argv[])
@@ -250,6 +261,11 @@ Options parseOptions(int argc, char* argv[])
       options.width = std::atoi(argv[++i]);
     } else if (std::strcmp(argv[i], "--height") == 0 && i + 1 < argc) {
       options.height = std::atoi(argv[++i]);
+    } else if (std::strcmp(argv[i], "--soft-alpha") == 0 && i + 1 < argc) {
+      options.display.softMeshAlpha
+          = static_cast<float>(std::clamp(std::atof(argv[++i]), 0.0, 1.0));
+    } else if (std::strcmp(argv[i], "--hide-embedded") == 0) {
+      options.display.showEmbeddedVisuals = false;
     } else {
       forwarded.push_back(argv[i]);
     }
@@ -263,14 +279,17 @@ Options parseOptions(int argc, char* argv[])
   return options;
 }
 
-void styleSoftBodyVisuals(const dart::simulation::WorldPtr& world)
+void styleSoftBodyVisuals(
+    const dart::simulation::WorldPtr& world,
+    const SoftBodyDisplayOptions& display)
 {
+  const double alpha = std::clamp<double>(display.softMeshAlpha, 0.0, 1.0);
   const std::array<Eigen::Vector4d, 5> softBodyColors = {
-      Eigen::Vector4d(0.35, 0.48, 1.00, 1.0),
-      Eigen::Vector4d(0.95, 0.45, 0.30, 1.0),
-      Eigen::Vector4d(0.30, 0.72, 0.48, 1.0),
-      Eigen::Vector4d(0.95, 0.76, 0.28, 1.0),
-      Eigen::Vector4d(0.70, 0.45, 0.90, 1.0),
+      Eigen::Vector4d(0.35, 0.48, 1.00, alpha),
+      Eigen::Vector4d(0.95, 0.45, 0.30, alpha),
+      Eigen::Vector4d(0.30, 0.72, 0.48, alpha),
+      Eigen::Vector4d(0.95, 0.76, 0.28, alpha),
+      Eigen::Vector4d(0.70, 0.45, 0.90, alpha),
   };
 
   std::size_t softBodyIndex = 0;
@@ -295,6 +314,8 @@ void styleSoftBodyVisuals(const dart::simulation::WorldPtr& world)
         if (shape && shape->getType() == SoftMeshShape::getStaticType()) {
           visualAspect->setRGBA(color);
           visualAspect->show();
+        } else if (display.showEmbeddedVisuals) {
+          visualAspect->show();
         } else {
           visualAspect->hide();
         }
@@ -302,6 +323,66 @@ void styleSoftBodyVisuals(const dart::simulation::WorldPtr& world)
     }
   }
 }
+
+void applySoftBodiesCameraPose(dart::gui::osg::Viewer& viewer);
+
+class SoftBodiesWidget : public dart::gui::osg::ImGuiWidget
+{
+public:
+  SoftBodiesWidget(
+      dart::gui::osg::ImGuiViewer* viewer,
+      dart::simulation::WorldPtr world,
+      SoftBodyDisplayOptions* display)
+    : mViewer(viewer), mWorld(std::move(world)), mDisplay(display)
+  {
+  }
+
+  void render() override
+  {
+    const float guiScale
+        = static_cast<float>(mViewer->getImGuiHandler()->getGuiScale());
+    const float margin = 12.0f * guiScale;
+    ImGui::SetNextWindowPos(ImVec2(margin, margin), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(
+        ImVec2(300.0f * guiScale, 190.0f * guiScale), ImGuiCond_Once);
+    ImGui::SetNextWindowBgAlpha(0.92f);
+    if (!ImGui::Begin(
+            "Soft Bodies",
+            nullptr,
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings)) {
+      ImGui::End();
+      return;
+    }
+
+    bool changed = false;
+    bool simulating = mViewer->isSimulating();
+    if (ImGui::Checkbox("Run simulation", &simulating))
+      mViewer->simulate(simulating);
+
+    changed |= ImGui::SliderFloat(
+        "Soft mesh alpha", &mDisplay->softMeshAlpha, 0.0f, 1.0f, "%.2f");
+    changed
+        |= ImGui::Checkbox("Embedded visuals", &mDisplay->showEmbeddedVisuals);
+
+    if (ImGui::Button("Reset view"))
+      applySoftBodiesCameraPose(*mViewer);
+
+    ImGui::Separator();
+    ImGui::Text("Time %.3f s", mWorld->getTime());
+    ImGui::SameLine();
+    ImGui::Text("FPS %.0f", ImGui::GetIO().Framerate);
+
+    if (changed)
+      styleSoftBodyVisuals(mWorld, *mDisplay);
+
+    ImGui::End();
+  }
+
+private:
+  dart::gui::osg::ImGuiViewer* mViewer;
+  dart::simulation::WorldPtr mWorld;
+  SoftBodyDisplayOptions* mDisplay;
+};
 
 void applySoftBodiesCameraPose(dart::gui::osg::Viewer& viewer)
 {
@@ -391,7 +472,7 @@ int runHeadless(
 
 int main(int argc, char* argv[])
 {
-  const Options options = parseOptions(argc, argv);
+  Options options = parseOptions(argc, argv);
   if (options.showHelp) {
     printUsage(argv[0]);
     return 0;
@@ -406,27 +487,32 @@ int main(int argc, char* argv[])
     return 1;
   }
 
-  styleSoftBodyVisuals(world);
+  styleSoftBodyVisuals(world, options.display);
 
   osg::ref_ptr<RecordingWorld> node = new RecordingWorld(world);
 
   node->simulate(true);
 
-  dart::gui::osg::Viewer viewer;
-  viewer.addWorldNode(node);
-  viewer.addEventHandler(new RecordingEventHandler(node));
-  applySoftBodiesCameraPose(viewer);
+  osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
+      = new dart::gui::osg::ImGuiViewer();
+  viewer->addWorldNode(node);
+  viewer->addEventHandler(new RecordingEventHandler(node));
+  viewer->getImGuiHandler()->setGuiScale(options.scale);
+  applySoftBodiesCameraPose(*viewer);
 
-  std::cout << viewer.getInstructions() << std::endl;
+  std::cout << viewer->getInstructions() << std::endl;
 
   if (options.headless)
-    return runHeadless(viewer, node.get(), world, options);
+    return runHeadless(*viewer, node.get(), world, options);
 
-  viewer.setUpViewInWindow(
+  viewer->getImGuiHandler()->addWidget(std::make_shared<SoftBodiesWidget>(
+      viewer.get(), world, &options.display));
+
+  viewer->setUpViewInWindow(
       0,
       0,
       dart::gui::osg::scaleWindowExtent(640, options.scale),
       dart::gui::osg::scaleWindowExtent(480, options.scale));
 
-  viewer.run();
+  viewer->run();
 }
