@@ -134,6 +134,25 @@ Inspect screenshots or captured frame sequences when judging visual quality.
 Command success alone is not enough for material, lighting, transparency,
 camera, or UI regressions.
 
+When adding screenshot or frame-output behavior, verify the requested artifact
+after the render loop finishes. Capture callbacks can report write failures
+late, after the viewer has already advanced its final frame, so a successful
+run is not enough evidence that a file was written. Remove stale regular files
+before capture, reject existing directories or special files at the target path,
+and fail if the final path is missing, empty, or not a regular file.
+
+Live ImGui controls that change `VisualAspect` color or alpha after renderable
+nodes already exist must also update the renderer-visible state. Do not assume
+that mutating a `VisualAspect` will invalidate an existing drawable when the
+refresh path is gated by shape version, first-frame initialization, or dynamic
+color flags; either mark and handle dynamic color explicitly or re-read the
+current visual aspect color and alpha in the per-frame refresh path.
+
+At high `--gui-scale` values, avoid long labels trailing after wide widgets.
+Put the visible label on its own line, give the control a hidden ImGui ID such
+as `##soft_mesh_alpha`, and size sliders or inputs from
+`ImGui::GetContentRegionAvail().x` so text does not clip in scaled overlays.
+
 ### Offscreen render-to-texture
 
 `dart/gui/detail/offscreen_parity.cpp` can render the live scene to an offscreen
