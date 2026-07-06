@@ -2,11 +2,10 @@
 # All rights reserved.
 
 [build-system]
-# Pin cmake below 4.3.4: that release regressed GLUT/OpenGL detection in the
-# manylinux_2_28 wheel container, so find_package(GLUT) fails, the dart-gui
-# target is skipped, and dartpy aborts with "Cannot find the library dart-gui".
-# 4.3.2 (the last version used by a green wheel build) works. Relax once a fixed
-# cmake ships.
+# Pin fallback PyPA CMake below 4.3.4: that release regressed GLUT/OpenGL
+# detection in DART 6 wheel builds, so find_package(GLUT) fails, dart-gui is
+# skipped, and dartpy aborts with "Cannot find the library dart-gui".
+# The Pixi wheel tasks use the Pixi CMake package directly.
 requires = ["setuptools>=42", "wheel", "ninja", "cmake>=3.12,<4.3.4"]
 build-backend = "setuptools.build_meta"
 
@@ -35,56 +34,3 @@ addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = true
 filterwarnings = ["error"]
 testpaths = ["tests"]
-
-# https://cibuildwheel.readthedocs.io/en/stable/options/#before-all
-[tool.cibuildwheel]
-manylinux-x86_64-image = "jslee02/dart-dev:manylinux_2_28_x86_64-v6.15"
-manylinux-aarch64-image = "jslee02/dart-dev:manylinux_2_28_aarch64-v6.15"
-manylinux-pypy_x86_64-image = "jslee02/dart-dev:manylinux_2_28_x86_64-v6.15"
-manylinux-pypy_aarch64-image = "jslee02/dart-dev:manylinux_2_28_aarch64-v6.15"
-test-requires = "pytest"
-test-command = "pytest {project}/python/tests"
-# https://cibuildwheel.readthedocs.io/en/stable/options/#build-skip
-skip = [
-  # Common
-  "pp*",
-
-  # Linux
-  "*musllinux*",
-  "cp36-*linux*",
-  "cp37-*linux*",
-  "cp38-*linux*",
-  "cp39-*linux*",
-
-  # macOS
-  "cp36-macosx*",
-  "cp37-macosx*",
-  "cp38-macosx*",
-  "cp39-macosx*",
-  "cp310-macosx*",
-  "cp311-macosx*",
-
-  # Windows
-  "cp*-win32",
-  "cp36-win*",
-  "cp37-win*",
-  "cp38-win*",
-  "cp39-win*",
-  "cp310-win*",
-  "cp311-win*",
-]
-
-[tool.cibuildwheel.linux]
-archs = ["x86_64"]
-
-[tool.cibuildwheel.macos]
-archs = ["auto64"] # TODO: Add universal2 and arm64
-before-all = [
-  "brew update > /dev/null",
-  "brew bundle || brew bundle",
-  "brew install open-scene-graph", # TODO: --HEAD is needed to build the latest version, but it's currently broken
-  "sw_vers",
-]
-
-[tool.cibuildwheel.windows]
-archs = ["AMD64", "ARM64"]
