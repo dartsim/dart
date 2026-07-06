@@ -1081,9 +1081,12 @@ void World::setNumSimulationThreads(std::size_t numThreads)
       numThreads = 1u;
   }
 
+  const auto previousNumSimulationThreads = mNumSimulationThreads;
   mNumSimulationThreads = std::max<std::size_t>(1u, numThreads);
   if (mConstraintSolver)
     mConstraintSolver->setNumSimulationThreads(mNumSimulationThreads);
+  if (mNumSimulationThreads != previousNumSimulationThreads)
+    invalidateSimulationMode();
 
   if (mNumSimulationThreads <= 1u) {
     mSimulationThreadPool.reset();

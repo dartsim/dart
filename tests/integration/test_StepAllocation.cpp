@@ -856,6 +856,20 @@ TEST(WorldSimulationModeMemoryManager, ShapeChangeInvalidatesAndRebakes)
   EXPECT_FALSE(world->isInSimulationMode());
 }
 
+TEST(WorldSimulationModeMemoryManager, ThreadCountChangeInvalidatesBake)
+{
+  auto world = createFallingBoxWorld("thread_count_rebake_world");
+  world->setNumSimulationThreads(1u);
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+
+  world->setNumSimulationThreads(2u);
+  EXPECT_FALSE(world->isInSimulationMode());
+
+  world->step();
+  EXPECT_TRUE(world->isInSimulationMode());
+}
+
 TEST(WorldSimulationModeMemoryManager, FrameArenaResetsEachStep)
 {
   auto world = createFallingBoxWorld("frame_arena_reset_world");

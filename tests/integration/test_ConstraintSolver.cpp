@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "AllocationCounting.hpp"
 #include "TestHelpers.hpp"
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionObject.hpp"
@@ -59,6 +60,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -146,6 +148,65 @@ public:
 
 private:
   std::size_t mNumUpdates{0u};
+};
+
+class DiagonalConstraint final : public constraint::ConstraintBase
+{
+public:
+  explicit DiagonalConstraint(std::size_t dimension) : mActiveImpulse(dimension)
+  {
+    mDim = dimension;
+  }
+
+  void update() override {}
+
+  void getInformation(constraint::ConstraintInfo* info) override
+  {
+    for (std::size_t i = 0u; i < mDim; ++i) {
+      info->x[i] = 0.0;
+      info->lo[i] = -1.0;
+      info->hi[i] = 1.0;
+      info->b[i] = 0.0;
+      info->w[i] = 0.0;
+      info->findex[i] = -1;
+    }
+  }
+
+  void applyUnitImpulse(std::size_t index) override
+  {
+    mActiveImpulse = index;
+  }
+
+  void getVelocityChange(double* vel, bool) override
+  {
+    for (std::size_t i = 0u; i < mDim; ++i)
+      vel[i] = i == mActiveImpulse ? 1.0 : 0.0;
+  }
+
+  void excite() override
+  {
+    mActiveImpulse = mDim;
+  }
+
+  void unexcite() override
+  {
+    mActiveImpulse = mDim;
+  }
+
+  void applyImpulse(double*) override {}
+
+  bool isActive() const override
+  {
+    return true;
+  }
+
+  dynamics::SkeletonPtr getRootSkeleton() const override
+  {
+    return nullptr;
+  }
+
+private:
+  std::size_t mActiveImpulse;
 };
 
 class DerivedDantzigBoxedLcpSolver final
@@ -414,6 +475,30 @@ private:
   std::atomic<int> mNumReserveCalls{0};
   mutable std::mutex mReserveThreadMutex;
   std::set<std::thread::id> mReserveThreadIds;
+};
+
+class ExposedBoxedLcpConstraintSolver final
+  : public constraint::BoxedLcpConstraintSolver
+{
+public:
+  constraint::ConstrainedGroup makeGroupForTest(
+      const std::vector<constraint::ConstraintBasePtr>& constraints)
+  {
+    constraint::ConstrainedGroup group;
+    for (const auto& constraint : constraints)
+      group.addConstraint(constraint);
+    return group;
+  }
+
+  void reserveGroupScratchForTest(const constraint::ConstrainedGroup& group)
+  {
+    reserveConstrainedGroupScratch(group);
+  }
+
+  void solveGroupForTest(constraint::ConstrainedGroup& group)
+  {
+    solveConstrainedGroup(group);
+  }
 };
 
 dynamics::BodyNode* createFreeBody(
@@ -989,6 +1074,29 @@ TEST(ConstraintSolver, ParallelPreparationWarmsScratchOnWorkerThreads)
   EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
   EXPECT_EQ(0, solver.getNumReserveCalls());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, BoxedLcpScratchRetainsLargestPreparedGroup)
+{
+  ExposedBoxedLcpConstraintSolver solver;
+  const std::vector<constraint::ConstraintBasePtr> largeGroup{
+      std::make_shared<DiagonalConstraint>(128u)};
+  const std::vector<constraint::ConstraintBasePtr> smallGroup{
+      std::make_shared<DiagonalConstraint>(32u)};
+  auto largeConstrainedGroup = solver.makeGroupForTest(largeGroup);
+  auto smallConstrainedGroup = solver.makeGroupForTest(smallGroup);
+
+  solver.reserveGroupScratchForTest(largeConstrainedGroup);
+  solver.reserveGroupScratchForTest(smallConstrainedGroup);
+
+  dart::test::ScopedHeapAllocationCounter counter;
+  solver.solveGroupForTest(smallConstrainedGroup);
+  solver.solveGroupForTest(largeConstrainedGroup);
+  counter.stop();
+
+  EXPECT_EQ(counter.allocationCount(), 0u);
+  EXPECT_EQ(counter.allocationBytes(), 0u);
 }
 
 //==============================================================================
