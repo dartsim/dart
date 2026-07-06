@@ -207,6 +207,12 @@
       "category": "test",
       "status": "active",
       "gate_profile": "command"
+    },
+    {
+      "name": "dart-verify-sim",
+      "category": "verification",
+      "status": "active",
+      "gate_profile": "reference"
     }
   ]
 }

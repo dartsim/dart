@@ -14,6 +14,8 @@ __all__: list[str] = [
     "MeshAlphaMode",
     "MeshMaterialDescriptor",
     "MeshPartDescriptor",
+    "OffscreenRenderOptions",
+    "OffscreenRenderer",
     "OrbitCamera",
     "OrbitCameraBasis",
     "OrbitCameraController",
@@ -27,6 +29,7 @@ __all__: list[str] = [
     "ProjectionOptions",
     "RenderableDescriptor",
     "RenderableSetUpdatePlan",
+    "RenderedImage",
     "RunOptions",
     "ShapeKind",
     "ViewerLifecycleState",
@@ -42,6 +45,7 @@ __all__: list[str] = [
     "intersect_plane",
     "intersect_renderable",
     "is_docking_available",
+    "look_at",
     "make_collision_shape_debug_lines",
     "make_frame_debug_lines",
     "make_frame_output_path",
@@ -57,8 +61,10 @@ __all__: list[str] = [
     "mark_screenshot_requested",
     "mark_simulation_advanced",
     "normalize_run_options",
+    "orbit_camera",
     "pick_nearest_renderable",
     "plan_renderable_set_update",
+    "render",
     "request_scene_replay",
     "request_scene_switch",
     "request_single_step",
@@ -89,6 +95,9 @@ import dartpy.math
 import numpy
 from dartpy._world_render_bridge import DescriptorRenderScene as DescriptorRenderScene
 from dartpy._world_render_bridge import WorldRenderBridge as WorldRenderBridge
+from dartpy._world_render_bridge import look_at as look_at
+from dartpy._world_render_bridge import orbit_camera as orbit_camera
+from dartpy._world_render_bridge import render as render
 from dartpy._world_render_bridge import world_render_frame as world_render_frame
 from numpy.typing import NDArray
 
@@ -528,6 +537,56 @@ class RenderableDescriptor:
     def render_resource_version(self) -> int: ...
     @render_resource_version.setter
     def render_resource_version(self, arg: int, /) -> None: ...
+
+class RenderedImage:
+    @property
+    def width(self) -> int: ...
+    @property
+    def height(self) -> int: ...
+    @property
+    def channels(self) -> int: ...
+    @property
+    def pixels(self) -> bytes: ...
+    def png_bytes(self) -> bytes: ...
+
+class OffscreenRenderOptions:
+    def __init__(self) -> None: ...
+    @property
+    def width(self) -> int: ...
+    @width.setter
+    def width(self, arg: int, /) -> None: ...
+    @property
+    def height(self) -> int: ...
+    @height.setter
+    def height(self, arg: int, /) -> None: ...
+    @property
+    def render_backend(self) -> str: ...
+    @render_backend.setter
+    def render_backend(self, arg: str, /) -> None: ...
+    @property
+    def warmup_frames(self) -> int: ...
+    @warmup_frames.setter
+    def warmup_frames(self, arg: int, /) -> None: ...
+    @property
+    def high_fidelity(self) -> bool: ...
+    @high_fidelity.setter
+    def high_fidelity(self, arg: bool, /) -> None: ...
+
+class OffscreenRenderer:
+    def __init__(
+        self,
+        width: int = ...,
+        height: int = ...,
+        render_backend: str = ...,
+        warmup_frames: int = ...,
+        high_fidelity: bool = ...,
+    ) -> None: ...
+    def render(
+        self, descriptors: Sequence[RenderableDescriptor], camera: OrbitCamera
+    ) -> RenderedImage: ...
+    def render_descriptors(
+        self, descriptors: Sequence[RenderableDescriptor], camera: OrbitCamera
+    ) -> RenderedImage: ...
 
 class RenderableSetUpdatePlan:
     def __init__(self) -> None: ...
@@ -1236,6 +1295,17 @@ def write_rgba_ppm(
     rgba_pixels: Sequence[int],
     origin_bottom_left: bool = ...,
 ) -> None: ...
+def render(
+    world: object, camera: OrbitCamera | None = ..., size: tuple[int, int] = ...
+) -> RenderedImage: ...
+def orbit_camera(
+    azimuth: float | None = ...,
+    elevation: float | None = ...,
+    distance: float | None = ...,
+    target: object | None = ...,
+    up: object | None = ...,
+) -> OrbitCamera: ...
+def look_at(eye: object, target: object, up: object = ...) -> OrbitCamera: ...
 def make_orbit_camera_basis(camera: OrbitCamera) -> OrbitCameraBasis: ...
 def camera_eye(
     camera: OrbitCamera,

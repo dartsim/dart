@@ -112,5 +112,44 @@ if(TARGET dart-demos)
             "LIBGL_ALWAYS_SOFTWARE=1;MESA_LOADER_DRIVER_OVERRIDE=llvmpipe"
       )
     endif()
+
+    # WP-ASV.4 camera-control smoke: one dart-demos process captures two distinct
+    # --views plus a --turntable, asserting every per-view PPM is valid and
+    # non-blank and that the two views are framed distinctly
+    # (analyze_headless_smoke.py compare mode). dart-demos routes through
+    # runGuiBackendApplication, the demos path that owns the camera flags.
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if(Python3_Interpreter_FOUND)
+      set(
+        _dart_demos_camera_testing_dir
+        "${DART_SOURCE_DIR}/dart/gui/detail/testing"
+      )
+      add_test(
+        NAME EXAMPLE_dart_demos_camera_control_headless_smoke
+        COMMAND
+          "${CMAKE_COMMAND}"
+          "-DDART_GUI_FILAMENT_EXECUTABLE=$<TARGET_FILE:dart-demos>"
+          "-DDART_GUI_FILAMENT_SCREENSHOT=${CMAKE_CURRENT_BINARY_DIR}/dart_demos_camera_control.ppm"
+          -DDART_GUI_FILAMENT_WIDTH=640 -DDART_GUI_FILAMENT_HEIGHT=480
+          -DDART_GUI_FILAMENT_FRAMES=6
+          -DDART_GUI_FILAMENT_VIEWS=front,three-quarter
+          -DDART_GUI_FILAMENT_TURNTABLE=4
+          "-DDART_GUI_FILAMENT_PYTHON=${Python3_EXECUTABLE}"
+          "-DDART_GUI_FILAMENT_ANALYZER=${_dart_demos_camera_testing_dir}/analyze_headless_smoke.py"
+          -P "${_dart_demos_camera_testing_dir}/run_camera_smoke.cmake"
+      )
+      set_tests_properties(
+        EXAMPLE_dart_demos_camera_control_headless_smoke
+        PROPERTIES LABELS "filament;gui;smoke;graphics"
+      )
+      if(UNIX AND NOT APPLE)
+        set_tests_properties(
+          EXAMPLE_dart_demos_camera_control_headless_smoke
+          PROPERTIES
+            ENVIRONMENT
+              "LIBGL_ALWAYS_SOFTWARE=1;MESA_LOADER_DRIVER_OVERRIDE=llvmpipe"
+        )
+      endif()
+    endif()
   endif()
 endif()

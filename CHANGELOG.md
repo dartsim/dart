@@ -287,6 +287,10 @@ compatibility remains on the active DART 6 LTS branch._
 - Restored or ported major robot, IK, collision, soft-body, vehicle, SIMBICON,
   and rigid-workflow examples through public `dart::gui`/dartpy surfaces rather
   than private scene fixtures.
+- Added agent-facing scene and physics verification tooling with text-first
+  trajectory/contact traces, headless offscreen render checks, image
+  verdict/golden/sheet scripts, and a `dart-verify-sim` workflow.
+  ([#3313](https://github.com/dartsim/dart/pull/3313))
 - Added visual-verification workflows, screenshot review indexes, UI capture
   guards, runtime scene-switch hardening, and demo panels aimed at debugging
   DART 7 simulation behavior instead of preserving every historical demo detail.

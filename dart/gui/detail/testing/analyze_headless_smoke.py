@@ -103,15 +103,91 @@ def analyze_contrast(path: Path, width: int, height: int) -> None:
     )
 
 
+def _scene_region_mean_luminance(pixels: bytes, width: int, height: int) -> float:
+    x0, y0, x1, y1 = _scene_region(width, height)
+    total = 0.0
+    count = 0
+    for y in range(y0, y1):
+        row_offset = y * width * 3
+        for x in range(x0, x1):
+            offset = row_offset + x * 3
+            total += _luminance(pixels[offset : offset + 3])
+            count += 1
+    if count == 0:
+        raise RuntimeError("scene luminance probe region is empty")
+    return total / count
+
+
+def _mean_abs_luminance_diff(
+    pixels_a: bytes, pixels_b: bytes, width: int, height: int
+) -> float:
+    total = 0.0
+    for offset in range(0, width * height * 3, 3):
+        lum_a = _luminance(pixels_a[offset : offset + 3])
+        lum_b = _luminance(pixels_b[offset : offset + 3])
+        total += abs(lum_a - lum_b)
+    return total / max(1, width * height)
+
+
+def analyze_compare(
+    path_a: Path,
+    path_b: Path,
+    width: int,
+    height: int,
+    min_divergence: float,
+) -> None:
+    """Assert two captures are non-blank and framed distinctly.
+
+    Two different camera angles of the same scene must not collapse to the same
+    (or a duplicated) image, so their image-evidence stats have to diverge
+    beyond ``min_divergence``. The check combines the whole-image mean absolute
+    per-pixel luminance difference with the scene-region mean-luminance delta and
+    requires the larger of the two to clear the threshold.
+    """
+
+    pixels_a = _read_ppm(path_a, width, height)
+    pixels_b = _read_ppm(path_b, width, height)
+    _require_nonzero_pixels(pixels_a)
+    _require_nonzero_pixels(pixels_b)
+
+    mean_abs_diff = _mean_abs_luminance_diff(pixels_a, pixels_b, width, height)
+    region_delta = abs(
+        _scene_region_mean_luminance(pixels_a, width, height)
+        - _scene_region_mean_luminance(pixels_b, width, height)
+    )
+    divergence = max(mean_abs_diff, region_delta)
+
+    print(
+        "two-view divergence: "
+        f"mean_abs_diff={mean_abs_diff:.3f}, region_delta={region_delta:.3f}, "
+        f"divergence={divergence:.3f} (min {min_divergence:.3f})"
+    )
+    if divergence < min_divergence:
+        raise RuntimeError(
+            f"{path_a} and {path_b} are not framed distinctly: divergence "
+            f"{divergence:.3f} < {min_divergence:.3f} (duplicated frame?)"
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("path", type=Path)
     parser.add_argument("--width", type=int, required=True)
     parser.add_argument("--height", type=int, required=True)
-    parser.add_argument("--mode", choices=("basic", "contrast"), default="contrast")
+    parser.add_argument(
+        "--mode", choices=("basic", "contrast", "compare"), default="contrast"
+    )
+    parser.add_argument("--compare", type=Path, default=None)
+    parser.add_argument("--min-divergence", type=float, default=2.0)
     args = parser.parse_args()
     if args.mode == "basic":
         analyze_basic(args.path, args.width, args.height)
+    elif args.mode == "compare":
+        if args.compare is None:
+            parser.error("--mode compare requires --compare PATH")
+        analyze_compare(
+            args.path, args.compare, args.width, args.height, args.min_divergence
+        )
     else:
         analyze_contrast(args.path, args.width, args.height)
 

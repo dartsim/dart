@@ -204,6 +204,26 @@ def test_gui_plan_renderable_set_update():
 
 
 @requires_gui_bindings
+def test_bounds_fit_camera_skips_invisible_renderables():
+    from dartpy import _world_render_bridge
+
+    visible = _renderable_from_shape(dart.BoxShape(np.array([1.0, 1.0, 1.0])))
+    hidden_transform = np.eye(4)
+    hidden_transform[:3, 3] = np.array([100.0, 0.0, 0.0])
+    hidden = _renderable_from_shape(
+        dart.BoxShape(np.array([50.0, 50.0, 50.0])),
+        renderable_id=2,
+        name="hidden",
+        transform=hidden_transform,
+    )
+    hidden.material.visible = False
+
+    camera = _world_render_bridge._bounds_fit_camera([visible, hidden], (320, 240))
+
+    assert np.allclose(camera.target, [0.0, 0.0, 0.0])
+
+
+@requires_gui_bindings
 def test_gui_pick_sphere_uses_surface_normal():
     renderables = [_renderable_from_shape(dart.SphereShape(1.0), name="sphere")]
     ray = dart.gui.PickRay()
