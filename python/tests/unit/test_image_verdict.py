@@ -142,6 +142,17 @@ def test_diff_catches_seeded_render_regression(tmp_path: Path) -> None:
     assert any("diff pixels over threshold" in reason for reason in verdict["reasons"])
 
 
+def test_cli_no_ignore_aa_flag_uses_supported_argparse(tmp_path: Path, capsys) -> None:
+    image = tmp_path / "capture.png"
+    _write_contrast_png(image)
+
+    assert image_verdict.main(["--no-ignore-aa", str(image)]) == 0
+
+    output = capsys.readouterr()
+    verdict = json.loads(output.out)
+    assert verdict["thresholds_used"]["diff"]["ignore_aa"] is False
+
+
 def test_diff_aa_ignore_suppresses_edge_fringe() -> None:
     width = height = 210
     reference_pixels = bytearray(_contrast_pixels(width, height))

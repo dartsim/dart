@@ -40,7 +40,10 @@
 #include <osg/Viewport>
 #include <osgGA/EventQueue>
 
+#include <fstream>
+
 #include <cmath>
+#include <cstdio>
 
 namespace dart {
 namespace gui {
@@ -137,8 +140,26 @@ bool captureOffscreen(
     camera->setViewMatrixAsLookAt(eye, center, up);
   }
 
+  if (pngPath.empty()) {
+    dterr << "[OffscreenViewer] capture path is empty; no image can be "
+             "written.\n";
+    return false;
+  }
+
+  std::remove(pngPath.c_str());
   viewer.captureScreen(pngPath);
   viewer.frame(); // SaveScreen writes the PNG during this frame.
+  std::ifstream image(pngPath, std::ios::binary);
+  if (!image.is_open()) {
+    dterr << "[OffscreenViewer] capture failed; no image was written to "
+          << pngPath << ".\n";
+    return false;
+  }
+  if (image.peek() == std::ifstream::traits_type::eof()) {
+    dterr << "[OffscreenViewer] capture failed; wrote an empty image file to "
+          << pngPath << ".\n";
+    return false;
+  }
   return true;
 }
 

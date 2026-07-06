@@ -458,12 +458,20 @@ def main(argv: list[str] | None = None) -> int:
         default=DEFAULT_FAILPERCENT,
         help="percent of pixels allowed over --fail (default: 1.0)",
     )
-    parser.add_argument(
+    aa_group = parser.add_mutually_exclusive_group()
+    aa_group.add_argument(
         "--ignore-aa",
-        action=argparse.BooleanOptionalAction,
-        default=True,
+        dest="ignore_aa",
+        action="store_true",
         help="ignore anti-aliased edge pixels in the diff budget (default: on)",
     )
+    aa_group.add_argument(
+        "--no-ignore-aa",
+        dest="ignore_aa",
+        action="store_false",
+        help="count anti-aliased edge pixels in the diff budget",
+    )
+    parser.set_defaults(ignore_aa=True)
     parser.add_argument(
         "--relnorm",
         type=float,

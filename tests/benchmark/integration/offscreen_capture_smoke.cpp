@@ -165,6 +165,9 @@ int main()
       = (tmpDir / "dart_offscreen_smoke_sugar.png").string();
   const std::string pathZeroWarmup
       = (tmpDir / "dart_offscreen_smoke_sugar_zero.png").string();
+  const std::filesystem::path missingDir
+      = tmpDir / "dart_offscreen_smoke_missing_dir";
+  const std::string pathMissingDir = (missingDir / "capture.png").string();
 
   // Path 1: setUpOffscreenViewer + explicit frame loop + captureScreen.
   {
@@ -253,6 +256,34 @@ int main()
             setup.width,
             setup.height))
       return 1;
+  }
+
+  // Path 4: captureOffscreen reports write failures instead of returning true
+  // when SaveScreen cannot create the requested file.
+  {
+    std::filesystem::remove_all(missingDir);
+
+    auto world = buildBoxWorld();
+    ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
+        = new dart::gui::osg::ImGuiViewer();
+    ::osg::ref_ptr<dart::gui::osg::WorldNode> node
+        = new dart::gui::osg::WorldNode(world);
+    viewer->addWorldNode(node);
+
+    if (dart::gui::osg::captureOffscreen(
+            *viewer,
+            pathMissingDir,
+            camera.eye,
+            camera.center,
+            camera.up,
+            setup,
+            0)) {
+      std::cerr
+          << "[offscreen_capture_smoke] captureOffscreen unexpectedly "
+             "succeeded for missing directory "
+          << pathMissingDir << "\n";
+      return 1;
+    }
   }
 
   std::cout << "[offscreen_capture_smoke] PASS\n";
