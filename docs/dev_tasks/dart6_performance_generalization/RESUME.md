@@ -86,6 +86,14 @@ decisions.
 
 ## Session log
 
+- 2026-07-04: WP-PG.30 executed (Codex worker + orchestrator review):
+  version-keyed cached root-FreeJoint classification; four dynamic_cast
+  sites removed; part (b) FD fast path analyzed and skipped with in-code
+  rationale (recursion already minimal; round-1 landmine avoided).
+  Adversarial review: 4 findings fixed (write ordering, zero-body
+  contract, private section, getRootJoint reuse). Evidence: 8/8
+  bit-identical hashes; win concentrated in many-islands regime.
+
 - 2026-07-04: Folder created on branch `perf/dart6-3056-performance-plan`
   (planning PR). Investigation evidence: issue #3056 reopened 2026-06-30;
   round-1 stack inventory reconstructed; active-regime baseline probe and
