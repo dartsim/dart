@@ -718,6 +718,7 @@ void ConstraintSolver::prepareForSimulation()
 {
   DART_PROFILE_SCOPED_N("ConstraintSolver::prepareForSimulation");
 
+  const auto lastCollisionContacts = mCollisionResult.getContacts();
   constexpr int kPreparationPasses = 2;
   for (int pass = 0; pass < kPreparationPasses; ++pass) {
     updateConstraints();
@@ -734,6 +735,9 @@ void ConstraintSolver::prepareForSimulation()
       reserveConstrainedGroupScratch(group);
     }
   }
+  mCollisionResult.clear();
+  for (const auto& contact : lastCollisionContacts)
+    mCollisionResult.addContact(contact);
 }
 
 //==============================================================================
