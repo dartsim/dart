@@ -38,10 +38,10 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/gui/osg/Utils.hpp"
 
-#include <osg/CullFace>
 #include <osg/Depth>
 #include <osg/Geode>
 #include <osg/Geometry>
+#include <osg/LightModel>
 
 namespace dart {
 namespace gui {
@@ -107,9 +107,6 @@ void SoftMeshShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
-    return;
-
   extractData(false);
 }
 
@@ -142,10 +139,15 @@ SoftMeshShapeGeode::SoftMeshShapeGeode(
     mVisualAspect(parentNode->getVisualAspect()),
     mDrawable(nullptr)
 {
-  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
-  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
-  getOrCreateStateSet()->setAttributeAndModes(
-      new ::osg::CullFace(::osg::CullFace::BACK));
+  ::osg::StateSet* ss = getOrCreateStateSet();
+  ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+  ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+  ss->setMode(GL_CULL_FACE, ::osg::StateAttribute::OFF);
+
+  ::osg::ref_ptr<::osg::LightModel> lightModel = new ::osg::LightModel;
+  lightModel->setTwoSided(true);
+  ss->setAttributeAndModes(lightModel, ::osg::StateAttribute::ON);
+
   extractData();
 }
 
@@ -274,13 +276,15 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
   }
 
-  if (mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
-      || firstTime) {
+  // VisualAspect color and alpha can change independently from the underlying
+  // SoftMeshShape data-variance flags, so re-read them on every refresh.
+  {
     // Set color
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
     mColors->resize(1);
     (*mColors)[0] = color;
     setColorArray(mColors, ::osg::Array::BIND_OVERALL);
+    dirtyDisplayList();
 
     // Set alpha specific properties
     ::osg::StateSet* ss = getOrCreateStateSet();
