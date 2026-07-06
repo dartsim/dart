@@ -37,6 +37,8 @@
 
 #include <vector>
 
+#include <cstddef>
+
 namespace dart {
 namespace constraint {
 
@@ -77,6 +79,9 @@ public:
       double* hi,
       int* findex,
       bool earlyTermination) override;
+
+  /// Reserves the thread-local PGS scratch used by solve().
+  void reserve(std::size_t n);
 
 #if DART_BUILD_MODE_DEBUG
   // Documentation inherited.

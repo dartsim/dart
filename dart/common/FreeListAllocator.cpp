@@ -41,7 +41,17 @@ namespace dart::common {
 //==============================================================================
 FreeListAllocator::FreeListAllocator(
     MemoryAllocator& baseAllocator, size_t initialAllocation)
-  : mBaseAllocator(baseAllocator)
+  : FreeListAllocator(baseAllocator, initialAllocation, GrowthPolicy::Expand)
+{
+  // Do nothing
+}
+
+//==============================================================================
+FreeListAllocator::FreeListAllocator(
+    MemoryAllocator& baseAllocator,
+    size_t initialAllocation,
+    GrowthPolicy growthPolicy)
+  : mBaseAllocator(baseAllocator), mGrowthPolicy(growthPolicy)
 {
   allocateMemoryBlock(initialAllocation);
 }
@@ -112,6 +122,12 @@ MemoryAllocator& FreeListAllocator::getBaseAllocator()
 }
 
 //==============================================================================
+FreeListAllocator::GrowthPolicy FreeListAllocator::getGrowthPolicy() const
+{
+  return mGrowthPolicy;
+}
+
+//==============================================================================
 void* FreeListAllocator::allocate(size_t bytes) noexcept
 {
   // Not allowed to allocate zero bytes
@@ -153,6 +169,10 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
 
   // If failed to find an available memory block, allocate a new memory block
   if (curr == nullptr) {
+    if (mGrowthPolicy == GrowthPolicy::FixedCapacity) {
+      return nullptr;
+    }
+
     // Allocate a sufficient size
     if (!allocateMemoryBlock((mTotalAllocatedBlockSize + bytes) * 2)) {
       return nullptr;
@@ -263,6 +283,9 @@ void FreeListAllocator::print(std::ostream& os, int indent) const
   if (indent != 0) {
     os << spaces << "type: " << getType() << "\n";
   }
+  os << spaces << "growth_policy: "
+     << (mGrowthPolicy == GrowthPolicy::Expand ? "expand" : "fixed_capacity")
+     << "\n";
   os << spaces << "reserved_size: " << mTotalAllocatedBlockSize << "\n";
   os << spaces << "memory_blocks:\n";
   auto curr = mFirstMemoryBlock;

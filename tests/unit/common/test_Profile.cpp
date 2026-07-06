@@ -34,6 +34,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <sstream>
 #include <string>
 
@@ -45,6 +46,21 @@
 
 using dart::common::profile::Profiler;
 using dart::common::profile::ProfileScope;
+
+namespace {
+
+std::size_t countOccurrences(const std::string& text, const std::string& token)
+{
+  std::size_t count = 0;
+  std::size_t pos = 0;
+  while ((pos = text.find(token, pos)) != std::string::npos) {
+    ++count;
+    pos += token.size();
+  }
+  return count;
+}
+
+} // namespace
 
   #define DART_TEST_PROFILE_IF_ELSE(profile_statement, marker_value)           \
     if (true)                                                                  \
@@ -96,6 +112,37 @@ TEST_F(ProfileTest, CapturesHierarchyAndHotspots)
 
   // Print once for manual inspection when running the test standalone.
   std::cout << summary;
+}
+
+TEST_F(ProfileTest, DeduplicatesRepeatedScopeAtSameTreePosition)
+{
+  for (int i = 0; i < 2; ++i) {
+    ProfileScope scope("dedup-scope", __FILE__, __LINE__);
+  }
+
+  const auto summary = DART_PROFILE_TEXT_SUMMARY();
+  const auto threadStart = summary.find("- thread ");
+  ASSERT_NE(threadStart, std::string::npos);
+  const auto tree = summary.substr(threadStart);
+
+  EXPECT_EQ(countOccurrences(tree, "dedup-scope"), 1u);
+  EXPECT_NE(tree.find("calls        2"), std::string::npos);
+}
+
+TEST_F(ProfileTest, KeepsDynamicScopeNamesAlive)
+{
+  std::string label = "dynamic-scope";
+  std::string file = "dynamic-file.cpp";
+  {
+    ProfileScope scope(label, file, 123);
+  }
+
+  std::fill(label.begin(), label.end(), 'x');
+  std::fill(file.begin(), file.end(), 'y');
+
+  const auto summary = DART_PROFILE_TEXT_SUMMARY();
+  EXPECT_NE(summary.find("dynamic-scope"), std::string::npos);
+  EXPECT_NE(summary.find("dynamic-file.cpp:123"), std::string::npos);
 }
 
 TEST_F(ProfileTest, TextSummaryMacroReturnsString)

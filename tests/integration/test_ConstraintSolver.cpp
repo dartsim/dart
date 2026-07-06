@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "AllocationCounting.hpp"
 #include "TestHelpers.hpp"
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionObject.hpp"
@@ -59,7 +60,10 @@
 
 #include <atomic>
 #include <chrono>
+#include <limits>
 #include <memory>
+#include <mutex>
+#include <set>
 #include <string>
 #include <thread>
 #include <typeinfo>
@@ -100,6 +104,109 @@ public:
   {
     return nullptr;
   }
+};
+
+class CountingManualConstraint final : public constraint::ConstraintBase
+{
+public:
+  CountingManualConstraint()
+  {
+    mDim = 1u;
+  }
+
+  void update() override
+  {
+    ++mNumUpdates;
+  }
+
+  void getInformation(constraint::ConstraintInfo*) override {}
+
+  void applyUnitImpulse(std::size_t) override {}
+
+  void getVelocityChange(double*, bool) override {}
+
+  void excite() override {}
+
+  void unexcite() override {}
+
+  void applyImpulse(double*) override {}
+
+  bool isActive() const override
+  {
+    return false;
+  }
+
+  dynamics::SkeletonPtr getRootSkeleton() const override
+  {
+    return nullptr;
+  }
+
+  std::size_t getNumUpdates() const
+  {
+    return mNumUpdates;
+  }
+
+private:
+  std::size_t mNumUpdates{0u};
+};
+
+class DiagonalConstraint final : public constraint::ConstraintBase
+{
+public:
+  explicit DiagonalConstraint(std::size_t dimension) : mActiveImpulse(dimension)
+  {
+    mDim = dimension;
+  }
+
+  void update() override {}
+
+  void getInformation(constraint::ConstraintInfo* info) override
+  {
+    for (std::size_t i = 0u; i < mDim; ++i) {
+      info->x[i] = 0.0;
+      info->lo[i] = -1.0;
+      info->hi[i] = 1.0;
+      info->b[i] = 0.0;
+      info->w[i] = 0.0;
+      info->findex[i] = -1;
+    }
+  }
+
+  void applyUnitImpulse(std::size_t index) override
+  {
+    mActiveImpulse = index;
+  }
+
+  void getVelocityChange(double* vel, bool) override
+  {
+    for (std::size_t i = 0u; i < mDim; ++i)
+      vel[i] = i == mActiveImpulse ? 1.0 : 0.0;
+  }
+
+  void excite() override
+  {
+    mActiveImpulse = mDim;
+  }
+
+  void unexcite() override
+  {
+    mActiveImpulse = mDim;
+  }
+
+  void applyImpulse(double*) override {}
+
+  bool isActive() const override
+  {
+    return true;
+  }
+
+  dynamics::SkeletonPtr getRootSkeleton() const override
+  {
+    return nullptr;
+  }
+
+private:
+  std::size_t mActiveImpulse;
 };
 
 class DerivedDantzigBoxedLcpSolver final
@@ -295,6 +402,11 @@ public:
     solveConstrainedGroups();
   }
 
+  void reserveScratchForCurrentGroupsForTest()
+  {
+    reserveConstrainedGroupsScratch();
+  }
+
   int getNumSolvedGroups() const
   {
     return mNumSolvedGroups.load(std::memory_order_relaxed);
@@ -305,7 +417,40 @@ public:
     return mMaxConcurrentSolves.load(std::memory_order_relaxed);
   }
 
+  void recordReserveThreadsForTest()
+  {
+    {
+      std::lock_guard<std::mutex> lock(mReserveThreadMutex);
+      mReserveThreadIds.clear();
+    }
+    mNumReserveCalls.store(0, std::memory_order_relaxed);
+    mRecordReserveThreads.store(true, std::memory_order_relaxed);
+  }
+
+  int getNumReserveCalls() const
+  {
+    return mNumReserveCalls.load(std::memory_order_relaxed);
+  }
+
+  std::size_t getNumReserveThreads() const
+  {
+    std::lock_guard<std::mutex> lock(mReserveThreadMutex);
+    return mReserveThreadIds.size();
+  }
+
 protected:
+  void reserveConstrainedGroupScratch(
+      const constraint::ConstrainedGroup& group) override
+  {
+    BoxedLcpConstraintSolver::reserveConstrainedGroupScratch(group);
+    if (!mRecordReserveThreads.load(std::memory_order_relaxed))
+      return;
+
+    mNumReserveCalls.fetch_add(1, std::memory_order_relaxed);
+    std::lock_guard<std::mutex> lock(mReserveThreadMutex);
+    mReserveThreadIds.insert(std::this_thread::get_id());
+  }
+
   void solveConstrainedGroup(constraint::ConstrainedGroup&) override
   {
     const int concurrent
@@ -326,6 +471,34 @@ private:
   std::atomic<int> mConcurrentSolves{0};
   std::atomic<int> mMaxConcurrentSolves{0};
   std::atomic<int> mNumSolvedGroups{0};
+  std::atomic<bool> mRecordReserveThreads{false};
+  std::atomic<int> mNumReserveCalls{0};
+  mutable std::mutex mReserveThreadMutex;
+  std::set<std::thread::id> mReserveThreadIds;
+};
+
+class ExposedBoxedLcpConstraintSolver final
+  : public constraint::BoxedLcpConstraintSolver
+{
+public:
+  constraint::ConstrainedGroup makeGroupForTest(
+      const std::vector<constraint::ConstraintBasePtr>& constraints)
+  {
+    constraint::ConstrainedGroup group;
+    for (const auto& constraint : constraints)
+      group.addConstraint(constraint);
+    return group;
+  }
+
+  void reserveGroupScratchForTest(const constraint::ConstrainedGroup& group)
+  {
+    reserveConstrainedGroupScratch(group);
+  }
+
+  void solveGroupForTest(constraint::ConstrainedGroup& group)
+  {
+    solveConstrainedGroup(group);
+  }
 };
 
 dynamics::BodyNode* createFreeBody(
@@ -865,6 +1038,65 @@ TEST(ConstraintSolver, DirectSimulationThreadSettingSolvesGroupsInParallel)
 
   EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, PrepareForSimulationDoesNotUpdateManualConstraints)
+{
+  constraint::BoxedLcpConstraintSolver solver;
+  auto manualConstraint = std::make_shared<CountingManualConstraint>();
+  solver.addConstraint(manualConstraint);
+
+  solver.prepareForSimulation();
+  EXPECT_EQ(0u, manualConstraint->getNumUpdates());
+
+  solver.solve();
+  EXPECT_EQ(1u, manualConstraint->getNumUpdates());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ParallelPreparationWarmsScratchOnWorkerThreads)
+{
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumSimulationThreads(4);
+  solver.addFakeConstrainedGroups(130, 100);
+  solver.recordReserveThreadsForTest();
+
+  solver.reserveScratchForCurrentGroupsForTest();
+
+  EXPECT_EQ(0, solver.getNumSolvedGroups());
+  EXPECT_GT(solver.getNumReserveCalls(), 130);
+  EXPECT_GT(solver.getNumReserveThreads(), 1u);
+
+  solver.recordReserveThreadsForTest();
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+  EXPECT_EQ(0, solver.getNumReserveCalls());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, BoxedLcpScratchRetainsLargestPreparedGroup)
+{
+  ExposedBoxedLcpConstraintSolver solver;
+  const std::vector<constraint::ConstraintBasePtr> largeGroup{
+      std::make_shared<DiagonalConstraint>(128u)};
+  const std::vector<constraint::ConstraintBasePtr> smallGroup{
+      std::make_shared<DiagonalConstraint>(32u)};
+  auto largeConstrainedGroup = solver.makeGroupForTest(largeGroup);
+  auto smallConstrainedGroup = solver.makeGroupForTest(smallGroup);
+
+  solver.reserveGroupScratchForTest(largeConstrainedGroup);
+  solver.reserveGroupScratchForTest(smallConstrainedGroup);
+
+  dart::test::ScopedHeapAllocationCounter counter;
+  solver.solveGroupForTest(smallConstrainedGroup);
+  solver.solveGroupForTest(largeConstrainedGroup);
+  counter.stop();
+
+  EXPECT_EQ(counter.allocationCount(), 0u);
+  EXPECT_EQ(counter.allocationBytes(), 0u);
 }
 
 //==============================================================================

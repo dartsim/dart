@@ -533,18 +533,26 @@ void PointMass::addExtForce(const Eigen::Vector3d& force, bool isForceLocal)
     return;
   }
 
+  Eigen::Vector3d localForce;
   if (isForceLocal) {
-    mFext += force;
+    localForce = force;
   } else {
-    mFext += mParentSoftBodyNode->getWorldTransform().linear().transpose()
-             * force;
+    localForce
+        = mParentSoftBodyNode->getWorldTransform().linear().transpose() * force;
   }
+
+  mFext += localForce;
+  if (!localForce.isZero(0.0))
+    mParentSoftBodyNode->dirtyExternalForces();
 }
 
 //==============================================================================
 void PointMass::clearExtForce()
 {
+  const bool wasNonzero = !mFext.isZero(0.0);
   mFext.setZero();
+  if (wasNonzero)
+    mParentSoftBodyNode->dirtyExternalForces();
 }
 
 //==============================================================================

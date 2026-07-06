@@ -46,9 +46,11 @@ TEST(MemoryManagerTest, BaseAllocator)
   auto& baseAllocator = mm.getBaseAllocator();
   auto& freeListAllocator = mm.getFreeListAllocator();
   auto& poolAllocator = mm.getPoolAllocator();
+  auto& frameAllocator = mm.getFrameAllocator();
 
   EXPECT_EQ(&freeListAllocator.getBaseAllocator(), &baseAllocator);
   EXPECT_EQ(&poolAllocator.getBaseAllocator(), &freeListAllocator);
+  EXPECT_EQ(&frameAllocator.getBaseAllocator(), &baseAllocator);
 }
 
 //==============================================================================
@@ -59,6 +61,7 @@ TEST(MemoryManagerTest, Allocate)
   // Cannot allocate 0 bytes
   EXPECT_EQ(mm.allocateUsingFree(0), nullptr);
   EXPECT_EQ(mm.allocateUsingPool(0), nullptr);
+  EXPECT_EQ(mm.allocate(MemoryManager::Type::Frame, 0), nullptr);
 
   // Allocate 1 byte using FreeListAllocator
   auto ptr1 = mm.allocateUsingFree(1);
@@ -78,9 +81,20 @@ TEST(MemoryManagerTest, Allocate)
   EXPECT_FALSE(mm.hasAllocated(ptr2, 1 * 2));
 #endif
 
+  // Allocate 1 byte using FrameAllocator
+  auto ptr3 = mm.allocate(MemoryManager::Type::Frame, 1);
+  EXPECT_NE(ptr3, nullptr);
+#if DART_BUILD_MODE_DEBUG
+  EXPECT_FALSE(mm.hasAllocated(ptr3, 1));
+#endif
+
   // Deallocate all
   mm.deallocateUsingFree(ptr1, 1);
   mm.deallocateUsingPool(ptr2, 1);
+  mm.deallocate(MemoryManager::Type::Frame, ptr3, 1);
+  EXPECT_GT(mm.getFrameAllocator().used(), 0u);
+  mm.getFrameAllocator().reset();
+  EXPECT_EQ(mm.getFrameAllocator().used(), 0u);
 }
 
 //==============================================================================

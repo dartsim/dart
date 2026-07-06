@@ -16,7 +16,15 @@ dart_build_tests(
     test_InverseKinematics.cpp
     test_NameManagement.cpp
     test_Signal.cpp
+    test_StepAllocation.cpp
 )
+target_sources(INTEGRATION_StepAllocation PRIVATE AllocationCounting.cpp)
+if(DART_CODECOV)
+  # Coverage instrumentation allocates; keep the allocation counters inert so
+  # coverage runs do not report gcov-runtime allocations as DART allocations.
+  target_compile_definitions(INTEGRATION_StepAllocation PRIVATE DART_CODECOV=1)
+endif()
+dart_format_add(AllocationCounting.cpp AllocationCounting.hpp)
 
 dart_add_test("integration" test_CollisionGroups)
 foreach(collision_engine dart-collision-bullet dart-collision-ode)
@@ -25,10 +33,21 @@ foreach(collision_engine dart-collision-bullet dart-collision-ode)
   endif()
 endforeach()
 dart_add_test("integration" test_ConstraintSolver)
+target_sources(test_ConstraintSolver PRIVATE AllocationCounting.cpp)
+if(DART_CODECOV)
+  target_compile_definitions(test_ConstraintSolver PRIVATE DART_CODECOV=1)
+endif()
 dart_add_test("integration" test_ContactConstraint)
 dart_add_test("integration" test_SplitImpulse)
 if(TARGET dart-collision-bullet)
   target_link_libraries(test_SplitImpulse dart-collision-bullet)
+  target_link_libraries(
+    INTEGRATION_StepAllocation
+    PRIVATE dart-collision-bullet
+  )
+endif()
+if(TARGET dart-collision-ode)
+  target_link_libraries(INTEGRATION_StepAllocation PRIVATE dart-collision-ode)
 endif()
 dart_add_test("integration" test_IslandDeactivation)
 dart_add_test("integration" test_Issue719)

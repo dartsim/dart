@@ -36,6 +36,7 @@
 #if DART_BUILD_MODE_DEBUG
   #include <mutex>
 #endif
+#include <dart/common/FrameAllocator.hpp>
 #include <dart/common/FreeListAllocator.hpp>
 #include <dart/common/PoolAllocator.hpp>
 
@@ -48,12 +49,27 @@ namespace dart::common {
 class MemoryManager final
 {
 public:
+  /// Construction options for the underlying allocator hierarchy.
+  struct Options final
+  {
+    /// Initial bytes reserved for the free-list allocator.
+    size_t freeListInitialAllocation = 1048576 /* 1 MB */;
+
+    /// Whether the free-list allocator may grow after construction.
+    FreeListAllocator::GrowthPolicy freeListGrowthPolicy
+        = FreeListAllocator::GrowthPolicy::Expand;
+
+    /// Initial bytes reserved for the frame allocator.
+    size_t frameAllocatorInitialCapacity = 65536;
+  };
+
   /// Type of the memory allocators
   enum class Type
   {
     Base,
     Free,
     Pool,
+    Frame,
   };
 
   /// Returns the default memory manager
@@ -66,6 +82,14 @@ public:
   explicit MemoryManager(
       MemoryAllocator& baseAllocator = MemoryAllocator::GetDefault());
 
+  /// Constructor
+  ///
+  /// \param[in] baseAllocator: The most low level allocator to be used by all
+  /// the underlying memory allocators.
+  /// \param[in] options: Initial reservation and growth options.
+  explicit MemoryManager(
+      MemoryAllocator& baseAllocator, const Options& options);
+
   /// Destructor
   ~MemoryManager();
 
@@ -77,6 +101,9 @@ public:
 
   /// Returns the pool allocator
   [[nodiscard]] PoolAllocator& getPoolAllocator();
+
+  /// Returns the frame allocator
+  [[nodiscard]] FrameAllocator& getFrameAllocator();
 
   /// Allocates \c size bytes of uninitialized storage.
   ///
@@ -180,6 +207,11 @@ private:
   /// The pool allocator.
   PoolAllocator::Debug mPoolAllocator;
 #endif
+
+  /// The frame allocator.
+  /// No debug wrapper: arena semantics are incompatible with per-allocation
+  /// tracking because deallocate() is intentionally a no-op.
+  FrameAllocator mFrameAllocator;
 };
 
 } // namespace dart::common

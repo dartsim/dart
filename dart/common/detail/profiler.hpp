@@ -89,6 +89,8 @@ private:
 
   static constexpr std::uint64_t kUnsetDuration
       = std::numeric_limits<std::uint64_t>::max();
+  static constexpr std::size_t kMaxFrameSamples = 4096;
+  static constexpr std::size_t kInitialThreadNodeCapacity = 4096;
 
   Profiler();
 
@@ -103,7 +105,17 @@ private:
   void popScope(ThreadRecord& record);
 
   ProfileNode* findOrCreateChild(
-      ProfileNode& parent, std::string_view label, std::string_view source);
+      ThreadRecord& record,
+      ProfileNode& parent,
+      std::string_view label,
+      std::string_view file,
+      int line);
+  ProfileNode* allocateNode(
+      ThreadRecord& record,
+      std::string_view label,
+      std::string_view file,
+      int line);
+  static std::string sourceText(const ProfileNode& node);
   static std::string padRight(std::string_view text, std::size_t width);
   static bool useColor();
   static std::string colorize(std::string_view text, const char* code);
@@ -146,6 +158,7 @@ private:
   std::atomic<std::uint64_t> m_frameCount;
   std::atomic<std::uint64_t> m_frameTimeSumNs;
   std::vector<std::uint64_t> m_frameSamplesNs;
+  std::size_t m_frameSampleCursor{0};
   std::chrono::steady_clock::time_point m_lastFrameTime{};
 };
 

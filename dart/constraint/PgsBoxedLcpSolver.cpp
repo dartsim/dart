@@ -48,6 +48,22 @@
 namespace dart {
 namespace constraint {
 
+namespace {
+
+struct PgsThreadScratch
+{
+  std::vector<int> cacheOrder;
+  std::vector<double> cacheD;
+};
+
+PgsThreadScratch& pgsThreadScratch()
+{
+  static thread_local PgsThreadScratch scratch;
+  return scratch;
+}
+
+} // namespace
+
 //==============================================================================
 PgsBoxedLcpSolver::Option::Option(
     int maxIteration,
@@ -90,8 +106,9 @@ bool PgsBoxedLcpSolver::solve(
     bool /*earlyTermination*/)
 {
   const int nskip = ::dart::lcpsolver::dantzig::padding(n);
-  static thread_local std::vector<int> cacheOrder;
-  static thread_local std::vector<double> cacheD;
+  auto& scratch = pgsThreadScratch();
+  auto& cacheOrder = scratch.cacheOrder;
+  auto& cacheD = scratch.cacheD;
 
   // If all the variables are unbounded then we can just factor, solve, and
   // return.R
@@ -230,6 +247,14 @@ bool PgsBoxedLcpSolver::solve(
   }
 
   return possibleToTerminate;
+}
+
+//==============================================================================
+void PgsBoxedLcpSolver::reserve(std::size_t n)
+{
+  auto& scratch = pgsThreadScratch();
+  scratch.cacheOrder.reserve(n);
+  scratch.cacheD.reserve(n);
 }
 
 #if DART_BUILD_MODE_DEBUG

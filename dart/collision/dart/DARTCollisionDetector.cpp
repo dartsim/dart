@@ -1963,7 +1963,7 @@ bool overlaps(const BroadphaseEntry& entry1, const BroadphaseEntry& entry2)
 
 //==============================================================================
 template <std::size_t Width>
-std::uint32_t computeFiniteOverlapMask(
+[[maybe_unused]] std::uint32_t computeFiniteOverlapMask(
     const BroadphaseEntry& entry,
     const SortedBroadphaseBounds& bounds,
     std::size_t begin)
