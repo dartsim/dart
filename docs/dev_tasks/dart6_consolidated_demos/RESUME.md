@@ -1,13 +1,22 @@
 # Resume Instructions
 
-Current phase: Phase 3 (visual debugging suite, BRIEF-phase3.md). Phase 2
-DONE 2026-07-05: all four batches accepted, 31 scenes live. Next in order:
-(1) build dartpy (`pixi run build-py-dev`, long, owns build dir) to unblock
-Phase 4; (2) dispatch Phase 3 per BRIEF-phase3.md (PR-a library fix already
-landed in commit 9493af236 — only the suite remains); (3) Phase 4 py-demos;
-(4) Phase 5 cleanup per EVIDENCE-cleanup-refs.md; (5) Phase 6 wrap.
-NOTE: Claude-agent session limit was hit 2026-07-05 ~03:25 PT (resets
-6:10am PT) — route implementation to Codex workers if it recurs.
+ALL PHASES COMPLETE 2026-07-05. The consolidated demos deliverable is on
+`feature/dart6-consolidated-demos` (unpushed): dart-demos (31 scenes + full
+visual-debugging suite), py-demos (9 scenes), 2 gui-osg library fixes, and
+the scattered examples retired. See PLAN.md for per-phase status and the
+"Open items for the PR" list.
+
+Remaining before merge (needs user/maintainer action, not branch work):
+- Open the PR(s): fill the two CHANGELOG `#XXXX` links; split commit
+  9493af236 (gui-osg library fixes) into its own PR with the compat gate.
+- Retire this dev-task folder after merge (durable facts already promoted to
+  CHANGELOG + examples/demos/README.md + DemoScene.hpp comments).
+
+Resilience log: 3 worker subagents died on Anthropic session limits mid-task
+(fixer-b4, codex-phase3, codex-phase5's predecessor). Each time the impl was
+essentially complete on disk; orchestrator salvaged by verifying/building/
+reviewing/fixing/committing directly. Phase 3's crash-safety fixes (2 UAF
+blockers + NaN major) were written by the orchestrator.
 
 ## Orchestration playbook (learned, follow it)
 

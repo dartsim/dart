@@ -394,6 +394,23 @@
 
 * Examples
 
+  * Consolidate the scattered GUI examples into a single `dart-demos`
+    application: a `dart::gui::osg` `ImGuiViewer` host with a categorized
+    scene navigator that switches between 31 demo scenes at runtime without
+    restarting (crash-safe, soft-failing per scene), a high-standard ImGui
+    workspace (simulation toolbar with play/step/reset/target-RTF/timestep,
+    scene tree and body inspector with paused-only joint editing, log console
+    capturing DART diagnostics, a reusable contact-force visualizer, host-wide
+    drag-force and a 3D manipulation gizmo, a live text profiler, and
+    RTF/contact/step stats), and headless `--list-scenes` / `--cycle-scenes` /
+    `--headless --shot` capture modes. A best-effort dartpy `py-demos` runner
+    mirrors the scene catalog through a keyboard-driven navigator (dartpy has
+    no ImGui bindings). The individual `examples/*` and `python/examples/*`
+    GUI programs they replace are retired, leaving only specialized standalone
+    examples (`hello_world`, `cylindrical_constraint`, `speed_test`,
+    `contact_benchmark`, and the dartpy `ssik_analytical_ik`):
+    [#XXXX](https://github.com/dartsim/dart/pull/XXXX)
+
   * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
     prebuilt IK modules and changing target and solver options online. Every IK
     solution is shown at once as a DART skeleton built from the arm's kinematics
@@ -409,6 +426,16 @@
     [#3092](https://github.com/dartsim/dart/pull/3092)
 
 * GUI
+
+  * Fix `dart::gui::osg` interaction teardown so registered handlers and
+    drag-and-drop tools are released correctly. `DefaultEventHandler::
+    addMouseEventHandler` now observes its handler so the documented
+    auto-unregister-on-destruction actually fires; previously a destroyed
+    `MouseEventHandler` left a dangling pointer in the handler list, a
+    use-after-free on the next mouse event. `InteractiveFrameDnD` now deletes
+    the nine `InteractiveToolDnD` objects it allocates instead of leaking them
+    on every teardown:
+    [#XXXX](https://github.com/dartsim/dart/pull/XXXX)
 
   * Add shared `dart-gui-osg` helpers for parsing and applying GUI scale, and
     route ImGui font/style scaling through `ImGuiHandler`:

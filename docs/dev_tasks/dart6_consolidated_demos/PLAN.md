@@ -266,21 +266,52 @@ composed-hook disable-on-scene-throw; teleport direct-write vs queued).
       bind the class (separate small PR, legit bugfix) or drop the call when
       porting.
 
-## Phase 5 — Cleanup (PR)
+## Phase 5 — Cleanup (PR)  [DONE 2026-07-05, commit 3fc50281352]
 
-- [ ] Retire superseded `examples/*` and `python/examples/*` dirs; keep
-      specialized set (minimum `hello_world`; final list evidence-based —
-      console/benchmark/external-dep examples judged individually).
-- [ ] Prove no test/CI/tutorial/doc references break (rg sweep + CI dry run).
-- [ ] Update `examples/README.md` + python examples README to point at demos.
+- [x] Retired 34 C++ + 9 python GUI example dirs + `rerun` stub
+      (152 files, -38355 lines). Kept standalone: `hello_world` (C++ & py),
+      `contact_benchmark` (CI-load-bearing), `speed_test`,
+      `cylindrical_constraint` (console API sample), and dartpy
+      `ssik_analytical_ik` (accepted deviation: py-demos has no ssik scene
+      because dartpy lacks ImGui bindings, so it is the only working demo of
+      dartpy setPythonAnalytical + ImGuiViewer — not superseded).
+- [x] rg sweep: zero dangling refs (remaining hits are the new "points at
+      demos" doc text + known false positives per EVIDENCE-cleanup-refs.md).
+- [x] Rewired examples/python CMakeLists (5 examples; py demos target),
+      pixi.toml (added `demos`/`py-demos` tasks, removed retired-example
+      tasks), deleted the FreeBSD wam_ikfast patch, repointed
+      examples.rst/gallery.rst(+ko .po), rewrote both READMEs.
+- Verified: config clean, dart-demos builds + 31-scene cycle x2 green,
+  py-demos --list/--cycle green, lint green.
 
-## Phase 6 — Wrap-up
+## Phase 6 — Wrap-up  [DONE 2026-07-05]
 
-- [ ] CHANGELOG entry; design note `docs/design/` (DART 6 variant) promoting
-      durable architecture facts from this folder.
-- [ ] Final full verification: build, lint, cycle smoke, capture gallery,
-      rapid-switch + panel fuzz robustness pass.
-- [ ] Retire this dev task folder per `docs/dev_tasks/README.md`.
+- [x] CHANGELOG entries: Examples (consolidation + retirement), GUI (the two
+      gui-osg interaction-teardown fixes). PR links are `#XXXX` placeholders
+      to fill at PR-open time (nothing pushed yet — approval boundary).
+- [x] Durable architecture promoted to `examples/demos/README.md` (host +
+      scene-registry design, "adding a scene", the review-enforced host
+      conventions, CLI). Scene contract already lives in `DemoScene.hpp`
+      source comments; user-facing summary in CHANGELOG.
+- [x] Final verification: build clean, lint green, 31-scene cycle x2 green,
+      py-demos --list/--cycle green, screenshot gallery reviewed across all
+      phases (scratchpad p1*/p2*/p3*/p4* PNGs).
+- [ ] Retire this folder: deferred until the work merges (it is the PR's
+      evidence/handoff artifact). Durable facts are already promoted, so the
+      folder can be deleted post-merge.
+
+## Open items for the PR (not blockers to the branch)
+
+- Fill the two `#XXXX` CHANGELOG PR links.
+- Split the two `dart/gui/osg` library fixes (commit 9493af236) into their
+  own PR — they are library changes independent of the examples work and want
+  their own review + the compatibility gate (build + existing gui tests +
+  drag_and_drop-style smoke). The demos/examples changes are not package
+  surface, so the Gazebo gate is not required for them.
+- Non-crash review minors left as documented code comments (LogCapture
+  single-thread assumption; composed preRefresh hook disabling host
+  facilities if a scene hook throws; DragForce paused teleport as a direct
+  setPositions vs a queued command).
 
 ## Verification harness (used throughout)
 
