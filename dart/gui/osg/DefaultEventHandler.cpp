@@ -43,10 +43,29 @@
 #include <osgGA/GUIEventAdapter>
 
 #include <iostream>
+#include <map>
 
 namespace dart {
 namespace gui {
 namespace osg {
+
+namespace {
+
+using MouseEventHandlerRegistry
+    = std::map<const dart::common::Subject*, MouseEventHandler*>;
+
+MouseEventHandlerRegistry& getMouseEventHandlerRegistry()
+{
+  static MouseEventHandlerRegistry registry;
+  return registry;
+}
+
+const dart::common::Subject* getSubject(MouseEventHandler* handler)
+{
+  return static_cast<const dart::common::Subject*>(handler);
+}
+
+} // namespace
 
 DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
   : mViewer(_viewer),
@@ -67,7 +86,9 @@ DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
 //==============================================================================
 DefaultEventHandler::~DefaultEventHandler()
 {
-  // Do nothing
+  MouseEventHandlerRegistry& registry = getMouseEventHandlerRegistry();
+  for (MouseEventHandler* handler : mMouseEventHandlers)
+    registry.erase(getSubject(handler));
 }
 
 //==============================================================================
@@ -239,6 +260,12 @@ void DefaultEventHandler::addMouseEventHandler(MouseEventHandler* handler)
   mMouseEventHandlers.insert(handler);
   handler->mEventHandler = this;
   handler->addSubject(this);
+  // Observe the handler so handleDestructionNotification() erases it from
+  // mMouseEventHandlers when it is destroyed. Without this the set keeps a
+  // dangling pointer after a registered handler dies (the header documents
+  // automatic removal on deletion), and the next mouse event dereferences it.
+  addSubject(handler);
+  getMouseEventHandlerRegistry()[getSubject(handler)] = handler;
 }
 
 //==============================================================================
@@ -362,8 +389,14 @@ bool DefaultEventHandler::handle(
 //==============================================================================
 void DefaultEventHandler::triggerMouseEventHandlers()
 {
-  for (MouseEventHandler* h : mMouseEventHandlers) {
-    h->update();
+  const std::vector<MouseEventHandler*> handlers(
+      mMouseEventHandlers.begin(), mMouseEventHandlers.end());
+
+  for (MouseEventHandler* handler : handlers) {
+    if (mMouseEventHandlers.find(handler) == mMouseEventHandlers.end())
+      continue;
+
+    handler->update();
   }
 }
 
@@ -415,11 +448,13 @@ void DefaultEventHandler::clearButtonEvents()
 void DefaultEventHandler::handleDestructionNotification(
     const dart::common::Subject* _subject)
 {
-  MouseEventHandler* meh = const_cast<MouseEventHandler*>(
-      dynamic_cast<const MouseEventHandler*>(_subject));
-  std::set<MouseEventHandler*>::iterator it = mMouseEventHandlers.find(meh);
-  if (it != mMouseEventHandlers.end())
-    mMouseEventHandlers.erase(it);
+  MouseEventHandlerRegistry& registry = getMouseEventHandlerRegistry();
+  const auto registryIt = registry.find(_subject);
+  if (registryIt == registry.end())
+    return;
+
+  mMouseEventHandlers.erase(registryIt->second);
+  registry.erase(registryIt);
 }
 
 } // namespace osg
