@@ -284,10 +284,20 @@ def _descriptor_bounds(descriptor: Any) -> tuple[np.ndarray, np.ndarray] | None:
     return world.min(axis=0), world.max(axis=0)
 
 
+def _descriptor_visible(descriptor: Any) -> bool:
+    material = getattr(descriptor, "material", None)
+    try:
+        return bool(getattr(material, "visible", True))
+    except Exception:  # noqa: BLE001
+        return True
+
+
 def _bounds_fit_camera(renderables: list[Any], size: tuple[int, int]) -> Any:
     mins: list[np.ndarray] = []
     maxs: list[np.ndarray] = []
     for descriptor in renderables:
+        if not _descriptor_visible(descriptor):
+            continue
         bounds = _descriptor_bounds(descriptor)
         if bounds is None:
             continue

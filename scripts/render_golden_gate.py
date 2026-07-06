@@ -62,6 +62,10 @@ def render_box_on_ground(size: tuple[int, int]) -> bytes:
 SCENES = {"box_on_ground": render_box_on_ground}
 
 
+def _write_scene_capture(scene: str, size: tuple[int, int], capture: Path) -> None:
+    capture.write_bytes(SCENES[scene](size))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scene", choices=sorted(SCENES), default="box_on_ground")
@@ -90,16 +94,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     size = (args.width, args.height)
-    try:
-        png = SCENES[args.scene](size)
-    except Exception as exc:  # noqa: BLE001 - surface render failures clearly
-        print(f"render_golden_gate.py: render failed: {exc}", file=sys.stderr)
+    if args.retries < 1:
+        print("render_golden_gate.py: --retries must be at least 1", file=sys.stderr)
         return 2
 
     with tempfile.TemporaryDirectory() as tmp:
-        capture = Path(tmp) / f"{args.scene}.png"
-        capture.write_bytes(png)
-
         metadata = {
             "backend": args.backend,
             "fidelity": "headless-default",
@@ -107,6 +106,12 @@ def main(argv: list[str] | None = None) -> int:
             "size": f"{size[0]}x{size[1]}",
         }
         if args.update:
+            capture = Path(tmp) / f"{args.scene}.png"
+            try:
+                _write_scene_capture(args.scene, size, capture)
+            except Exception as exc:  # noqa: BLE001 - surface render failures clearly
+                print(f"render_golden_gate.py: render failed: {exc}", file=sys.stderr)
+                return 2
             image_golden.update_golden(
                 capture,
                 args.golden,
@@ -117,21 +122,35 @@ def main(argv: list[str] | None = None) -> int:
             print(f"updated golden {args.golden} ({metadata})")
             return 0
 
-        try:
-            verdict = image_golden.compare_golden(
-                capture,
-                args.golden,
-                fail=args.fail,
-                failpercent=args.failpercent,
-                retries=args.retries,
-                metadata=metadata,
-            )
-        except FileNotFoundError as exc:
-            # Distinct from a visual-regression FAIL (exit 1): a missing golden
-            # means the gate cannot run. Surface it cleanly with exit 2, like
-            # image_golden.py, instead of an uncaught traceback.
-            print(f"render_golden_gate.py: {exc}", file=sys.stderr)
-            return 2
+        verdict: dict[str, object] | None = None
+        for attempt in range(1, args.retries + 1):
+            capture = Path(tmp) / f"{args.scene}_{attempt}.png"
+            try:
+                _write_scene_capture(args.scene, size, capture)
+            except Exception as exc:  # noqa: BLE001 - surface render failures clearly
+                print(f"render_golden_gate.py: render failed: {exc}", file=sys.stderr)
+                return 2
+            try:
+                verdict = image_golden.compare_golden(
+                    capture,
+                    args.golden,
+                    fail=args.fail,
+                    failpercent=args.failpercent,
+                    retries=1,
+                    metadata=metadata,
+                )
+            except FileNotFoundError as exc:
+                # Distinct from a visual-regression FAIL (exit 1): a missing golden
+                # means the gate cannot run. Surface it cleanly with exit 2, like
+                # image_golden.py, instead of an uncaught traceback.
+                print(f"render_golden_gate.py: {exc}", file=sys.stderr)
+                return 2
+
+            verdict["golden_workflow"]["attempt"] = attempt
+            verdict["golden_workflow"]["retries"] = args.retries
+            if bool(verdict.get("pass")):
+                break
+        assert verdict is not None
         if args.out is not None:
             args.out.parent.mkdir(parents=True, exist_ok=True)
             args.out.write_text(
