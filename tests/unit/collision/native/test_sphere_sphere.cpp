@@ -737,6 +737,36 @@ TEST(SphereSphere, ZeroContactLimitShortCircuitsEvenWithoutContact)
   EXPECT_EQ(result.numContacts(), 0);
 }
 
+TEST(SphereSphere, BinaryCheckDoesNotOverflowOnLargeSeparation)
+{
+  // Overflow-safe binary check: for large-but-finite, clearly-separated
+  // inputs the squared form would overflow to inf and spuriously report a
+  // hit; the hypot-based predicate must agree with the contact path (miss).
+  CollisionOption option;
+  option.enableContact = false;
+
+  CollisionResult result;
+  const double r = 1e154;
+  EXPECT_FALSE(collideSpheres(
+      Eigen::Vector3d(0, 0, 0),
+      r,
+      Eigen::Vector3d(3e154, 0, 0),
+      r,
+      result,
+      option));
+  EXPECT_EQ(result.numContacts(), 0);
+
+  // A genuine overlap at the same magnitude still reports a hit.
+  EXPECT_TRUE(collideSpheres(
+      Eigen::Vector3d(0, 0, 0),
+      r,
+      Eigen::Vector3d(1e154, 0, 0),
+      r,
+      result,
+      option));
+  EXPECT_EQ(result.numContacts(), 0);
+}
+
 // DART 6 supplementary coverage tests (not ported from DART 7)
 TEST(SphereSphere, ShapeOverloadZAxisAndContactLimit)
 {
