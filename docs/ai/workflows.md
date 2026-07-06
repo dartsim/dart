@@ -60,6 +60,7 @@ all workflows must remain usable from public docs and `pixi run ...` commands.
 | `dart-python`       | `$dart-python`       | `docs/onboarding/python-bindings.md`                                                                                                |
 | `dart-references`   | `$dart-references`   | `docs/readthedocs/papers.md`                                                                                                        |
 | `dart-test`         | `$dart-test`         | `docs/onboarding/testing.md`, `pixi run test-unit`, `pixi run test-py`                                                              |
+| `dart-verify-sim`   | `$dart-verify-sim`   | `docs/onboarding/agent-sim-verification.md`, `docs/ai/verification.md`, `pixi run image-verdict`                                    |
 
 ## Expected Routing Scenarios
 
