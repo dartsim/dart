@@ -128,12 +128,13 @@ bool captureOffscreen(
     return false;
 
   auto* camera = viewer.getCamera();
-  // Re-pin the view each warm-up frame: realize() may have reset it, and ImGui
-  // and the world node need a few frames to build their first frame before the
-  // capture.
+  // Pin once even when warm-up is skipped, then re-pin after each warm-up
+  // frame: realize() may have reset the view, and ImGui/the world node may
+  // mutate it while building their first frames.
+  camera->setViewMatrixAsLookAt(eye, center, up);
   for (int i = 0; i < warmupFrames; ++i) {
-    camera->setViewMatrixAsLookAt(eye, center, up);
     viewer.frame();
+    camera->setViewMatrixAsLookAt(eye, center, up);
   }
 
   viewer.captureScreen(pngPath);

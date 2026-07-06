@@ -450,6 +450,10 @@
     on every teardown:
     [#3300](https://github.com/dartsim/dart/pull/3300)
 
+  * Add OSG headless capture helpers, dartpy capture bindings, and
+    image-verification scripts/docs for DART 6 agent visual checks:
+    [#3314](https://github.com/dartsim/dart/pull/3314)
+
   * Add shared `dart-gui-osg` helpers for parsing and applying GUI scale, and
     route ImGui font/style scaling through `ImGuiHandler`:
     [#3092](https://github.com/dartsim/dart/pull/3092)
