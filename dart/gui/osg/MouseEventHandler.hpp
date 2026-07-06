@@ -54,12 +54,6 @@ public:
 
   inline MouseEventHandler() : mEventHandler(nullptr) {}
 
-  virtual ~MouseEventHandler()
-  {
-    if (mEventHandler)
-      mEventHandler->removeMouseEventHandler(this);
-  }
-
   /// Overload this function to set behavior that will get triggered during a
   /// mouse event
   virtual void update() = 0;
