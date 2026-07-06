@@ -567,9 +567,10 @@ World::snapshotFreeRootVelocities()
     if (rootBody == nullptr)
       continue;
 
-    const auto* freeJoint
-        = dynamic_cast<const dynamics::FreeJoint*>(rootBody->getParentJoint());
-    if (freeJoint == nullptr)
+    // WP-PG.30: cached per-skeleton (keyed on structural version) instead of
+    // repeating this dynamic_cast every step; see
+    // Skeleton::getCachedRootFreeJoint().
+    if (skeleton->getCachedRootFreeJoint() == nullptr)
       continue;
 
     const auto& state = mShallowSupportFreeRootVelocityStates[i];
@@ -717,8 +718,10 @@ void World::suppressShallowSupportedFreeRootDrift(
   if (rootBody == nullptr)
     return;
 
-  auto* freeJoint
-      = dynamic_cast<dynamics::FreeJoint*>(rootBody->getParentJoint());
+  // WP-PG.30: cached per-skeleton (keyed on structural version) instead of
+  // repeating this dynamic_cast every step; see
+  // Skeleton::getCachedRootFreeJoint().
+  auto* freeJoint = skeleton->getCachedRootFreeJoint();
   if (freeJoint == nullptr)
     return;
 
