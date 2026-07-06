@@ -1,0 +1,356 @@
+# Phase 5 Export Writers Plan
+
+## Current State
+
+Before Phase 5 started, DART 7 `dart::io` was read-only:
+
+- `dart::io::readSkeleton()` is the public front door for Skeleton imports.
+- `dart::utils::UrdfParser` exposes file/string parsing, package resolution,
+  and conversion from URDF data into a `Skeleton`.
+- `dart::utils::SdfParser` exposes SDF model parsing into a `Skeleton`.
+- `dart::utils::MjcfParser` is present, but `dart::io::readSkeleton()` does not
+  expose direct MJCF skeleton loading yet.
+- USD read-side work is active in `docs/dev_tasks/usd_scene_loader/`; early USD
+  phases are explicitly read-only.
+
+The first implementation slice adds
+`dart::io::SdfWriter::tryWriteSkeletonToString()`, a format-specific SDF
+writer for a conservative `Skeleton` subset. It builds libsdformat DOM objects
+and serializes through sdformat; DART owns the `Skeleton`-to-SDF semantic
+mapping and diagnostics. It writes BodyNode links, root FreeJoint/WeldJoint
+placement,
+revolute/continuous/prismatic/weld/screw/universal child joints, passive joint
+dynamics metadata (damping, Coulomb friction, spring reference, and spring
+stiffness), symmetric axis effort/velocity limits, sdformat-normalized screw
+thread pitch (legacy `<thread_pitch>` before SDF 1.10 and modern
+`<screw_thread_pitch>` for SDF 1.10+),
+topology-only ball child joints, SDF 1.11+ mimic metadata for axis/axis2
+follower joints with motor
+enforcement, explicit parent-world root joints for supported SDF joint types
+(revolute, continuous, prismatic, screw, universal, and topology-only ball),
+multiple root FreeJoint trees, mixed implicit FreeJoint plus explicit
+parent-world root models, model static/mobile state, model self-collision,
+non-default skeleton gravity through root SDF world gravity, link gravity mode,
+inertial parameters, local joint/shape poses,
+box/sphere/cylinder/capsule/cone/ellipsoid/mesh visual or collision geometry,
+visual shadow state as SDF `<cast_shadows>`, hidden visual state as zero-valued
+SDF `<visibility_flags>`, visual alpha as SDF `<transparency>`, explicit visual
+material colors as SDF `<diffuse>` values, and PBR metallic/roughness factors as
+SDF `<pbr><metal>` values. Model static/mobile state round-trips through SDF
+`<static>`, and model-level self-collision round-trips through SDF
+`<self_collide>`.
+Non-default skeleton gravity writes a root SDF `<world>` with `<gravity>` and
+re-parses through the same `sdf::World` DOM.
+Shape-level and body-level collision disable state round-trips through SDF
+`<surface><contact><collide_bitmask>` for DART's lossless zero-bitmask subset;
+zero-threshold bounce restitution round-trips through SDF
+`<surface><bounce>` coefficient values; ODE friction coefficients, first
+friction direction, and slip compliance round-trip through SDF
+`<surface><friction><ode>` values when the first friction direction is
+representable in the collision frame. Combined collision-surface coverage
+proves contact bitmask, friction/slip, and bounce metadata survive together in
+one sdformat surface entry. Non-finite slip compliance and non-collision-frame
+friction directions fail with targeted diagnostics.
+Absolute non-file mesh URI
+preservation is covered through a custom retriever-backed write/read test, and
+URI-backed mesh material variants are covered by a write/read test that
+preserves the source `sdf::Mesh` URI and re-loads the original multi-material
+glTF resource. A shipped relative-mesh model fixture also proves
+parser-resolved source mesh URIs survive writer read/write/read, and the
+top-level include-driver world for that model proves included-model relative
+mesh resources resolve against `sdf::Model::Uri()` and survive writer
+read/write/read. Targetless
+relative mesh references, URI-less in-memory mesh
+material variants, and relative or host-qualified `file` mesh URIs are rejected
+because the writer has no destination SDF URI for resource resolution or
+generated asset placement. `WriteOptions`
+visual/collision filtering is covered by focused tests. Unsupported constructs,
+empty skeletons, empty or malformed SDF versions, missing mesh URIs,
+non-finite mesh scales, pre-SDF-1.11 mimic output, coupler-style mimic
+enforcement, non-finite material colors, invalid PBR material factors,
+non-default visual reflectance,
+non-default DART mesh color/alpha render policies, NaN joint position limits,
+non-finite screw pitch,
+non-finite skeleton gravity, shape poses, non-positive body masses, non-finite
+inertial data, or joint axes, invalid
+collision-surface
+friction, slip, restitution, or
+friction-direction frame, unsupported ball-joint metadata, unsupported DART
+child `FreeJoint`s, `EulerJoint`, `PlanarJoint`, `TranslationalJoint2D`,
+`TranslationalJoint`, `SoftBodyNode` export, non-finite joint dynamics, and
+non-lossless asymmetric or NaN joint effort/velocity limits return
+`common::Result` errors instead of being silently dropped.
+DART `PlaneShape`, `HeightmapShape`, and `ConvexMeshShape` now report targeted
+policy diagnostics for the missing finite SDF plane size, source heightmap
+URI/resource policy, or destination URI for generated mesh resources.
+Additional DART-native geometry families that do not map to an sdformat-owned
+primitive or targetless resource, including `PyramidShape`, `ArrowShape`,
+`MultiSphereConvexHullShape`, `PointCloudShape`, `LineSegmentShape`, and
+`VoxelGridShape`, also fail with targeted diagnostics instead of falling back to
+generic unsupported-shape or mesh-URI errors.
+
+The SDF writer integration test now uses
+`tests/helpers/io_round_trip_helpers.hpp` for reusable body, joint, DoF,
+inertia, and shape assertions. Future writer tests should extend that helper
+instead of copying SDF-specific ad hoc checks.
+
+Parser-side SDF import now uses libsdformat DOM objects for top-level model,
+first-world model, or parser-requested named world model selection through
+`SdfParser::Options::mModelName` and `sdf::World::ModelByName()`, world
+gravity, ambiguous `.xml` SDF dispatch through `dart::io::readSkeleton()`, and
+standard model/link/joint/aspect
+traversal. Ambiguous XML dispatch asks sdformat to classify root-model and
+world-contained SDF documents before the non-SDF URDF/MJCF XML-root fallback
+runs. The remaining authored/default presence checks use sdformat's
+`Element::GetExplicitlySetInFile()` signal with non-mutating direct child
+traversal for standard SDF inertial, material diffuse, legacy
+`use_parent_model_frame`, and joint-axis dynamics/limits. sdformat Element
+presence reads remain only for that authored/default bridge and DART-specific
+soft-body extension fields; the compatibility boolean value is read through
+sdformat typed element access. Modern `axis/xyz@expressed_in` frame annotations are
+resolved through `sdf::JointAxis::ResolveXyz()`, and authored diffuse values are
+read from `sdf::Material::Diffuse()`. Visual shadow and zero-visibility hidden
+state are read through `sdf::Visual` DOM values. Authored collision-surface
+contact bitmask, bounce restitution, and ODE friction values are read through
+`sdf::Collision`, `sdf::Surface`, `sdf::Contact`, `sdf::Friction`, and
+`sdf::ODE` DOM values plus sdformat Element typed access for the bounce schema
+field that sdformat 16 does not expose as a high-level DOM class. Writer
+diagnostics now cover non-finite collision-surface friction directions before
+they can produce malformed SDF. Visual transparency reads use
+`sdf::Visual::Transparency()`. Those values map into DART visual, collision,
+and dynamics aspect fields. The SDF-specific
+helper surface has been narrowed accordingly: it no longer exposes generic XML
+attribute, string, boolean, vector2/vectorX, child enumerator, scalar, vector,
+or pose parser APIs that duplicate sdformat traversal/parsing. Retained helpers
+cover only authored element presence/lookup for fields the high-level DOM does
+not expose; remaining DART-specific soft-body extension values use local
+sdformat typed `Element::Get<T>` calls instead of DART-side XML text fallback
+parsing.
+Writer-side preservation of disabled link gravity and schema-preferred SDF
+1.10+ screw pitch still patches sdformat's serialized element tree, but the
+link/joint names and values now come from the typed `sdf::Model`,
+`sdf::Link`, and `sdf::Joint` DOM rather than from serialized XML attributes,
+and required patch targets are found by sdformat `Element::FindElement()`
+lookup plus sdformat sibling iteration for repeated generated children.
+The SDF writer tests also keep semantic checks on libsdformat by reparsing
+emitted SDF through `sdf::Root::LoadSdfString()` and inspecting typed DOM
+objects. Serialized XML substring assertions are reserved for element-name
+contracts that sdformat normalizes semantically, such as legacy
+`<thread_pitch>` versus modern `<screw_thread_pitch>`.
+Fixture-level coverage now also loads the shipped
+SDF samples converted from legacy SKEL (`single_pendulum.sdf`, `cube.sdf`,
+`shapes.sdf`, and `test_shapes.sdf`) plus the native
+`quad.sdf`, `two_link_revolute_model.sdf`, `test_issue1583.model`,
+`test_issue1596.model`, and `test_issue1683.model` fixtures, the included
+relative mesh model fixture, the top-level `ground.world` fixture, and the
+world-contained
+`issue1193_revolute*.sdf`, `high_version.world`, and
+`single_bodynode_skeleton.world` fixtures plus `test_skeleton_joint.world`,
+`force_torque_test.world`, and `force_torque_test2.world` through the normal
+SDF parser, plus the selected `model_0_0_1` cube from `issue1624_cubes.sdf`,
+the selected `pendulum_with_base_mimic_slow_follows_fast` model from
+`mimic_fast_slow_pendulums_world.sdf`, and the selected
+`double_pendulum_with_base` model from `double_pendulum*.world`, writes them
+with `SdfWriter::tryWriteSkeletonToString()`, reloads the emitted text, and compares
+body, joint, inertial, mobility, gravity,
+axis-limit, joint-dynamics, visual geometry, collision geometry, resource URI,
+model-pose, and joint-offset semantics between the original parsed skeletons and the
+re-parsed writer outputs. A synthetic two-world SDF fixture selects a model from
+the second world and proves the selected world's gravity, visual/collision box
+geometry, and visual material color survive writer DOM validation and
+read/write/read. The `quad.sdf` root-model fixture adds read/write/read
+coverage
+for a 17-link, 16-revolute-joint quadruped topology with repeated finite
+axis limits, visual material colors, box visual/collision geometry, and foot
+sphere visuals. The root-model issue fixtures add coverage for fixed
+parent-world root joints recovered through `RootJointType::Fixed`, model poses,
+child revolute axes and limits, parent-world and child universal joints, and
+box/sphere/cylinder visual and collision geometry. The relative mesh fixture
+adds coverage for visual/collision mesh geometry, parser-resolved source mesh
+URI preservation, and the top-level include-driver world path for included
+models with relative mesh resources. The top-level `ground.world` fixture adds
+coverage for
+imported SDF plane-as-DART-box semantics, static world model state, disabled
+visual shadow state, and high ODE friction metadata. The simple world coverage
+includes high-version SDF input, default-inertial fallback, root-joint
+semantics, gravity, and box/cylinder geometry. The mixed-joint world coverage
+adds a shipped fixture with prismatic, revolute, screw, and
+revolute2/universal joints plus cylinder visual/collision geometry. The
+force-torque world coverage is limited to DART skeleton semantics
+imported from the in-file models, including the three-link/two-joint chain in
+`force_torque_test2.world`; it does not claim SDF sensor or physics metadata
+preservation. The selected mimic world coverage proves SDF 1.11 axis mimic
+metadata on a non-first world model can be selected, written, validated through
+libsdformat DOM, and reparsed without adding XML-level SDF model enumeration.
+The selected double-pendulum world coverage proves parent-world revolute roots,
+child revolute joints, visual-only pendulum geometry, and visual/collision
+pendulum geometry on non-first world models can be selected through the same
+sdformat-backed path and round-tripped without XML-level SDF model enumeration.
+The selected `benchmark.world` coverage extends that path to a shipped
+many-model benchmark world with unresolved includes and a static plane model,
+proving a named in-world pendulum model can be selected, validated through
+typed libsdformat DOM, and reparsed without adding XML-level SDF enumeration.
+The selected `issue1624_cubes.sdf` coverage proves a named cube can be selected
+from a shipped many-model SDF world while preserving model pose, mass/inertia,
+red visual material color, and visual/collision box geometry through typed
+sdformat DOM validation.
+The synthetic two-world coverage proves the named-model selector searches
+sdformat world DOM objects beyond the first world and keeps the selected
+world's gravity without XML-level world/model enumeration.
+
+The bounded DART 7 Phase 5 export scope is now complete for the accepted
+current writers: format-specific SDF and URDF `Skeleton` writers, plus the
+already-delivered PLAN-101 scene/project save-load surface. Future writer
+expansion remains valid work, but it is parked behind the durable criteria in
+`docs/onboarding/io-parsing.md` instead of keeping this phase open indefinitely.
+
+Future SDF IO work must stay backed by libsdformat. Use typed sdformat DOM
+classes for standard SDF semantics and restrict direct `sdf::Element` access to
+authored/default distinctions, DART extension fields, and schema values not yet
+exposed by the high-level DOM. Do not introduce a DART-owned XML-level SDF
+parser, token scanner, child enumerator, or text reparser. The
+`pixi run check-sdf-sdformat-boundary` gate now enforces that boundary in
+`dart/utils/sdf` by rejecting TinyXML/raw XML APIs, generic element text parsing,
+and helper-surface expansion beyond authored sdformat element lookup.
+
+The next implementation slice adds
+`dart::io::UrdfWriter::tryWriteSkeletonToString()`, a format-specific URDF
+writer for robot-link trees that fit URDF's model constraints. It writes one
+root tree with identity root FreeJoint/WeldJoint placement validation, child
+revolute/continuous/prismatic/fixed joints whose child link frame coincides
+with the joint frame, standard-plane planar and floating child joints with
+uniform scalar limit/dynamics metadata, passive damping/friction metadata,
+single-DoF motor-style mimic metadata, inertial data, local visual/collision
+poses, box/sphere/cylinder and absolute or package URI mesh geometry, explicit
+visual colors, implicit default visual color omission, default-RGB alpha
+overrides, zero-offset coupler mimic metadata through paired URDF
+`SimpleTransmission` entries, and visual/collision include options.
+URDF has no parent-joint element for the root link, so root joint name/type are
+not serialized and are supplied by the parser default when the written text is
+read back.
+`INTEGRATION_io_UrdfWriter` validates a write/read/read round-trip for that
+subset and covers explicit diagnostics for empty skeletons, multiple root
+trees, unsupported root joint families, non-identity root placement,
+unsupported child joint families, arbitrary planar axes, non-uniform multi-DoF
+limit/dynamics metadata, non-identity child joint frames,
+unbounded finite-requiring URDF limits, missing mimic references, coupler mimic
+offsets, missing mesh URIs, relative or host-qualified file mesh URIs, and
+non-finite mesh scales.
+Additional coverage proves unbounded revolute DART joints write as URDF
+`continuous` joints and preserve passive dynamics metadata, and that visual and
+collision `package://` mesh URIs serialize and reparse through `UrdfParser`
+package resolution. Implicit default visual colors now serialize without
+authored URDF materials, explicit default colors stay authored, and default RGB
+with an alpha override still serializes a material so alpha round-trips.
+Non-positive mass, non-finite local center-of-mass, visual material color,
+shape pose, joint axis, and asymmetric velocity/effort limits now have focused
+diagnostics coverage. Non-default visual reflectance, disabled DART collision
+aspects, and collision dynamics metadata now fail with targeted diagnostics
+because URDF has no equivalent material reflectance, collidable-disable, or
+surface/contact-dynamics fields. DART `SoftBodyNode` export also fails with a
+targeted diagnostic because URDF has no point-mass, spring, damping, or soft
+mesh topology semantics. Together with the SDF writer and PLAN-101 scene
+project save/load evidence, this closes the current DART 7 Phase 5 writer
+scope; broader URDF work is parked until a new representable contract and
+round-trip tests exist.
+
+## Decision
+
+Phase 5 should be implemented as a separate round-trip effort, not as a SKEL
+replacement. The accepted writer scope is:
+
+1. **SDF writer** for portable simulation interchange, because SDF can
+   represent worlds/models and already has version/conversion semantics through
+   libsdformat. The format-specific writer contract is in place for the
+   conservative DART 7 `Skeleton` subset. Broader SDF coverage is parked behind
+   destination-aware resource policies, libsdformat-backed semantic mappings,
+   and new read/write/read tests.
+2. **Project/scene save-load** for DART-owned editor state is already owned and
+   delivered by PLAN-101 and the dartsim scene model, not by the `dart::io`
+   interchange writer APIs. The headless engine owns the versioned
+   `dartsim-scene` text format through `dartsim::engine::scene_io` and
+   `SimEngine::saveProject()` / `SimEngine::loadProject()`, with
+   `UNIT_dartsim_engine` covering stable scene round-trip, parser rejection
+   paths, and project-file lifecycle, and `UNIT_dartsim_ui_ProjectActions`
+   covering editor save/open/new/recent-project behavior. This project format
+   is not YAML and does not reopen SKEL syntax.
+3. **URDF writer** for robot-link trees that fit URDF's model constraints. The
+   format-specific writer contract is in place, including shipped
+   `primitive_geometry.urdf`, `joint_properties.urdf`, `issue838.urdf`,
+   `KR5/ground.urdf`, `wam.urdf`, and `drchubo.urdf` plus
+   `data/sdf/atlas/atlas_v5_no_head.urdf`
+   read/write/read coverage for imported primitive visual geometry, revolute
+   and continuous joint limits/dynamics, visual material colors,
+   parser-normalized root-`world` semantics, and visual/collision package
+   and relative meshes across small and robot-scale fixtures. The full
+   `KR5 sixx R650.urdf` fixture is
+   intentionally covered as a root-pose diagnostic because URDF cannot
+   serialize a non-identity root-link pose; broader URDF coverage is parked
+   until tests prove additional URDF-representable constructs round-trip without
+   losing DART semantics.
+4. **MJCF/USD writers** only after their read-side semantics are mature enough
+   in DART to define a truthful round-trip contract.
+
+Writer API home is decided for the current DART 7 slice: keep export APIs
+format-owned under the unified `dart::io` namespace until more than one accepted
+writer contract exists. The SDF writer therefore stays on
+`dart::io::SdfWriter`, the URDF writer stays on `dart::io::UrdfWriter`, and
+project/editor save-load belongs to the scene/project layer. The durable rule
+lives in `docs/onboarding/io-parsing.md`.
+
+## Implementation Shape
+
+Phase 5 used narrow writer APIs instead of a single mega-exporter:
+
+- Add writer options separately from `ReadOptions`; do not overload the import
+  API with write-only policy.
+- Make unsupported DART constructs explicit diagnostics, not silent drops.
+- Preserve resource URI strategy: targetless string writes should keep rejecting
+  relative/generated mesh references unless a future file/project writer defines
+  a destination URI, copy/rewrite policy, and round-trip tests.
+- Keep project save/load separate from interchange export. Project files may
+  include editor IDs, UI/editor metadata, command history seeds, or scene-model
+  descriptors that should not appear in URDF/SDF. Extend the PLAN-101
+  `dartsim::engine::scene_io` contract if editor state changes; do not route
+  editor project state through SKEL, YAML, or `dart::io` interchange writers.
+- Start with read -> write -> read tests on small scenes that exercise links,
+  joints, inertial data, visuals, collisions, mesh references, and root-joint
+  policy.
+- Add negative tests for unsupported constructs so the writer fails loudly when
+  a scene cannot be faithfully represented.
+
+## Acceptance Gates
+
+Phase 5 is complete for the current DART 7 writer scope because code, tests,
+docs, and the changelog now prove the writer contract:
+
+1. A public or intentionally-internal writer API exists for each accepted format.
+2. Focused C++ tests load a representative DART model, write it, re-load it, and
+   compare the re-parsed structure.
+3. The comparison checks names, topology, joint types, transforms, limits,
+   inertial data, visual geometry, collision geometry, and resource URIs where
+   the target format supports them.
+4. Unsupported features return structured errors or clear diagnostics.
+5. Project save/load stays in the scene/project layer, has headless PLAN-101
+   tests for command-safe scene round-trip, and does not conflate editor
+   metadata with interchange export.
+6. Documentation explains which DART constructs are representable in each
+   format and which are intentionally not.
+7. `CHANGELOG.md` records the user-visible export capability before the
+   implementation PR merges.
+
+## Parked Follow-up Work
+
+- Extend the SDF writer contract beyond the conservative subset only when
+  tests can prove additional joint aliases or edge cases beyond continuous
+  revolute joints, additional sdformat-owned shapes with complete resource
+  policies such as SDF heightmaps, URI-less or generated mesh material
+  variants, additional collision-surface fields beyond the already-covered
+  contact bitmask, zero-threshold bounce restitution, and ODE friction/slip,
+  destination-aware resource rewriting, or other world-level data beyond
+  gravity round-trip correctly.
+- Extend the URDF writer beyond the first conservative subset only when tests
+  can prove additional URDF-representable constructs round-trip without losing
+  DART semantics.
+- Keep YAML out of the first implementation target unless a durable
+  project/scene schema is accepted first.

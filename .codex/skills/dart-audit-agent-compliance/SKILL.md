@@ -1,6 +1,6 @@
 ---
 name: dart-audit-agent-compliance
-description: "DART Audit Agent Compliance: audit and fix gaps when agents miss documented rules"
+description: "DART Audit Agent Compliance: audit and fix gaps when agents miss or cannot discover documented rules"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-audit-agent-compliance.md -->
@@ -11,7 +11,7 @@ description: "DART Audit Agent Compliance: audit and fix gaps when agents miss d
 
 Use this skill in Codex to run the DART `dart-audit-agent-compliance` workflow. The editable
 workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Codex skill is a generated Codex adapter entrypoint.
 
 ## Invocation
 

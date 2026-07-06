@@ -11,7 +11,7 @@ description: "DART New Team Task: kick off a large team-scale DART task with a d
 
 Use this skill in Codex to run the DART `dart-new-team-task` workflow. The editable
 workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Codex skill is a generated Codex adapter entrypoint.
 
 ## Invocation
 
@@ -89,13 +89,22 @@ bounded single-session task.
      (worktrees for parallel mutation).
    - **Review lanes stay independent**: a session that implemented a packet
      never approves it.
+   - **Critical decisions, hard failures, and research synthesis go to the
+     oracle**: the strongest available Claude model (this orchestrator
+     session, or a dedicated deep-reasoning pass when coordination state
+     crowds it out). Escalate when a consequential decision is hard to
+     reverse or must be made from conflicting or incomplete evidence, when a
+     packet bounces twice or a failure resists worker root-causing, or when
+     research must be synthesized into a design call. Spend oracle passes on
+     judgment, not on routine implementation or searches.
    - Fallback public path: without Codex or team tooling, execute packets
      sequentially via `dart-execute-packet`; the packet contract is
      unchanged.
 6. **Supervise and steer** - Monitor progress; unblock, reassign, or re-cut
    packets on scope mismatch. Review every returned packet against its
    acceptance evidence before recording it done. Root-cause failures instead
-   of patching around them; fold newly discovered unknowns back into step 2.
+   of patching around them, escalating to the oracle when workers stall;
+   fold newly discovered unknowns back into step 2.
 7. **Verify and close** - Run the task-specific gates from
    `docs/ai/verification.md` and `pixi run lint` before commits; record
    evidence per packet. Complete the principle audit. Promote durable
@@ -135,6 +144,11 @@ Logistics:
 - Use team mode for parallel lanes: named Claude teammates for iterative
   build/test and coordination work; keep authoring and review lanes
   separate; keep concurrent file ownership disjoint.
+- Use the strongest Claude model as the oracle, smartly: critical decision
+  making, challenging issues Codex cannot resolve properly (escalate after
+  two bounced attempts or a failure workers cannot root-cause), and deep
+  research synthesis; do not spend oracle passes on routine implementation
+  or searches; those stay with workers.
 - Set the session goal (/goal) to the Done-when contract so orchestration
   cannot stop early.
 - Read docs/ai/principles.md and docs/ai/north-star.md before starting;

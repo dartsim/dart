@@ -219,7 +219,7 @@ in PLAN-041, not here):
 
 | Gate                         | Required evidence                                                         |
 | ---------------------------- | ------------------------------------------------------------------------- |
-| DART 7 model loading         | URDF/SDF/MJCF/SKEL load with topology/DOF/transform/mass/collision.       |
+| DART 7 model loading         | URDF/SDF/MJCF load with topology/DOF/transform/mass/collision.            |
 | Rigid dynamics parity        | Shared open-chain scenes match the classic DART 6 path within tolerances. |
 | Contact/constraint parity    | Contacts, friction, limits, motors, mimic/coupler, loop closures.         |
 | Serialization/replay parity  | Topology/state/assets + record/replay round-trip within bounded error.    |

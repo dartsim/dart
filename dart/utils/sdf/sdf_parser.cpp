@@ -58,10 +58,21 @@
 #include "dart/utils/mesh_loader.hpp"
 #include "dart/utils/sdf/detail/geometry_parsers.hpp"
 #include "dart/utils/sdf/detail/sdf_helpers.hpp"
-#include "dart/utils/skel_parser.hpp"
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <gz/math/Color.hh>
+#include <sdf/Collision.hh>
+#include <sdf/Geometry.hh>
+#include <sdf/Joint.hh>
+#include <sdf/JointAxis.hh>
+#include <sdf/Link.hh>
+#include <sdf/Material.hh>
+#include <sdf/Model.hh>
+#include <sdf/Pbr.hh>
+#include <sdf/Surface.hh>
+#include <sdf/Visual.hh>
+#include <sdf/World.hh>
 #include <sdf/sdf.hh>
 
 #include <algorithm>
@@ -94,9 +105,11 @@ namespace SdfParser {
 //==============================================================================
 Options::Options(
     common::ResourceRetrieverPtr resourceRetriever,
-    RootJointType defaultRootJointType)
+    RootJointType defaultRootJointType,
+    std::string modelName)
   : mResourceRetriever(std::move(resourceRetriever)),
-    mDefaultRootJointType(defaultRootJointType)
+    mDefaultRootJointType(defaultRootJointType),
+    mModelName(std::move(modelName))
 {
   // Do nothing
 }
@@ -106,21 +119,103 @@ namespace {
 using ElementPtr = sdf::ElementPtr;
 namespace detail = dart::utils::SdfParser::detail;
 
-using detail::ElementEnumerator;
-using detail::getAttributeString;
-using detail::getElement;
-using detail::getValueBool;
-using detail::getValueDouble;
-using detail::getValueIsometry3dWithExtrinsicRotation;
-using detail::getValueString;
-using detail::getValueUInt;
-using detail::getValueVector2d;
-using detail::getValueVector3d;
-using detail::getValueVector3i;
-using detail::getValueVectorXd;
-using detail::hasAttribute;
-using detail::hasElement;
+using detail::findAuthoredElement;
+using detail::hasAuthoredElement;
 using detail::readGeometryShape;
+
+Eigen::Vector3d toEigenVector3(const gz::math::Vector3d& vector)
+{
+  return Eigen::Vector3d(vector.X(), vector.Y(), vector.Z());
+}
+
+Eigen::Vector4d toEigenColor(const gz::math::Color& color)
+{
+  return Eigen::Vector4d(color[0], color[1], color[2], color[3]);
+}
+
+Eigen::Isometry3d toEigenIsometry3(const gz::math::Pose3d& pose)
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = toEigenVector3(pose.Pos());
+
+  const auto& rotation = pose.Rot();
+  Eigen::Quaterniond quaternion(
+      rotation.W(), rotation.X(), rotation.Y(), rotation.Z());
+  quaternion.normalize();
+  transform.linear() = quaternion.toRotationMatrix();
+
+  return transform;
+}
+
+template <typename T>
+T readDartExtensionValue(
+    const ElementPtr& parentElement,
+    std::string_view name,
+    const T& fallback,
+    std::string_view typeName)
+{
+  if (!parentElement || name.empty()) {
+    DART_WARN(
+        "[SdfParser] Failed to parse DART extension element <{}> under <{}> "
+        "as {}.",
+        name,
+        parentElement ? parentElement->GetName() : "unknown",
+        typeName);
+    return fallback;
+  }
+
+  sdf::Errors errors;
+  const auto [value, found]
+      = parentElement->Get<T>(errors, std::string(name), fallback);
+  if (found && errors.empty()) {
+    return value;
+  }
+
+  DART_WARN(
+      "[SdfParser] Failed to parse DART extension element <{}> under <{}> as "
+      "{}.",
+      name,
+      parentElement ? parentElement->GetName() : "unknown",
+      typeName);
+  return fallback;
+}
+
+double readDartExtensionDouble(
+    const ElementPtr& parentElement, std::string_view name)
+{
+  return readDartExtensionValue(parentElement, name, 0.0, "double");
+}
+
+unsigned int readDartExtensionUInt(
+    const ElementPtr& parentElement, std::string_view name)
+{
+  return readDartExtensionValue(parentElement, name, 0u, "unsigned int");
+}
+
+Eigen::Vector3d readDartExtensionVector3d(
+    const ElementPtr& parentElement, std::string_view name)
+{
+  return toEigenVector3(readDartExtensionValue(
+      parentElement, name, gz::math::Vector3d(), "vector3"));
+}
+
+Eigen::Vector3i readDartExtensionVector3i(
+    const ElementPtr& parentElement, std::string_view name)
+{
+  const gz::math::Vector3d vec3 = readDartExtensionValue(
+      parentElement, name, gz::math::Vector3d(), "vector3i");
+  return Eigen::Vector3i(
+      static_cast<int>(vec3.X()),
+      static_cast<int>(vec3.Y()),
+      static_cast<int>(vec3.Z()));
+}
+
+Eigen::Isometry3d readDartExtensionPose(
+    const ElementPtr& parentElement, std::string_view name)
+{
+  return toEigenIsometry3(
+      readDartExtensionValue(parentElement, name, gz::math::Pose3d(), "pose"));
+}
 
 common::ResourceRetrieverPtr getRetriever(
     const common::ResourceRetrieverPtr& retriever);
@@ -129,6 +224,7 @@ struct ResolvedOptions
 {
   common::ResourceRetrieverPtr retriever;
   RootJointType defaultRootJointType;
+  std::string modelName;
 };
 
 struct TemporaryResourceOwner;
@@ -138,6 +234,7 @@ ResolvedOptions resolveOptions(const Options& options)
   ResolvedOptions resolved;
   resolved.retriever = getRetriever(options.mResourceRetriever);
   resolved.defaultRootJointType = options.mDefaultRootJointType;
+  resolved.modelName = options.mModelName;
   return resolved;
 }
 
@@ -164,6 +261,7 @@ struct SDFJoint
   std::string parentName;
   std::string childName;
   std::string type;
+  sdf::JointType sdfType = sdf::JointType::INVALID;
   struct MimicInfo
   {
     std::string referenceJointName;
@@ -176,8 +274,7 @@ struct SDFJoint
   std::vector<MimicInfo> mimicInfos;
 };
 
-std::vector<SDFJoint::MimicInfo> readMimicElements(
-    const ElementPtr& axisElement);
+std::vector<SDFJoint::MimicInfo> readMimicElements(const sdf::JointAxis& axis);
 
 // Maps the name of a BodyNode to its properties
 using BodyMap = common::aligned_map<std::string, SDFBodyNode>;
@@ -186,7 +283,7 @@ using BodyMap = common::aligned_map<std::string, SDFBodyNode>;
 using JointMap = std::map<std::string, SDFJoint>;
 
 dynamics::SkeletonPtr readSkeleton(
-    const ElementPtr& skeletonElement,
+    const sdf::Model& model,
     const common::Uri& baseUri,
     const ResolvedOptions& options);
 
@@ -216,7 +313,7 @@ NextResult getNextJointAndNodePair(
     const JointMap& sdfJoints);
 
 dynamics::SkeletonPtr makeSkeleton(
-    const ElementPtr& skeletonElement, Eigen::Isometry3d& skeletonFrame);
+    const sdf::Model& model, Eigen::Isometry3d& skeletonFrame);
 
 template <class NodeType>
 std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
@@ -226,13 +323,13 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
     const SDFBodyNode& node);
 
 BodyMap readAllBodyNodes(
-    const ElementPtr& skeletonElement,
+    const sdf::Model& model,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever,
     const Eigen::Isometry3d& skeletonFrame);
 
 SDFBodyNode readBodyNode(
-    const ElementPtr& bodyNodeElement,
+    const sdf::Link& link,
     const Eigen::Isometry3d& skeletonFrame,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
@@ -241,75 +338,76 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
     const ElementPtr& softBodyNodeElement);
 
 dynamics::ShapePtr readShape(
-    const ElementPtr& _shapelement,
+    const sdf::Geometry* geometry,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& _retriever);
 
 dynamics::ShapeNode* readShapeNode(
     dynamics::BodyNode* bodyNode,
-    const ElementPtr& shapeNodeEle,
+    const sdf::Geometry* geometry,
+    const gz::math::Pose3d& rawPose,
     std::string_view shapeNodeName,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
 void readMaterial(
-    const ElementPtr& materialEle, dynamics::ShapeNode* shapeNode);
+    const sdf::Material& material, dynamics::ShapeNode* shapeNode);
 
 void readVisualizationShapeNode(
     dynamics::BodyNode* bodyNode,
-    const ElementPtr& vizShapeNodeEle,
+    const sdf::Visual& visual,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
 void readCollisionShapeNode(
     dynamics::BodyNode* bodyNode,
-    const ElementPtr& collShapeNodeEle,
+    const sdf::Collision& collision,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
 void readAspects(
     const dynamics::SkeletonPtr& skeleton,
-    const ElementPtr& skeletonElement,
+    const sdf::Model& model,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
 JointMap readAllJoints(
-    const ElementPtr& skeletonElement,
+    const sdf::Model& model,
     const Eigen::Isometry3d& skeletonFrame,
     const BodyMap& sdfBodyNodes);
 
 SDFJoint readJoint(
-    const ElementPtr& jointElement,
+    const sdf::Joint& joint,
     const BodyMap& bodies,
     const Eigen::Isometry3d& skeletonFrame);
 
 dart::dynamics::WeldJoint::Properties readWeldJoint(
-    const ElementPtr& jointElement,
+    const sdf::Joint& joint,
     const Eigen::Isometry3d& parentModelFrame,
     std::string_view name);
 
 dynamics::RevoluteJoint::Properties readRevoluteJoint(
-    const ElementPtr& revoluteJointElement,
+    const sdf::Joint& revoluteJoint,
     const Eigen::Isometry3d& parentModelFrame,
     std::string_view name);
 
 dynamics::PrismaticJoint::Properties readPrismaticJoint(
-    const ElementPtr& jointElement,
+    const sdf::Joint& joint,
     const Eigen::Isometry3d& parentModelFrame,
     std::string_view name);
 
 dynamics::ScrewJoint::Properties readScrewJoint(
-    const ElementPtr& jointElement,
+    const sdf::Joint& joint,
     const Eigen::Isometry3d& parentModelFrame,
     std::string_view name);
 
 dynamics::UniversalJoint::Properties readUniversalJoint(
-    const ElementPtr& jointElement,
+    const sdf::Joint& joint,
     const Eigen::Isometry3d& parentModelFrame,
     std::string_view name);
 
 dynamics::BallJoint::Properties readBallJoint(
-    const ElementPtr& jointElement,
+    const sdf::Joint& joint,
     const Eigen::Isometry3d& parentModelFrame,
     std::string_view name);
 
@@ -637,25 +735,33 @@ bool loadSdfRoot(
 }
 
 dynamics::SkeletonPtr readSkeleton(
-    const ElementPtr& skeletonElement,
+    const sdf::Model& model,
     const common::Uri& baseUri,
     const ResolvedOptions& options)
 {
-  DART_ASSERT(skeletonElement != nullptr);
+  common::Uri modelBaseUri = baseUri;
+  const std::string modelUriString = model.Uri();
+  if (!modelUriString.empty()) {
+    // Included models carry their source URI; resolve nested relative resources
+    // such as mesh files against that model URI instead of the outer world
+    // file.
+    common::Uri modelUri;
+    if (modelUri.fromStringOrPath(modelUriString)) {
+      modelBaseUri = modelUri;
+    }
+  }
 
   Eigen::Isometry3d skeletonFrame = Eigen::Isometry3d::Identity();
-  dynamics::SkeletonPtr newSkeleton
-      = makeSkeleton(skeletonElement, skeletonFrame);
+  dynamics::SkeletonPtr newSkeleton = makeSkeleton(model, skeletonFrame);
 
   //--------------------------------------------------------------------------
   // Bodies
-  BodyMap sdfBodyNodes = readAllBodyNodes(
-      skeletonElement, baseUri, options.retriever, skeletonFrame);
+  BodyMap sdfBodyNodes
+      = readAllBodyNodes(model, modelBaseUri, options.retriever, skeletonFrame);
 
   //--------------------------------------------------------------------------
   // Joints
-  JointMap sdfJoints
-      = readAllJoints(skeletonElement, skeletonFrame, sdfBodyNodes);
+  JointMap sdfJoints = readAllJoints(model, skeletonFrame, sdfBodyNodes);
 
   // Iterate through the collected properties and construct the Skeleton from
   // the root nodes downward
@@ -714,7 +820,7 @@ dynamics::SkeletonPtr readSkeleton(
 
   // Read aspects here since aspects cannot be added if the BodyNodes haven't
   // created yet.
-  readAspects(newSkeleton, skeletonElement, baseUri, options.retriever);
+  readAspects(newSkeleton, model, modelBaseUri, options.retriever);
 
   // Set positions to their initial values
   newSkeleton->resetPositions();
@@ -853,31 +959,25 @@ void applyMimicConstraints(
 }
 
 dynamics::SkeletonPtr makeSkeleton(
-    const ElementPtr& _skeletonElement, Eigen::Isometry3d& skeletonFrame)
+    const sdf::Model& model, Eigen::Isometry3d& skeletonFrame)
 {
-  DART_ASSERT(_skeletonElement != nullptr);
-
   dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
 
   //--------------------------------------------------------------------------
   // Name attribute
-  std::string name = getAttributeString(_skeletonElement, "name");
-  newSkeleton->setName(name);
+  newSkeleton->setName(model.Name());
 
   //--------------------------------------------------------------------------
   // immobile attribute
-  if (hasElement(_skeletonElement, "static")) {
-    bool isStatic = getValueBool(_skeletonElement, "static");
-    newSkeleton->setMobile(!isStatic);
-  }
+  newSkeleton->setMobile(!model.Static());
+
+  //--------------------------------------------------------------------------
+  // self-collision attribute
+  newSkeleton->setSelfCollisionCheck(model.SelfCollide());
 
   //--------------------------------------------------------------------------
   // transformation
-  if (hasElement(_skeletonElement, "pose")) {
-    Eigen::Isometry3d W
-        = getValueIsometry3dWithExtrinsicRotation(_skeletonElement, "pose");
-    skeletonFrame = W;
-  }
+  skeletonFrame = toEigenIsometry3(model.RawPose());
 
   return newSkeleton;
 }
@@ -892,36 +992,45 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
 {
   const std::string& type = joint.type;
 
-  if (std::string("prismatic") == type) {
+  if (joint.sdfType == sdf::JointType::PRISMATIC
+      || std::string("prismatic") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
         parent,
         static_cast<const dynamics::PrismaticJoint::Properties&>(
             *joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  } else if (std::string("revolute") == type) {
+  } else if (
+      joint.sdfType == sdf::JointType::REVOLUTE
+      || joint.sdfType == sdf::JointType::CONTINUOUS
+      || std::string("revolute") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
         parent,
         static_cast<const dynamics::RevoluteJoint::Properties&>(
             *joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  } else if (std::string("screw") == type) {
+  } else if (
+      joint.sdfType == sdf::JointType::SCREW || std::string("screw") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint>(
         parent,
         static_cast<const dynamics::ScrewJoint::Properties&>(*joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
   } else if (
-      std::string("revolute2") == type || std::string("universal") == type) {
+      joint.sdfType == sdf::JointType::REVOLUTE2
+      || joint.sdfType == sdf::JointType::UNIVERSAL
+      || std::string("revolute2") == type || std::string("universal") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(
         parent,
         static_cast<const dynamics::UniversalJoint::Properties&>(
             *joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  } else if (std::string("ball") == type) {
+  } else if (
+      joint.sdfType == sdf::JointType::BALL || std::string("ball") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(
         parent,
         static_cast<const dynamics::BallJoint::Properties&>(*joint.properties),
         static_cast<const typename NodeType::Properties&>(*node.properties));
-  } else if (std::string("fixed") == type) {
+  } else if (
+      joint.sdfType == sdf::JointType::FIXED || std::string("fixed") == type) {
     return skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
         parent,
         static_cast<const dynamics::WeldJoint::Properties&>(*joint.properties),
@@ -942,16 +1051,19 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
 
 //==============================================================================
 BodyMap readAllBodyNodes(
-    const ElementPtr& skeletonElement,
+    const sdf::Model& model,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever,
     const Eigen::Isometry3d& skeletonFrame)
 {
-  ElementEnumerator bodies(skeletonElement, "link");
   BodyMap sdfBodyNodes;
-  while (bodies.next()) {
-    SDFBodyNode body
-        = readBodyNode(bodies.get(), skeletonFrame, baseUri, retriever);
+  for (uint64_t linkIndex = 0; linkIndex < model.LinkCount(); ++linkIndex) {
+    const sdf::Link* link = model.LinkByIndex(linkIndex);
+    if (!link) {
+      continue;
+    }
+
+    SDFBodyNode body = readBodyNode(*link, skeletonFrame, baseUri, retriever);
 
     BodyMap::iterator it = sdfBodyNodes.find(body.properties->mName);
     if (it != sdfBodyNodes.end()) {
@@ -969,55 +1081,42 @@ BodyMap readAllBodyNodes(
 
 //===============================================================================
 SDFBodyNode readBodyNode(
-    const ElementPtr& bodyNodeElement,
+    const sdf::Link& link,
     const Eigen::Isometry3d& skeletonFrame,
     const common::Uri& /*baseUri*/,
     const common::ResourceRetrieverPtr& /*retriever*/)
 {
+  const ElementPtr bodyNodeElement = link.Element();
   DART_ASSERT(bodyNodeElement != nullptr);
 
   dynamics::BodyNode::Properties properties;
   Eigen::Isometry3d initTransform = Eigen::Isometry3d::Identity();
 
   // Name attribute
-  std::string name = getAttributeString(bodyNodeElement, "name");
+  std::string name = link.Name();
   properties.mName = name;
   const std::string bodyName = name;
 
   //--------------------------------------------------------------------------
   // gravity
-  if (hasElement(bodyNodeElement, "gravity")) {
-    bool gravityMode = getValueBool(bodyNodeElement, "gravity");
-    properties.mGravityMode = gravityMode;
-  }
-
-  //--------------------------------------------------------------------------
-  // self_collide
-  //    if (hasElement(_bodyElement, "self_collide"))
-  //    {
-  //        bool gravityMode = getValueBool(_bodyElement, "self_collide");
-  //    }
+  properties.mGravityMode = link.EnableGravity();
 
   //--------------------------------------------------------------------------
   // transformation
-  if (hasElement(bodyNodeElement, "pose")) {
-    Eigen::Isometry3d W
-        = getValueIsometry3dWithExtrinsicRotation(bodyNodeElement, "pose");
-    initTransform = skeletonFrame * W;
-  } else {
-    initTransform = skeletonFrame;
-  }
+  initTransform = skeletonFrame * toEigenIsometry3(link.RawPose());
 
   //--------------------------------------------------------------------------
   // inertia
   constexpr double kMinReasonableMass = 1e-9; // 1 microgram
   bool massSpecified = false;
-  if (hasElement(bodyNodeElement, "inertial")) {
-    const ElementPtr& inertiaElement = getElement(bodyNodeElement, "inertial");
+  if (const ElementPtr inertiaElement
+      = findAuthoredElement(bodyNodeElement, "inertial")) {
+    const auto& inertial = link.Inertial();
+    const auto& massMatrix = inertial.MassMatrix();
 
     // mass
-    if (hasElement(inertiaElement, "mass")) {
-      double mass = getValueDouble(inertiaElement, "mass");
+    if (hasAuthoredElement(inertiaElement, "mass")) {
+      double mass = massMatrix.Mass();
       if (mass <= 0.0) {
         DART_WARN(
             "[SdfParser] Link [{}] has non-positive mass [{}]. Clamping to {} "
@@ -1040,25 +1139,19 @@ SDFBodyNode readBodyNode(
     }
 
     // offset
-    if (hasElement(inertiaElement, "pose")) {
-      Eigen::Isometry3d T
-          = getValueIsometry3dWithExtrinsicRotation(inertiaElement, "pose");
-      properties.mInertia.setLocalCOM(T.translation());
+    if (hasAuthoredElement(inertiaElement, "pose")) {
+      properties.mInertia.setLocalCOM(toEigenVector3(inertial.Pose().Pos()));
     }
 
     // inertia
-    if (hasElement(inertiaElement, "inertia")) {
-      const ElementPtr& moiElement = getElement(inertiaElement, "inertia");
-
-      double ixx = getValueDouble(moiElement, "ixx");
-      double iyy = getValueDouble(moiElement, "iyy");
-      double izz = getValueDouble(moiElement, "izz");
-
-      double ixy = getValueDouble(moiElement, "ixy");
-      double ixz = getValueDouble(moiElement, "ixz");
-      double iyz = getValueDouble(moiElement, "iyz");
-
-      properties.mInertia.setMoment(ixx, iyy, izz, ixy, ixz, iyz);
+    if (hasAuthoredElement(inertiaElement, "inertia")) {
+      properties.mInertia.setMoment(
+          massMatrix.Ixx(),
+          massMatrix.Iyy(),
+          massMatrix.Izz(),
+          massMatrix.Ixy(),
+          massMatrix.Ixz(),
+          massMatrix.Iyz());
     } else if (massSpecified) {
       // Keep the inertia physically meaningful by matching the moment scale
       // to the specified mass; geometry is unknown, so use an isotropic guess.
@@ -1089,7 +1182,7 @@ SDFBodyNode readBodyNode(
 
   SDFBodyNode sdfBodyNode;
   sdfBodyNode.initTransform = initTransform;
-  if (hasElement(bodyNodeElement, "soft_shape")) {
+  if (findAuthoredElement(bodyNodeElement, "soft_shape")) {
     auto softProperties = readSoftBodyProperties(bodyNodeElement);
 
     sdfBodyNode.properties = dynamics::SoftBodyNode::Properties::createShared(
@@ -1119,48 +1212,49 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
 
   //----------------------------------------------------------------------------
   // Soft properties
-  if (hasElement(softBodyNodeElement, "soft_shape")) {
-    const ElementPtr& softShapeEle
-        = getElement(softBodyNodeElement, "soft_shape");
-
+  if (const ElementPtr softShapeEle
+      = findAuthoredElement(softBodyNodeElement, "soft_shape")) {
     // mass
-    double totalMass = getValueDouble(softShapeEle, "total_mass");
+    double totalMass = readDartExtensionDouble(softShapeEle, "total_mass");
 
     // pose
     Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-    if (hasElement(softShapeEle, "pose")) {
-      T = getValueIsometry3dWithExtrinsicRotation(softShapeEle, "pose");
+    if (hasAuthoredElement(softShapeEle, "pose")) {
+      T = readDartExtensionPose(softShapeEle, "pose");
     }
 
     // geometry
-    const ElementPtr& geometryEle = getElement(softShapeEle, "geometry");
-    if (hasElement(geometryEle, "sphere")) {
-      const ElementPtr& sphereEle = getElement(geometryEle, "sphere");
-      const auto radius = getValueDouble(sphereEle, "radius");
-      const auto nSlices = getValueUInt(sphereEle, "num_slices");
-      const auto nStacks = getValueUInt(sphereEle, "num_stacks");
+    const ElementPtr geometryEle
+        = findAuthoredElement(softShapeEle, "geometry");
+    if (const ElementPtr sphereEle
+        = findAuthoredElement(geometryEle, "sphere")) {
+      const auto radius = readDartExtensionDouble(sphereEle, "radius");
+      const auto nSlices = readDartExtensionUInt(sphereEle, "num_slices");
+      const auto nStacks = readDartExtensionUInt(sphereEle, "num_stacks");
       softProperties = dynamics::SoftBodyNodeHelper::makeSphereProperties(
           radius, nSlices, nStacks, totalMass);
-    } else if (hasElement(geometryEle, "box")) {
-      const ElementPtr& boxEle = getElement(geometryEle, "box");
-      Eigen::Vector3d size = getValueVector3d(boxEle, "size");
-      Eigen::Vector3i frags = getValueVector3i(boxEle, "frags");
+    } else if (
+        const ElementPtr boxEle = findAuthoredElement(geometryEle, "box")) {
+      Eigen::Vector3d size = readDartExtensionVector3d(boxEle, "size");
+      Eigen::Vector3i frags = readDartExtensionVector3i(boxEle, "frags");
       softProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
           size, T, frags, totalMass);
-    } else if (hasElement(geometryEle, "ellipsoid")) {
-      const ElementPtr& ellipsoidEle = getElement(geometryEle, "ellipsoid");
-      Eigen::Vector3d size = getValueVector3d(ellipsoidEle, "size");
-      const auto nSlices = getValueUInt(ellipsoidEle, "num_slices");
-      const auto nStacks = getValueUInt(ellipsoidEle, "num_stacks");
+    } else if (
+        const ElementPtr ellipsoidEle
+        = findAuthoredElement(geometryEle, "ellipsoid")) {
+      Eigen::Vector3d size = readDartExtensionVector3d(ellipsoidEle, "size");
+      const auto nSlices = readDartExtensionUInt(ellipsoidEle, "num_slices");
+      const auto nStacks = readDartExtensionUInt(ellipsoidEle, "num_stacks");
       softProperties = dynamics::SoftBodyNodeHelper::makeEllipsoidProperties(
           size, nSlices, nStacks, totalMass);
-    } else if (hasElement(geometryEle, "cylinder")) {
-      const ElementPtr& ellipsoidEle = getElement(geometryEle, "cylinder");
-      double radius = getValueDouble(ellipsoidEle, "radius");
-      double height = getValueDouble(ellipsoidEle, "height");
-      double nSlices = getValueDouble(ellipsoidEle, "num_slices");
-      double nStacks = getValueDouble(ellipsoidEle, "num_stacks");
-      double nRings = getValueDouble(ellipsoidEle, "num_rings");
+    } else if (
+        const ElementPtr cylinderEle
+        = findAuthoredElement(geometryEle, "cylinder")) {
+      double radius = readDartExtensionDouble(cylinderEle, "radius");
+      double height = readDartExtensionDouble(cylinderEle, "height");
+      double nSlices = readDartExtensionDouble(cylinderEle, "num_slices");
+      double nStacks = readDartExtensionDouble(cylinderEle, "num_stacks");
+      double nRings = readDartExtensionDouble(cylinderEle, "num_rings");
       softProperties = dynamics::SoftBodyNodeHelper::makeCylinderProperties(
           radius, height, nSlices, nStacks, nRings, totalMass);
     } else {
@@ -1168,18 +1262,18 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
     }
 
     // kv
-    if (hasElement(softShapeEle, "kv")) {
-      softProperties.mKv = getValueDouble(softShapeEle, "kv");
+    if (hasAuthoredElement(softShapeEle, "kv")) {
+      softProperties.mKv = readDartExtensionDouble(softShapeEle, "kv");
     }
 
     // ke
-    if (hasElement(softShapeEle, "ke")) {
-      softProperties.mKe = getValueDouble(softShapeEle, "ke");
+    if (hasAuthoredElement(softShapeEle, "ke")) {
+      softProperties.mKe = readDartExtensionDouble(softShapeEle, "ke");
     }
 
     // damp
-    if (hasElement(softShapeEle, "damp")) {
-      softProperties.mDampCoeff = getValueDouble(softShapeEle, "damp");
+    if (hasAuthoredElement(softShapeEle, "damp")) {
+      softProperties.mDampCoeff = readDartExtensionDouble(softShapeEle, "damp");
     }
   }
 
@@ -1188,71 +1282,138 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
 
 //==============================================================================
 dynamics::ShapePtr readShape(
-    const ElementPtr& _shapelement,
+    const sdf::Geometry* geometry,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& _retriever)
 {
-  if (!hasElement(_shapelement, "geometry")) {
+  if (!geometry) {
     DART_WARN("Shape node is missing required <geometry> element.");
     return nullptr;
   }
 
-  const ElementPtr& geometryElement = getElement(_shapelement, "geometry");
-  return readGeometryShape(geometryElement, baseUri, _retriever);
+  return readGeometryShape(*geometry, baseUri, _retriever);
 }
 
 //==============================================================================
 dynamics::ShapeNode* readShapeNode(
     dynamics::BodyNode* bodyNode,
-    const ElementPtr& shapeNodeEle,
+    const sdf::Geometry* geometry,
+    const gz::math::Pose3d& rawPose,
     std::string_view shapeNodeName,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
   DART_ASSERT(bodyNode);
 
-  auto shape = readShape(shapeNodeEle, baseUri, retriever);
+  auto shape = readShape(geometry, baseUri, retriever);
   auto shapeNode = bodyNode->createShapeNode(shape, shapeNodeName);
 
   // Transformation
-  if (hasElement(shapeNodeEle, "pose")) {
-    const Eigen::Isometry3d W
-        = getValueIsometry3dWithExtrinsicRotation(shapeNodeEle, "pose");
-    shapeNode->setRelativeTransform(W);
-  }
+  shapeNode->setRelativeTransform(toEigenIsometry3(rawPose));
 
   return shapeNode;
 }
 
 //==============================================================================
-void readMaterial(const ElementPtr& materialEle, dynamics::ShapeNode* shapeNode)
+void readMaterial(const sdf::Material& material, dynamics::ShapeNode* shapeNode)
 {
   auto visualAspect = shapeNode->getVisualAspect();
-  if (hasElement(materialEle, "diffuse")) {
-    Eigen::VectorXd color = getValueVectorXd(materialEle, "diffuse");
-    if (color.size() == 3) {
-      Eigen::Vector3d color3d = color;
-      visualAspect->setColor(color3d);
-    } else if (color.size() == 4) {
-      Eigen::Vector4d color4d = color;
-      visualAspect->setColor(color4d);
-    } else {
-      DART_ERROR("Unsupported color vector size: {}", color.size());
+  if (hasAuthoredElement(material.Element(), "diffuse")) {
+    visualAspect->setColor(toEigenColor(material.Diffuse()));
+  }
+
+  const sdf::Pbr* pbr = material.PbrMaterial();
+  if (!pbr) {
+    return;
+  }
+
+  const sdf::PbrWorkflow* workflow = pbr->Workflow(sdf::PbrWorkflowType::METAL);
+  if (!workflow) {
+    return;
+  }
+
+  visualAspect->setMetallic(workflow->Metalness());
+  visualAspect->setRoughness(workflow->Roughness());
+}
+
+//==============================================================================
+void readCollisionSurface(
+    const sdf::Collision& collision, dynamics::ShapeNode* shapeNode)
+{
+  const sdf::Surface* surface = collision.Surface();
+  if (!surface) {
+    return;
+  }
+
+  auto collisionAspect = shapeNode->getCollisionAspect();
+  if (collisionAspect) {
+    const sdf::Contact* contact = surface->Contact();
+    if (contact && hasAuthoredElement(contact->Element(), "collide_bitmask")) {
+      collisionAspect->setCollidable(contact->CollideBitmask() != 0u);
     }
+  }
+
+  auto dynamicsAspect = shapeNode->getDynamicsAspect();
+  if (!dynamicsAspect) {
+    return;
+  }
+
+  const ElementPtr surfaceElement = surface->Element();
+  if (const ElementPtr bounceElement
+      = findAuthoredElement(surfaceElement, "bounce")) {
+    if (hasAuthoredElement(bounceElement, "restitution_coefficient")) {
+      sdf::Errors errors;
+      const auto [restitution, found]
+          = bounceElement->Get<double>(errors, "restitution_coefficient", 0.0);
+      if (found && errors.empty()) {
+        dynamicsAspect->setRestitutionCoeff(restitution);
+      } else {
+        DART_WARN(
+            "[SdfParser] Failed to parse <restitution_coefficient> under "
+            "<bounce> as double.");
+      }
+    }
+  }
+
+  const sdf::Friction* friction = surface->Friction();
+  if (!friction) {
+    return;
+  }
+
+  const sdf::ODE* ode = friction->ODE();
+  if (!ode) {
+    return;
+  }
+
+  const ElementPtr odeElement = ode->Element();
+  if (hasAuthoredElement(odeElement, "mu")) {
+    dynamicsAspect->setPrimaryFrictionCoeff(ode->Mu());
+  }
+  if (hasAuthoredElement(odeElement, "mu2")) {
+    dynamicsAspect->setSecondaryFrictionCoeff(ode->Mu2());
+  }
+  if (hasAuthoredElement(odeElement, "slip1")) {
+    dynamicsAspect->setPrimarySlipCompliance(ode->Slip1());
+  }
+  if (hasAuthoredElement(odeElement, "slip2")) {
+    dynamicsAspect->setSecondarySlipCompliance(ode->Slip2());
+  }
+  if (hasAuthoredElement(odeElement, "fdir1")) {
+    dynamicsAspect->setFirstFrictionDirection(toEigenVector3(ode->Fdir1()));
+    dynamicsAspect->setFirstFrictionDirectionFrame(nullptr);
   }
 }
 
 //==============================================================================
 void readVisualizationShapeNode(
     dynamics::BodyNode* bodyNode,
-    const ElementPtr& vizShapeNodeEle,
+    const sdf::Visual& visual,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
-  std::string visualName = "visual shape";
-  if (hasAttribute(vizShapeNodeEle, "name")) {
-    visualName = getAttributeString(vizShapeNodeEle, "name");
-  } else {
+  std::string visualName = visual.Name();
+  if (visualName.empty()) {
+    visualName = "visual shape";
     DART_WARN(
         "Missing required attribute [name] in <visual> element of <link name = "
         "{}>.",
@@ -1261,31 +1422,39 @@ void readVisualizationShapeNode(
 
   dynamics::ShapeNode* newShapeNode = readShapeNode(
       bodyNode,
-      vizShapeNodeEle,
+      visual.Geom(),
+      visual.RawPose(),
       bodyNode->getName() + " - " + visualName,
       baseUri,
       retriever);
 
   newShapeNode->createVisualAspect();
+  auto* visualAspect = newShapeNode->getVisualAspect();
+  visualAspect->setShadowed(visual.CastShadows());
+  if (visual.VisibilityFlags() == 0u) {
+    visualAspect->hide();
+  }
 
   // Material
-  if (hasElement(vizShapeNodeEle, "material")) {
-    const ElementPtr& materialEle = getElement(vizShapeNodeEle, "material");
-    readMaterial(materialEle, newShapeNode);
+  if (const auto* material = visual.Material()) {
+    readMaterial(*material, newShapeNode);
+  }
+
+  if (hasAuthoredElement(visual.Element(), "transparency")) {
+    visualAspect->setAlpha(1.0 - static_cast<double>(visual.Transparency()));
   }
 }
 
 //==============================================================================
 void readCollisionShapeNode(
     dynamics::BodyNode* bodyNode,
-    const ElementPtr& collShapeNodeEle,
+    const sdf::Collision& collision,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
-  std::string collName = "collision shape";
-  if (hasAttribute(collShapeNodeEle, "name")) {
-    collName = getAttributeString(collShapeNodeEle, "name");
-  } else {
+  std::string collName = collision.Name();
+  if (collName.empty()) {
+    collName = "collision shape";
     DART_WARN(
         "Missing required attribute [name] in <collision> element of <link "
         "name = {}>.",
@@ -1294,52 +1463,73 @@ void readCollisionShapeNode(
 
   dynamics::ShapeNode* newShapeNode = readShapeNode(
       bodyNode,
-      collShapeNodeEle,
+      collision.Geom(),
+      collision.RawPose(),
       bodyNode->getName() + " - " + collName,
       baseUri,
       retriever);
 
   newShapeNode->createCollisionAspect();
   newShapeNode->createDynamicsAspect();
+  readCollisionSurface(collision, newShapeNode);
 }
 
 //==============================================================================
 void readAspects(
     const dynamics::SkeletonPtr& skeleton,
-    const ElementPtr& skeletonElement,
+    const sdf::Model& model,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
-  ElementEnumerator xmlBodies(skeletonElement, "link");
-  while (xmlBodies.next()) {
-    auto bodyElement = xmlBodies.get();
-    auto bodyNodeName = getAttributeString(bodyElement, "name");
-    auto bodyNode = skeleton->getBodyNode(bodyNodeName);
+  for (uint64_t linkIndex = 0; linkIndex < model.LinkCount(); ++linkIndex) {
+    const sdf::Link* link = model.LinkByIndex(linkIndex);
+    if (!link) {
+      continue;
+    }
+
+    auto bodyNode = skeleton->getBodyNode(link->Name());
+    if (!bodyNode) {
+      DART_WARN(
+          "[SdfParser] Skipping visual/collision aspects for unknown Link "
+          "[{}].",
+          link->Name());
+      continue;
+    }
 
     // visualization_shape
-    ElementEnumerator vizShapes(bodyElement, "visual");
-    while (vizShapes.next()) {
-      readVisualizationShapeNode(bodyNode, vizShapes.get(), baseUri, retriever);
+    for (uint64_t visualIndex = 0; visualIndex < link->VisualCount();
+         ++visualIndex) {
+      const sdf::Visual* visual = link->VisualByIndex(visualIndex);
+      if (visual) {
+        readVisualizationShapeNode(bodyNode, *visual, baseUri, retriever);
+      }
     }
 
     // collision_shape
-    ElementEnumerator collShapes(bodyElement, "collision");
-    while (collShapes.next()) {
-      readCollisionShapeNode(bodyNode, collShapes.get(), baseUri, retriever);
+    for (uint64_t collisionIndex = 0; collisionIndex < link->CollisionCount();
+         ++collisionIndex) {
+      const sdf::Collision* collision = link->CollisionByIndex(collisionIndex);
+      if (collision) {
+        readCollisionShapeNode(bodyNode, *collision, baseUri, retriever);
+      }
     }
   }
 }
 
 //==============================================================================
 JointMap readAllJoints(
-    const ElementPtr& _skeletonElement,
+    const sdf::Model& model,
     const Eigen::Isometry3d& skeletonFrame,
     const BodyMap& sdfBodyNodes)
 {
   JointMap sdfJoints;
-  ElementEnumerator joints(_skeletonElement, "joint");
-  while (joints.next()) {
-    SDFJoint joint = readJoint(joints.get(), sdfBodyNodes, skeletonFrame);
+  for (uint64_t jointIndex = 0; jointIndex < model.JointCount(); ++jointIndex) {
+    const sdf::Joint* jointDom = model.JointByIndex(jointIndex);
+    if (!jointDom) {
+      continue;
+    }
+
+    SDFJoint joint = readJoint(*jointDom, sdfBodyNodes, skeletonFrame);
 
     if (joint.childName.empty()) {
       DART_ERROR(
@@ -1367,58 +1557,73 @@ JointMap readAllJoints(
   return sdfJoints;
 }
 
-std::vector<SDFJoint::MimicInfo> readMimicElements(
-    const ElementPtr& axisElement)
+std::string_view getSdfJointTypeName(const sdf::JointType type)
 {
-  std::vector<SDFJoint::MimicInfo> mimics;
-  if (!axisElement || !hasElement(axisElement, "mimic")) {
-    return mimics;
+  switch (type) {
+    case sdf::JointType::BALL:
+      return "ball";
+    case sdf::JointType::CONTINUOUS:
+      return "continuous";
+    case sdf::JointType::FIXED:
+      return "fixed";
+    case sdf::JointType::GEARBOX:
+      return "gearbox";
+    case sdf::JointType::PRISMATIC:
+      return "prismatic";
+    case sdf::JointType::REVOLUTE:
+      return "revolute";
+    case sdf::JointType::REVOLUTE2:
+      return "revolute2";
+    case sdf::JointType::SCREW:
+      return "screw";
+    case sdf::JointType::UNIVERSAL:
+      return "universal";
+    case sdf::JointType::INVALID:
+      break;
   }
 
-  const auto mimicElement = getElement(axisElement, "mimic");
-  if (!mimicElement) {
+  return "invalid";
+}
+
+std::vector<SDFJoint::MimicInfo> readMimicElements(const sdf::JointAxis& axis)
+{
+  std::vector<SDFJoint::MimicInfo> mimics;
+  const auto mimic = axis.Mimic();
+  if (!mimic) {
     return mimics;
   }
 
   SDFJoint::MimicInfo info;
-  info.referenceJointName = getAttributeString(mimicElement, "joint");
-  if (hasAttribute(mimicElement, "axis")) {
-    const auto axisAttr = getAttributeString(mimicElement, "axis");
-    info.referenceDof = axisAttr == "axis2" ? 1u : 0u;
-  }
-  info.multiplier = hasElement(mimicElement, "multiplier")
-                        ? getValueDouble(mimicElement, "multiplier")
-                        : 1.0;
-  info.offset = hasElement(mimicElement, "offset")
-                    ? getValueDouble(mimicElement, "offset")
-                    : 0.0;
+  info.referenceJointName = mimic->Joint();
+  info.referenceDof = mimic->Axis() == "axis2" ? 1u : 0u;
+  info.multiplier = mimic->Multiplier();
+  info.offset = mimic->Offset();
   mimics.push_back(info);
 
   return mimics;
 }
 
 SDFJoint readJoint(
-    const ElementPtr& _jointElement,
+    const sdf::Joint& sdfJoint,
     const BodyMap& _sdfBodyNodes,
     const Eigen::Isometry3d& _skeletonFrame)
 {
-  DART_ASSERT(_jointElement != nullptr);
-
   //--------------------------------------------------------------------------
   // Type attribute
-  std::string type = getAttributeString(_jointElement, "type");
+  const sdf::JointType sdfType = sdfJoint.Type();
+  std::string type(getSdfJointTypeName(sdfType));
   DART_ASSERT(!type.empty());
 
   //--------------------------------------------------------------------------
   // Name attribute
-  std::string name = getAttributeString(_jointElement, "name");
+  std::string name = sdfJoint.Name();
 
   //--------------------------------------------------------------------------
   // parent
   BodyMap::const_iterator parent_it = _sdfBodyNodes.end();
 
-  if (hasElement(_jointElement, "parent")) {
-    std::string strParent = getValueString(_jointElement, "parent");
+  if (!sdfJoint.ParentName().empty()) {
+    std::string strParent = sdfJoint.ParentName();
 
     if (strParent != std::string("world")) {
       parent_it = _sdfBodyNodes.find(strParent);
@@ -1441,8 +1646,8 @@ SDFJoint readJoint(
   // child
   BodyMap::const_iterator child_it = _sdfBodyNodes.end();
 
-  if (hasElement(_jointElement, "child")) {
-    std::string strChild = getValueString(_jointElement, "child");
+  if (!sdfJoint.ChildName().empty()) {
+    std::string strChild = sdfJoint.ChildName();
 
     child_it = _sdfBodyNodes.find(strChild);
 
@@ -1463,17 +1668,16 @@ SDFJoint readJoint(
   newJoint.parentName
       = (parent_it == _sdfBodyNodes.end()) ? "" : parent_it->first;
   newJoint.childName = (child_it == _sdfBodyNodes.end()) ? "" : child_it->first;
+  newJoint.sdfType = sdfType;
 
   //--------------------------------------------------------------------------
   // Mimic metadata (captured before joint creation)
-  if (hasElement(_jointElement, "axis")) {
-    const ElementPtr& axisElement = getElement(_jointElement, "axis");
-    auto mimics = readMimicElements(axisElement);
+  if (const sdf::JointAxis* axis = sdfJoint.Axis(0)) {
+    auto mimics = readMimicElements(*axis);
     std::ranges::move(mimics, std::back_inserter(newJoint.mimicInfos));
   }
-  if (hasElement(_jointElement, "axis2")) {
-    const ElementPtr& axis2Element = getElement(_jointElement, "axis2");
-    auto mimics = readMimicElements(axis2Element);
+  if (const sdf::JointAxis* axis2 = sdfJoint.Axis(1)) {
+    auto mimics = readMimicElements(*axis2);
     std::ranges::for_each(mimics, [](auto& mimic) {
       mimic.referenceDof = 1u; // axis2 maps to the second DoF
     });
@@ -1492,10 +1696,7 @@ SDFJoint readJoint(
   if (child_it != _sdfBodyNodes.end()) {
     childWorld = child_it->second.initTransform;
   }
-  if (hasElement(_jointElement, "pose")) {
-    childToJoint
-        = getValueIsometry3dWithExtrinsicRotation(_jointElement, "pose");
-  }
+  childToJoint = toEigenIsometry3(sdfJoint.RawPose());
 
   Eigen::Isometry3d parentToJoint
       = parentWorld.inverse() * childWorld * childToJoint;
@@ -1504,30 +1705,38 @@ SDFJoint readJoint(
   Eigen::Isometry3d parentModelFrame
       = (childWorld * childToJoint).inverse() * _skeletonFrame;
 
-  if (type == std::string("fixed")) {
+  if (sdfType == sdf::JointType::FIXED || type == std::string("fixed")) {
     newJoint.properties = dynamics::WeldJoint::Properties::createShared(
-        readWeldJoint(_jointElement, parentModelFrame, name));
-  } else if (type == std::string("prismatic")) {
-    newJoint.properties = dynamics::PrismaticJoint::Properties::createShared(
-        readPrismaticJoint(_jointElement, parentModelFrame, name));
-  } else if (type == std::string("revolute")) {
-    newJoint.properties = dynamics::RevoluteJoint::Properties::createShared(
-        readRevoluteJoint(_jointElement, parentModelFrame, name));
-  } else if (type == std::string("screw")) {
-    newJoint.properties = dynamics::ScrewJoint::Properties::createShared(
-        readScrewJoint(_jointElement, parentModelFrame, name));
+        readWeldJoint(sdfJoint, parentModelFrame, name));
   } else if (
-      type == std::string("revolute2") || type == std::string("universal")) {
+      sdfType == sdf::JointType::PRISMATIC
+      || type == std::string("prismatic")) {
+    newJoint.properties = dynamics::PrismaticJoint::Properties::createShared(
+        readPrismaticJoint(sdfJoint, parentModelFrame, name));
+  } else if (
+      sdfType == sdf::JointType::REVOLUTE
+      || sdfType == sdf::JointType::CONTINUOUS
+      || type == std::string("revolute")) {
+    newJoint.properties = dynamics::RevoluteJoint::Properties::createShared(
+        readRevoluteJoint(sdfJoint, parentModelFrame, name));
+  } else if (sdfType == sdf::JointType::SCREW || type == std::string("screw")) {
+    newJoint.properties = dynamics::ScrewJoint::Properties::createShared(
+        readScrewJoint(sdfJoint, parentModelFrame, name));
+  } else if (
+      sdfType == sdf::JointType::REVOLUTE2
+      || sdfType == sdf::JointType::UNIVERSAL
+      || type == std::string("revolute2") || type == std::string("universal")) {
     newJoint.properties = dynamics::UniversalJoint::Properties::createShared(
-        readUniversalJoint(_jointElement, parentModelFrame, name));
-  } else if (type == std::string("ball")) {
-    newJoint.properties = dynamics::BallJoint::Properties::createShared(
-        readBallJoint(_jointElement, parentModelFrame, name));
+        readUniversalJoint(sdfJoint, parentModelFrame, name));
+  } else if (sdfType == sdf::JointType::BALL || type == std::string("ball")) {
+    auto ballProperties = dynamics::BallJoint::Properties::createShared();
+    *ballProperties = readBallJoint(sdfJoint, parentModelFrame, name);
+    newJoint.properties = ballProperties;
   } else {
     DART_ERROR(
         "Unsupported joint type [{}]. Using [fixed] joint type instead.", type);
     newJoint.properties = dynamics::WeldJoint::Properties::createShared(
-        readWeldJoint(_jointElement, parentModelFrame, name));
+        readWeldJoint(sdfJoint, parentModelFrame, name));
   }
 
   newJoint.type = type;
@@ -1555,12 +1764,59 @@ static void reportMissingElement(
   DART_ASSERT(0);
 }
 
+Eigen::Vector3d resolveAxisXyz(
+    const sdf::JointAxis& axisElement,
+    const Eigen::Isometry3d& _parentModelFrame,
+    const ElementPtr& axisSdfElement)
+{
+  gz::math::Vector3d xyz = axisElement.Xyz();
+
+  if (!axisElement.XyzExpressedIn().empty()) {
+    const sdf::Errors errors = axisElement.ResolveXyz(xyz);
+    if (errors.empty()) {
+      return toEigenVector3(xyz);
+    }
+
+    DART_WARN(
+        "[SdfParser] Failed to resolve joint axis expressed in frame [{}]; "
+        "falling back to the raw <xyz> value.",
+        axisElement.XyzExpressedIn());
+  }
+
+  // Legacy Gazebo/SDF files used this extension before SDF gained
+  // axis/xyz@expressed_in. Keep it as a compatibility fallback only.
+  bool useParentModelFrame = false;
+  if (hasAuthoredElement(axisSdfElement, "use_parent_model_frame")) {
+    sdf::Errors errors;
+    const auto [value, found] = axisSdfElement->Get<bool>(
+        errors, "use_parent_model_frame", useParentModelFrame);
+    if (found && errors.empty()) {
+      useParentModelFrame = value;
+    } else {
+      DART_WARN(
+          "[SdfParser] Failed to parse legacy "
+          "<use_parent_model_frame> for a joint axis as bool.");
+    }
+  }
+
+  Eigen::Vector3d axis = toEigenVector3(xyz);
+  if (useParentModelFrame) {
+    axis = _parentModelFrame.rotation() * axis;
+  }
+
+  return axis;
+}
+
 static bool readAxisElement(
-    const ElementPtr& axisElement,
+    const sdf::JointAxis& axisElement,
     const Eigen::Isometry3d& _parentModelFrame,
     Eigen::Vector3d& axis,
     double& lower,
     double& upper,
+    double& velocityLower,
+    double& velocityUpper,
+    double& forceLower,
+    double& forceUpper,
     double& initial,
     double& rest,
     double& damping,
@@ -1568,59 +1824,80 @@ static bool readAxisElement(
     double& spring_stiffness)
 {
   bool hasFinitePositionLimit = false;
-
-  // use_parent_model_frame
-  bool useParentModelFrame = false;
-  if (hasElement(axisElement, "use_parent_model_frame")) {
-    useParentModelFrame = getValueBool(axisElement, "use_parent_model_frame");
-  }
+  const ElementPtr axisSdfElement = axisElement.Element();
 
   // xyz
-  Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
-  if (useParentModelFrame) {
-    xyz = _parentModelFrame.rotation() * xyz;
-  }
-  axis = xyz;
+  axis = resolveAxisXyz(axisElement, _parentModelFrame, axisSdfElement);
 
   // dynamics
-  if (hasElement(axisElement, "dynamics")) {
-    const ElementPtr& dynamicsElement = getElement(axisElement, "dynamics");
-
+  if (const ElementPtr dynamicsElement
+      = findAuthoredElement(axisSdfElement, "dynamics")) {
     // damping
-    if (hasElement(dynamicsElement, "damping")) {
-      damping = getValueDouble(dynamicsElement, "damping");
+    if (hasAuthoredElement(dynamicsElement, "damping")) {
+      damping = axisElement.Damping();
     }
 
     // friction
-    if (hasElement(dynamicsElement, "friction")) {
-      friction = getValueDouble(dynamicsElement, "friction");
+    if (hasAuthoredElement(dynamicsElement, "friction")) {
+      friction = axisElement.Friction();
     }
 
     // spring reference
-    if (hasElement(dynamicsElement, "spring_reference")) {
-      rest = getValueDouble(dynamicsElement, "spring_reference");
+    if (hasAuthoredElement(dynamicsElement, "spring_reference")) {
+      rest = axisElement.SpringReference();
     }
 
     // spring stiffness
-    if (hasElement(dynamicsElement, "spring_stiffness")) {
-      spring_stiffness = getValueDouble(dynamicsElement, "spring_stiffness");
+    if (hasAuthoredElement(dynamicsElement, "spring_stiffness")) {
+      spring_stiffness = axisElement.SpringStiffness();
     }
   }
 
   // limit
-  if (hasElement(axisElement, "limit")) {
-    const ElementPtr& limitElement = getElement(axisElement, "limit");
-
+  if (const ElementPtr limitElement
+      = findAuthoredElement(axisSdfElement, "limit")) {
     // lower
-    if (hasElement(limitElement, "lower")) {
-      lower = getValueDouble(limitElement, "lower");
+    if (hasAuthoredElement(limitElement, "lower")) {
+      lower = axisElement.Lower();
       hasFinitePositionLimit = hasFinitePositionLimit || std::isfinite(lower);
     }
 
     // upper
-    if (hasElement(limitElement, "upper")) {
-      upper = getValueDouble(limitElement, "upper");
+    if (hasAuthoredElement(limitElement, "upper")) {
+      upper = axisElement.Upper();
       hasFinitePositionLimit = hasFinitePositionLimit || std::isfinite(upper);
+    }
+
+    // velocity
+    if (hasAuthoredElement(limitElement, "velocity")) {
+      const double maxVelocity = axisElement.MaxVelocity();
+      if (std::isfinite(maxVelocity) && maxVelocity >= 0.0) {
+        velocityLower = -maxVelocity;
+        velocityUpper = maxVelocity;
+      } else if (std::isinf(maxVelocity) && maxVelocity > 0.0) {
+        velocityLower = -math::inf;
+        velocityUpper = math::inf;
+      } else {
+        DART_WARN(
+            "[SdfParser] Ignoring invalid joint axis velocity limit [{}].",
+            maxVelocity);
+      }
+    }
+
+    // effort
+    if (hasAuthoredElement(limitElement, "effort")) {
+      const double effort = axisElement.Effort();
+      if (std::isfinite(effort) && effort >= 0.0) {
+        forceLower = -effort;
+        forceUpper = effort;
+      } else if (std::isinf(effort) && effort > 0.0) {
+        forceLower = -math::inf;
+        forceUpper = math::inf;
+      } else {
+        DART_WARN(
+            "[SdfParser] Ignoring invalid joint axis effort limit [{}].",
+            effort);
+      }
     }
   }
 
@@ -1645,33 +1922,31 @@ static bool readAxisElement(
 }
 
 dart::dynamics::WeldJoint::Properties readWeldJoint(
-    const ElementPtr& /*_jointElement*/,
-    const Eigen::Isometry3d&,
-    std::string_view)
+    const sdf::Joint& /*joint*/, const Eigen::Isometry3d&, std::string_view)
 {
   return dynamics::WeldJoint::Properties();
 }
 
 dynamics::RevoluteJoint::Properties readRevoluteJoint(
-    const ElementPtr& _revoluteJointElement,
+    const sdf::Joint& _revoluteJoint,
     const Eigen::Isometry3d& _parentModelFrame,
     std::string_view _name)
 {
-  DART_ASSERT(_revoluteJointElement != nullptr);
-
   dynamics::RevoluteJoint::Properties newRevoluteJoint;
 
   //--------------------------------------------------------------------------
   // axis
-  if (hasElement(_revoluteJointElement, "axis")) {
-    const ElementPtr& axisElement = getElement(_revoluteJointElement, "axis");
-
+  if (const sdf::JointAxis* axisElement = _revoluteJoint.Axis(0)) {
     const bool hasLimitedAxis = readAxisElement(
-        axisElement,
+        *axisElement,
         _parentModelFrame,
         newRevoluteJoint.mAxis,
         newRevoluteJoint.mPositionLowerLimits[0],
         newRevoluteJoint.mPositionUpperLimits[0],
+        newRevoluteJoint.mVelocityLowerLimits[0],
+        newRevoluteJoint.mVelocityUpperLimits[0],
+        newRevoluteJoint.mForceLowerLimits[0],
+        newRevoluteJoint.mForceUpperLimits[0],
         newRevoluteJoint.mInitialPositions[0],
         newRevoluteJoint.mRestPositions[0],
         newRevoluteJoint.mDampingCoefficients[0],
@@ -1686,25 +1961,25 @@ dynamics::RevoluteJoint::Properties readRevoluteJoint(
 }
 
 dynamics::PrismaticJoint::Properties readPrismaticJoint(
-    const ElementPtr& _jointElement,
+    const sdf::Joint& _joint,
     const Eigen::Isometry3d& _parentModelFrame,
     std::string_view _name)
 {
-  DART_ASSERT(_jointElement != nullptr);
-
   dynamics::PrismaticJoint::Properties newPrismaticJoint;
 
   //--------------------------------------------------------------------------
   // axis
-  if (hasElement(_jointElement, "axis")) {
-    const ElementPtr& axisElement = getElement(_jointElement, "axis");
-
+  if (const sdf::JointAxis* axisElement = _joint.Axis(0)) {
     const bool hasLimitedAxis = readAxisElement(
-        axisElement,
+        *axisElement,
         _parentModelFrame,
         newPrismaticJoint.mAxis,
         newPrismaticJoint.mPositionLowerLimits[0],
         newPrismaticJoint.mPositionUpperLimits[0],
+        newPrismaticJoint.mVelocityLowerLimits[0],
+        newPrismaticJoint.mVelocityUpperLimits[0],
+        newPrismaticJoint.mForceLowerLimits[0],
+        newPrismaticJoint.mForceUpperLimits[0],
         newPrismaticJoint.mInitialPositions[0],
         newPrismaticJoint.mRestPositions[0],
         newPrismaticJoint.mDampingCoefficients[0],
@@ -1719,25 +1994,25 @@ dynamics::PrismaticJoint::Properties readPrismaticJoint(
 }
 
 dynamics::ScrewJoint::Properties readScrewJoint(
-    const ElementPtr& _jointElement,
+    const sdf::Joint& _joint,
     const Eigen::Isometry3d& _parentModelFrame,
     std::string_view _name)
 {
-  DART_ASSERT(_jointElement != nullptr);
-
   dynamics::ScrewJoint::Properties newScrewJoint;
 
   //--------------------------------------------------------------------------
   // axis
-  if (hasElement(_jointElement, "axis")) {
-    const ElementPtr& axisElement = getElement(_jointElement, "axis");
-
+  if (const sdf::JointAxis* axisElement = _joint.Axis(0)) {
     const bool hasLimitedAxis = readAxisElement(
-        axisElement,
+        *axisElement,
         _parentModelFrame,
         newScrewJoint.mAxis,
         newScrewJoint.mPositionLowerLimits[0],
         newScrewJoint.mPositionUpperLimits[0],
+        newScrewJoint.mVelocityLowerLimits[0],
+        newScrewJoint.mVelocityUpperLimits[0],
+        newScrewJoint.mForceLowerLimits[0],
+        newScrewJoint.mForceUpperLimits[0],
         newScrewJoint.mInitialPositions[0],
         newScrewJoint.mRestPositions[0],
         newScrewJoint.mDampingCoefficients[0],
@@ -1748,37 +2023,33 @@ dynamics::ScrewJoint::Properties readScrewJoint(
     reportMissingElement("readScrewJoint", "axis", "joint", _name);
   }
 
-  // pitch
-  if (hasElement(_jointElement, "thread_pitch")) {
-    double pitch = getValueDouble(_jointElement, "thread_pitch");
-    newScrewJoint.mPitch = pitch;
-  }
+  newScrewJoint.mPitch = _joint.ScrewThreadPitch();
 
   return newScrewJoint;
 }
 
 dynamics::UniversalJoint::Properties readUniversalJoint(
-    const ElementPtr& _jointElement,
+    const sdf::Joint& _joint,
     const Eigen::Isometry3d& _parentModelFrame,
     std::string_view _name)
 {
-  DART_ASSERT(_jointElement != nullptr);
-
   dynamics::UniversalJoint::Properties newUniversalJoint;
   bool hasLimitedAxis1 = false;
   bool hasLimitedAxis2 = false;
 
   //--------------------------------------------------------------------------
   // axis
-  if (hasElement(_jointElement, "axis")) {
-    const ElementPtr& axisElement = getElement(_jointElement, "axis");
-
+  if (const sdf::JointAxis* axisElement = _joint.Axis(0)) {
     hasLimitedAxis1 = readAxisElement(
-        axisElement,
+        *axisElement,
         _parentModelFrame,
         newUniversalJoint.mAxis[0],
         newUniversalJoint.mPositionLowerLimits[0],
         newUniversalJoint.mPositionUpperLimits[0],
+        newUniversalJoint.mVelocityLowerLimits[0],
+        newUniversalJoint.mVelocityUpperLimits[0],
+        newUniversalJoint.mForceLowerLimits[0],
+        newUniversalJoint.mForceUpperLimits[0],
         newUniversalJoint.mInitialPositions[0],
         newUniversalJoint.mRestPositions[0],
         newUniversalJoint.mDampingCoefficients[0],
@@ -1790,15 +2061,17 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
 
   //--------------------------------------------------------------------------
   // axis2
-  if (hasElement(_jointElement, "axis2")) {
-    const ElementPtr& axis2Element = getElement(_jointElement, "axis2");
-
+  if (const sdf::JointAxis* axis2Element = _joint.Axis(1)) {
     hasLimitedAxis2 = readAxisElement(
-        axis2Element,
+        *axis2Element,
         _parentModelFrame,
         newUniversalJoint.mAxis[1],
         newUniversalJoint.mPositionLowerLimits[1],
         newUniversalJoint.mPositionUpperLimits[1],
+        newUniversalJoint.mVelocityLowerLimits[1],
+        newUniversalJoint.mVelocityUpperLimits[1],
+        newUniversalJoint.mForceLowerLimits[1],
+        newUniversalJoint.mForceUpperLimits[1],
         newUniversalJoint.mInitialPositions[1],
         newUniversalJoint.mRestPositions[1],
         newUniversalJoint.mDampingCoefficients[1],
@@ -1815,9 +2088,7 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
 }
 
 dynamics::BallJoint::Properties readBallJoint(
-    const ElementPtr& /*_jointElement*/,
-    const Eigen::Isometry3d&,
-    std::string_view)
+    const sdf::Joint& /*joint*/, const Eigen::Isometry3d&, std::string_view)
 {
   return dynamics::BallJoint::Properties();
 }
@@ -1851,22 +2122,77 @@ dynamics::SkeletonPtr readSkeleton(
     return nullptr;
   }
 
-  const ElementPtr sdfElement = root.Element();
-  if (!sdfElement) {
+  const sdf::World* world = nullptr;
+  const sdf::Model* model = root.Model();
+  const std::string& requestedModelName = resolvedOptions.modelName;
+  if (model && !requestedModelName.empty()
+      && model->Name() != requestedModelName) {
     DART_WARN(
-        "[SdfParser] [{}] does not contain a valid <sdf> root element.",
-        uri.toString());
+        "[SdfParser] [{}] contains top-level model [{}], not requested model "
+        "[{}].",
+        uri.toString(),
+        model->Name(),
+        requestedModelName);
     return nullptr;
   }
 
-  const ElementPtr modelElement = getElement(sdfElement, "model");
-  if (!modelElement) {
+  if (!model && root.WorldCount() > 0 && !requestedModelName.empty()) {
+    for (uint64_t i = 0; i < root.WorldCount(); ++i) {
+      const sdf::World* candidateWorld = root.WorldByIndex(i);
+      if (!candidateWorld) {
+        continue;
+      }
+
+      if (const sdf::Model* candidateModel
+          = candidateWorld->ModelByName(requestedModelName)) {
+        world = candidateWorld;
+        model = candidateModel;
+        break;
+      }
+    }
+
+    if (!model) {
+      DART_WARN(
+          "[SdfParser] [{}] does not contain requested model [{}].",
+          uri.toString(),
+          requestedModelName);
+      return nullptr;
+    }
+  }
+
+  if (!model && root.WorldCount() > 0) {
+    if (root.WorldCount() > 1) {
+      DART_WARN(
+          "[SdfParser] [{}] contains multiple <world> elements; loading the "
+          "first world's first model.",
+          uri.toString());
+    }
+
+    world = root.WorldByIndex(0);
+    if (world && world->ModelCount() > 0) {
+      if (world->ModelCount() > 1) {
+        DART_WARN(
+            "[SdfParser] [{}] contains multiple models in world [{}]; loading "
+            "the first model.",
+            uri.toString(),
+            world->Name());
+      }
+      model = world->ModelByIndex(0);
+    }
+  }
+
+  if (!model) {
     DART_WARN(
         "[SdfParser] [{}] does not contain a <model> element.", uri.toString());
     return nullptr;
   }
 
-  return readSkeleton(modelElement, uri, resolvedOptions);
+  auto skeleton = readSkeleton(*model, uri, resolvedOptions);
+  if (skeleton && world) {
+    skeleton->setGravity(toEigenVector3(world->Gravity()));
+  }
+
+  return skeleton;
 }
 
 } // namespace SdfParser

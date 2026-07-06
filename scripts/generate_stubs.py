@@ -30,7 +30,6 @@ STUB_MODULES = (
     ("dartpy._dartpy.utils", Path("dartpy/utils/__init__.pyi")),
     ("dartpy._dartpy.utils.MjcfParser", Path("dartpy/utils/MjcfParser.pyi")),
     ("dartpy._dartpy.utils.SdfParser", Path("dartpy/utils/SdfParser.pyi")),
-    ("dartpy._dartpy.utils.SkelParser", Path("dartpy/utils/SkelParser.pyi")),
 )
 
 OPTIONAL_STUB_MODULES = frozenset(

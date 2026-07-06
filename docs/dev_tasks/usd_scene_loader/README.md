@@ -24,13 +24,13 @@
 
 Make `.usda` / `.usd` scenes loadable through DART's unified IO front door so a
 researcher can drop a USD asset into a DART 7 `World` and visualize it through
-the maintained Filament renderer, with parity to the existing URDF / SDF / MJCF /
-SKEL paths.
+the maintained Filament renderer, with parity to the existing URDF / SDF / MJCF
+paths.
 
 ## Specification Intake
 
 - **Value:** researchers can load OpenUSD scenes through the same
-  `dart::io` / `dart::simulation::io` front door as URDF/SDF/MJCF/SKEL.
+  `dart::io` / `dart::simulation::io` front door as URDF/SDF/MJCF.
 - **Scope:** `dart/io/usd/`, `dart/io/read.{hpp,cpp}`, `cmake/dart_find_pxr.cmake`,
   `data/usd/`, `tests/{unit,integration}/io/`, plus (later phases) an
   `examples/` Filament viewer and `python/dartpy` bindings. Enabling OpenUSD by

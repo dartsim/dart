@@ -1,7 +1,7 @@
 # DART Release Management
 
 This guide collects release workflows that are too detailed for a command file.
-Use it with the release workflow commands in `.claude/commands/`:
+Use it with the release workflow sources in `.claude/commands/`:
 
 | Command                    | Use Case                                                   |
 | -------------------------- | ---------------------------------------------------------- |
@@ -10,8 +10,9 @@ Use it with the release workflow commands in `.claude/commands/`:
 | `/dart-release-merge-main` | Merge the active release branch back to main               |
 | `/dart-release-packaging`  | Prepare a release version bump and changelog               |
 
-Codex exposes the same workflows as `$dart-*` skills generated from those
-commands. OpenCode receives the same commands through `.opencode/command/`.
+Codex exposes the same workflows as generated `$dart-*` skill adapters from
+those sources. OpenCode receives generated command adapters through
+`.opencode/command/`.
 
 ## Branches and Milestones
 
@@ -48,6 +49,15 @@ git cherry-pick -x <COMMIT_HASH>
 ```
 
 For merge commits, use `git cherry-pick -x -m 1 <MERGE_COMMIT_HASH>`.
+
+AI-infra and workflow-doc backports need one extra check before cherry-picking.
+Compare the release branch's `docs/ai/capabilities.json`, `docs/ai/workflows.md`,
+`.claude/commands/`, `.claude/skills/`, `.codex/skills/`, and
+`.opencode/command/` against `main`. If the release branch intentionally has a
+smaller workflow surface, adapt the guidance to the release owners and
+regenerate only the affected adapters; do not add main-only workflows just to
+make the patch apply. Record a changelog entry when the backport changes
+contributor or agent behavior.
 
 ## Release Branch CI Fixes
 

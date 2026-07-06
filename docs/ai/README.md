@@ -27,12 +27,31 @@ For multi-session work, also read `docs/ai/sessions.md` and
 For project planning, also read `docs/plans/README.md`,
 `docs/plans/dashboard.md`, and `docs/plans/north-star-roadmap.md`.
 
+For documentation structure or placement work, also read `docs/README.md`,
+`docs/information-architecture.md`, and `docs/AGENTS.md`.
+
 For authoring or executing orchestrator-defined work packets, also read
 `docs/ai/orchestration.md`.
 
 For AI component maintenance or durable AI-infra self-improvement, read
-`docs/ai/components.md`, `docs/ai/verification.md`, and
+`docs/ai/terminology.md`, `docs/ai/components.md`,
+`docs/ai/verification.md`, and
 `docs/onboarding/ai-tools.md`.
+
+## Visibility And Context Budget
+
+`AGENTS.md`, this read order, and workflow `Required Reading` blocks are the
+visibility contract for agents. Do not copy the same rule into every workflow;
+move it to the owner doc, then add only the pointer needed for the workflow to
+load it.
+
+Always-loaded surfaces such as `AGENTS.md`, `docs/ai/principles.md`, and
+`docs/ai/north-star.md` must stay compact. Put procedures, compatibility
+details, and examples in the owner docs named by those entrypoints.
+
+When a documented rule is missed, use `dart-audit-agent-compliance` to diagnose
+whether the issue is owner placement, weak wording, missing required reading, a
+workflow description, or generated-adapter sync.
 
 ## Choosing The Next Task
 
@@ -57,14 +76,15 @@ still require explicit maintainer/user approval.
 | ----------------------------- | ------------------------------------------------------------------------------------- |
 | `AGENTS.md`                   | Root pointer board and mandatory high-level rules                                     |
 | `docs/ai/principles.md`       | AI-infra axioms and manual audit checklist                                            |
+| `docs/ai/terminology.md`      | Canonical AI-facing terms and migration candidates                                    |
 | `docs/ai/`                    | Durable AI-native mission, workflow map, session rules, and verification expectations |
 | `docs/ai/capabilities.json`   | Machine-readable capability status, category, and gate profile                        |
 | `docs/ai/orchestration.md`    | Orchestrator/executor roles and the work-packet contract                              |
 | `docs/onboarding/ai-tools.md` | Tool compatibility and adapter maintenance details                                    |
-| `.claude/commands/`           | Temporary editable source for DART workflow command bodies                            |
-| `.claude/skills/`             | Editable source for DART domain skills                                                |
-| `.codex/skills/`              | Generated first-class Codex workflow and skill entrypoints                            |
-| `.opencode/command/`          | Generated OpenCode command entrypoints                                                |
+| `.claude/commands/`           | Editable workflow source for DART user-invoked workflow capabilities                  |
+| `.claude/skills/`             | Editable domain-skill source for DART on-demand Agent Skills                          |
+| `.codex/skills/`              | Generated Codex adapter entrypoints for DART workflow and domain-skill capabilities   |
+| `.opencode/command/`          | Generated OpenCode command adapter entrypoints                                        |
 | `scripts/sync_ai_commands.py` | Adapter sync and AI docs consistency checker                                          |
 
 Do not hand-edit generated `.codex/` or `.opencode/` files. Update the source

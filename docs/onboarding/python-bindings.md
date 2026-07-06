@@ -58,7 +58,7 @@ namespaces:
 ```
 dartpy/
 ├── simulation    # DART 7 World and simulation object model
-├── io            # File parsers (URDF, SDF, SKEL, MJCF)
+├── io            # File parsers (URDF, SDF, MJCF)
 └── gui           # Filament-backed 3D visualization descriptors and helpers
 ```
 

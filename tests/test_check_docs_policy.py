@@ -375,6 +375,83 @@ def test_report_only_link_check_ignores_valid_internal_link(tmp_path):
     assert warnings == []
 
 
+def test_docs_information_architecture_owner_is_required(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (tmp_path / "AGENTS.md").write_text("# Agents\n", encoding="utf-8")
+    (docs / "README.md").write_text("# Docs\n", encoding="utf-8")
+    (docs / "AGENTS.md").write_text("# docs/\n", encoding="utf-8")
+
+    failures = module.check_docs_information_architecture(tmp_path)
+
+    assert any("missing docs placement owner" in failure for failure in failures)
+
+
+def test_docs_information_architecture_must_be_linked(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "information-architecture.md").write_text("# IA\n", encoding="utf-8")
+    (tmp_path / "AGENTS.md").write_text(
+        "See docs/information-architecture.md\n", encoding="utf-8"
+    )
+    (docs / "README.md").write_text("# Docs\n", encoding="utf-8")
+    (docs / "AGENTS.md").write_text(
+        "See docs/information-architecture.md\n", encoding="utf-8"
+    )
+
+    failures = module.check_docs_information_architecture(tmp_path)
+
+    assert any("docs/README.md: missing" in failure for failure in failures)
+    assert not any("docs/AGENTS.md: missing" in failure for failure in failures)
+
+
+def test_docs_information_architecture_linked_owner_passes(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    link = "docs/information-architecture.md"
+    (docs / "information-architecture.md").write_text("# IA\n", encoding="utf-8")
+    (tmp_path / "AGENTS.md").write_text(f"See {link}\n", encoding="utf-8")
+    (docs / "README.md").write_text(f"See {link}\n", encoding="utf-8")
+    (docs / "AGENTS.md").write_text(f"See {link}\n", encoding="utf-8")
+
+    assert module.check_docs_information_architecture(tmp_path) == []
+
+
+def test_docs_information_architecture_root_pointer_is_required(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    link = "docs/information-architecture.md"
+    (docs / "information-architecture.md").write_text("# IA\n", encoding="utf-8")
+    (tmp_path / "AGENTS.md").write_text("# Agents\n", encoding="utf-8")
+    (docs / "README.md").write_text(f"See {link}\n", encoding="utf-8")
+    (docs / "AGENTS.md").write_text(f"See {link}\n", encoding="utf-8")
+
+    failures = module.check_docs_information_architecture(tmp_path)
+
+    assert any("AGENTS.md: missing" in failure for failure in failures)
+
+
+def test_docs_information_architecture_root_pointer_must_be_repo_relative(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    link = "docs/information-architecture.md"
+    (docs / "information-architecture.md").write_text("# IA\n", encoding="utf-8")
+    (tmp_path / "AGENTS.md").write_text(
+        "See information-architecture.md\n", encoding="utf-8"
+    )
+    (docs / "README.md").write_text(f"See {link}\n", encoding="utf-8")
+    (docs / "AGENTS.md").write_text(f"See {link}\n", encoding="utf-8")
+
+    failures = module.check_docs_information_architecture(tmp_path)
+
+    assert any("AGENTS.md: missing" in failure for failure in failures)
+
+
 def test_docs_ai_frontmatter_pilot_requires_type_and_owner(tmp_path):
     module = _load_module()
     ai_dir = tmp_path / "docs" / "ai"

@@ -24,15 +24,16 @@ permissions:
   contents: read
 
 concurrency:
-  # Scheduled DART 6 canaries and protected release-branch manual runs should
-  # not replace pending validation.
+  # Preserve scheduled/manual evidence. There are no branch-push validations in
+  # this workflow.
   group: >-
-    ${{ (github.event_name == 'schedule' || startsWith(github.ref, 'refs/heads/release-'))
-        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
-        || format('{0}-{1}', github.workflow, github.ref) }}
+    ${{ (github.event_name == 'schedule'
+        || github.event_name == 'workflow_dispatch')
+        && format('{0}-{1}-{2}-{3}', github.workflow, github.ref, github.event_name, github.run_id)
+        || format('{0}-{1}-{2}', github.workflow, github.ref, github.event_name) }}
   cancel-in-progress: >-
     ${{ github.event_name != 'schedule'
-        && !startsWith(github.ref, 'refs/heads/release-') }}
+        && github.event_name != 'workflow_dispatch' }}
 
 jobs:
   gz-canary:

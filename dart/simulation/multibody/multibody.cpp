@@ -588,6 +588,7 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
   jointModel.armature = comps::makeJointVector(dof, 0.0);
   jointModel.coulombFriction = comps::makeJointVector(dof, 0.0);
   jointActuation.commandVelocity = comps::makeJointVector(dof, 0.0);
+  jointActuation.commandAcceleration = comps::makeJointVector(dof, 0.0);
 
   // Position, velocity, and effort limits default to unbounded.
   const double infinity = std::numeric_limits<double>::infinity();
@@ -743,6 +744,24 @@ Eigen::MatrixXd Multibody::getWorldJacobian(const Link& link) const
       registry, detail::toRegistryEntity(m_entity));
   return compute::computeMultibodyLinkWorldJacobian(
       registry, structure, detail::toRegistryEntity(link.getEntity()));
+}
+
+//==============================================================================
+Eigen::Vector3d Multibody::getCenterOfMass() const
+{
+  auto& registry = dart::simulation::detail::registryOf(*m_world);
+  const auto& structure = safeGet<comps::MultibodyStructure>(
+      registry, detail::toRegistryEntity(m_entity));
+  return compute::computeMultibodyCenterOfMass(registry, structure);
+}
+
+//==============================================================================
+Eigen::MatrixXd Multibody::getCenterOfMassJacobian() const
+{
+  auto& registry = dart::simulation::detail::registryOf(*m_world);
+  const auto& structure = safeGet<comps::MultibodyStructure>(
+      registry, detail::toRegistryEntity(m_entity));
+  return compute::computeMultibodyCenterOfMassJacobian(registry, structure);
 }
 
 //==============================================================================

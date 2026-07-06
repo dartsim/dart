@@ -44,6 +44,7 @@
 
 #include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/resource_retriever.hpp>
+#include <dart/common/result.hpp>
 #include <dart/common/uri.hpp>
 
 #include <Eigen/Core>

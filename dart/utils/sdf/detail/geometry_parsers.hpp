@@ -33,16 +33,18 @@
 #ifndef DART_UTILS_SDF_DETAIL_GEOMETRYPARSERS_HPP_
 #define DART_UTILS_SDF_DETAIL_GEOMETRYPARSERS_HPP_
 
-#include "dart/utils/sdf/detail/sdf_helpers.hpp"
+#include "dart/utils/export.hpp"
 
 #include <dart/dynamics/shape.hpp>
 
 #include <dart/common/resource_retriever.hpp>
 
+#include <sdf/Geometry.hh>
+
 namespace dart::utils::SdfParser::detail {
 
 DART_UTILS_API dynamics::ShapePtr readGeometryShape(
-    const ElementPtr& geometryElement,
+    const sdf::Geometry& geometry,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 

@@ -534,7 +534,7 @@ public:
 
 TEST(MeshShapeTest, CloneCreatesIndependentScene)
 {
-  const std::string filePath = dart::config::dataPath("skel/kima/l-foot.dae");
+  const std::string filePath = dart::config::dataPath("mesh/kima/l-foot.dae");
   const common::Uri fileUri = common::Uri::createFromPath(filePath);
   const std::string fileUriString = fileUri.toString();
   ASSERT_FALSE(fileUriString.empty());
@@ -580,7 +580,7 @@ TEST(MeshShapeTest, ColladaUnitMetadataApplied)
   GTEST_SKIP() << "Assimp build does not expose unit-size control property.";
 #endif
 
-  const std::string filePath = dart::config::dataPath("skel/kima/l-foot.dae");
+  const std::string filePath = dart::config::dataPath("mesh/kima/l-foot.dae");
   const std::string fileUri = common::Uri::createFromPath(filePath).toString();
   ASSERT_FALSE(fileUri.empty());
 
@@ -618,7 +618,7 @@ TEST(MeshShapeTest, ColladaUnitMetadataApplied)
 
 TEST(MeshShapeTest, ColladaUriWithoutExtensionStillLoads)
 {
-  const std::string filePath = dart::config::dataPath("skel/kima/l-foot.dae");
+  const std::string filePath = dart::config::dataPath("mesh/kima/l-foot.dae");
   const std::string aliasUri = "collada-nodot://meshshape/lfoot";
 
   auto aliasRetriever
@@ -796,7 +796,7 @@ TEST(MeshShapeTest, TriMeshConstructorTracksUriMetadata)
   triMesh->addVertex(0.0, 1.0, 0.0);
   triMesh->addTriangle(0, 1, 2);
 
-  const std::string filePath = dart::config::dataPath("skel/kima/l-foot.dae");
+  const std::string filePath = dart::config::dataPath("mesh/kima/l-foot.dae");
   const common::Uri fileUri = common::Uri::createFromPath(filePath);
 
   dynamics::MeshShape shape(Eigen::Vector3d::Ones(), triMesh, fileUri);
@@ -821,7 +821,7 @@ TEST(MeshShapeTest, TriMeshConstructorSkipsMaterialLoadForEmptyUri)
 
 TEST(MeshShapeTest, TriMeshConstructorPreservesMaterialsFromUri)
 {
-  const std::string filePath = dart::config::dataPath("skel/kima/l-foot.dae");
+  const std::string filePath = dart::config::dataPath("mesh/kima/l-foot.dae");
   const std::string aliasUri = "collada-nodot://meshshape/lfoot";
 
   auto aliasRetriever
