@@ -49,6 +49,13 @@ final-state hashes on all guard scenes for default-on packets.
   packet shows them in profiles.
 - Value: O(constraints) per-step overhead removed on the default serial
   path; near-zero behavior risk; default-on.
+- Prior art to mine (triaged, unmerged, hash-preserving): the unique
+  commits on `origin/perf/dart6-single-reactive-raw-root` (drop the
+  `mRootSkeleton` shared_ptr churn on the all-single-reactive path —
+  measured RTF 0.245 → 0.272, `buildConstrainedGroups` 67.9 → 40.8 ms)
+  and `origin/perf/dart6-single-reactive-union-reset` (stamped-index
+  union reset, ~4x scope reduction). Re-measure both on the round-2
+  baseline as part of this packet.
 - Scope: `dart/constraint/*` cpp + minimal additive header changes
   (virtual additions only on classes gz does not subclass — verify
   `ConstraintBase` is not part of the frozen-vtable set before landing;
@@ -63,7 +70,10 @@ final-state hashes on all guard scenes for default-on packets.
 
 #### WP-PG.12 — Generalized direct LCP assembly for single-free-body islands
 
-- Status: open
+- Status: deprioritized by WP-PG.01 evidence — on the dense-pile fixture
+  `Construct LCP` is only 7.4% of step time (solve-proper is 88.1%), and
+  one-body islands already use #3142's direct path; claim only if
+  WP-PG.10's census finds a scene class where assembly dominates.
 - Objective: extend the #3142 direct-assembly path
   (`BoxedLcpConstraintSolver.cpp:272-383`) to islands whose members are
   all 6-DoF single-free-body skeletons: build A blockwise from cached
