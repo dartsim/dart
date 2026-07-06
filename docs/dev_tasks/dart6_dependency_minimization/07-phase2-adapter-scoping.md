@@ -69,7 +69,8 @@ private:
   std::unique_ptr<native::Shape> mNativeShape;             // null if shape unsupported (warn+skip)
   Eigen::Isometry3d mNativeTransform{Eigen::Isometry3d::Identity()};
   native::Aabb mNativeAabb;
-  std::size_t mLastKnownShapeVersion = 0;                  // lazy geometry refresh guard
+  const dynamics::Shape* mLastKnownShape = nullptr;        // identity guard (shape swap)
+  std::size_t mLastKnownShapeVersion = 0;                  // version guard (in-place edit)
 };
 ```
 
@@ -119,15 +120,20 @@ private:
 ### 1.4 The three-tier refresh, realized (AABB call corrected — cpp17-entt/scope fix)
 
 1. **Membership** (base `CollisionGroup::update()`): unchanged; drives the six hooks.
-2. **Geometry** (tier-2): the detector-level hook stays a **no-op**; refresh is lazy — `NativeCollisionObject::updateEngineData()` compares `getShape()->getVersion()` against `mLastKnownShapeVersion` and calls `rebuildNativeShape()` on change (mirrors `DARTCollisionObject`'s shape-cache refresh).
+2. **Geometry** (tier-2): the detector-level hook stays a **no-op**; refresh is lazy — `NativeCollisionObject::updateEngineData()` rebuilds `mNativeShape` when **either the shape pointer changed** (a `ShapeFrame` re-assigned to a different `Shape` — fresh shapes commonly start at version 1, so a version-only guard would miss a swap; and the shape can be cleared to null) **or** the same shape's version advanced (an in-place edit). It mirrors `DARTCollisionObject`'s shape-cache refresh, which likewise keys on identity, not version alone.
 3. **Transform** (tier-3):
 ```cpp
 void NativeCollisionObject::updateEngineData() {
-  if (getShape() && getShape()->getVersion() != mLastKnownShapeVersion)
-    rebuildNativeShape();                              // resets mLastKnownShapeVersion
+  // Rebuild on shape *swap* (identity) or in-place *edit* (version); handles
+  // a shape being cleared to null. refreshCollisionObject() is a no-op, so
+  // this is the only path that replaces stale native geometry (review fix).
+  const dynamics::Shape* shape = getShape();
+  if (shape != mLastKnownShape
+      || (shape && shape->getVersion() != mLastKnownShapeVersion))
+    rebuildNativeShape();  // resets mLastKnownShape + mLastKnownShapeVersion (null-safe)
   mNativeTransform = getTransform();                   // = mShapeFrame->getWorldTransform()
   if (mNativeShape)
-    // CORRECTED: native::Shape has no computeAabb(tf); combine locally then transform.
+    // native::Shape has no computeAabb(tf); combine locally then transform.
     mNativeAabb = native::Aabb::transformed(mNativeShape->computeLocalAabb(), mNativeTransform);
 }
 void NativeCollisionGroup::updateCollisionGroupEngineData() {
@@ -282,7 +288,10 @@ Every PR description for P2/P4/P5/P6/P7/P9 flags `narrow_phase.{hpp,cpp}` as a *
 
 Two tracks. **Track A** = pure `dart::collision::native` engine (no wiring — cannot affect FCL, safest). **Track B** = adapter (wiring, but non-default). **Bridge-early ordering** de-risks the DART6↔native translation (R1) before ~5k lines of narrowphase land. The P3 bridge is split into **P3a (skeleton + registration)** and **P3b (translation + parity)** so the review-critical surface is not one oversized PR (scope fix #2).
 
-**Every PR:** milestone **DART 7.0**; branch off `release-6.20`; no AI-attribution trailer; after push comment `@codex review`; address codecov gaps on new files before merge. **Gates:** `pixi run build` (Debug+Release), the new unit tests (and `pixi run test-all` where practical), `pixi run check-lint` (full aggregate), guard-row hash capture unchanged, `pixi run -e gazebo test-gz`, and a **scope-diff assertion** (touches only `dart/collision/native/**` + its `CMakeLists` + `tests/**` — never `World.*`, `ConstraintSolver.*`, `WorldConfig`, `simulation/`, `constraint/`, or any `fcl/`/`bullet/`/`ode/` file, and never adds a `CollisionDetectorType` enum value).
+**Every PR:** milestone **DART 7.0**; branch off `release-6.20`; no AI-attribution trailer; address codecov gaps on new files before merge. Re-request a Codex review after each push (`@codex review`) **only within the approval boundary of `docs/onboarding/ai-tools.md`** — a bare agent needs explicit maintainer/user approval before posting PR comments; this is pre-authorized only when the active task (e.g. the current dependency-minimization goal) grants it. **Gates** (note `pixi run build`/`test-all` alone are insufficient — see below):
+- **Debug + Release build:** `pixi run build` is Release-only (`BUILD_TYPE=Release` is fixed in `pixi.toml`), so build Debug explicitly, e.g. `pixi run cmake -S . -B build/default/cpp/Debug -DCMAKE_BUILD_TYPE=Debug …` then `cmake --build build/default/cpp/Debug`. (Debug "nanobind not found" is the known poisoned-CMakeCache issue — `rm` the Debug `CMakeCache.txt` + reconfigure.)
+- **Runtime tests:** `pixi run test-all` only *builds* the CMake `ALL` target; it does **not** run tests. Execute them with `ctest --test-dir build/default/cpp/Release -R UNIT_collision_native --output-on-failure` (and `pixi run test` for the broader suite where practical).
+- `pixi run check-lint` (full aggregate), guard-row hash capture unchanged, `pixi run -e gazebo test-gz`, and a **scope-diff assertion** (touches only `dart/collision/native/**` + its `CMakeLists` + `tests/**` — never `World.*`, `ConstraintSolver.*`, `WorldConfig`, `simulation/`, `constraint/`, or any `fcl/`/`bullet/`/`ode/` file, and never adds a `CollisionDetectorType` enum value).
 
 > **Honest gate caveat (scope fix #5):** on the engine-only slices **P1, P2, P8** — and on **P3a**, whose `collide()` is still a stub — nothing new is reachable from the FCL-default gz path, so `test-gz` is a **non-regression guard, expected trivially green**; the substantive gates there are the new unit tests + unchanged guard-row hashes. Genuine gz-relevant signal on the new subsystem begins at **P3b**. P2 deliberately lands a dispatcher that no product code calls until P3b (and that P4/P5 re-expand); this is the accepted cost of keeping Track A pure, and it is bounded by the §2.1 bespoke-dispatcher gate.
 
@@ -323,8 +332,8 @@ Two tracks. **Track A** = pure `dart::collision::native` engine (no wiring — c
 **Registration/wiring:** NONE. The broadphase is an internal engine type; not factory-registered; touches no `dart::collision` public surface. No `World`/`ConstraintSolver`/enum changes.
 
 **Gates (all must pass before merge):**
-1. `pixi run build` — Debug **and** Release configure+compile. (Debug "nanobind not found" is the known poisoned-CMakeCache issue: `rm` the Debug `CMakeCache.txt` + reconfigure — not a code bug.)
-2. `pixi run test-all` (at minimum the new `UNIT_collision_native_brute_force` + existing `UNIT_collision_native_*`) — green.
+1. **Release build:** `pixi run config` + `pixi run cmake --build build/default/cpp/Release --target ALL --parallel 8`. **Debug build:** configure a Debug tree explicitly (`pixi run` is Release-fixed) — `pixi run cmake -S . -B build/default/cpp/Debug -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=$CONDA_PREFIX …` then build. (Debug "nanobind not found" is the poisoned-CMakeCache issue: `rm` the Debug `CMakeCache.txt` + reconfigure — not a code bug.)
+2. **Run the tests** (not just `test-all`, which only builds): `ctest --test-dir build/default/cpp/Release -R UNIT_collision_native --output-on-failure` — the new `UNIT_collision_native_brute_force` + existing `UNIT_collision_native_*` green.
 3. `pixi run -e gazebo test-gz` — **non-regression guard, expected trivially green** (nothing FCL/World/solver changed).
 4. `pixi run check-lint` — full aggregate (formatting, include order, license header on the 4 new files).
 5. **Guard-row hashes unchanged** — run the committed phase-0 capture/guard script; confirm identical hashes.
@@ -387,5 +396,7 @@ Three adversarial reviews (gz-compat, cpp17-entt, scope) each returned **SOUND-W
 | 10 | scope | Placing `dart::collision` adapter in `dart/collision/native/` makes one dir host two namespaces — not "structurally identical" to `dart/collision/dart/` | §1.1: the two-namespace layout is **documented as intentional** (snake_case=engine, PascalCase=adapter), the false "structurally identical" claim dropped, co-location justified, and the P3a PR body must call it out. |
 | 11 | scope | P1 accuracy slips: test path is flat `tests/unit/collision/test_brute_force.cpp` on main; "8 pure virtuals" is 7; `distance.cpp` needs span shim | §4: test relabeled "adapted from main's flat path, relocated to `native/`"; corrected to **7 pure virtuals**; **P8 row now states the span shim** (`distance.cpp` includes `<span>`). |
 | 12 | scope | P3 factory registration had no proof gate (static-init can silently fail to link) | §3/§6 R12: **P3a adds `EXPECT_TRUE(getFactory()->canCreate("native"))`** to `Collision.Factory`. |
+
+**PR-review refinements (#3302).** Three further defects raised on the plan PR are resolved above: (13) the lazy geometry guard now keys on **shape identity + null**, not version alone, so a `ShapeFrame` re-assigned to a fresh shape (version 1) or cleared still rebuilds the native geometry (§1.4); (14) the gate text now spells out the **real Debug build** and **`ctest`** commands, since `pixi run build` is Release-only and `pixi run test-all` only builds (§3, §4); (15) the `@codex review` step is now qualified by the **`docs/onboarding/ai-tools.md` approval boundary** for agent-run PRs (§3).
 
 **Net:** No fundamental infeasibility survived review. Nothing implicitly requires EnTT, a C++20/23 feature beyond the already-shimmed `std::span`, or a DART-7-only API. The two build-breaking items (non-existent `Shape::computeAabb(tf)`, non-existent `World::setCollisionDetector(const char*)`) are corrected to real `release-6.20` APIs; the PR-slicing bug (sphere-box parity before its collider) is fixed by pulling `sphere_box` into P3b; the reviewability defects (bespoke `narrow_phase` fork, oversized P3) are addressed with explicit gates and a P3a/P3b split. FCL-as-default and zero gz-visible behavior change are preserved and load-bearing on the scope-diff gate.
