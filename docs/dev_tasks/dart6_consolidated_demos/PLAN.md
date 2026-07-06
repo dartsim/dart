@@ -217,6 +217,37 @@ drive scenes), bullet/osgText linkage, InteractiveFrameDnD gizmo dragging.
 - [ ] Stats: RTF (smoothed/min/max), FPS, steps/refresh, counts.
 - [ ] COM/support-polygon toggles for legged scenes.
 
+## Phase 3 — Visual debugging suite  [DONE 2026-07-05]
+
+Implemented by codex-phase3 (which died on a session limit at the verify
+stage; orchestrator salvaged: rebuilt, reviewed, fixed, committed). Landed:
+log console (captures dtmsg/dtwarn/dterr via streambuf tee), scene tree +
+inspector (selection Observer-safe, paused-only clamped joint sliders,
+per-body wireframe/hide/highlight), reusable contact visualizer (256-arrow
+cap, finite-guarded, length-clamped), host-wide drag-force + gizmo-on-
+selection (InteractiveFrameDnD), profiler panel (DART_BUILD_PROFILE text
+backend, throttled), upgraded stats (contacts/constraints/steps-per-refresh/
+timestep), view utilities (shadow/grid/headlights/gui-scale/camera-home),
+plus the `preRefresh` contract hook (SleepingScene migrated) and hidden
+`--debug-select-body`/`--debug-record-profile` capture hooks. PR-a library
+fixes already in commit 9493af236.
+
+6-way crash-safety review found 2 blockers + 1 major (all "must never
+crash" violations), fixed by orchestrator before commit:
+- DragForce UAF: raw mDragBody/mGizmoBody dereferenced every frame survived
+  body deletion mid-scene (add_delete_skels + gizmo/Ctrl-drag). Fix: made
+  DragForce a dart::common::Observer (mirrors Inspector), releases on
+  handleDestructionNotification. Covers both gizmo + Ctrl-drag paths.
+- ContactVisualizer NaN/unbounded: diverging-scene NaN/huge force poisoned
+  the arrow mesh + OSG near/far. Fix: allFinite guards (before the <1e-8
+  check) + 5 m arrow clamp + synchronous hide on paused toggle-off.
+- Inspector std::clamp UB: infinite one-sided DOF limit -> lower>upper ->
+  abort on _GLIBCXX_ASSERTIONS. Fix: positionRange() ordered helper windowing
+  infinite limits around current position.
+Also: NaN guard at DragForce's addExtForce; Profiler font-relative sizing.
+Non-crash minors left documented (LogCapture single-thread assumption;
+composed-hook disable-on-scene-throw; teleport direct-write vs queued).
+
 ## Phase 4 — py-demos (PR)
 
 - [x] Verify dartpy binding coverage — `EVIDENCE-dartpy-bindings.md`.
