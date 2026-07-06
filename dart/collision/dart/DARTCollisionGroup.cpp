@@ -34,7 +34,6 @@
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
-#include "dart/common/Profile.hpp"
 
 namespace dart {
 namespace collision {
@@ -93,18 +92,12 @@ void DARTCollisionGroup::updateCollisionGroupEngineData()
 //==============================================================================
 void DARTCollisionGroup::updateEngineDataForCollide()
 {
-  {
-    DART_PROFILE_SCOPED_N("CollisionGroup update objects");
-    for (const auto& info : mObjectInfoList) {
-      auto* object = static_cast<DARTCollisionObject*>(info->mObject.get());
-      object->DARTCollisionObject::updateEngineData();
-    }
+  for (const auto& info : mObjectInfoList) {
+    auto* object = static_cast<DARTCollisionObject*>(info->mObject.get());
+    object->DARTCollisionObject::updateEngineData();
   }
 
-  {
-    DART_PROFILE_SCOPED_N("CollisionGroup update backend");
-    updateCollisionGroupEngineData();
-  }
+  updateCollisionGroupEngineData();
 }
 
 } // namespace collision

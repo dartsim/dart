@@ -34,7 +34,6 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/common/Profile.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -544,8 +543,6 @@ void SoftBodyNode::checkArticulatedInertiaUpdate() const
 //==============================================================================
 void SoftBodyNode::updateTransform()
 {
-  DART_PROFILE_SCOPED_N("SoftBodyNode::updateTransform");
-
   BodyNode::updateTransform();
 
   const std::vector<PointMass::State>& pointStates = mAspectState.mPointStates;
@@ -556,8 +553,13 @@ void SoftBodyNode::updateTransform()
 
   const Eigen::Isometry3d& parentWorldTransform = getWorldTransform();
   for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    mPointMasses[i]->updateTransform(
-        pointStates[i], pointProperties[i], parentWorldTransform);
+    PointMass& pointMass = *mPointMasses[i];
+    pointMass.mX = pointStates[i].mPositions + pointProperties[i].mX0;
+    DART_ASSERT(!math::isNan(pointMass.mX));
+
+    pointMass.mW = parentWorldTransform.translation()
+                   + parentWorldTransform.linear() * pointMass.mX;
+    DART_ASSERT(!math::isNan(pointMass.mW));
   }
 
   mNotifier->clearTransformNotice();
@@ -566,8 +568,6 @@ void SoftBodyNode::updateTransform()
 //==============================================================================
 void SoftBodyNode::updateVelocity()
 {
-  DART_PROFILE_SCOPED_N("SoftBodyNode::updateVelocity");
-
   BodyNode::updateVelocity();
 
   if (mNotifier->needsTransformUpdate())
@@ -577,8 +577,14 @@ void SoftBodyNode::updateVelocity()
   DART_ASSERT(pointStates.size() == mPointMasses.size());
 
   const Eigen::Vector6d& parentSpatialVelocity = getSpatialVelocity();
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses[i]->updateVelocity(pointStates[i], parentSpatialVelocity);
+  const Eigen::Vector3d parentAngularVelocity = parentSpatialVelocity.head<3>();
+  const Eigen::Vector3d parentLinearVelocity = parentSpatialVelocity.tail<3>();
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
+    PointMass& pointMass = *mPointMasses[i];
+    pointMass.mV = parentAngularVelocity.cross(pointMass.mX)
+                   + parentLinearVelocity + pointStates[i].mVelocities;
+    DART_ASSERT(!math::isNan(pointMass.mV));
+  }
 
   mNotifier->clearVelocityNotice();
 }
@@ -586,17 +592,17 @@ void SoftBodyNode::updateVelocity()
 //==============================================================================
 void SoftBodyNode::updatePartialAcceleration() const
 {
-  DART_PROFILE_SCOPED_N("SoftBodyNode::updatePartialAcceleration");
-
   BodyNode::updatePartialAcceleration();
 
   const std::vector<PointMass::State>& pointStates = mAspectState.mPointStates;
   DART_ASSERT(pointStates.size() == mPointMasses.size());
 
   const Eigen::Vector3d parentAngularVelocity = getSpatialVelocity().head<3>();
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses[i]->updatePartialAcceleration(
-        pointStates[i], parentAngularVelocity);
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
+    PointMass& pointMass = *mPointMasses[i];
+    pointMass.mEta = parentAngularVelocity.cross(pointStates[i].mVelocities);
+    DART_ASSERT(!math::isNan(pointMass.mEta));
+  }
 
   mNotifier->clearPartialAccelerationNotice();
 }
@@ -604,8 +610,6 @@ void SoftBodyNode::updatePartialAcceleration() const
 //==============================================================================
 void SoftBodyNode::updateAccelerationID()
 {
-  DART_PROFILE_SCOPED_N("SoftBodyNode::updateAccelerationID");
-
   BodyNode::updateAccelerationID();
 
   for (std::size_t i = 0; i < mPointMasses.size(); ++i)
@@ -618,8 +622,6 @@ void SoftBodyNode::updateAccelerationID()
 void SoftBodyNode::updateTransmittedForceID(
     const Eigen::Vector3d& _gravity, bool _withExternalForces)
 {
-  DART_PROFILE_SCOPED_N("SoftBodyNode::updateTransmittedForceID");
-
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   for (auto& pointMass : mPointMasses)
@@ -670,8 +672,6 @@ void SoftBodyNode::updateTransmittedForceID(
 void SoftBodyNode::updateJointForceID(
     double _timeStep, bool _withDampingForces, bool _withSpringForces)
 {
-  DART_PROFILE_SCOPED_N("SoftBodyNode::updateJointForceID");
-
   for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->updateJointForceID(
         _timeStep, _withDampingForces, _withSpringForces);
@@ -697,15 +697,27 @@ void SoftBodyNode::updateJointImpulseFD()
 //==============================================================================
 void SoftBodyNode::updateArtInertia(double _timeStep) const
 {
-  DART_PROFILE_SCOPED_N("SoftBodyNode::updateArtInertia");
-
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   const double dampingCoefficient = getDampingCoefficient();
   const double vertexSpringStiffness = getVertexSpringStiffness();
-  for (auto& pointMass : mPointMasses) {
-    pointMass->updateArtInertiaFD(
-        _timeStep, dampingCoefficient, vertexSpringStiffness);
+  const double implicitOffset = _timeStep * dampingCoefficient
+                                + _timeStep * _timeStep * vertexSpringStiffness;
+  const std::vector<PointMass::Properties>& pointProperties
+      = mAspectProperties.mPointProps;
+  DART_ASSERT(pointProperties.size() == mPointMasses.size());
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
+    PointMass& pointMass = *mPointMasses[i];
+    const double mass = pointProperties[i].mMass;
+    const double massSquared = mass * mass;
+    pointMass.mPsi = 1.0 / mass;
+    pointMass.mImplicitPsi = 1.0 / (mass + implicitOffset);
+    DART_ASSERT(!math::isNan(pointMass.mImplicitPsi));
+
+    pointMass.mPi = mass - massSquared * pointMass.mPsi;
+    pointMass.mImplicitPi = mass - massSquared * pointMass.mImplicitPsi;
+    DART_ASSERT(!math::isNan(pointMass.mPi));
+    DART_ASSERT(!math::isNan(pointMass.mImplicitPi));
   }
 
   DART_ASSERT(mParentJoint != nullptr);
@@ -747,8 +759,6 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
 void SoftBodyNode::updateBiasForce(
     const Eigen::Vector3d& _gravity, double _timeStep)
 {
-  DART_PROFILE_SCOPED_N("SoftBodyNode::updateBiasForce");
-
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   const bool gravityMode = BodyNode::mAspectProperties.mGravityMode;
@@ -769,23 +779,47 @@ void SoftBodyNode::updateBiasForce(
     updatePartialAcceleration();
   checkArticulatedInertiaUpdate();
 
-  for (PointMass* pointMass : mPointMasses) {
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
+    PointMass& pointMass = *mPointMasses[i];
+    const PointMass::State& state = pointStates[i];
+    const PointMass::Properties& properties = pointProperties[i];
+    const double mass = properties.mMass;
+
     // Reset internal forces of point masses before used.
     //
     // Once control force for point mass is introduced, assign it to the
     // internal force instead of always resetting the internal forces to zero.
-    pointMass->resetForces();
+    mAspectState.mPointStates[i].mForces.setZero();
 
-    pointMass->updateBiasForceFD(
-        _timeStep,
-        parentAngularVelocity,
-        localGravity,
-        gravityMode,
-        vertexSpringStiffness,
-        edgeSpringStiffness,
-        dampingCoefficient,
-        pointStates,
-        pointProperties);
+    pointMass.mB
+        = parentAngularVelocity.cross(mass * pointMass.mV) - pointMass.mFext;
+    if (gravityMode)
+      pointMass.mB -= mass * localGravity;
+    DART_ASSERT(!math::isNan(pointMass.mB));
+
+    const std::vector<std::size_t>& connections
+        = properties.mConnectedPointMassIndices;
+    const std::size_t numConnections = connections.size();
+    const double springStiffness
+        = vertexSpringStiffness + numConnections * edgeSpringStiffness;
+    pointMass.mAlpha = state.mForces - springStiffness * state.mPositions
+                       - (_timeStep * springStiffness + dampingCoefficient)
+                             * state.mVelocities
+                       - mass * pointMass.mEta - pointMass.mB;
+    for (std::size_t j = 0; j < numConnections; ++j) {
+      const std::size_t connectedIndex = connections[j];
+      DART_ASSERT(connectedIndex < pointStates.size());
+      const PointMass::State& connectedState = pointStates[connectedIndex];
+      pointMass.mAlpha += edgeSpringStiffness
+                          * (connectedState.mPositions
+                             + _timeStep * connectedState.mVelocities);
+    }
+    DART_ASSERT(!math::isNan(pointMass.mAlpha));
+
+    pointMass.mBeta = pointMass.mB;
+    pointMass.mBeta.noalias()
+        += mass * (pointMass.mEta + pointMass.mImplicitPsi * pointMass.mAlpha);
+    DART_ASSERT(!math::isNan(pointMass.mBeta));
   }
 
   // Gravity force
@@ -833,12 +867,38 @@ void SoftBodyNode::updateBiasForce(
 //==============================================================================
 void SoftBodyNode::updateAccelerationFD()
 {
-  DART_PROFILE_SCOPED_N("SoftBodyNode::updateAccelerationFD");
-
   BodyNode::updateAccelerationFD();
 
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateAccelerationFD();
+  if (mNotifier->needsTransformUpdate())
+    updateTransform();
+  if (mNotifier->needsPartialAccelerationUpdate())
+    updatePartialAcceleration();
+  checkArticulatedInertiaUpdate();
+
+  const Eigen::Vector6d& parentAcceleration = getSpatialAcceleration();
+  const Eigen::Vector3d parentAngularAcceleration
+      = parentAcceleration.head<3>();
+  const Eigen::Vector3d parentLinearAcceleration = parentAcceleration.tail<3>();
+  const std::vector<PointMass::Properties>& pointProperties
+      = mAspectProperties.mPointProps;
+  DART_ASSERT(pointProperties.size() == mPointMasses.size());
+  DART_ASSERT(mAspectState.mPointStates.size() == mPointMasses.size());
+
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
+    PointMass& pointMass = *mPointMasses[i];
+    const Eigen::Vector3d parentPointAcceleration
+        = parentAngularAcceleration.cross(pointMass.mX)
+          + parentLinearAcceleration;
+    const Eigen::Vector3d ddq
+        = pointMass.mImplicitPsi
+          * (pointMass.mAlpha
+             - pointProperties[i].mMass * parentPointAcceleration);
+    mAspectState.mPointStates[i].mAccelerations = ddq;
+    DART_ASSERT(!math::isNan(ddq));
+
+    pointMass.mA = parentPointAcceleration + pointMass.mEta + ddq;
+    DART_ASSERT(!math::isNan(pointMass.mA));
+  }
 
   mNotifier->clearAccelerationNotice();
 }
@@ -846,19 +906,25 @@ void SoftBodyNode::updateAccelerationFD()
 //==============================================================================
 void SoftBodyNode::updateTransmittedForceFD()
 {
-  DART_PROFILE_SCOPED_N("SoftBodyNode::updateTransmittedForceFD");
-
   BodyNode::updateTransmittedForceFD();
 
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateTransmittedForce();
+  if (mNotifier->needsAccelerationUpdate())
+    updateAccelerationFD();
+
+  const std::vector<PointMass::Properties>& pointProperties
+      = mAspectProperties.mPointProps;
+  DART_ASSERT(pointProperties.size() == mPointMasses.size());
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
+    PointMass& pointMass = *mPointMasses[i];
+    pointMass.mF = pointMass.mB;
+    pointMass.mF.noalias() += pointProperties[i].mMass * pointMass.mA;
+    DART_ASSERT(!math::isNan(pointMass.mF));
+  }
 }
 
 //==============================================================================
 void SoftBodyNode::updateBiasImpulse()
 {
-  DART_PROFILE_SCOPED_N("SoftBodyNode::updateBiasImpulse");
-
   for (auto& pointMass : mPointMasses)
     pointMass->updateBiasImpulseFD();
 
@@ -891,19 +957,35 @@ void SoftBodyNode::updateBiasImpulse()
 //==============================================================================
 void SoftBodyNode::updateVelocityChangeFD()
 {
-  DART_PROFILE_SCOPED_N("SoftBodyNode::updateVelocityChangeFD");
-
   BodyNode::updateVelocityChangeFD();
 
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateVelocityChangeFD();
+  if (mNotifier->needsTransformUpdate())
+    updateTransform();
+  checkArticulatedInertiaUpdate();
+
+  const Eigen::Vector6d& parentVelocityChange = getBodyVelocityChange();
+  const Eigen::Vector3d parentAngularVelocityChange
+      = parentVelocityChange.head<3>();
+  const Eigen::Vector3d parentLinearVelocityChange
+      = parentVelocityChange.tail<3>();
+
+  for (auto& pointMassPtr : mPointMasses) {
+    PointMass& pointMass = *pointMassPtr;
+    const Eigen::Vector3d parentPointVelocityChange
+        = parentAngularVelocityChange.cross(pointMass.mX)
+          + parentLinearVelocityChange;
+    pointMass.mVelocityChanges
+        = pointMass.mPsi * pointMass.mImpAlpha - parentPointVelocityChange;
+    DART_ASSERT(!math::isNan(pointMass.mVelocityChanges));
+
+    pointMass.mDelV = parentPointVelocityChange + pointMass.mVelocityChanges;
+    DART_ASSERT(!math::isNan(pointMass.mDelV));
+  }
 }
 
 //==============================================================================
 void SoftBodyNode::updateTransmittedImpulse()
 {
-  DART_PROFILE_SCOPED_N("SoftBodyNode::updateTransmittedImpulse");
-
   BodyNode::updateTransmittedImpulse();
 
   for (auto& pointMass : mPointMasses)
@@ -913,8 +995,6 @@ void SoftBodyNode::updateTransmittedImpulse()
 //==============================================================================
 void SoftBodyNode::updateConstrainedTerms(double _timeStep)
 {
-  DART_PROFILE_SCOPED_N("SoftBodyNode::updateConstrainedTerms");
-
   BodyNode::updateConstrainedTerms(_timeStep);
 
   for (auto& pointMass : mPointMasses)

@@ -925,8 +925,6 @@ bool ConstraintSolver::checkAndAddConstraint(
 //==============================================================================
 void ConstraintSolver::updateConstraints(bool updateManualConstraints)
 {
-  DART_PROFILE_SCOPED;
-
   // Clear previous active constraint list
   mActiveConstraints.clear();
   mActiveConstraintsAllSingleReactiveContacts = true;

@@ -34,7 +34,6 @@
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
-#include "dart/common/Profile.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
@@ -1858,6 +1857,8 @@ struct SoftPointFaceContact
   int faceIndex = -1;
 };
 
+constexpr double kSoftContactShell = 1e-6;
+
 bool projectPointInsideCachedTriangle(
     const Eigen::Vector3d& point,
     const DARTCollisionObject::CachedSoftFace& face,
@@ -1926,13 +1927,12 @@ bool addCachedSoftFaceCandidate(
   if (!face.valid)
     return false;
 
-  constexpr double contactShell = 1e-6;
   const double signedDistance = face.normal.dot(pointInFace) - face.planeOffset;
   const double centerSign
       = face.normal.dot(pointBodyOriginInFace) - face.planeOffset;
   const double side = centerSign >= 0.0 ? 1.0 : -1.0;
   const double separation = side * signedDistance;
-  if (separation > contactShell)
+  if (separation > kSoftContactShell)
     return false;
 
   if (!projectPointInsideCachedTriangle(pointInFace, face, signedDistance))
@@ -1984,6 +1984,8 @@ bool findSoftPointFaceContact(
     const std::vector<int>& pointFirstFaceByPointMass,
     const Eigen::Isometry3d& pointBodyTransform,
     const Eigen::Isometry3d& pointToFace,
+    const Eigen::Vector3d& faceBoundsMin,
+    const Eigen::Vector3d& faceBoundsMax,
     const Eigen::Vector3d& pointBodyOriginInFace,
     const Eigen::Matrix3d& faceRotation,
     std::size_t pointMassIndex,
@@ -1998,6 +2000,14 @@ bool findSoftPointFaceContact(
   const Eigen::Vector3d& pointLocal = pointVertices[pointMassIndex];
   const Eigen::Vector3d point = pointBodyTransform * pointLocal;
   const Eigen::Vector3d pointInFace = pointToFace * pointLocal;
+  const Eigen::Vector3d boundsPadding
+      = Eigen::Vector3d::Constant(kSoftContactShell + DART_COLLISION_EPS);
+  if ((pointInFace.array() < (faceBoundsMin - boundsPadding).array()).any()
+      || (pointInFace.array() > (faceBoundsMax + boundsPadding).array())
+             .any()) {
+    return false;
+  }
+
   int pointFaceIndex = -1;
   bool stopSearch = false;
 
@@ -2126,6 +2136,8 @@ int addSoftPointFaceContacts(
   const auto& pointVertices = pointObject->getCachedSoftLocalVertices();
   const auto& pointFirstFaceByPointMass
       = pointObject->getCachedSoftFirstFaceByPointMass();
+  const Eigen::Vector3d& faceBoundsMin = faceObject->getCachedLocalBoundsMin();
+  const Eigen::Vector3d& faceBoundsMax = faceObject->getCachedLocalBoundsMax();
 
   const Eigen::Isometry3d worldToFace = faceTransform.inverse();
   const Eigen::Isometry3d pointToFace = worldToFace * pointTransform;
@@ -2141,6 +2153,8 @@ int addSoftPointFaceContacts(
             pointFirstFaceByPointMass,
             pointTransform,
             pointToFace,
+            faceBoundsMin,
+            faceBoundsMax,
             pointBodyOriginInFace,
             faceRotation,
             i,
@@ -2182,8 +2196,6 @@ int collideSoftMeshSoftMesh(
     const Eigen::Isometry3d& T1,
     CollisionResult& result)
 {
-  DART_PROFILE_SCOPED_N("DARTCollide soft-soft vertex-face");
-
   if (softMesh0 == nullptr || softMesh1 == nullptr
       || softMesh0->getSoftBodyNode() == nullptr
       || softMesh1->getSoftBodyNode() == nullptr) {

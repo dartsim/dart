@@ -131,6 +131,7 @@ void BM_SoftBodyStep(benchmark::State& state)
     auto world = dart::utils::SkelParser::readWorld(scene.uri);
     if (!world) {
       state.SkipWithError("failed to load soft-body scene");
+      state.ResumeTiming();
       return;
     }
 
@@ -140,6 +141,7 @@ void BM_SoftBodyStep(benchmark::State& state)
           detectorEnv);
       if (!detector) {
         state.SkipWithError("failed to create collision detector");
+        state.ResumeTiming();
         return;
       }
       detectorName = detector->getType();
@@ -164,6 +166,9 @@ void BM_SoftBodyStep(benchmark::State& state)
       world->step();
 
     benchmark::DoNotOptimize(world->getTime());
+    state.PauseTiming();
+    world.reset();
+    state.ResumeTiming();
   }
 
   state.SetItemsProcessed(static_cast<std::int64_t>(
