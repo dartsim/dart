@@ -434,6 +434,16 @@
 
 * GUI
 
+  * Fix `dart::gui::osg` interaction teardown so registered handlers and
+    drag-and-drop tools are released correctly. `DefaultEventHandler::
+    addMouseEventHandler` now observes its handler so the documented
+    auto-unregister-on-destruction actually fires; previously a destroyed
+    `MouseEventHandler` left a dangling pointer in the handler list, a
+    use-after-free on the next mouse event. `InteractiveFrameDnD` now deletes
+    the nine `InteractiveToolDnD` objects it allocates instead of leaking them
+    on every teardown:
+    [#3300](https://github.com/dartsim/dart/pull/3300)
+
   * Add shared `dart-gui-osg` helpers for parsing and applying GUI scale, and
     route ImGui font/style scaling through `ImGuiHandler`:
     [#3092](https://github.com/dartsim/dart/pull/3092)
