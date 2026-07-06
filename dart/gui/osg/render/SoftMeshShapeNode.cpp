@@ -38,10 +38,10 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/gui/osg/Utils.hpp"
 
-#include <osg/CullFace>
 #include <osg/Depth>
 #include <osg/Geode>
 #include <osg/Geometry>
+#include <osg/LightModel>
 
 namespace dart {
 namespace gui {
@@ -142,10 +142,15 @@ SoftMeshShapeGeode::SoftMeshShapeGeode(
     mVisualAspect(parentNode->getVisualAspect()),
     mDrawable(nullptr)
 {
-  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
-  getOrCreateStateSet()->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
-  getOrCreateStateSet()->setAttributeAndModes(
-      new ::osg::CullFace(::osg::CullFace::BACK));
+  ::osg::StateSet* ss = getOrCreateStateSet();
+  ss->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+  ss->setRenderingHint(::osg::StateSet::TRANSPARENT_BIN);
+  ss->setMode(GL_CULL_FACE, ::osg::StateAttribute::OFF);
+
+  ::osg::ref_ptr<::osg::LightModel> lightModel = new ::osg::LightModel;
+  lightModel->setTwoSided(true);
+  ss->setAttributeAndModes(lightModel, ::osg::StateAttribute::ON);
+
   extractData();
 }
 
