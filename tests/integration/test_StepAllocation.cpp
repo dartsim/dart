@@ -69,6 +69,24 @@ constexpr double kGroundThickness = 0.1;
 
 void* volatile g_allocationSink = nullptr;
 
+bool canEnforceGlobalHeapAllocationGate()
+{
+#if defined(_WIN32)
+  return false;
+#else
+  return true;
+#endif
+}
+
+const char* globalHeapAllocationGateSkipReason()
+{
+#if defined(_WIN32)
+  return "global operator-new counter is advisory on Windows";
+#else
+  return "";
+#endif
+}
+
 class CountingDantzigBoxedLcpSolver final
   : public dart::constraint::BoxedLcpSolver
 {
@@ -582,7 +600,14 @@ void expectNativeGlobalAndBaseAllocatorGate(
       label, dart::collision::DARTCollisionDetector::create(), mode, allocator);
   reportMeasurement(label, measurement);
   EXPECT_GT(measurement.lastStepContacts, 0u);
-  EXPECT_TRUE(hasNoGlobalHeapAllocations(measurement));
+  if (canEnforceGlobalHeapAllocationGate()) {
+    EXPECT_TRUE(hasNoGlobalHeapAllocations(measurement));
+  } else {
+    recordProperty(label + "_operator_new_gate_skipped", "true");
+    recordProperty(
+        label + "_operator_new_gate_skip_reason",
+        globalHeapAllocationGateSkipReason());
+  }
   EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
 }
 

@@ -780,6 +780,8 @@ void ConstraintSolver::prepareForSimulation()
 
   const auto collidingState = snapshotCollidingState(mSkeletons);
   const auto lastCollisionContacts = mCollisionResult.getContacts();
+  const std::size_t collisionGroupContentVersion
+      = mCollisionGroup ? mCollisionGroup->getContentVersion() : 0u;
   constexpr int kPreparationPasses = 2;
   for (int pass = 0; pass < kPreparationPasses; ++pass) {
     updateConstraints(false);
@@ -787,8 +789,11 @@ void ConstraintSolver::prepareForSimulation()
     reserveConstrainedGroupsScratch();
   }
   mCollisionResult.clear();
-  for (const auto& contact : lastCollisionContacts)
-    mCollisionResult.addContact(contact);
+  if (!mCollisionGroup
+      || mCollisionGroup->getContentVersion() == collisionGroupContentVersion) {
+    for (const auto& contact : lastCollisionContacts)
+      mCollisionResult.addContact(contact);
+  }
   restoreCollidingState(collidingState);
 }
 
