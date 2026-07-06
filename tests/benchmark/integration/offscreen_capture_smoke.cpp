@@ -289,12 +289,12 @@ int main()
     }
   }
 
-  // Path 5: captureOffscreen must not accept a stale target that cannot be
-  // removed before the new frame is written.
+  // Path 5: captureOffscreen must reject a directory target before trying to
+  // remove it, even when that directory is empty and POSIX remove would
+  // otherwise delete it.
   {
     std::filesystem::remove_all(staleTargetDir);
     std::filesystem::create_directory(staleTargetDir);
-    std::ofstream((staleTargetDir / "stale.txt").string()) << "stale";
 
     auto world = buildBoxWorld();
     ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
@@ -315,6 +315,12 @@ int main()
           << "[offscreen_capture_smoke] captureOffscreen unexpectedly "
              "succeeded for stale target directory "
           << staleTargetDir << "\n";
+      return 1;
+    }
+    if (!std::filesystem::is_directory(staleTargetDir)) {
+      std::cerr << "[offscreen_capture_smoke] captureOffscreen removed target "
+                   "directory "
+                << staleTargetDir << "\n";
       return 1;
     }
     std::filesystem::remove_all(staleTargetDir);

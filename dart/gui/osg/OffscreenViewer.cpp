@@ -40,12 +40,11 @@
 #include <osg/Viewport>
 #include <osgGA/EventQueue>
 
+#include <filesystem>
 #include <fstream>
+#include <system_error>
 
-#include <cerrno>
 #include <cmath>
-#include <cstdio>
-#include <cstring>
 
 namespace dart {
 namespace gui {
@@ -148,11 +147,32 @@ bool captureOffscreen(
     return false;
   }
 
-  errno = 0;
-  if (std::remove(pngPath.c_str()) != 0 && errno != ENOENT) {
-    dterr << "[OffscreenViewer] capture failed; could not remove existing "
-          << "image at " << pngPath << ": " << std::strerror(errno) << ".\n";
+  const std::filesystem::path capturePath(pngPath);
+  std::error_code fileError;
+  const std::filesystem::file_status captureStatus
+      = std::filesystem::status(capturePath, fileError);
+  const bool targetMissing
+      = fileError == std::make_error_code(std::errc::no_such_file_or_directory);
+  if (fileError && !targetMissing) {
+    dterr << "[OffscreenViewer] capture failed; could not inspect target "
+          << pngPath << ": " << fileError.message() << ".\n";
     return false;
+  }
+
+  if (!targetMissing && std::filesystem::exists(captureStatus)) {
+    if (!std::filesystem::is_regular_file(captureStatus)) {
+      dterr << "[OffscreenViewer] capture failed; target exists but is not a "
+               "regular file: "
+            << pngPath << ".\n";
+      return false;
+    }
+
+    fileError.clear();
+    if (!std::filesystem::remove(capturePath, fileError) || fileError) {
+      dterr << "[OffscreenViewer] capture failed; could not remove existing "
+            << "image at " << pngPath << ": " << fileError.message() << ".\n";
+      return false;
+    }
   }
   viewer.captureScreen(pngPath);
   viewer.frame(); // SaveScreen writes the PNG during this frame.
