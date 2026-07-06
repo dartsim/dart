@@ -2517,7 +2517,11 @@ void World::setCollisionDetector(
     return;
   }
 
+  const auto previousCollisionDetector
+      = mConstraintSolver->getCollisionDetector();
   mConstraintSolver->setCollisionDetector(collisionDetector);
+  if (mConstraintSolver->getCollisionDetector() != previousCollisionDetector)
+    invalidateSimulationMode();
 }
 
 //==============================================================================

@@ -910,6 +910,23 @@ TEST(WorldSimulationModeMemoryManager, ThreadCountChangeInvalidatesBake)
   EXPECT_TRUE(world->isInSimulationMode());
 }
 
+TEST(WorldSimulationModeMemoryManager, CollisionDetectorChangeInvalidatesBake)
+{
+  auto world = createFallingBoxWorld("detector_change_rebake_world");
+  world->setCollisionDetector(dart::collision::DARTCollisionDetector::create());
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+
+  world->setCollisionDetector(world->getCollisionDetector());
+  EXPECT_TRUE(world->isInSimulationMode());
+
+  world->setCollisionDetector(dart::collision::DARTCollisionDetector::create());
+  EXPECT_FALSE(world->isInSimulationMode());
+
+  world->step();
+  EXPECT_TRUE(world->isInSimulationMode());
+}
+
 TEST(WorldSimulationModeMemoryManager, FrameArenaResetsEachStep)
 {
   auto world = createFallingBoxWorld("frame_arena_reset_world");
