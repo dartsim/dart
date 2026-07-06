@@ -39,7 +39,7 @@ math core — C++17, no EnTT, internal-only; FCL stays default). A follow-up
 fixed the `maxNumContacts==0` contract in native sphere-sphere (#3283 on
 main, #3298 on release-6.20).
 
-**Phase 2 is planned.** The execution plan is
+**Phase 2 is in progress.** The execution plan (merged, #3302) is
 [07-phase2-adapter-scoping.md](07-phase2-adapter-scoping.md): add an
 internal, non-default `dart::collision::NativeCollisionDetector` that
 bridges DART 6's `CollisionDetector`/`CollisionGroup`/`CollisionObject`
@@ -50,11 +50,23 @@ manager. FCL stays default; no new dependency; C++17. The plan slices
 phase 2 into PRs **P1–P9** (+ optional P10), each gz-gated and
 scope-diff-guarded.
 
-**Next: P1 — BroadPhase base + BruteForce** (pure engine, zero wiring),
-per §4 of the plan. Then P2 (dispatcher), P3a/P3b (adapter + bridge),
-P4–P9 (pair coverage). Do not add a `CollisionDetectorType::Native` enum
-or touch `World`/`ConstraintSolver`/`WorldConfig` — selection is via the
-factory pointer only (`getFactory()->create("native")`).
+- **P1** (BroadPhase base + BruteForce): **#3303** — engine-only, all
+  gates green (build, ctest, gz 199/4/1). Merging.
+- **P2** (narrowphase dispatcher, sphere/box only): **#3306** — **merged**
+  (`dart/collision/native/narrow_phase/narrow_phase.{hpp,cpp}` now on
+  `release-6.20`).
+
+**Next: P3a — adapter skeleton + `"native"` factory registration**, per
+plan §1.1/§1.2/§1.6 and the P3a row in §3, once P1 (#3303) is merged
+(P3a's adapter must compile against both the P1 broadphase and the P2
+dispatcher). Then P3b (bridge translation + `sphere_box` + parity),
+P4–P9 (pair coverage), then phases 3–7. **Do not** add a
+`CollisionDetectorType::Native` enum or touch
+`World`/`ConstraintSolver`/`WorldConfig` — selection is the factory
+pointer only (`getFactory()->create("native")`).
+
+See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
+PRs, worktrees, gotchas, exact P3a starting steps).
 
 ## Standing constraints
 
