@@ -38,6 +38,17 @@
 namespace dart {
 namespace constraint {
 
+namespace {
+
+::dart::lcpsolver::dantzig::DantzigLcpScratch<double>& dantzigScratch()
+{
+  static thread_local ::dart::lcpsolver::dantzig::DantzigLcpScratch<double>
+      scratch;
+  return scratch;
+}
+
+} // namespace
+
 //==============================================================================
 const std::string& DantzigBoxedLcpSolver::getType() const
 {
@@ -64,10 +75,34 @@ bool DantzigBoxedLcpSolver::solve(
     bool earlyTermination)
 {
   DART_PROFILE_SCOPED;
-  static thread_local ::dart::lcpsolver::dantzig::DantzigLcpScratch<double>
-      scratch;
+  auto& scratch = dantzigScratch();
   return ::dart::lcpsolver::dantzig::solveLcpWithScratch<double>(
       n, A, x, b, nullptr, 0, lo, hi, findex, scratch, earlyTermination);
+}
+
+//==============================================================================
+void DantzigBoxedLcpSolver::reserve(std::size_t n)
+{
+  if (n == 0u)
+    return;
+
+  auto& scratch = dantzigScratch();
+  const auto nskip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(n));
+  const auto nskipSize = static_cast<std::size_t>(nskip);
+  const auto ldltRemoveTmpScalars = n + 2u * nskipSize;
+
+  scratch.L.reserve(n * nskipSize);
+  scratch.d.reserve(n);
+  scratch.w.reserve(n);
+  scratch.deltaW.reserve(n);
+  scratch.deltaX.reserve(n);
+  scratch.dell.reserve(n);
+  scratch.ell.reserve(n);
+  scratch.p.reserve(n);
+  scratch.C.reserve(n);
+  scratch.ldltRemoveTmp.reserve(ldltRemoveTmpScalars);
+  scratch.rowPointers.reserve(n);
+  scratch.reserveState(n);
 }
 
 #if DART_BUILD_MODE_DEBUG
