@@ -51,9 +51,22 @@ FrameAllocator::FrameAllocator(
   if (mBuffer) {
     const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
     const auto aligned = (addr + 63) & ~uintptr_t{63};
-    mBegin = reinterpret_cast<char*>(aligned);
-    mCur = mBegin;
-    mEnd = mBuffer + mCapacity;
+    char* begin = reinterpret_cast<char*>(aligned);
+    char* end = mBuffer + mCapacity;
+    if (begin < end) {
+      mBegin = begin;
+      mCur = begin;
+      mEnd = end;
+    } else {
+      // The buffer is too small to hold a 64-byte-aligned arena, so leave the
+      // fast-path window empty (mCur == mEnd) and serve every request from the
+      // overflow path. Without this, mBegin > mEnd makes remaining = mEnd -
+      // mCur underflow to a huge size_t and the fast path returns
+      // out-of-bounds storage.
+      mBegin = mBuffer;
+      mCur = mBuffer;
+      mEnd = mBuffer;
+    }
   }
 }
 
@@ -143,7 +156,13 @@ void FrameAllocator::resetSlow() noexcept
 
   if (mBuffer) {
     const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
-    mBegin = reinterpret_cast<char*>((addr + 63) & ~uintptr_t{63});
+    char* begin = reinterpret_cast<char*>((addr + 63) & ~uintptr_t{63});
+    // Guard the same tiny-buffer case as the constructor: if a failed grow
+    // left a buffer too small for a 64-byte-aligned arena, keep the fast-path
+    // window empty (mCur == mEnd == mBuffer) instead of letting mBegin exceed
+    // mEnd.
+    mBegin = (begin < mEnd) ? begin : mBuffer;
+    mEnd = (begin < mEnd) ? mEnd : mBuffer;
   } else {
     mBegin = nullptr;
     mEnd = nullptr;
