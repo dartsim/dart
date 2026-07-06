@@ -176,6 +176,9 @@ public:
   /// deletion
   void addMouseEventHandler(MouseEventHandler* handler);
 
+  /// Remove a MouseEventHandler from this DefaultEventHandler
+  void removeMouseEventHandler(MouseEventHandler* handler);
+
   /// Get the list of MouseEventHandlers that are currently held by this
   /// DefaultEventHandler
   const std::set<MouseEventHandler*>& getMouseEventHandlers() const;
