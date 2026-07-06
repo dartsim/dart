@@ -437,7 +437,7 @@
     use-after-free on the next mouse event. `InteractiveFrameDnD` now deletes
     the nine `InteractiveToolDnD` objects it allocates instead of leaking them
     on every teardown:
-    [#XXXX](https://github.com/dartsim/dart/pull/XXXX)
+    [#3300](https://github.com/dartsim/dart/pull/3300)
 
   * Add shared `dart-gui-osg` helpers for parsing and applying GUI scale, and
     route ImGui font/style scaling through `ImGuiHandler`:
