@@ -389,8 +389,14 @@ bool DefaultEventHandler::handle(
 //==============================================================================
 void DefaultEventHandler::triggerMouseEventHandlers()
 {
-  for (MouseEventHandler* h : mMouseEventHandlers) {
-    h->update();
+  const std::vector<MouseEventHandler*> handlers(
+      mMouseEventHandlers.begin(), mMouseEventHandlers.end());
+
+  for (MouseEventHandler* handler : handlers) {
+    if (mMouseEventHandlers.find(handler) == mMouseEventHandlers.end())
+      continue;
+
+    handler->update();
   }
 }
 
