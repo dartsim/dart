@@ -409,7 +409,7 @@
     GUI programs they replace are retired, leaving only specialized standalone
     examples (`hello_world`, `cylindrical_constraint`, `speed_test`,
     `contact_benchmark`, and the dartpy `ssik_analytical_ik`):
-    [#XXXX](https://github.com/dartsim/dart/pull/XXXX)
+    [#3301](https://github.com/dartsim/dart/pull/3301)
 
   * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
     prebuilt IK modules and changing target and solver options online. Every IK
@@ -426,16 +426,6 @@
     [#3092](https://github.com/dartsim/dart/pull/3092)
 
 * GUI
-
-  * Fix `dart::gui::osg` interaction teardown so registered handlers and
-    drag-and-drop tools are released correctly. `DefaultEventHandler::
-    addMouseEventHandler` now observes its handler so the documented
-    auto-unregister-on-destruction actually fires; previously a destroyed
-    `MouseEventHandler` left a dangling pointer in the handler list, a
-    use-after-free on the next mouse event. `InteractiveFrameDnD` now deletes
-    the nine `InteractiveToolDnD` objects it allocates instead of leaking them
-    on every teardown:
-    [#XXXX](https://github.com/dartsim/dart/pull/XXXX)
 
   * Add shared `dart-gui-osg` helpers for parsing and applying GUI scale, and
     route ImGui font/style scaling through `ImGuiHandler`:
