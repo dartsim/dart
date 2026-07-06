@@ -9,21 +9,32 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packet
 
-**WP-PG.01 — Round-2 baseline evidence packet**
-([06-infra-evidence-lane.md](06-infra-evidence-lane.md)). Everything else
-depends on it. Branch `wp-pg-01-baseline-evidence` off
-`origin/release-6.20`; capture the exact cell matrix in
-[01-baseline-evidence.md](01-baseline-evidence.md) (canonical commands
-are spelled there, including `pixi run -e gazebo download-gz-sim` for the
-3k scenes); triage the six prior-art branches; commit the guard-row
-tables into that doc; PR title `WP-PG.01: Round-2 baseline evidence
-packet`.
+**Current claimed packet: WP-PG.42 — SoA broadphase sweep batching**
+([05-simd-enablement-lane.md](05-simd-enablement-lane.md)). Branch
+`wp-pg-42-soa-broadphase-simd` off `origin/release-6.20` carries the
+first production `dart/simd` consumer in DART 6: AVX-width finite
+broadphase candidate screening in the existing DART detector, with
+scalar/SSE/NEON builds preserving the previous scalar sweep shape. The
+standalone WP-PG.40 PR #3270 was closed by maintainer direction; its
+D1/D2 evidence rides with this actual SIMD-kernel PR.
+
+Immediate next step: refresh the local evidence after any edits, including
+the focused detector test, scalar/SSE4.2/AVX/AVX2 SIMD workflow-equivalent
+matrix, contact-container macro rows, and the `--profile` finite-finite
+sweep share now exposed by this branch's text-profiler labels.
+
+After WP-PG.42 lands, return to **WP-PG.01 — Round-2 baseline evidence
+packet** ([06-infra-evidence-lane.md](06-infra-evidence-lane.md)) unless a
+newer maintainer direction overrides it. Branch `wp-pg-01-baseline-evidence`
+off `origin/release-6.20`; capture the exact cell matrix in
+[01-baseline-evidence.md](01-baseline-evidence.md), triage the six
+prior-art branches, and commit the guard-row tables into that doc.
 
 Available in parallel after (or alongside, in a second session):
-WP-PG.02, WP-PG.03, WP-PG.40 (no deps; resolves D1/D2), then WP-PG.10,
-WP-PG.11, WP-PG.20, WP-PG.22, WP-PG.30, WP-PG.31. Packets marked
-blocked/gated (PG.04, PG.13, PG.14, PG.15, PG.23, PG.33, PG.41, PG.42)
-must not be claimed until their decision or evidence gate lands.
+WP-PG.02, WP-PG.03, then WP-PG.10, WP-PG.11, WP-PG.20, WP-PG.22,
+WP-PG.30, WP-PG.31. WP-PG.40 is folded into WP-PG.42. Packets marked
+blocked/gated (PG.04, PG.13, PG.14, PG.15, PG.23, PG.33, PG.41) must not
+be claimed until their decision or evidence gate lands.
 
 ## Verify commands (every packet)
 
@@ -59,3 +70,7 @@ reduction now vs WS-F phase 3) — see README "Open decisions".
   branch handoff (prior-art inventory + rejected-experiments list).
   Adversarial plan review applied (sequencing consistency, WP-PG.11
   re-scope, WP-PG.13 premise correction, success criteria added).
+- 2026-07-05: WP-PG.40 standalone PR #3270 closed per maintainer
+  direction. WP-PG.42 claimed on `wp-pg-42-soa-broadphase-simd`; live
+  WS-F check found #3281 merged only internal native collision math, so
+  this branch remains the DART 6 detector SIMD-consumer path.
