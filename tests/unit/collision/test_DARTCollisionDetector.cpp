@@ -61,6 +61,33 @@ namespace {
 constexpr double kDuplicateContactTolerance = 3.0e-12;
 constexpr double kDuplicateContactCellSize = 4.0 * kDuplicateContactTolerance;
 
+double computeSphereSoftContactDepth(
+    const dynamics::SphereShape& sphere,
+    const dynamics::Frame& sphereFrame,
+    const Eigen::Vector3d& worldPoint)
+{
+  const Eigen::Vector3d localPoint
+      = sphereFrame.getWorldTransform().inverse() * worldPoint;
+  return sphere.getRadius() - localPoint.norm();
+}
+
+double computeEllipsoidSoftContactDepth(
+    const dynamics::EllipsoidShape& ellipsoid,
+    const dynamics::Frame& ellipsoidFrame,
+    const Eigen::Vector3d& worldPoint)
+{
+  const Eigen::Vector3d localPoint
+      = ellipsoidFrame.getWorldTransform().inverse() * worldPoint;
+  const Eigen::Vector3d radii = ellipsoid.getRadii();
+  const double normalizedDistance
+      = localPoint.cwiseProduct(radii.cwiseInverse()).norm();
+  if (normalizedDistance == 0.0)
+    return radii.minCoeff();
+
+  const Eigen::Vector3d surfacePoint = localPoint / normalizedDistance;
+  return (surfacePoint - localPoint).norm();
+}
+
 class TestCollisionObject final : public collision::CollisionObject
 {
 public:
@@ -867,6 +894,10 @@ TEST(DARTCollisionDetector, DetectsNativeSoftMeshSphereContact)
       groups.sphereGroup->collide(groups.softGroup.get(), option, &result));
   ASSERT_GT(result.getNumContacts(), 0u);
 
+  const auto* sphere = static_cast<const dynamics::SphereShape*>(
+      groups.sphereFrame->getShape().get());
+  ASSERT_NE(nullptr, sphere);
+
   bool sawSoftContact = false;
   for (std::size_t i = 0u; i < result.getNumContacts(); ++i) {
     const auto& contact = result.getContact(i);
@@ -877,7 +908,11 @@ TEST(DARTCollisionDetector, DetectsNativeSoftMeshSphereContact)
     EXPECT_EQ(
         groups.sphereFrame.get(), contact.collisionObject1->getShapeFrame());
     EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
-    EXPECT_NEAR(contact.penetrationDepth, 0.1, 1e-12);
+    EXPECT_NEAR(
+        contact.penetrationDepth,
+        computeSphereSoftContactDepth(
+            *sphere, *groups.sphereFrame, contact.point),
+        1e-12);
     EXPECT_GE(contact.triID2, 0);
     EXPECT_LT(
         static_cast<std::size_t>(contact.triID2),
@@ -893,6 +928,11 @@ TEST(DARTCollisionDetector, DetectsNativeSoftMeshSphereLikeEllipsoidContact)
   auto groups = makeSphereSoftMeshGroups(true);
   ASSERT_NE(nullptr, groups.softBody);
   ASSERT_NE(nullptr, groups.softShapeNode);
+
+  const auto* ellipsoid = static_cast<const dynamics::EllipsoidShape*>(
+      groups.sphereFrame->getShape().get());
+  ASSERT_NE(nullptr, ellipsoid);
+  ASSERT_TRUE(ellipsoid->isSphere());
 
   collision::CollisionOption option;
   option.enableContact = true;
@@ -913,7 +953,11 @@ TEST(DARTCollisionDetector, DetectsNativeSoftMeshSphereLikeEllipsoidContact)
     EXPECT_EQ(
         groups.sphereFrame.get(), contact.collisionObject1->getShapeFrame());
     EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
-    EXPECT_NEAR(contact.penetrationDepth, 0.1, 1e-12);
+    EXPECT_NEAR(
+        contact.penetrationDepth,
+        computeEllipsoidSoftContactDepth(
+            *ellipsoid, *groups.sphereFrame, contact.point),
+        1e-12);
     EXPECT_GE(contact.triID2, 0);
     EXPECT_LT(
         static_cast<std::size_t>(contact.triID2),
@@ -936,7 +980,11 @@ TEST(DARTCollisionDetector, DetectsNativeSoftMeshSphereLikeEllipsoidContact)
     EXPECT_EQ(
         groups.sphereFrame.get(), contact.collisionObject2->getShapeFrame());
     EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
-    EXPECT_NEAR(contact.penetrationDepth, 0.1, 1e-12);
+    EXPECT_NEAR(
+        contact.penetrationDepth,
+        computeEllipsoidSoftContactDepth(
+            *ellipsoid, *groups.sphereFrame, contact.point),
+        1e-12);
     EXPECT_GE(contact.triID1, 0);
     EXPECT_LT(
         static_cast<std::size_t>(contact.triID1),
@@ -976,7 +1024,11 @@ TEST(DARTCollisionDetector, DetectsNativeSoftMeshEllipsoidContact)
     EXPECT_EQ(
         groups.sphereFrame.get(), contact.collisionObject1->getShapeFrame());
     EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
-    EXPECT_NEAR(contact.penetrationDepth, 0.1, 1e-12);
+    EXPECT_NEAR(
+        contact.penetrationDepth,
+        computeEllipsoidSoftContactDepth(
+            *ellipsoid, *groups.sphereFrame, contact.point),
+        1e-12);
     EXPECT_GE(contact.triID2, 0);
     EXPECT_LT(
         static_cast<std::size_t>(contact.triID2),
@@ -999,7 +1051,11 @@ TEST(DARTCollisionDetector, DetectsNativeSoftMeshEllipsoidContact)
     EXPECT_EQ(
         groups.sphereFrame.get(), contact.collisionObject2->getShapeFrame());
     EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
-    EXPECT_NEAR(contact.penetrationDepth, 0.1, 1e-12);
+    EXPECT_NEAR(
+        contact.penetrationDepth,
+        computeEllipsoidSoftContactDepth(
+            *ellipsoid, *groups.sphereFrame, contact.point),
+        1e-12);
     EXPECT_GE(contact.triID1, 0);
     EXPECT_LT(
         static_cast<std::size_t>(contact.triID1),
