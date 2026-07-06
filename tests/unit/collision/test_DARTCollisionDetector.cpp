@@ -121,6 +121,8 @@ struct PlaneSoftMeshGroups
   dynamics::SoftBodyNode* softBody{nullptr};
   dynamics::ShapeNode* softShapeNode{nullptr};
   std::unique_ptr<collision::CollisionGroup> group;
+  std::unique_ptr<collision::CollisionGroup> planeGroup;
+  std::unique_ptr<collision::CollisionGroup> softGroup;
 };
 
 PlaneSoftMeshGroups makePlaneSoftMeshGroups(double softCenterZ)
@@ -156,6 +158,10 @@ PlaneSoftMeshGroups makePlaneSoftMeshGroups(double softCenterZ)
       = groups.softBody->getShapeNodeWith<dynamics::CollisionAspect>(0);
   groups.group = groups.detector->createCollisionGroup(
       groups.planeFrame.get(), groups.softShapeNode);
+  groups.planeGroup
+      = groups.detector->createCollisionGroup(groups.planeFrame.get());
+  groups.softGroup
+      = groups.detector->createCollisionGroup(groups.softShapeNode);
 
   return groups;
 }
@@ -727,6 +733,52 @@ TEST(DARTCollisionDetector, DetectsNativeSoftMeshPlaneContact)
   }
 
   EXPECT_TRUE(sawSoftContact);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, KeepsNativeSoftPlaneContactPointOnCollidingVertex)
+{
+  auto groups = makePlaneSoftMeshGroups(0.45);
+  ASSERT_NE(nullptr, groups.planeGroup);
+  ASSERT_NE(nullptr, groups.softGroup);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  collision::CollisionResult primitiveFirstResult;
+  EXPECT_TRUE(groups.planeGroup->collide(
+      groups.softGroup.get(), option, &primitiveFirstResult));
+  ASSERT_GT(primitiveFirstResult.getNumContacts(), 0u);
+
+  bool sawPrimitiveFirstContact = false;
+  for (std::size_t i = 0u; i < primitiveFirstResult.getNumContacts(); ++i) {
+    const auto& contact = primitiveFirstResult.getContact(i);
+    if (contact.collisionObject2->getShapeFrame() != groups.softShapeNode)
+      continue;
+
+    sawPrimitiveFirstContact = true;
+    EXPECT_GT(contact.penetrationDepth, 0.0);
+    EXPECT_NEAR(contact.point.z(), -contact.penetrationDepth, 1e-12);
+  }
+  EXPECT_TRUE(sawPrimitiveFirstContact);
+
+  collision::CollisionResult softFirstResult;
+  EXPECT_TRUE(groups.softGroup->collide(
+      groups.planeGroup.get(), option, &softFirstResult));
+  ASSERT_GT(softFirstResult.getNumContacts(), 0u);
+
+  bool sawSoftFirstContact = false;
+  for (std::size_t i = 0u; i < softFirstResult.getNumContacts(); ++i) {
+    const auto& contact = softFirstResult.getContact(i);
+    if (contact.collisionObject1->getShapeFrame() != groups.softShapeNode)
+      continue;
+
+    sawSoftFirstContact = true;
+    EXPECT_GT(contact.penetrationDepth, 0.0);
+    EXPECT_NEAR(contact.point.z(), -contact.penetrationDepth, 1e-12);
+  }
+  EXPECT_TRUE(sawSoftFirstContact);
 }
 
 //==============================================================================

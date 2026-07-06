@@ -1572,7 +1572,7 @@ int collidePlaneSoftMesh(
     Contact contact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
-    contact.point = worldVertex - worldNormal * signedDist;
+    contact.point = worldVertex;
     contact.normal = -worldNormal;
     contact.penetrationDepth = std::max(0.0, -signedDist);
     contact.triID2 = faceIndex;
@@ -1618,7 +1618,7 @@ int collideSoftMeshPlane(
     Contact contact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
-    contact.point = worldVertex - worldNormal * signedDist;
+    contact.point = worldVertex;
     contact.normal = worldNormal;
     contact.penetrationDepth = std::max(0.0, -signedDist);
     contact.triID1 = faceIndex;
