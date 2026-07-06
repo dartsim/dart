@@ -48,3 +48,31 @@ take island colors and dim when asleep.
 The headless mode steps the world directly (independent of the real-time
 clock), so the captured frame deterministically shows the settled, sleeping
 state.
+
+## Off-screen capture and Xvfb
+
+`--headless` renders through the shared `dart::gui::osg` off-screen helper
+([`dart/gui/osg/OffscreenViewer.hpp`](../../dart/gui/osg/OffscreenViewer.hpp)):
+`setUpOffscreenViewer()` attaches a GLX pbuffer to the viewer and realizes it,
+`captureOffscreen()` is one-shot sugar for a single still, and
+`defaultAgentCamera()` frames the scene bounding sphere from a canonical 3/4
+view. The same helper backs the `ssik_ik_gui` example.
+
+The pbuffer path needs an X server. On a workstation with a display it works as
+shown above. On a headless host (CI, a container, or an SSH session with no
+`DISPLAY`) wrap the command in `xvfb-run`:
+
+    xvfb-run -a -s '-screen 0 1280x1024x24' ./sleeping --headless --shot out.png
+
+If no X server is reachable, the helper logs this same `xvfb-run` hint and the
+example exits non-zero rather than producing a blank image.
+
+From a checkout you can build-and-capture in one step with the pixi task
+(prefix with `xvfb-run` on a headless host):
+
+    pixi run capture                                    # sleeping, 640x480 -> capture.png
+    pixi run capture example=ssik_ik_gui out=arm.png    # another example
+
+The opt-in `offscreen_capture_smoke` ctest (enable with
+`-DDART_ENABLE_GUI_OSG_SMOKE_TESTS=ON`) exercises this helper and asserts the
+captured PNG is non-blank; it skips cleanly when no `DISPLAY` is present.
