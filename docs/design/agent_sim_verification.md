@@ -60,6 +60,24 @@ seeded defects and clean controls. The default capture recommendation above
 should change only after those measured deltas beat the current single-frame
 baseline without increasing control false positives.
 
+**Round 2 result (2026-07-06).** A fresh blinded DART 7 packet
+(`study_id=agent-sim-image-ab-round2-20260706`, one visual judge, 16 rows) did
+not justify changing the default image capture:
+
+| Arm        | Detection | Delta vs single | False positives |
+| ---------- | --------: | --------------: | --------------: |
+| single     |       2/2 |             n/a |             2/2 |
+| multi-view |       0/2 |            -2/2 |             1/2 |
+| turntable  |       2/2 |             0/2 |             2/2 |
+| annotated  |       2/2 |             0/2 |             1/2 |
+
+Annotations reduced false positives relative to this small single-view control
+but did not improve defect detection; multi-view reduced detection; turntables
+matched single-view detection with the same high false-positive rate. The
+result reaffirms the existing recommendation: keep images as corroboration,
+prefer a single clean 3/4-view still by default, add grids only for motion
+questions, and use metrics, trajectories, and scene JSON to decide correctness.
+
 ## Image-comparison tolerance policy
 
 Golden-image comparison is opt-in, never a default-CI gate (renderer/driver

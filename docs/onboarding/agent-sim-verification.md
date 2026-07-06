@@ -69,9 +69,10 @@ dynamic failures (explosions, tunneling); use text to decide correctness.
   `image-ab-round2 -- score` subcommand using `--answer-key`, `--observations`,
   `--out`, and optional `--results` paths.
 - **Recommended default capture**: one ~1280 px frame, UI hidden, from the 3/4
-  view; add a 9-frame grid for motion questions. Avoid filmstrips (they read
-  worst in the A/B). Keep images as corroboration, never the sole oracle for
-  static geometry.
+  view; add a 9-frame grid for motion questions. Avoid filmstrips; round-2
+  multi-view, turntable, and annotation studies did not improve static-defect
+  detection enough to replace the default. Keep images as corroboration, never
+  the sole oracle for static geometry.
 
 ## Opt-in extras and gates
 
