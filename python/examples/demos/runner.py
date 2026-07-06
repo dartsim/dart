@@ -282,7 +282,11 @@ class Navigator(dart.gui.osg.GUIEventHandler):
 
     def handle(self, ea, aa):
         ea_cls = dart.gui.osg.GUIEventAdapter
-        if ea.getEventType() == ea_cls.KEYDOWN:
+        event_type = ea.getEventType()
+        if event_type in (ea_cls.CLOSE_WINDOW, ea_cls.QUIT_APPLICATION):
+            self.running = False
+            return False
+        if event_type == ea_cls.KEYDOWN:
             key = ea.getKey()
             if key in (ord("n"), ord("N")):
                 self.select(1)

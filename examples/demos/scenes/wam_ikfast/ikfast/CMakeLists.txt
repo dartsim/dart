@@ -28,11 +28,13 @@ target_compile_options(dart_demos_wam_ikfast PRIVATE -w)
 # (to that project's own build dir) before this subdirectory is added, so this
 # child scope inherits it. WamIkFastScene.cpp is compiled with the same path as
 # DART_DEMOS_IKFAST_DIR so its dlopen lookup finds the library here, identically
-# in the in-source and standalone builds.
+# in the in-source and standalone builds. The generator expression prevents
+# multi-config generators from appending Debug/Release below this directory.
 set_target_properties(
   dart_demos_wam_ikfast
   PROPERTIES
     OUTPUT_NAME "dartDemosWamIk"
-    LIBRARY_OUTPUT_DIRECTORY "${dart_demos_ikfast_output_dir}"
-    ARCHIVE_OUTPUT_DIRECTORY "${dart_demos_ikfast_output_dir}"
+    RUNTIME_OUTPUT_DIRECTORY "$<1:${dart_demos_ikfast_output_dir}>"
+    LIBRARY_OUTPUT_DIRECTORY "$<1:${dart_demos_ikfast_output_dir}>"
+    ARCHIVE_OUTPUT_DIRECTORY "$<1:${dart_demos_ikfast_output_dir}>"
 )
