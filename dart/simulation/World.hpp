@@ -643,6 +643,8 @@ protected:
 
   std::vector<FreeRootVelocitySnapshot> mPreSolveFreeRootVelocityScratch;
   std::vector<char> mShallowSupportedFreeRootScratch;
+  std::vector<std::pair<const dynamics::Skeleton*, std::size_t>>
+      mSkeletonIndexScratch;
   std::vector<char> mDisturbedThisStepScratch;
 
   struct AllRestingKinematicSnapshot

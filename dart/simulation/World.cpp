@@ -56,6 +56,7 @@
 
 #include <algorithm>
 #include <condition_variable>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -174,7 +175,9 @@ void findShallowSupportedFreeRoots(
     const std::vector<dynamics::SkeletonPtr>& skeletons,
     const collision::CollisionResult& contacts,
     const Eigen::Vector3d& gravity,
-    std::vector<char>& supported)
+    std::vector<char>& supported,
+    std::vector<std::pair<const dynamics::Skeleton*, std::size_t>>&
+        skeletonIndexScratch)
 {
   supported.clear();
   supported.resize(skeletons.size(), false);
@@ -187,12 +190,32 @@ void findShallowSupportedFreeRoots(
   constexpr double kSupportContactPenetrationTolerance = 1e-4;
   constexpr double kSupportNormalMinVerticalComponent = 0.5;
 
+  skeletonIndexScratch.clear();
+  skeletonIndexScratch.reserve(skeletons.size());
+  for (std::size_t i = 0; i < skeletons.size(); ++i) {
+    if (skeletons[i])
+      skeletonIndexScratch.emplace_back(skeletons[i].get(), i);
+  }
+  const std::less<const dynamics::Skeleton*> skeletonLess;
+  std::sort(
+      skeletonIndexScratch.begin(),
+      skeletonIndexScratch.end(),
+      [&](const auto& lhs, const auto& rhs) {
+        return skeletonLess(lhs.first, rhs.first);
+      });
+
   const auto findSkeletonIndex
       = [&](const dynamics::Skeleton* skeleton) -> std::size_t {
-    for (std::size_t i = 0; i < skeletons.size(); ++i) {
-      if (skeletons[i].get() == skeleton)
-        return i;
-    }
+    const auto search = std::lower_bound(
+        skeletonIndexScratch.begin(),
+        skeletonIndexScratch.end(),
+        skeleton,
+        [&](const auto& entry, const dynamics::Skeleton* value) {
+          return skeletonLess(entry.first, value);
+        });
+    if (search != skeletonIndexScratch.end() && search->first == skeleton)
+      return search->second;
+
     return skeletons.size();
   };
 
@@ -379,6 +402,7 @@ void World::reserveMemoryManagerForSimulationShape()
 
   mPreSolveFreeRootVelocityScratch.reserve(numSkeletons);
   mShallowSupportedFreeRootScratch.reserve(numSkeletons);
+  mSkeletonIndexScratch.reserve(numSkeletons);
   mDisturbedThisStepScratch.reserve(numSkeletons);
 }
 
@@ -1241,7 +1265,8 @@ void World::step(bool _resetCommand)
         mSkeletons,
         mConstraintSolver->getLastCollisionResult(),
         mGravity,
-        mShallowSupportedFreeRootScratch);
+        mShallowSupportedFreeRootScratch,
+        mSkeletonIndexScratch);
     clearUnsupportedShallowSupportFreeRootVelocityStates(
         mShallowSupportedFreeRootScratch, preSolveFreeRootVelocities);
 
@@ -1409,7 +1434,8 @@ void World::step(bool _resetCommand)
       mSkeletons,
       mConstraintSolver->getLastCollisionResult(),
       mGravity,
-      mShallowSupportedFreeRootScratch);
+      mShallowSupportedFreeRootScratch,
+      mSkeletonIndexScratch);
   clearUnsupportedShallowSupportFreeRootVelocityStates(
       mShallowSupportedFreeRootScratch, preSolveFreeRootVelocities);
 
