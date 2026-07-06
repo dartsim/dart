@@ -32,6 +32,7 @@
 
 #include <dart/collision/native/narrow_phase/box_box.hpp>
 #include <dart/collision/native/narrow_phase/narrow_phase.hpp>
+#include <dart/collision/native/narrow_phase/sphere_box.hpp>
 #include <dart/collision/native/narrow_phase/sphere_sphere.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
@@ -40,6 +41,38 @@
 namespace dart::collision::native {
 
 namespace {
+
+template <typename CollideFn>
+bool collideWithFlippedNormals(
+    CollisionResult& result,
+    const CollisionOption& option,
+    CollideFn&& collideFn)
+{
+  const auto existingContacts = result.numContacts();
+  if (option.enableContact && existingContacts >= option.maxNumContacts) {
+    return false;
+  }
+
+  CollisionOption localOption = option;
+  if (option.enableContact) {
+    localOption.maxNumContacts = option.maxNumContacts - existingContacts;
+  }
+
+  CollisionResult localResult;
+  const bool hit = collideFn(localResult, localOption);
+  if (!hit) {
+    return false;
+  }
+
+  const auto numContacts = localResult.numContacts();
+  for (std::size_t i = 0; i < numContacts; ++i) {
+    ContactPoint contact = localResult.getContact(i);
+    contact.normal = -contact.normal;
+    result.addContact(contact);
+  }
+
+  return true;
+}
 
 bool collideShapes(
     const Shape* shape1,
@@ -70,6 +103,23 @@ bool collideShapes(
     const auto* b1 = static_cast<const BoxShape*>(shape1);
     const auto* b2 = static_cast<const BoxShape*>(shape2);
     return collideBoxes(*b1, tf1, *b2, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Sphere && type2 == ShapeType::Box) {
+    const auto* s = static_cast<const SphereShape*>(shape1);
+    const auto* b = static_cast<const BoxShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collideSphereBox(*s, tf1, *b, tf2, local, opt);
+        });
+  }
+
+  if (type1 == ShapeType::Box && type2 == ShapeType::Sphere) {
+    const auto* b = static_cast<const BoxShape*>(shape1);
+    const auto* s = static_cast<const SphereShape*>(shape2);
+    return collideSphereBox(*s, tf2, *b, tf1, result, option);
   }
 
   return false;
@@ -146,6 +196,10 @@ bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)
     return true;
   }
   if (type1 == ShapeType::Box && type2 == ShapeType::Box) {
+    return true;
+  }
+  if ((type1 == ShapeType::Sphere && type2 == ShapeType::Box)
+      || (type1 == ShapeType::Box && type2 == ShapeType::Sphere)) {
     return true;
   }
   return false;

@@ -106,6 +106,40 @@ TEST(NarrowPhaseDispatch, RoutesOverlappingBoxBox)
   EXPECT_GE(result.numContacts(), 1u);
 }
 
+TEST(NarrowPhaseDispatch, RoutesSphereBoxInBothOrders)
+{
+  SphereShape sphere(1.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  CollisionResult sphereFirstResult;
+  const bool sphereFirstHit = NarrowPhase::collide(
+      &sphere,
+      translated(0.0, 0.0, 1.5),
+      &box,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption(),
+      sphereFirstResult);
+
+  ASSERT_TRUE(sphereFirstHit);
+  ASSERT_EQ(1u, sphereFirstResult.numContacts());
+  EXPECT_TRUE(sphereFirstResult.getContact(0).normal.isApprox(
+      Eigen::Vector3d::UnitZ(), 1e-12));
+
+  CollisionResult boxFirstResult;
+  const bool boxFirstHit = NarrowPhase::collide(
+      &box,
+      Eigen::Isometry3d::Identity(),
+      &sphere,
+      translated(0.0, 0.0, 1.5),
+      CollisionOption(),
+      boxFirstResult);
+
+  ASSERT_TRUE(boxFirstHit);
+  ASSERT_EQ(1u, boxFirstResult.numContacts());
+  EXPECT_TRUE(boxFirstResult.getContact(0).normal.isApprox(
+      -Eigen::Vector3d::UnitZ(), 1e-12));
+}
+
 TEST(NarrowPhaseDispatch, ReturnsFalseForUnroutedPairs)
 {
   SphereShape sphere(1.0);
@@ -245,13 +279,13 @@ TEST(NarrowPhaseDispatch, BatchRejectsNullShapes)
       std::invalid_argument);
 }
 
-TEST(NarrowPhaseDispatch, ReportsSupportOnlyForSphereSphereAndBoxBox)
+TEST(NarrowPhaseDispatch, ReportsP3bSupportedPairs)
 {
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Sphere));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Box, ShapeType::Box));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Box));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Box, ShapeType::Sphere));
 
-  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Box));
-  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Box, ShapeType::Sphere));
   EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Capsule));
   EXPECT_FALSE(
       NarrowPhase::isSupported(ShapeType::Capsule, ShapeType::Capsule));
