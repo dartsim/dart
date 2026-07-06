@@ -75,8 +75,8 @@ def test_available_modules():
             "dynamics",
             "collision",
             "constraint",
+            "io",
             "simulation",
-            "utils",
         ]
 
         available = []

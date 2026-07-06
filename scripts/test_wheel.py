@@ -108,10 +108,10 @@ core_modules = [
     'constraint',
     'dynamics',
     'gui',
+    'io',
     'math',
     'optimizer',
     'simulation',
-    'utils',
 ]
 
 print('Testing core submodules:')
