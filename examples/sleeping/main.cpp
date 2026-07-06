@@ -1137,58 +1137,17 @@ int runHeadless(
     const ::osg::Vec3& center,
     const ::osg::Vec3& up)
 {
-  ::osg::ref_ptr<::osg::GraphicsContext::Traits> traits
-      = new ::osg::GraphicsContext::Traits;
-  traits->readDISPLAY();
-  traits->setUndefinedScreenDetailsToDefaultScreen();
-  traits->x = 0;
-  traits->y = 0;
-  traits->width = opt.width;
-  traits->height = opt.height;
-  traits->red = traits->green = traits->blue = 8;
-  traits->alpha = 8;
-  traits->depth = 24;
-  traits->windowDecoration = false;
-  traits->pbuffer = true;
-  traits->doubleBuffer = true;
-
-  ::osg::ref_ptr<::osg::GraphicsContext> gc
-      = ::osg::GraphicsContext::createGraphicsContext(traits.get());
-  if (!gc) {
-    std::cerr << "[headless] Failed to create an off-screen GL context "
-                 "(no usable DISPLAY?).\n";
+  dart::gui::osg::OffscreenSetup setup;
+  setup.width = opt.width;
+  setup.height = opt.height;
+  if (!dart::gui::osg::setUpOffscreenViewer(*viewer, setup))
     return 1;
-  }
 
+  // Pin the view before stepping so the scripted-key frames below render from
+  // the intended camera (setUpOffscreenViewer leaves per-scene framing to the
+  // caller).
   auto* camera = viewer->getCamera();
-  camera->setGraphicsContext(gc.get());
-  camera->setViewport(new ::osg::Viewport(0, 0, opt.width, opt.height));
-  camera->setProjectionMatrixAsPerspective(
-      30.0, static_cast<double>(opt.width) / opt.height, 0.1, 1000.0);
-  const GLenum buffer = traits->doubleBuffer ? GL_BACK : GL_FRONT;
-  camera->setDrawBuffer(buffer);
-  camera->setReadBuffer(buffer);
-
-  // Single-threaded so the screen-capture (a camera final-draw callback)
-  // completes synchronously inside frame(); otherwise the draw thread may still
-  // be writing the file as we tear down and exit, corrupting it.
-  viewer->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
-
-  // Drive stepping ourselves and pin the view, so the screenshot is
-  // deterministic and independent of the real-time clock or any manipulator.
-  viewer->setCameraManipulator(nullptr);
-  viewer->simulate(false);
   camera->setViewMatrixAsLookAt(eye, center, up);
-
-  viewer->realize();
-  if (!viewer->isRealized()) {
-    std::cerr << "[headless] Viewer failed to realize off-screen.\n";
-    return 1;
-  }
-  if (auto* queue = viewer->getEventQueue()) {
-    queue->windowResize(0, 0, opt.width, opt.height);
-    queue->setMouseInputRange(0.0f, 0.0f, opt.width, opt.height);
-  }
 
   for (int i = 0; i < opt.settleSteps; ++i)
     world->step();
