@@ -437,6 +437,26 @@ bm-boxes-headless = { cmd = """
   { arg = "checkpoint", default = "500" },
 ], env = { BUILD_TYPE = "Release" } }
 
+# Off-screen still capture of a gui-osg example via the dart-gui-osg
+# OffscreenViewer helper. On a headless host (no X server) prefix with
+# xvfb-run, e.g. `xvfb-run -a -s '-screen 0 1280x1024x24' pixi run capture`.
+# width/height apply to size-aware examples (sleeping); others ignore them.
+capture = { cmd = """
+    cmake \
+        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target {{ example }} \
+        --parallel \
+    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/{{ example }} \
+        --headless --shot {{ out }} --width {{ width }} --height {{ height }}
+""", depends-on = [
+  "config",
+], args = [
+  { arg = "example", default = "sleeping" },
+  { arg = "out", default = "capture.png" },
+  { arg = "width", default = "640" },
+  { arg = "height", default = "480" },
+], env = { BUILD_TYPE = "Release" } }
+
 bm-empty = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
