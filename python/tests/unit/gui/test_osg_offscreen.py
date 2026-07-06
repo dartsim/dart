@@ -17,7 +17,7 @@ import pytest
 import dartpy as dart
 
 # The off-screen pbuffer path requires an X server.
-pytestmark = pytest.mark.skipif(
+requires_display = pytest.mark.skipif(
     not os.environ.get("DISPLAY"),
     reason="off-screen GLX capture needs a DISPLAY (run under xvfb-run on "
     "headless hosts)",
@@ -109,6 +109,7 @@ def _build_box_world():
     return world
 
 
+@requires_display
 def test_capture_offscreen_non_blank(tmp_path):
     """captureOffscreen sets up the pbuffer, frames the scene, and writes a
     non-blank PNG in one call."""
@@ -127,6 +128,7 @@ def test_capture_offscreen_non_blank(tmp_path):
     assert variance > 1e-4, f"image looks blank (variance {variance})"
 
 
+@requires_display
 def test_set_up_offscreen_then_capture_screen(tmp_path):
     """setUpOffscreen configures an existing viewer for headless rendering so
     the already-bound captureScreen writes a valid PNG without a window."""

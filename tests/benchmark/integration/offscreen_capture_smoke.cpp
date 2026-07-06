@@ -54,6 +54,7 @@
 #include <osgDB/ReadFile>
 
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -168,6 +169,8 @@ int main()
   const std::filesystem::path missingDir
       = tmpDir / "dart_offscreen_smoke_missing_dir";
   const std::string pathMissingDir = (missingDir / "capture.png").string();
+  const std::filesystem::path staleTargetDir
+      = tmpDir / "dart_offscreen_smoke_stale_target";
 
   // Path 1: setUpOffscreenViewer + explicit frame loop + captureScreen.
   {
@@ -284,6 +287,37 @@ int main()
           << pathMissingDir << "\n";
       return 1;
     }
+  }
+
+  // Path 5: captureOffscreen must not accept a stale target that cannot be
+  // removed before the new frame is written.
+  {
+    std::filesystem::remove_all(staleTargetDir);
+    std::filesystem::create_directory(staleTargetDir);
+    std::ofstream((staleTargetDir / "stale.txt").string()) << "stale";
+
+    auto world = buildBoxWorld();
+    ::osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
+        = new dart::gui::osg::ImGuiViewer();
+    ::osg::ref_ptr<dart::gui::osg::WorldNode> node
+        = new dart::gui::osg::WorldNode(world);
+    viewer->addWorldNode(node);
+
+    if (dart::gui::osg::captureOffscreen(
+            *viewer,
+            staleTargetDir.string(),
+            camera.eye,
+            camera.center,
+            camera.up,
+            setup,
+            0)) {
+      std::cerr
+          << "[offscreen_capture_smoke] captureOffscreen unexpectedly "
+             "succeeded for stale target directory "
+          << staleTargetDir << "\n";
+      return 1;
+    }
+    std::filesystem::remove_all(staleTargetDir);
   }
 
   std::cout << "[offscreen_capture_smoke] PASS\n";

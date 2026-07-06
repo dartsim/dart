@@ -42,8 +42,10 @@
 
 #include <fstream>
 
+#include <cerrno>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 
 namespace dart {
 namespace gui {
@@ -146,7 +148,12 @@ bool captureOffscreen(
     return false;
   }
 
-  std::remove(pngPath.c_str());
+  errno = 0;
+  if (std::remove(pngPath.c_str()) != 0 && errno != ENOENT) {
+    dterr << "[OffscreenViewer] capture failed; could not remove existing "
+          << "image at " << pngPath << ": " << std::strerror(errno) << ".\n";
+    return false;
+  }
   viewer.captureScreen(pngPath);
   viewer.frame(); // SaveScreen writes the PNG during this frame.
   std::ifstream image(pngPath, std::ios::binary);
