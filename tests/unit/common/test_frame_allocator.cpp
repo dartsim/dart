@@ -47,6 +47,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 using namespace dart::common;
 
@@ -216,6 +217,69 @@ TEST_F(FrameAllocatorTest, RejectsOverflowingRequestsWithoutChangingArena)
   EXPECT_EQ(overflowOnly.used(), 0u);
   EXPECT_EQ(overflowOnly.overflowCount(), 0u);
   EXPECT_EQ(overflowOnly.overflowBytes(), 0u);
+}
+
+//=============================================================================
+TEST_F(FrameAllocatorTest, TinyCapacityStaysInBounds)
+{
+  // Regression: when the requested capacity is smaller than the 64-byte arena
+  // alignment, rounding mBegin up past mEnd used to leave mCur > mEnd, so the
+  // fast path computed remaining = mEnd - mCur as an underflowed size_t and
+  // handed back storage past the buffer end (heap-buffer-overflow under ASan).
+  // Two independent signals guard it here:
+  //  * writing across every returned block trips ASan if a pointer is OOB;
+  //  * used() must never exceed usableCapacity() -- the buggy fast path left
+  //    usableCapacity() == 0 while advancing used(), which this catches in any
+  //    build configuration (not just ASan).
+  for (size_t capacity :
+       {size_t{0},
+        size_t{1},
+        size_t{8},
+        size_t{16},
+        size_t{32},
+        size_t{48},
+        size_t{63},
+        size_t{64},
+        size_t{65}}) {
+    FrameAllocator allocator(MemoryAllocator::GetDefault(), capacity);
+
+    for (int i = 0; i < 8; ++i) {
+      void* p = allocator.allocate(24);
+      ASSERT_NE(p, nullptr) << "capacity=" << capacity;
+      std::memset(p, 0x5A, 24); // ASan catches an out-of-bounds arena pointer.
+      EXPECT_LE(allocator.used(), allocator.usableCapacity())
+          << "capacity=" << capacity;
+
+      void* q = allocator.allocateAligned(24, 128);
+      ASSERT_NE(q, nullptr) << "capacity=" << capacity;
+      EXPECT_EQ(reinterpret_cast<uintptr_t>(q) % 128u, 0u)
+          << "capacity=" << capacity;
+      std::memset(q, 0x3C, 24);
+      EXPECT_LE(allocator.used(), allocator.usableCapacity())
+          << "capacity=" << capacity;
+    }
+
+    // An arena too small to align is reported empty, so nothing may come from
+    // the fast path: every request must have overflowed.
+    if (allocator.usableCapacity() == 0u) {
+      EXPECT_EQ(allocator.used(), 0u) << "capacity=" << capacity;
+      EXPECT_GT(allocator.overflowCount(), 0u) << "capacity=" << capacity;
+    }
+  }
+}
+
+//=============================================================================
+TEST_F(FrameAllocatorTest, TinyCapacitySurvivesResetAndReuse)
+{
+  // The same guard must hold across reset(), which reallocates the arena.
+  FrameAllocator allocator(MemoryAllocator::GetDefault(), 16);
+  for (int round = 0; round < 3; ++round) {
+    void* p = allocator.allocate(40);
+    ASSERT_NE(p, nullptr);
+    std::memset(p, 0x11, 40);
+    EXPECT_LE(allocator.used(), allocator.usableCapacity());
+    allocator.reset();
+  }
 }
 
 //=============================================================================
