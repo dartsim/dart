@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPTS = ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
@@ -76,6 +78,26 @@ def test_update_writes_golden_and_metadata_sidecar(tmp_path: Path) -> None:
     }
     assert sidecar["golden"]["height"] == 90
     assert sidecar["tolerance"]["fail"] == 0.016
+
+
+def test_cli_does_not_require_boolean_optional_action(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    capture = tmp_path / "capture.png"
+    golden = tmp_path / "golden.png"
+    _write_contrast_png(capture, 80, 90)
+    monkeypatch.delattr(
+        image_golden.argparse, "BooleanOptionalAction", raising=False
+    )
+
+    assert (
+        image_golden.main(
+            [str(capture), str(golden), "--update", "--no-ignore-aa"]
+        )
+        == 0
+    )
+    sidecar = json.loads(image_golden.golden_sidecar_path(golden).read_text())
+    assert sidecar["tolerance"]["ignore_aa"] is False
 
 
 def test_compare_catches_seeded_render_regression(tmp_path: Path) -> None:

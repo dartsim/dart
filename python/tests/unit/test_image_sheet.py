@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import builtins
 import sys
 from pathlib import Path
 
@@ -48,6 +49,29 @@ def test_contact_sheet_geometry_and_label_smoke(tmp_path: Path) -> None:
             if sheet.pixels[offset : offset + 3] == b"\xff\xff\xff":
                 white_label_pixels += 1
     assert white_label_pixels > 0
+
+
+def test_contact_sheet_does_not_require_strict_zip_keyword(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first = tmp_path / "first.png"
+    second = tmp_path / "second.png"
+    _solid_png(first, (60, 90, 130))
+    _solid_png(second, (120, 70, 30))
+    output = tmp_path / "sheet.png"
+    real_zip = builtins.zip
+
+    def python39_zip(*iterables, **kwargs):
+        if kwargs:
+            raise TypeError("zip() takes no keyword arguments")
+        return real_zip(*iterables)
+
+    monkeypatch.setattr(builtins, "zip", python39_zip)
+
+    result = image_sheet.assemble_sheet([first, second], output)
+
+    assert result["frames"][0]["path"] == str(first)
+    assert result["frames"][1]["path"] == str(second)
 
 
 def test_contact_sheet_rejects_tiles_below_floor(tmp_path: Path) -> None:
