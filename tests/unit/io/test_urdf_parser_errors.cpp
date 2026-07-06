@@ -2,9 +2,8 @@
 
 #include <dart/config.hpp>
 
-#include <dart/utils/urdf/urdf_parser.hpp>
-
 #include <dart/io/All.hpp>
+#include <dart/io/urdf/urdf_parser.hpp>
 
 #include <gtest/gtest.h>
 
@@ -59,14 +58,14 @@ TEST(UrdfParserErrors, MissingPackageReturnsNull)
 
 TEST(UrdfParserErrors, EmptyStringReturnsNull)
 {
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto skeleton = parser.parseSkeletonString("", common::Uri());
   EXPECT_EQ(skeleton, nullptr);
 }
 
 TEST(UrdfParserErrors, GarbageStringReturnsNull)
 {
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto skeleton
       = parser.parseSkeletonString("this is not valid XML", common::Uri());
   EXPECT_EQ(skeleton, nullptr);
@@ -74,7 +73,7 @@ TEST(UrdfParserErrors, GarbageStringReturnsNull)
 
 TEST(UrdfParserErrors, IncompleteXmlReturnsNull)
 {
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto skeleton
       = parser.parseSkeletonString("<foo><bar/></foo>", common::Uri());
   EXPECT_EQ(skeleton, nullptr);

@@ -120,7 +120,11 @@ dart/
 ├── collision/      # Collision detection (FCL + optional Bullet/ODE)
 ├── constraint/     # Constraint handling
 ├── simulation/     # Simulation framework + time stepping
-├── utils/          # Parsers and helpers (URDF/SDF)
+├── io/             # Model IO, resource retrievers, and parsers
+│   ├── mjcf/
+│   ├── sdf/
+│   ├── urdf/
+│   └── usd/
 └── gui/            # Filament-backed GUI components
     └── detail/
 ```
@@ -277,20 +281,20 @@ active build.
 - **Failure mode:** Configuration aborts with `FATAL_ERROR` if the option is `ON` and ODE is missing.
 - **Disable:** There is no `DART_SKIP_ODE`; set `DART_BUILD_COLLISION_ODE=OFF` to omit the backend entirely.
 
-### Utility Dependencies
+### IO Dependencies
 
 #### 12. tinyxml2
 
 - **Version:** ≥ 11.0.0, < 12
 - **Purpose:** XML parsing (for SDF)
-- **Component:** `dart-utils`
+- **Component:** `dart-io`
 - **CMake Module:** `cmake/DARTFindtinyxml2.cmake`
 
 #### 13. libsdformat
 
 - **Version:** ≥ 16.0.0, < 17
 - **Purpose:** Official SDFormat parser used to canonicalize files (version conversion, `<include>` resolution, URI normalization) before DART walks the DOM.
-- **Component:** `dart-utils`
+- **Component:** `dart-io`
 - **CMake Module:** `cmake/DARTFindsdformat.cmake`
 - **Notes:** Required for all SDF parsing. DART no longer ships a fallback XML code path, so builds without libsdformat cannot load `.sdf`/`.world` assets.
 
@@ -298,7 +302,7 @@ active build.
 
 - **Version:** ≥ 4.0.1, < 5
 - **Purpose:** URDF parsing
-- **Component:** `dart-utils-urdf`
+- **Component:** `dart-io`
 - **CMake Module:** `cmake/DARTFindurdfdom.cmake`
 - **ROS Dependency:** `liburdfdom-dev`
 
@@ -453,14 +457,8 @@ Reference test/benchmark targets, when enabled:
     ├── dart-test-reference-ode (optional; reference tests/benchmarks only)
     └── octomap (optional; occupancy-grid tests/benchmarks only)
 
-    ├── utils
-    │   └── depends: dart, tinyxml2, libsdformat
-    │
-    ├── utils-urdf
-    │   └── depends: utils, urdfdom
-    │
     ├── io
-    │   └── depends: utils (+ utils-urdf when available)
+    │   └── depends: dart, tinyxml2, libsdformat, optional urdfdom/OpenUSD
     │
     └── gui
         └── depends: private Filament, GLFW3, ImGui implementation
@@ -471,9 +469,7 @@ Reference test/benchmark targets, when enabled:
 | Component        | Library Target        | Dependencies                                                                                                                        |
 | ---------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `dart`           | `dart`                | `dart-external-odelcpsolver`, `Eigen3::Eigen`, `fcl`, `assimp`, `fmt::fmt` (plus Bullet/ODE when the collision options are enabled) |
-| `utils`          | `dart-utils`          | `dart`, `tinyxml2`, `libsdformat`                                                                                                   |
-| `utils-urdf`     | `dart-utils-urdf`     | `dart-utils`, `urdfdom`                                                                                                             |
-| `io`             | `dart-io`             | `dart-utils` (plus `dart-utils-urdf` when available)                                                                                |
+| `io`             | `dart-io`             | `dart`, `tinyxml2`, `libsdformat` (optional URDF support adds `urdfdom`; optional USD support adds OpenUSD)                         |
 | `gui`            | `dart-gui`            | private GUI implementation, Filament, GLFW3, ImGui, PNG, JPEG                                                                       |
 | `external-imgui` | `dart-external-imgui` | `OpenGL::GL`                                                                                                                        |
 
@@ -512,10 +508,11 @@ dart/
 │   └── ode/        # ODE collision engine (optional)
 ├── constraint/      # Constraint solver
 ├── simulation/      # Simulation world, integration, and time stepping
-├── io/              # Unified skeleton loading (readSkeleton)
-├── utils/           # Utility functions
-│   ├── sdf/        # SDF file parser
-│   └── urdf/       # URDF file parser
+├── io/              # Model IO, resource retrievers, parsers, and writers
+│   ├── mjcf/        # MJCF parser internals
+│   ├── sdf/         # SDF parser internals
+│   ├── urdf/        # URDF parser internals
+│   └── usd/         # Optional OpenUSD loader
 └── gui/             # Filament-backed GUI components
     └── detail/
 ```
@@ -543,9 +540,7 @@ dart/
 
 #### Component Libraries
 
-- **`dart-utils`** - Utility functions
-- **`dart-utils-urdf`** - URDF parser
-- **`dart-io`** - Unified model loading (`dart::io`)
+- **`dart-io`** - Model IO, resource retrievers, parsers, and writers (`dart::io`)
 - **`dart-gui`** - Filament-backed GUI
 
 ### Python Bindings Target

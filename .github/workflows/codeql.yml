@@ -167,8 +167,6 @@ jobs:
             --build-dir "$BUILD_DIR" \
             --target dart_component_dart \
             --target dart-collision-native \
-            --target dart-utils \
-            --target dart-utils-urdf \
             --target dart-io \
             --target dart-simulation \
             --target dartsim_engine

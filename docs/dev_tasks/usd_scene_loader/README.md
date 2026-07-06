@@ -117,12 +117,12 @@ are kept for rationale/history; do not re-litigate them without new direction.
 
 - **Front door**: extend `dart::io::ModelFormat` with `Usd` and route reads
   through DART 7 loaders instead of restoring the retired public
-  `dart::io::readWorld` API. Do not create a parallel `dart::utils::UsdParser`
+  `dart::io::readWorld` API. Do not create a parallel `dart::io::UsdParser`
   namespace as the prototype did.
 - **Naming**: snake_case headers under `dart/io/usd/` (e.g.
   `usd_parser.{cpp,hpp}`), per `docs/onboarding/code-style.md` and the completed
   snake_case migration. The prototype's PascalCase paths
-  (`dart/utils/usd/UsdParser.{cpp,hpp}`) predate the migration.
+  (`dart/io/usd/UsdParser.{cpp,hpp}`) predate the migration.
 - **World target**: bind against the DART 7 `World` (`dart/simulation/`) through
   the `dart::simulation::io::addSkeleton` front door. PLAN-050 (DART 7 World
   binding transition) completed and was archived 2026-07-03, so this API is now
@@ -153,9 +153,9 @@ unless another clone still has the objects:
 - macOS diagnostics tail: `82f9a261361..b7a7ac09823` — five commits chasing
   pytest aborts; useful as a clue trail when Phase 4 picks up macOS stability.
 
-Files of interest in the prototype: `dart/utils/usd/UsdParser.{cpp,hpp}`,
+Files of interest in the prototype: `dart/io/usd/UsdParser.{cpp,hpp}`,
 `cmake/DARTFindpxr.cmake`, `data/usd/{simple_chain,unitree_h1_minimal}.usda`,
-`python/dartpy/utils/UsdParser.cpp`,
+`python/dartpy/io/UsdParser.cpp`,
 `tests/integration/io/test_UsdParser.cpp`,
 `python/tests/unit/test_usd_parser.py`.
 

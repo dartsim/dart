@@ -720,8 +720,8 @@ sequenceDiagram
 
 - [`dart::io` unified API](dart/io/read.hpp)
 - Implementation: [`dart/io/read.cpp`](dart/io/read.cpp)
-- Internal parser: [`UrdfParser`](dart/utils/urdf/urdf_parser.hpp)
-- Entry point: [`UrdfParser::parseSkeleton()`](dart/utils/urdf/urdf_parser.cpp)
+- Internal parser: [`UrdfParser`](dart/io/urdf/urdf_parser.hpp)
+- Entry point: [`UrdfParser::parseSkeleton()`](dart/io/urdf/urdf_parser.cpp)
 - Example: [`examples/atlas_puppet/main.cpp`](../../examples/atlas_puppet/main.cpp)
 - Notes: URDF `<limit>` on `planar` and `floating` joints is interpreted uniformly across all of their DOFs (with warnings), and planar joints derive their plane from the `<axis>` normal.
 

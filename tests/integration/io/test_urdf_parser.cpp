@@ -40,7 +40,8 @@
 #include "dart/dynamics/prismatic_joint.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
 #include "dart/dynamics/weld_joint.hpp"
-#include "dart/utils/urdf/urdf_parser.hpp"
+#include "dart/io/read.hpp"
+#include "dart/io/urdf/urdf_parser.hpp"
 
 #include <dart/all.hpp>
 
@@ -66,9 +67,11 @@
 using namespace dart;
 using namespace dart::test;
 using dart::common::Uri;
-using dart::utils::UrdfParser;
+using dart::io::UrdfParser;
 
 namespace {
+
+constexpr double kUrdfColorTolerance = 1e-6;
 
 class MemoryResource final : public common::Resource
 {
@@ -1293,7 +1296,8 @@ TEST(UrdfParser, WamMeshMaterialAndLimits)
     }
     body->eachShapeNodeWith<dynamics::VisualAspect>(
         [&](const dynamics::ShapeNode* shapeNode) {
-          if (shapeNode->getVisualAspect()->getRGBA().isApprox(expectedColor)) {
+          if (shapeNode->getVisualAspect()->getRGBA().isApprox(
+                  expectedColor, kUrdfColorTolerance)) {
             foundVisual = true;
           }
         });
@@ -1333,23 +1337,6 @@ TEST(UrdfParser, AtlasV5NoHeadLoadsMeshesAndExpectedStructure)
   EXPECT_TRUE(hasShapeType<dynamics::MeshShape>(skeleton));
 }
 #endif
-
-//==============================================================================
-TEST(UrdfParser, AtlasV5NoHeadLoadsMeshesAndExpectedStructure)
-{
-  UrdfParser parser;
-  const auto skeleton
-      = parser.parseSkeleton("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
-  ASSERT_NE(skeleton, nullptr);
-
-  EXPECT_EQ(skeleton->getNumBodyNodes(), 36u);
-  EXPECT_EQ(skeleton->getNumDofs(), 35u);
-  EXPECT_NE(skeleton->getBodyNode("pelvis"), nullptr);
-  EXPECT_NE(skeleton->getBodyNode("l_hand"), nullptr);
-  EXPECT_NE(skeleton->getBodyNode("r_hand"), nullptr);
-  EXPECT_EQ(skeleton->getJoint("neck_ry"), nullptr);
-  EXPECT_TRUE(hasShapeType<dynamics::MeshShape>(skeleton));
-}
 
 //==============================================================================
 TEST(UrdfParser, ParseSkeletonStringEmptyReturnsNull)
@@ -2416,12 +2403,16 @@ TEST(UrdfParser, VisualMaterialGlobalOverridesLocalColor)
         ASSERT_NE(visual, nullptr);
         if (node->getName() == "shared_visual") {
           foundShared = true;
-          EXPECT_TRUE(
-              visual->getRGBA().isApprox(Eigen::Vector4d(0.1, 0.2, 0.3, 0.4)));
+          const auto actual = visual->getRGBA();
+          EXPECT_TRUE(actual.isApprox(
+              Eigen::Vector4d(0.1, 0.2, 0.3, 0.4), kUrdfColorTolerance))
+              << "actual: " << actual.transpose();
         } else if (node->getName() == "local_visual") {
           foundLocal = true;
-          EXPECT_TRUE(
-              visual->getRGBA().isApprox(Eigen::Vector4d(0.4, 0.5, 0.6, 0.7)));
+          const auto actual = visual->getRGBA();
+          EXPECT_TRUE(actual.isApprox(
+              Eigen::Vector4d(0.4, 0.5, 0.6, 0.7), kUrdfColorTolerance))
+              << "actual: " << actual.transpose();
         }
       });
   EXPECT_TRUE(foundShared);

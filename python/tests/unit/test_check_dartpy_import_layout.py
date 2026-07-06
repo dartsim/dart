@@ -35,7 +35,7 @@ dart::python_nb::defSimulationModule(simulation);
         """
 _LEGACY_MODULES: tuple[str, ...] = ("common", "dynamics")
 _PROMOTE_MODULES: tuple[str, ...] = ("simulation",) + tuple(
-    name for name in _LEGACY_MODULES if name != "utils"
+    name for name in _LEGACY_MODULES
 )
 """,
     )
@@ -57,6 +57,7 @@ class WorldRenderBridge:
         root / "python" / "stubs" / "dartpy" / "__init__.pyi",
         '''
 from . import diff
+from . import io
 from . import simulation
 from .simulation import (
     World,
@@ -64,6 +65,7 @@ from .simulation import (
 __all__: list[str] = [
     "World",
     "diff",
+    "io",
     "simulation",
 ]
 ''',
@@ -80,7 +82,7 @@ class World:
 ''',
     )
     _write(
-        root / "python" / "stubs" / "dartpy" / "utils" / "SdfParser.pyi",
+        root / "python" / "stubs" / "dartpy" / "io" / "SdfParser.pyi",
         '''
 __all__: list[str] = ["Options", "RootJointType", "readSkeleton", "read_skeleton"]
 def readSkeleton(*args, **kwargs): ...
@@ -88,7 +90,7 @@ read_skeleton = readSkeleton
 ''',
     )
     _write(
-        root / "python" / "stubs" / "dartpy" / "utils" / "MjcfParser.pyi",
+        root / "python" / "stubs" / "dartpy" / "io" / "MjcfParser.pyi",
         '''
 __all__: list[str] = ["Options"]
 class Options:
@@ -96,7 +98,7 @@ class Options:
 ''',
     )
     _write(
-        root / "python" / "stubs" / "dartpy" / "utils" / "__init__.pyi",
+        root / "python" / "stubs" / "dartpy" / "io" / "__init__.pyi",
         '''
 class UrdfParser:
     def parseSkeleton(*args, **kwargs): ...
@@ -136,7 +138,7 @@ def test_static_check_rejects_second_simulation_experimental_module(tmp_path):
 def test_static_check_rejects_python_world_loader_stubs(tmp_path):
     module = _load_module()
     _write_minimal_layout(tmp_path)
-    sdf_stub = tmp_path / "python" / "stubs" / "dartpy" / "utils" / "SdfParser.pyi"
+    sdf_stub = tmp_path / "python" / "stubs" / "dartpy" / "io" / "SdfParser.pyi"
     sdf_stub.write_text(
         sdf_stub.read_text(encoding="utf-8")
         + "\ndef readWorld(*args, **kwargs): ...\nread_world = readWorld\n",

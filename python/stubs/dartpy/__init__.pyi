@@ -14,7 +14,6 @@ from . import io
 from . import math
 from . import optimizer
 from . import simulation
-from . import utils
 
 from .collision import (
     BodyNodeCollisionFilter,
@@ -620,7 +619,6 @@ __all__: list[str] = [
     "trim_left",
     "trim_right",
     "two_pi",
-    "utils",
     "verify_rotation",
     "verify_transform",
     "warn",

@@ -16,7 +16,7 @@ pass completed:
 
 - lightweight invariants: SKEL parser/source files absent, `data/skel` absent,
   Kima Collada meshes present under `data/mesh/kima/*.dae`;
-- `pixi run python -m pytest python/tests/unit/test_check_dartpy_import_layout.py python/tests/unit/utils/test_utils_stub_import.py python/tests/unit/test_check_dart7_world_promotion_blockers.py`
+- `pixi run python -m pytest python/tests/unit/test_check_dartpy_import_layout.py python/tests/unit/io/test_io_stub_import.py python/tests/unit/test_check_dart7_world_promotion_blockers.py`
   — 28 passed;
 - `pixi run check-ai-commands`;
 - `pixi run check-dartpy-import-layout`;
@@ -105,7 +105,7 @@ Body:
 
 ## Testing
 
-- `pixi run python -m pytest python/tests/unit/test_check_dartpy_import_layout.py python/tests/unit/utils/test_utils_stub_import.py python/tests/unit/test_check_dart7_world_promotion_blockers.py`
+- `pixi run python -m pytest python/tests/unit/test_check_dartpy_import_layout.py python/tests/unit/io/test_io_stub_import.py python/tests/unit/test_check_dart7_world_promotion_blockers.py`
 - `pixi run check-ai-commands`
 - `pixi run check-dartpy-import-layout`
 - `pixi run run-cpp-target INTEGRATION_io_Read`
@@ -163,7 +163,7 @@ future SDF/URDF writer expansion is parked behind the durable criteria in
 `docs/onboarding/io-parsing.md`.
 
 The SDF writer implementation is local on
-`work/skel-format-yaml-decision`: `dart::utils::SdfParser` exposes
+`work/skel-format-yaml-decision`: `dart::io::SdfParser` exposes
 `tryWriteSkeletonToString()` for a conservative `Skeleton` subset, with
 the writer building libsdformat DOM objects and serializing through sdformat.
 `INTEGRATION_io_SdfWriter` proves write/read round-trip for links, root
@@ -251,7 +251,7 @@ the high-level DOM; do not add DART-side XML tokenization, child enumeration,
 or text reparsing for SDF semantics.
 
 The URDF writer implementation is also local on
-`work/skel-format-yaml-decision`: `dart::utils::UrdfParser` exposes
+`work/skel-format-yaml-decision`: `dart::io::UrdfParser` exposes
 `tryWriteSkeletonToString()` for one-root URDF trees with identity root
 FreeJoint or WeldJoint placement validation, child
 revolute/continuous/prismatic/fixed joints,
@@ -297,7 +297,7 @@ Together with the SDF writer and PLAN-101 project save/load evidence, this
 closes the current DART 7 Phase 5 writer scope; broader URDF work is parked
 until a new representable contract and focused round-trip tests exist.
 
-Current SDF audit result: `dart/utils/sdf/` has no TinyXML/raw XML parser path
+Current SDF audit result: `dart/io/sdf/` has no TinyXML/raw XML parser path
 for SDF semantics. SDF content loading, ambiguous `.xml` SDF classification,
 standard model/link/joint/visual/collision/material reads, and writer semantic
 checks stay on libsdformat `sdf::Root` and typed DOM APIs. Remaining
@@ -309,7 +309,7 @@ in the URDF writer, where URDF XML is the target format.
 This boundary now has a local lint/check-lint guard:
 `pixi run check-sdf-sdformat-boundary` rejects TinyXML/raw XML parser APIs,
 generic SDF element text parsing, and SDF helper-surface expansion beyond
-authored sdformat element lookup in `dart/utils/sdf`.
+authored sdformat element lookup in `dart/io/sdf`.
 
 The supported SDF geometry reader paths now load through libsdformat
 `sdf::Geometry` DOM objects before mapping sphere, box, cylinder, capsule,
@@ -487,7 +487,7 @@ Changelog decision:
 - Mode: draft
 - Base evidence: local diff on `work/skel-format-yaml-decision`, compared
   against the DART 7 `CHANGELOG.md` IO and Parsing section.
-- Scope evidence: `dart/utils/sdf/sdf_parser.cpp`,
+- Scope evidence: `dart/io/sdf/sdf_parser.cpp`,
   `tests/integration/io/test_sdf_parser.cpp`,
   `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
   and this SKEL evolution task folder.
@@ -548,7 +548,7 @@ Changelog decision:
 
 - Mode: decide
 - Base evidence: `origin/main`
-- Scope evidence: focused diff in `dart/utils/sdf/sdf_writer.cpp`,
+- Scope evidence: focused diff in `dart/io/sdf/sdf_writer.cpp`,
   `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
   and this SKEL evolution task folder
 - Decision: no entry required
@@ -698,7 +698,7 @@ Changelog decision:
 
 - Mode: decide
 - Base evidence: `origin/main`
-- Scope evidence: focused diff in `dart/utils/sdf/sdf_writer.cpp`,
+- Scope evidence: focused diff in `dart/io/sdf/sdf_writer.cpp`,
   `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
   and this SKEL evolution task folder
 - Decision: no entry required
@@ -740,7 +740,7 @@ Changelog decision:
 
 - Mode: decide
 - Base evidence: `origin/main`
-- Scope evidence: focused diff in `dart/utils/sdf/sdf_writer.cpp`,
+- Scope evidence: focused diff in `dart/io/sdf/sdf_writer.cpp`,
   `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
   and this SKEL evolution task folder
 - Decision: no entry required
@@ -784,7 +784,7 @@ Changelog decision:
 
 - Mode: decide
 - Base evidence: `origin/main`
-- Scope evidence: focused diff in `dart/utils/sdf/sdf_writer.cpp`,
+- Scope evidence: focused diff in `dart/io/sdf/sdf_writer.cpp`,
   `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
   and this SKEL evolution task folder
 - Decision: no entry required
@@ -825,7 +825,7 @@ Changelog decision:
 
 - Mode: decide
 - Base evidence: `origin/main`
-- Scope evidence: focused diff in `dart/utils/sdf/sdf_writer.cpp`,
+- Scope evidence: focused diff in `dart/io/sdf/sdf_writer.cpp`,
   `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
   and this SKEL evolution task folder
 - Decision: no entry required
@@ -865,7 +865,7 @@ Changelog decision:
 
 - Mode: decide
 - Base evidence: `origin/main`
-- Scope evidence: focused diff in `dart/utils/sdf/sdf_writer.cpp`,
+- Scope evidence: focused diff in `dart/io/sdf/sdf_writer.cpp`,
   `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
   and this SKEL evolution task folder
 - Decision: no entry required
@@ -1334,7 +1334,7 @@ Changelog decision:
 
 - Mode: decide
 - Base evidence: `origin/main`
-- Scope evidence: focused diff in `dart/utils/sdf/sdf_writer.cpp`,
+- Scope evidence: focused diff in `dart/io/sdf/sdf_writer.cpp`,
   `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
   and this SKEL evolution task folder
 - Decision: no entry required
@@ -1404,8 +1404,8 @@ Changelog decision:
 - Mode: draft
 - Base evidence: `origin/main` inferred for
   `work/skel-format-yaml-decision`; no open PR exists for the branch.
-- Scope evidence: focused diff in `dart/utils/urdf/urdf_writer.cpp`,
-  `dart/utils/urdf/urdf_parser.hpp`,
+- Scope evidence: focused diff in `dart/io/urdf/urdf_writer.cpp`,
+  `dart/io/urdf/urdf_parser.hpp`,
   `tests/integration/io/test_urdf_writer.cpp`,
   `docs/onboarding/io-parsing.md`, `CHANGELOG.md`, and this SKEL evolution
   task folder.
@@ -1437,8 +1437,8 @@ Changelog decision:
 - Mode: draft
 - Base evidence: `origin/main` inferred for
   `work/skel-format-yaml-decision`; no open PR exists for the branch.
-- Scope evidence: focused diff in `dart/utils/urdf/urdf_writer.cpp`,
-  `dart/utils/urdf/urdf_parser.hpp`,
+- Scope evidence: focused diff in `dart/io/urdf/urdf_writer.cpp`,
+  `dart/io/urdf/urdf_parser.hpp`,
   `tests/integration/io/test_urdf_writer.cpp`,
   `docs/onboarding/io-parsing.md`, `CHANGELOG.md`, and this SKEL evolution
   task folder.
@@ -1460,8 +1460,8 @@ Changelog decision:
 - Mode: decide
 - Base evidence: `origin/main` inferred for
   `work/skel-format-yaml-decision`; no open PR exists for the branch.
-- Scope evidence: focused diff in `dart/utils/urdf/urdf_writer.cpp`,
-  `dart/utils/urdf/urdf_parser.hpp`,
+- Scope evidence: focused diff in `dart/io/urdf/urdf_writer.cpp`,
+  `dart/io/urdf/urdf_parser.hpp`,
   `tests/integration/io/test_urdf_writer.cpp`,
   `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
 - Decision: no additional changelog entry.
@@ -1492,7 +1492,7 @@ Changelog decision:
   `work/skel-format-yaml-decision`; no open PR exists for the branch.
 - Scope evidence: local diff committed as
   `a849cf29b27 Reject lossy URDF writer metadata` in
-  `dart/utils/urdf/urdf_writer.cpp`,
+  `dart/io/urdf/urdf_writer.cpp`,
   `tests/integration/io/test_urdf_writer.cpp`,
   `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder; nearby
   `CHANGELOG.md` DART 7 IO and Parsing URDF writer bullet inspected.
@@ -1527,7 +1527,7 @@ Changelog decision:
 - Base evidence: `origin/main` inferred for
   `work/skel-format-yaml-decision`; no open PR exists for the branch.
 - Scope evidence: local diff in `tests/integration/io/test_urdf_writer.cpp`,
-  `dart/utils/urdf/urdf_parser.hpp`, `CHANGELOG.md`,
+  `dart/io/urdf/urdf_parser.hpp`, `CHANGELOG.md`,
   `docs/onboarding/io-parsing.md`, and this SKEL evolution task folder.
 - Decision: no additional changelog entry; revise the existing unreleased DART
   7 URDF writer bullet to say identity root FreeJoint/WeldJoint validation
@@ -1586,8 +1586,8 @@ Changelog decision:
 
 - Mode: draft
 - Base evidence: `origin/main`
-- Scope evidence: focused diff in `dart/utils/sdf/sdf_parser.cpp`,
-  `dart/utils/sdf/sdf_writer.cpp`, `tests/integration/io/test_sdf_parser.cpp`,
+- Scope evidence: focused diff in `dart/io/sdf/sdf_parser.cpp`,
+  `dart/io/sdf/sdf_writer.cpp`, `tests/integration/io/test_sdf_parser.cpp`,
   `tests/integration/io/test_sdf_writer.cpp`, `docs/onboarding/io-parsing.md`,
   `CHANGELOG.md`, and this SKEL evolution task folder
 - Decision: entry required as a revision to the existing DART 7 SDF writer
@@ -1603,8 +1603,8 @@ Changelog decision:
 
 - Mode: draft
 - Base evidence: `origin/main`
-- Scope evidence: focused diff in `dart/utils/urdf/urdf_parser.hpp`,
-  `dart/utils/urdf/urdf_writer.cpp`,
+- Scope evidence: focused diff in `dart/io/urdf/urdf_parser.hpp`,
+  `dart/io/urdf/urdf_writer.cpp`,
   `tests/integration/io/test_urdf_writer.cpp`,
   `tests/integration/CMakeLists.txt`, `docs/onboarding/io-parsing.md`,
   `CHANGELOG.md`, and this SKEL evolution task folder
@@ -1644,7 +1644,7 @@ Changelog decision:
 
 - Mode: decide
 - Base evidence: current local diff in
-  `dart/utils/urdf/urdf_writer.cpp`,
+  `dart/io/urdf/urdf_writer.cpp`,
   `tests/integration/io/test_urdf_writer.cpp`, and this SKEL evolution task
   folder.
 - Decision: no additional changelog entry. The existing unreleased DART 7 URDF
@@ -2030,7 +2030,7 @@ that path.
 
 Phase 2 validation run on the branch:
 
-- `pixi run python -m pytest python/tests/unit/test_check_dartpy_import_layout.py python/tests/unit/utils/test_utils_stub_import.py python/tests/unit/test_check_dart7_world_promotion_blockers.py`
+- `pixi run python -m pytest python/tests/unit/test_check_dartpy_import_layout.py python/tests/unit/io/test_io_stub_import.py python/tests/unit/test_check_dart7_world_promotion_blockers.py`
 - `pixi run check-ai-commands`
 - `pixi run check-dartpy-import-layout`
 - `pixi run run-cpp-target INTEGRATION_io_Read`

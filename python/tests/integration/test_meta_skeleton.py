@@ -2,7 +2,7 @@ import dartpy as dart
 import pytest
 
 def test_basic():
-    urdfParser = dart.io.DartLoader()
+    urdfParser = dart.io.UrdfParser()
     kr5 = urdfParser.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
 

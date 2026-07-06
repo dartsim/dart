@@ -215,6 +215,14 @@ def find_static_violations(root: Path = REPO_ROOT) -> list[Violation]:
                 "simulation must not be installed as a deprecated legacy module",
             )
         )
+    elif "utils" in legacy_modules or "io" in legacy_modules:
+        violations.append(
+            Violation(
+                _rel(layout_py, root),
+                "dartpy.io must be the official IO module, not a deprecated "
+                "utils/io legacy wrapper",
+            )
+        )
     _require_contains(
         violations,
         layout_py,
@@ -294,6 +302,22 @@ def find_static_violations(root: Path = REPO_ROOT) -> list[Violation]:
         top_stub,
         root,
         top_stub_text,
+        "from . import io",
+        "top-level stubs must import the canonical io module",
+    )
+    _require_absent(
+        violations,
+        top_stub,
+        root,
+        top_stub_text,
+        "from . import utils",
+        "top-level stubs must not import the removed utils module",
+    )
+    _require_contains(
+        violations,
+        top_stub,
+        root,
+        top_stub_text,
         "from .simulation import (",
         "top-level World must be re-exported from dartpy.simulation",
     )
@@ -318,6 +342,17 @@ def find_static_violations(root: Path = REPO_ROOT) -> list[Violation]:
                 violations.append(
                     Violation(_rel(top_stub, root), f"__all__ must include {name}")
                 )
+        if "io" not in top_all:
+            violations.append(
+                Violation(_rel(top_stub, root), "__all__ must include io")
+            )
+        if "utils" in top_all:
+            violations.append(
+                Violation(
+                    _rel(top_stub, root),
+                    "__all__ must not include the removed utils module",
+                )
+            )
         if "simulation_experimental" in top_all:
             violations.append(
                 Violation(
@@ -361,10 +396,10 @@ def find_static_violations(root: Path = REPO_ROOT) -> list[Violation]:
         )
 
     removed_world_loader_stubs = {
-        stubs_root / "utils" / "SdfParser.pyi": ("readWorld", "read_world"),
-        stubs_root / "utils" / "MjcfParser.pyi": ("readWorld", "read_world"),
+        stubs_root / "io" / "SdfParser.pyi": ("readWorld", "read_world"),
+        stubs_root / "io" / "MjcfParser.pyi": ("readWorld", "read_world"),
         stubs_root
-        / "utils"
+        / "io"
         / "__init__.pyi": (
             "parseWorld",
             "parse_world",

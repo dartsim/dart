@@ -36,8 +36,8 @@
 #include "dart/common/local_resource_retriever.hpp"
 #include "dart/common/resource.hpp"
 #include "dart/common/resource_retriever.hpp"
+#include "dart/io/sdf/sdf_parser.hpp"
 #include "dart/io/sdf_writer.hpp"
-#include "dart/utils/sdf/sdf_parser.hpp"
 
 #include <dart/config.hpp>
 
@@ -769,8 +769,8 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
   EXPECT_NEAR(workflow->Roughness(), 0.35, 1e-12);
 
   const auto path = writeTempSdf(writeResult.value(), "roundtrip");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -960,7 +960,7 @@ TEST(SdfWriter, RoundTripsSupportedSkeletonSubset)
 //==============================================================================
 TEST(SdfWriter, RoundTripsExistingSinglePendulumFixture)
 {
-  const auto original = utils::SdfParser::readSkeleton(
+  const auto original = io::SdfParser::readSkeleton(
       common::Uri("dart://sample/sdf/test/single_pendulum.sdf"));
   ASSERT_NE(original, nullptr);
   ASSERT_EQ(original->getNumBodyNodes(), 1u);
@@ -975,8 +975,8 @@ TEST(SdfWriter, RoundTripsExistingSinglePendulumFixture)
 
   const auto path
       = writeTempSdf(writeResult.value(), "existing_single_pendulum");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -1023,8 +1023,8 @@ TEST(SdfWriter, RoundTripsExistingSinglePendulumFixture)
 //==============================================================================
 TEST(SdfWriter, RoundTripsExistingQuadFixture)
 {
-  const auto original = utils::SdfParser::readSkeleton(
-      common::Uri("dart://sample/sdf/quad.sdf"));
+  const auto original
+      = io::SdfParser::readSkeleton(common::Uri("dart://sample/sdf/quad.sdf"));
   ASSERT_NE(original, nullptr);
   ASSERT_EQ(original->getNumBodyNodes(), 17u);
   ASSERT_EQ(original->getNumJoints(), 17u);
@@ -1033,8 +1033,8 @@ TEST(SdfWriter, RoundTripsExistingQuadFixture)
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   const auto path = writeTempSdf(writeResult.value(), "quad");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -1148,7 +1148,7 @@ TEST(SdfWriter, RoundTripsConvertedSkelBoxFixtures)
 
   for (const auto& [uri, bodyName] : fixtures) {
     SCOPED_TRACE(uri);
-    const auto original = utils::SdfParser::readSkeleton(common::Uri(uri));
+    const auto original = io::SdfParser::readSkeleton(common::Uri(uri));
     ASSERT_NE(original, nullptr);
     ASSERT_EQ(original->getNumBodyNodes(), 1u);
     const auto* originalBody = test::requireBodyNode(*original, bodyName);
@@ -1160,7 +1160,7 @@ TEST(SdfWriter, RoundTripsConvertedSkelBoxFixtures)
     ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
     const auto path = writeTempSdf(writeResult.value(), bodyName);
-    const auto reparsed = utils::SdfParser::readSkeleton(
+    const auto reparsed = io::SdfParser::readSkeleton(
         common::Uri::createFromPath(path.string()));
     std::filesystem::remove(path);
 
@@ -1237,7 +1237,7 @@ TEST(SdfWriter, RoundTripsConvertedSkelBoxFixtures)
 //==============================================================================
 TEST(SdfWriter, RoundTripsExistingTwoLinkRevoluteFixture)
 {
-  const auto original = utils::SdfParser::readSkeleton(
+  const auto original = io::SdfParser::readSkeleton(
       common::Uri("dart://sample/sdf/test/two_link_revolute_model.sdf"));
   ASSERT_NE(original, nullptr);
   ASSERT_EQ(original->getNumBodyNodes(), 2u);
@@ -1257,8 +1257,8 @@ TEST(SdfWriter, RoundTripsExistingTwoLinkRevoluteFixture)
 
   const auto path
       = writeTempSdf(writeResult.value(), "existing_two_link_revolute");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -1371,7 +1371,7 @@ TEST(SdfWriter, RoundTripsExistingSimpleJointModelFixtures)
   for (const auto& testCase : cases) {
     SCOPED_TRACE(testCase.uri);
     const auto original
-        = utils::SdfParser::readSkeleton(common::Uri(testCase.uri));
+        = io::SdfParser::readSkeleton(common::Uri(testCase.uri));
     ASSERT_NE(original, nullptr);
     ASSERT_EQ(original->getNumBodyNodes(), 2u);
     ASSERT_EQ(original->getNumJoints(), 2u);
@@ -1380,9 +1380,9 @@ TEST(SdfWriter, RoundTripsExistingSimpleJointModelFixtures)
     ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
     const auto path = writeTempSdf(writeResult.value(), testCase.tempName);
-    const utils::SdfParser::Options options(
-        nullptr, utils::SdfParser::RootJointType::Fixed);
-    const auto reparsed = utils::SdfParser::readSkeleton(
+    const io::SdfParser::Options options(
+        nullptr, io::SdfParser::RootJointType::Fixed);
+    const auto reparsed = io::SdfParser::readSkeleton(
         common::Uri::createFromPath(path.string()), options);
     std::filesystem::remove(path);
 
@@ -1436,7 +1436,7 @@ TEST(SdfWriter, RoundTripsExistingSimpleJointModelFixtures)
 //==============================================================================
 TEST(SdfWriter, RoundTripsExistingUniversalJointModelFixture)
 {
-  const auto original = utils::SdfParser::readSkeleton(
+  const auto original = io::SdfParser::readSkeleton(
       common::Uri("dart://sample/sdf/test/test_issue1596.model"));
   ASSERT_NE(original, nullptr);
   ASSERT_EQ(original->getName(), "model_1");
@@ -1447,8 +1447,8 @@ TEST(SdfWriter, RoundTripsExistingUniversalJointModelFixture)
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   const auto path = writeTempSdf(writeResult.value(), "test_issue1596_model");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -1514,7 +1514,7 @@ TEST(SdfWriter, RoundTripsExistingWorldRevoluteFixtures)
 
   for (const auto& [uri, name] : fixtures) {
     SCOPED_TRACE(uri);
-    const auto original = utils::SdfParser::readSkeleton(common::Uri(uri));
+    const auto original = io::SdfParser::readSkeleton(common::Uri(uri));
     ASSERT_NE(original, nullptr);
     ASSERT_EQ(original->getNumBodyNodes(), 2u);
     ASSERT_EQ(original->getNumJoints(), 2u);
@@ -1532,7 +1532,7 @@ TEST(SdfWriter, RoundTripsExistingWorldRevoluteFixtures)
     ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
     const auto path = writeTempSdf(writeResult.value(), name);
-    const auto reparsed = utils::SdfParser::readSkeleton(
+    const auto reparsed = io::SdfParser::readSkeleton(
         common::Uri::createFromPath(path.string()));
     std::filesystem::remove(path);
 
@@ -1609,7 +1609,7 @@ TEST(SdfWriter, RoundTripsExistingWorldRevoluteFixtures)
 //==============================================================================
 TEST(SdfWriter, RoundTripsExistingForceTorqueWorldFixture)
 {
-  const auto original = utils::SdfParser::readSkeleton(
+  const auto original = io::SdfParser::readSkeleton(
       common::Uri("dart://sample/sdf/test/force_torque_test.world"));
   ASSERT_NE(original, nullptr);
   ASSERT_EQ(original->getNumBodyNodes(), 2u);
@@ -1629,8 +1629,8 @@ TEST(SdfWriter, RoundTripsExistingForceTorqueWorldFixture)
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   const auto path = writeTempSdf(writeResult.value(), "force_torque_world");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -1746,7 +1746,7 @@ TEST(SdfWriter, RoundTripsExistingSingleBodyWorldFixtures)
   for (const auto& testCase : cases) {
     SCOPED_TRACE(testCase.uri);
     const auto original
-        = utils::SdfParser::readSkeleton(common::Uri(testCase.uri));
+        = io::SdfParser::readSkeleton(common::Uri(testCase.uri));
     ASSERT_NE(original, nullptr);
     ASSERT_EQ(original->getNumBodyNodes(), 1u);
     ASSERT_EQ(original->getNumJoints(), 1u);
@@ -1761,7 +1761,7 @@ TEST(SdfWriter, RoundTripsExistingSingleBodyWorldFixtures)
     ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
     const auto path = writeTempSdf(writeResult.value(), testCase.tempName);
-    const auto reparsed = utils::SdfParser::readSkeleton(
+    const auto reparsed = io::SdfParser::readSkeleton(
         common::Uri::createFromPath(path.string()));
     std::filesystem::remove(path);
 
@@ -1800,7 +1800,7 @@ TEST(SdfWriter, RoundTripsExistingSingleBodyWorldFixtures)
 //==============================================================================
 TEST(SdfWriter, RoundTripsExistingGroundWorldFixture)
 {
-  const auto original = utils::SdfParser::readSkeleton(
+  const auto original = io::SdfParser::readSkeleton(
       common::Uri("dart://sample/sdf/ground.world"));
   ASSERT_NE(original, nullptr);
   EXPECT_EQ(original->getName(), "ground_plane");
@@ -1859,8 +1859,8 @@ TEST(SdfWriter, RoundTripsExistingGroundWorldFixture)
   EXPECT_DOUBLE_EQ(sdfCollision->Surface()->Friction()->ODE()->Mu2(), 50.0);
 
   const auto path = writeTempSdf(writeResult.value(), "ground_world");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -1924,10 +1924,10 @@ TEST(SdfWriter, RoundTripsSelectedDoublePendulumWorldFixtures)
 
   for (const auto& testCase : cases) {
     SCOPED_TRACE(testCase.uri);
-    utils::SdfParser::Options readOptions;
+    io::SdfParser::Options readOptions;
     readOptions.mModelName = std::string(testCase.modelName);
-    const auto original = utils::SdfParser::readSkeleton(
-        common::Uri(testCase.uri), readOptions);
+    const auto original
+        = io::SdfParser::readSkeleton(common::Uri(testCase.uri), readOptions);
     ASSERT_NE(original, nullptr);
     EXPECT_EQ(original->getName(), testCase.modelName);
     EXPECT_VECTOR_NEAR(
@@ -1976,7 +1976,7 @@ TEST(SdfWriter, RoundTripsSelectedDoublePendulumWorldFixtures)
     EXPECT_NE(sdfModel->JointByName("lower_joint"), nullptr);
 
     const auto path = writeTempSdf(writeResult.value(), testCase.tempName);
-    const auto reparsed = utils::SdfParser::readSkeleton(
+    const auto reparsed = io::SdfParser::readSkeleton(
         common::Uri::createFromPath(path.string()));
     std::filesystem::remove(path);
 
@@ -2123,11 +2123,11 @@ TEST(SdfWriter, RoundTripsSelectedModelFromSecondWorld)
 </sdf>
 )");
 
-  utils::SdfParser::Options readOptions;
+  io::SdfParser::Options readOptions;
   readOptions.mResourceRetriever = retriever;
   readOptions.mModelName = "selected_second_world_model";
   const auto original
-      = utils::SdfParser::readSkeleton(common::Uri(uri), readOptions);
+      = io::SdfParser::readSkeleton(common::Uri(uri), readOptions);
   ASSERT_NE(original, nullptr);
   EXPECT_EQ(original->getName(), "selected_second_world_model");
   EXPECT_VECTOR_NEAR(original->getGravity(), Eigen::Vector3d(0, 1, -4), 1e-12);
@@ -2183,8 +2183,8 @@ TEST(SdfWriter, RoundTripsSelectedModelFromSecondWorld)
 
   const auto path
       = writeTempSdf(writeResult.value(), "selected_second_world_model");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -2209,9 +2209,9 @@ TEST(SdfWriter, RoundTripsSelectedModelFromSecondWorld)
 //==============================================================================
 TEST(SdfWriter, RoundTripsSelectedIssue1624CubeFixture)
 {
-  utils::SdfParser::Options readOptions;
+  io::SdfParser::Options readOptions;
   readOptions.mModelName = "model_0_0_1";
-  const auto original = utils::SdfParser::readSkeleton(
+  const auto original = io::SdfParser::readSkeleton(
       common::Uri("dart://sample/sdf/test/issue1624_cubes.sdf"), readOptions);
   ASSERT_NE(original, nullptr);
   EXPECT_EQ(original->getName(), "model_0_0_1");
@@ -2278,8 +2278,8 @@ TEST(SdfWriter, RoundTripsSelectedIssue1624CubeFixture)
   EXPECT_DOUBLE_EQ(collisionBox->Size().Z(), 1.0);
 
   const auto path = writeTempSdf(writeResult.value(), "issue1624_cube");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -2305,7 +2305,7 @@ TEST(SdfWriter, RoundTripsSelectedIssue1624CubeFixture)
 //==============================================================================
 TEST(SdfWriter, RoundTripsExistingMixedJointWorldFixture)
 {
-  const auto original = utils::SdfParser::readSkeleton(
+  const auto original = io::SdfParser::readSkeleton(
       common::Uri("dart://sample/sdf/test/test_skeleton_joint.world"));
   ASSERT_NE(original, nullptr);
   ASSERT_EQ(original->getNumBodyNodes(), 5u);
@@ -2315,8 +2315,8 @@ TEST(SdfWriter, RoundTripsExistingMixedJointWorldFixture)
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
 
   const auto path = writeTempSdf(writeResult.value(), "mixed_joint_world");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -2394,7 +2394,7 @@ TEST(SdfWriter, RoundTripsExistingMixedJointWorldFixture)
 //==============================================================================
 TEST(SdfWriter, RoundTripsExistingForceTorqueChainWorldFixture)
 {
-  const auto original = utils::SdfParser::readSkeleton(
+  const auto original = io::SdfParser::readSkeleton(
       common::Uri("dart://sample/sdf/test/force_torque_test2.world"));
   ASSERT_NE(original, nullptr);
   ASSERT_EQ(original->getNumBodyNodes(), 3u);
@@ -2421,8 +2421,8 @@ TEST(SdfWriter, RoundTripsExistingForceTorqueChainWorldFixture)
 
   const auto path
       = writeTempSdf(writeResult.value(), "force_torque_chain_world");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -2471,9 +2471,9 @@ TEST(SdfWriter, RoundTripsExistingForceTorqueChainWorldFixture)
 //==============================================================================
 TEST(SdfWriter, RoundTripsSelectedMimicWorldFixture)
 {
-  utils::SdfParser::Options readOptions;
+  io::SdfParser::Options readOptions;
   readOptions.mModelName = "pendulum_with_base_mimic_slow_follows_fast";
-  const auto original = utils::SdfParser::readSkeleton(
+  const auto original = io::SdfParser::readSkeleton(
       common::Uri("dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf"),
       readOptions);
   ASSERT_NE(original, nullptr);
@@ -2533,8 +2533,8 @@ TEST(SdfWriter, RoundTripsSelectedMimicWorldFixture)
   EXPECT_DOUBLE_EQ(sdfMimic->Offset(), 0.0);
 
   const auto path = writeTempSdf(writeResult.value(), "selected_mimic_world");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -2626,8 +2626,8 @@ TEST(SdfWriter, RoundTripsJointAxisVelocityAndEffortLimits)
   EXPECT_DOUBLE_EQ(sdfJoint->Axis(0)->Effort(), 5.5);
 
   const auto path = writeTempSdf(writeResult.value(), "axis_limits");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -2656,8 +2656,8 @@ TEST(SdfWriter, WritesModernScrewThreadPitchForSdf110)
   EXPECT_EQ(writeResult.value().find("<thread_pitch>"), std::string::npos);
 
   const auto path = writeTempSdf(writeResult.value(), "screw_thread_pitch");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -2749,9 +2749,9 @@ TEST(SdfWriter, PreservesAbsoluteNonFileMeshUris)
   const std::string modelUri = "memory://pkg/models/writer_roundtrip.sdf";
   retriever->add(modelUri, writeResult.value());
 
-  const utils::SdfParser::Options options(retriever);
+  const io::SdfParser::Options options(retriever);
   const auto reparsed
-      = utils::SdfParser::readSkeleton(common::Uri(modelUri), options);
+      = io::SdfParser::readSkeleton(common::Uri(modelUri), options);
 
   ASSERT_NE(reparsed, nullptr);
   const auto* reparsedBody = test::requireBodyNode(*reparsed, "mesh_body");
@@ -2803,8 +2803,8 @@ TEST(SdfWriter, RoundTripsMeshMaterialVariantsThroughUri)
 
   const auto path
       = writeTempSdf(writeResult.value(), "mesh_material_roundtrip");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -2921,8 +2921,8 @@ TEST(SdfWriter, RoundTripsModelSelfCollision)
   EXPECT_TRUE(sdfRoot.Model()->SelfCollide());
 
   const auto path = writeTempSdf(writeResult.value(), "self_collision");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -2965,8 +2965,8 @@ TEST(SdfWriter, RoundTripsModelStaticStateWithImplicitRoot)
   EXPECT_EQ(sdfRoot.Model()->JointCount(), 0u);
 
   const auto path = writeTempSdf(writeResult.value(), "static_model");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -3024,8 +3024,8 @@ TEST(SdfWriter, RoundTripsNonDefaultSkeletonGravityThroughWorld)
   EXPECT_EQ(sdfWorld->ModelByIndex(0)->Name(), "gravity_writer");
 
   const auto path = writeTempSdf(writeResult.value(), "gravity_world");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -3064,8 +3064,8 @@ TEST(SdfWriter, RoundTripsVisualShadowAndHiddenState)
   EXPECT_EQ(sdfVisual->VisibilityFlags(), 0u);
 
   const auto path = writeTempSdf(writeResult.value(), "visual_metadata");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -3110,8 +3110,8 @@ TEST(SdfWriter, RoundTripsVisualTransparency)
   EXPECT_NEAR(sdfVisual->Transparency(), 0.25f, 1e-6);
 
   const auto path = writeTempSdf(writeResult.value(), "visual_transparency");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -3173,8 +3173,8 @@ TEST(SdfWriter, RoundTripsCollisionSurfaceOdeFriction)
   EXPECT_DOUBLE_EQ(ode->Slip2(), 0.025);
 
   const auto path = writeTempSdf(writeResult.value(), "surface_friction");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -3252,8 +3252,8 @@ TEST(SdfWriter, RoundTripsCollisionSurfaceContactBitmask)
   EXPECT_EQ(sdfCollision->Surface()->Contact()->CollideBitmask(), 0u);
 
   const auto path = writeTempSdf(writeResult.value(), "collision_bitmask");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -3296,8 +3296,8 @@ TEST(SdfWriter, RoundTripsBodyLevelCollidableAsCollisionBitmask)
   EXPECT_EQ(sdfCollision->Surface()->Contact()->CollideBitmask(), 0u);
 
   const auto path = writeTempSdf(writeResult.value(), "body_collision_bitmask");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -3349,8 +3349,8 @@ TEST(SdfWriter, RoundTripsCollisionSurfaceBounceRestitution)
   EXPECT_DOUBLE_EQ(getSdfDoubleElement(bounceElement, "threshold"), 0.0);
 
   const auto path = writeTempSdf(writeResult.value(), "collision_bounce");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -3425,8 +3425,8 @@ TEST(SdfWriter, RoundTripsCombinedCollisionSurfaceMetadata)
 
   const auto path
       = writeTempSdf(writeResult.value(), "combined_collision_surface");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -3487,8 +3487,8 @@ TEST(SdfWriter, RoundTripsContinuousRevoluteJoint)
   EXPECT_EQ(sdfJoint->Type(), sdf::JointType::CONTINUOUS);
 
   const auto path = writeTempSdf(writeResult.value(), "continuous");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -3567,8 +3567,8 @@ TEST(SdfWriter, RoundTripsMimicMetadataWithSdf111)
   EXPECT_NEAR(mimic->Reference(), 0.0, 1e-12);
 
   const auto path = writeTempSdf(writeResult.value(), "mimic");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -3777,9 +3777,9 @@ TEST(SdfWriter, RootWeldRoundTripsWithFixedRootOption)
   EXPECT_TRUE(sdfRoot.Model()->Static());
 
   const auto path = writeTempSdf(writeResult.value(), "root_weld");
-  const utils::SdfParser::Options options(
-      nullptr, utils::SdfParser::RootJointType::Fixed);
-  const auto reparsed = utils::SdfParser::readSkeleton(
+  const io::SdfParser::Options options(
+      nullptr, io::SdfParser::RootJointType::Fixed);
+  const auto reparsed = io::SdfParser::readSkeleton(
       common::Uri::createFromPath(path.string()), options);
   std::filesystem::remove(path);
 
@@ -3838,8 +3838,8 @@ TEST(SdfWriter, RootRevoluteJointRoundTripsAsParentWorld)
   EXPECT_EQ(sdfJoint->ChildName(), "pendulum");
 
   const auto path = writeTempSdf(writeResult.value(), "root_revolute");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -3911,8 +3911,8 @@ TEST(SdfWriter, RootContinuousRevoluteJointRoundTripsAsParentWorld)
   EXPECT_EQ(sdfJoint->ChildName(), "continuous_body");
 
   const auto path = writeTempSdf(writeResult.value(), "root_continuous");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -3983,8 +3983,8 @@ TEST(SdfWriter, RootPrismaticJointRoundTripsAsParentWorld)
   EXPECT_EQ(sdfJoint->ChildName(), "slider");
 
   const auto path = writeTempSdf(writeResult.value(), "root_prismatic");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -4056,8 +4056,8 @@ TEST(SdfWriter, RootScrewJointRoundTripsAsParentWorld)
   EXPECT_NEAR(sdfJoint->ScrewThreadPitch(), 0.35, 1e-12);
 
   const auto path = writeTempSdf(writeResult.value(), "root_screw");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -4134,8 +4134,8 @@ TEST(SdfWriter, RootUniversalJointRoundTripsAsParentWorld)
   EXPECT_EQ(sdfJoint->ChildName(), "universal_body");
 
   const auto path = writeTempSdf(writeResult.value(), "root_universal");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -4203,8 +4203,8 @@ TEST(SdfWriter, RootBallJointRoundTripsAsParentWorld)
   EXPECT_EQ(sdfJoint->ChildName(), "ball_body");
 
   const auto path = writeTempSdf(writeResult.value(), "root_ball");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -4280,8 +4280,8 @@ TEST(SdfWriter, RoundTripsMultipleRootFreeJointTrees)
   EXPECT_NE(sdfRoot.Model()->LinkByName("beta"), nullptr);
 
   const auto path = writeTempSdf(writeResult.value(), "multi_root");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -4391,8 +4391,8 @@ TEST(SdfWriter, RoundTripsMixedImplicitAndParentWorldRoots)
   EXPECT_EQ(sdfJoint->ChildName(), "pendulum");
 
   const auto path = writeTempSdf(writeResult.value(), "mixed_root");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -4532,8 +4532,8 @@ TEST(SdfWriter, RoundTripsCapsuleAndConeGeometry)
   EXPECT_EQ(sdfConeCollision->Geom()->Type(), sdf::GeometryType::CONE);
 
   const auto path = writeTempSdf(writeResult.value(), "capsule_cone");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -4824,7 +4824,7 @@ TEST(SdfWriter, RelativeMeshUriReturnsError)
 //==============================================================================
 TEST(SdfWriter, RoundTripsExistingRelativeMeshModelFixture)
 {
-  const auto original = utils::SdfParser::readSkeleton(
+  const auto original = io::SdfParser::readSkeleton(
       common::Uri(
           "dart://sample/sdf/test/include_relative_mesh/"
           "included_model/model.sdf"));
@@ -4851,8 +4851,8 @@ TEST(SdfWriter, RoundTripsExistingRelativeMeshModelFixture)
 
   const auto path
       = writeTempSdf(writeResult.value(), "existing_relative_mesh_model");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);
@@ -4897,7 +4897,7 @@ TEST(SdfWriter, RoundTripsExistingRelativeMeshModelFixture)
 //==============================================================================
 TEST(SdfWriter, RoundTripsExistingRelativeMeshIncludeWorldFixture)
 {
-  const auto original = utils::SdfParser::readSkeleton(
+  const auto original = io::SdfParser::readSkeleton(
       common::Uri(
           "dart://sample/sdf/test/include_relative_mesh/"
           "include_relative_mesh.world"));
@@ -4953,8 +4953,8 @@ TEST(SdfWriter, RoundTripsExistingRelativeMeshIncludeWorldFixture)
 
   const auto path
       = writeTempSdf(writeResult.value(), "existing_relative_mesh_include");
-  const auto reparsed = utils::SdfParser::readSkeleton(
-      common::Uri::createFromPath(path.string()));
+  const auto reparsed
+      = io::SdfParser::readSkeleton(common::Uri::createFromPath(path.string()));
   std::filesystem::remove(path);
 
   ASSERT_NE(reparsed, nullptr);

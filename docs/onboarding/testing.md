@@ -293,7 +293,7 @@ Unit tests focus on testing **individual classes or functions in isolation**. Th
 - ✅ Loads files and runs full simulations
 - ✅ Tests multiple modules working together
 - ✅ Validates end-to-end workflows
-- ✅ Depends on dart-utils or multiple dart-\* libraries
+- ✅ Depends on dart-io or multiple dart-\* libraries
 
 **Use Unit Test if:**
 
@@ -444,7 +444,7 @@ Examples (Suggested, Unverified):
    ```cmake
    dart_add_test("integration" test_YourTest)
    # If you need additional libraries:
-   target_link_libraries(test_YourTest dart-utils)
+   target_link_libraries(test_YourTest dart-io)
    ```
 3. **Write your test** using GoogleTest framework:
 
@@ -734,7 +734,7 @@ using namespace Eigen;  // For Eigen types in test code
 **Solution:** Ensure benchmark tests link against the benchmark library:
 
 ```cmake
-target_link_libraries(bm_yourtest dart-utils benchmark::benchmark)
+target_link_libraries(bm_yourtest dart-io benchmark::benchmark)
 ```
 
 ### Windows DLL Export Issues in Tests
@@ -755,7 +755,7 @@ target_link_libraries(bm_yourtest dart-utils benchmark::benchmark)
 
 **Solution:** Use modern header names:
 
-- `dart/utils/utils.hpp` → `dart/utils/All.hpp`
+- `dart/io/io.hpp` -> `dart/io/All.hpp`
 - `dart/simulation/simulation.hpp` → `dart/simulation/All.hpp`
 - `dart/constraint/constraint.hpp` → `dart/constraint/All.hpp`
 - `dart/collision/bullet/bullet.hpp` → `dart/collision/bullet/All.hpp`

@@ -425,7 +425,7 @@ compatibility remains on the active DART 6 LTS branch._
   gates replacing broad stale test targets.
 - Added a lint/check-lint guard that keeps SDF IO on libsdformat typed DOM APIs
   and rejects TinyXML, raw XML tree, or SDF element text-parsing helpers in
-  `dart/utils/sdf`: [#3291](https://github.com/dartsim/dart/pull/3291)
+  `dart/io/sdf`: [#3291](https://github.com/dartsim/dart/pull/3291)
 - Restored Performance Dashboard benchmark builds in Pixi environments that use
   the host compiler while Conda binutils appear earlier on `PATH`.
 - Sharded the heaviest simulation CTest binaries, tightened CUDA environment

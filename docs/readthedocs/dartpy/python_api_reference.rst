@@ -35,5 +35,5 @@ Module Reference
 
    api/modules/dartpy
    api/modules/simulation
-   api/modules/utils
+   api/modules/io
    api/modules/gui

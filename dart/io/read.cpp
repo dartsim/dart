@@ -36,18 +36,18 @@
 #include "dart/common/logging.hpp"
 #include "dart/common/result.hpp"
 #include "dart/common/string.hpp"
-#include "dart/utils/composite_resource_retriever.hpp"
-#include "dart/utils/dart_resource_retriever.hpp"
-#include "dart/utils/package_resource_retriever.hpp"
+#include "dart/io/composite_resource_retriever.hpp"
+#include "dart/io/dart_resource_retriever.hpp"
+#include "dart/io/package_resource_retriever.hpp"
 
 #if DART_HAS_SDFORMAT
-  #include "dart/utils/sdf/sdf_parser.hpp"
+  #include "dart/io/sdf/sdf_parser.hpp"
 
   #include <sdf/Root.hh>
 #endif
 
 #if DART_IO_HAS_URDF
-  #include "dart/utils/urdf/urdf_parser.hpp"
+  #include "dart/io/urdf/urdf_parser.hpp"
 #endif
 
 #if DART_IO_HAS_USD
@@ -71,10 +71,10 @@ common::ResourceRetrieverPtr getRetriever(
     return retrieverOrNullptr;
   }
 
-  auto composite = std::make_shared<utils::CompositeResourceRetriever>();
+  auto composite = std::make_shared<io::CompositeResourceRetriever>();
   composite->addSchemaRetriever(
       "file", std::make_shared<common::LocalResourceRetriever>());
-  composite->addSchemaRetriever("dart", utils::DartResourceRetriever::create());
+  composite->addSchemaRetriever("dart", io::DartResourceRetriever::create());
   return composite;
 }
 
@@ -230,7 +230,7 @@ common::ResourceRetrieverPtr getUrdfResourceRetriever(
     return options.resourceRetriever;
   }
 
-  auto packageRetriever = std::make_shared<utils::PackageResourceRetriever>(
+  auto packageRetriever = std::make_shared<io::PackageResourceRetriever>(
       options.resourceRetriever);
   for (const auto& [packageName, packageDirectories] :
        options.urdfPackageDirectories) {
@@ -239,7 +239,7 @@ common::ResourceRetrieverPtr getUrdfResourceRetriever(
     }
   }
 
-  auto resolver = std::make_shared<utils::CompositeResourceRetriever>();
+  auto resolver = std::make_shared<io::CompositeResourceRetriever>();
   resolver->addSchemaRetriever("package", packageRetriever);
   resolver->addDefaultRetriever(options.resourceRetriever);
   return resolver;
@@ -251,8 +251,7 @@ dynamics::SkeletonPtr readUrdfSkeleton(
   ReadOptions resolved = options;
   resolved.resourceRetriever = getUrdfResourceRetriever(options);
 
-  utils::UrdfParser parser(
-      utils::UrdfParser::Options(resolved.resourceRetriever));
+  io::UrdfParser parser(io::UrdfParser::Options(resolved.resourceRetriever));
   return parser.parseSkeleton(uri);
 }
 #endif
@@ -283,12 +282,12 @@ dynamics::SkeletonPtr readSkeleton(
     case Sdf:
 #if DART_HAS_SDFORMAT
     {
-      auto sdfOptions = utils::SdfParser::Options(resolved.resourceRetriever);
+      auto sdfOptions = io::SdfParser::Options(resolved.resourceRetriever);
       sdfOptions.mDefaultRootJointType
           = (resolved.sdfDefaultRootJointType == RootJointType::Fixed)
-                ? utils::SdfParser::RootJointType::Fixed
-                : utils::SdfParser::RootJointType::Floating;
-      return utils::SdfParser::readSkeleton(uri, sdfOptions);
+                ? io::SdfParser::RootJointType::Fixed
+                : io::SdfParser::RootJointType::Floating;
+      return io::SdfParser::readSkeleton(uri, sdfOptions);
     }
 #else
       DART_ERROR(
@@ -303,7 +302,8 @@ dynamics::SkeletonPtr readSkeleton(
 #else
       DART_ERROR(
           "[dart::io::readSkeleton] URDF support is not available. Build and "
-          "link against dart-utils-urdf to read URDF files. URI=[{}]",
+          "link against dart-io with urdfdom support to read URDF files. "
+          "URI=[{}]",
           uri.toString());
       return nullptr;
 #endif

@@ -23,9 +23,11 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # constraint
 # simulation
 # sensor
-# utils
+# io
+#   mjcf
 #   sdf
 #   urdf
+#   usd
 # gui
 #   experimental
 #   filament
@@ -35,9 +37,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #===============================================================================
 # dart - common, math (including math/optimization), lcpsolver, dynamics,
 #        collision (native with legacy FCL/Bullet/ODE facades), constraint, simulation,
-#        sensor, utils, gui, [assimp, eigen3, fmt]
-# dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
-# dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
+#        sensor, io, gui, [assimp, eigen3, fmt]
+# dart-io - {dart}, io, io/mjcf, io/sdf, io/urdf, io/usd,
+#           [tinyxml2, libsdformat, urdfdom, OpenUSD]
 # dart-gui - {dart-gui-core}, gui, gui/detail,
 #            [filament, glfw3, imgui, png, jpeg]
 
@@ -45,8 +47,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # Components - (dependency component), {dependency targets}
 #===============================================================================
 # dart - {dart}
-# utils - (dart), {dart-utils}
-# utils-urdf - (utils), {dart-utils-urdf}
+# io - (dart), {dart-io}
 # gui - (gui-core), {dart-gui}
 # collision-bullet - (dart), {dart} [compat]
 # collision-ode - (dart), {dart} [compat]
@@ -91,8 +92,7 @@ add_subdirectory(dynamics)
 add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(sensor)
-add_subdirectory(utils) # tinyxml2, libsdformat
-add_subdirectory(io)
+add_subdirectory(io) # tinyxml2, libsdformat, urdfdom
 add_subdirectory(gui) # DART GUI
 add_subdirectory(simd)
 

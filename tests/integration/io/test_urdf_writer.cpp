@@ -31,8 +31,8 @@
  */
 
 #include "dart/config.hpp"
+#include "dart/io/urdf/urdf_parser.hpp"
 #include "dart/io/urdf_writer.hpp"
-#include "dart/utils/urdf/urdf_parser.hpp"
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
@@ -495,7 +495,7 @@ TEST(UrdfWriter, RoundTripsSupportedTreeSubset)
   expectContains(writeResult.value(), "<robot");
   expectContains(writeResult.value(), "urdf_writer_roundtrip");
 
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
   ASSERT_NE(reparsed, nullptr);
 
@@ -579,7 +579,7 @@ TEST(UrdfWriter, RoundTripsSupportedTreeSubset)
 //==============================================================================
 TEST(UrdfWriter, RoundTripsExistingJointPropertiesFixture)
 {
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto original
       = parser.parseSkeleton("dart://sample/urdf/test/joint_properties.urdf");
   ASSERT_NE(original, nullptr);
@@ -653,7 +653,7 @@ TEST(UrdfWriter, RoundTripsExistingJointPropertiesFixture)
 //==============================================================================
 TEST(UrdfWriter, RoundTripsExistingIssue838Fixture)
 {
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto original
       = parser.parseSkeleton("dart://sample/urdf/test/issue838.urdf");
   ASSERT_NE(original, nullptr);
@@ -702,7 +702,7 @@ TEST(UrdfWriter, RoundTripsExistingIssue838Fixture)
 //==============================================================================
 TEST(UrdfWriter, RoundTripsExistingGroundFixture)
 {
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto original
       = parser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
   ASSERT_NE(original, nullptr);
@@ -735,7 +735,7 @@ TEST(UrdfWriter, RoundTripsExistingGroundFixture)
 //==============================================================================
 TEST(UrdfWriter, RoundTripsExistingPrimitiveGeometryFixture)
 {
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto original
       = parser.parseSkeleton("dart://sample/urdf/test/primitive_geometry.urdf");
   ASSERT_NE(original, nullptr);
@@ -774,7 +774,7 @@ TEST(UrdfWriter, RoundTripsExistingPrimitiveGeometryFixture)
 //==============================================================================
 TEST(UrdfWriter, ExistingKr5FixtureWithRootPoseReturnsError)
 {
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto original
       = parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   ASSERT_NE(original, nullptr);
@@ -788,7 +788,7 @@ TEST(UrdfWriter, ExistingKr5FixtureWithRootPoseReturnsError)
 //==============================================================================
 TEST(UrdfWriter, RoundTripsExistingDrchuboFixture)
 {
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   parser.addPackageDirectory("drchubo", config::dataPath("urdf/drchubo"));
 
   const auto original
@@ -851,7 +851,7 @@ TEST(UrdfWriter, RoundTripsExistingDrchuboFixture)
 //==============================================================================
 TEST(UrdfWriter, RoundTripsExistingWamFixture)
 {
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   parser.addPackageDirectory("herb_description", config::dataPath("urdf/wam"));
 
   const auto original = parser.parseSkeleton("dart://sample/urdf/wam/wam.urdf");
@@ -904,7 +904,7 @@ TEST(UrdfWriter, RoundTripsExistingWamFixture)
 //==============================================================================
 TEST(UrdfWriter, RoundTripsExistingAtlasV5NoHeadFixture)
 {
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto original
       = parser.parseSkeleton("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
   ASSERT_NE(original, nullptr);
@@ -980,7 +980,7 @@ TEST(UrdfWriter, OmitsImplicitDefaultVisualMaterial)
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   EXPECT_EQ(writeResult.value().find("<material"), std::string::npos);
 
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
   ASSERT_NE(reparsed, nullptr);
   const auto* reparsedVisual = getOnlyVisual(*reparsed);
@@ -1008,7 +1008,7 @@ TEST(UrdfWriter, PreservesExplicitDefaultVisualMaterial)
   expectContains(writeResult.value(), "<material");
   expectContains(writeResult.value(), "rgba=\"0.5 0.5 1 1\"");
 
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
   ASSERT_NE(reparsed, nullptr);
   const auto* reparsedVisual = getOnlyVisual(*reparsed);
@@ -1035,7 +1035,7 @@ TEST(UrdfWriter, PreservesDefaultVisualAlphaOverride)
   ASSERT_TRUE(writeResult.isOk()) << writeResult.error().message;
   expectContains(writeResult.value(), "<material");
 
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
   ASSERT_NE(reparsed, nullptr);
   const auto* reparsedVisual = getOnlyVisual(*reparsed);
@@ -1092,7 +1092,7 @@ TEST(UrdfWriter, RoundTripsMimicMetadata)
   expectContains(writeResult.value(), "<mimic");
   expectContains(writeResult.value(), "joint=\"reference_joint\"");
 
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
   ASSERT_NE(reparsed, nullptr);
 
@@ -1142,7 +1142,7 @@ TEST(UrdfWriter, RoundTripsContinuousJointDynamics)
   expectContains(writeResult.value(), "<dynamics");
   EXPECT_EQ(writeResult.value().find("<limit"), std::string::npos);
 
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
   ASSERT_NE(reparsed, nullptr);
 
@@ -1208,7 +1208,7 @@ TEST(UrdfWriter, RoundTripsPlanarAndFloatingJoints)
   expectContains(writeResult.value(), "<limit");
   expectContains(writeResult.value(), "<dynamics");
 
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
   ASSERT_NE(reparsed, nullptr);
 
@@ -1256,7 +1256,7 @@ TEST(UrdfWriter, PreservesPackageMeshUri)
   expectContains(
       writeResult.value(), "filename=\"package://writer_pkg/BoxSmall.obj\"");
 
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   parser.addPackageDirectory("writer_pkg", config::dataPath("obj"));
   const auto reparsed = parser.parseSkeletonString(
       writeResult.value(), common::Uri("memory://package_mesh.urdf"));
@@ -1283,7 +1283,7 @@ TEST(UrdfWriter, PreservesCollisionPackageMeshUri)
       writeResult.value(), "filename=\"package://writer_pkg/BoxSmall.obj\"");
   expectContains(writeResult.value(), "<collision");
 
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   parser.addPackageDirectory("writer_pkg", config::dataPath("obj"));
   const auto reparsed = parser.parseSkeletonString(
       writeResult.value(), common::Uri("memory://collision_package_mesh.urdf"));
@@ -1606,9 +1606,9 @@ TEST(UrdfWriter, IdentityRootWeldWritesRootLinkWithoutParentJointMetadata)
   EXPECT_EQ(writeResult.value().find("<joint"), std::string::npos);
   EXPECT_EQ(writeResult.value().find("fixed_root"), std::string::npos);
 
-  utils::UrdfParser::Options options;
-  options.mDefaultRootJointType = utils::UrdfParser::RootJointType::Fixed;
-  utils::UrdfParser parser(options);
+  io::UrdfParser::Options options;
+  options.mDefaultRootJointType = io::UrdfParser::RootJointType::Fixed;
+  io::UrdfParser parser(options);
   const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
   ASSERT_NE(reparsed, nullptr);
   ASSERT_NE(reparsed->getRootJoint(), nullptr);
@@ -1918,7 +1918,7 @@ TEST(UrdfWriter, RoundTripsCouplerMimicThroughTransmissions)
       "name=\"dart_coupler_reference_joint_follower_joint_actuator\"");
   EXPECT_EQ(writeResult.value().find("<mimic"), std::string::npos);
 
-  utils::UrdfParser parser;
+  io::UrdfParser parser;
   const auto reparsed = parser.parseSkeletonString(writeResult.value(), "");
   ASSERT_NE(reparsed, nullptr);
 

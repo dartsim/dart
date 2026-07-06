@@ -24,7 +24,7 @@ This unified API and documentation were introduced while addressing issue #604
 (parser naming) and migrating tests/examples/tutorials to the `dart::io`
 component APIs. The DART 7 surface keeps a single, consistent skeleton-loading
 front door (`dart::io`) without introducing new nested namespaces, while keeping
-parser-specific customization available via `dart::utils::*` parsers where
+parser-specific customization available via `dart::io::*` parsers where
 needed. DART 7 removed SKEL rather than redesigning it as YAML; migrate legacy
 SKEL assets to URDF, SDF, or MJCF. Unit coverage for the promoted options
 lives in `tests/unit/io/test_read.cpp`.
@@ -34,7 +34,7 @@ lives in `tests/unit/io/test_read.cpp`.
 ### One front door, not one mega-parser
 
 `dart::io::readSkeleton` is the preferred entry point for new C++ code.
-Internally it delegates to the format-specific parsers in `dart::utils`.
+Internally it delegates to the format-specific parsers in `dart::io`.
 Whole-world loading is not part of the DART 7 public `dart::io` API.
 
 DART 7 public interchange APIs use `read` / `write` for operations and
@@ -49,7 +49,7 @@ Instead:
 - `dart::io::ReadOptions` carries **common** options and a **small set** of
   high-frequency format-specific options that are hard to avoid in real projects.
 - If you need a format-specific feature that is not represented in `ReadOptions`, use the
-  underlying parser directly (e.g., `dart::utils::UrdfParser`).
+  underlying parser directly (e.g., `dart::io::UrdfParser`).
 
 This keeps the common-path API simple while preserving full capability for advanced use.
 
@@ -86,10 +86,10 @@ Source of truth:
 - `dart/io/sdf_writer.hpp` for the first format-specific SDF writer
 - `pixi run check-sdf-sdformat-boundary` guards the SDF implementation against
   TinyXML/raw XML parser APIs and generic SDF element text parsing in
-  `dart/utils/sdf` plus the `dart/io` SDF writer, and keeps ambiguous
+  `dart/io/sdf` plus the `dart/io` SDF writer, and keeps ambiguous
   `dart::io` SDF auto-detection on libsdformat before the legacy URDF/MJCF
   XML-root fallback
-- `dart/utils/sdf/` uses libsdformat DOM APIs for SDF structure, model/link
+- `dart/io/sdf/` uses libsdformat DOM APIs for SDF structure, model/link
   static and self-collision state, named top-level/world model selection, world
   gravity, included model source URIs for relative resource resolution,
   inertial,
@@ -161,12 +161,12 @@ auto skel = dart::io::readSkeleton("dart://sample/sdf/test/box.sdf", options);
 
 When an SDF world contains multiple models, `dart::io::readSkeleton` keeps the
 default SDF parser behavior of loading the first model from the first world.
-Call `dart::utils::SdfParser` directly when a workflow needs a specific model:
+Call `dart::io::SdfParser` directly when a workflow needs a specific model:
 
 ```cpp
-dart::utils::SdfParser::Options options;
+dart::io::SdfParser::Options options;
 options.mModelName = "selected_model";
-auto skel = dart::utils::SdfParser::readSkeleton(
+auto skel = dart::io::SdfParser::readSkeleton(
     dart::common::Uri("file:///path/to/world.sdf"), options);
 ```
 
@@ -186,7 +186,7 @@ options.addPackageDirectory("my_robot", "/path/to/my_robot");
 auto skel = dart::io::readSkeleton("package://my_robot/urdf/robot.urdf", options);
 ```
 
-This is the `dart::io` equivalent of `dart::utils::UrdfParser::addPackageDirectory`.
+This is the `dart::io` equivalent of `dart::io::UrdfParser::addPackageDirectory`.
 
 ## When to add a new option to `ReadOptions`
 
@@ -394,6 +394,6 @@ unsupported cases.
 
 The consolidated API is primarily for **C++** (`dart::io`). However, the Python
 bindings (`dartpy`) also expose parsers under `dart.io` (e.g.
-`dart.io.UrdfParser`). The legacy `dart.utils.*` parsers are deprecated and
-should be avoided in new code. Treat SKEL as a DART 6 compatibility format and
-use a `release-6.*` branch for old SKEL assets.
+`dart.io.UrdfParser`). The former utility parser module is removed from DART 7.
+Treat SKEL as a DART 6 compatibility format and use a `release-6.*` branch for
+old SKEL assets.

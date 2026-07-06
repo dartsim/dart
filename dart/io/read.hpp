@@ -100,7 +100,7 @@ struct DART_IO_API ReadOptions
   /// Package directories for resolving package:// URIs in URDF files.
   ///
   /// This is equivalent to calling
-  /// dart::utils::UrdfParser::addPackageDirectory. You can provide multiple
+  /// dart::io::UrdfParser::addPackageDirectory. You can provide multiple
   /// directories per package name; they will be tried in the same order in
   /// which they are added.
   std::map<std::string, std::vector<std::string>> urdfPackageDirectories;
