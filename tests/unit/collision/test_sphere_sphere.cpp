@@ -707,3 +707,31 @@ TEST(SphereSphere, BinaryCheckReportsHitWithoutContacts)
   EXPECT_FALSE(collideSpheres(sphere1, tf1, sphere2, tf2, result, option));
   EXPECT_EQ(result.numContacts(), 0);
 }
+
+TEST(SphereSphere, ZeroContactLimitShortCircuitsEvenWithoutContact)
+{
+  // maxNumContacts == 0 disables detection and must return false regardless of
+  // enableContact, even for an overlapping pair. This takes precedence over the
+  // enableContact binary-check path.
+  CollisionOption option;
+  option.enableContact = false;
+  option.maxNumContacts = 0;
+
+  CollisionResult result;
+  EXPECT_FALSE(collideSpheres(
+      Eigen::Vector3d(0, 0, 0),
+      1.0,
+      Eigen::Vector3d(1.5, 0, 0),
+      1.0,
+      result,
+      option));
+  EXPECT_EQ(result.numContacts(), 0);
+
+  SphereShape sphere1(1.0);
+  SphereShape sphere2(1.0);
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(0.0, 1.5, 0.0);
+  EXPECT_FALSE(collideSpheres(sphere1, tf1, sphere2, tf2, result, option));
+  EXPECT_EQ(result.numContacts(), 0);
+}
