@@ -1089,6 +1089,16 @@ image-golden = { cmd = ["python", "scripts/image_golden.py"] }
 
 image-sheet = { cmd = ["python", "scripts/image_sheet.py"] }
 
+# Opt-in golden-image gate: render a canonical scene through dart.gui.render and
+# compare it against a committed, backend-specific golden. Not wired into
+# default CI; regenerate the golden with `-- --update` on the target backend.
+render-golden-gate = { cmd = [
+  "python",
+  "scripts/render_golden_gate.py",
+], depends-on = [
+  "build-py-dev-docking",
+], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python" } }
+
 trajectory-record = { cmd = [
   "python",
   "scripts/trajectory_record.py",
