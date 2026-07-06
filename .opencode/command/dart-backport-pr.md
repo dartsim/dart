@@ -15,6 +15,7 @@ Backport PR or commits: $ARGUMENTS
 @AGENTS.md
 @docs/onboarding/contributing.md
 @docs/onboarding/release-management.md
+@docs/onboarding/changelog.md
 
 ## Workflow
 
@@ -27,14 +28,20 @@ Backport PR or commits: $ARGUMENTS
    git fetch origin <RELEASE_BRANCH> main
    git cherry -v --abbrev=40 origin/<RELEASE_BRANCH> origin/main | grep <COMMIT_HASH>
    ```
-3. Create a release branch from the release target:
+3. For AI-infra or workflow-doc backports, compare the release branch capability
+   inventory and adapter directories against `main`. If the release branch has a
+   smaller workflow surface, adapt to the release branch instead of importing
+   main-only workflows.
+4. Create a release branch from the release target:
    ```bash
    git checkout -B backport/<SOURCE_PR>-to-<RELEASE_BRANCH> origin/<RELEASE_BRANCH>
    ```
-4. Cherry-pick with provenance: `git cherry-pick -x <COMMIT_HASH>`.
-5. Resolve conflicts minimally; stop and ask if conflicts are broad or change behavior.
-6. Run `pixi run lint` and the smallest relevant release-branch checks.
-7. Ask for explicit maintainer/user approval before pushing or opening the PR.
+5. Cherry-pick with provenance: `git cherry-pick -x <COMMIT_HASH>`.
+6. Resolve conflicts minimally; stop and ask if conflicts are broad or change behavior.
+7. Run the `dart-changelog` routine for the release-target decision before
+   opening the backport PR.
+8. Run `pixi run lint` and the smallest relevant release-branch checks.
+9. Ask for explicit maintainer/user approval before pushing or opening the PR.
    After approval, open the PR against the release branch with milestone
    matching that release branch and use the PR template.
 
@@ -43,4 +50,5 @@ Backport PR or commits: $ARGUMENTS
 - Backport PR URL
 - Source PR/commit
 - Conflicts resolved, if any
+- Changelog decision
 - Checks run and CI status
