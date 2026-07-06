@@ -60,6 +60,8 @@
 #include <atomic>
 #include <chrono>
 #include <memory>
+#include <mutex>
+#include <set>
 #include <string>
 #include <thread>
 #include <typeinfo>
@@ -305,7 +307,40 @@ public:
     return mMaxConcurrentSolves.load(std::memory_order_relaxed);
   }
 
+  void recordReserveThreadsForTest()
+  {
+    {
+      std::lock_guard<std::mutex> lock(mReserveThreadMutex);
+      mReserveThreadIds.clear();
+    }
+    mNumReserveCalls.store(0, std::memory_order_relaxed);
+    mRecordReserveThreads.store(true, std::memory_order_relaxed);
+  }
+
+  int getNumReserveCalls() const
+  {
+    return mNumReserveCalls.load(std::memory_order_relaxed);
+  }
+
+  std::size_t getNumReserveThreads() const
+  {
+    std::lock_guard<std::mutex> lock(mReserveThreadMutex);
+    return mReserveThreadIds.size();
+  }
+
 protected:
+  void reserveConstrainedGroupScratch(
+      const constraint::ConstrainedGroup& group) override
+  {
+    BoxedLcpConstraintSolver::reserveConstrainedGroupScratch(group);
+    if (!mRecordReserveThreads.load(std::memory_order_relaxed))
+      return;
+
+    mNumReserveCalls.fetch_add(1, std::memory_order_relaxed);
+    std::lock_guard<std::mutex> lock(mReserveThreadMutex);
+    mReserveThreadIds.insert(std::this_thread::get_id());
+  }
+
   void solveConstrainedGroup(constraint::ConstrainedGroup&) override
   {
     const int concurrent
@@ -326,6 +361,10 @@ private:
   std::atomic<int> mConcurrentSolves{0};
   std::atomic<int> mMaxConcurrentSolves{0};
   std::atomic<int> mNumSolvedGroups{0};
+  std::atomic<bool> mRecordReserveThreads{false};
+  std::atomic<int> mNumReserveCalls{0};
+  mutable std::mutex mReserveThreadMutex;
+  std::set<std::thread::id> mReserveThreadIds;
 };
 
 dynamics::BodyNode* createFreeBody(
@@ -865,6 +904,22 @@ TEST(ConstraintSolver, DirectSimulationThreadSettingSolvesGroupsInParallel)
 
   EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ParallelSolveWarmsScratchOnWorkerThreads)
+{
+  ExposedThreadedConstraintSolver solver;
+  solver.setNumSimulationThreads(4);
+  solver.addFakeConstrainedGroups(130, 100);
+  solver.recordReserveThreadsForTest();
+
+  solver.solveGroupsForTest();
+
+  EXPECT_EQ(130, solver.getNumSolvedGroups());
+  EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
+  EXPECT_GT(solver.getNumReserveCalls(), 130);
+  EXPECT_GT(solver.getNumReserveThreads(), 1u);
 }
 
 //==============================================================================

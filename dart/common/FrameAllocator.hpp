@@ -373,7 +373,9 @@ public:
 
     const std::size_t bytes = n * sizeof(T);
     void* pointer;
-    if (alignof(T) > 32 || sizeof(T) >= 64) {
+    if (alignof(T) > 64) {
+      pointer = mArena->allocateAligned(bytes, alignof(T));
+    } else if (alignof(T) > 32 || sizeof(T) >= 64) {
       pointer = mArena->allocateStlStorageCacheAligned(bytes, false);
     } else {
       pointer = mArena->allocateDefaultAligned(bytes);

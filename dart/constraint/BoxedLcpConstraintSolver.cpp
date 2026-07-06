@@ -88,11 +88,18 @@ bool usesInlineLcpBuffer(std::size_t n, std::size_t matrixSize)
   return n <= kInlineLcpVectorSize && matrixSize <= kInlineLcpMatrixSize;
 }
 
-void reserveDantzigScratch(const BoxedLcpSolverPtr& solver, std::size_t n)
+void reserveBoxedLcpSolverScratch(
+    const BoxedLcpSolverPtr& solver, std::size_t n)
 {
   auto dantzigSolver = std::dynamic_pointer_cast<DantzigBoxedLcpSolver>(solver);
-  if (dantzigSolver)
+  if (dantzigSolver) {
     dantzigSolver->reserve(n);
+    return;
+  }
+
+  auto pgsSolver = std::dynamic_pointer_cast<PgsBoxedLcpSolver>(solver);
+  if (pgsSolver)
+    pgsSolver->reserve(n);
 }
 
 } // namespace
@@ -222,8 +229,8 @@ void BoxedLcpConstraintSolver::reserveConstrainedGroupScratch(
     scratch.lcpFIndex.resize(static_cast<Eigen::Index>(n));
   }
 
-  reserveDantzigScratch(mBoxedLcpSolver, n);
-  reserveDantzigScratch(mSecondaryBoxedLcpSolver, n);
+  reserveBoxedLcpSolverScratch(mBoxedLcpSolver, n);
+  reserveBoxedLcpSolverScratch(mSecondaryBoxedLcpSolver, n);
 }
 
 //==============================================================================

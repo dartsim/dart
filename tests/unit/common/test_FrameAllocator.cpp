@@ -57,6 +57,11 @@ struct alignas(64) OverAlignedStlValue
   double values[8] = {};
 };
 
+struct alignas(128) WideOverAlignedStlValue
+{
+  double values[16] = {};
+};
+
 struct CacheLineSizedStlValue
 {
   double values[8] = {};
@@ -401,7 +406,7 @@ TEST(FrameAllocatorTest, LargeCacheAlignedAllocationsRotateCacheLineColor)
 //==============================================================================
 TEST(FrameAllocatorTest, StlAllocatorPreservesOverAlignedValues)
 {
-  FrameAllocator arena(MemoryAllocator::GetDefault(), 512);
+  FrameAllocator arena(MemoryAllocator::GetDefault(), 2048);
   FrameStlAllocator<OverAlignedStlValue> allocator(arena);
 
   auto* raw = allocator.allocate(2);
@@ -414,6 +419,21 @@ TEST(FrameAllocatorTest, StlAllocatorPreservesOverAlignedValues)
   values.resize(2);
   ASSERT_EQ(values.size(), 2u);
   EXPECT_EQ(reinterpret_cast<std::uintptr_t>(values.data()) % 64u, 0u);
+
+  FrameStlAllocator<WideOverAlignedStlValue> wideAllocator(arena);
+  auto* wideRaw = wideAllocator.allocate(2);
+  ASSERT_NE(wideRaw, nullptr);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(wideRaw) % 128u, 0u);
+  wideAllocator.deallocate(wideRaw, 2);
+
+  std::vector<
+      WideOverAlignedStlValue,
+      FrameStlAllocator<WideOverAlignedStlValue>>
+      wideValues(wideAllocator);
+  wideValues.resize(2);
+  ASSERT_EQ(wideValues.size(), 2u);
+  EXPECT_EQ(reinterpret_cast<std::uintptr_t>(wideValues.data()) % 128u, 0u);
+  EXPECT_EQ(arena.overflowCount(), 0u);
 }
 
 //==============================================================================

@@ -2413,9 +2413,22 @@ void ConstraintSolver::solveConstrainedGroups()
                || !hasSharedNonReactiveDependency());
   };
 
+  auto warmParallelSolveScratch = [&]() {
+    const std::size_t participantCount = std::min<std::size_t>(
+        mNumSimulationThreads, mConstrainedGroups.size());
+    auto reserveAllGroupScratchForThread = [&](std::size_t) {
+      for (const auto& group : mConstrainedGroups)
+        reserveConstrainedGroupScratch(group);
+    };
+
+    mConstraintThreadPool->parallelFor(
+        participantCount, participantCount, reserveAllGroupScratchForThread);
+  };
+
   if (!mDeactivationActive) {
     if (canSolveGroupsInParallel()) {
       DART_PROFILE_SCOPED_N("parallel solve groups");
+      warmParallelSolveScratch();
       mConstraintThreadPool->parallelFor(
           mConstrainedGroups.size(), mNumSimulationThreads, solveGroupAt);
     } else {
@@ -2458,6 +2471,7 @@ void ConstraintSolver::solveConstrainedGroups()
 
   if (canSolveGroupsInParallel()) {
     DART_PROFILE_SCOPED_N("parallel solve deactivation groups");
+    warmParallelSolveScratch();
     mConstraintThreadPool->parallelFor(
         mConstrainedGroups.size(),
         mNumSimulationThreads,
