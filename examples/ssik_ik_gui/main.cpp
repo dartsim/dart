@@ -1487,52 +1487,13 @@ int runHeadless(
   const int height
       = dart::gui::osg::scaleWindowExtent(kViewerHeight, options.scale);
 
-  ::osg::ref_ptr<::osg::GraphicsContext::Traits> traits
-      = new ::osg::GraphicsContext::Traits;
-  traits->readDISPLAY();
-  traits->setUndefinedScreenDetailsToDefaultScreen();
-  traits->x = 0;
-  traits->y = 0;
-  traits->width = width;
-  traits->height = height;
-  traits->red = traits->green = traits->blue = 8;
-  traits->alpha = 8;
-  traits->depth = 24;
-  traits->windowDecoration = false;
-  traits->pbuffer = true;
-  traits->doubleBuffer = true;
-
-  ::osg::ref_ptr<::osg::GraphicsContext> gc
-      = ::osg::GraphicsContext::createGraphicsContext(traits.get());
-  if (!gc) {
-    std::cerr << "[headless] Failed to create an off-screen GL context "
-                 "(no usable DISPLAY?).\n";
+  dart::gui::osg::OffscreenSetup setup;
+  setup.width = width;
+  setup.height = height;
+  if (!dart::gui::osg::setUpOffscreenViewer(*viewer, setup))
     return 1;
-  }
 
   auto* camera = viewer->getCamera();
-  camera->setGraphicsContext(gc.get());
-  camera->setViewport(new ::osg::Viewport(0, 0, width, height));
-  camera->setProjectionMatrixAsPerspective(
-      30.0, static_cast<double>(width) / height, 0.1, 1000.0);
-  const GLenum buffer = traits->doubleBuffer ? GL_BACK : GL_FRONT;
-  camera->setDrawBuffer(buffer);
-  camera->setReadBuffer(buffer);
-
-  viewer->setThreadingModel(osgViewer::ViewerBase::SingleThreaded);
-  viewer->setCameraManipulator(nullptr);
-  viewer->simulate(false);
-  camera->setViewMatrixAsLookAt(eye, center, up);
-
-  viewer->realize();
-  if (!viewer->isRealized()) {
-    std::cerr << "[headless] Viewer failed to realize off-screen.\n";
-    return 1;
-  }
-  if (auto* queue = viewer->getEventQueue()) {
-    queue->windowResize(0, 0, width, height);
-    queue->setMouseInputRange(0.0f, 0.0f, width, height);
-  }
 
   // A few frames let ImGui build its first frame and the widget solve and pose
   // the arm before the screen capture.

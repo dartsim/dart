@@ -111,3 +111,20 @@ if(TARGET dart-utils)
     endif()
   endforeach()
 endif()
+
+# Opt-in off-screen GLX-pbuffer capture smoke for the dart-gui-osg helper
+# (dart/gui/osg/OffscreenViewer). Default OFF (see DART_ENABLE_GUI_OSG_SMOKE_TESTS);
+# needs a DISPLAY, so run headless hosts under xvfb-run. The test returns the
+# ctest skip code (77) with a clear message when no DISPLAY is present.
+if(DART_ENABLE_GUI_OSG_SMOKE_TESTS AND TARGET dart-gui-osg)
+  add_executable(offscreen_capture_smoke offscreen_capture_smoke.cpp)
+  target_link_libraries(offscreen_capture_smoke PRIVATE dart dart-gui-osg)
+  if(TARGET tests)
+    add_dependencies(tests offscreen_capture_smoke)
+  endif()
+  if(TARGET tests_and_run)
+    add_dependencies(tests_and_run offscreen_capture_smoke)
+  endif()
+  add_test(NAME offscreen_capture_smoke COMMAND offscreen_capture_smoke)
+  set_tests_properties(offscreen_capture_smoke PROPERTIES SKIP_RETURN_CODE 77)
+endif()
