@@ -502,6 +502,7 @@ void DemoHost::processPendingSwitch()
     } else {
       mStatusLine
           = "Failed to start demo '" + scene->title + "': " + failureReason;
+      teardownCurrentScene();
       installEmptyFallback();
     }
     log(LogEntry::Level::Error, mStatusLine);

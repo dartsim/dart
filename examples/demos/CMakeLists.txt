@@ -4,6 +4,24 @@ set(example_name dart-demos)
 
 project(${example_name})
 
+set(required_components utils-urdf gui-osg)
+set(
+  required_libraries
+  dart
+  dart-utils
+  dart-utils-urdf
+  dart-gui-osg
+  dart_demos_wam_ikfast
+)
+
+if(DART_IN_SOURCE_BUILD AND NOT TARGET dart-gui-osg)
+  dart_build_example_in_source(
+    ${example_name}
+    LINK_LIBRARIES ${required_libraries}
+  )
+  return()
+endif()
+
 # Single owner of where the wam_ikfast scene's dlopen'd IK shared library is
 # written: this demos project's own build dir. Used both as the ikfast target's
 # LIBRARY_OUTPUT_DIRECTORY (in scenes/wam_ikfast/ikfast/CMakeLists.txt, which
@@ -22,16 +40,6 @@ set(dart_demos_ikfast_output_dir "${CMAKE_CURRENT_BINARY_DIR}")
 # scenes/wam_ikfast/ikfast/CMakeLists.txt for why it is a standalone copy
 # rather than a dependency on that example.
 add_subdirectory(scenes/wam_ikfast/ikfast)
-
-set(required_components utils-urdf gui-osg)
-set(
-  required_libraries
-  dart
-  dart-utils
-  dart-utils-urdf
-  dart-gui-osg
-  dart_demos_wam_ikfast
-)
 
 # DynamicJointConstraintsScene.cpp draws its on-screen catalog labels with
 # osgText::Text directly (ported from examples/dynamic_joint_constraints,
