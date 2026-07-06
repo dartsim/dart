@@ -1089,6 +1089,15 @@ image-golden = { cmd = ["python", "scripts/image_golden.py"] }
 
 image-sheet = { cmd = ["python", "scripts/image_sheet.py"] }
 
+trajectory-record = { cmd = [
+  "python",
+  "scripts/trajectory_record.py",
+], depends-on = [
+  "build-py-dev-docking",
+], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python" } }
+
+trajectory-compare = { cmd = ["python", "scripts/trajectory_compare.py"] }
+
 py-ex-hello-world-gui = { depends-on = [
   { task = "py-ex", args = [
     "hello_world_gui",
