@@ -34,10 +34,27 @@ phase-6/default-flip tolerance gate, retrieve JSONL scene dumps matching
 the recorded SHA-256 digests or recapture dumps on the flip PR's parent
 and compare within that same recapture.
 
-**Phase 1 has landed as #3281** (C++17, no EnTT, internal-only native math
-core; FCL stays default). #3271 includes that merge via `f1916fd843f9`.
-**Next: phase 2 — DART 6 detector adapter**, but only after #3271's phase-0
-packet is accepted.
+**Phases 0 and 1 are merged** (#3271 phase-0 packet, #3281 phase-1 native
+math core — C++17, no EnTT, internal-only; FCL stays default). A follow-up
+fixed the `maxNumContacts==0` contract in native sphere-sphere (#3283 on
+main, #3298 on release-6.20).
+
+**Phase 2 is planned.** The execution plan is
+[07-phase2-adapter-scoping.md](07-phase2-adapter-scoping.md): add an
+internal, non-default `dart::collision::NativeCollisionDetector` that
+bridges DART 6's `CollisionDetector`/`CollisionGroup`/`CollisionObject`
+contract to the ported `dart::collision::native` engine (BruteForce
+broadphase → narrowphase dispatcher → DART 6 `Contact`), **bypassing the
+EnTT world layer** by reusing DART 6's existing `shared_ptr`-based object
+manager. FCL stays default; no new dependency; C++17. The plan slices
+phase 2 into PRs **P1–P9** (+ optional P10), each gz-gated and
+scope-diff-guarded.
+
+**Next: P1 — BroadPhase base + BruteForce** (pure engine, zero wiring),
+per §4 of the plan. Then P2 (dispatcher), P3a/P3b (adapter + bridge),
+P4–P9 (pair coverage). Do not add a `CollisionDetectorType::Native` enum
+or touch `World`/`ConstraintSolver`/`WorldConfig` — selection is via the
+factory pointer only (`getFactory()->create("native")`).
 
 ## Standing constraints
 

@@ -51,6 +51,9 @@
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
+#include <dart/common/FreeListAllocator.hpp>
+#include <dart/common/MemoryAllocator.hpp>
+#include <dart/common/MemoryManager.hpp>
 #include <dart/common/NameManager.hpp>
 #include <dart/common/SmartPointer.hpp>
 #include <dart/common/Subject.hpp>
@@ -98,6 +101,21 @@ struct WorldConfig final
 
   /// Preferred collision detector for the world.
   CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
+
+  /// Base allocator for the World-owned MemoryManager. The allocator must
+  /// outlive the World. This does not affect global operator new.
+  common::MemoryAllocator* baseAllocator
+      = &common::MemoryAllocator::GetDefault();
+
+  /// Initial bytes reserved for the World's free-list allocator.
+  std::size_t freeListInitialAllocation = 1048576 /* 1 MB */;
+
+  /// Whether the World's free-list allocator may grow after construction.
+  common::FreeListAllocator::GrowthPolicy freeListGrowthPolicy
+      = common::FreeListAllocator::GrowthPolicy::Expand;
+
+  /// Initial bytes reserved for the World's per-step frame scratch arena.
+  std::size_t frameScratchInitialCapacity = 65536;
 
   WorldConfig() = default;
   explicit WorldConfig(std::string worldName) : name(std::move(worldName)) {}
@@ -285,6 +303,19 @@ public:
   /// \param[in] _resetCommand True if you want to reset to zero the joint
   /// command after simulation step.
   void step(bool _resetCommand = true);
+
+  /// Prepare one-time simulation caches and allocator reservations for the
+  /// current world shape. Calling this is optional; step() does it lazily.
+  void enterSimulationMode();
+
+  /// Returns true if simulation preparation is current for the world shape.
+  bool isInSimulationMode() const;
+
+  /// Returns the World-owned memory manager.
+  common::MemoryManager& getMemoryManager();
+
+  /// Returns the World-owned memory manager.
+  const common::MemoryManager& getMemoryManager() const;
 
   /// Set current time
   void setTime(double _time);
@@ -474,7 +505,7 @@ protected:
   void syncShallowSupportFreeRootVelocityStates();
 
   /// Captures free-root velocities immediately before the constraint solve.
-  std::vector<FreeRootVelocitySnapshot> snapshotFreeRootVelocities();
+  const std::vector<FreeRootVelocitySnapshot>& snapshotFreeRootVelocities();
 
   /// Clears preserved baselines for skeletons without a shallow support
   /// contact.
@@ -498,6 +529,15 @@ protected:
   /// Wakes sleeping mobile skeletons after world-level or external kinematic
   /// changes that may invalidate filtered resting contacts.
   void wakeRestingSkeletonsForWorldChange();
+
+  /// Invalidates simulation preparation after a world-shape change.
+  void invalidateSimulationMode();
+
+  /// Rebuilds the cumulative DOF-index cache from the current skeleton list.
+  void refreshSkeletonDofIndices();
+
+  /// Reserves the World-owned memory hierarchy for the current world shape.
+  void reserveMemoryManagerForSimulationShape();
 
   /// Register when a Skeleton's name is changed
   void handleSkeletonNameChange(
@@ -564,11 +604,48 @@ protected:
   /// Constraint solver
   std::unique_ptr<constraint::ConstraintSolver> mConstraintSolver;
 
+  /// Memory manager owned by this World.
+  std::unique_ptr<common::MemoryManager> mMemoryManager;
+
+  /// Configured free-list initial reservation for this World's MemoryManager.
+  std::size_t mMemoryManagerFreeListInitialAllocation = 1048576 /* 1 MB */;
+
+  /// Configured frame arena initial capacity for this World's MemoryManager.
+  std::size_t mMemoryManagerFrameScratchInitialCapacity = 65536;
+
+  /// Whether simulation preparation is current for this world shape.
+  bool mSimulationMode = false;
+
+  /// Global Skeleton structural version captured at simulation preparation.
+  std::size_t mSimulationModeStructuralVersion = 0;
+
+  /// Collision group captured at simulation preparation.
+  const collision::CollisionGroup* mSimulationModeCollisionGroup = nullptr;
+  std::size_t mSimulationModeCollisionGroupVersion = 0;
+
+  /// Constraint solver thread count captured at simulation preparation.
+  std::size_t mSimulationModeConstraintSolverThreads = 0;
+
+  /// Collision options captured at simulation preparation.
+  bool mSimulationModeCollisionEnableContact = false;
+  std::size_t mSimulationModeCollisionMaxNumContacts = 0;
+  std::size_t mSimulationModeCollisionMaxNumContactsPerPair = 0;
+  bool mSimulationModeCollisionAllowNegativePenetrationDepthContacts = false;
+  const collision::CollisionFilter* mSimulationModeCollisionFilter = nullptr;
+  bool mSimulationModeCollisionFilterTrackable = true;
+  std::size_t mSimulationModeCollisionFilterRevision = 0;
+
   /// Options controlling automatic body deactivation ("sleeping")
   simulation::DeactivationOptions mDeactivationOptions;
 
   std::vector<ShallowSupportFreeRootVelocityState>
       mShallowSupportFreeRootVelocityStates;
+
+  std::vector<FreeRootVelocitySnapshot> mPreSolveFreeRootVelocityScratch;
+  std::vector<char> mShallowSupportedFreeRootScratch;
+  std::vector<std::pair<const dynamics::Skeleton*, std::size_t>>
+      mSkeletonIndexScratch;
+  std::vector<char> mDisturbedThisStepScratch;
 
   struct AllRestingKinematicSnapshot
   {
