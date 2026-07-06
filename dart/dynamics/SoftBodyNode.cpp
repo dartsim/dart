@@ -1233,6 +1233,19 @@ void SoftBodyNode::clearInternalForces()
 }
 
 //==============================================================================
+void SoftBodyNode::scanPointMassExternalForces(
+    double _tolerance, bool& _hasResidual, bool& _disturbed) const
+{
+  for (const auto* pointMass : mPointMasses) {
+    const auto& externalForce = pointMass->mFext;
+    if (!externalForce.isZero(0.0))
+      _hasResidual = true;
+    if (externalForce.cwiseAbs().maxCoeff() > _tolerance)
+      _disturbed = true;
+  }
+}
+
+//==============================================================================
 void SoftBodyNode::_addPiToArtInertia(
     const Eigen::Vector3d& _p, double _Pi) const
 {
