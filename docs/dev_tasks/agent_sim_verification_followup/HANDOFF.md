@@ -183,10 +183,11 @@ Set-of-Mark-style annotations (numbered bodies, ground-line, contact markers,
 CoM/velocity trails) on vs off — the research predicts annotations recover the
 static-geometry defects images missed in round 1.
 
-- **Local progress:** `pixi run image-ab-study` now reduces blind-judge rows
-  into detection deltas and false-positive rates; the durable design doc records
-  the round-2 protocol and makes clear that fixture rows are not research
-  evidence.
+- **Local progress:** `pixi run image-ab-round2 -- generate` prepares a
+  blinded packet over real DART 7 `dart.gui.render` images for all four
+  capture arms. The companion score command merges completed observations into
+  the `pixi run image-ab-study` reducer. The durable design doc records the
+  round-2 protocol and makes clear that fixture rows are not research evidence.
 - **Remaining next step:** collect real blind-judge rows over seeded defects and
   clean controls for single-view, multi-view, turntable, and annotated captures;
   record results and fold conclusions into

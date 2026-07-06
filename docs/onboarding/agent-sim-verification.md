@@ -62,6 +62,12 @@ dynamic failures (explosions, tunneling); use text to decide correctness.
   for single-view, multi-view, turntable, and annotated captures into detection
   deltas and false-positive rates. Treat its output as research evidence only
   when the rows came from a real blind protocol; unit fixtures are not evidence.
+- **Round-2 packet prep** — `pixi run image-ab-round2 -- generate --out <dir>`
+  renders a blinded DART 7 packet for the image-study follow-up: single view,
+  multi-view grid, turntable grid, and neutral annotation arms. Judges fill
+  observations without reading `answer_key.json`; score them with the
+  `image-ab-round2 -- score` subcommand using `--answer-key`, `--observations`,
+  `--out`, and optional `--results` paths.
 - **Recommended default capture**: one ~1280 px frame, UI hidden, from the 3/4
   view; add a 9-frame grid for motion questions. Avoid filmstrips (they read
   worst in the A/B). Keep images as corroboration, never the sole oracle for

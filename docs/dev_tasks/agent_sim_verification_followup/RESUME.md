@@ -10,8 +10,9 @@ verification symbols, PLAN-083 has a concrete visual-gate template, scene dumps
 cover the remaining named shape categories defensively, `pixi run scene-diff`
 exists, and `pixi run verification-bundle` packages text/image evidence for an
 external VLM or reviewer call. Item B is only partially complete:
-`pixi run image-ab-study` and the durable protocol are in place, but real
-blind-judge rows are still needed before recording measured detection deltas.
+`pixi run image-ab-study`, `pixi run image-ab-round2`, and the durable protocol
+are in place, but real blind-judge rows are still needed before recording
+measured detection deltas.
 
 ## Current Branch
 
@@ -22,7 +23,9 @@ happens on a `release-6.20` checkout/worktree if needed.
 
 ## Immediate Next Step
 
-Collect or arrange the real round-2 blind-judge rows for B. Do not delete this
+Run `pixi run image-ab-round2 -- generate --out <dir>`, collect or arrange the
+real round-2 blind-judge rows for B without exposing `answer_key.json`, then
+score them with `pixi run image-ab-round2 -- score ...`. Do not delete this
 folder until B has measured detection deltas and the default-capture
 recommendation is either updated or explicitly reaffirmed in the durable docs.
 

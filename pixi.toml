@@ -1101,6 +1101,8 @@ image-sheet = { cmd = ["python", "scripts/image_sheet.py"] }
 
 image-ab-study = { cmd = ["python", "scripts/image_ab_study.py"] }
 
+image-ab-round2 = { cmd = ["python", "scripts/image_ab_round2_packet.py"] }
+
 scene-diff = { cmd = ["python", "scripts/scene_diff.py"] }
 
 verification-bundle = { cmd = ["python", "scripts/verification_bundle.py"] }

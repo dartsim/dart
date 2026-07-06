@@ -51,12 +51,14 @@ the primary oracle, and a single UI-hidden ~1280 px 3/4-view frame (plus a
 Round-2 image studies should keep the same blind-judge protocol but score the
 new camera and annotation arms explicitly: single 3/4 view, multi-view grid,
 turntable samples, and Set-of-Mark-style annotations for body IDs, contact
-markers, ground lines, and motion trails. `pixi run image-ab-study` owns the
-reduction step from blind rows to detection-rate deltas and false-positive
-rates; a row set is research evidence only when it comes from real blind
-judgments over seeded defects and clean controls. The default capture
-recommendation above should change only after those measured deltas beat the
-current single-frame baseline without increasing control false positives.
+markers, ground lines, and motion trails. `pixi run image-ab-round2 -- generate`
+prepares a blinded local packet over real `dart.gui.render` captures and keeps
+the answer key separate from the judge form; `pixi run image-ab-round2 -- score`
+merges completed observations into the `pixi run image-ab-study` reducer. A row
+set is research evidence only when it comes from real blind judgments over
+seeded defects and clean controls. The default capture recommendation above
+should change only after those measured deltas beat the current single-frame
+baseline without increasing control false positives.
 
 ## Image-comparison tolerance policy
 

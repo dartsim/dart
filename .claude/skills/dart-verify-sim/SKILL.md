@@ -46,6 +46,8 @@ Visual (corroboration):
   gate)
 - `pixi run image-ab-study` — blind-judge detection deltas for single-view,
   multi-view, turntable, and annotated captures
+- `pixi run image-ab-round2` — prepare a blinded round-2 packet and score
+  completed judge observations
 
 Opt-in:
 
