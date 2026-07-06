@@ -395,6 +395,22 @@ dart_build_tests(
 if(TARGET dart-gui-core)
   dart_add_test("unit" UNIT_gui_DebugVisuals gui/test_gui_debug_visuals.cpp)
   target_link_libraries(UNIT_gui_DebugVisuals dart-gui-core)
+
+  dart_add_test("unit" UNIT_gui_CameraControl gui/test_camera_control.cpp)
+  target_link_libraries(UNIT_gui_CameraControl dart-gui-core)
+endif()
+
+if(TARGET dart-gui-core AND DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS)
+  dart_add_test(
+    "unit" UNIT_gui_OffscreenRenderer gui/test_offscreen_renderer.cpp
+  )
+  target_link_libraries(UNIT_gui_OffscreenRenderer dart-gui-core)
+  set_tests_properties(
+    UNIT_gui_OffscreenRenderer
+    PROPERTIES
+      LABELS "unit;filament;gui;smoke;graphics"
+      ENVIRONMENT "LIBGL_ALWAYS_SOFTWARE=1;MESA_LOADER_DRIVER_OVERRIDE=llvmpipe"
+  )
 endif()
 
 if(TARGET dart-gui AND TARGET dart-imgui-lib)

@@ -180,6 +180,9 @@ FilamentRenderContext createFilamentRenderContext(
   FilamentRenderContext context;
   context.engine = createEngineWithFallback(
       resolveRequestedBackend(options), &context.backendName, options.headless);
+  if (context.engine == nullptr) {
+    return context;
+  }
   context.renderer = context.engine->createRenderer();
   if (options.headless) {
     ::filament::Renderer::DisplayInfo displayInfo;

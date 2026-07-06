@@ -301,6 +301,60 @@ void defSimPartCompute(nb::module_& m)
       .def("__repr__", &sim::compute::WorldStepProfile::toSummaryText)
       .def("__str__", &sim::compute::WorldStepProfile::toSummaryText);
 
+  nb::class_<sim::compute::StepMetrics>(m, "StepMetrics")
+      .def_ro(
+          "kinetic_energy",
+          &sim::compute::StepMetrics::kineticEnergy,
+          "Total translational and rotational kinetic energy.")
+      .def_ro(
+          "potential_energy",
+          &sim::compute::StepMetrics::potentialEnergy,
+          "Total gravitational potential energy.")
+      .def_ro(
+          "total_energy",
+          &sim::compute::StepMetrics::totalEnergy,
+          "Kinetic plus potential energy.")
+      .def_ro(
+          "linear_momentum",
+          &sim::compute::StepMetrics::linearMomentum,
+          "Total linear momentum in the world frame.")
+      .def_ro(
+          "angular_momentum",
+          &sim::compute::StepMetrics::angularMomentum,
+          "Total angular momentum about the world origin.")
+      .def_ro(
+          "active_contact_count",
+          &sim::compute::StepMetrics::activeContactCount,
+          "Rigid contacts processed by the last mutating contact stage.")
+      .def_ro(
+          "max_penetration_depth",
+          &sim::compute::StepMetrics::maxPenetrationDepth,
+          "Maximum penetration depth reported by the last contact stage.")
+      .def_ro(
+          "last_step_iterations",
+          &sim::compute::StepMetrics::lastStepIterations,
+          "Solver iterations reported by the most recent World::step().")
+      .def_ro(
+          "last_step_residual",
+          &sim::compute::StepMetrics::lastStepResidual,
+          "Maximum final residual reported by the most recent World::step().")
+      .def("__repr__", [](const sim::compute::StepMetrics& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("kinetic_energy", repr_double(self.kineticEnergy));
+        fields.emplace_back(
+            "potential_energy", repr_double(self.potentialEnergy));
+        fields.emplace_back("total_energy", repr_double(self.totalEnergy));
+        fields.emplace_back(
+            "active_contact_count", std::to_string(self.activeContactCount));
+        fields.emplace_back(
+            "max_penetration_depth", repr_double(self.maxPenetrationDepth));
+        fields.emplace_back(
+            "last_step_iterations", std::to_string(self.lastStepIterations));
+        fields.emplace_back(
+            "last_step_residual", repr_double(self.lastStepResidual));
+        return format_repr("StepMetrics", fields);
+      });
+
   nb::class_<dart::common::MemoryManager::AllocatorDebugDiagnostics>(
       m, "AllocatorDebugDiagnostics")
       .def_ro(
