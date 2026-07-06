@@ -4,11 +4,13 @@ Everything the other lanes need to measure honestly and hand off cleanly.
 
 #### WP-PG.01 — Round-2 baseline evidence packet
 
-- Status: open — **prerequisite for all other packets**
-- Objective: capture the full baseline matrix on `origin/release-6.20`
-  @ `70b92010311` per the **exact cell matrix and canonical commands** in
+- Status: done — PR pending; **prerequisite baseline captured for all other
+  packets**
+- Objective: captured the full baseline matrix, then refreshed the durable
+  guard rows on current `origin/release-6.20` @ `b9e6910c066` per the
+  **exact cell matrix and canonical commands** in
   [01-baseline-evidence.md](01-baseline-evidence.md) (scenes S1–S6;
-  dashboard tooling run via
+  original dashboard tooling run via
   `scripts/run_performance_dashboard_benchmarks.py` plus the scenario-CLI
   rows), with final hashes, scene dumps, profile share breakdowns
   (including the `Construct LCP` vs Dantzig-solve split), and host
