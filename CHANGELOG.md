@@ -425,6 +425,12 @@
 
 * Examples
 
+  * Improve the C++ `soft_bodies` example with a framed Y-up view, headless PNG
+    capture, translucent soft meshes, display controls for embedded visuals,
+    and two-sided soft mesh rendering so generated soft-body faces do not look
+    missing from normal camera angles:
+    [#3304](https://github.com/dartsim/dart/pull/3304)
+
   * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
     prebuilt IK modules and changing target and solver options online. Every IK
     solution is shown at once as a DART skeleton built from the arm's kinematics
