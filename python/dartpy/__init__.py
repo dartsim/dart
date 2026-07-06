@@ -135,6 +135,7 @@ def _install_world_render_bridge() -> None:
     # Render plumbing: the dynamics world frame is still the parent frame for
     # descriptor-only SimpleFrame visuals used by Python demo helpers.
     gui.world_render_frame = _bridge_impl.world_render_frame
+    _bridge_impl.install_world_render_helpers(sys.modules[__name__], gui)
 
 
 _install_world_render_bridge()

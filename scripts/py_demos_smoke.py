@@ -28,13 +28,18 @@ Exit code is non-zero if any scene fails.
 from __future__ import annotations
 
 import argparse
+import ctypes
+import ctypes.util
+import importlib.util
 import json
 import os
 import pathlib
+import struct
 import subprocess
 import sys
 import tempfile
 import time
+import zlib
 from dataclasses import asdict, dataclass
 
 
@@ -167,6 +172,29 @@ def _apply_stable_linux_render_env() -> None:
         os.environ.setdefault("__EGL_VENDOR_LIBRARY_FILENAMES", str(egl_vendor))
 
 
+def _can_open_linux_display() -> bool:
+    if not sys.platform.startswith("linux"):
+        return True
+    display = os.environ.get("DISPLAY")
+    if not display:
+        return False
+    lib_name = ctypes.util.find_library("X11")
+    if not lib_name:
+        return False
+    try:
+        lib_x11 = ctypes.CDLL(lib_name)
+        lib_x11.XOpenDisplay.argtypes = [ctypes.c_char_p]
+        lib_x11.XOpenDisplay.restype = ctypes.c_void_p
+        lib_x11.XCloseDisplay.argtypes = [ctypes.c_void_p]
+        handle = lib_x11.XOpenDisplay(display.encode())
+        if not handle:
+            return False
+        lib_x11.XCloseDisplay(handle)
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _ppm_is_nonblank(path: os.PathLike[str] | str) -> bool:
     data = pathlib.Path(path).read_bytes()
     tokens: list[bytes] = []
@@ -217,6 +245,120 @@ def _ppm_is_nonblank(path: os.PathLike[str] | str) -> bool:
 
     first = pixels[0]
     return any(byte != first for byte in pixels[1:])
+
+
+def _load_headless_analyzer():
+    path = (
+        pathlib.Path(__file__).resolve().parents[1]
+        / "dart"
+        / "gui"
+        / "detail"
+        / "testing"
+        / "analyze_headless_smoke.py"
+    )
+    spec = importlib.util.spec_from_file_location("dart_headless_smoke_analyzer", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"failed to load {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _write_rgba_ppm(path: pathlib.Path, image: object) -> None:
+    width = int(getattr(image, "width"))
+    height = int(getattr(image, "height"))
+    channels = int(getattr(image, "channels"))
+    if channels != 4:
+        raise RuntimeError(f"expected RGBA image, got {channels} channels")
+    pixels = memoryview(image)
+    rgba = bytes(pixels)
+    rgb = bytearray(width * height * 3)
+    for src in range(0, len(rgba), 4):
+        dst = src // 4 * 3
+        rgb[dst : dst + 3] = rgba[src : src + 3]
+    path.write_bytes(f"P6\n{width} {height}\n255\n".encode() + bytes(rgb))
+
+
+def _require_png_decode(data: bytes, expected_width: int, expected_height: int) -> None:
+    if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise RuntimeError("png_bytes() did not return a PNG signature")
+    offset = 8
+    width = height = None
+    idat = bytearray()
+    while offset < len(data):
+        if offset + 12 > len(data):
+            raise RuntimeError("png_bytes() ended inside a PNG chunk")
+        length = struct.unpack(">I", data[offset : offset + 4])[0]
+        chunk = data[offset + 4 : offset + 8]
+        payload_start = offset + 8
+        payload_end = payload_start + length
+        if payload_end + 4 > len(data):
+            raise RuntimeError("png_bytes() contains a truncated PNG chunk")
+        payload = data[payload_start:payload_end]
+        offset = payload_end + 4
+        if chunk == b"IHDR":
+            width, height = struct.unpack(">II", payload[:8])
+        elif chunk == b"IDAT":
+            idat.extend(payload)
+        elif chunk == b"IEND":
+            break
+    if (width, height) != (expected_width, expected_height):
+        raise RuntimeError(
+            f"png_bytes() dimensions {(width, height)} != "
+            f"{(expected_width, expected_height)}"
+        )
+    raw = zlib.decompress(bytes(idat))
+    expected = expected_height * (1 + expected_width * 4)
+    if len(raw) != expected:
+        raise RuntimeError(
+            f"png_bytes() decompressed to {len(raw)} bytes, expected {expected}"
+        )
+
+
+def _run_offscreen_render_api_smoke(width: int, height: int) -> SceneResult:
+    start = time.monotonic()
+    if not _can_open_linux_display():
+        return SceneResult(
+            "dart_gui_render_api",
+            "fail",
+            time.monotonic() - start,
+            "Filament OpenGL headless rendering requires a usable DISPLAY/Xvfb",
+        )
+    try:
+        import dartpy as dart
+
+        world = dart.World()
+        ground = world.add_rigid_body(
+            "offscreen_smoke_ground", position=(0.0, 0.0, -0.05)
+        )
+        ground.is_static = True
+        ground.set_collision_shape(dart.CollisionShape.box((1.4, 1.4, 0.05)))
+        box = world.add_rigid_body("offscreen_smoke_box", position=(0.0, 0.0, 0.35))
+        box.set_collision_shape(dart.CollisionShape.box((0.22, 0.22, 0.22)))
+
+        image = dart.gui.render(world, size=(width, height))
+        with tempfile.NamedTemporaryFile(
+            prefix="dart_gui_render_api_", suffix=".ppm", delete=False
+        ) as tmp:
+            ppm_path = pathlib.Path(tmp.name)
+        try:
+            _write_rgba_ppm(ppm_path, image)
+            # PLAN-012's gate is a non-blank Filament-backed image. The strict
+            # shadow/lighting contrast heuristic is calibrated for full-fidelity
+            # demo scenes; a minimal one-box offscreen render under the default
+            # lightweight passes is legitimately flat, so assert non-blank here.
+            _load_headless_analyzer().analyze_basic(ppm_path, width, height)
+            _require_png_decode(image.png_bytes(), width, height)
+        finally:
+            try:
+                ppm_path.unlink()
+            except FileNotFoundError:
+                pass
+    except Exception as exc:  # noqa: BLE001
+        return SceneResult(
+            "dart_gui_render_api", "fail", time.monotonic() - start, str(exc)
+        )
+    return SceneResult("dart_gui_render_api", "ok", time.monotonic() - start)
 
 
 def _run_render_worker(
@@ -322,7 +464,20 @@ def _orchestrate(args: argparse.Namespace) -> int:
     print("-" * 72)
 
     results: list[SceneResult] = []
-    for i, scene_id in enumerate(scene_ids, 1):
+    total = len(scene_ids) + (1 if args.render else 0)
+    if args.render:
+        res = _run_offscreen_render_api_smoke(args.width, args.height)
+        results.append(res)
+        mark = {"ok": "ok  ", "fail": "FAIL", "timeout": "TIME", "crash": "CRSH"}[
+            res.status
+        ]
+        print(f"[{1:3d}/{total}] {mark} {res.scene_id:<44s} {res.seconds:6.2f}s")
+        if res.status != "ok":
+            for line in res.detail.splitlines():
+                print(f"           | {line}")
+
+    start_index = 2 if args.render else 1
+    for i, scene_id in enumerate(scene_ids, start_index):
         if args.render:
             res = _run_render_worker(
                 scene_id, args.frames, args.gpu, args.timeout, args.width, args.height
@@ -333,7 +488,7 @@ def _orchestrate(args: argparse.Namespace) -> int:
         mark = {"ok": "ok  ", "fail": "FAIL", "timeout": "TIME", "crash": "CRSH"}[
             res.status
         ]
-        print(f"[{i:3d}/{len(scene_ids)}] {mark} {scene_id:<44s} {res.seconds:6.2f}s")
+        print(f"[{i:3d}/{total}] {mark} {scene_id:<44s} {res.seconds:6.2f}s")
         if res.status != "ok":
             for line in res.detail.splitlines():
                 print(f"           | {line}")

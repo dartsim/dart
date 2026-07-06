@@ -30,48 +30,60 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_FWD_HPP_
-#define DART_GUI_FWD_HPP_
+#ifndef DART_GUI_OFFSCREEN_HPP_
+#define DART_GUI_OFFSCREEN_HPP_
 
-namespace dart {
-namespace gui {
+#include <dart/gui/export.hpp>
+#include <dart/gui/renderable.hpp>
 
-struct ActiveRenderableState;
-struct ApplicationOptions;
-struct DebugLineDescriptor;
-struct DebugLabelDescriptor;
-struct DebugTriangleDescriptor;
-struct Gizmo;
-struct GizmoAxisColors;
-struct GizmoHandleHit;
-struct GeometryDescriptor;
-struct BodyNodeDragHandle;
-struct DeformableSurfaceRenderOptions;
-struct MaterialDescriptor;
-struct MeshGeometry;
-struct MeshIndexRange;
-struct MeshTriangle;
-struct MeshVertex;
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <cstdint>
+
+namespace dart::gui {
+
 struct OrbitCamera;
-struct OrbitCameraBasis;
-struct OrbitCameraController;
-struct OffscreenRenderOptions;
-struct Panel;
-class PanelBuilder;
-struct PanelContext;
-struct PerspectiveProjection;
-struct PickHit;
-struct PickRay;
-struct ProfileAccumulator;
-struct RenderableDescriptor;
-struct RenderableSetUpdatePlan;
-struct RenderedImage;
-enum class RenderOutputMode;
-struct RenderSettings;
-struct RunOptions;
-struct ViewerLifecycleState;
 
-} // namespace gui
-} // namespace dart
+struct DART_GUI_API RenderedImage
+{
+  std::uint32_t width = 0;
+  std::uint32_t height = 0;
+  std::uint32_t channels = 4;
+  std::vector<std::uint8_t> pixels;
+};
 
-#endif // DART_GUI_FWD_HPP_
+struct DART_GUI_API OffscreenRenderOptions
+{
+  int width = 640;
+  int height = 480;
+  std::string renderBackend;
+  int warmupFrames = 2;
+  bool highFidelity = false;
+};
+
+class DART_GUI_API OffscreenRenderer
+{
+public:
+  explicit OffscreenRenderer(const OffscreenRenderOptions& options = {});
+  ~OffscreenRenderer();
+
+  OffscreenRenderer(const OffscreenRenderer&) = delete;
+  OffscreenRenderer& operator=(const OffscreenRenderer&) = delete;
+
+  OffscreenRenderer(OffscreenRenderer&&) noexcept;
+  OffscreenRenderer& operator=(OffscreenRenderer&&) noexcept;
+
+  RenderedImage render(
+      const std::vector<RenderableDescriptor>& descriptors,
+      const OrbitCamera& camera);
+
+private:
+  struct Impl;
+  std::unique_ptr<Impl> mImpl;
+};
+
+} // namespace dart::gui
+
+#endif // DART_GUI_OFFSCREEN_HPP_

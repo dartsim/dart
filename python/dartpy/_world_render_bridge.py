@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 from collections import deque
+from functools import wraps
+import math
 from typing import Any
 
 import dartpy as dart
 import numpy as np
+
+_WORLD_RIGID_BODY_NAMES: dict[int, list[str]] = {}
 
 
 class _FallbackGeometryDescriptor:
@@ -120,6 +124,275 @@ def _translation(position: Any) -> np.ndarray:
     return transform
 
 
+def _record_rigid_body_name(world: Any, name: str) -> None:
+    if not name:
+        return
+    names = _WORLD_RIGID_BODY_NAMES.setdefault(id(world), [])
+    if name not in names:
+        names.append(name)
+
+
+def _body_name(body: Any, fallback: str = "") -> str:
+    try:
+        return str(getattr(body, "name"))
+    except Exception:  # noqa: BLE001
+        return fallback
+
+
+def _install_rigid_body_registry(root: Any) -> None:
+    world_type = getattr(root, "World", None)
+    if world_type is None or getattr(world_type, "_dartpy_gui_render_registry", False):
+        return
+
+    add_rigid_body = getattr(world_type, "add_rigid_body", None)
+    if add_rigid_body is not None:
+
+        @wraps(add_rigid_body)
+        def wrapped_add_rigid_body(self: Any, *args: Any, **kwargs: Any) -> Any:
+            body = add_rigid_body(self, *args, **kwargs)
+            fallback = str(args[0]) if args else ""
+            _record_rigid_body_name(self, _body_name(body, fallback))
+            return body
+
+        try:
+            setattr(world_type, "add_rigid_body", wrapped_add_rigid_body)
+        except Exception:  # noqa: BLE001
+            pass
+
+    clear = getattr(world_type, "clear", None)
+    if clear is not None:
+
+        @wraps(clear)
+        def wrapped_clear(self: Any, *args: Any, **kwargs: Any) -> Any:
+            _WORLD_RIGID_BODY_NAMES.pop(id(self), None)
+            return clear(self, *args, **kwargs)
+
+        try:
+            setattr(world_type, "clear", wrapped_clear)
+        except Exception:  # noqa: BLE001
+            pass
+
+    try:
+        setattr(world_type, "_dartpy_gui_render_registry", True)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _collision_shape_to_render_shape(shape: Any) -> Any | None:
+    shape_type = getattr(getattr(shape, "type", None), "name", "")
+    shape_type = str(shape_type).upper()
+    try:
+        if shape_type == "BOX":
+            return dart.BoxShape(2.0 * np.asarray(shape.half_extents, dtype=float))
+        if shape_type == "SPHERE":
+            return dart.SphereShape(float(shape.radius))
+        if shape_type == "CAPSULE":
+            return dart.CapsuleShape(
+                float(shape.radius), 2.0 * float(shape.half_height)
+            )
+        if shape_type == "CYLINDER":
+            return dart.CylinderShape(
+                float(shape.radius), 2.0 * float(shape.half_height)
+            )
+    except Exception:  # noqa: BLE001
+        return None
+    return None
+
+
+def _tracked_rigid_bodies(world: Any) -> list[Any]:
+    bodies: list[Any] = []
+    get_rigid_body = getattr(world, "get_rigid_body", None)
+    if get_rigid_body is None:
+        return bodies
+    seen: set[int] = set()
+    for name in _WORLD_RIGID_BODY_NAMES.get(id(world), []):
+        try:
+            body = get_rigid_body(name)
+        except Exception:  # noqa: BLE001
+            continue
+        if body is None or id(body) in seen:
+            continue
+        seen.add(id(body))
+        bodies.append(body)
+    return bodies
+
+
+def _populate_bridge_from_world(bridge: "WorldRenderBridge", world: Any) -> None:
+    for body_index, body in enumerate(_tracked_rigid_bodies(world)):
+        color = (
+            (0.50, 0.52, 0.54)
+            if bool(getattr(body, "is_static", False))
+            else (0.22, 0.46, 0.76)
+        )
+        try:
+            shapes = list(getattr(body, "collision_shapes", []))
+        except Exception:  # noqa: BLE001
+            shapes = []
+        for shape_index, collision_shape in enumerate(shapes):
+            render_shape = _collision_shape_to_render_shape(collision_shape)
+            if render_shape is None:
+                continue
+            local_transform = getattr(collision_shape, "local_transform", np.eye(4))
+            bridge.add_rigid_body_visual(
+                body,
+                render_shape,
+                color,
+                name=f"{_body_name(body, f'body_{body_index}')}_{shape_index}",
+                local_transform=local_transform,
+            )
+
+
+def _descriptor_bounds(descriptor: Any) -> tuple[np.ndarray, np.ndarray] | None:
+    geometry = getattr(descriptor, "geometry", None)
+    if geometry is None:
+        return None
+    try:
+        has_bounds = bool(getattr(geometry, "has_local_bounds", False))
+    except Exception:  # noqa: BLE001
+        has_bounds = False
+    if has_bounds:
+        local_min = np.asarray(geometry.local_bounds_min, dtype=float).reshape(3)
+        local_max = np.asarray(geometry.local_bounds_max, dtype=float).reshape(3)
+    else:
+        size = np.asarray(getattr(geometry, "size", np.zeros(3)), dtype=float).reshape(
+            -1
+        )
+        if size.size >= 3 and np.any(size[:3] > 0.0):
+            half = 0.5 * size[:3]
+            local_min = -half
+            local_max = half
+        else:
+            radius = float(getattr(geometry, "radius", 0.0) or 0.0)
+            if radius <= 0.0:
+                return None
+            local_min = np.full(3, -radius)
+            local_max = np.full(3, radius)
+
+    transform = _isometry_to_matrix(getattr(descriptor, "world_transform", np.eye(4)))
+    corners = np.array(
+        [
+            [x, y, z, 1.0]
+            for x in (local_min[0], local_max[0])
+            for y in (local_min[1], local_max[1])
+            for z in (local_min[2], local_max[2])
+        ],
+        dtype=float,
+    )
+    world = (transform @ corners.T).T[:, :3]
+    if not np.all(np.isfinite(world)):
+        return None
+    return world.min(axis=0), world.max(axis=0)
+
+
+def _bounds_fit_camera(renderables: list[Any], size: tuple[int, int]) -> Any:
+    mins: list[np.ndarray] = []
+    maxs: list[np.ndarray] = []
+    for descriptor in renderables:
+        bounds = _descriptor_bounds(descriptor)
+        if bounds is None:
+            continue
+        mins.append(bounds[0])
+        maxs.append(bounds[1])
+    if not mins:
+        raise ValueError("dart.gui.render requires at least one bounded renderable")
+
+    scene_min = np.min(np.vstack(mins), axis=0)
+    scene_max = np.max(np.vstack(maxs), axis=0)
+    center = 0.5 * (scene_min + scene_max)
+    radius = 0.5 * float(np.linalg.norm(scene_max - scene_min))
+    radius = max(radius, 0.5)
+
+    width, height = size
+    vertical_fov = math.radians(45.0)
+    aspect = max(float(width) / float(max(height, 1)), 1.0e-6)
+    horizontal_fov = 2.0 * math.atan(math.tan(vertical_fov * 0.5) * aspect)
+    distance = radius / math.sin(min(horizontal_fov, vertical_fov) * 0.5) * 1.1
+
+    camera = dart.gui.OrbitCamera()
+    camera.target = center
+    camera.distance = distance
+    return camera
+
+
+def orbit_camera(
+    azimuth: float | None = None,
+    elevation: float | None = None,
+    distance: float | None = None,
+    target: Any | None = None,
+    up: Any | None = None,
+) -> Any:
+    camera = dart.gui.OrbitCamera()
+    if azimuth is not None:
+        camera.yaw = float(azimuth)
+    if elevation is not None:
+        camera.pitch = float(elevation)
+    if distance is not None:
+        camera.distance = float(distance)
+    if target is not None:
+        camera.target = np.asarray(target, dtype=float).reshape(3)
+    if up is not None and hasattr(camera, "up"):
+        camera.up = np.asarray(up, dtype=float).reshape(3)
+    return camera
+
+
+def look_at(eye: Any, target: Any, up: Any = (0.0, 0.0, 1.0)) -> Any:
+    eye_vector = np.asarray(eye, dtype=float).reshape(3)
+    target_vector = np.asarray(target, dtype=float).reshape(3)
+    offset = eye_vector - target_vector
+    distance = float(np.linalg.norm(offset))
+    if not np.isfinite(distance) or distance <= 0.0:
+        raise ValueError("look_at requires distinct eye and target positions")
+
+    camera = dart.gui.OrbitCamera()
+    camera.target = target_vector
+    camera.distance = distance
+    camera.yaw = math.atan2(offset[1], offset[0])
+    camera.pitch = math.asin(float(np.clip(offset[2] / distance, -1.0, 1.0)))
+    if hasattr(camera, "up"):
+        camera.up = np.asarray(up, dtype=float).reshape(3)
+    return camera
+
+
+def _normalize_render_size(size: Any) -> tuple[int, int]:
+    width, height = size
+    width = int(width)
+    height = int(height)
+    if width <= 0 or height <= 0:
+        raise ValueError("render size must be positive")
+    return width, height
+
+
+def _renderables_from_world(world: Any) -> list[Any]:
+    if hasattr(world, "renderable_provider"):
+        return list(world.renderable_provider())
+    bridge = WorldRenderBridge(world)
+    _populate_bridge_from_world(bridge, world)
+    return list(bridge.renderable_provider())
+
+
+def render(
+    world: Any, camera: Any | None = None, size: tuple[int, int] = (640, 480)
+) -> Any:
+    render_size = _normalize_render_size(size)
+    renderables = _renderables_from_world(world)
+    if not renderables:
+        raise ValueError(
+            "dart.gui.render found no renderable descriptors; add collision "
+            "shapes to a Python-created DART 7 world or pass a descriptor scene"
+        )
+    if camera is None:
+        camera = _bounds_fit_camera(renderables, render_size)
+    renderer = dart.gui.OffscreenRenderer(width=render_size[0], height=render_size[1])
+    return renderer.render(renderables, camera)
+
+
+def install_world_render_helpers(root: Any, gui: Any) -> None:
+    _install_rigid_body_registry(root)
+    gui.render = render
+    gui.orbit_camera = orbit_camera
+    gui.look_at = look_at
+
+
 def _is_fixed_node(body: Any, index: int) -> bool:
     try:
         return bool(body.is_fixed_node(index))
@@ -196,7 +469,9 @@ class DescriptorRenderScene:
         renderable_type = getattr(
             dart.gui, "RenderableDescriptor", _FallbackRenderableDescriptor
         )
-        material_type = getattr(dart.gui, "MaterialDescriptor", _FallbackMaterialDescriptor)
+        material_type = getattr(
+            dart.gui, "MaterialDescriptor", _FallbackMaterialDescriptor
+        )
         use_fallback_geometry = describe_shape is None
         for frame in self._frames:
             try:
@@ -479,7 +754,7 @@ class WorldRenderBridge:
         try:
             force = self._event_vector(event, "force") * float(self.force_drag_scale)
             point = self._event_vector(event, "application_point")
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             self._drag = None
             self._last_drag_status = "invalid event"
             self._last_drag_target = str(

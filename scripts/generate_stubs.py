@@ -157,12 +157,18 @@ def _postprocess_public_module_stub(source: str, public_module: str) -> str:
     helper_names = [
         "DescriptorRenderScene",
         "WorldRenderBridge",
+        "look_at",
+        "orbit_camera",
+        "render",
         "world_render_frame",
     ]
     helper_import = (
         "from dartpy._world_render_bridge import (\n"
         "    DescriptorRenderScene as DescriptorRenderScene,\n"
         "    WorldRenderBridge as WorldRenderBridge,\n"
+        "    look_at as look_at,\n"
+        "    orbit_camera as orbit_camera,\n"
+        "    render as render,\n"
         "    world_render_frame as world_render_frame,\n"
         ")\n"
     )

@@ -249,9 +249,21 @@ set(dartpy_gui_module_headers gui/module.hpp)
 
 set(dartpy_gui_module_sources gui/module.cpp)
 
-set(dartpy_gui_headers gui/descriptors.hpp gui/panel.hpp gui/viewer.hpp)
+set(
+  dartpy_gui_headers
+  gui/descriptors.hpp
+  gui/offscreen.hpp
+  gui/panel.hpp
+  gui/viewer.hpp
+)
 
-set(dartpy_gui_sources gui/descriptors.cpp gui/panel.cpp gui/viewer.cpp)
+set(
+  dartpy_gui_sources
+  gui/descriptors.cpp
+  gui/offscreen.cpp
+  gui/panel.cpp
+  gui/viewer.cpp
+)
 
 set(
   dartpy_simulation_headers
