@@ -103,9 +103,11 @@ bool collideSpheresOnAxis(
 bool spheresOverlap(
     double dx, double dy, double dz, double radius1, double radius2)
 {
-  // Use std::hypot (overflow-safe) rather than a squared comparison so
-  // large-but-finite inputs agree with the linear axis-aligned contact path.
-  return std::hypot(dx, dy, dz) <= radius1 + radius2;
+  // Squared comparison, identical to the contact path's generic overlap test,
+  // so the binary (enableContact=false) result matches full contact detection
+  // for ordinary finite inputs.
+  const double sumRadii = radius1 + radius2;
+  return dx * dx + dy * dy + dz * dz <= sumRadii * sumRadii;
 }
 
 bool collideSphereCenters(
