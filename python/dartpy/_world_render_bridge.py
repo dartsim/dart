@@ -754,7 +754,7 @@ class WorldRenderBridge:
         try:
             force = self._event_vector(event, "force") * float(self.force_drag_scale)
             point = self._event_vector(event, "application_point")
-        except TypeError, ValueError:
+        except (TypeError, ValueError):
             self._drag = None
             self._last_drag_status = "invalid event"
             self._last_drag_target = str(

@@ -58,7 +58,7 @@ def build_verdict(
         "metadata": metadata or {},
         "checks": checks,
         "thresholds_used": {
-            "non_blank": {"min_nonzero_pixels": 1},
+            "non_blank": {"min_nonzero_pixels": 1, "min_unique_colors": 2},
             "contrast": checks["contrast"]["thresholds"],
             "require_contrast": require_contrast,
             "diff": {
@@ -100,15 +100,25 @@ def build_verdict(
 
 def analyze_non_blank(image: ImageData) -> dict[str, Any]:
     nonzero_pixels = 0
+    unique_colors: set[bytes] = set()
     for offset in range(0, len(image.pixels), 3):
-        if any(image.pixels[offset : offset + 3]):
+        pixel = image.pixels[offset : offset + 3]
+        if len(unique_colors) < 2:
+            unique_colors.add(pixel)
+        if any(pixel):
             nonzero_pixels += 1
-    passed = nonzero_pixels > 0
+    reasons = []
+    if nonzero_pixels == 0:
+        reasons.append("image contains only zero-valued pixels")
+    if len(unique_colors) < 2:
+        reasons.append("image contains a single uniform color")
+    passed = not reasons
     return {
         "pass": passed,
         "nonzero_pixels": nonzero_pixels,
+        "unique_colors_seen": len(unique_colors),
         "total_pixels": image.pixel_count,
-        "reasons": [] if passed else ["image contains only zero-valued pixels"],
+        "reasons": reasons,
     }
 
 

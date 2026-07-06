@@ -353,6 +353,7 @@ def _run_offscreen_render_api_smoke(width: int, height: int) -> SceneResult:
             try:
                 ppm_path.unlink()
             except FileNotFoundError:
+                # Another cleanup path may already have removed the temporary file.
                 pass
     except Exception as exc:  # noqa: BLE001
         return SceneResult(

@@ -39,22 +39,28 @@ def _write_contrast_png(path: Path, width: int = 100, height: int = 100) -> byte
     return pixels
 
 
-def _write_flat_png(path: Path, width: int = 100, height: int = 100) -> None:
-    # Uniform mid-gray: non-blank (nonzero pixels) but no shadow/lighting
-    # contrast. A legitimate minimal render, not a defect.
-    write_png(path, width, height, bytes((92, 92, 92)) * (width * height))
+def _write_low_contrast_png(path: Path, width: int = 100, height: int = 100) -> None:
+    # Two close mid-gray values: non-blank and non-uniform, but no
+    # shadow/lighting contrast. A legitimate minimal render, not a defect.
+    pixels = bytearray(bytes((92, 92, 92)) * (width * height))
+    for y in range(height // 3, 2 * height // 3):
+        for x in range(width // 3, 2 * width // 3):
+            offset = (y * width + x) * 3
+            pixels[offset : offset + 3] = b"\x60\x60\x60"
+    write_png(path, width, height, bytes(pixels))
 
 
-def test_flat_non_blank_image_passes_unless_contrast_required(
+def test_low_contrast_non_blank_image_passes_unless_contrast_required(
     tmp_path: Path,
 ) -> None:
-    image = tmp_path / "flat.png"
-    _write_flat_png(image)
+    image = tmp_path / "low_contrast.png"
+    _write_low_contrast_png(image)
 
     default_verdict = image_verdict.build_verdict(image)
     assert default_verdict["checks"]["non_blank"]["pass"] is True
+    assert default_verdict["checks"]["non_blank"]["unique_colors_seen"] == 2
     assert default_verdict["checks"]["contrast"]["pass"] is False
-    # Contrast is report-only by default: a flat non-blank render still passes.
+    # Contrast is report-only by default: a low-contrast render still passes.
     assert default_verdict["pass"] is True
     assert default_verdict["reasons"] == []
     assert default_verdict["thresholds_used"]["require_contrast"] is False
@@ -103,6 +109,18 @@ def test_blank_image_fails_non_blank_and_contrast(tmp_path: Path) -> None:
     assert verdict["checks"]["non_blank"]["pass"] is False
     assert "image contains only zero-valued pixels" in verdict["reasons"]
     assert verdict["checks"]["contrast"]["pass"] is False
+
+
+def test_uniform_clear_color_image_fails_non_blank(tmp_path: Path) -> None:
+    image = tmp_path / "clear_color.png"
+    write_png(image, 64, 64, bytes((192, 192, 192)) * (64 * 64))
+
+    verdict = image_verdict.build_verdict(image)
+
+    assert verdict["pass"] is False
+    assert verdict["checks"]["non_blank"]["pass"] is False
+    assert verdict["checks"]["non_blank"]["unique_colors_seen"] == 1
+    assert "image contains a single uniform color" in verdict["reasons"]
 
 
 def test_diff_catches_seeded_render_regression(tmp_path: Path) -> None:

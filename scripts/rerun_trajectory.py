@@ -177,6 +177,7 @@ def _set_time(rr: Any, *, frame: int, seconds: float) -> None:
         try:
             rr.set_time("frame", sequence=frame)
         except TypeError:
+            # Older rerun SDKs expose set_time with incompatible keyword support.
             pass
 
     if hasattr(rr, "set_time_seconds"):

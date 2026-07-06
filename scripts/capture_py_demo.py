@@ -894,6 +894,10 @@ def rigid_workflow_related_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
     return RIGID_WORKFLOW_RELATED_CAPTURE_SPECS
 
 
+def multi_view_example_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
+    return MULTI_VIEW_EXAMPLE_CAPTURE_SPECS
+
+
 def rigid_workflow_contact_baseline_capture_specs() -> tuple[WorkflowCaptureSpec, ...]:
     return RIGID_WORKFLOW_CONTACT_BASELINE_CAPTURE_SPECS
 
