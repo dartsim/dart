@@ -239,8 +239,9 @@ public:
   /// Constructor
   InteractiveFrameDnD(Viewer* viewer, dart::gui::osg::InteractiveFrame* frame);
 
-  /// Virtual destructor
-  virtual ~InteractiveFrameDnD() = default;
+  /// Virtual destructor. Deletes the per-tool sub-DnDs this class allocates in
+  /// its constructor (they are owned by no one else).
+  virtual ~InteractiveFrameDnD();
 
   /// Get the frame associated with this DnD
   InteractiveFrame* getFrame() const;

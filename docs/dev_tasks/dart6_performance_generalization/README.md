@@ -18,7 +18,7 @@ Round 1 made settled scenes fast (3k_shapes DART-native RTF ~81, hash
 not claim, and what the #3209 benchmark + PR body make measurable and
 explicit, is the **active** regime and why scenes stay active:
 
-- Active 120-body container: DART-native RTF ≈ 0.042, ODE ≈ 0.029; 16
+- Active 120-body container: DART-native RTF ≈ 0.036, ODE ≈ 0.021; 16
   threads change almost nothing (see
   [01-baseline-evidence.md](01-baseline-evidence.md)).
 - Profile smoke (active 60-body, native): the Dantzig LCP solve scope ≈ 66%
@@ -61,7 +61,7 @@ claiming any packet that overlaps them**.
 
 1. **Primary fixture** (active container, native detector, 1 thread,
    120 objects): cumulative default-on packets reach **RTF ≥ 3× the round-2
-   baseline** (0.042 → ≥ 0.126) with all guard hashes stable.
+   baseline** (0.036 → ≥ 0.108) with all guard hashes stable.
 2. **Pile-sleep outcome** (the gz-visible #3056 closer, needs D7/WP-PG.15):
    the S6 creep reproducer (71-object container, 20 s) ends with bounded
    `max_penetration` and all bodies resting under default settings.

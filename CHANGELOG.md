@@ -44,6 +44,10 @@
 
 * Build
 
+  * Replace the dartpy wheel publishing path with Pixi-managed build,
+    repair, verification, and smoke-test tasks, and retire the legacy DART 6
+    Docker dev/wheel images.
+
   * Harden the release-branch contributor workflow: `pixi run install-hooks`
     installs a pre-commit hook running the lint gate (with a tracked Claude
     Code commit guard as fallback), `check-ai-commands` now runs inside
@@ -51,6 +55,10 @@
     workflow commands carry the structural metadata validated on `main`, and
     the `dart-changelog` routine is available for backport changelog
     decisions.
+
+  * Add a release-tailored documentation information architecture owner and
+    route docs-update workflows through it so DART 6.20 agents promote durable
+    task facts by lifecycle before retiring `docs/dev_tasks/` folders.
 
   * Add a "surface your unknowns" discipline to the release-branch AI
     principles (`docs/ai/principles.md`): before a non-trivial fix, convert
@@ -63,6 +71,10 @@
     smallest failing case, fix the underlying cause, and add regression
     coverage — instead of silencing the symptom or widening scope to route
     around it.
+
+  * Clarify release-branch AI-native guidance so always-loaded agent rules stay
+    compact, consequential decisions use release-wide context and proportionate
+    evidence, and in-scope failures are root-caused instead of hidden.
 
   * Replace the vendored `dart/external/convhull_3d` implementation with a
     DART-owned native `dart/math/detail/ConvexHull.hpp` implementation used by
@@ -118,6 +130,11 @@
   * Speed up DART-native broadphase setup by computing transformed cached local
     bounds directly from center and half-extents instead of visiting all local
     bounding-box corners:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
+  * Speed up DART-native finite-shape broadphase sweeps on AVX-width builds by
+    screening sorted AABB candidate batches with `dart/simd`, while keeping
+    baseline-ISA builds on the scalar sweep path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Reduce DART-native broadphase setup work by caching local bounds
@@ -416,6 +433,16 @@
     [#3092](https://github.com/dartsim/dart/pull/3092)
 
 * GUI
+
+  * Fix `dart::gui::osg` interaction teardown so registered handlers and
+    drag-and-drop tools are released correctly. `DefaultEventHandler::
+    addMouseEventHandler` now observes its handler so the documented
+    auto-unregister-on-destruction actually fires; previously a destroyed
+    `MouseEventHandler` left a dangling pointer in the handler list, a
+    use-after-free on the next mouse event. `InteractiveFrameDnD` now deletes
+    the nine `InteractiveToolDnD` objects it allocates instead of leaking them
+    on every teardown:
+    [#3300](https://github.com/dartsim/dart/pull/3300)
 
   * Add shared `dart-gui-osg` helpers for parsing and applying GUI scale, and
     route ImGui font/style scaling through `ImGuiHandler`:
