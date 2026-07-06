@@ -698,6 +698,22 @@ dynamics::RevoluteJoint* createLimitProbeJoint(
   return hinge;
 }
 
+void injectMalformedAxisForWriterTest(
+    dynamics::RevoluteJoint& joint, const Eigen::Vector3d& axis)
+{
+  // setAxis() recomputes joint caches and asserts in Debug for NaN axes before
+  // the writer can validate the serialized state.
+  const_cast<Eigen::Vector3d&>(joint.getAxis()) = axis;
+}
+
+void injectMalformedPitchForWriterTest(
+    dynamics::ScrewJoint& joint, double pitch)
+{
+  // setPitch() recomputes joint caches and asserts in Debug for non-finite
+  // pitch values before the writer can validate the serialized state.
+  const_cast<double&>(joint.getAspectProperties().mPitch) = pitch;
+}
+
 } // namespace
 
 //==============================================================================
@@ -5026,7 +5042,8 @@ TEST(SdfWriter, RelativeFileMeshUriReturnsError)
 TEST(SdfWriter, HostQualifiedFileMeshUriReturnsError)
 {
   auto retriever = std::make_shared<MapResourceRetriever>();
-  addTriangleObj(*retriever, "file://meshes/triangle.obj");
+  const common::Uri meshUri("file://meshes/triangle.obj");
+  addTriangleObj(*retriever, meshUri.toString());
 
   auto skeleton = dynamics::Skeleton::create("host_qualified_file_mesh_uri");
   auto [joint, body]
@@ -5035,10 +5052,7 @@ TEST(SdfWriter, HostQualifiedFileMeshUriReturnsError)
   body->setName("body");
   body->createShapeNodeWith<dynamics::VisualAspect>(
       std::make_shared<dynamics::MeshShape>(
-          Eigen::Vector3d::Ones(),
-          makeTriangleMesh(),
-          common::Uri("meshes/triangle.obj"),
-          retriever),
+          Eigen::Vector3d::Ones(), makeTriangleMesh(), meshUri, retriever),
       "host_qualified_file_mesh_uri");
 
   const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
@@ -5386,7 +5400,8 @@ TEST(SdfWriter, NonFiniteJointAxisReturnsError)
       = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
           base, hingeProperties, tipProperties);
   (void)tip;
-  hinge->setAxis(
+  injectMalformedAxisForWriterTest(
+      *hinge,
       Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 1.0));
 
   const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
@@ -5534,7 +5549,8 @@ TEST(SdfWriter, NonFiniteScrewJointPitchReturnsError)
       = skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint>(
           base, screwProperties, tipProperties);
   (void)tip;
-  screw->setPitch(std::numeric_limits<double>::quiet_NaN());
+  injectMalformedPitchForWriterTest(
+      *screw, std::numeric_limits<double>::quiet_NaN());
 
   const auto result = io::SdfWriter::tryWriteSkeletonToString(*skeleton);
   ASSERT_TRUE(result.isErr());
