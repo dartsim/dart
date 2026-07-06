@@ -261,20 +261,36 @@ TEST(NarrowPhaseDispatch, RespectsExhaustedContactBudget)
 {
   SphereShape sphere1(1.0);
   SphereShape sphere2(1.0);
+  BoxShape box1(Eigen::Vector3d(1.0, 1.0, 1.0));
+  BoxShape box2(Eigen::Vector3d(1.0, 1.0, 1.0));
 
   CollisionOption option;
   option.enableContact = true;
   option.maxNumContacts = 0;
 
-  CollisionResult result;
-  const bool hit = NarrowPhase::collide(
+  CollisionResult sphereResult;
+  const bool sphereHit = NarrowPhase::collide(
       &sphere1,
       Eigen::Isometry3d::Identity(),
       &sphere2,
       translated(1.5, 0.0, 0.0),
       option,
-      result);
+      sphereResult);
 
-  EXPECT_FALSE(hit);
-  EXPECT_EQ(result.numContacts(), 0u);
+  EXPECT_FALSE(sphereHit);
+  EXPECT_EQ(sphereResult.numContacts(), 0u);
+
+  option.enableContact = false;
+
+  CollisionResult boxResult;
+  const bool boxHit = NarrowPhase::collide(
+      &box1,
+      Eigen::Isometry3d::Identity(),
+      &box2,
+      translated(0.5, 0.0, 0.0),
+      option,
+      boxResult);
+
+  EXPECT_FALSE(boxHit);
+  EXPECT_EQ(boxResult.numContacts(), 0u);
 }

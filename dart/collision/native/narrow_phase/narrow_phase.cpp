@@ -53,6 +53,10 @@ bool collideShapes(
     return false;
   }
 
+  if (option.maxNumContacts == 0) {
+    return false;
+  }
+
   ShapeType type1 = shape1->getType();
   ShapeType type2 = shape2->getType();
 
