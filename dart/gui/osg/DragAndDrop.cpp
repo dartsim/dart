@@ -463,6 +463,11 @@ public:
     mEntity = tool;
   }
 
+  void stopObservingViewer()
+  {
+    removeSubject(mViewer);
+  }
+
   void update() override
   {
     if (nullptr == mEntity)
@@ -517,10 +522,16 @@ InteractiveFrameDnD::InteractiveFrameDnD(
   mViewer->getDefaultEventHandler()->addMouseEventHandler(
       new InteractiveFrameMouseEvent(frame));
 
-  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i)
-    for (std::size_t j = 0; j < 3; ++j)
-      mDnDs.push_back(new InteractiveToolDnD(
-          viewer, frame, frame->getTool((InteractiveTool::Type)i, j)));
+  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
+    for (std::size_t j = 0; j < 3; ++j) {
+      InteractiveToolDnD* dnd = new InteractiveToolDnD(
+          viewer, frame, frame->getTool((InteractiveTool::Type)i, j));
+      // The parent owns these child DnDs. If they observe the viewer directly,
+      // viewer teardown can delete a child before the parent deletes mDnDs.
+      dnd->stopObservingViewer();
+      mDnDs.push_back(dnd);
+    }
+  }
 
   for (std::size_t i = 0; i < 3; ++i) {
     DragAndDrop* dnd = mDnDs[i];
@@ -532,6 +543,19 @@ InteractiveFrameDnD::InteractiveFrameDnD(
     dnd = mDnDs[i + 6];
     dnd->setRotationOption(SimpleFrameDnD::RotationOption::ALWAYS_OFF);
   }
+}
+
+//==============================================================================
+InteractiveFrameDnD::~InteractiveFrameDnD()
+{
+  // The constructor allocates one InteractiveToolDnD per tool with `new` and
+  // stores them here; nothing else owns them, so delete them now. The
+  // InteractiveFrameMouseEvent allocated in the constructor is not deleted
+  // here: it observes the InteractiveFrame and deletes itself when that frame
+  // (or the DefaultEventHandler it registered with) is destroyed.
+  for (DragAndDrop* dnd : mDnDs)
+    delete dnd;
+  mDnDs.clear();
 }
 
 //==============================================================================
