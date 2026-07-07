@@ -147,6 +147,8 @@ private:
 
   void refreshSoftFaceBvhCache();
 
+  void refreshSoftFaceBvhBounds();
+
   dynamics::ConstShapePtr mCachedShape;
   const std::string* mCachedShapeType{nullptr};
   std::size_t mCachedShapeFrameVersion{std::numeric_limits<std::size_t>::max()};
@@ -158,6 +160,8 @@ private:
   bool mHasFiniteCachedLocalBounds{false};
   bool mIsCachedPlaneShape{false};
   bool mUseBodyNodeWorldTransform{false};
+  std::size_t mCachedSoftBodyNodeVersion{
+      std::numeric_limits<std::size_t>::max()};
   std::vector<Eigen::Vector3d> mCachedSoftLocalVertices;
   std::vector<int> mCachedSoftFirstFaceByPointMass;
   std::vector<CachedSoftFace> mCachedSoftFaces;
