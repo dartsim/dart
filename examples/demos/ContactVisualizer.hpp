@@ -45,11 +45,11 @@
 namespace dart_demos {
 
 //==============================================================================
-/// Host-level reusable contact-force visualizer (BRIEF-phase3.md #3),
-/// extracted from RigidCubesScene's original bespoke version so every scene
-/// gets it for free. Toggle lives in Diagnostics (host chrome, persists
-/// across scene switches); the arrow pool itself is rebuilt per scene (the
-/// SimpleFrames it owns belong to the active world).
+/// Host-level reusable contact-force visualizer, extracted from
+/// RigidCubesScene's original bespoke version so every scene gets it for free.
+/// Toggle lives in Diagnostics (host chrome, persists across scene switches);
+/// the arrow pool itself is rebuilt per scene (the SimpleFrames it owns belong
+/// to the active world).
 class ContactVisualizer
 {
 public:

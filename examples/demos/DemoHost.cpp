@@ -952,9 +952,8 @@ int DemoHost::cycleScenes(int framesPerScene)
 {
   bool anyFailure = false;
 
-  // Loop the whole catalog twice in-process: this is the rapid re-switch
-  // robustness gate from BRIEF-phase1.md #5 -- it must not leak world nodes
-  // or corrupt state across repeated switches.
+  // Loop the whole catalog twice in-process: this rapid re-switch robustness
+  // gate must not leak world nodes or corrupt state across repeated switches.
   for (int repeat = 0; repeat < 2; ++repeat) {
     for (const auto& scene : mScenes) {
       requestSceneSwitch(scene.id);
@@ -1069,9 +1068,8 @@ int DemoHost::runHeadlessShot(
 
   // Hidden debug/test hooks (main.cpp's --debug-select-body/
   // --debug-record-profile): let a headless capture exercise UI state that
-  // normally requires interactive input, per
-  // docs/dev_tasks/dart6_consolidated_demos/BRIEF-phase3.md's acceptance
-  // criteria (scene tree + inspector with a selection; profiler recording).
+  // normally requires interactive input: scene tree + inspector with a
+  // selection, and profiler recording in the Tools tab.
   if (!mDebugSelectBodyName.empty() && mCurrentWorld) {
     dart::dynamics::BodyNode* found = nullptr;
     for (std::size_t s = 0; s < mCurrentWorld->getNumSkeletons() && !found;
