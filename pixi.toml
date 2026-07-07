@@ -82,7 +82,10 @@ lint-py = { cmd = """
 
 lint-cmake = { cmd = ["python", "scripts/lint_cmake.py"] }
 
-lint-toml = { cmd = ["bash", "-lc", """
+lint-toml = { cmd = [
+  "bash",
+  "-lc",
+  """
 set -euo pipefail
 python - <<'PY'
 import pathlib
@@ -90,7 +93,7 @@ import shutil
 import subprocess
 import time
 
-skip_dirs = {'.pixi', 'build', 'external', 'node_modules'}
+skip_dirs = {'.benchmark_results', '.deps', '.pixi', 'build', 'external', 'node_modules'}
 root = pathlib.Path('.')
 toml_files = []
 for path in root.rglob('*.toml'):
@@ -110,7 +113,8 @@ for path in toml_files:
 
 subprocess.run(['taplo', 'fmt', *map(str, toml_files)], check=True)
 PY
-"""] }
+""",
+] }
 
 lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
 

@@ -263,14 +263,10 @@ deformable backend.
 3. Decide whether the next native soft path should use full triangle-mesh
    collision, adaptive active-vertex contact neighborhoods, or both.
 4. Extend the retained topology/dynamic-vertex adapter toward active
-   neighborhoods and broader allocation gates for soft-body scenes.
-5. Extend the native soft allocation gates beyond the current soft-box,
-   two-soft-box stack, and `softBodies.skel` no-contact lanes to
-   `soft_open_chain` and contact-heavy SKEL scenes before changing the default
-   deformable collision backend.
-6. Extend parity tests to compare contact counts, representative contact points,
+   neighborhoods for soft-body scenes.
+5. Extend parity tests to compare contact counts, representative contact points,
    checksums, and timing between FCL and native on the same soft scenes.
-7. Once parity is green, make the native path the preferred deformable collision
+6. Once parity is green, make the native path the preferred deformable collision
    backend and keep FCL as compatibility/fallback coverage.
 
 ## Acceptance gate

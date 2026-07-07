@@ -87,8 +87,9 @@ contact correctness, or performance envelope.
   uses its `World`/`MemoryManager`/`FrameAllocator` surfaces for native soft
   allocation gates. The latest local gates prove the measured native soft-box
   post-bake steps, a two-soft-box native stack steady-state window, and the
-  `softBodies.skel` no-contact soft-dynamics window perform zero
-  `operator new`, zero raw `malloc`, and zero base allocator growth.
+  `softBodies.skel`, `soft_open_chain.skel`, and contact-producing
+  `soft_cubes.skel` SKEL-authored windows perform zero `operator new`, zero
+  raw `malloc`, and zero base allocator growth.
   Contiguous point-mass storage and SIMD remain open.
 - WP-DB.08 native collision slices add dynamic `SoftMeshShape` bounds and native
   point-mass contacts for soft-vs-plane, soft-vs-box, soft-vs-sphere, and
@@ -107,8 +108,8 @@ contact correctness, or performance envelope.
   stronger multicore scaling beyond small pair counts before native can replace
   FCL. Native soft allocation gates now cover the soft-box contact lane, a
   soft-soft stack steady-state window, and the `softBodies.skel` no-contact
-  soft-dynamics window; `soft_open_chain` and contact-heavy SKEL windows still
-  need coverage.
+  soft-dynamics window, plus `soft_open_chain` and contact-heavy `soft_cubes`
+  SKEL-authored windows.
 
 ## Work packets
 
@@ -119,9 +120,9 @@ contact correctness, or performance envelope.
 | WP-DB.03 paper parity matrix | Convert both papers into a scene/feature/performance checklist. | Every representative paper demo has an owner row, current DART 6 status, target evidence, and acceptance gate. |
 | WP-DB.04 coupled equation correctness | Finish or replace stubbed point-mass mass, inverse-mass, gravity, combined-force, and external-force aggregation paths. | Matrix/vector checks pass for rigid-only, soft-only, and mixed rigid-soft worlds. |
 | WP-DB.05 adaptive contact activation | Implement Jain/Liu-style active vertex neighborhoods without breaking existing all-active soft bodies. | Contact-local activation gives matching contact behavior with fewer active DOFs and deterministic state hashes. |
-| WP-DB.06 CPU data layout and SIMD | Profile point-mass loops, identify contiguous/SoA/SIMD candidates, and use `dart/simd/` where it wins. | Benchmarks show single-core speedup without changing results beyond approved tolerances. Initial profiling, FCL soft-mesh refit reduction, parent-term scalar caching, vector-backed point-state/property reads in the bias-force edge loop and kinematics preflight, the `dart6-memory-hardening` stack, zero-allocation native soft-box plus soft-soft stack gates, and the heap-free `softBodies.skel` no-contact soft-dynamics gate are in `04-data-layout-and-memory-hardening.md`; heap-free contiguous point-mass storage and SIMD remain open. |
+| WP-DB.06 CPU data layout and SIMD | Profile point-mass loops, identify contiguous/SoA/SIMD candidates, and use `dart/simd/` where it wins. | Benchmarks show single-core speedup without changing results beyond approved tolerances. Initial profiling, FCL soft-mesh refit reduction, parent-term scalar caching, vector-backed point-state/property reads in the bias-force edge loop and kinematics preflight, the `dart6-memory-hardening` stack, zero-allocation native soft-box plus soft-soft stack gates, and the heap-free `softBodies.skel`, `soft_open_chain`, and contact-producing `soft_cubes` SKEL gates are in `04-data-layout-and-memory-hardening.md`; heap-free contiguous point-mass storage and SIMD remain open. |
 | WP-DB.07 multi-core scaling | Parallelize independent soft-body loops or scene islands behind existing thread controls. | `threads=16` rows improve on representative scenes while `threads=1` remains deterministic. Pair-level native soft-soft worker scheduling exists; broader scaling evidence still needs larger scenes or intra-pair/active-neighborhood work. |
-| WP-DB.08 native collision deformables | Make `dart/collision/native` the preferred collision solution for soft/deformable scenes instead of treating FCL as the destination backend. | Native soft-vs-plane, soft-vs-box, soft-vs-sphere, soft-vs-ellipsoid, and cached soft-vs-soft vertex-face contact lanes now have focused tests, with retained soft-face BVH pruning, pair-level finite-finite soft worker scheduling, `drop_box` FCL/native checksum parity for the soft-box lane, warning-free native dispatch on the representative `soft_bodies` diagnostic, zero-allocation native soft-box plus soft-soft stack gates, and a heap-free `softBodies.skel` no-contact soft-dynamics gate. Remaining acceptance requires fuller triangle/contact-neighborhood coverage, deterministic longer-run headless checksums, `soft_open_chain` and contact-heavy SKEL allocation gates, and performance rows that match or beat FCL on representative soft scenes. Current gap analysis is in `05-native-collision-deformable-lane.md`. |
+| WP-DB.08 native collision deformables | Make `dart/collision/native` the preferred collision solution for soft/deformable scenes instead of treating FCL as the destination backend. | Native soft-vs-plane, soft-vs-box, soft-vs-sphere, soft-vs-ellipsoid, and cached soft-vs-soft vertex-face contact lanes now have focused tests, with retained soft-face BVH pruning, pair-level finite-finite soft worker scheduling, `drop_box` FCL/native checksum parity for the soft-box lane, warning-free native dispatch on the representative `soft_bodies` diagnostic, zero-allocation native soft-box plus soft-soft stack gates, and heap-free `softBodies.skel`, `soft_open_chain`, and contact-producing `soft_cubes` SKEL gates. Remaining acceptance requires fuller triangle/contact-neighborhood coverage, deterministic longer-run headless checksums, and performance rows that match or beat FCL on representative soft scenes. Current gap analysis is in `05-native-collision-deformable-lane.md`. |
 | WP-DB.09 flagship demos | Add paper-parity basic and flagship examples that are runnable headlessly and, where useful, visually. | Each representative feature/performance/correctness claim has a demo or benchmark artifact. |
 
 The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
