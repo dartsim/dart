@@ -39,6 +39,7 @@
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/CapsuleShape.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/SphereShape.hpp>
@@ -293,6 +294,51 @@ TEST(NativeCollisionDetector, CollidesSphereBoxInBothOrders)
 }
 
 //==============================================================================
+TEST(NativeCollisionDetector, CollidesCapsuleSphere)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto capsuleFrame
+      = makeFrame(std::make_shared<dynamics::CapsuleShape>(0.5, 2.0));
+  auto sphereFrame = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(0.75, 0.0, 0.0));
+
+  auto group
+      = detector->createCollisionGroup(capsuleFrame.get(), sphereFrame.get());
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+
+  const auto& contact = result.getContact(0);
+  EXPECT_EQ(capsuleFrame.get(), contact.getShapeFrame1());
+  EXPECT_EQ(sphereFrame.get(), contact.getShapeFrame2());
+  EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(0.25, contact.penetrationDepth, 1e-12);
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, CollidesCapsuleBox)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto capsuleFrame = makeFrame(
+      std::make_shared<dynamics::CapsuleShape>(0.5, 2.0),
+      Eigen::Vector3d(1.25, 0.0, 0.0));
+  auto boxFrame = makeFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+
+  auto group
+      = detector->createCollisionGroup(capsuleFrame.get(), boxFrame.get());
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_GE(result.getNumContacts(), 1u);
+
+  const auto& contact = result.getContact(0);
+  EXPECT_EQ(capsuleFrame.get(), contact.getShapeFrame1());
+  EXPECT_EQ(boxFrame.get(), contact.getShapeFrame2());
+  EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+//==============================================================================
 TEST(NativeCollisionDetector, CollidesAcrossGroups)
 {
   auto detector = collision::NativeCollisionDetector::create();
@@ -344,6 +390,20 @@ TEST(NativeCollisionDetector, ConvertsSphereAndBoxShapes)
   EXPECT_EQ(
       Eigen::Vector3d(1.0, 2.0, 3.0),
       static_cast<const native::BoxShape*>(nativeBox.get())->getHalfExtents());
+
+  const dynamics::CapsuleShape capsule(0.25, 1.5);
+  auto nativeCapsule
+      = collision::detail::NativeShapeConversion::create(capsule);
+  ASSERT_NE(nullptr, nativeCapsule);
+  ASSERT_EQ(native::ShapeType::Capsule, nativeCapsule->getType());
+  EXPECT_DOUBLE_EQ(
+      0.25,
+      static_cast<const native::CapsuleShape*>(nativeCapsule.get())
+          ->getRadius());
+  EXPECT_DOUBLE_EQ(
+      1.5,
+      static_cast<const native::CapsuleShape*>(nativeCapsule.get())
+          ->getHeight());
 }
 
 //==============================================================================
