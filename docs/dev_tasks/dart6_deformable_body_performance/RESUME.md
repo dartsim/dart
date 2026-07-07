@@ -160,6 +160,12 @@ Latest state:
   soft dynamics, allocation, and native checksum smokes passed after this
   slice, but parent/base benchmark rows remain noisy and this is not a final
   speedup claim.
+- A follow-up WP-DB.06 fused aggregation slice is implemented locally:
+  several cached point-force fill loops now accumulate their parent soft-body
+  spatial contribution in the same pass, and `updateBiasImpulse()` skips the
+  point loop that only added freshly zeroed `mImpBeta` values. Focused soft
+  dynamics, allocation, and native checksum smokes passed after this slice.
+  Full parent/base benchmark evidence still needs a committed comparison run.
 - A narrow `origin/dart6-memory-hardening` carryover is implemented locally:
   `Skeleton::checkExternalDisturbanceAndReset()` now scans body-local external
   wrenches directly instead of materializing the external-force projection cache
