@@ -118,5 +118,7 @@ test over all ssik prebuilt arms:
    python python/examples/ssik_analytical_ik/main.py --list           # list available arms
    python python/examples/ssik_analytical_ik/main.py --self-test      # headless check
 
-A C++ counterpart, ``ssik_ik_gui`` (``pixi run ex ssik_ik_gui``), embeds a
-Python interpreter to drive the same solver from an OSG/ImGui application.
+A C++ counterpart embeds a Python interpreter to drive the same solver from
+an OSG/ImGui application: the ``ssik_ik_gui`` scene in the consolidated
+``dart-demos`` catalog (``pixi run demos``, then select it from the catalog,
+or launch it directly with ``bin/dart-demos --scene ssik_ik_gui``).
