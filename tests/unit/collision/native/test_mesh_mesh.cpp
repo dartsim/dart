@@ -104,6 +104,12 @@ TEST(MeshMeshCollision, OverlappingCubeMeshesCollide)
   const auto& contact = result.getContact(0);
   EXPECT_GE(contact.featureIndex1, 0);
   EXPECT_GE(contact.featureIndex2, 0);
+
+  bool hasSecondToFirstXNormal = false;
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
+    hasSecondToFirstXNormal |= result.getContact(i).normal.x() < -0.99;
+  }
+  EXPECT_TRUE(hasSecondToFirstXNormal);
 }
 
 TEST(MeshMeshCollision, SeparatedMeshesDoNotCollide)
@@ -139,6 +145,24 @@ TEST(MeshMeshCollision, SeparatedCoplanarTrianglesDoNotCollide)
       Eigen::Isometry3d::Identity(),
       result,
       CollisionOption::fullContacts(16)));
+  EXPECT_EQ(0u, result.numContacts());
+}
+
+TEST(MeshMeshCollision, ZeroContactLimitReturnsFalse)
+{
+  MeshShape mesh1 = makeUnitCubeMesh();
+  MeshShape mesh2 = makeUnitCubeMesh();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(0.75, 0.0, 0.0);
+
+  CollisionResult result;
+  EXPECT_FALSE(collideMeshMesh(
+      mesh1,
+      Eigen::Isometry3d::Identity(),
+      mesh2,
+      tf2,
+      result,
+      CollisionOption::fullContacts(0)));
   EXPECT_EQ(0u, result.numContacts());
 }
 

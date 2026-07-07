@@ -865,6 +865,10 @@ bool collideMeshMesh(
     CollisionResult& result,
     const CollisionOption& option)
 {
+  if (option.maxNumContacts == 0) {
+    return false;
+  }
+
   const auto& nodes1 = mesh1.bvhNodes();
   const auto& nodes2 = mesh2.bvhNodes();
   if (nodes1.empty() || nodes2.empty()) {
@@ -915,12 +919,12 @@ bool collideMeshMesh(
           }
 
           hit = true;
-          if (!option.enableContact || option.maxNumContacts == 0) {
+          if (!option.enableContact) {
             return true;
           }
 
           const Eigen::Vector3d worldNormal
-              = (tf1.rotation() * triResult.normal).normalized();
+              = -(tf1.rotation() * triResult.normal).normalized();
           for (const Eigen::Vector3d& pointLocal : triResult.contacts) {
             if (result.numContacts() >= option.maxNumContacts) {
               return true;
