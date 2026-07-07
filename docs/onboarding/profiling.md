@@ -131,8 +131,9 @@ deformable-body gates are:
 
 - re-enable or replace the disabled soft-body equations-of-motion comparison
   after matrix and vector aggregation paths are complete;
-- add deterministic checksum or invariant checks that catch divergent
-  soft-body state, not just finite values;
+- broaden the current one-thread versus multi-thread final-state check with
+  energy, contact-force, CoP, historical-golden, or other invariant checks that
+  catch divergent soft-body state;
 - complete paper-parity scenes or approved representative substitutes for the
   Kim/Pollard and Jain/Liu soft-body references;
 - extend native soft collision beyond the current primitive and retained

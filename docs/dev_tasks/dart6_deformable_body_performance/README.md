@@ -52,7 +52,8 @@ contact correctness, or performance envelope.
 - `tests/integration/test_SoftDynamics.cpp` contains an equations-of-motion
   comparison that remains disabled because soft-body matrix aggregation is not
   complete. WP-DB.02 adds an active finite-state gate around representative
-  soft scenes.
+  soft scenes, including ordered final-state comparison between one-thread and
+  four-thread runs.
 - `data/skel/test/test_double_pendulum.skel` used one legacy `<soft>` tag that
   `SkelParser` ignored; WP-DB.01 converts it to `<soft_shape>`, and WP-DB.02
   adds explicit soft-box fragments so both soft links parse cleanly.
@@ -116,7 +117,7 @@ contact correctness, or performance envelope.
 | Packet | Scope | Done when |
 | --- | --- | --- |
 | WP-DB.01 baseline harness | Add headless Google Benchmark rows for existing soft-body scenes across single-core and multi-core CPU. | Benchmark target builds; rows report sim seconds per second, point masses, soft bodies, and threads. |
-| WP-DB.02 stability gate | Re-enable or replace `test_SoftDynamics` with finite-state and equations-of-motion checks for representative soft scenes. | Focused integration test fails on NaN/Inf, gross state blow-up, or known equation regressions. Initial finite-state coverage is recorded in `03-stability-gate.md`; equation checks remain open. |
+| WP-DB.02 stability gate | Re-enable or replace `test_SoftDynamics` with finite-state and equations-of-motion checks for representative soft scenes. | Focused integration test fails on NaN/Inf, gross state blow-up, or one-thread versus four-thread final-state divergence. Current finite-state and deterministic final-state coverage is recorded in `03-stability-gate.md`; equation checks remain open. |
 | WP-DB.03 paper parity matrix | Convert both papers into a scene/feature/performance checklist. | Every representative paper demo has an owner row, current DART 6 status, target evidence, and acceptance gate. |
 | WP-DB.04 coupled equation correctness | Finish or replace stubbed point-mass mass, inverse-mass, gravity, combined-force, and external-force aggregation paths. | Matrix/vector checks pass for rigid-only, soft-only, and mixed rigid-soft worlds. |
 | WP-DB.05 adaptive contact activation | Implement Jain/Liu-style active vertex neighborhoods without breaking existing all-active soft bodies. | Contact-local activation gives matching contact behavior with fewer active DOFs and deterministic state hashes. |
