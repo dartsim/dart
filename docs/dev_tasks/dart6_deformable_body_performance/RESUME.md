@@ -142,6 +142,12 @@ Latest state:
   instead of delegating through per-point helper methods for behavior-preserving
   cache fills. Focused equation, allocation, and native checksum smokes passed
   after this slice.
+- A follow-up WP-DB.06 inverse-dynamics slice is implemented locally:
+  `SoftBodyNode::{updateAccelerationID,updateTransmittedForceID,updateJointForceID}()`
+  now use `PointMassPhaseView` and shared cache checks instead of per-point
+  helper calls, while preserving the existing DART 6 point external-force and
+  joint-force semantics. Focused equation, allocation, and native checksum
+  smokes passed after this slice.
 - A narrow `origin/dart6-memory-hardening` carryover is implemented locally:
   `Skeleton::checkExternalDisturbanceAndReset()` now scans body-local external
   wrenches directly instead of materializing the external-force projection cache

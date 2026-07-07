@@ -645,8 +645,24 @@ void SoftBodyNode::updateAccelerationID()
 {
   BodyNode::updateAccelerationID();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateAccelerationID();
+  if (mNotifier->needsTransformUpdate())
+    updateTransform();
+  if (mNotifier->needsPartialAccelerationUpdate())
+    updatePartialAcceleration();
+
+  const Eigen::Vector6d& parentAcceleration = getSpatialAcceleration();
+  const Eigen::Vector3d parentAngularAcceleration
+      = parentAcceleration.head<3>();
+  const Eigen::Vector3d parentLinearAcceleration = parentAcceleration.tail<3>();
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    pointMass.mA = parentAngularAcceleration.cross(pointMass.mX)
+                   + parentLinearAcceleration + pointMass.mEta
+                   + phase.states[i].mAccelerations;
+    DART_ASSERT(!math::isNan(pointMass.mA));
+  }
 
   mNotifier->clearAccelerationNotice();
 }
@@ -657,11 +673,33 @@ void SoftBodyNode::updateTransmittedForceID(
 {
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateTransmittedForceID(_gravity, _withExternalForces);
+
+  if (mNotifier->needsVelocityUpdate())
+    updateVelocity();
+  if (mNotifier->needsAccelerationUpdate())
+    updateAccelerationID();
+
+  const bool gravityMode = BodyNode::mAspectProperties.mGravityMode;
+  Eigen::Vector3d localGravity = Eigen::Vector3d::Zero();
+  if (gravityMode)
+    localGravity = getWorldTransform().linear().transpose() * _gravity;
+  const Eigen::Vector3d parentAngularVelocity = getSpatialVelocity().head<3>();
+
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    const double mass = phase.properties[i].mMass;
+    pointMass.mF.noalias() = mass * pointMass.mA;
+    pointMass.mF
+        += parentAngularVelocity.cross(mass * pointMass.mV) - pointMass.mFext;
+    if (gravityMode)
+      pointMass.mF -= mass * localGravity;
+    DART_ASSERT(!math::isNan(pointMass.mF));
+  }
 
   // Gravity force
-  if (BodyNode::mAspectProperties.mGravityMode == true)
+  if (gravityMode)
     mFgravity.noalias()
         = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
@@ -705,9 +743,10 @@ void SoftBodyNode::updateTransmittedForceID(
 void SoftBodyNode::updateJointForceID(
     double _timeStep, bool _withDampingForces, bool _withSpringForces)
 {
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateJointForceID(
-        _timeStep, _withDampingForces, _withSpringForces);
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i)
+    phase.states[i].mForces = phase.pointMasses[i]->mF;
 
   BodyNode::updateJointForceID(
       _timeStep, _withDampingForces, _withSpringForces);
