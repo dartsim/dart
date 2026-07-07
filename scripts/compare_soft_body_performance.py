@@ -114,6 +114,17 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--threads", default="1,16")
     parser.add_argument("--benchmark-min-time", default="0.05s")
     parser.add_argument("--benchmark-repetitions", default="3")
+    parser.add_argument(
+        "--benchmark-run-order",
+        choices=("detector", "revision"),
+        default="detector",
+        help=(
+            "Run order for benchmark binaries. 'detector' interleaves "
+            "revisions for each collision detector to reduce parent/current "
+            "order drift; 'revision' preserves the older all-detectors-per-"
+            "revision order."
+        ),
+    )
     parser.add_argument("--correctness-scenes", default="soft_cubes,soft_bodies")
     parser.add_argument("--correctness-steps", default="200")
     parser.add_argument("--correctness-tolerance", type=float, default=0.05)
@@ -885,6 +896,7 @@ def write_markdown(
     detector_equivalence: dict[str, dict[str, object]],
     failures: list[str],
     run_errors: list[dict[str, str]],
+    benchmark_run_order: str,
 ) -> None:
     lines = [
         "# Soft-Body Performance Comparison",
@@ -896,6 +908,15 @@ def write_markdown(
     ]
     for revision in revisions:
         lines.append(f"| `{revision.label}` | `{revision.rev}` | `{revision.sha}` |")
+
+    lines.extend(
+        [
+            "",
+            "## Benchmark Settings",
+            "",
+            f"- Run order: `{benchmark_run_order}`",
+        ]
+    )
 
     lines.extend(
         [
@@ -1044,68 +1065,85 @@ def main(argv: list[str]) -> int:
         for label, rev in revision_specs
     ]
 
-    all_rows: dict[str, dict[tuple[str, str, int], BenchmarkRow]] = {}
-    run_errors: list[dict[str, str]] = []
-    unsupported_detector_runs: dict[tuple[str, str], bool] = {}
+    revision_binaries: dict[str, tuple[Path, Path]] = {}
     current_headless_binary: Path | None = None
     for revision in revisions:
         binary, headless_binary = configure_and_build(revision)
+        revision_binaries[revision.label] = (binary, headless_binary)
         if revision.label == "current":
             current_headless_binary = headless_binary
-        revision_rows: dict[tuple[str, str, int], BenchmarkRow] = {}
-        for detector in detectors:
-            if args.wait_for_local_dart_builds:
-                wait_for_local_dart_idleness(
-                    root,
-                    args.idle_timeout,
-                    args.idle_poll_interval,
-                    args.idle_cooldown,
-                    args.idle_max_load_1m,
-                )
-            json_path, error = run_detector(
-                revision=revision,
-                binary=binary,
-                detector=detector,
-                output_dir=output_dir,
-                min_time=args.benchmark_min_time,
-                repetitions=args.benchmark_repetitions,
+
+    all_rows: dict[str, dict[tuple[str, str, int], BenchmarkRow]] = {
+        revision.label: {} for revision in revisions
+    }
+    run_errors: list[dict[str, str]] = []
+    unsupported_detector_runs: dict[tuple[str, str], bool] = {}
+
+    def run_one(revision: Revision, detector: str) -> bool:
+        binary, _ = revision_binaries[revision.label]
+        if args.wait_for_local_dart_builds:
+            wait_for_local_dart_idleness(
+                root,
+                args.idle_timeout,
+                args.idle_poll_interval,
+                args.idle_cooldown,
+                args.idle_max_load_1m,
             )
-            if error is not None:
-                unsupported_detector_runs[(revision.label, detector)] = (
-                    has_unsupported_shape_warning(error)
-                )
+        json_path, error = run_detector(
+            revision=revision,
+            binary=binary,
+            detector=detector,
+            output_dir=output_dir,
+            min_time=args.benchmark_min_time,
+            repetitions=args.benchmark_repetitions,
+        )
+        if error is not None:
+            unsupported_detector_runs[(revision.label, detector)] = (
+                has_unsupported_shape_warning(error)
+            )
+            run_errors.append(
+                {
+                    "revision": revision.label,
+                    "detector": detector,
+                    "message": error.splitlines()[-1] if error else "failed",
+                }
+            )
+            return False
+
+        log_path = output_dir / "logs" / f"{revision.label}-{detector}.log"
+        unsupported_detector_runs[(revision.label, detector)] = (
+            log_path.exists()
+            and has_unsupported_shape_warning(log_path.read_text(encoding="utf-8"))
+        )
+        parsed_rows = load_rows(revision, detector, json_path, requested_threads)
+        if not parsed_rows:
+            error_message = benchmark_error_message(json_path)
+            if error_message:
                 run_errors.append(
                     {
                         "revision": revision.label,
                         "detector": detector,
-                        "message": error.splitlines()[-1] if error else "failed",
+                        "message": error_message,
                     }
                 )
-                if not args.keep_going:
-                    break
-                continue
-            log_path = output_dir / "logs" / f"{revision.label}-{detector}.log"
-            unsupported_detector_runs[(revision.label, detector)] = (
-                log_path.exists()
-                and has_unsupported_shape_warning(log_path.read_text(encoding="utf-8"))
-            )
-            parsed_rows = load_rows(
-                revision, detector, json_path, requested_threads
-            )
-            if not parsed_rows:
-                error_message = benchmark_error_message(json_path)
-                if error_message:
-                    run_errors.append(
-                        {
-                            "revision": revision.label,
-                            "detector": detector,
-                            "message": error_message,
-                        }
-                    )
-                    continue
-            for row in parsed_rows:
-                revision_rows[row_key(row)] = row
-        all_rows[revision.label] = revision_rows
+                return False
+
+        for row in parsed_rows:
+            all_rows[revision.label][row_key(row)] = row
+        return True
+
+    if args.benchmark_run_order == "revision":
+        run_sequence = [
+            (revision, detector) for revision in revisions for detector in detectors
+        ]
+    else:
+        run_sequence = [
+            (revision, detector) for detector in detectors for revision in revisions
+        ]
+
+    for revision, detector in run_sequence:
+        if not run_one(revision, detector) and not args.keep_going:
+            break
 
     if current_headless_binary is None:
         raise SystemExit("current soft_body_headless binary was not built")
@@ -1166,6 +1204,7 @@ def main(argv: list[str]) -> int:
         ],
         "detectors": detectors,
         "threads": sorted(requested_threads),
+        "benchmark_run_order": args.benchmark_run_order,
         "rows": {
             label: [
                 {
@@ -1210,6 +1249,7 @@ def main(argv: list[str]) -> int:
         detector_equivalence,
         failures,
         run_errors,
+        args.benchmark_run_order,
     )
 
     print(output_dir / "summary.md")
