@@ -1,0 +1,212 @@
+{
+ "batch": "b1",
+ "scenes": [
+  {
+   "name": "rigid_chain",
+   "worldSetup": "Loads dart://sample/skel/chain.skel via dart::utils::SkelParser::readWorld. Gravity (0,-9.81,0) => Y-up skeleton convention; timestep 1/2000. Initial pose: every DOF randomized uniform(-0.5,0.5) via dart::math::Random. Camera home (2,1,2)->(0,0,0), up (0,0,1) (Z-up camera despite Y-up gravity); window 640x480.",
+   "controllers": "RigidChainWorldNode : dart::gui::osg::RealTimeWorldNode. customPreStep() computes damping = -0.01 * skeleton(0)->getVelocities(), then scales every DOF with index i%3==1 (twist dof) by 0.1, and calls skeleton(0)->setForces(damping) (overwrites all joint forces each step). No customPostStep.",
+   "keyBindings": [
+    "space: play/pause simulation (built-in dart::gui::osg::Viewer default handler; no custom keys in this example)"
+   ],
+   "tunables": [
+    "joint damping coefficient (code constant 0.01; safe ~0.0-0.1)",
+    "twist-DOF damping scale (code constant 0.1)",
+    "timestep 1/2000 s",
+    "initial random pose range +/-0.5 rad"
+   ],
+   "interactions": "None beyond built-in Viewer mouse camera navigation and default space-bar simulate toggle. No custom event handler, no DnD.",
+   "assets": [
+    "dart://sample/skel/chain.skel"
+   ],
+   "portRisks": "customPreStep hard-codes mWorld->getSkeleton(0) and setForces() OVERWRITES total forces \u2014 in a consolidated world it must be re-targeted to this scene's own skeleton and must not clobber other controllers. Y-up gravity scene mixed with Z-up camera up-vector. Random init pose uses the global RNG (non-deterministic across scene reloads unless seeded)."
+  },
+  {
+   "name": "rigid_loop",
+   "worldSetup": "Loads the SAME dart://sample/skel/chain.skel. Gravity (0,-9.81,0), timestep 1/2000. initPose all zero except DOFs 20, 23, 26, 29 = 0.4*pi. Closes the loop: BodyNodes \"link 6\" and \"link 10\" colored red (BodyNode::setColor), BallJointConstraint created at jointPos = bd1->getTransform() * offset(0,0.025,0) and added via world->getConstraintSolver()->addConstraint() (a WeldJointConstraint alternative is commented out). Window 640x480; no custom camera home.",
+   "controllers": "RigidLoopWorldNode : RealTimeWorldNode. customPreStep() identical damping to rigid_chain: -0.01*velocities with i%3==1 DOFs scaled by 0.1, applied via skeleton(0)->setForces().",
+   "keyBindings": [
+    "space: play/pause simulation (built-in Viewer; printed in stdout instructions)",
+    "ESC: exit (built-in osgViewer; printed in stdout instructions)"
+   ],
+   "tunables": [
+    "damping coefficient 0.01 / twist scale 0.1",
+    "loop-closure anchor offset (0,0.025,0)",
+    "initial bend angles 0.4*pi on DOFs 20/23/26/29",
+    "constraint type: BallJointConstraint vs WeldJointConstraint (commented alternative)"
+   ],
+   "interactions": "None custom; built-in mouse camera navigation only. Instructions printed to stdout, not on-screen.",
+   "assets": [
+    "dart://sample/skel/chain.skel"
+   ],
+   "portRisks": "The BallJointConstraint is added directly to the constraint solver \u2014 on scene switch/reset in a demos host it must be explicitly removed or it dangles into the next scene. Hard-coded DOF indices (20/23/26/29) and body names (\"link 6\", \"link 10\") assume chain.skel layout. Same setForces-overwrite and getSkeleton(0) coupling as rigid_chain. bd->setColor mutates the shared asset's visual state."
+  },
+  {
+   "name": "rigid_shapes",
+   "worldSetup": "Parses --gui-scale via dart::gui::osg::parseGuiScaleOptions (with --help path). Loads dart://sample/skel/shapes.skel; UNCONDITIONALLY creates BulletCollisionDetector and sets it on the constraint solver. Gravity/timestep come from the .skel file (not set in code). Window 640x480 scaled by gui-scale; camera home (2,2,2)->(0,0,0), up (0,1,0) => Y-up scene.",
+   "controllers": "CustomWorldNode : RealTimeWorldNode with an EMPTY customPreStep override (placeholder). All logic lives in RigidShapesEventHandler (osgGA::GUIEventHandler) which spawns/deletes skeletons: spawnBox/spawnEllipsoid/spawnCylinder each create a single-FreeJoint skeleton with Visual+Collision+Dynamics aspects, mass 10 set via Inertia.setMass only (NO moment from shape \u2014 default moment, parity-relevant), random color, random pose from getRandomTransform() (rotation uniform(-pi,pi) expMapRot; position x,z in (-1,1), y in (0.5,1)).",
+   "keyBindings": [
+    "q/Q: spawn random box (size uniform per-axis 0.05-0.25)",
+    "w/W: spawn random ellipsoid (radii 0.025-0.125, EllipsoidShape gets radii*2)",
+    "e/E: spawn random cylinder (radius 0.05-0.25, height 0.1-0.5)",
+    "a/A: delete last-added skeleton (only if getNumSkeletons() > 1)",
+    "space: simulation on/off (built-in Viewer; listed via addInstructionText)"
+   ],
+   "tunables": [
+    "--gui-scale <f> CLI option (window extent + GUI scale)",
+    "spawn mass (default arg 10)",
+    "spawn size/radius/height ranges (code constants above)",
+    "spawn position ranges x,z (-1,1), y (0.5,1)"
+   ],
+   "interactions": "Keyboard-only custom osgGA::GUIEventHandler added via viewer.addEventHandler; on-screen instruction text via viewer.addInstructionText/getInstructions. No DnD, no ImGui.",
+   "assets": [
+    "dart://sample/skel/shapes.skel"
+   ],
+   "portRisks": "Hard dependency on dart-collision-bullet (BulletCollisionDetector::create() called unconditionally; CMake requires collision-bullet component) \u2014 demos host needs the optional-dep guard or the factory-check pattern from add_delete_skels. Delete-last-skeleton heuristic (getNumSkeletons()-1, >1 guard) breaks if the consolidated world holds other scenes' skeletons \u2014 should track spawned skeletons explicitly. Spawned shapes intentionally lack a proper inertia moment (parity detail; do not 'fix' silently). Y-up scene."
+  },
+  {
+   "name": "add_delete_skels",
+   "worldSetup": "Loads dart://sample/skel/ground.skel; gravity set to (0,-9.81,0) => Y-up. Collision detector switched to \"bullet\" ONLY if CollisionDetector::getFactory()->canCreate(\"bullet\") (graceful fallback, unlike rigid_shapes). Plain RealTimeWorldNode (no subclass). Window 640x480; camera home (5,3,3)->(0,0,0), up (0,0,1).",
+   "controllers": "No custom WorldNode logic. AddDeleteSkelsEventHandler (osgGA::GUIEventHandler) owns spawnCube(): single FreeJoint skeleton, BoxShape, mass 0.1 with PROPER moment via BoxShape::computeInertia(size, mass), random color; position/size come from DEFAULT ARGUMENTS evaluated per call (position x,z in (-1,1), y in (0.5,1); size per-axis uniform 0.1-0.5).",
+   "keyBindings": [
+    "q/Q: spawn a random cube",
+    "w/W: delete last spawned cube (only if getNumSkeletons() > 1)",
+    "space: simulation on/off (built-in Viewer; listed via addInstructionText)"
+   ],
+   "tunables": [
+    "cube mass (default arg 0.1)",
+    "cube size range 0.1-0.5 per axis",
+    "spawn position ranges x,z (-1,1), y (0.5,1)"
+   ],
+   "interactions": "Keyboard-only custom handler; instruction text via addInstructionText. No ImGui, no DnD.",
+   "assets": [
+    "dart://sample/skel/ground.skel"
+   ],
+   "portRisks": "Randomization lives in spawnCube's default arguments (evaluated at each call) \u2014 a mechanical port that hoists them into fixed values would freeze the randomness. Delete-by-last-index heuristic again unsafe in a shared world. Bullet is optional here (factory check) \u2014 keep that pattern. Y-up gravity with Z-up camera up-vector."
+  },
+  {
+   "name": "box_stacking",
+   "worldSetup": "Built fully in code, Z-up: World::create() (default gravity (0,0,-9.81)); floor = 10x10x0.01 WeldJoint box at z=-0.005 (LightGray); stack of 5 FreeJoint boxes 1x1x0.5 at z = 0.5+0.25+i*0.5, random colors. Uses ImGuiViewer with --gui-scale/-h CLI (parseGuiScaleOptions, scaleWindowExtent, setGuiScale). Window 800x640 scaled; camera (12,12,9)->(0,0,2), up (0,0,1).",
+   "controllers": "CustomWorldNode : RealTimeWorldNode with placeholder customPreRefresh/customPostRefresh/customPreStep/customPostStep \u2014 note they are NOT marked override (documented as deletable templates). Real logic is in TestWidget (ImGuiWidget): play/pause via viewer->simulate(), LCP solver swapping (setLcpSolver replaces the world's ENTIRE constraint solver with a new BoxedLcpConstraintSolver wrapping Dantzig or PGS; a SequentialImpulse variant is commented out; guarded by mSolverType so it only swaps on change, initial -1 forces one swap on first frame), gravity toggle (-9.81*UnitZ vs Zero), headlights toggle via viewer->switchHeadlights.",
+   "keyBindings": [
+    "q (KEYDOWN): prints 'Lowercase q pressed' (demo-only)",
+    "Q (KEYDOWN): prints 'Capital Q pressed'",
+    "Left arrow (KEYDOWN): prints 'Left arrow key pressed'",
+    "Right arrow (KEYDOWN): prints 'Right arrow key pressed'",
+    "q/Q/Left/Right (KEYUP): print corresponding 'released' messages",
+    "space: play/pause (built-in ImGuiViewer)"
+   ],
+   "tunables": [
+    "ImGui radio: Play / Pause (viewer->simulate)",
+    "ImGui radio: LCP solver \u2014 labels 'Dantzig'/'Dantzig'/'PGS' (indices 0 and 1 are BOTH Dantzig; 0 was SI, commented out \u2014 label duplication is existing behavior)",
+    "ImGui checkbox: Gravity On/Off (world gravity -9.81 Z vs zero)",
+    "ImGui checkbox: Headlights On/Off",
+    "ImGui menu: Menu>Exit (viewer->setDone), Help>About DART (viewer->showAbout)",
+    "read-only ImGui: ms/frame + FPS, world time, camera eye/center/up, Help text (viewer instructions)",
+    "--gui-scale <f> CLI"
+   ],
+   "interactions": "ImGui panel (fixed pos/size, scaled by gui-scale) + CustomEventHandler printing key press/release. No DnD/picking.",
+   "assets": [],
+   "portRisks": "setLcpSolver REPLACES world->setConstraintSolver wholesale \u2014 in a consolidated host this discards any collision-detector choice/constraints other scenes set; also runs once unconditionally at startup (mSolverType=-1). 'static int solverType' inside render() persists across scene reloads (stale state on re-entry). TestWidget stores osg::ref_ptr<ImGuiViewer> while the viewer's ImGuiHandler owns the widget => reference cycle (leak); port should hold a raw pointer. Placeholder WorldNode hooks lack override \u2014 silent no-ops if base signatures change."
+  },
+  {
+   "name": "sleeping",
+   "worldSetup": "Built in code, Z-up: World::create(), timestep 1/60 (interactive playback priority), gravity (0,0,-9.81). Floor 20x20x0.1 WeldJoint, setMobile(false). Four stacks of four 0.3 boxes (density 1000, proper inertia via setShapeInertia) at x = {-2.0,-0.7,0.7,2.0} => four solver islands. Deactivation enabled by default with mTimeUntilSleep=0.3 s. Projectile POOL (size 1 each) pre-added: 'proj_shot0' ellipsoid d=1.10 + 'proj_drop0' box 0.62, parked at (60,60,10), inactive = non-collidable + setResting(true) + dark color. Aim line: SimpleFrame 'aim' with 32-vertex LineSegmentShape (DYNAMIC_VERTICES) predicting the sphere parabola to ground impact. ImGuiViewer, SingleThreaded, custom clear color, headlights OFF, custom key/fill lights, SoftShadowMap (2048) on the world node, custom global ImGui style, viewer->simulate(true) autostart. Camera eye (6,8,4)->(0,0,1), up Z. Full headless mode: pbuffer context, manual stepping, captureScreen PNG, scripted key/mouse injection, profiling.",
+   "controllers": "DeactivationWorldNode : RealTimeWorldNode. customPreRefresh(): (1) recolorIslands \u2014 every frame recolors ALL mobile skeletons: base = per-body HSV gradient, or (mColorByIsland) islandColor(skel->getIslandIndex()) with fallback to initial stack index / last-displayed island cached in mLastDisplayIsland; awake => awakeTint, resting => asleepTint; active projectiles keep bright shot/drop colors; (2) updateAimLine \u2014 recomputes the 32-point parabola for the current AimState target. fireSphere()/dropBox(): park entire pool, then activate one pooled projectile via name lookup with launch pos/vel (sphereLaunch targets kStackX[targetIdx%4]; drop computes vel to reach targetX in 0.65 s), then ++targetIdx. KeyHandler (osgGA) delegates to node/world; IslandWidget (ImGuiWidget) mirrors everything.",
+   "keyBindings": [
+    "f: shoot a sphere along the aim arc",
+    "d: drop a box onto the aimed stack",
+    "t: toggle automatic deactivation (world DeactivationOptions.mEnabled)",
+    "c: toggle color-by-solver-island",
+    "s: print '[stats] awake=N asleep=M' to stdout",
+    "space: play/pause (built-in ImGuiViewer)"
+   ],
+   "tunables": [
+    "ImGui checkbox: Run simulation",
+    "ImGui checkbox: Automatic deactivation (sleeping)",
+    "ImGui checkbox: Color by solver island",
+    "ImGui slider: Dwell time (mTimeUntilSleep) 0.05-2.0 s (default 0.3)",
+    "ImGui buttons: Shoot sphere / Drop box",
+    "read-only ImGui: time, FPS, stacks awake/asleep, active projectile counts, awake/asleep color swatches, key list",
+    "CLI: --gui-scale <f> (also DART_GUI_SCALE env), --headless, --shot <path>, --steps <n> (default 150), --width/--height (default 1280x800), --scripted-actions, --scripted-keys <keys>, --scripted-island-click, --profile-frames <n>, -h/--help"
+   ],
+   "interactions": "Keyboard via KeyHandler pushed to viewer->getEventHandlers().push_front() so hotkeys bypass ImGui focus/capture; ImGui panel buttons/sliders; headless mode injects synthetic key and mouse events through the osg event queue (clickIslandColorCheckbox probes candidate coordinates).",
+   "assets": [],
+   "portRisks": "Biggest port: (1) requires DART >= 6.18 deactivation API \u2014 World::get/setDeactivationOptions, Skeleton::isResting/setResting/getIslandIndex. (2) configureImGuiStyle() mutates the GLOBAL ImGui style \u2014 in a shared demos host it restyles every panel; must be scoped or dropped. (3) Viewer-level config (SingleThreaded threading model, clear color, headlights off, custom lights, SoftShadowMap, simulate(true)) must be applied/reverted per scene. (4) KeyHandler push_front ordering matters (hotkeys vs ImGui capture). (5) Per-frame recoloring writes VisualAspect RGBA on every mobile skeleton \u2014 clashes with any other coloring system and assumes only this scene's skeletons are mobile. (6) Projectile pool addressed by skeleton NAME ('proj_shot0'/'proj_drop0') \u2014 name collisions in a shared world. (7) Headless/scripted CLI paths drive frames + event queue manually; keys f/d/s conflict with simulation_event_handler bindings in a merged keymap."
+  },
+  {
+   "name": "simulation_event_handler",
+   "worldSetup": "Built in code, Z-up: World::create(), gravity (0,0,-9.81), timestep 0.001 (set in main AND re-set by handler ctor DEFAULT_TIME_STEP). Ground 10x10x0.1 WeldJoint at z=-0.05 (gray); box1 red 0.4^3 at (-1,0,2); box2 green 0.6x0.3x0.3 at (0,0,3); sphere1 blue r=0.3 at (1,0,2.5); box3 yellow 0.3x0.5x0.4 at (0.5,1,2.2); all FreeJoint with proper inertia via shape->computeInertia(mass=1). Plain Viewer (no ImGui), window 1280x960, camera (5,5,3)->(0,0,1), up Z.",
+   "controllers": "CustomWorldNode : RealTimeWorldNode; customPreStep() calls SimulationEventHandler::update() (increments mFrameCounter; every ARROW_UPDATE_FREQUENCY=5 calls, rebuilds force-arrow OSG geometry \u2014 note this runs per SIM STEP, not per render frame). SimulationEventHandler (osgGA::GUIEventHandler) keeps: selected-body index over getRigidBodies() (any body whose parent joint is Free/Ball/Euler/Translational or has >0 DOFs \u2014 includes chain interior bodies), force magnitude 100 N, torque magnitude 50 Nm, applied force/torque lists for visualization, addExtForce/addExtTorque at COM, manual arrow rendering (red LINES geometry + 4-vane arrowhead, LineWidth 3, added to viewer->getRootGroup()), resetSimulation (resetPositions/resetVelocities/clearExternalForces per skeleton + world->reset()), stepSimulation (direct world->step() + time printout), printSimulationState/printInstructions to stdout.",
+   "keyBindings": [
+    "space: toggle play/pause (built-in Viewer)",
+    "s/S: step simulation one timestep (direct world->step())",
+    "r/R: reset simulation",
+    "Tab: select next rigid body",
+    "Backspace: select previous rigid body",
+    "Up arrow: apply +Y force",
+    "Down arrow: apply -Y force",
+    "Left arrow: apply -X force",
+    "Right arrow: apply +X force",
+    "u/U: apply +Z force",
+    "d/D: apply -Z force",
+    "q/Q: apply +X torque",
+    "w/W: apply +Y torque",
+    "e/E: apply +Z torque",
+    "a/A: apply -X torque",
+    "z/Z: apply -Y torque",
+    "c/C: apply -Z torque",
+    "+ or =: force & torque magnitude *= 1.5",
+    "- or _: force & torque magnitude *= 0.67",
+    "> or . : timestep *= 1.5",
+    "< or , : timestep *= 0.67",
+    "v/V: toggle force-arrow visualization",
+    "i/I: print simulation state",
+    "h/H/?: print help/instructions"
+   ],
+   "tunables": [
+    "force magnitude (default 100 N, runtime x1.5/x0.67; also setForceMagnitude API)",
+    "torque magnitude (default 50 Nm, scales together with force)",
+    "simulation timestep (default 0.001 s, runtime x1.5/x0.67; unbounded \u2014 can grow unstable)",
+    "show force arrows bool (setShowForceArrows)",
+    "ARROW_UPDATE_FREQUENCY = 5 (compile-time)"
+   ],
+   "interactions": "Keyboard-only; selected-body model with console feedback; raw OSG arrow geometry injected into viewer->getRootGroup(). No ImGui, no DnD/picking.",
+   "assets": [],
+   "portRisks": "(1) update() runs in customPreStep (simulation callback) but creates/removes OSG scene-graph nodes on viewer->getRootGroup() \u2014 a threading hazard under osgViewer multithreaded models and a teardown leak risk: arrows must be removed from the root group on scene exit. (2) Very wide keymap (s,r,d,q,w,e,a,z,c,u,v,i,h,+,-,<,>,Tab,Backspace,arrows) collides with sleeping (f/d/t/c/s), rigid_shapes (q/w/e/a) and add_delete_skels (q/w) \u2014 the consolidated host needs per-scene key scoping. (3) Handler ctor overrides world timestep. (4) resetSimulation zeroes positions, which equals the spawn pose only because spawn offsets live in joint transforms \u2014 preserve that structure when porting. (5) getRigidBodies caches bodies once at construction; skeletons added later are invisible to selection."
+  },
+  {
+   "name": "simple_frames",
+   "worldSetup": "No skeletons, no dynamics: plain World (new dart::simulation::World). Frame hierarchy: F1 (SimpleFramePtr, box 0.05x0.05x0.02 at tf1=translate(0.1,-0.1,0)) -> child F2 (STACK object, +45deg about X at (0,0.1,0)) -> child F3 (STACK object, +60deg about Y at (0,0,0.1)). Observer set: A (SimpleFramePtr, ellipsoid 0.02) with stack children A1/A2/A3 (ellipsoid 0.01) placed at F1/F2/F3's transforms expressed in A's frame (Frame::getTransform(withRespectTo) snapshot). ArrowShape frame 'arrow' from (0.1,-0.1,0) to (0.1,0,0), radius 0.002, head scale 1.8, color (1,0.5,0.5,1). Only F1, A, arrow are addSimpleFrame'd; descendants render automatically. RealTimeWorldNode; window 640x480; camera (2,1,2)->(0,0,0), up (0,0,1).",
+   "controllers": "None. Plain RealTimeWorldNode, no subclass, no per-step logic. Scene is static (nothing moves even when simulation runs \u2014 the world has no skeletons).",
+   "keyBindings": [
+    "space: play/pause (built-in Viewer; has no visible effect \u2014 no dynamics)"
+   ],
+   "tunables": [
+    "frame transforms tf1/tf2/tf3 (translation + rotation angles 45deg/60deg)",
+    "shape sizes (boxes 0.05x0.05x0.02, ellipsoids 0.02/0.01, arrow properties 0.002 radius / 1.8 head)"
+   ],
+   "interactions": "None custom; built-in mouse camera navigation only.",
+   "assets": [],
+   "portRisks": "F2, F3, A1, A2, A3 are STACK-allocated SimpleFrames kept alive only by main()'s scope while viewer.run() blocks \u2014 a port into a scene class MUST move them to member/heap storage (SimpleFramePtr) or they dangle after setup returns. Source comment warns frames must be children of the World frame (directly or transitively) to render correctly (known TODO(MXG) issue). A1-A3 are one-time transform snapshots \u2014 recompute if the port rebuilds the scene."
+  },
+  {
+   "name": "hardcoded_design",
+   "worldSetup": "Skeleton built 100% in code (no model file): 3-link left leg with RevoluteJoints. LHY: axis Z, position limits +/-pi, box 0.3x0.3x1.0, mass 1. LHR: parent LHY, joint offset z+0.5, axis set to X via pair1.first->setAxis after creation, shape node offset (0,0,0.5), setLocalCOM to shape offset, mass 1. LHP: parent = getBodyNode(1), axis Y, joint offset z+1.0, same shape/COM/mass pattern. World::create() default gravity (0,0,-9.81); plain WorldNode (NOT RealTimeWorldNode). Wireframe: osg::PolygonMode LINE FRONT_AND_BACK with StateAttribute::ON|OVERRIDE on the world node's StateSet (legacy look). viewer.setUpwardsDirection(0,0,1); camera (2,2,2)->(0,0,0), up Z. Instructions via addInstructionText and stdout banner.",
+   "controllers": "No WorldNode subclass; purely kinematic control in HardcodedEventHandler (osgGA::GUIEventHandler): holds SkeletonPtr, bool mInverse, constexpr step mDOF=0.1. On KEYDOWN '1'/'2'/'3' it does pose = getPositions(); pose(dofIdx) += (mInverse ? -0.1 : 0.1); setPositions(pose) and prints the pose. '-' toggles mInverse and prints direction.",
+   "keyBindings": [
+    "1: increment DOF 0 (LHY) by +/-0.1 rad",
+    "2: increment DOF 1 (LHR) by +/-0.1 rad",
+    "3: increment DOF 2 (LHP) by +/-0.1 rad",
+    "-: toggle direction (positive/negative step)",
+    "space: toggle simulation (built-in Viewer \u2014 starts uncontrolled dynamics; see portRisks)"
+   ],
+   "tunables": [
+    "joint step size mDOF = 0.1 rad (compile-time constexpr)",
+    "direction flag mInverse (runtime via '-')"
+   ],
+   "interactions": "Keyboard joint jogging + built-in mouse camera navigation. No ImGui, no DnD.",
+   "assets": [],
+   "portRisks": "(1) Wireframe PolygonMode is set with OVERRIDE on the WorldNode StateSet \u2014 in a consolidated host it must be scoped to this scene's node only and removed on scene exit, or it will not coexist with shaded scenes. (2) Uses plain WorldNode, but the built-in space-bar still enables stepping: the uncontrolled 3-DOF leg then falls under default gravity \u2014 decide whether the port disables simulation (allowSimulation(false)) or preserves this quirk for parity. (3) LHR's axis is set post-construction via setAxis (joint.mAxis in Properties still holds the previous Z value at creation) \u2014 keep the same order or the axis silently changes. (4) Keys '1'-'3' map to DOF indices via ea.getKey()-'1' with a bounds check; '-' collides with simulation_event_handler's magnitude-decrease binding in a merged keymap."
+  }
+ ]
+}

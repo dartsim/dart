@@ -35,3 +35,22 @@ foreach(child ${children})
     endif()
   endif()
 endforeach()
+
+# The consolidated demos package (./demos, run as `python -m examples.demos`)
+# is a runnable module rather than a single main.py script, so the glob above
+# does not pick it up; register it explicitly. WORKING_DIRECTORY is the
+# parent of this directory so that `examples` resolves as the importable
+# package `-m examples.demos` needs.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/demos/__main__.py")
+  add_custom_target(
+    py_example_demos
+    COMMAND
+      ${CMAKE_COMMAND} -E echo
+      "Running: PYTHONPATH=${DART_PYTHONPATH} ${Python3_EXECUTABLE} -m examples.demos --cycle"
+    COMMAND
+      ${CMAKE_COMMAND} -E env "PYTHONPATH=${DART_PYTHONPATH}"
+      ${Python3_EXECUTABLE} -m examples.demos --cycle
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
+    SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/demos/__main__.py
+  )
+endif()

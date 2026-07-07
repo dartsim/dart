@@ -425,10 +425,27 @@
 
 * Examples
 
-  * Improve the C++ `soft_bodies` example with a framed Y-up view, headless PNG
-    capture, translucent soft meshes, display controls for embedded visuals,
-    and two-sided soft mesh rendering so generated soft-body faces do not look
-    missing from normal camera angles:
+  * Consolidate the scattered GUI examples into a single `dart-demos`
+    application: a `dart::gui::osg` `ImGuiViewer` host with a categorized
+    scene navigator that switches between 31 demo scenes at runtime without
+    restarting (crash-safe, soft-failing per scene), a high-standard ImGui
+    workspace (simulation toolbar with play/step/reset/target-RTF/timestep,
+    scene tree and body inspector with paused-only joint editing, log console
+    capturing DART diagnostics, a reusable contact-force visualizer, host-wide
+    drag-force and a 3D manipulation gizmo, a live text profiler, and
+    RTF/contact/step stats), and headless `--list-scenes` / `--cycle-scenes` /
+    `--headless --shot` capture modes. A best-effort dartpy `py-demos` runner
+    mirrors the scene catalog through a keyboard-driven navigator (dartpy has
+    no ImGui bindings). The individual `examples/*` and `python/examples/*`
+    GUI programs they replace are retired, leaving only specialized standalone
+    examples (`hello_world`, `cylindrical_constraint`, `speed_test`,
+    `contact_benchmark`, and the dartpy `ssik_analytical_ik`):
+    [#3301](https://github.com/dartsim/dart/pull/3301)
+
+  * Improve soft-body demo rendering with translucent soft meshes, display
+    controls for embedded visuals, framed/headless capture support through the
+    demo host, and two-sided soft mesh rendering so generated soft-body faces do
+    not look missing from normal camera angles:
     [#3304](https://github.com/dartsim/dart/pull/3304)
 
   * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
