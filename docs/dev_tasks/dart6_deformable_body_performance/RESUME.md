@@ -153,6 +153,13 @@ Latest state:
   helper calls, while preserving the existing DART 6 point external-force and
   joint-force semantics. Focused equation, allocation, and native checksum
   smokes passed after this slice.
+- A follow-up WP-DB.06 phase-view span slice is implemented locally:
+  `PointMassPhaseView` now stores raw point/state/property spans and a cached
+  count instead of vector references, while `updateArtInertia()` uses the
+  simplified point-mass scalar formula for explicit and implicit `Pi`. Focused
+  soft dynamics, allocation, and native checksum smokes passed after this
+  slice, but parent/base benchmark rows remain noisy and this is not a final
+  speedup claim.
 - A narrow `origin/dart6-memory-hardening` carryover is implemented locally:
   `Skeleton::checkExternalDisturbanceAndReset()` now scans body-local external
   wrenches directly instead of materializing the external-force projection cache

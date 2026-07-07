@@ -43,6 +43,7 @@
 
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -133,24 +134,30 @@ namespace {
 template <typename StateVector>
 struct PointMassPhaseView
 {
+  using StatePointer = decltype(std::declval<StateVector&>().data());
+
   PointMassPhaseView(
       const std::vector<PointMass*>& _pointMasses,
       StateVector& _states,
       const std::vector<PointMass::Properties>& _properties)
-    : pointMasses(_pointMasses), states(_states), properties(_properties)
+    : pointMasses(_pointMasses.data()),
+      states(_states.data()),
+      properties(_properties.data()),
+      count(_pointMasses.size())
   {
-    DART_ASSERT(states.size() == pointMasses.size());
-    DART_ASSERT(properties.size() == pointMasses.size());
+    DART_ASSERT(_states.size() == count);
+    DART_ASSERT(_properties.size() == count);
   }
 
   std::size_t size() const
   {
-    return pointMasses.size();
+    return count;
   }
 
-  const std::vector<PointMass*>& pointMasses;
-  StateVector& states;
-  const std::vector<PointMass::Properties>& properties;
+  PointMass* const* pointMasses;
+  StatePointer states;
+  const PointMass::Properties* properties;
+  std::size_t count;
 };
 
 template <typename StateVector>
@@ -780,13 +787,12 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
   for (std::size_t i = 0; i < phase.size(); ++i) {
     PointMass& pointMass = *phase.pointMasses[i];
     const double mass = phase.properties[i].mMass;
-    const double massSquared = mass * mass;
     pointMass.mPsi = 1.0 / mass;
     pointMass.mImplicitPsi = 1.0 / (mass + implicitOffset);
     DART_ASSERT(!math::isNan(pointMass.mImplicitPsi));
 
-    pointMass.mPi = mass - massSquared * pointMass.mPsi;
-    pointMass.mImplicitPi = mass - massSquared * pointMass.mImplicitPsi;
+    pointMass.mPi = 0.0;
+    pointMass.mImplicitPi = mass * implicitOffset * pointMass.mImplicitPsi;
     DART_ASSERT(!math::isNan(pointMass.mPi));
     DART_ASSERT(!math::isNan(pointMass.mImplicitPi));
   }
@@ -878,7 +884,7 @@ void SoftBodyNode::updateBiasForce(
                        - mass * pointMass.mEta - pointMass.mB;
     for (std::size_t j = 0; j < numConnections; ++j) {
       const std::size_t connectedIndex = connections[j];
-      DART_ASSERT(connectedIndex < phase.states.size());
+      DART_ASSERT(connectedIndex < phase.size());
       const PointMass::State& connectedState = phase.states[connectedIndex];
       pointMass.mAlpha += edgeSpringStiffness
                           * (connectedState.mPositions
