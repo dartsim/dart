@@ -20,7 +20,7 @@ with the first real SIMD-kernel PR.
 | WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | open (PG.20 #3329; PG.21 evidence-gated after span-only PG.20; PG.22 local cpp-only route rejected; PG.23 blocked D8; lane re-review at WS-F phase 5) |
 | WS-C dynamics batching | 04-dynamics-batching-lane.md | PG.30–PG.33 | open (PG.33 gated) |
 | WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | active (PG.40 folded into PG.42; PG.41 waits for PG.10 seam evidence) |
-| WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 done; PG.02/PG.03 next; PG.04 blocked D4) |
+| WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 done; PG.02 #3327; PG.03 claimed; PG.04 blocked D4) |
 | WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; phase 1 internal math core merged (#3281); no DART 6 detector adapter or phase-4 broadphase SIMD yet |
 
 ## Packet board
@@ -28,8 +28,8 @@ with the first real SIMD-kernel PR.
 | Packet | Lane | Status | Branch / PR | Evidence |
 | --- | --- | --- | --- | --- |
 | WP-PG.01 baseline packet | WS-E | done — PR pending | `wp-pg-01-baseline-evidence` | 01-baseline-evidence.md (S1–S6 guard rows, profile splits, prior-art triage) |
-| WP-PG.02 benchmark matrix | WS-E | claimed — local | `wp-pg-02-contact-container-matrix` | Active rows now cover DART/ODE/FCL/Bullet at 60/120 objects plus 4-thread sweep; bounded DART/ODE deactivation rows are in the dashboard filter; 900 dense-container rows are registered for manual filters but excluded from the default dashboard slice after local budget smoke |
-| WP-PG.03 profiling doc | WS-E | open | — | — |
+| WP-PG.02 benchmark matrix | WS-E | done — #3327 | `wp-pg-02-contact-container-matrix` / #3327 | Active rows now cover DART/ODE/FCL/Bullet at 60/120 objects plus 4-thread sweep; bounded DART/ODE deactivation rows are in the dashboard filter; 900 dense-container rows are registered for manual filters but excluded from the default dashboard slice after local budget smoke |
+| WP-PG.03 profiling doc | WS-E | claimed — local | `wp-pg-03-profiling-doc` | Adds `docs/onboarding/profiling.md` for the DART 6.20 text profiler and Tracy workflow, a profile-env `config-tracy` task, and the Tracy callstack compatibility fix required by the packaged dependency; local verification passed (`pixi run -e profile config-tracy`, profile `contact_benchmark` build + one-step `--profile` smoke, `UNIT_common_Profile`, docs parse smoke, `pixi run lint`, `pixi run check-lint`) |
 | WP-PG.04 executor tooling | WS-E | blocked (D4) | — | — |
 | WP-PG.10 LCP instrumentation | WS-A | open | — | — |
 | WP-PG.11 solver RTTI removal | WS-A | open | — | Local 2026-07-06 cpp-only mining rejected after refreshed current-base A/B on `2e11928288c`: S2 ODE 0.87x, S4 DART 0.93x, S4 Bullet 0.99x, S4 ODE 0.98x medians; guards identical |
