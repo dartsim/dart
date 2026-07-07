@@ -553,7 +553,16 @@ bool collideCylinderBox(
     }
 
     const double lateralDist = std::sqrt(lateralDistSq);
-    const double lateralPen = cylRadius - lateralDist;
+    const bool containsCylinderAxis
+        = minX <= 0.0 && maxX >= 0.0 && minY <= 0.0 && maxY >= 0.0;
+    const double distToMinX = std::abs(minX);
+    const double distToMaxX = std::abs(maxX);
+    const double distToMinY = std::abs(minY);
+    const double distToMaxY = std::abs(maxY);
+    const double minSideDist = std::min(
+        std::min(distToMinX, distToMaxX), std::min(distToMinY, distToMaxY));
+    const double lateralPen = containsCylinderAxis ? cylRadius + minSideDist
+                                                   : cylRadius - lateralDist;
 
     double penetration = lateralPen;
     Eigen::Vector3d normalLocal;
@@ -580,13 +589,6 @@ bool collideCylinderBox(
       normalLocal = Eigen::Vector3d(
           -closestX / lateralDist, -closestY / lateralDist, 0.0);
     } else {
-      const double distToMinX = std::abs(minX);
-      const double distToMaxX = std::abs(maxX);
-      const double distToMinY = std::abs(minY);
-      const double distToMaxY = std::abs(maxY);
-      const double minSideDist = std::min(
-          std::min(distToMinX, distToMaxX), std::min(distToMinY, distToMaxY));
-
       if (minSideDist == distToMinX) {
         normalLocal = Eigen::Vector3d(1, 0, 0);
         contactLocal.x() = minX;
