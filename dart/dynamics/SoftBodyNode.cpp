@@ -1292,54 +1292,52 @@ void SoftBodyNode::updateCombinedVector()
 {
   BodyNode::updateCombinedVector();
 
-  //  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-  //    mPointMasses.at(i)->updateCombinedVector();
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+    mPointMasses.at(i)->updateCombinedVector();
 }
 
 //==============================================================================
 void SoftBodyNode::aggregateCombinedVector(
     Eigen::VectorXd& _Cg, const Eigen::Vector3d& _gravity)
 {
-  BodyNode::aggregateCombinedVector(_Cg, _gravity);
-  //  //------------------------ PointMass Part
-  //  ------------------------------------ for (std::size_t i = 0; i <
-  //  mPointMasses.size(); ++i)
-  //    mPointMasses.at(i)->aggregateCombinedVector(_Cg, _gravity);
+  //------------------------ PointMass Part ------------------------------------
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+    mPointMasses.at(i)->aggregateCombinedVector(_Cg, _gravity);
 
-  //  //----------------------- SoftBodyNode Part
-  //  ----------------------------------
-  //  // H(i) = I(i) * W(i) -
-  //  //        dad{V}(I(i) * V(i)) + sum(k \in children)
-  //  dAd_{T(i,j)^{-1}}(H(k)) if (mGravityMode == true)
-  //    mFgravity = mI * math::AdInvRLinear(mW, _gravity);
-  //  else
-  //    mFgravity.setZero();
+  //----------------------- SoftBodyNode Part ----------------------------------
+  const Eigen::Matrix6d& mI
+      = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
 
-  //  mCg_F = mI * mCg_dV;
-  //  mCg_F -= mFgravity;
-  //  mCg_F -= math::dad(mV, mI * mV);
+  if (BodyNode::mAspectProperties.mGravityMode == true)
+    mFgravity = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
+  else
+    mFgravity.setZero();
 
-  //  for (std::vector<BodyNode*>::iterator it = mChildBodyNodes.begin();
-  //       it != mChildBodyNodes.end(); ++it)
-  //  {
-  //    mCg_F += math::dAdInvT((*it)->getParentJoint()->getRelativeTransform(),
-  //                           (*it)->mCg_F);
-  //  }
+  const Eigen::Vector6d& V = getSpatialVelocity();
+  mCg_F = mI * mCg_dV;
+  mCg_F -= mFgravity;
+  mCg_F -= math::dad(V, mI * V);
 
-  //  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-  //       it != mPointMasses.end(); ++it)
-  //  {
-  //    mCg_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mCg_F);
-  //    mCg_F.tail<3>() += (*it)->mCg_F;
-  //  }
+  for (std::vector<BodyNode*>::iterator it = mChildBodyNodes.begin();
+       it != mChildBodyNodes.end();
+       ++it) {
+    mCg_F += math::dAdInvT(
+        (*it)->getParentJoint()->getRelativeTransform(), (*it)->mCg_F);
+  }
 
-  //  int nGenCoords = mParentJoint->getNumDofs();
-  //  if (nGenCoords > 0)
-  //  {
-  //    Eigen::VectorXd Cg = mParentJoint->getRelativeJacobian().transpose() *
-  //    mCg_F; int iStart = mParentJoint->getIndexInTree(0);
-  //    _Cg->segment(iStart, nGenCoords) = Cg;
-  //  }
+  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
+       it != mPointMasses.end();
+       ++it) {
+    mCg_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mCg_F);
+    mCg_F.tail<3>() += (*it)->mCg_F;
+  }
+
+  const std::size_t nGenCoords = mParentJoint->getNumDofs();
+  if (nGenCoords > 0) {
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
+    _Cg.segment(iStart, nGenCoords).noalias()
+        = mParentJoint->getRelativeJacobian().transpose() * mCg_F;
+  }
 }
 
 //==============================================================================

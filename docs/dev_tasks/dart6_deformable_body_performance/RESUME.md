@@ -17,8 +17,9 @@ Latest state:
   ordered final-state comparison between `threads=1` and `threads=4`.
 - `07-equation-correctness.md` records the first active WP-DB.04 sub-gate:
   point-mass gravity now contributes deterministically to
-  `Skeleton::getGravityForces()`, and the test compares the projected
-  point-mass gravity wrench against the generalized-force delta.
+  `Skeleton::getGravityForces()` and
+  `Skeleton::getCoriolisAndGravityForces()` at rest, and the test compares the
+  projected point-mass gravity wrench against both generalized-force deltas.
 - `04-data-layout-and-memory-hardening.md` records the soft-body data-layout
   risk, adds the `soft_body_headless` profile/checksum runner, and records that
   this branch now stacks on `origin/dart6-memory-hardening` for
@@ -191,9 +192,9 @@ Next steps:
    four-thread final-state checks with energy, contact-force, CoP, or
    historical-golden regression thresholds that are stable across supported
    platforms.
-4. Continue WP-DB.04 with point-mass mass, augmented-mass, inverse-mass,
-   inverse-augmented-mass, and combined-vector aggregation, then re-enable or
-   replace the disabled equations-of-motion checks in `test_SoftDynamics.cpp`.
+4. Continue WP-DB.04 with point-mass mass, augmented-mass, inverse-mass, and
+   inverse-augmented-mass aggregation, then re-enable or replace the disabled
+   equations-of-motion checks in `test_SoftDynamics.cpp`.
 5. Complete the paper parity matrix with representative scenes and numbers from
    Kim/Pollard 2011 and Jain/Liu 2011.
 6. Continue WP-DB.08 with fuller triangle/contact-neighborhood coverage and

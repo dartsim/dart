@@ -59,8 +59,9 @@ the converted soft box.
 
 - The existing `compareEquationsOfMotion` body is still disabled. Completing
   soft-body matrix/vector aggregation and re-enabling equation checks belongs
-  to WP-DB.04. The first active point-mass gravity aggregation sub-gate is
-  recorded separately in `07-equation-correctness.md`.
+  to WP-DB.04. The first active point-mass gravity and combined-vector
+  aggregation sub-gate is recorded separately in
+  `07-equation-correctness.md`.
 - The gate does not yet check energy drift, contact force variance, or CoP
   smoothness. It also does not pin historical golden states across revisions.
 - Multi-core coverage currently proves finite state under a threaded world
