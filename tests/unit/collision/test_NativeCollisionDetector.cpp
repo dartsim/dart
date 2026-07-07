@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/collision/CollisionFilter.hpp>
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/native/NativeCollisionDetector.hpp>
 #include <dart/collision/native/NativeCollisionGroup.hpp>
@@ -45,6 +46,8 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <utility>
+#include <vector>
 
 using namespace dart;
 
@@ -96,22 +99,56 @@ dynamics::SimpleFramePtr makeFrame(
   return frame;
 }
 
+//==============================================================================
+class ShapeFramePairCollisionFilter : public collision::CollisionFilter
+{
+public:
+  void addIgnoredPair(
+      const dynamics::ShapeFrame* frame1, const dynamics::ShapeFrame* frame2)
+  {
+    mIgnoredPairs.emplace_back(frame1, frame2);
+  }
+
+  bool ignoresCollision(
+      const collision::CollisionObject* object1,
+      const collision::CollisionObject* object2) const override
+  {
+    const auto* frame1 = object1->getShapeFrame();
+    const auto* frame2 = object2->getShapeFrame();
+    for (const auto& pair : mIgnoredPairs) {
+      if ((frame1 == pair.first && frame2 == pair.second)
+          || (frame1 == pair.second && frame2 == pair.first)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+private:
+  std::vector<
+      std::pair<const dynamics::ShapeFrame*, const dynamics::ShapeFrame*>>
+      mIgnoredPairs;
+};
+
 } // namespace
 
 //==============================================================================
-TEST(NativeCollisionDetector, FactoryKeyRemainsUnregisteredInP3a)
+TEST(NativeCollisionDetector, FactoryKeyIsRegisteredInP3b)
 {
   auto* factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(nullptr, factory);
-  EXPECT_FALSE(
+  ASSERT_TRUE(
       factory->canCreate(collision::NativeCollisionDetector::getStaticType()));
+  auto detector
+      = factory->create(collision::NativeCollisionDetector::getStaticType());
+  ASSERT_NE(nullptr, detector);
   EXPECT_EQ(
-      nullptr,
-      factory->create(collision::NativeCollisionDetector::getStaticType()));
+      collision::NativeCollisionDetector::getStaticType(), detector->getType());
 }
 
 //==============================================================================
-TEST(NativeCollisionDetector, CreatesDetectorGroupAndStubCollide)
+TEST(NativeCollisionDetector, CreatesDetectorGroupAndCollidesSphereSphere)
 {
   auto detector = collision::NativeCollisionDetector::create();
   ASSERT_NE(nullptr, detector);
@@ -127,6 +164,162 @@ TEST(NativeCollisionDetector, CreatesDetectorGroupAndStubCollide)
   EXPECT_NE(
       nullptr, dynamic_cast<collision::NativeCollisionGroup*>(group.get()));
   EXPECT_EQ(1u, group->getNumShapeFrames());
+
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(0.75, 0.0, 0.0));
+  group->addShapeFrame(frame2.get());
+
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+
+  const auto& contact = result.getContact(0);
+  ASSERT_NE(nullptr, contact.collisionObject1);
+  ASSERT_NE(nullptr, contact.collisionObject2);
+  EXPECT_EQ(frame.get(), contact.collisionObject1->getShapeFrame());
+  EXPECT_EQ(frame2.get(), contact.collisionObject2->getShapeFrame());
+  EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(0.25, contact.penetrationDepth, 1e-12);
+  EXPECT_TRUE(result.inCollision(frame.get()));
+  EXPECT_TRUE(result.inCollision(frame2.get()));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, BinaryCheckEmitsPairOnlyContact)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto frame1 = makeFrame(std::make_shared<dynamics::SphereShape>(0.5));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(0.75, 0.0, 0.0));
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(collision::CollisionOption(false, 10u), &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+
+  const auto& contact = result.getContact(0);
+  ASSERT_NE(nullptr, contact.collisionObject1);
+  ASSERT_NE(nullptr, contact.collisionObject2);
+  EXPECT_EQ(frame1.get(), contact.collisionObject1->getShapeFrame());
+  EXPECT_EQ(frame2.get(), contact.collisionObject2->getShapeFrame());
+  EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::Zero(), 1e-12));
+  EXPECT_NEAR(0.0, contact.penetrationDepth, 1e-12);
+  EXPECT_TRUE(result.inCollision(frame1.get()));
+  EXPECT_TRUE(result.inCollision(frame2.get()));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, RespectsGlobalContactLimit)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto frame1 = makeFrame(std::make_shared<dynamics::SphereShape>(0.5));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(0.75, 0.0, 0.0));
+  auto frame3 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(0.0, 0.75, 0.0));
+  auto group = detector->createCollisionGroup(
+      frame1.get(), frame2.get(), frame3.get());
+
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(collision::CollisionOption(true, 1u), &result));
+  EXPECT_EQ(1u, result.getNumContacts());
+
+  collision::CollisionResult zeroLimitResult;
+  EXPECT_FALSE(
+      group->collide(collision::CollisionOption(true, 0u), &zeroLimitResult));
+  EXPECT_EQ(0u, zeroLimitResult.getNumContacts());
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, RespectsCollisionFilter)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto frame1 = makeFrame(std::make_shared<dynamics::SphereShape>(0.5));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(0.75, 0.0, 0.0));
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+  auto filter = std::make_shared<ShapeFramePairCollisionFilter>();
+  filter->addIgnoredPair(frame1.get(), frame2.get());
+
+  collision::CollisionResult result;
+  EXPECT_FALSE(
+      group->collide(collision::CollisionOption(true, 10u, filter), &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, CollidesSphereBoxInBothOrders)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto sphereFrame = makeFrame(
+      std::make_shared<dynamics::SphereShape>(1.0),
+      Eigen::Vector3d(0.0, 0.0, 1.5));
+  auto boxFrame = makeFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)));
+
+  auto sphereFirstGroup
+      = detector->createCollisionGroup(sphereFrame.get(), boxFrame.get());
+  collision::CollisionResult sphereFirstResult;
+  EXPECT_TRUE(sphereFirstGroup->collide(
+      collision::CollisionOption(true, 10u), &sphereFirstResult));
+  ASSERT_EQ(1u, sphereFirstResult.getNumContacts());
+
+  const auto& sphereFirstContact = sphereFirstResult.getContact(0);
+  EXPECT_EQ(sphereFrame.get(), sphereFirstContact.getShapeFrame1());
+  EXPECT_EQ(boxFrame.get(), sphereFirstContact.getShapeFrame2());
+  EXPECT_TRUE(
+      sphereFirstContact.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+  EXPECT_NEAR(0.5, sphereFirstContact.penetrationDepth, 1e-12);
+
+  auto boxFirstGroup
+      = detector->createCollisionGroup(boxFrame.get(), sphereFrame.get());
+  collision::CollisionResult boxFirstResult;
+  EXPECT_TRUE(boxFirstGroup->collide(
+      collision::CollisionOption(true, 10u), &boxFirstResult));
+  ASSERT_EQ(1u, boxFirstResult.getNumContacts());
+
+  const auto& boxFirstContact = boxFirstResult.getContact(0);
+  EXPECT_EQ(boxFrame.get(), boxFirstContact.getShapeFrame1());
+  EXPECT_EQ(sphereFrame.get(), boxFirstContact.getShapeFrame2());
+  EXPECT_TRUE(
+      boxFirstContact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+  EXPECT_NEAR(0.5, boxFirstContact.penetrationDepth, 1e-12);
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, CollidesAcrossGroups)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto frame1 = makeFrame(std::make_shared<dynamics::SphereShape>(0.5));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(0.75, 0.0, 0.0));
+  auto group1 = detector->createCollisionGroup(frame1.get());
+  auto group2 = detector->createCollisionGroup(frame2.get());
+
+  collision::CollisionResult result;
+  EXPECT_TRUE(group1->collide(
+      group2.get(), collision::CollisionOption(true, 10u), &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+  EXPECT_EQ(frame1.get(), result.getContact(0).getShapeFrame1());
+  EXPECT_EQ(frame2.get(), result.getContact(0).getShapeFrame2());
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, SkipsUnsupportedShapes)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto sphereFrame = makeFrame(std::make_shared<dynamics::SphereShape>(1.0));
+  auto planeFrame = makeFrame(
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  auto group
+      = detector->createCollisionGroup(sphereFrame.get(), planeFrame.get());
 
   collision::CollisionResult result;
   EXPECT_FALSE(group->collide(collision::CollisionOption(true, 10u), &result));
