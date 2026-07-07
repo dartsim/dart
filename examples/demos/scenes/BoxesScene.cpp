@@ -34,10 +34,9 @@
 // static ground plane.
 //
 // Deviation from the original: examples/boxes explicitly switches to a
-// Bullet collision detector. dart-demos only links dart-gui-osg (no
-// dart-collision-bullet) per BRIEF-phase1.md's fixed CMake link-library list,
-// so this port uses DART's default (FCL) collision detector instead; box-drop
-// behavior is otherwise unchanged.
+// Bullet collision detector. dart-demos relies on the host-selected collision
+// detector instead, defaulting to the same backend as the rest of DART;
+// box-drop behavior is otherwise unchanged.
 
 #include "Scenes.hpp"
 

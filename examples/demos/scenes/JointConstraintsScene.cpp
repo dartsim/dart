@@ -35,9 +35,9 @@
 // sagittal-plane ankle strategy, with a togglable WeldJointConstraint
 // "harness" on the pelvis and four scripted push perturbations on the spine.
 //
-// Deviations from the original: fullbody1.skel is authored Y-up (as required
-// by BRIEF-phase2's ground rules, reoriented to the host's Z-up convention
-// via the shared ZUp.hpp helper). The SPD gains, DOF-index coupling (6..21,
+// Deviations from the original: fullbody1.skel is authored Y-up and is
+// reoriented to the host's Z-up convention via the shared ZUp.hpp helper. The
+// SPD gains, DOF-index coupling (6..21,
 // 22..end), body names (h_pelvis/h_spine/h_heel_left), and the ankle
 // strategy's use of com[0]/cop[0] (the sagittal-plane X axis) are all
 // unaffected by the reorientation -- ZUp.hpp only premultiplies the root
