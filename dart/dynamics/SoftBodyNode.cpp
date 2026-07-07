@@ -1006,54 +1006,45 @@ void SoftBodyNode::updateMassMatrix()
 {
   BodyNode::updateMassMatrix();
 
-  //  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-  //    mPointMasses.at(i)->updateMassMatrix();
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+    mPointMasses.at(i)->updateMassMatrix();
 }
 
 //==============================================================================
 void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
 {
-  BodyNode::aggregateMassMatrix(_MCol, _col);
-  //  //------------------------ PointMass Part
-  //  ------------------------------------ for (std::size_t i = 0; i <
-  //  mPointMasses.size(); ++i)
-  //    mPointMasses.at(i)->aggregateMassMatrix(_MCol, _col);
+  //------------------------ PointMass Part ------------------------------------
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
+    mPointMasses.at(i)->aggregateMassMatrix(_MCol, _col);
 
-  //  //----------------------- SoftBodyNode Part
-  //  ----------------------------------
-  //  //
-  //  mM_F.noalias() = mI * mM_dV;
+  //----------------------- SoftBodyNode Part ----------------------------------
+  const Eigen::Matrix6d& mI
+      = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
+  mM_F.noalias() = mI * mM_dV;
+  DART_ASSERT(!math::isNan(mM_F));
 
-  //  // Verification
-  //  DART_ASSERT(!math::isNan(mM_F));
+  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
+       it != mChildBodyNodes.end();
+       ++it) {
+    mM_F += math::dAdInvT(
+        (*it)->getParentJoint()->getRelativeTransform(), (*it)->mM_F);
+  }
 
-  //  //
-  //  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-  //       it != mChildBodyNodes.end(); ++it)
-  //  {
-  //    mM_F += math::dAdInvT((*it)->getParentJoint()->getRelativeTransform(),
-  //                          (*it)->mM_F);
-  //  }
+  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
+       it != mPointMasses.end();
+       ++it) {
+    mM_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mM_F);
+    mM_F.tail<3>() += (*it)->mM_F;
+  }
 
-  //  //
-  //  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-  //       it != mPointMasses.end(); ++it)
-  //  {
-  //    mM_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mM_F);
-  //    mM_F.tail<3>() += (*it)->mM_F;
-  //  }
+  DART_ASSERT(!math::isNan(mM_F));
 
-  //  // Verification
-  //  DART_ASSERT(!math::isNan(mM_F));
-
-  //  //
-  //  int dof = mParentJoint->getNumDofs();
-  //  if (dof > 0)
-  //  {
-  //    int iStart = mParentJoint->getIndexInTree(0);
-  //    _MCol->block(iStart, _col, dof, 1).noalias()
-  //        = mParentJoint->getRelativeJacobian().transpose() * mM_F;
-  //  }
+  const std::size_t dof = mParentJoint->getNumDofs();
+  if (dof > 0) {
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
+    _MCol.block(iStart, _col, dof, 1).noalias()
+        = mParentJoint->getRelativeJacobian().transpose() * mM_F;
+  }
 }
 
 //==============================================================================
