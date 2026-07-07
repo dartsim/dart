@@ -47,7 +47,11 @@
 #include <dart/config.hpp>
 
 #include <iosfwd>
+#include <optional>
 #include <string>
+#include <string_view>
+
+#include <cstdint>
 
 #if DART_BUILD_PROFILE
 
@@ -128,6 +132,14 @@
       ::dart::common::profile::Profiler::instance().printSummary()
     #define DART_PROFILE_TEXT_SUMMARY()                                        \
       ::dart::common::profile::Profiler::instance().toSummaryText()
+    #define DART_PROFILE_TEXT_COUNTER(name_literal, value)                     \
+      do {                                                                     \
+        ::dart::common::profile::Profiler::instance().recordCounter(           \
+            name_literal,                                                      \
+            __FILE__,                                                          \
+            __LINE__,                                                          \
+            static_cast<::std::uint64_t>(value));                              \
+      } while (false)
   #else
     #define DART_PROFILE_TEXT_FRAME
     #define DART_PROFILE_TEXT_SCOPED(name_literal)
@@ -135,6 +147,10 @@
     #define DART_PROFILE_TEXT_DUMP()
     #define DART_PROFILE_TEXT_SUMMARY()                                        \
       ::std::string {}
+    #define DART_PROFILE_TEXT_COUNTER(name_literal, value)                     \
+      do {                                                                     \
+        (void)sizeof(value);                                                   \
+      } while (false)
   #endif
 
   #if DART_PROFILE_HAS_TRACY || DART_PROFILE_ENABLE_TEXT
@@ -188,6 +204,27 @@ private:
     #endif
 };
 
+class ConditionalScopedProfile
+{
+public:
+  ConditionalScopedProfile(
+      bool enabled,
+      const char* name,
+      const char* file,
+      int line,
+      const char* function)
+  {
+    if (enabled)
+      mScope.emplace(name, file, line, function);
+  }
+
+  ConditionalScopedProfile(const ConditionalScopedProfile&) = delete;
+  ConditionalScopedProfile& operator=(const ConditionalScopedProfile&) = delete;
+
+private:
+  std::optional<ScopedProfile> mScope;
+};
+
 } // namespace dart::common::profile::detail
 
     #if DART_PROFILE_HAS_TRACY
@@ -202,6 +239,14 @@ private:
       DART_PROFILE_TEXT_FRAME;                                                 \
     } while (false)
 
+  #define DART_PROFILE_COUNTER_N(name_literal, value)                          \
+    DART_PROFILE_TEXT_COUNTER(name_literal, value)
+  #define DART_PROFILE_COUNTER_IF_N(enabled, name_literal, value)              \
+    do {                                                                       \
+      if (enabled)                                                             \
+        DART_PROFILE_TEXT_COUNTER(name_literal, value);                        \
+    } while (false)
+
   #if DART_PROFILE_HAS_TRACY || DART_PROFILE_ENABLE_TEXT
 
     #define DART_PROFILE_SCOPED                                                \
@@ -212,10 +257,19 @@ private:
       ::dart::common::profile::detail::ScopedProfile DART_PROFILE_SCOPE_NAME(  \
           _dart_profile_scope_)(name_literal, __FILE__, __LINE__, __func__)
 
+    #define DART_PROFILE_SCOPED_IF_N(enabled, name_literal)                    \
+      ::dart::common::profile::detail::ConditionalScopedProfile                \
+      DART_PROFILE_SCOPE_NAME(_dart_profile_scope_)(                           \
+          enabled, name_literal, __FILE__, __LINE__, __func__)
+
   #else
 
     #define DART_PROFILE_SCOPED
     #define DART_PROFILE_SCOPED_N(name_literal)
+    #define DART_PROFILE_SCOPED_IF_N(enabled, name_literal)                    \
+      do {                                                                     \
+        (void)sizeof(enabled);                                                 \
+      } while (false)
 
   #endif
 
@@ -224,9 +278,26 @@ private:
   #define DART_PROFILE_FRAME
   #define DART_PROFILE_SCOPED
   #define DART_PROFILE_SCOPED_N(name_literal)
+  #define DART_PROFILE_SCOPED_IF_N(enabled, name_literal)                      \
+    do {                                                                       \
+      (void)sizeof(enabled);                                                   \
+    } while (false)
+  #define DART_PROFILE_COUNTER_N(name_literal, value)                          \
+    do {                                                                       \
+      (void)sizeof(value);                                                     \
+    } while (false)
+  #define DART_PROFILE_COUNTER_IF_N(enabled, name_literal, value)              \
+    do {                                                                       \
+      (void)sizeof(enabled);                                                   \
+      (void)sizeof(value);                                                     \
+    } while (false)
   #define DART_PROFILE_TEXT_DUMP()
   #define DART_PROFILE_TEXT_SUMMARY()                                          \
     ::std::string {}
+  #define DART_PROFILE_TEXT_COUNTER(name_literal, value)                       \
+    do {                                                                       \
+      (void)sizeof(value);                                                     \
+    } while (false)
 
 #endif
 
@@ -252,11 +323,50 @@ namespace dart::common::profile {
 #endif
 }
 
+/// Return whether conditional profile instrumentation is currently recording.
+[[nodiscard]] inline bool isProfileRecordingEnabled() noexcept
+{
+#if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
+  return Profiler::instance().isRecordingEnabled();
+#else
+  return false;
+#endif
+}
+
+/// Enable or disable conditional profile instrumentation and return the
+/// previous state.
+inline bool setProfileRecordingEnabled(bool enabled) noexcept
+{
+#if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
+  return Profiler::instance().setRecordingEnabled(enabled);
+#else
+  (void)enabled;
+  return false;
+#endif
+}
+
 /// Mark a frame in the built-in text profiler.
 inline void markProfileFrame()
 {
 #if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
   Profiler::instance().markFrame();
+#endif
+}
+
+/// Record an integer counter sample in the built-in text profiler.
+inline void recordProfileCounter(
+    std::string_view label,
+    std::uint64_t value,
+    std::string_view file,
+    int line)
+{
+#if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
+  Profiler::instance().recordCounter(label, file, line, value);
+#else
+  (void)label;
+  (void)value;
+  (void)file;
+  (void)line;
 #endif
 }
 

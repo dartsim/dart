@@ -40,6 +40,7 @@
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
@@ -728,9 +729,16 @@ LCPSolver* ConstraintSolver::getLCPSolver() const
 //==============================================================================
 void ConstraintSolver::solve()
 {
+  const bool profileRecording
+      = dart::common::profile::isProfileRecordingEnabled();
+  DART_PROFILE_SCOPED_IF_N(profileRecording, "ConstraintSolver::solve");
+
   const bool splitImpulse = mSplitImpulseEnabled;
 
   {
+    DART_PROFILE_SCOPED_IF_N(
+        profileRecording, "ConstraintSolver::clearSkeletonConstraintState");
+
     auto clearSkeletonAt = [&](std::size_t i) {
       auto& skeleton = mSkeletons[i];
       skeleton->clearConstraintImpulses();
@@ -755,15 +763,29 @@ void ConstraintSolver::solve()
   }
 
   // Update constraints and collect active constraints
-  updateConstraints();
+  {
+    DART_PROFILE_SCOPED_IF_N(
+        profileRecording, "ConstraintSolver::updateConstraints");
+    updateConstraints();
+  }
 
   // Build constrained groups
-  buildConstrainedGroups();
+  {
+    DART_PROFILE_SCOPED_IF_N(
+        profileRecording, "ConstraintSolver::buildConstrainedGroups");
+    buildConstrainedGroups();
+  }
 
   // Solve constrained groups
-  solveConstrainedGroups();
+  {
+    DART_PROFILE_SCOPED_IF_N(
+        profileRecording, "ConstraintSolver::solveConstrainedGroups");
+    solveConstrainedGroups();
+  }
 
   if (splitImpulse) {
+    DART_PROFILE_SCOPED_IF_N(
+        profileRecording, "ConstraintSolver::solvePositionConstrainedGroups");
     solvePositionConstrainedGroups();
   }
 }
@@ -1967,6 +1989,7 @@ void ConstraintSolver::buildConstrainedGroups()
           }
         }
 
+        recordConstrainedGroupProfileCounters();
         return;
       }
 
@@ -1988,8 +2011,10 @@ void ConstraintSolver::buildConstrainedGroups()
         }
       }
 
-      if (preservedRestingIsland)
+      if (preservedRestingIsland) {
+        recordConstrainedGroupProfileCounters();
         return;
+      }
 
       for (auto& skeleton : mSkeletons) {
         if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
@@ -1999,6 +2024,7 @@ void ConstraintSolver::buildConstrainedGroups()
       }
     }
     mHadDeactivationGroups = false;
+    recordConstrainedGroupProfileCounters();
     return;
   }
 
@@ -2222,6 +2248,154 @@ void ConstraintSolver::buildConstrainedGroups()
     for (auto& skeleton : mSkeletons)
       skeleton->resetUnion();
   }
+
+  recordConstrainedGroupProfileCounters();
+}
+
+//==============================================================================
+void ConstraintSolver::recordConstrainedGroupProfileCounters() const
+{
+#if DART_BUILD_PROFILE
+  if (!dart::common::profile::isProfileRecordingEnabled())
+    return;
+
+  std::size_t totalConstraints = 0u;
+  std::size_t totalContactConstraints = 0u;
+  std::size_t totalBodies = 0u;
+  std::size_t totalRows = 0u;
+  std::size_t maxConstraints = 0u;
+  std::size_t maxBodies = 0u;
+  std::size_t maxRows = 0u;
+  std::size_t rowBuckets[6] = {};
+  std::size_t bodyBuckets[6] = {};
+  std::size_t contactBuckets[6] = {};
+
+  static thread_local std::unordered_set<const dynamics::BodyNode*> groupBodies;
+
+  const auto bucketIndex = [](std::size_t value) {
+    if (value == 0u)
+      return 0u;
+    if (value <= 3u)
+      return 1u;
+    if (value <= 12u)
+      return 2u;
+    if (value <= 48u)
+      return 3u;
+    if (value <= 192u)
+      return 4u;
+    return 5u;
+  };
+
+  const auto addBody = [](std::unordered_set<const dynamics::BodyNode*>& bodies,
+                          const dynamics::BodyNode* body) {
+    if (body != nullptr)
+      bodies.insert(body);
+  };
+
+  for (const auto& group : mConstrainedGroups) {
+    groupBodies.clear();
+
+    std::size_t contactConstraints = 0u;
+    for (const auto& constraint : group.mConstraints) {
+      if (constraint == nullptr)
+        continue;
+
+      if (const auto* contact
+          = dynamic_cast<const ContactConstraint*>(constraint.get())) {
+        ++contactConstraints;
+        addBody(groupBodies, contact->mBodyNodeA);
+        addBody(groupBodies, contact->mBodyNodeB);
+        continue;
+      }
+
+      if (const auto* softContact
+          = dynamic_cast<const SoftContactConstraint*>(constraint.get())) {
+        addBody(groupBodies, softContact->mBodyNode1);
+        addBody(groupBodies, softContact->mBodyNode2);
+        continue;
+      }
+
+      if (const auto* dynamicJoint
+          = dynamic_cast<const DynamicJointConstraint*>(constraint.get())) {
+        addBody(groupBodies, dynamicJoint->getBodyNode1());
+        addBody(groupBodies, dynamicJoint->getBodyNode2());
+        continue;
+      }
+
+      if (const auto* joint
+          = dynamic_cast<const JointConstraint*>(constraint.get())) {
+        addBody(groupBodies, joint->mBodyNode);
+        continue;
+      }
+
+      if (const auto* mimicMotor
+          = dynamic_cast<const MimicMotorConstraint*>(constraint.get())) {
+        addBody(groupBodies, mimicMotor->mBodyNode);
+        continue;
+      }
+
+      if (const auto* jointFriction
+          = dynamic_cast<const JointCoulombFrictionConstraint*>(
+              constraint.get())) {
+        addBody(groupBodies, jointFriction->mBodyNode);
+      }
+    }
+
+    const std::size_t constraints = group.mConstraints.size();
+    const std::size_t bodies = groupBodies.size();
+    const std::size_t rows = group.getTotalDimension();
+
+    totalConstraints += constraints;
+    totalContactConstraints += contactConstraints;
+    totalBodies += bodies;
+    totalRows += rows;
+    maxConstraints = std::max(maxConstraints, constraints);
+    maxBodies = std::max(maxBodies, bodies);
+    maxRows = std::max(maxRows, rows);
+    ++rowBuckets[bucketIndex(rows)];
+    ++bodyBuckets[bucketIndex(bodies)];
+    ++contactBuckets[bucketIndex(contactConstraints)];
+  }
+
+  DART_PROFILE_COUNTER_N(
+      "ConstraintSolver island groups", mConstrainedGroups.size());
+  DART_PROFILE_COUNTER_N(
+      "ConstraintSolver island constraints", totalConstraints);
+  DART_PROFILE_COUNTER_N(
+      "ConstraintSolver island contact constraints", totalContactConstraints);
+  DART_PROFILE_COUNTER_N("ConstraintSolver island bodies", totalBodies);
+  DART_PROFILE_COUNTER_N("ConstraintSolver island LCP rows", totalRows);
+  DART_PROFILE_COUNTER_N(
+      "ConstraintSolver island max constraints", maxConstraints);
+  DART_PROFILE_COUNTER_N("ConstraintSolver island max bodies", maxBodies);
+  DART_PROFILE_COUNTER_N("ConstraintSolver island max LCP rows", maxRows);
+  DART_PROFILE_COUNTER_N("ConstraintSolver island rows 0", rowBuckets[0]);
+  DART_PROFILE_COUNTER_N("ConstraintSolver island rows 1-3", rowBuckets[1]);
+  DART_PROFILE_COUNTER_N("ConstraintSolver island rows 4-12", rowBuckets[2]);
+  DART_PROFILE_COUNTER_N("ConstraintSolver island rows 13-48", rowBuckets[3]);
+  DART_PROFILE_COUNTER_N("ConstraintSolver island rows 49-192", rowBuckets[4]);
+  DART_PROFILE_COUNTER_N("ConstraintSolver island rows 193+", rowBuckets[5]);
+  DART_PROFILE_COUNTER_N("ConstraintSolver island bodies 0", bodyBuckets[0]);
+  DART_PROFILE_COUNTER_N("ConstraintSolver island bodies 1-3", bodyBuckets[1]);
+  DART_PROFILE_COUNTER_N("ConstraintSolver island bodies 4-12", bodyBuckets[2]);
+  DART_PROFILE_COUNTER_N(
+      "ConstraintSolver island bodies 13-48", bodyBuckets[3]);
+  DART_PROFILE_COUNTER_N(
+      "ConstraintSolver island bodies 49-192", bodyBuckets[4]);
+  DART_PROFILE_COUNTER_N("ConstraintSolver island bodies 193+", bodyBuckets[5]);
+  DART_PROFILE_COUNTER_N(
+      "ConstraintSolver island contacts 0", contactBuckets[0]);
+  DART_PROFILE_COUNTER_N(
+      "ConstraintSolver island contacts 1-3", contactBuckets[1]);
+  DART_PROFILE_COUNTER_N(
+      "ConstraintSolver island contacts 4-12", contactBuckets[2]);
+  DART_PROFILE_COUNTER_N(
+      "ConstraintSolver island contacts 13-48", contactBuckets[3]);
+  DART_PROFILE_COUNTER_N(
+      "ConstraintSolver island contacts 49-192", contactBuckets[4]);
+  DART_PROFILE_COUNTER_N(
+      "ConstraintSolver island contacts 193+", contactBuckets[5]);
+#endif
 }
 
 //==============================================================================

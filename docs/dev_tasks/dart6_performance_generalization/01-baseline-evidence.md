@@ -155,6 +155,14 @@ Benchmark means from the suite invocation, independent of this CLI capture.
 | S5_ode | 87.57 | 0.011 | 0 (false) | 0 | 90/90 | true | 0 | `0x5f2afc7230ee8d10` |
 | S6_dart | 0.0939 | 10.65 | 160 (false) | 139 | 0/71 | true | **0.3624** | `0x6eb6ff3911ac9d04` |
 
+Current-base guard note (2026-07-07, WP-PG.10): S4/S5 FCL generated-scene
+hashes had already drifted on unmodified `origin/release-6.20` @
+`b78a8b8cbe7` before the WP-PG.10 instrumentation patch. Parent and WP-PG.10
+both produced `S4_fcl = 0xea9b68f8b062600d` (contacts 1800, pairs 900,
+resting 450/900) and `S5_fcl = 0x8277be4f0c14212` (contacts 180, pairs 90,
+resting 44/90). Treat these as current-base drift pending a full guard-table
+refresh or maintainer re-baseline.
+
 ### Headline findings (round-2 evidence; supersedes the pre-plan smoke run)
 
 1. **The two active regimes have opposite bottlenecks** (profile splits,

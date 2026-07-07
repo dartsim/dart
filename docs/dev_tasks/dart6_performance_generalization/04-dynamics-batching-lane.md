@@ -18,7 +18,7 @@ the same versions/dirty flags the scalar path does, or sleeping breaks.
 
 #### WP-PG.30 — Single-free-body classification cache + FD fast path
 
-- Status: open
+- Status: done — #3310 (`wp-pg-30-single-free-body-cache`)
 - Objective: (a) cache an `is single free body` classification per
   skeleton keyed on structural version (killing the per-step
   dynamic_casts at the three sites above); (b) add the missing
@@ -39,6 +39,10 @@ the same versions/dirty flags the scalar path does, or sleeping breaks.
 - Non-goals: articulated-skeleton FD changes; public API.
 - Acceptance evidence: bit-identical hashes on all guard scenes and
   detectors; step-time delta on 900/3000-object scenes.
+- Completion evidence: merged as PR #3310. A/B reported S5 -12.2%, S4 -5.3%,
+  S3 -2.3%, solve-bound rows flat, with 8/8 guard hashes bit-identical. The
+  FD fast path was skipped with an in-code rationale because round-1 evidence
+  showed the narrower FreeJoint no-op skip regressed.
 - Dependencies: WP-PG.01.
 
 #### WP-PG.31 — Scratch retention for shallow-support machinery
