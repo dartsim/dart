@@ -210,6 +210,13 @@ std::size_t BodyNode::msBodyNodeCount = 0;
 namespace detail {
 
 //==============================================================================
+const BodyNode::Properties& getDefaultBodyNodeProperties()
+{
+  static const BodyNode::Properties properties;
+  return properties;
+}
+
+//==============================================================================
 void setAllNodeStates(BodyNode* bodyNode, const AllNodeStates& states)
 {
   bodyNode->setAllNodeStates(states);

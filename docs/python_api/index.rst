@@ -11,7 +11,7 @@ dartpy provides Python bindings for DART (Dynamic Animation and Robotics Toolkit
 
    modules/dartpy
    modules/simulation
-   modules/utils
+   modules/io
    modules/gui
 
 Getting Started

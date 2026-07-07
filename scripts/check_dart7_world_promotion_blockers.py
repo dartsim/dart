@@ -299,7 +299,7 @@ def _classify(path: str, kind: str) -> str | None:
         return "promotion_guard_scripts"
     if path.startswith("dart/simulation/"):
         return "classic_simulation_owner"
-    if path.startswith("dart/utils/") or path.startswith("dart/io/"):
+    if path.startswith("dart/io/"):
         return "classic_loader_api"
     if path.startswith("dart/gui/") or path.startswith("dart/sensor/"):
         return "classic_render_sensor_bridge"
@@ -313,7 +313,7 @@ def _classify(path: str, kind: str) -> str | None:
         return "experimental_python_tests"
     if path.startswith("python/tests/unit/test_run_cpp_example.py"):
         return "example_runner_tests"
-    if path.startswith("python/tests/unit/utils/"):
+    if path.startswith("python/tests/unit/io/"):
         return "classic_loader_tests"
     if path.startswith("python/tests/"):
         return "python_transition_tests"

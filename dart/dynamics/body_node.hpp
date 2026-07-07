@@ -1304,6 +1304,12 @@ private:
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
+namespace detail {
+
+DART_API const BodyNode::Properties& getDefaultBodyNodeProperties();
+
+} // namespace detail
+
 } // namespace dynamics
 } // namespace dart
 

@@ -27,9 +27,9 @@ STUB_MODULES = (
     ("dartpy._dartpy.constraint", Path("dartpy/constraint.pyi")),
     ("dartpy._dartpy.optimizer", Path("dartpy/optimizer.pyi")),
     ("dartpy._dartpy.gui", Path("dartpy/gui/__init__.pyi")),
-    ("dartpy._dartpy.utils", Path("dartpy/utils/__init__.pyi")),
-    ("dartpy._dartpy.utils.MjcfParser", Path("dartpy/utils/MjcfParser.pyi")),
-    ("dartpy._dartpy.utils.SdfParser", Path("dartpy/utils/SdfParser.pyi")),
+    ("dartpy._dartpy.io", Path("dartpy/io/__init__.pyi")),
+    ("dartpy._dartpy.io.MjcfParser", Path("dartpy/io/MjcfParser.pyi")),
+    ("dartpy._dartpy.io.SdfParser", Path("dartpy/io/SdfParser.pyi")),
 )
 
 OPTIONAL_STUB_MODULES = frozenset(
@@ -53,7 +53,6 @@ SUBMODULES = (
     "math",
     "optimizer",
     "simulation",
-    "utils",
 )
 
 PROMOTED_MODULES = (
@@ -79,7 +78,9 @@ def _public_names(source: str) -> list[str]:
             )
         elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
             names.append(node.target.id)
-        elif isinstance(node, ast.ImportFrom) and node.level > 0:
+        elif isinstance(node, ast.ImportFrom) and (
+            node.level > 0 or node.module == "dartpy._scene_dump"
+        ):
             names.extend(alias.asname or alias.name for alias in node.names)
 
     names = [name for name in names if not name.startswith("_") and name != "*"]
@@ -95,9 +96,8 @@ def _all_block(names: list[str]) -> str:
 
 
 def _is_runtime_flat_promoted(name: str) -> bool:
-    # Match python/dartpy/_layout.py:_promote_symbols. Legacy lowerCamel
-    # compatibility names stay on their submodules; the flat namespace promotes
-    # classes, enums/constants, and snake_case helpers.
+    # Match python/dartpy/_layout.py:_promote_symbols: the flat namespace
+    # promotes classes, enums/constants, and snake_case helpers.
     return bool(name) and (name[0].isupper() or not any(ch.isupper() for ch in name))
 
 
@@ -156,12 +156,18 @@ def _postprocess_public_module_stub(source: str, public_module: str) -> str:
     helper_names = [
         "DescriptorRenderScene",
         "WorldRenderBridge",
+        "look_at",
+        "orbit_camera",
+        "render",
         "world_render_frame",
     ]
     helper_import = (
         "from dartpy._world_render_bridge import (\n"
         "    DescriptorRenderScene as DescriptorRenderScene,\n"
         "    WorldRenderBridge as WorldRenderBridge,\n"
+        "    look_at as look_at,\n"
+        "    orbit_camera as orbit_camera,\n"
+        "    render as render,\n"
         "    world_render_frame as world_render_frame,\n"
         ")\n"
     )
@@ -251,20 +257,6 @@ def _write_top_level_stub(
         ["", _all_block(sorted(dict.fromkeys(all_names))), "__version__: str = ''"]
     )
     (dartpy_dir / "__init__.pyi").write_text("\n".join(lines) + "\n")
-
-
-def _write_io_stub(stubs_dir: Path):
-    io_dir = stubs_dir / "dartpy" / "io"
-    io_dir.mkdir(parents=True, exist_ok=True)
-    (io_dir / "__init__.pyi").write_text(
-        '"""\n'
-        "Alias for ``dartpy.utils`` (preferred parser namespace).\n"
-        '"""\n\n'
-        "from __future__ import annotations\n\n"
-        "from dartpy import utils as _utils\n"
-        "from dartpy.utils import *  # noqa: F401,F403\n\n"
-        "__all__ = _utils.__all__\n"
-    )
 
 
 def _write_diff_stub(stubs_dir: Path):
@@ -385,7 +377,7 @@ def main():
             output.write_text(source)
 
             available_submodules.add(public_module)
-            if public_module != "utils":
+            if public_module != "io":
                 names_by_module[public_module] = _public_names(source)
 
     available_submodules.add("io")
@@ -395,7 +387,6 @@ def main():
     if diff_available:
         available_submodules.add("diff")
     _write_top_level_stub(stubs_dir, names_by_module, available_submodules)
-    _write_io_stub(stubs_dir)
     if diff_available:
         _write_diff_stub(stubs_dir)
     else:

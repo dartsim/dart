@@ -81,11 +81,15 @@ compatibility remains on the active DART 6 LTS branch._
   7 public contract. ([#2249](https://github.com/dartsim/dart/pull/2249),
   [#2256](https://github.com/dartsim/dart/pull/2256),
   [#2259](https://github.com/dartsim/dart/pull/2259))
-- Renamed `DartLoader` to `UrdfParser`, standardized parser naming, and removed
-  older direct resource-retriever parser overloads. ([#2269](https://github.com/dartsim/dart/pull/2269),
+- Removed the DART 6 `DartLoader` API; use `UrdfParser` for parser-specific
+  URDF work, and use `dart::io::readSkeleton` / `dartpy.io.read_skeleton` for
+  the common skeleton-loading path. ([#2269](https://github.com/dartsim/dart/pull/2269),
   [#2270](https://github.com/dartsim/dart/pull/2270),
   [#2141](https://github.com/dartsim/dart/pull/2141),
   [#2142](https://github.com/dartsim/dart/pull/2142))
+- Consolidated model-loading APIs from `dart::utils` and `dartpy.utils` into
+  `dart::io` and `dartpy.io`; update includes/imports and link against
+  `dart-io` for DART 7 model parsing. ([#3312](https://github.com/dartsim/dart/pull/3312))
 - Removed the legacy SKEL model format from DART 7, including `.skel` sample
   assets, `SkelParser`, `ModelFormat::Skel`, and dartpy SKEL bindings/stubs;
   migrate assets to URDF, SDF, or MJCF, or use `release-6.*` for legacy SKEL
@@ -287,6 +291,15 @@ compatibility remains on the active DART 6 LTS branch._
 - Restored or ported major robot, IK, collision, soft-body, vehicle, SIMBICON,
   and rigid-workflow examples through public `dart::gui`/dartpy surfaces rather
   than private scene fixtures.
+- Added agent-facing scene and physics verification tooling with text-first
+  trajectory/contact traces, headless offscreen render checks, image
+  verdict/golden/sheet scripts, and a `dart-verify-sim` workflow.
+  ([#3313](https://github.com/dartsim/dart/pull/3313))
+- Extended the agent-facing verification workflow with committed dartpy stubs,
+  scene-diff verdicts, blind-judge image-study reduction and round-2 packet
+  scoring, solver-plan visual gate templates, and provider-neutral VLM review
+  bundles.
+  ([#3320](https://github.com/dartsim/dart/pull/3320))
 - Added visual-verification workflows, screenshot review indexes, UI capture
   guards, runtime scene-switch hardening, and demo panels aimed at debugging
   DART 7 simulation behavior instead of preserving every historical demo detail.
@@ -370,6 +383,10 @@ compatibility remains on the active DART 6 LTS branch._
 - Made DART AI workflows more completion- and changelog-aware by default, with
   verification-first `$dart-resume` task management and a reusable
   `$dart-changelog` routine for consistent release-note decisions and entries.
+- Renamed the post-session retrospective workflow capability from
+  `dart-retrospect` to `dart-retro` across the shared workflow catalog and
+  generated Claude/OpenCode/Codex adapters; use `/dart-retro` or `$dart-retro`
+  for durable lessons from completed work.
 - Clarified AI-native guidance so always-loaded agent rules stay compact,
   consequential decisions use repo-wide north-star context and proportionate
   evidence, in-scope failures are root-caused instead of hidden, and AI-infra
@@ -425,9 +442,11 @@ compatibility remains on the active DART 6 LTS branch._
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.
+- Restored main-branch Windows IO builds and dartpy simulation stub parity checks
+  while preserving canonical `dartpy.simulation` aliases for IO loader types.
 - Added a lint/check-lint guard that keeps SDF IO on libsdformat typed DOM APIs
   and rejects TinyXML, raw XML tree, or SDF element text-parsing helpers in
-  `dart/utils/sdf`: [#3291](https://github.com/dartsim/dart/pull/3291)
+  `dart/io/sdf`: [#3291](https://github.com/dartsim/dart/pull/3291)
 - Restored Performance Dashboard benchmark builds in Pixi environments that use
   the host compiler while Conda binutils appear earlier on `PATH`.
 - Sharded the heaviest simulation CTest binaries, tightened CUDA environment

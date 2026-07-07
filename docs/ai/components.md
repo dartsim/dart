@@ -54,7 +54,7 @@ Generated files include source metadata and must not be hand-edited.
 
 ## Improving AI Infra From Learnings
 
-Use `dart-retrospect` after a completed session only when the learning is
+Use `dart-retro` after a completed session only when the learning is
 general enough to help future agents or contributors. Skip routine work,
 one-off local choices, and review-only narrative.
 
@@ -94,7 +94,7 @@ Prefer improving or consolidating an existing component over adding a new
 surface. If two docs would need the same changing fact, pick one owner and make
 the other a pointer.
 
-Durable retrospect learnings must be discoverable from the owner surface they
+Durable retrospective learnings must be discoverable from the owner surface they
 improve. Prefer editing an existing owner doc. If a learning justifies a new
 durable file, link that file from the relevant owner index or plan before the
 temporary session or dev-task context is retired.

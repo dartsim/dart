@@ -90,6 +90,14 @@ if(NOT _dartpy_nanobind_found)
   return()
 endif()
 
+if(NOT DART_IO_HAS_URDF)
+  message(
+    FATAL_ERROR
+    "dartpy requires dart-io URDF parser support. Install urdfdom or disable "
+    "DART_BUILD_DARTPY."
+  )
+endif()
+
 set(
   dartpy_headers
   common/composite.hpp
@@ -104,11 +112,12 @@ set(
   common/string.hpp
   common/subject.hpp
   common/uri.hpp
-  utils/module.hpp
-  utils/urdf_parser.hpp
-  utils/resource_retriever.hpp
-  utils/sdf_parser.hpp
-  utils/mjcf_parser.hpp
+  io/module.hpp
+  io/read.hpp
+  io/urdf_parser.hpp
+  io/resource_retriever.hpp
+  io/sdf_parser.hpp
+  io/mjcf_parser.hpp
   optimizer/module.hpp
   optimizer/function.hpp
   optimizer/problem.hpp
@@ -180,11 +189,12 @@ set(
   common/string.cpp
   common/subject.cpp
   common/uri.cpp
-  utils/module.cpp
-  utils/urdf_parser.cpp
-  utils/resource_retriever.cpp
-  utils/sdf_parser.cpp
-  utils/mjcf_parser.cpp
+  io/module.cpp
+  io/read.cpp
+  io/urdf_parser.cpp
+  io/resource_retriever.cpp
+  io/sdf_parser.cpp
+  io/mjcf_parser.cpp
   optimizer/module.cpp
   optimizer/function.cpp
   optimizer/problem.cpp
@@ -247,9 +257,21 @@ set(dartpy_gui_module_headers gui/module.hpp)
 
 set(dartpy_gui_module_sources gui/module.cpp)
 
-set(dartpy_gui_headers gui/descriptors.hpp gui/panel.hpp gui/viewer.hpp)
+set(
+  dartpy_gui_headers
+  gui/descriptors.hpp
+  gui/offscreen.hpp
+  gui/panel.hpp
+  gui/viewer.hpp
+)
 
-set(dartpy_gui_sources gui/descriptors.cpp gui/panel.cpp gui/viewer.cpp)
+set(
+  dartpy_gui_sources
+  gui/descriptors.cpp
+  gui/offscreen.cpp
+  gui/panel.cpp
+  gui/viewer.cpp
+)
 
 set(
   dartpy_simulation_headers
@@ -345,7 +367,7 @@ target_include_directories(
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}
 )
 
-set(dartpy_libraries dart dart-utils dart-utils-urdf)
+set(dartpy_libraries dart dart-io)
 foreach(lib ${dartpy_libraries})
   if(TARGET ${lib})
     target_link_libraries(dartpy PRIVATE ${lib})
@@ -444,6 +466,7 @@ foreach(
   _naming.py
   _layout.py
   _simulation_diff.py
+  _scene_dump.py
   _world_render_bridge.py
 )
   configure_file(
@@ -497,6 +520,7 @@ if(DEFINED SKBUILD_PLATLIB_DIR)
       ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_simulation_diff.py
+      ${CMAKE_CURRENT_SOURCE_DIR}/_scene_dump.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_world_render_bridge.py
     DESTINATION "${SKBUILD_PLATLIB_DIR}/dartpy"
   )
@@ -508,6 +532,7 @@ elseif(DEFINED PYTHON_SITE_PACKAGES)
       ${CMAKE_CURRENT_SOURCE_DIR}/_naming.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_layout.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_simulation_diff.py
+      ${CMAKE_CURRENT_SOURCE_DIR}/_scene_dump.py
       ${CMAKE_CURRENT_SOURCE_DIR}/_world_render_bridge.py
     DESTINATION "${PYTHON_SITE_PACKAGES}/dartpy"
   )

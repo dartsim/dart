@@ -3,7 +3,8 @@
 ## Why this exists
 
 DART historically exposed multiple model-loading entry points with inconsistent
-naming and structure (e.g., `SdfParser`, `UrdfParser`, and legacy loaders).
+naming and structure, including DART 6 loader names that are retired from the
+DART 7 public API.
 
 For most applications, this made “load a model from a URI” harder than it needed
 to be:
@@ -14,9 +15,10 @@ to be:
 
 The `dart::io` component provides a consolidated front door for reading
 `Skeleton`s while keeping the underlying format-specific parsers available when
-needed. The DART 6 whole-`World` front door was retired from `main` during the
-DART 7 API promotion; use a `release-6.*` branch when parity evidence requires the
-old public whole-world loader.
+needed. The DART 6 `DartLoader` and whole-`World` front doors are retired from
+`main` during the DART 7 API promotion; use `UrdfParser` for URDF-specific
+customization and a `release-6.*` branch when parity evidence requires the old
+public whole-world loader.
 
 ## Task context (issue #604)
 
@@ -24,7 +26,7 @@ This unified API and documentation were introduced while addressing issue #604
 (parser naming) and migrating tests/examples/tutorials to the `dart::io`
 component APIs. The DART 7 surface keeps a single, consistent skeleton-loading
 front door (`dart::io`) without introducing new nested namespaces, while keeping
-parser-specific customization available via `dart::utils::*` parsers where
+parser-specific customization available via `dart::io::*` parsers where
 needed. DART 7 removed SKEL rather than redesigning it as YAML; migrate legacy
 SKEL assets to URDF, SDF, or MJCF. Unit coverage for the promoted options
 lives in `tests/unit/io/test_read.cpp`.
@@ -34,14 +36,14 @@ lives in `tests/unit/io/test_read.cpp`.
 ### One front door, not one mega-parser
 
 `dart::io::readSkeleton` is the preferred entry point for new C++ code.
-Internally it delegates to the format-specific parsers in `dart::utils`.
+Internally it delegates to the format-specific parsers in `dart::io`.
 Whole-world loading is not part of the DART 7 public `dart::io` API.
 
 DART 7 public interchange APIs use `read` / `write` for operations and
 `Reader` / `Writer` for new format-owned actor names. `Parser` is reserved for
-existing syntax-level or compatibility internals, and `Loader` / `Saver` is
-reserved for APIs that mutate destination state, such as adding a model into a
-`simulation::World` or persisting DART-owned project state.
+format-specific syntax readers that expose parser details, and `Loader` /
+`Saver` is reserved for APIs that mutate destination state, such as adding a
+model into a `simulation::World` or persisting DART-owned project state.
 
 This is intentionally _not_ an attempt to expose every parser-specific knob through one API.
 Instead:
@@ -49,7 +51,7 @@ Instead:
 - `dart::io::ReadOptions` carries **common** options and a **small set** of
   high-frequency format-specific options that are hard to avoid in real projects.
 - If you need a format-specific feature that is not represented in `ReadOptions`, use the
-  underlying parser directly (e.g., `dart::utils::UrdfParser`).
+  underlying parser directly (e.g., `dart::io::UrdfParser`).
 
 This keeps the common-path API simple while preserving full capability for advanced use.
 
@@ -61,7 +63,7 @@ namespaces for each format is intentionally avoided.
 ### OpenUSD (`.usda`) is an opt-in format
 
 `dart::io::ModelFormat::Usd` reads textual OpenUSD (`.usda`) stages through the
-same front door. It is **off by default**: the `dart/io/usd/` loader and its
+same front door. It is **off by default**: the `dart/io/usd/` parser and its
 OpenUSD (pxr) dependency compile only when DART is built with
 `DART_BUILD_IO_USD=ON`. With the toggle off, `readSkeleton` returns a clean
 "USD support is not available" diagnostic, mirroring the SDF/URDF unavailable
@@ -86,10 +88,10 @@ Source of truth:
 - `dart/io/sdf_writer.hpp` for the first format-specific SDF writer
 - `pixi run check-sdf-sdformat-boundary` guards the SDF implementation against
   TinyXML/raw XML parser APIs and generic SDF element text parsing in
-  `dart/utils/sdf` plus the `dart/io` SDF writer, and keeps ambiguous
+  `dart/io/sdf` plus the `dart/io` SDF writer, and keeps ambiguous
   `dart::io` SDF auto-detection on libsdformat before the legacy URDF/MJCF
   XML-root fallback
-- `dart/utils/sdf/` uses libsdformat DOM APIs for SDF structure, model/link
+- `dart/io/sdf/` uses libsdformat DOM APIs for SDF structure, model/link
   static and self-collision state, named top-level/world model selection, world
   gravity, included model source URIs for relative resource resolution,
   inertial,
@@ -161,12 +163,12 @@ auto skel = dart::io::readSkeleton("dart://sample/sdf/test/box.sdf", options);
 
 When an SDF world contains multiple models, `dart::io::readSkeleton` keeps the
 default SDF parser behavior of loading the first model from the first world.
-Call `dart::utils::SdfParser` directly when a workflow needs a specific model:
+Call `dart::io::SdfParser` directly when a workflow needs a specific model:
 
 ```cpp
-dart::utils::SdfParser::Options options;
+dart::io::SdfParser::Options options;
 options.mModelName = "selected_model";
-auto skel = dart::utils::SdfParser::readSkeleton(
+auto skel = dart::io::SdfParser::readSkeleton(
     dart::common::Uri("file:///path/to/world.sdf"), options);
 ```
 
@@ -186,7 +188,7 @@ options.addPackageDirectory("my_robot", "/path/to/my_robot");
 auto skel = dart::io::readSkeleton("package://my_robot/urdf/robot.urdf", options);
 ```
 
-This is the `dart::io` equivalent of `dart::utils::UrdfParser::addPackageDirectory`.
+This is the `dart::io` equivalent of `dart::io::UrdfParser::addPackageDirectory`.
 
 ## When to add a new option to `ReadOptions`
 
@@ -394,6 +396,7 @@ unsupported cases.
 
 The consolidated API is primarily for **C++** (`dart::io`). However, the Python
 bindings (`dartpy`) also expose parsers under `dart.io` (e.g.
-`dart.io.UrdfParser`). The legacy `dart.utils.*` parsers are deprecated and
-should be avoided in new code. Treat SKEL as a DART 6 compatibility format and
-use a `release-6.*` branch for old SKEL assets.
+`dart.io.UrdfParser`). The former utility parser module and DART 6 `DartLoader`
+name are removed from DART 7.
+Treat SKEL as a DART 6 compatibility format and use a `release-6.*` branch for
+old SKEL assets.

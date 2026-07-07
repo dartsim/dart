@@ -395,6 +395,22 @@ dart_build_tests(
 if(TARGET dart-gui-core)
   dart_add_test("unit" UNIT_gui_DebugVisuals gui/test_gui_debug_visuals.cpp)
   target_link_libraries(UNIT_gui_DebugVisuals dart-gui-core)
+
+  dart_add_test("unit" UNIT_gui_CameraControl gui/test_camera_control.cpp)
+  target_link_libraries(UNIT_gui_CameraControl dart-gui-core)
+endif()
+
+if(TARGET dart-gui-core AND DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS)
+  dart_add_test(
+    "unit" UNIT_gui_OffscreenRenderer gui/test_offscreen_renderer.cpp
+  )
+  target_link_libraries(UNIT_gui_OffscreenRenderer dart-gui-core)
+  set_tests_properties(
+    UNIT_gui_OffscreenRenderer
+    PROPERTIES
+      LABELS "unit;filament;gui;smoke;graphics"
+      ENVIRONMENT "LIBGL_ALWAYS_SOFTWARE=1;MESA_LOADER_DRIVER_OVERRIDE=llvmpipe"
+  )
 endif()
 
 if(TARGET dart-gui AND TARGET dart-imgui-lib)
@@ -416,36 +432,29 @@ if(TARGET dart-gui AND TARGET dart-imgui-lib)
   )
 endif()
 
-# ==============================================================================
-# Utils Tests
-# ==============================================================================
-if(DART_ENABLE_SDFORMAT)
-  dart_add_test("unit" test_sdf_helpersNone utils/test_sdf_helpers.cpp)
-  target_link_libraries(test_sdf_helpersNone dart-utils sdformat::sdformat)
-endif()
-
-if(TARGET dart-utils)
-  dart_add_test("unit" test_mesh_loaderNone utils/test_mesh_loader.cpp)
-  target_link_libraries(test_mesh_loaderNone dart-utils)
-
-  dart_add_test("unit" test_HttpResourceRetriever utils/test_http_resource_retriever.cpp)
-  target_link_libraries(test_HttpResourceRetriever dart-utils)
-
-  dart_add_test("unit" test_FileInfoDof utils/test_file_info_dof.cpp)
-  target_link_libraries(test_FileInfoDof dart-utils)
-
-  dart_add_test("unit" test_xml_helpersNone utils/test_xml_helpers.cpp)
-  target_link_libraries(test_xml_helpersNone dart-utils)
-endif()
-
 if(TARGET dart-io)
   dart_add_test("unit" test_io_readNone io/test_read.cpp)
   target_link_libraries(test_io_readNone dart-io)
+
+  dart_add_test("unit" test_mesh_loaderNone io/test_mesh_loader.cpp)
+  target_link_libraries(test_mesh_loaderNone dart-io)
+
+  dart_add_test("unit" test_HttpResourceRetriever io/test_http_resource_retriever.cpp)
+  target_link_libraries(test_HttpResourceRetriever dart-io)
+
+  dart_add_test("unit" test_FileInfoDof io/test_file_info_dof.cpp)
+  target_link_libraries(test_FileInfoDof dart-io)
+
+  dart_add_test("unit" test_xml_helpersNone io/test_xml_helpers.cpp)
+  target_link_libraries(test_xml_helpersNone dart-io)
 
   dart_add_test("unit" UNIT_io_UrdfParser_Errors io/test_urdf_parser_errors.cpp)
   target_link_libraries(UNIT_io_UrdfParser_Errors dart-io)
 
   if(DART_ENABLE_SDFORMAT)
+    dart_add_test("unit" test_sdf_helpersNone io/test_sdf_helpers.cpp)
+    target_link_libraries(test_sdf_helpersNone dart-io sdformat::sdformat)
+
     dart_add_test("unit" UNIT_io_SdfParser_Errors io/test_sdf_parser_errors.cpp)
     target_link_libraries(UNIT_io_SdfParser_Errors dart-io)
   endif()

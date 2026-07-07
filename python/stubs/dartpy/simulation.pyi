@@ -49,6 +49,7 @@ __all__: list[str] = [
     "MemoryManagerDebugDiagnostics",
     "ModelFormat",
     "Multibody",
+    "MultibodyIntegrationFamily",
     "MultibodyOptions",
     "ParallelExecutor",
     "PhysicalParameter",
@@ -64,6 +65,7 @@ __all__: list[str] = [
     "StateVariable",
     "StepDerivatives",
     "StepGradient",
+    "StepMetrics",
     "World",
     "WorldEcsDiagnostics",
     "WorldEcsStorageDiagnostics",
@@ -74,6 +76,8 @@ __all__: list[str] = [
     "add_skeleton",
     "build_multibody_from_skeleton",
     "collect_deformable_scene_diagnostics",
+    "dump_scene_json",
+    "dump_scene_text",
     "is_accelerated_deformable_solve_available",
     "is_accelerated_deformable_solve_enabled",
     "load_deformable_scene",
@@ -89,13 +93,19 @@ from collections.abc import Sequence
 import enum
 import os
 import pathlib
-from typing import Annotated, overload
+from typing import Annotated, Any, overload
 
 import numpy
 from numpy.typing import NDArray
 
 import dartpy.dynamics
+import dartpy.io
 from dartpy import diff as diff
+from dartpy.io import (
+    ModelFormat as ModelFormat,
+    ReadOptions as ReadOptions,
+    RootJointType as RootJointType,
+)
 
 
 class JointType(enum.Enum):
@@ -1594,6 +1604,36 @@ class WorldStepProfile:
 
     def __str__(self) -> str: ...
 
+class StepMetrics:
+    @property
+    def kinetic_energy(self) -> float: ...
+
+    @property
+    def potential_energy(self) -> float: ...
+
+    @property
+    def total_energy(self) -> float: ...
+
+    @property
+    def linear_momentum(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def angular_momentum(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def active_contact_count(self) -> int: ...
+
+    @property
+    def max_penetration_depth(self) -> float: ...
+
+    @property
+    def last_step_iterations(self) -> int: ...
+
+    @property
+    def last_step_residual(self) -> float: ...
+
+    def __repr__(self) -> str: ...
+
 class AllocatorDebugDiagnostics:
     @property
     def live_bytes(self) -> int: ...
@@ -2025,37 +2065,6 @@ class SkeletonLoadOptions:
     @root_anchor_prefix.setter
     def root_anchor_prefix(self, arg: str, /) -> None: ...
 
-class ModelFormat(enum.Enum):
-    AUTO = 0
-
-    SDF = 1
-
-    URDF = 2
-
-    MJCF = 3
-
-class RootJointType(enum.Enum):
-    FLOATING = 0
-
-    FIXED = 1
-
-class ReadOptions:
-    def __init__(self) -> None: ...
-
-    @property
-    def format(self) -> ModelFormat: ...
-
-    @format.setter
-    def format(self, arg: ModelFormat, /) -> None: ...
-
-    @property
-    def sdf_default_root_joint_type(self) -> RootJointType: ...
-
-    @sdf_default_root_joint_type.setter
-    def sdf_default_root_joint_type(self, arg: RootJointType, /) -> None: ...
-
-    def add_package_directory(self, package_name: str, package_directory: str) -> None: ...
-
 class DeformableSceneLoadOptions:
     def __init__(self) -> None: ...
 
@@ -2214,6 +2223,10 @@ def add_skeleton(world: World, uri: str, options: SkeletonLoadOptions = ...) -> 
 @overload
 def add_skeleton(world: World, uri: str, read_options: ReadOptions, options: SkeletonLoadOptions = ...) -> Multibody: ...
 
+def dump_scene_json(world: Any) -> dict[str, Any]: ...
+
+def dump_scene_text(world: Any) -> str: ...
+
 def load_deformable_scene(world: World, scene_path: str | os.PathLike, options: DeformableSceneLoadOptions = ...) -> DeformableSceneInfo: ...
 
 def collect_deformable_scene_diagnostics(world: World) -> DeformableSceneDiagnostics: ...
@@ -2355,6 +2368,8 @@ class World:
 
     @property
     def last_step_profile(self) -> WorldStepProfile: ...
+
+    def compute_step_metrics(self) -> StepMetrics: ...
 
     @property
     def time_step(self) -> float: ...

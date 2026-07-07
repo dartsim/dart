@@ -32,11 +32,11 @@ auto skeleton = dart::io::readSkeleton("robot.urdf", options);
 
 ## Internal Parsers
 
-Located in `dart/utils/`:
+Located in `dart/io/`:
 
-- `urdf/UrdfParser.hpp` - URDF parsing
-- `sdf/SdfParser.hpp` - SDF parsing
-- `mjcf/MjcfParser.hpp` - MJCF parsing
+- `urdf/urdf_parser.hpp` - URDF parsing
+- `sdf/sdf_parser.hpp` - SDF parsing
+- `mjcf/mjcf_parser.hpp` - MJCF parsing
 
 ## Testing
 

@@ -22,8 +22,8 @@ Once you have installed dartpy using pip install -U dartpy, you can run the foll
         world = dart.World()
 
         urdf_parser = dart.io.UrdfParser()
-        kr5 = urdf_parser.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
-        ground = urdf_parser.parseSkeleton("dart://sample/urdf/KR5/ground.urdf")
+        kr5 = urdf_parser.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+        ground = urdf_parser.parse_skeleton("dart://sample/urdf/KR5/ground.urdf")
         world.addSkeleton(kr5)
         world.addSkeleton(ground)
         print("Robot {} is loaded".format(kr5.getName()))

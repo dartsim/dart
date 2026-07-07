@@ -2,8 +2,8 @@ import dartpy as dart
 import pytest
 
 def test_basic():
-    urdfParser = dart.io.DartLoader()
-    kr5 = urdfParser.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+    urdf_parser = dart.io.UrdfParser()
+    kr5 = urdf_parser.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert kr5 is not None
 
     shoulder = kr5.get_body_node("shoulder")

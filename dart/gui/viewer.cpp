@@ -31,6 +31,7 @@
  */
 
 #include <dart/gui/detail/gui_scale.hpp>
+#include <dart/gui/renderable.hpp>
 #include <dart/gui/viewer.hpp>
 
 #include <algorithm>
@@ -615,6 +616,192 @@ PerspectiveProjection makePerspectiveProjection(
                             ? *options.farPlane
                             : defaultFar;
   return projection;
+}
+
+namespace {
+
+constexpr double kPi = 3.14159265358979323846;
+
+double degreesToRadians(double degrees)
+{
+  return degrees * kPi / 180.0;
+}
+
+// Conservative local half-extent for a descriptor's geometry, used to build a
+// per-descriptor axis-aligned bounding box before transforming it to world
+// space. Meshes/point clouds expose explicit local bounds; primitive shapes are
+// sized from their descriptor fields.
+Eigen::Vector3d localHalfExtent(const GeometryDescriptor& geometry)
+{
+  if (geometry.hasLocalBounds) {
+    return 0.5 * (geometry.localBoundsMax - geometry.localBoundsMin).cwiseAbs();
+  }
+
+  switch (geometry.kind) {
+    case ShapeKind::Box:
+    case ShapeKind::Ellipsoid:
+      return 0.5 * geometry.size.cwiseAbs();
+    case ShapeKind::Sphere: {
+      const double r
+          = geometry.radius > 0.0 ? geometry.radius : 0.5 * geometry.size.x();
+      return Eigen::Vector3d::Constant(std::abs(r));
+    }
+    case ShapeKind::Cylinder:
+    case ShapeKind::Cone: {
+      const double r = std::abs(geometry.radius);
+      return Eigen::Vector3d(r, r, 0.5 * std::abs(geometry.height));
+    }
+    case ShapeKind::Capsule: {
+      const double r = std::abs(geometry.radius);
+      return Eigen::Vector3d(r, r, 0.5 * std::abs(geometry.height) + r);
+    }
+    default:
+      // Fall back to the primitive size (may be zero for descriptor-only
+      // geometry); such descriptors contribute only their world position.
+      return 0.5 * geometry.size.cwiseAbs();
+  }
+}
+
+Eigen::Vector3d localBoundsCenter(const GeometryDescriptor& geometry)
+{
+  if (geometry.hasLocalBounds) {
+    return 0.5 * (geometry.localBoundsMax + geometry.localBoundsMin);
+  }
+  return Eigen::Vector3d::Zero();
+}
+
+} // namespace
+
+bool orbitCameraViewPreset(
+    std::string_view name, double& azimuthDegrees, double& elevationDegrees)
+{
+  // House presets resolved in the WP-ASV.4 design note. Azimuth maps to yaw and
+  // elevation to pitch (see cameraEye), so these are plain spherical angles.
+  if (name == "three-quarter") {
+    azimuthDegrees = -45.0;
+    elevationDegrees = 25.0;
+    return true;
+  }
+  if (name == "front") {
+    azimuthDegrees = -90.0;
+    elevationDegrees = 0.0;
+    return true;
+  }
+  if (name == "side") {
+    azimuthDegrees = 0.0;
+    elevationDegrees = 0.0;
+    return true;
+  }
+  if (name == "top") {
+    // Just under 90 degrees to avoid the forward-parallel-up degeneracy that
+    // makeOrbitCameraBasis would otherwise have to patch.
+    azimuthDegrees = -90.0;
+    elevationDegrees = 89.0;
+    return true;
+  }
+  return false;
+}
+
+OrbitCamera applyOrbitCameraView(
+    OrbitCamera base, const OrbitCameraViewOptions& view)
+{
+  if (view.preset.has_value()) {
+    double azimuthDegrees = 0.0;
+    double elevationDegrees = 0.0;
+    if (orbitCameraViewPreset(*view.preset, azimuthDegrees, elevationDegrees)) {
+      base.yaw = degreesToRadians(azimuthDegrees);
+      base.pitch = degreesToRadians(elevationDegrees);
+    }
+  }
+  if (view.azimuthDegrees.has_value()) {
+    base.yaw = degreesToRadians(*view.azimuthDegrees);
+  }
+  if (view.elevationDegrees.has_value()) {
+    base.pitch = degreesToRadians(*view.elevationDegrees);
+  }
+  if (view.distance.has_value()) {
+    base.distance = *view.distance;
+  }
+  if (view.target.has_value()) {
+    base.target = *view.target;
+  }
+  return base;
+}
+
+BoundingSphere sceneBoundingSphere(
+    const std::vector<RenderableDescriptor>& descriptors)
+{
+  Eigen::Vector3d minCorner
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d maxCorner
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+  bool sawAny = false;
+
+  for (const RenderableDescriptor& descriptor : descriptors) {
+    if (!descriptor.material.visible) {
+      continue;
+    }
+    const Eigen::Vector3d halfExtent = localHalfExtent(descriptor.geometry);
+    const Eigen::Vector3d localCenter = localBoundsCenter(descriptor.geometry);
+    // Transform the 8 local AABB corners to world space and expand the union.
+    for (int sx = -1; sx <= 1; sx += 2) {
+      for (int sy = -1; sy <= 1; sy += 2) {
+        for (int sz = -1; sz <= 1; sz += 2) {
+          const Eigen::Vector3d localCorner = localCenter
+                                              + Eigen::Vector3d(
+                                                  sx * halfExtent.x(),
+                                                  sy * halfExtent.y(),
+                                                  sz * halfExtent.z());
+          const Eigen::Vector3d worldCorner
+              = descriptor.worldTransform * localCorner;
+          if (!worldCorner.allFinite()) {
+            continue;
+          }
+          minCorner = minCorner.cwiseMin(worldCorner);
+          maxCorner = maxCorner.cwiseMax(worldCorner);
+          sawAny = true;
+        }
+      }
+    }
+  }
+
+  BoundingSphere sphere;
+  if (!sawAny || !minCorner.allFinite() || !maxCorner.allFinite()) {
+    sphere.center = Eigen::Vector3d::Zero();
+    sphere.radius = 1.0;
+    return sphere;
+  }
+  sphere.center = 0.5 * (minCorner + maxCorner);
+  sphere.radius = 0.5 * (maxCorner - minCorner).norm();
+  if (!(sphere.radius > 0.0) || !std::isfinite(sphere.radius)) {
+    sphere.radius = 1.0;
+  }
+  return sphere;
+}
+
+OrbitCamera fitOrbitCamera(
+    const BoundingSphere& sphere,
+    double verticalFovDegrees,
+    double azimuthDegrees,
+    double elevationDegrees)
+{
+  OrbitCamera camera;
+  camera.target = sphere.center;
+  camera.up = Eigen::Vector3d::UnitZ();
+  camera.yaw = degreesToRadians(azimuthDegrees);
+  camera.pitch = degreesToRadians(elevationDegrees);
+
+  const double radius = std::isfinite(sphere.radius) && sphere.radius > 0.0
+                            ? sphere.radius
+                            : 1.0;
+  const double fovRadians = degreesToRadians(
+      std::isfinite(verticalFovDegrees) && verticalFovDegrees > 0.0
+              && verticalFovDegrees < 180.0
+          ? verticalFovDegrees
+          : ProjectionOptions{}.verticalFovDegrees);
+  const double sinHalf = std::sin(0.5 * fovRadians);
+  camera.distance = sinHalf > 1e-6 ? radius / sinHalf : radius;
+  return camera;
 }
 
 } // namespace dart::gui

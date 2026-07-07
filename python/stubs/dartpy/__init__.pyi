@@ -14,7 +14,6 @@ from . import io
 from . import math
 from . import optimizer
 from . import simulation
-from . import utils
 
 from .collision import (
     BodyNodeCollisionFilter,
@@ -307,6 +306,7 @@ from .simulation import (
     MemoryManagerDebugDiagnostics,
     ModelFormat,
     Multibody,
+    MultibodyIntegrationFamily,
     MultibodyOptions,
     ParallelExecutor,
     PhysicalParameter,
@@ -322,6 +322,7 @@ from .simulation import (
     StateVariable,
     StepDerivatives,
     StepGradient,
+    StepMetrics,
     World,
     WorldEcsDiagnostics,
     WorldEcsStorageDiagnostics,
@@ -332,6 +333,8 @@ from .simulation import (
     add_skeleton,
     build_multibody_from_skeleton,
     collect_deformable_scene_diagnostics,
+    dump_scene_json,
+    dump_scene_text,
     is_accelerated_deformable_solve_available,
     is_accelerated_deformable_solve_enabled,
     load_deformable_scene,
@@ -457,6 +460,7 @@ __all__: list[str] = [
     "ModelFormat",
     "Motor",
     "Multibody",
+    "MultibodyIntegrationFamily",
     "MultibodyOptions",
     "NullFunction",
     "Observer",
@@ -508,6 +512,7 @@ __all__: list[str] = [
     "StateVariable",
     "StepDerivatives",
     "StepGradient",
+    "StepMetrics",
     "Stopwatch",
     "Subject",
     "Support",
@@ -543,6 +548,8 @@ __all__: list[str] = [
     "debug",
     "deg2rad",
     "diff",
+    "dump_scene_json",
+    "dump_scene_text",
     "dynamics",
     "eps",
     "error",
@@ -620,7 +627,6 @@ __all__: list[str] = [
     "trim_left",
     "trim_right",
     "two_pi",
-    "utils",
     "verify_rotation",
     "verify_transform",
     "warn",

@@ -35,6 +35,7 @@
 #include "gui_scale.hpp"
 
 #include <dart/gui/renderable.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/simple_frame.hpp>
@@ -126,6 +127,79 @@ std::optional<std::string> inferPackageNameFromPackageUri(
   }
 
   return getLastPathSegment(packageUri);
+}
+
+bool parseFiniteDouble(const char* value, double& out)
+{
+  char* end = nullptr;
+  const double parsed = std::strtod(value, &end);
+  if (value == nullptr || end == value || *end != '\0'
+      || !std::isfinite(parsed)) {
+    return false;
+  }
+  out = parsed;
+  return true;
+}
+
+bool parseVector3(std::string_view text, Eigen::Vector3d& out)
+{
+  Eigen::Vector3d parsed = Eigen::Vector3d::Zero();
+  std::size_t start = 0u;
+  for (int component = 0; component < 3; ++component) {
+    const std::size_t comma = text.find(',', start);
+    const std::string_view field
+        = (component < 2) ? (comma == std::string_view::npos
+                                 ? std::string_view{}
+                                 : text.substr(start, comma - start))
+                          : text.substr(start);
+    if (field.empty() || (component < 2 && comma == std::string_view::npos)) {
+      return false;
+    }
+    if (!parseFiniteDouble(std::string(field).c_str(), parsed[component])) {
+      return false;
+    }
+    start = comma == std::string_view::npos ? text.size() : comma + 1u;
+  }
+  // Reject trailing content beyond the third component (e.g. "1,2,3,4").
+  if (text.find(',', start) != std::string_view::npos) {
+    return false;
+  }
+  out = parsed;
+  return true;
+}
+
+std::vector<std::string> splitCommaList(std::string_view text)
+{
+  std::vector<std::string> parts;
+  std::size_t start = 0u;
+  while (start <= text.size()) {
+    const std::size_t comma = text.find(',', start);
+    const std::string_view field = comma == std::string_view::npos
+                                       ? text.substr(start)
+                                       : text.substr(start, comma - start);
+    if (!field.empty()) {
+      parts.emplace_back(field);
+    }
+    if (comma == std::string_view::npos) {
+      break;
+    }
+    start = comma + 1u;
+  }
+  return parts;
+}
+
+void appendCameraView(CameraCliOptions& cameraCli, const std::string& name)
+{
+  double azimuthDegrees = 0.0;
+  double elevationDegrees = 0.0;
+  if (!dart::gui::orbitCameraViewPreset(
+          name, azimuthDegrees, elevationDegrees)) {
+    std::cerr << "Unknown --view '" << name
+              << "'. Expected 'three-quarter', 'front', 'side', or 'top'.\n";
+    std::exit(2);
+  }
+  cameraCli.views.push_back(name);
+  cameraCli.provided = true;
 }
 
 std::vector<dart::gui::RenderableDescriptor> makeDefaultSceneRenderables(
@@ -730,6 +804,67 @@ AppOptions parseOptions(
         && i + 1 < argc) {
       options.g1PackageName = argv[++i];
       g1PackageNameExplicit = true;
+    } else if (arg == "--camera-azimuth" && i + 1 < argc) {
+      double azimuthDegrees = 0.0;
+      if (!parseFiniteDouble(argv[++i], azimuthDegrees)) {
+        std::cerr << "Invalid --camera-azimuth value '" << argv[i]
+                  << "'. Expected a number of degrees.\n";
+        std::exit(2);
+      }
+      options.cameraCli.azimuthDegrees = azimuthDegrees;
+      options.cameraCli.provided = true;
+    } else if (arg == "--camera-elevation" && i + 1 < argc) {
+      double elevationDegrees = 0.0;
+      if (!parseFiniteDouble(argv[++i], elevationDegrees)) {
+        std::cerr << "Invalid --camera-elevation value '" << argv[i]
+                  << "'. Expected a number of degrees.\n";
+        std::exit(2);
+      }
+      options.cameraCli.elevationDegrees = elevationDegrees;
+      options.cameraCli.provided = true;
+    } else if (arg == "--camera-distance" && i + 1 < argc) {
+      double distance = 0.0;
+      if (!parseFiniteDouble(argv[++i], distance) || distance <= 0.0) {
+        std::cerr << "Invalid --camera-distance value '" << argv[i]
+                  << "'. Expected a positive number.\n";
+        std::exit(2);
+      }
+      options.cameraCli.distance = distance;
+      options.cameraCli.distanceExplicit = true;
+      options.cameraCli.provided = true;
+    } else if (arg == "--camera-target" && i + 1 < argc) {
+      Eigen::Vector3d target = Eigen::Vector3d::Zero();
+      if (!parseVector3(argv[++i], target)) {
+        std::cerr << "Invalid --camera-target value '" << argv[i]
+                  << "'. Expected three comma-separated numbers 'X,Y,Z'.\n";
+        std::exit(2);
+      }
+      options.cameraCli.target = target;
+      options.cameraCli.provided = true;
+    } else if (arg == "--view" && i + 1 < argc) {
+      appendCameraView(options.cameraCli, argv[++i]);
+    } else if (arg == "--views" && i + 1 < argc) {
+      const std::vector<std::string> names = splitCommaList(argv[++i]);
+      if (names.empty()) {
+        std::cerr << "Invalid --views value '" << argv[i]
+                  << "'. Expected a comma-separated list of view names.\n";
+        std::exit(2);
+      }
+      for (const std::string& name : names) {
+        appendCameraView(options.cameraCli, name);
+      }
+    } else if (arg == "--turntable" && i + 1 < argc) {
+      const int count = std::atoi(argv[++i]);
+      if (count < 1) {
+        std::cerr << "Invalid --turntable value '" << argv[i]
+                  << "'. Expected a positive integer.\n";
+        std::exit(2);
+      }
+      options.cameraCli.turntable = count;
+      options.cameraCli.provided = true;
+    } else if (arg == "--fit") {
+      options.cameraCli.fit = true;
+      options.cameraCli.provided = true;
     } else if (arg == "--help" || arg == "-h") {
       std::cout
           << "Usage: " << argv[0]
@@ -752,7 +887,34 @@ AppOptions parseOptions(
              "drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-"
              "ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
              " [--g1-package-uri URI] [--g1-robot-uri URI]"
-             " [--g1-package-name NAME]\n";
+             " [--g1-package-name NAME]"
+             " [--camera-azimuth DEG] [--camera-elevation DEG]"
+             " [--camera-distance D] [--camera-target X,Y,Z]"
+             " [--view three-quarter|front|side|top]"
+             " [--views V1,V2,...] [--turntable N] [--fit]\n"
+             "\n"
+             "Camera flags modify the per-scene default camera in place: only\n"
+             "the fields you pass are overridden. Azimuth and elevation are "
+             "in\n"
+             "degrees; azimuth maps to the orbit yaw and elevation to the "
+             "pitch\n"
+             "(cameraEye convention): azimuth 0 places the eye on the +X side "
+             "of\n"
+             "the target and positive azimuth rotates the eye toward +Y, "
+             "while\n"
+             "elevation is the angle above the XY plane (z-up). Example:\n"
+             "  --camera-azimuth -45 --camera-elevation 25   (a 3/4 view)\n"
+             "Presets: three-quarter=(-45,25), front=(-90,0), side=(0,0),\n"
+             "top=(-90,89). --view sets a preset (and auto-fits distance "
+             "unless\n"
+             "--camera-distance is given); --fit forces distance =\n"
+             "radius / sin(fovY/2) from the scene bounds. Two or more --views "
+             "(a\n"
+             "comma list or repeated --view) capture one screenshot per view,\n"
+             "naming them shot_<view>.ppm from the --screenshot base; "
+             "--turntable\n"
+             "N captures N frozen-sim frames orbiting 360 degrees as\n"
+             "shot_turnNNN.ppm.\n";
       std::exit(0);
     }
   }

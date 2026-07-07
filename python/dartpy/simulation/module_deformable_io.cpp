@@ -222,32 +222,6 @@ void defSimPartDeformableIo(nb::module_& m)
           "root_anchor_prefix",
           &sim::io::SkeletonLoadOptions::rootAnchorPrefix);
 
-  nb::enum_<dart::io::ModelFormat>(m, "ModelFormat")
-      .value("AUTO", dart::io::ModelFormat::Auto)
-      .value("SDF", dart::io::ModelFormat::Sdf)
-      .value("URDF", dart::io::ModelFormat::Urdf)
-      .value("MJCF", dart::io::ModelFormat::Mjcf);
-
-  nb::enum_<dart::io::RootJointType>(m, "RootJointType")
-      .value("FLOATING", dart::io::RootJointType::Floating)
-      .value("FIXED", dart::io::RootJointType::Fixed);
-
-  nb::class_<dart::io::ReadOptions>(m, "ReadOptions")
-      .def(nb::init<>())
-      .def_rw("format", &dart::io::ReadOptions::format)
-      .def_rw(
-          "sdf_default_root_joint_type",
-          &dart::io::ReadOptions::sdfDefaultRootJointType)
-      .def(
-          "add_package_directory",
-          [](dart::io::ReadOptions& self,
-             const std::string& packageName,
-             const std::string& packageDirectory) {
-            self.addPackageDirectory(packageName, packageDirectory);
-          },
-          nb::arg("package_name"),
-          nb::arg("package_directory"));
-
   nb::class_<sim::io::DeformableSceneLoadOptions>(
       m, "DeformableSceneLoadOptions")
       .def(nb::init<>())

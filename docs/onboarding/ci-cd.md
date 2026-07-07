@@ -47,7 +47,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
     and MSVC compatibility assumptions are updated together.
   - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; keep native-only collision toggles explicit unless the job also installs a reference-engine Pixi environment.
   - The Eigen over-alignment job forces `EIGEN_MAX_ALIGN_BYTES=64` and `EIGEN_MAX_STATIC_ALIGN_BYTES=64`; failures usually indicate allocator, placement-new, or storage code assuming a smaller Eigen alignment.
-  - Deprecated headers that emit `#warning` fail under `-Werror=cpp` (e.g., use `dart/utils/urdf/All.hpp` instead of deprecated `dart/utils/urdf/urdf.hpp`).
+  - Deprecated headers that emit `#warning` fail under `-Werror=cpp` (e.g., use `dart/io/urdf/All.hpp` instead of deprecated `dart/io/urdf/urdf.hpp`).
   - dartpy test failures can show up as a Python abort with minimal traceback when a C++ `DART_ASSERT` triggers; rerun the single test locally and inspect the C++ assert.
   - Reference collision raycast tests require the relevant reference target and dependency to be available; skip those checks or use the `collision-reference` environment when FCL/Bullet/ODE are intentionally disabled in a native-only build.
   - `gh pr status --json ...` can error with `Unknown JSON field: ...` if you request unsupported fields; use `gh pr status` (no JSON) or `gh pr view --json ...`.

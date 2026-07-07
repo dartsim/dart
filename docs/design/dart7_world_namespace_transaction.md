@@ -67,7 +67,7 @@ facade.
   `simulation::World` or `dart/simulation/world.hpp` currently finds 158 files:
   35 under `dart/`, 1 under `dartsim/`, 47 under `examples/`, 4 under
   `python/`, and 71 under `tests/`. The runtime/library subset includes
-  `dart/utils/**` parsers (URDF/SDF/MJCF), `dart/io/read.hpp`,
+  `dart/io/**` parsers (URDF/SDF/MJCF), `dart/io/read.hpp`,
   `dart/gui/**`, `dart/sensor/**`, and `dartsim/ui/src/editor.cpp`; examples,
   tests, and Python bindings are also part of the in-repo migration surface.
 

@@ -11,6 +11,7 @@ if(DART_BUILD_GUI)
     gizmo.hpp
     geometry.hpp
     interaction.hpp
+    offscreen.hpp
     panel.hpp
     profile.hpp
     renderable.hpp
@@ -23,6 +24,7 @@ if(DART_BUILD_GUI)
     geometry.cpp
     gizmo.cpp
     interaction.cpp
+    offscreen.cpp
     profile.cpp
     renderable.cpp
     shape_descriptions.cpp
@@ -82,6 +84,7 @@ set(
   gizmo.hpp
   geometry.hpp
   interaction.hpp
+  offscreen.hpp
   panel.hpp
   profile.hpp
   renderable.hpp
@@ -119,6 +122,7 @@ install(
     gizmo.hpp
     geometry.hpp
     interaction.hpp
+    offscreen.hpp
     panel.hpp
     profile.hpp
     renderable.hpp

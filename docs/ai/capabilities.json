@@ -93,7 +93,7 @@
       "gate_profile": "docs-ai"
     },
     {
-      "name": "dart-retrospect",
+      "name": "dart-retro",
       "category": "docs",
       "status": "active",
       "gate_profile": "docs-ai"
@@ -207,6 +207,12 @@
       "category": "test",
       "status": "active",
       "gate_profile": "command"
+    },
+    {
+      "name": "dart-verify-sim",
+      "category": "verification",
+      "status": "active",
+      "gate_profile": "reference"
     }
   ]
 }

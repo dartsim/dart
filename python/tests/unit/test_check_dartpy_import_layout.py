@@ -35,7 +35,7 @@ dart::python_nb::defSimulationModule(simulation);
         """
 _LEGACY_MODULES: tuple[str, ...] = ("common", "dynamics")
 _PROMOTE_MODULES: tuple[str, ...] = ("simulation",) + tuple(
-    name for name in _LEGACY_MODULES if name != "utils"
+    name for name in _LEGACY_MODULES
 )
 """,
     )
@@ -54,9 +54,25 @@ class WorldRenderBridge:
 ''',
     )
     _write(
+        root / "python" / "dartpy" / "io" / "module.cpp",
+        '''
+void defIoModule(nanobind::module_& m)
+{
+  defIoRead(m);
+}
+''',
+    )
+    _write(
+        root / "python" / "dartpy" / "io" / "urdf_parser.cpp",
+        '''
+nb::class_<UrdfParser>(m, "UrdfParser");
+''',
+    )
+    _write(
         root / "python" / "stubs" / "dartpy" / "__init__.pyi",
         '''
 from . import diff
+from . import io
 from . import simulation
 from .simulation import (
     World,
@@ -64,6 +80,7 @@ from .simulation import (
 __all__: list[str] = [
     "World",
     "diff",
+    "io",
     "simulation",
 ]
 ''',
@@ -72,7 +89,15 @@ __all__: list[str] = [
         root / "python" / "stubs" / "dartpy" / "simulation.pyi",
         '''
 from dartpy import diff as diff
+from dartpy.io import (
+    ModelFormat as ModelFormat,
+    ReadOptions as ReadOptions,
+    RootJointType as RootJointType,
+)
 __all__: list[str] = [
+    "ModelFormat",
+    "ReadOptions",
+    "RootJointType",
     "World",
 ]
 class World:
@@ -80,7 +105,7 @@ class World:
 ''',
     )
     _write(
-        root / "python" / "stubs" / "dartpy" / "utils" / "SdfParser.pyi",
+        root / "python" / "stubs" / "dartpy" / "io" / "SdfParser.pyi",
         '''
 __all__: list[str] = ["Options", "RootJointType", "readSkeleton", "read_skeleton"]
 def readSkeleton(*args, **kwargs): ...
@@ -88,7 +113,7 @@ read_skeleton = readSkeleton
 ''',
     )
     _write(
-        root / "python" / "stubs" / "dartpy" / "utils" / "MjcfParser.pyi",
+        root / "python" / "stubs" / "dartpy" / "io" / "MjcfParser.pyi",
         '''
 __all__: list[str] = ["Options"]
 class Options:
@@ -96,8 +121,16 @@ class Options:
 ''',
     )
     _write(
-        root / "python" / "stubs" / "dartpy" / "utils" / "__init__.pyi",
+        root / "python" / "stubs" / "dartpy" / "io" / "__init__.pyi",
         '''
+class ModelFormat:
+    pass
+class RootJointType:
+    pass
+class ReadOptions:
+    pass
+def readSkeleton(*args, **kwargs): ...
+read_skeleton = readSkeleton
 class UrdfParser:
     def parseSkeleton(*args, **kwargs): ...
     parse_skeleton = parseSkeleton
@@ -128,7 +161,9 @@ def test_static_check_rejects_second_simulation_experimental_module(tmp_path):
         encoding="utf-8",
     )
 
-    messages = [violation.message for violation in module.find_static_violations(tmp_path)]
+    messages = [
+        violation.message for violation in module.find_static_violations(tmp_path)
+    ]
 
     assert any("simulation_experimental must not be a second" in m for m in messages)
 
@@ -136,17 +171,71 @@ def test_static_check_rejects_second_simulation_experimental_module(tmp_path):
 def test_static_check_rejects_python_world_loader_stubs(tmp_path):
     module = _load_module()
     _write_minimal_layout(tmp_path)
-    sdf_stub = tmp_path / "python" / "stubs" / "dartpy" / "utils" / "SdfParser.pyi"
+    sdf_stub = tmp_path / "python" / "stubs" / "dartpy" / "io" / "SdfParser.pyi"
     sdf_stub.write_text(
         sdf_stub.read_text(encoding="utf-8")
         + "\ndef readWorld(*args, **kwargs): ...\nread_world = readWorld\n",
         encoding="utf-8",
     )
 
-    messages = [violation.message for violation in module.find_static_violations(tmp_path)]
+    messages = [
+        violation.message for violation in module.find_static_violations(tmp_path)
+    ]
 
     assert any("whole-world loader readWorld" in m for m in messages)
     assert any("whole-world loader read_world" in m for m in messages)
+
+
+def test_static_check_rejects_retired_urdf_loader_names(tmp_path):
+    module = _load_module()
+    _write_minimal_layout(tmp_path)
+    io_stub = tmp_path / "python" / "stubs" / "dartpy" / "io" / "__init__.pyi"
+    io_stub.write_text(
+        io_stub.read_text(encoding="utf-8")
+        + "\nclass DartLoader:\n    pass\n",
+        encoding="utf-8",
+    )
+    _write(
+        tmp_path / "python" / "dartpy" / "io" / "urdf_parser.cpp",
+        'nb::class_<UrdfParser>(m, "DartLoader");\n',
+    )
+
+    messages = [
+        violation.message for violation in module.find_static_violations(tmp_path)
+    ]
+
+    assert any("retired DART 6 URDF loader DartLoader" in m for m in messages)
+
+
+def test_static_check_rejects_missing_io_read_skeleton_binding(tmp_path):
+    module = _load_module()
+    _write_minimal_layout(tmp_path)
+    io_module = tmp_path / "python" / "dartpy" / "io" / "module.cpp"
+    io_module.write_text(
+        """
+void defIoModule(nanobind::module_& m)
+{
+  defUrdfParser(m);
+}
+""",
+        encoding="utf-8",
+    )
+    io_stub = tmp_path / "python" / "stubs" / "dartpy" / "io" / "__init__.pyi"
+    io_stub.write_text(
+        """
+class UrdfParser:
+    def parseSkeleton(*args, **kwargs): ...
+    parse_skeleton = parseSkeleton
+""",
+        encoding="utf-8",
+    )
+
+    messages = [
+        violation.message for violation in module.find_static_violations(tmp_path)
+    ]
+
+    assert any("unified readSkeleton binding" in m for m in messages)
+    assert any("unified read_skeleton API" in m for m in messages)
 
 
 def test_runtime_check_can_be_static_only_when_dartpy_is_missing(monkeypatch):
