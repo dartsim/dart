@@ -369,7 +369,7 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         encoding="utf-8"
     )
 
-    public_symbols = (
+    simulation_class_symbols = (
         "WorldSyncStage",
         "ClosureKinematicsPolicy",
         "ClosureDynamicsPolicy",
@@ -377,9 +377,6 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         "LoopClosureResidual",
         "LoopClosureResidualCoordinates",
         "SkeletonLoadOptions",
-        "ModelFormat",
-        "RootJointType",
-        "ReadOptions",
         "StateSpace",
         "StateVariable",
         "ComputeExecutor",
@@ -398,10 +395,21 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         "WorldEcsDiagnostics",
         "WorldMemoryDiagnostics",
     )
-    for symbol in public_symbols:
+    io_alias_symbols = (
+        "ModelFormat",
+        "RootJointType",
+        "ReadOptions",
+    )
+    for symbol in simulation_class_symbols + io_alias_symbols:
         assert hasattr(sx, symbol), symbol
         assert f'"{symbol}"' in stub
+
+    for symbol in simulation_class_symbols:
         assert f"class {symbol}" in stub
+
+    for symbol in io_alias_symbols:
+        assert getattr(sx, symbol) is getattr(dart.io, symbol)
+        assert f"{symbol} as {symbol}" in stub
 
     assert hasattr(sx, "add_skeleton")
     assert '"add_skeleton"' in stub

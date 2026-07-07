@@ -438,6 +438,8 @@ compatibility remains on the active DART 6 LTS branch._
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.
+- Restored main-branch Windows IO builds and dartpy simulation stub parity checks
+  while preserving canonical `dartpy.simulation` aliases for IO loader types.
 - Added a lint/check-lint guard that keeps SDF IO on libsdformat typed DOM APIs
   and rejects TinyXML, raw XML tree, or SDF element text-parsing helpers in
   `dart/io/sdf`: [#3291](https://github.com/dartsim/dart/pull/3291)

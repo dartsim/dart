@@ -67,104 +67,6 @@
 namespace dart {
 namespace io {
 
-using ModelInterfacePtr = std::shared_ptr<urdf::ModelInterface>;
-
-//==============================================================================
-UrdfParser::Options::Options(
-    common::ResourceRetrieverPtr resourceRetriever,
-    RootJointType defaultRootJointType,
-    const dynamics::Inertia& defaultInertia)
-  : mResourceRetriever(std::move(resourceRetriever)),
-    mDefaultRootJointType(defaultRootJointType),
-    mDefaultInertia(defaultInertia)
-{
-  // Do nothing
-}
-
-//==============================================================================
-UrdfParser::UrdfParser(const Options& options)
-  : mOptions(options),
-    mLocalRetriever(new common::LocalResourceRetriever),
-    mPackageRetriever(new io::PackageResourceRetriever(mLocalRetriever)),
-    mRetriever(new io::CompositeResourceRetriever)
-{
-  mRetriever->addSchemaRetriever("file", mLocalRetriever);
-  mRetriever->addSchemaRetriever("package", mPackageRetriever);
-  mRetriever->addSchemaRetriever("dart", DartResourceRetriever::create());
-}
-
-//==============================================================================
-void UrdfParser::setOptions(const Options& options)
-{
-  mOptions = options;
-}
-
-//==============================================================================
-const UrdfParser::Options& UrdfParser::getOptions() const
-{
-  return mOptions;
-}
-
-//==============================================================================
-void UrdfParser::addPackageDirectory(
-    std::string_view packageName, std::string_view packageDirectory)
-{
-  mPackageRetriever->addPackageDirectory(packageName, packageDirectory);
-}
-
-//==============================================================================
-dynamics::SkeletonPtr UrdfParser::parseSkeleton(const common::Uri& uri)
-{
-  const common::ResourceRetrieverPtr resourceRetriever
-      = getResourceRetriever(mOptions.mResourceRetriever);
-
-  std::string content;
-  if (!readFileToString(resourceRetriever, uri, content)) {
-    return nullptr;
-  }
-
-  // Use urdfdom to load the URDF file.
-  const ModelInterfacePtr urdfInterface = urdf::parseURDF(content);
-  if (!urdfInterface) {
-    DART_WARN("Failed loading URDF file '{}'.", uri.toString());
-    return nullptr;
-  }
-
-  ParseContext context;
-  context.mTransmissions = parseTransmissions(content);
-
-  return modelInterfaceToSkeleton(
-      urdfInterface.get(), uri, resourceRetriever, mOptions, &context);
-}
-
-//==============================================================================
-dynamics::SkeletonPtr UrdfParser::parseSkeletonString(
-    std::string_view urdfString, const common::Uri& baseUri)
-{
-  if (urdfString.empty()) {
-    DART_WARN(
-        "A blank string cannot be parsed into a Skeleton. Returning a nullptr");
-    return nullptr;
-  }
-
-  const std::string urdfStringCopy(urdfString);
-  ModelInterfacePtr urdfInterface = urdf::parseURDF(urdfStringCopy);
-  if (!urdfInterface) {
-    DART_WARN("Failed loading URDF.");
-    return nullptr;
-  }
-
-  ParseContext context;
-  context.mTransmissions = parseTransmissions(urdfStringCopy);
-
-  return modelInterfaceToSkeleton(
-      urdfInterface.get(),
-      baseUri,
-      getResourceRetriever(mOptions.mResourceRetriever),
-      mOptions,
-      &context);
-}
-
 dynamics::SkeletonPtr UrdfParser::modelInterfaceToSkeleton(
     const urdf::ModelInterface* model,
     const common::Uri& baseUri,
@@ -245,18 +147,20 @@ bool UrdfParser::createSkeletonRecursive(
       "[UrdfParser] Link name 'world' is reserved for the inertial frame. "
       "Consider changing the name to something else.");
 
-  dynamics::BodyNode::Properties properties;
-  if (!createDartNodeProperties(
-          lk, properties, baseUri, resourceRetriever, options)) {
+  BodyNodeProperties properties;
+  if (!createDartNodeProperties(lk, properties, options)) {
     return false;
   }
 
   dynamics::BodyNode* node = createDartJointAndNode(
-      lk->parent_joint.get(), properties, parentNode, skel, options);
+      lk->parent_joint.get(), parentNode, skel, options);
 
   if (!node) {
     return false;
   }
+
+  node->setName(properties.mName);
+  node->setInertia(properties.mInertia);
 
   const auto result
       = createShapeNodes(model, lk, node, baseUri, resourceRetriever);
@@ -531,11 +435,11 @@ bool UrdfParser::readFileToString(
 }
 
 dynamics::BodyNode* createDartJointAndNodeForRoot(
-    const dynamics::BodyNode::Properties& _body,
     dynamics::BodyNode* _parent,
     dynamics::SkeletonPtr _skeleton,
     const UrdfParser::Options& options)
 {
+  const auto& bodyProperties = dynamics::detail::getDefaultBodyNodeProperties();
   dynamics::Joint::Properties basicProperties("rootJoint");
 
   dynamics::GenericJoint<math::R1Space>::UniqueProperties singleDof;
@@ -545,12 +449,12 @@ dynamics::BodyNode* createDartJointAndNodeForRoot(
       dynamics::GenericJoint<math::SE3Space>::Properties properties(
           basicProperties);
       pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
-          _parent, properties, _body);
+          _parent, properties, bodyProperties);
       break;
     }
     case UrdfParser::RootJointType::Fixed: {
       pair = _skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
-          _parent, basicProperties, _body);
+          _parent, basicProperties, bodyProperties);
       break;
     }
     default: {
@@ -560,7 +464,7 @@ dynamics::BodyNode* createDartJointAndNodeForRoot(
       dynamics::GenericJoint<math::SE3Space>::Properties properties(
           basicProperties);
       pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
-          _parent, properties, _body);
+          _parent, properties, bodyProperties);
     }
   }
 
@@ -572,7 +476,6 @@ dynamics::BodyNode* createDartJointAndNodeForRoot(
  */
 dynamics::BodyNode* UrdfParser::createDartJointAndNode(
     const urdf::Joint* _jt,
-    const dynamics::BodyNode::Properties& _body,
     dynamics::BodyNode* _parent,
     dynamics::SkeletonPtr _skeleton,
     const Options& options)
@@ -581,9 +484,10 @@ dynamics::BodyNode* UrdfParser::createDartJointAndNode(
   // We don't have sufficient information what the joint type should be for the
   // root link. So we create the root joint by the specified flgas.
   if (!_jt) {
-    return createDartJointAndNodeForRoot(_body, _parent, _skeleton, options);
+    return createDartJointAndNodeForRoot(_parent, _skeleton, options);
   }
 
+  const auto& bodyProperties = dynamics::detail::getDefaultBodyNodeProperties();
   dynamics::Joint::Properties basicProperties;
 
   basicProperties.mName = _jt->name;
@@ -642,7 +546,7 @@ dynamics::BodyNode* UrdfParser::createDartJointAndNode(
           toEigen(_jt->axis));
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
-          _parent, properties, _body);
+          _parent, properties, bodyProperties);
 
       break;
     }
@@ -653,7 +557,7 @@ dynamics::BodyNode* UrdfParser::createDartJointAndNode(
           toEigen(_jt->axis));
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
-          _parent, properties, _body);
+          _parent, properties, bodyProperties);
 
       break;
     }
@@ -664,13 +568,13 @@ dynamics::BodyNode* UrdfParser::createDartJointAndNode(
           toEigen(_jt->axis));
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
-          _parent, properties, _body);
+          _parent, properties, bodyProperties);
 
       break;
     }
     case urdf::Joint::FIXED: {
       pair = _skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
-          _parent, basicProperties, _body);
+          _parent, basicProperties, bodyProperties);
       break;
     }
     case urdf::Joint::FLOATING: {
@@ -709,7 +613,7 @@ dynamics::BodyNode* UrdfParser::createDartJointAndNode(
       }
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
-          _parent, properties, _body);
+          _parent, properties, bodyProperties);
       break;
     }
     case urdf::Joint::PLANAR: {
@@ -769,7 +673,7 @@ dynamics::BodyNode* UrdfParser::createDartJointAndNode(
       }
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::PlanarJoint>(
-          _parent, properties, _body);
+          _parent, properties, bodyProperties);
       break;
     }
     default: {
@@ -785,11 +689,7 @@ dynamics::BodyNode* UrdfParser::createDartJointAndNode(
  * @function createDartNode
  */
 bool UrdfParser::createDartNodeProperties(
-    const urdf::Link* _lk,
-    dynamics::BodyNode::Properties& node,
-    const common::Uri& /*_baseUri*/,
-    const common::ResourceRetrieverPtr& /*_resourceRetriever*/,
-    const Options& options)
+    const urdf::Link* _lk, BodyNodeProperties& node, const Options& options)
 {
   node.mName = _lk->name;
 

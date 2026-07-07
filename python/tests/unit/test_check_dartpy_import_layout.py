@@ -89,7 +89,15 @@ __all__: list[str] = [
         root / "python" / "stubs" / "dartpy" / "simulation.pyi",
         '''
 from dartpy import diff as diff
+from dartpy.io import (
+    ModelFormat as ModelFormat,
+    ReadOptions as ReadOptions,
+    RootJointType as RootJointType,
+)
 __all__: list[str] = [
+    "ModelFormat",
+    "ReadOptions",
+    "RootJointType",
     "World",
 ]
 class World:
