@@ -33,6 +33,7 @@
 #include "dart/collision/collision.hpp"
 #include "dart/collision/dart/DARTCollide.hpp"
 #include "dart/collision/fcl/fcl.hpp"
+#include "dart/collision/native/NativeCollisionDetector.hpp"
 #include "dart/common/common.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/dynamics.hpp"
@@ -3743,6 +3744,8 @@ TEST_F(Collision, Factory)
 {
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("fcl"));
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("dart"));
+  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate(
+      collision::NativeCollisionDetector::getStaticType()));
 
 #if HAVE_BULLET
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("bullet"));
