@@ -1849,8 +1849,8 @@ int collideSoftMeshEllipsoid(
 struct SoftPointFaceContact
 {
   bool found = false;
-  Eigen::Vector3d point = Eigen::Vector3d::Zero();
-  Eigen::Vector3d normalFromPointBodyToFaceBody = Eigen::Vector3d::Zero();
+  Eigen::Vector3d point;
+  Eigen::Vector3d normalFromPointBodyToFaceBody;
   double penetrationDepth = 0.0;
   double absSeparation = std::numeric_limits<double>::infinity();
   int pointFaceIndex = -1;
@@ -1868,13 +1868,14 @@ bool projectPointInsideCachedTriangle(
     return false;
 
   const double aabbExpansion = std::abs(signedDistance) + DART_COLLISION_EPS;
-  const Eigen::Vector3d min
-      = face.boundsMin - Eigen::Vector3d::Constant(aabbExpansion);
-  const Eigen::Vector3d max
-      = face.boundsMax + Eigen::Vector3d::Constant(aabbExpansion);
-  if ((point.array() < min.array()).any()
-      || (point.array() > max.array()).any())
+  if (point[0] < face.boundsMin[0] - aabbExpansion
+      || point[0] > face.boundsMax[0] + aabbExpansion
+      || point[1] < face.boundsMin[1] - aabbExpansion
+      || point[1] > face.boundsMax[1] + aabbExpansion
+      || point[2] < face.boundsMin[2] - aabbExpansion
+      || point[2] > face.boundsMax[2] + aabbExpansion) {
     return false;
+  }
 
   const Eigen::Vector3d projectedPoint = point - signedDistance * face.normal;
   const Eigen::Vector3d projectedEdge = projectedPoint - face.a;
@@ -2000,11 +2001,13 @@ bool findSoftPointFaceContact(
 
   const Eigen::Vector3d& pointLocal = pointVertices[pointMassIndex];
   const Eigen::Vector3d pointInFace = pointToFace * pointLocal;
-  const Eigen::Vector3d boundsPadding
-      = Eigen::Vector3d::Constant(kSoftContactShell + DART_COLLISION_EPS);
-  if ((pointInFace.array() < (faceBoundsMin - boundsPadding).array()).any()
-      || (pointInFace.array() > (faceBoundsMax + boundsPadding).array())
-             .any()) {
+  constexpr double boundsPadding = kSoftContactShell + DART_COLLISION_EPS;
+  if (pointInFace[0] < faceBoundsMin[0] - boundsPadding
+      || pointInFace[0] > faceBoundsMax[0] + boundsPadding
+      || pointInFace[1] < faceBoundsMin[1] - boundsPadding
+      || pointInFace[1] > faceBoundsMax[1] + boundsPadding
+      || pointInFace[2] < faceBoundsMin[2] - boundsPadding
+      || pointInFace[2] > faceBoundsMax[2] + boundsPadding) {
     return false;
   }
 
