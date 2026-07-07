@@ -384,6 +384,11 @@ template <typename... Data>
 using MakeCompositeProperties
     = ComposeData<CompositeProperties, GetProperties, Data...>;
 
+#if DART_OS_WINDOWS
+extern template class ComposeData<CompositeState, GetState>;
+extern template class ComposeData<CompositeProperties, GetProperties>;
+#endif
+
 } // namespace detail
 } // namespace common
 } // namespace dart
