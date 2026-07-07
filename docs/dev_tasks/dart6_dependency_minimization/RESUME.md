@@ -56,14 +56,14 @@ scope-diff-guarded.
   (`dart/collision/native/narrow_phase/narrow_phase.{hpp,cpp}` now on
   `release-6.20`).
 
-**Next: P3a — adapter skeleton + `"native"` factory registration**, per
-plan §1.1/§1.2/§1.6 and the P3a row in §3, once P1 (#3303) is merged
-(P3a's adapter must compile against both the P1 broadphase and the P2
-dispatcher). Then P3b (bridge translation + `sphere_box` + parity),
-P4–P9 (pair coverage), then phases 3–7. **Do not** add a
-`CollisionDetectorType::Native` enum or touch
-`World`/`ConstraintSolver`/`WorldConfig` — selection is the factory
-pointer only (`getFactory()->create("native")`).
+**Next: P3a — adapter skeleton + sphere/box shape conversion, intentionally
+unregistered**, per plan §1.1/§1.2/§1.6 and the P3a row in §3, once P1 (#3303)
+is merged (P3a's adapter must compile against both the P1 broadphase and the P2
+dispatcher). Then P3b (bridge translation + `"native"` factory registration +
+`sphere_box` + parity), P4–P9 (pair coverage), then phases 3–7. **Do not** add a
+`CollisionDetectorType::Native` enum or touch `World`/`ConstraintSolver`/
+`WorldConfig` — selection is the factory pointer only
+(`getFactory()->create("native")`) after P3b.
 
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
 PRs, worktrees, gotchas, exact P3a starting steps).

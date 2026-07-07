@@ -59,8 +59,8 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 | --- | --- | --- |
 | **P1** | BroadPhase base + BruteForce (pure engine) | **#3303 OPEN** — all gates green; user merging |
 | **P2** | Narrowphase dispatcher, sphere/box only (bespoke §2.1 trim) | ✅ **merged (#3306)** |
-| **P3a** | Adapter skeleton + `NativeShapeConversion`(sphere,box) + `"native"` factory registration; `collide()` is a documented **stub** | ⬅ **NEXT** (needs P1 merged) |
-| **P3b** | Bridge `collide()` translation + `sphere_box` collider + normal calibration (R1) + parity vs **fcl and dart** | after P3a |
+| **P3a** | Adapter skeleton + `NativeShapeConversion`(sphere,box), intentionally **unregistered**; `collide()` is a documented **stub** | ⬅ **NEXT** (needs P1 merged) |
+| **P3b** | Bridge `collide()` translation + `"native"` factory registration + `sphere_box` collider + normal calibration (R1) + parity vs **fcl and dart** | after P3a |
 | **P4** | `capsule_sphere`, `capsule_box` (no-span primitives) | after P3b |
 | **P5** | `convex_convex` (keystone) + `capsule_capsule` (first span pair) | after P4 |
 | **P6** | `cylinder_collision` (needs convex_convex) | after P5 |
@@ -78,16 +78,15 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 2. Implement per `07` **§1.1** (files + the intentional two-namespace layout in
    `dart/collision/native/`: snake_case = engine, PascalCase = adapter),
    **§1.2** (the plain-C++17 store on `NativeCollisionGroup`), **§1.6**
-   (`NativeCollisionDetector` + `Registrar` `"native"` registration; **no**
+   (the detector class, with factory registration delayed until P3b; **no**
    `CollisionDetectorType::Native` enum), and the **P3a row in §3**. P3a's
-   `collide()` is a documented stub returning `false`; the real translation is
-   P3b.
-3. Proof gates specific to P3a: `EXPECT_TRUE(getFactory()->canCreate("native"))`
-   in `tests/integration/test_Collision.cpp` (proves the static `Registrar`
-   links — risk R12); a SKEL guard test (unknown/default `<collision_detector>`
-   still warns → falls back to fcl, unchanged). PR body must call out the
-   two-namespace directory (reviewers will not expect the `dart/collision/dart/`
-   structure).
+   `collide()` is a documented stub returning `false`; the real translation
+   and public `"native"` factory key land together in P3b.
+3. Proof gates specific to P3a:
+   `EXPECT_FALSE(getFactory()->canCreate("native"))`; unknown/default
+   `<collision_detector>` strings still warn → fall back to fcl, unchanged.
+   PR body must call out the two-namespace directory (reviewers will not expect
+   the `dart/collision/dart/` structure).
 4. Gates for **every** phase-2 PR (see `07` §3 — note the corrected commands):
    Release build + **explicit Debug build** (`pixi run build` is Release-only);
    **run** the tests with `ctest --test-dir build/default/cpp/Release -R
