@@ -99,7 +99,13 @@ import numpy
 from numpy.typing import NDArray
 
 import dartpy.dynamics
+import dartpy.io
 from dartpy import diff as diff
+from dartpy.io import (
+    ModelFormat as ModelFormat,
+    ReadOptions as ReadOptions,
+    RootJointType as RootJointType,
+)
 
 
 class JointType(enum.Enum):
@@ -2058,37 +2064,6 @@ class SkeletonLoadOptions:
 
     @root_anchor_prefix.setter
     def root_anchor_prefix(self, arg: str, /) -> None: ...
-
-class ModelFormat(enum.Enum):
-    AUTO = 0
-
-    SDF = 1
-
-    URDF = 2
-
-    MJCF = 3
-
-class RootJointType(enum.Enum):
-    FLOATING = 0
-
-    FIXED = 1
-
-class ReadOptions:
-    def __init__(self) -> None: ...
-
-    @property
-    def format(self) -> ModelFormat: ...
-
-    @format.setter
-    def format(self, arg: ModelFormat, /) -> None: ...
-
-    @property
-    def sdf_default_root_joint_type(self) -> RootJointType: ...
-
-    @sdf_default_root_joint_type.setter
-    def sdf_default_root_joint_type(self, arg: RootJointType, /) -> None: ...
-
-    def add_package_directory(self, package_name: str, package_directory: str) -> None: ...
 
 class DeformableSceneLoadOptions:
     def __init__(self) -> None: ...

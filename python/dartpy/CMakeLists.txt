@@ -113,6 +113,7 @@ set(
   common/subject.hpp
   common/uri.hpp
   io/module.hpp
+  io/read.hpp
   io/urdf_parser.hpp
   io/resource_retriever.hpp
   io/sdf_parser.hpp
@@ -189,6 +190,7 @@ set(
   common/subject.cpp
   common/uri.cpp
   io/module.cpp
+  io/read.cpp
   io/urdf_parser.cpp
   io/resource_retriever.cpp
   io/sdf_parser.cpp

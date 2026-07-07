@@ -395,12 +395,39 @@ def find_static_violations(root: Path = REPO_ROOT) -> list[Violation]:
             Violation(_rel(simulation_stub, root), "__all__ must include World")
         )
 
+    io_module_cpp = root / "python" / "dartpy" / "io" / "module.cpp"
+    io_module_cpp_text = _read(io_module_cpp, root, violations)
+    _require_contains(
+        violations,
+        io_module_cpp,
+        root,
+        io_module_cpp_text,
+        "defIoRead(m)",
+        "dartpy.io must register the unified readSkeleton binding",
+    )
+
+    io_stub = stubs_root / "io" / "__init__.pyi"
+    io_stub_text = _read(io_stub, root, violations)
+    for name in (
+        "class ModelFormat",
+        "class RootJointType",
+        "class ReadOptions",
+        "def readSkeleton",
+        "read_skeleton = readSkeleton",
+    ):
+        _require_contains(
+            violations,
+            io_stub,
+            root,
+            io_stub_text,
+            name,
+            "dartpy.io stubs must expose the unified read_skeleton API",
+        )
+
     removed_world_loader_stubs = {
         stubs_root / "io" / "SdfParser.pyi": ("readWorld", "read_world"),
         stubs_root / "io" / "MjcfParser.pyi": ("readWorld", "read_world"),
-        stubs_root
-        / "io"
-        / "__init__.pyi": (
+        io_stub: (
             "parseWorld",
             "parse_world",
             "parseWorldString",
@@ -428,7 +455,7 @@ def find_static_violations(root: Path = REPO_ROOT) -> list[Violation]:
             "DartLoader",
             "DartLoaderTestAccess",
         ),
-        stubs_root / "io" / "__init__.pyi": ("DartLoader", "DartLoaderTestAccess"),
+        io_stub: ("DartLoader", "DartLoaderTestAccess"),
     }
     for source_path, names in removed_urdf_loader_sources.items():
         source_text = _read(source_path, root, violations)
@@ -500,6 +527,12 @@ def find_runtime_violations(require_runtime: bool = False) -> list[Violation]:
         )
     io = getattr(dartpy, "io", None)
     if io is not None:
+        for name in ("ModelFormat", "RootJointType", "ReadOptions", "read_skeleton"):
+            if not hasattr(io, name):
+                violations.append(
+                    Violation("runtime", f"dartpy.io.{name} must be exposed")
+                )
+
         for name in ("DartLoader", "DartLoaderTestAccess"):
             if hasattr(io, name):
                 violations.append(

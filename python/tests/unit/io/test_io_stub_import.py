@@ -98,10 +98,15 @@ def test_io_stub_all_preserves_parser_exports():
 
     for name in (
         "MjcfParser",
+        "ModelFormat",
+        "ReadOptions",
+        "RootJointType",
         "SdfParser",
         "UrdfParser",
         "UrdfParserOptions",
         "UrdfParserRootJointType",
+        "readSkeleton",
+        "read_skeleton",
     ):
         assert name in public_names
 

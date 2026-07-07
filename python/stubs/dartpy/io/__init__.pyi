@@ -3,12 +3,17 @@ from __future__ import annotations
 __all__: list[str] = [
     "CompositeResourceRetriever",
     "DartResourceRetriever",
+    "ModelFormat",
     "MjcfParser",
     "PackageResourceRetriever",
+    "ReadOptions",
+    "RootJointType",
     "SdfParser",
     "UrdfParser",
     "UrdfParserOptions",
     "UrdfParserRootJointType",
+    "readSkeleton",
+    "read_skeleton",
 ]
 
 
@@ -22,6 +27,59 @@ from . import (
 import dartpy.common
 import dartpy.dynamics
 
+
+class ModelFormat(enum.Enum):
+    AUTO = 0
+
+    SDF = 1
+
+    URDF = 2
+
+    MJCF = 3
+
+    USD = 4
+
+class RootJointType(enum.Enum):
+    FLOATING = 0
+
+    FIXED = 1
+
+class ReadOptions:
+    def __init__(self) -> None: ...
+
+    @property
+    def format(self) -> ModelFormat: ...
+
+    @format.setter
+    def format(self, arg: ModelFormat, /) -> None: ...
+
+    @property
+    def resourceRetriever(self) -> dartpy.common.ResourceRetriever: ...
+
+    @resourceRetriever.setter
+    def resourceRetriever(self, arg: dartpy.common.ResourceRetriever, /) -> None: ...
+
+    @property
+    def resource_retriever(self) -> dartpy.common.ResourceRetriever: ...
+
+    @resource_retriever.setter
+    def resource_retriever(self, arg: dartpy.common.ResourceRetriever, /) -> None: ...
+
+    @property
+    def sdfDefaultRootJointType(self) -> RootJointType: ...
+
+    @sdfDefaultRootJointType.setter
+    def sdfDefaultRootJointType(self, arg: RootJointType, /) -> None: ...
+
+    @property
+    def sdf_default_root_joint_type(self) -> RootJointType: ...
+
+    @sdf_default_root_joint_type.setter
+    def sdf_default_root_joint_type(self, arg: RootJointType, /) -> None: ...
+
+    def addPackageDirectory(self, package_name: str, package_directory: str) -> None: ...
+
+    add_package_directory = addPackageDirectory
 
 class CompositeResourceRetriever(dartpy.common.ResourceRetriever):
     def __init__(self) -> None: ...
@@ -118,3 +176,7 @@ class UrdfParser:
     parse_skeleton_string = parseSkeletonString
 
     set_options = setOptions
+
+def readSkeleton(uri: dartpy.common.Uri | str, options: ReadOptions = ...) -> dartpy.dynamics.Skeleton | None: ...
+
+read_skeleton = readSkeleton

@@ -54,6 +54,15 @@ class WorldRenderBridge:
 ''',
     )
     _write(
+        root / "python" / "dartpy" / "io" / "module.cpp",
+        '''
+void defIoModule(nanobind::module_& m)
+{
+  defIoRead(m);
+}
+''',
+    )
+    _write(
         root / "python" / "dartpy" / "io" / "urdf_parser.cpp",
         '''
 nb::class_<UrdfParser>(m, "UrdfParser");
@@ -106,6 +115,14 @@ class Options:
     _write(
         root / "python" / "stubs" / "dartpy" / "io" / "__init__.pyi",
         '''
+class ModelFormat:
+    pass
+class RootJointType:
+    pass
+class ReadOptions:
+    pass
+def readSkeleton(*args, **kwargs): ...
+read_skeleton = readSkeleton
 class UrdfParser:
     def parseSkeleton(*args, **kwargs): ...
     parse_skeleton = parseSkeleton
@@ -180,6 +197,37 @@ def test_static_check_rejects_retired_urdf_loader_names(tmp_path):
     ]
 
     assert any("retired DART 6 URDF loader DartLoader" in m for m in messages)
+
+
+def test_static_check_rejects_missing_io_read_skeleton_binding(tmp_path):
+    module = _load_module()
+    _write_minimal_layout(tmp_path)
+    io_module = tmp_path / "python" / "dartpy" / "io" / "module.cpp"
+    io_module.write_text(
+        """
+void defIoModule(nanobind::module_& m)
+{
+  defUrdfParser(m);
+}
+""",
+        encoding="utf-8",
+    )
+    io_stub = tmp_path / "python" / "stubs" / "dartpy" / "io" / "__init__.pyi"
+    io_stub.write_text(
+        """
+class UrdfParser:
+    def parseSkeleton(*args, **kwargs): ...
+    parse_skeleton = parseSkeleton
+""",
+        encoding="utf-8",
+    )
+
+    messages = [
+        violation.message for violation in module.find_static_violations(tmp_path)
+    ]
+
+    assert any("unified readSkeleton binding" in m for m in messages)
+    assert any("unified read_skeleton API" in m for m in messages)
 
 
 def test_runtime_check_can_be_static_only_when_dartpy_is_missing(monkeypatch):
