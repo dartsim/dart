@@ -1355,12 +1355,11 @@ void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
     mFext_F.tail<3>() += (*it)->mFext;
   }
 
-  int nGenCoords = mParentJoint->getNumDofs();
+  const std::size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0) {
-    Eigen::VectorXd Fext
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
+    _Fext.segment(iStart, nGenCoords).noalias()
         = mParentJoint->getRelativeJacobian().transpose() * mFext_F;
-    int iStart = mParentJoint->getIndexInTree(0);
-    _Fext.segment(iStart, nGenCoords) = Fext;
   }
 }
 

@@ -21,10 +21,13 @@ Latest state:
   trees return inverse mass and inverse augmented mass matrices consistent with
   those public matrices, and point-mass gravity contributes to
   `Skeleton::getGravityForces()` and
-  `Skeleton::getCoriolisAndGravityForces()` at rest. The test compares the
-  observed deltas against analytical point-mass Jacobian and gravity-wrench
-  projections and verifies both left and right inverse-matrix identity
-  products before and after a point-mass mass change.
+  `Skeleton::getCoriolisAndGravityForces()` at rest. Point-mass external
+  forces are projected through the parent soft body into
+  `Skeleton::getExternalForces()` and cleared by
+  `Skeleton::clearExternalForces()`. The test compares the observed deltas
+  against analytical point-mass Jacobian and gravity-wrench projections and
+  verifies both left and right inverse-matrix identity products before and
+  after a point-mass mass change.
 - `04-data-layout-and-memory-hardening.md` records the soft-body data-layout
   risk, adds the `soft_body_headless` profile/checksum runner, and records that
   this branch now stacks on `origin/dart6-memory-hardening` for

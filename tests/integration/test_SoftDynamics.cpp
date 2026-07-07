@@ -267,6 +267,39 @@ Eigen::VectorXd projectPointMassGravity(
   return -(softBody->getJacobian().transpose() * pointMassGravityWrench);
 }
 
+Eigen::VectorXd projectPointMassExternalForces(
+    const dynamics::SkeletonPtr& skeleton,
+    const dynamics::SoftBodyNode* softBody,
+    const std::vector<Eigen::Vector3d>& localForces)
+{
+  DART_ASSERT(skeleton != nullptr);
+  DART_ASSERT(softBody != nullptr);
+  DART_ASSERT(localForces.size() == softBody->getNumPointMasses());
+
+  Eigen::Vector6d pointMassExternalWrench = Eigen::Vector6d::Zero();
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    const dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    DART_ASSERT(pointMass != nullptr);
+
+    pointMassExternalWrench.head<3>().noalias()
+        += pointMass->getLocalPosition().cross(localForces[i]);
+    pointMassExternalWrench.tail<3>().noalias() += localForces[i];
+  }
+
+  const Eigen::VectorXd localProjection
+      = softBody->getJacobian().transpose() * pointMassExternalWrench;
+  const std::vector<std::size_t>& indices
+      = softBody->getDependentGenCoordIndices();
+  DART_ASSERT(
+      localProjection.size() == static_cast<Eigen::Index>(indices.size()));
+
+  Eigen::VectorXd projection = Eigen::VectorXd::Zero(skeleton->getNumDofs());
+  for (std::size_t i = 0; i < indices.size(); ++i)
+    projection[indices[i]] = localProjection[static_cast<Eigen::Index>(i)];
+
+  return projection;
+}
+
 Eigen::MatrixXd projectPointMassMassMatrix(
     const dynamics::SkeletonPtr& skeleton,
     const dynamics::SoftBodyNode* softBody)
@@ -912,4 +945,29 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
       identity,
       1.0e-10,
       "soft point-mass half augmented inverse right identity");
+
+  std::vector<Eigen::Vector3d> localExternalForces;
+  localExternalForces.reserve(softBody->getNumPointMasses());
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    ASSERT_TRUE(pointMass != nullptr);
+
+    const double scale = static_cast<double>(i + 1u);
+    const Eigen::Vector3d localForce(0.01 * scale, -0.02 * scale, 0.03 * scale);
+    pointMass->addExtForce(localForce, true);
+    localExternalForces.push_back(localForce);
+  }
+
+  expectVectorNear(
+      skeleton->getExternalForces(),
+      projectPointMassExternalForces(skeleton, softBody, localExternalForces),
+      1.0e-10,
+      "soft point-mass external force projection");
+
+  skeleton->clearExternalForces();
+  expectVectorNear(
+      skeleton->getExternalForces(),
+      Eigen::VectorXd::Zero(skeleton->getNumDofs()),
+      1.0e-12,
+      "soft point-mass external force clear");
 }
