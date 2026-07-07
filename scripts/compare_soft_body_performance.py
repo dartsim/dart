@@ -10,6 +10,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -108,6 +109,44 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--correctness-scenes", default="soft_cubes,soft_bodies")
     parser.add_argument("--correctness-steps", default="200")
     parser.add_argument("--correctness-tolerance", type=float, default=0.05)
+    parser.add_argument(
+        "--wait-for-local-dart-builds",
+        action="store_true",
+        help=(
+            "Before each benchmark run, wait until local DART build/test "
+            "workloads from sibling worktrees are idle."
+        ),
+    )
+    parser.add_argument(
+        "--idle-timeout",
+        type=float,
+        default=1800.0,
+        help="Maximum seconds to wait for local build idleness.",
+    )
+    parser.add_argument(
+        "--idle-poll-interval",
+        type=float,
+        default=5.0,
+        help="Seconds between local build idleness checks.",
+    )
+    parser.add_argument(
+        "--idle-cooldown",
+        type=float,
+        default=0.0,
+        help=(
+            "Seconds to wait after local DART workloads become idle before "
+            "starting each benchmark run."
+        ),
+    )
+    parser.add_argument(
+        "--idle-max-load-1m",
+        type=float,
+        default=None,
+        help=(
+            "Optional maximum 1-minute system load average allowed before "
+            "starting each benchmark run."
+        ),
+    )
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
         "--keep-going",
@@ -150,6 +189,108 @@ def git(root: Path, *args: str) -> str:
 
 def repo_root() -> Path:
     return Path(git(Path.cwd(), "rev-parse", "--show-toplevel"))
+
+
+def local_dart_workspace_root(root: Path) -> Path:
+    for path in (root, *root.parents):
+        if path.name == "dart":
+            return path
+    return root
+
+
+def count_local_dart_workloads(root: Path) -> int:
+    workspace = str(local_dart_workspace_root(root))
+    build_tools = {"cc1plus", "clang-format", "cmake", "ninja"}
+    python_tools = {"python", "python3", "python3.14", "pytest"}
+    try:
+        result = subprocess.run(
+            ["ps", "-eo", "comm=,args="],
+            cwd=root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    except OSError:
+        return 0
+
+    if result.returncode != 0:
+        return 0
+
+    count = 0
+    for line in result.stdout.splitlines():
+        columns = line.split(maxsplit=1)
+        if not columns:
+            continue
+
+        command = Path(columns[0]).name
+        arguments = columns[1] if len(columns) > 1 else ""
+        if workspace not in arguments:
+            continue
+
+        if command in build_tools:
+            count += 1
+        elif command in python_tools and (
+            "cmake_build.py" in arguments or "pytest" in arguments
+        ):
+            count += 1
+    return count
+
+
+def wait_for_local_dart_idleness(
+    root: Path,
+    timeout: float,
+    poll_interval: float,
+    cooldown: float,
+    max_load_1m: float | None,
+) -> None:
+    deadline = time.monotonic() + timeout
+    last_count: int | None = None
+    cooldown_complete = cooldown <= 0.0
+
+    while True:
+        count = count_local_dart_workloads(root)
+        if count != 0:
+            cooldown_complete = cooldown <= 0.0
+
+        if count == 0:
+            if max_load_1m is not None:
+                load_1m = os.getloadavg()[0]
+                if load_1m > max_load_1m:
+                    print(
+                        "waiting for 1-minute load average to drop below "
+                        f"{max_load_1m:g}: {load_1m:.2f}",
+                        file=sys.stderr,
+                    )
+                    time.sleep(max(0.1, poll_interval))
+                    continue
+
+            if not cooldown_complete:
+                print(
+                    f"cooling down for {cooldown:g}s before benchmark timing",
+                    file=sys.stderr,
+                )
+                time.sleep(max(0.0, cooldown))
+                cooldown_complete = True
+                continue
+
+            if last_count:
+                print("local DART workloads are idle", file=sys.stderr)
+            return
+
+        if count != last_count:
+            print(
+                f"waiting for local DART workloads to become idle: {count}",
+                file=sys.stderr,
+            )
+            last_count = count
+
+        if time.monotonic() >= deadline:
+            raise TimeoutError(
+                "timed out waiting for local DART workloads to become idle"
+            )
+
+        time.sleep(max(0.1, poll_interval))
 
 
 def parse_csv(value: str) -> list[str]:
@@ -780,6 +921,14 @@ def main(argv: list[str]) -> int:
             current_headless_binary = headless_binary
         revision_rows: dict[tuple[str, str, int], BenchmarkRow] = {}
         for detector in detectors:
+            if args.wait_for_local_dart_builds:
+                wait_for_local_dart_idleness(
+                    root,
+                    args.idle_timeout,
+                    args.idle_poll_interval,
+                    args.idle_cooldown,
+                    args.idle_max_load_1m,
+                )
             json_path, error = run_detector(
                 revision=revision,
                 binary=binary,
