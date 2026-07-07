@@ -130,7 +130,8 @@ least as fast as FCL in apples-to-apples rows. The remaining DART 6.20
 deformable-body gates are:
 
 - re-enable or replace the disabled soft-body equations-of-motion comparison
-  after matrix and vector aggregation paths are complete;
+  after matrix and vector aggregation paths are complete; the current
+  point-mass gravity sub-gate is not full equation parity;
 - broaden the current one-thread versus multi-thread final-state check with
   energy, contact-force, CoP, historical-golden, or other invariant checks that
   catch divergent soft-body state;

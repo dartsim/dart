@@ -216,6 +216,41 @@ void expectSnapshotsNear(
   }
 }
 
+void expectVectorNear(
+    const Eigen::VectorXd& lhs,
+    const Eigen::VectorXd& rhs,
+    double tolerance,
+    const std::string& context)
+{
+  ASSERT_EQ(lhs.size(), rhs.size()) << context;
+  for (Eigen::Index i = 0; i < lhs.size(); ++i)
+    EXPECT_NEAR(lhs[i], rhs[i], tolerance) << context << " index=" << i;
+}
+
+Eigen::VectorXd projectPointMassGravity(
+    const dynamics::SoftBodyNode* softBody, const Eigen::Vector3d& gravity)
+{
+  DART_ASSERT(softBody != nullptr);
+  Eigen::Vector6d pointMassGravityWrench = Eigen::Vector6d::Zero();
+
+  if (softBody->getGravityMode()) {
+    const Eigen::Vector3d localGravity
+        = softBody->getWorldTransform().linear().transpose() * gravity;
+
+    for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+      const dynamics::PointMass* pointMass = softBody->getPointMass(i);
+      DART_ASSERT(pointMass != nullptr);
+
+      const Eigen::Vector3d pointForce = pointMass->getMass() * localGravity;
+      pointMassGravityWrench.head<3>().noalias()
+          += pointMass->getLocalPosition().cross(pointForce);
+      pointMassGravityWrench.tail<3>().noalias() += pointForce;
+    }
+  }
+
+  return -(softBody->getJacobian().transpose() * pointMassGravityWrench);
+}
+
 void expectFiniteSoftBodyState(
     const dynamics::SoftBodyNode* softBody, const std::string& context)
 {
@@ -702,4 +737,43 @@ TEST_F(SoftDynamicsTest, finiteStateForRepresentativeSoftScenes)
         finalSnapshots[1],
         scene.uri + " threads=1-vs-4 final state");
   }
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForces)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+
+  const dynamics::SkeletonPtr skeleton = world->getSkeleton("skeleton 1");
+  ASSERT_TRUE(skeleton != nullptr);
+  ASSERT_EQ(skeleton->getNumSoftBodyNodes(), 1u);
+
+  dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(0);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_TRUE(softBody->getGravityMode());
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+  const Eigen::VectorXd expectedPointMassGravity
+      = projectPointMassGravity(softBody, world->getGravity());
+  ASSERT_GT(expectedPointMassGravity.norm(), 1.0e-9);
+
+  const Eigen::VectorXd withOriginalPointMasses = skeleton->getGravityForces();
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    ASSERT_TRUE(pointMass != nullptr);
+    pointMass->setMass(0.5 * pointMass->getMass());
+  }
+
+  const Eigen::VectorXd withHalfPointMasses = skeleton->getGravityForces();
+  const Eigen::VectorXd actualPointMassDelta
+      = withOriginalPointMasses - withHalfPointMasses;
+
+  expectVectorNear(
+      actualPointMassDelta,
+      0.5 * expectedPointMassGravity,
+      1.0e-10,
+      "soft point-mass gravity projection");
 }
