@@ -27,7 +27,7 @@ scenes, plus the gz gate.
 
 #### WP-PG.20 — Contact-history span tracking (kill per-pair full copies)
 
-- Status: done — PR pending (`wp-pg-20-ode-history-spans`)
+- Status: done — #3329 (`wp-pg-20-ode-history-spans`)
 - Objective: replace the per-pair full copy of `result.getContacts()` with
   per-pair index spans recorded as contacts are appended.
 - Value: removes the dominant O(pairs × total-contacts) copy cost on

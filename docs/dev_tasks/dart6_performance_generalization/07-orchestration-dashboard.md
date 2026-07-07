@@ -17,7 +17,7 @@ with the first real SIMD-kernel PR.
 | Lane | Owner doc | Packets | Status |
 | --- | --- | --- | --- |
 | WS-A constraint/LCP | 02-constraint-lcp-lane.md | PG.10–PG.15 | open (PG.13 evidence-gated; PG.14 blocked D3; PG.15 blocked D7) |
-| WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | open (PG.20 PR pending; PG.21 re-scope after PG.20; PG.23 blocked D8; lane re-review at WS-F phase 5) |
+| WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | open (PG.20 #3329; PG.21 re-scope after PG.20; PG.23 blocked D8; lane re-review at WS-F phase 5) |
 | WS-C dynamics batching | 04-dynamics-batching-lane.md | PG.30–PG.33 | open (PG.33 gated) |
 | WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | active (PG.40 folded into PG.42; PG.41 waits for PG.10 seam evidence) |
 | WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 done; PG.02/PG.03 next; PG.04 blocked D4) |
@@ -37,7 +37,7 @@ with the first real SIMD-kernel PR.
 | WP-PG.13 row islanding | WS-A | evidence-gated (PG.10 census) | — | — |
 | WP-PG.14 matrix-free path | WS-A | blocked (D3) | — | — |
 | WP-PG.15 creep vs rest-veto | WS-A | blocked (D7) | — | — |
-| WP-PG.20 history spans | WS-B | done — PR pending | `wp-pg-20-ode-history-spans` | Gate A hashes bit-identical; Gate C ODE rows improved (`S3_ode` 194.2→17.6 ms/step, GB 120/1/1 16.5→6.18 s, 120/1/16 6.84→6.02 s); Gate D base/WP 30/30 clean |
+| WP-PG.20 history spans | WS-B | done — #3329 | `wp-pg-20-ode-history-spans` / #3329 | Gate A hashes bit-identical; Gate C ODE rows improved (`S3_ode` 194.2→17.6 ms/step, GB 120/1/1 16.5→6.18 s, 120/1/16 6.84→6.02 s); Gate D base/WP 30/30 clean |
 | WP-PG.21 history map/pruning | WS-B | open | — | — |
 | WP-PG.22 version-gated pose push | WS-B | open | — | — |
 | WP-PG.23 ODE manifold reduction | WS-B | blocked (D8) | — | — |
