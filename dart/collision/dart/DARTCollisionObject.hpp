@@ -145,6 +145,8 @@ private:
 
   void refreshSoftMeshCache();
 
+  void refreshSoftFaceCacheIfNeeded();
+
   void refreshSoftFaceBvhCache();
 
   void refreshSoftFaceBvhBounds();
@@ -167,6 +169,8 @@ private:
   std::vector<CachedSoftFace> mCachedSoftFaces;
   std::vector<CachedSoftFaceBvhNode> mCachedSoftFaceBvhNodes;
   std::vector<int> mCachedSoftFaceBvhIndices;
+  bool mCachedSoftFacesDirty{false};
+  bool mCachedSoftFaceTopologyDirty{false};
 };
 
 } // namespace collision

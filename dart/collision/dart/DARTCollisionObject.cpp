@@ -169,6 +169,7 @@ const std::vector<int>& DARTCollisionObject::getCachedSoftFirstFaceByPointMass()
 const std::vector<DARTCollisionObject::CachedSoftFace>&
 DARTCollisionObject::getCachedSoftFaces() const
 {
+  const_cast<DARTCollisionObject*>(this)->refreshSoftFaceCacheIfNeeded();
   return mCachedSoftFaces;
 }
 
@@ -176,12 +177,14 @@ DARTCollisionObject::getCachedSoftFaces() const
 const std::vector<DARTCollisionObject::CachedSoftFaceBvhNode>&
 DARTCollisionObject::getCachedSoftFaceBvhNodes() const
 {
+  const_cast<DARTCollisionObject*>(this)->refreshSoftFaceCacheIfNeeded();
   return mCachedSoftFaceBvhNodes;
 }
 
 //==============================================================================
 const std::vector<int>& DARTCollisionObject::getCachedSoftFaceBvhIndices() const
 {
+  const_cast<DARTCollisionObject*>(this)->refreshSoftFaceCacheIfNeeded();
   return mCachedSoftFaceBvhIndices;
 }
 
@@ -268,6 +271,8 @@ void DARTCollisionObject::refreshShapeCache()
   mCachedSoftFaceBvhNodes.clear();
   mCachedSoftFaceBvhIndices.clear();
   mCachedSoftBodyNodeVersion = std::numeric_limits<std::size_t>::max();
+  mCachedSoftFacesDirty = false;
+  mCachedSoftFaceTopologyDirty = false;
 }
 
 //==============================================================================
@@ -289,6 +294,8 @@ void DARTCollisionObject::refreshSoftMeshCache()
     mCachedSoftFaceBvhNodes.clear();
     mCachedSoftFaceBvhIndices.clear();
     mCachedSoftBodyNodeVersion = std::numeric_limits<std::size_t>::max();
+    mCachedSoftFacesDirty = false;
+    mCachedSoftFaceTopologyDirty = false;
     return;
   }
 
@@ -344,18 +351,53 @@ void DARTCollisionObject::refreshSoftMeshCache()
   if (softTopologyChanged) {
     mCachedSoftFirstFaceByPointMass.assign(numPointMasses, -1);
     mCachedSoftFaces.resize(numFaces);
-  }
 
-  bool softFaceValidityChanged = false;
-  for (std::size_t faceIndex = 0u; faceIndex < numFaces; ++faceIndex) {
-    auto& cachedFace = mCachedSoftFaces[faceIndex];
-    const bool wasValid = cachedFace.valid;
-    if (softTopologyChanged) {
+    for (std::size_t faceIndex = 0u; faceIndex < numFaces; ++faceIndex) {
+      auto& cachedFace = mCachedSoftFaces[faceIndex];
       cachedFace = CachedSoftFace{};
       cachedFace.indices = softBodyNode->getFace(faceIndex);
-    } else {
-      cachedFace.valid = false;
+
+      if ((cachedFace.indices.array() < 0).any())
+        continue;
+
+      const auto index0 = static_cast<std::size_t>(cachedFace.indices[0]);
+      const auto index1 = static_cast<std::size_t>(cachedFace.indices[1]);
+      const auto index2 = static_cast<std::size_t>(cachedFace.indices[2]);
+      if (index0 >= numPointMasses || index1 >= numPointMasses
+          || index2 >= numPointMasses) {
+        continue;
+      }
+
+      if (mCachedSoftFirstFaceByPointMass[index0] < 0)
+        mCachedSoftFirstFaceByPointMass[index0] = static_cast<int>(faceIndex);
+      if (mCachedSoftFirstFaceByPointMass[index1] < 0)
+        mCachedSoftFirstFaceByPointMass[index1] = static_cast<int>(faceIndex);
+      if (mCachedSoftFirstFaceByPointMass[index2] < 0)
+        mCachedSoftFirstFaceByPointMass[index2] = static_cast<int>(faceIndex);
     }
+  }
+
+  if (softGeometryChanged || softTopologyChanged) {
+    mCachedSoftFacesDirty = true;
+    mCachedSoftFaceTopologyDirty
+        = mCachedSoftFaceTopologyDirty || softTopologyChanged;
+  }
+
+  mCachedSoftBodyNodeVersion = softBodyNodeVersion;
+}
+
+//==============================================================================
+void DARTCollisionObject::refreshSoftFaceCacheIfNeeded()
+{
+  if (!mCachedSoftFacesDirty)
+    return;
+
+  bool softFaceValidityChanged = false;
+  for (std::size_t faceIndex = 0u; faceIndex < mCachedSoftFaces.size();
+       ++faceIndex) {
+    auto& cachedFace = mCachedSoftFaces[faceIndex];
+    const bool wasValid = cachedFace.valid;
+    cachedFace.valid = false;
 
     if ((cachedFace.indices.array() < 0).any()) {
       softFaceValidityChanged = softFaceValidityChanged || wasValid;
@@ -365,19 +407,11 @@ void DARTCollisionObject::refreshSoftMeshCache()
     const auto index0 = static_cast<std::size_t>(cachedFace.indices[0]);
     const auto index1 = static_cast<std::size_t>(cachedFace.indices[1]);
     const auto index2 = static_cast<std::size_t>(cachedFace.indices[2]);
-    if (index0 >= numPointMasses || index1 >= numPointMasses
-        || index2 >= numPointMasses) {
+    if (index0 >= mCachedSoftLocalVertices.size()
+        || index1 >= mCachedSoftLocalVertices.size()
+        || index2 >= mCachedSoftLocalVertices.size()) {
       softFaceValidityChanged = softFaceValidityChanged || wasValid;
       continue;
-    }
-
-    if (softTopologyChanged) {
-      if (mCachedSoftFirstFaceByPointMass[index0] < 0)
-        mCachedSoftFirstFaceByPointMass[index0] = static_cast<int>(faceIndex);
-      if (mCachedSoftFirstFaceByPointMass[index1] < 0)
-        mCachedSoftFirstFaceByPointMass[index1] = static_cast<int>(faceIndex);
-      if (mCachedSoftFirstFaceByPointMass[index2] < 0)
-        mCachedSoftFirstFaceByPointMass[index2] = static_cast<int>(faceIndex);
     }
 
     cachedFace.a = mCachedSoftLocalVertices[index0];
@@ -412,14 +446,15 @@ void DARTCollisionObject::refreshSoftMeshCache()
     softFaceValidityChanged = softFaceValidityChanged || !wasValid;
   }
 
-  if (softTopologyChanged || softFaceValidityChanged
+  if (mCachedSoftFaceTopologyDirty || softFaceValidityChanged
       || mCachedSoftFaceBvhNodes.empty()) {
     refreshSoftFaceBvhCache();
   } else {
     refreshSoftFaceBvhBounds();
   }
 
-  mCachedSoftBodyNodeVersion = softBodyNodeVersion;
+  mCachedSoftFacesDirty = false;
+  mCachedSoftFaceTopologyDirty = false;
 }
 
 //==============================================================================
