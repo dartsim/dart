@@ -45,7 +45,7 @@ is set.
 
   ```bash
   pixi run capture                                   # sleeping, 640x480 -> capture.png
-  pixi run capture example=ssik_ik_gui out=arm.png
+  pixi run capture ssik_ik_gui arm.png
   ```
 
 - Or capture from dartpy (release-6.20 offscreen bindings):
