@@ -131,8 +131,8 @@ deformable-body gates are:
 
 - re-enable or replace the disabled soft-body equations-of-motion comparison
   after matrix and vector aggregation paths are complete; the current
-  point-mass mass-matrix, gravity, and combined-vector sub-gate is not full
-  equation parity;
+  point-mass mass-matrix, augmented-mass, gravity, and combined-vector sub-gate
+  is not full equation parity;
 - broaden the current one-thread versus multi-thread final-state check with
   energy, contact-force, CoP, historical-golden, or other invariant checks that
   catch divergent soft-body state;

@@ -1094,11 +1094,12 @@ void PointMass::aggregateMassMatrix(MatrixXd& /*_MCol*/, int /*_col*/)
 void PointMass::aggregateAugMassMatrix(
     Eigen::MatrixXd& /*_MCol*/, int /*_col*/, double /*_timeStep*/)
 {
-  // TODO(JS): Not implemented
+  mM_F.noalias() = getMass() * mM_dV;
+  DART_ASSERT(!math::isNan(mM_F));
+
   //  // Assign
   //  // We assume that the three generalized coordinates are in a row.
   //  int iStart = mIndexInSkeleton[0];
-  //  mM_F.noalias() = mMass * mM_dV;
 
   //  double d = mParentSoftBodyNode->getDampingCoefficient();
   //  double kv = mParentSoftBodyNode->getVertexSpringStiffness();
