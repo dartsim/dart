@@ -30,11 +30,23 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/osg/PerformanceStatsPanel.hpp>
 #include <dart/gui/osg/osg.hpp>
 
 #include <dart/utils/utils.hpp>
 
+#include <dart/collision/CollisionDetector.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
+
 #include <dart/dart.hpp>
+
+#if HAVE_BULLET
+  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#endif
+#if HAVE_ODE
+  #include <dart/collision/ode/OdeCollisionDetector.hpp>
+#endif
 
 #include <osg/GraphicsContext>
 #include <osg/Viewport>
@@ -84,6 +96,85 @@ const SoftBodyScene* findSoftBodyScene(const std::string& name)
   }
 
   return nullptr;
+}
+
+void keepOptionalCollisionBackendsLinked()
+{
+  const auto* dartType
+      = &dart::collision::DARTCollisionDetector::getStaticType();
+  const auto* fclType = &dart::collision::FCLCollisionDetector::getStaticType();
+  (void)dartType;
+  (void)fclType;
+
+#if HAVE_BULLET
+  const auto* bulletType
+      = &dart::collision::BulletCollisionDetector::getStaticType();
+  (void)bulletType;
+#endif
+#if HAVE_ODE
+  const auto* odeType = &dart::collision::OdeCollisionDetector::getStaticType();
+  (void)odeType;
+#endif
+}
+
+std::vector<std::string> getAvailableCollisionDetectors()
+{
+  keepOptionalCollisionBackendsLinked();
+
+  std::vector<std::string> names;
+  const auto keys = dart::collision::CollisionDetector::getFactory()->getKeys();
+  names.reserve(keys.size());
+  for (const auto& key : keys)
+    names.push_back(key);
+
+  std::sort(names.begin(), names.end());
+  return names;
+}
+
+std::string getWorldCollisionDetectorName(
+    const dart::simulation::WorldPtr& world)
+{
+  if (!world || !world->getConstraintSolver())
+    return "none";
+
+  const auto detector = world->getConstraintSolver()->getCollisionDetector();
+  return detector ? detector->getType() : "none";
+}
+
+bool applyCollisionDetector(
+    const dart::simulation::WorldPtr& world,
+    const std::string& detectorName,
+    std::ostream& error)
+{
+  if (!world || detectorName.empty())
+    return true;
+
+  auto detector
+      = dart::collision::CollisionDetector::getFactory()->create(detectorName);
+  if (!detector) {
+    error << "Failed to create collision detector '" << detectorName << "'. "
+          << "Available detectors:";
+    for (const auto& name : getAvailableCollisionDetectors())
+      error << " " << name;
+    error << "\n";
+    return false;
+  }
+
+  world->getConstraintSolver()->setCollisionDetector(detector);
+  return true;
+}
+
+std::size_t parseThreadCount(const char* value, std::size_t fallback)
+{
+  if (value == nullptr || value[0] == '\0')
+    return fallback;
+
+  char* end = nullptr;
+  const auto parsed = std::strtoull(value, &end, 10);
+  if (end == value)
+    return fallback;
+
+  return static_cast<std::size_t>(parsed);
 }
 
 struct SoftBodyDisplayOptions
@@ -418,6 +509,8 @@ struct Options
   int width = 640;
   int height = 480;
   bool showWidget = true;
+  std::string collisionDetectorName;
+  std::size_t simulationThreads = 1u;
   SoftBodyDisplayOptions display;
 };
 
@@ -436,6 +529,11 @@ void printUsage(const char* executable)
                "(default 640).\n"
             << "  --height H       Headless capture height before --gui-scale "
                "(default 480).\n"
+            << "  --collision-detector NAME\n"
+            << "                  Collision backend to use: fcl, dart, bullet, "
+               "or ode when available.\n"
+            << "  --threads N      Simulation threads (0 selects hardware "
+               "concurrency, default 1).\n"
             << "  --soft-alpha A   Soft mesh alpha in [0, 1] (default 0.5).\n"
             << "  --hide-embedded  Hide embedded rigid visualization shapes.\n"
             << "  --hide-widget    Hide the ImGui control and stats panel.\n";
@@ -444,6 +542,10 @@ void printUsage(const char* executable)
 Options parseOptions(int argc, char* argv[])
 {
   Options options;
+  if (const char* detectorEnv = std::getenv("COLLISION_DETECTOR"))
+    options.collisionDetectorName = detectorEnv;
+  if (const char* threadsEnv = std::getenv("THREADS"))
+    options.simulationThreads = parseThreadCount(threadsEnv, 1u);
 
   std::vector<char*> forwarded;
   forwarded.push_back(argv[0]);
@@ -460,6 +562,11 @@ Options parseOptions(int argc, char* argv[])
       options.width = std::atoi(argv[++i]);
     } else if (std::strcmp(argv[i], "--height") == 0 && i + 1 < argc) {
       options.height = std::atoi(argv[++i]);
+    } else if (
+        std::strcmp(argv[i], "--collision-detector") == 0 && i + 1 < argc) {
+      options.collisionDetectorName = argv[++i];
+    } else if (std::strcmp(argv[i], "--threads") == 0 && i + 1 < argc) {
+      options.simulationThreads = parseThreadCount(argv[++i], 1u);
     } else if (std::strcmp(argv[i], "--soft-alpha") == 0 && i + 1 < argc) {
       options.display.softMeshAlpha
           = static_cast<float>(std::clamp(std::atof(argv[++i]), 0.0, 1.0));
@@ -541,8 +648,11 @@ public:
       mWorld(std::move(world)),
       mSceneStats(collectSoftBodySceneStats(mWorld)),
       mSceneLabel(std::move(sceneLabel)),
-      mDisplay(display)
+      mDisplay(display),
+      mDetectorNames(getAvailableCollisionDetectors()),
+      mDetectorIndex(0)
   {
+    syncDetectorIndex();
   }
 
   void render() override
@@ -550,9 +660,15 @@ public:
     const float guiScale
         = static_cast<float>(mViewer->getImGuiHandler()->getGuiScale());
     const float margin = 12.0f * guiScale;
+    const ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+    const float width
+        = std::min(420.0f * guiScale, std::max(320.0f, displaySize.x * 0.42f));
+    const float height = std::min(
+        560.0f * guiScale, std::max(330.0f, displaySize.y - 2.0f * margin));
     ImGui::SetNextWindowPos(ImVec2(margin, margin), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(
-        ImVec2(350.0f * guiScale, 315.0f * guiScale), ImGuiCond_Once);
+    ImGui::SetNextWindowSizeConstraints(
+        ImVec2(320.0f, 330.0f), ImVec2(width, height));
+    ImGui::SetNextWindowSize(ImVec2(width, height), ImGuiCond_Once);
     ImGui::SetNextWindowBgAlpha(0.92f);
     if (!ImGui::Begin(
             "Soft Bodies",
@@ -567,6 +683,8 @@ public:
     if (ImGui::Checkbox("Run simulation", &simulating))
       mViewer->simulate(simulating);
 
+    renderSimulationControls();
+
     ImGui::TextUnformatted("Soft mesh alpha");
     ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
     changed |= ImGui::SliderFloat(
@@ -576,6 +694,7 @@ public:
 
     if (ImGui::Button("Reset simulation")) {
       mNode->resetSimulation();
+      mStatsPanel.reset();
       styleSoftBodyVisuals(mWorld, *mDisplay);
       refreshDisplay();
     }
@@ -584,42 +703,28 @@ public:
       applySoftBodiesCameraPose(*mViewer);
 
     ImGui::Separator();
-    const std::size_t contacts
-        = mWorld->getLastCollisionResult().getNumContacts();
-    const double smoothedStepMs = mNode->getSmoothedStepMs();
-    const double simStepsPerSecond
-        = smoothedStepMs > 0.0 ? 1000.0 / smoothedStepMs : 0.0;
-    const double physicsRealTimeFactor
-        = simStepsPerSecond * mWorld->getTimeStep();
-    ImGui::Text(
-        "Frame %d   Time %.3f s", mWorld->getSimFrames(), mWorld->getTime());
-    ImGui::Text("Scene %s", mSceneLabel.c_str());
-    ImGui::Text(
-        "Render %.0f FPS   target RTF %.2f",
-        ImGui::GetIO().Framerate,
-        mNode->getTargetRealTimeFactor());
-    ImGui::Text(
-        "Physics %.3f ms avg   %.3f ms last",
-        smoothedStepMs,
-        mNode->getLastStepMs());
-    ImGui::Text(
-        "Physics %.1f steps/s   RTF %.2f",
-        simStepsPerSecond,
-        physicsRealTimeFactor);
-    ImGui::Text("Samples %zu", mNode->getMeasuredSteps());
-    ImGui::Text(
-        "Step range %.3f - %.3f ms",
-        mNode->getMinStepMs(),
-        mNode->getMaxStepMs());
-    ImGui::Text(
-        "Soft bodies %zu   points %zu",
-        mSceneStats.softBodies,
-        mSceneStats.pointMasses);
-    ImGui::Text(
-        "Skeletons %zu   body nodes %zu",
-        mSceneStats.skeletons,
-        mSceneStats.bodyNodes);
-    ImGui::Text("Contacts %zu", contacts);
+    dart::gui::osg::PerformanceStatsData data;
+    data.frame = mWorld->getSimFrames();
+    data.simTime = mWorld->getTime();
+    data.sceneName = mSceneLabel;
+    data.collisionDetectorName = getWorldCollisionDetectorName(mWorld);
+    data.simulationThreads = mWorld->getNumSimulationThreads();
+    data.renderFps = ImGui::GetIO().Framerate;
+    data.targetRealTimeFactor = mNode->getTargetRealTimeFactor();
+    data.timeStep = mWorld->getTimeStep();
+    data.lastStepMs = mNode->getLastStepMs();
+    data.movingAverageStepMs = mNode->getSmoothedStepMs();
+    data.minStepMs = mNode->getMinStepMs();
+    data.maxStepMs = mNode->getMaxStepMs();
+    data.measuredSteps = mNode->getMeasuredSteps();
+    data.contacts = mWorld->getLastCollisionResult().getNumContacts();
+    data.softBodies = mSceneStats.softBodies;
+    data.pointMasses = mSceneStats.pointMasses;
+    data.skeletons = mSceneStats.skeletons;
+    data.bodyNodes = mSceneStats.bodyNodes;
+    dart::gui::osg::PerformanceStatsPanelOptions statsOptions;
+    statsOptions.graphHeight = 54.0f * guiScale;
+    mStatsPanel.render(data, statsOptions);
 
     if (changed) {
       styleSoftBodyVisuals(mWorld, *mDisplay);
@@ -630,6 +735,77 @@ public:
   }
 
 private:
+  void renderSimulationControls()
+  {
+    syncDetectorIndex();
+    if (!mDetectorNames.empty()) {
+      const char* preview = mDetectorNames[mDetectorIndex].c_str();
+      ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+      if (ImGui::BeginCombo("Collision detector", preview)) {
+        for (std::size_t i = 0; i < mDetectorNames.size(); ++i) {
+          const bool selected = i == mDetectorIndex;
+          if (ImGui::Selectable(mDetectorNames[i].c_str(), selected)) {
+            mDetectorIndex = i;
+            applySelectedDetector();
+          }
+          if (selected)
+            ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+      }
+    }
+
+    int threads = static_cast<int>(mWorld->getNumSimulationThreads());
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+    if (ImGui::InputInt("Simulation threads", &threads)) {
+      threads = std::max(0, threads);
+      applyThreadCount(static_cast<std::size_t>(threads));
+    }
+  }
+
+  void syncDetectorIndex()
+  {
+    const std::string current = getWorldCollisionDetectorName(mWorld);
+    const auto found
+        = std::find(mDetectorNames.begin(), mDetectorNames.end(), current);
+    if (found != mDetectorNames.end()) {
+      mDetectorIndex = static_cast<std::size_t>(
+          std::distance(mDetectorNames.begin(), found));
+      return;
+    }
+
+    if (!current.empty() && current != "none") {
+      mDetectorNames.push_back(current);
+      std::sort(mDetectorNames.begin(), mDetectorNames.end());
+      syncDetectorIndex();
+    }
+  }
+
+  void applySelectedDetector()
+  {
+    if (mDetectorIndex >= mDetectorNames.size())
+      return;
+
+    const bool wasSimulating = mViewer->isSimulating();
+    mViewer->simulate(false);
+    if (!applyCollisionDetector(
+            mWorld, mDetectorNames[mDetectorIndex], std::cerr))
+      syncDetectorIndex();
+    mStatsPanel.reset();
+    refreshDisplay();
+    mViewer->simulate(wasSimulating);
+  }
+
+  void applyThreadCount(std::size_t threads)
+  {
+    const bool wasSimulating = mViewer->isSimulating();
+    mViewer->simulate(false);
+    mWorld->setNumSimulationThreads(threads);
+    mStatsPanel.reset();
+    refreshDisplay();
+    mViewer->simulate(wasSimulating);
+  }
+
   void refreshDisplay()
   {
     if (!mNode)
@@ -647,6 +823,9 @@ private:
   SoftBodySceneStats mSceneStats;
   std::string mSceneLabel;
   SoftBodyDisplayOptions* mDisplay;
+  std::vector<std::string> mDetectorNames;
+  std::size_t mDetectorIndex;
+  dart::gui::osg::PerformanceStatsPanel mStatsPanel;
 };
 
 void applySoftBodiesCameraPose(dart::gui::osg::Viewer& viewer)
@@ -773,6 +952,8 @@ int runHeadless(
 
 int main(int argc, char* argv[])
 {
+  keepOptionalCollisionBackendsLinked();
+
   Options options = parseOptions(argc, argv);
   if (options.showHelp) {
     printUsage(argv[0]);
@@ -801,6 +982,10 @@ int main(int argc, char* argv[])
     return 1;
   }
 
+  if (!applyCollisionDetector(world, options.collisionDetectorName, std::cerr))
+    return 1;
+  world->setNumSimulationThreads(options.simulationThreads);
+
   styleSoftBodyVisuals(world, options.display);
 
   osg::ref_ptr<RecordingWorld> node = new RecordingWorld(world);
@@ -826,8 +1011,8 @@ int main(int argc, char* argv[])
   viewer->setUpViewInWindow(
       0,
       0,
-      dart::gui::osg::scaleWindowExtent(640, options.scale),
-      dart::gui::osg::scaleWindowExtent(480, options.scale));
+      dart::gui::osg::scaleWindowExtent(960, options.scale),
+      dart::gui::osg::scaleWindowExtent(720, options.scale));
 
   viewer->run();
 }

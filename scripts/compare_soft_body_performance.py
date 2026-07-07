@@ -690,6 +690,43 @@ def fmt_float(value: float | None, digits: int = 3) -> str:
     return f"{value:.{digits}f}"
 
 
+def write_cpu_change_graph(
+    lines: list[str], comparison_items: list[dict[str, object]]
+) -> None:
+    valid_items = [item for item in comparison_items if "missing" not in item]
+    if not valid_items:
+        return
+
+    label_width = max(
+        len(f"{item['detector']}/{item['scene']}/{item['threads']}")
+        for item in valid_items
+    )
+    bar_width = 16
+    max_abs_change = max(
+        1.0, *(abs(float(item["cpu_change_pct"])) for item in valid_items)
+    )
+    lines.extend(
+        [
+            "```text",
+            f"{'detector/scene/threads':<{label_width}}  "
+            f"{'faster':>{bar_width}}|{'slower':<{bar_width}}  change",
+        ]
+    )
+    for item in valid_items:
+        change = float(item["cpu_change_pct"])
+        units = int(round(abs(change) / max_abs_change * bar_width))
+        units = min(bar_width, max(0, units))
+        if change < 0.0:
+            left = "." * (bar_width - units) + "#" * units
+            right = "." * bar_width
+        else:
+            left = "." * bar_width
+            right = "!" * units + "." * (bar_width - units)
+        label = f"{item['detector']}/{item['scene']}/{item['threads']}"
+        lines.append(f"{label:<{label_width}}  {left}|{right}  {change:+.1f}%")
+    lines.append("```")
+
+
 def build_comparison(
     current_rows: dict[tuple[str, str, int], BenchmarkRow],
     other_rows: dict[tuple[str, str, int], BenchmarkRow],
@@ -816,17 +853,26 @@ def write_markdown(
         )
 
     for comparison_name in sorted({str(item["comparison"]) for item in comparisons}):
+        comparison_items = [
+            item for item in comparisons if item["comparison"] == comparison_name
+        ]
         lines.extend(
             [
                 "",
                 f"## {comparison_name.replace('_', ' ')}",
                 "",
+            ]
+        )
+        write_cpu_change_graph(lines, comparison_items)
+        lines.extend(
+            [
+                "",
                 "| Detector | Scene | Threads | Other CPU ms | Current CPU ms | CPU change | Other sim_s/s | Current sim_s/s |",
                 "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
             ]
         )
-        for item in comparisons:
-            if item["comparison"] != comparison_name or "missing" in item:
+        for item in comparison_items:
+            if "missing" in item:
                 continue
             other_key = "parent_cpu_ms" if "parent_cpu_ms" in item else "base_cpu_ms"
             other_sim_key = (
