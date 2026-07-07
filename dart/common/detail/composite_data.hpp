@@ -187,26 +187,85 @@ template <
 class ComposeData
 {
 public:
-  ComposeData() = default;
+  ComposeData();
 
-  ComposeData(const CompositeType&)
-  {
-    // Do nothing
-  }
+  ComposeData(const ComposeData&);
 
-  virtual ~ComposeData() = default;
+  ComposeData& operator=(const ComposeData&);
 
-  void setFrom(const CompositeType&)
-  {
-    // Do nothing
-  }
+  ComposeData(const CompositeType&);
+
+  virtual ~ComposeData();
+
+  void setFrom(const CompositeType&);
 
 protected:
-  void _addData(CompositeType&) const
-  {
-    // Do nothing
-  }
+  void _addData(CompositeType&) const;
 };
+
+//==============================================================================
+template <
+    class CompositeType,
+    template <class> class GetData,
+    typename... Aspects>
+ComposeData<CompositeType, GetData, Aspects...>::ComposeData() = default;
+
+//==============================================================================
+template <
+    class CompositeType,
+    template <class> class GetData,
+    typename... Aspects>
+ComposeData<CompositeType, GetData, Aspects...>::ComposeData(const ComposeData&)
+    = default;
+
+//==============================================================================
+template <
+    class CompositeType,
+    template <class> class GetData,
+    typename... Aspects>
+ComposeData<CompositeType, GetData, Aspects...>&
+ComposeData<CompositeType, GetData, Aspects...>::operator=(const ComposeData&)
+    = default;
+
+//==============================================================================
+template <
+    class CompositeType,
+    template <class> class GetData,
+    typename... Aspects>
+ComposeData<CompositeType, GetData, Aspects...>::ComposeData(
+    const CompositeType&)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <
+    class CompositeType,
+    template <class> class GetData,
+    typename... Aspects>
+ComposeData<CompositeType, GetData, Aspects...>::~ComposeData() = default;
+
+//==============================================================================
+template <
+    class CompositeType,
+    template <class> class GetData,
+    typename... Aspects>
+void ComposeData<CompositeType, GetData, Aspects...>::setFrom(
+    const CompositeType&)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <
+    class CompositeType,
+    template <class> class GetData,
+    typename... Aspects>
+void ComposeData<CompositeType, GetData, Aspects...>::_addData(
+    CompositeType&) const
+{
+  // Do nothing
+}
 
 //==============================================================================
 template <

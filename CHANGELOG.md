@@ -365,6 +365,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Fixed DART 7 Windows dartpy wheel links against conda-forge libcurl/libpsl
   metadata by pruning Unix-only `libm` entries from imported MSVC CMake target
   interfaces. ([#3282](https://github.com/dartsim/dart/pull/3282))
+- Restored MSVC `dart-io` shared-library builds when parser code uses empty
+  `Composite::Properties` data by keeping zero-aspect composite-data template
+  members owned by the exported `dart` instantiation.
 - Added a `DART_USE_SYSTEM_FMT` CMake option (default ON) that falls back to a
   FetchContent source build of fmt when set OFF, so source and container builds
   keep working when a distro's packaged fmt CMake config is broken; the Alt
