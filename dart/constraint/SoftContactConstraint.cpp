@@ -559,61 +559,63 @@ void SoftContactConstraint::applyUnitImpulse(std::size_t _idx)
 {
   DART_ASSERT(_idx < mDim && "Invalid Index.");
   DART_ASSERT(isActive());
-  DART_ASSERT(mBodyNode1->isReactive() || mBodyNode2->isReactive());
+
+  const auto skeleton1 = mBodyNode1->getSkeleton();
+  const auto skeleton2 = mBodyNode2->getSkeleton();
+  const bool isReactive1 = mBodyNode1->isReactive();
+  const bool isReactive2 = mBodyNode2->isReactive();
+
+  DART_ASSERT(isReactive1 || isReactive2);
 
   // Self collision case
-  if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton()) {
-    mBodyNode1->getSkeleton()->clearConstraintImpulses();
+  if (skeleton1 == skeleton2) {
+    skeleton1->clearConstraintImpulses();
 
     if (mPointMass1) {
-      mBodyNode1->getSkeleton()->updateBiasImpulse(
+      skeleton1->updateBiasImpulse(
           mSoftBodyNode1, mPointMass1, mJacobians1.col(_idx).tail<3>());
     } else {
-      if (mBodyNode1->isReactive()) {
-        mBodyNode1->getSkeleton()->updateBiasImpulse(
-            mBodyNode1, mJacobians1.col(_idx));
+      if (isReactive1) {
+        skeleton1->updateBiasImpulse(mBodyNode1, mJacobians1.col(_idx));
       }
     }
 
     if (mPointMass2) {
-      mBodyNode2->getSkeleton()->updateBiasImpulse(
+      skeleton1->updateBiasImpulse(
           mSoftBodyNode2, mPointMass2, mJacobians2.col(_idx).tail<3>());
     } else {
-      if (mBodyNode2->isReactive()) {
-        mBodyNode2->getSkeleton()->updateBiasImpulse(
-            mBodyNode2, mJacobians2.col(_idx));
+      if (isReactive2) {
+        skeleton1->updateBiasImpulse(mBodyNode2, mJacobians2.col(_idx));
       }
     }
 
-    mBodyNode1->getSkeleton()->updateVelocityChange();
+    skeleton1->updateVelocityChange();
   }
   // Colliding two distinct skeletons
   else {
     if (mPointMass1) {
-      mBodyNode1->getSkeleton()->clearConstraintImpulses();
-      mBodyNode1->getSkeleton()->updateBiasImpulse(
+      skeleton1->clearConstraintImpulses();
+      skeleton1->updateBiasImpulse(
           mSoftBodyNode1, mPointMass1, mJacobians1.col(_idx).tail<3>());
-      mBodyNode1->getSkeleton()->updateVelocityChange();
+      skeleton1->updateVelocityChange();
     } else {
-      if (mBodyNode1->isReactive()) {
-        mBodyNode1->getSkeleton()->clearConstraintImpulses();
-        mBodyNode1->getSkeleton()->updateBiasImpulse(
-            mBodyNode1, mJacobians1.col(_idx));
-        mBodyNode1->getSkeleton()->updateVelocityChange();
+      if (isReactive1) {
+        skeleton1->clearConstraintImpulses();
+        skeleton1->updateBiasImpulse(mBodyNode1, mJacobians1.col(_idx));
+        skeleton1->updateVelocityChange();
       }
     }
 
     if (mPointMass2) {
-      mBodyNode2->getSkeleton()->clearConstraintImpulses();
-      mBodyNode2->getSkeleton()->updateBiasImpulse(
+      skeleton2->clearConstraintImpulses();
+      skeleton2->updateBiasImpulse(
           mSoftBodyNode2, mPointMass2, mJacobians2.col(_idx).tail<3>());
-      mBodyNode2->getSkeleton()->updateVelocityChange();
+      skeleton2->updateVelocityChange();
     } else {
-      if (mBodyNode2->isReactive()) {
-        mBodyNode2->getSkeleton()->clearConstraintImpulses();
-        mBodyNode2->getSkeleton()->updateBiasImpulse(
-            mBodyNode2, mJacobians2.col(_idx));
-        mBodyNode2->getSkeleton()->updateVelocityChange();
+      if (isReactive2) {
+        skeleton2->clearConstraintImpulses();
+        skeleton2->updateBiasImpulse(mBodyNode2, mJacobians2.col(_idx));
+        skeleton2->updateVelocityChange();
       }
     }
   }
@@ -626,8 +628,10 @@ void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
   DART_ASSERT(_vel != nullptr && "Null pointer is not allowed.");
 
-  const bool isImpulseApplied1 = mBodyNode1->getSkeleton()->isImpulseApplied();
-  const bool isImpulseApplied2 = mBodyNode2->getSkeleton()->isImpulseApplied();
+  const auto skeleton1 = mBodyNode1->getSkeleton();
+  const auto skeleton2 = mBodyNode2->getSkeleton();
+  const bool isImpulseApplied1 = skeleton1->isImpulseApplied();
+  const bool isImpulseApplied2 = skeleton2->isImpulseApplied();
 
   const Eigen::Vector3d* pointVelChange1 = nullptr;
   const Eigen::Vector3d* pointVelChange2 = nullptr;
