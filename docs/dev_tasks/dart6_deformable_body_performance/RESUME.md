@@ -11,7 +11,12 @@ Latest state:
   coverage but are not clean regression thresholds because CPU scaling and host
   load were noisy.
 - `02-paper-parity-matrix.md` maps the requested papers into tracked DART 6
-  feature, demo, and performance targets.
+  feature, demo, and performance targets. It now includes concrete
+  Kim/Pollard 2011 and Jain/Liu 2011 paper numbers, current DART 6 evidence,
+  and acceptance gates for every representative row. The matrix is complete as
+  WP-DB.03 evidence; the runnable scene, adaptive-contact, native-collision,
+  and flagship-demo follow-through remains owned by WP-DB.05, WP-DB.08, and
+  WP-DB.09.
 - `03-stability-gate.md` records the active `test_SoftDynamics` finite-state
   gate across representative SKEL soft scenes and thread settings, plus the
   ordered final-state comparison between `threads=1` and `threads=4`.
@@ -232,12 +237,10 @@ Next steps:
    four-thread final-state checks with energy, contact-force, CoP, or
    historical-golden regression thresholds that are stable across supported
    platforms.
-4. Complete the paper parity matrix with representative scenes and numbers from
-   Kim/Pollard 2011 and Jain/Liu 2011.
-5. Continue WP-DB.08 with fuller triangle/contact-neighborhood coverage and
+4. Continue WP-DB.08 with fuller triangle/contact-neighborhood coverage and
    stronger multicore scaling beyond the current pair-level soft-soft worker
    path before preferring native as the default soft collision backend.
-6. Before creating the PR, capture a same-host baseline-vs-branch performance
+5. Before creating the PR, capture a same-host baseline-vs-branch performance
    comparison and include newly added GUI example commands plus locally captured
    videos as PR evidence. The first evidence packet exists in
    `06-pr-evidence.md`; rerun it on a cleaner host before turning the smoke

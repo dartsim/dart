@@ -63,6 +63,11 @@ contact correctness, or performance envelope.
   there was no headless soft-body benchmark before this task.
 - WP-DB.01 now adds `BM_INTEGRATION_soft_body` and records smoke rows in
   `01-baseline-evidence.md`.
+- WP-DB.03 now converts Kim/Pollard 2011 and Jain/Liu 2011 into a concrete
+  parity ledger in `02-paper-parity-matrix.md`, including paper scene metrics,
+  current DART 6 evidence, and acceptance gates. The matrix itself is complete;
+  the runnable scene, adaptive-contact, native-collision, and flagship-demo
+  follow-through remains owned by WP-DB.05, WP-DB.08, and WP-DB.09.
 - WP-DB.06 groundwork adds `soft_body_headless`, a deterministic checksum and
   text-profiler runner for soft-body scenes. Initial profile evidence and the
   `origin/dart6-memory-hardening` dependency analysis are recorded in
@@ -127,7 +132,7 @@ contact correctness, or performance envelope.
 | --- | --- | --- |
 | WP-DB.01 baseline harness | Add headless Google Benchmark rows for existing soft-body scenes across single-core and multi-core CPU. | Benchmark target builds; rows report sim seconds per second, point masses, soft bodies, and threads. |
 | WP-DB.02 stability gate | Re-enable or replace `test_SoftDynamics` with finite-state and equations-of-motion checks for representative soft scenes. | Focused integration test fails on NaN/Inf, gross state blow-up, one-thread versus four-thread final-state divergence, or representative matrix/vector equation inconsistency. Current finite-state and deterministic final-state coverage is recorded in `03-stability-gate.md`; equation correctness coverage is recorded in `07-equation-correctness.md`. |
-| WP-DB.03 paper parity matrix | Convert both papers into a scene/feature/performance checklist. | Every representative paper demo has an owner row, current DART 6 status, target evidence, and acceptance gate. |
+| WP-DB.03 paper parity matrix | Convert both papers into a scene/feature/performance checklist. | Every representative paper demo has an owner row, current DART 6 status, target evidence, and acceptance gate in `02-paper-parity-matrix.md`. Follow-through scene implementation remains in WP-DB.05, WP-DB.08, and WP-DB.09. |
 | WP-DB.04 coupled equation correctness | Finish or replace stubbed point-mass mass, inverse-mass, gravity, combined-force, and external-force aggregation paths. | Point-mass mass-matrix, augmented-mass, inverse-mass, inverse-augmented-mass, gravity, combined-vector, external-force, and representative rigid-only/soft-only/mixed-world matrix/vector checks now have active regressions in `07-equation-correctness.md`. |
 | WP-DB.05 adaptive contact activation | Implement Jain/Liu-style active vertex neighborhoods without breaking existing all-active soft bodies. | Contact-local activation gives matching contact behavior with fewer active DOFs and deterministic state hashes. |
 | WP-DB.06 CPU data layout and SIMD | Profile point-mass loops, identify contiguous/SoA/SIMD candidates, and use `dart/simd/` where it wins. | Benchmarks show single-core speedup without changing results beyond approved tolerances. Initial profiling, FCL soft-mesh refit reduction, parent-term scalar caching, vector-backed point-state/property reads in the bias-force edge loop, kinematics preflight, inverse-dynamics force updates, impulse/constrained-term state updates, matrix/vector aggregation state reads, the internal `PointMassPhaseView`, the `dart6-memory-hardening` stack, zero-allocation native soft-box plus soft-soft stack gates, and the heap-free `softBodies.skel`, `soft_open_chain`, and contact-producing `soft_cubes` SKEL gates are in `04-data-layout-and-memory-hardening.md`; heap-free contiguous point-mass object storage, retained SoA scratch, and SIMD remain open. |
