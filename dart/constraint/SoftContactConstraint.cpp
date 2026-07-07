@@ -980,8 +980,6 @@ void SoftContactConstraint::updateFirstFrictionalDirection()
 SoftContactConstraint::TangentBasisMatrix
 SoftContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& _n)
 {
-  using namespace math::suffixes;
-
   // TODO(JS): Use mNumFrictionConeBases
   // Check if the number of bases is even number.
   //  bool isEvenNumBases = mNumFrictionConeBases % 2 ? true : false;
@@ -1000,12 +998,10 @@ SoftContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& _n)
 
   tangent.normalize();
 
-  // Rotate the tangent around the normal to compute bases.
-  // Note: a possible speedup is in place for mNumDir % 2 = 0
-  // Each basis and its opposite belong in the matrix, so we iterate half as
-  // many times
+  // Rotate the tangent 90 degrees around the unit normal. Rodrigues' formula
+  // reduces to n x tangent because the tangent is perpendicular to n.
   T.col(0) = tangent;
-  T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(0.5_pi, _n)) * tangent;
+  T.col(1) = _n.cross(tangent);
   return T;
 }
 
@@ -1026,9 +1022,9 @@ static PointMassT selectCollidingPointMassT(
   const Eigen::Vector3d& pos2 = pm1->getWorldPosition();
   const Eigen::Vector3d& pos3 = pm2->getWorldPosition();
 
-  double dist0 = (pos1 - _point).dot(pos1 - _point);
-  double dist1 = (pos2 - _point).dot(pos2 - _point);
-  double dist2 = (pos3 - _point).dot(pos3 - _point);
+  const double dist0 = (pos1 - _point).squaredNorm();
+  const double dist1 = (pos2 - _point).squaredNorm();
+  const double dist2 = (pos3 - _point).squaredNorm();
 
   if (dist0 > dist1) {
     if (dist1 > dist2)
