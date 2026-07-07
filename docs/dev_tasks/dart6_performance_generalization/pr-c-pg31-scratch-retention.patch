@@ -1,0 +1,395 @@
+diff --git a/dart/simulation/World.cpp b/dart/simulation/World.cpp
+index c732d1022a9..aff88936706 100644
+--- a/dart/simulation/World.cpp
++++ b/dart/simulation/World.cpp
+@@ -171,97 +171,6 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
+   return nullptr;
+ }
+ 
+-std::vector<char> findShallowSupportedFreeRoots(
+-    const std::vector<dynamics::SkeletonPtr>& skeletons,
+-    const collision::CollisionResult& contacts,
+-    const Eigen::Vector3d& gravity)
+-{
+-  std::vector<char> supported(skeletons.size(), false);
+-
+-  const double gravityNorm = gravity.norm();
+-  if (contacts.getNumContacts() == 0u || gravityNorm <= 0.0)
+-    return supported;
+-
+-  const Eigen::Vector3d up = -gravity / gravityNorm;
+-  constexpr double kSupportContactPenetrationTolerance = 1e-4;
+-  constexpr double kSupportNormalMinVerticalComponent = 0.5;
+-
+-  std::unordered_map<const dynamics::Skeleton*, std::size_t> skeletonToIndex;
+-  skeletonToIndex.reserve(skeletons.size());
+-  for (std::size_t i = 0; i < skeletons.size(); ++i) {
+-    if (skeletons[i])
+-      skeletonToIndex.emplace(skeletons[i].get(), i);
+-  }
+-
+-  auto markIfSupportedRoot = [&](const auto& bodyNode,
+-                                 const auto& supportBodyNode,
+-                                 const Eigen::Vector3d& normal,
+-                                 double penetrationDepth) {
+-    // Mirror the constraint solver's contact gating: a contact with a
+-    // non-finite or negative penetration depth (e.g. a Bullet proximity hit
+-    // kept by allowNegativePenetrationDepthContacts) never creates a contact
+-    // constraint, so it cannot inject the Baumgarte correction this
+-    // suppression compensates for.
+-    if (!bodyNode || !supportBodyNode || !std::isfinite(penetrationDepth)
+-        || penetrationDepth < 0.0
+-        || penetrationDepth > kSupportContactPenetrationTolerance) {
+-      return;
+-    }
+-
+-    const auto* skeleton = bodyNode->getSkeletonRawPtr();
+-    if (skeleton == nullptr || !skeleton->isMobile())
+-      return;
+-
+-    if (bodyNode != getRootBodyNodeIfAny(*skeleton))
+-      return;
+-
+-    const auto* supportSkeleton = supportBodyNode->getSkeletonRawPtr();
+-    const bool supportRestingAndUnperturbed
+-        = supportSkeleton != nullptr && supportSkeleton->isResting()
+-          && !supportSkeleton->isImpulseApplied();
+-    const bool supportInactive = supportSkeleton == nullptr
+-                                 || !supportSkeleton->isMobile()
+-                                 || supportRestingAndUnperturbed;
+-    if (!supportInactive)
+-      return;
+-
+-    const double normalNorm = normal.norm();
+-    if (!normal.allFinite() || normalNorm <= 0.0)
+-      return;
+-
+-    const double verticalComponent = normal.dot(up) / normalNorm;
+-    if (verticalComponent < kSupportNormalMinVerticalComponent)
+-      return;
+-
+-    // Same relative-height guard as the resting support check: only a contact
+-    // that supports the root from below qualifies. A shallow contact with the
+-    // underside of a ceiling or overhang must not clamp legitimate small
+-    // lateral or tilt motion.
+-    const double bodyHeightAboveSupport
+-        = (bodyNode->getTransform().translation()
+-           - supportBodyNode->getTransform().translation())
+-              .dot(up);
+-    if (bodyHeightAboveSupport < -kSupportContactPenetrationTolerance)
+-      return;
+-
+-    const auto it = skeletonToIndex.find(skeleton);
+-    if (it != skeletonToIndex.end())
+-      supported[it->second] = true;
+-  };
+-
+-  for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
+-    const auto& contact = contacts.getContact(i);
+-    const auto bodyNode1 = contact.getBodyNodePtr1();
+-    const auto bodyNode2 = contact.getBodyNodePtr2();
+-    markIfSupportedRoot(
+-        bodyNode1, bodyNode2, contact.normal, contact.penetrationDepth);
+-    markIfSupportedRoot(
+-        bodyNode2, bodyNode1, -contact.normal, contact.penetrationDepth);
+-  }
+-
+-  return supported;
+-}
+-
+ bool hasFiniteNonzeroVelocity(const Eigen::Vector3d& velocity)
+ {
+   return velocity.allFinite() && velocity.squaredNorm() > 0.0;
+@@ -311,11 +220,31 @@ void World::syncShallowSupportFreeRootVelocityStates()
+ }
+ 
+ //==============================================================================
+-std::vector<World::FreeRootVelocitySnapshot> World::snapshotFreeRootVelocities()
++bool World::hasAnyShallowSupportFreeRootCandidate() const
++{
++  // WP-PG.31: cheap O(skeletons) pre-check (no allocation) so World::step can
++  // skip the snapshot/detection/clear passes below entirely on worlds with no
++  // free-jointed skeleton, instead of building a scratch map/vector that
++  // would end up all-false/all-invalid anyway.
++  for (const auto& skeleton : mSkeletons) {
++    if (skeleton && skeleton->isMobile()
++        && skeleton->getCachedRootFreeJoint() != nullptr) {
++      return true;
++    }
++  }
++  return false;
++}
++
++//==============================================================================
++const std::vector<World::FreeRootVelocitySnapshot>&
++World::snapshotFreeRootVelocities()
+ {
+   syncShallowSupportFreeRootVelocityStates();
+ 
+-  std::vector<FreeRootVelocitySnapshot> snapshots(mSkeletons.size());
++  // WP-PG.31: reuse the scratch buffer's existing capacity instead of
++  // constructing a fresh vector every step (#3227 originally did the latter).
++  mFreeRootVelocitySnapshotScratch.assign(
++      mSkeletons.size(), FreeRootVelocitySnapshot{});
+ 
+   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+     const auto& skeleton = mSkeletons[i];
+@@ -333,7 +262,7 @@ std::vector<World::FreeRootVelocitySnapshot> World::snapshotFreeRootVelocities()
+       continue;
+ 
+     const auto& state = mShallowSupportFreeRootVelocityStates[i];
+-    auto& snapshot = snapshots[i];
++    auto& snapshot = mFreeRootVelocitySnapshotScratch[i];
+     snapshot.mSkeleton = skeleton.get();
+     snapshot.mValid = true;
+     snapshot.mVelocityEditedSinceLastStep
+@@ -343,7 +272,106 @@ std::vector<World::FreeRootVelocitySnapshot> World::snapshotFreeRootVelocities()
+     snapshot.mAngular = rootBody->getAngularVelocity();
+   }
+ 
+-  return snapshots;
++  return mFreeRootVelocitySnapshotScratch;
++}
++
++//==============================================================================
++const std::vector<char>& World::findShallowSupportedFreeRootsScratch(
++    const collision::CollisionResult& contacts)
++{
++  // WP-PG.31: reuse the scratch vector/map's existing capacity instead of
++  // constructing them fresh every step (#3227 originally did the latter).
++  // This was a free function (findShallowSupportedFreeRoots) taking
++  // mSkeletons/mGravity as parameters; it is now a member purely so it has
++  // somewhere to keep that persistent scratch state.
++  mShallowSupportedFreeRootsScratch.assign(
++      mSkeletons.size(), static_cast<char>(false));
++
++  const double gravityNorm = mGravity.norm();
++  if (contacts.getNumContacts() == 0u || gravityNorm <= 0.0)
++    return mShallowSupportedFreeRootsScratch;
++
++  const Eigen::Vector3d up = -mGravity / gravityNorm;
++  constexpr double kSupportContactPenetrationTolerance = 1e-4;
++  constexpr double kSupportNormalMinVerticalComponent = 0.5;
++
++  mShallowSupportSkeletonToIndexScratch.clear();
++  mShallowSupportSkeletonToIndexScratch.reserve(mSkeletons.size());
++  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
++    if (mSkeletons[i])
++      mShallowSupportSkeletonToIndexScratch.emplace(mSkeletons[i].get(), i);
++  }
++
++  auto& supported = mShallowSupportedFreeRootsScratch;
++  const auto& skeletonToIndex = mShallowSupportSkeletonToIndexScratch;
++
++  auto markIfSupportedRoot = [&](const auto& bodyNode,
++                                 const auto& supportBodyNode,
++                                 const Eigen::Vector3d& normal,
++                                 double penetrationDepth) {
++    // Mirror the constraint solver's contact gating: a contact with a
++    // non-finite or negative penetration depth (e.g. a Bullet proximity hit
++    // kept by allowNegativePenetrationDepthContacts) never creates a contact
++    // constraint, so it cannot inject the Baumgarte correction this
++    // suppression compensates for.
++    if (!bodyNode || !supportBodyNode || !std::isfinite(penetrationDepth)
++        || penetrationDepth < 0.0
++        || penetrationDepth > kSupportContactPenetrationTolerance) {
++      return;
++    }
++
++    const auto* skeleton = bodyNode->getSkeletonRawPtr();
++    if (skeleton == nullptr || !skeleton->isMobile())
++      return;
++
++    if (bodyNode != getRootBodyNodeIfAny(*skeleton))
++      return;
++
++    const auto* supportSkeleton = supportBodyNode->getSkeletonRawPtr();
++    const bool supportRestingAndUnperturbed
++        = supportSkeleton != nullptr && supportSkeleton->isResting()
++          && !supportSkeleton->isImpulseApplied();
++    const bool supportInactive = supportSkeleton == nullptr
++                                 || !supportSkeleton->isMobile()
++                                 || supportRestingAndUnperturbed;
++    if (!supportInactive)
++      return;
++
++    const double normalNorm = normal.norm();
++    if (!normal.allFinite() || normalNorm <= 0.0)
++      return;
++
++    const double verticalComponent = normal.dot(up) / normalNorm;
++    if (verticalComponent < kSupportNormalMinVerticalComponent)
++      return;
++
++    // Same relative-height guard as the resting support check: only a contact
++    // that supports the root from below qualifies. A shallow contact with the
++    // underside of a ceiling or overhang must not clamp legitimate small
++    // lateral or tilt motion.
++    const double bodyHeightAboveSupport
++        = (bodyNode->getTransform().translation()
++           - supportBodyNode->getTransform().translation())
++              .dot(up);
++    if (bodyHeightAboveSupport < -kSupportContactPenetrationTolerance)
++      return;
++
++    const auto it = skeletonToIndex.find(skeleton);
++    if (it != skeletonToIndex.end())
++      supported[it->second] = true;
++  };
++
++  for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
++    const auto& contact = contacts.getContact(i);
++    const auto bodyNode1 = contact.getBodyNodePtr1();
++    const auto bodyNode2 = contact.getBodyNodePtr2();
++    markIfSupportedRoot(
++        bodyNode1, bodyNode2, contact.normal, contact.penetrationDepth);
++    markIfSupportedRoot(
++        bodyNode2, bodyNode1, -contact.normal, contact.penetrationDepth);
++  }
++
++  return mShallowSupportedFreeRootsScratch;
+ }
+ 
+ //==============================================================================
+@@ -1028,19 +1056,32 @@ void World::step(bool _resetCommand)
+           });
+     }
+ 
+-    const std::vector<FreeRootVelocitySnapshot> preSolveFreeRootVelocities
+-        = snapshotFreeRootVelocities();
++    // WP-PG.31: skip the whole shallow-support snapshot/detection/clear pass
++    // (and its scratch-buffer bookkeeping) when no skeleton could possibly
++    // qualify, instead of building buffers that would end up all-false.
++    const bool hasShallowSupportCandidate
++        = hasAnyShallowSupportFreeRootCandidate();
++    if (!hasShallowSupportCandidate)
++      mFreeRootVelocitySnapshotScratch.clear();
++    const std::vector<FreeRootVelocitySnapshot>& preSolveFreeRootVelocities
++        = hasShallowSupportCandidate ? snapshotFreeRootVelocities()
++                                     : mFreeRootVelocitySnapshotScratch;
+ 
+     {
+       DART_PROFILE_SCOPED_N("World::step - Solve constraints");
+       mConstraintSolver->solve();
+     }
+ 
+-    const std::vector<char> shallowSupportedFreeRoots
+-        = findShallowSupportedFreeRoots(
+-            mSkeletons, mConstraintSolver->getLastCollisionResult(), mGravity);
+-    clearUnsupportedShallowSupportFreeRootVelocityStates(
+-        shallowSupportedFreeRoots, preSolveFreeRootVelocities);
++    if (!hasShallowSupportCandidate)
++      mShallowSupportedFreeRootsScratch.clear();
++    const std::vector<char>& shallowSupportedFreeRoots
++        = hasShallowSupportCandidate ? findShallowSupportedFreeRootsScratch(
++              mConstraintSolver->getLastCollisionResult())
++                                     : mShallowSupportedFreeRootsScratch;
++    if (hasShallowSupportCandidate) {
++      clearUnsupportedShallowSupportFreeRootVelocityStates(
++          shallowSupportedFreeRoots, preSolveFreeRootVelocities);
++    }
+ 
+     {
+       DART_PROFILE_SCOPED_N("World::step - Integrate positions");
+@@ -1193,8 +1234,16 @@ void World::step(bool _resetCommand)
+         });
+   }
+ 
+-  const std::vector<FreeRootVelocitySnapshot> preSolveFreeRootVelocities
+-      = snapshotFreeRootVelocities();
++  // WP-PG.31: skip the whole shallow-support snapshot/detection/clear pass
++  // (and its scratch-buffer bookkeeping) when no skeleton could possibly
++  // qualify, instead of building buffers that would end up all-false.
++  const bool hasShallowSupportCandidate
++      = hasAnyShallowSupportFreeRootCandidate();
++  if (!hasShallowSupportCandidate)
++    mFreeRootVelocitySnapshotScratch.clear();
++  const std::vector<FreeRootVelocitySnapshot>& preSolveFreeRootVelocities
++      = hasShallowSupportCandidate ? snapshotFreeRootVelocities()
++                                   : mFreeRootVelocitySnapshotScratch;
+ 
+   // Detect activated constraints and compute constraint impulses
+   {
+@@ -1202,11 +1251,16 @@ void World::step(bool _resetCommand)
+     mConstraintSolver->solve();
+   }
+ 
+-  const std::vector<char> shallowSupportedFreeRoots
+-      = findShallowSupportedFreeRoots(
+-          mSkeletons, mConstraintSolver->getLastCollisionResult(), mGravity);
+-  clearUnsupportedShallowSupportFreeRootVelocityStates(
+-      shallowSupportedFreeRoots, preSolveFreeRootVelocities);
++  if (!hasShallowSupportCandidate)
++    mShallowSupportedFreeRootsScratch.clear();
++  const std::vector<char>& shallowSupportedFreeRoots
++      = hasShallowSupportCandidate ? findShallowSupportedFreeRootsScratch(
++            mConstraintSolver->getLastCollisionResult())
++                                   : mShallowSupportedFreeRootsScratch;
++  if (hasShallowSupportCandidate) {
++    clearUnsupportedShallowSupportFreeRootVelocityStates(
++        shallowSupportedFreeRoots, preSolveFreeRootVelocities);
++  }
+ 
+   {
+     DART_PROFILE_SCOPED_N("World::step - Integrate positions");
+diff --git a/dart/simulation/World.hpp b/dart/simulation/World.hpp
+index feccf9bfb80..5228d75f2da 100644
+--- a/dart/simulation/World.hpp
++++ b/dart/simulation/World.hpp
+@@ -60,6 +60,7 @@
+ #include <memory>
+ #include <set>
+ #include <string>
++#include <unordered_map>
+ #include <utility>
+ #include <vector>
+ 
+@@ -473,8 +474,27 @@ protected:
+   /// Synchronizes shallow-support velocity state with mSkeletons.
+   void syncShallowSupportFreeRootVelocityStates();
+ 
++  /// (WP-PG.31) Returns true if any mobile skeleton has a cached root
++  /// FreeJoint (Skeleton::getCachedRootFreeJoint(), from WP-PG.30) and could
++  /// therefore participate in the shallow-support machinery below. Lets
++  /// World::step skip snapshotting/detection/clearing entirely -- including
++  /// their scratch-buffer bookkeeping -- on worlds with no such skeleton.
++  bool hasAnyShallowSupportFreeRootCandidate() const;
++
+   /// Captures free-root velocities immediately before the constraint solve.
+-  std::vector<FreeRootVelocitySnapshot> snapshotFreeRootVelocities();
++  /// Returns a reference to a reused scratch buffer
++  /// (mFreeRootVelocitySnapshotScratch): valid only until the next call.
++  const std::vector<FreeRootVelocitySnapshot>& snapshotFreeRootVelocities();
++
++  /// (WP-PG.31) Finds skeletons whose root body is shallowly supported by a
++  /// resting/immobile contact (see the .cpp for the definition of "shallow
++  /// support"). Was a free function; moved to a member so the working
++  /// vector and skeleton-to-index map can be reused scratch buffers
++  /// (mShallowSupportedFreeRootsScratch / mShallowSupportSkeletonToIndex
++  /// Scratch) instead of reallocating every call. Returns a reference to a
++  /// reused scratch buffer: valid only until the next call.
++  const std::vector<char>& findShallowSupportedFreeRootsScratch(
++      const collision::CollisionResult& contacts);
+ 
+   /// Clears preserved baselines for skeletons without a shallow support
+   /// contact.
+@@ -570,6 +590,19 @@ protected:
+   std::vector<ShallowSupportFreeRootVelocityState>
+       mShallowSupportFreeRootVelocityStates;
+ 
++  /// (WP-PG.31) Reused scratch buffer backing snapshotFreeRootVelocities();
++  /// avoids reallocating a fresh vector every step (#3227 originally did).
++  std::vector<FreeRootVelocitySnapshot> mFreeRootVelocitySnapshotScratch;
++
++  /// (WP-PG.31) Reused scratch buffer backing
++  /// findShallowSupportedFreeRootsScratch()'s result vector.
++  std::vector<char> mShallowSupportedFreeRootsScratch;
++
++  /// (WP-PG.31) Reused scratch map backing
++  /// findShallowSupportedFreeRootsScratch()'s skeleton-to-index lookup.
++  std::unordered_map<const dynamics::Skeleton*, std::size_t>
++      mShallowSupportSkeletonToIndexScratch;
++
+   struct AllRestingKinematicSnapshot
+   {
+     const dynamics::Skeleton* mSkeleton = nullptr;
