@@ -1,6 +1,11 @@
 dart_add_test("unit" test_Contact test_Contact.cpp)
 dart_add_test("unit" test_DARTCollisionDetector test_DARTCollisionDetector.cpp)
 dart_add_test("unit" test_FCLCollisionObject test_FCLCollisionObject.cpp)
+dart_add_test(
+  "unit"
+  UNIT_collision_native_detector_adapter
+  test_NativeCollisionDetector.cpp
+)
 
 dart_add_test(
   "unit"

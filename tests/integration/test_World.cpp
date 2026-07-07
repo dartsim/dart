@@ -512,6 +512,40 @@ TEST(World, DefaultWorldUsesFclPrimitive)
 }
 
 //==============================================================================
+TEST(World, NativeSkelDetectorFallsBackToFclBeforeRegistration)
+{
+  auto factory = collision::CollisionDetector::getFactory();
+  ASSERT_NE(factory, nullptr);
+
+  if (!factory->canCreate("fcl"))
+    GTEST_SKIP() << "fcl collision detector is not available in this build";
+
+  EXPECT_FALSE(factory->canCreate("native"));
+
+  const std::string skel = R"(
+<skel version="1.0">
+  <world name="world">
+    <physics>
+      <time_step>0.001</time_step>
+      <gravity>0 0 -9.81</gravity>
+      <collision_detector>native</collision_detector>
+    </physics>
+  </world>
+</skel>
+)";
+
+  auto world = utils::SkelParser::readWorldXML(skel);
+  ASSERT_NE(nullptr, world);
+
+  auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
+      world->getCollisionDetector());
+  ASSERT_TRUE(fclDetector);
+  EXPECT_EQ(
+      fclDetector->getPrimitiveShapeType(),
+      collision::FCLCollisionDetector::PRIMITIVE);
+}
+
+//==============================================================================
 TEST(World, TypedSetterToFclKeepsPrimitive)
 {
   auto factory = collision::CollisionDetector::getFactory();
