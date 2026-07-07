@@ -34,7 +34,6 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
@@ -547,7 +546,6 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   bool fallbackSuccess = false;
   bool fallbackRan = false;
   if (!success && mSecondaryBoxedLcpSolver) {
-    DART_PROFILE_SCOPED_N("Secondary LCP");
     constructLcpTerms();
     fallbackSuccess
         = mSecondaryBoxedLcpSolver->solve(n, a, x, b, 0, lo, hi, fIndex, false);
@@ -621,8 +619,6 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 void BoxedLcpConstraintSolver::solvePositionConstrainedGroup(
     ConstrainedGroup& group)
 {
-  DART_PROFILE_SCOPED;
-
   // Collect only contact constraints for the position-correction pass.
   std::vector<ContactConstraint*> contacts;
   contacts.reserve(group.getNumConstraints());
