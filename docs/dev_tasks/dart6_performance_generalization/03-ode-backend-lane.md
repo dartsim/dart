@@ -39,12 +39,14 @@ scenes, plus the gz gate.
 - Acceptance evidence: bit-identical ODE hashes/contacts/resting on all
   five guard scenes; ODE rows of the active matrix improve measurably;
   other detectors untouched (hash-identical).
-- Completion evidence: base vs WP-PG.20 hashes stayed bit-identical for
-  `S2_ode`, `S4_ode`, and `S3_dart`. Dense ODE `S3_ode` improved from
-  194.2 to 17.6 ms/step; Google Benchmark `BM_ContactContainerActive`
-  ODE 120/1/1 improved from 16.5 to 6.18 s and 120/1/16 improved from
-  6.84 to 6.02 s. Controlled-load crash gate was 30/30 clean on both
-  base and WP-PG.20.
+- Completion evidence: refreshed after the #3307/#3327 base advance against
+  `origin/release-6.20` @ `9ff8b1d77a1`. Base vs WP-PG.20 hashes stayed
+  bit-identical for `S2_ode`, `S3_ode`, `S4_ode`, `S3_dart`, and
+  `S4_dart`. ODE rows improved: `S2_ode` 0.0933 -> 0.0521 ms/step,
+  `S3_ode` 115.9 -> 19.7 ms/step, `S4_ode` 0.2269 -> 0.1549 ms/step;
+  Google Benchmark `BM_ContactContainerActive` ODE rows improved 3.2-7.6%
+  (60/1/1 1220 -> 1181 ms, 60/1/16 1244 -> 1177 ms, 120/1/1
+  6115 -> 5650 ms, 120/1/16 6061 -> 5861 ms).
 - Dependencies: WP-PG.01.
 
 #### WP-PG.21 — Pair-keyed history lookup + generation-based pruning
@@ -61,10 +63,10 @@ scenes, plus the gz gate.
 - Acceptance evidence: same bar as WP-PG.20 (bit-identical ODE outcomes;
   measurable win at 900/3000 objects; gz gate green).
 - Dependencies: WP-PG.20 (shares span structure).
-- Re-scope note: WP-PG.20's executed implementation already includes the
-  pair-keyed history map and current-frame pruning sweep. After WP-PG.20
-  lands, re-evaluate whether any generation-based pruning work remains
-  evidence-backed before claiming this packet.
+- Re-scope note: WP-PG.20 intentionally stayed span-only after current-base
+  A/B showed the pair-keyed map/pruning variant could add small-row overhead.
+  Claim this packet only with a fresh profile and current-base matrix proving
+  map/pruning work beats the span-only baseline.
 
 #### WP-PG.22 — Version-gated ODE pose push
 

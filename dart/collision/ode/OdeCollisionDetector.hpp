@@ -38,11 +38,8 @@
 #include <ode/ode.h>
 
 #include <deque>
-#include <unordered_map>
 #include <utility>
 #include <vector>
-
-#include <cstddef>
 
 #define MAX_COLLIDE_RETURNS 250
 
@@ -78,15 +75,6 @@ public:
     bool hasTransforms;
     std::deque<Contact> history;
   };
-
-  /// Hashes a canonical collision-object pair for the contact-history map.
-  struct CollObjPairHash
-  {
-    std::size_t operator()(const CollObjPair& pair) const noexcept;
-  };
-
-  using ContactHistoryMap
-      = std::unordered_map<CollObjPair, ContactHistoryItem, CollObjPairHash>;
 
   static std::shared_ptr<OdeCollisionDetector> create();
 
@@ -158,7 +146,7 @@ private:
 
 private:
   dContactGeom contactCollisions[MAX_COLLIDE_RETURNS];
-  ContactHistoryMap mContactHistory;
+  std::vector<ContactHistoryItem> mContactHistory;
   static Registrar<OdeCollisionDetector> mRegistrar;
 };
 

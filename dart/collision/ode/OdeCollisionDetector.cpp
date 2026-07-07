@@ -56,7 +56,6 @@
 #include <deque>
 #include <functional>
 #include <limits>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -76,7 +75,7 @@ void reportContacts(
     OdeCollisionObject* b2,
     const CollisionOption& option,
     CollisionResult& result,
-    OdeCollisionDetector::ContactHistoryMap* history);
+    std::vector<OdeCollisionDetector::ContactHistoryItem>* history);
 
 Contact convertContact(
     const dContactGeom& fclContact,
@@ -149,12 +148,13 @@ void refreshHistoryTransforms(OdeCollisionDetector::ContactHistoryItem& item)
 }
 
 OdeCollisionDetector::ContactHistoryItem& FindPairInHist(
-    OdeCollisionDetector::ContactHistoryMap& cache,
+    std::vector<OdeCollisionDetector::ContactHistoryItem>& cache,
     const OdeCollisionDetector::CollObjPair& pair)
 {
-  const auto found = cache.find(pair);
-  if (found != cache.end()) {
-    return found->second;
+  for (auto& item : cache) {
+    if (pair.first == item.pair.first && pair.second == item.pair.second) {
+      return item;
+    }
   }
 
   OdeCollisionDetector::ContactHistoryItem newItem;
@@ -162,24 +162,26 @@ OdeCollisionDetector::ContactHistoryItem& FindPairInHist(
   newItem.transform1 = Eigen::Isometry3d::Identity();
   newItem.transform2 = Eigen::Isometry3d::Identity();
   newItem.hasTransforms = false;
+  cache.push_back(newItem);
 
-  return cache.emplace(pair, std::move(newItem)).first->second;
+  return cache.back();
 }
 
 void eraseHistoryForObject(
-    OdeCollisionDetector::ContactHistoryMap& cache,
+    std::vector<OdeCollisionDetector::ContactHistoryItem>& cache,
     const CollisionObject* object)
 {
   if (!object)
     return;
 
-  for (auto it = cache.begin(); it != cache.end();) {
-    if (it->first.first == object || it->first.second == object) {
-      it = cache.erase(it);
-    } else {
-      ++it;
-    }
-  }
+  cache.erase(
+      std::remove_if(
+          cache.begin(),
+          cache.end(),
+          [object](const OdeCollisionDetector::ContactHistoryItem& item) {
+            return item.pair.first == object || item.pair.second == object;
+          }),
+      cache.end());
 }
 
 struct OdeCollisionCallbackData
@@ -191,7 +193,7 @@ struct OdeCollisionCallbackData
 
   /// Collision result of DART
   CollisionResult* result;
-  OdeCollisionDetector::ContactHistoryMap* history;
+  std::vector<OdeCollisionDetector::ContactHistoryItem>* history;
 
   /// Whether the collision iteration can stop
   bool done;
@@ -227,17 +229,6 @@ OdeCollisionDetector::Registrar<OdeCollisionDetector>
 std::shared_ptr<OdeCollisionDetector> OdeCollisionDetector::create()
 {
   return std::shared_ptr<OdeCollisionDetector>(new OdeCollisionDetector());
-}
-
-//==============================================================================
-std::size_t OdeCollisionDetector::CollObjPairHash::operator()(
-    const CollObjPair& pair) const noexcept
-{
-  const auto h1 = std::hash<CollisionObject*>()(pair.first);
-  const auto h2 = std::hash<CollisionObject*>()(pair.second);
-  // boost::hash_combine-style mix so (a, b) and (b, a) hash differently even
-  // though MakeNewPair() already canonicalizes pair order.
-  return h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2));
 }
 
 //==============================================================================
@@ -465,7 +456,7 @@ void reportContacts(
     OdeCollisionObject* b2,
     const CollisionOption& option,
     CollisionResult& result,
-    OdeCollisionDetector::ContactHistoryMap* history)
+    std::vector<OdeCollisionDetector::ContactHistoryItem>* history)
 {
   if (0u == numContacts)
     return;
@@ -548,24 +539,32 @@ void reportContacts(
   }
 
   const auto pair = MakeNewPair(b1, b2);
-  auto& historyItem = FindPairInHist(*history, pair);
-  refreshHistoryTransforms(historyItem);
-  auto& pastContacsVec = historyItem.history;
   const std::size_t pairSpanEnd
       = pairContactsBegin + static_cast<std::size_t>(contactsToCopy);
+  const std::size_t pairContactCount = pairSpanEnd - pairContactsBegin;
+  const std::size_t pairTarget
+      = std::min<std::size_t>(3u, option.getEffectiveMaxNumContactsPerPair());
+
+  auto foundHistory = std::find_if(
+      history->begin(),
+      history->end(),
+      [&pair](const OdeCollisionDetector::ContactHistoryItem& item) {
+        return pair.first == item.pair.first && pair.second == item.pair.second;
+      });
+  if (pairContactCount >= pairTarget && foundHistory == history->end()) {
+    return;
+  }
+
+  auto& historyItem = foundHistory != history->end()
+                          ? *foundHistory
+                          : FindPairInHist(*history, pair);
+  refreshHistoryTransforms(historyItem);
+  auto& pastContacsVec = historyItem.history;
 
   bool sliding = false;
   constexpr double slidingThreshold = 1e-3;
-  std::size_t pairContactCount = 0u;
   for (std::size_t i = pairContactsBegin; i < pairSpanEnd; ++i) {
     const auto& curr_cont = result.getContact(i);
-    const auto current_pair
-        = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
-    if (current_pair != pair)
-      continue;
-
-    ++pairContactCount;
-
     if (computeTangentialSpeed(curr_cont) > slidingThreshold) {
       sliding = true;
       break;
@@ -581,8 +580,6 @@ void reportContacts(
     return;
   }
 
-  const std::size_t pairTarget
-      = std::min<std::size_t>(3u, option.getEffectiveMaxNumContactsPerPair());
   if (pairContactCount >= pairTarget) {
     return;
   }
@@ -599,15 +596,8 @@ void reportContacts(
        ++it) {
     auto past_cont = *it;
     bool matchesCurrentContact = false;
-    bool hasCurrentContactForPair = false;
     for (std::size_t i = pairContactsBegin; i < pairSpanEnd; ++i) {
       const auto& curr_cont = result.getContact(i);
-      const auto res_pair
-          = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
-      if (res_pair != pair) {
-        continue;
-      }
-      hasCurrentContactForPair = true;
       auto dist_v = past_cont.point - curr_cont.point;
       const auto dist_m = (dist_v.transpose() * dist_v).coeff(0, 0);
       if (dist_m < 0.01) {
@@ -616,7 +606,7 @@ void reportContacts(
       }
     }
 
-    if (matchesCurrentContact || !hasCurrentContactForPair) {
+    if (matchesCurrentContact) {
       continue;
     }
 
@@ -628,12 +618,7 @@ void reportContacts(
       break;
   }
   for (std::size_t i = pairContactsBegin; i < pairSpanEnd; ++i) {
-    const auto& item = result.getContact(i);
-    const auto res_pair
-        = MakeNewPair(item.collisionObject1, item.collisionObject2);
-    if (res_pair == pair) {
-      pastContacsVec.push_back(item);
-    }
+    pastContacsVec.push_back(result.getContact(i));
   }
 
   const auto size = pastContacsVec.size();
@@ -1098,21 +1083,24 @@ void OdeCollisionDetector::pruneContactHistory(const CollisionResult& result)
   if (mContactHistory.empty())
     return;
 
-  // Single stamp-and-sweep pass instead of an O(history x contacts) double
-  // loop: first stamp every pair seen in this round's contacts into a set
-  // (O(contacts) with O(1) canonical-pair hashing), then sweep the history
-  // map once (O(history)) and drop the cached manifold for any pair that
-  // wasn't stamped.
-  std::unordered_set<CollObjPair, CollObjPairHash> seenPairs;
-  seenPairs.reserve(result.getNumContacts());
-  for (const auto& current : result.getContacts()) {
-    seenPairs.insert(
-        MakeNewPair(current.collisionObject1, current.collisionObject2));
+  if (result.getNumContacts() == 0u) {
+    mContactHistory.clear();
+    return;
   }
 
-  for (auto& entry : mContactHistory) {
-    if (seenPairs.find(entry.first) == seenPairs.end()) {
-      entry.second.history.clear();
+  const auto& contacts = result.getContacts();
+  for (auto& pastContact : mContactHistory) {
+    bool clear = true;
+    for (const auto& current : contacts) {
+      auto currentPair
+          = MakeNewPair(current.collisionObject1, current.collisionObject2);
+      if (pastContact.pair == currentPair) {
+        clear = false;
+        break;
+      }
+    }
+    if (clear) {
+      pastContact.history.clear();
     }
   }
 }
