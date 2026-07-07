@@ -36,6 +36,7 @@
 #include <dart/collision/native/narrow_phase/capsule_sphere.hpp>
 #include <dart/collision/native/narrow_phase/convex_convex.hpp>
 #include <dart/collision/native/narrow_phase/cylinder_collision.hpp>
+#include <dart/collision/native/narrow_phase/mesh_mesh.hpp>
 #include <dart/collision/native/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/native/narrow_phase/sphere_box.hpp>
 #include <dart/collision/native/narrow_phase/sphere_sphere.hpp>
@@ -83,7 +84,7 @@ bool isConvexFallbackType(ShapeType type)
 {
   return type == ShapeType::Sphere || type == ShapeType::Box
          || type == ShapeType::Capsule || type == ShapeType::Cylinder
-         || type == ShapeType::Convex;
+         || type == ShapeType::Convex || type == ShapeType::Mesh;
 }
 
 bool collideShapes(
@@ -248,6 +249,44 @@ bool collideShapes(
         });
   }
 
+  if (type1 == ShapeType::Mesh && type2 == ShapeType::Mesh) {
+    const auto* m1 = static_cast<const MeshShape*>(shape1);
+    const auto* m2 = static_cast<const MeshShape*>(shape2);
+    return collideMeshMesh(*m1, tf1, *m2, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Mesh && type2 == ShapeType::Plane) {
+    const auto* mesh = static_cast<const MeshShape*>(shape1);
+    const auto* plane = static_cast<const PlaneShape*>(shape2);
+    return collidePlaneMesh(*plane, tf2, *mesh, tf1, result, option);
+  }
+
+  if (type1 == ShapeType::Plane && type2 == ShapeType::Mesh) {
+    const auto* plane = static_cast<const PlaneShape*>(shape1);
+    const auto* mesh = static_cast<const MeshShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collidePlaneMesh(*plane, tf1, *mesh, tf2, local, opt);
+        });
+  }
+
+  if (type1 == ShapeType::Mesh && type2 != ShapeType::Convex) {
+    const auto* mesh = static_cast<const MeshShape*>(shape1);
+    return collidePrimitiveMesh(*shape2, tf2, *mesh, tf1, result, option);
+  }
+
+  if (type2 == ShapeType::Mesh && type1 != ShapeType::Convex) {
+    const auto* mesh = static_cast<const MeshShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collidePrimitiveMesh(*shape1, tf1, *mesh, tf2, local, opt);
+        });
+  }
+
   if ((type1 == ShapeType::Convex || type2 == ShapeType::Convex)
       && isConvexFallbackType(type1) && isConvexFallbackType(type2)) {
     return collideConvexConvex(*shape1, tf1, *shape2, tf2, result, option);
@@ -361,6 +400,11 @@ bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)
   }
   if ((type1 == ShapeType::Cylinder && type2 == ShapeType::Plane)
       || (type1 == ShapeType::Plane && type2 == ShapeType::Cylinder)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Mesh || type2 == ShapeType::Mesh)
+      && type1 != ShapeType::Sdf && type2 != ShapeType::Sdf
+      && type1 != ShapeType::Compound && type2 != ShapeType::Compound) {
     return true;
   }
   if ((type1 == ShapeType::Convex || type2 == ShapeType::Convex)
