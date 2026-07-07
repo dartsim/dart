@@ -267,12 +267,24 @@ msgid "DART_ENABLE_SIMD"
 msgstr ""
 
 #: ../../build.rst:195 3a1bc12e58ed4f12be15d23895d47e58
-msgid "ON"
+msgid "OFF"
 msgstr ""
 
 #: ../../build.rst:195 768b97537e4f403cb9f8e5a13b8c5aaa
-msgid "Enables use of SIMD instructions."
-msgstr "SIMD 명령어 사용을 활성화합니다."
+msgid ""
+"Adds local-machine SIMD compiler flags such as ``-march=native``. Use "
+"only for builds that run on the same machine architecture."
+msgstr ""
+
+#: ../../build.rst:198
+msgid "DART_SIMD_FORCE_SCALAR"
+msgstr ""
+
+#: ../../build.rst:198
+msgid ""
+"Forces the header-only ``dart/simd`` module to use its scalar fallback "
+"backend in tests."
+msgstr ""
 
 #: ../../build.rst:202 911d247c51744ad3841c9239e89094fd
 msgid ""
@@ -522,4 +534,3 @@ msgstr ""
 
 #~ msgid "Building on Windows"
 #~ msgstr "윈도우즈에서 빌드하기"
-
