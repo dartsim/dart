@@ -40,7 +40,11 @@
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/CapsuleShape.hpp>
+#include <dart/dynamics/ConeShape.hpp>
+#include <dart/dynamics/ConvexMeshShape.hpp>
+#include <dart/dynamics/MultiSphereConvexHullShape.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
+#include <dart/dynamics/PyramidShape.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/SphereShape.hpp>
 
@@ -131,6 +135,39 @@ private:
       std::pair<const dynamics::ShapeFrame*, const dynamics::ShapeFrame*>>
       mIgnoredPairs;
 };
+
+//==============================================================================
+dynamics::ConvexMeshShape::Vertices makeCubeVertices(double halfExtent = 0.5)
+{
+  const double h = halfExtent;
+  return {
+      {-h, -h, -h},
+      {h, -h, -h},
+      {h, h, -h},
+      {-h, h, -h},
+      {-h, -h, h},
+      {h, -h, h},
+      {h, h, h},
+      {-h, h, h}};
+}
+
+//==============================================================================
+dynamics::ConvexMeshShape::Triangles makeCubeTriangles()
+{
+  return {
+      {0, 1, 2},
+      {0, 2, 3},
+      {4, 6, 5},
+      {4, 7, 6},
+      {0, 5, 1},
+      {0, 4, 5},
+      {2, 6, 7},
+      {2, 7, 3},
+      {0, 7, 4},
+      {0, 3, 7},
+      {1, 5, 6},
+      {1, 6, 2}};
+}
 
 } // namespace
 
@@ -339,6 +376,49 @@ TEST(NativeCollisionDetector, CollidesCapsuleBox)
 }
 
 //==============================================================================
+TEST(NativeCollisionDetector, CollidesCapsuleCapsule)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto capsuleFrame1
+      = makeFrame(std::make_shared<dynamics::CapsuleShape>(0.5, 2.0));
+  auto capsuleFrame2 = makeFrame(
+      std::make_shared<dynamics::CapsuleShape>(0.5, 2.0),
+      Eigen::Vector3d(0.75, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup(
+      capsuleFrame1.get(), capsuleFrame2.get());
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+
+  const auto& contact = result.getContact(0);
+  EXPECT_EQ(capsuleFrame1.get(), contact.getShapeFrame1());
+  EXPECT_EQ(capsuleFrame2.get(), contact.getShapeFrame2());
+  EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, CollidesSphereConvexMesh)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto convexFrame = makeFrame(std::make_shared<dynamics::ConvexMeshShape>(
+      makeCubeVertices(), makeCubeTriangles()));
+  auto sphereFrame = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.75),
+      Eigen::Vector3d(1.0, 0.0, 0.0));
+
+  auto group
+      = detector->createCollisionGroup(convexFrame.get(), sphereFrame.get());
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+
+  const auto& contact = result.getContact(0);
+  EXPECT_EQ(convexFrame.get(), contact.getShapeFrame1());
+  EXPECT_EQ(sphereFrame.get(), contact.getShapeFrame2());
+}
+
+//==============================================================================
 TEST(NativeCollisionDetector, CollidesAcrossGroups)
 {
   auto detector = collision::NativeCollisionDetector::create();
@@ -404,6 +484,52 @@ TEST(NativeCollisionDetector, ConvertsSphereAndBoxShapes)
       1.5,
       static_cast<const native::CapsuleShape*>(nativeCapsule.get())
           ->getHeight());
+
+  const dynamics::ConvexMeshShape convexMesh(
+      makeCubeVertices(), makeCubeTriangles());
+  auto nativeConvexMesh
+      = collision::detail::NativeShapeConversion::create(convexMesh);
+  ASSERT_NE(nullptr, nativeConvexMesh);
+  ASSERT_EQ(native::ShapeType::Convex, nativeConvexMesh->getType());
+  EXPECT_EQ(
+      8u,
+      static_cast<const native::ConvexShape*>(nativeConvexMesh.get())
+          ->getVertices()
+          .size());
+
+  const dynamics::PyramidShape pyramid(1.0, 2.0, 3.0);
+  auto nativePyramid
+      = collision::detail::NativeShapeConversion::create(pyramid);
+  ASSERT_NE(nullptr, nativePyramid);
+  ASSERT_EQ(native::ShapeType::Convex, nativePyramid->getType());
+  EXPECT_EQ(
+      5u,
+      static_cast<const native::ConvexShape*>(nativePyramid.get())
+          ->getVertices()
+          .size());
+
+  const dynamics::ConeShape cone(1.0, 2.0);
+  auto nativeCone = collision::detail::NativeShapeConversion::create(cone);
+  ASSERT_NE(nullptr, nativeCone);
+  ASSERT_EQ(native::ShapeType::Convex, nativeCone->getType());
+  EXPECT_GT(
+      static_cast<const native::ConvexShape*>(nativeCone.get())
+          ->getVertices()
+          .size(),
+      8u);
+
+  const dynamics::MultiSphereConvexHullShape multiSphere(
+      {{0.25, Eigen::Vector3d::Zero()},
+       {0.25, Eigen::Vector3d(0.5, 0.0, 0.0)}});
+  auto nativeMultiSphere
+      = collision::detail::NativeShapeConversion::create(multiSphere);
+  ASSERT_NE(nullptr, nativeMultiSphere);
+  ASSERT_EQ(native::ShapeType::Convex, nativeMultiSphere->getType());
+  EXPECT_GT(
+      static_cast<const native::ConvexShape*>(nativeMultiSphere.get())
+          ->getVertices()
+          .size(),
+      8u);
 }
 
 //==============================================================================
