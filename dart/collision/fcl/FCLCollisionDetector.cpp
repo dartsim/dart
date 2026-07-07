@@ -686,22 +686,6 @@ template <class BV>
 
     model->endModel();
 
-    // Allocate FCL's previous-vertex buffer before the model enters the
-    // simulation hot path. Subsequent dynamic updates reuse this storage.
-    model->beginUpdateModel();
-    for (std::size_t i = 0; i < _mesh->mNumFaces; ++i) {
-      const aiFace& face = _mesh->mFaces[i];
-      DART_ASSERT(face.mNumIndices == 3);
-
-      fcl::Vector3 vertices[3];
-      for (std::size_t j = 0; j < 3; ++j) {
-        const aiVector3D& vertex = _mesh->mVertices[face.mIndices[j]];
-        vertices[j] = fcl::Vector3(vertex.x, vertex.y, vertex.z);
-      }
-      model->updateTriangle(vertices[0], vertices[1], vertices[2]);
-    }
-    model->endUpdateModel();
-
     return model;
   }
 
@@ -729,13 +713,6 @@ template <class BV>
   model->beginModel();
   model->addSubModel(vertices, faces);
   model->endModel();
-
-  // Allocate FCL's previous-vertex buffer before the model enters the
-  // simulation hot path. Subsequent dynamic updates reuse this storage.
-  model->beginUpdateModel();
-  for (const auto& vertex : vertices)
-    model->updateVertex(vertex);
-  model->endUpdateModel();
 
   return model;
 }

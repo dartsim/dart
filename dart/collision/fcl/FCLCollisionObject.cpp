@@ -173,14 +173,17 @@ void FCLCollisionObject::updateEngineData()
       }
 
       if (softMeshChanged) {
-        bvhModel->beginUpdateModel();
+        // Soft-body collision in DART is discrete. Replace the current
+        // geometry with the same topology instead of using FCL's dynamic update
+        // path, which refits swept previous/current vertex bounds.
+        bvhModel->beginReplaceModel();
         for (std::size_t i = 0; i < pointMasses.size(); ++i) {
           const Eigen::Vector3d& vertex = pointMasses[i]->getLocalPosition();
           mesh->mVertices[i].Set(vertex[0], vertex[1], vertex[2]);
-          bvhModel->updateVertex(
+          bvhModel->replaceVertex(
               dart::collision::fcl::Vector3(vertex[0], vertex[1], vertex[2]));
         }
-        bvhModel->endUpdateModel();
+        bvhModel->endReplaceModel();
       }
     } else {
       DART_ASSERT(numFclVertices == mesh->mNumFaces * 3u);
@@ -203,7 +206,10 @@ void FCLCollisionObject::updateEngineData()
       }
 
       if (softMeshChanged) {
-        bvhModel->beginUpdateModel();
+        // Soft-body collision in DART is discrete. Replace the current
+        // geometry with the same topology instead of using FCL's dynamic update
+        // path, which refits swept previous/current vertex bounds.
+        bvhModel->beginReplaceModel();
         for (std::size_t i = 0; i < pointMasses.size(); ++i) {
           const Eigen::Vector3d& vertex = pointMasses[i]->getLocalPosition();
           mesh->mVertices[i].Set(vertex[0], vertex[1], vertex[2]);
@@ -219,9 +225,9 @@ void FCLCollisionObject::updateEngineData()
             vertices[j]
                 = dart::collision::fcl::Vector3(vertex.x, vertex.y, vertex.z);
           }
-          bvhModel->updateTriangle(vertices[0], vertices[1], vertices[2]);
+          bvhModel->replaceTriangle(vertices[0], vertices[1], vertices[2]);
         }
-        bvhModel->endUpdateModel();
+        bvhModel->endReplaceModel();
       }
     }
   }

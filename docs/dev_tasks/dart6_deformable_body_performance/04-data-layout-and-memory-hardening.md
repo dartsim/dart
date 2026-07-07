@@ -77,10 +77,13 @@ hot path:
 
 - `createSoftMesh()` now builds the FCL BVH with shared vertices and triangle
   indices instead of duplicating three vertices for every face.
-- FCL's previous-vertex buffer is allocated by a one-time update at collision
-  geometry creation, not on the first simulation collision update.
-- `FCLCollisionObject::updateEngineData()` updates one FCL vertex per point
-  mass instead of rewriting every triangle.
+- `FCLCollisionObject::updateEngineData()` replaces the current FCL soft-mesh
+  geometry with the same topology instead of using FCL's dynamic update path,
+  which refits swept previous/current vertex bounds that DART's discrete
+  soft-body collision does not consume.
+- The shared-vertex path replaces one FCL vertex per point mass instead of
+  rewriting every triangle; the triangle-contiguous path keeps the small
+  articulated-soft-link specialization and replaces those triangles in place.
 - The expensive FCL BVH refit is skipped when the soft mesh's local point-mass
   positions are unchanged; the object transform and AABB still update every
   collision pass, so rigid motion remains represented.
@@ -97,6 +100,12 @@ Scene: `soft_bodies`, 200 steps, checkpoint 100, scalar Release build
 
 The step-200 checksum values matched before and after the optimization and
 matched between `THREADS=1` and `THREADS=4` in these profile runs.
+
+A later same-host `soft_bodies` FCL smoke over 200 steps kept the exact
+step-200 checksum while replacing FCL's swept dynamic refit path with the
+topology-preserving replace path. The measured elapsed time changed from
+88.524 ms to 58.334 ms on that run; treat the exact number as load-sensitive,
+but the profile showed the removed refit path was the dominant cost.
 
 Remaining profile signal after this slice:
 
