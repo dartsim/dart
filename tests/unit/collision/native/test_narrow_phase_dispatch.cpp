@@ -605,6 +605,44 @@ TEST(NarrowPhaseDispatch, RoutesCylinderPairsInBothOrders)
       -Eigen::Vector3d::UnitZ());
 }
 
+TEST(NarrowPhaseDispatch, FlippedCylinderBoxPreservesCapPatchManifold)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 0.5));
+  const Eigen::Isometry3d cylinderTransform = Eigen::Isometry3d::Identity();
+  const Eigen::Isometry3d boxTransform = translated(0.0, 0.0, 1.3);
+
+  CollisionResult cylinderFirstResult;
+  const bool cylinderFirstHit = NarrowPhase::collide(
+      &cylinder,
+      cylinderTransform,
+      &box,
+      boxTransform,
+      CollisionOption(),
+      cylinderFirstResult);
+
+  ASSERT_TRUE(cylinderFirstHit);
+  ASSERT_EQ(1u, cylinderFirstResult.numManifolds());
+  ASSERT_GT(cylinderFirstResult.numContacts(), 1u);
+  EXPECT_EQ(ContactType::Patch, cylinderFirstResult.getManifold(0).getType());
+
+  CollisionResult boxFirstResult;
+  const bool boxFirstHit = NarrowPhase::collide(
+      &box,
+      boxTransform,
+      &cylinder,
+      cylinderTransform,
+      CollisionOption(),
+      boxFirstResult);
+
+  ASSERT_TRUE(boxFirstHit);
+  ASSERT_EQ(1u, boxFirstResult.numManifolds());
+  ASSERT_EQ(cylinderFirstResult.numContacts(), boxFirstResult.numContacts());
+  EXPECT_EQ(ContactType::Patch, boxFirstResult.getManifold(0).getType());
+  EXPECT_TRUE(boxFirstResult.getManifold(0).getSharedNormal().isApprox(
+      Eigen::Vector3d::UnitZ(), 1e-12));
+}
+
 TEST(NarrowPhaseDispatch, RoutesContainedCylinderSphereNormalsInBothOrders)
 {
   CylinderShape cylinder(1.0, 4.0);

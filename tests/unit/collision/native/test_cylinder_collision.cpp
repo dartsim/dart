@@ -58,6 +58,14 @@ Eigen::Isometry3d rotatedAroundY(double radians)
   return tf;
 }
 
+Eigen::Isometry3d rotatedAroundZ(double radians)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear()
+      = Eigen::AngleAxisd(radians, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  return tf;
+}
+
 CollisionResult resultWithStoredContact()
 {
   CollisionResult result;
@@ -330,6 +338,25 @@ TEST(CylinderCollision, CylinderBoxCapContactPositionLiesInOverlap)
     EXPECT_NEAR(0.9, result.getContact(i).position.z(), 1e-12);
     EXPECT_NEAR(0.2, result.getContact(i).depth, 1e-12);
   }
+}
+
+TEST(CylinderCollision, PlaneLikeBoxUsesProjectedCylinderFootprint)
+{
+  CylinderShape cylinder(0.1, 20.0);
+  BoxShape box(Eigen::Vector3d::Constant(2000.0));
+  Eigen::Isometry3d boxTransform = rotatedAroundZ(0.25);
+  boxTransform.translation() = Eigen::Vector3d(0.0, 0.0, -2000.0);
+
+  Eigen::Isometry3d cylinderTransform = Eigen::Isometry3d::Identity();
+  cylinderTransform.translation()
+      = boxTransform * Eigen::Vector3d(2001.0, 0.0, 2009.9);
+
+  CollisionResult result;
+  const bool hit = collideCylinderBox(
+      cylinder, cylinderTransform, box, boxTransform, result);
+
+  EXPECT_FALSE(hit);
+  EXPECT_EQ(0u, result.numContacts());
 }
 
 TEST(CylinderCollision, EmbeddedBoxUsesLateralSeparation)

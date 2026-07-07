@@ -55,6 +55,17 @@ bool contactBudgetExhausted(
   return option.enableContact && numContacts >= option.maxNumContacts;
 }
 
+double cylinderProjectionRadius(
+    const Eigen::Vector3d& cylinderAxis,
+    const Eigen::Vector3d& direction,
+    double cylinderRadius,
+    double cylinderHalfHeight)
+{
+  const double axisDot = std::clamp(cylinderAxis.dot(direction), -1.0, 1.0);
+  const double radialScale = std::sqrt(std::max(0.0, 1.0 - axisDot * axisDot));
+  return cylinderHalfHeight * std::abs(axisDot) + cylinderRadius * radialScale;
+}
+
 Eigen::Vector3d chooseRadialDirection(const Eigen::Vector3d& axis)
 {
   const Eigen::Vector3d reference = (std::abs(axis.x()) < 0.9)
@@ -237,11 +248,16 @@ bool collideCylinderPlaneLikeBox(
 
   const Eigen::Vector3d deepestPointInBox
       = boxTransform.inverse() * deepestPoint;
-  const double boundsTolerance = cylinderExtent + 1e-9;
   for (int axis = 0; axis < 3; ++axis) {
     if (axis == faceAxis) {
       continue;
     }
+    const double boundsTolerance = cylinderProjectionRadius(
+                                       cylinderAxis,
+                                       boxRotation.col(axis),
+                                       cylinderRadius,
+                                       cylinderHalfHeight)
+                                   + 1e-9;
     if (std::abs(deepestPointInBox[axis])
         > boxHalfExtents[axis] + boundsTolerance) {
       return false;

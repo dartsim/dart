@@ -42,6 +42,7 @@
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <stdexcept>
+#include <utility>
 
 namespace dart::collision::native {
 
@@ -69,11 +70,17 @@ bool collideWithFlippedNormals(
     return false;
   }
 
-  const auto numContacts = localResult.numContacts();
-  for (std::size_t i = 0; i < numContacts; ++i) {
-    ContactPoint contact = localResult.getContact(i);
-    contact.normal = -contact.normal;
-    result.addContact(contact);
+  for (const auto& manifold : localResult.getManifolds()) {
+    ContactManifold flipped;
+    flipped.setType(manifold.getType());
+    flipped.setObjects(manifold.getObject2(), manifold.getObject1());
+    for (ContactPoint contact : manifold.getContacts()) {
+      contact.normal = -contact.normal;
+      std::swap(contact.object1, contact.object2);
+      std::swap(contact.featureIndex1, contact.featureIndex2);
+      flipped.addContact(contact);
+    }
+    result.addManifold(std::move(flipped));
   }
 
   return true;
