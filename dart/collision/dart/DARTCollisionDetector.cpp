@@ -2475,7 +2475,7 @@ bool processFiniteFiniteCandidatePairs(
   if (pairs.empty())
     return false;
 
-  constexpr std::size_t kMinParallelSoftSoftPairs = 2u;
+  constexpr std::size_t kMinParallelSoftSoftPairs = 4u;
   const bool contactCapCanShortCircuit = option.maxNumContacts < pairs.size();
   const auto parallelSoftSoftPairCount = countParallelSoftSoftPairs(pairs);
   const bool canParallelize
