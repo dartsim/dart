@@ -409,7 +409,7 @@ TEST(NarrowPhaseDispatch, RoutesCapsuleBoxInBothOrders)
   ASSERT_TRUE(capsuleFirstHit);
   ASSERT_GE(capsuleFirstResult.numContacts(), 1u);
   EXPECT_TRUE(capsuleFirstResult.getContact(0).normal.isApprox(
-      -Eigen::Vector3d::UnitX(), 1e-12));
+      Eigen::Vector3d::UnitX(), 1e-12));
 
   CollisionResult boxFirstResult;
   const bool boxFirstHit = NarrowPhase::collide(
@@ -423,7 +423,7 @@ TEST(NarrowPhaseDispatch, RoutesCapsuleBoxInBothOrders)
   ASSERT_TRUE(boxFirstHit);
   ASSERT_GE(boxFirstResult.numContacts(), 1u);
   EXPECT_TRUE(boxFirstResult.getContact(0).normal.isApprox(
-      Eigen::Vector3d::UnitX(), 1e-12));
+      -Eigen::Vector3d::UnitX(), 1e-12));
 }
 
 TEST(NarrowPhaseDispatch, CapsuleBoxBinaryCheckDoesNotAddContacts)

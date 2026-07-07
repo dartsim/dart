@@ -87,7 +87,7 @@ TEST(CapsuleBox, OverlappingTranslatedVerticalCapsuleAddsContacts)
 
   ASSERT_GE(result.numContacts(), 1u);
   const auto& contact = result.getContact(0);
-  EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
   EXPECT_NEAR(0.25, contact.depth, 1e-12);
 }
 

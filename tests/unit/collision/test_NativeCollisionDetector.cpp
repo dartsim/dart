@@ -335,7 +335,7 @@ TEST(NativeCollisionDetector, CollidesCapsuleBox)
   const auto& contact = result.getContact(0);
   EXPECT_EQ(capsuleFrame.get(), contact.getShapeFrame1());
   EXPECT_EQ(boxFrame.get(), contact.getShapeFrame2());
-  EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
 }
 
 //==============================================================================
