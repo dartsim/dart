@@ -30,74 +30,72 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SOFTMESHSHAPE_HPP_
-#define DART_DYNAMICS_SOFTMESHSHAPE_HPP_
+#ifndef DART_GUI_OSG_PERFORMANCESTATSPANEL_HPP_
+#define DART_GUI_OSG_PERFORMANCESTATSPANEL_HPP_
 
-#include <dart/dynamics/Shape.hpp>
+#include <string>
+#include <vector>
 
-#include <Eigen/Dense>
-#include <assimp/scene.h>
+#include <cstddef>
 
 namespace dart {
-namespace dynamics {
+namespace gui {
+namespace osg {
 
-class SoftBodyNode;
-
-// TODO(JS): Implement
-class SoftMeshShape : public Shape
+struct PerformanceStatsData
 {
-public:
-  friend class SoftBodyNode;
-
-  /// \brief Constructor.
-  explicit SoftMeshShape(SoftBodyNode* _softBodyNode);
-
-  /// \brief Destructor.
-  virtual ~SoftMeshShape();
-
-  // Documentation inherited.
-  const std::string& getType() const override;
-
-  /// Returns shape type for this class
-  static const std::string& getStaticType();
-
-  /// \brief
-  const aiMesh* getAssimpMesh() const;
-
-  /// Get the SoftBodyNode that is associated with this SoftMeshShape
-  const SoftBodyNode* getSoftBodyNode() const;
-
-  /// \brief Update positions of the vertices using the parent soft body node.
-  void update();
-
-  // Documentation inherited.
-  void refreshData() override;
-
-  // Documentation inherited.
-  Eigen::Matrix3d computeInertia(double mass) const override;
-
-  // Documentation inherited.
-  ShapePtr clone() const override;
-
-protected:
-  // Documentation inherited.
-  void updateBoundingBox() const override;
-
-  // Documentation inherited.
-  void updateVolume() const override;
-
-private:
-  /// \brief Build mesh using SoftBodyNode data
-  void _buildMesh();
-
-  /// \brief
-  SoftBodyNode* mSoftBodyNode;
-
-  /// \brief
-  std::unique_ptr<aiMesh> mAssimpMesh;
+  int frame = 0;
+  double simTime = 0.0;
+  std::string sceneName;
+  std::string collisionDetectorName;
+  std::size_t simulationThreads = 1u;
+  double renderFps = 0.0;
+  double targetRealTimeFactor = 1.0;
+  double timeStep = 0.0;
+  double lastStepMs = 0.0;
+  double movingAverageStepMs = 0.0;
+  double minStepMs = 0.0;
+  double maxStepMs = 0.0;
+  std::size_t measuredSteps = 0u;
+  std::size_t contacts = 0u;
+  std::size_t softBodies = 0u;
+  std::size_t pointMasses = 0u;
+  std::size_t skeletons = 0u;
+  std::size_t bodyNodes = 0u;
 };
 
-} // namespace dynamics
+struct PerformanceStatsPanelOptions
+{
+  bool showGraph = true;
+  bool showSceneCounts = true;
+  float graphHeight = 58.0f;
+};
+
+class PerformanceStatsPanel
+{
+public:
+  explicit PerformanceStatsPanel(std::size_t historyCapacity = 180u);
+
+  void reset();
+
+  void setHistoryCapacity(std::size_t historyCapacity);
+
+  std::size_t getHistoryCapacity() const;
+
+  void render(
+      const PerformanceStatsData& data,
+      const PerformanceStatsPanelOptions& options = {});
+
+private:
+  void recordSample(const PerformanceStatsData& data);
+
+  std::size_t mHistoryCapacity;
+  std::size_t mLastMeasuredSteps;
+  std::vector<float> mStepMsHistory;
+};
+
+} // namespace osg
+} // namespace gui
 } // namespace dart
 
-#endif // DART_DYNAMICS_SOFTMESHSHAPE_HPP_
+#endif // DART_GUI_OSG_PERFORMANCESTATSPANEL_HPP_
