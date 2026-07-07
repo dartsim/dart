@@ -356,6 +356,37 @@ Focused verification after this slice:
   `THREADS=1` and `THREADS=4` with the same step-200 values as the prior
   phase-view slice.
 
+## Span-backed phase-view slice
+
+The next WP-DB.06 implementation keeps `PointMassPhaseView` `.cpp`-local but
+changes it from vector references to a small raw span:
+
+- cached `PointMass* const*`, point-state pointer, point-property pointer, and
+  count,
+- invariant checks remain at construction, and
+- converted hot loops index contiguous state/property storage without asking
+  the owning vectors for `size()` or `data()` on every pass.
+
+The same slice simplifies the point-mass articulated-inertia scalar path.
+Explicit `Pi` is mathematically zero for a point mass, and implicit `Pi` now
+reuses the already computed inverse denominator as
+`mass * implicitOffset * implicitPsi` instead of the equivalent old expression
+`mass - mass^2 * implicitPsi`. This keeps the existing scalar formula but
+removes one multiply and one subtract per point-mass inertia update.
+
+Focused verification after this slice:
+
+- `test_SoftDynamics` passed.
+- `INTEGRATION_StepAllocation` passed.
+- `StepAllocation.*Soft*` passed all 12 zero-allocation rows.
+- Native `soft_bodies` 200-step checksum rows matched exactly between
+  `THREADS=1` and `THREADS=4` with the same step-200 values as the prior
+  phase-view slice.
+- Current-only benchmark repeats showed lower native CPU time than the earlier
+  pre-span current summary on most tracked rows, but parent/base threshold
+  evidence remains open and noisy enough that this slice is not a final
+  speedup claim.
+
 ## Rest-detection memory-hardening carryover
 
 After refreshing `origin/dart6-memory-hardening`, this branch first ported its
