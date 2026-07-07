@@ -250,6 +250,21 @@ function(dart_configure_compiler_cache)
     endif()
   endforeach()
 
+  set(
+    CMAKE_C_COMPILER_LAUNCHER
+    ""
+    CACHE STRING
+    "C compiler launcher used for caching"
+    FORCE
+  )
+  set(
+    CMAKE_CXX_COMPILER_LAUNCHER
+    ""
+    CACHE STRING
+    "CXX compiler launcher used for caching"
+    FORCE
+  )
+  unset(DART_ACTIVE_COMPILER_CACHE CACHE)
   message(
     STATUS
     "Compiler cache disabled: neither sccache nor ccache found on PATH"
