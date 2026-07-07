@@ -42,6 +42,12 @@ def test_humanize_dart6_curated_surfaces():
         == "Contact container active step - 60 objects - 0 engine - 16 threads"
     )
     assert (
+        module.humanize_name(
+            "BM_ContactContainerDeactivation/60/0/16/iterations:1"
+        )
+        == "Contact container deactivation-enabled step - 60 objects - 0 engine - 16 threads"
+    )
+    assert (
         module.humanize_name("BM_SoftBodyStep/2/16/200")
         == "Soft-body world step - 2 scene - 16 threads - 200 steps"
     )
@@ -59,3 +65,7 @@ def test_family_mapping_and_generic_fallback():
     )
     assert module.family_of("BM_UnmappedCase/4") == "Other benchmarks"
     assert module.humanize_name("BM_UnmappedCase/4") == "Unmapped Case - 4 arg0"
+    assert (
+        module.humanize_name("BM_UnmappedCase/4/iterations:1")
+        == "Unmapped Case - 4 arg0"
+    )

@@ -32,7 +32,11 @@
 
 #include "ContactContainerScene.hpp"
 
+#ifdef DART_CONTACT_CONTAINER_BENCHMARK_HAS_BULLET
+  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#endif
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
 #include <benchmark/benchmark.h>
@@ -43,24 +47,45 @@ enum Engine
 {
   DART = 0,
   ODE = 1,
+  FCL = 2,
+  BULLET = 3,
 };
 
 dart::collision::CollisionDetectorPtr makeDetector(int engine)
 {
-  if (engine == ODE)
-    return dart::collision::OdeCollisionDetector::create();
-
-  return dart::collision::DARTCollisionDetector::create();
+  switch (engine) {
+    case ODE:
+      return dart::collision::OdeCollisionDetector::create();
+    case FCL:
+      return dart::collision::FCLCollisionDetector::create();
+#ifdef DART_CONTACT_CONTAINER_BENCHMARK_HAS_BULLET
+    case BULLET:
+      return dart::collision::BulletCollisionDetector::create();
+#endif
+    case DART:
+    default:
+      return dart::collision::DARTCollisionDetector::create();
+  }
 }
 
 const char* engineName(int engine)
 {
-  return engine == ODE ? "ode" : "dart";
+  switch (engine) {
+    case ODE:
+      return "ode";
+    case FCL:
+      return "fcl";
+    case BULLET:
+      return "bullet";
+    case DART:
+    default:
+      return "dart";
+  }
 }
 
-void BM_ContactContainerActive(benchmark::State& state)
+void runContactContainerBenchmark(
+    benchmark::State& state, bool deactivationEnabled, std::size_t steps)
 {
-  constexpr std::size_t kSteps = 200;
   const auto objects = static_cast<std::size_t>(state.range(0));
   const int engine = static_cast<int>(state.range(1));
   const auto threads = static_cast<std::size_t>(state.range(2));
@@ -88,14 +113,14 @@ void BM_ContactContainerActive(benchmark::State& state)
         options);
     world->setNumSimulationThreads(threads);
     auto deactivation = world->getDeactivationOptions();
-    deactivation.mEnabled = false;
+    deactivation.mEnabled = deactivationEnabled;
     world->setDeactivationOptions(deactivation);
     world->getConstraintSolver()->getCollisionOption().maxNumContacts = 20000;
     world->getConstraintSolver()->getCollisionOption().maxNumContactsPerPair
         = 4;
     state.ResumeTiming();
 
-    for (std::size_t step = 0; step < kSteps; ++step)
+    for (std::size_t step = 0; step < steps; ++step)
       world->step();
 
     state.PauseTiming();
@@ -116,17 +141,35 @@ void BM_ContactContainerActive(benchmark::State& state)
   }
 
   state.SetItemsProcessed(
-      static_cast<std::int64_t>(state.iterations() * kSteps * objects));
+      static_cast<std::int64_t>(state.iterations() * steps * objects));
   state.SetLabel(
       std::string("engine=") + engineName(engine)
-      + " threads=" + std::to_string(threads));
+      + " threads=" + std::to_string(threads)
+      + " deactivation=" + (deactivationEnabled ? "on" : "off")
+      + " steps=" + std::to_string(steps));
   state.counters["sim_s/s"] = benchmark::Counter(
-      static_cast<double>(state.iterations()) * static_cast<double>(kSteps)
+      static_cast<double>(state.iterations()) * static_cast<double>(steps)
           * 0.001,
       benchmark::Counter::kIsRate);
   state.counters["contacts"] = static_cast<double>(finalContacts);
   state.counters["resting"] = static_cast<double>(finalResting);
   state.counters["mobile"] = static_cast<double>(finalMobile);
+  state.counters["steps"] = static_cast<double>(steps);
+}
+
+void BM_ContactContainerActive(benchmark::State& state)
+{
+  runContactContainerBenchmark(state, false, 200);
+}
+
+void BM_ContactContainerLargeActive(benchmark::State& state)
+{
+  runContactContainerBenchmark(state, false, 20);
+}
+
+void BM_ContactContainerDeactivation(benchmark::State& state)
+{
+  runContactContainerBenchmark(state, true, 20);
 }
 
 BENCHMARK(BM_ContactContainerActive)
@@ -138,6 +181,34 @@ BENCHMARK(BM_ContactContainerActive)
     ->Args({120, DART, 16})
     ->Args({120, ODE, 1})
     ->Args({120, ODE, 16})
+    ->Args({60, FCL, 1})
+    ->Args({60, FCL, 16})
+    ->Args({120, FCL, 1})
+    ->Args({120, FCL, 16})
+#ifdef DART_CONTACT_CONTAINER_BENCHMARK_HAS_BULLET
+    ->Args({60, BULLET, 1})
+    ->Args({60, BULLET, 16})
+    ->Args({120, BULLET, 1})
+    ->Args({120, BULLET, 16})
+#endif
+    ->Args({120, DART, 4})
+    ->Args({120, ODE, 4})
+    ->Args({120, FCL, 4})
+#ifdef DART_CONTACT_CONTAINER_BENCHMARK_HAS_BULLET
+    ->Args({120, BULLET, 4})
+#endif
+    ->Unit(benchmark::kMillisecond);
+
+BENCHMARK(BM_ContactContainerLargeActive)
+    ->Args({900, DART, 16})
+    ->Args({900, ODE, 16})
+    ->Iterations(1)
+    ->Unit(benchmark::kMillisecond);
+
+BENCHMARK(BM_ContactContainerDeactivation)
+    ->Args({60, DART, 16})
+    ->Args({60, ODE, 16})
+    ->Iterations(1)
     ->Unit(benchmark::kMillisecond);
 
 } // namespace
