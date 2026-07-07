@@ -462,6 +462,13 @@
     contacts:
     [#3307](https://github.com/dartsim/dart/pull/3307)
 
+  * Polish the `dart-demos` workspace with a more compact toolbar, tabbed
+    scene/inspector/tool panes, a status-and-log bottom panel, clearer
+    simulation/render metrics, a lighter 3D viewport background, a fit-scene
+    view action, and a migrated `hello_world` scene while preserving the
+    standalone first-program example:
+    [#3328](https://github.com/dartsim/dart/pull/3328)
+
   * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
     prebuilt IK modules and changing target and solver options online. Every IK
     solution is shown at once as a DART skeleton built from the arm's kinematics

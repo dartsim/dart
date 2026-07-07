@@ -144,13 +144,12 @@ DemoScene makeAddDeleteSkelsScene()
 
     DemoSceneSetup setup;
     setup.world = world;
-    // Elevated ~49-degree three-quarter view, pulled back far enough that the
-    // whole 4x4 m ground.skel plane (which sits near z = -1) fits as a floor
-    // the cubes drop onto -- the original's low 5,3,3 eye skimmed it nearly
-    // edge-on, and a closer eye pushed the plane's near corner off-screen.
+    // Elevated three-quarter view, pulled back enough for the whole 4x4 m
+    // ground.skel plane and a growing cube pile to remain readable inside the
+    // demo host's center viewport.
     setup.cameraHome = CameraHome{
-        ::osg::Vec3d(4.0, 4.0, 6.0),
-        ::osg::Vec3d(0.0, 0.0, -0.5),
+        ::osg::Vec3d(7.0, 7.0, 8.0),
+        ::osg::Vec3d(0.0, 0.0, 1.0),
         ::osg::Vec3d(0.0, 0.0, 1.0)};
 
     setup.keyActions.push_back(KeyAction{'q', "Spawn cube", [world, state] {

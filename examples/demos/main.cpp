@@ -50,6 +50,9 @@
 
 namespace {
 
+constexpr int kDefaultWindowWidth = 1600;
+constexpr int kDefaultWindowHeight = 1000;
+
 //==============================================================================
 enum class ParseResult
 {
@@ -69,8 +72,8 @@ struct Options
   std::string shotPath = "dart-demos.png";
   int steps = 150;
   std::string sceneId = DART_DEMOS_DEFAULT_SCENE;
-  int width = 1280;
-  int height = 800;
+  int width = kDefaultWindowWidth;
+  int height = kDefaultWindowHeight;
   std::string collisionDetectorName;
   std::size_t simulationThreads = 1u;
 
@@ -102,7 +105,7 @@ void printUsage(const char* prog)
       << "  --steps <n>     Sim steps to settle before the --headless shot "
          "(default 150).\n"
       << "  --width <w> --height <h>  Render/window size (default "
-         "1280x800).\n"
+      << kDefaultWindowWidth << "x" << kDefaultWindowHeight << ").\n"
       << "  --gui-scale <f> Scale the ImGui panels and initial window size "
          "(default 1.0).\n"
       << "  --collision-detector <name>  Initial collision backend "

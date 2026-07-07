@@ -43,6 +43,10 @@ namespace dart_demos {
 /// target, ported from examples/empty.
 [[nodiscard]] DemoScene makeEmptyScene();
 
+/// Getting Started > hello_world: the canonical free-falling box first program,
+/// mirrored from examples/hello_world while keeping that standalone example.
+[[nodiscard]] DemoScene makeHelloWorldScene();
+
 /// Visualization > simple_frames: nested SimpleFrames with ellipsoid markers
 /// and an arrow shape, ported from examples/simple_frames.
 [[nodiscard]] DemoScene makeSimpleFramesScene();
