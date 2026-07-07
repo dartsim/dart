@@ -299,6 +299,37 @@ Focused verification after this slice:
   `pointVelL1=6.7481899526541707`, and
   `pointWorldPosL1=189.54545901295526`.
 
+## Matrix/vector aggregation phase-view slice
+
+The next WP-DB.06 implementation extends the phase-view pattern to matrix and
+vector aggregation paths that previously delegated into per-point helper
+methods:
+
+- `updateMassMatrix`,
+- `aggregateMassMatrix`,
+- `aggregateAugMassMatrix`,
+- `updateInvMassMatrix`,
+- `aggregateGravityForceVector`,
+- `updateCombinedVector`,
+- `aggregateCombinedVector`, and
+- `aggregateExternalForces`.
+
+The moved formulas are behavior-preserving cache fills. `SoftBodyNode` now
+uses the same phase view to read contiguous point state/property vectors while
+writing each point mass's existing cached `mM_*`, `mG_F`, `mCg_*`, and inverse
+mass helper fields. The external-force path also skips the old no-op
+`PointMass::aggregateExternalForces()` loop and projects point external forces
+directly from the parent soft body after a shared transform-cache check.
+
+Focused verification after this slice:
+
+- `test_SoftDynamics` passed, including representative public
+  matrix/vector-equation checks.
+- `StepAllocation.*Soft*` passed all 12 zero-allocation rows.
+- Native `soft_bodies` 200-step checksum rows matched exactly between
+  `THREADS=1` and `THREADS=4` with the same step-200 values as the prior
+  phase-view slice.
+
 ## Rest-detection memory-hardening carryover
 
 After refreshing `origin/dart6-memory-hardening`, this branch first ported its
