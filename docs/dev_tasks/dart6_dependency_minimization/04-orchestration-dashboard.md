@@ -12,7 +12,7 @@
 >   names (a project convention; see the naming note in
 >   `02-default-environment-split.md`).
 >
-> _Last updated: 2026-07-05._
+> _Last updated: 2026-07-07._
 
 ## Lanes & owners
 
@@ -20,8 +20,8 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | **Phase 0 packet in review** (#3271, recaptured before #3281); phase 1 internal core merged (#3281); phase 2 next after packet acceptance |
-| **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet open as **#3263** (tracks the native-collision port as its WS-F lane, external owner) |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271) + phase 1 (#3281) merged; phase 2 in progress: P1 (#3303), P2 (#3306), and P3a (#3318) merged; P3b (#3319) open |
+| **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet **#3263 merged** (tracks the native-collision port as its WS-F lane, external owner) |
 
 ## PR tracker
 
@@ -66,10 +66,21 @@
 - Follow-up #3056 release work has landed through #3199/#3203. This resolves the
   measured headless-performance path, but it does **not** port DART 7
   `dart/collision/native/` or make FCL optional.
+- **#3271** phase-0 baseline packet (merged 2026-07-05) — captures the
+  incumbent guard rows, default-flip verdict, and phase-6 acceptance envelope.
 - **#3281** native collision math core (merged 2026-07-05, squash commit
   `135cc8f20765`) — phase-1 internal-only C++17/no-EnTT math core under
   `dart/collision/native/`; no installed component, no detector adapter, and no
   default change. Its PR evidence re-ran the phase-0 guard rows bit-identically.
+- **#3298** release-6.20 native sphere-sphere zero-contact-limit fix (merged
+  2026-07-06).
+- **#3302** phase-2 adapter execution plan (merged 2026-07-06).
+- **#3303** phase-2 P1 BruteForce broadphase, internal-only (merged
+  2026-07-06).
+- **#3306** phase-2 P2 narrowphase dispatcher, sphere/box only (merged
+  2026-07-06).
+- **#3318** phase-2 P3a adapter skeleton + sphere/box conversion, intentionally
+  unregistered (merged 2026-07-07).
 
 ### ✅ Merged — former monitoring queue (all landed by 2026-07-04)
 
@@ -82,20 +93,19 @@
   **#3239** release-branch AI enforcement stack · **#3245** MSVC SIMD fix ·
   **#3233** release CI concurrency fix.
 
-### 🔄 Open — monitoring (checked 2026-07-05)
+### 🔄 Open — monitoring (checked 2026-07-07)
 
-- **#3263** `wp-pg-01-baseline-evidence` — perf lane's WP-PG.01 round-2
-  baseline packet (full S1–S6 guard matrix at `5bee91ad6be`). This lane's
-  phase-0 packet cross-references those cells instead of duplicating them.
-- **#3271** `docs/native-collision-phase0-baseline` — this lane's phase-0
-  baseline packet (recaptured on `1e6a8332a730` after merging
-  `origin/release-6.20` = `949a9c2ff5ed`; later merge-up `f1916fd843f9`
-  includes #3281's internal-only phase-1 merge).
-- Branch-CI fixes **#3267/#3272/#3273 merged 2026-07-04** (macOS SIMD
-  `-Werror`, dartpy format checks via pixi, shallow-support + SIMD CI).
-  Base failures observed before them (Windows `Install` step, coverage
-  `Build with coverage`) were pre-existing; FreeBSD ssh exit-8 rows are VM
-  flakes. Don't misread any of these as new-PR regressions.
+- **#3317** `docs/phase2-handoff` — handoff/dashboard synchronization for the
+  phase-2 native-collision stack. Review fixes are applied; hosted CI is queued.
+- **#3319** `feature/native-detector-bridge` — phase-2 P3b bridge translation +
+  delayed `"native"` factory registration. Codex review is clean; hosted CI is
+  queued/running.
+- **#3321 / #3322 / #3324 / #3325** — stacked phase-2 pair-coverage PRs
+  (capsule primitives, convex foundation, cylinder, mesh). Hosted CI is queued
+  or running; #3325 has follow-up review fixes pushed.
+- **#3283** `fix/native-sphere-binary-check` — main-branch dual of merged
+  release-6.20 #3298.
+- The perf lane's WP-PG.01 baseline packet **#3263** merged 2026-07-06.
 
 Related remote heads still visible: `feature/native-occupancy-grid`,
 `task/native-collision-performance-exec`, and six `perf/dart6-*` round-1
@@ -108,7 +118,8 @@ before treating it as an open/active PR.)_
 
 ### 🛠️ Native-collision-port lane (the largest dependency lever — FCL/Bullet/ODE)
 - **Current state:** DART 6.20 now contains #3281's internal native math core,
-  but it has no DART 6 detector adapter and no FCL-optional default.
+  phase-2 P1/P2, and the P3a adapter skeleton, but it has no registered
+  `"native"` factory key and no FCL-optional default.
   `release-6.20` still uses FCL as the default detector — created in *both*
   `ConstraintSolver` constructors (`dart/constraint/ConstraintSolver.cpp:336`
   and `:353` at `1e6a8332a730`; the `:322`/`:342` refs in `03` predate recent
@@ -123,9 +134,14 @@ before treating it as an open/active PR.)_
   sequencing. For the phase-6 tolerance gate, retrieve JSONL dumps matching
   the recorded SHA-256 digests or recapture dumps on the flip PR's parent
   and compare within that same recapture.
-- **Next: phase 2** — DART 6 detector adapter work, but only after this
-  phase-0 packet is accepted. Do not flip defaults until `03`'s full A/B
-  packet and gz gate pass.
+- **Phase 2 status:** P1 broadphase (#3303), P2 dispatcher (#3306), and P3a
+  adapter skeleton (#3318) are merged. **Next merge target is P3b (#3319):**
+  bridge `collide()` translation, `sphere_box`, normal calibration, and delayed
+  `"native"` factory registration after real contacts work. P4-P7 pair coverage
+  is open as stacked PRs (#3321/#3322/#3324/#3325). P8/P9 distance+plane work is
+  being kept consolidated to avoid extra CI waves.
+- **Default flip:** still late-phase only. Do not flip defaults until `03`'s full
+  A/B packet and gz gate pass.
 - _Hold each follow-up to `03`'s bar: gz-compat (`pixi run -e gazebo test-gz`),
   feature/contact parity, evidence-driven perf ≥ Bullet/ODE/FCL, and
   outcome/hash/scene-dump tolerances. The FCL-optional default-flip (the actual
@@ -135,8 +151,8 @@ before treating it as an open/active PR.)_
 
 1. **Base / conflict status**:
    - Current planning baseline: `origin/release-6.20` =
-     `135cc8f20765d39040e3e3ae87536dabac8f5401`; `origin/main` =
-     `5c75381f79a0431909f8c1b0a04fca1fbaa256ed`.
+     `634c20d1b9a1bb9e009535e7d7c523d6c4dde12f`; `origin/main` =
+     `82372aa6fed623bd6ba1e16045fce683bcb52ba7`.
    - Open PRs routinely fall behind as the base advances; a maintainer merge-up
      clears it. Exact behind-counts aren't tracked here (too volatile).
    - All remote mutations are owned by the maintainer.
@@ -173,13 +189,13 @@ before treating it as an open/active PR.)_
 - **Just landed (2026-06-22):** legacy `dart/integration` dead-code removal (#3122);
   native-collision **#3123** (primitive plane contacts + broadphase pruning) — first
   piece of the native collision port.
-- **Open queue (2026-07-05):** #3263 (perf-lane WP-PG.01 baseline packet) and
-  #3271 (this lane's phase-0 packet, in review). The former #3281
-  phase-1-native-core review, the #3209/#3226/#3227/#3229/#3230 monitoring
-  queue, and the #3267/#3272/#3273 branch-CI fixes are all merged.
+- **Open queue (2026-07-07):** #3317, #3319, #3321, #3322, #3324, #3325, and
+  main-branch dual #3283. The former #3263/#3271/#3281/#3302/#3303/#3306/#3318
+  lane milestones are merged.
 - **Largest remaining win:** native-collision port → makes FCL/Bullet/ODE
-  optional and eventually drops `fcl` from core. The DART 7 native engine is not
-  yet ported to DART 6.20; default-flip is still a late-phase decision.
+  optional and eventually drops `fcl` from core. The DART 7 native engine is
+  only partially ported to DART 6.20; default-flip is still a late-phase
+  decision.
 - **Confirmed non-removable standalone:** `boost` (OSG-coupled), core deps
   (Eigen/assimp/fmt/tinyxml2/urdfdom), `octomap` (exported-header contract).
 
