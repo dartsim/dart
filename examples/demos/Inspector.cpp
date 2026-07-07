@@ -217,12 +217,12 @@ void Inspector::renderJointRow(Joint* joint)
 void Inspector::renderDetail(bool paused, ::osg::Group* worldNode)
 {
   if (!mSelected) {
-    ImGui::TextDisabled("No body selected. Click a body in the tree above.");
+    ImGui::TextWrapped("No body selected. Click a body in the tree above.");
     return;
   }
 
   BodyNode* body = mSelected;
-  ImGui::Text("Body: %s", body->getName().c_str());
+  ImGui::TextWrapped("Body: %s", body->getName().c_str());
 
   const Eigen::Isometry3d worldTf = body->getWorldTransform();
   const Eigen::Isometry3d relTf = body->getRelativeTransform();
@@ -257,7 +257,7 @@ void Inspector::renderDetail(bool paused, ::osg::Group* worldNode)
 
   ImGui::Separator();
   if (auto* joint = body->getParentJoint()) {
-    ImGui::Text(
+    ImGui::TextWrapped(
         "Joint: %s (%s)", joint->getName().c_str(), joint->getType().c_str());
     for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
       auto* dof = joint->getDof(i);

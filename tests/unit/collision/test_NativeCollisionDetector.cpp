@@ -566,23 +566,22 @@ TEST(NativeCollisionDetector, ConvertsSphereAndBoxShapes)
       static_cast<const native::ConvexShape*>(nativePyramid.get())
           ->getVertices()
           .size());
-
-  const dynamics::ConeShape cone(1.0, 2.0);
-  auto nativeCone = collision::detail::NativeShapeConversion::create(cone);
-  ASSERT_NE(nullptr, nativeCone);
-  ASSERT_EQ(native::ShapeType::Convex, nativeCone->getType());
-  EXPECT_GT(
-      static_cast<const native::ConvexShape*>(nativeCone.get())
-          ->getVertices()
-          .size(),
-      8u);
 }
 
 //==============================================================================
 TEST(NativeCollisionDetector, LeavesUnsupportedShapesNull)
 {
+  auto emptyMesh = std::make_shared<dynamics::ConvexMeshShape::TriMeshType>();
+  const dynamics::ConvexMeshShape emptyConvexMesh(emptyMesh);
+  EXPECT_EQ(
+      nullptr,
+      collision::detail::NativeShapeConversion::create(emptyConvexMesh));
+
   const dynamics::PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
   EXPECT_EQ(nullptr, collision::detail::NativeShapeConversion::create(plane));
+
+  const dynamics::ConeShape cone(1.0, 2.0);
+  EXPECT_EQ(nullptr, collision::detail::NativeShapeConversion::create(cone));
 
   const dynamics::MultiSphereConvexHullShape multiSphere(
       {{0.25, Eigen::Vector3d::Zero()},

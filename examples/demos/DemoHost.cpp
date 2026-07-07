@@ -34,6 +34,11 @@
 
 #include "Theme.hpp"
 
+#include <dart/collision/CollisionDetector.hpp>
+
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/SoftBodyNode.hpp>
+
 #include <osg/Camera>
 #include <osg/GraphicsContext>
 #include <osg/Viewport>
@@ -42,6 +47,8 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <limits>
+#include <thread>
 
 #include <cctype>
 #include <cerrno>
@@ -52,6 +59,9 @@
 namespace dart_demos {
 
 namespace {
+
+constexpr int kDefaultWindowWidth = 1600;
+constexpr int kDefaultWindowHeight = 1000;
 
 //==============================================================================
 std::string toLower(const std::string& value)
@@ -100,6 +110,93 @@ bool hasLiveRtfStats(
 {
   return worldNode && viewer->isSimulating()
          && std::isfinite(worldNode->getLowestRealTimeFactor());
+}
+
+//==============================================================================
+float calcButtonWidth(const char* label)
+{
+  const ImGuiStyle& style = ImGui::GetStyle();
+  return ImGui::CalcTextSize(label).x + 2.0f * style.FramePadding.x;
+}
+
+//==============================================================================
+void sameLineIfEnoughRoom(float nextItemWidth)
+{
+  const ImGuiStyle& style = ImGui::GetStyle();
+  const float windowRight
+      = ImGui::GetWindowPos().x + ImGui::GetContentRegionMax().x;
+  const float nextRight
+      = ImGui::GetItemRectMax().x + style.ItemSpacing.x + nextItemWidth;
+  if (nextRight <= windowRight)
+    ImGui::SameLine();
+}
+
+//==============================================================================
+float clampedItemWidth(float preferred, float minimum)
+{
+  const float avail = std::max(1.0f, ImGui::GetContentRegionAvail().x);
+  return std::clamp(preferred, std::min(minimum, avail), avail);
+}
+
+//==============================================================================
+std::vector<std::string> getAvailableCollisionDetectorNames()
+{
+  std::vector<std::string> names;
+  auto* factory = dart::collision::CollisionDetector::getFactory();
+  if (!factory)
+    return names;
+
+  const auto keys = factory->getKeys();
+  names.reserve(keys.size());
+  for (const auto& key : keys)
+    names.push_back(key);
+
+  std::sort(names.begin(), names.end());
+  return names;
+}
+
+//==============================================================================
+std::string getWorldCollisionDetectorName(
+    const dart::simulation::WorldPtr& world)
+{
+  if (!world)
+    return "none";
+
+  const auto detector = world->getCollisionDetector();
+  return detector ? detector->getType() : "none";
+}
+
+//==============================================================================
+struct SceneCounts
+{
+  std::size_t skeletons = 0;
+  std::size_t bodyNodes = 0;
+  std::size_t softBodies = 0;
+  std::size_t pointMasses = 0;
+};
+
+//==============================================================================
+SceneCounts collectSceneCounts(const dart::simulation::WorldPtr& world)
+{
+  SceneCounts counts;
+  if (!world)
+    return counts;
+
+  counts.skeletons = world->getNumSkeletons();
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const auto& skeleton = world->getSkeleton(i);
+    counts.bodyNodes += skeleton->getNumBodyNodes();
+    for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
+      const auto* softBodyNode = skeleton->getBodyNode(j)->asSoftBodyNode();
+      if (!softBodyNode)
+        continue;
+
+      ++counts.softBodies;
+      counts.pointMasses += softBodyNode->getNumPointMasses();
+    }
+  }
+
+  return counts;
 }
 
 //==============================================================================
@@ -238,11 +335,13 @@ std::size_t DemoWorldNode::getStepCount() const
 void DemoWorldNode::customPreStep()
 {
   invokeHook(mPreStep, "preStep");
+  beginStepTiming();
 }
 
 //==============================================================================
 void DemoWorldNode::customPostStep()
 {
+  endStepTiming();
   invokeHook(mPostStep, "postStep");
   ++mStepCount;
 }
@@ -267,6 +366,36 @@ std::size_t DemoWorldNode::getLastRefreshStepCount() const
 }
 
 //==============================================================================
+double DemoWorldNode::getLastStepMs() const
+{
+  return mLastStepMs;
+}
+
+//==============================================================================
+double DemoWorldNode::getMovingAverageStepMs() const
+{
+  return mMovingAverageStepMs;
+}
+
+//==============================================================================
+double DemoWorldNode::getMinStepMs() const
+{
+  return mMinStepMs;
+}
+
+//==============================================================================
+double DemoWorldNode::getMaxStepMs() const
+{
+  return mMaxStepMs;
+}
+
+//==============================================================================
+std::size_t DemoWorldNode::getStepTimingSamples() const
+{
+  return mStepTimingSamples;
+}
+
+//==============================================================================
 void DemoWorldNode::invokeHook(std::function<void()>& hook, const char* name)
 {
   if (!hook)
@@ -286,11 +415,53 @@ void DemoWorldNode::invokeHook(std::function<void()>& hook, const char* name)
 }
 
 //==============================================================================
-DemoHost::DemoHost(std::vector<DemoScene> scenes, double guiScale)
+void DemoWorldNode::beginStepTiming()
+{
+  mStepStart = std::chrono::steady_clock::now();
+  mStepTimingActive = true;
+}
+
+//==============================================================================
+void DemoWorldNode::endStepTiming()
+{
+  if (!mStepTimingActive)
+    return;
+
+  mStepTimingActive = false;
+  mLastStepMs = std::chrono::duration<double, std::milli>(
+                    std::chrono::steady_clock::now() - mStepStart)
+                    .count();
+
+  if (mStepTimingSamples == 0u) {
+    mMovingAverageStepMs = mLastStepMs;
+    mMinStepMs = mLastStepMs;
+    mMaxStepMs = mLastStepMs;
+  } else {
+    constexpr double kAlpha = 0.08;
+    mMovingAverageStepMs += kAlpha * (mLastStepMs - mMovingAverageStepMs);
+    mMinStepMs = std::min(mMinStepMs, mLastStepMs);
+    mMaxStepMs = std::max(mMaxStepMs, mLastStepMs);
+  }
+
+  ++mStepTimingSamples;
+}
+
+//==============================================================================
+DemoHost::DemoHost(
+    std::vector<DemoScene> scenes,
+    double guiScale,
+    std::string collisionDetectorName,
+    std::size_t simulationThreads)
   : mScenes(std::move(scenes)),
+    mPerformanceStatsPanel(240u),
+    mRequestedCollisionDetectorName(toLower(collisionDetectorName)),
+    mSimulationThreads(static_cast<int>(std::min<std::size_t>(
+        simulationThreads,
+        static_cast<std::size_t>(std::numeric_limits<int>::max())))),
     mGuiScale(dart::gui::osg::sanitizeGuiScale(guiScale))
 {
   buildCategories();
+  mAvailableCollisionDetectors = getAvailableCollisionDetectorNames();
   mViewer = new dart::gui::osg::ImGuiViewer();
 
   // Captures dart::common's dtmsg/dtwarn/dterr output (and any other
@@ -368,6 +539,13 @@ void DemoHost::setDebugRecordProfile(bool on)
 }
 
 //==============================================================================
+void DemoHost::requestScenePanelTab(ScenePanelTab tab)
+{
+  mRequestedScenePanelTab = tab;
+  mHasRequestedScenePanelTab = true;
+}
+
+//==============================================================================
 std::size_t DemoHost::getActiveWorldNodeCount() const
 {
   return mActiveWorldNodeCount;
@@ -405,6 +583,71 @@ void DemoHost::log(LogEntry::Level level, const std::string& message)
 }
 
 //==============================================================================
+void DemoHost::syncCollisionDetectorSelectionFromWorld()
+{
+  mCurrentCollisionDetectorName = getWorldCollisionDetectorName(mCurrentWorld);
+  mCollisionDetectorIndex = -1;
+  for (std::size_t i = 0; i < mAvailableCollisionDetectors.size(); ++i) {
+    if (mAvailableCollisionDetectors[i] == mCurrentCollisionDetectorName) {
+      mCollisionDetectorIndex = static_cast<int>(i);
+      break;
+    }
+  }
+}
+
+//==============================================================================
+bool DemoHost::setCollisionDetectorByName(const std::string& name)
+{
+  if (!mCurrentWorld || name.empty())
+    return true;
+
+  auto* factory = dart::collision::CollisionDetector::getFactory();
+  if (!factory || !factory->canCreate(name)) {
+    log(LogEntry::Level::Warning,
+        "Collision detector '" + name + "' is not available; keeping '"
+            + getWorldCollisionDetectorName(mCurrentWorld) + "'.");
+    syncCollisionDetectorSelectionFromWorld();
+    return false;
+  }
+
+  auto detector = factory->create(name);
+  if (!detector) {
+    log(LogEntry::Level::Warning,
+        "Collision detector '" + name + "' failed to create; keeping '"
+            + getWorldCollisionDetectorName(mCurrentWorld) + "'.");
+    syncCollisionDetectorSelectionFromWorld();
+    return false;
+  }
+
+  mCurrentWorld->setCollisionDetector(detector);
+  mRequestedCollisionDetectorName = detector->getType();
+  syncCollisionDetectorSelectionFromWorld();
+  mPerformanceStatsPanel.reset();
+  log(LogEntry::Level::Info,
+      "Collision detector set to '" + mCurrentCollisionDetectorName + "'.");
+  return true;
+}
+
+//==============================================================================
+void DemoHost::applyRuntimeOptionsToWorld()
+{
+  if (!mCurrentWorld)
+    return;
+
+  if (mSimulationThreads < 0)
+    mSimulationThreads = 1;
+  mCurrentWorld->setNumSimulationThreads(
+      static_cast<std::size_t>(mSimulationThreads));
+  mSimulationThreads
+      = static_cast<int>(mCurrentWorld->getNumSimulationThreads());
+
+  if (!mRequestedCollisionDetectorName.empty())
+    setCollisionDetectorByName(mRequestedCollisionDetectorName);
+  else
+    syncCollisionDetectorSelectionFromWorld();
+}
+
+//==============================================================================
 void DemoHost::ensureViewerConfigured()
 {
   if (mViewerConfigured)
@@ -417,7 +660,7 @@ void DemoHost::ensureViewerConfigured()
   applyModernDarkMetrics();
   mViewer->getImGuiHandler()->setGuiScale(mGuiScale);
 
-  mViewer->getCamera()->setClearColor(::osg::Vec4(0.10f, 0.11f, 0.13f, 1.0f));
+  mViewer->getCamera()->setClearColor(::osg::Vec4(0.58f, 0.62f, 0.65f, 1.0f));
 
   mViewer->getImGuiHandler()->addWidget(
       std::make_shared<HostPanelWidget>(this));
@@ -559,6 +802,8 @@ void DemoHost::teardownCurrentScene()
 void DemoHost::installScene(const DemoScene& scene, DemoSceneSetup setup)
 {
   mCurrentWorld = setup.world;
+  applyRuntimeOptionsToWorld();
+  mPerformanceStatsPanel.reset();
   mDragForce.onSceneInstalled(mCurrentWorld);
   mContactVisualizer.onSceneInstalled(mCurrentWorld);
   mCurrentSceneWantsShadows = setup.enableShadows;
@@ -676,6 +921,14 @@ void DemoHost::applyCameraHome(const CameraHome& home, bool viaManipulator)
   } else {
     mViewer->getCamera()->setViewMatrixAsLookAt(home.eye, home.center, home.up);
   }
+}
+
+//==============================================================================
+void DemoHost::fitCameraToWorld()
+{
+  if (!mCurrentWorld)
+    return;
+  dart::gui::osg::applyDefaultCameraPose(*mViewer, mCurrentWorld);
 }
 
 //==============================================================================
@@ -825,14 +1078,18 @@ int DemoHost::runHeadlessShot(
          ++s) {
       found = mCurrentWorld->getSkeleton(s)->getBodyNode(mDebugSelectBodyName);
     }
-    if (found)
+    if (found) {
       mInspector.setSelection(found);
-    else
+      requestScenePanelTab(ScenePanelTab::Inspector);
+    } else {
       std::cerr << "[headless] --debug-select-body '" << mDebugSelectBodyName
                 << "' not found in demo '" << initial << "'.\n";
+    }
   }
-  if (mDebugRecordProfile)
+  if (mDebugRecordProfile) {
     mProfiler.setRecordingForTest(true);
+    requestScenePanelTab(ScenePanelTab::Tools);
+  }
 
   const CameraHome defaultHome{
       ::osg::Vec3d(6.0, 8.0, 4.0),
@@ -881,8 +1138,8 @@ int DemoHost::run()
   mViewer->setUpViewInWindow(
       0,
       0,
-      dart::gui::osg::scaleWindowExtent(1280, mGuiScale),
-      dart::gui::osg::scaleWindowExtent(800, mGuiScale));
+      dart::gui::osg::scaleWindowExtent(kDefaultWindowWidth, mGuiScale),
+      dart::gui::osg::scaleWindowExtent(kDefaultWindowHeight, mGuiScale));
 
   const std::string initial = !mInitialSceneId.empty() ? mInitialSceneId
                               : !mScenes.empty()       ? mScenes.front().id
@@ -963,10 +1220,10 @@ void DemoHost::renderPanels()
   const float screenW = std::max(1.0f, io.DisplaySize.x);
   const float screenH = std::max(1.0f, io.DisplaySize.y);
 
-  const float toolbarH = std::min(96.0f * scale, screenH * 0.3f);
-  const float bottomH = std::min(190.0f * scale, screenH * 0.35f);
-  const float leftW = std::min(300.0f * scale, screenW * 0.4f);
-  const float rightW = std::min(340.0f * scale, screenW * 0.4f);
+  const float toolbarH = std::min(58.0f * scale, screenH * 0.18f);
+  const float bottomH = std::min(156.0f * scale, screenH * 0.26f);
+  const float leftW = std::min(260.0f * scale, screenW * 0.30f);
+  const float rightW = std::min(360.0f * scale, screenW * 0.34f);
   const float middleH = std::max(1.0f, screenH - toolbarH - bottomH);
 
   constexpr ImGuiWindowFlags kChromeFlags
@@ -1005,17 +1262,27 @@ void DemoHost::renderToolbar()
 {
   const bool hasScene = mWorldNode != nullptr;
   const bool simulating = mViewer->isSimulating();
+  const float scale = static_cast<float>(mGuiScale);
 
+  ImGui::TextColored(ImVec4(0.42f, 0.70f, 1.0f, 1.0f), "DART");
+  ImGui::SameLine();
+  ImGui::TextDisabled("demos");
+  if (!mCurrentSceneTitle.empty()) {
+    sameLineIfEnoughRoom(ImGui::CalcTextSize(mCurrentSceneTitle.c_str()).x);
+    ImGui::TextUnformatted(mCurrentSceneTitle.c_str());
+  }
+
+  sameLineIfEnoughRoom(calcButtonWidth(simulating ? "Pause" : "Play"));
   ImGui::BeginDisabled(!hasScene);
   if (ImGui::Button(simulating ? "Pause" : "Play"))
     mViewer->simulate(!simulating);
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(calcButtonWidth("Step"));
   if (ImGui::Button("Step") && mWorldNode)
     mWorldNode->stepOnce();
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(calcButtonWidth("Rebuild"));
   if (ImGui::Button("Rebuild") && !mCurrentSceneId.empty())
     requestSceneSwitch(mCurrentSceneId);
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(calcButtonWidth("Reset"));
   // Reset restores the scene's initial state by re-running its factory (a
   // fresh World), the same as Rebuild -- see the Rebuild/Reset note in
   // README or the phase-1 report for why world->reset() alone is not enough.
@@ -1023,17 +1290,26 @@ void DemoHost::renderToolbar()
     requestSceneSwitch(mCurrentSceneId);
   ImGui::EndDisabled();
 
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(90.0f * scale);
   ImGui::Text("Time %.2f s", mCurrentWorld ? mCurrentWorld->getTime() : 0.0);
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(72.0f * scale);
+  ImGui::Text("FPS %.0f", static_cast<double>(ImGui::GetIO().Framerate));
+  sameLineIfEnoughRoom(96.0f * scale);
   if (hasLiveRtfStats(mViewer.get(), mWorldNode.get()))
-    ImGui::Text("RTF %.2f", mWorldNode->getSmoothedRealTimeFactor());
+    ImGui::Text("Sim %.2fx", mWorldNode->getSmoothedRealTimeFactor());
   else
-    ImGui::TextUnformatted("RTF --");
+    ImGui::TextUnformatted("Sim --");
+  sameLineIfEnoughRoom(100.0f * scale);
+  ImGui::Text(
+      "Steps/frame %zu",
+      mWorldNode ? mWorldNode->getLastRefreshStepCount() : std::size_t{0});
 
-  ImGui::SetNextItemWidth(220.0f * static_cast<float>(mGuiScale));
+  sameLineIfEnoughRoom(190.0f * scale);
+  ImGui::TextUnformatted("Target");
+  ImGui::SameLine();
+  ImGui::SetNextItemWidth(clampedItemWidth(116.0f * scale, 76.0f * scale));
   if (ImGui::SliderFloat(
-          "Target RTF",
+          "##target_rtf",
           &mTargetRtf,
           0.1f,
           4.0f,
@@ -1044,7 +1320,7 @@ void DemoHost::renderToolbar()
     if (mWorldNode)
       mWorldNode->setTargetRealTimeFactor(mTargetRtf);
   }
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(90.0f * scale);
   if (ImGui::Checkbox("Gravity", &mGravityEnabled) && mCurrentWorld) {
     if (mGravityEnabled) {
       mCurrentWorld->setGravity(mSavedGravity);
@@ -1058,10 +1334,12 @@ void DemoHost::renderToolbar()
   // directly to the active world (the same frame-loop thread ImGui renders on,
   // matching the Gravity/Target RTF writes above). NaN input is rejected by
   // keeping the previous value.
+  sameLineIfEnoughRoom(170.0f * scale);
+  ImGui::TextUnformatted("dt");
   ImGui::SameLine();
-  ImGui::SetNextItemWidth(200.0f * static_cast<float>(mGuiScale));
+  ImGui::SetNextItemWidth(clampedItemWidth(120.0f * scale, 86.0f * scale));
   if (ImGui::SliderFloat(
-          "Timestep",
+          "##timestep",
           &mTimeStep,
           1e-5f,
           1e-2f,
@@ -1073,7 +1351,9 @@ void DemoHost::renderToolbar()
       mCurrentWorld->setTimeStep(mTimeStep);
   }
 
-  ImGui::SameLine();
+  renderRuntimeControls();
+
+  sameLineIfEnoughRoom(calcButtonWidth("View"));
   if (ImGui::Button("View"))
     ImGui::OpenPopup("##view_menu_popup");
   if (ImGui::BeginPopup("##view_menu_popup")) {
@@ -1081,12 +1361,65 @@ void DemoHost::renderToolbar()
     ImGui::EndPopup();
   }
 
+  sameLineIfEnoughRoom(120.0f * scale);
   mDragForce.renderToolbarStatus(mGuiScale);
+}
+
+//==============================================================================
+void DemoHost::renderRuntimeControls()
+{
+  const float scale = static_cast<float>(mGuiScale);
+
+  sameLineIfEnoughRoom(250.0f * scale);
+  ImGui::SetNextItemWidth(clampedItemWidth(170.0f * scale, 120.0f * scale));
+  ImGui::BeginDisabled(!mCurrentWorld || mAvailableCollisionDetectors.empty());
+  const char* currentDetector
+      = mCollisionDetectorIndex >= 0
+                && mCollisionDetectorIndex
+                       < static_cast<int>(mAvailableCollisionDetectors.size())
+            ? mAvailableCollisionDetectors[mCollisionDetectorIndex].c_str()
+            : mCurrentCollisionDetectorName.c_str();
+  if (ImGui::BeginCombo("Collision", currentDetector)) {
+    for (std::size_t i = 0; i < mAvailableCollisionDetectors.size(); ++i) {
+      const bool selected = static_cast<int>(i) == mCollisionDetectorIndex;
+      if (ImGui::Selectable(mAvailableCollisionDetectors[i].c_str(), selected))
+        setCollisionDetectorByName(mAvailableCollisionDetectors[i]);
+      if (selected)
+        ImGui::SetItemDefaultFocus();
+    }
+    ImGui::EndCombo();
+  }
+  ImGui::EndDisabled();
+
+  sameLineIfEnoughRoom(128.0f * scale);
+  ImGui::SetNextItemWidth(clampedItemWidth(90.0f * scale, 64.0f * scale));
+  ImGui::BeginDisabled(!mCurrentWorld);
+  int requestedThreads = mSimulationThreads;
+  if (ImGui::InputInt("Threads", &requestedThreads, 1, 4)) {
+    requestedThreads = std::clamp(requestedThreads, 0, 256);
+    if (mCurrentWorld) {
+      mCurrentWorld->setNumSimulationThreads(
+          static_cast<std::size_t>(requestedThreads));
+      mSimulationThreads
+          = static_cast<int>(mCurrentWorld->getNumSimulationThreads());
+      mPerformanceStatsPanel.reset();
+    }
+  }
+  ImGui::EndDisabled();
 }
 
 //==============================================================================
 void DemoHost::renderViewMenu()
 {
+  ImGui::BeginDisabled(!mCurrentWorld);
+  if (ImGui::Button("Fit scene"))
+    fitCameraToWorld();
+  ImGui::EndDisabled();
+  ImGui::SameLine();
+  if (ImGui::Button("Reset camera"))
+    mViewer->home();
+
+  ImGui::Separator();
   if (ImGui::Checkbox("Shadows", &mShadowsEnabled))
     applyShadowState();
 
@@ -1146,10 +1479,6 @@ void DemoHost::renderViewMenu()
         = dart::gui::osg::sanitizeGuiScale(std::clamp(guiScale, 0.75f, 2.0f));
     mViewer->getImGuiHandler()->setGuiScale(mGuiScale);
   }
-
-  ImGui::Separator();
-  if (ImGui::Button("Reset camera"))
-    mViewer->home();
 }
 
 //==============================================================================
@@ -1158,10 +1487,15 @@ void DemoHost::renderNavigator()
   ImGui::TextWrapped("%s", mStatusLine.c_str());
   ImGui::Separator();
 
-  ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 60.0f);
+  const float clearW = calcButtonWidth("Clear");
+  const float searchW = std::max(
+      ImGui::GetFontSize() * 5.0f,
+      ImGui::GetContentRegionAvail().x - clearW
+          - ImGui::GetStyle().ItemSpacing.x);
+  ImGui::SetNextItemWidth(searchW);
   ImGui::InputTextWithHint(
       "##search", "Search demos...", mSearchBuf, sizeof(mSearchBuf));
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(clearW);
   if (ImGui::Button("Clear"))
     mSearchBuf[0] = '\0';
 
@@ -1215,8 +1549,13 @@ void DemoHost::renderInspectorSection()
   if (ImGui::CollapsingHeader("Scene Tree", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::BeginChild(
         "##scene_tree_scroll",
-        ImVec2(0.0f, 120.0f * static_cast<float>(mGuiScale)),
-        true);
+        ImVec2(
+            0.0f,
+            std::min(
+                180.0f * static_cast<float>(mGuiScale),
+                ImGui::GetContentRegionAvail().y * 0.45f)),
+        true,
+        ImGuiWindowFlags_HorizontalScrollbar);
     mInspector.renderTree(mCurrentWorld);
     ImGui::EndChild();
   }
@@ -1234,15 +1573,11 @@ void DemoHost::renderInspectorSection()
       }
     }
   }
-
-  ImGui::Separator();
 }
 
 //==============================================================================
-void DemoHost::renderScenePanel()
+void DemoHost::renderSceneControlsSection()
 {
-  renderInspectorSection();
-
   if (mCurrentRenderPanel) {
     try {
       mCurrentRenderPanel();
@@ -1276,39 +1611,68 @@ void DemoHost::renderScenePanel()
 }
 
 //==============================================================================
+void DemoHost::renderToolsSection()
+{
+  if (ImGui::CollapsingHeader(
+          "Contact Visualizer", ImGuiTreeNodeFlags_DefaultOpen)) {
+    mContactVisualizer.renderToggle();
+  }
+
+  if (ImGui::CollapsingHeader("Drag Force", ImGuiTreeNodeFlags_DefaultOpen)) {
+    mDragForce.renderTunables(mGuiScale);
+  }
+
+  if (ImGui::CollapsingHeader("Profiler", ImGuiTreeNodeFlags_DefaultOpen)) {
+    mProfiler.render();
+  }
+}
+
+//==============================================================================
+void DemoHost::renderScenePanel()
+{
+  const auto tabSelectionFlags = [this](ScenePanelTab tab) {
+    return mHasRequestedScenePanelTab && mRequestedScenePanelTab == tab
+               ? ImGuiTabItemFlags_SetSelected
+               : static_cast<ImGuiTabItemFlags>(0);
+  };
+
+  if (ImGui::BeginTabBar("##scene_panel_tabs")) {
+    if (ImGui::BeginTabItem(
+            "Scene", nullptr, tabSelectionFlags(ScenePanelTab::Scene))) {
+      renderSceneControlsSection();
+      ImGui::EndTabItem();
+    }
+
+    if (ImGui::BeginTabItem(
+            "Inspector",
+            nullptr,
+            tabSelectionFlags(ScenePanelTab::Inspector))) {
+      renderInspectorSection();
+      ImGui::EndTabItem();
+    }
+
+    if (ImGui::BeginTabItem(
+            "Tools", nullptr, tabSelectionFlags(ScenePanelTab::Tools))) {
+      renderToolsSection();
+      ImGui::EndTabItem();
+    }
+    ImGui::EndTabBar();
+  }
+
+  mHasRequestedScenePanelTab = false;
+}
+
+//==============================================================================
 void DemoHost::renderDiagnostics()
 {
-  std::size_t numSkeletons = 0;
-  std::size_t numBodies = 0;
   std::size_t numDofs = 0;
+  const SceneCounts counts = collectSceneCounts(mCurrentWorld);
   if (mCurrentWorld) {
-    numSkeletons = mCurrentWorld->getNumSkeletons();
-    for (std::size_t i = 0; i < numSkeletons; ++i) {
+    for (std::size_t i = 0; i < mCurrentWorld->getNumSkeletons(); ++i) {
       const auto& skel = mCurrentWorld->getSkeleton(i);
-      numBodies += skel->getNumBodyNodes();
       numDofs += skel->getNumDofs();
     }
   }
-
-  if (hasLiveRtfStats(mViewer.get(), mWorldNode.get())) {
-    ImGui::Text(
-        "FPS %.0f   RTF min/avg/max %.2f / %.2f / %.2f",
-        static_cast<double>(ImGui::GetIO().Framerate),
-        mWorldNode->getLowestRealTimeFactor(),
-        mWorldNode->getSmoothedRealTimeFactor(),
-        mWorldNode->getHighestRealTimeFactor());
-  } else {
-    ImGui::Text(
-        "FPS %.0f   RTF min/avg/max -- / -- / --",
-        static_cast<double>(ImGui::GetIO().Framerate));
-  }
-  ImGui::Text(
-      "Steps %zu   Sim time %.2f s   Skeletons %zu   Bodies %zu   DOFs %zu",
-      mWorldNode ? mWorldNode->getStepCount() : std::size_t{0},
-      mCurrentWorld ? mCurrentWorld->getTime() : 0.0,
-      numSkeletons,
-      numBodies,
-      numDofs);
 
   const std::size_t numContacts
       = mCurrentWorld ? mCurrentWorld->getLastCollisionResult().getNumContacts()
@@ -1317,76 +1681,101 @@ void DemoHost::renderDiagnostics()
       = (mCurrentWorld && mCurrentWorld->getConstraintSolver())
             ? mCurrentWorld->getConstraintSolver()->getNumConstraints()
             : std::size_t{0};
+
+  dart::gui::osg::PerformanceStatsData stats;
+  stats.frame = static_cast<int>(mWorldNode ? mWorldNode->getStepCount() : 0u);
+  stats.simTime = mCurrentWorld ? mCurrentWorld->getTime() : 0.0;
+  stats.sceneName = mCurrentSceneTitle;
+  stats.collisionDetectorName = getWorldCollisionDetectorName(mCurrentWorld);
+  stats.simulationThreads
+      = mCurrentWorld ? mCurrentWorld->getNumSimulationThreads() : 1u;
+  stats.renderFps = static_cast<double>(ImGui::GetIO().Framerate);
+  stats.targetRealTimeFactor = mTargetRtf;
+  stats.timeStep = mCurrentWorld ? mCurrentWorld->getTimeStep() : 0.0;
+  stats.lastStepMs = mWorldNode ? mWorldNode->getLastStepMs() : 0.0;
+  stats.movingAverageStepMs
+      = mWorldNode ? mWorldNode->getMovingAverageStepMs() : 0.0;
+  stats.minStepMs = mWorldNode ? mWorldNode->getMinStepMs() : 0.0;
+  stats.maxStepMs = mWorldNode ? mWorldNode->getMaxStepMs() : 0.0;
+  stats.measuredSteps = mWorldNode ? mWorldNode->getStepTimingSamples() : 0u;
+  stats.contacts = numContacts;
+  stats.softBodies = counts.softBodies;
+  stats.pointMasses = counts.pointMasses;
+  stats.skeletons = counts.skeletons;
+  stats.bodyNodes = counts.bodyNodes;
+  mPerformanceStatsPanel.render(stats);
+
   ImGui::Text(
-      "Contacts %zu   Constraints %zu   Steps/refresh %zu   Timestep %.5f s",
-      numContacts,
-      numConstraints,
+      "Steps %zu   Sim %.2f s   Steps/frame %zu   dt %.5f s   Skeletons %zu   "
+      "Bodies %zu   Soft %zu   Points %zu   DOFs %zu   Contacts %zu   "
+      "Constraints %zu",
+      mWorldNode ? mWorldNode->getStepCount() : std::size_t{0},
+      mCurrentWorld ? mCurrentWorld->getTime() : 0.0,
       mWorldNode ? mWorldNode->getLastRefreshStepCount() : std::size_t{0},
-      mCurrentWorld ? mCurrentWorld->getTimeStep() : 0.0);
-
-  ImGui::Separator();
-  if (ImGui::CollapsingHeader(
-          "Contact Visualizer", ImGuiTreeNodeFlags_DefaultOpen)) {
-    mContactVisualizer.renderToggle();
+      mCurrentWorld ? mCurrentWorld->getTimeStep() : 0.0,
+      counts.skeletons,
+      counts.bodyNodes,
+      counts.softBodies,
+      counts.pointMasses,
+      numDofs,
+      numContacts,
+      numConstraints);
+  if (hasLiveRtfStats(mViewer.get(), mWorldNode.get())) {
+    ImGui::Text(
+        "RTF min/avg/max %.2f / %.2f / %.2f",
+        mWorldNode->getLowestRealTimeFactor(),
+        mWorldNode->getSmoothedRealTimeFactor(),
+        mWorldNode->getHighestRealTimeFactor());
   }
 
   ImGui::Separator();
-  if (ImGui::CollapsingHeader("Drag Force", ImGuiTreeNodeFlags_DefaultOpen)) {
-    mDragForce.renderTunables(mGuiScale);
-  }
+  renderLogSection(0.0f);
+}
 
-  ImGui::Separator();
-  if (ImGui::CollapsingHeader("Profiler", ImGuiTreeNodeFlags_DefaultOpen)) {
-    mProfiler.render();
-  }
-
-  ImGui::Separator();
-  if (ImGui::CollapsingHeader("Log", ImGuiTreeNodeFlags_DefaultOpen)) {
-    ImGui::Checkbox("Info", &mLogShowInfo);
-    ImGui::SameLine();
-    ImGui::Checkbox("Warning", &mLogShowWarning);
-    ImGui::SameLine();
-    ImGui::Checkbox("Error", &mLogShowError);
-    ImGui::SameLine();
-    ImGui::Checkbox("Autoscroll", &mLogAutoscroll);
-    ImGui::SameLine();
-    if (ImGui::Button("Copy")) {
-      std::string joined;
-      for (const auto& entry : mLog) {
-        if ((entry.level == LogEntry::Level::Info && !mLogShowInfo)
-            || (entry.level == LogEntry::Level::Warning && !mLogShowWarning)
-            || (entry.level == LogEntry::Level::Error && !mLogShowError))
-          continue;
-        joined += entry.message;
-        joined += '\n';
-      }
-      ImGui::SetClipboardText(joined.c_str());
-    }
-
-    ImGui::BeginChild(
-        "##log_scroll",
-        ImVec2(0.0f, 100.0f * static_cast<float>(mGuiScale)),
-        true);
+//==============================================================================
+void DemoHost::renderLogSection(float height)
+{
+  ImGui::Checkbox("Info", &mLogShowInfo);
+  sameLineIfEnoughRoom(95.0f * static_cast<float>(mGuiScale));
+  ImGui::Checkbox("Warning", &mLogShowWarning);
+  sameLineIfEnoughRoom(72.0f * static_cast<float>(mGuiScale));
+  ImGui::Checkbox("Error", &mLogShowError);
+  sameLineIfEnoughRoom(100.0f * static_cast<float>(mGuiScale));
+  ImGui::Checkbox("Autoscroll", &mLogAutoscroll);
+  sameLineIfEnoughRoom(calcButtonWidth("Copy"));
+  if (ImGui::Button("Copy")) {
+    std::string joined;
     for (const auto& entry : mLog) {
       if ((entry.level == LogEntry::Level::Info && !mLogShowInfo)
           || (entry.level == LogEntry::Level::Warning && !mLogShowWarning)
           || (entry.level == LogEntry::Level::Error && !mLogShowError))
         continue;
-
-      ImVec4 color = ImGui::GetStyle().Colors[ImGuiCol_Text];
-      if (entry.level == LogEntry::Level::Error)
-        color = ImVec4(0.95f, 0.35f, 0.35f, 1.0f);
-      else if (entry.level == LogEntry::Level::Warning)
-        color = ImVec4(0.95f, 0.75f, 0.25f, 1.0f);
-
-      ImGui::PushStyleColor(ImGuiCol_Text, color);
-      ImGui::TextWrapped("%s", entry.message.c_str());
-      ImGui::PopStyleColor();
+      joined += entry.message;
+      joined += '\n';
     }
-    if (mLogAutoscroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f)
-      ImGui::SetScrollHereY(1.0f);
-    ImGui::EndChild();
+    ImGui::SetClipboardText(joined.c_str());
   }
+
+  ImGui::BeginChild("##log_scroll", ImVec2(0.0f, height), true);
+  for (const auto& entry : mLog) {
+    if ((entry.level == LogEntry::Level::Info && !mLogShowInfo)
+        || (entry.level == LogEntry::Level::Warning && !mLogShowWarning)
+        || (entry.level == LogEntry::Level::Error && !mLogShowError))
+      continue;
+
+    ImVec4 color = ImGui::GetStyle().Colors[ImGuiCol_Text];
+    if (entry.level == LogEntry::Level::Error)
+      color = ImVec4(0.95f, 0.35f, 0.35f, 1.0f);
+    else if (entry.level == LogEntry::Level::Warning)
+      color = ImVec4(0.95f, 0.75f, 0.25f, 1.0f);
+
+    ImGui::PushStyleColor(ImGuiCol_Text, color);
+    ImGui::TextWrapped("%s", entry.message.c_str());
+    ImGui::PopStyleColor();
+  }
+  if (mLogAutoscroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f)
+    ImGui::SetScrollHereY(1.0f);
+  ImGui::EndChild();
 }
 
 } // namespace dart_demos

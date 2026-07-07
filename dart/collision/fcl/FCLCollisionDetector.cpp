@@ -52,6 +52,8 @@
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/VoxelGridShape.hpp"
@@ -63,6 +65,7 @@
 #include <algorithm>
 #include <limits>
 #include <string>
+#include <vector>
 
 #include <cmath>
 #include <cstdint>
@@ -658,25 +661,77 @@ template <class BV>
 
 //==============================================================================
 template <class BV>
-::fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
+::fcl::BVHModel<BV>* createSoftMesh(
+    const aiMesh* _mesh, bool _useTriangleContiguousVertices)
 {
   // Create FCL mesh from Assimp mesh
 
   DART_ASSERT(_mesh);
   ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
-  model->beginModel();
 
-  for (std::size_t i = 0; i < _mesh->mNumFaces; i++) {
-    fcl::Vector3 vertices[3];
-    for (std::size_t j = 0; j < 3; j++) {
-      const aiVector3D& vertex = _mesh->mVertices[_mesh->mFaces[i].mIndices[j]];
-      vertices[j] = fcl::Vector3(vertex.x, vertex.y, vertex.z);
+  if (_useTriangleContiguousVertices) {
+    model->beginModel();
+
+    for (std::size_t i = 0; i < _mesh->mNumFaces; ++i) {
+      const aiFace& face = _mesh->mFaces[i];
+      DART_ASSERT(face.mNumIndices == 3);
+
+      fcl::Vector3 vertices[3];
+      for (std::size_t j = 0; j < 3; ++j) {
+        const aiVector3D& vertex = _mesh->mVertices[face.mIndices[j]];
+        vertices[j] = fcl::Vector3(vertex.x, vertex.y, vertex.z);
+      }
+      model->addTriangle(vertices[0], vertices[1], vertices[2]);
     }
-    model->addTriangle(vertices[0], vertices[1], vertices[2]);
+
+    model->endModel();
+
+    return model;
   }
 
+  std::vector<fcl::Vector3> vertices;
+  vertices.reserve(_mesh->mNumVertices);
+  for (std::size_t i = 0; i < _mesh->mNumVertices; ++i) {
+    const aiVector3D& vertex = _mesh->mVertices[i];
+    vertices.emplace_back(vertex.x, vertex.y, vertex.z);
+  }
+
+  std::vector<::fcl::Triangle> faces;
+  faces.reserve(_mesh->mNumFaces);
+  for (std::size_t i = 0; i < _mesh->mNumFaces; ++i) {
+    const aiFace& face = _mesh->mFaces[i];
+    DART_ASSERT(face.mNumIndices == 3);
+
+    ::fcl::Triangle triangle;
+    triangle.set(
+        static_cast<int>(face.mIndices[0]),
+        static_cast<int>(face.mIndices[1]),
+        static_cast<int>(face.mIndices[2]));
+    faces.push_back(triangle);
+  }
+
+  model->beginModel();
+  model->addSubModel(vertices, faces);
   model->endModel();
+
   return model;
+}
+
+//==============================================================================
+bool shouldUseTriangleContiguousSoftMesh(
+    const dynamics::SoftMeshShape& _shape, const aiMesh& _mesh)
+{
+  const auto* softBodyNode = _shape.getSoftBodyNode();
+  const auto* skeleton
+      = softBodyNode != nullptr ? softBodyNode->getSkeletonRawPtr() : nullptr;
+  if (skeleton == nullptr || skeleton->getNumSoftBodyNodes() <= 1u)
+    return false;
+
+  // Small articulated soft links benefit from triangle-local traversal, while
+  // denser meshes pay too much extra refit/update cost when vertices are
+  // duplicated per triangle.
+  constexpr auto kMaxTriangleContiguousSoftFaces = 64u;
+  return _mesh.mNumFaces <= kMaxTriangleContiguousSoftFaces;
 }
 
 } // anonymous namespace
@@ -1167,7 +1222,8 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
     auto aiMesh = softMeshShape->getAssimpMesh();
 
-    geom = createSoftMesh<fcl::OBBRSS>(aiMesh);
+    geom = createSoftMesh<fcl::OBBRSS>(
+        aiMesh, shouldUseTriangleContiguousSoftMesh(*softMeshShape, *aiMesh));
   }
 #if HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType) {

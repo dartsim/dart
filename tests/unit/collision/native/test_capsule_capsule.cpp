@@ -96,6 +96,63 @@ TEST(CapsuleCapsule, ParallelOverlapAddsContact)
   EXPECT_NEAR(0.25, result.getContact(0).depth, 1e-12);
 }
 
+TEST(CapsuleCapsule, ParallelYOffsetUsesYAxisNormal)
+{
+  const CapsuleShape capsule1(0.5, 2.0);
+  const CapsuleShape capsule2(0.5, 2.0);
+
+  CollisionResult result;
+  ASSERT_TRUE(collideCapsules(
+      capsule1,
+      Eigen::Isometry3d::Identity(),
+      capsule2,
+      translated(0.0, 0.75, 0.0),
+      result));
+
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitY(), 1e-12));
+  EXPECT_NEAR(0.25, result.getContact(0).depth, 1e-12);
+}
+
+TEST(CapsuleCapsule, AxialEndcapOverlapAddsContact)
+{
+  const CapsuleShape capsule1(0.5, 2.0);
+  const CapsuleShape capsule2(0.5, 2.0);
+
+  CollisionResult result;
+  ASSERT_TRUE(collideCapsules(
+      capsule1,
+      Eigen::Isometry3d::Identity(),
+      capsule2,
+      translated(0.0, 0.0, 2.25),
+      result));
+
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+  EXPECT_NEAR(0.75, result.getContact(0).depth, 1e-12);
+}
+
+TEST(CapsuleCapsule, CoincidentAxesUseDeterministicFallbackNormal)
+{
+  const CapsuleShape capsule1(0.5, 2.0);
+  const CapsuleShape capsule2(0.5, 2.0);
+
+  CollisionResult result;
+  ASSERT_TRUE(collideCapsules(
+      capsule1,
+      Eigen::Isometry3d::Identity(),
+      capsule2,
+      Eigen::Isometry3d::Identity(),
+      result));
+
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+  EXPECT_NEAR(1.0, result.getContact(0).depth, 1e-12);
+}
+
 TEST(CapsuleCapsule, RotatedOverlapAddsContact)
 {
   const CapsuleShape capsule1(0.5, 2.0);
@@ -113,6 +170,21 @@ TEST(CapsuleCapsule, RotatedOverlapAddsContact)
   EXPECT_GT(result.getContact(0).depth, 0.0);
 }
 
+TEST(CapsuleCapsule, RotatedSeparatedReturnsFalse)
+{
+  const CapsuleShape capsule1(0.5, 2.0);
+  const CapsuleShape capsule2(0.5, 2.0);
+
+  CollisionResult result;
+  EXPECT_FALSE(collideCapsules(
+      capsule1,
+      Eigen::Isometry3d::Identity(),
+      capsule2,
+      rotatedTranslated(3.0, 0.0, 0.0),
+      result));
+  EXPECT_EQ(0u, result.numContacts());
+}
+
 TEST(CapsuleCapsule, BinaryCheckDoesNotAddContacts)
 {
   const CapsuleShape capsule1(0.5, 2.0);
@@ -126,6 +198,35 @@ TEST(CapsuleCapsule, BinaryCheckDoesNotAddContacts)
       translated(0.75, 0.0, 0.0),
       result,
       CollisionOption::binaryCheck()));
+  EXPECT_EQ(0u, result.numContacts());
+}
+
+TEST(CapsuleCapsule, NonContactOptionReportsOverlapOnly)
+{
+  const CapsuleShape capsule1(0.5, 2.0);
+  const CapsuleShape capsule2(0.5, 2.0);
+
+  CollisionOption option;
+  option.enableContact = false;
+  option.maxNumContacts = 8;
+
+  CollisionResult result;
+  EXPECT_TRUE(collideCapsules(
+      capsule1,
+      Eigen::Isometry3d::Identity(),
+      capsule2,
+      translated(0.75, 0.0, 0.0),
+      result,
+      option));
+  EXPECT_EQ(0u, result.numContacts());
+
+  EXPECT_FALSE(collideCapsules(
+      capsule1,
+      Eigen::Isometry3d::Identity(),
+      capsule2,
+      translated(3.0, 0.0, 0.0),
+      result,
+      option));
   EXPECT_EQ(0u, result.numContacts());
 }
 
@@ -147,6 +248,27 @@ TEST(CapsuleCapsule, ZeroContactLimitReturnsFalse)
       result,
       option));
   EXPECT_EQ(0u, result.numContacts());
+}
+
+TEST(CapsuleCapsuleBatch, CollidesEachPair)
+{
+  const CapsuleShape capsule1(0.5, 2.0);
+  const CapsuleShape capsule2(0.5, 2.0);
+  const std::vector<CapsulePair> pairs{
+      {&capsule1,
+       &capsule2,
+       Eigen::Isometry3d::Identity(),
+       translated(0.75, 0.0, 0.0)},
+      {&capsule1,
+       &capsule2,
+       Eigen::Isometry3d::Identity(),
+       translated(3.0, 0.0, 0.0)}};
+  std::vector<CollisionResult> results(2);
+
+  collideCapsulesBatch(pairs, results);
+
+  EXPECT_EQ(1u, results[0].numContacts());
+  EXPECT_EQ(0u, results[1].numContacts());
 }
 
 TEST(CapsuleCapsuleBatch, RejectsMalformedInputs)

@@ -67,6 +67,26 @@ Eigen::Vector3d closestPointOnSegment(
   return segmentStart + segment * t;
 }
 
+Eigen::Vector3d chooseRadialNormal(const Eigen::Vector3d& capsuleAxis)
+{
+  const double axisNorm = capsuleAxis.norm();
+  if (axisNorm < 1e-10) {
+    return Eigen::Vector3d::UnitX();
+  }
+
+  const Eigen::Vector3d axis = capsuleAxis / axisNorm;
+  const Eigen::Vector3d reference = (std::abs(axis.x()) < 0.9)
+                                        ? Eigen::Vector3d::UnitX()
+                                        : Eigen::Vector3d::UnitY();
+  const Eigen::Vector3d radial = reference - axis * reference.dot(axis);
+  const double radialNorm = radial.norm();
+  if (radialNorm < 1e-10) {
+    return Eigen::Vector3d::UnitY();
+  }
+
+  return radial / radialNorm;
+}
+
 bool collideVerticalCapsuleSphere(
     double capsuleRadius,
     double sphereRadius,
@@ -91,14 +111,14 @@ bool collideVerticalCapsuleSphere(
 
     const double penetration = sumRadii - dist;
     if (dist < 1e-10) {
-      result.addContact(
-          capsuleTranslation.x(),
-          capsuleTranslation.y(),
-          capsuleTranslation.z() + closestZ - capsuleRadius + penetration * 0.5,
-          0.0,
-          0.0,
-          1.0,
-          penetration);
+      const Eigen::Vector3d normal
+          = chooseRadialNormal(Eigen::Vector3d::UnitZ());
+      const Eigen::Vector3d closestOnCapsule
+          = capsuleTranslation + Eigen::Vector3d(0.0, 0.0, closestZ);
+      const Eigen::Vector3d contactPoint
+          = closestOnCapsule + (-normal) * (capsuleRadius - penetration * 0.5);
+
+      result.addContact(contactPoint, normal, penetration);
     } else {
       const double normalX = (dx > 0.0) ? -1.0 : 1.0;
       result.addContact(
@@ -255,7 +275,7 @@ bool collideCapsuleSphere(
 
   Eigen::Vector3d normal;
   if (dist < 1e-10) {
-    normal = Eigen::Vector3d::UnitZ();
+    normal = chooseRadialNormal(top - bottom);
   } else {
     normal = -diff / dist;
   }

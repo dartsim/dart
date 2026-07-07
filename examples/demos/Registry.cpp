@@ -44,6 +44,7 @@ std::vector<DemoScene> makeDemoScenes()
   // docs/dev_tasks/dart6_consolidated_demos/PLAN.md.
   std::vector<DemoScene> scenes;
   scenes.push_back(makeEmptyScene());
+  scenes.push_back(makeHelloWorldScene());
   scenes.push_back(makeSimpleFramesScene());
   scenes.push_back(makeBoxesScene());
   scenes.push_back(makeRigidCubesScene());
@@ -78,6 +79,8 @@ std::vector<DemoScene> makeDemoScenes()
   // Soft Bodies (new category; first appearance here).
   scenes.push_back(makeMixedChainScene());
   scenes.push_back(makeSoftBodiesScene());
+  scenes.push_back(makeSoftCubesScene());
+  scenes.push_back(makeSoftOpenChainScene());
 
   // Robots (new category; first appearance here).
   scenes.push_back(makeFetchScene());

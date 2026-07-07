@@ -62,7 +62,7 @@ public:
   SoftContactConstraint(collision::Contact& _contact, double _timeStep);
 
   /// Destructor
-  virtual ~SoftContactConstraint();
+  ~SoftContactConstraint() override;
 
   // Documentation inherited
   const std::string& getType() const override;
@@ -152,6 +152,11 @@ protected:
       const dynamics::ShapeNode* shapeNode);
 
 private:
+  using TangentBasisMatrix = Eigen::Matrix<double, 3, 2>;
+
+  /// Reinitialize this constraint for a new per-step collision contact.
+  void reset(collision::Contact& contact, double timeStep);
+
   /// Get change in relative velocity at contact point due to external impulse
   /// \param[out] _vel Change in relative velocity at contact point of the two
   ///                  colliding bodies
@@ -161,7 +166,7 @@ private:
   void updateFirstFrictionalDirection();
 
   ///
-  Eigen::MatrixXd getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
+  TangentBasisMatrix getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
 
   /// Find the nearest point mass from _point in a face, of which id is _faceId
   /// in _softBodyNode.
@@ -200,9 +205,8 @@ private:
   /// Second point mass
   dynamics::PointMass* mPointMass2;
 
-  // TODO(JS): For now, there is only one contact per contact constraint
   /// Contacts between mBodyNode1 and mBodyNode2
-  std::vector<collision::Contact*> mContacts;
+  collision::Contact* mContact;
 
   /// Soft collision information
   collision::SoftCollisionInfo* mSoftCollInfo;
@@ -216,11 +220,12 @@ private:
   /// Coefficient of restitution
   double mRestitutionCoeff;
 
-  /// Local body jacobians for mBodyNode1
-  common::aligned_vector<Eigen::Vector6d> mJacobians1;
+  /// Local body jacobians for mBodyNode1. Soft contacts currently hold one
+  /// contact with one normal direction and optionally two friction directions.
+  Eigen::Matrix<double, 6, 3> mJacobians1;
 
-  /// Local body jacobians for mBodyNode2
-  common::aligned_vector<Eigen::Vector6d> mJacobians2;
+  /// Local body jacobians for mBodyNode2 (see mJacobians1).
+  Eigen::Matrix<double, 6, 3> mJacobians2;
 
   /// Contact normal expressed in body frame of the first body node
   Eigen::Vector3d mBodyDirection1;
@@ -230,6 +235,9 @@ private:
 
   ///
   bool mIsFrictionOn;
+
+  /// ODE-style tangent basis for the contact normal, cached for applyImpulse().
+  TangentBasisMatrix mTangentBasis;
 
   /// Index of applied impulse
   std::size_t mAppliedImpulseIndex;
