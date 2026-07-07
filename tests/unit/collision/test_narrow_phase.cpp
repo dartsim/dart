@@ -347,7 +347,7 @@ TEST(NarrowPhase, CompoundCollisionTraversesChildrenAndEarlyStops)
           identity,
           CollisionOption::binaryCheck(),
           compoundPair));
-  EXPECT_GE(compoundPair.numContacts(), 1u);
+  EXPECT_EQ(compoundPair.numContacts(), 0u);
 
   CollisionOption option;
   option.maxNumContacts = 1;
