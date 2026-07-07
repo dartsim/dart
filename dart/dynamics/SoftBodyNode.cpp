@@ -925,8 +925,17 @@ void SoftBodyNode::updateTransmittedForceFD()
 //==============================================================================
 void SoftBodyNode::updateBiasImpulse()
 {
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateBiasImpulseFD();
+  for (auto& pointMassPtr : mPointMasses) {
+    PointMass& pointMass = *pointMassPtr;
+    pointMass.mImpB = -pointMass.mConstraintImpulses;
+    DART_ASSERT(!math::isNan(pointMass.mImpB));
+
+    pointMass.mImpAlpha = -pointMass.mImpB;
+    DART_ASSERT(!math::isNan(pointMass.mImpAlpha));
+
+    pointMass.mImpBeta.setZero();
+    DART_ASSERT(!math::isNan(pointMass.mImpBeta));
+  }
 
   // Update impulsive bias force
   mBiasImpulse = -mConstraintImpulse;
@@ -988,8 +997,16 @@ void SoftBodyNode::updateTransmittedImpulse()
 {
   BodyNode::updateTransmittedImpulse();
 
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateTransmittedImpulse();
+  const std::vector<PointMass::Properties>& pointProperties
+      = mAspectProperties.mPointProps;
+  DART_ASSERT(pointProperties.size() == mPointMasses.size());
+
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
+    PointMass& pointMass = *mPointMasses[i];
+    pointMass.mImpF = pointMass.mImpB;
+    pointMass.mImpF.noalias() += pointProperties[i].mMass * pointMass.mDelV;
+    DART_ASSERT(!math::isNan(pointMass.mImpF));
+  }
 }
 
 //==============================================================================
@@ -997,8 +1014,24 @@ void SoftBodyNode::updateConstrainedTerms(double _timeStep)
 {
   BodyNode::updateConstrainedTerms(_timeStep);
 
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateConstrainedTermsFD(_timeStep);
+  DART_ASSERT(_timeStep > 0.0);
+  std::vector<PointMass::State>& pointStates = mAspectState.mPointStates;
+  DART_ASSERT(pointStates.size() == mPointMasses.size());
+
+  const double invTimeStep = 1.0 / _timeStep;
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
+    PointMass& pointMass = *mPointMasses[i];
+    PointMass::State& state = pointStates[i];
+
+    state.mVelocities += pointMass.mVelocityChanges;
+    state.mAccelerations.noalias()
+        += invTimeStep * (pointMass.mVelocityChanges + pointMass.mDelV);
+    state.mForces.noalias() += invTimeStep * pointMass.mConstraintImpulses;
+    pointMass.mF.noalias() += _timeStep * pointMass.mImpF;
+
+    pointMass.mNotifier->dirtyVelocity();
+    pointMass.mNotifier->dirtyAcceleration();
+  }
 }
 
 //==============================================================================

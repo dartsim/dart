@@ -120,6 +120,14 @@ Latest state:
   transform/velocity terms into protected `PointMass` overloads. A native
   `soft_bodies` 200-step smoke preserved the prior checksum; timing remained
   too noisy for a stable speedup claim.
+- Another WP-DB.06 scalar data-access slice is implemented locally:
+  `SoftBodyNode::{updateBiasImpulse,updateTransmittedImpulse,updateConstrainedTerms}()`
+  now update point-mass impulse caches and contiguous point state/property
+  vectors directly while preserving the old point-mass velocity and
+  acceleration dirty-notice behavior. This removes more per-point helper calls
+  from recursive dynamics phases, but it is still not contiguous point-mass
+  object storage or SIMD. Native `soft_bodies` 200-step checksum rows matched
+  exactly between `THREADS=1` and `THREADS=4` after this slice.
 - A narrow `origin/dart6-memory-hardening` carryover is implemented locally:
   `Skeleton::checkExternalDisturbanceAndReset()` now scans body-local external
   wrenches directly instead of materializing the external-force projection cache
@@ -198,8 +206,9 @@ Next steps:
    repetitions, then refresh `01-baseline-evidence.md`.
 2. Use `soft_body_headless` for longer single-core and multi-core profile
    captures on an idle host, then choose the next measured soft-body layout
-   slice. The likely next WP-DB.06 slice is a retained internal span/facade for
-   point-mass phase inputs before any `dart/simd/` kernel.
+   slice. The likely next WP-DB.06 slice is still a retained internal
+   span/facade or SoA scratch for point-mass phase inputs before any
+   `dart/simd/` kernel.
 3. Extend `test_SoftDynamics` beyond finite-state and one-thread versus
    four-thread final-state checks with energy, contact-force, CoP, or
    historical-golden regression thresholds that are stable across supported
