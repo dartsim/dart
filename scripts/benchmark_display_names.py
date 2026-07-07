@@ -10,6 +10,7 @@ FAMILY_BASELINE = "DART 6 benchmark baselines"
 FAMILY_KINEMATICS = "DART 6 kinematics and dynamics"
 FAMILY_INVERSE = "DART 6 inverse dynamics"
 FAMILY_CONTACT = "DART 6 contact and collision"
+FAMILY_DEFORMABLE = "DART 6 deformable bodies"
 FAMILY_OTHER = "Other benchmarks"
 
 
@@ -46,13 +47,39 @@ SURFACES: dict[str, Surface] = {
         FAMILY_CONTACT,
         ("objects", "engine", "threads"),
     ),
+    "BM_ContactContainerLargeActive": Surface(
+        "Contact container large active step",
+        FAMILY_CONTACT,
+        ("objects", "engine", "threads"),
+    ),
+    "BM_ContactContainerDeactivation": Surface(
+        "Contact container deactivation-enabled step",
+        FAMILY_CONTACT,
+        ("objects", "engine", "threads"),
+    ),
+    "BM_SoftBodyStep": Surface(
+        "Soft-body world step",
+        FAMILY_DEFORMABLE,
+        ("scene", "threads", "steps"),
+    ),
 }
+
+GOOGLE_BENCHMARK_METADATA_PREFIXES = (
+    "iterations:",
+    "repeats:",
+    "threads:",
+    "thread_per_cpu:",
+)
 
 
 def _split(raw_name: str) -> tuple[str, list[str]]:
     base, _, arg_str = raw_name.partition("/")
     values = [part for part in arg_str.split("/") if part != ""] if arg_str else []
-    return base, values
+    return base, [value for value in values if not _is_google_benchmark_metadata(value)]
+
+
+def _is_google_benchmark_metadata(value: str) -> bool:
+    return value.startswith(GOOGLE_BENCHMARK_METADATA_PREFIXES)
 
 
 def _generic_title(base: str) -> str:

@@ -119,10 +119,17 @@ gz dartsim plugin subclasses `OdeCollisionDetector` and
 - Determinism guard: `contact_benchmark` final-state hash + contact/pair/
   resting counts vs the recorded baseline for **every** detector (DART
   native, FCL, Bullet, ODE) — untouched backends must be bit-identical.
-- Benchmark evidence in the #3203 format: common-flags line + scenario ×
-  commit table (baseline SHA, parent SHA, PR head) with RTF, resting N/M,
-  contacts, final hash per cell; RTF-only acceptance is banned. ODE rows
-  are only valid with `--max-contacts-per-pair 4` (#3209 finding 3).
+- Benchmark evidence in the #3307 format: every performance PR must carry a
+  PR-body performance report, not just a small timing table. The report must
+  include the benchmark evidence head, parent/current-base comparison commits,
+  exact commands, benchmark settings, an apples-to-apples equivalence scope,
+  a strict regression gate or explicit maintainer-approved exception, compact
+  before/after graphs when the table is non-trivial, and a full raw matrix
+  with samples, mean/median timing, speedup/change, contacts/resting/cap or
+  final-hash guard columns as applicable. Label non-equivalent detector rows
+  as diagnostic instead of counting them as winners/regressions. ODE rows are
+  only valid with `--max-contacts-per-pair 4` (#3209 finding 3). RTF-only or
+  best-row-only acceptance is banned.
 - Packet metadata: compiler, CPU/governor, pixi env, exact commands,
   which optional detectors were built (per the native-port scoping doc).
 - `pixi run test-eigen-overalignment` when allocation/alignment changes.

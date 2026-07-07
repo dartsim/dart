@@ -37,14 +37,18 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/math/Constants.hpp"
+#include "dart/math/Helpers.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <array>
 #include <string>
 #include <vector>
+
+#include <cmath>
 
 using namespace std;
 using namespace Eigen;
@@ -75,6 +79,143 @@ bool equals(
   // If no problems, the two matrices are equal
   return true;
 }
+
+namespace {
+
+struct SoftStabilityScene
+{
+  std::string uri;
+  std::size_t minSoftBodies;
+  std::size_t minPointMasses;
+  std::size_t steps;
+};
+
+struct SoftSceneStats
+{
+  std::size_t softBodies = 0u;
+  std::size_t pointMasses = 0u;
+};
+
+constexpr double kMaxPointMassPositionNorm = 1.0e4;
+constexpr double kMaxPointMassVelocityNorm = 1.0e6;
+
+template <class Derived>
+void expectFinite(
+    const Eigen::MatrixBase<Derived>& value, const std::string& context)
+{
+  EXPECT_FALSE(math::isNan(value)) << context << " contains NaN";
+  EXPECT_FALSE(math::isInf(value)) << context << " contains Inf";
+}
+
+void expectFinite(double value, const std::string& context)
+{
+  EXPECT_TRUE(std::isfinite(value)) << context << " = " << value;
+}
+
+SoftSceneStats collectSoftSceneStats(const simulation::WorldPtr& world)
+{
+  SoftSceneStats stats;
+  if (!world)
+    return stats;
+
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const dynamics::SkeletonPtr skeleton = world->getSkeleton(i);
+    if (!skeleton)
+      continue;
+
+    stats.softBodies += skeleton->getNumSoftBodyNodes();
+    for (std::size_t j = 0; j < skeleton->getNumSoftBodyNodes(); ++j) {
+      const dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(j);
+      if (softBody != nullptr)
+        stats.pointMasses += softBody->getNumPointMasses();
+    }
+  }
+
+  return stats;
+}
+
+void expectFiniteSoftBodyState(
+    const dynamics::SoftBodyNode* softBody, const std::string& context)
+{
+  ASSERT_TRUE(softBody != nullptr) << context;
+
+  expectFinite(softBody->getVertexSpringStiffness(), context + " vertex k");
+  expectFinite(softBody->getEdgeSpringStiffness(), context + " edge k");
+  expectFinite(softBody->getDampingCoefficient(), context + " damping");
+  EXPECT_GE(softBody->getVertexSpringStiffness(), 0.0) << context;
+  EXPECT_GE(softBody->getEdgeSpringStiffness(), 0.0) << context;
+  EXPECT_GE(softBody->getDampingCoefficient(), 0.0) << context;
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    const dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    const std::string pointContext
+        = context + " point_mass=" + std::to_string(i);
+    ASSERT_TRUE(pointMass != nullptr) << pointContext;
+
+    expectFinite(pointMass->getPositions(), pointContext + " positions");
+    expectFinite(pointMass->getVelocities(), pointContext + " velocities");
+    expectFinite(
+        pointMass->getAccelerations(), pointContext + " accelerations");
+    expectFinite(pointMass->getForces(), pointContext + " forces");
+    expectFinite(pointMass->getRestingPosition(), pointContext + " rest");
+    expectFinite(pointMass->getLocalPosition(), pointContext + " local");
+    expectFinite(pointMass->getWorldPosition(), pointContext + " world");
+    expectFinite(pointMass->getBodyVelocity(), pointContext + " body velocity");
+    expectFinite(
+        pointMass->getWorldVelocity(), pointContext + " world velocity");
+    expectFinite(
+        pointMass->getBodyAcceleration(), pointContext + " body acceleration");
+    expectFinite(
+        pointMass->getWorldAcceleration(),
+        pointContext + " world acceleration");
+
+    EXPECT_LT(pointMass->getWorldPosition().norm(), kMaxPointMassPositionNorm)
+        << pointContext;
+    EXPECT_LT(pointMass->getWorldVelocity().norm(), kMaxPointMassVelocityNorm)
+        << pointContext;
+  }
+}
+
+void expectFiniteWorldState(
+    const simulation::WorldPtr& world,
+    const SoftStabilityScene& scene,
+    std::size_t threads,
+    std::size_t step)
+{
+  ASSERT_TRUE(world != nullptr) << scene.uri;
+
+  const std::string worldContext = scene.uri
+                                   + " threads=" + std::to_string(threads)
+                                   + " step=" + std::to_string(step);
+  expectFinite(world->getTime(), worldContext + " time");
+  EXPECT_LT(std::abs(world->getTime()), 1.0e4) << worldContext;
+
+  const SoftSceneStats stats = collectSoftSceneStats(world);
+  EXPECT_GE(stats.softBodies, scene.minSoftBodies) << worldContext;
+  EXPECT_GE(stats.pointMasses, scene.minPointMasses) << worldContext;
+
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const dynamics::SkeletonPtr skeleton = world->getSkeleton(i);
+    const std::string skeletonContext
+        = worldContext + " skeleton=" + std::to_string(i);
+    ASSERT_TRUE(skeleton != nullptr) << skeletonContext;
+
+    expectFinite(skeleton->getPositions(), skeletonContext + " positions");
+    expectFinite(skeleton->getVelocities(), skeletonContext + " velocities");
+    expectFinite(
+        skeleton->getAccelerations(), skeletonContext + " accelerations");
+    expectFinite(skeleton->getForces(), skeletonContext + " forces");
+
+    for (std::size_t j = 0; j < skeleton->getNumSoftBodyNodes(); ++j) {
+      const dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(j);
+      const std::string softBodyContext
+          = skeletonContext + " soft_body=" + std::to_string(j);
+      expectFiniteSoftBodyState(softBody, softBodyContext);
+    }
+  }
+}
+
+} // namespace
 
 //==============================================================================
 class SoftDynamicsTest : public ::testing::Test
@@ -436,4 +577,36 @@ TEST_F(SoftDynamicsTest, compareEquationsOfMotion)
   // #endif
   //    compareEquationsOfMotion(getList()[i]);
   //  }
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, finiteStateForRepresentativeSoftScenes)
+{
+  const std::array<SoftStabilityScene, 7> scenes = {{
+      {"dart://sample/skel/test/test_drop_box.skel", 1u, 26u, 30u},
+      {"dart://sample/skel/test/test_drop_low_stiffness.skel", 1u, 26u, 30u},
+      {"dart://sample/skel/test/test_double_pendulum.skel", 2u, 52u, 30u},
+      {"dart://sample/skel/test/test_adaptive_deformable.skel", 1u, 12u, 30u},
+      {"dart://sample/skel/soft_cubes.skel", 2u, 52u, 30u},
+      {"dart://sample/skel/softBodies.skel", 5u, 290u, 30u},
+      {"dart://sample/skel/soft_open_chain.skel", 5u, 120u, 30u},
+  }};
+  const std::array<std::size_t, 2> threadCounts = {{1u, 4u}};
+
+  for (const SoftStabilityScene& scene : scenes) {
+    for (const std::size_t threads : threadCounts) {
+      simulation::WorldPtr world = utils::SkelParser::readWorld(scene.uri);
+      ASSERT_TRUE(world != nullptr) << scene.uri;
+      world->setNumSimulationThreads(threads);
+
+      expectFiniteWorldState(world, scene, threads, 0u);
+
+      for (std::size_t step = 1u; step <= scene.steps; ++step) {
+        world->step();
+
+        if (step == scene.steps || step % 10u == 0u)
+          expectFiniteWorldState(world, scene, threads, step);
+      }
+    }
+  }
 }

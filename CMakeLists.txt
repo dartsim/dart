@@ -53,6 +53,7 @@ set(CMAKE_MODULE_PATH "${DART_SOURCE_DIR}/cmake")
 
 include(DARTMacros)
 include(dart_defs)
+include(compiler_cache)
 
 # CMake component helper. It uses the following variables:
 # - LIBRARY_INSTALL_DIR
@@ -171,6 +172,8 @@ dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
 dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF)
+
+dart_configure_compiler_cache()
 
 #===============================================================================
 # Print intro

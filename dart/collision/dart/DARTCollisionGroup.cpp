@@ -33,6 +33,7 @@
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/dart/DARTCollisionObject.hpp"
 
 namespace dart {
 namespace collision {
@@ -86,6 +87,17 @@ void DARTCollisionGroup::removeAllCollisionObjectsFromEngine()
 void DARTCollisionGroup::updateCollisionGroupEngineData()
 {
   // Do nothing
+}
+
+//==============================================================================
+void DARTCollisionGroup::updateEngineDataForCollide()
+{
+  for (const auto& info : mObjectInfoList) {
+    auto* object = static_cast<DARTCollisionObject*>(info->mObject.get());
+    object->DARTCollisionObject::updateEngineData();
+  }
+
+  updateCollisionGroupEngineData();
 }
 
 } // namespace collision
