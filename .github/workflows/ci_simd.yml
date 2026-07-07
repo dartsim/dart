@@ -13,20 +13,26 @@ on:
       - "main"
       - "release-*"
     paths:
+      - "CMakeLists.txt"
+      - "dart/CMakeLists.txt"
       - "dart/simd/**"
       - "dart/collision/dart/**"
       - "tests/unit/simd/**"
       - "tests/unit/collision/test_DARTCollisionDetector.cpp"
+      - "tests/benchmark/CMakeLists.txt"
       - "tests/benchmark/simd/**"
       - ".github/workflows/ci_simd.yml"
   pull_request:
     branches:
       - "**"
     paths:
+      - "CMakeLists.txt"
+      - "dart/CMakeLists.txt"
       - "dart/simd/**"
       - "dart/collision/dart/**"
       - "tests/unit/simd/**"
       - "tests/unit/collision/test_DARTCollisionDetector.cpp"
+      - "tests/benchmark/CMakeLists.txt"
       - "tests/benchmark/simd/**"
       - ".github/workflows/ci_simd.yml"
   workflow_dispatch:
