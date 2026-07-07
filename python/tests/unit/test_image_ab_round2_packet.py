@@ -160,6 +160,37 @@ def test_merge_observations_builds_reducer_manifest() -> None:
     }
 
 
+def test_merge_observations_rejects_duplicate_judge_artifact_pairs() -> None:
+    answer_key = {
+        "schema_version": "dart.image_ab_round2_packet/v1",
+        "study_id": "round2-test",
+        "rows": [
+            {
+                "artifact_id": "r2_a",
+                "case": "clean",
+                "variant": "single",
+                "expected": "clean",
+                "image": "images/r2_a.png",
+            }
+        ],
+    }
+    observations = {
+        "schema_version": "dart.image_ab_round2_observations/v1",
+        "study_id": "round2-test",
+        "rows": [
+            {"artifact_id": "r2_a", "judge": "j1", "observed": "clean"},
+            {"artifact_id": "r2_a", "judge": "j1", "observed": "defect"},
+        ],
+    }
+
+    try:
+        image_ab_round2_packet.merge_observations(answer_key, observations)
+    except ValueError as exc:
+        assert "duplicate observation" in str(exc)
+    else:
+        raise AssertionError("expected ValueError")
+
+
 def test_score_observations_writes_manifest_and_results(tmp_path: Path) -> None:
     answer_key = {
         "schema_version": "dart.image_ab_round2_packet/v1",

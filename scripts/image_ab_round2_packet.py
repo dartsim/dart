@@ -483,6 +483,7 @@ def merge_observations(
     observations: Mapping[str, Any],
 ) -> dict[str, Any]:
     keyed = {row["artifact_id"]: row for row in answer_key.get("rows", [])}
+    seen_observations: set[tuple[str, str]] = set()
     rows = []
     for raw_row in observations.get("rows", []):
         if not isinstance(raw_row, Mapping):
@@ -494,6 +495,12 @@ def merge_observations(
             raise ValueError(f"unknown artifact_id {artifact_id!r}")
         if not isinstance(judge, str) or not judge:
             raise ValueError(f"{artifact_id}: missing non-empty judge")
+        observation_key = (artifact_id, judge)
+        if observation_key in seen_observations:
+            raise ValueError(
+                f"{artifact_id}: duplicate observation for judge {judge!r}"
+            )
+        seen_observations.add(observation_key)
         if not isinstance(observed, str):
             raise ValueError(f"{artifact_id}: missing observed label")
         observed = observed.lower()

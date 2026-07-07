@@ -220,7 +220,7 @@
   from `docs/onboarding/agent-sim-verification.md`: capture the solver scene
   with `pixi run py-demo-capture -- --scene <scene> --view three-quarter --fit`
   and gate the resulting still with
-  `pixi run image-verdict -- <capture.png> --metadata plan=PLAN-083`. For
+  `pixi run image-verdict -- <capture.png> --meta plan=PLAN-083`. For
   stable renderer-regression lanes, curate a backend-local golden with
   `pixi run render-golden-gate -- --golden tests/fixtures/render_goldens/plan083_<scene>.png --update`
   and compare it with the same command without `--update`; these PNG goldens
