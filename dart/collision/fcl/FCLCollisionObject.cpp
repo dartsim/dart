@@ -48,6 +48,14 @@ namespace collision {
 namespace {
 
 //==============================================================================
+bool transformsEqual(
+    const dart::collision::fcl::Transform3& lhs,
+    const dart::collision::fcl::Transform3& rhs)
+{
+  return lhs.matrix().cwiseEqual(rhs.matrix()).all();
+}
+
+//==============================================================================
 class MutableFCLCollisionObject : public dart::collision::fcl::CollisionObject
 {
 public:
@@ -65,12 +73,32 @@ public:
   {
     cgeom = fclCollGeom;
     cgeom_const = fclCollGeom;
+    mHasCachedTransform = false;
 
     if (cgeom) {
       cgeom->computeLocalAABB();
       computeAABB();
     }
   }
+
+  void setTransformAndComputeAABBIfNeeded(
+      const dart::collision::fcl::Transform3& transform, bool geometryChanged)
+  {
+    if (!geometryChanged && mHasCachedTransform
+        && transformsEqual(mCachedTransform, transform)) {
+      return;
+    }
+
+    setTransform(transform);
+    computeAABB();
+    mCachedTransform = transform;
+    mHasCachedTransform = true;
+  }
+
+private:
+  dart::collision::fcl::Transform3 mCachedTransform{
+      dart::collision::fcl::getTransform3Identity()};
+  bool mHasCachedTransform{false};
 };
 
 } // namespace
@@ -136,6 +164,7 @@ void FCLCollisionObject::updateEngineData()
   using dart::dynamics::SoftMeshShape;
 
   auto shape = mShapeFrame->getShape().get();
+  bool geometryChanged = false;
 
   // Update soft-body's vertices
   if (shape->getType() == dynamics::SoftMeshShape::getStaticType()) {
@@ -158,7 +187,6 @@ void FCLCollisionObject::updateEngineData()
     const auto& pointMasses = softBodyNode->getPointMasses();
     DART_ASSERT(mesh->mNumVertices == pointMasses.size());
 
-    bool softMeshChanged = false;
     const auto numFclVertices
         = static_cast<std::size_t>(bvhModel->num_vertices);
     if (numFclVertices == pointMasses.size()) {
@@ -167,12 +195,12 @@ void FCLCollisionObject::updateEngineData()
         const auto& previousVertex = bvhModel->vertices[i];
         if (previousVertex[0] != vertex[0] || previousVertex[1] != vertex[1]
             || previousVertex[2] != vertex[2]) {
-          softMeshChanged = true;
+          geometryChanged = true;
           break;
         }
       }
 
-      if (softMeshChanged) {
+      if (geometryChanged) {
         bvhModel->beginUpdateModel();
         for (std::size_t i = 0; i < pointMasses.size(); ++i) {
           const Eigen::Vector3d& vertex = pointMasses[i]->getLocalPosition();
@@ -194,15 +222,15 @@ void FCLCollisionObject::updateEngineData()
           const auto& previousVertex = bvhModel->vertices[vertexIndex];
           if (previousVertex[0] != vertex[0] || previousVertex[1] != vertex[1]
               || previousVertex[2] != vertex[2]) {
-            softMeshChanged = true;
+            geometryChanged = true;
             break;
           }
         }
-        if (softMeshChanged)
+        if (geometryChanged)
           break;
       }
 
-      if (softMeshChanged) {
+      if (geometryChanged) {
         bvhModel->beginUpdateModel();
         for (std::size_t i = 0; i < pointMasses.size(); ++i) {
           const Eigen::Vector3d& vertex = pointMasses[i]->getLocalPosition();
@@ -226,8 +254,11 @@ void FCLCollisionObject::updateEngineData()
     }
   }
 
-  mFCLCollisionObject->setTransform(FCLTypes::convertTransform(getTransform()));
-  mFCLCollisionObject->computeAABB();
+  auto* mutableObject
+      = static_cast<MutableFCLCollisionObject*>(mFCLCollisionObject.get());
+  DART_ASSERT(mutableObject);
+  mutableObject->setTransformAndComputeAABBIfNeeded(
+      FCLTypes::convertTransform(getTransform()), geometryChanged);
 }
 
 } // namespace collision
