@@ -72,6 +72,27 @@ constexpr double DART_DEFAULT_FRICTION_COEFF = 1.0;
 constexpr double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
 
 //==============================================================================
+static double dotColumnTail3(
+    const Eigen::Matrix<double, 6, 3>& matrix,
+    std::size_t column,
+    const Eigen::Vector3d& vector)
+{
+  const double* data = matrix.data() + column * 6 + 3;
+  return data[0] * vector[0] + data[1] * vector[1] + data[2] * vector[2];
+}
+
+//==============================================================================
+static double dotColumn6(
+    const Eigen::Matrix<double, 6, 3>& matrix,
+    std::size_t column,
+    const Eigen::Vector6d& vector)
+{
+  const double* data = matrix.data() + column * 6;
+  return data[0] * vector[0] + data[1] * vector[1] + data[2] * vector[2]
+         + data[3] * vector[3] + data[4] * vector[4] + data[5] * vector[5];
+}
+
+//==============================================================================
 SoftContactConstraint::SoftContactConstraint(
     collision::Contact& contact, double timeStep)
   : ConstraintBase(),
@@ -656,14 +677,14 @@ void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
     double vel = 0.0;
 
     if (pointVelChange1)
-      vel += mJacobians1.col(i).tail<3>().dot(*pointVelChange1);
+      vel += dotColumnTail3(mJacobians1, i, *pointVelChange1);
     else if (bodyVelChange1)
-      vel += mJacobians1.col(i).dot(*bodyVelChange1);
+      vel += dotColumn6(mJacobians1, i, *bodyVelChange1);
 
     if (pointVelChange2)
-      vel += mJacobians2.col(i).tail<3>().dot(*pointVelChange2);
+      vel += dotColumnTail3(mJacobians2, i, *pointVelChange2);
     else if (bodyVelChange2)
-      vel += mJacobians2.col(i).dot(*bodyVelChange2);
+      vel += dotColumn6(mJacobians2, i, *bodyVelChange2);
 
     _vel[i] = vel;
   }
@@ -848,14 +869,14 @@ void SoftContactConstraint::getRelVelocity(double* _vel)
     double vel = 0.0;
 
     if (pointVelocity1)
-      vel -= mJacobians1.col(i).tail<3>().dot(*pointVelocity1);
+      vel -= dotColumnTail3(mJacobians1, i, *pointVelocity1);
     else
-      vel -= mJacobians1.col(i).dot(*bodyVelocity1);
+      vel -= dotColumn6(mJacobians1, i, *bodyVelocity1);
 
     if (pointVelocity2)
-      vel -= mJacobians2.col(i).tail<3>().dot(*pointVelocity2);
+      vel -= dotColumnTail3(mJacobians2, i, *pointVelocity2);
     else
-      vel -= mJacobians2.col(i).dot(*bodyVelocity2);
+      vel -= dotColumn6(mJacobians2, i, *bodyVelocity2);
 
     _vel[i] = vel;
   }
