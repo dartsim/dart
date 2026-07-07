@@ -462,6 +462,11 @@
     contacts:
     [#3307](https://github.com/dartsim/dart/pull/3307)
 
+  * Extend `contact_benchmark --profile` and DART's text profiler with
+    opt-in constraint-solver island census counters and LCP stage timings, so
+    performance investigations can compare solver shape, row counts, and stage
+    cost without adding allocations to ordinary `World::step()` calls.
+
   * Polish the `dart-demos` workspace with a more compact toolbar, tabbed
     scene/inspector/tool panes, a status-and-log bottom panel, clearer
     simulation/render metrics, a lighter 3D viewport background, a fit-scene
