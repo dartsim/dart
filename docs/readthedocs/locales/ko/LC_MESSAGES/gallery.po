@@ -54,7 +54,7 @@ msgstr ""
 "3D 시뮬레이션입니다. 이 데모는 3D 렌더링을 위해 OpenSceneGraph를 사용하고 2D 화면 상 "
 "버튼에는 ImGui를 사용합니다. 통합된 dart-demos 카탈로그의 장면 중 하나입니다 "
 "(``pixi run demos`` 실행 후 \"Atlas Simbicon\"을 선택하거나, "
-"``bin/dart-demos --scene atlas_simbicon``으로 직접 실행할 수 있습니다); "
+"``bin/dart-demos --scene atlas_simbicon`` 로 직접 실행할 수 있습니다); "
 "소스 코드는 examples/demos/scenes/atlas_simbicon 디렉토리에서 찾을 수 있습니다."
 
 #: ../../gallery.rst:18 df61e363fc364b38be8908808f2d64a8
@@ -113,7 +113,7 @@ msgid ""
 "`examples/demos/scenes/tinkertoy "
 "<https://github.com/dartsim/dart/tree/main/examples/demos/scenes/tinkertoy>`_."
 msgstr ""
-"Tinkertoy 데모는 다양한 관절 유형으로 연결된 블록으로 이루어진 tinkertoy의 나무를 시뮬레이션합니다. 이 데모는 관절 역학 및 강체 충돌이 있는 완전한 3D 시뮬레이션입니다. 이 데모는 3D 렌더링을 위해 OpenSceneGraph를 사용하고 2D 화면 상 버튼에는 ImGui를 사용합니다. 통합된 dart-demos 카탈로그의 장면 중 하나입니다 (``pixi run demos`` 실행 후 \"Tinkertoy\"를 선택하거나, ``bin/dart-demos --scene tinkertoy``으로 직접 실행할 수 있습니다); 소스 코드는 examples/demos/scenes/tinkertoy 디렉토리에서 찾을 수 있습니다."
+"Tinkertoy 데모는 다양한 관절 유형으로 연결된 블록으로 이루어진 tinkertoy의 나무를 시뮬레이션합니다. 이 데모는 관절 역학 및 강체 충돌이 있는 완전한 3D 시뮬레이션입니다. 이 데모는 3D 렌더링을 위해 OpenSceneGraph를 사용하고 2D 화면 상 버튼에는 ImGui를 사용합니다. 통합된 dart-demos 카탈로그의 장면 중 하나입니다 (``pixi run demos`` 실행 후 \"Tinkertoy\"를 선택하거나, ``bin/dart-demos --scene tinkertoy`` 로 직접 실행할 수 있습니다); 소스 코드는 examples/demos/scenes/tinkertoy 디렉토리에서 찾을 수 있습니다."
 
 #: ../../gallery.rst:48 00695f148ea74acb96933246379d65f3
 msgid ""
