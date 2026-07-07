@@ -63,6 +63,12 @@
       "gate_profile": "docs-ai"
     },
     {
+      "name": "dart-retro",
+      "category": "docs",
+      "status": "active",
+      "gate_profile": "docs-ai"
+    },
+    {
       "name": "dart-mechanical-refactor",
       "category": "refactor",
       "status": "active",

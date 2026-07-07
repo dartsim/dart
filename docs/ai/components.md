@@ -17,3 +17,7 @@ workflow required reading, and generated-adapter sync instead of duplication.
 
 Use `.claude/` as the editable source. Do not hand-edit generated `.codex/` or
 `.opencode/` files; rerun the sync script instead.
+
+Use `dart-retro` after a completed release-branch session only when the
+learning is general enough to improve future DART 6.20 maintenance work. Skip
+routine work, one-off local choices, and review-only narrative.
