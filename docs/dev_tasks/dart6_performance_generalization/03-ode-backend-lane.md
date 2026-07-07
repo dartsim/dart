@@ -27,7 +27,7 @@ scenes, plus the gz gate.
 
 #### WP-PG.20 — Contact-history span tracking (kill per-pair full copies)
 
-- Status: open
+- Status: done — PR pending (`wp-pg-20-ode-history-spans`)
 - Objective: replace the per-pair full copy of `result.getContacts()` with
   per-pair index spans recorded as contacts are appended.
 - Value: removes the dominant O(pairs × total-contacts) copy cost on
@@ -39,6 +39,12 @@ scenes, plus the gz gate.
 - Acceptance evidence: bit-identical ODE hashes/contacts/resting on all
   five guard scenes; ODE rows of the active matrix improve measurably;
   other detectors untouched (hash-identical).
+- Completion evidence: base vs WP-PG.20 hashes stayed bit-identical for
+  `S2_ode`, `S4_ode`, and `S3_dart`. Dense ODE `S3_ode` improved from
+  194.2 to 17.6 ms/step; Google Benchmark `BM_ContactContainerActive`
+  ODE 120/1/1 improved from 16.5 to 6.18 s and 120/1/16 improved from
+  6.84 to 6.02 s. Controlled-load crash gate was 30/30 clean on both
+  base and WP-PG.20.
 - Dependencies: WP-PG.01.
 
 #### WP-PG.21 — Pair-keyed history lookup + generation-based pruning
@@ -55,6 +61,10 @@ scenes, plus the gz gate.
 - Acceptance evidence: same bar as WP-PG.20 (bit-identical ODE outcomes;
   measurable win at 900/3000 objects; gz gate green).
 - Dependencies: WP-PG.20 (shares span structure).
+- Re-scope note: WP-PG.20's executed implementation already includes the
+  pair-keyed history map and current-frame pruning sweep. After WP-PG.20
+  lands, re-evaluate whether any generation-based pruning work remains
+  evidence-backed before claiming this packet.
 
 #### WP-PG.22 — Version-gated ODE pose push
 

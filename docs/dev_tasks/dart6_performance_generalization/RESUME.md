@@ -37,8 +37,9 @@ Claimable now, in priority order:
    prior-art rejection caveat in the packet).
 2. **WP-PG.11** (WS-A — includes re-measuring the two mined
    single-reactive commits; hash-preserving).
-3. **WP-PG.20** then **WP-PG.21** (WS-B — the 12x active-3k ODE gap).
-4. **WP-PG.03**, **WP-PG.02**, **WP-PG.22** (independent). WP-PG.40 is
+3. **WP-PG.21** re-scope and **WP-PG.22** (WS-B — WP-PG.20 is PR
+   pending and already absorbed the pair-keyed map/pruning sweep).
+4. **WP-PG.03**, **WP-PG.02** (independent). WP-PG.40 is
    folded into WP-PG.42 per maintainer direction.
 
 Blocked/gated (do not claim): PG.04 (D4), PG.12 (evidence), PG.13
@@ -83,6 +84,13 @@ decisions.
   dense-pile: solve 88.1% / assembly 7.4%; P2 active-3k: integration
   50.1%); six prior-art branches triaged (two unmerged hash-preserving
   solver wins queued into WP-PG.11; one branch recommended for deletion).
+- 2026-07-06/07: WP-PG.20 executed on
+  `wp-pg-20-ode-history-spans`: ODE contact-history spans, pair-keyed
+  history map, and current-frame pruning sweep. Base/WP hashes were
+  bit-identical on the required guard rows; dense ODE timing improved
+  from 194.2 to 17.6 ms/step on `S3_ode`, and the controlled-load crash
+  gate was 30/30 clean on both arms. WP-PG.21 needs re-scope after this
+  PR because the map/pruning part is already included.
 
 ## Session log
 
