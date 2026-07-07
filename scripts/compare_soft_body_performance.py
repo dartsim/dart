@@ -30,6 +30,12 @@ HARNESS_FILES = [
     Path("tests/benchmark/integration/bm_soft_body.cpp"),
     Path("tests/benchmark/integration/soft_body_headless.cpp"),
 ]
+REFERENCE_DETECTOR = "dart"
+UNSUPPORTED_SHAPE_WARNING_FRAGMENTS = [
+    "not supported by nativecollisiondetector",
+    "shape will be skipped by the native adapter",
+    "unsupported shape type",
+]
 CHECKSUM_METRICS = [
     "skelPosL1",
     "skelPosSq",
@@ -102,7 +108,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--current", default="HEAD")
     parser.add_argument("--parent", default="HEAD^1")
     parser.add_argument("--base")
-    parser.add_argument("--detectors", default="fcl,dart,bullet,ode")
+    parser.add_argument("--detectors", default="fcl,dart,native,bullet,ode")
     parser.add_argument("--threads", default="1,16")
     parser.add_argument("--benchmark-min-time", default="0.05s")
     parser.add_argument("--benchmark-repetitions", default="3")
@@ -583,6 +589,13 @@ def checksums_match(
     return not mismatches, mismatches
 
 
+def has_unsupported_shape_warning(output: str) -> bool:
+    lowered = output.lower()
+    return any(
+        fragment in lowered for fragment in UNSUPPORTED_SHAPE_WARNING_FRAGMENTS
+    )
+
+
 def run_headless_checksum(
     revision: Revision,
     headless_binary: Path,
@@ -622,22 +635,27 @@ def evaluate_detector_equivalence(
 
     for scene in scenes:
         checksum, output = run_headless_checksum(
-            current, headless_binary, "dart", scene, steps, output_dir
+            current,
+            headless_binary,
+            REFERENCE_DETECTOR,
+            scene,
+            steps,
+            output_dir,
         )
         if checksum is None:
-            detector_results["dart"] = {
+            detector_results[REFERENCE_DETECTOR] = {
                 "eligible": False,
-                "reason": f"native reference failed for {scene}",
+                "reason": f"reference detector failed for {scene}",
                 "details": output.splitlines()[-1] if output else "failed",
             }
             return detector_results, eligible
         reference_by_scene[scene] = checksum
 
     for detector in detectors:
-        if detector == "dart":
+        if detector == REFERENCE_DETECTOR:
             detector_results[detector] = {
                 "eligible": True,
-                "reason": "native reference",
+                "reason": "reference detector",
                 "scenes": scenes,
             }
             eligible.append(detector)
@@ -653,7 +671,7 @@ def evaluate_detector_equivalence(
                 detector_ok = False
                 reasons.append(f"{scene}: failed")
                 continue
-            if "unsupported shape type" in output:
+            if has_unsupported_shape_warning(output):
                 detector_ok = False
                 reasons.append(f"{scene}: unsupported soft shape fallback")
                 continue
@@ -784,7 +802,7 @@ def fastest_rows(
             continue
 
         winner = min(eligible_candidates, key=lambda row: row.cpu_ms)
-        dart_row = by_detector.get("dart")
+        reference_row = by_detector.get(REFERENCE_DETECTOR)
         detector_times = {
             detector: by_detector[detector].cpu_ms
             for detector in detectors
@@ -795,7 +813,8 @@ def fastest_rows(
             "threads": threads,
             "winner": winner.detector,
             "winner_cpu_ms": winner.cpu_ms,
-            "native_cpu_ms": dart_row.cpu_ms if dart_row else None,
+            "reference_detector": REFERENCE_DETECTOR,
+            "reference_cpu_ms": reference_row.cpu_ms if reference_row else None,
             "detectors": detector_times,
             "eligible_detectors": sorted(
                 detector
@@ -804,11 +823,15 @@ def fastest_rows(
             ),
         }
         rows.append(row)
-        if dart_row is None:
-            failures.append(f"{scene}/{threads}: native detector missing")
-        elif winner.detector != "dart":
+        if reference_row is None:
             failures.append(
-                f"{scene}/{threads}: native {dart_row.cpu_ms:.3f} ms, "
+                f"{scene}/{threads}: {REFERENCE_DETECTOR} reference detector "
+                "missing"
+            )
+        elif winner.detector != REFERENCE_DETECTOR:
+            failures.append(
+                f"{scene}/{threads}: {REFERENCE_DETECTOR} "
+                f"{reference_row.cpu_ms:.3f} ms, "
                 f"winner {winner.detector} {winner.cpu_ms:.3f} ms"
             )
     return rows, failures
@@ -899,7 +922,7 @@ def write_markdown(
             "",
             "## Current Detector Winners",
             "",
-            "| Scene | Threads | Winner | Winner CPU ms | Native CPU ms | Eligible detectors | Detector CPU ms |",
+            f"| Scene | Threads | Winner | Winner CPU ms | Reference (`{REFERENCE_DETECTOR}`) CPU ms | Eligible detectors | Detector CPU ms |",
             "| --- | ---: | --- | ---: | ---: | --- | --- |",
         ]
     )
@@ -910,12 +933,12 @@ def write_markdown(
         )
         lines.append(
             "| `{scene}` | {threads} | `{winner}` | {winner_cpu} | "
-            "{native_cpu} | {eligible} | {detectors} |".format(
+            "{reference_cpu} | {eligible} | {detectors} |".format(
                 scene=item["scene"],
                 threads=item["threads"],
                 winner=item["winner"],
                 winner_cpu=fmt_float(float(item["winner_cpu_ms"])),
-                native_cpu=fmt_float(item["native_cpu_ms"]),
+                reference_cpu=fmt_float(item["reference_cpu_ms"]),
                 eligible=", ".join(
                     f"`{detector}`" for detector in item["eligible_detectors"]
                 ),
@@ -1033,7 +1056,7 @@ def main(argv: list[str]) -> int:
                 build_comparison(current_rows, all_rows[other_label], other_label)
             )
 
-    fastest, native_failures = fastest_rows(
+    fastest, detector_winner_failures = fastest_rows(
         current_rows, detectors, eligible_detectors
     )
     run_error_keys = {
@@ -1051,7 +1074,7 @@ def main(argv: list[str]) -> int:
                 f"{label} rows {len(rows)} < expected {expected_count}"
             )
 
-    failures = [*coverage_failures, *native_failures]
+    failures = [*coverage_failures, *detector_winner_failures]
     summary = {
         "revisions": [
             {

@@ -86,7 +86,9 @@ whatever the user changes at runtime:
 - `--collision-detector <name>` / `COLLISION_DETECTOR=<name>` — start a
   scene with a specific registered backend (`fcl`, `dart`, `native`, `bullet`,
   or `ode` when available). The toolbar can switch backends while the scene is
-  running.
+  running. Soft-body scenes should use `dart` or `fcl` for apples-to-apples
+  comparisons; the `native` adapter is selectable for diagnostics, but does not
+  yet cover `SoftMeshShape`.
 - `--threads <n>` / `THREADS=<n>` — start with a specific simulation worker
   count (`0` selects hardware concurrency). The toolbar can change this live.
 - `--debug-select-body <name>` / `--debug-record-profile` — hidden hooks that
@@ -96,4 +98,4 @@ The legacy soft-body commands are retained as thin aliases over `dart-demos`:
 
     $ pixi run ex soft_bodies -- --collision-detector dart --threads 16
     $ pixi run ex soft_cubes -- --collision-detector fcl --threads 1
-    $ pixi run ex soft_open_chain -- --collision-detector native --threads 4
+    $ pixi run ex soft_open_chain -- --collision-detector dart --threads 4
