@@ -31,8 +31,7 @@
  */
 
 // Ported wholesale from examples/atlas_simbicon/TerminalCondition.{hpp,cpp}
-// into the dart_demos::atlas_simbicon namespace, per BRIEF-phase2's
-// multi-file-scene convention. No behavior changes.
+// into the dart_demos::atlas_simbicon namespace. No behavior changes.
 
 #ifndef DART_EXAMPLES_DEMOS_SCENES_ATLASSIMBICON_TERMINALCONDITION_HPP_
 #define DART_EXAMPLES_DEMOS_SCENES_ATLASSIMBICON_TERMINALCONDITION_HPP_
