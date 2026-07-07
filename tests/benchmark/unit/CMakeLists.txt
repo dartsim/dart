@@ -32,6 +32,7 @@ dart_benchmarks(
   TYPE BM_UNIT
   SOURCES
     bm_dantzig_lcp.cpp
+    bm_native_collision.cpp
   LINK_LIBRARIES
     dart
     dart-baseline-ode
