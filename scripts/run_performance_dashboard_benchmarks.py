@@ -61,6 +61,12 @@ BENCHMARK_SPECS = [
         ),
         output_name="dashboard_contact_container.json",
     ),
+    BenchmarkSpec(
+        surface="soft-body",
+        target="BM_INTEGRATION_soft_body",
+        benchmark_filter="BM_SoftBodyStep/.*",
+        output_name="dashboard_soft_body.json",
+    ),
 ]
 
 

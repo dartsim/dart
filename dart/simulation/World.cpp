@@ -45,7 +45,6 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/common/Profile.hpp"
 #include "dart/common/String.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
@@ -64,7 +63,6 @@
 #include <thread>
 #include <type_traits>
 #include <typeinfo>
-#include <unordered_set>
 #include <vector>
 
 #include <cmath>
@@ -142,6 +140,30 @@ dynamics::BodyNode* getRootBodyNodeIfAny(dynamics::Skeleton& skeleton)
     return nullptr;
 
   return skeleton.getRootBodyNode();
+}
+
+void copySkeletonPositions(
+    const dynamics::Skeleton& skeleton, Eigen::VectorXd& positions)
+{
+  const auto numDofs = static_cast<Eigen::Index>(skeleton.getNumDofs());
+  positions.resize(numDofs);
+  for (Eigen::Index i = 0; i < numDofs; ++i)
+    positions[i] = skeleton.getPosition(static_cast<std::size_t>(i));
+}
+
+bool skeletonPositionsMatch(
+    const dynamics::Skeleton& skeleton, const Eigen::VectorXd& positions)
+{
+  const auto numDofs = static_cast<Eigen::Index>(skeleton.getNumDofs());
+  if (positions.size() != numDofs)
+    return false;
+
+  for (Eigen::Index i = 0; i < numDofs; ++i) {
+    if (skeleton.getPosition(static_cast<std::size_t>(i)) != positions[i])
+      return false;
+  }
+
+  return true;
 }
 
 // Resolves a collision detector for a World constructed from a WorldConfig.
@@ -404,6 +426,8 @@ void World::reserveMemoryManagerForSimulationShape()
   mShallowSupportedFreeRootScratch.reserve(numSkeletons);
   mSkeletonIndexScratch.reserve(numSkeletons);
   mDisturbedThisStepScratch.reserve(numSkeletons);
+  mDeepInitialContactSkeletonScratch.reserve(numSkeletons);
+  mSupportedInitialContactSkeletonScratch.reserve(numSkeletons);
 }
 
 //==============================================================================
@@ -1226,8 +1250,6 @@ void World::reset()
 //==============================================================================
 void World::step(bool _resetCommand)
 {
-  DART_PROFILE_FRAME;
-
   if (!isInSimulationMode())
     enterSimulationMode();
   getMemoryManager().getFrameAllocator().reset();
@@ -1242,7 +1264,6 @@ void World::step(bool _resetCommand)
 
   if (!deactivationEnabled) {
     {
-      DART_PROFILE_SCOPED_N("World::step - Integrate velocity");
       parallelForIndexRange(
           mSimulationThreadPool.get(),
           mSkeletons.size(),
@@ -1260,7 +1281,6 @@ void World::step(bool _resetCommand)
     const auto& preSolveFreeRootVelocities = snapshotFreeRootVelocities();
 
     {
-      DART_PROFILE_SCOPED_N("World::step - Solve constraints");
       mConstraintSolver->solve();
     }
 
@@ -1274,7 +1294,6 @@ void World::step(bool _resetCommand)
         mShallowSupportedFreeRootScratch, preSolveFreeRootVelocities);
 
     {
-      DART_PROFILE_SCOPED_N("World::step - Integrate positions");
       parallelForIndexRange(
           mSimulationThreadPool.get(),
           mSkeletons.size(),
@@ -1335,7 +1354,6 @@ void World::step(bool _resetCommand)
   }
 
   if (deactivationEnabled && lastStepHadNoContacts && allRestingFastPathReady) {
-    DART_PROFILE_SCOPED_N("World::step - All-resting fast path");
     mTime += mTimeStep;
     mFrame++;
     updateShallowSupportFreeRootVelocityVersions();
@@ -1355,14 +1373,12 @@ void World::step(bool _resetCommand)
       = deactivationEnabled
         && mConstraintSolver->getLastCollisionResult().getNumContacts() > 0;
   {
-    DART_PROFILE_SCOPED_N("World::step - Prepare deactivation");
     if (trackDisturbances)
       disturbedThisStep.assign(mSkeletons.size(), false);
   }
 
   // Integrate velocity for unconstrained skeletons
   {
-    DART_PROFILE_SCOPED_N("World::step - Integrate velocity");
     parallelForIndexRange(
         mSimulationThreadPool.get(),
         mSkeletons.size(),
@@ -1429,7 +1445,6 @@ void World::step(bool _resetCommand)
 
   // Detect activated constraints and compute constraint impulses
   {
-    DART_PROFILE_SCOPED_N("World::step - Solve constraints");
     mConstraintSolver->solve();
   }
 
@@ -1443,7 +1458,6 @@ void World::step(bool _resetCommand)
       mShallowSupportedFreeRootScratch, preSolveFreeRootVelocities);
 
   {
-    DART_PROFILE_SCOPED_N("World::step - Integrate positions");
     parallelForIndexRange(
         mSimulationThreadPool.get(),
         mSkeletons.size(),
@@ -1549,8 +1563,6 @@ void World::step(bool _resetCommand)
 //==============================================================================
 void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 {
-  DART_PROFILE_SCOPED_N("World::step - Rest detection");
-
   const double linSleep = mDeactivationOptions.mLinearSpeedThreshold;
   const double angSleep = mDeactivationOptions.mAngularSpeedThreshold;
   const double scale = mDeactivationOptions.mWakeThresholdScale;
@@ -1617,18 +1629,28 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
     return bodyHeightAboveSupport >= -kSleepContactPenetrationTolerance;
   };
 
-  std::unordered_set<const dynamics::Skeleton*> deepInitialContactSkeletons;
-  std::unordered_set<const dynamics::Skeleton*>
-      supportedInitialContactSkeletons;
+  auto& deepInitialContactSkeletons = mDeepInitialContactSkeletonScratch;
+  auto& supportedInitialContactSkeletons
+      = mSupportedInitialContactSkeletonScratch;
+  deepInitialContactSkeletons.clear();
+  supportedInitialContactSkeletons.clear();
+  const auto containsSkeleton
+      = [](const std::vector<const dynamics::Skeleton*>& skeletons,
+           const dynamics::Skeleton* skeleton) {
+          return std::find(skeletons.begin(), skeletons.end(), skeleton)
+                 != skeletons.end();
+        };
   if (mFrame == 0) {
     for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
       const auto& contact = contacts.getContact(i);
-      auto markMobileSkeleton = [](auto bodyNode, auto& skeletons) {
+      auto markMobileSkeleton = [&](auto bodyNode, auto& skeletons) {
         if (!bodyNode)
           return;
         const auto* skeleton = bodyNode->getSkeletonRawPtr();
-        if (skeleton != nullptr && skeleton->isMobile())
-          skeletons.insert(skeleton);
+        if (skeleton != nullptr && skeleton->isMobile()) {
+          if (!containsSkeleton(skeletons, skeleton))
+            skeletons.push_back(skeleton);
+        }
       };
 
       const auto bodyNode1 = contact.getBodyNodePtr1();
@@ -1693,11 +1715,9 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
                                 && angSpeed < finalSleepAngularSpeed;
         double dwell = skel->getRestDwellTime() + mTimeStep;
         const bool deepInitialContact
-            = deepInitialContactSkeletons.find(skel.get())
-              != deepInitialContactSkeletons.end();
+            = containsSkeleton(deepInitialContactSkeletons, skel.get());
         const bool supportedInitialContact
-            = supportedInitialContactSkeletons.find(skel.get())
-              != supportedInitialContactSkeletons.end();
+            = containsSkeleton(supportedInitialContactSkeletons, skel.get());
         // The first-frame shortcut credits the full dwell only to bodies that
         // are essentially stationary at load time (pre-settled imported
         // scenes). It deliberately keeps these near-zero fixed bounds instead
@@ -1795,8 +1815,6 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 //==============================================================================
 bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 {
-  DART_PROFILE_SCOPED_N("all-resting readiness check");
-
   if (snapshotStale)
     *snapshotStale = false;
 
@@ -1929,10 +1947,8 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 
     if (snapshot.mStructuralVersion != skel->getVersion()
         || snapshot.mKinematicVersion != skel->getKinematicVersion()) {
-      const Eigen::VectorXd positions = skel->getPositions();
       bool kinematicStateUnchanged
-          = positions.size() == snapshot.mPositions.size()
-            && positions.isApprox(snapshot.mPositions, 0.0)
+          = skeletonPositionsMatch(*skel, snapshot.mPositions)
             && snapshot.mBodyTransforms.size() == skel->getNumBodyNodes();
       if (kinematicStateUnchanged) {
         for (std::size_t j = 0; j < skel->getNumBodyNodes(); ++j) {
@@ -1953,7 +1969,7 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 
       snapshot.mStructuralVersion = skel->getVersion();
       snapshot.mKinematicVersion = skel->getKinematicVersion();
-      snapshot.mPositions = positions;
+      copySkeletonPositions(*skel, snapshot.mPositions);
     }
 
     if (!skel->isMobile())
@@ -1987,23 +2003,23 @@ void World::updateAllRestingKinematicSnapshot(bool _resetCommand)
     return;
   }
 
-  mAllRestingKinematicSnapshot.clear();
-  mAllRestingKinematicSnapshot.reserve(mSkeletons.size());
+  mAllRestingKinematicSnapshot.resize(mSkeletons.size());
   mAllRestingSnapshotHasMobileSkeleton = false;
   mAllRestingSnapshotReady = false;
   mAllRestingSnapshotResetCommand = _resetCommand;
 
-  for (const auto& skel : mSkeletons) {
-    AllRestingKinematicSnapshot snapshot;
+  for (std::size_t skelIndex = 0; skelIndex < mSkeletons.size(); ++skelIndex) {
+    const auto& skel = mSkeletons[skelIndex];
+    auto& snapshot = mAllRestingKinematicSnapshot[skelIndex];
     snapshot.mSkeleton = skel.get();
     snapshot.mStructuralVersion = skel->getVersion();
     snapshot.mKinematicVersion = skel->getKinematicVersion();
     snapshot.mNumBodyNodes = skel->getNumBodyNodes();
-    snapshot.mPositions = skel->getPositions();
+    copySkeletonPositions(*skel, snapshot.mPositions);
+    snapshot.mBodyTransforms.clear();
     snapshot.mBodyTransforms.reserve(snapshot.mNumBodyNodes);
     for (std::size_t i = 0; i < snapshot.mNumBodyNodes; ++i)
       snapshot.mBodyTransforms.push_back(skel->getBodyNode(i)->getTransform());
-    mAllRestingKinematicSnapshot.push_back(snapshot);
     mAllRestingSnapshotHasMobileSkeleton
         = mAllRestingSnapshotHasMobileSkeleton || skel->isMobile();
   }
@@ -2226,8 +2242,6 @@ void World::invalidateAllRestingKinematicSnapshot()
 //==============================================================================
 void World::wakeRestingSkeletonsForWorldChange()
 {
-  DART_PROFILE_SCOPED_N("World::step - Wake resting after world change");
-
   for (auto& skel : mSkeletons) {
     if (!skel->isMobile() || !skel->isResting())
       continue;
@@ -2619,10 +2633,10 @@ void World::setCollisionDetector(
     return;
   }
 
-  const auto previousCollisionDetector
-      = mConstraintSolver->getCollisionDetector();
+  const auto* previousCollisionGroup
+      = mConstraintSolver->getCollisionGroup().get();
   mConstraintSolver->setCollisionDetector(collisionDetector);
-  if (mConstraintSolver->getCollisionDetector() != previousCollisionDetector)
+  if (mConstraintSolver->getCollisionGroup().get() != previousCollisionGroup)
     invalidateSimulationMode();
 }
 

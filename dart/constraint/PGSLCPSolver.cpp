@@ -34,7 +34,6 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
@@ -55,7 +54,6 @@ PGSLCPSolver::~PGSLCPSolver() {}
 //==============================================================================
 void PGSLCPSolver::solve(ConstrainedGroup* _group)
 {
-  DART_PROFILE_SCOPED;
   // If there is no constraint, then just return true.
   std::size_t numConstraints = _group->getNumConstraints();
   if (numConstraints == 0)

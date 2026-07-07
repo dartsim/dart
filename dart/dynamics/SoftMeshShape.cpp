@@ -37,6 +37,8 @@
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 
+#include <limits>
+
 namespace dart {
 namespace dynamics {
 
@@ -99,7 +101,27 @@ ShapePtr SoftMeshShape::clone() const
 //==============================================================================
 void SoftMeshShape::updateBoundingBox() const
 {
-  // TODO(JS): Not implemented.
+  const auto& pointMasses = mSoftBodyNode->getPointMasses();
+  if (pointMasses.empty()) {
+    mBoundingBox.setMin(Eigen::Vector3d::Zero());
+    mBoundingBox.setMax(Eigen::Vector3d::Zero());
+    mIsBoundingBoxDirty = false;
+    return;
+  }
+
+  Eigen::Vector3d min
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d max
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+
+  for (const auto* pointMass : pointMasses) {
+    const Eigen::Vector3d& vertex = pointMass->getLocalPosition();
+    min = min.cwiseMin(vertex);
+    max = max.cwiseMax(vertex);
+  }
+
+  mBoundingBox.setMin(min);
+  mBoundingBox.setMax(max);
   mIsBoundingBoxDirty = false;
 }
 
@@ -148,15 +170,22 @@ void SoftMeshShape::_buildMesh()
 
 void SoftMeshShape::update()
 {
-  std::size_t nVertices = mSoftBodyNode->getNumPointMasses();
-
   aiVector3D itAIVector3d;
-  for (std::size_t i = 0; i < nVertices; ++i) {
-    PointMass* itPointMass = mSoftBodyNode->getPointMass(i);
+  const auto& pointMasses = mSoftBodyNode->getPointMasses();
+  for (std::size_t i = 0; i < pointMasses.size(); ++i) {
+    PointMass* itPointMass = pointMasses[i];
     const Eigen::Vector3d& vertex = itPointMass->getLocalPosition();
     itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
     mAssimpMesh->mVertices[i] = itAIVector3d;
   }
+
+  mIsBoundingBoxDirty = true;
+}
+
+//==============================================================================
+void SoftMeshShape::refreshData()
+{
+  update();
 }
 
 } // namespace dynamics
