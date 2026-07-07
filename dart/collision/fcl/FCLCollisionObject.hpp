@@ -38,7 +38,15 @@
 
 #include <string>
 
+struct aiMesh;
+
 namespace dart {
+
+namespace dynamics {
+class SoftBodyNode;
+class SoftMeshShape;
+} // namespace dynamics
+
 namespace collision {
 
 class FCLCollisionObject : public CollisionObject
@@ -71,6 +79,9 @@ protected:
       const std::shared_ptr<dart::collision::fcl::CollisionGeometry>&
           fclCollGeom);
 
+  /// Refresh cached soft-mesh pointers for the current ShapeFrame/geometry.
+  void refreshSoftMeshCache();
+
   // Documentation inherited
   void updateEngineData() override;
 
@@ -80,6 +91,26 @@ protected:
 
   /// Stable identifier for deterministic ordering.
   std::string mKey;
+
+  /// Soft-mesh shape cached from the ShapeFrame, or nullptr for non-soft
+  /// shapes.
+  const dynamics::SoftMeshShape* mSoftMeshShape{nullptr};
+
+  /// Soft body cached from mSoftMeshShape.
+  const dynamics::SoftBodyNode* mSoftBodyNode{nullptr};
+
+  /// Assimp mesh cached from mSoftMeshShape.
+  aiMesh* mSoftMesh{nullptr};
+
+  /// FCL BVH model cached from the collision geometry.
+  ::fcl::BVHModel<dart::collision::fcl::OBBRSS>* mSoftMeshBvhModel{nullptr};
+
+  /// Last FCL transform used to compute the world-space AABB.
+  dart::collision::fcl::Transform3 mCachedFCLTransform{
+      dart::collision::fcl::getTransform3Identity()};
+
+  /// Whether mCachedFCLTransform has been initialized from the ShapeFrame.
+  bool mHasCachedFCLTransform{false};
 };
 
 } // namespace collision
