@@ -34,7 +34,6 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
@@ -236,8 +235,6 @@ void BoxedLcpConstraintSolver::reserveConstrainedGroupScratch(
 //==============================================================================
 void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 {
-  DART_PROFILE_SCOPED;
-
   // Build LCP terms by aggregating them from constraints
   const auto& constraints = group.mConstraints;
   const std::size_t numConstraints = constraints.size();
@@ -406,7 +403,6 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 
   const auto constructLcpTerms = [&]() {
     resetLcpTerms();
-    DART_PROFILE_SCOPED_N("Construct LCP");
     ConstraintInfo constInfo;
     constInfo.invTimeStep = 1.0 / mTimeStep;
 
@@ -438,32 +434,26 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
           constInfo.findex = fIndex + offset;
           constInfo.w = w + offset;
 
-          {
-            DART_PROFILE_SCOPED_N("Fill lo, hi, b, w");
-            constraint->getInformation(&constInfo);
-          }
+          constraint->getInformation(&constInfo);
 
-          {
-            DART_PROFILE_SCOPED_N("Fill A direct single body");
-            for (std::size_t j = 0; j < dim; ++j) {
-              const std::size_t row = offset + j;
-              if (fIndex[row] >= 0)
-                fIndex[row] += offset;
+          for (std::size_t j = 0; j < dim; ++j) {
+            const std::size_t row = offset + j;
+            if (fIndex[row] >= 0)
+              fIndex[row] += offset;
 
-              Eigen::Vector6d bodyVelocityChange
-                  = constraint->getSpatialNormalForSingleReactiveBody(j);
-              if (!hasIdentityInertia)
-                bodyVelocityChange
-                    = inertiaDecomposition.solve(bodyVelocityChange);
+            Eigen::Vector6d bodyVelocityChange
+                = constraint->getSpatialNormalForSingleReactiveBody(j);
+            if (!hasIdentityInertia)
+              bodyVelocityChange
+                  = inertiaDecomposition.solve(bodyVelocityChange);
 
-              std::size_t index = nSkip * row + offset;
-              constraint->getVelocityChangeFromSingleBody(
-                  bodyVelocityChange, a + index, true, j);
-              for (std::size_t k = i + 1; k < numConstraints; ++k) {
-                index = nSkip * row + constraintOffsets[k];
-                inlineContactPtrs[k]->getVelocityChangeFromSingleBody(
-                    bodyVelocityChange, a + index, false, 0u);
-              }
+            std::size_t index = nSkip * row + offset;
+            constraint->getVelocityChangeFromSingleBody(
+                bodyVelocityChange, a + index, true, j);
+            for (std::size_t k = i + 1; k < numConstraints; ++k) {
+              index = nSkip * row + constraintOffsets[k];
+              inlineContactPtrs[k]->getVelocityChangeFromSingleBody(
+                  bodyVelocityChange, a + index, false, 0u);
             }
           }
         }
@@ -484,54 +474,36 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
         constInfo.w = w + offset;
 
         // Fill vectors: lo, hi, b, w
-        {
-          DART_PROFILE_SCOPED_N("Fill lo, hi, b, w");
-          constraint->getInformation(&constInfo);
-        }
+        constraint->getInformation(&constInfo);
 
         // Fill a matrix by impulse tests: A
-        {
-          DART_PROFILE_SCOPED_N("Fill A");
-          constraint->excite();
-          for (std::size_t j = 0; j < dim; ++j) {
-            // Adjust findex for global index
-            const std::size_t row = offset + j;
-            if (fIndex[row] >= 0)
-              fIndex[row] += offset;
+        constraint->excite();
+        for (std::size_t j = 0; j < dim; ++j) {
+          // Adjust findex for global index
+          const std::size_t row = offset + j;
+          if (fIndex[row] >= 0)
+            fIndex[row] += offset;
 
-            // Apply impulse for impulse test
-            {
-              DART_PROFILE_SCOPED_N("Unit impulse test");
-              constraint->applyUnitImpulse(j);
-            }
+          // Apply impulse for impulse test
+          constraint->applyUnitImpulse(j);
 
-            // Fill upper triangle blocks of A matrix
-            {
-              DART_PROFILE_SCOPED_N("Fill upper triangle of A");
-              std::size_t index = nSkip * row + offset;
-              constraint->getVelocityChange(a + index, true);
-              for (std::size_t k = i + 1; k < numConstraints; ++k) {
-                index = nSkip * row + constraintOffsets[k];
-                constraintPtrs[k]->getVelocityChange(a + index, false);
-              }
-            }
+          // Fill upper triangle blocks of A matrix
+          std::size_t index = nSkip * row + offset;
+          constraint->getVelocityChange(a + index, true);
+          for (std::size_t k = i + 1; k < numConstraints; ++k) {
+            index = nSkip * row + constraintOffsets[k];
+            constraintPtrs[k]->getVelocityChange(a + index, false);
           }
         }
 
-        {
-          DART_PROFILE_SCOPED_N("Unexcite");
-          constraint->unexcite();
-        }
+        constraint->unexcite();
       }
     }
 
-    {
-      // Fill lower triangle blocks of A matrix
-      DART_PROFILE_SCOPED_N("Fill lower triangle of A");
-      for (std::size_t row = 1; row < n; ++row) {
-        for (std::size_t col = 0; col < row; ++col) {
-          a[nSkip * row + col] = a[nSkip * col + row];
-        }
+    // Fill lower triangle blocks of A matrix
+    for (std::size_t row = 1; row < n; ++row) {
+      for (std::size_t col = 0; col < row; ++col) {
+        a[nSkip * row + col] = a[nSkip * col + row];
       }
     }
   };
@@ -574,7 +546,6 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   bool fallbackSuccess = false;
   bool fallbackRan = false;
   if (!success && mSecondaryBoxedLcpSolver) {
-    DART_PROFILE_SCOPED_N("Secondary LCP");
     constructLcpTerms();
     fallbackSuccess
         = mSecondaryBoxedLcpSolver->solve(n, a, x, b, 0, lo, hi, fIndex, false);
@@ -629,20 +600,17 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   //  std::cout << std::endl;
 
   // Apply constraint impulses
-  {
-    DART_PROFILE_SCOPED_N("Apply constraint impulses");
-    if (useDirectSingleFreeBody) {
-      for (std::size_t i = 0; i < numConstraints; ++i) {
-        inlineContactPtrs[i]->applyImpulse(x + constraintOffsets[i]);
-      }
+  if (useDirectSingleFreeBody) {
+    for (std::size_t i = 0; i < numConstraints; ++i) {
+      inlineContactPtrs[i]->applyImpulse(x + constraintOffsets[i]);
+    }
 
-      directSkeleton->setImpulseApplied(true);
-    } else {
-      for (std::size_t i = 0; i < numConstraints; ++i) {
-        ConstraintBase* constraint = constraintPtrs[i];
-        constraint->applyImpulse(x + constraintOffsets[i]);
-        constraint->excite();
-      }
+    directSkeleton->setImpulseApplied(true);
+  } else {
+    for (std::size_t i = 0; i < numConstraints; ++i) {
+      ConstraintBase* constraint = constraintPtrs[i];
+      constraint->applyImpulse(x + constraintOffsets[i]);
+      constraint->excite();
     }
   }
 }
@@ -651,8 +619,6 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 void BoxedLcpConstraintSolver::solvePositionConstrainedGroup(
     ConstrainedGroup& group)
 {
-  DART_PROFILE_SCOPED;
-
   // Collect only contact constraints for the position-correction pass.
   std::vector<ContactConstraint*> contacts;
   contacts.reserve(group.getNumConstraints());
