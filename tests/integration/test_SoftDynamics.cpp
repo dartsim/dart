@@ -821,6 +821,10 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
   const Eigen::MatrixXd withOriginalPointMassesM = skeleton->getMassMatrix();
   const Eigen::MatrixXd withOriginalPointMassesAugM
       = skeleton->getAugMassMatrix();
+  const Eigen::MatrixXd withOriginalPointMassesInvM
+      = skeleton->getInvMassMatrix();
+  const Eigen::MatrixXd withOriginalPointMassesInvAugM
+      = skeleton->getInvAugMassMatrix();
 
   for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
     dynamics::PointMass* pointMass = softBody->getPointMass(i);
@@ -833,6 +837,9 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
       = skeleton->getCoriolisAndGravityForces();
   const Eigen::MatrixXd withHalfPointMassesM = skeleton->getMassMatrix();
   const Eigen::MatrixXd withHalfPointMassesAugM = skeleton->getAugMassMatrix();
+  const Eigen::MatrixXd withHalfPointMassesInvM = skeleton->getInvMassMatrix();
+  const Eigen::MatrixXd withHalfPointMassesInvAugM
+      = skeleton->getInvAugMassMatrix();
   const Eigen::VectorXd actualPointMassDelta
       = withOriginalPointMasses - withHalfPointMasses;
   const Eigen::VectorXd actualPointMassCgDelta
@@ -862,4 +869,47 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
       0.5 * expectedPointMassMass,
       1.0e-10,
       "soft point-mass augmented mass matrix projection");
+
+  const Eigen::MatrixXd identity = Eigen::MatrixXd::Identity(
+      skeleton->getNumDofs(), skeleton->getNumDofs());
+  expectMatrixNear(
+      withOriginalPointMassesM * withOriginalPointMassesInvM,
+      identity,
+      1.0e-10,
+      "soft point-mass mass inverse left identity");
+  expectMatrixNear(
+      withOriginalPointMassesInvM * withOriginalPointMassesM,
+      identity,
+      1.0e-10,
+      "soft point-mass mass inverse right identity");
+  expectMatrixNear(
+      withHalfPointMassesM * withHalfPointMassesInvM,
+      identity,
+      1.0e-10,
+      "soft point-mass half mass inverse left identity");
+  expectMatrixNear(
+      withHalfPointMassesInvM * withHalfPointMassesM,
+      identity,
+      1.0e-10,
+      "soft point-mass half mass inverse right identity");
+  expectMatrixNear(
+      withOriginalPointMassesAugM * withOriginalPointMassesInvAugM,
+      identity,
+      1.0e-10,
+      "soft point-mass augmented inverse left identity");
+  expectMatrixNear(
+      withOriginalPointMassesInvAugM * withOriginalPointMassesAugM,
+      identity,
+      1.0e-10,
+      "soft point-mass augmented inverse right identity");
+  expectMatrixNear(
+      withHalfPointMassesAugM * withHalfPointMassesInvAugM,
+      identity,
+      1.0e-10,
+      "soft point-mass half augmented inverse left identity");
+  expectMatrixNear(
+      withHalfPointMassesInvAugM * withHalfPointMassesAugM,
+      identity,
+      1.0e-10,
+      "soft point-mass half augmented inverse right identity");
 }
