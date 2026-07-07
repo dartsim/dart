@@ -9,7 +9,8 @@
 - Expected output: initial and final radial axis error printed to the console.
 
 For a GUI comparison of every DART 6.x runtime dynamic joint constraint, see
-the `dynamic_joint_constraints` example.
+the `dynamic_joint_constraints` scene in the consolidated `dart-demos`
+catalog (`pixi run demos`, then select "Dynamic Joint Constraints").
 
 `CylindricalJointConstraint` sits between the existing runtime dynamic joint
 constraints:

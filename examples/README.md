@@ -1,16 +1,63 @@
 # DART Examples README
 
-## Build Each Example
+Most of DART's C++ example programs live in one consolidated application,
+`demos`, so there is a single place to browse and run them. A handful of
+examples remain standalone because they serve a purpose the consolidated
+catalog does not: a minimal "first program", a console-only regression check,
+a benchmark, and a CI-load-bearing microbenchmark harness.
 
-Copy the subdirectory to your workspace and follow the instruction of README.md
-in the subdirectory.
+## `demos`: the consolidated example catalog
 
-## Build Examples as One Project
+`demos/` hosts `dart-demos`, an OSG/ImGui application that bundles every
+former single-purpose GUI example (add/delete skeletons, box stacking, rigid
+chains/cubes/loops, joint constraints, humanoid controllers, soft bodies,
+drag-and-drop, IK, and more) as selectable scenes in one window.
 
-### Build Instructions
+Build and run it:
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+    $ pixi run demos
+
+Soft-body scene aliases are also available for compatibility with the former
+standalone examples:
+
+    $ pixi run ex soft_bodies -- --collision-detector dart --threads 16
+    $ pixi run ex soft_cubes -- --collision-detector fcl --threads 1
+    $ pixi run ex soft_open_chain -- --collision-detector native --threads 4
+
+or, from a manual build directory:
+
+    $ cmake --build build --target dart-demos
+    $ ./build/bin/dart-demos
+
+Useful flags (`./dart-demos --help` for the full list):
+
+    --list-scenes            Print the catalog grouped by category and exit.
+    --scene <id>              Start on a specific scene (e.g. --scene boxes).
+    --cycle-scenes            Headless smoke test: step every scene and exit.
+
+Each scene's source lives under `demos/scenes/`; scene ids match their
+original standalone example names (e.g. `demos/scenes/BoxesScene.cpp` is
+`--scene boxes`).
+
+## Standalone examples
+
+These are kept outside `demos` because folding them in would not simplify
+anything:
+
+- **`hello_world`** — the canonical minimal "first program"; start here if
+  you are new to DART.
+- **`cylindrical_constraint`** — a headless, console-only convergence check
+  for `dart::constraint::CylindricalJointConstraint`; not a GUI demo, so it
+  does not fit the `demos` catalog.
+- **`speed_test`** — a console performance benchmark.
+- **`contact_benchmark`** — backs `tests/benchmark/integration/` and the
+  performance-dashboard CI workflow; its header is compiled directly by
+  those targets, so it cannot be removed or relocated without touching CI.
+
+## Build Instructions
+
+This project is dependent on DART. Please make sure a proper version of DART
+is installed before building this project.
 
 Copy this directory to your workspace (e.g., in Linux):
 
@@ -24,25 +71,11 @@ From the workspace directory:
     $ cmake ..
     $ make
 
-### Execute Instructions
+## Execute Instructions
 
-Launch the each executable from the build directory above (e.g.,):
+Launch an executable from the build directory above (e.g.):
 
     $ ./hello_world
 
-Follow the instructions detailed in the console.
-
-## Dynamic Joint Constraint Examples
-
-The `dynamic_joint_constraints` GUI example demonstrates the DART 6.x runtime
-dynamic joint constraints side by side. The `cylindrical_constraint` headless
-example provides a focused convergence smoke test for slide-and-rotate
-attachments with `dart::constraint::CylindricalJointConstraint`.
-
-`BallJointConstraint` keeps one anchor coincident and leaves all relative
-rotation free. `CylindricalJointConstraint` keeps the bodies on one axis and
-leaves translation along that axis plus rotation about that axis free.
-`WeldJointConstraint` removes all relative rigid-body DOFs. DART 7/main also
-has `RevoluteJointConstraint`, which keeps a fixed anchor and leaves only
-rotation about the shared axis free; DART 6.19 does not expose that dynamic
-constraint, so this example compares the 6.x runtime constraints directly.
+Follow the instructions detailed in the console, or see each example's own
+`README.md` for details.

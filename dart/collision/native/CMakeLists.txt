@@ -8,7 +8,11 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/contact_point.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/types.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/contact_manifold.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionDetector.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionGroup.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionObject.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/detail/span.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/detail/NativeShapeConversion.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/shapes/shape.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/sdf/signed_distance_field.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/broad_phase.hpp
@@ -21,6 +25,7 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/sat.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/face_clip.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/contact_reduction.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_box.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_sphere.hpp
 )
 
@@ -29,6 +34,10 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/aabb.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/types.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/contact_manifold.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionDetector.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionGroup.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionObject.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/detail/NativeShapeConversion.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/shapes/shape.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/gjk.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/mpr.cpp
@@ -37,6 +46,7 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/sat.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/face_clip.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/contact_reduction.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_box.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_sphere.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/brute_force.cpp
 )

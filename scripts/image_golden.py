@@ -91,9 +91,7 @@ def _effective_tolerance(
     assert isinstance(effective_failpercent, float)
     assert isinstance(effective_ignore_aa, bool)
     assert effective_relnorm is None or isinstance(effective_relnorm, float)
-    _validate_thresholds(
-        effective_fail, effective_failpercent, effective_relnorm
-    )
+    _validate_thresholds(effective_fail, effective_failpercent, effective_relnorm)
     return (
         effective_fail,
         effective_failpercent,
@@ -264,9 +262,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.update:
             fail = DEFAULT_FAIL if args.fail is None else args.fail
             failpercent = (
-                DEFAULT_FAILPERCENT
-                if args.failpercent is None
-                else args.failpercent
+                DEFAULT_FAILPERCENT if args.failpercent is None else args.failpercent
             )
             ignore_aa = True if args.ignore_aa is None else args.ignore_aa
             _validate_thresholds(fail, failpercent, args.relnorm)
