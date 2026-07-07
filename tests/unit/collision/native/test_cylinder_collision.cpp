@@ -1,0 +1,313 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <dart/collision/native/narrow_phase/cylinder_collision.hpp>
+#include <dart/collision/native/shapes/shape.hpp>
+#include <dart/collision/native/types.hpp>
+
+#include <gtest/gtest.h>
+
+#include <array>
+#include <stdexcept>
+
+using namespace dart::collision::native;
+
+namespace {
+
+Eigen::Isometry3d translated(double x, double y, double z)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(x, y, z);
+  return tf;
+}
+
+Eigen::Isometry3d rotatedAroundY(double radians)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear()
+      = Eigen::AngleAxisd(radians, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  return tf;
+}
+
+} // namespace
+
+TEST(CylinderCollision, CollidesParallelCylinders)
+{
+  CylinderShape cylinder1(0.5, 2.0);
+  CylinderShape cylinder2(0.5, 2.0);
+
+  CollisionResult result;
+  const bool hit = collideCylinders(
+      cylinder1,
+      Eigen::Isometry3d::Identity(),
+      cylinder2,
+      translated(0.75, 0.0, 0.0),
+      result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+TEST(CylinderCollision, RejectsSeparatedCylinders)
+{
+  CylinderShape cylinder1(0.5, 2.0);
+  CylinderShape cylinder2(0.5, 2.0);
+
+  CollisionResult result;
+  const bool hit = collideCylinders(
+      cylinder1,
+      Eigen::Isometry3d::Identity(),
+      cylinder2,
+      translated(1.5, 0.0, 0.0),
+      result);
+
+  EXPECT_FALSE(hit);
+  EXPECT_EQ(0u, result.numContacts());
+}
+
+TEST(CylinderCollision, CollidesSkewCylinders)
+{
+  CylinderShape cylinder1(0.5, 2.0);
+  CylinderShape cylinder2(0.5, 2.0);
+  Eigen::Isometry3d tf2 = rotatedAroundY(0.5);
+  tf2.translation() = Eigen::Vector3d(0.5, 0.0, 0.0);
+
+  CollisionResult result;
+  const bool hit = collideCylinders(
+      cylinder1, Eigen::Isometry3d::Identity(), cylinder2, tf2, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_EQ(1u, result.numContacts());
+}
+
+TEST(CylinderCollision, BatchCollidesCylinderPairs)
+{
+  CylinderShape cylinder1(0.5, 2.0);
+  CylinderShape cylinder2(0.5, 2.0);
+  const std::array<CylinderPair, 2> pairs{{
+      {&cylinder1,
+       &cylinder2,
+       Eigen::Isometry3d::Identity(),
+       translated(0.75, 0.0, 0.0)},
+      {&cylinder1,
+       &cylinder2,
+       Eigen::Isometry3d::Identity(),
+       translated(1.5, 0.0, 0.0)},
+  }};
+  std::array<CollisionResult, 2> results;
+
+  collideCylindersBatch(pairs, results);
+
+  EXPECT_EQ(1u, results[0].numContacts());
+  EXPECT_EQ(0u, results[1].numContacts());
+}
+
+TEST(CylinderCollision, BatchRejectsInvalidInputs)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  const std::array<CylinderPair, 1> pairs{{
+      {&cylinder,
+       &cylinder,
+       Eigen::Isometry3d::Identity(),
+       Eigen::Isometry3d::Identity()},
+  }};
+
+  EXPECT_THROW(
+      collideCylindersBatch(pairs, span<CollisionResult>()),
+      std::invalid_argument);
+
+  std::array<CollisionResult, 1> results;
+  const std::array<CylinderPair, 1> nullPairs{{
+      {nullptr,
+       &cylinder,
+       Eigen::Isometry3d::Identity(),
+       Eigen::Isometry3d::Identity()},
+  }};
+  EXPECT_THROW(
+      collideCylindersBatch(nullPairs, results), std::invalid_argument);
+}
+
+TEST(CylinderCollision, CollidesCylinderSphere)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  SphereShape sphere(0.5);
+
+  CollisionResult result;
+  const bool hit = collideCylinderSphere(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      sphere,
+      translated(0.75, 0.0, 0.0),
+      result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+TEST(CylinderCollision, CollidesCylinderBox)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
+
+  CollisionResult result;
+  const bool hit = collideCylinderBox(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      box,
+      translated(0.75, 0.0, 0.0),
+      result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+TEST(CylinderCollision, CollidesCylinderCapsule)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  CapsuleShape capsule(0.5, 2.0);
+
+  CollisionResult result;
+  const bool hit = collideCylinderCapsule(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.75, 0.0, 0.0),
+      result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+TEST(CylinderCollision, CollidesCylinderPlane)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+
+  CollisionResult result;
+  const bool hit = collideCylinderPlane(
+      cylinder,
+      translated(0.0, 0.0, 0.75),
+      plane,
+      Eigen::Isometry3d::Identity(),
+      result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+}
+
+TEST(CylinderCollision, BinaryChecksDoNotAddContacts)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  SphereShape sphere(0.5);
+  BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
+  CapsuleShape capsule(0.5, 2.0);
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  CollisionOption option = CollisionOption::binaryCheck();
+
+  CollisionResult cylinderResult;
+  EXPECT_TRUE(collideCylinders(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      cylinder,
+      translated(0.75, 0.0, 0.0),
+      cylinderResult,
+      option));
+  EXPECT_EQ(0u, cylinderResult.numContacts());
+
+  CollisionResult sphereResult;
+  EXPECT_TRUE(collideCylinderSphere(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      sphere,
+      translated(0.75, 0.0, 0.0),
+      sphereResult,
+      option));
+  EXPECT_EQ(0u, sphereResult.numContacts());
+
+  CollisionResult boxResult;
+  EXPECT_TRUE(collideCylinderBox(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      box,
+      translated(0.75, 0.0, 0.0),
+      boxResult,
+      option));
+  EXPECT_EQ(0u, boxResult.numContacts());
+
+  CollisionResult capsuleResult;
+  EXPECT_TRUE(collideCylinderCapsule(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.75, 0.0, 0.0),
+      capsuleResult,
+      option));
+  EXPECT_EQ(0u, capsuleResult.numContacts());
+
+  CollisionResult planeResult;
+  EXPECT_TRUE(collideCylinderPlane(
+      cylinder,
+      translated(0.0, 0.0, 0.75),
+      plane,
+      Eigen::Isometry3d::Identity(),
+      planeResult,
+      option));
+  EXPECT_EQ(0u, planeResult.numContacts());
+}
+
+TEST(CylinderCollision, RespectsExhaustedContactBudget)
+{
+  CylinderShape cylinder1(0.5, 2.0);
+  CylinderShape cylinder2(0.5, 2.0);
+  CollisionOption option;
+  option.maxNumContacts = 0;
+
+  CollisionResult result;
+  EXPECT_FALSE(collideCylinders(
+      cylinder1,
+      Eigen::Isometry3d::Identity(),
+      cylinder2,
+      translated(0.75, 0.0, 0.0),
+      result,
+      option));
+  EXPECT_EQ(0u, result.numContacts());
+}
