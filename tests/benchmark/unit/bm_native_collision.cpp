@@ -5,6 +5,8 @@
 #include <Eigen/Geometry>
 #include <benchmark/benchmark.h>
 
+#include <vector>
+
 #include <cstddef>
 
 namespace {
@@ -13,6 +15,7 @@ using dart::collision::native::BoxShape;
 using dart::collision::native::CapsuleShape;
 using dart::collision::native::CollisionOption;
 using dart::collision::native::CollisionResult;
+using dart::collision::native::ConvexShape;
 using dart::collision::native::NarrowPhase;
 using dart::collision::native::Shape;
 using dart::collision::native::SphereShape;
@@ -22,6 +25,17 @@ Eigen::Isometry3d translated(double x, double y, double z)
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(x, y, z);
   return transform;
+}
+
+std::vector<Eigen::Vector3d> makeOctahedronVertices(double scale = 1.0)
+{
+  return {
+      {scale, 0.0, 0.0},
+      {-scale, 0.0, 0.0},
+      {0.0, scale, 0.0},
+      {0.0, -scale, 0.0},
+      {0.0, 0.0, scale},
+      {0.0, 0.0, -scale}};
 }
 
 void runNarrowPhase(
@@ -118,6 +132,32 @@ void BM_NativeCapsuleBox(benchmark::State& state)
       Eigen::Isometry3d::Identity());
 }
 
+void BM_NativeCapsuleCapsule(benchmark::State& state)
+{
+  CapsuleShape capsuleA(0.5, 1.0);
+  CapsuleShape capsuleB(0.5, 1.0);
+
+  runNarrowPhase(
+      state,
+      capsuleA,
+      Eigen::Isometry3d::Identity(),
+      capsuleB,
+      translated(0.75, 0.0, 0.0));
+}
+
+void BM_NativeConvexConvex(benchmark::State& state)
+{
+  ConvexShape convexA(makeOctahedronVertices());
+  ConvexShape convexB(makeOctahedronVertices());
+
+  runNarrowPhase(
+      state,
+      convexA,
+      Eigen::Isometry3d::Identity(),
+      convexB,
+      translated(1.5, 0.0, 0.0));
+}
+
 } // namespace
 
 BENCHMARK(BM_NativeSphereSphere)->Unit(benchmark::kNanosecond);
@@ -125,3 +165,5 @@ BENCHMARK(BM_NativeSphereBox)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeBoxBox)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeCapsuleSphere)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeCapsuleBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativeCapsuleCapsule)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativeConvexConvex)->Unit(benchmark::kNanosecond);

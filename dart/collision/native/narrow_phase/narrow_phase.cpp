@@ -32,7 +32,9 @@
 
 #include <dart/collision/native/narrow_phase/box_box.hpp>
 #include <dart/collision/native/narrow_phase/capsule_box.hpp>
+#include <dart/collision/native/narrow_phase/capsule_capsule.hpp>
 #include <dart/collision/native/narrow_phase/capsule_sphere.hpp>
+#include <dart/collision/native/narrow_phase/convex_convex.hpp>
 #include <dart/collision/native/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/native/narrow_phase/sphere_box.hpp>
 #include <dart/collision/native/narrow_phase/sphere_sphere.hpp>
@@ -74,6 +76,12 @@ bool collideWithFlippedNormals(
   }
 
   return true;
+}
+
+bool isP5ConvexFallbackType(ShapeType type)
+{
+  return type == ShapeType::Sphere || type == ShapeType::Box
+         || type == ShapeType::Capsule || type == ShapeType::Convex;
 }
 
 bool collideShapes(
@@ -156,6 +164,17 @@ bool collideShapes(
         [&](CollisionResult& local, const CollisionOption& opt) {
           return collideCapsuleBox(*c, tf2, *b, tf1, local, opt);
         });
+  }
+
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Capsule) {
+    const auto* c1 = static_cast<const CapsuleShape*>(shape1);
+    const auto* c2 = static_cast<const CapsuleShape*>(shape2);
+    return collideCapsules(*c1, tf1, *c2, tf2, result, option);
+  }
+
+  if ((type1 == ShapeType::Convex || type2 == ShapeType::Convex)
+      && isP5ConvexFallbackType(type1) && isP5ConvexFallbackType(type2)) {
+    return collideConvexConvex(*shape1, tf1, *shape2, tf2, result, option);
   }
 
   return false;
@@ -244,6 +263,13 @@ bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)
   }
   if ((type1 == ShapeType::Capsule && type2 == ShapeType::Box)
       || (type1 == ShapeType::Box && type2 == ShapeType::Capsule)) {
+    return true;
+  }
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Capsule) {
+    return true;
+  }
+  if ((type1 == ShapeType::Convex || type2 == ShapeType::Convex)
+      && isP5ConvexFallbackType(type1) && isP5ConvexFallbackType(type2)) {
     return true;
   }
   return false;
