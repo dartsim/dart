@@ -48,7 +48,7 @@
                     <geometry>
                         <box>
                             <size>0.1 0.5 0.1</size>
-                            <frags>2 2 2</frags>
+                            <frags>3 3 3</frags>
                         </box>
                     </geometry>
                     <kv>500.0</kv>
@@ -104,7 +104,7 @@
                     <geometry>
                         <box>
                             <size>0.1 0.5 0.1</size>
-                            <frags>2 2 2</frags>
+                            <frags>3 3 3</frags>
                         </box>
                     </geometry>
                     <kv>500.0</kv>
@@ -160,7 +160,7 @@
                     <geometry>
                         <box>
                             <size>0.1 0.5 0.1</size>
-                            <frags>2 2 2</frags>
+                            <frags>3 3 3</frags>
                         </box>
                     </geometry>
                     <kv>500.0</kv>
@@ -216,7 +216,7 @@
                     <geometry>
                         <box>
                             <size>0.1 0.5 0.1</size>
-                            <frags>2 2 2</frags>
+                            <frags>3 3 3</frags>
                         </box>
                     </geometry>
                     <kv>500.0</kv>
@@ -272,7 +272,7 @@
                     <geometry>
                         <box>
                             <size>0.1 0.5 0.1</size>
-                            <frags>2 2 2</frags>
+                            <frags>3 3 3</frags>
                         </box>
                     </geometry>
                     <kv>500.0</kv>

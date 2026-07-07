@@ -32,15 +32,23 @@
 
 #include <dart/collision/CollisionFilter.hpp>
 #include <dart/collision/CollisionObject.hpp>
+#include <dart/collision/dart/DARTCollide.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/EllipsoidShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/SoftBodyNode.hpp>
 #include <dart/dynamics/SphereShape.hpp>
 
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 using namespace dart;
@@ -52,6 +60,47 @@ namespace {
 // grid internals.
 constexpr double kDuplicateContactTolerance = 3.0e-12;
 constexpr double kDuplicateContactCellSize = 4.0 * kDuplicateContactTolerance;
+
+double computeSphereSoftContactDepth(
+    const dynamics::SphereShape& sphere,
+    const dynamics::Frame& sphereFrame,
+    const Eigen::Vector3d& worldPoint)
+{
+  const Eigen::Vector3d localPoint
+      = sphereFrame.getWorldTransform().inverse() * worldPoint;
+  return sphere.getRadius() - localPoint.norm();
+}
+
+double computeEllipsoidSoftContactDepth(
+    const dynamics::EllipsoidShape& ellipsoid,
+    const dynamics::Frame& ellipsoidFrame,
+    const Eigen::Vector3d& worldPoint)
+{
+  const Eigen::Vector3d localPoint
+      = ellipsoidFrame.getWorldTransform().inverse() * worldPoint;
+  const Eigen::Vector3d radii = ellipsoid.getRadii();
+  const double normalizedDistance
+      = localPoint.cwiseProduct(radii.cwiseInverse()).norm();
+  if (normalizedDistance == 0.0)
+    return radii.minCoeff();
+
+  const Eigen::Vector3d surfacePoint = localPoint / normalizedDistance;
+  return (surfacePoint - localPoint).norm();
+}
+
+class TestCollisionObject final : public collision::CollisionObject
+{
+public:
+  TestCollisionObject(
+      collision::CollisionDetector* collisionDetector,
+      const dynamics::ShapeFrame* shapeFrame)
+    : collision::CollisionObject(collisionDetector, shapeFrame)
+  {
+  }
+
+private:
+  void updateEngineData() override {}
+};
 
 struct PlaneSphereGroups
 {
@@ -91,6 +140,266 @@ PlaneSphereGroups makePlaneSphereGroups(double sphereX1, double sphereX2)
   return groups;
 }
 
+struct PlaneSoftMeshGroups
+{
+  collision::CollisionDetectorPtr detector;
+  dynamics::SimpleFramePtr planeFrame;
+  dynamics::SkeletonPtr softSkeleton;
+  dynamics::SoftBodyNode* softBody{nullptr};
+  dynamics::ShapeNode* softShapeNode{nullptr};
+  std::unique_ptr<collision::CollisionGroup> group;
+  std::unique_ptr<collision::CollisionGroup> planeGroup;
+  std::unique_ptr<collision::CollisionGroup> softGroup;
+};
+
+PlaneSoftMeshGroups makePlaneSoftMeshGroups(double softCenterZ)
+{
+  PlaneSoftMeshGroups groups;
+  groups.detector = collision::DARTCollisionDetector::create();
+
+  groups.planeFrame
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  groups.planeFrame->setShape(
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  groups.softSkeleton = dynamics::Skeleton::create("soft");
+  const auto softProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d::Ones(), Eigen::Isometry3d::Identity(), 1.0);
+  const dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties("soft_body"));
+  const dynamics::SoftBodyNode::Properties softBodyProperties(
+      bodyProperties, softProperties);
+
+  auto pair = groups.softSkeleton->createJointAndBodyNodePair<
+      dynamics::FreeJoint,
+      dynamics::SoftBodyNode>(
+      nullptr, dynamics::FreeJoint::Properties(), softBodyProperties);
+  groups.softBody = pair.second;
+
+  Eigen::Isometry3d softTransform = Eigen::Isometry3d::Identity();
+  softTransform.translation().z() = softCenterZ;
+  pair.first->setPositions(
+      dynamics::FreeJoint::convertToPositions(softTransform));
+
+  groups.softShapeNode
+      = groups.softBody->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  groups.group = groups.detector->createCollisionGroup(
+      groups.planeFrame.get(), groups.softShapeNode);
+  groups.planeGroup
+      = groups.detector->createCollisionGroup(groups.planeFrame.get());
+  groups.softGroup
+      = groups.detector->createCollisionGroup(groups.softShapeNode);
+
+  return groups;
+}
+
+struct BoxSoftMeshGroups
+{
+  collision::CollisionDetectorPtr detector;
+  dynamics::SimpleFramePtr boxFrame;
+  dynamics::SkeletonPtr softSkeleton;
+  dynamics::SoftBodyNode* softBody{nullptr};
+  dynamics::ShapeNode* softShapeNode{nullptr};
+  std::unique_ptr<collision::CollisionGroup> boxGroup;
+  std::unique_ptr<collision::CollisionGroup> softGroup;
+};
+
+BoxSoftMeshGroups makeBoxSoftMeshGroups(double softCenterZ)
+{
+  BoxSoftMeshGroups groups;
+  groups.detector = collision::DARTCollisionDetector::create();
+
+  groups.boxFrame
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  groups.boxFrame->setShape(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(10.0, 10.0, 1.0)));
+  groups.boxFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, -0.5));
+
+  groups.softSkeleton = dynamics::Skeleton::create("soft_box");
+  const auto softProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d::Ones(), Eigen::Isometry3d::Identity(), 1.0);
+  const dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties("soft_box_body"));
+  const dynamics::SoftBodyNode::Properties softBodyProperties(
+      bodyProperties, softProperties);
+
+  auto pair = groups.softSkeleton->createJointAndBodyNodePair<
+      dynamics::FreeJoint,
+      dynamics::SoftBodyNode>(
+      nullptr, dynamics::FreeJoint::Properties(), softBodyProperties);
+  groups.softBody = pair.second;
+
+  Eigen::Isometry3d softTransform = Eigen::Isometry3d::Identity();
+  softTransform.translation().z() = softCenterZ;
+  pair.first->setPositions(
+      dynamics::FreeJoint::convertToPositions(softTransform));
+
+  groups.softShapeNode
+      = groups.softBody->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  groups.boxGroup
+      = groups.detector->createCollisionGroup(groups.boxFrame.get());
+  groups.softGroup
+      = groups.detector->createCollisionGroup(groups.softShapeNode);
+
+  return groups;
+}
+
+struct SphereSoftMeshGroups
+{
+  collision::CollisionDetectorPtr detector;
+  dynamics::SimpleFramePtr sphereFrame;
+  dynamics::SkeletonPtr softSkeleton;
+  dynamics::SoftBodyNode* softBody{nullptr};
+  dynamics::ShapeNode* softShapeNode{nullptr};
+  std::unique_ptr<collision::CollisionGroup> sphereGroup;
+  std::unique_ptr<collision::CollisionGroup> softGroup;
+};
+
+SphereSoftMeshGroups makeSphereSoftMeshGroups(bool sphereLikeEllipsoid)
+{
+  SphereSoftMeshGroups groups;
+  groups.detector = collision::DARTCollisionDetector::create();
+
+  groups.sphereFrame
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  if (sphereLikeEllipsoid) {
+    groups.sphereFrame->setShape(std::make_shared<dynamics::EllipsoidShape>(
+        Eigen::Vector3d::Constant(0.4)));
+  } else {
+    groups.sphereFrame->setShape(std::make_shared<dynamics::SphereShape>(0.2));
+  }
+  groups.sphereFrame->setTranslation(Eigen::Vector3d(-0.5, -0.5, -0.15));
+
+  groups.softSkeleton = dynamics::Skeleton::create("soft_sphere");
+  const auto softProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d::Ones(), Eigen::Isometry3d::Identity(), 1.0);
+  const dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties("soft_sphere_body"));
+  const dynamics::SoftBodyNode::Properties softBodyProperties(
+      bodyProperties, softProperties);
+
+  auto pair = groups.softSkeleton->createJointAndBodyNodePair<
+      dynamics::FreeJoint,
+      dynamics::SoftBodyNode>(
+      nullptr, dynamics::FreeJoint::Properties(), softBodyProperties);
+  groups.softBody = pair.second;
+
+  Eigen::Isometry3d softTransform = Eigen::Isometry3d::Identity();
+  softTransform.translation().z() = 0.45;
+  pair.first->setPositions(
+      dynamics::FreeJoint::convertToPositions(softTransform));
+
+  groups.softShapeNode
+      = groups.softBody->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  groups.sphereGroup
+      = groups.detector->createCollisionGroup(groups.sphereFrame.get());
+  groups.softGroup
+      = groups.detector->createCollisionGroup(groups.softShapeNode);
+
+  return groups;
+}
+
+SphereSoftMeshGroups makeEllipsoidSoftMeshGroups()
+{
+  SphereSoftMeshGroups groups;
+  groups.detector = collision::DARTCollisionDetector::create();
+
+  groups.sphereFrame
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  groups.sphereFrame->setShape(std::make_shared<dynamics::EllipsoidShape>(
+      Eigen::Vector3d(0.30, 0.40, 0.60)));
+  groups.sphereFrame->setTranslation(Eigen::Vector3d(-0.5, -0.5, -0.25));
+
+  groups.softSkeleton = dynamics::Skeleton::create("soft_ellipsoid");
+  const auto softProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d::Ones(), Eigen::Isometry3d::Identity(), 1.0);
+  const dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties("soft_ellipsoid_body"));
+  const dynamics::SoftBodyNode::Properties softBodyProperties(
+      bodyProperties, softProperties);
+
+  auto pair = groups.softSkeleton->createJointAndBodyNodePair<
+      dynamics::FreeJoint,
+      dynamics::SoftBodyNode>(
+      nullptr, dynamics::FreeJoint::Properties(), softBodyProperties);
+  groups.softBody = pair.second;
+
+  Eigen::Isometry3d softTransform = Eigen::Isometry3d::Identity();
+  softTransform.translation().z() = 0.45;
+  pair.first->setPositions(
+      dynamics::FreeJoint::convertToPositions(softTransform));
+
+  groups.softShapeNode
+      = groups.softBody->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  groups.sphereGroup
+      = groups.detector->createCollisionGroup(groups.sphereFrame.get());
+  groups.softGroup
+      = groups.detector->createCollisionGroup(groups.softShapeNode);
+
+  return groups;
+}
+
+struct SoftSoftMeshGroups
+{
+  collision::CollisionDetectorPtr detector;
+  dynamics::SkeletonPtr softSkeleton1;
+  dynamics::SkeletonPtr softSkeleton2;
+  dynamics::SoftBodyNode* softBody1{nullptr};
+  dynamics::SoftBodyNode* softBody2{nullptr};
+  dynamics::ShapeNode* softShapeNode1{nullptr};
+  dynamics::ShapeNode* softShapeNode2{nullptr};
+  std::unique_ptr<collision::CollisionGroup> softGroup1;
+  std::unique_ptr<collision::CollisionGroup> softGroup2;
+};
+
+std::pair<dynamics::SoftBodyNode*, dynamics::ShapeNode*> addSoftBox(
+    const dynamics::SkeletonPtr& skeleton,
+    const std::string& name,
+    double centerZ)
+{
+  const auto softProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d::Ones(), Eigen::Isometry3d::Identity(), 1.0);
+  const dynamics::BodyNode::Properties bodyProperties{
+      dynamics::BodyNode::AspectProperties(name)};
+  const dynamics::SoftBodyNode::Properties softBodyProperties(
+      bodyProperties, softProperties);
+
+  auto pair = skeleton->createJointAndBodyNodePair<
+      dynamics::FreeJoint,
+      dynamics::SoftBodyNode>(
+      nullptr, dynamics::FreeJoint::Properties(), softBodyProperties);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation().z() = centerZ;
+  pair.first->setPositions(dynamics::FreeJoint::convertToPositions(transform));
+
+  return {
+      pair.second, pair.second->getShapeNodeWith<dynamics::CollisionAspect>(0)};
+}
+
+SoftSoftMeshGroups makeSoftSoftMeshGroups()
+{
+  SoftSoftMeshGroups groups;
+  groups.detector = collision::DARTCollisionDetector::create();
+
+  groups.softSkeleton1 = dynamics::Skeleton::create("soft_soft_1");
+  groups.softSkeleton2 = dynamics::Skeleton::create("soft_soft_2");
+
+  auto soft1 = addSoftBox(groups.softSkeleton1, "soft_soft_body_1", 0.0);
+  auto soft2 = addSoftBox(groups.softSkeleton2, "soft_soft_body_2", 0.95);
+  groups.softBody1 = soft1.first;
+  groups.softShapeNode1 = soft1.second;
+  groups.softBody2 = soft2.first;
+  groups.softShapeNode2 = soft2.second;
+
+  groups.softGroup1
+      = groups.detector->createCollisionGroup(groups.softShapeNode1);
+  groups.softGroup2
+      = groups.detector->createCollisionGroup(groups.softShapeNode2);
+
+  return groups;
+}
+
 class AnchorOnlyCollisionFilter : public collision::CollisionFilter
 {
 public:
@@ -109,6 +418,26 @@ public:
 
 private:
   const dynamics::ShapeFrame* mAnchor;
+};
+
+class CountingCollisionFilter : public collision::CollisionFilter
+{
+public:
+  bool ignoresCollision(
+      const collision::CollisionObject*,
+      const collision::CollisionObject*) const override
+  {
+    ++mNumChecks;
+    return false;
+  }
+
+  std::size_t getNumChecks() const
+  {
+    return mNumChecks;
+  }
+
+private:
+  mutable std::size_t mNumChecks = 0u;
 };
 
 } // namespace
@@ -311,6 +640,34 @@ TEST(DARTCollisionDetector, BatchedSingleGroupSweepPreservesCandidateOrder)
 }
 
 //==============================================================================
+TEST(
+    DARTCollisionDetector, BinaryFiniteSweepShortCircuitsWithoutCollectingPairs)
+{
+  constexpr std::size_t kNumSpheres = 24u;
+
+  auto detector = collision::DARTCollisionDetector::create();
+
+  std::vector<dynamics::SimpleFramePtr> sphereFrames;
+  sphereFrames.reserve(kNumSpheres);
+  for (std::size_t i = 0u; i < kNumSpheres; ++i) {
+    auto frame = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+    frame->setShape(std::make_shared<dynamics::SphereShape>(1.0));
+    frame->setTranslation(Eigen::Vector3d::Zero());
+    sphereFrames.push_back(frame);
+  }
+
+  auto group = detector->createCollisionGroup();
+  for (const auto& sphereFrame : sphereFrames)
+    group->addShapeFrame(sphereFrame.get());
+
+  auto filter = std::make_shared<CountingCollisionFilter>();
+  collision::CollisionOption option(false, 1u, filter);
+
+  EXPECT_TRUE(group->collide(option, nullptr));
+  EXPECT_EQ(1u, filter->getNumChecks());
+}
+
+//==============================================================================
 TEST(DARTCollisionDetector, ParallelDisjointSinglePlaneContactsMatchSerial)
 {
   constexpr std::size_t kNumSpheres = 140u;
@@ -368,4 +725,390 @@ TEST(DARTCollisionDetector, ParallelDisjointSinglePlaneContactsMatchSerial)
         parallelContact.penetrationDepth,
         1e-12);
   }
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, DetectsNativeSoftMeshPlaneContact)
+{
+  auto groups = makePlaneSoftMeshGroups(0.45);
+  ASSERT_NE(nullptr, groups.softBody);
+  ASSERT_NE(nullptr, groups.softShapeNode);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  collision::CollisionResult result;
+  EXPECT_TRUE(groups.group->collide(option, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  bool sawSoftContact = false;
+  for (std::size_t i = 0u; i < result.getNumContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    if (contact.collisionObject2->getShapeFrame() != groups.softShapeNode)
+      continue;
+
+    sawSoftContact = true;
+    EXPECT_EQ(
+        groups.planeFrame.get(), contact.collisionObject1->getShapeFrame());
+    EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+    EXPECT_GE(contact.penetrationDepth, 0.0);
+    EXPECT_GE(contact.triID2, 0);
+    EXPECT_LT(
+        static_cast<std::size_t>(contact.triID2),
+        groups.softBody->getNumFaces());
+  }
+
+  EXPECT_TRUE(sawSoftContact);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, KeepsNativeSoftPlaneContactPointOnCollidingVertex)
+{
+  auto groups = makePlaneSoftMeshGroups(0.45);
+  ASSERT_NE(nullptr, groups.planeGroup);
+  ASSERT_NE(nullptr, groups.softGroup);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  collision::CollisionResult primitiveFirstResult;
+  EXPECT_TRUE(groups.planeGroup->collide(
+      groups.softGroup.get(), option, &primitiveFirstResult));
+  ASSERT_GT(primitiveFirstResult.getNumContacts(), 0u);
+
+  bool sawPrimitiveFirstContact = false;
+  for (std::size_t i = 0u; i < primitiveFirstResult.getNumContacts(); ++i) {
+    const auto& contact = primitiveFirstResult.getContact(i);
+    if (contact.collisionObject2->getShapeFrame() != groups.softShapeNode)
+      continue;
+
+    sawPrimitiveFirstContact = true;
+    EXPECT_GT(contact.penetrationDepth, 0.0);
+    EXPECT_NEAR(contact.point.z(), -contact.penetrationDepth, 1e-12);
+  }
+  EXPECT_TRUE(sawPrimitiveFirstContact);
+
+  collision::CollisionResult softFirstResult;
+  EXPECT_TRUE(groups.softGroup->collide(
+      groups.planeGroup.get(), option, &softFirstResult));
+  ASSERT_GT(softFirstResult.getNumContacts(), 0u);
+
+  bool sawSoftFirstContact = false;
+  for (std::size_t i = 0u; i < softFirstResult.getNumContacts(); ++i) {
+    const auto& contact = softFirstResult.getContact(i);
+    if (contact.collisionObject1->getShapeFrame() != groups.softShapeNode)
+      continue;
+
+    sawSoftFirstContact = true;
+    EXPECT_GT(contact.penetrationDepth, 0.0);
+    EXPECT_NEAR(contact.point.z(), -contact.penetrationDepth, 1e-12);
+  }
+  EXPECT_TRUE(sawSoftFirstContact);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, PublicSoftMeshCollideFallsBackForNonDartObjects)
+{
+  auto groups = makePlaneSoftMeshGroups(0.45);
+  ASSERT_NE(nullptr, groups.softShapeNode);
+
+  TestCollisionObject planeObject(
+      groups.detector.get(), groups.planeFrame.get());
+  TestCollisionObject softObject(groups.detector.get(), groups.softShapeNode);
+
+  collision::CollisionResult primitiveFirstResult;
+  EXPECT_GT(
+      collision::collide(&planeObject, &softObject, primitiveFirstResult), 0);
+  EXPECT_GT(primitiveFirstResult.getNumContacts(), 0u);
+
+  collision::CollisionResult softFirstResult;
+  EXPECT_GT(collision::collide(&softObject, &planeObject, softFirstResult), 0);
+  EXPECT_GT(softFirstResult.getNumContacts(), 0u);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, PublicSoftSoftCollideIgnoresNonDartObjects)
+{
+  auto groups = makeSoftSoftMeshGroups();
+  ASSERT_NE(nullptr, groups.softShapeNode1);
+  ASSERT_NE(nullptr, groups.softShapeNode2);
+
+  TestCollisionObject softObject1(groups.detector.get(), groups.softShapeNode1);
+  TestCollisionObject softObject2(groups.detector.get(), groups.softShapeNode2);
+
+  collision::CollisionResult result;
+  EXPECT_EQ(collision::collide(&softObject1, &softObject2, result), 0);
+  EXPECT_EQ(result.getNumContacts(), 0u);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, DetectsNativeSoftMeshBoxContact)
+{
+  auto groups = makeBoxSoftMeshGroups(0.45);
+  ASSERT_NE(nullptr, groups.softBody);
+  ASSERT_NE(nullptr, groups.softShapeNode);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  collision::CollisionResult result;
+  EXPECT_TRUE(
+      groups.boxGroup->collide(groups.softGroup.get(), option, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  bool sawSoftContact = false;
+  for (std::size_t i = 0u; i < result.getNumContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    if (contact.collisionObject2->getShapeFrame() != groups.softShapeNode)
+      continue;
+
+    sawSoftContact = true;
+    EXPECT_EQ(groups.boxFrame.get(), contact.collisionObject1->getShapeFrame());
+    EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+    EXPECT_GT(contact.penetrationDepth, 0.0);
+    EXPECT_GE(contact.triID2, 0);
+    EXPECT_LT(
+        static_cast<std::size_t>(contact.triID2),
+        groups.softBody->getNumFaces());
+  }
+
+  EXPECT_TRUE(sawSoftContact);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, DetectsNativeSoftMeshSphereContact)
+{
+  auto groups = makeSphereSoftMeshGroups(false);
+  ASSERT_NE(nullptr, groups.softBody);
+  ASSERT_NE(nullptr, groups.softShapeNode);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  collision::CollisionResult result;
+  EXPECT_TRUE(
+      groups.sphereGroup->collide(groups.softGroup.get(), option, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  const auto* sphere = static_cast<const dynamics::SphereShape*>(
+      groups.sphereFrame->getShape().get());
+  ASSERT_NE(nullptr, sphere);
+
+  bool sawSoftContact = false;
+  for (std::size_t i = 0u; i < result.getNumContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    if (contact.collisionObject2->getShapeFrame() != groups.softShapeNode)
+      continue;
+
+    sawSoftContact = true;
+    EXPECT_EQ(
+        groups.sphereFrame.get(), contact.collisionObject1->getShapeFrame());
+    EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+    EXPECT_NEAR(
+        contact.penetrationDepth,
+        computeSphereSoftContactDepth(
+            *sphere, *groups.sphereFrame, contact.point),
+        1e-12);
+    EXPECT_GE(contact.triID2, 0);
+    EXPECT_LT(
+        static_cast<std::size_t>(contact.triID2),
+        groups.softBody->getNumFaces());
+  }
+
+  EXPECT_TRUE(sawSoftContact);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, DetectsNativeSoftMeshSphereLikeEllipsoidContact)
+{
+  auto groups = makeSphereSoftMeshGroups(true);
+  ASSERT_NE(nullptr, groups.softBody);
+  ASSERT_NE(nullptr, groups.softShapeNode);
+
+  const auto* ellipsoid = static_cast<const dynamics::EllipsoidShape*>(
+      groups.sphereFrame->getShape().get());
+  ASSERT_NE(nullptr, ellipsoid);
+  ASSERT_TRUE(ellipsoid->isSphere());
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  collision::CollisionResult primitiveFirstResult;
+  EXPECT_TRUE(groups.sphereGroup->collide(
+      groups.softGroup.get(), option, &primitiveFirstResult));
+  ASSERT_GT(primitiveFirstResult.getNumContacts(), 0u);
+
+  bool sawPrimitiveFirstSoftContact = false;
+  for (std::size_t i = 0u; i < primitiveFirstResult.getNumContacts(); ++i) {
+    const auto& contact = primitiveFirstResult.getContact(i);
+    if (contact.collisionObject2->getShapeFrame() != groups.softShapeNode)
+      continue;
+
+    sawPrimitiveFirstSoftContact = true;
+    EXPECT_EQ(
+        groups.sphereFrame.get(), contact.collisionObject1->getShapeFrame());
+    EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+    EXPECT_NEAR(
+        contact.penetrationDepth,
+        computeEllipsoidSoftContactDepth(
+            *ellipsoid, *groups.sphereFrame, contact.point),
+        1e-12);
+    EXPECT_GE(contact.triID2, 0);
+    EXPECT_LT(
+        static_cast<std::size_t>(contact.triID2),
+        groups.softBody->getNumFaces());
+  }
+  EXPECT_TRUE(sawPrimitiveFirstSoftContact);
+
+  collision::CollisionResult softFirstResult;
+  EXPECT_TRUE(groups.softGroup->collide(
+      groups.sphereGroup.get(), option, &softFirstResult));
+  ASSERT_GT(softFirstResult.getNumContacts(), 0u);
+
+  bool sawSoftFirstContact = false;
+  for (std::size_t i = 0u; i < softFirstResult.getNumContacts(); ++i) {
+    const auto& contact = softFirstResult.getContact(i);
+    if (contact.collisionObject1->getShapeFrame() != groups.softShapeNode)
+      continue;
+
+    sawSoftFirstContact = true;
+    EXPECT_EQ(
+        groups.sphereFrame.get(), contact.collisionObject2->getShapeFrame());
+    EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+    EXPECT_NEAR(
+        contact.penetrationDepth,
+        computeEllipsoidSoftContactDepth(
+            *ellipsoid, *groups.sphereFrame, contact.point),
+        1e-12);
+    EXPECT_GE(contact.triID1, 0);
+    EXPECT_LT(
+        static_cast<std::size_t>(contact.triID1),
+        groups.softBody->getNumFaces());
+  }
+  EXPECT_TRUE(sawSoftFirstContact);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, DetectsNativeSoftMeshEllipsoidContact)
+{
+  auto groups = makeEllipsoidSoftMeshGroups();
+  ASSERT_NE(nullptr, groups.softBody);
+  ASSERT_NE(nullptr, groups.softShapeNode);
+
+  const auto* ellipsoid = static_cast<const dynamics::EllipsoidShape*>(
+      groups.sphereFrame->getShape().get());
+  ASSERT_NE(nullptr, ellipsoid);
+  ASSERT_FALSE(ellipsoid->isSphere());
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  collision::CollisionResult primitiveFirstResult;
+  EXPECT_TRUE(groups.sphereGroup->collide(
+      groups.softGroup.get(), option, &primitiveFirstResult));
+  ASSERT_GT(primitiveFirstResult.getNumContacts(), 0u);
+
+  bool sawPrimitiveFirstSoftContact = false;
+  for (std::size_t i = 0u; i < primitiveFirstResult.getNumContacts(); ++i) {
+    const auto& contact = primitiveFirstResult.getContact(i);
+    if (contact.collisionObject2->getShapeFrame() != groups.softShapeNode)
+      continue;
+
+    sawPrimitiveFirstSoftContact = true;
+    EXPECT_EQ(
+        groups.sphereFrame.get(), contact.collisionObject1->getShapeFrame());
+    EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+    EXPECT_NEAR(
+        contact.penetrationDepth,
+        computeEllipsoidSoftContactDepth(
+            *ellipsoid, *groups.sphereFrame, contact.point),
+        1e-12);
+    EXPECT_GE(contact.triID2, 0);
+    EXPECT_LT(
+        static_cast<std::size_t>(contact.triID2),
+        groups.softBody->getNumFaces());
+  }
+  EXPECT_TRUE(sawPrimitiveFirstSoftContact);
+
+  collision::CollisionResult softFirstResult;
+  EXPECT_TRUE(groups.softGroup->collide(
+      groups.sphereGroup.get(), option, &softFirstResult));
+  ASSERT_GT(softFirstResult.getNumContacts(), 0u);
+
+  bool sawSoftFirstContact = false;
+  for (std::size_t i = 0u; i < softFirstResult.getNumContacts(); ++i) {
+    const auto& contact = softFirstResult.getContact(i);
+    if (contact.collisionObject1->getShapeFrame() != groups.softShapeNode)
+      continue;
+
+    sawSoftFirstContact = true;
+    EXPECT_EQ(
+        groups.sphereFrame.get(), contact.collisionObject2->getShapeFrame());
+    EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+    EXPECT_NEAR(
+        contact.penetrationDepth,
+        computeEllipsoidSoftContactDepth(
+            *ellipsoid, *groups.sphereFrame, contact.point),
+        1e-12);
+    EXPECT_GE(contact.triID1, 0);
+    EXPECT_LT(
+        static_cast<std::size_t>(contact.triID1),
+        groups.softBody->getNumFaces());
+  }
+  EXPECT_TRUE(sawSoftFirstContact);
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, DetectsNativeSoftMeshSoftMeshContact)
+{
+  auto groups = makeSoftSoftMeshGroups();
+  ASSERT_NE(nullptr, groups.softBody1);
+  ASSERT_NE(nullptr, groups.softBody2);
+  ASSERT_NE(nullptr, groups.softShapeNode1);
+  ASSERT_NE(nullptr, groups.softShapeNode2);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 32u;
+
+  collision::CollisionResult result;
+  EXPECT_TRUE(
+      groups.softGroup1->collide(groups.softGroup2.get(), option, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  bool sawSoftSoftContact = false;
+  bool sawExpectedSeparatingContact = false;
+  for (std::size_t i = 0u; i < result.getNumContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    if (contact.collisionObject1->getShapeFrame() != groups.softShapeNode1
+        || contact.collisionObject2->getShapeFrame() != groups.softShapeNode2) {
+      continue;
+    }
+
+    sawSoftSoftContact = true;
+    EXPECT_FALSE(collision::Contact::isZeroNormal(contact.normal));
+    EXPECT_GE(contact.penetrationDepth, 0.0);
+    EXPECT_GE(contact.triID1, 0);
+    EXPECT_LT(
+        static_cast<std::size_t>(contact.triID1),
+        groups.softBody1->getNumFaces());
+    EXPECT_GE(contact.triID2, 0);
+    EXPECT_LT(
+        static_cast<std::size_t>(contact.triID2),
+        groups.softBody2->getNumFaces());
+
+    if (contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12)
+        && contact.penetrationDepth > 0.0) {
+      sawExpectedSeparatingContact = true;
+    }
+  }
+
+  EXPECT_TRUE(sawSoftSoftContact);
+  EXPECT_TRUE(sawExpectedSeparatingContact);
 }

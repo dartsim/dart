@@ -24,7 +24,7 @@ endif()
 
 if(NOT DART_IN_SOURCE_BUILD)
   find_package(DART 6.17 REQUIRED COMPONENTS ${required_components} CONFIG)
-  find_package(DART 6.17 QUIET COMPONENTS collision-bullet CONFIG)
+  find_package(DART 6.17 QUIET COMPONENTS collision-bullet collision-ode CONFIG)
 endif()
 
 # Single owner of where the wam_ikfast scene's dlopen'd IK shared library is
@@ -88,10 +88,19 @@ list(APPEND required_libraries osgText::osgText)
 # library to stay linked on GNU/Clang. Apple/MSVC keep an explicitly linked
 # library regardless, and target_link_options is signature-neutral so it is safe
 # to mix with either a plain or keyword target_link_libraries call.
-function(force_link_bullet_backend target)
+function(force_link_collision_backend target)
   if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND NOT APPLE)
     target_link_options(${target} PRIVATE "LINKER:--no-as-needed")
   endif()
+endfunction()
+
+function(dart_demos_link_optional_collision_backends target)
+  foreach(collision_backend dart-collision-bullet dart-collision-ode)
+    if(TARGET ${collision_backend})
+      target_link_libraries(${target} ${collision_backend})
+      force_link_collision_backend(${target})
+    endif()
+  endforeach()
 endfunction()
 
 # Optional TinyDNN + Threads dependency for the human_joint_limits scene
@@ -193,6 +202,8 @@ function(dart_demos_configure_scenes_target target)
   )
 endfunction()
 
+file(GLOB srcs "*.cpp" "*.hpp")
+
 # The scene ports (examples/demos/scenes/*.cpp) live in a subdirectory, so they
 # cannot be picked up by dart_build_target_in_source()'s non-recursive
 # `file(GLOB srcs "*.cpp" "*.hpp")`. Compile them into a small static library
@@ -222,14 +233,31 @@ if(DART_IN_SOURCE_BUILD)
     ${example_name}
     LINK_LIBRARIES ${required_libraries} dart-demos-scenes
   )
-  # dart_build_example_in_source() returns early (skipping the example) unless
-  # every LINK_LIBRARIES entry is a target, and it links with the plain
-  # target_link_libraries() signature, so the Bullet backend is attached to the
-  # created executable here (matching that plain signature) instead of being
-  # passed through the macro.
-  if(TARGET ${example_name} AND TARGET dart-collision-bullet)
-    target_link_libraries(${example_name} dart-collision-bullet)
-    force_link_bullet_backend(${example_name})
+
+  if(TARGET ${example_name})
+    dart_demos_link_optional_collision_backends(${example_name})
+  endif()
+
+  foreach(alias_scene soft_bodies soft_cubes soft_open_chain)
+    add_executable(${alias_scene} ${srcs})
+    set_target_properties(
+      ${alias_scene}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    )
+    target_compile_definitions(
+      ${alias_scene}
+      PRIVATE DART_DEMOS_DEFAULT_SCENE="${alias_scene}"
+    )
+    target_link_libraries(
+      ${alias_scene}
+      ${required_libraries}
+      dart-demos-scenes
+    )
+    dart_demos_link_optional_collision_backends(${alias_scene})
+  endforeach()
+
+  if(TARGET examples)
+    add_dependencies(examples soft_bodies soft_cubes soft_open_chain)
   endif()
   return()
 endif()
@@ -239,13 +267,20 @@ add_library(dart-demos-scenes STATIC ${demos_scene_srcs})
 target_link_libraries(dart-demos-scenes PUBLIC ${required_libraries})
 dart_demos_configure_scenes_target(dart-demos-scenes)
 
-file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})
-target_link_libraries(
-  ${example_name}
-  PUBLIC ${required_libraries} dart-demos-scenes
-)
-if(TARGET dart-collision-bullet)
-  target_link_libraries(${example_name} PUBLIC dart-collision-bullet)
-  force_link_bullet_backend(${example_name})
-endif()
+target_link_libraries(${example_name} ${required_libraries} dart-demos-scenes)
+dart_demos_link_optional_collision_backends(${example_name})
+
+foreach(alias_scene soft_bodies soft_cubes soft_open_chain)
+  add_executable(${alias_scene} ${srcs})
+  set_target_properties(
+    ${alias_scene}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  )
+  target_compile_definitions(
+    ${alias_scene}
+    PRIVATE DART_DEMOS_DEFAULT_SCENE="${alias_scene}"
+  )
+  target_link_libraries(${alias_scene} ${required_libraries} dart-demos-scenes)
+  dart_demos_link_optional_collision_backends(${alias_scene})
+endforeach()

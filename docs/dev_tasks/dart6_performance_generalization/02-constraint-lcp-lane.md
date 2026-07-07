@@ -56,6 +56,13 @@ final-state hashes on all guard scenes for default-on packets.
   and `origin/perf/dart6-single-reactive-union-reset` (stamped-index
   union reset, ~4x scope reduction). Re-measure both on the round-2
   baseline as part of this packet.
+- Local rejection note (2026-07-06): cpp-only mining of those two
+  single-reactive commits on `wp-pg-11-solver-rtti-scans` was reverted
+  after current-base A/B on `origin/release-6.20` @ `2e11928288c`
+  regressed the median on S2 ODE 3k settled (0.87x), S4 generated-900
+  DART (0.93x), S4 Bullet (0.99x), and S4 ODE (0.98x). FCL and active S1
+  ODE improved, but not enough for the general-performance bar; all guards
+  were identical. Artifacts: `/tmp/wp_pg11_ab/current_2e119_repeat`.
 - Scope: `dart/constraint/*` cpp + minimal additive header changes
   (virtual additions only on classes gz does not subclass — verify
   `ConstraintBase` is not part of the frozen-vtable set before landing;

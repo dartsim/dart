@@ -34,6 +34,11 @@
 
 #include "Theme.hpp"
 
+#include <dart/collision/CollisionDetector.hpp>
+
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/SoftBodyNode.hpp>
+
 #include <osg/Camera>
 #include <osg/GraphicsContext>
 #include <osg/Viewport>
@@ -42,6 +47,8 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <limits>
+#include <thread>
 
 #include <cctype>
 #include <cerrno>
@@ -129,6 +136,67 @@ float clampedItemWidth(float preferred, float minimum)
 {
   const float avail = std::max(1.0f, ImGui::GetContentRegionAvail().x);
   return std::clamp(preferred, std::min(minimum, avail), avail);
+}
+
+//==============================================================================
+std::vector<std::string> getAvailableCollisionDetectorNames()
+{
+  std::vector<std::string> names;
+  auto* factory = dart::collision::CollisionDetector::getFactory();
+  if (!factory)
+    return names;
+
+  const auto keys = factory->getKeys();
+  names.reserve(keys.size());
+  for (const auto& key : keys)
+    names.push_back(key);
+
+  std::sort(names.begin(), names.end());
+  return names;
+}
+
+//==============================================================================
+std::string getWorldCollisionDetectorName(
+    const dart::simulation::WorldPtr& world)
+{
+  if (!world)
+    return "none";
+
+  const auto detector = world->getCollisionDetector();
+  return detector ? detector->getType() : "none";
+}
+
+//==============================================================================
+struct SceneCounts
+{
+  std::size_t skeletons = 0;
+  std::size_t bodyNodes = 0;
+  std::size_t softBodies = 0;
+  std::size_t pointMasses = 0;
+};
+
+//==============================================================================
+SceneCounts collectSceneCounts(const dart::simulation::WorldPtr& world)
+{
+  SceneCounts counts;
+  if (!world)
+    return counts;
+
+  counts.skeletons = world->getNumSkeletons();
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const auto& skeleton = world->getSkeleton(i);
+    counts.bodyNodes += skeleton->getNumBodyNodes();
+    for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
+      const auto* softBodyNode = skeleton->getBodyNode(j)->asSoftBodyNode();
+      if (!softBodyNode)
+        continue;
+
+      ++counts.softBodies;
+      counts.pointMasses += softBodyNode->getNumPointMasses();
+    }
+  }
+
+  return counts;
 }
 
 //==============================================================================
@@ -267,11 +335,13 @@ std::size_t DemoWorldNode::getStepCount() const
 void DemoWorldNode::customPreStep()
 {
   invokeHook(mPreStep, "preStep");
+  beginStepTiming();
 }
 
 //==============================================================================
 void DemoWorldNode::customPostStep()
 {
+  endStepTiming();
   invokeHook(mPostStep, "postStep");
   ++mStepCount;
 }
@@ -296,6 +366,36 @@ std::size_t DemoWorldNode::getLastRefreshStepCount() const
 }
 
 //==============================================================================
+double DemoWorldNode::getLastStepMs() const
+{
+  return mLastStepMs;
+}
+
+//==============================================================================
+double DemoWorldNode::getMovingAverageStepMs() const
+{
+  return mMovingAverageStepMs;
+}
+
+//==============================================================================
+double DemoWorldNode::getMinStepMs() const
+{
+  return mMinStepMs;
+}
+
+//==============================================================================
+double DemoWorldNode::getMaxStepMs() const
+{
+  return mMaxStepMs;
+}
+
+//==============================================================================
+std::size_t DemoWorldNode::getStepTimingSamples() const
+{
+  return mStepTimingSamples;
+}
+
+//==============================================================================
 void DemoWorldNode::invokeHook(std::function<void()>& hook, const char* name)
 {
   if (!hook)
@@ -315,11 +415,53 @@ void DemoWorldNode::invokeHook(std::function<void()>& hook, const char* name)
 }
 
 //==============================================================================
-DemoHost::DemoHost(std::vector<DemoScene> scenes, double guiScale)
+void DemoWorldNode::beginStepTiming()
+{
+  mStepStart = std::chrono::steady_clock::now();
+  mStepTimingActive = true;
+}
+
+//==============================================================================
+void DemoWorldNode::endStepTiming()
+{
+  if (!mStepTimingActive)
+    return;
+
+  mStepTimingActive = false;
+  mLastStepMs = std::chrono::duration<double, std::milli>(
+                    std::chrono::steady_clock::now() - mStepStart)
+                    .count();
+
+  if (mStepTimingSamples == 0u) {
+    mMovingAverageStepMs = mLastStepMs;
+    mMinStepMs = mLastStepMs;
+    mMaxStepMs = mLastStepMs;
+  } else {
+    constexpr double kAlpha = 0.08;
+    mMovingAverageStepMs += kAlpha * (mLastStepMs - mMovingAverageStepMs);
+    mMinStepMs = std::min(mMinStepMs, mLastStepMs);
+    mMaxStepMs = std::max(mMaxStepMs, mLastStepMs);
+  }
+
+  ++mStepTimingSamples;
+}
+
+//==============================================================================
+DemoHost::DemoHost(
+    std::vector<DemoScene> scenes,
+    double guiScale,
+    std::string collisionDetectorName,
+    std::size_t simulationThreads)
   : mScenes(std::move(scenes)),
+    mPerformanceStatsPanel(240u),
+    mRequestedCollisionDetectorName(toLower(collisionDetectorName)),
+    mSimulationThreads(static_cast<int>(std::min<std::size_t>(
+        simulationThreads,
+        static_cast<std::size_t>(std::numeric_limits<int>::max())))),
     mGuiScale(dart::gui::osg::sanitizeGuiScale(guiScale))
 {
   buildCategories();
+  mAvailableCollisionDetectors = getAvailableCollisionDetectorNames();
   mViewer = new dart::gui::osg::ImGuiViewer();
 
   // Captures dart::common's dtmsg/dtwarn/dterr output (and any other
@@ -438,6 +580,71 @@ void DemoHost::log(LogEntry::Level level, const std::string& message)
   constexpr std::size_t kMaxLogEntries = 2000;
   while (mLog.size() > kMaxLogEntries)
     mLog.pop_front();
+}
+
+//==============================================================================
+void DemoHost::syncCollisionDetectorSelectionFromWorld()
+{
+  mCurrentCollisionDetectorName = getWorldCollisionDetectorName(mCurrentWorld);
+  mCollisionDetectorIndex = -1;
+  for (std::size_t i = 0; i < mAvailableCollisionDetectors.size(); ++i) {
+    if (mAvailableCollisionDetectors[i] == mCurrentCollisionDetectorName) {
+      mCollisionDetectorIndex = static_cast<int>(i);
+      break;
+    }
+  }
+}
+
+//==============================================================================
+bool DemoHost::setCollisionDetectorByName(const std::string& name)
+{
+  if (!mCurrentWorld || name.empty())
+    return true;
+
+  auto* factory = dart::collision::CollisionDetector::getFactory();
+  if (!factory || !factory->canCreate(name)) {
+    log(LogEntry::Level::Warning,
+        "Collision detector '" + name + "' is not available; keeping '"
+            + getWorldCollisionDetectorName(mCurrentWorld) + "'.");
+    syncCollisionDetectorSelectionFromWorld();
+    return false;
+  }
+
+  auto detector = factory->create(name);
+  if (!detector) {
+    log(LogEntry::Level::Warning,
+        "Collision detector '" + name + "' failed to create; keeping '"
+            + getWorldCollisionDetectorName(mCurrentWorld) + "'.");
+    syncCollisionDetectorSelectionFromWorld();
+    return false;
+  }
+
+  mCurrentWorld->setCollisionDetector(detector);
+  mRequestedCollisionDetectorName = detector->getType();
+  syncCollisionDetectorSelectionFromWorld();
+  mPerformanceStatsPanel.reset();
+  log(LogEntry::Level::Info,
+      "Collision detector set to '" + mCurrentCollisionDetectorName + "'.");
+  return true;
+}
+
+//==============================================================================
+void DemoHost::applyRuntimeOptionsToWorld()
+{
+  if (!mCurrentWorld)
+    return;
+
+  if (mSimulationThreads < 0)
+    mSimulationThreads = 1;
+  mCurrentWorld->setNumSimulationThreads(
+      static_cast<std::size_t>(mSimulationThreads));
+  mSimulationThreads
+      = static_cast<int>(mCurrentWorld->getNumSimulationThreads());
+
+  if (!mRequestedCollisionDetectorName.empty())
+    setCollisionDetectorByName(mRequestedCollisionDetectorName);
+  else
+    syncCollisionDetectorSelectionFromWorld();
 }
 
 //==============================================================================
@@ -595,6 +802,8 @@ void DemoHost::teardownCurrentScene()
 void DemoHost::installScene(const DemoScene& scene, DemoSceneSetup setup)
 {
   mCurrentWorld = setup.world;
+  applyRuntimeOptionsToWorld();
+  mPerformanceStatsPanel.reset();
   mDragForce.onSceneInstalled(mCurrentWorld);
   mContactVisualizer.onSceneInstalled(mCurrentWorld);
   mCurrentSceneWantsShadows = setup.enableShadows;
@@ -1142,6 +1351,8 @@ void DemoHost::renderToolbar()
       mCurrentWorld->setTimeStep(mTimeStep);
   }
 
+  renderRuntimeControls();
+
   sameLineIfEnoughRoom(calcButtonWidth("View"));
   if (ImGui::Button("View"))
     ImGui::OpenPopup("##view_menu_popup");
@@ -1152,6 +1363,49 @@ void DemoHost::renderToolbar()
 
   sameLineIfEnoughRoom(120.0f * scale);
   mDragForce.renderToolbarStatus(mGuiScale);
+}
+
+//==============================================================================
+void DemoHost::renderRuntimeControls()
+{
+  const float scale = static_cast<float>(mGuiScale);
+
+  sameLineIfEnoughRoom(250.0f * scale);
+  ImGui::SetNextItemWidth(clampedItemWidth(170.0f * scale, 120.0f * scale));
+  ImGui::BeginDisabled(!mCurrentWorld || mAvailableCollisionDetectors.empty());
+  const char* currentDetector
+      = mCollisionDetectorIndex >= 0
+                && mCollisionDetectorIndex
+                       < static_cast<int>(mAvailableCollisionDetectors.size())
+            ? mAvailableCollisionDetectors[mCollisionDetectorIndex].c_str()
+            : mCurrentCollisionDetectorName.c_str();
+  if (ImGui::BeginCombo("Collision", currentDetector)) {
+    for (std::size_t i = 0; i < mAvailableCollisionDetectors.size(); ++i) {
+      const bool selected = static_cast<int>(i) == mCollisionDetectorIndex;
+      if (ImGui::Selectable(mAvailableCollisionDetectors[i].c_str(), selected))
+        setCollisionDetectorByName(mAvailableCollisionDetectors[i]);
+      if (selected)
+        ImGui::SetItemDefaultFocus();
+    }
+    ImGui::EndCombo();
+  }
+  ImGui::EndDisabled();
+
+  sameLineIfEnoughRoom(128.0f * scale);
+  ImGui::SetNextItemWidth(clampedItemWidth(90.0f * scale, 64.0f * scale));
+  ImGui::BeginDisabled(!mCurrentWorld);
+  int requestedThreads = mSimulationThreads;
+  if (ImGui::InputInt("Threads", &requestedThreads, 1, 4)) {
+    requestedThreads = std::clamp(requestedThreads, 0, 256);
+    if (mCurrentWorld) {
+      mCurrentWorld->setNumSimulationThreads(
+          static_cast<std::size_t>(requestedThreads));
+      mSimulationThreads
+          = static_cast<int>(mCurrentWorld->getNumSimulationThreads());
+      mPerformanceStatsPanel.reset();
+    }
+  }
+  ImGui::EndDisabled();
 }
 
 //==============================================================================
@@ -1411,30 +1665,15 @@ void DemoHost::renderScenePanel()
 //==============================================================================
 void DemoHost::renderDiagnostics()
 {
-  std::size_t numSkeletons = 0;
-  std::size_t numBodies = 0;
   std::size_t numDofs = 0;
+  const SceneCounts counts = collectSceneCounts(mCurrentWorld);
   if (mCurrentWorld) {
-    numSkeletons = mCurrentWorld->getNumSkeletons();
-    for (std::size_t i = 0; i < numSkeletons; ++i) {
+    for (std::size_t i = 0; i < mCurrentWorld->getNumSkeletons(); ++i) {
       const auto& skel = mCurrentWorld->getSkeleton(i);
-      numBodies += skel->getNumBodyNodes();
       numDofs += skel->getNumDofs();
     }
   }
 
-  if (hasLiveRtfStats(mViewer.get(), mWorldNode.get())) {
-    ImGui::Text(
-        "FPS %.0f   RTF min/avg/max %.2f / %.2f / %.2f",
-        static_cast<double>(ImGui::GetIO().Framerate),
-        mWorldNode->getLowestRealTimeFactor(),
-        mWorldNode->getSmoothedRealTimeFactor(),
-        mWorldNode->getHighestRealTimeFactor());
-  } else {
-    ImGui::Text(
-        "FPS %.0f   RTF min/avg/max -- / -- / --",
-        static_cast<double>(ImGui::GetIO().Framerate));
-  }
   const std::size_t numContacts
       = mCurrentWorld ? mCurrentWorld->getLastCollisionResult().getNumContacts()
                       : std::size_t{0};
@@ -1442,18 +1681,52 @@ void DemoHost::renderDiagnostics()
       = (mCurrentWorld && mCurrentWorld->getConstraintSolver())
             ? mCurrentWorld->getConstraintSolver()->getNumConstraints()
             : std::size_t{0};
+
+  dart::gui::osg::PerformanceStatsData stats;
+  stats.frame = static_cast<int>(mWorldNode ? mWorldNode->getStepCount() : 0u);
+  stats.simTime = mCurrentWorld ? mCurrentWorld->getTime() : 0.0;
+  stats.sceneName = mCurrentSceneTitle;
+  stats.collisionDetectorName = getWorldCollisionDetectorName(mCurrentWorld);
+  stats.simulationThreads
+      = mCurrentWorld ? mCurrentWorld->getNumSimulationThreads() : 1u;
+  stats.renderFps = static_cast<double>(ImGui::GetIO().Framerate);
+  stats.targetRealTimeFactor = mTargetRtf;
+  stats.timeStep = mCurrentWorld ? mCurrentWorld->getTimeStep() : 0.0;
+  stats.lastStepMs = mWorldNode ? mWorldNode->getLastStepMs() : 0.0;
+  stats.movingAverageStepMs
+      = mWorldNode ? mWorldNode->getMovingAverageStepMs() : 0.0;
+  stats.minStepMs = mWorldNode ? mWorldNode->getMinStepMs() : 0.0;
+  stats.maxStepMs = mWorldNode ? mWorldNode->getMaxStepMs() : 0.0;
+  stats.measuredSteps = mWorldNode ? mWorldNode->getStepTimingSamples() : 0u;
+  stats.contacts = numContacts;
+  stats.softBodies = counts.softBodies;
+  stats.pointMasses = counts.pointMasses;
+  stats.skeletons = counts.skeletons;
+  stats.bodyNodes = counts.bodyNodes;
+  mPerformanceStatsPanel.render(stats);
+
   ImGui::Text(
       "Steps %zu   Sim %.2f s   Steps/frame %zu   dt %.5f s   Skeletons %zu   "
-      "Bodies %zu   DOFs %zu   Contacts %zu   Constraints %zu",
+      "Bodies %zu   Soft %zu   Points %zu   DOFs %zu   Contacts %zu   "
+      "Constraints %zu",
       mWorldNode ? mWorldNode->getStepCount() : std::size_t{0},
       mCurrentWorld ? mCurrentWorld->getTime() : 0.0,
       mWorldNode ? mWorldNode->getLastRefreshStepCount() : std::size_t{0},
       mCurrentWorld ? mCurrentWorld->getTimeStep() : 0.0,
-      numSkeletons,
-      numBodies,
+      counts.skeletons,
+      counts.bodyNodes,
+      counts.softBodies,
+      counts.pointMasses,
       numDofs,
       numContacts,
       numConstraints);
+  if (hasLiveRtfStats(mViewer.get(), mWorldNode.get())) {
+    ImGui::Text(
+        "RTF min/avg/max %.2f / %.2f / %.2f",
+        mWorldNode->getLowestRealTimeFactor(),
+        mWorldNode->getSmoothedRealTimeFactor(),
+        mWorldNode->getHighestRealTimeFactor());
+  }
 
   ImGui::Separator();
   renderLogSection(0.0f);

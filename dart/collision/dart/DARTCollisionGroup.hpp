@@ -71,6 +71,8 @@ protected:
   // Documentation inherited
   void updateCollisionGroupEngineData() override;
 
+  void updateEngineDataForCollide();
+
 protected:
   /// CollisionObjects added to this DARTCollisionGroup
   std::vector<CollisionObject*> mCollisionObjects;

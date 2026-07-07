@@ -60,6 +60,11 @@ if(TARGET dart-collision-bullet)
 endif()
 
 if(TARGET dart-collision-ode)
+  set(contact_container_link_libraries dart dart-collision-ode)
+  if(TARGET dart-collision-bullet)
+    list(APPEND contact_container_link_libraries dart-collision-bullet)
+  endif()
+
   dart_benchmarks(
     TYPE BM_INTEGRATION
     SOURCES
@@ -67,9 +72,15 @@ if(TARGET dart-collision-ode)
     INCLUDE_DIRS
       ${DART_SOURCE_DIR}/examples/contact_benchmark
     LINK_LIBRARIES
-      dart
-      dart-collision-ode
+      ${contact_container_link_libraries}
   )
+
+  if(TARGET dart-collision-bullet)
+    target_compile_definitions(
+      BM_INTEGRATION_contact_container
+      PRIVATE DART_CONTACT_CONTAINER_BENCHMARK_HAS_BULLET
+    )
+  endif()
 endif()
 
 # Headless contact-aware inverse-dynamics driver (checksum oracle + stepping-
@@ -86,6 +97,30 @@ if(TARGET dart-utils)
     LINK_LIBRARIES
       dart-utils
   )
+
+  dart_benchmarks(
+    TYPE BM_INTEGRATION
+    SOURCES
+      bm_soft_body.cpp
+    LINK_LIBRARIES
+      dart-utils
+  )
+
+  add_executable(soft_body_headless soft_body_headless.cpp)
+  target_link_libraries(soft_body_headless PRIVATE dart-utils)
+
+  foreach(soft_body_collision_library dart-collision-bullet dart-collision-ode)
+    if(TARGET ${soft_body_collision_library})
+      target_link_libraries(
+        BM_INTEGRATION_soft_body
+        PRIVATE ${soft_body_collision_library}
+      )
+      target_link_libraries(
+        soft_body_headless
+        PRIVATE ${soft_body_collision_library}
+      )
+    endif()
+  endforeach()
 endif()
 
 # Opt-in off-screen GLX-pbuffer capture smoke for the dart-gui-osg helper

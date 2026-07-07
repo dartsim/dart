@@ -14,6 +14,8 @@ CANONICAL_BENCHMARKS = {
     "boxes": "BM_INTEGRATION_boxes",
     "kinematics": "BM_INTEGRATION_kinematics",
     "dynamics": "BM_INTEGRATION_kinematics",
+    "soft_body": "BM_INTEGRATION_soft_body",
+    "soft-body": "BM_INTEGRATION_soft_body",
     "inverse_dynamics": "BM_INTEGRATION_inverse_dynamics",
     "inverse-dynamics": "BM_INTEGRATION_inverse_dynamics",
     # Added by PR #3209. Keeping the alias here lets the dashboard pick it up
@@ -27,6 +29,7 @@ ALIASES = {
     "bm_empty": "BM_INTEGRATION_empty",
     "bm_boxes": "BM_INTEGRATION_boxes",
     "bm_kinematics": "BM_INTEGRATION_kinematics",
+    "bm_soft_body": "BM_INTEGRATION_soft_body",
     "bm_inverse_dynamics": "BM_INTEGRATION_inverse_dynamics",
     "bm_contact_container": "BM_INTEGRATION_contact_container",
 }

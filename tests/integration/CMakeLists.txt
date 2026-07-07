@@ -19,6 +19,7 @@ dart_build_tests(
     test_StepAllocation.cpp
 )
 target_sources(INTEGRATION_StepAllocation PRIVATE AllocationCounting.cpp)
+target_link_libraries(INTEGRATION_StepAllocation PRIVATE dart-utils)
 if(DART_CODECOV)
   # Coverage instrumentation allocates; keep the allocation counters inert so
   # coverage runs do not report gcov-runtime allocations as DART allocations.

@@ -40,7 +40,6 @@
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/common/Profile.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
@@ -729,12 +728,9 @@ LCPSolver* ConstraintSolver::getLCPSolver() const
 //==============================================================================
 void ConstraintSolver::solve()
 {
-  DART_PROFILE_SCOPED_N("ConstraintSolver::solve");
-
   const bool splitImpulse = mSplitImpulseEnabled;
 
   {
-    DART_PROFILE_SCOPED_N("ConstraintSolver::clear per-step state");
     auto clearSkeletonAt = [&](std::size_t i) {
       auto& skeleton = mSkeletons[i];
       skeleton->clearConstraintImpulses();
@@ -750,7 +746,6 @@ void ConstraintSolver::solve()
 
     if (mConstraintThreadPool != nullptr && mNumSimulationThreads > 1u
         && mSkeletons.size() >= 128u) {
-      DART_PROFILE_SCOPED_N("parallel clear per-step state");
       mConstraintThreadPool->parallelFor(
           mSkeletons.size(), mNumSimulationThreads, clearSkeletonAt);
     } else {
@@ -776,8 +771,6 @@ void ConstraintSolver::solve()
 //==============================================================================
 void ConstraintSolver::prepareForSimulation()
 {
-  DART_PROFILE_SCOPED_N("ConstraintSolver::prepareForSimulation");
-
   const auto collidingState = snapshotCollidingState(mSkeletons);
   const auto lastCollisionContacts = mCollisionResult.getContacts();
   const std::size_t collisionGroupContentVersion
@@ -925,8 +918,6 @@ bool ConstraintSolver::checkAndAddConstraint(
 //==============================================================================
 void ConstraintSolver::updateConstraints(bool updateManualConstraints)
 {
-  DART_PROFILE_SCOPED;
-
   // Clear previous active constraint list
   mActiveConstraints.clear();
   mActiveConstraintsAllSingleReactiveContacts = true;
@@ -937,7 +928,6 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
   // Update manual constraints
   //----------------------------------------------------------------------------
   if (updateManualConstraints) {
-    DART_PROFILE_SCOPED_N("update manual constraints");
     for (auto& manualConstraint : mManualConstraints) {
       manualConstraint->update();
 
@@ -971,7 +961,6 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
   }
 
   {
-    DART_PROFILE_SCOPED_N("collide");
     mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
   }
 
@@ -999,8 +988,10 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
     mReusableContactConstraints.clear();
   }
 
-  // Destroy previous soft contact constraints
-  mSoftContactConstraints.clear();
+  // Move previous soft contact constraints into a reuse pool so steady-state
+  // soft contact solving does not allocate one shared object per contact.
+  mReusableSoftContactConstraints.clear();
+  mReusableSoftContactConstraints.swap(mSoftContactConstraints);
 
   // Create a mapping of contact pairs to the number of contacts between them.
   // The scratch table uses open addressing over retained vectors so the
@@ -1065,7 +1056,6 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
   contactCandidates.clear();
 
   {
-    DART_PROFILE_SCOPED_N("collect contact candidates");
     contactPairCounts.reserve(mCollisionResult.getNumContacts());
     contactCandidates.reserve(mCollisionResult.getNumContacts());
     const ContactPairHash contactPairHash;
@@ -1215,8 +1205,23 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
         continue;
 
       if (isSoftContact(bodyNode1, bodyNode2)) {
-        mSoftContactConstraints.push_back(
-            std::make_shared<SoftContactConstraint>(contact, mTimeStep));
+        SoftContactConstraintPtr softContactConstraint;
+        while (!mReusableSoftContactConstraints.empty()) {
+          softContactConstraint
+              = std::move(mReusableSoftContactConstraints.back());
+          mReusableSoftContactConstraints.pop_back();
+          if (softContactConstraint != nullptr)
+            break;
+        }
+
+        if (softContactConstraint != nullptr) {
+          softContactConstraint->reset(contact, mTimeStep);
+        } else {
+          softContactConstraint
+              = std::make_shared<SoftContactConstraint>(contact, mTimeStep);
+        }
+
+        mSoftContactConstraints.push_back(std::move(softContactConstraint));
       } else {
         const std::size_t contactPairIndex = findContactPairIndex(
             contact.collisionObject1,
@@ -1245,7 +1250,6 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
 
   // Add the new contact constraints to dynamic constraint list
   {
-    DART_PROFILE_SCOPED_N("build contact constraints");
     std::size_t reusableContactConstraintIndex = 0u;
     const auto createDefaultContactConstraint =
         [&](collision::Contact& contact,
@@ -1495,8 +1499,6 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
           skipRelVelocityBodyBuckets;
       bool needsSurfaceParamsPrepass = false;
 
-      DART_PROFILE_SCOPED_N("build contact constraints - shared-body check");
-
       const auto resetBodyBuckets =
           [](std::vector<const dynamics::BodyNode*>& buckets,
              std::size_t minimumBucketCount) {
@@ -1592,8 +1594,6 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
 
       if (contactPairCounts.size() < kParallelDefaultSurfacePrepassMinPairs) {
         {
-          DART_PROFILE_SCOPED_N(
-              "build contact constraints - shared-body body scan");
           for (auto& contactPairCount : contactPairCounts) {
             const auto body1Check = checkBodyForParallelDefaultContact(
                 contactPairCount.bodyNode1);
@@ -1608,8 +1608,6 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
         }
 
         {
-          DART_PROFILE_SCOPED_N(
-              "build contact constraints - shared-body surface scan");
           for (auto& contactPairCount : contactPairCounts) {
             if (!ensureDefaultSurfaceParamsChecked(contactPairCount))
               needsSurfaceParamsPrepass = true;
@@ -1617,8 +1615,6 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
         }
       } else {
         {
-          DART_PROFILE_SCOPED_N(
-              "build contact constraints - shared-body body scan");
           for (auto& contactPairCount : contactPairCounts) {
             const auto body1Check = checkBodyForParallelDefaultContact(
                 contactPairCount.bodyNode1);
@@ -1633,8 +1629,6 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
         }
 
         {
-          DART_PROFILE_SCOPED_N(
-              "build contact constraints - shared-body surface scan");
           static thread_local std::vector<char> surfaceParamsPrepassScratch;
           surfaceParamsPrepassScratch.resize(contactPairCounts.size());
 
@@ -1681,7 +1675,6 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
     if (useBuiltInDefaultSurfaceParamsCache
         && (!useParallelDefaultContactBuild
             || parallelDefaultContactBuildNeedsSurfaceParamsPrepass)) {
-      DART_PROFILE_SCOPED_N("build contact constraints - surface params");
       for (auto& contactPairCount : contactPairCounts) {
         if (contactPairCount.firstCandidateIndex == invalidContactPairIndex)
           continue;
@@ -1757,18 +1750,15 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
       };
 
       {
-        DART_PROFILE_SCOPED_N("build contact constraints - parallel reset");
         mConstraintThreadPool->parallelFor(
             contactPairCountsForParallel->size(),
             mNumSimulationThreads,
             buildDefaultContactConstraintsForPair);
       }
 
-      DART_PROFILE_SCOPED_N("build contact constraints - activate");
       for (const auto& contactConstraint : mContactConstraints)
         activateContactConstraint(contactConstraint);
     } else {
-      DART_PROFILE_SCOPED_N("build contact constraints - serial fallback");
       for (const auto& candidate : contactCandidates) {
         ContactConstraintPtr contactConstraint;
         if (useBuiltInDefaultSurfaceParamsCache) {
@@ -1803,7 +1793,6 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
 
   // Add the new soft contact constraints to dynamic constraint list
   {
-    DART_PROFILE_SCOPED_N("update soft contact constraints");
     for (const auto& softContactConstraint : mSoftContactConstraints) {
       softContactConstraint->update();
 
@@ -1812,6 +1801,7 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
         mActiveConstraints.push_back(softContactConstraint);
       }
     }
+    mReusableSoftContactConstraints.clear();
   }
 
   //----------------------------------------------------------------------------
@@ -1824,7 +1814,6 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
   mJointCoulombFrictionConstraints.clear();
 
   {
-    DART_PROFILE_SCOPED_N("scan joint constraints");
     updateAutomaticJointConstraintCache();
     for (auto* joint : mAutomaticJointConstraintJoints) {
       if (joint->hasCoulombFriction()) {
@@ -1873,7 +1862,6 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
 
   // Add active joint limit
   {
-    DART_PROFILE_SCOPED_N("update joint constraints");
     for (auto& jointLimitConstraint : mJointConstraints) {
       jointLimitConstraint->update();
 
@@ -1915,8 +1903,6 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
 //==============================================================================
 void ConstraintSolver::buildConstrainedGroups()
 {
-  DART_PROFILE_SCOPED;
-
   // Clear constrained groups while retaining per-group constraint-vector
   // capacity for the steady-state case where thousands of small contact groups
   // are rebuilt every step.
@@ -2022,7 +2008,6 @@ void ConstraintSolver::buildConstrainedGroups()
   const bool allConstraintsHaveSingleReactiveSkeleton
       = mActiveConstraintsAllSingleReactiveContacts;
   if (!allConstraintsHaveSingleReactiveSkeleton) {
-    DART_PROFILE_SCOPED_N("unite active constraints");
     for (const auto& activeConstraint : mActiveConstraints) {
       if (const auto* contact
           = dynamic_cast<const ContactConstraint*>(activeConstraint.get())) {
@@ -2040,7 +2025,6 @@ void ConstraintSolver::buildConstrainedGroups()
   const std::size_t invalidUnionIndex = static_cast<std::size_t>(-1);
   std::size_t numConstrainedGroups = 0u;
   {
-    DART_PROFILE_SCOPED_N("build constrained group map");
     if (allConstraintsHaveSingleReactiveSkeleton) {
       for (auto& activeConstraint : mActiveConstraints) {
         const auto* contact
@@ -2141,7 +2125,6 @@ void ConstraintSolver::buildConstrainedGroups()
     constexpr double kPreserveSleepCandidatePenetrationTolerance
         = 10.0 * kSleepContactPenetrationTolerance;
     {
-      DART_PROFILE_SCOPED_N("classify resting groups");
       for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i) {
         const auto& group = mConstrainedGroups[i];
         for (std::size_t j = 0; j < group.mConstraints.size(); ++j) {
@@ -2168,7 +2151,6 @@ void ConstraintSolver::buildConstrainedGroups()
     }
 
     {
-      DART_PROFILE_SCOPED_N("stamp resting islands");
       bool hasUngroupedAwakeMobileSkeleton = false;
       for (const auto& skeleton : mSkeletons) {
         if (!skeleton->isMobile())
@@ -2237,7 +2219,6 @@ void ConstraintSolver::buildConstrainedGroups()
   // Reset union since we don't need union information anymore.
   //----------------------------------------------------------------------------
   {
-    DART_PROFILE_SCOPED_N("reset constraint unions");
     for (auto& skeleton : mSkeletons)
       skeleton->resetUnion();
   }
@@ -2266,8 +2247,6 @@ void ConstraintSolver::solvePositionConstrainedGroup(
 //==============================================================================
 void ConstraintSolver::solvePositionConstrainedGroups()
 {
-  DART_PROFILE_SCOPED;
-
   // Preserve velocity-impulse flags across the position pass.
   std::vector<bool> impulseAppliedStates;
   impulseAppliedStates.reserve(mSkeletons.size());
@@ -2469,8 +2448,6 @@ bool ConstraintSolver::canSolveConstrainedGroupsInParallel() const
 //==============================================================================
 void ConstraintSolver::solveConstrainedGroups()
 {
-  DART_PROFILE_SCOPED;
-
   auto solveGroupAt = [&](std::size_t i) {
     solveConstrainedGroup(mConstrainedGroups[i]);
   };
@@ -2482,7 +2459,6 @@ void ConstraintSolver::solveConstrainedGroups()
 
   if (!mDeactivationActive) {
     if (canSolveConstrainedGroupsInParallel()) {
-      DART_PROFILE_SCOPED_N("parallel solve groups");
       mConstraintThreadPool->parallelFor(
           mConstrainedGroups.size(), mNumSimulationThreads, solveGroupAt);
     } else {
@@ -2524,7 +2500,6 @@ void ConstraintSolver::solveConstrainedGroups()
   };
 
   if (canSolveConstrainedGroupsInParallel()) {
-    DART_PROFILE_SCOPED_N("parallel solve deactivation groups");
     mConstraintThreadPool->parallelFor(
         mConstrainedGroups.size(),
         mNumSimulationThreads,

@@ -66,6 +66,11 @@
     affected code, or an independent blind-spot review — instead of coding a
     guess and discovering them mid-change.
 
+  * Enable compiler-cache discovery in DART 6 Pixi builds so repeated CMake
+    builds use `sccache` or fall back to `ccache` by default, while retaining
+    `DART_DISABLE_COMPILER_CACHE=ON` for uncached comparisons and cache-specific
+    toolchain debugging.
+
   * Add a root-cause discipline to the release-branch AI principles
     (`docs/ai/principles.md`): fix bugs at the root cause — reproduce the
     smallest failing case, fix the underlying cause, and add regression
@@ -447,6 +452,11 @@
     demo host, and two-sided soft mesh rendering so generated soft-body faces do
     not look missing from normal camera angles:
     [#3304](https://github.com/dartsim/dart/pull/3304)
+
+  * Extend the C++ `soft_bodies` ImGui/headless widget with live performance
+    stats for physics step time, measured simulation rate, scene size, and
+    contacts:
+    [#3307](https://github.com/dartsim/dart/pull/3307)
 
   * Polish the `dart-demos` workspace with a more compact toolbar, tabbed
     scene/inspector/tool panes, a status-and-log bottom panel, clearer

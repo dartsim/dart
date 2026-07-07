@@ -28,26 +28,26 @@ with the first real SIMD-kernel PR.
 | Packet | Lane | Status | Branch / PR | Evidence |
 | --- | --- | --- | --- | --- |
 | WP-PG.01 baseline packet | WS-E | done — PR pending | `wp-pg-01-baseline-evidence` | 01-baseline-evidence.md (S1–S6 guard rows, profile splits, prior-art triage) |
-| WP-PG.02 benchmark matrix | WS-E | open | — | — |
+| WP-PG.02 benchmark matrix | WS-E | claimed — local | `wp-pg-02-contact-container-matrix` | Active rows now cover DART/ODE/FCL/Bullet at 60/120 objects plus 4-thread sweep; bounded DART/ODE deactivation rows are in the dashboard filter; 900 dense-container rows are registered for manual filters but excluded from the default dashboard slice after local budget smoke |
 | WP-PG.03 profiling doc | WS-E | open | — | — |
 | WP-PG.04 executor tooling | WS-E | blocked (D4) | — | — |
 | WP-PG.10 LCP instrumentation | WS-A | open | — | — |
-| WP-PG.11 solver RTTI removal | WS-A | open | — | — |
+| WP-PG.11 solver RTTI removal | WS-A | open | — | Local 2026-07-06 cpp-only mining rejected after refreshed current-base A/B on `2e11928288c`: S2 ODE 0.87x, S4 DART 0.93x, S4 Bullet 0.99x, S4 ODE 0.98x medians; guards identical |
 | WP-PG.12 direct assembly | WS-A | deprioritized (PG.01 evidence: assembly ≤ ~8%) | — | — |
 | WP-PG.13 row islanding | WS-A | evidence-gated (PG.10 census) | — | — |
 | WP-PG.14 matrix-free path | WS-A | blocked (D3) | — | — |
 | WP-PG.15 creep vs rest-veto | WS-A | blocked (D7) | — | — |
-| WP-PG.20 history spans | WS-B | open | — | — |
+| WP-PG.20 history spans | WS-B | open | — | Local 2026-07-06 attempts rejected by A/B: weakest 120-object/16-thread ODE row regressed |
 | WP-PG.21 history map/pruning | WS-B | open | — | — |
-| WP-PG.22 version-gated pose push | WS-B | open | — | — |
+| WP-PG.22 version-gated pose push | WS-B | open | — | Local 2026-07-06 exact-transform fallback rejected by A/B; protected kinematic version blocks cpp-only route |
 | WP-PG.23 ODE manifold reduction | WS-B | blocked (D8) | — | — |
-| WP-PG.30 free-body cache + FD path | WS-C | done — PR pending | `wp-pg-30-single-free-body-cache` | A/B: S5 −12.2%, S4 −5.3%, S3 −2.3%, solve-bound rows flat; 8/8 guard hashes bit-identical |
+| WP-PG.30 free-body cache + FD path | WS-C | done — PR #3310 | `wp-pg-30-single-free-body-cache` | A/B: S5 −12.2%, S4 −5.3%, S3 −2.3%, solve-bound rows flat; 8/8 guard hashes bit-identical |
 | WP-PG.31 shallow-support scratch | WS-C | open | — | — |
 | WP-PG.32 frame arena + alloc gate | WS-C | open | — | — |
 | WP-PG.33 SoA integration | WS-C | gated | — | — |
 | WP-PG.40 FP/ISA contracts | WS-D | folded into WP-PG.42 | #3270 closed | maintainer direction: carry D1/D2 evidence with actual SIMD kernel PR |
 | WP-PG.41 batch math seam | WS-D | blocked (PG.10 seam evidence) | — | — |
-| WP-PG.42 SoA broadphase | WS-D | claimed — local | `wp-pg-42-soa-broadphase-simd` | AVX-width finite sweep SIMD screen, scalar/SSE/NEON fallback, SIMD CI consumer coverage, contact-container macro rows, finite-finite profile scope |
+| WP-PG.42 SoA broadphase | WS-D | done — PR #3299 | `wp-pg-42-soa-broadphase-simd` | AVX-width finite sweep SIMD screen, scalar/SSE/NEON fallback, SIMD CI consumer coverage, contact-container macro rows, finite-finite profile scope |
 
 Claim flow: set the packet row to `claimed — <who/session>` with the
 `wp-pg-<nn>-<slug>` branch name, update RESUME.md, and open the packet PR
