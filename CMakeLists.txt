@@ -402,7 +402,7 @@ dart_option(DART_USE_SYSTEM_BULLET
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF CATEGORY diagnostics)
 dart_option(
   DART_ENABLE_SDFORMAT
-  "Enable sdformat support in dart-utils (disable on platforms without sdformat)"
+  "Enable sdformat support in dart-io (disable on platforms without sdformat)"
   ON
   CATEGORY build
 )

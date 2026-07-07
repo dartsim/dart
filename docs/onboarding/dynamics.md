@@ -549,7 +549,7 @@ const Eigen::VectorXd& g = skeleton->getGravityForces();
 
 ## MeshShape and TriMesh
 
-**Design Decision:** MeshShape internally uses `dart::math::TriMesh<double>` for mesh representation instead of Assimp's `aiScene*`. This decouples mesh data from the loading library (Assimp), enabling format-agnostic mesh handling. The deprecated `aiScene*` API is maintained for backward compatibility via lazy on-demand conversion while DART 7 clean-break gates are being closed. For Filament rendering, materials/textures are accessed through `getMaterials()` (Assimp-free), while scene graph hierarchy uses the deprecated `getMesh()` only where source formats still require it. See `dart/dynamics/mesh_shape.hpp` and `dart/utils/mesh_loader.hpp` for implementation.
+**Design Decision:** MeshShape internally uses `dart::math::TriMesh<double>` for mesh representation instead of Assimp's `aiScene*`. This decouples mesh data from the loading library (Assimp), enabling format-agnostic mesh handling. The deprecated `aiScene*` API is maintained for backward compatibility via lazy on-demand conversion while DART 7 clean-break gates are being closed. For Filament rendering, materials/textures are accessed through `getMaterials()` (Assimp-free), while scene graph hierarchy uses the deprecated `getMesh()` only where source formats still require it. See `dart/dynamics/mesh_shape.hpp` and `dart/io/mesh_loader.hpp` for implementation.
 
 **PolygonMesh:** `dart::math::PolygonMesh<S>` stores variable-length polygon faces (quads, n-gons) and provides deterministic triangulation via ear clipping. This preserves original mesh topology for rendering/export while the collision layer uses the triangulated `TriMesh`. See `dart/math/polygon_mesh.hpp`.
 

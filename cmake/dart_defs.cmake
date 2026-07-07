@@ -1464,6 +1464,12 @@ macro(dart_add_library _name)
     PUBLIC DART_BUILD_SHARED=${_dart_target_build_shared}
     PRIVATE DART_BUILDING_${_dart_export_macro}
   )
+  if(MSVC AND BUILD_SHARED_LIBS)
+    # Keep inline members of exported classes header-owned on MSVC. Otherwise
+    # component DLLs that include exported DART core templates can collide with
+    # the same inline symbols from dart.lib.
+    target_compile_options(${_name} PRIVATE /Zc:dllexportInlines-)
+  endif()
   unset(_dart_target_build_shared)
 
   set(_dart_use_global_output_dirs TRUE)

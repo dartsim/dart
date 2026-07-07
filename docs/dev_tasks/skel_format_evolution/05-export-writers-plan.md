@@ -5,10 +5,10 @@
 Before Phase 5 started, DART 7 `dart::io` was read-only:
 
 - `dart::io::readSkeleton()` is the public front door for Skeleton imports.
-- `dart::utils::UrdfParser` exposes file/string parsing, package resolution,
+- `dart::io::UrdfParser` exposes file/string parsing, package resolution,
   and conversion from URDF data into a `Skeleton`.
-- `dart::utils::SdfParser` exposes SDF model parsing into a `Skeleton`.
-- `dart::utils::MjcfParser` is present, but `dart::io::readSkeleton()` does not
+- `dart::io::SdfParser` exposes SDF model parsing into a `Skeleton`.
+- `dart::io::MjcfParser` is present, but `dart::io::readSkeleton()` does not
   expose direct MJCF skeleton loading yet.
 - USD read-side work is active in `docs/dev_tasks/usd_scene_loader/`; early USD
   phases are explicitly read-only.
@@ -210,7 +210,7 @@ authored/default distinctions, DART extension fields, and schema values not yet
 exposed by the high-level DOM. Do not introduce a DART-owned XML-level SDF
 parser, token scanner, child enumerator, or text reparser. The
 `pixi run check-sdf-sdformat-boundary` gate now enforces that boundary in
-`dart/utils/sdf` by rejecting TinyXML/raw XML APIs, generic element text parsing,
+`dart/io/sdf` by rejecting TinyXML/raw XML APIs, generic element text parsing,
 and helper-surface expansion beyond authored sdformat element lookup.
 
 The next implementation slice adds

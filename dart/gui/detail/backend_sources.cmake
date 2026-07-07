@@ -355,7 +355,6 @@ function(dart_gui_filament_configure_backend_target target_name)
     ${target_name}
     PRIVATE
       dart-io
-      dart-utils-urdf
       Filament::filament
       ${_dart_gui_filament_jpeg_libraries}
       ${_dart_gui_filament_png_libraries}

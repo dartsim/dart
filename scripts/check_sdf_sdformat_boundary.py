@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SDF_ROOT = REPO_ROOT / "dart" / "utils" / "sdf"
+SDF_ROOT = REPO_ROOT / "dart" / "io" / "sdf"
 SDF_IO_FILES = (
     REPO_ROOT / "dart" / "io" / "sdf_writer.cpp",
     REPO_ROOT / "dart" / "io" / "sdf_writer.hpp",
@@ -42,13 +42,13 @@ FORBIDDEN_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     ),
 )
 
-HELPER_HEADER = REPO_ROOT / "dart" / "utils" / "sdf" / "detail" / "sdf_helpers.hpp"
-HELPER_IMPL = REPO_ROOT / "dart" / "utils" / "sdf" / "detail" / "sdf_helpers.cpp"
+HELPER_HEADER = REPO_ROOT / "dart" / "io" / "sdf" / "detail" / "sdf_helpers.hpp"
+HELPER_IMPL = REPO_ROOT / "dart" / "io" / "sdf" / "detail" / "sdf_helpers.cpp"
 ALLOWED_HELPER_API = {"findAuthoredElement", "hasAuthoredElement"}
 ALLOWED_HELPER_IMPL = ALLOWED_HELPER_API | {"findChildElement"}
 
 HELPER_HEADER_API_PATTERN = re.compile(
-    r"DART_UTILS_API\s+(?:ElementPtr|bool)\s+([A-Za-z_]\w*)\s*\("
+    r"DART_IO_API\s+(?:ElementPtr|bool)\s+([A-Za-z_]\w*)\s*\("
 )
 HELPER_IMPL_FUNCTION_PATTERN = re.compile(
     r"^(?:sdf::ElementPtr|ElementPtr|bool)\s+([A-Za-z_]\w*)\s*\(",

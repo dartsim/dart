@@ -85,7 +85,7 @@ The compat mechanism is used across core modules (via `dart_install_compat_heade
 - `dart/optimizer/`
 - `dart/sensor/`
 - `dart/simulation/`
-- `dart/utils/`
+- `dart/io/`
 
 ## 2. Current File Naming State
 

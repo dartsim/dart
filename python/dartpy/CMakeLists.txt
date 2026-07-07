@@ -90,6 +90,14 @@ if(NOT _dartpy_nanobind_found)
   return()
 endif()
 
+if(NOT DART_IO_HAS_URDF)
+  message(
+    FATAL_ERROR
+    "dartpy requires dart-io URDF parser support. Install urdfdom or disable "
+    "DART_BUILD_DARTPY."
+  )
+endif()
+
 set(
   dartpy_headers
   common/composite.hpp
@@ -104,11 +112,12 @@ set(
   common/string.hpp
   common/subject.hpp
   common/uri.hpp
-  utils/module.hpp
-  utils/urdf_parser.hpp
-  utils/resource_retriever.hpp
-  utils/sdf_parser.hpp
-  utils/mjcf_parser.hpp
+  io/module.hpp
+  io/read.hpp
+  io/urdf_parser.hpp
+  io/resource_retriever.hpp
+  io/sdf_parser.hpp
+  io/mjcf_parser.hpp
   optimizer/module.hpp
   optimizer/function.hpp
   optimizer/problem.hpp
@@ -180,11 +189,12 @@ set(
   common/string.cpp
   common/subject.cpp
   common/uri.cpp
-  utils/module.cpp
-  utils/urdf_parser.cpp
-  utils/resource_retriever.cpp
-  utils/sdf_parser.cpp
-  utils/mjcf_parser.cpp
+  io/module.cpp
+  io/read.cpp
+  io/urdf_parser.cpp
+  io/resource_retriever.cpp
+  io/sdf_parser.cpp
+  io/mjcf_parser.cpp
   optimizer/module.cpp
   optimizer/function.cpp
   optimizer/problem.cpp
@@ -357,7 +367,7 @@ target_include_directories(
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}
 )
 
-set(dartpy_libraries dart dart-utils dart-utils-urdf)
+set(dartpy_libraries dart dart-io)
 foreach(lib ${dartpy_libraries})
   if(TARGET ${lib})
     target_link_libraries(dartpy PRIVATE ${lib})

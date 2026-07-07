@@ -76,6 +76,22 @@ def _install_scene_dump() -> None:
 
 
 _install_scene_dump()
+
+
+def _install_simulation_io_aliases() -> None:
+    """Keep simulation loader helpers using the canonical dartpy.io types."""
+
+    io = getattr(_ext, "io", None)
+    simulation = getattr(_ext, "simulation", None)
+    if io is None or simulation is None:
+        return
+    for name in ("ModelFormat", "RootJointType", "ReadOptions"):
+        obj = getattr(io, name, None)
+        if obj is not None:
+            setattr(simulation, name, obj)
+
+
+_install_simulation_io_aliases()
 _layout.install_layout(sys.modules[__name__])
 
 

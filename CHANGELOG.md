@@ -81,11 +81,15 @@ compatibility remains on the active DART 6 LTS branch._
   7 public contract. ([#2249](https://github.com/dartsim/dart/pull/2249),
   [#2256](https://github.com/dartsim/dart/pull/2256),
   [#2259](https://github.com/dartsim/dart/pull/2259))
-- Renamed `DartLoader` to `UrdfParser`, standardized parser naming, and removed
-  older direct resource-retriever parser overloads. ([#2269](https://github.com/dartsim/dart/pull/2269),
+- Removed the DART 6 `DartLoader` API; use `UrdfParser` for parser-specific
+  URDF work, and use `dart::io::readSkeleton` / `dartpy.io.read_skeleton` for
+  the common skeleton-loading path. ([#2269](https://github.com/dartsim/dart/pull/2269),
   [#2270](https://github.com/dartsim/dart/pull/2270),
   [#2141](https://github.com/dartsim/dart/pull/2141),
   [#2142](https://github.com/dartsim/dart/pull/2142))
+- Consolidated model-loading APIs from `dart::utils` and `dartpy.utils` into
+  `dart::io` and `dartpy.io`; update includes/imports and link against
+  `dart-io` for DART 7 model parsing. ([#3312](https://github.com/dartsim/dart/pull/3312))
 - Removed the legacy SKEL model format from DART 7, including `.skel` sample
   assets, `SkelParser`, `ModelFormat::Skel`, and dartpy SKEL bindings/stubs;
   migrate assets to URDF, SDF, or MJCF, or use `release-6.*` for legacy SKEL
@@ -436,7 +440,7 @@ compatibility remains on the active DART 6 LTS branch._
   gates replacing broad stale test targets.
 - Added a lint/check-lint guard that keeps SDF IO on libsdformat typed DOM APIs
   and rejects TinyXML, raw XML tree, or SDF element text-parsing helpers in
-  `dart/utils/sdf`: [#3291](https://github.com/dartsim/dart/pull/3291)
+  `dart/io/sdf`: [#3291](https://github.com/dartsim/dart/pull/3291)
 - Restored Performance Dashboard benchmark builds in Pixi environments that use
   the host compiler while Conda binutils appear earlier on `PATH`.
 - Sharded the heaviest simulation CTest binaries, tightened CUDA environment

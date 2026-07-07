@@ -48,7 +48,7 @@
 #include "dart/dynamics/universal_joint.hpp"
 #include "dart/dynamics/weld_joint.hpp"
 #include "dart/io/read.hpp"
-#include "dart/utils/sdf/sdf_parser.hpp"
+#include "dart/io/sdf/sdf_parser.hpp"
 
 #include <dart/all.hpp>
 
@@ -77,7 +77,7 @@
 using namespace dart;
 using namespace dart::dynamics;
 using namespace math;
-using namespace utils;
+using namespace io;
 
 namespace {
 

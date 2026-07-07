@@ -48,7 +48,7 @@
   #include "simulation/module.hpp"
 #endif
 
-#include "utils/module.hpp"
+#include "io/module.hpp"
 
 #include <nanobind/nanobind.h>
 
@@ -75,8 +75,8 @@ NB_MODULE(_dartpy, m)
       = m.def_submodule("dynamics", "Dynamics utilities backed by nanobind");
   dart::python_nb::defDynamicsModule(dynamics);
 
-  auto utils = m.def_submodule("utils", "Utilities backed by nanobind");
-  dart::python_nb::defUtilsModule(utils);
+  auto io = m.def_submodule("io", "Model IO backed by nanobind");
+  dart::python_nb::defIoModule(io);
 
   auto collision
       = m.def_submodule("collision", "Collision utilities backed by nanobind");

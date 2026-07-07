@@ -152,7 +152,7 @@ endif()
 # ==============================================================================
 # Dynamics Tests
 # ==============================================================================
-if(TARGET dart-utils-urdf AND TARGET dart-io)
+if(TARGET dart-io AND DART_IO_HAS_URDF)
   dart_add_test("integration" INTEGRATION_dynamics_ForwardKinematics dynamics/test_forward_kinematics.cpp)
   target_link_libraries(INTEGRATION_dynamics_ForwardKinematics dart-io)
 
@@ -163,18 +163,13 @@ endif()
 # ==============================================================================
 # IO Tests
 # ==============================================================================
-if(TARGET dart-utils)
+if(TARGET dart-io)
   if(DART_ENABLE_SDFORMAT)
     dart_add_test("integration" INTEGRATION_io_SdfParser io/test_sdf_parser.cpp)
-    target_link_libraries(INTEGRATION_io_SdfParser dart-utils)
-    if(TARGET dart-io)
-      target_link_libraries(INTEGRATION_io_SdfParser dart-io)
-    endif()
+    target_link_libraries(INTEGRATION_io_SdfParser dart-io)
 
-    if(TARGET dart-io)
-      dart_add_test("integration" INTEGRATION_io_SdfWriter io/test_sdf_writer.cpp)
-      target_link_libraries(INTEGRATION_io_SdfWriter dart-io)
-    endif()
+    dart_add_test("integration" INTEGRATION_io_SdfWriter io/test_sdf_writer.cpp)
+    target_link_libraries(INTEGRATION_io_SdfWriter dart-io)
   endif()
 endif()
 
@@ -192,22 +187,18 @@ if(DART_BUILD_IO_USD AND TARGET dart-io)
   target_link_libraries(INTEGRATION_io_Usd dart-io dart-simulation)
 endif()
 
-if(TARGET dart-utils-urdf)
+if(TARGET dart-io AND DART_IO_HAS_URDF)
   if(NOT MSVC)
     dart_add_test("integration" INTEGRATION_io_UrdfParser io/test_urdf_parser.cpp)
-    target_link_libraries(INTEGRATION_io_UrdfParser dart-utils-urdf)
+    target_link_libraries(INTEGRATION_io_UrdfParser dart-io)
 
-    if(TARGET dart-io)
-      dart_add_test("integration" INTEGRATION_io_UrdfWriter io/test_urdf_writer.cpp)
-      target_link_libraries(INTEGRATION_io_UrdfWriter dart-io)
-    endif()
+    dart_add_test("integration" INTEGRATION_io_UrdfWriter io/test_urdf_writer.cpp)
+    target_link_libraries(INTEGRATION_io_UrdfWriter dart-io)
   endif()
 
   # Additional IO tests
-  if(TARGET dart-io)
-    dart_add_test("integration" INTEGRATION_io_UrdfMaterialParsing io/test_urdf_material_parsing.cpp)
-    target_link_libraries(INTEGRATION_io_UrdfMaterialParsing dart-io)
-  endif()
+  dart_add_test("integration" INTEGRATION_io_UrdfMaterialParsing io/test_urdf_material_parsing.cpp)
+  target_link_libraries(INTEGRATION_io_UrdfMaterialParsing dart-io)
 
   dart_add_library(SharedLibraryWamIkFast io/shared_library_wam_ik_fast.hpp io/shared_library_wam_ik_fast.cpp)
   target_link_libraries(SharedLibraryWamIkFast PUBLIC dart)
@@ -280,13 +271,13 @@ dart_build_tests(
 dart_add_test("integration" INTEGRATION_utils_LocalResourceRetriever utils/test_local_resource_retriever.cpp)
 dart_add_test("integration" INTEGRATION_utils_Subscriptions utils/test_subscriptions.cpp)
 
-if(TARGET dart-utils)
-  dart_add_test("integration" INTEGRATION_utils_CompositeResourceRetriever utils/test_composite_resource_retriever.cpp)
-  target_link_libraries(INTEGRATION_utils_CompositeResourceRetriever dart-utils)
+if(TARGET dart-io)
+  dart_add_test("integration" INTEGRATION_io_CompositeResourceRetriever io/test_composite_resource_retriever.cpp)
+  target_link_libraries(INTEGRATION_io_CompositeResourceRetriever dart-io)
 
-  dart_add_test("integration" INTEGRATION_utils_DartResourceRetriever utils/test_dart_resource_retriever.cpp)
-  target_link_libraries(INTEGRATION_utils_DartResourceRetriever dart-utils)
+  dart_add_test("integration" INTEGRATION_io_DartResourceRetriever io/test_dart_resource_retriever.cpp)
+  target_link_libraries(INTEGRATION_io_DartResourceRetriever dart-io)
 
-  dart_add_test("integration" INTEGRATION_utils_PackageResourceRetriever utils/test_package_resource_retriever.cpp)
-  target_link_libraries(INTEGRATION_utils_PackageResourceRetriever dart-utils)
+  dart_add_test("integration" INTEGRATION_io_PackageResourceRetriever io/test_package_resource_retriever.cpp)
+  target_link_libraries(INTEGRATION_io_PackageResourceRetriever dart-io)
 endif()

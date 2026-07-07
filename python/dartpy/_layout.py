@@ -38,7 +38,6 @@ _LEGACY_MODULES: tuple[str, ...] = (
     "collision",
     "constraint",
     "optimizer",
-    "utils",
 )
 # Flatten order matters: _promote_symbols is first-wins. Promote `simulation`
 # FIRST so the official DART 7 ECS facade owns the canonical flat names. Three of
@@ -48,7 +47,7 @@ _LEGACY_MODULES: tuple[str, ...] = (
 # Frame survives only as render plumbing, reached by the render bridge via
 # dartpy.gui.world_render_frame(), never the flat name.
 _PROMOTE_MODULES: tuple[str, ...] = ("simulation",) + tuple(
-    name for name in _LEGACY_MODULES if name != "utils"
+    name for name in _LEGACY_MODULES
 )
 
 _WARNED: set[str] = set()
@@ -128,23 +127,12 @@ def _install_legacy_modules(root) -> None:
     mod = _load_module(f"{root_name}.{module}")
     if mod is None:
       continue
-    replacement = f"{root_name}.io" if module == "utils" else root_name
-    wrapper = _LegacyModule(f"{root_name}.{module}", mod, replacement)
+    wrapper = _LegacyModule(f"{root_name}.{module}", mod, root_name)
     sys.modules[f"{root_name}.{module}"] = wrapper
     setattr(root, module, wrapper)
 
 
-def _install_io_alias(root) -> None:
-  root_name = getattr(root, "__name__", "dartpy")
-  utils_mod = _load_module(f"{root_name}.utils")
-  if utils_mod is None:
-    return
-  sys.modules[f"{root_name}.io"] = utils_mod
-  setattr(root, "io", utils_mod)
-
-
 def install_layout(root) -> None:
   """Flatten public API to dartpy + dartpy.io and deprecate legacy modules."""
-  _install_io_alias(root)
   _promote_symbols(root, _PROMOTE_MODULES)
   _install_legacy_modules(root)

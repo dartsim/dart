@@ -215,6 +215,14 @@ def find_static_violations(root: Path = REPO_ROOT) -> list[Violation]:
                 "simulation must not be installed as a deprecated legacy module",
             )
         )
+    elif "utils" in legacy_modules or "io" in legacy_modules:
+        violations.append(
+            Violation(
+                _rel(layout_py, root),
+                "dartpy.io must be the official IO module, not a deprecated "
+                "utils/io legacy wrapper",
+            )
+        )
     _require_contains(
         violations,
         layout_py,
@@ -294,6 +302,22 @@ def find_static_violations(root: Path = REPO_ROOT) -> list[Violation]:
         top_stub,
         root,
         top_stub_text,
+        "from . import io",
+        "top-level stubs must import the canonical io module",
+    )
+    _require_absent(
+        violations,
+        top_stub,
+        root,
+        top_stub_text,
+        "from . import utils",
+        "top-level stubs must not import the removed utils module",
+    )
+    _require_contains(
+        violations,
+        top_stub,
+        root,
+        top_stub_text,
         "from .simulation import (",
         "top-level World must be re-exported from dartpy.simulation",
     )
@@ -318,6 +342,17 @@ def find_static_violations(root: Path = REPO_ROOT) -> list[Violation]:
                 violations.append(
                     Violation(_rel(top_stub, root), f"__all__ must include {name}")
                 )
+        if "io" not in top_all:
+            violations.append(
+                Violation(_rel(top_stub, root), "__all__ must include io")
+            )
+        if "utils" in top_all:
+            violations.append(
+                Violation(
+                    _rel(top_stub, root),
+                    "__all__ must not include the removed utils module",
+                )
+            )
         if "simulation_experimental" in top_all:
             violations.append(
                 Violation(
@@ -360,12 +395,39 @@ def find_static_violations(root: Path = REPO_ROOT) -> list[Violation]:
             Violation(_rel(simulation_stub, root), "__all__ must include World")
         )
 
+    io_module_cpp = root / "python" / "dartpy" / "io" / "module.cpp"
+    io_module_cpp_text = _read(io_module_cpp, root, violations)
+    _require_contains(
+        violations,
+        io_module_cpp,
+        root,
+        io_module_cpp_text,
+        "defIoRead(m)",
+        "dartpy.io must register the unified readSkeleton binding",
+    )
+
+    io_stub = stubs_root / "io" / "__init__.pyi"
+    io_stub_text = _read(io_stub, root, violations)
+    for name in (
+        "class ModelFormat",
+        "class RootJointType",
+        "class ReadOptions",
+        "def readSkeleton",
+        "read_skeleton = readSkeleton",
+    ):
+        _require_contains(
+            violations,
+            io_stub,
+            root,
+            io_stub_text,
+            name,
+            "dartpy.io stubs must expose the unified read_skeleton API",
+        )
+
     removed_world_loader_stubs = {
-        stubs_root / "utils" / "SdfParser.pyi": ("readWorld", "read_world"),
-        stubs_root / "utils" / "MjcfParser.pyi": ("readWorld", "read_world"),
-        stubs_root
-        / "utils"
-        / "__init__.pyi": (
+        stubs_root / "io" / "SdfParser.pyi": ("readWorld", "read_world"),
+        stubs_root / "io" / "MjcfParser.pyi": ("readWorld", "read_world"),
+        io_stub: (
             "parseWorld",
             "parse_world",
             "parseWorldString",
@@ -382,6 +444,30 @@ def find_static_violations(root: Path = REPO_ROOT) -> list[Violation]:
                 stub_text,
                 name,
                 f"dartpy.io must not stub DART 6 whole-world loader {name}",
+            )
+
+    removed_urdf_loader_sources = {
+        root
+        / "python"
+        / "dartpy"
+        / "io"
+        / "urdf_parser.cpp": (
+            "DartLoader",
+            "DartLoaderTestAccess",
+        ),
+        io_stub: ("DartLoader", "DartLoaderTestAccess"),
+    }
+    for source_path, names in removed_urdf_loader_sources.items():
+        source_text = _read(source_path, root, violations)
+        for name in names:
+            _require_absent(
+                violations,
+                source_path,
+                root,
+                source_text,
+                name,
+                "dartpy.io must expose UrdfParser only, not retired DART 6 "
+                f"URDF loader {name}",
             )
 
     return violations
@@ -441,6 +527,22 @@ def find_runtime_violations(require_runtime: bool = False) -> list[Violation]:
         )
     io = getattr(dartpy, "io", None)
     if io is not None:
+        for name in ("ModelFormat", "RootJointType", "ReadOptions", "read_skeleton"):
+            if not hasattr(io, name):
+                violations.append(
+                    Violation("runtime", f"dartpy.io.{name} must be exposed")
+                )
+
+        for name in ("DartLoader", "DartLoaderTestAccess"):
+            if hasattr(io, name):
+                violations.append(
+                    Violation(
+                        "runtime",
+                        "dartpy.io must expose UrdfParser only, not retired "
+                        f"DART 6 URDF loader {name}",
+                    )
+                )
+
         removed_world_loader_attrs = {
             "SdfParser": ("readWorld", "read_world"),
             "MjcfParser": ("readWorld", "read_world"),
