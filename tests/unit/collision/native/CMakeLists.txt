@@ -25,8 +25,18 @@ dart_add_test(
 )
 dart_add_test(
   "unit"
+  UNIT_collision_native_capsule_capsule
+  test_capsule_capsule.cpp
+)
+dart_add_test(
+  "unit"
   UNIT_collision_native_capsule_sphere
   test_capsule_sphere.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_native_convex_convex
+  test_convex_convex.cpp
 )
 dart_add_test(
   "unit"

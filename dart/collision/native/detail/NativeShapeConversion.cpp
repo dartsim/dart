@@ -36,15 +36,109 @@
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
+#include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 
+#include <array>
 #include <set>
 #include <string>
+#include <vector>
+
+#include <cmath>
 
 namespace dart {
 namespace collision {
 namespace detail {
+
+namespace {
+
+constexpr double kPi = 3.141592653589793238462643383279502884;
+
+std::unique_ptr<native::Shape> createConvexOrNull(
+    std::vector<Eigen::Vector3d> vertices, const std::string& shapeType)
+{
+  if (vertices.empty()) {
+    static std::set<std::string> warnedInvalidShapeTypes;
+    if (warnedInvalidShapeTypes.insert(shapeType).second) {
+      dtwarn << "[NativeShapeConversion] Shape type [" << shapeType
+             << "] did not provide convex vertices. This shape will be "
+             << "skipped by the native adapter.\n";
+    }
+    return nullptr;
+  }
+
+  return std::make_unique<native::ConvexShape>(std::move(vertices));
+}
+
+std::vector<Eigen::Vector3d> makeConeVertices(double radius, double height)
+{
+  std::vector<Eigen::Vector3d> vertices;
+  constexpr std::size_t kNumBaseVertices = 16;
+  vertices.reserve(kNumBaseVertices + 1);
+
+  const double baseZ = -0.5 * height;
+  for (std::size_t i = 0; i < kNumBaseVertices; ++i) {
+    const double theta = 2.0 * kPi * static_cast<double>(i)
+                         / static_cast<double>(kNumBaseVertices);
+    vertices.emplace_back(
+        radius * std::cos(theta), radius * std::sin(theta), baseZ);
+  }
+
+  vertices.emplace_back(0.0, 0.0, 0.5 * height);
+  return vertices;
+}
+
+std::vector<Eigen::Vector3d> makePyramidVertices(
+    double baseWidth, double baseDepth, double height)
+{
+  const double halfWidth = 0.5 * baseWidth;
+  const double halfDepth = 0.5 * baseDepth;
+  const double baseZ = -0.5 * height;
+  return {
+      {-halfWidth, -halfDepth, baseZ},
+      {halfWidth, -halfDepth, baseZ},
+      {halfWidth, halfDepth, baseZ},
+      {-halfWidth, halfDepth, baseZ},
+      {0.0, 0.0, 0.5 * height}};
+}
+
+std::vector<Eigen::Vector3d> makeMultiSphereHullVertices(
+    const dynamics::MultiSphereConvexHullShape::Spheres& spheres)
+{
+  static const std::array<Eigen::Vector3d, 14> directions{{
+      Eigen::Vector3d::UnitX(),
+      -Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitY(),
+      -Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ(),
+      -Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d(1.0, 1.0, 1.0).normalized(),
+      Eigen::Vector3d(1.0, 1.0, -1.0).normalized(),
+      Eigen::Vector3d(1.0, -1.0, 1.0).normalized(),
+      Eigen::Vector3d(1.0, -1.0, -1.0).normalized(),
+      Eigen::Vector3d(-1.0, 1.0, 1.0).normalized(),
+      Eigen::Vector3d(-1.0, 1.0, -1.0).normalized(),
+      Eigen::Vector3d(-1.0, -1.0, 1.0).normalized(),
+      Eigen::Vector3d(-1.0, -1.0, -1.0).normalized(),
+  }};
+
+  std::vector<Eigen::Vector3d> vertices;
+  vertices.reserve(spheres.size() * directions.size());
+  for (const auto& sphere : spheres) {
+    const double radius = sphere.first;
+    const Eigen::Vector3d& center = sphere.second;
+    for (const auto& direction : directions) {
+      vertices.push_back(center + radius * direction);
+    }
+  }
+  return vertices;
+}
+
+} // namespace
 
 //==============================================================================
 std::unique_ptr<native::Shape> NativeShapeConversion::create(
@@ -66,6 +160,38 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
     const auto& capsule = static_cast<const dynamics::CapsuleShape&>(shape);
     return std::make_unique<native::CapsuleShape>(
         capsule.getRadius(), capsule.getHeight());
+  }
+
+  if (shapeType == dynamics::ConvexMeshShape::getStaticType()) {
+    const auto& convex = static_cast<const dynamics::ConvexMeshShape&>(shape);
+    const auto& mesh = convex.getMesh();
+    if (!mesh) {
+      return createConvexOrNull({}, shapeType);
+    }
+    return createConvexOrNull(mesh->getVertices(), shapeType);
+  }
+
+  if (shapeType == dynamics::MultiSphereConvexHullShape::getStaticType()) {
+    const auto& multiSphere
+        = static_cast<const dynamics::MultiSphereConvexHullShape&>(shape);
+    return createConvexOrNull(
+        makeMultiSphereHullVertices(multiSphere.getSpheres()), shapeType);
+  }
+
+  if (shapeType == dynamics::ConeShape::getStaticType()) {
+    const auto& cone = static_cast<const dynamics::ConeShape&>(shape);
+    return createConvexOrNull(
+        makeConeVertices(cone.getRadius(), cone.getHeight()), shapeType);
+  }
+
+  if (shapeType == dynamics::PyramidShape::getStaticType()) {
+    const auto& pyramid = static_cast<const dynamics::PyramidShape&>(shape);
+    return createConvexOrNull(
+        makePyramidVertices(
+            pyramid.getBaseWidth(),
+            pyramid.getBaseDepth(),
+            pyramid.getHeight()),
+        shapeType);
   }
 
   static std::set<std::string> warnedShapeTypes;
