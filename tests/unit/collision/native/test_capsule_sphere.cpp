@@ -91,6 +91,61 @@ TEST(CapsuleSphere, OverlappingVerticalCapsuleAddsContact)
   EXPECT_NEAR(0.25, contact.depth, 1e-12);
 }
 
+TEST(CapsuleSphere, CenterlineVerticalCapsuleUsesRadialNormal)
+{
+  const CapsuleShape capsule(0.5, 2.0);
+  const SphereShape sphere(0.5);
+
+  CollisionResult result;
+  ASSERT_TRUE(collideCapsuleSphere(
+      capsule,
+      Eigen::Isometry3d::Identity(),
+      sphere,
+      Eigen::Isometry3d::Identity(),
+      result));
+
+  ASSERT_EQ(1u, result.numContacts());
+  const auto& contact = result.getContact(0);
+  EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(0.0, contact.normal.dot(Eigen::Vector3d::UnitZ()), 1e-12);
+  EXPECT_NEAR(1.0, contact.normal.norm(), 1e-12);
+  EXPECT_NEAR(1.0, contact.depth, 1e-12);
+}
+
+TEST(CapsuleSphere, CenterlineRotatedCapsuleUsesRadialNormal)
+{
+  const CapsuleShape capsule(0.5, 2.0);
+  const SphereShape sphere(0.5);
+  const Eigen::Isometry3d capsuleTransform = rotatedCapsule();
+  const Eigen::Vector3d capsuleAxis
+      = capsuleTransform.linear() * Eigen::Vector3d::UnitZ();
+
+  CollisionResult result;
+  ASSERT_TRUE(collideCapsuleSphere(
+      capsule,
+      capsuleTransform,
+      sphere,
+      Eigen::Isometry3d::Identity(),
+      result));
+
+  ASSERT_EQ(1u, result.numContacts());
+  const auto& contact = result.getContact(0);
+  EXPECT_NEAR(0.0, contact.normal.dot(capsuleAxis), 1e-12);
+  EXPECT_NEAR(1.0, contact.normal.norm(), 1e-12);
+  EXPECT_NEAR(1.0, contact.depth, 1e-12);
+}
+
+TEST(CapsuleSphere, RotatedSeparatedCapsuleReturnsFalse)
+{
+  const CapsuleShape capsule(0.5, 2.0);
+  const SphereShape sphere(0.5);
+
+  CollisionResult result;
+  EXPECT_FALSE(collideCapsuleSphere(
+      capsule, rotatedCapsule(), sphere, translated(0.0, 2.0, 0.0), result));
+  EXPECT_EQ(0u, result.numContacts());
+}
+
 TEST(CapsuleSphere, BinaryCheckDoesNotAddContacts)
 {
   const CapsuleShape capsule(0.5, 2.0);
@@ -121,6 +176,26 @@ TEST(CapsuleSphere, RotatedBinaryCheckDoesNotAddContacts)
       result,
       CollisionOption::binaryCheck()));
   EXPECT_EQ(0u, result.numContacts());
+}
+
+TEST(CapsuleSphere, ExistingContactLimitReturnsFalse)
+{
+  const CapsuleShape capsule(0.5, 2.0);
+  const SphereShape sphere(0.5);
+
+  CollisionResult result;
+  result.addContact(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitX(), 0.0);
+
+  CollisionOption option;
+  option.maxNumContacts = 1u;
+  EXPECT_FALSE(collideCapsuleSphere(
+      capsule,
+      Eigen::Isometry3d::Identity(),
+      sphere,
+      translated(0.75, 0.0, 0.0),
+      result,
+      option));
+  EXPECT_EQ(1u, result.numContacts());
 }
 
 TEST(CapsuleSphere, ZeroContactLimitReturnsFalse)
