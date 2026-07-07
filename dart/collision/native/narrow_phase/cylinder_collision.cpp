@@ -102,7 +102,7 @@ bool addAxialCylinderBoxPatchContacts(
   manifold.setType(ContactType::Patch);
 
   const auto normalWorld = cylinderTransform.rotation() * normalLocal;
-  const double contactZ = contactPlaneZ + normalLocal.z() * penetration * 0.5;
+  const double contactZ = contactPlaneZ - normalLocal.z() * penetration * 0.5;
   const double radiusSq = cylinderRadius * cylinderRadius;
   const double duplicateThresholdSq = 1e-18;
 
@@ -640,7 +640,7 @@ bool collideCylinderBox(
     const Eigen::Vector3d normalWorld
         = cylinderTransform.rotation() * normalLocal;
     const Eigen::Vector3d contactWorld
-        = cylinderTransform * contactLocal + normalWorld * (penetration * 0.5);
+        = cylinderTransform * contactLocal - normalWorld * (penetration * 0.5);
 
     ContactPoint contact;
     contact.position = contactWorld;

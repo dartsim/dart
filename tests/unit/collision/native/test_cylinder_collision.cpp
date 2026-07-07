@@ -266,6 +266,7 @@ TEST(CylinderCollision, CollidesCylinderBox)
   ASSERT_EQ(1u, result.numContacts());
   EXPECT_TRUE(
       result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(0.375, result.getContact(0).position.x(), 1e-12);
 }
 
 TEST(CylinderCollision, DeepFloorBoxUsesAxialNormal)
@@ -306,6 +307,29 @@ TEST(CylinderCollision, TouchingCylinderBoxCapReportsContact)
   EXPECT_TRUE(
       result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
   EXPECT_NEAR(0.0, result.getContact(0).depth, 1e-12);
+}
+
+TEST(CylinderCollision, CylinderBoxCapContactPositionLiesInOverlap)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 0.5));
+
+  CollisionResult result;
+  const bool hit = collideCylinderBox(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      box,
+      translated(0.0, 0.0, 1.3),
+      result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_GE(result.numContacts(), 1u);
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
+    EXPECT_TRUE(
+        result.getContact(i).normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+    EXPECT_NEAR(0.9, result.getContact(i).position.z(), 1e-12);
+    EXPECT_NEAR(0.2, result.getContact(i).depth, 1e-12);
+  }
 }
 
 TEST(CylinderCollision, EmbeddedBoxUsesLateralSeparation)
