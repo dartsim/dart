@@ -20,6 +20,11 @@ dart_add_test(
 )
 dart_add_test(
   "unit"
+  UNIT_collision_native_sphere_box
+  test_sphere_box.cpp
+)
+dart_add_test(
+  "unit"
   UNIT_collision_native_narrow_phase_dispatch
   test_narrow_phase_dispatch.cpp
 )
