@@ -220,11 +220,12 @@
   from `docs/onboarding/agent-sim-verification.md`: capture the solver scene
   with `pixi run py-demo-capture -- --scene <scene> --view three-quarter --fit`
   and gate the resulting still with
-  `pixi run image-verdict -- <capture.png> --meta plan=PLAN-083`. For
-  stable renderer-regression lanes, curate a backend-local golden with
-  `pixi run render-golden-gate -- --golden tests/fixtures/render_goldens/plan083_<scene>.png --update`
-  and compare it with the same command without `--update`; these PNG goldens
-  stay opt-in and backend-specific, not default CI inputs.
+  `pixi run image-verdict -- <capture.png> --meta plan=PLAN-083`. Keep
+  `render-golden-gate` for its canonical renderer fixture, e.g.
+  `pixi run render-golden-gate -- --scene box_on_ground --golden tests/fixtures/render_goldens/box_on_ground.png --update`;
+  do not use that gate as solver-scene evidence until the gate grows the
+  intended scene. These PNG goldens stay opt-in and backend-specific, not
+  default CI inputs.
 - Before any commit, run the required gates from `docs/ai/verification.md`;
   implementation slices also keep `pixi run lint`, `pixi run build`, focused
   C++/Python tests, benchmark smoke packets, and `check-api-boundaries` green.
