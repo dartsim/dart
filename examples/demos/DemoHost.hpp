@@ -209,6 +209,13 @@ public:
   bool handleKey(int key);
 
 private:
+  enum class ScenePanelTab
+  {
+    Scene,
+    Inspector,
+    Tools
+  };
+
   struct CategoryGroup
   {
     std::string name;
@@ -259,6 +266,7 @@ private:
   void renderLogSection(float height);
   void renderViewMenu();
   void invokeKeyAction(KeyAction& action);
+  void requestScenePanelTab(ScenePanelTab tab);
   void applyShadowState();
   void fitCameraToWorld();
 
@@ -313,6 +321,9 @@ private:
 
   std::string mDebugSelectBodyName;
   bool mDebugRecordProfile = false;
+
+  ScenePanelTab mRequestedScenePanelTab = ScenePanelTab::Scene;
+  bool mHasRequestedScenePanelTab = false;
 };
 
 } // namespace dart_demos

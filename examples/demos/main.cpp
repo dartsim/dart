@@ -45,6 +45,9 @@
 
 namespace {
 
+constexpr int kDefaultWindowWidth = 1600;
+constexpr int kDefaultWindowHeight = 1000;
+
 //==============================================================================
 enum class ParseResult
 {
@@ -64,8 +67,8 @@ struct Options
   std::string shotPath = "dart-demos.png";
   int steps = 150;
   std::string sceneId;
-  int width = 1280;
-  int height = 800;
+  int width = kDefaultWindowWidth;
+  int height = kDefaultWindowHeight;
 
   // Hidden test/debug hooks (undocumented -- not in printUsage()): let a
   // headless --shot capture exercise UI state that normally requires
@@ -95,7 +98,7 @@ void printUsage(const char* prog)
       << "  --steps <n>     Sim steps to settle before the --headless shot "
          "(default 150).\n"
       << "  --width <w> --height <h>  Render/window size (default "
-         "1280x800).\n"
+      << kDefaultWindowWidth << "x" << kDefaultWindowHeight << ").\n"
       << "  --gui-scale <f> Scale the ImGui panels and initial window size "
          "(default 1.0).\n"
       << "  -h, --help      Show this help.\n";

@@ -53,6 +53,9 @@ namespace dart_demos {
 
 namespace {
 
+constexpr int kDefaultWindowWidth = 1600;
+constexpr int kDefaultWindowHeight = 1000;
+
 //==============================================================================
 std::string toLower(const std::string& value)
 {
@@ -391,6 +394,13 @@ void DemoHost::setDebugSelectBodyName(const std::string& name)
 void DemoHost::setDebugRecordProfile(bool on)
 {
   mDebugRecordProfile = on;
+}
+
+//==============================================================================
+void DemoHost::requestScenePanelTab(ScenePanelTab tab)
+{
+  mRequestedScenePanelTab = tab;
+  mHasRequestedScenePanelTab = true;
 }
 
 //==============================================================================
@@ -859,14 +869,18 @@ int DemoHost::runHeadlessShot(
          ++s) {
       found = mCurrentWorld->getSkeleton(s)->getBodyNode(mDebugSelectBodyName);
     }
-    if (found)
+    if (found) {
       mInspector.setSelection(found);
-    else
+      requestScenePanelTab(ScenePanelTab::Inspector);
+    } else {
       std::cerr << "[headless] --debug-select-body '" << mDebugSelectBodyName
                 << "' not found in demo '" << initial << "'.\n";
+    }
   }
-  if (mDebugRecordProfile)
+  if (mDebugRecordProfile) {
     mProfiler.setRecordingForTest(true);
+    requestScenePanelTab(ScenePanelTab::Tools);
+  }
 
   const CameraHome defaultHome{
       ::osg::Vec3d(6.0, 8.0, 4.0),
@@ -915,8 +929,8 @@ int DemoHost::run()
   mViewer->setUpViewInWindow(
       0,
       0,
-      dart::gui::osg::scaleWindowExtent(1280, mGuiScale),
-      dart::gui::osg::scaleWindowExtent(800, mGuiScale));
+      dart::gui::osg::scaleWindowExtent(kDefaultWindowWidth, mGuiScale),
+      dart::gui::osg::scaleWindowExtent(kDefaultWindowHeight, mGuiScale));
 
   const std::string initial = !mInitialSceneId.empty() ? mInitialSceneId
                               : !mScenes.empty()       ? mScenes.front().id
@@ -1362,23 +1376,36 @@ void DemoHost::renderToolsSection()
 //==============================================================================
 void DemoHost::renderScenePanel()
 {
+  const auto tabSelectionFlags = [this](ScenePanelTab tab) {
+    return mHasRequestedScenePanelTab && mRequestedScenePanelTab == tab
+               ? ImGuiTabItemFlags_SetSelected
+               : static_cast<ImGuiTabItemFlags>(0);
+  };
+
   if (ImGui::BeginTabBar("##scene_panel_tabs")) {
-    if (ImGui::BeginTabItem("Scene")) {
+    if (ImGui::BeginTabItem(
+            "Scene", nullptr, tabSelectionFlags(ScenePanelTab::Scene))) {
       renderSceneControlsSection();
       ImGui::EndTabItem();
     }
 
-    if (ImGui::BeginTabItem("Inspector")) {
+    if (ImGui::BeginTabItem(
+            "Inspector",
+            nullptr,
+            tabSelectionFlags(ScenePanelTab::Inspector))) {
       renderInspectorSection();
       ImGui::EndTabItem();
     }
 
-    if (ImGui::BeginTabItem("Tools")) {
+    if (ImGui::BeginTabItem(
+            "Tools", nullptr, tabSelectionFlags(ScenePanelTab::Tools))) {
       renderToolsSection();
       ImGui::EndTabItem();
     }
     ImGui::EndTabBar();
   }
+
+  mHasRequestedScenePanelTab = false;
 }
 
 //==============================================================================
