@@ -128,6 +128,42 @@ SoftBodyNodeProperties::SoftBodyNodeProperties(
 
 } // namespace detail
 
+namespace {
+
+template <typename StateVector>
+struct PointMassPhaseView
+{
+  PointMassPhaseView(
+      const std::vector<PointMass*>& _pointMasses,
+      StateVector& _states,
+      const std::vector<PointMass::Properties>& _properties)
+    : pointMasses(_pointMasses), states(_states), properties(_properties)
+  {
+    DART_ASSERT(states.size() == pointMasses.size());
+    DART_ASSERT(properties.size() == pointMasses.size());
+  }
+
+  std::size_t size() const
+  {
+    return pointMasses.size();
+  }
+
+  const std::vector<PointMass*>& pointMasses;
+  StateVector& states;
+  const std::vector<PointMass::Properties>& properties;
+};
+
+template <typename StateVector>
+PointMassPhaseView<StateVector> makePointMassPhaseView(
+    const std::vector<PointMass*>& _pointMasses,
+    StateVector& _states,
+    const std::vector<PointMass::Properties>& _properties)
+{
+  return PointMassPhaseView<StateVector>(_pointMasses, _states, _properties);
+}
+
+} // namespace
+
 //==============================================================================
 SoftBodyNode::~SoftBodyNode()
 {
@@ -545,16 +581,13 @@ void SoftBodyNode::updateTransform()
 {
   BodyNode::updateTransform();
 
-  const std::vector<PointMass::State>& pointStates = mAspectState.mPointStates;
-  const std::vector<PointMass::Properties>& pointProperties
-      = mAspectProperties.mPointProps;
-  DART_ASSERT(pointStates.size() == mPointMasses.size());
-  DART_ASSERT(pointProperties.size() == mPointMasses.size());
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
 
   const Eigen::Isometry3d& parentWorldTransform = getWorldTransform();
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
-    pointMass.mX = pointStates[i].mPositions + pointProperties[i].mX0;
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    pointMass.mX = phase.states[i].mPositions + phase.properties[i].mX0;
     DART_ASSERT(!math::isNan(pointMass.mX));
 
     pointMass.mW = parentWorldTransform.translation()
@@ -573,16 +606,16 @@ void SoftBodyNode::updateVelocity()
   if (mNotifier->needsTransformUpdate())
     updateTransform();
 
-  const std::vector<PointMass::State>& pointStates = mAspectState.mPointStates;
-  DART_ASSERT(pointStates.size() == mPointMasses.size());
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
 
   const Eigen::Vector6d& parentSpatialVelocity = getSpatialVelocity();
   const Eigen::Vector3d parentAngularVelocity = parentSpatialVelocity.head<3>();
   const Eigen::Vector3d parentLinearVelocity = parentSpatialVelocity.tail<3>();
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
     pointMass.mV = parentAngularVelocity.cross(pointMass.mX)
-                   + parentLinearVelocity + pointStates[i].mVelocities;
+                   + parentLinearVelocity + phase.states[i].mVelocities;
     DART_ASSERT(!math::isNan(pointMass.mV));
   }
 
@@ -594,13 +627,13 @@ void SoftBodyNode::updatePartialAcceleration() const
 {
   BodyNode::updatePartialAcceleration();
 
-  const std::vector<PointMass::State>& pointStates = mAspectState.mPointStates;
-  DART_ASSERT(pointStates.size() == mPointMasses.size());
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
 
   const Eigen::Vector3d parentAngularVelocity = getSpatialVelocity().head<3>();
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
-    pointMass.mEta = parentAngularVelocity.cross(pointStates[i].mVelocities);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    pointMass.mEta = parentAngularVelocity.cross(phase.states[i].mVelocities);
     DART_ASSERT(!math::isNan(pointMass.mEta));
   }
 
@@ -703,12 +736,11 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
   const double vertexSpringStiffness = getVertexSpringStiffness();
   const double implicitOffset = _timeStep * dampingCoefficient
                                 + _timeStep * _timeStep * vertexSpringStiffness;
-  const std::vector<PointMass::Properties>& pointProperties
-      = mAspectProperties.mPointProps;
-  DART_ASSERT(pointProperties.size() == mPointMasses.size());
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
-    const double mass = pointProperties[i].mMass;
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    const double mass = phase.properties[i].mMass;
     const double massSquared = mass * mass;
     pointMass.mPsi = 1.0 / mass;
     pointMass.mImplicitPsi = 1.0 / (mass + implicitOffset);
@@ -769,9 +801,8 @@ void SoftBodyNode::updateBiasForce(
   const double vertexSpringStiffness = getVertexSpringStiffness();
   const double edgeSpringStiffness = getEdgeSpringStiffness();
   const double dampingCoefficient = getDampingCoefficient();
-  const std::vector<PointMass::State>& pointStates = mAspectState.mPointStates;
-  const std::vector<PointMass::Properties>& pointProperties
-      = mAspectProperties.mPointProps;
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
 
   if (mNotifier->needsVelocityUpdate())
     updateVelocity();
@@ -779,17 +810,17 @@ void SoftBodyNode::updateBiasForce(
     updatePartialAcceleration();
   checkArticulatedInertiaUpdate();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
-    const PointMass::State& state = pointStates[i];
-    const PointMass::Properties& properties = pointProperties[i];
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    const PointMass::State& state = phase.states[i];
+    const PointMass::Properties& properties = phase.properties[i];
     const double mass = properties.mMass;
 
     // Reset internal forces of point masses before used.
     //
     // Once control force for point mass is introduced, assign it to the
     // internal force instead of always resetting the internal forces to zero.
-    mAspectState.mPointStates[i].mForces.setZero();
+    phase.states[i].mForces.setZero();
 
     pointMass.mB
         = parentAngularVelocity.cross(mass * pointMass.mV) - pointMass.mFext;
@@ -808,8 +839,8 @@ void SoftBodyNode::updateBiasForce(
                        - mass * pointMass.mEta - pointMass.mB;
     for (std::size_t j = 0; j < numConnections; ++j) {
       const std::size_t connectedIndex = connections[j];
-      DART_ASSERT(connectedIndex < pointStates.size());
-      const PointMass::State& connectedState = pointStates[connectedIndex];
+      DART_ASSERT(connectedIndex < phase.states.size());
+      const PointMass::State& connectedState = phase.states[connectedIndex];
       pointMass.mAlpha += edgeSpringStiffness
                           * (connectedState.mPositions
                              + _timeStep * connectedState.mVelocities);
@@ -879,21 +910,19 @@ void SoftBodyNode::updateAccelerationFD()
   const Eigen::Vector3d parentAngularAcceleration
       = parentAcceleration.head<3>();
   const Eigen::Vector3d parentLinearAcceleration = parentAcceleration.tail<3>();
-  const std::vector<PointMass::Properties>& pointProperties
-      = mAspectProperties.mPointProps;
-  DART_ASSERT(pointProperties.size() == mPointMasses.size());
-  DART_ASSERT(mAspectState.mPointStates.size() == mPointMasses.size());
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
     const Eigen::Vector3d parentPointAcceleration
         = parentAngularAcceleration.cross(pointMass.mX)
           + parentLinearAcceleration;
     const Eigen::Vector3d ddq
         = pointMass.mImplicitPsi
           * (pointMass.mAlpha
-             - pointProperties[i].mMass * parentPointAcceleration);
-    mAspectState.mPointStates[i].mAccelerations = ddq;
+             - phase.properties[i].mMass * parentPointAcceleration);
+    phase.states[i].mAccelerations = ddq;
     DART_ASSERT(!math::isNan(ddq));
 
     pointMass.mA = parentPointAcceleration + pointMass.mEta + ddq;
@@ -911,13 +940,12 @@ void SoftBodyNode::updateTransmittedForceFD()
   if (mNotifier->needsAccelerationUpdate())
     updateAccelerationFD();
 
-  const std::vector<PointMass::Properties>& pointProperties
-      = mAspectProperties.mPointProps;
-  DART_ASSERT(pointProperties.size() == mPointMasses.size());
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
     pointMass.mF = pointMass.mB;
-    pointMass.mF.noalias() += pointProperties[i].mMass * pointMass.mA;
+    pointMass.mF.noalias() += phase.properties[i].mMass * pointMass.mA;
     DART_ASSERT(!math::isNan(pointMass.mF));
   }
 }
@@ -978,8 +1006,10 @@ void SoftBodyNode::updateVelocityChangeFD()
   const Eigen::Vector3d parentLinearVelocityChange
       = parentVelocityChange.tail<3>();
 
-  for (auto& pointMassPtr : mPointMasses) {
-    PointMass& pointMass = *pointMassPtr;
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
     const Eigen::Vector3d parentPointVelocityChange
         = parentAngularVelocityChange.cross(pointMass.mX)
           + parentLinearVelocityChange;
@@ -997,14 +1027,13 @@ void SoftBodyNode::updateTransmittedImpulse()
 {
   BodyNode::updateTransmittedImpulse();
 
-  const std::vector<PointMass::Properties>& pointProperties
-      = mAspectProperties.mPointProps;
-  DART_ASSERT(pointProperties.size() == mPointMasses.size());
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
     pointMass.mImpF = pointMass.mImpB;
-    pointMass.mImpF.noalias() += pointProperties[i].mMass * pointMass.mDelV;
+    pointMass.mImpF.noalias() += phase.properties[i].mMass * pointMass.mDelV;
     DART_ASSERT(!math::isNan(pointMass.mImpF));
   }
 }
@@ -1015,13 +1044,13 @@ void SoftBodyNode::updateConstrainedTerms(double _timeStep)
   BodyNode::updateConstrainedTerms(_timeStep);
 
   DART_ASSERT(_timeStep > 0.0);
-  std::vector<PointMass::State>& pointStates = mAspectState.mPointStates;
-  DART_ASSERT(pointStates.size() == mPointMasses.size());
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
 
   const double invTimeStep = 1.0 / _timeStep;
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i) {
-    PointMass& pointMass = *mPointMasses[i];
-    PointMass::State& state = pointStates[i];
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    PointMass::State& state = phase.states[i];
 
     state.mVelocities += pointMass.mVelocityChanges;
     state.mAccelerations.noalias()

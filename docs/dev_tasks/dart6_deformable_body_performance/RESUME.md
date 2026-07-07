@@ -128,6 +128,14 @@ Latest state:
   from recursive dynamics phases, but it is still not contiguous point-mass
   object storage or SIMD. Native `soft_bodies` 200-step checksum rows matched
   exactly between `THREADS=1` and `THREADS=4` after this slice.
+- Another WP-DB.06 internal-facade slice is implemented locally:
+  `SoftBodyNode.cpp` now has a local `PointMassPhaseView` for converted
+  recursive dynamics phases, centralizing the matched point-object,
+  point-state, and point-property access shape without changing public headers
+  or class layout. Focused soft dynamics, soft allocation, and native
+  `soft_bodies` single-thread/four-thread checksum smokes passed after this
+  slice. Retained SoA scratch, contiguous point-mass object storage, and SIMD
+  remain open.
 - A narrow `origin/dart6-memory-hardening` carryover is implemented locally:
   `Skeleton::checkExternalDisturbanceAndReset()` now scans body-local external
   wrenches directly instead of materializing the external-force projection cache
@@ -206,9 +214,8 @@ Next steps:
    repetitions, then refresh `01-baseline-evidence.md`.
 2. Use `soft_body_headless` for longer single-core and multi-core profile
    captures on an idle host, then choose the next measured soft-body layout
-   slice. The likely next WP-DB.06 slice is still a retained internal
-   span/facade or SoA scratch for point-mass phase inputs before any
-   `dart/simd/` kernel.
+   slice. The likely next WP-DB.06 slice is retained SoA scratch for
+   point-mass phase inputs before any `dart/simd/` kernel.
 3. Extend `test_SoftDynamics` beyond finite-state and one-thread versus
    four-thread final-state checks with energy, contact-force, CoP, or
    historical-golden regression thresholds that are stable across supported
