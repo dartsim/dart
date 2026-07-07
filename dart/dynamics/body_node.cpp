@@ -30,7 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define DART_DYNAMICS_BODY_NODE_INSTANTIATE_COMPOSE_DATA
 #include "dart/dynamics/body_node.hpp"
 
 #include "dart/common/logging.hpp"
@@ -52,23 +51,6 @@
 #include <vector>
 
 #include <cmath>
-
-#if defined(_MSC_VER) && DART_BUILD_SHARED
-namespace dart {
-namespace common {
-namespace detail {
-
-template class ComposeData<CompositeProperties, GetProperties>;
-
-template class ComposeData<
-    CompositeProperties,
-    GetProperties,
-    dynamics::BodyNode>;
-
-} // namespace detail
-} // namespace common
-} // namespace dart
-#endif
 
 namespace dart {
 namespace dynamics {
@@ -226,6 +208,13 @@ using EntityPtrSet = std::set<Entity*>;
 std::size_t BodyNode::msBodyNodeCount = 0;
 
 namespace detail {
+
+//==============================================================================
+const BodyNode::Properties& getDefaultBodyNodeProperties()
+{
+  static const BodyNode::Properties properties;
+  return properties;
+}
 
 //==============================================================================
 void setAllNodeStates(BodyNode* bodyNode, const AllNodeStates& states)

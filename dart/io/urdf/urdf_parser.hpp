@@ -160,8 +160,13 @@ public:
       std::string_view urdfString, const common::Uri& baseUri);
 
 private:
-  using BodyPropPtr = std::shared_ptr<dynamics::BodyNode::Properties>;
   using JointPropPtr = std::shared_ptr<dynamics::Joint::Properties>;
+
+  struct BodyNodeProperties
+  {
+    std::string mName;
+    dynamics::Inertia mInertia;
+  };
 
   /// Parses the ModelInterface and spits out a Skeleton object
   static dart::dynamics::SkeletonPtr modelInterfaceToSkeleton(
@@ -201,16 +206,13 @@ private:
 
   static dynamics::BodyNode* createDartJointAndNode(
       const urdf::Joint* _jt,
-      const dynamics::BodyNode::Properties& _body,
       dynamics::BodyNode* _parent,
       dynamics::SkeletonPtr _skeleton,
       const Options& options);
 
   static bool createDartNodeProperties(
       const urdf::Link* _lk,
-      dynamics::BodyNode::Properties& properties,
-      const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _resourceRetriever,
+      BodyNodeProperties& properties,
       const Options& options);
 
   static bool createShapeNodes(
