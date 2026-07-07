@@ -8,6 +8,7 @@ import json
 import os
 import re
 import shutil
+import statistics
 import subprocess
 import sys
 import time
@@ -103,6 +104,9 @@ class BenchmarkRow:
     real_ms: float
     sim_s_per_s: float | None
     name: str
+    cpu_median_ms: float | None = None
+    cpu_stddev_ms: float | None = None
+    sample_count: int = 1
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -114,6 +118,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--threads", default="1,16")
     parser.add_argument("--benchmark-min-time", default="0.05s")
     parser.add_argument("--benchmark-repetitions", default="3")
+    parser.add_argument(
+        "--benchmark-cycles",
+        type=int,
+        default=1,
+        help=(
+            "Number of balanced benchmark cycles to run. Cycles alternate "
+            "revision order so parent/current timing drift is less likely to "
+            "look like a detector regression."
+        ),
+    )
     parser.add_argument(
         "--benchmark-run-order",
         choices=("detector", "revision"),
@@ -451,9 +465,11 @@ def run_detector(
     output_dir: Path,
     min_time: str,
     repetitions: str,
+    cycle_index: int | None,
 ) -> tuple[Path | None, str | None]:
-    json_path = output_dir / "raw" / f"{revision.label}-{detector}.json"
-    log_path = output_dir / "logs" / f"{revision.label}-{detector}.log"
+    suffix = "" if cycle_index is None else f"-cycle{cycle_index + 1}"
+    json_path = output_dir / "raw" / f"{revision.label}-{detector}{suffix}.json"
+    log_path = output_dir / "logs" / f"{revision.label}-{detector}{suffix}.log"
     json_path.parent.mkdir(parents=True, exist_ok=True)
     log_path.parent.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
@@ -507,14 +523,13 @@ def load_rows(
     requested_threads: set[int],
 ) -> list[BenchmarkRow]:
     data = json.loads(json_path.read_text(encoding="utf-8"))
-    rows: list[BenchmarkRow] = []
+    iteration_rows: list[BenchmarkRow] = []
+    aggregate_rows: dict[
+        tuple[str, str, int], dict[str, BenchmarkRow]
+    ] = {}
     for benchmark in data.get("benchmarks", []):
         run_type = benchmark.get("run_type")
         if run_type not in {"iteration", "aggregate"}:
-            continue
-        if run_type == "aggregate" and benchmark.get("aggregate_name") != "mean":
-            continue
-        if run_type == "iteration" and int(benchmark.get("repetitions", 1)) != 1:
             continue
         if benchmark.get("error_occurred"):
             continue
@@ -533,23 +548,74 @@ def load_rows(
         if multiplier is None:
             raise SystemExit(f"Unsupported benchmark time unit: {unit}")
 
+        row = BenchmarkRow(
+            revision=revision.label,
+            detector=label_detector or detector,
+            scene=scene,
+            threads=threads,
+            cpu_ms=float(benchmark["cpu_time"]) * multiplier,
+            real_ms=float(benchmark["real_time"]) * multiplier,
+            sim_s_per_s=(
+                float(benchmark["sim_s/s"]) if "sim_s/s" in benchmark else None
+            ),
+            name=benchmark.get("name", ""),
+        )
+        if run_type == "iteration":
+            iteration_rows.append(row)
+        else:
+            aggregate_name = str(benchmark.get("aggregate_name", ""))
+            if aggregate_name:
+                aggregate_rows.setdefault(row_key(row), {})[aggregate_name] = row
+
+    if iteration_rows:
+        return iteration_rows
+
+    rows = []
+    for aggregates in aggregate_rows.values():
+        mean_row = aggregates.get("mean")
+        if mean_row is None:
+            continue
+        median_row = aggregates.get("median")
+        stddev_row = aggregates.get("stddev")
         rows.append(
             BenchmarkRow(
-                revision=revision.label,
-                detector=label_detector or detector,
-                scene=scene,
-                threads=threads,
-                cpu_ms=float(benchmark["cpu_time"]) * multiplier,
-                real_ms=float(benchmark["real_time"]) * multiplier,
-                sim_s_per_s=(
-                    float(benchmark["sim_s/s"])
-                    if "sim_s/s" in benchmark
-                    else None
-                ),
-                name=benchmark.get("name", ""),
+                revision=mean_row.revision,
+                detector=mean_row.detector,
+                scene=mean_row.scene,
+                threads=mean_row.threads,
+                cpu_ms=mean_row.cpu_ms,
+                real_ms=mean_row.real_ms,
+                sim_s_per_s=mean_row.sim_s_per_s,
+                name=mean_row.name,
+                cpu_median_ms=median_row.cpu_ms if median_row else None,
+                cpu_stddev_ms=stddev_row.cpu_ms if stddev_row else None,
+                sample_count=1,
             )
         )
     return rows
+
+
+def aggregate_sample_rows(rows: list[BenchmarkRow]) -> BenchmarkRow:
+    if not rows:
+        raise ValueError("Cannot aggregate an empty benchmark row list")
+
+    cpu_values = [row.cpu_ms for row in rows]
+    real_values = [row.real_ms for row in rows]
+    sim_values = [row.sim_s_per_s for row in rows if row.sim_s_per_s is not None]
+    sample_count = len(rows)
+    return BenchmarkRow(
+        revision=rows[0].revision,
+        detector=rows[0].detector,
+        scene=rows[0].scene,
+        threads=rows[0].threads,
+        cpu_ms=statistics.fmean(cpu_values),
+        real_ms=statistics.fmean(real_values),
+        sim_s_per_s=statistics.fmean(sim_values) if sim_values else None,
+        name=rows[0].name,
+        cpu_median_ms=statistics.median(cpu_values),
+        cpu_stddev_ms=statistics.stdev(cpu_values) if sample_count > 1 else 0.0,
+        sample_count=sample_count,
+    )
 
 
 def benchmark_error_message(json_path: Path) -> str | None:
@@ -721,6 +787,12 @@ def fmt_float(value: float | None, digits: int = 3) -> str:
     return f"{value:.{digits}f}"
 
 
+def fmt_cpu_with_std(mean: float, stddev: float | None, samples: int | None) -> str:
+    if samples and samples > 1 and stddev is not None:
+        return f"{mean:.3f} +/- {stddev:.3f}"
+    return f"{mean:.3f}"
+
+
 def write_cpu_change_graph(
     lines: list[str], comparison_items: list[dict[str, object]]
 ) -> None:
@@ -819,8 +891,20 @@ def build_comparison(
                 "scene": key[1],
                 "threads": key[2],
                 "current_cpu_ms": current.cpu_ms,
+                "current_cpu_median_ms": current.cpu_median_ms,
+                "current_cpu_stddev_ms": current.cpu_stddev_ms,
+                "current_sample_count": current.sample_count,
                 f"{other_label}_cpu_ms": other.cpu_ms,
+                f"{other_label}_cpu_median_ms": other.cpu_median_ms,
+                f"{other_label}_cpu_stddev_ms": other.cpu_stddev_ms,
+                f"{other_label}_sample_count": other.sample_count,
                 "cpu_change_pct": pct_change(current.cpu_ms, other.cpu_ms),
+                "cpu_median_change_pct": (
+                    pct_change(current.cpu_median_ms, other.cpu_median_ms)
+                    if current.cpu_median_ms is not None
+                    and other.cpu_median_ms is not None
+                    else None
+                ),
                 "current_sim_s_per_s": current.sim_s_per_s,
                 f"{other_label}_sim_s_per_s": other.sim_s_per_s,
                 "apples_to_apples": apples_to_apples,
@@ -897,6 +981,7 @@ def write_markdown(
     failures: list[str],
     run_errors: list[dict[str, str]],
     benchmark_run_order: str,
+    benchmark_cycles: int,
 ) -> None:
     lines = [
         "# Soft-Body Performance Comparison",
@@ -915,6 +1000,7 @@ def write_markdown(
             "## Benchmark Settings",
             "",
             f"- Run order: `{benchmark_run_order}`",
+            f"- Balanced cycles: `{benchmark_cycles}`",
         ]
     )
 
@@ -951,8 +1037,8 @@ def write_markdown(
         lines.extend(
             [
                 "",
-                "| Detector | Scene | Threads | Scope | Other CPU ms | Current CPU ms | CPU change | Other sim_s/s | Current sim_s/s |",
-                "| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: |",
+                "| Detector | Scene | Threads | Scope | Other CPU ms | Current CPU ms | Mean CPU change | Median CPU change | Samples | Other sim_s/s | Current sim_s/s |",
+                "| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
             ]
         )
         for item in comparison_items:
@@ -964,9 +1050,23 @@ def write_markdown(
                 if "parent_sim_s_per_s" in item
                 else "base_sim_s_per_s"
             )
+            other_stddev_key = (
+                "parent_cpu_stddev_ms"
+                if "parent_cpu_stddev_ms" in item
+                else "base_cpu_stddev_ms"
+            )
+            other_samples_key = (
+                "parent_sample_count"
+                if "parent_sample_count" in item
+                else "base_sample_count"
+            )
+            median_change = item.get("cpu_median_change_pct")
+            current_samples = int(item.get("current_sample_count", 1))
+            other_samples = int(item.get(other_samples_key, 1))
             lines.append(
                 "| `{detector}` | `{scene}` | {threads} | {scope} | {other_cpu} | "
-                "{current_cpu} | {change:+.1f}% | {other_sim} | {current_sim} |".format(
+                "{current_cpu} | {change:+.1f}% | {median_change} | "
+                "{samples} | {other_sim} | {current_sim} |".format(
                     detector=item["detector"],
                     scene=item["scene"],
                     threads=item["threads"],
@@ -975,9 +1075,23 @@ def write_markdown(
                         if item.get("apples_to_apples", True)
                         else "diagnostic"
                     ),
-                    other_cpu=fmt_float(float(item[other_key])),
-                    current_cpu=fmt_float(float(item["current_cpu_ms"])),
+                    other_cpu=fmt_cpu_with_std(
+                        float(item[other_key]),
+                        item.get(other_stddev_key),
+                        other_samples,
+                    ),
+                    current_cpu=fmt_cpu_with_std(
+                        float(item["current_cpu_ms"]),
+                        item.get("current_cpu_stddev_ms"),
+                        current_samples,
+                    ),
                     change=float(item["cpu_change_pct"]),
+                    median_change=(
+                        f"{float(median_change):+.1f}%"
+                        if median_change is not None
+                        else "n/a"
+                    ),
+                    samples=f"{current_samples}/{other_samples}",
                     other_sim=fmt_float(item.get(other_sim_key)),
                     current_sim=fmt_float(item.get("current_sim_s_per_s")),
                 )
@@ -1050,6 +1164,9 @@ def write_markdown(
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
+    if args.benchmark_cycles < 1:
+        raise SystemExit("--benchmark-cycles must be at least 1")
+
     root = repo_root()
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1073,13 +1190,15 @@ def main(argv: list[str]) -> int:
         if revision.label == "current":
             current_headless_binary = headless_binary
 
-    all_rows: dict[str, dict[tuple[str, str, int], BenchmarkRow]] = {
+    all_row_samples: dict[str, dict[tuple[str, str, int], list[BenchmarkRow]]] = {
         revision.label: {} for revision in revisions
     }
     run_errors: list[dict[str, str]] = []
     unsupported_detector_runs: dict[tuple[str, str], bool] = {}
 
-    def run_one(revision: Revision, detector: str) -> bool:
+    def run_one(
+        revision: Revision, detector: str, cycle_index: int | None
+    ) -> bool:
         binary, _ = revision_binaries[revision.label]
         if args.wait_for_local_dart_builds:
             wait_for_local_dart_idleness(
@@ -1096,6 +1215,7 @@ def main(argv: list[str]) -> int:
             output_dir=output_dir,
             min_time=args.benchmark_min_time,
             repetitions=args.benchmark_repetitions,
+            cycle_index=cycle_index,
         )
         if error is not None:
             unsupported_detector_runs[(revision.label, detector)] = (
@@ -1110,10 +1230,14 @@ def main(argv: list[str]) -> int:
             )
             return False
 
-        log_path = output_dir / "logs" / f"{revision.label}-{detector}.log"
+        suffix = "" if cycle_index is None else f"-cycle{cycle_index + 1}"
+        log_path = output_dir / "logs" / f"{revision.label}-{detector}{suffix}.log"
         unsupported_detector_runs[(revision.label, detector)] = (
-            log_path.exists()
-            and has_unsupported_shape_warning(log_path.read_text(encoding="utf-8"))
+            unsupported_detector_runs.get((revision.label, detector), False)
+            or (
+                log_path.exists()
+                and has_unsupported_shape_warning(log_path.read_text(encoding="utf-8"))
+            )
         )
         parsed_rows = load_rows(revision, detector, json_path, requested_threads)
         if not parsed_rows:
@@ -1129,20 +1253,34 @@ def main(argv: list[str]) -> int:
                 return False
 
         for row in parsed_rows:
-            all_rows[revision.label][row_key(row)] = row
+            all_row_samples[revision.label].setdefault(row_key(row), []).append(row)
         return True
 
-    if args.benchmark_run_order == "revision":
-        run_sequence = [
-            (revision, detector) for revision in revisions for detector in detectors
-        ]
-    else:
-        run_sequence = [
-            (revision, detector) for detector in detectors for revision in revisions
-        ]
+    stop_requested = False
+    for cycle in range(args.benchmark_cycles):
+        cycle_index = None if args.benchmark_cycles == 1 else cycle
+        cycle_revisions = list(revisions)
+        if cycle % 2 == 1:
+            cycle_revisions.reverse()
 
-    for revision, detector in run_sequence:
-        if not run_one(revision, detector) and not args.keep_going:
+        if args.benchmark_run_order == "revision":
+            run_sequence = [
+                (revision, detector)
+                for revision in cycle_revisions
+                for detector in detectors
+            ]
+        else:
+            run_sequence = [
+                (revision, detector)
+                for detector in detectors
+                for revision in cycle_revisions
+            ]
+
+        for revision, detector in run_sequence:
+            if not run_one(revision, detector, cycle_index) and not args.keep_going:
+                stop_requested = True
+                break
+        if stop_requested:
             break
 
     if current_headless_binary is None:
@@ -1157,6 +1295,14 @@ def main(argv: list[str]) -> int:
         tolerance=args.correctness_tolerance,
         output_dir=output_dir,
     )
+
+    all_rows: dict[str, dict[tuple[str, str, int], BenchmarkRow]] = {
+        label: {
+            key: aggregate_sample_rows(rows)
+            for key, rows in row_samples.items()
+        }
+        for label, row_samples in all_row_samples.items()
+    }
 
     current_rows = all_rows.get("current", {})
     comparisons: list[dict[str, object]] = []
@@ -1205,6 +1351,7 @@ def main(argv: list[str]) -> int:
         "detectors": detectors,
         "threads": sorted(requested_threads),
         "benchmark_run_order": args.benchmark_run_order,
+        "benchmark_cycles": args.benchmark_cycles,
         "rows": {
             label: [
                 {
@@ -1215,6 +1362,9 @@ def main(argv: list[str]) -> int:
                     "real_ms": row.real_ms,
                     "sim_s_per_s": row.sim_s_per_s,
                     "name": row.name,
+                    "cpu_median_ms": row.cpu_median_ms,
+                    "cpu_stddev_ms": row.cpu_stddev_ms,
+                    "sample_count": row.sample_count,
                 }
                 for row in sorted(rows.values(), key=lambda row: row_key(row))
             ]
@@ -1250,6 +1400,7 @@ def main(argv: list[str]) -> int:
         failures,
         run_errors,
         args.benchmark_run_order,
+        args.benchmark_cycles,
     )
 
     print(output_dir / "summary.md")
