@@ -38,14 +38,13 @@
 namespace dart_demos {
 
 //==============================================================================
-/// Diagnostics-panel live profiler (BRIEF-phase3.md #6). Wraps
-/// dart::common::profile's built-in text backend
-/// (dart/common/Profile.hpp), which compiles to real functionality when
-/// DART_BUILD_PROFILE is on (pixi's config task turns it on) and to inert
-/// no-ops otherwise -- isTextProfilingEnabled() tells us which, so this
-/// class needs no #if of its own. Recording state persists across scene
-/// switches (it profiles the app/World::step machinery in general, not any
-/// one scene).
+/// Diagnostics-panel live profiler. Wraps dart::common::profile's built-in
+/// text backend (dart/common/Profile.hpp), which compiles to real
+/// functionality when DART_BUILD_PROFILE is on (pixi's config task turns it
+/// on) and to inert no-ops otherwise -- isTextProfilingEnabled() tells us
+/// which, so this class needs no #if of its own. Recording state persists
+/// across scene switches (it profiles the app/World::step machinery in
+/// general, not any one scene).
 class Profiler
 {
 public:
