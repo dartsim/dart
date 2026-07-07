@@ -94,6 +94,9 @@ UrdfParser::UrdfParser(const Options& options)
 }
 
 //==============================================================================
+UrdfParser::~UrdfParser() = default;
+
+//==============================================================================
 void UrdfParser::setOptions(const Options& options)
 {
   mOptions = options;

@@ -68,7 +68,7 @@ namespace dart {
 namespace io {
 
 /// Parser for URDF files.
-class DART_IO_API UrdfParser
+class UrdfParser
 {
 public:
   /// Root joint type to be used when the parent joint of the root link is not
@@ -104,10 +104,12 @@ public:
   };
 
   /// Constructor with the default ResourceRetriever.
-  explicit UrdfParser(const Options& options = Options());
+  DART_IO_API explicit UrdfParser(const Options& options = Options());
+
+  DART_IO_API ~UrdfParser();
 
   /// Sets options
-  void setOptions(const Options& options);
+  DART_IO_API void setOptions(const Options& options);
 
   /// Lightweight representation of a URDF transmission.
   struct TransmissionInfo
@@ -126,7 +128,7 @@ public:
   };
 
   /// Returns options
-  const Options& getOptions() const;
+  DART_IO_API const Options& getOptions() const;
 
   /// Specify the directory of a ROS package. In your URDF files, you may see
   /// strings with a package URI pattern such as:
@@ -147,14 +149,14 @@ public:
   /// "/path/to/my_robot/meshes/mesh_for_my_robot.stl" exists. Whatever you
   /// specify as the package directory will end up replacing the 'package
   /// keyword' and 'package name' components of the URI string.
-  void addPackageDirectory(
+  DART_IO_API void addPackageDirectory(
       std::string_view packageName, std::string_view packageDirectory);
 
   /// Parse a file to produce a Skeleton
-  dynamics::SkeletonPtr parseSkeleton(const common::Uri& uri);
+  DART_IO_API dynamics::SkeletonPtr parseSkeleton(const common::Uri& uri);
 
   /// Parse a text string to produce a Skeleton
-  dynamics::SkeletonPtr parseSkeletonString(
+  DART_IO_API dynamics::SkeletonPtr parseSkeletonString(
       std::string_view urdfString, const common::Uri& baseUri);
 
 private:

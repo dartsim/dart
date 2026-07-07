@@ -394,6 +394,15 @@ def find_static_violations(root: Path = REPO_ROOT) -> list[Violation]:
         violations.append(
             Violation(_rel(simulation_stub, root), "__all__ must include World")
         )
+    for name in ("ModelFormat", "RootJointType", "ReadOptions"):
+        _require_contains(
+            violations,
+            simulation_stub,
+            root,
+            simulation_stub_text,
+            f"{name} as {name}",
+            "dartpy.simulation stubs must alias canonical dartpy.io loader types",
+        )
 
     io_module_cpp = root / "python" / "dartpy" / "io" / "module.cpp"
     io_module_cpp_text = _read(io_module_cpp, root, violations)
