@@ -8,7 +8,7 @@ agent: build
 <!-- Sync script: scripts/sync_ai_commands.py -->
 <!-- Run `pixi run sync-ai-commands` to update -->
 
-Resume unfinished work: $ARGUMENTS
+Resume unfinished work to its real completion contract: $ARGUMENTS
 
 ## Required Reading
 
@@ -38,7 +38,8 @@ Infer the task from branch name, commits, diffs, issue/PR description, and any
 and ask.
 
 For a named `docs/dev_tasks/<task>/`, reconstruct the task's actual completion
-contract before editing:
+contract before editing. Treat the dev-task folder as an execution plan and
+evidence ledger first, not as cleanup inventory:
 
 - read the task README, RESUME, dashboard, packet files, and verification notes;
 - extract every acceptance criterion, open decision, required benchmark,
@@ -48,7 +49,7 @@ contract before editing:
 - treat task completion as satisfying those criteria with verification, not as
   merely promoting notes or deleting the temporary folder.
 
-### Step 3: Continue
+### Step 3: Execute to completion
 
 - Propose a 3-6 step plan before editing.
 - Continue by executing the reconstructed plan until the task's acceptance
@@ -58,6 +59,9 @@ contract before editing:
   retirement, or evidence promotion unless the implementation criteria are
   already satisfied or the maintainer has explicitly approved deferring the
   remaining implementation work.
+- Treat dev-task retirement as the final bookkeeping step after implementation
+  completion or an explicitly approved deferral. It is never a substitute for
+  running the plan, benchmarks, tests, and review/PR evidence the task requires.
 - For active solver/paper implementations, keep the plan or dev-task resume
   surface explicit about the completed slice, the next missing paper-parity
   gap, and why focused green tests are not a full paper-completion claim.
