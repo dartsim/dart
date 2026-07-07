@@ -483,6 +483,8 @@ def merge_observations(
     observations: Mapping[str, Any],
 ) -> dict[str, Any]:
     keyed = {row["artifact_id"]: row for row in answer_key.get("rows", [])}
+    expected_artifact_ids = set(keyed)
+    observed_by_judge: dict[str, set[str]] = {}
     seen_observations: set[tuple[str, str]] = set()
     rows = []
     for raw_row in observations.get("rows", []):
@@ -501,6 +503,7 @@ def merge_observations(
                 f"{artifact_id}: duplicate observation for judge {judge!r}"
             )
         seen_observations.add(observation_key)
+        observed_by_judge.setdefault(judge, set()).add(artifact_id)
         if not isinstance(observed, str):
             raise ValueError(f"{artifact_id}: missing observed label")
         observed = observed.lower()
@@ -519,6 +522,18 @@ def merge_observations(
                 "observed": observed,
             }
         )
+    if expected_artifact_ids and not observed_by_judge:
+        raise ValueError("missing observations: no judge rows provided")
+    for judge, seen_artifact_ids in sorted(observed_by_judge.items()):
+        missing = sorted(expected_artifact_ids - seen_artifact_ids)
+        if missing:
+            preview = ", ".join(missing[:5])
+            if len(missing) > 5:
+                preview += ", ..."
+            raise ValueError(
+                f"judge {judge!r}: missing observations for "
+                f"{len(missing)} artifact(s): {preview}"
+            )
     return {
         "schema_version": image_ab_study.SCHEMA_VERSION,
         "study_id": str(answer_key.get("study_id", "")),

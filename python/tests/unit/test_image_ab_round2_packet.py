@@ -191,6 +191,44 @@ def test_merge_observations_rejects_duplicate_judge_artifact_pairs() -> None:
         raise AssertionError("expected ValueError")
 
 
+def test_merge_observations_rejects_incomplete_judge_forms() -> None:
+    answer_key = {
+        "schema_version": "dart.image_ab_round2_packet/v1",
+        "study_id": "round2-test",
+        "rows": [
+            {
+                "artifact_id": "r2_a",
+                "case": "clean",
+                "variant": "single",
+                "expected": "clean",
+                "image": "images/r2_a.png",
+            },
+            {
+                "artifact_id": "r2_b",
+                "case": "penetration",
+                "variant": "annotated",
+                "expected": "defect",
+                "image": "images/r2_b.png",
+            },
+        ],
+    }
+    observations = {
+        "schema_version": "dart.image_ab_round2_observations/v1",
+        "study_id": "round2-test",
+        "rows": [
+            {"artifact_id": "r2_a", "judge": "j1", "observed": "clean"},
+        ],
+    }
+
+    try:
+        image_ab_round2_packet.merge_observations(answer_key, observations)
+    except ValueError as exc:
+        assert "missing observations" in str(exc)
+        assert "r2_b" in str(exc)
+    else:
+        raise AssertionError("expected ValueError")
+
+
 def test_score_observations_writes_manifest_and_results(tmp_path: Path) -> None:
     answer_key = {
         "schema_version": "dart.image_ab_round2_packet/v1",
