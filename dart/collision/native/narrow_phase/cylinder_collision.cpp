@@ -763,6 +763,7 @@ bool collideCylinderCapsule(
   Eigen::Vector3d bestCylPoint;
   Eigen::Vector3d bestCapPoint;
   bool foundCollision = false;
+  bool bestEndpointInsideCylinder = false;
 
   auto checkCapsuleEndpoint = [&](const Eigen::Vector3d& capEndLocal) {
     const double lateralDistSq
@@ -771,6 +772,9 @@ bool collideCylinderCapsule(
 
     Eigen::Vector3d closestOnCyl;
     double dist;
+    const bool endpointInsideCylinder
+        = std::abs(capEndLocal.z()) <= cylHalfHeight
+          && lateralDist <= cylRadius;
 
     if (std::abs(capEndLocal.z()) <= cylHalfHeight) {
       if (lateralDist <= cylRadius) {
@@ -807,13 +811,15 @@ bool collideCylinderCapsule(
     }
 
     dist = (capEndLocal - closestOnCyl).norm();
-    double penetration = capRadius - dist;
+    double penetration
+        = endpointInsideCylinder ? capRadius + dist : capRadius - dist;
 
     if (penetration > 0 && penetration > bestPenetration) {
       bestPenetration = penetration;
       bestCylPoint = closestOnCyl;
       bestCapPoint = capEndLocal;
       foundCollision = true;
+      bestEndpointInsideCylinder = endpointInsideCylinder;
     }
   };
 
@@ -843,7 +849,7 @@ bool collideCylinderCapsule(
 
   ContactPoint contact;
   contact.position = contactWorld;
-  contact.normal = -normalWorld;
+  contact.normal = bestEndpointInsideCylinder ? normalWorld : -normalWorld;
   contact.depth = bestPenetration;
 
   result.addContact(contact);

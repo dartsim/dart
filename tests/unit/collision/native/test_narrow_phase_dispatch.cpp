@@ -624,6 +624,25 @@ TEST(NarrowPhaseDispatch, RoutesContainedCylinderSphereNormalsInBothOrders)
       Eigen::Vector3d::UnitX());
 }
 
+TEST(NarrowPhaseDispatch, RoutesContainedCylinderCapsuleNormalsInBothOrders)
+{
+  CylinderShape cylinder(1.0, 4.0);
+  CapsuleShape capsule(0.2, 1.0);
+
+  expectSingleNormal(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.9, 0.0, 0.0),
+      -Eigen::Vector3d::UnitX());
+  expectSingleNormal(
+      capsule,
+      translated(0.9, 0.0, 0.0),
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3d::UnitX());
+}
+
 TEST(NarrowPhaseDispatch, CylinderPairsBinaryCheckDoesNotAddContacts)
 {
   CylinderShape cylinder(0.5, 2.0);
