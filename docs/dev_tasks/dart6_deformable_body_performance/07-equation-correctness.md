@@ -11,11 +11,12 @@ ctest --test-dir build/default/cpp/Release -R 'test_SoftDynamics$' --output-on-f
 
 Result: `test_SoftDynamics` passed locally in 0.09 seconds after the
 point-mass gravity, combined-vector, mass-matrix, augmented-mass,
-inverse-mass, inverse-augmented-mass, and external-force gate was added.
+inverse-mass, inverse-augmented-mass, external-force, and representative
+equation matrix/vector gate was added.
 
 ## Current slice
 
-The first active WP-DB.04 sub-gate covers point-mass contribution to the
+The active WP-DB.04 gate covers point-mass contribution to the
 generalized mass, augmented-mass, inverse-mass, and inverse-augmented-mass
 matrices and to gravity, combined Coriolis/gravity force, and external-force
 vectors:
@@ -63,12 +64,20 @@ vectors:
   point-mass external forces, verifies `Skeleton::getExternalForces()` against
   the analytical soft-body Jacobian projection, and verifies
   `Skeleton::clearExternalForces()` clears the point-mass forces.
+- `SoftDynamicsTest.representativeEquationMatrixAndVectorChecks` replaces the
+  disabled random soft-body equation loop with a deterministic representative
+  gate. It checks a rigid-only world (`double_pendulum.skel`), a soft-body
+  world (`test_drop_box.skel`), and a mixed rigid/soft world
+  (`softBodies.skel`). For every mobile skeleton in those worlds it verifies
+  mass and augmented-mass matrices against Jacobian projections, verifies left
+  and right inverse identities, and verifies Coriolis and combined
+  Coriolis/gravity vectors against inverse dynamics at the loaded state.
 
-This is a correctness slice, not full equation parity.
+This completes the current public DART 6 `Skeleton` matrix/vector equation
+gate for WP-DB.04. It is not a claim of paper-level deformable solver parity.
 
 ## Remaining gaps
 
-- `SoftDynamicsTest.compareEquationsOfMotion` remains disabled.
 - Point-mass inverse-mass and inverse-augmented-mass aggregation methods are
   still legacy stubs for the old point-coordinate formulation; the active
   public `Skeleton` inverse-matrix API is covered by the soft-tree solve above.
@@ -76,5 +85,3 @@ This is a correctness slice, not full equation parity.
   independent generalized coordinates still need a DART 6-compatible
   replacement or an explicit design decision, because current soft point masses
   are not exposed as ordinary `Skeleton` DOFs.
-- Rigid-only, soft-only, and mixed rigid-soft matrix/vector checks still need
-  active tests before WP-DB.04 can be considered complete.

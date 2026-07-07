@@ -15,7 +15,7 @@ Latest state:
 - `03-stability-gate.md` records the active `test_SoftDynamics` finite-state
   gate across representative SKEL soft scenes and thread settings, plus the
   ordered final-state comparison between `threads=1` and `threads=4`.
-- `07-equation-correctness.md` records the first active WP-DB.04 sub-gate:
+- `07-equation-correctness.md` records the active WP-DB.04 gate:
   point-mass mass now contributes deterministically to
   `Skeleton::getMassMatrix()` and `Skeleton::getAugMassMatrix()`, soft-body
   trees return inverse mass and inverse augmented mass matrices consistent with
@@ -27,7 +27,11 @@ Latest state:
   `Skeleton::clearExternalForces()`. The test compares the observed deltas
   against analytical point-mass Jacobian and gravity-wrench projections and
   verifies both left and right inverse-matrix identity products before and
-  after a point-mass mass change.
+  after a point-mass mass change. The disabled random soft-body
+  `compareEquationsOfMotion` body has been replaced with
+  `representativeEquationMatrixAndVectorChecks`, covering a rigid-only world,
+  a soft-body world, and a mixed rigid/soft world with deterministic
+  matrix/vector equation checks.
 - `04-data-layout-and-memory-hardening.md` records the soft-body data-layout
   risk, adds the `soft_body_headless` profile/checksum runner, and records that
   this branch now stacks on `origin/dart6-memory-hardening` for
@@ -200,15 +204,12 @@ Next steps:
    four-thread final-state checks with energy, contact-force, CoP, or
    historical-golden regression thresholds that are stable across supported
    platforms.
-4. Continue WP-DB.04 by re-enabling or replacing the disabled
-   equations-of-motion checks in `test_SoftDynamics.cpp` for rigid-only,
-   soft-only, and mixed rigid-soft worlds.
-5. Complete the paper parity matrix with representative scenes and numbers from
+4. Complete the paper parity matrix with representative scenes and numbers from
    Kim/Pollard 2011 and Jain/Liu 2011.
-6. Continue WP-DB.08 with fuller triangle/contact-neighborhood coverage and
+5. Continue WP-DB.08 with fuller triangle/contact-neighborhood coverage and
    stronger multicore scaling beyond the current pair-level soft-soft worker
    path before preferring native as the default soft collision backend.
-7. Before creating the PR, capture a same-host baseline-vs-branch performance
+6. Before creating the PR, capture a same-host baseline-vs-branch performance
    comparison and include newly added GUI example commands plus locally captured
    videos as PR evidence. The first evidence packet exists in
    `06-pr-evidence.md`; rerun it on a cleaner host before turning the smoke
