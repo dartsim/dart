@@ -21,6 +21,8 @@ SKIP_DIRS = {
     "patches",
 }
 
+MAX_GERSEMI_ARG_BYTES = 100_000
+
 
 def find_cmake_files(root: pathlib.Path) -> list[pathlib.Path]:
     # Only ``CMakeLists.txt`` and ``*.cmake`` are formatted. ``*.cmake.in``
@@ -46,14 +48,34 @@ def run_gersemi(root: pathlib.Path, files: list[pathlib.Path], check: bool) -> i
     if not files:
         return 0
 
-    cmd = ["gersemi"]
+    cmd_prefix = ["gersemi"]
     if check:
-        cmd.append("--check")
+        cmd_prefix.append("--check")
     else:
-        cmd.append("-i")
-    cmd.extend(str(root / path) for path in files)
-    result = subprocess.run(cmd, cwd=root)
-    return result.returncode
+        cmd_prefix.append("-i")
+
+    result_code = 0
+    chunk: list[str] = []
+    chunk_size = sum(len(arg) + 1 for arg in cmd_prefix)
+    for path in files:
+        arg = str(root / path)
+        arg_size = len(arg) + 1
+        if chunk and chunk_size + arg_size > MAX_GERSEMI_ARG_BYTES:
+            result = subprocess.run([*cmd_prefix, *chunk], cwd=root)
+            if result.returncode != 0 and result_code == 0:
+                result_code = result.returncode
+            chunk = []
+            chunk_size = sum(len(arg) + 1 for arg in cmd_prefix)
+
+        chunk.append(arg)
+        chunk_size += arg_size
+
+    if chunk:
+        result = subprocess.run([*cmd_prefix, *chunk], cwd=root)
+        if result.returncode != 0 and result_code == 0:
+            result_code = result.returncode
+
+    return result_code
 
 
 def main() -> int:

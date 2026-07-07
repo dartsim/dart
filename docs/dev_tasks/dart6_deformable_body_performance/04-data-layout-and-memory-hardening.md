@@ -294,6 +294,10 @@ the parsed soft skeletons into a counted native world without cloning
 `SoftMeshShape`, and measures a representative SKEL-authored soft-dynamics
 window. That SKEL window has no contacts in the measured range, so it is an
 allocation gate for soft-body stepping rather than a contact-solving gate.
+Follow-up gates load `dart://sample/skel/soft_open_chain.skel` for another
+SKEL-authored no-contact soft-dynamics window and
+`dart://sample/skel/soft_cubes.skel` for a contact-producing SKEL-authored
+window.
 
 The gate measures both explicit and implicit integration after a warmup:
 
@@ -301,7 +305,7 @@ The gate measures both explicit and implicit integration after a warmup:
 ./build/default/cpp/Release/tests/integration/INTEGRATION_StepAllocation --gtest_filter='StepAllocation.*Soft*'
 ```
 
-Current result on 2026-07-05:
+Current result on 2026-07-07:
 
 | Test row | Steps | Contacts | Soft-soft contacts | `operator new` | Raw `malloc` | Base allocator growth |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -313,6 +317,10 @@ Current result on 2026-07-05:
 | Soft-stack steady-state raw gate | 100 | 27 | 18 | 0 | 0 | 0 |
 | `softBodies.skel` steady-state gate | 100 | 0 | 0 | 0 | 0 | 0 |
 | `softBodies.skel` steady-state raw gate | 100 | 0 | 0 | 0 | 0 | 0 |
+| `soft_open_chain.skel` steady-state gate | 100 | 0 | 0 | 0 | 0 | 0 |
+| `soft_open_chain.skel` steady-state raw gate | 100 | 0 | 0 | 0 | 0 | 0 |
+| `soft_cubes.skel` steady-state gate | 100 | 9 | 0 | 0 | 0 | 0 |
+| `soft_cubes.skel` steady-state raw gate | 100 | 9 | 0 | 0 | 0 | 0 |
 
 The implementation changes behind the gate are intentionally local to
 steady-state allocation behavior:
@@ -331,11 +339,11 @@ steady-state allocation behavior:
 
 This gate proves the current native soft-box contact lane can step without
 heap growth after preparation, and that a small native soft-soft stack can run
-steady-state steps without heap growth after warmup. It also proves the
-representative `softBodies.skel` no-contact soft-dynamics window is heap-free
-after warmup. It does not yet prove contiguous point-mass object storage,
-SIMD-friendly SoA layout, or allocation coverage for `soft_open_chain` and
-contact-heavy SKEL scenes.
+steady-state steps without heap growth after warmup. It also proves
+representative `softBodies.skel` and `soft_open_chain.skel` no-contact
+soft-dynamics windows and a contact-producing `soft_cubes.skel` window are
+heap-free after warmup. It does not yet prove contiguous point-mass object
+storage or SIMD-friendly SoA layout.
 
 ## Candidate implementation sequence
 
@@ -345,10 +353,7 @@ contact-heavy SKEL scenes.
 2. Keep existing `PointMass` objects initially, but mirror the hottest phase
    inputs into retained scratch so `updateBiasForce` and `updateArtInertia` can
    be measured as contiguous scalar loops.
-3. Extend the native soft allocation gate from the current soft-box,
-   soft-soft stack, and `softBodies.skel` lanes to `soft_open_chain` and
-   contact-heavy SKEL scenes before changing storage ownership.
-4. Once scalar checksums match, evaluate replacing per-point allocations with a
+3. Once scalar checksums match, evaluate replacing per-point allocations with a
    contiguous object pool or memory-manager-backed block allocation.
-5. Add SIMD kernels only for phases whose memory layout is contiguous and whose
+4. Add SIMD kernels only for phases whose memory layout is contiguous and whose
    FP contract is approved.

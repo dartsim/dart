@@ -145,10 +145,14 @@ Latest state:
   into a counted native world, then 100 steady-state steps are measured after
   warmup with zero `operator new`, zero raw `malloc`, and zero counted base
   allocator growth. That measured window has zero contacts, so it proves
-  no-contact SKEL soft-dynamics allocation behavior; `soft_open_chain` and
-  contact-heavy SKEL windows remain open. The underlying runtime fix reuses
-  all-resting kinematic snapshot storage and copies generalized positions by
-  scalar index instead of allocating temporary `Eigen::VectorXd` values.
+  no-contact SKEL soft-dynamics allocation behavior. Follow-up gates now cover
+  `dart://sample/skel/soft_open_chain.skel` as another no-contact SKEL
+  soft-dynamics window and `dart://sample/skel/soft_cubes.skel` as a
+  contact-producing SKEL window with 9 contacts; all four new global/base and
+  raw gates report zero `operator new`, zero raw `malloc`, and zero counted
+  base allocator growth. The underlying runtime fix reuses all-resting
+  kinematic snapshot storage and copies generalized positions by scalar index
+  instead of allocating temporary `Eigen::VectorXd` values.
 - Current post-merge smokes preserved the key runtime checks: FCL and native
   `drop_box` 200-step checksums matched exactly, native remained faster on that
   limited lane in the local run, and `THREADS=4`
@@ -187,11 +191,7 @@ Next steps:
 6. Continue WP-DB.08 with fuller triangle/contact-neighborhood coverage and
    stronger multicore scaling beyond the current pair-level soft-soft worker
    path before preferring native as the default soft collision backend.
-7. Extend the native soft allocation gates from the current soft-box,
-   soft-soft stack, and `softBodies.skel` no-contact lanes to
-   `soft_open_chain` and contact-heavy SKEL scenes before changing point-mass
-   storage ownership or making native the default deformable backend.
-8. Before creating the PR, capture a same-host baseline-vs-branch performance
+7. Before creating the PR, capture a same-host baseline-vs-branch performance
    comparison and include newly added GUI example commands plus locally captured
    videos as PR evidence. The first evidence packet exists in
    `06-pr-evidence.md`; rerun it on a cleaner host before turning the smoke
