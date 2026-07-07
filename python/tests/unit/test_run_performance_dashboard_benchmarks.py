@@ -50,7 +50,11 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     assert "dashboard_boxes.json" in result.stdout
     assert "BM_RunBoxes/(2|4|8)$" in result.stdout
     assert "dashboard_contact_container.json" in result.stdout
-    assert "BM_ContactContainerActive/.*" in result.stdout
+    assert "BM_ContactContainerActive/(60|120)/(0|1|2|3)/(1|4|16)$" in result.stdout
+    assert (
+        "BM_ContactContainerDeactivation/60/(0|1)/16/iterations:1$"
+        in result.stdout
+    )
     assert "dashboard_soft_body.json" in result.stdout
     assert "BM_SoftBodyStep/.*" in result.stdout
 
