@@ -1,28 +1,30 @@
 # WS-D — SIMD enablement lane
 
-`dart/simd` (#3229) is merged and tested but has **zero consumers** in
-dynamics/collision/constraint code. This lane makes it earn its keep at
-proven seams — following main's `lie_group_batch.md` discipline (free
-functions, 4-wide batches, `simd::cross3` for cross products, scalar
-tail) and the native-port scoping rule ("SIMD is an optimization packet,
-not a substitute": scalar correctness first, measured before/after
-always).
+`dart/simd` (#3229) is merged and now has its first production DART 6
+consumer: WP-PG.42 / PR #3299 uses it inside the DART collision detector's
+finite-candidate broadphase screen. This lane now tracks future SIMD seams
+after the first consumer, following main's `lie_group_batch.md` discipline
+(free functions, 4-wide batches, `simd::cross3` for cross products, scalar
+tail) and the native-port scoping rule ("SIMD is an optimization packet, not
+a substitute": scalar correctness first, measured before/after always).
 
 Round-1 evidence says the cost is structural, not arithmetic — so this
 lane is deliberately *third* in sequencing: kernels land where WS-A/WS-C
 restructuring has exposed batchable loops, not before.
 
-Current execution note (2026-07-05): standalone WP-PG.40 PR #3270 was
+Current execution note (2026-07-07): standalone WP-PG.40 PR #3270 was
 closed by maintainer direction so the D1/D2 contract and prototype evidence
-ride with the first real SIMD kernel PR, not a docs-only packet. The first
-production-consumer slice is `wp-pg-42-soa-broadphase-simd`: it keeps the
-DART 6 packaged default at baseline ISA, extends `ci_simd.yml` so the
-DART detector builds/runs under scalar/SSE4.2/AVX/AVX2, and starts
-WP-PG.42 with AVX-width SIMD-screened finite broadphase candidate
+rode with the first real SIMD kernel PR, not a docs-only packet. WP-PG.42
+merged as PR #3299: it keeps the DART 6 packaged default at baseline ISA,
+extends `ci_simd.yml` so the DART detector builds/runs under scalar/SSE4.2/
+AVX/AVX2, and uses AVX-width SIMD-screened finite broadphase candidate
 batches while scalar/SSE/NEON builds keep the previous scalar sweep shape.
-WS-F phase 1 (#3281) has landed only the internal native collision math
-core; there is still no DART 6 detector adapter or phase-4 native
-broadphase SIMD work, so this slice does not duplicate WS-F.
+The 2026-07-07 integration audit also verified an installed DART consumer can
+`find_package(DART)` and include public `dart/simd` headers with C++17 using
+the installed include surface; `dart-simd` remains a build-tree helper target.
+WS-F has since landed internal native detector adapter/bridge PRs, but its
+phase-4 broadphase optimization lane is still the place for any native-detector
+SIMD work.
 
 Local evidence (2026-07-05, js workstation, GCC 15.2, CPU scaling enabled;
 treat small deltas as noisy): `origin/release-6.20@c371060c9fa` was compared
@@ -87,11 +89,11 @@ the 120-object row (30.29 ms / 1.61% of 100 profiled steps).
 
 #### WP-PG.42 — SoA broadphase sweep batching (coordinate with WS-F)
 
-- Status: claimed — `wp-pg-42-soa-broadphase-simd` starts with
-  AVX-width SIMD-screened finite candidate batches in the existing DART
-  detector, plus CI matrix coverage for the production consumer. Remaining
-  scope in this packet still includes measured before/after evidence and
-  any version-gated AABB recomputation follow-up that survives profiling.
+- Status: done — PR #3299. The packet added AVX-width SIMD-screened finite
+  candidate batches in the existing DART detector, plus CI matrix coverage for
+  the production consumer and measured before/after evidence. Any future AABB
+  recomputation or native-detector SIMD follow-up needs fresh profiling
+  evidence and should claim a new packet.
 - Objective: split the DART-native detector's `BroadphaseEntry` into SoA
   min/max arrays and batch the y/z overlap tests inside the x-sweep
   (`DARTCollisionDetector.cpp:2329-2347`) with `dart/simd`; version-gate

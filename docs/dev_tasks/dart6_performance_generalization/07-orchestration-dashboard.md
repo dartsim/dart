@@ -3,14 +3,15 @@
 Status board only; packet definitions live in the lane docs. Update this
 file (and RESUME.md) in every PR that claims or completes a packet.
 
-Branch point: `origin/release-6.20` @ `70b92010311` (2026-07-04 plan
-branch point).
+Branch point: `origin/release-6.20` @ `9ff8b1d77a1` (2026-07-07, after
+WP-PG.02 / PR #3327).
 Guard baseline: `origin/release-6.20` @ `b9e6910c066` (2026-07-05
 WP-PG.01 current-base guard refresh).
-Related open queue at last refresh: none blocking (enablers merged:
-#3209, #3226, #3229, #3230, #3234, #3281). WP-PG.40 standalone PR
-#3270 was closed by maintainer direction and its D1/D2 evidence now rides
-with the first real SIMD-kernel PR.
+Related open queue at last refresh: WP-PG.20 / PR #3329 is hosted-CI queued
+only; PR #3331 is a rename-only branch touching SIMD headers and is orthogonal
+to this cleanup. Enablers merged: #3209, #3226, #3229, #3230, #3234, #3281,
+#3299, #3303, #3306, #3318, #3319, #3327. WP-PG.40 standalone PR #3270 was
+closed by maintainer direction and its D1/D2 evidence rode with WP-PG.42.
 
 ## Lane status
 
@@ -19,16 +20,16 @@ with the first real SIMD-kernel PR.
 | WS-A constraint/LCP | 02-constraint-lcp-lane.md | PG.10–PG.15 | open (PG.13 evidence-gated; PG.14 blocked D3; PG.15 blocked D7) |
 | WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | open (PG.23 blocked D8; lane re-review at WS-F phase 5) |
 | WS-C dynamics batching | 04-dynamics-batching-lane.md | PG.30–PG.33 | open (PG.33 gated) |
-| WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | active (PG.40 folded into PG.42; PG.41 waits for PG.10 seam evidence) |
-| WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 done; PG.02/PG.03 next; PG.04 blocked D4) |
-| WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; phase 1 internal math core merged (#3281); no DART 6 detector adapter or phase-4 broadphase SIMD yet |
+| WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | first consumer done (PG.42/#3299; PG.41 waits for PG.10 seam evidence) |
+| WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 and PG.02 done; PG.03 next; PG.04 blocked D4) |
+| WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; internal core/adapter/bridge merged (#3281, #3303, #3306, #3318, #3319); phase-4 native broadphase SIMD still future |
 
 ## Packet board
 
 | Packet | Lane | Status | Branch / PR | Evidence |
 | --- | --- | --- | --- | --- |
 | WP-PG.01 baseline packet | WS-E | done — PR pending | `wp-pg-01-baseline-evidence` | 01-baseline-evidence.md (S1–S6 guard rows, profile splits, prior-art triage) |
-| WP-PG.02 benchmark matrix | WS-E | claimed — local | `wp-pg-02-contact-container-matrix` | Active rows now cover DART/ODE/FCL/Bullet at 60/120 objects plus 4-thread sweep; bounded DART/ODE deactivation rows are in the dashboard filter; 900 dense-container rows are registered for manual filters but excluded from the default dashboard slice after local budget smoke |
+| WP-PG.02 benchmark matrix | WS-E | done — PR #3327 | `wp-pg-02-contact-container-matrix` | Active rows now cover DART/ODE/FCL/Bullet at 60/120 objects plus 4-thread sweep; bounded DART/ODE deactivation rows are in the dashboard filter; 900 dense-container rows are registered for manual filters but excluded from the default dashboard slice after local budget smoke |
 | WP-PG.03 profiling doc | WS-E | open | — | — |
 | WP-PG.04 executor tooling | WS-E | blocked (D4) | — | — |
 | WP-PG.10 LCP instrumentation | WS-A | open | — | — |
@@ -58,8 +59,9 @@ against the packet's acceptance evidence.
 ## Cross-lane coordination notes
 
 - WS-F consumes WS-D kernels in its phase 4; WS-D's WP-PG.42 checked live
-  phase status before claiming. As of #3281, WS-F has internal native
-  collision math only, with no DART 6 detector adapter or broadphase SIMD.
+  phase status before claiming. As of #3319, WS-F has internal native core,
+  broadphase/narrowphase pieces, and the DART 6 detector adapter/bridge, but
+  phase-4 native broadphase SIMD is still future work.
 - WS-B investment is re-reviewed when WS-F reaches phase 5 (facade
   decision) — see D5 in the README.
 - WS-A WP-PG.12 and WS-C WP-PG.30 share the single-free-body

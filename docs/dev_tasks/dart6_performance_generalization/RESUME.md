@@ -9,15 +9,13 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
-**Current claimed packet: WP-PG.02 — Extend the contact-container benchmark
-matrix** ([06-infra-evidence-lane.md](06-infra-evidence-lane.md)). Claim this
-on `wp-pg-02-contact-container-matrix` off current `origin/release-6.20`;
-do not continue the rejected WP-PG.11 solver branch.
-
-Immediate next step: finish verification (`pixi run lint`, `pixi run
-check-lint`, benchmark target build, dashboard dry-run, and merge/preview smoke
-over the emitted JSON). Keep any performance claim out of the PR body unless
-backed by a fresh current-base A/B comparison.
+**Current cleanup: SIMD integration audit** on
+`complete-dart6-simd-integration` off current `origin/release-6.20`. This is
+not a new performance packet: it closes remaining integration hygiene after
+WP-PG.42 / PR #3299 and WP-PG.02 / PR #3327 by tightening SIMD CI triggers,
+fixing the stale build-option docs, and refreshing the tracker state. Keep any
+new performance claim out of the PR body unless backed by a fresh current-base
+A/B comparison.
 
 **WP-PG.01 is captured** (branch `wp-pg-01-baseline-evidence`, PR
 pending) — guard rows, profile splits, and prior-art triage are in
@@ -28,18 +26,17 @@ many-islands regime is ~50% integration (WS-C is the lever there).
 
 Claimable now, in priority order:
 
-1. **WP-PG.02** (WS-E — benchmark matrix coverage for honest future A/B).
-2. **WP-PG.03** (WS-E — profiling doc and Tracy config).
-3. **WP-PG.21** only if a new current-base profile justifies revisiting the
+1. **WP-PG.03** (WS-E — profiling doc and Tracy config).
+2. **WP-PG.21** only if a new current-base profile justifies revisiting the
    ODE active path. WP-PG.20, WP-PG.22, and WP-PG.11 all have local
    current-base rejection evidence from 2026-07-06.
 
 Blocked/gated (do not claim): PG.04 (D4), PG.12 (evidence), PG.13
 (PG.10 census), PG.14 (D3 — now urgent), PG.15 (D7 — now urgent), PG.23
 (D8), PG.33, PG.41. PG.42 is done in PR #3299; WP-PG.30 is done in
-PR #3310. **D3 and D7 are the decisions that unblock the dense-pile
-fixture**; everything claimable above serves the many-islands and ODE
-regimes meanwhile.
+PR #3310; WP-PG.02 is done in PR #3327. **D3 and D7 are the decisions that
+unblock the dense-pile fixture**; everything claimable above serves the
+many-islands and ODE regimes meanwhile.
 
 ## Verify commands (every packet)
 
@@ -109,6 +106,10 @@ decisions.
   dashboard slice after local smoke runs exceeded the runtime budget.
   Artifacts: `/tmp/wp_pg02_contact_container_deactivation_rows.json`,
   `/tmp/wp_pg02_contact_container_active_fcl_bullet_smoke.json`.
+- 2026-07-07: WP-PG.02 merged as PR #3327. Follow-up SIMD integration cleanup
+  started on `complete-dart6-simd-integration`: `ci_simd.yml` path filters,
+  build-option docs, and tracker freshness after WP-PG.42/#3299 and
+  WP-PG.02/#3327.
 
 ## Session log
 
