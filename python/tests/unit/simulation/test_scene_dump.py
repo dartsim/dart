@@ -1,10 +1,27 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import dartpy as dart
 import numpy as np
 import pytest
+
+
+ROOT = Path(__file__).resolve().parents[4]
+
+
+class _FakeShapeType:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
+class _FakeShape:
+    def __init__(self, name: str, **attrs) -> None:
+        self.type = _FakeShapeType(name)
+        self.local_transform = np.eye(4)
+        for key, value in attrs.items():
+            setattr(self, key, value)
 
 
 def _simulation():
@@ -42,6 +59,30 @@ def test_compute_step_metrics_binding_reports_finite_step_state():
     assert metrics.max_penetration_depth >= 0.0
     assert metrics.last_step_iterations >= 0
     assert math.isfinite(metrics.last_step_residual)
+
+
+def test_agent_verification_symbols_are_in_committed_stubs():
+    root_stub = (ROOT / "python" / "stubs" / "dartpy" / "__init__.pyi").read_text()
+    simulation_stub = (
+        ROOT / "python" / "stubs" / "dartpy" / "simulation.pyi"
+    ).read_text()
+
+    for token in (
+        "StepMetrics",
+        "def compute_step_metrics(self) -> StepMetrics",
+        "def dump_scene_json(world: Any) -> dict[str, Any]",
+        "def dump_scene_text(world: Any) -> str",
+        "MultibodyIntegrationFamily",
+    ):
+        assert token in simulation_stub
+
+    for token in (
+        "StepMetrics",
+        "dump_scene_json",
+        "dump_scene_text",
+        "MultibodyIntegrationFamily",
+    ):
+        assert token in root_stub
 
 
 def test_scene_dump_json_and_text_match_agent_schema():
@@ -146,3 +187,49 @@ def test_capsule_scene_dump_size_includes_caps():
     # Full axial extent includes both hemispherical caps: 2*half_height + 2*radius
     # (not the bare cylinder segment 2*half_height).
     assert shape["size"] == pytest.approx([0.6, 0.6, 1.6])
+
+
+def test_scene_dump_serializes_followup_shape_fields():
+    from dartpy import _scene_dump
+
+    cone = _scene_dump._shape_to_json(
+        _FakeShape("CONE", radius=0.4, height=1.5),
+        "body:cone",
+        0,
+    )
+    assert cone["type"] == "cone"
+    assert cone["size"] == pytest.approx([0.8, 0.8, 1.5])
+    assert cone["radius"] == pytest.approx(0.4)
+    assert cone["height"] == pytest.approx(1.5)
+
+    heightmap = _scene_dump._shape_to_json(
+        _FakeShape(
+            "HEIGHTMAP",
+            size=(2.0, 3.0, 0.5),
+            heights=np.array([[0.0, 0.25], [0.5, -0.25]]),
+            width=2.0,
+            depth=3.0,
+        ),
+        "body:heightmap",
+        0,
+    )
+    assert heightmap["type"] == "heightmap"
+    assert heightmap["size"] == pytest.approx([2.0, 3.0, 0.5])
+    assert heightmap["height_sample_count"] == 4
+    assert heightmap["height_range"] == pytest.approx([-0.25, 0.5])
+
+    soft_body = _scene_dump._shape_to_json(
+        _FakeShape(
+            "SOFT_BODY",
+            vertices=[(0.0, 0.0, 0.0), (1.0, 2.0, 3.0)],
+            triangles=[(0, 1, 1)],
+            tetrahedra=[(0, 1, 1, 1)],
+        ),
+        "body:soft",
+        0,
+    )
+    assert soft_body["type"] == "soft_body"
+    assert soft_body["size"] == pytest.approx([1.0, 2.0, 3.0])
+    assert soft_body["vertex_count"] == 2
+    assert soft_body["triangle_count"] == 1
+    assert soft_body["tetrahedron_count"] == 1

@@ -32,6 +32,10 @@ dynamic failures (explosions, tunneling); use text to decide correctness.
   runs with a bit-exact checksum mode (determinism) or a per-column tolerance
   mode, reporting the first divergence. Derive an empirical drift band from
   DART's own runs rather than importing a threshold — no engine publishes one.
+- **Scene diff** — `pixi run scene-diff` compares two
+  `dump_scene_json` outputs structurally, with numeric tolerance and a
+  machine-readable verdict. Use it when the question is "did the scene I built
+  match the scene I intended?" before relying on a rendered image.
 - **Profiling** — `docs/onboarding/profiling.md` covers the text-first step
   profiler and solver diagnostics for _where time goes_.
 
@@ -54,10 +58,21 @@ dynamic failures (explosions, tunneling); use text to decide correctness.
   golden workflow (`--update`, retries). `pixi run image-sheet` assembles a
   labeled contact-sheet grid (>=200 px tiles). Contrast is scene-dependent, so
   it is reported but only gates pass/fail with `--require-contrast`.
+- **A/B study reducer** — `pixi run image-ab-study` reduces blind-judge rows
+  for single-view, multi-view, turntable, and annotated captures into detection
+  deltas and false-positive rates. Treat its output as research evidence only
+  when the rows came from a real blind protocol; unit fixtures are not evidence.
+- **Round-2 packet prep** — `pixi run image-ab-round2 -- generate --out <dir>`
+  renders a blinded DART 7 packet for the image-study follow-up: single view,
+  multi-view grid, turntable grid, and neutral annotation arms. Judges fill
+  observations without reading `answer_key.json`; score them with the
+  `image-ab-round2 -- score` subcommand using `--answer-key`, `--observations`,
+  `--out`, and optional `--results` paths.
 - **Recommended default capture**: one ~1280 px frame, UI hidden, from the 3/4
-  view; add a 9-frame grid for motion questions. Avoid filmstrips (they read
-  worst in the A/B). Keep images as corroboration, never the sole oracle for
-  static geometry.
+  view; add a 9-frame grid for motion questions. Avoid filmstrips; round-2
+  multi-view, turntable, and annotation studies did not improve static-defect
+  detection enough to replace the default. Keep images as corroboration, never
+  the sole oracle for static geometry.
 
 ## Opt-in extras and gates
 
@@ -72,6 +87,11 @@ dynamic failures (explosions, tunneling); use text to decide correctness.
   rerun for interactive or agent inspection (`--spawn` / `--save`). Opt-in and
   never a core or wheel dependency: install `rerun-sdk` yourself; absent it the
   tool prints an install hint and exits nonzero without a traceback.
+- **VLM bundle** — `pixi run verification-bundle` packages scene JSON/text,
+  metrics, trajectories, contacts, one still frame, and an optional grid into a
+  manifest plus provider-neutral review prompt. The bundle is for an external
+  VLM or reviewer call; it does not add a network dependency or make VLM output
+  a default gate.
 
 ## DART 6 (release-6.20)
 
