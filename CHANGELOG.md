@@ -60,6 +60,10 @@
     route docs-update workflows through it so DART 6.20 agents promote durable
     task facts by lifecycle before retiring `docs/dev_tasks/` folders.
 
+  * Add the release-branch `dart-retro` AI workflow so maintainers and agents
+    can capture durable lessons from completed DART 6.20 work through
+    `/dart-retro` or `$dart-retro`.
+
   * Add a "surface your unknowns" discipline to the release-branch AI
     principles (`docs/ai/principles.md`): before a non-trivial fix, convert
     consequential unknowns into knowns — a reproduction, a focused read of the
