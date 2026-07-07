@@ -31,7 +31,7 @@ VARIANTS = ("single", "multi_view", "turntable", "annotated")
 class BoxSpec:
     name: str
     position: tuple[float, float, float]
-    size: tuple[float, float, float] = (0.24, 0.24, 0.24)
+    extents: tuple[float, float, float] = (0.24, 0.24, 0.24)
 
 
 @dataclass(frozen=True)
@@ -93,11 +93,15 @@ def _make_world(case: CaseSpec) -> Any:
     world = dart.World(gravity=(0.0, 0.0, -9.81))
     ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.04))
     ground.is_static = True
-    ground.set_collision_shape(dart.CollisionShape.box((1.6, 1.6, 0.08)))
+    ground.set_collision_shape(dart.CollisionShape.box(_half_extents((1.6, 1.6, 0.08))))
     for box in case.boxes:
         body = world.add_rigid_body(box.name, mass=1.0, position=box.position)
-        body.set_collision_shape(dart.CollisionShape.box(box.size))
+        body.set_collision_shape(dart.CollisionShape.box(_half_extents(box.extents)))
     return world
+
+
+def _half_extents(extents: tuple[float, float, float]) -> tuple[float, float, float]:
+    return tuple(0.5 * value for value in extents)
 
 
 def _render_world(

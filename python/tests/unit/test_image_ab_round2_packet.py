@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+import types
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -11,6 +12,57 @@ if str(SCRIPTS) not in sys.path:
 
 import image_ab_round2_packet
 from _image_tools import read_image, write_png
+
+
+def test_make_world_uses_half_extents_for_clean_controls(monkeypatch) -> None:
+    shape_calls: list[tuple[float, float, float]] = []
+
+    class FakeBody:
+        def __init__(self, name: str, position: tuple[float, float, float]) -> None:
+            self.name = name
+            self.position = position
+            self.is_static = False
+            self.shape = None
+
+        def set_collision_shape(self, shape) -> None:
+            self.shape = shape
+
+    class FakeWorld:
+        def __init__(self, gravity: tuple[float, float, float]) -> None:
+            self.gravity = gravity
+            self.bodies: list[FakeBody] = []
+
+        def add_rigid_body(
+            self,
+            name: str,
+            *,
+            position: tuple[float, float, float],
+            mass: float | None = None,
+        ) -> FakeBody:
+            del mass
+            body = FakeBody(name, position)
+            self.bodies.append(body)
+            return body
+
+    class FakeCollisionShape:
+        @staticmethod
+        def box(half_extents: tuple[float, float, float]):
+            shape_calls.append(half_extents)
+            return ("box", half_extents)
+
+    fake_dartpy = types.SimpleNamespace(
+        World=FakeWorld,
+        CollisionShape=FakeCollisionShape,
+    )
+    monkeypatch.setitem(sys.modules, "dartpy", fake_dartpy)
+
+    world = image_ab_round2_packet._make_world(image_ab_round2_packet.CASES[0])
+
+    assert shape_calls == [(0.8, 0.8, 0.04), (0.12, 0.12, 0.12)]
+    ground = world.bodies[0]
+    box = world.bodies[1]
+    assert ground.position[2] + shape_calls[0][2] == 0.0
+    assert box.position[2] - shape_calls[1][2] == 0.0
 
 
 def test_judge_form_hides_case_variant_and_expected_labels() -> None:
