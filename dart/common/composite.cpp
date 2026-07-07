@@ -43,6 +43,13 @@
 namespace dart {
 namespace common {
 
+#if DART_OS_WINDOWS
+template class DART_API
+    detail::ComposeData<detail::CompositeState, detail::GetState>;
+template class DART_API
+    detail::ComposeData<detail::CompositeProperties, detail::GetProperties>;
+#endif
+
 //==============================================================================
 /// Type maps are std::map containers which map an object's Type Info to some
 /// instance or trait of that type. For example, an ObjectMap will map an
