@@ -50,23 +50,23 @@ manager. FCL stays default; no new dependency; C++17. The plan slices
 phase 2 into PRs **P1–P9** (+ optional P10), each gz-gated and
 scope-diff-guarded.
 
-- **P1** (BroadPhase base + BruteForce): **#3303** — engine-only, all
-  gates green (build, ctest, gz 199/4/1). Merging.
+- **P1** (BroadPhase base + BruteForce): **#3303** — **merged**.
 - **P2** (narrowphase dispatcher, sphere/box only): **#3306** — **merged**
   (`dart/collision/native/narrow_phase/narrow_phase.{hpp,cpp}` now on
   `release-6.20`).
+- **P3a** (adapter skeleton + sphere/box shape conversion, intentionally
+  unregistered): **#3318** — **merged**. The `"native"` factory key is still
+  unknown by design.
 
-**Next: P3a — adapter skeleton + sphere/box shape conversion, intentionally
-unregistered**, per plan §1.1/§1.2/§1.6 and the P3a row in §3, once P1 (#3303)
-is merged (P3a's adapter must compile against both the P1 broadphase and the P2
-dispatcher). Then P3b (bridge translation + `"native"` factory registration +
-`sphere_box` + parity), P4–P9 (pair coverage), then phases 3–7. **Do not** add a
+**Next: P3b — bridge translation + `"native"` factory registration +
+`sphere_box` + parity** (#3319), per plan §1.5/§1.6 and the P3b row in §3.
+Then P4–P9 (pair coverage), then phases 3–7. **Do not** add a
 `CollisionDetectorType::Native` enum or touch `World`/`ConstraintSolver`/
-`WorldConfig` — selection is the factory pointer only
-(`getFactory()->create("native")`) after P3b.
+`WorldConfig` — selection becomes the factory pointer
+(`getFactory()->create("native")`) only after P3b.
 
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
-PRs, worktrees, gotchas, exact P3a starting steps).
+PRs, worktrees, gotchas, exact P3b next steps).
 
 ## Standing constraints
 
