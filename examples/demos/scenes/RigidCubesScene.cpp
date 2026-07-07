@@ -36,18 +36,13 @@
 // Deviations from the original:
 //  - The recorded-frame playback mode (key 'p', World::bake()/getRecording())
 //    is intentionally omitted. It relied on customPreRefresh, which runs once
-//    per render frame independent of the simulate/pause state; DemoSceneSetup
-//    (BRIEF-phase1.md's scene contract) only exposed preStep/postStep at the
-//    time of this port (once per simulation step, only while running).
-//    Rather than ship a playback mode that silently freezes whenever
-//    Play/Pause is off (unlike the original), it was left out; Phase 3 has
-//    since added DemoSceneSetup::preRefresh, so a playback mode could be
-//    revisited, but that is a separate, larger feature and out of scope here.
+//    per render frame independent of the simulate/pause state. A
+//    DemoSceneSetup::preRefresh-based playback mode could be added, but that
+//    is a separate feature from this scene's force/stacking behavior.
 //  - This scene's own bespoke contact-force visualization (key 'v', the
 //    contactFrames/contactArrows/showContactForces machinery) has been
-//    removed: BRIEF-phase3.md #3 extracts exactly this logic into a
-//    reusable host-level facility (DemoHost's ContactVisualizer, toggled in
-//    Diagnostics) that now applies to every scene, not just this one. Force
+//    removed in favor of DemoHost's reusable ContactVisualizer, toggled from
+//    the host's Tools tab, so every scene can inspect contacts. Force
 //    application (keys 1-4) is unaffected and preserved with full parity.
 
 #include "Scenes.hpp"

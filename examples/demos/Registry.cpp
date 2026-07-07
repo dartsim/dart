@@ -39,9 +39,8 @@ namespace dart_demos {
 //==============================================================================
 std::vector<DemoScene> makeDemoScenes()
 {
-  // Category order below is the navigator's first-appearance order; it
-  // follows the frozen catalog taxonomy in
-  // docs/dev_tasks/dart6_consolidated_demos/PLAN.md.
+  // Category order below is the navigator's first-appearance order. Keep this
+  // in sync with examples/demos/README.md when adding or moving scenes.
   std::vector<DemoScene> scenes;
   scenes.push_back(makeEmptyScene());
   scenes.push_back(makeHelloWorldScene());

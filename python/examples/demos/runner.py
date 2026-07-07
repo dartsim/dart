@@ -1,9 +1,9 @@
 """CLI and keyboard-navigated viewer runtime for the dartpy consolidated
 demos.
 
-See docs/dev_tasks/dart6_consolidated_demos/EVIDENCE-dartpy-bindings.md for
-why this is a plain ``dart.gui.osg.Viewer`` (no ImGui) driven by a single
-``GUIEventHandler`` navigator instead of the C++ host's panel chrome.
+This is a plain ``dart.gui.osg.Viewer`` (no ImGui) driven by a single
+``GUIEventHandler`` navigator instead of the C++ host's panel chrome because
+dartpy has no Python-side ImGui panel API.
 
 Modes:
   --list                 Print the catalog and exit.
@@ -171,11 +171,11 @@ def cmd_shot(scenes, scene_id, path, steps):
         # C++ demos host's headless-shot recipe (examples/demos/
         # DemoHost.cpp). The actual write happens inside SaveScreen's draw
         # callback (dart/gui/osg/Viewer.cpp), which may run on a separate
-        # draw thread depending on the viewer's threading model (dartpy has
-        # no setThreadingModel binding to force SingleThreaded -- see
-        # EVIDENCE-dartpy-bindings.md) -- so keep pumping frames for a short
-        # grace period until the file actually shows up, rather than trust
-        # a single extra frame and risk a silently-truncated/missing PNG.
+        # draw thread depending on the viewer's threading model. dartpy has
+        # no setThreadingModel binding to force SingleThreaded, so keep
+        # pumping frames for a short grace period until the file actually
+        # shows up, rather than trust a single extra frame and risk a
+        # silently-truncated/missing PNG.
         try:
             os.remove(path)
         except FileNotFoundError:

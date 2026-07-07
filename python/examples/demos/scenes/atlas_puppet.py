@@ -8,11 +8,8 @@ Significantly reworked from the original, which builds its whole IK rig on
 ``dart.dynamics.EndEffector`` (per-limb offset transforms, foot Support
 polygons feeding a ``BalanceConstraint``). ``EndEffector`` is not bound in
 dartpy at all -- no ``createEndEffector``, no ``EndEffector`` class, nothing
-beyond ``Skeleton.getNumEndEffectors()`` (see
-``docs/dev_tasks/dart6_consolidated_demos/EVIDENCE-dartpy-bindings.md``,
-which only flagged the narrower ``SupportPolygonVisual`` gap; this port
-found the EndEffector gap is much wider while trying to make the rest of
-the file run). Since ``BalanceConstraint`` computes its cost from
+beyond ``Skeleton.getNumEndEffectors()``. Since ``BalanceConstraint`` computes
+its cost from
 ``Skeleton::getSupportPolygon()``, which is itself built from active
 EndEffector supports, it is unusable with zero EndEffectors (empty support
 polygon) -- not merely cosmetically degraded, so this port drops it rather
