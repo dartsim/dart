@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/sub_ptr.hpp"
+#include "dart/common/SubPtr.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 

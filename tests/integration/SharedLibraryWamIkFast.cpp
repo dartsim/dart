@@ -32,7 +32,7 @@
 
 #include "SharedLibraryWamIkFast.hpp"
 
-#include <dart/dynamics/ikfast.h> // found inside share/openrave-X.Y/python/ikfast.h
+#include <dart/dynamics/Ikfast.h> // found inside share/openrave-X.Y/python/Ikfast.h
 using namespace ikfast;
 
 // check if the included ikfast version matches what this file was compiled with

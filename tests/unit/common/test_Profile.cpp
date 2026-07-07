@@ -39,7 +39,7 @@
 #include <string>
 
 #if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
-  #include <dart/common/detail/profiler.hpp>
+  #include <dart/common/detail/Profiler.hpp>
 
   #include <chrono>
   #include <thread>

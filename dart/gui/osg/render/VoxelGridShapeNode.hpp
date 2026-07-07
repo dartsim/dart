@@ -33,7 +33,7 @@
 #ifndef DART_GUI_OSG_RENDER_VOXELGRIDSHAPENODE_HPP_
 #define DART_GUI_OSG_RENDER_VOXELGRIDSHAPENODE_HPP_
 
-#include <dart/config.hpp>
+#include <dart/Config.hpp>
 
 #if HAVE_OCTOMAP
 

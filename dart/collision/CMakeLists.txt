@@ -10,7 +10,7 @@ dart_add_core_sources(${srcs} ${detail_srcs})
 dart_get_filename_components(header_names "collision headers" ${hdrs})
 # TODO: remove below line once the files are completely removed.
 list(REMOVE_ITEM header_names "Option.hpp" "Result.hpp")
-set(header_names ${header_names} dart/dart.hpp fcl/fcl.hpp)
+set(header_names ${header_names} dart/Dart.hpp fcl/fcl.hpp)
 dart_generate_include_header_file(
   "${CMAKE_CURRENT_BINARY_DIR}/collision.hpp"
   "dart/collision/"

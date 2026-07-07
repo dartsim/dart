@@ -37,7 +37,7 @@
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 
-#include <dart/dynamics/ikfast.h>
+#include <dart/dynamics/Ikfast.h>
 
 namespace dart {
 namespace dynamics {

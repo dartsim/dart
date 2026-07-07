@@ -38,7 +38,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/config.hpp"
+#include "dart/Config.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"

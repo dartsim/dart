@@ -36,7 +36,7 @@
 #include <dart/collision/native/NativeCollisionGroup.hpp>
 #include <dart/collision/native/NativeCollisionObject.hpp>
 #include <dart/collision/native/detail/NativeShapeConversion.hpp>
-#include <dart/collision/native/shapes/shape.hpp>
+#include <dart/collision/native/shapes/Shape.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/PlaneShape.hpp>

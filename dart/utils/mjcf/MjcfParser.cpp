@@ -35,7 +35,7 @@
 #include "dart/collision/collision.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/common.hpp"
-#include "dart/config.hpp"
+#include "dart/Config.hpp"
 #include "dart/constraint/constraint.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"

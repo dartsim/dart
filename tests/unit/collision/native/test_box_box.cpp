@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/native/narrow_phase/box_box.hpp>
-#include <dart/collision/native/narrow_phase/box_box/contact_reduction.hpp>
-#include <dart/collision/native/narrow_phase/box_box/face_clip.hpp>
-#include <dart/collision/native/narrow_phase/box_box/sat.hpp>
-#include <dart/collision/native/shapes/shape.hpp>
-#include <dart/collision/native/types.hpp>
+#include <dart/collision/native/narrow_phase/BoxBox.hpp>
+#include <dart/collision/native/narrow_phase/box_box/ContactReduction.hpp>
+#include <dart/collision/native/narrow_phase/box_box/FaceClip.hpp>
+#include <dart/collision/native/narrow_phase/box_box/Sat.hpp>
+#include <dart/collision/native/shapes/Shape.hpp>
+#include <dart/collision/native/Types.hpp>
 
 #include <gtest/gtest.h>
 

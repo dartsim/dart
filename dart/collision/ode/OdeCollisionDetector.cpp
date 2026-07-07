@@ -38,7 +38,7 @@
 #include "dart/collision/ode/OdeCollisionObject.hpp"
 #include "dart/collision/ode/OdeTypes.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/config.hpp"
+#include "dart/Config.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"

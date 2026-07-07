@@ -38,7 +38,7 @@
 #include <dart/dynamics/Entity.hpp>
 #include <dart/dynamics/Shape.hpp>
 
-#include <dart/common/sub_ptr.hpp>
+#include <dart/common/SubPtr.hpp>
 
 #include <Eigen/Geometry>
 

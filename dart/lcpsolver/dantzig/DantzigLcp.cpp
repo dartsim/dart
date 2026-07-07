@@ -648,4 +648,4 @@ template bool solveLcp<double>(
 
 } // namespace dart::lcpsolver::dantzig
 
-// Note: Template implementations are in lcp-impl.hpp (included via lcp.h)
+// Note: Template implementations are in lcp-impl.hpp (included via Lcp.h)

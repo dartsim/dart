@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_BODYNODE_HPP_
 #define DART_DYNAMICS_BODYNODE_HPP_
 
-#include <dart/config.hpp>
+#include <dart/Config.hpp>
 
 #include <dart/dynamics/EndEffector.hpp>
 #include <dart/dynamics/Frame.hpp>

@@ -33,7 +33,7 @@
 // Ported near-verbatim from examples/human_joint_limits
 // (HumanArmJointLimitConstraint.cpp). Two necessary fixes for this DART 6.20
 // tree, neither touching the constraint math:
-//  1. `#include <dart/external/odelcpsolver/lcp.h>` no longer exists in this
+//  1. `#include <dart/external/odelcpsolver/Lcp.h>` no longer exists in this
 //     source tree (that module was renamed/refactored to
 //     dart/lcpsolver/dantzig/, which no longer exports `dInfinity` either);
 //     replaced with `std::numeric_limits<double>::infinity()` directly.

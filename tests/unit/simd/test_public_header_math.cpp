@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simd/math.hpp>
+#include <dart/simd/Math.hpp>
 
 #include <gtest/gtest.h>
 

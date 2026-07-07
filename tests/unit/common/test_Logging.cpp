@@ -34,7 +34,7 @@
 
 #include <dart/common/Logging.hpp>
 // For version macros
-#include <dart/config.hpp>
+#include <dart/Config.hpp>
 
 #include <gtest/gtest.h>
 

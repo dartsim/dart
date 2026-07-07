@@ -2,60 +2,60 @@
 
 set(
   simd_headers
-  config.hpp
-  fwd.hpp
-  math.hpp
-  memory.hpp
-  simd.hpp
-  detail/backend.hpp
+  Config.hpp
+  Fwd.hpp
+  Math.hpp
+  Memory.hpp
+  Simd.hpp
+  detail/Backend.hpp
   # Scalar backend (always available)
-  detail/scalar/vec.hpp
-  detail/scalar/vec_mask.hpp
-  detail/scalar/operations.hpp
+  detail/scalar/Vec.hpp
+  detail/scalar/VecMask.hpp
+  detail/scalar/Operations.hpp
   # SSE4.2 backend
-  detail/sse42/vec.hpp
-  detail/sse42/vec_mask.hpp
-  detail/sse42/operations.hpp
+  detail/sse42/Vec.hpp
+  detail/sse42/VecMask.hpp
+  detail/sse42/Operations.hpp
   # AVX backend
-  detail/avx/vec.hpp
-  detail/avx/vec_mask.hpp
-  detail/avx/operations.hpp
+  detail/avx/Vec.hpp
+  detail/avx/VecMask.hpp
+  detail/avx/Operations.hpp
   # AVX2 backend
-  detail/avx2/vec.hpp
-  detail/avx2/vec_mask.hpp
-  detail/avx2/operations.hpp
+  detail/avx2/Vec.hpp
+  detail/avx2/VecMask.hpp
+  detail/avx2/Operations.hpp
   # AVX-512 backend
-  detail/avx512/vec.hpp
-  detail/avx512/vec_mask.hpp
-  detail/avx512/operations.hpp
+  detail/avx512/Vec.hpp
+  detail/avx512/VecMask.hpp
+  detail/avx512/Operations.hpp
   # ARM NEON backend
-  detail/neon/vec.hpp
-  detail/neon/vec_mask.hpp
-  detail/neon/operations.hpp
+  detail/neon/Vec.hpp
+  detail/neon/VecMask.hpp
+  detail/neon/Operations.hpp
   # ARM SVE backend
-  detail/sve/vec.hpp
-  detail/sve/vec_mask.hpp
-  detail/sve/operations.hpp
+  detail/sve/Vec.hpp
+  detail/sve/VecMask.hpp
+  detail/sve/Operations.hpp
   # Math functions
-  detail/math/constants.hpp
-  detail/math/exp_impl.hpp
-  detail/math/log_impl.hpp
-  detail/math/polynomial.hpp
-  detail/math/sincos_impl.hpp
+  detail/math/Constants.hpp
+  detail/math/ExpImpl.hpp
+  detail/math/LogImpl.hpp
+  detail/math/Polynomial.hpp
+  detail/math/SincosImpl.hpp
   # Geometry types
-  geometry/vector3.hpp
-  geometry/vector4.hpp
-  geometry/matrix3x3.hpp
-  geometry/matrix4x4.hpp
-  geometry/quaternion.hpp
-  geometry/isometry3.hpp
-  geometry/batch.hpp
+  geometry/Vector3.hpp
+  geometry/Vector4.hpp
+  geometry/Matrix3x3.hpp
+  geometry/Matrix4x4.hpp
+  geometry/Quaternion.hpp
+  geometry/Isometry3.hpp
+  geometry/Batch.hpp
   # Dynamic types
-  dynamic/vector.hpp
-  dynamic/matrix.hpp
+  dynamic/Vector.hpp
+  dynamic/Matrix.hpp
   # Eigen interop
-  eigen/interop.hpp
-  eigen/iterator.hpp
+  eigen/Interop.hpp
+  eigen/Iterator.hpp
 )
 
 # Header-only library (interface target)

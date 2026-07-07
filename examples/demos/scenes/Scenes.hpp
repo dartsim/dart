@@ -35,7 +35,7 @@
 
 #include "../DemoScene.hpp"
 
-#include <dart/config.hpp>
+#include <dart/Config.hpp>
 
 namespace dart_demos {
 

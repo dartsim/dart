@@ -33,7 +33,7 @@
 #ifndef DART_DYNAMICS_VOXELGRIDSHAPE_HPP_
 #define DART_DYNAMICS_VOXELGRIDSHAPE_HPP_
 
-#include <dart/config.hpp>
+#include <dart/Config.hpp>
 
 #if HAVE_OCTOMAP
 

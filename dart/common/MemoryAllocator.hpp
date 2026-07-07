@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_MEMORYALLOCATOR_HPP_
 #define DART_COMMON_MEMORYALLOCATOR_HPP_
 
-#include <dart/config.hpp>
+#include <dart/Config.hpp>
 
 #include <dart/common/Castable.hpp>
 

@@ -36,7 +36,7 @@
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
-#include "dart/config.hpp"
+#include "dart/Config.hpp"
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 

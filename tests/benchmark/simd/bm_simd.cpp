@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simd/simd.hpp>
+#include <dart/simd/Simd.hpp>
 
 #include <benchmark/benchmark.h>
 

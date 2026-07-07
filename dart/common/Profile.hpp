@@ -44,7 +44,7 @@
 // The selector macros default sensibly and can be overridden by compile
 // definitions wired from CMake (see DART_PROFILE_BUILTIN / DART_PROFILE_TRACY).
 
-#include <dart/config.hpp>
+#include <dart/Config.hpp>
 
 #include <iosfwd>
 #include <string>
@@ -89,7 +89,7 @@
 
   // Built-in text backend (readable console summaries)
   #if DART_PROFILE_ENABLE_TEXT
-    #include <dart/common/detail/profiler.hpp>
+    #include <dart/common/detail/Profiler.hpp>
   #endif
 
   #if defined(__COUNTER__)

@@ -35,9 +35,9 @@
 #include "dart/collision/fcl/fcl.hpp"
 #include "dart/collision/native/NativeCollisionDetector.hpp"
 #include "dart/common/common.hpp"
-#include "dart/config.hpp"
+#include "dart/Config.hpp"
 #include "dart/dynamics/dynamics.hpp"
-#include "dart/math/math.hpp"
+#include "dart/math/Math.hpp"
 
 #include <gtest/gtest.h>
 

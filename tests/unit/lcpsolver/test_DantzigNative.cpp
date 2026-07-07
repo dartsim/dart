@@ -8,7 +8,7 @@
 #include "dart/lcpsolver/dantzig/DantzigCommon.hpp"
 #include "dart/lcpsolver/dantzig/DantzigMisc.hpp"
 #include "dart/lcpsolver/dantzig/DantzigPivotMatrix.hpp"
-#include "dart/lcpsolver/dantzig/lcp.h"
+#include "dart/lcpsolver/dantzig/Lcp.h"
 
 #include <gtest/gtest.h>
 

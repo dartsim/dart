@@ -3,7 +3,7 @@
 
 #include "dart/lcpsolver/dantzig/DantzigCommon.hpp"
 #include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
-#include "tests/baseline/odelcpsolver/lcp.h"
+#include "tests/baseline/odelcpsolver/Lcp.h"
 
 #include <algorithm>
 #include <cstddef>

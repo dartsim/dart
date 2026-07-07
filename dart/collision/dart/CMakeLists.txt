@@ -7,14 +7,14 @@ dart_add_core_sources(${srcs} ${detail_srcs})
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_dart headers" ${hdrs})
 dart_generate_include_header_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/dart.hpp"
+  "${CMAKE_CURRENT_BINARY_DIR}/Dart.hpp"
   "dart/collision/dart/"
   ${header_names}
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dart.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/Dart.hpp
   DESTINATION include/dart/collision/dart
   COMPONENT headers
 )

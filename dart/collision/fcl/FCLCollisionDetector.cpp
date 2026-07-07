@@ -38,7 +38,7 @@
 #include "dart/collision/fcl/FCLCollisionGroup.hpp"
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 #include "dart/collision/fcl/FCLTypes.hpp"
-#include "dart/collision/fcl/tri_tri_intersection_test.hpp"
+#include "dart/collision/fcl/TriTriIntersectionTest.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"

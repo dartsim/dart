@@ -32,7 +32,7 @@
 
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
-#include "dart/config.hpp"
+#include "dart/Config.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"

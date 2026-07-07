@@ -33,7 +33,7 @@
 #ifndef DART_GUI_OSG_INCLUDEIMGUI_HPP_
 #define DART_GUI_OSG_INCLUDEIMGUI_HPP_
 
-#include <dart/config.hpp>
+#include <dart/Config.hpp>
 
 #include <dart/external/imgui/imgui.h>
 #include <dart/external/imgui/imgui_impl_opengl2.h>

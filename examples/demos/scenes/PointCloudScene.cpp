@@ -36,7 +36,7 @@
 // VoxelGridShape occupancy grid.
 //
 // Compiled only when DART was built with octomap support (HAVE_OCTOMAP, from
-// <dart/config.hpp> -- the same macro dart/dynamics/{PointCloud,VoxelGrid}
+// <dart/Config.hpp> -- the same macro dart/dynamics/{PointCloud,VoxelGrid}
 // Shape.{hpp,cpp} themselves are guarded by), mirroring
 // examples/CMakeLists.txt's `if(HAVE_OCTOMAP) add_subdirectory(point_cloud)`
 // gate. No examples/demos/CMakeLists.txt change is needed for this: unlike
@@ -67,7 +67,7 @@
 
 #include "Scenes.hpp"
 
-#include <dart/config.hpp>
+#include <dart/Config.hpp>
 
 #if HAVE_OCTOMAP
 

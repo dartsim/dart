@@ -40,7 +40,7 @@
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/common/SpecializedForAspect.hpp"
 #include "dart/common/Subject.hpp"
-#include "dart/common/sub_ptr.hpp"
+#include "dart/common/SubPtr.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
 

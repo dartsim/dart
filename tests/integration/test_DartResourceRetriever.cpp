@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/config.hpp"
+#include "dart/Config.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 
 #include <gtest/gtest.h>

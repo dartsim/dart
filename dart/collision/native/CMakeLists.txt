@@ -2,53 +2,53 @@
 
 set(
   collision_native_headers
-  ${CMAKE_CURRENT_SOURCE_DIR}/export.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/fwd.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/aabb.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/contact_point.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/types.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/contact_manifold.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Export.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Fwd.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Aabb.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ContactPoint.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Types.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ContactManifold.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionDetector.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionGroup.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionObject.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/detail/span.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/detail/Span.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/detail/NativeShapeConversion.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/shapes/shape.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/sdf/signed_distance_field.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/broad_phase.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/brute_force.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/gjk.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/gjk_inl.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/mpr.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/narrow_phase.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/sat.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/face_clip.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/contact_reduction.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_box.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_sphere.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/shapes/Shape.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/sdf/SignedDistanceField.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/BroadPhase.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/BruteForce.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Gjk.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/GjkInl.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Mpr.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/NarrowPhase.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/BoxBox.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/Sat.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/FaceClip.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/ContactReduction.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/SphereBox.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/SphereSphere.hpp
 )
 
 set(
   collision_native_sources
-  ${CMAKE_CURRENT_SOURCE_DIR}/aabb.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/types.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/contact_manifold.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Aabb.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Types.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ContactManifold.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionDetector.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionGroup.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionObject.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/detail/NativeShapeConversion.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/shapes/shape.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/gjk.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/mpr.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/narrow_phase.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/sat.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/face_clip.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/contact_reduction.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_box.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_sphere.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/brute_force.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/shapes/Shape.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Gjk.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Mpr.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/NarrowPhase.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/BoxBox.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/Sat.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/FaceClip.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/ContactReduction.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/SphereBox.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/SphereSphere.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/BruteForce.cpp
 )
 
 dart_add_core_headers(${collision_native_headers})

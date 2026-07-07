@@ -35,7 +35,7 @@
 
 #include "dart/common/Macros.hpp"
 
-#include <dart/config.hpp>
+#include <dart/Config.hpp>
 
 #include <dart/gui/osg/Utils.hpp>
 #include <dart/gui/osg/render/ShapeNode.hpp>

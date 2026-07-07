@@ -33,7 +33,7 @@
 #ifndef DART_GUI_OSG_SHAPEFRAMENODE_HPP_
 #define DART_GUI_OSG_SHAPEFRAMENODE_HPP_
 
-#include <dart/config.hpp>
+#include <dart/Config.hpp>
 
 #include <dart/dynamics/SmartPointer.hpp>
 

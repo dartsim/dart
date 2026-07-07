@@ -37,7 +37,7 @@
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/native/NativeCollisionGroup.hpp"
 #include "dart/collision/native/NativeCollisionObject.hpp"
-#include "dart/collision/native/narrow_phase/narrow_phase.hpp"
+#include "dart/collision/native/narrow_phase/NarrowPhase.hpp"
 #include "dart/common/Console.hpp"
 
 namespace dart {

@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simd/eigen/interop.hpp>
-#include <dart/simd/eigen/iterator.hpp>
-#include <dart/simd/simd.hpp>
+#include <dart/simd/eigen/Interop.hpp>
+#include <dart/simd/eigen/Iterator.hpp>
+#include <dart/simd/Simd.hpp>
 
 #include <Eigen/Core>
 #include <gtest/gtest.h>

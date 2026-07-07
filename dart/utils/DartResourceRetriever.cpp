@@ -34,7 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
-#include "dart/config.hpp"
+#include "dart/Config.hpp"
 
 #include <fstream>
 #include <iostream>

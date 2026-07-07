@@ -32,7 +32,7 @@
 
 #include "dart/common/Observer.hpp"
 #include "dart/common/Subject.hpp"
-#include "dart/common/sub_ptr.hpp"
+#include "dart/common/SubPtr.hpp"
 
 #include <gtest/gtest.h>
 

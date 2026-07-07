@@ -31,7 +31,7 @@
  */
 
 #include "dart/collision/CollisionResult.hpp"
-#include "dart/config.hpp"
+#include "dart/Config.hpp"
 #if HAVE_BULLET
   #include "dart/collision/bullet/BulletCollisionDetector.hpp"
 #endif

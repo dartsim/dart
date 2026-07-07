@@ -34,7 +34,7 @@
 #define DART_COLLISION_NATIVE_NATIVECOLLISIONGROUP_HPP_
 
 #include <dart/collision/CollisionGroup.hpp>
-#include <dart/collision/native/broad_phase/brute_force.hpp>
+#include <dart/collision/native/broad_phase/BruteForce.hpp>
 
 #include <memory>
 #include <unordered_map>

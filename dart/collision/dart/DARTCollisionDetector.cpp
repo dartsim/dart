@@ -47,7 +47,7 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SphereShape.hpp"
-#include "dart/simd/simd.hpp"
+#include "dart/simd/Simd.hpp"
 
 #include <algorithm>
 #include <condition_variable>

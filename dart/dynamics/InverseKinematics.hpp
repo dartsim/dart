@@ -44,7 +44,7 @@
 
 #include <dart/common/Signal.hpp>
 #include <dart/common/Subject.hpp>
-#include <dart/common/sub_ptr.hpp>
+#include <dart/common/SubPtr.hpp>
 
 #include <Eigen/SVD>
 

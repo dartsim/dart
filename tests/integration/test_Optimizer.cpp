@@ -33,7 +33,7 @@
 // For problem
 #include "TestHelpers.hpp"
 #include "dart/common/Console.hpp"
-#include "dart/config.hpp"
+#include "dart/Config.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/Skeleton.hpp"

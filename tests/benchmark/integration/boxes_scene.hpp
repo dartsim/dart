@@ -41,7 +41,7 @@
 
 #include <dart/dynamics/dynamics.hpp>
 
-#include <dart/math/math.hpp>
+#include <dart/math/Math.hpp>
 
 #include <string>
 

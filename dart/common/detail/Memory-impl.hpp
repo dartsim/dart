@@ -33,7 +33,7 @@
 #ifndef DART_COMMON_DETAIL_MEMORY_IMPL_HPP_
 #define DART_COMMON_DETAIL_MEMORY_IMPL_HPP_
 
-#include <dart/config.hpp>
+#include <dart/Config.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/StdVector>

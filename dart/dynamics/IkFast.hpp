@@ -37,7 +37,7 @@
 
 #define IKFAST_HAS_LIBRARY
 #include <dart/dynamics/InverseKinematics.hpp>
-#include <dart/dynamics/ikfast.h>
+#include <dart/dynamics/Ikfast.h>
 
 namespace dart {
 namespace dynamics {

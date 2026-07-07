@@ -9,14 +9,14 @@ dart_add_core_sources(${srcs} ${detail_srcs})
 # Generate header for this namespace
 dart_get_filename_components(header_names "math headers" ${hdrs})
 dart_generate_include_header_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/math.hpp"
+  "${CMAKE_CURRENT_BINARY_DIR}/Math.hpp"
   "dart/math/"
   ${header_names}
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/math.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/Math.hpp
   DESTINATION include/dart/math
   COMPONENT headers
 )

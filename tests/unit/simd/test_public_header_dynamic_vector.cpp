@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simd/dynamic/vector.hpp>
+#include <dart/simd/dynamic/Vector.hpp>
 
 #include <gtest/gtest.h>
 
