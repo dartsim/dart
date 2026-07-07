@@ -49,6 +49,7 @@ __all__: list[str] = [
     "MemoryManagerDebugDiagnostics",
     "ModelFormat",
     "Multibody",
+    "MultibodyIntegrationFamily",
     "MultibodyOptions",
     "ParallelExecutor",
     "PhysicalParameter",
@@ -64,6 +65,7 @@ __all__: list[str] = [
     "StateVariable",
     "StepDerivatives",
     "StepGradient",
+    "StepMetrics",
     "World",
     "WorldEcsDiagnostics",
     "WorldEcsStorageDiagnostics",
@@ -74,6 +76,8 @@ __all__: list[str] = [
     "add_skeleton",
     "build_multibody_from_skeleton",
     "collect_deformable_scene_diagnostics",
+    "dump_scene_json",
+    "dump_scene_text",
     "is_accelerated_deformable_solve_available",
     "is_accelerated_deformable_solve_enabled",
     "load_deformable_scene",
@@ -89,7 +93,7 @@ from collections.abc import Sequence
 import enum
 import os
 import pathlib
-from typing import Annotated, overload
+from typing import Annotated, Any, overload
 
 import numpy
 from numpy.typing import NDArray
@@ -1594,6 +1598,36 @@ class WorldStepProfile:
 
     def __str__(self) -> str: ...
 
+class StepMetrics:
+    @property
+    def kinetic_energy(self) -> float: ...
+
+    @property
+    def potential_energy(self) -> float: ...
+
+    @property
+    def total_energy(self) -> float: ...
+
+    @property
+    def linear_momentum(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def angular_momentum(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def active_contact_count(self) -> int: ...
+
+    @property
+    def max_penetration_depth(self) -> float: ...
+
+    @property
+    def last_step_iterations(self) -> int: ...
+
+    @property
+    def last_step_residual(self) -> float: ...
+
+    def __repr__(self) -> str: ...
+
 class AllocatorDebugDiagnostics:
     @property
     def live_bytes(self) -> int: ...
@@ -2214,6 +2248,10 @@ def add_skeleton(world: World, uri: str, options: SkeletonLoadOptions = ...) -> 
 @overload
 def add_skeleton(world: World, uri: str, read_options: ReadOptions, options: SkeletonLoadOptions = ...) -> Multibody: ...
 
+def dump_scene_json(world: Any) -> dict[str, Any]: ...
+
+def dump_scene_text(world: Any) -> str: ...
+
 def load_deformable_scene(world: World, scene_path: str | os.PathLike, options: DeformableSceneLoadOptions = ...) -> DeformableSceneInfo: ...
 
 def collect_deformable_scene_diagnostics(world: World) -> DeformableSceneDiagnostics: ...
@@ -2355,6 +2393,8 @@ class World:
 
     @property
     def last_step_profile(self) -> WorldStepProfile: ...
+
+    def compute_step_metrics(self) -> StepMetrics: ...
 
     @property
     def time_step(self) -> float: ...
