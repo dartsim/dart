@@ -1178,15 +1178,19 @@ void PointMass::updateCombinedVector()
 
 //==============================================================================
 void PointMass::aggregateCombinedVector(
-    Eigen::VectorXd& /*_Cg*/, const Eigen::Vector3d& /*_gravity*/)
+    Eigen::VectorXd& /*_Cg*/, const Eigen::Vector3d& _gravity)
 {
-  // TODO(JS): Not implemented
-  //  mCg_F.noalias() = mMass * mCg_dV;
-  //  mCg_F -= mMass
-  //           * (mParentSoftBodyNode->getWorldTransform().linear().transpose()
-  //              * _gravity);
-  //  mCg_F += mParentSoftBodyNode->getBodyVelocity().head<3>().cross(mMass *
-  //  mV);
+  const double mass = getMass();
+  mCg_F.noalias() = mass * mCg_dV;
+  if (mParentSoftBodyNode->getGravityMode()) {
+    mCg_F.noalias()
+        -= mass
+           * (mParentSoftBodyNode->getWorldTransform().linear().transpose()
+              * _gravity);
+  }
+  mCg_F.noalias()
+      += mParentSoftBodyNode->getSpatialVelocity().head<3>().cross(mass * mV);
+  DART_ASSERT(!math::isNan(mCg_F));
 
   //  // Assign
   //  // We assume that the three generalized coordinates are in a row.

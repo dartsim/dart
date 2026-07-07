@@ -740,7 +740,7 @@ TEST_F(SoftDynamicsTest, finiteStateForRepresentativeSoftScenes)
 }
 
 //==============================================================================
-TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForces)
+TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
 {
   simulation::WorldPtr world = utils::SkelParser::readWorld(
       "dart://sample/skel/test/test_drop_box.skel");
@@ -758,8 +758,11 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForces)
   const Eigen::VectorXd expectedPointMassGravity
       = projectPointMassGravity(softBody, world->getGravity());
   ASSERT_GT(expectedPointMassGravity.norm(), 1.0e-9);
+  ASSERT_LT(skeleton->getVelocities().norm(), 1.0e-12);
 
   const Eigen::VectorXd withOriginalPointMasses = skeleton->getGravityForces();
+  const Eigen::VectorXd withOriginalPointMassesCg
+      = skeleton->getCoriolisAndGravityForces();
 
   for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
     dynamics::PointMass* pointMass = softBody->getPointMass(i);
@@ -768,12 +771,21 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForces)
   }
 
   const Eigen::VectorXd withHalfPointMasses = skeleton->getGravityForces();
+  const Eigen::VectorXd withHalfPointMassesCg
+      = skeleton->getCoriolisAndGravityForces();
   const Eigen::VectorXd actualPointMassDelta
       = withOriginalPointMasses - withHalfPointMasses;
+  const Eigen::VectorXd actualPointMassCgDelta
+      = withOriginalPointMassesCg - withHalfPointMassesCg;
 
   expectVectorNear(
       actualPointMassDelta,
       0.5 * expectedPointMassGravity,
       1.0e-10,
       "soft point-mass gravity projection");
+  expectVectorNear(
+      actualPointMassCgDelta,
+      0.5 * expectedPointMassGravity,
+      1.0e-10,
+      "soft point-mass combined gravity projection");
 }
