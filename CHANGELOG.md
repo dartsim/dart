@@ -81,8 +81,9 @@ compatibility remains on the active DART 6 LTS branch._
   7 public contract. ([#2249](https://github.com/dartsim/dart/pull/2249),
   [#2256](https://github.com/dartsim/dart/pull/2256),
   [#2259](https://github.com/dartsim/dart/pull/2259))
-- Renamed `DartLoader` to `UrdfParser`, standardized parser naming, and removed
-  older direct resource-retriever parser overloads. ([#2269](https://github.com/dartsim/dart/pull/2269),
+- Removed the DART 6 `DartLoader` API; use `UrdfParser` for parser-specific
+  URDF work, and use `dart::io::readSkeleton` / `dartpy.io.read_skeleton` for
+  the common skeleton-loading path. ([#2269](https://github.com/dartsim/dart/pull/2269),
   [#2270](https://github.com/dartsim/dart/pull/2270),
   [#2141](https://github.com/dartsim/dart/pull/2141),
   [#2142](https://github.com/dartsim/dart/pull/2142))

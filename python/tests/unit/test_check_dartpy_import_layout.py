@@ -54,6 +54,12 @@ class WorldRenderBridge:
 ''',
     )
     _write(
+        root / "python" / "dartpy" / "io" / "urdf_parser.cpp",
+        '''
+nb::class_<UrdfParser>(m, "UrdfParser");
+''',
+    )
+    _write(
         root / "python" / "stubs" / "dartpy" / "__init__.pyi",
         '''
 from . import diff
@@ -130,7 +136,9 @@ def test_static_check_rejects_second_simulation_experimental_module(tmp_path):
         encoding="utf-8",
     )
 
-    messages = [violation.message for violation in module.find_static_violations(tmp_path)]
+    messages = [
+        violation.message for violation in module.find_static_violations(tmp_path)
+    ]
 
     assert any("simulation_experimental must not be a second" in m for m in messages)
 
@@ -145,10 +153,33 @@ def test_static_check_rejects_python_world_loader_stubs(tmp_path):
         encoding="utf-8",
     )
 
-    messages = [violation.message for violation in module.find_static_violations(tmp_path)]
+    messages = [
+        violation.message for violation in module.find_static_violations(tmp_path)
+    ]
 
     assert any("whole-world loader readWorld" in m for m in messages)
     assert any("whole-world loader read_world" in m for m in messages)
+
+
+def test_static_check_rejects_retired_urdf_loader_names(tmp_path):
+    module = _load_module()
+    _write_minimal_layout(tmp_path)
+    io_stub = tmp_path / "python" / "stubs" / "dartpy" / "io" / "__init__.pyi"
+    io_stub.write_text(
+        io_stub.read_text(encoding="utf-8")
+        + "\nclass DartLoader:\n    pass\n",
+        encoding="utf-8",
+    )
+    _write(
+        tmp_path / "python" / "dartpy" / "io" / "urdf_parser.cpp",
+        'nb::class_<UrdfParser>(m, "DartLoader");\n',
+    )
+
+    messages = [
+        violation.message for violation in module.find_static_violations(tmp_path)
+    ]
+
+    assert any("retired DART 6 URDF loader DartLoader" in m for m in messages)
 
 
 def test_runtime_check_can_be_static_only_when_dartpy_is_missing(monkeypatch):

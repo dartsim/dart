@@ -419,6 +419,30 @@ def find_static_violations(root: Path = REPO_ROOT) -> list[Violation]:
                 f"dartpy.io must not stub DART 6 whole-world loader {name}",
             )
 
+    removed_urdf_loader_sources = {
+        root
+        / "python"
+        / "dartpy"
+        / "io"
+        / "urdf_parser.cpp": (
+            "DartLoader",
+            "DartLoaderTestAccess",
+        ),
+        stubs_root / "io" / "__init__.pyi": ("DartLoader", "DartLoaderTestAccess"),
+    }
+    for source_path, names in removed_urdf_loader_sources.items():
+        source_text = _read(source_path, root, violations)
+        for name in names:
+            _require_absent(
+                violations,
+                source_path,
+                root,
+                source_text,
+                name,
+                "dartpy.io must expose UrdfParser only, not retired DART 6 "
+                f"URDF loader {name}",
+            )
+
     return violations
 
 
@@ -476,6 +500,16 @@ def find_runtime_violations(require_runtime: bool = False) -> list[Violation]:
         )
     io = getattr(dartpy, "io", None)
     if io is not None:
+        for name in ("DartLoader", "DartLoaderTestAccess"):
+            if hasattr(io, name):
+                violations.append(
+                    Violation(
+                        "runtime",
+                        "dartpy.io must expose UrdfParser only, not retired "
+                        f"DART 6 URDF loader {name}",
+                    )
+                )
+
         removed_world_loader_attrs = {
             "SdfParser": ("readWorld", "read_world"),
             "MjcfParser": ("readWorld", "read_world"),

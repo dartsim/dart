@@ -96,9 +96,8 @@ def _all_block(names: list[str]) -> str:
 
 
 def _is_runtime_flat_promoted(name: str) -> bool:
-    # Match python/dartpy/_layout.py:_promote_symbols. Legacy lowerCamel
-    # compatibility names stay on their submodules; the flat namespace promotes
-    # classes, enums/constants, and snake_case helpers.
+    # Match python/dartpy/_layout.py:_promote_symbols: the flat namespace
+    # promotes classes, enums/constants, and snake_case helpers.
     return bool(name) and (name[0].isupper() or not any(ch.isupper() for ch in name))
 
 

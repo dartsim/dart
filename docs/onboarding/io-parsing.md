@@ -3,7 +3,8 @@
 ## Why this exists
 
 DART historically exposed multiple model-loading entry points with inconsistent
-naming and structure (e.g., `SdfParser`, `UrdfParser`, and legacy loaders).
+naming and structure, including DART 6 loader names that are retired from the
+DART 7 public API.
 
 For most applications, this made “load a model from a URI” harder than it needed
 to be:
@@ -14,9 +15,10 @@ to be:
 
 The `dart::io` component provides a consolidated front door for reading
 `Skeleton`s while keeping the underlying format-specific parsers available when
-needed. The DART 6 whole-`World` front door was retired from `main` during the
-DART 7 API promotion; use a `release-6.*` branch when parity evidence requires the
-old public whole-world loader.
+needed. The DART 6 `DartLoader` and whole-`World` front doors are retired from
+`main` during the DART 7 API promotion; use `UrdfParser` for URDF-specific
+customization and a `release-6.*` branch when parity evidence requires the old
+public whole-world loader.
 
 ## Task context (issue #604)
 
@@ -39,9 +41,9 @@ Whole-world loading is not part of the DART 7 public `dart::io` API.
 
 DART 7 public interchange APIs use `read` / `write` for operations and
 `Reader` / `Writer` for new format-owned actor names. `Parser` is reserved for
-existing syntax-level or compatibility internals, and `Loader` / `Saver` is
-reserved for APIs that mutate destination state, such as adding a model into a
-`simulation::World` or persisting DART-owned project state.
+format-specific syntax readers that expose parser details, and `Loader` /
+`Saver` is reserved for APIs that mutate destination state, such as adding a
+model into a `simulation::World` or persisting DART-owned project state.
 
 This is intentionally _not_ an attempt to expose every parser-specific knob through one API.
 Instead:
@@ -61,7 +63,7 @@ namespaces for each format is intentionally avoided.
 ### OpenUSD (`.usda`) is an opt-in format
 
 `dart::io::ModelFormat::Usd` reads textual OpenUSD (`.usda`) stages through the
-same front door. It is **off by default**: the `dart/io/usd/` loader and its
+same front door. It is **off by default**: the `dart/io/usd/` parser and its
 OpenUSD (pxr) dependency compile only when DART is built with
 `DART_BUILD_IO_USD=ON`. With the toggle off, `readSkeleton` returns a clean
 "USD support is not available" diagnostic, mirroring the SDF/URDF unavailable
@@ -394,6 +396,7 @@ unsupported cases.
 
 The consolidated API is primarily for **C++** (`dart::io`). However, the Python
 bindings (`dartpy`) also expose parsers under `dart.io` (e.g.
-`dart.io.UrdfParser`). The former utility parser module is removed from DART 7.
+`dart.io.UrdfParser`). The former utility parser module and DART 6 `DartLoader`
+name are removed from DART 7.
 Treat SKEL as a DART 6 compatibility format and use a `release-6.*` branch for
 old SKEL assets.

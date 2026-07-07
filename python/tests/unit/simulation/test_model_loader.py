@@ -271,11 +271,11 @@ def test_build_multiple_multibodies_from_skeletons():
 def test_build_multibody_from_urdf_skeleton():
     sx = _simulation()
 
-    loader = dart.io.UrdfParser()
+    parser = dart.io.UrdfParser()
     options = dart.io.UrdfParserOptions()
     options.m_default_root_joint_type = dart.io.UrdfParserRootJointType.Fixed
-    loader.set_options(options)
-    skeleton = loader.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+    parser.set_options(options)
+    skeleton = parser.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
     assert skeleton is not None
 
     world = sx.World()

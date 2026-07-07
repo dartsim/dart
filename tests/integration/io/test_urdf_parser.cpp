@@ -743,8 +743,8 @@ TEST(UrdfParser, transmissionsCreateCoupledMimicJoints)
   )";
   // clang-format on
 
-  UrdfParser loader;
-  auto robot = loader.parseSkeletonString(urdfStr, "");
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(robot);
 
   auto* refJoint = robot->getJoint("j1");
@@ -916,8 +916,8 @@ TEST(UrdfParser, transmissionsSkipInvalidEntries)
   )";
   // clang-format on
 
-  UrdfParser loader;
-  auto robot = loader.parseSkeletonString(urdfStr, "");
+  UrdfParser parser;
+  auto robot = parser.parseSkeletonString(urdfStr, "");
   ASSERT_TRUE(robot);
 
   auto* j1 = robot->getJoint("j1");
