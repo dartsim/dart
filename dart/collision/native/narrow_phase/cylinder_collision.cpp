@@ -45,71 +45,6 @@ namespace dart::collision::native {
 
 namespace {
 
-struct SegmentClosestResult
-{
-  Eigen::Vector3d point1;
-  Eigen::Vector3d point2;
-  double distSq;
-};
-
-SegmentClosestResult closestPointsBetweenSegments(
-    const Eigen::Vector3d& p1,
-    const Eigen::Vector3d& q1,
-    const Eigen::Vector3d& p2,
-    const Eigen::Vector3d& q2)
-{
-  const Eigen::Vector3d d1 = q1 - p1;
-  const Eigen::Vector3d d2 = q2 - p2;
-  const Eigen::Vector3d r = p1 - p2;
-
-  const double a = d1.squaredNorm();
-  const double e = d2.squaredNorm();
-  const double f = d2.dot(r);
-
-  double s = 0.0;
-  double t = 0.0;
-
-  constexpr double eps = 1e-10;
-
-  if (a <= eps && e <= eps) {
-    s = t = 0.0;
-  } else if (a <= eps) {
-    s = 0.0;
-    t = std::clamp(f / e, 0.0, 1.0);
-  } else {
-    const double c = d1.dot(r);
-    if (e <= eps) {
-      t = 0.0;
-      s = std::clamp(-c / a, 0.0, 1.0);
-    } else {
-      const double b = d1.dot(d2);
-      const double denom = a * e - b * b;
-
-      if (denom != 0.0) {
-        s = std::clamp((b * f - c * e) / denom, 0.0, 1.0);
-      } else {
-        s = 0.0;
-      }
-
-      t = (b * s + f) / e;
-
-      if (t < 0.0) {
-        t = 0.0;
-        s = std::clamp(-c / a, 0.0, 1.0);
-      } else if (t > 1.0) {
-        t = 1.0;
-        s = std::clamp((b - c) / a, 0.0, 1.0);
-      }
-    }
-  }
-
-  SegmentClosestResult result;
-  result.point1 = p1 + d1 * s;
-  result.point2 = p2 + d2 * t;
-  result.distSq = (result.point1 - result.point2).squaredNorm();
-  return result;
-}
-
 bool addAxialCylinderBoxPatchContacts(
     double cylinderRadius,
     const Eigen::Isometry3d& cylinderTransform,
@@ -416,45 +351,8 @@ bool collideCylinders(
         r1, h1, axis1, center1, r2, h2, center2, result, option);
   }
 
-  const Eigen::Vector3d top1 = center1 + axis1 * h1;
-  const Eigen::Vector3d bot1 = center1 - axis1 * h1;
-  const Eigen::Vector3d top2 = center2 + axis2 * h2;
-  const Eigen::Vector3d bot2 = center2 - axis2 * h2;
-
-  auto closest = closestPointsBetweenSegments(bot1, top1, bot2, top2);
-
-  const double sumRadii = r1 + r2;
-  if (closest.distSq > sumRadii * sumRadii) {
-    return false;
-  }
-
-  const double dist = std::sqrt(closest.distSq);
-  const double penetration = sumRadii - dist;
-  if (!option.enableContact) {
-    return true;
-  }
-
-  Eigen::Vector3d normal;
-  if (dist < 1e-10) {
-    normal = axis1.cross(axis2);
-    if (normal.squaredNorm() < 1e-10) {
-      normal = Eigen::Vector3d::UnitX();
-    }
-    normal.normalize();
-  } else {
-    normal = (closest.point1 - closest.point2) / dist;
-  }
-
-  const Eigen::Vector3d contactPoint
-      = closest.point2 + normal * (r2 - penetration * 0.5);
-
-  ContactPoint contact;
-  contact.position = contactPoint;
-  contact.normal = normal;
-  contact.depth = penetration;
-
-  result.addContact(contact);
-  return true;
+  return collideConvexConvex(
+      cyl1, transform1, cyl2, transform2, result, option);
 }
 
 void collideCylindersBatch(
@@ -892,7 +790,8 @@ bool collideCylinderCapsule(
   checkCapsuleEndpoint(capBotLocal);
 
   if (!foundCollision) {
-    return false;
+    return collideConvexConvex(
+        cylinder, cylinderTransform, capsule, capsuleTransform, result, option);
   }
 
   if (!option.enableContact) {

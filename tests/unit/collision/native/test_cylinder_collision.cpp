@@ -111,6 +111,31 @@ TEST(CylinderCollision, CollidesSkewCylinders)
   EXPECT_EQ(1u, result.numContacts());
 }
 
+TEST(CylinderCollision, RejectsSeparatedSkewCylinders)
+{
+  CylinderShape cylinder1(0.5, 1.0);
+  CylinderShape cylinder2(0.5, 1.0);
+  Eigen::Isometry3d tf2 = rotatedAroundY(1.5707963267948966);
+  tf2.translation() = Eigen::Vector3d(0.0, 0.0, 1.1);
+
+  CollisionResult result;
+  const bool hit = collideCylinders(
+      cylinder1, Eigen::Isometry3d::Identity(), cylinder2, tf2, result);
+
+  EXPECT_FALSE(hit);
+  EXPECT_EQ(0u, result.numContacts());
+
+  CollisionResult binaryResult;
+  EXPECT_FALSE(collideCylinders(
+      cylinder1,
+      Eigen::Isometry3d::Identity(),
+      cylinder2,
+      tf2,
+      binaryResult,
+      CollisionOption::binaryCheck()));
+  EXPECT_EQ(0u, binaryResult.numContacts());
+}
+
 TEST(CylinderCollision, BatchCollidesCylinderPairs)
 {
   CylinderShape cylinder1(0.5, 2.0);
@@ -213,6 +238,20 @@ TEST(CylinderCollision, CollidesCylinderCapsule)
   ASSERT_EQ(1u, result.numContacts());
   EXPECT_TRUE(
       result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+TEST(CylinderCollision, CollidesCylinderCapsuleBody)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  CapsuleShape capsule(0.1, 2.0);
+  Eigen::Isometry3d capsuleTf = rotatedAroundY(1.5707963267948966);
+
+  CollisionResult result;
+  const bool hit = collideCylinderCapsule(
+      cylinder, Eigen::Isometry3d::Identity(), capsule, capsuleTf, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_EQ(1u, result.numContacts());
 }
 
 TEST(CylinderCollision, CollidesCylinderPlane)
