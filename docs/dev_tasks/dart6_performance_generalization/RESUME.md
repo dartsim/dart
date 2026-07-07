@@ -9,13 +9,17 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
-**Current cleanup: SIMD integration audit** on
-`complete-dart6-simd-integration` off current `origin/release-6.20`. This is
-not a new performance packet: it closes remaining integration hygiene after
-WP-PG.42 / PR #3299 and WP-PG.02 / PR #3327 by tightening SIMD CI triggers,
-fixing the stale build-option docs, and refreshing the tracker state. Keep any
-new performance claim out of the PR body unless backed by a fresh current-base
-A/B comparison.
+**Current claimed packet: WP-PG.03 — DART 6 profiling documentation + Tracy
+config task** ([06-infra-evidence-lane.md](06-infra-evidence-lane.md)). Continue
+on `wp-pg-03-profiling-doc` off current `origin/release-6.20`.
+
+Immediate next step: open the packet PR after maintainer approval, then monitor
+hosted CI. Local verification already passed (`pixi run -e profile
+config-tracy`, profile `contact_benchmark` build + one-step `--profile` smoke,
+`UNIT_common_Profile`, docs parse smoke, `pixi run lint`, and
+`pixi run check-lint`). This packet is docs/config plus the small Tracy
+callstack compatibility fix required to make the new profile task build; do not
+include performance speedup claims.
 
 **WP-PG.01 is captured** (branch `wp-pg-01-baseline-evidence`, PR
 pending) — guard rows, profile splits, and prior-art triage are in
@@ -26,17 +30,18 @@ many-islands regime is ~50% integration (WS-C is the lever there).
 
 Claimable now, in priority order:
 
-1. **WP-PG.03** (WS-E — profiling doc and Tracy config).
+1. **WP-PG.03** (WS-E — profiling doc and Tracy config; currently claimed).
 2. **WP-PG.21** only if a new current-base profile justifies revisiting the
-   ODE active path. WP-PG.20, WP-PG.22, and WP-PG.11 all have local
-   current-base rejection evidence from 2026-07-06.
+   ODE active path. WP-PG.20 is #3329 and intentionally stayed span-only
+   after the map/pruning variant showed small-row overhead; WP-PG.22 and
+   WP-PG.11 both have local current-base rejection evidence from 2026-07-06.
 
 Blocked/gated (do not claim): PG.04 (D4), PG.12 (evidence), PG.13
 (PG.10 census), PG.14 (D3 — now urgent), PG.15 (D7 — now urgent), PG.23
 (D8), PG.33, PG.41. PG.42 is done in PR #3299; WP-PG.30 is done in
-PR #3310; WP-PG.02 is done in PR #3327. **D3 and D7 are the decisions that
-unblock the dense-pile fixture**; everything claimable above serves the
-many-islands and ODE regimes meanwhile.
+PR #3310. **D3 and D7 are the decisions that unblock the dense-pile
+fixture**; everything claimable above serves the many-islands and ODE
+regimes meanwhile.
 
 ## Verify commands (every packet)
 
@@ -73,15 +78,18 @@ decisions.
   dense-pile: solve 88.1% / assembly 7.4%; P2 active-3k: integration
   50.1%); six prior-art branches triaged (two unmerged hash-preserving
   solver wins queued into WP-PG.11; one branch recommended for deletion).
-- 2026-07-06: WP-PG.20 was attempted locally after current
-  `release-6.20` advanced through #3297 and #3310, but was not published:
-  span, span+lookup, and minimal no-copy variants all failed the required
-  current-base A/B gate on the weakest 120-object/16-thread ODE row.
-  Work moved to independent packet WP-PG.22 on
-  `wp-pg-22-ode-pose-version-gate`. The previously local WP-PG.31 branch
-  was not published because #3297 already contains the World
-  shallow-support scratch-retention mechanics; its local patch was stashed
-  as superseded instead of layered on top of the newer base.
+- 2026-07-06: Earlier local WP-PG.20 span/no-copy variants were rejected
+  against then-current `release-6.20` because the weakest 120-object/
+  16-thread ODE row regressed; those probes are superseded by the corrected
+  #3329 implementation below.
+- 2026-07-06/07: WP-PG.20 executed on #3329
+  `wp-pg-20-ode-history-spans`: ODE contact-history spans without the
+  pair-keyed map/pruning follow-up. After the #3307/#3327 base advance,
+  current-base A/B on `origin/release-6.20` @ `9ff8b1d77a1` kept hashes
+  bit-identical and improved ODE rows: `S2_ode` 0.0933 -> 0.0521 ms/step,
+  `S3_ode` 115.9 -> 19.7 ms/step, `S4_ode` 0.2269 -> 0.1549 ms/step,
+  and `BM_ContactContainerActive` ODE rows by 3.2-7.6%. WP-PG.21 remains
+  open but evidence-gated against the span-only baseline.
 - 2026-07-06: WP-PG.22 was attempted locally but not published: a safe
   exact-transform ODE pose-write gate preserved hashes but regressed the
   settled 3k/900-object ODE rows; the intended cpp-only kinematic-version
@@ -106,10 +114,16 @@ decisions.
   dashboard slice after local smoke runs exceeded the runtime budget.
   Artifacts: `/tmp/wp_pg02_contact_container_deactivation_rows.json`,
   `/tmp/wp_pg02_contact_container_active_fcl_bullet_smoke.json`.
-- 2026-07-07: WP-PG.02 merged as PR #3327. Follow-up SIMD integration cleanup
-  started on `complete-dart6-simd-integration`: `ci_simd.yml` path filters,
-  build-option docs, and tracker freshness after WP-PG.42/#3299 and
-  WP-PG.02/#3327.
+- 2026-07-07: WP-PG.02 merged as #3327. WP-PG.03 claimed on
+  `wp-pg-03-profiling-doc` to promote the DART 6.20 profiling workflow into
+  `docs/onboarding/profiling.md` and add the profile-env Tracy configure task.
+  End-to-end profile build exposed an existing `TRACY_CALLSTACK` compatibility
+  bug in `dart/common/Profile.hpp`; the branch fixes it by using Tracy's
+  callstack constructor only when the packaged header exposes the callstack
+  macro. Local verification passed: `pixi run -e profile config-tracy`, profile
+  `contact_benchmark` build + one-step `--profile` smoke,
+  `UNIT_common_Profile`, docs parse smoke, `pixi run lint`, and
+  `pixi run check-lint`.
 
 ## Session log
 

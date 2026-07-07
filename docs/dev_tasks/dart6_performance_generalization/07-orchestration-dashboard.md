@@ -3,34 +3,33 @@
 Status board only; packet definitions live in the lane docs. Update this
 file (and RESUME.md) in every PR that claims or completes a packet.
 
-Branch point: `origin/release-6.20` @ `2d898081931` (2026-07-07, after
-WP-PG.02 / PR #3327 and the #3321/#3328/#3333 base merges).
+Branch point: `origin/release-6.20` @ `70b92010311` (2026-07-04 plan
+branch point).
 Guard baseline: `origin/release-6.20` @ `b9e6910c066` (2026-07-05
 WP-PG.01 current-base guard refresh).
-Related open queue at last refresh: WP-PG.20 / PR #3329 is hosted-CI queued
-only; PR #3331 is a rename-only branch touching SIMD headers and is orthogonal
-to this cleanup. Enablers merged: #3209, #3226, #3229, #3230, #3234, #3281,
-#3299, #3303, #3306, #3318, #3319, #3321, #3327. WP-PG.40 standalone PR #3270 was
-closed by maintainer direction and its D1/D2 evidence rode with WP-PG.42.
+Related open queue at last refresh: none blocking (enablers merged:
+#3209, #3226, #3229, #3230, #3234, #3281). WP-PG.40 standalone PR
+#3270 was closed by maintainer direction and its D1/D2 evidence now rides
+with the first real SIMD-kernel PR.
 
 ## Lane status
 
 | Lane | Owner doc | Packets | Status |
 | --- | --- | --- | --- |
 | WS-A constraint/LCP | 02-constraint-lcp-lane.md | PG.10–PG.15 | open (PG.13 evidence-gated; PG.14 blocked D3; PG.15 blocked D7) |
-| WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | open (PG.23 blocked D8; lane re-review at WS-F phase 5) |
+| WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | open (PG.20 #3329; PG.21 evidence-gated after span-only PG.20; PG.22 local cpp-only route rejected; PG.23 blocked D8; lane re-review at WS-F phase 5) |
 | WS-C dynamics batching | 04-dynamics-batching-lane.md | PG.30–PG.33 | open (PG.33 gated) |
-| WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | first consumer done (PG.42/#3299; PG.41 waits for PG.10 seam evidence) |
-| WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 and PG.02 done; PG.03 next; PG.04 blocked D4) |
-| WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; internal core/adapter/bridge and capsule primitive pairs merged (#3281, #3303, #3306, #3318, #3319, #3321); phase-4 native broadphase SIMD still future |
+| WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | active (PG.40 folded into PG.42; PG.41 waits for PG.10 seam evidence) |
+| WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 done; PG.02 #3327; PG.03 claimed; PG.04 blocked D4) |
+| WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; phase 1 internal math core merged (#3281); no DART 6 detector adapter or phase-4 broadphase SIMD yet |
 
 ## Packet board
 
 | Packet | Lane | Status | Branch / PR | Evidence |
 | --- | --- | --- | --- | --- |
 | WP-PG.01 baseline packet | WS-E | done — PR pending | `wp-pg-01-baseline-evidence` | 01-baseline-evidence.md (S1–S6 guard rows, profile splits, prior-art triage) |
-| WP-PG.02 benchmark matrix | WS-E | done — PR #3327 | `wp-pg-02-contact-container-matrix` | Active rows now cover DART/ODE/FCL/Bullet at 60/120 objects plus 4-thread sweep; bounded DART/ODE deactivation rows are in the dashboard filter; 900 dense-container rows are registered for manual filters but excluded from the default dashboard slice after local budget smoke |
-| WP-PG.03 profiling doc | WS-E | open | — | — |
+| WP-PG.02 benchmark matrix | WS-E | done — #3327 | `wp-pg-02-contact-container-matrix` / #3327 | Active rows now cover DART/ODE/FCL/Bullet at 60/120 objects plus 4-thread sweep; bounded DART/ODE deactivation rows are in the dashboard filter; 900 dense-container rows are registered for manual filters but excluded from the default dashboard slice after local budget smoke |
+| WP-PG.03 profiling doc | WS-E | claimed — local | `wp-pg-03-profiling-doc` | Adds `docs/onboarding/profiling.md` for the DART 6.20 text profiler and Tracy workflow, a profile-env `config-tracy` task, and the Tracy callstack compatibility fix required by the packaged dependency; local verification passed (`pixi run -e profile config-tracy`, profile `contact_benchmark` build + one-step `--profile` smoke, `UNIT_common_Profile`, docs parse smoke, `pixi run lint`, `pixi run check-lint`) |
 | WP-PG.04 executor tooling | WS-E | blocked (D4) | — | — |
 | WP-PG.10 LCP instrumentation | WS-A | open | — | — |
 | WP-PG.11 solver RTTI removal | WS-A | open | — | Local 2026-07-06 cpp-only mining rejected after refreshed current-base A/B on `2e11928288c`: S2 ODE 0.87x, S4 DART 0.93x, S4 Bullet 0.99x, S4 ODE 0.98x medians; guards identical |
@@ -38,8 +37,8 @@ closed by maintainer direction and its D1/D2 evidence rode with WP-PG.42.
 | WP-PG.13 row islanding | WS-A | evidence-gated (PG.10 census) | — | — |
 | WP-PG.14 matrix-free path | WS-A | blocked (D3) | — | — |
 | WP-PG.15 creep vs rest-veto | WS-A | blocked (D7) | — | — |
-| WP-PG.20 history spans | WS-B | open | — | Local 2026-07-06 attempts rejected by A/B: weakest 120-object/16-thread ODE row regressed |
-| WP-PG.21 history map/pruning | WS-B | open | — | — |
+| WP-PG.20 history spans | WS-B | done — #3329 | `wp-pg-20-ode-history-spans` / #3329 | Current-base refresh @ `9ff8b1d77a1`: hashes bit-identical; ODE rows improved (`S2_ode` 0.0933→0.0521 ms, `S3_ode` 115.9→19.7 ms, `S4_ode` 0.2269→0.1549 ms; GB ODE rows 3.2–7.6% faster) |
+| WP-PG.21 history map/pruning | WS-B | open | — | Evidence-gated after #3329; map/pruning variant must beat the span-only baseline on a fresh current-base matrix before claim |
 | WP-PG.22 version-gated pose push | WS-B | open | — | Local 2026-07-06 exact-transform fallback rejected by A/B; protected kinematic version blocks cpp-only route |
 | WP-PG.23 ODE manifold reduction | WS-B | blocked (D8) | — | — |
 | WP-PG.30 free-body cache + FD path | WS-C | done — PR #3310 | `wp-pg-30-single-free-body-cache` | A/B: S5 −12.2%, S4 −5.3%, S3 −2.3%, solve-bound rows flat; 8/8 guard hashes bit-identical |
@@ -59,10 +58,8 @@ against the packet's acceptance evidence.
 ## Cross-lane coordination notes
 
 - WS-F consumes WS-D kernels in its phase 4; WS-D's WP-PG.42 checked live
-  phase status before claiming. As of #3321, WS-F has internal native core,
-  broadphase/narrowphase pieces, capsule primitive pairs, and the DART 6
-  detector adapter/bridge, but phase-4 native broadphase SIMD is still future
-  work.
+  phase status before claiming. As of #3281, WS-F has internal native
+  collision math only, with no DART 6 detector adapter or broadphase SIMD.
 - WS-B investment is re-reviewed when WS-F reaches phase 5 (facade
   decision) — see D5 in the README.
 - WS-A WP-PG.12 and WS-C WP-PG.30 share the single-free-body
