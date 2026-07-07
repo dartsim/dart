@@ -1,12 +1,12 @@
 # HANDOFF — WP-PG.20 (ODE contact-history perf) + crash-investigation resolution
 
-**Date:** 2026-07-06 · **Branch:** `wp-pg-20-ode-history-spans` (off
-`origin/release-6.20` tip `38656f3dbea`) · **For:** any fresh AI agent (Codex/
-Claude/other) resuming this lane.
+**Date:** 2026-07-06 · **Branch:** `wp-pg-20-ode-history-spans` (currently
+merged through `origin/release-6.20` tip `90c1d3bfb6b`) · **For:** any fresh AI
+agent (Codex/Claude/other) resuming this lane.
 
-This branch's WP-PG.20 code is committed here; the remaining work is a
-**quiet-host evidence pass** and then opening the PR. Read this top-to-bottom
-once, then jump to **§7 "How to resume"**.
+This branch's WP-PG.20 code is committed and PR #3329 is open; the remaining
+work is review/CI management and any required evidence refresh after base
+advances. Read this top-to-bottom once, then jump to **§7 "How to resume"**.
 
 ---
 
@@ -35,27 +35,22 @@ Hard rules:
 **Orchestration model:** you are orchestrator/supervisor. Delegate focused
 implementation + A/B to Codex (`codex:codex-rescue` subagent / `/codex:*`),
 ensuring Codex works in the correct dir + branch, runs under `/goal`, and does
-its own A/B. Orchestrate Codex to manage created PRs (merge conflicts, Codex
-review comments, CI). Standing approval is granted for pushes / PRs / CI actions
-in this round; **merges stay with the maintainer** (the user, jslee02).
+its own A/B. Follow the durable approval boundaries in
+`docs/onboarding/ai-tools.md`: pushes, PR edits/comments, CI reruns, and thread
+resolution require explicit maintainer/user approval. **Merges stay with the
+maintainer** (the user, jslee02).
 
 ---
 
 ## 2. What WP-PG.20 is (the code on this branch)
 
-Three algorithmic optimizations to the **ODE** contact-history bookkeeping in
+The final PR keeps WP-PG.20 to **span-only** ODE contact-history bookkeeping in
 `dart/collision/ode/OdeCollisionDetector.{hpp,cpp}` (serial collision path only
-— see §4). Net effect: removes an O(pairs × total_contacts) full-vector copy and
-two linear scans per `collide()` call.
+— see §4). The pair-keyed map/pruning variant was measured separately and
+deferred back to WP-PG.21 because it added small-row overhead on the refreshed
+current-base matrix.
 
-1. **Contact-history map** — `mContactHistory` changed from
-   `std::vector<ContactHistoryItem>` to
-   `ContactHistoryMap = std::unordered_map<CollObjPair, ContactHistoryItem, CollObjPairHash>`.
-   `FindPairInHist()` is now an O(1) `map.find` instead of an O(n) linear scan;
-   `eraseHistoryForObject()` and `pruneContactHistory()` iterate the map.
-   `CollObjPairHash` is a boost-style `hash_combine` of the two
-   `CollisionObject*` (order-sensitive; `MakeNewPair()` already canonicalizes).
-2. **Contact-span tracking** — `reportContacts()` used to do
+1. **Contact-span tracking** — `reportContacts()` used to do
    `auto results_vec_copy = result.getContacts();` (a **full copy of the growing
    contact vector, once per pair**) and re-scan it three times. Replaced with
    `pairContactsBegin = result.getNumContacts()` before appending this pair's
@@ -63,13 +58,16 @@ two linear scans per `collide()` call.
    `result.getContact(i)` over `[begin, end)`. Valid because ODE visits each
    object pair at most once per `collide()` call, so a pair's contacts are one
    contiguous span.
-3. **Stamp-and-sweep prune** — `pruneContactHistory()` replaced its
-   O(history × contacts) double loop with: build an
-   `unordered_set<CollObjPair>` of pairs seen this round (O(contacts)), then one
-   O(history) sweep clearing manifolds for unseen pairs.
+2. **Avoid unused history entries** — if ODE already emits the target manifold
+   for a pair and that pair has no prior history, `reportContacts()` now returns
+   before creating a new `ContactHistoryItem`.
+3. **Empty-result cleanup** — `pruneContactHistory()` clears the vector-backed
+   history when the current result has no contacts. The remaining non-empty
+   prune path intentionally stays vector-backed for WP-PG.21 to revisit with
+   fresh evidence.
 
-Diff size: `OdeCollisionDetector.cpp` +72/−37 lines, `.hpp` +13/−? . All hunks
-are commented in-code.
+The final implementation keeps `mContactHistory` as `std::vector` and does not
+introduce `std::unordered_map` or `CollObjPairHash`.
 
 ---
 
@@ -97,8 +95,9 @@ corrected record is in
   (`parallelForIndexRange` @~1246) and position-integration (@~1278) regions.
   Even at `setNumSimulationThreads(16)`, collision detection is single-threaded;
   only the dynamics recursions and the constraint-**group** solve parallelize,
-  and neither touches `mContactHistory`. So a **concurrent `unordered_map`
-  rehash** (the suspected mechanism) is implausible, and the `120/1/16` "30/30"
+  and neither touches `mContactHistory`. The earlier **concurrent
+  `unordered_map` rehash** suspicion applied only to a discarded WP-PG.21-style
+  map variant; the final PR keeps vector-backed history. The `120/1/16` "30/30"
   is best explained by the missing-binary artifact + contention.
   **Caveats (do not read this as "cleared"):** the crash A/B was never run on a
   verified WP-PG.20 binary; `solve()`'s internals were inferred from `World::step`
@@ -170,13 +169,14 @@ WP-PG.20-only real-heap crash reopens §3.
 **A/B mechanics — the shared base↔WP-PG.20 swap for Gates A, C, and D**
 **(WP-PG.20 is COMMITTED — do NOT use `git stash`, the working tree is clean so
 it would stash nothing and the two arms would be identical).**
-The WP-PG.20 code is commit `3b1732643b7`; its parent/base is `38656f3dbea`.
+Use the current branch tip as the WP-PG.20 arm and current
+`origin/release-6.20` as the base arm; do not hard-code older pre-merge SHAs.
 Swap only the two ODE files between arms:
-- **WP-PG.20 arm:** on the branch tip as-is → build the *specific* targets → run.
-- **base/parent arm:** revert just the two files to base —
-  `git checkout 38656f3dbea -- dart/collision/ode/OdeCollisionDetector.cpp dart/collision/ode/OdeCollisionDetector.hpp`
-  → rebuild the specific targets → run → then restore WP-PG.20 with
-  `git checkout HEAD -- dart/collision/ode/OdeCollisionDetector.cpp dart/collision/ode/OdeCollisionDetector.hpp`.
+- **WP-PG.20 arm:** on the branch tip as-is -> build the *specific* targets -> run.
+- **base arm:** restore just the two files from the current base:
+  `git restore --source=origin/release-6.20 --worktree -- dart/collision/ode/OdeCollisionDetector.cpp dart/collision/ode/OdeCollisionDetector.hpp`
+  -> rebuild the specific targets -> run -> then restore WP-PG.20 with
+  `git restore --source=HEAD --worktree -- dart/collision/ode/OdeCollisionDetector.cpp dart/collision/ode/OdeCollisionDetector.hpp`.
   (`git diff --stat` should be empty again afterward.)
 
 **Always assert `[ -x "$GB" ]` before running** and classify failures by
@@ -187,11 +187,9 @@ is in the scratchpad as `groundtruth.sh`; the older gate logic is in
 the commit and used the now-wrong `stash` approach; use the `checkout`-based
 swap above instead.
 
-**Then:** open the PR against `release-6.20` with the evidence table inline
-(fewer/bolder-PR policy). Push already sets `-u origin wp-pg-20-ode-history-spans`
-(same name, per the branch-naming rule). After pushing, comment `@codex review`
-to trigger the bot review. Address Codex review comments + CI. Merge stays with
-the maintainer.
+For the already-open PR #3329, keep the PR body evidence table current after
+base advances, address review comments, and monitor CI. Merge stays with the
+maintainer.
 
 ---
 
@@ -214,9 +212,11 @@ the maintainer.
   hierarchy. Root-cause the 16-thread crash (parallel-dynamics path) before
   shipping either way.
 - **WP-PG.11** (ContactConstraint pooled-cache) — DEFERRED; preserved as
-  `pr-b-pg11-contact-cache.patch`. **This one applies cleanly** to the current
-  base (`git apply --check` rc 0, touches `ConstraintBase.{cpp,hpp}` +
-  `ContactConstraint`); re-verify the wiring sites after #3297's
+  `pr-b-pg11-contact-cache.patch`. **This patch does NOT apply cleanly** to the
+  current base; `git apply --check` fails at
+  `dart/constraint/ConstraintSolver.cpp:2152`. Treat it as a reference
+  snapshot and either refresh the patch against current `release-6.20` or
+  re-implement the idea fresh. Re-verify the wiring sites after #3297's
   `ConstraintSolver.cpp` changes, and confirm the parallel-eligibility concern
   in `pr-a-crash-investigation.md` before shipping.
 - **#3311** (arm64/clang `-Werror` CI fix, `[[maybe_unused]]`) — **CLOSED without
@@ -240,9 +240,9 @@ the maintainer.
 3. Wait for a quiet host (`pgrep -c cc1plus`≈0). Run **Gate A** (determinism,
    base vs WP-PG.20 — must be bit-identical) → **Gate B** (lint) → **Gate C**
    (A/B table) → **Gate D** (crash A/B — required, see §5/§3).
-4. If all pass: write the PR body with the 3-column benchmark table (ODE +
-   native), open the PR vs `release-6.20`, `@codex review`, shepherd CI/review.
-   Merge = maintainer.
+4. If base advances, refresh the PR body with the 3-column benchmark table
+   context and exact head/base SHAs, then shepherd CI/review. Merge =
+   maintainer.
 5. If Gate A fails (hashes differ): WP-PG.20 changed results — a real bug; debug
    the span-tracking indices / prune set before shipping.
 
@@ -283,7 +283,8 @@ the maintainer.
 - Corrected crash record: `base-release620-heap-crash.md`
 - Historical (superseded-in-part) note: `pr-a-crash-investigation.md`
 - Preserved packets (see §6 for applicability): `pr-b-pg11-contact-cache.patch`
-  (applies cleanly), `pr-c-pg31-scratch-retention.patch` (does NOT apply to the
+  (does NOT apply cleanly to current base — reference snapshot; refresh or
+  re-implement), `pr-c-pg31-scratch-retention.patch` (does NOT apply to the
   current base — reference snapshot; needs `--3way`/re-implement vs #3297)
 - Plan: `README.md`, `01-baseline-evidence.md` (very-first-baseline numbers),
   `07-orchestration-dashboard.md`, `RESUME.md`
