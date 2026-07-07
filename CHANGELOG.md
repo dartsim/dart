@@ -60,6 +60,10 @@
     route docs-update workflows through it so DART 6.20 agents promote durable
     task facts by lifecycle before retiring `docs/dev_tasks/` folders.
 
+  * Add the release-branch `dart-retro` AI workflow so maintainers and agents
+    can capture durable lessons from completed DART 6.20 work through
+    `/dart-retro` or `$dart-retro`.
+
   * Add a "surface your unknowns" discipline to the release-branch AI
     principles (`docs/ai/principles.md`): before a non-trivial fix, convert
     consequential unknowns into knowns — a reproduction, a focused read of the
@@ -457,6 +461,13 @@
     stats for physics step time, measured simulation rate, scene size, and
     contacts:
     [#3307](https://github.com/dartsim/dart/pull/3307)
+
+  * Polish the `dart-demos` workspace with a more compact toolbar, tabbed
+    scene/inspector/tool panes, a status-and-log bottom panel, clearer
+    simulation/render metrics, a lighter 3D viewport background, a fit-scene
+    view action, and a migrated `hello_world` scene while preserving the
+    standalone first-program example:
+    [#3328](https://github.com/dartsim/dart/pull/3328)
 
   * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
     prebuilt IK modules and changing target and solver options online. Every IK
