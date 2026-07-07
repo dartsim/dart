@@ -379,6 +379,7 @@ struct BroadphaseScratch
   std::vector<ContactBoundEntry> contactBoundEntries;
   std::vector<std::size_t> parallelPairIndices;
   std::vector<FiniteFinitePair> finiteFinitePairs;
+  std::vector<DARTCollisionObject*> parallelSoftSoftObjects;
   std::vector<ScratchCollisionResult> parallelPairResults;
   std::vector<char> parallelPairCollisions;
   // Remaining contacts ordered by the same representative-contact priority.
@@ -1406,6 +1407,7 @@ void BroadphaseScratch::clear()
   contactBoundEntries.clear();
   parallelPairIndices.clear();
   finiteFinitePairs.clear();
+  parallelSoftSoftObjects.clear();
   pairResult.clear();
   contactPointIndex.clear();
   localContactPoints.clear();
@@ -2010,6 +2012,34 @@ std::size_t countParallelSoftSoftPairs(
 }
 
 //==============================================================================
+void prepareParallelSoftSoftCaches(
+    const std::vector<FiniteFinitePair>& pairs,
+    std::vector<DARTCollisionObject*>& preparedObjects)
+{
+  preparedObjects.clear();
+  preparedObjects.reserve(2u * pairs.size());
+
+  for (const auto& pair : pairs) {
+    if (!isParallelSoftSoftPair(pair))
+      continue;
+
+    const BroadphaseEntry* entries[2] = {pair.entry1, pair.entry2};
+    for (const auto* entry : entries) {
+      auto* object = static_cast<DARTCollisionObject*>(entry->object);
+      if (std::find(preparedObjects.begin(), preparedObjects.end(), object)
+          != preparedObjects.end()) {
+        continue;
+      }
+
+      object->getCachedSoftFaces();
+      object->getCachedSoftFaceBvhNodes();
+      object->getCachedSoftFaceBvhIndices();
+      preparedObjects.push_back(object);
+    }
+  }
+}
+
+//==============================================================================
 template <std::size_t Width>
 [[maybe_unused]] std::uint32_t computeFiniteOverlapMask(
     const BroadphaseEntry& entry,
@@ -2484,6 +2514,7 @@ bool processFiniteFiniteCandidatePairs(
         && !contactCapCanShortCircuit;
 
   if (canParallelize) {
+    prepareParallelSoftSoftCaches(pairs, scratch.parallelSoftSoftObjects);
     scratch.prepareParallelPairResults(pairs.size());
 
     auto collidePairAt = [&](std::size_t workIndex) {
