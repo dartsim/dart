@@ -45,6 +45,16 @@ namespace dart::collision::native {
 
 namespace {
 
+bool contactBudgetExhausted(
+    std::size_t numContacts, const CollisionOption& option)
+{
+  if (option.maxNumContacts == 0u) {
+    return true;
+  }
+
+  return option.enableContact && numContacts >= option.maxNumContacts;
+}
+
 bool addAxialCylinderBoxPatchContacts(
     double cylinderRadius,
     const Eigen::Isometry3d& cylinderTransform,
@@ -59,7 +69,7 @@ bool addAxialCylinderBoxPatchContacts(
     const CollisionOption& option)
 {
   const auto contactsBefore = result.numContacts();
-  if (contactsBefore >= option.maxNumContacts) {
+  if (contactBudgetExhausted(contactsBefore, option)) {
     return false;
   }
 
@@ -162,7 +172,7 @@ bool collideCylinderPlaneLikeBox(
   constexpr double planeLikeBoxExtentScale = 100.0;
   constexpr double planeLikeBoxPatchDepth = 1e-5;
 
-  if (result.numContacts() >= option.maxNumContacts) {
+  if (contactBudgetExhausted(result.numContacts(), option)) {
     return false;
   }
 
@@ -332,7 +342,7 @@ bool collideCylinders(
     CollisionResult& result,
     const CollisionOption& option)
 {
-  if (result.numContacts() >= option.maxNumContacts) {
+  if (contactBudgetExhausted(result.numContacts(), option)) {
     return false;
   }
 
@@ -385,7 +395,7 @@ bool collideCylinderSphere(
     CollisionResult& result,
     const CollisionOption& option)
 {
-  if (result.numContacts() >= option.maxNumContacts) {
+  if (contactBudgetExhausted(result.numContacts(), option)) {
     return false;
   }
 
@@ -519,7 +529,7 @@ bool collideCylinderBox(
     CollisionResult& result,
     const CollisionOption& option)
 {
-  if (result.numContacts() >= option.maxNumContacts) {
+  if (contactBudgetExhausted(result.numContacts(), option)) {
     return false;
   }
 
@@ -716,7 +726,7 @@ bool collideCylinderCapsule(
     CollisionResult& result,
     const CollisionOption& option)
 {
-  if (result.numContacts() >= option.maxNumContacts) {
+  if (contactBudgetExhausted(result.numContacts(), option)) {
     return false;
   }
 
@@ -833,7 +843,7 @@ bool collideCylinderPlane(
     CollisionResult& result,
     const CollisionOption& option)
 {
-  if (result.numContacts() >= option.maxNumContacts) {
+  if (contactBudgetExhausted(result.numContacts(), option)) {
     return false;
   }
 

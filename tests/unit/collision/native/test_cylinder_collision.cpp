@@ -58,6 +58,13 @@ Eigen::Isometry3d rotatedAroundY(double radians)
   return tf;
 }
 
+CollisionResult resultWithStoredContact()
+{
+  CollisionResult result;
+  result.addContact(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ(), 0.0);
+  return result;
+}
+
 } // namespace
 
 TEST(CylinderCollision, CollidesParallelCylinders)
@@ -393,6 +400,66 @@ TEST(CylinderCollision, BinaryChecksDoNotAddContacts)
   EXPECT_EQ(0u, planeResult.numContacts());
 }
 
+TEST(CylinderCollision, BinaryChecksIgnoreExistingContacts)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  SphereShape sphere(0.5);
+  BoxShape capBox(Eigen::Vector3d(1.0, 1.0, 0.5));
+  CapsuleShape capsule(0.5, 2.0);
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  CollisionOption option = CollisionOption::binaryCheck();
+
+  CollisionResult cylinderResult = resultWithStoredContact();
+  EXPECT_TRUE(collideCylinders(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      cylinder,
+      translated(0.75, 0.0, 0.0),
+      cylinderResult,
+      option));
+  EXPECT_EQ(1u, cylinderResult.numContacts());
+
+  CollisionResult sphereResult = resultWithStoredContact();
+  EXPECT_TRUE(collideCylinderSphere(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      sphere,
+      translated(0.75, 0.0, 0.0),
+      sphereResult,
+      option));
+  EXPECT_EQ(1u, sphereResult.numContacts());
+
+  CollisionResult boxResult = resultWithStoredContact();
+  EXPECT_TRUE(collideCylinderBox(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      capBox,
+      translated(0.0, 0.0, 1.5),
+      boxResult,
+      option));
+  EXPECT_EQ(1u, boxResult.numContacts());
+
+  CollisionResult capsuleResult = resultWithStoredContact();
+  EXPECT_TRUE(collideCylinderCapsule(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.75, 0.0, 0.0),
+      capsuleResult,
+      option));
+  EXPECT_EQ(1u, capsuleResult.numContacts());
+
+  CollisionResult planeResult = resultWithStoredContact();
+  EXPECT_TRUE(collideCylinderPlane(
+      cylinder,
+      translated(0.0, 0.0, 0.75),
+      plane,
+      Eigen::Isometry3d::Identity(),
+      planeResult,
+      option));
+  EXPECT_EQ(1u, planeResult.numContacts());
+}
+
 TEST(CylinderCollision, RespectsExhaustedContactBudget)
 {
   CylinderShape cylinder1(0.5, 2.0);
@@ -409,4 +476,17 @@ TEST(CylinderCollision, RespectsExhaustedContactBudget)
       result,
       option));
   EXPECT_EQ(0u, result.numContacts());
+
+  CollisionOption binaryOption = CollisionOption::binaryCheck();
+  binaryOption.maxNumContacts = 0;
+
+  CollisionResult binaryResult;
+  EXPECT_FALSE(collideCylinders(
+      cylinder1,
+      Eigen::Isometry3d::Identity(),
+      cylinder2,
+      translated(0.75, 0.0, 0.0),
+      binaryResult,
+      binaryOption));
+  EXPECT_EQ(0u, binaryResult.numContacts());
 }
