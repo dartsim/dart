@@ -12,8 +12,9 @@ Latest state:
   load were noisy.
 - `02-paper-parity-matrix.md` maps the requested papers into tracked DART 6
   feature, demo, and performance targets.
-- `03-stability-gate.md` records the first active `test_SoftDynamics` finite
-  state gate across representative SKEL soft scenes and thread settings.
+- `03-stability-gate.md` records the active `test_SoftDynamics` finite-state
+  gate across representative SKEL soft scenes and thread settings, plus the
+  ordered final-state comparison between `threads=1` and `threads=4`.
 - `04-data-layout-and-memory-hardening.md` records the soft-body data-layout
   risk, adds the `soft_body_headless` profile/checksum runner, and records that
   this branch now stacks on `origin/dart6-memory-hardening` for
@@ -182,8 +183,10 @@ Next steps:
    captures on an idle host, then choose the next measured soft-body layout
    slice. The likely next WP-DB.06 slice is a retained internal span/facade for
    point-mass phase inputs before any `dart/simd/` kernel.
-3. Extend `test_SoftDynamics` beyond finite-state checks with energy or state
-   hash regression thresholds that are stable across supported platforms.
+3. Extend `test_SoftDynamics` beyond finite-state and one-thread versus
+   four-thread final-state checks with energy, contact-force, CoP, or
+   historical-golden regression thresholds that are stable across supported
+   platforms.
 4. Complete WP-DB.04 soft-body matrix/vector aggregation, then re-enable the
    equations-of-motion checks that remain disabled in `test_SoftDynamics.cpp`.
 5. Complete the paper parity matrix with representative scenes and numbers from

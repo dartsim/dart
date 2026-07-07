@@ -44,6 +44,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <string>
 #include <vector>
@@ -96,8 +97,17 @@ struct SoftSceneStats
   std::size_t pointMasses = 0u;
 };
 
+struct SoftStateSnapshot
+{
+  std::vector<double> values;
+  std::size_t dofs = 0u;
+  std::size_t softBodies = 0u;
+  std::size_t pointMasses = 0u;
+};
+
 constexpr double kMaxPointMassPositionNorm = 1.0e4;
 constexpr double kMaxPointMassVelocityNorm = 1.0e6;
+constexpr double kChecksumRelativeTolerance = 1.0e-12;
 
 template <class Derived>
 void expectFinite(
@@ -132,6 +142,78 @@ SoftSceneStats collectSoftSceneStats(const simulation::WorldPtr& world)
   }
 
   return stats;
+}
+
+template <class Derived>
+void appendStateValues(
+    const Eigen::MatrixBase<Derived>& value, std::vector<double>& values)
+{
+  values.reserve(values.size() + static_cast<std::size_t>(value.size()));
+  for (Eigen::Index i = 0; i < value.size(); ++i)
+    values.push_back(value(i));
+}
+
+SoftStateSnapshot computeSoftStateSnapshot(const simulation::WorldPtr& world)
+{
+  SoftStateSnapshot snapshot;
+  if (!world)
+    return snapshot;
+
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const dynamics::SkeletonPtr skeleton = world->getSkeleton(i);
+    if (!skeleton)
+      continue;
+
+    const Eigen::VectorXd positions = skeleton->getPositions();
+    const Eigen::VectorXd velocities = skeleton->getVelocities();
+    appendStateValues(positions, snapshot.values);
+    appendStateValues(velocities, snapshot.values);
+    snapshot.dofs += static_cast<std::size_t>(positions.size());
+
+    snapshot.softBodies += skeleton->getNumSoftBodyNodes();
+    for (std::size_t j = 0; j < skeleton->getNumSoftBodyNodes(); ++j) {
+      const dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(j);
+      if (softBody == nullptr)
+        continue;
+
+      for (std::size_t k = 0; k < softBody->getNumPointMasses(); ++k) {
+        const dynamics::PointMass* pointMass = softBody->getPointMass(k);
+        if (pointMass == nullptr)
+          continue;
+
+        appendStateValues(pointMass->getPositions(), snapshot.values);
+        appendStateValues(pointMass->getVelocities(), snapshot.values);
+        appendStateValues(pointMass->getWorldPosition(), snapshot.values);
+        ++snapshot.pointMasses;
+      }
+    }
+  }
+
+  return snapshot;
+}
+
+void expectNearSnapshotValue(double lhs, double rhs, const std::string& context)
+{
+  const double scale = std::max({1.0, std::abs(lhs), std::abs(rhs)});
+  EXPECT_NEAR(lhs, rhs, kChecksumRelativeTolerance * scale) << context;
+}
+
+void expectSnapshotsNear(
+    const SoftStateSnapshot& lhs,
+    const SoftStateSnapshot& rhs,
+    const std::string& context)
+{
+  EXPECT_EQ(lhs.dofs, rhs.dofs) << context;
+  EXPECT_EQ(lhs.softBodies, rhs.softBodies) << context;
+  EXPECT_EQ(lhs.pointMasses, rhs.pointMasses) << context;
+  ASSERT_EQ(lhs.values.size(), rhs.values.size()) << context;
+
+  for (std::size_t i = 0; i < lhs.values.size(); ++i) {
+    expectNearSnapshotValue(
+        lhs.values[i],
+        rhs.values[i],
+        context + " state[" + std::to_string(i) + "]");
+  }
 }
 
 void expectFiniteSoftBodyState(
@@ -594,6 +676,9 @@ TEST_F(SoftDynamicsTest, finiteStateForRepresentativeSoftScenes)
   const std::array<std::size_t, 2> threadCounts = {{1u, 4u}};
 
   for (const SoftStabilityScene& scene : scenes) {
+    std::vector<SoftStateSnapshot> finalSnapshots;
+    finalSnapshots.reserve(threadCounts.size());
+
     for (const std::size_t threads : threadCounts) {
       simulation::WorldPtr world = utils::SkelParser::readWorld(scene.uri);
       ASSERT_TRUE(world != nullptr) << scene.uri;
@@ -607,6 +692,14 @@ TEST_F(SoftDynamicsTest, finiteStateForRepresentativeSoftScenes)
         if (step == scene.steps || step % 10u == 0u)
           expectFiniteWorldState(world, scene, threads, step);
       }
+
+      finalSnapshots.push_back(computeSoftStateSnapshot(world));
     }
+
+    ASSERT_EQ(finalSnapshots.size(), threadCounts.size()) << scene.uri;
+    expectSnapshotsNear(
+        finalSnapshots[0],
+        finalSnapshots[1],
+        scene.uri + " threads=1-vs-4 final state");
   }
 }

@@ -1,7 +1,7 @@
 # WP-DB.02 stability gate
 
-Captured on 2026-07-05 from `release-6.20` plus local WP-DB.01/WP-DB.02
-edits.
+Captured on 2026-07-07 from `release-6.20` plus local WP-DB.01/WP-DB.02
+edits on branch `wp-db-soft-skel-allocation-gates`.
 
 ## Command
 
@@ -10,8 +10,8 @@ cmake --build build/default/cpp/Release --target test_SoftDynamics --parallel
 ctest --test-dir build/default/cpp/Release -R 'test_SoftDynamics$' --output-on-failure
 ```
 
-Result: `test_SoftDynamics` passed locally in 0.14 seconds after the new gate
-was added.
+Result: `test_SoftDynamics` passed locally in 0.09 seconds after the final
+state comparison gate was added.
 
 ## Coverage
 
@@ -41,6 +41,13 @@ At initialization, step 10, step 20, and step 30, the gate checks:
   body/world velocity and acceleration are finite,
 - point-mass world position and velocity norms stay under broad blow-up guards.
 
+After each scene finishes, the gate compares the ordered final state from the
+`threads=1` run against the `threads=4` run with a relative tolerance of
+`1e-12`. The compared state includes skeleton positions and velocities plus
+each point mass's local position, local velocity, and world position. This
+turns the threaded-world coverage into a deterministic final-state regression
+check instead of only proving that both runs stayed finite.
+
 ## Fixture cleanup
 
 `data/skel/test/test_double_pendulum.skel` now has both intended bodies encoded
@@ -53,8 +60,8 @@ the converted soft box.
 - The existing `compareEquationsOfMotion` body is still disabled. Completing
   soft-body matrix/vector aggregation and re-enabling equation checks belongs
   to WP-DB.04.
-- The gate does not yet check energy drift, contact force variance, CoP
-  smoothness, or deterministic state hashes.
+- The gate does not yet check energy drift, contact force variance, or CoP
+  smoothness. It also does not pin historical golden states across revisions.
 - Multi-core coverage currently proves finite state under a threaded world
   setting; it does not prove speedup. WP-DB.07 owns scaling.
 - SIMD is not exercised by this gate. WP-DB.06 owns `dart/simd/` profiling and
