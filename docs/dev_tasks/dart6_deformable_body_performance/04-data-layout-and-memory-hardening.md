@@ -330,6 +330,32 @@ Focused verification after this slice:
   `THREADS=1` and `THREADS=4` with the same step-200 values as the prior
   phase-view slice.
 
+## Inverse-dynamics phase-view slice
+
+The next WP-DB.06 implementation extends the same phase-view pattern to the
+remaining point-mass inverse-dynamics helpers used by `SoftBodyNode`:
+
+- `updateAccelerationID`,
+- `updateTransmittedForceID`, and
+- `updateJointForceID`.
+
+The moved formulas preserve the existing DART 6 semantics:
+`updateTransmittedForceID()` still subtracts each point mass's local external
+force independent of the parent method's `_withExternalForces` body-wrench
+switch, and `updateJointForceID()` still copies each cached point force back
+into the point state without adding the TODO spring/damping terms. The parent
+soft body now refreshes shared transform, velocity, partial-acceleration, and
+acceleration caches once before the point loop rather than relying on per-point
+getter checks.
+
+Focused verification after this slice:
+
+- `test_SoftDynamics` passed.
+- `StepAllocation.*Soft*` passed all 12 zero-allocation rows.
+- Native `soft_bodies` 200-step checksum rows matched exactly between
+  `THREADS=1` and `THREADS=4` with the same step-200 values as the prior
+  phase-view slice.
+
 ## Rest-detection memory-hardening carryover
 
 After refreshing `origin/dart6-memory-hardening`, this branch first ported its
