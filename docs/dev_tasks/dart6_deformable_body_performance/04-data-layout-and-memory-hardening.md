@@ -387,6 +387,39 @@ Focused verification after this slice:
   evidence remains open and noisy enough that this slice is not a final
   speedup claim.
 
+## Fused point-force aggregation slice
+
+The next WP-DB.06 implementation removes several remaining two-pass
+point-mass aggregation patterns inside `SoftBodyNode.cpp`. Paths that used one
+loop to fill a point-mass cached force and a second loop to add the point
+contribution back into the parent soft-body spatial vector now compute and
+accumulate in the same point loop:
+
+- inverse dynamics transmitted force,
+- forward dynamics bias force,
+- mass and augmented-mass aggregation,
+- inverse-mass bias aggregation,
+- gravity-force aggregation, and
+- combined-vector aggregation.
+
+The slice also drops the point-mass pass in `updateBiasImpulse()` because
+`mImpBeta` is reset to zero immediately before the removed aggregation, so the
+old loop only added zeros. Where the fused loops read cached point local
+positions directly, the code now performs one explicit transform preflight
+instead of relying on `PointMass::getLocalPosition()` to check the same dirty
+flag for every point.
+
+Focused verification after this slice:
+
+- `test_SoftDynamics` passed.
+- `INTEGRATION_StepAllocation` passed.
+- `StepAllocation.*Soft*` passed all 12 zero-allocation rows.
+- Native `soft_bodies` 200-step checksum rows matched between `THREADS=1` and
+  `THREADS=4`.
+- Current-only benchmark repeats improved most rows relative to the prior
+  span-backed current binary. Full parent/base threshold evidence still needs a
+  committed comparison run.
+
 ## Rest-detection memory-hardening carryover
 
 After refreshing `origin/dart6-memory-hardening`, this branch first ported its
