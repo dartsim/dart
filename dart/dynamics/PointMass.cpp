@@ -1203,9 +1203,9 @@ void PointMass::aggregateCombinedVector(
 //==============================================================================
 void PointMass::aggregateExternalForces(VectorXd& /*_Fext*/)
 {
-  // TODO(JS): Not implemented
-  //  int iStart = mIndexInSkeleton[0];
-  //  _Fext->segment<3>(iStart) = mFext;
+  // Point masses are not exposed as Skeleton generalized coordinates in
+  // DART 6. SoftBodyNode projects each point's local external force through
+  // the parent joint while aggregating the soft body's generalized wrench.
 }
 
 //==============================================================================

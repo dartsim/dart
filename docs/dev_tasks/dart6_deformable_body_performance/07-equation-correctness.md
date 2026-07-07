@@ -11,13 +11,14 @@ ctest --test-dir build/default/cpp/Release -R 'test_SoftDynamics$' --output-on-f
 
 Result: `test_SoftDynamics` passed locally in 0.09 seconds after the
 point-mass gravity, combined-vector, mass-matrix, augmented-mass,
-inverse-mass, and inverse-augmented-mass gate was added.
+inverse-mass, inverse-augmented-mass, and external-force gate was added.
 
 ## Current slice
 
 The first active WP-DB.04 sub-gate covers point-mass contribution to the
 generalized mass, augmented-mass, inverse-mass, and inverse-augmented-mass
-matrices and to gravity and combined Coriolis/gravity force vectors:
+matrices and to gravity, combined Coriolis/gravity force, and external-force
+vectors:
 
 - `PointMass` equation-cache vectors are initialized to zero instead of
   relying on later aggregation paths to write every cache before read.
@@ -40,6 +41,11 @@ matrices and to gravity and combined Coriolis/gravity force vectors:
   matrices from the public mass and augmented-mass matrices. This keeps the
   `Skeleton` API internally consistent without changing the forward-dynamics
   articulated-inertia Schur complement used for free point-mass coordinates.
+- `SoftBodyNode::aggregateExternalForces()` projects point-mass local external
+  forces through the parent joint into `Skeleton::getExternalForces()` without
+  the old point-coordinate segment assignment. `PointMass` now documents that
+  the parent soft body owns this projection because point masses are not
+  exposed as DART 6 `Skeleton` DOFs.
 - `PointMass::setMass()` now dirties the parent tree's articulated-inertia and
   dependent matrix/vector caches so gravity-force queries are recomputed after
   point-mass mass changes.
@@ -53,7 +59,10 @@ matrices and to gravity and combined Coriolis/gravity force vectors:
   `sum(m * J_point^T * J_point)` over the soft body's dependent DOFs, and
   verifies both left and right identity products for
   `Skeleton::getInvMassMatrix()` and `Skeleton::getInvAugMassMatrix()` before
-  and after the point-mass mass change.
+  and after the point-mass mass change. It also applies deterministic local
+  point-mass external forces, verifies `Skeleton::getExternalForces()` against
+  the analytical soft-body Jacobian projection, and verifies
+  `Skeleton::clearExternalForces()` clears the point-mass forces.
 
 This is a correctness slice, not full equation parity.
 
@@ -63,9 +72,9 @@ This is a correctness slice, not full equation parity.
 - Point-mass inverse-mass and inverse-augmented-mass aggregation methods are
   still legacy stubs for the old point-coordinate formulation; the active
   public `Skeleton` inverse-matrix API is covered by the soft-tree solve above.
-- The legacy comments that assign point-mass vector segments to independent
-  generalized coordinates still need a DART 6-compatible replacement or an
-  explicit design decision, because current soft point masses are not exposed
-  as ordinary `Skeleton` DOFs.
+- The remaining legacy comments that assign point-mass vector segments to
+  independent generalized coordinates still need a DART 6-compatible
+  replacement or an explicit design decision, because current soft point masses
+  are not exposed as ordinary `Skeleton` DOFs.
 - Rigid-only, soft-only, and mixed rigid-soft matrix/vector checks still need
   active tests before WP-DB.04 can be considered complete.
