@@ -86,6 +86,26 @@ TEST(CylinderCollision, CollidesParallelCylinders)
       result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
 }
 
+TEST(CylinderCollision, CoaxialCylindersUseLateralSeparation)
+{
+  CylinderShape cylinder1(0.5, 4.0);
+  CylinderShape cylinder2(0.5, 4.0);
+
+  CollisionResult result;
+  const bool hit = collideCylinders(
+      cylinder1,
+      Eigen::Isometry3d::Identity(),
+      cylinder2,
+      Eigen::Isometry3d::Identity(),
+      result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(1.0, result.getContact(0).depth, 1e-12);
+}
+
 TEST(CylinderCollision, RejectsSeparatedCylinders)
 {
   CylinderShape cylinder1(0.5, 2.0);
@@ -207,6 +227,26 @@ TEST(CylinderCollision, CollidesCylinderSphere)
   ASSERT_EQ(1u, result.numContacts());
   EXPECT_TRUE(
       result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+TEST(CylinderCollision, ContainedCylinderSphereUsesInwardNormal)
+{
+  CylinderShape cylinder(1.0, 4.0);
+  SphereShape sphere(0.5);
+
+  CollisionResult result;
+  const bool hit = collideCylinderSphere(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      sphere,
+      translated(0.75, 0.0, 0.0),
+      result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(0.75, result.getContact(0).depth, 1e-12);
 }
 
 TEST(CylinderCollision, CollidesCylinderBox)

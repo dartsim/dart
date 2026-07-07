@@ -55,6 +55,20 @@ bool contactBudgetExhausted(
   return option.enableContact && numContacts >= option.maxNumContacts;
 }
 
+Eigen::Vector3d chooseRadialDirection(const Eigen::Vector3d& axis)
+{
+  const Eigen::Vector3d reference = (std::abs(axis.x()) < 0.9)
+                                        ? Eigen::Vector3d::UnitX()
+                                        : Eigen::Vector3d::UnitY();
+  const Eigen::Vector3d radial = reference - axis * reference.dot(axis);
+  const double radialNorm = radial.norm();
+  if (radialNorm < 1e-10) {
+    return Eigen::Vector3d::UnitY();
+  }
+
+  return radial / radialNorm;
+}
+
 bool addAxialCylinderBoxPatchContacts(
     double cylinderRadius,
     const Eigen::Isometry3d& cylinderTransform,
@@ -293,8 +307,7 @@ bool collideParallelCylinders(
     return true;
   }
 
-  const bool useAxialContact
-      = lateralDist < eps || axialOverlap <= lateralOverlap;
+  const bool useAxialContact = axialOverlap <= lateralOverlap;
 
   ContactPoint contact;
   if (useAxialContact) {
@@ -308,7 +321,9 @@ bool collideParallelCylinders(
     contact.normal = normal;
     contact.depth = std::max(0.0, axialOverlap);
   } else {
-    const Eigen::Vector3d lateralDir = lateralOffset / lateralDist;
+    const Eigen::Vector3d lateralDir = lateralDist < eps
+                                           ? chooseRadialDirection(axis1)
+                                           : lateralOffset / lateralDist;
     const Eigen::Vector3d normal = -lateralDir;
 
     const double min1 = -h1;
@@ -460,7 +475,7 @@ bool collideCylinderSphere(
 
     ContactPoint contact;
     contact.position = contactPoint;
-    contact.normal = -normalWorld;
+    contact.normal = normalWorld;
     contact.depth = penetration;
 
     result.addContact(contact);
