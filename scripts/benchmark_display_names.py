@@ -46,6 +46,16 @@ SURFACES: dict[str, Surface] = {
         FAMILY_CONTACT,
         ("objects", "engine", "threads"),
     ),
+    "BM_ContactContainerLargeActive": Surface(
+        "Contact container large active step",
+        FAMILY_CONTACT,
+        ("objects", "engine", "threads"),
+    ),
+    "BM_ContactContainerDeactivation": Surface(
+        "Contact container deactivation-enabled step",
+        FAMILY_CONTACT,
+        ("objects", "engine", "threads"),
+    ),
 }
 
 
