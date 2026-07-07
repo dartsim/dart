@@ -1,30 +1,14 @@
 ---
-name: dart-retrospect
-description: "DART Retrospect: retrospect on completed work and capture durable lessons"
+description: run a retrospective and capture durable lessons
+argument-hint: "<what-was-completed>"
+agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
-<!-- Source: .claude/commands/dart-retrospect.md -->
+<!-- Source: .claude/commands/dart-retro.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
 <!-- Run `pixi run sync-ai-commands` to update -->
 
-# dart-retrospect
-
-Use this skill in Codex to run the DART `dart-retrospect` workflow. The editable
-workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a generated Codex adapter entrypoint.
-
-## Invocation
-
-- Claude Code/OpenCode: `/dart-retrospect <arguments>`
-- Codex: `$dart-retrospect <arguments>`
-
-Treat the text after the skill name as `$ARGUMENTS`. When the workflow
-references `$1`, `$2`, etc., map those to the positional values supplied by the
-user.
-
-## Command Body
-
-Retrospect on completed work and capture durable lessons: $ARGUMENTS
+Run a retrospective and capture durable lessons: $ARGUMENTS
 
 ## Required Reading
 
