@@ -1307,6 +1307,24 @@ DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 } // namespace dynamics
 } // namespace dart
 
+#if defined(_MSC_VER) && DART_BUILD_SHARED                                     \
+    && !defined(DART_DYNAMICS_BODY_NODE_INSTANTIATE_COMPOSE_DATA)
+namespace dart {
+namespace common {
+namespace detail {
+
+extern template class ComposeData<CompositeProperties, GetProperties>;
+
+extern template class ComposeData<
+    CompositeProperties,
+    GetProperties,
+    dynamics::BodyNode>;
+
+} // namespace detail
+} // namespace common
+} // namespace dart
+#endif
+
 #include <dart/dynamics/detail/body_node.hpp>
 
 #endif // DART_DYNAMICS_BODYNODE_HPP_
