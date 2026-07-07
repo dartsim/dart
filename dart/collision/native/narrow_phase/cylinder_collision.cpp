@@ -541,7 +541,7 @@ bool collideCylinderBox(
 
     const double zOverlap
         = std::min(cylHalfHeight, maxZ) - std::max(-cylHalfHeight, minZ);
-    if (zOverlap <= 0.0) {
+    if (zOverlap < 0.0) {
       return false;
     }
 

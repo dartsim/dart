@@ -241,6 +241,26 @@ TEST(CylinderCollision, DeepFloorBoxUsesAxialNormal)
   EXPECT_NEAR(0.75, result.getContact(0).depth, 1e-12);
 }
 
+TEST(CylinderCollision, TouchingCylinderBoxCapReportsContact)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 0.5));
+
+  CollisionResult result;
+  const bool hit = collideCylinderBox(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      box,
+      translated(0.0, 0.0, 1.5),
+      result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_GE(result.numContacts(), 1u);
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+  EXPECT_NEAR(0.0, result.getContact(0).depth, 1e-12);
+}
+
 TEST(CylinderCollision, CollidesCylinderCapsule)
 {
   CylinderShape cylinder(0.5, 2.0);
