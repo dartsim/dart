@@ -148,20 +148,20 @@ void applyModernDarkMetrics()
 {
   ImGuiStyle& style = ImGui::GetStyle();
 
-  style.WindowPadding = ImVec2(12.0f, 10.0f);
-  style.FramePadding = ImVec2(8.0f, 5.0f);
-  style.ItemSpacing = ImVec2(9.0f, 7.0f);
-  style.ItemInnerSpacing = ImVec2(6.0f, 5.0f);
-  style.ScrollbarSize = 14.0f;
+  style.WindowPadding = ImVec2(9.0f, 7.0f);
+  style.FramePadding = ImVec2(7.0f, 4.0f);
+  style.ItemSpacing = ImVec2(7.0f, 5.0f);
+  style.ItemInnerSpacing = ImVec2(5.0f, 4.0f);
+  style.ScrollbarSize = 12.0f;
   style.GrabMinSize = 10.0f;
 
-  style.WindowRounding = 7.0f;
-  style.ChildRounding = 5.0f;
-  style.FrameRounding = 5.0f;
-  style.PopupRounding = 5.0f;
-  style.TabRounding = 6.0f;
-  style.ScrollbarRounding = 9.0f;
-  style.GrabRounding = 5.0f;
+  style.WindowRounding = 5.0f;
+  style.ChildRounding = 4.0f;
+  style.FrameRounding = 4.0f;
+  style.PopupRounding = 4.0f;
+  style.TabRounding = 4.0f;
+  style.ScrollbarRounding = 6.0f;
+  style.GrabRounding = 4.0f;
 
   style.WindowBorderSize = 1.0f;
   style.FrameBorderSize = 0.0f;

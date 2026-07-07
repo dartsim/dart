@@ -103,6 +103,32 @@ bool hasLiveRtfStats(
 }
 
 //==============================================================================
+float calcButtonWidth(const char* label)
+{
+  const ImGuiStyle& style = ImGui::GetStyle();
+  return ImGui::CalcTextSize(label).x + 2.0f * style.FramePadding.x;
+}
+
+//==============================================================================
+void sameLineIfEnoughRoom(float nextItemWidth)
+{
+  const ImGuiStyle& style = ImGui::GetStyle();
+  const float windowRight
+      = ImGui::GetWindowPos().x + ImGui::GetContentRegionMax().x;
+  const float nextRight
+      = ImGui::GetItemRectMax().x + style.ItemSpacing.x + nextItemWidth;
+  if (nextRight <= windowRight)
+    ImGui::SameLine();
+}
+
+//==============================================================================
+float clampedItemWidth(float preferred, float minimum)
+{
+  const float avail = std::max(1.0f, ImGui::GetContentRegionAvail().x);
+  return std::clamp(preferred, std::min(minimum, avail), avail);
+}
+
+//==============================================================================
 /// Forwards ImGui rendering to the host; kept alive by ImGuiHandler's own
 /// widget list once registered.
 class HostPanelWidget : public dart::gui::osg::ImGuiWidget
@@ -417,7 +443,7 @@ void DemoHost::ensureViewerConfigured()
   applyModernDarkMetrics();
   mViewer->getImGuiHandler()->setGuiScale(mGuiScale);
 
-  mViewer->getCamera()->setClearColor(::osg::Vec4(0.10f, 0.11f, 0.13f, 1.0f));
+  mViewer->getCamera()->setClearColor(::osg::Vec4(0.58f, 0.62f, 0.65f, 1.0f));
 
   mViewer->getImGuiHandler()->addWidget(
       std::make_shared<HostPanelWidget>(this));
@@ -676,6 +702,14 @@ void DemoHost::applyCameraHome(const CameraHome& home, bool viaManipulator)
   } else {
     mViewer->getCamera()->setViewMatrixAsLookAt(home.eye, home.center, home.up);
   }
+}
+
+//==============================================================================
+void DemoHost::fitCameraToWorld()
+{
+  if (!mCurrentWorld)
+    return;
+  dart::gui::osg::applyDefaultCameraPose(*mViewer, mCurrentWorld);
 }
 
 //==============================================================================
@@ -963,10 +997,10 @@ void DemoHost::renderPanels()
   const float screenW = std::max(1.0f, io.DisplaySize.x);
   const float screenH = std::max(1.0f, io.DisplaySize.y);
 
-  const float toolbarH = std::min(96.0f * scale, screenH * 0.3f);
-  const float bottomH = std::min(190.0f * scale, screenH * 0.35f);
-  const float leftW = std::min(300.0f * scale, screenW * 0.4f);
-  const float rightW = std::min(340.0f * scale, screenW * 0.4f);
+  const float toolbarH = std::min(58.0f * scale, screenH * 0.18f);
+  const float bottomH = std::min(156.0f * scale, screenH * 0.26f);
+  const float leftW = std::min(260.0f * scale, screenW * 0.30f);
+  const float rightW = std::min(360.0f * scale, screenW * 0.34f);
   const float middleH = std::max(1.0f, screenH - toolbarH - bottomH);
 
   constexpr ImGuiWindowFlags kChromeFlags
@@ -1005,17 +1039,27 @@ void DemoHost::renderToolbar()
 {
   const bool hasScene = mWorldNode != nullptr;
   const bool simulating = mViewer->isSimulating();
+  const float scale = static_cast<float>(mGuiScale);
 
+  ImGui::TextColored(ImVec4(0.42f, 0.70f, 1.0f, 1.0f), "DART");
+  ImGui::SameLine();
+  ImGui::TextDisabled("demos");
+  if (!mCurrentSceneTitle.empty()) {
+    sameLineIfEnoughRoom(ImGui::CalcTextSize(mCurrentSceneTitle.c_str()).x);
+    ImGui::TextUnformatted(mCurrentSceneTitle.c_str());
+  }
+
+  sameLineIfEnoughRoom(calcButtonWidth(simulating ? "Pause" : "Play"));
   ImGui::BeginDisabled(!hasScene);
   if (ImGui::Button(simulating ? "Pause" : "Play"))
     mViewer->simulate(!simulating);
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(calcButtonWidth("Step"));
   if (ImGui::Button("Step") && mWorldNode)
     mWorldNode->stepOnce();
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(calcButtonWidth("Rebuild"));
   if (ImGui::Button("Rebuild") && !mCurrentSceneId.empty())
     requestSceneSwitch(mCurrentSceneId);
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(calcButtonWidth("Reset"));
   // Reset restores the scene's initial state by re-running its factory (a
   // fresh World), the same as Rebuild -- see the Rebuild/Reset note in
   // README or the phase-1 report for why world->reset() alone is not enough.
@@ -1023,17 +1067,26 @@ void DemoHost::renderToolbar()
     requestSceneSwitch(mCurrentSceneId);
   ImGui::EndDisabled();
 
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(90.0f * scale);
   ImGui::Text("Time %.2f s", mCurrentWorld ? mCurrentWorld->getTime() : 0.0);
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(72.0f * scale);
+  ImGui::Text("FPS %.0f", static_cast<double>(ImGui::GetIO().Framerate));
+  sameLineIfEnoughRoom(96.0f * scale);
   if (hasLiveRtfStats(mViewer.get(), mWorldNode.get()))
-    ImGui::Text("RTF %.2f", mWorldNode->getSmoothedRealTimeFactor());
+    ImGui::Text("Sim %.2fx", mWorldNode->getSmoothedRealTimeFactor());
   else
-    ImGui::TextUnformatted("RTF --");
+    ImGui::TextUnformatted("Sim --");
+  sameLineIfEnoughRoom(100.0f * scale);
+  ImGui::Text(
+      "Steps/frame %zu",
+      mWorldNode ? mWorldNode->getLastRefreshStepCount() : std::size_t{0});
 
-  ImGui::SetNextItemWidth(220.0f * static_cast<float>(mGuiScale));
+  sameLineIfEnoughRoom(190.0f * scale);
+  ImGui::TextUnformatted("Target");
+  ImGui::SameLine();
+  ImGui::SetNextItemWidth(clampedItemWidth(116.0f * scale, 76.0f * scale));
   if (ImGui::SliderFloat(
-          "Target RTF",
+          "##target_rtf",
           &mTargetRtf,
           0.1f,
           4.0f,
@@ -1044,7 +1097,7 @@ void DemoHost::renderToolbar()
     if (mWorldNode)
       mWorldNode->setTargetRealTimeFactor(mTargetRtf);
   }
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(90.0f * scale);
   if (ImGui::Checkbox("Gravity", &mGravityEnabled) && mCurrentWorld) {
     if (mGravityEnabled) {
       mCurrentWorld->setGravity(mSavedGravity);
@@ -1058,10 +1111,12 @@ void DemoHost::renderToolbar()
   // directly to the active world (the same frame-loop thread ImGui renders on,
   // matching the Gravity/Target RTF writes above). NaN input is rejected by
   // keeping the previous value.
+  sameLineIfEnoughRoom(170.0f * scale);
+  ImGui::TextUnformatted("dt");
   ImGui::SameLine();
-  ImGui::SetNextItemWidth(200.0f * static_cast<float>(mGuiScale));
+  ImGui::SetNextItemWidth(clampedItemWidth(120.0f * scale, 86.0f * scale));
   if (ImGui::SliderFloat(
-          "Timestep",
+          "##timestep",
           &mTimeStep,
           1e-5f,
           1e-2f,
@@ -1073,7 +1128,7 @@ void DemoHost::renderToolbar()
       mCurrentWorld->setTimeStep(mTimeStep);
   }
 
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(calcButtonWidth("View"));
   if (ImGui::Button("View"))
     ImGui::OpenPopup("##view_menu_popup");
   if (ImGui::BeginPopup("##view_menu_popup")) {
@@ -1081,12 +1136,22 @@ void DemoHost::renderToolbar()
     ImGui::EndPopup();
   }
 
+  sameLineIfEnoughRoom(120.0f * scale);
   mDragForce.renderToolbarStatus(mGuiScale);
 }
 
 //==============================================================================
 void DemoHost::renderViewMenu()
 {
+  ImGui::BeginDisabled(!mCurrentWorld);
+  if (ImGui::Button("Fit scene"))
+    fitCameraToWorld();
+  ImGui::EndDisabled();
+  ImGui::SameLine();
+  if (ImGui::Button("Reset camera"))
+    mViewer->home();
+
+  ImGui::Separator();
   if (ImGui::Checkbox("Shadows", &mShadowsEnabled))
     applyShadowState();
 
@@ -1146,10 +1211,6 @@ void DemoHost::renderViewMenu()
         = dart::gui::osg::sanitizeGuiScale(std::clamp(guiScale, 0.75f, 2.0f));
     mViewer->getImGuiHandler()->setGuiScale(mGuiScale);
   }
-
-  ImGui::Separator();
-  if (ImGui::Button("Reset camera"))
-    mViewer->home();
 }
 
 //==============================================================================
@@ -1158,10 +1219,15 @@ void DemoHost::renderNavigator()
   ImGui::TextWrapped("%s", mStatusLine.c_str());
   ImGui::Separator();
 
-  ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 60.0f);
+  const float clearW = calcButtonWidth("Clear");
+  const float searchW = std::max(
+      ImGui::GetFontSize() * 5.0f,
+      ImGui::GetContentRegionAvail().x - clearW
+          - ImGui::GetStyle().ItemSpacing.x);
+  ImGui::SetNextItemWidth(searchW);
   ImGui::InputTextWithHint(
       "##search", "Search demos...", mSearchBuf, sizeof(mSearchBuf));
-  ImGui::SameLine();
+  sameLineIfEnoughRoom(clearW);
   if (ImGui::Button("Clear"))
     mSearchBuf[0] = '\0';
 
@@ -1215,8 +1281,13 @@ void DemoHost::renderInspectorSection()
   if (ImGui::CollapsingHeader("Scene Tree", ImGuiTreeNodeFlags_DefaultOpen)) {
     ImGui::BeginChild(
         "##scene_tree_scroll",
-        ImVec2(0.0f, 120.0f * static_cast<float>(mGuiScale)),
-        true);
+        ImVec2(
+            0.0f,
+            std::min(
+                180.0f * static_cast<float>(mGuiScale),
+                ImGui::GetContentRegionAvail().y * 0.45f)),
+        true,
+        ImGuiWindowFlags_HorizontalScrollbar);
     mInspector.renderTree(mCurrentWorld);
     ImGui::EndChild();
   }
@@ -1234,15 +1305,11 @@ void DemoHost::renderInspectorSection()
       }
     }
   }
-
-  ImGui::Separator();
 }
 
 //==============================================================================
-void DemoHost::renderScenePanel()
+void DemoHost::renderSceneControlsSection()
 {
-  renderInspectorSection();
-
   if (mCurrentRenderPanel) {
     try {
       mCurrentRenderPanel();
@@ -1276,6 +1343,45 @@ void DemoHost::renderScenePanel()
 }
 
 //==============================================================================
+void DemoHost::renderToolsSection()
+{
+  if (ImGui::CollapsingHeader(
+          "Contact Visualizer", ImGuiTreeNodeFlags_DefaultOpen)) {
+    mContactVisualizer.renderToggle();
+  }
+
+  if (ImGui::CollapsingHeader("Drag Force", ImGuiTreeNodeFlags_DefaultOpen)) {
+    mDragForce.renderTunables(mGuiScale);
+  }
+
+  if (ImGui::CollapsingHeader("Profiler", ImGuiTreeNodeFlags_DefaultOpen)) {
+    mProfiler.render();
+  }
+}
+
+//==============================================================================
+void DemoHost::renderScenePanel()
+{
+  if (ImGui::BeginTabBar("##scene_panel_tabs")) {
+    if (ImGui::BeginTabItem("Scene")) {
+      renderSceneControlsSection();
+      ImGui::EndTabItem();
+    }
+
+    if (ImGui::BeginTabItem("Inspector")) {
+      renderInspectorSection();
+      ImGui::EndTabItem();
+    }
+
+    if (ImGui::BeginTabItem("Tools")) {
+      renderToolsSection();
+      ImGui::EndTabItem();
+    }
+    ImGui::EndTabBar();
+  }
+}
+
+//==============================================================================
 void DemoHost::renderDiagnostics()
 {
   std::size_t numSkeletons = 0;
@@ -1302,14 +1408,6 @@ void DemoHost::renderDiagnostics()
         "FPS %.0f   RTF min/avg/max -- / -- / --",
         static_cast<double>(ImGui::GetIO().Framerate));
   }
-  ImGui::Text(
-      "Steps %zu   Sim time %.2f s   Skeletons %zu   Bodies %zu   DOFs %zu",
-      mWorldNode ? mWorldNode->getStepCount() : std::size_t{0},
-      mCurrentWorld ? mCurrentWorld->getTime() : 0.0,
-      numSkeletons,
-      numBodies,
-      numDofs);
-
   const std::size_t numContacts
       = mCurrentWorld ? mCurrentWorld->getLastCollisionResult().getNumContacts()
                       : std::size_t{0};
@@ -1318,75 +1416,66 @@ void DemoHost::renderDiagnostics()
             ? mCurrentWorld->getConstraintSolver()->getNumConstraints()
             : std::size_t{0};
   ImGui::Text(
-      "Contacts %zu   Constraints %zu   Steps/refresh %zu   Timestep %.5f s",
-      numContacts,
-      numConstraints,
+      "Steps %zu   Sim %.2f s   Steps/frame %zu   dt %.5f s   Skeletons %zu   "
+      "Bodies %zu   DOFs %zu   Contacts %zu   Constraints %zu",
+      mWorldNode ? mWorldNode->getStepCount() : std::size_t{0},
+      mCurrentWorld ? mCurrentWorld->getTime() : 0.0,
       mWorldNode ? mWorldNode->getLastRefreshStepCount() : std::size_t{0},
-      mCurrentWorld ? mCurrentWorld->getTimeStep() : 0.0);
+      mCurrentWorld ? mCurrentWorld->getTimeStep() : 0.0,
+      numSkeletons,
+      numBodies,
+      numDofs,
+      numContacts,
+      numConstraints);
 
   ImGui::Separator();
-  if (ImGui::CollapsingHeader(
-          "Contact Visualizer", ImGuiTreeNodeFlags_DefaultOpen)) {
-    mContactVisualizer.renderToggle();
-  }
+  renderLogSection(0.0f);
+}
 
-  ImGui::Separator();
-  if (ImGui::CollapsingHeader("Drag Force", ImGuiTreeNodeFlags_DefaultOpen)) {
-    mDragForce.renderTunables(mGuiScale);
-  }
-
-  ImGui::Separator();
-  if (ImGui::CollapsingHeader("Profiler", ImGuiTreeNodeFlags_DefaultOpen)) {
-    mProfiler.render();
-  }
-
-  ImGui::Separator();
-  if (ImGui::CollapsingHeader("Log", ImGuiTreeNodeFlags_DefaultOpen)) {
-    ImGui::Checkbox("Info", &mLogShowInfo);
-    ImGui::SameLine();
-    ImGui::Checkbox("Warning", &mLogShowWarning);
-    ImGui::SameLine();
-    ImGui::Checkbox("Error", &mLogShowError);
-    ImGui::SameLine();
-    ImGui::Checkbox("Autoscroll", &mLogAutoscroll);
-    ImGui::SameLine();
-    if (ImGui::Button("Copy")) {
-      std::string joined;
-      for (const auto& entry : mLog) {
-        if ((entry.level == LogEntry::Level::Info && !mLogShowInfo)
-            || (entry.level == LogEntry::Level::Warning && !mLogShowWarning)
-            || (entry.level == LogEntry::Level::Error && !mLogShowError))
-          continue;
-        joined += entry.message;
-        joined += '\n';
-      }
-      ImGui::SetClipboardText(joined.c_str());
-    }
-
-    ImGui::BeginChild(
-        "##log_scroll",
-        ImVec2(0.0f, 100.0f * static_cast<float>(mGuiScale)),
-        true);
+//==============================================================================
+void DemoHost::renderLogSection(float height)
+{
+  ImGui::Checkbox("Info", &mLogShowInfo);
+  sameLineIfEnoughRoom(95.0f * static_cast<float>(mGuiScale));
+  ImGui::Checkbox("Warning", &mLogShowWarning);
+  sameLineIfEnoughRoom(72.0f * static_cast<float>(mGuiScale));
+  ImGui::Checkbox("Error", &mLogShowError);
+  sameLineIfEnoughRoom(100.0f * static_cast<float>(mGuiScale));
+  ImGui::Checkbox("Autoscroll", &mLogAutoscroll);
+  sameLineIfEnoughRoom(calcButtonWidth("Copy"));
+  if (ImGui::Button("Copy")) {
+    std::string joined;
     for (const auto& entry : mLog) {
       if ((entry.level == LogEntry::Level::Info && !mLogShowInfo)
           || (entry.level == LogEntry::Level::Warning && !mLogShowWarning)
           || (entry.level == LogEntry::Level::Error && !mLogShowError))
         continue;
-
-      ImVec4 color = ImGui::GetStyle().Colors[ImGuiCol_Text];
-      if (entry.level == LogEntry::Level::Error)
-        color = ImVec4(0.95f, 0.35f, 0.35f, 1.0f);
-      else if (entry.level == LogEntry::Level::Warning)
-        color = ImVec4(0.95f, 0.75f, 0.25f, 1.0f);
-
-      ImGui::PushStyleColor(ImGuiCol_Text, color);
-      ImGui::TextWrapped("%s", entry.message.c_str());
-      ImGui::PopStyleColor();
+      joined += entry.message;
+      joined += '\n';
     }
-    if (mLogAutoscroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f)
-      ImGui::SetScrollHereY(1.0f);
-    ImGui::EndChild();
+    ImGui::SetClipboardText(joined.c_str());
   }
+
+  ImGui::BeginChild("##log_scroll", ImVec2(0.0f, height), true);
+  for (const auto& entry : mLog) {
+    if ((entry.level == LogEntry::Level::Info && !mLogShowInfo)
+        || (entry.level == LogEntry::Level::Warning && !mLogShowWarning)
+        || (entry.level == LogEntry::Level::Error && !mLogShowError))
+      continue;
+
+    ImVec4 color = ImGui::GetStyle().Colors[ImGuiCol_Text];
+    if (entry.level == LogEntry::Level::Error)
+      color = ImVec4(0.95f, 0.35f, 0.35f, 1.0f);
+    else if (entry.level == LogEntry::Level::Warning)
+      color = ImVec4(0.95f, 0.75f, 0.25f, 1.0f);
+
+    ImGui::PushStyleColor(ImGuiCol_Text, color);
+    ImGui::TextWrapped("%s", entry.message.c_str());
+    ImGui::PopStyleColor();
+  }
+  if (mLogAutoscroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f)
+    ImGui::SetScrollHereY(1.0f);
+  ImGui::EndChild();
 }
 
 } // namespace dart_demos

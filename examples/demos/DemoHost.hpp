@@ -254,9 +254,13 @@ private:
   void renderScenePanel();
   void renderDiagnostics();
   void renderInspectorSection();
+  void renderSceneControlsSection();
+  void renderToolsSection();
+  void renderLogSection(float height);
   void renderViewMenu();
   void invokeKeyAction(KeyAction& action);
   void applyShadowState();
+  void fitCameraToWorld();
 
   std::vector<DemoScene> mScenes;
   std::vector<CategoryGroup> mCategories;
