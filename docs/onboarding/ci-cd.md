@@ -632,6 +632,11 @@ Coverage guardrails:
 
 - Do not add broad `.github/workflows/**` exclusions. Changes to build, test,
   packaging, and CI orchestration workflows should continue to run heavy CI.
+- For path-scoped accelerator or backend workflows, include the build and test
+  registration files that enable the path, not just the implementation
+  directory. For example, a SIMD workflow needs the root and module
+  `CMakeLists.txt` files plus benchmark/test registration files that can add or
+  remove SIMD-covered targets.
 - Keep `.github/filters/ci-code.yml` itself covered by the filter so changes to
   the trigger policy run the normal matrix.
 - Prefer job-level `changes` gates over top-level `pull_request.paths-ignore`
