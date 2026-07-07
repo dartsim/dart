@@ -800,8 +800,21 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
   const double vertexSpringStiffness = getVertexSpringStiffness();
   const double implicitOffset = _timeStep * dampingCoefficient
                                 + _timeStep * _timeStep * vertexSpringStiffness;
-  if (mNotifier->needsTransformUpdate())
-    const_cast<SoftBodyNode*>(this)->updateTransform();
+  auto phase = makePointMassPhaseView(
+      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    PointMass& pointMass = *phase.pointMasses[i];
+    const double mass = phase.properties[i].mMass;
+    const double massSquared = mass * mass;
+    pointMass.mPsi = 1.0 / mass;
+    pointMass.mImplicitPsi = 1.0 / (mass + implicitOffset);
+    DART_ASSERT(!math::isNan(pointMass.mImplicitPsi));
+
+    pointMass.mPi = mass - massSquared * pointMass.mPsi;
+    pointMass.mImplicitPi = mass - massSquared * pointMass.mImplicitPsi;
+    DART_ASSERT(!math::isNan(pointMass.mPi));
+    DART_ASSERT(!math::isNan(pointMass.mImplicitPi));
+  }
 
   DART_ASSERT(mParentJoint != nullptr);
 
@@ -818,22 +831,11 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
         mArtInertiaImplicit, child->mArtInertiaImplicit);
   }
 
-  auto phase = makePointMassPhaseView(
-      mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
   for (std::size_t i = 0; i < phase.size(); ++i) {
-    PointMass& pointMass = *phase.pointMasses[i];
-    const double mass = phase.properties[i].mMass;
-    pointMass.mPsi = 1.0 / mass;
-    pointMass.mImplicitPsi = 1.0 / (mass + implicitOffset);
-    DART_ASSERT(!math::isNan(pointMass.mImplicitPsi));
-
-    pointMass.mPi = 0.0;
-    pointMass.mImplicitPi = mass * implicitOffset * pointMass.mImplicitPsi;
-    DART_ASSERT(!math::isNan(pointMass.mPi));
-    DART_ASSERT(!math::isNan(pointMass.mImplicitPi));
-
-    _addPiToArtInertia(pointMass.mX, pointMass.mPi);
-    _addPiToArtInertiaImplicit(pointMass.mX, pointMass.mImplicitPi);
+    const PointMass& pointMass = *phase.pointMasses[i];
+    const Eigen::Vector3d& localPosition = pointMass.getLocalPosition();
+    _addPiToArtInertia(localPosition, pointMass.mPi);
+    _addPiToArtInertiaImplicit(localPosition, pointMass.mImplicitPi);
   }
 
   // Verification
@@ -895,14 +897,16 @@ void SoftBodyNode::updateBiasForce(
     const std::vector<std::size_t>& connections
         = properties.mConnectedPointMassIndices;
     const std::size_t numConnections = connections.size();
+    const std::size_t* connectionIndices = connections.data();
     const double springStiffness
         = vertexSpringStiffness + numConnections * edgeSpringStiffness;
+    const double velocityScale
+        = _timeStep * springStiffness + dampingCoefficient;
     pointMass.mAlpha = state.mForces - springStiffness * state.mPositions
-                       - (_timeStep * springStiffness + dampingCoefficient)
-                             * state.mVelocities
+                       - velocityScale * state.mVelocities
                        - mass * pointMass.mEta - pointMass.mB;
     for (std::size_t j = 0; j < numConnections; ++j) {
-      const std::size_t connectedIndex = connections[j];
+      const std::size_t connectedIndex = connectionIndices[j];
       DART_ASSERT(connectedIndex < phase.size());
       const PointMass::State& connectedState = phase.states[connectedIndex];
       pointMass.mAlpha += edgeSpringStiffness
