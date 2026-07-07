@@ -36,7 +36,6 @@
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
-#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -46,15 +45,11 @@
 #include <string>
 #include <vector>
 
-#include <cmath>
-
 namespace dart {
 namespace collision {
 namespace detail {
 
 namespace {
-
-constexpr double kPi = 3.141592653589793238462643383279502884;
 
 std::unique_ptr<native::Shape> createConvexOrNull(
     std::vector<Eigen::Vector3d> vertices, const std::string& shapeType)
@@ -70,24 +65,6 @@ std::unique_ptr<native::Shape> createConvexOrNull(
   }
 
   return std::make_unique<native::ConvexShape>(std::move(vertices));
-}
-
-std::vector<Eigen::Vector3d> makeConeVertices(double radius, double height)
-{
-  std::vector<Eigen::Vector3d> vertices;
-  constexpr std::size_t kNumBaseVertices = 16;
-  vertices.reserve(kNumBaseVertices + 1);
-
-  const double baseZ = -0.5 * height;
-  for (std::size_t i = 0; i < kNumBaseVertices; ++i) {
-    const double theta = 2.0 * kPi * static_cast<double>(i)
-                         / static_cast<double>(kNumBaseVertices);
-    vertices.emplace_back(
-        radius * std::cos(theta), radius * std::sin(theta), baseZ);
-  }
-
-  vertices.emplace_back(0.0, 0.0, 0.5 * height);
-  return vertices;
 }
 
 std::vector<Eigen::Vector3d> makePyramidVertices(
@@ -135,12 +112,6 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
       return createConvexOrNull({}, shapeType);
     }
     return createConvexOrNull(mesh->getVertices(), shapeType);
-  }
-
-  if (shapeType == dynamics::ConeShape::getStaticType()) {
-    const auto& cone = static_cast<const dynamics::ConeShape&>(shape);
-    return createConvexOrNull(
-        makeConeVertices(cone.getRadius(), cone.getHeight()), shapeType);
   }
 
   if (shapeType == dynamics::PyramidShape::getStaticType()) {
