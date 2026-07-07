@@ -418,6 +418,46 @@ TEST(CylinderCollision, ContainedCapsuleEndpointUsesContainmentDepth)
   EXPECT_NEAR(0.3, result.getContact(0).depth, 1e-12);
 }
 
+TEST(CylinderCollision, CapsuleEndpointOnCylinderBarrelUsesSurfaceNormal)
+{
+  CylinderShape cylinder(1.0, 4.0);
+  CapsuleShape capsule(0.2, 1.0);
+
+  CollisionResult result;
+  const bool hit = collideCylinderCapsule(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(1.0, 0.0, 0.0),
+      result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(0.2, result.getContact(0).depth, 1e-12);
+}
+
+TEST(CylinderCollision, CapsuleEndpointOnCylinderCapUsesSurfaceNormal)
+{
+  CylinderShape cylinder(1.0, 2.0);
+  CapsuleShape capsule(0.2, 1.0);
+
+  CollisionResult result;
+  const bool hit = collideCylinderCapsule(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.0, 0.0, -1.5),
+      result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+  EXPECT_NEAR(0.2, result.getContact(0).depth, 1e-12);
+}
+
 TEST(CylinderCollision, CollidesCylinderCapsuleBody)
 {
   CylinderShape cylinder(0.5, 2.0);

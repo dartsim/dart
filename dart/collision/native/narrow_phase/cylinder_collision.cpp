@@ -778,6 +778,7 @@ bool collideCylinderCapsule(
   double bestPenetration = -std::numeric_limits<double>::max();
   Eigen::Vector3d bestCylPoint;
   Eigen::Vector3d bestCapPoint;
+  Eigen::Vector3d bestNormalLocal;
   bool foundCollision = false;
   bool bestEndpointInsideCylinder = false;
 
@@ -787,10 +788,15 @@ bool collideCylinderCapsule(
     const double lateralDist = std::sqrt(lateralDistSq);
 
     Eigen::Vector3d closestOnCyl;
+    Eigen::Vector3d normalLocal;
     double dist;
     const bool endpointInsideCylinder
         = std::abs(capEndLocal.z()) <= cylHalfHeight
           && lateralDist <= cylRadius;
+    const Eigen::Vector3d radialDir
+        = lateralDist > 1e-10 ? Eigen::Vector3d(
+              capEndLocal.x() / lateralDist, capEndLocal.y() / lateralDist, 0.0)
+                              : Eigen::Vector3d::UnitX();
 
     if (std::abs(capEndLocal.z()) <= cylHalfHeight) {
       if (lateralDist <= cylRadius) {
@@ -801,16 +807,20 @@ bool collideCylinderCapsule(
               capEndLocal.x() * cylRadius / lateralDist,
               capEndLocal.y() * cylRadius / lateralDist,
               capEndLocal.z());
+          normalLocal = -radialDir;
         } else {
           double cappedZ = capEndLocal.z() > 0 ? cylHalfHeight : -cylHalfHeight;
           closestOnCyl
               = Eigen::Vector3d(capEndLocal.x(), capEndLocal.y(), cappedZ);
+          normalLocal
+              = Eigen::Vector3d(0.0, 0.0, capEndLocal.z() > 0 ? -1.0 : 1.0);
         }
       } else {
         closestOnCyl = Eigen::Vector3d(
             capEndLocal.x() * cylRadius / lateralDist,
             capEndLocal.y() * cylRadius / lateralDist,
             capEndLocal.z());
+        normalLocal = radialDir;
       }
     } else {
       double cappedZ
@@ -818,11 +828,14 @@ bool collideCylinderCapsule(
       if (lateralDist <= cylRadius) {
         closestOnCyl
             = Eigen::Vector3d(capEndLocal.x(), capEndLocal.y(), cappedZ);
+        normalLocal
+            = Eigen::Vector3d(0.0, 0.0, capEndLocal.z() > 0 ? 1.0 : -1.0);
       } else {
         closestOnCyl = Eigen::Vector3d(
             capEndLocal.x() * cylRadius / lateralDist,
             capEndLocal.y() * cylRadius / lateralDist,
             cappedZ);
+        normalLocal = (capEndLocal - closestOnCyl).normalized();
       }
     }
 
@@ -834,6 +847,7 @@ bool collideCylinderCapsule(
       bestPenetration = penetration;
       bestCylPoint = closestOnCyl;
       bestCapPoint = capEndLocal;
+      bestNormalLocal = normalLocal;
       foundCollision = true;
       bestEndpointInsideCylinder = endpointInsideCylinder;
     }
@@ -853,7 +867,7 @@ bool collideCylinderCapsule(
 
   Eigen::Vector3d normalLocal = bestCapPoint - bestCylPoint;
   if (normalLocal.squaredNorm() < 1e-10) {
-    normalLocal = Eigen::Vector3d::UnitZ();
+    normalLocal = bestNormalLocal;
   } else {
     normalLocal.normalize();
   }
