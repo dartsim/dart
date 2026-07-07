@@ -17,7 +17,7 @@ with the first real SIMD-kernel PR.
 | Lane | Owner doc | Packets | Status |
 | --- | --- | --- | --- |
 | WS-A constraint/LCP | 02-constraint-lcp-lane.md | PG.10–PG.15 | open (PG.13 evidence-gated; PG.14 blocked D3; PG.15 blocked D7) |
-| WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | open (PG.23 blocked D8; lane re-review at WS-F phase 5) |
+| WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | open (PG.20 #3329; PG.21 evidence-gated after span-only PG.20; PG.22 local cpp-only route rejected; PG.23 blocked D8; lane re-review at WS-F phase 5) |
 | WS-C dynamics batching | 04-dynamics-batching-lane.md | PG.30–PG.33 | open (PG.33 gated) |
 | WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | active (PG.40 folded into PG.42; PG.41 waits for PG.10 seam evidence) |
 | WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 done; PG.02/PG.03 next; PG.04 blocked D4) |
@@ -37,8 +37,8 @@ with the first real SIMD-kernel PR.
 | WP-PG.13 row islanding | WS-A | evidence-gated (PG.10 census) | — | — |
 | WP-PG.14 matrix-free path | WS-A | blocked (D3) | — | — |
 | WP-PG.15 creep vs rest-veto | WS-A | blocked (D7) | — | — |
-| WP-PG.20 history spans | WS-B | open | — | Local 2026-07-06 attempts rejected by A/B: weakest 120-object/16-thread ODE row regressed |
-| WP-PG.21 history map/pruning | WS-B | open | — | — |
+| WP-PG.20 history spans | WS-B | done — #3329 | `wp-pg-20-ode-history-spans` / #3329 | Current-base refresh @ `9ff8b1d77a1`: hashes bit-identical; ODE rows improved (`S2_ode` 0.0933→0.0521 ms, `S3_ode` 115.9→19.7 ms, `S4_ode` 0.2269→0.1549 ms; GB ODE rows 3.2–7.6% faster) |
+| WP-PG.21 history map/pruning | WS-B | open | — | Evidence-gated after #3329; map/pruning variant must beat the span-only baseline on a fresh current-base matrix before claim |
 | WP-PG.22 version-gated pose push | WS-B | open | — | Local 2026-07-06 exact-transform fallback rejected by A/B; protected kinematic version blocks cpp-only route |
 | WP-PG.23 ODE manifold reduction | WS-B | blocked (D8) | — | — |
 | WP-PG.30 free-body cache + FD path | WS-C | done — PR #3310 | `wp-pg-30-single-free-body-cache` | A/B: S5 −12.2%, S4 −5.3%, S3 −2.3%, solve-bound rows flat; 8/8 guard hashes bit-identical |
