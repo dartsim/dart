@@ -1081,11 +1081,12 @@ void PointMass::updateConstrainedTermsFD(double _timeStep)
 //==============================================================================
 void PointMass::aggregateMassMatrix(MatrixXd& /*_MCol*/, int /*_col*/)
 {
-  // TODO(JS): Not implemented
+  mM_F.noalias() = getMass() * mM_dV;
+  DART_ASSERT(!math::isNan(mM_F));
+
   //  // Assign
   //  // We assume that the three generalized coordinates are in a row.
   //  int iStart = mIndexInSkeleton[0];
-  //  mM_F.noalias() = mMass * mM_dV;
   //  _MCol->block<3, 1>(iStart, _col).noalias() = mM_F;
 }
 

@@ -227,6 +227,22 @@ void expectVectorNear(
     EXPECT_NEAR(lhs[i], rhs[i], tolerance) << context << " index=" << i;
 }
 
+void expectMatrixNear(
+    const Eigen::MatrixXd& lhs,
+    const Eigen::MatrixXd& rhs,
+    double tolerance,
+    const std::string& context)
+{
+  ASSERT_EQ(lhs.rows(), rhs.rows()) << context;
+  ASSERT_EQ(lhs.cols(), rhs.cols()) << context;
+  for (Eigen::Index row = 0; row < lhs.rows(); ++row) {
+    for (Eigen::Index col = 0; col < lhs.cols(); ++col) {
+      EXPECT_NEAR(lhs(row, col), rhs(row, col), tolerance)
+          << context << " row=" << row << " col=" << col;
+    }
+  }
+}
+
 Eigen::VectorXd projectPointMassGravity(
     const dynamics::SoftBodyNode* softBody, const Eigen::Vector3d& gravity)
 {
@@ -249,6 +265,42 @@ Eigen::VectorXd projectPointMassGravity(
   }
 
   return -(softBody->getJacobian().transpose() * pointMassGravityWrench);
+}
+
+Eigen::MatrixXd projectPointMassMassMatrix(
+    const dynamics::SkeletonPtr& skeleton,
+    const dynamics::SoftBodyNode* softBody)
+{
+  DART_ASSERT(skeleton != nullptr);
+  DART_ASSERT(softBody != nullptr);
+
+  const std::vector<std::size_t>& indices
+      = softBody->getDependentGenCoordIndices();
+  Eigen::MatrixXd localContribution
+      = Eigen::MatrixXd::Zero(indices.size(), indices.size());
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    const dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    DART_ASSERT(pointMass != nullptr);
+
+    Eigen::Isometry3d pointTransform = Eigen::Isometry3d::Identity();
+    pointTransform.translation() = pointMass->getLocalPosition();
+    const Eigen::Matrix<double, 3, Eigen::Dynamic> pointJacobian
+        = math::AdInvTJac(pointTransform, softBody->getJacobian())
+              .bottomRows<3>();
+
+    localContribution.noalias()
+        += pointMass->getMass() * pointJacobian.transpose() * pointJacobian;
+  }
+
+  Eigen::MatrixXd contribution
+      = Eigen::MatrixXd::Zero(skeleton->getNumDofs(), skeleton->getNumDofs());
+  for (std::size_t row = 0; row < indices.size(); ++row) {
+    for (std::size_t col = 0; col < indices.size(); ++col)
+      contribution(indices[row], indices[col]) = localContribution(row, col);
+  }
+
+  return contribution;
 }
 
 void expectFiniteSoftBodyState(
@@ -757,12 +809,16 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
 
   const Eigen::VectorXd expectedPointMassGravity
       = projectPointMassGravity(softBody, world->getGravity());
+  const Eigen::MatrixXd expectedPointMassMass
+      = projectPointMassMassMatrix(skeleton, softBody);
   ASSERT_GT(expectedPointMassGravity.norm(), 1.0e-9);
+  ASSERT_GT(expectedPointMassMass.norm(), 1.0e-9);
   ASSERT_LT(skeleton->getVelocities().norm(), 1.0e-12);
 
   const Eigen::VectorXd withOriginalPointMasses = skeleton->getGravityForces();
   const Eigen::VectorXd withOriginalPointMassesCg
       = skeleton->getCoriolisAndGravityForces();
+  const Eigen::MatrixXd withOriginalPointMassesM = skeleton->getMassMatrix();
 
   for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
     dynamics::PointMass* pointMass = softBody->getPointMass(i);
@@ -773,10 +829,13 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
   const Eigen::VectorXd withHalfPointMasses = skeleton->getGravityForces();
   const Eigen::VectorXd withHalfPointMassesCg
       = skeleton->getCoriolisAndGravityForces();
+  const Eigen::MatrixXd withHalfPointMassesM = skeleton->getMassMatrix();
   const Eigen::VectorXd actualPointMassDelta
       = withOriginalPointMasses - withHalfPointMasses;
   const Eigen::VectorXd actualPointMassCgDelta
       = withOriginalPointMassesCg - withHalfPointMassesCg;
+  const Eigen::MatrixXd actualPointMassMassDelta
+      = withOriginalPointMassesM - withHalfPointMassesM;
 
   expectVectorNear(
       actualPointMassDelta,
@@ -788,4 +847,9 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
       0.5 * expectedPointMassGravity,
       1.0e-10,
       "soft point-mass combined gravity projection");
+  expectMatrixNear(
+      actualPointMassMassDelta,
+      0.5 * expectedPointMassMass,
+      1.0e-10,
+      "soft point-mass mass matrix projection");
 }
