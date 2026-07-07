@@ -261,6 +261,26 @@ TEST(CylinderCollision, TouchingCylinderBoxCapReportsContact)
   EXPECT_NEAR(0.0, result.getContact(0).depth, 1e-12);
 }
 
+TEST(CylinderCollision, EmbeddedBoxUsesLateralSeparation)
+{
+  CylinderShape cylinder(0.5, 4.0);
+  BoxShape box(Eigen::Vector3d(0.1, 0.2, 0.1));
+
+  CollisionResult result;
+  const bool hit = collideCylinderBox(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      box,
+      translated(0, 0, 0),
+      result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(0.6, result.getContact(0).depth, 1e-12);
+}
+
 TEST(CylinderCollision, CollidesCylinderCapsule)
 {
   CylinderShape cylinder(0.5, 2.0);

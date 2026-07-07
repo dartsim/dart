@@ -544,6 +544,10 @@ bool collideCylinderBox(
     if (zOverlap < 0.0) {
       return false;
     }
+    const double topAxialPen = cylHalfHeight - minZ;
+    const double bottomAxialPen = maxZ + cylHalfHeight;
+    const bool topAxialContact = topAxialPen <= bottomAxialPen;
+    const double axialPen = topAxialContact ? topAxialPen : bottomAxialPen;
 
     const double closestX = std::clamp(0.0, minX, maxX);
     const double closestY = std::clamp(0.0, minY, maxY);
@@ -569,10 +573,10 @@ bool collideCylinderBox(
     Eigen::Vector3d contactLocal(
         closestX, closestY, std::clamp(0.0, minZ, maxZ));
 
-    if (zOverlap < lateralPen) {
-      penetration = zOverlap;
-      normalLocal = Eigen::Vector3d(0, 0, center.z() > 0.0 ? -1.0 : 1.0);
-      contactLocal.z() = center.z() > 0.0 ? minZ : maxZ;
+    if (axialPen < lateralPen) {
+      penetration = axialPen;
+      normalLocal = Eigen::Vector3d(0, 0, topAxialContact ? -1.0 : 1.0);
+      contactLocal.z() = topAxialContact ? minZ : maxZ;
       return addAxialCylinderBoxPatchContacts(
           cylRadius,
           cylinderTransform,
