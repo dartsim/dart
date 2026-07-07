@@ -1,10 +1,10 @@
 ---
-description: retrospect on completed work and capture durable lessons
+description: run a retrospective and capture durable lessons
 argument-hint: "<what-was-completed>"
 agent: build
 ---
 
-Retrospect on completed work and capture durable lessons: $ARGUMENTS
+Run a retrospective and capture durable lessons: $ARGUMENTS
 
 ## Required Reading
 

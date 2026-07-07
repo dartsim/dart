@@ -93,7 +93,7 @@
       "gate_profile": "docs-ai"
     },
     {
-      "name": "dart-retrospect",
+      "name": "dart-retro",
       "category": "docs",
       "status": "active",
       "gate_profile": "docs-ai"

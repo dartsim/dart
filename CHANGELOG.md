@@ -383,6 +383,10 @@ compatibility remains on the active DART 6 LTS branch._
 - Made DART AI workflows more completion- and changelog-aware by default, with
   verification-first `$dart-resume` task management and a reusable
   `$dart-changelog` routine for consistent release-note decisions and entries.
+- Renamed the post-session retrospective workflow capability from
+  `dart-retrospect` to `dart-retro` across the shared workflow catalog and
+  generated Claude/OpenCode/Codex adapters; use `/dart-retro` or `$dart-retro`
+  for durable lessons from completed work.
 - Clarified AI-native guidance so always-loaded agent rules stay compact,
   consequential decisions use repo-wide north-star context and proportionate
   evidence, in-scope failures are root-caused instead of hidden, and AI-infra
