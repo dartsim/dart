@@ -11,9 +11,11 @@ The *Atlas Simbicon* demo simulates `Atlas <http://www.bostondynamics.com/robot_
 humanoid robot controlled by `Simbicon <http://www.cs.ubc.ca/~van/papers/Simbicon.htm>`_,
 which is a simple biped locomotion controller. This demo is a fully 3D
 simulation with articulated dynamics and rigid body collisions. This demo uses
-OpenSceneGraph for 3D rendering and ImGui for 2D on-screen buttons. The source
-code can be found in the `examples/osg/osgAtlasSimbicon <https://github.com/dartsim/dart/tree/b680dfa4dad11eeee4a7d5d1e0d621c9861a70d0/examples/atlas_simbicon>`_
-directory.
+OpenSceneGraph for 3D rendering and ImGui for 2D on-screen buttons. It is one
+of the scenes in the consolidated `dart-demos <https://github.com/dartsim/dart/tree/main/examples/demos>`_
+catalog (``pixi run demos``, then select "Atlas Simbicon", or launch it
+directly with ``bin/dart-demos --scene atlas_simbicon``); its source lives at
+`examples/demos/scenes/atlas_simbicon <https://github.com/dartsim/dart/tree/main/examples/demos/scenes/atlas_simbicon>`_.
 
 The controller has three control modes: 'No Control', 'Short-Stride Walking',
 and 'Normal-Stride Walking'. The Atlas robot can walk keeping its balance with
@@ -41,9 +43,11 @@ Tinkertoy
 The *tinkertoy* demo simulates trees of *tinkertoys*, which are blocks connected
 to each other via various joint types. This is a fully 3D simulation with
 articulated dynamics and rigid body collisions. This demo uses OpenSceneGraph
-for 3D rendering and ImGui for 2D on-screen buttons. The source code can be
-found in the `examples/osg/osgTinkertoy <https://github.com/dartsim/dart/tree/b680dfa4dad11eeee4a7d5d1e0d621c9861a70d0/examples/tinkertoy>`_
-directory.
+for 3D rendering and ImGui for 2D on-screen buttons. It is one of the scenes
+in the consolidated `dart-demos <https://github.com/dartsim/dart/tree/main/examples/demos>`_
+catalog (``pixi run demos``, then select "Tinkertoy", or launch it directly
+with ``bin/dart-demos --scene tinkertoy``); its source lives at
+`examples/demos/scenes/tinkertoy <https://github.com/dartsim/dart/tree/main/examples/demos/scenes/tinkertoy>`_.
 
 The scene starts out with two trees of *tinkertoys*. Left-click on one of the
 blocks to attach a target to it. During simulation, the block that is attached

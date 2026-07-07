@@ -31,6 +31,53 @@ surface affects shared behavior.
   If the docs affect Read the Docs pages, run `pixi run docs-build` when
   practical.
 
+## Visual Verification (Headless Capture)
+
+DART 6 renders off-screen through the `dart::gui::osg` helper
+(`dart/gui/osg/OffscreenViewer.hpp`). The GLX pbuffer path needs an X server:
+use the workstation display, or wrap headless hosts in
+`xvfb-run -a -s '-screen 0 1280x1024x24' <command>`. conda-forge has no
+linux-64 Xvfb build, so install Xvfb from the system package manager (or run on
+a host with a real X server); the capture path skips cleanly when no `DISPLAY`
+is set.
+
+- Capture a still from a GUI example:
+
+  ```bash
+  pixi run capture                                   # sleeping, 640x480 -> capture.png
+  pixi run capture ssik_ik_gui arm.png
+  ```
+
+- Or capture from dartpy (release-6.20 offscreen bindings):
+
+  ```python
+  import dartpy as dart
+
+  viewer = dart.gui.osg.ImGuiViewer()
+  viewer.addWorldNode(dart.gui.osg.WorldNode(world))
+  eye, center, up = dart.gui.osg.defaultAgentCamera([0, 0, 0], radius)
+  viewer.captureOffscreen("out.png", eye, center, up, width=640, height=480)
+  ```
+
+- Turn a capture into a machine-readable verdict, or compare against a golden:
+
+  ```bash
+  pixi run image-verdict out.png                 # JSON: non-blank, contrast, diff
+  pixi run image-verdict out.png golden.png      # diff a capture against a golden
+  pixi run image-golden capture.png golden.png --update   # regenerate a golden
+  pixi run image-sheet frame_0.png frame_1.png --out sheet.png --grid 3x3
+  ```
+
+The verdict JSON (`schema_version dart.image_verdict/v1`) sets `pass` from the
+non-blank check plus any golden diff. Contrast is scene-dependent, so it is
+reported but only gates when you pass `--require-contrast`.
+
+For physics determinism (rather than visual appearance), use the text path that
+already exists on the branch: `pixi run bm-boxes-headless` prints per-step
+position/velocity checksums with no rendering, so diffing two builds' output
+proves byte-identical simulation. Prefer this for logic/solver changes; use the
+image verdict for anything that affects what is drawn.
+
 ## Completion Audit
 
 Before calling work complete, verify every explicit requirement against current

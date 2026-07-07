@@ -76,6 +76,65 @@ void Viewer(py::module& m)
                 },
                 ::py::arg("filename"))
             .def(
+                "setUpOffscreen",
+                +[](dart::gui::osg::Viewer* self,
+                    int width,
+                    int height,
+                    double fovYDeg,
+                    double nearClip,
+                    double farClip) -> bool {
+                  dart::gui::osg::OffscreenSetup setup;
+                  setup.width = width;
+                  setup.height = height;
+                  setup.fovYDeg = fovYDeg;
+                  setup.nearClip = nearClip;
+                  setup.farClip = farClip;
+                  return dart::gui::osg::setUpOffscreenViewer(*self, setup);
+                },
+                ::py::arg("width") = 640,
+                ::py::arg("height") = 480,
+                ::py::arg("fovYDeg") = 30.0,
+                ::py::arg("nearClip") = 0.1,
+                ::py::arg("farClip") = 1000.0)
+            .def(
+                "captureOffscreen",
+                +[](dart::gui::osg::Viewer* self,
+                    const std::string& pngPath,
+                    const Eigen::Vector3d& eye,
+                    const Eigen::Vector3d& center,
+                    const Eigen::Vector3d& up,
+                    int width,
+                    int height,
+                    double fovYDeg,
+                    double nearClip,
+                    double farClip,
+                    int warmupFrames) -> bool {
+                  dart::gui::osg::OffscreenSetup setup;
+                  setup.width = width;
+                  setup.height = height;
+                  setup.fovYDeg = fovYDeg;
+                  setup.nearClip = nearClip;
+                  setup.farClip = farClip;
+                  return dart::gui::osg::captureOffscreen(
+                      *self,
+                      pngPath,
+                      gui::osg::eigToOsgVec3f(eye),
+                      gui::osg::eigToOsgVec3f(center),
+                      gui::osg::eigToOsgVec3f(up),
+                      setup,
+                      warmupFrames);
+                },
+                ::py::arg("pngPath"),
+                ::py::arg("eye"),
+                ::py::arg("center"),
+                ::py::arg("up"),
+                ::py::arg("width") = 640,
+                ::py::arg("height") = 480,
+                ::py::arg("fovYDeg") = 30.0,
+                ::py::arg("nearClip") = 0.1,
+                ::py::arg("farClip") = 1000.0,
+                ::py::arg("warmupFrames") = 10)
+            .def(
                 "record",
                 +[](dart::gui::osg::Viewer* self,
                     const std::string& directory) { self->record(directory); },
@@ -230,9 +289,8 @@ void Viewer(py::module& m)
                 ::py::arg("active"))
             .def(
                 "simulate",
-                +[](dart::gui::osg::Viewer* self, bool on) {
-                  self->simulate(on);
-                },
+                +[](dart::gui::osg::Viewer* self,
+                    bool on) { self->simulate(on); },
                 ::py::arg("on"))
             .def(
                 "isSimulating",
@@ -379,6 +437,32 @@ void Viewer(py::module& m)
                 &gui::osg::Viewer::setCameraMode,
                 py::arg("mode"))
             .def("getCameraMode", &gui::osg::Viewer::getCameraMode);
+
+  // Agent-friendly default camera from a scene bounding sphere: a canonical 3/4
+  // view framed to fill the vertical field of view, z-up. Returns
+  // (eye, center, up) for use with Viewer.captureOffscreen.
+  m.def(
+      "defaultAgentCamera",
+      +[](const Eigen::Vector3d& center,
+          double radius,
+          double fovYDeg,
+          double azimuthDeg,
+          double elevationDeg) {
+        const ::osg::BoundingSphere bound(
+            gui::osg::eigToOsgVec3f(center), static_cast<float>(radius));
+        const dart::gui::osg::OffscreenCamera cam
+            = dart::gui::osg::defaultAgentCamera(
+                bound, fovYDeg, azimuthDeg, elevationDeg);
+        return std::make_tuple(
+            gui::osg::osgToEigVec3(cam.eye),
+            gui::osg::osgToEigVec3(cam.center),
+            gui::osg::osgToEigVec3(cam.up));
+      },
+      ::py::arg("center"),
+      ::py::arg("radius"),
+      ::py::arg("fovYDeg") = 30.0,
+      ::py::arg("azimuthDeg") = 45.0,
+      ::py::arg("elevationDeg") = 30.0);
 
   ::py::enum_<dart::gui::osg::Viewer::LightingMode>(viewer, "LightingMode")
       .value("NO_LIGHT", dart::gui::osg::Viewer::NO_LIGHT)
