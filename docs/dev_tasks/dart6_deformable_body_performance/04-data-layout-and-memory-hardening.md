@@ -228,6 +228,37 @@ were too noisy to claim a stable speedup. Treat this as another
 behavior-preserving data-access cleanup on the path toward an internal
 phase-input facade.
 
+## Contiguous impulse/constrained-term slice
+
+The next WP-DB.06 implementation removes another small layer of per-point
+dispatch from the impulse and constraint-resolution phases:
+
+- `SoftBodyNode::updateBiasImpulse()` now fills each point mass's impulse
+  caches directly instead of calling the protected per-point helper.
+- `SoftBodyNode::updateTransmittedImpulse()` reads point masses through an
+  indexed loop and uses the owning soft body's contiguous point-property vector
+  for mass values.
+- `SoftBodyNode::updateConstrainedTerms()` updates the contiguous point-state
+  vector directly for velocity, acceleration, and generalized-force changes,
+  then preserves the same velocity and acceleration dirty-notice behavior that
+  the old `PointMass` setters provided.
+
+This is another scalar data-access cleanup, not a new algorithm. It reduces
+point-mass method dispatch and repeated state/property lookups in phases that
+already execute under the parent soft body's recursive dynamics update. The
+remaining storage problem is unchanged: point masses are still heap-owned
+objects behind `std::vector<PointMass*>`, and SIMD still needs a retained
+phase-input facade or SoA storage before it should be introduced.
+
+A native `soft_bodies` 200-step smoke after this slice preserved identical
+step-200 checksum rows for `THREADS=1` and `THREADS=4`:
+`skelPosL1=1.3242580728329107`,
+`pointPosL1=0.12844450735027885`,
+`pointVelL1=6.7481899526541707`, and
+`pointWorldPosL1=189.54545901295526`. The elapsed rows were 25.346 ms and
+23.295 ms respectively on this host; treat them as smoke timing, not a stable
+threshold.
+
 ## Rest-detection memory-hardening carryover
 
 After refreshing `origin/dart6-memory-hardening`, this branch first ported its
