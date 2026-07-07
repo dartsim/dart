@@ -1018,8 +1018,10 @@ bool DemoHost::prepareOffscreenContext(
   camera->setDrawBuffer(buffer);
   camera->setReadBuffer(buffer);
 
-  // Single-threaded so the screen-capture (a camera final-draw callback)
-  // completes synchronously inside frame(); see EVIDENCE-gui-capabilities.md.
+  // SingleThreaded makes Viewer::captureScreen's final-draw callback complete
+  // inside frame(). Other OSG threading models may run draw callbacks on a
+  // separate thread, which would make a single extra frame an unreliable
+  // screenshot completion point for the headless CLI path.
   mViewer->setThreadingModel(::osgViewer::ViewerBase::SingleThreaded);
   mViewer->setCameraManipulator(nullptr);
   mViewer->simulate(false);
