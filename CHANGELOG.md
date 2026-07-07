@@ -66,6 +66,11 @@
     affected code, or an independent blind-spot review — instead of coding a
     guess and discovering them mid-change.
 
+  * Enable compiler-cache discovery in DART 6 Pixi builds so repeated CMake
+    builds use `sccache` or fall back to `ccache` by default, while retaining
+    `DART_DISABLE_COMPILER_CACHE=ON` for uncached comparisons and cache-specific
+    toolchain debugging.
+
   * Add a root-cause discipline to the release-branch AI principles
     (`docs/ai/principles.md`): fix bugs at the root cause — reproduce the
     smallest failing case, fix the underlying cause, and add regression
