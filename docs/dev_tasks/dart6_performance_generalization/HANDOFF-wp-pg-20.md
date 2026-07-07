@@ -1,12 +1,15 @@
 # HANDOFF — WP-PG.20 (ODE contact-history perf) + crash-investigation resolution
 
-**Date:** 2026-07-06 · **Branch:** `wp-pg-20-ode-history-spans` (currently
-merged through `origin/release-6.20` tip `90c1d3bfb6b`) · **For:** any fresh AI
-agent (Codex/Claude/other) resuming this lane.
+**Date:** 2026-07-06 · **Status refresh:** 2026-07-07 · **Branch:**
+`wp-pg-20-ode-history-spans` (merged as PR #3329; current
+`origin/release-6.20` includes it) · **For:** any fresh AI agent
+(Codex/Claude/other) resuming this lane.
 
-This branch's WP-PG.20 code is committed and PR #3329 is open; the remaining
-work is review/CI management and any required evidence refresh after base
-advances. Read this top-to-bottom once, then jump to **§7 "How to resume"**.
+This branch's WP-PG.20 code is merged. The gate and crash-investigation notes
+below are retained as audit history for future ODE work, not as an active PR
+checklist. Read [RESUME.md](RESUME.md) and
+[07-orchestration-dashboard.md](07-orchestration-dashboard.md) for the next
+packet.
 
 ---
 
@@ -187,9 +190,8 @@ is in the scratchpad as `groundtruth.sh`; the older gate logic is in
 the commit and used the now-wrong `stash` approach; use the `checkout`-based
 swap above instead.
 
-For the already-open PR #3329, keep the PR body evidence table current after
-base advances, address review comments, and monitor CI. Merge stays with the
-maintainer.
+PR #3329 is merged. Use the evidence table there as the reference format for
+future performance PRs that change runtime behavior.
 
 ---
 
@@ -233,18 +235,15 @@ maintainer.
 
 ## 7. How to resume (checklist)
 
-1. `git checkout wp-pg-20-ode-history-spans && git pull` (branch is pushed).
-2. Confirm you're off `release-6.20` tip; `pixi run config` then
-   `pixi run cmake --build build/default/cpp/Release --target contact_benchmark BM_INTEGRATION_contact_container --parallel 8`. **Verify both binaries exist**
-   (`ls -x build/default/cpp/Release/bin/{contact_benchmark,BM_INTEGRATION_contact_container}`).
-3. Wait for a quiet host (`pgrep -c cc1plus`≈0). Run **Gate A** (determinism,
-   base vs WP-PG.20 — must be bit-identical) → **Gate B** (lint) → **Gate C**
-   (A/B table) → **Gate D** (crash A/B — required, see §5/§3).
-4. If base advances, refresh the PR body with the 3-column benchmark table
-   context and exact head/base SHAs, then shepherd CI/review. Merge =
-   maintainer.
-5. If Gate A fails (hashes differ): WP-PG.20 changed results — a real bug; debug
-   the span-tracking indices / prune set before shipping.
+1. Start from [RESUME.md](RESUME.md), not the merged WP-PG.20 branch.
+2. Claim the next open packet in
+   [07-orchestration-dashboard.md](07-orchestration-dashboard.md) on a fresh
+   branch from current `origin/release-6.20`.
+3. For any runtime performance PR, copy the #3329 evidence shape: recorded
+   baseline, parent/current-base, PR head, exact commands, guard hashes/counts,
+   and explicit unknowns.
+4. If revisiting WP-PG.21, compare against the merged span-only WP-PG.20
+   baseline and require a fresh current-base matrix before claiming the packet.
 
 ---
 

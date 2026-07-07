@@ -85,6 +85,12 @@
 
     #include <cstdint>
     #include <cstring>
+
+    #if defined(TRACY_HAS_CALLSTACK) && defined(TRACY_CALLSTACK)
+      #define DART_PROFILE_TRACY_CALLSTACK_ARG , TRACY_CALLSTACK
+    #else
+      #define DART_PROFILE_TRACY_CALLSTACK_ARG
+    #endif
   #endif
 
   // Built-in text backend (readable console summaries)
@@ -148,8 +154,7 @@ public:
         function,
         std::strlen(function),
         name,
-        std::strlen(name),
-        TRACY_CALLSTACK,
+        std::strlen(name) DART_PROFILE_TRACY_CALLSTACK_ARG,
         true),
       m_text(name, file, line)
     #elif DART_PROFILE_HAS_TRACY
@@ -160,8 +165,7 @@ public:
         function,
         std::strlen(function),
         name,
-        std::strlen(name),
-        TRACY_CALLSTACK,
+        std::strlen(name) DART_PROFILE_TRACY_CALLSTACK_ARG,
         true)
     #elif DART_PROFILE_ENABLE_TEXT
     : m_text(name, file, line)
@@ -185,6 +189,10 @@ private:
 };
 
 } // namespace dart::common::profile::detail
+
+    #if DART_PROFILE_HAS_TRACY
+      #undef DART_PROFILE_TRACY_CALLSTACK_ARG
+    #endif
 
   #endif
 
