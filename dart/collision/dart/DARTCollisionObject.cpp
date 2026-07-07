@@ -518,14 +518,9 @@ void DARTCollisionObject::refreshSoftFaceBvhBounds()
   if (mCachedSoftFaceBvhNodes.empty() || mCachedSoftFaceBvhIndices.empty())
     return;
 
-  const auto refreshNode = [&](auto&& self, int nodeIndex) -> bool {
-    if (nodeIndex < 0
-        || static_cast<std::size_t>(nodeIndex)
-               >= mCachedSoftFaceBvhNodes.size()) {
-      return false;
-    }
-
-    auto& node = mCachedSoftFaceBvhNodes[static_cast<std::size_t>(nodeIndex)];
+  for (std::size_t nodeCursor = mCachedSoftFaceBvhNodes.size(); nodeCursor > 0u;
+       --nodeCursor) {
+    auto& node = mCachedSoftFaceBvhNodes[nodeCursor - 1u];
     Eigen::Vector3d boundsMin
         = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
     Eigen::Vector3d boundsMax
@@ -535,33 +530,34 @@ void DARTCollisionObject::refreshSoftFaceBvhBounds()
     if (node.left < 0 && node.right < 0) {
       for (int i = 0; i < node.count; ++i) {
         const auto faceCursor = static_cast<std::size_t>(node.first + i);
-        if (faceCursor >= mCachedSoftFaceBvhIndices.size())
-          continue;
+        DART_ASSERT(faceCursor < mCachedSoftFaceBvhIndices.size());
 
         const int faceIndex = mCachedSoftFaceBvhIndices[faceCursor];
-        if (faceIndex < 0
-            || static_cast<std::size_t>(faceIndex) >= mCachedSoftFaces.size()) {
-          continue;
-        }
+        DART_ASSERT(faceIndex >= 0);
+        DART_ASSERT(
+            static_cast<std::size_t>(faceIndex) < mCachedSoftFaces.size());
 
         const auto& face
             = mCachedSoftFaces[static_cast<std::size_t>(faceIndex)];
-        if (!face.valid)
-          continue;
+        DART_ASSERT(face.valid);
 
         boundsMin = boundsMin.cwiseMin(face.boundsMin);
         boundsMax = boundsMax.cwiseMax(face.boundsMax);
         hasBounds = true;
       }
     } else {
-      if (self(self, node.left)) {
+      if (node.left >= 0
+          && static_cast<std::size_t>(node.left)
+                 < mCachedSoftFaceBvhNodes.size()) {
         const auto& left
             = mCachedSoftFaceBvhNodes[static_cast<std::size_t>(node.left)];
         boundsMin = boundsMin.cwiseMin(left.boundsMin);
         boundsMax = boundsMax.cwiseMax(left.boundsMax);
         hasBounds = true;
       }
-      if (self(self, node.right)) {
+      if (node.right >= 0
+          && static_cast<std::size_t>(node.right)
+                 < mCachedSoftFaceBvhNodes.size()) {
         const auto& right
             = mCachedSoftFaceBvhNodes[static_cast<std::size_t>(node.right)];
         boundsMin = boundsMin.cwiseMin(right.boundsMin);
@@ -577,11 +573,7 @@ void DARTCollisionObject::refreshSoftFaceBvhBounds()
       node.boundsMin.setZero();
       node.boundsMax.setZero();
     }
-
-    return hasBounds;
-  };
-
-  refreshNode(refreshNode, 0);
+  }
 }
 
 //==============================================================================
