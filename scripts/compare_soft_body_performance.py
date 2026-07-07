@@ -32,9 +32,11 @@ HARNESS_FILES = [
 ]
 REFERENCE_DETECTOR = "dart"
 UNSUPPORTED_SHAPE_WARNING_FRAGMENTS = [
+    "not supported by dartcollisiondetector",
     "not supported by nativecollisiondetector",
     "shape will be skipped by the native adapter",
     "unsupported shape type",
+    "always get penetrated",
 ]
 CHECKSUM_METRICS = [
     "skelPosL1",
@@ -727,7 +729,7 @@ def write_cpu_change_graph(
         [
             "```text",
             f"{'detector/scene/threads':<{label_width}}  "
-            f"{'faster':>{bar_width}}|{'slower':<{bar_width}}  change",
+            f"{'faster':>{bar_width}}|{'slower':<{bar_width}}  change  scope",
         ]
     )
     for item in valid_items:
@@ -741,7 +743,10 @@ def write_cpu_change_graph(
             left = "." * bar_width
             right = "!" * units + "." * (bar_width - units)
         label = f"{item['detector']}/{item['scene']}/{item['threads']}"
-        lines.append(f"{label:<{label_width}}  {left}|{right}  {change:+.1f}%")
+        scope = "apples" if item.get("apples_to_apples", True) else "diagnostic"
+        lines.append(
+            f"{label:<{label_width}}  {left}|{right}  {change:+.1f}%  {scope}"
+        )
     lines.append("```")
 
 
@@ -749,12 +754,41 @@ def build_comparison(
     current_rows: dict[tuple[str, str, int], BenchmarkRow],
     other_rows: dict[tuple[str, str, int], BenchmarkRow],
     other_label: str,
+    detector_equivalence: dict[str, dict[str, object]],
+    unsupported_detector_runs: dict[tuple[str, str], bool],
 ) -> list[dict[str, object]]:
     comparison = []
     for key in sorted(current_rows):
         current = current_rows[key]
+        current_supported = not unsupported_detector_runs.get(
+            ("current", current.detector), False
+        )
+        current_equivalent = bool(
+            detector_equivalence.get(current.detector, {}).get("eligible", False)
+        )
+        other_supported = not unsupported_detector_runs.get(
+            (other_label, current.detector), False
+        )
+        apples_to_apples = current_supported and current_equivalent and other_supported
+        diagnostic_reasons = []
+        if not current_supported:
+            diagnostic_reasons.append("current emitted unsupported-shape warnings")
+        if not current_equivalent:
+            diagnostic_reasons.append(
+                str(
+                    detector_equivalence.get(current.detector, {}).get(
+                        "reason", "not checksum-equivalent to reference detector"
+                    )
+                )
+            )
+        if not other_supported:
+            diagnostic_reasons.append(
+                f"{other_label} emitted unsupported-shape warnings"
+            )
+
         other = other_rows.get(key)
         if other is None:
+            diagnostic_reasons.append(f"missing {other_label} row")
             comparison.append(
                 {
                     "comparison": f"current_vs_{other_label}",
@@ -762,6 +796,8 @@ def build_comparison(
                     "scene": key[1],
                     "threads": key[2],
                     "missing": other_label,
+                    "apples_to_apples": apples_to_apples,
+                    "diagnostic_reason": "; ".join(diagnostic_reasons),
                 }
             )
             continue
@@ -776,6 +812,10 @@ def build_comparison(
                 "cpu_change_pct": pct_change(current.cpu_ms, other.cpu_ms),
                 "current_sim_s_per_s": current.sim_s_per_s,
                 f"{other_label}_sim_s_per_s": other.sim_s_per_s,
+                "apples_to_apples": apples_to_apples,
+                "diagnostic_reason": (
+                    "; ".join(diagnostic_reasons) if diagnostic_reasons else ""
+                ),
             }
         )
     return comparison
@@ -890,8 +930,8 @@ def write_markdown(
         lines.extend(
             [
                 "",
-                "| Detector | Scene | Threads | Other CPU ms | Current CPU ms | CPU change | Other sim_s/s | Current sim_s/s |",
-                "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+                "| Detector | Scene | Threads | Scope | Other CPU ms | Current CPU ms | CPU change | Other sim_s/s | Current sim_s/s |",
+                "| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: |",
             ]
         )
         for item in comparison_items:
@@ -904,11 +944,16 @@ def write_markdown(
                 else "base_sim_s_per_s"
             )
             lines.append(
-                "| `{detector}` | `{scene}` | {threads} | {other_cpu} | "
+                "| `{detector}` | `{scene}` | {threads} | {scope} | {other_cpu} | "
                 "{current_cpu} | {change:+.1f}% | {other_sim} | {current_sim} |".format(
                     detector=item["detector"],
                     scene=item["scene"],
                     threads=item["threads"],
+                    scope=(
+                        "apples-to-apples"
+                        if item.get("apples_to_apples", True)
+                        else "diagnostic"
+                    ),
                     other_cpu=fmt_float(float(item[other_key])),
                     current_cpu=fmt_float(float(item["current_cpu_ms"])),
                     change=float(item["cpu_change_pct"]),
@@ -916,6 +961,24 @@ def write_markdown(
                     current_sim=fmt_float(item.get("current_sim_s_per_s")),
                 )
             )
+
+        diagnostic_items = [
+            item
+            for item in comparison_items
+            if "missing" not in item and not item.get("apples_to_apples", True)
+        ]
+        if diagnostic_items:
+            lines.extend(["", "Diagnostic rows:", ""])
+            for item in diagnostic_items:
+                lines.append(
+                    "- `{detector}` `{scene}` threads `{threads}`: {reason}".format(
+                        detector=item["detector"],
+                        scene=item["scene"],
+                        threads=item["threads"],
+                        reason=item.get("diagnostic_reason")
+                        or "not apples-to-apples",
+                    )
+                )
 
     lines.extend(
         [
@@ -983,6 +1046,7 @@ def main(argv: list[str]) -> int:
 
     all_rows: dict[str, dict[tuple[str, str, int], BenchmarkRow]] = {}
     run_errors: list[dict[str, str]] = []
+    unsupported_detector_runs: dict[tuple[str, str], bool] = {}
     current_headless_binary: Path | None = None
     for revision in revisions:
         binary, headless_binary = configure_and_build(revision)
@@ -1007,6 +1071,9 @@ def main(argv: list[str]) -> int:
                 repetitions=args.benchmark_repetitions,
             )
             if error is not None:
+                unsupported_detector_runs[(revision.label, detector)] = (
+                    has_unsupported_shape_warning(error)
+                )
                 run_errors.append(
                     {
                         "revision": revision.label,
@@ -1017,6 +1084,11 @@ def main(argv: list[str]) -> int:
                 if not args.keep_going:
                     break
                 continue
+            log_path = output_dir / "logs" / f"{revision.label}-{detector}.log"
+            unsupported_detector_runs[(revision.label, detector)] = (
+                log_path.exists()
+                and has_unsupported_shape_warning(log_path.read_text(encoding="utf-8"))
+            )
             parsed_rows = load_rows(
                 revision, detector, json_path, requested_threads
             )
@@ -1053,7 +1125,13 @@ def main(argv: list[str]) -> int:
     for other_label in ("parent", "base"):
         if other_label in all_rows:
             comparisons.extend(
-                build_comparison(current_rows, all_rows[other_label], other_label)
+                build_comparison(
+                    current_rows,
+                    all_rows[other_label],
+                    other_label,
+                    detector_equivalence,
+                    unsupported_detector_runs,
+                )
             )
 
     fastest, detector_winner_failures = fastest_rows(
@@ -1107,6 +1185,16 @@ def main(argv: list[str]) -> int:
         "current_detector_winners": fastest,
         "detector_equivalence": detector_equivalence,
         "eligible_detectors": eligible_detectors,
+        "unsupported_detector_runs": [
+            {
+                "revision": revision,
+                "detector": detector,
+                "unsupported_shape_warning": unsupported,
+            }
+            for (revision, detector), unsupported in sorted(
+                unsupported_detector_runs.items()
+            )
+        ],
         "run_errors": run_errors,
         "failures": failures,
         "verdict": "pass" if not failures else "fail",

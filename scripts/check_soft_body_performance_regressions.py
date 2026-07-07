@@ -23,6 +23,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default="current_vs_base,current_vs_parent",
         help="Comma-separated comparison names to check.",
     )
+    parser.add_argument(
+        "--include-diagnostic",
+        action="store_true",
+        help=(
+            "Also fail diagnostic rows that are marked not apples-to-apples. "
+            "By default, diagnostic rows remain reported by the summary but do "
+            "not gate the strict regression check."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -36,6 +45,8 @@ def main(argv: list[str]) -> int:
     failures = []
     for item in summary.get("comparisons", []):
         if item.get("comparison") not in comparison_names:
+            continue
+        if not args.include_diagnostic and not item.get("apples_to_apples", True):
             continue
         if "missing" in item:
             failures.append(
