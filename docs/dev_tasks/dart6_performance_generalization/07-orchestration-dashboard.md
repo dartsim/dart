@@ -3,14 +3,14 @@
 Status board only; packet definitions live in the lane docs. Update this
 file (and RESUME.md) in every PR that claims or completes a packet.
 
-Branch point: `origin/release-6.20` @ `6f170f5d470` (2026-07-07, after
-WP-PG.02 / PR #3327 and the #3333 base merge).
+Branch point: `origin/release-6.20` @ `2d898081931` (2026-07-07, after
+WP-PG.02 / PR #3327 and the #3321/#3328/#3333 base merges).
 Guard baseline: `origin/release-6.20` @ `b9e6910c066` (2026-07-05
 WP-PG.01 current-base guard refresh).
 Related open queue at last refresh: WP-PG.20 / PR #3329 is hosted-CI queued
 only; PR #3331 is a rename-only branch touching SIMD headers and is orthogonal
 to this cleanup. Enablers merged: #3209, #3226, #3229, #3230, #3234, #3281,
-#3299, #3303, #3306, #3318, #3319, #3327. WP-PG.40 standalone PR #3270 was
+#3299, #3303, #3306, #3318, #3319, #3321, #3327. WP-PG.40 standalone PR #3270 was
 closed by maintainer direction and its D1/D2 evidence rode with WP-PG.42.
 
 ## Lane status
@@ -22,7 +22,7 @@ closed by maintainer direction and its D1/D2 evidence rode with WP-PG.42.
 | WS-C dynamics batching | 04-dynamics-batching-lane.md | PG.30–PG.33 | open (PG.33 gated) |
 | WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | first consumer done (PG.42/#3299; PG.41 waits for PG.10 seam evidence) |
 | WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 and PG.02 done; PG.03 next; PG.04 blocked D4) |
-| WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; internal core/adapter/bridge merged (#3281, #3303, #3306, #3318, #3319); phase-4 native broadphase SIMD still future |
+| WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; internal core/adapter/bridge and capsule primitive pairs merged (#3281, #3303, #3306, #3318, #3319, #3321); phase-4 native broadphase SIMD still future |
 
 ## Packet board
 
@@ -59,9 +59,10 @@ against the packet's acceptance evidence.
 ## Cross-lane coordination notes
 
 - WS-F consumes WS-D kernels in its phase 4; WS-D's WP-PG.42 checked live
-  phase status before claiming. As of #3319, WS-F has internal native core,
-  broadphase/narrowphase pieces, and the DART 6 detector adapter/bridge, but
-  phase-4 native broadphase SIMD is still future work.
+  phase status before claiming. As of #3321, WS-F has internal native core,
+  broadphase/narrowphase pieces, capsule primitive pairs, and the DART 6
+  detector adapter/bridge, but phase-4 native broadphase SIMD is still future
+  work.
 - WS-B investment is re-reviewed when WS-F reaches phase 5 (facade
   decision) — see D5 in the README.
 - WS-A WP-PG.12 and WS-C WP-PG.30 share the single-free-body
