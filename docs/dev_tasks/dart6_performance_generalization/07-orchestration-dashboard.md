@@ -3,8 +3,8 @@
 Status board only; packet definitions live in the lane docs. Update this
 file (and RESUME.md) in every PR that claims or completes a packet.
 
-Branch point: `origin/release-6.20` @ `9ff8b1d77a1` (2026-07-07, after
-WP-PG.02 / PR #3327).
+Branch point: `origin/release-6.20` @ `6f170f5d470` (2026-07-07, after
+WP-PG.02 / PR #3327 and the #3333 base merge).
 Guard baseline: `origin/release-6.20` @ `b9e6910c066` (2026-07-05
 WP-PG.01 current-base guard refresh).
 Related open queue at last refresh: WP-PG.20 / PR #3329 is hosted-CI queued
