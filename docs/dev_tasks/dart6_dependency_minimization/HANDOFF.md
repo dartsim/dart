@@ -65,12 +65,12 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 | **P2** | Narrowphase dispatcher, sphere/box only (bespoke §2.1 trim) | ✅ **merged (#3306)** |
 | **P3a** | Adapter skeleton + `NativeShapeConversion`(sphere,box), intentionally **unregistered**; `collide()` is a documented **stub** | ✅ **merged (#3318)** |
 | **P3b** | Bridge `collide()` translation + `"native"` factory registration + `sphere_box` collider + normal calibration (R1) + parity vs **fcl and dart** | 🔄 **open (#3319)** |
-| **P4** | `capsule_sphere`, `capsule_box` (no-span primitives) | after P3b |
-| **P5** | `convex_convex` (keystone) + `capsule_capsule` (first span pair) | after P4 |
-| **P6** | `cylinder_collision` (needs convex_convex) | after P5 |
-| **P7** | `mesh_mesh` (needs convex_convex; largest file) | after P5 |
-| **P8** | `distance` module (engine-only; needs span shim) | independent of P1–P7 |
-| **P9** | `plane_sphere` (needs `distance`) → completes primitive+convex+mesh+plane | after P8 |
+| **P4** | `capsule_sphere`, `capsule_box` (no-span primitives) | 🔄 **open (#3321)** |
+| **P5** | `convex_convex` (keystone) + `capsule_capsule` (first span pair) | 🔄 **open (#3322)** |
+| **P6** | `cylinder_collision` (needs convex_convex) | 🔄 **open (#3324)** |
+| **P7** | `mesh_mesh` (needs convex_convex; largest file) | 🔄 **open (#3325)** |
+| **P8** | `distance` module (engine-only; needs span shim) | local combined with P9; unpublished |
+| **P9** | `plane_sphere` (needs `distance`) → completes primitive+convex+mesh+plane | local combined with P8; unpublished |
 | **P10** | (optional) mixed-scene fcl/dart/native parity integration test | after P9 |
 
 ### Exact next step: execute P3b
@@ -97,6 +97,13 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 ## 5. Open PRs / loose ends
 
 - **#3319 (P3b bridge)** — OPEN; next phase-2 merge target after #3318.
+- **#3321 (P4 capsule primitives)** — OPEN; stacked after #3319.
+- **#3322 (P5 convex foundation)** — OPEN; stacked after #3321.
+- **#3324 (P6 cylinder collision)** — OPEN; stacked after #3322.
+- **#3325 (P7 mesh collision)** — OPEN; stacked after #3324; review fixes for
+  mesh dispatch and mesh-mesh contracts have been pushed.
+- **P8/P9 distance + plane work** — kept as one local unpublished branch to
+  avoid another CI wave until the stack is ready for it.
 - **#3283 (main sphere-sphere `enableContact` fix)** — OPEN; the **main-branch
   dual** of the merged release-6.20 #3298. It was **reverted to the squared
   overlap predicate** (commit `afb1ea58959`) after review — see the lesson in
