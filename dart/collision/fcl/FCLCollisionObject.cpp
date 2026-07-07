@@ -48,14 +48,6 @@ namespace collision {
 namespace {
 
 //==============================================================================
-bool transformsEqual(
-    const dart::collision::fcl::Transform3& lhs,
-    const dart::collision::fcl::Transform3& rhs)
-{
-  return lhs.matrix().cwiseEqual(rhs.matrix()).all();
-}
-
-//==============================================================================
 class MutableFCLCollisionObject : public dart::collision::fcl::CollisionObject
 {
 public:
@@ -123,8 +115,6 @@ FCLCollisionObject::FCLCollisionObject(
       mKey = shapeFrame->getName();
     }
   }
-
-  refreshSoftMeshCache();
 }
 
 //==============================================================================
@@ -136,36 +126,6 @@ void FCLCollisionObject::setFCLCollisionGeometry(
   DART_ASSERT(mutableObject);
 
   mutableObject->setCollisionGeometry(fclCollGeom);
-  refreshSoftMeshCache();
-  mHasCachedFCLTransform = false;
-}
-
-//==============================================================================
-void FCLCollisionObject::refreshSoftMeshCache()
-{
-  mSoftMeshShape = nullptr;
-  mSoftBodyNode = nullptr;
-  mSoftMesh = nullptr;
-  mSoftMeshBvhModel = nullptr;
-
-  auto shape = mShapeFrame->getShape().get();
-  if (shape->getType() != dynamics::SoftMeshShape::getStaticType())
-    return;
-
-  DART_ASSERT(dynamic_cast<const dynamics::SoftMeshShape*>(shape));
-  mSoftMeshShape = static_cast<const dynamics::SoftMeshShape*>(shape);
-  mSoftBodyNode = mSoftMeshShape->getSoftBodyNode();
-  DART_ASSERT(mSoftBodyNode);
-
-  mSoftMesh = const_cast<aiMesh*>(mSoftMeshShape->getAssimpMesh());
-  DART_ASSERT(mSoftMesh);
-
-  auto collGeom = const_cast<dart::collision::fcl::CollisionGeometry*>(
-      mFCLCollisionObject->collisionGeometry().get());
-  DART_ASSERT(
-      dynamic_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom));
-  mSoftMeshBvhModel
-      = static_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom);
 }
 
 //==============================================================================
@@ -175,19 +135,30 @@ void FCLCollisionObject::updateEngineData()
   using dart::dynamics::Shape;
   using dart::dynamics::SoftMeshShape;
 
-  bool softMeshChanged = false;
+  auto shape = mShapeFrame->getShape().get();
 
   // Update soft-body's vertices
-  if (mSoftMeshShape) {
-    DART_ASSERT(mSoftBodyNode);
-    DART_ASSERT(mSoftMesh);
-    DART_ASSERT(mSoftMeshBvhModel);
+  if (shape->getType() == dynamics::SoftMeshShape::getStaticType()) {
+    DART_ASSERT(dynamic_cast<const SoftMeshShape*>(shape));
+    auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
 
-    auto bvhModel = mSoftMeshBvhModel;
-    auto mesh = mSoftMesh;
-    const auto& pointMasses = mSoftBodyNode->getPointMasses();
+    auto collGeom = const_cast<dart::collision::fcl::CollisionGeometry*>(
+        mFCLCollisionObject->collisionGeometry().get());
+    DART_ASSERT(
+        dynamic_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom));
+    auto bvhModel
+        = static_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom);
+
+    const auto* softBodyNode = softMeshShape->getSoftBodyNode();
+    DART_ASSERT(softBodyNode);
+
+    auto* mesh = const_cast<aiMesh*>(softMeshShape->getAssimpMesh());
+    DART_ASSERT(mesh);
+
+    const auto& pointMasses = softBodyNode->getPointMasses();
     DART_ASSERT(mesh->mNumVertices == pointMasses.size());
 
+    bool softMeshChanged = false;
     const auto numFclVertices
         = static_cast<std::size_t>(bvhModel->num_vertices);
     if (numFclVertices == pointMasses.size()) {
@@ -255,24 +226,8 @@ void FCLCollisionObject::updateEngineData()
     }
   }
 
-  const auto fclTransform = FCLTypes::convertTransform(getTransform());
-  if (softMeshChanged) {
-    mFCLCollisionObject->setTransform(fclTransform);
-    mFCLCollisionObject->computeAABB();
-    mCachedFCLTransform = fclTransform;
-    mHasCachedFCLTransform = true;
-    return;
-  }
-
-  const bool transformChanged
-      = !mHasCachedFCLTransform
-        || !transformsEqual(mCachedFCLTransform, fclTransform);
-  if (transformChanged) {
-    mFCLCollisionObject->setTransform(fclTransform);
-    mFCLCollisionObject->computeAABB();
-    mCachedFCLTransform = fclTransform;
-    mHasCachedFCLTransform = true;
-  }
+  mFCLCollisionObject->setTransform(FCLTypes::convertTransform(getTransform()));
+  mFCLCollisionObject->computeAABB();
 }
 
 } // namespace collision
