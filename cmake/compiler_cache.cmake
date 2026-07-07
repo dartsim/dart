@@ -49,21 +49,22 @@ set(
 )
 set_property(CACHE DART_COMPILER_CACHE PROPERTY STRINGS "" sccache ccache)
 
-function(_dart_collect_compiler_cache_candidates out_var)
+function(_dart_collect_compiler_cache_candidates out_var requested_var)
   set(candidates)
+  set(cache_requested OFF)
 
   if(
     DEFINED ENV{DART_COMPILER_CACHE}
     AND NOT "$ENV{DART_COMPILER_CACHE}" STREQUAL ""
   )
     list(APPEND candidates "$ENV{DART_COMPILER_CACHE}")
-  endif()
-
-  if(DART_COMPILER_CACHE)
+    set(cache_requested ON)
+  elseif(DART_COMPILER_CACHE)
     list(APPEND candidates "${DART_COMPILER_CACHE}")
+    set(cache_requested ON)
+  else()
+    list(APPEND candidates sccache ccache)
   endif()
-
-  list(APPEND candidates sccache ccache)
 
   set(unique_candidates)
   set(unique_keys)
@@ -82,6 +83,7 @@ function(_dart_collect_compiler_cache_candidates out_var)
   endforeach()
 
   set(${out_var} "${unique_candidates}" PARENT_SCOPE)
+  set(${requested_var} "${cache_requested}" PARENT_SCOPE)
 endfunction()
 
 function(_dart_seed_compiler_launcher_from_environment language)
@@ -217,7 +219,7 @@ function(dart_configure_compiler_cache)
     )
   endif()
 
-  _dart_collect_compiler_cache_candidates(cache_candidates)
+  _dart_collect_compiler_cache_candidates(cache_candidates cache_requested)
   foreach(candidate IN LISTS cache_candidates)
     _dart_find_compiler_cache("${candidate}" cache_executable)
     if(cache_executable)
@@ -265,8 +267,15 @@ function(dart_configure_compiler_cache)
     FORCE
   )
   unset(DART_ACTIVE_COMPILER_CACHE CACHE)
-  message(
-    STATUS
-    "Compiler cache disabled: neither sccache nor ccache found on PATH"
-  )
+  if(cache_requested)
+    message(
+      STATUS
+      "Compiler cache disabled: requested launcher not found (${cache_candidates})"
+    )
+  else()
+    message(
+      STATUS
+      "Compiler cache disabled: neither sccache nor ccache found on PATH"
+    )
+  endif()
 endfunction()
