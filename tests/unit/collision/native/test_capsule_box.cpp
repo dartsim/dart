@@ -113,6 +113,8 @@ TEST(CapsuleBox, CenteredVerticalCapsuleInsideBoxUsesFaceNormal)
   ASSERT_EQ(1u, result.numContacts());
   const auto& contact = result.getContact(0);
   EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_TRUE(
+      contact.position.isApprox(Eigen::Vector3d(0.75, 0.0, 0.0), 1e-12));
   EXPECT_NEAR(1.5, contact.depth, 1e-12);
 }
 
@@ -134,6 +136,32 @@ TEST(CapsuleBox, RotatedBoxAddsContact)
   EXPECT_LE(localContact.cwiseAbs().y(), 1.0 + 1e-12);
   EXPECT_LE(localContact.cwiseAbs().z(), 1.0 + 1e-12);
   EXPECT_GT(contact.depth, 0.0);
+}
+
+TEST(CapsuleBox, RotatedContainedCapsuleKeepsContactInsideOverlap)
+{
+  const CapsuleShape capsule(0.5, 2.0);
+  const BoxShape box(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  CollisionOption option;
+  option.maxNumContacts = 1u;
+
+  CollisionResult result;
+  ASSERT_TRUE(collideCapsuleBox(
+      capsule,
+      Eigen::Isometry3d::Identity(),
+      box,
+      rotatedBox(),
+      result,
+      option));
+
+  ASSERT_EQ(1u, result.numContacts());
+  const auto& contact = result.getContact(0);
+  EXPECT_TRUE(contact.normal.isApprox(
+      rotatedBox().rotation() * Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_TRUE(contact.position.isApprox(
+      rotatedBox() * Eigen::Vector3d(0.75, 0.0, 0.0), 1e-12));
+  EXPECT_NEAR(1.5, contact.depth, 1e-12);
 }
 
 TEST(CapsuleBox, RotatedBoxSeparatedReturnsFalse)

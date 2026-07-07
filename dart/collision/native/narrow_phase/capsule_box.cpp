@@ -224,6 +224,7 @@ bool collideTranslatedVerticalCapsuleBox(
     }
 
     Eigen::Vector3d normalLocal;
+    Eigen::Vector3d contactPositionLocal;
     double penetration = 0.0;
     const double dist = std::sqrt(distSquared);
     if (dist < 1e-10) {
@@ -243,14 +244,18 @@ bool collideTranslatedVerticalCapsuleBox(
                                        ? halfExtents[minAxis]
                                        : -halfExtents[minAxis];
       penetration = capsuleRadius + distToFace[minAxis];
+      contactPositionLocal = 0.5
+                             * (contactOnBoxLocal + axisPointLocal
+                                + normalLocal * capsuleRadius);
     } else {
       normalLocal = diff / dist;
       penetration = capsuleRadius - dist;
+      contactPositionLocal
+          = contactOnBoxLocal - normalLocal * (penetration * 0.5);
     }
 
     ContactPoint contact;
-    contact.position = boxTranslation + contactOnBoxLocal
-                       - normalLocal * (penetration * 0.5);
+    contact.position = boxTranslation + contactPositionLocal;
     contact.normal = normalLocal;
     contact.depth = penetration;
 
@@ -377,6 +382,7 @@ bool collideCapsuleBox(
 
     Eigen::Vector3d normalLocal;
     Eigen::Vector3d contactOnBoxLocal = pointOnBoxLocal;
+    Eigen::Vector3d contactPositionLocal;
     double penetration = capsuleRadius - dist;
     if (dist < 1e-10) {
       const Eigen::Vector3d absAxisPoint = axisPointLocal.cwiseAbs();
@@ -394,15 +400,19 @@ bool collideCapsuleBox(
                                        ? halfExtents[minAxis]
                                        : -halfExtents[minAxis];
       penetration = capsuleRadius + distToFace[minAxis];
+      contactPositionLocal = 0.5
+                             * (contactOnBoxLocal + axisPointLocal
+                                + normalLocal * capsuleRadius);
     } else {
       normalLocal = diff / dist;
+      contactPositionLocal
+          = contactOnBoxLocal - normalLocal * (penetration * 0.5);
     }
 
     const Eigen::Vector3d normalWorld = boxTransform.rotation() * normalLocal;
 
     ContactPoint contact;
-    contact.position
-        = boxTransform * contactOnBoxLocal - normalWorld * (penetration * 0.5);
+    contact.position = boxTransform * contactPositionLocal;
     contact.normal = normalWorld;
     contact.depth = penetration;
 
