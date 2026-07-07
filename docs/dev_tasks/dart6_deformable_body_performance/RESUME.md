@@ -136,6 +136,12 @@ Latest state:
   `soft_bodies` single-thread/four-thread checksum smokes passed after this
   slice. Retained SoA scratch, contiguous point-mass object storage, and SIMD
   remain open.
+- A follow-up WP-DB.06 aggregation slice is implemented locally:
+  mass, augmented-mass, inverse-mass helper, gravity, combined-vector, and
+  external-force aggregation paths now use the same `PointMassPhaseView`
+  instead of delegating through per-point helper methods for behavior-preserving
+  cache fills. Focused equation, allocation, and native checksum smokes passed
+  after this slice.
 - A narrow `origin/dart6-memory-hardening` carryover is implemented locally:
   `Skeleton::checkExternalDisturbanceAndReset()` now scans body-local external
   wrenches directly instead of materializing the external-force projection cache
