@@ -97,6 +97,9 @@ protected:
 
   // Documentation inherited
   void refreshCollisionObject(CollisionObject* object) override;
+
+private:
+  static Registrar<NativeCollisionDetector> mRegistrar;
 };
 
 } // namespace collision

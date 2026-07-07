@@ -25,6 +25,7 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/sat.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/face_clip.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/contact_reduction.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_box.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_sphere.hpp
 )
 
@@ -45,6 +46,7 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/sat.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/face_clip.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/contact_reduction.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_box.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_sphere.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/brute_force.cpp
 )
