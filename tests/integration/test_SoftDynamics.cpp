@@ -819,6 +819,8 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
   const Eigen::VectorXd withOriginalPointMassesCg
       = skeleton->getCoriolisAndGravityForces();
   const Eigen::MatrixXd withOriginalPointMassesM = skeleton->getMassMatrix();
+  const Eigen::MatrixXd withOriginalPointMassesAugM
+      = skeleton->getAugMassMatrix();
 
   for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
     dynamics::PointMass* pointMass = softBody->getPointMass(i);
@@ -830,12 +832,15 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
   const Eigen::VectorXd withHalfPointMassesCg
       = skeleton->getCoriolisAndGravityForces();
   const Eigen::MatrixXd withHalfPointMassesM = skeleton->getMassMatrix();
+  const Eigen::MatrixXd withHalfPointMassesAugM = skeleton->getAugMassMatrix();
   const Eigen::VectorXd actualPointMassDelta
       = withOriginalPointMasses - withHalfPointMasses;
   const Eigen::VectorXd actualPointMassCgDelta
       = withOriginalPointMassesCg - withHalfPointMassesCg;
   const Eigen::MatrixXd actualPointMassMassDelta
       = withOriginalPointMassesM - withHalfPointMassesM;
+  const Eigen::MatrixXd actualPointMassAugMassDelta
+      = withOriginalPointMassesAugM - withHalfPointMassesAugM;
 
   expectVectorNear(
       actualPointMassDelta,
@@ -852,4 +857,9 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
       0.5 * expectedPointMassMass,
       1.0e-10,
       "soft point-mass mass matrix projection");
+  expectMatrixNear(
+      actualPointMassAugMassDelta,
+      0.5 * expectedPointMassMass,
+      1.0e-10,
+      "soft point-mass augmented mass matrix projection");
 }

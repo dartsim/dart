@@ -10,14 +10,14 @@ ctest --test-dir build/default/cpp/Release -R 'test_SoftDynamics$' --output-on-f
 ```
 
 Result: `test_SoftDynamics` passed locally in 0.09 seconds after the
-point-mass gravity, combined-vector, and mass-matrix aggregation gate was
-added.
+point-mass gravity, combined-vector, mass-matrix, and augmented-mass
+aggregation gate was added.
 
 ## Current slice
 
 The first active WP-DB.04 sub-gate covers point-mass contribution to the
-generalized mass matrix and to gravity and combined Coriolis/gravity force
-vectors:
+generalized mass and augmented-mass matrices and to gravity and combined
+Coriolis/gravity force vectors:
 
 - `PointMass` equation-cache vectors are initialized to zero instead of
   relying on later aggregation paths to write every cache before read.
@@ -31,6 +31,10 @@ vectors:
   for the current mass-matrix column, and
   `SoftBodyNode::{updateMassMatrix,aggregateMassMatrix}()` fold those point
   contributions into the parent soft body's generalized mass matrix.
+- `PointMass::aggregateAugMassMatrix()` now computes the same point-mass
+  inertial contribution for the augmented-mass path. The parent soft body's
+  joint damping and stiffness terms remain handled by
+  `SoftBodyNode::aggregateAugMassMatrix()`.
 - `PointMass::setMass()` now dirties the parent tree's articulated-inertia and
   dependent matrix/vector caches so gravity-force queries are recomputed after
   point-mass mass changes.
@@ -39,7 +43,8 @@ vectors:
   wrench, halves every point mass, and verifies that the resulting
   `Skeleton::getGravityForces()` and `Skeleton::getCoriolisAndGravityForces()`
   deltas equal the projected point-mass gravity contribution at rest. The same
-  test verifies the `Skeleton::getMassMatrix()` delta against
+  test verifies the `Skeleton::getMassMatrix()` and
+  `Skeleton::getAugMassMatrix()` deltas against
   `sum(m * J_point^T * J_point)` over the soft body's dependent DOFs.
 
 This is a correctness slice, not full equation parity.
@@ -47,8 +52,8 @@ This is a correctness slice, not full equation parity.
 ## Remaining gaps
 
 - `SoftDynamicsTest.compareEquationsOfMotion` remains disabled.
-- Point-mass augmented-mass, inverse-mass, and inverse-augmented-mass
-  aggregation paths are still stubbed or only partially wired.
+- Point-mass inverse-mass and inverse-augmented-mass aggregation paths are still
+  stubbed or only partially wired.
 - The legacy comments that assign point-mass vector segments to independent
   generalized coordinates still need a DART 6-compatible replacement or an
   explicit design decision, because current soft point masses are not exposed
