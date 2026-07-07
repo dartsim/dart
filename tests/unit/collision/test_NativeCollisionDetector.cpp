@@ -522,6 +522,12 @@ TEST(NativeCollisionDetector, ConvertsSphereAndBoxShapes)
 //==============================================================================
 TEST(NativeCollisionDetector, LeavesUnsupportedShapesNull)
 {
+  auto emptyMesh = std::make_shared<dynamics::ConvexMeshShape::TriMeshType>();
+  const dynamics::ConvexMeshShape emptyConvexMesh(emptyMesh);
+  EXPECT_EQ(
+      nullptr,
+      collision::detail::NativeShapeConversion::create(emptyConvexMesh));
+
   const dynamics::PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
   EXPECT_EQ(nullptr, collision::detail::NativeShapeConversion::create(plane));
 
