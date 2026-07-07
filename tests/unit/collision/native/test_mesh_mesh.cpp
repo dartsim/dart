@@ -76,6 +76,16 @@ MeshShape makePlaneMesh(double z = 0.0)
   return MeshShape(vertices, triangles);
 }
 
+MeshShape makeSingleTriangleMesh(
+    const Eigen::Vector3d& v0,
+    const Eigen::Vector3d& v1,
+    const Eigen::Vector3d& v2)
+{
+  std::vector<Eigen::Vector3d> vertices = {v0, v1, v2};
+  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}};
+  return MeshShape(vertices, triangles);
+}
+
 } // namespace
 
 TEST(MeshMeshCollision, OverlappingCubeMeshesCollide)
@@ -107,6 +117,28 @@ TEST(MeshMeshCollision, SeparatedMeshesDoNotCollide)
   CollisionResult result;
   EXPECT_FALSE(collideMeshMesh(
       mesh1, tf1, mesh2, tf2, result, CollisionOption::fullContacts(16)));
+  EXPECT_EQ(0u, result.numContacts());
+}
+
+TEST(MeshMeshCollision, SeparatedCoplanarTrianglesDoNotCollide)
+{
+  MeshShape mesh1 = makeSingleTriangleMesh(
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 1.0, 0.0));
+  MeshShape mesh2 = makeSingleTriangleMesh(
+      Eigen::Vector3d(0.75, 0.75, 0.0),
+      Eigen::Vector3d(1.75, 0.75, 0.0),
+      Eigen::Vector3d(0.75, 1.75, 0.0));
+
+  CollisionResult result;
+  EXPECT_FALSE(collideMeshMesh(
+      mesh1,
+      Eigen::Isometry3d::Identity(),
+      mesh2,
+      Eigen::Isometry3d::Identity(),
+      result,
+      CollisionOption::fullContacts(16)));
   EXPECT_EQ(0u, result.numContacts());
 }
 

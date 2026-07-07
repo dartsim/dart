@@ -820,19 +820,7 @@ TriIntersectionResult triangleTriangleIntersection(
   }
 
   if (contactPoints.empty()) {
-    double bestDistSq = std::numeric_limits<double>::max();
-    Eigen::Vector3d bestMidpoint = (t1.centroid() + t2.centroid()) * 0.5;
-    for (const auto& e1 : edges1) {
-      for (const auto& e2 : edges2) {
-        const SegmentClosestResult segClosest = closestPointsBetweenSegments(
-            e1.first, e1.second, e2.first, e2.second);
-        if (segClosest.distSq < bestDistSq) {
-          bestDistSq = segClosest.distSq;
-          bestMidpoint = (segClosest.point1 + segClosest.point2) * 0.5;
-        }
-      }
-    }
-    addUniquePoint(contactPoints, bestMidpoint);
+    return result;
   }
 
   result.intersect = true;

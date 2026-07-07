@@ -98,6 +98,29 @@ MeshShape makePlaneMesh(double z = 0.0)
   return MeshShape(vertices, triangles);
 }
 
+MeshShape makeSquareRingMesh()
+{
+  std::vector<Eigen::Vector3d> vertices
+      = {{-2.0, -2.0, 0.0},
+         {2.0, -2.0, 0.0},
+         {2.0, 2.0, 0.0},
+         {-2.0, 2.0, 0.0},
+         {-0.5, -0.5, 0.0},
+         {0.5, -0.5, 0.0},
+         {0.5, 0.5, 0.0},
+         {-0.5, 0.5, 0.0}};
+  std::vector<MeshShape::Triangle> triangles
+      = {{0, 1, 5},
+         {0, 5, 4},
+         {1, 2, 6},
+         {1, 6, 5},
+         {2, 3, 7},
+         {2, 7, 6},
+         {3, 0, 4},
+         {3, 4, 7}};
+  return MeshShape(vertices, triangles);
+}
+
 void expectSingleNormal(
     const Shape& shape1,
     const Eigen::Isometry3d& tf1,
@@ -737,6 +760,7 @@ TEST(NarrowPhaseDispatch, RoutesMeshPairsInBothOrders)
       CollisionOption(),
       meshPlane));
   EXPECT_GT(meshPlane.numContacts(), 0u);
+  EXPECT_LT(meshPlane.getContact(0).normal.z(), -0.99);
 
   CollisionResult planeMeshResult;
   EXPECT_TRUE(NarrowPhase::collide(
@@ -747,6 +771,7 @@ TEST(NarrowPhaseDispatch, RoutesMeshPairsInBothOrders)
       CollisionOption(),
       planeMeshResult));
   EXPECT_GT(planeMeshResult.numContacts(), 0u);
+  EXPECT_GT(planeMeshResult.getContact(0).normal.z(), 0.99);
 
   CollisionResult convexMesh;
   EXPECT_TRUE(NarrowPhase::collide(
@@ -757,6 +782,32 @@ TEST(NarrowPhaseDispatch, RoutesMeshPairsInBothOrders)
       CollisionOption(),
       convexMesh));
   EXPECT_GT(convexMesh.numContacts(), 0u);
+}
+
+TEST(NarrowPhaseDispatch, RoutesMeshConvexThroughTriangleTests)
+{
+  MeshShape ringMesh = makeSquareRingMesh();
+  ConvexShape convex(makeOctahedronVertices(0.2));
+
+  CollisionResult convexMesh;
+  EXPECT_FALSE(NarrowPhase::collide(
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      &ringMesh,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption(),
+      convexMesh));
+  EXPECT_EQ(0u, convexMesh.numContacts());
+
+  CollisionResult meshConvex;
+  EXPECT_FALSE(NarrowPhase::collide(
+      &ringMesh,
+      Eigen::Isometry3d::Identity(),
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption(),
+      meshConvex));
+  EXPECT_EQ(0u, meshConvex.numContacts());
 }
 
 TEST(NarrowPhaseDispatch, MeshPairsBinaryCheckDoesNotAddContacts)
