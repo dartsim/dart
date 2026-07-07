@@ -86,11 +86,7 @@ endfunction()
 
 function(_dart_seed_compiler_launcher_from_environment language)
   set(variable "CMAKE_${language}_COMPILER_LAUNCHER")
-  if(
-    NOT ${variable}
-    AND DEFINED ENV{${variable}}
-    AND NOT "$ENV{${variable}}" STREQUAL ""
-  )
+  if(DEFINED ENV{${variable}} AND NOT "$ENV{${variable}}" STREQUAL "")
     set(
       ${variable}
       "$ENV{${variable}}"
@@ -112,6 +108,21 @@ function(_dart_find_compiler_cache candidate out_var)
   endif()
 
   set(${out_var} "${cache_executable}" PARENT_SCOPE)
+endfunction()
+
+function(_dart_compiler_cache_launchers_are_auto_configured out_var)
+  set(launchers_are_auto_configured OFF)
+
+  if(
+    DART_ACTIVE_COMPILER_CACHE
+    AND "${CMAKE_C_COMPILER_LAUNCHER}" STREQUAL "${DART_ACTIVE_COMPILER_CACHE}"
+    AND
+      "${CMAKE_CXX_COMPILER_LAUNCHER}" STREQUAL "${DART_ACTIVE_COMPILER_CACHE}"
+  )
+    set(launchers_are_auto_configured ON)
+  endif()
+
+  set(${out_var} "${launchers_are_auto_configured}" PARENT_SCOPE)
 endfunction()
 
 function(dart_configure_compiler_cache)
@@ -167,21 +178,43 @@ function(dart_configure_compiler_cache)
     )
   endif()
 
+  _dart_compiler_cache_launchers_are_auto_configured(
+    launchers_are_auto_configured
+  )
+
   if(CMAKE_C_COMPILER_LAUNCHER OR CMAKE_CXX_COMPILER_LAUNCHER)
-    if(CMAKE_CUDA_COMPILER AND NOT cuda_compiler_launcher_preconfigured)
-      set(
-        CMAKE_CUDA_COMPILER_LAUNCHER
-        ""
-        CACHE STRING
-        "CUDA compiler launcher used for caching"
-        FORCE
+    if(launchers_are_auto_configured)
+      message(
+        STATUS
+        "Compiler cache auto-configured; re-evaluating launcher candidates"
       )
+    else()
+      if(CMAKE_CUDA_COMPILER AND NOT cuda_compiler_launcher_preconfigured)
+        set(
+          CMAKE_CUDA_COMPILER_LAUNCHER
+          ""
+          CACHE STRING
+          "CUDA compiler launcher used for caching"
+          FORCE
+        )
+      endif()
+      unset(DART_ACTIVE_COMPILER_CACHE CACHE)
+      message(
+        STATUS
+        "Compiler cache already configured (C: ${CMAKE_C_COMPILER_LAUNCHER} | CXX: ${CMAKE_CXX_COMPILER_LAUNCHER})"
+      )
+      return()
     endif()
-    message(
-      STATUS
-      "Compiler cache already configured (C: ${CMAKE_C_COMPILER_LAUNCHER} | CXX: ${CMAKE_CXX_COMPILER_LAUNCHER})"
+  endif()
+
+  if(CMAKE_CUDA_COMPILER AND NOT cuda_compiler_launcher_preconfigured)
+    set(
+      CMAKE_CUDA_COMPILER_LAUNCHER
+      ""
+      CACHE STRING
+      "CUDA compiler launcher used for caching"
+      FORCE
     )
-    return()
   endif()
 
   _dart_collect_compiler_cache_candidates(cache_candidates)
@@ -202,22 +235,13 @@ function(dart_configure_compiler_cache)
         "CXX compiler launcher used for caching"
         FORCE
       )
-      if(CMAKE_CUDA_COMPILER AND NOT cuda_compiler_launcher_preconfigured)
-        set(
-          CMAKE_CUDA_COMPILER_LAUNCHER
-          ""
-          CACHE STRING
-          "CUDA compiler launcher used for caching"
-          FORCE
-        )
-      endif()
-
       set(
         DART_ACTIVE_COMPILER_CACHE
         "${cache_executable}"
         CACHE INTERNAL
         "Compiler cache executable selected for this build"
       )
+
       message(
         STATUS
         "Compiler cache enabled: ${candidate} (${cache_executable})"
