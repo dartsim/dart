@@ -308,8 +308,16 @@ TEST(ProfileBackendDisabled, TextProfilerUnavailable)
   EXPECT_TRUE(ss.str().empty());
   EXPECT_TRUE(dart::common::profile::getProfileSummaryText().empty());
   EXPECT_TRUE(DART_PROFILE_TEXT_SUMMARY().empty());
+  #if DART_BUILD_PROFILE && DART_PROFILE_HAS_TRACY
   EXPECT_FALSE(dart::common::profile::isProfileRecordingEnabled());
   EXPECT_FALSE(dart::common::profile::setProfileRecordingEnabled(true));
+  EXPECT_TRUE(dart::common::profile::isProfileRecordingEnabled());
+  EXPECT_TRUE(dart::common::profile::setProfileRecordingEnabled(false));
+  EXPECT_FALSE(dart::common::profile::isProfileRecordingEnabled());
+  #else
+  EXPECT_FALSE(dart::common::profile::isProfileRecordingEnabled());
+  EXPECT_FALSE(dart::common::profile::setProfileRecordingEnabled(true));
+  #endif
   GTEST_SKIP() << "Text profiling backend disabled at build time.";
 }
 

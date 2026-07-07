@@ -46,6 +46,7 @@
 
 #include <dart/config.hpp>
 
+#include <atomic>
 #include <iosfwd>
 #include <optional>
 #include <string>
@@ -303,6 +304,20 @@ private:
 
 namespace dart::common::profile {
 
+namespace detail {
+
+#if DART_BUILD_PROFILE && !DART_PROFILE_ENABLE_TEXT && DART_PROFILE_HAS_TRACY
+
+[[nodiscard]] inline std::atomic<bool>& profileRecordingEnabledFlag() noexcept
+{
+  static std::atomic<bool> enabled{false};
+  return enabled;
+}
+
+#endif
+
+} // namespace detail
+
 /// Return whether DART was built with profiling support.
 [[nodiscard]] constexpr bool isProfilingEnabled() noexcept
 {
@@ -328,6 +343,8 @@ namespace dart::common::profile {
 {
 #if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
   return Profiler::instance().isRecordingEnabled();
+#elif DART_BUILD_PROFILE && DART_PROFILE_HAS_TRACY
+  return detail::profileRecordingEnabledFlag().load(std::memory_order_relaxed);
 #else
   return false;
 #endif
@@ -339,6 +356,9 @@ inline bool setProfileRecordingEnabled(bool enabled) noexcept
 {
 #if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
   return Profiler::instance().setRecordingEnabled(enabled);
+#elif DART_BUILD_PROFILE && DART_PROFILE_HAS_TRACY
+  return detail::profileRecordingEnabledFlag().exchange(
+      enabled, std::memory_order_relaxed);
 #else
   (void)enabled;
   return false;
