@@ -60,6 +60,11 @@ if(TARGET dart-collision-bullet)
 endif()
 
 if(TARGET dart-collision-ode)
+  set(contact_container_link_libraries dart dart-collision-ode)
+  if(TARGET dart-collision-bullet)
+    list(APPEND contact_container_link_libraries dart-collision-bullet)
+  endif()
+
   dart_benchmarks(
     TYPE BM_INTEGRATION
     SOURCES
@@ -67,9 +72,15 @@ if(TARGET dart-collision-ode)
     INCLUDE_DIRS
       ${DART_SOURCE_DIR}/examples/contact_benchmark
     LINK_LIBRARIES
-      dart
-      dart-collision-ode
+      ${contact_container_link_libraries}
   )
+
+  if(TARGET dart-collision-bullet)
+    target_compile_definitions(
+      BM_INTEGRATION_contact_container
+      PRIVATE DART_CONTACT_CONTAINER_BENCHMARK_HAS_BULLET
+    )
+  endif()
 endif()
 
 # Headless contact-aware inverse-dynamics driver (checksum oracle + stepping-

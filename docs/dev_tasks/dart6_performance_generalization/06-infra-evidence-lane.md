@@ -29,7 +29,7 @@ Everything the other lanes need to measure honestly and hand off cleanly.
 
 #### WP-PG.02 — Extend the contact-container benchmark matrix
 
-- Status: open
+- Status: claimed — `wp-pg-02-contact-container-matrix`
 - Objective: extend `BM_INTEGRATION_contact_container` with fcl/bullet
   engines, a 900-object row, deactivation-enabled variants, and a threads
   sweep, keeping the #3230 dashboard schema stable (additive surfaces
@@ -42,6 +42,12 @@ Everything the other lanes need to measure honestly and hand off cleanly.
 - Acceptance evidence: new rows produce stable (cv < ~5%) aggregates
   locally; dashboard workflow green; no schema break (merge/preview
   scripts run).
+- Local scope note (2026-07-06): this branch keeps the default dashboard
+  slice bounded by including FCL/Bullet in the 60/120 active rows and
+  DART/ODE deactivation-enabled rows; 900-object contact-container rows
+  are registered for manual filters but excluded from the default dashboard
+  allowlist because dense 900-container setup exceeded the local smoke
+  budget.
 - Dependencies: WP-PG.01 (so old/new rows are comparable).
 
 #### WP-PG.03 — DART 6 profiling documentation + Tracy config task

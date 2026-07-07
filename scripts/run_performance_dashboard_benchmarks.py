@@ -55,7 +55,10 @@ BENCHMARK_SPECS = [
     BenchmarkSpec(
         surface="contact-container",
         target="BM_INTEGRATION_contact_container",
-        benchmark_filter="BM_ContactContainerActive/.*",
+        benchmark_filter=(
+            "BM_ContactContainerActive/(60|120)/(0|1|2|3)/(1|4|16)$|"
+            "BM_ContactContainerDeactivation/60/(0|1)/16/iterations:1$"
+        ),
         output_name="dashboard_contact_container.json",
     ),
     BenchmarkSpec(

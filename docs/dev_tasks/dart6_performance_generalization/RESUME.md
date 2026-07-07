@@ -9,19 +9,15 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
-**Current claimed packet: WP-PG.42 — SoA broadphase sweep batching**
-([05-simd-enablement-lane.md](05-simd-enablement-lane.md)). Branch
-`wp-pg-42-soa-broadphase-simd` off `origin/release-6.20` carries the
-first production `dart/simd` consumer in DART 6: AVX-width finite
-broadphase candidate screening in the existing DART detector, with
-scalar/SSE/NEON builds preserving the previous scalar sweep shape. The
-standalone WP-PG.40 PR #3270 was closed by maintainer direction; its
-D1/D2 evidence rides with this actual SIMD-kernel PR.
+**Current claimed packet: WP-PG.02 — Extend the contact-container benchmark
+matrix** ([06-infra-evidence-lane.md](06-infra-evidence-lane.md)). Claim this
+on `wp-pg-02-contact-container-matrix` off current `origin/release-6.20`;
+do not continue the rejected WP-PG.11 solver branch.
 
-Immediate next step: refresh the local evidence after any edits, including
-the focused detector test, scalar/SSE4.2/AVX/AVX2 SIMD workflow-equivalent
-matrix, contact-container macro rows, and the `--profile` finite-finite
-sweep share now exposed by this branch's text-profiler labels.
+Immediate next step: finish verification (`pixi run lint`, `pixi run
+check-lint`, benchmark target build, dashboard dry-run, and merge/preview smoke
+over the emitted JSON). Keep any performance claim out of the PR body unless
+backed by a fresh current-base A/B comparison.
 
 **WP-PG.01 is captured** (branch `wp-pg-01-baseline-evidence`, PR
 pending) — guard rows, profile splits, and prior-art triage are in
@@ -32,21 +28,18 @@ many-islands regime is ~50% integration (WS-C is the lever there).
 
 Claimable now, in priority order:
 
-1. **WP-PG.30/31** (WS-C — highest evidence-backed default-on value:
-   integration/per-skeleton overhead on many-islands scenes; mind the
-   prior-art rejection caveat in the packet).
-2. **WP-PG.11** (WS-A — includes re-measuring the two mined
-   single-reactive commits; hash-preserving).
-3. **WP-PG.20** then **WP-PG.21** (WS-B — the 12x active-3k ODE gap).
-4. **WP-PG.03**, **WP-PG.02**, **WP-PG.22** (independent). WP-PG.40 is
-   folded into WP-PG.42 per maintainer direction.
+1. **WP-PG.02** (WS-E — benchmark matrix coverage for honest future A/B).
+2. **WP-PG.03** (WS-E — profiling doc and Tracy config).
+3. **WP-PG.21** only if a new current-base profile justifies revisiting the
+   ODE active path. WP-PG.20, WP-PG.22, and WP-PG.11 all have local
+   current-base rejection evidence from 2026-07-06.
 
 Blocked/gated (do not claim): PG.04 (D4), PG.12 (evidence), PG.13
 (PG.10 census), PG.14 (D3 — now urgent), PG.15 (D7 — now urgent), PG.23
-(D8), PG.33, PG.41. PG.42 is currently claimed on
-`wp-pg-42-soa-broadphase-simd`. **D3 and D7 are the decisions that unblock
-the dense-pile fixture**; everything claimable above serves the many-islands
-and ODE regimes meanwhile.
+(D8), PG.33, PG.41. PG.42 is done in PR #3299; WP-PG.30 is done in
+PR #3310. **D3 and D7 are the decisions that unblock the dense-pile
+fixture**; everything claimable above serves the many-islands and ODE
+regimes meanwhile.
 
 ## Verify commands (every packet)
 
@@ -83,6 +76,39 @@ decisions.
   dense-pile: solve 88.1% / assembly 7.4%; P2 active-3k: integration
   50.1%); six prior-art branches triaged (two unmerged hash-preserving
   solver wins queued into WP-PG.11; one branch recommended for deletion).
+- 2026-07-06: WP-PG.20 was attempted locally after current
+  `release-6.20` advanced through #3297 and #3310, but was not published:
+  span, span+lookup, and minimal no-copy variants all failed the required
+  current-base A/B gate on the weakest 120-object/16-thread ODE row.
+  Work moved to independent packet WP-PG.22 on
+  `wp-pg-22-ode-pose-version-gate`. The previously local WP-PG.31 branch
+  was not published because #3297 already contains the World
+  shallow-support scratch-retention mechanics; its local patch was stashed
+  as superseded instead of layered on top of the newer base.
+- 2026-07-06: WP-PG.22 was attempted locally but not published: a safe
+  exact-transform ODE pose-write gate preserved hashes but regressed the
+  settled 3k/900-object ODE rows; the intended cpp-only kinematic-version
+  route is blocked because `Skeleton::getKinematicVersion()` is protected
+  on this branch. Work moved to WP-PG.11 on
+  `wp-pg-11-solver-rtti-scans`.
+- 2026-07-06: WP-PG.11 mined the two round-1 single-reactive solver
+  commits locally, but was reverted and not published after `release-6.20`
+  advanced to `2e11928288c`: refreshed A/B medians regressed S2 ODE 3k
+  settled (0.87x), S4 generated-900 DART (0.93x), S4 Bullet (0.99x), and
+  S4 ODE (0.98x). FCL and active S1 ODE improved, but the required
+  general-performance bar was not met; all compared rows had identical
+  contacts, pairs, resting counts, and final hashes. Artifacts:
+  `/tmp/wp_pg11_ab/current_2e119_repeat`. Work moved to WP-PG.02 to
+  strengthen benchmark coverage before more optimization packets.
+- 2026-07-06: WP-PG.02 claimed on
+  `wp-pg-02-contact-container-matrix`. Active contact-container rows now
+  preserve the old DART/ODE 60/120 rows and add FCL/Bullet plus a
+  4-thread sweep. Separate bounded DART/ODE deactivation-enabled rows are
+  included in the dashboard filter; dense 900-object contact-container
+  rows are registered for manual filters but kept out of the default
+  dashboard slice after local smoke runs exceeded the runtime budget.
+  Artifacts: `/tmp/wp_pg02_contact_container_deactivation_rows.json`,
+  `/tmp/wp_pg02_contact_container_active_fcl_bullet_smoke.json`.
 
 ## Session log
 
