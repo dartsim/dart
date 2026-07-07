@@ -49,8 +49,8 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
   intentionally unregistered. The `"native"` factory key still does not exist
   until P3b.
 
-`origin/release-6.20` tip at handoff: `645537ff198` (moves as the maintainer
-merges; **always re-fetch before branching/capturing**).
+`origin/release-6.20` tip at this refresh: `634c20d1b9a1` (moves as the
+maintainer merges; **always re-fetch before branching/capturing**).
 
 ## 4. Phase 2 — the active work (plan: `07`, PR slices P1–P9 + P10)
 
