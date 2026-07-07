@@ -32,11 +32,11 @@
 
 // Ported near-verbatim from examples/human_joint_limits
 // (HumanArmJointLimitConstraint.hpp). This file is only compiled when
-// TinyDNN + Threads are available (see examples/demos/CMakeLists.txt) --
-// mirroring the original example's own optional-dependency CMake guard, and
-// the ground rule in BRIEF-phase2.md for optional deps ("registry omits the
-// entry when unavailable"). The only change from the original is this file's
-// own include guard macro, which the original defined inconsistently with
+// TinyDNN + Threads are available (see examples/demos/CMakeLists.txt),
+// mirroring the original example's own optional-dependency CMake guard. The
+// registry omits the entry when unavailable rather than showing a broken row.
+// The only change from the original is this file's own include guard macro,
+// which the original defined inconsistently with
 // HumanLegJointLimitConstraint.hpp's guard (a pre-existing copy/paste bug:
 // the original's `#ifndef` checked the LEG guard name while `#define`d the
 // ARM name, which happens to work only because of the specific include order

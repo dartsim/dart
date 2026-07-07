@@ -271,6 +271,22 @@ std::uint64_t Profiler::sumInclusiveChildren(const ProfileNode& node)
   return total;
 }
 
+bool Profiler::hasRecordedScopes(const ProfileNode& node)
+{
+  if (node.callCount > 0) {
+    return true;
+  }
+
+  for (auto* child = node.firstChild; child != nullptr;
+       child = child->nextSibling) {
+    if (hasRecordedScopes(*child)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 void Profiler::markFrame()
 {
   const auto now = std::chrono::steady_clock::now();
@@ -484,7 +500,10 @@ void Profiler::printNode(
   for (std::size_t idx = 0; idx < children.size(); ++idx) {
     const auto* child = children[idx];
     const auto pct = percentage(child->inclusiveNs, threadTotalNs);
-    if (pct < minPercent && child->inclusiveNs < 1'000'000) {
+    const bool shouldShowZeroDurationCall
+        = threadTotalNs == 0 && child->callCount > 0;
+    if (!shouldShowZeroDurationCall && pct < minPercent
+        && child->inclusiveNs < 1'000'000) {
       continue; // Skip insignificant nodes (<minPercent and <1ms total).
     }
 
@@ -637,7 +656,7 @@ void Profiler::printSummary(std::ostream& os)
 
   for (const auto& record : threads) {
     const auto threadTotal = sumInclusiveChildren(record->root);
-    if (threadTotal == 0) {
+    if (threadTotal == 0 && !hasRecordedScopes(record->root)) {
       continue;
     }
 

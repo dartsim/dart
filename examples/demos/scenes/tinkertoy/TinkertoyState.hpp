@@ -31,9 +31,9 @@
  */
 
 // Shared state for the Tinkertoy scene port (examples/tinkertoy). Split into
-// its own header per BRIEF-phase2's convention for multi-file scenes
-// (examples/demos/scenes/<name>/, namespaced dart_demos::<name>), mirroring
-// the original's TinkertoyWorldNode+TinkertoyWidget split.
+// its own header so the scene can mirror the original's
+// TinkertoyWorldNode+TinkertoyWidget ownership split without widening the
+// public demo-host API.
 
 #ifndef DART_EXAMPLES_DEMOS_SCENES_TINKERTOY_TINKERTOYSTATE_HPP_
 #define DART_EXAMPLES_DEMOS_SCENES_TINKERTOY_TINKERTOYSTATE_HPP_

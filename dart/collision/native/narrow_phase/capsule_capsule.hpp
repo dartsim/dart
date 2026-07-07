@@ -30,27 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_EXAMPLES_DEMOS_THEME_HPP_
-#define DART_EXAMPLES_DEMOS_THEME_HPP_
+#pragma once
 
-namespace dart_demos {
+#include <dart/collision/native/detail/span.hpp>
+#include <dart/collision/native/export.hpp>
+#include <dart/collision/native/types.hpp>
 
-//==============================================================================
-/// A restrained, cool-neutral dark palette with a single blue accent, adapted
-/// from the DART 7 demos host's applyModernDarkColors. Sets
-/// ImGui::GetStyle().Colors[]; call once before the first frame.
-void applyModernDarkColors();
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
-//==============================================================================
-/// Companion spacing/rounding metrics to applyModernDarkColors, ported from
-/// applyModernDarkMetrics (docking-only bits skipped; this app targets
-/// vanilla ImGui 1.92 with no docking). Sets base (unscaled) style metrics;
-/// per-frame GUI scaling is applied on top of these by
-/// dart::gui::osg::ImGuiHandler::setGuiScale() via ImGuiStyle::ScaleAllSizes,
-/// so callers should not pre-multiply these values by the GUI scale. Call
-/// once before the first frame, after applyModernDarkColors().
-void applyModernDarkMetrics();
+namespace dart::collision::native {
 
-} // namespace dart_demos
+class CapsuleShape;
 
-#endif // DART_EXAMPLES_DEMOS_THEME_HPP_
+struct DART_COLLISION_NATIVE_API CapsulePair
+{
+  const CapsuleShape* shapeA;
+  const CapsuleShape* shapeB;
+  Eigen::Isometry3d tfA;
+  Eigen::Isometry3d tfB;
+};
+
+[[nodiscard]] DART_COLLISION_NATIVE_API bool collideCapsules(
+    const CapsuleShape& capsule1,
+    const Eigen::Isometry3d& transform1,
+    const CapsuleShape& capsule2,
+    const Eigen::Isometry3d& transform2,
+    CollisionResult& result,
+    const CollisionOption& option = CollisionOption());
+
+DART_COLLISION_NATIVE_API void collideCapsulesBatch(
+    span<const CapsulePair> pairs,
+    span<CollisionResult> results,
+    const CollisionOption& option = CollisionOption());
+
+} // namespace dart::collision::native

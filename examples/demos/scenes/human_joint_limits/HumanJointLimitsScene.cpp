@@ -38,17 +38,12 @@
 //
 // This entire scene is compiled only when TinyDNN and Threads are found (see
 // examples/demos/CMakeLists.txt), mirroring the original example's own
-// optional-dependency CMake guard and the BRIEF-phase2.md ground rule for
-// optional deps ("registry omits the entry when unavailable rather than
-// showing a broken row"). TinyDNN is not available in this environment
-// (confirmed: `find_package(TinyDNN QUIET)` reports NOTFOUND and no tiny_dnn
-// installation exists anywhere on this machine), so this scene could not be
-// built, run, or screenshotted as part of this batch's verification -- flagged
-// explicitly in the batch report rather than silently skipped.
+// optional-dependency CMake guard. The registry omits the entry when
+// unavailable rather than showing a broken row.
 //
-// Deviations from the original: kima_human_edited.skel is Y-up (reoriented to
-// Z-up via the shared ZUp.hpp helper, per the ground rules); the constraint
-// math only reads/writes local joint dofs, which are unaffected by the
+// Deviations from the original: kima_human_edited.skel is Y-up and is
+// reoriented to Z-up via the shared ZUp.hpp helper; the constraint math only
+// reads/writes local joint dofs, which are unaffected by the
 // reorientation (see ZUp.hpp). This skel is authored <gravity>0 -9.8 0</...>
 // (|g|=9.8, not the usual 9.81); ZUp.hpp rotates the source gravity rather
 // than hard-coding -9.81 Z, so that 9.8 magnitude is preserved -- the port

@@ -36,15 +36,52 @@
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
+#include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 
 #include <set>
 #include <string>
+#include <vector>
 
 namespace dart {
 namespace collision {
 namespace detail {
+
+namespace {
+
+std::unique_ptr<native::Shape> createConvexOrNull(
+    std::vector<Eigen::Vector3d> vertices, const std::string& shapeType)
+{
+  if (vertices.empty()) {
+    static std::set<std::string> warnedInvalidShapeTypes;
+    if (warnedInvalidShapeTypes.insert(shapeType).second) {
+      dtwarn << "[NativeShapeConversion] Shape type [" << shapeType
+             << "] did not provide convex vertices. This shape will be "
+             << "skipped by the native adapter.\n";
+    }
+    return nullptr;
+  }
+
+  return std::make_unique<native::ConvexShape>(std::move(vertices));
+}
+
+std::vector<Eigen::Vector3d> makePyramidVertices(
+    double baseWidth, double baseDepth, double height)
+{
+  const double halfWidth = 0.5 * baseWidth;
+  const double halfDepth = 0.5 * baseDepth;
+  const double baseZ = -0.5 * height;
+  return {
+      {-halfWidth, -halfDepth, baseZ},
+      {halfWidth, -halfDepth, baseZ},
+      {halfWidth, halfDepth, baseZ},
+      {-halfWidth, halfDepth, baseZ},
+      {0.0, 0.0, 0.5 * height}};
+}
+
+} // namespace
 
 //==============================================================================
 std::unique_ptr<native::Shape> NativeShapeConversion::create(
@@ -66,6 +103,25 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
     const auto& capsule = static_cast<const dynamics::CapsuleShape&>(shape);
     return std::make_unique<native::CapsuleShape>(
         capsule.getRadius(), capsule.getHeight());
+  }
+
+  if (shapeType == dynamics::ConvexMeshShape::getStaticType()) {
+    const auto& convex = static_cast<const dynamics::ConvexMeshShape&>(shape);
+    const auto& mesh = convex.getMesh();
+    if (!mesh) {
+      return createConvexOrNull({}, shapeType);
+    }
+    return createConvexOrNull(mesh->getVertices(), shapeType);
+  }
+
+  if (shapeType == dynamics::PyramidShape::getStaticType()) {
+    const auto& pyramid = static_cast<const dynamics::PyramidShape&>(shape);
+    return createConvexOrNull(
+        makePyramidVertices(
+            pyramid.getBaseWidth(),
+            pyramid.getBaseDepth(),
+            pyramid.getHeight()),
+        shapeType);
   }
 
   static std::set<std::string> warnedShapeTypes;
