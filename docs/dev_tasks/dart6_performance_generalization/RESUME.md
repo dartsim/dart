@@ -9,15 +9,17 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
-**Current claimed packet: WP-PG.02 — Extend the contact-container benchmark
-matrix** ([06-infra-evidence-lane.md](06-infra-evidence-lane.md)). Claim this
-on `wp-pg-02-contact-container-matrix` off current `origin/release-6.20`;
-do not continue the rejected WP-PG.11 solver branch.
+**Current claimed packet: WP-PG.03 — DART 6 profiling documentation + Tracy
+config task** ([06-infra-evidence-lane.md](06-infra-evidence-lane.md)). Continue
+on `wp-pg-03-profiling-doc` off current `origin/release-6.20`.
 
-Immediate next step: finish verification (`pixi run lint`, `pixi run
-check-lint`, benchmark target build, dashboard dry-run, and merge/preview smoke
-over the emitted JSON). Keep any performance claim out of the PR body unless
-backed by a fresh current-base A/B comparison.
+Immediate next step: open the packet PR after maintainer approval, then monitor
+hosted CI. Local verification already passed (`pixi run -e profile
+config-tracy`, profile `contact_benchmark` build + one-step `--profile` smoke,
+`UNIT_common_Profile`, docs parse smoke, `pixi run lint`, and
+`pixi run check-lint`). This packet is docs/config plus the small Tracy
+callstack compatibility fix required to make the new profile task build; do not
+include performance speedup claims.
 
 **WP-PG.01 is captured** (branch `wp-pg-01-baseline-evidence`, PR
 pending) — guard rows, profile splits, and prior-art triage are in
@@ -28,9 +30,8 @@ many-islands regime is ~50% integration (WS-C is the lever there).
 
 Claimable now, in priority order:
 
-1. **WP-PG.02** (WS-E — benchmark matrix coverage for honest future A/B).
-2. **WP-PG.03** (WS-E — profiling doc and Tracy config).
-3. **WP-PG.21** only if a new current-base profile justifies revisiting the
+1. **WP-PG.03** (WS-E — profiling doc and Tracy config; currently claimed).
+2. **WP-PG.21** only if a new current-base profile justifies revisiting the
    ODE active path. WP-PG.20 is #3329 and intentionally stayed span-only
    after the map/pruning variant showed small-row overhead; WP-PG.22 and
    WP-PG.11 both have local current-base rejection evidence from 2026-07-06.
@@ -113,6 +114,16 @@ decisions.
   dashboard slice after local smoke runs exceeded the runtime budget.
   Artifacts: `/tmp/wp_pg02_contact_container_deactivation_rows.json`,
   `/tmp/wp_pg02_contact_container_active_fcl_bullet_smoke.json`.
+- 2026-07-07: WP-PG.02 merged as #3327. WP-PG.03 claimed on
+  `wp-pg-03-profiling-doc` to promote the DART 6.20 profiling workflow into
+  `docs/onboarding/profiling.md` and add the profile-env Tracy configure task.
+  End-to-end profile build exposed an existing `TRACY_CALLSTACK` compatibility
+  bug in `dart/common/Profile.hpp`; the branch fixes it by using Tracy's
+  callstack constructor only when the packaged header exposes the callstack
+  macro. Local verification passed: `pixi run -e profile config-tracy`, profile
+  `contact_benchmark` build + one-step `--profile` smoke,
+  `UNIT_common_Profile`, docs parse smoke, `pixi run lint`, and
+  `pixi run check-lint`.
 
 ## Session log
 
