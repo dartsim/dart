@@ -663,6 +663,10 @@ void Profiler::reset()
   std::lock_guard<std::mutex> lock(m_threadRegistryMutex);
   for (auto& record : m_threads) {
     clearNode(record->root);
+    record->root.firstChild = nullptr;
+    record->root.nextSibling = nullptr;
+    record->nodes.clear();
+    record->stack.clear();
   }
   m_frameCount.store(0, std::memory_order_relaxed);
   m_frameTimeSumNs.store(0, std::memory_order_relaxed);

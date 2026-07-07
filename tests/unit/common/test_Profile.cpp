@@ -129,6 +129,24 @@ TEST_F(ProfileTest, DeduplicatesRepeatedScopeAtSameTreePosition)
   EXPECT_NE(tree.find("calls        2"), std::string::npos);
 }
 
+TEST_F(ProfileTest, ResetReclaimsNodeStorageForNewScopes)
+{
+  constexpr auto numScopes = 4096;
+  for (auto i = 0; i < numScopes; ++i) {
+    const auto label = "prefill-scope-" + std::to_string(i);
+    ProfileScope scope(label, __FILE__, 10000 + i);
+  }
+
+  Profiler::instance().reset();
+  {
+    ProfileScope scope("after-reset-scope", __FILE__, __LINE__);
+  }
+
+  const auto summary = DART_PROFILE_TEXT_SUMMARY();
+  EXPECT_NE(summary.find("after-reset-scope"), std::string::npos);
+  EXPECT_EQ(summary.find("prefill-scope-"), std::string::npos);
+}
+
 TEST_F(ProfileTest, KeepsDynamicScopeNamesAlive)
 {
   std::string label = "dynamic-scope";

@@ -43,7 +43,6 @@
 #include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
-#include "dart/common/Profile.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
@@ -276,32 +275,21 @@ bool BulletCollisionDetector::collide(
   if (option.collisionFilter) {
     if (filterRevision == (std::numeric_limits<std::size_t>::max)()) {
       castedGroup->resetPersistentPairFilterCache();
-      DART_PROFILE_SCOPED_N("Bullet filter persistent pairs");
       filterOutCollisions(collisionWorld);
     } else if (castedGroup->shouldFilterPersistentPairs(
                    option.collisionFilter.get(), filterRevision)) {
-      DART_PROFILE_SCOPED_N("Bullet filter persistent pairs");
       filterOutCollisions(collisionWorld);
     }
   } else {
     castedGroup->resetPersistentPairFilterCache();
   }
 
-  {
-    DART_PROFILE_SCOPED_N("Bullet update engine data");
-    castedGroup->updateEngineDataForCollide();
-  }
+  castedGroup->updateEngineDataForCollide();
 
-  {
-    DART_PROFILE_SCOPED_N("Bullet perform discrete collision");
-    collisionWorld->performDiscreteCollisionDetection();
-  }
+  collisionWorld->performDiscreteCollisionDetection();
 
   if (result) {
-    {
-      DART_PROFILE_SCOPED_N("Bullet report contacts");
-      reportContacts(collisionWorld, option, *result);
-    }
+    reportContacts(collisionWorld, option, *result);
 
     return result->isCollision();
   } else {

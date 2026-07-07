@@ -93,6 +93,16 @@ struct SoftBodyDisplayOptions
 };
 
 //==============================================================================
+struct SoftBodySceneSpec
+{
+  const char* id;
+  const char* title;
+  const char* uri;
+  const char* summary;
+  CameraHome cameraHome;
+};
+
+//==============================================================================
 struct HistoryState
 {
   Skeleton::Configuration config;
@@ -251,23 +261,19 @@ void moveBackward(
   moveTo(world, state, target);
 }
 
-} // namespace
-
 //==============================================================================
-DemoScene makeSoftBodiesScene()
+DemoScene makeSoftBodyPlaybackScene(const SoftBodySceneSpec& spec)
 {
   DemoScene scene;
-  scene.id = "soft_bodies";
-  scene.title = "Soft Bodies";
+  scene.id = spec.id;
+  scene.title = spec.title;
   scene.category = "Soft Bodies";
-  scene.summary = "Soft-body simulation with recorded-state playback.";
+  scene.summary = spec.summary;
 
-  scene.factory = [] {
-    auto world = dart::utils::SkelParser::readWorld(
-        "dart://sample/skel/softBodies.skel");
+  scene.factory = [spec] {
+    auto world = dart::utils::SkelParser::readWorld(spec.uri);
     if (!world)
-      throw std::runtime_error(
-          "failed to load dart://sample/skel/softBodies.skel");
+      throw std::runtime_error(std::string("failed to load ") + spec.uri);
     reorientWorldToZUp(world);
 
     auto state = std::make_shared<SoftBodiesState>();
@@ -281,10 +287,7 @@ DemoScene makeSoftBodiesScene()
 
     DemoSceneSetup setup;
     setup.world = world;
-    setup.cameraHome = CameraHome{
-        ::osg::Vec3d(3.0, -3.0, 2.2),
-        ::osg::Vec3d(0.0, 0.0, 0.4),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
+    setup.cameraHome = spec.cameraHome;
 
     setup.onActivate = [state](DemoHostContext& ctx) {
       state->viewer = ctx.viewer();
@@ -355,6 +358,50 @@ DemoScene makeSoftBodiesScene()
   };
 
   return scene;
+}
+
+} // namespace
+
+//==============================================================================
+DemoScene makeSoftBodiesScene()
+{
+  return makeSoftBodyPlaybackScene(SoftBodySceneSpec{
+      "soft_bodies",
+      "Soft Bodies",
+      "dart://sample/skel/softBodies.skel",
+      "Soft-body simulation with recorded-state playback.",
+      CameraHome{
+          ::osg::Vec3d(3.0, -3.0, 2.2),
+          ::osg::Vec3d(0.0, 0.0, 0.4),
+          ::osg::Vec3d(0.0, 0.0, 1.0)}});
+}
+
+//==============================================================================
+DemoScene makeSoftCubesScene()
+{
+  return makeSoftBodyPlaybackScene(SoftBodySceneSpec{
+      "soft_cubes",
+      "Soft Cubes",
+      "dart://sample/skel/soft_cubes.skel",
+      "Soft cube stack with recorded-state playback.",
+      CameraHome{
+          ::osg::Vec3d(2.5, -2.8, 2.0),
+          ::osg::Vec3d(0.0, 0.0, 0.35),
+          ::osg::Vec3d(0.0, 0.0, 1.0)}});
+}
+
+//==============================================================================
+DemoScene makeSoftOpenChainScene()
+{
+  return makeSoftBodyPlaybackScene(SoftBodySceneSpec{
+      "soft_open_chain",
+      "Soft Open Chain",
+      "dart://sample/skel/soft_open_chain.skel",
+      "Open chain of soft links with recorded-state playback.",
+      CameraHome{
+          ::osg::Vec3d(2.7, -2.7, 1.9),
+          ::osg::Vec3d(0.0, 0.0, 0.25),
+          ::osg::Vec3d(0.0, 0.0, 1.0)}});
 }
 
 } // namespace dart_demos

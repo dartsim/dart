@@ -428,21 +428,72 @@ protected:
   /// \brief Update transformation.
   void updateTransform() const;
 
+  /// \brief Update transformation using cached parent transform and contiguous
+  /// point state/property storage.
+  void updateTransform(
+      const State& _state,
+      const Properties& _properties,
+      const Eigen::Isometry3d& _parentWorldTransform) const;
+
   /// \brief Update body velocity.
   void updateVelocity() const;
+
+  /// \brief Update body velocity using cached parent velocity and contiguous
+  /// point state storage.
+  /// The caller must ensure this point mass's transform cache is current.
+  void updateVelocity(
+      const State& _state, const Eigen::Vector6d& _parentSpatialVelocity) const;
 
   /// \brief Update partial body acceleration due to parent joint's velocity.
   void updatePartialAcceleration() const;
 
+  /// \brief Update partial body acceleration using cached parent angular
+  /// velocity and contiguous point state storage.
+  void updatePartialAcceleration(
+      const State& _state, const Eigen::Vector3d& _parentAngularVelocity) const;
+
   /// \brief Update articulated body inertia. Forward dynamics routine.
   /// \param[in] _timeStep Required for implicit joint stiffness and damping.
   void updateArtInertiaFD(double _timeStep) const;
+
+  /// \brief Update articulated body inertia using cached parent soft-body
+  /// properties.
+  void updateArtInertiaFD(
+      double _timeStep,
+      double _dampingCoefficient,
+      double _vertexSpringStiffness) const;
 
   /// \brief Update bias force associated with the articulated body inertia.
   /// Forward dynamics routine.
   /// \param[in] _dt Required for implicit joint stiffness and damping.
   /// \param[in] _gravity Vector of gravitational acceleration
   void updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity);
+
+  /// \brief Update bias force using cached parent soft-body terms.
+  void updateBiasForceFD(
+      double _dt,
+      const Eigen::Vector3d& _parentAngularVelocity,
+      const Eigen::Vector3d& _localGravity,
+      bool _gravityMode,
+      double _vertexSpringStiffness,
+      double _edgeSpringStiffness,
+      double _dampingCoefficient);
+
+  /// \brief Update bias force using cached parent soft-body terms and
+  /// contiguous soft-body point state/property storage.
+  /// The caller must ensure this point mass's velocity and partial
+  /// acceleration caches are current, and the parent soft body's articulated
+  /// inertia cache is current, before calling.
+  void updateBiasForceFD(
+      double _dt,
+      const Eigen::Vector3d& _parentAngularVelocity,
+      const Eigen::Vector3d& _localGravity,
+      bool _gravityMode,
+      double _vertexSpringStiffness,
+      double _edgeSpringStiffness,
+      double _dampingCoefficient,
+      const std::vector<State>& _pointStates,
+      const std::vector<Properties>& _pointProperties);
 
   /// \brief Update bias impulse associated with the articulated body inertia.
   /// Impulse-based forward dynamics routine.

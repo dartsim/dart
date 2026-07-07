@@ -38,6 +38,7 @@
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 #include "dart/simulation/World.hpp"
+#include "dart/utils/SkelParser.hpp"
 
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
@@ -68,24 +69,6 @@ constexpr double kBoxEdge = 0.9;
 constexpr double kGroundThickness = 0.1;
 
 void* volatile g_allocationSink = nullptr;
-
-bool canEnforceGlobalHeapAllocationGate()
-{
-#if defined(_WIN32)
-  return false;
-#else
-  return true;
-#endif
-}
-
-const char* globalHeapAllocationGateSkipReason()
-{
-#if defined(_WIN32)
-  return "global operator-new counter is advisory on Windows";
-#else
-  return "";
-#endif
-}
 
 class CountingDantzigBoxedLcpSolver final
   : public dart::constraint::BoxedLcpSolver
@@ -234,6 +217,42 @@ dart::simulation::WorldPtr createFallingBoxWorld(const std::string& name)
   return world;
 }
 
+dart::dynamics::SkeletonPtr createSoftBox(
+    const std::string& name,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& size)
+{
+  auto skel = dart::dynamics::Skeleton::create(name);
+
+  dart::dynamics::GenericJoint<dart::math::SE3Space>::Properties jointProps(
+      name + "_joint");
+  dart::dynamics::BodyNode::Properties bodyProps(
+      dart::dynamics::BodyNode::AspectProperties(name + "_body"));
+  bodyProps.mInertia.setMass(1.0);
+
+  const auto softProperties
+      = dart::dynamics::SoftBodyNodeHelper::makeBoxProperties(
+          size,
+          Eigen::Isometry3d::Identity(),
+          Eigen::Vector3i(3, 3, 3),
+          1.0,
+          500.0,
+          10.0,
+          1.0);
+  const dart::dynamics::SoftBodyNode::Properties softBodyProperties(
+      bodyProps, softProperties);
+
+  auto pair = skel->createJointAndBodyNodePair<
+      dart::dynamics::FreeJoint,
+      dart::dynamics::SoftBodyNode>(nullptr, jointProps, softBodyProperties);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = position;
+  pair.first->setPositions(dart::dynamics::FreeJoint::convertToPositions(tf));
+
+  return skel;
+}
+
 void expectWorldStateExactlyEqual(
     const dart::simulation::World& lhs, const dart::simulation::World& rhs)
 {
@@ -282,7 +301,53 @@ struct StepAllocationMeasurement
   dart::test::CountingMemoryAllocatorSnapshot countingAllocator;
   int measuredSteps = 0;
   std::size_t lastStepContacts = 0u;
+  std::size_t lastStepSoftSoftContacts = 0u;
 };
+
+struct SoftSceneStats
+{
+  std::size_t softBodies = 0u;
+  std::size_t pointMasses = 0u;
+};
+
+SoftSceneStats collectSoftSceneStats(const dart::simulation::WorldPtr& world)
+{
+  SoftSceneStats stats;
+  if (!world)
+    return stats;
+
+  for (std::size_t i = 0u; i < world->getNumSkeletons(); ++i) {
+    const auto skeleton = world->getSkeleton(i);
+    if (!skeleton)
+      continue;
+
+    stats.softBodies += skeleton->getNumSoftBodyNodes();
+    for (std::size_t j = 0u; j < skeleton->getNumSoftBodyNodes(); ++j) {
+      const auto* softBody = skeleton->getSoftBodyNode(j);
+      if (softBody != nullptr)
+        stats.pointMasses += softBody->getNumPointMasses();
+    }
+  }
+
+  return stats;
+}
+
+std::size_t countSoftSoftContacts(
+    const dart::collision::CollisionResult& collisionResult)
+{
+  std::size_t count = 0u;
+  for (const auto& contact : collisionResult.getContacts()) {
+    const auto bodyNode1 = contact.getBodyNodePtr1();
+    const auto bodyNode2 = contact.getBodyNodePtr2();
+    if (bodyNode1 != nullptr && bodyNode2 != nullptr
+        && bodyNode1->asSoftBodyNode() != nullptr
+        && bodyNode2->asSoftBodyNode() != nullptr) {
+      ++count;
+    }
+  }
+
+  return count;
+}
 
 StepAllocationMeasurement measureWorldStepsNow(
     const dart::simulation::WorldPtr& world,
@@ -320,7 +385,8 @@ StepAllocationMeasurement measureWorldStepsNow(
       rawCounter.snapshot(),
       allocatorCounter.snapshot(),
       measuredSteps,
-      world->getLastCollisionResult().getNumContacts()};
+      world->getLastCollisionResult().getNumContacts(),
+      countSoftSoftContacts(world->getLastCollisionResult())};
 }
 
 StepAllocationMeasurement measureWorldStepAllocations(
@@ -352,10 +418,32 @@ void recordProperty(const std::string& key, const std::string& value)
   ::testing::Test::RecordProperty(key, value);
 }
 
+[[nodiscard]] const char* strictGlobalHeapGateSkipReason()
+{
+#if defined(DART_CODECOV)
+  return "coverage instrumentation can allocate outside DART";
+#elif defined(__SANITIZE_ADDRESS__)
+  return "AddressSanitizer can allocate outside DART";
+#elif defined(__has_feature)
+  #if __has_feature(address_sanitizer)
+  return "AddressSanitizer can allocate outside DART";
+  #elif !defined(__linux__) || !defined(__GLIBC__)
+  return "strict operator-new gate is supported on Linux glibc";
+  #else
+  return "";
+  #endif
+#elif !defined(__linux__) || !defined(__GLIBC__)
+  return "strict operator-new gate is supported on Linux glibc";
+#else
+  return "";
+#endif
+}
+
 void reportMeasurement(
     const std::string& label,
     const StepAllocationMeasurement& measurement,
-    const std::string& note = "")
+    const std::string& note = "",
+    bool requireContacts = true)
 {
   const std::string prefix = label + "_";
 
@@ -363,11 +451,16 @@ void reportMeasurement(
   recordProperty(prefix + "warmup_steps", kWarmupSteps);
   recordProperty(prefix + "measured_steps", measurement.measuredSteps);
   recordProperty(prefix + "last_step_contacts", measurement.lastStepContacts);
+  recordProperty(
+      prefix + "last_step_soft_soft_contacts",
+      measurement.lastStepSoftSoftContacts);
 
   // Scene validity, not an allocation assertion: the baseline is only
   // meaningful if the measured window actually exercises contact solving.
-  EXPECT_GT(measurement.lastStepContacts, 0u)
-      << label << " scene produced no contacts in the measured window";
+  if (requireContacts) {
+    EXPECT_GT(measurement.lastStepContacts, 0u)
+        << label << " scene produced no contacts in the measured window";
+  }
   recordProperty(
       prefix + "operator_new_count", measurement.globalHeap.allocationCount);
   recordProperty(
@@ -424,7 +517,9 @@ void reportMeasurement(
             << " boxes_per_side=" << kBoxesPerSide
             << " warmup_steps=" << kWarmupSteps
             << " measured_steps=" << measurement.measuredSteps
-            << " last_step_contacts=" << measurement.lastStepContacts;
+            << " last_step_contacts=" << measurement.lastStepContacts
+            << " last_step_soft_soft_contacts="
+            << measurement.lastStepSoftSoftContacts;
   if (!note.empty()) {
     std::cout << " note=\"" << note << "\"";
   }
@@ -519,6 +614,92 @@ dart::simulation::WorldPtr createCountedStackedBoxesWorld(
   return createStackedBoxesWorld(kBoxesPerSide, collisionDetector, config);
 }
 
+dart::simulation::WorldPtr createCountedNativeSoftBoxOnGroundWorld(
+    const std::string& name, dart::test::CountingMemoryAllocator& allocator)
+{
+  dart::simulation::WorldConfig config(name);
+  config.collisionDetector = dart::simulation::CollisionDetectorType::Dart;
+  config.baseAllocator = &allocator;
+  config.freeListInitialAllocation = 4u * 1024u * 1024u;
+  config.frameScratchInitialCapacity = 1024u * 1024u;
+
+  auto world = dart::simulation::World::create(config);
+  world->setNumSimulationThreads(1u);
+  world->setTimeStep(0.001);
+  world->setGravity(0.0, 0.0, -9.81);
+
+  world->addSkeleton(createGround());
+  world->addSkeleton(createSoftBox(
+      name + "_soft_box",
+      Eigen::Vector3d(0.0, 0.0, 0.22),
+      Eigen::Vector3d(0.4, 0.4, 0.4)));
+
+  return world;
+}
+
+dart::simulation::WorldPtr createCountedNativeSoftStackWorld(
+    const std::string& name, dart::test::CountingMemoryAllocator& allocator)
+{
+  dart::simulation::WorldConfig config(name);
+  config.collisionDetector = dart::simulation::CollisionDetectorType::Dart;
+  config.baseAllocator = &allocator;
+  config.freeListInitialAllocation = 8u * 1024u * 1024u;
+  config.frameScratchInitialCapacity = 2u * 1024u * 1024u;
+
+  auto world = dart::simulation::World::create(config);
+  world->setNumSimulationThreads(1u);
+  world->setTimeStep(0.001);
+  world->setGravity(0.0, 0.0, -9.81);
+
+  world->addSkeleton(createGround());
+  world->addSkeleton(createSoftBox(
+      name + "_lower_soft_box",
+      Eigen::Vector3d(0.0, 0.0, 0.22),
+      Eigen::Vector3d(0.4, 0.4, 0.4)));
+  world->addSkeleton(createSoftBox(
+      name + "_upper_soft_box",
+      Eigen::Vector3d(0.0, 0.0, 0.58),
+      Eigen::Vector3d(0.4, 0.4, 0.4)));
+
+  return world;
+}
+
+dart::simulation::WorldPtr createCountedNativeSoftSkelWorld(
+    const std::string& name,
+    const std::string& uri,
+    dart::test::CountingMemoryAllocator& allocator)
+{
+  const auto sourceWorld = dart::utils::SkelParser::readWorld(uri);
+  if (!sourceWorld)
+    return nullptr;
+
+  dart::simulation::WorldConfig config(name);
+  config.collisionDetector = dart::simulation::CollisionDetectorType::Dart;
+  config.baseAllocator = &allocator;
+  config.freeListInitialAllocation = 64u * 1024u * 1024u;
+  config.frameScratchInitialCapacity = 8u * 1024u * 1024u;
+
+  auto world = dart::simulation::World::create(config);
+  world->setNumSimulationThreads(1u);
+  world->setTimeStep(sourceWorld->getTimeStep());
+  world->setGravity(sourceWorld->getGravity());
+
+  std::vector<dart::dynamics::SkeletonPtr> skeletons;
+  skeletons.reserve(sourceWorld->getNumSkeletons());
+  for (std::size_t i = 0u; i < sourceWorld->getNumSkeletons(); ++i) {
+    const auto skeleton = sourceWorld->getSkeleton(i);
+    if (skeleton)
+      skeletons.push_back(skeleton);
+  }
+
+  for (const auto& skeleton : skeletons) {
+    sourceWorld->removeSkeleton(skeleton);
+    world->addSkeleton(skeleton);
+  }
+
+  return world;
+}
+
 enum class PreparationMode
 {
   Explicit,
@@ -543,6 +724,44 @@ StepAllocationMeasurement measurePreparedGateScene(
   EXPECT_TRUE(world->isInSimulationMode());
 
   return measureWorldStepsNow(world, allocator, 1);
+}
+
+StepAllocationMeasurement measurePreparedSoftGateScene(
+    const std::string& name,
+    PreparationMode mode,
+    dart::test::CountingMemoryAllocator& allocator)
+{
+  auto world = createCountedNativeSoftBoxOnGroundWorld(name, allocator);
+
+  if (mode == PreparationMode::Explicit) {
+    world->enterSimulationMode();
+  } else {
+    EXPECT_FALSE(world->isInSimulationMode());
+    world->step();
+  }
+  EXPECT_TRUE(world->isInSimulationMode());
+
+  return measureWorldStepsNow(world, allocator, 1);
+}
+
+StepAllocationMeasurement measureNativeSoftStackSteadyState(
+    const std::string& name, dart::test::CountingMemoryAllocator& allocator)
+{
+  auto world = createCountedNativeSoftStackWorld(name, allocator);
+  world->enterSimulationMode();
+  EXPECT_TRUE(world->isInSimulationMode());
+
+  return measureWorldStepAllocations(world, allocator);
+}
+
+StepAllocationMeasurement measureNativeSoftSkelSteadyState(
+    const dart::simulation::WorldPtr& world,
+    dart::test::CountingMemoryAllocator& allocator)
+{
+  world->enterSimulationMode();
+  EXPECT_TRUE(world->isInSimulationMode());
+
+  return measureWorldStepAllocations(world, allocator);
 }
 
 ::testing::AssertionResult hasNoGlobalHeapAllocations(
@@ -592,6 +811,22 @@ StepAllocationMeasurement measurePreparedGateScene(
   return ::testing::AssertionSuccess();
 }
 
+void expectNoGlobalHeapAllocationsWhenReliable(
+    const std::string& label, const StepAllocationMeasurement& measurement)
+{
+  const char* skipReason = strictGlobalHeapGateSkipReason();
+  if (skipReason[0] != '\0') {
+    recordProperty(label + "_operator_new_strict_gate_skipped", "true");
+    recordProperty(label + "_operator_new_strict_gate_skip_reason", skipReason);
+    std::cout << "[StepAllocation] " << label
+              << " operator_new_strict_gate=skipped reason=\"" << skipReason
+              << "\"\n";
+    return;
+  }
+
+  EXPECT_TRUE(hasNoGlobalHeapAllocations(measurement));
+}
+
 void expectNativeGlobalAndBaseAllocatorGate(
     PreparationMode mode, const std::string& label)
 {
@@ -600,14 +835,18 @@ void expectNativeGlobalAndBaseAllocatorGate(
       label, dart::collision::DARTCollisionDetector::create(), mode, allocator);
   reportMeasurement(label, measurement);
   EXPECT_GT(measurement.lastStepContacts, 0u);
-  if (canEnforceGlobalHeapAllocationGate()) {
-    EXPECT_TRUE(hasNoGlobalHeapAllocations(measurement));
-  } else {
-    recordProperty(label + "_operator_new_gate_skipped", "true");
-    recordProperty(
-        label + "_operator_new_gate_skip_reason",
-        globalHeapAllocationGateSkipReason());
-  }
+  expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
+  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+}
+
+void expectNativeSoftGlobalAndBaseAllocatorGate(
+    PreparationMode mode, const std::string& label)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement = measurePreparedSoftGateScene(label, mode, allocator);
+  reportMeasurement(label, measurement);
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
   EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
 }
 
@@ -618,6 +857,93 @@ void expectNativeRawHeapGate(PreparationMode mode, const std::string& label)
       label, dart::collision::DARTCollisionDetector::create(), mode, allocator);
   reportMeasurement(label, measurement);
   EXPECT_GT(measurement.lastStepContacts, 0u);
+  if (measurement.rawHeap.skipped) {
+    recordProperty(label + "_raw_malloc_skipped", "true");
+    recordProperty(
+        label + "_raw_malloc_skip_reason", measurement.rawHeap.skipReason);
+    GTEST_SKIP() << measurement.rawHeap.skipReason;
+  }
+  EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+}
+
+void expectNativeSoftRawHeapGate(PreparationMode mode, const std::string& label)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement = measurePreparedSoftGateScene(label, mode, allocator);
+  reportMeasurement(label, measurement);
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  if (measurement.rawHeap.skipped) {
+    recordProperty(label + "_raw_malloc_skipped", "true");
+    recordProperty(
+        label + "_raw_malloc_skip_reason", measurement.rawHeap.skipReason);
+    GTEST_SKIP() << measurement.rawHeap.skipReason;
+  }
+  EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+}
+
+void expectNativeSoftStackGlobalAndBaseAllocatorGate(const std::string& label)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement = measureNativeSoftStackSteadyState(label, allocator);
+  reportMeasurement(label, measurement);
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  EXPECT_GT(measurement.lastStepSoftSoftContacts, 0u);
+  expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
+  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+}
+
+void expectNativeSoftStackRawHeapGate(const std::string& label)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement = measureNativeSoftStackSteadyState(label, allocator);
+  reportMeasurement(label, measurement);
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  EXPECT_GT(measurement.lastStepSoftSoftContacts, 0u);
+  if (measurement.rawHeap.skipped) {
+    recordProperty(label + "_raw_malloc_skipped", "true");
+    recordProperty(
+        label + "_raw_malloc_skip_reason", measurement.rawHeap.skipReason);
+    GTEST_SKIP() << measurement.rawHeap.skipReason;
+  }
+  EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+}
+
+void expectNativeSoftSkelGlobalAndBaseAllocatorGate(
+    const std::string& label, const std::string& uri)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  const auto world = createCountedNativeSoftSkelWorld(label, uri, allocator);
+  ASSERT_NE(nullptr, world);
+
+  const auto stats = collectSoftSceneStats(world);
+  recordProperty(label + "_soft_bodies", stats.softBodies);
+  recordProperty(label + "_point_masses", stats.pointMasses);
+  ASSERT_GT(stats.softBodies, 0u);
+  ASSERT_GT(stats.pointMasses, 0u);
+
+  const auto measurement = measureNativeSoftSkelSteadyState(world, allocator);
+  reportMeasurement(
+      label, measurement, "native transferred SKEL soft scene", false);
+  expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
+  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+}
+
+void expectNativeSoftSkelRawHeapGate(
+    const std::string& label, const std::string& uri)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  const auto world = createCountedNativeSoftSkelWorld(label, uri, allocator);
+  ASSERT_NE(nullptr, world);
+
+  const auto stats = collectSoftSceneStats(world);
+  recordProperty(label + "_soft_bodies", stats.softBodies);
+  recordProperty(label + "_point_masses", stats.pointMasses);
+  ASSERT_GT(stats.softBodies, 0u);
+  ASSERT_GT(stats.pointMasses, 0u);
+
+  const auto measurement = measureNativeSoftSkelSteadyState(world, allocator);
+  reportMeasurement(
+      label, measurement, "native transferred SKEL soft scene", false);
   if (measurement.rawHeap.skipped) {
     recordProperty(label + "_raw_malloc_skipped", "true");
     recordProperty(
@@ -737,6 +1063,23 @@ TEST(StepAllocation, NativeImplicitSecondStepHasNoGlobalOrBaseAllocatorGrowth)
       PreparationMode::Implicit, "native_dart_implicit_second_step_gate");
 }
 
+TEST(
+    StepAllocation,
+    NativeSoftExplicitFirstPostBakeHasNoGlobalOrBaseAllocatorGrowth)
+{
+  expectNativeSoftGlobalAndBaseAllocatorGate(
+      PreparationMode::Explicit,
+      "native_dart_soft_explicit_first_post_bake_gate");
+}
+
+TEST(
+    StepAllocation,
+    NativeSoftImplicitSecondStepHasNoGlobalOrBaseAllocatorGrowth)
+{
+  expectNativeSoftGlobalAndBaseAllocatorGate(
+      PreparationMode::Implicit, "native_dart_soft_implicit_second_step_gate");
+}
+
 TEST(StepAllocation, NativeExplicitFirstPostBakeHasNoRawMallocWhenAvailable)
 {
   expectNativeRawHeapGate(
@@ -748,6 +1091,47 @@ TEST(StepAllocation, NativeImplicitSecondStepHasNoRawMallocWhenAvailable)
 {
   expectNativeRawHeapGate(
       PreparationMode::Implicit, "native_dart_implicit_second_step_raw_gate");
+}
+
+TEST(StepAllocation, NativeSoftExplicitFirstPostBakeHasNoRawMallocWhenAvailable)
+{
+  expectNativeSoftRawHeapGate(
+      PreparationMode::Explicit,
+      "native_dart_soft_explicit_first_post_bake_raw_gate");
+}
+
+TEST(StepAllocation, NativeSoftImplicitSecondStepHasNoRawMallocWhenAvailable)
+{
+  expectNativeSoftRawHeapGate(
+      PreparationMode::Implicit,
+      "native_dart_soft_implicit_second_step_raw_gate");
+}
+
+TEST(StepAllocation, NativeSoftStackSteadyStateHasNoGlobalOrBaseAllocatorGrowth)
+{
+  expectNativeSoftStackGlobalAndBaseAllocatorGate(
+      "native_dart_soft_stack_steady_state_gate");
+}
+
+TEST(StepAllocation, NativeSoftStackSteadyStateHasNoRawMallocWhenAvailable)
+{
+  expectNativeSoftStackRawHeapGate(
+      "native_dart_soft_stack_steady_state_raw_gate");
+}
+
+TEST(
+    StepAllocation, NativeSoftBodiesSkelSteadyStateHasNoGlobalOrAllocatorGrowth)
+{
+  expectNativeSoftSkelGlobalAndBaseAllocatorGate(
+      "native_dart_soft_bodies_skel_steady_state_gate",
+      "dart://sample/skel/softBodies.skel");
+}
+
+TEST(StepAllocation, NativeSoftBodiesSkelSteadyStateHasNoRawMallocWhenAvailable)
+{
+  expectNativeSoftSkelRawHeapGate(
+      "native_dart_soft_bodies_skel_steady_state_raw_gate",
+      "dart://sample/skel/softBodies.skel");
 }
 
 TEST(

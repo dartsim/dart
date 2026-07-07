@@ -646,6 +646,9 @@ protected:
   std::vector<std::pair<const dynamics::Skeleton*, std::size_t>>
       mSkeletonIndexScratch;
   std::vector<char> mDisturbedThisStepScratch;
+  std::vector<const dynamics::Skeleton*> mDeepInitialContactSkeletonScratch;
+  std::vector<const dynamics::Skeleton*>
+      mSupportedInitialContactSkeletonScratch;
 
   struct AllRestingKinematicSnapshot
   {

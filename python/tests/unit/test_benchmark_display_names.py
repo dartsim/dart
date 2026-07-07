@@ -41,6 +41,10 @@ def test_humanize_dart6_curated_surfaces():
         module.humanize_name("BM_ContactContainerActive/60/0/16")
         == "Contact container active step - 60 objects - 0 engine - 16 threads"
     )
+    assert (
+        module.humanize_name("BM_SoftBodyStep/2/16/200")
+        == "Soft-body world step - 2 scene - 16 threads - 200 steps"
+    )
 
 
 def test_family_mapping_and_generic_fallback():
@@ -49,6 +53,9 @@ def test_family_mapping_and_generic_fallback():
     assert (
         module.family_of("BM_ContactContainerActive/120/1/16")
         == "DART 6 contact and collision"
+    )
+    assert module.family_of("BM_SoftBodyStep/2/16/200") == (
+        "DART 6 deformable bodies"
     )
     assert module.family_of("BM_UnmappedCase/4") == "Other benchmarks"
     assert module.humanize_name("BM_UnmappedCase/4") == "Unmapped Case - 4 arg0"

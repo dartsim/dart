@@ -51,4 +51,5 @@ def test_run_cpp_benchmark_resolves_release_branch_aliases():
         module._resolve_target("contact-container")
         == "BM_INTEGRATION_contact_container"
     )
+    assert module._resolve_target("soft-body") == "BM_INTEGRATION_soft_body"
     assert module._resolve_target("BM_CUSTOM") == "BM_CUSTOM"
