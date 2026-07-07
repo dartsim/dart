@@ -88,6 +88,8 @@ TEST(CapsuleBox, OverlappingTranslatedVerticalCapsuleAddsContacts)
   ASSERT_GE(result.numContacts(), 1u);
   const auto& contact = result.getContact(0);
   EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_TRUE(
+      contact.position.isApprox(Eigen::Vector3d(0.875, 0.0, 0.0), 1e-12));
   EXPECT_NEAR(0.25, contact.depth, 1e-12);
 }
 
@@ -126,6 +128,11 @@ TEST(CapsuleBox, RotatedBoxAddsContact)
   ASSERT_GE(result.numContacts(), 1u);
   const auto& contact = result.getContact(0);
   EXPECT_NEAR(1.0, contact.normal.norm(), 1e-12);
+  const Eigen::Vector3d localContact
+      = rotatedBox().inverse() * contact.position;
+  EXPECT_LE(localContact.cwiseAbs().x(), 1.0 + 1e-12);
+  EXPECT_LE(localContact.cwiseAbs().y(), 1.0 + 1e-12);
+  EXPECT_LE(localContact.cwiseAbs().z(), 1.0 + 1e-12);
   EXPECT_GT(contact.depth, 0.0);
 }
 

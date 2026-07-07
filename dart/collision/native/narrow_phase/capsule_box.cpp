@@ -250,7 +250,7 @@ bool collideTranslatedVerticalCapsuleBox(
 
     ContactPoint contact;
     contact.position = boxTranslation + contactOnBoxLocal
-                       + normalLocal * (penetration * 0.5);
+                       - normalLocal * (penetration * 0.5);
     contact.normal = normalLocal;
     contact.depth = penetration;
 
@@ -402,7 +402,7 @@ bool collideCapsuleBox(
 
     ContactPoint contact;
     contact.position
-        = boxTransform * contactOnBoxLocal + normalWorld * (penetration * 0.5);
+        = boxTransform * contactOnBoxLocal - normalWorld * (penetration * 0.5);
     contact.normal = normalWorld;
     contact.depth = penetration;
 
