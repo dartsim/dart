@@ -127,6 +127,7 @@ private:
       const ProfileNode& node, std::size_t minWidth, std::size_t maxWidth);
 
   static std::uint64_t sumInclusiveChildren(const ProfileNode& node);
+  static bool hasRecordedScopes(const ProfileNode& node);
   static void clearNode(ProfileNode& node);
   static std::string formatDuration(std::uint64_t ns);
   static std::string formatPercent(double pct);
