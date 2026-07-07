@@ -517,19 +517,6 @@ TEST(NativeCollisionDetector, ConvertsSphereAndBoxShapes)
           ->getVertices()
           .size(),
       8u);
-
-  const dynamics::MultiSphereConvexHullShape multiSphere(
-      {{0.25, Eigen::Vector3d::Zero()},
-       {0.25, Eigen::Vector3d(0.5, 0.0, 0.0)}});
-  auto nativeMultiSphere
-      = collision::detail::NativeShapeConversion::create(multiSphere);
-  ASSERT_NE(nullptr, nativeMultiSphere);
-  ASSERT_EQ(native::ShapeType::Convex, nativeMultiSphere->getType());
-  EXPECT_GT(
-      static_cast<const native::ConvexShape*>(nativeMultiSphere.get())
-          ->getVertices()
-          .size(),
-      8u);
 }
 
 //==============================================================================
@@ -537,6 +524,12 @@ TEST(NativeCollisionDetector, LeavesUnsupportedShapesNull)
 {
   const dynamics::PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
   EXPECT_EQ(nullptr, collision::detail::NativeShapeConversion::create(plane));
+
+  const dynamics::MultiSphereConvexHullShape multiSphere(
+      {{0.25, Eigen::Vector3d::Zero()},
+       {0.25, Eigen::Vector3d(0.5, 0.0, 0.0)}});
+  EXPECT_EQ(
+      nullptr, collision::detail::NativeShapeConversion::create(multiSphere));
 }
 
 //==============================================================================

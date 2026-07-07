@@ -38,12 +38,10 @@
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"
-#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 
-#include <array>
 #include <set>
 #include <string>
 #include <vector>
@@ -106,38 +104,6 @@ std::vector<Eigen::Vector3d> makePyramidVertices(
       {0.0, 0.0, 0.5 * height}};
 }
 
-std::vector<Eigen::Vector3d> makeMultiSphereHullVertices(
-    const dynamics::MultiSphereConvexHullShape::Spheres& spheres)
-{
-  static const std::array<Eigen::Vector3d, 14> directions{{
-      Eigen::Vector3d::UnitX(),
-      -Eigen::Vector3d::UnitX(),
-      Eigen::Vector3d::UnitY(),
-      -Eigen::Vector3d::UnitY(),
-      Eigen::Vector3d::UnitZ(),
-      -Eigen::Vector3d::UnitZ(),
-      Eigen::Vector3d(1.0, 1.0, 1.0).normalized(),
-      Eigen::Vector3d(1.0, 1.0, -1.0).normalized(),
-      Eigen::Vector3d(1.0, -1.0, 1.0).normalized(),
-      Eigen::Vector3d(1.0, -1.0, -1.0).normalized(),
-      Eigen::Vector3d(-1.0, 1.0, 1.0).normalized(),
-      Eigen::Vector3d(-1.0, 1.0, -1.0).normalized(),
-      Eigen::Vector3d(-1.0, -1.0, 1.0).normalized(),
-      Eigen::Vector3d(-1.0, -1.0, -1.0).normalized(),
-  }};
-
-  std::vector<Eigen::Vector3d> vertices;
-  vertices.reserve(spheres.size() * directions.size());
-  for (const auto& sphere : spheres) {
-    const double radius = sphere.first;
-    const Eigen::Vector3d& center = sphere.second;
-    for (const auto& direction : directions) {
-      vertices.push_back(center + radius * direction);
-    }
-  }
-  return vertices;
-}
-
 } // namespace
 
 //==============================================================================
@@ -169,13 +135,6 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
       return createConvexOrNull({}, shapeType);
     }
     return createConvexOrNull(mesh->getVertices(), shapeType);
-  }
-
-  if (shapeType == dynamics::MultiSphereConvexHullShape::getStaticType()) {
-    const auto& multiSphere
-        = static_cast<const dynamics::MultiSphereConvexHullShape&>(shape);
-    return createConvexOrNull(
-        makeMultiSphereHullVertices(multiSphere.getSpheres()), shapeType);
   }
 
   if (shapeType == dynamics::ConeShape::getStaticType()) {
