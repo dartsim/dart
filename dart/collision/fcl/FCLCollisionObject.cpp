@@ -47,13 +47,6 @@ namespace collision {
 
 namespace {
 
-// FCL soft meshes use vertices in the parent soft-body frame. Reading the
-// generalized point state directly avoids refreshing point-mass world caches.
-Eigen::Vector3d getSoftMeshLocalVertex(const dynamics::PointMass& pointMass)
-{
-  return pointMass.getPositions() + pointMass.getRestingPosition();
-}
-
 //==============================================================================
 class MutableFCLCollisionObject : public dart::collision::fcl::CollisionObject
 {
@@ -170,7 +163,7 @@ void FCLCollisionObject::updateEngineData()
         = static_cast<std::size_t>(bvhModel->num_vertices);
     if (numFclVertices == pointMasses.size()) {
       for (std::size_t i = 0; i < pointMasses.size(); ++i) {
-        const Eigen::Vector3d vertex = getSoftMeshLocalVertex(*pointMasses[i]);
+        const Eigen::Vector3d& vertex = pointMasses[i]->getLocalPosition();
         const auto& previousVertex = bvhModel->vertices[i];
         if (previousVertex[0] != vertex[0] || previousVertex[1] != vertex[1]
             || previousVertex[2] != vertex[2]) {
@@ -185,8 +178,8 @@ void FCLCollisionObject::updateEngineData()
         // path, which refits swept previous/current vertex bounds.
         bvhModel->beginReplaceModel();
         for (std::size_t i = 0; i < pointMasses.size(); ++i) {
-          const Eigen::Vector3d vertex
-              = getSoftMeshLocalVertex(*pointMasses[i]);
+          const Eigen::Vector3d& vertex = pointMasses[i]->getLocalPosition();
+          mesh->mVertices[i].Set(vertex[0], vertex[1], vertex[2]);
           bvhModel->replaceVertex(
               dart::collision::fcl::Vector3(vertex[0], vertex[1], vertex[2]));
         }
@@ -199,8 +192,8 @@ void FCLCollisionObject::updateEngineData()
         DART_ASSERT(face.mNumIndices == 3);
 
         for (auto j = 0u; j < 3u; ++j, ++vertexIndex) {
-          const Eigen::Vector3d vertex
-              = getSoftMeshLocalVertex(*pointMasses[face.mIndices[j]]);
+          const Eigen::Vector3d& vertex
+              = pointMasses[face.mIndices[j]]->getLocalPosition();
           const auto& previousVertex = bvhModel->vertices[vertexIndex];
           if (previousVertex[0] != vertex[0] || previousVertex[1] != vertex[1]
               || previousVertex[2] != vertex[2]) {
@@ -217,16 +210,20 @@ void FCLCollisionObject::updateEngineData()
         // geometry with the same topology instead of using FCL's dynamic update
         // path, which refits swept previous/current vertex bounds.
         bvhModel->beginReplaceModel();
+        for (std::size_t i = 0; i < pointMasses.size(); ++i) {
+          const Eigen::Vector3d& vertex = pointMasses[i]->getLocalPosition();
+          mesh->mVertices[i].Set(vertex[0], vertex[1], vertex[2]);
+        }
+
         for (auto i = 0u; i < mesh->mNumFaces; ++i) {
           const aiFace& face = mesh->mFaces[i];
           DART_ASSERT(face.mNumIndices == 3);
 
           dart::collision::fcl::Vector3 vertices[3];
           for (auto j = 0u; j < 3; ++j) {
-            const Eigen::Vector3d vertex
-                = getSoftMeshLocalVertex(*pointMasses[face.mIndices[j]]);
-            vertices[j] = dart::collision::fcl::Vector3(
-                vertex[0], vertex[1], vertex[2]);
+            const auto& vertex = mesh->mVertices[face.mIndices[j]];
+            vertices[j]
+                = dart::collision::fcl::Vector3(vertex.x, vertex.y, vertex.z);
           }
           bvhModel->replaceTriangle(vertices[0], vertices[1], vertices[2]);
         }
