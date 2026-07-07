@@ -259,6 +259,46 @@ step-200 checksum rows for `THREADS=1` and `THREADS=4`:
 23.295 ms respectively on this host; treat them as smoke timing, not a stable
 threshold.
 
+## Internal phase-view slice
+
+The next WP-DB.06 implementation adds a `.cpp`-local
+`PointMassPhaseView<StateVector>` facade for recursive soft-body dynamics
+loops. It does not change public headers, class layout, or the existing
+`PointMass*` ownership model. The view centralizes the invariant that
+`mPointMasses`, `mPointStates`, and `mPointProps` have matching lengths, then
+gives each phase a single access shape for point objects, contiguous state, and
+contiguous properties.
+
+The converted loops are:
+
+- `updateTransform`,
+- `updateVelocity`,
+- `updatePartialAcceleration`,
+- `updateArtInertia`,
+- `updateBiasForce`,
+- `updateAccelerationFD`,
+- `updateTransmittedForceFD`,
+- `updateVelocityChangeFD`,
+- `updateTransmittedImpulse`, and
+- `updateConstrainedTerms`.
+
+This is the narrow facade step before a retained SoA scratch or object-storage
+rewrite. It reduces duplicated size checks and makes the phase inputs explicit,
+but it still dereferences the existing point-mass object vector for cached
+per-point dynamics fields.
+
+Focused verification after this slice:
+
+- `test_SoftDynamics` passed.
+- `StepAllocation.*Soft*` passed all 12 rows with zero `operator new`, zero raw
+  `malloc`, and zero counted base allocator growth in the measured windows.
+- Native `soft_bodies` 200-step checksum rows matched exactly between
+  `THREADS=1` and `THREADS=4`:
+  `skelPosL1=1.3242580728329107`,
+  `pointPosL1=0.12844450735027885`,
+  `pointVelL1=6.7481899526541707`, and
+  `pointWorldPosL1=189.54545901295526`.
+
 ## Rest-detection memory-hardening carryover
 
 After refreshing `origin/dart6-memory-hardening`, this branch first ported its
@@ -378,9 +418,9 @@ storage or SIMD-friendly SoA layout.
 
 ## Candidate implementation sequence
 
-1. Add an internal soft-body storage facade that can expose contiguous spans of
-   point positions, velocities, accelerations, forces, masses, and connectivity
-   without changing public `PointMass*` accessors.
+1. Extend the internal phase view into retained SoA scratch that can expose
+   contiguous spans of point positions, velocities, accelerations, forces,
+   masses, and connectivity without changing public `PointMass*` accessors.
 2. Keep existing `PointMass` objects initially, but mirror the hottest phase
    inputs into retained scratch so `updateBiasForce` and `updateArtInertia` can
    be measured as contiguous scalar loops.
