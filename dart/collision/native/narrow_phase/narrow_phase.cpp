@@ -31,6 +31,8 @@
  */
 
 #include <dart/collision/native/narrow_phase/box_box.hpp>
+#include <dart/collision/native/narrow_phase/capsule_box.hpp>
+#include <dart/collision/native/narrow_phase/capsule_sphere.hpp>
 #include <dart/collision/native/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/native/narrow_phase/sphere_box.hpp>
 #include <dart/collision/native/narrow_phase/sphere_sphere.hpp>
@@ -122,6 +124,40 @@ bool collideShapes(
     return collideSphereBox(*s, tf2, *b, tf1, result, option);
   }
 
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Sphere) {
+    const auto* c = static_cast<const CapsuleShape*>(shape1);
+    const auto* s = static_cast<const SphereShape*>(shape2);
+    return collideCapsuleSphere(*c, tf1, *s, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Sphere && type2 == ShapeType::Capsule) {
+    const auto* s = static_cast<const SphereShape*>(shape1);
+    const auto* c = static_cast<const CapsuleShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collideCapsuleSphere(*c, tf2, *s, tf1, local, opt);
+        });
+  }
+
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Box) {
+    const auto* c = static_cast<const CapsuleShape*>(shape1);
+    const auto* b = static_cast<const BoxShape*>(shape2);
+    return collideCapsuleBox(*c, tf1, *b, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Box && type2 == ShapeType::Capsule) {
+    const auto* b = static_cast<const BoxShape*>(shape1);
+    const auto* c = static_cast<const CapsuleShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collideCapsuleBox(*c, tf2, *b, tf1, local, opt);
+        });
+  }
+
   return false;
 }
 
@@ -200,6 +236,14 @@ bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)
   }
   if ((type1 == ShapeType::Sphere && type2 == ShapeType::Box)
       || (type1 == ShapeType::Box && type2 == ShapeType::Sphere)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Capsule && type2 == ShapeType::Sphere)
+      || (type1 == ShapeType::Sphere && type2 == ShapeType::Capsule)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Capsule && type2 == ShapeType::Box)
+      || (type1 == ShapeType::Box && type2 == ShapeType::Capsule)) {
     return true;
   }
   return false;

@@ -174,13 +174,13 @@ TEST(NarrowPhaseDispatch, SphereBoxBinaryCheckDoesNotAddContacts)
 TEST(NarrowPhaseDispatch, ReturnsFalseForUnroutedPairs)
 {
   SphereShape sphere(1.0);
-  CapsuleShape capsule(0.5, 2.0);
+  CylinderShape cylinder(0.5, 2.0);
 
   CollisionResult result;
   const bool hit = NarrowPhase::collide(
       &sphere,
       Eigen::Isometry3d::Identity(),
-      &capsule,
+      &cylinder,
       Eigen::Isometry3d::Identity(),
       CollisionOption(),
       result);
@@ -238,7 +238,7 @@ TEST(NarrowPhaseDispatch, BatchRecordsPerPairHits)
 {
   SphereShape sphere1(1.0);
   SphereShape sphere2(1.0);
-  CapsuleShape capsule(0.5, 2.0);
+  CylinderShape cylinder(0.5, 2.0);
 
   const std::array<NarrowPhasePair, 3> pairs{{
       {&sphere1,
@@ -250,7 +250,7 @@ TEST(NarrowPhaseDispatch, BatchRecordsPerPairHits)
        Eigen::Isometry3d::Identity(),
        translated(3.0, 0.0, 0.0)},
       {&sphere1,
-       &capsule,
+       &cylinder,
        Eigen::Isometry3d::Identity(),
        Eigen::Isometry3d::Identity()},
   }};
@@ -310,16 +310,151 @@ TEST(NarrowPhaseDispatch, BatchRejectsNullShapes)
       std::invalid_argument);
 }
 
-TEST(NarrowPhaseDispatch, ReportsP3bSupportedPairs)
+TEST(NarrowPhaseDispatch, ReportsP4SupportedPairs)
 {
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Sphere));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Box, ShapeType::Box));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Box));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Box, ShapeType::Sphere));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Capsule, ShapeType::Sphere));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Capsule));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Capsule, ShapeType::Box));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Box, ShapeType::Capsule));
 
-  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Capsule));
   EXPECT_FALSE(
       NarrowPhase::isSupported(ShapeType::Capsule, ShapeType::Capsule));
+  EXPECT_FALSE(
+      NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Cylinder));
+}
+
+TEST(NarrowPhaseDispatch, RoutesCapsuleSphereInBothOrders)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  SphereShape sphere(0.5);
+
+  CollisionResult capsuleFirstResult;
+  const bool capsuleFirstHit = NarrowPhase::collide(
+      &capsule,
+      Eigen::Isometry3d::Identity(),
+      &sphere,
+      translated(0.75, 0.0, 0.0),
+      CollisionOption(),
+      capsuleFirstResult);
+
+  ASSERT_TRUE(capsuleFirstHit);
+  ASSERT_EQ(1u, capsuleFirstResult.numContacts());
+  EXPECT_TRUE(capsuleFirstResult.getContact(0).normal.isApprox(
+      -Eigen::Vector3d::UnitX(), 1e-12));
+
+  CollisionResult sphereFirstResult;
+  const bool sphereFirstHit = NarrowPhase::collide(
+      &sphere,
+      translated(0.75, 0.0, 0.0),
+      &capsule,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption(),
+      sphereFirstResult);
+
+  ASSERT_TRUE(sphereFirstHit);
+  ASSERT_EQ(1u, sphereFirstResult.numContacts());
+  EXPECT_TRUE(sphereFirstResult.getContact(0).normal.isApprox(
+      Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+TEST(NarrowPhaseDispatch, CapsuleSphereBinaryCheckDoesNotAddContacts)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  SphereShape sphere(0.5);
+  CollisionOption option = CollisionOption::binaryCheck();
+
+  CollisionResult capsuleFirstResult;
+  const bool capsuleFirstHit = NarrowPhase::collide(
+      &capsule,
+      Eigen::Isometry3d::Identity(),
+      &sphere,
+      translated(0.75, 0.0, 0.0),
+      option,
+      capsuleFirstResult);
+
+  EXPECT_TRUE(capsuleFirstHit);
+  EXPECT_EQ(0u, capsuleFirstResult.numContacts());
+
+  CollisionResult sphereFirstResult;
+  const bool sphereFirstHit = NarrowPhase::collide(
+      &sphere,
+      translated(0.75, 0.0, 0.0),
+      &capsule,
+      Eigen::Isometry3d::Identity(),
+      option,
+      sphereFirstResult);
+
+  EXPECT_TRUE(sphereFirstHit);
+  EXPECT_EQ(0u, sphereFirstResult.numContacts());
+}
+
+TEST(NarrowPhaseDispatch, RoutesCapsuleBoxInBothOrders)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  CollisionResult capsuleFirstResult;
+  const bool capsuleFirstHit = NarrowPhase::collide(
+      &capsule,
+      translated(1.25, 0.0, 0.0),
+      &box,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption(),
+      capsuleFirstResult);
+
+  ASSERT_TRUE(capsuleFirstHit);
+  ASSERT_GE(capsuleFirstResult.numContacts(), 1u);
+  EXPECT_TRUE(capsuleFirstResult.getContact(0).normal.isApprox(
+      Eigen::Vector3d::UnitX(), 1e-12));
+
+  CollisionResult boxFirstResult;
+  const bool boxFirstHit = NarrowPhase::collide(
+      &box,
+      Eigen::Isometry3d::Identity(),
+      &capsule,
+      translated(1.25, 0.0, 0.0),
+      CollisionOption(),
+      boxFirstResult);
+
+  ASSERT_TRUE(boxFirstHit);
+  ASSERT_GE(boxFirstResult.numContacts(), 1u);
+  EXPECT_TRUE(boxFirstResult.getContact(0).normal.isApprox(
+      -Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+TEST(NarrowPhaseDispatch, CapsuleBoxBinaryCheckDoesNotAddContacts)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 1.0));
+  CollisionOption option = CollisionOption::binaryCheck();
+
+  CollisionResult capsuleFirstResult;
+  const bool capsuleFirstHit = NarrowPhase::collide(
+      &capsule,
+      translated(1.25, 0.0, 0.0),
+      &box,
+      Eigen::Isometry3d::Identity(),
+      option,
+      capsuleFirstResult);
+
+  EXPECT_TRUE(capsuleFirstHit);
+  EXPECT_EQ(0u, capsuleFirstResult.numContacts());
+
+  CollisionResult boxFirstResult;
+  const bool boxFirstHit = NarrowPhase::collide(
+      &box,
+      Eigen::Isometry3d::Identity(),
+      &capsule,
+      translated(1.25, 0.0, 0.0),
+      option,
+      boxFirstResult);
+
+  EXPECT_TRUE(boxFirstHit);
+  EXPECT_EQ(0u, boxFirstResult.numContacts());
 }
 
 TEST(NarrowPhaseDispatch, RespectsExhaustedContactBudget)

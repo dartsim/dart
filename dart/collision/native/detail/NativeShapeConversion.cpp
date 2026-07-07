@@ -35,6 +35,7 @@
 #include "dart/collision/native/shapes/shape.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 
@@ -59,6 +60,12 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
   if (shapeType == dynamics::BoxShape::getStaticType()) {
     const auto& box = static_cast<const dynamics::BoxShape&>(shape);
     return std::make_unique<native::BoxShape>(0.5 * box.getSize());
+  }
+
+  if (shapeType == dynamics::CapsuleShape::getStaticType()) {
+    const auto& capsule = static_cast<const dynamics::CapsuleShape&>(shape);
+    return std::make_unique<native::CapsuleShape>(
+        capsule.getRadius(), capsule.getHeight());
   }
 
   static std::set<std::string> warnedShapeTypes;
