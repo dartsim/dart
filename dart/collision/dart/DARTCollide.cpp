@@ -1909,7 +1909,8 @@ double distanceSquaredToAabb(
 
 bool addCachedSoftFaceCandidate(
     const std::vector<int>& pointFirstFaceByPointMass,
-    const Eigen::Vector3d& point,
+    const Eigen::Isometry3d& pointBodyTransform,
+    const Eigen::Vector3d& pointLocal,
     const Eigen::Vector3d& pointInFace,
     const Eigen::Vector3d& pointBodyOriginInFace,
     const Eigen::Matrix3d& faceRotation,
@@ -1970,7 +1971,7 @@ bool addCachedSoftFaceCandidate(
   }
 
   best.found = true;
-  best.point = point;
+  best.point = pointBodyTransform * pointLocal;
   best.normalFromPointBodyToFaceBody = -side * (faceRotation * face.normal);
   best.penetrationDepth = penetrationDepth;
   best.absSeparation = absSeparation;
@@ -1998,7 +1999,6 @@ bool findSoftPointFaceContact(
     return false;
 
   const Eigen::Vector3d& pointLocal = pointVertices[pointMassIndex];
-  const Eigen::Vector3d point = pointBodyTransform * pointLocal;
   const Eigen::Vector3d pointInFace = pointToFace * pointLocal;
   const Eigen::Vector3d boundsPadding
       = Eigen::Vector3d::Constant(kSoftContactShell + DART_COLLISION_EPS);
@@ -2017,7 +2017,8 @@ bool findSoftPointFaceContact(
          ++faceIndex) {
       addCachedSoftFaceCandidate(
           pointFirstFaceByPointMass,
-          point,
+          pointBodyTransform,
+          pointLocal,
           pointInFace,
           pointBodyOriginInFace,
           faceRotation,
@@ -2063,7 +2064,8 @@ bool findSoftPointFaceContact(
 
         addCachedSoftFaceCandidate(
             pointFirstFaceByPointMass,
-            point,
+            pointBodyTransform,
+            pointLocal,
             pointInFace,
             pointBodyOriginInFace,
             faceRotation,
