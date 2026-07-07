@@ -174,8 +174,15 @@ inline void addPointForceContribution(
     const Eigen::Vector3d& _localPosition,
     const Eigen::Vector3d& _force)
 {
-  _spatialForce.head<3>() += _localPosition.cross(_force);
-  _spatialForce.tail<3>() += _force;
+  _spatialForce[0]
+      += _localPosition[1] * _force[2] - _localPosition[2] * _force[1];
+  _spatialForce[1]
+      += _localPosition[2] * _force[0] - _localPosition[0] * _force[2];
+  _spatialForce[2]
+      += _localPosition[0] * _force[1] - _localPosition[1] * _force[0];
+  _spatialForce[3] += _force[0];
+  _spatialForce[4] += _force[1];
+  _spatialForce[5] += _force[2];
 }
 
 } // namespace
@@ -867,7 +874,6 @@ void SoftBodyNode::updateBiasForce(
     updateTransform();
   checkArticulatedInertiaUpdate();
 
-  Eigen::Vector6d pointBiasForceContribution = Eigen::Vector6d::Zero();
   for (std::size_t i = 0; i < phase.size(); ++i) {
     PointMass& pointMass = *phase.pointMasses[i];
     const PointMass::State& state = phase.states[i];
@@ -909,8 +915,6 @@ void SoftBodyNode::updateBiasForce(
     pointMass.mBeta.noalias()
         += mass * (pointMass.mEta + pointMass.mImplicitPsi * pointMass.mAlpha);
     DART_ASSERT(!math::isNan(pointMass.mBeta));
-    addPointForceContribution(
-        pointBiasForceContribution, pointMass.mX, pointMass.mBeta);
   }
 
   // Gravity force
@@ -938,7 +942,10 @@ void SoftBodyNode::updateBiasForce(
         childBodyNode->getPartialAcceleration());
   }
 
-  mBiasForce += pointBiasForceContribution;
+  for (std::size_t i = 0; i < phase.size(); ++i) {
+    const PointMass& pointMass = *phase.pointMasses[i];
+    addPointForceContribution(mBiasForce, pointMass.mX, pointMass.mBeta);
+  }
 
   // Verifycation
   DART_ASSERT(!math::isNan(mBiasForce));

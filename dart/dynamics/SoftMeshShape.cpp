@@ -42,6 +42,18 @@
 namespace dart {
 namespace dynamics {
 
+namespace {
+
+// SoftMeshShape vertices live in the parent soft-body frame. Reading the point
+// state directly avoids refreshing world-position caches when only local mesh
+// vertices are needed.
+Eigen::Vector3d getSoftMeshLocalVertex(const PointMass& pointMass)
+{
+  return pointMass.getPositions() + pointMass.getRestingPosition();
+}
+
+} // namespace
+
 SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
   : Shape(SOFT_MESH), mSoftBodyNode(_softBodyNode), mAssimpMesh(nullptr)
 {
@@ -115,7 +127,7 @@ void SoftMeshShape::updateBoundingBox() const
       = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
 
   for (const auto* pointMass : pointMasses) {
-    const Eigen::Vector3d& vertex = pointMass->getLocalPosition();
+    const Eigen::Vector3d vertex = getSoftMeshLocalVertex(*pointMass);
     min = min.cwiseMin(vertex);
     max = max.cwiseMax(vertex);
   }
@@ -174,7 +186,7 @@ void SoftMeshShape::update()
   const auto& pointMasses = mSoftBodyNode->getPointMasses();
   for (std::size_t i = 0; i < pointMasses.size(); ++i) {
     PointMass* itPointMass = pointMasses[i];
-    const Eigen::Vector3d& vertex = itPointMass->getLocalPosition();
+    const Eigen::Vector3d vertex = getSoftMeshLocalVertex(*itPointMass);
     itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
     mAssimpMesh->mVertices[i] = itAIVector3d;
   }
