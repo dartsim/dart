@@ -432,8 +432,7 @@ def configure_and_build(revision: Revision) -> tuple[Path, Path]:
 
     benchmark_candidates = [
         revision.build_dir / "bin/BM_INTEGRATION_soft_body",
-        revision.build_dir
-        / "tests/benchmark/integration/BM_INTEGRATION_soft_body",
+        revision.build_dir / "tests/benchmark/integration/BM_INTEGRATION_soft_body",
     ]
     benchmark_binary = None
     for candidate in benchmark_candidates:
@@ -441,7 +440,9 @@ def configure_and_build(revision: Revision) -> tuple[Path, Path]:
             benchmark_binary = candidate
             break
     if benchmark_binary is None:
-        raise SystemExit(f"BM_INTEGRATION_soft_body binary not found for {revision.label}")
+        raise SystemExit(
+            f"BM_INTEGRATION_soft_body binary not found for {revision.label}"
+        )
 
     headless_candidates = [
         revision.build_dir / "bin/soft_body_headless",
@@ -524,9 +525,7 @@ def load_rows(
 ) -> list[BenchmarkRow]:
     data = json.loads(json_path.read_text(encoding="utf-8"))
     iteration_rows: list[BenchmarkRow] = []
-    aggregate_rows: dict[
-        tuple[str, str, int], dict[str, BenchmarkRow]
-    ] = {}
+    aggregate_rows: dict[tuple[str, str, int], dict[str, BenchmarkRow]] = {}
     for benchmark in data.get("benchmarks", []):
         run_type = benchmark.get("run_type")
         if run_type not in {"iteration", "aggregate"}:
@@ -670,9 +669,7 @@ def checksums_match(
 
 def has_unsupported_shape_warning(output: str) -> bool:
     lowered = output.lower()
-    return any(
-        fragment in lowered for fragment in UNSUPPORTED_SHAPE_WARNING_FRAGMENTS
-    )
+    return any(fragment in lowered for fragment in UNSUPPORTED_SHAPE_WARNING_FRAGMENTS)
 
 
 def run_headless_checksum(
@@ -683,9 +680,7 @@ def run_headless_checksum(
     steps: str,
     output_dir: Path,
 ) -> tuple[dict[str, float] | None, str]:
-    log_path = (
-        output_dir / "logs" / f"{revision.label}-{detector}-{scene}-headless.log"
-    )
+    log_path = output_dir / "logs" / f"{revision.label}-{detector}-{scene}-headless.log"
     env = os.environ.copy()
     env["COLLISION_DETECTOR"] = detector
     env["THREADS"] = "1"
@@ -827,9 +822,7 @@ def write_cpu_change_graph(
             right = "!" * units + "." * (bar_width - units)
         label = f"{item['detector']}/{item['scene']}/{item['threads']}"
         scope = "apples" if item.get("apples_to_apples", True) else "diagnostic"
-        lines.append(
-            f"{label:<{label_width}}  {left}|{right}  {change:+.1f}%  {scope}"
-        )
+        lines.append(f"{label:<{label_width}}  {left}|{right}  {change:+.1f}%  {scope}")
     lines.append("```")
 
 
@@ -960,8 +953,7 @@ def fastest_rows(
         rows.append(row)
         if reference_row is None:
             failures.append(
-                f"{scene}/{threads}: {REFERENCE_DETECTOR} reference detector "
-                "missing"
+                f"{scene}/{threads}: {REFERENCE_DETECTOR} reference detector " "missing"
             )
         elif winner.detector != REFERENCE_DETECTOR:
             failures.append(
@@ -1110,8 +1102,7 @@ def write_markdown(
                         detector=item["detector"],
                         scene=item["scene"],
                         threads=item["threads"],
-                        reason=item.get("diagnostic_reason")
-                        or "not apples-to-apples",
+                        reason=item.get("diagnostic_reason") or "not apples-to-apples",
                     )
                 )
 
@@ -1196,9 +1187,7 @@ def main(argv: list[str]) -> int:
     run_errors: list[dict[str, str]] = []
     unsupported_detector_runs: dict[tuple[str, str], bool] = {}
 
-    def run_one(
-        revision: Revision, detector: str, cycle_index: int | None
-    ) -> bool:
+    def run_one(revision: Revision, detector: str, cycle_index: int | None) -> bool:
         binary, _ = revision_binaries[revision.label]
         if args.wait_for_local_dart_builds:
             wait_for_local_dart_idleness(
@@ -1232,12 +1221,11 @@ def main(argv: list[str]) -> int:
 
         suffix = "" if cycle_index is None else f"-cycle{cycle_index + 1}"
         log_path = output_dir / "logs" / f"{revision.label}-{detector}{suffix}.log"
-        unsupported_detector_runs[(revision.label, detector)] = (
-            unsupported_detector_runs.get((revision.label, detector), False)
-            or (
-                log_path.exists()
-                and has_unsupported_shape_warning(log_path.read_text(encoding="utf-8"))
-            )
+        unsupported_detector_runs[
+            (revision.label, detector)
+        ] = unsupported_detector_runs.get((revision.label, detector), False) or (
+            log_path.exists()
+            and has_unsupported_shape_warning(log_path.read_text(encoding="utf-8"))
         )
         parsed_rows = load_rows(revision, detector, json_path, requested_threads)
         if not parsed_rows:
@@ -1297,10 +1285,7 @@ def main(argv: list[str]) -> int:
     )
 
     all_rows: dict[str, dict[tuple[str, str, int], BenchmarkRow]] = {
-        label: {
-            key: aggregate_sample_rows(rows)
-            for key, rows in row_samples.items()
-        }
+        label: {key: aggregate_sample_rows(rows) for key, rows in row_samples.items()}
         for label, row_samples in all_row_samples.items()
     }
 
@@ -1321,9 +1306,7 @@ def main(argv: list[str]) -> int:
     fastest, detector_winner_failures = fastest_rows(
         current_rows, detectors, eligible_detectors
     )
-    run_error_keys = {
-        (error["revision"], error["detector"]) for error in run_errors
-    }
+    run_error_keys = {(error["revision"], error["detector"]) for error in run_errors}
     coverage_failures = []
     for label, rows in all_rows.items():
         expected_count = 0
