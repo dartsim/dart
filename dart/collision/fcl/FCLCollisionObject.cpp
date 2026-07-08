@@ -158,22 +158,8 @@ void FCLCollisionObject::updateEngineData()
     const auto& pointMasses = softBodyNode->getPointMasses();
     DART_ASSERT(mesh->mNumVertices == pointMasses.size());
 
-    const auto& pointStates = softBodyNode->mAspectState.mPointStates;
-    const auto& pointProperties = softBodyNode->mAspectProperties.mPointProps;
-    const bool useContiguousPointData
-        = pointStates.size() == pointMasses.size()
-          && pointProperties.size() == pointMasses.size();
     const auto readLocalVertex
         = [&](std::size_t index, double& x, double& y, double& z) {
-            if (useContiguousPointData) {
-              const auto& position = pointStates[index].mPositions;
-              const auto& restingPosition = pointProperties[index].mX0;
-              x = position[0] + restingPosition[0];
-              y = position[1] + restingPosition[1];
-              z = position[2] + restingPosition[2];
-              return;
-            }
-
             const Eigen::Vector3d& vertex
                 = pointMasses[index]->getLocalPosition();
             x = vertex[0];
