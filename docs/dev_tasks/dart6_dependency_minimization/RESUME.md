@@ -47,7 +47,7 @@ contract to the ported `dart::collision::native` engine (BruteForce
 broadphase → narrowphase dispatcher → DART 6 `Contact`), **bypassing the
 EnTT world layer** by reusing DART 6's existing `shared_ptr`-based object
 manager. FCL stays default; no new dependency; C++17. The plan slices
-phase 2 into PRs **P1–P9** (+ optional P10), each gz-gated and
+phase 2 into PRs **P1–P9** (+ P10 coverage), each gz-gated and
 scope-diff-guarded.
 
 - **P1** (BroadPhase base + BruteForce): **#3303** — **merged**.
@@ -62,16 +62,19 @@ scope-diff-guarded.
 - **P5** (convex foundation + capsule-capsule): **#3322** — **merged**.
 - **P6** (cylinder collision pairs): **#3324** — **merged**.
 - **P7** (mesh collision pairs): **#3325** — **merged**.
+- **P8/P9** (distance module + plane primitive/convex coverage): **#3343** —
+  **merged**.
 
-**Next: P8/P9 — distance module + plane primitive/convex coverage** on
-`feature/native-distance-plane`. Keep this as one PR to minimize CI overhead:
-add `distance.{hpp,cpp}`, `plane_sphere.{hpp,cpp}`, dispatcher plane routes,
-focused distance/plane tests, and native plane benchmark rows. **Do not** add a
+**Next: P10 — mixed-scene detector parity coverage** on
+`feature/native-mixed-scene-parity`. Keep this as one small test/docs PR: add a
+native adapter boundary test that runs one deterministic mixed primitive scene
+through FCL, the legacy DART detector, and the new native detector, then compares
+the unordered colliding frame-pair set. **Do not** add a
 `CollisionDetectorType::Native` enum or touch `World`/`ConstraintSolver`/
 `WorldConfig`; FCL remains the default until phase 6.
 
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
-PRs, worktrees, gotchas, and exact P8/P9 next steps).
+PRs, worktrees, gotchas, and exact P10 next steps).
 
 ## Standing constraints
 

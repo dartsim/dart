@@ -25,7 +25,7 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
 | --- | --- | --- |
 | 0 | Baseline evidence packet (incumbent A/B envelope + default-flip verdict) | ✅ merged (#3271) |
 | 1 | Native math core (aabb/gjk/mpr/box_box/sphere_sphere/shapes/span shim) internal-only | ✅ merged (#3281) |
-| 2 | DART 6 detector adapter over the native core (bridge, sliced P1–P9) | 🔄 **in progress** — see §4 |
+| 2 | DART 6 detector adapter over the native core (bridge, sliced P1–P9 + P10 coverage) | 🔄 **in progress** — see §4 |
 | 3 | Capability parity (distance→FCL, raycast→Bullet, CCD, manifolds, voxel) | ⬜ not started |
 | 4 | Evidence-driven performance optimization (broadphase, SIMD, manifold reuse) | ⬜ not started |
 | 5 | Bullet/ODE/FCL facade decision (must keep gz subclassing) | ⬜ not started |
@@ -54,8 +54,10 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
 - **#3322** phase-2 **P5**: convex foundation and capsule-capsule.
 - **#3324** phase-2 **P6**: cylinder collision pairs.
 - **#3325** phase-2 **P7**: mesh collision pairs.
+- **#3343** phase-2 **P8/P9**: distance module and plane primitive/convex
+  coverage.
 
-`origin/release-6.20` tip at this refresh: `44645974b35` (moves as the
+`origin/release-6.20` tip at this refresh: `c1deaca67b8` (moves as the
 maintainer merges; **always re-fetch before branching/capturing**).
 
 ## 4. Phase 2 — the active work (plan: `07`, PR slices P1–P9 + P10)
@@ -75,27 +77,24 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 | **P5** | `convex_convex` (keystone) + `capsule_capsule` (first span pair) | ✅ **merged (#3322)** |
 | **P6** | `cylinder_collision` (needs convex_convex) | ✅ **merged (#3324)** |
 | **P7** | `mesh_mesh` (needs convex_convex; largest file) | ✅ **merged (#3325)** |
-| **P8** | `distance` module (engine-only; needs span shim) | 🔄 active on `feature/native-distance-plane`, combined with P9 |
-| **P9** | `plane_sphere` (needs `distance`) → completes primitive+convex+mesh+plane | 🔄 active on `feature/native-distance-plane`, combined with P8 |
-| **P10** | (optional) mixed-scene fcl/dart/native parity integration test | after P9 |
+| **P8** | `distance` module (engine-only; needs span shim) | ✅ **merged (#3343)**, combined with P9 |
+| **P9** | `plane_sphere` (needs `distance`) → completes primitive+convex+mesh+plane | ✅ **merged (#3343)**, combined with P8 |
+| **P10** | mixed-scene fcl/dart/native parity integration test | 🔄 active on `feature/native-mixed-scene-parity` |
 
-### Exact next step: execute P8/P9
+### Exact next step: execute P10
 
-1. Continue with the consolidated **P8/P9** branch
-   `feature/native-distance-plane`, based on the current
-   `origin/release-6.20`.
-2. Keep it as one PR to avoid another CI wave: port `distance.{hpp,cpp}`,
-   `plane_sphere.{hpp,cpp}`, dispatcher plane routes, and focused distance /
-   plane-pair tests. `NativeCollisionDetector::distance()` remains stubbed in
-   phase 2; this slice only provides the engine distance helpers needed by the
-   plane pair implementation.
-3. Include performance evidence for the newly routed plane rows. Baseline
-   `origin/release-6.20` plus benchmark rows should report unsupported; PR head
-   should report median CPU time, CV, and contacts/iter for
-   `BM_NativePlane{Sphere,Box,Capsule,Convex}`.
-4. After P8/P9 merges, phase 2 is functionally complete except for optional
-   **P10** mixed-scene fcl/dart/native parity coverage.
-5. Gates for **every** phase-2 PR (see `07` §3 — note the corrected commands):
+1. Continue with the **P10** branch `feature/native-mixed-scene-parity`, based
+   on the current `origin/release-6.20`.
+2. Keep it as one small PR to avoid unnecessary CI overhead: add a native adapter
+   boundary test that runs one deterministic mixed primitive scene through
+   `fcl`, legacy `dart`, and `native`, then compares the unordered colliding
+   frame-pair set. FCL does not support DART 6 `CapsuleShape`, so the
+   three-detector scene is limited to the common primitive subset; capsule
+   coverage remains in the focused native/DART pair tests.
+3. After P10 merges, phase 2 is functionally complete and the next executable
+   lane is **phase 3** capability parity (distance detector wiring, raycast,
+   CCD, manifolds, voxel/octree replacement).
+4. Gates for **every** phase-2 PR (see `07` §3 — note the corrected commands):
    Release build + **explicit Debug build** (`pixi run build` is Release-only);
    **run** the tests with `ctest --test-dir build/default/cpp/Release -R
    UNIT_collision_native --output-on-failure` (`pixi run test-all` only *builds*);
@@ -106,13 +105,14 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 
 ## 5. Open PRs / loose ends
 
-- **P8/P9 distance + plane work** — active on `feature/native-distance-plane`
-  as one PR-sized slice to minimize CI overhead.
+- **P10 mixed-scene detector parity** — active on
+  `feature/native-mixed-scene-parity` as one small PR-sized slice to minimize CI
+  overhead.
 - **#3283 (main sphere-sphere `enableContact` fix)** — MERGED; main and
   `release-6.20` now agree on the squared binary predicate for the eventual
   phase-6 diff.
-- **#3341** is the only current open `release-6.20` PR seen during this
-  refresh, and it belongs to the separate performance-generalization lane.
+- **#3348** is the only current open `release-6.20` PR seen during this refresh,
+  and it belongs to the separate MSVC/toolchain policy lane.
 
 ## 6. Load-bearing invariants (do not violate)
 
