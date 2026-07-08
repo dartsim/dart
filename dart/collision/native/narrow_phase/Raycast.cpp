@@ -725,7 +725,11 @@ bool raycastConvex(
   double entryDistance = 0.0;
   double exitDistance = maxDist;
   Eigen::Vector3d entryNormal = -ray.direction;
+  Eigen::Vector3d exitNormal = ray.direction;
+  Eigen::Vector3d boundaryNormal = -ray.direction;
   bool startsInside = true;
+  bool originOnBoundary = false;
+  bool hasExitWithinMaxDistance = false;
 
   for (const auto& face : faces) {
     const Eigen::Vector3d worldPoint = convexTransform * face.point;
@@ -746,16 +750,33 @@ bool raycastConvex(
         entryDistance = candidateEntry;
         entryNormal = worldNormal;
       }
+    } else if (std::abs(signedDistance) <= kEpsilon) {
+      originOnBoundary = true;
+      boundaryNormal = worldNormal;
     } else if (directionDot > kEpsilon) {
       const double candidateExit = -signedDistance / directionDot;
-      if (candidateExit < exitDistance) {
+      if (candidateExit >= 0.0 && candidateExit <= exitDistance) {
         exitDistance = candidateExit;
+        exitNormal = worldNormal;
+        hasExitWithinMaxDistance = true;
       }
     }
 
     if (entryDistance - exitDistance > kEpsilon) {
       return false;
     }
+  }
+
+  if (startsInside && !originOnBoundary) {
+    if (!hasExitWithinMaxDistance) {
+      return false;
+    }
+
+    result.hit = true;
+    result.distance = exitDistance;
+    result.point = ray.pointAt(result.distance);
+    result.normal = exitNormal;
+    return true;
   }
 
   if (entryDistance < 0.0 || entryDistance > maxDist) {
@@ -765,9 +786,9 @@ bool raycastConvex(
   result.hit = true;
   result.distance = startsInside ? 0.0 : entryDistance;
   result.point = ray.pointAt(result.distance);
-  result.normal = startsInside ? -ray.direction : entryNormal;
+  result.normal = startsInside ? boundaryNormal : entryNormal;
 
-  if (result.normal.dot(ray.direction) > 0.0) {
+  if (!startsInside && result.normal.dot(ray.direction) > 0.0) {
     result.normal = -result.normal;
   }
 
