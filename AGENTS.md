@@ -47,12 +47,17 @@ If `pixi` is unavailable, install it from [https://pixi.sh](https://pixi.sh) and
 - Documentation lives in `docs/` and `tutorials/`. For docs placement on this
   release branch, read `docs/README.md`, `docs/information-architecture.md`,
   and `docs/AGENTS.md`.
+- DART 6.20 uses `docs/plans/` for living roadmap state, `docs/design/` for
+  durable compatibility and architecture decisions, `docs/background/` for
+  reusable theory/reference context, and `docs/assets/` for durable repository
+  documentation assets.
 - Examples demonstrating API usage can be found in `examples/`.
 
 ## AI Workflows
 
 Release-branch AI workflow guidance lives in `docs/ai/README.md`,
-`docs/ai/principles.md`, and `docs/ai/workflows.md`.
+`docs/ai/principles.md`, `docs/ai/terminology.md`,
+`docs/ai/orchestration.md`, and `docs/ai/workflows.md`.
 
 Editable sources live in `.claude/commands/` and `.claude/skills/`. Generated
 Codex and OpenCode entrypoints live in `.codex/skills/` and

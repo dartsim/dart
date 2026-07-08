@@ -12,6 +12,8 @@ Read these files first:
 @AGENTS.md
 @docs/ai/principles.md
 @docs/ai/north-star.md
+@docs/ai/orchestration.md
+@docs/plans/dashboard.md
 @docs/ai/verification.md
 @docs/dev_tasks/README.md
 

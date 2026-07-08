@@ -60,6 +60,11 @@
     route docs-update workflows through it so DART 6.20 agents promote durable
     task facts by lifecycle before retiring `docs/dev_tasks/` folders.
 
+  * Add release-branch AI-infra buckets for living plans, durable design
+    rationale, theory/reference background, and reusable documentation assets,
+    with `dart-new-team-task` routed through the DART 6.20 plan dashboard and
+    work-packet contract.
+
   * Add the release-branch `dart-retro` AI workflow so maintainers and agents
     can capture durable lessons from completed DART 6.20 work through
     `/dart-retro` or `$dart-retro`.

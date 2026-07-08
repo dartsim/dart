@@ -28,7 +28,10 @@ surface affects shared behavior.
   ```
 
 - For ordinary docs-only changes on this release branch, run `pixi run lint`.
-  If the docs affect Read the Docs pages, run `pixi run docs-build` when
+- For docs placement, AI operating-model, plan/dashboard, or workflow-source
+  changes, also run `pixi run check-ai-commands`; run
+  `pixi run sync-ai-commands` first when `.claude/` sources changed.
+- If the docs affect Read the Docs pages, run `pixi run docs-build` when
   practical.
 
 ## Visual Verification (Headless Capture)
