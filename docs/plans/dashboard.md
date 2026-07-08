@@ -21,13 +21,15 @@ Priority order is document order. Active implementation handoff remains in
 
 ### PLAN-621: Active Contact Performance Generalization
 
-- Owner doc: [performance generalization](../dev_tasks/dart6_performance_generalization/README.md)
-- Status: Active
-- Horizon: Now
+- Owner doc: [contact performance decisions](../design/dart6_contact_performance.md)
+- Status: Parked
+- Horizon: Parked
 - Dimension: Performance, determinism, and Gazebo/gz-sim compatibility.
-- Next step: Execute the next unblocked WP-PG packet from the performance
-  task dashboard, keeping behavior-preserving performance work separate from
-  behavior-changing contact or sleeping decisions.
+- Next step: Do not claim another WP-PG implementation packet. Reopen
+  DART 6 contact-performance implementation only with a maintainer-approved
+  D3/D7/D8 behavior envelope, new profile evidence that reverses an
+  evidence-gated candidate, or native-collision-port evidence that changes the
+  detector decision.
 - Gate: `pixi run lint`; capped C++ build; detector-specific final-state
   hash guards; benchmark evidence in the task-required report shape;
   `pixi run -e gazebo test-gz` for collision, solver, or `World::step`

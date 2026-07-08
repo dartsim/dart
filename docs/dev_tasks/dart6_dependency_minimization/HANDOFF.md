@@ -183,8 +183,9 @@ in `05-artifacts.md` and are checkout-relative (runnable from any clone).
 
 ## 10. Coordination
 
-The perf-generalization lane (`../dart6_performance_generalization/`) tracks this
-port as **WS-F (external owner)**; its WP-PG.42 (SoA broadphase) gates on this
-lane's phase status, its D8 (manifold reduction) re-cuts at this lane's phase 3,
-and its WS-B depth re-reviews at this lane's phase 5. Do not pick up WP-PG.*
-packets from this folder. All remote mutations (merges) are the maintainer's.
+The retired contact-performance round records this port's old WS-F sequencing
+hooks in `../../design/dart6_contact_performance.md`: #3299 consumed this lane's
+phase status for DART-native broadphase SIMD, D8 manifold reduction re-cuts at
+this lane's phase 3, and ODE lane depth re-reviews at this lane's phase 5. Do
+not pick up WP-PG.* packets from this folder. New contact-performance work needs
+a fresh task. All remote mutations (merges) are the maintainer's.

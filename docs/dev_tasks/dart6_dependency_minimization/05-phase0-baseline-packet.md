@@ -22,11 +22,10 @@
 - Host: 13th Gen Intel Core i9-13950HX, 32 CPUs, `powersave` governor
   (CPU scaling enabled — RTF cells carry noise; hash/contact/resting
   cells do not). Toolchain: pixi 0.72.0 default env, GCC 15.2.0.
-- Protocol: canonical guard scenes from
-  `../dart6_performance_generalization/01-baseline-evidence.md` (S2/S3/
-  S4/S5 reused cell-for-cell; S1/S6 are perf-lane-owned and
-  cross-referenced from its WP-PG.01 packet, PR #3263), plus this lane's
-  delta rows g120 (continuity with the 2026-07-03 scoping probe, now
+- Protocol: canonical guard scenes captured by the retired
+  contact-performance round's WP-PG.01 packet, PR #3263 (S2/S3/S4/S5 reused
+  cell-for-cell; S1/S6 are perf-lane-owned), plus this lane's delta rows g120
+  (continuity with the 2026-07-03 scoping probe, now
   under `--max-contacts-per-pair 4` — hashes are not comparable to the
   uncapped probe) and g3000 (scoping-doc scale row). ODE rows are only
   valid with `--max-contacts-per-pair 4`.
@@ -101,7 +100,7 @@ Command shapes (`CB=./build/default/cpp/Release/bin/contact_benchmark`,
   same binary reproduce their hashes bit-exactly (`0xe0fe5d6773190ca1`,
   `0xbd8a15e877f70822`).
 - **Determinism (cross-SHA):** S4/S5 dart, FCL, and ODE hashes still
-  match the perf lane's WP-PG.01 cells (PR #3263, captured at
+  match the retired perf lane's WP-PG.01 cells (PR #3263, captured at
   `5bee91ad6be`) bit-for-bit. Bullet's generated-scene hashes changed
   after the release-branch solver/resting fixes, so this recaptured
   packet is the current Bullet baseline for this lane.

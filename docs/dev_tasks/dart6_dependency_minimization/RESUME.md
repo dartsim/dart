@@ -14,12 +14,12 @@ Every workstream except the **native collision port** is complete:
 - Native-replacement lane: complete (#3076 convhull, #3078 ikfast, #3081
   imgui, #3088 odelcpsolver, #3116 GLUT+lodepng, #3122 dart/integration).
 - Native-collision-port lane (this folder's remaining executable work):
-  phases 0–7 in `03-native-collision-port-scoping.md`. The perf task
-  (`../dart6_performance_generalization/`) tracks this lane as **WS-F,
-  external owner** — sequencing hooks: its WP-PG.42 (SoA broadphase) is
-  gated on this lane's phase status; its D8 decision (manifold reduction)
-  is re-cut at this lane's phase 3; its WS-B depth is re-reviewed at this
-  lane's phase 5.
+  phases 0–7 in `03-native-collision-port-scoping.md`. The retired
+  contact-performance round records this lane's sequencing hooks in
+  [../../design/dart6_contact_performance.md](../../design/dart6_contact_performance.md):
+  #3299 consumed this lane's phase status for DART-native broadphase SIMD, D8
+  manifold reduction re-cuts at this lane's phase 3, and ODE lane depth is
+  re-reviewed at this lane's phase 5.
 
 ## Next step
 
@@ -89,5 +89,6 @@ PRs, worktrees, gotchas, and exact P10 next steps).
   constructors (`dart/constraint/ConstraintSolver.cpp`, lines 336/353 as
   of `1e6a8332a730`; still FCL after #3281) — the phase-6 flip must change
   both.
-- Do not pick up perf-lane packets (WP-PG.*) from this folder; that lane
-  has its own owner and dashboard.
+- Do not pick up retired perf-lane packets (WP-PG.*) from this folder; new
+  contact-performance work needs a fresh task and the reopening criteria in
+  `../../design/dart6_contact_performance.md`.
