@@ -36,17 +36,48 @@
 
 namespace dart::collision::native {
 
-namespace {
-
 //==============================================================================
-bool overlapsFast(const Aabb& a, const Aabb& b)
+BruteForceBroadPhase::Entry BruteForceBroadPhase::makeEntry(
+    std::size_t id, const Aabb& aabb)
 {
-  return (a.min.x() <= b.max.x() && a.max.x() >= b.min.x())
-         && (a.min.y() <= b.max.y() && a.max.y() >= b.min.y())
-         && (a.min.z() <= b.max.z() && a.max.z() >= b.min.z());
+  return BruteForceBroadPhase::Entry{
+      id,
+      aabb,
+      aabb.min.x(),
+      aabb.min.y(),
+      aabb.min.z(),
+      aabb.max.x(),
+      aabb.max.y(),
+      aabb.max.z()};
 }
 
-} // namespace
+//==============================================================================
+void BruteForceBroadPhase::updateEntryAabb(Entry& entry, const Aabb& aabb)
+{
+  entry.aabb = aabb;
+  entry.minX = aabb.min.x();
+  entry.minY = aabb.min.y();
+  entry.minZ = aabb.min.z();
+  entry.maxX = aabb.max.x();
+  entry.maxY = aabb.max.y();
+  entry.maxZ = aabb.max.z();
+}
+
+//==============================================================================
+bool BruteForceBroadPhase::overlapsFast(const Entry& a, const Entry& b)
+{
+  return (a.minX <= b.maxX && a.maxX >= b.minX)
+         && (a.minY <= b.maxY && a.maxY >= b.minY)
+         && (a.minZ <= b.maxZ && a.maxZ >= b.minZ);
+}
+
+//==============================================================================
+bool BruteForceBroadPhase::overlapsFast(const Entry& entry, const Aabb& aabb)
+{
+  return (entry.minX <= aabb.max.x() && entry.maxX >= aabb.min.x())
+         && (entry.minY <= aabb.max.y() && entry.maxY >= aabb.min.y())
+         && (entry.minZ <= aabb.max.z() && entry.maxZ >= aabb.min.z());
+}
 
 //==============================================================================
 void BruteForceBroadPhase::clear()
@@ -59,7 +90,7 @@ void BruteForceBroadPhase::add(std::size_t id, const Aabb& aabb)
 {
   const auto existing = indices_.find(id);
   if (existing != indices_.end()) {
-    entries_[existing->second].aabb = aabb;
+    updateEntryAabb(entries_[existing->second], aabb);
     return;
   }
 
@@ -70,7 +101,7 @@ void BruteForceBroadPhase::add(std::size_t id, const Aabb& aabb)
       [](const Entry& entry, std::size_t value) { return entry.id < value; });
   const auto index
       = static_cast<std::size_t>(std::distance(entries_.begin(), position));
-  entries_.insert(position, Entry{id, aabb});
+  entries_.insert(position, makeEntry(id, aabb));
   rebuildIndicesFrom(index);
 }
 
@@ -78,7 +109,7 @@ void BruteForceBroadPhase::update(std::size_t id, const Aabb& aabb)
 {
   const auto it = indices_.find(id);
   if (it != indices_.end())
-    entries_[it->second].aabb = aabb;
+    updateEntryAabb(entries_[it->second], aabb);
 }
 
 void BruteForceBroadPhase::remove(std::size_t id)
@@ -101,7 +132,7 @@ std::vector<BroadPhasePair> BruteForceBroadPhase::queryPairs() const
     const auto& entry1 = entries_[i];
     for (std::size_t j = i + 1; j < entries_.size(); ++j) {
       const auto& entry2 = entries_[j];
-      if (overlapsFast(entry1.aabb, entry2.aabb))
+      if (overlapsFast(entry1, entry2))
         pairs.emplace_back(entry1.id, entry2.id);
     }
   }
@@ -116,8 +147,7 @@ bool BruteForceBroadPhase::visitPairs(
     const auto& entry1 = entries_[i];
     for (std::size_t j = i + 1; j < entries_.size(); ++j) {
       const auto& entry2 = entries_[j];
-      if (overlapsFast(entry1.aabb, entry2.aabb)
-          && !visitor(entry1.id, entry2.id)) {
+      if (overlapsFast(entry1, entry2) && !visitor(entry1.id, entry2.id)) {
         return false;
       }
     }
@@ -132,7 +162,7 @@ std::vector<std::size_t> BruteForceBroadPhase::queryOverlapping(
   std::vector<std::size_t> result;
 
   for (const auto& entry : entries_) {
-    if (overlapsFast(entry.aabb, aabb))
+    if (overlapsFast(entry, aabb))
       result.push_back(entry.id);
   }
 

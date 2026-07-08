@@ -37,6 +37,7 @@
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/DistanceFilter.hpp"
 #include "dart/collision/dart/DARTCollide.hpp"
+#include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/native/NativeCollisionGroup.hpp"
 #include "dart/collision/native/NativeCollisionObject.hpp"
 #include "dart/collision/native/PersistentManifoldCache.hpp"
@@ -52,6 +53,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -141,16 +143,11 @@ bool shouldSkipPair(
 }
 
 //==============================================================================
-bool isPlaneObject(const NativeCollisionObject* object)
-{
-  return object != nullptr && object->isPlaneShape();
-}
-
-//==============================================================================
 bool shouldUseDartSoftFallback(
     const NativeCollisionObject* object1, const NativeCollisionObject* object2)
 {
-  return object1->usesDartFallbackShape() || object2->usesDartFallbackShape();
+  return object1->usesSoftMeshFallbackShape()
+         || object2->usesSoftMeshFallbackShape();
 }
 
 //==============================================================================
@@ -725,12 +722,26 @@ bool processDartSoftFallbackPair(
   pairResult.clear();
   auto* dartFallback1 = object1->getDartFallbackObject();
   auto* dartFallback2 = object2->getDartFallbackObject();
+  const bool object1Plane = object1->isPlaneShape();
+  const bool object2Plane = object2->isPlaneShape();
   bool hit = false;
-  if (isPlaneObject(object1) && !isPlaneObject(object2)) {
-    hit = collidePlaneShape(dartFallback1, dartFallback2, true, pairResult)
+  if (object1Plane && !object2Plane) {
+    hit = collidePlaneShape(
+              dartFallback1,
+              dartFallback2,
+              dartFallback1->getWorldTransformForCollision(),
+              dartFallback2->getWorldTransformForCollision(),
+              true,
+              pairResult)
           != 0;
-  } else if (!isPlaneObject(object1) && isPlaneObject(object2)) {
-    hit = collidePlaneShape(dartFallback2, dartFallback1, false, pairResult)
+  } else if (!object1Plane && object2Plane) {
+    hit = collidePlaneShape(
+              dartFallback2,
+              dartFallback1,
+              dartFallback2->getWorldTransformForCollision(),
+              dartFallback1->getWorldTransformForCollision(),
+              false,
+              pairResult)
           != 0;
   } else {
     hit = collide(dartFallback1, dartFallback2, pairResult) != 0;
@@ -768,6 +779,9 @@ bool processNativePair(
     return processDartSoftFallbackPair(
         object1, object2, option, result, collisionFound, fallbackPairResult);
   }
+
+  if (!object1->getNativeShape() || !object2->getNativeShape())
+    return false;
 
   if (result && result->getNumContacts() >= option.maxNumContacts)
     return true;
@@ -867,7 +881,9 @@ void NativeCollisionDetector::notifyCollisionObjectDestroying(
 std::shared_ptr<CollisionDetector>
 NativeCollisionDetector::cloneWithoutCollisionObjects() const
 {
-  return NativeCollisionDetector::create();
+  auto clone = NativeCollisionDetector::create();
+  clone->setNumCollisionThreads(mNumCollisionThreads);
+  return clone;
 }
 
 //==============================================================================
@@ -887,6 +903,24 @@ const std::string& NativeCollisionDetector::getStaticType()
 std::unique_ptr<CollisionGroup> NativeCollisionDetector::createCollisionGroup()
 {
   return std::make_unique<NativeCollisionGroup>(shared_from_this());
+}
+
+//==============================================================================
+void NativeCollisionDetector::setNumCollisionThreads(std::size_t numThreads)
+{
+  if (numThreads == 0u) {
+    numThreads = std::thread::hardware_concurrency();
+    if (numThreads == 0u)
+      numThreads = 1u;
+  }
+
+  mNumCollisionThreads = std::max<std::size_t>(1u, numThreads);
+}
+
+//==============================================================================
+std::size_t NativeCollisionDetector::getNumCollisionThreads() const
+{
+  return mNumCollisionThreads;
 }
 
 //==============================================================================
@@ -912,8 +946,8 @@ bool NativeCollisionDetector::collide(
   bool collisionFound = false;
   ScratchCollisionResult fallbackPairResult;
   nativeGroup->mBroadPhase->visitPairs([&](std::size_t id1, std::size_t id2) {
-    auto* object1 = nativeGroup->mIdToObject.at(id1);
-    auto* object2 = nativeGroup->mIdToObject.at(id2);
+    auto* object1 = nativeGroup->mIdToObject[id1];
+    auto* object2 = nativeGroup->mIdToObject[id2];
     return !processNativePair(
         object1, object2, option, result, collisionFound, fallbackPairResult);
   });

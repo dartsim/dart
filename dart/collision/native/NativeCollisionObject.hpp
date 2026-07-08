@@ -69,6 +69,8 @@ public:
 
   bool usesDartFallbackShape() const;
 
+  bool usesSoftMeshFallbackShape() const;
+
   bool isPlaneShape() const;
 
 protected:
@@ -87,6 +89,7 @@ private:
   Eigen::Isometry3d mNativeTransform{Eigen::Isometry3d::Identity()};
   native::Aabb mNativeAabb;
   bool mUsesDartFallbackShape{false};
+  bool mUsesSoftMeshFallbackShape{false};
   bool mIsPlaneShape{false};
   std::size_t mLastKnownShapeId{std::numeric_limits<std::size_t>::max()};
   std::size_t mLastKnownShapeVersion{0u};
