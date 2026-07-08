@@ -118,7 +118,7 @@ dynamics::SimpleFramePtr makeFrame(
 }
 
 //==============================================================================
-class ShapeFramePairCollisionFilter : public collision::CollisionFilter
+class ShapeFramePairCollisionFilter final : public collision::CollisionFilter
 {
 public:
   void addIgnoredPair(
@@ -150,7 +150,7 @@ private:
 };
 
 //==============================================================================
-class ShapeFramePairDistanceFilter : public collision::DistanceFilter
+class ShapeFramePairDistanceFilter final : public collision::DistanceFilter
 {
 public:
   void addIgnoredPair(
@@ -182,7 +182,7 @@ private:
 };
 
 //==============================================================================
-class OrderedShapeFrameDistanceFilter : public collision::DistanceFilter
+class OrderedShapeFrameDistanceFilter final : public collision::DistanceFilter
 {
 public:
   OrderedShapeFrameDistanceFilter(
