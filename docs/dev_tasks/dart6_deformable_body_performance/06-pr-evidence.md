@@ -3,6 +3,9 @@
 Captured on 2026-07-05 from local branch
 `js/dart6-deformable-performance`.
 
+Updated on 2026-07-07 from local branch
+`wp-db-soft-skel-allocation-gates` at commit `649926d28dc`.
+
 ## Baseline setup
 
 The soft-body benchmark harness was used for the baseline and PR rows. Because
@@ -38,6 +41,67 @@ evidence, not final threshold-quality benchmark results. The benchmark now runs
 one warmup `World::step()` while timing is paused so the measured loop reflects
 steady-state soft-body stepping rather than one-time collision/simulation
 preparation.
+
+## 2026-07-07 correction benchmark
+
+The latest WP-DB.06 slice restores the prior two-pass
+`SoftBodyNode::updateArtInertia()` scalar timing after benchmark experiments
+showed the simplified point-mass `Pi` formula and direct cached-position
+variants could move FCL rows in the wrong direction. The retained change keeps
+the span-backed phase view and adds only a conservative
+`updateBiasForce()` connection-loop cleanup.
+
+Command:
+
+```bash
+pixi run python scripts/compare_soft_body_performance.py \
+  --current HEAD \
+  --parent HEAD^1 \
+  --base origin/release-6.20 \
+  --detectors fcl,dart \
+  --threads 1,16 \
+  --benchmark-min-time 0.2s \
+  --benchmark-repetitions 7 \
+  --benchmark-cycles 2 \
+  --benchmark-run-order detector \
+  --correctness-scenes soft_cubes,soft_bodies \
+  --correctness-steps 200 \
+  --wait-for-local-dart-builds \
+  --idle-max-load-1m 4 \
+  --idle-cooldown 5 \
+  --output-dir .benchmark_results/wp-db06-inertia-conn-649926-parent-43347c-base
+```
+
+Results:
+
+- Artifact:
+  `.benchmark_results/wp-db06-inertia-conn-649926-parent-43347c-base/summary.md`.
+- Revisions: current `649926d28dc`, parent `43347c78514`,
+  base `2d898081931`.
+- Evaluator verdict: `PASS`.
+- Detector equivalence: native `dart` is the reference detector; `fcl` is
+  checksum-equivalent on the correctness scenes.
+- Current detector ranking: native `dart` is the winner for every tracked
+  current scene/thread row.
+
+| Scene | Threads | Native CPU ms | FCL CPU ms |
+| --- | ---: | ---: | ---: |
+| `adaptive_deformable` | 1 | 2.326 | 15.927 |
+| `adaptive_deformable` | 16 | 2.501 | 16.351 |
+| `soft_bodies` | 1 | 13.706 | 66.629 |
+| `soft_bodies` | 16 | 13.546 | 69.737 |
+| `soft_cubes` | 1 | 3.738 | 17.931 |
+| `soft_cubes` | 16 | 3.872 | 18.527 |
+| `soft_open_chain` | 1 | 5.417 | 31.537 |
+| `soft_open_chain` | 16 | 5.710 | 32.604 |
+
+This comparison is strong enough to keep the correction and to show native is
+the best current detector choice on these apples-to-apples soft-body rows. It
+is still not final all-threshold evidence: the shared workstation had other
+DART workloads during the run, and a few current-vs-parent/base CPU mean rows
+remain noise-sensitive. Before a PR claims every CPU row beats both parent and
+base, rerun the same comparison on an exclusive idle host with longer timing
+windows and refresh this evidence packet.
 
 ## Benchmark commands
 
