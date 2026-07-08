@@ -37,6 +37,8 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
@@ -103,6 +105,18 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
     const auto& capsule = static_cast<const dynamics::CapsuleShape&>(shape);
     return std::make_unique<native::CapsuleShape>(
         capsule.getRadius(), capsule.getHeight());
+  }
+
+  if (shapeType == dynamics::CylinderShape::getStaticType()) {
+    const auto& cylinder = static_cast<const dynamics::CylinderShape&>(shape);
+    return std::make_unique<native::CylinderShape>(
+        cylinder.getRadius(), cylinder.getHeight());
+  }
+
+  if (shapeType == dynamics::PlaneShape::getStaticType()) {
+    const auto& plane = static_cast<const dynamics::PlaneShape&>(shape);
+    return std::make_unique<native::PlaneShape>(
+        plane.getNormal(), plane.getOffset());
   }
 
   if (shapeType == dynamics::ConvexMeshShape::getStaticType()) {

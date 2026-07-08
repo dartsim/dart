@@ -40,6 +40,11 @@ dart_add_test(
 )
 dart_add_test(
   "unit"
+  UNIT_collision_native_cylinder_collision
+  test_cylinder_collision.cpp
+)
+dart_add_test(
+  "unit"
   UNIT_collision_native_sphere_box
   test_sphere_box.cpp
 )
