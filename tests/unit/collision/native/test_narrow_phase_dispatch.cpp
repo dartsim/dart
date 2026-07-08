@@ -418,6 +418,25 @@ TEST(NarrowPhaseDispatch, CompoundRaycastAcceptsEndpointHit)
   EXPECT_TRUE(result.normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
 }
 
+TEST(NarrowPhaseDispatch, CapsuleRaycastFromInsideExitsCapSurface)
+{
+  CapsuleShape capsule(0.5, 2.0);
+
+  const Ray ray(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ(), 2.0);
+  RaycastResult result;
+
+  EXPECT_TRUE(NarrowPhase::raycast(
+      ray,
+      &capsule,
+      Eigen::Isometry3d::Identity(),
+      RaycastOption::unlimited(),
+      result));
+  EXPECT_TRUE(result.hit);
+  EXPECT_DOUBLE_EQ(1.5, result.distance);
+  EXPECT_TRUE(result.point.isApprox(Eigen::Vector3d(0.0, 0.0, 1.5), 1e-12));
+  EXPECT_TRUE(result.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+}
+
 TEST(NarrowPhaseDispatch, ReportsP9SupportedPairs)
 {
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Sphere));

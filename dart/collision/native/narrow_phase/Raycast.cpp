@@ -269,7 +269,7 @@ bool raycastCapsule(
     }
   }
 
-  auto testSphereCap = [&](const Eigen::Vector3d& center) {
+  auto testSphereCap = [&](const Eigen::Vector3d& center, double capSign) {
     Eigen::Vector3d oc = localOrigin - center;
     double a2 = localDir.squaredNorm();
     double b2 = 2.0 * oc.dot(localDir);
@@ -279,16 +279,20 @@ bool raycastCapsule(
     if (solveQuadratic(a2, b2, c2, t0, t1) >= 0.0) {
       for (double t : {t0, t1}) {
         if (acceptsHitDistance(t) && t < bestT) {
-          bestT = t;
           Eigen::Vector3d hitPoint = localOrigin + t * localDir;
+          if (capSign * hitPoint.z() < halfHeight - kEpsilon) {
+            continue;
+          }
+
+          bestT = t;
           bestNormal = (hitPoint - center).normalized();
         }
       }
     }
   };
 
-  testSphereCap(Eigen::Vector3d(0, 0, halfHeight));
-  testSphereCap(Eigen::Vector3d(0, 0, -halfHeight));
+  testSphereCap(Eigen::Vector3d(0, 0, halfHeight), 1.0);
+  testSphereCap(Eigen::Vector3d(0, 0, -halfHeight), -1.0);
 
   double maxDist = std::min(ray.maxDistance, option.maxDistance);
   if (bestT > maxDist || bestT == std::numeric_limits<double>::max()) {
