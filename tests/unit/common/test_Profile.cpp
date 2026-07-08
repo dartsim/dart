@@ -37,6 +37,7 @@
 #include <algorithm>
 #include <sstream>
 #include <string>
+#include <string_view>
 
 #if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
   #include <dart/common/detail/profiler.hpp>
@@ -46,6 +47,20 @@
 
 using dart::common::profile::Profiler;
 using dart::common::profile::ProfileScope;
+
+namespace dart::common::profile {
+
+class ProfilerTestAccess
+{
+public:
+  static void recordZeroDurationScope(std::string_view label)
+  {
+    auto& profiler = Profiler::instance();
+    profiler.recordScopeForTesting(label, __FILE__, __LINE__, 0);
+  }
+};
+
+} // namespace dart::common::profile
 
 namespace {
 
@@ -159,6 +174,17 @@ TEST_F(ProfileTest, ResetReclaimsNodeStorageForNewScopes)
   const auto summary = DART_PROFILE_TEXT_SUMMARY();
   EXPECT_NE(summary.find("after-reset-scope"), std::string::npos);
   EXPECT_EQ(summary.find("prefill-scope-"), std::string::npos);
+}
+
+TEST_F(ProfileTest, ZeroDurationScopesRemainVisibleInSummary)
+{
+  dart::common::profile::ProfilerTestAccess::recordZeroDurationScope(
+      "zero-duration-scope");
+
+  const auto summary = DART_PROFILE_TEXT_SUMMARY();
+  EXPECT_NE(summary.find("zero-duration-scope"), std::string::npos);
+  EXPECT_NE(summary.find("calls        1"), std::string::npos);
+  EXPECT_EQ(summary.find("no scoped regions were recorded"), std::string::npos);
 }
 
 TEST_F(ProfileTest, KeepsDynamicScopeNamesAlive)
