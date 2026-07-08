@@ -17,7 +17,7 @@ final-state hashes on all guard scenes for default-on packets.
 
 #### WP-PG.10 — LCP pipeline instrumentation and island census
 
-- Status: claimed — `wp-pg-10-lcp-profile-census`
+- Status: done — #3339 (`wp-pg-10-lcp-profile-census`)
 - Objective: add missing `DART_PROFILE_*` scopes so assembly vs solve vs
   build split is measurable per island, and emit an island-size histogram
   (bodies, contacts, LCP rows) from `contact_benchmark --profile` runs.
