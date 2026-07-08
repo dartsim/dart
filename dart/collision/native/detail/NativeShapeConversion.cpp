@@ -38,11 +38,13 @@
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 
+#include <limits>
 #include <set>
 #include <string>
 #include <vector>
@@ -67,6 +69,57 @@ std::unique_ptr<native::Shape> createConvexOrNull(
   }
 
   return std::make_unique<native::ConvexShape>(std::move(vertices));
+}
+
+std::unique_ptr<native::Shape> createMeshOrNull(
+    const dynamics::MeshShape& meshShape, const std::string& shapeType)
+{
+  auto mesh = meshShape.getTriMesh();
+  if (!mesh || mesh->getVertices().empty() || mesh->getTriangles().empty()) {
+    static std::set<std::string> warnedInvalidShapeTypes;
+    if (warnedInvalidShapeTypes.insert(shapeType).second) {
+      dtwarn << "[NativeShapeConversion] Shape type [" << shapeType
+             << "] did not provide triangle mesh data. This shape will be "
+             << "skipped by the native adapter.\n";
+    }
+    return nullptr;
+  }
+
+  const auto& sourceVertices = mesh->getVertices();
+  const auto& sourceTriangles = mesh->getTriangles();
+
+  std::vector<Eigen::Vector3d> vertices;
+  vertices.reserve(sourceVertices.size());
+  const Eigen::Vector3d& scale = meshShape.getScale();
+  for (const auto& vertex : sourceVertices) {
+    vertices.emplace_back(vertex.cwiseProduct(scale));
+  }
+
+  std::vector<native::MeshShape::Triangle> triangles;
+  triangles.reserve(sourceTriangles.size());
+  const auto maxInt = static_cast<std::size_t>(std::numeric_limits<int>::max());
+  for (const auto& triangle : sourceTriangles) {
+    if (triangle[0] >= sourceVertices.size()
+        || triangle[1] >= sourceVertices.size()
+        || triangle[2] >= sourceVertices.size() || triangle[0] > maxInt
+        || triangle[1] > maxInt || triangle[2] > maxInt) {
+      static std::set<std::string> warnedInvalidShapeTypes;
+      if (warnedInvalidShapeTypes.insert(shapeType).second) {
+        dtwarn << "[NativeShapeConversion] Shape type [" << shapeType
+               << "] has triangle indices that cannot be represented by the "
+               << "native mesh adapter. This shape will be skipped.\n";
+      }
+      return nullptr;
+    }
+
+    triangles.emplace_back(
+        static_cast<int>(triangle[0]),
+        static_cast<int>(triangle[1]),
+        static_cast<int>(triangle[2]));
+  }
+
+  return std::make_unique<native::MeshShape>(
+      std::move(vertices), std::move(triangles));
 }
 
 std::vector<Eigen::Vector3d> makePyramidVertices(
@@ -117,6 +170,11 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
     const auto& plane = static_cast<const dynamics::PlaneShape&>(shape);
     return std::make_unique<native::PlaneShape>(
         plane.getNormal(), plane.getOffset());
+  }
+
+  if (shapeType == dynamics::MeshShape::getStaticType()) {
+    const auto& mesh = static_cast<const dynamics::MeshShape&>(shape);
+    return createMeshOrNull(mesh, shapeType);
   }
 
   if (shapeType == dynamics::ConvexMeshShape::getStaticType()) {
