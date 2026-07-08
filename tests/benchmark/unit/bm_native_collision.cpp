@@ -1,3 +1,5 @@
+#include <dart/config.hpp>
+
 #include <dart/collision/CollisionDetector.hpp>
 #include <dart/collision/CollisionGroup.hpp>
 #include <dart/collision/DistanceOption.hpp>
