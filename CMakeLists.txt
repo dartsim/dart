@@ -110,10 +110,22 @@ if(MSVC)
     DART_RUNTIME_LIBRARY
     "/MD"
     CACHE STRING
-    "BaseName chosen by the user at CMake configure time"
+    "MSVC runtime family used when DART_MSVC_FORCE_RELEASE_RUNTIME is OFF"
   )
   set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
-  dart_option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
+  dart_option(
+    DART_MSVC_DEFAULT_OPTIONS
+    "Use Visual Studio default Debug/Release tuning instead of DART's MSVC tuning"
+    OFF
+  )
+  # Pre-built package-manager dependencies are generally built with /MD. Keep
+  # every configuration on that runtime by default to avoid LNK2038 mismatches.
+  dart_option(
+    DART_MSVC_FORCE_RELEASE_RUNTIME
+    "Force /MD (Release DLL runtime) for all configurations to match pre-built packages"
+    ON
+  )
+  dart_configure_msvc_runtime_library()
 else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
@@ -307,6 +319,15 @@ endif()
 
 option(DART_BUILD_WHEELS "Indicate building dartpy for wheels" OFF)
 
+# Configure MSVC compile policy before dependency discovery so any dependency
+# targets created during configure inherit the same directory options.
+if(MSVC)
+  dart_configure_msvc_toolchain(
+    REQUIRED_VERSION 1920
+    REQUIRED_LABEL "Visual Studio 2019"
+  )
+endif()
+
 #===============================================================================
 # Find dependencies
 #===============================================================================
@@ -329,46 +350,10 @@ endif()
 # Compiler flags
 #===============================================================================
 if(MSVC)
-  # Visual Studio enables C++17 support by default
-  set(msvc_required_version 1920)
-  if(
-    MSVC_VERSION VERSION_LESS ${msvc_required_version}
-    AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC"
-  )
-    message(
-      FATAL_ERROR
-      "Visual Studio ${MSVC_VERSION} is detected, but "
-      "${PROJECT_NAME_UPPERCASE} requires ${msvc_required_version} or greater."
-    )
-  endif()
-
+  # MSVC policy is configured before dependency discovery.
   if(DART_TREAT_WARNINGS_AS_ERRORS)
-    add_compile_options(/WX)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/WX>)
   endif()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase-")
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO")
-  if(NOT DART_MSVC_DEFAULT_OPTIONS)
-    set(
-      CMAKE_CXX_FLAGS_DEBUG
-      "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc"
-    )
-    set(
-      CMAKE_CXX_FLAGS_RELEASE
-      "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc"
-    )
-  endif(NOT DART_MSVC_DEFAULT_OPTIONS)
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
-  add_compile_options(/wd4005)
-  add_compile_options(/wd4099)
-  add_compile_options(/wd4146) # for FCL warnings: https://github.com/dartsim/dart/runs/4568423649?check_suite_focus=true#step:5:407
-  add_compile_options(/wd4244)
-  add_compile_options(/wd4250)
-  add_compile_options(/wd4267)
-  add_compile_options(/wd4305)
-  add_compile_options(/wd4334)
-  add_compile_options(/wd4838)
-  add_compile_options(/wd4996)
-  add_compile_options(/bigobj)
 elseif(CMAKE_COMPILER_IS_GNUCXX)
   # There is a known bug in GCC 12.1 and above that leads to spurious
   # -Wmaybe-uninitialized warnings from gcc/x86_64-linux-gnu/12/include/avxintrin.h and
