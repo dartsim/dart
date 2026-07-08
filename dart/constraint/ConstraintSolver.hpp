@@ -305,6 +305,9 @@ protected:
   /// Build constrained groupsContact
   void buildConstrainedGroups();
 
+  /// Clears group state and returns true when no active constraints remain.
+  bool clearInactiveConstrainedGroups();
+
   /// Record profiler counters for the currently built constrained groups.
   void recordConstrainedGroupProfileCounters() const;
 
@@ -393,6 +396,12 @@ protected:
 
   /// Active constraints
   std::vector<ConstraintBasePtr> mActiveConstraints;
+
+  /// True when the previous solve could have written constraint impulses.
+  bool mHasConstraintImpulsesToClear = false;
+
+  /// True when the previous solve marked any body or point mass as colliding.
+  bool mHasCollidingBodiesToClear = false;
 
   /// True when every currently active constraint is a ContactConstraint with
   /// exactly one reactive skeleton.
