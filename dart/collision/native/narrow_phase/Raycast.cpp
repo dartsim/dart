@@ -783,12 +783,20 @@ bool raycastConvex(
     return false;
   }
 
-  result.hit = true;
-  result.distance = startsInside ? 0.0 : entryDistance;
-  result.point = ray.pointAt(result.distance);
-  result.normal = startsInside ? boundaryNormal : entryNormal;
+  if (startsInside) {
+    result.hit = true;
+    result.distance = 0.0;
+    result.point = ray.origin;
+    result.normal = boundaryNormal;
+    return true;
+  }
 
-  if (!startsInside && result.normal.dot(ray.direction) > 0.0) {
+  result.hit = true;
+  result.distance = entryDistance;
+  result.point = ray.pointAt(result.distance);
+  result.normal = entryNormal;
+
+  if (result.normal.dot(ray.direction) > 0.0) {
     result.normal = -result.normal;
   }
 
