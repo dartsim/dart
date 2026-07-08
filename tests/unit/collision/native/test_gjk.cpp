@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/native/detail/span.hpp>
-#include <dart/collision/native/narrow_phase/gjk.hpp>
-#include <dart/collision/native/narrow_phase/mpr.hpp>
-#include <dart/collision/native/shapes/shape.hpp>
+#include <dart/collision/native/detail/Span.hpp>
+#include <dart/collision/native/narrow_phase/Gjk.hpp>
+#include <dart/collision/native/narrow_phase/Mpr.hpp>
+#include <dart/collision/native/shapes/Shape.hpp>
 
 #include <gtest/gtest.h>
 
