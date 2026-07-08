@@ -165,7 +165,7 @@ refresh or maintainer re-baseline.
 
 ### WP-PG.15 D7 default-remediation A/B (candidate)
 
-Artifact: `/tmp/wp_pg15_ab_candidate_20260708T222839Z/summary.tsv` on
+Artifact: `/tmp/wp_pg15_ab_final_20260708T232819Z/summary.tsv` on
 `docs/close-dart6-performance-generalization`, using
 `build/default/cpp/Release/bin/contact_benchmark`. The old-default row uses
 CLI overrides to reproduce the baseline contact ERV (`0.001`) and
@@ -177,11 +177,11 @@ dense islands under the default tolerance policy.
 
 | Row | RTF | Avg step ms | Contacts | Pairs | Over sleep tol | Resting | Finite | Max pen | Hash |
 | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |
-| S6 current defaults | 0.205229 | 4.8726 | 0 | 0 | 0 | 71/71 | true | 0 | `0xec80f734df6d5e74` |
-| S6 old-default override | 0.095977 | 10.4192 | 165 | 137 | 43 | 3/71 | true | 0.363373 | `0xf0690e9a45a8f655` |
-| S6 explicit evaluator (`ERV=0.1`, tol `0.005`) | 0.513881 | 1.94598 | 0 | 0 | 0 | 71/71 | true | 0 | `0x8f8ec8de71465934` |
+| S6 current defaults | 0.206305 | 4.8472 | 0 | 0 | 0 | 71/71 | true | 0 | `0xec80f734df6d5e74` |
+| S6 old-default override | 0.0915293 | 10.9255 | 165 | 137 | 43 | 3/71 | true | 0.363373 | `0xf0690e9a45a8f655` |
+| S6 explicit evaluator (`ERV=0.1`, tol `0.005`) | 0.466901 | 2.14178 | 0 | 0 | 0 | 71/71 | true | 0 | `0x8f8ec8de71465934` |
 
-The proposed default is 2.14x faster than the old-default override on this
+The proposed default is 2.25x faster than the old-default override on this
 S6 run and reaches the pile-sleep success criterion under default settings.
 The explicit evaluator row remains the upper bound for a fully global ERV/
 tolerance override, but that broader policy was rejected because it regressed

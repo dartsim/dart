@@ -229,10 +229,13 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
 - **D7 — Penetration-creep remediation policy** (active on WP-PG.15/#3353):
   #3353 is the current behavior-changing default-policy proposal. It promotes
   the evidenced contact ERV/tolerance values through dense-island adaptive
-  policy, and adds dense-contact-island sleep candidacy for sub-wake jitter;
-  the PR must carry the old/new re-baseline evidence and reviewer acceptance
-  before D7 is closed. D3 remains the separate large-island solve-side
-  decision.
+  policy, keeps ordinary single-body support contacts on the legacy effective
+  ERV/tolerance path, and adds dense-contact-island sleep candidacy for
+  sub-wake jitter. After the #3355 base merge, analytic `PlaneShape` support
+  contacts are included in the bounded contact-rest tolerance because Bullet
+  plane contacts converge at millimeter scale. The PR must carry the old/new
+  re-baseline evidence and reviewer acceptance before D7 is closed. D3 remains
+  the separate large-island solve-side decision.
 - **D8 — Contact-manifold reduction on current detectors** (blocks
   WP-PG.23): round 1 explicitly deferred default-on manifold
   reduction/selection ("mines #2366 and DART 7 native collision"; recorded

@@ -207,13 +207,13 @@ solve-side decision after the D7 sleep-policy path.
   tolerance under the default policy, plus dense-contact-island sleep candidacy
   for sub-wake jitter. `contact_benchmark` now reports island and
   dwell/velocity diagnostics. A/B artifact
-  `/tmp/wp_pg15_ab_candidate_20260708T222839Z`: S6 old-default override
+  `/tmp/wp_pg15_ab_final_20260708T232819Z`: S6 old-default override
   (`--contact-max-erv 0.001 --sleep-contact-penetration-tolerance 0.00001`)
-  took 208.383 s, RTF 0.095977, 165 contacts / 137 pairs, max penetration
+  took 218.509 s, RTF 0.0915293, 165 contacts / 137 pairs, max penetration
   0.363373, 3/71 resting, hash `0xf0690e9a45a8f655`; current defaults took
-  97.4519 s, RTF 0.205229, zero contacts, max penetration 0, 71/71 resting,
+  96.9441 s, RTF 0.206305, zero contacts, max penetration 0, 71/71 resting,
   hash `0xec80f734df6d5e74`; the explicit global evaluator row (`ERV=0.1`,
-  tol `0.005`) took 38.9195 s, RTF 0.513881, zero contacts, 71/71 resting,
+  tol `0.005`) took 42.8357 s, RTF 0.466901, zero contacts, 71/71 resting,
   hash `0x8f8ec8de71465934`. S4/S5 DART/FCL/Bullet/ODE new-default rows
   matched old-default hashes/contact/resting states. Extra evidence:
   S2 DART 3k-shapes guard
@@ -235,6 +235,23 @@ solve-side decision after the D7 sleep-policy path.
   38.9195 s) without a clear S4/S5 guard-row timing win. Keep the
   island-atomic candidate path from the accepted candidate unless a future
   optimization carries a cleaner old/new matrix.
+- 2026-07-08: After merging `origin/release-6.20` through #3355, capped `ALL`
+  first failed `SdfParser.PlaneShapeBulletWorldSettles`: the new Bullet
+  analytic `PlaneShape` path converged with millimeter-scale penetration and
+  never satisfied the strict `1e-5` rest-veto tolerance. The fix keeps small
+  non-plane support islands on their legacy individual candidacy path, keeps
+  dense islands on the atomic sub-wake path, and applies the bounded `0.005`
+  rest-veto tolerance only to dense islands and analytic `PlaneShape` contacts.
+  Focused rechecks passed: `test_SdfParser
+  --gtest_filter='SdfParser.PlaneShapeBulletWorldSettles' --gtest_repeat=3`,
+  `INTEGRATION_StepAllocation` native allocation gates, `test_SplitImpulse`
+  shallow-support guards, `test_Issue1445`, and full `test_IslandDeactivation`.
+- Final pre-push gates for this candidate passed locally: `pixi run lint`,
+  `pixi run check-lint`, capped `pixi run cmake --build
+  build/default/cpp/Release --target ALL --parallel 8` (98 Python tests and
+  148 CTest tests), and `pixi run -e gazebo test-gz` (`gz-physics` 199/199
+  plus 4 performance tests; `gz-sim` `INTEGRATION_entity_system` passed against
+  the source-built DART plugin).
 
 ## Session log
 

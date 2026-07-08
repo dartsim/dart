@@ -56,6 +56,7 @@
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
@@ -86,6 +87,17 @@ constexpr double kSmallContactIslandMaxErrorReductionVelocity = 1e-3;
 constexpr std::size_t kDenseContactIslandMinMobileSkeletons = 3u;
 double gSleepContactPenetrationTolerance
     = kDefaultSleepContactPenetrationTolerance;
+
+bool contactTouchesPlaneShape(const collision::Contact& collisionContact)
+{
+  auto isPlaneShapeObject = [](const collision::CollisionObject* object) {
+    const auto shape = object ? object->getShape() : nullptr;
+    return shape != nullptr && shape->getType() == PlaneShape::getStaticType();
+  };
+
+  return isPlaneShapeObject(collisionContact.collisionObject1)
+         || isPlaneShapeObject(collisionContact.collisionObject2);
+}
 
 struct CollidingStateSnapshot
 {
@@ -2253,8 +2265,6 @@ void ConstraintSolver::buildConstrainedGroups()
                       && denseContactIsland
                   ? kDenseContactIslandSleepContactPenetrationTolerance
                   : sleepContactPenetrationTolerance;
-        const double preserveSleepCandidatePenetrationTolerance
-            = groupSleepContactPenetrationTolerance;
         for (std::size_t j = 0; j < group.mConstraints.size(); ++j) {
           const auto* constraint = group.mConstraints[j].get();
           const auto* contact
@@ -2265,8 +2275,18 @@ void ConstraintSolver::buildConstrainedGroups()
             break;
           }
 
+          const bool usePlaneShapeSleepContactPenetrationTolerance
+              = useDenseIslandSleepContactPenetrationTolerance
+                && contactTouchesPlaneShape(contact->getContact());
+          const double contactSleepContactPenetrationTolerance
+              = usePlaneShapeSleepContactPenetrationTolerance
+                    ? kDenseContactIslandSleepContactPenetrationTolerance
+                    : groupSleepContactPenetrationTolerance;
+          const double preserveSleepCandidatePenetrationTolerance
+              = contactSleepContactPenetrationTolerance;
+
           if (contact->getContact().penetrationDepth
-              > groupSleepContactPenetrationTolerance) {
+              > contactSleepContactPenetrationTolerance) {
             mGroupResting[i] = false;
             if (contact->getContact().penetrationDepth
                 > preserveSleepCandidatePenetrationTolerance) {

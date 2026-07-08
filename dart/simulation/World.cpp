@@ -1710,14 +1710,41 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   }
 
   std::size_t islandCount = 0;
+  std::size_t islandedMobileSkeletonCount = 0;
   for (const auto& skel : mSkeletons) {
     if (!skel->isMobile())
       continue;
 
     const int island = skel->getIslandIndex();
     if (island >= 0) {
+      ++islandedMobileSkeletonCount;
       islandCount = std::max(
           islandCount, static_cast<std::size_t>(island) + std::size_t{1});
+    }
+  }
+
+  auto& islandMobileSkeletonCount = mIslandMobileSkeletonCountScratch;
+  bool hasDenseContactIsland = false;
+  if (islandCount > 0u
+      && islandedMobileSkeletonCount >= kDenseContactJitterMinIslandSize
+      && islandedMobileSkeletonCount != islandCount) {
+    islandMobileSkeletonCount.assign(islandCount, 0u);
+    for (const auto& skel : mSkeletons) {
+      if (!skel->isMobile())
+        continue;
+
+      const int island = skel->getIslandIndex();
+      if (island < 0)
+        continue;
+
+      const auto islandIndex = static_cast<std::size_t>(island);
+      if (islandIndex < islandMobileSkeletonCount.size()) {
+        ++islandMobileSkeletonCount[islandIndex];
+        if (islandMobileSkeletonCount[islandIndex]
+            >= kDenseContactJitterMinIslandSize) {
+          hasDenseContactIsland = true;
+        }
+      }
     }
   }
 
@@ -1786,7 +1813,15 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
           dwell = std::max(dwell, mDeactivationOptions.mTimeUntilSleep);
         }
         skel->setRestDwellTime(dwell);
-        if (!islanded && dwell >= mDeactivationOptions.mTimeUntilSleep
+        bool denseContactIsland = false;
+        if (hasDenseContactIsland && islanded) {
+          const auto islandIndex
+              = static_cast<std::size_t>(skel->getIslandIndex());
+          denseContactIsland = islandIndex < islandMobileSkeletonCount.size()
+                               && islandMobileSkeletonCount[islandIndex]
+                                      >= kDenseContactJitterMinIslandSize;
+        }
+        if (!denseContactIsland && dwell >= mDeactivationOptions.mTimeUntilSleep
             && finalQuiet) {
           skel->setSleepCandidate(true);
         }
@@ -1796,17 +1831,15 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
     }
   }
 
-  if (islandCount > 0u) {
+  if (hasDenseContactIsland) {
     auto& islandHasMobileSkeleton = mIslandHasMobileSkeletonScratch;
     auto& islandAllFinalSleepCandidateReady
         = mIslandAllFinalSleepCandidateReadyScratch;
     auto& islandAllBelowWake = mIslandAllBelowWakeScratch;
-    auto& islandMobileSkeletonCount = mIslandMobileSkeletonCountScratch;
     auto& islandDwellWakeReadyCount = mIslandDwellWakeReadyCountScratch;
     islandHasMobileSkeleton.assign(islandCount, 0);
     islandAllFinalSleepCandidateReady.assign(islandCount, 1);
     islandAllBelowWake.assign(islandCount, 1);
-    islandMobileSkeletonCount.assign(islandCount, 0u);
     islandDwellWakeReadyCount.assign(islandCount, 0u);
 
     for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
@@ -1821,6 +1854,10 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       const auto islandIndex = static_cast<std::size_t>(island);
       if (islandIndex >= islandCount)
         continue;
+      if (islandMobileSkeletonCount[islandIndex]
+          < kDenseContactJitterMinIslandSize) {
+        continue;
+      }
 
       const bool disturbed
           = (i < disturbedThisStep.size() && disturbedThisStep[i])
@@ -1841,7 +1878,6 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
           = islandAllFinalSleepCandidateReady[islandIndex] && finalReady;
       islandAllBelowWake[islandIndex]
           = islandAllBelowWake[islandIndex] && belowWake;
-      ++islandMobileSkeletonCount[islandIndex];
       if (belowWake
           && skel->getRestDwellTime() >= mDeactivationOptions.mTimeUntilSleep) {
         ++islandDwellWakeReadyCount[islandIndex];
@@ -1859,6 +1895,10 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       const auto islandIndex = static_cast<std::size_t>(island);
       if (islandIndex >= islandCount || !islandHasMobileSkeleton[islandIndex])
         continue;
+      if (islandMobileSkeletonCount[islandIndex]
+          < kDenseContactJitterMinIslandSize) {
+        continue;
+      }
 
       const bool finalReady = islandAllFinalSleepCandidateReady[islandIndex];
       const bool denseContactJitterReady
