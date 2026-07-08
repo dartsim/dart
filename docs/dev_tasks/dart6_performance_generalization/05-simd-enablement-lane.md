@@ -67,7 +67,7 @@ the 120-object row (30.29 ms / 1.61% of 100 profiled steps).
 
 #### WP-PG.41 — Batch math helpers at the contact-Jacobian seam
 
-- Status: blocked on WP-PG.40
+- Status: blocked on WP-PG.10 seam evidence
 - Objective: add main-style batch helpers (AdT/AdInvT/dAdT-style spatial
   transforms and cross3 batches, 4-wide, scalar tail) to `dart/math` as
   free functions consuming `dart::simd` types strictly inside cpp TUs,
@@ -87,11 +87,7 @@ the 120-object row (30.29 ms / 1.61% of 100 profiled steps).
 
 #### WP-PG.42 — SoA broadphase sweep batching (coordinate with WS-F)
 
-- Status: claimed — `wp-pg-42-soa-broadphase-simd` starts with
-  AVX-width SIMD-screened finite candidate batches in the existing DART
-  detector, plus CI matrix coverage for the production consumer. Remaining
-  scope in this packet still includes measured before/after evidence and
-  any version-gated AABB recomputation follow-up that survives profiling.
+- Status: done — #3299 (`wp-pg-42-soa-broadphase-simd`)
 - Objective: split the DART-native detector's `BroadphaseEntry` into SoA
   min/max arrays and batch the y/z overlap tests inside the x-sweep
   (`DARTCollisionDetector.cpp:2329-2347`) with `dart/simd`; version-gate
@@ -111,4 +107,8 @@ the 120-object row (30.29 ms / 1.61% of 100 profiled steps).
 - Acceptance evidence: bit-identical native-detector outcomes; broadphase
   stage share before/after (WP-PG.10 scopes); coordination note with
   WS-F recorded.
+- Completion evidence: merged as PR #3299 with AVX-width SIMD-screened
+  finite candidate batches in the existing DART detector plus scalar/SSE/AVX/
+  AVX2 CI consumer coverage. The packaged default remains baseline ISA; AVX2
+  builds exercise the batch loop.
 - Dependencies: WP-PG.40; WS-F phase status check.
