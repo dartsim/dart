@@ -450,6 +450,58 @@ TEST(NarrowPhaseDispatch, ReportsP9SupportedPairs)
   EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Compound, ShapeType::Mesh));
 }
 
+TEST(NarrowPhaseDispatch, ReportsOnlySupportedPlaneDistanceRows)
+{
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Plane, ShapeType::Sphere));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Sphere, ShapeType::Plane));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Plane, ShapeType::Box));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Plane));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Plane, ShapeType::Cylinder));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Convex, ShapeType::Plane));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Mesh, ShapeType::Plane));
+
+  EXPECT_FALSE(
+      NarrowPhase::isDistanceSupported(ShapeType::Plane, ShapeType::Plane));
+  EXPECT_FALSE(
+      NarrowPhase::isDistanceSupported(ShapeType::Plane, ShapeType::Sdf));
+  EXPECT_FALSE(
+      NarrowPhase::isDistanceSupported(ShapeType::Sdf, ShapeType::Plane));
+
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  SdfShape sdf(nullptr);
+  DistanceResult result;
+
+  EXPECT_EQ(
+      std::numeric_limits<double>::max(),
+      NarrowPhase::distance(
+          &plane,
+          Eigen::Isometry3d::Identity(),
+          &plane,
+          Eigen::Isometry3d::Identity(),
+          DistanceOption(),
+          result));
+  EXPECT_FALSE(result.isValid());
+
+  result.clear();
+  EXPECT_EQ(
+      std::numeric_limits<double>::max(),
+      NarrowPhase::distance(
+          &plane,
+          Eigen::Isometry3d::Identity(),
+          &sdf,
+          Eigen::Isometry3d::Identity(),
+          DistanceOption(),
+          result));
+  EXPECT_FALSE(result.isValid());
+}
+
 TEST(NarrowPhaseDispatch, RoutesCapsuleSphereInBothOrders)
 {
   CapsuleShape capsule(0.5, 2.0);

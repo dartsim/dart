@@ -105,6 +105,13 @@ bool isMeshPrimitiveType(ShapeType type)
          || type == ShapeType::Convex;
 }
 
+bool isPlaneDistanceShapeType(ShapeType type)
+{
+  return type == ShapeType::Sphere || type == ShapeType::Box
+         || type == ShapeType::Capsule || type == ShapeType::Cylinder
+         || type == ShapeType::Convex || type == ShapeType::Mesh;
+}
+
 bool collideShapes(
     const Shape* shape1,
     const Eigen::Isometry3d& tf1,
@@ -620,12 +627,12 @@ double distanceShapes(
     return distance;
   }
 
-  if (type1 == ShapeType::Plane) {
+  if (type1 == ShapeType::Plane && isPlaneDistanceShapeType(type2)) {
     const auto* p = static_cast<const PlaneShape*>(shape1);
     return distancePlaneShape(*p, tf1, *shape2, tf2, result, option);
   }
 
-  if (type2 == ShapeType::Plane) {
+  if (type2 == ShapeType::Plane && isPlaneDistanceShapeType(type1)) {
     const auto* p = static_cast<const PlaneShape*>(shape2);
     const double distance
         = distancePlaneShape(*p, tf2, *shape1, tf1, result, option);
@@ -835,7 +842,8 @@ bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
       || (type1 == ShapeType::Box && type2 == ShapeType::Capsule)) {
     return true;
   }
-  if (type1 == ShapeType::Plane || type2 == ShapeType::Plane) {
+  if ((type1 == ShapeType::Plane && isPlaneDistanceShapeType(type2))
+      || (type2 == ShapeType::Plane && isPlaneDistanceShapeType(type1))) {
     return true;
   }
   if ((type1 == ShapeType::Cylinder || type2 == ShapeType::Cylinder)
