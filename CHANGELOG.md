@@ -348,7 +348,7 @@ compatibility remains on the active DART 6 LTS branch._
 - Refreshed the DART 7 README and Read the Docs package guidance so the
   published install, dartpy smoke-test, and Python example paths match the
   current `package.xml`, wheel workflow, and `dart::simulation::World` API
-  surface.
+  surface. ([#3347](https://github.com/dartsim/dart/pull/3347))
 - Hardened the AI-native contributor workflow: `pixi run install-hooks` now
   installs a pre-commit hook running the Tier-0 lint gate (with a tracked
   Claude Code commit guard as fallback), the plan dashboard is bounded by
