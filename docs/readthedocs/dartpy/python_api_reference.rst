@@ -21,7 +21,7 @@ To explore the bindings from a source checkout:
 .. code-block:: bash
 
    pixi run build
-   PYTHONPATH=build/default/cpp/Release/python python - <<'PY'
+   PYTHONPATH=build/default/cpp/Release/python pixi run python - <<'PY'
    import dartpy as dart
    world = dart.World()
    print(world.gravity)
