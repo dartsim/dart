@@ -43,11 +43,16 @@ release-branch target remains to move soft/deformable collision onto
   masses and assigns a representative soft face ID for the contact triangle
   field. The soft-vs-primitive loops now reuse cached local vertices and
   first-face metadata, falling back to the old face scan only when the retained
-  cache is unavailable.
+  cache is unavailable. A follow-up primitive-frame slice classifies
+  soft-vs-plane, soft-vs-sphere, and soft-vs-box points in primitive-local
+  coordinates and computes world contact points only for colliding vertices.
 - `tests/unit/collision/test_DARTCollisionDetector.cpp` now covers native
   soft-plane, soft-box, soft-sphere, soft-sphere-like-ellipsoid,
   soft-non-spherical-ellipsoid, and soft-soft vertex-face contacts with
   expected object ordering, normals, penetration, and valid soft triangle IDs.
+- `tests/integration/test_SoftDynamics.cpp` now runs the representative
+  finite-state and one-thread versus four-thread final-state gate under both
+  the default detector and `CollisionDetectorType::Dart`.
 - `tests/integration/test_StepAllocation.cpp` now has native soft-box
   allocation gates for explicit first post-bake and implicit second-step
   simulation. The current local result is zero `operator new`, zero raw
@@ -90,6 +95,9 @@ The first WP-DB.08 implementation supports:
   soft-soft candidate pairs in worker-local `CollisionResult`s and merges them
   in the original sweep order to preserve duplicate-contact handling and
   contact-cap behavior,
+- primitive-frame classification for soft-vs-plane, soft-vs-sphere, and
+  soft-vs-box point contacts so non-contact vertices avoid unnecessary world
+  contact-point transforms,
 - reusable soft contact constraints with fixed one-contact, Jacobian, and
   tangent-basis storage for the current soft-contact constraint shape,
 - detector selection in `soft_body_headless` for FCL/native comparison.
@@ -159,6 +167,27 @@ allocation gate, a current 200-step repeat again produced identical FCL/native
 `drop_box` checksums. The same busy-host run measured 48.534 ms for FCL and
 11.977 ms for native. Treat that as current parity and native-path dominance
 evidence, not a stable speedup threshold.
+
+After the primitive-frame soft-vs-primitive slice, a 2026-07-07 repeat again
+produced identical FCL/native `drop_box` step-200 checksums. On the same busy
+host, FCL measured 7.045 ms elapsed and native measured 1.431 ms elapsed for
+200 steps. A quick current-only Google Benchmark smoke still ranked native
+ahead of FCL on every tracked scene/thread row:
+
+| Scene | Threads | Native CPU ms | FCL CPU ms |
+| --- | ---: | ---: | ---: |
+| `adaptive_deformable` | 1 | 2.01 | 16.4 |
+| `adaptive_deformable` | 16 | 2.41 | 17.0 |
+| `soft_cubes` | 1 | 3.69 | 17.8 |
+| `soft_cubes` | 16 | 3.68 | 17.9 |
+| `soft_bodies` | 1 | 13.8 | 68.1 |
+| `soft_bodies` | 16 | 13.6 | 63.4 |
+| `soft_open_chain` | 1 | 5.38 | 29.6 |
+| `soft_open_chain` | 16 | 5.06 | 29.8 |
+
+The load average during that benchmark was still high, so these rows are
+current smoke evidence for detector ranking and regression triage, not final
+threshold-quality PR evidence.
 
 Diagnostic run on a broader soft scene:
 
@@ -274,7 +303,9 @@ deformable backend.
 Native soft/deformable collision should not replace FCL until:
 
 - `test_SoftDynamics` passes with the native detector on representative soft
-  scenes,
+  scenes. This is now covered by the finite-state and one-thread versus
+  four-thread final-state gate; broader physical regression thresholds remain
+  useful follow-up coverage,
 - `soft_body_headless` reports stable checksums for `COLLISION_DETECTOR=dart`,
 - native detector rows match or beat FCL on the representative
   `soft_bodies`, `soft_open_chain`, and contact-heavy soft scenes on the same

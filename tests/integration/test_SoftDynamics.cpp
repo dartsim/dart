@@ -354,12 +354,13 @@ void expectFiniteSoftBodyState(
 void expectFiniteWorldState(
     const simulation::WorldPtr& world,
     const SoftStabilityScene& scene,
+    const std::string& detectorName,
     std::size_t threads,
     std::size_t step)
 {
   ASSERT_TRUE(world != nullptr) << scene.uri;
 
-  const std::string worldContext = scene.uri
+  const std::string worldContext = scene.uri + " detector=" + detectorName
                                    + " threads=" + std::to_string(threads)
                                    + " step=" + std::to_string(step);
   expectFinite(world->getTime(), worldContext + " time");
@@ -631,6 +632,12 @@ TEST_F(SoftDynamicsTest, representativeEquationMatrixAndVectorChecks)
 //==============================================================================
 TEST_F(SoftDynamicsTest, finiteStateForRepresentativeSoftScenes)
 {
+  struct DetectorConfig
+  {
+    std::string name;
+    bool useNativeDetector;
+  };
+
   const std::array<SoftStabilityScene, 7> scenes = {{
       {"dart://sample/skel/test/test_drop_box.skel", 1u, 26u, 30u},
       {"dart://sample/skel/test/test_drop_low_stiffness.skel", 1u, 26u, 30u},
@@ -640,34 +647,48 @@ TEST_F(SoftDynamicsTest, finiteStateForRepresentativeSoftScenes)
       {"dart://sample/skel/softBodies.skel", 5u, 290u, 30u},
       {"dart://sample/skel/soft_open_chain.skel", 5u, 120u, 30u},
   }};
+  const std::array<DetectorConfig, 2> detectorConfigs = {{
+      {"default", false},
+      {"dart", true},
+  }};
   const std::array<std::size_t, 2> threadCounts = {{1u, 4u}};
 
-  for (const SoftStabilityScene& scene : scenes) {
+  for (const DetectorConfig& detectorConfig : detectorConfigs) {
     std::vector<SoftStateSnapshot> finalSnapshots;
     finalSnapshots.reserve(threadCounts.size());
 
-    for (const std::size_t threads : threadCounts) {
-      simulation::WorldPtr world = utils::SkelParser::readWorld(scene.uri);
-      ASSERT_TRUE(world != nullptr) << scene.uri;
-      world->setNumSimulationThreads(threads);
+    for (const SoftStabilityScene& scene : scenes) {
+      finalSnapshots.clear();
 
-      expectFiniteWorldState(world, scene, threads, 0u);
+      for (const std::size_t threads : threadCounts) {
+        simulation::WorldPtr world = utils::SkelParser::readWorld(scene.uri);
+        ASSERT_TRUE(world != nullptr) << scene.uri;
+        if (detectorConfig.useNativeDetector)
+          world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+        world->setNumSimulationThreads(threads);
 
-      for (std::size_t step = 1u; step <= scene.steps; ++step) {
-        world->step();
+        expectFiniteWorldState(world, scene, detectorConfig.name, threads, 0u);
 
-        if (step == scene.steps || step % 10u == 0u)
-          expectFiniteWorldState(world, scene, threads, step);
+        for (std::size_t step = 1u; step <= scene.steps; ++step) {
+          world->step();
+
+          if (step == scene.steps || step % 10u == 0u) {
+            expectFiniteWorldState(
+                world, scene, detectorConfig.name, threads, step);
+          }
+        }
+
+        finalSnapshots.push_back(computeSoftStateSnapshot(world));
       }
 
-      finalSnapshots.push_back(computeSoftStateSnapshot(world));
+      ASSERT_EQ(finalSnapshots.size(), threadCounts.size())
+          << detectorConfig.name << " " << scene.uri;
+      expectSnapshotsNear(
+          finalSnapshots[0],
+          finalSnapshots[1],
+          scene.uri + " detector=" + detectorConfig.name
+              + " threads=1-vs-4 final state");
     }
-
-    ASSERT_EQ(finalSnapshots.size(), threadCounts.size()) << scene.uri;
-    expectSnapshotsNear(
-        finalSnapshots[0],
-        finalSnapshots[1],
-        scene.uri + " threads=1-vs-4 final state");
   }
 }
 

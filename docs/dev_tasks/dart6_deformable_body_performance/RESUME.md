@@ -196,6 +196,21 @@ Latest state:
   `dart/soft_open_chain/1`, but targeted reruns of that exact row measured
   current faster than parent in both parent-then-current and current-then-parent
   order. Keep final all-threshold claims gated on an exclusive idle-host rerun.
+- A follow-up WP-DB.08 native primitive-frame and stability-gate slice is
+  implemented locally: native soft-vs-plane, soft-vs-sphere, and soft-vs-box
+  contacts classify point masses in primitive-local coordinates and compute
+  world contact points only after a vertex is known to collide. The
+  representative `test_SoftDynamics` finite-state and one-thread versus
+  four-thread final-state gate now runs under both the default detector and
+  `CollisionDetectorType::Dart`. Focused
+  `test_DARTCollisionDetector`, `test_SoftDynamics`, and
+  `INTEGRATION_StepAllocation` gates passed, `drop_box` FCL/native 200-step
+  checksums still matched exactly, native `soft_cubes`, `soft_bodies`, and
+  `soft_open_chain` 200-step checksums matched between `THREADS=1` and
+  `THREADS=16`, and a quick current-only benchmark kept native ahead of FCL on
+  every tracked scene/thread row. This closes the explicit native
+  `test_SoftDynamics` acceptance gate; fuller triangle/contact-neighborhood
+  coverage and threshold-quality parent/base comparison remain open.
 - A narrow `origin/dart6-memory-hardening` carryover is implemented locally:
   `Skeleton::checkExternalDisturbanceAndReset()` now scans body-local external
   wrenches directly instead of materializing the external-force projection cache
@@ -279,10 +294,10 @@ Next steps:
    captures on an idle host, then choose the next measured soft-body layout
    slice. The likely next WP-DB.06 slice is retained SoA scratch for
    point-mass phase inputs before any `dart/simd/` kernel.
-3. Extend `test_SoftDynamics` beyond finite-state and one-thread versus
-   four-thread final-state checks with energy, contact-force, CoP, or
-   historical-golden regression thresholds that are stable across supported
-   platforms.
+3. Extend `test_SoftDynamics` beyond default/native finite-state and
+   one-thread versus four-thread final-state checks with energy, contact-force,
+   CoP, or historical-golden regression thresholds that are stable across
+   supported platforms.
 4. Continue WP-DB.08 with fuller triangle/contact-neighborhood coverage and
    stronger multicore scaling beyond the current pair-level soft-soft worker
    path before preferring native as the default soft collision backend.
