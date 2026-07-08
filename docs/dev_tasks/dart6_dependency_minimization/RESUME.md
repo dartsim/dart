@@ -35,9 +35,9 @@ the recorded SHA-256 digests or recapture dumps on the flip PR's parent
 and compare within that same recapture.
 
 **Phases 0 and 1 are merged** (#3271 phase-0 packet, #3281 phase-1 native
-math core — C++17, no EnTT, internal-only; FCL stays default). A follow-up
-fixed the `maxNumContacts==0` contract in native sphere-sphere (#3283 on
-main, #3298 on release-6.20).
+math core — C++17, no EnTT, internal-only; FCL stays default). Follow-ups
+fixed the `maxNumContacts==0` contract in native sphere-sphere on both
+release-6.20 (#3298) and main (#3283).
 
 **Phase 2 is in progress.** The execution plan (merged, #3302) is
 [07-phase2-adapter-scoping.md](07-phase2-adapter-scoping.md): add an
@@ -55,18 +55,23 @@ scope-diff-guarded.
   (`dart/collision/native/narrow_phase/narrow_phase.{hpp,cpp}` now on
   `release-6.20`).
 - **P3a** (adapter skeleton + sphere/box shape conversion, intentionally
-  unregistered): **#3318** — **merged**. The `"native"` factory key is still
-  unknown by design.
+  unregistered): **#3318** — **merged**.
+- **P3b** (bridge translation + `"native"` registration + `sphere_box` +
+  parity): **#3319** — **merged**.
+- **P4** (capsule primitive pairs): **#3321** — **merged**.
+- **P5** (convex foundation + capsule-capsule): **#3322** — **merged**.
+- **P6** (cylinder collision pairs): **#3324** — **merged**.
+- **P7** (mesh collision pairs): **#3325** — **merged**.
 
-**Next: P3b — bridge translation + `"native"` factory registration +
-`sphere_box` + parity** (#3319), per plan §1.5/§1.6 and the P3b row in §3.
-Then P4–P9 (pair coverage), then phases 3–7. **Do not** add a
+**Next: P8/P9 — distance module + plane primitive/convex coverage** on
+`feature/native-distance-plane`. Keep this as one PR to minimize CI overhead:
+add `distance.{hpp,cpp}`, `plane_sphere.{hpp,cpp}`, dispatcher plane routes,
+focused distance/plane tests, and native plane benchmark rows. **Do not** add a
 `CollisionDetectorType::Native` enum or touch `World`/`ConstraintSolver`/
-`WorldConfig` — selection becomes the factory pointer
-(`getFactory()->create("native")`) only after P3b.
+`WorldConfig`; FCL remains the default until phase 6.
 
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
-PRs, worktrees, gotchas, exact P3b next steps).
+PRs, worktrees, gotchas, and exact P8/P9 next steps).
 
 ## Standing constraints
 

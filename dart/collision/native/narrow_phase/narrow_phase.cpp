@@ -38,6 +38,7 @@
 #include <dart/collision/native/narrow_phase/cylinder_collision.hpp>
 #include <dart/collision/native/narrow_phase/mesh_mesh.hpp>
 #include <dart/collision/native/narrow_phase/narrow_phase.hpp>
+#include <dart/collision/native/narrow_phase/plane_sphere.hpp>
 #include <dart/collision/native/narrow_phase/sphere_box.hpp>
 #include <dart/collision/native/narrow_phase/sphere_sphere.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
@@ -130,6 +131,74 @@ bool collideShapes(
     const auto* b1 = static_cast<const BoxShape*>(shape1);
     const auto* b2 = static_cast<const BoxShape*>(shape2);
     return collideBoxes(*b1, tf1, *b2, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Plane && type2 == ShapeType::Sphere) {
+    const auto* p = static_cast<const PlaneShape*>(shape1);
+    const auto* s = static_cast<const SphereShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collidePlaneSphere(*p, tf1, *s, tf2, local, opt);
+        });
+  }
+
+  if (type1 == ShapeType::Sphere && type2 == ShapeType::Plane) {
+    const auto* s = static_cast<const SphereShape*>(shape1);
+    const auto* p = static_cast<const PlaneShape*>(shape2);
+    return collidePlaneSphere(*p, tf2, *s, tf1, result, option);
+  }
+
+  if (type1 == ShapeType::Plane && type2 == ShapeType::Box) {
+    const auto* p = static_cast<const PlaneShape*>(shape1);
+    const auto* b = static_cast<const BoxShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collidePlaneBox(*p, tf1, *b, tf2, local, opt);
+        });
+  }
+
+  if (type1 == ShapeType::Box && type2 == ShapeType::Plane) {
+    const auto* b = static_cast<const BoxShape*>(shape1);
+    const auto* p = static_cast<const PlaneShape*>(shape2);
+    return collidePlaneBox(*p, tf2, *b, tf1, result, option);
+  }
+
+  if (type1 == ShapeType::Plane && type2 == ShapeType::Capsule) {
+    const auto* p = static_cast<const PlaneShape*>(shape1);
+    const auto* c = static_cast<const CapsuleShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collidePlaneCapsule(*p, tf1, *c, tf2, local, opt);
+        });
+  }
+
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Plane) {
+    const auto* c = static_cast<const CapsuleShape*>(shape1);
+    const auto* p = static_cast<const PlaneShape*>(shape2);
+    return collidePlaneCapsule(*p, tf2, *c, tf1, result, option);
+  }
+
+  if (type1 == ShapeType::Plane && type2 == ShapeType::Convex) {
+    const auto* p = static_cast<const PlaneShape*>(shape1);
+    const auto* c = static_cast<const ConvexShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collidePlaneConvex(*p, tf1, *c, tf2, local, opt);
+        });
+  }
+
+  if (type1 == ShapeType::Convex && type2 == ShapeType::Plane) {
+    const auto* c = static_cast<const ConvexShape*>(shape1);
+    const auto* p = static_cast<const PlaneShape*>(shape2);
+    return collidePlaneConvex(*p, tf2, *c, tf1, result, option);
   }
 
   if (type1 == ShapeType::Sphere && type2 == ShapeType::Box) {
@@ -380,6 +449,16 @@ bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)
     return true;
   }
   if (type1 == ShapeType::Box && type2 == ShapeType::Box) {
+    return true;
+  }
+  if ((type1 == ShapeType::Plane && type2 == ShapeType::Sphere)
+      || (type1 == ShapeType::Sphere && type2 == ShapeType::Plane)
+      || (type1 == ShapeType::Plane && type2 == ShapeType::Box)
+      || (type1 == ShapeType::Box && type2 == ShapeType::Plane)
+      || (type1 == ShapeType::Plane && type2 == ShapeType::Capsule)
+      || (type1 == ShapeType::Capsule && type2 == ShapeType::Plane)
+      || (type1 == ShapeType::Plane && type2 == ShapeType::Convex)
+      || (type1 == ShapeType::Convex && type2 == ShapeType::Plane)) {
     return true;
   }
   if ((type1 == ShapeType::Sphere && type2 == ShapeType::Box)
