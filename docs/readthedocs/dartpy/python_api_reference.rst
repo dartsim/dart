@@ -24,7 +24,7 @@ To explore the bindings locally:
    python - <<'PY'
    import dartpy as dart
    world = dart.World()
-   print(world.get_gravity())
+   print(world.gravity)
    PY
 
 Module Reference
