@@ -1,11 +1,12 @@
 Python API Reference
 ====================
 
-The full ``dartpy`` API reference is built from the module pages under
-``docs/python_api/``. Sphinx imports a live ``dartpy`` module when one is
-available; otherwise ``docs/readthedocs/conf.py`` falls back to the committed
-stubs under ``python/stubs/dartpy`` so Read the Docs renders the current
-repository API shape without pinning an older release wheel.
+The full ``dartpy`` API reference is authored under ``docs/python_api/modules``
+and included into this site through the shims under
+``docs/readthedocs/dartpy/api/modules``. Sphinx imports a live ``dartpy`` module
+when one is available; otherwise ``docs/readthedocs/conf.py`` falls back to the
+committed stubs under ``python/stubs/dartpy`` so Read the Docs renders the
+current repository API shape without pinning an older release wheel.
 
 .. note::
    Local ``pixi run docs-build`` uses the same fallback path unless the current
@@ -19,7 +20,7 @@ To explore the bindings locally:
 
 .. code-block:: bash
 
-   pip install dartpy
+   pip install --pre dartpy
    python - <<'PY'
    import dartpy as dart
    world = dart.World()

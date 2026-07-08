@@ -1,8 +1,8 @@
 # Install DART
 
-DART 7 is **Python-first**, but because it is still in development its `dartpy`
-packages are pre-releases. The two reliable ways to get the DART 7 API used
-throughout this guide are PyPI pre-release wheels and a source build.
+DART 7 is **Python-first**, but because it is still in development the default
+package channels may still resolve stable DART 6 artifacts. The two DART 7 paths
+tracked by this source tree are the CPython 3.14 wheel lane and a source build.
 
 ```{admonition} Default channels still install DART 6
 :class: important
@@ -15,8 +15,9 @@ with one of the options below, or build from source.
 
 ## Python package (pre-release)
 
-DART 7 wheels are published as pre-releases on PyPI (currently Linux x86_64 /
-CPython 3.14). Opt into pre-releases so you get DART 7 rather than DART 6:
+The tracked DART 7 wheel workflow builds `dartpy` for CPython 3.14 on Linux,
+macOS, and Windows. Opt into pre-releases when using PyPI so a DART 7 wheel is
+preferred over the stable DART 6 line:
 
 ```bash
 pip install --pre dartpy           # pip (PyPI)

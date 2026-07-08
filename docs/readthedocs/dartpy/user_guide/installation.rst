@@ -4,19 +4,21 @@ Installation
 Quick install commands
 ----------------------
 
-Use your preferred package manager to add ``dartpy`` to an existing environment:
+Use your preferred package manager to add ``dartpy`` to an existing environment.
+For DART 7, opt into PyPI pre-releases so the Python-first API in this guide is
+selected instead of the stable DART 6 package line:
 
 .. code-block:: bash
 
-   uv add dartpy                 # uv (recommended for Python-first projects)
-   pip install dartpy --pre      # PyPI wheels (Linux x86_64, CPython 3.14)
-   pixi add dartpy               # Pixi environment
+   uv add dartpy --prerelease allow  # uv (recommended for Python-first projects)
+   pip install dartpy --pre          # PyPI wheels, CPython 3.14
+   pixi add dartpy                   # stable DART 6 package line today
    conda install -c conda-forge dartpy
 
 Supported platforms
 -------------------
 
-Pre-built wheels on PyPI currently cover the following configurations:
+The tracked DART 7 wheel workflow builds these configurations:
 
 .. list-table::
    :header-rows: 1
@@ -24,14 +26,25 @@ Pre-built wheels on PyPI currently cover the following configurations:
 
    * - Platform / Python
      - Status
-   * - Linux x86_64 / CPython 3.14
-     - ✅ Published as ``dartpy`` wheels (7.0.0.dev0, ``pip install --pre``)
-   * - Other CPython versions and platforms
-     - ⚠️ Use conda-forge, pixi, or build from source (no recent wheels yet)
+   * - Linux / CPython 3.14
+     - Built by ``publish_dartpy.yml`` and installable from PyPI when the
+       matching tag is published
+   * - macOS / CPython 3.14
+     - Built by ``publish_dartpy.yml`` and installable from PyPI when the
+       matching tag is published
+   * - Windows / CPython 3.14
+     - Built by ``publish_dartpy.yml`` and installable from PyPI when the
+       matching tag is published
+   * - Other CPython versions
+     - Build from source with a matching Python 3.14 toolchain
 
 .. note::
 
-   The latest PyPI upload is a pre-release (``7.0.0.dev0``). Use the ``--pre`` flag with ``pip`` if you want that build; otherwise pip falls back to the last stable 0.2.x wheel. For the most up-to-date availability, check the `dartpy project page on PyPI <https://pypi.org/project/dartpy/>`_.
+   Wheel versions are sourced from ``package.xml``. Use the ``--pre`` flag with
+   ``pip`` for DART 7 pre-release tags; otherwise package managers can fall
+   back to the stable DART 6 package line. For the most up-to-date published
+   availability, check the `dartpy project page on PyPI
+   <https://pypi.org/project/dartpy/>`_.
 
 Building from source
 --------------------

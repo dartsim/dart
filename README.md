@@ -33,7 +33,7 @@ Articulated Body Algorithm for accurate, stable motion dynamics.
 >
 > For a stable release, use **DART 6 LTS**:
 > [documentation](https://dart.readthedocs.io/en/stable/) ·
-> [`release-6.19` branch](https://github.com/dartsim/dart/tree/release-6.19).
+> [`release-6.20` branch](https://github.com/dartsim/dart/tree/release-6.20).
 
 <p align="center">
   <img src="docs/assets/unitree_g1_demo.gif" width="720" alt="Unitree G1 humanoid demo" />
@@ -54,18 +54,22 @@ Articulated Body Algorithm for accurate, stable motion dynamics.
 
 ```python
 import dartpy as dart
+import numpy as np
 
-world = dart.World()
+world = dart.World(time_step=1.0 / 1000.0)
 
-# Load a robot from URDF
-urdf = dart.io.UrdfParser()
-robot = urdf.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
-world.add_skeleton(robot)
+# Add a 1 kg rigid body one metre above the origin.
+options = dart.RigidBodyOptions()
+options.mass = 1.0
+options.position = np.array([0.0, 0.0, 1.0])
+box = world.add_rigid_body("box", options)
 
-# Simulate 100 steps
+# Lock topology, then simulate 100 steps.
+world.enter_simulation_mode()
 for _ in range(100):
     world.step()
-    print(f"Positions: {robot.get_positions()}")
+
+print(f"t = {world.time:.3f} s, box z = {float(box.translation[2]):.3f} m")
 ```
 
 **C++**
@@ -79,20 +83,19 @@ for current source-checkout examples; DART 6 C++ snippets remain on the
 ## Installation
 
 The quick-start snippets above target the current `main` branch and DART 7 API.
-Until DART 7 package artifacts are published, package managers resolve the
-latest published DART 6 artifacts instead, and different indexes may briefly
-serve different DART 6 patch releases until their packages finish publishing.
-Use the file-free package smoke checks below for the installed package version,
-or use the source checkout path for the DART 7 quick starts.
+The tracked DART 7 wheel lane builds CPython 3.14 wheels on Linux, macOS, and
+Windows, while default package channels may still resolve stable DART 6
+artifacts. Use PyPI pre-release resolution for DART 7 packages, or use the
+source checkout path for the newest DART 7 surface.
 
 ### Python (Recommended)
 
-| Method             | Command                               |
-| ------------------ | ------------------------------------- |
-| **uv** (preferred) | `uv add dartpy`                       |
-| **pip**            | `pip install dartpy`                  |
-| **pixi**           | `pixi add dartpy`                     |
-| **conda**          | `conda install -c conda-forge dartpy` |
+| Method                   | Command                               |
+| ------------------------ | ------------------------------------- |
+| **uv** (DART 7 PyPI)     | `uv add dartpy --prerelease allow`    |
+| **pip** (DART 7 PyPI)    | `pip install --pre dartpy`            |
+| **pixi** (DART 6 today)  | `pixi add dartpy`                     |
+| **conda** (DART 6 today) | `conda install -c conda-forge dartpy` |
 
 ### C++
 
@@ -110,19 +113,20 @@ or use the source checkout path for the DART 7 quick starts.
 ### Current Package Smoke Checks
 
 These snippets create a tiny model in code, so they do not depend on sample data
-files being present in the installed package.
+files being present in the installed package. The Python snippet targets the
+DART 7 facade; if `dart.World` or `add_rigid_body` is missing, the environment
+resolved a stable DART 6 package and should use the stable documentation.
 
 **Python package**
 
 ```python
 import dartpy as dart
 
-world = dart.simulation.World()
-skeleton = dart.dynamics.Skeleton("box")
-skeleton.createFreeJointAndBodyNodePair()
-world.addSkeleton(skeleton)
+world = dart.World()
+body = world.add_rigid_body("box", dart.RigidBodyOptions())
+world.enter_simulation_mode()
 world.step()
-print(f"Positions: {skeleton.getPositions()}")
+print(f"t = {world.time:.4f} s, box position = {body.translation}")
 ```
 
 **C++ package**
@@ -173,7 +177,7 @@ search terms, and capture commands are in the
 #### Branches
 
 - `main` — Active development targeting DART 7 (not yet production-ready)
-- `release-6.19` — Maintenance branch for DART 6 LTS (critical fixes only); see
+- `release-6.20` — Maintenance branch for DART 6 LTS (critical fixes only); see
   the [DART 6 documentation](https://dart.readthedocs.io/en/stable/)
 
 ## Citation
