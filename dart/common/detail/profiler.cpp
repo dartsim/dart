@@ -343,6 +343,22 @@ void Profiler::recordCounter(
   counter->last = value;
 }
 
+void Profiler::recordScopeForTesting(
+    std::string_view label,
+    std::string_view file,
+    int line,
+    std::uint64_t durationNs)
+{
+  auto record = threadRecord();
+  auto* node = findOrCreateChild(*record, record->root, label, file, line);
+
+  ++node->callCount;
+  node->inclusiveNs += durationNs;
+  node->selfNs += durationNs;
+  node->minNs = std::min(node->minNs, durationNs);
+  node->maxNs = std::max(node->maxNs, durationNs);
+}
+
 std::uint64_t Profiler::sumInclusiveChildren(const ProfileNode& node)
 {
   std::uint64_t total = 0;
@@ -702,13 +718,15 @@ void Profiler::printSummary(std::ostream& os)
   }
 
   std::uint64_t totalNs = 0;
+  bool anyScopes = false;
   bool anyCounters = false;
   for (const auto& record : threads) {
     totalNs += sumInclusiveChildren(record->root);
+    anyScopes = anyScopes || hasRecordedScopes(record->root);
     anyCounters = anyCounters || hasRecordedCounters(*record);
   }
 
-  if (totalNs == 0 && !anyCounters) {
+  if (!anyScopes && !anyCounters) {
     os << "DART profiler (text): no scoped regions were recorded.\n";
     return;
   }
