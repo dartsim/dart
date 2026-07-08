@@ -66,20 +66,20 @@ scope-diff-guarded.
   **merged**.
 - **P10** (mixed-scene FCL/DART/native parity coverage): **#3350** —
   **merged**.
+- **D1** (native detector distance adapter + native basename normalization):
+  **#3352** — **merged**.
 
-**Next: Phase 3 D1 — native detector distance adapter** on
-`feature/native-distance-adapter`. Keep this as one PR: expose
-`NativeCollisionDetector::distance()` through the existing DART 6
-`CollisionGroup`/`DistanceOption`/`DistanceResult` contract, compare supported
-primitive rows against the incumbent FCL distance path, and keep the native
-detector opt-in only. Fold the native engine basename normalization
-(`Aabb.hpp`, `NarrowPhase.cpp`, `SphereBox.hpp`, etc.) into this PR rather than
-opening a separate cleanup PR. **Do not** add a
-`CollisionDetectorType::Native` enum or touch `World`/`ConstraintSolver`/
-`WorldConfig`; FCL remains the default until phase 6.
+**Next: Phase 3 D2 — native detector raycast adapter** on
+`feature/native-raycast-adapter`. Keep this as one PR: expose
+`NativeCollisionDetector::raycast()` through the existing DART 6
+`CollisionGroup`/`RaycastOption`/`RaycastResult` contract, compare supported
+raycast rows against the incumbent Bullet raycast path, and keep the native
+detector opt-in only. **Do not** add a `CollisionDetectorType::Native` enum or
+touch `World`/`ConstraintSolver`/`WorldConfig`; FCL remains the default until
+phase 6.
 
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
-PRs, worktrees, gotchas, and exact Phase 3 D1 next steps).
+PRs, worktrees, gotchas, and exact Phase 3 D2 next steps).
 
 ## Standing constraints
 

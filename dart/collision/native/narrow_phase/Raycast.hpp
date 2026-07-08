@@ -34,65 +34,60 @@
 
 #include <dart/collision/native/Export.hpp>
 #include <dart/collision/native/Types.hpp>
-#include <dart/collision/native/detail/Span.hpp>
+#include <dart/collision/native/shapes/Shape.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 namespace dart::collision::native {
 
-enum class ShapeType;
+[[nodiscard]] DART_COLLISION_NATIVE_API bool raycastSphere(
+    const Ray& ray,
+    const SphereShape& sphere,
+    const Eigen::Isometry3d& sphereTransform,
+    const RaycastOption& option,
+    RaycastResult& result);
 
-struct DART_COLLISION_NATIVE_API NarrowPhasePair
-{
-  const Shape* shapeA;
-  const Shape* shapeB;
-  Eigen::Isometry3d tfA;
-  Eigen::Isometry3d tfB;
-};
+[[nodiscard]] DART_COLLISION_NATIVE_API bool raycastBox(
+    const Ray& ray,
+    const BoxShape& box,
+    const Eigen::Isometry3d& boxTransform,
+    const RaycastOption& option,
+    RaycastResult& result);
 
-class DART_COLLISION_NATIVE_API NarrowPhase
-{
-public:
-  static bool collide(
-      const Shape* shape1,
-      const Eigen::Isometry3d& tf1,
-      const Shape* shape2,
-      const Eigen::Isometry3d& tf2,
-      const CollisionOption& option,
-      CollisionResult& result);
+[[nodiscard]] DART_COLLISION_NATIVE_API bool raycastCapsule(
+    const Ray& ray,
+    const CapsuleShape& capsule,
+    const Eigen::Isometry3d& capsuleTransform,
+    const RaycastOption& option,
+    RaycastResult& result);
 
-  static bool collideBatch(
-      span<const NarrowPhasePair> pairs,
-      span<CollisionResult> results,
-      const CollisionOption& option = CollisionOption());
+[[nodiscard]] DART_COLLISION_NATIVE_API bool raycastCylinder(
+    const Ray& ray,
+    const CylinderShape& cylinder,
+    const Eigen::Isometry3d& cylinderTransform,
+    const RaycastOption& option,
+    RaycastResult& result);
 
-  static bool collideBatch(
-      span<const NarrowPhasePair> pairs,
-      span<CollisionResult> results,
-      span<bool> hits,
-      const CollisionOption& option = CollisionOption());
+[[nodiscard]] DART_COLLISION_NATIVE_API bool raycastPlane(
+    const Ray& ray,
+    const PlaneShape& plane,
+    const Eigen::Isometry3d& planeTransform,
+    const RaycastOption& option,
+    RaycastResult& result);
 
-  static double distance(
-      const Shape* shape1,
-      const Eigen::Isometry3d& tf1,
-      const Shape* shape2,
-      const Eigen::Isometry3d& tf2,
-      const DistanceOption& option,
-      DistanceResult& result);
+[[nodiscard]] DART_COLLISION_NATIVE_API bool raycastMesh(
+    const Ray& ray,
+    const MeshShape& mesh,
+    const Eigen::Isometry3d& meshTransform,
+    const RaycastOption& option,
+    RaycastResult& result);
 
-  static bool raycast(
-      const Ray& ray,
-      const Shape* shape,
-      const Eigen::Isometry3d& transform,
-      const RaycastOption& option,
-      RaycastResult& result);
-
-  static bool isSupported(ShapeType type1, ShapeType type2);
-
-  static bool isDistanceSupported(ShapeType type1, ShapeType type2);
-
-  static bool isRaycastSupported(ShapeType type);
-};
+[[nodiscard]] DART_COLLISION_NATIVE_API bool raycastConvex(
+    const Ray& ray,
+    const ConvexShape& convex,
+    const Eigen::Isometry3d& convexTransform,
+    const RaycastOption& option,
+    RaycastResult& result);
 
 } // namespace dart::collision::native

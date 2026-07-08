@@ -34,6 +34,8 @@
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/DistanceFilter.hpp>
 #include <dart/collision/DistanceResult.hpp>
+#include <dart/collision/RaycastOption.hpp>
+#include <dart/collision/RaycastResult.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/native/NativeCollisionDetector.hpp>
@@ -977,6 +979,165 @@ TEST(NativeCollisionDetector, DistanceLeavesMeshPrimitivePairsUnsupported)
       = detector->createCollisionGroup(meshFrame.get(), sphereFrame.get());
   EXPECT_NEAR(
       2.0, unsupportedGroup->distance(lowerBoundOption, nullptr), 1e-12);
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, RaycastReportsClosestHit)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto frame1 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(1.0),
+      Eigen::Vector3d(-2.0, 0.0, 0.0));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(1.0),
+      Eigen::Vector3d(2.0, 0.0, 0.0));
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+  collision::RaycastOption option;
+  collision::RaycastResult result;
+  EXPECT_TRUE(group->raycast(
+      Eigen::Vector3d(-5.0, 0.0, 0.0),
+      Eigen::Vector3d(5.0, 0.0, 0.0),
+      option,
+      &result));
+
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(1u, result.mRayHits.size());
+  const auto& hit = result.mRayHits[0];
+  EXPECT_EQ(frame1.get(), hit.mCollisionObject->getShapeFrame());
+  EXPECT_TRUE(hit.mPoint.isApprox(Eigen::Vector3d(-3.0, 0.0, 0.0), 1e-12));
+  EXPECT_TRUE(hit.mNormal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(0.2, hit.mFraction, 1e-12);
+
+  EXPECT_TRUE(group->raycast(
+      Eigen::Vector3d(-5.0, 0.0, 0.0),
+      Eigen::Vector3d(5.0, 0.0, 0.0),
+      option,
+      nullptr));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, RaycastRespectsAllHitsSortingAndFilters)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto frame1 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(1.0),
+      Eigen::Vector3d(-2.0, 0.0, 0.0));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(1.0),
+      Eigen::Vector3d(2.0, 0.0, 0.0));
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+  collision::RaycastOption allHitsOption(true, true, nullptr);
+  collision::RaycastResult result;
+  EXPECT_TRUE(group->raycast(
+      Eigen::Vector3d(-5.0, 0.0, 0.0),
+      Eigen::Vector3d(5.0, 0.0, 0.0),
+      allHitsOption,
+      &result));
+
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(2u, result.mRayHits.size());
+  EXPECT_EQ(frame1.get(), result.mRayHits[0].mCollisionObject->getShapeFrame());
+  EXPECT_NEAR(0.2, result.mRayHits[0].mFraction, 1e-12);
+  EXPECT_EQ(frame2.get(), result.mRayHits[1].mCollisionObject->getShapeFrame());
+  EXPECT_NEAR(0.6, result.mRayHits[1].mFraction, 1e-12);
+
+  collision::RaycastOption filteredOption(
+      false, false, [&](const collision::CollisionObject* object) {
+        return object->getShapeFrame() == frame2.get();
+      });
+  result.clear();
+  EXPECT_TRUE(group->raycast(
+      Eigen::Vector3d(-5.0, 0.0, 0.0),
+      Eigen::Vector3d(5.0, 0.0, 0.0),
+      filteredOption,
+      &result));
+
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(1u, result.mRayHits.size());
+  EXPECT_EQ(frame2.get(), result.mRayHits[0].mCollisionObject->getShapeFrame());
+  EXPECT_TRUE(result.mRayHits[0].mPoint.isApprox(
+      Eigen::Vector3d(1.0, 0.0, 0.0), 1e-12));
+  EXPECT_NEAR(0.6, result.mRayHits[0].mFraction, 1e-12);
+
+  collision::RaycastOption rejectingOption(
+      false, false, [](const collision::CollisionObject*) { return false; });
+  result.clear();
+  EXPECT_FALSE(group->raycast(
+      Eigen::Vector3d(-5.0, 0.0, 0.0),
+      Eigen::Vector3d(5.0, 0.0, 0.0),
+      rejectingOption,
+      &result));
+  EXPECT_FALSE(result.hasHit());
+  EXPECT_FALSE(group->raycast(
+      Eigen::Vector3d(-5.0, 0.0, 0.0),
+      Eigen::Vector3d(5.0, 0.0, 0.0),
+      rejectingOption,
+      nullptr));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, RaycastCoversPrimitiveRows)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  collision::RaycastOption option;
+
+  auto expectHit = [&](const dynamics::ShapePtr& shape,
+                       const Eigen::Vector3d& from,
+                       const Eigen::Vector3d& to,
+                       const Eigen::Vector3d& point,
+                       const Eigen::Vector3d& normal,
+                       double fraction) {
+    auto frame = makeFrame(shape);
+    auto group = detector->createCollisionGroup(frame.get());
+
+    collision::RaycastResult result;
+    ASSERT_TRUE(group->raycast(from, to, option, &result));
+    ASSERT_TRUE(result.hasHit());
+    ASSERT_EQ(1u, result.mRayHits.size());
+    const auto& hit = result.mRayHits[0];
+    EXPECT_EQ(frame.get(), hit.mCollisionObject->getShapeFrame());
+    EXPECT_TRUE(hit.mPoint.isApprox(point, 1e-12));
+    EXPECT_TRUE(hit.mNormal.isApprox(normal, 1e-12));
+    EXPECT_NEAR(fraction, hit.mFraction, 1e-12);
+  };
+
+  expectHit(
+      std::make_shared<dynamics::SphereShape>(1.0),
+      Eigen::Vector3d(-3.0, 0.0, 0.0),
+      Eigen::Vector3d(3.0, 0.0, 0.0),
+      Eigen::Vector3d(-1.0, 0.0, 0.0),
+      -Eigen::Vector3d::UnitX(),
+      1.0 / 3.0);
+  expectHit(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(2.0, 2.0, 2.0)),
+      Eigen::Vector3d(-3.0, 0.0, 0.0),
+      Eigen::Vector3d(3.0, 0.0, 0.0),
+      Eigen::Vector3d(-1.0, 0.0, 0.0),
+      -Eigen::Vector3d::UnitX(),
+      1.0 / 3.0);
+  expectHit(
+      std::make_shared<dynamics::CapsuleShape>(0.5, 2.0),
+      Eigen::Vector3d(-3.0, 0.0, 0.0),
+      Eigen::Vector3d(3.0, 0.0, 0.0),
+      Eigen::Vector3d(-0.5, 0.0, 0.0),
+      -Eigen::Vector3d::UnitX(),
+      2.5 / 6.0);
+  expectHit(
+      std::make_shared<dynamics::CylinderShape>(0.5, 2.0),
+      Eigen::Vector3d(-3.0, 0.0, 0.0),
+      Eigen::Vector3d(3.0, 0.0, 0.0),
+      Eigen::Vector3d(-0.5, 0.0, 0.0),
+      -Eigen::Vector3d::UnitX(),
+      2.5 / 6.0);
+  expectHit(
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0),
+      Eigen::Vector3d(0.0, 0.0, 1.0),
+      Eigen::Vector3d(0.0, 0.0, -1.0),
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::UnitZ(),
+      0.5);
 }
 
 //==============================================================================

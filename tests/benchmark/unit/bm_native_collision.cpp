@@ -2,6 +2,11 @@
 #include <dart/collision/CollisionGroup.hpp>
 #include <dart/collision/DistanceOption.hpp>
 #include <dart/collision/DistanceResult.hpp>
+#include <dart/collision/RaycastOption.hpp>
+#include <dart/collision/RaycastResult.hpp>
+#if HAVE_BULLET
+  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#endif
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/native/NativeCollisionDetector.hpp>
 #include <dart/collision/native/Types.hpp>
@@ -189,6 +194,59 @@ void runFclDetectorDistance(
       shapeB,
       translationB);
 }
+
+void runDetectorRaycast(
+    benchmark::State& state,
+    const dart::collision::CollisionDetectorPtr& detector,
+    const dart::dynamics::ShapePtr& shape,
+    const Eigen::Vector3d& translation)
+{
+  auto frame = makeDistanceFrame(shape, translation);
+  auto group = detector->createCollisionGroup(frame.get());
+
+  const Eigen::Vector3d from(-5.0, 0.0, 0.0);
+  const Eigen::Vector3d to(5.0, 0.0, 0.0);
+  dart::collision::RaycastOption option(false, false, nullptr);
+  dart::collision::RaycastResult result;
+  bool hit = false;
+
+  for (auto _ : state) {
+    result.clear();
+    hit = group->raycast(from, to, option, &result);
+    benchmark::DoNotOptimize(hit);
+    benchmark::DoNotOptimize(result.mRayHits.size());
+  }
+
+  if (!hit) {
+    state.SkipWithError("raycast benchmark case did not produce a hit");
+  }
+}
+
+void runNativeDetectorRaycast(
+    benchmark::State& state,
+    const dart::dynamics::ShapePtr& shape,
+    const Eigen::Vector3d& translation = Eigen::Vector3d::Zero())
+{
+  runDetectorRaycast(
+      state,
+      dart::collision::NativeCollisionDetector::create(),
+      shape,
+      translation);
+}
+
+#if HAVE_BULLET
+void runBulletDetectorRaycast(
+    benchmark::State& state,
+    const dart::dynamics::ShapePtr& shape,
+    const Eigen::Vector3d& translation = Eigen::Vector3d::Zero())
+{
+  runDetectorRaycast(
+      state,
+      dart::collision::BulletCollisionDetector::create(),
+      shape,
+      translation);
+}
+#endif
 
 void BM_NativeSphereSphere(benchmark::State& state)
 {
@@ -568,6 +626,36 @@ void BM_DistanceFclPlaneSphere(benchmark::State& state)
       Eigen::Vector3d(0.0, 0.0, 0.75));
 }
 
+void BM_RaycastNativeSphere(benchmark::State& state)
+{
+  runNativeDetectorRaycast(
+      state, std::make_shared<dart::dynamics::SphereShape>(1.0));
+}
+
+void BM_RaycastNativeBox(benchmark::State& state)
+{
+  runNativeDetectorRaycast(
+      state,
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d(2.0, 2.0, 2.0)));
+}
+
+#if HAVE_BULLET
+void BM_RaycastBulletSphere(benchmark::State& state)
+{
+  runBulletDetectorRaycast(
+      state, std::make_shared<dart::dynamics::SphereShape>(1.0));
+}
+
+void BM_RaycastBulletBox(benchmark::State& state)
+{
+  runBulletDetectorRaycast(
+      state,
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d(2.0, 2.0, 2.0)));
+}
+#endif
+
 } // namespace
 
 BENCHMARK(BM_NativeSphereSphere)->Unit(benchmark::kNanosecond);
@@ -600,3 +688,9 @@ BENCHMARK(BM_DistanceNativeBoxBox)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_DistanceFclBoxBox)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_DistanceNativePlaneSphere)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_DistanceFclPlaneSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_RaycastNativeSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_RaycastNativeBox)->Unit(benchmark::kNanosecond);
+#if HAVE_BULLET
+BENCHMARK(BM_RaycastBulletSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_RaycastBulletBox)->Unit(benchmark::kNanosecond);
+#endif
