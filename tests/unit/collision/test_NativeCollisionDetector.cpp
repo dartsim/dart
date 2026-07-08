@@ -47,11 +47,15 @@
 #include <dart/dynamics/ConeShape.hpp>
 #include <dart/dynamics/ConvexMeshShape.hpp>
 #include <dart/dynamics/CylinderShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/MeshShape.hpp>
 #include <dart/dynamics/MultiSphereConvexHullShape.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
 #include <dart/dynamics/PyramidShape.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/SoftBodyNode.hpp>
 #include <dart/dynamics/SphereShape.hpp>
 
 #include <dart/math/TriMesh.hpp>
@@ -201,6 +205,55 @@ private:
   const dynamics::ShapeFrame* mFirst;
   const dynamics::ShapeFrame* mSecond;
 };
+
+//==============================================================================
+struct NativePlaneSoftMeshScene
+{
+  collision::CollisionDetectorPtr detector;
+  dynamics::SimpleFramePtr planeFrame;
+  dynamics::SkeletonPtr softSkeleton;
+  dynamics::SoftBodyNode* softBody{nullptr};
+  dynamics::ShapeNode* softShapeNode{nullptr};
+  std::unique_ptr<collision::CollisionGroup> group;
+};
+
+//==============================================================================
+NativePlaneSoftMeshScene makeNativePlaneSoftMeshScene(double softCenterZ)
+{
+  NativePlaneSoftMeshScene scene;
+  scene.detector = collision::NativeCollisionDetector::create();
+
+  scene.planeFrame
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  scene.planeFrame->setShape(
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  scene.softSkeleton = dynamics::Skeleton::create("native_soft_plane");
+  const auto softProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d::Ones(), Eigen::Isometry3d::Identity(), 1.0);
+  const dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties("native_soft_plane_body"));
+  const dynamics::SoftBodyNode::Properties softBodyProperties(
+      bodyProperties, softProperties);
+
+  auto pair = scene.softSkeleton->createJointAndBodyNodePair<
+      dynamics::FreeJoint,
+      dynamics::SoftBodyNode>(
+      nullptr, dynamics::FreeJoint::Properties(), softBodyProperties);
+  scene.softBody = pair.second;
+
+  Eigen::Isometry3d softTransform = Eigen::Isometry3d::Identity();
+  softTransform.translation().z() = softCenterZ;
+  pair.first->setPositions(
+      dynamics::FreeJoint::convertToPositions(softTransform));
+
+  scene.softShapeNode
+      = scene.softBody->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  scene.group = scene.detector->createCollisionGroup(
+      scene.planeFrame.get(), scene.softShapeNode);
+
+  return scene;
+}
 
 //==============================================================================
 dynamics::ConvexMeshShape::Vertices makeCubeVertices(double halfExtent = 0.5)
@@ -519,6 +572,41 @@ TEST(NativeCollisionDetector, CreatesDetectorGroupAndCollidesSphereSphere)
   EXPECT_NEAR(0.25, contact.penetrationDepth, 1e-12);
   EXPECT_TRUE(result.inCollision(frame.get()));
   EXPECT_TRUE(result.inCollision(frame2.get()));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, DetectsSoftMeshPlaneContactThroughFallback)
+{
+  auto scene = makeNativePlaneSoftMeshScene(0.45);
+  ASSERT_NE(nullptr, scene.softBody);
+  ASSERT_NE(nullptr, scene.softShapeNode);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  collision::CollisionResult result;
+  EXPECT_TRUE(scene.group->collide(option, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  bool sawSoftContact = false;
+  for (std::size_t i = 0u; i < result.getNumContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    if (contact.collisionObject2->getShapeFrame() != scene.softShapeNode)
+      continue;
+
+    sawSoftContact = true;
+    EXPECT_EQ(
+        scene.planeFrame.get(), contact.collisionObject1->getShapeFrame());
+    EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+    EXPECT_GE(contact.penetrationDepth, 0.0);
+    EXPECT_GE(contact.triID2, 0);
+    EXPECT_LT(
+        static_cast<std::size_t>(contact.triID2),
+        scene.softBody->getNumFaces());
+  }
+
+  EXPECT_TRUE(sawSoftContact);
 }
 
 //==============================================================================

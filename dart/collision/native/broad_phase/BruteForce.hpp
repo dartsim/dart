@@ -60,10 +60,16 @@ public:
   using BroadPhase::updateRange;
 
 private:
-  std::unordered_map<std::size_t, Aabb> objects_;
-  std::vector<std::size_t> orderedIds_;
+  struct Entry
+  {
+    std::size_t id;
+    Aabb aabb;
+  };
 
-  void rebuildOrderedIds();
+  std::vector<Entry> entries_;
+  std::unordered_map<std::size_t, std::size_t> indices_;
+
+  void rebuildIndicesFrom(std::size_t begin);
 };
 
 } // namespace dart::collision::native

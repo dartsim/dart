@@ -10,8 +10,11 @@ runtime paths, including deformable-body work. FCL remains necessary in this
 branch for broad soft-mesh coverage, but it is no longer the only measured path:
 this branch now has an initial native `SoftMeshShape` lane for soft-vs-plane,
 soft-vs-box, soft-vs-sphere, soft-vs-ellipsoid, and soft-vs-soft contacts. The
-release-branch target remains to move soft/deformable collision onto
-`dart/collision/native` once complete parity and performance gates exist.
+direct `NativeCollisionDetector` factory key also participates in these soft
+scenes through cached DART-native fallback collision objects instead of
+skipping `SoftMeshShape` or `EllipsoidShape`. The release-branch target remains
+to move soft/deformable collision onto `dart/collision/native` once complete
+parity and performance gates exist.
 
 ## Current native evidence
 
@@ -26,6 +29,15 @@ release-branch target remains to move soft/deformable collision onto
 - `DARTCollisionObject::CachedShapeKind` now caches `SoftMeshShape` and forces
   `SoftMeshShape::refreshData()` on every native update so dynamic soft bounds
   track point-mass motion even when the shape frame version is unchanged.
+- Direct `NativeCollisionObject` instances keep cached DART-native fallback
+  objects for `SoftMeshShape` and `EllipsoidShape` pairs. Their dynamic AABBs
+  stay in the native broadphase, fallback plane pairs use the cached DART plane
+  collision path, and fallback pair scratch results skip unused colliding-object
+  lookup-cache maintenance.
+- `BruteForceBroadPhase` now stores deterministic object IDs and AABBs in a
+  sorted contiguous entry vector, with an ID-to-index map used only for
+  add/update/remove. The hot pair walk no longer performs hash lookups per AABB
+  candidate.
 - `DARTCollisionObject` also keeps a backend-internal soft mesh cache with
   current local vertices, first-face metadata per point mass, and precomputed
   triangle geometry for native soft-soft contact tests. The cache resizes when
@@ -64,6 +76,7 @@ release-branch target remains to move soft/deformable collision onto
 `soft_body_headless` now accepts:
 
 ```bash
+COLLISION_DETECTOR=native ./build/default/cpp/Release/tests/benchmark/integration/soft_body_headless soft_bodies 200 100
 COLLISION_DETECTOR=dart ./build/default/cpp/Release/tests/benchmark/integration/soft_body_headless soft_bodies 200 100
 COLLISION_DETECTOR=fcl ./build/default/cpp/Release/tests/benchmark/integration/soft_body_headless soft_bodies 200 100
 ```
@@ -98,6 +111,9 @@ The first WP-DB.08 implementation supports:
 - primitive-frame classification for soft-vs-plane, soft-vs-sphere, and
   soft-vs-box point contacts so non-contact vertices avoid unnecessary world
   contact-point transforms,
+- direct `NativeCollisionDetector` soft/ellipsoid fallback that keeps native
+  broadphase culling while reusing the tested DART-native soft contact kernels,
+- cache-friendly contiguous storage for native brute-force broadphase entries,
 - reusable soft contact constraints with fixed one-contact, Jacobian, and
   tangent-basis storage for the current soft-contact constraint shape,
 - detector selection in `soft_body_headless` for FCL/native comparison.
@@ -287,8 +303,9 @@ deformable backend.
 1. Optimize native soft-soft collision beyond the current hybrid retained-BVH
    vertex-face lane, including intra-pair or active-neighborhood parallelism for
    scenes with only a few finite-finite soft pairs.
-2. Add broader soft-vs-primitive coverage beyond the current representative
-   soft scene.
+2. Replace the direct `NativeCollisionDetector` soft/ellipsoid fallback bridge
+   with native-owned kernels once full triangle/contact-neighborhood coverage is
+   ready.
 3. Decide whether the next native soft path should use full triangle-mesh
    collision, adaptive active-vertex contact neighborhoods, or both.
 4. Extend the retained topology/dynamic-vertex adapter toward active
@@ -306,10 +323,11 @@ Native soft/deformable collision should not replace FCL until:
   scenes. This is now covered by the finite-state and one-thread versus
   four-thread final-state gate; broader physical regression thresholds remain
   useful follow-up coverage,
-- `soft_body_headless` reports stable checksums for `COLLISION_DETECTOR=dart`,
-- native detector rows match or beat FCL on the representative
-  `soft_bodies`, `soft_open_chain`, and contact-heavy soft scenes on the same
-  host,
+- `soft_body_headless` reports stable checksums for `COLLISION_DETECTOR=dart`
+  and direct `COLLISION_DETECTOR=native`,
+- direct `native` rows match or beat FCL and any other checksum-equivalent
+  backend on representative `soft_bodies`, `soft_open_chain`, and contact-heavy
+  soft scenes on the same host,
 - native soft allocation gates cover the representative soft scene set after
   simulation preparation, including contact-heavy SKEL windows,
 - unsupported-pair diagnostics are eliminated for the representative soft

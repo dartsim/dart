@@ -32,8 +32,13 @@
 
 #include "dart/collision/native/NativeCollisionObject.hpp"
 
+#include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/native/detail/NativeShapeConversion.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
 
 #include <limits>
 
@@ -42,6 +47,73 @@ namespace collision {
 namespace {
 
 constexpr std::size_t kNoShapeId = std::numeric_limits<std::size_t>::max();
+
+//==============================================================================
+class DartFallbackCollisionObject final : public DARTCollisionObject
+{
+public:
+  DartFallbackCollisionObject(
+      CollisionDetector* collisionDetector,
+      const dynamics::ShapeFrame* shapeFrame)
+    : DARTCollisionObject(collisionDetector, shapeFrame)
+  {
+    // Do nothing
+  }
+
+  void refresh()
+  {
+    updateEngineData();
+  }
+};
+
+//==============================================================================
+void refreshDartFallbackObject(DARTCollisionObject* object)
+{
+  if (object == nullptr)
+    return;
+
+  static_cast<DartFallbackCollisionObject*>(object)->refresh();
+}
+
+//==============================================================================
+bool shapeUsesDartFallback(const dynamics::Shape* shape)
+{
+  if (shape == nullptr)
+    return false;
+
+  const auto& shapeType = shape->getType();
+  return shapeType == dynamics::SoftMeshShape::getStaticType()
+         || shapeType == dynamics::EllipsoidShape::getStaticType();
+}
+
+//==============================================================================
+bool shapeIsPlane(const dynamics::Shape* shape)
+{
+  return shape != nullptr
+         && shape->getType() == dynamics::PlaneShape::getStaticType();
+}
+
+//==============================================================================
+native::Aabb getShapeAabb(
+    const dynamics::Shape& shape, const Eigen::Isometry3d& transform)
+{
+  const auto& bounds = shape.getBoundingBox();
+  return native::Aabb::transformed(
+      native::Aabb(bounds.getMin(), bounds.getMax()), transform);
+}
+
+//==============================================================================
+native::Aabb getDartFallbackAabb(
+    const DARTCollisionObject& object, const Eigen::Isometry3d& transform)
+{
+  if (!object.hasFiniteCachedLocalBounds())
+    return native::Aabb();
+
+  return native::Aabb::transformed(
+      native::Aabb(
+          object.getCachedLocalBoundsMin(), object.getCachedLocalBoundsMax()),
+      transform);
+}
 
 } // namespace
 
@@ -53,6 +125,9 @@ NativeCollisionObject::NativeCollisionObject(
 {
   updateEngineData();
 }
+
+//==============================================================================
+NativeCollisionObject::~NativeCollisionObject() = default;
 
 //==============================================================================
 const native::Shape* NativeCollisionObject::getNativeShape() const
@@ -73,6 +148,29 @@ const native::Aabb& NativeCollisionObject::getNativeAabb() const
 }
 
 //==============================================================================
+DARTCollisionObject* NativeCollisionObject::getDartFallbackObject()
+{
+  if (!mDartFallbackObject) {
+    mDartFallbackObject = std::make_unique<DartFallbackCollisionObject>(
+        getCollisionDetector(), getShapeFrame());
+  }
+
+  return mDartFallbackObject.get();
+}
+
+//==============================================================================
+bool NativeCollisionObject::usesDartFallbackShape() const
+{
+  return mUsesDartFallbackShape;
+}
+
+//==============================================================================
+bool NativeCollisionObject::isPlaneShape() const
+{
+  return mIsPlaneShape;
+}
+
+//==============================================================================
 void NativeCollisionObject::updateEngineData()
 {
   const auto shape = getShape();
@@ -80,16 +178,34 @@ void NativeCollisionObject::updateEngineData()
   const std::size_t shapeId = shapePtr ? shapePtr->getID() : kNoShapeId;
   const std::size_t shapeVersion = shapePtr ? shapePtr->getVersion() : 0u;
 
+  mNativeTransform = getTransform();
+  mUsesDartFallbackShape = shapeUsesDartFallback(shapePtr);
+  mIsPlaneShape = shapeIsPlane(shapePtr);
+
+  if (mUsesDartFallbackShape) {
+    mLastKnownShapeId = shapeId;
+    mLastKnownShapeVersion = shapeVersion;
+    mNativeShape.reset();
+    auto* fallbackObject = getDartFallbackObject();
+    refreshDartFallbackObject(fallbackObject);
+    mNativeAabb
+        = fallbackObject != nullptr ? getDartFallbackAabb(
+              *fallbackObject, fallbackObject->getWorldTransformForCollision())
+                                    : getShapeAabb(*shapePtr, mNativeTransform);
+    return;
+  }
+
   if (shapeId != mLastKnownShapeId || shapeVersion != mLastKnownShapeVersion)
     rebuildNativeShape();
 
-  mNativeTransform = getTransform();
   if (mNativeShape) {
     mNativeAabb = native::Aabb::transformed(
         mNativeShape->computeLocalAabb(), mNativeTransform);
   } else {
     mNativeAabb = native::Aabb();
   }
+
+  refreshDartFallbackObject(mDartFallbackObject.get());
 }
 
 //==============================================================================

@@ -267,6 +267,15 @@ Latest state:
   limited lane in the local run, and `THREADS=4`
   `COLLISION_DETECTOR=dart soft_bodies 20 20` preserved the prior checksum
   while showing the native finite-finite soft worker scope in the profiler.
+- A direct `NativeCollisionDetector` fallback slice is implemented locally:
+  `SoftMeshShape` and `EllipsoidShape` objects now keep native broadphase AABBs
+  while routing fallback pairs through cached DART-native collision objects.
+  Direct `COLLISION_DETECTOR=native` no longer skips the representative soft
+  scenes, reuses scratch fallback results without lookup-cache bookkeeping, uses
+  the cached plane fallback for plane/soft pairs, and benefits from contiguous
+  brute-force native broadphase storage. Focused native broadphase and detector
+  unit tests pass, and current direct-native smokes are warning-free and
+  checksum-equivalent to `COLLISION_DETECTOR=dart`.
 - `06-pr-evidence.md` now records a temporary same-harness
   `origin/release-6.20` baseline comparison, current native/FCL headless parity
   evidence, and the fact that this branch has not added a new GUI example or
@@ -285,11 +294,12 @@ Latest state:
 
 Next steps:
 
-1. Re-run the current/parent/base benchmark on an exclusive idle host with
-   longer `--benchmark_min_time` and repetitions, then refresh
-   `01-baseline-evidence.md` and `06-pr-evidence.md` with threshold-quality
-   rows. The latest committed comparison artifact is useful evidence but still
-   records noise-sensitive CPU means on a shared workstation.
+1. Commit the direct-native fallback/broadphase slice after lint and focused
+   tests, then re-run the current/parent/base benchmark on an exclusive idle
+   host with longer `--benchmark_min_time`, more repetitions,
+   `--detectors fcl,dart,native,bullet,ode`, and the default
+   `--expected-fastest-detector native`. Refresh `01-baseline-evidence.md` and
+   `06-pr-evidence.md` only after threshold-quality rows are available.
 2. Use `soft_body_headless` for longer single-core and multi-core profile
    captures on an idle host, then choose the next measured soft-body layout
    slice. The likely next WP-DB.06 slice is retained SoA scratch for
