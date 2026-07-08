@@ -229,6 +229,11 @@ TEST(NativeDistance, ComputesPrimitiveDistances)
       distanceSphereBox(
           sphereB, translated(-2.0, 0.0, 0.0), boxA, identity, sphereBoxResult),
       1e-12);
+  EXPECT_TRUE(sphereBoxResult.pointOnObject1.isApprox(
+      Eigen::Vector3d(-1.75, 0.0, 0.0)));
+  EXPECT_TRUE(
+      sphereBoxResult.pointOnObject2.isApprox(Eigen::Vector3d(-0.5, 0.0, 0.0)));
+  EXPECT_TRUE(sphereBoxResult.normal.isApprox(Eigen::Vector3d::UnitX()));
 
   BoxShape largeBox(Eigen::Vector3d(3.0, 2.0, 1.0));
   DistanceResult containedSphereBoxResult;
@@ -347,6 +352,7 @@ TEST(NativeDistance, ComputesExactCapsuleBoxAxisDistance)
       1e-12);
   EXPECT_NEAR(1.75, result.pointOnObject1.y(), 1e-12);
   EXPECT_NEAR(1.0, result.pointOnObject2.y(), 1e-12);
+  EXPECT_TRUE(result.normal.isApprox(-Eigen::Vector3d::UnitY(), 1e-12));
 }
 
 TEST(NativeDistance, AccountsForCapsuleBoxContainmentDepth)
@@ -530,6 +536,7 @@ TEST(NativeDistance, ComputesSdfDistances)
   EXPECT_TRUE(
       sphereResult.pointOnObject1.isApprox(Eigen::Vector3d(0.0, 0.0, 0.75)));
   EXPECT_TRUE(sphereResult.pointOnObject2.isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_TRUE(sphereResult.normal.isApprox(-Eigen::Vector3d::UnitZ()));
 
   CapsuleShape capsule(0.25, 1.0);
   DistanceResult capsuleResult;
@@ -541,6 +548,7 @@ TEST(NativeDistance, ComputesSdfDistances)
   EXPECT_TRUE(
       capsuleResult.pointOnObject1.isApprox(Eigen::Vector3d(0.0, 0.0, 0.25)));
   EXPECT_TRUE(capsuleResult.pointOnObject2.isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_TRUE(capsuleResult.normal.isApprox(-Eigen::Vector3d::UnitZ()));
 
   CylinderShape cylinder(0.25, 1.0);
   DistanceResult cylinderResult;
@@ -549,6 +557,7 @@ TEST(NativeDistance, ComputesSdfDistances)
       distanceCylinderSdf(
           cylinder, translated(0.0, 0.0, 1.0), sdf, identity, cylinderResult),
       1e-12);
+  EXPECT_TRUE(cylinderResult.normal.isApprox(-Eigen::Vector3d::UnitZ()));
 
   ConvexShape convex(
       {Eigen::Vector3d(-0.5, 0.0, 0.25),
@@ -560,17 +569,20 @@ TEST(NativeDistance, ComputesSdfDistances)
       0.25,
       distanceConvexSdf(convex, identity, sdf, identity, convexResult),
       1e-12);
+  EXPECT_TRUE(convexResult.normal.isApprox(-Eigen::Vector3d::UnitZ()));
 
   MeshShape mesh = makePlaneMesh(0.4);
   DistanceResult meshResult;
   EXPECT_NEAR(
       0.4, distanceMeshSdf(mesh, identity, sdf, identity, meshResult), 1e-12);
+  EXPECT_TRUE(meshResult.normal.isApprox(-Eigen::Vector3d::UnitZ()));
 
   DistanceResult sdfResult;
   EXPECT_NEAR(
       -0.5,
       distanceSdfSdf(sdf, identity, sdf, translated(0.0, 0.0, 0.5), sdfResult),
       1e-12);
+  EXPECT_TRUE(sdfResult.normal.isApprox(Eigen::Vector3d::UnitZ()));
 }
 
 TEST(NativeDistance, PlacesRoundedSdfWitnessesOnFacingSide)
@@ -588,6 +600,7 @@ TEST(NativeDistance, PlacesRoundedSdfWitnessesOnFacingSide)
       1e-12);
   EXPECT_NEAR(0.75, separatedSphere.pointOnObject1.z(), 1e-12);
   EXPECT_NEAR(0.0, separatedSphere.pointOnObject2.z(), 1e-12);
+  EXPECT_TRUE(separatedSphere.normal.isApprox(-Eigen::Vector3d::UnitZ()));
 
   DistanceResult penetratingSphere;
   EXPECT_NEAR(
@@ -597,6 +610,7 @@ TEST(NativeDistance, PlacesRoundedSdfWitnessesOnFacingSide)
       1e-12);
   EXPECT_NEAR(0.15, penetratingSphere.pointOnObject1.z(), 1e-12);
   EXPECT_NEAR(0.0, penetratingSphere.pointOnObject2.z(), 1e-12);
+  EXPECT_TRUE(penetratingSphere.normal.isApprox(Eigen::Vector3d::UnitZ()));
 
   CapsuleShape capsule(0.25, 1.0);
   DistanceResult separatedCapsule;
@@ -607,6 +621,7 @@ TEST(NativeDistance, PlacesRoundedSdfWitnessesOnFacingSide)
       1e-12);
   EXPECT_NEAR(0.25, separatedCapsule.pointOnObject1.z(), 1e-12);
   EXPECT_NEAR(0.0, separatedCapsule.pointOnObject2.z(), 1e-12);
+  EXPECT_TRUE(separatedCapsule.normal.isApprox(-Eigen::Vector3d::UnitZ()));
 
   DistanceResult penetratingCapsule;
   EXPECT_NEAR(
@@ -620,6 +635,7 @@ TEST(NativeDistance, PlacesRoundedSdfWitnessesOnFacingSide)
       1e-12);
   EXPECT_NEAR(0.15, penetratingCapsule.pointOnObject1.z(), 1e-12);
   EXPECT_NEAR(0.0, penetratingCapsule.pointOnObject2.z(), 1e-12);
+  EXPECT_TRUE(penetratingCapsule.normal.isApprox(Eigen::Vector3d::UnitZ()));
 }
 
 TEST(NativeDistance, HandlesSdfMissesAndNullFields)

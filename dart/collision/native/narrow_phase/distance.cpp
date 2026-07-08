@@ -623,7 +623,7 @@ bool sampleSdfSurfaceAgainstSdf(
           const Eigen::Vector3d targetGradientUnit
               = targetGradientWorld / targetGradientNorm;
           const double sign = (targetDistance >= 0.0) ? 1.0 : -1.0;
-          normal = targetGradientUnit * sign;
+          normal = -targetGradientUnit * sign;
           targetSurfaceWorld
               = sourceSurfaceWorld - targetGradientUnit * targetDistance;
         }
@@ -709,7 +709,7 @@ double distancePointSetSdf(
     if (gradNorm > 1e-12) {
       const Eigen::Vector3d gradUnit = bestGradient / gradNorm;
       const double sign = (bestDistance >= 0.0) ? 1.0 : -1.0;
-      normal = gradUnit * sign;
+      normal = -gradUnit * sign;
       result.pointOnObject2 = bestPoint - gradUnit * bestDistance;
     } else {
       result.pointOnObject2 = bestPoint;
@@ -789,7 +789,8 @@ double distanceSphereBox(
   Eigen::Vector3d pointOnBoxLocal = closestOnBoxLocal;
   double dist = distToSurface - sphereRadius;
 
-  if (distToSurface > boundaryTolerance) {
+  const bool sphereCenterOutsideBox = distToSurface > boundaryTolerance;
+  if (sphereCenterOutsideBox) {
     normalLocal = diffLocal / distToSurface;
   } else {
     Eigen::Vector3d insideLocalSphereCenter = sphereCenterLocal;
@@ -827,11 +828,13 @@ double distanceSphereBox(
   result.distance = dist;
 
   if (option.enableNearestPoints) {
+    const Eigen::Vector3d resultNormalLocal
+        = sphereCenterOutsideBox ? -normalLocal : normalLocal;
     result.pointOnObject2 = boxTransform * pointOnBoxLocal;
     result.pointOnObject1
         = sphereTransform.translation()
           - (boxTransform.rotation() * normalLocal) * sphereRadius;
-    result.normal = boxTransform.rotation() * normalLocal;
+    result.normal = boxTransform.rotation() * resultNormalLocal;
   }
 
   return dist;
@@ -1098,7 +1101,8 @@ double distanceCapsuleBox(
   Eigen::Vector3d pointOnBoxLocal = bestBoxPoint;
   double dist = minDist - capRadius;
 
-  if (minDist > boundaryTolerance) {
+  const bool capsuleAxisOutsideBox = minDist > boundaryTolerance;
+  if (capsuleAxisOutsideBox) {
     dirLocal /= minDist;
   } else {
     Eigen::Vector3d insideLocalCapsulePoint = bestCapsulePoint;
@@ -1136,10 +1140,12 @@ double distanceCapsuleBox(
   result.distance = dist;
 
   if (option.enableNearestPoints) {
+    const Eigen::Vector3d resultDirLocal
+        = capsuleAxisOutsideBox ? -dirLocal : dirLocal;
     result.pointOnObject2 = boxTransform * pointOnBoxLocal;
     result.pointOnObject1
         = boxTransform * (bestCapsulePoint - dirLocal * capRadius);
-    result.normal = boxTransform.rotation() * dirLocal;
+    result.normal = boxTransform.rotation() * resultDirLocal;
   }
 
   return dist;
@@ -1244,7 +1250,7 @@ double distanceSphereSdf(
       result.pointOnObject2 = center;
       result.pointOnObject1 = center + normal * radius;
     }
-    result.normal = normal;
+    result.normal = -normal;
   }
 
   return dist;
@@ -1341,7 +1347,7 @@ double distanceCapsuleSdf(
       result.pointOnObject2 = best_axis_point;
       result.pointOnObject1 = best_axis_point + normal * radius;
     }
-    result.normal = normal;
+    result.normal = -normal;
   }
 
   return best_dist;
@@ -1445,7 +1451,7 @@ double distanceCylinderSdf(
     if (gradNorm > 1e-12) {
       const Eigen::Vector3d gradUnit = bestGradient / gradNorm;
       const double sign = (bestDistance >= 0.0) ? 1.0 : -1.0;
-      normal = gradUnit * sign;
+      normal = -gradUnit * sign;
       result.pointOnObject2 = bestPoint - gradUnit * bestDistance;
     } else {
       result.pointOnObject2 = bestPoint;
