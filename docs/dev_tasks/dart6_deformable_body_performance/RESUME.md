@@ -165,7 +165,22 @@ Latest state:
   spatial contribution in the same pass, and `updateBiasImpulse()` skips the
   point loop that only added freshly zeroed `mImpBeta` values. Focused soft
   dynamics, allocation, and native checksum smokes passed after this slice.
-  Full parent/base benchmark evidence still needs a committed comparison run.
+  The later benchmark-correction slice below records the current committed
+  parent/base comparison artifact.
+- A follow-up WP-DB.06 benchmark-correction slice is implemented locally in
+  commit `649926d28dc`: the branch restores the prior two-pass
+  `updateArtInertia()` scalar timing after same-host comparisons showed the
+  simplified point-mass `Pi` formula and direct cached-position variants could
+  regress FCL rows. The retained code keeps the span-backed phase view and a
+  conservative `updateBiasForce()` connection-loop cleanup. Focused
+  `test_SoftDynamics`, `INTEGRATION_StepAllocation`, FCL `soft_cubes`, and
+  native `soft_bodies` checksum smokes passed. The comparison artifact
+  `.benchmark_results/wp-db06-inertia-conn-649926-parent-43347c-base/` reports
+  evaluator `PASS`, checksum-equivalent FCL/native correctness scenes, and
+  native as the winner for every tracked current scene/thread row. A few
+  current-vs-parent/base CPU mean rows remain noise-sensitive, so this is
+  evidence for the correction and native-detector ranking, not final
+  all-threshold completion.
 - A narrow `origin/dart6-memory-hardening` carryover is implemented locally:
   `Skeleton::checkExternalDisturbanceAndReset()` now scans body-local external
   wrenches directly instead of materializing the external-force projection cache
@@ -233,15 +248,17 @@ Latest state:
   passed the gz-physics suite and performance checks, then hit a single
   downstream gz-sim `INTEGRATION_entity_system` timing failure; immediate
   focused rerun and fresh `pixi run -e gazebo test-gz-sim` both passed.
-- Branch `js/dart6-deformable-performance` now has local implementation commit
-  `09b4e0e5d78`, memory-hardening merge/evidence commits
-  `3a2833a6e24..9d4ef692eb6`, and a local stack on
-  `origin/dart6-memory-hardening`.
+- Branch `wp-db-soft-skel-allocation-gates` now has local implementation
+  commit `649926d28dc`, including the articulated-inertia correction and
+  connection-loop cleanup. No PR is currently attached to this local branch.
 
 Next steps:
 
-1. Re-run the benchmark on an idle host with `--benchmark_min_time=1s` and
-   repetitions, then refresh `01-baseline-evidence.md`.
+1. Re-run the current/parent/base benchmark on an exclusive idle host with
+   longer `--benchmark_min_time` and repetitions, then refresh
+   `01-baseline-evidence.md` and `06-pr-evidence.md` with threshold-quality
+   rows. The latest committed comparison artifact is useful evidence but still
+   records noise-sensitive CPU means on a shared workstation.
 2. Use `soft_body_headless` for longer single-core and multi-core profile
    captures on an idle host, then choose the next measured soft-body layout
    slice. The likely next WP-DB.06 slice is retained SoA scratch for

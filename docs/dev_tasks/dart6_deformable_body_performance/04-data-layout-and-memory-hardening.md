@@ -417,8 +417,46 @@ Focused verification after this slice:
 - Native `soft_bodies` 200-step checksum rows matched between `THREADS=1` and
   `THREADS=4`.
 - Current-only benchmark repeats improved most rows relative to the prior
-  span-backed current binary. Full parent/base threshold evidence still needs a
-  committed comparison run.
+  span-backed current binary. The later articulated-inertia correction below
+  records the current committed parent/base comparison artifact.
+
+## Articulated-inertia timing correction
+
+Commit `649926d28dc` keeps the span-backed phase view, but it reverts the
+simplified point-mass `Pi` formula from the span-backed slice. Same-host
+current/parent/base comparisons showed that the algebraically smaller formula
+and direct cached-position variants could move FCL rows in the wrong direction,
+especially `soft_cubes`, even though focused checksums stayed unchanged.
+
+The current `updateArtInertia()` therefore restores the prior DART 6 timing:
+
+- compute the explicit and implicit articulated-inertia scalars first with the
+  old expressions,
+- preserve the lazy `PointMass::getLocalPosition()` transform refresh in the
+  second pass that contributes point inertia to the parent soft body, and
+- keep the change local to `SoftBodyNode.cpp` without public header or class
+  layout changes.
+
+The same commit keeps a conservative `updateBiasForce()` cleanup that hoists
+the connected-neighbor index pointer and velocity scale out of the inner spring
+loop. This avoids repeated vector access and scalar recomputation without
+changing the point-mass force model or cache invalidation behavior.
+
+Focused verification after this correction:
+
+- `pixi run lint` passed before the commit.
+- `test_SoftDynamics` and `INTEGRATION_StepAllocation` passed.
+- `soft_body_headless soft_cubes 200 200` with `COLLISION_DETECTOR=fcl`
+  and `THREADS=1` preserved the expected checksum.
+- `soft_body_headless soft_bodies 200 200` with `COLLISION_DETECTOR=dart`
+  and `THREADS=16` preserved the expected checksum.
+- `.benchmark_results/wp-db06-inertia-conn-649926-parent-43347c-base/`
+  records a two-cycle current/parent/base comparison. The evaluator verdict is
+  `PASS`, FCL and native are checksum-equivalent on the correctness scenes,
+  and the native detector wins every tracked current scene/thread row. A few
+  current-vs-parent/base CPU mean rows remain within host-load noise, so this
+  is not final threshold-quality evidence; rerun on an exclusive idle host
+  before claiming every row beats the base and parent.
 
 ## Rest-detection memory-hardening carryover
 
