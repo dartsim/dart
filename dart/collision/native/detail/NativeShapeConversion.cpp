@@ -32,7 +32,7 @@
 
 #include "dart/collision/native/detail/NativeShapeConversion.hpp"
 
-#include "dart/collision/native/shapes/shape.hpp"
+#include "dart/collision/native/shapes/Shape.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
