@@ -47,17 +47,25 @@ the same versions/dirty flags the scalar path does, or sleeping breaks.
 
 #### WP-PG.31 — Scratch retention for shallow-support machinery
 
-- Status: open
-- Objective: reuse member buffers for
-  `findShallowSupportedFreeRoots`' map+vector and
-  `snapshotFreeRootVelocities`' vector, and skip the pass entirely when
-  no skeleton qualifies (using WP-PG.30's classification).
-- Value: removes per-step allocations added by #3227 on every world;
-  zero behavior risk.
-- Scope: `dart/simulation/World.*` cpp + private members.
-- Acceptance evidence: bit-identical everything; allocation-count delta
-  (measure with the WP-PG.32 gate tooling if landed, else heaptrack row).
-- Dependencies: WP-PG.30 (for the skip), else standalone buffer reuse.
+- Status: local verified — `wp-pg-31-shallow-support-scratch`
+- Objective: current `release-6.20` already retains the
+  `findShallowSupportedFreeRoots` and `snapshotFreeRootVelocities` scratch
+  buffers; finish the packet by skipping the shallow-support snapshot/find pass
+  entirely when no mobile root-FreeJoint skeleton can use it.
+- Value: removes unconditional per-step work added by #3227 on articulated or
+  fixed-root worlds while preserving the existing cleanup pass that clears stale
+  shallow-support state after topology/mobile-state changes.
+- Scope: `dart/simulation/World.*` helper and step-path call sites.
+- Acceptance evidence: current-base A/B artifact
+  `/tmp/wp_pg31_ab_20260707T184319` on base `3964108a675` vs branch
+  `21f691311df`: `double_pendulum.world` hashes identical
+  (`0x1db838038acbd960`) with median step time 0.002106 -> 0.001836 ms
+  (DART) and 0.001903 -> 0.001644 ms (ODE); generated 120-object DART/ODE
+  guard hashes identical (`0x3bd9d26da5ea002b`,
+  `0x5576f6244b736aae`); `BM_ContactContainerActive/120/1/{1,16}` ODE medians
+  6588 -> 6433 ms and 6998 -> 6468 ms; base and branch both passed 30/30
+  default 16-thread crash stressors.
+- Dependencies: WP-PG.30.
 
 #### WP-PG.32 — Frame-arena allocation discipline + CI allocation gate
 

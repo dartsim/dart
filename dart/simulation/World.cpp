@@ -549,6 +549,19 @@ void World::syncShallowSupportFreeRootVelocityStates()
 }
 
 //==============================================================================
+bool World::hasAnyShallowSupportFreeRootCandidate() const
+{
+  for (const auto& skeleton : mSkeletons) {
+    if (skeleton && skeleton->isMobile()
+        && skeleton->getCachedRootFreeJoint() != nullptr) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+//==============================================================================
 const std::vector<World::FreeRootVelocitySnapshot>&
 World::snapshotFreeRootVelocities()
 {
@@ -1278,18 +1291,28 @@ void World::step(bool _resetCommand)
           });
     }
 
-    const auto& preSolveFreeRootVelocities = snapshotFreeRootVelocities();
+    const bool hasShallowSupportFreeRootCandidate
+        = hasAnyShallowSupportFreeRootCandidate();
+    if (!hasShallowSupportFreeRootCandidate)
+      mPreSolveFreeRootVelocityScratch.clear();
+    const auto& preSolveFreeRootVelocities
+        = hasShallowSupportFreeRootCandidate ? snapshotFreeRootVelocities()
+                                             : mPreSolveFreeRootVelocityScratch;
 
     {
       mConstraintSolver->solve();
     }
 
-    findShallowSupportedFreeRoots(
-        mSkeletons,
-        mConstraintSolver->getLastCollisionResult(),
-        mGravity,
-        mShallowSupportedFreeRootScratch,
-        mSkeletonIndexScratch);
+    if (hasShallowSupportFreeRootCandidate) {
+      findShallowSupportedFreeRoots(
+          mSkeletons,
+          mConstraintSolver->getLastCollisionResult(),
+          mGravity,
+          mShallowSupportedFreeRootScratch,
+          mSkeletonIndexScratch);
+    } else {
+      mShallowSupportedFreeRootScratch.clear();
+    }
     clearUnsupportedShallowSupportFreeRootVelocityStates(
         mShallowSupportedFreeRootScratch, preSolveFreeRootVelocities);
 
@@ -1441,19 +1464,29 @@ void World::step(bool _resetCommand)
         });
   }
 
-  const auto& preSolveFreeRootVelocities = snapshotFreeRootVelocities();
+  const bool hasShallowSupportFreeRootCandidate
+      = hasAnyShallowSupportFreeRootCandidate();
+  if (!hasShallowSupportFreeRootCandidate)
+    mPreSolveFreeRootVelocityScratch.clear();
+  const auto& preSolveFreeRootVelocities
+      = hasShallowSupportFreeRootCandidate ? snapshotFreeRootVelocities()
+                                           : mPreSolveFreeRootVelocityScratch;
 
   // Detect activated constraints and compute constraint impulses
   {
     mConstraintSolver->solve();
   }
 
-  findShallowSupportedFreeRoots(
-      mSkeletons,
-      mConstraintSolver->getLastCollisionResult(),
-      mGravity,
-      mShallowSupportedFreeRootScratch,
-      mSkeletonIndexScratch);
+  if (hasShallowSupportFreeRootCandidate) {
+    findShallowSupportedFreeRoots(
+        mSkeletons,
+        mConstraintSolver->getLastCollisionResult(),
+        mGravity,
+        mShallowSupportedFreeRootScratch,
+        mSkeletonIndexScratch);
+  } else {
+    mShallowSupportedFreeRootScratch.clear();
+  }
   clearUnsupportedShallowSupportFreeRootVelocityStates(
       mShallowSupportedFreeRootScratch, preSolveFreeRootVelocities);
 
