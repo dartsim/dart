@@ -1,59 +1,55 @@
 Examples
 ========
 
-.. include:: /_includes/legacy_dart6.rst
-
-.. note::
-
-   For a DART 7 "Hello, World" simulation using the current API, see
-   :doc:`/user_guide/getting_started/hello_dart`.
-
-Once you have installed dartpy using pip install -U dartpy, you can run the following "Hello World" example to simulate a 6-DOF robot using DART.
-
-.. note::
-
-   In order to load the URDF, please clone dart repository and set the `DART_DATA_PATH` environment variable to where the `data` folder is in the cloned repository (e.g., `C:/ws/dart/data/` if cloned to `C:/ws/dart/`)
+DART 7's Python examples use the ``dartpy`` World facade. The smallest useful
+example builds a scene in code, steps it, and inspects the body state:
 
 .. code-block:: python
 
-    import dartpy as dart
+   import dartpy as dart
 
-    def main():
-        world = dart.World()
+   world = dart.World(time_step=1.0 / 1000.0)
 
-        urdf_parser = dart.io.UrdfParser()
-        kr5 = urdf_parser.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
-        ground = urdf_parser.parse_skeleton("dart://sample/urdf/KR5/ground.urdf")
-        world.addSkeleton(kr5)
-        world.addSkeleton(ground)
-        print("Robot {} is loaded".format(kr5.getName()))
+   ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.5))
+   ground.is_static = True
+   ground.set_collision_shape(dart.CollisionShape.box((1.0, 1.0, 0.05)))
 
-        for i in range(100):
-            if i % 10 == 0:
-                print(
-                    "[{}] joint position: {}".format(
-                        world.getSimFrames(), kr5.getPositions()
-                    )
-                )
-            world.step()
+   box = world.add_rigid_body("box", mass=1.0, position=(0.0, 0.0, 1.0))
+   box.set_collision_shape(dart.CollisionShape.box((0.1, 0.1, 0.1)))
 
-    if __name__ == "__main__":
-        main()
+   world.enter_simulation_mode()
+   for _ in range(100):
+       world.step()
 
-When you run this script, it will perform a forward dynamic simulation of the 6-DOF robot for 100 steps. Joint angles are printed every 10 steps, producing the following output:
+   print(f"t = {world.time:.3f} s, box z = {float(box.translation[2]):.3f} m")
 
-.. code-block:: none
+For the same first step with more explanation, see
+:doc:`/user_guide/getting_started/hello_dart`.
 
-   Robot KR5sixxR650WP_description is loaded
-   [0] joint position: [0. 0. 0. 0. 0. 0.]
-   [10] joint position: [ 0.00220342  0.00021945 -0.00040518  0.00011133  0.00074889 -0.00010902]
-   [20] joint position: [ 0.00841056  0.0008539  -0.0015611   0.00042308  0.00284968 -0.00040791]
-   [30] joint position: [ 0.01861372  0.00194988 -0.00350848  0.00092958  0.0062733  -0.00087254]
-   [40] joint position: [ 0.03279843  0.00358421 -0.00631463  0.00162151  0.01097006 -0.0014636 ]
-   [50] joint position: [ 0.05094093  0.00586373 -0.01007336  0.00248606  0.01686793 -0.00212772]
-   [60] joint position: [ 0.07300469  0.00892482 -0.01490498  0.00350698  0.02387041 -0.00279907]
-   [70] joint position: [ 0.098936    0.01293271 -0.02095646  0.00466479  0.03185446 -0.0034017 ]
-   [80] joint position: [ 0.12865883  0.01808055 -0.02840175  0.00593683  0.04066865 -0.00385261]
-   [90] joint position: [ 0.16206903  0.02458815 -0.03744247  0.00729732  0.05013223 -0.00406555]
+Interactive demos
+-----------------
 
-You can find additional example code at https://github.com/dartsim/dart/tree/main/python/examples
+The source tree's maintained Python example surface is the ``py-demos`` runner
+under ``python/examples/demos``. It hosts World scenes in the same Filament
+viewer used by the C++ demo app:
+
+.. code-block:: bash
+
+   pixi run py-demos                                # open the default rigid_body scene
+   pixi run py-demos -- --scene rigid_solver_compare # compare solver behavior
+   pixi run py-demos -- --list                      # print the scene catalog
+   pixi run py-demo-capture -- --scene rigid_body --frames 2 --width 640 --height 360
+
+The demo catalog includes rigid bodies, multibody contact, solver comparisons,
+deformable examples, differentiable simulation scenes, and visual debugging
+packets. Start with ``python/examples/README.md`` and
+``python/examples/demos/README.md`` in the source checkout when you need the
+current scene list and command-line options.
+
+Legacy DART 6 examples
+----------------------
+
+If you need ``Skeleton``/``BodyNode``/``Joint`` examples such as URDF loading
+with ``World.addSkeleton()``, use the stable DART 6 documentation at
+https://dart.readthedocs.io/en/stable/. Those APIs are not the DART 7
+Python-first path documented here.

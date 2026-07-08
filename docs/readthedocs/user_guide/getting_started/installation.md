@@ -1,46 +1,19 @@
 # Install DART
 
-DART 7 is **Python-first**, but because it is still in development its `dartpy`
-packages are pre-releases. The two reliable ways to get the DART 7 API used
-throughout this guide are PyPI pre-release wheels and a source build.
+DART 7 is **Python-first**, but because it is still in development, public
+package channels still resolve stable DART 6 artifacts today. The current DART 7
+path is a source build from this repository; the CPython 3.14 wheel lane becomes
+an install path after a non-yanked DART 7 `dartpy` wheel is published.
 
-```{admonition} Default channels still install DART 6
+```{admonition} Public package channels still install DART 6
 :class: important
 
-Plain `uv add dartpy`, `pixi add dartpy`, and `conda install dartpy` resolve the
-**stable DART 6** line, which uses a different API — `dart.World()` and
-`add_rigid_body` from this guide do not exist there. Install DART 7 explicitly
-with one of the options below, or build from source.
+`pip install --pre dartpy`, `uv add dartpy --prerelease allow`,
+`pixi add dartpy`, and `conda install dartpy` do not currently provide the DART
+7 API used by this guide. They resolve the **stable DART 6** line, or no usable
+non-yanked DART 7 wheel. Use a source build for DART 7 examples until a
+non-yanked DART 7 wheel is available on PyPI.
 ```
-
-## Python package (pre-release)
-
-DART 7 wheels are published as pre-releases on PyPI (currently Linux x86_64 /
-CPython 3.14). Opt into pre-releases so you get DART 7 rather than DART 6:
-
-```bash
-pip install --pre dartpy           # pip (PyPI)
-uv add dartpy --prerelease allow    # uv (PyPI)
-```
-
-The default `pixi add dartpy` and `conda install -c conda-forge dartpy` channels
-currently track the stable **DART 6** line; use them for DART 6, or build from
-source (below) for the DART 7 examples in this guide.
-
-Verify the install by creating a tiny world in code — this does not need any
-sample data files:
-
-```python
-import dartpy as dart
-
-world = dart.World()
-world.add_rigid_body("box", dart.RigidBodyOptions())
-world.enter_simulation_mode()
-world.step()
-print(f"Stepped one frame to t = {world.time:.4f} s")
-```
-
-If that prints without error, you are ready for {doc}`hello_dart`.
 
 ## Build from source
 
@@ -61,13 +34,45 @@ Run a headless smoke check to confirm the build works:
 pixi run py-demos -- --scene rigid_body --headless --frames 1
 ```
 
-To use your source build from a plain Python interpreter, point `PYTHONPATH` at
-the built bindings (the exact path is printed at the end of `pixi run build`),
-for example:
+Verify the install by creating a tiny world in code. Point `PYTHONPATH` at the
+built bindings before importing `dartpy`; this does not need any sample data
+files:
 
 ```bash
-PYTHONPATH=build/default/cpp/Release/python python your_script.py
+PYTHONPATH=build/default/cpp/Release/python pixi run python - <<'PY'
+import dartpy as dart
+
+world = dart.World()
+world.add_rigid_body("box", dart.RigidBodyOptions())
+world.enter_simulation_mode()
+world.step()
+print(f"Stepped one frame to t = {world.time:.4f} s")
+PY
 ```
+
+If that prints without error, you are ready for {doc}`hello_dart`.
+
+Use the same prefix for your own scripts:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python pixi run python your_script.py
+```
+
+## Python package status
+
+The tracked DART 7 wheel workflow builds `dartpy` for CPython 3.14 on Linux,
+macOS, and Windows. After a non-yanked DART 7 wheel is published on PyPI, opt
+into pre-release resolution so the DART 7 wheel is preferred over the stable
+DART 6 line:
+
+```bash
+pip install --pre dartpy
+uv add dartpy --prerelease allow
+```
+
+The default `pixi add dartpy` and `conda install -c conda-forge dartpy` channels
+currently track the stable **DART 6** line; use them for DART 6, or build from
+source for the DART 7 examples in this guide.
 
 For more detail on supported platforms and wheels, see the
 {doc}`Python installation reference </dartpy/user_guide/installation>`. For

@@ -446,9 +446,9 @@ def _read_dart_semver():
         if version_elem is not None and version_elem.text:
             return version_elem.text.strip()
     except (FileNotFoundError, ET.ParseError):
-        pass
-    # Fallback to latest stable version
-    return "6.16.0"
+        logger.warning("Unable to read DART version from %s", package_xml)
+    # Keep this visibly synthetic instead of falling back to a stale real release.
+    return "0.0.0"
 
 
 def get_dart_version(prefix_with_v: bool = True):
@@ -459,19 +459,14 @@ def get_dart_version(prefix_with_v: bool = True):
 
 
 def _read_api_versions():
-    """Return the list of published documentation versions."""
+    """Return source-known documentation versions for local template context.
 
-    versions_file = REPO_ROOT / "scripts" / "docs_versions.txt"
-    versions = []
-    try:
-        for line in versions_file.read_text().splitlines():
-            line = line.strip()
-            if line and not line.startswith("DART "):
-                versions.append(line)
-    except FileNotFoundError:
-        # Fallback to a safe default when running locally without the helper.
-        versions = ["v6.16.0"]
-    return versions
+    Read the Docs owns the published version selector. Local builds only need a
+    non-stale current-source value, so derive it from package.xml instead of a
+    checked-out helper file that may not exist on every branch.
+    """
+
+    return [get_dart_version()]
 
 
 # Get current DART version from package.xml

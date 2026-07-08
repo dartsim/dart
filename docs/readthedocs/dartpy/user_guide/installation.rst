@@ -1,22 +1,36 @@
 Installation
 ============
 
-Quick install commands
-----------------------
+DART 7 source build
+-------------------
 
-Use your preferred package manager to add ``dartpy`` to an existing environment:
+DART 7's Python-first API is available from a source checkout today. Public
+package channels currently resolve stable DART 6 artifacts, or no usable
+non-yanked DART 7 wheel, so do not use package-manager commands for the DART 7
+examples until a non-yanked DART 7 ``dartpy`` wheel is published.
 
 .. code-block:: bash
 
-   uv add dartpy                 # uv (recommended for Python-first projects)
-   pip install dartpy --pre      # PyPI wheels (Linux x86_64, CPython 3.14)
-   pixi add dartpy               # Pixi environment
-   conda install -c conda-forge dartpy
+   git clone https://github.com/dartsim/dart.git
+   cd dart
+   pixi install
+   pixi run build
+
+After a non-yanked DART 7 wheel is published on PyPI, use pre-release
+resolution to select it instead of the stable DART 6 package line:
+
+.. code-block:: bash
+
+   uv add dartpy --prerelease allow
+   pip install dartpy --pre
+
+The default ``pixi add dartpy`` and ``conda install -c conda-forge dartpy``
+commands currently install the stable DART 6 package line.
 
 Supported platforms
 -------------------
 
-Pre-built wheels on PyPI currently cover the following configurations:
+The tracked DART 7 wheel workflow builds these configurations:
 
 .. list-table::
    :header-rows: 1
@@ -24,14 +38,25 @@ Pre-built wheels on PyPI currently cover the following configurations:
 
    * - Platform / Python
      - Status
-   * - Linux x86_64 / CPython 3.14
-     - ✅ Published as ``dartpy`` wheels (7.0.0.dev0, ``pip install --pre``)
-   * - Other CPython versions and platforms
-     - ⚠️ Use conda-forge, pixi, or build from source (no recent wheels yet)
+   * - Linux / CPython 3.14
+     - Built by ``publish_dartpy.yml`` and installable from PyPI when the
+       matching tag is published
+   * - macOS / CPython 3.14
+     - Built by ``publish_dartpy.yml`` and installable from PyPI when the
+       matching tag is published
+   * - Windows / CPython 3.14
+     - Built by ``publish_dartpy.yml`` and installable from PyPI when the
+       matching tag is published
+   * - Other CPython versions
+     - Build from source with a matching Python 3.14 toolchain
 
 .. note::
 
-   The latest PyPI upload is a pre-release (``7.0.0.dev0``). Use the ``--pre`` flag with ``pip`` if you want that build; otherwise pip falls back to the last stable 0.2.x wheel. For the most up-to-date availability, check the `dartpy project page on PyPI <https://pypi.org/project/dartpy/>`_.
+   Wheel versions are sourced from ``package.xml``. DART 7 wheels are usable
+   from PyPI only after a non-yanked DART 7 release is published. Until then,
+   build from source for this guide's DART 7 examples. For the most up-to-date
+   published availability, check the `dartpy project page on PyPI
+   <https://pypi.org/project/dartpy/>`_.
 
 Building from source
 --------------------
