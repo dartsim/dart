@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271) + phase 1 (#3281) merged; phase 2 in progress: P1-P7 merged through mesh (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325); P8/P9 active on `feature/native-distance-plane` |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271) + phase 1 (#3281) merged; phase 2 in progress: P1-P9 merged through distance/plane (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343); P10 active on `feature/native-mixed-scene-parity` |
 | **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet **#3263 merged** (tracks the native-collision port as its WS-F lane, external owner) |
 
 ## PR tracker
@@ -88,6 +88,8 @@
   2026-07-07).
 - **#3324** phase-2 P6 cylinder collision pairs (merged 2026-07-07).
 - **#3325** phase-2 P7 mesh collision pairs (merged 2026-07-08).
+- **#3343** phase-2 P8/P9 distance module and plane primitive/convex coverage
+  (merged 2026-07-08).
 - **#3283** main-branch dual for the native sphere-sphere binary-check fix
   (merged 2026-07-07).
 
@@ -104,11 +106,11 @@
 
 ### 🔄 Open — monitoring (checked 2026-07-08)
 
-- **P8/P9** `feature/native-distance-plane` — active local slice for the
-  distance module and plane primitive/convex coverage. Keep it one PR to reduce
-  CI overhead.
-- **#3341** is the only current open `release-6.20` PR seen during this refresh;
-  it belongs to the separate performance-generalization lane, not this native
+- **P10** `feature/native-mixed-scene-parity` — active local slice for
+  mixed-scene fcl/dart/native parity coverage. Keep it one PR to reduce CI
+  overhead.
+- **#3348** is the only current open `release-6.20` PR seen during this refresh;
+  it belongs to the separate MSVC/toolchain policy lane, not this native
   collision port lane.
 - The earlier monitoring queue has landed: #3283, #3317, #3319, #3321, #3322,
   #3324, and #3325 are merged. The perf lane's WP-PG.01 baseline packet
@@ -125,8 +127,8 @@ before treating it as an open/active PR.)_
 
 ### 🛠️ Native-collision-port lane (the largest dependency lever — FCL/Bullet/ODE)
 - **Current state:** DART 6.20 now contains #3281's internal native math core,
-  phase-2 P1-P7, the DART 6 adapter, and the opt-in `"native"` factory key,
-  but it has no FCL-optional default.
+  phase-2 P1-P9, the DART 6 adapter, and the opt-in `"native"` factory key, but
+  it has no FCL-optional default.
   `release-6.20` still uses FCL as the default detector — created in *both*
   `ConstraintSolver` constructors.
 - **Phase 0 (captured 2026-07-04, recaptured 2026-07-05):** all
@@ -139,12 +141,11 @@ before treating it as an open/active PR.)_
   sequencing. For the phase-6 tolerance gate, retrieve JSONL dumps matching
   the recorded SHA-256 digests or recapture dumps on the flip PR's parent
   and compare within that same recapture.
-- **Phase 2 status:** P1-P7 are merged: broadphase, dispatcher, adapter bridge,
-  `"native"` registration, sphere/box/capsule/convex/cylinder/mesh coverage, and
-  associated parity tests. **Current slice is P8/P9:** distance module +
-  plane-sphere/box/capsule/convex routes, kept consolidated to avoid another CI
-  wave. P10 remains optional mixed-scene fcl/dart/native parity coverage after
-  P9.
+- **Phase 2 status:** P1-P9 are merged: broadphase, dispatcher, adapter bridge,
+  `"native"` registration, sphere/box/capsule/convex/cylinder/mesh/plane
+  coverage, distance helpers, and associated parity/performance tests. **Current
+  slice is P10:** mixed-scene fcl/dart/native parity coverage, kept as one small
+  PR to avoid another large CI wave.
 - **Default flip:** still late-phase only. Do not flip defaults until `03`'s full
   A/B packet and gz gate pass.
 - _Hold each follow-up to `03`'s bar: gz-compat (`pixi run -e gazebo test-gz`),
@@ -156,7 +157,7 @@ before treating it as an open/active PR.)_
 
 1. **Base / conflict status**:
    - Current planning baseline: `origin/release-6.20` =
-     `44645974b3570b35db11c6c251117cc4d8dea624`; `origin/main` =
+     `c1deaca67b8c0ea5ba2a182608e6407e84d58c31`; `origin/main` =
      `a1128c429223622790bf128c4a57f1e5d2c40b9b`.
    - Open PRs routinely fall behind as the base advances; a maintainer merge-up
      clears it. Exact behind-counts aren't tracked here (too volatile).
@@ -195,9 +196,9 @@ before treating it as an open/active PR.)_
   native-collision **#3123** (primitive plane contacts + broadphase pruning) — first
   piece of the native collision port.
 - **Open queue (2026-07-08):** no open native-collision release PRs remain after
-  #3325. P8/P9 is active locally on `feature/native-distance-plane`; the former
-  #3263/#3271/#3281/#3302/#3303/#3306/#3318/#3319/#3321/#3322/#3324/#3325
-  lane milestones and main-branch dual #3283 are merged.
+  #3343. P10 is active locally on `feature/native-mixed-scene-parity`; the former
+  #3263/#3271/#3281/#3302/#3303/#3306/#3318/#3319/#3321/#3322/#3324/#3325/#3343
+  lane milestones, and main-branch dual #3283 are merged.
 - **Largest remaining win:** native-collision port → makes FCL/Bullet/ODE
   optional and eventually drops `fcl` from core. The DART 7 native engine is
   only partially ported to DART 6.20; default-flip is still a late-phase
