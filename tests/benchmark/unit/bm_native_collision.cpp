@@ -1,10 +1,23 @@
-#include <dart/collision/native/narrow_phase/narrow_phase.hpp>
-#include <dart/collision/native/shapes/shape.hpp>
-#include <dart/collision/native/types.hpp>
+#include <dart/collision/CollisionDetector.hpp>
+#include <dart/collision/CollisionGroup.hpp>
+#include <dart/collision/DistanceOption.hpp>
+#include <dart/collision/DistanceResult.hpp>
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
+#include <dart/collision/native/NativeCollisionDetector.hpp>
+#include <dart/collision/native/Types.hpp>
+#include <dart/collision/native/narrow_phase/NarrowPhase.hpp>
+#include <dart/collision/native/shapes/Shape.hpp>
+
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/PlaneShape.hpp>
+#include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/SphereShape.hpp>
 
 #include <Eigen/Geometry>
 #include <benchmark/benchmark.h>
 
+#include <memory>
 #include <vector>
 
 #include <cstddef>
@@ -104,6 +117,77 @@ void runNarrowPhase(
   state.counters["contacts/iter"] = benchmark::Counter(
       static_cast<double>(contactCount)
       / static_cast<double>(state.iterations()));
+}
+
+std::shared_ptr<dart::dynamics::SimpleFrame> makeDistanceFrame(
+    const dart::dynamics::ShapePtr& shape,
+    const Eigen::Vector3d& translation = Eigen::Vector3d::Zero())
+{
+  auto frame = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World());
+  frame->setShape(shape);
+  frame->setTranslation(translation);
+  return frame;
+}
+
+void runDetectorDistance(
+    benchmark::State& state,
+    const dart::collision::CollisionDetectorPtr& detector,
+    const dart::dynamics::ShapePtr& shapeA,
+    const Eigen::Vector3d& translationA,
+    const dart::dynamics::ShapePtr& shapeB,
+    const Eigen::Vector3d& translationB)
+{
+  auto frameA = makeDistanceFrame(shapeA, translationA);
+  auto frameB = makeDistanceFrame(shapeB, translationB);
+  auto group = detector->createCollisionGroup(frameA.get(), frameB.get());
+
+  dart::collision::DistanceOption option(true, 0.0, nullptr);
+  dart::collision::DistanceResult result;
+  double distance = 0.0;
+
+  for (auto _ : state) {
+    result.clear();
+    distance = group->distance(option, &result);
+    benchmark::DoNotOptimize(distance);
+    benchmark::DoNotOptimize(result.unclampedMinDistance);
+  }
+
+  if (!result.found()) {
+    state.SkipWithError("distance benchmark case did not produce a result");
+  }
+}
+
+void runNativeDetectorDistance(
+    benchmark::State& state,
+    const dart::dynamics::ShapePtr& shapeA,
+    const Eigen::Vector3d& translationA,
+    const dart::dynamics::ShapePtr& shapeB,
+    const Eigen::Vector3d& translationB)
+{
+  runDetectorDistance(
+      state,
+      dart::collision::NativeCollisionDetector::create(),
+      shapeA,
+      translationA,
+      shapeB,
+      translationB);
+}
+
+void runFclDetectorDistance(
+    benchmark::State& state,
+    const dart::dynamics::ShapePtr& shapeA,
+    const Eigen::Vector3d& translationA,
+    const dart::dynamics::ShapePtr& shapeB,
+    const Eigen::Vector3d& translationB)
+{
+  runDetectorDistance(
+      state,
+      dart::collision::FCLCollisionDetector::create(),
+      shapeA,
+      translationA,
+      shapeB,
+      translationB);
 }
 
 void BM_NativeSphereSphere(benchmark::State& state)
@@ -396,6 +480,94 @@ void BM_NativeMeshConvex(benchmark::State& state)
       translated(0.0, 0.0, 0.2));
 }
 
+void BM_DistanceNativeSphereSphere(benchmark::State& state)
+{
+  runNativeDetectorDistance(
+      state,
+      std::make_shared<dart::dynamics::SphereShape>(0.25),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dart::dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(2.0, 0.0, 0.0));
+}
+
+void BM_DistanceFclSphereSphere(benchmark::State& state)
+{
+  runFclDetectorDistance(
+      state,
+      std::make_shared<dart::dynamics::SphereShape>(0.25),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dart::dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(2.0, 0.0, 0.0));
+}
+
+void BM_DistanceNativeSphereBox(benchmark::State& state)
+{
+  runNativeDetectorDistance(
+      state,
+      std::make_shared<dart::dynamics::SphereShape>(0.25),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(0.5)),
+      Eigen::Vector3d(1.25, 0.0, 0.0));
+}
+
+void BM_DistanceFclSphereBox(benchmark::State& state)
+{
+  runFclDetectorDistance(
+      state,
+      std::make_shared<dart::dynamics::SphereShape>(0.25),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(0.5)),
+      Eigen::Vector3d(1.25, 0.0, 0.0));
+}
+
+void BM_DistanceNativeBoxBox(benchmark::State& state)
+{
+  runNativeDetectorDistance(
+      state,
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(0.5)),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(0.5)),
+      Eigen::Vector3d(1.25, 0.0, 0.0));
+}
+
+void BM_DistanceFclBoxBox(benchmark::State& state)
+{
+  runFclDetectorDistance(
+      state,
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(0.5)),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(0.5)),
+      Eigen::Vector3d(1.25, 0.0, 0.0));
+}
+
+void BM_DistanceNativePlaneSphere(benchmark::State& state)
+{
+  runNativeDetectorDistance(
+      state,
+      std::make_shared<dart::dynamics::PlaneShape>(
+          Eigen::Vector3d::UnitZ(), 0.0),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dart::dynamics::SphereShape>(0.25),
+      Eigen::Vector3d(0.0, 0.0, 0.75));
+}
+
+void BM_DistanceFclPlaneSphere(benchmark::State& state)
+{
+  runFclDetectorDistance(
+      state,
+      std::make_shared<dart::dynamics::PlaneShape>(
+          Eigen::Vector3d::UnitZ(), 0.0),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dart::dynamics::SphereShape>(0.25),
+      Eigen::Vector3d(0.0, 0.0, 0.75));
+}
+
 } // namespace
 
 BENCHMARK(BM_NativeSphereSphere)->Unit(benchmark::kNanosecond);
@@ -420,3 +592,11 @@ BENCHMARK(BM_NativeMeshSphere)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeMeshBox)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeMeshCapsule)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeMeshConvex)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DistanceNativeSphereSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DistanceFclSphereSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DistanceNativeSphereBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DistanceFclSphereBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DistanceNativeBoxBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DistanceFclBoxBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DistanceNativePlaneSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_DistanceFclPlaneSphere)->Unit(benchmark::kNanosecond);
