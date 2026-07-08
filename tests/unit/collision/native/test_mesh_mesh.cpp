@@ -36,9 +36,18 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
+
 using namespace dart::collision::native;
 
 namespace {
+
+Eigen::Isometry3d translated(double x, double y, double z)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(x, y, z);
+  return tf;
+}
 
 MeshShape makeUnitCubeMesh()
 {
@@ -188,6 +197,135 @@ TEST(MeshMeshCollision, PrimitiveMeshSphereContact)
   EXPECT_NEAR(0.25, contact.depth, 1e-12);
   EXPECT_GE(contact.featureIndex1, 0);
   EXPECT_GE(contact.featureIndex2, 0);
+}
+
+TEST(MeshMeshCollision, PrimitiveMeshCapsuleContact)
+{
+  CapsuleShape capsule(0.25, 0.5);
+  MeshShape mesh = makePlaneMesh();
+  Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
+  tfCapsule.translation() = Eigen::Vector3d(0.25, -0.25, 0.25);
+
+  CollisionResult result;
+  EXPECT_TRUE(collidePrimitiveMesh(
+      capsule,
+      tfCapsule,
+      mesh,
+      Eigen::Isometry3d::Identity(),
+      result,
+      CollisionOption::fullContacts(4)));
+  ASSERT_GT(result.numContacts(), 0u);
+
+  const auto& contact = result.getContact(0);
+  EXPECT_LT(contact.normal.z(), -0.1);
+  EXPECT_GE(contact.featureIndex1, 0);
+  EXPECT_GE(contact.featureIndex2, 0);
+}
+
+TEST(MeshMeshCollision, PrimitiveMeshSupportContactsUsePrimitiveToMeshNormal)
+{
+  MeshShape mesh = makePlaneMesh();
+  BoxShape box(Eigen::Vector3d::Constant(0.25));
+  CylinderShape cylinder(0.25, 0.5);
+  ConvexShape convex(
+      {{0.25, 0.0, 0.0},
+       {-0.25, 0.0, 0.0},
+       {0.0, 0.25, 0.0},
+       {0.0, -0.25, 0.0},
+       {0.0, 0.0, 0.25},
+       {0.0, 0.0, -0.25}});
+
+  for (const Shape* primitive : {
+           static_cast<const Shape*>(&box),
+           static_cast<const Shape*>(&cylinder),
+           static_cast<const Shape*>(&convex),
+       }) {
+    CollisionResult result;
+    EXPECT_TRUE(collidePrimitiveMesh(
+        *primitive,
+        translated(0.0, 0.0, 0.2),
+        mesh,
+        Eigen::Isometry3d::Identity(),
+        result,
+        CollisionOption::fullContacts(4)));
+    ASSERT_GT(result.numContacts(), 0u);
+    EXPECT_LT(result.getContact(0).normal.z(), -0.1);
+    EXPECT_GE(result.getContact(0).featureIndex1, 0);
+    EXPECT_GE(result.getContact(0).featureIndex2, 0);
+  }
+}
+
+TEST(MeshMeshCollision, MeshMeshBatchCollidesPairs)
+{
+  MeshShape mesh1 = makeUnitCubeMesh();
+  MeshShape mesh2 = makeUnitCubeMesh();
+  const std::array<MeshPair, 2> pairs{{
+      {&mesh1,
+       &mesh2,
+       Eigen::Isometry3d::Identity(),
+       [] {
+         Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+         tf.translation() = Eigen::Vector3d(0.75, 0.0, 0.0);
+         return tf;
+       }()},
+      {&mesh1,
+       &mesh2,
+       Eigen::Isometry3d::Identity(),
+       [] {
+         Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+         tf.translation() = Eigen::Vector3d(3.0, 0.0, 0.0);
+         return tf;
+       }()},
+  }};
+  std::array<CollisionResult, 2> results;
+
+  collideMeshMeshBatch(pairs, results, CollisionOption::fullContacts(4));
+
+  EXPECT_GT(results[0].numContacts(), 0u);
+  EXPECT_EQ(0u, results[1].numContacts());
+}
+
+TEST(MeshMeshCollision, MeshMeshBatchRejectsInvalidInputs)
+{
+  MeshShape mesh = makeUnitCubeMesh();
+  const std::array<MeshPair, 1> pairs{{
+      {&mesh,
+       &mesh,
+       Eigen::Isometry3d::Identity(),
+       Eigen::Isometry3d::Identity()},
+  }};
+
+  EXPECT_THROW(
+      collideMeshMeshBatch(pairs, span<CollisionResult>()),
+      std::invalid_argument);
+
+  std::array<CollisionResult, 1> results;
+  const std::array<MeshPair, 1> nullPairs{{
+      {nullptr,
+       &mesh,
+       Eigen::Isometry3d::Identity(),
+       Eigen::Isometry3d::Identity()},
+  }};
+  EXPECT_THROW(collideMeshMeshBatch(nullPairs, results), std::invalid_argument);
+}
+
+TEST(MeshMeshCollision, DistanceMeshMeshReportsSeparatedDistance)
+{
+  MeshShape mesh1 = makeUnitCubeMesh();
+  MeshShape mesh2 = makeUnitCubeMesh();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(3.0, 0.0, 0.0);
+
+  DistanceOption option;
+  option.enableNearestPoints = true;
+  DistanceResult result;
+  const double distance = distanceMeshMesh(
+      mesh1, Eigen::Isometry3d::Identity(), mesh2, tf2, result, option);
+
+  EXPECT_NEAR(2.0, distance, 1e-12);
+  EXPECT_NEAR(2.0, result.distance, 1e-12);
+  EXPECT_NEAR(0.5, result.pointOnObject1.x(), 1e-12);
+  EXPECT_NEAR(2.5, result.pointOnObject2.x(), 1e-12);
 }
 
 TEST(MeshMeshCollision, PlaneMeshContact)

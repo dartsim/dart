@@ -40,8 +40,10 @@
 #include "LogCapture.hpp"
 #include "Profiler.hpp"
 
+#include <dart/gui/osg/PerformanceStatsPanel.hpp>
 #include <dart/gui/osg/osg.hpp>
 
+#include <chrono>
 #include <deque>
 #include <memory>
 #include <optional>
@@ -92,6 +94,12 @@ public:
   /// affect this counter.
   std::size_t getLastRefreshStepCount() const;
 
+  double getLastStepMs() const;
+  double getMovingAverageStepMs() const;
+  double getMinStepMs() const;
+  double getMaxStepMs() const;
+  std::size_t getStepTimingSamples() const;
+
   // Documentation inherited
   void customPreStep() override;
   void customPostStep() override;
@@ -100,6 +108,8 @@ public:
 
 private:
   void invokeHook(std::function<void()>& hook, const char* name);
+  void beginStepTiming();
+  void endStepTiming();
 
   std::function<void()> mPreStep;
   std::function<void()> mPostStep;
@@ -108,6 +118,13 @@ private:
   std::size_t mStepCount;
   std::size_t mStepCountAtRefreshStart = 0;
   std::size_t mLastRefreshStepCount = 0;
+  std::chrono::steady_clock::time_point mStepStart;
+  bool mStepTimingActive = false;
+  double mLastStepMs = 0.0;
+  double mMovingAverageStepMs = 0.0;
+  double mMinStepMs = 0.0;
+  double mMaxStepMs = 0.0;
+  std::size_t mStepTimingSamples = 0;
 };
 
 //==============================================================================
@@ -127,15 +144,18 @@ struct LogEntry
 
 //==============================================================================
 /// Owns the single ImGuiViewer window, the scene registry, and the safe
-/// runtime scene-switching machinery described in
-/// docs/dev_tasks/dart6_consolidated_demos/BRIEF-phase1.md. Persistent host
-/// chrome (window, theme, panel layout) survives scene switches; per-scene
-/// state (world node, widgets, drag-and-drop, event handlers) is torn down in
-/// full on every switch.
+/// runtime scene-switching machinery described in examples/demos/README.md.
+/// Persistent host chrome (window, theme, panel layout) survives scene
+/// switches; per-scene state (world node, widgets, drag-and-drop, event
+/// handlers) is torn down in full on every switch.
 class DemoHost
 {
 public:
-  DemoHost(std::vector<DemoScene> scenes, double guiScale);
+  DemoHost(
+      std::vector<DemoScene> scenes,
+      double guiScale,
+      std::string collisionDetectorName = {},
+      std::size_t simulationThreads = 1u);
 
   /// Tears down the active scene (draining every registered teardown --
   /// drag-and-drop, attachments, event handlers) before the viewer is
@@ -209,6 +229,13 @@ public:
   bool handleKey(int key);
 
 private:
+  enum class ScenePanelTab
+  {
+    Scene,
+    Inspector,
+    Tools
+  };
+
   struct CategoryGroup
   {
     std::string name;
@@ -254,9 +281,18 @@ private:
   void renderScenePanel();
   void renderDiagnostics();
   void renderInspectorSection();
+  void renderSceneControlsSection();
+  void renderToolsSection();
+  void renderLogSection(float height);
   void renderViewMenu();
+  void renderRuntimeControls();
   void invokeKeyAction(KeyAction& action);
+  void requestScenePanelTab(ScenePanelTab tab);
   void applyShadowState();
+  void fitCameraToWorld();
+  void applyRuntimeOptionsToWorld();
+  bool setCollisionDetectorByName(const std::string& name);
+  void syncCollisionDetectorSelectionFromWorld();
 
   std::vector<DemoScene> mScenes;
   std::vector<CategoryGroup> mCategories;
@@ -289,11 +325,17 @@ private:
   DragForce mDragForce;
   ContactVisualizer mContactVisualizer;
   Profiler mProfiler;
+  dart::gui::osg::PerformanceStatsPanel mPerformanceStatsPanel;
 
   bool mGravityEnabled = true;
   Eigen::Vector3d mSavedGravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   float mTargetRtf = 1.0f;
   float mTimeStep = 0.001f;
+  std::vector<std::string> mAvailableCollisionDetectors;
+  std::string mRequestedCollisionDetectorName;
+  std::string mCurrentCollisionDetectorName = "none";
+  int mCollisionDetectorIndex = -1;
+  int mSimulationThreads = 1;
 
   // View utilities (toolbar "View" menu). Shadows/grid/headlights/GUI scale
   // are host chrome that persists across scene switches; mCurrentSceneWants
@@ -309,6 +351,9 @@ private:
 
   std::string mDebugSelectBodyName;
   bool mDebugRecordProfile = false;
+
+  ScenePanelTab mRequestedScenePanelTab = ScenePanelTab::Scene;
+  bool mHasRequestedScenePanelTab = false;
 };
 
 } // namespace dart_demos

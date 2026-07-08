@@ -31,7 +31,7 @@
  */
 
 // dart-demos: a single-window host for browsing and running DART example
-// scenes. See docs/dev_tasks/dart6_consolidated_demos/BRIEF-phase1.md.
+// scenes. See examples/demos/README.md for the host architecture.
 
 #include "DemoHost.hpp"
 #include "Registry.hpp"
@@ -41,9 +41,17 @@
 #include <iostream>
 #include <string>
 
+#include <cstdlib>
 #include <cstring>
 
+#ifndef DART_DEMOS_DEFAULT_SCENE
+  #define DART_DEMOS_DEFAULT_SCENE ""
+#endif
+
 namespace {
+
+constexpr int kDefaultWindowWidth = 1600;
+constexpr int kDefaultWindowHeight = 1000;
 
 //==============================================================================
 enum class ParseResult
@@ -63,14 +71,16 @@ struct Options
   bool headless = false;
   std::string shotPath = "dart-demos.png";
   int steps = 150;
-  std::string sceneId;
-  int width = 1280;
-  int height = 800;
+  std::string sceneId = DART_DEMOS_DEFAULT_SCENE;
+  int width = kDefaultWindowWidth;
+  int height = kDefaultWindowHeight;
+  std::string collisionDetectorName;
+  std::size_t simulationThreads = 1u;
 
   // Hidden test/debug hooks (undocumented -- not in printUsage()): let a
   // headless --shot capture exercise UI state that normally requires
   // interactive input (a body selected in the Inspector; the Profiler
-  // actively recording), per BRIEF-phase3.md's acceptance criteria.
+  // actively recording).
   std::string debugSelectBody;
   bool debugRecordProfile = false;
 };
@@ -95,16 +105,39 @@ void printUsage(const char* prog)
       << "  --steps <n>     Sim steps to settle before the --headless shot "
          "(default 150).\n"
       << "  --width <w> --height <h>  Render/window size (default "
-         "1280x800).\n"
+      << kDefaultWindowWidth << "x" << kDefaultWindowHeight << ").\n"
       << "  --gui-scale <f> Scale the ImGui panels and initial window size "
          "(default 1.0).\n"
+      << "  --collision-detector <name>  Initial collision backend "
+         "(e.g. fcl, dart, native, bullet, ode when available).\n"
+      << "  --threads <n>   Initial simulation worker threads (0 selects "
+         "hardware concurrency).\n"
       << "  -h, --help      Show this help.\n";
+}
+
+//==============================================================================
+std::size_t parseThreadCount(const char* value, std::size_t fallback)
+{
+  if (value == nullptr || value[0] == '\0')
+    return fallback;
+
+  char* end = nullptr;
+  const auto parsed = std::strtoull(value, &end, 10);
+  if (end == value)
+    return fallback;
+
+  return static_cast<std::size_t>(parsed);
 }
 
 //==============================================================================
 /// Parses command-line options.
 ParseResult parseArgs(int argc, char** argv, Options& opt)
 {
+  if (const char* detectorEnv = std::getenv("COLLISION_DETECTOR"))
+    opt.collisionDetectorName = detectorEnv;
+  if (const char* threadsEnv = std::getenv("THREADS"))
+    opt.simulationThreads = parseThreadCount(threadsEnv, opt.simulationThreads);
+
   auto needsValue = [&](int i) {
     if (i + 1 >= argc) {
       std::cerr << "Missing value for " << argv[i] << "\n";
@@ -150,6 +183,15 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
         return ParseResult::Error;
       opt.guiScale
           = dart::gui::osg::parseGuiScale(argv[++i], opt.guiScale, &std::cerr);
+    } else if (std::strcmp(a, "--collision-detector") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.collisionDetectorName = argv[++i];
+    } else if (std::strcmp(a, "--threads") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.simulationThreads
+          = parseThreadCount(argv[++i], opt.simulationThreads);
     } else if (std::strcmp(a, "--debug-select-body") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
@@ -180,7 +222,11 @@ int main(int argc, char** argv)
   if (parseResult == ParseResult::Error)
     return 1;
 
-  dart_demos::DemoHost host(dart_demos::makeDemoScenes(), opt.guiScale);
+  dart_demos::DemoHost host(
+      dart_demos::makeDemoScenes(),
+      opt.guiScale,
+      opt.collisionDetectorName,
+      opt.simulationThreads);
   if (!opt.sceneId.empty())
     host.setInitialScene(opt.sceneId);
   if (!opt.debugSelectBody.empty())

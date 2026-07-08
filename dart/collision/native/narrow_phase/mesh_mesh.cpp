@@ -287,11 +287,17 @@ void setMeshTriangleFeature(ContactPoint& contact, int triangleIndex)
 }
 
 void appendContactsWithMeshTriangleFeature(
-    CollisionResult& result, const CollisionResult& contacts, int triangleIndex)
+    CollisionResult& result,
+    const CollisionResult& contacts,
+    int triangleIndex,
+    bool flipNormals = false)
 {
   const auto numContacts = contacts.numContacts();
   for (std::size_t i = 0; i < numContacts; ++i) {
     ContactPoint contact = contacts.getContact(i);
+    if (flipNormals) {
+      contact.normal = -contact.normal;
+    }
     setMeshTriangleFeature(contact, triangleIndex);
     result.addContact(contact);
   }
@@ -1252,7 +1258,8 @@ bool collidePrimitiveMesh(
         if (!option.enableContact) {
           return true;
         }
-        appendContactsWithMeshTriangleFeature(result, localResult, triIndex);
+        appendContactsWithMeshTriangleFeature(
+            result, localResult, triIndex, true);
         if (result.numContacts() >= option.maxNumContacts) {
           return true;
         }

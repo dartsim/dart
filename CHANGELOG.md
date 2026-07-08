@@ -60,11 +60,25 @@
     route docs-update workflows through it so DART 6.20 agents promote durable
     task facts by lifecycle before retiring `docs/dev_tasks/` folders.
 
+  * Add the release-branch `dart-retro` AI workflow so maintainers and agents
+    can capture durable lessons from completed DART 6.20 work through
+    `/dart-retro` or `$dart-retro`.
+
+  * Clarify release-branch AI workflow backports: compare workflow inventories
+    before cherry-picking, add release-tailored capabilities only when the
+    requested outcome explicitly requires them, and regenerate adapters through
+    the sync task.
+
   * Add a "surface your unknowns" discipline to the release-branch AI
     principles (`docs/ai/principles.md`): before a non-trivial fix, convert
     consequential unknowns into knowns — a reproduction, a focused read of the
     affected code, or an independent blind-spot review — instead of coding a
     guess and discovering them mid-change.
+
+  * Enable compiler-cache discovery in DART 6 Pixi builds so repeated CMake
+    builds use `sccache` or fall back to `ccache` by default, while retaining
+    `DART_DISABLE_COMPILER_CACHE=ON` for uncached comparisons and cache-specific
+    toolchain debugging.
 
   * Add a root-cause discipline to the release-branch AI principles
     (`docs/ai/principles.md`): fix bugs at the root cause — reproduce the
@@ -447,6 +461,18 @@
     demo host, and two-sided soft mesh rendering so generated soft-body faces do
     not look missing from normal camera angles:
     [#3304](https://github.com/dartsim/dart/pull/3304)
+
+  * Extend the C++ `soft_bodies` ImGui/headless widget with live performance
+    stats for physics step time, measured simulation rate, scene size, and
+    contacts:
+    [#3307](https://github.com/dartsim/dart/pull/3307)
+
+  * Polish the `dart-demos` workspace with a more compact toolbar, tabbed
+    scene/inspector/tool panes, a status-and-log bottom panel, clearer
+    simulation/render metrics, a lighter 3D viewport background, a fit-scene
+    view action, and a migrated `hello_world` scene while preserving the
+    standalone first-program example:
+    [#3328](https://github.com/dartsim/dart/pull/3328)
 
   * Add an OSG/ImGui `ssik_ik_gui` example for interactively selecting ssik
     prebuilt IK modules and changing target and solver options online. Every IK

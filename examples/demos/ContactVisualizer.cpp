@@ -178,8 +178,7 @@ void ContactVisualizer::renderToggle()
     hideFrom(0);
     mLastVisualizedCount = 0;
   }
-  ImGui::SameLine();
-  ImGui::TextDisabled("(capped at %zu arrows)", kMaxArrows);
+  ImGui::TextDisabled("Capped at %zu arrows", kMaxArrows);
 }
 
 } // namespace dart_demos

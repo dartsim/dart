@@ -459,6 +459,28 @@ TEST(NativeCollisionDetector, CollidesCylinderBox)
 }
 
 //==============================================================================
+TEST(NativeCollisionDetector, CollidesCylinderPlane)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto cylinderFrame = makeFrame(
+      std::make_shared<dynamics::CylinderShape>(0.5, 2.0),
+      Eigen::Vector3d(0.0, 0.0, 0.75));
+  auto planeFrame = makeFrame(
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  auto group
+      = detector->createCollisionGroup(cylinderFrame.get(), planeFrame.get());
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+
+  const auto& contact = result.getContact(0);
+  EXPECT_EQ(cylinderFrame.get(), contact.getShapeFrame1());
+  EXPECT_EQ(planeFrame.get(), contact.getShapeFrame2());
+  EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+}
+
+//==============================================================================
 TEST(NativeCollisionDetector, CollidesSphereMesh)
 {
   auto detector = collision::NativeCollisionDetector::create();
@@ -582,6 +604,17 @@ TEST(NativeCollisionDetector, ConvertsSphereAndBoxShapes)
       static_cast<const native::CylinderShape*>(nativeCylinder.get())
           ->getHeight());
 
+  const dynamics::PlaneShape plane(Eigen::Vector3d(0.0, 0.0, 2.0), -0.75);
+  auto nativePlane = collision::detail::NativeShapeConversion::create(plane);
+  ASSERT_NE(nullptr, nativePlane);
+  ASSERT_EQ(native::ShapeType::Plane, nativePlane->getType());
+  EXPECT_TRUE(static_cast<const native::PlaneShape*>(nativePlane.get())
+                  ->getNormal()
+                  .isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+  EXPECT_DOUBLE_EQ(
+      -0.75,
+      static_cast<const native::PlaneShape*>(nativePlane.get())->getOffset());
+
   const dynamics::ConvexMeshShape convexMesh(
       makeCubeVertices(), makeCubeTriangles());
   auto nativeConvexMesh
@@ -614,23 +647,26 @@ TEST(NativeCollisionDetector, ConvertsSphereAndBoxShapes)
       static_cast<const native::ConvexShape*>(nativePyramid.get())
           ->getVertices()
           .size());
-
-  const dynamics::ConeShape cone(1.0, 2.0);
-  auto nativeCone = collision::detail::NativeShapeConversion::create(cone);
-  ASSERT_NE(nullptr, nativeCone);
-  ASSERT_EQ(native::ShapeType::Convex, nativeCone->getType());
-  EXPECT_GT(
-      static_cast<const native::ConvexShape*>(nativeCone.get())
-          ->getVertices()
-          .size(),
-      8u);
 }
 
 //==============================================================================
 TEST(NativeCollisionDetector, LeavesUnsupportedShapesNull)
 {
-  const dynamics::PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
-  EXPECT_EQ(nullptr, collision::detail::NativeShapeConversion::create(plane));
+  auto emptyMesh = std::make_shared<dynamics::ConvexMeshShape::TriMeshType>();
+  const dynamics::ConvexMeshShape emptyConvexMesh(emptyMesh);
+  EXPECT_EQ(
+      nullptr,
+      collision::detail::NativeShapeConversion::create(emptyConvexMesh));
+
+  auto emptyTriMesh = std::make_shared<math::TriMesh<double>>();
+  const dynamics::MeshShape emptyMeshShape(
+      Eigen::Vector3d::Ones(), emptyTriMesh);
+  EXPECT_EQ(
+      nullptr,
+      collision::detail::NativeShapeConversion::create(emptyMeshShape));
+
+  const dynamics::ConeShape cone(1.0, 2.0);
+  EXPECT_EQ(nullptr, collision::detail::NativeShapeConversion::create(cone));
 
   const dynamics::MultiSphereConvexHullShape multiSphere(
       {{0.25, Eigen::Vector3d::Zero()},

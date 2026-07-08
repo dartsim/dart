@@ -382,7 +382,9 @@ void DragForce::renderToolbarStatus(double /*guiScale*/) const
 //==============================================================================
 void DragForce::renderTunables(double guiScale)
 {
-  ImGui::SetNextItemWidth(180.0f * static_cast<float>(guiScale));
+  const float width = std::min(
+      180.0f * static_cast<float>(guiScale), ImGui::GetContentRegionAvail().x);
+  ImGui::SetNextItemWidth(width);
   if (ImGui::SliderFloat(
           "Drag coeff",
           &mCoeff,
@@ -392,8 +394,7 @@ void DragForce::renderTunables(double guiScale)
           ImGuiSliderFlags_AlwaysClamp)
       && std::isfinite(mCoeff))
     mCoeff = std::clamp(mCoeff, 1.0f, 2000.0f);
-  ImGui::SameLine();
-  ImGui::SetNextItemWidth(180.0f * static_cast<float>(guiScale));
+  ImGui::SetNextItemWidth(width);
   if (ImGui::SliderFloat(
           "Max force",
           &mMaxForce,

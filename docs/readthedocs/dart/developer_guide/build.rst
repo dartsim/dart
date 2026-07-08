@@ -223,15 +223,18 @@ For example, you can specify the build type by passing the
 allow you to customize the build process. Here are some of the most important
 options:
 
-+---------------------------+----------------------+------------------------------------------+
-| Option                    | Default Value        | Description                              |
-+===========================+======================+==========================================+
-| CMAKE_BUILD_TYPE          | Release              | Specifies the build type.                |
-+---------------------------+----------------------+------------------------------------------+
-| DART_ENABLE_SIMD          | ON                   | Enables use of SIMD instructions.        |
-+---------------------------+----------------------+------------------------------------------+
-| TODO                      |                      |                                          |
-+---------------------------+----------------------+------------------------------------------+
++-------------------------+---------------+----------------------------------------------+
+| Option                  | Default Value | Description                                  |
++=========================+===============+==============================================+
+| CMAKE_BUILD_TYPE        | Release       | Specifies the build type.                    |
++-------------------------+---------------+----------------------------------------------+
+| DART_ENABLE_SIMD        | OFF           | Adds local-machine SIMD compiler flags such  |
+|                         |               | as ``-march=native``. Use only for builds    |
+|                         |               | that run on the same machine architecture.   |
++-------------------------+---------------+----------------------------------------------+
+| DART_SIMD_FORCE_SCALAR  | OFF           | Forces the header-only ``dart/simd`` module  |
+|                         |               | to use its scalar fallback backend in tests. |
++-------------------------+---------------+----------------------------------------------+
 
 .. note::
 

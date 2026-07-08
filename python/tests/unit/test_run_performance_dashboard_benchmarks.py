@@ -36,7 +36,7 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     )
 
     lines = result.stdout.strip().splitlines()
-    assert len(lines) == 5
+    assert len(lines) == 6
     assert all("scripts/run_cpp_benchmark.py" in line for line in lines)
     assert all("--benchmark_out_format=json" in line for line in lines)
     assert all("--benchmark_min_time=1ms" in line for line in lines)
@@ -50,7 +50,13 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     assert "dashboard_boxes.json" in result.stdout
     assert "BM_RunBoxes/(2|4|8)$" in result.stdout
     assert "dashboard_contact_container.json" in result.stdout
-    assert "BM_ContactContainerActive/.*" in result.stdout
+    assert "BM_ContactContainerActive/(60|120)/(0|1|2|3)/(1|4|16)$" in result.stdout
+    assert (
+        "BM_ContactContainerDeactivation/60/(0|1)/16/iterations:1$"
+        in result.stdout
+    )
+    assert "dashboard_soft_body.json" in result.stdout
+    assert "BM_SoftBodyStep/.*" in result.stdout
 
 
 def test_dashboard_surface_runner_can_select_specific_surface(tmp_path):

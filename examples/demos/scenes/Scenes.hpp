@@ -43,6 +43,10 @@ namespace dart_demos {
 /// target, ported from examples/empty.
 [[nodiscard]] DemoScene makeEmptyScene();
 
+/// Getting Started > hello_world: the canonical free-falling box first program,
+/// mirrored from examples/hello_world while keeping that standalone example.
+[[nodiscard]] DemoScene makeHelloWorldScene();
+
 /// Visualization > simple_frames: nested SimpleFrames with ellipsoid markers
 /// and an arrow shape, ported from examples/simple_frames.
 [[nodiscard]] DemoScene makeSimpleFramesScene();
@@ -143,6 +147,14 @@ namespace dart_demos {
 /// Soft Bodies > soft_bodies: soft-body simulation with recorded-state
 /// playback, ported from examples/soft_bodies.
 [[nodiscard]] DemoScene makeSoftBodiesScene();
+
+/// Soft Bodies > soft_cubes: soft cube stack with recorded-state playback,
+/// ported from examples/soft_bodies.
+[[nodiscard]] DemoScene makeSoftCubesScene();
+
+/// Soft Bodies > soft_open_chain: open chain of soft links with recorded-state
+/// playback, ported from examples/soft_bodies.
+[[nodiscard]] DemoScene makeSoftOpenChainScene();
 
 /// Constraints & Joints > tinkertoy: interactively assemble jointed
 /// structures from blocks, ported from examples/tinkertoy.
