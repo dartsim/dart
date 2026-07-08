@@ -1485,6 +1485,34 @@ struct SoftPointCacheView
   const std::vector<int>* firstFaceByPointMass{nullptr};
 };
 
+struct RelativeTransformView
+{
+  Eigen::Vector3d apply(const Eigen::Vector3d& point) const
+  {
+    return linear * point + translation;
+  }
+
+  Eigen::Matrix3d linear;
+  Eigen::Vector3d translation;
+};
+
+RelativeTransformView makeRelativeTransformView(
+    const Eigen::Isometry3d& targetFrame, const Eigen::Isometry3d& sourceFrame)
+{
+  const Eigen::Matrix3d targetRotationTranspose
+      = targetFrame.linear().transpose();
+  return RelativeTransformView{
+      targetRotationTranspose * sourceFrame.linear(),
+      targetRotationTranspose
+          * (sourceFrame.translation() - targetFrame.translation())};
+}
+
+Eigen::Vector3d transformPoint(
+    const Eigen::Isometry3d& transform, const Eigen::Vector3d& point)
+{
+  return transform.linear() * point + transform.translation();
+}
+
 SoftPointCacheView makeSoftPointCacheView(
     const CollisionObject* object, const dynamics::SoftBodyNode* softBodyNode)
 {
@@ -1572,7 +1600,7 @@ int collidePlaneSoftMesh(
     Contact contact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
-    contact.point = T1 * localVertex;
+    contact.point = transformPoint(T1, localVertex);
     contact.normal = -worldNormal;
     contact.penetrationDepth = std::max(0.0, -signedDist);
     contact.triID2 = faceIndex;
@@ -1619,7 +1647,7 @@ int collideSoftMeshPlane(
     Contact contact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
-    contact.point = T0 * localVertex;
+    contact.point = transformPoint(T0, localVertex);
     contact.normal = worldNormal;
     contact.penetrationDepth = std::max(0.0, -signedDist);
     contact.triID1 = faceIndex;
@@ -1643,13 +1671,13 @@ int collideSphereSoftMesh(
   if (softBodyNode == nullptr)
     return 0;
 
-  const Eigen::Isometry3d softToSphere = T0.inverse() * T1;
+  const RelativeTransformView softToSphere = makeRelativeTransformView(T0, T1);
   const auto softPoints = makeSoftPointCacheView(o2, softBodyNode);
   auto numContacts = 0;
   constexpr double contactTolerance = 1e-9;
   for (std::size_t i = 0u; i < getSoftPointCount(softPoints); ++i) {
     const Eigen::Vector3d& localVertex = getSoftLocalPosition(softPoints, i);
-    const Eigen::Vector3d pointInSphere = softToSphere * localVertex;
+    const Eigen::Vector3d pointInSphere = softToSphere.apply(localVertex);
     const double distance = pointInSphere.norm();
     if (distance > sphereRadius + contactTolerance)
       continue;
@@ -1667,7 +1695,7 @@ int collideSphereSoftMesh(
     Contact contact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
-    contact.point = T1 * localVertex;
+    contact.point = transformPoint(T1, localVertex);
     contact.normal = normal;
     contact.penetrationDepth = std::max(0.0, sphereRadius - distance);
     contact.triID2 = faceIndex;
@@ -1691,13 +1719,13 @@ int collideSoftMeshSphere(
   if (softBodyNode == nullptr)
     return 0;
 
-  const Eigen::Isometry3d softToSphere = T1.inverse() * T0;
+  const RelativeTransformView softToSphere = makeRelativeTransformView(T1, T0);
   const auto softPoints = makeSoftPointCacheView(o1, softBodyNode);
   auto numContacts = 0;
   constexpr double contactTolerance = 1e-9;
   for (std::size_t i = 0u; i < getSoftPointCount(softPoints); ++i) {
     const Eigen::Vector3d& localVertex = getSoftLocalPosition(softPoints, i);
-    const Eigen::Vector3d pointInSphere = softToSphere * localVertex;
+    const Eigen::Vector3d pointInSphere = softToSphere.apply(localVertex);
     const double distance = pointInSphere.norm();
     if (distance > sphereRadius + contactTolerance)
       continue;
@@ -1715,7 +1743,7 @@ int collideSoftMeshSphere(
     Contact contact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
-    contact.point = T0 * localVertex;
+    contact.point = transformPoint(T0, localVertex);
     contact.normal = normal;
     contact.penetrationDepth = std::max(0.0, sphereRadius - distance);
     contact.triID1 = faceIndex;
@@ -1753,14 +1781,15 @@ int collideEllipsoidSoftMesh(
 
   const Eigen::Vector3d invRadii = ellipsoidRadii.cwiseInverse();
   const Eigen::Vector3d invRadiiSq = invRadii.cwiseProduct(invRadii);
-  const Eigen::Isometry3d softToEllipsoid = T0.inverse() * T1;
+  const RelativeTransformView softToEllipsoid
+      = makeRelativeTransformView(T0, T1);
 
   const auto softPoints = makeSoftPointCacheView(o2, softBodyNode);
   auto numContacts = 0;
   constexpr double contactTolerance = 1e-9;
   for (std::size_t i = 0u; i < getSoftPointCount(softPoints); ++i) {
     const Eigen::Vector3d& localVertex = getSoftLocalPosition(softPoints, i);
-    const Eigen::Vector3d pointInEllipsoid = softToEllipsoid * localVertex;
+    const Eigen::Vector3d pointInEllipsoid = softToEllipsoid.apply(localVertex);
     const Eigen::Vector3d scaledPoint = pointInEllipsoid.cwiseProduct(invRadii);
     const double normalizedDistance = scaledPoint.norm();
     if (normalizedDistance > 1.0 + contactTolerance)
@@ -1781,7 +1810,7 @@ int collideEllipsoidSoftMesh(
     Contact contact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
-    contact.point = T1 * localVertex;
+    contact.point = transformPoint(T1, localVertex);
     contact.normal = normal;
     contact.penetrationDepth = computeEllipsoidPointPenetrationDepth(
         pointInEllipsoid, ellipsoidRadii, normalizedDistance);
@@ -1808,14 +1837,15 @@ int collideSoftMeshEllipsoid(
 
   const Eigen::Vector3d invRadii = ellipsoidRadii.cwiseInverse();
   const Eigen::Vector3d invRadiiSq = invRadii.cwiseProduct(invRadii);
-  const Eigen::Isometry3d softToEllipsoid = T1.inverse() * T0;
+  const RelativeTransformView softToEllipsoid
+      = makeRelativeTransformView(T1, T0);
 
   const auto softPoints = makeSoftPointCacheView(o1, softBodyNode);
   auto numContacts = 0;
   constexpr double contactTolerance = 1e-9;
   for (std::size_t i = 0u; i < getSoftPointCount(softPoints); ++i) {
     const Eigen::Vector3d& localVertex = getSoftLocalPosition(softPoints, i);
-    const Eigen::Vector3d pointInEllipsoid = softToEllipsoid * localVertex;
+    const Eigen::Vector3d pointInEllipsoid = softToEllipsoid.apply(localVertex);
     const Eigen::Vector3d scaledPoint = pointInEllipsoid.cwiseProduct(invRadii);
     const double normalizedDistance = scaledPoint.norm();
     if (normalizedDistance > 1.0 + contactTolerance)
@@ -1836,7 +1866,7 @@ int collideSoftMeshEllipsoid(
     Contact contact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
-    contact.point = T0 * localVertex;
+    contact.point = transformPoint(T0, localVertex);
     contact.normal = normal;
     contact.penetrationDepth = computeEllipsoidPointPenetrationDepth(
         pointInEllipsoid, ellipsoidRadii, normalizedDistance);
@@ -1974,7 +2004,7 @@ bool addCachedSoftFaceCandidate(
   }
 
   best.found = true;
-  best.point = pointBodyTransform * pointLocal;
+  best.point = transformPoint(pointBodyTransform, pointLocal);
   best.normalFromPointBodyToFaceBody = -side * (faceRotation * face.normal);
   best.penetrationDepth = penetrationDepth;
   best.absSeparation = absSeparation;
@@ -1987,7 +2017,7 @@ bool findSoftPointFaceContact(
     const std::vector<Eigen::Vector3d>& pointVertices,
     const std::vector<int>& pointFirstFaceByPointMass,
     const Eigen::Isometry3d& pointBodyTransform,
-    const Eigen::Isometry3d& pointToFace,
+    const RelativeTransformView& pointToFace,
     const Eigen::Vector3d& faceBoundsMin,
     const Eigen::Vector3d& faceBoundsMax,
     const Eigen::Vector3d& pointBodyOriginInFace,
@@ -2002,7 +2032,7 @@ bool findSoftPointFaceContact(
     return false;
 
   const Eigen::Vector3d& pointLocal = pointVertices[pointMassIndex];
-  const Eigen::Vector3d pointInFace = pointToFace * pointLocal;
+  const Eigen::Vector3d pointInFace = pointToFace.apply(pointLocal);
   constexpr double boundsPadding = kSoftContactShell + DART_COLLISION_EPS;
   if (pointInFace[0] < faceBoundsMin[0] - boundsPadding
       || pointInFace[0] > faceBoundsMax[0] + boundsPadding
@@ -2146,10 +2176,11 @@ int addSoftPointFaceContacts(
   const Eigen::Vector3d& faceBoundsMin = faceObject->getCachedLocalBoundsMin();
   const Eigen::Vector3d& faceBoundsMax = faceObject->getCachedLocalBoundsMax();
 
-  const Eigen::Isometry3d worldToFace = faceTransform.inverse();
-  const Eigen::Isometry3d pointToFace = worldToFace * pointTransform;
+  const RelativeTransformView pointToFace
+      = makeRelativeTransformView(faceTransform, pointTransform);
   const Eigen::Vector3d pointBodyOriginInFace
-      = worldToFace * pointTransform.translation();
+      = faceTransform.linear().transpose()
+        * (pointTransform.translation() - faceTransform.translation());
   const Eigen::Matrix3d faceRotation = faceTransform.linear();
 
   auto numContacts = 0;
@@ -2259,13 +2290,13 @@ int collideBoxSoftMesh(
     return 0;
 
   const Eigen::Vector3d halfExtents = 0.5 * size0;
-  const Eigen::Isometry3d softToBox = T0.inverse() * T1;
+  const RelativeTransformView softToBox = makeRelativeTransformView(T0, T1);
   const auto softPoints = makeSoftPointCacheView(o2, softBodyNode);
   auto numContacts = 0;
   for (std::size_t i = 0u; i < getSoftPointCount(softPoints); ++i) {
     const Eigen::Vector3d& softLocalVertex
         = getSoftLocalPosition(softPoints, i);
-    const Eigen::Vector3d localVertex = softToBox * softLocalVertex;
+    const Eigen::Vector3d localVertex = softToBox.apply(softLocalVertex);
 
     int axis = 0;
     double distance = 0.0;
@@ -2282,7 +2313,7 @@ int collideBoxSoftMesh(
     Contact contact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
-    contact.point = T1 * softLocalVertex;
+    contact.point = transformPoint(T1, softLocalVertex);
     contact.normal = T0.linear() * normal;
     contact.penetrationDepth = std::max(0.0, distance);
     contact.triID2 = faceIndex;
@@ -2307,13 +2338,13 @@ int collideSoftMeshBox(
     return 0;
 
   const Eigen::Vector3d halfExtents = 0.5 * size1;
-  const Eigen::Isometry3d softToBox = T1.inverse() * T0;
+  const RelativeTransformView softToBox = makeRelativeTransformView(T1, T0);
   const auto softPoints = makeSoftPointCacheView(o1, softBodyNode);
   auto numContacts = 0;
   for (std::size_t i = 0u; i < getSoftPointCount(softPoints); ++i) {
     const Eigen::Vector3d& softLocalVertex
         = getSoftLocalPosition(softPoints, i);
-    const Eigen::Vector3d localVertex = softToBox * softLocalVertex;
+    const Eigen::Vector3d localVertex = softToBox.apply(softLocalVertex);
 
     int axis = 0;
     double distance = 0.0;
@@ -2330,7 +2361,7 @@ int collideSoftMeshBox(
     Contact contact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
-    contact.point = T0 * softLocalVertex;
+    contact.point = transformPoint(T0, softLocalVertex);
     contact.normal = T1.linear() * normal;
     contact.penetrationDepth = std::max(0.0, distance);
     contact.triID1 = faceIndex;
