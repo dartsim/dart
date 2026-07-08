@@ -351,6 +351,9 @@ endif()
 #===============================================================================
 if(MSVC)
   # MSVC policy is configured before dependency discovery.
+  if(DART_TREAT_WARNINGS_AS_ERRORS)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/WX>)
+  endif()
 elseif(CMAKE_COMPILER_IS_GNUCXX)
   # There is a known bug in GCC 12.1 and above that leads to spurious
   # -Wmaybe-uninitialized warnings from gcc/x86_64-linux-gnu/12/include/avxintrin.h and

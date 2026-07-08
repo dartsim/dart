@@ -421,10 +421,6 @@ function(dart_configure_msvc_toolchain)
     )
   endif()
 
-  if(DART_TREAT_WARNINGS_AS_ERRORS)
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/WX>)
-  endif()
-
   if(NOT DART_MSVC_DEFAULT_OPTIONS)
     add_compile_options(
       $<$<COMPILE_LANGUAGE:CXX>:/W1>
