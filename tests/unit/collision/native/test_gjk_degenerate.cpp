@@ -8,7 +8,7 @@
  * This file is provided under the following "BSD-style" License
  */
 
-#include <dart/collision/native/narrow_phase/gjk.hpp>
+#include <dart/collision/native/narrow_phase/Gjk.hpp>
 
 #include <gtest/gtest.h>
 

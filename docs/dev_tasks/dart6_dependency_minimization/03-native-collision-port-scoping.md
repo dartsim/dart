@@ -91,7 +91,7 @@ the incumbent for each capability.
 ## What DART 7 provides (the source) - `dart/collision/native/` (~80 files)
 
 - **Broadphase:** AABB-tree, brute-force, spatial-hash, sweep-and-prune (`broad_phase/`).
-- **Narrowphase:** GJK + MPR (`gjk.cpp`, `mpr.cpp`), box-box SAT + face-clip + contact-reduction (`narrow_phase/box_box/`), sphere/box/capsule/cylinder/plane/mesh pairs, convex-convex, `distance.cpp`, `raycast.cpp`, `ccd.cpp`/`primitive_ccd.cpp`.
+- **Narrowphase:** GJK + MPR (`Gjk.cpp`, `Mpr.cpp`), box-box SAT + face-clip + contact-reduction (`narrow_phase/box_box/`), sphere/box/capsule/cylinder/plane/mesh pairs, convex-convex, `Distance.cpp`, `raycast.cpp`, `ccd.cpp`/`primitive_ccd.cpp`.
 - **SDF:** dense / ESDF / TSDF fields (`sdf/`).
 - **Manifolds:** persistent 4-point contact manifolds with warm-starting (`persistent_manifold_cache.*`, `contact_manifold.*`).
 - **Default mechanism:** `DartCollisionDetector` registers under aliases

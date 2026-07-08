@@ -39,7 +39,7 @@ math core — C++17, no EnTT, internal-only; FCL stays default). Follow-ups
 fixed the `maxNumContacts==0` contract in native sphere-sphere on both
 release-6.20 (#3298) and main (#3283).
 
-**Phase 2 is in progress.** The execution plan (merged, #3302) is
+**Phase 2 is complete.** The execution plan (merged, #3302) is
 [07-phase2-adapter-scoping.md](07-phase2-adapter-scoping.md): add an
 internal, non-default `dart::collision::NativeCollisionDetector` that
 bridges DART 6's `CollisionDetector`/`CollisionGroup`/`CollisionObject`
@@ -52,7 +52,7 @@ scope-diff-guarded.
 
 - **P1** (BroadPhase base + BruteForce): **#3303** — **merged**.
 - **P2** (narrowphase dispatcher, sphere/box only): **#3306** — **merged**
-  (`dart/collision/native/narrow_phase/narrow_phase.{hpp,cpp}` now on
+  (`dart/collision/native/narrow_phase/NarrowPhase.{hpp,cpp}` now on
   `release-6.20`).
 - **P3a** (adapter skeleton + sphere/box shape conversion, intentionally
   unregistered): **#3318** — **merged**.
@@ -64,17 +64,22 @@ scope-diff-guarded.
 - **P7** (mesh collision pairs): **#3325** — **merged**.
 - **P8/P9** (distance module + plane primitive/convex coverage): **#3343** —
   **merged**.
+- **P10** (mixed-scene FCL/DART/native parity coverage): **#3350** —
+  **merged**.
 
-**Next: P10 — mixed-scene detector parity coverage** on
-`feature/native-mixed-scene-parity`. Keep this as one small test/docs PR: add a
-native adapter boundary test that runs one deterministic mixed primitive scene
-through FCL, the legacy DART detector, and the new native detector, then compares
-the unordered colliding frame-pair set. **Do not** add a
+**Next: Phase 3 D1 — native detector distance adapter** on
+`feature/native-distance-adapter`. Keep this as one PR: expose
+`NativeCollisionDetector::distance()` through the existing DART 6
+`CollisionGroup`/`DistanceOption`/`DistanceResult` contract, compare supported
+primitive rows against the incumbent FCL distance path, and keep the native
+detector opt-in only. Fold the native engine basename normalization
+(`Aabb.hpp`, `NarrowPhase.cpp`, `SphereBox.hpp`, etc.) into this PR rather than
+opening a separate cleanup PR. **Do not** add a
 `CollisionDetectorType::Native` enum or touch `World`/`ConstraintSolver`/
 `WorldConfig`; FCL remains the default until phase 6.
 
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
-PRs, worktrees, gotchas, and exact P10 next steps).
+PRs, worktrees, gotchas, and exact Phase 3 D1 next steps).
 
 ## Standing constraints
 
@@ -83,6 +88,9 @@ PRs, worktrees, gotchas, and exact P10 next steps).
   `pixi run test-py` (maintainer clarification, see `02`).
 - Shared hot files (`pixi.toml`/`pixi.lock`): merge `origin/release-6.20`
   before pushing; never rebase a published PR branch.
+- Prefer fewer PRs from phase 3 onward: group cohesive capability wiring,
+  parity tests, and mechanical native-file cleanup in one PR when validation
+  remains tractable; split only for real review or risk boundaries.
 - Topic branches: `git switch --no-track -c <type>/<topic>
   origin/release-6.20`.
 - FCL default detector is created in *both* `ConstraintSolver`
