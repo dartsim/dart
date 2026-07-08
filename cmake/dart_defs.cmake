@@ -134,6 +134,124 @@ function(dart_print_options)
   message(STATUS "")
 endfunction()
 
+#-------------------------------------------------------------------------------
+# Configure MSVC runtime-library policy before any targets are created.
+#-------------------------------------------------------------------------------
+function(dart_configure_msvc_runtime_library)
+  if(NOT MSVC)
+    return()
+  endif()
+
+  if(DART_MSVC_FORCE_RELEASE_RUNTIME)
+    set(_dart_msvc_runtime_library "MultiThreadedDLL")
+  elseif(DART_RUNTIME_LIBRARY STREQUAL "/MT")
+    set(_dart_msvc_runtime_library "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  else()
+    set(_dart_msvc_runtime_library "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+  endif()
+  set(
+    CMAKE_MSVC_RUNTIME_LIBRARY
+    "${_dart_msvc_runtime_library}"
+    CACHE STRING
+    "MSVC runtime library for DART targets"
+    FORCE
+  )
+  set_property(
+    CACHE CMAKE_MSVC_RUNTIME_LIBRARY
+    PROPERTY
+      STRINGS
+        "MultiThreadedDLL"
+        "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+        "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+  )
+
+  if(DART_MSVC_FORCE_RELEASE_RUNTIME)
+    message(
+      STATUS
+      "DART_MSVC_FORCE_RELEASE_RUNTIME=ON: using /MD for all configurations"
+    )
+  else()
+    message(STATUS "MSVC runtime library: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
+  endif()
+endfunction()
+
+#-------------------------------------------------------------------------------
+# Configure MSVC-specific compiler and linker policy.
+#-------------------------------------------------------------------------------
+function(dart_configure_msvc_toolchain)
+  if(NOT MSVC)
+    return()
+  endif()
+
+  set(options)
+  set(oneValueArgs REQUIRED_VERSION REQUIRED_LABEL)
+  set(multiValueArgs)
+  cmake_parse_arguments(
+    ARG
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+
+  if(
+    ARG_REQUIRED_VERSION
+    AND MSVC_VERSION VERSION_LESS "${ARG_REQUIRED_VERSION}"
+    AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"
+  )
+    if(ARG_REQUIRED_LABEL)
+      set(_dart_msvc_required_label " (${ARG_REQUIRED_LABEL})")
+    else()
+      set(_dart_msvc_required_label "")
+    endif()
+    message(
+      FATAL_ERROR
+      "MSVC ${MSVC_VERSION} is detected, but ${PROJECT_NAME_UPPERCASE} "
+      "requires MSVC ${ARG_REQUIRED_VERSION} or greater"
+      "${_dart_msvc_required_label}."
+    )
+  endif()
+
+  add_compile_definitions(
+    _CRT_SECURE_NO_WARNINGS
+    _ENABLE_EXTENDED_ALIGNED_STORAGE
+  )
+
+  add_compile_options(
+    $<$<COMPILE_LANGUAGE:CXX>:/EHsc>
+    $<$<COMPILE_LANGUAGE:CXX>:/permissive->
+    $<$<COMPILE_LANGUAGE:CXX>:/Zc:twoPhase->
+    $<$<COMPILE_LANGUAGE:CXX>:/utf-8>
+    $<$<COMPILE_LANGUAGE:CXX>:/MP>
+    $<$<COMPILE_LANGUAGE:CXX>:/FS>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4005>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4099>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4146>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4244>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4250>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4267>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4305>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4334>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4838>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4996>
+    $<$<COMPILE_LANGUAGE:CXX>:/bigobj>
+  )
+
+  if(DART_TREAT_WARNINGS_AS_ERRORS)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/WX>)
+  endif()
+
+  if(NOT DART_MSVC_DEFAULT_OPTIONS)
+    add_compile_options(
+      $<$<COMPILE_LANGUAGE:CXX>:/W1>
+      $<$<COMPILE_LANGUAGE:CXX>:/Zi>
+      $<$<COMPILE_LANGUAGE:CXX>:/Gy>
+      $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Release>>:/GL>
+    )
+    add_link_options($<$<CONFIG:Release>:/INCREMENTAL:NO>)
+  endif()
+endfunction()
+
 function(dart_library)
   set(prefix _ARG)
   set(options GLOB_HEADERS GLOB_SOURCES)
