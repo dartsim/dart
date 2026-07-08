@@ -923,6 +923,17 @@ TEST(NativeCollisionDetector, DistanceRespectsLowerBoundAndFilter)
   EXPECT_DOUBLE_EQ(0.0, filtered.distance);
   EXPECT_FALSE(filtered.result.found());
 
+  collision::DistanceOption filteredLowerBoundOption(true, 2.0, filter);
+  const auto filteredLowerBound
+      = distanceShapeFrames(detector, frame1, frame2, filteredLowerBoundOption);
+  EXPECT_NEAR(2.0, filteredLowerBound.distance, 1e-12);
+  EXPECT_FALSE(filteredLowerBound.result.found());
+
+  auto filteredGroup
+      = detector->createCollisionGroup(frame1.get(), frame2.get());
+  EXPECT_NEAR(
+      2.0, filteredGroup->distance(filteredLowerBoundOption, nullptr), 1e-12);
+
   auto orderedFilter = std::make_shared<OrderedShapeFrameDistanceFilter>(
       frame1.get(), frame2.get());
   collision::DistanceOption orderedOption(true, 0.0, orderedFilter);
@@ -955,6 +966,17 @@ TEST(NativeCollisionDetector, DistanceLeavesMeshPrimitivePairsUnsupported)
       = distanceShapeFrames(detector, sphereFrame, meshFrame, option);
   EXPECT_DOUBLE_EQ(0.0, sphereMesh.distance);
   EXPECT_FALSE(sphereMesh.result.found());
+
+  collision::DistanceOption lowerBoundOption(true, 2.0, nullptr);
+  const auto meshSphereLowerBound
+      = distanceShapeFrames(detector, meshFrame, sphereFrame, lowerBoundOption);
+  EXPECT_NEAR(2.0, meshSphereLowerBound.distance, 1e-12);
+  EXPECT_FALSE(meshSphereLowerBound.result.found());
+
+  auto unsupportedGroup
+      = detector->createCollisionGroup(meshFrame.get(), sphereFrame.get());
+  EXPECT_NEAR(
+      2.0, unsupportedGroup->distance(lowerBoundOption, nullptr), 1e-12);
 }
 
 //==============================================================================

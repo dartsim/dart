@@ -182,7 +182,7 @@ double convertDistanceResult(
     DistanceResult* result)
 {
   if (!best.found)
-    return 0.0;
+    return std::max(0.0, option.distanceLowerBound);
 
   const double minDistance = std::max(best.distance, option.distanceLowerBound);
 
