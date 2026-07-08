@@ -1,5 +1,5 @@
 ---
-description: continue work from a previous session
+description: continue unfinished work through its acceptance criteria, verification, and safe completion or documented blocker
 argument-hint: "[branch-or-task]"
 agent: build
 ---
