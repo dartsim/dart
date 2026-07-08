@@ -1141,6 +1141,60 @@ TEST(NativeCollisionDetector, RaycastCoversPrimitiveRows)
 }
 
 //==============================================================================
+TEST(NativeCollisionDetector, RaycastCoversConvexRows)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  collision::RaycastOption option;
+
+  auto expectHit = [&](const dynamics::ShapePtr& shape,
+                       const Eigen::Vector3d& from,
+                       const Eigen::Vector3d& to,
+                       const Eigen::Vector3d& point,
+                       const Eigen::Vector3d& normal,
+                       double fraction) {
+    auto frame = makeFrame(shape);
+    auto group = detector->createCollisionGroup(frame.get());
+
+    collision::RaycastResult result;
+    ASSERT_TRUE(group->raycast(from, to, option, &result));
+    ASSERT_TRUE(result.hasHit());
+    ASSERT_EQ(1u, result.mRayHits.size());
+    const auto& hit = result.mRayHits[0];
+    EXPECT_EQ(frame.get(), hit.mCollisionObject->getShapeFrame());
+    EXPECT_TRUE(hit.mPoint.isApprox(point, 1e-12));
+    EXPECT_TRUE(hit.mNormal.isApprox(normal, 1e-12));
+    EXPECT_NEAR(fraction, hit.mFraction, 1e-12);
+  };
+
+  const dynamics::ConvexMeshShape::Vertices thinVertices{
+      {-0.001, -0.1, -0.1},
+      {0.001, -0.1, -0.1},
+      {0.001, 0.1, -0.1},
+      {-0.001, 0.1, -0.1},
+      {-0.001, -0.1, 0.1},
+      {0.001, -0.1, 0.1},
+      {0.001, 0.1, 0.1},
+      {-0.001, 0.1, 0.1}};
+
+  expectHit(
+      std::make_shared<dynamics::ConvexMeshShape>(
+          thinVertices, makeCubeTriangles()),
+      Eigen::Vector3d(-1.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(-0.001, 0.0, 0.0),
+      -Eigen::Vector3d::UnitX(),
+      0.4995);
+
+  expectHit(
+      std::make_shared<dynamics::PyramidShape>(1.0, 1.0, 1.0),
+      Eigen::Vector3d(-2.0, 0.0, 0.0),
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      Eigen::Vector3d(-0.25, 0.0, 0.0),
+      Eigen::Vector3d(-2.0, 0.0, 1.0).normalized(),
+      0.4375);
+}
+
+//==============================================================================
 TEST(NativeCollisionDetector, CollidesAcrossGroups)
 {
   auto detector = collision::NativeCollisionDetector::create();

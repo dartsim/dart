@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/native/narrow_phase/Gjk.hpp>
 #include <dart/collision/native/narrow_phase/Raycast.hpp>
 
 #include <algorithm>
 #include <limits>
+#include <vector>
 
 #include <cmath>
 
@@ -616,35 +616,89 @@ bool raycastMesh(
 
 namespace {
 
-bool isPointInConvex(
-    const Eigen::Vector3d& point,
-    const ConvexShape& convex,
-    const Eigen::Isometry3d& transform)
+struct ConvexFace
 {
-  auto pointSupport = [&point](const Eigen::Vector3d&) {
-    return point;
-  };
+  Eigen::Vector3d point;
+  Eigen::Vector3d normal;
+};
 
-  auto convexSupport = [&convex, transform](const Eigen::Vector3d& dir) {
-    Eigen::Vector3d localDir = transform.linear().transpose() * dir;
-    return transform * convex.support(localDir);
-  };
+std::vector<ConvexFace> computeConvexFaces(const ConvexShape& convex)
+{
+  const auto& vertices = convex.getVertices();
+  std::vector<ConvexFace> faces;
 
-  Eigen::Vector3d initialDir = point - transform.translation();
-  if (initialDir.squaredNorm() < 1e-10) {
-    initialDir = Eigen::Vector3d::UnitX();
+  if (vertices.size() < 4) {
+    return faces;
   }
 
-  return Gjk::intersect(pointSupport, convexSupport, initialDir);
-}
-
-double computeBoundingRadius(const ConvexShape& convex)
-{
-  double maxRadiusSq = 0.0;
-  for (const auto& v : convex.getVertices()) {
-    maxRadiusSq = std::max(maxRadiusSq, v.squaredNorm());
+  Eigen::Vector3d centroid = Eigen::Vector3d::Zero();
+  double maxVertexNorm = 0.0;
+  for (const auto& vertex : vertices) {
+    centroid += vertex;
+    maxVertexNorm = std::max(maxVertexNorm, vertex.norm());
   }
-  return std::sqrt(maxRadiusSq);
+  centroid /= static_cast<double>(vertices.size());
+
+  const double scale = std::max(1.0, maxVertexNorm);
+  const double areaTolerance = 1e-12 * scale * scale;
+  const double planeTolerance = 1e-8 * scale;
+  const double normalTolerance = 1e-8;
+
+  for (std::size_t i = 0; i + 2 < vertices.size(); ++i) {
+    for (std::size_t j = i + 1; j + 1 < vertices.size(); ++j) {
+      for (std::size_t k = j + 1; k < vertices.size(); ++k) {
+        const Eigen::Vector3d edge1 = vertices[j] - vertices[i];
+        const Eigen::Vector3d edge2 = vertices[k] - vertices[i];
+        Eigen::Vector3d normal = edge1.cross(edge2);
+        const double normalNorm = normal.norm();
+        if (normalNorm <= areaTolerance) {
+          continue;
+        }
+        normal /= normalNorm;
+
+        bool hasPositiveSide = false;
+        bool hasNegativeSide = false;
+        for (const auto& vertex : vertices) {
+          const double signedDistance = normal.dot(vertex - vertices[i]);
+          if (signedDistance > planeTolerance) {
+            hasPositiveSide = true;
+          } else if (signedDistance < -planeTolerance) {
+            hasNegativeSide = true;
+          }
+
+          if (hasPositiveSide && hasNegativeSide) {
+            break;
+          }
+        }
+
+        if (hasPositiveSide && hasNegativeSide) {
+          continue;
+        }
+
+        if (normal.dot(centroid - vertices[i]) > 0.0) {
+          normal = -normal;
+        }
+
+        bool duplicate = false;
+        for (const auto& face : faces) {
+          const double normalDot = face.normal.dot(normal);
+          const double planeDistance
+              = std::abs(normal.dot(face.point - vertices[i]));
+          if (normalDot > 1.0 - normalTolerance
+              && planeDistance <= planeTolerance) {
+            duplicate = true;
+            break;
+          }
+        }
+
+        if (!duplicate) {
+          faces.push_back({vertices[i], normal});
+        }
+      }
+    }
+  }
+
+  return faces;
 }
 
 } // namespace
@@ -659,102 +713,59 @@ bool raycastConvex(
   result.clear();
 
   const double maxDist = std::min(ray.maxDistance, option.maxDistance);
-
-  if (isPointInConvex(ray.origin, convex, convexTransform)) {
-    result.hit = true;
-    result.distance = 0.0;
-    result.point = ray.origin;
-    result.normal = -ray.direction.normalized();
-    return true;
-  }
-
-  const Eigen::Vector3d center = convexTransform.translation();
-  const double boundingRadius = computeBoundingRadius(convex);
-
-  const Eigen::Vector3d oc = ray.origin - center;
-  const double a = ray.direction.squaredNorm();
-  const double b = 2.0 * oc.dot(ray.direction);
-  const double c = oc.squaredNorm() - boundingRadius * boundingRadius;
-
-  double t0, t1;
-  if (solveQuadratic(a, b, c, t0, t1) < 0.0) {
+  const auto faces = computeConvexFaces(convex);
+  if (faces.empty()) {
     return false;
   }
 
-  if (t1 < 0.0 || t0 > maxDist) {
-    return false;
-  }
+  double entryDistance = 0.0;
+  double exitDistance = maxDist;
+  Eigen::Vector3d entryNormal = -ray.direction;
+  bool startsInside = true;
 
-  double lo = std::max(0.0, t0);
-  double hi = std::min(maxDist, t1);
+  for (const auto& face : faces) {
+    const Eigen::Vector3d worldPoint = convexTransform * face.point;
+    const Eigen::Vector3d worldNormal
+        = convexTransform.rotation() * face.normal;
 
-  if (!isPointInConvex(ray.pointAt(hi), convex, convexTransform)) {
-    bool foundEntry = false;
-    constexpr int kCoarseSteps = 16;
-    double step = (hi - lo) / kCoarseSteps;
-    for (int i = 1; i <= kCoarseSteps; ++i) {
-      double t = lo + i * step;
-      if (isPointInConvex(ray.pointAt(t), convex, convexTransform)) {
-        hi = t;
-        lo = t - step;
-        foundEntry = true;
-        break;
+    const double signedDistance = worldNormal.dot(ray.origin - worldPoint);
+    const double directionDot = worldNormal.dot(ray.direction);
+
+    if (signedDistance > kEpsilon) {
+      startsInside = false;
+      if (directionDot >= -kEpsilon) {
+        return false;
+      }
+
+      const double candidateEntry = -signedDistance / directionDot;
+      if (candidateEntry > entryDistance) {
+        entryDistance = candidateEntry;
+        entryNormal = worldNormal;
+      }
+    } else if (directionDot > kEpsilon) {
+      const double candidateExit = -signedDistance / directionDot;
+      if (candidateExit < exitDistance) {
+        exitDistance = candidateExit;
       }
     }
-    if (!foundEntry) {
+
+    if (entryDistance - exitDistance > kEpsilon) {
       return false;
     }
   }
 
-  constexpr int kBinarySearchIterations = 32;
-  for (int i = 0; i < kBinarySearchIterations; ++i) {
-    double mid = (lo + hi) * 0.5;
-    if (isPointInConvex(ray.pointAt(mid), convex, convexTransform)) {
-      hi = mid;
-    } else {
-      lo = mid;
-    }
-  }
-
-  double hitT = hi;
-  if (hitT > maxDist) {
+  if (entryDistance < 0.0 || entryDistance > maxDist) {
     return false;
   }
 
   result.hit = true;
-  result.distance = hitT;
-  result.point = ray.pointAt(hitT);
+  result.distance = startsInside ? 0.0 : entryDistance;
+  result.point = ray.pointAt(result.distance);
+  result.normal = startsInside ? -ray.direction : entryNormal;
 
-  const Eigen::Isometry3d invTransform = convexTransform.inverse();
-  const Eigen::Vector3d localPoint = invTransform * result.point;
-
-  Eigen::Vector3d bestNormal = -ray.direction.normalized();
-  double bestDot = -std::numeric_limits<double>::max();
-
-  constexpr int kNormalSamples = 6;
-  const Eigen::Vector3d directions[kNormalSamples]
-      = {Eigen::Vector3d::UnitX(),
-         -Eigen::Vector3d::UnitX(),
-         Eigen::Vector3d::UnitY(),
-         -Eigen::Vector3d::UnitY(),
-         Eigen::Vector3d::UnitZ(),
-         -Eigen::Vector3d::UnitZ()};
-
-  for (const auto& dir : directions) {
-    Eigen::Vector3d support = convex.support(dir);
-    Eigen::Vector3d toPoint = localPoint - support;
-    double dot = toPoint.dot(dir);
-    if (dot > bestDot) {
-      bestDot = dot;
-      bestNormal = convexTransform.rotation() * dir;
-    }
+  if (result.normal.dot(ray.direction) > 0.0) {
+    result.normal = -result.normal;
   }
-
-  if (bestNormal.dot(ray.direction) > 0.0) {
-    bestNormal = -bestNormal;
-  }
-
-  result.normal = bestNormal;
 
   return true;
 }
