@@ -351,6 +351,12 @@ function(_dart_msvc_runtime_flag_for_config out runtime_library config)
 
   if(runtime_library STREQUAL "MultiThreadedDLL")
     set(runtime_flag "/MD")
+  elseif(runtime_library STREQUAL "MultiThreadedDebugDLL")
+    set(runtime_flag "/MDd")
+  elseif(runtime_library STREQUAL "MultiThreaded")
+    set(runtime_flag "/MT")
+  elseif(runtime_library STREQUAL "MultiThreadedDebug")
+    set(runtime_flag "/MTd")
   elseif(runtime_library STREQUAL "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     if(config_upper STREQUAL "DEBUG")
       set(runtime_flag "/MDd")
@@ -370,7 +376,7 @@ function(_dart_msvc_runtime_flag_for_config out runtime_library config)
   set(${out} "${runtime_flag}" PARENT_SCOPE)
 endfunction()
 
-function(_dart_replace_msvc_runtime_flag flags_variable runtime_flag)
+macro(_dart_replace_msvc_runtime_flag flags_variable runtime_flag)
   if(DEFINED ${flags_variable})
     set(flags_value "${${flags_variable}}")
   else()
@@ -392,14 +398,9 @@ function(_dart_replace_msvc_runtime_flag flags_variable runtime_flag)
     set(flags_value "${runtime_flag}")
   endif()
 
-  set(
-    ${flags_variable}
-    "${flags_value}"
-    CACHE STRING
-    "Compiler flags updated by DART MSVC runtime policy"
-    FORCE
-  )
-endfunction()
+  set(${flags_variable} "${flags_value}")
+  set(${flags_variable} "${flags_value}" PARENT_SCOPE)
+endmacro()
 
 function(_dart_msvc_runtime_flag_fallback_needed out)
   set(needs_fallback OFF)
@@ -446,7 +447,7 @@ function(_dart_msvc_runtime_flag_fallback_needed out)
   set(${out} ${needs_fallback} PARENT_SCOPE)
 endfunction()
 
-function(_dart_apply_msvc_runtime_flag_fallback runtime_library)
+macro(_dart_apply_msvc_runtime_flag_fallback runtime_library)
   set(configs Debug Release RelWithDebInfo MinSizeRel)
 
   if(CMAKE_CONFIGURATION_TYPES)
@@ -488,7 +489,7 @@ function(_dart_apply_msvc_runtime_flag_fallback runtime_library)
       endif()
     endforeach()
   endforeach()
-endfunction()
+endmacro()
 
 #-------------------------------------------------------------------------------
 # Configure MSVC runtime-library policy before any targets are created.
@@ -498,35 +499,52 @@ function(dart_configure_msvc_runtime_library)
     return()
   endif()
 
-  if(DART_MSVC_FORCE_RELEASE_RUNTIME)
-    set(_dart_msvc_runtime_library "MultiThreadedDLL")
-  elseif(DART_RUNTIME_LIBRARY STREQUAL "/MT")
-    set(_dart_msvc_runtime_library "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  set(_dart_msvc_runtime_preserved OFF)
+  if(
+    DEFINED CMAKE_MSVC_RUNTIME_LIBRARY
+    AND NOT CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL ""
+  )
+    set(_dart_msvc_runtime_library "${CMAKE_MSVC_RUNTIME_LIBRARY}")
+    set(_dart_msvc_runtime_preserved ON)
   else()
-    set(_dart_msvc_runtime_library "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    if(DART_MSVC_FORCE_RELEASE_RUNTIME)
+      set(_dart_msvc_runtime_library "MultiThreadedDLL")
+    elseif(DART_RUNTIME_LIBRARY STREQUAL "/MT")
+      set(_dart_msvc_runtime_library "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    else()
+      set(_dart_msvc_runtime_library "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    endif()
+    set(
+      CMAKE_MSVC_RUNTIME_LIBRARY
+      "${_dart_msvc_runtime_library}"
+      CACHE STRING
+      "MSVC runtime library for DART targets"
+      FORCE
+    )
   endif()
-  set(
-    CMAKE_MSVC_RUNTIME_LIBRARY
-    "${_dart_msvc_runtime_library}"
-    CACHE STRING
-    "MSVC runtime library for DART targets"
-    FORCE
-  )
-  set_property(
-    CACHE CMAKE_MSVC_RUNTIME_LIBRARY
-    PROPERTY
-      STRINGS
-        "MultiThreadedDLL"
-        "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
-        "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-  )
+
+  if(DEFINED CACHE{CMAKE_MSVC_RUNTIME_LIBRARY})
+    set_property(
+      CACHE CMAKE_MSVC_RUNTIME_LIBRARY
+      PROPERTY
+        STRINGS
+          "MultiThreadedDLL"
+          "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+          "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+    )
+  endif()
 
   _dart_msvc_runtime_flag_fallback_needed(_dart_msvc_runtime_fallback_needed)
   if(_dart_msvc_runtime_fallback_needed)
     _dart_apply_msvc_runtime_flag_fallback("${_dart_msvc_runtime_library}")
   endif()
 
-  if(DART_MSVC_FORCE_RELEASE_RUNTIME)
+  if(_dart_msvc_runtime_preserved)
+    message(
+      STATUS
+      "MSVC runtime library: ${_dart_msvc_runtime_library} (preserved from caller)"
+    )
+  elseif(DART_MSVC_FORCE_RELEASE_RUNTIME)
     message(
       STATUS
       "DART_MSVC_FORCE_RELEASE_RUNTIME=ON: using /MD for all configurations"
