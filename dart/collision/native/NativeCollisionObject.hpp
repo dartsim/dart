@@ -34,8 +34,8 @@
 #define DART_COLLISION_NATIVE_NATIVECOLLISIONOBJECT_HPP_
 
 #include <dart/collision/CollisionObject.hpp>
-#include <dart/collision/native/aabb.hpp>
-#include <dart/collision/native/shapes/shape.hpp>
+#include <dart/collision/native/Aabb.hpp>
+#include <dart/collision/native/shapes/Shape.hpp>
 
 #include <Eigen/Dense>
 

@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/native/narrow_phase/distance.hpp>
-#include <dart/collision/native/shapes/shape.hpp>
+#include <dart/collision/native/narrow_phase/Distance.hpp>
+#include <dart/collision/native/shapes/Shape.hpp>
 
 #include <gtest/gtest.h>
 

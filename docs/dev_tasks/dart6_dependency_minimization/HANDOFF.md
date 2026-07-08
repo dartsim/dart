@@ -24,9 +24,9 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
 | Phase | What | Status |
 | --- | --- | --- |
 | 0 | Baseline evidence packet (incumbent A/B envelope + default-flip verdict) | ✅ merged (#3271) |
-| 1 | Native math core (aabb/gjk/mpr/box_box/sphere_sphere/shapes/span shim) internal-only | ✅ merged (#3281) |
-| 2 | DART 6 detector adapter over the native core (bridge, sliced P1–P9 + P10 coverage) | 🔄 **in progress** — see §4 |
-| 3 | Capability parity (distance→FCL, raycast→Bullet, CCD, manifolds, voxel) | ⬜ not started |
+| 1 | Native math core (Aabb/Gjk/Mpr/BoxBox/SphereSphere/shapes/Span shim) internal-only | ✅ merged (#3281) |
+| 2 | DART 6 detector adapter over the native core (bridge, sliced P1–P9 + P10 coverage) | ✅ complete (#3350) |
+| 3 | Capability parity (distance→FCL, raycast→Bullet, CCD, manifolds, voxel) | 🔄 **in progress** — see §4 |
 | 4 | Evidence-driven performance optimization (broadphase, SIMD, manifold reuse) | ⬜ not started |
 | 5 | Bullet/ODE/FCL facade decision (must keep gz subclassing) | ⬜ not started |
 | 6 | Default flip in both `ConstraintSolver` ctors (point of no return) | ⬜ not started |
@@ -44,7 +44,7 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
 - **#3302** phase-2 execution plan (`07-phase2-adapter-scoping.md`) + this RESUME.
 - **#3303** phase-2 **P1**: native BruteForce broadphase (internal-only).
 - **#3306** phase-2 **P2**: narrowphase dispatcher (sphere/box only) →
-  `dart/collision/native/narrow_phase/narrow_phase.{hpp,cpp}`.
+  `dart/collision/native/narrow_phase/NarrowPhase.{hpp,cpp}`.
 - **#3318** phase-2 **P3a**: adapter skeleton + sphere/box conversion,
   intentionally unregistered. The `"native"` factory key still does not exist
   until P3b.
@@ -56,11 +56,12 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
 - **#3325** phase-2 **P7**: mesh collision pairs.
 - **#3343** phase-2 **P8/P9**: distance module and plane primitive/convex
   coverage.
+- **#3350** phase-2 **P10**: mixed-scene FCL/DART/native parity coverage.
 
-`origin/release-6.20` tip at this refresh: `c1deaca67b8` (moves as the
+`origin/release-6.20` tip at this refresh: `b9f4b118e2e8` (moves as the
 maintainer merges; **always re-fetch before branching/capturing**).
 
-## 4. Phase 2 — the active work (plan: `07`, PR slices P1–P9 + P10)
+## 4. Phase 2 complete; Phase 3 D1 active
 
 Bridge design (see `07` §0–§1): **bypass DART 7's EnTT `CollisionWorld`**; the
 adapter (`NativeCollisionDetector/Group/Object` + `NativeShapeConversion`)
@@ -79,22 +80,24 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 | **P7** | `mesh_mesh` (needs convex_convex; largest file) | ✅ **merged (#3325)** |
 | **P8** | `distance` module (engine-only; needs span shim) | ✅ **merged (#3343)**, combined with P9 |
 | **P9** | `plane_sphere` (needs `distance`) → completes primitive+convex+mesh+plane | ✅ **merged (#3343)**, combined with P8 |
-| **P10** | mixed-scene fcl/dart/native parity integration test | 🔄 active on `feature/native-mixed-scene-parity` |
+| **P10** | mixed-scene fcl/dart/native parity integration test | ✅ **merged (#3350)** |
 
-### Exact next step: execute P10
+### Exact next step: execute Phase 3 D1
 
-1. Continue with the **P10** branch `feature/native-mixed-scene-parity`, based
-   on the current `origin/release-6.20`.
-2. Keep it as one small PR to avoid unnecessary CI overhead: add a native adapter
-   boundary test that runs one deterministic mixed primitive scene through
-   `fcl`, legacy `dart`, and `native`, then compares the unordered colliding
-   frame-pair set. FCL does not support DART 6 `CapsuleShape`, so the
-   three-detector scene is limited to the common primitive subset; capsule
-   coverage remains in the focused native/DART pair tests.
-3. After P10 merges, phase 2 is functionally complete and the next executable
-   lane is **phase 3** capability parity (distance detector wiring, raycast,
-   CCD, manifolds, voxel/octree replacement).
-4. Gates for **every** phase-2 PR (see `07` §3 — note the corrected commands):
+1. Continue with the **Phase 3 D1** branch `feature/native-distance-adapter`,
+   based on the current `origin/release-6.20`.
+2. Keep it as one PR: port the native narrowphase distance dispatcher entrypoint,
+   normalize native engine basenames to DART 6 style (`Aabb.hpp`,
+   `NarrowPhase.cpp`, `SphereBox.hpp`, etc.), and wire
+   `NativeCollisionDetector::distance()` to the DART 6
+   `CollisionGroup` contract. Compare supported primitive rows against FCL,
+   including `DistanceOption::distanceLowerBound`, `DistanceFilter`, same-group
+   duplicate skipping, cross-group queries, and `DistanceResult` shape-frame
+   ownership.
+3. Leave raycast, CCD, persistent manifolds, voxel/octree replacement,
+   Bullet/ODE/FCL facades, and the default flip for later phase-3/phase-5/phase-6
+   slices.
+4. Gates for **every** native-collision capability PR:
    Release build + **explicit Debug build** (`pixi run build` is Release-only);
    **run** the tests with `ctest --test-dir build/default/cpp/Release -R
    UNIT_collision_native --output-on-failure` (`pixi run test-all` only *builds*);
@@ -105,8 +108,8 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 
 ## 5. Open PRs / loose ends
 
-- **P10 mixed-scene detector parity** — active on
-  `feature/native-mixed-scene-parity` as one small PR-sized slice to minimize CI
+- **Phase 3 D1 native distance adapter** — active on
+  `feature/native-distance-adapter` as one PR-sized slice to minimize CI
   overhead.
 - **#3283 (main sphere-sphere `enableContact` fix)** — MERGED; main and
   `release-6.20` now agree on the squared binary predicate for the eventual
@@ -123,14 +126,18 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
   **no** `World::setCollisionDetector(const char*)` overload).
 - **No EnTT, no new dependency, C++17 only.** `rg entt dart/collision/native`
   stays empty. Only C++20 feature in the ported tree is `std::span` → the
-  `detail/span.hpp` shim.
+  `detail/Span.hpp` shim.
 - **gz gate every PR** (`pixi run -e gazebo test-gz`); on engine-only slices it
   is a non-regression guard (trivially green), substantive from P3b onward.
-- **`narrow_phase.{hpp,cpp}` is a bespoke reduced dispatcher** (`07` §2.1): it is
+- **`NarrowPhase.{hpp,cpp}` is a bespoke reduced dispatcher** (`07` §2.1): it is
   hand-trimmed and re-expands in P4–P9. Each dispatcher-touching PR must keep the
   `git diff origin/main` reduced to {span shim; dropped `CollisionObject`
   overloads + Compound + non-routed branches; the `enum class ShapeType;` compile
   fix}; P9 must re-converge to `main` modulo those deltas.
+- **Prefer fewer PRs for remaining phases.** Combine cohesive capability wiring,
+  parity coverage, and mechanical native-file cleanup in one PR when the local
+  validation envelope remains clear; split only when review risk or ownership
+  boundaries require it.
 - **Lazy geometry refresh** (P3b `NativeCollisionObject::updateEngineData`) must
   key on **shape identity + null**, not version alone (a fresh shape starts at
   version 1 → a version-only guard misses a swap). See `07` §1.4.

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/native/shapes/shape.hpp>
+#include <dart/collision/native/shapes/Shape.hpp>
 
 #include <gtest/gtest.h>
 

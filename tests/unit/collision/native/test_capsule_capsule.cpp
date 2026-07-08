@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/native/narrow_phase/capsule_capsule.hpp>
-#include <dart/collision/native/shapes/shape.hpp>
-#include <dart/collision/native/types.hpp>
+#include <dart/collision/native/Types.hpp>
+#include <dart/collision/native/narrow_phase/CapsuleCapsule.hpp>
+#include <dart/collision/native/shapes/Shape.hpp>
 
 #include <gtest/gtest.h>
 

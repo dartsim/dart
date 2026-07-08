@@ -15,7 +15,7 @@ release-branch target remains to move soft/deformable collision onto
 
 ## Current native evidence
 
-- `dart/collision/native/shapes/shape.hpp` has `native::MeshShape` with
+- `dart/collision/native/shapes/Shape.hpp` has `native::MeshShape` with
   retained vertices, triangle indices, and a local triangle BVH.
 - `dart/collision/native` already owns primitive narrow-phase pieces such as
   sphere-sphere, box-box, GJK/MPR-style support-mapped collision, and batch
