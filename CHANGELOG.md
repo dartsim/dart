@@ -373,6 +373,10 @@ compatibility remains on the active DART 6 LTS branch._
   `Composite::Properties` data by keeping zero-aspect composite-data template
   members owned by the exported `dart` instantiation.
   ([#3340](https://github.com/dartsim/dart/pull/3340))
+- Centralized MSVC runtime, conformance, warning, and parallel-compile policy in
+  CMake helpers so Windows builds use the same long-term toolchain settings
+  across Pixi, CI, and source builds.
+  ([#3349](https://github.com/dartsim/dart/pull/3349))
 - Added a `DART_USE_SYSTEM_FMT` CMake option (default ON) that falls back to a
   FetchContent source build of fmt when set OFF, so source and container builds
   keep working when a distro's packaged fmt CMake config is broken; the Alt

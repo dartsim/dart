@@ -41,10 +41,11 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Example reorganizations can conflict in `examples/CMakeLists.txt`; reconcile any new example entries and keep the category layout aligned before pushing.
   - GitHub Actions API calls can return `HTTP 406` if you omit required headers; include an explicit `Accept` header.
   - `gh api` writes to stdout and does not support `--output`; redirect to a file when you need to search logs.
-  - Windows CI and Windows wheels are pinned to `windows-2022` because the
-    repository's Windows Pixi tasks request CMake's `Visual Studio 17 2022`
-    generator. Do not move them back to `windows-latest` unless the generator
-    and MSVC compatibility assumptions are updated together.
+  - Windows CI and Windows wheels are pinned to `windows-2025-vs2026` because
+    DART's Windows floor is Visual Studio 2026 and the Pixi tasks default to
+    CMake's `Visual Studio 18 2026` generator. Do not move them back to
+    `windows-latest` unless the generator and MSVC compatibility assumptions are
+    updated together.
   - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; keep native-only collision toggles explicit unless the job also installs a reference-engine Pixi environment.
   - The Eigen over-alignment job forces `EIGEN_MAX_ALIGN_BYTES=64` and `EIGEN_MAX_STATIC_ALIGN_BYTES=64`; failures usually indicate allocator, placement-new, or storage code assuming a smaller Eigen alignment.
   - Deprecated headers that emit `#warning` fail under `-Werror=cpp` (e.g., use `dart/io/urdf/All.hpp` instead of deprecated `dart/io/urdf/urdf.hpp`).
@@ -476,15 +477,25 @@ issues, but still allow C/CXX launchers unless
 - The `.github/actions/configure-compiler-cache` action may disable the sccache launcher on some Linux runners (e.g., self-hosted or non-Ubuntu) and fall back to `ccache` when available (otherwise `env`) to avoid flaky `try_compile` failures.
 - In `.github/workflows/ci_macos.yml`, the "Setup sccache" step is best-effort (`continue-on-error: true`) so transient download timeouts don't fail the job.
 
-## MSVC Multi-Core Compilation
+## MSVC Toolchain Policy
 
-**Critical configuration** (`CMakeLists.txt` line 282-284):
+MSVC settings are centralized in `cmake/dart_defs.cmake` and invoked from the
+root `CMakeLists.txt`. Keep new Windows compiler policy in those helpers
+instead of appending to `CMAKE_CXX_FLAGS`.
 
-```cmake
-# /MP - Multi-processor compilation (uses all available cores)
-# /FS - Force synchronous PDB writes (prevents PDB conflicts in parallel builds with /MP)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase- /MP /FS")
-```
+The helpers own:
+
+- runtime selection through `dart_configure_msvc_runtime_library()` and
+  `CMAKE_MSVC_RUNTIME_LIBRARY`; this runs before dependency discovery so targets
+  created during configure inherit the same runtime model
+- compile-option policy through `dart_configure_msvc_toolchain()`; this also
+  runs before dependency discovery so dependency-created targets inherit DART's
+  MSVC directory options
+- standard conformance and encoding options (`/EHsc`, `/permissive-`,
+  `/Zc:twoPhase-`, `/utf-8`)
+- multi-core compilation (`/MP` plus `/FS`)
+- DART's documented warning suppressions and warnings-as-errors wiring
+- Release/Debug tuning when `DART_MSVC_DEFAULT_OPTIONS=OFF`
 
 **Two levels of parallelization:**
 

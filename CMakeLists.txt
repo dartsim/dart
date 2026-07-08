@@ -199,45 +199,23 @@ if(MSVC)
     DART_RUNTIME_LIBRARY
     "/MD"
     CACHE STRING
-    "BaseName chosen by the user at CMake configure time"
+    "MSVC runtime family used when DART_MSVC_FORCE_RELEASE_RUNTIME is OFF"
   )
   set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
-  dart_option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF CATEGORY msvc)
+  dart_option(
+    DART_MSVC_DEFAULT_OPTIONS
+    "Use Visual Studio default Debug/Release tuning instead of DART's MSVC tuning"
+    OFF
+    CATEGORY msvc
+  )
 
-  # Option to force /MD (Release runtime) for all configurations including Debug.
-  # This is useful when linking against pre-built libraries (e.g., conda-forge packages)
-  # that are built with /MD to avoid LNK2038 runtime library mismatch errors.
-  # Default: ON (recommended for most users using package managers like conda/pixi)
-  # Set to OFF if you're building all dependencies from source with matching runtime libraries.
+  # Pre-built package-manager dependencies are generally built with /MD. Keep
+  # every configuration on that runtime by default to avoid LNK2038 mismatches.
   dart_option(DART_MSVC_FORCE_RELEASE_RUNTIME
     "Force /MD (Release DLL runtime) for all configurations to match pre-built packages (conda-forge, vcpkg, etc.)" ON
     CATEGORY msvc
   )
-
-  if(DART_MSVC_FORCE_RELEASE_RUNTIME)
-    # Use CMAKE_MSVC_RUNTIME_LIBRARY so all configurations match pre-built
-    # package-manager dependencies.
-    # This sets /MD for all configurations (Debug, Release, RelWithDebInfo, MinSizeRel)
-    set(
-      CMAKE_MSVC_RUNTIME_LIBRARY
-      "MultiThreadedDLL"
-      CACHE STRING
-      "MSVC runtime library - forced to /MD for all configs"
-      FORCE
-    )
-    message(
-      STATUS
-      "DART_MSVC_FORCE_RELEASE_RUNTIME=ON: Using /MD for all configurations"
-    )
-    message(
-      STATUS
-      "  This avoids LNK2038 errors when linking pre-built packages built with /MD"
-    )
-    message(
-      STATUS
-      "  Set -DDART_MSVC_FORCE_RELEASE_RUNTIME=OFF if building all deps from source"
-    )
-  endif()
+  dart_configure_msvc_runtime_library()
 else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON CATEGORY build)
 endif()
@@ -587,6 +565,15 @@ endif()
 
 option(DART_BUILD_WHEELS "Indicate building dartpy for wheels" OFF)
 
+# Configure MSVC compile policy before dependency discovery so any dependency
+# targets created during configure inherit the same directory options.
+if(MSVC)
+  dart_configure_msvc_toolchain(
+    REQUIRED_VERSION 1950
+    REQUIRED_LABEL "Visual Studio 2026"
+  )
+endif()
+
 #===============================================================================
 # Uninstall
 #===============================================================================
@@ -632,52 +619,10 @@ endif()
 # Compiler flags
 #===============================================================================
 if(MSVC)
-  # Visual Studio 2026 required for supported Windows builds.
-  set(msvc_required_version 1950)
-  if(
-    MSVC_VERSION VERSION_LESS ${msvc_required_version}
-    AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC"
-  )
-    message(
-      FATAL_ERROR
-      "MSVC ${MSVC_VERSION} is detected, but "
-      "${PROJECT_NAME_UPPERCASE} requires MSVC ${msvc_required_version} or greater (Visual Studio 2026)."
-    )
-  endif()
-
+  # MSVC policy is configured before dependency discovery.
   if(DART_TREAT_WARNINGS_AS_ERRORS)
-    add_compile_options(/WX)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/WX>)
   endif()
-  # /MP - Multi-processor compilation (uses all available cores)
-  # /FS - Force synchronous PDB writes (prevents PDB conflicts in parallel builds with /MP)
-  # /utf-8 - Required by fmt's Unicode support on MSVC.
-  set(
-    CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase- /utf-8 /MP /FS"
-  )
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO")
-  if(NOT DART_MSVC_DEFAULT_OPTIONS)
-    set(
-      CMAKE_CXX_FLAGS_DEBUG
-      "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc"
-    )
-    set(
-      CMAKE_CXX_FLAGS_RELEASE
-      "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc"
-    )
-  endif()
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_ENABLE_EXTENDED_ALIGNED_STORAGE)
-  add_compile_options(/wd4005)
-  add_compile_options(/wd4099)
-  add_compile_options(/wd4146) # for FCL warnings: https://github.com/dartsim/dart/runs/4568423649?check_suite_focus=true#step:5:407
-  add_compile_options(/wd4244)
-  add_compile_options(/wd4250)
-  add_compile_options(/wd4267)
-  add_compile_options(/wd4305)
-  add_compile_options(/wd4334)
-  add_compile_options(/wd4838)
-  add_compile_options(/wd4996)
-  add_compile_options(/bigobj)
 elseif(CMAKE_COMPILER_IS_GNUCXX)
   # There is a known bug in GCC 12.1 and above that leads to spurious
   # -Wmaybe-uninitialized warnings from gcc/x86_64-linux-gnu/12/include/avxintrin.h and
