@@ -28,12 +28,17 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
+set(unit_benchmark_link_libraries dart dart-baseline-ode)
+
+if(HAVE_BULLET AND TARGET dart-collision-bullet)
+  list(APPEND unit_benchmark_link_libraries dart-collision-bullet)
+endif()
+
 dart_benchmarks(
   TYPE BM_UNIT
   SOURCES
     bm_dantzig_lcp.cpp
     bm_native_collision.cpp
   LINK_LIBRARIES
-    dart
-    dart-baseline-ode
+    ${unit_benchmark_link_libraries}
 )

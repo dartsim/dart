@@ -37,6 +37,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
@@ -395,6 +396,159 @@ TEST(NarrowPhaseDispatch, BatchRejectsNullShapes)
   EXPECT_THROW(
       NarrowPhase::collideBatch(pairs, results, CollisionOption()),
       std::invalid_argument);
+}
+
+TEST(NarrowPhaseDispatch, CompoundRaycastAcceptsEndpointHit)
+{
+  CompoundShape compound;
+  compound.addChild(std::make_unique<SphereShape>(1.0));
+
+  const Ray ray(Eigen::Vector3d(-2.0, 0.0, 0.0), Eigen::Vector3d::UnitX(), 1.0);
+  RaycastResult result;
+
+  EXPECT_TRUE(NarrowPhase::raycast(
+      ray,
+      &compound,
+      Eigen::Isometry3d::Identity(),
+      RaycastOption::unlimited(),
+      result));
+  EXPECT_TRUE(result.hit);
+  EXPECT_DOUBLE_EQ(1.0, result.distance);
+  EXPECT_TRUE(result.point.isApprox(Eigen::Vector3d(-1.0, 0.0, 0.0), 1e-12));
+  EXPECT_TRUE(result.normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+TEST(NarrowPhaseDispatch, BoxRaycastPreservesBoundaryStartHit)
+{
+  BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
+
+  RaycastResult result;
+  EXPECT_TRUE(NarrowPhase::raycast(
+      Ray(Eigen::Vector3d(0.5, 0.0, 0.0), -Eigen::Vector3d::UnitX(), 2.0),
+      &box,
+      Eigen::Isometry3d::Identity(),
+      RaycastOption::unlimited(),
+      result));
+  EXPECT_TRUE(result.hit);
+  EXPECT_DOUBLE_EQ(0.0, result.distance);
+  EXPECT_TRUE(result.point.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), 1e-12));
+  EXPECT_TRUE(result.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+TEST(NarrowPhaseDispatch, MeshRaycastPreservesBoundaryStartHit)
+{
+  MeshShape mesh = makePlaneMesh();
+
+  RaycastResult result;
+  EXPECT_TRUE(NarrowPhase::raycast(
+      Ray(Eigen::Vector3d::Zero(), -Eigen::Vector3d::UnitZ(), 1.0),
+      &mesh,
+      Eigen::Isometry3d::Identity(),
+      RaycastOption::unlimited(),
+      result));
+  EXPECT_TRUE(result.hit);
+  EXPECT_DOUBLE_EQ(0.0, result.distance);
+  EXPECT_TRUE(result.point.isApprox(Eigen::Vector3d::Zero(), 1e-12));
+  EXPECT_TRUE(result.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+}
+
+TEST(NarrowPhaseDispatch, CapsuleRaycastPreservesBoundaryStartHit)
+{
+  CapsuleShape capsule(0.5, 2.0);
+
+  auto expectBoundaryHit = [&](const Eigen::Vector3d& direction) {
+    RaycastResult result;
+    EXPECT_TRUE(NarrowPhase::raycast(
+        Ray(Eigen::Vector3d(0.5, 0.0, 0.0), direction, 2.0),
+        &capsule,
+        Eigen::Isometry3d::Identity(),
+        RaycastOption::unlimited(),
+        result));
+    EXPECT_TRUE(result.hit);
+    EXPECT_DOUBLE_EQ(0.0, result.distance);
+    EXPECT_TRUE(result.point.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), 1e-12));
+    EXPECT_TRUE(result.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+  };
+
+  expectBoundaryHit(Eigen::Vector3d::UnitX());
+  expectBoundaryHit(-Eigen::Vector3d::UnitX());
+}
+
+TEST(NarrowPhaseDispatch, CapsuleRaycastFromInsideExitsCapSurface)
+{
+  CapsuleShape capsule(0.5, 2.0);
+
+  const Ray ray(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ(), 2.0);
+  RaycastResult result;
+
+  EXPECT_TRUE(NarrowPhase::raycast(
+      ray,
+      &capsule,
+      Eigen::Isometry3d::Identity(),
+      RaycastOption::unlimited(),
+      result));
+  EXPECT_TRUE(result.hit);
+  EXPECT_DOUBLE_EQ(1.5, result.distance);
+  EXPECT_TRUE(result.point.isApprox(Eigen::Vector3d(0.0, 0.0, 1.5), 1e-12));
+  EXPECT_TRUE(result.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+}
+
+TEST(NarrowPhaseDispatch, ConvexRaycastFromInsideExitsSurface)
+{
+  ConvexShape convex(
+      {{-0.5, -0.5, -0.5},
+       {0.5, -0.5, -0.5},
+       {0.5, 0.5, -0.5},
+       {-0.5, 0.5, -0.5},
+       {-0.5, -0.5, 0.5},
+       {0.5, -0.5, 0.5},
+       {0.5, 0.5, 0.5},
+       {-0.5, 0.5, 0.5}});
+
+  RaycastResult result;
+  EXPECT_TRUE(NarrowPhase::raycast(
+      Ray(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitX(), 2.0),
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      RaycastOption::unlimited(),
+      result));
+  EXPECT_TRUE(result.hit);
+  EXPECT_DOUBLE_EQ(0.5, result.distance);
+  EXPECT_TRUE(result.point.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), 1e-12));
+  EXPECT_TRUE(result.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+
+  result.clear();
+  EXPECT_FALSE(NarrowPhase::raycast(
+      Ray(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitX(), 0.25),
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      RaycastOption::unlimited(),
+      result));
+  EXPECT_FALSE(result.hit);
+}
+
+TEST(NarrowPhaseDispatch, ConvexRaycastRejectsEntryAfterBoundaryExit)
+{
+  ConvexShape convex(
+      {{-0.5, -0.5, -0.5},
+       {0.5, -0.5, -0.5},
+       {0.5, 0.5, -0.5},
+       {-0.5, 0.5, -0.5},
+       {-0.5, -0.5, 0.5},
+       {0.5, -0.5, 0.5},
+       {0.5, 0.5, 0.5},
+       {-0.5, 0.5, 0.5}});
+
+  RaycastResult result;
+  EXPECT_FALSE(NarrowPhase::raycast(
+      Ray(Eigen::Vector3d(-1.0, 0.5, 0.0),
+          Eigen::Vector3d(1.0, 1.0, 0.0).normalized(),
+          2.0),
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      RaycastOption::unlimited(),
+      result));
+  EXPECT_FALSE(result.hit);
 }
 
 TEST(NarrowPhaseDispatch, ReportsP9SupportedPairs)

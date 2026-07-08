@@ -36,7 +36,139 @@
 #include <limits>
 #include <numeric>
 
+#include <cmath>
+
 namespace dart::collision::native {
+
+namespace {
+
+constexpr double kConvexFaceAreaToleranceScale = 1e-12;
+constexpr double kConvexFacePlaneToleranceScale = 1e-8;
+constexpr double kConvexFaceNormalTolerance = 1e-8;
+
+double computeConvexScale(const std::vector<Eigen::Vector3d>& vertices)
+{
+  double maxVertexNorm = 0.0;
+  for (const auto& vertex : vertices) {
+    maxVertexNorm = std::max(maxVertexNorm, vertex.norm());
+  }
+
+  return std::max(1.0, maxVertexNorm);
+}
+
+Eigen::Vector3d computeCentroid(const std::vector<Eigen::Vector3d>& vertices)
+{
+  Eigen::Vector3d centroid = Eigen::Vector3d::Zero();
+  for (const auto& vertex : vertices) {
+    centroid += vertex;
+  }
+
+  if (!vertices.empty()) {
+    centroid /= static_cast<double>(vertices.size());
+  }
+
+  return centroid;
+}
+
+std::vector<ConvexShape::Face> normalizeConvexFaces(
+    const std::vector<Eigen::Vector3d>& vertices,
+    std::vector<ConvexShape::Face> faces)
+{
+  if (vertices.size() < 4) {
+    return {};
+  }
+
+  const Eigen::Vector3d centroid = computeCentroid(vertices);
+  const double scale = computeConvexScale(vertices);
+  const double planeTolerance = kConvexFacePlaneToleranceScale * scale;
+  const double normalTolerance = kConvexFaceNormalTolerance;
+
+  std::vector<ConvexShape::Face> normalizedFaces;
+  normalizedFaces.reserve(faces.size());
+
+  for (auto face : faces) {
+    const double normalNorm = face.normal.norm();
+    if (normalNorm <= kConvexFaceAreaToleranceScale) {
+      continue;
+    }
+    face.normal /= normalNorm;
+
+    if (face.normal.dot(centroid - face.point) > 0.0) {
+      face.normal = -face.normal;
+    }
+
+    bool duplicate = false;
+    for (const auto& existing : normalizedFaces) {
+      const double normalDot = existing.normal.dot(face.normal);
+      const double planeDistance
+          = std::abs(face.normal.dot(existing.point - face.point));
+      if (normalDot > 1.0 - normalTolerance
+          && planeDistance <= planeTolerance) {
+        duplicate = true;
+        break;
+      }
+    }
+
+    if (!duplicate) {
+      normalizedFaces.push_back(face);
+    }
+  }
+
+  return normalizedFaces;
+}
+
+std::vector<ConvexShape::Face> computeConvexFaces(
+    const std::vector<Eigen::Vector3d>& vertices)
+{
+  std::vector<ConvexShape::Face> faces;
+  if (vertices.size() < 4) {
+    return faces;
+  }
+
+  const double scale = computeConvexScale(vertices);
+  const double areaTolerance = kConvexFaceAreaToleranceScale * scale * scale;
+  const double planeTolerance = kConvexFacePlaneToleranceScale * scale;
+
+  for (std::size_t i = 0; i + 2 < vertices.size(); ++i) {
+    for (std::size_t j = i + 1; j + 1 < vertices.size(); ++j) {
+      for (std::size_t k = j + 1; k < vertices.size(); ++k) {
+        const Eigen::Vector3d edge1 = vertices[j] - vertices[i];
+        const Eigen::Vector3d edge2 = vertices[k] - vertices[i];
+        Eigen::Vector3d normal = edge1.cross(edge2);
+        const double normalNorm = normal.norm();
+        if (normalNorm <= areaTolerance) {
+          continue;
+        }
+        normal /= normalNorm;
+
+        bool hasPositiveSide = false;
+        bool hasNegativeSide = false;
+        for (const auto& vertex : vertices) {
+          const double signedDistance = normal.dot(vertex - vertices[i]);
+          if (signedDistance > planeTolerance) {
+            hasPositiveSide = true;
+          } else if (signedDistance < -planeTolerance) {
+            hasNegativeSide = true;
+          }
+
+          if (hasPositiveSide && hasNegativeSide) {
+            break;
+          }
+        }
+
+        if (hasPositiveSide && hasNegativeSide) {
+          continue;
+        }
+
+        faces.push_back({vertices[i], normal});
+      }
+    }
+  }
+
+  return normalizeConvexFaces(vertices, std::move(faces));
+}
+
+} // namespace
 
 SphereShape::SphereShape(double radius) : radius_(radius) {}
 
@@ -153,7 +285,16 @@ double PlaneShape::getOffset() const
 }
 
 ConvexShape::ConvexShape(std::vector<Eigen::Vector3d> vertices)
-  : vertices_(std::move(vertices))
+  : ConvexShape(std::move(vertices), {})
+{
+}
+
+ConvexShape::ConvexShape(
+    std::vector<Eigen::Vector3d> vertices, std::vector<Face> faces)
+  : vertices_(std::move(vertices)),
+    faces_(
+        faces.empty() ? computeConvexFaces(vertices_)
+                      : normalizeConvexFaces(vertices_, std::move(faces)))
 {
 }
 
@@ -182,6 +323,11 @@ Aabb ConvexShape::computeLocalAabb() const
 const std::vector<Eigen::Vector3d>& ConvexShape::getVertices() const
 {
   return vertices_;
+}
+
+const std::vector<ConvexShape::Face>& ConvexShape::getFaces() const
+{
+  return faces_;
 }
 
 Eigen::Vector3d ConvexShape::support(const Eigen::Vector3d& direction) const
