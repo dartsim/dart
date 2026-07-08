@@ -398,7 +398,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Expanded `dart-ultrawork` into the autonomous-project kickoff path for
   large or multi-session DART work, with `docs/dev_tasks/<task>/` as the
   project home, one up-front interview or provided brief, session start/end
-  rules, explicit acceptance evidence, and DART 7/DART 6 maintenance hygiene.
+  rules, explicit acceptance evidence, iterative two-pass review, GUI/demo
+  deliverable expectations for behavior-bearing physics work, prompt-level goal
+  shorthands for Claude, and DART 7/DART 6 maintenance hygiene.
   ([#3356](https://github.com/dartsim/dart/pull/3356))
 - Renamed the post-session retrospective workflow capability from
   `dart-retrospect` to `dart-retro` across the shared workflow catalog and

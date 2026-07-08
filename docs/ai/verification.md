@@ -17,13 +17,19 @@ Before finalizing substantial AI-assisted work:
 2. Map each explicit request, file, command, gate, and deliverable to evidence.
 3. Inspect the actual files, command output, review state, or artifacts.
 4. Identify missing, weakly verified, or blocked requirements.
-5. If the work used `docs/dev_tasks/<task>/`, verify durable artifacts were
+5. Verify review evidence: at least two clean independent or role-separated
+   review passes on the current post-fix state, with substantive findings
+   investigated rather than blindly accepted.
+6. For behavior-bearing physics or simulation work, verify a high-quality,
+   self-contained GUI example or demos-app artifact exists, or that the owner
+   docs explicitly justify a different user-level visual artifact.
+7. If the work used `docs/dev_tasks/<task>/`, verify durable artifacts were
    promoted and the completed task folder was removed.
-6. If remaining dev-task work is blocked by a substantial maintainer decision,
+8. If remaining dev-task work is blocked by a substantial maintainer decision,
    external dependency, or intentionally out-of-session scope boundary, verify
    that the human was asked when needed and that the parked work has a durable
    owner in `docs/plans/`, `docs/design/`, or `docs/onboarding/`.
-7. Continue working until all required items are satisfied or a real blocker
+9. Continue working until all required items are satisfied or a real blocker
    remains.
 
 ## Research Paper Implementation Evidence
@@ -69,6 +75,7 @@ the broader CPU/GPU, demo, benchmark, and performance requirements.
 | C++ code            | `pixi run lint`, `pixi run build`, focused tests or `pixi run test-unit`                                                                                           |
 | Python bindings     | `pixi run lint`, `pixi run build`, `pixi run test-py`                                                                                                              |
 | IO/model parsing    | `pixi run lint`, focused parser tests, relevant examples if affected                                                                                               |
+| Simulation behavior | `pixi run lint`, focused simulation tests, a self-contained GUI/demo artifact when user-visible, and visual or artifact inspection evidence                        |
 | CI workflow         | local reproduction when possible, `pixi run check-lint`, relevant build/test gate                                                                                  |
 | Release work        | release-management docs, changelog/version checks, target branch gates                                                                                             |
 
@@ -79,6 +86,32 @@ the full `pixi run check-lint` aggregate, not only the sub-check you edited. CI
 runs the whole aggregate in `ci_lint.yml`, so a drift in an unrelated sub-check
 (for example codespell or clang-format) still fails the "Check Lint" step even
 when the sub-check you ran is clean.
+
+## GUI And Demo Evidence
+
+Physics simulator behavior is easiest to review through a working scene. When a
+task changes behavior that users should understand visually or interactively,
+the deliverable normally includes a high-quality GUI example, ideally in the
+demos app or another durable DART demo surface. The example must be
+self-contained: a user should be able to run it, manipulate the scene or
+controls, and understand the result without reading implementation code or
+developer explanation.
+
+Record the runnable command, expected interaction, and visual evidence in the
+owning plan, dev-task `verification.md`, or PR Testing section. Use headless
+capture, image verdict/golden comparison, screenshots, or manual artifact
+inspection as appropriate. If the work is deliberately non-visual, the
+acceptance evidence must say why and name the replacement user-level artifact
+or check.
+
+## Review Evidence
+
+Review findings are extra input, not orders. For each substantive review
+finding, verify the claim with code inspection, tests, docs, benchmarks, or
+visual artifacts before changing behavior. Record whether the finding was fixed,
+deferred, or rejected with evidence. Completion requires two clean review
+passes on the current post-fix state; a pass before later fixes does not count
+as final evidence.
 
 ## DART 7 Simulation Allocation Evidence
 

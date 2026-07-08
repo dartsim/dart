@@ -369,9 +369,10 @@ check-ai-commands` in CI; behavior notes hand-checked 2026-07
 - Commands use `$ARGUMENTS` for user input
 - Skills require YAML frontmatter with `name` and `description`
 - For `/goal`, put the canonical command in the goal text, such as
-  `/goal Run /dart-ultrawork with: <task>; done when: ...`. The shared DART
-  capability set does not define shorthand aliases such as `ulw` or typo
-  aliases; keep personal aliases in local tool config if needed.
+  `/goal Run /dart-ultrawork with: <task>; done when: ...`. If goal text starts
+  with `ulw:` or the common typo `ultrawok:`, normalize it to the canonical
+  `/dart-ultrawork` workflow. These are prompt-level shorthands, not separate
+  shared capabilities.
 
 ### OpenCode
 

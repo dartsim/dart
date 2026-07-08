@@ -33,11 +33,11 @@ parallel project-home tree unless a task-specific owner doc requires it.
 
 For autonomous projects, the dev-task folder may add these sidecars:
 
-| File              | Purpose                                                                  |
-| ----------------- | ------------------------------------------------------------------------ |
-| `decisions.md`    | Dated decisions, alternatives considered, evidence, tradeoffs, revisit   |
-| `verification.md` | Checks, results, evidence, known gaps, and follow-up per chunk/milestone |
-| `progress-log.md` | Chronological record of meaningful work completed                        |
+| File              | Purpose                                                                 |
+| ----------------- | ----------------------------------------------------------------------- |
+| `decisions.md`    | Dated decisions, alternatives considered, evidence, tradeoffs, revisit  |
+| `verification.md` | Checks, review passes, GUI/demo evidence when relevant, gaps, follow-up |
+| `progress-log.md` | Chronological record of meaningful work completed                       |
 
 Keep `README.md` as the combined overview and plan: north star, final
 deliverable, acceptance criteria, scope, non-goals, constraints, risks, current
@@ -76,7 +76,8 @@ Before pausing, handing off, or claiming a chunk complete:
    present.
 
 Do not mark an autonomous project complete while acceptance criteria, required
-evidence, current docs, or dev-task cleanup are still missing.
+review passes, GUI/demo evidence when relevant, current docs, or dev-task
+cleanup are still missing.
 
 ## Shared Checkouts
 

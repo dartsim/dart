@@ -60,7 +60,7 @@ they make resumability or evidence clearer:
 | `README.md`       | north star, final deliverable, acceptance criteria, scope, non-goals, constraints, risks, current milestone, blockers, next actions, gates |
 | `RESUME.md`       | current branch/worktree state, immediate next step, risks, recovery notes, verification commands                                           |
 | `decisions.md`    | date, decision, context, options considered, evidence, tradeoffs, result, revisit trigger                                                  |
-| `verification.md` | date, chunk or milestone, what changed, checks run, results, evidence, known gaps, follow-up                                               |
+| `verification.md` | date, chunk or milestone, what changed, checks run, review passes, GUI/demo evidence when relevant, results, known gaps, follow-up         |
 | `progress-log.md` | chronological record of meaningful completed work and links to evidence                                                                    |
 
 Do not create a separate generic project-home tree outside `docs/dev_tasks/`
@@ -146,6 +146,10 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 
 - <test, benchmark, doc update, visual artifact, or command output that proves
   success>
+- <for behavior-bearing physics/simulation work: self-contained GUI or demos-app
+  artifact, runnable command, and visual inspection or capture evidence>
+- <review evidence: at least two clean independent or role-separated passes on
+  the current post-fix state>
 
 ## Gates
 
