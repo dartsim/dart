@@ -316,21 +316,39 @@ void DARTCollisionObject::refreshSoftMeshCache()
     if (pointMassCountChanged)
       mCachedSoftLocalVertices.resize(numPointMasses);
 
-    for (std::size_t i = 0u; i < numPointMasses; ++i) {
-      const auto* pointMass = softBodyNode->getPointMass(i);
-      const Eigen::Vector3d localPosition
-          = pointMass->getPositions() + pointMass->getRestingPosition();
-      boundsMin = boundsMin.cwiseMin(localPosition);
-      boundsMax = boundsMax.cwiseMax(localPosition);
-      if (!softGeometryChanged
-          && !mCachedSoftLocalVertices[i].cwiseEqual(localPosition).all()) {
-        softGeometryChanged = true;
+    const auto& pointStates = softBodyNode->mAspectState.mPointStates;
+    const auto& pointProperties = softBodyNode->mAspectProperties.mPointProps;
+    if (pointStates.size() == numPointMasses
+        && pointProperties.size() == numPointMasses) {
+      for (std::size_t i = 0u; i < numPointMasses; ++i) {
+        const Eigen::Vector3d localPosition
+            = pointStates[i].mPositions + pointProperties[i].mX0;
+        boundsMin = boundsMin.cwiseMin(localPosition);
+        boundsMax = boundsMax.cwiseMax(localPosition);
+        if (!softGeometryChanged
+            && !mCachedSoftLocalVertices[i].cwiseEqual(localPosition).all()) {
+          softGeometryChanged = true;
+        }
+        mCachedSoftLocalVertices[i] = localPosition;
       }
-      mCachedSoftLocalVertices[i] = localPosition;
+    } else {
+      for (std::size_t i = 0u; i < numPointMasses; ++i) {
+        const auto* pointMass = softBodyNode->getPointMass(i);
+        const Eigen::Vector3d localPosition
+            = pointMass->getPositions() + pointMass->getRestingPosition();
+        boundsMin = boundsMin.cwiseMin(localPosition);
+        boundsMax = boundsMax.cwiseMax(localPosition);
+        if (!softGeometryChanged
+            && !mCachedSoftLocalVertices[i].cwiseEqual(localPosition).all()) {
+          softGeometryChanged = true;
+        }
+        mCachedSoftLocalVertices[i] = localPosition;
+      }
     }
   }
 
-  const auto numFaces = softBodyNode->getNumFaces();
+  const auto& faces = softBodyNode->mAspectProperties.mFaces;
+  const auto numFaces = faces.size();
   bool softTopologyChanged
       = pointMassCountChanged || mCachedSoftFaces.size() != numFaces
         || mCachedSoftFirstFaceByPointMass.size() != numPointMasses
@@ -355,7 +373,7 @@ void DARTCollisionObject::refreshSoftMeshCache()
     for (std::size_t faceIndex = 0u; faceIndex < numFaces; ++faceIndex) {
       auto& cachedFace = mCachedSoftFaces[faceIndex];
       cachedFace = CachedSoftFace{};
-      cachedFace.indices = softBodyNode->getFace(faceIndex);
+      cachedFace.indices = faces[faceIndex];
 
       if ((cachedFace.indices.array() < 0).any())
         continue;
