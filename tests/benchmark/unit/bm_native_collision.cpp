@@ -16,7 +16,9 @@ using dart::collision::native::CapsuleShape;
 using dart::collision::native::CollisionOption;
 using dart::collision::native::CollisionResult;
 using dart::collision::native::ConvexShape;
+using dart::collision::native::CylinderShape;
 using dart::collision::native::NarrowPhase;
+using dart::collision::native::PlaneShape;
 using dart::collision::native::Shape;
 using dart::collision::native::SphereShape;
 
@@ -158,6 +160,84 @@ void BM_NativeConvexConvex(benchmark::State& state)
       translated(1.5, 0.0, 0.0));
 }
 
+void BM_NativeCylinderCylinder(benchmark::State& state)
+{
+  CylinderShape cylinderA(0.5, 1.0);
+  CylinderShape cylinderB(0.5, 1.0);
+
+  runNarrowPhase(
+      state,
+      cylinderA,
+      Eigen::Isometry3d::Identity(),
+      cylinderB,
+      translated(0.75, 0.0, 0.0));
+}
+
+void BM_NativeCylinderSphere(benchmark::State& state)
+{
+  CylinderShape cylinder(0.5, 1.0);
+  SphereShape sphere(0.5);
+
+  runNarrowPhase(
+      state,
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      sphere,
+      translated(0.75, 0.0, 0.0));
+}
+
+void BM_NativeCylinderBox(benchmark::State& state)
+{
+  CylinderShape cylinder(0.5, 1.0);
+  BoxShape box(Eigen::Vector3d::Constant(0.5));
+
+  runNarrowPhase(
+      state,
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      box,
+      translated(0.75, 0.0, 0.0));
+}
+
+void BM_NativeCylinderCapsule(benchmark::State& state)
+{
+  CylinderShape cylinder(0.5, 1.0);
+  CapsuleShape capsule(0.5, 1.0);
+
+  runNarrowPhase(
+      state,
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.75, 0.0, 0.0));
+}
+
+void BM_NativeCylinderPlane(benchmark::State& state)
+{
+  CylinderShape cylinder(0.5, 1.0);
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+
+  runNarrowPhase(
+      state,
+      cylinder,
+      translated(0.0, 0.0, 0.25),
+      plane,
+      Eigen::Isometry3d::Identity());
+}
+
+void BM_NativeConvexCylinder(benchmark::State& state)
+{
+  ConvexShape convex(makeOctahedronVertices());
+  CylinderShape cylinder(0.5, 1.0);
+
+  runNarrowPhase(
+      state,
+      convex,
+      Eigen::Isometry3d::Identity(),
+      cylinder,
+      translated(1.25, 0.0, 0.0));
+}
+
 } // namespace
 
 BENCHMARK(BM_NativeSphereSphere)->Unit(benchmark::kNanosecond);
@@ -167,3 +247,9 @@ BENCHMARK(BM_NativeCapsuleSphere)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeCapsuleBox)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeCapsuleCapsule)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeConvexConvex)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativeCylinderCylinder)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativeCylinderSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativeCylinderBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativeCylinderCapsule)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativeCylinderPlane)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativeConvexCylinder)->Unit(benchmark::kNanosecond);
