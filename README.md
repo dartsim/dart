@@ -122,7 +122,7 @@ DART 6 package and should use the stable documentation.
 Run this after `pixi run build` from a source checkout:
 
 ```bash
-PYTHONPATH=build/default/cpp/Release/python python - <<'PY'
+PYTHONPATH=build/default/cpp/Release/python pixi run python - <<'PY'
 import dartpy as dart
 
 world = dart.World()

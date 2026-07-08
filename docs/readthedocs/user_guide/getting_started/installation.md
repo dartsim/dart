@@ -39,7 +39,7 @@ built bindings before importing `dartpy`; this does not need any sample data
 files:
 
 ```bash
-PYTHONPATH=build/default/cpp/Release/python python - <<'PY'
+PYTHONPATH=build/default/cpp/Release/python pixi run python - <<'PY'
 import dartpy as dart
 
 world = dart.World()
@@ -55,7 +55,7 @@ If that prints without error, you are ready for {doc}`hello_dart`.
 Use the same prefix for your own scripts:
 
 ```bash
-PYTHONPATH=build/default/cpp/Release/python python your_script.py
+PYTHONPATH=build/default/cpp/Release/python pixi run python your_script.py
 ```
 
 ## Python package status
