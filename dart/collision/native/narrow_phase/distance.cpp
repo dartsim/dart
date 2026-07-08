@@ -1091,8 +1091,42 @@ double distanceCapsuleBox(
   const Eigen::Vector3d bestBoxPoint = closestPointOnSegmentInBoxSpace(
       botLocal, topLocal, boxHalf, bestCapsulePoint);
   const double minDist = (bestCapsulePoint - bestBoxPoint).norm();
+  const double boundaryTolerance
+      = computeBoxBoundaryTolerance(boxHalf, bestCapsulePoint);
 
-  const double dist = minDist - capRadius;
+  Eigen::Vector3d dirLocal = bestCapsulePoint - bestBoxPoint;
+  Eigen::Vector3d pointOnBoxLocal = bestBoxPoint;
+  double dist = minDist - capRadius;
+
+  if (minDist > boundaryTolerance) {
+    dirLocal /= minDist;
+  } else {
+    Eigen::Vector3d insideLocalCapsulePoint = bestCapsulePoint;
+    snapNearBoxBoundary(insideLocalCapsulePoint, boxHalf, boundaryTolerance);
+
+    double minFaceDist = boxHalf.x() - std::abs(insideLocalCapsulePoint.x());
+    int minAxis = 0;
+
+    const double distY = boxHalf.y() - std::abs(insideLocalCapsulePoint.y());
+    if (distY < minFaceDist) {
+      minFaceDist = distY;
+      minAxis = 1;
+    }
+
+    const double distZ = boxHalf.z() - std::abs(insideLocalCapsulePoint.z());
+    if (distZ < minFaceDist) {
+      minFaceDist = distZ;
+      minAxis = 2;
+    }
+
+    minFaceDist = std::max(0.0, minFaceDist);
+    dirLocal = Eigen::Vector3d::Zero();
+    dirLocal[minAxis] = (insideLocalCapsulePoint[minAxis] >= 0.0) ? 1.0 : -1.0;
+    pointOnBoxLocal = insideLocalCapsulePoint;
+    pointOnBoxLocal[minAxis]
+        = dirLocal[minAxis] > 0.0 ? boxHalf[minAxis] : -boxHalf[minAxis];
+    dist = -(capRadius + minFaceDist);
+  }
 
   if (dist > option.upperBound) {
     result.distance = dist;
@@ -1102,14 +1136,7 @@ double distanceCapsuleBox(
   result.distance = dist;
 
   if (option.enableNearestPoints) {
-    Eigen::Vector3d dirLocal = bestCapsulePoint - bestBoxPoint;
-    if (dirLocal.squaredNorm() > 1e-10) {
-      dirLocal.normalize();
-    } else {
-      dirLocal = Eigen::Vector3d::UnitX();
-    }
-
-    result.pointOnObject2 = boxTransform * bestBoxPoint;
+    result.pointOnObject2 = boxTransform * pointOnBoxLocal;
     result.pointOnObject1
         = boxTransform * (bestCapsulePoint - dirLocal * capRadius);
     result.normal = boxTransform.rotation() * dirLocal;

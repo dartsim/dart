@@ -254,6 +254,27 @@ TEST(NativeDistance, ComputesExactCapsuleBoxAxisDistance)
   EXPECT_NEAR(1.0, result.pointOnObject2.y(), 1e-12);
 }
 
+TEST(NativeDistance, AccountsForCapsuleBoxContainmentDepth)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  BoxShape box(Eigen::Vector3d(10.0, 10.0, 10.0));
+
+  DistanceResult result;
+  EXPECT_NEAR(
+      -10.5,
+      distanceCapsuleBox(
+          capsule,
+          Eigen::Isometry3d::Identity(),
+          box,
+          Eigen::Isometry3d::Identity(),
+          result,
+          DistanceOption::withUpperBound(0.0)),
+      1e-12);
+  EXPECT_NEAR(-0.5, result.pointOnObject1.x(), 1e-12);
+  EXPECT_NEAR(10.0, result.pointOnObject2.x(), 1e-12);
+  EXPECT_TRUE(result.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+}
+
 TEST(NativeDistance, ComputesPlaneShapeDistances)
 {
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
