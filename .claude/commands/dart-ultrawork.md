@@ -75,8 +75,10 @@ handling.
      quality-bar, or roadmap calls that evidence cannot settle. Ask the human
      now in one batched interview (focused questions with 2-4 concrete
      options each, recommendation first). Do not start large work while a
-     consequential decision is open. Skip only when `interview=skip` and the
-     prompt already answers everything consequential.
+     consequential decision is open. Skip this discretionary interview when
+     `mode=brief`; also skip when `interview=skip` and the prompt already
+     answers everything consequential. In both cases, still follow the
+     escalation rules above.
    - **Evidence-resolvable uncertainties**: anything a focused A/B test,
      benchmark, throwaway spike, reference lookup, or blind-spot review can
      settle. Do not ask the human; schedule these as spike/research packets
