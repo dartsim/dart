@@ -25,8 +25,8 @@ clearer:
 
 - `decisions.md`: dated decisions, alternatives, evidence, tradeoffs, and
   revisit triggers.
-- `verification.md`: chunk or milestone, checks run, results, evidence, known
-  gaps, and follow-up.
+- `verification.md`: chunk or milestone, checks run, review passes, GUI/demo
+  evidence when relevant, known gaps, and follow-up.
 - `progress-log.md`: chronological record of meaningful completed work.
 
 At session start, read the task `README.md`, `RESUME.md`, and any sidecars,
@@ -37,4 +37,5 @@ current-reality note before acting on them.
 At session end, update status, next action, blockers, risks, verification
 results, and handoff notes so a fresh session can continue without hidden chat
 history. Do not mark an autonomous project complete while acceptance criteria,
-required evidence, current docs, or dev-task cleanup are still missing.
+required review passes, GUI/demo evidence when relevant, current docs, or
+dev-task cleanup are still missing.

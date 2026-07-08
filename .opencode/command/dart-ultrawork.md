@@ -36,10 +36,9 @@ Start a team-scale or autonomous DART task: $ARGUMENTS
 - `interview=skip`: skip maintainer questions only when the brief already
   answers all consequential decisions.
 
-The brief may be compact prose or a structured `TASK` / `CONTEXT` block. Extract
-north star, final deliverable, acceptance criteria, scope limits, constraints,
-risks, references, prior work, paths, issues/PRs/branches, commands, and first
-step when present.
+The brief may be prose or a structured `TASK` / `CONTEXT` block. Extract north
+star, deliverable, acceptance criteria, constraints, risks, references, paths,
+issues/PRs/branches, commands, and first step when present.
 
 ## Workflow
 
@@ -89,17 +88,13 @@ the real scope materially different stops and reports back.
      benchmark, throwaway spike, reference lookup, or blind-spot review can
      settle. Do not ask the human; schedule these as spike/research packets
      and record the method and result as evidence.
-4. **Create or refresh the tracking surface** - Populate
-   `docs/dev_tasks/<task>/README.md` with the specification intake: value,
-   north star, final deliverable, scope, non-goals, constraints, assumptions,
-   risks, acceptance evidence, gates, dependencies, current milestone, next
-   actions, and blockers. Keep `RESUME.md` as the handoff for a fresh session.
-   For autonomous multi-session projects, also add sidecars when useful:
-   `decisions.md` for dated decisions and alternatives, `verification.md` for
-   checks and known gaps, and `progress-log.md` for meaningful chronological
-   progress. Record interview answers and uncertainty-resolution evidence
-   there. Multi-week scope is expected: plan and track well rather than
-   rushing.
+4. **Create or refresh the tracking surface** - Populate the project home with
+   value, north star, deliverable, scope, non-goals, assumptions, risks,
+   acceptance evidence, gates, dependencies, milestone, next actions, and
+   blockers. Behavior-bearing physics/simulation work needs a high-quality,
+   self-contained GUI example unless explicitly out of scope. Keep `RESUME.md`
+   as the handoff; add `decisions.md`, `verification.md`, and
+   `progress-log.md` sidecars when they improve resumability or evidence.
 5. **Set the goal contract** - Express done-when as verifiable outcomes
    (files, tests, gates, artifacts). When the session supports a goal or
    stop-hook mode (for example `/goal` in Claude Code), set it to this
@@ -116,19 +111,17 @@ the real scope materially different stops and reports back.
    team tooling, execute packets sequentially in ordinary sessions via
    `dart-new-task`. Use parallelism only when the environment supports it and
    file ownership can stay disjoint.
-7. **Run the autonomous work cycle** - For each meaningful chunk: brainstorm at
-   the depth the risk warrants; plan expected files, verification, risks, and
-   rollback; execute a bounded change; verify with the strongest practical
-   evidence; clean up by classifying changes as core, supporting, deferred, or
-   unnecessary; then re-verify. Use A/B comparison only when it is the right
-   evidence for a consequential choice.
+7. **Run the autonomous work/review cycle** - For each meaningful chunk: plan,
+   execute, verify, then run an independent/specialized review lane. Treat
+   review findings as hypotheses: investigate, fix or record no-fix evidence,
+   clean up, re-verify, and re-review. A packet is not done until the current
+   post-fix state has at least two clean review passes recorded.
 8. **Supervise and steer** - Monitor progress; unblock, reassign, or re-cut
-   packets on scope mismatch. Each delegated worker must return Task, Summary,
-   Files changed, Evidence/tests, Risks, and Recommended next step. Review
-   every returned packet against its acceptance evidence before recording it
-   done. Root-cause failures instead of patching around them, escalating to
-   the oracle when workers stall; fold newly discovered unknowns back into
-   step 3.
+   packets on scope mismatch. Workers return Task, Summary, Files changed,
+   Evidence/tests, Risks, and Recommended next step. Use Codex from Claude,
+   Claude from Codex, subagents, or specialist reviewers when available; fall
+   back to role-separated local review only when unavailable. Root-cause
+   failures and fold newly discovered unknowns back into step 3.
 9. **Update docs at each stopping point** - Every meaningful cycle updates the
    project home: `README.md` for status/plan/risks, `RESUME.md` for the next
    fresh-session handoff, `decisions.md` if decisions changed,
@@ -181,20 +174,21 @@ Logistics:
   DONE WHEN / EVIDENCE. Use team mode only when available and file ownership
   can stay disjoint. Keep authoring and review separate. Use the oracle for
   critical decisions, hard failures, and research synthesis.
-- Set goal mode to the Done-when contract when available; use Claude
-  `/goal Run /dart-ultrawork with: <real prompt>` or Codex
-  `/goal $dart-ultrawork <real prompt>`.
+- Set goal mode to Done-when; use Claude `/goal Run /dart-ultrawork with:
+  <real prompt>` or Codex `/goal $dart-ultrawork <real prompt>`. Treat Claude
+  goal text beginning `ulw:` or `ultrawok:` as shorthand for the same canonical
+  `/dart-ultrawork` workflow, not as separate capabilities.
 - Read docs/ai/principles.md, docs/ai/north-star.md,
   docs/ai/orchestration.md, and docs/ai/sessions.md before starting.
-- Verification first: task-specific gates from docs/ai/verification.md,
-  pixi run lint before commits, evidence per packet; GitHub mutations only
-  with explicit maintainer/user approval.
+- Review loop: use specialized reviewers when available, investigate findings,
+  and require two clean passes on the current state before done.
+- Verification first: task-specific gates, GUI/demo evidence when relevant,
+  pixi run lint before commits; GitHub mutations only with approval.
 ```
 
 ## Output
 
-- Interview record and uncertainty-resolution evidence
-- Dev-task folder path, session-start status, and any stale-docs correction
-- Packet list with routing and per-packet goal contracts
-- Per-packet acceptance evidence, gate results, and updated project-home docs
-- Principle-audit result, cleanup status, and any approved external mutation
+- Interview record, uncertainty-resolution evidence, and project-home path
+- Packet list, routing, goal contracts, gates, and review-loop status
+- Per-packet evidence, GUI/demo artifacts when relevant, and updated docs
+- Principle audit, cleanup status, and approved external mutations

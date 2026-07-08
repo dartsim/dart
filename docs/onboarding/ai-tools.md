@@ -12,8 +12,9 @@ entrypoints generated from `.claude/` sources.
 - Check parity with `pixi run check-ai-commands`.
 - Use canonical DART capability names in prompt-driven goal modes: Claude goal
   text should name `/dart-ultrawork`, and Codex goal text can name
-  `$dart-ultrawork`. This release branch does not ship shorthand aliases such
-  as `ulw` or typo aliases.
+  `$dart-ultrawork`. If Claude goal text starts with `ulw:` or the common typo
+  `ultrawok:`, normalize it to the canonical `/dart-ultrawork` workflow. These
+  are prompt-level shorthands, not separate shared capabilities.
 
 ## Approval Boundaries
 
