@@ -434,8 +434,6 @@ function(dart_configure_msvc_toolchain)
     $<$<COMPILE_LANGUAGE:CXX>:/permissive->
     $<$<COMPILE_LANGUAGE:CXX>:/Zc:twoPhase->
     $<$<COMPILE_LANGUAGE:CXX>:/utf-8>
-    $<$<COMPILE_LANGUAGE:CXX>:/MP>
-    $<$<COMPILE_LANGUAGE:CXX>:/FS>
     $<$<COMPILE_LANGUAGE:CXX>:/wd4005>
     $<$<COMPILE_LANGUAGE:CXX>:/wd4099>
     $<$<COMPILE_LANGUAGE:CXX>:/wd4146>
@@ -448,6 +446,13 @@ function(dart_configure_msvc_toolchain)
     $<$<COMPILE_LANGUAGE:CXX>:/wd4996>
     $<$<COMPILE_LANGUAGE:CXX>:/bigobj>
   )
+
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    add_compile_options(
+      $<$<COMPILE_LANGUAGE:CXX>:/MP>
+      $<$<COMPILE_LANGUAGE:CXX>:/FS>
+    )
+  endif()
 
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/WX>)

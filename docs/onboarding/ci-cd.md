@@ -488,6 +488,9 @@ The helpers own:
 - runtime selection through `dart_configure_msvc_runtime_library()` and
   `CMAKE_MSVC_RUNTIME_LIBRARY`; this runs before dependency discovery so targets
   created during configure inherit the same runtime model
+- compile-option policy through `dart_configure_msvc_toolchain()`; this also
+  runs before dependency discovery so dependency-created targets inherit DART's
+  MSVC directory options
 - standard conformance and encoding options (`/EHsc`, `/permissive-`,
   `/Zc:twoPhase-`, `/utf-8`)
 - multi-core compilation (`/MP` plus `/FS`)
