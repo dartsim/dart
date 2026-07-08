@@ -35,10 +35,14 @@
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/Contact.hpp"
+#include "dart/collision/DistanceFilter.hpp"
 #include "dart/collision/native/NativeCollisionGroup.hpp"
 #include "dart/collision/native/NativeCollisionObject.hpp"
-#include "dart/collision/native/narrow_phase/narrow_phase.hpp"
+#include "dart/collision/native/narrow_phase/NarrowPhase.hpp"
 #include "dart/common/Console.hpp"
+
+#include <algorithm>
+#include <limits>
 
 namespace dart {
 namespace collision {
@@ -95,6 +99,106 @@ bool shouldSkipPair(
   }
 
   return false;
+}
+
+//==============================================================================
+bool shouldSkipDistancePair(
+    const NativeCollisionObject* object1,
+    const NativeCollisionObject* object2,
+    const DistanceOption& option)
+{
+  if (!object1->getNativeShape() || !object2->getNativeShape())
+    return true;
+
+  if (option.distanceFilter
+      && !option.distanceFilter->needDistance(object1, object2)) {
+    return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+native::DistanceOption makeNativeDistanceOption(
+    const DistanceOption& option, double upperBound)
+{
+  native::DistanceOption nativeOption;
+  nativeOption.upperBound = upperBound;
+  nativeOption.enableNearestPoints = option.enableNearestPoints;
+
+  return nativeOption;
+}
+
+//==============================================================================
+struct NativeDistanceCandidate
+{
+  double distance = std::numeric_limits<double>::max();
+  native::DistanceResult result;
+  const NativeCollisionObject* object1 = nullptr;
+  const NativeCollisionObject* object2 = nullptr;
+  bool found = false;
+};
+
+//==============================================================================
+bool processNativeDistancePair(
+    const NativeCollisionObject* object1,
+    const NativeCollisionObject* object2,
+    const DistanceOption& option,
+    NativeDistanceCandidate& best)
+{
+  if (shouldSkipDistancePair(object1, object2, option))
+    return false;
+
+  native::DistanceResult nativeResult;
+  const native::DistanceOption nativeOption = makeNativeDistanceOption(
+      option, best.found ? best.distance : std::numeric_limits<double>::max());
+
+  const double distance = native::NarrowPhase::distance(
+      object1->getNativeShape(),
+      object1->getNativeTransform(),
+      object2->getNativeShape(),
+      object2->getNativeTransform(),
+      nativeOption,
+      nativeResult);
+
+  if (!nativeResult.isValid())
+    return false;
+
+  if (!best.found || distance < best.distance) {
+    best.distance = distance;
+    best.result = nativeResult;
+    best.object1 = object1;
+    best.object2 = object2;
+    best.found = true;
+  }
+
+  return best.distance <= option.distanceLowerBound;
+}
+
+//==============================================================================
+double convertDistanceResult(
+    const NativeDistanceCandidate& best,
+    const DistanceOption& option,
+    DistanceResult* result)
+{
+  if (!best.found)
+    return 0.0;
+
+  const double minDistance = std::max(best.distance, option.distanceLowerBound);
+
+  if (result) {
+    result->minDistance = minDistance;
+    result->unclampedMinDistance = best.distance;
+    result->shapeFrame1 = best.object1->getShapeFrame();
+    result->shapeFrame2 = best.object2->getShapeFrame();
+
+    if (option.enableNearestPoints) {
+      result->nearestPoint1 = best.result.pointOnObject1;
+      result->nearestPoint2 = best.result.pointOnObject2;
+    }
+  }
+
+  return minDistance;
 }
 
 //==============================================================================
@@ -313,27 +417,72 @@ bool NativeCollisionDetector::collide(
 
 //==============================================================================
 double NativeCollisionDetector::distance(
-    CollisionGroup* /*group*/,
-    const DistanceOption& /*option*/,
-    DistanceResult* /*result*/)
+    CollisionGroup* group, const DistanceOption& option, DistanceResult* result)
 {
-  dtwarn << "[NativeCollisionDetector::distance] This collision detector does "
-         << "not support (signed) distance queries. Returning 0.0.\n";
+  if (result)
+    result->clear();
 
-  return 0.0;
+  if (!checkGroupValidity(this, group))
+    return 0.0;
+
+  auto* nativeGroup = static_cast<NativeCollisionGroup*>(group);
+  nativeGroup->updateEngineData();
+
+  NativeDistanceCandidate best;
+  for (std::size_t i = 0u; i < nativeGroup->mCollisionObjects.size(); ++i) {
+    for (std::size_t j = i + 1u; j < nativeGroup->mCollisionObjects.size();
+         ++j) {
+      const auto* object1 = static_cast<const NativeCollisionObject*>(
+          nativeGroup->mCollisionObjects[i]);
+      const auto* object2 = static_cast<const NativeCollisionObject*>(
+          nativeGroup->mCollisionObjects[j]);
+
+      if (processNativeDistancePair(object1, object2, option, best))
+        return convertDistanceResult(best, option, result);
+    }
+  }
+
+  return convertDistanceResult(best, option, result);
 }
 
 //==============================================================================
 double NativeCollisionDetector::distance(
-    CollisionGroup* /*group1*/,
-    CollisionGroup* /*group2*/,
-    const DistanceOption& /*option*/,
-    DistanceResult* /*result*/)
+    CollisionGroup* group1,
+    CollisionGroup* group2,
+    const DistanceOption& option,
+    DistanceResult* result)
 {
-  dtwarn << "[NativeCollisionDetector::distance] This collision detector does "
-         << "not support (signed) distance queries. Returning 0.0.\n";
+  if (result)
+    result->clear();
 
-  return 0.0;
+  if (!checkGroupValidity(this, group1))
+    return 0.0;
+
+  if (!checkGroupValidity(this, group2))
+    return 0.0;
+
+  if (group1 == group2)
+    return distance(group1, option, result);
+
+  auto* nativeGroup1 = static_cast<NativeCollisionGroup*>(group1);
+  auto* nativeGroup2 = static_cast<NativeCollisionGroup*>(group2);
+  nativeGroup1->updateEngineData();
+  nativeGroup2->updateEngineData();
+
+  NativeDistanceCandidate best;
+  for (auto* object1 : nativeGroup1->mCollisionObjects) {
+    for (auto* object2 : nativeGroup2->mCollisionObjects) {
+      if (processNativeDistancePair(
+              static_cast<const NativeCollisionObject*>(object1),
+              static_cast<const NativeCollisionObject*>(object2),
+              option,
+              best)) {
+        return convertDistanceResult(best, option, result);
+      }
+    }
+  }
+
+  return convertDistanceResult(best, option, result);
 }
 
 //==============================================================================
