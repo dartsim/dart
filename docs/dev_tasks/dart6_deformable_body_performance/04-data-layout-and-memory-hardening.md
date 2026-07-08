@@ -458,6 +458,51 @@ Focused verification after this correction:
   is not final threshold-quality evidence; rerun on an exclusive idle host
   before claiming every row beats the base and parent.
 
+## Soft aggregation temporary cleanup
+
+Commit `221fdf00145` removes a small set of remaining soft-body aggregation
+overheads that were still visible after the phase-view work:
+
+- `SoftBodyNode::getMass()` now sums contiguous point properties directly
+  instead of pointer-chasing each `PointMass`.
+- `aggregateAugMassMatrix()` no longer allocates dynamic diagonal stiffness and
+  damping matrices or a temporary acceleration vector for the soft-body row; it
+  writes the Jacobian product into the destination block and adds scalar
+  spring/damping terms in place.
+- `aggregateGravityForceVector()` mirrors the heap-free `BodyNode` pattern by
+  assigning the Jacobian product directly into the destination segment and
+  negating in place.
+- `aggregateInvMassMatrix()` skips the per-point dispatch to
+  `PointMass::aggregateInvMassMatrix()`, which is an intentional no-op in
+  DART 6.
+- `clearExternalForces()` clears point external forces in one direct loop and
+  dirties the skeleton once when any point force was nonzero.
+- `clearInternalForces()` zeros the contiguous point-state force entries
+  directly.
+
+Focused verification after this slice:
+
+- `pixi run cmake --build build/default/cpp/Release --target
+  test_SoftDynamics INTEGRATION_StepAllocation soft_body_headless
+  BM_INTEGRATION_soft_body --parallel 8` passed.
+- `pixi run ctest --test-dir build/default/cpp/Release -R
+  'test_SoftDynamics$|INTEGRATION_StepAllocation$' --output-on-failure`
+  passed.
+- FCL `soft_cubes` and native threaded `soft_bodies` 200-step checksum smokes
+  preserved the expected step-200 values.
+- `pixi run lint` passed before the commit.
+- `.benchmark_results/wp-db06-aggregation-temp-221fdf-parent-423f926-base/`
+  records a current/parent/base comparison with evaluator `PASS`, FCL/native
+  checksum equivalence on the correctness scenes, and native `dart` as the
+  winner for every tracked current scene/thread row.
+- The broad comparison still reported a positive mean on
+  `dart/soft_open_chain/1` against the parent. Targeted reruns of that exact
+  row using the already-built parent/current binaries contradicted the broad
+  positive: parent-then-current measured 4.851 ms vs 4.795 ms CPU mean, and
+  reverse order under higher load measured 7.662 ms vs 7.420 ms. Treat the
+  broad positive as noise, but keep final threshold claims gated on an
+  exclusive idle-host rerun.
+
 ## Rest-detection memory-hardening carryover
 
 After refreshing `origin/dart6-memory-hardening`, this branch first ported its
