@@ -60,7 +60,6 @@ public:
   friend class Skeleton;
   friend class collision::DARTCollisionObject;
   friend class collision::FCLCollisionObject;
-  friend class SoftMeshShape;
   friend class PointMass;
   friend class PointMassNotifier;
 
