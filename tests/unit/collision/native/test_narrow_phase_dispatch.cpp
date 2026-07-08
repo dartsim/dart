@@ -1134,6 +1134,18 @@ TEST(NarrowPhaseDispatch, PlanePairsBinaryCheckDoesNotAddContacts)
       CollisionOption::binaryCheck(),
       result));
   EXPECT_EQ(0u, result.numContacts());
+
+  CollisionResult reusedResult;
+  reusedResult.addContact(
+      Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ(), 0.0);
+  EXPECT_TRUE(NarrowPhase::collide(
+      &sphere,
+      translated(0.0, 0.0, 0.5),
+      &plane,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption::binaryCheck(),
+      reusedResult));
+  EXPECT_EQ(1u, reusedResult.numContacts());
 }
 
 TEST(NarrowPhaseDispatch, RespectsExhaustedContactBudget)

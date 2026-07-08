@@ -191,3 +191,63 @@ TEST(PlaneCollision, BinaryChecksDoNotAddContacts)
       CollisionOption::binaryCheck()));
   EXPECT_EQ(0u, convexResult.numContacts());
 }
+
+TEST(PlaneCollision, BinaryChecksIgnoreExistingContacts)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  SphereShape sphere(1.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 1.0));
+  CapsuleShape capsule(0.5, 2.0);
+  ConvexShape convex(
+      {Eigen::Vector3d(-0.5, -0.5, -0.25),
+       Eigen::Vector3d(0.5, -0.5, -0.25),
+       Eigen::Vector3d(0.0, 0.5, -0.25),
+       Eigen::Vector3d(0.0, 0.0, 0.75)});
+  const CollisionOption option = CollisionOption::binaryCheck();
+
+  auto makeFullResult = [] {
+    CollisionResult result;
+    result.addContact(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ(), 0.0);
+    return result;
+  };
+
+  CollisionResult sphereResult = makeFullResult();
+  EXPECT_TRUE(collidePlaneSphere(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      sphere,
+      translated(0.0, 0.0, 0.5),
+      sphereResult,
+      option));
+  EXPECT_EQ(1u, sphereResult.numContacts());
+
+  CollisionResult boxResult = makeFullResult();
+  EXPECT_TRUE(collidePlaneBox(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      box,
+      translated(0.0, 0.0, 0.5),
+      boxResult,
+      option));
+  EXPECT_EQ(1u, boxResult.numContacts());
+
+  CollisionResult capsuleResult = makeFullResult();
+  EXPECT_TRUE(collidePlaneCapsule(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.0, 0.0, 1.3),
+      capsuleResult,
+      option));
+  EXPECT_EQ(1u, capsuleResult.numContacts());
+
+  CollisionResult convexResult = makeFullResult();
+  EXPECT_TRUE(collidePlaneConvex(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      convex,
+      Eigen::Isometry3d::Identity(),
+      convexResult,
+      option));
+  EXPECT_EQ(1u, convexResult.numContacts());
+}

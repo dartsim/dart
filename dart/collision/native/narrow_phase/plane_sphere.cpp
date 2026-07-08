@@ -41,6 +41,20 @@
 
 namespace dart::collision::native {
 
+namespace {
+
+bool contactBudgetPrecludesDetection(
+    const CollisionResult& result, const CollisionOption& option)
+{
+  if (option.maxNumContacts == 0) {
+    return true;
+  }
+
+  return option.enableContact && result.numContacts() >= option.maxNumContacts;
+}
+
+} // namespace
+
 bool collidePlaneSphere(
     const PlaneShape& plane,
     const Eigen::Isometry3d& planeTransform,
@@ -49,7 +63,7 @@ bool collidePlaneSphere(
     CollisionResult& result,
     const CollisionOption& option)
 {
-  if (result.numContacts() >= option.maxNumContacts) {
+  if (contactBudgetPrecludesDetection(result, option)) {
     return false;
   }
 
@@ -92,7 +106,7 @@ bool collidePlaneBox(
     CollisionResult& result,
     const CollisionOption& option)
 {
-  if (result.numContacts() >= option.maxNumContacts) {
+  if (contactBudgetPrecludesDetection(result, option)) {
     return false;
   }
 
@@ -151,7 +165,7 @@ bool collidePlaneCapsule(
     CollisionResult& result,
     const CollisionOption& option)
 {
-  if (result.numContacts() >= option.maxNumContacts) {
+  if (contactBudgetPrecludesDetection(result, option)) {
     return false;
   }
 
@@ -212,7 +226,7 @@ bool collidePlaneConvex(
     CollisionResult& result,
     const CollisionOption& option)
 {
-  if (result.numContacts() >= option.maxNumContacts) {
+  if (contactBudgetPrecludesDetection(result, option)) {
     return false;
   }
 
