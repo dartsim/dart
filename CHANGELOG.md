@@ -47,7 +47,8 @@
   * Refresh the release-6.20 Read the Docs build, install, tutorial, and
     migration pages so the stable website reads version metadata from
     `package.xml`, points users to the DART 6 LTS package lanes, and documents
-    the branch-owned Pixi/CMake build and verification tasks.
+    the branch-owned Pixi/CMake build and verification tasks:
+    [#3346](https://github.com/dartsim/dart/pull/3346)
 
   * Replace the dartpy wheel publishing path with Pixi-managed build,
     repair, verification, and smoke-test tasks, and retire the legacy DART 6
