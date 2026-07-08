@@ -81,6 +81,23 @@ unbounded penetration growth and no bodies resting under the current defaults.
 Fixes may involve the contact error-reduction budget, large-island convergence,
 or the island-rest veto. All of those alter contact depth or sleep transitions,
 so implementation is parked until the accepted behavior envelope is decided.
+The durable D7 reproducer is:
+
+```bash
+CB=./build/default/cpp/Release/bin/contact_benchmark
+pixi run $CB --generate-container 71 --steps 20000 --checkpoint 5000 \
+  --collision dart
+```
+
+The round-2 guard capture on `origin/release-6.20` @ `b9e6910c066` recorded:
+
+| Row | RTF | Avg step ms | Contacts (cap) | Pairs | Resting | Finite | Max pen | Hash |
+| --- | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |
+| S6_dart | 0.0939 | 10.65 | 160 (false) | 139 | 0/71 | true | 0.3624 | `0x6eb6ff3911ac9d04` |
+
+The acceptance shape for future D7 work is old/new S6 evidence showing bounded
+max penetration and all 71 mobile bodies resting under default settings, plus
+the compatibility guard matrix for unchanged detectors.
 
 **D8, current-detector manifold reduction.** Per-pair manifold reduction can
 remove cap-flooding and tunneling failure modes, especially for ODE/FCL wrapper
