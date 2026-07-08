@@ -195,6 +195,13 @@
     single-plane pair-index path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Let the direct `native` collision detector participate in soft-body scenes
+    by routing `SoftMeshShape` and `EllipsoidShape` pairs through cached
+    DART-native fallback collision objects instead of skipping them, while
+    keeping native broadphase traversal cache-friendly for small dynamic
+    groups:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Speed up primitive DART-native plane collision dispatch by caching a compact
     shape kind beside each collision object's cached shape metadata, while
     preserving the existing fallback path for unsupported shapes:

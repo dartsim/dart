@@ -3,6 +3,10 @@
 Captured on 2026-07-05 from local branch
 `js/dart6-deformable-performance`.
 
+Updated on 2026-07-07 from local branch
+`wp-db-soft-skel-allocation-gates` at commits `649926d28dc` and
+`221fdf00145`, plus the follow-up native primitive-frame stability slice.
+
 ## Baseline setup
 
 The soft-body benchmark harness was used for the baseline and PR rows. Because
@@ -38,6 +42,260 @@ evidence, not final threshold-quality benchmark results. The benchmark now runs
 one warmup `World::step()` while timing is paused so the measured loop reflects
 steady-state soft-body stepping rather than one-time collision/simulation
 preparation.
+
+## 2026-07-07 correction benchmark
+
+The latest WP-DB.06 slice restores the prior two-pass
+`SoftBodyNode::updateArtInertia()` scalar timing after benchmark experiments
+showed the simplified point-mass `Pi` formula and direct cached-position
+variants could move FCL rows in the wrong direction. The retained change keeps
+the span-backed phase view and adds only a conservative
+`updateBiasForce()` connection-loop cleanup.
+
+Command:
+
+```bash
+pixi run python scripts/compare_soft_body_performance.py \
+  --current HEAD \
+  --parent HEAD^1 \
+  --base origin/release-6.20 \
+  --detectors fcl,dart \
+  --threads 1,16 \
+  --benchmark-min-time 0.2s \
+  --benchmark-repetitions 7 \
+  --benchmark-cycles 2 \
+  --benchmark-run-order detector \
+  --correctness-scenes soft_cubes,soft_bodies \
+  --correctness-steps 200 \
+  --wait-for-local-dart-builds \
+  --idle-max-load-1m 4 \
+  --idle-cooldown 5 \
+  --output-dir .benchmark_results/wp-db06-inertia-conn-649926-parent-43347c-base
+```
+
+Results:
+
+- Artifact:
+  `.benchmark_results/wp-db06-inertia-conn-649926-parent-43347c-base/summary.md`.
+- Revisions: current `649926d28dc`, parent `43347c78514`,
+  base `2d898081931`.
+- Evaluator verdict: `PASS`.
+- Detector equivalence: native `dart` is the reference detector; `fcl` is
+  checksum-equivalent on the correctness scenes.
+- Current detector ranking: native `dart` is the winner for every tracked
+  current scene/thread row.
+
+| Scene | Threads | Native CPU ms | FCL CPU ms |
+| --- | ---: | ---: | ---: |
+| `adaptive_deformable` | 1 | 2.326 | 15.927 |
+| `adaptive_deformable` | 16 | 2.501 | 16.351 |
+| `soft_bodies` | 1 | 13.706 | 66.629 |
+| `soft_bodies` | 16 | 13.546 | 69.737 |
+| `soft_cubes` | 1 | 3.738 | 17.931 |
+| `soft_cubes` | 16 | 3.872 | 18.527 |
+| `soft_open_chain` | 1 | 5.417 | 31.537 |
+| `soft_open_chain` | 16 | 5.710 | 32.604 |
+
+This comparison is strong enough to keep the correction and to show native is
+the best current detector choice on these apples-to-apples soft-body rows. It
+is still not final all-threshold evidence: the shared workstation had other
+DART workloads during the run, and a few current-vs-parent/base CPU mean rows
+remain noise-sensitive. Before a PR claims every CPU row beats both parent and
+base, rerun the same comparison on an exclusive idle host with longer timing
+windows and refresh this evidence packet.
+
+## 2026-07-07 aggregation-temporary comparison
+
+The follow-up `221fdf00145` slice removes avoidable soft-body aggregation
+temporaries and no-op point dispatch:
+
+- dynamic diagonal `K`/`D` matrices in `aggregateAugMassMatrix()`,
+- the temporary gravity vector in `aggregateGravityForceVector()`,
+- no-op point dispatch in `aggregateInvMassMatrix()`, and
+- point-mass pointer/helper calls in mass summation and force clearing.
+
+Command:
+
+```bash
+pixi run python scripts/compare_soft_body_performance.py \
+  --current HEAD \
+  --parent HEAD^1 \
+  --base origin/release-6.20 \
+  --detectors fcl,dart \
+  --threads 1,16 \
+  --benchmark-min-time 0.1s \
+  --benchmark-repetitions 5 \
+  --benchmark-cycles 2 \
+  --benchmark-run-order detector \
+  --correctness-scenes soft_cubes,soft_bodies \
+  --correctness-steps 200 \
+  --wait-for-local-dart-builds \
+  --idle-max-load-1m 4 \
+  --idle-cooldown 5 \
+  --output-dir .benchmark_results/wp-db06-aggregation-temp-221fdf-parent-423f926-base
+```
+
+Results:
+
+- Artifact:
+  `.benchmark_results/wp-db06-aggregation-temp-221fdf-parent-423f926-base/summary.md`.
+- Revisions: current `221fdf00145`, parent `423f926e030`,
+  base `2d898081931`.
+- Evaluator verdict: `PASS`.
+- Detector equivalence: native `dart` is the reference detector; `fcl` is
+  checksum-equivalent on the correctness scenes.
+- Current detector ranking: native `dart` is the winner for every tracked
+  current scene/thread row.
+
+| Scene | Threads | Native CPU ms | FCL CPU ms |
+| --- | ---: | ---: | ---: |
+| `adaptive_deformable` | 1 | 2.039 | 15.738 |
+| `adaptive_deformable` | 16 | 2.375 | 16.177 |
+| `soft_bodies` | 1 | 13.538 | 66.086 |
+| `soft_bodies` | 16 | 13.724 | 65.266 |
+| `soft_cubes` | 1 | 3.680 | 17.785 |
+| `soft_cubes` | 16 | 3.839 | 17.599 |
+| `soft_open_chain` | 1 | 5.905 | 30.072 |
+| `soft_open_chain` | 16 | 5.449 | 29.989 |
+
+The broad comparison improved every current-vs-base FCL row and every native
+row except `dart/soft_open_chain/1`, where the mean was +1.3% against base and
++7.8% against parent while the median was -0.9% against base. Targeted reruns
+of that exact row using the already-built parent/current binaries measured
+current faster than parent:
+
+| Order | Parent CPU ms | Current CPU ms | Current change |
+| --- | ---: | ---: | ---: |
+| parent then current | 4.851 | 4.795 | -1.2% |
+| current then parent, higher load | 7.662 | 7.420 | -3.2% |
+
+Treat the broad positive as workstation noise, not a code regression. Still,
+before claiming all CPU rows beat parent and base, rerun the full matrix on an
+exclusive idle host with longer benchmark windows.
+
+## 2026-07-07 native primitive-frame smoke
+
+The follow-up native collision slice classifies soft-vs-plane,
+soft-vs-sphere, and soft-vs-box point contacts in primitive-local coordinates,
+then computes the world contact point only for vertices that actually collide.
+The same slice extends `test_SoftDynamics` so the representative finite-state
+and one-thread versus four-thread final-state gate runs under both the default
+detector and `CollisionDetectorType::Dart`.
+
+Focused validation:
+
+```bash
+pixi run cmake --build build/default/cpp/Release \
+  --target test_DARTCollisionDetector test_SoftDynamics \
+    INTEGRATION_StepAllocation soft_body_headless BM_INTEGRATION_soft_body \
+  --parallel 8
+pixi run ctest --test-dir build/default/cpp/Release \
+  -R 'test_DARTCollisionDetector$|test_SoftDynamics$|INTEGRATION_StepAllocation$' \
+  --output-on-failure
+```
+
+Result: all three focused CTest gates passed. FCL/native `drop_box` 200-step
+checksums remained identical; the native row measured 1.431 ms elapsed versus
+7.045 ms for FCL in this busy-host smoke. Native `soft_cubes`, `soft_bodies`,
+and `soft_open_chain` 200-step checksum rows matched exactly between
+`THREADS=1` and `THREADS=16`.
+
+Quick current-only detector-ranking smoke:
+
+```bash
+for detector in dart fcl; do
+  COLLISION_DETECTOR=$detector \
+    ./build/default/cpp/Release/bin/BM_INTEGRATION_soft_body \
+      --benchmark_filter='BM_SoftBodyStep/(0|1|2|3)/(1|16)/200$' \
+      --benchmark_min_time=0.05s \
+      --benchmark_repetitions=3 \
+      --benchmark_report_aggregates_only=true
+done
+```
+
+Google Benchmark reported CPU scaling enabled and load averages of
+2.27 / 6.96 / 9.50, so treat these rows as quick detector-ranking evidence,
+not threshold-quality parent/base evidence.
+
+| Scene | Threads | Native CPU ms | FCL CPU ms |
+| --- | ---: | ---: | ---: |
+| `adaptive_deformable` | 1 | 2.01 | 16.4 |
+| `adaptive_deformable` | 16 | 2.41 | 17.0 |
+| `soft_cubes` | 1 | 3.69 | 17.8 |
+| `soft_cubes` | 16 | 3.68 | 17.9 |
+| `soft_bodies` | 1 | 13.8 | 68.1 |
+| `soft_bodies` | 16 | 13.6 | 63.4 |
+| `soft_open_chain` | 1 | 5.38 | 29.6 |
+| `soft_open_chain` | 16 | 5.06 | 29.8 |
+
+Native remained the fastest detector for every tracked current row in this
+smoke. The formal current/parent/base matrix still needs a committed-revision
+rerun on an idle host before this slice can support all-threshold claims.
+
+## 2026-07-08 direct-native fallback and broadphase smoke
+
+After merging `origin/release-6.20`, the direct
+`COLLISION_DETECTOR=native` factory path initially skipped `SoftMeshShape` and
+`EllipsoidShape` rows. The follow-up slice keeps those shapes in the native
+broadphase and routes their pairs through cached DART-native fallback collision
+objects. It also reuses a fallback scratch result without colliding-object
+lookup-cache bookkeeping, uses the cached plane fallback for plane/soft pairs,
+and stores brute-force native broadphase entries contiguously instead of
+fetching AABBs through a hash table in the pair loop.
+
+Focused validation:
+
+```bash
+pixi run cmake --build build/default/cpp/Release \
+  --target UNIT_collision_native_brute_force \
+    UNIT_collision_native_detector_adapter BM_INTEGRATION_soft_body \
+    soft_body_headless --parallel 4
+pixi run ctest --test-dir build/default/cpp/Release \
+  -R 'UNIT_collision_native_brute_force$|UNIT_collision_native_detector_adapter$' \
+  --output-on-failure
+```
+
+Result: both focused unit tests passed. Direct native `soft_cubes` and
+`soft_bodies` 200-step headless checksums matched `COLLISION_DETECTOR=dart`,
+and the representative direct-native soft-scene benchmark emitted no
+unsupported-shape warnings.
+
+Quick detector-ranking smoke:
+
+```bash
+for detector in native dart fcl; do
+  COLLISION_DETECTOR=$detector \
+    ./build/default/cpp/Release/bin/BM_INTEGRATION_soft_body \
+      --benchmark_filter='BM_SoftBodyStep/(0|1|2|3)/(1|16)/200$' \
+      --benchmark_min_time=0.2s \
+      --benchmark_repetitions=7 \
+      --benchmark_report_aggregates_only=true
+done
+```
+
+Google Benchmark still reported CPU scaling enabled, and the FCL run had a
+noisy `soft_open_chain/16` row, so these rows remain smoke evidence rather than
+threshold-quality parent/base evidence.
+
+| Scene | Threads | Native CPU ms | DART CPU ms | FCL CPU ms |
+| --- | ---: | ---: | ---: | ---: |
+| `adaptive_deformable` | 1 | 1.85 | 1.85 | 15.0 |
+| `adaptive_deformable` | 16 | 2.21 | 2.26 | 15.5 |
+| `soft_cubes` | 1 | 3.30 | 3.41 | 17.2 |
+| `soft_cubes` | 16 | 3.48 | 3.52 | 18.2 |
+| `soft_bodies` | 1 | 12.2 | 12.1 | 66.0 |
+| `soft_bodies` | 16 | 12.5 | 12.4 | 63.6 |
+| `soft_open_chain` | 1 | 4.84 | 4.73 | 28.9 |
+| `soft_open_chain` | 16 | 5.06 | 5.08 | 30.6 |
+
+The direct `native` and `dart` rows are close because direct native currently
+bridges to the same soft contact kernels for soft/ellipsoid pairs; FCL remains
+far slower on every tracked row. The formal matrix script now treats
+`native` as the expected fastest checksum-equivalent detector while keeping
+`dart` as the checksum reference, and its generated `summary.md` includes both
+the CPU-change graphs and a detector-winner graph. The next committed-revision
+comparison will fail if direct native is missing, checksum-ineligible, or not
+the winner.
 
 ## Benchmark commands
 
