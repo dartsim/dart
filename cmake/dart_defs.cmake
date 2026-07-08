@@ -1795,10 +1795,9 @@ macro(dart_add_library _name)
     PUBLIC DART_BUILD_SHARED=${_dart_target_build_shared}
     PRIVATE DART_BUILDING_${_dart_export_macro}
   )
-  if(MSVC AND BUILD_SHARED_LIBS)
-    # Keep inline members of exported classes header-owned on MSVC. Otherwise
-    # component DLLs that include exported DART core templates can collide with
-    # the same inline symbols from dart.lib.
+  if(MSVC AND BUILD_SHARED_LIBS AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Keep inline members of exported classes header-owned for clang-cl builds.
+    # Microsoft cl.exe does not recognize this clang-cl option and emits D9002.
     target_compile_options(${_name} PRIVATE /Zc:dllexportInlines-)
   endif()
   unset(_dart_target_build_shared)
