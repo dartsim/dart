@@ -49,14 +49,16 @@ explicit, is the **active** regime and why scenes stay active:
   profile scope; WP-PG.01/WP-PG.10 must record the `Construct LCP` vs
   solve-proper split before WS-A effort is committed.
 - **Penetration creep blocks sleeping** (#3209 root-cause finding 2):
-  contact error correction is capped at `DART_MAX_ERV = 1e-3` m/s
+  baseline contact error correction is capped at `DART_MAX_ERV = 1e-3` m/s
   (`ContactConstraint.cpp:49`); piles compact faster than the cap corrects,
   so max penetration grows ~5–10 mm/s without bound — and the island-rest
   veto requires every contact ≤ 1e-5 m penetration
   (`kSleepContactPenetrationTolerance`, `ConstraintSolver.cpp:2050`,
   `World.cpp:1229`), so **creeping piles can never freeze**. Detector- and
   solver-independent; deterministic reproducer recorded in
-  01-baseline-evidence.md (scene S6).
+  01-baseline-evidence.md (scene S6). WP-PG.15 addresses this for dense
+  mobile-mobile islands while preserving legacy behavior for single-mobile
+  static-support islands.
 - gz-sim uses the **ODE collision detector by default** (issue #3056,
   @azeey); the DART-side ODE wrapper carries quadratic contact-history
   bookkeeping, and its trimesh cylinder fallback can flood contact caps
@@ -224,13 +226,13 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
   WS-F phase 5 (facade decision). WP-PG.23 is governed by D8, not D5.
 - **D6 — Deactivation default divergence**: 6.20 defaults deactivation ON,
   main defaults OFF. Flagged for awareness; no action proposed this round.
-- **D7 — Penetration-creep remediation policy** (blocks WP-PG.15): the fix
-  space spans the contact ERV budget (`DART_MAX_ERV`; a public setter
-  `ContactConstraint::setMaxErrorReductionVelocity` already exists),
-  island-LCP convergence for large piles, and/or a bounded-penetration
-  tolerance in the island-rest veto. All are behavior-changing (contact
-  depths, sleep transitions); decide the acceptance envelope and
-  re-baseline process before implementation.
+- **D7 — Penetration-creep remediation policy** (active on WP-PG.15/#3353):
+  #3353 is the current behavior-changing default-policy proposal. It promotes
+  the evidenced contact ERV/tolerance values through dense-island adaptive
+  policy, and adds dense-contact-island sleep candidacy for sub-wake jitter;
+  the PR must carry the old/new re-baseline evidence and reviewer acceptance
+  before D7 is closed. D3 remains the separate large-island solve-side
+  decision.
 - **D8 — Contact-manifold reduction on current detectors** (blocks
   WP-PG.23): round 1 explicitly deferred default-on manifold
   reduction/selection ("mines #2366 and DART 7 native collision"; recorded

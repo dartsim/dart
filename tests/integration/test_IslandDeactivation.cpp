@@ -494,6 +494,9 @@ TEST(IslandDeactivation, SettlesThenSleeps)
 TEST(IslandDeactivation, SleepTransitionFreezesLastSolvedPoseAndVelocity)
 {
   auto world = makeSleepWorld();
+  auto opts = world->getDeactivationOptions();
+  opts.mLinearSpeedThreshold = 0.1;
+  world->setDeactivationOptions(opts);
   world->addSkeleton(createFloor());
   auto box = createFreeBox(
       "box",
@@ -638,7 +641,8 @@ TEST(IslandDeactivation, UnconvergedContactClearsSleepCandidate)
 
 //==============================================================================
 // The contact-penetration gate that prevents premature sleeping is tunable for
-// dense-pile evaluation, but the legacy default remains strict.
+// dense-pile evaluation: a strict tolerance rejects this contact, while a
+// bounded relaxed tolerance can treat it as converged.
 TEST(IslandDeactivation, ContactPenetrationToleranceIsConfigurable)
 {
   auto makePenetratedCandidate = []() {
@@ -2268,6 +2272,59 @@ TEST(IslandDeactivation, FinalQuietGateScalesWithThresholds)
     EXPECT_GE(steps, minDwellSteps)
         << "moving slider slept before the configured dwell elapsed";
   }
+}
+
+//==============================================================================
+// Large contact islands can carry residual solver jitter that is below the wake
+// band but above the stricter final-quiet gate for individual members. Once the
+// whole island is below wake and has sustained dwell evidence, it should enter
+// sleep candidacy together instead of requiring every member's dwell clock to
+// cross the threshold on the same frame.
+TEST(IslandDeactivation, DenseSubWakeStackSleepsAtomically)
+{
+  auto world = makeSleepWorld();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->addSkeleton(createFloor());
+
+  constexpr double overlap = 1.0e-8;
+  std::vector<SkeletonPtr> stack;
+  for (int i = 0; i < 8; ++i) {
+    const double z = kHalf - overlap / 2.0 + i * (kBoxSize - overlap);
+    auto b = createFreeBox(
+        "dense_stack" + std::to_string(i),
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, z));
+    world->addSkeleton(b);
+    stack.push_back(b);
+  }
+
+  world->step();
+  for (const auto& b : stack)
+    ASSERT_GE(b->getIslandIndex(), 0);
+
+  const auto& opts = world->getDeactivationOptions();
+  const double subWakeSpeed = 1.5 * opts.mLinearSpeedThreshold;
+  ASSERT_LT(
+      subWakeSpeed, opts.mWakeThresholdScale * opts.mLinearSpeedThreshold);
+  ASSERT_GT(subWakeSpeed, 0.1 * opts.mLinearSpeedThreshold);
+
+  stack.front()->setRestDwellTime(
+      opts.mTimeUntilSleep + 2.0 * world->getTimeStep());
+  for (const auto& b : stack) {
+    b->setSmoothedLinearSpeed(subWakeSpeed);
+    b->setSmoothedAngularSpeed(0.0);
+  }
+  stack.front()->setSmoothedLinearSpeed(0.0);
+
+  world->step();
+  for (const auto& b : stack)
+    EXPECT_TRUE(b->isSleepCandidate())
+        << b->getName() << " did not enter dense-island candidacy";
+
+  world->step();
+  for (const auto& b : stack)
+    EXPECT_TRUE(b->isResting())
+        << b->getName() << " did not freeze with the dense island";
 }
 
 } // namespace

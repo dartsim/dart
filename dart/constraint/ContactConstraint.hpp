@@ -342,6 +342,9 @@ private:
   ///
   bool mActive;
 
+  /// Effective maximum error reduction velocity for this contact instance.
+  double mEffectiveMaxErrorReductionVelocity;
+
   /// Global constraint error allowance
   static double mErrorAllowance;
 
@@ -351,6 +354,10 @@ private:
 
   /// Maximum error reduction velocity
   static double mMaxErrorReductionVelocity;
+
+  /// Whether the public setter has explicitly configured the maximum error
+  /// reduction velocity.
+  static bool mMaxErrorReductionVelocityUserConfigured;
 
   /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
   /// default is 1e-5

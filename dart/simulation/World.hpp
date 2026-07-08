@@ -653,6 +653,11 @@ protected:
   std::vector<const dynamics::Skeleton*> mDeepInitialContactSkeletonScratch;
   std::vector<const dynamics::Skeleton*>
       mSupportedInitialContactSkeletonScratch;
+  std::vector<char> mIslandHasMobileSkeletonScratch;
+  std::vector<char> mIslandAllFinalSleepCandidateReadyScratch;
+  std::vector<char> mIslandAllBelowWakeScratch;
+  std::vector<std::size_t> mIslandMobileSkeletonCountScratch;
+  std::vector<std::size_t> mIslandDwellWakeReadyCountScratch;
 
   struct AllRestingKinematicSnapshot
   {

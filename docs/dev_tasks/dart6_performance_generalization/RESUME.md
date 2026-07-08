@@ -9,13 +9,13 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
-**Current claimed packet: WP-PG.15 evaluator / D7 policy evidence on #3353**
+**Current claimed packet: WP-PG.15 D7 default remediation on #3353**
 (`docs/close-dart6-performance-generalization`, converted from the mistaken
-retirement PR). This is an active restoration/evidence PR, not a completion or
-parking PR. It restores this task folder, keeps PLAN-621 active, adds explicit
-`contact_benchmark` knobs for the existing contact ERV and automatic-sleeping
-contact-penetration tolerance, and records focused tests/evidence so D7 can be
-decided from data.
+retirement PR). This is an active behavior-changing restoration/evidence PR,
+not a completion or parking PR. It restores this task folder, keeps PLAN-621
+active, promotes the D7 evaluator evidence into the default contact/rest
+policy, keeps explicit `contact_benchmark` knobs for old/new A/B rows, and
+records focused tests/evidence so reviewers can judge the re-baseline envelope.
 
 WP-PG.32 is closed in this tracker as delivered by merged PRs #3297 and #3307:
 `FrameAllocator`, World-owned `MemoryManager` preparation, frame-scratch
@@ -25,11 +25,11 @@ native and soft allocation gates are already on `release-6.20`. The
 `wp-pg-32-frame-allocation-gate` branch should not be resumed as a new
 implementation packet after its PR lands.
 
-Next practical action after #3353: use the new D7 evaluator surface to choose
-and validate a default policy, or pivot to D3 if the S6 evidence shows that
-sleeping cannot be made physically acceptable without a solve-side change. Do
-not retire or park the tracker while issue #3056 remains open and the
-north-star evidence matrix is incomplete.
+Next practical action on #3353: finish the full verification/report loop for
+the default policy, including local lint/check-lint, relevant C++ tests,
+gz/downstream gates where feasible, hosted CI review, and PR-body benchmark
+reporting in the #3307 style. Do not retire or park the tracker while issue
+#3056 remains open and the north-star evidence matrix is incomplete.
 
 **WP-PG.01 is captured** (merged as #3263) — guard rows, profile splits, and
 prior-art triage are in
@@ -40,12 +40,12 @@ many-islands regime is ~50% integration (WS-C is the lever there).
 
 Implementation packets after WP-PG.32, in priority order:
 
-1. Finish #3353 as a WP-PG.15/D7 evaluator and restoration PR. Acceptance for
-   this PR is the benchmark/test surface plus documented evidence and next
-   policy decision; it is **not** a claim that S6 sleeps under default settings.
-2. Then choose the default-fix route from evidence: D7 policy change
-   (contact ERV, contact-penetration tolerance, and/or dense-pile final-quiet
-   treatment), D3 solve-side work, or a maintainer-approved combination.
+1. Finish #3353 as the WP-PG.15/D7 behavior-changing restoration PR. Current
+   local evidence shows S6 now sleeps under default settings; acceptance still
+   needs the full validation/report/review loop before merge.
+2. After #3353, continue with the remaining north-star evidence and any still
+   open D3/D8 decisions rather than treating the packet merge as task
+   completion.
 3. Do not retry rejected packets unchanged. WP-PG.20 is #3329; WP-PG.21 failed
    the 2026-07-07 current-base map/pruning gate; WP-PG.22 and WP-PG.11 both
    have local current-base rejection evidence from 2026-07-06; WP-PG.31 is
@@ -53,9 +53,9 @@ Implementation packets after WP-PG.32, in priority order:
 
 Blocked/gated (do not claim): PG.04 (D4), PG.12 (evidence), PG.13
 (PG.10 census), PG.14 (D3 — now urgent), PG.23 (D8), PG.33, PG.41. PG.15
-(D7) is claimed only for evaluator/policy evidence on #3353; default behavior
-remediation remains open. PG.42 is done in PR #3299; WP-PG.30 is done in PR
-#3310.
+(D7) is claimed on #3353 as the default behavior remediation and remains open
+until the behavior-changing evidence/re-baseline package passes review. PG.42
+is done in PR #3299; WP-PG.30 is done in PR #3310.
 **D3 and D7 are the decisions that unblock the dense-pile
 fixture**; everything claimable above serves the many-islands and ODE
 regimes meanwhile.
@@ -80,10 +80,10 @@ the explicit `--parallel 8` build command.)
 D1 (SIMD FP contract), D2 (ISA delivery), D3 (matrix-free — **revisit
 trigger fired by WP-PG.01**: solve-proper is 88.1% of the dense-pile
 step), D4 (executor tooling), D5 (ODE lane depth = PG.20/21/22), D7
-(penetration-creep remediation — **S6 confirms 0.362 m penetration,
-0/71 resting at baseline**), D8 (manifold reduction now vs WS-F phase 3)
-— see README "Open decisions". D3 and D7 are now the highest-leverage
-decisions.
+(penetration-creep remediation — #3353 is the active behavior-changing
+default-policy PR and needs re-baseline review), D8 (manifold reduction now vs
+WS-F phase 3) — see README "Open decisions". D3 remains the large-island
+solve-side decision after the D7 sleep-policy path.
 
 ## Session log (round-2 execution)
 
@@ -195,8 +195,46 @@ decisions.
   with `--contact-max-erv 0.1 --sleep-contact-penetration-tolerance 0.005`
   stayed finite with bounded max penetration (~0.0037 m) but still ended
   0/71 resting because the dense-pile velocity jitter remained above the
-  final-quiet gate. Therefore #3353 must not be described as the D7 default
-  fix; it supplies the evaluator and narrows the next policy decision.
+  final-quiet gate. At that point #3353 was evaluator-only; the later
+  default-remediation evidence below supersedes this note.
+- 2026-07-08: #3353 was advanced from evaluator-only to the D7
+  default-remediation implementation after A/B evidence showed threshold
+  widening alone was insufficient and broad global ERV regressed simple
+  support-contact tests. The candidate promotes the static contact ERV default
+  `0.001 -> 0.1` but applies the higher effective ERV only to dense islands
+  with mobile-mobile contacts; single-mobile static-support islands keep the
+  legacy effective cap. Dense islands also get a `0.005` solver rest-veto
+  tolerance under the default policy, plus dense-contact-island sleep candidacy
+  for sub-wake jitter. `contact_benchmark` now reports island and
+  dwell/velocity diagnostics. A/B artifact
+  `/tmp/wp_pg15_ab_candidate_20260708T222839Z`: S6 old-default override
+  (`--contact-max-erv 0.001 --sleep-contact-penetration-tolerance 0.00001`)
+  took 208.383 s, RTF 0.095977, 165 contacts / 137 pairs, max penetration
+  0.363373, 3/71 resting, hash `0xf0690e9a45a8f655`; current defaults took
+  97.4519 s, RTF 0.205229, zero contacts, max penetration 0, 71/71 resting,
+  hash `0xec80f734df6d5e74`; the explicit global evaluator row (`ERV=0.1`,
+  tol `0.005`) took 38.9195 s, RTF 0.513881, zero contacts, 71/71 resting,
+  hash `0x8f8ec8de71465934`. S4/S5 DART/FCL/Bullet/ODE new-default rows
+  matched old-default hashes/contact/resting states. Extra evidence:
+  S2 DART 3k-shapes guard
+  `/tmp/wp_pg15_examples_20260708T223506Z/S2_dart_3k_shapes.log`
+  (`3003/3003` resting, hash `0x8ddc9a81f2d28a7f`), S6 final-scene dump
+  `/tmp/wp_pg15_visual_20260708T223506Z/S6_final_scene.jsonl`, and S6 GUI
+  capture `/tmp/wp_pg15_gui_20260708T223653Z/S6_gui.png` with a passing
+  non-blank `image-verdict`.
+  Focused tests passed: `INTEGRATION_StepAllocation` native allocation gates,
+  `test_SplitImpulse` shallow-support guards, `test_Issue1445`, full
+  `test_IslandDeactivation`, and full `NativeCollisionDetector.*`.
+  CI failures on the old PR head were traced to `test_NativeCollisionDetector`
+  helper filters needing `final` under clang/libc++ warning-as-error builds;
+  the test-only fix is included in the current dirty tree.
+- 2026-07-08: An attempted overhead trim for the dense-island World sleep
+  candidacy path was rejected and reverted after an A/B rerun
+  (`/tmp/wp_pg15_ab_candidate_20260708T224930Z`) changed the S6 final hashes
+  and made the explicit evaluator row slower (82.9871 s vs the prior
+  38.9195 s) without a clear S4/S5 guard-row timing win. Keep the
+  island-atomic candidate path from the accepted candidate unless a future
+  optimization carries a cleaner old/new matrix.
 
 ## Session log
 

@@ -81,6 +81,9 @@ namespace constraint {
 using namespace dynamics;
 
 constexpr double kDefaultSleepContactPenetrationTolerance = 1e-5;
+constexpr double kDenseContactIslandSleepContactPenetrationTolerance = 0.005;
+constexpr double kSmallContactIslandMaxErrorReductionVelocity = 1e-3;
+constexpr std::size_t kDenseContactIslandMinMobileSkeletons = 3u;
 double gSleepContactPenetrationTolerance
     = kDefaultSleepContactPenetrationTolerance;
 
@@ -2142,6 +2145,68 @@ void ConstraintSolver::buildConstrainedGroups()
     mConstrainedGroups.resize(numConstrainedGroups);
   }
 
+  const bool needsGroupMobileSkeletonCounts
+      = mDeactivationActive
+        || (!ContactConstraint::mMaxErrorReductionVelocityUserConfigured
+            && ContactConstraint::mMaxErrorReductionVelocity
+                   > kSmallContactIslandMaxErrorReductionVelocity);
+  if (needsGroupMobileSkeletonCounts) {
+    mGroupMobileSkeletonCountScratch.assign(mConstrainedGroups.size(), 0u);
+    for (const auto& skeleton : mSkeletons) {
+      if (!skeleton->isMobile())
+        continue;
+
+      const auto root = ConstraintBase::getRootSkeleton(skeleton);
+      const auto groupIndex = root->mUnionIndex;
+      if (groupIndex != invalidUnionIndex
+          && groupIndex < mGroupMobileSkeletonCountScratch.size()) {
+        ++mGroupMobileSkeletonCountScratch[groupIndex];
+      }
+    }
+  }
+
+  if (!ContactConstraint::mMaxErrorReductionVelocityUserConfigured
+      && ContactConstraint::mMaxErrorReductionVelocity
+             > kSmallContactIslandMaxErrorReductionVelocity) {
+    for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i) {
+      bool hasMobileMobileContact = false;
+      for (const auto& constraint : mConstrainedGroups[i].mConstraints) {
+        const auto* contact
+            = dynamic_cast<ContactConstraint*>(constraint.get());
+        if (!contact)
+          continue;
+
+        const auto bodyNode1 = contact->getContact().getBodyNodePtr1();
+        const auto bodyNode2 = contact->getContact().getBodyNodePtr2();
+        const auto* skeleton1
+            = bodyNode1 ? bodyNode1->getSkeletonRawPtr() : nullptr;
+        const auto* skeleton2
+            = bodyNode2 ? bodyNode2->getSkeletonRawPtr() : nullptr;
+        if (skeleton1 != nullptr && skeleton2 != nullptr
+            && skeleton1 != skeleton2 && skeleton1->isMobile()
+            && skeleton2->isMobile()) {
+          hasMobileMobileContact = true;
+          break;
+        }
+      }
+
+      const auto mobileSkeletonCount = mGroupMobileSkeletonCountScratch[i];
+      const bool denseMobileIsland
+          = mobileSkeletonCount >= kDenseContactIslandMinMobileSkeletons;
+      const double effectiveMaxErrorReductionVelocity
+          = denseMobileIsland && hasMobileMobileContact
+                ? ContactConstraint::mMaxErrorReductionVelocity
+                : kSmallContactIslandMaxErrorReductionVelocity;
+      for (const auto& constraint : mConstrainedGroups[i].mConstraints) {
+        auto* contact = dynamic_cast<ContactConstraint*>(constraint.get());
+        if (contact) {
+          contact->mEffectiveMaxErrorReductionVelocity
+              = effectiveMaxErrorReductionVelocity;
+        }
+      }
+    }
+  }
+
   //----------------------------------------------------------------------------
   // Determine which islands are fully at rest, and set the island-atomic
   // freeze flag on every skeleton.
@@ -2173,11 +2238,23 @@ void ConstraintSolver::buildConstrainedGroups()
     // by default.
     const double sleepContactPenetrationTolerance
         = getAutomaticSleepingContactPenetrationTolerance();
-    const double preserveSleepCandidatePenetrationTolerance
-        = 10.0 * sleepContactPenetrationTolerance;
+    const bool useDenseIslandSleepContactPenetrationTolerance
+        = sleepContactPenetrationTolerance
+          == kDefaultSleepContactPenetrationTolerance;
     {
       for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i) {
         const auto& group = mConstrainedGroups[i];
+        const bool denseContactIsland
+            = i < mGroupMobileSkeletonCountScratch.size()
+              && mGroupMobileSkeletonCountScratch[i]
+                     >= kDenseContactIslandMinMobileSkeletons;
+        const double groupSleepContactPenetrationTolerance
+            = useDenseIslandSleepContactPenetrationTolerance
+                      && denseContactIsland
+                  ? kDenseContactIslandSleepContactPenetrationTolerance
+                  : sleepContactPenetrationTolerance;
+        const double preserveSleepCandidatePenetrationTolerance
+            = groupSleepContactPenetrationTolerance;
         for (std::size_t j = 0; j < group.mConstraints.size(); ++j) {
           const auto* constraint = group.mConstraints[j].get();
           const auto* contact
@@ -2189,7 +2266,7 @@ void ConstraintSolver::buildConstrainedGroups()
           }
 
           if (contact->getContact().penetrationDepth
-              > sleepContactPenetrationTolerance) {
+              > groupSleepContactPenetrationTolerance) {
             mGroupResting[i] = false;
             if (contact->getContact().penetrationDepth
                 > preserveSleepCandidatePenetrationTolerance) {
@@ -2220,10 +2297,9 @@ void ConstraintSolver::buildConstrainedGroups()
 
       // Pass 1: an island can freeze only if every member is a sleep candidate.
       // Keep that kinematic condition separate from constraint/contact
-      // eligibility. A quiet island with slightly unconverged contact
-      // penetration should keep accumulating dwell while the LCP continues to
-      // solve, instead of restarting dwell every time the solver declines to
-      // freeze it.
+      // eligibility. A contact whose penetration exceeds the automatic
+      // sleeping tolerance clears candidacy so a later freeze cannot preserve
+      // unconverged contact state.
       for (const auto& skeleton : mSkeletons) {
         const auto root = ConstraintBase::getRootSkeleton(skeleton);
         const auto groupIndex = root->mUnionIndex;
@@ -2251,7 +2327,9 @@ void ConstraintSolver::buildConstrainedGroups()
         const bool groupAllSleepCandidates
             = grouped && groupIndex < mGroupAllSleepCandidates.size()
               && mGroupAllSleepCandidates[groupIndex];
-        const bool groupCanRest = grouped && mGroupResting[groupIndex];
+        const bool groupCanRest
+            = grouped && mGroupResting[groupIndex]
+              && (!hasUngroupedAwakeMobileSkeleton || skeleton->isResting());
         const bool groupCanPreserveSleepCandidate
             = groupAllSleepCandidates && !hasUngroupedAwakeMobileSkeleton
               && groupIndex < mGroupPreserveSleepCandidates.size()
@@ -2739,6 +2817,7 @@ void ConstraintSolver::reserveConstrainedGroupsScratch()
   mGroupResting.reserve(groupCount);
   mGroupAllSleepCandidates.reserve(groupCount);
   mGroupPreserveSleepCandidates.reserve(groupCount);
+  mGroupMobileSkeletonCountScratch.reserve(groupCount);
   mGroupAlreadyRestingScratch.reserve(groupCount);
   mGroupSolvedToRestScratch.reserve(groupCount);
 

@@ -189,14 +189,17 @@ final-state hashes on all guard scenes for default-on packets.
 
 #### WP-PG.15 — Penetration creep vs island-rest veto (root cause)
 
-- Status: evaluator claimed on #3353; default remediation still blocked on D7
-  policy evidence — behavior-changing PR class
+- Status: claimed on #3353 as the D7 default-remediation PR; local evaluator
+  evidence passes, hosted CI/review and full closeout gates still pending. This
+  is a behavior-changing PR class and needs explicit old/new evidence rather
+  than hash-identical guard acceptance.
 - Objective: fix #3209 root-cause finding 2 so compacting piles stop
   creeping and can sleep: investigate the interaction of the contact
-  error-reduction budget (`DART_MAX_ERV = 1e-3` m/s,
+  error-reduction budget (baseline `DART_MAX_ERV = 1e-3` m/s,
   `ContactConstraint.cpp:49`; public setter
   `setMaxErrorReductionVelocity` exists), large-island LCP convergence,
-  and the island-rest veto requiring every contact ≤ 1e-5 m penetration
+  and the island-rest veto requiring every contact ≤ 1e-5 m penetration at
+  baseline
   (`kSleepContactPenetrationTolerance`, `ConstraintSolver.cpp:2050`,
   `World.cpp:1229`). Candidate remedies (per D7): penetration-aware ERV
   scaling under pile load, convergence budget for large islands, and/or a
@@ -209,13 +212,46 @@ final-state hashes on all guard scenes for default-on packets.
   `ConstraintSolver.cpp` / `World.cpp` rest-veto sites; behavior-changing
   — carries tolerance rationale, old/new guard rows for ALL detectors,
   and maintainer re-baseline sign-off per envelope rule 2.
-- Current evaluator scope (#3353): expose the existing contact ERV knob and
-  the automatic-sleeping contact-penetration tolerance through
-  `contact_benchmark`, add focused tests proving the tolerance gate is
-  configurable while the legacy default remains strict, and record S6 tuning
-  evidence before any default value changes. #3353 must not be described as the
-  D7 default fix unless the full S6 acceptance row passes under default
-  settings.
+- Current #3353 implementation: promotes the D7 evaluator evidence into the
+  default policy by raising the static contact ERV default from `0.001` to
+  `0.1`, but applies that higher effective ERV only to dense islands with
+  mobile-mobile contacts. Single-mobile static-support islands keep the legacy
+  effective cap (`0.001`) unless the public ERV setter is used. The automatic
+  sleeping contact tolerance also remains externally defaulted to `1e-5`, while
+  dense contact islands use `0.005` internally for the solver rest-veto gate
+  under the default policy. The patch also adds a dense-contact-island
+  sleep-candidate path when every mobile member is below the wake band and at
+  least one member has sustained dwell evidence. `contact_benchmark` keeps the
+  ERV/tolerance CLI overrides so old-default A/B rows remain reproducible, and
+  now reports island and dwell/velocity diagnostics needed to explain why a
+  pile does or does not sleep.
+- Local D7 evaluator evidence (2026-07-08, branch
+  `docs/close-dart6-performance-generalization`, binary
+  `build/default/cpp/Release/bin/contact_benchmark`; full logs:
+  `/tmp/wp_pg15_ab_candidate_20260708T222839Z/summary.tsv`):
+
+  | Row | Wall time | RTF | Contacts / pairs | Over sleep tol | Max penetration | Resting | Hash |
+  | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+  | S6 current defaults | 97.4519 s | 0.205229 | 0 / 0 | 0 | 0 | 71/71 | `0xec80f734df6d5e74` |
+  | S6 old-default override (`ERV=0.001`, tol `1e-5`) | 208.383 s | 0.095977 | 165 / 137 | 43 | 0.363373 | 3/71 | `0xf0690e9a45a8f655` |
+  | S6 explicit evaluator (`ERV=0.1`, tol `0.005`) | 38.9195 s | 0.513881 | 0 / 0 | 0 | 0 | 71/71 | `0x8f8ec8de71465934` |
+
+  The default row is 2.14x faster than the old-default override on this run
+  and reaches the WP-PG.15 pile-sleep outcome under default settings. The
+  explicit evaluator row is retained as the upper-bound comparison; the broader
+  global policy was rejected after `Issue1445` and split-impulse guards exposed
+  simple-contact regressions. S4/S5 detector guard rows in the same artifact
+  stayed finite across DART, FCL, Bullet, and ODE, and every new-default S4/S5
+  row matched the old-default hash/contact/resting state.
+
+  Headless and visual closeout artifacts:
+  S2 DART 3k-shapes guard
+  `/tmp/wp_pg15_examples_20260708T223506Z/S2_dart_3k_shapes.log`
+  (`RTF 29.7321`, `3003/3003` resting, hash
+  `0x8ddc9a81f2d28a7f`); S6 final-scene dump
+  `/tmp/wp_pg15_visual_20260708T223506Z/S6_final_scene.jsonl`; S6 GUI capture
+  `/tmp/wp_pg15_gui_20260708T223653Z/S6_gui.png` with a passing non-blank
+  `image-verdict`.
 - Non-goals: solver algorithm swaps (that is WP-PG.14); changing gz-visible
   default semantics beyond the approved D7 envelope.
 - Acceptance evidence: S6 reproducer ends with bounded `max_penetration`

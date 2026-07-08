@@ -436,6 +436,10 @@ protected:
   /// freeze gate to keep solving without discarding already-earned sleep dwell.
   std::vector<bool> mGroupPreserveSleepCandidates;
 
+  /// Per-group count of mobile skeletons, used to choose contact correction
+  /// budgets without allocating in the solver hot path.
+  std::vector<std::size_t> mGroupMobileSkeletonCountScratch;
+
   /// Scratch arrays for deactivation-aware group solves. These intentionally
   /// use byte storage rather than vector<bool> so parallel group workers can
   /// write distinct entries without sharing packed bits.

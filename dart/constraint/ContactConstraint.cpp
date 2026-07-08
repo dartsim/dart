@@ -46,7 +46,7 @@
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP 0.01
-#define DART_MAX_ERV 1e-3
+#define DART_MAX_ERV 0.1
 #define DART_CFM 1e-5
 // #define DART_MAX_NUMBER_OF_CONTACTS 32
 
@@ -108,6 +108,7 @@ bool isContactBodyNodeReactive(
 double ContactConstraint::mErrorAllowance = DART_ERROR_ALLOWANCE;
 double ContactConstraint::mErrorReductionParameter = DART_ERP;
 double ContactConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
+bool ContactConstraint::mMaxErrorReductionVelocityUserConfigured = false;
 double ContactConstraint::mConstraintForceMixing = DART_CFM;
 
 //==============================================================================
@@ -142,7 +143,8 @@ ContactConstraint::ContactConstraint(
     mIsFrictionOn(true),
     mAppliedImpulseIndex(dynamics::INVALID_INDEX),
     mIsBounceOn(false),
-    mActive(false)
+    mActive(false),
+    mEffectiveMaxErrorReductionVelocity(mMaxErrorReductionVelocity)
 {
   initialize(contactSurfaceParams);
 }
@@ -197,6 +199,7 @@ void ContactConstraint::resetState(collision::Contact& contact, double timeStep)
   mAppliedImpulseIndex = dynamics::INVALID_INDEX;
   mIsBounceOn = false;
   mActive = false;
+  mEffectiveMaxErrorReductionVelocity = mMaxErrorReductionVelocity;
 }
 
 //==============================================================================
@@ -477,9 +480,12 @@ void ContactConstraint::setMaxErrorReductionVelocity(double erv)
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
     mMaxErrorReductionVelocity = 0.0;
+    mMaxErrorReductionVelocityUserConfigured = true;
+    return;
   }
 
   mMaxErrorReductionVelocity = erv;
+  mMaxErrorReductionVelocityUserConfigured = true;
 }
 
 //==============================================================================
@@ -549,8 +555,8 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     }
 
     errorReductionVelocity *= mErrorReductionParameter * info->invTimeStep;
-    if (errorReductionVelocity > mMaxErrorReductionVelocity) {
-      errorReductionVelocity = mMaxErrorReductionVelocity;
+    if (errorReductionVelocity > mEffectiveMaxErrorReductionVelocity) {
+      errorReductionVelocity = mEffectiveMaxErrorReductionVelocity;
     }
     return errorReductionVelocity;
   };

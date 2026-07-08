@@ -78,6 +78,7 @@ using dart::collision::CollisionDetectorPtr;
 
 constexpr double kFinalSleepLinearRatio = 0.1;
 constexpr double kFinalSleepAngularRatio = 0.2;
+constexpr std::size_t kDenseContactJitterMinIslandSize = 3;
 
 std::string toCollisionDetectorKey(CollisionDetectorType type)
 {
@@ -429,6 +430,11 @@ void World::reserveMemoryManagerForSimulationShape()
   mDisturbedThisStepScratch.reserve(numSkeletons);
   mDeepInitialContactSkeletonScratch.reserve(numSkeletons);
   mSupportedInitialContactSkeletonScratch.reserve(numSkeletons);
+  mIslandHasMobileSkeletonScratch.reserve(numSkeletons);
+  mIslandAllFinalSleepCandidateReadyScratch.reserve(numSkeletons);
+  mIslandAllBelowWakeScratch.reserve(numSkeletons);
+  mIslandMobileSkeletonCountScratch.reserve(numSkeletons);
+  mIslandDwellWakeReadyCountScratch.reserve(numSkeletons);
 }
 
 //==============================================================================
@@ -1703,6 +1709,18 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
     }
   }
 
+  std::size_t islandCount = 0;
+  for (const auto& skel : mSkeletons) {
+    if (!skel->isMobile())
+      continue;
+
+    const int island = skel->getIslandIndex();
+    if (island >= 0) {
+      islandCount = std::max(
+          islandCount, static_cast<std::size_t>(island) + std::size_t{1});
+    }
+  }
+
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
     auto& skel = mSkeletons[i];
     if (!skel->isMobile())
@@ -1768,11 +1786,88 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
           dwell = std::max(dwell, mDeactivationOptions.mTimeUntilSleep);
         }
         skel->setRestDwellTime(dwell);
-        if (dwell >= mDeactivationOptions.mTimeUntilSleep && finalQuiet) {
+        if (!islanded && dwell >= mDeactivationOptions.mTimeUntilSleep
+            && finalQuiet) {
           skel->setSleepCandidate(true);
         }
       } else {
         skel->setRestDwellTime(0.0);
+      }
+    }
+  }
+
+  if (islandCount > 0u) {
+    auto& islandHasMobileSkeleton = mIslandHasMobileSkeletonScratch;
+    auto& islandAllFinalSleepCandidateReady
+        = mIslandAllFinalSleepCandidateReadyScratch;
+    auto& islandAllBelowWake = mIslandAllBelowWakeScratch;
+    auto& islandMobileSkeletonCount = mIslandMobileSkeletonCountScratch;
+    auto& islandDwellWakeReadyCount = mIslandDwellWakeReadyCountScratch;
+    islandHasMobileSkeleton.assign(islandCount, 0);
+    islandAllFinalSleepCandidateReady.assign(islandCount, 1);
+    islandAllBelowWake.assign(islandCount, 1);
+    islandMobileSkeletonCount.assign(islandCount, 0u);
+    islandDwellWakeReadyCount.assign(islandCount, 0u);
+
+    for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+      const auto& skel = mSkeletons[i];
+      if (!skel->isMobile())
+        continue;
+
+      const int island = skel->getIslandIndex();
+      if (island < 0)
+        continue;
+
+      const auto islandIndex = static_cast<std::size_t>(island);
+      if (islandIndex >= islandCount)
+        continue;
+
+      const bool disturbed
+          = (i < disturbedThisStep.size() && disturbedThisStep[i])
+            || skel->hasExternalDisturbance();
+      const bool belowWake = !disturbed
+                             && skel->getSmoothedLinearSpeed() < linWake
+                             && skel->getSmoothedAngularSpeed() < angWake;
+      const bool finalReady
+          = !disturbed
+            && (skel->isSleepCandidate()
+                || (skel->getRestDwellTime()
+                        >= mDeactivationOptions.mTimeUntilSleep
+                    && skel->getSmoothedLinearSpeed() < finalSleepLinearSpeed
+                    && skel->getSmoothedAngularSpeed()
+                           < finalSleepAngularSpeed));
+      islandHasMobileSkeleton[islandIndex] = 1;
+      islandAllFinalSleepCandidateReady[islandIndex]
+          = islandAllFinalSleepCandidateReady[islandIndex] && finalReady;
+      islandAllBelowWake[islandIndex]
+          = islandAllBelowWake[islandIndex] && belowWake;
+      ++islandMobileSkeletonCount[islandIndex];
+      if (belowWake
+          && skel->getRestDwellTime() >= mDeactivationOptions.mTimeUntilSleep) {
+        ++islandDwellWakeReadyCount[islandIndex];
+      }
+    }
+
+    for (const auto& skel : mSkeletons) {
+      if (!skel->isMobile())
+        continue;
+
+      const int island = skel->getIslandIndex();
+      if (island < 0)
+        continue;
+
+      const auto islandIndex = static_cast<std::size_t>(island);
+      if (islandIndex >= islandCount || !islandHasMobileSkeleton[islandIndex])
+        continue;
+
+      const bool finalReady = islandAllFinalSleepCandidateReady[islandIndex];
+      const bool denseContactJitterReady
+          = islandMobileSkeletonCount[islandIndex]
+                >= kDenseContactJitterMinIslandSize
+            && islandAllBelowWake[islandIndex]
+            && islandDwellWakeReadyCount[islandIndex] > 0u;
+      if (finalReady || denseContactJitterReady) {
+        skel->setSleepCandidate(true);
       }
     }
   }
