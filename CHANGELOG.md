@@ -64,6 +64,11 @@
     can capture durable lessons from completed DART 6.20 work through
     `/dart-retro` or `$dart-retro`.
 
+  * Clarify release-branch AI workflow backports: compare workflow inventories
+    before cherry-picking, add release-tailored capabilities only when the
+    requested outcome explicitly requires them, and regenerate adapters through
+    the sync task.
+
   * Add a "surface your unknowns" discipline to the release-branch AI
     principles (`docs/ai/principles.md`): before a non-trivial fix, convert
     consequential unknowns into knowns — a reproduction, a focused read of the
