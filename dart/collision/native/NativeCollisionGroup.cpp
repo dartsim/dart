@@ -65,6 +65,8 @@ void NativeCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 
   const std::size_t id = assignId(nativeObject);
   mObjectToId[object] = id;
+  if (id >= mIdToObject.size())
+    mIdToObject.resize(id + 1u, nullptr);
   mIdToObject[id] = nativeObject;
   mCollisionObjects.push_back(object);
   mBroadPhase->add(id, nativeObject->getNativeAabb());
@@ -89,7 +91,8 @@ void NativeCollisionGroup::removeCollisionObjectFromEngine(
   const std::size_t id = search->second;
   mBroadPhase->remove(id);
   mObjectToId.erase(search);
-  mIdToObject.erase(id);
+  if (id < mIdToObject.size())
+    mIdToObject[id] = nullptr;
   mFreeIds.push_back(id);
   mCollisionObjects.erase(
       std::remove(mCollisionObjects.begin(), mCollisionObjects.end(), object),

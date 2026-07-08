@@ -82,7 +82,7 @@ private:
 
   std::unique_ptr<native::BroadPhase> mBroadPhase;
   std::vector<CollisionObject*> mCollisionObjects;
-  std::unordered_map<std::size_t, NativeCollisionObject*> mIdToObject;
+  std::vector<NativeCollisionObject*> mIdToObject;
   std::unordered_map<CollisionObject*, std::size_t> mObjectToId;
   std::vector<std::size_t> mFreeIds;
   std::size_t mNextId{0u};
