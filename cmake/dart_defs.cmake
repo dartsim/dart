@@ -288,10 +288,7 @@ function(dart_configure_msvc_runtime_library)
   endif()
 
   set(_dart_msvc_runtime_preserved OFF)
-  if(
-    DEFINED CMAKE_MSVC_RUNTIME_LIBRARY
-    AND NOT CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL ""
-  )
+  if(DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
     set(_dart_msvc_runtime_library "${CMAKE_MSVC_RUNTIME_LIBRARY}")
     set(_dart_msvc_runtime_preserved ON)
   else()
@@ -317,21 +314,32 @@ function(dart_configure_msvc_runtime_library)
       PROPERTY
         STRINGS
           "MultiThreadedDLL"
+          ""
           "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
           "MultiThreaded$<$<CONFIG:Debug>:Debug>"
     )
   endif()
 
-  _dart_msvc_runtime_flag_fallback_needed(_dart_msvc_runtime_fallback_needed)
-  if(_dart_msvc_runtime_fallback_needed)
-    _dart_apply_msvc_runtime_flag_fallback("${_dart_msvc_runtime_library}")
+  set(_dart_msvc_runtime_fallback_needed OFF)
+  if(
+    NOT _dart_msvc_runtime_preserved
+    OR NOT _dart_msvc_runtime_library STREQUAL ""
+  )
+    _dart_msvc_runtime_flag_fallback_needed(_dart_msvc_runtime_fallback_needed)
+    if(_dart_msvc_runtime_fallback_needed)
+      _dart_apply_msvc_runtime_flag_fallback("${_dart_msvc_runtime_library}")
+    endif()
   endif()
 
   if(_dart_msvc_runtime_preserved)
-    message(
-      STATUS
-      "MSVC runtime library: ${_dart_msvc_runtime_library} (preserved from caller)"
-    )
+    if(_dart_msvc_runtime_library STREQUAL "")
+      message(STATUS "MSVC runtime library: <empty> (preserved from caller)")
+    else()
+      message(
+        STATUS
+        "MSVC runtime library: ${_dart_msvc_runtime_library} (preserved from caller)"
+      )
+    endif()
   elseif(DART_MSVC_FORCE_RELEASE_RUNTIME)
     message(
       STATUS
