@@ -12,7 +12,7 @@ DART AI work can split into two roles when the task is large enough:
   The orchestrator reads the north star, the plan dashboard, and relevant owner
   docs; turns roadmap intent into bounded work packets; and reviews executor
   output against acceptance evidence. Large, team-scale, or explicitly
-  autonomous release-branch work enters through `dart-new-team-task`, which
+  autonomous release-branch work enters through `dart-ultrawork`, which
   uses `docs/dev_tasks/<task>/` as the project home and starts from either a
   provided brief or one up-front decision interview.
 - **Executor** - owns implementation of one packet at a time. The executor

@@ -1,8 +1,28 @@
 ---
-description: kick off a large or autonomous DART task with project-home docs, an optional decision interview, and orchestrated execution
-argument-hint: "<TASK/CONTEXT> [mode=interview|brief|resume] [interview=skip]"
-agent: build
+name: dart-ultrawork
+description: "DART Ultrawork: kick off a large or autonomous DART task with project-home docs, an optional decision interview, and orchestrated execution"
 ---
+<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
+<!-- Source: .claude/commands/dart-ultrawork.md -->
+<!-- Sync script: scripts/sync_ai_commands.py -->
+<!-- Run `pixi run sync-ai-commands` to update -->
+
+# dart-ultrawork
+
+Use this skill in Codex to run the DART `dart-ultrawork` workflow. The editable
+workflow source currently lives in `.claude/commands/`, and this generated
+Codex skill is a first-class Codex entrypoint.
+
+## Invocation
+
+- Claude Code/OpenCode: `/dart-ultrawork <arguments>`
+- Codex: `$dart-ultrawork <arguments>`
+
+Treat the text after the skill name as `$ARGUMENTS`. When the workflow
+references `$1`, `$2`, etc., map those to the positional values supplied by the
+user.
+
+## Command Body
 
 Start a team-scale or autonomous DART task: $ARGUMENTS
 
@@ -147,9 +167,8 @@ the real scope materially different stops and reports back.
 
 ## Kickoff Prompt Template
 
-Canonical prompt for starting this workflow from a fresh orchestrator
-session. `TASK`, the context block, and `Done when` are per-task; reuse the
-`Logistics` block verbatim.
+Canonical fresh-session prompt. `TASK`, context, and `Done when` are per-task;
+reuse the `Logistics` block verbatim.
 
 ```text
 TASK: <one-sentence objective>
@@ -162,7 +181,7 @@ Done when:
 - <verifiable outcome>
 
 Logistics:
-- Run /dart-new-team-task with this task. You are the orchestrator,
+- Run /dart-ultrawork with this task. You are the orchestrator,
   supervisor, and steerer: decompose, delegate, review, and keep evidence
   honest.
 - Interview first: ask the maintainer only the consequential decisions that
@@ -178,7 +197,9 @@ Logistics:
   DONE WHEN / EVIDENCE. Use team mode only when available and file ownership
   can stay disjoint. Keep authoring and review separate. Use the oracle for
   critical decisions, hard failures, and research synthesis.
-- Set the session goal (/goal) to the Done-when contract when available.
+- Set goal mode to the Done-when contract when available; use Claude
+  `/goal Run /dart-ultrawork with: <real prompt>` or Codex
+  `/goal $dart-ultrawork <real prompt>`.
 - Read docs/ai/principles.md, docs/ai/north-star.md,
   docs/ai/orchestration.md, and docs/ai/sessions.md before starting.
 - Verification first: task-specific gates from docs/ai/verification.md,

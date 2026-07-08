@@ -68,10 +68,10 @@
 
   * Add release-branch AI-infra buckets for living plans, durable design
     rationale, theory/reference background, and reusable documentation assets,
-    with `dart-new-team-task` routed through the DART 6.20 plan dashboard and
+    with `dart-ultrawork` routed through the DART 6.20 plan dashboard and
     work-packet contract.
 
-  * Expand `dart-new-team-task` into the autonomous-project kickoff path for
+  * Expand `dart-ultrawork` into the autonomous-project kickoff path for
     large or multi-session DART 6 work, with `docs/dev_tasks/<task>/` as the
     project home, one up-front interview or provided brief, session start/end
     rules, explicit acceptance evidence, and release-branch maintenance

@@ -40,7 +40,7 @@ For documentation placement, use
 [`docs/information-architecture.md`](../information-architecture.md).
 For living roadmap state, use [`docs/plans/dashboard.md`](../plans/dashboard.md).
 
-Use `$dart-new-team-task` in Codex or `/dart-new-team-task` in
+Use `$dart-ultrawork` in Codex or `/dart-ultrawork` in
 Claude/OpenCode when DART 6 work should run as an autonomous release-branch
 project from either a provided brief or one up-front decision interview. The
 workflow keeps `docs/dev_tasks/<task>/` as the project home and records

@@ -58,7 +58,7 @@ If `pixi` is unavailable, install it from [https://pixi.sh](https://pixi.sh) and
 Release-branch AI workflow guidance lives in `docs/ai/README.md`,
 `docs/ai/principles.md`, `docs/ai/terminology.md`,
 `docs/ai/orchestration.md`, and `docs/ai/workflows.md`.
-Use `/dart-new-team-task` or `$dart-new-team-task` for large, multi-session, or
+Use `/dart-ultrawork` or `$dart-ultrawork` for large, multi-session, or
 explicitly autonomous DART 6 work from a brief or one up-front interview; it
 uses `docs/dev_tasks/<task>/` as the project home.
 

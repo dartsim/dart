@@ -14,7 +14,7 @@ Recommended files:
 - `HANDOFF.md`: optional transfer note when handing work to another agent or
   worktree.
 
-For autonomous projects started with `dart-new-team-task`, this same folder is
+For autonomous projects started with `dart-ultrawork`, this same folder is
 the project home. Keep `README.md` as the overview and plan: north star, final
 deliverable, acceptance criteria, scope, non-goals, constraints, risks, current
 milestone, blockers, next actions, and gates. Keep `RESUME.md` as the handoff:
