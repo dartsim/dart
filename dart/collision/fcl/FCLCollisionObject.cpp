@@ -208,7 +208,6 @@ void FCLCollisionObject::updateEngineData()
           double y = 0.0;
           double z = 0.0;
           readLocalVertex(i, x, y, z);
-          mesh->mVertices[i].Set(x, y, z);
           bvhModel->replaceVertex(dart::collision::fcl::Vector3(x, y, z));
         }
         bvhModel->endReplaceModel();
