@@ -1,6 +1,6 @@
 # HANDOFF — DART 6.20 dependency minimization (native collision port)
 
-> Session handoff, 2026-07-06. Read [README.md](README.md) (overall SSOT),
+> Session handoff, refreshed 2026-07-08. Read [README.md](README.md) (overall SSOT),
 > then [03-native-collision-port-scoping.md](03-native-collision-port-scoping.md)
 > (plan of record for the remaining work), then
 > [07-phase2-adapter-scoping.md](07-phase2-adapter-scoping.md) (phase-2 execution
@@ -25,7 +25,7 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
 | --- | --- | --- |
 | 0 | Baseline evidence packet (incumbent A/B envelope + default-flip verdict) | ✅ merged (#3271) |
 | 1 | Native math core (aabb/gjk/mpr/box_box/sphere_sphere/shapes/span shim) internal-only | ✅ merged (#3281) |
-| 2 | DART 6 detector adapter over the native core (bridge, sliced P1–P9) | 🔄 **in progress** — see §4 |
+| 2 | DART 6 detector adapter over the native core (bridge, sliced P1–P9 + P10 coverage) | 🔄 **in progress** — see §4 |
 | 3 | Capability parity (distance→FCL, raycast→Bullet, CCD, manifolds, voxel) | ⬜ not started |
 | 4 | Evidence-driven performance optimization (broadphase, SIMD, manifold reuse) | ⬜ not started |
 | 5 | Bullet/ODE/FCL facade decision (must keep gz subclassing) | ⬜ not started |
@@ -40,7 +40,7 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
 - **#3281** phase-1 native math core → `dart/collision/native/` (internal-only,
   FCL default). Includes `06-phase1-port-packet.md`.
 - **#3298** fix: `maxNumContacts == 0` short-circuit in native sphere-sphere
-  (release-6.20). Its main-branch dual is **#3283 (still OPEN — see §5)**.
+  (release-6.20). Its main-branch dual **#3283** is also merged.
 - **#3302** phase-2 execution plan (`07-phase2-adapter-scoping.md`) + this RESUME.
 - **#3303** phase-2 **P1**: native BruteForce broadphase (internal-only).
 - **#3306** phase-2 **P2**: narrowphase dispatcher (sphere/box only) →
@@ -48,8 +48,16 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
 - **#3318** phase-2 **P3a**: adapter skeleton + sphere/box conversion,
   intentionally unregistered. The `"native"` factory key still does not exist
   until P3b.
+- **#3319** phase-2 **P3b**: bridge translation, `"native"` factory
+  registration, `sphere_box`, and native-vs-fcl/dart parity.
+- **#3321** phase-2 **P4**: capsule primitive pairs.
+- **#3322** phase-2 **P5**: convex foundation and capsule-capsule.
+- **#3324** phase-2 **P6**: cylinder collision pairs.
+- **#3325** phase-2 **P7**: mesh collision pairs.
+- **#3343** phase-2 **P8/P9**: distance module and plane primitive/convex
+  coverage.
 
-`origin/release-6.20` tip at this refresh: `634c20d1b9a1` (moves as the
+`origin/release-6.20` tip at this refresh: `c1deaca67b8` (moves as the
 maintainer merges; **always re-fetch before branching/capturing**).
 
 ## 4. Phase 2 — the active work (plan: `07`, PR slices P1–P9 + P10)
@@ -64,27 +72,28 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 | **P1** | BroadPhase base + BruteForce (pure engine) | ✅ **merged (#3303)** |
 | **P2** | Narrowphase dispatcher, sphere/box only (bespoke §2.1 trim) | ✅ **merged (#3306)** |
 | **P3a** | Adapter skeleton + `NativeShapeConversion`(sphere,box), intentionally **unregistered**; `collide()` is a documented **stub** | ✅ **merged (#3318)** |
-| **P3b** | Bridge `collide()` translation + `"native"` factory registration + `sphere_box` collider + normal calibration (R1) + parity vs **fcl and dart** | 🔄 **open (#3319)** |
-| **P4** | `capsule_sphere`, `capsule_box` (no-span primitives) | 🔄 **open (#3321)** |
-| **P5** | `convex_convex` (keystone) + `capsule_capsule` (first span pair) | 🔄 **open (#3322)** |
-| **P6** | `cylinder_collision` (needs convex_convex) | 🔄 **open (#3324)** |
-| **P7** | `mesh_mesh` (needs convex_convex; largest file) | 🔄 **open (#3325)** |
-| **P8** | `distance` module (engine-only; needs span shim) | local combined with P9; unpublished |
-| **P9** | `plane_sphere` (needs `distance`) → completes primitive+convex+mesh+plane | local combined with P8; unpublished |
-| **P10** | (optional) mixed-scene fcl/dart/native parity integration test | after P9 |
+| **P3b** | Bridge `collide()` translation + `"native"` factory registration + `sphere_box` collider + normal calibration (R1) + parity vs **fcl and dart** | ✅ **merged (#3319)** |
+| **P4** | `capsule_sphere`, `capsule_box` (no-span primitives) | ✅ **merged (#3321)** |
+| **P5** | `convex_convex` (keystone) + `capsule_capsule` (first span pair) | ✅ **merged (#3322)** |
+| **P6** | `cylinder_collision` (needs convex_convex) | ✅ **merged (#3324)** |
+| **P7** | `mesh_mesh` (needs convex_convex; largest file) | ✅ **merged (#3325)** |
+| **P8** | `distance` module (engine-only; needs span shim) | ✅ **merged (#3343)**, combined with P9 |
+| **P9** | `plane_sphere` (needs `distance`) → completes primitive+convex+mesh+plane | ✅ **merged (#3343)**, combined with P8 |
+| **P10** | mixed-scene fcl/dart/native parity integration test | 🔄 active on `feature/native-mixed-scene-parity` |
 
-### Exact next step: execute P3b
+### Exact next step: execute P10
 
-1. Continue with **#3319** (`feature/native-detector-bridge`), after merging
-   the latest `origin/release-6.20` into the PR branch before any push.
-2. Implement/verify per `07` **§1.5** (bridge `collide()` translation,
-   pair-only result mode, global/per-pair caps, normal orientation) and
-   **§1.6** (delayed `"native"` factory registration; **no**
-   `CollisionDetectorType::Native` enum), and the **P3b row in §3**.
-3. Proof gates specific to P3b: `EXPECT_TRUE(getFactory()->canCreate("native"))`
-   after the bridge produces real contacts; SKEL `"native"` resolves to the
-   new detector; parity vs both **fcl** and **dart** on sphere-sphere, box-box,
-   and sphere-box.
+1. Continue with the **P10** branch `feature/native-mixed-scene-parity`, based
+   on the current `origin/release-6.20`.
+2. Keep it as one small PR to avoid unnecessary CI overhead: add a native adapter
+   boundary test that runs one deterministic mixed primitive scene through
+   `fcl`, legacy `dart`, and `native`, then compares the unordered colliding
+   frame-pair set. FCL does not support DART 6 `CapsuleShape`, so the
+   three-detector scene is limited to the common primitive subset; capsule
+   coverage remains in the focused native/DART pair tests.
+3. After P10 merges, phase 2 is functionally complete and the next executable
+   lane is **phase 3** capability parity (distance detector wiring, raycast,
+   CCD, manifolds, voxel/octree replacement).
 4. Gates for **every** phase-2 PR (see `07` §3 — note the corrected commands):
    Release build + **explicit Debug build** (`pixi run build` is Release-only);
    **run** the tests with `ctest --test-dir build/default/cpp/Release -R
@@ -96,19 +105,14 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 
 ## 5. Open PRs / loose ends
 
-- **#3319 (P3b bridge)** — OPEN; next phase-2 merge target after #3318.
-- **#3321 (P4 capsule primitives)** — OPEN; stacked after #3319.
-- **#3322 (P5 convex foundation)** — OPEN; stacked after #3321.
-- **#3324 (P6 cylinder collision)** — OPEN; stacked after #3322.
-- **#3325 (P7 mesh collision)** — OPEN; stacked after #3324; review fixes for
-  mesh dispatch and mesh-mesh contracts have been pushed.
-- **P8/P9 distance + plane work** — kept as one local unpublished branch to
-  avoid another CI wave until the stack is ready for it.
-- **#3283 (main sphere-sphere `enableContact` fix)** — OPEN; the **main-branch
-  dual** of the merged release-6.20 #3298. It was **reverted to the squared
-  overlap predicate** (commit `afb1ea58959`) after review — see the lesson in
-  §7. It still needs to merge so `main` and `release-6.20` stay consistent for
-  the eventual phase-6 diff. Re-review was requested.
+- **P10 mixed-scene detector parity** — active on
+  `feature/native-mixed-scene-parity` as one small PR-sized slice to minimize CI
+  overhead.
+- **#3283 (main sphere-sphere `enableContact` fix)** — MERGED; main and
+  `release-6.20` now agree on the squared binary predicate for the eventual
+  phase-6 diff.
+- **#3348** is the only current open `release-6.20` PR seen during this refresh,
+  and it belongs to the separate MSVC/toolchain policy lane.
 
 ## 6. Load-bearing invariants (do not violate)
 
@@ -160,12 +164,10 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 
 ## 8. Worktrees at handoff (cleanup)
 
-- `.claude/worktrees/phase2-p1` — P1 (#3303, merged), removable after confirming
-  no unpushed local-only evidence is needed.
-- `.claude/worktrees/phase2-p2` — P2 (**merged**), **removable now**; holds the
-  untracked `08-p2-dispatcher-packet.md` working spec (disposable — the
-  dispatcher approach is captured in `07` §2.1) and a symlinked `.pixi` env.
-- `.claude/worktrees/dart7-sphere-fix` — #3283 (main), keep until it merges.
+- `.claude/worktrees/phase2-p2` — P2 merged; retained only because it has
+  untracked local notes.
+- `.claude/worktrees/phase2-p4` — dirty local performance-generalization work;
+  not part of this lane's next code slice.
 - `task_1_pr3239` — pre-existing, not this lane's.
 
 ## 9. Evidence artifacts (for phase 6)

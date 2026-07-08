@@ -1,36 +1,48 @@
 Installation
 ============
 
-To install the Python bindings for DART using the `dartpy` package from PyPI,
-you can use the following command:
+Quick install commands
+----------------------
+
+For the DART 6 Python bindings, use one of the package channels below:
 
 .. code-block:: bash
 
-   pip install dartpy -U
+   pixi add dartpy
+   # or
+   conda install -c conda-forge dartpy
+   # or
+   pip install --upgrade dartpy
 
-The following operating systems are currently supported:
+Supported PyPI wheel lanes
+--------------------------
 
-+----------------+--------+--------+--------+--------+--------+
-| Operating      | Python | Python | Python | Python | Python |
-| System         | 3.7    | 3.8    | 3.9    | 3.10   | 3.11   |
-+================+========+========+========+========+========+
-| Linux x86_64   |   O    |   O    |   O    |   O    |   O    |
-+----------------+--------+--------+--------+--------+--------+
-| Linux arm64    |   X    |   X    |   X    |   X    |   O    |
-+----------------+--------+--------+--------+--------+--------+
-| macOS x86_64   |   X    |   O    |   O    |   O    |   O    |
-+----------------+--------+--------+--------+--------+--------+
-| macOS arm64    |   X    |   O    |   X    |   O    |   O    |
-+----------------+--------+--------+--------+--------+--------+
-| Windows x86_64 |   X    |   O    |   O    |   O    |   O    |
-+----------------+--------+--------+--------+--------+--------+
-| Windows arm64  |   X    |   X    |   X    |   X    |   O    |
-+----------------+--------+--------+--------+--------+--------+
+The release branch's ``publish_dartpy.yml`` workflow builds these PyPI wheel
+lanes. Wheel versions are sourced from ``package.xml`` and are published from
+matching version tags.
 
-.. note::
+.. list-table::
+   :header-rows: 1
+   :widths: 35 65
 
-   This table may not be up-to-date. For the latest information on the
-   availability of the Python bindings for DART, please refer to the dartpy
-   package on PyPI: https://pypi.org/project/dartpy/. If you would like to use
-   dartpy on an unsupported OS or Python version, please let us know so we can
-   consider adding support.
+   * - Platform
+     - CPython wheels built by this branch
+   * - Linux x86_64
+     - 3.13 on regular wheel runs; 3.10, 3.11, 3.12, and 3.13 on release branch
+       and tag builds
+   * - macOS arm64
+     - 3.13 on regular wheel runs; 3.12 and 3.13 on release branch and tag
+       builds
+   * - Windows x86_64
+     - 3.13 on regular wheel runs; 3.12 and 3.13 on release branch and tag
+       builds
+   * - Other Python versions or platforms
+     - Build from source with Python 3.7 or newer, or use conda-forge/Pixi when
+       packages are available there
+
+Building from source
+--------------------
+
+The DART 6 ``setup.py`` package supports Python 3.7 or newer. Building the
+bindings locally requires a matching C++ toolchain, CMake, Ninja, and the DART
+dependencies used by the source checkout.

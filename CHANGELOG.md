@@ -44,6 +44,12 @@
 
 * Build
 
+  * Refresh the release-6.20 Read the Docs build, install, tutorial, and
+    migration pages so the stable website reads version metadata from
+    `package.xml`, points users to the DART 6 LTS package lanes, and documents
+    the branch-owned Pixi/CMake build and verification tasks:
+    [#3346](https://github.com/dartsim/dart/pull/3346)
+
   * Replace the dartpy wheel publishing path with Pixi-managed build,
     repair, verification, and smoke-test tasks, and retire the legacy DART 6
     Docker dev/wheel images.
@@ -59,6 +65,11 @@
   * Add a release-tailored documentation information architecture owner and
     route docs-update workflows through it so DART 6.20 agents promote durable
     task facts by lifecycle before retiring `docs/dev_tasks/` folders.
+
+  * Add release-branch AI-infra buckets for living plans, durable design
+    rationale, theory/reference background, and reusable documentation assets,
+    with `dart-new-team-task` routed through the DART 6.20 plan dashboard and
+    work-packet contract.
 
   * Add the release-branch `dart-retro` AI workflow so maintainers and agents
     can capture durable lessons from completed DART 6.20 work through
@@ -79,6 +90,11 @@
     builds use `sccache` or fall back to `ccache` by default, while retaining
     `DART_DISABLE_COMPILER_CACHE=ON` for uncached comparisons and cache-specific
     toolchain debugging.
+
+  * Keep Pixi DartPy and GUI demo configuration warning-free on CMake 4.3 by
+    using the Pixi `pybind11` package with modern Python discovery, updating
+    the FetchContent fallback to the same pybind11 release, and resolving GLVND
+    OpenGL libraries from the active Pixi prefix.
 
   * Add a root-cause discipline to the release-branch AI principles
     (`docs/ai/principles.md`): fix bugs at the root cause — reproduce the

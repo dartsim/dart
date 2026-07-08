@@ -262,6 +262,62 @@ void BM_NativeCylinderPlane(benchmark::State& state)
       Eigen::Isometry3d::Identity());
 }
 
+void BM_NativePlaneSphere(benchmark::State& state)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  SphereShape sphere(1.0);
+
+  runNarrowPhase(
+      state,
+      plane,
+      Eigen::Isometry3d::Identity(),
+      sphere,
+      translated(0.0, 0.0, 0.5));
+}
+
+void BM_NativePlaneBox(benchmark::State& state)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  BoxShape box(Eigen::Vector3d::Constant(1.0));
+
+  runNarrowPhase(
+      state,
+      plane,
+      Eigen::Isometry3d::Identity(),
+      box,
+      translated(0.0, 0.0, 0.5));
+}
+
+void BM_NativePlaneCapsule(benchmark::State& state)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  CapsuleShape capsule(0.5, 2.0);
+
+  runNarrowPhase(
+      state,
+      plane,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.0, 0.0, 1.3));
+}
+
+void BM_NativePlaneConvex(benchmark::State& state)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  ConvexShape convex(
+      {Eigen::Vector3d(-0.5, -0.5, -0.25),
+       Eigen::Vector3d(0.5, -0.5, -0.25),
+       Eigen::Vector3d(0.0, 0.5, -0.25),
+       Eigen::Vector3d(0.0, 0.0, 0.75)});
+
+  runNarrowPhase(
+      state,
+      plane,
+      Eigen::Isometry3d::Identity(),
+      convex,
+      Eigen::Isometry3d::Identity());
+}
+
 void BM_NativeConvexCylinder(benchmark::State& state)
 {
   ConvexShape convex(makeOctahedronVertices());
@@ -354,6 +410,10 @@ BENCHMARK(BM_NativeCylinderSphere)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeCylinderBox)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeCylinderCapsule)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeCylinderPlane)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativePlaneSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativePlaneBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativePlaneCapsule)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativePlaneConvex)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeConvexCylinder)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeMeshMesh)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeMeshSphere)->Unit(benchmark::kNanosecond);

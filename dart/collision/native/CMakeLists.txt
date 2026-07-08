@@ -30,7 +30,9 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/capsule_sphere.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/convex_convex.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/cylinder_collision.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/distance.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/mesh_mesh.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/plane_sphere.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_box.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_sphere.hpp
 )
@@ -57,7 +59,9 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/capsule_sphere.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/convex_convex.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/cylinder_collision.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/distance.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/mesh_mesh.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/plane_sphere.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_box.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_sphere.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/brute_force.cpp
