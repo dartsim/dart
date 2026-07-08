@@ -51,7 +51,7 @@ scenes, plus the gz gate.
 
 #### WP-PG.21 — Pair-keyed history lookup + generation-based pruning
 
-- Status: open
+- Status: evidence-gated (current-base map/pruning gate rejected)
 - Objective: replace the `FindPairInHist` linear scan with an
   unordered_map keyed on the canonical object pair, and replace
   O(history × contacts) pruning with a generation/stamp sweep.
@@ -67,6 +67,15 @@ scenes, plus the gz gate.
   A/B showed the pair-keyed map/pruning variant could add small-row overhead.
   Claim this packet only with a fresh profile and current-base matrix proving
   map/pruning work beats the span-only baseline.
+- Gate evidence (2026-07-07, current base
+  `origin/release-6.20` @ `b78a8b8cbe7`): the prior map/pruning variant kept
+  hashes identical but was mixed against the span-only base, so it is not a
+  shippable general-performance packet. `S2_ode` regressed 0.0572 -> 0.0644
+  ms/step (+12.6%), `S3_ode` improved 22.28 -> 19.74 ms/step (-11.4%),
+  and `S4_ode` regressed 0.208 -> 0.248 ms/step (+19.2%). Contact-container
+  ODE rows were also mixed: 60-object rows improved 13-14%, but 120-object
+  rows regressed 6.8-9.4%. Artifact:
+  `/tmp/wp_pg21_gate_20260707T130843`.
 
 #### WP-PG.22 — Version-gated ODE pose push
 

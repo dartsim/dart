@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
@@ -235,6 +236,11 @@ void BoxedLcpConstraintSolver::reserveConstrainedGroupScratch(
 //==============================================================================
 void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 {
+  const bool profileRecording
+      = dart::common::profile::isProfileRecordingEnabled();
+  DART_PROFILE_SCOPED_IF_N(
+      profileRecording, "BoxedLcpConstraintSolver::solveConstrainedGroup");
+
   // Build LCP terms by aggregating them from constraints
   const auto& constraints = group.mConstraints;
   const std::size_t numConstraints = constraints.size();
@@ -402,6 +408,9 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   };
 
   const auto constructLcpTerms = [&]() {
+    DART_PROFILE_SCOPED_IF_N(
+        profileRecording, "BoxedLcpConstraintSolver::constructLcpTerms");
+
     resetLcpTerms();
     ConstraintInfo constInfo;
     constInfo.invTimeStep = 1.0 / mTimeStep;
@@ -527,8 +536,13 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   // the primary solver failed.
   const bool earlyTermination = (mSecondaryBoxedLcpSolver != nullptr);
   DART_ASSERT(mBoxedLcpSolver);
-  bool success
-      = mBoxedLcpSolver->solve(n, a, x, b, 0, lo, hi, fIndex, earlyTermination);
+  bool success = false;
+  {
+    DART_PROFILE_SCOPED_IF_N(
+        profileRecording, "BoxedLcpConstraintSolver::primarySolve");
+    success = mBoxedLcpSolver->solve(
+        n, a, x, b, 0, lo, hi, fIndex, earlyTermination);
+  }
 
   const auto hasNaN = [](const double* values, std::size_t size) {
     for (std::size_t i = 0; i < size; ++i) {
@@ -547,8 +561,12 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   bool fallbackRan = false;
   if (!success && mSecondaryBoxedLcpSolver) {
     constructLcpTerms();
-    fallbackSuccess
-        = mSecondaryBoxedLcpSolver->solve(n, a, x, b, 0, lo, hi, fIndex, false);
+    {
+      DART_PROFILE_SCOPED_IF_N(
+          profileRecording, "BoxedLcpConstraintSolver::fallbackSolve");
+      fallbackSuccess = mSecondaryBoxedLcpSolver->solve(
+          n, a, x, b, 0, lo, hi, fIndex, false);
+    }
     fallbackRan = true;
   }
 
@@ -600,17 +618,22 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   //  std::cout << std::endl;
 
   // Apply constraint impulses
-  if (useDirectSingleFreeBody) {
-    for (std::size_t i = 0; i < numConstraints; ++i) {
-      inlineContactPtrs[i]->applyImpulse(x + constraintOffsets[i]);
-    }
+  {
+    DART_PROFILE_SCOPED_IF_N(
+        profileRecording, "BoxedLcpConstraintSolver::applyImpulses");
 
-    directSkeleton->setImpulseApplied(true);
-  } else {
-    for (std::size_t i = 0; i < numConstraints; ++i) {
-      ConstraintBase* constraint = constraintPtrs[i];
-      constraint->applyImpulse(x + constraintOffsets[i]);
-      constraint->excite();
+    if (useDirectSingleFreeBody) {
+      for (std::size_t i = 0; i < numConstraints; ++i) {
+        inlineContactPtrs[i]->applyImpulse(x + constraintOffsets[i]);
+      }
+
+      directSkeleton->setImpulseApplied(true);
+    } else {
+      for (std::size_t i = 0; i < numConstraints; ++i) {
+        ConstraintBase* constraint = constraintPtrs[i];
+        constraint->applyImpulse(x + constraintOffsets[i]);
+        constraint->excite();
+      }
     }
   }
 }

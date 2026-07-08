@@ -305,6 +305,9 @@ protected:
   /// Build constrained groupsContact
   void buildConstrainedGroups();
 
+  /// Record profiler counters for the currently built constrained groups.
+  void recordConstrainedGroupProfileCounters() const;
+
   /// Solve constrained groups
   void solveConstrainedGroups();
 

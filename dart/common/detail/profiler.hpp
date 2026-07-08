@@ -68,6 +68,20 @@ public:
 
   void markFrame();
 
+  /// Enable or disable runtime recording for conditional instrumentation.
+  /// Returns the previous state.
+  bool setRecordingEnabled(bool enabled) noexcept;
+
+  /// Return whether conditional instrumentation should record samples.
+  [[nodiscard]] bool isRecordingEnabled() const noexcept;
+
+  /// Record an integer counter sample in the current thread's profiler record.
+  void recordCounter(
+      std::string_view label,
+      std::string_view file,
+      int line,
+      std::uint64_t value);
+
   /// Dump a summary suitable for quick textual review (hotspots + per-thread
   /// tree).
   void printSummary(std::ostream& os = std::cout);
@@ -80,6 +94,7 @@ public:
 
 private:
   struct ProfileNode;
+  struct CounterNode;
   struct ActiveScope;
   struct ThreadRecord;
   struct Flattened;
@@ -115,7 +130,13 @@ private:
       std::string_view label,
       std::string_view file,
       int line);
+  CounterNode* findOrCreateCounter(
+      ThreadRecord& record,
+      std::string_view label,
+      std::string_view file,
+      int line);
   static std::string sourceText(const ProfileNode& node);
+  static std::string sourceText(const CounterNode& node);
   static std::string padRight(std::string_view text, std::size_t width);
   static bool useColor();
   static std::string colorize(std::string_view text, const char* code);
@@ -128,6 +149,7 @@ private:
 
   static std::uint64_t sumInclusiveChildren(const ProfileNode& node);
   static bool hasRecordedScopes(const ProfileNode& node);
+  static bool hasRecordedCounters(const ThreadRecord& record);
   static void clearNode(ProfileNode& node);
   static std::string formatDuration(std::uint64_t ns);
   static std::string formatPercent(double pct);
@@ -145,6 +167,8 @@ private:
       std::uint64_t threadTotalNs,
       double minPercent,
       std::size_t labelWidth) const;
+
+  void printThreadCounters(std::ostream& os, const ThreadRecord& record) const;
 
   void printNode(
       std::ostream& os,

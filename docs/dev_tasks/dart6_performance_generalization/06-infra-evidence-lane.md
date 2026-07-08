@@ -52,7 +52,7 @@ Everything the other lanes need to measure honestly and hand off cleanly.
 
 #### WP-PG.03 — DART 6 profiling documentation + Tracy config task
 
-- Status: claimed — `wp-pg-03-profiling-doc`
+- Status: done — #3337 (`wp-pg-03-profiling-doc`)
 - Objective: author `docs/onboarding/profiling.md` **for 6.20** (the main
   doc documents DART 7-only APIs): `dart/common/Profile.hpp` text backend
   (`DART_BUILD_PROFILE`, default ON in the pixi config),
@@ -65,6 +65,9 @@ Everything the other lanes need to measure honestly and hand off cleanly.
   profile backend build with the packaged DART 6.20 Tracy dependency.
 - Acceptance evidence: doc renders; commands verified end-to-end on a
   clean tree; `pixi run lint` (incl. toml/docs linters) green.
+- Completion evidence: merged as PR #3337 with `docs/onboarding/profiling.md`,
+  the profile-env `config-tracy` task, and the Tracy callstack compatibility
+  fix required by the packaged DART 6.20 dependency.
 - Dependencies: none.
 
 #### WP-PG.04 — Executor tooling decision (D4)

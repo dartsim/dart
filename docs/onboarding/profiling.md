@@ -50,13 +50,42 @@ void stepSomething()
 ```
 
 Use `DART_PROFILE_FRAME` once per simulation frame when frame counts matter.
+Use `DART_PROFILE_COUNTER_N` for integer census data that complements timing,
+such as island counts, row counts, or queue depths:
+
+```cpp
+DART_PROFILE_COUNTER_N("solver island rows", totalRows);
+```
+
+The text summary reports counter samples with sum, mean, min, max, and last
+values per thread. Counter labels should be fixed string literals so Tracy builds
+do not depend on temporary label storage.
+
+For instrumentation inside allocation-sensitive runtime paths, use the
+conditional macros and enable recording only from the profiling tool or command:
+
+```cpp
+const bool profileRecording
+    = dart::common::profile::isProfileRecordingEnabled();
+DART_PROFILE_SCOPED_IF_N(profileRecording, "solver stage");
+DART_PROFILE_COUNTER_IF_N(profileRecording, "solver island rows", totalRows);
+```
+
+`contact_benchmark --profile` enables this runtime recording flag around the
+measured run. Normal Release builds may still compile the profiler in, but
+conditional scopes and counters should stay off unless a tool explicitly calls
+`setProfileRecordingEnabled(true)`.
+
 For tools that need to control the text backend directly, use:
 
 ```cpp
+const bool previousRecording
+    = dart::common::profile::setProfileRecordingEnabled(true);
 dart::common::profile::resetProfile();
 dart::common::profile::markProfileFrame();
 dart::common::profile::printProfileSummary(std::cout);
 const auto text = dart::common::profile::getProfileSummaryText();
+dart::common::profile::setProfileRecordingEnabled(previousRecording);
 ```
 
 Keep scopes coarse enough to answer a packet question. If a scope is only
