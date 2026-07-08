@@ -16,12 +16,12 @@ current repository API shape without pinning an older release wheel.
 Getting Started
 ---------------
 
-To explore the bindings locally:
+To explore the bindings from a source checkout:
 
 .. code-block:: bash
 
-   pip install --pre dartpy
-   python - <<'PY'
+   pixi run build
+   PYTHONPATH=build/default/cpp/Release/python python - <<'PY'
    import dartpy as dart
    world = dart.World()
    print(world.gravity)

@@ -84,18 +84,18 @@ for current source-checkout examples; DART 6 C++ snippets remain on the
 
 The quick-start snippets above target the current `main` branch and DART 7 API.
 The tracked DART 7 wheel lane builds CPython 3.14 wheels on Linux, macOS, and
-Windows, while default package channels may still resolve stable DART 6
-artifacts. Use PyPI pre-release resolution for DART 7 packages, or use the
-source checkout path for the newest DART 7 surface.
+Windows, but PyPI currently serves the stable DART 6 line as the latest
+non-yanked `dartpy` package. Use the source checkout path for the DART 7 Python
+facade until a non-yanked DART 7 wheel is published.
 
 ### Python (Recommended)
 
-| Method                   | Command                               |
-| ------------------------ | ------------------------------------- |
-| **uv** (DART 7 PyPI)     | `uv add dartpy --prerelease allow`    |
-| **pip** (DART 7 PyPI)    | `pip install --pre dartpy`            |
-| **pixi** (DART 6 today)  | `pixi add dartpy`                     |
-| **conda** (DART 6 today) | `conda install -c conda-forge dartpy` |
+| Method                                  | Command                                                         |
+| --------------------------------------- | --------------------------------------------------------------- |
+| **source checkout** (DART 7 today)      | `pixi run build` from this repository                           |
+| **uv/pip** (DART 7 after wheel publish) | `uv add dartpy --prerelease allow` / `pip install --pre dartpy` |
+| **pixi** (DART 6 stable today)          | `pixi add dartpy`                                               |
+| **conda** (DART 6 stable today)         | `conda install -c conda-forge dartpy`                           |
 
 ### C++
 
@@ -110,14 +110,14 @@ source checkout path for the newest DART 7 surface.
 
 [All distributions →](https://repology.org/project/dart-sim/versions)
 
-### Current Package Smoke Checks
+### Current DART 7 Smoke Checks
 
 These snippets create a tiny model in code, so they do not depend on sample data
-files being present in the installed package. The Python snippet targets the
-DART 7 facade; if `dart.World` or `add_rigid_body` is missing, the environment
-resolved a stable DART 6 package and should use the stable documentation.
+files being present. The Python snippet targets a DART 7 source build; if
+`dart.World` or `add_rigid_body` is missing, the environment resolved a stable
+DART 6 package and should use the stable documentation.
 
-**Python package**
+**Python source build**
 
 ```python
 import dartpy as dart
