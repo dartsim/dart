@@ -36,6 +36,13 @@
 #include <dart/dynamics/detail/SoftBodyNodeAspect.hpp>
 
 namespace dart {
+
+namespace collision {
+
+class DARTCollisionObject;
+
+} // namespace collision
+
 namespace dynamics {
 
 /// SoftBodyNode represent a soft body that has one deformable skin
@@ -50,6 +57,7 @@ public:
   using Base = detail::SoftBodyNodeBase;
 
   friend class Skeleton;
+  friend class collision::DARTCollisionObject;
   friend class PointMass;
   friend class PointMassNotifier;
 
