@@ -112,6 +112,17 @@ TEST(PlaneCollision, BoxCapsuleAndConvexContacts)
   ASSERT_EQ(1u, capsuleResult.numContacts());
   EXPECT_NEAR(0.2, capsuleResult.getContact(0).depth, 1e-12);
 
+  PlaneShape negativePlane(-Eigen::Vector3d::UnitZ(), 0.0);
+  CollisionResult flippedCapsuleResult;
+  EXPECT_TRUE(collidePlaneCapsule(
+      negativePlane,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.0, 0.0, -1.3),
+      flippedCapsuleResult));
+  ASSERT_EQ(1u, flippedCapsuleResult.numContacts());
+  EXPECT_NEAR(0.2, flippedCapsuleResult.getContact(0).depth, 1e-12);
+
   CollisionResult deepCapsuleResult;
   EXPECT_TRUE(collidePlaneCapsule(
       plane,
@@ -250,4 +261,93 @@ TEST(PlaneCollision, BinaryChecksIgnoreExistingContacts)
       convexResult,
       option));
   EXPECT_EQ(1u, convexResult.numContacts());
+}
+
+TEST(PlaneCollision, RespectsContactBudgetAndSeparatedPairs)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  SphereShape sphere(1.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 1.0));
+  CapsuleShape capsule(0.5, 2.0);
+  ConvexShape convex(
+      {Eigen::Vector3d(-0.5, -0.5, -0.25),
+       Eigen::Vector3d(0.5, -0.5, -0.25),
+       Eigen::Vector3d(0.0, 0.5, -0.25),
+       Eigen::Vector3d(0.0, 0.0, 0.75)});
+
+  CollisionOption zeroBudget;
+  zeroBudget.maxNumContacts = 0;
+
+  CollisionResult sphereBudget;
+  EXPECT_FALSE(collidePlaneSphere(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      sphere,
+      translated(0.0, 0.0, 0.5),
+      sphereBudget,
+      zeroBudget));
+
+  CollisionResult boxBudget;
+  EXPECT_FALSE(collidePlaneBox(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      box,
+      translated(0.0, 0.0, 0.5),
+      boxBudget,
+      zeroBudget));
+
+  CollisionResult capsuleBudget;
+  EXPECT_FALSE(collidePlaneCapsule(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.0, 0.0, 1.3),
+      capsuleBudget,
+      zeroBudget));
+
+  CollisionResult convexBudget;
+  EXPECT_FALSE(collidePlaneConvex(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      convex,
+      Eigen::Isometry3d::Identity(),
+      convexBudget,
+      zeroBudget));
+
+  CollisionOption oneContact;
+  oneContact.maxNumContacts = 1;
+  CollisionResult fullResult;
+  fullResult.addContact(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ(), 0.0);
+  EXPECT_FALSE(collidePlaneSphere(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      sphere,
+      translated(0.0, 0.0, 0.5),
+      fullResult,
+      oneContact));
+  EXPECT_EQ(1u, fullResult.numContacts());
+
+  CollisionResult separatedBox;
+  EXPECT_FALSE(collidePlaneBox(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      box,
+      translated(0.0, 0.0, 2.0),
+      separatedBox));
+
+  CollisionResult separatedCapsule;
+  EXPECT_FALSE(collidePlaneCapsule(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.0, 0.0, 2.0),
+      separatedCapsule));
+
+  CollisionResult separatedConvex;
+  EXPECT_FALSE(collidePlaneConvex(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      convex,
+      translated(0.0, 0.0, 1.0),
+      separatedConvex));
 }

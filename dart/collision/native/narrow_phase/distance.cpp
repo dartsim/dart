@@ -1239,7 +1239,7 @@ double distanceSphereSdf(
       normal = grad_unit * sign;
 
       result.pointOnObject2 = center - grad_unit * field_distance;
-      result.pointOnObject1 = center + normal * radius;
+      result.pointOnObject1 = center - normal * radius;
     } else {
       result.pointOnObject2 = center;
       result.pointOnObject1 = center + normal * radius;
@@ -1336,7 +1336,7 @@ double distanceCapsuleSdf(
       normal = grad_unit * sign;
 
       result.pointOnObject2 = best_axis_point - grad_unit * best_field_distance;
-      result.pointOnObject1 = best_axis_point + normal * radius;
+      result.pointOnObject1 = best_axis_point - normal * radius;
     } else {
       result.pointOnObject2 = best_axis_point;
       result.pointOnObject1 = best_axis_point + normal * radius;

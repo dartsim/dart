@@ -1109,6 +1109,16 @@ TEST(NarrowPhaseDispatch, RoutesPlanePairsInBothOrders)
       capsulePlane));
   EXPECT_EQ(1u, capsulePlane.numContacts());
 
+  CollisionResult planeCapsule;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &plane,
+      Eigen::Isometry3d::Identity(),
+      &capsule,
+      translated(0.0, 0.0, 1.3),
+      CollisionOption(),
+      planeCapsule));
+  EXPECT_EQ(1u, planeCapsule.numContacts());
+
   CollisionResult convexPlane;
   EXPECT_TRUE(NarrowPhase::collide(
       &convex,
@@ -1118,6 +1128,16 @@ TEST(NarrowPhaseDispatch, RoutesPlanePairsInBothOrders)
       CollisionOption(),
       convexPlane));
   EXPECT_EQ(1u, convexPlane.numContacts());
+
+  CollisionResult planeConvex;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &plane,
+      Eigen::Isometry3d::Identity(),
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption(),
+      planeConvex));
+  EXPECT_EQ(1u, planeConvex.numContacts());
 }
 
 TEST(NarrowPhaseDispatch, PlanePairsBinaryCheckDoesNotAddContacts)
