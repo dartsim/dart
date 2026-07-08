@@ -24,6 +24,60 @@ needs design decisions, or has dependencies between steps. Follow
 A separate `TODO.md` is optional and should only be introduced with a checker or
 clear cleanup rule. Otherwise, status belongs in `README.md`.
 
+## Autonomous Project Sessions
+
+`dart-new-team-task` is the DART entrypoint for large, multi-session, team-scale,
+or explicitly autonomous work. It still uses `docs/dev_tasks/<task>/` as the
+project home for both DART 7 and DART 6 maintenance work; do not create a
+parallel project-home tree unless a task-specific owner doc requires it.
+
+For autonomous projects, the dev-task folder may add these sidecars:
+
+| File              | Purpose                                                                  |
+| ----------------- | ------------------------------------------------------------------------ |
+| `decisions.md`    | Dated decisions, alternatives considered, evidence, tradeoffs, revisit   |
+| `verification.md` | Checks, results, evidence, known gaps, and follow-up per chunk/milestone |
+| `progress-log.md` | Chronological record of meaningful work completed                        |
+
+Keep `README.md` as the combined overview and plan: north star, final
+deliverable, acceptance criteria, scope, non-goals, constraints, risks, current
+milestone, blockers, next actions, and gates. Keep `RESUME.md` as the handoff
+surface: current branch/worktree state, immediate next step, risks, recovery
+notes, and commands to verify reality.
+
+### Session Start
+
+At the start of every autonomous or multi-session continuation:
+
+1. Locate `docs/dev_tasks/<task>/` from the prompt, branch, active plan, or
+   current worktree. If none exists and the work needs one, create it before
+   implementation.
+2. Read `README.md`, `RESUME.md`, and the autonomous sidecars that exist.
+3. Inspect current repository state with `git status --short --branch` and any
+   branch, PR, or plan evidence named by the docs.
+4. If the docs are stale, add a current-reality note before acting on them.
+5. Identify the current milestone, next action, blockers, acceptance evidence,
+   and escalation risks.
+
+If existing relevant work lives outside the project home, first absorb or
+summarize it into the dev-task docs before extending it.
+
+### Session End
+
+Before pausing, handing off, or claiming a chunk complete:
+
+1. Update `README.md` with current status, blockers, risks, and next actions.
+2. Update `RESUME.md` with the exact next step, branch/worktree state, and
+   recovery commands for a fresh session.
+3. Update `decisions.md` if an assumption or decision changed.
+4. Update `verification.md` for checks run, results, evidence, known gaps, and
+   follow-up.
+5. Update `progress-log.md` for meaningful completed work when that sidecar is
+   present.
+
+Do not mark an autonomous project complete while acceptance criteria, required
+evidence, current docs, or dev-task cleanup are still missing.
+
 ## Shared Checkouts
 
 When more than one agent or human session works in the same clone, branch

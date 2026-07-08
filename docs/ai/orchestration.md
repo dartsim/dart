@@ -24,9 +24,11 @@ from public docs and `pixi run ...` commands without a specific AI tool.
   relevant design docs; turns roadmap intent into bounded work packets;
   keeps packet scope honest against the simplicity axiom; and reviews
   executor output against the packet's acceptance evidence before the work is
-  recorded as done. Team-scale tasks enter through `dart-new-team-task`,
-  which front-loads a decision interview and routes evidence-resolvable
-  uncertainties to spikes and research instead of questions. The
+  recorded as done. Team-scale and explicitly autonomous tasks enter through
+  `dart-new-team-task`, which uses `docs/dev_tasks/<task>/` as the project
+  home, front-loads a decision interview or provided brief, and routes
+  evidence-resolvable uncertainties to spikes and research instead of
+  questions. The
   orchestrator's strongest model also serves as the oracle: critical
   decisions, escalations executors cannot resolve, and research synthesis
   get its deepest reasoning, while routine implementation stays with
