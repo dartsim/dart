@@ -206,6 +206,54 @@ TEST(NativeDistance, ComputesPrimitiveDistances)
       1e-12);
 }
 
+TEST(NativeDistance, HandlesRotatedBoxOverlap)
+{
+  BoxShape bar(Eigen::Vector3d(5.0, 0.25, 0.25));
+
+  Eigen::Isometry3d rotated = Eigen::Isometry3d::Identity();
+  rotated.linear()
+      = Eigen::AngleAxisd(0.5 * std::acos(-1.0), Eigen::Vector3d::UnitZ())
+            .toRotationMatrix();
+
+  DistanceResult result;
+  EXPECT_LE(
+      distanceBoxBox(
+          bar,
+          Eigen::Isometry3d::Identity(),
+          bar,
+          rotated,
+          result,
+          DistanceOption::withUpperBound(0.0)),
+      0.0);
+  EXPECT_LE(result.distance, 0.0);
+  EXPECT_TRUE(result.normal.allFinite());
+}
+
+TEST(NativeDistance, ComputesExactCapsuleBoxAxisDistance)
+{
+  CapsuleShape capsule(0.25, 20.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  Eigen::Isometry3d capsuleTransform = translated(2.0, 2.0, 0.0);
+  capsuleTransform.linear()
+      = Eigen::AngleAxisd(0.5 * std::acos(-1.0), Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+
+  DistanceResult result;
+  EXPECT_NEAR(
+      0.75,
+      distanceCapsuleBox(
+          capsule,
+          capsuleTransform,
+          box,
+          Eigen::Isometry3d::Identity(),
+          result,
+          DistanceOption::withUpperBound(0.8)),
+      1e-12);
+  EXPECT_NEAR(1.75, result.pointOnObject1.y(), 1e-12);
+  EXPECT_NEAR(1.0, result.pointOnObject2.y(), 1e-12);
+}
+
 TEST(NativeDistance, ComputesPlaneShapeDistances)
 {
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);

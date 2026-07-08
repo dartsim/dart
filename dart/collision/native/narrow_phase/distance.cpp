@@ -31,10 +31,12 @@
  */
 
 #include <dart/collision/native/detail/span.hpp>
+#include <dart/collision/native/narrow_phase/box_box/sat.hpp>
 #include <dart/collision/native/narrow_phase/distance.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 
 #include <cmath>
@@ -48,6 +50,12 @@ struct SegmentClosestResult
   Eigen::Vector3d point1;
   Eigen::Vector3d point2;
   double distSq;
+};
+
+struct Segment
+{
+  Eigen::Vector3d start;
+  Eigen::Vector3d end;
 };
 
 struct SdfSdfCandidate
@@ -123,6 +131,148 @@ Eigen::Vector3d closestPointOnBox(
       std::clamp(point.x(), -halfExtents.x(), halfExtents.x()),
       std::clamp(point.y(), -halfExtents.y(), halfExtents.y()),
       std::clamp(point.z(), -halfExtents.z(), halfExtents.z()));
+}
+
+Eigen::Vector3d closestPointOnSegmentInBoxSpace(
+    const Eigen::Vector3d& segmentStart,
+    const Eigen::Vector3d& segmentEnd,
+    const Eigen::Vector3d& halfExtents,
+    Eigen::Vector3d& closestOnSegment)
+{
+  const Eigen::Vector3d segment = segmentEnd - segmentStart;
+  const double segmentLengthSq = segment.squaredNorm();
+
+  if (segmentLengthSq < 1e-10) {
+    closestOnSegment = segmentStart;
+    return closestPointOnBox(segmentStart, halfExtents);
+  }
+
+  double bestDistSq = std::numeric_limits<double>::max();
+  double bestInteriorMargin = -std::numeric_limits<double>::infinity();
+  Eigen::Vector3d bestOnBox = Eigen::Vector3d::Zero();
+  Eigen::Vector3d bestOnSegment = segmentStart;
+
+  auto computeInteriorMargin = [&](const Eigen::Vector3d& point) {
+    double margin = std::numeric_limits<double>::infinity();
+    for (int axis = 0; axis < 3; ++axis) {
+      const double axisMargin = halfExtents[axis] - std::abs(point[axis]);
+      if (axisMargin < 0.0) {
+        return -std::numeric_limits<double>::infinity();
+      }
+      margin = std::min(margin, axisMargin);
+    }
+    return margin;
+  };
+
+  auto testCandidate = [&](double t) {
+    const Eigen::Vector3d pointOnSegment = segmentStart + segment * t;
+    const Eigen::Vector3d pointOnBox
+        = closestPointOnBox(pointOnSegment, halfExtents);
+    const double distSq = (pointOnSegment - pointOnBox).squaredNorm();
+    const double interiorMargin = computeInteriorMargin(pointOnSegment);
+
+    if (distSq < bestDistSq - 1e-18
+        || (std::abs(distSq - bestDistSq) <= 1e-18
+            && interiorMargin > bestInteriorMargin)) {
+      bestDistSq = distSq;
+      bestInteriorMargin = interiorMargin;
+      bestOnBox = pointOnBox;
+      bestOnSegment = pointOnSegment;
+    }
+  };
+
+  std::array<double, 8> breakpoints{};
+  std::size_t numBreakpoints = 0;
+  breakpoints[numBreakpoints++] = 0.0;
+  breakpoints[numBreakpoints++] = 1.0;
+
+  constexpr double kAxisEps = 1e-12;
+  for (int axis = 0; axis < 3; ++axis) {
+    if (std::abs(segment[axis]) <= kAxisEps) {
+      continue;
+    }
+
+    for (const double face : {-halfExtents[axis], halfExtents[axis]}) {
+      const double t = (face - segmentStart[axis]) / segment[axis];
+      if (t > 0.0 && t < 1.0) {
+        breakpoints[numBreakpoints++] = t;
+      }
+    }
+  }
+
+  std::sort(breakpoints.begin(), breakpoints.begin() + numBreakpoints);
+
+  std::array<double, 8> uniqueBreakpoints{};
+  std::size_t numUniqueBreakpoints = 0;
+  for (std::size_t i = 0; i < numBreakpoints; ++i) {
+    if (numUniqueBreakpoints == 0
+        || std::abs(
+               breakpoints[i] - uniqueBreakpoints[numUniqueBreakpoints - 1])
+               > kAxisEps) {
+      uniqueBreakpoints[numUniqueBreakpoints++] = breakpoints[i];
+      testCandidate(breakpoints[i]);
+    }
+  }
+
+  for (std::size_t i = 0; i + 1 < numUniqueBreakpoints; ++i) {
+    const double lo = uniqueBreakpoints[i];
+    const double hi = uniqueBreakpoints[i + 1];
+    if (hi - lo <= kAxisEps) {
+      continue;
+    }
+
+    const double mid = 0.5 * (lo + hi);
+    double numerator = 0.0;
+    double denominator = 0.0;
+    for (int axis = 0; axis < 3; ++axis) {
+      const double coord = segmentStart[axis] + segment[axis] * mid;
+      double face = 0.0;
+      if (coord < -halfExtents[axis]) {
+        face = -halfExtents[axis];
+      } else if (coord > halfExtents[axis]) {
+        face = halfExtents[axis];
+      } else {
+        continue;
+      }
+
+      numerator += segment[axis] * (face - segmentStart[axis]);
+      denominator += segment[axis] * segment[axis];
+    }
+
+    if (denominator > kAxisEps) {
+      testCandidate(std::clamp(numerator / denominator, lo, hi));
+    } else {
+      testCandidate(mid);
+    }
+  }
+
+  closestOnSegment = bestOnSegment;
+  return bestOnBox;
+}
+
+std::array<Segment, 12> boxEdges(const Eigen::Vector3d& halfExtents)
+{
+  std::array<Segment, 12> edges;
+  int edgeIndex = 0;
+
+  for (int axis = 0; axis < 3; ++axis) {
+    const int axis1 = (axis + 1) % 3;
+    const int axis2 = (axis + 2) % 3;
+
+    for (const double sign1 : {-1.0, 1.0}) {
+      for (const double sign2 : {-1.0, 1.0}) {
+        Eigen::Vector3d start = Eigen::Vector3d::Zero();
+        Eigen::Vector3d end = Eigen::Vector3d::Zero();
+        start[axis] = -halfExtents[axis];
+        end[axis] = halfExtents[axis];
+        start[axis1] = end[axis1] = sign1 * halfExtents[axis1];
+        start[axis2] = end[axis2] = sign2 * halfExtents[axis2];
+        edges[edgeIndex++] = {start, end};
+      }
+    }
+  }
+
+  return edges;
 }
 
 [[nodiscard]] double computeBoxBoundaryTolerance(
@@ -703,11 +853,53 @@ double distanceBoxBox(
     return result.distance;
   }
 
+  box_box::SatResult sat;
+  const box_box::BoxData boxData1{
+      transform1.translation(), half1, transform1.linear()};
+  const box_box::BoxData boxData2{
+      transform2.translation(), half2, transform2.linear()};
+  if (box_box::computeBoxBoxSat(boxData1, boxData2, sat)) {
+    const double dist = -sat.penetration;
+    result.distance = dist;
+    if (dist > option.upperBound) {
+      return dist;
+    }
+
+    if (option.enableNearestPoints) {
+      Eigen::Vector3d normal = -sat.normal;
+      if (normal.squaredNorm() < 1e-10) {
+        const Eigen::Vector3d centerDiff
+            = transform2.translation() - transform1.translation();
+        normal = centerDiff.squaredNorm() > 1e-10 ? centerDiff.normalized()
+                                                  : Eigen::Vector3d::UnitX();
+      }
+
+      result.normal = normal;
+      result.pointOnObject1 = transform1.translation()
+                              + normal * box_box::projectBox(boxData1, normal);
+      result.pointOnObject2 = transform2.translation()
+                              - normal * box_box::projectBox(boxData2, normal);
+    }
+
+    return dist;
+  }
+
   const Eigen::Isometry3d inv1 = transform1.inverse();
   const Eigen::Isometry3d box2In1 = inv1 * transform2;
 
-  double minDist = std::numeric_limits<double>::max();
-  Eigen::Vector3d bestPoint1Local, bestPoint2Local;
+  double minDistSq = std::numeric_limits<double>::max();
+  Eigen::Vector3d bestPoint1World = Eigen::Vector3d::Zero();
+  Eigen::Vector3d bestPoint2World = Eigen::Vector3d::Zero();
+
+  auto updateCandidate
+      = [&](const Eigen::Vector3d& point1, const Eigen::Vector3d& point2) {
+          const double distSq = (point2 - point1).squaredNorm();
+          if (distSq < minDistSq) {
+            minDistSq = distSq;
+            bestPoint1World = point1;
+            bestPoint2World = point2;
+          }
+        };
 
   for (int i = 0; i < 8; ++i) {
     const Eigen::Vector3d corner2Local(
@@ -717,13 +909,7 @@ double distanceBoxBox(
 
     const Eigen::Vector3d corner2In1 = box2In1 * corner2Local;
     const Eigen::Vector3d closest1 = closestPointOnBox(corner2In1, half1);
-    const double d = (corner2In1 - closest1).norm();
-
-    if (d < minDist) {
-      minDist = d;
-      bestPoint1Local = closest1;
-      bestPoint2Local = corner2Local;
-    }
+    updateCandidate(transform1 * closest1, transform2 * corner2Local);
   }
 
   const Eigen::Isometry3d inv2 = transform2.inverse();
@@ -737,15 +923,25 @@ double distanceBoxBox(
 
     const Eigen::Vector3d corner1In2 = box1In2 * corner1Local;
     const Eigen::Vector3d closest2 = closestPointOnBox(corner1In2, half2);
-    const double d = (corner1In2 - closest2).norm();
+    updateCandidate(transform1 * corner1Local, transform2 * closest2);
+  }
 
-    if (d < minDist) {
-      minDist = d;
-      bestPoint1Local = corner1Local;
-      bestPoint2Local = closest2;
+  const auto edges1 = boxEdges(half1);
+  const auto edges2 = boxEdges(half2);
+  for (const auto& edge1 : edges1) {
+    const Eigen::Vector3d edge1Start = transform1 * edge1.start;
+    const Eigen::Vector3d edge1End = transform1 * edge1.end;
+    for (const auto& edge2 : edges2) {
+      const auto closest = closestPointsBetweenSegments(
+          edge1Start,
+          edge1End,
+          transform2 * edge2.start,
+          transform2 * edge2.end);
+      updateCandidate(closest.point1, closest.point2);
     }
   }
 
+  const double minDist = std::sqrt(minDistSq);
   result.distance = minDist;
 
   if (minDist > option.upperBound) {
@@ -753,8 +949,8 @@ double distanceBoxBox(
   }
 
   if (option.enableNearestPoints) {
-    result.pointOnObject1 = transform1 * bestPoint1Local;
-    result.pointOnObject2 = transform2 * bestPoint2Local;
+    result.pointOnObject1 = bestPoint1World;
+    result.pointOnObject2 = bestPoint2World;
 
     const Eigen::Vector3d diff = result.pointOnObject2 - result.pointOnObject1;
     if (diff.squaredNorm() > 1e-10) {
@@ -891,23 +1087,10 @@ double distanceCapsuleBox(
   const Eigen::Vector3d topLocal = boxInv * capTop;
   const Eigen::Vector3d botLocal = boxInv * capBot;
 
-  double minDist = std::numeric_limits<double>::max();
-  Eigen::Vector3d bestCapsulePoint, bestBoxPoint;
-
-  constexpr int numSamples = 5;
-  for (int i = 0; i < numSamples; ++i) {
-    const double t = static_cast<double>(i) / (numSamples - 1);
-    const Eigen::Vector3d axisPointLocal = botLocal + (topLocal - botLocal) * t;
-    const Eigen::Vector3d closestOnBox
-        = closestPointOnBox(axisPointLocal, boxHalf);
-    const double d = (axisPointLocal - closestOnBox).norm();
-
-    if (d < minDist) {
-      minDist = d;
-      bestCapsulePoint = axisPointLocal;
-      bestBoxPoint = closestOnBox;
-    }
-  }
+  Eigen::Vector3d bestCapsulePoint = Eigen::Vector3d::Zero();
+  const Eigen::Vector3d bestBoxPoint = closestPointOnSegmentInBoxSpace(
+      botLocal, topLocal, boxHalf, bestCapsulePoint);
+  const double minDist = (bestCapsulePoint - bestBoxPoint).norm();
 
   const double dist = minDist - capRadius;
 

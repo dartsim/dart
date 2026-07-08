@@ -192,7 +192,7 @@ bool collidePlaneCapsule(
 
   const double penetration = radius - minDist;
   const Eigen::Vector3d contactPoint
-      = *closestEndpoint - worldNormal * (minDist - penetration * 0.5);
+      = *closestEndpoint - worldNormal * (0.5 * (radius + minDist));
 
   ContactPoint contact;
   contact.position = contactPoint;

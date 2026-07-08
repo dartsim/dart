@@ -112,6 +112,17 @@ TEST(PlaneCollision, BoxCapsuleAndConvexContacts)
   ASSERT_EQ(1u, capsuleResult.numContacts());
   EXPECT_NEAR(0.2, capsuleResult.getContact(0).depth, 1e-12);
 
+  CollisionResult deepCapsuleResult;
+  EXPECT_TRUE(collidePlaneCapsule(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.0, 0.0, 0.3),
+      deepCapsuleResult));
+  ASSERT_EQ(1u, deepCapsuleResult.numContacts());
+  EXPECT_NEAR(1.2, deepCapsuleResult.getContact(0).depth, 1e-12);
+  EXPECT_NEAR(-0.6, deepCapsuleResult.getContact(0).position.z(), 1e-12);
+
   ConvexShape convex(
       {Eigen::Vector3d(-0.5, -0.5, -0.25),
        Eigen::Vector3d(0.5, -0.5, -0.25),
