@@ -363,6 +363,20 @@ bool collideParallelCylinders(
   return true;
 }
 
+bool canUseParallelCylinderShortcut(
+    const Eigen::Vector3d& axis1,
+    const Eigen::Vector3d& axis2,
+    double r1,
+    double h1,
+    double r2,
+    double h2)
+{
+  constexpr double eps = 1e-10;
+  const double angularSweep = axis1.cross(axis2).norm() * (h1 + h2);
+  const double lengthScale = std::max({1.0, r1 + r2, h1 + h2});
+  return angularSweep <= eps * lengthScale;
+}
+
 } // namespace
 
 bool collideCylinders(
@@ -387,7 +401,7 @@ bool collideCylinders(
   const Eigen::Vector3d center1 = transform1.translation();
   const Eigen::Vector3d center2 = transform2.translation();
 
-  if (std::abs(axis1.dot(axis2)) > 1.0 - 1e-6) {
+  if (canUseParallelCylinderShortcut(axis1, axis2, r1, h1, r2, h2)) {
     return collideParallelCylinders(
         r1, h1, axis1, center1, r2, h2, center2, result, option);
   }

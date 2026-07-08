@@ -146,6 +146,31 @@ TEST(CylinderCollision, CollidesSkewCylinders)
   EXPECT_EQ(1u, result.numContacts());
 }
 
+TEST(CylinderCollision, CollidesNearParallelLongCylinders)
+{
+  CylinderShape cylinder1(0.1, 1000.0);
+  CylinderShape cylinder2(0.1, 1000.0);
+  Eigen::Isometry3d tf2 = rotatedAroundY(0.001);
+  tf2.translation() = Eigen::Vector3d(0.3, 0.0, 0.0);
+
+  CollisionResult result;
+  const bool hit = collideCylinders(
+      cylinder1, Eigen::Isometry3d::Identity(), cylinder2, tf2, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_EQ(1u, result.numContacts());
+
+  CollisionResult binaryResult;
+  EXPECT_TRUE(collideCylinders(
+      cylinder1,
+      Eigen::Isometry3d::Identity(),
+      cylinder2,
+      tf2,
+      binaryResult,
+      CollisionOption::binaryCheck()));
+  EXPECT_EQ(0u, binaryResult.numContacts());
+}
+
 TEST(CylinderCollision, RejectsSeparatedSkewCylinders)
 {
   CylinderShape cylinder1(0.5, 1.0);
