@@ -34,10 +34,12 @@ Run a headless smoke check to confirm the build works:
 pixi run py-demos -- --scene rigid_body --headless --frames 1
 ```
 
-Verify the install by creating a tiny world in code — this does not need any
-sample data files:
+Verify the install by creating a tiny world in code. Point `PYTHONPATH` at the
+built bindings before importing `dartpy`; this does not need any sample data
+files:
 
-```python
+```bash
+PYTHONPATH=build/default/cpp/Release/python python - <<'PY'
 import dartpy as dart
 
 world = dart.World()
@@ -45,13 +47,12 @@ world.add_rigid_body("box", dart.RigidBodyOptions())
 world.enter_simulation_mode()
 world.step()
 print(f"Stepped one frame to t = {world.time:.4f} s")
+PY
 ```
 
 If that prints without error, you are ready for {doc}`hello_dart`.
 
-To use your source build from a plain Python interpreter, point `PYTHONPATH` at
-the built bindings (the exact path is printed at the end of `pixi run build`),
-for example:
+Use the same prefix for your own scripts:
 
 ```bash
 PYTHONPATH=build/default/cpp/Release/python python your_script.py

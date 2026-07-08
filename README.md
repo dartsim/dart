@@ -119,7 +119,10 @@ DART 6 package and should use the stable documentation.
 
 **Python source build**
 
-```python
+Run this after `pixi run build` from a source checkout:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python python - <<'PY'
 import dartpy as dart
 
 world = dart.World()
@@ -127,6 +130,7 @@ body = world.add_rigid_body("box", dart.RigidBodyOptions())
 world.enter_simulation_mode()
 world.step()
 print(f"t = {world.time:.4f} s, box position = {body.translation}")
+PY
 ```
 
 **C++ package**
