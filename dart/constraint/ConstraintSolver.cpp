@@ -444,6 +444,8 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
   mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
   mConstrainedGroups.reserve(mSkeletons.size());
+  mHasConstraintImpulsesToClear = true;
+  mHasCollidingBodiesToClear = true;
 }
 
 //==============================================================================
@@ -734,6 +736,8 @@ void ConstraintSolver::solve()
   DART_PROFILE_SCOPED_IF_N(profileRecording, "ConstraintSolver::solve");
 
   const bool splitImpulse = mSplitImpulseEnabled;
+  const bool clearConstraintImpulses = mHasConstraintImpulsesToClear;
+  const bool clearCollidingBodies = mHasCollidingBodiesToClear;
 
   {
     DART_PROFILE_SCOPED_IF_N(
@@ -741,14 +745,16 @@ void ConstraintSolver::solve()
 
     auto clearSkeletonAt = [&](std::size_t i) {
       auto& skeleton = mSkeletons[i];
-      skeleton->clearConstraintImpulses();
-      if (splitImpulse) {
+      if (clearConstraintImpulses)
+        skeleton->clearConstraintImpulses();
+      if (splitImpulse && clearConstraintImpulses) {
         skeleton->clearPositionConstraintImpulses();
         skeleton->clearPositionVelocityChanges();
         skeleton->setPositionImpulseApplied(false);
       }
       DART_SUPPRESS_DEPRECATED_BEGIN
-      skeleton->clearCollidingBodies();
+      if (clearCollidingBodies)
+        skeleton->clearCollidingBodies();
       DART_SUPPRESS_DEPRECATED_END
     };
 
@@ -760,6 +766,11 @@ void ConstraintSolver::solve()
       for (std::size_t i = 0; i < mSkeletons.size(); ++i)
         clearSkeletonAt(i);
     }
+
+    if (clearConstraintImpulses)
+      mHasConstraintImpulsesToClear = false;
+    if (clearCollidingBodies)
+      mHasCollidingBodiesToClear = false;
   }
 
   // Update constraints and collect active constraints
@@ -768,6 +779,13 @@ void ConstraintSolver::solve()
         profileRecording, "ConstraintSolver::updateConstraints");
     updateConstraints();
   }
+
+  if (mActiveConstraints.empty()) {
+    clearInactiveConstrainedGroups();
+    return;
+  }
+
+  mHasConstraintImpulsesToClear = true;
 
   // Build constrained groups
   {
@@ -1084,6 +1102,7 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
       contactCandidates.reserve(mCollisionResult.getNumContacts());
       const ContactPairHash contactPairHash;
       bool contactPairBucketsInitialized = false;
+      bool markedCollidingBodies = false;
       const auto initializeContactPairBuckets = [&]() {
         if (contactPairBucketsInitialized)
           return;
@@ -1223,6 +1242,7 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
         bodyNode1->setColliding(true);
         bodyNode2->setColliding(true);
         DART_SUPPRESS_DEPRECATED_END
+        markedCollidingBodies = true;
 
         // If penetration depth is negative, then the collision isn't really
         // happening and the contact point should be ignored.
@@ -1274,6 +1294,9 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
           contactPairCount.lastCandidateIndex = candidateIndex;
         }
       }
+
+      if (markedCollidingBodies)
+        mHasCollidingBodiesToClear = true;
     }
 
     // Add the new contact constraints to dynamic constraint list
@@ -1952,8 +1975,106 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
 }
 
 //==============================================================================
+bool ConstraintSolver::clearInactiveConstrainedGroups()
+{
+  if (!mActiveConstraints.empty())
+    return false;
+
+  mConstrainedGroups.clear();
+  mGroupResting.clear();
+  mGroupAllSleepCandidates.clear();
+  mGroupPreserveSleepCandidates.clear();
+
+  // With no active constraints, no island can be frozen. Clear any stale
+  // freeze flags so a body that just lost all of its contacts resumes
+  // simulating (e.g. a stack member that was kicked away). Preserve the
+  // sleep-candidate dwell state here: World::updateRestStates() and the
+  // pre-solve wake-band check clear stale candidates only when the body is
+  // actually disturbed or moving again, which makes sleeping robust to
+  // one-frame contact misses from collision jitter.
+  if (mDeactivationActive && mHadDeactivationGroups) {
+    if (mCollisionResult.getNumContacts() > 0) {
+      static thread_local std::unordered_set<const dynamics::Skeleton*>
+          contactedSkeletons;
+      contactedSkeletons.clear();
+      contactedSkeletons.reserve(mCollisionResult.getNumContacts());
+
+      for (std::size_t i = 0; i < mCollisionResult.getNumContacts(); ++i) {
+        const auto& contact = mCollisionResult.getContact(i);
+        const auto bodyNode1 = contact.getBodyNodePtr1();
+        const auto bodyNode2 = contact.getBodyNodePtr2();
+
+        if (bodyNode1) {
+          const auto skeleton = bodyNode1->getSkeleton();
+          if (skeleton && skeleton->isMobile())
+            contactedSkeletons.insert(skeleton.get());
+        }
+
+        if (bodyNode2) {
+          const auto skeleton = bodyNode2->getSkeleton();
+          if (skeleton && skeleton->isMobile())
+            contactedSkeletons.insert(skeleton.get());
+        }
+      }
+
+      for (auto& skeleton : mSkeletons) {
+        if (contactedSkeletons.find(skeleton.get())
+            != contactedSkeletons.end()) {
+          continue;
+        }
+
+        if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
+          skeleton->setResting(false);
+          skeleton->setIslandIndex(-1);
+        }
+      }
+
+      recordConstrainedGroupProfileCounters();
+      return true;
+    }
+
+    bool preservedRestingIsland = false;
+    for (auto& skeleton : mSkeletons) {
+      const bool canRemainResting = skeleton->isResting()
+                                    && skeleton->isSleepCandidate()
+                                    && skeleton->getIslandIndex() >= 0
+                                    && !skeleton->hasExternalDisturbance();
+
+      if (canRemainResting) {
+        preservedRestingIsland = true;
+        continue;
+      }
+
+      if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
+        skeleton->setResting(false);
+        skeleton->setIslandIndex(-1);
+      }
+    }
+
+    if (preservedRestingIsland) {
+      recordConstrainedGroupProfileCounters();
+      return true;
+    }
+
+    for (auto& skeleton : mSkeletons) {
+      if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
+        skeleton->setResting(false);
+        skeleton->setIslandIndex(-1);
+      }
+    }
+  }
+
+  mHadDeactivationGroups = false;
+  recordConstrainedGroupProfileCounters();
+  return true;
+}
+
+//==============================================================================
 void ConstraintSolver::buildConstrainedGroups()
 {
+  if (clearInactiveConstrainedGroups())
+    return;
+
   // Clear constrained groups while retaining per-group constraint-vector
   // capacity for the steady-state case where thousands of small contact groups
   // are rebuilt every step.
@@ -1969,93 +2090,6 @@ void ConstraintSolver::buildConstrainedGroups()
   mGroupResting.clear();
   mGroupAllSleepCandidates.clear();
   mGroupPreserveSleepCandidates.clear();
-
-  // Exit if there is no active constraint
-  if (mActiveConstraints.empty()) {
-    mConstrainedGroups.clear();
-
-    // With no active constraints, no island can be frozen. Clear any stale
-    // freeze flags so a body that just lost all of its contacts resumes
-    // simulating (e.g. a stack member that was kicked away). Preserve the
-    // sleep-candidate dwell state here: World::updateRestStates() and the
-    // pre-solve wake-band check clear stale candidates only when the body is
-    // actually disturbed or moving again, which makes sleeping robust to
-    // one-frame contact misses from collision jitter.
-    if (mDeactivationActive && mHadDeactivationGroups) {
-      if (mCollisionResult.getNumContacts() > 0) {
-        static thread_local std::unordered_set<const dynamics::Skeleton*>
-            contactedSkeletons;
-        contactedSkeletons.clear();
-        contactedSkeletons.reserve(mCollisionResult.getNumContacts());
-
-        for (std::size_t i = 0; i < mCollisionResult.getNumContacts(); ++i) {
-          const auto& contact = mCollisionResult.getContact(i);
-          const auto bodyNode1 = contact.getBodyNodePtr1();
-          const auto bodyNode2 = contact.getBodyNodePtr2();
-
-          if (bodyNode1) {
-            const auto skeleton = bodyNode1->getSkeleton();
-            if (skeleton && skeleton->isMobile())
-              contactedSkeletons.insert(skeleton.get());
-          }
-
-          if (bodyNode2) {
-            const auto skeleton = bodyNode2->getSkeleton();
-            if (skeleton && skeleton->isMobile())
-              contactedSkeletons.insert(skeleton.get());
-          }
-        }
-
-        for (auto& skeleton : mSkeletons) {
-          if (contactedSkeletons.find(skeleton.get())
-              != contactedSkeletons.end()) {
-            continue;
-          }
-
-          if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
-            skeleton->setResting(false);
-            skeleton->setIslandIndex(-1);
-          }
-        }
-
-        recordConstrainedGroupProfileCounters();
-        return;
-      }
-
-      bool preservedRestingIsland = false;
-      for (auto& skeleton : mSkeletons) {
-        const bool canRemainResting = skeleton->isResting()
-                                      && skeleton->isSleepCandidate()
-                                      && skeleton->getIslandIndex() >= 0
-                                      && !skeleton->hasExternalDisturbance();
-
-        if (canRemainResting) {
-          preservedRestingIsland = true;
-          continue;
-        }
-
-        if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
-          skeleton->setResting(false);
-          skeleton->setIslandIndex(-1);
-        }
-      }
-
-      if (preservedRestingIsland) {
-        recordConstrainedGroupProfileCounters();
-        return;
-      }
-
-      for (auto& skeleton : mSkeletons) {
-        if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
-          skeleton->setResting(false);
-          skeleton->setIslandIndex(-1);
-        }
-      }
-    }
-    mHadDeactivationGroups = false;
-    recordConstrainedGroupProfileCounters();
-    return;
-  }
 
   //----------------------------------------------------------------------------
   // Unite skeletons according to constraints's relationships
