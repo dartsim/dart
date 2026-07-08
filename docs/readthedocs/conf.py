@@ -3,14 +3,27 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+
+def _read_dart_version() -> str:
+    package_xml = Path(__file__).resolve().parents[2] / "package.xml"
+    try:
+        version = ET.parse(package_xml).getroot().findtext("version", default="")
+    except (FileNotFoundError, ET.ParseError):
+        return "0.0.0"
+    return version.strip() or "0.0.0"
+
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "DART: Dynamic Animation and Robotics Toolkit"
 copyright = "Copyright (c) 2011, The DART development contributors"
 author = "The DART development contributors"
-version = "7.0.0-alpha0"
-release = "7.0.0-alpha20230101"
+version = _read_dart_version()
+release = version
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

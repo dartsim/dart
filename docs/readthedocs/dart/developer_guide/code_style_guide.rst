@@ -82,4 +82,16 @@ help with integration with other Python modules or projects.
 CMake Style Guide
 -----------------
 
-TODO
+Follow the CMake style in ``CONTRIBUTING.md`` and nearby ``CMakeLists.txt`` or
+``*.cmake`` files:
+
+* Use two-space indentation.
+* Quote singleton variable expansions, especially paths.
+* Split complex commands across semantic groups instead of making one long
+  line.
+* Keep configure templates (``*.cmake.in``) conservative because they contain
+  substitution tokens that are expanded by CMake.
+
+The branch formats CMake sources with gersemi through ``scripts/lint_cmake.py``.
+Run ``pixi run lint-cmake`` for CMake-only edits, or ``pixi run lint`` before
+committing.
