@@ -48,6 +48,7 @@
 #include "dart/common/String.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
@@ -1612,7 +1613,8 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // handles active contact islands; the final contact-result pass below handles
   // quiet candidate bodies whose static support contact produced no active
   // constraint on this step.
-  constexpr double kSleepContactPenetrationTolerance = 1e-5;
+  const double sleepContactPenetrationTolerance = constraint::ConstraintSolver::
+      getAutomaticSleepingContactPenetrationTolerance();
   // Final-quiet gate for sleep candidacy, expressed as fixed fractions of the
   // configured thresholds. At the default thresholds (0.01 m/s, 0.05 rad/s)
   // these evaluate to the previous hardcoded 1e-3 m/s and 1e-2 rad/s, so
@@ -1659,7 +1661,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
         = (bodyNode->getTransform().translation()
            - supportBodyNode->getTransform().translation())
               .dot(up);
-    return bodyHeightAboveSupport >= -kSleepContactPenetrationTolerance;
+    return bodyHeightAboveSupport >= -sleepContactPenetrationTolerance;
   };
 
   auto& deepInitialContactSkeletons = mDeepInitialContactSkeletonScratch;
@@ -1688,7 +1690,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 
       const auto bodyNode1 = contact.getBodyNodePtr1();
       const auto bodyNode2 = contact.getBodyNodePtr2();
-      if (contact.penetrationDepth > kSleepContactPenetrationTolerance) {
+      if (contact.penetrationDepth > sleepContactPenetrationTolerance) {
         markMobileSkeleton(bodyNode1, deepInitialContactSkeletons);
         markMobileSkeleton(bodyNode2, deepInitialContactSkeletons);
         continue;
@@ -1783,7 +1785,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // by the wake-band checks above and in the pre-solve velocity pass.
   for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
     const auto& contact = contacts.getContact(i);
-    if (contact.penetrationDepth > kSleepContactPenetrationTolerance)
+    if (contact.penetrationDepth > sleepContactPenetrationTolerance)
       continue;
 
     auto tryRestOnInactiveSupport = [&](const auto& bodyNode,

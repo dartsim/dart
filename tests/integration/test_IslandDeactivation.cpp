@@ -299,6 +299,27 @@ bool contactContainsBodies(
          || (contactBody1 == body2 && contactBody2 == body1);
 }
 
+class ScopedSleepingContactPenetrationTolerance
+{
+public:
+  explicit ScopedSleepingContactPenetrationTolerance(double tolerance)
+    : mPrevious(constraint::ConstraintSolver::
+                    getAutomaticSleepingContactPenetrationTolerance())
+  {
+    constraint::ConstraintSolver::
+        setAutomaticSleepingContactPenetrationTolerance(tolerance);
+  }
+
+  ~ScopedSleepingContactPenetrationTolerance()
+  {
+    constraint::ConstraintSolver::
+        setAutomaticSleepingContactPenetrationTolerance(mPrevious);
+  }
+
+private:
+  double mPrevious;
+};
+
 // Creates a world with automatic deactivation enabled. Keep this explicit so
 // tests stay robust if callers locally override the default options.
 WorldPtr makeSleepWorld()
@@ -613,6 +634,47 @@ TEST(IslandDeactivation, UnconvergedContactClearsSleepCandidate)
   ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
   EXPECT_FALSE(box->isSleepCandidate());
   EXPECT_FALSE(box->isResting());
+}
+
+//==============================================================================
+// The contact-penetration gate that prevents premature sleeping is tunable for
+// dense-pile evaluation, but the legacy default remains strict.
+TEST(IslandDeactivation, ContactPenetrationToleranceIsConfigurable)
+{
+  auto makePenetratedCandidate = []() {
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    auto box = createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf - 5e-4));
+    box->setSleepCandidate(true);
+    box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
+    world->addSkeleton(box);
+    return std::make_pair(world, box);
+  };
+
+  {
+    ScopedSleepingContactPenetrationTolerance tolerance(1e-5);
+    auto [world, box] = makePenetratedCandidate();
+
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_FALSE(box->isResting());
+    EXPECT_FALSE(box->isSleepCandidate());
+  }
+
+  {
+    ScopedSleepingContactPenetrationTolerance tolerance(1e-3);
+    auto [world, box] = makePenetratedCandidate();
+
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_TRUE(box->isResting());
+    EXPECT_TRUE(box->isSleepCandidate());
+  }
 }
 
 //==============================================================================

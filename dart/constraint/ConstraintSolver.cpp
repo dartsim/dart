@@ -80,6 +80,10 @@ namespace constraint {
 
 using namespace dynamics;
 
+constexpr double kDefaultSleepContactPenetrationTolerance = 1e-5;
+double gSleepContactPenetrationTolerance
+    = kDefaultSleepContactPenetrationTolerance;
+
 struct CollidingStateSnapshot
 {
   std::vector<std::pair<dynamics::BodyNode*, bool>> bodyNodes;
@@ -596,6 +600,26 @@ void ConstraintSolver::setDeactivationActive(bool _active)
 void ConstraintSolver::setAutomaticSleepingEnabled(bool _enabled)
 {
   setDeactivationActive(_enabled);
+}
+
+//==============================================================================
+void ConstraintSolver::setAutomaticSleepingContactPenetrationTolerance(
+    double tolerance)
+{
+  if (tolerance < 0.0) {
+    dtwarn << "[ConstraintSolver] Automatic sleeping contact penetration "
+           << "tolerance[" << tolerance << "] is lower than 0.0. It is set "
+           << "to 0.0." << std::endl;
+    tolerance = 0.0;
+  }
+
+  gSleepContactPenetrationTolerance = tolerance;
+}
+
+//==============================================================================
+double ConstraintSolver::getAutomaticSleepingContactPenetrationTolerance()
+{
+  return gSleepContactPenetrationTolerance;
 }
 
 //==============================================================================
@@ -2147,9 +2171,10 @@ void ConstraintSolver::buildConstrainedGroups()
     // expose solver forces as part of their observable behavior; keeping those
     // islands awake preserves existing query semantics when sleeping is enabled
     // by default.
-    constexpr double kSleepContactPenetrationTolerance = 1e-5;
-    constexpr double kPreserveSleepCandidatePenetrationTolerance
-        = 10.0 * kSleepContactPenetrationTolerance;
+    const double sleepContactPenetrationTolerance
+        = getAutomaticSleepingContactPenetrationTolerance();
+    const double preserveSleepCandidatePenetrationTolerance
+        = 10.0 * sleepContactPenetrationTolerance;
     {
       for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i) {
         const auto& group = mConstrainedGroups[i];
@@ -2164,10 +2189,10 @@ void ConstraintSolver::buildConstrainedGroups()
           }
 
           if (contact->getContact().penetrationDepth
-              > kSleepContactPenetrationTolerance) {
+              > sleepContactPenetrationTolerance) {
             mGroupResting[i] = false;
             if (contact->getContact().penetrationDepth
-                > kPreserveSleepCandidatePenetrationTolerance) {
+                > preserveSleepCandidatePenetrationTolerance) {
               mGroupPreserveSleepCandidates[i] = false;
               break;
             }

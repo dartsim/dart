@@ -43,6 +43,7 @@
 
 #include <dart/constraint/BoxedLcpConstraintSolver.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
+#include <dart/constraint/ContactConstraint.hpp>
 #include <dart/constraint/DantzigBoxedLcpSolver.hpp>
 #include <dart/constraint/PgsBoxedLcpSolver.hpp>
 
@@ -158,6 +159,8 @@ struct Options
   std::optional<double> sleepLinearThreshold;
   std::optional<double> sleepAngularThreshold;
   std::optional<double> sleepTimeUntilSleep;
+  std::optional<double> sleepContactPenetrationTolerance;
+  std::optional<double> contactMaxErrorReductionVelocity;
   std::optional<std::size_t> generatedObjects;
   bool generateCapsules = false;
   bool generateContainer = false;
@@ -334,6 +337,11 @@ void printUsage(const std::string& programName)
       << "                            Override automatic sleep angular speed "
          "threshold.\n"
       << "  --sleep-time T            Override quiet dwell time before sleep.\n"
+      << "  --sleep-contact-penetration-tolerance D\n"
+      << "                            Override automatic sleep contact "
+         "penetration tolerance.\n"
+      << "  --contact-max-erv V       Override rigid-contact maximum error "
+         "reduction velocity.\n"
       << "  --generate-objects N      Generate an in-memory 3-lane "
          "sphere/box/cylinder scene instead of loading SDF.\n"
       << "  --generate-capsules N     Generate an in-memory capsule-only "
@@ -577,6 +585,14 @@ Options parseOptions(int argc, char* argv[])
       options.sleepAngularThreshold = parsePositiveDouble(needValue(arg), arg);
     } else if (arg == "--sleep-time") {
       options.sleepTimeUntilSleep = parsePositiveDouble(needValue(arg), arg);
+    } else if (arg == "--sleep-contact-penetration-tolerance") {
+      options.sleepContactPenetrationTolerance
+          = parseNonNegativeDouble(needValue(arg), arg);
+    } else if (
+        arg == "--contact-max-erv"
+        || arg == "--contact-max-error-reduction-velocity") {
+      options.contactMaxErrorReductionVelocity
+          = parseNonNegativeDouble(needValue(arg), arg);
     } else if (arg == "--generate-objects" || arg == "--num-objects") {
       options.generatedObjects = parseSize(needValue(arg), arg);
       options.generateCapsules = false;
@@ -1446,6 +1462,16 @@ void applyOptions(
     deactivation.mTimeUntilSleep = *options.sleepTimeUntilSleep;
   world->setDeactivationOptions(deactivation);
 
+  if (options.contactMaxErrorReductionVelocity.has_value()) {
+    dart::constraint::ContactConstraint::setMaxErrorReductionVelocity(
+        *options.contactMaxErrorReductionVelocity);
+  }
+  if (options.sleepContactPenetrationTolerance.has_value()) {
+    dart::constraint::ConstraintSolver::
+        setAutomaticSleepingContactPenetrationTolerance(
+            *options.sleepContactPenetrationTolerance);
+  }
+
   if (options.boxedLcpSolver != BoxedLcpSolverKind::Default) {
     auto* boxedSolver
         = dynamic_cast<dart::constraint::BoxedLcpConstraintSolver*>(
@@ -1520,6 +1546,14 @@ void printWorldSummary(
             << " rad/s\n";
   std::cout << "  Sleep quiet time: "
             << world->getDeactivationOptions().mTimeUntilSleep << " s\n";
+  std::cout
+      << "  Contact max ERV: "
+      << dart::constraint::ContactConstraint::getMaxErrorReductionVelocity()
+      << " m/s\n";
+  std::cout << "  Sleep contact penetration tolerance: "
+            << dart::constraint::ConstraintSolver::
+                   getAutomaticSleepingContactPenetrationTolerance()
+            << " m\n";
   std::cout << "  World simulation threads: "
             << world->getNumSimulationThreads() << "\n";
   std::cout << "  Collision detector requested: "

@@ -231,10 +231,10 @@ Success means **both**:
    along with #3226/#3227/#3229/#3234).
 3. ~~Re-run the local A/B command above at larger scale~~ — **done
    2026-07-04; recaptured 2026-07-05 after the base moved** (canonical
-   guard-scene protocol captured by the retired contact-performance round's
-   WP-PG.01 packet #3263 instead of duplicating its cells; durable follow-up
-   decisions now live in
-   `../../design/dart6_contact_performance.md`).
+   guard-scene protocol from
+   `../dart6_performance_generalization/01-baseline-evidence.md`,
+   cross-referenced against the perf lane's WP-PG.01 packet #3263 instead
+   of duplicating its cells).
 4. ~~Write the baseline packet before porting code~~ — **done**:
    `05-phase0-baseline-packet.md` (raw evidence: `05-artifacts.md`) with
    command lines, raw output, hashes, scene-dump tolerances, CPU

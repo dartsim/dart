@@ -21,7 +21,7 @@
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
 | **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271) + phase 1 (#3281) merged; phase 2 in progress: P1-P9 merged through distance/plane (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343); P10 active on `feature/native-mixed-scene-parity` |
-| **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); round 2 behavior-preserving work is retired and parked in `docs/design/dart6_contact_performance.md`. WP-PG.01 baseline packet **#3263 merged**; D8/native-detector sequencing now defers to this native-collision lane. |
+| **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet **#3263 merged** (tracks the native-collision port as its WS-F lane, external owner) |
 
 ## PR tracker
 
@@ -113,12 +113,13 @@
   it belongs to the separate MSVC/toolchain policy lane, not this native
   collision port lane.
 - The earlier monitoring queue has landed: #3283, #3317, #3319, #3321, #3322,
-  #3324, and #3325 are merged. The retired perf lane's WP-PG.01 baseline
-  packet **#3263** also merged.
+  #3324, and #3325 are merged. The perf lane's WP-PG.01 baseline packet
+  **#3263** also merged.
 
 Related remote heads still visible: `feature/native-occupancy-grid`,
 `task/native-collision-performance-exec`, and six `perf/dart6-*` round-1
-experiment branches (published for reference; triaged in #3263).
+experiment branches (published for reference; triaged in the perf lane's
+WP-PG.01).
 
 _(Note for automated reviewers: a just-merged PR can briefly still show "Open" on its page
 due to GitHub merge-state lag — confirm via `gh pr view <n> --json state` and `git log`

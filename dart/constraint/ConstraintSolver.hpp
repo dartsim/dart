@@ -177,6 +177,18 @@ public:
   /// compatibility; forwards to setDeactivationActive().
   void setAutomaticSleepingEnabled(bool _enabled);
 
+  /// Sets the maximum rigid-contact penetration depth that can still be
+  /// treated as converged for automatic body deactivation.
+  ///
+  /// This is a process-wide tuning knob because the DART 6 automatic
+  /// deactivation policy is otherwise configured through World-level options
+  /// without changing ConstraintSolver's public layout. Set it before stepping
+  /// worlds; changing it concurrently with simulation is not thread-safe.
+  static void setAutomaticSleepingContactPenetrationTolerance(double tolerance);
+
+  /// Returns the current automatic-sleeping contact penetration tolerance.
+  static double getAutomaticSleepingContactPenetrationTolerance();
+
   /// Sets the number of threads available to parallel solver work. This mirrors
   /// World::setNumSimulationThreads(); a value of 0 maps to hardware
   /// concurrency, and 1 keeps the historical serial behavior.

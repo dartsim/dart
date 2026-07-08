@@ -799,8 +799,8 @@ Final State Sums:   position_l1 2.21797e-05 velocity_l1 1.15343e-05 body_transla
 #!/usr/bin/env bash
 # Phase-0 baseline matrix for the native-collision port
 # (docs/dev_tasks/dart6_dependency_minimization). Reuses the canonical
-# guard-scene protocol captured by the retired performance round's WP-PG.01
-# evidence (S2/S3/S4/S5) and adds the scoping-doc delta rows (g120 incl. `default`
+# guard-scene protocol from dart6_performance_generalization/01-baseline-evidence.md
+# (S2/S3/S4/S5) and adds the scoping-doc delta rows (g120 incl. `default`
 # detector, g3000). ODE rows valid only with --max-contacts-per-pair 4.
 set -uo pipefail
 cd "$(git rev-parse --show-toplevel)"

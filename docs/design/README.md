@@ -16,7 +16,6 @@ For cross-bucket placement decisions, use
 | File | Purpose |
 | --- | --- |
 | [`dart6_ai_infra.md`](dart6_ai_infra.md) | Release-branch decision for adopting DART 7-inspired AI documentation buckets while preserving DART 6 compatibility constraints. |
-| [`dart6_contact_performance.md`](dart6_contact_performance.md) | Durable compatibility envelope and parked decisions for DART 6 contact-performance work after the issue #3056 round-2 packet board retired. |
 
 ## Placement Rules
 
