@@ -25,7 +25,7 @@ Read these files first:
 2. **Assess scope** - Multi-phase or multi-session? Create
    `docs/dev_tasks/<task>/` (see `docs/dev_tasks/README.md` for criteria).
    Team-scale work (multiple parallel lanes needing orchestrated worker
-   agents) switches to `dart-new-team-task` instead.
+   agents) switches to `dart-ultrawork` instead.
    For multi-session, design-heavy, public API, solver/paper, release, or
    cross-module work, fill the dev-task specification intake before editing:
    value, scope, assumptions, traceability, non-goals, acceptance evidence,

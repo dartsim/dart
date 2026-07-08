@@ -72,7 +72,7 @@ still require explicit maintainer/user approval.
 
 ## Starting Autonomous Projects
 
-Use `$dart-new-team-task` in Codex or `/dart-new-team-task` in
+Use `$dart-ultrawork` in Codex or `/dart-ultrawork` in
 Claude/OpenCode when a task should run as an autonomous project from either a
 brief or one up-front decision interview. The workflow uses
 `docs/dev_tasks/<task>/` as the project home, records acceptance criteria,

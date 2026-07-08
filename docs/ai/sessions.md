@@ -26,7 +26,7 @@ clear cleanup rule. Otherwise, status belongs in `README.md`.
 
 ## Autonomous Project Sessions
 
-`dart-new-team-task` is the DART entrypoint for large, multi-session, team-scale,
+`dart-ultrawork` is the DART entrypoint for large, multi-session, team-scale,
 or explicitly autonomous work. It still uses `docs/dev_tasks/<task>/` as the
 project home for both DART 7 and DART 6 maintenance work; do not create a
 parallel project-home tree unless a task-specific owner doc requires it.

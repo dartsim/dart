@@ -66,7 +66,7 @@ skill adapters in Codex. `docs/ai/workflows.md` owns the capability catalog;
 Use `/dart-next` or `$dart-next` when an agent should select the next bounded
 task from the north star, plan dashboard, dev-task state, issues, PRs, or CI;
 pass `focus=<topic>` to prefer an area without hard-coding the outcome.
-Use `/dart-new-team-task` or `$dart-new-team-task` for large, multi-session, or
+Use `/dart-ultrawork` or `$dart-ultrawork` for large, multi-session, or
 explicitly autonomous work from a brief or one up-front interview; it uses
 `docs/dev_tasks/<task>/` as the project home.
 

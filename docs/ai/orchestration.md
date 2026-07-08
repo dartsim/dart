@@ -25,7 +25,7 @@ from public docs and `pixi run ...` commands without a specific AI tool.
   keeps packet scope honest against the simplicity axiom; and reviews
   executor output against the packet's acceptance evidence before the work is
   recorded as done. Team-scale and explicitly autonomous tasks enter through
-  `dart-new-team-task`, which uses `docs/dev_tasks/<task>/` as the project
+  `dart-ultrawork`, which uses `docs/dev_tasks/<task>/` as the project
   home, front-loads a decision interview or provided brief, and routes
   evidence-resolvable uncertainties to spikes and research instead of
   questions. The

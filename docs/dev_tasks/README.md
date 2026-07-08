@@ -48,7 +48,7 @@ docs/dev_tasks/<task>/
 
 ### Autonomous Project Extension
 
-Use `dart-new-team-task` for large, team-scale, multi-session, or explicitly
+Use `dart-ultrawork` for large, team-scale, multi-session, or explicitly
 autonomous work. It uses this same `docs/dev_tasks/<task>/` folder as the
 project home for both DART 7 and DART 6 maintenance tasks.
 
