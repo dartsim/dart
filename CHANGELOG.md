@@ -91,6 +91,11 @@
     `DART_DISABLE_COMPILER_CACHE=ON` for uncached comparisons and cache-specific
     toolchain debugging.
 
+  * Centralize MSVC runtime, conformance, warning, and parallel-compile policy
+    in CMake helpers so Windows builds use the same long-term toolchain settings
+    across Pixi, CI, and source builds.
+    ([#3348](https://github.com/dartsim/dart/pull/3348))
+
   * Keep Pixi DartPy and GUI demo configuration warning-free on CMake 4.3 by
     using the Pixi `pybind11` package with modern Python discovery, updating
     the FetchContent fallback to the same pybind11 release, and resolving GLVND

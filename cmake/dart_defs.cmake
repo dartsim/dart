@@ -134,6 +134,337 @@ function(dart_print_options)
   message(STATUS "")
 endfunction()
 
+function(_dart_msvc_runtime_flag_for_config out runtime_library config)
+  string(TOUPPER "${config}" config_upper)
+
+  if(runtime_library STREQUAL "MultiThreadedDLL")
+    set(runtime_flag "/MD")
+  elseif(runtime_library STREQUAL "MultiThreadedDebugDLL")
+    set(runtime_flag "/MDd")
+  elseif(runtime_library STREQUAL "MultiThreaded")
+    set(runtime_flag "/MT")
+  elseif(runtime_library STREQUAL "MultiThreadedDebug")
+    set(runtime_flag "/MTd")
+  elseif(runtime_library STREQUAL "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    if(config_upper STREQUAL "DEBUG")
+      set(runtime_flag "/MDd")
+    else()
+      set(runtime_flag "/MD")
+    endif()
+  elseif(runtime_library STREQUAL "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    if(config_upper STREQUAL "DEBUG")
+      set(runtime_flag "/MTd")
+    else()
+      set(runtime_flag "/MT")
+    endif()
+  else()
+    message(FATAL_ERROR "Unsupported MSVC runtime library: ${runtime_library}")
+  endif()
+
+  set(${out} "${runtime_flag}" PARENT_SCOPE)
+endfunction()
+
+macro(_dart_replace_msvc_runtime_flag flags_variable runtime_flag)
+  if(DEFINED ${flags_variable})
+    set(flags_value "${${flags_variable}}")
+  else()
+    set(flags_value "")
+  endif()
+
+  string(
+    REGEX REPLACE
+    "(^|[ \t\r\n])[-/]M[DT]d?([ \t\r\n]|$)"
+    " "
+    flags_value
+    "${flags_value}"
+  )
+  string(STRIP "${flags_value}" flags_value)
+
+  if(flags_value)
+    set(flags_value "${flags_value} ${runtime_flag}")
+  else()
+    set(flags_value "${runtime_flag}")
+  endif()
+
+  set(${flags_variable} "${flags_value}")
+  set(${flags_variable} "${flags_value}" PARENT_SCOPE)
+endmacro()
+
+function(_dart_msvc_runtime_flag_fallback_needed out)
+  set(needs_fallback OFF)
+  set(configs Debug Release RelWithDebInfo MinSizeRel)
+
+  if(CMAKE_CONFIGURATION_TYPES)
+    list(APPEND configs ${CMAKE_CONFIGURATION_TYPES})
+  endif()
+  if(CMAKE_BUILD_TYPE)
+    list(APPEND configs ${CMAKE_BUILD_TYPE})
+  endif()
+  list(REMOVE_DUPLICATES configs)
+
+  foreach(lang C CXX)
+    if(DEFINED CMAKE_${lang}_FLAGS)
+      if(
+        "${CMAKE_${lang}_FLAGS}" MATCHES "(^|[ \t\r\n])[-/]M[DT]d?([ \t\r\n]|$)"
+      )
+        set(needs_fallback ON)
+      endif()
+    endif()
+
+    foreach(config IN LISTS configs)
+      string(TOUPPER "${config}" config_upper)
+      set(flags_variable CMAKE_${lang}_FLAGS_${config_upper})
+
+      if(DEFINED ${flags_variable})
+        if(
+          "${${flags_variable}}" MATCHES "(^|[ \t\r\n])[-/]M[DT]d?([ \t\r\n]|$)"
+        )
+          set(needs_fallback ON)
+        endif()
+      endif()
+    endforeach()
+  endforeach()
+
+  if(POLICY CMP0091)
+    cmake_policy(GET CMP0091 cmp0091)
+    if(NOT cmp0091 STREQUAL "NEW")
+      set(needs_fallback ON)
+    endif()
+  endif()
+
+  set(${out} ${needs_fallback} PARENT_SCOPE)
+endfunction()
+
+macro(_dart_apply_msvc_runtime_flag_fallback runtime_library)
+  set(configs Debug Release RelWithDebInfo MinSizeRel)
+
+  if(CMAKE_CONFIGURATION_TYPES)
+    list(APPEND configs ${CMAKE_CONFIGURATION_TYPES})
+  endif()
+  if(CMAKE_BUILD_TYPE)
+    list(APPEND configs ${CMAKE_BUILD_TYPE})
+  endif()
+  list(REMOVE_DUPLICATES configs)
+
+  _dart_msvc_runtime_flag_for_config(
+    default_runtime_flag
+    "${runtime_library}"
+    ""
+  )
+
+  foreach(lang C CXX)
+    if(DEFINED CMAKE_${lang}_FLAGS)
+      _dart_replace_msvc_runtime_flag(
+        CMAKE_${lang}_FLAGS
+        "${default_runtime_flag}"
+      )
+    endif()
+
+    foreach(config IN LISTS configs)
+      string(TOUPPER "${config}" config_upper)
+      set(flags_variable CMAKE_${lang}_FLAGS_${config_upper})
+
+      if(DEFINED ${flags_variable})
+        _dart_msvc_runtime_flag_for_config(
+          config_runtime_flag
+          "${runtime_library}"
+          "${config}"
+        )
+        _dart_replace_msvc_runtime_flag(
+          ${flags_variable}
+          "${config_runtime_flag}"
+        )
+      endif()
+    endforeach()
+  endforeach()
+endmacro()
+
+#-------------------------------------------------------------------------------
+# Configure MSVC runtime-library policy before any targets are created.
+#-------------------------------------------------------------------------------
+function(dart_configure_msvc_runtime_library)
+  if(NOT MSVC)
+    return()
+  endif()
+
+  set(_dart_msvc_runtime_cache_managed OFF)
+  if(DEFINED CACHE{CMAKE_MSVC_RUNTIME_LIBRARY})
+    get_property(
+      _dart_msvc_runtime_cache_help
+      CACHE CMAKE_MSVC_RUNTIME_LIBRARY
+      PROPERTY HELPSTRING
+    )
+    if(
+      _dart_msvc_runtime_cache_help
+        STREQUAL
+        "MSVC runtime library for DART targets"
+    )
+      set(_dart_msvc_runtime_cache_managed ON)
+    endif()
+  endif()
+
+  set(_dart_msvc_runtime_preserved OFF)
+  if(
+    DART_MSVC_FORCE_RELEASE_RUNTIME
+    AND
+      (
+        NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY
+        OR _dart_msvc_runtime_cache_managed
+      )
+  )
+    set(_dart_msvc_runtime_library "MultiThreadedDLL")
+    set(
+      CMAKE_MSVC_RUNTIME_LIBRARY
+      "${_dart_msvc_runtime_library}"
+      CACHE STRING
+      "MSVC runtime library for DART targets"
+      FORCE
+    )
+  elseif(
+    DEFINED CMAKE_MSVC_RUNTIME_LIBRARY
+    AND NOT _dart_msvc_runtime_cache_managed
+  )
+    set(_dart_msvc_runtime_library "${CMAKE_MSVC_RUNTIME_LIBRARY}")
+    set(_dart_msvc_runtime_preserved ON)
+  else()
+    if(DART_RUNTIME_LIBRARY STREQUAL "/MT")
+      set(_dart_msvc_runtime_library "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    else()
+      set(_dart_msvc_runtime_library "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    endif()
+    set(
+      CMAKE_MSVC_RUNTIME_LIBRARY
+      "${_dart_msvc_runtime_library}"
+      CACHE STRING
+      "MSVC runtime library for DART targets"
+      FORCE
+    )
+  endif()
+
+  if(DEFINED CACHE{CMAKE_MSVC_RUNTIME_LIBRARY})
+    set_property(
+      CACHE CMAKE_MSVC_RUNTIME_LIBRARY
+      PROPERTY
+        STRINGS
+          "MultiThreadedDLL"
+          ""
+          "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+          "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+    )
+  endif()
+
+  set(_dart_msvc_runtime_fallback_needed OFF)
+  if(
+    NOT _dart_msvc_runtime_preserved
+    OR NOT _dart_msvc_runtime_library STREQUAL ""
+  )
+    _dart_msvc_runtime_flag_fallback_needed(_dart_msvc_runtime_fallback_needed)
+    if(_dart_msvc_runtime_fallback_needed)
+      _dart_apply_msvc_runtime_flag_fallback("${_dart_msvc_runtime_library}")
+    endif()
+  endif()
+
+  if(_dart_msvc_runtime_preserved)
+    if(_dart_msvc_runtime_library STREQUAL "")
+      message(STATUS "MSVC runtime library: <empty> (preserved from caller)")
+    else()
+      message(
+        STATUS
+        "MSVC runtime library: ${_dart_msvc_runtime_library} (preserved from caller)"
+      )
+    endif()
+  elseif(DART_MSVC_FORCE_RELEASE_RUNTIME)
+    message(
+      STATUS
+      "DART_MSVC_FORCE_RELEASE_RUNTIME=ON: using /MD for all configurations"
+    )
+  else()
+    message(STATUS "MSVC runtime library: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
+  endif()
+
+  if(_dart_msvc_runtime_fallback_needed)
+    message(STATUS "Updated MSVC runtime flags for CMP0091 OLD compatibility")
+  endif()
+endfunction()
+
+#-------------------------------------------------------------------------------
+# Configure MSVC-specific compiler and linker policy.
+#-------------------------------------------------------------------------------
+function(dart_configure_msvc_toolchain)
+  if(NOT MSVC)
+    return()
+  endif()
+
+  set(options)
+  set(oneValueArgs REQUIRED_VERSION REQUIRED_LABEL)
+  set(multiValueArgs)
+  cmake_parse_arguments(
+    ARG
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+
+  if(
+    ARG_REQUIRED_VERSION
+    AND MSVC_VERSION VERSION_LESS "${ARG_REQUIRED_VERSION}"
+    AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"
+  )
+    if(ARG_REQUIRED_LABEL)
+      set(_dart_msvc_required_label " (${ARG_REQUIRED_LABEL})")
+    else()
+      set(_dart_msvc_required_label "")
+    endif()
+    message(
+      FATAL_ERROR
+      "MSVC ${MSVC_VERSION} is detected, but ${PROJECT_NAME_UPPERCASE} "
+      "requires MSVC ${ARG_REQUIRED_VERSION} or greater"
+      "${_dart_msvc_required_label}."
+    )
+  endif()
+
+  add_compile_definitions(
+    _CRT_SECURE_NO_WARNINGS
+    _ENABLE_EXTENDED_ALIGNED_STORAGE
+  )
+
+  add_compile_options(
+    $<$<COMPILE_LANGUAGE:CXX>:/EHsc>
+    $<$<COMPILE_LANGUAGE:CXX>:/permissive->
+    $<$<COMPILE_LANGUAGE:CXX>:/Zc:twoPhase->
+    $<$<COMPILE_LANGUAGE:CXX>:/utf-8>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4005>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4099>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4146>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4244>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4250>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4267>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4305>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4334>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4838>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4996>
+    $<$<COMPILE_LANGUAGE:CXX>:/bigobj>
+  )
+
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    add_compile_options(
+      $<$<COMPILE_LANGUAGE:CXX>:/MP>
+      $<$<COMPILE_LANGUAGE:CXX>:/FS>
+    )
+  endif()
+
+  if(NOT DART_MSVC_DEFAULT_OPTIONS)
+    add_compile_options(
+      $<$<COMPILE_LANGUAGE:CXX>:/W1>
+      $<$<COMPILE_LANGUAGE:CXX>:/Zi>
+      $<$<COMPILE_LANGUAGE:CXX>:/Gy>
+      $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:Release>>:/GL>
+    )
+    add_link_options($<$<CONFIG:Release>:/INCREMENTAL:NO>)
+  endif()
+endfunction()
+
 function(dart_library)
   set(prefix _ARG)
   set(options GLOB_HEADERS GLOB_SOURCES)
