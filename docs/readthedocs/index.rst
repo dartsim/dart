@@ -6,6 +6,15 @@
 Welcome to DART documentation!
 ==============================
 
+.. admonition:: You are reading the DART 6 LTS documentation
+   :class: important
+
+   This site documents the **DART 6** compatibility line. The active
+   maintenance branch is ``release-6.20``; its source version is read from
+   ``package.xml`` and release notes are tracked in ``CHANGELOG.md``. For the
+   in-progress DART 7 redesign, use the `latest documentation
+   <https://dart.readthedocs.io/en/latest/>`_.
+
 Introduction
 ------------
 
@@ -27,6 +36,10 @@ Articulated Body Algorithm to compute motion dynamics.
 Updates
 -------
 
+* 2026-06-27: DART version 6.19.3 released. See the
+  `CHANGELOG <https://github.com/dartsim/dart/blob/release-6.20/CHANGELOG.md>`_.
+* DART 6.20.0 is in progress on the
+  `release-6.20 branch <https://github.com/dartsim/dart/tree/release-6.20>`_.
 * 2022-12-31: DART version 6.13.0 released.
 
 Project Stats
