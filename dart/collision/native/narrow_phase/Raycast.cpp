@@ -133,8 +133,52 @@ bool raycastBox(
   const Eigen::Vector3d localDir = invTransform.rotation() * ray.direction;
 
   const Eigen::Vector3d& halfExtents = box.getHalfExtents();
+  const double maxDist = std::min(ray.maxDistance, option.maxDistance);
 
-  double tMin = 0.0;
+  int boundaryAxis = -1;
+  int boundarySign = 1;
+  double boundaryDirectionDot = std::numeric_limits<double>::max();
+  bool originInsideOrOn = true;
+  for (int i = 0; i < 3; ++i) {
+    if (localOrigin[i] < -halfExtents[i] - kEpsilon
+        || localOrigin[i] > halfExtents[i] + kEpsilon) {
+      originInsideOrOn = false;
+      break;
+    }
+
+    const double distanceToMin = std::abs(localOrigin[i] + halfExtents[i]);
+    const double distanceToMax = std::abs(localOrigin[i] - halfExtents[i]);
+    if (distanceToMin <= kEpsilon) {
+      const double directionDot = -localDir[i];
+      if (directionDot < boundaryDirectionDot) {
+        boundaryAxis = i;
+        boundarySign = -1;
+        boundaryDirectionDot = directionDot;
+      }
+    }
+    if (distanceToMax <= kEpsilon) {
+      const double directionDot = localDir[i];
+      if (directionDot < boundaryDirectionDot) {
+        boundaryAxis = i;
+        boundarySign = 1;
+        boundaryDirectionDot = directionDot;
+      }
+    }
+  }
+
+  if (originInsideOrOn && boundaryAxis >= 0 && maxDist >= 0.0) {
+    result.hit = true;
+    result.distance = 0.0;
+    result.point = ray.origin;
+
+    Eigen::Vector3d localNormal = Eigen::Vector3d::Zero();
+    localNormal[boundaryAxis] = static_cast<double>(boundarySign);
+    result.normal = boxTransform.rotation() * localNormal;
+
+    return true;
+  }
+
+  double tMin = -std::numeric_limits<double>::max();
   double tMax = std::numeric_limits<double>::max();
   int hitAxisMin = -1;
   int hitSignMin = 1;
@@ -186,7 +230,6 @@ bool raycastBox(
     hitSign = hitSignMax;
   }
 
-  double maxDist = std::min(ray.maxDistance, option.maxDistance);
   if (tHit > maxDist) {
     return false;
   }
@@ -618,95 +661,6 @@ bool raycastMesh(
   return true;
 }
 
-namespace {
-
-struct ConvexFace
-{
-  Eigen::Vector3d point;
-  Eigen::Vector3d normal;
-};
-
-std::vector<ConvexFace> computeConvexFaces(const ConvexShape& convex)
-{
-  const auto& vertices = convex.getVertices();
-  std::vector<ConvexFace> faces;
-
-  if (vertices.size() < 4) {
-    return faces;
-  }
-
-  Eigen::Vector3d centroid = Eigen::Vector3d::Zero();
-  double maxVertexNorm = 0.0;
-  for (const auto& vertex : vertices) {
-    centroid += vertex;
-    maxVertexNorm = std::max(maxVertexNorm, vertex.norm());
-  }
-  centroid /= static_cast<double>(vertices.size());
-
-  const double scale = std::max(1.0, maxVertexNorm);
-  const double areaTolerance = 1e-12 * scale * scale;
-  const double planeTolerance = 1e-8 * scale;
-  const double normalTolerance = 1e-8;
-
-  for (std::size_t i = 0; i + 2 < vertices.size(); ++i) {
-    for (std::size_t j = i + 1; j + 1 < vertices.size(); ++j) {
-      for (std::size_t k = j + 1; k < vertices.size(); ++k) {
-        const Eigen::Vector3d edge1 = vertices[j] - vertices[i];
-        const Eigen::Vector3d edge2 = vertices[k] - vertices[i];
-        Eigen::Vector3d normal = edge1.cross(edge2);
-        const double normalNorm = normal.norm();
-        if (normalNorm <= areaTolerance) {
-          continue;
-        }
-        normal /= normalNorm;
-
-        bool hasPositiveSide = false;
-        bool hasNegativeSide = false;
-        for (const auto& vertex : vertices) {
-          const double signedDistance = normal.dot(vertex - vertices[i]);
-          if (signedDistance > planeTolerance) {
-            hasPositiveSide = true;
-          } else if (signedDistance < -planeTolerance) {
-            hasNegativeSide = true;
-          }
-
-          if (hasPositiveSide && hasNegativeSide) {
-            break;
-          }
-        }
-
-        if (hasPositiveSide && hasNegativeSide) {
-          continue;
-        }
-
-        if (normal.dot(centroid - vertices[i]) > 0.0) {
-          normal = -normal;
-        }
-
-        bool duplicate = false;
-        for (const auto& face : faces) {
-          const double normalDot = face.normal.dot(normal);
-          const double planeDistance
-              = std::abs(normal.dot(face.point - vertices[i]));
-          if (normalDot > 1.0 - normalTolerance
-              && planeDistance <= planeTolerance) {
-            duplicate = true;
-            break;
-          }
-        }
-
-        if (!duplicate) {
-          faces.push_back({vertices[i], normal});
-        }
-      }
-    }
-  }
-
-  return faces;
-}
-
-} // namespace
-
 bool raycastConvex(
     const Ray& ray,
     const ConvexShape& convex,
@@ -717,7 +671,7 @@ bool raycastConvex(
   result.clear();
 
   const double maxDist = std::min(ray.maxDistance, option.maxDistance);
-  const auto faces = computeConvexFaces(convex);
+  const auto& faces = convex.getFaces();
   if (faces.empty()) {
     return false;
   }

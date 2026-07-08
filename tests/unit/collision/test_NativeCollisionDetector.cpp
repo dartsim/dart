@@ -1300,6 +1300,11 @@ TEST(NativeCollisionDetector, ConvertsSphereAndBoxShapes)
       static_cast<const native::ConvexShape*>(nativeConvexMesh.get())
           ->getVertices()
           .size());
+  EXPECT_EQ(
+      6u,
+      static_cast<const native::ConvexShape*>(nativeConvexMesh.get())
+          ->getFaces()
+          .size());
 
   const dynamics::MeshShape meshShape(
       Eigen::Vector3d(2.0, 3.0, 4.0), makePlaneTriMesh());
@@ -1320,6 +1325,11 @@ TEST(NativeCollisionDetector, ConvertsSphereAndBoxShapes)
       5u,
       static_cast<const native::ConvexShape*>(nativePyramid.get())
           ->getVertices()
+          .size());
+  EXPECT_EQ(
+      5u,
+      static_cast<const native::ConvexShape*>(nativePyramid.get())
+          ->getFaces()
           .size());
 }
 
