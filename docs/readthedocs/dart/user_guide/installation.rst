@@ -1,41 +1,35 @@
 Installation
 ============
 
-Ubuntu
-------
+Cross-platform
+--------------
 
-To install DART on Ubuntu, you can use the following commands:
-
-1. Add the DART PPA to your system:
-
-.. code-block:: bash
-
-   sudo apt-add-repository ppa:dartsim/ppa
-
-2. Update your package list:
+For a reproducible DART 6 environment across Linux, macOS, and Windows, use
+Pixi or conda-forge:
 
 .. code-block:: bash
 
-   sudo apt-get update
+   pixi add dartsim-cpp
+   # or
+   conda install -c conda-forge dartsim-cpp
 
-3. Install the `libdart7-all-dev-nightly` package:
+Ubuntu / Debian
+---------------
+
+To install the distro-packaged DART C++ libraries on Ubuntu or Debian:
 
 .. code-block:: bash
 
-   sudo apt-get install libdart7-all-dev-nightly
+   sudo apt update
+   sudo apt install libdart-all-dev
+
+If you need a newer DART 6 LTS build than your distro provides, prefer the
+cross-platform package channels above.
 
 macOS
 -----
 
-To install DART on macOS, you can use Homebrew:
-
-1. Install Homebrew if you haven't already:
-
-.. code-block:: bash
-
-   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-2. Install the `dartsim` formula:
+To install DART on macOS, use Homebrew:
 
 .. code-block:: bash
 
@@ -44,53 +38,39 @@ To install DART on macOS, you can use Homebrew:
 Windows
 -------
 
-To install DART on Windows, you can use vcpkg:
-
-1. Install vcpkg if you haven't already:
+To install DART on Windows, use vcpkg:
 
 .. code-block:: bash
 
    git clone https://github.com/microsoft/vcpkg.git
    cd vcpkg
-   bootstrap-vcpkg.bat
+   .\bootstrap-vcpkg.bat
+   .\vcpkg install dartsim:x64-windows
 
-2. Install the `dartsim` package:
+Arch Linux
+----------
 
-.. code-block:: bash
-
-   vcpkg install dartsim:x64-windows
-
-Arch Linux (experimental)
---------------------------
-
-To install DART on Arch Linux using the `yay` package manager, you can use the
-following commands:
-
-1. Update your package list:
-
-.. code-block:: bash
-
-   yay -Syu
-
-2. Install the `libdart` package:
+To install DART on Arch Linux using the ``yay`` package manager:
 
 .. code-block:: bash
 
    yay -S libdart
 
-FreeBSD (experimental)
-----------------------
+FreeBSD
+-------
 
-To install DART on FreeBSD, you can use the following commands:
-
-1. Update your package list:
-
-.. code-block:: bash
-
-   pkg update
-
-2. Install the `dartsim` package:
+To install DART on FreeBSD:
 
 .. code-block:: bash
 
    pkg install dartsim
+
+Package availability
+--------------------
+
+For an up-to-date view of every distribution that packages DART, refer to
+Repology:
+
+.. image:: https://repology.org/badge/vertical-allrepos/dart-sim.svg
+   :target: https://repology.org/project/dart-sim/versions
+   :alt: Packaging status
