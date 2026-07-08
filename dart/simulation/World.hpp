@@ -504,6 +504,10 @@ protected:
   /// Synchronizes shallow-support velocity state with mSkeletons.
   void syncShallowSupportFreeRootVelocityStates();
 
+  /// Returns true if the shallow-support velocity correction pass can affect
+  /// at least one current skeleton.
+  bool hasAnyShallowSupportFreeRootCandidate() const;
+
   /// Captures free-root velocities immediately before the constraint solve.
   const std::vector<FreeRootVelocitySnapshot>& snapshotFreeRootVelocities();
 
