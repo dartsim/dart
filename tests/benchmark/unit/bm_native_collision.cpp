@@ -17,6 +17,7 @@ using dart::collision::native::CollisionOption;
 using dart::collision::native::CollisionResult;
 using dart::collision::native::ConvexShape;
 using dart::collision::native::CylinderShape;
+using dart::collision::native::MeshShape;
 using dart::collision::native::NarrowPhase;
 using dart::collision::native::PlaneShape;
 using dart::collision::native::Shape;
@@ -38,6 +39,42 @@ std::vector<Eigen::Vector3d> makeOctahedronVertices(double scale = 1.0)
       {0.0, -scale, 0.0},
       {0.0, 0.0, scale},
       {0.0, 0.0, -scale}};
+}
+
+MeshShape makeUnitCubeMesh()
+{
+  std::vector<Eigen::Vector3d> vertices
+      = {{-0.5, -0.5, -0.5},
+         {0.5, -0.5, -0.5},
+         {0.5, 0.5, -0.5},
+         {-0.5, 0.5, -0.5},
+         {-0.5, -0.5, 0.5},
+         {0.5, -0.5, 0.5},
+         {0.5, 0.5, 0.5},
+         {-0.5, 0.5, 0.5}};
+  std::vector<MeshShape::Triangle> triangles
+      = {{0, 1, 2},
+         {0, 2, 3},
+         {4, 6, 5},
+         {4, 7, 6},
+         {0, 5, 1},
+         {0, 4, 5},
+         {2, 6, 7},
+         {2, 7, 3},
+         {0, 7, 4},
+         {0, 3, 7},
+         {1, 5, 6},
+         {1, 6, 2}};
+
+  return MeshShape(std::move(vertices), std::move(triangles));
+}
+
+MeshShape makePlaneMesh()
+{
+  std::vector<Eigen::Vector3d> vertices = {
+      {-1.0, -1.0, 0.0}, {1.0, -1.0, 0.0}, {1.0, 1.0, 0.0}, {-1.0, 1.0, 0.0}};
+  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}, {0, 2, 3}};
+  return MeshShape(std::move(vertices), std::move(triangles));
 }
 
 void runNarrowPhase(
@@ -238,6 +275,71 @@ void BM_NativeConvexCylinder(benchmark::State& state)
       translated(1.25, 0.0, 0.0));
 }
 
+void BM_NativeMeshMesh(benchmark::State& state)
+{
+  MeshShape meshA = makeUnitCubeMesh();
+  MeshShape meshB = makeUnitCubeMesh();
+
+  runNarrowPhase(
+      state,
+      meshA,
+      Eigen::Isometry3d::Identity(),
+      meshB,
+      translated(0.25, 0.0, 0.0));
+}
+
+void BM_NativeMeshSphere(benchmark::State& state)
+{
+  MeshShape mesh = makePlaneMesh();
+  SphereShape sphere(0.5);
+
+  runNarrowPhase(
+      state,
+      mesh,
+      Eigen::Isometry3d::Identity(),
+      sphere,
+      translated(0.25, -0.25, 0.25));
+}
+
+void BM_NativeMeshBox(benchmark::State& state)
+{
+  MeshShape mesh = makePlaneMesh();
+  BoxShape box(Eigen::Vector3d::Constant(0.25));
+
+  runNarrowPhase(
+      state,
+      mesh,
+      Eigen::Isometry3d::Identity(),
+      box,
+      translated(0.0, 0.0, 0.2));
+}
+
+void BM_NativeMeshCapsule(benchmark::State& state)
+{
+  MeshShape mesh = makePlaneMesh();
+  CapsuleShape capsule(0.25, 0.5);
+
+  runNarrowPhase(
+      state,
+      mesh,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.25, -0.25, 0.25));
+}
+
+void BM_NativeMeshConvex(benchmark::State& state)
+{
+  MeshShape mesh = makePlaneMesh();
+  ConvexShape convex(makeOctahedronVertices(0.25));
+
+  runNarrowPhase(
+      state,
+      mesh,
+      Eigen::Isometry3d::Identity(),
+      convex,
+      translated(0.0, 0.0, 0.2));
+}
+
 } // namespace
 
 BENCHMARK(BM_NativeSphereSphere)->Unit(benchmark::kNanosecond);
@@ -253,3 +355,8 @@ BENCHMARK(BM_NativeCylinderBox)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeCylinderCapsule)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeCylinderPlane)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeConvexCylinder)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativeMeshMesh)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativeMeshSphere)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativeMeshBox)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativeMeshCapsule)->Unit(benchmark::kNanosecond);
+BENCHMARK(BM_NativeMeshConvex)->Unit(benchmark::kNanosecond);
