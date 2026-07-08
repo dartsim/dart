@@ -71,6 +71,12 @@
     with `dart-new-team-task` routed through the DART 6.20 plan dashboard and
     work-packet contract.
 
+  * Expand `dart-new-team-task` into the autonomous-project kickoff path for
+    large or multi-session DART 6 work, with `docs/dev_tasks/<task>/` as the
+    project home, one up-front interview or provided brief, session start/end
+    rules, explicit acceptance evidence, and release-branch maintenance
+    hygiene.
+
   * Add the release-branch `dart-retro` AI workflow so maintainers and agents
     can capture durable lessons from completed DART 6.20 work through
     `/dart-retro` or `$dart-retro`.
