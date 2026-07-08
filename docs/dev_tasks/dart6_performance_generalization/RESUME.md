@@ -9,19 +9,18 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
-**Current claimed packet: WP-PG.32 — frame-arena allocation discipline + CI
-allocation gate** ([04-dynamics-batching-lane.md](04-dynamics-batching-lane.md)).
-Continue on `wp-pg-32-frame-allocation-gate` off current
-`origin/release-6.20`.
+**Current claimed packet: none.** WP-PG.32 is closed in this tracker as
+delivered by merged PRs #3297 and #3307: `FrameAllocator`, World-owned
+`MemoryManager` preparation, frame-scratch capacity/overflow counters,
+`FrameStlAllocator`, DART-owned solver/collision/profiler scratch reuse, and
+`INTEGRATION_StepAllocation` native and soft allocation gates are already on
+`release-6.20`. The `wp-pg-32-frame-allocation-gate` branch is only the
+tracker reconciliation for that already-landed work and should not be resumed as
+a new implementation packet after its PR lands.
 
-Immediate next step: finish the tracker-only reconciliation PR after local
-verification. Current `release-6.20` already contains the WP-PG.32
-implementation slice from merged PRs #3297 and #3307: `FrameAllocator`,
-World-owned `MemoryManager` preparation, frame-scratch capacity/overflow
-counters, `FrameStlAllocator`, DART-owned solver/collision/profiler scratch
-reuse, and `INTEGRATION_StepAllocation` native and soft allocation gates.
-This branch records that evidence and avoids duplicating allocator code that is
-already on the release branch.
+Next practical action: choose a maintainer decision or gather new profile
+evidence that reopens one of the gated packets below. Do not claim an
+implementation packet from this tracker without changing that evidence state.
 
 **WP-PG.01 is captured** (merged as #3263) — guard rows, profile splits, and
 prior-art triage are in
