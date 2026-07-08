@@ -635,7 +635,7 @@ double distanceShapes(
   }
 
   if ((type1 == ShapeType::Cylinder || type2 == ShapeType::Cylinder)
-      && type1 != ShapeType::Sdf && type2 != ShapeType::Sdf) {
+      && isConvexFallbackType(type1) && isConvexFallbackType(type2)) {
     return distanceConvexConvex(*shape1, tf1, *shape2, tf2, result, option);
   }
 
@@ -645,9 +645,8 @@ double distanceShapes(
     return distanceMeshMesh(*m1, tf1, *m2, tf2, result, option);
   }
 
-  if ((type1 == ShapeType::Convex || type1 == ShapeType::Mesh
-       || type2 == ShapeType::Convex || type2 == ShapeType::Mesh)
-      && type1 != ShapeType::Sdf && type2 != ShapeType::Sdf) {
+  if ((type1 == ShapeType::Convex || type2 == ShapeType::Convex)
+      && isConvexFallbackType(type1) && isConvexFallbackType(type2)) {
     return distanceConvexConvex(*shape1, tf1, *shape2, tf2, result, option);
   }
 
@@ -840,15 +839,14 @@ bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
     return true;
   }
   if ((type1 == ShapeType::Cylinder || type2 == ShapeType::Cylinder)
-      && type1 != ShapeType::Sdf && type2 != ShapeType::Sdf) {
+      && isConvexFallbackType(type1) && isConvexFallbackType(type2)) {
     return true;
   }
   if (type1 == ShapeType::Mesh && type2 == ShapeType::Mesh) {
     return true;
   }
-  if ((type1 == ShapeType::Convex || type1 == ShapeType::Mesh
-       || type2 == ShapeType::Convex || type2 == ShapeType::Mesh)
-      && type1 != ShapeType::Sdf && type2 != ShapeType::Sdf) {
+  if ((type1 == ShapeType::Convex || type2 == ShapeType::Convex)
+      && isConvexFallbackType(type1) && isConvexFallbackType(type2)) {
     return true;
   }
   return false;

@@ -936,6 +936,28 @@ TEST(NativeCollisionDetector, DistanceRespectsLowerBoundAndFilter)
 }
 
 //==============================================================================
+TEST(NativeCollisionDetector, DistanceLeavesMeshPrimitivePairsUnsupported)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto meshFrame = makeFrame(std::make_shared<dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), makePlaneTriMesh()));
+  auto sphereFrame = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.25),
+      Eigen::Vector3d(0.0, 0.0, 0.75));
+
+  collision::DistanceOption option(true, 0.0, nullptr);
+  const auto meshSphere
+      = distanceShapeFrames(detector, meshFrame, sphereFrame, option);
+  EXPECT_DOUBLE_EQ(0.0, meshSphere.distance);
+  EXPECT_FALSE(meshSphere.result.found());
+
+  const auto sphereMesh
+      = distanceShapeFrames(detector, sphereFrame, meshFrame, option);
+  EXPECT_DOUBLE_EQ(0.0, sphereMesh.distance);
+  EXPECT_FALSE(sphereMesh.result.found());
+}
+
+//==============================================================================
 TEST(NativeCollisionDetector, CollidesAcrossGroups)
 {
   auto detector = collision::NativeCollisionDetector::create();

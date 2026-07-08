@@ -220,10 +220,10 @@
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Add opt-in DART-native `CollisionDetector::distance()` support for the
-    native detector's supported primitive, plane, convex, mesh, compound, and
-    signed-distance-field shape rows, with FCL parity coverage for
-    primitive/plane adapter behavior and benchmark rows comparing native and FCL
-    distance queries:
+    native detector's supported primitive, plane, convex, compound,
+    signed-distance-field, exact mesh-mesh, mesh-SDF, and plane-mesh shape rows,
+    with FCL parity coverage for primitive/plane adapter behavior and benchmark
+    rows comparing native and FCL distance queries:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Fix FCL primitive contact normal orientation and switch default FCL primitive
