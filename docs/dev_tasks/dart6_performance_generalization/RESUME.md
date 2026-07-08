@@ -9,37 +9,39 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
-**Current claimed packet: WP-PG.31 — shallow-support scratch retention**
-([04-dynamics-batching-lane.md](04-dynamics-batching-lane.md)). Continue on
-`wp-pg-31-shallow-support-scratch` off current `origin/release-6.20`.
+**Current claimed packet: WP-PG.32 — frame-arena allocation discipline + CI
+allocation gate** ([04-dynamics-batching-lane.md](04-dynamics-batching-lane.md)).
+Continue on `wp-pg-32-frame-allocation-gate` off current
+`origin/release-6.20`.
 
-Immediate next step: run the final local lint/test refresh, then open the PR.
-The old `pr-c-pg31-scratch-retention.patch` was treated as a reference snapshot
-only. Current `release-6.20` already retains the member scratch buffers, so the
-branch implements the remaining no-candidate skip and preserves stale-state
-cleanup. Current-base A/B and the old 16-thread heap-crash gate are recorded in
-the 2026-07-08 session log entry below.
+Immediate next step: finish the tracker-only reconciliation PR after local
+verification. Current `release-6.20` already contains the WP-PG.32
+implementation slice from merged PRs #3297 and #3307: `FrameAllocator`,
+World-owned `MemoryManager` preparation, frame-scratch capacity/overflow
+counters, `FrameStlAllocator`, DART-owned solver/collision/profiler scratch
+reuse, and `INTEGRATION_StepAllocation` native and soft allocation gates.
+This branch records that evidence and avoids duplicating allocator code that is
+already on the release branch.
 
-**WP-PG.01 is captured** (branch `wp-pg-01-baseline-evidence`, PR
-pending) — guard rows, profile splits, and prior-art triage are in
+**WP-PG.01 is captured** (merged as #3263) — guard rows, profile splits, and
+prior-art triage are in
 [01-baseline-evidence.md](01-baseline-evidence.md). Its evidence changed
 priorities: the dense-pile fixture is 88.1% Dantzig solve-proper (D3
 revisit trigger FIRED; WP-PG.12 deprioritized), and the active-3k
 many-islands regime is ~50% integration (WS-C is the lever there).
 
-Claimable now, in priority order:
+Implementation packets after WP-PG.32, in priority order:
 
-1. **WP-PG.31** (WS-C — shallow-support scratch retention; locally verified,
-   PR pending).
-2. **WP-PG.32** only after WP-PG.31 lands or if maintainer
-   explicitly prioritizes allocation work. WP-PG.20 is #3329; WP-PG.21 failed
-   the 2026-07-07 current-base map/pruning gate; WP-PG.22 and WP-PG.11 both
-   have local current-base rejection evidence from 2026-07-06.
+1. No unblocked implementation packet is currently claimable without new
+   maintainer direction or new profile evidence. WP-PG.20 is #3329; WP-PG.21
+   failed the 2026-07-07 current-base map/pruning gate; WP-PG.22 and WP-PG.11
+   both have local current-base rejection evidence from 2026-07-06; WP-PG.31 is
+   #3341; WP-PG.32 is already implemented by #3297/#3307.
 
 Blocked/gated (do not claim): PG.04 (D4), PG.12 (evidence), PG.13
 (PG.10 census), PG.14 (D3 — now urgent), PG.15 (D7 — now urgent), PG.23
-(D8), PG.33, PG.41. PG.42 is done in PR #3299; WP-PG.30 is done in
-PR #3310. **D3 and D7 are the decisions that unblock the dense-pile
+(D8), PG.33, PG.41. PG.42 is done in PR #3299; WP-PG.30 is done in PR #3310.
+**D3 and D7 are the decisions that unblock the dense-pile
 fixture**; everything claimable above serves the many-islands and ODE
 regimes meanwhile.
 
@@ -159,6 +161,14 @@ decisions.
   `BM_ContactContainerActive/120/1/{1,16}` medians were 6588 -> 6433 ms and
   6998 -> 6468 ms. Verified binaries passed the historical crash gate: base
   30/30 and branch 30/30 default 16-thread benchmark stressors returned 0.
+- 2026-07-08: WP-PG.31 merged as #3341 (`653da1256fb`). WP-PG.32 claimed on
+  `wp-pg-32-frame-allocation-gate` as a tracker reconciliation: merged #3297
+  (`93afb066c66`) had already added `FrameAllocator`, World-owned
+  `MemoryManager` preparation, solver/profiler/Dantzig scratch reuse, and the
+  `INTEGRATION_StepAllocation` allocation-counting gate; merged #3307
+  (`b6e6a0d8778`) extended the same allocation discipline through soft-body
+  paths and recorded the full #3307-style performance report. Current local
+  verification is recorded in the WP-PG.32 row of the dashboard and lane doc.
 
 ## Session log
 

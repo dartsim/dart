@@ -47,7 +47,7 @@ the same versions/dirty flags the scalar path does, or sleeping breaks.
 
 #### WP-PG.31 — Scratch retention for shallow-support machinery
 
-- Status: local verified — `wp-pg-31-shallow-support-scratch`
+- Status: done — #3341 (`wp-pg-31-shallow-support-scratch`)
 - Objective: current `release-6.20` already retains the
   `findShallowSupportedFreeRoots` and `snapshotFreeRootVelocities` scratch
   buffers; finish the packet by skipping the shallow-support snapshot/find pass
@@ -69,12 +69,16 @@ the same versions/dirty flags the scalar path does, or sleeping breaks.
 
 #### WP-PG.32 — Frame-arena allocation discipline + CI allocation gate
 
-- Status: open
+- Status: done — #3297/#3307 (`wp-pg-32-frame-allocation-gate` tracker
+  reconciliation)
 - Objective: port the *pattern* of main's `FrameAllocator`
   (`dart/common/frame_allocator.hpp`) as an additive `dart::common`
   utility; route ConstraintSolver/collision per-step scratch through it;
   expose capacity/overflow counters; add an allocation-count regression
-  gate to CI (modeled on main #3103/#2504) using the guard scenes.
+  gate to CI (modeled on main #3103/#2504) using the guard scenes. Current
+  `release-6.20` already contains this implementation from merged #3297 and
+  #3307, so this packet is closed by recording the live evidence and avoiding a
+  duplicate allocator branch.
 - Value: converts "we think steady-state allocates" into a ratcheted
   invariant; unlocks safe scratch reuse everywhere else.
 - Scope: new `dart/common` header+cpp (additive, not in any public class
@@ -84,6 +88,26 @@ the same versions/dirty flags the scalar path does, or sleeping breaks.
 - Acceptance evidence: bit-identical outcomes; steady-state
   allocations-per-step counter on guard scenes recorded and gated;
   `pixi run test-eigen-overalignment` green.
+- Completion evidence: merged #3297 (`93afb066c66`) added
+  `dart/common/FrameAllocator.*`, `FrameStlAllocator`, World-owned
+  `MemoryManager` preparation, frame-scratch capacity/overflow counters,
+  solver/profiler/Dantzig scratch reuse, and the allocation-counting
+  `INTEGRATION_StepAllocation` harness covering `operator new`, raw
+  malloc-family calls where available, and DART `MemoryAllocator` traffic.
+  Its PR evidence reported strict native DART same-shape gates with zero
+  `operator new`, zero raw malloc-family, and zero World base-allocator growth
+  after explicit preparation or the implicit first step; Bullet/ODE gates are
+  scoped to the World base allocator because backend-internal allocations are
+  outside DART ownership. Merged #3307 (`b6e6a0d8778`) extended the allocation
+  discipline to soft/deformable paths and carried the required #3307-style
+  performance report: strict zero-regression checker PASS on
+  `.benchmark_results/pr3307-bafbd4b-full-parent-base/summary.json`, native
+  DART winning every checksum-equivalent soft-scene/thread row against FCL, and
+  strict soft allocation gates reporting zero `operator new`, zero raw
+  `malloc`, and zero counted allocator growth where available. Local
+  reconciliation-branch verification passed `pixi run test-eigen-overalignment`
+  (148/148), targeted Release allocator build, and
+  `ctest -R '(StepAllocation|FrameAllocator|MemoryManager)'` (3/3).
 - Dependencies: WP-PG.01; pairs well after WP-PG.31.
 
 #### WP-PG.33 — SoA batched integration for single-free-body cohorts
