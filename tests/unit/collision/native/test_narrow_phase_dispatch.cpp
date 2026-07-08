@@ -452,6 +452,28 @@ TEST(NarrowPhaseDispatch, MeshRaycastPreservesBoundaryStartHit)
   EXPECT_TRUE(result.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
 }
 
+TEST(NarrowPhaseDispatch, CapsuleRaycastPreservesBoundaryStartHit)
+{
+  CapsuleShape capsule(0.5, 2.0);
+
+  auto expectBoundaryHit = [&](const Eigen::Vector3d& direction) {
+    RaycastResult result;
+    EXPECT_TRUE(NarrowPhase::raycast(
+        Ray(Eigen::Vector3d(0.5, 0.0, 0.0), direction, 2.0),
+        &capsule,
+        Eigen::Isometry3d::Identity(),
+        RaycastOption::unlimited(),
+        result));
+    EXPECT_TRUE(result.hit);
+    EXPECT_DOUBLE_EQ(0.0, result.distance);
+    EXPECT_TRUE(result.point.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), 1e-12));
+    EXPECT_TRUE(result.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
+  };
+
+  expectBoundaryHit(Eigen::Vector3d::UnitX());
+  expectBoundaryHit(-Eigen::Vector3d::UnitX());
+}
+
 TEST(NarrowPhaseDispatch, CapsuleRaycastFromInsideExitsCapSurface)
 {
   CapsuleShape capsule(0.5, 2.0);

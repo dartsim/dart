@@ -273,20 +273,25 @@ bool raycastCapsule(
   const double oy = localOrigin.y();
   const double radiusSquared = radius * radius;
   const double radialSquared = ox * ox + oy * oy;
-  const bool originInsideCylinder = radialSquared <= radiusSquared + kEpsilon
-                                    && localOrigin.z() >= -halfHeight - kEpsilon
-                                    && localOrigin.z() <= halfHeight + kEpsilon;
-  const bool originInsideTopCap
+  const bool originStrictlyInsideCylinder
+      = radialSquared < radiusSquared - kEpsilon
+        && localOrigin.z() >= -halfHeight - kEpsilon
+        && localOrigin.z() <= halfHeight + kEpsilon;
+  const bool originStrictlyInsideTopCap
       = (localOrigin - Eigen::Vector3d(0, 0, halfHeight)).squaredNorm()
-        <= radiusSquared + kEpsilon;
-  const bool originInsideBottomCap
+        < radiusSquared - kEpsilon;
+  const bool originStrictlyInsideBottomCap
       = (localOrigin - Eigen::Vector3d(0, 0, -halfHeight)).squaredNorm()
-        <= radiusSquared + kEpsilon;
-  const bool originInsideCapsule
-      = originInsideCylinder || originInsideTopCap || originInsideBottomCap;
+        < radiusSquared - kEpsilon;
+  const bool originStrictlyInsideCapsule = originStrictlyInsideCylinder
+                                           || originStrictlyInsideTopCap
+                                           || originStrictlyInsideBottomCap;
 
-  auto acceptsHitDistance = [originInsideCapsule](double t) {
-    return originInsideCapsule ? t > kEpsilon : t >= 0.0;
+  auto acceptsHitDistance = [originStrictlyInsideCapsule](double& t) {
+    if (std::abs(t) <= kEpsilon) {
+      t = 0.0;
+    }
+    return originStrictlyInsideCapsule ? t > kEpsilon : t >= 0.0;
   };
 
   double a = dx * dx + dy * dy;
