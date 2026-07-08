@@ -44,6 +44,7 @@ libode = ">=0.16.5,<0.17"
 numpy = ">=2.2.5,<3"
 octomap = ">=1.10.0,<2"
 openscenegraph = ">=3.6.5,<4"
+pybind11 = ">=3.0.3,<4"
 spdlog = ">=1.15.3,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
@@ -65,6 +66,7 @@ config = { cmd = """
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
@@ -174,7 +176,7 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_IMGUI=ON" }
+build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_PYBIND11=ON" }
 
 wheel-build-core = { cmd = "python scripts/wheel_build.py {{ use_system_imgui }}", args = [
   { arg = "use_system_imgui", default = "ON" },
@@ -236,6 +238,7 @@ config-py = { cmd = """
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
@@ -776,7 +779,7 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_IMGUI=ON" }
+build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_PYBIND11=ON" }
 
 build-py-dev = { cmd = """
     cmake \
@@ -799,6 +802,7 @@ config-py = { cmd = """
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF" } }
@@ -1100,6 +1104,7 @@ config-tracy = { cmd = """
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
+        -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }

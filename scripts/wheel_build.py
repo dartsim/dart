@@ -62,6 +62,7 @@ def main(argv: list[str]) -> int:
         "-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
         "-DBUILD_SHARED_LIBS=OFF",
         f"-DDART_USE_SYSTEM_IMGUI={use_system_imgui}",
+        "-DDART_USE_SYSTEM_PYBIND11=ON",
     ]
     cmake_args.extend(cmake_host_linker_flags())
 

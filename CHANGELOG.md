@@ -80,6 +80,11 @@
     `DART_DISABLE_COMPILER_CACHE=ON` for uncached comparisons and cache-specific
     toolchain debugging.
 
+  * Keep Pixi DartPy and GUI demo configuration warning-free on CMake 4.3 by
+    using the Pixi `pybind11` package with modern Python discovery, updating
+    the FetchContent fallback to the same pybind11 release, and resolving GLVND
+    OpenGL libraries from the active Pixi prefix.
+
   * Add a root-cause discipline to the release-branch AI principles
     (`docs/ai/principles.md`): fix bugs at the root cause — reproduce the
     smallest failing case, fix the underlying cause, and add regression
