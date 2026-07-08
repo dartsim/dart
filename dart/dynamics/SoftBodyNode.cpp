@@ -463,8 +463,8 @@ double SoftBodyNode::getMass() const
 {
   double totalMass = BodyNode::getMass();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    totalMass += mPointMasses.at(i)->getMass();
+  for (const auto& pointProperty : mAspectProperties.mPointProps)
+    totalMass += pointProperty.mMass;
 
   return totalMass;
 }
@@ -1215,19 +1215,18 @@ void SoftBodyNode::aggregateAugMassMatrix(
 
   std::size_t dof = mParentJoint->getNumDofs();
   if (dof > 0) {
-    Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
-    Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
-    for (std::size_t i = 0; i < dof; ++i) {
-      K(i, i) = mParentJoint->getSpringStiffness(i);
-      D(i, i) = mParentJoint->getDampingCoefficient(i);
-    }
-    int iStart = mParentJoint->getIndexInTree(0);
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
 
-    // TODO(JS): Not recommended to use Joint::getAccelerations
-    _MCol.block(iStart, _col, dof, 1).noalias()
-        = mParentJoint->getRelativeJacobian().transpose() * mM_F
-          + D * (_timeStep * mParentJoint->getAccelerations())
-          + K * (_timeStep * _timeStep * mParentJoint->getAccelerations());
+    // TODO(JS): Revisit the augmented-mass spring/damping formulation.
+    auto segment = _MCol.block(iStart, _col, dof, 1);
+    segment.noalias() = mParentJoint->getRelativeJacobian().transpose() * mM_F;
+
+    const double timeStepSquared = _timeStep * _timeStep;
+    for (std::size_t i = 0; i < dof; ++i) {
+      segment(i, 0) += (_timeStep * mParentJoint->getDampingCoefficient(i)
+                        + timeStepSquared * mParentJoint->getSpringStiffness(i))
+                       * mParentJoint->getAcceleration(i);
+    }
   }
 }
 
@@ -1328,9 +1327,8 @@ void SoftBodyNode::aggregateInvMassMatrix(
   //
   mParentJoint->addInvMassMatrixSegmentTo(mInvM_U);
 
-  //
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->aggregateInvMassMatrix(_InvMCol, _col);
+  // PointMass::aggregateInvMassMatrix() is intentionally a no-op in DART 6.
+  // Preserve that public behavior without dispatching once per point mass.
 }
 
 //==============================================================================
@@ -1415,12 +1413,12 @@ void SoftBodyNode::aggregateGravityForceVector(
     addPointForceContribution(mG_F, pointMass.mX, pointMass.mG_F);
   }
 
-  int nGenCoords = mParentJoint->getNumDofs();
+  const std::size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0) {
-    Eigen::VectorXd g
-        = -(mParentJoint->getRelativeJacobian().transpose() * mG_F);
-    int iStart = mParentJoint->getIndexInTree(0);
-    _g.segment(iStart, nGenCoords) = g;
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
+    auto segment = _g.segment(iStart, nGenCoords);
+    segment.noalias() = mParentJoint->getRelativeJacobian().transpose() * mG_F;
+    segment = -segment;
   }
 }
 
@@ -1538,8 +1536,14 @@ void SoftBodyNode::clearExternalForces()
 {
   BodyNode::clearExternalForces();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->clearExtForce();
+  bool hadExternalPointForce = false;
+  for (auto* pointMass : mPointMasses) {
+    hadExternalPointForce
+        = hadExternalPointForce || !pointMass->mFext.isZero(0.0);
+    pointMass->mFext.setZero();
+  }
+  if (hadExternalPointForce)
+    dirtyExternalForces();
 }
 
 //==============================================================================
@@ -1547,8 +1551,8 @@ void SoftBodyNode::clearInternalForces()
 {
   BodyNode::clearInternalForces();
 
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses[i]->resetForces();
+  for (auto& pointState : mAspectState.mPointStates)
+    pointState.mForces.setZero();
 }
 
 //==============================================================================
