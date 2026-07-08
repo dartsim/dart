@@ -36,10 +36,14 @@
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/DistanceFilter.hpp"
+#include "dart/collision/dart/DARTCollide.hpp"
 #include "dart/collision/native/NativeCollisionGroup.hpp"
 #include "dart/collision/native/NativeCollisionObject.hpp"
 #include "dart/collision/native/narrow_phase/NarrowPhase.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
 
 #include <algorithm>
 #include <limits>
@@ -48,6 +52,16 @@ namespace dart {
 namespace collision {
 
 namespace {
+
+//==============================================================================
+class ScratchCollisionResult final : public CollisionResult
+{
+public:
+  ScratchCollisionResult()
+  {
+    setCollidingObjectCacheEnabled(false);
+  }
+};
 
 //==============================================================================
 bool checkGroupValidity(
@@ -85,12 +99,20 @@ native::CollisionOption makeNativeOption(
 }
 
 //==============================================================================
+bool hasNativeCollisionPath(const NativeCollisionObject* object)
+{
+  return object != nullptr
+         && (object->getNativeShape() != nullptr
+             || object->usesDartFallbackShape());
+}
+
+//==============================================================================
 bool shouldSkipPair(
     const NativeCollisionObject* object1,
     const NativeCollisionObject* object2,
     const CollisionOption& option)
 {
-  if (!object1->getNativeShape() || !object2->getNativeShape())
+  if (!hasNativeCollisionPath(object1) || !hasNativeCollisionPath(object2))
     return true;
 
   if (option.collisionFilter
@@ -99,6 +121,19 @@ bool shouldSkipPair(
   }
 
   return false;
+}
+
+//==============================================================================
+bool isPlaneObject(const NativeCollisionObject* object)
+{
+  return object != nullptr && object->isPlaneShape();
+}
+
+//==============================================================================
+bool shouldUseDartSoftFallback(
+    const NativeCollisionObject* object1, const NativeCollisionObject* object2)
+{
+  return object1->usesDartFallbackShape() || object2->usesDartFallbackShape();
 }
 
 //==============================================================================
@@ -258,15 +293,101 @@ bool emitContacts(
 }
 
 //==============================================================================
+bool emitDartFallbackContacts(
+    const CollisionResult& pairResult,
+    NativeCollisionObject* object1,
+    NativeCollisionObject* object2,
+    const CollisionOption& option,
+    CollisionResult& result)
+{
+  const std::size_t maxPairContacts
+      = option.getEffectiveMaxNumContactsPerPair();
+  std::size_t emittedForPair = 0u;
+
+  const std::size_t numContacts = pairResult.getNumContacts();
+  for (std::size_t i = 0u; i < numContacts; ++i) {
+    if (result.getNumContacts() >= option.maxNumContacts)
+      return true;
+
+    if (emittedForPair >= maxPairContacts)
+      return false;
+
+    auto contact = pairResult.getContact(i);
+    if (contact.penetrationDepth < 0.0
+        && !option.allowNegativePenetrationDepthContacts) {
+      continue;
+    }
+
+    if (Contact::isZeroNormal(contact.normal))
+      continue;
+
+    contact.collisionObject1 = object1;
+    contact.collisionObject2 = object2;
+    result.addContact(contact);
+    ++emittedForPair;
+  }
+
+  return result.getNumContacts() >= option.maxNumContacts;
+}
+
+//==============================================================================
+bool processDartSoftFallbackPair(
+    NativeCollisionObject* object1,
+    NativeCollisionObject* object2,
+    const CollisionOption& option,
+    CollisionResult* result,
+    bool& collisionFound,
+    ScratchCollisionResult& pairResult)
+{
+  if (result && result->getNumContacts() >= option.maxNumContacts)
+    return true;
+
+  pairResult.clear();
+  auto* dartFallback1 = object1->getDartFallbackObject();
+  auto* dartFallback2 = object2->getDartFallbackObject();
+  bool hit = false;
+  if (isPlaneObject(object1) && !isPlaneObject(object2)) {
+    hit = collidePlaneShape(dartFallback1, dartFallback2, true, pairResult)
+          != 0;
+  } else if (!isPlaneObject(object1) && isPlaneObject(object2)) {
+    hit = collidePlaneShape(dartFallback2, dartFallback1, false, pairResult)
+          != 0;
+  } else {
+    hit = collide(dartFallback1, dartFallback2, pairResult) != 0;
+  }
+  if (!hit)
+    return false;
+
+  collisionFound = true;
+
+  if (!result)
+    return true;
+
+  if (!option.enableContact) {
+    addPairOnlyContact(object1, object2, *result);
+    return result->getNumContacts() >= option.maxNumContacts;
+  }
+
+  return emitDartFallbackContacts(
+      pairResult, object1, object2, option, *result);
+}
+
+//==============================================================================
 bool processNativePair(
     NativeCollisionObject* object1,
     NativeCollisionObject* object2,
     const CollisionOption& option,
     CollisionResult* result,
-    bool& collisionFound)
+    bool& collisionFound,
+    ScratchCollisionResult& fallbackPairResult)
 {
   if (shouldSkipPair(object1, object2, option))
     return false;
+
+  if (shouldUseDartSoftFallback(object1, object2)) {
+    return processDartSoftFallbackPair(
+        object1, object2, option, result, collisionFound, fallbackPairResult);
+  }
 
   if (result && result->getNumContacts() >= option.maxNumContacts)
     return true;
@@ -362,10 +483,12 @@ bool NativeCollisionDetector::collide(
   nativeGroup->updateEngineData();
 
   bool collisionFound = false;
+  ScratchCollisionResult fallbackPairResult;
   nativeGroup->mBroadPhase->visitPairs([&](std::size_t id1, std::size_t id2) {
     auto* object1 = nativeGroup->mIdToObject.at(id1);
     auto* object2 = nativeGroup->mIdToObject.at(id2);
-    return !processNativePair(object1, object2, option, result, collisionFound);
+    return !processNativePair(
+        object1, object2, option, result, collisionFound, fallbackPairResult);
   });
 
   return collisionFound;
@@ -399,6 +522,7 @@ bool NativeCollisionDetector::collide(
   nativeGroup2->updateEngineData();
 
   bool collisionFound = false;
+  ScratchCollisionResult fallbackPairResult;
   for (auto* object1 : nativeGroup1->mCollisionObjects) {
     for (auto* object2 : nativeGroup2->mCollisionObjects) {
       if (processNativePair(
@@ -406,7 +530,8 @@ bool NativeCollisionDetector::collide(
               static_cast<NativeCollisionObject*>(object2),
               option,
               result,
-              collisionFound)) {
+              collisionFound,
+              fallbackPairResult)) {
         return collisionFound;
       }
     }

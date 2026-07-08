@@ -49,6 +49,7 @@ namespace collision {
 
 class NativeCollisionDetector;
 class NativeCollisionGroup;
+class DARTCollisionObject;
 
 class NativeCollisionObject : public CollisionObject
 {
@@ -56,11 +57,19 @@ public:
   friend class NativeCollisionDetector;
   friend class NativeCollisionGroup;
 
+  ~NativeCollisionObject() override;
+
   const native::Shape* getNativeShape() const;
 
   const Eigen::Isometry3d& getNativeTransform() const;
 
   const native::Aabb& getNativeAabb() const;
+
+  DARTCollisionObject* getDartFallbackObject();
+
+  bool usesDartFallbackShape() const;
+
+  bool isPlaneShape() const;
 
 protected:
   NativeCollisionObject(
@@ -74,8 +83,11 @@ private:
   void rebuildNativeShape();
 
   std::unique_ptr<native::Shape> mNativeShape;
+  std::unique_ptr<DARTCollisionObject> mDartFallbackObject;
   Eigen::Isometry3d mNativeTransform{Eigen::Isometry3d::Identity()};
   native::Aabb mNativeAabb;
+  bool mUsesDartFallbackShape{false};
+  bool mIsPlaneShape{false};
   std::size_t mLastKnownShapeId{std::numeric_limits<std::size_t>::max()};
   std::size_t mLastKnownShapeVersion{0u};
 };
