@@ -92,6 +92,7 @@ TEST(CylinderCollision, CollidesParallelCylinders)
   ASSERT_EQ(1u, result.numContacts());
   EXPECT_TRUE(
       result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(0.375, result.getContact(0).position.x(), 1e-12);
 }
 
 TEST(CylinderCollision, CoaxialCylindersUseLateralSeparation)
@@ -260,6 +261,7 @@ TEST(CylinderCollision, CollidesCylinderSphere)
   ASSERT_EQ(1u, result.numContacts());
   EXPECT_TRUE(
       result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(0.375, result.getContact(0).position.x(), 1e-12);
 }
 
 TEST(CylinderCollision, ContainedCylinderSphereUsesInwardNormal)
@@ -300,6 +302,23 @@ TEST(CylinderCollision, CollidesCylinderBox)
   EXPECT_TRUE(
       result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
   EXPECT_NEAR(0.375, result.getContact(0).position.x(), 1e-12);
+}
+
+TEST(CylinderCollision, RotatedCylinderBoxCornerContactPositionLiesInOverlap)
+{
+  CylinderShape cylinder(1.0, 2.0);
+  BoxShape box(Eigen::Vector3d::Constant(1e-4));
+  Eigen::Isometry3d boxTransform = rotatedAroundZ(0.25);
+  boxTransform.translation() = Eigen::Vector3d(0.9, 0.0, 0.0);
+
+  CollisionResult result;
+  const bool hit = collideCylinderBox(
+      cylinder, Eigen::Isometry3d::Identity(), box, boxTransform, result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_LT(result.getContact(0).position.x(), 1.0);
+  EXPECT_GT(result.getContact(0).position.x(), 0.9);
 }
 
 TEST(CylinderCollision, DeepFloorBoxUsesAxialNormal)
@@ -421,6 +440,7 @@ TEST(CylinderCollision, CollidesCylinderCapsule)
   ASSERT_EQ(1u, result.numContacts());
   EXPECT_TRUE(
       result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(0.375, result.getContact(0).position.x(), 1e-12);
 }
 
 TEST(CylinderCollision, ContainedCapsuleEndpointUsesContainmentDepth)

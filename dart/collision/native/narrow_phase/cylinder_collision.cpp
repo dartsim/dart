@@ -554,12 +554,13 @@ bool collideCylinderSphere(
   const Eigen::Vector3d normalWorld
       = cylinderTransform.rotation() * normalLocal;
   const Eigen::Vector3d closestWorld = cylinderTransform * closestLocal;
+  const Eigen::Vector3d contactNormalWorld = -normalWorld;
   const Eigen::Vector3d contactPoint
-      = closestWorld + normalWorld * (penetration * 0.5);
+      = closestWorld + contactNormalWorld * (penetration * 0.5);
 
   ContactPoint contact;
   contact.position = contactPoint;
-  contact.normal = -normalWorld;
+  contact.normal = contactNormalWorld;
   contact.depth = penetration;
 
   result.addContact(contact);
@@ -752,7 +753,7 @@ bool collideCylinderBox(
 
   const Eigen::Vector3d normalWorld = cylinderTransform.rotation() * bestNormal;
   const Eigen::Vector3d contactWorld = cylinderTransform * bestContactPoint
-                                       + normalWorld * (maxPenetration * 0.5);
+                                       - normalWorld * (maxPenetration * 0.5);
 
   ContactPoint contact;
   contact.position = contactWorld;
@@ -886,12 +887,15 @@ bool collideCylinderCapsule(
 
   const Eigen::Vector3d normalWorld
       = cylinderTransform.rotation() * normalLocal;
-  const Eigen::Vector3d contactWorld = cylinderTransform * bestCylPoint
-                                       + normalWorld * (bestPenetration * 0.5);
+  const Eigen::Vector3d contactNormalWorld
+      = bestEndpointInsideCylinder ? normalWorld : -normalWorld;
+  const Eigen::Vector3d contactWorld
+      = cylinderTransform * bestCylPoint
+        + contactNormalWorld * (bestPenetration * 0.5);
 
   ContactPoint contact;
   contact.position = contactWorld;
-  contact.normal = bestEndpointInsideCylinder ? normalWorld : -normalWorld;
+  contact.normal = contactNormalWorld;
   contact.depth = bestPenetration;
 
   result.addContact(contact);
