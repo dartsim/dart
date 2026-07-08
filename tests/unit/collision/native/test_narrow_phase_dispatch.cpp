@@ -527,6 +527,30 @@ TEST(NarrowPhaseDispatch, ConvexRaycastFromInsideExitsSurface)
   EXPECT_FALSE(result.hit);
 }
 
+TEST(NarrowPhaseDispatch, ConvexRaycastRejectsEntryAfterBoundaryExit)
+{
+  ConvexShape convex(
+      {{-0.5, -0.5, -0.5},
+       {0.5, -0.5, -0.5},
+       {0.5, 0.5, -0.5},
+       {-0.5, 0.5, -0.5},
+       {-0.5, -0.5, 0.5},
+       {0.5, -0.5, 0.5},
+       {0.5, 0.5, 0.5},
+       {-0.5, 0.5, 0.5}});
+
+  RaycastResult result;
+  EXPECT_FALSE(NarrowPhase::raycast(
+      Ray(Eigen::Vector3d(-1.0, 0.5, 0.0),
+          Eigen::Vector3d(1.0, 1.0, 0.0).normalized(),
+          2.0),
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      RaycastOption::unlimited(),
+      result));
+  EXPECT_FALSE(result.hit);
+}
+
 TEST(NarrowPhaseDispatch, ReportsP9SupportedPairs)
 {
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Sphere));

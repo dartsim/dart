@@ -715,6 +715,11 @@ bool raycastConvex(
     } else if (std::abs(signedDistance) <= kEpsilon) {
       originOnBoundary = true;
       boundaryNormal = worldNormal;
+      if (directionDot > kEpsilon) {
+        exitDistance = 0.0;
+        exitNormal = worldNormal;
+        hasExitWithinMaxDistance = true;
+      }
     } else if (directionDot > kEpsilon) {
       const double candidateExit = -signedDistance / directionDot;
       if (candidateExit >= 0.0 && candidateExit <= exitDistance) {
