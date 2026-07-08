@@ -2310,6 +2310,7 @@ void ConstraintSolver::recordConstrainedGroupProfileCounters() const
 
       if (const auto* softContact
           = dynamic_cast<const SoftContactConstraint*>(constraint.get())) {
+        ++contactConstraints;
         addBody(groupBodies, softContact->mBodyNode1);
         addBody(groupBodies, softContact->mBodyNode2);
         continue;
@@ -2337,6 +2338,11 @@ void ConstraintSolver::recordConstrainedGroupProfileCounters() const
       if (const auto* coupler
           = dynamic_cast<const CouplerConstraint*>(constraint.get())) {
         addBody(groupBodies, coupler->mBodyNode);
+        for (const auto& mimicProp : coupler->mMimicProps) {
+          if (mimicProp.mReferenceJoint != nullptr) {
+            addBody(groupBodies, mimicProp.mReferenceJoint->getChildBodyNode());
+          }
+        }
         continue;
       }
 
