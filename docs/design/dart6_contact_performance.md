@@ -21,6 +21,11 @@ without changing default contact, solver, or sleeping semantics:
 - frame allocation discipline and allocation gates: #3297 and #3307;
 - DART-native broadphase SIMD consumer: #3299.
 
+This is not a claim that the full issue #3056 performance target, D3 solver
+policy, D7 sleeping/penetration behavior, or D8 manifold policy is complete. It
+only retires the stale active packet board after the behavior-preserving packets
+closed or became evidence-gated.
+
 No unblocked implementation packet remains from that round. Future
 contact-performance work needs either new profile evidence that reverses a
 rejected candidate or explicit maintainer approval for a behavior-changing
