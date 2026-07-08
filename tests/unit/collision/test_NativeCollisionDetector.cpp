@@ -40,9 +40,17 @@
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/CapsuleShape.hpp>
+#include <dart/dynamics/ConeShape.hpp>
+#include <dart/dynamics/ConvexMeshShape.hpp>
+#include <dart/dynamics/CylinderShape.hpp>
+#include <dart/dynamics/MeshShape.hpp>
+#include <dart/dynamics/MultiSphereConvexHullShape.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
+#include <dart/dynamics/PyramidShape.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/SphereShape.hpp>
+
+#include <dart/math/TriMesh.hpp>
 
 #include <gtest/gtest.h>
 
@@ -131,6 +139,52 @@ private:
       std::pair<const dynamics::ShapeFrame*, const dynamics::ShapeFrame*>>
       mIgnoredPairs;
 };
+
+//==============================================================================
+dynamics::ConvexMeshShape::Vertices makeCubeVertices(double halfExtent = 0.5)
+{
+  const double h = halfExtent;
+  return {
+      {-h, -h, -h},
+      {h, -h, -h},
+      {h, h, -h},
+      {-h, h, -h},
+      {-h, -h, h},
+      {h, -h, h},
+      {h, h, h},
+      {-h, h, h}};
+}
+
+//==============================================================================
+dynamics::ConvexMeshShape::Triangles makeCubeTriangles()
+{
+  return {
+      {0, 1, 2},
+      {0, 2, 3},
+      {4, 6, 5},
+      {4, 7, 6},
+      {0, 5, 1},
+      {0, 4, 5},
+      {2, 6, 7},
+      {2, 7, 3},
+      {0, 7, 4},
+      {0, 3, 7},
+      {1, 5, 6},
+      {1, 6, 2}};
+}
+
+//==============================================================================
+std::shared_ptr<math::TriMesh<double>> makePlaneTriMesh()
+{
+  auto mesh = std::make_shared<math::TriMesh<double>>();
+  mesh->addVertex(-1.0, -1.0, 0.0);
+  mesh->addVertex(1.0, -1.0, 0.0);
+  mesh->addVertex(1.0, 1.0, 0.0);
+  mesh->addVertex(-1.0, 1.0, 0.0);
+  mesh->addTriangle(0, 1, 2);
+  mesh->addTriangle(0, 2, 3);
+  return mesh;
+}
 
 } // namespace
 
@@ -339,6 +393,153 @@ TEST(NativeCollisionDetector, CollidesCapsuleBox)
 }
 
 //==============================================================================
+TEST(NativeCollisionDetector, CollidesCapsuleCapsule)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto capsuleFrame1
+      = makeFrame(std::make_shared<dynamics::CapsuleShape>(0.5, 2.0));
+  auto capsuleFrame2 = makeFrame(
+      std::make_shared<dynamics::CapsuleShape>(0.5, 2.0),
+      Eigen::Vector3d(0.75, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup(
+      capsuleFrame1.get(), capsuleFrame2.get());
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+
+  const auto& contact = result.getContact(0);
+  EXPECT_EQ(capsuleFrame1.get(), contact.getShapeFrame1());
+  EXPECT_EQ(capsuleFrame2.get(), contact.getShapeFrame2());
+  EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, CollidesCylinderSphere)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto cylinderFrame
+      = makeFrame(std::make_shared<dynamics::CylinderShape>(0.5, 2.0));
+  auto sphereFrame = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(0.75, 0.0, 0.0));
+
+  auto group
+      = detector->createCollisionGroup(cylinderFrame.get(), sphereFrame.get());
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+
+  const auto& contact = result.getContact(0);
+  EXPECT_EQ(cylinderFrame.get(), contact.getShapeFrame1());
+  EXPECT_EQ(sphereFrame.get(), contact.getShapeFrame2());
+  EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, CollidesCylinderBox)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto cylinderFrame
+      = makeFrame(std::make_shared<dynamics::CylinderShape>(0.5, 2.0));
+  auto boxFrame = makeFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)),
+      Eigen::Vector3d(0.75, 0.0, 0.0));
+
+  auto group
+      = detector->createCollisionGroup(cylinderFrame.get(), boxFrame.get());
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+
+  const auto& contact = result.getContact(0);
+  EXPECT_EQ(cylinderFrame.get(), contact.getShapeFrame1());
+  EXPECT_EQ(boxFrame.get(), contact.getShapeFrame2());
+  EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, CollidesCylinderPlane)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto cylinderFrame = makeFrame(
+      std::make_shared<dynamics::CylinderShape>(0.5, 2.0),
+      Eigen::Vector3d(0.0, 0.0, 0.75));
+  auto planeFrame = makeFrame(
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  auto group
+      = detector->createCollisionGroup(cylinderFrame.get(), planeFrame.get());
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+
+  const auto& contact = result.getContact(0);
+  EXPECT_EQ(cylinderFrame.get(), contact.getShapeFrame1());
+  EXPECT_EQ(planeFrame.get(), contact.getShapeFrame2());
+  EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, CollidesSphereMesh)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto meshFrame = makeFrame(std::make_shared<dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), makePlaneTriMesh()));
+  auto sphereFrame = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(0.25, -0.25, 0.25));
+
+  auto group
+      = detector->createCollisionGroup(meshFrame.get(), sphereFrame.get());
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  const auto& contact = result.getContact(0);
+  EXPECT_EQ(meshFrame.get(), contact.getShapeFrame1());
+  EXPECT_EQ(sphereFrame.get(), contact.getShapeFrame2());
+  EXPECT_LT(contact.normal.z(), -0.99);
+  EXPECT_GE(contact.triID1, 0);
+  EXPECT_EQ(-1, contact.triID2);
+
+  auto reverseGroup
+      = detector->createCollisionGroup(sphereFrame.get(), meshFrame.get());
+  collision::CollisionResult reverseResult;
+  EXPECT_TRUE(reverseGroup->collide(
+      collision::CollisionOption(true, 10u), &reverseResult));
+  ASSERT_GT(reverseResult.getNumContacts(), 0u);
+
+  const auto& reverseContact = reverseResult.getContact(0);
+  EXPECT_EQ(sphereFrame.get(), reverseContact.getShapeFrame1());
+  EXPECT_EQ(meshFrame.get(), reverseContact.getShapeFrame2());
+  EXPECT_GT(reverseContact.normal.z(), 0.99);
+  EXPECT_EQ(-1, reverseContact.triID1);
+  EXPECT_GE(reverseContact.triID2, 0);
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, CollidesSphereConvexMesh)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto convexFrame = makeFrame(std::make_shared<dynamics::ConvexMeshShape>(
+      makeCubeVertices(), makeCubeTriangles()));
+  auto sphereFrame = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.75),
+      Eigen::Vector3d(1.0, 0.0, 0.0));
+
+  auto group
+      = detector->createCollisionGroup(convexFrame.get(), sphereFrame.get());
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+
+  const auto& contact = result.getContact(0);
+  EXPECT_EQ(convexFrame.get(), contact.getShapeFrame1());
+  EXPECT_EQ(sphereFrame.get(), contact.getShapeFrame2());
+}
+
+//==============================================================================
 TEST(NativeCollisionDetector, CollidesAcrossGroups)
 {
   auto detector = collision::NativeCollisionDetector::create();
@@ -404,13 +605,90 @@ TEST(NativeCollisionDetector, ConvertsSphereAndBoxShapes)
       1.5,
       static_cast<const native::CapsuleShape*>(nativeCapsule.get())
           ->getHeight());
+
+  const dynamics::CylinderShape cylinder(0.4, 1.2);
+  auto nativeCylinder
+      = collision::detail::NativeShapeConversion::create(cylinder);
+  ASSERT_NE(nullptr, nativeCylinder);
+  ASSERT_EQ(native::ShapeType::Cylinder, nativeCylinder->getType());
+  EXPECT_DOUBLE_EQ(
+      0.4,
+      static_cast<const native::CylinderShape*>(nativeCylinder.get())
+          ->getRadius());
+  EXPECT_DOUBLE_EQ(
+      1.2,
+      static_cast<const native::CylinderShape*>(nativeCylinder.get())
+          ->getHeight());
+
+  const dynamics::PlaneShape plane(Eigen::Vector3d(0.0, 0.0, 2.0), -0.75);
+  auto nativePlane = collision::detail::NativeShapeConversion::create(plane);
+  ASSERT_NE(nullptr, nativePlane);
+  ASSERT_EQ(native::ShapeType::Plane, nativePlane->getType());
+  EXPECT_TRUE(static_cast<const native::PlaneShape*>(nativePlane.get())
+                  ->getNormal()
+                  .isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+  EXPECT_DOUBLE_EQ(
+      -0.75,
+      static_cast<const native::PlaneShape*>(nativePlane.get())->getOffset());
+
+  const dynamics::ConvexMeshShape convexMesh(
+      makeCubeVertices(), makeCubeTriangles());
+  auto nativeConvexMesh
+      = collision::detail::NativeShapeConversion::create(convexMesh);
+  ASSERT_NE(nullptr, nativeConvexMesh);
+  ASSERT_EQ(native::ShapeType::Convex, nativeConvexMesh->getType());
+  EXPECT_EQ(
+      8u,
+      static_cast<const native::ConvexShape*>(nativeConvexMesh.get())
+          ->getVertices()
+          .size());
+
+  const dynamics::MeshShape meshShape(
+      Eigen::Vector3d(2.0, 3.0, 4.0), makePlaneTriMesh());
+  auto nativeMesh = collision::detail::NativeShapeConversion::create(meshShape);
+  ASSERT_NE(nullptr, nativeMesh);
+  ASSERT_EQ(native::ShapeType::Mesh, nativeMesh->getType());
+  const auto* mesh = static_cast<const native::MeshShape*>(nativeMesh.get());
+  ASSERT_EQ(4u, mesh->getVertices().size());
+  ASSERT_EQ(2u, mesh->getTriangles().size());
+  EXPECT_EQ(Eigen::Vector3d(-2.0, -3.0, 0.0), mesh->getVertices()[0]);
+
+  const dynamics::PyramidShape pyramid(1.0, 2.0, 3.0);
+  auto nativePyramid
+      = collision::detail::NativeShapeConversion::create(pyramid);
+  ASSERT_NE(nullptr, nativePyramid);
+  ASSERT_EQ(native::ShapeType::Convex, nativePyramid->getType());
+  EXPECT_EQ(
+      5u,
+      static_cast<const native::ConvexShape*>(nativePyramid.get())
+          ->getVertices()
+          .size());
 }
 
 //==============================================================================
 TEST(NativeCollisionDetector, LeavesUnsupportedShapesNull)
 {
-  const dynamics::PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
-  EXPECT_EQ(nullptr, collision::detail::NativeShapeConversion::create(plane));
+  auto emptyMesh = std::make_shared<dynamics::ConvexMeshShape::TriMeshType>();
+  const dynamics::ConvexMeshShape emptyConvexMesh(emptyMesh);
+  EXPECT_EQ(
+      nullptr,
+      collision::detail::NativeShapeConversion::create(emptyConvexMesh));
+
+  auto emptyTriMesh = std::make_shared<math::TriMesh<double>>();
+  const dynamics::MeshShape emptyMeshShape(
+      Eigen::Vector3d::Ones(), emptyTriMesh);
+  EXPECT_EQ(
+      nullptr,
+      collision::detail::NativeShapeConversion::create(emptyMeshShape));
+
+  const dynamics::ConeShape cone(1.0, 2.0);
+  EXPECT_EQ(nullptr, collision::detail::NativeShapeConversion::create(cone));
+
+  const dynamics::MultiSphereConvexHullShape multiSphere(
+      {{0.25, Eigen::Vector3d::Zero()},
+       {0.25, Eigen::Vector3d(0.5, 0.0, 0.0)}});
+  EXPECT_EQ(
+      nullptr, collision::detail::NativeShapeConversion::create(multiSphere));
 }
 
 //==============================================================================

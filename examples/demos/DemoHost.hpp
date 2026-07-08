@@ -144,11 +144,10 @@ struct LogEntry
 
 //==============================================================================
 /// Owns the single ImGuiViewer window, the scene registry, and the safe
-/// runtime scene-switching machinery described in
-/// docs/dev_tasks/dart6_consolidated_demos/BRIEF-phase1.md. Persistent host
-/// chrome (window, theme, panel layout) survives scene switches; per-scene
-/// state (world node, widgets, drag-and-drop, event handlers) is torn down in
-/// full on every switch.
+/// runtime scene-switching machinery described in examples/demos/README.md.
+/// Persistent host chrome (window, theme, panel layout) survives scene
+/// switches; per-scene state (world node, widgets, drag-and-drop, event
+/// handlers) is torn down in full on every switch.
 class DemoHost
 {
 public:

@@ -9,15 +9,23 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
-**Current claimed packet: WP-PG.02 — Extend the contact-container benchmark
-matrix** ([06-infra-evidence-lane.md](06-infra-evidence-lane.md)). Claim this
-on `wp-pg-02-contact-container-matrix` off current `origin/release-6.20`;
-do not continue the rejected WP-PG.11 solver branch.
+**Current claimed packet: WP-PG.10 — LCP pipeline instrumentation and island
+census** ([02-constraint-lcp-lane.md](02-constraint-lcp-lane.md)). Continue on
+`wp-pg-10-lcp-profile-census` off current `origin/release-6.20`.
 
-Immediate next step: finish verification (`pixi run lint`, `pixi run
-check-lint`, benchmark target build, dashboard dry-run, and merge/preview smoke
-over the emitted JSON). Keep any performance claim out of the PR body unless
-backed by a fresh current-base A/B comparison.
+Immediate next step: open the packet PR after maintainer approval. The branch
+adds fixed-label text-profiler counters for constrained-group island census,
+solver/LCP stage scopes, and a runtime profile-recording gate so ordinary
+`World::step()` execution remains allocation-neutral when profiling is compiled
+in but not requested. Local profile artifact
+`/tmp/wp_pg10_profile_20260707T132241` captured S1-S5 native rows; guard
+artifact `/tmp/wp_pg10_guard_20260707T132321` captured S1 120-object dart/ode
+rows and S2-S5 all-detector rows. The FCL generated-scene guard drift (`S4_fcl`,
+`S5_fcl`) reproduces on the unmodified current base, so it is not a WP-PG.10
+regression. Final local verification passed `pixi run lint`,
+`pixi run check-lint`, capped `ALL`, profile smoke, `UNIT_common_Profile`,
+`INTEGRATION_StepAllocation`, and
+`DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
 
 **WP-PG.01 is captured** (branch `wp-pg-01-baseline-evidence`, PR
 pending) — guard rows, profile splits, and prior-art triage are in
@@ -28,11 +36,12 @@ many-islands regime is ~50% integration (WS-C is the lever there).
 
 Claimable now, in priority order:
 
-1. **WP-PG.02** (WS-E — benchmark matrix coverage for honest future A/B).
-2. **WP-PG.03** (WS-E — profiling doc and Tracy config).
-3. **WP-PG.21** only if a new current-base profile justifies revisiting the
-   ODE active path. WP-PG.20, WP-PG.22, and WP-PG.11 all have local
-   current-base rejection evidence from 2026-07-06.
+1. **WP-PG.10** (WS-A — LCP instrumentation and island census; currently
+   claimed).
+2. **WP-PG.31** or **WP-PG.32** only after WP-PG.10 lands or if maintainer
+   explicitly prioritizes allocation work. WP-PG.20 is #3329; WP-PG.21 failed
+   the 2026-07-07 current-base map/pruning gate; WP-PG.22 and WP-PG.11 both
+   have local current-base rejection evidence from 2026-07-06.
 
 Blocked/gated (do not claim): PG.04 (D4), PG.12 (evidence), PG.13
 (PG.10 census), PG.14 (D3 — now urgent), PG.15 (D7 — now urgent), PG.23
@@ -76,15 +85,18 @@ decisions.
   dense-pile: solve 88.1% / assembly 7.4%; P2 active-3k: integration
   50.1%); six prior-art branches triaged (two unmerged hash-preserving
   solver wins queued into WP-PG.11; one branch recommended for deletion).
-- 2026-07-06: WP-PG.20 was attempted locally after current
-  `release-6.20` advanced through #3297 and #3310, but was not published:
-  span, span+lookup, and minimal no-copy variants all failed the required
-  current-base A/B gate on the weakest 120-object/16-thread ODE row.
-  Work moved to independent packet WP-PG.22 on
-  `wp-pg-22-ode-pose-version-gate`. The previously local WP-PG.31 branch
-  was not published because #3297 already contains the World
-  shallow-support scratch-retention mechanics; its local patch was stashed
-  as superseded instead of layered on top of the newer base.
+- 2026-07-06: Earlier local WP-PG.20 span/no-copy variants were rejected
+  against then-current `release-6.20` because the weakest 120-object/
+  16-thread ODE row regressed; those probes are superseded by the corrected
+  #3329 implementation below.
+- 2026-07-06/07: WP-PG.20 executed on #3329
+  `wp-pg-20-ode-history-spans`: ODE contact-history spans without the
+  pair-keyed map/pruning follow-up. After the #3307/#3327 base advance,
+  current-base A/B on `origin/release-6.20` @ `9ff8b1d77a1` kept hashes
+  bit-identical and improved ODE rows: `S2_ode` 0.0933 -> 0.0521 ms/step,
+  `S3_ode` 115.9 -> 19.7 ms/step, `S4_ode` 0.2269 -> 0.1549 ms/step,
+  and `BM_ContactContainerActive` ODE rows by 3.2-7.6%. WP-PG.21 remains
+  open but evidence-gated against the span-only baseline.
 - 2026-07-06: WP-PG.22 was attempted locally but not published: a safe
   exact-transform ODE pose-write gate preserved hashes but regressed the
   settled 3k/900-object ODE rows; the intended cpp-only kinematic-version
@@ -109,6 +121,37 @@ decisions.
   dashboard slice after local smoke runs exceeded the runtime budget.
   Artifacts: `/tmp/wp_pg02_contact_container_deactivation_rows.json`,
   `/tmp/wp_pg02_contact_container_active_fcl_bullet_smoke.json`.
+- 2026-07-07: WP-PG.02 merged as #3327. WP-PG.03 claimed on
+  `wp-pg-03-profiling-doc` to promote the DART 6.20 profiling workflow into
+  `docs/onboarding/profiling.md` and add the profile-env Tracy configure task.
+  End-to-end profile build exposed an existing `TRACY_CALLSTACK` compatibility
+  bug in `dart/common/Profile.hpp`; the branch fixes it by using Tracy's
+  callstack constructor only when the packaged header exposes the callstack
+  macro. Local verification passed: `pixi run -e profile config-tracy`, profile
+  `contact_benchmark` build + one-step `--profile` smoke,
+  `UNIT_common_Profile`, docs parse smoke, `pixi run lint`, and
+  `pixi run check-lint`.
+- 2026-07-07: WP-PG.03 merged as #3337. A fresh WP-PG.21 gate on current
+  `origin/release-6.20` @ `b78a8b8cbe7` re-tested the prior ODE
+  pair-keyed map/pruning variant against the span-only #3329 base. Hashes
+  stayed identical, but the result was mixed/regressive: `S2_ode` 0.0572 ->
+  0.0644 ms/step (+12.6%), `S3_ode` 22.28 -> 19.74 ms/step (-11.4%),
+  `S4_ode` 0.208 -> 0.248 ms/step (+19.2%), and contact-container 120-object
+  ODE rows regressed 6.8-9.4%. Artifact:
+  `/tmp/wp_pg21_gate_20260707T130843`; WP-PG.21 remains evidence-gated.
+- 2026-07-07: WP-PG.10 claimed on `wp-pg-10-lcp-profile-census`. The branch
+  adds text-profiler counters and scopes for constrained-group island census
+  and boxed-LCP stage split, plus runtime-gated solver recording for
+  allocation-sensitive non-profile runs. Local profile artifact:
+  `/tmp/wp_pg10_profile_20260707T132241`; local guard artifact:
+  `/tmp/wp_pg10_guard_20260707T132321`. Native S1-S5 hashes matched the guard
+  references; S1 120-object dart/ode rows and S2-S5 all-detector rows matched
+  current-base parent. The old S4/S5 FCL guard hashes had already drifted on
+  unmodified `origin/release-6.20` (`S4_fcl = 0xea9b68f8b062600d`,
+  `S5_fcl = 0x8277be4f0c14212`), so they are not WP-PG.10 regressions.
+  Final verification passed lint/check-lint, capped `ALL` (144/144 C++ tests,
+  98/98 Python tests), profile smoke, allocation gates, and gz-physics/gz-sim
+  compatibility (`test-gz`).
 
 ## Session log
 

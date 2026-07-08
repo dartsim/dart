@@ -32,6 +32,8 @@
 
 #include "dart/common/detail/profiler.hpp"
 
+#include "dart/common/detail/ProfileRecording.hpp"
+
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -98,6 +100,18 @@ struct Profiler::ProfileNode
   ProfileNode* nextSibling{nullptr};
 };
 
+struct Profiler::CounterNode
+{
+  InlineString<192> label;
+  InlineString<320> file;
+  int line{0};
+  std::uint64_t sampleCount{0};
+  std::uint64_t sum{0};
+  std::uint64_t min{std::numeric_limits<std::uint64_t>::max()};
+  std::uint64_t max{0};
+  std::uint64_t last{0};
+};
+
 struct Profiler::ActiveScope
 {
   ProfileNode* node{nullptr};
@@ -112,6 +126,7 @@ struct Profiler::ThreadRecord
   std::thread::id id;
   ProfileNode root{};
   std::vector<ProfileNode> nodes;
+  std::vector<CounterNode> counters;
   std::vector<ActiveScope> stack;
 };
 
@@ -136,6 +151,16 @@ Profiler& Profiler::instance()
   return profiler;
 }
 
+bool Profiler::setRecordingEnabled(bool enabled) noexcept
+{
+  return detail::setProfileRecordingEnabledFlag(enabled);
+}
+
+bool Profiler::isRecordingEnabled() const noexcept
+{
+  return detail::isProfileRecordingEnabledFlag();
+}
+
 std::shared_ptr<Profiler::ThreadRecord> Profiler::threadRecord()
 {
   thread_local std::shared_ptr<ThreadRecord> record
@@ -155,6 +180,7 @@ std::shared_ptr<Profiler::ThreadRecord> Profiler::registerThread()
     record->root.label.assign(record->rootLabel);
   }
   record->nodes.reserve(kInitialThreadNodeCapacity);
+  record->counters.reserve(kInitialThreadNodeCapacity);
 
   {
     std::lock_guard<std::mutex> lock(m_threadRegistryMutex);
@@ -205,7 +231,45 @@ Profiler::ProfileNode* Profiler::allocateNode(
   return &node;
 }
 
+Profiler::CounterNode* Profiler::findOrCreateCounter(
+    Profiler::ThreadRecord& record,
+    std::string_view label,
+    std::string_view file,
+    int line)
+{
+  for (auto& counter : record.counters) {
+    if (counter.line == line && counter.label.matches(label)
+        && counter.file.matches(file)) {
+      return &counter;
+    }
+  }
+
+  if (record.counters.size() == record.counters.capacity())
+    return nullptr;
+
+  record.counters.emplace_back();
+  auto& counter = record.counters.back();
+  counter.label.assign(label);
+  counter.file.assign(file);
+  counter.line = line;
+  return &counter;
+}
+
 std::string Profiler::sourceText(const ProfileNode& node)
+{
+  if (node.file.empty())
+    return "";
+
+  const auto file = node.file.view();
+  std::string source;
+  source.reserve(file.size() + 1u + 16u);
+  source.append(file);
+  source.push_back(':');
+  source.append(std::to_string(static_cast<long long>(node.line)));
+  return source;
+}
+
+std::string Profiler::sourceText(const CounterNode& node)
 {
   if (node.file.empty())
     return "";
@@ -261,6 +325,40 @@ void Profiler::popScope(Profiler::ThreadRecord& record)
   }
 }
 
+void Profiler::recordCounter(
+    std::string_view label,
+    std::string_view file,
+    int line,
+    std::uint64_t value)
+{
+  auto record = threadRecord();
+  auto* counter = findOrCreateCounter(*record, label, file, line);
+  if (counter == nullptr)
+    return;
+
+  ++counter->sampleCount;
+  counter->sum += value;
+  counter->min = std::min(counter->min, value);
+  counter->max = std::max(counter->max, value);
+  counter->last = value;
+}
+
+void Profiler::recordScopeForTesting(
+    std::string_view label,
+    std::string_view file,
+    int line,
+    std::uint64_t durationNs)
+{
+  auto record = threadRecord();
+  auto* node = findOrCreateChild(*record, record->root, label, file, line);
+
+  ++node->callCount;
+  node->inclusiveNs += durationNs;
+  node->selfNs += durationNs;
+  node->minNs = std::min(node->minNs, durationNs);
+  node->maxNs = std::max(node->maxNs, durationNs);
+}
+
 std::uint64_t Profiler::sumInclusiveChildren(const ProfileNode& node)
 {
   std::uint64_t total = 0;
@@ -269,6 +367,32 @@ std::uint64_t Profiler::sumInclusiveChildren(const ProfileNode& node)
     total += child->inclusiveNs;
   }
   return total;
+}
+
+bool Profiler::hasRecordedScopes(const ProfileNode& node)
+{
+  if (node.callCount > 0) {
+    return true;
+  }
+
+  for (auto* child = node.firstChild; child != nullptr;
+       child = child->nextSibling) {
+    if (hasRecordedScopes(*child)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool Profiler::hasRecordedCounters(const ThreadRecord& record)
+{
+  for (const auto& counter : record.counters) {
+    if (counter.sampleCount > 0)
+      return true;
+  }
+
+  return false;
 }
 
 void Profiler::markFrame()
@@ -484,7 +608,10 @@ void Profiler::printNode(
   for (std::size_t idx = 0; idx < children.size(); ++idx) {
     const auto* child = children[idx];
     const auto pct = percentage(child->inclusiveNs, threadTotalNs);
-    if (pct < minPercent && child->inclusiveNs < 1'000'000) {
+    const bool shouldShowZeroDurationCall
+        = threadTotalNs == 0 && child->callCount > 0;
+    if (!shouldShowZeroDurationCall && pct < minPercent
+        && child->inclusiveNs < 1'000'000) {
       continue; // Skip insignificant nodes (<minPercent and <1ms total).
     }
 
@@ -526,6 +653,57 @@ void Profiler::printThreadTree(
   printNode(os, record.root, threadTotalNs, "", minPercent, labelWidth);
 }
 
+void Profiler::printThreadCounters(
+    std::ostream& os, const ThreadRecord& record) const
+{
+  std::vector<const CounterNode*> counters;
+  counters.reserve(record.counters.size());
+  for (const auto& counter : record.counters) {
+    if (counter.sampleCount > 0)
+      counters.push_back(&counter);
+  }
+
+  if (counters.empty())
+    return;
+
+  std::sort(
+      counters.begin(),
+      counters.end(),
+      [](const CounterNode* lhs, const CounterNode* rhs) {
+        const auto lhsLabel = lhs->label.view();
+        const auto rhsLabel = rhs->label.view();
+        if (lhsLabel == rhsLabel)
+          return lhs->line < rhs->line;
+        return lhsLabel < rhsLabel;
+      });
+
+  std::size_t labelWidth = 0;
+  for (const auto* counter : counters)
+    labelWidth = std::max(labelWidth, counter->label.view().size());
+  labelWidth = std::clamp<std::size_t>(labelWidth, 16, 56);
+
+  os << "  Counters:\n";
+  for (const auto* counter : counters) {
+    const double mean = counter->sampleCount > 0
+                            ? static_cast<double>(counter->sum)
+                                  / static_cast<double>(counter->sampleCount)
+                            : 0.0;
+    std::ostringstream meanText;
+    meanText << std::fixed << std::setprecision(mean >= 100.0 ? 1 : 2) << mean;
+
+    os << "    " << padRight(counter->label.view(), labelWidth) << " samples "
+       << std::setw(8) << counter->sampleCount << " sum " << std::setw(8)
+       << formatCount(counter->sum) << " mean " << std::setw(8)
+       << meanText.str() << " min " << std::setw(8) << formatCount(counter->min)
+       << " max " << std::setw(8) << formatCount(counter->max) << " last "
+       << std::setw(8) << formatCount(counter->last);
+    const auto source = sourceText(*counter);
+    if (!source.empty())
+      os << " src " << source;
+    os << '\n';
+  }
+}
+
 void Profiler::printSummary(std::ostream& os)
 {
   std::vector<std::shared_ptr<ThreadRecord>> threads;
@@ -540,8 +718,17 @@ void Profiler::printSummary(std::ostream& os)
   }
 
   std::uint64_t totalNs = 0;
+  bool anyScopes = false;
+  bool anyCounters = false;
   for (const auto& record : threads) {
     totalNs += sumInclusiveChildren(record->root);
+    anyScopes = anyScopes || hasRecordedScopes(record->root);
+    anyCounters = anyCounters || hasRecordedCounters(*record);
+  }
+
+  if (!anyScopes && !anyCounters) {
+    os << "DART profiler (text): no scoped regions were recorded.\n";
+    return;
   }
 
   const auto frameCount = m_frameCount.load(std::memory_order_relaxed);
@@ -637,7 +824,9 @@ void Profiler::printSummary(std::ostream& os)
 
   for (const auto& record : threads) {
     const auto threadTotal = sumInclusiveChildren(record->root);
-    if (threadTotal == 0) {
+    const bool threadHasCounters = hasRecordedCounters(*record);
+    if (threadTotal == 0 && !hasRecordedScopes(record->root)
+        && !threadHasCounters) {
       continue;
     }
 
@@ -647,6 +836,7 @@ void Profiler::printSummary(std::ostream& os)
     os << "- thread " << record->label << " total "
        << formatDuration(threadTotal) << '\n';
     printThreadTree(os, *record, threadTotal, /*minPercent=*/0.25, labelWidth);
+    printThreadCounters(os, *record);
   }
   os << std::flush;
 }
@@ -666,6 +856,7 @@ void Profiler::reset()
     record->root.firstChild = nullptr;
     record->root.nextSibling = nullptr;
     record->nodes.clear();
+    record->counters.clear();
     record->stack.clear();
   }
   m_frameCount.store(0, std::memory_order_relaxed);

@@ -29,7 +29,7 @@ Everything the other lanes need to measure honestly and hand off cleanly.
 
 #### WP-PG.02 — Extend the contact-container benchmark matrix
 
-- Status: claimed — `wp-pg-02-contact-container-matrix`
+- Status: done — PR #3327 (`wp-pg-02-contact-container-matrix`)
 - Objective: extend `BM_INTEGRATION_contact_container` with fcl/bullet
   engines, a 900-object row, deactivation-enabled variants, and a threads
   sweep, keeping the #3230 dashboard schema stable (additive surfaces
@@ -52,7 +52,7 @@ Everything the other lanes need to measure honestly and hand off cleanly.
 
 #### WP-PG.03 — DART 6 profiling documentation + Tracy config task
 
-- Status: open
+- Status: done — #3337 (`wp-pg-03-profiling-doc`)
 - Objective: author `docs/onboarding/profiling.md` **for 6.20** (the main
   doc documents DART 7-only APIs): `dart/common/Profile.hpp` text backend
   (`DART_BUILD_PROFILE`, default ON in the pixi config),
@@ -61,9 +61,13 @@ Everything the other lanes need to measure honestly and hand off cleanly.
   (currently manual reconfigure; note `TRACY_NO_EXIT=1` for short runs).
 - Value: every future perf packet starts with a profile; today the
   instructions live in nobody's head but round-1 history.
-- Scope: docs + pixi.toml task; no C++ change.
+- Scope: docs + pixi.toml task; C++ changes only if required to make the Tracy
+  profile backend build with the packaged DART 6.20 Tracy dependency.
 - Acceptance evidence: doc renders; commands verified end-to-end on a
   clean tree; `pixi run lint` (incl. toml/docs linters) green.
+- Completion evidence: merged as PR #3337 with `docs/onboarding/profiling.md`,
+  the profile-env `config-tracy` task, and the Tracy callstack compatibility
+  fix required by the packaged DART 6.20 dependency.
 - Dependencies: none.
 
 #### WP-PG.04 — Executor tooling decision (D4)

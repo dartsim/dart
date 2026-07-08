@@ -64,6 +64,11 @@
     can capture durable lessons from completed DART 6.20 work through
     `/dart-retro` or `$dart-retro`.
 
+  * Clarify release-branch AI workflow backports: compare workflow inventories
+    before cherry-picking, add release-tailored capabilities only when the
+    requested outcome explicitly requires them, and regenerate adapters through
+    the sync task.
+
   * Add a "surface your unknowns" discipline to the release-branch AI
     principles (`docs/ai/principles.md`): before a non-trivial fix, convert
     consequential unknowns into knowns — a reproduction, a focused read of the
@@ -461,6 +466,11 @@
     stats for physics step time, measured simulation rate, scene size, and
     contacts:
     [#3307](https://github.com/dartsim/dart/pull/3307)
+
+  * Extend `contact_benchmark --profile` and DART's text profiler with
+    opt-in constraint-solver island census counters and LCP stage timings, so
+    performance investigations can compare solver shape, row counts, and stage
+    cost without adding allocations to ordinary `World::step()` calls.
 
   * Polish the `dart-demos` workspace with a more compact toolbar, tabbed
     scene/inspector/tool panes, a status-and-log bottom panel, clearer
