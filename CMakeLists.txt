@@ -319,6 +319,15 @@ endif()
 
 option(DART_BUILD_WHEELS "Indicate building dartpy for wheels" OFF)
 
+# Configure MSVC compile policy before dependency discovery so any dependency
+# targets created during configure inherit the same directory options.
+if(MSVC)
+  dart_configure_msvc_toolchain(
+    REQUIRED_VERSION 1920
+    REQUIRED_LABEL "Visual Studio 2019"
+  )
+endif()
+
 #===============================================================================
 # Find dependencies
 #===============================================================================
@@ -340,12 +349,7 @@ endif()
 #===============================================================================
 # Compiler flags
 #===============================================================================
-if(MSVC)
-  dart_configure_msvc_toolchain(
-    REQUIRED_VERSION 1920
-    REQUIRED_LABEL "Visual Studio 2019"
-  )
-elseif(CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_COMPILER_IS_GNUCXX)
   # There is a known bug in GCC 12.1 and above that leads to spurious
   # -Wmaybe-uninitialized warnings from gcc/x86_64-linux-gnu/12/include/avxintrin.h and
   # -Warray-bounds warnings from gcc/x86_64-linux-gnu/12/include/avx512fintrin.h.
