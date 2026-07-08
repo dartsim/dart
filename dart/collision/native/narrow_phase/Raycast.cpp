@@ -516,8 +516,11 @@ bool rayTriangleMollerTrumbore(
   }
 
   t = f * edge2.dot(q);
+  if (std::abs(t) <= kMeshEpsilon) {
+    t = 0.0;
+  }
 
-  return t > kMeshEpsilon;
+  return t >= 0.0;
 }
 
 bool rayAabbIntersect(
@@ -626,7 +629,7 @@ bool raycastMesh(
                 u,
                 v,
                 option.backfaceCulling)) {
-          if (t > 0.0 && t < bestT && t <= maxDist) {
+          if (t >= 0.0 && t < bestT && t <= maxDist) {
             bestT = t;
             const Eigen::Vector3d edge1 = v1 - v0;
             const Eigen::Vector3d edge2 = v2 - v0;

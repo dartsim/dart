@@ -435,6 +435,23 @@ TEST(NarrowPhaseDispatch, BoxRaycastPreservesBoundaryStartHit)
   EXPECT_TRUE(result.normal.isApprox(Eigen::Vector3d::UnitX(), 1e-12));
 }
 
+TEST(NarrowPhaseDispatch, MeshRaycastPreservesBoundaryStartHit)
+{
+  MeshShape mesh = makePlaneMesh();
+
+  RaycastResult result;
+  EXPECT_TRUE(NarrowPhase::raycast(
+      Ray(Eigen::Vector3d::Zero(), -Eigen::Vector3d::UnitZ(), 1.0),
+      &mesh,
+      Eigen::Isometry3d::Identity(),
+      RaycastOption::unlimited(),
+      result));
+  EXPECT_TRUE(result.hit);
+  EXPECT_DOUBLE_EQ(0.0, result.distance);
+  EXPECT_TRUE(result.point.isApprox(Eigen::Vector3d::Zero(), 1e-12));
+  EXPECT_TRUE(result.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+}
+
 TEST(NarrowPhaseDispatch, CapsuleRaycastFromInsideExitsCapSurface)
 {
   CapsuleShape capsule(0.5, 2.0);
