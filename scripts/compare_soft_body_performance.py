@@ -115,6 +115,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--parent", default="HEAD^1")
     parser.add_argument("--base")
     parser.add_argument("--detectors", default="fcl,dart,native,bullet,ode")
+    parser.add_argument(
+        "--expected-fastest-detector",
+        default="native",
+        help=(
+            "Detector expected to be the fastest eligible current-row backend. "
+            f"The checksum reference remains {REFERENCE_DETECTOR}."
+        ),
+    )
     parser.add_argument("--threads", default="1,16")
     parser.add_argument("--benchmark-min-time", default="0.05s")
     parser.add_argument("--benchmark-repetitions", default="3")
@@ -826,6 +834,52 @@ def write_cpu_change_graph(
     lines.append("```")
 
 
+def write_detector_winner_graph(
+    lines: list[str], fastest: list[dict[str, object]]
+) -> None:
+    if not fastest:
+        return
+
+    bar_width = 24
+    lines.extend(
+        [
+            "Detector CPU graph, lower is better. `*` marks the winning row.",
+            "",
+            "```text",
+        ]
+    )
+    for item in fastest:
+        detectors = {
+            str(detector): float(cpu_ms)
+            for detector, cpu_ms in item["detectors"].items()
+        }
+        if not detectors:
+            continue
+
+        max_cpu = max(detectors.values())
+        if max_cpu <= 0.0:
+            max_cpu = 1.0
+
+        parts = []
+        for detector, cpu_ms in sorted(detectors.items()):
+            units = int(round(cpu_ms / max_cpu * bar_width))
+            units = min(bar_width, max(1, units))
+            marker = "*" if detector == item["winner"] else " "
+            parts.append(
+                f"{marker}{detector}:{'#' * units:<{bar_width}} "
+                f"{cpu_ms:.3f}ms"
+            )
+
+        lines.append(
+            "{scene}/{threads:<2} {parts}".format(
+                scene=item["scene"],
+                threads=item["threads"],
+                parts=" | ".join(parts),
+            )
+        )
+    lines.append("```")
+
+
 def build_comparison(
     current_rows: dict[tuple[str, str, int], BenchmarkRow],
     other_rows: dict[tuple[str, str, int], BenchmarkRow],
@@ -913,6 +967,7 @@ def fastest_rows(
     current_rows: dict[tuple[str, str, int], BenchmarkRow],
     detectors: list[str],
     eligible_detectors: list[str],
+    expected_fastest_detector: str,
 ) -> tuple[list[dict[str, object]], list[str]]:
     by_scene_thread: dict[tuple[str, int], list[BenchmarkRow]] = {}
     for row in current_rows.values():
@@ -931,6 +986,7 @@ def fastest_rows(
 
         winner = min(eligible_candidates, key=lambda row: row.cpu_ms)
         reference_row = by_detector.get(REFERENCE_DETECTOR)
+        expected_row = by_detector.get(expected_fastest_detector)
         detector_times = {
             detector: by_detector[detector].cpu_ms
             for detector in detectors
@@ -943,6 +999,10 @@ def fastest_rows(
             "winner_cpu_ms": winner.cpu_ms,
             "reference_detector": REFERENCE_DETECTOR,
             "reference_cpu_ms": reference_row.cpu_ms if reference_row else None,
+            "expected_fastest_detector": expected_fastest_detector,
+            "expected_fastest_cpu_ms": (
+                expected_row.cpu_ms if expected_row is not None else None
+            ),
             "detectors": detector_times,
             "eligible_detectors": sorted(
                 detector
@@ -955,10 +1015,20 @@ def fastest_rows(
             failures.append(
                 f"{scene}/{threads}: {REFERENCE_DETECTOR} reference detector " "missing"
             )
-        elif winner.detector != REFERENCE_DETECTOR:
+        if expected_row is None:
             failures.append(
-                f"{scene}/{threads}: {REFERENCE_DETECTOR} "
-                f"{reference_row.cpu_ms:.3f} ms, "
+                f"{scene}/{threads}: {expected_fastest_detector} expected "
+                "fastest detector missing"
+            )
+        elif expected_fastest_detector not in eligible_detectors:
+            failures.append(
+                f"{scene}/{threads}: {expected_fastest_detector} is not "
+                "checksum-equivalent to reference"
+            )
+        elif winner.detector != expected_fastest_detector:
+            failures.append(
+                f"{scene}/{threads}: expected {expected_fastest_detector} "
+                f"{expected_row.cpu_ms:.3f} ms, "
                 f"winner {winner.detector} {winner.cpu_ms:.3f} ms"
             )
     return rows, failures
@@ -974,6 +1044,7 @@ def write_markdown(
     run_errors: list[dict[str, str]],
     benchmark_run_order: str,
     benchmark_cycles: int,
+    expected_fastest_detector: str,
 ) -> None:
     lines = [
         "# Soft-Body Performance Comparison",
@@ -1111,8 +1182,14 @@ def write_markdown(
             "",
             "## Current Detector Winners",
             "",
-            f"| Scene | Threads | Winner | Winner CPU ms | Reference (`{REFERENCE_DETECTOR}`) CPU ms | Eligible detectors | Detector CPU ms |",
-            "| --- | ---: | --- | ---: | ---: | --- | --- |",
+        ]
+    )
+    write_detector_winner_graph(lines, fastest)
+    lines.extend(
+        [
+            "",
+            f"| Scene | Threads | Winner | Winner CPU ms | Expected (`{expected_fastest_detector}`) CPU ms | Reference (`{REFERENCE_DETECTOR}`) CPU ms | Eligible detectors | Detector CPU ms |",
+            "| --- | ---: | --- | ---: | ---: | ---: | --- | --- |",
         ]
     )
     for item in fastest:
@@ -1122,11 +1199,12 @@ def write_markdown(
         )
         lines.append(
             "| `{scene}` | {threads} | `{winner}` | {winner_cpu} | "
-            "{reference_cpu} | {eligible} | {detectors} |".format(
+            "{expected_cpu} | {reference_cpu} | {eligible} | {detectors} |".format(
                 scene=item["scene"],
                 threads=item["threads"],
                 winner=item["winner"],
                 winner_cpu=fmt_float(float(item["winner_cpu_ms"])),
+                expected_cpu=fmt_float(item["expected_fastest_cpu_ms"]),
                 reference_cpu=fmt_float(item["reference_cpu_ms"]),
                 eligible=", ".join(
                     f"`{detector}`" for detector in item["eligible_detectors"]
@@ -1304,7 +1382,10 @@ def main(argv: list[str]) -> int:
             )
 
     fastest, detector_winner_failures = fastest_rows(
-        current_rows, detectors, eligible_detectors
+        current_rows,
+        detectors,
+        eligible_detectors,
+        args.expected_fastest_detector,
     )
     run_error_keys = {(error["revision"], error["detector"]) for error in run_errors}
     coverage_failures = []
@@ -1335,6 +1416,7 @@ def main(argv: list[str]) -> int:
         "threads": sorted(requested_threads),
         "benchmark_run_order": args.benchmark_run_order,
         "benchmark_cycles": args.benchmark_cycles,
+        "expected_fastest_detector": args.expected_fastest_detector,
         "rows": {
             label: [
                 {
@@ -1384,6 +1466,7 @@ def main(argv: list[str]) -> int:
         run_errors,
         args.benchmark_run_order,
         args.benchmark_cycles,
+        args.expected_fastest_detector,
     )
 
     print(output_dir / "summary.md")

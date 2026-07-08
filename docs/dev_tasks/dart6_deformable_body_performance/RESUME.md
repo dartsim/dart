@@ -11,9 +11,32 @@ Latest state:
   coverage but are not clean regression thresholds because CPU scaling and host
   load were noisy.
 - `02-paper-parity-matrix.md` maps the requested papers into tracked DART 6
-  feature, demo, and performance targets.
-- `03-stability-gate.md` records the first active `test_SoftDynamics` finite
-  state gate across representative SKEL soft scenes and thread settings.
+  feature, demo, and performance targets. It now includes concrete
+  Kim/Pollard 2011 and Jain/Liu 2011 paper numbers, current DART 6 evidence,
+  and acceptance gates for every representative row. The matrix is complete as
+  WP-DB.03 evidence; the runnable scene, adaptive-contact, native-collision,
+  and flagship-demo follow-through remains owned by WP-DB.05, WP-DB.08, and
+  WP-DB.09.
+- `03-stability-gate.md` records the active `test_SoftDynamics` finite-state
+  gate across representative SKEL soft scenes and thread settings, plus the
+  ordered final-state comparison between `threads=1` and `threads=4`.
+- `07-equation-correctness.md` records the active WP-DB.04 gate:
+  point-mass mass now contributes deterministically to
+  `Skeleton::getMassMatrix()` and `Skeleton::getAugMassMatrix()`, soft-body
+  trees return inverse mass and inverse augmented mass matrices consistent with
+  those public matrices, and point-mass gravity contributes to
+  `Skeleton::getGravityForces()` and
+  `Skeleton::getCoriolisAndGravityForces()` at rest. Point-mass external
+  forces are projected through the parent soft body into
+  `Skeleton::getExternalForces()` and cleared by
+  `Skeleton::clearExternalForces()`. The test compares the observed deltas
+  against analytical point-mass Jacobian and gravity-wrench projections and
+  verifies both left and right inverse-matrix identity products before and
+  after a point-mass mass change. The disabled random soft-body
+  `compareEquationsOfMotion` body has been replaced with
+  `representativeEquationMatrixAndVectorChecks`, covering a rigid-only world,
+  a soft-body world, and a mixed rigid/soft world with deterministic
+  matrix/vector equation checks.
 - `04-data-layout-and-memory-hardening.md` records the soft-body data-layout
   risk, adds the `soft_body_headless` profile/checksum runner, and records that
   this branch now stacks on `origin/dart6-memory-hardening` for
@@ -102,6 +125,92 @@ Latest state:
   transform/velocity terms into protected `PointMass` overloads. A native
   `soft_bodies` 200-step smoke preserved the prior checksum; timing remained
   too noisy for a stable speedup claim.
+- Another WP-DB.06 scalar data-access slice is implemented locally:
+  `SoftBodyNode::{updateBiasImpulse,updateTransmittedImpulse,updateConstrainedTerms}()`
+  now update point-mass impulse caches and contiguous point state/property
+  vectors directly while preserving the old point-mass velocity and
+  acceleration dirty-notice behavior. This removes more per-point helper calls
+  from recursive dynamics phases, but it is still not contiguous point-mass
+  object storage or SIMD. Native `soft_bodies` 200-step checksum rows matched
+  exactly between `THREADS=1` and `THREADS=4` after this slice.
+- Another WP-DB.06 internal-facade slice is implemented locally:
+  `SoftBodyNode.cpp` now has a local `PointMassPhaseView` for converted
+  recursive dynamics phases, centralizing the matched point-object,
+  point-state, and point-property access shape without changing public headers
+  or class layout. Focused soft dynamics, soft allocation, and native
+  `soft_bodies` single-thread/four-thread checksum smokes passed after this
+  slice. Retained SoA scratch, contiguous point-mass object storage, and SIMD
+  remain open.
+- A follow-up WP-DB.06 aggregation slice is implemented locally:
+  mass, augmented-mass, inverse-mass helper, gravity, combined-vector, and
+  external-force aggregation paths now use the same `PointMassPhaseView`
+  instead of delegating through per-point helper methods for behavior-preserving
+  cache fills. Focused equation, allocation, and native checksum smokes passed
+  after this slice.
+- A follow-up WP-DB.06 inverse-dynamics slice is implemented locally:
+  `SoftBodyNode::{updateAccelerationID,updateTransmittedForceID,updateJointForceID}()`
+  now use `PointMassPhaseView` and shared cache checks instead of per-point
+  helper calls, while preserving the existing DART 6 point external-force and
+  joint-force semantics. Focused equation, allocation, and native checksum
+  smokes passed after this slice.
+- A follow-up WP-DB.06 phase-view span slice is implemented locally:
+  `PointMassPhaseView` now stores raw point/state/property spans and a cached
+  count instead of vector references, while `updateArtInertia()` uses the
+  simplified point-mass scalar formula for explicit and implicit `Pi`. Focused
+  soft dynamics, allocation, and native checksum smokes passed after this
+  slice, but parent/base benchmark rows remain noisy and this is not a final
+  speedup claim.
+- A follow-up WP-DB.06 fused aggregation slice is implemented locally:
+  several cached point-force fill loops now accumulate their parent soft-body
+  spatial contribution in the same pass, and `updateBiasImpulse()` skips the
+  point loop that only added freshly zeroed `mImpBeta` values. Focused soft
+  dynamics, allocation, and native checksum smokes passed after this slice.
+  The later benchmark-correction slice below records the current committed
+  parent/base comparison artifact.
+- A follow-up WP-DB.06 benchmark-correction slice is implemented locally in
+  commit `649926d28dc`: the branch restores the prior two-pass
+  `updateArtInertia()` scalar timing after same-host comparisons showed the
+  simplified point-mass `Pi` formula and direct cached-position variants could
+  regress FCL rows. The retained code keeps the span-backed phase view and a
+  conservative `updateBiasForce()` connection-loop cleanup. Focused
+  `test_SoftDynamics`, `INTEGRATION_StepAllocation`, FCL `soft_cubes`, and
+  native `soft_bodies` checksum smokes passed. The comparison artifact
+  `.benchmark_results/wp-db06-inertia-conn-649926-parent-43347c-base/` reports
+  evaluator `PASS`, checksum-equivalent FCL/native correctness scenes, and
+  native as the winner for every tracked current scene/thread row. A few
+  current-vs-parent/base CPU mean rows remain noise-sensitive, so this is
+  evidence for the correction and native-detector ranking, not final
+  all-threshold completion.
+- A follow-up WP-DB.06 soft aggregation temporary cleanup is implemented
+  locally in commit `221fdf00145`: `SoftBodyNode` now avoids dynamic diagonal
+  matrices in augmented-mass aggregation, writes gravity projection directly
+  into the destination segment, skips the DART 6 no-op point inverse-mass
+  aggregation dispatch, sums point masses through contiguous properties, and
+  clears point external/internal forces through direct loops. Focused
+  soft-dynamics/allocation tests, FCL/native checksum smokes, and `pixi run
+  lint` passed. The comparison artifact
+  `.benchmark_results/wp-db06-aggregation-temp-221fdf-parent-423f926-base/`
+  reports evaluator `PASS`, checksum-equivalent FCL/native correctness scenes,
+  and native as the winner for every tracked current scene/thread row. The
+  broad run still had one positive current-vs-parent CPU mean on
+  `dart/soft_open_chain/1`, but targeted reruns of that exact row measured
+  current faster than parent in both parent-then-current and current-then-parent
+  order. Keep final all-threshold claims gated on an exclusive idle-host rerun.
+- A follow-up WP-DB.08 native primitive-frame and stability-gate slice is
+  implemented locally: native soft-vs-plane, soft-vs-sphere, and soft-vs-box
+  contacts classify point masses in primitive-local coordinates and compute
+  world contact points only after a vertex is known to collide. The
+  representative `test_SoftDynamics` finite-state and one-thread versus
+  four-thread final-state gate now runs under both the default detector and
+  `CollisionDetectorType::Dart`. Focused
+  `test_DARTCollisionDetector`, `test_SoftDynamics`, and
+  `INTEGRATION_StepAllocation` gates passed, `drop_box` FCL/native 200-step
+  checksums still matched exactly, native `soft_cubes`, `soft_bodies`, and
+  `soft_open_chain` 200-step checksums matched between `THREADS=1` and
+  `THREADS=16`, and a quick current-only benchmark kept native ahead of FCL on
+  every tracked scene/thread row. This closes the explicit native
+  `test_SoftDynamics` acceptance gate; fuller triangle/contact-neighborhood
+  coverage and threshold-quality parent/base comparison remain open.
 - A narrow `origin/dart6-memory-hardening` carryover is implemented locally:
   `Skeleton::checkExternalDisturbanceAndReset()` now scans body-local external
   wrenches directly instead of materializing the external-force projection cache
@@ -145,15 +254,28 @@ Latest state:
   into a counted native world, then 100 steady-state steps are measured after
   warmup with zero `operator new`, zero raw `malloc`, and zero counted base
   allocator growth. That measured window has zero contacts, so it proves
-  no-contact SKEL soft-dynamics allocation behavior; `soft_open_chain` and
-  contact-heavy SKEL windows remain open. The underlying runtime fix reuses
-  all-resting kinematic snapshot storage and copies generalized positions by
-  scalar index instead of allocating temporary `Eigen::VectorXd` values.
+  no-contact SKEL soft-dynamics allocation behavior. Follow-up gates now cover
+  `dart://sample/skel/soft_open_chain.skel` as another no-contact SKEL
+  soft-dynamics window and `dart://sample/skel/soft_cubes.skel` as a
+  contact-producing SKEL window with 9 contacts; all four new global/base and
+  raw gates report zero `operator new`, zero raw `malloc`, and zero counted
+  base allocator growth. The underlying runtime fix reuses all-resting
+  kinematic snapshot storage and copies generalized positions by scalar index
+  instead of allocating temporary `Eigen::VectorXd` values.
 - Current post-merge smokes preserved the key runtime checks: FCL and native
   `drop_box` 200-step checksums matched exactly, native remained faster on that
   limited lane in the local run, and `THREADS=4`
   `COLLISION_DETECTOR=dart soft_bodies 20 20` preserved the prior checksum
   while showing the native finite-finite soft worker scope in the profiler.
+- A direct `NativeCollisionDetector` fallback slice is implemented locally:
+  `SoftMeshShape` and `EllipsoidShape` objects now keep native broadphase AABBs
+  while routing fallback pairs through cached DART-native collision objects.
+  Direct `COLLISION_DETECTOR=native` no longer skips the representative soft
+  scenes, reuses scratch fallback results without lookup-cache bookkeeping, uses
+  the cached plane fallback for plane/soft pairs, and benefits from contiguous
+  brute-force native broadphase storage. Focused native broadphase and detector
+  unit tests pass, and current direct-native smokes are warning-free and
+  checksum-equivalent to `COLLISION_DETECTOR=dart`.
 - `06-pr-evidence.md` now records a temporary same-harness
   `origin/release-6.20` baseline comparison, current native/FCL headless parity
   evidence, and the fact that this branch has not added a new GUI example or
@@ -165,33 +287,31 @@ Latest state:
   passed the gz-physics suite and performance checks, then hit a single
   downstream gz-sim `INTEGRATION_entity_system` timing failure; immediate
   focused rerun and fresh `pixi run -e gazebo test-gz-sim` both passed.
-- Branch `js/dart6-deformable-performance` now has local implementation commit
-  `09b4e0e5d78`, memory-hardening merge/evidence commits
-  `3a2833a6e24..9d4ef692eb6`, and a local stack on
-  `origin/dart6-memory-hardening`.
+- Branch `wp-db-soft-skel-allocation-gates` now has local implementation
+  commit `221fdf00145`, including the articulated-inertia correction,
+  connection-loop cleanup, and soft aggregation temporary cleanup. No PR is
+  currently attached to this local branch.
 
 Next steps:
 
-1. Re-run the benchmark on an idle host with `--benchmark_min_time=1s` and
-   repetitions, then refresh `01-baseline-evidence.md`.
+1. Commit the direct-native fallback/broadphase slice after lint and focused
+   tests, then re-run the current/parent/base benchmark on an exclusive idle
+   host with longer `--benchmark_min_time`, more repetitions,
+   `--detectors fcl,dart,native,bullet,ode`, and the default
+   `--expected-fastest-detector native`. Refresh `01-baseline-evidence.md` and
+   `06-pr-evidence.md` only after threshold-quality rows are available.
 2. Use `soft_body_headless` for longer single-core and multi-core profile
    captures on an idle host, then choose the next measured soft-body layout
-   slice. The likely next WP-DB.06 slice is a retained internal span/facade for
+   slice. The likely next WP-DB.06 slice is retained SoA scratch for
    point-mass phase inputs before any `dart/simd/` kernel.
-3. Extend `test_SoftDynamics` beyond finite-state checks with energy or state
-   hash regression thresholds that are stable across supported platforms.
-4. Complete WP-DB.04 soft-body matrix/vector aggregation, then re-enable the
-   equations-of-motion checks that remain disabled in `test_SoftDynamics.cpp`.
-5. Complete the paper parity matrix with representative scenes and numbers from
-   Kim/Pollard 2011 and Jain/Liu 2011.
-6. Continue WP-DB.08 with fuller triangle/contact-neighborhood coverage and
+3. Extend `test_SoftDynamics` beyond default/native finite-state and
+   one-thread versus four-thread final-state checks with energy, contact-force,
+   CoP, or historical-golden regression thresholds that are stable across
+   supported platforms.
+4. Continue WP-DB.08 with fuller triangle/contact-neighborhood coverage and
    stronger multicore scaling beyond the current pair-level soft-soft worker
    path before preferring native as the default soft collision backend.
-7. Extend the native soft allocation gates from the current soft-box,
-   soft-soft stack, and `softBodies.skel` no-contact lanes to
-   `soft_open_chain` and contact-heavy SKEL scenes before changing point-mass
-   storage ownership or making native the default deformable backend.
-8. Before creating the PR, capture a same-host baseline-vs-branch performance
+5. Before creating the PR, capture a same-host baseline-vs-branch performance
    comparison and include newly added GUI example commands plus locally captured
    videos as PR evidence. The first evidence packet exists in
    `06-pr-evidence.md`; rerun it on a cleaner host before turning the smoke
