@@ -35,6 +35,7 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Distance.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/MeshMesh.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/PlaneSphere.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Raycast.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/SphereBox.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/SphereSphere.hpp
 )
@@ -92,6 +93,7 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Distance.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/MeshMesh.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/PlaneSphere.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Raycast.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/SphereBox.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/SphereSphere.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/BruteForce.cpp

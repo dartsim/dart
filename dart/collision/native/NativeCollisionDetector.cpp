@@ -43,6 +43,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <vector>
 
 namespace dart {
 namespace collision {
@@ -138,6 +139,92 @@ struct NativeDistanceCandidate
   const NativeCollisionObject* object2 = nullptr;
   bool found = false;
 };
+
+//==============================================================================
+struct NativeRayHitCandidate
+{
+  RayHit hit;
+  double distance = std::numeric_limits<double>::max();
+};
+
+//==============================================================================
+RayHit convertRayHit(
+    const native::RaycastResult& nativeResult,
+    const NativeCollisionObject* object,
+    double rayLength)
+{
+  RayHit hit;
+  hit.mCollisionObject = object;
+  hit.mPoint = nativeResult.point;
+  hit.mNormal = nativeResult.normal;
+  hit.mFraction = nativeResult.distance / rayLength;
+  return hit;
+}
+
+//==============================================================================
+bool processNativeRaycastObject(
+    const NativeCollisionObject* object,
+    const native::Ray& ray,
+    double rayLength,
+    const RaycastOption& option,
+    std::vector<NativeRayHitCandidate>& hits)
+{
+  const native::Shape* shape = object->getNativeShape();
+  if (!shape)
+    return false;
+
+  if (!native::NarrowPhase::isRaycastSupported(shape->getType()))
+    return false;
+
+  native::RaycastResult nativeResult;
+  native::RaycastOption nativeOption
+      = native::RaycastOption::withMaxDistance(rayLength);
+  nativeOption.backfaceCulling = false;
+  const bool hit = native::NarrowPhase::raycast(
+      ray, shape, object->getNativeTransform(), nativeOption, nativeResult);
+  if (!hit || !option.passesFilter(object))
+    return false;
+
+  hits.push_back(NativeRayHitCandidate{
+      convertRayHit(nativeResult, object, rayLength), nativeResult.distance});
+  return true;
+}
+
+//==============================================================================
+void convertRaycastResults(
+    const std::vector<NativeRayHitCandidate>& hits,
+    const RaycastOption& option,
+    RaycastResult& result)
+{
+  result.clear();
+
+  if (hits.empty())
+    return;
+
+  if (!option.mEnableAllHits) {
+    const auto closest = std::min_element(
+        hits.begin(),
+        hits.end(),
+        [](const NativeRayHitCandidate& a, const NativeRayHitCandidate& b) {
+          return a.distance < b.distance;
+        });
+    result.mRayHits.emplace_back(closest->hit);
+    return;
+  }
+
+  result.mRayHits.reserve(hits.size());
+  for (const auto& hit : hits)
+    result.mRayHits.emplace_back(hit.hit);
+
+  if (option.mSortByClosest) {
+    std::sort(
+        result.mRayHits.begin(),
+        result.mRayHits.end(),
+        [](const RayHit& a, const RayHit& b) {
+          return a.mFraction < b.mFraction;
+        });
+  }
+}
 
 //==============================================================================
 bool processNativeDistancePair(
@@ -483,6 +570,49 @@ double NativeCollisionDetector::distance(
   }
 
   return convertDistanceResult(best, option, result);
+}
+
+//==============================================================================
+bool NativeCollisionDetector::raycast(
+    CollisionGroup* group,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const RaycastOption& option,
+    RaycastResult* result)
+{
+  if (result)
+    result->clear();
+
+  if (!checkGroupValidity(this, group))
+    return false;
+
+  const Eigen::Vector3d displacement = to - from;
+  const double rayLength = displacement.norm();
+  if (rayLength <= std::numeric_limits<double>::epsilon())
+    return false;
+
+  native::Ray ray(from, displacement, rayLength);
+
+  auto* nativeGroup = static_cast<NativeCollisionGroup*>(group);
+  nativeGroup->updateEngineData();
+
+  std::vector<NativeRayHitCandidate> hits;
+  for (auto* object : nativeGroup->mCollisionObjects) {
+    const auto* nativeObject
+        = static_cast<const NativeCollisionObject*>(object);
+    if (processNativeRaycastObject(nativeObject, ray, rayLength, option, hits)
+        && result == nullptr) {
+      return true;
+    }
+  }
+
+  if (hits.empty())
+    return false;
+
+  if (result)
+    convertRaycastResults(hits, option, *result);
+
+  return true;
 }
 
 //==============================================================================

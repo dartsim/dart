@@ -231,6 +231,12 @@
     rows comparing native and FCL distance queries:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Add opt-in DART-native `CollisionDetector::raycast()` support for the
+    native detector's supported primitive, plane, convex-backed, and mesh shape
+    rows, preserving DART 6 closest-hit, all-hits, sorting, and filter behavior
+    while adding benchmark rows comparing native and Bullet raycast queries:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Fix FCL primitive contact normal orientation and switch default FCL primitive
     handling to `PRIMITIVE` for `FCLCollisionDetector`, the default constraint
     solver, and SKEL parser fallback paths. Users needing legacy mesh

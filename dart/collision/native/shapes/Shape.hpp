@@ -206,18 +206,27 @@ private:
 class DART_COLLISION_NATIVE_API ConvexShape : public Shape
 {
 public:
+  struct Face
+  {
+    Eigen::Vector3d point;
+    Eigen::Vector3d normal;
+  };
+
   explicit ConvexShape(std::vector<Eigen::Vector3d> vertices);
+  ConvexShape(std::vector<Eigen::Vector3d> vertices, std::vector<Face> faces);
 
   [[nodiscard]] ShapeType getType() const override;
   [[nodiscard]] Aabb computeLocalAabb() const override;
 
   [[nodiscard]] const std::vector<Eigen::Vector3d>& getVertices() const;
+  [[nodiscard]] const std::vector<Face>& getFaces() const;
 
   /// Returns the support point in the given direction (furthest vertex)
   [[nodiscard]] Eigen::Vector3d support(const Eigen::Vector3d& direction) const;
 
 private:
   std::vector<Eigen::Vector3d> vertices_;
+  std::vector<Face> faces_;
 };
 
 /// Triangle mesh shape defined by vertices and triangle indices

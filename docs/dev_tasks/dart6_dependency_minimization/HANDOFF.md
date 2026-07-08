@@ -57,11 +57,13 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
 - **#3343** phase-2 **P8/P9**: distance module and plane primitive/convex
   coverage.
 - **#3350** phase-2 **P10**: mixed-scene FCL/DART/native parity coverage.
+- **#3352** phase-3 **D1**: native detector distance adapter, DART 6-style
+  native basename normalization, and native-vs-FCL distance benchmarks.
 
-`origin/release-6.20` tip at this refresh: `b9f4b118e2e8` (moves as the
+`origin/release-6.20` tip at this refresh: `f343528708e` (moves as the
 maintainer merges; **always re-fetch before branching/capturing**).
 
-## 4. Phase 2 complete; Phase 3 D1 active
+## 4. Phase 2 complete; Phase 3 D2 active
 
 Bridge design (see `07` §0–§1): **bypass DART 7's EnTT `CollisionWorld`**; the
 adapter (`NativeCollisionDetector/Group/Object` + `NativeShapeConversion`)
@@ -81,22 +83,20 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 | **P8** | `distance` module (engine-only; needs span shim) | ✅ **merged (#3343)**, combined with P9 |
 | **P9** | `plane_sphere` (needs `distance`) → completes primitive+convex+mesh+plane | ✅ **merged (#3343)**, combined with P8 |
 | **P10** | mixed-scene fcl/dart/native parity integration test | ✅ **merged (#3350)** |
+| **D1** | DART 6 `NativeCollisionDetector::distance()` adapter + native basename normalization | ✅ **merged (#3352)** |
+| **D2** | DART 6 `NativeCollisionDetector::raycast()` adapter + native-vs-Bullet raycast benchmarks | 🔄 **active local branch** `feature/native-raycast-adapter` |
 
-### Exact next step: execute Phase 3 D1
+### Exact next step: finish Phase 3 D2
 
-1. Continue with the **Phase 3 D1** branch `feature/native-distance-adapter`,
+1. Continue with the **Phase 3 D2** branch `feature/native-raycast-adapter`,
    based on the current `origin/release-6.20`.
-2. Keep it as one PR: port the native narrowphase distance dispatcher entrypoint,
-   normalize native engine basenames to DART 6 style (`Aabb.hpp`,
-   `NarrowPhase.cpp`, `SphereBox.hpp`, etc.), and wire
-   `NativeCollisionDetector::distance()` to the DART 6
-   `CollisionGroup` contract. Compare supported primitive rows against FCL,
-   including `DistanceOption::distanceLowerBound`, `DistanceFilter`, same-group
-   duplicate skipping, cross-group queries, and `DistanceResult` shape-frame
-   ownership.
-3. Leave raycast, CCD, persistent manifolds, voxel/octree replacement,
-   Bullet/ODE/FCL facades, and the default flip for later phase-3/phase-5/phase-6
-   slices.
+2. Keep it as one PR: port the native narrowphase raycast entrypoint, wire
+   `NativeCollisionDetector::raycast()` to the DART 6 `CollisionGroup`
+   contract, and compare native raycasts against the incumbent Bullet path.
+   Preserve DART 6 `RaycastOption` behavior: closest hit, all hits, optional
+   sorting, object filters, and `result == nullptr`.
+3. Leave CCD, persistent manifolds, voxel/octree replacement, Bullet/ODE/FCL
+   facades, and the default flip for later phase-3/phase-5/phase-6 slices.
 4. Gates for **every** native-collision capability PR:
    Release build + **explicit Debug build** (`pixi run build` is Release-only);
    **run** the tests with `ctest --test-dir build/default/cpp/Release -R
@@ -108,14 +108,16 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 
 ## 5. Open PRs / loose ends
 
-- **Phase 3 D1 native distance adapter** — active on
-  `feature/native-distance-adapter` as one PR-sized slice to minimize CI
+- **Phase 3 D2 native raycast adapter** — active on
+  `feature/native-raycast-adapter` as one PR-sized slice to minimize CI
   overhead.
+- **#3353** is open on `release-6.20` for the separate performance-generalization
+  plan parking lane.
 - **#3283 (main sphere-sphere `enableContact` fix)** — MERGED; main and
   `release-6.20` now agree on the squared binary predicate for the eventual
   phase-6 diff.
-- **#3348** is the only current open `release-6.20` PR seen during this refresh,
-  and it belongs to the separate MSVC/toolchain policy lane.
+- **#3348** remains open on `release-6.20` and belongs to the separate
+  MSVC/toolchain policy lane.
 
 ## 6. Load-bearing invariants (do not violate)
 
