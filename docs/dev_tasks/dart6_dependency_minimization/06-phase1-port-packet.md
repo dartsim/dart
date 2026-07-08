@@ -16,7 +16,7 @@ detector), with the DART 7 deterministic unit tests ported alongside.
 ## Grounded port facts (verified 2026-07-04)
 
 - The only C++20 feature in the entire DART 7 `native/` tree is
-  `std::span` (13 files + transitive reach through `types.hpp`, which 19
+  `std::span` (13 files + transitive reach through `Types.hpp`, which 19
   files include). No concepts/ranges/expected/spaceship anywhere.
 - EnTT coupling is confined to `collision_object.{hpp,cpp}`,
   `collision_world.{hpp,cpp}`, `comps/collision_object.hpp` — all
@@ -36,26 +36,26 @@ detector), with the DART 7 deterministic unit tests ported alongside.
 > span-clean. The first execution attempt correctly stopped and
 > falsified both: DART 7's unit *tests* use `std::numbers` (C++20;
 > zero occurrences in the library tree), `test_box_box`/`test_gjk`/
-> `test_sphere_sphere` include `shapes/shape.hpp` and `types.hpp`, and
+> `test_sphere_sphere` include `shapes/Shape.hpp` and `Types.hpp`, and
 > `test_gjk` includes `<span>` directly. The ported set below is the
 > **verified include closure** — every `dart/` include of every listed
 > file resolves inside the list.
 
-**Step 0 — span shim.** `dart/collision/native/detail/span.hpp`: a
+**Step 0 — span shim.** `dart/collision/native/detail/Span.hpp`: a
 minimal C++17 `dart::collision::native::span<T>` (pointer+size view with
 `begin/end/size/empty/operator[]/data`, constructible from container /
 pointer+size). Ported code replaces `std::span<T>` with this alias and
 `#include <span>` with the shim include.
 
 **Library files (closure-verified, 20 files + shim):**
-`export.hpp`, `fwd.hpp`, `aabb.{hpp,cpp}`, `contact_point.hpp`,
-`types.{hpp,cpp}`, `contact_manifold.{hpp,cpp}`,
-`shapes/shape.{hpp,cpp}`, `sdf/signed_distance_field.hpp` (abstract
+`Export.hpp`, `Fwd.hpp`, `Aabb.{hpp,cpp}`, `ContactPoint.hpp`,
+`Types.{hpp,cpp}`, `ContactManifold.{hpp,cpp}`,
+`shapes/Shape.{hpp,cpp}`, `sdf/SignedDistanceField.hpp` (abstract
 interface only — the dense field impls stay in phase 3),
-`narrow_phase/gjk.{hpp,cpp}` + `gjk_inl.hpp`, `narrow_phase/mpr.{hpp,cpp}`,
-`narrow_phase/box_box.{hpp,cpp}`,
-`narrow_phase/box_box/{sat,face_clip,contact_reduction}.{hpp,cpp}`,
-`narrow_phase/sphere_sphere.{hpp,cpp}`.
+`narrow_phase/Gjk.{hpp,cpp}` + `Gjk-impl.hpp`, `narrow_phase/Mpr.{hpp,cpp}`,
+`narrow_phase/BoxBox.{hpp,cpp}`,
+`narrow_phase/box_box/{Sat,FaceClip,ContactReduction}.{hpp,cpp}`,
+`narrow_phase/SphereSphere.{hpp,cpp}`.
 
 **Tests (ported from DART 7 `tests/unit/collision/`, wired as
 `UNIT_collision_native_*` in `tests/unit/collision/native/`):**
@@ -74,8 +74,8 @@ interface only — the dense field impls stay in phase 3),
 Anything else that fails under C++17: stop and record here.
 
 **Documented behavioral deviation (post-review):** DART 7's
-`sphere_sphere.cpp` ignores `CollisionOption::enableContact` and mutates
-the `CollisionResult` on binary checks, unlike `box_box.cpp` which gates
+`SphereSphere.cpp` ignores `CollisionOption::enableContact` and mutates
+the `CollisionResult` on binary checks, unlike `BoxBox.cpp` which gates
 contact creation at four sites (verified against `origin/main` @
 `dbe6fcccb`). This is an upstream bug surfaced by the phase-1 PR review.
 The port fixes it (both `collideSpheres` entry points return the boolean

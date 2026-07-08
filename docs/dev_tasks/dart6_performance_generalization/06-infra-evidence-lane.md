@@ -4,7 +4,7 @@ Everything the other lanes need to measure honestly and hand off cleanly.
 
 #### WP-PG.01 — Round-2 baseline evidence packet
 
-- Status: done — PR pending; **prerequisite baseline captured for all other
+- Status: done — #3263; **prerequisite baseline captured for all other
   packets**
 - Objective: captured the full baseline matrix, then refreshed the durable
   guard rows on current `origin/release-6.20` @ `b9e6910c066` per the

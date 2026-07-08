@@ -16,9 +16,9 @@ with the first real SIMD-kernel PR.
 
 | Lane | Owner doc | Packets | Status |
 | --- | --- | --- | --- |
-| WS-A constraint/LCP | 02-constraint-lcp-lane.md | PG.10–PG.15 | active (PG.10 #3339; PG.13 evidence-gated; PG.14 blocked D3; PG.15 blocked D7) |
-| WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | open (PG.20 #3329; PG.21 current-base gate rejected after span-only PG.20; PG.22 local cpp-only route rejected; PG.23 blocked D8; lane re-review at WS-F phase 5) |
-| WS-C dynamics batching | 04-dynamics-batching-lane.md | PG.30–PG.33 | active (PG.31 claimed; PG.33 gated) |
+| WS-A constraint/LCP | 02-constraint-lcp-lane.md | PG.10–PG.15 | gated (PG.10 #3339; PG.13 evidence-gated by PG.10 census; PG.14 blocked D3; PG.15 blocked D7) |
+| WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | gated (PG.20 #3329; PG.21 current-base gate rejected after span-only PG.20; PG.22 local cpp-only route rejected; PG.23 blocked D8; lane re-review at WS-F phase 5) |
+| WS-C dynamics batching | 04-dynamics-batching-lane.md | PG.30–PG.33 | gated (PG.30 #3310; PG.31 #3341; PG.32 delivered by #3297/#3307; PG.33 gated) |
 | WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | active (PG.40 folded into PG.42; PG.41 waits for PG.10 seam evidence) |
 | WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 done; PG.02 #3327; PG.03 #3337; PG.04 blocked D4) |
 | WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; phase 1 internal math core merged (#3281); no DART 6 detector adapter or phase-4 broadphase SIMD yet |
@@ -27,23 +27,23 @@ with the first real SIMD-kernel PR.
 
 | Packet | Lane | Status | Branch / PR | Evidence |
 | --- | --- | --- | --- | --- |
-| WP-PG.01 baseline packet | WS-E | done — PR pending | `wp-pg-01-baseline-evidence` | 01-baseline-evidence.md (S1–S6 guard rows, profile splits, prior-art triage) |
+| WP-PG.01 baseline packet | WS-E | done — #3263 | `wp-pg-01-baseline-evidence` / #3263 | 01-baseline-evidence.md (S1–S6 guard rows, profile splits, prior-art triage) |
 | WP-PG.02 benchmark matrix | WS-E | done — #3327 | `wp-pg-02-contact-container-matrix` / #3327 | Active rows now cover DART/ODE/FCL/Bullet at 60/120 objects plus 4-thread sweep; bounded DART/ODE deactivation rows are in the dashboard filter; 900 dense-container rows are registered for manual filters but excluded from the default dashboard slice after local budget smoke |
 | WP-PG.03 profiling doc | WS-E | done — #3337 | `wp-pg-03-profiling-doc` / #3337 | Adds `docs/onboarding/profiling.md` for the DART 6.20 text profiler and Tracy workflow, a profile-env `config-tracy` task, and the Tracy callstack compatibility fix required by the packaged dependency; merged 2026-07-07 |
 | WP-PG.04 executor tooling | WS-E | blocked (D4) | — | — |
 | WP-PG.10 LCP instrumentation | WS-A | done — #3339 | `wp-pg-10-lcp-profile-census` / #3339 | Adds runtime-gated text-profiler counters for constrained-group island census plus solver/LCP stage scopes. Local profile artifact `/tmp/wp_pg10_profile_20260707T132241`: S1 dense container is solve-proper dominated (primary solve 90.0%, construct 5.69%, one 816-row island); S3 active 3k has 3003 islands / 15015 rows with build 5.44%, construct 0.89%, primary solve 1.02%; S4/S5 generated scenes have 900/90 islands and max 12-row groups. Final local gates passed lint/check-lint, profile smoke, allocation gate, capped `ALL`, and `test-gz`; merged 2026-07-08 |
-| WP-PG.11 solver RTTI removal | WS-A | open | — | Local 2026-07-06 cpp-only mining rejected after refreshed current-base A/B on `2e11928288c`: S2 ODE 0.87x, S4 DART 0.93x, S4 Bullet 0.99x, S4 ODE 0.98x medians; guards identical |
+| WP-PG.11 solver RTTI removal | WS-A | evidence-gated (current-base rejected) | — | Local 2026-07-06 cpp-only mining rejected after refreshed current-base A/B on `2e11928288c`: S2 ODE 0.87x, S4 DART 0.93x, S4 Bullet 0.99x, S4 ODE 0.98x medians; guards identical |
 | WP-PG.12 direct assembly | WS-A | deprioritized (PG.01 evidence: assembly ≤ ~8%) | — | — |
 | WP-PG.13 row islanding | WS-A | evidence-gated (PG.10 census) | — | — |
 | WP-PG.14 matrix-free path | WS-A | blocked (D3) | — | — |
 | WP-PG.15 creep vs rest-veto | WS-A | blocked (D7) | — | — |
 | WP-PG.20 history spans | WS-B | done — #3329 | `wp-pg-20-ode-history-spans` / #3329 | Current-base refresh @ `9ff8b1d77a1`: hashes bit-identical; ODE rows improved (`S2_ode` 0.0933→0.0521 ms, `S3_ode` 115.9→19.7 ms, `S4_ode` 0.2269→0.1549 ms; GB ODE rows 3.2–7.6% faster) |
 | WP-PG.21 history map/pruning | WS-B | evidence-gated (current-base rejected) | — | 2026-07-07 gate on `b78a8b8cbe7`: hashes identical but mixed/regressive vs span-only (`S2_ode` +12.6%, `S3_ode` -11.4%, `S4_ode` +19.2%; GB 60 rows faster, 120 rows +6.8-9.4% slower), so do not claim without new profile evidence |
-| WP-PG.22 version-gated pose push | WS-B | open | — | Local 2026-07-06 exact-transform fallback rejected by A/B; protected kinematic version blocks cpp-only route |
+| WP-PG.22 version-gated pose push | WS-B | evidence-gated (current-base rejected) | — | Local 2026-07-06 exact-transform fallback rejected by A/B; protected `Skeleton::getKinematicVersion()` blocks cpp-only route |
 | WP-PG.23 ODE manifold reduction | WS-B | blocked (D8) | — | — |
 | WP-PG.30 free-body cache + FD path | WS-C | done — PR #3310 | `wp-pg-30-single-free-body-cache` | A/B: S5 −12.2%, S4 −5.3%, S3 −2.3%, solve-bound rows flat; 8/8 guard hashes bit-identical |
-| WP-PG.31 shallow-support scratch | WS-C | local verified | `wp-pg-31-shallow-support-scratch` | Current-base A/B artifact `/tmp/wp_pg31_ab_20260707T184319` (`3964108a675` -> `21f691311df`): no-root-FreeJoint `double_pendulum.world` hashes identical and median step time improved 0.002106 -> 0.001836 ms (DART), 0.001903 -> 0.001644 ms (ODE); generated 120-object DART/ODE guard hashes identical; ODE `BM_ContactContainerActive/120/1/{1,16}` medians 6588 -> 6433 ms and 6998 -> 6468 ms; base and branch both passed 30/30 default 16-thread crash stressors |
-| WP-PG.32 frame arena + alloc gate | WS-C | open | — | — |
+| WP-PG.31 shallow-support scratch | WS-C | done — #3341 | `wp-pg-31-shallow-support-scratch` / #3341 | Current-base A/B artifact `/tmp/wp_pg31_ab_20260707T184319` (`3964108a675` -> `21f691311df`): no-root-FreeJoint `double_pendulum.world` hashes identical and median step time improved 0.002106 -> 0.001836 ms (DART), 0.001903 -> 0.001644 ms (ODE); generated 120-object DART/ODE guard hashes identical; ODE `BM_ContactContainerActive/120/1/{1,16}` medians 6588 -> 6433 ms and 6998 -> 6468 ms; base and branch both passed 30/30 default 16-thread crash stressors; merged 2026-07-08 |
+| WP-PG.32 frame arena + alloc gate | WS-C | done — #3297/#3307 | `wp-pg-32-frame-allocation-gate` (tracker reconciliation) | Merged #3297 added `FrameAllocator`, `FrameStlAllocator`, World-owned `MemoryManager` preparation, solver/profiler/Dantzig scratch reuse, and `INTEGRATION_StepAllocation` allocation-counting gates. Merged #3307 extended the allocation discipline to soft/deformable paths and recorded the #3307-style performance report: strict zero-regression checker PASS on `.benchmark_results/pr3307-bafbd4b-full-parent-base/summary.json`, native DART winning every checksum-equivalent soft-scene/thread row against FCL, and strict soft allocation gates reporting zero `operator new`, zero raw `malloc`, and zero counted allocator growth where available. Local reconciliation-branch verification passed `pixi run test-eigen-overalignment` (148/148), targeted Release allocator build, and `ctest -R '(StepAllocation|FrameAllocator|MemoryManager)'` (3/3) |
 | WP-PG.33 SoA integration | WS-C | gated | — | — |
 | WP-PG.40 FP/ISA contracts | WS-D | folded into WP-PG.42 | #3270 closed | maintainer direction: carry D1/D2 evidence with actual SIMD kernel PR |
 | WP-PG.41 batch math seam | WS-D | blocked (PG.10 seam evidence) | — | — |

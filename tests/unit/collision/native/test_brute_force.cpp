@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/native/broad_phase/brute_force.hpp>
+#include <dart/collision/native/broad_phase/BruteForce.hpp>
 
 #include <gtest/gtest.h>
 

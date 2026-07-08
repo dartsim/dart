@@ -32,13 +32,15 @@
 
 #include <dart/collision/CollisionFilter.hpp>
 #include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/DistanceFilter.hpp>
+#include <dart/collision/DistanceResult.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/native/NativeCollisionDetector.hpp>
 #include <dart/collision/native/NativeCollisionGroup.hpp>
 #include <dart/collision/native/NativeCollisionObject.hpp>
 #include <dart/collision/native/detail/NativeShapeConversion.hpp>
-#include <dart/collision/native/shapes/shape.hpp>
+#include <dart/collision/native/shapes/Shape.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/CapsuleShape.hpp>
@@ -59,6 +61,7 @@
 #include <functional>
 #include <memory>
 #include <set>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -142,6 +145,61 @@ private:
   std::vector<
       std::pair<const dynamics::ShapeFrame*, const dynamics::ShapeFrame*>>
       mIgnoredPairs;
+};
+
+//==============================================================================
+class ShapeFramePairDistanceFilter : public collision::DistanceFilter
+{
+public:
+  void addIgnoredPair(
+      const dynamics::ShapeFrame* frame1, const dynamics::ShapeFrame* frame2)
+  {
+    mIgnoredPairs.emplace_back(frame1, frame2);
+  }
+
+  bool needDistance(
+      const collision::CollisionObject* object1,
+      const collision::CollisionObject* object2) const override
+  {
+    const auto* frame1 = object1->getShapeFrame();
+    const auto* frame2 = object2->getShapeFrame();
+    for (const auto& pair : mIgnoredPairs) {
+      if ((frame1 == pair.first && frame2 == pair.second)
+          || (frame1 == pair.second && frame2 == pair.first)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+private:
+  std::vector<
+      std::pair<const dynamics::ShapeFrame*, const dynamics::ShapeFrame*>>
+      mIgnoredPairs;
+};
+
+//==============================================================================
+class OrderedShapeFrameDistanceFilter : public collision::DistanceFilter
+{
+public:
+  OrderedShapeFrameDistanceFilter(
+      const dynamics::ShapeFrame* first, const dynamics::ShapeFrame* second)
+    : mFirst(first), mSecond(second)
+  {
+  }
+
+  bool needDistance(
+      const collision::CollisionObject* object1,
+      const collision::CollisionObject* object2) const override
+  {
+    return object1->getShapeFrame() == mFirst
+           && object2->getShapeFrame() == mSecond;
+  }
+
+private:
+  const dynamics::ShapeFrame* mFirst;
+  const dynamics::ShapeFrame* mSecond;
 };
 
 //==============================================================================
@@ -252,6 +310,69 @@ ShapeFramePairSet collideShapeFrames(
   collision::CollisionResult result;
   EXPECT_TRUE(group->collide(option, &result)) << detector->getType();
   return collectShapeFramePairs(result);
+}
+
+//==============================================================================
+struct DistanceResultSnapshot
+{
+  double distance = 0.0;
+  collision::DistanceResult result;
+};
+
+//==============================================================================
+DistanceResultSnapshot distanceShapeFrames(
+    const collision::CollisionDetectorPtr& detector,
+    const dynamics::SimpleFramePtr& frame1,
+    const dynamics::SimpleFramePtr& frame2,
+    const collision::DistanceOption& option)
+{
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+  DistanceResultSnapshot snapshot;
+  snapshot.distance = group->distance(option, &snapshot.result);
+  return snapshot;
+}
+
+//==============================================================================
+DistanceResultSnapshot distanceShapeFramesAcrossGroups(
+    const collision::CollisionDetectorPtr& detector,
+    const dynamics::SimpleFramePtr& frame1,
+    const dynamics::SimpleFramePtr& frame2,
+    const collision::DistanceOption& option)
+{
+  auto group1 = detector->createCollisionGroup(frame1.get());
+  auto group2 = detector->createCollisionGroup(frame2.get());
+
+  DistanceResultSnapshot snapshot;
+  snapshot.distance = group1->distance(group2.get(), option, &snapshot.result);
+  return snapshot;
+}
+
+//==============================================================================
+void expectDistanceMatchesFcl(
+    const std::string& name,
+    const dynamics::ShapePtr& shape1,
+    const Eigen::Vector3d& translation1,
+    const dynamics::ShapePtr& shape2,
+    const Eigen::Vector3d& translation2)
+{
+  const auto frame1 = makeFrame(shape1, translation1);
+  const auto frame2 = makeFrame(shape2, translation2);
+
+  collision::DistanceOption option(true, 0.0, nullptr);
+  const auto fcl = distanceShapeFrames(
+      collision::FCLCollisionDetector::create(), frame1, frame2, option);
+  const auto native = distanceShapeFrames(
+      collision::NativeCollisionDetector::create(), frame1, frame2, option);
+
+  ASSERT_TRUE(fcl.result.found()) << name;
+  ASSERT_TRUE(native.result.found()) << name;
+  EXPECT_NEAR(fcl.distance, native.distance, 1e-9) << name;
+  EXPECT_NEAR(
+      fcl.result.unclampedMinDistance, native.result.unclampedMinDistance, 1e-9)
+      << name;
+  EXPECT_EQ(frame1.get(), native.result.shapeFrame1) << name;
+  EXPECT_EQ(frame2.get(), native.result.shapeFrame2) << name;
 }
 
 //==============================================================================
@@ -718,6 +839,144 @@ TEST(NativeCollisionDetector, MixedPrimitiveSceneMatchesFclAndDart)
   EXPECT_EQ(scene.expectedPairs, fclPairs);
   EXPECT_EQ(scene.expectedPairs, dartPairs);
   EXPECT_EQ(fclPairs, nativePairs);
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, DistanceMatchesFclForSupportedPrimitivePairs)
+{
+  expectDistanceMatchesFcl(
+      "sphere-sphere",
+      std::make_shared<dynamics::SphereShape>(0.25),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(2.0, 0.0, 0.0));
+  expectDistanceMatchesFcl(
+      "sphere-box",
+      std::make_shared<dynamics::SphereShape>(0.25),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Constant(0.5)),
+      Eigen::Vector3d(1.25, 0.0, 0.0));
+  expectDistanceMatchesFcl(
+      "box-box",
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Constant(0.5)),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Constant(0.5)),
+      Eigen::Vector3d(1.25, 0.0, 0.0));
+  expectDistanceMatchesFcl(
+      "plane-sphere",
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dynamics::SphereShape>(0.25),
+      Eigen::Vector3d(0.0, 0.0, 0.75));
+  expectDistanceMatchesFcl(
+      "plane-box",
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Constant(0.5)),
+      Eigen::Vector3d(0.0, 0.0, 0.75));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, DistanceWorksAcrossGroups)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto frame1 = makeFrame(std::make_shared<dynamics::SphereShape>(0.25));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(2.0, 0.0, 0.0));
+
+  collision::DistanceOption option(true, 0.0, nullptr);
+  const auto sameGroup = distanceShapeFrames(detector, frame1, frame2, option);
+  const auto acrossGroups
+      = distanceShapeFramesAcrossGroups(detector, frame1, frame2, option);
+
+  ASSERT_TRUE(sameGroup.result.found());
+  ASSERT_TRUE(acrossGroups.result.found());
+  EXPECT_NEAR(sameGroup.distance, acrossGroups.distance, 1e-12);
+  EXPECT_NEAR(1.25, acrossGroups.distance, 1e-12);
+  EXPECT_EQ(frame1.get(), acrossGroups.result.shapeFrame1);
+  EXPECT_EQ(frame2.get(), acrossGroups.result.shapeFrame2);
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, DistanceRespectsLowerBoundAndFilter)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto frame1 = makeFrame(std::make_shared<dynamics::SphereShape>(0.25));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(2.0, 0.0, 0.0));
+
+  collision::DistanceOption lowerBoundOption(true, 2.0, nullptr);
+  const auto lowerBound
+      = distanceShapeFrames(detector, frame1, frame2, lowerBoundOption);
+  ASSERT_TRUE(lowerBound.result.found());
+  EXPECT_NEAR(2.0, lowerBound.distance, 1e-12);
+  EXPECT_NEAR(2.0, lowerBound.result.minDistance, 1e-12);
+  EXPECT_NEAR(1.25, lowerBound.result.unclampedMinDistance, 1e-12);
+
+  auto filter = std::make_shared<ShapeFramePairDistanceFilter>();
+  filter->addIgnoredPair(frame1.get(), frame2.get());
+  collision::DistanceOption filteredOption(true, 0.0, filter);
+  const auto filtered
+      = distanceShapeFrames(detector, frame1, frame2, filteredOption);
+  EXPECT_DOUBLE_EQ(0.0, filtered.distance);
+  EXPECT_FALSE(filtered.result.found());
+
+  collision::DistanceOption filteredLowerBoundOption(true, 2.0, filter);
+  const auto filteredLowerBound
+      = distanceShapeFrames(detector, frame1, frame2, filteredLowerBoundOption);
+  EXPECT_NEAR(2.0, filteredLowerBound.distance, 1e-12);
+  EXPECT_FALSE(filteredLowerBound.result.found());
+
+  auto filteredGroup
+      = detector->createCollisionGroup(frame1.get(), frame2.get());
+  EXPECT_NEAR(
+      2.0, filteredGroup->distance(filteredLowerBoundOption, nullptr), 1e-12);
+
+  auto orderedFilter = std::make_shared<OrderedShapeFrameDistanceFilter>(
+      frame1.get(), frame2.get());
+  collision::DistanceOption orderedOption(true, 0.0, orderedFilter);
+  const auto nativeOrdered
+      = distanceShapeFrames(detector, frame1, frame2, orderedOption);
+  const auto fclOrdered = distanceShapeFrames(
+      collision::FCLCollisionDetector::create(), frame1, frame2, orderedOption);
+  ASSERT_TRUE(fclOrdered.result.found());
+  ASSERT_TRUE(nativeOrdered.result.found());
+  EXPECT_NEAR(fclOrdered.distance, nativeOrdered.distance, 1e-12);
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, DistanceLeavesMeshPrimitivePairsUnsupported)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto meshFrame = makeFrame(std::make_shared<dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), makePlaneTriMesh()));
+  auto sphereFrame = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.25),
+      Eigen::Vector3d(0.0, 0.0, 0.75));
+
+  collision::DistanceOption option(true, 0.0, nullptr);
+  const auto meshSphere
+      = distanceShapeFrames(detector, meshFrame, sphereFrame, option);
+  EXPECT_DOUBLE_EQ(0.0, meshSphere.distance);
+  EXPECT_FALSE(meshSphere.result.found());
+
+  const auto sphereMesh
+      = distanceShapeFrames(detector, sphereFrame, meshFrame, option);
+  EXPECT_DOUBLE_EQ(0.0, sphereMesh.distance);
+  EXPECT_FALSE(sphereMesh.result.found());
+
+  collision::DistanceOption lowerBoundOption(true, 2.0, nullptr);
+  const auto meshSphereLowerBound
+      = distanceShapeFrames(detector, meshFrame, sphereFrame, lowerBoundOption);
+  EXPECT_NEAR(2.0, meshSphereLowerBound.distance, 1e-12);
+  EXPECT_FALSE(meshSphereLowerBound.result.found());
+
+  auto unsupportedGroup
+      = detector->createCollisionGroup(meshFrame.get(), sphereFrame.get());
+  EXPECT_NEAR(
+      2.0, unsupportedGroup->distance(lowerBoundOption, nullptr), 1e-12);
 }
 
 //==============================================================================

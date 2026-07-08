@@ -79,7 +79,7 @@ scenes, plus the gz gate.
 
 #### WP-PG.22 — Version-gated ODE pose push
 
-- Status: open
+- Status: evidence-gated (current-base rejected; cpp-only route blocked)
 - Objective: skip per-step ODE geom pose writes for objects whose
   kinematic version is unchanged (`CollisionGroup.cpp:379`,
   `OdeCollisionObject.cpp:321`).

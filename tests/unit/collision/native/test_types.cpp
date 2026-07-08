@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/native/types.hpp>
+#include <dart/collision/native/Types.hpp>
 
 #include <gtest/gtest.h>
 

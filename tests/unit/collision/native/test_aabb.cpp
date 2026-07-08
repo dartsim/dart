@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/native/aabb.hpp>
+#include <dart/collision/native/Aabb.hpp>
 
 #include <gtest/gtest.h>
 
