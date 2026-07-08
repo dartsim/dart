@@ -55,8 +55,32 @@ namespace detail {
 
 namespace {
 
+std::vector<native::ConvexShape::Face> makeConvexFacesFromTriangles(
+    const std::vector<Eigen::Vector3d>& vertices,
+    const dynamics::ConvexMeshShape::Triangles& triangles)
+{
+  std::vector<native::ConvexShape::Face> faces;
+  faces.reserve(triangles.size());
+
+  for (const auto& triangle : triangles) {
+    if (triangle[0] >= vertices.size() || triangle[1] >= vertices.size()
+        || triangle[2] >= vertices.size()) {
+      continue;
+    }
+
+    const Eigen::Vector3d& v0 = vertices[triangle[0]];
+    const Eigen::Vector3d& v1 = vertices[triangle[1]];
+    const Eigen::Vector3d& v2 = vertices[triangle[2]];
+    faces.push_back({v0, (v1 - v0).cross(v2 - v0)});
+  }
+
+  return faces;
+}
+
 std::unique_ptr<native::Shape> createConvexOrNull(
-    std::vector<Eigen::Vector3d> vertices, const std::string& shapeType)
+    std::vector<Eigen::Vector3d> vertices,
+    const std::string& shapeType,
+    std::vector<native::ConvexShape::Face> faces = {})
 {
   if (vertices.empty()) {
     static std::set<std::string> warnedInvalidShapeTypes;
@@ -68,7 +92,8 @@ std::unique_ptr<native::Shape> createConvexOrNull(
     return nullptr;
   }
 
-  return std::make_unique<native::ConvexShape>(std::move(vertices));
+  return std::make_unique<native::ConvexShape>(
+      std::move(vertices), std::move(faces));
 }
 
 std::unique_ptr<native::Shape> createMeshOrNull(
@@ -183,7 +208,11 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
     if (!mesh) {
       return createConvexOrNull({}, shapeType);
     }
-    return createConvexOrNull(mesh->getVertices(), shapeType);
+    return createConvexOrNull(
+        mesh->getVertices(),
+        shapeType,
+        makeConvexFacesFromTriangles(
+            mesh->getVertices(), mesh->getTriangles()));
   }
 
   if (shapeType == dynamics::PyramidShape::getStaticType()) {
