@@ -53,6 +53,11 @@ bool contactBudgetPrecludesDetection(
   return option.enableContact && result.numContacts() >= option.maxNumContacts;
 }
 
+double contactTieTolerance(double scale)
+{
+  return 64.0 * std::numeric_limits<double>::epsilon() * std::max(1.0, scale);
+}
+
 } // namespace
 
 bool collidePlaneSphere(
@@ -118,7 +123,6 @@ bool collidePlaneBox(
   const Eigen::Vector3d& halfExtents = box.getHalfExtents();
 
   double minDist = std::numeric_limits<double>::max();
-  Eigen::Vector3d deepestCorner;
 
   for (int i = 0; i < 8; ++i) {
     const Eigen::Vector3d localCorner(
@@ -131,7 +135,6 @@ bool collidePlaneBox(
 
     if (signedDist < minDist) {
       minDist = signedDist;
-      deepestCorner = worldCorner;
     }
   }
 
@@ -144,8 +147,31 @@ bool collidePlaneBox(
   }
 
   const double penetration = -minDist;
+  const double tieTolerance = contactTieTolerance(std::max(
+      {halfExtents.cwiseAbs().maxCoeff(),
+       boxTransform.translation().cwiseAbs().maxCoeff(),
+       planePoint.cwiseAbs().maxCoeff(),
+       std::abs(minDist)}));
+  Eigen::Vector3d deepestCentroid = Eigen::Vector3d::Zero();
+  int numDeepestCorners = 0;
+
+  for (int i = 0; i < 8; ++i) {
+    const Eigen::Vector3d localCorner(
+        (i & 1) ? halfExtents.x() : -halfExtents.x(),
+        (i & 2) ? halfExtents.y() : -halfExtents.y(),
+        (i & 4) ? halfExtents.z() : -halfExtents.z());
+
+    const Eigen::Vector3d worldCorner = boxTransform * localCorner;
+    const double signedDist = worldNormal.dot(worldCorner - planePoint);
+    if (signedDist <= minDist + tieTolerance) {
+      deepestCentroid += worldCorner;
+      ++numDeepestCorners;
+    }
+  }
+  deepestCentroid /= static_cast<double>(numDeepestCorners);
+
   const Eigen::Vector3d contactPoint
-      = deepestCorner + worldNormal * (penetration * 0.5);
+      = deepestCentroid + worldNormal * (penetration * 0.5);
 
   ContactPoint contact;
   contact.position = contactPoint;
@@ -186,13 +212,23 @@ bool collidePlaneCapsule(
   const double distTop = worldNormal.dot(worldTop - planePoint);
   const double distBottom = worldNormal.dot(worldBottom - planePoint);
 
-  const Eigen::Vector3d* closestEndpoint;
+  const double tieTolerance = contactTieTolerance(std::max(
+      {std::abs(distTop),
+       std::abs(distBottom),
+       radius,
+       halfHeight,
+       capsuleTransform.translation().cwiseAbs().maxCoeff(),
+       planePoint.cwiseAbs().maxCoeff()}));
+  Eigen::Vector3d closestAxisPoint;
   double minDist;
-  if (distTop < distBottom) {
-    closestEndpoint = &worldTop;
+  if (std::abs(distTop - distBottom) <= tieTolerance) {
+    closestAxisPoint = 0.5 * (worldTop + worldBottom);
+    minDist = 0.5 * (distTop + distBottom);
+  } else if (distTop < distBottom) {
+    closestAxisPoint = worldTop;
     minDist = distTop;
   } else {
-    closestEndpoint = &worldBottom;
+    closestAxisPoint = worldBottom;
     minDist = distBottom;
   }
 
@@ -206,7 +242,7 @@ bool collidePlaneCapsule(
 
   const double penetration = radius - minDist;
   const Eigen::Vector3d contactPoint
-      = *closestEndpoint - worldNormal * (0.5 * (radius + minDist));
+      = closestAxisPoint - worldNormal * (0.5 * (radius + minDist));
 
   ContactPoint contact;
   contact.position = contactPoint;

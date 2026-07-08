@@ -36,6 +36,8 @@
 
 #include <gtest/gtest.h>
 
+#include <cmath>
+
 using namespace dart::collision::native;
 
 namespace {
@@ -100,6 +102,9 @@ TEST(PlaneCollision, BoxCapsuleAndConvexContacts)
       boxResult));
   ASSERT_EQ(1u, boxResult.numContacts());
   EXPECT_NEAR(0.5, boxResult.getContact(0).depth, 1e-12);
+  EXPECT_NEAR(0.0, boxResult.getContact(0).position.x(), 1e-12);
+  EXPECT_NEAR(0.0, boxResult.getContact(0).position.y(), 1e-12);
+  EXPECT_NEAR(-0.25, boxResult.getContact(0).position.z(), 1e-12);
 
   CapsuleShape capsule(0.5, 2.0);
   CollisionResult capsuleResult;
@@ -133,6 +138,23 @@ TEST(PlaneCollision, BoxCapsuleAndConvexContacts)
   ASSERT_EQ(1u, deepCapsuleResult.numContacts());
   EXPECT_NEAR(1.2, deepCapsuleResult.getContact(0).depth, 1e-12);
   EXPECT_NEAR(-0.6, deepCapsuleResult.getContact(0).position.z(), 1e-12);
+
+  Eigen::Isometry3d horizontalCapsuleTransform = translated(0.0, 0.0, 0.4);
+  horizontalCapsuleTransform.linear()
+      = Eigen::AngleAxisd(0.5 * std::acos(-1.0), Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  CollisionResult horizontalCapsuleResult;
+  EXPECT_TRUE(collidePlaneCapsule(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      horizontalCapsuleTransform,
+      horizontalCapsuleResult));
+  ASSERT_EQ(1u, horizontalCapsuleResult.numContacts());
+  EXPECT_NEAR(0.1, horizontalCapsuleResult.getContact(0).depth, 1e-12);
+  EXPECT_NEAR(0.0, horizontalCapsuleResult.getContact(0).position.x(), 1e-12);
+  EXPECT_NEAR(0.0, horizontalCapsuleResult.getContact(0).position.y(), 1e-12);
+  EXPECT_NEAR(-0.05, horizontalCapsuleResult.getContact(0).position.z(), 1e-12);
 
   ConvexShape convex(
       {Eigen::Vector3d(-0.5, -0.5, -0.25),
