@@ -563,10 +563,13 @@ TEST(NativeCollisionDetector, SkipsUnsupportedShapes)
 {
   auto detector = collision::NativeCollisionDetector::create();
   auto sphereFrame = makeFrame(std::make_shared<dynamics::SphereShape>(1.0));
-  auto planeFrame = makeFrame(
-      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
-  auto group
-      = detector->createCollisionGroup(sphereFrame.get(), planeFrame.get());
+  auto unsupportedFrame
+      = makeFrame(std::make_shared<dynamics::MultiSphereConvexHullShape>(
+          std::vector<dynamics::MultiSphereConvexHullShape::Sphere>{
+              {0.25, Eigen::Vector3d::Zero()},
+              {0.25, Eigen::Vector3d(0.5, 0.0, 0.0)}}));
+  auto group = detector->createCollisionGroup(
+      sphereFrame.get(), unsupportedFrame.get());
 
   collision::CollisionResult result;
   EXPECT_FALSE(group->collide(collision::CollisionOption(true, 10u), &result));
