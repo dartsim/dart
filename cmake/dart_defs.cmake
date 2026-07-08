@@ -532,7 +532,10 @@ function(dart_configure_msvc_runtime_library)
       "MSVC runtime library for DART targets"
       FORCE
     )
-  elseif(DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
+  elseif(
+    DEFINED CMAKE_MSVC_RUNTIME_LIBRARY
+    AND NOT _dart_msvc_runtime_cache_managed
+  )
     set(_dart_msvc_runtime_library "${CMAKE_MSVC_RUNTIME_LIBRARY}")
     set(_dart_msvc_runtime_preserved ON)
   else()
