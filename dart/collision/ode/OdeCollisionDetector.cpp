@@ -513,6 +513,15 @@ void reportContacts(
   const auto contactsToCopy
       = static_cast<int>(std::min({requested, available, maxContactsPerPair}));
 
+  // ODE visits a given collision-object pair at most once per collide() call
+  // (each OdeCollisionObject owns exactly one non-space dGeomID), so the
+  // contacts appended below for `pair` land in one contiguous span of
+  // `result`'s contact vector. Recording [pairContactsBegin, pairSpanEnd)
+  // lets the history logic below address this pair's current-round contacts
+  // directly by index instead of copying/re-scanning every contact
+  // accumulated so far across all pairs.
+  const std::size_t pairContactsBegin = result.getNumContacts();
+
   for (auto i = 0; i < contactsToCopy; ++i) {
     result.addContact(convertContact(contactGeoms[i], b1, b2, option));
   }
@@ -530,22 +539,32 @@ void reportContacts(
   }
 
   const auto pair = MakeNewPair(b1, b2);
-  auto& historyItem = FindPairInHist(*history, pair);
+  const std::size_t pairSpanEnd
+      = pairContactsBegin + static_cast<std::size_t>(contactsToCopy);
+  const std::size_t pairContactCount = pairSpanEnd - pairContactsBegin;
+  const std::size_t pairTarget
+      = std::min<std::size_t>(3u, option.getEffectiveMaxNumContactsPerPair());
+
+  auto foundHistory = std::find_if(
+      history->begin(),
+      history->end(),
+      [&pair](const OdeCollisionDetector::ContactHistoryItem& item) {
+        return pair.first == item.pair.first && pair.second == item.pair.second;
+      });
+  if (pairContactCount >= pairTarget && foundHistory == history->end()) {
+    return;
+  }
+
+  auto& historyItem = foundHistory != history->end()
+                          ? *foundHistory
+                          : FindPairInHist(*history, pair);
   refreshHistoryTransforms(historyItem);
   auto& pastContacsVec = historyItem.history;
-  auto results_vec_copy = result.getContacts();
 
   bool sliding = false;
   constexpr double slidingThreshold = 1e-3;
-  std::size_t pairContactCount = 0u;
-  for (const auto& curr_cont : results_vec_copy) {
-    const auto current_pair
-        = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
-    if (current_pair != pair)
-      continue;
-
-    ++pairContactCount;
-
+  for (std::size_t i = pairContactsBegin; i < pairSpanEnd; ++i) {
+    const auto& curr_cont = result.getContact(i);
     if (computeTangentialSpeed(curr_cont) > slidingThreshold) {
       sliding = true;
       break;
@@ -561,8 +580,6 @@ void reportContacts(
     return;
   }
 
-  const std::size_t pairTarget
-      = std::min<std::size_t>(3u, option.getEffectiveMaxNumContactsPerPair());
   if (pairContactCount >= pairTarget) {
     return;
   }
@@ -579,14 +596,8 @@ void reportContacts(
        ++it) {
     auto past_cont = *it;
     bool matchesCurrentContact = false;
-    bool hasCurrentContactForPair = false;
-    for (const auto& curr_cont : results_vec_copy) {
-      const auto res_pair
-          = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
-      if (res_pair != pair) {
-        continue;
-      }
-      hasCurrentContactForPair = true;
+    for (std::size_t i = pairContactsBegin; i < pairSpanEnd; ++i) {
+      const auto& curr_cont = result.getContact(i);
       auto dist_v = past_cont.point - curr_cont.point;
       const auto dist_m = (dist_v.transpose() * dist_v).coeff(0, 0);
       if (dist_m < 0.01) {
@@ -595,7 +606,7 @@ void reportContacts(
       }
     }
 
-    if (matchesCurrentContact || !hasCurrentContactForPair) {
+    if (matchesCurrentContact) {
       continue;
     }
 
@@ -606,12 +617,8 @@ void reportContacts(
     if (--missing == 0u)
       break;
   }
-  for (const auto& item : results_vec_copy) {
-    const auto res_pair
-        = MakeNewPair(item.collisionObject1, item.collisionObject2);
-    if (res_pair == pair) {
-      pastContacsVec.push_back(item);
-    }
+  for (std::size_t i = pairContactsBegin; i < pairSpanEnd; ++i) {
+    pastContacsVec.push_back(result.getContact(i));
   }
 
   const auto size = pastContacsVec.size();
@@ -1075,6 +1082,11 @@ void OdeCollisionDetector::pruneContactHistory(const CollisionResult& result)
 {
   if (mContactHistory.empty())
     return;
+
+  if (result.getNumContacts() == 0u) {
+    mContactHistory.clear();
+    return;
+  }
 
   const auto& contacts = result.getContacts();
   for (auto& pastContact : mContactHistory) {

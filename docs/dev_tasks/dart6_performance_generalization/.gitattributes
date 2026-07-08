@@ -1,0 +1,3 @@
+# Preserved git-format patches: blank context lines are a single space by
+# design; do not let whitespace checks flag or "fix" them (would break git apply).
+*.patch -whitespace -text

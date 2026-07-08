@@ -17,7 +17,7 @@ final-state hashes on all guard scenes for default-on packets.
 
 #### WP-PG.10 — LCP pipeline instrumentation and island census
 
-- Status: open
+- Status: claimed — `wp-pg-10-lcp-profile-census`
 - Objective: add missing `DART_PROFILE_*` scopes so assembly vs solve vs
   build split is measurable per island, and emit an island-size histogram
   (bodies, contacts, LCP rows) from `contact_benchmark --profile` runs.
@@ -27,10 +27,42 @@ final-state hashes on all guard scenes for default-on packets.
   `BoxedLcpConstraintSolver.cpp`; a stats counter surfaced through the
   existing profiler dump; baseline histograms recorded in
   01-baseline-evidence.md.
-- Non-goals: any behavior change; new public API.
+- Non-goals: any behavior change; solver API or physics semantics changes.
 - Acceptance evidence: histogram + stage-share tables for the five guard
   scenes; zero hash drift on all detectors.
 - Dependencies: WP-PG.01.
+- Local evidence (2026-07-07, current base
+  `origin/release-6.20` @ `b78a8b8cbe7`): added fixed-label text-profiler
+  counters for constrained-group island census plus solver scopes for
+  clear/update/build/solve, boxed-LCP term construction, primary solve,
+  fallback solve, and impulse application. Profile artifacts:
+  `/tmp/wp_pg10_profile_20260707T132241`.
+
+  | Row | Groups | LCP rows | Max rows | Build share | Group-solve share | Construct share | Primary-solve share | Hash |
+  | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+  | S1 dart, 120 container | 1 | 816 | 816 | 0.28% | 95.9% | 5.69% | 90.0% | `0x2757590b13e917ee` |
+  | S2 dart, settled 3k | 0 final (initial warm solve rows only) | 0 final | 0 final | 2.43% | 9.27% | 2.12% | 1.96% | `0x8ddc9a81f2d28a7f` |
+  | S3 dart, active 3k | 3003 | 15015 | 9 | 5.44% | 3.97% | 0.89% | 1.02% | `0xcf0ba6eaa97be038` |
+  | S4 dart, generated 900 | 900 | 5400 | 12 | 6.30% | 3.63% | 0.26% | 0.21% | `0x76205ad68f4293bb` |
+  | S5 dart, serial 90 | 90 | 540 | 12 | 6.10% | 10.3% | 3.91% | 2.91% | `0x726d1ff51bdb717` |
+
+  The solver scopes/counters use runtime-gated profiling so ordinary
+  `World::step()` execution stays allocation-neutral even when DART is built
+  with `DART_BUILD_PROFILE=ON`; `contact_benchmark --profile` enables the gate
+  around the measured run. Final profile smoke:
+  `/tmp/wp_pg10_profile_smoke_final.txt` (`--generate-objects 30`, 20 steps,
+  DART collision) printed the solver construct scope and island counters with
+  final hash `0x31cf9caf33b82e3c`.
+
+  Guard artifact `/tmp/wp_pg10_guard_20260707T132321` matched current-base
+  parent and WP-PG.10 for S1 120-object dart/ode rows and S2-S5 all-detector
+  rows. The old baseline table's S4/S5 FCL hashes had already drifted on the
+  unmodified parent (`S4_fcl = 0xea9b68f8b062600d`, `S5_fcl =
+  0x8277be4f0c14212`); the WP-PG.10 branch reproduced the same parent values.
+  Final local verification passed `UNIT_common_Profile`,
+  `INTEGRATION_StepAllocation` (native DART measured allocation gates reported
+  zero operator-new/raw-malloc/base-allocator growth), capped `ALL`, and
+  `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
 
 #### WP-PG.11 — Remove per-step RTTI and full scans from the solver
 

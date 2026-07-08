@@ -27,6 +27,14 @@ branch and adapt it to the DART-6 layout:
   there too. Drop genuinely DART-7-only infra (the ECS `ClassicRigidSolver`,
   `MeshLoader`, the `tests/unit/gui` tree); confirm against the 6.20 tree first,
   since much is already backported (e.g. `CouplerConstraint`).
+- For AI workflow or generated-adapter backports, compare
+  `docs/ai/capabilities.json`, `docs/ai/workflows.md`, `.claude/commands/`,
+  `.claude/skills/`, `.codex/skills/`, and `.opencode/command/` before
+  cherry-picking. If the requested outcome names a workflow that is absent on
+  this branch, add a release-tailored capability only when that is the explicit
+  request; otherwise adapt the guidance to the existing DART 6.20 workflow
+  surface and do not import main-only workflows just to make a patch apply.
+  Regenerate adapters with `pixi run sync-ai-commands`.
 
 Verify before merging: `pixi run test-all` (full C++ + Python) and, for any
 collision/constraint/parser/default-solver/public-header change,

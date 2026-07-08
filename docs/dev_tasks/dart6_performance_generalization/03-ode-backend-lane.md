@@ -27,7 +27,7 @@ scenes, plus the gz gate.
 
 #### WP-PG.20 — Contact-history span tracking (kill per-pair full copies)
 
-- Status: open
+- Status: done — #3329 (`wp-pg-20-ode-history-spans`)
 - Objective: replace the per-pair full copy of `result.getContacts()` with
   per-pair index spans recorded as contacts are appended.
 - Value: removes the dominant O(pairs × total-contacts) copy cost on
@@ -39,11 +39,19 @@ scenes, plus the gz gate.
 - Acceptance evidence: bit-identical ODE hashes/contacts/resting on all
   five guard scenes; ODE rows of the active matrix improve measurably;
   other detectors untouched (hash-identical).
+- Completion evidence: refreshed after the #3307/#3327 base advance against
+  `origin/release-6.20` @ `9ff8b1d77a1`. Base vs WP-PG.20 hashes stayed
+  bit-identical for `S2_ode`, `S3_ode`, `S4_ode`, `S3_dart`, and
+  `S4_dart`. ODE rows improved: `S2_ode` 0.0933 -> 0.0521 ms/step,
+  `S3_ode` 115.9 -> 19.7 ms/step, `S4_ode` 0.2269 -> 0.1549 ms/step;
+  Google Benchmark `BM_ContactContainerActive` ODE rows improved 3.2-7.6%
+  (60/1/1 1220 -> 1181 ms, 60/1/16 1244 -> 1177 ms, 120/1/1
+  6115 -> 5650 ms, 120/1/16 6061 -> 5861 ms).
 - Dependencies: WP-PG.01.
 
 #### WP-PG.21 — Pair-keyed history lookup + generation-based pruning
 
-- Status: open
+- Status: evidence-gated (current-base map/pruning gate rejected)
 - Objective: replace the `FindPairInHist` linear scan with an
   unordered_map keyed on the canonical object pair, and replace
   O(history × contacts) pruning with a generation/stamp sweep.
@@ -55,6 +63,19 @@ scenes, plus the gz gate.
 - Acceptance evidence: same bar as WP-PG.20 (bit-identical ODE outcomes;
   measurable win at 900/3000 objects; gz gate green).
 - Dependencies: WP-PG.20 (shares span structure).
+- Re-scope note: WP-PG.20 intentionally stayed span-only after current-base
+  A/B showed the pair-keyed map/pruning variant could add small-row overhead.
+  Claim this packet only with a fresh profile and current-base matrix proving
+  map/pruning work beats the span-only baseline.
+- Gate evidence (2026-07-07, current base
+  `origin/release-6.20` @ `b78a8b8cbe7`): the prior map/pruning variant kept
+  hashes identical but was mixed against the span-only base, so it is not a
+  shippable general-performance packet. `S2_ode` regressed 0.0572 -> 0.0644
+  ms/step (+12.6%), `S3_ode` improved 22.28 -> 19.74 ms/step (-11.4%),
+  and `S4_ode` regressed 0.208 -> 0.248 ms/step (+19.2%). Contact-container
+  ODE rows were also mixed: 60-object rows improved 13-14%, but 120-object
+  rows regressed 6.8-9.4%. Artifact:
+  `/tmp/wp_pg21_gate_20260707T130843`.
 
 #### WP-PG.22 — Version-gated ODE pose push
 

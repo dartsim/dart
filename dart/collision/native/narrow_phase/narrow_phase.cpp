@@ -32,13 +32,18 @@
 
 #include <dart/collision/native/narrow_phase/box_box.hpp>
 #include <dart/collision/native/narrow_phase/capsule_box.hpp>
+#include <dart/collision/native/narrow_phase/capsule_capsule.hpp>
 #include <dart/collision/native/narrow_phase/capsule_sphere.hpp>
+#include <dart/collision/native/narrow_phase/convex_convex.hpp>
+#include <dart/collision/native/narrow_phase/cylinder_collision.hpp>
+#include <dart/collision/native/narrow_phase/mesh_mesh.hpp>
 #include <dart/collision/native/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/native/narrow_phase/sphere_box.hpp>
 #include <dart/collision/native/narrow_phase/sphere_sphere.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <stdexcept>
+#include <utility>
 
 namespace dart::collision::native {
 
@@ -66,14 +71,34 @@ bool collideWithFlippedNormals(
     return false;
   }
 
-  const auto numContacts = localResult.numContacts();
-  for (std::size_t i = 0; i < numContacts; ++i) {
-    ContactPoint contact = localResult.getContact(i);
-    contact.normal = -contact.normal;
-    result.addContact(contact);
+  for (const auto& manifold : localResult.getManifolds()) {
+    ContactManifold flipped;
+    flipped.setType(manifold.getType());
+    flipped.setObjects(manifold.getObject2(), manifold.getObject1());
+    for (ContactPoint contact : manifold.getContacts()) {
+      contact.normal = -contact.normal;
+      std::swap(contact.object1, contact.object2);
+      std::swap(contact.featureIndex1, contact.featureIndex2);
+      flipped.addContact(contact);
+    }
+    result.addManifold(std::move(flipped));
   }
 
   return true;
+}
+
+bool isConvexFallbackType(ShapeType type)
+{
+  return type == ShapeType::Sphere || type == ShapeType::Box
+         || type == ShapeType::Capsule || type == ShapeType::Cylinder
+         || type == ShapeType::Convex;
+}
+
+bool isMeshPrimitiveType(ShapeType type)
+{
+  return type == ShapeType::Sphere || type == ShapeType::Box
+         || type == ShapeType::Capsule || type == ShapeType::Cylinder
+         || type == ShapeType::Convex;
 }
 
 bool collideShapes(
@@ -156,6 +181,129 @@ bool collideShapes(
         [&](CollisionResult& local, const CollisionOption& opt) {
           return collideCapsuleBox(*c, tf2, *b, tf1, local, opt);
         });
+  }
+
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Capsule) {
+    const auto* c1 = static_cast<const CapsuleShape*>(shape1);
+    const auto* c2 = static_cast<const CapsuleShape*>(shape2);
+    return collideCapsules(*c1, tf1, *c2, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Cylinder && type2 == ShapeType::Cylinder) {
+    const auto* c1 = static_cast<const CylinderShape*>(shape1);
+    const auto* c2 = static_cast<const CylinderShape*>(shape2);
+    return collideCylinders(*c1, tf1, *c2, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Cylinder && type2 == ShapeType::Sphere) {
+    const auto* c = static_cast<const CylinderShape*>(shape1);
+    const auto* s = static_cast<const SphereShape*>(shape2);
+    return collideCylinderSphere(*c, tf1, *s, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Sphere && type2 == ShapeType::Cylinder) {
+    const auto* s = static_cast<const SphereShape*>(shape1);
+    const auto* c = static_cast<const CylinderShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collideCylinderSphere(*c, tf2, *s, tf1, local, opt);
+        });
+  }
+
+  if (type1 == ShapeType::Cylinder && type2 == ShapeType::Box) {
+    const auto* c = static_cast<const CylinderShape*>(shape1);
+    const auto* b = static_cast<const BoxShape*>(shape2);
+    return collideCylinderBox(*c, tf1, *b, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Box && type2 == ShapeType::Cylinder) {
+    const auto* b = static_cast<const BoxShape*>(shape1);
+    const auto* c = static_cast<const CylinderShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collideCylinderBox(*c, tf2, *b, tf1, local, opt);
+        });
+  }
+
+  if (type1 == ShapeType::Cylinder && type2 == ShapeType::Capsule) {
+    const auto* cyl = static_cast<const CylinderShape*>(shape1);
+    const auto* cap = static_cast<const CapsuleShape*>(shape2);
+    return collideCylinderCapsule(*cyl, tf1, *cap, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Cylinder) {
+    const auto* cap = static_cast<const CapsuleShape*>(shape1);
+    const auto* cyl = static_cast<const CylinderShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collideCylinderCapsule(*cyl, tf2, *cap, tf1, local, opt);
+        });
+  }
+
+  if (type1 == ShapeType::Cylinder && type2 == ShapeType::Plane) {
+    const auto* c = static_cast<const CylinderShape*>(shape1);
+    const auto* p = static_cast<const PlaneShape*>(shape2);
+    return collideCylinderPlane(*c, tf1, *p, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Plane && type2 == ShapeType::Cylinder) {
+    const auto* p = static_cast<const PlaneShape*>(shape1);
+    const auto* c = static_cast<const CylinderShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collideCylinderPlane(*c, tf2, *p, tf1, local, opt);
+        });
+  }
+
+  if (type1 == ShapeType::Mesh && type2 == ShapeType::Mesh) {
+    const auto* m1 = static_cast<const MeshShape*>(shape1);
+    const auto* m2 = static_cast<const MeshShape*>(shape2);
+    return collideMeshMesh(*m1, tf1, *m2, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Mesh && type2 == ShapeType::Plane) {
+    const auto* mesh = static_cast<const MeshShape*>(shape1);
+    const auto* plane = static_cast<const PlaneShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collidePlaneMesh(*plane, tf2, *mesh, tf1, local, opt);
+        });
+  }
+
+  if (type1 == ShapeType::Plane && type2 == ShapeType::Mesh) {
+    const auto* plane = static_cast<const PlaneShape*>(shape1);
+    const auto* mesh = static_cast<const MeshShape*>(shape2);
+    return collidePlaneMesh(*plane, tf1, *mesh, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Mesh && isMeshPrimitiveType(type2)) {
+    const auto* mesh = static_cast<const MeshShape*>(shape1);
+    return collidePrimitiveMesh(*shape2, tf2, *mesh, tf1, result, option);
+  }
+
+  if (type2 == ShapeType::Mesh && isMeshPrimitiveType(type1)) {
+    const auto* mesh = static_cast<const MeshShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collidePrimitiveMesh(*shape1, tf1, *mesh, tf2, local, opt);
+        });
+  }
+
+  if ((type1 == ShapeType::Convex || type2 == ShapeType::Convex)
+      && isConvexFallbackType(type1) && isConvexFallbackType(type2)) {
+    return collideConvexConvex(*shape1, tf1, *shape2, tf2, result, option);
   }
 
   return false;
@@ -244,6 +392,41 @@ bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)
   }
   if ((type1 == ShapeType::Capsule && type2 == ShapeType::Box)
       || (type1 == ShapeType::Box && type2 == ShapeType::Capsule)) {
+    return true;
+  }
+  if (type1 == ShapeType::Capsule && type2 == ShapeType::Capsule) {
+    return true;
+  }
+  if (type1 == ShapeType::Cylinder && type2 == ShapeType::Cylinder) {
+    return true;
+  }
+  if ((type1 == ShapeType::Cylinder && type2 == ShapeType::Sphere)
+      || (type1 == ShapeType::Sphere && type2 == ShapeType::Cylinder)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Cylinder && type2 == ShapeType::Box)
+      || (type1 == ShapeType::Box && type2 == ShapeType::Cylinder)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Cylinder && type2 == ShapeType::Capsule)
+      || (type1 == ShapeType::Capsule && type2 == ShapeType::Cylinder)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Cylinder && type2 == ShapeType::Plane)
+      || (type1 == ShapeType::Plane && type2 == ShapeType::Cylinder)) {
+    return true;
+  }
+  if (type1 == ShapeType::Mesh
+      && (type2 == ShapeType::Mesh || type2 == ShapeType::Plane
+          || isMeshPrimitiveType(type2))) {
+    return true;
+  }
+  if (type2 == ShapeType::Mesh
+      && (type1 == ShapeType::Plane || isMeshPrimitiveType(type1))) {
+    return true;
+  }
+  if ((type1 == ShapeType::Convex || type2 == ShapeType::Convex)
+      && isConvexFallbackType(type1) && isConvexFallbackType(type2)) {
     return true;
   }
   return false;

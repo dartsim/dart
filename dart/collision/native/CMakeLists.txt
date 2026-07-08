@@ -26,7 +26,11 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/face_clip.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/contact_reduction.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/capsule_box.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/capsule_capsule.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/capsule_sphere.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/convex_convex.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/cylinder_collision.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/mesh_mesh.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_box.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_sphere.hpp
 )
@@ -49,7 +53,11 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/face_clip.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/box_box/contact_reduction.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/capsule_box.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/capsule_capsule.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/capsule_sphere.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/convex_convex.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/cylinder_collision.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/mesh_mesh.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_box.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/sphere_sphere.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/brute_force.cpp

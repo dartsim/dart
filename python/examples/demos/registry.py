@@ -1,10 +1,9 @@
 """Scene catalog for the dartpy consolidated demos runner.
 
 This mirrors the C++ ``examples/demos`` catalog's id/category/title scheme
-where a Python port of the same demo exists (see
-``docs/dev_tasks/dart6_consolidated_demos/PLAN.md`` for the frozen taxonomy).
-A few scenes here have no C++ counterpart (``hello_world_gui``,
-``contacts_pointcloud``); those get their own id/category/summary.
+where a Python port of the same demo exists. A few scenes here have no C++
+counterpart (``hello_world_gui``, ``contacts_pointcloud``); those get their
+own id/category/summary.
 
 ``SceneHandle`` is the Python analog of the C++ host's ``DemoSceneSetup``
 (see ``examples/demos/DemoScene.hpp``), scaled down to what a plain

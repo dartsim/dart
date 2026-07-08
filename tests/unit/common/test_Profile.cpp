@@ -37,6 +37,7 @@
 #include <algorithm>
 #include <sstream>
 #include <string>
+#include <string_view>
 
 #if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
   #include <dart/common/detail/profiler.hpp>
@@ -46,6 +47,20 @@
 
 using dart::common::profile::Profiler;
 using dart::common::profile::ProfileScope;
+
+namespace dart::common::profile {
+
+class ProfilerTestAccess
+{
+public:
+  static void recordZeroDurationScope(std::string_view label)
+  {
+    auto& profiler = Profiler::instance();
+    profiler.recordScopeForTesting(label, __FILE__, __LINE__, 0);
+  }
+};
+
+} // namespace dart::common::profile
 
 namespace {
 
@@ -75,6 +90,14 @@ TEST(ProfileMacro, ScopedMacrosAreSingleStatements)
   DART_TEST_PROFILE_IF_ELSE(DART_PROFILE_SCOPED, 1);
   DART_TEST_PROFILE_IF_ELSE(
       DART_PROFILE_SCOPED_N("single-statement named scope"), 2);
+  DART_TEST_PROFILE_IF_ELSE(
+      DART_PROFILE_COUNTER_N("single-statement counter", 1), 3);
+  DART_TEST_PROFILE_IF_ELSE(
+      DART_PROFILE_SCOPED_IF_N(true, "single-statement conditional scope"), 4);
+  DART_TEST_PROFILE_IF_ELSE(
+      DART_PROFILE_COUNTER_IF_N(
+          true, "single-statement conditional counter", 1),
+      5);
 
   EXPECT_EQ(marker, 0);
 }
@@ -87,6 +110,12 @@ protected:
   void SetUp() override
   {
     Profiler::instance().reset();
+    dart::common::profile::setProfileRecordingEnabled(false);
+  }
+
+  void TearDown() override
+  {
+    dart::common::profile::setProfileRecordingEnabled(false);
   }
 };
 
@@ -147,6 +176,17 @@ TEST_F(ProfileTest, ResetReclaimsNodeStorageForNewScopes)
   EXPECT_EQ(summary.find("prefill-scope-"), std::string::npos);
 }
 
+TEST_F(ProfileTest, ZeroDurationScopesRemainVisibleInSummary)
+{
+  dart::common::profile::ProfilerTestAccess::recordZeroDurationScope(
+      "zero-duration-scope");
+
+  const auto summary = DART_PROFILE_TEXT_SUMMARY();
+  EXPECT_NE(summary.find("zero-duration-scope"), std::string::npos);
+  EXPECT_NE(summary.find("calls        1"), std::string::npos);
+  EXPECT_EQ(summary.find("no scoped regions were recorded"), std::string::npos);
+}
+
 TEST_F(ProfileTest, KeepsDynamicScopeNamesAlive)
 {
   std::string label = "dynamic-scope";
@@ -175,10 +215,67 @@ TEST_F(ProfileTest, TextSummaryMacroReturnsString)
   EXPECT_NE(summary.find("DART profiler (text backend)"), std::string::npos);
 }
 
+TEST_F(ProfileTest, CounterSamplesAreReported)
+{
+  for (const auto value : {3u, 5u}) {
+    DART_PROFILE_COUNTER_N("counter-sample", value);
+  }
+
+  const auto summary = DART_PROFILE_TEXT_SUMMARY();
+  EXPECT_NE(summary.find("Counters:"), std::string::npos);
+  EXPECT_NE(summary.find("counter-sample"), std::string::npos);
+  EXPECT_NE(summary.find("samples        2"), std::string::npos);
+  EXPECT_NE(summary.find("sum        8"), std::string::npos);
+  EXPECT_NE(summary.find("mean     4.00"), std::string::npos);
+  EXPECT_NE(summary.find("min        3"), std::string::npos);
+  EXPECT_NE(summary.find("max        5"), std::string::npos);
+  EXPECT_NE(summary.find("last        5"), std::string::npos);
+}
+
+TEST_F(ProfileTest, ConditionalMacrosRecordOnlyWhenEnabled)
+{
+  {
+    DART_PROFILE_SCOPED_IF_N(false, "conditional-off-scope");
+  }
+  DART_PROFILE_COUNTER_IF_N(false, "conditional-off-counter", 7);
+
+  {
+    DART_PROFILE_SCOPED_IF_N(true, "conditional-on-scope");
+  }
+  DART_PROFILE_COUNTER_IF_N(true, "conditional-on-counter", 13);
+
+  const auto summary = DART_PROFILE_TEXT_SUMMARY();
+  EXPECT_EQ(summary.find("conditional-off-scope"), std::string::npos);
+  EXPECT_EQ(summary.find("conditional-off-counter"), std::string::npos);
+  EXPECT_NE(summary.find("conditional-on-scope"), std::string::npos);
+  EXPECT_NE(summary.find("conditional-on-counter"), std::string::npos);
+}
+
+TEST_F(ProfileTest, RecordingFlagReturnsPreviousState)
+{
+  EXPECT_FALSE(dart::common::profile::isProfileRecordingEnabled());
+  EXPECT_FALSE(dart::common::profile::setProfileRecordingEnabled(true));
+  EXPECT_TRUE(dart::common::profile::isProfileRecordingEnabled());
+  EXPECT_TRUE(dart::common::profile::setProfileRecordingEnabled(false));
+  EXPECT_FALSE(dart::common::profile::isProfileRecordingEnabled());
+}
+
+TEST_F(ProfileTest, ResetClearsCounterSamples)
+{
+  DART_PROFILE_COUNTER_N("counter-before-reset", 7);
+  Profiler::instance().reset();
+  DART_PROFILE_COUNTER_N("counter-after-reset", 11);
+
+  const auto summary = DART_PROFILE_TEXT_SUMMARY();
+  EXPECT_EQ(summary.find("counter-before-reset"), std::string::npos);
+  EXPECT_NE(summary.find("counter-after-reset"), std::string::npos);
+}
+
 TEST_F(ProfileTest, CommonHelperApiReturnsTextSummary)
 {
   EXPECT_TRUE(dart::common::profile::isProfilingEnabled());
   EXPECT_TRUE(dart::common::profile::isTextProfilingEnabled());
+  EXPECT_FALSE(dart::common::profile::isProfileRecordingEnabled());
 
   dart::common::profile::resetProfile();
   {
@@ -237,6 +334,16 @@ TEST(ProfileBackendDisabled, TextProfilerUnavailable)
   EXPECT_TRUE(ss.str().empty());
   EXPECT_TRUE(dart::common::profile::getProfileSummaryText().empty());
   EXPECT_TRUE(DART_PROFILE_TEXT_SUMMARY().empty());
+  #if DART_BUILD_PROFILE && DART_PROFILE_HAS_TRACY
+  EXPECT_FALSE(dart::common::profile::isProfileRecordingEnabled());
+  EXPECT_FALSE(dart::common::profile::setProfileRecordingEnabled(true));
+  EXPECT_TRUE(dart::common::profile::isProfileRecordingEnabled());
+  EXPECT_TRUE(dart::common::profile::setProfileRecordingEnabled(false));
+  EXPECT_FALSE(dart::common::profile::isProfileRecordingEnabled());
+  #else
+  EXPECT_FALSE(dart::common::profile::isProfileRecordingEnabled());
+  EXPECT_FALSE(dart::common::profile::setProfileRecordingEnabled(true));
+  #endif
   GTEST_SKIP() << "Text profiling backend disabled at build time.";
 }
 

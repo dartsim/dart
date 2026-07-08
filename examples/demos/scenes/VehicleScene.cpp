@@ -43,12 +43,10 @@
 // touch which local joint axis is "steering" vs "wheel-spin" for a
 // multi-dof root FreeJoint, so reorienting here would risk silently
 // scrambling which dof each hardcoded index (6, 7, 8, ...) refers to. This
-// mirrors parity-b4.json's own guidance to treat this as "a parity gap to
-// document rather than replicate" (the same call already made for this
-// scene during Phase 0 recon) rather than risk an unverified behavior
-// change. The original's fixed 640x480 window (it does not parse
-// --gui-scale, unlike every other example) and its own instruction-text
-// block are host chrome now.
+// keeps this as a documented parity gap rather than risk an unverified
+// behavior change. The original's fixed 640x480 window (it does not parse
+// --gui-scale, unlike every other example) and its own instruction-text block
+// are host chrome now.
 
 #include "Scenes.hpp"
 

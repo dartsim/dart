@@ -32,9 +32,9 @@
 
 // Ported from examples/atlas_simbicon: an Atlas humanoid balanced by a
 // Simbicon (Simple Biped Locomotion Control) state-machine controller
-// (atlas_simbicon::Controller, State, StateMachine, TerminalCondition --
-// ported wholesale into this subdirectory per BRIEF-phase2's multi-file-scene
-// convention), with keyboard push perturbations and an ImGui control panel.
+// (atlas_simbicon::Controller, State, StateMachine, TerminalCondition, ported
+// wholesale into this subdirectory), with keyboard push perturbations and an
+// ImGui control panel.
 //
 // Deviations from the original:
 //  - Y-UP, NOT reoriented to Z-up. Every other Y-up .skel/.sdf world in this
@@ -60,9 +60,7 @@
 //    help text are dropped as redundant with host chrome, matching every
 //    other B2-B4 ImGui-panel port; the Headlights/Shadow/Depth-mode toggles
 //    and the Gravity-magnitude slider are kept because they are genuine
-//    per-scene tunables the host chrome does not otherwise expose (no
-//    generic headlights/shadow-resolution/depth-mode/gravity-magnitude
-//    controls exist yet -- see PLAN.md Phase 3).
+//    per-scene tunables the host chrome does not otherwise expose.
 //  - The widget's control-mode radio buttons are ported byte-for-byte
 //    including their documented label/state-machine mismatch:
 //    "Short-Stride Walking" actually selects the "running" state machine,

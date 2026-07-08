@@ -39,27 +39,21 @@
 // examples/sleeping/main.cpp is a full standalone app (its own ImGui panel,
 // CLI options, and headless capture mode) that predates and duplicates much
 // of what dart-demos' host now provides generically (headless --shot
-// capture, a Simulation toolbar, viewer theming). Per
-// docs/dev_tasks/dart6_consolidated_demos/BRIEF-phase2.md, only the scene
-// itself and its bespoke panel controls (stacks, shoot sphere, drop box,
-// deactivation toggle, island coloring) are ported here; the original example
-// is left in place (its removal is a later cleanup phase). Also dropped, all
-// because they are host-owned chrome shared across every scene rather than
-// this scene's own state: the custom clear color/headlights/key+fill
-// lights/SoftShadowMap, the global configureImGuiStyle() override (would
-// restyle every other scene's panel too), the SingleThreaded threading-model
-// call and viewer->simulate(true) autostart, and the "Run simulation"
-// checkbox (the host's Simulation toolbar already owns Play/Pause), and the
-// 's' key that printed awake/asleep stats to stdout (the scene panel shows the
-// same awake/asleep counts continuously, and there is no GUI console).
+// capture, a Simulation toolbar, viewer theming). Only the scene itself and
+// its bespoke panel controls (stacks, shoot sphere, drop box, deactivation
+// toggle, island coloring) are ported here. Host-owned chrome shared across
+// every scene is intentionally not duplicated: the custom clear color,
+// headlights/key+fill lights/SoftShadowMap, the global configureImGuiStyle()
+// override, the SingleThreaded threading-model call, viewer->simulate(true)
+// autostart, and the "Run simulation" checkbox are all owned by DemoHost.
+// The original 's' key printed awake/asleep stats to stdout; the scene panel
+// shows the same awake/asleep counts continuously.
+//
 // customPreRefresh's island-recolor/aim-line-update ran every render frame
-// regardless of pause state in the original; B1 had to demote this to
-// postStep (once per simulation step, only while running) because
-// DemoSceneSetup did not yet expose a preRefresh hook, so the visuals held
-// their last state while paused. Phase 3 adds DemoSceneSetup::preRefresh
-// (wired to WorldNode::customPreRefresh, which fires every render frame
-// unconditionally); this port now uses it, restoring full parity with the
-// original's always-live recolor/aim-line.
+// regardless of pause state in the original. DemoSceneSetup::preRefresh is
+// wired to WorldNode::customPreRefresh, which fires every render frame
+// unconditionally, so this port keeps the original's always-live
+// recolor/aim-line behavior.
 
 #include "Scenes.hpp"
 

@@ -31,8 +31,8 @@
  */
 
 // Python bridge for the ssik_ik_gui scene port (examples/ssik_ik_gui). Split
-// into its own header per BRIEF-phase2's convention for multi-file scenes
-// (examples/demos/scenes/<name>/, namespaced dart_demos::<name>).
+// into its own header to keep the multi-file scene's bridge interface local to
+// examples/demos/scenes/ssik_ik_gui/.
 //
 // Python.h must be included before any standard or system headers because it
 // configures feature-test macros (e.g. _POSIX_C_SOURCE) that those headers

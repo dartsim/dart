@@ -50,12 +50,12 @@ class Group;
 namespace dart_demos {
 
 //==============================================================================
-/// Host-owned scene tree + body inspector (BRIEF-phase3.md #2): skeletons ->
-/// bodies (tree) with a single host-owned selection, a detail view (world/
-/// relative transform, velocities, mass, per-joint position/velocity/limits
-/// with paused-only clamped sliders), and per-body wireframe/hide/highlight
-/// visual toggles. One instance is owned by DemoHost and reset() on every
-/// scene switch (the BodyNode/DegreeOfFreedom pointers it tracks belong to
+/// Host-owned scene tree + body inspector: skeletons -> bodies (tree) with a
+/// single host-owned selection, a detail view (world/relative transform,
+/// velocities, mass, per-joint position/velocity/limits with paused-only
+/// clamped sliders), and per-body wireframe/hide/highlight visual toggles. One
+/// instance is owned by DemoHost and reset() on every scene switch (the
+/// BodyNode/DegreeOfFreedom pointers it tracks belong to
 /// the world that is about to be destroyed).
 ///
 /// Derives from dart::common::Observer so a selection that gets deleted out

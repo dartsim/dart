@@ -31,7 +31,7 @@
  */
 
 // dart-demos: a single-window host for browsing and running DART example
-// scenes. See docs/dev_tasks/dart6_consolidated_demos/BRIEF-phase1.md.
+// scenes. See examples/demos/README.md for the host architecture.
 
 #include "DemoHost.hpp"
 #include "Registry.hpp"
@@ -80,7 +80,7 @@ struct Options
   // Hidden test/debug hooks (undocumented -- not in printUsage()): let a
   // headless --shot capture exercise UI state that normally requires
   // interactive input (a body selected in the Inspector; the Profiler
-  // actively recording), per BRIEF-phase3.md's acceptance criteria.
+  // actively recording).
   std::string debugSelectBody;
   bool debugRecordProfile = false;
 };

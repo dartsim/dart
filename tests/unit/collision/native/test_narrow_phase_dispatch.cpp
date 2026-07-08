@@ -38,6 +38,7 @@
 
 #include <array>
 #include <stdexcept>
+#include <vector>
 
 using namespace dart::collision::native;
 
@@ -48,6 +49,92 @@ Eigen::Isometry3d translated(double x, double y, double z)
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = Eigen::Vector3d(x, y, z);
   return tf;
+}
+
+std::vector<Eigen::Vector3d> makeOctahedronVertices(double scale = 1.0)
+{
+  return {
+      {scale, 0.0, 0.0},
+      {-scale, 0.0, 0.0},
+      {0.0, scale, 0.0},
+      {0.0, -scale, 0.0},
+      {0.0, 0.0, scale},
+      {0.0, 0.0, -scale}};
+}
+
+MeshShape makeUnitCubeMesh()
+{
+  std::vector<Eigen::Vector3d> vertices
+      = {{-0.5, -0.5, -0.5},
+         {0.5, -0.5, -0.5},
+         {0.5, 0.5, -0.5},
+         {-0.5, 0.5, -0.5},
+         {-0.5, -0.5, 0.5},
+         {0.5, -0.5, 0.5},
+         {0.5, 0.5, 0.5},
+         {-0.5, 0.5, 0.5}};
+  std::vector<MeshShape::Triangle> triangles
+      = {{0, 1, 2},
+         {0, 2, 3},
+         {4, 6, 5},
+         {4, 7, 6},
+         {0, 5, 1},
+         {0, 4, 5},
+         {2, 6, 7},
+         {2, 7, 3},
+         {0, 7, 4},
+         {0, 3, 7},
+         {1, 5, 6},
+         {1, 6, 2}};
+
+  return MeshShape(vertices, triangles);
+}
+
+MeshShape makePlaneMesh(double z = 0.0)
+{
+  std::vector<Eigen::Vector3d> vertices
+      = {{-1.0, -1.0, z}, {1.0, -1.0, z}, {1.0, 1.0, z}, {-1.0, 1.0, z}};
+  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}, {0, 2, 3}};
+  return MeshShape(vertices, triangles);
+}
+
+MeshShape makeSquareRingMesh()
+{
+  std::vector<Eigen::Vector3d> vertices
+      = {{-2.0, -2.0, 0.0},
+         {2.0, -2.0, 0.0},
+         {2.0, 2.0, 0.0},
+         {-2.0, 2.0, 0.0},
+         {-0.5, -0.5, 0.0},
+         {0.5, -0.5, 0.0},
+         {0.5, 0.5, 0.0},
+         {-0.5, 0.5, 0.0}};
+  std::vector<MeshShape::Triangle> triangles
+      = {{0, 1, 5},
+         {0, 5, 4},
+         {1, 2, 6},
+         {1, 6, 5},
+         {2, 3, 7},
+         {2, 7, 6},
+         {3, 0, 4},
+         {3, 4, 7}};
+  return MeshShape(vertices, triangles);
+}
+
+void expectSingleNormal(
+    const Shape& shape1,
+    const Eigen::Isometry3d& tf1,
+    const Shape& shape2,
+    const Eigen::Isometry3d& tf2,
+    const Eigen::Vector3d& expectedNormal)
+{
+  CollisionResult result;
+  const bool hit = NarrowPhase::collide(
+      &shape1, tf1, &shape2, tf2, CollisionOption(), result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_GE(result.numContacts(), 1u);
+  EXPECT_TRUE(result.getContact(0).normal.isApprox(expectedNormal, 1e-12));
 }
 
 } // namespace
@@ -174,13 +261,13 @@ TEST(NarrowPhaseDispatch, SphereBoxBinaryCheckDoesNotAddContacts)
 TEST(NarrowPhaseDispatch, ReturnsFalseForUnroutedPairs)
 {
   SphereShape sphere(1.0);
-  CylinderShape cylinder(0.5, 2.0);
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
 
   CollisionResult result;
   const bool hit = NarrowPhase::collide(
-      &sphere,
+      &plane,
       Eigen::Isometry3d::Identity(),
-      &cylinder,
+      &sphere,
       Eigen::Isometry3d::Identity(),
       CollisionOption(),
       result);
@@ -238,7 +325,7 @@ TEST(NarrowPhaseDispatch, BatchRecordsPerPairHits)
 {
   SphereShape sphere1(1.0);
   SphereShape sphere2(1.0);
-  CylinderShape cylinder(0.5, 2.0);
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
 
   const std::array<NarrowPhasePair, 3> pairs{{
       {&sphere1,
@@ -250,7 +337,7 @@ TEST(NarrowPhaseDispatch, BatchRecordsPerPairHits)
        Eigen::Isometry3d::Identity(),
        translated(3.0, 0.0, 0.0)},
       {&sphere1,
-       &cylinder,
+       &plane,
        Eigen::Isometry3d::Identity(),
        Eigen::Isometry3d::Identity()},
   }};
@@ -310,7 +397,7 @@ TEST(NarrowPhaseDispatch, BatchRejectsNullShapes)
       std::invalid_argument);
 }
 
-TEST(NarrowPhaseDispatch, ReportsP4SupportedPairs)
+TEST(NarrowPhaseDispatch, ReportsP7SupportedPairs)
 {
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Sphere));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Box, ShapeType::Box));
@@ -320,11 +407,41 @@ TEST(NarrowPhaseDispatch, ReportsP4SupportedPairs)
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Capsule));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Capsule, ShapeType::Box));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Box, ShapeType::Capsule));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Capsule, ShapeType::Capsule));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Convex, ShapeType::Convex));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Convex, ShapeType::Sphere));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Convex));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Convex, ShapeType::Box));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Capsule, ShapeType::Convex));
+  EXPECT_TRUE(
+      NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Cylinder));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Sphere));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Cylinder));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Box));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Box, ShapeType::Cylinder));
+  EXPECT_TRUE(
+      NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Capsule));
+  EXPECT_TRUE(
+      NarrowPhase::isSupported(ShapeType::Capsule, ShapeType::Cylinder));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Plane));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Plane, ShapeType::Cylinder));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Convex, ShapeType::Cylinder));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Convex));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Mesh));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Sphere));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Mesh));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Box));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Capsule, ShapeType::Mesh));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Cylinder, ShapeType::Mesh));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Plane));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Plane, ShapeType::Mesh));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Convex, ShapeType::Mesh));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Convex));
 
-  EXPECT_FALSE(
-      NarrowPhase::isSupported(ShapeType::Capsule, ShapeType::Capsule));
-  EXPECT_FALSE(
-      NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Cylinder));
+  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Sphere, ShapeType::Plane));
+  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Plane, ShapeType::Sphere));
+  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Sdf));
+  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Compound, ShapeType::Mesh));
 }
 
 TEST(NarrowPhaseDispatch, RoutesCapsuleSphereInBothOrders)
@@ -455,6 +572,471 @@ TEST(NarrowPhaseDispatch, CapsuleBoxBinaryCheckDoesNotAddContacts)
 
   EXPECT_TRUE(boxFirstHit);
   EXPECT_EQ(0u, boxFirstResult.numContacts());
+}
+
+TEST(NarrowPhaseDispatch, RoutesCapsuleCapsule)
+{
+  CapsuleShape capsule1(0.5, 2.0);
+  CapsuleShape capsule2(0.5, 2.0);
+
+  CollisionResult result;
+  const bool hit = NarrowPhase::collide(
+      &capsule1,
+      Eigen::Isometry3d::Identity(),
+      &capsule2,
+      translated(0.75, 0.0, 0.0),
+      CollisionOption(),
+      result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+}
+
+TEST(NarrowPhaseDispatch, CapsuleCapsuleBinaryCheckDoesNotAddContacts)
+{
+  CapsuleShape capsule1(0.5, 2.0);
+  CapsuleShape capsule2(0.5, 2.0);
+
+  CollisionResult result;
+  const bool hit = NarrowPhase::collide(
+      &capsule1,
+      Eigen::Isometry3d::Identity(),
+      &capsule2,
+      translated(0.75, 0.0, 0.0),
+      CollisionOption::binaryCheck(),
+      result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_EQ(0u, result.numContacts());
+}
+
+TEST(NarrowPhaseDispatch, RoutesCylinderPairsInBothOrders)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  SphereShape sphere(0.5);
+  BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
+  CapsuleShape capsule(0.5, 2.0);
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+
+  expectSingleNormal(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      cylinder,
+      translated(0.75, 0.0, 0.0),
+      -Eigen::Vector3d::UnitX());
+  expectSingleNormal(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      sphere,
+      translated(0.75, 0.0, 0.0),
+      -Eigen::Vector3d::UnitX());
+  expectSingleNormal(
+      sphere,
+      translated(0.75, 0.0, 0.0),
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3d::UnitX());
+  expectSingleNormal(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      box,
+      translated(0.75, 0.0, 0.0),
+      -Eigen::Vector3d::UnitX());
+  expectSingleNormal(
+      box,
+      translated(0.75, 0.0, 0.0),
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3d::UnitX());
+  expectSingleNormal(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.75, 0.0, 0.0),
+      -Eigen::Vector3d::UnitX());
+  expectSingleNormal(
+      capsule,
+      translated(0.75, 0.0, 0.0),
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3d::UnitX());
+  expectSingleNormal(
+      cylinder,
+      translated(0.0, 0.0, 0.75),
+      plane,
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3d::UnitZ());
+  expectSingleNormal(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      cylinder,
+      translated(0.0, 0.0, 0.75),
+      -Eigen::Vector3d::UnitZ());
+}
+
+TEST(NarrowPhaseDispatch, FlippedCylinderBoxPreservesCapPatchManifold)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  BoxShape box(Eigen::Vector3d(1.0, 1.0, 0.5));
+  const Eigen::Isometry3d cylinderTransform = Eigen::Isometry3d::Identity();
+  const Eigen::Isometry3d boxTransform = translated(0.0, 0.0, 1.3);
+
+  CollisionResult cylinderFirstResult;
+  const bool cylinderFirstHit = NarrowPhase::collide(
+      &cylinder,
+      cylinderTransform,
+      &box,
+      boxTransform,
+      CollisionOption(),
+      cylinderFirstResult);
+
+  ASSERT_TRUE(cylinderFirstHit);
+  ASSERT_EQ(1u, cylinderFirstResult.numManifolds());
+  ASSERT_GT(cylinderFirstResult.numContacts(), 1u);
+  EXPECT_EQ(ContactType::Patch, cylinderFirstResult.getManifold(0).getType());
+
+  CollisionResult boxFirstResult;
+  const bool boxFirstHit = NarrowPhase::collide(
+      &box,
+      boxTransform,
+      &cylinder,
+      cylinderTransform,
+      CollisionOption(),
+      boxFirstResult);
+
+  ASSERT_TRUE(boxFirstHit);
+  ASSERT_EQ(1u, boxFirstResult.numManifolds());
+  ASSERT_EQ(cylinderFirstResult.numContacts(), boxFirstResult.numContacts());
+  EXPECT_EQ(ContactType::Patch, boxFirstResult.getManifold(0).getType());
+  EXPECT_TRUE(boxFirstResult.getManifold(0).getSharedNormal().isApprox(
+      Eigen::Vector3d::UnitZ(), 1e-12));
+}
+
+TEST(NarrowPhaseDispatch, RoutesContainedCylinderSphereNormalsInBothOrders)
+{
+  CylinderShape cylinder(1.0, 4.0);
+  SphereShape sphere(0.5);
+
+  expectSingleNormal(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      sphere,
+      translated(0.75, 0.0, 0.0),
+      -Eigen::Vector3d::UnitX());
+  expectSingleNormal(
+      sphere,
+      translated(0.75, 0.0, 0.0),
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3d::UnitX());
+}
+
+TEST(NarrowPhaseDispatch, RoutesContainedCylinderCapsuleNormalsInBothOrders)
+{
+  CylinderShape cylinder(1.0, 4.0);
+  CapsuleShape capsule(0.2, 1.0);
+
+  expectSingleNormal(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      translated(0.9, 0.0, 0.0),
+      -Eigen::Vector3d::UnitX());
+  expectSingleNormal(
+      capsule,
+      translated(0.9, 0.0, 0.0),
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3d::UnitX());
+}
+
+TEST(NarrowPhaseDispatch, CylinderPairsBinaryCheckDoesNotAddContacts)
+{
+  CylinderShape cylinder(0.5, 2.0);
+  SphereShape sphere(0.5);
+  BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
+  CollisionOption option = CollisionOption::binaryCheck();
+
+  CollisionResult sphereFirstResult;
+  const bool sphereFirstHit = NarrowPhase::collide(
+      &sphere,
+      translated(0.75, 0.0, 0.0),
+      &cylinder,
+      Eigen::Isometry3d::Identity(),
+      option,
+      sphereFirstResult);
+
+  EXPECT_TRUE(sphereFirstHit);
+  EXPECT_EQ(0u, sphereFirstResult.numContacts());
+
+  CollisionResult boxFirstResult;
+  const bool boxFirstHit = NarrowPhase::collide(
+      &box,
+      translated(0.75, 0.0, 0.0),
+      &cylinder,
+      Eigen::Isometry3d::Identity(),
+      option,
+      boxFirstResult);
+
+  EXPECT_TRUE(boxFirstHit);
+  EXPECT_EQ(0u, boxFirstResult.numContacts());
+}
+
+TEST(NarrowPhaseDispatch, RoutesMeshPairsInBothOrders)
+{
+  MeshShape cube1 = makeUnitCubeMesh();
+  MeshShape cube2 = makeUnitCubeMesh();
+  MeshShape planeMesh = makePlaneMesh();
+  MeshShape belowPlaneMesh1 = makePlaneMesh(-0.1);
+  MeshShape belowPlaneMesh2 = makePlaneMesh(-0.1);
+  SphereShape sphere(0.5);
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  ConvexShape convex(makeOctahedronVertices(0.75));
+
+  CollisionResult meshMesh;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &cube1,
+      Eigen::Isometry3d::Identity(),
+      &cube2,
+      translated(0.25, 0.0, 0.0),
+      CollisionOption(),
+      meshMesh));
+  EXPECT_GT(meshMesh.numContacts(), 0u);
+
+  CollisionResult meshSphere;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &planeMesh,
+      Eigen::Isometry3d::Identity(),
+      &sphere,
+      translated(0.25, -0.25, 0.25),
+      CollisionOption(),
+      meshSphere));
+  ASSERT_GT(meshSphere.numContacts(), 0u);
+  EXPECT_LT(meshSphere.getContact(0).normal.z(), -0.99);
+  EXPECT_GE(meshSphere.getContact(0).featureIndex1, 0);
+  EXPECT_EQ(-1, meshSphere.getContact(0).featureIndex2);
+
+  CollisionResult sphereMesh;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &sphere,
+      translated(0.25, -0.25, 0.25),
+      &planeMesh,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption(),
+      sphereMesh));
+  ASSERT_GT(sphereMesh.numContacts(), 0u);
+  EXPECT_GT(sphereMesh.getContact(0).normal.z(), 0.99);
+  EXPECT_EQ(-1, sphereMesh.getContact(0).featureIndex1);
+  EXPECT_GE(sphereMesh.getContact(0).featureIndex2, 0);
+
+  CollisionResult meshPlane;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &belowPlaneMesh1,
+      Eigen::Isometry3d::Identity(),
+      &plane,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption(),
+      meshPlane));
+  EXPECT_GT(meshPlane.numContacts(), 0u);
+  EXPECT_LT(meshPlane.getContact(0).normal.z(), -0.99);
+  EXPECT_GE(meshPlane.getContact(0).featureIndex1, 0);
+  EXPECT_EQ(-1, meshPlane.getContact(0).featureIndex2);
+
+  CollisionResult planeMeshResult;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &plane,
+      Eigen::Isometry3d::Identity(),
+      &belowPlaneMesh2,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption(),
+      planeMeshResult));
+  EXPECT_GT(planeMeshResult.numContacts(), 0u);
+  EXPECT_GT(planeMeshResult.getContact(0).normal.z(), 0.99);
+  EXPECT_EQ(-1, planeMeshResult.getContact(0).featureIndex1);
+  EXPECT_GE(planeMeshResult.getContact(0).featureIndex2, 0);
+
+  CollisionResult convexMesh;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      &cube1,
+      translated(0.25, 0.0, 0.0),
+      CollisionOption(),
+      convexMesh));
+  EXPECT_GT(convexMesh.numContacts(), 0u);
+  EXPECT_EQ(-1, convexMesh.getContact(0).featureIndex1);
+  EXPECT_GE(convexMesh.getContact(0).featureIndex2, 0);
+}
+
+TEST(NarrowPhaseDispatch, SupportMeshPrimitiveNormalsFollowObjectOrder)
+{
+  MeshShape planeMesh = makePlaneMesh();
+  BoxShape box(Eigen::Vector3d::Constant(0.25));
+  CylinderShape cylinder(0.25, 0.5);
+  ConvexShape convex(makeOctahedronVertices(0.25));
+
+  for (const Shape* primitive : {
+           static_cast<const Shape*>(&box),
+           static_cast<const Shape*>(&cylinder),
+           static_cast<const Shape*>(&convex),
+       }) {
+    CollisionResult meshPrimitive;
+    EXPECT_TRUE(NarrowPhase::collide(
+        &planeMesh,
+        Eigen::Isometry3d::Identity(),
+        primitive,
+        translated(0.0, 0.0, 0.2),
+        CollisionOption(),
+        meshPrimitive));
+    ASSERT_GT(meshPrimitive.numContacts(), 0u);
+    EXPECT_LT(meshPrimitive.getContact(0).normal.z(), -0.1);
+    EXPECT_GE(meshPrimitive.getContact(0).featureIndex1, 0);
+    EXPECT_EQ(-1, meshPrimitive.getContact(0).featureIndex2);
+
+    CollisionResult primitiveMesh;
+    EXPECT_TRUE(NarrowPhase::collide(
+        primitive,
+        translated(0.0, 0.0, 0.2),
+        &planeMesh,
+        Eigen::Isometry3d::Identity(),
+        CollisionOption(),
+        primitiveMesh));
+    ASSERT_GT(primitiveMesh.numContacts(), 0u);
+    EXPECT_GT(primitiveMesh.getContact(0).normal.z(), 0.1);
+    EXPECT_EQ(-1, primitiveMesh.getContact(0).featureIndex1);
+    EXPECT_GE(primitiveMesh.getContact(0).featureIndex2, 0);
+  }
+}
+
+TEST(NarrowPhaseDispatch, RoutesMeshConvexThroughTriangleTests)
+{
+  MeshShape ringMesh = makeSquareRingMesh();
+  ConvexShape convex(makeOctahedronVertices(0.2));
+
+  CollisionResult convexMesh;
+  EXPECT_FALSE(NarrowPhase::collide(
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      &ringMesh,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption(),
+      convexMesh));
+  EXPECT_EQ(0u, convexMesh.numContacts());
+
+  CollisionResult meshConvex;
+  EXPECT_FALSE(NarrowPhase::collide(
+      &ringMesh,
+      Eigen::Isometry3d::Identity(),
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption(),
+      meshConvex));
+  EXPECT_EQ(0u, meshConvex.numContacts());
+}
+
+TEST(NarrowPhaseDispatch, MeshPairsBinaryCheckDoesNotAddContacts)
+{
+  SphereShape sphere(0.5);
+  MeshShape mesh = makePlaneMesh();
+
+  CollisionResult sphereMesh;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &sphere,
+      translated(0.25, -0.25, 0.25),
+      &mesh,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption::binaryCheck(),
+      sphereMesh));
+  EXPECT_EQ(0u, sphereMesh.numContacts());
+
+  CollisionResult meshSphere;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &mesh,
+      Eigen::Isometry3d::Identity(),
+      &sphere,
+      translated(0.25, -0.25, 0.25),
+      CollisionOption::binaryCheck(),
+      meshSphere));
+  EXPECT_EQ(0u, meshSphere.numContacts());
+}
+
+TEST(NarrowPhaseDispatch, RoutesConvexFallbackPairs)
+{
+  ConvexShape convex(makeOctahedronVertices());
+  SphereShape sphere(0.75);
+  BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
+  CapsuleShape capsule(0.5, 2.0);
+  CylinderShape cylinder(0.5, 2.0);
+
+  CollisionResult convexSphere;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      &sphere,
+      translated(1.25, 0.0, 0.0),
+      CollisionOption(),
+      convexSphere));
+  EXPECT_EQ(1u, convexSphere.numContacts());
+
+  CollisionResult sphereConvex;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &sphere,
+      translated(1.25, 0.0, 0.0),
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      CollisionOption(),
+      sphereConvex));
+  EXPECT_EQ(1u, sphereConvex.numContacts());
+
+  CollisionResult convexBox;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      &box,
+      translated(1.25, 0.0, 0.0),
+      CollisionOption(),
+      convexBox));
+  EXPECT_EQ(1u, convexBox.numContacts());
+
+  CollisionResult convexCapsule;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      &capsule,
+      translated(1.25, 0.0, 0.0),
+      CollisionOption(),
+      convexCapsule));
+  EXPECT_EQ(1u, convexCapsule.numContacts());
+
+  CollisionResult convexCylinder;
+  EXPECT_TRUE(NarrowPhase::collide(
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      &cylinder,
+      translated(1.25, 0.0, 0.0),
+      CollisionOption(),
+      convexCylinder));
+  EXPECT_EQ(1u, convexCylinder.numContacts());
+}
+
+TEST(NarrowPhaseDispatch, ConvexFallbackBinaryCheckDoesNotAddContacts)
+{
+  ConvexShape convex(makeOctahedronVertices());
+  SphereShape sphere(0.75);
+
+  CollisionResult result;
+  const bool hit = NarrowPhase::collide(
+      &convex,
+      Eigen::Isometry3d::Identity(),
+      &sphere,
+      translated(1.25, 0.0, 0.0),
+      CollisionOption::binaryCheck(),
+      result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_EQ(0u, result.numContacts());
 }
 
 TEST(NarrowPhaseDispatch, RespectsExhaustedContactBudget)

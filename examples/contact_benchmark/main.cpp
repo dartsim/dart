@@ -184,6 +184,27 @@ struct Options
   bool dropHeightSpecified = false;
 };
 
+class ScopedProfileRecording
+{
+public:
+  explicit ScopedProfileRecording(bool enabled)
+    : mPrevious(dart::common::profile::setProfileRecordingEnabled(enabled))
+  {
+    // Do nothing
+  }
+
+  ~ScopedProfileRecording()
+  {
+    dart::common::profile::setProfileRecordingEnabled(mPrevious);
+  }
+
+  ScopedProfileRecording(const ScopedProfileRecording&) = delete;
+  ScopedProfileRecording& operator=(const ScopedProfileRecording&) = delete;
+
+private:
+  bool mPrevious;
+};
+
 struct ContactPair
 {
   std::uintptr_t a = 0;
@@ -2452,7 +2473,9 @@ int runHeadless(const dart::simulation::WorldPtr& world, const Options& options)
 
   std::cout << "\nSimulating " << options.steps << " steps...\n";
 
-  dart::common::profile::resetProfile();
+  ScopedProfileRecording profileRecording(options.profile);
+  if (options.profile)
+    dart::common::profile::resetProfile();
 
   const double timeStep = world->getTimeStep();
   const double worldTimeBefore = world->getTime();
@@ -2460,10 +2483,10 @@ int runHeadless(const dart::simulation::WorldPtr& world, const Options& options)
   const auto startTime = std::chrono::steady_clock::now();
 
   {
-    DART_PROFILE_SCOPED_N("contact_benchmark::runHeadless");
+    DART_PROFILE_SCOPED_IF_N(options.profile, "contact_benchmark::runHeadless");
     for (std::size_t step = 0; step < options.steps; ++step) {
       {
-        DART_PROFILE_SCOPED_N("world->step");
+        DART_PROFILE_SCOPED_IF_N(options.profile, "world->step");
         world->step();
       }
 

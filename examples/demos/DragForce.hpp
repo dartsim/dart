@@ -44,9 +44,9 @@
 namespace dart_demos {
 
 //==============================================================================
-/// Host-wide drag-force interaction (BRIEF-phase3.md #4) plus gizmo-on-
-/// selection (#5), since both are "pick a body, spring it toward a target
-/// point, render a line" and share the same tunables/status line.
+/// Host-wide drag-force interaction plus gizmo-on-selection, since both are
+/// "pick a body, spring it toward a target point, render a line" and share the
+/// same tunables/status line.
 ///
 ///  - Momentary drag: Ctrl+left-click-drag on any BodyNode in any scene picks
 ///    it and applies a clamped spring force toward the live cursor position

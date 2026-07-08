@@ -265,11 +265,23 @@ msgid "DART_ENABLE_SIMD"
 msgstr ""
 
 #: ../../developer_guide/build.rst:198 617546040b6b45c79aa24dcd365d7252
-msgid "ON"
+msgid "OFF"
 msgstr ""
 
 #: ../../developer_guide/build.rst:198 d8cca1335312415299018355e2aa6d56
-msgid "Enables use of SIMD instructions."
+msgid ""
+"Adds local-machine SIMD compiler flags such as ``-march=native``. Use "
+"only for builds that run on the same machine architecture."
+msgstr ""
+
+#: ../../developer_guide/build.rst:201
+msgid "DART_SIMD_FORCE_SCALAR"
+msgstr ""
+
+#: ../../developer_guide/build.rst:201
+msgid ""
+"Forces the header-only ``dart/simd`` module to use its scalar fallback "
+"backend in tests."
 msgstr ""
 
 #: ../../developer_guide/build.rst:205 184122e2771a40a9828e56d9a2f003ee
@@ -411,4 +423,3 @@ msgid ""
 "In general, building dartpy from source is not necessary. The easiest way"
 " to install dartpy is to use pip:"
 msgstr ""
-
