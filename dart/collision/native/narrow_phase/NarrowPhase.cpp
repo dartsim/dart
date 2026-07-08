@@ -40,6 +40,7 @@
 #include <dart/collision/native/narrow_phase/MeshMesh.hpp>
 #include <dart/collision/native/narrow_phase/NarrowPhase.hpp>
 #include <dart/collision/native/narrow_phase/PlaneSphere.hpp>
+#include <dart/collision/native/narrow_phase/Raycast.hpp>
 #include <dart/collision/native/narrow_phase/SphereBox.hpp>
 #include <dart/collision/native/narrow_phase/SphereSphere.hpp>
 #include <dart/collision/native/shapes/Shape.hpp>
@@ -661,6 +662,86 @@ double distanceShapes(
   return result.distance;
 }
 
+bool raycastShape(
+    const Ray& ray,
+    const Shape* shape,
+    const Eigen::Isometry3d& transform,
+    const RaycastOption& option,
+    RaycastResult& result)
+{
+  result.clear();
+
+  if (!shape) {
+    return false;
+  }
+
+  switch (shape->getType()) {
+    case ShapeType::Sphere: {
+      const auto* s = static_cast<const SphereShape*>(shape);
+      return raycastSphere(ray, *s, transform, option, result);
+    }
+    case ShapeType::Box: {
+      const auto* b = static_cast<const BoxShape*>(shape);
+      return raycastBox(ray, *b, transform, option, result);
+    }
+    case ShapeType::Capsule: {
+      const auto* c = static_cast<const CapsuleShape*>(shape);
+      return raycastCapsule(ray, *c, transform, option, result);
+    }
+    case ShapeType::Cylinder: {
+      const auto* c = static_cast<const CylinderShape*>(shape);
+      return raycastCylinder(ray, *c, transform, option, result);
+    }
+    case ShapeType::Plane: {
+      const auto* p = static_cast<const PlaneShape*>(shape);
+      return raycastPlane(ray, *p, transform, option, result);
+    }
+    case ShapeType::Mesh: {
+      const auto* m = static_cast<const MeshShape*>(shape);
+      return raycastMesh(ray, *m, transform, option, result);
+    }
+    case ShapeType::Convex: {
+      const auto* c = static_cast<const ConvexShape*>(shape);
+      return raycastConvex(ray, *c, transform, option, result);
+    }
+    case ShapeType::Compound: {
+      const auto* compound = static_cast<const CompoundShape*>(shape);
+      bool hit = false;
+      double bestDistance = std::min(ray.maxDistance, option.maxDistance);
+      RaycastResult bestResult;
+
+      for (const auto& child : compound->children()) {
+        if (!child.shape) {
+          continue;
+        }
+
+        RaycastOption childOption = option;
+        childOption.maxDistance = bestDistance;
+        RaycastResult childResult;
+        if (raycastShape(
+                ray,
+                child.shape.get(),
+                transform * child.localTransform,
+                childOption,
+                childResult)) {
+          if (!hit || childResult.distance <= bestDistance) {
+            bestDistance = childResult.distance;
+            bestResult = childResult;
+          }
+          hit = true;
+        }
+      }
+
+      if (hit) {
+        result = bestResult;
+      }
+      return hit;
+    }
+    default:
+      return false;
+  }
+}
+
 bool collideBatchShapes(
     span<const NarrowPhasePair> pairs,
     span<CollisionResult> results,
@@ -735,6 +816,16 @@ double NarrowPhase::distance(
     DistanceResult& result)
 {
   return distanceShapes(shape1, tf1, shape2, tf2, option, result);
+}
+
+bool NarrowPhase::raycast(
+    const Ray& ray,
+    const Shape* shape,
+    const Eigen::Isometry3d& transform,
+    const RaycastOption& option,
+    RaycastResult& result)
+{
+  return raycastShape(ray, shape, transform, option, result);
 }
 
 bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)
@@ -858,6 +949,23 @@ bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
     return true;
   }
   return false;
+}
+
+bool NarrowPhase::isRaycastSupported(ShapeType type)
+{
+  switch (type) {
+    case ShapeType::Sphere:
+    case ShapeType::Box:
+    case ShapeType::Capsule:
+    case ShapeType::Cylinder:
+    case ShapeType::Plane:
+    case ShapeType::Mesh:
+    case ShapeType::Convex:
+    case ShapeType::Compound:
+      return true;
+    default:
+      return false;
+  }
 }
 
 } // namespace dart::collision::native
