@@ -64,7 +64,18 @@ private:
   {
     std::size_t id;
     Aabb aabb;
+    double minX{0.0};
+    double minY{0.0};
+    double minZ{0.0};
+    double maxX{0.0};
+    double maxY{0.0};
+    double maxZ{0.0};
   };
+
+  static Entry makeEntry(std::size_t id, const Aabb& aabb);
+  static void updateEntryAabb(Entry& entry, const Aabb& aabb);
+  static bool overlapsFast(const Entry& a, const Entry& b);
+  static bool overlapsFast(const Entry& entry, const Aabb& aabb);
 
   std::vector<Entry> entries_;
   std::unordered_map<std::size_t, std::size_t> indices_;
