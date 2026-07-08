@@ -76,6 +76,7 @@
     project home, one up-front interview or provided brief, session start/end
     rules, explicit acceptance evidence, and release-branch maintenance
     hygiene.
+    [#3357](https://github.com/dartsim/dart/pull/3357)
 
   * Add the release-branch `dart-retro` AI workflow so maintainers and agents
     can capture durable lessons from completed DART 6.20 work through
