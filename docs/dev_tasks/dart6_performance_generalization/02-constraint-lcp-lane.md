@@ -66,7 +66,7 @@ final-state hashes on all guard scenes for default-on packets.
 
 #### WP-PG.11 — Remove per-step RTTI and full scans from the solver
 
-- Status: open
+- Status: evidence-gated (current-base rejected)
 - Objective: replace per-step `dynamic_cast`/type-check classification
   with cached type tags/flags where it actually runs every step: (1) the
   resting-group `dynamic_cast<ContactConstraint>` classification under
