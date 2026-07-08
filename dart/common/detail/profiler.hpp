@@ -135,6 +135,11 @@ private:
       std::string_view label,
       std::string_view file,
       int line);
+  void recordScopeForTesting(
+      std::string_view label,
+      std::string_view file,
+      int line,
+      std::uint64_t durationNs);
   static std::string sourceText(const ProfileNode& node);
   static std::string sourceText(const CounterNode& node);
   static std::string padRight(std::string_view text, std::size_t width);
