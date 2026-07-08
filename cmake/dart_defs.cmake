@@ -346,6 +346,150 @@ function(dart_print_options)
   message(STATUS "")
 endfunction()
 
+function(_dart_msvc_runtime_flag_for_config out runtime_library config)
+  string(TOUPPER "${config}" config_upper)
+
+  if(runtime_library STREQUAL "MultiThreadedDLL")
+    set(runtime_flag "/MD")
+  elseif(runtime_library STREQUAL "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    if(config_upper STREQUAL "DEBUG")
+      set(runtime_flag "/MDd")
+    else()
+      set(runtime_flag "/MD")
+    endif()
+  elseif(runtime_library STREQUAL "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    if(config_upper STREQUAL "DEBUG")
+      set(runtime_flag "/MTd")
+    else()
+      set(runtime_flag "/MT")
+    endif()
+  else()
+    message(FATAL_ERROR "Unsupported MSVC runtime library: ${runtime_library}")
+  endif()
+
+  set(${out} "${runtime_flag}" PARENT_SCOPE)
+endfunction()
+
+function(_dart_replace_msvc_runtime_flag flags_variable runtime_flag)
+  if(DEFINED ${flags_variable})
+    set(flags_value "${${flags_variable}}")
+  else()
+    set(flags_value "")
+  endif()
+
+  string(
+    REGEX REPLACE
+    "(^|[ \t\r\n])[-/]M[DT]d?([ \t\r\n]|$)"
+    " "
+    flags_value
+    "${flags_value}"
+  )
+  string(STRIP "${flags_value}" flags_value)
+
+  if(flags_value)
+    set(flags_value "${flags_value} ${runtime_flag}")
+  else()
+    set(flags_value "${runtime_flag}")
+  endif()
+
+  set(
+    ${flags_variable}
+    "${flags_value}"
+    CACHE STRING
+    "Compiler flags updated by DART MSVC runtime policy"
+    FORCE
+  )
+endfunction()
+
+function(_dart_msvc_runtime_flag_fallback_needed out)
+  set(needs_fallback OFF)
+  set(configs Debug Release RelWithDebInfo MinSizeRel)
+
+  if(CMAKE_CONFIGURATION_TYPES)
+    list(APPEND configs ${CMAKE_CONFIGURATION_TYPES})
+  endif()
+  if(CMAKE_BUILD_TYPE)
+    list(APPEND configs ${CMAKE_BUILD_TYPE})
+  endif()
+  list(REMOVE_DUPLICATES configs)
+
+  foreach(lang C CXX)
+    if(DEFINED CMAKE_${lang}_FLAGS)
+      if(
+        "${CMAKE_${lang}_FLAGS}" MATCHES "(^|[ \t\r\n])[-/]M[DT]d?([ \t\r\n]|$)"
+      )
+        set(needs_fallback ON)
+      endif()
+    endif()
+
+    foreach(config IN LISTS configs)
+      string(TOUPPER "${config}" config_upper)
+      set(flags_variable CMAKE_${lang}_FLAGS_${config_upper})
+
+      if(DEFINED ${flags_variable})
+        if(
+          "${${flags_variable}}" MATCHES "(^|[ \t\r\n])[-/]M[DT]d?([ \t\r\n]|$)"
+        )
+          set(needs_fallback ON)
+        endif()
+      endif()
+    endforeach()
+  endforeach()
+
+  if(POLICY CMP0091)
+    cmake_policy(GET CMP0091 cmp0091)
+    if(NOT cmp0091 STREQUAL "NEW")
+      set(needs_fallback ON)
+    endif()
+  endif()
+
+  set(${out} ${needs_fallback} PARENT_SCOPE)
+endfunction()
+
+function(_dart_apply_msvc_runtime_flag_fallback runtime_library)
+  set(configs Debug Release RelWithDebInfo MinSizeRel)
+
+  if(CMAKE_CONFIGURATION_TYPES)
+    list(APPEND configs ${CMAKE_CONFIGURATION_TYPES})
+  endif()
+  if(CMAKE_BUILD_TYPE)
+    list(APPEND configs ${CMAKE_BUILD_TYPE})
+  endif()
+  list(REMOVE_DUPLICATES configs)
+
+  _dart_msvc_runtime_flag_for_config(
+    default_runtime_flag
+    "${runtime_library}"
+    ""
+  )
+
+  foreach(lang C CXX)
+    if(DEFINED CMAKE_${lang}_FLAGS)
+      _dart_replace_msvc_runtime_flag(
+        CMAKE_${lang}_FLAGS
+        "${default_runtime_flag}"
+      )
+    endif()
+
+    foreach(config IN LISTS configs)
+      string(TOUPPER "${config}" config_upper)
+      set(flags_variable CMAKE_${lang}_FLAGS_${config_upper})
+
+      if(DEFINED ${flags_variable})
+        _dart_msvc_runtime_flag_for_config(
+          config_runtime_flag
+          "${runtime_library}"
+          "${config}"
+        )
+        _dart_replace_msvc_runtime_flag(
+          ${flags_variable}
+          "${config_runtime_flag}"
+        )
+      endif()
+    endforeach()
+  endforeach()
+endfunction()
+
 #-------------------------------------------------------------------------------
 # Configure MSVC runtime-library policy before any targets are created.
 #-------------------------------------------------------------------------------
@@ -377,6 +521,11 @@ function(dart_configure_msvc_runtime_library)
         "MultiThreaded$<$<CONFIG:Debug>:Debug>"
   )
 
+  _dart_msvc_runtime_flag_fallback_needed(_dart_msvc_runtime_fallback_needed)
+  if(_dart_msvc_runtime_fallback_needed)
+    _dart_apply_msvc_runtime_flag_fallback("${_dart_msvc_runtime_library}")
+  endif()
+
   if(DART_MSVC_FORCE_RELEASE_RUNTIME)
     message(
       STATUS
@@ -384,6 +533,10 @@ function(dart_configure_msvc_runtime_library)
     )
   else()
     message(STATUS "MSVC runtime library: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
+  endif()
+
+  if(_dart_msvc_runtime_fallback_needed)
+    message(STATUS "Updated MSVC runtime flags for CMP0091 OLD compatibility")
   endif()
 endfunction()
 
