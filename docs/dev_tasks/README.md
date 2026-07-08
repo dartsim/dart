@@ -16,5 +16,6 @@ Recommended files:
 
 Before completing a task, move durable facts to the owner selected by
 `docs/information-architecture.md`: published docs, onboarding docs, AI policy,
-API docs, changelog, compatibility notes, or source comments. Do not leave
-important decisions only in a temporary task folder.
+living plans, design rationale, theory/reference background, reusable docs
+assets, API docs, changelog, compatibility notes, or source comments. Do not
+leave important decisions only in a temporary task folder.

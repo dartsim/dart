@@ -9,23 +9,16 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
-**Current claimed packet: WP-PG.10 — LCP pipeline instrumentation and island
-census** ([02-constraint-lcp-lane.md](02-constraint-lcp-lane.md)). Continue on
-`wp-pg-10-lcp-profile-census` off current `origin/release-6.20`.
+**Current claimed packet: WP-PG.31 — shallow-support scratch retention**
+([04-dynamics-batching-lane.md](04-dynamics-batching-lane.md)). Continue on
+`wp-pg-31-shallow-support-scratch` off current `origin/release-6.20`.
 
-Immediate next step: open the packet PR after maintainer approval. The branch
-adds fixed-label text-profiler counters for constrained-group island census,
-solver/LCP stage scopes, and a runtime profile-recording gate so ordinary
-`World::step()` execution remains allocation-neutral when profiling is compiled
-in but not requested. Local profile artifact
-`/tmp/wp_pg10_profile_20260707T132241` captured S1-S5 native rows; guard
-artifact `/tmp/wp_pg10_guard_20260707T132321` captured S1 120-object dart/ode
-rows and S2-S5 all-detector rows. The FCL generated-scene guard drift (`S4_fcl`,
-`S5_fcl`) reproduces on the unmodified current base, so it is not a WP-PG.10
-regression. Final local verification passed `pixi run lint`,
-`pixi run check-lint`, capped `ALL`, profile smoke, `UNIT_common_Profile`,
-`INTEGRATION_StepAllocation`, and
-`DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+Immediate next step: run the final local lint/test refresh, then open the PR.
+The old `pr-c-pg31-scratch-retention.patch` was treated as a reference snapshot
+only. Current `release-6.20` already retains the member scratch buffers, so the
+branch implements the remaining no-candidate skip and preserves stale-state
+cleanup. Current-base A/B and the old 16-thread heap-crash gate are recorded in
+the 2026-07-08 session log entry below.
 
 **WP-PG.01 is captured** (branch `wp-pg-01-baseline-evidence`, PR
 pending) — guard rows, profile splits, and prior-art triage are in
@@ -36,9 +29,9 @@ many-islands regime is ~50% integration (WS-C is the lever there).
 
 Claimable now, in priority order:
 
-1. **WP-PG.10** (WS-A — LCP instrumentation and island census; currently
-   claimed).
-2. **WP-PG.31** or **WP-PG.32** only after WP-PG.10 lands or if maintainer
+1. **WP-PG.31** (WS-C — shallow-support scratch retention; locally verified,
+   PR pending).
+2. **WP-PG.32** only after WP-PG.31 lands or if maintainer
    explicitly prioritizes allocation work. WP-PG.20 is #3329; WP-PG.21 failed
    the 2026-07-07 current-base map/pruning gate; WP-PG.22 and WP-PG.11 both
    have local current-base rejection evidence from 2026-07-06.
@@ -152,6 +145,20 @@ decisions.
   Final verification passed lint/check-lint, capped `ALL` (144/144 C++ tests,
   98/98 Python tests), profile smoke, allocation gates, and gz-physics/gz-sim
   compatibility (`test-gz`).
+- 2026-07-08: WP-PG.10 merged as #3339 after Codex review reported no major
+  issues on `d099efa2c9`. WP-PG.31 claimed on
+  `wp-pg-31-shallow-support-scratch`.
+- 2026-07-08: WP-PG.31 implemented as the no-candidate shallow-support skip on
+  current base `3964108a675` (branch `21f691311df`), because current
+  `World.cpp` already retained the scratch buffers from the old preserved
+  patch. A/B artifact `/tmp/wp_pg31_ab_20260707T184319`: no-root-FreeJoint
+  `double_pendulum.world` hashes stayed `0x1db838038acbd960` with median step
+  time 0.002106 -> 0.001836 ms (DART) and 0.001903 -> 0.001644 ms (ODE);
+  generated 120-object DART/ODE guard hashes stayed
+  `0x3bd9d26da5ea002b` and `0x5576f6244b736aae`; ODE
+  `BM_ContactContainerActive/120/1/{1,16}` medians were 6588 -> 6433 ms and
+  6998 -> 6468 ms. Verified binaries passed the historical crash gate: base
+  30/30 and branch 30/30 default 16-thread benchmark stressors returned 0.
 
 ## Session log
 

@@ -6,6 +6,13 @@ if(NOT DART_BUILD_DARTPY)
 endif()
 
 # Set up pybind11
+set(
+  PYBIND11_FINDPYTHON
+  ON
+  CACHE BOOL
+  "Use CMake FindPython mode for pybind11"
+  FORCE
+)
 if(DART_USE_SYSTEM_PYBIND11)
   if(Python3_EXECUTABLE)
     execute_process(
@@ -31,7 +38,7 @@ else()
   FetchContent_Declare(
     pybind11
     GIT_REPOSITORY https://github.com/pybind/pybind11
-    GIT_TAG v2.13.6
+    GIT_TAG v3.0.3
   )
   FetchContent_MakeAvailable(pybind11)
 endif()

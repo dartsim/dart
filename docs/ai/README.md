@@ -1,6 +1,6 @@
 # DART 6.20 AI Workflows
 
-This directory contains the release-branch AI workflow map used by Codex,
+This directory contains the release-branch AI operating model used by Codex,
 Claude Code, and OpenCode. It is intentionally smaller than the DART 7 `main`
 workflow surface and focuses on the workflows needed to maintain the DART 6 LTS
 line.
@@ -23,6 +23,8 @@ generated-adapter sync.
 Start with:
 
 - [`principles.md`](principles.md)
+- [`terminology.md`](terminology.md)
+- [`orchestration.md`](orchestration.md)
 - [`workflows.md`](workflows.md)
 - [`verification.md`](verification.md)
 - [`sessions.md`](sessions.md)
@@ -36,3 +38,4 @@ verify parity.
 
 For documentation placement, use
 [`docs/information-architecture.md`](../information-architecture.md).
+For living roadmap state, use [`docs/plans/dashboard.md`](../plans/dashboard.md).
