@@ -101,8 +101,8 @@ ShapePtr SoftMeshShape::clone() const
 //==============================================================================
 void SoftMeshShape::updateBoundingBox() const
 {
-  const auto& pointMasses = mSoftBodyNode->getPointMasses();
-  if (pointMasses.empty()) {
+  const auto numPointMasses = mSoftBodyNode->getNumPointMasses();
+  if (numPointMasses == 0u) {
     mBoundingBox.setMin(Eigen::Vector3d::Zero());
     mBoundingBox.setMax(Eigen::Vector3d::Zero());
     mIsBoundingBoxDirty = false;
@@ -114,10 +114,23 @@ void SoftMeshShape::updateBoundingBox() const
   Eigen::Vector3d max
       = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
 
-  for (const auto* pointMass : pointMasses) {
-    const Eigen::Vector3d& vertex = pointMass->getLocalPosition();
-    min = min.cwiseMin(vertex);
-    max = max.cwiseMax(vertex);
+  const auto& pointStates = mSoftBodyNode->mAspectState.mPointStates;
+  const auto& pointProperties = mSoftBodyNode->mAspectProperties.mPointProps;
+  if (pointStates.size() == numPointMasses
+      && pointProperties.size() == numPointMasses) {
+    for (std::size_t i = 0u; i < numPointMasses; ++i) {
+      const Eigen::Vector3d vertex
+          = pointStates[i].mPositions + pointProperties[i].mX0;
+      min = min.cwiseMin(vertex);
+      max = max.cwiseMax(vertex);
+    }
+  } else {
+    const auto& pointMasses = mSoftBodyNode->getPointMasses();
+    for (const auto* pointMass : pointMasses) {
+      const Eigen::Vector3d& vertex = pointMass->getLocalPosition();
+      min = min.cwiseMin(vertex);
+      max = max.cwiseMax(vertex);
+    }
   }
 
   mBoundingBox.setMin(min);
@@ -135,8 +148,8 @@ void SoftMeshShape::updateVolume() const
 void SoftMeshShape::_buildMesh()
 {
   // Get number of vertices and faces from soft body node
-  int nVertices = mSoftBodyNode->getNumPointMasses();
-  int nFaces = mSoftBodyNode->getNumFaces();
+  const int nVertices = static_cast<int>(mSoftBodyNode->getNumPointMasses());
+  const int nFaces = static_cast<int>(mSoftBodyNode->getNumFaces());
 
   // Create new aiMesh
   mAssimpMesh = std::make_unique<aiMesh>();
@@ -146,19 +159,35 @@ void SoftMeshShape::_buildMesh()
   mAssimpMesh->mVertices = new aiVector3D[nVertices];
   mAssimpMesh->mNormals = new aiVector3D[nVertices];
   aiVector3D itAIVector3d;
-  for (int i = 0; i < nVertices; ++i) {
-    PointMass* itPointMass = mSoftBodyNode->getPointMass(i);
-    const Eigen::Vector3d& vertex = itPointMass->getRestingPosition();
-    itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
-    mAssimpMesh->mVertices[i] = itAIVector3d;
-    mAssimpMesh->mNormals[i] = itAIVector3d;
+  const auto numPointMasses = static_cast<std::size_t>(nVertices);
+  const auto& pointProperties = mSoftBodyNode->mAspectProperties.mPointProps;
+  if (pointProperties.size() == numPointMasses) {
+    for (int i = 0; i < nVertices; ++i) {
+      const Eigen::Vector3d& vertex
+          = pointProperties[static_cast<std::size_t>(i)].mX0;
+      itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
+      mAssimpMesh->mVertices[i] = itAIVector3d;
+      mAssimpMesh->mNormals[i] = itAIVector3d;
+    }
+  } else {
+    for (int i = 0; i < nVertices; ++i) {
+      PointMass* itPointMass = mSoftBodyNode->getPointMass(i);
+      const Eigen::Vector3d& vertex = itPointMass->getRestingPosition();
+      itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
+      mAssimpMesh->mVertices[i] = itAIVector3d;
+      mAssimpMesh->mNormals[i] = itAIVector3d;
+    }
   }
 
   // Set faces
   mAssimpMesh->mNumFaces = nFaces;
   mAssimpMesh->mFaces = new aiFace[nFaces];
+  const auto& faces = mSoftBodyNode->mAspectProperties.mFaces;
   for (int i = 0; i < nFaces; ++i) {
-    Eigen::Vector3i itFace = mSoftBodyNode->getFace(i);
+    const Eigen::Vector3i itFace
+        = faces.size() == static_cast<std::size_t>(nFaces)
+              ? faces[static_cast<std::size_t>(i)]
+              : mSoftBodyNode->getFace(static_cast<std::size_t>(i));
     aiFace* itAIFace = &mAssimpMesh->mFaces[i];
     itAIFace->mNumIndices = 3;
     itAIFace->mIndices = new unsigned int[3];
@@ -171,12 +200,25 @@ void SoftMeshShape::_buildMesh()
 void SoftMeshShape::update()
 {
   aiVector3D itAIVector3d;
-  const auto& pointMasses = mSoftBodyNode->getPointMasses();
-  for (std::size_t i = 0; i < pointMasses.size(); ++i) {
-    PointMass* itPointMass = pointMasses[i];
-    const Eigen::Vector3d& vertex = itPointMass->getLocalPosition();
-    itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
-    mAssimpMesh->mVertices[i] = itAIVector3d;
+  const auto numPointMasses = mSoftBodyNode->getNumPointMasses();
+  const auto& pointStates = mSoftBodyNode->mAspectState.mPointStates;
+  const auto& pointProperties = mSoftBodyNode->mAspectProperties.mPointProps;
+  if (pointStates.size() == numPointMasses
+      && pointProperties.size() == numPointMasses) {
+    for (std::size_t i = 0u; i < numPointMasses; ++i) {
+      const Eigen::Vector3d vertex
+          = pointStates[i].mPositions + pointProperties[i].mX0;
+      itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
+      mAssimpMesh->mVertices[i] = itAIVector3d;
+    }
+  } else {
+    const auto& pointMasses = mSoftBodyNode->getPointMasses();
+    for (std::size_t i = 0; i < pointMasses.size(); ++i) {
+      PointMass* itPointMass = pointMasses[i];
+      const Eigen::Vector3d& vertex = itPointMass->getLocalPosition();
+      itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
+      mAssimpMesh->mVertices[i] = itAIVector3d;
+    }
   }
 
   mIsBoundingBoxDirty = true;
