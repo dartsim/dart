@@ -274,22 +274,31 @@ std::vector<int> makeVertexTriangleFeatureMap(const MeshShape& mesh)
   return featureIndices;
 }
 
-void setMeshTriangleFeature(ContactPoint& contact, int triangleIndex)
+enum class MeshFeatureSlot
+{
+  Object1,
+  Object2
+};
+
+void setMeshTriangleFeature(
+    ContactPoint& contact, int triangleIndex, MeshFeatureSlot slot)
 {
   if (triangleIndex < 0) {
     return;
   }
 
-  // These one-mesh helpers are dispatched with the mesh on either public
-  // collision-object side, so mirror the face id into both feature slots.
-  contact.featureIndex1 = triangleIndex;
-  contact.featureIndex2 = triangleIndex;
+  if (slot == MeshFeatureSlot::Object1) {
+    contact.featureIndex1 = triangleIndex;
+  } else {
+    contact.featureIndex2 = triangleIndex;
+  }
 }
 
 void appendContactsWithMeshTriangleFeature(
     CollisionResult& result,
     const CollisionResult& contacts,
     int triangleIndex,
+    MeshFeatureSlot meshFeatureSlot,
     bool flipNormals = false)
 {
   const auto numContacts = contacts.numContacts();
@@ -298,7 +307,7 @@ void appendContactsWithMeshTriangleFeature(
     if (flipNormals) {
       contact.normal = -contact.normal;
     }
-    setMeshTriangleFeature(contact, triangleIndex);
+    setMeshTriangleFeature(contact, triangleIndex, meshFeatureSlot);
     result.addContact(contact);
   }
 }
@@ -451,7 +460,8 @@ bool collideLargeBoxFaceMesh(
     contact.position = candidate.point + worldNormal * (candidate.depth * 0.5);
     contact.normal = worldNormal;
     contact.depth = candidate.depth;
-    setMeshTriangleFeature(contact, candidate.featureIndex);
+    setMeshTriangleFeature(
+        contact, candidate.featureIndex, MeshFeatureSlot::Object1);
     result.addContact(contact);
   }
 
@@ -1236,7 +1246,8 @@ bool collidePrimitiveMesh(
           if (!option.enableContact) {
             return true;
           }
-          appendContactsWithMeshTriangleFeature(result, localResult, triIndex);
+          appendContactsWithMeshTriangleFeature(
+              result, localResult, triIndex, MeshFeatureSlot::Object1);
           if (result.numContacts() >= option.maxNumContacts) {
             return true;
           }
@@ -1256,7 +1267,8 @@ bool collidePrimitiveMesh(
           if (!option.enableContact) {
             return true;
           }
-          appendContactsWithMeshTriangleFeature(result, localResult, triIndex);
+          appendContactsWithMeshTriangleFeature(
+              result, localResult, triIndex, MeshFeatureSlot::Object1);
           if (result.numContacts() >= option.maxNumContacts) {
             return true;
           }
@@ -1293,7 +1305,7 @@ bool collidePrimitiveMesh(
           return true;
         }
         appendContactsWithMeshTriangleFeature(
-            result, localResult, triIndex, true);
+            result, localResult, triIndex, MeshFeatureSlot::Object1, true);
         if (result.numContacts() >= option.maxNumContacts) {
           return true;
         }
@@ -1379,7 +1391,8 @@ bool collidePlaneMesh(
         = meshContact.point + worldNormal * (meshContact.depth * 0.5);
     contact.normal = worldNormal;
     contact.depth = meshContact.depth;
-    setMeshTriangleFeature(contact, meshContact.featureIndex);
+    setMeshTriangleFeature(
+        contact, meshContact.featureIndex, MeshFeatureSlot::Object2);
     result.addContact(contact);
   }
 

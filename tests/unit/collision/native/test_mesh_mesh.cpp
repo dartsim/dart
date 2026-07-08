@@ -226,7 +226,7 @@ TEST(MeshMeshCollision, PrimitiveMeshSphereContact)
   EXPECT_LT(contact.normal.z(), -0.99);
   EXPECT_NEAR(0.25, contact.depth, 1e-12);
   EXPECT_GE(contact.featureIndex1, 0);
-  EXPECT_GE(contact.featureIndex2, 0);
+  EXPECT_EQ(-1, contact.featureIndex2);
 }
 
 TEST(MeshMeshCollision, PrimitiveMeshCapsuleContact)
@@ -249,7 +249,7 @@ TEST(MeshMeshCollision, PrimitiveMeshCapsuleContact)
   const auto& contact = result.getContact(0);
   EXPECT_LT(contact.normal.z(), -0.1);
   EXPECT_GE(contact.featureIndex1, 0);
-  EXPECT_GE(contact.featureIndex2, 0);
+  EXPECT_EQ(-1, contact.featureIndex2);
 }
 
 TEST(MeshMeshCollision, PrimitiveMeshSupportContactsUsePrimitiveToMeshNormal)
@@ -281,7 +281,7 @@ TEST(MeshMeshCollision, PrimitiveMeshSupportContactsUsePrimitiveToMeshNormal)
     ASSERT_GT(result.numContacts(), 0u);
     EXPECT_LT(result.getContact(0).normal.z(), -0.1);
     EXPECT_GE(result.getContact(0).featureIndex1, 0);
-    EXPECT_GE(result.getContact(0).featureIndex2, 0);
+    EXPECT_EQ(-1, result.getContact(0).featureIndex2);
   }
 }
 
@@ -376,7 +376,7 @@ TEST(MeshMeshCollision, PlaneMeshContact)
   const auto& contact = result.getContact(0);
   EXPECT_GT(contact.normal.z(), 0.99);
   EXPECT_NEAR(0.1, contact.depth, 1e-12);
-  EXPECT_GE(contact.featureIndex1, 0);
+  EXPECT_EQ(-1, contact.featureIndex1);
   EXPECT_GE(contact.featureIndex2, 0);
 }
 

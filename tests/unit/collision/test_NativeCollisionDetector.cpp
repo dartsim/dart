@@ -500,6 +500,22 @@ TEST(NativeCollisionDetector, CollidesSphereMesh)
   EXPECT_EQ(meshFrame.get(), contact.getShapeFrame1());
   EXPECT_EQ(sphereFrame.get(), contact.getShapeFrame2());
   EXPECT_LT(contact.normal.z(), -0.99);
+  EXPECT_GE(contact.triID1, 0);
+  EXPECT_EQ(-1, contact.triID2);
+
+  auto reverseGroup
+      = detector->createCollisionGroup(sphereFrame.get(), meshFrame.get());
+  collision::CollisionResult reverseResult;
+  EXPECT_TRUE(reverseGroup->collide(
+      collision::CollisionOption(true, 10u), &reverseResult));
+  ASSERT_GT(reverseResult.getNumContacts(), 0u);
+
+  const auto& reverseContact = reverseResult.getContact(0);
+  EXPECT_EQ(sphereFrame.get(), reverseContact.getShapeFrame1());
+  EXPECT_EQ(meshFrame.get(), reverseContact.getShapeFrame2());
+  EXPECT_GT(reverseContact.normal.z(), 0.99);
+  EXPECT_EQ(-1, reverseContact.triID1);
+  EXPECT_GE(reverseContact.triID2, 0);
 }
 
 //==============================================================================

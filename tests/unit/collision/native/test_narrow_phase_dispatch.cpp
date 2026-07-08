@@ -815,6 +815,8 @@ TEST(NarrowPhaseDispatch, RoutesMeshPairsInBothOrders)
       meshSphere));
   ASSERT_GT(meshSphere.numContacts(), 0u);
   EXPECT_LT(meshSphere.getContact(0).normal.z(), -0.99);
+  EXPECT_GE(meshSphere.getContact(0).featureIndex1, 0);
+  EXPECT_EQ(-1, meshSphere.getContact(0).featureIndex2);
 
   CollisionResult sphereMesh;
   EXPECT_TRUE(NarrowPhase::collide(
@@ -826,6 +828,8 @@ TEST(NarrowPhaseDispatch, RoutesMeshPairsInBothOrders)
       sphereMesh));
   ASSERT_GT(sphereMesh.numContacts(), 0u);
   EXPECT_GT(sphereMesh.getContact(0).normal.z(), 0.99);
+  EXPECT_EQ(-1, sphereMesh.getContact(0).featureIndex1);
+  EXPECT_GE(sphereMesh.getContact(0).featureIndex2, 0);
 
   CollisionResult meshPlane;
   EXPECT_TRUE(NarrowPhase::collide(
@@ -837,6 +841,8 @@ TEST(NarrowPhaseDispatch, RoutesMeshPairsInBothOrders)
       meshPlane));
   EXPECT_GT(meshPlane.numContacts(), 0u);
   EXPECT_LT(meshPlane.getContact(0).normal.z(), -0.99);
+  EXPECT_GE(meshPlane.getContact(0).featureIndex1, 0);
+  EXPECT_EQ(-1, meshPlane.getContact(0).featureIndex2);
 
   CollisionResult planeMeshResult;
   EXPECT_TRUE(NarrowPhase::collide(
@@ -848,6 +854,8 @@ TEST(NarrowPhaseDispatch, RoutesMeshPairsInBothOrders)
       planeMeshResult));
   EXPECT_GT(planeMeshResult.numContacts(), 0u);
   EXPECT_GT(planeMeshResult.getContact(0).normal.z(), 0.99);
+  EXPECT_EQ(-1, planeMeshResult.getContact(0).featureIndex1);
+  EXPECT_GE(planeMeshResult.getContact(0).featureIndex2, 0);
 
   CollisionResult convexMesh;
   EXPECT_TRUE(NarrowPhase::collide(
@@ -858,6 +866,8 @@ TEST(NarrowPhaseDispatch, RoutesMeshPairsInBothOrders)
       CollisionOption(),
       convexMesh));
   EXPECT_GT(convexMesh.numContacts(), 0u);
+  EXPECT_EQ(-1, convexMesh.getContact(0).featureIndex1);
+  EXPECT_GE(convexMesh.getContact(0).featureIndex2, 0);
 }
 
 TEST(NarrowPhaseDispatch, SupportMeshPrimitiveNormalsFollowObjectOrder)
@@ -882,6 +892,8 @@ TEST(NarrowPhaseDispatch, SupportMeshPrimitiveNormalsFollowObjectOrder)
         meshPrimitive));
     ASSERT_GT(meshPrimitive.numContacts(), 0u);
     EXPECT_LT(meshPrimitive.getContact(0).normal.z(), -0.1);
+    EXPECT_GE(meshPrimitive.getContact(0).featureIndex1, 0);
+    EXPECT_EQ(-1, meshPrimitive.getContact(0).featureIndex2);
 
     CollisionResult primitiveMesh;
     EXPECT_TRUE(NarrowPhase::collide(
@@ -893,6 +905,8 @@ TEST(NarrowPhaseDispatch, SupportMeshPrimitiveNormalsFollowObjectOrder)
         primitiveMesh));
     ASSERT_GT(primitiveMesh.numContacts(), 0u);
     EXPECT_GT(primitiveMesh.getContact(0).normal.z(), 0.1);
+    EXPECT_EQ(-1, primitiveMesh.getContact(0).featureIndex1);
+    EXPECT_GE(primitiveMesh.getContact(0).featureIndex2, 0);
   }
 }
 
