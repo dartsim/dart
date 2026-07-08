@@ -37,6 +37,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
@@ -395,6 +396,26 @@ TEST(NarrowPhaseDispatch, BatchRejectsNullShapes)
   EXPECT_THROW(
       NarrowPhase::collideBatch(pairs, results, CollisionOption()),
       std::invalid_argument);
+}
+
+TEST(NarrowPhaseDispatch, CompoundRaycastAcceptsEndpointHit)
+{
+  CompoundShape compound;
+  compound.addChild(std::make_unique<SphereShape>(1.0));
+
+  const Ray ray(Eigen::Vector3d(-2.0, 0.0, 0.0), Eigen::Vector3d::UnitX(), 1.0);
+  RaycastResult result;
+
+  EXPECT_TRUE(NarrowPhase::raycast(
+      ray,
+      &compound,
+      Eigen::Isometry3d::Identity(),
+      RaycastOption::unlimited(),
+      result));
+  EXPECT_TRUE(result.hit);
+  EXPECT_DOUBLE_EQ(1.0, result.distance);
+  EXPECT_TRUE(result.point.isApprox(Eigen::Vector3d(-1.0, 0.0, 0.0), 1e-12));
+  EXPECT_TRUE(result.normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
 }
 
 TEST(NarrowPhaseDispatch, ReportsP9SupportedPairs)

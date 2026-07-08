@@ -724,7 +724,7 @@ bool raycastShape(
                 transform * child.localTransform,
                 childOption,
                 childResult)) {
-          if (childResult.distance < bestDistance) {
+          if (!hit || childResult.distance <= bestDistance) {
             bestDistance = childResult.distance;
             bestResult = childResult;
           }
