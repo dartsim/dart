@@ -157,6 +157,36 @@ TEST(MeshMeshCollision, SeparatedCoplanarTrianglesDoNotCollide)
   EXPECT_EQ(0u, result.numContacts());
 }
 
+TEST(MeshMeshCollision, EdgeThroughFaceTrianglesCollide)
+{
+  MeshShape horizontal = makeSingleTriangleMesh(
+      Eigen::Vector3d(-1.0, -1.0, 0.0),
+      Eigen::Vector3d(1.0, -1.0, 0.0),
+      Eigen::Vector3d(0.0, 1.0, 0.0));
+  MeshShape vertical = makeSingleTriangleMesh(
+      Eigen::Vector3d(0.0, -0.25, -1.0),
+      Eigen::Vector3d(0.0, -0.25, 1.0),
+      Eigen::Vector3d(0.0, 0.75, 0.25));
+
+  CollisionResult result;
+  EXPECT_TRUE(collideMeshMesh(
+      horizontal,
+      Eigen::Isometry3d::Identity(),
+      vertical,
+      Eigen::Isometry3d::Identity(),
+      result,
+      CollisionOption::fullContacts(4)));
+  ASSERT_GT(result.numContacts(), 0u);
+
+  bool hasFacePiercingContact = false;
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    hasFacePiercingContact |= std::abs(contact.position.x()) < 1e-12
+                              && std::abs(contact.position.z()) < 1e-12;
+  }
+  EXPECT_TRUE(hasFacePiercingContact);
+}
+
 TEST(MeshMeshCollision, ZeroContactLimitReturnsFalse)
 {
   MeshShape mesh1 = makeUnitCubeMesh();

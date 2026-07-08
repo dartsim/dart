@@ -825,6 +825,40 @@ TriIntersectionResult triangleTriangleIntersection(
     }
   }
 
+  auto addEdgeFaceIntersections =
+      [&contactPoints](
+          const std::array<std::pair<Eigen::Vector3d, Eigen::Vector3d>, 3>&
+              edges,
+          const LocalTriangle& tri,
+          const Eigen::Vector3d& triNormal) {
+        if (triNormal.squaredNorm() < kEpsilon * kEpsilon) {
+          return;
+        }
+
+        constexpr double kSegmentParamTolerance = 1e-9;
+        for (const auto& edge : edges) {
+          const Eigen::Vector3d edgeDir = edge.second - edge.first;
+          const double denom = triNormal.dot(edgeDir);
+          if (std::abs(denom) <= kEpsilon) {
+            continue;
+          }
+
+          const double t = triNormal.dot(tri.v0 - edge.first) / denom;
+          if (t < -kSegmentParamTolerance || t > 1.0 + kSegmentParamTolerance) {
+            continue;
+          }
+
+          const Eigen::Vector3d point
+              = edge.first + std::clamp(t, 0.0, 1.0) * edgeDir;
+          if (pointInTriangleProjected(
+                  point, tri.v0, tri.v1, tri.v2, triNormal)) {
+            addUniquePoint(contactPoints, point);
+          }
+        }
+      };
+  addEdgeFaceIntersections(edges1, t2, t2Normal);
+  addEdgeFaceIntersections(edges2, t1, t1Normal);
+
   if (contactPoints.empty()) {
     return result;
   }
