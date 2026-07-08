@@ -181,6 +181,21 @@ Latest state:
   current-vs-parent/base CPU mean rows remain noise-sensitive, so this is
   evidence for the correction and native-detector ranking, not final
   all-threshold completion.
+- A follow-up WP-DB.06 soft aggregation temporary cleanup is implemented
+  locally in commit `221fdf00145`: `SoftBodyNode` now avoids dynamic diagonal
+  matrices in augmented-mass aggregation, writes gravity projection directly
+  into the destination segment, skips the DART 6 no-op point inverse-mass
+  aggregation dispatch, sums point masses through contiguous properties, and
+  clears point external/internal forces through direct loops. Focused
+  soft-dynamics/allocation tests, FCL/native checksum smokes, and `pixi run
+  lint` passed. The comparison artifact
+  `.benchmark_results/wp-db06-aggregation-temp-221fdf-parent-423f926-base/`
+  reports evaluator `PASS`, checksum-equivalent FCL/native correctness scenes,
+  and native as the winner for every tracked current scene/thread row. The
+  broad run still had one positive current-vs-parent CPU mean on
+  `dart/soft_open_chain/1`, but targeted reruns of that exact row measured
+  current faster than parent in both parent-then-current and current-then-parent
+  order. Keep final all-threshold claims gated on an exclusive idle-host rerun.
 - A narrow `origin/dart6-memory-hardening` carryover is implemented locally:
   `Skeleton::checkExternalDisturbanceAndReset()` now scans body-local external
   wrenches directly instead of materializing the external-force projection cache
@@ -249,8 +264,9 @@ Latest state:
   downstream gz-sim `INTEGRATION_entity_system` timing failure; immediate
   focused rerun and fresh `pixi run -e gazebo test-gz-sim` both passed.
 - Branch `wp-db-soft-skel-allocation-gates` now has local implementation
-  commit `649926d28dc`, including the articulated-inertia correction and
-  connection-loop cleanup. No PR is currently attached to this local branch.
+  commit `221fdf00145`, including the articulated-inertia correction,
+  connection-loop cleanup, and soft aggregation temporary cleanup. No PR is
+  currently attached to this local branch.
 
 Next steps:
 

@@ -4,7 +4,8 @@ Captured on 2026-07-05 from local branch
 `js/dart6-deformable-performance`.
 
 Updated on 2026-07-07 from local branch
-`wp-db-soft-skel-allocation-gates` at commit `649926d28dc`.
+`wp-db-soft-skel-allocation-gates` at commits `649926d28dc` and
+`221fdf00145`.
 
 ## Baseline setup
 
@@ -102,6 +103,75 @@ DART workloads during the run, and a few current-vs-parent/base CPU mean rows
 remain noise-sensitive. Before a PR claims every CPU row beats both parent and
 base, rerun the same comparison on an exclusive idle host with longer timing
 windows and refresh this evidence packet.
+
+## 2026-07-07 aggregation-temporary comparison
+
+The follow-up `221fdf00145` slice removes avoidable soft-body aggregation
+temporaries and no-op point dispatch:
+
+- dynamic diagonal `K`/`D` matrices in `aggregateAugMassMatrix()`,
+- the temporary gravity vector in `aggregateGravityForceVector()`,
+- no-op point dispatch in `aggregateInvMassMatrix()`, and
+- point-mass pointer/helper calls in mass summation and force clearing.
+
+Command:
+
+```bash
+pixi run python scripts/compare_soft_body_performance.py \
+  --current HEAD \
+  --parent HEAD^1 \
+  --base origin/release-6.20 \
+  --detectors fcl,dart \
+  --threads 1,16 \
+  --benchmark-min-time 0.1s \
+  --benchmark-repetitions 5 \
+  --benchmark-cycles 2 \
+  --benchmark-run-order detector \
+  --correctness-scenes soft_cubes,soft_bodies \
+  --correctness-steps 200 \
+  --wait-for-local-dart-builds \
+  --idle-max-load-1m 4 \
+  --idle-cooldown 5 \
+  --output-dir .benchmark_results/wp-db06-aggregation-temp-221fdf-parent-423f926-base
+```
+
+Results:
+
+- Artifact:
+  `.benchmark_results/wp-db06-aggregation-temp-221fdf-parent-423f926-base/summary.md`.
+- Revisions: current `221fdf00145`, parent `423f926e030`,
+  base `2d898081931`.
+- Evaluator verdict: `PASS`.
+- Detector equivalence: native `dart` is the reference detector; `fcl` is
+  checksum-equivalent on the correctness scenes.
+- Current detector ranking: native `dart` is the winner for every tracked
+  current scene/thread row.
+
+| Scene | Threads | Native CPU ms | FCL CPU ms |
+| --- | ---: | ---: | ---: |
+| `adaptive_deformable` | 1 | 2.039 | 15.738 |
+| `adaptive_deformable` | 16 | 2.375 | 16.177 |
+| `soft_bodies` | 1 | 13.538 | 66.086 |
+| `soft_bodies` | 16 | 13.724 | 65.266 |
+| `soft_cubes` | 1 | 3.680 | 17.785 |
+| `soft_cubes` | 16 | 3.839 | 17.599 |
+| `soft_open_chain` | 1 | 5.905 | 30.072 |
+| `soft_open_chain` | 16 | 5.449 | 29.989 |
+
+The broad comparison improved every current-vs-base FCL row and every native
+row except `dart/soft_open_chain/1`, where the mean was +1.3% against base and
++7.8% against parent while the median was -0.9% against base. Targeted reruns
+of that exact row using the already-built parent/current binaries measured
+current faster than parent:
+
+| Order | Parent CPU ms | Current CPU ms | Current change |
+| --- | ---: | ---: | ---: |
+| parent then current | 4.851 | 4.795 | -1.2% |
+| current then parent, higher load | 7.662 | 7.420 | -3.2% |
+
+Treat the broad positive as workstation noise, not a code regression. Still,
+before claiming all CPU rows beat parent and base, rerun the full matrix on an
+exclusive idle host with longer benchmark windows.
 
 ## Benchmark commands
 
