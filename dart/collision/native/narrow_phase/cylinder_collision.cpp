@@ -802,11 +802,9 @@ bool collideCylinderCapsule(
       if (lateralDist <= cylRadius) {
         double lateralPen = cylRadius - lateralDist;
         double axialPen = cylHalfHeight - std::abs(capEndLocal.z());
-        if (lateralPen < axialPen && lateralDist > 1e-10) {
-          closestOnCyl = Eigen::Vector3d(
-              capEndLocal.x() * cylRadius / lateralDist,
-              capEndLocal.y() * cylRadius / lateralDist,
-              capEndLocal.z());
+        if (lateralPen < axialPen) {
+          closestOnCyl = radialDir * cylRadius;
+          closestOnCyl.z() = capEndLocal.z();
           normalLocal = -radialDir;
         } else {
           double cappedZ = capEndLocal.z() > 0 ? cylHalfHeight : -cylHalfHeight;

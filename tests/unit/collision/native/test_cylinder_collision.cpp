@@ -458,6 +458,26 @@ TEST(CylinderCollision, CapsuleEndpointOnCylinderCapUsesSurfaceNormal)
   EXPECT_NEAR(0.2, result.getContact(0).depth, 1e-12);
 }
 
+TEST(CylinderCollision, OnAxisCapsuleEndpointUsesRadialSeparation)
+{
+  CylinderShape cylinder(1.0, 20.0);
+  CapsuleShape capsule(0.2, 1.0);
+
+  CollisionResult result;
+  const bool hit = collideCylinderCapsule(
+      cylinder,
+      Eigen::Isometry3d::Identity(),
+      capsule,
+      Eigen::Isometry3d::Identity(),
+      result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_EQ(1u, result.numContacts());
+  EXPECT_TRUE(
+      result.getContact(0).normal.isApprox(-Eigen::Vector3d::UnitX(), 1e-12));
+  EXPECT_NEAR(1.2, result.getContact(0).depth, 1e-12);
+}
+
 TEST(CylinderCollision, CollidesCylinderCapsuleBody)
 {
   CylinderShape cylinder(0.5, 2.0);
