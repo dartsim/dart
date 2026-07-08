@@ -3,323 +3,132 @@
 Build
 =====
 
-Building DART
+This page describes the DART 6 LTS source-build paths for the ``release-6.20``
+branch. The current source version is read from ``package.xml``; until release
+packaging bumps it, this branch can still report a ``6.19.x`` package version
+while collecting changes for DART 6.20.0.
+
+Recommended Pixi build
+----------------------
+
+The reproducible developer path is the Pixi environment tracked in
+``pixi.toml``. It supplies the compiler tools, CMake, Ninja, Python, Doxygen,
+Sphinx, test tools, and the C++ dependencies used by the branch.
+
+.. code-block:: bash
+
+   pixi run config
+   pixi run build
+   pixi run build-py-dev
+
+Run the relevant verification gates from the same environment:
+
+.. code-block:: bash
+
+   pixi run lint
+   pixi run test
+   pixi run test-py
+   pixi run docs-build
+
+``pixi run test-all`` builds the default aggregate CMake target. Run the lint
+and test tasks separately when you need explicit verification output.
+
+Core requirements
+-----------------
+
+For manual builds, use the versions and dependency set in the source tree as
+the authority:
+
+* CMake minimum: ``3.22.1`` from ``CMakeLists.txt``.
+* Language level: C++17 from the DART CMake targets.
+* Build system: Ninja is the Pixi default; other CMake generators can work.
+* Core package dependencies: Assimp, Eigen, FCL, fmt, Bullet, ODE, OctoMap,
+  spdlog, tinyxml2, urdfdom, and OpenSceneGraph.
+* dartpy dependencies: Python, NumPy, and pybind11.
+
+Manual CMake build
+------------------
+
+Install the dependencies with your platform package manager or use the Pixi
+environment as the dependency prefix. Then configure and build:
+
+.. code-block:: bash
+
+   cmake -G Ninja -S . -B build/default/cpp/Release \
+       -DCMAKE_BUILD_TYPE=Release \
+       -DDART_BUILD_DARTPY=ON \
+       -DDART_BUILD_PROFILE=ON \
+       -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+       -DDART_USE_SYSTEM_GOOGLETEST=ON \
+       -DDART_USE_SYSTEM_IMGUI=ON \
+       -DDART_USE_SYSTEM_PYBIND11=ON \
+       -DDART_USE_SYSTEM_TRACY=ON
+   cmake --build build/default/cpp/Release -j
+
+Use ``-DCMAKE_PREFIX_PATH=<prefix>`` when dependencies are installed outside the
+compiler's default search paths.
+
+Important CMake options
+-----------------------
+
+The source-of-truth option list is in ``CMakeLists.txt``. Common branch options
+include:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 20 45
+
+   * - Option
+     - Default
+     - Purpose
+   * - ``DART_BUILD_DARTPY``
+     - ``OFF``
+     - Build the Python bindings.
+   * - ``DART_BUILD_GUI_OSG``
+     - ``ON``
+     - Build the OpenSceneGraph GUI component.
+   * - ``DART_ENABLE_GUI_OSG_SMOKE_TESTS``
+     - ``OFF``
+     - Build off-screen GUI capture smoke tests when a display or Xvfb is
+       available.
+   * - ``DART_ENABLE_SIMD``
+     - ``OFF``
+     - Add local-machine SIMD compiler flags such as ``-march=native``.
+   * - ``DART_SIMD_FORCE_SCALAR``
+     - ``OFF``
+     - Force the header-only ``dart/simd`` module to use its scalar fallback
+       backend in tests.
+   * - ``DART_BUILD_PROFILE``
+     - ``OFF``
+     - Build profiling support.
+   * - ``DART_PROFILE_BUILTIN``
+     - ``ON``
+     - Enable DART's built-in text profiling backend.
+   * - ``DART_PROFILE_TRACY``
+     - ``OFF``
+     - Enable the Tracy profiling backend for local developer profiling.
+   * - ``DART_USE_SYSTEM_IMGUI``
+     - ``OFF``
+     - Use a system ImGui package instead of the bundled compatibility target.
+   * - ``DART_USE_SYSTEM_PYBIND11``
+     - ``OFF``
+     - Use a system pybind11 package.
+
+Build targets
 -------------
 
-This guide describes how to build DART, a C++ library for robotics and motion
-planning, using CMake. DART also has Python bindings, called dartpy, which will
-be covered in a separate section.
-
-Supported Environments
-~~~~~~~~~~~~~~~~~~~~~~
-
-DART is supported on the following operating systems and compilers:
-
-+-----------------------+-----------------------+
-| Operating System      | Compiler              |
-+=======================+=======================+
-| Ubuntu 22.04 or later | GCC 11.2 or later     |
-+-----------------------+-----------------------+
-| Windows 2022 or later | Visual Studio 2022    |
-+-----------------------+-----------------------+
-| macOS 13 or later     | Clang 13 or later     |
-+-----------------------+-----------------------+
-
-Prerequisites
-~~~~~~~~~~~~~
-
-Before you can build DART, you'll need to install the required and optional
-dependencies. The required dependencies are the minimum set of dependencies
-needed to build DART, while the optional dependencies enable additional
-features in DART.
-
-The steps for installing dependencies may vary depending on your operating
-system and package manager. Below, we provide instructions for installing the
-required and optional dependencies on Ubuntu, macOS, and Windows, as well as
-some experimental guidance for other platforms.
-
-.. note::
-
-   Please note that the dependencies and installation steps are subject to
-   change, so we encourage you to report any issues you encounter and
-   contribute to keeping the instructions up-to-date for the community. By
-   working together, we can help ensure that the DART documentation is accurate
-   and helpful for everyone who uses it.
-
-Ubuntu
-^^^^^^
-
-The dependencies for Ubuntu can be installed using the ``apt`` package
-manager. The following command will install the required dependencies:
-
-.. code-block:: bash
-
-   $ sudo apt install \
-      build-essential cmake pkg-config git libassimp-dev \
-      libeigen3-dev libfcl-dev libfmt-dev
-
-The following command will install the optional dependencies:
-
-.. code-block:: bash
-
-   $ sudo apt install \
-      libbullet-dev \
-      libtinyxml2-dev liburdfdom-dev liburdfdom-headers-dev \
-      libopenscenegraph-dev liboctomap-dev libode-dev \
-      libspdlog-dev libyaml-cpp-dev ocl-icd-opencl-dev opencl-headers \
-      opencl-clhpp-headers
-
-macOS
-^^^^^
-
-The dependencies for macOS can be installed using the ``brew`` package
-manager. The following command will install the required dependencies:
-
-.. code-block:: bash
-
-   $ brew install assimp cmake eigen fmt fcl
-
-The following command will install the optional dependencies:
-
-.. code-block:: bash
-
-   $ brew install bullet octomap ode \
-      open-scene-graph --HEAD \
-      spdlog tinyxml2 urdfdom yaml-cpp
-
-Windows
-^^^^^^^
-
-The dependencies for Windows can be installed using the ``vcpkg`` package
-manager. The following command will install the required dependencies:
-
-.. code-block:: bash
-
-   $ vcpkg install --triplet x64-windows assimp eigen3 fcl fmt spdlog
-
-The following command will install the optional dependencies:
-
-.. code-block:: bash
-
-   $ vcpkg install --triplet x64-windows \
-      assimp eigen3 fcl fmt spdlog bullet3 ode \
-      opencl opengl osg pybind11 tinyxml2 urdfdom yaml-cpp
-
-Arch Linux (experimental)
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The dependencies for Arch Linux can be installed using the ``yay`` package
-manager. The following command will install the required dependencies:
-
-.. code-block:: bash
-
-   $ yay -S assimp cmake eigen fcl fmt
-
-The following command will install the optional dependencies:
-
-.. code-block:: bash
-
-   $ yay -S \
-      bullet octomap ode opencl-clhpp \
-      opencl-headers opencl-icd-loader openscenegraph spdlog tinyxml2 \
-      urdfdom pybind11
-
-FreeBSD (experimental)
-^^^^^^^^^^^^^^^^^^^^^^
-
-TODO
-
-Dependency Info
-~~~~~~~~~~~~~~~
-
-Here's a summary of the dependencies required to build DART (WIP):
-
-+----------------+----------+---------+--------------+-------+
-| Dependency     | Required | Type    | Min. Version | Notes |
-+================+==========+=========+==============+=======+
-| CMake          | Yes      | Build   | 3.22.1       |       |
-+----------------+----------+---------+--------------+-------+
-| Assimp         | Yes      | Runtime | 5.2.2        |       |
-+----------------+----------+---------+--------------+-------+
-| Eigen          | Yes      | Runtime | 3.4.0        |       |
-+----------------+----------+---------+--------------+-------+
-| FCL            | Yes      | Runtime | 0.7.0        |       |
-+----------------+----------+---------+--------------+-------+
-| fmt            | Yes      | Runtime | 8.1.1        |       |
-+----------------+----------+---------+--------------+-------+
-| Bullet         | No       | Runtime | 3.06         |       |
-+----------------+----------+---------+--------------+-------+
-| Octomap        | No       | Runtime | 1.9.7        |       |
-+----------------+----------+---------+--------------+-------+
-| ODE            | No       | Runtime | 0.16.2       |       |
-+----------------+----------+---------+--------------+-------+
-| spdlog         | No       | Runtime | 1.9.2        |       |
-+----------------+----------+---------+--------------+-------+
-| tinyxml2       | No       | Runtime | 9.0.0        |       |
-+----------------+----------+---------+--------------+-------+
-| urdfdom        | No       | Runtime | 3.0.1        |       |
-+----------------+----------+---------+--------------+-------+
-| OpenSceneGraph | No       | Runtime | 3.6.5        |       |
-+----------------+----------+---------+--------------+-------+
-
-Clone the DART Repository
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-To get started with building DART, you'll need to clone the DART repository.
-Here's how to do it:
-
-1. Clone the DART repository by running the following command in your terminal:
-
-   .. code-block:: bash
-
-      $ git clone https://github.com/dartsim/dart.git
-
-2. (Optional) If you want to build a specific version of DART, you can checkout
-   a specific branch, tag, or commit.
-
-   .. code-block:: bash
-
-      $ git checkout -b <branch_or_tag_or_commit>
-
-.. note::
-
-   Please note that the DART repository is actively maintained, so there may be
-   changes and updates to the repository over time. To get the latest
-   information, we recommend referring to the DART GitHub repository.
-
-Build Configuration
-~~~~~~~~~~~~~~~~~~~
-
-DART uses CMake as its build system. CMake is a powerful tool that generates
-build files for a variety of build systems, including Makefiles, Visual Studio
-projects, and Xcode projects. For more information about available generators,
-we recommend referring to the
-`CMake documentation <https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html>`_.
-
-To configure the build, you'll need to create a build directory and run CMake
-from that directory. Here's how to do it:
-
-1. Create a build directory by running the following command in your terminal:
-
-   .. code-block:: bash
-
-      $ mkdir build
-
-2. Change into the build directory by running the following command:
-
-   .. code-block:: bash
-
-      $ cd build
-
-3. Run CMake from the build directory by running the following command:
-
-   .. code-block:: bash
-
-      $ cmake ..
-
-If you want to configure the build, you can pass additional options to CMake.
-For example, you can specify the build type by passing the
-``-DCMAKE_BUILD_TYPE`` option. DART provides a number of CMake options that
-allow you to customize the build process. Here are some of the most important
-options:
-
-+-------------------------+---------------+----------------------------------------------+
-| Option                  | Default Value | Description                                  |
-+=========================+===============+==============================================+
-| CMAKE_BUILD_TYPE        | Release       | Specifies the build type.                    |
-+-------------------------+---------------+----------------------------------------------+
-| DART_ENABLE_SIMD        | OFF           | Adds local-machine SIMD compiler flags such  |
-|                         |               | as ``-march=native``. Use only for builds    |
-|                         |               | that run on the same machine architecture.   |
-+-------------------------+---------------+----------------------------------------------+
-| DART_SIMD_FORCE_SCALAR  | OFF           | Forces the header-only ``dart/simd`` module  |
-|                         |               | to use its scalar fallback backend in tests. |
-+-------------------------+---------------+----------------------------------------------+
-
-.. note::
-
-   This list of options may not be exhaustive or up-to-date. Please refer to
-   the main CMakeLists.txt file in the DART repository to confirm the list of
-   available options. If you find any discrepancies or errors, please consider
-   submitting a pull request to update this document.
-
-Here are some example commands that you can use to configure the build on
-different platforms with different generators:
-
-.. code-block:: bash
-
-   $ cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
-   $ cmake .. -G "Visual Studio 15 2017" -A x64 -DCMAKE_BUILD_TYPE=Release
-   $ cmake .. -G "Xcode" -DCMAKE_BUILD_TYPE=Release
-
-Building DART from Command Line
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Whether or not you configured the build for IDEs, you can still build DART from
-the command line using CMake's unified build commands.
-
-To build DART from the command line, you'll need to run the build command from
-the build directory. Here's how to do it:
-
-1. Change into the build directory by running the following command:
-
-   .. code-block:: bash
-
-      $ cd build
-
-2. Run the build command by running the following command:
-
-   .. code-block:: bash
-
-      $ cmake --build . [--target <target> [, <target2>, ...]] [-j<num_core>]
-
-DART provides a number of CMake targets that you can use to build different
-parts of the project. Here are some of the most important targets:
-
-* ``ALL``: Builds all the targets in the project, including building tests,
-  examples, tutorials, and running tests.
-* ``all``: Builds core targets without tests, examples, and tutorials.
-* ``tests``: Builds all the tests.
-* ``test``: Runs tests (need to build tests first).
-* ``tests_and_run``: Builds and runs tests.
-* ``examples``: Builds all the examples.
-* ``tutorials``: Builds all the tutorials.
-* ``benchmarks``: Builds all the benchmarks.
-* ``view_docs``: Builds the documentation and opens it in a web browser.
-* ``install``: Installs the project.
-* ``dartpy``: Builds the Python bindings (it's encouraged to build using pip
-  instead).
-* ``pytest``: Runs Python tests (building tests if necessary).
-* ``coverage``: Runs tests and generates a coverage report.
-* ``coverage_html``: Runs tests and generates an HTML coverage report.
-* ``coverage_view``: Runs tests, generates an HTML coverage report, and opens
-  it in a web browser.
-
-.. note::
-
-   Please note that this list of targets may not be exhaustive or up-to-date.
-   To confirm the full list of available targets, we recommend referring to the
-   main CMakeLists.txt file in the DART repository. If you find any
-   discrepancies or errors, we encourage you to submit a pull request to
-   update this document and help keep the documentation up-to-date for the
-   community.
-
-Building DART from IDEs
-~~~~~~~~~~~~~~~~~~~~~~~
-
-If you configured the build for IDEs, you can build DART from the IDEs. This
-section doesn't cover how to build DART from IDEs. Please refer to the IDEs
-documentation for more information. However, it's always to welcome to submit a
-pull request to update this document with instructions for your favorite IDE!
-
-Building dartpy
----------------
-
-In general, building dartpy from source is not necessary. The easiest way to
-install dartpy is to use pip:
-
-.. code-block:: bash
-
-   $ pip install dartpy -U
-
-TODO
+Useful CMake targets include:
+
+* ``all``: build the default libraries and tools.
+* ``tests``: build the C++ tests.
+* ``test``: run CTest after tests are built.
+* ``examples``: build examples.
+* ``tutorials``: build tutorials.
+* ``dartpy``: build the Python bindings.
+* ``pytest``: run Python tests through the CMake target.
+* ``install``: install the configured components.
+* ``view_docs``: build and open local documentation.
+
+For most development work, prefer the Pixi task names above because they encode
+the branch's expected build directory, dependency prefix, and platform-specific
+settings.
