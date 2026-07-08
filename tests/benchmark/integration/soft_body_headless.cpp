@@ -270,9 +270,13 @@ int main(int argc, char** argv)
       world->getTimeStep());
   printChecksum(0u, initial);
 
+  const bool previousProfileRecording
+      = dart::common::profile::setProfileRecordingEnabled(true);
+  dart::common::profile::resetProfile();
   const auto start = std::chrono::steady_clock::now();
   for (std::size_t i = 0; i < steps; ++i) {
     world->step();
+    dart::common::profile::markProfileFrame();
 
     const std::size_t done = i + 1u;
     if ((checkpoint != 0u && done % checkpoint == 0u) || done == steps)
@@ -289,6 +293,7 @@ int main(int argc, char** argv)
                       : 0.0);
 
   DART_PROFILE_TEXT_DUMP();
+  dart::common::profile::setProfileRecordingEnabled(previousProfileRecording);
 
   return 0;
 }
