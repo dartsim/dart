@@ -32,6 +32,8 @@
 
 #include "dart/common/detail/profiler.hpp"
 
+#include "dart/common/detail/ProfileRecording.hpp"
+
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -138,8 +140,7 @@ struct Profiler::Flattened
   std::uint64_t callCount{0};
 };
 
-Profiler::Profiler()
-  : m_recordingEnabled(false), m_frameCount(0), m_frameTimeSumNs(0)
+Profiler::Profiler() : m_frameCount(0), m_frameTimeSumNs(0)
 {
   m_frameSamplesNs.reserve(kMaxFrameSamples);
 }
@@ -152,12 +153,12 @@ Profiler& Profiler::instance()
 
 bool Profiler::setRecordingEnabled(bool enabled) noexcept
 {
-  return m_recordingEnabled.exchange(enabled, std::memory_order_relaxed);
+  return detail::setProfileRecordingEnabledFlag(enabled);
 }
 
 bool Profiler::isRecordingEnabled() const noexcept
 {
-  return m_recordingEnabled.load(std::memory_order_relaxed);
+  return detail::isProfileRecordingEnabledFlag();
 }
 
 std::shared_ptr<Profiler::ThreadRecord> Profiler::threadRecord()

@@ -46,7 +46,6 @@
 
 #include <dart/config.hpp>
 
-#include <atomic>
 #include <iosfwd>
 #include <optional>
 #include <string>
@@ -55,6 +54,8 @@
 #include <cstdint>
 
 #if DART_BUILD_PROFILE
+
+  #include <dart/common/detail/ProfileRecording.hpp>
 
   //-------------------------------------------------------------------------
   // Backend selection
@@ -304,20 +305,6 @@ private:
 
 namespace dart::common::profile {
 
-namespace detail {
-
-#if DART_BUILD_PROFILE && !DART_PROFILE_ENABLE_TEXT && DART_PROFILE_HAS_TRACY
-
-[[nodiscard]] inline std::atomic<bool>& profileRecordingEnabledFlag() noexcept
-{
-  static std::atomic<bool> enabled{false};
-  return enabled;
-}
-
-#endif
-
-} // namespace detail
-
 /// Return whether DART was built with profiling support.
 [[nodiscard]] constexpr bool isProfilingEnabled() noexcept
 {
@@ -341,10 +328,8 @@ namespace detail {
 /// Return whether conditional profile instrumentation is currently recording.
 [[nodiscard]] inline bool isProfileRecordingEnabled() noexcept
 {
-#if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
-  return Profiler::instance().isRecordingEnabled();
-#elif DART_BUILD_PROFILE && DART_PROFILE_HAS_TRACY
-  return detail::profileRecordingEnabledFlag().load(std::memory_order_relaxed);
+#if DART_BUILD_PROFILE && (DART_PROFILE_ENABLE_TEXT || DART_PROFILE_HAS_TRACY)
+  return detail::isProfileRecordingEnabledFlag();
 #else
   return false;
 #endif
@@ -354,11 +339,8 @@ namespace detail {
 /// previous state.
 inline bool setProfileRecordingEnabled(bool enabled) noexcept
 {
-#if DART_BUILD_PROFILE && DART_PROFILE_ENABLE_TEXT
-  return Profiler::instance().setRecordingEnabled(enabled);
-#elif DART_BUILD_PROFILE && DART_PROFILE_HAS_TRACY
-  return detail::profileRecordingEnabledFlag().exchange(
-      enabled, std::memory_order_relaxed);
+#if DART_BUILD_PROFILE && (DART_PROFILE_ENABLE_TEXT || DART_PROFILE_HAS_TRACY)
+  return detail::setProfileRecordingEnabledFlag(enabled);
 #else
   (void)enabled;
   return false;

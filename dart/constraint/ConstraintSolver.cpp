@@ -2334,6 +2334,12 @@ void ConstraintSolver::recordConstrainedGroupProfileCounters() const
         continue;
       }
 
+      if (const auto* coupler
+          = dynamic_cast<const CouplerConstraint*>(constraint.get())) {
+        addBody(groupBodies, coupler->mBodyNode);
+        continue;
+      }
+
       if (const auto* jointFriction
           = dynamic_cast<const JointCoulombFrictionConstraint*>(
               constraint.get())) {

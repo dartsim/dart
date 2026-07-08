@@ -180,7 +180,6 @@ private:
 
   std::mutex m_threadRegistryMutex;
   std::vector<std::shared_ptr<ThreadRecord>> m_threads;
-  std::atomic<bool> m_recordingEnabled;
   std::atomic<std::uint64_t> m_frameCount;
   std::atomic<std::uint64_t> m_frameTimeSumNs;
   std::vector<std::uint64_t> m_frameSamplesNs;
