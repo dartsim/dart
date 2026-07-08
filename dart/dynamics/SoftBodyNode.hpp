@@ -40,6 +40,7 @@ namespace dart {
 namespace collision {
 
 class DARTCollisionObject;
+class FCLCollisionObject;
 
 } // namespace collision
 
@@ -58,6 +59,7 @@ public:
 
   friend class Skeleton;
   friend class collision::DARTCollisionObject;
+  friend class collision::FCLCollisionObject;
   friend class PointMass;
   friend class PointMassNotifier;
 
