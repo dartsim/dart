@@ -601,7 +601,9 @@ TEST(NarrowPhaseDispatch, ReportsP9SupportedPairs)
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Convex));
 
   EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Sdf));
-  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Compound, ShapeType::Mesh));
+  EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Compound, ShapeType::Mesh));
+  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Compound, ShapeType::Sdf));
+  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Sdf, ShapeType::Compound));
 }
 
 TEST(NarrowPhaseDispatch, ReportsOnlySupportedPlaneDistanceRows)

@@ -34,6 +34,7 @@
 
 #include "dart/collision/native/shapes/Shape.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"
@@ -43,6 +44,10 @@
 #include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+
+#if HAVE_OCTOMAP
+  #include "dart/dynamics/VoxelGridShape.hpp"
+#endif
 
 #include <limits>
 #include <set>
@@ -161,6 +166,36 @@ std::vector<Eigen::Vector3d> makePyramidVertices(
       {0.0, 0.0, 0.5 * height}};
 }
 
+#if HAVE_OCTOMAP
+std::unique_ptr<native::Shape> createVoxelGrid(
+    const dynamics::VoxelGridShape& voxelGrid)
+{
+  auto octree = voxelGrid.getOctree();
+  auto compound = std::make_unique<native::CompoundShape>();
+  if (!octree)
+    return compound;
+
+  const double occupancyThreshold = octree->getOccupancyThres();
+  for (auto it = octree->begin_leafs(), end = octree->end_leafs(); it != end;
+       ++it) {
+    if (it->getOccupancy() < occupancyThreshold)
+      continue;
+
+    const auto coordinate = it.getCoordinate();
+    Eigen::Isometry3d voxelTransform = Eigen::Isometry3d::Identity();
+    voxelTransform.translation()
+        = Eigen::Vector3d(coordinate.x(), coordinate.y(), coordinate.z());
+
+    compound->addChild(
+        std::make_unique<native::BoxShape>(
+            Eigen::Vector3d::Constant(0.5 * it.getSize())),
+        voxelTransform);
+  }
+
+  return compound;
+}
+#endif
+
 } // namespace
 
 //==============================================================================
@@ -224,6 +259,13 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
             pyramid.getHeight()),
         shapeType);
   }
+
+#if HAVE_OCTOMAP
+  if (shapeType == dynamics::VoxelGridShape::getStaticType()) {
+    const auto& voxelGrid = static_cast<const dynamics::VoxelGridShape&>(shape);
+    return createVoxelGrid(voxelGrid);
+  }
+#endif
 
   static std::set<std::string> warnedShapeTypes;
   if (warnedShapeTypes.insert(shapeType).second) {

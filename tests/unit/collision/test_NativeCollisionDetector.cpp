@@ -30,9 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <dart/collision/CollisionFilter.hpp>
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/DistanceFilter.hpp>
+#include <dart/collision/DistanceOption.hpp>
 #include <dart/collision/DistanceResult.hpp>
 #include <dart/collision/RaycastOption.hpp>
 #include <dart/collision/RaycastResult.hpp>
@@ -55,6 +58,10 @@
 #include <dart/dynamics/PyramidShape.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/SphereShape.hpp>
+
+#if HAVE_OCTOMAP
+  #include <dart/dynamics/VoxelGridShape.hpp>
+#endif
 
 #include <dart/math/TriMesh.hpp>
 
@@ -1332,6 +1339,97 @@ TEST(NativeCollisionDetector, ConvertsSphereAndBoxShapes)
           ->getFaces()
           .size());
 }
+
+//==============================================================================
+#if HAVE_OCTOMAP
+TEST(NativeCollisionDetector, ConvertsVoxelGridToCompoundShape)
+{
+  dynamics::VoxelGridShape voxelGrid(0.1);
+  voxelGrid.updateOccupancy(Eigen::Vector3d::Zero(), true);
+
+  auto nativeVoxelGrid
+      = collision::detail::NativeShapeConversion::create(voxelGrid);
+  ASSERT_NE(nullptr, nativeVoxelGrid);
+  ASSERT_EQ(native::ShapeType::Compound, nativeVoxelGrid->getType());
+
+  const auto* compound
+      = static_cast<const native::CompoundShape*>(nativeVoxelGrid.get());
+  ASSERT_EQ(1u, compound->numChildren());
+  EXPECT_EQ(native::ShapeType::Box, compound->childShape(0).getType());
+
+  const auto& box
+      = static_cast<const native::BoxShape&>(compound->childShape(0));
+  EXPECT_TRUE(
+      box.getHalfExtents().isApprox(Eigen::Vector3d::Constant(0.05), 1e-12));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, VoxelGridOccupancyUpdatesNativeShape)
+{
+  auto detector = std::make_shared<ExposedNativeCollisionDetector>();
+  auto voxelGrid = std::make_shared<dynamics::VoxelGridShape>(0.1);
+  auto voxelFrame = makeFrame(voxelGrid);
+  auto sphereFrame = makeFrame(std::make_shared<dynamics::SphereShape>(0.01));
+
+  auto group
+      = detector->createCollisionGroup(voxelFrame.get(), sphereFrame.get());
+  auto raycastGroup = detector->createCollisionGroup(voxelFrame.get());
+
+  collision::CollisionOption option(true, 10u);
+  collision::CollisionResult result;
+
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  auto object = detector->claimCollisionObject(voxelFrame.get());
+  auto* nativeObject
+      = dynamic_cast<ExposedNativeCollisionObject*>(object.get());
+  ASSERT_NE(nullptr, nativeObject);
+  ASSERT_NE(nullptr, nativeObject->getNativeShape());
+  ASSERT_EQ(
+      native::ShapeType::Compound, nativeObject->getNativeShape()->getType());
+  const auto* emptyCompound = static_cast<const native::CompoundShape*>(
+      nativeObject->getNativeShape());
+  ASSERT_EQ(0u, emptyCompound->numChildren());
+
+  voxelGrid->updateOccupancy(Eigen::Vector3d::Zero(), true);
+  nativeObject->updateEngineData();
+  ASSERT_NE(nullptr, nativeObject->getNativeShape());
+  ASSERT_EQ(
+      native::ShapeType::Compound, nativeObject->getNativeShape()->getType());
+  const auto* occupiedCompound = static_cast<const native::CompoundShape*>(
+      nativeObject->getNativeShape());
+  ASSERT_EQ(1u, occupiedCompound->numChildren());
+  const Eigen::Vector3d voxelCenter
+      = occupiedCompound->childTransform(0).translation();
+
+  sphereFrame->setTranslation(voxelCenter + Eigen::Vector3d(0.2, 0.0, 0.0));
+  collision::DistanceOption distanceOption(true, 0.0, nullptr);
+  collision::DistanceResult distanceResult;
+  const double distance = group->distance(distanceOption, &distanceResult);
+  ASSERT_TRUE(distanceResult.found());
+  EXPECT_NEAR(0.14, distance, 1e-12);
+  EXPECT_NEAR(0.14, distanceResult.minDistance, 1e-12);
+  EXPECT_EQ(voxelFrame.get(), distanceResult.shapeFrame1);
+  EXPECT_EQ(sphereFrame.get(), distanceResult.shapeFrame2);
+
+  sphereFrame->setTranslation(voxelCenter);
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GE(result.getNumContacts(), 1u);
+
+  collision::RaycastResult raycastResult;
+  EXPECT_TRUE(raycastGroup->raycast(
+      Eigen::Vector3d(-0.2, voxelCenter.y(), voxelCenter.z()),
+      Eigen::Vector3d(0.2, voxelCenter.y(), voxelCenter.z()),
+      collision::RaycastOption(),
+      &raycastResult));
+  ASSERT_EQ(1u, raycastResult.mRayHits.size());
+  EXPECT_EQ(
+      voxelFrame.get(),
+      raycastResult.mRayHits[0].mCollisionObject->getShapeFrame());
+}
+#endif
 
 //==============================================================================
 TEST(NativeCollisionDetector, LeavesUnsupportedShapesNull)
