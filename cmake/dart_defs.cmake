@@ -287,14 +287,44 @@ function(dart_configure_msvc_runtime_library)
     return()
   endif()
 
+  set(_dart_msvc_runtime_cache_managed OFF)
+  if(DEFINED CACHE{CMAKE_MSVC_RUNTIME_LIBRARY})
+    get_property(
+      _dart_msvc_runtime_cache_help
+      CACHE CMAKE_MSVC_RUNTIME_LIBRARY
+      PROPERTY HELPSTRING
+    )
+    if(
+      _dart_msvc_runtime_cache_help
+        STREQUAL
+        "MSVC runtime library for DART targets"
+    )
+      set(_dart_msvc_runtime_cache_managed ON)
+    endif()
+  endif()
+
   set(_dart_msvc_runtime_preserved OFF)
-  if(DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
+  if(
+    DART_MSVC_FORCE_RELEASE_RUNTIME
+    AND
+      (
+        NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY
+        OR _dart_msvc_runtime_cache_managed
+      )
+  )
+    set(_dart_msvc_runtime_library "MultiThreadedDLL")
+    set(
+      CMAKE_MSVC_RUNTIME_LIBRARY
+      "${_dart_msvc_runtime_library}"
+      CACHE STRING
+      "MSVC runtime library for DART targets"
+      FORCE
+    )
+  elseif(DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
     set(_dart_msvc_runtime_library "${CMAKE_MSVC_RUNTIME_LIBRARY}")
     set(_dart_msvc_runtime_preserved ON)
   else()
-    if(DART_MSVC_FORCE_RELEASE_RUNTIME)
-      set(_dart_msvc_runtime_library "MultiThreadedDLL")
-    elseif(DART_RUNTIME_LIBRARY STREQUAL "/MT")
+    if(DART_RUNTIME_LIBRARY STREQUAL "/MT")
       set(_dart_msvc_runtime_library "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     else()
       set(_dart_msvc_runtime_library "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
