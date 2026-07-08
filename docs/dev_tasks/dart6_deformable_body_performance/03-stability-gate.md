@@ -10,13 +10,17 @@ cmake --build build/default/cpp/Release --target test_SoftDynamics --parallel
 ctest --test-dir build/default/cpp/Release -R 'test_SoftDynamics$' --output-on-failure
 ```
 
-Result: `test_SoftDynamics` passed locally in 0.09 seconds after the final
-state comparison gate was added.
+Result: `test_SoftDynamics` passed locally after the final-state comparison
+gate was added. A follow-up native-detector slice extended the same finite-state
+gate to run under both the default collision detector and
+`CollisionDetectorType::Dart`; the focused CTest repeat passed locally in
+0.11 seconds.
 
 ## Coverage
 
 `tests/integration/test_SoftDynamics.cpp` now loads and steps these SKEL soft
-scenes for both `World::setNumSimulationThreads(1)` and
+scenes with the default detector and the native DART detector. Each detector
+configuration runs both `World::setNumSimulationThreads(1)` and
 `World::setNumSimulationThreads(4)`:
 
 | Scene | Min soft bodies | Min point masses | Steps per thread setting |
@@ -42,11 +46,13 @@ At initialization, step 10, step 20, and step 30, the gate checks:
 - point-mass world position and velocity norms stay under broad blow-up guards.
 
 After each scene finishes, the gate compares the ordered final state from the
-`threads=1` run against the `threads=4` run with a relative tolerance of
-`1e-12`. The compared state includes skeleton positions and velocities plus
-each point mass's local position, local velocity, and world position. This
-turns the threaded-world coverage into a deterministic final-state regression
-check instead of only proving that both runs stayed finite.
+`threads=1` run against the `threads=4` run for that same detector with a
+relative tolerance of `1e-12`. The compared state includes skeleton positions
+and velocities plus each point mass's local position, local velocity, and world
+position. This turns the threaded-world coverage into a deterministic
+final-state regression check instead of only proving that both runs stayed
+finite, and it now proves the representative finite-state gate for the native
+soft collision backend.
 
 ## Fixture cleanup
 

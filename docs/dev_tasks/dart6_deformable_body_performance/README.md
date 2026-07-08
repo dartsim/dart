@@ -50,12 +50,12 @@ contact correctness, or performance envelope.
 - `dart/constraint/SoftContactConstraint.*` supports soft-body contact plumbing
   through `SoftMeshShape` point selection and friction directions.
 - `tests/integration/test_SoftDynamics.cpp` contains active finite-state,
-  deterministic threaded final-state, and representative equations-of-motion
-  gates for deformable scenes. WP-DB.04 now covers point-mass mass-matrix,
-  augmented-mass, inverse-mass, inverse-augmented-mass, gravity,
-  combined-vector, external-force, and representative rigid-only/soft-only/
-  mixed-world matrix/vector checks, recorded in
-  `07-equation-correctness.md`.
+  deterministic threaded final-state, native-detector, and representative
+  equations-of-motion gates for deformable scenes. WP-DB.04 now covers
+  point-mass mass-matrix, augmented-mass, inverse-mass,
+  inverse-augmented-mass, gravity, combined-vector, external-force, and
+  representative rigid-only/soft-only/mixed-world matrix/vector checks,
+  recorded in `07-equation-correctness.md`.
 - `data/skel/test/test_double_pendulum.skel` used one legacy `<soft>` tag that
   `SkelParser` ignored; WP-DB.01 converts it to `<soft_shape>`, and WP-DB.02
   adds explicit soft-box fragments so both soft links parse cleanly.
@@ -125,8 +125,11 @@ contact correctness, or performance envelope.
   retained soft-face BVH traversal once a penetrating candidate exists, and
   pair-level worker scheduling for eligible finite-finite soft pairs. The
   soft-vs-primitive lanes also reuse cached local vertices and representative
-  face IDs. A 200-step `drop_box` headless run matched FCL checksums exactly
-  and ran faster with `COLLISION_DETECTOR=dart` on this host, and the broader
+  face IDs. A follow-up primitive-frame slice classifies soft-vs-plane,
+  soft-vs-sphere, and soft-vs-box point contacts in primitive-local
+  coordinates and only computes world contact points for colliding vertices.
+  A 200-step `drop_box` headless run matched FCL checksums exactly and ran
+  faster with `COLLISION_DETECTOR=dart` on this host, and the broader
   `soft_bodies` native diagnostic now runs without shape-creation or
   unsupported-pair warnings.
   Broader scenes still need fuller triangle/contact-neighborhood coverage and
@@ -141,13 +144,13 @@ contact correctness, or performance envelope.
 | Packet | Scope | Done when |
 | --- | --- | --- |
 | WP-DB.01 baseline harness | Add headless Google Benchmark rows for existing soft-body scenes across single-core and multi-core CPU. | Benchmark target builds; rows report sim seconds per second, point masses, soft bodies, and threads. |
-| WP-DB.02 stability gate | Re-enable or replace `test_SoftDynamics` with finite-state and equations-of-motion checks for representative soft scenes. | Focused integration test fails on NaN/Inf, gross state blow-up, one-thread versus four-thread final-state divergence, or representative matrix/vector equation inconsistency. Current finite-state and deterministic final-state coverage is recorded in `03-stability-gate.md`; equation correctness coverage is recorded in `07-equation-correctness.md`. |
+| WP-DB.02 stability gate | Re-enable or replace `test_SoftDynamics` with finite-state and equations-of-motion checks for representative soft scenes. | Focused integration test fails on NaN/Inf, gross state blow-up, one-thread versus four-thread final-state divergence, or representative matrix/vector equation inconsistency. Current default/native-detector finite-state and deterministic final-state coverage is recorded in `03-stability-gate.md`; equation correctness coverage is recorded in `07-equation-correctness.md`. |
 | WP-DB.03 paper parity matrix | Convert both papers into a scene/feature/performance checklist. | Every representative paper demo has an owner row, current DART 6 status, target evidence, and acceptance gate in `02-paper-parity-matrix.md`. Follow-through scene implementation remains in WP-DB.05, WP-DB.08, and WP-DB.09. |
 | WP-DB.04 coupled equation correctness | Finish or replace stubbed point-mass mass, inverse-mass, gravity, combined-force, and external-force aggregation paths. | Point-mass mass-matrix, augmented-mass, inverse-mass, inverse-augmented-mass, gravity, combined-vector, external-force, and representative rigid-only/soft-only/mixed-world matrix/vector checks now have active regressions in `07-equation-correctness.md`. |
 | WP-DB.05 adaptive contact activation | Implement Jain/Liu-style active vertex neighborhoods without breaking existing all-active soft bodies. | Contact-local activation gives matching contact behavior with fewer active DOFs and deterministic state hashes. |
 | WP-DB.06 CPU data layout and SIMD | Profile point-mass loops, identify contiguous/SoA/SIMD candidates, and use `dart/simd/` where it wins. | Benchmarks show single-core speedup without changing results beyond approved tolerances. Initial profiling, FCL soft-mesh refit reduction, parent-term scalar caching, vector-backed point-state/property reads in the bias-force edge loop, kinematics preflight, inverse-dynamics force updates, impulse/constrained-term state updates, matrix/vector aggregation state reads, the internal span-backed `PointMassPhaseView`, fused cached point-force aggregation, the articulated-inertia timing correction, conservative bias-force connection-loop cleanup, soft aggregation temporary cleanup, the `dart6-memory-hardening` stack, zero-allocation native soft-box plus soft-soft stack gates, and the heap-free `softBodies.skel`, `soft_open_chain`, and contact-producing `soft_cubes` SKEL gates are in `04-data-layout-and-memory-hardening.md`; heap-free contiguous point-mass object storage, retained SoA scratch, SIMD, and final idle-host threshold evidence remain open. |
 | WP-DB.07 multi-core scaling | Parallelize independent soft-body loops or scene islands behind existing thread controls. | `threads=16` rows improve on representative scenes while `threads=1` remains deterministic. Pair-level native soft-soft worker scheduling exists; broader scaling evidence still needs larger scenes or intra-pair/active-neighborhood work. |
-| WP-DB.08 native collision deformables | Make `dart/collision/native` the preferred collision solution for soft/deformable scenes instead of treating FCL as the destination backend. | Native soft-vs-plane, soft-vs-box, soft-vs-sphere, soft-vs-ellipsoid, and cached soft-vs-soft vertex-face contact lanes now have focused tests, with retained soft-face BVH pruning, pair-level finite-finite soft worker scheduling, `drop_box` FCL/native checksum parity for the soft-box lane, warning-free native dispatch on the representative `soft_bodies` diagnostic, zero-allocation native soft-box plus soft-soft stack gates, and heap-free `softBodies.skel`, `soft_open_chain`, and contact-producing `soft_cubes` SKEL gates. Remaining acceptance requires fuller triangle/contact-neighborhood coverage, deterministic longer-run headless checksums, and performance rows that match or beat FCL on representative soft scenes. Current gap analysis is in `05-native-collision-deformable-lane.md`. |
+| WP-DB.08 native collision deformables | Make `dart/collision/native` the preferred collision solution for soft/deformable scenes instead of treating FCL as the destination backend. | Native soft-vs-plane, soft-vs-box, soft-vs-sphere, soft-vs-ellipsoid, and cached soft-vs-soft vertex-face contact lanes now have focused tests, with retained soft-face BVH pruning, pair-level finite-finite soft worker scheduling, primitive-frame soft-vs-primitive classification, native-detector `test_SoftDynamics` coverage, `drop_box` FCL/native checksum parity for the soft-box lane, warning-free native dispatch on the representative `soft_bodies` diagnostic, zero-allocation native soft-box plus soft-soft stack gates, and heap-free `softBodies.skel`, `soft_open_chain`, and contact-producing `soft_cubes` SKEL gates. Remaining acceptance requires fuller triangle/contact-neighborhood coverage, deterministic longer-run headless checksums, and threshold-quality performance rows that match or beat FCL on representative soft scenes. Current gap analysis is in `05-native-collision-deformable-lane.md`. |
 | WP-DB.09 flagship demos | Add paper-parity basic and flagship examples that are runnable headlessly and, where useful, visually. | Each representative feature/performance/correctness claim has a demo or benchmark artifact. |
 
 The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.

@@ -5,7 +5,7 @@ Captured on 2026-07-05 from local branch
 
 Updated on 2026-07-07 from local branch
 `wp-db-soft-skel-allocation-gates` at commits `649926d28dc` and
-`221fdf00145`.
+`221fdf00145`, plus the follow-up native primitive-frame stability slice.
 
 ## Baseline setup
 
@@ -172,6 +172,65 @@ current faster than parent:
 Treat the broad positive as workstation noise, not a code regression. Still,
 before claiming all CPU rows beat parent and base, rerun the full matrix on an
 exclusive idle host with longer benchmark windows.
+
+## 2026-07-07 native primitive-frame smoke
+
+The follow-up native collision slice classifies soft-vs-plane,
+soft-vs-sphere, and soft-vs-box point contacts in primitive-local coordinates,
+then computes the world contact point only for vertices that actually collide.
+The same slice extends `test_SoftDynamics` so the representative finite-state
+and one-thread versus four-thread final-state gate runs under both the default
+detector and `CollisionDetectorType::Dart`.
+
+Focused validation:
+
+```bash
+pixi run cmake --build build/default/cpp/Release \
+  --target test_DARTCollisionDetector test_SoftDynamics \
+    INTEGRATION_StepAllocation soft_body_headless BM_INTEGRATION_soft_body \
+  --parallel 8
+pixi run ctest --test-dir build/default/cpp/Release \
+  -R 'test_DARTCollisionDetector$|test_SoftDynamics$|INTEGRATION_StepAllocation$' \
+  --output-on-failure
+```
+
+Result: all three focused CTest gates passed. FCL/native `drop_box` 200-step
+checksums remained identical; the native row measured 1.431 ms elapsed versus
+7.045 ms for FCL in this busy-host smoke. Native `soft_cubes`, `soft_bodies`,
+and `soft_open_chain` 200-step checksum rows matched exactly between
+`THREADS=1` and `THREADS=16`.
+
+Quick current-only detector-ranking smoke:
+
+```bash
+for detector in dart fcl; do
+  COLLISION_DETECTOR=$detector \
+    ./build/default/cpp/Release/bin/BM_INTEGRATION_soft_body \
+      --benchmark_filter='BM_SoftBodyStep/(0|1|2|3)/(1|16)/200$' \
+      --benchmark_min_time=0.05s \
+      --benchmark_repetitions=3 \
+      --benchmark_report_aggregates_only=true
+done
+```
+
+Google Benchmark reported CPU scaling enabled and load averages of
+2.27 / 6.96 / 9.50, so treat these rows as quick detector-ranking evidence,
+not threshold-quality parent/base evidence.
+
+| Scene | Threads | Native CPU ms | FCL CPU ms |
+| --- | ---: | ---: | ---: |
+| `adaptive_deformable` | 1 | 2.01 | 16.4 |
+| `adaptive_deformable` | 16 | 2.41 | 17.0 |
+| `soft_cubes` | 1 | 3.69 | 17.8 |
+| `soft_cubes` | 16 | 3.68 | 17.9 |
+| `soft_bodies` | 1 | 13.8 | 68.1 |
+| `soft_bodies` | 16 | 13.6 | 63.4 |
+| `soft_open_chain` | 1 | 5.38 | 29.6 |
+| `soft_open_chain` | 16 | 5.06 | 29.8 |
+
+Native remained the fastest detector for every tracked current row in this
+smoke. The formal current/parent/base matrix still needs a committed-revision
+rerun on an idle host before this slice can support all-threshold claims.
 
 ## Benchmark commands
 
