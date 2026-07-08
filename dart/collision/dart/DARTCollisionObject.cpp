@@ -304,8 +304,10 @@ void DARTCollisionObject::refreshSoftMeshCache()
   const bool pointMassCountChanged
       = mCachedSoftLocalVertices.size() != numPointMasses;
   bool softGeometryChanged = pointMassCountChanged;
-  Eigen::Vector3d boundsMin;
-  Eigen::Vector3d boundsMax;
+  Eigen::Vector3d boundsMin
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d boundsMax
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
 
   if (numPointMasses == 0u) {
     boundsMin.setZero();
@@ -314,61 +316,35 @@ void DARTCollisionObject::refreshSoftMeshCache()
     if (pointMassCountChanged)
       mCachedSoftLocalVertices.resize(numPointMasses);
 
-    double minX = std::numeric_limits<double>::infinity();
-    double minY = std::numeric_limits<double>::infinity();
-    double minZ = std::numeric_limits<double>::infinity();
-    double maxX = -std::numeric_limits<double>::infinity();
-    double maxY = -std::numeric_limits<double>::infinity();
-    double maxZ = -std::numeric_limits<double>::infinity();
-
-    const auto cacheVertex
-        = [&](std::size_t index, double x, double y, double z) {
-            minX = std::min(minX, x);
-            minY = std::min(minY, y);
-            minZ = std::min(minZ, z);
-            maxX = std::max(maxX, x);
-            maxY = std::max(maxY, y);
-            maxZ = std::max(maxZ, z);
-
-            auto& cachedVertex = mCachedSoftLocalVertices[index];
-            if (!softGeometryChanged
-                && (cachedVertex[0] != x || cachedVertex[1] != y
-                    || cachedVertex[2] != z)) {
-              softGeometryChanged = true;
-            }
-
-            cachedVertex[0] = x;
-            cachedVertex[1] = y;
-            cachedVertex[2] = z;
-          };
-
     const auto& pointStates = softBodyNode->mAspectState.mPointStates;
     const auto& pointProperties = softBodyNode->mAspectProperties.mPointProps;
     if (pointStates.size() == numPointMasses
         && pointProperties.size() == numPointMasses) {
       for (std::size_t i = 0u; i < numPointMasses; ++i) {
-        const auto& position = pointStates[i].mPositions;
-        const auto& restingPosition = pointProperties[i].mX0;
-        cacheVertex(
-            i,
-            position[0] + restingPosition[0],
-            position[1] + restingPosition[1],
-            position[2] + restingPosition[2]);
+        const Eigen::Vector3d localPosition
+            = pointStates[i].mPositions + pointProperties[i].mX0;
+        boundsMin = boundsMin.cwiseMin(localPosition);
+        boundsMax = boundsMax.cwiseMax(localPosition);
+        if (!softGeometryChanged
+            && !mCachedSoftLocalVertices[i].cwiseEqual(localPosition).all()) {
+          softGeometryChanged = true;
+        }
+        mCachedSoftLocalVertices[i] = localPosition;
       }
     } else {
       for (std::size_t i = 0u; i < numPointMasses; ++i) {
         const auto* pointMass = softBodyNode->getPointMass(i);
-        const Eigen::Vector3d& localPosition = pointMass->getLocalPosition();
-        cacheVertex(i, localPosition[0], localPosition[1], localPosition[2]);
+        const Eigen::Vector3d localPosition
+            = pointMass->getPositions() + pointMass->getRestingPosition();
+        boundsMin = boundsMin.cwiseMin(localPosition);
+        boundsMax = boundsMax.cwiseMax(localPosition);
+        if (!softGeometryChanged
+            && !mCachedSoftLocalVertices[i].cwiseEqual(localPosition).all()) {
+          softGeometryChanged = true;
+        }
+        mCachedSoftLocalVertices[i] = localPosition;
       }
     }
-
-    boundsMin[0] = minX;
-    boundsMin[1] = minY;
-    boundsMin[2] = minZ;
-    boundsMax[0] = maxX;
-    boundsMax[1] = maxY;
-    boundsMax[2] = maxZ;
   }
 
   const auto& faces = softBodyNode->mAspectProperties.mFaces;
