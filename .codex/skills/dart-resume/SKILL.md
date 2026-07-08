@@ -1,6 +1,6 @@
 ---
 name: dart-resume
-description: "DART Resume: continue work from a previous session"
+description: "DART Resume: continue unfinished work through its acceptance criteria, verification, and safe completion or documented blocker"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-resume.md -->

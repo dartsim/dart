@@ -158,27 +158,15 @@ void FCLCollisionObject::updateEngineData()
     const auto& pointMasses = softBodyNode->getPointMasses();
     DART_ASSERT(mesh->mNumVertices == pointMasses.size());
 
-    const auto readLocalVertex
-        = [&](std::size_t index, double& x, double& y, double& z) {
-            const Eigen::Vector3d& vertex
-                = pointMasses[index]->getLocalPosition();
-            x = vertex[0];
-            y = vertex[1];
-            z = vertex[2];
-          };
-
     bool softMeshChanged = false;
     const auto numFclVertices
         = static_cast<std::size_t>(bvhModel->num_vertices);
     if (numFclVertices == pointMasses.size()) {
       for (std::size_t i = 0; i < pointMasses.size(); ++i) {
-        double x = 0.0;
-        double y = 0.0;
-        double z = 0.0;
-        readLocalVertex(i, x, y, z);
+        const Eigen::Vector3d& vertex = pointMasses[i]->getLocalPosition();
         const auto& previousVertex = bvhModel->vertices[i];
-        if (previousVertex[0] != x || previousVertex[1] != y
-            || previousVertex[2] != z) {
+        if (previousVertex[0] != vertex[0] || previousVertex[1] != vertex[1]
+            || previousVertex[2] != vertex[2]) {
           softMeshChanged = true;
           break;
         }
@@ -190,11 +178,9 @@ void FCLCollisionObject::updateEngineData()
         // path, which refits swept previous/current vertex bounds.
         bvhModel->beginReplaceModel();
         for (std::size_t i = 0; i < pointMasses.size(); ++i) {
-          double x = 0.0;
-          double y = 0.0;
-          double z = 0.0;
-          readLocalVertex(i, x, y, z);
-          bvhModel->replaceVertex(dart::collision::fcl::Vector3(x, y, z));
+          const Eigen::Vector3d& vertex = pointMasses[i]->getLocalPosition();
+          bvhModel->replaceVertex(
+              dart::collision::fcl::Vector3(vertex[0], vertex[1], vertex[2]));
         }
         bvhModel->endReplaceModel();
       }
@@ -205,13 +191,11 @@ void FCLCollisionObject::updateEngineData()
         DART_ASSERT(face.mNumIndices == 3);
 
         for (auto j = 0u; j < 3u; ++j, ++vertexIndex) {
-          double x = 0.0;
-          double y = 0.0;
-          double z = 0.0;
-          readLocalVertex(face.mIndices[j], x, y, z);
+          const Eigen::Vector3d& vertex
+              = pointMasses[face.mIndices[j]]->getLocalPosition();
           const auto& previousVertex = bvhModel->vertices[vertexIndex];
-          if (previousVertex[0] != x || previousVertex[1] != y
-              || previousVertex[2] != z) {
+          if (previousVertex[0] != vertex[0] || previousVertex[1] != vertex[1]
+              || previousVertex[2] != vertex[2]) {
             softMeshChanged = true;
             break;
           }
@@ -226,11 +210,8 @@ void FCLCollisionObject::updateEngineData()
         // path, which refits swept previous/current vertex bounds.
         bvhModel->beginReplaceModel();
         for (std::size_t i = 0; i < pointMasses.size(); ++i) {
-          double x = 0.0;
-          double y = 0.0;
-          double z = 0.0;
-          readLocalVertex(i, x, y, z);
-          mesh->mVertices[i].Set(x, y, z);
+          const Eigen::Vector3d& vertex = pointMasses[i]->getLocalPosition();
+          mesh->mVertices[i].Set(vertex[0], vertex[1], vertex[2]);
         }
 
         for (auto i = 0u; i < mesh->mNumFaces; ++i) {
