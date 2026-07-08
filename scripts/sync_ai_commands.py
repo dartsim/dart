@@ -1118,6 +1118,8 @@ def validate_ai_docs(repo_root: Path) -> bool:
         docs_dir / "verification.md",
         docs_dir / "sessions.md",
         docs_dir / "components.md",
+        docs_dir / "terminology.md",
+        docs_dir / "orchestration.md",
         docs_dir / "capabilities.json",
     ]
 
@@ -1131,6 +1133,10 @@ def validate_ai_docs(repo_root: Path) -> bool:
         errors.append("AGENTS.md: missing docs/ai/README.md pointer")
     if "docs/ai/principles.md" not in agents_content:
         errors.append("AGENTS.md: missing docs/ai/principles.md pointer")
+    if "docs/ai/terminology.md" not in agents_content:
+        errors.append("AGENTS.md: missing docs/ai/terminology.md pointer")
+    if "docs/ai/orchestration.md" not in agents_content:
+        errors.append("AGENTS.md: missing docs/ai/orchestration.md pointer")
     if "ai/README.md" not in docs_readme_content:
         errors.append("docs/README.md: missing ai/README.md index link")
 
