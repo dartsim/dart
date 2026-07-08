@@ -32,6 +32,8 @@
 
 #include <dart/collision/CollisionFilter.hpp>
 #include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/native/NativeCollisionDetector.hpp>
 #include <dart/collision/native/NativeCollisionGroup.hpp>
 #include <dart/collision/native/NativeCollisionObject.hpp>
@@ -54,7 +56,9 @@
 
 #include <gtest/gtest.h>
 
+#include <functional>
 #include <memory>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -184,6 +188,162 @@ std::shared_ptr<math::TriMesh<double>> makePlaneTriMesh()
   mesh->addTriangle(0, 1, 2);
   mesh->addTriangle(0, 2, 3);
   return mesh;
+}
+
+//==============================================================================
+using ShapeFramePair
+    = std::pair<const dynamics::ShapeFrame*, const dynamics::ShapeFrame*>;
+
+struct ShapeFramePairLess
+{
+  bool operator()(const ShapeFramePair& lhs, const ShapeFramePair& rhs) const
+  {
+    const std::less<const dynamics::ShapeFrame*> isLess;
+    if (isLess(lhs.first, rhs.first))
+      return true;
+    if (isLess(rhs.first, lhs.first))
+      return false;
+    return isLess(lhs.second, rhs.second);
+  }
+};
+
+using ShapeFramePairSet = std::set<ShapeFramePair, ShapeFramePairLess>;
+
+//==============================================================================
+ShapeFramePair makeShapeFramePair(
+    const dynamics::ShapeFrame* frame1, const dynamics::ShapeFrame* frame2)
+{
+  const std::less<const dynamics::ShapeFrame*> isLess;
+  return isLess(frame1, frame2) ? ShapeFramePair{frame1, frame2}
+                                : ShapeFramePair{frame2, frame1};
+}
+
+//==============================================================================
+ShapeFramePairSet collectShapeFramePairs(
+    const collision::CollisionResult& result)
+{
+  ShapeFramePairSet pairs;
+  for (const auto& contact : result.getContacts()) {
+    EXPECT_NE(nullptr, contact.collisionObject1);
+    EXPECT_NE(nullptr, contact.collisionObject2);
+    if (!contact.collisionObject1 || !contact.collisionObject2)
+      continue;
+
+    pairs.insert(makeShapeFramePair(
+        contact.collisionObject1->getShapeFrame(),
+        contact.collisionObject2->getShapeFrame()));
+  }
+
+  return pairs;
+}
+
+//==============================================================================
+ShapeFramePairSet collideShapeFrames(
+    const collision::CollisionDetectorPtr& detector,
+    const std::vector<dynamics::SimpleFramePtr>& frames)
+{
+  auto group = detector->createCollisionGroup();
+  for (const auto& frame : frames)
+    group->addShapeFrame(frame.get());
+
+  collision::CollisionOption option(true, 256u);
+  option.maxNumContactsPerPair = 8u;
+
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(option, &result)) << detector->getType();
+  return collectShapeFramePairs(result);
+}
+
+//==============================================================================
+struct MixedPrimitiveScene
+{
+  std::vector<dynamics::SimpleFramePtr> frames;
+  ShapeFramePairSet expectedPairs;
+};
+
+//==============================================================================
+MixedPrimitiveScene makeMixedPrimitiveScene()
+{
+  MixedPrimitiveScene scene;
+
+  // DART 6 FCL does not support CapsuleShape, so this scene covers the
+  // primitive subset shared by FCL, the legacy DART detector, and native.
+  auto addFrame = [&](const dynamics::ShapePtr& shape,
+                      const Eigen::Vector3d& translation) {
+    auto frame = makeFrame(shape, translation);
+    scene.frames.push_back(frame);
+    return frame;
+  };
+
+  auto plane = addFrame(
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0),
+      Eigen::Vector3d::Zero());
+
+  auto planeSphere = addFrame(
+      std::make_shared<dynamics::SphereShape>(0.25),
+      Eigen::Vector3d(0.0, 0.0, 0.18));
+  auto planeBox = addFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Constant(0.4)),
+      Eigen::Vector3d(1.2, 0.0, 0.15));
+  auto planeCylinder = addFrame(
+      std::make_shared<dynamics::CylinderShape>(0.2, 0.5),
+      Eigen::Vector3d(2.4, 0.0, 0.20));
+
+  auto sphere1 = addFrame(
+      std::make_shared<dynamics::SphereShape>(0.25),
+      Eigen::Vector3d(0.0, 2.0, 1.0));
+  auto sphere2 = addFrame(
+      std::make_shared<dynamics::SphereShape>(0.25),
+      Eigen::Vector3d(0.4, 2.0, 1.0));
+
+  auto box1 = addFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Constant(0.4)),
+      Eigen::Vector3d(1.4, 2.0, 1.0));
+  auto box2 = addFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Constant(0.4)),
+      Eigen::Vector3d(1.75, 2.0, 1.0));
+
+  auto sphereBoxSphere = addFrame(
+      std::make_shared<dynamics::SphereShape>(0.25),
+      Eigen::Vector3d(2.8, 2.0, 1.0));
+  auto sphereBoxBox = addFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Constant(0.4)),
+      Eigen::Vector3d(3.15, 2.0, 1.0));
+
+  auto cylinderSphereCylinder = addFrame(
+      std::make_shared<dynamics::CylinderShape>(0.25, 0.5),
+      Eigen::Vector3d(4.2, 2.0, 1.0));
+  auto cylinderSphereSphere = addFrame(
+      std::make_shared<dynamics::SphereShape>(0.2),
+      Eigen::Vector3d(4.55, 2.0, 1.0));
+
+  auto cylinderBoxCylinder = addFrame(
+      std::make_shared<dynamics::CylinderShape>(0.25, 0.5),
+      Eigen::Vector3d(5.6, 2.0, 1.0));
+  auto cylinderBoxBox = addFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Constant(0.4)),
+      Eigen::Vector3d(5.95, 2.0, 1.0));
+
+  auto cylinder1 = addFrame(
+      std::make_shared<dynamics::CylinderShape>(0.25, 0.5),
+      Eigen::Vector3d(7.0, 2.0, 1.0));
+  auto cylinder2 = addFrame(
+      std::make_shared<dynamics::CylinderShape>(0.25, 0.5),
+      Eigen::Vector3d(7.4, 2.0, 1.0));
+
+  scene.expectedPairs
+      = {makeShapeFramePair(plane.get(), planeSphere.get()),
+         makeShapeFramePair(plane.get(), planeBox.get()),
+         makeShapeFramePair(plane.get(), planeCylinder.get()),
+         makeShapeFramePair(sphere1.get(), sphere2.get()),
+         makeShapeFramePair(box1.get(), box2.get()),
+         makeShapeFramePair(sphereBoxSphere.get(), sphereBoxBox.get()),
+         makeShapeFramePair(
+             cylinderSphereCylinder.get(), cylinderSphereSphere.get()),
+         makeShapeFramePair(cylinderBoxCylinder.get(), cylinderBoxBox.get()),
+         makeShapeFramePair(cylinder1.get(), cylinder2.get())};
+
+  return scene;
 }
 
 } // namespace
@@ -537,6 +697,27 @@ TEST(NativeCollisionDetector, CollidesSphereConvexMesh)
   const auto& contact = result.getContact(0);
   EXPECT_EQ(convexFrame.get(), contact.getShapeFrame1());
   EXPECT_EQ(sphereFrame.get(), contact.getShapeFrame2());
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, MixedPrimitiveSceneMatchesFclAndDart)
+{
+  const auto scene = makeMixedPrimitiveScene();
+
+  auto fclDetector = collision::FCLCollisionDetector::create();
+  fclDetector->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+  fclDetector->setContactPointComputationMethod(
+      collision::FCLCollisionDetector::DART);
+  auto dartDetector = collision::DARTCollisionDetector::create();
+  auto nativeDetector = collision::NativeCollisionDetector::create();
+
+  const auto fclPairs = collideShapeFrames(fclDetector, scene.frames);
+  const auto dartPairs = collideShapeFrames(dartDetector, scene.frames);
+  const auto nativePairs = collideShapeFrames(nativeDetector, scene.frames);
+
+  EXPECT_EQ(scene.expectedPairs, fclPairs);
+  EXPECT_EQ(scene.expectedPairs, dartPairs);
+  EXPECT_EQ(fclPairs, nativePairs);
 }
 
 //==============================================================================
