@@ -9,6 +9,9 @@ The DART 6.20 release branch uses a small cross-agent workflow surface:
 - `scripts/sync_ai_commands.py`: sync and validation tool.
 - `docs/ai/capabilities.json`: machine-readable workflow inventory.
 - `docs/ai/workflows.md`: human-readable workflow map and gates.
+- `docs/ai/terminology.md`: canonical AI-facing vocabulary.
+- `docs/ai/orchestration.md`: work-packet and orchestrator/executor contract.
+- `docs/plans/dashboard.md`: release-branch operating plan state.
 - `docs/information-architecture.md`: release-branch docs placement owner.
 
 AI docs are agent context, not a dumping ground. Keep always-loaded entrypoints
