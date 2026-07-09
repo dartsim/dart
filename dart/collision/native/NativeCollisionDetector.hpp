@@ -34,11 +34,14 @@
 #define DART_COLLISION_NATIVE_NATIVECOLLISIONDETECTOR_HPP_
 
 #include <dart/collision/CollisionDetector.hpp>
+#include <dart/collision/native/Fwd.hpp>
 
 #include <memory>
 
 namespace dart {
 namespace collision {
+
+class NativeCollisionObject;
 
 class NativeCollisionDetector : public CollisionDetector
 {
@@ -96,6 +99,11 @@ public:
       const RaycastOption& option = RaycastOption(),
       RaycastResult* result = nullptr) override;
 
+  [[nodiscard]] native::CachedContact* getCachedContact(
+      const NativeCollisionObject* object1,
+      const NativeCollisionObject* object2,
+      void* userData) const;
+
 protected:
   NativeCollisionDetector();
 
@@ -105,6 +113,9 @@ protected:
 
   // Documentation inherited
   void refreshCollisionObject(CollisionObject* object) override;
+
+  // Documentation inherited
+  void notifyCollisionObjectDestroying(CollisionObject* object) override;
 
 private:
   static Registrar<NativeCollisionDetector> mRegistrar;

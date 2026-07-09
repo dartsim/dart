@@ -36,6 +36,9 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/native/NativeCollisionDetector.hpp"
+#include "dart/collision/native/NativeCollisionObject.hpp"
+#include "dart/collision/native/PersistentManifoldCache.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
@@ -235,8 +238,21 @@ public:
 class ExposedContactConstraint final : public constraint::ContactConstraint
 {
 public:
+  using ContactConstraint::applyImpulse;
   using ContactConstraint::ContactConstraint;
   using ContactConstraint::getInformation;
+};
+
+class ExposedNativeCollisionObject final
+  : public collision::NativeCollisionObject
+{
+public:
+  ExposedNativeCollisionObject(
+      collision::CollisionDetector* detector,
+      const dynamics::ShapeFrame* shapeFrame)
+    : NativeCollisionObject(detector, shapeFrame)
+  {
+  }
 };
 
 class CustomContactSurfaceHandler final
@@ -595,6 +611,27 @@ collision::Contact createContact(
   contact.point = Eigen::Vector3d::Zero();
   contact.normal = Eigen::Vector3d::UnitZ();
   return contact;
+}
+
+Eigen::Vector3d makeContactTangentDirection(
+    const Eigen::Vector3d& normal, const Eigen::Vector3d& seed)
+{
+  Eigen::Vector3d n = normal;
+  if (n.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
+    n = Eigen::Vector3d::UnitZ();
+  else
+    n.normalize();
+
+  Eigen::Vector3d tangent = seed - n * seed.dot(n);
+  if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
+    tangent = Eigen::Vector3d::UnitX() - n * n.x();
+  if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
+    tangent = Eigen::Vector3d::UnitY() - n * n.y();
+  if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
+    tangent = Eigen::Vector3d::UnitZ() - n * n.z();
+
+  tangent.normalize();
+  return tangent;
 }
 
 template <typename ConstraintT>
@@ -1352,6 +1389,348 @@ TEST(ConstraintSolver, MovingFixedContactSupportContributesRelVelocity)
   constraint.getInformation(&info);
 
   EXPECT_NEAR(0.25, b[0], 1e-12);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ContactConstraintCachesSolvedImpulse)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* dynamicBody = createFreeBody("dynamic", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  auto detector = collision::NativeCollisionDetector::create();
+  auto group = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
+
+  collision::CollisionResult result;
+  ASSERT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  auto contact = result.getContact(0);
+  ASSERT_NE(nullptr, contact.userData);
+  auto* cachedContact
+      = static_cast<collision::native::CachedContact*>(contact.userData);
+  cachedContact->cachedNormalImpulse = 1.25;
+  cachedContact->cachedFrictionImpulse1 = -0.5;
+  cachedContact->cachedFrictionImpulse2 = 0.75;
+
+  contact.userData = cachedContact;
+
+  ExposedContactConstraint constraint(
+      contact, 0.001, constraint::ContactSurfaceParams{});
+
+  double x[3] = {1.0, 2.0, 3.0};
+  double lo[3] = {0.0, 0.0, 0.0};
+  double hi[3] = {0.0, 0.0, 0.0};
+  double b[3] = {0.0, 0.0, 0.0};
+  double w[3] = {0.0, 0.0, 0.0};
+  int findex[3] = {-1, -1, -1};
+  constraint::ConstraintInfo info;
+  info.x = x;
+  info.lo = lo;
+  info.hi = hi;
+  info.b = b;
+  info.w = w;
+  info.findex = findex;
+  info.invTimeStep = 1000.0;
+  constraint.getInformation(&info);
+
+  EXPECT_NEAR(1.25, x[0], 1e-12);
+  EXPECT_NEAR(0.0, x[1], 1e-12);
+  EXPECT_NEAR(0.0, x[2], 1e-12);
+  EXPECT_NEAR(0.0, cachedContact->cachedFrictionImpulse1, 1e-12);
+  EXPECT_NEAR(0.0, cachedContact->cachedFrictionImpulse2, 1e-12);
+  EXPECT_FALSE(cachedContact->hasCachedFrictionBasis);
+
+  double lambda[3] = {2.5, -0.25, 0.125};
+  constraint.applyImpulse(lambda);
+
+  EXPECT_NEAR(2.5, cachedContact->cachedNormalImpulse, 1e-12);
+  EXPECT_NEAR(-0.25, cachedContact->cachedFrictionImpulse1, 1e-12);
+  EXPECT_NEAR(0.125, cachedContact->cachedFrictionImpulse2, 1e-12);
+  EXPECT_TRUE(cachedContact->hasCachedFrictionBasis);
+  EXPECT_FALSE(cachedContact->cachedFrictionBasis1.isZero());
+  EXPECT_FALSE(cachedContact->cachedFrictionBasis2.isZero());
+
+  ExposedContactConstraint warmConstraint(
+      contact, 0.001, constraint::ContactSurfaceParams{});
+  double warmX[3] = {0.0, 0.0, 0.0};
+  double warmLo[3] = {0.0, 0.0, 0.0};
+  double warmHi[3] = {0.0, 0.0, 0.0};
+  double warmB[3] = {0.0, 0.0, 0.0};
+  double warmW[3] = {0.0, 0.0, 0.0};
+  int warmFindex[3] = {-1, -1, -1};
+  constraint::ConstraintInfo warmInfo;
+  warmInfo.x = warmX;
+  warmInfo.lo = warmLo;
+  warmInfo.hi = warmHi;
+  warmInfo.b = warmB;
+  warmInfo.w = warmW;
+  warmInfo.findex = warmFindex;
+  warmInfo.invTimeStep = 1000.0;
+  warmConstraint.getInformation(&warmInfo);
+
+  EXPECT_NEAR(2.5, warmX[0], 1e-12);
+  EXPECT_NEAR(-0.25, warmX[1], 1e-12);
+  EXPECT_NEAR(0.125, warmX[2], 1e-12);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ContactConstraintClearsFrictionForChangedFrictionBasis)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* dynamicBody = createFreeBody("dynamic", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  auto detector = collision::NativeCollisionDetector::create();
+  auto group = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
+
+  collision::CollisionResult result;
+  ASSERT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  auto contact = result.getContact(0);
+  ASSERT_NE(nullptr, contact.userData);
+  auto* cachedContact
+      = static_cast<collision::native::CachedContact*>(contact.userData);
+
+  constraint::ContactSurfaceParams firstParams;
+  firstParams.mFirstFrictionalDirection
+      = makeContactTangentDirection(contact.normal, Eigen::Vector3d::UnitX());
+  Eigen::Vector3d n = contact.normal;
+  ASSERT_GT(n.squaredNorm(), DART_CONTACT_CONSTRAINT_EPSILON_SQUARED);
+  n.normalize();
+  constraint::ContactSurfaceParams secondParams;
+  secondParams.mFirstFrictionalDirection
+      = n.cross(firstParams.mFirstFrictionalDirection).normalized();
+
+  ExposedContactConstraint solved(contact, 0.001, firstParams);
+  double lambda[3] = {2.5, -0.25, 0.125};
+  solved.applyImpulse(lambda);
+  ASSERT_TRUE(cachedContact->hasCachedFrictionBasis);
+
+  ExposedContactConstraint changed(contact, 0.001, secondParams);
+  double x[3] = {1.0, 2.0, 3.0};
+  double lo[3] = {0.0, 0.0, 0.0};
+  double hi[3] = {0.0, 0.0, 0.0};
+  double b[3] = {0.0, 0.0, 0.0};
+  double w[3] = {0.0, 0.0, 0.0};
+  int findex[3] = {-1, -1, -1};
+  constraint::ConstraintInfo info;
+  info.x = x;
+  info.lo = lo;
+  info.hi = hi;
+  info.b = b;
+  info.w = w;
+  info.findex = findex;
+  info.invTimeStep = 1000.0;
+  changed.getInformation(&info);
+
+  EXPECT_NEAR(2.5, x[0], 1e-12);
+  EXPECT_NEAR(0.0, x[1], 1e-12);
+  EXPECT_NEAR(0.0, x[2], 1e-12);
+  EXPECT_NEAR(0.0, cachedContact->cachedFrictionImpulse1, 1e-12);
+  EXPECT_NEAR(0.0, cachedContact->cachedFrictionImpulse2, 1e-12);
+  EXPECT_FALSE(cachedContact->hasCachedFrictionBasis);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ContactConstraintDoesNotSeedFrictionInPositionPhase)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* dynamicBody = createFreeBody("dynamic", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  auto detector = collision::NativeCollisionDetector::create();
+  auto group = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
+
+  collision::CollisionResult result;
+  ASSERT_TRUE(group->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  auto contact = result.getContact(0);
+  ASSERT_NE(nullptr, contact.userData);
+  auto* cachedContact
+      = static_cast<collision::native::CachedContact*>(contact.userData);
+  contact.userData = cachedContact;
+
+  ExposedContactConstraint velocityConstraint(
+      contact, 0.001, constraint::ContactSurfaceParams{});
+  double lambda[3] = {1.25, -0.5, 0.75};
+  velocityConstraint.applyImpulse(lambda);
+  ASSERT_TRUE(cachedContact->hasCachedFrictionBasis);
+
+  ExposedContactConstraint positionConstraint(
+      contact, 0.001, constraint::ContactSurfaceParams{});
+
+  double x[3] = {1.0, 2.0, 3.0};
+  double lo[3] = {0.0, 0.0, 0.0};
+  double hi[3] = {0.0, 0.0, 0.0};
+  double b[3] = {0.0, 0.0, 0.0};
+  double w[3] = {0.0, 0.0, 0.0};
+  int findex[3] = {-1, -1, -1};
+  constraint::ConstraintInfo info;
+  info.x = x;
+  info.lo = lo;
+  info.hi = hi;
+  info.b = b;
+  info.w = w;
+  info.findex = findex;
+  info.invTimeStep = 1000.0;
+  info.phase = constraint::ConstraintPhase::Position;
+  positionConstraint.getInformation(&info);
+
+  EXPECT_NEAR(1.25, x[0], 1e-12);
+  EXPECT_NEAR(0.0, x[1], 1e-12);
+  EXPECT_NEAR(0.0, x[2], 1e-12);
+  EXPECT_NEAR(-0.5, cachedContact->cachedFrictionImpulse1, 1e-12);
+  EXPECT_NEAR(0.75, cachedContact->cachedFrictionImpulse2, 1e-12);
+  EXPECT_TRUE(cachedContact->hasCachedFrictionBasis);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ContactConstraintIgnoresForeignUserData)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* dynamicBody = createFreeBody("dynamic", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShapeNode);
+  FakeCollisionObject dynamicObject(&detector, dynamicShapeNode);
+
+  struct ForeignPayload
+  {
+    double value1;
+    double value2;
+    double value3;
+  };
+  ForeignPayload payload{10.0, 20.0, 30.0};
+
+  auto contact = createContact(&dynamicObject, &fixedObject);
+  contact.userData = &payload;
+
+  ExposedContactConstraint constraint(
+      contact, 0.001, constraint::ContactSurfaceParams{});
+
+  double x[3] = {1.0, 2.0, 3.0};
+  double lo[3] = {0.0, 0.0, 0.0};
+  double hi[3] = {0.0, 0.0, 0.0};
+  double b[3] = {0.0, 0.0, 0.0};
+  double w[3] = {0.0, 0.0, 0.0};
+  int findex[3] = {-1, -1, -1};
+  constraint::ConstraintInfo info;
+  info.x = x;
+  info.lo = lo;
+  info.hi = hi;
+  info.b = b;
+  info.w = w;
+  info.findex = findex;
+  info.invTimeStep = 1000.0;
+  constraint.getInformation(&info);
+
+  EXPECT_NEAR(0.0, x[0], 1e-12);
+  EXPECT_NEAR(0.0, x[1], 1e-12);
+  EXPECT_NEAR(0.0, x[2], 1e-12);
+
+  double lambda[3] = {2.5, -0.25, 0.125};
+  constraint.applyImpulse(lambda);
+
+  EXPECT_NEAR(10.0, payload.value1, 1e-12);
+  EXPECT_NEAR(20.0, payload.value2, 1e-12);
+  EXPECT_NEAR(30.0, payload.value3, 1e-12);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ContactConstraintIgnoresForeignNativeUserData)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* dynamicBody = createFreeBody("dynamic", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  auto detector = collision::NativeCollisionDetector::create();
+  ExposedNativeCollisionObject fixedObject(detector.get(), fixedShapeNode);
+  ExposedNativeCollisionObject dynamicObject(detector.get(), dynamicShapeNode);
+
+  struct ForeignPayload
+  {
+    double value1;
+    double value2;
+    double value3;
+  };
+  ForeignPayload payload{10.0, 20.0, 30.0};
+
+  auto contact = createContact(&dynamicObject, &fixedObject);
+  contact.userData = &payload;
+
+  ExposedContactConstraint constraint(
+      contact, 0.001, constraint::ContactSurfaceParams{});
+
+  double x[3] = {1.0, 2.0, 3.0};
+  double lo[3] = {0.0, 0.0, 0.0};
+  double hi[3] = {0.0, 0.0, 0.0};
+  double b[3] = {0.0, 0.0, 0.0};
+  double w[3] = {0.0, 0.0, 0.0};
+  int findex[3] = {-1, -1, -1};
+  constraint::ConstraintInfo info;
+  info.x = x;
+  info.lo = lo;
+  info.hi = hi;
+  info.b = b;
+  info.w = w;
+  info.findex = findex;
+  info.invTimeStep = 1000.0;
+  constraint.getInformation(&info);
+
+  EXPECT_NEAR(0.0, x[0], 1e-12);
+  EXPECT_NEAR(0.0, x[1], 1e-12);
+  EXPECT_NEAR(0.0, x[2], 1e-12);
+
+  double lambda[3] = {2.5, -0.25, 0.125};
+  constraint.applyImpulse(lambda);
+
+  EXPECT_NEAR(10.0, payload.value1, 1e-12);
+  EXPECT_NEAR(20.0, payload.value2, 1e-12);
+  EXPECT_NEAR(30.0, payload.value3, 1e-12);
 }
 
 //==============================================================================

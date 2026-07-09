@@ -46,6 +46,7 @@
 
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -116,7 +117,8 @@ struct BoxedLcpThreadScratch
   std::vector<double> matrixFreeHi;
   std::vector<double> matrixFreeB;
   std::vector<int> matrixFreeFIndex;
-  std::vector<dynamics::BodyNode*> matrixFreeBodyNodes;
+  std::vector<dynamics::BodyNode*> matrixFreeBodyLookupKeys;
+  std::vector<std::size_t> matrixFreeBodyLookupValues;
   std::vector<MatrixFreeContactBodyScratch> matrixFreeBodies;
 };
 
@@ -159,7 +161,14 @@ void reserveMatrixFreeContactScratch(
   scratch.matrixFreeFIndex.reserve(n);
 
   const std::size_t maxReactiveBodies = std::max(n, 2u * numConstraints);
-  scratch.matrixFreeBodyNodes.reserve(maxReactiveBodies);
+  std::size_t bodyLookupCapacity = 1u;
+  while (bodyLookupCapacity < 2u * maxReactiveBodies)
+    bodyLookupCapacity <<= 1u;
+
+  if (scratch.matrixFreeBodyLookupKeys.size() < bodyLookupCapacity) {
+    scratch.matrixFreeBodyLookupKeys.resize(bodyLookupCapacity, nullptr);
+    scratch.matrixFreeBodyLookupValues.resize(bodyLookupCapacity, 0u);
+  }
   scratch.matrixFreeBodies.reserve(maxReactiveBodies);
 }
 
@@ -456,13 +465,13 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
   auto& hi = scratch.matrixFreeHi;
   auto& b = scratch.matrixFreeB;
   auto& fIndex = scratch.matrixFreeFIndex;
-  auto& bodyNodes = scratch.matrixFreeBodyNodes;
+  auto& bodyLookupKeys = scratch.matrixFreeBodyLookupKeys;
+  auto& bodyLookupValues = scratch.matrixFreeBodyLookupValues;
   auto& bodies = scratch.matrixFreeBodies;
 
   contacts.clear();
   offsets.clear();
   rows.clear();
-  bodyNodes.clear();
   bodies.clear();
   contacts.reserve(numConstraints);
   offsets.reserve(numConstraints);
@@ -477,11 +486,17 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
   std::fill(x.begin(), x.end(), 0.0);
   std::fill(w.begin(), w.end(), 0.0);
   std::fill(fIndex.begin(), fIndex.end(), -1);
+  std::fill(bodyLookupKeys.begin(), bodyLookupKeys.end(), nullptr);
+  const std::size_t bodyLookupMask = bodyLookupKeys.size() - 1u;
 
   const auto findOrAddBody = [&](dynamics::BodyNode* body) -> int {
-    const auto it = std::find(bodyNodes.begin(), bodyNodes.end(), body);
-    if (it != bodyNodes.end()) {
-      return static_cast<int>(static_cast<std::size_t>(it - bodyNodes.begin()));
+    const std::size_t bodyHash = std::hash<dynamics::BodyNode*>{}(body);
+    std::size_t lookupIndex = bodyHash & bodyLookupMask;
+    while (bodyLookupKeys[lookupIndex] != nullptr) {
+      if (bodyLookupKeys[lookupIndex] == body)
+        return static_cast<int>(bodyLookupValues[lookupIndex]);
+
+      lookupIndex = (lookupIndex + 1u) & bodyLookupMask;
     }
 
     MatrixFreeContactBodyScratch bodyScratch;
@@ -496,7 +511,8 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
     }
 
     const std::size_t index = bodies.size();
-    bodyNodes.push_back(body);
+    bodyLookupKeys[lookupIndex] = body;
+    bodyLookupValues[lookupIndex] = index;
     bodies.push_back(std::move(bodyScratch));
     return static_cast<int>(index);
   };
