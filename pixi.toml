@@ -92,7 +92,14 @@ import shutil
 import subprocess
 import time
 
-skip_dirs = {'.pixi', 'build', 'external', 'node_modules'}
+skip_dirs = {
+    '.benchmark_results',
+    '.deps',
+    '.pixi',
+    'build',
+    'external',
+    'node_modules',
+}
 root = pathlib.Path('.')
 toml_files = []
 for path in root.rglob('*.toml'):
