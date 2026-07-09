@@ -207,13 +207,13 @@ solve-side decision after the D7 sleep-policy path.
   tolerance under the default policy, plus dense-contact-island sleep candidacy
   for sub-wake jitter. `contact_benchmark` now reports island and
   dwell/velocity diagnostics. A/B artifact
-  `/tmp/wp_pg15_ab_erv_reset_20260709T012537Z`: S6 old-default override
+  `/tmp/wp_pg15_ab_idempotent_20260709T015150Z`: S6 old-default override
   (`--contact-max-erv 0.001 --sleep-contact-penetration-tolerance 0.00001`)
-  took 197.777 s, RTF 0.101124, 162 contacts / 141 pairs, max penetration
+  took 252.23 s, RTF 0.0792927, 162 contacts / 141 pairs, max penetration
   0.364241, 0/71 resting, hash `0x159825257114c5d5`; current defaults took
-  94.1562 s, RTF 0.212413, zero contacts, max penetration 0, 71/71 resting,
+  95.6687 s, RTF 0.209055, zero contacts, max penetration 0, 71/71 resting,
   hash `0xec80f734df6d5e74`; the explicit global evaluator row (`ERV=0.1`,
-  tol `0.005`) took 73.1579 s, RTF 0.273381, zero contacts, 71/71 resting,
+  tol `0.005`) took 176.956 s, RTF 0.113022, zero contacts, 71/71 resting,
   hash `0x877687e64e1011b9`. S4/S5 DART/FCL/Bullet/ODE new-default rows in
   `/tmp/wp_pg15_ab_review_20260708T235540Z` matched old-default hashes,
   contacts, and resting states. Extra evidence:
@@ -271,11 +271,11 @@ solve-side decision after the D7 sleep-policy path.
   `/tmp/wp_pg15_ab_awake_veto_20260709T005203Z`; accepted-default and
   strict-old hashes stayed unchanged.
 - 2026-07-08 Codex review fix: temporary contact ERV overrides can now return
-  to the adaptive default policy with `resetMaxErrorReductionVelocity()` or by
-  setting the built-in default (`0.1`) after a non-default override. Added
+  to the adaptive default policy with `resetMaxErrorReductionVelocity()`, while
+  explicit default-valued setter calls remain idempotent broad overrides. Added
   `IslandDeactivation.DefaultContactErvRestoresAdaptivePolicy`; reran the
   current-head S6 A/B rows in
-  `/tmp/wp_pg15_ab_erv_reset_20260709T012537Z`; accepted-default,
+  `/tmp/wp_pg15_ab_idempotent_20260709T015150Z`; accepted-default,
   strict-old, and explicit-evaluator hashes stayed unchanged.
 
 ## Session log

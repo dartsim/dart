@@ -474,11 +474,6 @@ double ContactConstraint::getErrorReductionParameter()
 //==============================================================================
 void ContactConstraint::setMaxErrorReductionVelocity(double erv)
 {
-  // A first explicit 0.1 request remains an override, but setting 0.1 after a
-  // temporary non-default override restores the adaptive default policy.
-  const bool restoreAdaptiveDefault
-      = mMaxErrorReductionVelocityUserConfigured && erv == DART_MAX_ERV;
-
   // Clamp maximum error reduction velocity if it is out of the range
   if (erv < 0.0) {
     dtwarn << "Maximum error reduction velocity[" << erv
@@ -490,7 +485,7 @@ void ContactConstraint::setMaxErrorReductionVelocity(double erv)
   }
 
   mMaxErrorReductionVelocity = erv;
-  mMaxErrorReductionVelocityUserConfigured = !restoreAdaptiveDefault;
+  mMaxErrorReductionVelocityUserConfigured = true;
 }
 
 //==============================================================================

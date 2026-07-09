@@ -747,10 +747,9 @@ TEST(IslandDeactivation, ExplicitDefaultToleranceKeepsPlaneContactStrict)
 }
 
 //==============================================================================
-// Setting the global contact ERV back to the built-in default after a temporary
-// old-default override must restore the adaptive default policy. Otherwise a
-// multi-world process cannot return ordinary support contacts to the small ERV
-// cap without restarting.
+// Resetting the global contact ERV after a temporary old-default override must
+// restore the adaptive default policy. Explicitly setting the built-in default
+// remains an idempotent broad global override.
 TEST(IslandDeactivation, DefaultContactErvRestoresAdaptivePolicy)
 {
   auto stepSimpleSupportContact = []() {
@@ -774,13 +773,14 @@ TEST(IslandDeactivation, DefaultContactErvRestoresAdaptivePolicy)
   double broadCorrectionVelocity = 0.0;
   {
     ScopedContactMaxErrorReductionVelocity explicitBroadDefault(0.1);
+    constraint::ContactConstraint::setMaxErrorReductionVelocity(0.1);
     broadCorrectionVelocity = std::abs(stepSimpleSupportContact());
   }
 
   double restoredCorrectionVelocity = 0.0;
   {
     ScopedContactMaxErrorReductionVelocity oldDefaultOverride(1e-3);
-    constraint::ContactConstraint::setMaxErrorReductionVelocity(0.1);
+    constraint::ContactConstraint::resetMaxErrorReductionVelocity();
     restoredCorrectionVelocity = std::abs(stepSimpleSupportContact());
   }
 

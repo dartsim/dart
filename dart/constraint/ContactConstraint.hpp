@@ -88,7 +88,7 @@ public:
   /// Get global error reduction parameter
   static double getErrorReductionParameter();
 
-  /// Set global maximum error reduction velocity.
+  /// Set an explicit global maximum error reduction velocity.
   static void setMaxErrorReductionVelocity(double erv);
 
   /// Restore the adaptive default maximum error reduction velocity policy.
