@@ -442,15 +442,25 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
             return false;
 
           const auto* parentJoint = body->getParentJoint();
+          const auto hasSupportedActuatorTypes
+              = [](const dynamics::Joint* joint) {
+                  for (std::size_t i = 0u; i < joint->getNumDofs(); ++i) {
+                    const auto actuatorType = joint->getActuatorType(i);
+                    if (actuatorType != dynamics::Joint::FORCE
+                        && actuatorType != dynamics::Joint::PASSIVE) {
+                      return false;
+                    }
+                  }
+                  return true;
+                };
+
           return skel->isMobile() && skel->getNumBodyNodes() == 1u
                  && skel->getNumDofs() == 6u
                  && body->getParentBodyNode() == nullptr
                  && body->getNumChildBodyNodes() == 0u
                  && skel->getCachedRootFreeJoint() != nullptr
                  && parentJoint != nullptr
-                 && (parentJoint->getActuatorType() == dynamics::Joint::FORCE
-                     || parentJoint->getActuatorType()
-                            == dynamics::Joint::PASSIVE);
+                 && hasSupportedActuatorTypes(parentJoint);
         };
 
   auto& scratch = boxedLcpThreadScratch();

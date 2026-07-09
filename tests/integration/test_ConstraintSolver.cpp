@@ -1320,6 +1320,53 @@ TEST(ConstraintSolver, MatrixFreeContactSolverFallsBackWhenNotConverged)
 }
 
 //==============================================================================
+TEST(ConstraintSolver, MatrixFreeContactSolverRejectsMixedFreeJointActuators)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* dynamicBody = createFreeBody("dynamic", true, skeletons);
+  auto* dynamicJoint = dynamicBody->getParentJoint();
+  ASSERT_NE(nullptr, dynamicJoint);
+  dynamicJoint->setActuatorType(0u, dynamics::Joint::MIMIC);
+  ASSERT_EQ(dynamics::Joint::MIMIC, dynamicJoint->getActuatorType(0u));
+  ASSERT_EQ(dynamics::Joint::FORCE, dynamicJoint->getActuatorType());
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  auto detector = collision::NativeCollisionDetector::create();
+  auto collisionGroup
+      = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
+
+  collision::CollisionResult result;
+  ASSERT_TRUE(
+      collisionGroup->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  auto contact = result.getContact(0);
+  std::vector<constraint::ConstraintBasePtr> constraints{
+      createContactConstraint<constraint::ContactConstraint>(contact)};
+
+  auto primarySolver = std::make_shared<CountingDantzigBoxedLcpSolver>();
+  ExposedBoxedLcpConstraintSolver solver(primarySolver, nullptr);
+  auto options = solver.getMatrixFreeContactSolverOptions();
+  options.mEnabled = true;
+  options.mMinRows = 1u;
+  options.mMaxIterations = 30;
+  solver.setMatrixFreeContactSolverOptions(options);
+
+  auto constrainedGroup = solver.makeGroupForTest(constraints);
+  solver.solveGroupForTest(constrainedGroup);
+
+  EXPECT_EQ(1u, primarySolver->getNumSolves());
+}
+
+//==============================================================================
 TEST(ConstraintSolver, ManualConstraintsForceSerialParallelGroupSolves)
 {
   ExposedThreadedConstraintSolver solver;
