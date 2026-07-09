@@ -42,6 +42,30 @@ namespace constraint {
 class BoxedLcpConstraintSolver : public ConstraintSolver
 {
 public:
+  struct MatrixFreeContactSolverOptions
+  {
+    /// Enable the matrix-free contact-only projected Gauss-Seidel path.
+    bool mEnabled = false;
+
+    /// Minimum LCP row count before the matrix-free path is considered.
+    std::size_t mMinRows = 193u;
+
+    /// Maximum projected Gauss-Seidel sweeps.
+    int mMaxIterations = 30;
+
+    /// Successive over-relaxation factor.
+    double mSor = 0.9;
+
+    /// Absolute impulse-change convergence tolerance.
+    double mDeltaTolerance = 1e-6;
+
+    /// Relative impulse-change convergence tolerance.
+    double mRelativeDeltaTolerance = 1e-3;
+
+    /// Diagonal floor used to skip singular rows.
+    double mEpsilonForDivision = 1e-9;
+  };
+
   /// Constructor
   ///
   /// \param[in] timeStep Simulation time step
@@ -96,6 +120,17 @@ public:
   /// Returns boxed LCP (BLCP) solver that is used when the primary solver
   /// failed
   ConstBoxedLcpSolverPtr getSecondaryBoxedLcpSolver() const;
+
+  /// Sets options for the opt-in matrix-free contact solver path.
+  void setMatrixFreeContactSolverOptions(
+      const MatrixFreeContactSolverOptions& options);
+
+  /// Returns options for the opt-in matrix-free contact solver path.
+  const MatrixFreeContactSolverOptions& getMatrixFreeContactSolverOptions()
+      const;
+
+  // Documentation inherited.
+  void setFromOtherConstraintSolver(const ConstraintSolver& other) override;
 
 protected:
   // Documentation inherited.
@@ -160,7 +195,15 @@ protected:
   /// Cache data for boxed LCP formulation
   Eigen::VectorXi mOffset;
 
+  /// Options for the opt-in matrix-free contact-only solve path.
+  MatrixFreeContactSolverOptions mMatrixFreeContactSolverOptions;
+
 private:
+  /// Try the opt-in matrix-free contact solver. Returns false when the group
+  /// is outside the supported envelope and the dense LCP path should run.
+  bool solveMatrixFreeContactGroup(
+      ConstrainedGroup& group, bool profileRecording);
+
   /// Return true if the matrix is symmetric
   bool isSymmetric(std::size_t n, double* A);
 

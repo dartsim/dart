@@ -36,6 +36,7 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
@@ -1907,4 +1908,182 @@ TEST(ConstraintSolver, SplitImpulseFlagIsCopiedFromOtherSolver)
   sourceOff.setSplitImpulseEnabled(false);
   target.setFromOtherConstraintSolver(sourceOff);
   EXPECT_FALSE(target.isSplitImpulseEnabled());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, MatrixFreeContactSolverOptionsDisabledByDefault)
+{
+  constraint::BoxedLcpConstraintSolver solver;
+  const auto& options = solver.getMatrixFreeContactSolverOptions();
+
+  EXPECT_FALSE(options.mEnabled);
+  EXPECT_EQ(193u, options.mMinRows);
+  EXPECT_EQ(30, options.mMaxIterations);
+  EXPECT_DOUBLE_EQ(0.9, options.mSor);
+  EXPECT_DOUBLE_EQ(1e-6, options.mDeltaTolerance);
+  EXPECT_DOUBLE_EQ(1e-3, options.mRelativeDeltaTolerance);
+  EXPECT_DOUBLE_EQ(1e-9, options.mEpsilonForDivision);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, MatrixFreeContactSolverOptionsSanitizeAndRoundTrip)
+{
+  constraint::BoxedLcpConstraintSolver solver;
+  auto options = solver.getMatrixFreeContactSolverOptions();
+  options.mEnabled = true;
+  options.mMinRows = 7u;
+  options.mMaxIterations = -4;
+  options.mSor = std::numeric_limits<double>::quiet_NaN();
+  options.mDeltaTolerance = -1.0;
+  options.mRelativeDeltaTolerance = -2.0;
+  options.mEpsilonForDivision = 0.0;
+
+  solver.setMatrixFreeContactSolverOptions(options);
+  const auto& stored = solver.getMatrixFreeContactSolverOptions();
+
+  EXPECT_TRUE(stored.mEnabled);
+  EXPECT_EQ(7u, stored.mMinRows);
+  EXPECT_EQ(1, stored.mMaxIterations);
+  EXPECT_DOUBLE_EQ(1.0, stored.mSor);
+  EXPECT_DOUBLE_EQ(0.0, stored.mDeltaTolerance);
+  EXPECT_DOUBLE_EQ(0.0, stored.mRelativeDeltaTolerance);
+  EXPECT_DOUBLE_EQ(1e-9, stored.mEpsilonForDivision);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, MatrixFreeContactSolverOptionsCopiedFromOtherSolver)
+{
+  constraint::BoxedLcpConstraintSolver source;
+  auto options = source.getMatrixFreeContactSolverOptions();
+  options.mEnabled = true;
+  options.mMinRows = 11u;
+  options.mMaxIterations = 12;
+  options.mSor = 1.1;
+  options.mDeltaTolerance = 1e-5;
+  options.mRelativeDeltaTolerance = 2e-3;
+  options.mEpsilonForDivision = 1e-8;
+  source.setMatrixFreeContactSolverOptions(options);
+
+  constraint::BoxedLcpConstraintSolver target;
+  ASSERT_FALSE(target.getMatrixFreeContactSolverOptions().mEnabled);
+  target.setFromOtherConstraintSolver(source);
+
+  const auto& copied = target.getMatrixFreeContactSolverOptions();
+  EXPECT_TRUE(copied.mEnabled);
+  EXPECT_EQ(options.mMinRows, copied.mMinRows);
+  EXPECT_EQ(options.mMaxIterations, copied.mMaxIterations);
+  EXPECT_DOUBLE_EQ(options.mSor, copied.mSor);
+  EXPECT_DOUBLE_EQ(options.mDeltaTolerance, copied.mDeltaTolerance);
+  EXPECT_DOUBLE_EQ(
+      options.mRelativeDeltaTolerance, copied.mRelativeDeltaTolerance);
+  EXPECT_DOUBLE_EQ(options.mEpsilonForDivision, copied.mEpsilonForDivision);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, MatrixFreeContactSolverOptInKeepsContactWorldFinite)
+{
+  constexpr std::size_t kNumBoxes = 48u;
+  auto world = createManySingleFreeBodyContactWorld(kNumBoxes, 1u);
+  auto* boxedSolver = dynamic_cast<constraint::BoxedLcpConstraintSolver*>(
+      world->getConstraintSolver());
+  ASSERT_NE(nullptr, boxedSolver);
+
+  auto options = boxedSolver->getMatrixFreeContactSolverOptions();
+  options.mEnabled = true;
+  options.mMinRows = 1u;
+  options.mMaxIterations = 15;
+  boxedSolver->setMatrixFreeContactSolverOptions(options);
+
+  const bool previousRecording = common::profile::setProfileRecordingEnabled(
+      common::profile::isTextProfilingEnabled());
+  if (common::profile::isTextProfilingEnabled())
+    common::profile::resetProfile();
+
+  for (std::size_t step = 0u; step < 10u; ++step)
+    world->step();
+
+  const auto profileSummary = common::profile::getProfileSummaryText();
+  common::profile::setProfileRecordingEnabled(previousRecording);
+  common::profile::resetProfile();
+
+  const auto& contacts = world->getConstraintSolver()->getLastCollisionResult();
+  EXPECT_GE(contacts.getNumContacts(), kNumBoxes * 3u);
+
+  for (std::size_t i = 0u; i < kNumBoxes; ++i) {
+    const auto skeleton = world->getSkeleton("box_" + std::to_string(i));
+    ASSERT_NE(nullptr, skeleton) << i;
+    EXPECT_TRUE(skeleton->getPositions().allFinite()) << i;
+    EXPECT_TRUE(skeleton->getVelocities().allFinite()) << i;
+  }
+
+  if (common::profile::isTextProfilingEnabled()) {
+    EXPECT_NE(
+        std::string::npos,
+        profileSummary.find(
+            "BoxedLcpConstraintSolver::matrixFreeContactSolve"));
+    EXPECT_NE(
+        std::string::npos,
+        profileSummary.find(
+            "BoxedLcpConstraintSolver::matrixFreeContactIterations"));
+  }
+}
+
+//==============================================================================
+TEST(ConstraintSolver, MatrixFreeContactSolverOptInSupportsTwoReactiveBodies)
+{
+  auto world = createWorld();
+  world->setTimeStep(0.001);
+
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+  solver->getCollisionOption().maxNumContacts = 16u;
+  solver->getCollisionOption().maxNumContactsPerPair = 4u;
+
+  auto* boxedSolver
+      = dynamic_cast<constraint::BoxedLcpConstraintSolver*>(solver);
+  ASSERT_NE(nullptr, boxedSolver);
+
+  auto options = boxedSolver->getMatrixFreeContactSolverOptions();
+  options.mEnabled = true;
+  options.mMinRows = 1u;
+  options.mMaxIterations = 20;
+  boxedSolver->setMatrixFreeContactSolverOptions(options);
+
+  world->addSkeleton(createSolverTestBox(
+      "box_a", Eigen::Vector3d::Ones(), Eigen::Vector3d::Zero(), true));
+  world->addSkeleton(createSolverTestBox(
+      "box_b", Eigen::Vector3d::Ones(), Eigen::Vector3d(0.0, 0.0, 0.9), true));
+
+  const bool previousRecording = common::profile::setProfileRecordingEnabled(
+      common::profile::isTextProfilingEnabled());
+  if (common::profile::isTextProfilingEnabled())
+    common::profile::resetProfile();
+
+  for (std::size_t step = 0u; step < 5u; ++step)
+    world->step();
+
+  const auto profileSummary = common::profile::getProfileSummaryText();
+  common::profile::setProfileRecordingEnabled(previousRecording);
+  common::profile::resetProfile();
+
+  const auto& contacts = solver->getLastCollisionResult();
+  EXPECT_GT(contacts.getNumContacts(), 0u);
+
+  for (const auto& name : {"box_a", "box_b"}) {
+    const auto skeleton = world->getSkeleton(name);
+    ASSERT_NE(nullptr, skeleton) << name;
+    EXPECT_TRUE(skeleton->getPositions().allFinite()) << name;
+    EXPECT_TRUE(skeleton->getVelocities().allFinite()) << name;
+  }
+
+  if (common::profile::isTextProfilingEnabled()) {
+    EXPECT_NE(
+        std::string::npos,
+        profileSummary.find(
+            "BoxedLcpConstraintSolver::matrixFreeContactSolve"));
+  }
 }

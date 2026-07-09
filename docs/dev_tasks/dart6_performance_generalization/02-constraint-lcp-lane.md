@@ -164,7 +164,7 @@ final-state hashes on all guard scenes for default-on packets.
 
 #### WP-PG.14 — Island-size-gated matrix-free solve path (gated, opt-in)
 
-- Status: blocked on D3
+- Status: claimed on `wp-pg-14-matrix-free-lcp`
 - Objective: for islands above a size threshold, offer a matrix-free
   sequential-impulse/PGS path over cached Jacobians (no dense (3n)^2 A),
   as an opt-in `BoxedLcpConstraintSolver` option defaulting to current
@@ -175,24 +175,47 @@ final-state hashes on all guard scenes for default-on packets.
   trivially additive.
 - Non-goals: changing the default solve; friction-cone semantics changes
   silently (must be documented as solver-option semantics).
-- Assumptions/open decisions: D3 (opt-in confirmed?); solution
-  non-uniqueness vs Dantzig means hashes differ by construction when the
-  option is enabled — guard scenes run with the option OFF must stay
+- Assumptions/open decisions: D3 direction is default-off opt-in on DART 6;
+  solution non-uniqueness vs Dantzig means hashes differ by construction when
+  the option is enabled — guard scenes run with the option OFF must stay
   bit-identical.
 - Acceptance evidence: option-off = bit-identical everywhere; option-on
   evidence table with contacts/resting/finite checks + convergence
   metrics at 900/3000 objects.
-- Dependencies: D3 (note its revisit trigger in the README: if WP-PG.10
-  confirms solve-proper dominance on single-connected islands, opt-in
-  leaves the primary fixture without a default-on solve remedy — D3 gets
-  re-decided with that evidence), WP-PG.10, WP-PG.13 insights.
+- Dependencies: D3, WP-PG.10, WP-PG.13 insights. The original D3 revisit
+  trigger fired when WP-PG.10 confirmed solve-proper dominance, but merged
+  WP-PG.15/#3353 now supplies the default-on primary-fixture win; WP-PG.14
+  therefore remains an explicit opt-in solve-side option.
+- Current implementation evidence (2026-07-09): adds a default-off
+  `BoxedLcpConstraintSolver::MatrixFreeContactSolverOptions` path, exact
+  built-in `ContactConstraint` gating, single-free-body support checks,
+  `contact_benchmark` opt-in flags, and profiler counters for rows,
+  iterations, and convergence. Artifact:
+  `/tmp/wp_pg14_matrix_free_ab_20260709T040443Z`.
+
+  | Row | Median RTF | Median avg step | Contacts / pairs | Finite | Hash |
+  | --- | ---: | ---: | ---: | --- | --- |
+  | S1 120 DART dense, option off | 0.135054 | 7.40446 ms | 242 / 182 | true | `0x123ee9779bccacfb` |
+  | S1 120 DART matrix-free, 10 iters | 1.51219 | 0.661291 ms | 238 / 181 | true | `0xfa1e197d3a93fd80` |
+  | S1 120 DART matrix-free, 30 iters | 1.50798 | 0.663138 ms | 237 / 181 | true | `0xbf538ac9d35f145e` |
+  | S3 active-3k DART, option-on fallback | 0.115575 | 8.65239 ms | 5005 / 3003 | true | `0xcf0ba6eaa97be038` |
+
+  The dense option-off row matches the post-#3353 guard hash. The option-on
+  rows are faster by ~11x on this supported large island and intentionally
+  carry new hashes because D3 changes solver semantics. S3 active-3k has many
+  small islands below the 193-row threshold, so enabling the option falls back
+  and preserves the exact dense hash. Profile evidence on S1 120 DART:
+  dense spends 77.1% in `BoxedLcpConstraintSolver::primarySolve`; matrix-free
+  spends 17.8% in `matrixFreeContactSolve`, with 200 row samples, mean 781.9
+  rows, mean 1.90 iterations, and 198/200 converged samples. Local validation
+  passed `pixi run lint`, `pixi run check-lint`, focused/full
+  `test_ConstraintSolver`, dartpy constraint pytest, capped `ALL`, and
+  `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
 
 #### WP-PG.15 — Penetration creep vs island-rest veto (root cause)
 
-- Status: claimed on #3353 as the D7 default-remediation PR; local evaluator
-  evidence passes, hosted CI/review and full closeout gates still pending. This
-  is a behavior-changing PR class and needs explicit old/new evidence rather
-  than hash-identical guard acceptance.
+- Status: done — #3353 merged after local validation and clean Codex review
+  on `9ab3e05332`.
 - Objective: fix #3209 root-cause finding 2 so compacting piles stop
   creeping and can sleep: investigate the interaction of the contact
   error-reduction budget (baseline `DART_MAX_ERV = 1e-3` m/s,

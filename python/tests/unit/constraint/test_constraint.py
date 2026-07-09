@@ -131,5 +131,33 @@ def test_revolute_joint_constraint():
     assert np.dot(axis1, axis2) > 0.2
 
 
+def test_matrix_free_contact_solver_options_round_trip():
+    solver = dart.constraint.BoxedLcpConstraintSolver()
+    options = solver.getMatrixFreeContactSolverOptions()
+
+    assert not options.mEnabled
+    assert options.mMinRows == 193
+    assert options.mMaxIterations == 30
+
+    options.mEnabled = True
+    options.mMinRows = 7
+    options.mMaxIterations = -3
+    options.mSor = -1.0
+    options.mDeltaTolerance = -1.0
+    options.mRelativeDeltaTolerance = -1.0
+    options.mEpsilonForDivision = 0.0
+
+    solver.setMatrixFreeContactSolverOptions(options)
+    stored = solver.getMatrixFreeContactSolverOptions()
+
+    assert stored.mEnabled
+    assert stored.mMinRows == 7
+    assert stored.mMaxIterations == 1
+    assert stored.mSor == 1.0
+    assert stored.mDeltaTolerance == 0.0
+    assert stored.mRelativeDeltaTolerance == 0.0
+    assert stored.mEpsilonForDivision == 1e-9
+
+
 if __name__ == "__main__":
     pytest.main()
