@@ -207,15 +207,16 @@ solve-side decision after the D7 sleep-policy path.
   tolerance under the default policy, plus dense-contact-island sleep candidacy
   for sub-wake jitter. `contact_benchmark` now reports island and
   dwell/velocity diagnostics. A/B artifact
-  `/tmp/wp_pg15_ab_review_20260708T235540Z`: S6 old-default override
+  `/tmp/wp_pg15_ab_awake_veto_20260709T005203Z`: S6 old-default override
   (`--contact-max-erv 0.001 --sleep-contact-penetration-tolerance 0.00001`)
-  took 484.363 s, RTF 0.0412914, 162 contacts / 141 pairs, max penetration
+  took 251.068 s, RTF 0.0796598, 162 contacts / 141 pairs, max penetration
   0.364241, 0/71 resting, hash `0x159825257114c5d5`; current defaults took
-  94.3367 s, RTF 0.212006, zero contacts, max penetration 0, 71/71 resting,
+  130.644 s, RTF 0.153088, zero contacts, max penetration 0, 71/71 resting,
   hash `0xec80f734df6d5e74`; the explicit global evaluator row (`ERV=0.1`,
-  tol `0.005`) took 60.4741 s, RTF 0.33072, zero contacts, 71/71 resting,
-  hash `0x8f8ec8de71465934`. S4/S5 DART/FCL/Bullet/ODE new-default rows
-  matched old-default hashes/contact/resting states. Extra evidence:
+  tol `0.005`) took 78.221 s, RTF 0.255686, zero contacts, 71/71 resting,
+  hash `0x877687e64e1011b9`. S4/S5 DART/FCL/Bullet/ODE new-default rows in
+  `/tmp/wp_pg15_ab_review_20260708T235540Z` matched old-default hashes,
+  contacts, and resting states. Extra evidence:
   S2 DART 3k-shapes guard
   `/tmp/wp_pg15_examples_20260708T223506Z/S2_dart_3k_shapes.log`
   (`3003/3003` resting, hash `0x8ddc9a81f2d28a7f`), S6 final-scene dump
@@ -259,8 +260,16 @@ solve-side decision after the D7 sleep-policy path.
   adaptive default. Added
   `IslandDeactivation.ExplicitDefaultToleranceKeepsPlaneContactStrict` and
   regenerated the A/B matrix above; the strict old-default S6 row now takes
-  484.363 s and never reaches resting, while current defaults keep the accepted
+  251.068 s and never reaches resting, while current defaults keep the accepted
   71/71 resting hash.
+- 2026-07-08 Codex review fix: the ungrouped-awake-body veto now clears the
+  group-level rest flag before `solveConstrainedGroups()`, so a newly eligible
+  contact island cannot be marked resting by the final solve while another
+  mobile body is still awake. Added
+  `IslandDeactivation.UngroupedAwakeBodyVetoesNewContactIslandResting` and
+  reran the S6 A/B rows in
+  `/tmp/wp_pg15_ab_awake_veto_20260709T005203Z`; accepted-default and
+  strict-old hashes stayed unchanged.
 
 ## Session log
 

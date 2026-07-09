@@ -2344,6 +2344,20 @@ void ConstraintSolver::buildConstrainedGroups()
         mGroupResting[groupIndex] = mGroupResting[groupIndex] && sleepCandidate;
       }
 
+      if (hasUngroupedAwakeMobileSkeleton) {
+        for (const auto& skeleton : mSkeletons) {
+          if (skeleton->isResting())
+            continue;
+
+          const auto root = ConstraintBase::getRootSkeleton(skeleton);
+          const auto groupIndex = root->mUnionIndex;
+          if (groupIndex != invalidUnionIndex
+              && groupIndex < mGroupResting.size()) {
+            mGroupResting[groupIndex] = false;
+          }
+        }
+      }
+
       // Pass 2: stamp the island index and keep only already-frozen islands
       // frozen. A newly eligible island must run one final contact solve before
       // it freezes so observable force caches (e.g. transmitted wrench queries)
@@ -2357,9 +2371,7 @@ void ConstraintSolver::buildConstrainedGroups()
         const bool groupAllSleepCandidates
             = grouped && groupIndex < mGroupAllSleepCandidates.size()
               && mGroupAllSleepCandidates[groupIndex];
-        const bool groupCanRest
-            = grouped && mGroupResting[groupIndex]
-              && (!hasUngroupedAwakeMobileSkeleton || skeleton->isResting());
+        const bool groupCanRest = grouped && mGroupResting[groupIndex];
         const bool groupCanPreserveSleepCandidate
             = groupAllSleepCandidates && !hasUngroupedAwakeMobileSkeleton
               && groupIndex < mGroupPreserveSleepCandidates.size()

@@ -234,15 +234,15 @@ final-state hashes on all guard scenes for default-on packets.
 - Local D7 evaluator evidence (2026-07-08, branch
   `docs/close-dart6-performance-generalization`, binary
   `build/default/cpp/Release/bin/contact_benchmark`; full logs:
-  `/tmp/wp_pg15_ab_review_20260708T235540Z/summary.tsv`):
+  `/tmp/wp_pg15_ab_awake_veto_20260709T005203Z/summary.tsv`):
 
   | Row | Wall time | RTF | Contacts / pairs | Over sleep tol | Max penetration | Resting | Hash |
   | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-  | S6 current defaults | 94.3367 s | 0.212006 | 0 / 0 | 0 | 0 | 71/71 | `0xec80f734df6d5e74` |
-  | S6 old-default override (`ERV=0.001`, tol `1e-5`) | 484.363 s | 0.0412914 | 162 / 141 | 39 | 0.364241 | 0/71 | `0x159825257114c5d5` |
-  | S6 explicit evaluator (`ERV=0.1`, tol `0.005`) | 60.4741 s | 0.33072 | 0 / 0 | 0 | 0 | 71/71 | `0x8f8ec8de71465934` |
+  | S6 current defaults | 130.644 s | 0.153088 | 0 / 0 | 0 | 0 | 71/71 | `0xec80f734df6d5e74` |
+  | S6 old-default override (`ERV=0.001`, tol `1e-5`) | 251.068 s | 0.0796598 | 162 / 141 | 39 | 0.364241 | 0/71 | `0x159825257114c5d5` |
+  | S6 explicit evaluator (`ERV=0.1`, tol `0.005`) | 78.221 s | 0.255686 | 0 / 0 | 0 | 0 | 71/71 | `0x877687e64e1011b9` |
 
-  The default row is 5.13x faster than the old-default override on this run
+  The default row is 1.92x faster than the old-default override on this run
   and reaches the WP-PG.15 pile-sleep outcome under default settings. The
   explicit evaluator row is retained as the upper-bound comparison; the broader
   global policy was rejected after `Issue1445` and split-impulse guards exposed

@@ -1955,6 +1955,44 @@ TEST(IslandDeactivation, IndependentQuietIslandSleepsWhileOtherBodyMoves)
 }
 
 //==============================================================================
+// A just-eligible contact island must not be marked resting while a separate
+// ungrouped mobile body is awake. The veto must reach the group-level
+// solve-to-rest flag, not just the per-skeleton pre-solve resting flag.
+TEST(IslandDeactivation, UngroupedAwakeBodyVetoesNewContactIslandResting)
+{
+  auto world = makeSleepWorld();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->addSkeleton(createFloor());
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf - 1.0e-6));
+  sleeper->setSleepCandidate(true);
+  sleeper->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
+  world->addSkeleton(sleeper);
+
+  auto awake = createFreeBox(
+      "awake",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(3.0, 0, kHalf + 0.5));
+  Eigen::Vector6d movingVelocity = Eigen::Vector6d::Zero();
+  const auto& opts = world->getDeactivationOptions();
+  movingVelocity[3]
+      = 2.0 * opts.mWakeThresholdScale * opts.mLinearSpeedThreshold;
+  awake->getJoint(0)->setVelocities(movingVelocity);
+  world->addSkeleton(awake);
+
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_FALSE(awake->isResting());
+  EXPECT_FALSE(awake->isSleepCandidate());
+  EXPECT_FALSE(sleeper->isResting());
+  EXPECT_FALSE(sleeper->isSleepCandidate());
+}
+
+//==============================================================================
 // A body kept in genuine slow motion (above the sleep thresholds) must NOT be
 // put to sleep within the test horizon. This is the "always beneficial"
 // correctness gate: we must never freeze a body that is actually moving.
