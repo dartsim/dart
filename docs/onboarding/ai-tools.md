@@ -10,6 +10,11 @@ entrypoints generated from `.claude/` sources.
 - Do not hand-edit `.codex/skills/` or `.opencode/command/`; run
   `pixi run sync-ai-commands` instead.
 - Check parity with `pixi run check-ai-commands`.
+- Use canonical DART capability names in prompt-driven goal modes: Claude goal
+  text should name `/dart-ultrawork`, and Codex goal text can name
+  `$dart-ultrawork`. If Claude goal text starts with `ulw:` or the common typo
+  `ultrawok:`, normalize it to the canonical `/dart-ultrawork` workflow. These
+  are prompt-level shorthands, not separate shared capabilities.
 
 ## Approval Boundaries
 

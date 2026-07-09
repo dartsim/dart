@@ -68,8 +68,16 @@
 
   * Add release-branch AI-infra buckets for living plans, durable design
     rationale, theory/reference background, and reusable documentation assets,
-    with `dart-new-team-task` routed through the DART 6.20 plan dashboard and
+    with `dart-ultrawork` routed through the DART 6.20 plan dashboard and
     work-packet contract.
+
+  * Expand `dart-ultrawork` into the autonomous-project kickoff path for
+    large or multi-session DART 6 work, with `docs/dev_tasks/<task>/` as the
+    project home, one up-front interview or provided brief, session start/end
+    rules, explicit acceptance evidence, iterative two-pass review, GUI/demo
+    deliverable expectations for behavior-bearing physics work, prompt-level
+    goal shorthands for Claude, and release-branch maintenance hygiene.
+    [#3357](https://github.com/dartsim/dart/pull/3357)
 
   * Add the release-branch `dart-retro` AI workflow so maintainers and agents
     can capture durable lessons from completed DART 6.20 work through
