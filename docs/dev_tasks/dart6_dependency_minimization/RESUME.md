@@ -68,18 +68,19 @@ scope-diff-guarded.
   **merged**.
 - **D1** (native detector distance adapter + native basename normalization):
   **#3352** — **merged**.
+- **D2** (native detector raycast adapter + native-vs-Bullet raycast
+  benchmarks): **#3355** — **merged**.
 
-**Next: Phase 3 D2 — native detector raycast adapter** on
-`feature/native-raycast-adapter`. Keep this as one PR: expose
-`NativeCollisionDetector::raycast()` through the existing DART 6
-`CollisionGroup`/`RaycastOption`/`RaycastResult` contract, compare supported
-raycast rows against the incumbent Bullet raycast path, and keep the native
-detector opt-in only. **Do not** add a `CollisionDetectorType::Native` enum or
-touch `World`/`ConstraintSolver`/`WorldConfig`; FCL remains the default until
-phase 6.
+**Next: Phase 3 D3 — native VoxelGrid/compound support** on
+`feature/native-voxelgrid-compound`. Keep this as one PR: convert occupied
+`VoxelGridShape` octree leaves into native compound-box children, route compound
+collision through the existing narrowphase child pairs, and cover collision,
+distance/raycast, and shape-version refresh behavior. Keep the native detector
+opt-in only. **Do not** add a `CollisionDetectorType::Native` enum or touch
+`World`/`ConstraintSolver`/`WorldConfig`; FCL remains the default until phase 6.
 
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
-PRs, worktrees, gotchas, and exact Phase 3 D2 next steps).
+PRs, worktrees, gotchas, and exact Phase 3 D3 next steps).
 
 ## Standing constraints
 

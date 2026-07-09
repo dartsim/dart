@@ -59,11 +59,13 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
 - **#3350** phase-2 **P10**: mixed-scene FCL/DART/native parity coverage.
 - **#3352** phase-3 **D1**: native detector distance adapter, DART 6-style
   native basename normalization, and native-vs-FCL distance benchmarks.
+- **#3355** phase-3 **D2**: native detector raycast adapter and native-vs-Bullet
+  raycast benchmarks.
 
-`origin/release-6.20` tip at this refresh: `f343528708e` (moves as the
+`origin/release-6.20` tip at this refresh: `e3f7f67211e` (moves as the
 maintainer merges; **always re-fetch before branching/capturing**).
 
-## 4. Phase 2 complete; Phase 3 D2 active
+## 4. Phase 2 complete; Phase 3 VoxelGrid/compound active
 
 Bridge design (see `07` §0–§1): **bypass DART 7's EnTT `CollisionWorld`**; the
 adapter (`NativeCollisionDetector/Group/Object` + `NativeShapeConversion`)
@@ -84,19 +86,19 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 | **P9** | `plane_sphere` (needs `distance`) → completes primitive+convex+mesh+plane | ✅ **merged (#3343)**, combined with P8 |
 | **P10** | mixed-scene fcl/dart/native parity integration test | ✅ **merged (#3350)** |
 | **D1** | DART 6 `NativeCollisionDetector::distance()` adapter + native basename normalization | ✅ **merged (#3352)** |
-| **D2** | DART 6 `NativeCollisionDetector::raycast()` adapter + native-vs-Bullet raycast benchmarks | 🔄 **active local branch** `feature/native-raycast-adapter` |
+| **D2** | DART 6 `NativeCollisionDetector::raycast()` adapter + native-vs-Bullet raycast benchmarks | ✅ **merged (#3355)** |
+| **D3** | `VoxelGridShape`/octree replacement via native compound boxes + compound collision recursion | 🔄 **active local branch** `feature/native-voxelgrid-compound` |
 
-### Exact next step: finish Phase 3 D2
+### Exact next step: finish Phase 3 VoxelGrid/compound
 
-1. Continue with the **Phase 3 D2** branch `feature/native-raycast-adapter`,
+1. Continue with the **Phase 3 D3** branch `feature/native-voxelgrid-compound`,
    based on the current `origin/release-6.20`.
-2. Keep it as one PR: port the native narrowphase raycast entrypoint, wire
-   `NativeCollisionDetector::raycast()` to the DART 6 `CollisionGroup`
-   contract, and compare native raycasts against the incumbent Bullet path.
-   Preserve DART 6 `RaycastOption` behavior: closest hit, all hits, optional
-   sorting, object filters, and `result == nullptr`.
-3. Leave CCD, persistent manifolds, voxel/octree replacement, Bullet/ODE/FCL
-   facades, and the default flip for later phase-3/phase-5/phase-6 slices.
+2. Keep it as one PR: convert occupied `dynamics::VoxelGridShape` octree leaves
+   into a native `CompoundShape` of voxel `BoxShape` children, route compound
+   collision through the existing narrowphase child pairs, and cover collision,
+   distance/raycast, and shape-version refresh behavior.
+3. Leave CCD, persistent manifolds, Bullet/ODE/FCL facades, and the default
+   flip for later phase-3/phase-5/phase-6 slices.
 4. Gates for **every** native-collision capability PR:
    Release build + **explicit Debug build** (`pixi run build` is Release-only);
    **run** the tests with `ctest --test-dir build/default/cpp/Release -R
@@ -104,20 +106,20 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
    full `pixi run check-lint`; guard-row hashes unchanged;
    `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz` (199 + 4 + 1); portability
    `rg 'entt|std::span'` on new files → empty; scope-diff touches only
-   `dart/collision/native/**` + its CMakeLists + `tests/**`.
+   `dart/collision/native/**` + its CMakeLists + `tests/**`. Include a scoped
+   performance/complexity note in the PR body; full optimization remains phase 4.
 
 ## 5. Open PRs / loose ends
 
-- **Phase 3 D2 native raycast adapter** — active on
-  `feature/native-raycast-adapter` as one PR-sized slice to minimize CI
+- **Phase 3 D3 VoxelGrid/compound native support** — active on
+  `feature/native-voxelgrid-compound` as one PR-sized slice to minimize CI
   overhead.
 - **#3353** is open on `release-6.20` for the separate performance-generalization
   plan parking lane.
-- **#3283 (main sphere-sphere `enableContact` fix)** — MERGED; main and
-  `release-6.20` now agree on the squared binary predicate for the eventual
-  phase-6 diff.
-- **#3348** remains open on `release-6.20` and belongs to the separate
-  MSVC/toolchain policy lane.
+- **#3357** is a draft docs/workflow PR on `release-6.20`; unrelated to this
+  native-collision code slice.
+- **#3283 (main sphere-sphere `enableContact` fix)** and **#3348** (MSVC
+  toolchain policy) are MERGED.
 
 ## 6. Load-bearing invariants (do not violate)
 
@@ -132,10 +134,10 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 - **gz gate every PR** (`pixi run -e gazebo test-gz`); on engine-only slices it
   is a non-regression guard (trivially green), substantive from P3b onward.
 - **`NarrowPhase.{hpp,cpp}` is a bespoke reduced dispatcher** (`07` §2.1): it is
-  hand-trimmed and re-expands in P4–P9. Each dispatcher-touching PR must keep the
-  `git diff origin/main` reduced to {span shim; dropped `CollisionObject`
-  overloads + Compound + non-routed branches; the `enum class ShapeType;` compile
-  fix}; P9 must re-converge to `main` modulo those deltas.
+  hand-trimmed and re-expands capability-by-capability. Each dispatcher-touching
+  PR must keep the `git diff origin/main` explainable: span shim, dropped
+  `CollisionObject` overloads/world-layer branches, DART 6 compile fixes, and
+  only the current routed capability deltas.
 - **Prefer fewer PRs for remaining phases.** Combine cohesive capability wiring,
   parity coverage, and mechanical native-file cleanup in one PR when the local
   validation envelope remains clear; split only when review risk or ownership
