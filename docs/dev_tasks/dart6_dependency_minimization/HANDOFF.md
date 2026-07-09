@@ -1,6 +1,6 @@
 # HANDOFF — DART 6.20 dependency minimization (native collision port)
 
-> Session handoff, refreshed 2026-07-08. Read [README.md](README.md) (overall SSOT),
+> Session handoff, refreshed 2026-07-09. Read [README.md](README.md) (overall SSOT),
 > then [03-native-collision-port-scoping.md](03-native-collision-port-scoping.md)
 > (plan of record for the remaining work), then
 > [07-phase2-adapter-scoping.md](07-phase2-adapter-scoping.md) (phase-2 execution
@@ -61,11 +61,13 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
   native basename normalization, and native-vs-FCL distance benchmarks.
 - **#3355** phase-3 **D2**: native detector raycast adapter and native-vs-Bullet
   raycast benchmarks.
+- **#3358** phase-3 **D3**: native `VoxelGridShape`/octree replacement via
+  compound voxel boxes, plus compound collision/distance/raycast routing.
 
-`origin/release-6.20` tip at this refresh: `e3f7f67211e` (moves as the
+`origin/release-6.20` tip at this refresh: `e2e03ffe8ee` (moves as the
 maintainer merges; **always re-fetch before branching/capturing**).
 
-## 4. Phase 2 complete; Phase 3 VoxelGrid/compound active
+## 4. Phase 2 complete; Phase 3 CCD active
 
 Bridge design (see `07` §0–§1): **bypass DART 7's EnTT `CollisionWorld`**; the
 adapter (`NativeCollisionDetector/Group/Object` + `NativeShapeConversion`)
@@ -87,19 +89,24 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 | **P10** | mixed-scene fcl/dart/native parity integration test | ✅ **merged (#3350)** |
 | **D1** | DART 6 `NativeCollisionDetector::distance()` adapter + native basename normalization | ✅ **merged (#3352)** |
 | **D2** | DART 6 `NativeCollisionDetector::raycast()` adapter + native-vs-Bullet raycast benchmarks | ✅ **merged (#3355)** |
-| **D3** | `VoxelGridShape`/octree replacement via native compound boxes + compound collision recursion | 🔄 **active local branch** `feature/native-voxelgrid-compound` |
+| **D3** | `VoxelGridShape`/octree replacement via native compound boxes + compound collision/distance/raycast recursion | ✅ **merged (#3358)** |
+| **D4** | Native CCD engine: rigid sphere/capsule casts, primitive point-triangle/edge-edge CCD, and shape+transform dispatcher support | 🔄 **active local branch** `feature/native-ccd` |
+| **D5** | Persistent manifold cache and manifold reuse/reduction follow-up | ⬜ not started |
 
-### Exact next step: finish Phase 3 VoxelGrid/compound
+### Exact next step: finish Phase 3 D4 native CCD
 
-1. Continue with the **Phase 3 D3** branch `feature/native-voxelgrid-compound`,
+1. Continue with the **Phase 3 D4** branch `feature/native-ccd`,
    based on the current `origin/release-6.20`.
-2. Keep it as one PR: convert occupied `dynamics::VoxelGridShape` octree leaves
-   into a native `CompoundShape` of voxel `BoxShape` children, route compound
-   collision through the existing narrowphase child pairs, and cover collision,
-   distance/raycast, and shape-version refresh behavior.
-3. Leave CCD, persistent manifolds, Bullet/ODE/FCL facades, and the default
-   flip for later phase-3/phase-5/phase-6 slices.
-4. Gates for **every** native-collision capability PR:
+2. Keep it as one PR: port `Ccd` and `PrimitiveCcd` from DART 7 with DART 6
+   PascalCase file names and C++17-compatible includes; expose only
+   shape+transform `NarrowPhase::sphereCast` and `capsuleCast` entry points,
+   not the DART 7 EnTT `CollisionObject` overloads.
+3. Cover rigid sphere/capsule casts, primitive point-triangle/edge-edge CCD,
+   compound-target earliest-hit selection, and the support matrix. Keep the
+   native detector opt-in only.
+4. Leave persistent manifolds, Bullet/ODE/FCL facades, and the default flip for
+   later phase-3/phase-5/phase-6 slices.
+5. Gates for **every** native-collision capability PR:
    Release build + **explicit Debug build** (`pixi run build` is Release-only);
    **run** the tests with `ctest --test-dir build/default/cpp/Release -R
    UNIT_collision_native --output-on-failure` (`pixi run test-all` only *builds*);
@@ -111,13 +118,12 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 
 ## 5. Open PRs / loose ends
 
-- **Phase 3 D3 VoxelGrid/compound native support** — active on
-  `feature/native-voxelgrid-compound` as one PR-sized slice to minimize CI
-  overhead.
+- **Phase 3 D4 native CCD support** — active on `feature/native-ccd` as one
+  PR-sized slice to minimize CI overhead.
 - **#3353** is open on `release-6.20` for the separate performance-generalization
   plan parking lane.
-- **#3357** is a draft docs/workflow PR on `release-6.20`; unrelated to this
-  native-collision code slice.
+- **#3357** is merged; it renamed the DART 6 autonomous AI workflow to
+  `dart-ultrawork` and is unrelated to this native-collision code slice.
 - **#3283 (main sphere-sphere `enableContact` fix)** and **#3348** (MSVC
   toolchain policy) are MERGED.
 

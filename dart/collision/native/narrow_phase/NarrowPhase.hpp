@@ -41,6 +41,7 @@
 
 namespace dart::collision::native {
 
+class CapsuleShape;
 enum class ShapeType;
 
 struct DART_COLLISION_NATIVE_API NarrowPhasePair
@@ -88,11 +89,33 @@ public:
       const RaycastOption& option,
       RaycastResult& result);
 
+  static bool sphereCast(
+      const Eigen::Vector3d& sphereStart,
+      const Eigen::Vector3d& sphereEnd,
+      double sphereRadius,
+      const Shape* target,
+      const Eigen::Isometry3d& targetTransform,
+      const CcdOption& option,
+      CcdResult& result);
+
+  static bool capsuleCast(
+      const Eigen::Isometry3d& capsuleStart,
+      const Eigen::Isometry3d& capsuleEnd,
+      const CapsuleShape& capsule,
+      const Shape* target,
+      const Eigen::Isometry3d& targetTransform,
+      const CcdOption& option,
+      CcdResult& result);
+
   static bool isSupported(ShapeType type1, ShapeType type2);
 
   static bool isDistanceSupported(ShapeType type1, ShapeType type2);
 
   static bool isRaycastSupported(ShapeType type);
+
+  static bool isSphereCastSupported(ShapeType type);
+
+  static bool isCapsuleCastSupported(ShapeType type);
 };
 
 } // namespace dart::collision::native

@@ -35,6 +35,11 @@ dart_add_test(
 )
 dart_add_test(
   "unit"
+  UNIT_collision_native_ccd
+  test_ccd.cpp
+)
+dart_add_test(
+  "unit"
   UNIT_collision_native_convex_convex
   test_convex_convex.cpp
 )
@@ -57,6 +62,11 @@ dart_add_test(
   "unit"
   UNIT_collision_native_plane_sphere
   test_plane_sphere.cpp
+)
+dart_add_test(
+  "unit"
+  UNIT_collision_native_primitive_ccd
+  test_primitive_ccd.cpp
 )
 dart_add_test(
   "unit"
