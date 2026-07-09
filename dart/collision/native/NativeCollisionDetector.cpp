@@ -38,12 +38,20 @@
 #include "dart/collision/DistanceFilter.hpp"
 #include "dart/collision/native/NativeCollisionGroup.hpp"
 #include "dart/collision/native/NativeCollisionObject.hpp"
+#include "dart/collision/native/PersistentManifoldCache.hpp"
 #include "dart/collision/native/narrow_phase/NarrowPhase.hpp"
 #include "dart/common/Console.hpp"
 
 #include <algorithm>
+#include <array>
 #include <limits>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <unordered_map>
 #include <vector>
+
+#include <cstdint>
 
 namespace dart {
 namespace collision {
@@ -146,6 +154,65 @@ struct NativeRayHitCandidate
   RayHit hit;
   double distance = std::numeric_limits<double>::max();
 };
+
+//==============================================================================
+std::size_t getManifoldCacheId(const CollisionObject* object)
+{
+  return static_cast<std::size_t>(reinterpret_cast<std::uintptr_t>(object));
+}
+
+//==============================================================================
+using ManifoldCacheMap = std::unordered_map<
+    const NativeCollisionDetector*,
+    std::unique_ptr<native::PersistentManifoldCache>>;
+
+//==============================================================================
+struct ManifoldCacheRegistry
+{
+  ManifoldCacheMap caches;
+  std::mutex mutex;
+};
+
+//==============================================================================
+ManifoldCacheRegistry& getManifoldCacheRegistry()
+{
+  static ManifoldCacheRegistry registry;
+  return registry;
+}
+
+//==============================================================================
+native::PersistentManifoldCache* findManifoldCache(
+    const NativeCollisionDetector* detector)
+{
+  auto& registry = getManifoldCacheRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  const auto it = registry.caches.find(detector);
+  if (it == registry.caches.end())
+    return nullptr;
+
+  return it->second.get();
+}
+
+//==============================================================================
+native::PersistentManifoldCache& getOrCreateManifoldCache(
+    const NativeCollisionDetector* detector)
+{
+  auto& registry = getManifoldCacheRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  auto& cache = registry.caches[detector];
+  if (!cache)
+    cache = std::make_unique<native::PersistentManifoldCache>();
+
+  return *cache;
+}
+
+//==============================================================================
+void removeManifoldCache(const NativeCollisionDetector* detector)
+{
+  auto& registry = getManifoldCacheRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  registry.caches.erase(detector);
+}
 
 //==============================================================================
 RayHit convertRayHit(
@@ -301,6 +368,224 @@ void addPairOnlyContact(
 }
 
 //==============================================================================
+void attachCachedContactImpulses(
+    CollisionResult* result, native::PersistentManifoldCache* manifoldCache)
+{
+  if (!result || !manifoldCache)
+    return;
+
+  if (result->getNumContacts() == 1u) {
+    auto& contact = result->getContact(0);
+    auto* object1 = contact.collisionObject1;
+    auto* object2 = contact.collisionObject2;
+    if (!object1 || !object2)
+      return;
+
+    const auto id1 = getManifoldCacheId(object1);
+    const auto id2 = getManifoldCacheId(object2);
+    if (id1 == 0u || id2 == 0u)
+      return;
+
+    const auto tf1 = object1->getTransform();
+    const auto tf2 = object2->getTransform();
+    const auto tf1Inv = tf1.inverse();
+    const auto tf2Inv = tf2.inverse();
+    const bool swapped = id2 < id1;
+
+    native::CachedContact cached;
+    cached.localPointA
+        = swapped ? tf2Inv * contact.point : tf1Inv * contact.point;
+    cached.localPointB
+        = swapped ? tf1Inv * contact.point : tf2Inv * contact.point;
+    cached.normal = contact.normal;
+    cached.penetrationDepth = contact.penetrationDepth;
+
+    auto& manifold = manifoldCache->getOrCreate(id1, id2);
+    manifold.addOrReplace(cached);
+    if (manifold.numContacts == 1) {
+      auto& manifoldContact = manifold.contacts[0];
+      contact.userData = &manifoldContact;
+      return;
+    }
+
+    manifold.refresh(swapped ? tf2 : tf1, swapped ? tf1 : tf2);
+    if (manifold.numContacts == 0) {
+      manifoldCache->remove(id1, id2);
+      return;
+    }
+
+    const auto match = manifold.findMatch(cached.localPointA);
+    if (match < 0)
+      return;
+
+    const auto matchIndex = static_cast<std::size_t>(match);
+    auto& manifoldContact = manifold.contacts[matchIndex];
+    contact.userData = &manifoldContact;
+    return;
+  }
+
+  CollisionObject* cachedObject1 = nullptr;
+  CollisionObject* cachedObject2 = nullptr;
+  Eigen::Isometry3d tf1;
+  Eigen::Isometry3d tf2;
+  Eigen::Isometry3d tf1Inv;
+  Eigen::Isometry3d tf2Inv;
+  std::size_t id1 = 0u;
+  std::size_t id2 = 0u;
+  bool swapped = false;
+  native::PersistentManifold* manifold = nullptr;
+  std::vector<std::size_t> pendingContactIndices;
+  std::vector<Eigen::Vector3d> pendingLocalPoints;
+  pendingContactIndices.reserve(result->getNumContacts());
+  pendingLocalPoints.reserve(result->getNumContacts());
+
+  auto flushPair = [&]() {
+    if (!manifold || pendingContactIndices.empty())
+      return;
+
+    manifold->refresh(swapped ? tf2 : tf1, swapped ? tf1 : tf2);
+    if (manifold->numContacts == 0) {
+      manifoldCache->remove(id1, id2);
+      manifold = nullptr;
+      pendingContactIndices.clear();
+      pendingLocalPoints.clear();
+      return;
+    }
+
+    std::array<bool, native::PersistentManifold::kMaxContacts> assignedSlots{};
+    for (std::size_t pendingIndex = 0u;
+         pendingIndex < pendingContactIndices.size();
+         ++pendingIndex) {
+      const auto match = manifold->findMatch(pendingLocalPoints[pendingIndex]);
+      if (match < 0)
+        continue;
+
+      const auto matchIndex = static_cast<std::size_t>(match);
+      if (assignedSlots[matchIndex])
+        continue;
+      assignedSlots[matchIndex] = true;
+
+      auto& contact = result->getContact(pendingContactIndices[pendingIndex]);
+      auto& manifoldContact = manifold->contacts[matchIndex];
+      contact.userData = &manifoldContact;
+    }
+
+    manifold = nullptr;
+    pendingContactIndices.clear();
+    pendingLocalPoints.clear();
+  };
+
+  for (std::size_t i = 0u; i < result->getNumContacts(); ++i) {
+    auto& contact = result->getContact(i);
+    auto* object1 = contact.collisionObject1;
+    auto* object2 = contact.collisionObject2;
+    if (!object1 || !object2)
+      continue;
+
+    if (object1 != cachedObject1 || object2 != cachedObject2) {
+      flushPair();
+      cachedObject1 = object1;
+      cachedObject2 = object2;
+      tf1 = object1->getTransform();
+      tf2 = object2->getTransform();
+      tf1Inv = tf1.inverse();
+      tf2Inv = tf2.inverse();
+      id1 = getManifoldCacheId(object1);
+      id2 = getManifoldCacheId(object2);
+      swapped = id2 < id1;
+    }
+
+    if (id1 == 0u || id2 == 0u) {
+      flushPair();
+      cachedObject1 = nullptr;
+      cachedObject2 = nullptr;
+      continue;
+    }
+
+    if (!manifold)
+      manifold = &manifoldCache->getOrCreate(id1, id2);
+
+    native::CachedContact cached;
+    cached.localPointA
+        = swapped ? tf2Inv * contact.point : tf1Inv * contact.point;
+    cached.localPointB
+        = swapped ? tf1Inv * contact.point : tf2Inv * contact.point;
+    cached.normal = contact.normal;
+    cached.penetrationDepth = contact.penetrationDepth;
+
+    manifold->addOrReplace(cached);
+    pendingContactIndices.push_back(i);
+    pendingLocalPoints.push_back(cached.localPointA);
+  }
+
+  flushPair();
+}
+
+//==============================================================================
+void refreshManifoldCache(
+    const std::vector<CollisionObject*>& objects,
+    native::PersistentManifoldCache* manifoldCache)
+{
+  if (!manifoldCache)
+    return;
+
+  std::unordered_map<std::size_t, CollisionObject*> objectsById;
+  objectsById.reserve(objects.size());
+  for (auto* object : objects) {
+    const auto id = getManifoldCacheId(object);
+    if (id != 0u)
+      objectsById[id] = object;
+  }
+
+  manifoldCache->refreshAll(
+      [&](std::size_t idA, std::size_t idB)
+          -> std::optional<std::pair<Eigen::Isometry3d, Eigen::Isometry3d>> {
+        const auto itA = objectsById.find(idA);
+        const auto itB = objectsById.find(idB);
+        if (itA == objectsById.end() || itB == objectsById.end())
+          return std::nullopt;
+
+        return std::make_pair(
+            itA->second->getTransform(), itB->second->getTransform());
+      });
+}
+
+//==============================================================================
+void refreshManifoldCache(
+    const std::vector<CollisionObject*>& objects1,
+    const std::vector<CollisionObject*>& objects2,
+    native::PersistentManifoldCache* manifoldCache)
+{
+  if (!manifoldCache)
+    return;
+
+  std::unordered_map<std::size_t, CollisionObject*> objectsById;
+  objectsById.reserve(objects1.size() + objects2.size());
+  for (auto* object : objects1) {
+    const auto id = getManifoldCacheId(object);
+    if (id != 0u)
+      objectsById[id] = object;
+  }
+  for (auto* object : objects2) {
+    const auto id = getManifoldCacheId(object);
+    if (id != 0u)
+      objectsById[id] = object;
+  }
+
+  manifoldCache->refreshAll(
+      [&](std::size_t idA, std::size_t idB)
+          -> std::optional<std::pair<Eigen::Isometry3d, Eigen::Isometry3d>> {
+        const auto itA = objectsById.find(idA);
+        const auto itB = objectsById.find(idB);
+        if (itA == objectsById.end() || itB == objectsById.end())
+          return std::nullopt;
+
+        return std::make_pair(
+            itA->second->getTransform(), itB->second->getTransform());
+      });
+}
+
+//==============================================================================
 bool emitContacts(
     const native::CollisionResult& nativeResult,
     NativeCollisionObject* object1,
@@ -402,7 +687,52 @@ std::shared_ptr<NativeCollisionDetector> NativeCollisionDetector::create()
 }
 
 //==============================================================================
-NativeCollisionDetector::~NativeCollisionDetector() = default;
+NativeCollisionDetector::~NativeCollisionDetector()
+{
+  removeManifoldCache(this);
+}
+
+//==============================================================================
+native::CachedContact* NativeCollisionDetector::getCachedContact(
+    const NativeCollisionObject* object1,
+    const NativeCollisionObject* object2,
+    void* userData) const
+{
+  if (!object1 || !object2 || !userData)
+    return nullptr;
+
+  if (object1->getCollisionDetector() != this
+      || object2->getCollisionDetector() != this) {
+    return nullptr;
+  }
+
+  const auto* manifoldCache = findManifoldCache(this);
+  if (!manifoldCache)
+    return nullptr;
+
+  const auto id1 = getManifoldCacheId(object1);
+  const auto id2 = getManifoldCacheId(object2);
+  if (!manifoldCache->ownsContact(id1, id2, userData))
+    return nullptr;
+
+  return static_cast<native::CachedContact*>(userData);
+}
+
+//==============================================================================
+void NativeCollisionDetector::notifyCollisionObjectDestroying(
+    CollisionObject* object)
+{
+  CollisionDetector::notifyCollisionObjectDestroying(object);
+
+  if (!object)
+    return;
+
+  auto* manifoldCache = findManifoldCache(this);
+  if (!manifoldCache)
+    return;
+
+  manifoldCache->removeObject(getManifoldCacheId(object));
+}
 
 //==============================================================================
 std::shared_ptr<CollisionDetector>
@@ -447,6 +777,8 @@ bool NativeCollisionDetector::collide(
 
   auto* nativeGroup = static_cast<NativeCollisionGroup*>(group);
   nativeGroup->updateEngineData();
+  auto& manifoldCache = getOrCreateManifoldCache(this);
+  refreshManifoldCache(nativeGroup->mCollisionObjects, &manifoldCache);
 
   bool collisionFound = false;
   nativeGroup->mBroadPhase->visitPairs([&](std::size_t id1, std::size_t id2) {
@@ -454,6 +786,9 @@ bool NativeCollisionDetector::collide(
     auto* object2 = nativeGroup->mIdToObject.at(id2);
     return !processNativePair(object1, object2, option, result, collisionFound);
   });
+
+  if (option.enableContact)
+    attachCachedContactImpulses(result, &manifoldCache);
 
   return collisionFound;
 }
@@ -484,6 +819,11 @@ bool NativeCollisionDetector::collide(
   auto* nativeGroup2 = static_cast<NativeCollisionGroup*>(group2);
   nativeGroup1->updateEngineData();
   nativeGroup2->updateEngineData();
+  auto& manifoldCache = getOrCreateManifoldCache(this);
+  refreshManifoldCache(
+      nativeGroup1->mCollisionObjects,
+      nativeGroup2->mCollisionObjects,
+      &manifoldCache);
 
   bool collisionFound = false;
   for (auto* object1 : nativeGroup1->mCollisionObjects) {
@@ -494,10 +834,15 @@ bool NativeCollisionDetector::collide(
               option,
               result,
               collisionFound)) {
+        if (option.enableContact)
+          attachCachedContactImpulses(result, &manifoldCache);
         return collisionFound;
       }
     }
   }
+
+  if (option.enableContact)
+    attachCachedContactImpulses(result, &manifoldCache);
 
   return collisionFound;
 }
@@ -618,6 +963,7 @@ bool NativeCollisionDetector::raycast(
 //==============================================================================
 NativeCollisionDetector::NativeCollisionDetector() : CollisionDetector()
 {
+  getOrCreateManifoldCache(this);
   mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
 }
 
