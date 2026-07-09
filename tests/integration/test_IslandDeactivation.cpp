@@ -329,6 +329,20 @@ public:
   }
 };
 
+class ScopedContactMaxErrorReductionVelocity
+{
+public:
+  explicit ScopedContactMaxErrorReductionVelocity(double velocity)
+  {
+    constraint::ContactConstraint::setMaxErrorReductionVelocity(velocity);
+  }
+
+  ~ScopedContactMaxErrorReductionVelocity()
+  {
+    constraint::ContactConstraint::resetMaxErrorReductionVelocity();
+  }
+};
+
 // Creates a world with automatic deactivation enabled. Keep this explicit so
 // tests stay robust if callers locally override the default options.
 WorldPtr makeSleepWorld()
@@ -730,6 +744,48 @@ TEST(IslandDeactivation, ExplicitDefaultToleranceKeepsPlaneContactStrict)
     EXPECT_FALSE(box->isResting());
     EXPECT_FALSE(box->isSleepCandidate());
   }
+}
+
+//==============================================================================
+// Setting the global contact ERV back to the built-in default after a temporary
+// old-default override must restore the adaptive default policy. Otherwise a
+// multi-world process cannot return ordinary support contacts to the small ERV
+// cap without restarting.
+TEST(IslandDeactivation, DefaultContactErvRestoresAdaptivePolicy)
+{
+  auto stepSimpleSupportContact = []() {
+    auto world = makeSleepWorld();
+    world->setGravity(Eigen::Vector3d::Zero());
+    world->addSkeleton(createFloor());
+
+    auto box = createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf - 0.01));
+    world->addSkeleton(box);
+
+    world->step();
+
+    EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    return box->getJoint(0)->getVelocity(5);
+  };
+
+  constraint::ContactConstraint::resetMaxErrorReductionVelocity();
+  double broadCorrectionVelocity = 0.0;
+  {
+    ScopedContactMaxErrorReductionVelocity explicitBroadDefault(0.1);
+    broadCorrectionVelocity = std::abs(stepSimpleSupportContact());
+  }
+
+  double restoredCorrectionVelocity = 0.0;
+  {
+    ScopedContactMaxErrorReductionVelocity oldDefaultOverride(1e-3);
+    constraint::ContactConstraint::setMaxErrorReductionVelocity(0.1);
+    restoredCorrectionVelocity = std::abs(stepSimpleSupportContact());
+  }
+
+  EXPECT_GT(broadCorrectionVelocity, 0.05);
+  EXPECT_LT(restoredCorrectionVelocity, 0.01);
 }
 
 //==============================================================================

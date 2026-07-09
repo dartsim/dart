@@ -1522,6 +1522,8 @@ void applyOptions(
   if (options.contactMaxErrorReductionVelocity.has_value()) {
     dart::constraint::ContactConstraint::setMaxErrorReductionVelocity(
         *options.contactMaxErrorReductionVelocity);
+  } else {
+    dart::constraint::ContactConstraint::resetMaxErrorReductionVelocity();
   }
   if (options.sleepContactPenetrationTolerance.has_value()) {
     dart::constraint::ConstraintSolver::

@@ -88,10 +88,13 @@ public:
   /// Get global error reduction parameter
   static double getErrorReductionParameter();
 
-  /// Set global error reduction parameter
+  /// Set global maximum error reduction velocity.
   static void setMaxErrorReductionVelocity(double erv);
 
-  /// Get global error reduction parameter
+  /// Restore the adaptive default maximum error reduction velocity policy.
+  static void resetMaxErrorReductionVelocity();
+
+  /// Get global maximum error reduction velocity.
   static double getMaxErrorReductionVelocity();
 
   /// Set global constraint force mixing parameter

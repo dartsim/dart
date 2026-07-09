@@ -474,6 +474,11 @@ double ContactConstraint::getErrorReductionParameter()
 //==============================================================================
 void ContactConstraint::setMaxErrorReductionVelocity(double erv)
 {
+  // A first explicit 0.1 request remains an override, but setting 0.1 after a
+  // temporary non-default override restores the adaptive default policy.
+  const bool restoreAdaptiveDefault
+      = mMaxErrorReductionVelocityUserConfigured && erv == DART_MAX_ERV;
+
   // Clamp maximum error reduction velocity if it is out of the range
   if (erv < 0.0) {
     dtwarn << "Maximum error reduction velocity[" << erv
@@ -485,7 +490,14 @@ void ContactConstraint::setMaxErrorReductionVelocity(double erv)
   }
 
   mMaxErrorReductionVelocity = erv;
-  mMaxErrorReductionVelocityUserConfigured = true;
+  mMaxErrorReductionVelocityUserConfigured = !restoreAdaptiveDefault;
+}
+
+//==============================================================================
+void ContactConstraint::resetMaxErrorReductionVelocity()
+{
+  mMaxErrorReductionVelocity = DART_MAX_ERV;
+  mMaxErrorReductionVelocityUserConfigured = false;
 }
 
 //==============================================================================
@@ -633,9 +645,9 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
         // Split impulse disabled (the default): merge the Baumgarte
         // penetration correction back into the velocity bias, reproducing the
         // legacy behavior. The result equals the pre-split-impulse code for all
-        // reachable inputs because the penetration correction is clamped to
-        // mMaxErrorReductionVelocity (default 1e-3) while restitution only
-        // engages above DART_BOUNCING_VELOCITY_THRESHOLD and is clamped to
+        // reachable inputs because the penetration correction is clamped to the
+        // contact's effective maximum ERV while restitution only engages above
+        // DART_BOUNCING_VELOCITY_THRESHOLD and is clamped to
         // DART_MAX_BOUNCING_VELOCITY (1e+2), so the max-merge order is
         // immaterial.
         const double errorReductionVelocity
