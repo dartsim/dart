@@ -44,6 +44,7 @@
 #include <dart/collision/native/NativeCollisionDetector.hpp>
 #include <dart/collision/native/NativeCollisionGroup.hpp>
 #include <dart/collision/native/NativeCollisionObject.hpp>
+#include <dart/collision/native/PersistentManifoldCache.hpp>
 #include <dart/collision/native/detail/NativeShapeConversion.hpp>
 #include <dart/collision/native/shapes/Shape.hpp>
 
@@ -67,10 +68,13 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <atomic>
 #include <functional>
 #include <memory>
 #include <set>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -104,6 +108,7 @@ public:
   ExposedNativeCollisionDetector() = default;
 
   using collision::CollisionDetector::claimCollisionObject;
+  using collision::NativeCollisionDetector::notifyCollisionObjectDestroying;
 
 private:
   std::unique_ptr<collision::CollisionObject> createCollisionObject(
@@ -1218,6 +1223,219 @@ TEST(NativeCollisionDetector, CollidesAcrossGroups)
   ASSERT_EQ(1u, result.getNumContacts());
   EXPECT_EQ(frame1.get(), result.getContact(0).getShapeFrame1());
   EXPECT_EQ(frame2.get(), result.getContact(0).getShapeFrame2());
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, PersistentManifoldReusesCachedSingleContact)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto frame1 = makeFrame(std::make_shared<dynamics::SphereShape>(1.0));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(1.0),
+      Eigen::Vector3d(1.5, 0.0, 0.0));
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+  collision::CollisionOption option(true, 10u);
+  collision::CollisionResult first;
+  ASSERT_TRUE(group->collide(option, &first));
+  ASSERT_GT(first.getNumContacts(), 0u);
+
+  auto& firstContact = first.getContact(0);
+  ASSERT_NE(nullptr, firstContact.userData);
+  auto* cached = static_cast<native::CachedContact*>(firstContact.userData);
+  cached->cachedNormalImpulse = 1.5;
+  cached->cachedFrictionImpulse1 = -0.4;
+  cached->cachedFrictionImpulse2 = 0.2;
+  cached->cachedFrictionBasis1 = Eigen::Vector3d::UnitY();
+  cached->cachedFrictionBasis2 = Eigen::Vector3d::UnitZ();
+  cached->hasCachedFrictionBasis = true;
+
+  collision::CollisionResult second;
+  ASSERT_TRUE(group->collide(option, &second));
+  ASSERT_GT(second.getNumContacts(), 0u);
+  const auto& warm = second.getContact(0);
+  EXPECT_NE(nullptr, warm.userData);
+  auto* warmCached = static_cast<native::CachedContact*>(warm.userData);
+  EXPECT_NEAR(1.5, warmCached->cachedNormalImpulse, 1e-12);
+  EXPECT_NEAR(-0.4, warmCached->cachedFrictionImpulse1, 1e-12);
+  EXPECT_NEAR(0.2, warmCached->cachedFrictionImpulse2, 1e-12);
+  EXPECT_TRUE(warmCached->hasCachedFrictionBasis);
+  EXPECT_TRUE(
+      warmCached->cachedFrictionBasis1.isApprox(Eigen::Vector3d::UnitY()));
+  EXPECT_TRUE(
+      warmCached->cachedFrictionBasis2.isApprox(Eigen::Vector3d::UnitZ()));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, ManifoldCacheRegistryHandlesConcurrentDetectors)
+{
+  constexpr auto kThreadCount = 8u;
+  constexpr auto kIterations = 20u;
+
+  std::atomic<unsigned int> ready{0u};
+  std::atomic<bool> start{false};
+  std::atomic<bool> failed{false};
+  std::vector<std::thread> threads;
+  threads.reserve(kThreadCount);
+
+  for (auto threadIndex = 0u; threadIndex < kThreadCount; ++threadIndex) {
+    threads.emplace_back([&] {
+      ready.fetch_add(1u, std::memory_order_release);
+      while (!start.load(std::memory_order_acquire))
+        std::this_thread::yield();
+
+      for (auto iteration = 0u; iteration < kIterations; ++iteration) {
+        auto detector = collision::NativeCollisionDetector::create();
+        auto frame1 = makeFrame(std::make_shared<dynamics::SphereShape>(0.5));
+        auto frame2 = makeFrame(
+            std::make_shared<dynamics::SphereShape>(0.5),
+            Eigen::Vector3d(0.75, 0.0, 0.0));
+        auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+        collision::CollisionResult result;
+        if (!group->collide(collision::CollisionOption(true, 4u), &result)
+            || result.getNumContacts() == 0u) {
+          failed.store(true, std::memory_order_release);
+        }
+      }
+    });
+  }
+
+  while (ready.load(std::memory_order_acquire) != kThreadCount)
+    std::this_thread::yield();
+  start.store(true, std::memory_order_release);
+
+  for (auto& thread : threads)
+    thread.join();
+
+  EXPECT_FALSE(failed.load(std::memory_order_acquire));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, DestroyingObjectDropsPersistentManifoldCache)
+{
+  auto detector = std::make_shared<ExposedNativeCollisionDetector>();
+  auto frame1 = makeFrame(std::make_shared<dynamics::SphereShape>(0.5));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(0.8, 0.0, 0.0));
+
+  auto object1 = detector->claimCollisionObject(frame1.get());
+  auto object2 = detector->claimCollisionObject(frame2.get());
+  auto* nativeObject1
+      = dynamic_cast<collision::NativeCollisionObject*>(object1.get());
+  auto* nativeObject2
+      = dynamic_cast<collision::NativeCollisionObject*>(object2.get());
+  ASSERT_NE(nullptr, nativeObject1);
+  ASSERT_NE(nullptr, nativeObject2);
+
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+  collision::CollisionOption option(true, 4u, nullptr);
+  collision::CollisionResult result;
+  ASSERT_TRUE(detector->collide(group.get(), option, &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  void* userData = result.getContact(0).userData;
+  ASSERT_NE(nullptr, userData);
+  ASSERT_NE(
+      nullptr,
+      detector->getCachedContact(nativeObject1, nativeObject2, userData));
+
+  detector->notifyCollisionObjectDestroying(nativeObject1);
+
+  EXPECT_EQ(
+      nullptr,
+      detector->getCachedContact(nativeObject1, nativeObject2, userData));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, PersistentManifoldClearsFrictionAcrossGroupOrder)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto groupA = detector->createCollisionGroup();
+  auto groupB = detector->createCollisionGroup();
+
+  auto frame1 = makeFrame(std::make_shared<dynamics::SphereShape>(1.0));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(1.0),
+      Eigen::Vector3d(1.5, 0.0, 0.0));
+  groupA->addShapeFrame(frame1.get());
+  groupB->addShapeFrame(frame2.get());
+
+  collision::CollisionOption option(true, 10u);
+  collision::CollisionResult first;
+  ASSERT_TRUE(detector->collide(groupB.get(), groupA.get(), option, &first));
+  ASSERT_GT(first.getNumContacts(), 0u);
+
+  auto& firstContact = first.getContact(0);
+  ASSERT_NE(nullptr, firstContact.userData);
+  auto* cached = static_cast<native::CachedContact*>(firstContact.userData);
+  cached->cachedNormalImpulse = 2.5;
+  cached->cachedFrictionImpulse1 = -0.6;
+  cached->cachedFrictionImpulse2 = 0.3;
+  cached->cachedFrictionBasis1 = Eigen::Vector3d::UnitY();
+  cached->cachedFrictionBasis2 = Eigen::Vector3d::UnitZ();
+  cached->hasCachedFrictionBasis = true;
+
+  collision::CollisionResult second;
+  ASSERT_TRUE(detector->collide(groupA.get(), groupB.get(), option, &second));
+  ASSERT_GT(second.getNumContacts(), 0u);
+  const auto& warm = second.getContact(0);
+  EXPECT_NE(nullptr, warm.userData);
+  EXPECT_LT(firstContact.normal.dot(warm.normal), -0.99);
+  auto* warmCached = static_cast<native::CachedContact*>(warm.userData);
+  EXPECT_NEAR(2.5, warmCached->cachedNormalImpulse, 1e-12);
+  EXPECT_NEAR(0.0, warmCached->cachedFrictionImpulse1, 1e-12);
+  EXPECT_NEAR(0.0, warmCached->cachedFrictionImpulse2, 1e-12);
+  EXPECT_FALSE(warmCached->hasCachedFrictionBasis);
+  EXPECT_TRUE(warmCached->cachedFrictionBasis1.isZero());
+  EXPECT_TRUE(warmCached->cachedFrictionBasis2.isZero());
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, PersistentManifoldReusesCachedMultipleContacts)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto frame1 = makeFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      Eigen::Vector3d(0.8, 0.0, 0.0));
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+  collision::CollisionOption option(true, 10u);
+  option.maxNumContactsPerPair = 10u;
+
+  collision::CollisionResult first;
+  ASSERT_TRUE(group->collide(option, &first));
+  ASSERT_GT(first.getNumContacts(), 1u);
+
+  std::vector<double> expectedImpulses;
+  expectedImpulses.reserve(first.getNumContacts());
+  for (std::size_t i = 0u; i < first.getNumContacts(); ++i) {
+    auto& contact = first.getContact(i);
+    ASSERT_NE(nullptr, contact.userData);
+    auto* cached = static_cast<native::CachedContact*>(contact.userData);
+    cached->cachedNormalImpulse = static_cast<double>(i + 1u);
+    expectedImpulses.push_back(cached->cachedNormalImpulse);
+  }
+  std::sort(expectedImpulses.begin(), expectedImpulses.end());
+
+  collision::CollisionResult second;
+  ASSERT_TRUE(group->collide(option, &second));
+  ASSERT_EQ(first.getNumContacts(), second.getNumContacts());
+
+  std::vector<double> actualImpulses;
+  actualImpulses.reserve(second.getNumContacts());
+  for (std::size_t i = 0u; i < second.getNumContacts(); ++i) {
+    const auto& contact = second.getContact(i);
+    ASSERT_NE(nullptr, contact.userData);
+    auto* cached = static_cast<native::CachedContact*>(contact.userData);
+    actualImpulses.push_back(cached->cachedNormalImpulse);
+  }
+  std::sort(actualImpulses.begin(), actualImpulses.end());
+
+  EXPECT_EQ(expectedImpulses, actualImpulses);
 }
 
 //==============================================================================

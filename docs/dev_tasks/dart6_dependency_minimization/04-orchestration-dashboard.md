@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), and phase 3 D1-D3 (#3352, #3355, #3358) merged; phase 3 D4 active on `feature/native-ccd` |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), and phase 3 D1-D4 (#3352, #3355, #3358, #3359) merged; phase 3 D5 active on `feature/native-manifold-cache` |
 | **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet **#3263 merged** (tracks the native-collision port as its WS-F lane, external owner) |
 
 ## PR tracker
@@ -103,6 +103,7 @@
 - **#3358** phase-3 D3 native `VoxelGridShape`/octree replacement via compound
   voxel boxes and compound collision/distance/raycast routing (merged
   2026-07-09).
+- **#3359** phase-3 D4 native CCD engine support (merged 2026-07-09).
 - **#3283** main-branch dual for the native sphere-sphere binary-check fix
   (merged 2026-07-07).
 
@@ -119,15 +120,14 @@
 
 ### 🔄 Open — monitoring (checked 2026-07-09)
 
-- **Phase 3 D4** `feature/native-ccd` — active local slice for native CCD
-  engine support (rigid sphere/capsule casts, primitive point-triangle/edge-edge
-  CCD, and shape+transform dispatcher entry points). Keep it one PR to reduce
-  CI overhead.
-- **#3353** is open on `release-6.20` for the separate performance-generalization
-  plan parking lane.
+- **Phase 3 D5** `feature/native-manifold-cache` — active local slice for
+  persistent manifold cache/reuse, native detector cached-impulse reuse, and
+  solver cached-impulse write-back. Keep it one PR to reduce CI overhead.
+- **#3353** is merged on `release-6.20` for the separate
+  performance-generalization plan parking lane.
 - The earlier monitoring queue has landed: #3283, #3317, #3319, #3321, #3322,
-  #3324, #3325, #3357, and #3358 are merged. The perf lane's WP-PG.01 baseline packet
-  **#3263** also merged.
+  #3324, #3325, #3357, #3358, and #3359 are merged. The perf lane's WP-PG.01
+  baseline packet **#3263** also merged.
 
 Related remote heads still visible: `feature/native-occupancy-grid`,
 `task/native-collision-performance-exec`, and six `perf/dart6-*` round-1
@@ -157,10 +157,10 @@ before treating it as an open/active PR.)_
 - **Phase 2 status:** P1-P10 are merged: broadphase, dispatcher, adapter bridge,
   `"native"` registration, sphere/box/capsule/convex/cylinder/mesh/plane
   coverage, distance helpers, mixed-scene parity, and associated parity/
-  performance tests. **Phase 3 D1-D3 are merged (#3352/#3355/#3358):** native
-  detector distance, raycast, and VoxelGrid/compound wiring against the FCL/
-  Bullet incumbents and prior DART 6 support gaps. **Current slice is phase 3
-  D4:** native CCD engine support.
+  performance tests. **Phase 3 D1-D4 are merged (#3352/#3355/#3358/#3359):**
+  native detector distance, raycast, VoxelGrid/compound wiring, and CCD support
+  against the incumbent support gaps. **Current slice is phase 3 D5:**
+  persistent manifold cache/reuse.
 - **Default flip:** still late-phase only. Do not flip defaults until `03`'s full
   A/B packet and gz gate pass.
 - _Hold each follow-up to `03`'s bar: gz-compat (`pixi run -e gazebo test-gz`),
@@ -172,8 +172,8 @@ before treating it as an open/active PR.)_
 
 1. **Base / conflict status**:
    - Current planning baseline: `origin/release-6.20` =
-     `e2e03ffe8ee99cedda2fcda051f6eb30dc102363`; `origin/main` =
-     `a70fc2ed5cb7c3a4c44759ec222ce0338b8507f54`.
+     `1a33843125dde544c1a1c4caa11fae71af35b6e5`; `origin/main` =
+     `a70fc2ed5cb7ea40f72dce68b7d374583ab7feee`.
    - Open PRs routinely fall behind as the base advances; a maintainer merge-up
      clears it. Exact behind-counts aren't tracked here (too volatile).
    - All remote mutations are owned by the maintainer.
@@ -212,9 +212,9 @@ before treating it as an open/active PR.)_
   native-collision **#3123** (primitive plane contacts + broadphase pruning) — first
   piece of the native collision port.
 - **Open queue (2026-07-09):** no open native-collision release PRs remain after
-  #3358. Phase 3 D4 is active locally on `feature/native-ccd`; the former
+  #3359. Phase 3 D5 is active locally on `feature/native-manifold-cache`; the former
   #3263/#3271/#3281/#3302/#3303/#3306/#3318/#3319, plus
-  #3321/#3322/#3324/#3325/#3343/#3350/#3352/#3355/#3358 lane milestones,
+  #3321/#3322/#3324/#3325/#3343/#3350/#3352/#3355/#3358/#3359 lane milestones,
   main-branch dual #3283, workflow rename #3357, and MSVC policy #3348 are
   merged.
 - **Largest remaining win:** native-collision port → makes FCL/Bullet/ODE

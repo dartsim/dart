@@ -65,6 +65,11 @@ dart_add_test(
 )
 dart_add_test(
   "unit"
+  UNIT_collision_native_persistent_manifold_cache
+  test_persistent_manifold_cache.cpp
+)
+dart_add_test(
+  "unit"
   UNIT_collision_native_primitive_ccd
   test_primitive_ccd.cpp
 )

@@ -33,6 +33,9 @@
 #include "dart/constraint/ContactConstraint.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/native/NativeCollisionDetector.hpp"
+#include "dart/collision/native/NativeCollisionObject.hpp"
+#include "dart/collision/native/PersistentManifoldCache.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -41,7 +44,10 @@
 #include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 #include "dart/math/Helpers.hpp"
 
+#include <algorithm>
 #include <iostream>
+
+#include <cmath>
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
@@ -54,6 +60,12 @@ namespace dart {
 namespace constraint {
 
 namespace {
+
+using NativeFrictionBasisMatrix = Eigen::Matrix<double, 3, 2>;
+
+constexpr double kCachedFrictionBasisTolerance = 1e-6;
+constexpr double kCachedFrictionBasisToleranceSquared
+    = kCachedFrictionBasisTolerance * kCachedFrictionBasisTolerance;
 
 //==============================================================================
 dynamics::BodyNode* getContactBodyNode(
@@ -101,6 +113,103 @@ bool isContactBodyNodeReactive(
   }
 
   return false;
+}
+
+//==============================================================================
+collision::native::CachedContact* getNativeCachedContact(
+    collision::Contact* contact)
+{
+  if (contact == nullptr || contact->userData == nullptr)
+    return nullptr;
+
+  auto* object1 = dynamic_cast<collision::NativeCollisionObject*>(
+      contact->collisionObject1);
+  if (object1 == nullptr)
+    return nullptr;
+
+  auto* object2 = dynamic_cast<collision::NativeCollisionObject*>(
+      contact->collisionObject2);
+  if (object2 == nullptr)
+    return nullptr;
+
+  auto* detector = dynamic_cast<collision::NativeCollisionDetector*>(
+      object1->getCollisionDetector());
+  if (detector == nullptr)
+    return nullptr;
+
+  return detector->getCachedContact(object1, object2, contact->userData);
+}
+
+//==============================================================================
+bool isFiniteVector(const Eigen::Vector3d& vector)
+{
+  return std::isfinite(vector.x()) && std::isfinite(vector.y())
+         && std::isfinite(vector.z());
+}
+
+//==============================================================================
+bool hasMatchingCachedFrictionBasis(
+    const collision::native::CachedContact& cached,
+    const NativeFrictionBasisMatrix& tangentBasis)
+{
+  if (!cached.hasCachedFrictionBasis)
+    return false;
+
+  if (!isFiniteVector(cached.cachedFrictionBasis1)
+      || !isFiniteVector(cached.cachedFrictionBasis2)) {
+    return false;
+  }
+
+  return (cached.cachedFrictionBasis1 - tangentBasis.col(0)).squaredNorm()
+             <= kCachedFrictionBasisToleranceSquared
+         && (cached.cachedFrictionBasis2 - tangentBasis.col(1)).squaredNorm()
+                <= kCachedFrictionBasisToleranceSquared;
+}
+
+//==============================================================================
+void clearCachedFrictionBasis(collision::native::CachedContact* cached)
+{
+  if (!cached)
+    return;
+
+  cached->cachedFrictionImpulse1 = 0.0;
+  cached->cachedFrictionImpulse2 = 0.0;
+  cached->cachedFrictionBasis1.setZero();
+  cached->cachedFrictionBasis2.setZero();
+  cached->hasCachedFrictionBasis = false;
+}
+
+//==============================================================================
+void seedCachedImpulses(
+    collision::native::CachedContact* cached,
+    ConstraintInfo* info,
+    bool hasFrictionRows,
+    bool seedFriction,
+    const NativeFrictionBasisMatrix* tangentBasis = nullptr)
+{
+  info->x[0] = 0.0;
+  if (hasFrictionRows) {
+    info->x[1] = 0.0;
+    info->x[2] = 0.0;
+  }
+
+  if (!cached)
+    return;
+
+  // Iterative boxed solvers such as PGS consume ConstraintInfo::x as an initial
+  // guess. The default Dantzig solver recomputes x from scratch, but still
+  // writes solved impulses back into the cache for initial-guess-aware solvers.
+  info->x[0] = std::max(0.0, cached->cachedNormalImpulse);
+  if (hasFrictionRows && seedFriction) {
+    if (!tangentBasis
+        || !hasMatchingCachedFrictionBasis(*cached, *tangentBasis)) {
+      clearCachedFrictionBasis(cached);
+      return;
+    }
+
+    info->x[1] = cached->cachedFrictionImpulse1;
+    info->x[2] = cached->cachedFrictionImpulse2;
+  }
 }
 
 } // namespace
@@ -660,11 +769,12 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
       info->b[2] += mContactSurfaceMotionVelocity.z();
     }
 
-    // TODO(JS): Initial guess
-    // x
-    info->x[0] = 0.0;
-    info->x[1] = 0.0;
-    info->x[2] = 0.0;
+    seedCachedImpulses(
+        getNativeCachedContact(mContact),
+        info,
+        true,
+        !isPositionPhase,
+        &mTangentBasis);
   }
   //----------------------------------------------------------------------------
   // Frictionless case
@@ -716,9 +826,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
       info->b[0] += mContactSurfaceMotionVelocity.x();
     }
 
-    // TODO(JS): Initial guess
-    // x
-    info->x[0] = 0.0;
+    seedCachedImpulses(getNativeCachedContact(mContact), info, false, false);
   }
 }
 
@@ -943,6 +1051,29 @@ void ContactConstraint::applyImpulse(double* lambda)
   if (!hasValidBodyNodes())
     return;
 
+  const auto updateCachedUserData
+      = [&](double normalImpulse,
+            double frictionImpulse1,
+            double frictionImpulse2,
+            const NativeFrictionBasisMatrix* frictionBasis) {
+          auto* cached = getNativeCachedContact(mContact);
+          if (!cached)
+            return;
+
+          cached->cachedNormalImpulse = normalImpulse;
+          cached->cachedFrictionImpulse1 = frictionImpulse1;
+          cached->cachedFrictionImpulse2 = frictionImpulse2;
+          if (frictionBasis) {
+            cached->cachedFrictionBasis1 = frictionBasis->col(0);
+            cached->cachedFrictionBasis2 = frictionBasis->col(1);
+            cached->hasCachedFrictionBasis = true;
+          } else {
+            cached->cachedFrictionBasis1.setZero();
+            cached->cachedFrictionBasis2.setZero();
+            cached->hasCachedFrictionBasis = false;
+          }
+        };
+
   //----------------------------------------------------------------------------
   // Friction case
   //----------------------------------------------------------------------------
@@ -979,6 +1110,8 @@ void ContactConstraint::applyImpulse(double* lambda)
       mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(2) * lambda[2]);
     if (mIsReactiveB)
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(2) * lambda[2]);
+
+    updateCachedUserData(lambda[0], lambda[1], lambda[2], &mTangentBasis);
   }
   //----------------------------------------------------------------------------
   // Frictionless case
@@ -993,6 +1126,7 @@ void ContactConstraint::applyImpulse(double* lambda)
 
     // Store contact impulse (force) toward the normal w.r.t. world frame
     mContact->force = mContact->normal * lambda[0] / mTimeStep;
+    updateCachedUserData(lambda[0], 0.0, 0.0, nullptr);
   }
 }
 

@@ -10,6 +10,7 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/ContactPoint.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Types.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ContactManifold.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/PersistentManifoldCache.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionDetector.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionGroup.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionObject.hpp
@@ -75,6 +76,7 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/Aabb.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Types.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ContactManifold.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/PersistentManifoldCache.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionDetector.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionGroup.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/NativeCollisionObject.cpp

@@ -35,9 +35,9 @@ jobs:
     runs-on: windows-2025-vs2026
     env:
       CMAKE_GENERATOR: Visual Studio 18 2026
-    # Fail fast on hung Windows jobs instead of consuming the protected-branch
-    # runner indefinitely.
-    timeout-minutes: 120
+    # Keep the job bounded, but allow large native-collision PRs enough time
+    # for MSVC Release test linking on hosted runners.
+    timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
