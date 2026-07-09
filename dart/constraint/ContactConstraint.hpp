@@ -88,10 +88,13 @@ public:
   /// Get global error reduction parameter
   static double getErrorReductionParameter();
 
-  /// Set global error reduction parameter
+  /// Set an explicit global maximum error reduction velocity.
   static void setMaxErrorReductionVelocity(double erv);
 
-  /// Get global error reduction parameter
+  /// Restore the adaptive default maximum error reduction velocity policy.
+  static void resetMaxErrorReductionVelocity();
+
+  /// Get global maximum error reduction velocity.
   static double getMaxErrorReductionVelocity();
 
   /// Set global constraint force mixing parameter
@@ -342,6 +345,9 @@ private:
   ///
   bool mActive;
 
+  /// Effective maximum error reduction velocity for this contact instance.
+  double mEffectiveMaxErrorReductionVelocity;
+
   /// Global constraint error allowance
   static double mErrorAllowance;
 
@@ -351,6 +357,10 @@ private:
 
   /// Maximum error reduction velocity
   static double mMaxErrorReductionVelocity;
+
+  /// Whether the public setter has explicitly configured the maximum error
+  /// reduction velocity.
+  static bool mMaxErrorReductionVelocityUserConfigured;
 
   /// Global constraint force mixing parameter in the range of [1e-9, 1]. The
   /// default is 1e-5

@@ -40,6 +40,7 @@
 
 #include "dart/simulation/DeactivationOptions.hpp"
 
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 
 #include <dart/dart.hpp>
@@ -79,6 +80,19 @@ SkeletonPtr createFloor()
 
   // A static floor is immobile, so it is never a candidate for sleeping and
   // never adds itself to a solver island as an awake member.
+  floor->setMobile(false);
+  return floor;
+}
+
+//==============================================================================
+SkeletonPtr createPlaneFloor()
+{
+  auto floor = Skeleton::create("plane_floor");
+  auto body = floor->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
+
+  auto shape = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+
   floor->setMobile(false);
   return floor;
 }
@@ -129,6 +143,34 @@ SkeletonPtr createFreeBox(
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = position;
   skel->getJoint(0)->setPositions(FreeJoint::convertToPositions(tf));
+
+  return skel;
+}
+
+//==============================================================================
+SkeletonPtr createWeldedBox(
+    const std::string& name,
+    const Eigen::Vector3d& size,
+    const Eigen::Vector3d& position)
+{
+  auto skel = Skeleton::create(name);
+
+  WeldJoint::Properties jointProps;
+  jointProps.mName = name + "_joint";
+  BodyNode::Properties bodyProps(
+      BodyNode::AspectProperties(std::string(name + "_body")));
+  bodyProps.mInertia.setMass(1.0);
+
+  auto pair = skel->createJointAndBodyNodePair<WeldJoint>(
+      nullptr, jointProps, bodyProps);
+  auto* body = pair.second;
+
+  auto shape = std::make_shared<BoxShape>(size);
+  body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = position;
+  pair.first->setTransformFromParentBodyNode(tf);
 
   return skel;
 }
@@ -298,6 +340,36 @@ bool contactContainsBodies(
   return (contactBody1 == body1 && contactBody2 == body2)
          || (contactBody1 == body2 && contactBody2 == body1);
 }
+
+class ScopedSleepingContactPenetrationTolerance
+{
+public:
+  explicit ScopedSleepingContactPenetrationTolerance(double tolerance)
+  {
+    constraint::ConstraintSolver::
+        setAutomaticSleepingContactPenetrationTolerance(tolerance);
+  }
+
+  ~ScopedSleepingContactPenetrationTolerance()
+  {
+    constraint::ConstraintSolver::
+        resetAutomaticSleepingContactPenetrationTolerance();
+  }
+};
+
+class ScopedContactMaxErrorReductionVelocity
+{
+public:
+  explicit ScopedContactMaxErrorReductionVelocity(double velocity)
+  {
+    constraint::ContactConstraint::setMaxErrorReductionVelocity(velocity);
+  }
+
+  ~ScopedContactMaxErrorReductionVelocity()
+  {
+    constraint::ContactConstraint::resetMaxErrorReductionVelocity();
+  }
+};
 
 // Creates a world with automatic deactivation enabled. Keep this explicit so
 // tests stay robust if callers locally override the default options.
@@ -473,6 +545,9 @@ TEST(IslandDeactivation, SettlesThenSleeps)
 TEST(IslandDeactivation, SleepTransitionFreezesLastSolvedPoseAndVelocity)
 {
   auto world = makeSleepWorld();
+  auto opts = world->getDeactivationOptions();
+  opts.mLinearSpeedThreshold = 0.1;
+  world->setDeactivationOptions(opts);
   world->addSkeleton(createFloor());
   auto box = createFreeBox(
       "box",
@@ -613,6 +688,176 @@ TEST(IslandDeactivation, UnconvergedContactClearsSleepCandidate)
   ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
   EXPECT_FALSE(box->isSleepCandidate());
   EXPECT_FALSE(box->isResting());
+}
+
+//==============================================================================
+// The contact-penetration gate that prevents premature sleeping is tunable for
+// dense-pile evaluation: a strict tolerance rejects this contact, while a
+// bounded relaxed tolerance can treat it as converged.
+TEST(IslandDeactivation, ContactPenetrationToleranceIsConfigurable)
+{
+  auto makePenetratedCandidate = []() {
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    auto box = createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf - 5e-4));
+    box->setSleepCandidate(true);
+    box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
+    world->addSkeleton(box);
+    return std::make_pair(world, box);
+  };
+
+  {
+    ScopedSleepingContactPenetrationTolerance tolerance(1e-5);
+    auto [world, box] = makePenetratedCandidate();
+
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_FALSE(box->isResting());
+    EXPECT_FALSE(box->isSleepCandidate());
+  }
+
+  {
+    ScopedSleepingContactPenetrationTolerance tolerance(1e-3);
+    auto [world, box] = makePenetratedCandidate();
+
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_TRUE(box->isResting());
+    EXPECT_TRUE(box->isSleepCandidate());
+  }
+}
+
+//==============================================================================
+// PlaneShape contacts use the adaptive rest tolerance only when the caller has
+// not explicitly configured the process-wide tolerance. Setting the strict
+// default value must still reproduce the legacy strict policy.
+TEST(IslandDeactivation, ExplicitDefaultToleranceKeepsPlaneContactStrict)
+{
+  auto makePenetratedPlaneCandidate = []() {
+    auto world = makeSleepWorld();
+    world->setCollisionDetector(collision::DARTCollisionDetector::create());
+    world->addSkeleton(createPlaneFloor());
+    auto box = createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf - 5e-4));
+    box->setSleepCandidate(true);
+    box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
+    world->addSkeleton(box);
+    return std::make_pair(world, box);
+  };
+
+  {
+    auto [world, box] = makePenetratedPlaneCandidate();
+
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_TRUE(box->isResting());
+    EXPECT_TRUE(box->isSleepCandidate());
+  }
+
+  {
+    ScopedSleepingContactPenetrationTolerance tolerance(1e-5);
+    auto [world, box] = makePenetratedPlaneCandidate();
+
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_FALSE(box->isResting());
+    EXPECT_FALSE(box->isSleepCandidate());
+  }
+}
+
+//==============================================================================
+// A mobile zero-DOF body can report a quiet PlaneShape support contact without
+// an active LCP constraint. The contact-miss fallback must use the same
+// adaptive default PlaneShape tolerance as the constrained-group rest path.
+TEST(IslandDeactivation, PlaneContactMissFallbackUsesAdaptiveDefaultTolerance)
+{
+  auto makeInactivePlaneCandidate = []() {
+    auto world = makeSleepWorld();
+    world->setCollisionDetector(collision::DARTCollisionDetector::create());
+    world->addSkeleton(createPlaneFloor());
+    auto box = createWeldedBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf - 5e-4));
+    box->setSleepCandidate(true);
+    box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
+    world->addSkeleton(box);
+    return std::make_pair(world, box);
+  };
+
+  {
+    auto [world, box] = makeInactivePlaneCandidate();
+    ASSERT_EQ(0u, box->getNumDofs());
+
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_TRUE(box->isResting());
+    EXPECT_TRUE(box->isSleepCandidate());
+  }
+
+  {
+    ScopedSleepingContactPenetrationTolerance tolerance(1e-5);
+    auto [world, box] = makeInactivePlaneCandidate();
+    ASSERT_EQ(0u, box->getNumDofs());
+
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_FALSE(box->isResting());
+    EXPECT_FALSE(box->isSleepCandidate());
+  }
+}
+
+//==============================================================================
+// Resetting the global contact ERV after a temporary old-default override must
+// restore the adaptive default policy. Explicitly setting the built-in default
+// remains an idempotent broad global override.
+TEST(IslandDeactivation, DefaultContactErvRestoresAdaptivePolicy)
+{
+  auto stepSimpleSupportContact = []() {
+    auto world = makeSleepWorld();
+    world->setGravity(Eigen::Vector3d::Zero());
+    world->addSkeleton(createFloor());
+
+    auto box = createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf - 0.01));
+    world->addSkeleton(box);
+
+    world->step();
+
+    EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    return box->getJoint(0)->getVelocity(5);
+  };
+
+  constraint::ContactConstraint::resetMaxErrorReductionVelocity();
+  double broadCorrectionVelocity = 0.0;
+  {
+    ScopedContactMaxErrorReductionVelocity explicitBroadDefault(0.1);
+    constraint::ContactConstraint::setMaxErrorReductionVelocity(0.1);
+    broadCorrectionVelocity = std::abs(stepSimpleSupportContact());
+  }
+
+  double restoredCorrectionVelocity = 0.0;
+  {
+    ScopedContactMaxErrorReductionVelocity oldDefaultOverride(1e-3);
+    constraint::ContactConstraint::resetMaxErrorReductionVelocity();
+    restoredCorrectionVelocity = std::abs(stepSimpleSupportContact());
+  }
+
+  EXPECT_GT(broadCorrectionVelocity, 0.05);
+  EXPECT_LT(restoredCorrectionVelocity, 0.01);
 }
 
 //==============================================================================
@@ -1838,6 +2083,44 @@ TEST(IslandDeactivation, IndependentQuietIslandSleepsWhileOtherBodyMoves)
 }
 
 //==============================================================================
+// A just-eligible contact island must not be marked resting while a separate
+// ungrouped mobile body is awake. The veto must reach the group-level
+// solve-to-rest flag, not just the per-skeleton pre-solve resting flag.
+TEST(IslandDeactivation, UngroupedAwakeBodyVetoesNewContactIslandResting)
+{
+  auto world = makeSleepWorld();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->addSkeleton(createFloor());
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf - 1.0e-6));
+  sleeper->setSleepCandidate(true);
+  sleeper->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
+  world->addSkeleton(sleeper);
+
+  auto awake = createFreeBox(
+      "awake",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(3.0, 0, kHalf + 0.5));
+  Eigen::Vector6d movingVelocity = Eigen::Vector6d::Zero();
+  const auto& opts = world->getDeactivationOptions();
+  movingVelocity[3]
+      = 2.0 * opts.mWakeThresholdScale * opts.mLinearSpeedThreshold;
+  awake->getJoint(0)->setVelocities(movingVelocity);
+  world->addSkeleton(awake);
+
+  world->step();
+
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_FALSE(awake->isResting());
+  EXPECT_FALSE(awake->isSleepCandidate());
+  EXPECT_FALSE(sleeper->isResting());
+  EXPECT_FALSE(sleeper->isSleepCandidate());
+}
+
+//==============================================================================
 // A body kept in genuine slow motion (above the sleep thresholds) must NOT be
 // put to sleep within the test horizon. This is the "always beneficial"
 // correctness gate: we must never freeze a body that is actually moving.
@@ -2206,6 +2489,59 @@ TEST(IslandDeactivation, FinalQuietGateScalesWithThresholds)
     EXPECT_GE(steps, minDwellSteps)
         << "moving slider slept before the configured dwell elapsed";
   }
+}
+
+//==============================================================================
+// Large contact islands can carry residual solver jitter that is below the wake
+// band but above the stricter final-quiet gate for individual members. Once the
+// whole island is below wake and has sustained dwell evidence, it should enter
+// sleep candidacy together instead of requiring every member's dwell clock to
+// cross the threshold on the same frame.
+TEST(IslandDeactivation, DenseSubWakeStackSleepsAtomically)
+{
+  auto world = makeSleepWorld();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->addSkeleton(createFloor());
+
+  constexpr double overlap = 1.0e-8;
+  std::vector<SkeletonPtr> stack;
+  for (int i = 0; i < 8; ++i) {
+    const double z = kHalf - overlap / 2.0 + i * (kBoxSize - overlap);
+    auto b = createFreeBox(
+        "dense_stack" + std::to_string(i),
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, z));
+    world->addSkeleton(b);
+    stack.push_back(b);
+  }
+
+  world->step();
+  for (const auto& b : stack)
+    ASSERT_GE(b->getIslandIndex(), 0);
+
+  const auto& opts = world->getDeactivationOptions();
+  const double subWakeSpeed = 1.5 * opts.mLinearSpeedThreshold;
+  ASSERT_LT(
+      subWakeSpeed, opts.mWakeThresholdScale * opts.mLinearSpeedThreshold);
+  ASSERT_GT(subWakeSpeed, 0.1 * opts.mLinearSpeedThreshold);
+
+  stack.front()->setRestDwellTime(
+      opts.mTimeUntilSleep + 2.0 * world->getTimeStep());
+  for (const auto& b : stack) {
+    b->setSmoothedLinearSpeed(subWakeSpeed);
+    b->setSmoothedAngularSpeed(0.0);
+  }
+  stack.front()->setSmoothedLinearSpeed(0.0);
+
+  world->step();
+  for (const auto& b : stack)
+    EXPECT_TRUE(b->isSleepCandidate())
+        << b->getName() << " did not enter dense-island candidacy";
+
+  world->step();
+  for (const auto& b : stack)
+    EXPECT_TRUE(b->isResting())
+        << b->getName() << " did not freeze with the dense island";
 }
 
 } // namespace

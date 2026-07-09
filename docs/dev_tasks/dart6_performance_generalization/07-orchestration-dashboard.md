@@ -16,7 +16,7 @@ with the first real SIMD-kernel PR.
 
 | Lane | Owner doc | Packets | Status |
 | --- | --- | --- | --- |
-| WS-A constraint/LCP | 02-constraint-lcp-lane.md | PG.10–PG.15 | gated (PG.10 #3339; PG.13 evidence-gated by PG.10 census; PG.14 blocked D3; PG.15 blocked D7) |
+| WS-A constraint/LCP | 02-constraint-lcp-lane.md | PG.10–PG.15 | active/gated (PG.10 #3339; PG.13 evidence-gated by PG.10 census; PG.14 blocked D3; PG.15 default-remediation PR active on #3353 with local D7 evaluator pass) |
 | WS-B ODE backend | 03-ode-backend-lane.md | PG.20–PG.23 | gated (PG.20 #3329; PG.21 current-base gate rejected after span-only PG.20; PG.22 local cpp-only route rejected; PG.23 blocked D8; lane re-review at WS-F phase 5) |
 | WS-C dynamics batching | 04-dynamics-batching-lane.md | PG.30–PG.33 | gated (PG.30 #3310; PG.31 #3341; PG.32 delivered by #3297/#3307; PG.33 gated) |
 | WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | active (PG.40 folded into PG.42; PG.41 waits for PG.10 seam evidence) |
@@ -36,7 +36,7 @@ with the first real SIMD-kernel PR.
 | WP-PG.12 direct assembly | WS-A | deprioritized (PG.01 evidence: assembly ≤ ~8%) | — | — |
 | WP-PG.13 row islanding | WS-A | evidence-gated (PG.10 census) | — | — |
 | WP-PG.14 matrix-free path | WS-A | blocked (D3) | — | — |
-| WP-PG.15 creep vs rest-veto | WS-A | blocked (D7) | — | — |
+| WP-PG.15 creep vs rest-veto | WS-A | claimed — D7 default remediation on #3353; local evaluator pass | `docs/close-dart6-performance-generalization` / #3353 | Restores the active tracker after mistaken retirement, promotes the evidenced D7 policy into defaults with adaptive ERV (`0.1` only for dense mobile-mobile islands, legacy `0.001` effective cap for single-mobile static-support islands), dense-island rest tolerance (`0.005` only under the default solver rest-veto policy), dense-contact-island sleep candidacy for sub-wake jitter, `contact_benchmark` old/new override knobs, and focused sleeping/CI tests. Explicit `1e-5` sleep-tolerance overrides still preserve the strict legacy rest-veto policy, and `resetMaxErrorReductionVelocity()` restores the adaptive contact ERV policy after temporary overrides. Local S6 refresh `/tmp/wp_pg15_ab_plane_fallback_20260709T023141Z`: S6 old-default override took 212.08 s, RTF 0.0943, 162 contacts, max penetration 0.364241, 0/71 resting; current defaults took 91.9572 s, RTF 0.217, zero contacts, max penetration 0, 71/71 resting. S4/S5 new-default hashes matched old-default rows across DART/FCL/Bullet/ODE in `/tmp/wp_pg15_ab_review_20260708T235540Z`. GUI/final-scene evidence: `/tmp/wp_pg15_gui_20260708T223653Z/S6_gui.png`, `/tmp/wp_pg15_visual_20260708T223506Z/S6_final_scene.jsonl`. |
 | WP-PG.20 history spans | WS-B | done — #3329 | `wp-pg-20-ode-history-spans` / #3329 | Current-base refresh @ `9ff8b1d77a1`: hashes bit-identical; ODE rows improved (`S2_ode` 0.0933→0.0521 ms, `S3_ode` 115.9→19.7 ms, `S4_ode` 0.2269→0.1549 ms; GB ODE rows 3.2–7.6% faster) |
 | WP-PG.21 history map/pruning | WS-B | evidence-gated (current-base rejected) | — | 2026-07-07 gate on `b78a8b8cbe7`: hashes identical but mixed/regressive vs span-only (`S2_ode` +12.6%, `S3_ode` -11.4%, `S4_ode` +19.2%; GB 60 rows faster, 120 rows +6.8-9.4% slower), so do not claim without new profile evidence |
 | WP-PG.22 version-gated pose push | WS-B | evidence-gated (current-base rejected) | — | Local 2026-07-06 exact-transform fallback rejected by A/B; protected `Skeleton::getKinematicVersion()` blocks cpp-only route |

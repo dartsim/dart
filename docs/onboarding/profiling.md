@@ -129,7 +129,8 @@ before/after matrix separately.
 
 ## Reporting
 
-Every performance PR should record:
+Every performance PR should match the #3307-style comparison and report bar,
+not just a timing snippet. Record:
 
 - exact commit SHAs for the recorded baseline, parent/current base, and PR head;
 - exact configure, build, benchmark, and profile commands;
