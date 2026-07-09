@@ -9,6 +9,9 @@ surface affects shared behavior.
 - Before every commit, run `pixi run lint`.
 - For C++ or Python code changes, run `pixi run build` and the focused tests for
   the touched module.
+- For behavior-bearing physics or simulation changes, include a high-quality,
+  self-contained GUI example or durable demo artifact unless the task explicitly
+  records why a different user-level visual artifact is the right evidence.
 - For package, exported target, installed-header, collision, constraint, or
   default-solver changes that can affect Gazebo/gz-physics, run the Gazebo gate:
 
@@ -81,8 +84,33 @@ position/velocity checksums with no rendering, so diffing two builds' output
 proves byte-identical simulation. Prefer this for logic/solver changes; use the
 image verdict for anything that affects what is drawn.
 
+## GUI And Demo Evidence
+
+Physics simulator behavior is easiest to review through a working scene. When a
+task changes behavior that users should understand visually or interactively,
+the deliverable normally includes a high-quality GUI example or durable demo
+artifact. The example must be self-contained: a user should be able to run it,
+manipulate the scene or controls, and understand the result without reading
+implementation code or developer explanation.
+
+Record the runnable command, expected interaction, and visual evidence in the
+owning plan, dev-task `verification.md`, or PR Testing section. Use the
+offscreen capture and image-verdict path above when practical. If the work is
+deliberately non-visual, the acceptance evidence must say why and name the
+replacement user-level artifact or check.
+
+## Review Evidence
+
+Review findings are extra input, not orders. For each substantive review
+finding, verify the claim with code inspection, tests, docs, downstream checks,
+benchmarks, or visual artifacts before changing behavior. Record whether the
+finding was fixed, deferred, or rejected with evidence. Completion requires two
+clean independent or role-separated review passes on the current post-fix state;
+a pass before later fixes does not count as final evidence.
+
 ## Completion Audit
 
 Before calling work complete, verify every explicit requirement against current
-evidence: files, command output, tests, PR state, and downstream gates where
-applicable. If evidence is indirect or missing, keep working.
+evidence: files, command output, tests, PR state, review evidence, GUI/demo
+artifacts when relevant, and downstream gates where applicable. If evidence is
+indirect or missing, keep working.
