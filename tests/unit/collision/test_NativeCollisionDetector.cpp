@@ -53,6 +53,7 @@
 #include <dart/dynamics/ConeShape.hpp>
 #include <dart/dynamics/ConvexMeshShape.hpp>
 #include <dart/dynamics/CylinderShape.hpp>
+#include <dart/dynamics/EllipsoidShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/MeshShape.hpp>
 #include <dart/dynamics/MultiSphereConvexHullShape.hpp>
@@ -131,6 +132,24 @@ dynamics::SimpleFramePtr makeFrame(
   frame->setShape(shape);
   frame->setTranslation(translation);
   return frame;
+}
+
+//==============================================================================
+double computeEllipsoidSoftContactDepth(
+    const dynamics::EllipsoidShape& ellipsoid,
+    const dynamics::Frame& ellipsoidFrame,
+    const Eigen::Vector3d& worldPoint)
+{
+  const Eigen::Vector3d localPoint
+      = ellipsoidFrame.getWorldTransform().inverse() * worldPoint;
+  const Eigen::Vector3d radii = ellipsoid.getRadii();
+  const double normalizedDistance
+      = localPoint.cwiseProduct(radii.cwiseInverse()).norm();
+  if (normalizedDistance == 0.0)
+    return radii.minCoeff();
+
+  const Eigen::Vector3d surfacePoint = localPoint / normalizedDistance;
+  return (surfacePoint - localPoint).norm();
 }
 
 //==============================================================================
@@ -232,6 +251,18 @@ struct NativePlaneSoftMeshScene
 };
 
 //==============================================================================
+struct NativeEllipsoidSoftMeshScene
+{
+  collision::CollisionDetectorPtr detector;
+  dynamics::SimpleFramePtr ellipsoidFrame;
+  dynamics::SkeletonPtr softSkeleton;
+  dynamics::SoftBodyNode* softBody{nullptr};
+  dynamics::ShapeNode* softShapeNode{nullptr};
+  std::unique_ptr<collision::CollisionGroup> ellipsoidGroup;
+  std::unique_ptr<collision::CollisionGroup> softGroup;
+};
+
+//==============================================================================
 NativePlaneSoftMeshScene makeNativePlaneSoftMeshScene(double softCenterZ)
 {
   NativePlaneSoftMeshScene scene;
@@ -265,6 +296,46 @@ NativePlaneSoftMeshScene makeNativePlaneSoftMeshScene(double softCenterZ)
       = scene.softBody->getShapeNodeWith<dynamics::CollisionAspect>(0);
   scene.group = scene.detector->createCollisionGroup(
       scene.planeFrame.get(), scene.softShapeNode);
+
+  return scene;
+}
+
+//==============================================================================
+NativeEllipsoidSoftMeshScene makeNativeEllipsoidSoftMeshScene()
+{
+  NativeEllipsoidSoftMeshScene scene;
+  scene.detector = collision::NativeCollisionDetector::create();
+
+  scene.ellipsoidFrame
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  scene.ellipsoidFrame->setShape(std::make_shared<dynamics::EllipsoidShape>(
+      Eigen::Vector3d(0.30, 0.40, 0.60)));
+  scene.ellipsoidFrame->setTranslation(Eigen::Vector3d(-0.5, -0.5, -0.25));
+
+  scene.softSkeleton = dynamics::Skeleton::create("native_soft_ellipsoid");
+  const auto softProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d::Ones(), Eigen::Isometry3d::Identity(), 1.0);
+  const dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties("native_soft_ellipsoid_body"));
+  const dynamics::SoftBodyNode::Properties softBodyProperties(
+      bodyProperties, softProperties);
+
+  auto pair = scene.softSkeleton->createJointAndBodyNodePair<
+      dynamics::FreeJoint,
+      dynamics::SoftBodyNode>(
+      nullptr, dynamics::FreeJoint::Properties(), softBodyProperties);
+  scene.softBody = pair.second;
+
+  Eigen::Isometry3d softTransform = Eigen::Isometry3d::Identity();
+  softTransform.translation().z() = 0.45;
+  pair.first->setPositions(
+      dynamics::FreeJoint::convertToPositions(softTransform));
+
+  scene.softShapeNode
+      = scene.softBody->getShapeNodeWith<dynamics::CollisionAspect>(0);
+  scene.ellipsoidGroup
+      = scene.detector->createCollisionGroup(scene.ellipsoidFrame.get());
+  scene.softGroup = scene.detector->createCollisionGroup(scene.softShapeNode);
 
   return scene;
 }
@@ -621,6 +692,77 @@ TEST(NativeCollisionDetector, DetectsSoftMeshPlaneContactThroughFallback)
   }
 
   EXPECT_TRUE(sawSoftContact);
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, DetectsSoftMeshEllipsoidContactThroughFallback)
+{
+  auto scene = makeNativeEllipsoidSoftMeshScene();
+  ASSERT_NE(nullptr, scene.softBody);
+  ASSERT_NE(nullptr, scene.softShapeNode);
+
+  const auto* ellipsoid = static_cast<const dynamics::EllipsoidShape*>(
+      scene.ellipsoidFrame->getShape().get());
+  ASSERT_NE(nullptr, ellipsoid);
+  ASSERT_FALSE(ellipsoid->isSphere());
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  collision::CollisionResult ellipsoidFirstResult;
+  EXPECT_TRUE(scene.ellipsoidGroup->collide(
+      scene.softGroup.get(), option, &ellipsoidFirstResult));
+  ASSERT_GT(ellipsoidFirstResult.getNumContacts(), 0u);
+
+  bool sawEllipsoidFirstSoftContact = false;
+  for (std::size_t i = 0u; i < ellipsoidFirstResult.getNumContacts(); ++i) {
+    const auto& contact = ellipsoidFirstResult.getContact(i);
+    if (contact.collisionObject2->getShapeFrame() != scene.softShapeNode)
+      continue;
+
+    sawEllipsoidFirstSoftContact = true;
+    EXPECT_EQ(
+        scene.ellipsoidFrame.get(), contact.collisionObject1->getShapeFrame());
+    EXPECT_TRUE(contact.normal.isApprox(-Eigen::Vector3d::UnitZ(), 1e-12));
+    EXPECT_NEAR(
+        contact.penetrationDepth,
+        computeEllipsoidSoftContactDepth(
+            *ellipsoid, *scene.ellipsoidFrame, contact.point),
+        1e-12);
+    EXPECT_GE(contact.triID2, 0);
+    EXPECT_LT(
+        static_cast<std::size_t>(contact.triID2),
+        scene.softBody->getNumFaces());
+  }
+  EXPECT_TRUE(sawEllipsoidFirstSoftContact);
+
+  collision::CollisionResult softFirstResult;
+  EXPECT_TRUE(scene.softGroup->collide(
+      scene.ellipsoidGroup.get(), option, &softFirstResult));
+  ASSERT_GT(softFirstResult.getNumContacts(), 0u);
+
+  bool sawSoftFirstContact = false;
+  for (std::size_t i = 0u; i < softFirstResult.getNumContacts(); ++i) {
+    const auto& contact = softFirstResult.getContact(i);
+    if (contact.collisionObject1->getShapeFrame() != scene.softShapeNode)
+      continue;
+
+    sawSoftFirstContact = true;
+    EXPECT_EQ(
+        scene.ellipsoidFrame.get(), contact.collisionObject2->getShapeFrame());
+    EXPECT_TRUE(contact.normal.isApprox(Eigen::Vector3d::UnitZ(), 1e-12));
+    EXPECT_NEAR(
+        contact.penetrationDepth,
+        computeEllipsoidSoftContactDepth(
+            *ellipsoid, *scene.ellipsoidFrame, contact.point),
+        1e-12);
+    EXPECT_GE(contact.triID1, 0);
+    EXPECT_LT(
+        static_cast<std::size_t>(contact.triID1),
+        scene.softBody->getNumFaces());
+  }
+  EXPECT_TRUE(sawSoftFirstContact);
 }
 
 //==============================================================================

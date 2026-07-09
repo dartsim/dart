@@ -143,11 +143,33 @@ bool shouldSkipPair(
 }
 
 //==============================================================================
-bool shouldUseDartSoftFallback(
+bool shouldUseDartFallback(
     const NativeCollisionObject* object1, const NativeCollisionObject* object2)
 {
-  return object1->usesSoftMeshFallbackShape()
-         || object2->usesSoftMeshFallbackShape();
+  // DART's non-spherical ellipsoid fallback is implemented through the
+  // soft-mesh kernels. Keep unsupported ellipsoid/primitive pairs off the hot
+  // fallback bridge and let native-owned kernels handle primitive coverage.
+  return (object1 != nullptr && object1->usesSoftMeshFallbackShape())
+         || (object2 != nullptr && object2->usesSoftMeshFallbackShape());
+}
+
+//==============================================================================
+bool shouldUseNativeManifoldContact(
+    const CollisionObject* object1, const CollisionObject* object2)
+{
+  if (!object1 || !object2)
+    return false;
+
+  const auto* nativeObject1
+      = static_cast<const NativeCollisionObject*>(object1);
+  const auto* nativeObject2
+      = static_cast<const NativeCollisionObject*>(object2);
+
+  if (shouldUseDartFallback(nativeObject1, nativeObject2))
+    return false;
+
+  return nativeObject1->getNativeShape() != nullptr
+         && nativeObject2->getNativeShape() != nullptr;
 }
 
 //==============================================================================
@@ -418,7 +440,7 @@ void attachCachedContactImpulses(
     auto& contact = result->getContact(0);
     auto* object1 = contact.collisionObject1;
     auto* object2 = contact.collisionObject2;
-    if (!object1 || !object2)
+    if (!shouldUseNativeManifoldContact(object1, object2))
       return;
 
     const auto id1 = getManifoldCacheId(object1);
@@ -519,7 +541,7 @@ void attachCachedContactImpulses(
     auto& contact = result->getContact(i);
     auto* object1 = contact.collisionObject1;
     auto* object2 = contact.collisionObject2;
-    if (!object1 || !object2)
+    if (!shouldUseNativeManifoldContact(object1, object2))
       continue;
 
     if (object1 != cachedObject1 || object2 != cachedObject2) {
@@ -566,7 +588,7 @@ void refreshManifoldCache(
     const std::vector<CollisionObject*>& objects,
     native::PersistentManifoldCache* manifoldCache)
 {
-  if (!manifoldCache)
+  if (!manifoldCache || manifoldCache->size() == 0u)
     return;
 
   std::unordered_map<std::size_t, CollisionObject*> objectsById;
@@ -596,7 +618,7 @@ void refreshManifoldCache(
     const std::vector<CollisionObject*>& objects2,
     native::PersistentManifoldCache* manifoldCache)
 {
-  if (!manifoldCache)
+  if (!manifoldCache || manifoldCache->size() == 0u)
     return;
 
   std::unordered_map<std::size_t, CollisionObject*> objectsById;
@@ -708,7 +730,7 @@ bool emitDartFallbackContacts(
 }
 
 //==============================================================================
-bool processDartSoftFallbackPair(
+bool processDartFallbackPair(
     NativeCollisionObject* object1,
     NativeCollisionObject* object2,
     const CollisionOption& option,
@@ -775,8 +797,8 @@ bool processNativePair(
   if (shouldSkipPair(object1, object2, option))
     return false;
 
-  if (shouldUseDartSoftFallback(object1, object2)) {
-    return processDartSoftFallbackPair(
+  if (shouldUseDartFallback(object1, object2)) {
+    return processDartFallbackPair(
         object1, object2, option, result, collisionFound, fallbackPairResult);
   }
 
