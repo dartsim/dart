@@ -25,7 +25,7 @@ evidence in `03-native-collision-port-scoping.md` and the dashboard state in
 ## Current Branch State
 
 - `origin/release-6.20` currently points at
-  `f343528708ef52e520f6f2bdd1a0d371dc38a86b`.
+  `e3f7f67211e65d88d16834f331bc40b1f0edaead`.
 - `package.xml` and `pixi.toml` on `origin/release-6.20` still report a 6.19.x
   package version (`6.19.3` in the current CMake configure output).
 - DART 6.20 intentionally uses the release lane while package version metadata

@@ -2,6 +2,8 @@
 
 #include <dart/collision/CollisionDetector.hpp>
 #include <dart/collision/CollisionGroup.hpp>
+#include <dart/collision/CollisionOption.hpp>
+#include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/DistanceOption.hpp>
 #include <dart/collision/DistanceResult.hpp>
 #include <dart/collision/RaycastOption.hpp>
@@ -20,6 +22,9 @@
 #include <dart/dynamics/PlaneShape.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/SphereShape.hpp>
+#if HAVE_OCTOMAP
+  #include <dart/dynamics/VoxelGridShape.hpp>
+#endif
 
 #include <Eigen/Geometry>
 #include <benchmark/benchmark.h>
@@ -136,6 +141,85 @@ std::shared_ptr<dart::dynamics::SimpleFrame> makeDistanceFrame(
   frame->setTranslation(translation);
   return frame;
 }
+
+#if HAVE_OCTOMAP
+std::shared_ptr<dart::dynamics::VoxelGridShape> makeOccupiedVoxelGrid()
+{
+  auto voxelGrid = std::make_shared<dart::dynamics::VoxelGridShape>(0.1);
+  voxelGrid->updateOccupancy(Eigen::Vector3d::Zero(), true);
+  return voxelGrid;
+}
+#endif
+
+void runDetectorCollision(
+    benchmark::State& state,
+    const dart::collision::CollisionDetectorPtr& detector,
+    const dart::dynamics::ShapePtr& shapeA,
+    const Eigen::Vector3d& translationA,
+    const dart::dynamics::ShapePtr& shapeB,
+    const Eigen::Vector3d& translationB)
+{
+  auto frameA = makeDistanceFrame(shapeA, translationA);
+  auto frameB = makeDistanceFrame(shapeB, translationB);
+  auto group = detector->createCollisionGroup(frameA.get(), frameB.get());
+
+  dart::collision::CollisionOption option(true, 8u);
+  dart::collision::CollisionResult result;
+  std::size_t contactCount = 0u;
+  bool hit = false;
+
+  for (auto _ : state) {
+    result.clear();
+    hit = group->collide(option, &result);
+    benchmark::DoNotOptimize(hit);
+    benchmark::DoNotOptimize(result.getNumContacts());
+    contactCount += result.getNumContacts();
+  }
+
+  if (!hit) {
+    state.SkipWithError("collision benchmark case did not collide");
+  }
+
+  state.counters["contacts/iter"] = benchmark::Counter(
+      static_cast<double>(contactCount)
+      / static_cast<double>(state.iterations()));
+}
+
+#if HAVE_OCTOMAP
+void runNativeDetectorCollision(
+    benchmark::State& state,
+    const dart::dynamics::ShapePtr& shapeA,
+    const Eigen::Vector3d& translationA,
+    const dart::dynamics::ShapePtr& shapeB,
+    const Eigen::Vector3d& translationB)
+{
+  runDetectorCollision(
+      state,
+      dart::collision::NativeCollisionDetector::create(),
+      shapeA,
+      translationA,
+      shapeB,
+      translationB);
+}
+#endif
+
+#if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+void runFclDetectorCollision(
+    benchmark::State& state,
+    const dart::dynamics::ShapePtr& shapeA,
+    const Eigen::Vector3d& translationA,
+    const dart::dynamics::ShapePtr& shapeB,
+    const Eigen::Vector3d& translationB)
+{
+  runDetectorCollision(
+      state,
+      dart::collision::FCLCollisionDetector::create(),
+      shapeA,
+      translationA,
+      shapeB,
+      translationB);
+}
+#endif
 
 void runDetectorDistance(
     benchmark::State& state,
@@ -540,6 +624,30 @@ void BM_NativeMeshConvex(benchmark::State& state)
       translated(0.0, 0.0, 0.2));
 }
 
+#if HAVE_OCTOMAP
+void BM_CollisionNativeVoxelGridSphere(benchmark::State& state)
+{
+  runNativeDetectorCollision(
+      state,
+      makeOccupiedVoxelGrid(),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dart::dynamics::SphereShape>(0.01),
+      Eigen::Vector3d::Zero());
+}
+#endif
+
+#if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+void BM_CollisionFclVoxelGridSphere(benchmark::State& state)
+{
+  runFclDetectorCollision(
+      state,
+      makeOccupiedVoxelGrid(),
+      Eigen::Vector3d::Zero(),
+      std::make_shared<dart::dynamics::SphereShape>(0.01),
+      Eigen::Vector3d::Zero());
+}
+#endif
+
 void BM_DistanceNativeSphereSphere(benchmark::State& state)
 {
   runNativeDetectorDistance(
@@ -682,6 +790,12 @@ BENCHMARK(BM_NativeMeshSphere)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeMeshBox)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeMeshCapsule)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_NativeMeshConvex)->Unit(benchmark::kNanosecond);
+#if HAVE_OCTOMAP
+BENCHMARK(BM_CollisionNativeVoxelGridSphere)->Unit(benchmark::kNanosecond);
+#endif
+#if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+BENCHMARK(BM_CollisionFclVoxelGridSphere)->Unit(benchmark::kNanosecond);
+#endif
 BENCHMARK(BM_DistanceNativeSphereSphere)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_DistanceFclSphereSphere)->Unit(benchmark::kNanosecond);
 BENCHMARK(BM_DistanceNativeSphereBox)->Unit(benchmark::kNanosecond);

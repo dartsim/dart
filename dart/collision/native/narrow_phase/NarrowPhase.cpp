@@ -113,6 +113,11 @@ bool isPlaneDistanceShapeType(ShapeType type)
          || type == ShapeType::Convex || type == ShapeType::Mesh;
 }
 
+bool isCompoundCollisionPeer(ShapeType type)
+{
+  return type != ShapeType::Sdf;
+}
+
 bool collideShapes(
     const Shape* shape1,
     const Eigen::Isometry3d& tf1,
@@ -131,6 +136,88 @@ bool collideShapes(
 
   ShapeType type1 = shape1->getType();
   ShapeType type2 = shape2->getType();
+
+  if (type1 == ShapeType::Compound || type2 == ShapeType::Compound) {
+    if (option.enableContact && result.numContacts() >= option.maxNumContacts)
+      return false;
+
+    bool hit = false;
+    auto collideChild = [&](const Shape* childShape1,
+                            const Eigen::Isometry3d& childTf1,
+                            const Shape* childShape2,
+                            const Eigen::Isometry3d& childTf2) {
+      CollisionOption childOption = option;
+      if (option.enableContact) {
+        const std::size_t existingContacts = result.numContacts();
+        if (existingContacts >= option.maxNumContacts)
+          return true;
+
+        childOption.maxNumContacts = option.maxNumContacts - existingContacts;
+      }
+
+      CollisionResult childResult;
+      if (!collideShapes(
+              childShape1,
+              childTf1,
+              childShape2,
+              childTf2,
+              childOption,
+              childResult)) {
+        return false;
+      }
+
+      hit = true;
+      if (!option.enableContact)
+        return true;
+
+      for (const auto& manifold : childResult.getManifolds())
+        result.addManifold(manifold);
+
+      return result.numContacts() >= option.maxNumContacts;
+    };
+
+    if (type1 == ShapeType::Compound && type2 == ShapeType::Compound) {
+      const auto* compound1 = static_cast<const CompoundShape*>(shape1);
+      const auto* compound2 = static_cast<const CompoundShape*>(shape2);
+      for (const auto& child1 : compound1->children()) {
+        if (!child1.shape)
+          continue;
+
+        const Eigen::Isometry3d childTf1 = tf1 * child1.localTransform;
+        for (const auto& child2 : compound2->children()) {
+          if (!child2.shape)
+            continue;
+
+          const Eigen::Isometry3d childTf2 = tf2 * child2.localTransform;
+          if (collideChild(
+                  child1.shape.get(), childTf1, child2.shape.get(), childTf2))
+            return hit;
+        }
+      }
+    } else if (type1 == ShapeType::Compound) {
+      const auto* compound = static_cast<const CompoundShape*>(shape1);
+      for (const auto& child : compound->children()) {
+        if (!child.shape)
+          continue;
+
+        const Eigen::Isometry3d childTf = tf1 * child.localTransform;
+        if (collideChild(child.shape.get(), childTf, shape2, tf2))
+          return hit;
+      }
+    } else {
+      const auto* compound = static_cast<const CompoundShape*>(shape2);
+      for (const auto& child : compound->children()) {
+        if (!child.shape)
+          continue;
+
+        const Eigen::Isometry3d childTf = tf2 * child.localTransform;
+        if (collideChild(shape1, tf1, child.shape.get(), childTf))
+          return hit;
+      }
+    }
+
+    return hit;
+  }
 
   if (type1 == ShapeType::Sphere && type2 == ShapeType::Sphere) {
     const auto* s1 = static_cast<const SphereShape*>(shape1);
@@ -830,6 +917,15 @@ bool NarrowPhase::raycast(
 
 bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)
 {
+  if (type1 == ShapeType::Compound && type2 == ShapeType::Compound) {
+    return true;
+  }
+  if (type1 == ShapeType::Compound) {
+    return isCompoundCollisionPeer(type2);
+  }
+  if (type2 == ShapeType::Compound) {
+    return isCompoundCollisionPeer(type1);
+  }
   if (type1 == ShapeType::Sphere && type2 == ShapeType::Sphere) {
     return true;
   }
