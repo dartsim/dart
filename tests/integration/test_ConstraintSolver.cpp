@@ -1193,6 +1193,57 @@ TEST(ConstraintSolver, MatrixFreeContactScratchRetainsPreparedGroup)
 }
 
 //==============================================================================
+TEST(ConstraintSolver, MatrixFreeContactSolverSeedsCachedImpulseResidual)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* dynamicBody = createFreeBody("dynamic", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  auto detector = collision::NativeCollisionDetector::create();
+  auto collisionGroup
+      = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
+
+  collision::CollisionResult result;
+  ASSERT_TRUE(
+      collisionGroup->collide(collision::CollisionOption(true, 10u), &result));
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  auto contact = result.getContact(0);
+  ASSERT_NE(nullptr, contact.userData);
+  auto* cachedContact
+      = static_cast<collision::native::CachedContact*>(contact.userData);
+  cachedContact->cachedNormalImpulse = 100.0;
+  cachedContact->cachedFrictionImpulse1 = 0.0;
+  cachedContact->cachedFrictionImpulse2 = 0.0;
+  cachedContact->hasCachedFrictionBasis = false;
+
+  std::vector<constraint::ConstraintBasePtr> constraints{
+      createContactConstraint<constraint::ContactConstraint>(contact)};
+
+  ExposedBoxedLcpConstraintSolver solver;
+  auto options = solver.getMatrixFreeContactSolverOptions();
+  options.mEnabled = true;
+  options.mMinRows = 1u;
+  options.mMaxIterations = 1;
+  options.mSor = 1.0;
+  solver.setMatrixFreeContactSolverOptions(options);
+
+  auto constrainedGroup = solver.makeGroupForTest(constraints);
+  solver.solveGroupForTest(constrainedGroup);
+
+  EXPECT_TRUE(std::isfinite(cachedContact->cachedNormalImpulse));
+  EXPECT_LT(cachedContact->cachedNormalImpulse, 10.0);
+}
+
+//==============================================================================
 TEST(ConstraintSolver, ManualConstraintsForceSerialParallelGroupSolves)
 {
   ExposedThreadedConstraintSolver solver;

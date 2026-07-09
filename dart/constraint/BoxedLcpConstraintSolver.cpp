@@ -647,6 +647,16 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
     }
   };
 
+  for (std::size_t rowIndex = 0u; rowIndex < rows.size(); ++rowIndex) {
+    const double seededImpulse = x[rowIndex];
+    if (seededImpulse == 0.0)
+      continue;
+    if (!std::isfinite(seededImpulse))
+      return false;
+
+    applyDelta(rows[rowIndex], seededImpulse);
+  }
+
   const auto clampImpulse = [&](const MatrixFreeContactRow& row, double value) {
     double lower = row.lo;
     double upper = row.hi;
