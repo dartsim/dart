@@ -585,6 +585,32 @@ TEST(NativeCollisionDetector, RespectsGlobalContactLimit)
 }
 
 //==============================================================================
+TEST(NativeCollisionDetector, CapsSolverFacingManifoldContacts)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto frame1 = makeFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()),
+      Eigen::Vector3d(0.8, 0.0, 0.0));
+  auto group = detector->createCollisionGroup(frame1.get(), frame2.get());
+
+  collision::CollisionOption wideOption(true, 10u);
+  wideOption.maxNumContactsPerPair = 10u;
+
+  collision::CollisionResult wideResult;
+  ASSERT_TRUE(group->collide(wideOption, &wideResult));
+  EXPECT_EQ(3u, wideResult.getNumContacts());
+
+  collision::CollisionOption strictOption(true, 10u);
+  strictOption.maxNumContactsPerPair = 2u;
+
+  collision::CollisionResult strictResult;
+  ASSERT_TRUE(group->collide(strictOption, &strictResult));
+  EXPECT_EQ(2u, strictResult.getNumContacts());
+}
+
+//==============================================================================
 TEST(NativeCollisionDetector, RespectsCollisionFilter)
 {
   auto detector = collision::NativeCollisionDetector::create();
