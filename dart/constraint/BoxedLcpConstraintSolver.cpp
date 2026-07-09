@@ -718,6 +718,9 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
       "BoxedLcpConstraintSolver::matrixFreeContactConverged",
       solverConverged ? 1u : 0u);
 
+  if (!solverConverged)
+    return false;
+
   for (std::size_t i = 0u; i < contacts.size(); ++i) {
     contacts[i]->applyImpulse(x.data() + offsets[i]);
     contacts[i]->excite();
