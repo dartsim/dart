@@ -43,6 +43,7 @@
 
 #include <dart/constraint/BoxedLcpConstraintSolver.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
+#include <dart/constraint/ContactConstraint.hpp>
 #include <dart/constraint/DantzigBoxedLcpSolver.hpp>
 #include <dart/constraint/PgsBoxedLcpSolver.hpp>
 
@@ -158,6 +159,8 @@ struct Options
   std::optional<double> sleepLinearThreshold;
   std::optional<double> sleepAngularThreshold;
   std::optional<double> sleepTimeUntilSleep;
+  std::optional<double> sleepContactPenetrationTolerance;
+  std::optional<double> contactMaxErrorReductionVelocity;
   std::optional<std::size_t> generatedObjects;
   bool generateCapsules = false;
   bool generateContainer = false;
@@ -248,10 +251,19 @@ struct SleepStats
 {
   std::size_t skeletons = 0;
   std::size_t mobile = 0;
+  std::size_t islands = 0;
+  std::size_t maxIslandMobile = 0;
   std::size_t islanded = 0;
   std::size_t candidates = 0;
   std::size_t resting = 0;
   std::size_t disturbed = 0;
+  std::size_t belowSleepSpeed = 0;
+  std::size_t belowFinalSpeed = 0;
+  std::size_t belowWakeSpeed = 0;
+  std::size_t dwellReady = 0;
+  std::size_t dwellAndSleepReady = 0;
+  std::size_t dwellAndFinalReady = 0;
+  std::size_t dwellAndWakeReady = 0;
   double maxLinearSpeed = 0.0;
   double maxAngularSpeed = 0.0;
   double maxSmoothedLinearSpeed = 0.0;
@@ -334,6 +346,11 @@ void printUsage(const std::string& programName)
       << "                            Override automatic sleep angular speed "
          "threshold.\n"
       << "  --sleep-time T            Override quiet dwell time before sleep.\n"
+      << "  --sleep-contact-penetration-tolerance D\n"
+      << "                            Override automatic sleep contact "
+         "penetration tolerance.\n"
+      << "  --contact-max-erv V       Override rigid-contact maximum error "
+         "reduction velocity.\n"
       << "  --generate-objects N      Generate an in-memory 3-lane "
          "sphere/box/cylinder scene instead of loading SDF.\n"
       << "  --generate-capsules N     Generate an in-memory capsule-only "
@@ -577,6 +594,14 @@ Options parseOptions(int argc, char* argv[])
       options.sleepAngularThreshold = parsePositiveDouble(needValue(arg), arg);
     } else if (arg == "--sleep-time") {
       options.sleepTimeUntilSleep = parsePositiveDouble(needValue(arg), arg);
+    } else if (arg == "--sleep-contact-penetration-tolerance") {
+      options.sleepContactPenetrationTolerance
+          = parseNonNegativeDouble(needValue(arg), arg);
+    } else if (
+        arg == "--contact-max-erv"
+        || arg == "--contact-max-error-reduction-velocity") {
+      options.contactMaxErrorReductionVelocity
+          = parseNonNegativeDouble(needValue(arg), arg);
     } else if (arg == "--generate-objects" || arg == "--num-objects") {
       options.generatedObjects = parseSize(needValue(arg), arg);
       options.generateCapsules = false;
@@ -913,6 +938,8 @@ dart::simulation::WorldPtr createGeneratedWorld(const Options& options)
 ContactStats collectContactStats(const dart::simulation::WorldPtr& world)
 {
   ContactStats stats;
+  const double sleepContactPenetrationTolerance = dart::constraint::
+      ConstraintSolver::getAutomaticSleepingContactPenetrationTolerance();
   const auto& result = world->getLastCollisionResult();
   stats.contacts = result.getNumContacts();
 
@@ -924,7 +951,7 @@ ContactStats collectContactStats(const dart::simulation::WorldPtr& world)
         contact.collisionObject1, contact.collisionObject2)];
     ++count;
     stats.maxPairContacts = std::max(stats.maxPairContacts, count);
-    if (contact.penetrationDepth > 1e-3)
+    if (contact.penetrationDepth > sleepContactPenetrationTolerance)
       ++stats.contactsOverSleepTolerance;
     if (dart::collision::Contact::isZeroNormal(contact.normal))
       ++stats.zeroNormalContacts;
@@ -939,14 +966,26 @@ SleepStats collectSleepStats(const dart::simulation::WorldPtr& world)
 {
   SleepStats stats;
   stats.skeletons = world->getNumSkeletons();
+  const auto& options = world->getDeactivationOptions();
+  const double linearSleep = options.mLinearSpeedThreshold;
+  const double angularSleep = options.mAngularSpeedThreshold;
+  const double linearFinal = 0.1 * linearSleep;
+  const double angularFinal = 0.2 * angularSleep;
+  const double linearWake = options.mWakeThresholdScale * linearSleep;
+  const double angularWake = options.mWakeThresholdScale * angularSleep;
+  static thread_local std::unordered_map<int, std::size_t> islandSizes;
+  islandSizes.clear();
+
   for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
     const auto skel = world->getSkeleton(i);
     if (!skel || !skel->isMobile())
       continue;
 
     ++stats.mobile;
-    if (skel->getIslandIndex() >= 0)
+    if (skel->getIslandIndex() >= 0) {
       ++stats.islanded;
+      ++islandSizes[skel->getIslandIndex()];
+    }
     if (skel->isSleepCandidate())
       ++stats.candidates;
     if (skel->isResting())
@@ -964,7 +1003,34 @@ SleepStats collectSleepStats(const dart::simulation::WorldPtr& world)
         stats.maxSmoothedAngularSpeed, skel->getSmoothedAngularSpeed());
     stats.maxRestDwellTime
         = std::max(stats.maxRestDwellTime, skel->getRestDwellTime());
+
+    const bool belowSleep = skel->getSmoothedLinearSpeed() < linearSleep
+                            && skel->getSmoothedAngularSpeed() < angularSleep;
+    const bool belowFinal = skel->getSmoothedLinearSpeed() < linearFinal
+                            && skel->getSmoothedAngularSpeed() < angularFinal;
+    const bool belowWake = skel->getSmoothedLinearSpeed() < linearWake
+                           && skel->getSmoothedAngularSpeed() < angularWake;
+    const bool dwellReady = skel->getRestDwellTime() >= options.mTimeUntilSleep;
+    if (belowSleep)
+      ++stats.belowSleepSpeed;
+    if (belowFinal)
+      ++stats.belowFinalSpeed;
+    if (belowWake)
+      ++stats.belowWakeSpeed;
+    if (dwellReady)
+      ++stats.dwellReady;
+    if (dwellReady && belowSleep)
+      ++stats.dwellAndSleepReady;
+    if (dwellReady && belowFinal)
+      ++stats.dwellAndFinalReady;
+    if (dwellReady && belowWake)
+      ++stats.dwellAndWakeReady;
   }
+
+  stats.islands = islandSizes.size();
+  for (const auto& island : islandSizes)
+    stats.maxIslandMobile = std::max(stats.maxIslandMobile, island.second);
+
   return stats;
 }
 
@@ -1090,8 +1156,15 @@ void printDiagnostics(
             << sleep.maxLinearSpeed << " max_ang " << sleep.maxAngularSpeed
             << " max_smooth_lin " << sleep.maxSmoothedLinearSpeed
             << " max_smooth_ang " << sleep.maxSmoothedAngularSpeed
-            << " max_dwell " << sleep.maxRestDwellTime << " disturbed "
-            << sleep.disturbed << "\n";
+            << " max_dwell " << sleep.maxRestDwellTime << " dwell_ready "
+            << sleep.dwellReady << " dwell_sleep_ready "
+            << sleep.dwellAndSleepReady << " dwell_final_ready "
+            << sleep.dwellAndFinalReady << " dwell_wake_ready "
+            << sleep.dwellAndWakeReady << " below_sleep "
+            << sleep.belowSleepSpeed << " below_final " << sleep.belowFinalSpeed
+            << " below_wake " << sleep.belowWakeSpeed << " islands "
+            << sleep.islands << " max_island_mobile " << sleep.maxIslandMobile
+            << " disturbed " << sleep.disturbed << "\n";
 }
 
 std::string jsonString(const std::string& value)
@@ -1446,6 +1519,18 @@ void applyOptions(
     deactivation.mTimeUntilSleep = *options.sleepTimeUntilSleep;
   world->setDeactivationOptions(deactivation);
 
+  if (options.contactMaxErrorReductionVelocity.has_value()) {
+    dart::constraint::ContactConstraint::setMaxErrorReductionVelocity(
+        *options.contactMaxErrorReductionVelocity);
+  } else {
+    dart::constraint::ContactConstraint::resetMaxErrorReductionVelocity();
+  }
+  if (options.sleepContactPenetrationTolerance.has_value()) {
+    dart::constraint::ConstraintSolver::
+        setAutomaticSleepingContactPenetrationTolerance(
+            *options.sleepContactPenetrationTolerance);
+  }
+
   if (options.boxedLcpSolver != BoxedLcpSolverKind::Default) {
     auto* boxedSolver
         = dynamic_cast<dart::constraint::BoxedLcpConstraintSolver*>(
@@ -1520,6 +1605,14 @@ void printWorldSummary(
             << " rad/s\n";
   std::cout << "  Sleep quiet time: "
             << world->getDeactivationOptions().mTimeUntilSleep << " s\n";
+  std::cout
+      << "  Contact max ERV: "
+      << dart::constraint::ContactConstraint::getMaxErrorReductionVelocity()
+      << " m/s\n";
+  std::cout << "  Sleep contact penetration tolerance: "
+            << dart::constraint::ConstraintSolver::
+                   getAutomaticSleepingContactPenetrationTolerance()
+            << " m\n";
   std::cout << "  World simulation threads: "
             << world->getNumSimulationThreads() << "\n";
   std::cout << "  Collision detector requested: "
@@ -2565,7 +2658,24 @@ int runHeadless(const dart::simulation::WorldPtr& world, const Options& options)
             << sleep.mobile << " mobile skeletons\n";
   std::cout << "Final Islanded:     " << sleep.islanded << " / " << sleep.mobile
             << " mobile skeletons\n";
+  std::cout << "Final Islands:      " << sleep.islands
+            << " island(s), max mobile island size " << sleep.maxIslandMobile
+            << "\n";
   std::cout << "Final Disturbed:    " << sleep.disturbed << " / "
+            << sleep.mobile << " mobile skeletons\n";
+  std::cout << "Final Below Sleep Speed: " << sleep.belowSleepSpeed << " / "
+            << sleep.mobile << " mobile skeletons\n";
+  std::cout << "Final Below Final Speed: " << sleep.belowFinalSpeed << " / "
+            << sleep.mobile << " mobile skeletons\n";
+  std::cout << "Final Below Wake Speed: " << sleep.belowWakeSpeed << " / "
+            << sleep.mobile << " mobile skeletons\n";
+  std::cout << "Final Dwell Ready:  " << sleep.dwellReady << " / "
+            << sleep.mobile << " mobile skeletons\n";
+  std::cout << "Final Dwell+Sleep Ready: " << sleep.dwellAndSleepReady << " / "
+            << sleep.mobile << " mobile skeletons\n";
+  std::cout << "Final Dwell+Final Ready: " << sleep.dwellAndFinalReady << " / "
+            << sleep.mobile << " mobile skeletons\n";
+  std::cout << "Final Dwell+Wake Ready: " << sleep.dwellAndWakeReady << " / "
             << sleep.mobile << " mobile skeletons\n";
   std::cout << "Final Max Smoothed Linear Speed: "
             << sleep.maxSmoothedLinearSpeed << "\n";

@@ -41,6 +41,7 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
+#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
@@ -48,9 +49,11 @@
 #include "dart/common/String.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <algorithm>
@@ -77,6 +80,21 @@ using dart::collision::CollisionDetectorPtr;
 
 constexpr double kFinalSleepLinearRatio = 0.1;
 constexpr double kFinalSleepAngularRatio = 0.2;
+constexpr std::size_t kDenseContactJitterMinIslandSize = 3;
+constexpr double kDefaultSleepContactPenetrationTolerance = 1e-5;
+constexpr double kAdaptivePlaneSleepContactPenetrationTolerance = 0.005;
+
+bool contactTouchesPlaneShape(const collision::Contact& contact)
+{
+  auto isPlaneShapeObject = [](const collision::CollisionObject* object) {
+    const auto shape = object ? object->getShape() : nullptr;
+    return shape != nullptr
+           && shape->getType() == dynamics::PlaneShape::getStaticType();
+  };
+
+  return isPlaneShapeObject(contact.collisionObject1)
+         || isPlaneShapeObject(contact.collisionObject2);
+}
 
 std::string toCollisionDetectorKey(CollisionDetectorType type)
 {
@@ -428,6 +446,11 @@ void World::reserveMemoryManagerForSimulationShape()
   mDisturbedThisStepScratch.reserve(numSkeletons);
   mDeepInitialContactSkeletonScratch.reserve(numSkeletons);
   mSupportedInitialContactSkeletonScratch.reserve(numSkeletons);
+  mIslandHasMobileSkeletonScratch.reserve(numSkeletons);
+  mIslandAllFinalSleepCandidateReadyScratch.reserve(numSkeletons);
+  mIslandAllBelowWakeScratch.reserve(numSkeletons);
+  mIslandMobileSkeletonCountScratch.reserve(numSkeletons);
+  mIslandDwellWakeReadyCountScratch.reserve(numSkeletons);
 }
 
 //==============================================================================
@@ -1612,7 +1635,20 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // handles active contact islands; the final contact-result pass below handles
   // quiet candidate bodies whose static support contact produced no active
   // constraint on this step.
-  constexpr double kSleepContactPenetrationTolerance = 1e-5;
+  const double sleepContactPenetrationTolerance = constraint::ConstraintSolver::
+      getAutomaticSleepingContactPenetrationTolerance();
+  const bool useAdaptivePlaneSleepContactPenetrationTolerance
+      = !constraint::ConstraintSolver::
+            isAutomaticSleepingContactPenetrationToleranceUserConfigured()
+        && sleepContactPenetrationTolerance
+               == kDefaultSleepContactPenetrationTolerance;
+  auto getSleepContactPenetrationTolerance
+      = [&](const collision::Contact& contact) {
+          return useAdaptivePlaneSleepContactPenetrationTolerance
+                         && contactTouchesPlaneShape(contact)
+                     ? kAdaptivePlaneSleepContactPenetrationTolerance
+                     : sleepContactPenetrationTolerance;
+        };
   // Final-quiet gate for sleep candidacy, expressed as fixed fractions of the
   // configured thresholds. At the default thresholds (0.01 m/s, 0.05 rad/s)
   // these evaluate to the previous hardcoded 1e-3 m/s and 1e-2 rad/s, so
@@ -1632,7 +1668,8 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 
   auto isShallowSupportContact = [&](const auto& bodyNode,
                                      const auto& supportBodyNode,
-                                     const Eigen::Vector3d& normal) {
+                                     const Eigen::Vector3d& normal,
+                                     double contactSleepPenetrationTolerance) {
     if (!bodyNode || !supportBodyNode || gravityNorm <= 0.0)
       return false;
 
@@ -1659,7 +1696,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
         = (bodyNode->getTransform().translation()
            - supportBodyNode->getTransform().translation())
               .dot(up);
-    return bodyHeightAboveSupport >= -kSleepContactPenetrationTolerance;
+    return bodyHeightAboveSupport >= -contactSleepPenetrationTolerance;
   };
 
   auto& deepInitialContactSkeletons = mDeepInitialContactSkeletonScratch;
@@ -1673,31 +1710,91 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
           return std::find(skeletons.begin(), skeletons.end(), skeleton)
                  != skeletons.end();
         };
+  auto markMobileSkeleton = [&](auto bodyNode, auto& skeletons) {
+    if (!bodyNode)
+      return;
+    const auto* skeleton = bodyNode->getSkeletonRawPtr();
+    if (skeleton != nullptr && skeleton->isMobile()) {
+      if (!containsSkeleton(skeletons, skeleton))
+        skeletons.push_back(skeleton);
+    }
+  };
+  auto clearMobileSleepCandidate = [](auto bodyNode) {
+    if (!bodyNode)
+      return;
+    auto* skeleton
+        = const_cast<dynamics::Skeleton*>(bodyNode->getSkeletonRawPtr());
+    if (skeleton != nullptr && skeleton->isMobile()
+        && skeleton->getIslandIndex() < 0) {
+      skeleton->setSleepCandidate(false);
+    }
+  };
   if (mFrame == 0) {
     for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
       const auto& contact = contacts.getContact(i);
-      auto markMobileSkeleton = [&](auto bodyNode, auto& skeletons) {
-        if (!bodyNode)
-          return;
-        const auto* skeleton = bodyNode->getSkeletonRawPtr();
-        if (skeleton != nullptr && skeleton->isMobile()) {
-          if (!containsSkeleton(skeletons, skeleton))
-            skeletons.push_back(skeleton);
-        }
-      };
-
+      const double contactSleepContactPenetrationTolerance
+          = getSleepContactPenetrationTolerance(contact);
       const auto bodyNode1 = contact.getBodyNodePtr1();
       const auto bodyNode2 = contact.getBodyNodePtr2();
-      if (contact.penetrationDepth > kSleepContactPenetrationTolerance) {
+      if (contact.penetrationDepth > contactSleepContactPenetrationTolerance) {
         markMobileSkeleton(bodyNode1, deepInitialContactSkeletons);
         markMobileSkeleton(bodyNode2, deepInitialContactSkeletons);
         continue;
       }
 
-      if (isShallowSupportContact(bodyNode1, bodyNode2, contact.normal))
+      if (isShallowSupportContact(
+              bodyNode1,
+              bodyNode2,
+              contact.normal,
+              contactSleepContactPenetrationTolerance)) {
         markMobileSkeleton(bodyNode1, supportedInitialContactSkeletons);
-      if (isShallowSupportContact(bodyNode2, bodyNode1, contact.normal))
+      }
+      if (isShallowSupportContact(
+              bodyNode2,
+              bodyNode1,
+              contact.normal,
+              contactSleepContactPenetrationTolerance)) {
         markMobileSkeleton(bodyNode2, supportedInitialContactSkeletons);
+      }
+    }
+  }
+
+  std::size_t islandCount = 0;
+  std::size_t islandedMobileSkeletonCount = 0;
+  for (const auto& skel : mSkeletons) {
+    if (!skel->isMobile())
+      continue;
+
+    const int island = skel->getIslandIndex();
+    if (island >= 0) {
+      ++islandedMobileSkeletonCount;
+      islandCount = std::max(
+          islandCount, static_cast<std::size_t>(island) + std::size_t{1});
+    }
+  }
+
+  auto& islandMobileSkeletonCount = mIslandMobileSkeletonCountScratch;
+  bool hasDenseContactIsland = false;
+  if (islandCount > 0u
+      && islandedMobileSkeletonCount >= kDenseContactJitterMinIslandSize
+      && islandedMobileSkeletonCount != islandCount) {
+    islandMobileSkeletonCount.assign(islandCount, 0u);
+    for (const auto& skel : mSkeletons) {
+      if (!skel->isMobile())
+        continue;
+
+      const int island = skel->getIslandIndex();
+      if (island < 0)
+        continue;
+
+      const auto islandIndex = static_cast<std::size_t>(island);
+      if (islandIndex < islandMobileSkeletonCount.size()) {
+        ++islandMobileSkeletonCount[islandIndex];
+        if (islandMobileSkeletonCount[islandIndex]
+            >= kDenseContactJitterMinIslandSize) {
+          hasDenseContactIsland = true;
+        }
+      }
     }
   }
 
@@ -1766,11 +1863,101 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
           dwell = std::max(dwell, mDeactivationOptions.mTimeUntilSleep);
         }
         skel->setRestDwellTime(dwell);
-        if (dwell >= mDeactivationOptions.mTimeUntilSleep && finalQuiet) {
+        bool denseContactIsland = false;
+        if (hasDenseContactIsland && islanded) {
+          const auto islandIndex
+              = static_cast<std::size_t>(skel->getIslandIndex());
+          denseContactIsland = islandIndex < islandMobileSkeletonCount.size()
+                               && islandMobileSkeletonCount[islandIndex]
+                                      >= kDenseContactJitterMinIslandSize;
+        }
+        if (!denseContactIsland && dwell >= mDeactivationOptions.mTimeUntilSleep
+            && finalQuiet) {
           skel->setSleepCandidate(true);
         }
       } else {
         skel->setRestDwellTime(0.0);
+      }
+    }
+  }
+
+  if (hasDenseContactIsland) {
+    auto& islandHasMobileSkeleton = mIslandHasMobileSkeletonScratch;
+    auto& islandAllFinalSleepCandidateReady
+        = mIslandAllFinalSleepCandidateReadyScratch;
+    auto& islandAllBelowWake = mIslandAllBelowWakeScratch;
+    auto& islandDwellWakeReadyCount = mIslandDwellWakeReadyCountScratch;
+    islandHasMobileSkeleton.assign(islandCount, 0);
+    islandAllFinalSleepCandidateReady.assign(islandCount, 1);
+    islandAllBelowWake.assign(islandCount, 1);
+    islandDwellWakeReadyCount.assign(islandCount, 0u);
+
+    for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+      const auto& skel = mSkeletons[i];
+      if (!skel->isMobile())
+        continue;
+
+      const int island = skel->getIslandIndex();
+      if (island < 0)
+        continue;
+
+      const auto islandIndex = static_cast<std::size_t>(island);
+      if (islandIndex >= islandCount)
+        continue;
+      if (islandMobileSkeletonCount[islandIndex]
+          < kDenseContactJitterMinIslandSize) {
+        continue;
+      }
+
+      const bool disturbed
+          = (i < disturbedThisStep.size() && disturbedThisStep[i])
+            || skel->hasExternalDisturbance();
+      const bool belowWake = !disturbed
+                             && skel->getSmoothedLinearSpeed() < linWake
+                             && skel->getSmoothedAngularSpeed() < angWake;
+      const bool finalReady
+          = !disturbed
+            && (skel->isSleepCandidate()
+                || (skel->getRestDwellTime()
+                        >= mDeactivationOptions.mTimeUntilSleep
+                    && skel->getSmoothedLinearSpeed() < finalSleepLinearSpeed
+                    && skel->getSmoothedAngularSpeed()
+                           < finalSleepAngularSpeed));
+      islandHasMobileSkeleton[islandIndex] = 1;
+      islandAllFinalSleepCandidateReady[islandIndex]
+          = islandAllFinalSleepCandidateReady[islandIndex] && finalReady;
+      islandAllBelowWake[islandIndex]
+          = islandAllBelowWake[islandIndex] && belowWake;
+      if (belowWake
+          && skel->getRestDwellTime() >= mDeactivationOptions.mTimeUntilSleep) {
+        ++islandDwellWakeReadyCount[islandIndex];
+      }
+    }
+
+    for (const auto& skel : mSkeletons) {
+      if (!skel->isMobile())
+        continue;
+
+      const int island = skel->getIslandIndex();
+      if (island < 0)
+        continue;
+
+      const auto islandIndex = static_cast<std::size_t>(island);
+      if (islandIndex >= islandCount || !islandHasMobileSkeleton[islandIndex])
+        continue;
+      if (islandMobileSkeletonCount[islandIndex]
+          < kDenseContactJitterMinIslandSize) {
+        continue;
+      }
+
+      const bool finalReady = islandAllFinalSleepCandidateReady[islandIndex];
+      const bool denseContactJitterReady
+          = islandMobileSkeletonCount[islandIndex]
+                >= kDenseContactJitterMinIslandSize
+            && islandAllBelowWake[islandIndex]
+            && islandDwellWakeReadyCount[islandIndex] > 0u;
+      if (finalReady || denseContactJitterReady) {
+        skel->setSleepCandidate(true);
       }
     }
   }
@@ -1783,8 +1970,15 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // by the wake-band checks above and in the pre-solve velocity pass.
   for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
     const auto& contact = contacts.getContact(i);
-    if (contact.penetrationDepth > kSleepContactPenetrationTolerance)
+    const double contactSleepContactPenetrationTolerance
+        = getSleepContactPenetrationTolerance(contact);
+    const auto bodyNode1 = contact.getBodyNodePtr1();
+    const auto bodyNode2 = contact.getBodyNodePtr2();
+    if (contact.penetrationDepth > contactSleepContactPenetrationTolerance) {
+      clearMobileSleepCandidate(bodyNode1);
+      clearMobileSleepCandidate(bodyNode2);
       continue;
+    }
 
     auto tryRestOnInactiveSupport = [&](const auto& bodyNode,
                                         const auto& supportBodyNode) {
@@ -1806,8 +2000,13 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       if (!supportInactive)
         return;
 
-      if (!isShallowSupportContact(bodyNode, supportBodyNode, contact.normal))
+      if (!isShallowSupportContact(
+              bodyNode,
+              supportBodyNode,
+              contact.normal,
+              contactSleepContactPenetrationTolerance)) {
         return;
+      }
 
       if (skel->getSmoothedLinearSpeed() > linWake
           || skel->getSmoothedAngularSpeed() > angWake) {
@@ -1819,8 +2018,6 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       skel->setResting(true);
     };
 
-    const auto bodyNode1 = contact.getBodyNodePtr1();
-    const auto bodyNode2 = contact.getBodyNodePtr2();
     tryRestOnInactiveSupport(bodyNode1, bodyNode2);
     tryRestOnInactiveSupport(bodyNode2, bodyNode1);
   }

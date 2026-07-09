@@ -9,18 +9,27 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
-**Current claimed packet: none.** WP-PG.32 is closed in this tracker as
-delivered by merged PRs #3297 and #3307: `FrameAllocator`, World-owned
-`MemoryManager` preparation, frame-scratch capacity/overflow counters,
-`FrameStlAllocator`, DART-owned solver/collision/profiler scratch reuse, and
-`INTEGRATION_StepAllocation` native and soft allocation gates are already on
-`release-6.20`. The `wp-pg-32-frame-allocation-gate` branch is only the
-tracker reconciliation for that already-landed work and should not be resumed as
-a new implementation packet after its PR lands.
+**Current claimed packet: WP-PG.15 D7 default remediation on #3353**
+(`docs/close-dart6-performance-generalization`, converted from the mistaken
+retirement PR). This is an active behavior-changing restoration/evidence PR,
+not a completion or parking PR. It restores this task folder, keeps PLAN-621
+active, promotes the D7 evaluator evidence into the default contact/rest
+policy, keeps explicit `contact_benchmark` knobs for old/new A/B rows, and
+records focused tests/evidence so reviewers can judge the re-baseline envelope.
 
-Next practical action: choose a maintainer decision or gather new profile
-evidence that reopens one of the gated packets below. Do not claim an
-implementation packet from this tracker without changing that evidence state.
+WP-PG.32 is closed in this tracker as delivered by merged PRs #3297 and #3307:
+`FrameAllocator`, World-owned `MemoryManager` preparation, frame-scratch
+capacity/overflow counters, `FrameStlAllocator`, DART-owned
+solver/collision/profiler scratch reuse, and `INTEGRATION_StepAllocation`
+native and soft allocation gates are already on `release-6.20`. The
+`wp-pg-32-frame-allocation-gate` branch should not be resumed as a new
+implementation packet after its PR lands.
+
+Next practical action on #3353: finish the full verification/report loop for
+the default policy, including local lint/check-lint, relevant C++ tests,
+gz/downstream gates where feasible, hosted CI review, and PR-body benchmark
+reporting in the #3307 style. Do not retire or park the tracker while issue
+#3056 remains open and the north-star evidence matrix is incomplete.
 
 **WP-PG.01 is captured** (merged as #3263) — guard rows, profile splits, and
 prior-art triage are in
@@ -31,15 +40,22 @@ many-islands regime is ~50% integration (WS-C is the lever there).
 
 Implementation packets after WP-PG.32, in priority order:
 
-1. No unblocked implementation packet is currently claimable without new
-   maintainer direction or new profile evidence. WP-PG.20 is #3329; WP-PG.21
-   failed the 2026-07-07 current-base map/pruning gate; WP-PG.22 and WP-PG.11
-   both have local current-base rejection evidence from 2026-07-06; WP-PG.31 is
+1. Finish #3353 as the WP-PG.15/D7 behavior-changing restoration PR. Current
+   local evidence shows S6 now sleeps under default settings; acceptance still
+   needs the full validation/report/review loop before merge.
+2. After #3353, continue with the remaining north-star evidence and any still
+   open D3/D8 decisions rather than treating the packet merge as task
+   completion.
+3. Do not retry rejected packets unchanged. WP-PG.20 is #3329; WP-PG.21 failed
+   the 2026-07-07 current-base map/pruning gate; WP-PG.22 and WP-PG.11 both
+   have local current-base rejection evidence from 2026-07-06; WP-PG.31 is
    #3341; WP-PG.32 is already implemented by #3297/#3307.
 
 Blocked/gated (do not claim): PG.04 (D4), PG.12 (evidence), PG.13
-(PG.10 census), PG.14 (D3 — now urgent), PG.15 (D7 — now urgent), PG.23
-(D8), PG.33, PG.41. PG.42 is done in PR #3299; WP-PG.30 is done in PR #3310.
+(PG.10 census), PG.14 (D3 — now urgent), PG.23 (D8), PG.33, PG.41. PG.15
+(D7) is claimed on #3353 as the default behavior remediation and remains open
+until the behavior-changing evidence/re-baseline package passes review. PG.42
+is done in PR #3299; WP-PG.30 is done in PR #3310.
 **D3 and D7 are the decisions that unblock the dense-pile
 fixture**; everything claimable above serves the many-islands and ODE
 regimes meanwhile.
@@ -64,10 +80,10 @@ the explicit `--parallel 8` build command.)
 D1 (SIMD FP contract), D2 (ISA delivery), D3 (matrix-free — **revisit
 trigger fired by WP-PG.01**: solve-proper is 88.1% of the dense-pile
 step), D4 (executor tooling), D5 (ODE lane depth = PG.20/21/22), D7
-(penetration-creep remediation — **S6 confirms 0.362 m penetration,
-0/71 resting at baseline**), D8 (manifold reduction now vs WS-F phase 3)
-— see README "Open decisions". D3 and D7 are now the highest-leverage
-decisions.
+(penetration-creep remediation — #3353 is the active behavior-changing
+default-policy PR and needs re-baseline review), D8 (manifold reduction now vs
+WS-F phase 3) — see README "Open decisions". D3 remains the large-island
+solve-side decision after the D7 sleep-policy path.
 
 ## Session log (round-2 execution)
 
@@ -168,6 +184,107 @@ decisions.
   (`b6e6a0d8778`) extended the same allocation discipline through soft-body
   paths and recorded the full #3307-style performance report. Current local
   verification is recorded in the WP-PG.32 row of the dashboard and lane doc.
+- 2026-07-08: The attempt to retire this task in #3353 was reversed after the
+  maintainer clarified the north-star goal: fully complete the performance
+  optimization dev task for #3056 with broad tests, benchmarks, and GUI/example
+  evidence. #3353 is now the WP-PG.15/D7 evaluator PR. Local evidence so far:
+  `contact_benchmark` exposes `--contact-max-erv` and
+  `--sleep-contact-penetration-tolerance`; focused
+  `test_IslandDeactivation` guards passed; short S6 sweeps showed ERV reduces
+  penetration but does not make the pile sleep by itself, and a 20 s S6 run
+  with `--contact-max-erv 0.1 --sleep-contact-penetration-tolerance 0.005`
+  stayed finite with bounded max penetration (~0.0037 m) but still ended
+  0/71 resting because the dense-pile velocity jitter remained above the
+  final-quiet gate. At that point #3353 was evaluator-only; the later
+  default-remediation evidence below supersedes this note.
+- 2026-07-08: #3353 was advanced from evaluator-only to the D7
+  default-remediation implementation after A/B evidence showed threshold
+  widening alone was insufficient and broad global ERV regressed simple
+  support-contact tests. The candidate promotes the static contact ERV default
+  `0.001 -> 0.1` but applies the higher effective ERV only to dense islands
+  with mobile-mobile contacts; single-mobile static-support islands keep the
+  legacy effective cap. Dense islands also get a `0.005` solver rest-veto
+  tolerance under the default policy, plus dense-contact-island sleep candidacy
+  for sub-wake jitter. `contact_benchmark` now reports island and
+  dwell/velocity diagnostics. A/B artifact
+  `/tmp/wp_pg15_ab_plane_fallback_20260709T023141Z`: S6 old-default override
+  (`--contact-max-erv 0.001 --sleep-contact-penetration-tolerance 0.00001`)
+  took 212.08 s, RTF 0.0943043, 162 contacts / 141 pairs, max penetration
+  0.364241, 0/71 resting, hash `0x159825257114c5d5`; current defaults took
+  91.9572 s, RTF 0.217493, zero contacts, max penetration 0, 71/71 resting,
+  hash `0xec80f734df6d5e74`; the explicit global evaluator row (`ERV=0.1`,
+  tol `0.005`) took 75.487 s, RTF 0.264946, zero contacts, 71/71 resting,
+  hash `0x877687e64e1011b9`. S4/S5 DART/FCL/Bullet/ODE new-default rows in
+  `/tmp/wp_pg15_ab_review_20260708T235540Z` matched old-default hashes,
+  contacts, and resting states. Extra evidence:
+  S2 DART 3k-shapes guard
+  `/tmp/wp_pg15_examples_20260708T223506Z/S2_dart_3k_shapes.log`
+  (`3003/3003` resting, hash `0x8ddc9a81f2d28a7f`), S6 final-scene dump
+  `/tmp/wp_pg15_visual_20260708T223506Z/S6_final_scene.jsonl`, and S6 GUI
+  capture `/tmp/wp_pg15_gui_20260708T223653Z/S6_gui.png` with a passing
+  non-blank `image-verdict`.
+  Focused tests passed: `INTEGRATION_StepAllocation` native allocation gates,
+  `test_SplitImpulse` shallow-support guards, `test_Issue1445`, full
+  `test_IslandDeactivation`, and full `NativeCollisionDetector.*`.
+  CI failures on the old PR head were traced to `test_NativeCollisionDetector`
+  helper filters needing `final` under clang/libc++ warning-as-error builds;
+  that test-only fix landed through the refreshed base.
+- 2026-07-08: An attempted overhead trim for the dense-island World sleep
+  candidacy path was rejected and reverted after an A/B rerun
+  (`/tmp/wp_pg15_ab_candidate_20260708T224930Z`) changed the S6 final hashes
+  and made the explicit evaluator row slower (82.9871 s vs the prior
+  38.9195 s) without a clear S4/S5 guard-row timing win. Keep the
+  island-atomic candidate path from the accepted candidate unless a future
+  optimization carries a cleaner old/new matrix.
+- 2026-07-08: After merging `origin/release-6.20` through #3355, capped `ALL`
+  first failed `SdfParser.PlaneShapeBulletWorldSettles`: the new Bullet
+  analytic `PlaneShape` path converged with millimeter-scale penetration and
+  never satisfied the strict `1e-5` rest-veto tolerance. The fix keeps small
+  non-plane support islands on their legacy individual candidacy path, keeps
+  dense islands on the atomic sub-wake path, and applies the bounded `0.005`
+  rest-veto tolerance only to dense islands and analytic `PlaneShape` contacts.
+  Focused rechecks passed: `test_SdfParser
+  --gtest_filter='SdfParser.PlaneShapeBulletWorldSettles' --gtest_repeat=3`,
+  `INTEGRATION_StepAllocation` native allocation gates, `test_SplitImpulse`
+  shallow-support guards, `test_Issue1445`, and full `test_IslandDeactivation`.
+- Final pre-push gates for the current candidate passed locally after the Codex
+  review fix and public-query cleanup: `pixi run lint`,
+  `pixi run check-lint`, capped `pixi run cmake --build
+  build/default/cpp/Release --target ALL --parallel 8` (98 Python tests and
+  148 CTest tests), and `pixi run -e gazebo test-gz` (`gz-physics` 199/199
+  plus 4 performance tests; `gz-sim` `INTEGRATION_entity_system` passed against
+  the source-built DART plugin).
+- 2026-07-08 Codex review fix: explicit default-valued
+  `setAutomaticSleepingContactPenetrationTolerance(1e-5)` calls now preserve
+  the strict legacy rest-veto policy instead of being treated as the implicit
+  adaptive default. Added
+  `IslandDeactivation.ExplicitDefaultToleranceKeepsPlaneContactStrict` and
+  regenerated the A/B matrix above; the strict old-default S6 row now takes
+  197.777 s and never reaches resting, while current defaults keep the accepted
+  71/71 resting hash.
+- 2026-07-08 Codex review fix: the ungrouped-awake-body veto now clears the
+  group-level rest flag before `solveConstrainedGroups()`, so a newly eligible
+  contact island cannot be marked resting by the final solve while another
+  mobile body is still awake. Added
+  `IslandDeactivation.UngroupedAwakeBodyVetoesNewContactIslandResting` and
+  reran the S6 A/B rows in
+  `/tmp/wp_pg15_ab_awake_veto_20260709T005203Z`; accepted-default and
+  strict-old hashes stayed unchanged.
+- 2026-07-08 Codex review fix: temporary contact ERV overrides can now return
+  to the adaptive default policy with `resetMaxErrorReductionVelocity()`, while
+  explicit default-valued setter calls remain idempotent broad overrides. Added
+  `IslandDeactivation.DefaultContactErvRestoresAdaptivePolicy`; reran the
+  current-head S6 A/B rows in
+  `/tmp/wp_pg15_ab_idempotent_20260709T015150Z`; accepted-default,
+  strict-old, and explicit-evaluator hashes stayed unchanged.
+- 2026-07-08 Codex review fix: the contact-miss sleep fallback now applies the
+  same default adaptive `PlaneShape` tolerance as the constrained-group rest
+  gate, while explicit strict tolerance overrides still clear unislanded sleep
+  candidates. Added
+  `IslandDeactivation.PlaneContactMissFallbackUsesAdaptiveDefaultTolerance`;
+  reran the S6 A/B rows in
+  `/tmp/wp_pg15_ab_plane_fallback_20260709T023141Z`; accepted-default,
+  strict-old, and explicit-evaluator hashes stayed unchanged.
 
 ## Session log
 

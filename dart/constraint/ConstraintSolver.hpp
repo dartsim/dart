@@ -177,6 +177,26 @@ public:
   /// compatibility; forwards to setDeactivationActive().
   void setAutomaticSleepingEnabled(bool _enabled);
 
+  /// Sets the maximum rigid-contact penetration depth that can still be
+  /// treated as converged for automatic body deactivation.
+  ///
+  /// This is a process-wide tuning knob because the DART 6 automatic
+  /// deactivation policy is otherwise configured through World-level options
+  /// without changing ConstraintSolver's public layout. Set it before stepping
+  /// worlds; changing it concurrently with simulation is not thread-safe.
+  static void setAutomaticSleepingContactPenetrationTolerance(double tolerance);
+
+  /// Restores the adaptive default automatic-sleeping contact penetration
+  /// tolerance policy.
+  static void resetAutomaticSleepingContactPenetrationTolerance();
+
+  /// Returns the current automatic-sleeping contact penetration tolerance.
+  static double getAutomaticSleepingContactPenetrationTolerance();
+
+  /// Returns true if the automatic-sleeping contact penetration tolerance was
+  /// explicitly configured through the process-wide setter.
+  static bool isAutomaticSleepingContactPenetrationToleranceUserConfigured();
+
   /// Sets the number of threads available to parallel solver work. This mirrors
   /// World::setNumSimulationThreads(); a value of 0 maps to hardware
   /// concurrency, and 1 keeps the historical serial behavior.
@@ -423,6 +443,10 @@ protected:
   /// true for contact-only groups that are close enough to the penetration
   /// freeze gate to keep solving without discarding already-earned sleep dwell.
   std::vector<bool> mGroupPreserveSleepCandidates;
+
+  /// Per-group count of mobile skeletons, used to choose contact correction
+  /// budgets without allocating in the solver hot path.
+  std::vector<std::size_t> mGroupMobileSkeletonCountScratch;
 
   /// Scratch arrays for deactivation-aware group solves. These intentionally
   /// use byte storage rather than vector<bool> so parallel group workers can

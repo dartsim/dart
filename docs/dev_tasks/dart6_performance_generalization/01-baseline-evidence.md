@@ -163,6 +163,48 @@ resting 450/900) and `S5_fcl = 0x8277be4f0c14212` (contacts 180, pairs 90,
 resting 44/90). Treat these as current-base drift pending a full guard-table
 refresh or maintainer re-baseline.
 
+### WP-PG.15 D7 default-remediation A/B (candidate)
+
+Artifact: `/tmp/wp_pg15_ab_plane_fallback_20260709T023141Z/summary.tsv` on
+`docs/close-dart6-performance-generalization`, using
+`build/default/cpp/Release/bin/contact_benchmark`. The old-default row uses
+CLI overrides to reproduce the baseline contact ERV (`0.001`) and
+automatic-sleeping contact-penetration tolerance (`1e-5`) on the same binary.
+The current-default row keeps the legacy effective ERV for single-mobile
+static-support islands, uses the higher ERV only for dense islands with
+mobile-mobile contacts, and uses the wider contact-rest tolerance only for
+dense islands under the default tolerance policy.
+
+| Row | RTF | Avg step ms | Contacts | Pairs | Over sleep tol | Resting | Finite | Max pen | Hash |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |
+| S6 current defaults | 0.217493 | 4.59786 | 0 | 0 | 0 | 71/71 | true | 0 | `0xec80f734df6d5e74` |
+| S6 old-default override | 0.0943043 | 10.604 | 162 | 141 | 39 | 0/71 | true | 0.364241 | `0x159825257114c5d5` |
+| S6 explicit evaluator (`ERV=0.1`, tol `0.005`) | 0.264946 | 3.77435 | 0 | 0 | 0 | 71/71 | true | 0 | `0x877687e64e1011b9` |
+
+The proposed default is 2.31x faster than the old-default override on this
+S6 run and reaches the pile-sleep success criterion under default settings.
+The explicit evaluator row remains a rejected fully global ERV/tolerance
+comparison; its final outcome stays healthy and is faster in this run, but the
+policy is not promoted because simple support-contact guards regressed under
+that broader setting. The S4/S5 DART/FCL/Bullet/ODE guard rows in
+`/tmp/wp_pg15_ab_review_20260708T235540Z/summary.tsv` stayed finite, and every
+new-default row matched the old-default hash/contact/resting state.
+
+Additional current-candidate examples:
+
+- S2 3k-shapes DART headless guard:
+  `/tmp/wp_pg15_examples_20260708T223506Z/S2_dart_3k_shapes.log`
+  (`RTF 29.7321`, `3003/3003` resting, zero contacts, hash
+  `0x8ddc9a81f2d28a7f`).
+- S6 final-scene dump:
+  `/tmp/wp_pg15_visual_20260708T223506Z/S6_final_scene.jsonl` (78 records)
+  with log `/tmp/wp_pg15_visual_20260708T223506Z/S6_dump_final_scene.log`
+  (`71/71` resting, zero contacts, hash `0xec80f734df6d5e74`).
+- S6 GUI capture:
+  `/tmp/wp_pg15_gui_20260708T223653Z/S6_gui.png`; GUI log reports
+  `20000 / 20000` capture frames, `71/71` resting, zero contacts, and
+  `pixi run image-verdict` passed the non-blank verdict.
+
 ### Headline findings (round-2 evidence; supersedes the pre-plan smoke run)
 
 1. **The two active regimes have opposite bottlenecks** (profile splits,

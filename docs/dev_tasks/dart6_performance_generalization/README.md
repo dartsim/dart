@@ -11,6 +11,29 @@
 > Baseline branch point: `origin/release-6.20` @ `70b92010311` (includes
 > #3209 benchmark, #3229 dart/simd, #3230 dashboard, #3226 deactivation gate).
 
+## North-star completion gate
+
+This task is not complete merely because the current packet queue becomes
+gated. It completes only when issue #3056 is closure-ready for the DART 6.20
+line with evidence that the fix is general, not overfit to one reproducer.
+That means the final closeout must include:
+
+- focused regression tests for any solver, contact, collision, sleeping, or
+  benchmark behavior changed by the round;
+- #3307-style benchmark reports covering the issue-specific 3k-shapes/gz
+  default ODE path, the active contact-container fixture, settled-scene
+  regression guards, and untouched-detector hash/contact/resting checks;
+- representative headless and GUI example evidence from `contact_benchmark`
+  (`--gui-capture`, sleep-state colors, and final-scene dumps where useful)
+  so reviewers can inspect whether the optimized scene is physically
+  plausible, finite, and not merely faster; and
+- a recorded decision for every behavior-changing gate that remains relevant
+  to #3056 (especially D3, D7, and D8), with an explicit maintainer-approved
+  deferral if a gate is not fixed on this branch.
+
+Do not retire this folder, park PLAN-621, or post a final issue-closure claim
+while any required evidence above is missing.
+
 ## Why this round exists
 
 Round 1 made settled scenes fast (3k_shapes DART-native RTF ~81, hash
@@ -26,14 +49,16 @@ explicit, is the **active** regime and why scenes stay active:
   profile scope; WP-PG.01/WP-PG.10 must record the `Construct LCP` vs
   solve-proper split before WS-A effort is committed.
 - **Penetration creep blocks sleeping** (#3209 root-cause finding 2):
-  contact error correction is capped at `DART_MAX_ERV = 1e-3` m/s
+  baseline contact error correction is capped at `DART_MAX_ERV = 1e-3` m/s
   (`ContactConstraint.cpp:49`); piles compact faster than the cap corrects,
   so max penetration grows ~5–10 mm/s without bound — and the island-rest
   veto requires every contact ≤ 1e-5 m penetration
   (`kSleepContactPenetrationTolerance`, `ConstraintSolver.cpp:2050`,
   `World.cpp:1229`), so **creeping piles can never freeze**. Detector- and
   solver-independent; deterministic reproducer recorded in
-  01-baseline-evidence.md (scene S6).
+  01-baseline-evidence.md (scene S6). WP-PG.15 addresses this for dense
+  mobile-mobile islands while preserving legacy behavior for single-mobile
+  static-support islands.
 - gz-sim uses the **ODE collision detector by default** (issue #3056,
   @azeey); the DART-side ODE wrapper carries quadratic contact-history
   bookkeeping, and its trimesh cylinder fallback can flood contact caps
@@ -68,10 +93,13 @@ claiming any packet that overlaps them**.
 3. **No regressions**: settled 3k native stays ≥ round-2 baseline RTF
    within noise (±5%); settled 3k ODE row does not regress; every guard
    scene keeps bit-identical hashes for untouched detectors.
-4. **Completion trigger**: criteria 1–3 met (or maintainer-approved
+4. **General evidence trigger**: issue-specific wins are insufficient. The
+   final report must include broad tests, benchmark matrices, and GUI/headless
+   example evidence proving the optimized path is not overfit to one fixture.
+5. **Completion trigger**: criteria 1–4 met (or maintainer-approved
    exceptions recorded), D3/D4/D5/D7/D8 resolved with their packets landed
-   or explicitly deferred, then the closeout promotions below and folder
-   deletion in the completing PR.
+   or explicitly deferred, issue #3056 ready for closure, then the closeout
+   promotions below and folder deletion in the completing PR.
 
 ## Compatibility envelope (hard rules for every packet)
 
@@ -198,13 +226,18 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
   WS-F phase 5 (facade decision). WP-PG.23 is governed by D8, not D5.
 - **D6 — Deactivation default divergence**: 6.20 defaults deactivation ON,
   main defaults OFF. Flagged for awareness; no action proposed this round.
-- **D7 — Penetration-creep remediation policy** (blocks WP-PG.15): the fix
-  space spans the contact ERV budget (`DART_MAX_ERV`; a public setter
-  `ContactConstraint::setMaxErrorReductionVelocity` already exists),
-  island-LCP convergence for large piles, and/or a bounded-penetration
-  tolerance in the island-rest veto. All are behavior-changing (contact
-  depths, sleep transitions); decide the acceptance envelope and
-  re-baseline process before implementation.
+- **D7 — Penetration-creep remediation policy** (active on WP-PG.15/#3353):
+  #3353 is the current behavior-changing default-policy proposal. It promotes
+  the evidenced contact ERV/tolerance values through dense-island adaptive
+  policy, keeps ordinary single-body support contacts on the legacy effective
+  ERV/tolerance path, and adds dense-contact-island sleep candidacy for
+  sub-wake jitter. After the #3355 base merge, analytic `PlaneShape` support
+  contacts are included in the bounded contact-rest tolerance because Bullet
+  plane contacts converge at millimeter scale, but explicit
+  `setAutomaticSleepingContactPenetrationTolerance(1e-5)` calls still preserve
+  the strict legacy policy. The PR must carry the old/new re-baseline evidence
+  and reviewer acceptance before D7 is closed. D3 remains the separate
+  large-island solve-side decision.
 - **D8 — Contact-manifold reduction on current detectors** (blocks
   WP-PG.23): round 1 explicitly deferred default-on manifold
   reduction/selection ("mines #2366 and DART 7 native collision"; recorded
