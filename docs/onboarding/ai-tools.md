@@ -368,6 +368,11 @@ check-ai-commands` in CI; behavior notes hand-checked 2026-07
 - Does NOT read `.opencode/` directory
 - Commands use `$ARGUMENTS` for user input
 - Skills require YAML frontmatter with `name` and `description`
+- For `/goal`, put the canonical command in the goal text, such as
+  `/goal Run /dart-ultrawork with: <task>; done when: ...`. If goal text starts
+  with `ulw:` or the common typo `ultrawok:`, normalize it to the canonical
+  `/dart-ultrawork` workflow. These are prompt-level shorthands, not separate
+  shared capabilities.
 
 ### OpenCode
 
@@ -418,6 +423,8 @@ hand-checked 2026-07
 - Supports subdirectory `AGENTS.md` files (walks from root to CWD)
 - Skills use `$skill-name` syntax (e.g., `$dart-build`)
 - Command workflows use the same syntax (e.g., `$dart-fix-ci <arguments>`)
+- For Codex goal mode, put the generated skill adapter in the goal text, such
+  as `/goal $dart-ultrawork <task>`.
 - Codex CLI slash commands are built-in controls; project workflows are exposed
   through skills instead of repo-local `/dart-*` slash files
 - Current OpenAI docs describe `.agents/skills` as the repository skill

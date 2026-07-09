@@ -66,6 +66,9 @@ skill adapters in Codex. `docs/ai/workflows.md` owns the capability catalog;
 Use `/dart-next` or `$dart-next` when an agent should select the next bounded
 task from the north star, plan dashboard, dev-task state, issues, PRs, or CI;
 pass `focus=<topic>` to prefer an area without hard-coding the outcome.
+Use `/dart-ultrawork` or `$dart-ultrawork` for large, multi-session, or
+explicitly autonomous work from a brief or one up-front interview; it uses
+`docs/dev_tasks/<task>/` as the project home.
 
 Editable sources live in `.claude/commands/` and `.claude/skills/`. Generated
 OpenCode and Codex entrypoints live in `.opencode/command/` and

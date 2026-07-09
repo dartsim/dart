@@ -24,9 +24,11 @@ from public docs and `pixi run ...` commands without a specific AI tool.
   relevant design docs; turns roadmap intent into bounded work packets;
   keeps packet scope honest against the simplicity axiom; and reviews
   executor output against the packet's acceptance evidence before the work is
-  recorded as done. Team-scale tasks enter through `dart-new-team-task`,
-  which front-loads a decision interview and routes evidence-resolvable
-  uncertainties to spikes and research instead of questions. The
+  recorded as done. Team-scale and explicitly autonomous tasks enter through
+  `dart-ultrawork`, which uses `docs/dev_tasks/<task>/` as the project
+  home, front-loads a decision interview or provided brief, and routes
+  evidence-resolvable uncertainties to spikes and research instead of
+  questions. The
   orchestrator's strongest model also serves as the oracle: critical
   decisions, escalations executors cannot resolve, and research synthesis
   get its deepest reasoning, while routine implementation stays with
@@ -45,6 +47,30 @@ contract.
 Authoring and review stay separated: the agent that implemented a packet does
 not approve it. The orchestrator (or an independent reviewer session)
 performs the acceptance check.
+
+## Review Loop
+
+Review is part of the work cycle, not a final courtesy pass. For every
+meaningful implementation chunk, the orchestrator runs an independent review
+lane after verification and again after any cleanup or fixes. A packet is done
+only after the current post-fix state has at least two clean review passes
+recorded in the owning plan, dev-task `verification.md`, or PR evidence.
+
+Use the strongest available reviewer for the risk: `dart-review-pr` for PR
+shape and repo policy, `dart-analyze` for read-only design or regression
+questions, test-focused agents for coverage and failure modes, architecture or
+performance reviewers for shared contracts, and visual/UX reviewers for GUI or
+demo surfaces. When the environment supports cross-agent review, prefer Codex
+from a Claude-led workflow, Claude from a Codex-led workflow, or subagents with
+disjoint context. If those tools are unavailable, perform a role-separated
+local review and record the limitation.
+
+Reviewer findings are hypotheses, not commands. Investigate each substantive
+finding with code inspection, tests, docs, benchmarks, or visual evidence; then
+fix it, split it into a tracked follow-up, or record a no-fix rationale with
+evidence. Re-run the relevant gates after fixes before asking for the next
+review pass. Do not mark a packet complete while review findings are
+unexplained, unverified, or only acknowledged.
 
 ## Work-packet contract
 
@@ -83,6 +109,14 @@ DART work. Before implementation starts, the owning surface must answer:
 - which decisions remain open and where they are recorded;
 - what acceptance evidence will prove the objective; and
 - which `pixi run ...` gates cover that evidence.
+
+For behavior-bearing physics or simulation work, acceptance evidence normally
+includes a high-quality GUI example, ideally in the demos app or another durable
+DART demo surface. The example should be self-contained enough that a user can
+understand the behavior by running and interacting with it, without reading the
+implementation or a developer explanation. If a GUI/demo artifact is not
+appropriate, the task must say why and name the replacement visual or user-level
+evidence.
 
 For numbered plans, this information belongs in the work packet. For
 multi-session implementation tasks, it belongs in

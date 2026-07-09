@@ -70,6 +70,17 @@ better-bounded task is selected instead. PR creation, PR comments, review
 re-triggers, thread resolution, CI reruns, pushes, merges, and branch deletion
 still require explicit maintainer/user approval.
 
+## Starting Autonomous Projects
+
+Use `$dart-ultrawork` in Codex or `/dart-ultrawork` in
+Claude/OpenCode when a task should run as an autonomous project from either a
+brief or one up-front decision interview. The workflow uses
+`docs/dev_tasks/<task>/` as the project home, records acceptance criteria,
+risks, decisions, verification, progress, and handoff state, and then routes
+well-defined packets through the orchestrator/executor model. For ordinary
+bounded single-session work, use `dart-new-task` unless the user explicitly
+asks for the autonomous project-home loop.
+
 ## Source Ownership
 
 | Surface                       | Role                                                                                  |

@@ -46,6 +46,28 @@ docs/dev_tasks/<task>/
 └── NN-<topic>.md       # Optional: Additional docs as needed
 ```
 
+### Autonomous Project Extension
+
+Use `dart-ultrawork` for large, team-scale, multi-session, or explicitly
+autonomous work. It uses this same `docs/dev_tasks/<task>/` folder as the
+project home for both DART 7 and DART 6 maintenance tasks.
+
+For autonomous projects, keep the required files above and add sidecars when
+they make resumability or evidence clearer:
+
+| File              | Required contents                                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `README.md`       | north star, final deliverable, acceptance criteria, scope, non-goals, constraints, risks, current milestone, blockers, next actions, gates |
+| `RESUME.md`       | current branch/worktree state, immediate next step, risks, recovery notes, verification commands                                           |
+| `decisions.md`    | date, decision, context, options considered, evidence, tradeoffs, result, revisit trigger                                                  |
+| `verification.md` | date, chunk or milestone, what changed, checks run, review passes, GUI/demo evidence when relevant, results, known gaps, follow-up         |
+| `progress-log.md` | chronological record of meaningful completed work and links to evidence                                                                    |
+
+Do not create a separate generic project-home tree outside `docs/dev_tasks/`
+unless a task-specific owner doc explicitly requires it. Before any session
+ends, update the project-home docs enough that a fresh agent can continue
+without hidden chat history.
+
 ### RESUME.md — Session Continuity (IMPORTANT)
 
 **Why this matters**: AI sessions can end unexpectedly (context limits, crashes, user closes session). Without a resume prompt, the next session starts from scratch and may misunderstand where work left off.
@@ -124,6 +146,10 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 
 - <test, benchmark, doc update, visual artifact, or command output that proves
   success>
+- <for behavior-bearing physics/simulation work: self-contained GUI or demos-app
+  artifact, runnable command, and visual inspection or capture evidence>
+- <review evidence: at least two clean independent or role-separated passes on
+  the current post-fix state>
 
 ## Gates
 
