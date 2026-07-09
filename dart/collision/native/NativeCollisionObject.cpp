@@ -197,13 +197,13 @@ void NativeCollisionObject::updateEngineData()
   const auto* shapePtr = shape.get();
   const std::size_t shapeId = shapePtr ? shapePtr->getID() : kNoShapeId;
   const std::size_t shapeVersion = shapePtr ? shapePtr->getVersion() : 0u;
-
-  mNativeTransform = getTransform();
-  mUsesDartFallbackShape = shapeUsesDartFallback(shapePtr);
-  mUsesSoftMeshFallbackShape = shapeUsesSoftMeshFallback(shapePtr);
-  mIsPlaneShape = shapeIsPlane(shapePtr);
   const bool shapeChanged
       = shapeId != mLastKnownShapeId || shapeVersion != mLastKnownShapeVersion;
+  if (shapeChanged) {
+    mUsesDartFallbackShape = shapeUsesDartFallback(shapePtr);
+    mUsesSoftMeshFallbackShape = shapeUsesSoftMeshFallback(shapePtr);
+    mIsPlaneShape = shapeIsPlane(shapePtr);
+  }
 
   if (mUsesDartFallbackShape) {
     mLastKnownShapeId = shapeId;
@@ -212,12 +212,17 @@ void NativeCollisionObject::updateEngineData()
     auto* fallbackObject = getDartFallbackObject();
     if (mUsesSoftMeshFallbackShape || shapeChanged)
       refreshDartFallbackObject(fallbackObject);
-    mNativeAabb
-        = fallbackObject != nullptr ? getDartFallbackAabb(
-              *fallbackObject, fallbackObject->getWorldTransformForCollision())
-                                    : getShapeAabb(*shapePtr, mNativeTransform);
+    if (fallbackObject != nullptr) {
+      mNativeTransform = fallbackObject->getWorldTransformForCollision();
+      mNativeAabb = getDartFallbackAabb(*fallbackObject, mNativeTransform);
+    } else {
+      mNativeTransform = getTransform();
+      mNativeAabb = getShapeAabb(*shapePtr, mNativeTransform);
+    }
     return;
   }
+
+  mNativeTransform = getTransform();
 
   if (shapeChanged)
     rebuildNativeShape();

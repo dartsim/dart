@@ -46,6 +46,8 @@ public:
   void clear() override;
   void add(std::size_t id, const Aabb& aabb) override;
   void update(std::size_t id, const Aabb& aabb) override;
+  void updateRange(
+      span<const std::size_t> ids, span<const Aabb> aabbs) override;
   void remove(std::size_t id) override;
 
   [[nodiscard]] std::vector<BroadPhasePair> queryPairs() const override;
@@ -54,6 +56,21 @@ public:
   [[nodiscard]] std::size_t size() const override;
 
   bool visitPairs(const BroadPhasePairVisitor& visitor) const override;
+
+  template <typename Visitor>
+  bool visitPairsInline(Visitor&& visitor) const
+  {
+    for (std::size_t i = 0u; i < entries_.size(); ++i) {
+      const auto& entry1 = entries_[i];
+      for (std::size_t j = i + 1u; j < entries_.size(); ++j) {
+        const auto& entry2 = entries_[j];
+        if (overlapsFast(entry1, entry2) && !visitor(entry1.id, entry2.id))
+          return false;
+      }
+    }
+
+    return true;
+  }
 
   using BroadPhase::build;
   using BroadPhase::queryPairs;

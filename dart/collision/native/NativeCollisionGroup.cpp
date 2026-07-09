@@ -69,6 +69,9 @@ void NativeCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
     mIdToObject.resize(id + 1u, nullptr);
   mIdToObject[id] = nativeObject;
   mCollisionObjects.push_back(object);
+  mNativeObjects.push_back(nativeObject);
+  mCollisionObjectIds.push_back(id);
+  mCollisionObjectAabbs.push_back(nativeObject->getNativeAabb());
   mBroadPhase->add(id, nativeObject->getNativeAabb());
 }
 
@@ -76,6 +79,11 @@ void NativeCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 void NativeCollisionGroup::addCollisionObjectsToEngine(
     const std::vector<CollisionObject*>& collObjects)
 {
+  mCollisionObjects.reserve(mCollisionObjects.size() + collObjects.size());
+  mNativeObjects.reserve(mNativeObjects.size() + collObjects.size());
+  mCollisionObjectIds.reserve(mCollisionObjectIds.size() + collObjects.size());
+  mCollisionObjectAabbs.reserve(
+      mCollisionObjectAabbs.size() + collObjects.size());
   for (auto* collObject : collObjects)
     addCollisionObjectToEngine(collObject);
 }
@@ -94,9 +102,19 @@ void NativeCollisionGroup::removeCollisionObjectFromEngine(
   if (id < mIdToObject.size())
     mIdToObject[id] = nullptr;
   mFreeIds.push_back(id);
-  mCollisionObjects.erase(
-      std::remove(mCollisionObjects.begin(), mCollisionObjects.end(), object),
-      mCollisionObjects.end());
+  const auto objectIt
+      = std::find(mCollisionObjects.begin(), mCollisionObjects.end(), object);
+  if (objectIt != mCollisionObjects.end()) {
+    const auto index = static_cast<std::size_t>(
+        std::distance(mCollisionObjects.begin(), objectIt));
+    mCollisionObjects.erase(objectIt);
+    mNativeObjects.erase(
+        mNativeObjects.begin() + static_cast<std::ptrdiff_t>(index));
+    mCollisionObjectIds.erase(
+        mCollisionObjectIds.begin() + static_cast<std::ptrdiff_t>(index));
+    mCollisionObjectAabbs.erase(
+        mCollisionObjectAabbs.begin() + static_cast<std::ptrdiff_t>(index));
+  }
 }
 
 //==============================================================================
@@ -104,6 +122,9 @@ void NativeCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
   mBroadPhase->clear();
   mCollisionObjects.clear();
+  mNativeObjects.clear();
+  mCollisionObjectIds.clear();
+  mCollisionObjectAabbs.clear();
   mIdToObject.clear();
   mObjectToId.clear();
   mFreeIds.clear();
@@ -113,12 +134,24 @@ void NativeCollisionGroup::removeAllCollisionObjectsFromEngine()
 //==============================================================================
 void NativeCollisionGroup::updateCollisionGroupEngineData()
 {
-  for (auto* object : mCollisionObjects) {
-    auto* nativeObject = static_cast<NativeCollisionObject*>(object);
-    const auto search = mObjectToId.find(object);
-    if (search != mObjectToId.end())
-      mBroadPhase->update(search->second, nativeObject->getNativeAabb());
+  const auto numObjects = mNativeObjects.size();
+  for (std::size_t i = 0u; i < numObjects; ++i)
+    mCollisionObjectAabbs[i] = mNativeObjects[i]->getNativeAabb();
+
+  mBroadPhase->updateRange(mCollisionObjectIds, mCollisionObjectAabbs);
+}
+
+//==============================================================================
+void NativeCollisionGroup::updateEngineDataForCollide()
+{
+  const auto numObjects = mNativeObjects.size();
+  for (std::size_t i = 0u; i < numObjects; ++i) {
+    auto* nativeObject = mNativeObjects[i];
+    nativeObject->NativeCollisionObject::updateEngineData();
+    mCollisionObjectAabbs[i] = nativeObject->getNativeAabb();
   }
+
+  mBroadPhase->updateRange(mCollisionObjectIds, mCollisionObjectAabbs);
 }
 
 //==============================================================================

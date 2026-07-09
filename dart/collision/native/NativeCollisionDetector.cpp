@@ -118,31 +118,6 @@ native::CollisionOption makeNativeOption(
 }
 
 //==============================================================================
-bool hasNativeCollisionPath(const NativeCollisionObject* object)
-{
-  return object != nullptr
-         && (object->getNativeShape() != nullptr
-             || object->usesDartFallbackShape());
-}
-
-//==============================================================================
-bool shouldSkipPair(
-    const NativeCollisionObject* object1,
-    const NativeCollisionObject* object2,
-    const CollisionOption& option)
-{
-  if (!hasNativeCollisionPath(object1) || !hasNativeCollisionPath(object2))
-    return true;
-
-  if (option.collisionFilter
-      && option.collisionFilter->ignoresCollision(object1, object2)) {
-    return true;
-  }
-
-  return false;
-}
-
-//==============================================================================
 bool shouldUseDartFallback(
     const NativeCollisionObject* object1, const NativeCollisionObject* object2)
 {
@@ -151,6 +126,37 @@ bool shouldUseDartFallback(
   // fallback bridge and let native-owned kernels handle primitive coverage.
   return (object1 != nullptr && object1->usesSoftMeshFallbackShape())
          || (object2 != nullptr && object2->usesSoftMeshFallbackShape());
+}
+
+//==============================================================================
+bool hasSupportedCollisionPath(
+    const NativeCollisionObject* object1, const NativeCollisionObject* object2)
+{
+  if (object1 == nullptr || object2 == nullptr)
+    return false;
+
+  if (shouldUseDartFallback(object1, object2))
+    return true;
+
+  return object1->getNativeShape() != nullptr
+         && object2->getNativeShape() != nullptr;
+}
+
+//==============================================================================
+bool shouldSkipPair(
+    const NativeCollisionObject* object1,
+    const NativeCollisionObject* object2,
+    const CollisionOption& option)
+{
+  if (!hasSupportedCollisionPath(object1, object2))
+    return true;
+
+  if (option.collisionFilter
+      && option.collisionFilter->ignoresCollision(object1, object2)) {
+    return true;
+  }
+
+  return false;
 }
 
 //==============================================================================
@@ -170,6 +176,66 @@ bool shouldUseNativeManifoldContact(
 
   return nativeObject1->getNativeShape() != nullptr
          && nativeObject2->getNativeShape() != nullptr;
+}
+
+//==============================================================================
+bool ownsNativeManifoldShape(const NativeCollisionObject* object)
+{
+  return object != nullptr && object->getNativeShape() != nullptr
+         && !object->usesDartFallbackShape();
+}
+
+//==============================================================================
+bool mayUseNativeManifoldContacts(
+    const std::vector<NativeCollisionObject*>& objects)
+{
+  std::size_t nativeShapeCount = 0u;
+  for (const auto* object : objects) {
+    if (!ownsNativeManifoldShape(object))
+      continue;
+
+    ++nativeShapeCount;
+    if (nativeShapeCount >= 2u)
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool hasSoftMeshFallbackShape(
+    const std::vector<NativeCollisionObject*>& objects)
+{
+  for (const auto* object : objects) {
+    if (object != nullptr && object->usesSoftMeshFallbackShape())
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool mayUseNativeManifoldContacts(
+    const std::vector<NativeCollisionObject*>& objects1,
+    const std::vector<NativeCollisionObject*>& objects2)
+{
+  bool hasNativeShape1 = false;
+  for (const auto* object : objects1) {
+    if (ownsNativeManifoldShape(object)) {
+      hasNativeShape1 = true;
+      break;
+    }
+  }
+
+  if (!hasNativeShape1)
+    return false;
+
+  for (const auto* object : objects2) {
+    if (ownsNativeManifoldShape(object))
+      return true;
+  }
+
+  return false;
 }
 
 //==============================================================================
@@ -792,6 +858,7 @@ bool processNativePair(
     const CollisionOption& option,
     CollisionResult* result,
     bool& collisionFound,
+    bool& nativeManifoldContactFound,
     ScratchCollisionResult& fallbackPairResult)
 {
   if (shouldSkipPair(object1, object2, option))
@@ -822,6 +889,8 @@ bool processNativePair(
     return false;
 
   collisionFound = true;
+  if (option.enableContact && result)
+    nativeManifoldContactFound = true;
 
   if (!result)
     return true;
@@ -854,7 +923,8 @@ std::shared_ptr<NativeCollisionDetector> NativeCollisionDetector::create()
 //==============================================================================
 NativeCollisionDetector::~NativeCollisionDetector()
 {
-  removeManifoldCache(this);
+  if (mHasManifoldCache)
+    removeManifoldCache(this);
 }
 
 //==============================================================================
@@ -870,6 +940,9 @@ native::CachedContact* NativeCollisionDetector::getCachedContact(
       || object2->getCollisionDetector() != this) {
     return nullptr;
   }
+
+  if (!mHasManifoldCache)
+    return nullptr;
 
   const auto* manifoldCache = findManifoldCache(this);
   if (!manifoldCache)
@@ -890,6 +963,9 @@ void NativeCollisionDetector::notifyCollisionObjectDestroying(
   CollisionDetector::notifyCollisionObjectDestroying(object);
 
   if (!object)
+    return;
+
+  if (!mHasManifoldCache)
     return;
 
   auto* manifoldCache = findManifoldCache(this);
@@ -961,21 +1037,40 @@ bool NativeCollisionDetector::collide(
     return false;
 
   auto* nativeGroup = static_cast<NativeCollisionGroup*>(group);
-  nativeGroup->updateEngineData();
-  auto& manifoldCache = getOrCreateManifoldCache(this);
-  refreshManifoldCache(nativeGroup->mCollisionObjects, &manifoldCache);
+  nativeGroup->updateEngineDataForCollide();
+  native::PersistentManifoldCache* manifoldCache = nullptr;
+  const bool cacheNativeManifoldContacts
+      = !hasSoftMeshFallbackShape(nativeGroup->mNativeObjects);
+  if (cacheNativeManifoldContacts && mHasManifoldCache && option.enableContact
+      && mayUseNativeManifoldContacts(nativeGroup->mNativeObjects)) {
+    manifoldCache = findManifoldCache(this);
+    refreshManifoldCache(nativeGroup->mCollisionObjects, manifoldCache);
+  }
 
   bool collisionFound = false;
+  bool nativeManifoldContactFound = false;
   ScratchCollisionResult fallbackPairResult;
-  nativeGroup->mBroadPhase->visitPairs([&](std::size_t id1, std::size_t id2) {
-    auto* object1 = nativeGroup->mIdToObject[id1];
-    auto* object2 = nativeGroup->mIdToObject[id2];
-    return !processNativePair(
-        object1, object2, option, result, collisionFound, fallbackPairResult);
-  });
+  nativeGroup->mBroadPhase->visitPairsInline(
+      [&](std::size_t id1, std::size_t id2) {
+        auto* object1 = nativeGroup->mIdToObject[id1];
+        auto* object2 = nativeGroup->mIdToObject[id2];
+        return !processNativePair(
+            object1,
+            object2,
+            option,
+            result,
+            collisionFound,
+            nativeManifoldContactFound,
+            fallbackPairResult);
+      });
 
-  if (option.enableContact)
-    attachCachedContactImpulses(result, &manifoldCache);
+  if (cacheNativeManifoldContacts && nativeManifoldContactFound) {
+    if (!manifoldCache) {
+      mHasManifoldCache = true;
+      manifoldCache = &getOrCreateManifoldCache(this);
+    }
+    attachCachedContactImpulses(result, manifoldCache);
+  }
 
   return collisionFound;
 }
@@ -1004,15 +1099,24 @@ bool NativeCollisionDetector::collide(
 
   auto* nativeGroup1 = static_cast<NativeCollisionGroup*>(group1);
   auto* nativeGroup2 = static_cast<NativeCollisionGroup*>(group2);
-  nativeGroup1->updateEngineData();
-  nativeGroup2->updateEngineData();
-  auto& manifoldCache = getOrCreateManifoldCache(this);
-  refreshManifoldCache(
-      nativeGroup1->mCollisionObjects,
-      nativeGroup2->mCollisionObjects,
-      &manifoldCache);
+  nativeGroup1->updateEngineDataForCollide();
+  nativeGroup2->updateEngineDataForCollide();
+  native::PersistentManifoldCache* manifoldCache = nullptr;
+  const bool cacheNativeManifoldContacts
+      = !hasSoftMeshFallbackShape(nativeGroup1->mNativeObjects)
+        && !hasSoftMeshFallbackShape(nativeGroup2->mNativeObjects);
+  if (cacheNativeManifoldContacts && mHasManifoldCache && option.enableContact
+      && mayUseNativeManifoldContacts(
+          nativeGroup1->mNativeObjects, nativeGroup2->mNativeObjects)) {
+    manifoldCache = findManifoldCache(this);
+    refreshManifoldCache(
+        nativeGroup1->mCollisionObjects,
+        nativeGroup2->mCollisionObjects,
+        manifoldCache);
+  }
 
   bool collisionFound = false;
+  bool nativeManifoldContactFound = false;
   ScratchCollisionResult fallbackPairResult;
   for (auto* object1 : nativeGroup1->mCollisionObjects) {
     for (auto* object2 : nativeGroup2->mCollisionObjects) {
@@ -1022,16 +1126,27 @@ bool NativeCollisionDetector::collide(
               option,
               result,
               collisionFound,
+              nativeManifoldContactFound,
               fallbackPairResult)) {
-        if (option.enableContact)
-          attachCachedContactImpulses(result, &manifoldCache);
+        if (cacheNativeManifoldContacts && nativeManifoldContactFound) {
+          if (!manifoldCache) {
+            mHasManifoldCache = true;
+            manifoldCache = &getOrCreateManifoldCache(this);
+          }
+          attachCachedContactImpulses(result, manifoldCache);
+        }
         return collisionFound;
       }
     }
   }
 
-  if (option.enableContact)
-    attachCachedContactImpulses(result, &manifoldCache);
+  if (cacheNativeManifoldContacts && nativeManifoldContactFound) {
+    if (!manifoldCache) {
+      mHasManifoldCache = true;
+      manifoldCache = &getOrCreateManifoldCache(this);
+    }
+    attachCachedContactImpulses(result, manifoldCache);
+  }
 
   return collisionFound;
 }
@@ -1047,7 +1162,7 @@ double NativeCollisionDetector::distance(
     return 0.0;
 
   auto* nativeGroup = static_cast<NativeCollisionGroup*>(group);
-  nativeGroup->updateEngineData();
+  nativeGroup->updateEngineDataForCollide();
 
   NativeDistanceCandidate best;
   for (std::size_t i = 0u; i < nativeGroup->mCollisionObjects.size(); ++i) {
@@ -1087,8 +1202,8 @@ double NativeCollisionDetector::distance(
 
   auto* nativeGroup1 = static_cast<NativeCollisionGroup*>(group1);
   auto* nativeGroup2 = static_cast<NativeCollisionGroup*>(group2);
-  nativeGroup1->updateEngineData();
-  nativeGroup2->updateEngineData();
+  nativeGroup1->updateEngineDataForCollide();
+  nativeGroup2->updateEngineDataForCollide();
 
   NativeDistanceCandidate best;
   for (auto* object1 : nativeGroup1->mCollisionObjects) {
@@ -1128,7 +1243,7 @@ bool NativeCollisionDetector::raycast(
   native::Ray ray(from, displacement, rayLength);
 
   auto* nativeGroup = static_cast<NativeCollisionGroup*>(group);
-  nativeGroup->updateEngineData();
+  nativeGroup->updateEngineDataForCollide();
 
   std::vector<NativeRayHitCandidate> hits;
   for (auto* object : nativeGroup->mCollisionObjects) {
@@ -1152,7 +1267,6 @@ bool NativeCollisionDetector::raycast(
 //==============================================================================
 NativeCollisionDetector::NativeCollisionDetector() : CollisionDetector()
 {
-  getOrCreateManifoldCache(this);
   mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
 }
 

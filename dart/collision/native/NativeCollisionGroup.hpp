@@ -79,9 +79,13 @@ protected:
 
 private:
   std::size_t assignId(NativeCollisionObject* object);
+  void updateEngineDataForCollide();
 
-  std::unique_ptr<native::BroadPhase> mBroadPhase;
+  std::unique_ptr<native::BruteForceBroadPhase> mBroadPhase;
   std::vector<CollisionObject*> mCollisionObjects;
+  std::vector<NativeCollisionObject*> mNativeObjects;
+  std::vector<std::size_t> mCollisionObjectIds;
+  std::vector<native::Aabb> mCollisionObjectAabbs;
   std::vector<NativeCollisionObject*> mIdToObject;
   std::unordered_map<CollisionObject*, std::size_t> mObjectToId;
   std::vector<std::size_t> mFreeIds;

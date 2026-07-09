@@ -112,6 +112,31 @@ void BruteForceBroadPhase::update(std::size_t id, const Aabb& aabb)
     updateEntryAabb(entries_[it->second], aabb);
 }
 
+void BruteForceBroadPhase::updateRange(
+    span<const std::size_t> ids, span<const Aabb> aabbs)
+{
+  const std::size_t n = std::min(ids.size(), aabbs.size());
+
+  if (n == entries_.size()) {
+    bool sameOrder = true;
+    for (std::size_t i = 0u; i < n; ++i) {
+      if (entries_[i].id != ids[i]) {
+        sameOrder = false;
+        break;
+      }
+    }
+
+    if (sameOrder) {
+      for (std::size_t i = 0u; i < n; ++i)
+        updateEntryAabb(entries_[i], aabbs[i]);
+      return;
+    }
+  }
+
+  for (std::size_t i = 0u; i < n; ++i)
+    update(ids[i], aabbs[i]);
+}
+
 void BruteForceBroadPhase::remove(std::size_t id)
 {
   const auto it = indices_.find(id);
