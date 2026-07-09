@@ -186,6 +186,10 @@ public:
   /// worlds; changing it concurrently with simulation is not thread-safe.
   static void setAutomaticSleepingContactPenetrationTolerance(double tolerance);
 
+  /// Restores the adaptive default automatic-sleeping contact penetration
+  /// tolerance policy.
+  static void resetAutomaticSleepingContactPenetrationTolerance();
+
   /// Returns the current automatic-sleeping contact penetration tolerance.
   static double getAutomaticSleepingContactPenetrationTolerance();
 

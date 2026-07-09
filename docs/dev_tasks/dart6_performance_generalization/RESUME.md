@@ -207,13 +207,13 @@ solve-side decision after the D7 sleep-policy path.
   tolerance under the default policy, plus dense-contact-island sleep candidacy
   for sub-wake jitter. `contact_benchmark` now reports island and
   dwell/velocity diagnostics. A/B artifact
-  `/tmp/wp_pg15_ab_final_20260708T232819Z`: S6 old-default override
+  `/tmp/wp_pg15_ab_review_20260708T235540Z`: S6 old-default override
   (`--contact-max-erv 0.001 --sleep-contact-penetration-tolerance 0.00001`)
-  took 218.509 s, RTF 0.0915293, 165 contacts / 137 pairs, max penetration
-  0.363373, 3/71 resting, hash `0xf0690e9a45a8f655`; current defaults took
-  96.9441 s, RTF 0.206305, zero contacts, max penetration 0, 71/71 resting,
+  took 484.363 s, RTF 0.0412914, 162 contacts / 141 pairs, max penetration
+  0.364241, 0/71 resting, hash `0x159825257114c5d5`; current defaults took
+  94.3367 s, RTF 0.212006, zero contacts, max penetration 0, 71/71 resting,
   hash `0xec80f734df6d5e74`; the explicit global evaluator row (`ERV=0.1`,
-  tol `0.005`) took 42.8357 s, RTF 0.466901, zero contacts, 71/71 resting,
+  tol `0.005`) took 60.4741 s, RTF 0.33072, zero contacts, 71/71 resting,
   hash `0x8f8ec8de71465934`. S4/S5 DART/FCL/Bullet/ODE new-default rows
   matched old-default hashes/contact/resting states. Extra evidence:
   S2 DART 3k-shapes guard
@@ -227,7 +227,7 @@ solve-side decision after the D7 sleep-policy path.
   `test_IslandDeactivation`, and full `NativeCollisionDetector.*`.
   CI failures on the old PR head were traced to `test_NativeCollisionDetector`
   helper filters needing `final` under clang/libc++ warning-as-error builds;
-  the test-only fix is included in the current dirty tree.
+  that test-only fix landed through the refreshed base.
 - 2026-07-08: An attempted overhead trim for the dense-island World sleep
   candidacy path was rejected and reverted after an A/B rerun
   (`/tmp/wp_pg15_ab_candidate_20260708T224930Z`) changed the S6 final hashes
@@ -246,12 +246,21 @@ solve-side decision after the D7 sleep-policy path.
   --gtest_filter='SdfParser.PlaneShapeBulletWorldSettles' --gtest_repeat=3`,
   `INTEGRATION_StepAllocation` native allocation gates, `test_SplitImpulse`
   shallow-support guards, `test_Issue1445`, and full `test_IslandDeactivation`.
-- Final pre-push gates for this candidate passed locally: `pixi run lint`,
+- Final pre-push gates for the current candidate passed locally after the Codex
+  review fix and public-query cleanup: `pixi run lint`,
   `pixi run check-lint`, capped `pixi run cmake --build
   build/default/cpp/Release --target ALL --parallel 8` (98 Python tests and
   148 CTest tests), and `pixi run -e gazebo test-gz` (`gz-physics` 199/199
   plus 4 performance tests; `gz-sim` `INTEGRATION_entity_system` passed against
   the source-built DART plugin).
+- 2026-07-08 Codex review fix: explicit default-valued
+  `setAutomaticSleepingContactPenetrationTolerance(1e-5)` calls now preserve
+  the strict legacy rest-veto policy instead of being treated as the implicit
+  adaptive default. Added
+  `IslandDeactivation.ExplicitDefaultToleranceKeepsPlaneContactStrict` and
+  regenerated the A/B matrix above; the strict old-default S6 row now takes
+  484.363 s and never reaches resting, while current defaults keep the accepted
+  71/71 resting hash.
 
 ## Session log
 

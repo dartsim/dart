@@ -233,9 +233,11 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
   ERV/tolerance path, and adds dense-contact-island sleep candidacy for
   sub-wake jitter. After the #3355 base merge, analytic `PlaneShape` support
   contacts are included in the bounded contact-rest tolerance because Bullet
-  plane contacts converge at millimeter scale. The PR must carry the old/new
-  re-baseline evidence and reviewer acceptance before D7 is closed. D3 remains
-  the separate large-island solve-side decision.
+  plane contacts converge at millimeter scale, but explicit
+  `setAutomaticSleepingContactPenetrationTolerance(1e-5)` calls still preserve
+  the strict legacy policy. The PR must carry the old/new re-baseline evidence
+  and reviewer acceptance before D7 is closed. D3 remains the separate
+  large-island solve-side decision.
 - **D8 — Contact-manifold reduction on current detectors** (blocks
   WP-PG.23): round 1 explicitly deferred default-on manifold
   reduction/selection ("mines #2366 and DART 7 native collision"; recorded

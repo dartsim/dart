@@ -40,6 +40,7 @@
 
 #include "dart/simulation/DeactivationOptions.hpp"
 
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 
 #include <dart/dart.hpp>
@@ -79,6 +80,19 @@ SkeletonPtr createFloor()
 
   // A static floor is immobile, so it is never a candidate for sleeping and
   // never adds itself to a solver island as an awake member.
+  floor->setMobile(false);
+  return floor;
+}
+
+//==============================================================================
+SkeletonPtr createPlaneFloor()
+{
+  auto floor = Skeleton::create("plane_floor");
+  auto body = floor->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
+
+  auto shape = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+
   floor->setMobile(false);
   return floor;
 }
@@ -303,8 +317,6 @@ class ScopedSleepingContactPenetrationTolerance
 {
 public:
   explicit ScopedSleepingContactPenetrationTolerance(double tolerance)
-    : mPrevious(constraint::ConstraintSolver::
-                    getAutomaticSleepingContactPenetrationTolerance())
   {
     constraint::ConstraintSolver::
         setAutomaticSleepingContactPenetrationTolerance(tolerance);
@@ -313,11 +325,8 @@ public:
   ~ScopedSleepingContactPenetrationTolerance()
   {
     constraint::ConstraintSolver::
-        setAutomaticSleepingContactPenetrationTolerance(mPrevious);
+        resetAutomaticSleepingContactPenetrationTolerance();
   }
-
-private:
-  double mPrevious;
 };
 
 // Creates a world with automatic deactivation enabled. Keep this explicit so
@@ -678,6 +687,48 @@ TEST(IslandDeactivation, ContactPenetrationToleranceIsConfigurable)
     ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
     EXPECT_TRUE(box->isResting());
     EXPECT_TRUE(box->isSleepCandidate());
+  }
+}
+
+//==============================================================================
+// PlaneShape contacts use the adaptive rest tolerance only when the caller has
+// not explicitly configured the process-wide tolerance. Setting the strict
+// default value must still reproduce the legacy strict policy.
+TEST(IslandDeactivation, ExplicitDefaultToleranceKeepsPlaneContactStrict)
+{
+  auto makePenetratedPlaneCandidate = []() {
+    auto world = makeSleepWorld();
+    world->setCollisionDetector(collision::DARTCollisionDetector::create());
+    world->addSkeleton(createPlaneFloor());
+    auto box = createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf - 5e-4));
+    box->setSleepCandidate(true);
+    box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
+    world->addSkeleton(box);
+    return std::make_pair(world, box);
+  };
+
+  {
+    auto [world, box] = makePenetratedPlaneCandidate();
+
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_TRUE(box->isResting());
+    EXPECT_TRUE(box->isSleepCandidate());
+  }
+
+  {
+    ScopedSleepingContactPenetrationTolerance tolerance(1e-5);
+    auto [world, box] = makePenetratedPlaneCandidate();
+
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_FALSE(box->isResting());
+    EXPECT_FALSE(box->isSleepCandidate());
   }
 }
 

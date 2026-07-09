@@ -87,6 +87,7 @@ constexpr double kSmallContactIslandMaxErrorReductionVelocity = 1e-3;
 constexpr std::size_t kDenseContactIslandMinMobileSkeletons = 3u;
 double gSleepContactPenetrationTolerance
     = kDefaultSleepContactPenetrationTolerance;
+bool gSleepContactPenetrationToleranceUserConfigured = false;
 
 bool contactTouchesPlaneShape(const collision::Contact& collisionContact)
 {
@@ -629,6 +630,14 @@ void ConstraintSolver::setAutomaticSleepingContactPenetrationTolerance(
   }
 
   gSleepContactPenetrationTolerance = tolerance;
+  gSleepContactPenetrationToleranceUserConfigured = true;
+}
+
+//==============================================================================
+void ConstraintSolver::resetAutomaticSleepingContactPenetrationTolerance()
+{
+  gSleepContactPenetrationTolerance = kDefaultSleepContactPenetrationTolerance;
+  gSleepContactPenetrationToleranceUserConfigured = false;
 }
 
 //==============================================================================
@@ -2251,8 +2260,9 @@ void ConstraintSolver::buildConstrainedGroups()
     const double sleepContactPenetrationTolerance
         = getAutomaticSleepingContactPenetrationTolerance();
     const bool useDenseIslandSleepContactPenetrationTolerance
-        = sleepContactPenetrationTolerance
-          == kDefaultSleepContactPenetrationTolerance;
+        = !gSleepContactPenetrationToleranceUserConfigured
+          && sleepContactPenetrationTolerance
+                 == kDefaultSleepContactPenetrationTolerance;
     {
       for (std::size_t i = 0; i < mConstrainedGroups.size(); ++i) {
         const auto& group = mConstrainedGroups[i];

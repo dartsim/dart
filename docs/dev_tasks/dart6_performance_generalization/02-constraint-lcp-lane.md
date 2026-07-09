@@ -223,24 +223,26 @@ final-state hashes on all guard scenes for default-on packets.
   bounded contact-rest tolerance after the #3355 base merge exposed Bullet
   plane contacts converging at millimeter scale while ordinary box/sphere/
   capsule static-support islands remain on the strict legacy tolerance. The
-  patch also adds a dense-contact-island sleep-candidate path when every mobile
-  member is below the wake band and at least one member has sustained dwell
-  evidence. `contact_benchmark` keeps the ERV/tolerance CLI overrides so
+  process-wide tolerance setter is tracked separately from the numeric value, so
+  explicitly setting `1e-5` still reproduces the strict legacy rest-veto policy.
+  The patch also adds a dense-contact-island sleep-candidate path when every
+  mobile member is below the wake band and at least one member has sustained
+  dwell evidence. `contact_benchmark` keeps the ERV/tolerance CLI overrides so
   old-default A/B rows remain reproducible, and now reports island and
   dwell/velocity diagnostics needed to explain why a pile does or does not
   sleep.
 - Local D7 evaluator evidence (2026-07-08, branch
   `docs/close-dart6-performance-generalization`, binary
   `build/default/cpp/Release/bin/contact_benchmark`; full logs:
-  `/tmp/wp_pg15_ab_final_20260708T232819Z/summary.tsv`):
+  `/tmp/wp_pg15_ab_review_20260708T235540Z/summary.tsv`):
 
   | Row | Wall time | RTF | Contacts / pairs | Over sleep tol | Max penetration | Resting | Hash |
   | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-  | S6 current defaults | 96.9441 s | 0.206305 | 0 / 0 | 0 | 0 | 71/71 | `0xec80f734df6d5e74` |
-  | S6 old-default override (`ERV=0.001`, tol `1e-5`) | 218.509 s | 0.0915293 | 165 / 137 | 43 | 0.363373 | 3/71 | `0xf0690e9a45a8f655` |
-  | S6 explicit evaluator (`ERV=0.1`, tol `0.005`) | 42.8357 s | 0.466901 | 0 / 0 | 0 | 0 | 71/71 | `0x8f8ec8de71465934` |
+  | S6 current defaults | 94.3367 s | 0.212006 | 0 / 0 | 0 | 0 | 71/71 | `0xec80f734df6d5e74` |
+  | S6 old-default override (`ERV=0.001`, tol `1e-5`) | 484.363 s | 0.0412914 | 162 / 141 | 39 | 0.364241 | 0/71 | `0x159825257114c5d5` |
+  | S6 explicit evaluator (`ERV=0.1`, tol `0.005`) | 60.4741 s | 0.33072 | 0 / 0 | 0 | 0 | 71/71 | `0x8f8ec8de71465934` |
 
-  The default row is 2.25x faster than the old-default override on this run
+  The default row is 5.13x faster than the old-default override on this run
   and reaches the WP-PG.15 pile-sleep outcome under default settings. The
   explicit evaluator row is retained as the upper-bound comparison; the broader
   global policy was rejected after `Issue1445` and split-impulse guards exposed
