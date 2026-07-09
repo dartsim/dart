@@ -1101,6 +1101,61 @@ TEST(ConstraintSolver, BoxedLcpScratchRetainsLargestPreparedGroup)
 }
 
 //==============================================================================
+TEST(ConstraintSolver, MatrixFreeContactScratchRetainsPreparedGroup)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShapeNode);
+
+  constexpr std::size_t kNumContacts = 96u;
+  std::vector<std::unique_ptr<FakeCollisionObject>> dynamicObjects;
+  std::vector<collision::Contact> contacts;
+  std::vector<constraint::ConstraintBasePtr> constraints;
+  dynamicObjects.reserve(kNumContacts);
+  contacts.reserve(kNumContacts);
+  constraints.reserve(kNumContacts);
+
+  for (std::size_t i = 0u; i < kNumContacts; ++i) {
+    auto* dynamicBody
+        = createFreeBody("dynamic_" + std::to_string(i), true, skeletons);
+    auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+        dynamics::CollisionAspect,
+        dynamics::DynamicsAspect>(shape);
+    dynamicObjects.push_back(
+        std::make_unique<FakeCollisionObject>(&detector, dynamicShapeNode));
+    contacts.push_back(
+        createContact(dynamicObjects.back().get(), &fixedObject));
+    constraints.push_back(
+        createContactConstraint<constraint::ContactConstraint>(
+            contacts.back()));
+  }
+
+  ExposedBoxedLcpConstraintSolver solver;
+  auto options = solver.getMatrixFreeContactSolverOptions();
+  options.mEnabled = true;
+  options.mMinRows = 1u;
+  options.mMaxIterations = 5;
+  solver.setMatrixFreeContactSolverOptions(options);
+
+  auto constrainedGroup = solver.makeGroupForTest(constraints);
+  solver.reserveGroupScratchForTest(constrainedGroup);
+
+  dart::test::ScopedHeapAllocationCounter counter;
+  solver.solveGroupForTest(constrainedGroup);
+  counter.stop();
+
+  EXPECT_EQ(counter.allocationCount(), 0u);
+  EXPECT_EQ(counter.allocationBytes(), 0u);
+}
+
+//==============================================================================
 TEST(ConstraintSolver, ManualConstraintsForceSerialParallelGroupSolves)
 {
   ExposedThreadedConstraintSolver solver;

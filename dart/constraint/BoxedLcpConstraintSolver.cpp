@@ -50,7 +50,6 @@
 #include <iostream>
 #include <memory>
 #include <typeinfo>
-#include <unordered_map>
 #include <vector>
 
 #include <cassert>
@@ -65,6 +64,34 @@ constexpr std::size_t kInlineConstraintCount = 8;
 constexpr std::size_t kInlineLcpVectorSize = 12;
 constexpr std::size_t kInlineLcpMatrixSize = 192;
 
+struct MatrixFreeContactBodyScratch
+{
+  bool identityInertia = false;
+  Eigen::LDLT<Eigen::Matrix6d> inertiaDecomposition;
+  Eigen::Vector6d velocityChange = Eigen::Vector6d::Zero();
+
+  Eigen::Vector6d solve(const Eigen::Vector6d& impulse) const
+  {
+    if (identityInertia)
+      return impulse;
+
+    return inertiaDecomposition.solve(impulse);
+  }
+};
+
+struct MatrixFreeContactRow
+{
+  std::array<int, 2> bodyIndices{{-1, -1}};
+  std::array<Eigen::Vector6d, 2> spatialNormals;
+  std::array<Eigen::Vector6d, 2> unitVelocityChanges;
+  double bodyDiagonal = 0.0;
+  double diagonal = 0.0;
+  double b = 0.0;
+  double lo = 0.0;
+  double hi = 0.0;
+  int fIndex = -1;
+};
+
 struct BoxedLcpThreadScratch
 {
   std::vector<ConstraintBase*> constraintPtrStorage;
@@ -77,6 +104,18 @@ struct BoxedLcpThreadScratch
   std::vector<double> lcpLo;
   std::vector<double> lcpHi;
   std::vector<int> lcpFIndex;
+
+  std::vector<ContactConstraint*> matrixFreeContacts;
+  std::vector<std::size_t> matrixFreeOffsets;
+  std::vector<MatrixFreeContactRow> matrixFreeRows;
+  std::vector<double> matrixFreeX;
+  std::vector<double> matrixFreeW;
+  std::vector<double> matrixFreeLo;
+  std::vector<double> matrixFreeHi;
+  std::vector<double> matrixFreeB;
+  std::vector<int> matrixFreeFIndex;
+  std::vector<dynamics::BodyNode*> matrixFreeBodyNodes;
+  std::vector<MatrixFreeContactBodyScratch> matrixFreeBodies;
 };
 
 BoxedLcpThreadScratch& boxedLcpThreadScratch()
@@ -102,6 +141,24 @@ void reserveBoxedLcpSolverScratch(
   auto pgsSolver = std::dynamic_pointer_cast<PgsBoxedLcpSolver>(solver);
   if (pgsSolver)
     pgsSolver->reserve(n);
+}
+
+void reserveMatrixFreeContactScratch(
+    BoxedLcpThreadScratch& scratch, std::size_t numConstraints, std::size_t n)
+{
+  scratch.matrixFreeContacts.reserve(numConstraints);
+  scratch.matrixFreeOffsets.reserve(numConstraints);
+  scratch.matrixFreeRows.reserve(n);
+  scratch.matrixFreeX.reserve(n);
+  scratch.matrixFreeW.reserve(n);
+  scratch.matrixFreeLo.reserve(n);
+  scratch.matrixFreeHi.reserve(n);
+  scratch.matrixFreeB.reserve(n);
+  scratch.matrixFreeFIndex.reserve(n);
+
+  const std::size_t maxReactiveBodies = std::max(n, 2u * numConstraints);
+  scratch.matrixFreeBodyNodes.reserve(maxReactiveBodies);
+  scratch.matrixFreeBodies.reserve(maxReactiveBodies);
 }
 
 //==============================================================================
@@ -298,6 +355,11 @@ void BoxedLcpConstraintSolver::reserveConstrainedGroupScratch(
     scratch.lcpFIndex.reserve(n);
   }
 
+  if (mMatrixFreeContactSolverOptions.mEnabled
+      && n >= mMatrixFreeContactSolverOptions.mMinRows) {
+    reserveMatrixFreeContactScratch(scratch, numConstraints, n);
+  }
+
   reserveBoxedLcpSolverScratch(mBoxedLcpSolver, n);
   reserveBoxedLcpSolverScratch(mSecondaryBoxedLcpSolver, n);
 }
@@ -325,34 +387,6 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
   DART_PROFILE_SCOPED_IF_N(
       profileRecording, "BoxedLcpConstraintSolver::matrixFreeContactSolve");
 
-  struct BodyScratch
-  {
-    bool identityInertia = false;
-    Eigen::LDLT<Eigen::Matrix6d> inertiaDecomposition;
-    Eigen::Vector6d velocityChange = Eigen::Vector6d::Zero();
-
-    Eigen::Vector6d solve(const Eigen::Vector6d& impulse) const
-    {
-      if (identityInertia)
-        return impulse;
-
-      return inertiaDecomposition.solve(impulse);
-    }
-  };
-
-  struct Row
-  {
-    std::array<int, 2> bodyIndices{{-1, -1}};
-    std::array<Eigen::Vector6d, 2> spatialNormals;
-    std::array<Eigen::Vector6d, 2> unitVelocityChanges;
-    double bodyDiagonal = 0.0;
-    double diagonal = 0.0;
-    double b = 0.0;
-    double lo = 0.0;
-    double hi = 0.0;
-    int fIndex = -1;
-  };
-
   const auto isSupportedSingleFreeBodySide
       = [](const dynamics::BodyNode* body, const dynamics::Skeleton* skel) {
           if (body == nullptr || skel == nullptr)
@@ -370,43 +404,60 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
                             == dynamics::Joint::PASSIVE);
         };
 
-  std::vector<ContactConstraint*> contacts;
-  std::vector<std::size_t> offsets;
+  auto& scratch = boxedLcpThreadScratch();
+  reserveMatrixFreeContactScratch(scratch, numConstraints, n);
+
+  auto& contacts = scratch.matrixFreeContacts;
+  auto& offsets = scratch.matrixFreeOffsets;
+  auto& rows = scratch.matrixFreeRows;
+  auto& x = scratch.matrixFreeX;
+  auto& w = scratch.matrixFreeW;
+  auto& lo = scratch.matrixFreeLo;
+  auto& hi = scratch.matrixFreeHi;
+  auto& b = scratch.matrixFreeB;
+  auto& fIndex = scratch.matrixFreeFIndex;
+  auto& bodyNodes = scratch.matrixFreeBodyNodes;
+  auto& bodies = scratch.matrixFreeBodies;
+
+  contacts.clear();
+  offsets.clear();
+  rows.clear();
+  bodyNodes.clear();
+  bodies.clear();
   contacts.reserve(numConstraints);
   offsets.reserve(numConstraints);
-
-  std::vector<Row> rows;
   rows.reserve(n);
-  std::vector<double> x(n, 0.0);
-  std::vector<double> w(n, 0.0);
-  std::vector<double> lo(n, 0.0);
-  std::vector<double> hi(n, 0.0);
-  std::vector<double> b(n, 0.0);
-  std::vector<int> fIndex(n, -1);
-  std::vector<BodyScratch> bodies;
-  bodies.reserve(n);
-  std::unordered_map<dynamics::BodyNode*, std::size_t> bodyToIndex;
-  bodyToIndex.reserve(n);
+
+  x.resize(n);
+  w.resize(n);
+  lo.resize(n);
+  hi.resize(n);
+  b.resize(n);
+  fIndex.resize(n);
+  std::fill(x.begin(), x.end(), 0.0);
+  std::fill(w.begin(), w.end(), 0.0);
+  std::fill(fIndex.begin(), fIndex.end(), -1);
 
   const auto findOrAddBody = [&](dynamics::BodyNode* body) -> int {
-    const auto it = bodyToIndex.find(body);
-    if (it != bodyToIndex.end())
-      return static_cast<int>(it->second);
+    const auto it = std::find(bodyNodes.begin(), bodyNodes.end(), body);
+    if (it != bodyNodes.end()) {
+      return static_cast<int>(static_cast<std::size_t>(it - bodyNodes.begin()));
+    }
 
-    BodyScratch scratch;
+    MatrixFreeContactBodyScratch bodyScratch;
     const Eigen::Matrix6d& articulatedInertia = body->getArticulatedInertia();
     static const Eigen::Matrix6d identityInertia = Eigen::Matrix6d::Identity();
-    scratch.identityInertia
+    bodyScratch.identityInertia
         = articulatedInertia.cwiseEqual(identityInertia).all();
-    if (!scratch.identityInertia) {
-      scratch.inertiaDecomposition.compute(articulatedInertia);
-      if (scratch.inertiaDecomposition.info() != Eigen::Success)
+    if (!bodyScratch.identityInertia) {
+      bodyScratch.inertiaDecomposition.compute(articulatedInertia);
+      if (bodyScratch.inertiaDecomposition.info() != Eigen::Success)
         return -1;
     }
 
     const std::size_t index = bodies.size();
-    bodies.push_back(std::move(scratch));
-    bodyToIndex.emplace(body, index);
+    bodyNodes.push_back(body);
+    bodies.push_back(std::move(bodyScratch));
     return static_cast<int>(index);
   };
 
@@ -458,7 +509,7 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
       if (fIndex[rowIndex] >= 0)
         fIndex[rowIndex] += static_cast<int>(offset);
 
-      Row row;
+      MatrixFreeContactRow row;
       row.b = b[rowIndex];
       row.lo = lo[rowIndex];
       row.hi = hi[rowIndex];
@@ -516,7 +567,7 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
   if (rows.size() != n)
     return false;
 
-  const auto projectVelocityChange = [&](const Row& row) {
+  const auto projectVelocityChange = [&](const MatrixFreeContactRow& row) {
     double value = 0.0;
     for (int side = 0; side < 2; ++side) {
       const int bodyIndex = row.bodyIndices[side];
@@ -529,7 +580,7 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
     return value;
   };
 
-  const auto applyDelta = [&](const Row& row, double delta) {
+  const auto applyDelta = [&](const MatrixFreeContactRow& row, double delta) {
     for (int side = 0; side < 2; ++side) {
       const int bodyIndex = row.bodyIndices[side];
       if (bodyIndex < 0)
@@ -540,7 +591,7 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
     }
   };
 
-  const auto clampImpulse = [&](const Row& row, double value) {
+  const auto clampImpulse = [&](const MatrixFreeContactRow& row, double value) {
     double lower = row.lo;
     double upper = row.hi;
     if (row.fIndex >= 0) {
@@ -559,7 +610,7 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
     bool converged = true;
     numIterations = iter + 1;
     for (std::size_t rowIndex = 0u; rowIndex < rows.size(); ++rowIndex) {
-      const Row& row = rows[rowIndex];
+      const MatrixFreeContactRow& row = rows[rowIndex];
       if (row.diagonal <= options.mEpsilonForDivision)
         continue;
 
