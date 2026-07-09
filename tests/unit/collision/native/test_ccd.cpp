@@ -268,6 +268,37 @@ TEST(SphereCastBox, SlabMissAndInitialOverlapNormal)
   }
 }
 
+TEST(SphereCastBox, InflatedCornerStationaryMiss)
+{
+  BoxShape target(Eigen::Vector3d(1, 1, 1));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Eigen::Vector3d center(1.4, 1.4, 0.0);
+  double radius = 0.5;
+
+  CcdOption option;
+  CcdResult result;
+
+  EXPECT_FALSE(
+      sphereCastBox(center, center, radius, target, transform, option, result));
+}
+
+TEST(SphereCastBox, InflatedCornerSweepMiss)
+{
+  BoxShape target(Eigen::Vector3d(1, 1, 1));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Eigen::Vector3d start(1.4, 1.4, -3.0);
+  Eigen::Vector3d end(1.4, 1.4, 3.0);
+  double radius = 0.5;
+
+  CcdOption option;
+  CcdResult result;
+
+  EXPECT_FALSE(
+      sphereCastBox(start, end, radius, target, transform, option, result));
+}
+
 TEST(SphereCastBox, HitFrontFace)
 {
   BoxShape target(Eigen::Vector3d(1, 1, 1));

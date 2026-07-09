@@ -430,6 +430,29 @@ TEST(PointTriangleCcdExact, MissBesideTriangle)
   EXPECT_FALSE(hit);
 }
 
+TEST(PointTriangleCcdExact, CoplanarInteriorCrossing)
+{
+  CcdOption option;
+  CcdPrimitiveResult result;
+
+  const bool hit = pointTriangleCcdExact(
+      Eigen::Vector3d(-2, 0, 0),
+      Eigen::Vector3d(2, 0, 0),
+      kA,
+      kA,
+      kB,
+      kB,
+      kC,
+      kC,
+      option,
+      result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 1.0);
+  EXPECT_NEAR(result.timeOfImpact, 0.375, 0.05);
+}
+
 TEST(EdgeEdgeCcdExact, CrossingRootAtHalf)
 {
   CcdOption option;

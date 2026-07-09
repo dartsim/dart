@@ -188,6 +188,16 @@ Eigen::Vector3d boxSupport(
   return transform * localPoint;
 }
 
+Eigen::Vector3d closestPointOnBox(
+    const Eigen::Vector3d& localPoint, const Eigen::Vector3d& halfExtents)
+{
+  Eigen::Vector3d closest;
+  for (int i = 0; i < 3; ++i) {
+    closest[i] = std::clamp(localPoint[i], -halfExtents[i], halfExtents[i]);
+  }
+  return closest;
+}
+
 Eigen::Vector3d getCapsuleSupport(
     const Eigen::Isometry3d& transform,
     const CapsuleShape& capsule,
@@ -361,7 +371,6 @@ bool sphereCastBox(
     const CcdOption& option,
     CcdResult& result)
 {
-  (void)option;
   result.clear();
 
   const Eigen::Isometry3d invTransform = targetTransform.inverse();
@@ -372,6 +381,21 @@ bool sphereCastBox(
   const Eigen::Vector3d& halfExtents = target.getHalfExtents();
   const Eigen::Vector3d expandedHalf
       = halfExtents + Eigen::Vector3d::Constant(sphereRadius);
+  const double expandedRadius = sphereRadius + option.tolerance;
+  const double expandedRadiusSq = expandedRadius * expandedRadius;
+
+  auto runSupportFallback = [&]() {
+    return sphereCastConvexTarget(
+        sphereStart,
+        sphereEnd,
+        sphereRadius,
+        [&](const Eigen::Vector3d& dir) {
+          return boxSupport(targetTransform, halfExtents, dir);
+        },
+        targetTransform.translation(),
+        option,
+        result);
+  };
 
   double tMin = 0.0;
   double tMax = 1.0;
@@ -408,16 +432,17 @@ bool sphereCastBox(
   }
 
   if (hitAxis < 0 || tMin <= 0.0) {
+    const Eigen::Vector3d closestOnBox
+        = closestPointOnBox(localStart, halfExtents);
+    Eigen::Vector3d localNormal = localStart - closestOnBox;
+    if (localNormal.squaredNorm() > expandedRadiusSq) {
+      return runSupportFallback();
+    }
+
     result.hit = true;
     result.timeOfImpact = 0.0;
-    result.point = sphereStart;
+    result.point = targetTransform * closestOnBox;
 
-    Eigen::Vector3d closestOnBox;
-    for (int i = 0; i < 3; ++i) {
-      closestOnBox[i]
-          = std::clamp(localStart[i], -halfExtents[i], halfExtents[i]);
-    }
-    Eigen::Vector3d localNormal = localStart - closestOnBox;
     if (localNormal.squaredNorm() < kEpsilon) {
       localNormal = Eigen::Vector3d::UnitZ();
     } else {
@@ -431,12 +456,18 @@ bool sphereCastBox(
   result.timeOfImpact = tMin;
 
   Eigen::Vector3d hitCenter = localStart + tMin * localDir;
-  Eigen::Vector3d localNormal = Eigen::Vector3d::Zero();
-  localNormal[hitAxis] = static_cast<double>(hitSign);
+  const Eigen::Vector3d closestOnBox
+      = closestPointOnBox(hitCenter, halfExtents);
+  Eigen::Vector3d localNormal = hitCenter - closestOnBox;
+  if (localNormal.squaredNorm() > expandedRadiusSq) {
+    return runSupportFallback();
+  }
 
-  Eigen::Vector3d closestOnBox;
-  for (int i = 0; i < 3; ++i) {
-    closestOnBox[i] = std::clamp(hitCenter[i], -halfExtents[i], halfExtents[i]);
+  if (localNormal.squaredNorm() < kEpsilon) {
+    localNormal = Eigen::Vector3d::Zero();
+    localNormal[hitAxis] = static_cast<double>(hitSign);
+  } else {
+    localNormal.normalize();
   }
 
   result.point = targetTransform * closestOnBox;

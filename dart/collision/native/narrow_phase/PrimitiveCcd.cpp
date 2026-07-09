@@ -509,12 +509,50 @@ bool pointTriangleCcdExact(
   const auto coef = coplanarityCubic(x0, dx, y0, dy, z0, dz);
   const double slack = std::max(option.tolerance, 1e-9);
 
-  for (const double t : cubicRootsInUnit(coef)) {
+  const double triangleScale = std::max({x0.norm(), y0.norm(), 1.0});
+  const double distTol = slack * triangleScale + 1e-9;
+
+  const auto contactAt = [&](double t) {
     const Eigen::Vector3d p = pStart + t * dp;
     const Eigen::Vector3d a = aStart + t * da;
     const Eigen::Vector3d b = bStart + t * db;
     const Eigen::Vector3d c = cStart + t * dc;
-    if (pointInsideTriangle(p, a, b, c, slack)) {
+    return distancePointTriangle(p, a, b, c) <= distTol
+           && pointInsideTriangle(p, a, b, c, slack);
+  };
+
+  std::vector<double> candidates = cubicRootsInUnit(coef);
+
+  const double coefMag = std::max(
+      {std::abs(coef[0]),
+       std::abs(coef[1]),
+       std::abs(coef[2]),
+       std::abs(coef[3])});
+  if (coefMag <= 1e-10 * triangleScale * triangleScale * triangleScale) {
+    constexpr int kSamples = 256;
+    bool prevContact = contactAt(0.0);
+    for (int i = 1; i <= kSamples; ++i) {
+      double hi = static_cast<double>(i) / static_cast<double>(kSamples);
+      bool curContact = contactAt(hi);
+      if (!prevContact && curContact) {
+        double lo = static_cast<double>(i - 1) / static_cast<double>(kSamples);
+        for (int b = 0; b < 40; ++b) {
+          const double mid = 0.5 * (lo + hi);
+          if (contactAt(mid)) {
+            hi = mid;
+          } else {
+            lo = mid;
+          }
+        }
+        candidates.push_back(hi);
+      }
+      prevContact = curContact;
+    }
+    std::sort(candidates.begin(), candidates.end());
+  }
+
+  for (const double t : candidates) {
+    if (contactAt(t)) {
       result.hit = true;
       result.status = CcdPrimitiveStatus::Hit;
       result.timeOfImpact = std::clamp(t, 0.0, 1.0);
