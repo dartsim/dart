@@ -96,6 +96,208 @@ void updateBestCcdResult(
   }
 }
 
+Eigen::Vector3d normalizedOr(
+    const Eigen::Vector3d& value, const Eigen::Vector3d& fallback)
+{
+  if (value.squaredNorm() < kEpsilon) {
+    return fallback;
+  }
+  return value.normalized();
+}
+
+Eigen::Vector3d getCapsuleEndpoint(
+    const Eigen::Isometry3d& transform, double halfHeight, bool top)
+{
+  Eigen::Vector3d localPoint(0, 0, top ? halfHeight : -halfHeight);
+  return transform * localPoint;
+}
+
+// Samples a rigid motion start -> end at parameter t in [0, 1]. Endpoint
+// quaternions are built once at construction so the conservative-advancement
+// loop pays only a slerp (or nothing, for translation) per iteration instead of
+// reconstructing quaternions from rotation matrices every step.
+class MotionSample
+{
+public:
+  MotionSample(const Eigen::Isometry3d& start, const Eigen::Isometry3d& end)
+    : startTranslation_(start.translation()),
+      endTranslation_(end.translation()),
+      startRotation_(start.rotation()),
+      rotates_(!startRotation_.isApprox(end.rotation())),
+      qStart_(startRotation_),
+      qEnd_(end.rotation())
+  {
+  }
+
+  [[nodiscard]] Eigen::Isometry3d at(double t) const
+  {
+    Eigen::Isometry3d result = Eigen::Isometry3d::Identity();
+    result.translation() = (1.0 - t) * startTranslation_ + t * endTranslation_;
+    // Translation-only motion skips the slerp; rotational motion reuses the
+    // cached endpoint quaternions.
+    result.linear() = rotates_ ? qStart_.slerp(t, qEnd_).toRotationMatrix()
+                               : startRotation_;
+    return result;
+  }
+
+private:
+  Eigen::Vector3d startTranslation_;
+  Eigen::Vector3d endTranslation_;
+  Eigen::Matrix3d startRotation_;
+  bool rotates_;
+  Eigen::Quaterniond qStart_;
+  Eigen::Quaterniond qEnd_;
+};
+
+double computeCapsuleMotionBound(
+    const CapsuleShape& capsule,
+    const Eigen::Isometry3d& transformStart,
+    const Eigen::Isometry3d& transformEnd)
+{
+  const double linearVelocity
+      = (transformEnd.translation() - transformStart.translation()).norm();
+
+  const Eigen::Quaterniond qStart(transformStart.rotation());
+  const Eigen::Quaterniond qEnd(transformEnd.rotation());
+  const double angle = qStart.angularDistance(qEnd);
+
+  const double maxRadius = capsule.getHeight() / 2.0 + capsule.getRadius();
+  return linearVelocity + angle * maxRadius;
+}
+
+// World-space support functions for the convex primitive targets (the shape
+// classes do not expose support(), so they are provided analytically here).
+Eigen::Vector3d sphereSupport(
+    const Eigen::Vector3d& center,
+    double radius,
+    const Eigen::Vector3d& direction)
+{
+  return center + radius * normalizedOr(direction, Eigen::Vector3d::UnitX());
+}
+
+Eigen::Vector3d boxSupport(
+    const Eigen::Isometry3d& transform,
+    const Eigen::Vector3d& halfExtents,
+    const Eigen::Vector3d& direction)
+{
+  const Eigen::Vector3d localDir = transform.rotation().transpose() * direction;
+  const Eigen::Vector3d localPoint(
+      std::copysign(halfExtents.x(), localDir.x()),
+      std::copysign(halfExtents.y(), localDir.y()),
+      std::copysign(halfExtents.z(), localDir.z()));
+  return transform * localPoint;
+}
+
+Eigen::Vector3d getCapsuleSupport(
+    const Eigen::Isometry3d& transform,
+    const CapsuleShape& capsule,
+    const Eigen::Vector3d& direction)
+{
+  const Eigen::Vector3d worldDir
+      = normalizedOr(direction, Eigen::Vector3d::UnitZ());
+  const Eigen::Vector3d localDir = transform.rotation().transpose() * worldDir;
+  const double halfHeight = capsule.getHeight() / 2.0;
+  const Eigen::Vector3d localEndpoint(
+      0.0, 0.0, localDir.z() >= 0.0 ? halfHeight : -halfHeight);
+  return transform * localEndpoint + capsule.getRadius() * worldDir;
+}
+
+Eigen::Vector3d cylinderSupport(
+    const Eigen::Isometry3d& transform,
+    double radius,
+    double halfHeight,
+    const Eigen::Vector3d& direction)
+{
+  const Eigen::Vector3d localDir = transform.rotation().transpose() * direction;
+  Eigen::Vector3d localPoint(0.0, 0.0, std::copysign(halfHeight, localDir.z()));
+  const double radial
+      = std::sqrt(localDir.x() * localDir.x() + localDir.y() * localDir.y());
+  if (radial > kEpsilon) {
+    localPoint.x() = radius * localDir.x() / radial;
+    localPoint.y() = radius * localDir.y() / radial;
+  }
+  return transform * localPoint;
+}
+
+// Conservative advancement of a moving sphere against any static convex target
+// supplied as a world-space support function. This mirrors the ConvexShape
+// sphere cast but also lets primitive targets with analytic support (cylinders,
+// capsules) cover rounded edge cases that slab/quadratic decompositions miss.
+template <typename TargetSupport>
+bool sphereCastConvexTarget(
+    const Eigen::Vector3d& sphereStart,
+    const Eigen::Vector3d& sphereEnd,
+    double sphereRadius,
+    const TargetSupport& targetSupport,
+    const Eigen::Vector3d& targetSeed,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  result.clear();
+
+  double motionBound = (sphereEnd - sphereStart).norm();
+  if (motionBound < option.tolerance) {
+    motionBound = option.tolerance;
+  }
+
+  double t = 0.0;
+
+  Eigen::Vector3d initialDir = targetSeed - sphereStart;
+  if (initialDir.squaredNorm() < kEpsilon) {
+    initialDir = Eigen::Vector3d::UnitX();
+  }
+
+  for (int iter = 0; iter < std::max(1, option.maxIterations); ++iter) {
+    const Eigen::Vector3d currentCenter
+        = sphereStart + t * (sphereEnd - sphereStart);
+
+    auto supportA = [&](const Eigen::Vector3d& dir) {
+      return sphereSupport(currentCenter, sphereRadius, dir);
+    };
+
+    GjkResult gjkResult = detail::queryT(supportA, targetSupport, initialDir);
+
+    if (gjkResult.intersecting) {
+      result.hit = true;
+      result.timeOfImpact = t;
+      result.point = targetSupport(Eigen::Vector3d::UnitX());
+      result.normal = normalizedOr(
+          currentCenter - result.point, Eigen::Vector3d::UnitZ());
+      return true;
+    }
+
+    const Eigen::Vector3d pointA = gjkResult.closestPointA;
+    const Eigen::Vector3d pointB = gjkResult.closestPointB;
+    const double distance = gjkResult.distance;
+
+    Eigen::Vector3d sepAxis = gjkResult.separationAxis;
+    if (sepAxis.squaredNorm() < kEpsilon) {
+      sepAxis = pointB - pointA;
+    }
+    if (sepAxis.squaredNorm() < kEpsilon) {
+      sepAxis = Eigen::Vector3d::UnitX();
+    }
+    sepAxis.normalize();
+
+    if (distance < option.tolerance) {
+      result.hit = true;
+      result.timeOfImpact = t;
+      result.point = pointB;
+      result.normal = sepAxis;
+      return true;
+    }
+
+    t += distance / motionBound;
+    if (t > 1.0) {
+      return false;
+    }
+
+    initialDir = sepAxis;
+  }
+
+  return false;
+}
+
 } // namespace
 
 bool sphereCastSphere(
@@ -264,6 +466,28 @@ bool sphereCastCapsule(
   const Eigen::Vector3d localEnd = invTransform * sphereEnd;
   const Eigen::Vector3d localDir = localEnd - localStart;
 
+  const double closestZ = std::clamp(localStart.z(), -halfHeight, halfHeight);
+  const Eigen::Vector3d closestAxisPoint(0.0, 0.0, closestZ);
+  const Eigen::Vector3d initialDelta = localStart - closestAxisPoint;
+  if (initialDelta.squaredNorm() <= combinedRadius * combinedRadius) {
+    Eigen::Vector3d localNormal
+        = normalizedOr(initialDelta, Eigen::Vector3d::UnitX());
+    if (initialDelta.squaredNorm() < kEpsilon) {
+      if (localStart.z() >= halfHeight) {
+        localNormal = Eigen::Vector3d::UnitZ();
+      } else if (localStart.z() <= -halfHeight) {
+        localNormal = -Eigen::Vector3d::UnitZ();
+      }
+    }
+
+    result.hit = true;
+    result.timeOfImpact = 0.0;
+    result.normal = targetTransform.rotation() * localNormal;
+    result.point
+        = targetTransform * (closestAxisPoint + capsuleRadius * localNormal);
+    return true;
+  }
+
   double bestT = 2.0;
   Eigen::Vector3d bestNormal = Eigen::Vector3d::UnitZ();
   Eigen::Vector3d bestPoint = Eigen::Vector3d::Zero();
@@ -278,7 +502,8 @@ bool sphereCastCapsule(
     if (t >= 0.0 && t <= 1.0 && t < bestT) {
       bestT = t;
       Eigen::Vector3d hitCenter = localStart + t * localDir;
-      bestNormal = (hitCenter - capCenter).normalized();
+      bestNormal
+          = normalizedOr(hitCenter - capCenter, Eigen::Vector3d::UnitZ());
       bestPoint = capCenter + capsuleRadius * bestNormal;
     }
   };
@@ -377,7 +602,6 @@ bool sphereCastCylinder(
     const CcdOption& option,
     CcdResult& result)
 {
-  (void)option;
   result.clear();
 
   const double cylinderRadius = target.getRadius();
@@ -388,6 +612,59 @@ bool sphereCastCylinder(
   const Eigen::Vector3d localStart = invTransform * sphereStart;
   const Eigen::Vector3d localEnd = invTransform * sphereEnd;
   const Eigen::Vector3d localDir = localEnd - localStart;
+
+  const double startRadial = std::sqrt(
+      localStart.x() * localStart.x() + localStart.y() * localStart.y());
+  const double closestRadius = std::min(startRadial, cylinderRadius);
+  const double closestZ = std::clamp(localStart.z(), -halfHeight, halfHeight);
+  Eigen::Vector3d closestOnCylinder(0.0, 0.0, closestZ);
+  if (startRadial > kEpsilon) {
+    closestOnCylinder.x() = closestRadius * localStart.x() / startRadial;
+    closestOnCylinder.y() = closestRadius * localStart.y() / startRadial;
+  }
+
+  const Eigen::Vector3d initialDelta = localStart - closestOnCylinder;
+  if (initialDelta.squaredNorm() <= sphereRadius * sphereRadius) {
+    Eigen::Vector3d localNormal
+        = normalizedOr(initialDelta, Eigen::Vector3d::UnitX());
+    Eigen::Vector3d localPoint = closestOnCylinder;
+
+    if (initialDelta.squaredNorm() < kEpsilon) {
+      Eigen::Vector3d radialNormal = Eigen::Vector3d::UnitX();
+      if (startRadial > kEpsilon) {
+        radialNormal = Eigen::Vector3d(
+            localStart.x() / startRadial, localStart.y() / startRadial, 0.0);
+      }
+
+      double nearestDistance = cylinderRadius - startRadial;
+      localNormal = radialNormal;
+      localPoint = Eigen::Vector3d(
+          cylinderRadius * radialNormal.x(),
+          cylinderRadius * radialNormal.y(),
+          localStart.z());
+
+      const double topDistance = halfHeight - localStart.z();
+      if (topDistance < nearestDistance) {
+        nearestDistance = topDistance;
+        localNormal = Eigen::Vector3d::UnitZ();
+        localPoint
+            = Eigen::Vector3d(localStart.x(), localStart.y(), halfHeight);
+      }
+
+      const double bottomDistance = localStart.z() + halfHeight;
+      if (bottomDistance < nearestDistance) {
+        localNormal = -Eigen::Vector3d::UnitZ();
+        localPoint
+            = Eigen::Vector3d(localStart.x(), localStart.y(), -halfHeight);
+      }
+    }
+
+    result.hit = true;
+    result.timeOfImpact = 0.0;
+    result.normal = targetTransform.rotation() * localNormal;
+    result.point = targetTransform * localPoint;
+    return true;
+  }
 
   double bestT = 2.0;
   Eigen::Vector3d bestNormal = Eigen::Vector3d::UnitZ();
@@ -438,6 +715,24 @@ bool sphereCastCylinder(
     }
   }
 
+  CcdResult supportResult;
+  if (sphereCastConvexTarget(
+          sphereStart,
+          sphereEnd,
+          sphereRadius,
+          [&](const Eigen::Vector3d& dir) {
+            return cylinderSupport(
+                targetTransform, cylinderRadius, halfHeight, dir);
+          },
+          targetTransform.translation(),
+          option,
+          supportResult)
+      && (bestT > 1.0
+          || supportResult.timeOfImpact + option.tolerance < bestT)) {
+    result = supportResult;
+    return true;
+  }
+
   if (bestT > 1.0) {
     return false;
   }
@@ -459,98 +754,17 @@ bool sphereCastConvex(
     const CcdOption& option,
     CcdResult& result)
 {
-  result.clear();
-
-  Eigen::Isometry3d sphereTransformStart = Eigen::Isometry3d::Identity();
-  sphereTransformStart.translation() = sphereStart;
-  Eigen::Isometry3d sphereTransformEnd = Eigen::Isometry3d::Identity();
-  sphereTransformEnd.translation() = sphereEnd;
-
-  double motionBound = (sphereEnd - sphereStart).norm();
-  if (motionBound < option.tolerance) {
-    motionBound = option.tolerance;
-  }
-
-  double t = 0.0;
-
-  Eigen::Vector3d initialDir = targetTransform.translation() - sphereStart;
-  if (initialDir.squaredNorm() < kEpsilon) {
-    initialDir = Eigen::Vector3d::UnitX();
-  }
-
-  // Clamp to >= 1 so a zero/negative budget still tests the t = 0 overlap.
-  for (int iter = 0; iter < std::max(1, option.maxIterations); ++iter) {
-    Eigen::Vector3d currentCenter = sphereStart + t * (sphereEnd - sphereStart);
-
-    const double centerX = currentCenter.x();
-    const double centerY = currentCenter.y();
-    const double centerZ = currentCenter.z();
-    auto supportA =
-        [centerX, centerY, centerZ, sphereRadius](const Eigen::Vector3d& dir) {
-          Eigen::Vector3d worldDir = dir;
-          if (worldDir.squaredNorm() < kEpsilon) {
-            worldDir = Eigen::Vector3d::UnitZ();
-          } else {
-            worldDir.normalize();
-          }
-          return Eigen::Vector3d(
-              centerX + sphereRadius * worldDir.x(),
-              centerY + sphereRadius * worldDir.y(),
-              centerZ + sphereRadius * worldDir.z());
-        };
-    auto supportB = [&](const Eigen::Vector3d& dir) {
-      return targetTransform
-             * target.support(targetTransform.rotation().transpose() * dir);
-    };
-
-    GjkResult gjkResult = detail::queryT(supportA, supportB, initialDir);
-
-    if (gjkResult.intersecting) {
-      result.hit = true;
-      result.timeOfImpact = t;
-      Eigen::Vector3d pointB = supportB(Eigen::Vector3d::UnitX());
-      result.point = pointB;
-      const Eigen::Vector3d normal = currentCenter - pointB;
-      if (normal.squaredNorm() < kEpsilon) {
-        result.normal = Eigen::Vector3d::UnitZ();
-      } else {
-        result.normal = normal.normalized();
-      }
-      return true;
-    }
-
-    Eigen::Vector3d pointA = gjkResult.closestPointA;
-    Eigen::Vector3d pointB = gjkResult.closestPointB;
-    double distance = gjkResult.distance;
-
-    Eigen::Vector3d sepAxis = gjkResult.separationAxis;
-    if (sepAxis.squaredNorm() < kEpsilon) {
-      sepAxis = pointB - pointA;
-    }
-    if (sepAxis.squaredNorm() < kEpsilon) {
-      sepAxis = Eigen::Vector3d::UnitX();
-    }
-    sepAxis.normalize();
-
-    if (distance < option.tolerance) {
-      result.hit = true;
-      result.timeOfImpact = t;
-      result.point = pointB;
-      result.normal = sepAxis;
-      return true;
-    }
-
-    double dt = distance / motionBound;
-    t += dt;
-
-    if (t > 1.0) {
-      return false;
-    }
-
-    initialDir = sepAxis;
-  }
-
-  return false;
+  return sphereCastConvexTarget(
+      sphereStart,
+      sphereEnd,
+      sphereRadius,
+      [&](const Eigen::Vector3d& dir) {
+        return targetTransform
+               * target.support(targetTransform.rotation().transpose() * dir);
+      },
+      targetTransform.translation(),
+      option,
+      result);
 }
 
 bool sphereCastMesh(
@@ -592,85 +806,6 @@ bool sphereCastMesh(
 }
 
 namespace {
-
-Eigen::Vector3d getCapsuleEndpoint(
-    const Eigen::Isometry3d& transform, double halfHeight, bool top)
-{
-  Eigen::Vector3d localPoint(0, 0, top ? halfHeight : -halfHeight);
-  return transform * localPoint;
-}
-
-// Samples a rigid motion start -> end at parameter t in [0, 1]. Endpoint
-// quaternions are built once at construction so the conservative-advancement
-// loop pays only a slerp (or nothing, for translation) per iteration instead of
-// reconstructing quaternions from rotation matrices every step.
-class MotionSample
-{
-public:
-  MotionSample(const Eigen::Isometry3d& start, const Eigen::Isometry3d& end)
-    : startTranslation_(start.translation()),
-      endTranslation_(end.translation()),
-      startRotation_(start.rotation()),
-      rotates_(!startRotation_.isApprox(end.rotation())),
-      qStart_(startRotation_),
-      qEnd_(end.rotation())
-  {
-  }
-
-  [[nodiscard]] Eigen::Isometry3d at(double t) const
-  {
-    Eigen::Isometry3d result = Eigen::Isometry3d::Identity();
-    result.translation() = (1.0 - t) * startTranslation_ + t * endTranslation_;
-    // Translation-only motion skips the slerp; rotational motion reuses the
-    // cached endpoint quaternions.
-    result.linear() = rotates_ ? qStart_.slerp(t, qEnd_).toRotationMatrix()
-                               : startRotation_;
-    return result;
-  }
-
-private:
-  Eigen::Vector3d startTranslation_;
-  Eigen::Vector3d endTranslation_;
-  Eigen::Matrix3d startRotation_;
-  bool rotates_;
-  Eigen::Quaterniond qStart_;
-  Eigen::Quaterniond qEnd_;
-};
-
-double computeCapsuleMotionBound(
-    const CapsuleShape& capsule,
-    const Eigen::Isometry3d& transformStart,
-    const Eigen::Isometry3d& transformEnd)
-{
-  const double linearVelocity
-      = (transformEnd.translation() - transformStart.translation()).norm();
-
-  const Eigen::Quaterniond qStart(transformStart.rotation());
-  const Eigen::Quaterniond qEnd(transformEnd.rotation());
-  const double angle = qStart.angularDistance(qEnd);
-
-  const double maxRadius = capsule.getHeight() / 2.0 + capsule.getRadius();
-  return linearVelocity + angle * maxRadius;
-}
-
-Eigen::Vector3d getCapsuleSupport(
-    const Eigen::Isometry3d& transform,
-    const CapsuleShape& capsule,
-    const Eigen::Vector3d& direction)
-{
-  Eigen::Vector3d worldDir = direction;
-  if (worldDir.squaredNorm() < kEpsilon) {
-    worldDir = Eigen::Vector3d::UnitZ();
-  } else {
-    worldDir.normalize();
-  }
-
-  const Eigen::Vector3d localDir = transform.rotation().transpose() * worldDir;
-  const double halfHeight = capsule.getHeight() / 2.0;
-  const Eigen::Vector3d localEndpoint(
-      0.0, 0.0, localDir.z() >= 0.0 ? halfHeight : -halfHeight);
-  return transform * localEndpoint + capsule.getRadius() * worldDir;
-}
 
 // Conservative advancement of a moving capsule against any static convex
 // target, given the target's world-space support function. Uses the full
@@ -761,52 +896,6 @@ bool capsuleCastConvexTarget(
   return false;
 }
 
-// World-space support functions for the convex primitive targets (the shape
-// classes do not expose support(), so they are provided analytically here).
-Eigen::Vector3d sphereSupport(
-    const Eigen::Vector3d& center,
-    double radius,
-    const Eigen::Vector3d& direction)
-{
-  Eigen::Vector3d n = direction;
-  if (n.squaredNorm() < kEpsilon) {
-    n = Eigen::Vector3d::UnitX();
-  } else {
-    n.normalize();
-  }
-  return center + radius * n;
-}
-
-Eigen::Vector3d boxSupport(
-    const Eigen::Isometry3d& transform,
-    const Eigen::Vector3d& halfExtents,
-    const Eigen::Vector3d& direction)
-{
-  const Eigen::Vector3d localDir = transform.rotation().transpose() * direction;
-  const Eigen::Vector3d localPoint(
-      std::copysign(halfExtents.x(), localDir.x()),
-      std::copysign(halfExtents.y(), localDir.y()),
-      std::copysign(halfExtents.z(), localDir.z()));
-  return transform * localPoint;
-}
-
-Eigen::Vector3d cylinderSupport(
-    const Eigen::Isometry3d& transform,
-    double radius,
-    double halfHeight,
-    const Eigen::Vector3d& direction)
-{
-  const Eigen::Vector3d localDir = transform.rotation().transpose() * direction;
-  Eigen::Vector3d localPoint(0.0, 0.0, std::copysign(halfHeight, localDir.z()));
-  const double radial
-      = std::sqrt(localDir.x() * localDir.x() + localDir.y() * localDir.y());
-  if (radial > kEpsilon) {
-    localPoint.x() = radius * localDir.x() / radial;
-    localPoint.y() = radius * localDir.y() / radial;
-  }
-  return transform * localPoint;
-}
-
 } // namespace
 
 bool capsuleCastSphere(
@@ -888,37 +977,51 @@ bool capsuleCastPlane(
 
   const double capsuleRadius = capsule.getRadius();
   const double halfHeight = capsule.getHeight() / 2.0;
+  const Eigen::Vector3d worldNormal
+      = targetTransform.rotation() * target.getNormal();
+  const Eigen::Vector3d worldPoint
+      = targetTransform.translation() + target.getOffset() * worldNormal;
 
-  double bestT = 2.0;
-  CcdResult bestResult;
-
-  auto testEndpoint = [&](bool top) {
-    Eigen::Vector3d startPos
-        = getCapsuleEndpoint(capsuleStart, halfHeight, top);
-    Eigen::Vector3d endPos = getCapsuleEndpoint(capsuleEnd, halfHeight, top);
-
-    CcdResult localResult;
-    if (sphereCastPlane(
-            startPos,
-            endPos,
-            capsuleRadius,
-            target,
-            targetTransform,
-            option,
-            localResult)) {
-      updateBestCcdResult(localResult, bestT, bestResult);
-    }
-  };
-
-  testEndpoint(true);
-  testEndpoint(false);
-
-  if (bestT > 1.0) {
-    return false;
+  double motionBound
+      = computeCapsuleMotionBound(capsule, capsuleStart, capsuleEnd);
+  if (motionBound < option.tolerance) {
+    motionBound = option.tolerance;
   }
 
-  result = bestResult;
-  return true;
+  const MotionSample capsuleMotion(capsuleStart, capsuleEnd);
+  double t = 0.0;
+
+  for (int iter = 0; iter < std::max(1, option.maxIterations); ++iter) {
+    const Eigen::Isometry3d currentCapsuleTransform = capsuleMotion.at(t);
+    const Eigen::Vector3d topEndpoint
+        = getCapsuleEndpoint(currentCapsuleTransform, halfHeight, true);
+    const Eigen::Vector3d bottomEndpoint
+        = getCapsuleEndpoint(currentCapsuleTransform, halfHeight, false);
+
+    const double topDistance = (topEndpoint - worldPoint).dot(worldNormal);
+    const double bottomDistance
+        = (bottomEndpoint - worldPoint).dot(worldNormal);
+    const bool useTop = topDistance < bottomDistance;
+    const Eigen::Vector3d closestEndpoint
+        = useTop ? topEndpoint : bottomEndpoint;
+    const double clearance
+        = (useTop ? topDistance : bottomDistance) - capsuleRadius;
+
+    if (clearance <= option.tolerance) {
+      result.hit = true;
+      result.timeOfImpact = t;
+      result.point = closestEndpoint - capsuleRadius * worldNormal;
+      result.normal = worldNormal;
+      return true;
+    }
+
+    t += clearance / motionBound;
+    if (t > 1.0) {
+      return false;
+    }
+  }
+
+  return false;
 }
 
 bool capsuleCastCylinder(

@@ -41,6 +41,7 @@
 
 namespace dart::collision::native {
 
+class CapsuleShape;
 enum class ShapeType;
 
 struct DART_COLLISION_NATIVE_API NarrowPhasePair

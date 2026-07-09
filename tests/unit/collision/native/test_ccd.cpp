@@ -412,6 +412,52 @@ TEST(SphereCastCapsule, HitCylindricalPart)
   EXPECT_NEAR(result.normal.x(), -1.0, 1e-6);
 }
 
+TEST(SphereCastCapsule, StartingInsideCylindricalPart)
+{
+  CapsuleShape target(1.0, 4.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  CcdOption option;
+
+  {
+    CcdResult result;
+    ASSERT_TRUE(sphereCastCapsule(
+        Eigen::Vector3d(0.5, 0.0, 0.0),
+        Eigen::Vector3d(0.5, 0.0, 0.0),
+        0.5,
+        target,
+        transform,
+        option,
+        result));
+    EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-12);
+  }
+
+  {
+    CcdResult result;
+    ASSERT_TRUE(sphereCastCapsule(
+        Eigen::Vector3d(0.5, 0.0, -1.0),
+        Eigen::Vector3d(0.5, 0.0, 1.0),
+        0.5,
+        target,
+        transform,
+        option,
+        result));
+    EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-12);
+  }
+
+  {
+    CcdResult result;
+    ASSERT_TRUE(sphereCastCapsule(
+        Eigen::Vector3d(0.5, 0.0, 0.0),
+        Eigen::Vector3d(3.0, 0.0, 0.0),
+        0.5,
+        target,
+        transform,
+        option,
+        result));
+    EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-12);
+  }
+}
+
 TEST(SphereCastCapsule, HitSphericalCap)
 {
   CapsuleShape target(1.0, 2.0);
@@ -702,6 +748,60 @@ TEST(SphereCastCylinder, HitBottomCap)
   EXPECT_GT(result.timeOfImpact, 0.0);
   EXPECT_LT(result.timeOfImpact, 0.5);
   EXPECT_NEAR(result.normal.z(), -1.0, 1e-6);
+}
+
+TEST(SphereCastCylinder, StartingInside)
+{
+  CylinderShape target(1.0, 4.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  CcdOption option;
+
+  {
+    CcdResult result;
+    ASSERT_TRUE(sphereCastCylinder(
+        Eigen::Vector3d(0.5, 0.0, 0.0),
+        Eigen::Vector3d(0.5, 0.0, 0.0),
+        0.5,
+        target,
+        transform,
+        option,
+        result));
+    EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-12);
+  }
+
+  {
+    CcdResult result;
+    ASSERT_TRUE(sphereCastCylinder(
+        Eigen::Vector3d(0.5, 0.0, -1.0),
+        Eigen::Vector3d(0.5, 0.0, 1.0),
+        0.5,
+        target,
+        transform,
+        option,
+        result));
+    EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-12);
+  }
+}
+
+TEST(SphereCastCylinder, HitCapRim)
+{
+  CylinderShape target(1.0, 2.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  CcdOption option;
+  CcdResult result;
+  ASSERT_TRUE(sphereCastCylinder(
+      Eigen::Vector3d(1.3, 0.0, 5.0),
+      Eigen::Vector3d(1.3, 0.0, -5.0),
+      0.5,
+      target,
+      transform,
+      option,
+      result));
+
+  EXPECT_NEAR(result.timeOfImpact, 0.36, 0.05);
+  EXPECT_TRUE(result.point.allFinite());
+  EXPECT_TRUE(result.normal.allFinite());
 }
 
 //==============================================================================
@@ -1202,6 +1302,40 @@ TEST(CapsuleCastPlane, TiltedCapsule)
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
   EXPECT_LT(result.timeOfImpact, 1.0);
+}
+
+TEST(CapsuleCastPlane, RotatingEndpointArcHits)
+{
+  CapsuleShape capsule(0.2, 4.0);
+  PlaneShape target(Eigen::Vector3d::UnitZ(), 0.0);
+  Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
+
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  capsuleStart.translation() = Eigen::Vector3d(0, 0, 1.5);
+  capsuleStart.rotate(Eigen::AngleAxisd(
+      -3.141592653589793238462643383279502884 / 3, Eigen::Vector3d::UnitY()));
+
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(0, 0, 1.5);
+  capsuleEnd.rotate(Eigen::AngleAxisd(
+      3.141592653589793238462643383279502884 / 3, Eigen::Vector3d::UnitY()));
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit = capsuleCastPlane(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 0.5);
+  EXPECT_NEAR(result.normal.z(), 1.0, 1e-6);
 }
 
 //==============================================================================
