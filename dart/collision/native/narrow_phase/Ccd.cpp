@@ -333,7 +333,7 @@ bool sphereCastSphere(
   const double b = 2.0 * f.dot(d);
   const double c = f.squaredNorm() - combinedRadius * combinedRadius;
 
-  if (c < 0.0) {
+  if (c <= 0.0) {
     result.hit = true;
     result.timeOfImpact = 0.0;
     result.point = sphereStart;

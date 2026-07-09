@@ -502,6 +502,29 @@ TEST(EdgeEdgeCcdExact, CoplanarInteriorCrossing)
   EXPECT_NEAR(result.timeOfImpact, 0.25, 0.05);
 }
 
+TEST(EdgeEdgeCcdExact, CoplanarNarrowInteriorCrossing)
+{
+  // The contact interval is much narrower than the old fixed 1/256 grid: the
+  // static edge is 0.001 wide in x, and a vertical edge sweeps across it.
+  CcdOption option;
+  CcdPrimitiveResult result;
+
+  const bool hit = edgeEdgeCcdExact(
+      Eigen::Vector3d(-0.0005, 0, 0),
+      Eigen::Vector3d(-0.0005, 0, 0),
+      Eigen::Vector3d(0.0005, 0, 0),
+      Eigen::Vector3d(0.0005, 0, 0),
+      Eigen::Vector3d(-2, -1, 0),
+      Eigen::Vector3d(2, -1, 0),
+      Eigen::Vector3d(-2, 1, 0),
+      Eigen::Vector3d(2, 1, 0),
+      option,
+      result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.timeOfImpact, 0.499875, 1e-6);
+}
+
 //==============================================================================
 // Conservativeness: ACCD must never overshoot the exact time of impact
 //==============================================================================

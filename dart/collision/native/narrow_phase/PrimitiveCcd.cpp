@@ -401,6 +401,72 @@ bool pointInsideTriangle(
   return u >= -slack && v >= -slack && w >= -slack;
 }
 
+std::array<Eigen::Vector3d, 3> crossQuadraticCoefficients(
+    const Eigen::Vector3d& x0,
+    const Eigen::Vector3d& dx,
+    const Eigen::Vector3d& y0,
+    const Eigen::Vector3d& dy)
+{
+  return {x0.cross(y0), x0.cross(dy) + dx.cross(y0), dx.cross(dy)};
+}
+
+void addVectorQuadraticZeroRoots(
+    const std::array<Eigen::Vector3d, 3>& coef, std::vector<double>& candidates)
+{
+  for (int i = 0; i < 3; ++i) {
+    quadraticRootsInUnit(coef[2][i], coef[1][i], coef[0][i], candidates);
+  }
+}
+
+void addMovingPointOnSegmentRoots(
+    const Eigen::Vector3d& pointStart,
+    const Eigen::Vector3d& pointVelocity,
+    const Eigen::Vector3d& segmentStart,
+    const Eigen::Vector3d& segmentVelocity,
+    const Eigen::Vector3d& segmentEndStart,
+    const Eigen::Vector3d& segmentEndVelocity,
+    std::vector<double>& candidates)
+{
+  addVectorQuadraticZeroRoots(
+      crossQuadraticCoefficients(
+          segmentEndStart - segmentStart,
+          segmentEndVelocity - segmentVelocity,
+          pointStart - segmentStart,
+          pointVelocity - segmentVelocity),
+      candidates);
+}
+
+void addMovingPointPairRoots(
+    const Eigen::Vector3d& aStart,
+    const Eigen::Vector3d& aVelocity,
+    const Eigen::Vector3d& bStart,
+    const Eigen::Vector3d& bVelocity,
+    std::vector<double>& candidates)
+{
+  const Eigen::Vector3d offset = aStart - bStart;
+  const Eigen::Vector3d velocity = aVelocity - bVelocity;
+  for (int i = 0; i < 3; ++i) {
+    if (std::abs(velocity[i]) <= kEpsilon) {
+      continue;
+    }
+    const double t = -offset[i] / velocity[i];
+    if (t > 0.0 && t < 1.0) {
+      candidates.push_back(t);
+    }
+  }
+}
+
+void sortUniqueCandidates(std::vector<double>& candidates)
+{
+  std::sort(candidates.begin(), candidates.end());
+  candidates.erase(
+      std::unique(
+          candidates.begin(),
+          candidates.end(),
+          [](double x, double y) { return std::abs(x - y) <= 1e-9; }),
+      candidates.end());
+}
+
 } // namespace
 
 //==============================================================================
@@ -529,26 +595,17 @@ bool pointTriangleCcdExact(
        std::abs(coef[2]),
        std::abs(coef[3])});
   if (coefMag <= 1e-10 * triangleScale * triangleScale * triangleScale) {
-    constexpr int kSamples = 256;
-    bool prevContact = contactAt(0.0);
-    for (int i = 1; i <= kSamples; ++i) {
-      double hi = static_cast<double>(i) / static_cast<double>(kSamples);
-      bool curContact = contactAt(hi);
-      if (!prevContact && curContact) {
-        double lo = static_cast<double>(i - 1) / static_cast<double>(kSamples);
-        for (int b = 0; b < 40; ++b) {
-          const double mid = 0.5 * (lo + hi);
-          if (contactAt(mid)) {
-            hi = mid;
-          } else {
-            lo = mid;
-          }
-        }
-        candidates.push_back(hi);
-      }
-      prevContact = curContact;
-    }
-    std::sort(candidates.begin(), candidates.end());
+    addMovingPointOnSegmentRoots(
+        pStart, dp, aStart, da, bStart, db, candidates);
+    addMovingPointOnSegmentRoots(
+        pStart, dp, bStart, db, cStart, dc, candidates);
+    addMovingPointOnSegmentRoots(
+        pStart, dp, cStart, dc, aStart, da, candidates);
+
+    addMovingPointPairRoots(pStart, dp, aStart, da, candidates);
+    addMovingPointPairRoots(pStart, dp, bStart, db, candidates);
+    addMovingPointPairRoots(pStart, dp, cStart, dc, candidates);
+    sortUniqueCandidates(candidates);
   }
 
   for (const double t : candidates) {
@@ -621,39 +678,20 @@ bool edgeEdgeCcdExact(
        std::abs(coef[2]),
        std::abs(coef[3])});
   if (coefMag <= 1e-10 * edgeScale * edgeScale * edgeScale) {
-    const auto segGap = [&](double t) {
-      double s = 0.0;
-      double u = 0.0;
-      return distanceSegmentSegment(
-                 aStart + t * da,
-                 bStart + t * db,
-                 cStart + t * dc,
-                 dStart + t * dd,
-                 s,
-                 u)
-             - distTol;
-    };
-    constexpr int kSamples = 256;
-    double prevGap = segGap(0.0);
-    for (int i = 1; i <= kSamples; ++i) {
-      double hi = static_cast<double>(i) / static_cast<double>(kSamples);
-      const double curGap = segGap(hi);
-      if (prevGap > 0.0 && curGap <= 0.0) {
-        // Entering contact between (i-1)/N and i/N; bisect for the entry time.
-        double lo = static_cast<double>(i - 1) / static_cast<double>(kSamples);
-        for (int b = 0; b < 40; ++b) {
-          const double mid = 0.5 * (lo + hi);
-          if (segGap(mid) > 0.0) {
-            lo = mid;
-          } else {
-            hi = mid;
-          }
-        }
-        candidates.push_back(hi);
-      }
-      prevGap = curGap;
-    }
-    std::sort(candidates.begin(), candidates.end());
+    addMovingPointOnSegmentRoots(
+        aStart, da, cStart, dc, dStart, dd, candidates);
+    addMovingPointOnSegmentRoots(
+        bStart, db, cStart, dc, dStart, dd, candidates);
+    addMovingPointOnSegmentRoots(
+        cStart, dc, aStart, da, bStart, db, candidates);
+    addMovingPointOnSegmentRoots(
+        dStart, dd, aStart, da, bStart, db, candidates);
+
+    addMovingPointPairRoots(aStart, da, cStart, dc, candidates);
+    addMovingPointPairRoots(aStart, da, dStart, dd, candidates);
+    addMovingPointPairRoots(bStart, db, cStart, dc, candidates);
+    addMovingPointPairRoots(bStart, db, dStart, dd, candidates);
+    sortUniqueCandidates(candidates);
   }
 
   for (const double t : candidates) {

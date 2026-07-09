@@ -213,6 +213,26 @@ TEST(SphereCastSphere, StationarySweep)
   EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-6);
 }
 
+TEST(SphereCastSphere, StationaryTouching)
+{
+  SphereShape target(1.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Eigen::Vector3d start(1.5, 0, 0);
+  Eigen::Vector3d end(1.5, 0, 0);
+  double radius = 0.5;
+
+  CcdOption option;
+  CcdResult result;
+
+  bool hit
+      = sphereCastSphere(start, end, radius, target, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-6);
+  EXPECT_NEAR(result.normal.x(), 1.0, 1e-6);
+}
+
 //==============================================================================
 // Sphere-cast Box tests
 //==============================================================================
