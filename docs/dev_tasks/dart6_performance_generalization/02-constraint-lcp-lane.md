@@ -234,19 +234,20 @@ final-state hashes on all guard scenes for default-on packets.
 - Local D7 evaluator evidence (2026-07-08, branch
   `docs/close-dart6-performance-generalization`, binary
   `build/default/cpp/Release/bin/contact_benchmark`; full logs:
-  `/tmp/wp_pg15_ab_idempotent_20260709T015150Z/summary.tsv`):
+  `/tmp/wp_pg15_ab_plane_fallback_20260709T023141Z/summary.tsv`):
 
   | Row | Wall time | RTF | Contacts / pairs | Over sleep tol | Max penetration | Resting | Hash |
   | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-  | S6 current defaults | 95.6687 s | 0.209055 | 0 / 0 | 0 | 0 | 71/71 | `0xec80f734df6d5e74` |
-  | S6 old-default override (`ERV=0.001`, tol `1e-5`) | 252.23 s | 0.0792927 | 162 / 141 | 39 | 0.364241 | 0/71 | `0x159825257114c5d5` |
-  | S6 explicit evaluator (`ERV=0.1`, tol `0.005`) | 176.956 s | 0.113022 | 0 / 0 | 0 | 0 | 71/71 | `0x877687e64e1011b9` |
+  | S6 current defaults | 91.9572 s | 0.217493 | 0 / 0 | 0 | 0 | 71/71 | `0xec80f734df6d5e74` |
+  | S6 old-default override (`ERV=0.001`, tol `1e-5`) | 212.08 s | 0.0943043 | 162 / 141 | 39 | 0.364241 | 0/71 | `0x159825257114c5d5` |
+  | S6 explicit evaluator (`ERV=0.1`, tol `0.005`) | 75.487 s | 0.264946 | 0 / 0 | 0 | 0 | 71/71 | `0x877687e64e1011b9` |
 
-  The default row is 2.64x faster than the old-default override on this run
+  The default row is 2.31x faster than the old-default override on this run
   and reaches the WP-PG.15 pile-sleep outcome under default settings. The
-  explicit evaluator row is retained as a rejected broad-policy comparison; the
-  broader global policy was rejected after `Issue1445` and split-impulse guards
-  exposed simple-contact regressions. S4/S5 detector guard rows in the same artifact
+  explicit evaluator row is retained as a rejected broad-policy comparison even
+  though this run is faster; the broader global policy was rejected after
+  `Issue1445` and split-impulse guards exposed simple-contact regressions.
+  S4/S5 detector guard rows in `/tmp/wp_pg15_ab_review_20260708T235540Z`
   stayed finite across DART, FCL, Bullet, and ODE, and every new-default S4/S5
   row matched the old-default hash/contact/resting state.
 

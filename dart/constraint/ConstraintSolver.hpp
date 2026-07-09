@@ -193,6 +193,10 @@ public:
   /// Returns the current automatic-sleeping contact penetration tolerance.
   static double getAutomaticSleepingContactPenetrationTolerance();
 
+  /// Returns true if the automatic-sleeping contact penetration tolerance was
+  /// explicitly configured through the process-wide setter.
+  static bool isAutomaticSleepingContactPenetrationToleranceUserConfigured();
+
   /// Sets the number of threads available to parallel solver work. This mirrors
   /// World::setNumSimulationThreads(); a value of 0 maps to hardware
   /// concurrency, and 1 keeps the historical serial behavior.

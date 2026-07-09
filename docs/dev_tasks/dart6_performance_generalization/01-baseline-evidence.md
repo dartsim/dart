@@ -165,7 +165,7 @@ refresh or maintainer re-baseline.
 
 ### WP-PG.15 D7 default-remediation A/B (candidate)
 
-Artifact: `/tmp/wp_pg15_ab_idempotent_20260709T015150Z/summary.tsv` on
+Artifact: `/tmp/wp_pg15_ab_plane_fallback_20260709T023141Z/summary.tsv` on
 `docs/close-dart6-performance-generalization`, using
 `build/default/cpp/Release/bin/contact_benchmark`. The old-default row uses
 CLI overrides to reproduce the baseline contact ERV (`0.001`) and
@@ -177,17 +177,18 @@ dense islands under the default tolerance policy.
 
 | Row | RTF | Avg step ms | Contacts | Pairs | Over sleep tol | Resting | Finite | Max pen | Hash |
 | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |
-| S6 current defaults | 0.209055 | 4.78344 | 0 | 0 | 0 | 71/71 | true | 0 | `0xec80f734df6d5e74` |
-| S6 old-default override | 0.0792927 | 12.6115 | 162 | 141 | 39 | 0/71 | true | 0.364241 | `0x159825257114c5d5` |
-| S6 explicit evaluator (`ERV=0.1`, tol `0.005`) | 0.113022 | 8.84781 | 0 | 0 | 0 | 71/71 | true | 0 | `0x877687e64e1011b9` |
+| S6 current defaults | 0.217493 | 4.59786 | 0 | 0 | 0 | 71/71 | true | 0 | `0xec80f734df6d5e74` |
+| S6 old-default override | 0.0943043 | 10.604 | 162 | 141 | 39 | 0/71 | true | 0.364241 | `0x159825257114c5d5` |
+| S6 explicit evaluator (`ERV=0.1`, tol `0.005`) | 0.264946 | 3.77435 | 0 | 0 | 0 | 71/71 | true | 0 | `0x877687e64e1011b9` |
 
-The proposed default is 2.64x faster than the old-default override on this
+The proposed default is 2.31x faster than the old-default override on this
 S6 run and reaches the pile-sleep success criterion under default settings.
 The explicit evaluator row remains a rejected fully global ERV/tolerance
-comparison; its final outcome stays healthy, but this rerun does not use it as
-a performance upper bound. The same artifact includes S4/S5
-DART/FCL/Bullet/ODE guard rows; all stayed finite, and every new-default S4/S5
-row matched the old-default hash/contact/resting state.
+comparison; its final outcome stays healthy and is faster in this run, but the
+policy is not promoted because simple support-contact guards regressed under
+that broader setting. The S4/S5 DART/FCL/Bullet/ODE guard rows in
+`/tmp/wp_pg15_ab_review_20260708T235540Z/summary.tsv` stayed finite, and every
+new-default row matched the old-default hash/contact/resting state.
 
 Additional current-candidate examples:
 

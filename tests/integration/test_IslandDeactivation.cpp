@@ -148,6 +148,34 @@ SkeletonPtr createFreeBox(
 }
 
 //==============================================================================
+SkeletonPtr createWeldedBox(
+    const std::string& name,
+    const Eigen::Vector3d& size,
+    const Eigen::Vector3d& position)
+{
+  auto skel = Skeleton::create(name);
+
+  WeldJoint::Properties jointProps;
+  jointProps.mName = name + "_joint";
+  BodyNode::Properties bodyProps(
+      BodyNode::AspectProperties(std::string(name + "_body")));
+  bodyProps.mInertia.setMass(1.0);
+
+  auto pair = skel->createJointAndBodyNodePair<WeldJoint>(
+      nullptr, jointProps, bodyProps);
+  auto* body = pair.second;
+
+  auto shape = std::make_shared<BoxShape>(size);
+  body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = position;
+  pair.first->setTransformFromParentBodyNode(tf);
+
+  return skel;
+}
+
+//==============================================================================
 SkeletonPtr createFreeSinglePointSoftBody(
     const std::string& name, const Eigen::Vector3d& position)
 {
@@ -737,6 +765,50 @@ TEST(IslandDeactivation, ExplicitDefaultToleranceKeepsPlaneContactStrict)
   {
     ScopedSleepingContactPenetrationTolerance tolerance(1e-5);
     auto [world, box] = makePenetratedPlaneCandidate();
+
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_FALSE(box->isResting());
+    EXPECT_FALSE(box->isSleepCandidate());
+  }
+}
+
+//==============================================================================
+// A mobile zero-DOF body can report a quiet PlaneShape support contact without
+// an active LCP constraint. The contact-miss fallback must use the same
+// adaptive default PlaneShape tolerance as the constrained-group rest path.
+TEST(IslandDeactivation, PlaneContactMissFallbackUsesAdaptiveDefaultTolerance)
+{
+  auto makeInactivePlaneCandidate = []() {
+    auto world = makeSleepWorld();
+    world->setCollisionDetector(collision::DARTCollisionDetector::create());
+    world->addSkeleton(createPlaneFloor());
+    auto box = createWeldedBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf - 5e-4));
+    box->setSleepCandidate(true);
+    box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
+    world->addSkeleton(box);
+    return std::make_pair(world, box);
+  };
+
+  {
+    auto [world, box] = makeInactivePlaneCandidate();
+    ASSERT_EQ(0u, box->getNumDofs());
+
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_TRUE(box->isResting());
+    EXPECT_TRUE(box->isSleepCandidate());
+  }
+
+  {
+    ScopedSleepingContactPenetrationTolerance tolerance(1e-5);
+    auto [world, box] = makeInactivePlaneCandidate();
+    ASSERT_EQ(0u, box->getNumDofs());
 
     world->step();
 

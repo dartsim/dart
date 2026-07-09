@@ -41,6 +41,7 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
+#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
@@ -52,6 +53,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <algorithm>
@@ -79,6 +81,20 @@ using dart::collision::CollisionDetectorPtr;
 constexpr double kFinalSleepLinearRatio = 0.1;
 constexpr double kFinalSleepAngularRatio = 0.2;
 constexpr std::size_t kDenseContactJitterMinIslandSize = 3;
+constexpr double kDefaultSleepContactPenetrationTolerance = 1e-5;
+constexpr double kAdaptivePlaneSleepContactPenetrationTolerance = 0.005;
+
+bool contactTouchesPlaneShape(const collision::Contact& contact)
+{
+  auto isPlaneShapeObject = [](const collision::CollisionObject* object) {
+    const auto shape = object ? object->getShape() : nullptr;
+    return shape != nullptr
+           && shape->getType() == dynamics::PlaneShape::getStaticType();
+  };
+
+  return isPlaneShapeObject(contact.collisionObject1)
+         || isPlaneShapeObject(contact.collisionObject2);
+}
 
 std::string toCollisionDetectorKey(CollisionDetectorType type)
 {
@@ -1621,6 +1637,18 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // constraint on this step.
   const double sleepContactPenetrationTolerance = constraint::ConstraintSolver::
       getAutomaticSleepingContactPenetrationTolerance();
+  const bool useAdaptivePlaneSleepContactPenetrationTolerance
+      = !constraint::ConstraintSolver::
+            isAutomaticSleepingContactPenetrationToleranceUserConfigured()
+        && sleepContactPenetrationTolerance
+               == kDefaultSleepContactPenetrationTolerance;
+  auto getSleepContactPenetrationTolerance
+      = [&](const collision::Contact& contact) {
+          return useAdaptivePlaneSleepContactPenetrationTolerance
+                         && contactTouchesPlaneShape(contact)
+                     ? kAdaptivePlaneSleepContactPenetrationTolerance
+                     : sleepContactPenetrationTolerance;
+        };
   // Final-quiet gate for sleep candidacy, expressed as fixed fractions of the
   // configured thresholds. At the default thresholds (0.01 m/s, 0.05 rad/s)
   // these evaluate to the previous hardcoded 1e-3 m/s and 1e-2 rad/s, so
@@ -1640,7 +1668,8 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 
   auto isShallowSupportContact = [&](const auto& bodyNode,
                                      const auto& supportBodyNode,
-                                     const Eigen::Vector3d& normal) {
+                                     const Eigen::Vector3d& normal,
+                                     double contactSleepPenetrationTolerance) {
     if (!bodyNode || !supportBodyNode || gravityNorm <= 0.0)
       return false;
 
@@ -1667,7 +1696,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
         = (bodyNode->getTransform().translation()
            - supportBodyNode->getTransform().translation())
               .dot(up);
-    return bodyHeightAboveSupport >= -sleepContactPenetrationTolerance;
+    return bodyHeightAboveSupport >= -contactSleepPenetrationTolerance;
   };
 
   auto& deepInitialContactSkeletons = mDeepInitialContactSkeletonScratch;
@@ -1681,31 +1710,52 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
           return std::find(skeletons.begin(), skeletons.end(), skeleton)
                  != skeletons.end();
         };
+  auto markMobileSkeleton = [&](auto bodyNode, auto& skeletons) {
+    if (!bodyNode)
+      return;
+    const auto* skeleton = bodyNode->getSkeletonRawPtr();
+    if (skeleton != nullptr && skeleton->isMobile()) {
+      if (!containsSkeleton(skeletons, skeleton))
+        skeletons.push_back(skeleton);
+    }
+  };
+  auto clearMobileSleepCandidate = [](auto bodyNode) {
+    if (!bodyNode)
+      return;
+    auto* skeleton
+        = const_cast<dynamics::Skeleton*>(bodyNode->getSkeletonRawPtr());
+    if (skeleton != nullptr && skeleton->isMobile()
+        && skeleton->getIslandIndex() < 0) {
+      skeleton->setSleepCandidate(false);
+    }
+  };
   if (mFrame == 0) {
     for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
       const auto& contact = contacts.getContact(i);
-      auto markMobileSkeleton = [&](auto bodyNode, auto& skeletons) {
-        if (!bodyNode)
-          return;
-        const auto* skeleton = bodyNode->getSkeletonRawPtr();
-        if (skeleton != nullptr && skeleton->isMobile()) {
-          if (!containsSkeleton(skeletons, skeleton))
-            skeletons.push_back(skeleton);
-        }
-      };
-
+      const double contactSleepContactPenetrationTolerance
+          = getSleepContactPenetrationTolerance(contact);
       const auto bodyNode1 = contact.getBodyNodePtr1();
       const auto bodyNode2 = contact.getBodyNodePtr2();
-      if (contact.penetrationDepth > sleepContactPenetrationTolerance) {
+      if (contact.penetrationDepth > contactSleepContactPenetrationTolerance) {
         markMobileSkeleton(bodyNode1, deepInitialContactSkeletons);
         markMobileSkeleton(bodyNode2, deepInitialContactSkeletons);
         continue;
       }
 
-      if (isShallowSupportContact(bodyNode1, bodyNode2, contact.normal))
+      if (isShallowSupportContact(
+              bodyNode1,
+              bodyNode2,
+              contact.normal,
+              contactSleepContactPenetrationTolerance)) {
         markMobileSkeleton(bodyNode1, supportedInitialContactSkeletons);
-      if (isShallowSupportContact(bodyNode2, bodyNode1, contact.normal))
+      }
+      if (isShallowSupportContact(
+              bodyNode2,
+              bodyNode1,
+              contact.normal,
+              contactSleepContactPenetrationTolerance)) {
         markMobileSkeleton(bodyNode2, supportedInitialContactSkeletons);
+      }
     }
   }
 
@@ -1920,8 +1970,15 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // by the wake-band checks above and in the pre-solve velocity pass.
   for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
     const auto& contact = contacts.getContact(i);
-    if (contact.penetrationDepth > sleepContactPenetrationTolerance)
+    const double contactSleepContactPenetrationTolerance
+        = getSleepContactPenetrationTolerance(contact);
+    const auto bodyNode1 = contact.getBodyNodePtr1();
+    const auto bodyNode2 = contact.getBodyNodePtr2();
+    if (contact.penetrationDepth > contactSleepContactPenetrationTolerance) {
+      clearMobileSleepCandidate(bodyNode1);
+      clearMobileSleepCandidate(bodyNode2);
       continue;
+    }
 
     auto tryRestOnInactiveSupport = [&](const auto& bodyNode,
                                         const auto& supportBodyNode) {
@@ -1943,8 +2000,13 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       if (!supportInactive)
         return;
 
-      if (!isShallowSupportContact(bodyNode, supportBodyNode, contact.normal))
+      if (!isShallowSupportContact(
+              bodyNode,
+              supportBodyNode,
+              contact.normal,
+              contactSleepContactPenetrationTolerance)) {
         return;
+      }
 
       if (skel->getSmoothedLinearSpeed() > linWake
           || skel->getSmoothedAngularSpeed() > angWake) {
@@ -1956,8 +2018,6 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       skel->setResting(true);
     };
 
-    const auto bodyNode1 = contact.getBodyNodePtr1();
-    const auto bodyNode2 = contact.getBodyNodePtr2();
     tryRestOnInactiveSupport(bodyNode1, bodyNode2);
     tryRestOnInactiveSupport(bodyNode2, bodyNode1);
   }

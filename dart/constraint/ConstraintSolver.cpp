@@ -647,6 +647,13 @@ double ConstraintSolver::getAutomaticSleepingContactPenetrationTolerance()
 }
 
 //==============================================================================
+bool ConstraintSolver::
+    isAutomaticSleepingContactPenetrationToleranceUserConfigured()
+{
+  return gSleepContactPenetrationToleranceUserConfigured;
+}
+
+//==============================================================================
 void ConstraintSolver::setNumSimulationThreads(std::size_t numThreads)
 {
   if (numThreads == 0u) {
