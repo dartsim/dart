@@ -75,16 +75,35 @@ scope-diff-guarded.
 - **D5** (native persistent manifold cache + cached-impulse seed/write-back):
   **#3360** — **merged**.
 
-**Next: Phase 4 — evidence-driven native performance optimization** on
-`feature/native-phase4-performance`. Keep this cohesive: first expose
-`"native"` in the durable contact-rich benchmark surfaces, then optimize only
-measured native hot paths with parent-vs-PR and detector-vs-detector evidence in
-the style of #3307. Candidate areas are broadphase pair pruning, scratch/cache
-reuse, manifold reuse, scene-local allocation control, optional SIMD from
-#3229, and thread-safe contact aggregation. Keep the native detector opt-in
-only. **Do not** add a `CollisionDetectorType::Native` enum or touch `World`
-detector defaults, `ConstraintSolver` detector defaults, `WorldConfig`, or
-dependency/package metadata; FCL remains the default until phase 6.
+**Next: Phase 4 — evidence-driven native performance optimization.** The first
+performance slice is on `feature/native-phase4-solver-manifolds`: cap
+solver-facing native manifolds at three contacts while honoring stricter
+per-pair caps. This targets the measured solver row overhead from native's
+fourth contact on contact-rich scenes and keeps the native detector opt-in.
+
+Measured on `origin/release-6.20` parent `43e419638986` vs this local slice:
+
+| Benchmark row | Parent native | Slice native | Delta | Contacts |
+| --- | ---: | ---: | ---: | ---: |
+| `BM_ContactContainerActive/60/4/1_mean` | 202.383 ms | 202.918 ms | -0.3% | 84 -> 80 |
+| `BM_ContactContainerActive/60/4/16_mean` | 204.547 ms | 203.067 ms | +0.7% | 84 -> 80 |
+| `BM_ContactContainerActive/120/4/1_mean` | 2268.942 ms | 1118.032 ms | +50.7% | 282 -> 251 |
+| `BM_ContactContainerActive/120/4/16_mean` | 2202.924 ms | 1124.906 ms | +48.9% | 282 -> 251 |
+| `BM_ContactContainerActive/120/4/4_mean` | 2193.106 ms | 1167.577 ms | +46.8% | 282 -> 251 |
+| `BM_ContactContainerDeactivation/60/4/16/iterations:1_mean` | 30.589 ms | 29.391 ms | +3.9% | 101 -> 97 |
+
+Post-slice detector comparison on `BM_ContactContainerActive/120/*/1_mean`:
+native 1118.032 ms / 251 contacts, DART 1452.013 ms / 242 contacts, FCL
+1475.995 ms / 243 contacts, Bullet 1544.000 ms / 256 contacts.
+
+Remaining Phase 4 work after this PR merges: continue with measured native hot
+paths only, using parent-vs-PR and detector-vs-detector evidence in the style of
+#3307. Candidate areas are broadphase pair pruning, scratch/cache reuse,
+manifold reuse, scene-local allocation control, optional SIMD from #3229, and
+thread-safe contact aggregation. **Do not** add a
+`CollisionDetectorType::Native` enum or touch `World` detector defaults,
+`ConstraintSolver` detector defaults, `WorldConfig`, or dependency/package
+metadata; FCL remains the default until phase 6.
 
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
 PRs, worktrees, gotchas, and exact Phase 4 next steps).

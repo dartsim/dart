@@ -59,6 +59,11 @@ namespace collision {
 namespace {
 
 //==============================================================================
+// Three non-collinear contacts define a stable planar patch while avoiding a
+// fourth redundant solver row on contact-rich native scenes.
+constexpr std::size_t kSolverFacingManifoldContactTarget = 3u;
+
+//==============================================================================
 bool checkGroupValidity(
     const NativeCollisionDetector* detector, CollisionGroup* group)
 {
@@ -85,9 +90,13 @@ native::CollisionOption makeNativeOption(
 {
   native::CollisionOption nativeOption;
   nativeOption.enableContact = option.enableContact && result != nullptr;
-  nativeOption.maxNumContacts = nativeOption.enableContact
-                                    ? option.getEffectiveMaxNumContactsPerPair()
-                                    : 1u;
+  if (nativeOption.enableContact) {
+    nativeOption.maxNumContacts = std::min(
+        option.getEffectiveMaxNumContactsPerPair(),
+        kSolverFacingManifoldContactTarget);
+  } else {
+    nativeOption.maxNumContacts = 1u;
+  }
   nativeOption.collisionFilter = nullptr;
 
   return nativeOption;

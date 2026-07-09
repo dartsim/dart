@@ -20,12 +20,13 @@ Evidence was first collected on 2026-06-19 after fetching `origin/main`,
 `origin/release-6.20`, and `origin/release-6.19`. The native-collision port
 evidence in `03-native-collision-port-scoping.md` and the dashboard state in
 `04-orchestration-dashboard.md` were refreshed on 2026-07-09 after fetching
-`origin/main` and `origin/release-6.20`, and after phase-3 D4 merged.
+`origin/main` and `origin/release-6.20`, and after phase-3 D5 plus the native
+dashboard fix (#3363) merged.
 
 ## Current Branch State
 
 - `origin/release-6.20` currently points at
-  `1a33843125dde544c1a1c4caa11fae71af35b6e5`.
+  `43e4196389863f7405cd81f4ab501b45f02ae479`.
 - `origin/main` currently points at
   `a70fc2ed5cb7ea40f72dce68b7d374583ab7feee`.
 - `package.xml` and `pixi.toml` on `origin/release-6.20` still report a 6.19.x
