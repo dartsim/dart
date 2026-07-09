@@ -72,21 +72,22 @@ scope-diff-guarded.
   benchmarks): **#3355** — **merged**.
 - **D3** (native VoxelGrid/compound support): **#3358** — **merged**.
 - **D4** (native CCD support): **#3359** — **merged**.
+- **D5** (native persistent manifold cache + cached-impulse seed/write-back):
+  **#3360** — **merged**.
 
-**Next: Phase 3 D5 — persistent manifold cache** on
-`feature/native-manifold-cache`. Keep this as one PR: port DART 7's persistent
-manifold cache using DART 6 PascalCase file names, wire native detector
-cached-impulse reuse, and seed/write back cached impulses through
-`ContactConstraint` for solvers that honor `ConstraintInfo::x` initial guesses.
-Cover cache matching/reduction/refresh, native detector cached-impulse reuse
-for same-group and cross-group contacts, and solver cached-impulse write-back.
-Keep the native detector opt-in only. **Do not** add
-a `CollisionDetectorType::Native` enum or touch `World` detector defaults,
-`ConstraintSolver` detector defaults, `WorldConfig`, or dependency/package
-metadata; FCL remains the default until phase 6.
+**Next: Phase 4 — evidence-driven native performance optimization** on
+`feature/native-phase4-performance`. Keep this cohesive: first expose
+`"native"` in the durable contact-rich benchmark surfaces, then optimize only
+measured native hot paths with parent-vs-PR and detector-vs-detector evidence in
+the style of #3307. Candidate areas are broadphase pair pruning, scratch/cache
+reuse, manifold reuse, scene-local allocation control, optional SIMD from
+#3229, and thread-safe contact aggregation. Keep the native detector opt-in
+only. **Do not** add a `CollisionDetectorType::Native` enum or touch `World`
+detector defaults, `ConstraintSolver` detector defaults, `WorldConfig`, or
+dependency/package metadata; FCL remains the default until phase 6.
 
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
-PRs, worktrees, gotchas, and exact Phase 3 D5 next steps).
+PRs, worktrees, gotchas, and exact Phase 4 next steps).
 
 ## Standing constraints
 

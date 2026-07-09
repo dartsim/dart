@@ -37,6 +37,7 @@
 #endif
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
+#include <dart/collision/native/NativeCollisionDetector.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
 #include <benchmark/benchmark.h>
@@ -49,6 +50,7 @@ enum Engine
   ODE = 1,
   FCL = 2,
   BULLET = 3,
+  NATIVE = 4,
 };
 
 dart::collision::CollisionDetectorPtr makeDetector(int engine)
@@ -58,6 +60,8 @@ dart::collision::CollisionDetectorPtr makeDetector(int engine)
       return dart::collision::OdeCollisionDetector::create();
     case FCL:
       return dart::collision::FCLCollisionDetector::create();
+    case NATIVE:
+      return dart::collision::NativeCollisionDetector::create();
 #ifdef DART_CONTACT_CONTAINER_BENCHMARK_HAS_BULLET
     case BULLET:
       return dart::collision::BulletCollisionDetector::create();
@@ -75,6 +79,8 @@ const char* engineName(int engine)
       return "ode";
     case FCL:
       return "fcl";
+    case NATIVE:
+      return "native";
     case BULLET:
       return "bullet";
     case DART:
@@ -175,10 +181,14 @@ void BM_ContactContainerDeactivation(benchmark::State& state)
 BENCHMARK(BM_ContactContainerActive)
     ->Args({60, DART, 1})
     ->Args({60, DART, 16})
+    ->Args({60, NATIVE, 1})
+    ->Args({60, NATIVE, 16})
     ->Args({60, ODE, 1})
     ->Args({60, ODE, 16})
     ->Args({120, DART, 1})
     ->Args({120, DART, 16})
+    ->Args({120, NATIVE, 1})
+    ->Args({120, NATIVE, 16})
     ->Args({120, ODE, 1})
     ->Args({120, ODE, 16})
     ->Args({60, FCL, 1})
@@ -192,6 +202,7 @@ BENCHMARK(BM_ContactContainerActive)
     ->Args({120, BULLET, 16})
 #endif
     ->Args({120, DART, 4})
+    ->Args({120, NATIVE, 4})
     ->Args({120, ODE, 4})
     ->Args({120, FCL, 4})
 #ifdef DART_CONTACT_CONTAINER_BENCHMARK_HAS_BULLET
@@ -201,12 +212,14 @@ BENCHMARK(BM_ContactContainerActive)
 
 BENCHMARK(BM_ContactContainerLargeActive)
     ->Args({900, DART, 16})
+    ->Args({900, NATIVE, 16})
     ->Args({900, ODE, 16})
     ->Iterations(1)
     ->Unit(benchmark::kMillisecond);
 
 BENCHMARK(BM_ContactContainerDeactivation)
     ->Args({60, DART, 16})
+    ->Args({60, NATIVE, 16})
     ->Args({60, ODE, 16})
     ->Iterations(1)
     ->Unit(benchmark::kMillisecond);
