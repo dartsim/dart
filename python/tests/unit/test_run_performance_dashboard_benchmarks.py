@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -50,9 +51,12 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     assert "dashboard_boxes.json" in result.stdout
     assert "BM_RunBoxes/(2|4|8)$" in result.stdout
     assert "dashboard_contact_container.json" in result.stdout
-    assert "BM_ContactContainerActive/(60|120)/(0|1|2|3)/(1|4|16)$" in result.stdout
     assert (
-        "BM_ContactContainerDeactivation/60/(0|1)/16/iterations:1$"
+        "BM_ContactContainerActive/(60|120)/(0|1|2|3|4)/(1|4|16)$"
+        in result.stdout
+    )
+    assert (
+        "BM_ContactContainerDeactivation/60/(0|1|4)/16/iterations:1$"
         in result.stdout
     )
     assert "dashboard_soft_body.json" in result.stdout
@@ -95,6 +99,35 @@ def test_contact_container_surface_is_required():
 
     assert spec.target == "BM_INTEGRATION_contact_container"
     assert not spec.optional
+
+
+def test_contact_container_surface_filter_selects_native_rows():
+    runner = _load_runner_module()
+    spec = next(
+        spec for spec in runner.BENCHMARK_SPECS if spec.surface == "contact-container"
+    )
+
+    pattern = re.compile(spec.benchmark_filter)
+
+    assert pattern.fullmatch("BM_ContactContainerActive/60/4/1")
+    assert pattern.fullmatch("BM_ContactContainerActive/60/4/16")
+    assert pattern.fullmatch("BM_ContactContainerActive/120/4/4")
+    assert pattern.fullmatch("BM_ContactContainerDeactivation/60/4/16/iterations:1")
+
+
+def test_contact_container_surface_filter_keeps_incumbent_rows():
+    runner = _load_runner_module()
+    spec = next(
+        spec for spec in runner.BENCHMARK_SPECS if spec.surface == "contact-container"
+    )
+
+    pattern = re.compile(spec.benchmark_filter)
+
+    assert pattern.fullmatch("BM_ContactContainerActive/60/0/1")
+    assert pattern.fullmatch("BM_ContactContainerActive/60/1/16")
+    assert pattern.fullmatch("BM_ContactContainerActive/120/2/4")
+    assert pattern.fullmatch("BM_ContactContainerActive/120/3/16")
+    assert pattern.fullmatch("BM_ContactContainerDeactivation/60/0/16/iterations:1")
 
 
 def test_dashboard_surface_runner_fails_when_output_has_no_rows(tmp_path, monkeypatch):
