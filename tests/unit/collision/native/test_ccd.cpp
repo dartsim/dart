@@ -879,6 +879,7 @@ TEST(SphereCastConvex, DirectHit)
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.3);
   EXPECT_LT(result.timeOfImpact, 0.5);
+  EXPECT_NEAR(result.normal.x(), -1.0, 1e-6);
 }
 
 TEST(SphereCastConvex, TranslatedTarget)
@@ -1242,6 +1243,7 @@ TEST(CapsuleCastCapsule, DirectHit)
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
   EXPECT_LT(result.timeOfImpact, 0.5);
+  EXPECT_NEAR(result.normal.x(), -1.0, 1e-6);
 }
 
 //==============================================================================
@@ -1501,6 +1503,7 @@ TEST(CapsuleCastConvex, DirectHit)
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.0);
   EXPECT_LT(result.timeOfImpact, 0.5);
+  EXPECT_NEAR(result.normal.x(), -1.0, 1e-6);
 }
 
 TEST(CapsuleCastConvex, StationaryOverlapUsesFallbackDirections)

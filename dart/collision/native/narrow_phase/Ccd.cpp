@@ -293,7 +293,7 @@ bool sphereCastConvexTarget(
       result.hit = true;
       result.timeOfImpact = t;
       result.point = pointB;
-      result.normal = sepAxis;
+      result.normal = -sepAxis;
       return true;
     }
 
@@ -912,7 +912,7 @@ bool capsuleCastConvexTarget(
       result.hit = true;
       result.timeOfImpact = t;
       result.point = pointB;
-      result.normal = sepAxis;
+      result.normal = -sepAxis;
       return true;
     }
 
@@ -1474,7 +1474,7 @@ bool conservativeAdvancement(
       result.hit = true;
       result.timeOfImpact = t;
       result.point = pointB;
-      result.normal = sepAxis;
+      result.normal = -sepAxis;
       return true;
     }
 
@@ -1593,7 +1593,7 @@ bool convexCast(
       result.hit = true;
       result.timeOfImpact = t;
       result.point = pointB;
-      result.normal = sepAxis;
+      result.normal = -sepAxis;
       return true;
     }
 
@@ -1720,7 +1720,7 @@ bool splineCast(
       result.hit = true;
       result.timeOfImpact = t;
       result.point = gjkResult.closestPointB;
-      result.normal = sepAxis;
+      result.normal = -sepAxis;
       return true;
     }
 
