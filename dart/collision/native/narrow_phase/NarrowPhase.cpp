@@ -34,6 +34,7 @@
 #include <dart/collision/native/narrow_phase/CapsuleBox.hpp>
 #include <dart/collision/native/narrow_phase/CapsuleCapsule.hpp>
 #include <dart/collision/native/narrow_phase/CapsuleSphere.hpp>
+#include <dart/collision/native/narrow_phase/Ccd.hpp>
 #include <dart/collision/native/narrow_phase/ConvexConvex.hpp>
 #include <dart/collision/native/narrow_phase/CylinderCollision.hpp>
 #include <dart/collision/native/narrow_phase/Distance.hpp>
@@ -829,6 +830,184 @@ bool raycastShape(
   }
 }
 
+bool sphereCastShape(
+    const Eigen::Vector3d& sphereStart,
+    const Eigen::Vector3d& sphereEnd,
+    double sphereRadius,
+    const Shape* shape,
+    const Eigen::Isometry3d& transform,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  result.clear();
+
+  if (!shape) {
+    return false;
+  }
+
+  switch (shape->getType()) {
+    case ShapeType::Sphere: {
+      const auto* s = static_cast<const SphereShape*>(shape);
+      return sphereCastSphere(
+          sphereStart, sphereEnd, sphereRadius, *s, transform, option, result);
+    }
+    case ShapeType::Box: {
+      const auto* b = static_cast<const BoxShape*>(shape);
+      return sphereCastBox(
+          sphereStart, sphereEnd, sphereRadius, *b, transform, option, result);
+    }
+    case ShapeType::Capsule: {
+      const auto* c = static_cast<const CapsuleShape*>(shape);
+      return sphereCastCapsule(
+          sphereStart, sphereEnd, sphereRadius, *c, transform, option, result);
+    }
+    case ShapeType::Cylinder: {
+      const auto* c = static_cast<const CylinderShape*>(shape);
+      return sphereCastCylinder(
+          sphereStart, sphereEnd, sphereRadius, *c, transform, option, result);
+    }
+    case ShapeType::Plane: {
+      const auto* p = static_cast<const PlaneShape*>(shape);
+      return sphereCastPlane(
+          sphereStart, sphereEnd, sphereRadius, *p, transform, option, result);
+    }
+    case ShapeType::Convex: {
+      const auto* c = static_cast<const ConvexShape*>(shape);
+      return sphereCastConvex(
+          sphereStart, sphereEnd, sphereRadius, *c, transform, option, result);
+    }
+    case ShapeType::Mesh: {
+      const auto* m = static_cast<const MeshShape*>(shape);
+      return sphereCastMesh(
+          sphereStart, sphereEnd, sphereRadius, *m, transform, option, result);
+    }
+    case ShapeType::Compound: {
+      const auto* compound = static_cast<const CompoundShape*>(shape);
+      bool hit = false;
+      double bestTime = 2.0;
+      CcdResult bestResult;
+
+      for (const auto& child : compound->children()) {
+        if (!child.shape) {
+          continue;
+        }
+
+        CcdResult childResult;
+        if (sphereCastShape(
+                sphereStart,
+                sphereEnd,
+                sphereRadius,
+                child.shape.get(),
+                transform * child.localTransform,
+                option,
+                childResult)) {
+          if (childResult.timeOfImpact < bestTime) {
+            bestTime = childResult.timeOfImpact;
+            bestResult = childResult;
+          }
+          hit = true;
+        }
+      }
+
+      if (hit) {
+        result = bestResult;
+      }
+      return hit;
+    }
+    default:
+      return false;
+  }
+}
+
+bool capsuleCastShape(
+    const Eigen::Isometry3d& capsuleStart,
+    const Eigen::Isometry3d& capsuleEnd,
+    const CapsuleShape& capsule,
+    const Shape* shape,
+    const Eigen::Isometry3d& transform,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  result.clear();
+
+  if (!shape) {
+    return false;
+  }
+
+  switch (shape->getType()) {
+    case ShapeType::Sphere: {
+      const auto* s = static_cast<const SphereShape*>(shape);
+      return capsuleCastSphere(
+          capsuleStart, capsuleEnd, capsule, *s, transform, option, result);
+    }
+    case ShapeType::Box: {
+      const auto* b = static_cast<const BoxShape*>(shape);
+      return capsuleCastBox(
+          capsuleStart, capsuleEnd, capsule, *b, transform, option, result);
+    }
+    case ShapeType::Capsule: {
+      const auto* c = static_cast<const CapsuleShape*>(shape);
+      return capsuleCastCapsule(
+          capsuleStart, capsuleEnd, capsule, *c, transform, option, result);
+    }
+    case ShapeType::Plane: {
+      const auto* p = static_cast<const PlaneShape*>(shape);
+      return capsuleCastPlane(
+          capsuleStart, capsuleEnd, capsule, *p, transform, option, result);
+    }
+    case ShapeType::Cylinder: {
+      const auto* c = static_cast<const CylinderShape*>(shape);
+      return capsuleCastCylinder(
+          capsuleStart, capsuleEnd, capsule, *c, transform, option, result);
+    }
+    case ShapeType::Convex: {
+      const auto* c = static_cast<const ConvexShape*>(shape);
+      return capsuleCastConvex(
+          capsuleStart, capsuleEnd, capsule, *c, transform, option, result);
+    }
+    case ShapeType::Mesh: {
+      const auto* m = static_cast<const MeshShape*>(shape);
+      return capsuleCastMesh(
+          capsuleStart, capsuleEnd, capsule, *m, transform, option, result);
+    }
+    case ShapeType::Compound: {
+      const auto* compound = static_cast<const CompoundShape*>(shape);
+      bool hit = false;
+      double bestTime = 2.0;
+      CcdResult bestResult;
+
+      for (const auto& child : compound->children()) {
+        if (!child.shape) {
+          continue;
+        }
+
+        CcdResult childResult;
+        if (capsuleCastShape(
+                capsuleStart,
+                capsuleEnd,
+                capsule,
+                child.shape.get(),
+                transform * child.localTransform,
+                option,
+                childResult)) {
+          if (childResult.timeOfImpact < bestTime) {
+            bestTime = childResult.timeOfImpact;
+            bestResult = childResult;
+          }
+          hit = true;
+        }
+      }
+
+      if (hit) {
+        result = bestResult;
+      }
+      return hit;
+    }
+    default:
+      return false;
+  }
+}
+
 bool collideBatchShapes(
     span<const NarrowPhasePair> pairs,
     span<CollisionResult> results,
@@ -913,6 +1092,44 @@ bool NarrowPhase::raycast(
     RaycastResult& result)
 {
   return raycastShape(ray, shape, transform, option, result);
+}
+
+bool NarrowPhase::sphereCast(
+    const Eigen::Vector3d& sphereStart,
+    const Eigen::Vector3d& sphereEnd,
+    double sphereRadius,
+    const Shape* target,
+    const Eigen::Isometry3d& targetTransform,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  return sphereCastShape(
+      sphereStart,
+      sphereEnd,
+      sphereRadius,
+      target,
+      targetTransform,
+      option,
+      result);
+}
+
+bool NarrowPhase::capsuleCast(
+    const Eigen::Isometry3d& capsuleStart,
+    const Eigen::Isometry3d& capsuleEnd,
+    const CapsuleShape& capsule,
+    const Shape* target,
+    const Eigen::Isometry3d& targetTransform,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  return capsuleCastShape(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
 }
 
 bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)
@@ -1057,6 +1274,40 @@ bool NarrowPhase::isRaycastSupported(ShapeType type)
     case ShapeType::Plane:
     case ShapeType::Mesh:
     case ShapeType::Convex:
+    case ShapeType::Compound:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool NarrowPhase::isSphereCastSupported(ShapeType type)
+{
+  switch (type) {
+    case ShapeType::Sphere:
+    case ShapeType::Box:
+    case ShapeType::Capsule:
+    case ShapeType::Cylinder:
+    case ShapeType::Plane:
+    case ShapeType::Convex:
+    case ShapeType::Mesh:
+    case ShapeType::Compound:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool NarrowPhase::isCapsuleCastSupported(ShapeType type)
+{
+  switch (type) {
+    case ShapeType::Sphere:
+    case ShapeType::Box:
+    case ShapeType::Capsule:
+    case ShapeType::Plane:
+    case ShapeType::Cylinder:
+    case ShapeType::Convex:
+    case ShapeType::Mesh:
     case ShapeType::Compound:
       return true;
     default:
