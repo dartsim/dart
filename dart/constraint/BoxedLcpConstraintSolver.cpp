@@ -49,7 +49,9 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <typeinfo>
+#include <unordered_map>
 #include <vector>
 
 #include <cassert>
@@ -161,6 +163,48 @@ void reserveMatrixFreeContactScratch(
   scratch.matrixFreeBodies.reserve(maxReactiveBodies);
 }
 
+using MatrixFreeContactSolverOptions
+    = BoxedLcpConstraintSolver::MatrixFreeContactSolverOptions;
+
+std::mutex& matrixFreeContactOptionsMutex()
+{
+  static auto* mutex = new std::mutex;
+  return *mutex;
+}
+
+std::unordered_map<
+    const BoxedLcpConstraintSolver*,
+    MatrixFreeContactSolverOptions>&
+matrixFreeContactOptionsBySolver()
+{
+  static auto* options = new std::unordered_map<
+      const BoxedLcpConstraintSolver*,
+      MatrixFreeContactSolverOptions>;
+  return *options;
+}
+
+MatrixFreeContactSolverOptions sanitizeMatrixFreeContactOptions(
+    MatrixFreeContactSolverOptions options)
+{
+  if (options.mMaxIterations < 1)
+    options.mMaxIterations = 1;
+  if (!std::isfinite(options.mSor) || options.mSor <= 0.0)
+    options.mSor = 1.0;
+  if (!std::isfinite(options.mDeltaTolerance)
+      || options.mDeltaTolerance < 0.0) {
+    options.mDeltaTolerance = 0.0;
+  }
+  if (!std::isfinite(options.mRelativeDeltaTolerance)
+      || options.mRelativeDeltaTolerance < 0.0) {
+    options.mRelativeDeltaTolerance = 0.0;
+  }
+  if (!std::isfinite(options.mEpsilonForDivision)
+      || options.mEpsilonForDivision <= 0.0) {
+    options.mEpsilonForDivision = 1e-9;
+  }
+  return options;
+}
+
 //==============================================================================
 template <typename ExactT, typename DynamicT>
 bool isExactDynamicType(const DynamicT* object)
@@ -227,6 +271,13 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
 }
 
 //==============================================================================
+BoxedLcpConstraintSolver::~BoxedLcpConstraintSolver()
+{
+  std::lock_guard<std::mutex> lock(matrixFreeContactOptionsMutex());
+  matrixFreeContactOptionsBySolver().erase(this);
+}
+
+//==============================================================================
 void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
 {
   if (!lcpSolver) {
@@ -275,33 +326,22 @@ ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getSecondaryBoxedLcpSolver()
 void BoxedLcpConstraintSolver::setMatrixFreeContactSolverOptions(
     const MatrixFreeContactSolverOptions& options)
 {
-  mMatrixFreeContactSolverOptions = options;
-
-  if (mMatrixFreeContactSolverOptions.mMaxIterations < 1)
-    mMatrixFreeContactSolverOptions.mMaxIterations = 1;
-  if (!std::isfinite(mMatrixFreeContactSolverOptions.mSor)
-      || mMatrixFreeContactSolverOptions.mSor <= 0.0) {
-    mMatrixFreeContactSolverOptions.mSor = 1.0;
-  }
-  if (!std::isfinite(mMatrixFreeContactSolverOptions.mDeltaTolerance)
-      || mMatrixFreeContactSolverOptions.mDeltaTolerance < 0.0) {
-    mMatrixFreeContactSolverOptions.mDeltaTolerance = 0.0;
-  }
-  if (!std::isfinite(mMatrixFreeContactSolverOptions.mRelativeDeltaTolerance)
-      || mMatrixFreeContactSolverOptions.mRelativeDeltaTolerance < 0.0) {
-    mMatrixFreeContactSolverOptions.mRelativeDeltaTolerance = 0.0;
-  }
-  if (!std::isfinite(mMatrixFreeContactSolverOptions.mEpsilonForDivision)
-      || mMatrixFreeContactSolverOptions.mEpsilonForDivision <= 0.0) {
-    mMatrixFreeContactSolverOptions.mEpsilonForDivision = 1e-9;
-  }
+  const auto sanitized = sanitizeMatrixFreeContactOptions(options);
+  std::lock_guard<std::mutex> lock(matrixFreeContactOptionsMutex());
+  matrixFreeContactOptionsBySolver()[this] = sanitized;
 }
 
 //==============================================================================
-const BoxedLcpConstraintSolver::MatrixFreeContactSolverOptions&
+BoxedLcpConstraintSolver::MatrixFreeContactSolverOptions
 BoxedLcpConstraintSolver::getMatrixFreeContactSolverOptions() const
 {
-  return mMatrixFreeContactSolverOptions;
+  std::lock_guard<std::mutex> lock(matrixFreeContactOptionsMutex());
+  const auto& optionsBySolver = matrixFreeContactOptionsBySolver();
+  const auto it = optionsBySolver.find(this);
+  if (it == optionsBySolver.end())
+    return MatrixFreeContactSolverOptions{};
+
+  return it->second;
 }
 
 //==============================================================================
@@ -355,8 +395,8 @@ void BoxedLcpConstraintSolver::reserveConstrainedGroupScratch(
     scratch.lcpFIndex.reserve(n);
   }
 
-  if (mMatrixFreeContactSolverOptions.mEnabled
-      && n >= mMatrixFreeContactSolverOptions.mMinRows) {
+  const auto matrixFreeOptions = getMatrixFreeContactSolverOptions();
+  if (matrixFreeOptions.mEnabled && n >= matrixFreeOptions.mMinRows) {
     reserveMatrixFreeContactScratch(scratch, numConstraints, n);
   }
 
@@ -368,7 +408,7 @@ void BoxedLcpConstraintSolver::reserveConstrainedGroupScratch(
 bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
     ConstrainedGroup& group, bool profileRecording)
 {
-  const auto& options = mMatrixFreeContactSolverOptions;
+  const auto options = getMatrixFreeContactSolverOptions();
   if (!options.mEnabled)
     return false;
 

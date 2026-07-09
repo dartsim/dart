@@ -105,6 +105,9 @@ public:
       BoxedLcpSolverPtr boxedLcpSolver,
       BoxedLcpSolverPtr secondaryBoxedLcpSolver);
 
+  /// Destructor.
+  ~BoxedLcpConstraintSolver() override;
+
   /// Sets boxed LCP (BLCP) solver
   ///
   /// \param[in] lcpSolver The primary boxed LCP solver. When nullptr is
@@ -126,8 +129,7 @@ public:
       const MatrixFreeContactSolverOptions& options);
 
   /// Returns options for the opt-in matrix-free contact solver path.
-  const MatrixFreeContactSolverOptions& getMatrixFreeContactSolverOptions()
-      const;
+  MatrixFreeContactSolverOptions getMatrixFreeContactSolverOptions() const;
 
   // Documentation inherited.
   void setFromOtherConstraintSolver(const ConstraintSolver& other) override;
@@ -194,9 +196,6 @@ protected:
 
   /// Cache data for boxed LCP formulation
   Eigen::VectorXi mOffset;
-
-  /// Options for the opt-in matrix-free contact-only solve path.
-  MatrixFreeContactSolverOptions mMatrixFreeContactSolverOptions;
 
 private:
   /// Try the opt-in matrix-free contact solver. Returns false when the group
