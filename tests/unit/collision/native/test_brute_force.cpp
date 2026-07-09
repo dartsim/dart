@@ -232,6 +232,26 @@ TEST(BruteForceBroadPhase, UpdateMissingIdDoesNotInsert)
   EXPECT_TRUE(bp.queryPairs().empty());
 }
 
+TEST(BruteForceBroadPhase, UpdateRangeHandlesOutOfOrderIds)
+{
+  BruteForceBroadPhase bp;
+
+  bp.add(0, makeAabb(0, 1));
+  bp.add(2, makeAabb(10, 11));
+  bp.add(1, makeAabb(20, 21));
+
+  const std::array<std::size_t, 3> ids{{2, 0, 1}};
+  const std::array<Aabb, 3> aabbs{
+      {makeAabb(10, 11), makeAabb(0, 1), makeAabb(0.25, 0.75)}};
+
+  bp.updateRange(ids, aabbs);
+
+  const auto pairs = bp.queryPairs();
+  ASSERT_EQ(pairs.size(), 1);
+  EXPECT_EQ(pairs[0].first, 0);
+  EXPECT_EQ(pairs[0].second, 1);
+}
+
 TEST(BruteForceBroadPhase, Clear)
 {
   BruteForceBroadPhase bp;
