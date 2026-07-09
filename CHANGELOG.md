@@ -251,6 +251,11 @@
     comparing native and FCL VoxelGrid collision queries:
     [#3358](https://github.com/dartsim/dart/pull/3358)
 
+  * Add opt-in DART-native persistent contact manifolds and PGS-compatible
+    cached contact impulse seeding for native-detector contacts, preserving the
+    FCL default detector while reducing repeated native contact reconstruction:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Fix FCL primitive contact normal orientation and switch default FCL primitive
     handling to `PRIMITIVE` for `FCLCollisionDetector`, the default constraint
     solver, and SKEL parser fallback paths. Users needing legacy mesh
