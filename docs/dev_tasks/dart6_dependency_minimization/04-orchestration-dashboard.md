@@ -12,7 +12,7 @@
 >   names (a project convention; see the naming note in
 >   `02-default-environment-split.md`).
 >
-> _Last updated: 2026-07-08._
+> _Last updated: 2026-07-09._
 
 ## Lanes & owners
 
@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), and phase 3 D1/D2 (#3352, #3355) merged; phase 3 D3 active on `feature/native-voxelgrid-compound` |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), and phase 3 D1-D3 (#3352, #3355, #3358) merged; phase 3 D4 active on `feature/native-ccd` |
 | **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet **#3263 merged** (tracks the native-collision port as its WS-F lane, external owner) |
 
 ## PR tracker
@@ -98,6 +98,11 @@
   normalization (merged 2026-07-08).
 - **#3355** phase-3 D2 native detector raycast adapter and native-vs-Bullet
   raycast benchmarks (merged 2026-07-08).
+- **#3357** DART 6 autonomous AI workflow rename to `dart-ultrawork` (merged
+  2026-07-09).
+- **#3358** phase-3 D3 native `VoxelGridShape`/octree replacement via compound
+  voxel boxes and compound collision/distance/raycast routing (merged
+  2026-07-09).
 - **#3283** main-branch dual for the native sphere-sphere binary-check fix
   (merged 2026-07-07).
 
@@ -112,16 +117,16 @@
   **#3239** release-branch AI enforcement stack · **#3245** MSVC SIMD fix ·
   **#3233** release CI concurrency fix.
 
-### 🔄 Open — monitoring (checked 2026-07-08)
+### 🔄 Open — monitoring (checked 2026-07-09)
 
-- **Phase 3 D3** `feature/native-voxelgrid-compound` — active local slice for
-  native `VoxelGridShape`/octree replacement via compound voxel boxes. Keep it
-  one PR to reduce CI overhead.
+- **Phase 3 D4** `feature/native-ccd` — active local slice for native CCD
+  engine support (rigid sphere/capsule casts, primitive point-triangle/edge-edge
+  CCD, and shape+transform dispatcher entry points). Keep it one PR to reduce
+  CI overhead.
 - **#3353** is open on `release-6.20` for the separate performance-generalization
   plan parking lane.
-- **#3357** is a draft docs/workflow PR on `release-6.20`.
 - The earlier monitoring queue has landed: #3283, #3317, #3319, #3321, #3322,
-  #3324, and #3325 are merged. The perf lane's WP-PG.01 baseline packet
+  #3324, #3325, #3357, and #3358 are merged. The perf lane's WP-PG.01 baseline packet
   **#3263** also merged.
 
 Related remote heads still visible: `feature/native-occupancy-grid`,
@@ -152,11 +157,10 @@ before treating it as an open/active PR.)_
 - **Phase 2 status:** P1-P10 are merged: broadphase, dispatcher, adapter bridge,
   `"native"` registration, sphere/box/capsule/convex/cylinder/mesh/plane
   coverage, distance helpers, mixed-scene parity, and associated parity/
-  performance tests. **Phase 3 D1/D2 are merged (#3352/#3355):** native detector
-  distance and raycast adapter wiring against the FCL/Bullet incumbents, bundled
-  with DART 6-style native source/header basenames to avoid another cleanup PR.
-  **Current slice is phase 3 D3:** native VoxelGrid/octree replacement via
-  compound voxel boxes and compound collision routing.
+  performance tests. **Phase 3 D1-D3 are merged (#3352/#3355/#3358):** native
+  detector distance, raycast, and VoxelGrid/compound wiring against the FCL/
+  Bullet incumbents and prior DART 6 support gaps. **Current slice is phase 3
+  D4:** native CCD engine support.
 - **Default flip:** still late-phase only. Do not flip defaults until `03`'s full
   A/B packet and gz gate pass.
 - _Hold each follow-up to `03`'s bar: gz-compat (`pixi run -e gazebo test-gz`),
@@ -168,8 +172,8 @@ before treating it as an open/active PR.)_
 
 1. **Base / conflict status**:
    - Current planning baseline: `origin/release-6.20` =
-     `e3f7f67211e65d88d16834f331bc40b1f0edaead`; `origin/main` =
-     `c6b5152e777ec1b4607b61a97a82f0d588dfb60f`.
+     `e2e03ffe8ee99cedda2fcda051f6eb30dc102363`; `origin/main` =
+     `a70fc2ed5cb7c3a4c44759ec222ce0338b8507f54`.
    - Open PRs routinely fall behind as the base advances; a maintainer merge-up
      clears it. Exact behind-counts aren't tracked here (too volatile).
    - All remote mutations are owned by the maintainer.
@@ -183,11 +187,12 @@ before treating it as an open/active PR.)_
    Windows `Install`-step and coverage `Build with coverage` failures
    reproduced on base pushes, and FreeBSD ssh exit-8 / runner `Setup pixi`
    failures are infra flakes that clear on re-run.
-4. **Native-collision lane: plan before port.** The #3056 performance stack is
-   useful evidence, but the DART 7 native port/default-flip is still unstarted
-   on DART 6.20. Do not treat `feature/native-occupancy-grid` or
-   `task/native-collision-performance-exec` as release-branch PRs unless a live
-   PR exists and is based on `release-6.20`.
+4. **Native-collision lane: stay inside the active phase.** The #3056
+   performance stack is useful evidence, but the DART 7 native default flip is
+   still a later phase. Phase 3 capability parity is active; do not treat
+   `feature/native-occupancy-grid` or `task/native-collision-performance-exec`
+   as release-branch PRs unless a live PR exists and is based on
+   `release-6.20`.
 
 ## Effort-level status
 
@@ -206,11 +211,12 @@ before treating it as an open/active PR.)_
 - **Just landed (2026-06-22):** legacy `dart/integration` dead-code removal (#3122);
   native-collision **#3123** (primitive plane contacts + broadphase pruning) — first
   piece of the native collision port.
-- **Open queue (2026-07-08):** no open native-collision release PRs remain after
-  #3355. Phase 3 D3 is active locally on `feature/native-voxelgrid-compound`; the
-  former #3263/#3271/#3281/#3302/#3303/#3306/#3318/#3319, plus
-  #3321/#3322/#3324/#3325/#3343/#3350/#3352/#3355 lane milestones, main-branch
-  dual #3283, and MSVC policy #3348 are merged.
+- **Open queue (2026-07-09):** no open native-collision release PRs remain after
+  #3358. Phase 3 D4 is active locally on `feature/native-ccd`; the former
+  #3263/#3271/#3281/#3302/#3303/#3306/#3318/#3319, plus
+  #3321/#3322/#3324/#3325/#3343/#3350/#3352/#3355/#3358 lane milestones,
+  main-branch dual #3283, workflow rename #3357, and MSVC policy #3348 are
+  merged.
 - **Largest remaining win:** native-collision port → makes FCL/Bullet/ODE
   optional and eventually drops `fcl` from core. The DART 7 native engine is
   only partially ported to DART 6.20; default-flip is still a late-phase

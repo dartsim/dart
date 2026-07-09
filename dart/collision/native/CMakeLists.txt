@@ -30,12 +30,14 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/CapsuleBox.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/CapsuleCapsule.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/CapsuleSphere.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Ccd.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/ConvexConvex.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/CylinderCollision.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Distance.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/MeshMesh.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/PlaneSphere.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Raycast.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/PrimitiveCcd.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/SphereBox.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/SphereSphere.hpp
 )
@@ -88,12 +90,14 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/CapsuleBox.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/CapsuleCapsule.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/CapsuleSphere.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Ccd.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/ConvexConvex.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/CylinderCollision.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Distance.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/MeshMesh.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/PlaneSphere.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Raycast.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/PrimitiveCcd.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/SphereBox.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/SphereSphere.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/BruteForce.cpp

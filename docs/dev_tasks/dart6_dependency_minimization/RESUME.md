@@ -70,17 +70,20 @@ scope-diff-guarded.
   **#3352** — **merged**.
 - **D2** (native detector raycast adapter + native-vs-Bullet raycast
   benchmarks): **#3355** — **merged**.
+- **D3** (native VoxelGrid/compound support): **#3358** — **merged**.
 
-**Next: Phase 3 D3 — native VoxelGrid/compound support** on
-`feature/native-voxelgrid-compound`. Keep this as one PR: convert occupied
-`VoxelGridShape` octree leaves into native compound-box children, route compound
-collision through the existing narrowphase child pairs, and cover collision,
-distance/raycast, and shape-version refresh behavior. Keep the native detector
-opt-in only. **Do not** add a `CollisionDetectorType::Native` enum or touch
-`World`/`ConstraintSolver`/`WorldConfig`; FCL remains the default until phase 6.
+**Next: Phase 3 D4 — native CCD support** on `feature/native-ccd`. Keep this
+as one PR: port DART 7's rigid sphere/capsule casts and primitive
+point-triangle/edge-edge CCD into `dart/collision/native/narrow_phase/` using
+DART 6 PascalCase file names, expose shape+transform
+`NarrowPhase::sphereCast` and `capsuleCast` entry points, and cover the
+support matrix plus compound-target earliest-hit behavior. Keep the native
+detector opt-in only. **Do not** add a `CollisionDetectorType::Native` enum or
+touch `World`/`ConstraintSolver`/`WorldConfig`; FCL remains the default until
+phase 6.
 
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
-PRs, worktrees, gotchas, and exact Phase 3 D3 next steps).
+PRs, worktrees, gotchas, and exact Phase 3 D4 next steps).
 
 ## Standing constraints
 
