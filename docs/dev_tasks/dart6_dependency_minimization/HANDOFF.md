@@ -26,8 +26,8 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
 | 0 | Baseline evidence packet (incumbent A/B envelope + default-flip verdict) | ✅ merged (#3271) |
 | 1 | Native math core (Aabb/Gjk/Mpr/BoxBox/SphereSphere/shapes/Span shim) internal-only | ✅ merged (#3281) |
 | 2 | DART 6 detector adapter over the native core (bridge, sliced P1–P9 + P10 coverage) | ✅ complete (#3350) |
-| 3 | Capability parity (distance→FCL, raycast→Bullet, CCD, manifolds, voxel) | 🔄 **in progress** — see §4 |
-| 4 | Evidence-driven performance optimization (broadphase, SIMD, manifold reuse) | ⬜ not started |
+| 3 | Capability parity (distance→FCL, raycast→Bullet, CCD, manifolds, voxel) | ✅ complete (#3360) |
+| 4 | Evidence-driven performance optimization (broadphase, SIMD, manifold reuse) | 🔄 **active** — see §4 |
 | 5 | Bullet/ODE/FCL facade decision (must keep gz subclassing) | ⬜ not started |
 | 6 | Default flip in both `ConstraintSolver` ctors (point of no return) | ⬜ not started |
 | 7 | FCL decoupling from core (the dependency win) + retire this task folder | ⬜ not started |
@@ -66,11 +66,13 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
 - **#3359** phase-3 **D4**: native CCD engine support for rigid sphere/capsule
   casts, primitive point-triangle/edge-edge CCD, shape+transform dispatcher
   entry points, and compound-target earliest-hit selection.
+- **#3360** phase-3 **D5**: native persistent manifold cache, contact reduction,
+  cache refresh/removal, and native cached-impulse seed/write-back plumbing.
 
-`origin/release-6.20` tip at this refresh: `1a33843125d` (moves as the
+`origin/release-6.20` tip at this refresh: `5ee4095fd52` (moves as the
 maintainer merges; **always re-fetch before branching/capturing**).
 
-## 4. Phase 2 complete; Phase 3 D5 manifold cache active
+## 4. Phases 2 and 3 complete; Phase 4 performance active
 
 Bridge design (see `07` §0–§1): **bypass DART 7's EnTT `CollisionWorld`**; the
 adapter (`NativeCollisionDetector/Group/Object` + `NativeShapeConversion`)
@@ -94,37 +96,37 @@ reuses DART 6's existing `shared_ptr`-based `CollisionObjectManager`, driving
 | **D2** | DART 6 `NativeCollisionDetector::raycast()` adapter + native-vs-Bullet raycast benchmarks | ✅ **merged (#3355)** |
 | **D3** | `VoxelGridShape`/octree replacement via native compound boxes + compound collision/distance/raycast recursion | ✅ **merged (#3358)** |
 | **D4** | Native CCD engine: rigid sphere/capsule casts, primitive point-triangle/edge-edge CCD, and shape+transform dispatcher support | ✅ **merged (#3359)** |
-| **D5** | Persistent manifold cache and manifold reuse/reduction follow-up | 🔄 **active local branch** `feature/native-manifold-cache` |
+| **D5** | Persistent manifold cache, manifold reduction/reuse, and solver cached-impulse seed/write-back | ✅ **merged (#3360)** |
 
-### Exact next step: finish Phase 3 D5 persistent manifold cache
+### Exact next step: execute Phase 4 measured optimization
 
-1. Continue with the **Phase 3 D5** branch `feature/native-manifold-cache`,
-   based on `origin/release-6.20` at or after `1a33843125d`.
-2. Keep it as one PR: port DART 7's persistent manifold cache with DART 6
-   PascalCase file names, wire native detector cached-impulse reuse, and seed/
-   write back cached impulses through `ContactConstraint` for solvers that
-   honor `ConstraintInfo::x` initial guesses.
-3. Cover cache matching/reduction/refresh, native detector cached-impulse reuse
-   for same-group and cross-group contacts, and solver cached-impulse
-   write-back.
+1. Continue with the **Phase 4** branch `feature/native-phase4-performance`,
+   based on `origin/release-6.20` at or after `5ee4095fd52`.
+2. Keep the next PR cohesive: expose `"native"` in the durable contact-rich
+   benchmark surfaces, then optimize only measured native hot paths whose
+   before/after data justifies the code change.
+3. Candidate optimization areas are the `03` Phase 4 list: data layout,
+   scratch caches, broadphase pair pruning, manifold reuse, scene-local
+   allocation control, optional SIMD from #3229, and thread-safe contact
+   aggregation. Do not mix in phase-5 facade decisions or phase-6 defaults.
 4. Keep FCL as the default detector; do not touch `World`,
    `ConstraintSolver` detector defaults, `WorldConfig`, or dependency/package
    metadata in this slice.
-5. Gates for **every** native-collision capability PR:
+5. Gates for **every** native-collision performance PR:
    Release build + **explicit Debug build** (`pixi run build` is Release-only);
    **run** the tests with `ctest --test-dir build/default/cpp/Release -R
    UNIT_collision_native --output-on-failure` (`pixi run test-all` only *builds*);
    full `pixi run check-lint`; contact-rich benchmark comparison evidence;
    `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz` (199 + 4 + 1); portability
-   `rg 'entt|std::span'` on new files → empty. The D5 scope necessarily also
-   touches `dart/constraint/ContactConstraint.cpp` for native cached-impulse
-   seed/write-back; keep any further scope expansion out. Preserve the public
-   `dart::collision::Contact` layout on this release branch.
+   `rg 'entt|std::span'` on new files → empty. Each performance PR must report
+   parent-vs-PR and native-vs-incumbent rows in the style of #3307. Preserve the
+   public `dart::collision::Contact` layout on this release branch.
 
 ## 5. Open PRs / loose ends
 
-- **Phase 3 D5 persistent manifold cache** — active on
-  `feature/native-manifold-cache` as one PR-sized slice to minimize CI overhead.
+- **Phase 4 native performance** — active on
+  `feature/native-phase4-performance` as a cohesive benchmark/optimization
+  slice to minimize CI overhead.
 - **#3353** is merged on `release-6.20` for the separate
   performance-generalization plan parking lane.
 - **#3357** is merged; it renamed the DART 6 autonomous AI workflow to
