@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), and phase 3 (#3352, #3355, #3358, #3359, #3360) merged; phase 4 active on `feature/native-phase4-performance` |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), and phase 3 (#3352, #3355, #3358, #3359, #3360) merged; phase 4 active on `feature/native-phase4-solver-manifolds` |
 | **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet **#3263 merged** (tracks the native-collision port as its WS-F lane, external owner) |
 
 ## PR tracker
@@ -122,10 +122,11 @@
 
 ### 🔄 Open — monitoring (checked 2026-07-09)
 
-- **Phase 4** `feature/native-phase4-performance` — active local slice for
-  native contact-rich benchmark surfacing and measured native hot-path
-  optimization. Keep it cohesive to reduce CI overhead, and require
-  parent-vs-PR plus detector-vs-detector performance tables in the PR report.
+- **Phase 4** `feature/native-phase4-solver-manifolds` — active local slice for
+  solver-facing native manifold contact reduction. Local dashboard evidence on
+  the 120-object contact-container row improves native from 2268.942 ms to
+  1118.032 ms while reducing contacts from 282 to 251; the PR report must carry
+  the full parent-vs-PR and detector-vs-detector tables.
 - **#3353** is merged on `release-6.20` for the separate
   performance-generalization plan parking lane.
 - The earlier monitoring queue has landed: #3283, #3317, #3319, #3321, #3322,
@@ -176,7 +177,7 @@ before treating it as an open/active PR.)_
 
 1. **Base / conflict status**:
    - Current planning baseline: `origin/release-6.20` =
-     `5ee4095fd52d0346b8bc634c5b349050649c2137`; `origin/main` =
+     `43e4196389863f7405cd81f4ab501b45f02ae479`; `origin/main` =
      `a70fc2ed5cb7ea40f72dce68b7d374583ab7feee`.
    - Open PRs routinely fall behind as the base advances; a maintainer merge-up
      clears it. Exact behind-counts aren't tracked here (too volatile).
@@ -216,7 +217,8 @@ before treating it as an open/active PR.)_
   native-collision **#3123** (primitive plane contacts + broadphase pruning) — first
   piece of the native collision port.
 - **Open queue (2026-07-09):** no open native-collision release PRs remain after
-  #3360. Phase 4 is active locally on `feature/native-phase4-performance`; the former
+  #3360. Phase 4 is active locally on
+  `feature/native-phase4-solver-manifolds`; the former
   #3263/#3271/#3281/#3302/#3303/#3306/#3318/#3319, plus
   #3321/#3322/#3324/#3325/#3343/#3350/#3352/#3355/#3358/#3359/#3360 lane
   milestones, main-branch dual #3283, workflow rename #3357, and MSVC policy
