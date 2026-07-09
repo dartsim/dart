@@ -46,9 +46,13 @@
 
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <mutex>
+#include <typeinfo>
+#include <unordered_map>
 #include <vector>
 
 #include <cassert>
@@ -63,6 +67,34 @@ constexpr std::size_t kInlineConstraintCount = 8;
 constexpr std::size_t kInlineLcpVectorSize = 12;
 constexpr std::size_t kInlineLcpMatrixSize = 192;
 
+struct MatrixFreeContactBodyScratch
+{
+  bool identityInertia = false;
+  Eigen::LDLT<Eigen::Matrix6d> inertiaDecomposition;
+  Eigen::Vector6d velocityChange = Eigen::Vector6d::Zero();
+
+  Eigen::Vector6d solve(const Eigen::Vector6d& impulse) const
+  {
+    if (identityInertia)
+      return impulse;
+
+    return inertiaDecomposition.solve(impulse);
+  }
+};
+
+struct MatrixFreeContactRow
+{
+  std::array<int, 2> bodyIndices{{-1, -1}};
+  std::array<Eigen::Vector6d, 2> spatialNormals;
+  std::array<Eigen::Vector6d, 2> unitVelocityChanges;
+  double bodyDiagonal = 0.0;
+  double diagonal = 0.0;
+  double b = 0.0;
+  double lo = 0.0;
+  double hi = 0.0;
+  int fIndex = -1;
+};
+
 struct BoxedLcpThreadScratch
 {
   std::vector<ConstraintBase*> constraintPtrStorage;
@@ -75,6 +107,19 @@ struct BoxedLcpThreadScratch
   std::vector<double> lcpLo;
   std::vector<double> lcpHi;
   std::vector<int> lcpFIndex;
+
+  std::vector<ContactConstraint*> matrixFreeContacts;
+  std::vector<std::size_t> matrixFreeOffsets;
+  std::vector<MatrixFreeContactRow> matrixFreeRows;
+  std::vector<double> matrixFreeX;
+  std::vector<double> matrixFreeW;
+  std::vector<double> matrixFreeLo;
+  std::vector<double> matrixFreeHi;
+  std::vector<double> matrixFreeB;
+  std::vector<int> matrixFreeFIndex;
+  std::vector<dynamics::BodyNode*> matrixFreeBodyLookupKeys;
+  std::vector<std::size_t> matrixFreeBodyLookupValues;
+  std::vector<MatrixFreeContactBodyScratch> matrixFreeBodies;
 };
 
 BoxedLcpThreadScratch& boxedLcpThreadScratch()
@@ -100,6 +145,92 @@ void reserveBoxedLcpSolverScratch(
   auto pgsSolver = std::dynamic_pointer_cast<PgsBoxedLcpSolver>(solver);
   if (pgsSolver)
     pgsSolver->reserve(n);
+}
+
+void reserveMatrixFreeContactScratch(
+    BoxedLcpThreadScratch& scratch, std::size_t numConstraints, std::size_t n)
+{
+  scratch.matrixFreeContacts.reserve(numConstraints);
+  scratch.matrixFreeOffsets.reserve(numConstraints);
+  scratch.matrixFreeRows.reserve(n);
+  scratch.matrixFreeX.reserve(n);
+  scratch.matrixFreeW.reserve(n);
+  scratch.matrixFreeLo.reserve(n);
+  scratch.matrixFreeHi.reserve(n);
+  scratch.matrixFreeB.reserve(n);
+  scratch.matrixFreeFIndex.reserve(n);
+
+  const std::size_t maxReactiveBodies = std::max(n, 2u * numConstraints);
+  std::size_t bodyLookupCapacity = 1u;
+  while (bodyLookupCapacity < 2u * maxReactiveBodies)
+    bodyLookupCapacity <<= 1u;
+
+  if (scratch.matrixFreeBodyLookupKeys.size() < bodyLookupCapacity) {
+    scratch.matrixFreeBodyLookupKeys.resize(bodyLookupCapacity, nullptr);
+    scratch.matrixFreeBodyLookupValues.resize(bodyLookupCapacity, 0u);
+  }
+  scratch.matrixFreeBodies.reserve(maxReactiveBodies);
+}
+
+using MatrixFreeContactSolverOptions
+    = BoxedLcpConstraintSolver::MatrixFreeContactSolverOptions;
+
+std::mutex& matrixFreeContactOptionsMutex()
+{
+  static auto* mutex = new std::mutex;
+  return *mutex;
+}
+
+std::unordered_map<
+    const BoxedLcpConstraintSolver*,
+    MatrixFreeContactSolverOptions>&
+matrixFreeContactOptionsBySolver()
+{
+  static auto* options = new std::unordered_map<
+      const BoxedLcpConstraintSolver*,
+      MatrixFreeContactSolverOptions>;
+  return *options;
+}
+
+MatrixFreeContactSolverOptions sanitizeMatrixFreeContactOptions(
+    MatrixFreeContactSolverOptions options)
+{
+  if (options.mMaxIterations < 1)
+    options.mMaxIterations = 1;
+  if (!std::isfinite(options.mSor) || options.mSor <= 0.0)
+    options.mSor = 1.0;
+  if (!std::isfinite(options.mDeltaTolerance)
+      || options.mDeltaTolerance < 0.0) {
+    options.mDeltaTolerance = 0.0;
+  }
+  if (!std::isfinite(options.mRelativeDeltaTolerance)
+      || options.mRelativeDeltaTolerance < 0.0) {
+    options.mRelativeDeltaTolerance = 0.0;
+  }
+  if (!std::isfinite(options.mEpsilonForDivision)
+      || options.mEpsilonForDivision <= 0.0) {
+    options.mEpsilonForDivision = 1e-9;
+  }
+  return options;
+}
+
+//==============================================================================
+template <typename ExactT, typename DynamicT>
+bool isExactDynamicType(const DynamicT* object)
+{
+  if (object == nullptr)
+    return false;
+
+#if defined(__clang__)
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wpotentially-evaluated-expression"
+#endif
+  const bool isExact = typeid(*object) == typeid(ExactT);
+#if defined(__clang__)
+  #pragma clang diagnostic pop
+#endif
+
+  return isExact;
 }
 
 } // namespace
@@ -149,6 +280,13 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
 }
 
 //==============================================================================
+BoxedLcpConstraintSolver::~BoxedLcpConstraintSolver()
+{
+  std::lock_guard<std::mutex> lock(matrixFreeContactOptionsMutex());
+  matrixFreeContactOptionsBySolver().erase(this);
+}
+
+//==============================================================================
 void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
 {
   if (!lcpSolver) {
@@ -194,6 +332,43 @@ ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getSecondaryBoxedLcpSolver()
 }
 
 //==============================================================================
+void BoxedLcpConstraintSolver::setMatrixFreeContactSolverOptions(
+    const MatrixFreeContactSolverOptions& options)
+{
+  const auto sanitized = sanitizeMatrixFreeContactOptions(options);
+  std::lock_guard<std::mutex> lock(matrixFreeContactOptionsMutex());
+  matrixFreeContactOptionsBySolver()[this] = sanitized;
+}
+
+//==============================================================================
+BoxedLcpConstraintSolver::MatrixFreeContactSolverOptions
+BoxedLcpConstraintSolver::getMatrixFreeContactSolverOptions() const
+{
+  std::lock_guard<std::mutex> lock(matrixFreeContactOptionsMutex());
+  const auto& optionsBySolver = matrixFreeContactOptionsBySolver();
+  const auto it = optionsBySolver.find(this);
+  if (it == optionsBySolver.end())
+    return MatrixFreeContactSolverOptions{};
+
+  return it->second;
+}
+
+//==============================================================================
+void BoxedLcpConstraintSolver::setFromOtherConstraintSolver(
+    const ConstraintSolver& other)
+{
+  ConstraintSolver::setFromOtherConstraintSolver(other);
+
+  if (const auto* boxed
+      = dynamic_cast<const BoxedLcpConstraintSolver*>(&other)) {
+    setMatrixFreeContactSolverOptions(
+        boxed->getMatrixFreeContactSolverOptions());
+  } else {
+    setMatrixFreeContactSolverOptions(MatrixFreeContactSolverOptions{});
+  }
+}
+
+//==============================================================================
 void BoxedLcpConstraintSolver::reserveConstrainedGroupScratch(
     const ConstrainedGroup& group)
 {
@@ -229,8 +404,339 @@ void BoxedLcpConstraintSolver::reserveConstrainedGroupScratch(
     scratch.lcpFIndex.reserve(n);
   }
 
+  const auto matrixFreeOptions = getMatrixFreeContactSolverOptions();
+  if (matrixFreeOptions.mEnabled && n >= matrixFreeOptions.mMinRows) {
+    reserveMatrixFreeContactScratch(scratch, numConstraints, n);
+  }
+
   reserveBoxedLcpSolverScratch(mBoxedLcpSolver, n);
   reserveBoxedLcpSolverScratch(mSecondaryBoxedLcpSolver, n);
+}
+
+//==============================================================================
+bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
+    ConstrainedGroup& group, bool profileRecording)
+{
+  const auto options = getMatrixFreeContactSolverOptions();
+  if (!options.mEnabled)
+    return false;
+
+  const auto& constraints = group.mConstraints;
+  const std::size_t numConstraints = constraints.size();
+  if (numConstraints == 0u)
+    return false;
+
+  std::size_t n = 0u;
+  for (const auto& constraint : constraints)
+    n += constraint->getDimension();
+
+  if (n < options.mMinRows)
+    return false;
+
+  DART_PROFILE_SCOPED_IF_N(
+      profileRecording, "BoxedLcpConstraintSolver::matrixFreeContactSolve");
+
+  const auto isSupportedSingleFreeBodySide
+      = [](const dynamics::BodyNode* body, const dynamics::Skeleton* skel) {
+          if (body == nullptr || skel == nullptr)
+            return false;
+
+          const auto* parentJoint = body->getParentJoint();
+          const auto hasSupportedActuatorTypes
+              = [](const dynamics::Joint* joint) {
+                  for (std::size_t i = 0u; i < joint->getNumDofs(); ++i) {
+                    const auto actuatorType = joint->getActuatorType(i);
+                    if (actuatorType != dynamics::Joint::FORCE
+                        && actuatorType != dynamics::Joint::PASSIVE) {
+                      return false;
+                    }
+                  }
+                  return true;
+                };
+
+          return skel->isMobile() && skel->getNumBodyNodes() == 1u
+                 && skel->getNumDofs() == 6u
+                 && body->getParentBodyNode() == nullptr
+                 && body->getNumChildBodyNodes() == 0u
+                 && skel->getCachedRootFreeJoint() != nullptr
+                 && parentJoint != nullptr
+                 && hasSupportedActuatorTypes(parentJoint);
+        };
+
+  auto& scratch = boxedLcpThreadScratch();
+  reserveMatrixFreeContactScratch(scratch, numConstraints, n);
+
+  auto& contacts = scratch.matrixFreeContacts;
+  auto& offsets = scratch.matrixFreeOffsets;
+  auto& rows = scratch.matrixFreeRows;
+  auto& x = scratch.matrixFreeX;
+  auto& w = scratch.matrixFreeW;
+  auto& lo = scratch.matrixFreeLo;
+  auto& hi = scratch.matrixFreeHi;
+  auto& b = scratch.matrixFreeB;
+  auto& fIndex = scratch.matrixFreeFIndex;
+  auto& bodyLookupKeys = scratch.matrixFreeBodyLookupKeys;
+  auto& bodyLookupValues = scratch.matrixFreeBodyLookupValues;
+  auto& bodies = scratch.matrixFreeBodies;
+
+  contacts.clear();
+  offsets.clear();
+  rows.clear();
+  bodies.clear();
+  contacts.reserve(numConstraints);
+  offsets.reserve(numConstraints);
+  rows.reserve(n);
+
+  x.resize(n);
+  w.resize(n);
+  lo.resize(n);
+  hi.resize(n);
+  b.resize(n);
+  fIndex.resize(n);
+  std::fill(x.begin(), x.end(), 0.0);
+  std::fill(w.begin(), w.end(), 0.0);
+  std::fill(fIndex.begin(), fIndex.end(), -1);
+  std::fill(bodyLookupKeys.begin(), bodyLookupKeys.end(), nullptr);
+  const std::size_t bodyLookupMask = bodyLookupKeys.size() - 1u;
+
+  const auto findOrAddBody = [&](dynamics::BodyNode* body) -> int {
+    const std::size_t bodyHash = std::hash<dynamics::BodyNode*>{}(body);
+    std::size_t lookupIndex = bodyHash & bodyLookupMask;
+    while (bodyLookupKeys[lookupIndex] != nullptr) {
+      if (bodyLookupKeys[lookupIndex] == body)
+        return static_cast<int>(bodyLookupValues[lookupIndex]);
+
+      lookupIndex = (lookupIndex + 1u) & bodyLookupMask;
+    }
+
+    MatrixFreeContactBodyScratch bodyScratch;
+    const Eigen::Matrix6d& articulatedInertia = body->getArticulatedInertia();
+    static const Eigen::Matrix6d identityInertia = Eigen::Matrix6d::Identity();
+    bodyScratch.identityInertia
+        = articulatedInertia.cwiseEqual(identityInertia).all();
+    if (!bodyScratch.identityInertia) {
+      bodyScratch.inertiaDecomposition.compute(articulatedInertia);
+      if (bodyScratch.inertiaDecomposition.info() != Eigen::Success)
+        return -1;
+    }
+
+    const std::size_t index = bodies.size();
+    bodyLookupKeys[lookupIndex] = body;
+    bodyLookupValues[lookupIndex] = index;
+    bodies.push_back(std::move(bodyScratch));
+    return static_cast<int>(index);
+  };
+
+  ConstraintInfo constInfo;
+  constInfo.invTimeStep = 1.0 / mTimeStep;
+
+  std::size_t offset = 0u;
+  for (const auto& constraintPtr : constraints) {
+    if (!isExactDynamicType<ContactConstraint>(constraintPtr.get()))
+      return false;
+
+    auto* contact = static_cast<ContactConstraint*>(constraintPtr.get());
+    if (contact->mIsSelfCollision)
+      return false;
+
+    const std::size_t dim = contact->getDimension();
+    if (dim == 0u || (dim != 1u && dim != 3u))
+      return false;
+
+    const bool hasReactiveA = contact->mIsReactiveA;
+    const bool hasReactiveB = contact->mIsReactiveB;
+    if (!hasReactiveA && !hasReactiveB)
+      return false;
+
+    if (hasReactiveA
+        && !isSupportedSingleFreeBodySide(
+            contact->mBodyNodeA, contact->mSkeletonA)) {
+      return false;
+    }
+    if (hasReactiveB
+        && !isSupportedSingleFreeBodySide(
+            contact->mBodyNodeB, contact->mSkeletonB)) {
+      return false;
+    }
+
+    contacts.push_back(contact);
+    offsets.push_back(offset);
+
+    constInfo.x = x.data() + offset;
+    constInfo.lo = lo.data() + offset;
+    constInfo.hi = hi.data() + offset;
+    constInfo.b = b.data() + offset;
+    constInfo.findex = fIndex.data() + offset;
+    constInfo.w = w.data() + offset;
+    contact->getInformation(&constInfo);
+
+    for (std::size_t local = 0u; local < dim; ++local) {
+      const std::size_t rowIndex = offset + local;
+      if (fIndex[rowIndex] >= 0)
+        fIndex[rowIndex] += static_cast<int>(offset);
+
+      MatrixFreeContactRow row;
+      row.b = b[rowIndex];
+      row.lo = lo[rowIndex];
+      row.hi = hi[rowIndex];
+      row.fIndex = fIndex[rowIndex];
+
+      int side = 0;
+      if (hasReactiveA) {
+        const int bodyIndex = findOrAddBody(contact->mBodyNodeA);
+        if (bodyIndex < 0)
+          return false;
+
+        row.bodyIndices[side] = bodyIndex;
+        row.spatialNormals[side] = contact->mSpatialNormalA.col(local);
+        row.unitVelocityChanges[side]
+            = bodies[static_cast<std::size_t>(bodyIndex)].solve(
+                row.spatialNormals[side]);
+        row.bodyDiagonal
+            += row.spatialNormals[side].dot(row.unitVelocityChanges[side]);
+        ++side;
+      }
+
+      if (hasReactiveB) {
+        const int bodyIndex = findOrAddBody(contact->mBodyNodeB);
+        if (bodyIndex < 0)
+          return false;
+
+        row.bodyIndices[side] = bodyIndex;
+        row.spatialNormals[side] = contact->mSpatialNormalB.col(local);
+        row.unitVelocityChanges[side]
+            = bodies[static_cast<std::size_t>(bodyIndex)].solve(
+                row.spatialNormals[side]);
+        row.bodyDiagonal
+            += row.spatialNormals[side].dot(row.unitVelocityChanges[side]);
+      }
+
+      double extraDiagonal
+          = row.bodyDiagonal * ContactConstraint::mConstraintForceMixing;
+      if (local == 1u)
+        extraDiagonal += contact->mPrimarySlipCompliance / mTimeStep;
+      else if (local == 2u)
+        extraDiagonal += contact->mSecondarySlipCompliance / mTimeStep;
+
+      row.diagonal = row.bodyDiagonal + extraDiagonal;
+      if (!std::isfinite(row.diagonal)
+          || row.diagonal <= options.mEpsilonForDivision) {
+        row.diagonal = 0.0;
+      }
+
+      rows.push_back(row);
+    }
+
+    offset += dim;
+  }
+
+  if (rows.size() != n)
+    return false;
+
+  const auto projectVelocityChange = [&](const MatrixFreeContactRow& row) {
+    double value = 0.0;
+    for (int side = 0; side < 2; ++side) {
+      const int bodyIndex = row.bodyIndices[side];
+      if (bodyIndex < 0)
+        continue;
+
+      value += row.spatialNormals[side].dot(
+          bodies[static_cast<std::size_t>(bodyIndex)].velocityChange);
+    }
+    return value;
+  };
+
+  const auto applyDelta = [&](const MatrixFreeContactRow& row, double delta) {
+    for (int side = 0; side < 2; ++side) {
+      const int bodyIndex = row.bodyIndices[side];
+      if (bodyIndex < 0)
+        continue;
+
+      bodies[static_cast<std::size_t>(bodyIndex)].velocityChange.noalias()
+          += row.unitVelocityChanges[side] * delta;
+    }
+  };
+
+  for (std::size_t rowIndex = 0u; rowIndex < rows.size(); ++rowIndex) {
+    const double seededImpulse = x[rowIndex];
+    if (seededImpulse == 0.0)
+      continue;
+    if (!std::isfinite(seededImpulse))
+      return false;
+
+    applyDelta(rows[rowIndex], seededImpulse);
+  }
+
+  const auto clampImpulse = [&](const MatrixFreeContactRow& row, double value) {
+    double lower = row.lo;
+    double upper = row.hi;
+    if (row.fIndex >= 0) {
+      const double normalImpulse = x[static_cast<std::size_t>(row.fIndex)];
+      upper = row.hi * normalImpulse;
+      lower = -upper;
+    }
+
+    return std::max(lower, std::min(value, upper));
+  };
+
+  const double oneMinusSor = 1.0 - options.mSor;
+  int numIterations = 0;
+  bool solverConverged = false;
+  for (int iter = 0; iter < options.mMaxIterations; ++iter) {
+    bool converged = true;
+    numIterations = iter + 1;
+    for (std::size_t rowIndex = 0u; rowIndex < rows.size(); ++rowIndex) {
+      const MatrixFreeContactRow& row = rows[rowIndex];
+      if (row.diagonal <= options.mEpsilonForDivision)
+        continue;
+
+      const double oldX = x[rowIndex];
+      const double bodyAx = projectVelocityChange(row);
+      double newX = (row.b - bodyAx + row.bodyDiagonal * oldX) / row.diagonal;
+      newX = options.mSor * newX + oneMinusSor * oldX;
+      newX = clampImpulse(row, newX);
+      if (!std::isfinite(newX))
+        return false;
+
+      const double delta = newX - oldX;
+      if (delta != 0.0) {
+        x[rowIndex] = newX;
+        applyDelta(row, delta);
+      }
+
+      const double tolerance = std::max(
+          options.mDeltaTolerance,
+          options.mRelativeDeltaTolerance * std::max(1.0, std::abs(newX)));
+      if (std::abs(delta) > tolerance)
+        converged = false;
+    }
+
+    if (converged) {
+      solverConverged = true;
+      break;
+    }
+  }
+
+  DART_PROFILE_COUNTER_IF_N(
+      profileRecording, "BoxedLcpConstraintSolver::matrixFreeContactRows", n);
+  DART_PROFILE_COUNTER_IF_N(
+      profileRecording,
+      "BoxedLcpConstraintSolver::matrixFreeContactIterations",
+      numIterations);
+  DART_PROFILE_COUNTER_IF_N(
+      profileRecording,
+      "BoxedLcpConstraintSolver::matrixFreeContactConverged",
+      solverConverged ? 1u : 0u);
+
+  if (!solverConverged)
+    return false;
+
+  for (std::size_t i = 0u; i < contacts.size(); ++i) {
+    contacts[i]->applyImpulse(x.data() + offsets[i]);
+    contacts[i]->excite();
+  }
+
+  return true;
 }
 
 //==============================================================================
@@ -245,6 +751,9 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   const auto& constraints = group.mConstraints;
   const std::size_t numConstraints = constraints.size();
   if (numConstraints == 0u)
+    return;
+
+  if (solveMatrixFreeContactGroup(group, profileRecording))
     return;
 
   std::array<ConstraintBase*, kInlineConstraintCount> inlineConstraintPtrs;

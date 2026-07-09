@@ -149,6 +149,9 @@ struct Options
   bool sdfPlaneShapes = false;
   bool disableDeactivation = false;
   bool disableSecondaryLcp = false;
+  bool matrixFreeContactLcp = false;
+  std::optional<std::size_t> matrixFreeContactLcpMinRows;
+  std::optional<std::size_t> matrixFreeContactLcpIterations;
   bool sleepStateColors = false;
   bool guiStart = false;
   bool guiCaptureExerciseWidget = false;
@@ -320,6 +323,14 @@ void printUsage(const std::string& programName)
          "sleeping/deactivation.\n"
       << "  --disable-secondary-lcp   Disable the boxed-LCP fallback solver "
          "for measurement.\n"
+      << "  --matrix-free-contact-lcp Enable opt-in matrix-free contact PGS "
+         "for supported large single-free-body contact islands.\n"
+      << "  --matrix-free-contact-lcp-min-rows N\n"
+      << "                            Minimum LCP rows before using the "
+         "matrix-free contact path.\n"
+      << "  --matrix-free-contact-lcp-iterations N\n"
+      << "                            Matrix-free contact PGS iteration "
+         "count.\n"
       << "  --sleep-state-colors      In GUI mode, color mobile objects by "
          "sleep state.\n"
       << "  --gui-target-rtf N        Target GUI playback RTF; default 1.0.\n"
@@ -568,6 +579,14 @@ Options parseOptions(int argc, char* argv[])
       options.disableDeactivation = true;
     } else if (arg == "--disable-secondary-lcp") {
       options.disableSecondaryLcp = true;
+    } else if (arg == "--matrix-free-contact-lcp") {
+      options.matrixFreeContactLcp = true;
+    } else if (arg == "--matrix-free-contact-lcp-min-rows") {
+      options.matrixFreeContactLcp = true;
+      options.matrixFreeContactLcpMinRows = parseSize(needValue(arg), arg);
+    } else if (arg == "--matrix-free-contact-lcp-iterations") {
+      options.matrixFreeContactLcp = true;
+      options.matrixFreeContactLcpIterations = parseSize(needValue(arg), arg);
     } else if (arg == "--sleep-state-colors") {
       options.sleepStateColors = true;
     } else if (arg == "--gui-target-rtf") {
@@ -1557,6 +1576,29 @@ void applyOptions(
     }
   }
 
+  if (options.matrixFreeContactLcp) {
+    auto* boxedSolver
+        = dynamic_cast<dart::constraint::BoxedLcpConstraintSolver*>(
+            world->getConstraintSolver());
+    if (boxedSolver == nullptr) {
+      throw std::runtime_error(
+          "--matrix-free-contact-lcp requires BoxedLcpConstraintSolver");
+    }
+
+    auto matrixFreeOptions = boxedSolver->getMatrixFreeContactSolverOptions();
+    matrixFreeOptions.mEnabled = true;
+    if (options.matrixFreeContactLcpMinRows.has_value()) {
+      matrixFreeOptions.mMinRows = *options.matrixFreeContactLcpMinRows;
+    }
+    if (options.matrixFreeContactLcpIterations.has_value()) {
+      const std::size_t maxInt
+          = static_cast<std::size_t>(std::numeric_limits<int>::max());
+      matrixFreeOptions.mMaxIterations = static_cast<int>(
+          std::min(*options.matrixFreeContactLcpIterations, maxInt));
+    }
+    boxedSolver->setMatrixFreeContactSolverOptions(matrixFreeOptions);
+  }
+
   if (options.disableSecondaryLcp) {
     auto* boxedSolver
         = dynamic_cast<dart::constraint::BoxedLcpConstraintSolver*>(
@@ -1621,6 +1663,16 @@ void printWorldSummary(
             << dart::constraint::ConstraintSolver::
                    getAutomaticSleepingContactPenetrationTolerance()
             << " m\n";
+  if (auto* boxedSolver
+      = dynamic_cast<dart::constraint::BoxedLcpConstraintSolver*>(
+          world->getConstraintSolver())) {
+    const auto& matrixFreeOptions
+        = boxedSolver->getMatrixFreeContactSolverOptions();
+    std::cout << "  Matrix-free contact LCP: "
+              << (matrixFreeOptions.mEnabled ? "true" : "false")
+              << " (min rows " << matrixFreeOptions.mMinRows << ", iterations "
+              << matrixFreeOptions.mMaxIterations << ")\n";
+  }
   std::cout << "  World simulation threads: "
             << world->getNumSimulationThreads() << "\n";
   std::cout << "  Collision detector requested: "

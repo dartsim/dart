@@ -41,6 +41,26 @@ namespace python {
 
 void BoxedLcpConstraintSolver(py::module& m)
 {
+  using MatrixFreeContactSolverOptions
+      = constraint::BoxedLcpConstraintSolver::MatrixFreeContactSolverOptions;
+
+  ::py::class_<MatrixFreeContactSolverOptions>(
+      m, "MatrixFreeContactSolverOptions")
+      .def(::py::init<>())
+      .def_readwrite("mEnabled", &MatrixFreeContactSolverOptions::mEnabled)
+      .def_readwrite("mMinRows", &MatrixFreeContactSolverOptions::mMinRows)
+      .def_readwrite(
+          "mMaxIterations", &MatrixFreeContactSolverOptions::mMaxIterations)
+      .def_readwrite("mSor", &MatrixFreeContactSolverOptions::mSor)
+      .def_readwrite(
+          "mDeltaTolerance", &MatrixFreeContactSolverOptions::mDeltaTolerance)
+      .def_readwrite(
+          "mRelativeDeltaTolerance",
+          &MatrixFreeContactSolverOptions::mRelativeDeltaTolerance)
+      .def_readwrite(
+          "mEpsilonForDivision",
+          &MatrixFreeContactSolverOptions::mEpsilonForDivision);
+
   ::py::class_<
       constraint::BoxedLcpConstraintSolver,
       constraint::ConstraintSolver,
@@ -68,6 +88,19 @@ void BoxedLcpConstraintSolver(py::module& m)
           +[](const constraint::BoxedLcpConstraintSolver* self)
               -> constraint::ConstBoxedLcpSolverPtr {
             return self->getBoxedLcpSolver();
+          })
+      .def(
+          "setMatrixFreeContactSolverOptions",
+          +[](constraint::BoxedLcpConstraintSolver* self,
+              const MatrixFreeContactSolverOptions& options) {
+            self->setMatrixFreeContactSolverOptions(options);
+          },
+          ::py::arg("options"))
+      .def(
+          "getMatrixFreeContactSolverOptions",
+          +[](const constraint::BoxedLcpConstraintSolver* self)
+              -> MatrixFreeContactSolverOptions {
+            return self->getMatrixFreeContactSolverOptions();
           });
 }
 
