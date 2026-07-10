@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Sequence
 
@@ -135,9 +136,14 @@ def _split_focus(
         }
         if wanted & names:
             return True
-        # Render descriptors append a shape index ("body" -> "body_0").
+        # Render descriptors append a numeric shape index ("body" ->
+        # "body_0"). Require exactly that form so a focus of "marker" cannot
+        # swallow a distinct body named "marker_holder" — over-matching would
+        # put occluders into the focus set and hide real occlusion.
         return any(
-            name.startswith(f"{target}_") for name in names for target in wanted
+            re.fullmatch(rf"{re.escape(target)}_\d+", name)
+            for name in names
+            for target in wanted
         )
 
     matched = [d for d in descriptors if matches(d)]
@@ -279,8 +285,22 @@ def assess_view(
         descriptor_projected = _debug_layers.project_points(
             camera, (width, height), descriptor_corners, projection_options
         )
+        # Bodies straddling the camera plane project to unbounded boxes and
+        # signed depths; they cannot be judged for overlap, so skip them.
+        descriptor_in_front = descriptor_projected[:, 2] > 0.0
+        if not descriptor_in_front.all():
+            continue
         descriptor_box = _screen_box(descriptor_projected)
         if descriptor_box is None:
+            continue
+        # Only overlap that is actually visible can make a view ambiguous.
+        clipped_box = (
+            max(descriptor_box[0], 0.0),
+            max(descriptor_box[1], 0.0),
+            min(descriptor_box[2], float(width)),
+            min(descriptor_box[3], float(height)),
+        )
+        if clipped_box[2] <= clipped_box[0] or clipped_box[3] <= clipped_box[1]:
             continue
         depth = float(np.median(descriptor_projected[:, 2]))
         extent = float(
@@ -288,7 +308,7 @@ def assess_view(
                 descriptor_corners.max(axis=0) - descriptor_corners.min(axis=0)
             )
         )
-        boxes.append((descriptor_box, depth, extent))
+        boxes.append((clipped_box, depth, extent))
     worst_iou = 0.0
     for index, (box_a, depth_a, extent_a) in enumerate(boxes):
         for box_b, depth_b, extent_b in boxes[index + 1 :]:

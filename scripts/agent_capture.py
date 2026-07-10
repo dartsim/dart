@@ -147,7 +147,13 @@ def _encode_video(frame_dir: Path, pattern: str, out: Path, fps: int) -> bool:
         "pad=ceil(iw/2)*2:ceil(ih/2)*2",
         str(out),
     ]
-    subprocess.run(command, check=True)
+    try:
+        subprocess.run(command, check=True)
+    except subprocess.CalledProcessError as error:
+        # The frames on disk are still valid evidence; keep the capture and
+        # its sidecar instead of aborting the whole run.
+        print(f"ffmpeg encode failed ({error}); keeping frames", file=sys.stderr)
+        return False
     return True
 
 
@@ -328,6 +334,10 @@ def _reproduce_command(args: argparse.Namespace) -> str:
         )
         if args.camera_distance is not None:
             parts.append(f"--camera-distance {args.camera_distance}")
+        elif args.focus:
+            # Focus framing derives the camera from --frame-margin; without
+            # it the reproduce command would use a different distance.
+            parts.append(f"--frame-margin {args.frame_margin}")
         target = " ".join(str(v) for v in args.camera_target)
         parts.append(f"--camera-target {target}")
     if args.turntable:

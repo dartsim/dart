@@ -130,8 +130,13 @@ def capture_pbr_sweep(out_dir: Path, size: tuple[int, int]) -> dict:
     }
 
 
-def capture_fidelity_pair(out_dir: Path, size: tuple[int, int]) -> list[dict]:
-    """C2: identical scene, default vs high-fidelity offscreen renderer."""
+def capture_fidelity_pair(
+    out_dir: Path, size: tuple[int, int]
+) -> tuple[list[dict], dict, object]:
+    """C2: identical scene, default vs high-fidelity offscreen renderer.
+
+    Returns (candidate entries, diff statistics, camera used).
+    """
     gui = dart.gui
     world = dart.World()
     ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.05))

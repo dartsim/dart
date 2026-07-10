@@ -159,7 +159,24 @@ def _postprocess_public_module_stub(source: str, public_module: str) -> str:
         "look_at",
         "orbit_camera",
         "render",
+        "render_annotated",
         "world_render_frame",
+        # _debug_layers helpers attached at runtime.
+        "DEBUG_LAYERS",
+        "TrajectoryTracker",
+        "body_labels",
+        "composite_labels",
+        "contact_debug_lines",
+        "debug_scene_for_world",
+        "draw_text",
+        "project_points",
+        # _view_quality helpers attached at runtime.
+        "ViewReport",
+        "ViewpointChoice",
+        "assess_view",
+        "frame_body",
+        "frame_region",
+        "select_viewpoints",
     ]
     helper_import = (
         "from dartpy._world_render_bridge import (\n"
@@ -168,7 +185,26 @@ def _postprocess_public_module_stub(source: str, public_module: str) -> str:
         "    look_at as look_at,\n"
         "    orbit_camera as orbit_camera,\n"
         "    render as render,\n"
+        "    render_annotated as render_annotated,\n"
         "    world_render_frame as world_render_frame,\n"
+        ")\n"
+        "from dartpy._debug_layers import (\n"
+        "    DEBUG_LAYERS as DEBUG_LAYERS,\n"
+        "    TrajectoryTracker as TrajectoryTracker,\n"
+        "    body_labels as body_labels,\n"
+        "    composite_labels as composite_labels,\n"
+        "    contact_debug_lines as contact_debug_lines,\n"
+        "    debug_scene_for_world as debug_scene_for_world,\n"
+        "    draw_text as draw_text,\n"
+        "    project_points as project_points,\n"
+        ")\n"
+        "from dartpy._view_quality import (\n"
+        "    ViewReport as ViewReport,\n"
+        "    ViewpointChoice as ViewpointChoice,\n"
+        "    assess_view as assess_view,\n"
+        "    frame_body as frame_body,\n"
+        "    frame_region as frame_region,\n"
+        "    select_viewpoints as select_viewpoints,\n"
         ")\n"
     )
 

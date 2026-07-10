@@ -2,6 +2,7 @@ from __future__ import annotations
 
 __all__: list[str] = [
     "ActiveRenderableState",
+    "DEBUG_LAYERS",
     "DebugDrawOptions",
     "DebugLabelDescriptor",
     "DebugLineDescriptor",
@@ -32,16 +33,27 @@ __all__: list[str] = [
     "RenderedImage",
     "RunOptions",
     "ShapeKind",
+    "TrajectoryTracker",
+    "ViewReport",
     "ViewerLifecycleState",
+    "ViewpointChoice",
     "WorldRenderBridge",
     "add_orbit_camera_scroll",
+    "assess_view",
+    "body_labels",
     "camera_eye",
+    "composite_labels",
     "compute_axis_drag_translation",
     "compute_camera_relative_nudge",
     "compute_plane_drag_translation",
+    "contact_debug_lines",
+    "debug_scene_for_world",
     "describe_shape",
+    "draw_text",
     "extract_contact_debug_lines",
     "extract_debug_lines",
+    "frame_body",
+    "frame_region",
     "intersect_plane",
     "intersect_renderable",
     "is_docking_available",
@@ -64,13 +76,16 @@ __all__: list[str] = [
     "orbit_camera",
     "pick_nearest_renderable",
     "plan_renderable_set_update",
+    "project_points",
     "render",
+    "render_annotated",
     "request_scene_replay",
     "request_scene_switch",
     "request_single_step",
     "reset_orbit_camera_tracking",
     "run_application",
     "run_demos",
+    "select_viewpoints",
     "should_advance_simulation",
     "should_capture_frame_output",
     "should_request_screenshot",
@@ -1370,6 +1385,19 @@ def draw_text(
 ) -> None: ...
 
 class ViewReport:
+    def __init__(
+        self,
+        camera: dict[str, object],
+        size: tuple[int, int],
+        focus: list[str],
+        corner_coverage: float = ...,
+        subject_fraction: float = ...,
+        center_visible: bool = ...,
+        occlusion_fraction: float = ...,
+        ambiguity_iou: float = ...,
+        issues: list[str] = ...,
+        score: float = ...,
+    ) -> None: ...
     camera: dict[str, object]
     size: tuple[int, int]
     focus: list[str]
@@ -1386,6 +1414,9 @@ class ViewReport:
     def to_json_text(self) -> str: ...
 
 class ViewpointChoice:
+    def __init__(
+        self, camera: OrbitCamera, report: ViewReport, reason: str
+    ) -> None: ...
     camera: OrbitCamera
     report: ViewReport
     reason: str

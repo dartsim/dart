@@ -130,6 +130,113 @@ def test_gh_release_dry_run_predicts_urls_without_uploading(tmp_path: Path) -> N
     assert "UPLOAD-PLACEHOLDER" not in text
 
 
+def test_gh_release_yes_uploads_each_artifact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selection = _selection(tmp_path)
+    calls: list[list[str]] = []
+
+    class _Completed:
+        def __init__(self, returncode: int) -> None:
+            self.returncode = returncode
+            self.stdout = ""
+            self.stderr = ""
+
+    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        calls.append(list(args))
+        # First call is `release view` for a tag that does not exist yet.
+        if args[:2] == ["release", "view"]:
+            return _Completed(1)
+        return _Completed(0)
+
+    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--tag",
+            "verification-media",
+            "--yes",
+            "--environment",
+            "Linux",
+            "--out",
+            str(out),
+            "--manifest-out",
+            str(manifest_out),
+        ]
+    )
+    assert code == 0
+    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["uploaded"] is True
+    assert "note" not in manifest
+    verbs = [call[:2] for call in calls]
+    assert verbs[0] == ["release", "view"]
+    assert verbs[1] == ["release", "create"]
+    uploads = [call for call in calls if call[:2] == ["release", "upload"]]
+    assert len(uploads) == 2  # one per selected artifact
+    assert all("--clobber" in call for call in uploads)
+    assert manifest["urls"]["shot.png"] == (
+        "https://github.com/dartsim/dart/releases/download/"
+        "verification-media/shot.png"
+    )
+
+
+def test_duplicate_basenames_are_rejected(tmp_path: Path) -> None:
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    (tmp_path / "a" / "shot.png").write_bytes(b"x")
+    (tmp_path / "b" / "shot.png").write_bytes(b"y")
+    manifest = {
+        "schema_version": "dart.evidence_selection/v1",
+        "claims": [{"id": "C1", "text": "t", "covered": True}],
+        "selected": [
+            {
+                "path": "a/shot.png",
+                "kind": "still",
+                "claims": ["C1"],
+                "caption": "",
+                "observe": "",
+                "quality": 0.5,
+                "bytes": 1,
+                "sha256": "0" * 64,
+                "rationale": "r",
+            },
+            {
+                "path": "b/shot.png",
+                "kind": "still",
+                "claims": ["C1"],
+                "caption": "",
+                "observe": "",
+                "quality": 0.5,
+                "bytes": 1,
+                "sha256": "1" * 64,
+                "rationale": "r",
+            },
+        ],
+        "rejected": [],
+        "total_bytes": 2,
+        "uncovered_claims": [],
+        "pass": True,
+    }
+    selection = tmp_path / "selection.json"
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--environment",
+            "Linux",
+            "--out",
+            str(tmp_path / "x.md"),
+        ]
+    )
+    assert code == 2
+
+
 def test_gh_release_requires_repo(tmp_path: Path) -> None:
     selection = _selection(tmp_path)
     code = evidence_publish.main(

@@ -43,6 +43,18 @@ def _load_selection(path: Path) -> dict[str, Any]:
         )
     if not manifest.get("selected"):
         raise ValueError("selection manifest has no selected artifacts")
+    # Release assets are keyed by basename, so duplicates would silently
+    # clobber each other under the shared tag (and collide in placeholders).
+    basenames: dict[str, str] = {}
+    for artifact in manifest["selected"]:
+        name = Path(artifact["path"]).name
+        if name in basenames:
+            raise ValueError(
+                f"selected artifacts {basenames[name]!r} and "
+                f"{artifact['path']!r} share the basename {name!r}; rename "
+                "one before publishing"
+            )
+        basenames[name] = artifact["path"]
     return manifest
 
 

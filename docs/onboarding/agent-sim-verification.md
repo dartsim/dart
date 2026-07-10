@@ -54,7 +54,8 @@ dynamic failures (explosions, tunneling); use text to decide correctness.
 - **View quality + adaptive viewpoints** — `dart.gui.assess_view(world,
 camera, size, focus=...)` returns a machine-readable `ViewReport`
   (coverage/crop, subject size, occlusion via CPU pick rays, ambiguity) with
-  named issues (`cropped`, `too-far`, `too-close`, `occluded`, `ambiguous`);
+  named issues (`cropped`, `off-frame`, `too-far`, `too-close`, `occluded`,
+  `ambiguous`, `no-bounded-focus`);
   `dart.gui.select_viewpoints(...)` deterministically scores a candidate grid
   and returns the best azimuth-diverse cameras with recorded reasons;
   `dart.gui.frame_body` / `frame_region` reframe onto a named body or region.
@@ -64,8 +65,9 @@ camera, size, focus=...)` returns a machine-readable `ViewReport`
 debug=(...layers...))` draws world-derived overlay layers through the same
   unlit always-on-top path as the viewer: `grid`, `world_frame`,
   `body_frames`, `coms`, `inertia_boxes`, `collision_bounds`, `velocities`,
-  `contacts` (from `world.collide()`), `trajectories` (via
-  `dart.gui.TrajectoryTracker`), and `labels`.
+  `contacts` (from `world.collide()`), and `labels`; the `trajectories`
+  layer requires a sampled `dart.gui.TrajectoryTracker` (or recorded
+  positions) passed through `debug_scene_for_world` and raises without one.
   `dart.gui.render_annotated(...)` additionally composites label text into
   the returned RGBA array (offscreen has no UI text pass). Compose custom
   scenes with `dart.gui.debug_scene_for_world(...)`. Enable only the layers

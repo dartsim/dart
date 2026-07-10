@@ -42,10 +42,11 @@ Visual (corroboration):
 
 - `dart.gui.render(world, camera=None, size=(w, h), debug=(...layers...))` →
   headless image with optional world-derived debug layers (`grid`,
-  `body_frames`, `coms`, `inertia_boxes`, `collision_bounds`, `velocities`,
-  `contacts`, `trajectories`, `labels`); `dart.gui.render_annotated(...)`
-  composites label text; `.png_bytes()` for notebooks;
-  `dart.gui.orbit_camera(...)` / `look_at(...)`
+  `world_frame`, `body_frames`, `coms`, `inertia_boxes`, `collision_bounds`,
+  `velocities`, `contacts`, `labels`; `trajectories` additionally requires a
+  sampled `dart.gui.TrajectoryTracker` via `debug_scene_for_world`);
+  `dart.gui.render_annotated(...)` composites label text; `.png_bytes()` for
+  notebooks; `dart.gui.orbit_camera(...)` / `look_at(...)`
 - `dart.gui.assess_view(world, camera, size, focus=...)` → ViewReport with
   issues (`cropped`/`too-far`/`too-close`/`occluded`/`ambiguous`);
   `dart.gui.select_viewpoints(...)` picks deterministic best views;

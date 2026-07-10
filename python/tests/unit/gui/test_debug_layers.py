@@ -62,17 +62,28 @@ def test_explicit_contacts_input_is_used_verbatim():
 
 
 def test_trajectory_tracker_grows_polyline():
-    world = _settled_world()
-    tracker = dart.gui.TrajectoryTracker(world, bodies=["box"])
+    # Track a body while it is actually falling so the polyline is non-empty
+    # (a settled body would yield zero-length segments that are dropped).
+    world = dart.World()
+    faller = world.add_rigid_body("faller", position=(0.0, 0.0, 2.0))
+    faller.set_collision_shape(dart.CollisionShape.sphere(0.1))
+    tracker = dart.gui.TrajectoryTracker(world, bodies=["faller"])
     for _ in range(10):
         world.step()
         tracker.sample()
     lines = tracker.debug_lines()
-    assert len(lines) <= 9
+    assert 1 <= len(lines) <= 9
+    assert all(line.label == "faller.trajectory" for line in lines)
     scene = dart.gui.debug_scene_for_world(
         world, layers=("trajectories",), trajectories=tracker
     )
     assert len(scene.lines) == len(lines)
+
+
+def test_trajectories_layer_without_history_raises():
+    world = _settled_world()
+    with pytest.raises(ValueError, match="TrajectoryTracker"):
+        dart.gui.debug_scene_for_world(world, layers=("trajectories",))
 
 
 def test_labels_layer_names_bodies():
@@ -87,8 +98,14 @@ def test_velocities_layer_only_draws_moving_bodies():
         "mover", position=(0.0, 0.0, 2.0), linear_velocity=(1.0, 0.0, 0.0)
     )
     body.set_collision_shape(dart.CollisionShape.sphere(0.1))
+    still = world.add_rigid_body("still", position=(1.0, 0.0, 2.0))
+    still.is_static = True
+    still.set_collision_shape(dart.CollisionShape.sphere(0.1))
     scene = dart.gui.debug_scene_for_world(world, layers=("velocities",))
-    assert any(line.label == "mover.vel_linear" for line in scene.lines)
+    labels = {line.label for line in scene.lines}
+    assert "mover.vel_linear" in labels
+    # The exclusion side of the claim: a static body draws no arrows.
+    assert not any(label.startswith("still.") for label in labels)
 
 
 def test_project_points_puts_camera_target_at_image_center():

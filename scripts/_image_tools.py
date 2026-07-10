@@ -499,13 +499,17 @@ def diff_heatmap(
         magnitude = min(int(delta * amplify), 255)
         if magnitude <= 0:
             continue
-        if magnitude < 128:
-            heat[offset] = 0
-            heat[offset + 1] = magnitude
-            heat[offset + 2] = min(64 + magnitude, 255)
+        # Continuous blue -> yellow -> red ramp over the amplified magnitude.
+        position = magnitude / 255.0
+        if position < 0.5:
+            blend = position * 2.0
+            heat[offset] = int(255 * blend)
+            heat[offset + 1] = int(255 * blend)
+            heat[offset + 2] = int(255 * (1.0 - blend))
         else:
-            heat[offset] = magnitude
-            heat[offset + 1] = 255 - magnitude
+            blend = (position - 0.5) * 2.0
+            heat[offset] = 255
+            heat[offset + 1] = int(255 * (1.0 - blend))
             heat[offset + 2] = 0
     stats = {
         "changed_pixel_fraction": changed / total if total else 0.0,
