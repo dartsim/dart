@@ -223,6 +223,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Hardened collision/contact behavior for malformed contacts, invalid surface
   parameters, non-finite dynamics inputs, plane/ground contacts, capsule/box
   stability, mesh contact metadata, and Gazebo-driven regression cases.
+- Hardened native collision-query cache validation so malformed internal mesh
+  geometry is skipped before native shape construction instead of aborting
+  collision queries.
 - Added native collision benchmarks, reference-engine comparisons, runtime source
   isolation checks, and a Filament collision sandbox for interactive inspection.
 

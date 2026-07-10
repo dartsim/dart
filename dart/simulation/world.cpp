@@ -757,6 +757,66 @@ bool sameReplayCollisionGeometry(
   return true;
 }
 
+bool isPositiveFiniteVector(const Eigen::Vector3d& value)
+{
+  return value.allFinite() && (value.array() > 0.0).all();
+}
+
+bool hasValidMeshTriangleIndices(
+    const Eigen::Vector3i& triangle, const std::size_t vertexCount)
+{
+  if (triangle.minCoeff() < 0) {
+    return false;
+  }
+
+  const auto maxVertex = static_cast<std::size_t>(triangle.maxCoeff());
+  if (maxVertex >= vertexCount) {
+    return false;
+  }
+
+  return triangle.x() != triangle.y() && triangle.x() != triangle.z()
+         && triangle.y() != triangle.z();
+}
+
+bool isValidNativeCollisionShape(const CollisionShape& shape)
+{
+  if (!shape.localTransform.matrix().allFinite()) {
+    return false;
+  }
+
+  switch (shape.type) {
+    case CollisionShapeType::Sphere:
+      return std::isfinite(shape.radius) && shape.radius > 0.0;
+    case CollisionShapeType::Box:
+      return isPositiveFiniteVector(shape.halfExtents);
+    case CollisionShapeType::Capsule:
+    case CollisionShapeType::Cylinder:
+      return std::isfinite(shape.radius) && shape.radius > 0.0
+             && std::isfinite(shape.halfExtents.z())
+             && shape.halfExtents.z() > 0.0;
+    case CollisionShapeType::Plane:
+      return shape.normal.allFinite() && shape.normal.squaredNorm() > 0.0
+             && std::isfinite(shape.offset);
+    case CollisionShapeType::Mesh:
+      if (shape.vertices.empty() || shape.triangles.empty()) {
+        return false;
+      }
+      for (const Eigen::Vector3d& vertex : shape.vertices) {
+        if (!vertex.allFinite()) {
+          return false;
+        }
+      }
+      for (const Eigen::Vector3i& triangle : shape.triangles) {
+        if (!hasValidMeshTriangleIndices(triangle, shape.vertices.size())) {
+          return false;
+        }
+      }
+      return true;
+  }
+
+  return false;
+}
+
 bool sameReplayLoopClosureRuntimePolicy(
     const LoopClosureRuntimePolicy& lhs, const LoopClosureRuntimePolicy& rhs)
 {
@@ -7817,19 +7877,6 @@ std::span<const Contact> World::updateCollisionQueryCache(
     return shape;
   };
 
-  const auto supportsNativeShape = [](const CollisionShape& collisionShape) {
-    switch (collisionShape.type) {
-      case CollisionShapeType::Sphere:
-      case CollisionShapeType::Box:
-      case CollisionShapeType::Capsule:
-      case CollisionShapeType::Cylinder:
-      case CollisionShapeType::Plane:
-      case CollisionShapeType::Mesh:
-        return true;
-    }
-    return false;
-  };
-
   if (options.includeRigidBodyPairs) {
     collectLivePublicRigidBodyJointPairsInto(
         m_storage->registry, cache.liveRigidBodyJointPairs);
@@ -7848,7 +7895,7 @@ std::span<const Contact> World::updateCollisionQueryCache(
                             const Eigen::Isometry3d& pose) {
     for (std::size_t i = 0; i < geometry.shapes.size(); ++i) {
       const auto& shape = geometry.shapes[i];
-      if (!supportsNativeShape(shape)) {
+      if (!isValidNativeCollisionShape(shape)) {
         continue;
       }
       const Eigen::Isometry3d worldPose = pose * shape.localTransform;
