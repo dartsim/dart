@@ -557,3 +557,43 @@ TEST(MjcfParserTest, SwimmerMixedJointStack)
   EXPECT_TRUE(skel->getPositions().allFinite());
   EXPECT_TRUE(skel->getVelocities().allFinite());
 }
+
+//==============================================================================
+TEST(MjcfParserTest, UnnamedRootBodyWithUnnamedJointStack)
+{
+  // Regression: a root <body> without a name whose joints are also unnamed
+  // used to crash in the stacked-joint chain path (nullptr parent BodyNode in
+  // the unnamed-joint name fallback), and unnamed root bodies must keep
+  // inheriting a generated BodyNode name instead of a synthetic
+  // "__mjcf_dof" link name or the World's generic default.
+  const auto uri = "dart://sample/mjcf/test/unnamed_root_joint_stack.xml";
+
+  auto world = utils::MjcfParser::readWorld(uri);
+  ASSERT_NE(world, nullptr);
+
+  dynamics::SkeletonPtr stacked = nullptr;
+  for (std::size_t i = 0u; i < world->getNumSkeletons(); ++i) {
+    auto skel = world->getSkeleton(i);
+    if (skel->getNumDofs() == 2u) {
+      stacked = skel;
+      break;
+    }
+  }
+  ASSERT_NE(stacked, nullptr);
+
+  // Two chained revolute joints: one synthetic intermediate link plus the
+  // real body.
+  EXPECT_EQ(stacked->getNumBodyNodes(), 2u);
+  EXPECT_NE(stacked->getRootJoint(), nullptr);
+
+  // The skeleton name must come from the real (non-synthetic) BodyNode.
+  EXPECT_EQ(stacked->getName().find("__mjcf_dof"), std::string::npos);
+  EXPECT_FALSE(stacked->getName().empty());
+
+  for (auto i = 0; i < 10; ++i) {
+    world->step();
+  }
+
+  EXPECT_TRUE(stacked->getPositions().allFinite());
+  EXPECT_TRUE(stacked->getVelocities().allFinite());
+}

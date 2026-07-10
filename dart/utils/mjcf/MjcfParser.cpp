@@ -92,8 +92,12 @@ void createJointCommonProperties(
   // Name
   if (!mjcfJoint.getName().empty()) {
     props.mName = mjcfJoint.getName();
-  } else {
+  } else if (parentBodyNode) {
     props.mName = parentBodyNode->getName() + "_Joint";
+  } else {
+    // Root joint without a name and without a parent BodyNode (e.g. the
+    // first joint of a root body's joint stack).
+    props.mName = "World_Joint";
   }
 }
 
@@ -794,8 +798,23 @@ simulation::WorldPtr createWorld(
     // name rather than skel->getRootBodyNode()->getName(): if mjcfRootBody
     // itself has a stack of joints, DART's actual root BodyNode is one of
     // the synthetic intermediate links created for that stack, not the body
-    // named in the MJCF file.
-    skel->setName(mjcfRootBody.getName());
+    // named in the MJCF file. Unnamed root bodies keep the pre-existing
+    // behavior of inheriting a generated BodyNode name, taken from the last
+    // (real) BodyNode so a synthetic intermediate link never names the
+    // skeleton.
+    if (!mjcfRootBody.getName().empty()) {
+      skel->setName(mjcfRootBody.getName());
+    } else {
+      // Synthetic links are created before the real root body, so the first
+      // BodyNode without the marker is the real one.
+      for (std::size_t i = 0u; i < skel->getNumBodyNodes(); ++i) {
+        const auto* bodyNode = skel->getBodyNode(i);
+        if (bodyNode->getName().find("__mjcf_dof") == std::string::npos) {
+          skel->setName(bodyNode->getName());
+          break;
+        }
+      }
+    }
 
     // Skeleton name should be unique in the World.
     if (world->hasSkeleton(skel->getName())) {
