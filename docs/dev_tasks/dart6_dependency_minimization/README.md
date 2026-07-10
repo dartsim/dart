@@ -20,19 +20,24 @@ Evidence was first collected on 2026-06-19 after fetching `origin/main`,
 `origin/release-6.20`, and `origin/release-6.19`. The native-collision port
 evidence in `03-native-collision-port-scoping.md` and the dashboard state in
 `04-orchestration-dashboard.md` were refreshed on 2026-07-09 after fetching
-`origin/main` and `origin/release-6.20`, and after phase-3 D5 plus the native
-dashboard fix (#3363) merged.
+`origin/main` and `origin/release-6.20`, after phase-3 D5 plus the native
+dashboard fix (#3363) merged, and after the first Phase 4 optimization slice
+(#3364) landed.
 
 ## Current Branch State
 
 - `origin/release-6.20` currently points at
-  `43e4196389863f7405cd81f4ab501b45f02ae479`.
+  `613241385ae58fed2d2a47e9ff53beb2972d4b76`.
 - `origin/main` currently points at
   `a70fc2ed5cb7ea40f72dce68b7d374583ab7feee`.
 - `package.xml` and `pixi.toml` on `origin/release-6.20` still report a 6.19.x
   package version (`6.19.3` in the current CMake configure output).
 - DART 6.20 intentionally uses the release lane while package version metadata
   catches up to the branch/milestone naming.
+- Native collision status: DART 6.20 now has the opt-in `"native"` detector,
+  phase-2 adapter, phase-3 capability parity pieces, native dashboard rows, and
+  one measured Phase 4 solver-facing manifold optimization. FCL is still the
+  default and still part of the core dependency surface until phases 6 and 7.
 
 ## DART 6 Dependency Inventory
 
