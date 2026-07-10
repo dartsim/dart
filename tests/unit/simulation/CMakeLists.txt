@@ -307,12 +307,92 @@ if(DART_SIMULATION_BUILD_TESTS)
 
   # These rigid IPC and deformable gates remain active in normal CI, but
   # coverage instrumentation can make their long runtime corpora exceed the
-  # default ctest timeout. Keep compiling the targets under Codecov, then skip
-  # the heavyweight paper-sized target and give long-running targets enough
-  # coverage-specific headroom.
+  # default ctest timeout. Keep compiling the targets under Codecov, then run
+  # bounded smoke shards for the coverage job instead of the monolithic
+  # production-scale binaries.
   if(DART_CODECOV)
+    if(TEST test_variational_integration)
+      _dart_disable_monolithic_simulation_test(test_variational_integration)
+      string(
+        JOIN ":"
+        _dart_variational_integration_coverage_filter
+        "VariationalIntegration.PrismaticFreeFallMatchesConstantAcceleration"
+        "VariationalIntegration.VelocityActuatorSinglePrismaticCommandsVelocity"
+        "VariationalIntegration.VelocityActuatorCoupledRevoluteCommandsVelocity"
+        "VariationalIntegration.RevolutePendulumFirstStepAcceleration"
+        "VariationalIntegration.ArticulatedInverseMassMatchesDenseSolve"
+        "VariationalIntegration.ConstraintJacobianMatchesFiniteDifference"
+        "VariationalIntegration.PassiveChainEnergyCoverageSmoke"
+        "VariationalIntegration.NonConvergenceRaisesDocumentedError"
+      )
+      _dart_add_simulation_gtest_shard(
+        test_variational_integration_coverage_smoke
+        test_variational_integration
+        "${_dart_variational_integration_coverage_filter}"
+        360
+        1200
+      )
+    endif()
     if(TEST test_deformable_body)
-      set_tests_properties(test_deformable_body PROPERTIES TIMEOUT 3600)
+      _dart_disable_monolithic_simulation_test(test_deformable_body)
+      string(
+        JOIN ":"
+        _dart_deformable_body_coverage_filter
+        "DeformableBody.AddGetAndExposeNodeStateWithoutSolverDetails"
+        "DeformableBody.MeshTopologyValidationAndSurfaceExtraction"
+        "DeformableBody.FemTetrahedronResistsGravityWhereSpringlessBodyFreeFalls"
+        "DeformableBody.ExposesDeformableSolverDiagnostics"
+        "DeformableBody.SparseInertiaAssemblyOmitsExplicitZeroEntries"
+        "DeformableBody.BoxObstacleBarrierRepelsNodeAlongFaceNormal"
+        "DeformableBody.CapsuleObstacleBarrierRepelsNodeRadially"
+        "DeformableBody.StaticGroundBarrierCcdLimitsFastFallingNode"
+        "DeformableBody.SurfaceContactCcdPreventsFastPointTriangleCrossing"
+        "DeformableBody.InterBodySurfaceContactCcdLimitsMovingPoint"
+        "DeformableBody.StaticRigidSurfaceCcdLimitsPointOnlySideCrossing"
+        "DeformableBody.MovingRigidSurfaceCcdMatchesRealizedMotionInFullPipeline"
+        "DeformableBody.SurfaceContactScratchIsPerBody"
+        "DeformableBody.StepIsDeterministic"
+        "DeformableBody.SerializationPreservesModelAndState"
+        "DeformableBody.ProjectedNewtonAboveDenseCapUsesIterativeSolverByDefault"
+        "DeformableBody.MatrixFreeLinearSolverMatchesDefaultDirectSolve"
+      )
+      _dart_add_simulation_gtest_shard(
+        test_deformable_body_coverage_smoke
+        test_deformable_body
+        "${_dart_deformable_body_coverage_filter}"
+        300
+        900
+      )
+    endif()
+    if(TEST test_vbd_world_solver)
+      _dart_disable_monolithic_simulation_test(test_vbd_world_solver)
+      string(
+        JOIN ":"
+        _dart_vbd_world_solver_coverage_filter
+        "VbdWorldSolver.RunsVbdPathWhenEnabled"
+        "VbdWorldSolver.DefaultSolverRunsWhenNotOptedIn"
+        "VbdWorldSolver.MatchesDefaultSolverOnContactFreeScene"
+        "VbdWorldSolver.AvbdFiniteStiffnessRowsIgnoreUnusedFrictionCoefficient"
+        "VbdWorldSolver.AvbdMassSpringRowsAllowEmptyRequestedFamilies"
+        "VbdWorldSolver.AvbdContactNormalRowsSkipInactiveGroundRows"
+        "VbdWorldSolver.AvbdSelfContactNormalRowsPushSupportedSurfaceApart"
+        "VbdWorldSolver.AvbdSelfContactFrictionRowsReduceTangentialMotion"
+        "VbdWorldSolver.AvbdContactNormalRowsIncludeFrictionTangentRows"
+        "VbdWorldSolver.RunsVbdPathForTetrahedralBody"
+        "VbdWorldSolver.PublicConfigureSelectsVbdSolver"
+        "VbdWorldSolver.VbdSphereObstacleRepelsCenterEmbeddedNode"
+        "VbdWorldSolver.VbdStaticRigidSurfaceCcdLimitsFastCrossing"
+        "VbdWorldSolver.VbdInterBodySurfaceCcdLimitsFastCrossing"
+        "VbdWorldSolver.VbdSelfSurfaceCcdLimitsFastCrossing"
+        "VbdWorldSolver.VbdSelfContactIgnoresInteriorTetNodes"
+      )
+      _dart_add_simulation_gtest_shard(
+        test_vbd_world_solver_coverage_smoke
+        test_vbd_world_solver
+        "${_dart_vbd_world_solver_coverage_filter}"
+        240
+        600
+      )
     endif()
     if(TEST test_rigid_ipc_fixture)
       set_tests_properties(test_rigid_ipc_fixture PROPERTIES TIMEOUT 3600)

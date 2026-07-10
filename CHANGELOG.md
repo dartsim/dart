@@ -461,6 +461,10 @@ compatibility remains on the active DART 6 LTS branch._
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.
+- Bounded the Debug coverage lane for production-scale simulation tests by
+  replacing gcov-heavy monolithic variational, deformable, and VBD CTest entries
+  with representative coverage smoke shards while keeping the full tests active
+  in normal Release and Debug CI.
 - Restored main-branch Windows IO builds and dartpy simulation stub parity checks
   while preserving canonical `dartpy.simulation` aliases for IO loader types.
 - Added a lint/check-lint guard that keeps SDF IO on libsdformat typed DOM APIs
