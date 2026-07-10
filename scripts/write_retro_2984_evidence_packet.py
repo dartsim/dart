@@ -2,7 +2,8 @@
 
 Reconstructs the visual evidence #2984 ("Improve renderer fidelity and
 promote debug visuals into dart::gui") described but never attached, using
-the Fable 5 workflow: deterministic offscreen captures with explicit claims.
+the agent evidence workflow: deterministic offscreen captures tied to
+explicit claims (see docs/design/agent_sim_verification.md).
 
   C1  Per-shape PBR (metallic/roughness) produces visibly distinct materials.
   C2  high_fidelity offscreen rendering differs from the default reduced-
@@ -11,10 +12,9 @@ the Fable 5 workflow: deterministic offscreen captures with explicit claims.
       overlay lines, contact markers/normals, frames, and labels render
       offscreen with world-derived composition (the follow-up #2984 deferred).
 
-Run through pixi so dartpy resolves:
-  PYTHONPATH=build/default/cpp/Release/python:python \
-      pixi run python docs/dev_tasks/fable5_visual_verification/capture_2984.py \
-      --out /tmp/retro_2984
+Run: pixi run retro-2984-evidence -- --out <dir>
+Then: pixi run evidence-select -- <dir>/candidates.json --out <dir>/selection.json
+      pixi run evidence-publish -- <dir>/selection.json ...
 """
 
 from __future__ import annotations
@@ -22,18 +22,11 @@ from __future__ import annotations
 import argparse
 import json
 import struct
-import sys
 import zlib
 from pathlib import Path
 
-import numpy as np
-
 import dartpy as dart
-
-_SCRIPTS = Path(__file__).resolve().parents[3] / "scripts"
-if str(_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(_SCRIPTS))
-
+import numpy as np
 from _image_tools import ImageData, diff_heatmap, side_by_side, write_image
 
 

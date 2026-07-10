@@ -1127,6 +1127,15 @@ agent-capture = { cmd = [
   "build-py-dev-docking",
 ], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python:scripts" } }
 
+# Regenerate the #2984 retrospective evidence packet (PBR sweep, fidelity
+# pair + diff, debug-layer overlay) for the agent evidence workflow.
+retro-2984-evidence = { cmd = [
+  "python",
+  "scripts/write_retro_2984_evidence_packet.py",
+], depends-on = [
+  "build-py-dev-docking",
+], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python:scripts" } }
+
 # Opt-in golden-image gate: render a canonical scene through dart.gui.render and
 # compare it against a committed, backend-specific golden. Not wired into
 # default CI; regenerate the golden with `-- --update` on the target backend.

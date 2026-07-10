@@ -124,3 +124,54 @@ image verdict/golden/sheet, text metrics/scene-dump/trajectory). DART 6
 helper, dartpy binding, ported image tooling) verified on a real X server;
 conda-forge has no linux-64 Xvfb build, so DART 6 headless capture needs a real
 display or a system-installed Xvfb.
+
+## Active views, debug layers, and PR evidence (2026-07)
+
+A review of the merged visual-verification lineage (#2690, #2836, #2984,
+#2992, #3063, #3084, #3304, #3313, #3314, #3320) found four recurring gaps:
+no PR ever embedded its visual evidence (bodies cite local `/tmp/*.png`
+paths; GitHub user-attachments can only be minted in the web editor), cameras
+were fixed enumerations with no notion of view adequacy, debug overlays never
+reached the headless path, and artifacts were not tied to explicit claims.
+The follow-up workflow closes these:
+
+- **View adequacy is measured, not assumed.** `dart.gui.assess_view` scores a
+  camera against the world geometrically (bounds-corner coverage, subject
+  screen fraction, CPU pick-ray occlusion, screen-overlap ambiguity) and
+  names issues (`cropped`, `too-far`, `too-close`, `occluded`, `ambiguous`);
+  `select_viewpoints` deterministically searches a candidate grid and returns
+  azimuth-diverse choices with recorded reasons. Geometry-first keeps
+  assessment GPU-free and mirrors the text-first oracle policy.
+- **Debug layers are world-derived and offscreen-capable.**
+  `OffscreenRenderer` accepts a `DebugScene` through the viewer's unlit
+  always-on-top overlay path (a plain render always clears it, so captures
+  stay pure functions of their arguments); `dart.gui.debug_scene_for_world`
+  composes named layers (frames, centers of mass, inertia, collision bounds,
+  velocities, contacts from `world.collide()`, trajectory polylines,
+  labels) that the built-in loop never aggregated. Labels are composited in
+  Python because offscreen rendering has no UI text pass.
+- **Evidence is claim-driven and rationale-carrying.** `evidence-select`
+  performs greedy claim cover with redundancy pruning and size budgets and
+  rejects artifacts that support no claim; `evidence-publish` renders the PR
+  "Visual verification" section (environment, per-artifact what-to-observe,
+  not-proven statements, limitations, repro commands). Media is
+  GitHub-hosted, never committed: the default backend emits web-editor
+  upload placeholders, and the `gh-release` backend uploads release assets
+  but only behind `--yes` plus maintainer approval (release-asset images
+  render inline in PR bodies; videos render as links — only
+  user-attachments URLs get the inline player).
+- **Case study (#2984 retrospective).** Re-verifying the renderer-fidelity
+  PR with this workflow (`scripts/write_retro_2984_evidence_packet.py`)
+  produced claim-tied evidence its own body declined to attach: a PBR
+  metallic/roughness sweep, a default-vs-high-fidelity side-by-side with
+  diff heatmap, and a world-derived debug-layer offscreen render — the
+  "world-derived debug overlays" follow-up #2984 itself deferred. The
+  view-adequacy loop caught a too-far framing before it shipped as weak
+  evidence.
+
+Known limits and future work: occlusion probes sample bounds corners (a
+depth/ID-buffer readback would make visibility exact), thresholds are fixed
+constants calibrated on primitive scenes, multibody/deformable layers reuse
+only the transform-based subset, inline PR video still requires the manual
+user-attachments flow, and DART 6 has the fixed `defaultAgentCamera` rather
+than adaptive selection.
