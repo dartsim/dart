@@ -9,12 +9,55 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
-**Current claimed packet: WP-PG.14 matrix-free contact LCP**
-(`wp-pg-14-matrix-free-lcp`). This is a D3 behavior-changing, default-off
-solver-option packet. It adds an opt-in matrix-free contact PGS path for
-supported large single-free-body contact islands, keeps the default dense LCP
-path bit-identical, and must carry explicit option-on re-baseline evidence
-instead of claiming hash stability for the new solver semantics.
+**Current claimed packet: none. Stop and audit before writing more code.**
+
+Current `release-6.20` head is #3361 merge commit `91c158fc3e5`
+(`WP-PG.14: add opt-in matrix-free contact LCP`). A fresh session should start
+from that head, re-read this README plus the lane docs, and do a current-base
+completion/evidence audit before claiming any new packet. The maintainer's
+north-star requirement is still broader than "latest packet merged": finish
+issue #3056 on DART 6.20 with enough tests, benchmarks, and GUI/headless
+evidence to show the result is general and not overfit to one fixture.
+
+Do not open a small follow-up PR merely because a packet exists. Prefer one
+consolidated evidence/closeout branch unless the audit identifies a real
+implementation gap that deserves its own packet.
+
+WP-PG.14/D3 is done by #3361. It added a default-off
+`BoxedLcpConstraintSolver::MatrixFreeContactSolverOptions` path, exact
+built-in `ContactConstraint` gating, single-free-body support checks,
+prepared scratch reuse, cached-impulse residual seeding, dense fallback on
+matrix-free non-convergence, mixed per-DoF FreeJoint actuator rejection,
+`contact_benchmark` flags, dartpy options, and profiler counters. Final
+current-head smoke artifact:
+`/tmp/wp_pg14_matrix_free_review_5751c7ed84c_repeat_20260709T223525Z`
+(`5751c7ed84c`): S1 120 DART dense option-off median avg step `7.93478` ms,
+hash `0x123ee9779bccacfb`; option-on 30-iteration matrix-free median avg step
+`1.38782` ms, finite, hash `0xa5548e1abe05b52` (~5.7x on that run). The
+original fuller artifact remains
+`/tmp/wp_pg14_matrix_free_ab_20260709T040443Z` with S3 active-3k option-on
+fallback preserving hash `0xcf0ba6eaa97be038`.
+
+Recommended next session plan:
+
+1. Verify live state: `git fetch origin release-6.20`, confirm head contains
+   #3361, inspect open PRs/issues, and avoid touching dirty sibling worktrees
+   such as `/home/js/dev/dartsim/dart/task_3-fix-simd`.
+2. Run a current-head acceptance audit against the README north-star gate:
+   tests, benchmark matrix, GUI/headless artifacts, decision status, and
+   remaining issue #3056 closure evidence.
+3. Refresh cumulative benchmark evidence on the current merged head, not on
+   individual PR heads. Include the issue-specific 3k/gz default ODE path,
+   active contact-container rows across relevant detectors, S6/default sleep
+   evidence, settled-scene guard rows, and option-off/option-on semantics where
+   WP-PG.14 is discussed.
+4. Refresh representative GUI/headless evidence if current artifacts are not
+   enough for closeout: `contact_benchmark --gui-capture`, sleep-state colors
+   where useful, and final-scene dumps with command lines and hashes.
+5. Decide from that evidence whether remaining work is a code packet
+   (for example D8/WP-PG.23, WP-PG.33, or WP-PG.41) or a closeout/promote-docs
+   PR. Do not revive WP-PG.11/21/22 unchanged; each already has current-base
+   rejection evidence below.
 
 WP-PG.32 is closed in this tracker as delivered by merged PRs #3297 and #3307:
 `FrameAllocator`, World-owned `MemoryManager` preparation, frame-scratch
@@ -23,18 +66,6 @@ solver/collision/profiler scratch reuse, and `INTEGRATION_StepAllocation`
 native and soft allocation gates are already on `release-6.20`. The
 `wp-pg-32-frame-allocation-gate` branch should not be resumed as a new
 implementation packet after its PR lands.
-
-Next practical action: finish WP-PG.14 with the full #3307-style PR/review
-loop. Current local artifact:
-`/tmp/wp_pg14_matrix_free_ab_20260709T040443Z`. The option-off S1 120-object
-DART row still hashes to `0x123ee9779bccacfb`; option-on median step time is
-~0.663 ms versus ~7.40 ms dense on the same fixture, finite but with the
-expected option-on hash change. S3 active-3k with the option enabled but the
-default 193-row threshold kept the exact fallback hash
-`0xcf0ba6eaa97be038`. Local gates passed: `pixi run lint`,
-`pixi run check-lint`, focused/full `test_ConstraintSolver`, dartpy constraint
-pytest, capped `ALL`, and `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
-The PR body still needs the #3307-style benchmark report.
 
 **WP-PG.01 is captured** (merged as #3263) — guard rows, profile splits, and
 prior-art triage are in
@@ -45,21 +76,21 @@ many-islands regime is ~50% integration (WS-C is the lever there).
 
 Implementation packets after WP-PG.32, in priority order:
 
-1. Finish WP-PG.14 as the D3 opt-in matrix-free solver PR, with option-off
-   guards and option-on convergence/finite evidence.
+1. Run the current-head completion/evidence audit above before choosing more
+   implementation.
 2. Continue with the remaining north-star evidence and any still open D8/D4
-   decisions rather than treating WP-PG.14 as task completion.
+   decisions rather than treating WP-PG.14/#3361 as task completion.
 3. Do not retry rejected packets unchanged. WP-PG.20 is #3329; WP-PG.21 failed
    the 2026-07-07 current-base map/pruning gate; WP-PG.22 and WP-PG.11 both
    have local current-base rejection evidence from 2026-07-06; WP-PG.31 is
    #3341; WP-PG.32 is already implemented by #3297/#3307.
 
-Blocked/gated (do not claim): PG.04 (D4), PG.12 (evidence), PG.13
-(PG.10 census), PG.23 (D8), PG.33, PG.41. PG.15/D7 is done as merged #3353;
-PG.14/D3 is the current claimed packet. PG.42 is done in PR #3299; WP-PG.30
-is done in PR #3310. The dense-pile fixture now has the D7 default-remediation
-win; WP-PG.14 provides the separate explicit solve-side option for large
-active islands.
+Blocked/gated (do not claim without new evidence): PG.04 (D4),
+PG.12 (evidence), PG.13 (PG.10 census), PG.23 (D8), PG.33, PG.41.
+PG.15/D7 is done as merged #3353; PG.14/D3 is done as merged #3361. PG.42 is
+done in PR #3299; WP-PG.30 is done in PR #3310. The dense-pile fixture now has
+the D7 default-remediation win; WP-PG.14 provides the separate explicit
+solve-side option for large active islands.
 
 ## Verify commands (every packet)
 
@@ -78,10 +109,12 @@ the explicit `--parallel 8` build command.)
 
 ## Standing decisions awaiting maintainer
 
-D1 (SIMD FP contract), D2 (ISA delivery), D3 (matrix-free — current branch
-implements the DART 6 opt-in option), D4 (executor tooling), D5 (ODE lane
+D1 (SIMD FP contract), D2 (ISA delivery), D4 (executor tooling), D5 (ODE lane
 depth = PG.20/21/22), D8 (manifold reduction now vs WS-F phase 3) — see
-README "Open decisions". D7 is resolved by merged #3353.
+README "Open decisions". D7 is resolved by merged #3353. D3 is resolved by
+merged #3361 as a DART 6 default-off matrix-free contact solver option; do not
+reopen it as a default-on behavior without new maintainer direction and
+option-off/option-on evidence.
 
 ## Session log (round-2 execution)
 
@@ -297,6 +330,27 @@ README "Open decisions". D7 is resolved by merged #3353.
   `pixi run check-lint`, focused/full `test_ConstraintSolver`, dartpy
   constraint pytest, capped `ALL`, and
   `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+- 2026-07-09: WP-PG.14 merged as #3361 after merge-conflict resolution,
+  Codex review cleanup, local validation, and mostly passing hosted CI.
+  Merge commit: `91c158fc3e5`; PR head before merge:
+  `5751c7ed84c`. Review-hardening fixes added reserved thread-scratch
+  `BodyNode*` lookup storage, cached-impulse residual seeding before the first
+  matrix-free sweep, dense fallback when matrix-free PGS does not converge, and
+  mixed per-DoF FreeJoint actuator rejection. Added regression coverage:
+  `MatrixFreeContactSolverSeedsCachedImpulseResidual`,
+  `MatrixFreeContactSolverFallsBackWhenNotConverged`, and
+  `MatrixFreeContactSolverRejectsMixedFreeJointActuators`. Final current-head
+  smoke artifact:
+  `/tmp/wp_pg14_matrix_free_review_5751c7ed84c_repeat_20260709T223525Z`;
+  S1 120 DART dense option-off median avg step `7.93478` ms, hash
+  `0x123ee9779bccacfb`; option-on 30-iteration matrix-free median avg step
+  `1.38782` ms, finite, hash `0xa5548e1abe05b52`. Final local validation:
+  `pixi run lint`, `pixi run check-lint`, build target
+  `contact_benchmark test_ConstraintSolver dartpy`, full
+  `test_ConstraintSolver` (48/48), and dartpy constraint pytest (4/4).
+  Codex reviewed `5751c7ed84c` and reported no major issues; all earlier
+  Codex review threads were resolved. Hosted Codecov patch/project passed
+  before merge.
 
 ## Session log
 
