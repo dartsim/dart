@@ -31,6 +31,7 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/collision/native/NativeCollisionDetector.hpp"
 #include "dart/dart.hpp"
 #include "dart/utils/mjcf/detail/MujocoModel.hpp"
 #include "dart/utils/mjcf/detail/Types.hpp"
@@ -40,6 +41,8 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <string>
+#include <vector>
 
 using namespace dart;
 using namespace utils::MjcfParser::detail;
@@ -347,4 +350,210 @@ TEST(MjcfParserTest, RoboticsFetch)
   ASSERT_NE(world, nullptr);
 
   ASSERT_EQ(world->getNumSkeletons(), 6);
+}
+
+//==============================================================================
+// Bodies with more <joint>s than DART has a predefined multi-DOF joint for
+// (i.e. anything other than 2 or 3 slide joints) are represented as a chain
+// of single-DOF joints connected by intermediate massless BodyNodes. Those
+// BodyNodes are named "<ownerBodyName>__mjcf_dof<i>" and carry no shapes.
+std::size_t countStackedJointDummyBodies(const dynamics::SkeletonPtr& skel)
+{
+  std::size_t count = 0u;
+  for (auto i = 0u; i < skel->getNumBodyNodes(); ++i) {
+    if (skel->getBodyNode(i)->getName().find("__mjcf_dof")
+        != std::string::npos) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+//==============================================================================
+TEST(MjcfParserTest, HumanoidStackedHingeJoints)
+{
+  // The humanoid model has several bodies with 2 or 3 stacked hinge joints
+  // (lwaist: 2, right_thigh/left_thigh: 3, right_upper_arm/left_upper_arm: 2)
+  // that are not any of the predefined multi-DOF joint compositions.
+  const auto uri = "dart://sample/mjcf/openai/humanoid.xml";
+  auto world = utils::MjcfParser::readWorld(uri);
+  ASSERT_NE(world, nullptr);
+
+  ASSERT_EQ(world->getNumSkeletons(), 2);
+
+  auto humanoidSkel = world->getSkeleton("torso");
+  ASSERT_NE(humanoidSkel, nullptr);
+
+  // 6 DOFs from the free root joint + 17 DOFs from the hinge joints.
+  EXPECT_EQ(humanoidSkel->getNumDofs(), 23u);
+
+  // 13 real bodies plus 7 massless intermediate bodies inserted to represent
+  // the joint stacks: lwaist (2 joints -> 1 dummy), right_thigh and
+  // left_thigh (3 joints -> 2 dummies each), right_upper_arm and
+  // left_upper_arm (2 joints -> 1 dummy each).
+  EXPECT_EQ(humanoidSkel->getNumBodyNodes(), 20u);
+  EXPECT_EQ(countStackedJointDummyBodies(humanoidSkel), 7u);
+
+  const std::vector<std::string> realBodyNames
+      = {"torso",
+         "lwaist",
+         "pelvis",
+         "right_thigh",
+         "right_shin",
+         "right_foot",
+         "left_thigh",
+         "left_shin",
+         "left_foot",
+         "right_upper_arm",
+         "right_lower_arm",
+         "left_upper_arm",
+         "left_lower_arm"};
+  for (const auto& name : realBodyNames) {
+    EXPECT_NE(humanoidSkel->getBodyNode(name), nullptr) << name;
+  }
+
+  EXPECT_EQ(
+      humanoidSkel->getRootJoint()->getType(),
+      dynamics::FreeJoint::getStaticType());
+
+  world->getConstraintSolver()->setCollisionDetector(
+      collision::NativeCollisionDetector::create());
+
+  for (auto i = 0; i < 100; ++i) {
+    world->step();
+  }
+
+  EXPECT_TRUE(humanoidSkel->getPositions().allFinite());
+  EXPECT_TRUE(humanoidSkel->getVelocities().allFinite());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, HumanoidStandupStackedHingeJoints)
+{
+  // Same body/joint topology as humanoid.xml, just different geometry.
+  const auto uri = "dart://sample/mjcf/openai/humanoidstandup.xml";
+  auto world = utils::MjcfParser::readWorld(uri);
+  ASSERT_NE(world, nullptr);
+
+  ASSERT_EQ(world->getNumSkeletons(), 2);
+
+  auto humanoidSkel = world->getSkeleton("torso");
+  ASSERT_NE(humanoidSkel, nullptr);
+
+  EXPECT_EQ(humanoidSkel->getNumDofs(), 23u);
+  EXPECT_EQ(humanoidSkel->getNumBodyNodes(), 20u);
+  EXPECT_EQ(countStackedJointDummyBodies(humanoidSkel), 7u);
+
+  for (auto i = 0; i < 10; ++i) {
+    world->step();
+  }
+
+  EXPECT_TRUE(humanoidSkel->getPositions().allFinite());
+  EXPECT_TRUE(humanoidSkel->getVelocities().allFinite());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, Walker2dMixedJointStack)
+{
+  // torso has a 2-slide + 1-hinge stack (rootx, rootz, rooty), which is not
+  // the predefined 3-slide TranslationalJoint composition.
+  const auto uri = "dart://sample/mjcf/openai/walker2d.xml";
+  auto world = utils::MjcfParser::readWorld(uri);
+  ASSERT_NE(world, nullptr);
+
+  ASSERT_EQ(world->getNumSkeletons(), 2);
+
+  auto skel = world->getSkeleton("torso");
+  ASSERT_NE(skel, nullptr);
+
+  // 7 real bodies (torso, thigh, leg, foot, thigh_left, leg_left, foot_left)
+  // + 2 dummies for the torso's 3-joint stack.
+  EXPECT_EQ(skel->getNumBodyNodes(), 9u);
+  EXPECT_EQ(countStackedJointDummyBodies(skel), 2u);
+
+  // 3 DOFs from torso's stack + 1 DOF from each of the 6 single-hinge bodies.
+  EXPECT_EQ(skel->getNumDofs(), 9u);
+
+  for (auto i = 0; i < 10; ++i) {
+    world->step();
+  }
+
+  EXPECT_TRUE(skel->getPositions().allFinite());
+  EXPECT_TRUE(skel->getVelocities().allFinite());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, HopperMixedJointStack)
+{
+  const auto uri = "dart://sample/mjcf/openai/hopper.xml";
+  auto world = utils::MjcfParser::readWorld(uri);
+  ASSERT_NE(world, nullptr);
+
+  ASSERT_EQ(world->getNumSkeletons(), 2);
+
+  auto skel = world->getSkeleton("torso");
+  ASSERT_NE(skel, nullptr);
+
+  // 4 real bodies (torso, thigh, leg, foot) + 2 dummies for torso's stack.
+  EXPECT_EQ(skel->getNumBodyNodes(), 6u);
+  EXPECT_EQ(countStackedJointDummyBodies(skel), 2u);
+  EXPECT_EQ(skel->getNumDofs(), 6u);
+
+  for (auto i = 0; i < 10; ++i) {
+    world->step();
+  }
+
+  EXPECT_TRUE(skel->getPositions().allFinite());
+  EXPECT_TRUE(skel->getVelocities().allFinite());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, HalfCheetahMixedJointStack)
+{
+  const auto uri = "dart://sample/mjcf/openai/half_cheetah.xml";
+  auto world = utils::MjcfParser::readWorld(uri);
+  ASSERT_NE(world, nullptr);
+
+  ASSERT_EQ(world->getNumSkeletons(), 2);
+
+  auto skel = world->getSkeleton("torso");
+  ASSERT_NE(skel, nullptr);
+
+  // 7 real bodies (torso, bthigh, bshin, bfoot, fthigh, fshin, ffoot) + 2
+  // dummies for torso's stack.
+  EXPECT_EQ(skel->getNumBodyNodes(), 9u);
+  EXPECT_EQ(countStackedJointDummyBodies(skel), 2u);
+  EXPECT_EQ(skel->getNumDofs(), 9u);
+
+  for (auto i = 0; i < 10; ++i) {
+    world->step();
+  }
+
+  EXPECT_TRUE(skel->getPositions().allFinite());
+  EXPECT_TRUE(skel->getVelocities().allFinite());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, SwimmerMixedJointStack)
+{
+  const auto uri = "dart://sample/mjcf/openai/swimmer.xml";
+  auto world = utils::MjcfParser::readWorld(uri);
+  ASSERT_NE(world, nullptr);
+
+  ASSERT_EQ(world->getNumSkeletons(), 2);
+
+  auto skel = world->getSkeleton("torso");
+  ASSERT_NE(skel, nullptr);
+
+  // 3 real bodies (torso, mid, back) + 2 dummies for torso's stack.
+  EXPECT_EQ(skel->getNumBodyNodes(), 5u);
+  EXPECT_EQ(countStackedJointDummyBodies(skel), 2u);
+  EXPECT_EQ(skel->getNumDofs(), 5u);
+
+  for (auto i = 0; i < 10; ++i) {
+    world->step();
+  }
+
+  EXPECT_TRUE(skel->getPositions().allFinite());
+  EXPECT_TRUE(skel->getVelocities().allFinite());
 }

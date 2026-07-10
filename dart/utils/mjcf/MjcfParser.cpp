@@ -255,6 +255,139 @@ dynamics::RevoluteJoint::Properties createRevoluteJointProperties(
 }
 
 //==============================================================================
+bool canChainJointStack(const detail::Body& mjcfBody)
+{
+  // The generic joint-stack chain built by createJointChainForStackedJoints()
+  // below only knows how to translate hinge and slide joints into Revolute-
+  // and PrismaticJoints respectively. Free and ball joints cannot appear
+  // alongside other joints under a valid MJCF <body> in the first place, so
+  // excluding them here just makes that assumption explicit.
+  for (auto i = 0u; i < mjcfBody.getNumJoints(); ++i) {
+    const auto type = mjcfBody.getJoint(i).getType();
+    if (type != detail::JointType::HINGE && type != detail::JointType::SLIDE)
+      return false;
+  }
+  return true;
+}
+
+//==============================================================================
+// Creates a chain of single-DOF joints for a MJCF <body> that lists more
+// <joint> elements than DART has a predefined multi-DOF joint for (i.e. any
+// combination of hinges/slides other than 2 or 3 slides).
+//
+// Per the MuJoCo XML reference, when several joints are defined on the same
+// body, they are applied in listed order (the first joint is closest to the
+// parent body) and every joint's pos/axis is expressed in the same
+// undisplaced frame of the owning body -- not chained relative to whatever
+// the previous joint in the stack did. We reproduce that by threading a chain
+// of massless, shapeless intermediate BodyNodes (one per joint except the
+// last) between the real parent body and the real (final) BodyNode, with one
+// RevoluteJoint per hinge and one PrismaticJoint per slide.
+//
+// Each intermediate BodyNode's local frame is defined to coincide with the
+// owning body's nominal (rest) frame, i.e. mjcfBody.getRelativeTransform()
+// relative to the real parent. That is what lets every sub-joint use its own
+// pos/axis directly as T_ChildBodyToJoint: only the first joint in the chain
+// additionally needs mjcfBody.getRelativeTransform() to reach that nominal
+// frame from the real parent; every later joint's immediate parent already
+// *is* that frame by construction, so its T_ParentBodyToJoint collapses to
+// exactly its own T_ChildBodyToJoint.
+std::pair<dynamics::Joint*, dynamics::BodyNode*>
+createJointChainForStackedJoints(
+    dynamics::SkeletonPtr skel,
+    dynamics::BodyNode* parentBodyNode,
+    const dynamics::BodyNode::Properties& bodyProps,
+    const detail::Body& mjcfBody)
+{
+  const auto numJoints = mjcfBody.getNumJoints();
+  DART_ASSERT(numJoints >= 2u);
+
+  dynamics::BodyNode* currentParent = parentBodyNode;
+  dynamics::Joint* joint = nullptr;
+  dynamics::BodyNode* bodyNode = nullptr;
+
+  for (auto i = 0u; i < numJoints; ++i) {
+    const detail::Joint& mjcfJoint = mjcfBody.getJoint(i);
+    const bool isFinalJoint = (i + 1u == numJoints);
+
+    // Joint pos/axis are given in the owning body's nominal (undisplaced)
+    // local frame, regardless of this joint's position in the stack.
+    Eigen::Isometry3d childBodyToJoint = Eigen::Isometry3d::Identity();
+    childBodyToJoint.translation() = mjcfJoint.getPos();
+    childBodyToJoint.linear()
+        = Eigen::Quaterniond::FromTwoVectors(
+              Eigen::Vector3d::UnitZ(), mjcfJoint.getAxis())
+              .toRotationMatrix();
+
+    const Eigen::Isometry3d parentBodyToJoint
+        = (i == 0u) ? mjcfBody.getRelativeTransform() * childBodyToJoint
+                    : childBodyToJoint;
+
+    dynamics::BodyNode::Properties currentBodyProps;
+    if (isFinalJoint) {
+      currentBodyProps = bodyProps;
+    } else {
+      currentBodyProps.mName
+          = mjcfBody.getName() + "__mjcf_dof" + std::to_string(i);
+      // Intermediate links only exist to carry a single DOF each; they have
+      // no shape and no mass of their own.
+      currentBodyProps.mInertia = dynamics::Inertia(
+          0.0, Eigen::Vector3d::Zero(), Eigen::Matrix3d::Zero());
+    }
+
+    if (mjcfJoint.getType() == detail::JointType::HINGE) {
+      dynamics::RevoluteJoint::Properties props;
+      createJointCommonProperties(props, currentParent, mjcfBody, mjcfJoint);
+
+      props.mAxis = Eigen::Vector3d::UnitZ();
+      props.mT_ChildBodyToJoint = childBodyToJoint;
+      props.mT_ParentBodyToJoint = parentBodyToJoint;
+
+      props.mIsPositionLimitEnforced = mjcfJoint.isLimited();
+      props.mPositionLowerLimits[0] = mjcfJoint.getRange()[0];
+      props.mPositionUpperLimits[0] = mjcfJoint.getRange()[1];
+
+      props.mDampingCoefficients[0] = mjcfJoint.getDamping();
+      props.mRestPositions[0] = mjcfJoint.getSpringRef();
+
+      props.mDofNames[0] = mjcfJoint.getName();
+      props.mPreserveDofNames[0] = true;
+
+      std::tie(joint, bodyNode)
+          = skel->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+              currentParent, props, currentBodyProps);
+    } else {
+      DART_ASSERT(mjcfJoint.getType() == detail::JointType::SLIDE);
+
+      dynamics::PrismaticJoint::Properties props;
+      createJointCommonProperties(props, currentParent, mjcfBody, mjcfJoint);
+
+      props.mAxis = Eigen::Vector3d::UnitZ();
+      props.mT_ChildBodyToJoint = childBodyToJoint;
+      props.mT_ParentBodyToJoint = parentBodyToJoint;
+
+      props.mIsPositionLimitEnforced = mjcfJoint.isLimited();
+      props.mPositionLowerLimits[0] = mjcfJoint.getRange()[0];
+      props.mPositionUpperLimits[0] = mjcfJoint.getRange()[1];
+
+      props.mDampingCoefficients[0] = mjcfJoint.getDamping();
+      props.mRestPositions[0] = mjcfJoint.getSpringRef();
+
+      props.mDofNames[0] = mjcfJoint.getName();
+      props.mPreserveDofNames[0] = true;
+
+      std::tie(joint, bodyNode)
+          = skel->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
+              currentParent, props, currentBodyProps);
+    }
+
+    currentParent = bodyNode;
+  }
+
+  return std::make_pair(joint, bodyNode);
+}
+
+//==============================================================================
 std::pair<dynamics::Joint*, dynamics::BodyNode*>
 createJointAndBodyNodePairForMultipleJoints(
     dynamics::SkeletonPtr skel,
@@ -381,6 +514,13 @@ createJointAndBodyNodePairForMultipleJoints(
       return skel->createJointAndBodyNodePair<dynamics::TranslationalJoint>(
           parentBodyNode, props, bodyProps);
     }
+  }
+
+  // Fall back to a chain of single-DOF joints for any other stack of
+  // hinge/slide joints (e.g. hinge+hinge, or hinge mixed with slide).
+  if (canChainJointStack(mjcfBody)) {
+    return createJointChainForStackedJoints(
+        skel, parentBodyNode, bodyProps, mjcfBody);
   }
 
   dterr << "[MjcfParser] Attempted to create unsupported joint composition.\n";
@@ -650,8 +790,12 @@ simulation::WorldPtr createWorld(
     // MuJoCo doesn't have a concept that corresponds to DART Skeleton so no
     // name for Skeleton. We use the name of the root body instead. The root
     // body name will be unique anyway because all the MuJoCo body name are
-    // unique in the same <worldbody>.
-    skel->setName(skel->getRootBodyNode()->getName());
+    // unique in the same <worldbody>. Note this must be mjcfRootBody's own
+    // name rather than skel->getRootBodyNode()->getName(): if mjcfRootBody
+    // itself has a stack of joints, DART's actual root BodyNode is one of
+    // the synthetic intermediate links created for that stack, not the body
+    // named in the MJCF file.
+    skel->setName(mjcfRootBody.getName());
 
     // Skeleton name should be unique in the World.
     if (world->hasSkeleton(skel->getName())) {
