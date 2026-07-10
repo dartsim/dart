@@ -6,9 +6,13 @@ import pytest
 
 import dartpy as dart
 
+# Guard on the C++ GUI bindings the assessments consume (projection, pick
+# rays, descriptors); reduced builds expose dartpy.gui without them.
 pytestmark = pytest.mark.skipif(
-    not hasattr(dart, "gui") or not hasattr(dart.gui, "assess_view"),
-    reason="dartpy GUI view-quality helpers are not available",
+    not hasattr(dart, "gui")
+    or not hasattr(dart.gui, "ProjectionOptions")
+    or not hasattr(dart.gui, "PickRay"),
+    reason="dartpy GUI projection/picking bindings are not available in this build",
 )
 
 

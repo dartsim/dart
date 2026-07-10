@@ -5,9 +5,12 @@ import pytest
 
 import dartpy as dart
 
+# Guard on a C++ GUI binding, not the pure-Python helpers: reduced builds
+# (e.g. the cuda environment) expose dartpy.gui without the descriptor and
+# debug types these layers compose.
 pytestmark = pytest.mark.skipif(
-    not hasattr(dart, "gui") or not hasattr(dart.gui, "debug_scene_for_world"),
-    reason="dartpy GUI debug-layer helpers are not available",
+    not hasattr(dart, "gui") or not hasattr(dart.gui, "DebugDrawOptions"),
+    reason="dartpy GUI debug bindings are not available in this build",
 )
 
 
