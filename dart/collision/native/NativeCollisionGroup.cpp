@@ -110,11 +110,11 @@ void NativeCollisionGroup::removeAllCollisionObjectsFromEngine()
 //==============================================================================
 void NativeCollisionGroup::updateCollisionGroupEngineData()
 {
-  for (auto* object : mCollisionObjects) {
-    auto* nativeObject = static_cast<NativeCollisionObject*>(object);
-    const auto search = mObjectToId.find(object);
-    if (search != mObjectToId.end())
-      mBroadPhase->update(search->second, nativeObject->getNativeAabb());
+  // Iterate the id map directly instead of hashing every object through
+  // mObjectToId each step; broadphase update order cannot leak into results
+  // because pair queries are normalized and sorted before visitation.
+  for (const auto& entry : mIdToObject) {
+    mBroadPhase->update(entry.first, entry.second->getNativeAabb());
   }
 }
 
