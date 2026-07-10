@@ -2268,30 +2268,6 @@ int collideSoftMeshSoftMesh(
   return numContacts;
 }
 
-bool findContainingBoxFace(
-    const Eigen::Vector3d& localPoint,
-    const Eigen::Vector3d& halfExtents,
-    int& axis,
-    double& distance)
-{
-  axis = 0;
-  distance = std::numeric_limits<double>::infinity();
-  constexpr double contactTolerance = 1e-9;
-
-  for (auto i = 0; i < 3; ++i) {
-    const double faceDistance = halfExtents[i] - std::abs(localPoint[i]);
-    if (faceDistance < -contactTolerance)
-      return false;
-
-    if (faceDistance < distance) {
-      axis = i;
-      distance = faceDistance;
-    }
-  }
-
-  return true;
-}
-
 bool findContainingBoxFaceFast(
     const Eigen::Vector3d& localPoint,
     const Eigen::Vector3d& halfExtents,

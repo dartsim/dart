@@ -215,8 +215,7 @@ void PointMass::setMass(double _mass)
     return;
 
   mMass = _mass;
-  mParentSoftBodyNode->dirtyArticulatedInertia();
-  mParentSoftBodyNode->incrementVersion();
+  mParentSoftBodyNode->handlePointMassMassChange();
 }
 
 //==============================================================================
