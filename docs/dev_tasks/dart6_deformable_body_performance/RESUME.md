@@ -267,15 +267,29 @@ Latest state:
   limited lane in the local run, and `THREADS=4`
   `COLLISION_DETECTOR=dart soft_bodies 20 20` preserved the prior checksum
   while showing the native finite-finite soft worker scope in the profiler.
-- A direct `NativeCollisionDetector` fallback slice is implemented locally:
+- A direct `NativeCollisionDetector` fallback slice is committed locally through
+  `0ed32afba03` on branch `wp-db-native-soft-fallback`:
   `SoftMeshShape` and `EllipsoidShape` objects now keep native broadphase AABBs
   while routing fallback pairs through cached DART-native collision objects.
   Direct `COLLISION_DETECTOR=native` no longer skips the representative soft
   scenes, reuses scratch fallback results without lookup-cache bookkeeping, uses
-  the cached plane fallback for plane/soft pairs, and benefits from contiguous
-  brute-force native broadphase storage. Focused native broadphase and detector
-  unit tests pass, and current direct-native smokes are warning-free and
-  checksum-equivalent to `COLLISION_DETECTOR=dart`.
+  the cached plane fallback for plane/soft pairs, lazily creates the persistent
+  native manifold cache, skips manifold-cache refresh for soft fallback groups,
+  fuses native object update/AABB collection before broadphase refresh, and
+  benefits from contiguous brute-force native broadphase storage. During review
+  of the uncommitted changes, an unsafe ordered-AABB broadphase shortcut was
+  found and replaced with an id-checked `updateRange()` path plus the
+  `BruteForceBroadPhase.UpdateRangeHandlesOutOfOrderIds` regression.
+- The current handoff file is
+  `docs/dev_tasks/dart6_deformable_body_performance/HANDOFF.md`. It records the
+  exact branch, commit, interrupted benchmark attempt, validation commands, and
+  next takeover steps for a fresh agent.
+- Focused validation after lint and before commit `0ed32afba03` passed:
+  `pixi run lint`, the focused `cmake --build` for `soft_body_headless`,
+  `BM_INTEGRATION_soft_body`, `UNIT_collision_native_detector_adapter`,
+  `UNIT_collision_native_brute_force`, `test_DARTCollisionDetector`,
+  `test_SoftDynamics`, and `INTEGRATION_StepAllocation`, and the focused CTest
+  regex covering those five tests.
 - `06-pr-evidence.md` now records a temporary same-harness
   `origin/release-6.20` baseline comparison, current native/FCL headless parity
   evidence, and the fact that this branch has not added a new GUI example or
@@ -287,31 +301,46 @@ Latest state:
   passed the gz-physics suite and performance checks, then hit a single
   downstream gz-sim `INTEGRATION_entity_system` timing failure; immediate
   focused rerun and fresh `pixi run -e gazebo test-gz-sim` both passed.
-- Branch `wp-db-soft-skel-allocation-gates` now has local implementation
-  commit `221fdf00145`, including the articulated-inertia correction,
-  connection-loop cleanup, and soft aggregation temporary cleanup. No PR is
-  currently attached to this local branch.
+- Branch `wp-db-native-soft-fallback` is local-only at this handoff: no upstream
+  and no GitHub PR was attached. It was six commits ahead of
+  `origin/release-6.20` before this docs handoff. Because it has not been
+  published, a future agent may clean up/squash the branch history before first
+  push, but only after preserving evidence and rerunning the required gates.
+- A formal current/parent/base benchmark was started with output directory
+  `.benchmark_results/wp-db08-native-soft-fallback-0ed32af-parent-40445e-base-2ba736`
+  and then killed after the user requested a handoff-only stop. It created
+  current/parent/base metadata and cold build worktrees but no usable
+  `summary.md`, `raw/`, or `logs/` timing evidence. Do not cite that aborted
+  attempt as benchmark proof.
 
 Next steps:
 
-1. Commit the direct-native fallback/broadphase slice after lint and focused
-   tests, then re-run the current/parent/base benchmark on an exclusive idle
-   host with longer `--benchmark_min_time`, more repetitions,
-   `--detectors fcl,dart,native,bullet,ode`, and the default
-   `--expected-fastest-detector native`. Refresh `01-baseline-evidence.md` and
-   `06-pr-evidence.md` only after threshold-quality rows are available.
-2. Use `soft_body_headless` for longer single-core and multi-core profile
+1. Start by reading `HANDOFF.md`, verifying `git status -sb`, checking whether
+   `origin/release-6.20` has moved, and confirming no previous benchmark
+   process remains alive.
+2. Re-run the current/parent/base comparison on an idle host with
+   `--detectors fcl,dart,native,bullet,ode`, `--threads 1,16`, and the default
+   expected fastest detector (`native`). Prefer a fresh output directory such as
+   `.benchmark_results/wp-db08-native-soft-fallback-0ed32af-parent-40445e-base-2ba736-rerun`.
+   Refresh `06-pr-evidence.md` only after the generated `summary.md` proves
+   checksum eligibility, direct-native winner rows, and current-vs-parent/base
+   CPU-change details. Use the generated graph sections in the PR description.
+3. If the comparison fails, inspect the `summary.md` and raw logs first, then
+   optimize the native path generally rather than overfitting one row. Re-run
+   `pixi run lint`, focused native/soft tests, and the comparison on the final
+   commit.
+4. Use `soft_body_headless` for longer single-core and multi-core profile
    captures on an idle host, then choose the next measured soft-body layout
    slice. The likely next WP-DB.06 slice is retained SoA scratch for
    point-mass phase inputs before any `dart/simd/` kernel.
-3. Extend `test_SoftDynamics` beyond default/native finite-state and
+5. Extend `test_SoftDynamics` beyond default/native finite-state and
    one-thread versus four-thread final-state checks with energy, contact-force,
    CoP, or historical-golden regression thresholds that are stable across
    supported platforms.
-4. Continue WP-DB.08 with fuller triangle/contact-neighborhood coverage and
+6. Continue WP-DB.08 with fuller triangle/contact-neighborhood coverage and
    stronger multicore scaling beyond the current pair-level soft-soft worker
    path before preferring native as the default soft collision backend.
-5. Before creating the PR, capture a same-host baseline-vs-branch performance
+7. Before creating the PR, capture a same-host baseline-vs-branch performance
    comparison and include newly added GUI example commands plus locally captured
    videos as PR evidence. The first evidence packet exists in
    `06-pr-evidence.md`; rerun it on a cleaner host before turning the smoke

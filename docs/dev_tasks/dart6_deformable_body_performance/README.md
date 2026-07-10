@@ -143,9 +143,17 @@ contact correctness, or performance envelope.
   skipping them, reuses a scratch fallback result without colliding-object
   lookup-cache bookkeeping, specializes fallback plane pairs through the cached
   plane path, and stores brute-force native broadphase entries contiguously.
-  Current direct `COLLISION_DETECTOR=native` soft-scene smokes are warning-free
-  and checksum-equivalent to `COLLISION_DETECTOR=dart`; the final
-  current/parent/base matrix still gates threshold claims.
+  Commit `0ed32afba03` tightens that path by lazily creating the persistent
+  native manifold cache, skipping manifold-cache refresh for soft fallback
+  groups, fusing native object update/AABB collection, and preserving
+  broadphase id/AABB correctness through an id-checked range update. Focused
+  native broadphase, detector, soft-dynamics, DART-detector, and allocation
+  gates passed after `pixi run lint`. Current direct
+  `COLLISION_DETECTOR=native` soft-scene smokes are warning-free and
+  checksum-equivalent to `COLLISION_DETECTOR=dart`; the final
+  current/parent/base matrix still gates threshold claims. The 2026-07-09
+  comparison attempt was intentionally stopped before timing rows were
+  produced, so it is not benchmark evidence.
 
 ## Work packets
 
