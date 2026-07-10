@@ -64,6 +64,7 @@ namespace {
 
 constexpr std::size_t kBoxesPerSide = 3u;
 constexpr int kWarmupSteps = 50;
+constexpr int kSoftSkelContactWarmupSteps = 500;
 constexpr int kMeasuredSteps = 100;
 constexpr double kBoxEdge = 0.9;
 constexpr double kGroundThickness = 0.1;
@@ -299,6 +300,7 @@ struct StepAllocationMeasurement
   dart::test::HeapAllocationSnapshot globalHeap;
   dart::test::RawHeapAllocationSnapshot rawHeap;
   dart::test::CountingMemoryAllocatorSnapshot countingAllocator;
+  int warmupSteps = 0;
   int measuredSteps = 0;
   std::size_t lastStepContacts = 0u;
   std::size_t lastStepSoftSoftContacts = 0u;
@@ -352,7 +354,8 @@ std::size_t countSoftSoftContacts(
 StepAllocationMeasurement measureWorldStepsNow(
     const dart::simulation::WorldPtr& world,
     dart::test::CountingMemoryAllocator& allocator,
-    int measuredSteps)
+    int measuredSteps,
+    int warmupSteps = 0)
 {
   // Opt-in allocation-site attribution: set DART_TEST_ALLOCATION_BACKTRACE
   // to dump aggregated backtraces of every measured operator-new call.
@@ -384,6 +387,7 @@ StepAllocationMeasurement measureWorldStepsNow(
       globalCounter.snapshot(),
       rawCounter.snapshot(),
       allocatorCounter.snapshot(),
+      warmupSteps,
       measuredSteps,
       world->getLastCollisionResult().getNumContacts(),
       countSoftSoftContacts(world->getLastCollisionResult())};
@@ -397,7 +401,7 @@ StepAllocationMeasurement measureWorldStepAllocations(
     world->step();
   }
 
-  return measureWorldStepsNow(world, allocator, kMeasuredSteps);
+  return measureWorldStepsNow(world, allocator, kMeasuredSteps, kWarmupSteps);
 }
 
 std::string perStep(std::size_t count, int measuredSteps)
@@ -448,7 +452,7 @@ void reportMeasurement(
   const std::string prefix = label + "_";
 
   recordProperty(prefix + "boxes_per_side", kBoxesPerSide);
-  recordProperty(prefix + "warmup_steps", kWarmupSteps);
+  recordProperty(prefix + "warmup_steps", measurement.warmupSteps);
   recordProperty(prefix + "measured_steps", measurement.measuredSteps);
   recordProperty(prefix + "last_step_contacts", measurement.lastStepContacts);
   recordProperty(
@@ -515,7 +519,7 @@ void reportMeasurement(
 
   std::cout << "[StepAllocation] " << label
             << " boxes_per_side=" << kBoxesPerSide
-            << " warmup_steps=" << kWarmupSteps
+            << " warmup_steps=" << measurement.warmupSteps
             << " measured_steps=" << measurement.measuredSteps
             << " last_step_contacts=" << measurement.lastStepContacts
             << " last_step_soft_soft_contacts="
@@ -756,12 +760,17 @@ StepAllocationMeasurement measureNativeSoftStackSteadyState(
 
 StepAllocationMeasurement measureNativeSoftSkelSteadyState(
     const dart::simulation::WorldPtr& world,
-    dart::test::CountingMemoryAllocator& allocator)
+    dart::test::CountingMemoryAllocator& allocator,
+    int warmupSteps = kWarmupSteps)
 {
   world->enterSimulationMode();
   EXPECT_TRUE(world->isInSimulationMode());
 
-  return measureWorldStepAllocations(world, allocator);
+  for (int i = 0; i < warmupSteps; ++i) {
+    world->step();
+  }
+
+  return measureWorldStepsNow(world, allocator, kMeasuredSteps, warmupSteps);
 }
 
 ::testing::AssertionResult hasNoGlobalHeapAllocations(
@@ -909,7 +918,11 @@ void expectNativeSoftStackRawHeapGate(const std::string& label)
 }
 
 void expectNativeSoftSkelGlobalAndBaseAllocatorGate(
-    const std::string& label, const std::string& uri)
+    const std::string& label,
+    const std::string& uri,
+    bool requireContacts = false,
+    bool requireSoftSoftContacts = false,
+    int warmupSteps = kWarmupSteps)
 {
   dart::test::CountingMemoryAllocator allocator;
   const auto world = createCountedNativeSoftSkelWorld(label, uri, allocator);
@@ -921,15 +934,26 @@ void expectNativeSoftSkelGlobalAndBaseAllocatorGate(
   ASSERT_GT(stats.softBodies, 0u);
   ASSERT_GT(stats.pointMasses, 0u);
 
-  const auto measurement = measureNativeSoftSkelSteadyState(world, allocator);
+  const auto measurement
+      = measureNativeSoftSkelSteadyState(world, allocator, warmupSteps);
   reportMeasurement(
-      label, measurement, "native transferred SKEL soft scene", false);
+      label,
+      measurement,
+      "native transferred SKEL soft scene",
+      requireContacts);
+  if (requireSoftSoftContacts) {
+    EXPECT_GT(measurement.lastStepSoftSoftContacts, 0u);
+  }
   expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
   EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
 }
 
 void expectNativeSoftSkelRawHeapGate(
-    const std::string& label, const std::string& uri)
+    const std::string& label,
+    const std::string& uri,
+    bool requireContacts = false,
+    bool requireSoftSoftContacts = false,
+    int warmupSteps = kWarmupSteps)
 {
   dart::test::CountingMemoryAllocator allocator;
   const auto world = createCountedNativeSoftSkelWorld(label, uri, allocator);
@@ -941,9 +965,16 @@ void expectNativeSoftSkelRawHeapGate(
   ASSERT_GT(stats.softBodies, 0u);
   ASSERT_GT(stats.pointMasses, 0u);
 
-  const auto measurement = measureNativeSoftSkelSteadyState(world, allocator);
+  const auto measurement
+      = measureNativeSoftSkelSteadyState(world, allocator, warmupSteps);
   reportMeasurement(
-      label, measurement, "native transferred SKEL soft scene", false);
+      label,
+      measurement,
+      "native transferred SKEL soft scene",
+      requireContacts);
+  if (requireSoftSoftContacts) {
+    EXPECT_GT(measurement.lastStepSoftSoftContacts, 0u);
+  }
   if (measurement.rawHeap.skipped) {
     recordProperty(label + "_raw_malloc_skipped", "true");
     recordProperty(
@@ -1132,6 +1163,50 @@ TEST(StepAllocation, NativeSoftBodiesSkelSteadyStateHasNoRawMallocWhenAvailable)
   expectNativeSoftSkelRawHeapGate(
       "native_dart_soft_bodies_skel_steady_state_raw_gate",
       "dart://sample/skel/softBodies.skel");
+}
+
+TEST(
+    StepAllocation,
+    NativeSoftOpenChainSkelSteadyStateHasNoGlobalOrAllocatorGrowth)
+{
+  expectNativeSoftSkelGlobalAndBaseAllocatorGate(
+      "native_dart_soft_open_chain_skel_steady_state_gate",
+      "dart://sample/skel/soft_open_chain.skel",
+      false,
+      false,
+      kSoftSkelContactWarmupSteps);
+}
+
+TEST(
+    StepAllocation,
+    NativeSoftOpenChainSkelSteadyStateHasNoRawMallocWhenAvailable)
+{
+  expectNativeSoftSkelRawHeapGate(
+      "native_dart_soft_open_chain_skel_steady_state_raw_gate",
+      "dart://sample/skel/soft_open_chain.skel",
+      false,
+      false,
+      kSoftSkelContactWarmupSteps);
+}
+
+TEST(StepAllocation, NativeSoftCubesSkelSteadyStateHasNoGlobalOrAllocatorGrowth)
+{
+  expectNativeSoftSkelGlobalAndBaseAllocatorGate(
+      "native_dart_soft_cubes_skel_steady_state_gate",
+      "dart://sample/skel/soft_cubes.skel",
+      true,
+      false,
+      kSoftSkelContactWarmupSteps);
+}
+
+TEST(StepAllocation, NativeSoftCubesSkelSteadyStateHasNoRawMallocWhenAvailable)
+{
+  expectNativeSoftSkelRawHeapGate(
+      "native_dart_soft_cubes_skel_steady_state_raw_gate",
+      "dart://sample/skel/soft_cubes.skel",
+      true,
+      false,
+      kSoftSkelContactWarmupSteps);
 }
 
 TEST(

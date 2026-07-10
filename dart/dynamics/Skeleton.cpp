@@ -92,6 +92,16 @@ std::atomic<std::size_t> gExternalDisturbanceVersion{0};
 std::atomic<std::size_t> gDeactivationStateVersion{0};
 std::atomic<std::size_t> gVelocityVersion{0};
 
+bool containsSoftBodyNode(const std::vector<BodyNode*>& bodyNodes)
+{
+  for (const BodyNode* bodyNode : bodyNodes) {
+    if (bodyNode != nullptr && bodyNode->asSoftBodyNode() != nullptr)
+      return true;
+  }
+
+  return false;
+}
+
 std::size_t incrementGlobal(std::atomic<std::size_t>& counter)
 {
   return counter.fetch_add(1, std::memory_order_relaxed) + 1;
@@ -3013,6 +3023,14 @@ void Skeleton::updateInvMassMatrix(std::size_t _treeIdx) const
     return;
   }
 
+  if (containsSoftBodyNode(cache.mBodyNodes)) {
+    const Eigen::MatrixXd& massMatrix = getMassMatrix(_treeIdx);
+    cache.mInvM = massMatrix.ldlt().solve(Eigen::MatrixXd::Identity(dof, dof));
+    DART_ASSERT(!math::isNan(cache.mInvM));
+    cache.mDirty.mInvMassMatrix = false;
+    return;
+  }
+
   // We don't need to set mInvM as zero matrix as long as the below is correct
   // cache.mInvM.setZero();
 
@@ -3101,6 +3119,15 @@ void Skeleton::updateInvAugMassMatrix(std::size_t _treeIdx) const
       static_cast<std::size_t>(cache.mInvAugM.cols()) == dof
       && static_cast<std::size_t>(cache.mInvAugM.rows()) == dof);
   if (dof == 0) {
+    cache.mDirty.mInvAugMassMatrix = false;
+    return;
+  }
+
+  if (containsSoftBodyNode(cache.mBodyNodes)) {
+    const Eigen::MatrixXd& augMassMatrix = getAugMassMatrix(_treeIdx);
+    cache.mInvAugM
+        = augMassMatrix.ldlt().solve(Eigen::MatrixXd::Identity(dof, dof));
+    DART_ASSERT(!math::isNan(cache.mInvAugM));
     cache.mDirty.mInvAugMassMatrix = false;
     return;
   }
@@ -4400,11 +4427,12 @@ void Skeleton::clearCollidingBodies()
   for (auto i = 0u; i < getNumBodyNodes(); ++i) {
     auto bodyNode = getBodyNode(i);
     DART_SUPPRESS_DEPRECATED_BEGIN
+    const bool wasColliding = bodyNode->isColliding();
     bodyNode->setColliding(false);
     DART_SUPPRESS_DEPRECATED_END
 
     auto softBodyNode = bodyNode->asSoftBodyNode();
-    if (softBodyNode) {
+    if (softBodyNode && wasColliding) {
       auto& pointMasses = softBodyNode->getPointMasses();
 
       for (auto pointMass : pointMasses)
