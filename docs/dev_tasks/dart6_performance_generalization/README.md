@@ -175,9 +175,8 @@ Wave 2 (dependency-driven):   WP-PG.12 (after PG.10, ideally PG.30),
                               WP-PG.32
 Evidence-gated:               WP-PG.13 (only if PG.10's island census shows
                               groups coarser than contact connectivity)
-Decision-gated:               WP-PG.04 (D4), WP-PG.14 (D3), WP-PG.15 (D7),
-                              WP-PG.23 (D8), WP-PG.33 (PG.30; D1/D2 for the
-                              SIMD variant), WP-PG.42 (PG.40 + WS-F coord)
+Decision-gated:               WP-PG.04 (D4), WP-PG.23 (D8),
+                              WP-PG.33 (PG.30; D1/D2 for the SIMD variant)
 WS-F (native port) runs its own phases 0–7; its phase 4 consumes WS-D
 kernels; WS-B depth is re-reviewed at its phase 5/6 (D5).
 ```
@@ -212,12 +211,16 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
   gains only, or build a small runtime-dispatch layer (per-backend TUs +
   CPU feature check). Naive per-file `-mavx2` on unconditional code would
   SIGILL on older CPUs.
-- **D3 — Matrix-free large-island solver**: opt-in solver option vs
-  island-size-gated default. Proposal: opt-in on DART 6 (WP-PG.14).
-  **Revisit trigger**: if WP-PG.10 confirms solve-proper dominance on
-  single-connected-component islands, opt-in leaves the primary fixture
-  without a default-on solve-side remedy — D3 must then be re-decided
-  with that evidence.
+- **D3 — Matrix-free large-island solver**: resolved by merged #3361
+  (`WP-PG.14: add opt-in matrix-free contact LCP`). DART 6.20 keeps dense
+  Dantzig as the default and exposes matrix-free contact PGS only as an
+  explicit default-off `BoxedLcpConstraintSolver` option plus
+  `contact_benchmark`/dartpy controls. The #3353/D7 default remediation
+  satisfies the primary-fixture default-on target, so D3 is not promoted to a
+  default behavior on 6.20. Future work may tune or broaden the option only
+  with explicit option-off hash guards and option-on finite/convergence/
+  re-baseline evidence because matrix-free PGS has different solver semantics
+  from Dantzig.
 - **D4 — Executor tooling**: keep `/dart-resume` + RESUME.md as the 6.20
   entry point, or backport a 6.20-adapted `dart-execute-packet` command
   (WP-PG.04).
@@ -226,18 +229,14 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
   WS-F phase 5 (facade decision). WP-PG.23 is governed by D8, not D5.
 - **D6 — Deactivation default divergence**: 6.20 defaults deactivation ON,
   main defaults OFF. Flagged for awareness; no action proposed this round.
-- **D7 — Penetration-creep remediation policy** (active on WP-PG.15/#3353):
-  #3353 is the current behavior-changing default-policy proposal. It promotes
-  the evidenced contact ERV/tolerance values through dense-island adaptive
-  policy, keeps ordinary single-body support contacts on the legacy effective
-  ERV/tolerance path, and adds dense-contact-island sleep candidacy for
-  sub-wake jitter. After the #3355 base merge, analytic `PlaneShape` support
-  contacts are included in the bounded contact-rest tolerance because Bullet
-  plane contacts converge at millimeter scale, but explicit
-  `setAutomaticSleepingContactPenetrationTolerance(1e-5)` calls still preserve
-  the strict legacy policy. The PR must carry the old/new re-baseline evidence
-  and reviewer acceptance before D7 is closed. D3 remains the separate
-  large-island solve-side decision.
+- **D7 — Penetration-creep remediation policy**: resolved by merged #3353. The
+  behavior-changing default policy promotes the evidenced contact ERV/tolerance
+  values through dense-island adaptive policy, keeps ordinary single-body
+  support contacts on the legacy effective ERV/tolerance path, adds
+  dense-contact-island sleep candidacy for sub-wake jitter, and preserves the
+  strict legacy policy for explicit
+  `setAutomaticSleepingContactPenetrationTolerance(1e-5)` calls. D3 remains the
+  separate default-off large-island solve-side option.
 - **D8 — Contact-manifold reduction on current detectors** (blocks
   WP-PG.23): round 1 explicitly deferred default-on manifold
   reduction/selection ("mines #2366 and DART 7 native collision"; recorded

@@ -299,6 +299,12 @@
 
 * Dynamics
 
+  * Add a default-off `BoxedLcpConstraintSolver` matrix-free contact solver
+    option, plus dartpy bindings and `contact_benchmark` flags, for explicitly
+    benchmarking large supported contact-only islands without changing the
+    default dense LCP solver behavior:
+    [#3361](https://github.com/dartsim/dart/pull/3361)
+
   * Add an opt-in per-DoF actuator type API to `Joint`
     (`setActuatorType(index, type)`, `setActuatorTypes(vector)`,
     `getActuatorType(index)`, `getActuatorTypes()`, `hasActuatorType()`) so

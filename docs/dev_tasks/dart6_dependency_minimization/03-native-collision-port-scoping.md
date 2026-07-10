@@ -1,11 +1,12 @@
 # Scoping: Native collision detector port (DART 7 -> DART 6.20)
 
-> **Status: PLANNING REFRESH / EXECUTION PLAN** - DART 6.20 has already landed a
-> substantial performance stack for issue #3056, but the DART 7 native collision
-> engine has **not** been ported to DART 6 and FCL is still the release-branch
-> default. This document is the go/no-go and sequencing artifact for the native
-> port/default-flip work recorded in `02-default-environment-split.md`
-> (decision c). Sub-doc of the `dart6_dependency_minimization` task.
+> **Status: EXECUTION PLAN / CURRENT RESUME MAP** - DART 6.20 now has the
+> opt-in native collision detector, phase-2 adapter, phase-3 capability parity
+> pieces, native dashboard rows, and the first measured Phase 4 optimization
+> (#3364). FCL is still the release-branch default and still part of the core
+> dependency surface. This document is the go/no-go and sequencing artifact for
+> finishing Phase 4, deciding Phase 5 compatibility facades, performing the
+> Phase 6 default flip, and completing Phase 7 FCL decoupling.
 
 ## Why (the real dependency win)
 
@@ -17,15 +18,19 @@ and turn FCL/Bullet/ODE optional - exactly what DART 7 did (PLAN-035, PRs #2652
 /#2688/#2700). Goal for 6.20: native default that is **gz-compatible**, **feature-
 complete**, and **evidence-driven faster** than Bullet/ODE/FCL.
 
-## Current evidence refresh (2026-07-05)
+## Current evidence refresh (2026-07-09)
 
 Refs checked:
 
-- `origin/release-6.20`: `949a9c2ff5ed6309beef0aa1345101d36c813f02`.
-- This phase-0 packet branch after the base merge: `1e6a8332a730a994450c14ee8a780780c5e069bb`.
-- This PR later merged #3281 via `f1916fd843f931eb7304b9a9dc8089eaf3586b38`
-  on `origin/release-6.20` = `135cc8f20765d39040e3e3ae87536dabac8f5401`.
-- `origin/main`: `5c75381f79a0431909f8c1b0a04fca1fbaa256ed`.
+- Phase-0 original `origin/release-6.20`:
+  `949a9c2ff5ed6309beef0aa1345101d36c813f02`.
+- Phase-0 packet branch after the base merge:
+  `1e6a8332a730a994450c14ee8a780780c5e069bb`.
+- #3281 later merged via `f1916fd843f931eb7304b9a9dc8089eaf3586b38` on
+  `origin/release-6.20` = `135cc8f20765d39040e3e3ae87536dabac8f5401`.
+- Current `origin/release-6.20`: `613241385ae58fed2d2a47e9ff53beb2972d4b76`
+  after #3364 and the performance-generalization handoff update.
+- Current `origin/main`: `a70fc2ed5cb7ea40f72dce68b7d374583ab7feee`.
 - Related remote heads: `feature/native-occupancy-grid`,
   `task/native-collision-performance-exec`,
   `docs/dart6-performance-dashboard`, `backport/2490-to-release-6.20`,
@@ -33,10 +38,12 @@ Refs checked:
 
 Live conclusion:
 
-- `release-6.20` now contains the #3281 phase-1 internal native math core under
-  `dart/collision/native/`. It still has no DART 6 detector adapter and no
-  default flip: the public `dart` detector remains the old limited detector,
-  and the default path still resolves through FCL.
+- `release-6.20` now contains the phase-1 native math core, phase-2 DART 6
+  detector adapter, opt-in `"native"` factory key, phase-3 capability parity
+  pieces, native dashboard rows, and #3364's solver-facing manifold
+  optimization.
+- It still has no default flip: the default path still resolves through FCL,
+  and FCL remains a core dependency until phases 6 and 7.
 - DART 7 source/reference PRs remain #2652 (native default), #2688 (coverage and
   performance superset), and #2700 (native CCD). Use these as reference only;
   do not copy the EnTT/C++23 world plumbing directly into DART 6.
@@ -183,25 +190,31 @@ Success means **both**:
 
 0. **Evidence harness and queue cleanup.** With #3209 and #3230 landed, decide
    whether #3229 is a prerequisite for native optimization, and capture a
-   baseline packet on current `release-6.20`. No behavior change.
+   baseline packet on current `release-6.20`. No behavior change. **Done:
+   #3271.**
 1. **Native core skeleton.** Port the pure math/native algorithm core to DART 6
    as C++17 with no EnTT and no new dependency: AABB/broadphase scaffolding,
    GJK/MPR/SAT primitives, contact data structures, and deterministic tests.
-   Keep it internal; FCL remains default.
+   Keep it internal; FCL remains default. **Done: #3281.**
 2. **DART 6 detector adapter.** Plumb the native core behind the existing
    `CollisionDetector`/`CollisionGroup`/`CollisionObject` contracts, initially
    behind the `dart` detector or a new internal factory alias. Cover primitive,
-   convex, mesh, plane, and SDF/voxel paths. FCL remains default.
+   convex, mesh, plane, and SDF/voxel paths. FCL remains default. **Done:
+   #3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350.**
 3. **Capability parity.** Add distance, raycast, CCD, persistent manifolds,
    contact reduction, `CollisionOption.maxNumContactsPerPair`, and VoxelGrid/
    octree replacement. Gate each capability against its incumbent: FCL for
    distance/default contacts, Bullet for raycast, and current DART behavior where
-   no other incumbent exists.
+   no other incumbent exists. **Done: #3352, #3355, #3358, #3359, #3360.**
 4. **Performance optimization.** Optimize only with measured evidence: data
    layout, scratch caches, broadphase pair pruning, manifold reuse, scene-local
    allocation control, optional SIMD from #3229, and thread-safe contact
    aggregation. Every optimization PR carries parent-vs-PR and detector-vs-
-   detector tables.
+   detector tables. **Started: #3362 added native dashboard rows; #3364 capped
+   solver-facing manifolds and made native faster than DART/FCL/Bullet on the
+   120-object contact-container row in that run. Next session must refresh this
+   evidence on the current base and either close Phase 4 or land one cohesive
+   measured follow-up.**
 5. **Compatibility facade decision.** Decide whether Bullet/ODE/FCL components
    stay real optional components or become facade-over-native compatibility
    components. This phase must prove gz subclassing still works, not just
@@ -240,15 +253,24 @@ Success means **both**:
    command lines, raw output, hashes, scene-dump tolerances, CPU
    metadata, and the explicit "native default NOT allowed at this tip"
    verdict plus the phase-6 acceptance envelope.
-5. Phase 1 (#3281) has landed as an internal-only, no-default-change math core.
-   Do not start Phase 2/default-adapter work until this phase-0 packet is
-   accepted.
+5. ~~Phase 1 (#3281) has landed as an internal-only, no-default-change math
+   core. Do not start Phase 2/default-adapter work until this phase-0 packet is
+   accepted.~~ **Superseded:** phases 2 and 3 are merged, and Phase 4 has begun.
+6. Current next packet: refresh Phase 4 performance evidence on current
+   `origin/release-6.20`. If #3364's native rows still satisfy the bar, record a
+   Phase 4 closeout and move to Phase 5. If not, implement one cohesive measured
+   follow-up with parent-vs-PR and detector-vs-detector tables.
+7. After Phase 4 closeout, run the Phase 5 facade decision. Prefer clean,
+   long-term interfaces over header-compatibility shims; preserve gz-physics and
+   gz-sim behavior where they actually depend on subclassing, component names,
+   detector factory keys, or contact semantics.
 
 ## Recommendation
 
-Feasible and the right end-state, but **XL**. The native detector port should
-not start as a default-flip branch. Start with Phase 0 evidence harness and a
-baseline packet, then land Phase 1/2 as internal non-default work. Re-evaluate
-after capability parity and performance optimization before committing to the
-default flip. If 6.20 LTS appetite for a change this large is limited, keep FCL
-core in 6.20 and target the native default for a later 6.x minor.
+Feasible and the right end-state, but still **XL**. The branch is past the
+initial port risk: phases 0-3 are merged and Phase 4 has begun. Do not jump
+directly to the default flip. First close Phase 4 with current benchmark
+evidence, then make the Phase 5 facade decision with gz compatibility proof.
+Only after that should Phase 6 flip the default in both `ConstraintSolver`
+constructors, and only after a green default-flip packet should Phase 7 remove
+FCL from the core dependency surface.

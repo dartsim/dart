@@ -205,6 +205,48 @@ Additional current-candidate examples:
   `20000 / 20000` capture frames, `71/71` resting, zero contacts, and
   `pixi run image-verdict` passed the non-blank verdict.
 
+### WP-PG.14 D3 matrix-free opt-in A/B (landed as #3361)
+
+Artifact: `/tmp/wp_pg14_matrix_free_ab_20260709T040443Z` on
+`wp-pg-14-matrix-free-lcp`, using
+`build/default/cpp/Release/bin/contact_benchmark`. The matrix-free rows enable
+the new solver option explicitly; default settings remain dense Dantzig.
+
+| Row | Median RTF | Median avg step | Contacts | Pairs | Over sleep tol | Finite | Max pen | Hash |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | --- |
+| S1 120 DART dense, option off | 0.135054 | 7.40446 ms | 242 | 182 | 241 | true | 0.302429 | `0x123ee9779bccacfb` |
+| S1 120 DART matrix-free, 10 iters | 1.51219 | 0.661291 ms | 238 | 181 | 235 | true | 0.311295 | `0xfa1e197d3a93fd80` |
+| S1 120 DART matrix-free, 30 iters | 1.50798 | 0.663138 ms | 237 | 181 | 233 | true | 0.309478 | `0xbf538ac9d35f145e` |
+| S3 active-3k DART, option-on fallback | 0.115575 | 8.65239 ms | 5005 | 3003 | n/a | true | n/a | `0xcf0ba6eaa97be038` |
+
+The option-off row is the default guard and keeps the post-#3353 hash. The
+matrix-free rows are finite and ~11x faster on the supported large contact
+island, but their hashes change by design and require explicit D3 re-baseline
+review if callers opt in. The S3 row verifies that enabling the option does not
+alter many-small-island scenes below the default 193-row threshold.
+
+Profile evidence from the same artifact:
+
+- Dense S1 120 DART: RTF `0.132365`, avg step `7.55488` ms; `primarySolve`
+  takes 77.1% of wall time and `constructLcpTerms` takes 13.2%.
+- Matrix-free S1 120 DART: RTF `1.4841`, avg step `0.67381` ms;
+  `matrixFreeContactSolve` takes 17.8% of wall time, with 200 row samples,
+  mean 781.9 rows, mean 1.90 iterations, and 198/200 converged samples.
+
+Validation on the same branch: `pixi run lint`, `pixi run check-lint`,
+focused/full `test_ConstraintSolver`, dartpy constraint pytest, capped
+`ALL`, and `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz` all passed.
+
+PR #3361 merged as `91c158fc3e5` after review hardening on head
+`5751c7ed84c`. Final current-head smoke artifact:
+`/tmp/wp_pg14_matrix_free_review_5751c7ed84c_repeat_20260709T223525Z`;
+S1 120 DART dense option-off median avg step `7.93478` ms, hash
+`0x123ee9779bccacfb`; option-on 30-iteration matrix-free median avg step
+`1.38782` ms, finite, hash `0xa5548e1abe05b52`. The post-review changes
+preserve the same semantics boundary: option-off remains the default guard,
+while option-on is an explicit D3 solver mode with its own convergence and
+finite-state evidence.
+
 ### Headline findings (round-2 evidence; supersedes the pre-plan smoke run)
 
 1. **The two active regimes have opposite bottlenecks** (profile splits,
