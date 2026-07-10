@@ -78,11 +78,42 @@ scope-diff-guarded.
 - **D6** (solver-facing native manifold cap with performance evidence):
   **#3364** — **merged**.
 
-**Next: Phase 4 closeout / remaining measured optimization.** PR #3364 landed
-the first native performance optimization: cap solver-facing native manifolds at
-three contacts while honoring stricter per-pair caps. This targets the measured
-solver row overhead from native's fourth contact on contact-rich scenes and
-keeps the native detector opt-in.
+**Phase 4 continues (2026-07-10 refresh).** After #3364, the AABB-tree
+broadphase PR (#3368, `feature/native-aabb-tree-broadphase`) replaced the
+O(n^2) BruteForce pair loop with DART 7's dynamic AABB tree while keeping all
+eight native guard rows bit-identical (fat-AABB cull + tight-AABB filter +
+sorted pair order): S2 settled-3k 0.0809 -> 0.0340 ms/step (now ties the
+`dart` detector), S3 active-3k 34.63 -> 12.28 ms/step, S4 generated-900
+0.125 -> 0.072, GB 120/4/1 1404 -> 1232 ms; gz gate green on the branch.
+Artifacts: `/tmp/audit_head_20260710T011207Z` (parent full matrix incl.
+native rows) and `/tmp/aabbtree_ab_20260710T022954Z` (branch A/B).
+
+Remaining measured Phase 4 gaps against the phase-6 envelope (native >=
+fastest incumbent per row):
+
+1. S3 active-3k: native 12.28 vs dart 9.14 ms/step (16-thread) — remaining
+   delta is narrowphase/manifold-cache side; profile on a quiet host first.
+2. Small scenes: native ~1.21 vs dart 1.06 ms/step on S1-60; ~40% slower
+   than dart on a small MJCF arm-scene bisect. Native small-scene collide
+   overhead packet.
+3. S6 dense-pile resting profile: native 0/71 resting vs dart 71/71 — the
+   pile physically jitters (max smoothed linear speed 0.24 m/s at 20k
+   steps); NOT a sleep-gating bug. A solver-facing manifold cap 3 -> 4 A/B
+   was decisively REJECTED (penetration 0.0046 -> 0.158 m, S1-120 +102%;
+   `/tmp/cap4_ab_20260710T014124Z`). Root cause is contact-quality/solver
+   interaction; next probe is a shape-type bisect of the pile (box-only vs
+   cylinder-only) under native vs dart.
+
+**Phase 5 decision draft exists:**
+[08-phase5-facade-decision.md](08-phase5-facade-decision.md) — canonical key
+`native`; 6.21 deprecates FCL/Bullet/ODE via messaged attributes on
+create()/ctors; 6.22 removes the external deps with facades-over-native
+(only `OdeCollisionDetector` needs subclassability for gz). Maintainer
+ratification points are listed in that doc. Note doc 03's ConstraintSolver
+line numbers were stale: the FCL ctor sites are `ConstraintSolver.cpp:416`
+and `:433`.
+
+Historical context for #3364 (superseded rows above):
 
 Measured on `origin/release-6.20` parent `43e419638986` vs #3364:
 

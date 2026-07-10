@@ -9,7 +9,32 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
-**Current claimed packet: none. Stop and audit before writing more code.**
+**2026-07-10: the current-head completion audit RAN** (release-6.20 @
+`db255a08e8e`; artifacts `/tmp/audit_head_20260710T011207Z`):
+
+- Criterion 1 (S1 primary fixture 3x): **MET** — 120/dart/1 RTF 0.126447
+  (3.51x the 0.036 round-2 baseline), avg step 7.908 ms, hash
+  `0x123ee9779bccacfb`.
+- Criterion 2 (S6 pile-sleep): **MET** — 71/71 resting, max_pen 0, hash
+  `0xec80f734df6d5e74` (exact #3353 accepted value), RTF 0.21.
+- Criterion 3 (no regressions): all S2/S3 guard hashes bit-identical across
+  dart/fcl/bullet/ode; S4/S5 fcl match the recorded drift values; S4/S5
+  bullet re-baselined by merged #3355's analytic PlaneShape path (new values
+  in the audit dir are the current guards).
+- Criterion 4 (general evidence): the maintainer broadened the bar to
+  cross-engine evidence vs MuJoCo across DART's major workloads. New lane
+  **WS-G**: [08-mujoco-comparison-lane.md](08-mujoco-comparison-lane.md).
+  Harness + mujoco pixi env + dartpy native binding: PR #3367. First
+  standings: DART+native already beats MuJoCo on ant (+30%); gaps and root
+  causes recorded in the lane doc with packets (MJCF stacked joints PR
+  #3369; MJCF contype/conaffinity+friction fidelity packet in flight;
+  WP-SS small-scene-overhead family evidence-gated on fidelity).
+- Side products: #3366 fixes a dartpy `getDofs`/`getChainDofs` ownership bug
+  (heap corruption, SIGSEGV at teardown); #3368 (dep-min lane) removes the
+  native detector's O(n^2) broadphase with bit-identical guards.
+
+Open PRs from this cycle: #3366, #3367, #3368, #3369 — all awaiting review/
+merge; docs refresh is this PR.
 
 Current `release-6.20` head is #3361 merge commit `91c158fc3e5`
 (`WP-PG.14: add opt-in matrix-free contact LCP`). A fresh session should start

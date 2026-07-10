@@ -12,11 +12,16 @@ Related open queue at last refresh: none blocking (enablers merged:
 #3270 was closed by maintainer direction and its D1/D2 evidence now rides
 with the first real SIMD-kernel PR.
 
-Current handoff (2026-07-09): no packet is claimed after #3361. The next
-session should run the current-head completion/evidence audit in RESUME.md
-before writing more code. If the audit finds a real remaining bottleneck, claim
-the smallest matching packet; otherwise prepare the closeout/promote-docs path
-for issue #3056 rather than creating more small PRs.
+Current handoff (2026-07-10): the completion audit ran (see RESUME.md —
+criteria 1-3 MET on the merged head). The maintainer broadened criterion 4 to
+cross-engine evidence vs MuJoCo across DART's major workloads; lane **WS-G**
+(08-mujoco-comparison-lane.md) owns that work. Open PRs from the 2026-07-10
+cycle: #3366 (dartpy getDofs ownership bugfix), #3367 (MuJoCo comparison
+harness + mujoco env + dartpy native binding), #3368 (native AABB-tree
+broadphase, dep-min lane), #3369 (MJCF stacked hinge/slide joint support).
+In-flight packets: MJCF contype/conaffinity+friction fidelity; native
+small-scene overhead (WP-SS family) and the S6 native resting-profile
+investigation are evidence-gated in the dep-min lane.
 
 ## Lane status
 
