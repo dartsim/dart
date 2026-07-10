@@ -18,7 +18,9 @@ engines, warmup excluded, median-of-reps, finite/contact telemetry,
 FFI-overhead calibration row, MuJoCo integrator normalized to Euler with
 model-default sensitivity row, 1.1x win/noise band).
 
-Reproduce:
+Reproduce (the harness and the `mujoco` pixi environment land with #3367;
+until that merges, run from the `feature/mujoco-comparison-harness` branch —
+and the humanoid rows additionally need #3369's MJCF stacked-joint support):
 
 ```sh
 pixi run build-py-dev && pixi install -e mujoco
