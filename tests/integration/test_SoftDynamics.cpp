@@ -36,7 +36,6 @@
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/math/Constants.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
@@ -44,6 +43,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <string>
 #include <vector>
@@ -53,32 +53,6 @@
 using namespace std;
 using namespace Eigen;
 using namespace dart;
-
-//==============================================================================
-/// Returns true if the two matrices are equal within the given bound
-template <class MATRIX>
-bool equals(
-    const DenseBase<MATRIX>& A, const DenseBase<MATRIX>& B, double tol = 1e-5)
-{
-  // Get the matrix sizes and sanity check the call
-  const std::size_t n1 = A.cols(), m1 = A.rows();
-  const std::size_t n2 = B.cols(), m2 = B.rows();
-  if (m1 != m2 || n1 != n2)
-    return false;
-
-  // Check each index
-  for (std::size_t i = 0; i < m1; i++) {
-    for (std::size_t j = 0; j < n1; j++) {
-      if (std::isnan(A(i, j)) ^ std::isnan(B(i, j)))
-        return false;
-      else if (std::abs(A(i, j) - B(i, j)) > tol)
-        return false;
-    }
-  }
-
-  // If no problems, the two matrices are equal
-  return true;
-}
 
 namespace {
 
@@ -96,8 +70,17 @@ struct SoftSceneStats
   std::size_t pointMasses = 0u;
 };
 
+struct SoftStateSnapshot
+{
+  std::vector<double> values;
+  std::size_t dofs = 0u;
+  std::size_t softBodies = 0u;
+  std::size_t pointMasses = 0u;
+};
+
 constexpr double kMaxPointMassPositionNorm = 1.0e4;
 constexpr double kMaxPointMassVelocityNorm = 1.0e6;
+constexpr double kChecksumRelativeTolerance = 1.0e-12;
 
 template <class Derived>
 void expectFinite(
@@ -132,6 +115,198 @@ SoftSceneStats collectSoftSceneStats(const simulation::WorldPtr& world)
   }
 
   return stats;
+}
+
+template <class Derived>
+void appendStateValues(
+    const Eigen::MatrixBase<Derived>& value, std::vector<double>& values)
+{
+  values.reserve(values.size() + static_cast<std::size_t>(value.size()));
+  for (Eigen::Index i = 0; i < value.size(); ++i)
+    values.push_back(value(i));
+}
+
+SoftStateSnapshot computeSoftStateSnapshot(const simulation::WorldPtr& world)
+{
+  SoftStateSnapshot snapshot;
+  if (!world)
+    return snapshot;
+
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const dynamics::SkeletonPtr skeleton = world->getSkeleton(i);
+    if (!skeleton)
+      continue;
+
+    const Eigen::VectorXd positions = skeleton->getPositions();
+    const Eigen::VectorXd velocities = skeleton->getVelocities();
+    appendStateValues(positions, snapshot.values);
+    appendStateValues(velocities, snapshot.values);
+    snapshot.dofs += static_cast<std::size_t>(positions.size());
+
+    snapshot.softBodies += skeleton->getNumSoftBodyNodes();
+    for (std::size_t j = 0; j < skeleton->getNumSoftBodyNodes(); ++j) {
+      const dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(j);
+      if (softBody == nullptr)
+        continue;
+
+      for (std::size_t k = 0; k < softBody->getNumPointMasses(); ++k) {
+        const dynamics::PointMass* pointMass = softBody->getPointMass(k);
+        if (pointMass == nullptr)
+          continue;
+
+        appendStateValues(pointMass->getPositions(), snapshot.values);
+        appendStateValues(pointMass->getVelocities(), snapshot.values);
+        appendStateValues(pointMass->getWorldPosition(), snapshot.values);
+        ++snapshot.pointMasses;
+      }
+    }
+  }
+
+  return snapshot;
+}
+
+void expectNearSnapshotValue(double lhs, double rhs, const std::string& context)
+{
+  const double scale = std::max({1.0, std::abs(lhs), std::abs(rhs)});
+  EXPECT_NEAR(lhs, rhs, kChecksumRelativeTolerance * scale) << context;
+}
+
+void expectSnapshotsNear(
+    const SoftStateSnapshot& lhs,
+    const SoftStateSnapshot& rhs,
+    const std::string& context)
+{
+  EXPECT_EQ(lhs.dofs, rhs.dofs) << context;
+  EXPECT_EQ(lhs.softBodies, rhs.softBodies) << context;
+  EXPECT_EQ(lhs.pointMasses, rhs.pointMasses) << context;
+  ASSERT_EQ(lhs.values.size(), rhs.values.size()) << context;
+
+  for (std::size_t i = 0; i < lhs.values.size(); ++i) {
+    expectNearSnapshotValue(
+        lhs.values[i],
+        rhs.values[i],
+        context + " state[" + std::to_string(i) + "]");
+  }
+}
+
+void expectVectorNear(
+    const Eigen::VectorXd& lhs,
+    const Eigen::VectorXd& rhs,
+    double tolerance,
+    const std::string& context)
+{
+  ASSERT_EQ(lhs.size(), rhs.size()) << context;
+  for (Eigen::Index i = 0; i < lhs.size(); ++i)
+    EXPECT_NEAR(lhs[i], rhs[i], tolerance) << context << " index=" << i;
+}
+
+void expectMatrixNear(
+    const Eigen::MatrixXd& lhs,
+    const Eigen::MatrixXd& rhs,
+    double tolerance,
+    const std::string& context)
+{
+  ASSERT_EQ(lhs.rows(), rhs.rows()) << context;
+  ASSERT_EQ(lhs.cols(), rhs.cols()) << context;
+  for (Eigen::Index row = 0; row < lhs.rows(); ++row) {
+    for (Eigen::Index col = 0; col < lhs.cols(); ++col) {
+      EXPECT_NEAR(lhs(row, col), rhs(row, col), tolerance)
+          << context << " row=" << row << " col=" << col;
+    }
+  }
+}
+
+Eigen::VectorXd projectPointMassGravity(
+    const dynamics::SoftBodyNode* softBody, const Eigen::Vector3d& gravity)
+{
+  DART_ASSERT(softBody != nullptr);
+  Eigen::Vector6d pointMassGravityWrench = Eigen::Vector6d::Zero();
+
+  if (softBody->getGravityMode()) {
+    const Eigen::Vector3d localGravity
+        = softBody->getWorldTransform().linear().transpose() * gravity;
+
+    for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+      const dynamics::PointMass* pointMass = softBody->getPointMass(i);
+      DART_ASSERT(pointMass != nullptr);
+
+      const Eigen::Vector3d pointForce = pointMass->getMass() * localGravity;
+      pointMassGravityWrench.head<3>().noalias()
+          += pointMass->getLocalPosition().cross(pointForce);
+      pointMassGravityWrench.tail<3>().noalias() += pointForce;
+    }
+  }
+
+  return -(softBody->getJacobian().transpose() * pointMassGravityWrench);
+}
+
+Eigen::VectorXd projectPointMassExternalForces(
+    const dynamics::SkeletonPtr& skeleton,
+    const dynamics::SoftBodyNode* softBody,
+    const std::vector<Eigen::Vector3d>& localForces)
+{
+  DART_ASSERT(skeleton != nullptr);
+  DART_ASSERT(softBody != nullptr);
+  DART_ASSERT(localForces.size() == softBody->getNumPointMasses());
+
+  Eigen::Vector6d pointMassExternalWrench = Eigen::Vector6d::Zero();
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    const dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    DART_ASSERT(pointMass != nullptr);
+
+    pointMassExternalWrench.head<3>().noalias()
+        += pointMass->getLocalPosition().cross(localForces[i]);
+    pointMassExternalWrench.tail<3>().noalias() += localForces[i];
+  }
+
+  const Eigen::VectorXd localProjection
+      = softBody->getJacobian().transpose() * pointMassExternalWrench;
+  const std::vector<std::size_t>& indices
+      = softBody->getDependentGenCoordIndices();
+  DART_ASSERT(
+      localProjection.size() == static_cast<Eigen::Index>(indices.size()));
+
+  Eigen::VectorXd projection = Eigen::VectorXd::Zero(skeleton->getNumDofs());
+  for (std::size_t i = 0; i < indices.size(); ++i)
+    projection[indices[i]] = localProjection[static_cast<Eigen::Index>(i)];
+
+  return projection;
+}
+
+Eigen::MatrixXd projectPointMassMassMatrix(
+    const dynamics::SkeletonPtr& skeleton,
+    const dynamics::SoftBodyNode* softBody)
+{
+  DART_ASSERT(skeleton != nullptr);
+  DART_ASSERT(softBody != nullptr);
+
+  const std::vector<std::size_t>& indices
+      = softBody->getDependentGenCoordIndices();
+  Eigen::MatrixXd localContribution
+      = Eigen::MatrixXd::Zero(indices.size(), indices.size());
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    const dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    DART_ASSERT(pointMass != nullptr);
+
+    Eigen::Isometry3d pointTransform = Eigen::Isometry3d::Identity();
+    pointTransform.translation() = pointMass->getLocalPosition();
+    const Eigen::Matrix<double, 3, Eigen::Dynamic> pointJacobian
+        = math::AdInvTJac(pointTransform, softBody->getJacobian())
+              .bottomRows<3>();
+
+    localContribution.noalias()
+        += pointMass->getMass() * pointJacobian.transpose() * pointJacobian;
+  }
+
+  Eigen::MatrixXd contribution
+      = Eigen::MatrixXd::Zero(skeleton->getNumDofs(), skeleton->getNumDofs());
+  for (std::size_t row = 0; row < indices.size(); ++row) {
+    for (std::size_t col = 0; col < indices.size(); ++col)
+      contribution(indices[row], indices[col]) = localContribution(row, col);
+  }
+
+  return contribution;
 }
 
 void expectFiniteSoftBodyState(
@@ -179,12 +354,13 @@ void expectFiniteSoftBodyState(
 void expectFiniteWorldState(
     const simulation::WorldPtr& world,
     const SoftStabilityScene& scene,
+    const std::string& detectorName,
     std::size_t threads,
     std::size_t step)
 {
   ASSERT_TRUE(world != nullptr) << scene.uri;
 
-  const std::string worldContext = scene.uri
+  const std::string worldContext = scene.uri + " detector=" + detectorName
                                    + " threads=" + std::to_string(threads)
                                    + " step=" + std::to_string(step);
   expectFinite(world->getTime(), worldContext + " time");
@@ -221,9 +397,6 @@ void expectFiniteWorldState(
 class SoftDynamicsTest : public ::testing::Test
 {
 public:
-  // Get Skel file list to test.
-  const std::vector<std::string>& getList();
-
   // Get mass matrix of _skel using Jacobians and inertias of each body
   // in _skel.
   MatrixXd getMassMatrix(dynamics::SkeletonPtr _skel);
@@ -241,31 +414,7 @@ public:
   // Compare accelerations computed by recursive method, Jacobian, and finite
   // difference.
   // void compareAccelerations(const std::string& _fileName) {}
-
-  // Compare dynamics terms in equations of motion such as mass matrix, mass
-  // inverse matrix, Coriolis force vector, gravity force vector, and external
-  // force vector.
-  void compareEquationsOfMotion(const std::string& _fileName);
-
-protected:
-  // Sets up the test fixture.
-  void SetUp() override;
-
-  // Skel file list.
-  std::vector<std::string> list;
 };
-
-//==============================================================================
-void SoftDynamicsTest::SetUp()
-{
-  list.push_back("dart://sample/skel/test/test_drop_box.skel");
-}
-
-//==============================================================================
-const std::vector<std::string>& SoftDynamicsTest::getList()
-{
-  return list;
-}
 
 //==============================================================================
 MatrixXd SoftDynamicsTest::getMassMatrix(dynamics::SkeletonPtr _skel)
@@ -300,6 +449,9 @@ MatrixXd SoftDynamicsTest::getMassMatrix(dynamics::SkeletonPtr _skel)
         skelM(jIdx, kIdx) += M(j, k);
       }
     }
+
+    if (const dynamics::SoftBodyNode* softBody = body->asSoftBodyNode())
+      skelM += projectPointMassMassMatrix(_skel, softBody);
   }
 
   return skelM;
@@ -366,222 +518,126 @@ MatrixXd SoftDynamicsTest::getAugMassMatrix(dynamics::SkeletonPtr _skel)
 }
 
 //==============================================================================
-void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
+TEST_F(SoftDynamicsTest, representativeEquationMatrixAndVectorChecks)
 {
-  using namespace std;
-  using namespace Eigen;
-  using namespace dart;
-  using namespace math;
-  using namespace dynamics;
-  using namespace simulation;
-  using namespace utils;
+  struct EquationScene
+  {
+    std::string uri;
+    bool expectMobileRigidSkeleton;
+    bool expectMobileSoftSkeleton;
+    bool expectRigidSkeleton;
+  };
 
-  //---------------------------- Settings --------------------------------------
-  // Number of random state tests for each skeletons
-#if DART_BUILD_MODE_DEBUG
-  std::size_t nRandomItr = 1;
-#else
-  std::size_t nRandomItr = 1;
-#endif
+  const std::array<EquationScene, 3> scenes = {{
+      {"dart://sample/skel/test/double_pendulum.skel", true, false, true},
+      {"dart://sample/skel/test/test_drop_box.skel", false, true, true},
+      {"dart://sample/skel/softBodies.skel", false, true, true},
+  }};
 
-  // Lower and upper bound of configuration for system
-  double lb = -1.5 * constantsd::pi();
-  double ub = 1.5 * constantsd::pi();
+  for (const EquationScene& scene : scenes) {
+    simulation::WorldPtr world = utils::SkelParser::readWorld(scene.uri);
+    ASSERT_TRUE(world != nullptr) << scene.uri;
 
-  // Lower and upper bound of joint damping and stiffness
-  double lbD = 0.0;
-  double ubD = 10.0;
-  double lbK = 0.0;
-  double ubK = 10.0;
+    bool sawMobileRigidSkeleton = false;
+    bool sawMobileSoftSkeleton = false;
+    bool sawRigidSkeleton = false;
 
-  simulation::WorldPtr myWorld;
+    for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+      const dynamics::SkeletonPtr skeleton = world->getSkeleton(i);
+      ASSERT_TRUE(skeleton != nullptr) << scene.uri << " skeleton=" << i;
 
-  //----------------------------- Tests ----------------------------------------
-  // Check whether multiplication of mass matrix and its inverse is identity
-  // matrix.
-  myWorld = utils::SkelParser::readWorld(_fileName);
-  EXPECT_TRUE(myWorld != nullptr);
+      const bool hasSoftBody = skeleton->getNumSoftBodyNodes() > 0u;
+      const bool hasRigidBody
+          = skeleton->getNumBodyNodes() > skeleton->getNumSoftBodyNodes();
+      sawRigidSkeleton = sawRigidSkeleton || hasRigidBody;
 
-  for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i) {
-    dynamics::SkeletonPtr softSkel = myWorld->getSkeleton(i);
+      const std::string context = scene.uri + " skeleton=" + std::to_string(i)
+                                  + " name=" + skeleton->getName();
+      const std::size_t dof = skeleton->getNumDofs();
+      if (dof == 0u)
+        continue;
 
-    int dof = softSkel->getNumDofs();
-    //    int nBodyNodes     = skel->getNumBodyNodes();
-    int nSoftBodyNodes = 0;
-    if (softSkel != nullptr)
-      nSoftBodyNodes = softSkel->getNumSoftBodyNodes();
+      sawMobileSoftSkeleton = sawMobileSoftSkeleton || hasSoftBody;
+      sawMobileRigidSkeleton = sawMobileRigidSkeleton || !hasSoftBody;
 
-    if (dof == 0) {
-      dtmsg << "Skeleton [" << softSkel->getName()
-            << "] is skipped since it has "
-            << "0 DOF." << endl;
-      continue;
+      const Eigen::MatrixXd mass = skeleton->getMassMatrix();
+      const Eigen::MatrixXd expectedMass = getMassMatrix(skeleton);
+      const Eigen::MatrixXd invMass = skeleton->getInvMassMatrix();
+      const Eigen::MatrixXd augMass = skeleton->getAugMassMatrix();
+      const Eigen::MatrixXd expectedAugMass = getAugMassMatrix(skeleton);
+      const Eigen::MatrixXd invAugMass = skeleton->getInvAugMassMatrix();
+      const Eigen::MatrixXd identity = Eigen::MatrixXd::Identity(dof, dof);
+
+      expectMatrixNear(mass, expectedMass, 1.0e-8, context + " mass");
+      expectMatrixNear(
+          augMass, expectedAugMass, 1.0e-8, context + " augmented mass");
+      expectMatrixNear(
+          mass * invMass, identity, 1.0e-8, context + " mass inverse left");
+      expectMatrixNear(
+          invMass * mass, identity, 1.0e-8, context + " mass inverse right");
+      expectMatrixNear(
+          augMass * invAugMass,
+          identity,
+          1.0e-8,
+          context + " augmented inverse left");
+      expectMatrixNear(
+          invAugMass * augMass,
+          identity,
+          1.0e-8,
+          context + " augmented inverse right");
+
+      const Eigen::VectorXd coriolis = skeleton->getCoriolisForces();
+      const Eigen::VectorXd combined = skeleton->getCoriolisAndGravityForces();
+      const Eigen::Vector3d originalGravity = skeleton->getGravity();
+      const Eigen::VectorXd originalForces = skeleton->getForces();
+      const Eigen::VectorXd originalAccelerations
+          = skeleton->getAccelerations();
+
+      skeleton->resetGeneralizedForces();
+      skeleton->clearExternalForces();
+      skeleton->setAccelerations(Eigen::VectorXd::Zero(dof));
+
+      skeleton->setGravity(Eigen::Vector3d::Zero());
+      skeleton->computeInverseDynamics(false, false, false);
+      const Eigen::VectorXd coriolisFromInverseDynamics = skeleton->getForces();
+
+      skeleton->setGravity(originalGravity);
+      skeleton->computeInverseDynamics(false, false, false);
+      const Eigen::VectorXd combinedFromInverseDynamics = skeleton->getForces();
+
+      expectVectorNear(
+          coriolis,
+          coriolisFromInverseDynamics,
+          1.0e-8,
+          context + " coriolis inverse dynamics");
+      expectVectorNear(
+          combined,
+          combinedFromInverseDynamics,
+          1.0e-8,
+          context + " combined inverse dynamics");
+
+      skeleton->setGravity(originalGravity);
+      skeleton->setForces(originalForces);
+      skeleton->setAccelerations(originalAccelerations);
     }
 
-    for (std::size_t j = 0; j < nRandomItr; ++j) {
-      // Random joint stiffness and damping coefficient
-      for (std::size_t k = 0; k < softSkel->getNumBodyNodes(); ++k) {
-        BodyNode* body = softSkel->getBodyNode(k);
-        Joint* joint = body->getParentJoint();
-        int localDof = joint->getNumDofs();
-
-        for (int l = 0; l < localDof; ++l) {
-          joint->setDampingCoefficient(l, Random::uniform(lbD, ubD));
-          joint->setSpringStiffness(l, Random::uniform(lbK, ubK));
-
-          double lbRP = joint->getPositionLowerLimit(l);
-          double ubRP = joint->getPositionUpperLimit(l);
-          joint->setRestPosition(l, Random::uniform(lbRP, ubRP));
-        }
-      }
-
-      // Set random states
-      Skeleton::Configuration x = softSkel->getConfiguration();
-      for (auto k = 0u; k < softSkel->getNumDofs(); ++k) {
-        x.mPositions[k] = Random::uniform(lb, ub);
-        x.mVelocities[k] = Random::uniform(lb, ub);
-      }
-      softSkel->setConfiguration(x);
-
-      //------------------------ Mass Matrix Test ----------------------------
-      // Get matrices
-      MatrixXd M = softSkel->getMassMatrix();
-      MatrixXd M2 = getMassMatrix(softSkel);
-      MatrixXd InvM = softSkel->getInvMassMatrix();
-      MatrixXd M_InvM = M * InvM;
-      MatrixXd InvM_M = InvM * M;
-
-      MatrixXd AugM = softSkel->getAugMassMatrix();
-      MatrixXd AugM2 = getAugMassMatrix(softSkel);
-      MatrixXd InvAugM = softSkel->getInvAugMassMatrix();
-      MatrixXd AugM_InvAugM = AugM * InvAugM;
-      MatrixXd InvAugM_AugM = InvAugM * AugM;
-
-      MatrixXd I = MatrixXd::Identity(dof, dof);
-
-      // Check if the number of generalized coordinates and dimension of mass
-      // matrix are same.
-      EXPECT_EQ(M.rows(), dof);
-      EXPECT_EQ(M.cols(), dof);
-
-      // Check mass matrix
-      EXPECT_TRUE(equals(M, M2, 1e-6));
-      if (!equals(M, M2, 1e-6)) {
-        cout << "M :" << endl << M << endl << endl;
-        cout << "M2:" << endl << M2 << endl << endl;
-      }
-
-      // Check augmented mass matrix
-      EXPECT_TRUE(equals(AugM, AugM2, 1e-6));
-      if (!equals(AugM, AugM2, 1e-6)) {
-        cout << "AugM :" << endl << AugM << endl << endl;
-        cout << "AugM2:" << endl << AugM2 << endl << endl;
-      }
-
-      // Check if both of (M * InvM) and (InvM * M) are identity.
-      EXPECT_TRUE(equals(M_InvM, I, 1e-6));
-      if (!equals(M_InvM, I, 1e-6)) {
-        cout << "InvM  :" << endl << InvM << endl << endl;
-      }
-      EXPECT_TRUE(equals(InvM_M, I, 1e-6));
-      if (!equals(InvM_M, I, 1e-6)) {
-        cout << "InvM_M:" << endl << InvM_M << endl << endl;
-      }
-
-      // Check if both of (M * InvM) and (InvM * M) are identity.
-      EXPECT_TRUE(equals(AugM_InvAugM, I, 1e-6));
-      if (!equals(AugM_InvAugM, I, 1e-6)) {
-        cout << "InvAugM  :" << endl << InvAugM << endl << endl;
-        cout << "InvAugM2  :" << endl << AugM.inverse() << endl << endl;
-        cout << "AugM_InvAugM  :" << endl << AugM_InvAugM << endl << endl;
-      }
-      EXPECT_TRUE(equals(InvAugM_AugM, I, 1e-6));
-      if (!equals(InvAugM_AugM, I, 1e-6)) {
-        cout << "InvAugM_AugM:" << endl << InvAugM_AugM << endl << endl;
-      }
-
-      //------- Coriolis Force Vector and Combined Force Vector Tests --------
-      // Get C1, Coriolis force vector using recursive method
-      VectorXd C = softSkel->getCoriolisForces();
-      VectorXd Cg = softSkel->getCoriolisAndGravityForces();
-
-      // Get C2, Coriolis force vector using inverse dynamics algorithm
-      Vector3d oldGravity = softSkel->getGravity();
-      VectorXd oldTau = softSkel->getForces();
-      VectorXd oldDdq = softSkel->getAccelerations();
-      // TODO(JS): Save external forces of body nodes
-      vector<double> oldKv(nSoftBodyNodes, 0.0);
-      vector<double> oldKe(nSoftBodyNodes, 0.0);
-      vector<double> oldD(nSoftBodyNodes, 0.0);
-      for (int k = 0; k < nSoftBodyNodes; ++k) {
-        DART_ASSERT(softSkel != nullptr);
-        dynamics::SoftBodyNode* sbn = softSkel->getSoftBodyNode(k);
-        oldKv[k] = sbn->getVertexSpringStiffness();
-        oldKe[k] = sbn->getEdgeSpringStiffness();
-        oldD[k] = sbn->getDampingCoefficient();
-      }
-
-      softSkel->resetGeneralizedForces();
-      softSkel->clearExternalForces();
-      softSkel->setAccelerations(VectorXd::Zero(dof));
-      for (int k = 0; k < nSoftBodyNodes; ++k) {
-        DART_ASSERT(softSkel != nullptr);
-        dynamics::SoftBodyNode* sbn = softSkel->getSoftBodyNode(k);
-        sbn->setVertexSpringStiffness(0.0);
-        sbn->setEdgeSpringStiffness(0.0);
-        sbn->setDampingCoefficient(0.0);
-      }
-
-      EXPECT_TRUE(softSkel->getForces() == VectorXd::Zero(dof));
-      EXPECT_TRUE(softSkel->getExternalForces() == VectorXd::Zero(dof));
-      EXPECT_TRUE(softSkel->getAccelerations() == VectorXd::Zero(dof));
-
-      softSkel->setGravity(Vector3d::Zero());
-      EXPECT_TRUE(softSkel->getGravity() == Vector3d::Zero());
-      softSkel->computeInverseDynamics(false, false);
-      VectorXd C2 = softSkel->getForces();
-
-      softSkel->setGravity(oldGravity);
-      EXPECT_TRUE(softSkel->getGravity() == oldGravity);
-      softSkel->computeInverseDynamics(false, false);
-      VectorXd Cg2 = softSkel->getForces();
-
-      EXPECT_TRUE(equals(C, C2, 1e-6));
-      if (!equals(C, C2, 1e-6)) {
-        cout << "C :" << C.transpose() << endl;
-        cout << "C2:" << C2.transpose() << endl;
-      }
-
-      EXPECT_TRUE(equals(Cg, Cg2, 1e-6));
-      if (!equals(Cg, Cg2, 1e-6)) {
-        cout << "Cg :" << Cg.transpose() << endl;
-        cout << "Cg2:" << Cg2.transpose() << endl;
-      }
-
-      softSkel->setForces(oldTau);
-      softSkel->setAccelerations(oldDdq);
-      // TODO(JS): Restore external forces of body nodes
-    }
+    EXPECT_EQ(scene.expectMobileRigidSkeleton, sawMobileRigidSkeleton)
+        << scene.uri;
+    EXPECT_EQ(scene.expectMobileSoftSkeleton, sawMobileSoftSkeleton)
+        << scene.uri;
+    EXPECT_EQ(scene.expectRigidSkeleton, sawRigidSkeleton) << scene.uri;
   }
-}
-
-//==============================================================================
-TEST_F(SoftDynamicsTest, compareEquationsOfMotion)
-{
-  // TODO(JS): Equations of motion for softbody skeleton is not done yet
-
-  //  for (int i = 0; i < getList().size(); ++i)
-  //  {
-  // #if DART_BUILD_MODE_DEBUG
-  //    dtdbg << getList()[i] << std::endl;
-  // #endif
-  //    compareEquationsOfMotion(getList()[i]);
-  //  }
 }
 
 //==============================================================================
 TEST_F(SoftDynamicsTest, finiteStateForRepresentativeSoftScenes)
 {
+  struct DetectorConfig
+  {
+    std::string name;
+    bool useNativeDetector;
+  };
+
   const std::array<SoftStabilityScene, 7> scenes = {{
       {"dart://sample/skel/test/test_drop_box.skel", 1u, 26u, 30u},
       {"dart://sample/skel/test/test_drop_low_stiffness.skel", 1u, 26u, 30u},
@@ -591,22 +647,195 @@ TEST_F(SoftDynamicsTest, finiteStateForRepresentativeSoftScenes)
       {"dart://sample/skel/softBodies.skel", 5u, 290u, 30u},
       {"dart://sample/skel/soft_open_chain.skel", 5u, 120u, 30u},
   }};
+  const std::array<DetectorConfig, 2> detectorConfigs = {{
+      {"default", false},
+      {"dart", true},
+  }};
   const std::array<std::size_t, 2> threadCounts = {{1u, 4u}};
 
-  for (const SoftStabilityScene& scene : scenes) {
-    for (const std::size_t threads : threadCounts) {
-      simulation::WorldPtr world = utils::SkelParser::readWorld(scene.uri);
-      ASSERT_TRUE(world != nullptr) << scene.uri;
-      world->setNumSimulationThreads(threads);
+  for (const DetectorConfig& detectorConfig : detectorConfigs) {
+    std::vector<SoftStateSnapshot> finalSnapshots;
+    finalSnapshots.reserve(threadCounts.size());
 
-      expectFiniteWorldState(world, scene, threads, 0u);
+    for (const SoftStabilityScene& scene : scenes) {
+      finalSnapshots.clear();
 
-      for (std::size_t step = 1u; step <= scene.steps; ++step) {
-        world->step();
+      for (const std::size_t threads : threadCounts) {
+        simulation::WorldPtr world = utils::SkelParser::readWorld(scene.uri);
+        ASSERT_TRUE(world != nullptr) << scene.uri;
+        if (detectorConfig.useNativeDetector)
+          world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+        world->setNumSimulationThreads(threads);
 
-        if (step == scene.steps || step % 10u == 0u)
-          expectFiniteWorldState(world, scene, threads, step);
+        expectFiniteWorldState(world, scene, detectorConfig.name, threads, 0u);
+
+        for (std::size_t step = 1u; step <= scene.steps; ++step) {
+          world->step();
+
+          if (step == scene.steps || step % 10u == 0u) {
+            expectFiniteWorldState(
+                world, scene, detectorConfig.name, threads, step);
+          }
+        }
+
+        finalSnapshots.push_back(computeSoftStateSnapshot(world));
       }
+
+      ASSERT_EQ(finalSnapshots.size(), threadCounts.size())
+          << detectorConfig.name << " " << scene.uri;
+      expectSnapshotsNear(
+          finalSnapshots[0],
+          finalSnapshots[1],
+          scene.uri + " detector=" + detectorConfig.name
+              + " threads=1-vs-4 final state");
     }
   }
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+
+  const dynamics::SkeletonPtr skeleton = world->getSkeleton("skeleton 1");
+  ASSERT_TRUE(skeleton != nullptr);
+  ASSERT_EQ(skeleton->getNumSoftBodyNodes(), 1u);
+
+  dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(0);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_TRUE(softBody->getGravityMode());
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+  const Eigen::VectorXd expectedPointMassGravity
+      = projectPointMassGravity(softBody, world->getGravity());
+  const Eigen::MatrixXd expectedPointMassMass
+      = projectPointMassMassMatrix(skeleton, softBody);
+  ASSERT_GT(expectedPointMassGravity.norm(), 1.0e-9);
+  ASSERT_GT(expectedPointMassMass.norm(), 1.0e-9);
+  ASSERT_LT(skeleton->getVelocities().norm(), 1.0e-12);
+
+  const Eigen::VectorXd withOriginalPointMasses = skeleton->getGravityForces();
+  const Eigen::VectorXd withOriginalPointMassesCg
+      = skeleton->getCoriolisAndGravityForces();
+  const Eigen::MatrixXd withOriginalPointMassesM = skeleton->getMassMatrix();
+  const Eigen::MatrixXd withOriginalPointMassesAugM
+      = skeleton->getAugMassMatrix();
+  const Eigen::MatrixXd withOriginalPointMassesInvM
+      = skeleton->getInvMassMatrix();
+  const Eigen::MatrixXd withOriginalPointMassesInvAugM
+      = skeleton->getInvAugMassMatrix();
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    ASSERT_TRUE(pointMass != nullptr);
+    pointMass->setMass(0.5 * pointMass->getMass());
+  }
+
+  const Eigen::VectorXd withHalfPointMasses = skeleton->getGravityForces();
+  const Eigen::VectorXd withHalfPointMassesCg
+      = skeleton->getCoriolisAndGravityForces();
+  const Eigen::MatrixXd withHalfPointMassesM = skeleton->getMassMatrix();
+  const Eigen::MatrixXd withHalfPointMassesAugM = skeleton->getAugMassMatrix();
+  const Eigen::MatrixXd withHalfPointMassesInvM = skeleton->getInvMassMatrix();
+  const Eigen::MatrixXd withHalfPointMassesInvAugM
+      = skeleton->getInvAugMassMatrix();
+  const Eigen::VectorXd actualPointMassDelta
+      = withOriginalPointMasses - withHalfPointMasses;
+  const Eigen::VectorXd actualPointMassCgDelta
+      = withOriginalPointMassesCg - withHalfPointMassesCg;
+  const Eigen::MatrixXd actualPointMassMassDelta
+      = withOriginalPointMassesM - withHalfPointMassesM;
+  const Eigen::MatrixXd actualPointMassAugMassDelta
+      = withOriginalPointMassesAugM - withHalfPointMassesAugM;
+
+  expectVectorNear(
+      actualPointMassDelta,
+      0.5 * expectedPointMassGravity,
+      1.0e-10,
+      "soft point-mass gravity projection");
+  expectVectorNear(
+      actualPointMassCgDelta,
+      0.5 * expectedPointMassGravity,
+      1.0e-10,
+      "soft point-mass combined gravity projection");
+  expectMatrixNear(
+      actualPointMassMassDelta,
+      0.5 * expectedPointMassMass,
+      1.0e-10,
+      "soft point-mass mass matrix projection");
+  expectMatrixNear(
+      actualPointMassAugMassDelta,
+      0.5 * expectedPointMassMass,
+      1.0e-10,
+      "soft point-mass augmented mass matrix projection");
+
+  const Eigen::MatrixXd identity = Eigen::MatrixXd::Identity(
+      skeleton->getNumDofs(), skeleton->getNumDofs());
+  expectMatrixNear(
+      withOriginalPointMassesM * withOriginalPointMassesInvM,
+      identity,
+      1.0e-10,
+      "soft point-mass mass inverse left identity");
+  expectMatrixNear(
+      withOriginalPointMassesInvM * withOriginalPointMassesM,
+      identity,
+      1.0e-10,
+      "soft point-mass mass inverse right identity");
+  expectMatrixNear(
+      withHalfPointMassesM * withHalfPointMassesInvM,
+      identity,
+      1.0e-10,
+      "soft point-mass half mass inverse left identity");
+  expectMatrixNear(
+      withHalfPointMassesInvM * withHalfPointMassesM,
+      identity,
+      1.0e-10,
+      "soft point-mass half mass inverse right identity");
+  expectMatrixNear(
+      withOriginalPointMassesAugM * withOriginalPointMassesInvAugM,
+      identity,
+      1.0e-10,
+      "soft point-mass augmented inverse left identity");
+  expectMatrixNear(
+      withOriginalPointMassesInvAugM * withOriginalPointMassesAugM,
+      identity,
+      1.0e-10,
+      "soft point-mass augmented inverse right identity");
+  expectMatrixNear(
+      withHalfPointMassesAugM * withHalfPointMassesInvAugM,
+      identity,
+      1.0e-10,
+      "soft point-mass half augmented inverse left identity");
+  expectMatrixNear(
+      withHalfPointMassesInvAugM * withHalfPointMassesAugM,
+      identity,
+      1.0e-10,
+      "soft point-mass half augmented inverse right identity");
+
+  std::vector<Eigen::Vector3d> localExternalForces;
+  localExternalForces.reserve(softBody->getNumPointMasses());
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    ASSERT_TRUE(pointMass != nullptr);
+
+    const double scale = static_cast<double>(i + 1u);
+    const Eigen::Vector3d localForce(0.01 * scale, -0.02 * scale, 0.03 * scale);
+    pointMass->addExtForce(localForce, true);
+    localExternalForces.push_back(localForce);
+  }
+
+  expectVectorNear(
+      skeleton->getExternalForces(),
+      projectPointMassExternalForces(skeleton, softBody, localExternalForces),
+      1.0e-10,
+      "soft point-mass external force projection");
+
+  skeleton->clearExternalForces();
+  expectVectorNear(
+      skeleton->getExternalForces(),
+      Eigen::VectorXd::Zero(skeleton->getNumDofs()),
+      1.0e-12,
+      "soft point-mass external force clear");
 }

@@ -1,7 +1,7 @@
 # WP-DB.02 stability gate
 
-Captured on 2026-07-05 from `release-6.20` plus local WP-DB.01/WP-DB.02
-edits.
+Captured on 2026-07-07 from `release-6.20` plus local WP-DB.01/WP-DB.02
+edits on branch `wp-db-soft-skel-allocation-gates`.
 
 ## Command
 
@@ -10,13 +10,17 @@ cmake --build build/default/cpp/Release --target test_SoftDynamics --parallel
 ctest --test-dir build/default/cpp/Release -R 'test_SoftDynamics$' --output-on-failure
 ```
 
-Result: `test_SoftDynamics` passed locally in 0.14 seconds after the new gate
-was added.
+Result: `test_SoftDynamics` passed locally after the final-state comparison
+gate was added. A follow-up native-detector slice extended the same finite-state
+gate to run under both the default collision detector and
+`CollisionDetectorType::Dart`; the focused CTest repeat passed locally in
+0.11 seconds.
 
 ## Coverage
 
 `tests/integration/test_SoftDynamics.cpp` now loads and steps these SKEL soft
-scenes for both `World::setNumSimulationThreads(1)` and
+scenes with the default detector and the native DART detector. Each detector
+configuration runs both `World::setNumSimulationThreads(1)` and
 `World::setNumSimulationThreads(4)`:
 
 | Scene | Min soft bodies | Min point masses | Steps per thread setting |
@@ -41,6 +45,15 @@ At initialization, step 10, step 20, and step 30, the gate checks:
   body/world velocity and acceleration are finite,
 - point-mass world position and velocity norms stay under broad blow-up guards.
 
+After each scene finishes, the gate compares the ordered final state from the
+`threads=1` run against the `threads=4` run for that same detector with a
+relative tolerance of `1e-12`. The compared state includes skeleton positions
+and velocities plus each point mass's local position, local velocity, and world
+position. This turns the threaded-world coverage into a deterministic
+final-state regression check instead of only proving that both runs stayed
+finite, and it now proves the representative finite-state gate for the native
+soft collision backend.
+
 ## Fixture cleanup
 
 `data/skel/test/test_double_pendulum.skel` now has both intended bodies encoded
@@ -50,11 +63,12 @@ the converted soft box.
 
 ## Remaining gaps
 
-- The existing `compareEquationsOfMotion` body is still disabled. Completing
-  soft-body matrix/vector aggregation and re-enabling equation checks belongs
-  to WP-DB.04.
-- The gate does not yet check energy drift, contact force variance, CoP
-  smoothness, or deterministic state hashes.
+- Equation matrix/vector coverage now lives in
+  `07-equation-correctness.md`, including representative rigid-only,
+  soft-only, and mixed rigid/soft worlds. This stability gate remains focused
+  on finite state and deterministic threaded final-state behavior.
+- The gate does not yet check energy drift, contact force variance, or CoP
+  smoothness. It also does not pin historical golden states across revisions.
 - Multi-core coverage currently proves finite state under a threaded world
   setting; it does not prove speedup. WP-DB.07 owns scaling.
 - SIMD is not exercised by this gate. WP-DB.06 owns `dart/simd/` profiling and
