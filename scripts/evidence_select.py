@@ -1,0 +1,251 @@
+"""Select a small, non-redundant evidence set tied to explicit claims.
+
+Takes a candidate manifest — artifacts (stills, grids, composites, videos)
+annotated with the claims they support, a quality score, and an optional
+view azimuth — and picks a minimal high-quality subset: greedy set cover by
+claim, quality-ranked, with redundancy pruning (same kind + same claims +
+similar viewpoint keeps only the best) and size budgets. Every selection and
+rejection records its rationale so the PR evidence trail explains why each
+artifact exists and what it proves.
+
+Input schema (dart.evidence_candidates/v1):
+{
+  "claims": [{"id": "C1", "text": "..."}],
+  "artifacts": [{
+      "path": "relative/or/absolute.png",
+      "kind": "still" | "grid" | "composite" | "video",
+      "claims": ["C1"],
+      "caption": "what it shows",
+      "quality": 0.0-1.0 (optional; default 0.5),
+      "azimuth": radians (optional, for redundancy pruning),
+      "observe": "what a reviewer should look at" (optional)
+  }]
+}
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import math
+import sys
+from pathlib import Path
+from typing import Any
+
+SCHEMA_VERSION = "dart.evidence_selection/v1"
+INPUT_SCHEMA_VERSION = "dart.evidence_candidates/v1"
+
+_DEFAULT_MAX_ARTIFACTS = 5
+_DEFAULT_MAX_TOTAL_BYTES = 25 * 1024 * 1024
+# Views closer than this (radians) show the same information for pruning.
+_SIMILAR_AZIMUTH = math.tau / 12.0
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _angular_distance(a: float, b: float) -> float:
+    difference = (a - b) % math.tau
+    return min(difference, math.tau - difference)
+
+
+def _validate(manifest: dict[str, Any], base_dir: Path) -> list[dict[str, Any]]:
+    if manifest.get("schema_version") != INPUT_SCHEMA_VERSION:
+        raise ValueError(
+            f"candidates manifest must declare schema_version={INPUT_SCHEMA_VERSION!r}"
+        )
+    claims = manifest.get("claims") or []
+    claim_ids = {claim["id"] for claim in claims}
+    if not claim_ids:
+        raise ValueError("candidates manifest declares no claims")
+    artifacts = manifest.get("artifacts") or []
+    if not artifacts:
+        raise ValueError("candidates manifest declares no artifacts")
+    prepared = []
+    for artifact in artifacts:
+        path = Path(artifact["path"])
+        if not path.is_absolute():
+            path = base_dir / path
+        if not path.exists():
+            raise ValueError(f"artifact does not exist: {path}")
+        supported = list(artifact.get("claims") or [])
+        unknown = sorted(set(supported) - claim_ids)
+        if unknown:
+            raise ValueError(
+                f"artifact {artifact['path']} references unknown claims {unknown}"
+            )
+        if not supported:
+            raise ValueError(
+                f"artifact {artifact['path']} supports no claims; every piece of "
+                "evidence must be tied to an explicit claim"
+            )
+        prepared.append(
+            {
+                "path": path,
+                "declared_path": str(artifact["path"]),
+                "kind": str(artifact.get("kind", "still")),
+                "claims": supported,
+                "caption": str(artifact.get("caption", "")),
+                "observe": str(artifact.get("observe", "")),
+                "quality": float(artifact.get("quality", 0.5)),
+                "azimuth": artifact.get("azimuth"),
+                "bytes": path.stat().st_size,
+            }
+        )
+    return prepared
+
+
+def select_evidence(
+    manifest: dict[str, Any],
+    base_dir: Path,
+    *,
+    max_artifacts: int = _DEFAULT_MAX_ARTIFACTS,
+    max_total_bytes: int = _DEFAULT_MAX_TOTAL_BYTES,
+) -> dict[str, Any]:
+    artifacts = _validate(manifest, base_dir)
+    claims = {claim["id"]: claim for claim in manifest["claims"]}
+
+    # Deterministic quality ranking; ties broken by declared path.
+    ranked = sorted(artifacts, key=lambda a: (-a["quality"], a["declared_path"]))
+
+    selected: list[dict[str, Any]] = []
+    rejected: list[dict[str, Any]] = []
+    covered: set[str] = set()
+    total_bytes = 0
+
+    def redundant_against_selected(candidate: dict[str, Any]) -> str | None:
+        for existing in selected:
+            if existing["kind"] != candidate["kind"]:
+                continue
+            if set(existing["claims"]) != set(candidate["claims"]):
+                continue
+            azimuth_a = existing.get("azimuth")
+            azimuth_b = candidate.get("azimuth")
+            if (
+                azimuth_a is not None
+                and azimuth_b is not None
+                and _angular_distance(float(azimuth_a), float(azimuth_b))
+                > _SIMILAR_AZIMUTH
+            ):
+                # Distinct viewpoints reveal different information; keep both.
+                continue
+            return (
+                f"redundant with {existing['declared_path']} "
+                "(same kind, same claims, similar viewpoint)"
+            )
+        return None
+
+    for candidate in ranked:
+        new_claims = set(candidate["claims"]) - covered
+        redundancy = redundant_against_selected(candidate)
+        if redundancy is not None and not new_claims:
+            rejected.append({"path": candidate["declared_path"], "reason": redundancy})
+            continue
+        if len(selected) >= max_artifacts:
+            rejected.append(
+                {
+                    "path": candidate["declared_path"],
+                    "reason": f"artifact budget reached ({max_artifacts})",
+                }
+            )
+            continue
+        if total_bytes + candidate["bytes"] > max_total_bytes:
+            rejected.append(
+                {
+                    "path": candidate["declared_path"],
+                    "reason": (f"size budget reached ({max_total_bytes} bytes total)"),
+                }
+            )
+            continue
+        if not new_claims:
+            # Minimality: an extra angle earns its place only through an
+            # explicit claim of its own (e.g. "no penetration from the side").
+            rejected.append(
+                {
+                    "path": candidate["declared_path"],
+                    "reason": "adds no claim coverage beyond already-selected evidence",
+                }
+            )
+            continue
+        rationale_parts = [
+            "covers claim(s) " + ", ".join(sorted(new_claims)),
+            f"quality={candidate['quality']:.3f}",
+        ]
+        selected.append(
+            {
+                **candidate,
+                "rationale": "; ".join(rationale_parts),
+                "sha256": _sha256(candidate["path"]),
+            }
+        )
+        covered |= set(candidate["claims"])
+        total_bytes += candidate["bytes"]
+
+    uncovered = sorted(set(claims) - covered)
+    result = {
+        "schema_version": SCHEMA_VERSION,
+        "claims": [
+            {
+                "id": claim_id,
+                "text": claims[claim_id]["text"],
+                "covered": claim_id in covered,
+            }
+            for claim_id in sorted(claims)
+        ],
+        "selected": [
+            {
+                "path": artifact["declared_path"],
+                "kind": artifact["kind"],
+                "claims": sorted(artifact["claims"]),
+                "caption": artifact["caption"],
+                "observe": artifact["observe"],
+                "quality": artifact["quality"],
+                "bytes": artifact["bytes"],
+                "sha256": artifact["sha256"],
+                "rationale": artifact["rationale"],
+            }
+            for artifact in selected
+        ],
+        "rejected": rejected,
+        "total_bytes": total_bytes,
+        "uncovered_claims": uncovered,
+        "pass": not uncovered,
+    }
+    return result
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("candidates", type=Path, help="candidates manifest JSON")
+    parser.add_argument("--out", type=Path, help="write selection manifest here")
+    parser.add_argument("--max-artifacts", type=int, default=_DEFAULT_MAX_ARTIFACTS)
+    parser.add_argument("--max-total-bytes", type=int, default=_DEFAULT_MAX_TOTAL_BYTES)
+    args = parser.parse_args(argv)
+
+    try:
+        manifest = json.loads(args.candidates.read_text(encoding="utf-8"))
+        result = select_evidence(
+            manifest,
+            args.candidates.parent,
+            max_artifacts=args.max_artifacts,
+            max_total_bytes=args.max_total_bytes,
+        )
+    except (OSError, ValueError, KeyError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    text = json.dumps(result, indent=2, sort_keys=True)
+    if args.out is not None:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(text + "\n", encoding="utf-8")
+    print(text)
+    return 0 if result["pass"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

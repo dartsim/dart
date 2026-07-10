@@ -51,6 +51,43 @@ dynamic failures (explosions, tunneling); use text to decide correctness.
   and `--fit`; multi-view and turntable captures write `shot_<view>.ppm` /
   `shot_turnNNN.ppm`. `pixi run py-demo-capture` drives this from Python (PNG,
   and MP4 with `--video` when ffmpeg is present).
+- **View quality + adaptive viewpoints** — `dart.gui.assess_view(world,
+camera, size, focus=...)` returns a machine-readable `ViewReport`
+  (coverage/crop, subject size, occlusion via CPU pick rays, ambiguity) with
+  named issues (`cropped`, `too-far`, `too-close`, `occluded`, `ambiguous`);
+  `dart.gui.select_viewpoints(...)` deterministically scores a candidate grid
+  and returns the best azimuth-diverse cameras with recorded reasons;
+  `dart.gui.frame_body` / `frame_region` reframe onto a named body or region.
+  Assess before rendering; when a report lists issues, reframe or reselect
+  instead of shipping the shot.
+- **Debug layers offscreen** — `dart.gui.render(world, camera, size,
+debug=(...layers...))` draws world-derived overlay layers through the same
+  unlit always-on-top path as the viewer: `grid`, `world_frame`,
+  `body_frames`, `coms`, `inertia_boxes`, `collision_bounds`, `velocities`,
+  `contacts` (from `world.collide()`), `trajectories` (via
+  `dart.gui.TrajectoryTracker`), and `labels`.
+  `dart.gui.render_annotated(...)` additionally composites label text into
+  the returned RGBA array (offscreen has no UI text pass). Compose custom
+  scenes with `dart.gui.debug_scene_for_world(...)`. Enable only the layers
+  the claim needs; pair with step metrics/scene dumps.
+- **Agent capture harness** — `pixi run agent-capture` renders deterministic
+  stills/turntables/motion sequences (optional MP4) from the built-in scene
+  registry or a `module:callable` world factory, with explicit or
+  auto-selected cameras, debug layers, and a sidecar JSON recording camera
+  parameters, layers, view reports, and the exact reproduction command.
+- **Composites** — `pixi run image-compose` builds labeled side-by-side
+  (before/after, expected/actual, normal/debug), overlay blends, and
+  amplified diff heatmaps with summary statistics.
+- **Evidence selection + PR publication** — `pixi run evidence-select` picks
+  a small non-redundant artifact set from a claims-annotated candidate
+  manifest (greedy claim cover, quality-ranked, redundancy pruning, size
+  budgets, per-artifact rationale; artifacts without claims are rejected).
+  `pixi run evidence-publish` renders the PR-body "Visual verification"
+  section (environment, claims, what-to-observe, not-proven, limitations,
+  repro commands) with GitHub-hosted media: `manual` backend emits
+  web-editor upload placeholders (the documented user-attachments flow);
+  `gh-release` uploads release assets via `gh` but only with `--yes` and
+  maintainer approval. PR-only media never enters git history.
 - **Image verdict / golden / contact sheet** — `pixi run image-verdict`
   emits a machine-readable JSON verdict (non-blank, report-only contrast,
   per-pixel diff with AA-ignore and a Blender-style two-number budget, optional

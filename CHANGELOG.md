@@ -300,6 +300,16 @@ compatibility remains on the active DART 6 LTS branch._
   scoring, solver-plan visual gate templates, and provider-neutral VLM review
   bundles.
   ([#3320](https://github.com/dartsim/dart/pull/3320))
+- Added active camera control and adaptive viewpoint selection for headless
+  agent captures (view-quality reports detecting cropped/too-far/too-close/
+  occluded/ambiguous views, deterministic viewpoint search, focus framing),
+  world-derived debug layers on the offscreen path (frames, centers of mass,
+  inertia boxes, collision bounds, velocities, contacts, trajectories,
+  composited labels), evidence composition (side-by-side/blend/diff heatmap),
+  claim-driven evidence selection with recorded rationale, and a PR
+  visual-verification section generator with GitHub-hosted media backends
+  (`pixi run agent-capture`, `image-compose`, `evidence-select`,
+  `evidence-publish`).
 - Added visual-verification workflows, screenshot review indexes, UI capture
   guards, runtime scene-switch hardening, and demo panels aimed at debugging
   DART 7 simulation behavior instead of preserving every historical demo detail.

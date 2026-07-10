@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/detail/debug_overlay.hpp>
 #include <dart/gui/detail/render_context.hpp>
 #include <dart/gui/detail/render_environment.hpp>
 #include <dart/gui/detail/renderable_factory.hpp>
@@ -137,6 +138,35 @@ struct OffscreenRenderer::Impl
 
   RenderedImage render(
       const std::vector<RenderableDescriptor>& descriptors,
+      const OrbitCamera& camera,
+      const DebugScene& debug)
+  {
+    const auto materials = materialResources.materialSet();
+    // Refresh replaces the previous overlay entity, so an empty DebugScene
+    // clears any overlay left by an earlier debug render.
+    detail::refreshProviderDebugOverlay(
+        *context.engine,
+        *context.scene,
+        materials.debugColor,
+        debug.lines,
+        debug.triangles,
+        debugOverlay);
+    return renderWithCurrentOverlay(descriptors, camera);
+  }
+
+  RenderedImage render(
+      const std::vector<RenderableDescriptor>& descriptors,
+      const OrbitCamera& camera)
+  {
+    // A plain render must not inherit the overlay from an earlier debug
+    // render; clearing keeps every call a pure function of its arguments.
+    detail::clearProviderDebugOverlay(
+        *context.engine, *context.scene, debugOverlay);
+    return renderWithCurrentOverlay(descriptors, camera);
+  }
+
+  RenderedImage renderWithCurrentOverlay(
+      const std::vector<RenderableDescriptor>& descriptors,
       const OrbitCamera& camera)
   {
     const auto materials = materialResources.materialSet();
@@ -210,6 +240,11 @@ struct OffscreenRenderer::Impl
       return;
     }
 
+    if (context.scene != nullptr) {
+      detail::clearProviderDebugOverlay(
+          *context.engine, *context.scene, debugOverlay);
+    }
+
     for (auto& sceneRenderable : sceneRenderables) {
       if (context.scene != nullptr) {
         detail::removeRenderableFromScene(
@@ -262,6 +297,7 @@ struct OffscreenRenderer::Impl
   bool materialResourcesCreated = false;
   std::vector<detail::SceneRenderable> sceneRenderables;
   std::vector<RenderableId> loggedUnsupportedRenderableIds;
+  detail::DebugOverlayController debugOverlay;
 };
 
 OffscreenRenderer::OffscreenRenderer(const OffscreenRenderOptions& options)
@@ -281,6 +317,14 @@ RenderedImage OffscreenRenderer::render(
     const OrbitCamera& camera)
 {
   return mImpl->render(descriptors, camera);
+}
+
+RenderedImage OffscreenRenderer::render(
+    const std::vector<RenderableDescriptor>& descriptors,
+    const OrbitCamera& camera,
+    const DebugScene& debug)
+{
+  return mImpl->render(descriptors, camera, debug);
 }
 
 } // namespace dart::gui

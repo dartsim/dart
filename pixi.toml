@@ -1112,6 +1112,21 @@ scene-diff = { cmd = ["python", "scripts/scene_diff.py"] }
 
 verification-bundle = { cmd = ["python", "scripts/verification_bundle.py"] }
 
+image-compose = { cmd = ["python", "scripts/image_compose.py"] }
+
+evidence-select = { cmd = ["python", "scripts/evidence_select.py"] }
+
+evidence-publish = { cmd = ["python", "scripts/evidence_publish.py"] }
+
+# Deterministic headless capture with active camera control (auto viewpoint
+# selection, focus framing, turntable/motion video) and debug layers.
+agent-capture = { cmd = [
+  "python",
+  "scripts/agent_capture.py",
+], depends-on = [
+  "build-py-dev-docking",
+], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python:scripts" } }
+
 # Opt-in golden-image gate: render a canonical scene through dart.gui.render and
 # compare it against a committed, backend-specific golden. Not wired into
 # default CI; regenerate the golden with `-- --update` on the target backend.

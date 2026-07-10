@@ -1,11 +1,13 @@
 #include "gui/offscreen.hpp"
 
+#include "dart/gui/debug.hpp"
 #include "dart/gui/offscreen.hpp"
 #include "dart/gui/viewer.hpp"
 
 #include <Python.h>
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
@@ -289,22 +291,32 @@ void defGuiOffscreen(nb::module_& m)
           "render",
           [](OffscreenRenderer& renderer,
              const std::vector<RenderableDescriptor>& descriptors,
-             const OrbitCamera& camera) {
+             const OrbitCamera& camera,
+             const std::optional<dart::gui::DebugScene>& debug) {
             nb::gil_scoped_release release;
+            if (debug.has_value()) {
+              return renderer.render(descriptors, camera, *debug);
+            }
             return renderer.render(descriptors, camera);
           },
           nb::arg("descriptors"),
-          nb::arg("camera"))
+          nb::arg("camera"),
+          nb::arg("debug") = nb::none())
       .def(
           "render_descriptors",
           [](OffscreenRenderer& renderer,
              const std::vector<RenderableDescriptor>& descriptors,
-             const OrbitCamera& camera) {
+             const OrbitCamera& camera,
+             const std::optional<dart::gui::DebugScene>& debug) {
             nb::gil_scoped_release release;
+            if (debug.has_value()) {
+              return renderer.render(descriptors, camera, *debug);
+            }
             return renderer.render(descriptors, camera);
           },
           nb::arg("descriptors"),
-          nb::arg("camera"));
+          nb::arg("camera"),
+          nb::arg("debug") = nb::none());
 }
 
 } // namespace dart::python_nb

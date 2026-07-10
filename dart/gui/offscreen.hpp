@@ -33,6 +33,7 @@
 #ifndef DART_GUI_OFFSCREEN_HPP_
 #define DART_GUI_OFFSCREEN_HPP_
 
+#include <dart/gui/debug.hpp>
 #include <dart/gui/export.hpp>
 #include <dart/gui/renderable.hpp>
 
@@ -78,6 +79,15 @@ public:
   RenderedImage render(
       const std::vector<RenderableDescriptor>& descriptors,
       const OrbitCamera& camera);
+
+  /// Renders the descriptors with an application-supplied debug overlay drawn
+  /// through the same unlit, always-on-top path as the interactive viewer.
+  /// Labels are not rasterized here (the viewer draws them in its UI pass);
+  /// callers composite them onto the returned image instead.
+  RenderedImage render(
+      const std::vector<RenderableDescriptor>& descriptors,
+      const OrbitCamera& camera,
+      const DebugScene& debug);
 
 private:
   struct Impl;

@@ -112,6 +112,47 @@ def test_descriptor_offscreen_render_buffer_and_png():
     assert _decode_png_size(image.png_bytes()) == (96, 72)
 
 
+def test_debug_scene_render_differs_and_clears():
+    world = dart.World()
+    ground = world.add_rigid_body("debug_ground", position=(0.0, 0.0, -0.05))
+    ground.is_static = True
+    ground.set_collision_shape(dart.CollisionShape.box((1.4, 1.4, 0.1)))
+    box = world.add_rigid_body("debug_box", position=(0.0, 0.0, 0.12))
+    box.set_collision_shape(dart.CollisionShape.box((0.22, 0.22, 0.22)))
+    for _ in range(50):
+        world.step()
+
+    camera = dart.gui.frame_body(world, "debug_box", margin=3.0)
+    plain = dart.gui.render(world, camera, size=(160, 120))
+    debugged = dart.gui.render(
+        world, camera, size=(160, 120), debug=("grid", "body_frames", "contacts")
+    )
+    plain_again = dart.gui.render(world, camera, size=(160, 120))
+
+    assert bytes(memoryview(plain)) != bytes(memoryview(debugged))
+    # The overlay must not leak into subsequent plain renders.
+    assert bytes(memoryview(plain)) == bytes(memoryview(plain_again))
+    # Repeated debug renders are pure functions of their arguments.
+    debugged_again = dart.gui.render(
+        world, camera, size=(160, 120), debug=("grid", "body_frames", "contacts")
+    )
+    assert bytes(memoryview(debugged)) == bytes(memoryview(debugged_again))
+
+
+def test_render_annotated_composites_labels():
+    world = dart.World()
+    box = world.add_rigid_body("labeled_box", position=(0.0, 0.0, 0.3))
+    box.set_collision_shape(dart.CollisionShape.box((0.2, 0.2, 0.2)))
+    camera = dart.gui.frame_body(world, "labeled_box", margin=3.0)
+
+    without_labels = dart.gui.render_annotated(world, camera, (160, 120))
+    with_labels = dart.gui.render_annotated(
+        world, camera, (160, 120), debug=("labels",)
+    )
+    assert with_labels.shape == (120, 160, 4)
+    assert not np.array_equal(without_labels, with_labels)
+
+
 def test_world_render_default_camera_is_stable():
     world = dart.World()
     ground = world.add_rigid_body("render_ground", position=(0.0, 0.0, -0.05))

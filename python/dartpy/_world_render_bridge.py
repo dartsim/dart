@@ -380,8 +380,23 @@ def _renderables_from_world(world: Any) -> list[Any]:
     return list(bridge.renderable_provider())
 
 
+def _resolve_debug_scene(world: Any, debug: Any) -> Any:
+    """Accept a DebugScene, a layer-name sequence, or None."""
+    if debug is None:
+        return None
+    if hasattr(debug, "lines") and hasattr(debug, "labels"):
+        return debug
+    from . import _debug_layers
+
+    return _debug_layers.debug_scene_for_world(world, layers=tuple(debug))
+
+
 def render(
-    world: Any, camera: Any | None = None, size: tuple[int, int] = (640, 480)
+    world: Any,
+    camera: Any | None = None,
+    size: tuple[int, int] = (640, 480),
+    *,
+    debug: Any | None = None,
 ) -> Any:
     render_size = _normalize_render_size(size)
     renderables = _renderables_from_world(world)
@@ -392,13 +407,52 @@ def render(
         )
     if camera is None:
         camera = _bounds_fit_camera(renderables, render_size)
+    debug_scene = _resolve_debug_scene(world, debug)
     renderer = dart.gui.OffscreenRenderer(width=render_size[0], height=render_size[1])
-    return renderer.render(renderables, camera)
+    if debug_scene is None:
+        return renderer.render(renderables, camera)
+    return renderer.render(renderables, camera, debug=debug_scene)
+
+
+def render_annotated(
+    world: Any,
+    camera: Any | None = None,
+    size: tuple[int, int] = (640, 480),
+    *,
+    debug: Any | None = None,
+    label_scale: int = 2,
+) -> Any:
+    """Render with debug layers and composite label text onto the pixels.
+
+    Returns an (H, W, 4) uint8 numpy array (labels need a CPU pass; the
+    offscreen renderer has no text stage).
+    """
+    render_size = _normalize_render_size(size)
+    renderables = _renderables_from_world(world)
+    if not renderables:
+        raise ValueError(
+            "dart.gui.render found no renderable descriptors; add collision "
+            "shapes to a Python-created DART 7 world or pass a descriptor scene"
+        )
+    if camera is None:
+        camera = _bounds_fit_camera(renderables, render_size)
+    debug_scene = _resolve_debug_scene(world, debug)
+    renderer = dart.gui.OffscreenRenderer(width=render_size[0], height=render_size[1])
+    if debug_scene is None:
+        image = renderer.render(renderables, camera)
+        return np.array(memoryview(image), copy=True)
+    image = renderer.render(renderables, camera, debug=debug_scene)
+    from . import _debug_layers
+
+    return _debug_layers.composite_labels(
+        image, camera, debug_scene.labels, scale=label_scale
+    )
 
 
 def install_world_render_helpers(root: Any, gui: Any) -> None:
     _install_rigid_body_registry(root)
     gui.render = render
+    gui.render_annotated = render_annotated
     gui.orbit_camera = orbit_camera
     gui.look_at = look_at
 

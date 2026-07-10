@@ -582,10 +582,16 @@ class OffscreenRenderer:
         high_fidelity: bool = ...,
     ) -> None: ...
     def render(
-        self, descriptors: Sequence[RenderableDescriptor], camera: OrbitCamera
+        self,
+        descriptors: Sequence[RenderableDescriptor],
+        camera: OrbitCamera,
+        debug: DebugScene | None = ...,
     ) -> RenderedImage: ...
     def render_descriptors(
-        self, descriptors: Sequence[RenderableDescriptor], camera: OrbitCamera
+        self,
+        descriptors: Sequence[RenderableDescriptor],
+        camera: OrbitCamera,
+        debug: DebugScene | None = ...,
     ) -> RenderedImage: ...
 
 class RenderableSetUpdatePlan:
@@ -1296,8 +1302,133 @@ def write_rgba_ppm(
     origin_bottom_left: bool = ...,
 ) -> None: ...
 def render(
-    world: object, camera: OrbitCamera | None = ..., size: tuple[int, int] = ...
+    world: object,
+    camera: OrbitCamera | None = ...,
+    size: tuple[int, int] = ...,
+    *,
+    debug: DebugScene | Sequence[str] | None = ...,
 ) -> RenderedImage: ...
+def render_annotated(
+    world: object,
+    camera: OrbitCamera | None = ...,
+    size: tuple[int, int] = ...,
+    *,
+    debug: DebugScene | Sequence[str] | None = ...,
+    label_scale: int = ...,
+) -> NDArray[numpy.uint8]: ...
+
+DEBUG_LAYERS: tuple[str, ...]
+
+class TrajectoryTracker:
+    def __init__(
+        self,
+        world: object,
+        bodies: Sequence[str] | None = ...,
+        max_samples: int = ...,
+    ) -> None: ...
+    def sample(self) -> None: ...
+    @property
+    def history(self) -> dict[str, list[NDArray[numpy.float64]]]: ...
+    def debug_lines(self) -> list[DebugLineDescriptor]: ...
+
+def debug_scene_for_world(
+    world: object,
+    options: DebugDrawOptions | None = ...,
+    *,
+    layers: Sequence[str] = ...,
+    contacts: Sequence[object] | None = ...,
+    trajectories: TrajectoryTracker | dict[str, Sequence[object]] | None = ...,
+    extra_lines: Sequence[DebugLineDescriptor] | None = ...,
+    extra_labels: Sequence[DebugLabelDescriptor] | None = ...,
+) -> DebugScene: ...
+def contact_debug_lines(
+    contacts: Sequence[object], options: DebugDrawOptions | None = ...
+) -> list[DebugLineDescriptor]: ...
+def body_labels(
+    world: object, *, offset: Sequence[float] = ...
+) -> list[DebugLabelDescriptor]: ...
+def project_points(
+    camera: OrbitCamera,
+    size: tuple[int, int],
+    points: Sequence[object],
+    projection_options: ProjectionOptions | None = ...,
+) -> NDArray[numpy.float64]: ...
+def composite_labels(
+    image: object,
+    camera: OrbitCamera,
+    labels: Sequence[DebugLabelDescriptor],
+    *,
+    scale: int = ...,
+    projection_options: ProjectionOptions | None = ...,
+) -> NDArray[numpy.uint8]: ...
+def draw_text(
+    pixels: NDArray[numpy.uint8],
+    text: str,
+    origin: tuple[int, int],
+    rgba: Sequence[float] = ...,
+    scale: int = ...,
+) -> None: ...
+
+class ViewReport:
+    camera: dict[str, object]
+    size: tuple[int, int]
+    focus: list[str]
+    corner_coverage: float
+    subject_fraction: float
+    center_visible: bool
+    occlusion_fraction: float
+    ambiguity_iou: float
+    issues: list[str]
+    score: float
+    @property
+    def acceptable(self) -> bool: ...
+    def to_json(self) -> dict[str, object]: ...
+    def to_json_text(self) -> str: ...
+
+class ViewpointChoice:
+    camera: OrbitCamera
+    report: ViewReport
+    reason: str
+
+def assess_view(
+    world: object,
+    camera: OrbitCamera,
+    size: tuple[int, int] = ...,
+    *,
+    focus: str | Sequence[str] | None = ...,
+    projection_options: ProjectionOptions | None = ...,
+) -> ViewReport: ...
+def select_viewpoints(
+    world: object,
+    size: tuple[int, int] = ...,
+    *,
+    focus: str | Sequence[str] | None = ...,
+    count: int = ...,
+    azimuths: Sequence[float] = ...,
+    elevations: Sequence[float] = ...,
+    distance_scales: Sequence[float] = ...,
+    min_azimuth_separation: float = ...,
+    projection_options: ProjectionOptions | None = ...,
+) -> list[ViewpointChoice]: ...
+def frame_body(
+    world: object,
+    name: str | Sequence[str],
+    *,
+    azimuth: float = ...,
+    elevation: float = ...,
+    size: tuple[int, int] = ...,
+    margin: float = ...,
+) -> OrbitCamera: ...
+def frame_region(
+    center: Sequence[float],
+    radius: float,
+    *,
+    azimuth: float = ...,
+    elevation: float = ...,
+    size: tuple[int, int] = ...,
+    margin: float = ...,
+    vertical_fov_degrees: float = ...,
+) -> OrbitCamera: ...
 def orbit_camera(
     azimuth: float | None = ...,
     elevation: float | None = ...,
