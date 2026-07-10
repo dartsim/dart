@@ -297,6 +297,69 @@ the CPU-change graphs and a detector-winner graph. The next committed-revision
 comparison will fail if direct native is missing, checksum-ineligible, or not
 the winner.
 
+## 2026-07-09 direct-native hot-path handoff
+
+Commit `0ed32afba03` (`Tighten native soft fallback hot paths`) is the latest
+local code slice on branch `wp-db-native-soft-fallback`. It tightens the
+direct-native soft fallback path by:
+
+- caching fallback-shape traits until the shape identity/version changes,
+- using the cached DART fallback transform/AABB for fallback shapes,
+- avoiding persistent native manifold-cache creation until native-owned
+  manifold contacts are emitted,
+- skipping native manifold-cache refresh for soft fallback groups,
+- fusing native collision-object update and AABB collection before broadphase
+  refresh, and
+- replacing an unsafe ordered broadphase AABB update with id-checked
+  `BruteForceBroadPhase::updateRange()` plus an out-of-order ID regression.
+
+Focused validation:
+
+```bash
+pixi run lint
+pixi run cmake --build build/default/cpp/Release \
+  --target soft_body_headless BM_INTEGRATION_soft_body \
+    UNIT_collision_native_detector_adapter UNIT_collision_native_brute_force \
+    test_DARTCollisionDetector test_SoftDynamics INTEGRATION_StepAllocation \
+  --parallel 8
+pixi run ctest --test-dir build/default/cpp/Release \
+  -R 'UNIT_collision_native_brute_force$|UNIT_collision_native_detector_adapter$|test_DARTCollisionDetector$|test_SoftDynamics$|INTEGRATION_StepAllocation$' \
+  --output-on-failure
+```
+
+Result: lint passed, the focused build passed, and all five focused CTest
+entries passed.
+
+A formal comparison was started with:
+
+```bash
+pixi run python scripts/compare_soft_body_performance.py \
+  --current HEAD \
+  --parent HEAD^1 \
+  --base origin/release-6.20 \
+  --detectors fcl,dart,native,bullet,ode \
+  --threads 1,16 \
+  --benchmark-min-time 0.1s \
+  --benchmark-repetitions 7 \
+  --benchmark-cycles 2 \
+  --benchmark-run-order detector \
+  --correctness-scenes soft_cubes,soft_bodies \
+  --correctness-steps 200 \
+  --wait-for-local-dart-builds \
+  --idle-max-load-1m 4 \
+  --idle-cooldown 5 \
+  --output-dir .benchmark_results/wp-db08-native-soft-fallback-0ed32af-parent-40445e-base-2ba736 \
+  --keep-going
+```
+
+That run was intentionally stopped after the user asked for a handoff-only
+state update. It created current/parent/base metadata and build worktrees but
+did not produce usable `summary.md`, `raw/`, or `logs/` benchmark timing
+evidence. Do not use that partial directory for performance claims. A fresh
+agent should rerun the comparison, preferably without `--keep-going` for final
+PR evidence, and update this section with the generated table and graph
+summary only after the evaluator passes.
+
 ## Benchmark commands
 
 Baseline:
