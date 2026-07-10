@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | **Dependency-reduction lane** (this one) | Optimizer removal; default-env analysis; **now orchestration/monitoring** | Own removals **complete**; running this board |
 | **Native-replacement lane** | `dart/external/*` → native built-ins; **GUI/OSG + GLUT removal** | External replacements + **GLUT/lodepng removal done** (#3116 merged) |
-| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), and phase 3 (#3352, #3355, #3358, #3359, #3360) merged; phase 4 active on `feature/native-phase4-solver-manifolds` |
+| **Native-collision-port lane** | Port DART 7 `dart/collision/native/` → DART 6.20 (make FCL/Bullet/ODE optional) | Phase 0 (#3271), phase 1 (#3281), phase 2 (#3303, #3306, #3318, #3319, #3321, #3322, #3324, #3325, #3343, #3350), phase 3 (#3352, #3355, #3358, #3359, #3360), and first phase-4 slices (#3362, #3364) merged; phase 4 closeout / remaining measured optimization is next |
 | **Perf / parallelism lane** (issue #3056) | Island deactivation, parallel-safe solves, benchmarks | Round 1 landed through #3199/#3203 (guardrails); **round 2 active in `docs/dev_tasks/dart6_performance_generalization/`** — WP-PG.01 baseline packet **#3263 merged** (tracks the native-collision port as its WS-F lane, external owner) |
 
 ## PR tracker
@@ -106,6 +106,10 @@
 - **#3359** phase-3 D4 native CCD engine support (merged 2026-07-09).
 - **#3360** phase-3 D5 native persistent manifold cache, contact reduction,
   and cached-impulse seed/write-back (merged 2026-07-09).
+- **#3362** phase-4 native contact-container dashboard rows (merged
+  2026-07-09).
+- **#3364** phase-4 solver-facing native manifold cap with parent-vs-PR and
+  detector-vs-detector evidence (merged 2026-07-09).
 - **#3283** main-branch dual for the native sphere-sphere binary-check fix
   (merged 2026-07-07).
 
@@ -122,16 +126,15 @@
 
 ### 🔄 Open — monitoring (checked 2026-07-09)
 
-- **Phase 4** `feature/native-phase4-solver-manifolds` — active local slice for
-  solver-facing native manifold contact reduction. Local dashboard evidence on
-  the 120-object contact-container row improves native from 2268.942 ms to
-  1118.032 ms while reducing contacts from 282 to 251; the PR report must carry
-  the full parent-vs-PR and detector-vs-detector tables.
+- **Phase 4** — #3362 and #3364 are merged. The next native-collision session
+  should refresh benchmark evidence on the current base, close out Phase 4 if
+  native still clears the performance bar, or make one cohesive measured
+  follow-up PR before moving to Phase 5.
 - **#3353** is merged on `release-6.20` for the separate
   performance-generalization plan parking lane.
 - The earlier monitoring queue has landed: #3283, #3317, #3319, #3321, #3322,
-  #3324, #3325, #3357, #3358, #3359, and #3360 are merged. The perf lane's
-  WP-PG.01 baseline packet **#3263** also merged.
+  #3324, #3325, #3357, #3358, #3359, #3360, #3362, and #3364 are merged. The
+  perf lane's WP-PG.01 baseline packet **#3263** also merged.
 
 Related remote heads still visible: `feature/native-occupancy-grid`,
 `task/native-collision-performance-exec`, and six `perf/dart6-*` round-1
@@ -164,8 +167,10 @@ before treating it as an open/active PR.)_
   performance tests. **Phase 3 D1-D4 are merged (#3352/#3355/#3358/#3359):**
   native detector distance, raycast, VoxelGrid/compound wiring, and CCD support
   against the incumbent support gaps. **Phase 3 D5 is merged (#3360):**
-  persistent manifold cache/reuse and cached-impulse seed/write-back.
-  **Current slice is phase 4:** measured native performance optimization.
+  persistent manifold cache/reuse and cached-impulse seed/write-back. **Phase 4
+  has begun (#3362/#3364):** native dashboard rows and solver-facing manifold
+  contact reduction are merged, but Phase 4 still needs closeout evidence or one
+  consolidated measured follow-up before Phase 5.
 - **Default flip:** still late-phase only. Do not flip defaults until `03`'s full
   A/B packet and gz gate pass.
 - _Hold each follow-up to `03`'s bar: gz-compat (`pixi run -e gazebo test-gz`),
@@ -177,11 +182,12 @@ before treating it as an open/active PR.)_
 
 1. **Base / conflict status**:
    - Current planning baseline: `origin/release-6.20` =
-     `43e4196389863f7405cd81f4ab501b45f02ae479`; `origin/main` =
+     `613241385ae58fed2d2a47e9ff53beb2972d4b76`; `origin/main` =
      `a70fc2ed5cb7ea40f72dce68b7d374583ab7feee`.
    - Open PRs routinely fall behind as the base advances; a maintainer merge-up
      clears it. Exact behind-counts aren't tracked here (too volatile).
-   - All remote mutations are owned by the maintainer.
+   - Remote mutations are maintainer-owned unless the maintainer explicitly
+     requests a direct maintenance push.
 2. **Shared hot files:** `pixi.toml` / `pixi.lock` are touched by multiple lanes —
    **merge `origin/release-6.20` before pushing**, never rebase a published PR branch
    (per `AGENTS.md` / `02`).
@@ -217,16 +223,15 @@ before treating it as an open/active PR.)_
   native-collision **#3123** (primitive plane contacts + broadphase pruning) — first
   piece of the native collision port.
 - **Open queue (2026-07-09):** no open native-collision release PRs remain after
-  #3360. Phase 4 is active locally on
-  `feature/native-phase4-solver-manifolds`; the former
+  #3364. Phase 4 should resume from current `origin/release-6.20`; the former
   #3263/#3271/#3281/#3302/#3303/#3306/#3318/#3319, plus
-  #3321/#3322/#3324/#3325/#3343/#3350/#3352/#3355/#3358/#3359/#3360 lane
-  milestones, main-branch dual #3283, workflow rename #3357, and MSVC policy
-  #3348 are merged.
+  #3321/#3322/#3324/#3325/#3343/#3350/#3352/#3355/#3358/#3359/#3360/#3362/#3364
+  lane milestones, main-branch dual #3283, workflow rename #3357, and MSVC
+  policy #3348 are merged.
 - **Largest remaining win:** native-collision port → makes FCL/Bullet/ODE
-  optional and eventually drops `fcl` from core. The DART 7 native engine is
-  only partially ported to DART 6.20; default-flip is still a late-phase
-  decision.
+  optional and eventually drops `fcl` from core. The opt-in native detector and
+  capability parity pieces are now on DART 6.20, but default-flip and dependency
+  decoupling are still late-phase decisions.
 - **Confirmed non-removable standalone:** `boost` (OSG-coupled), core deps
   (Eigen/assimp/fmt/tinyxml2/urdfdom), `octomap` (exported-header contract).
 

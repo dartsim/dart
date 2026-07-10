@@ -74,14 +74,17 @@ scope-diff-guarded.
 - **D4** (native CCD support): **#3359** — **merged**.
 - **D5** (native persistent manifold cache + cached-impulse seed/write-back):
   **#3360** — **merged**.
+- **P11** (native contact-container dashboard rows): **#3362** — **merged**.
+- **D6** (solver-facing native manifold cap with performance evidence):
+  **#3364** — **merged**.
 
-**Next: Phase 4 — evidence-driven native performance optimization.** The first
-performance slice is on `feature/native-phase4-solver-manifolds`: cap
-solver-facing native manifolds at three contacts while honoring stricter
-per-pair caps. This targets the measured solver row overhead from native's
-fourth contact on contact-rich scenes and keeps the native detector opt-in.
+**Next: Phase 4 closeout / remaining measured optimization.** PR #3364 landed
+the first native performance optimization: cap solver-facing native manifolds at
+three contacts while honoring stricter per-pair caps. This targets the measured
+solver row overhead from native's fourth contact on contact-rich scenes and
+keeps the native detector opt-in.
 
-Measured on `origin/release-6.20` parent `43e419638986` vs this local slice:
+Measured on `origin/release-6.20` parent `43e419638986` vs #3364:
 
 | Benchmark row | Parent native | Slice native | Delta | Contacts |
 | --- | ---: | ---: | ---: | ---: |
@@ -92,18 +95,38 @@ Measured on `origin/release-6.20` parent `43e419638986` vs this local slice:
 | `BM_ContactContainerActive/120/4/4_mean` | 2193.106 ms | 1167.577 ms | +46.8% | 282 -> 251 |
 | `BM_ContactContainerDeactivation/60/4/16/iterations:1_mean` | 30.589 ms | 29.391 ms | +3.9% | 101 -> 97 |
 
-Post-slice detector comparison on `BM_ContactContainerActive/120/*/1_mean`:
+Post-#3364 detector comparison on `BM_ContactContainerActive/120/*/1_mean`:
 native 1118.032 ms / 251 contacts, DART 1452.013 ms / 242 contacts, FCL
 1475.995 ms / 243 contacts, Bullet 1544.000 ms / 256 contacts.
 
-Remaining Phase 4 work after this PR merges: continue with measured native hot
-paths only, using parent-vs-PR and detector-vs-detector evidence in the style of
-#3307. Candidate areas are broadphase pair pruning, scratch/cache reuse,
-manifold reuse, scene-local allocation control, optional SIMD from #3229, and
-thread-safe contact aggregation. **Do not** add a
-`CollisionDetectorType::Native` enum or touch `World` detector defaults,
-`ConstraintSolver` detector defaults, `WorldConfig`, or dependency/package
-metadata; FCL remains the default until phase 6.
+Fresh-agent resume path:
+
+1. Start from current `origin/release-6.20`; verify #3364 is merged before doing
+   any new work. Do not reopen `feature/native-phase4-solver-manifolds`.
+2. Re-run the contact-container dashboard and focused profile rows on the latest
+   base. If native still clears the Phase 4 performance bar, record a Phase 4
+   closeout packet and move to Phase 5. If not, do **one cohesive** follow-up PR
+   for the next measured hot path rather than several small PRs.
+3. Candidate Phase 4 follow-ups remain broadphase pair pruning, scratch/cache
+   reuse, manifold reuse beyond #3364, scene-local allocation control, optional
+   SIMD from #3229, and thread-safe contact aggregation. Every performance PR
+   needs parent-vs-PR and detector-vs-detector evidence in the style of #3307.
+4. Phase 5 is the compatibility facade decision: decide whether Bullet/ODE/FCL
+   components stay real optional components or become facade-over-native
+   compatibility components. Preserve gz-physics/gz-sim ABI/API expectations,
+   especially subclassing of `BulletCollisionDetector` and `OdeCollisionDetector`.
+5. Phase 6 is the default flip in both `ConstraintSolver` constructors. Do not
+   flip defaults until the full A/B packet, scene-dump tolerance checks, local
+   tests, and Gazebo gate pass on the current base.
+6. Phase 7 is the actual dependency win: only after the default flip is accepted,
+   decouple FCL from the core `dart` target and package dependency surface, then
+   move Bullet/ODE/FCL packages out of default paths with package/export smoke
+   tests.
+
+Do **not** add a `CollisionDetectorType::Native` enum or touch `World` detector
+defaults, `ConstraintSolver` detector defaults, `WorldConfig`, or
+dependency/package metadata before the explicit phase that owns it; FCL remains
+the default until phase 6.
 
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
 PRs, worktrees, gotchas, and exact Phase 4 next steps).
