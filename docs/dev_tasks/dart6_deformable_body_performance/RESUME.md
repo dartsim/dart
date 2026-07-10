@@ -1,5 +1,29 @@
 # RESUME - DART 6 deformable body feature and performance
 
+## 2026-07-09 evening reunification update
+
+This update corrects the current-reality picture; bullets below it describe
+history that partially landed through other refs.
+
+- PR #3307 (merged 2026-07-07) carried an earlier snapshot of this task's
+  implementation into `origin/release-6.20`.
+- The newer slices (WP-DB.04 equation gates plus `07-equation-correctness.md`,
+  the `PointMassPhaseView` series, FCL soft-mesh read slices, World
+  empty-solve fast paths, `soft_open_chain`/`soft_cubes` SKEL allocation
+  gates) lived only on `wp-db-soft-skel-allocation-gates` and were absent from
+  `wp-db-native-soft-fallback` even though this file described them as current
+  state.
+- Merge commit `4286fd53097` reunifies the lanes on
+  `wp-db-native-soft-fallback`. Conflict policy, validation evidence, and the
+  accepted 1-3 ULP point-mass accumulator drift on dart/native contact scenes
+  are recorded in `decisions.md` (entry 7) and the merge commit message.
+- The branch is pushed (`origin/wp-db-native-soft-fallback`) but the merge is
+  local-only until maintainers approve a push. No PR exists yet.
+- Orchestrator assumptions for the previously open decisions (API
+  preservation, competing-implementation envelope, mandatory demo subset,
+  native soft direction, opt-in adaptive activation) are recorded in
+  `decisions.md`.
+
 Latest state:
 
 - Task folder created on `release-6.20`.

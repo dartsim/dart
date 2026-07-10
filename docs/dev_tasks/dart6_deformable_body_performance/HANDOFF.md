@@ -1,6 +1,17 @@
 # Handoff - DART 6 deformable body performance
 
-Updated: 2026-07-09
+Updated: 2026-07-09 (evening; supersedes the morning handoff)
+
+**Reunification note:** merge commit `4286fd53097` merged
+`wp-db-soft-skel-allocation-gates` into this branch, restoring the WP-DB.04
+equation gates, `07-equation-correctness.md`, the point-mass phase-view
+series, FCL soft-mesh read slices, World empty-solve fast paths, and the
+extra SKEL allocation gates that the morning handoff's docs referenced but the
+branch did not contain. See `decisions.md` entry 7 for the conflict policy and
+validation evidence. Statements below about "latest implementation commit
+`0ed32afba03`" and the branch being local-only predate that merge; the branch
+now has an upstream at `origin/wp-db-native-soft-fallback` (pushed before this
+session) and is ahead of it by the merge and follow-up commits.
 
 This file is the short, current handoff for a fresh agent. Treat the repository
 state as authoritative, then use this note to avoid rediscovering the recent
