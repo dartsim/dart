@@ -134,6 +134,15 @@ void AabbTreeBroadPhase::queryPairs(std::vector<BroadPhasePair>& out) const
 
 bool AabbTreeBroadPhase::visitPairs(const BroadPhasePairVisitor& visitor) const
 {
+  // Materializing and sorting the candidate pairs before visiting is
+  // load-bearing, not incidental: callers that stop early (contact caps,
+  // boolean queries) terminate on whichever pair they see first, so the
+  // visitation order is behavior. Sorted (min,max) order reproduces
+  // BruteForceBroadPhase's ordered scan bit-for-bit, which is what keeps the
+  // native detector's results independent of tree topology. Collection costs
+  // O(k log k) in the number of overlapping candidates; the previous
+  // BruteForce scan was O(n^2) in object count regardless of overlap, so
+  // even early-exit queries do not regress asymptotically.
   const auto pairs = queryPairs();
   for (const auto& pair : pairs) {
     if (!visitor(pair.first, pair.second)) {
