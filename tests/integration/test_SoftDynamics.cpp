@@ -727,11 +727,27 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
   const Eigen::MatrixXd withOriginalPointMassesInvAugM
       = skeleton->getInvAugMassMatrix();
 
+  const double skeletonMassBeforeHalving = skeleton->getMass();
+  const double softBodyMassBeforeHalving = softBody->getMass();
+  double halvedPointMassSum = 0.0;
   for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
     dynamics::PointMass* pointMass = softBody->getPointMass(i);
     ASSERT_TRUE(pointMass != nullptr);
+    halvedPointMassSum += 0.5 * pointMass->getMass();
     pointMass->setMass(0.5 * pointMass->getMass());
   }
+
+  // SoftBodyNode::getMass() shadows the non-virtual BodyNode::getMass(), so
+  // Skeleton-level totals are rigid-only by construction and must not move
+  // when point-mass masses change, while the soft body's own flesh-inclusive
+  // mass reflects the halving. Point-mass gravity reaches the skeleton
+  // through the aggregation paths verified below, not through the cached
+  // skeleton total.
+  EXPECT_NEAR(skeleton->getMass(), skeletonMassBeforeHalving, 1e-12);
+  EXPECT_NEAR(
+      softBody->getMass(),
+      softBodyMassBeforeHalving - halvedPointMassSum,
+      1e-12);
 
   const Eigen::VectorXd withHalfPointMasses = skeleton->getGravityForces();
   const Eigen::VectorXd withHalfPointMassesCg

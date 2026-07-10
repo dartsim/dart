@@ -470,6 +470,18 @@ double SoftBodyNode::getMass() const
 }
 
 //==============================================================================
+void SoftBodyNode::handlePointMassMassChange()
+{
+  dirtyArticulatedInertia();
+  const SkeletonPtr& skel = getSkeleton();
+  if (skel) {
+    skel->updateTotalMass();
+    skel->incrementDeactivationStateVersion();
+  }
+  incrementVersion();
+}
+
+//==============================================================================
 void SoftBodyNode::setVertexSpringStiffness(double _kv)
 {
   DART_ASSERT(0.0 <= _kv);

@@ -40,7 +40,6 @@ namespace dart {
 namespace collision {
 
 class DARTCollisionObject;
-class FCLCollisionObject;
 
 } // namespace collision
 
@@ -59,7 +58,6 @@ public:
 
   friend class Skeleton;
   friend class collision::DARTCollisionObject;
-  friend class collision::FCLCollisionObject;
   friend class SoftMeshShape;
   friend class PointMass;
   friend class PointMassNotifier;
@@ -178,6 +176,11 @@ protected:
   /// Used by SoftBodyAspect to have this SoftBodyNode reconstruct its
   /// SoftMeshShape
   void configurePointMasses(ShapeNode* softNode);
+
+  /// Used by PointMass when its mass changes so the skeleton's cached total
+  /// mass and deactivation state stay consistent, mirroring
+  /// BodyNode::setInertia.
+  void handlePointMassMassChange();
 
   //--------------------------------------------------------------------------
   // Sub-functions for Recursive Kinematics Algorithms

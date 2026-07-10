@@ -78,6 +78,18 @@ gate for WP-DB.04. It is not a claim of paper-level deformable solver parity.
 
 ## Remaining gaps
 
+- `Skeleton::updateTotalMass()` sums the non-virtual `BodyNode::getMass()`,
+  so flesh mass appears in the shadowing `SoftBodyNode::getMass()` but never
+  in Skeleton-level totals (`Skeleton::getMass()` and COM-style aggregates).
+  This is a pre-existing DART 6 accounting split, left unchanged for
+  compatibility: point-mass gravity and inertia reach the skeleton through
+  the aggregation paths gated above. `PointMass::setMass()` now follows the
+  `BodyNode::setInertia()` dirty protocol (articulated-inertia dirtying,
+  total-mass recompute, deactivation-state wake, version bump) via
+  `SoftBodyNode::handlePointMassMassChange()`, and the gravity gate asserts
+  the rigid-only skeleton total stays fixed while the soft body's
+  flesh-inclusive mass tracks point-mass changes.
+
 - Point-mass inverse-mass and inverse-augmented-mass aggregation methods are
   still legacy stubs for the old point-coordinate formulation; the active
   public `Skeleton` inverse-matrix API is covered by the soft-tree solve above.
