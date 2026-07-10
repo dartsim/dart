@@ -1,0 +1,26 @@
+<mujoco model="contype_conaffinity">
+  <!--
+    Three mutually-overlapping static spheres used to exercise MuJoCo's
+    contype/conaffinity collision pair rule in isolation:
+
+      collides(A, B) := (contype_A & conaffinity_B) || (contype_B & conaffinity_A)
+
+    bodyA: contype=1 conaffinity=0
+    bodyB: contype=0 conaffinity=1
+    bodyC: contype=1 conaffinity=0 (same masks as bodyA)
+
+    A vs B: (1 & 1) || (0 & 0) = 1 -> collide
+    A vs C: (1 & 0) || (1 & 0) = 0 -> do not collide
+  -->
+  <worldbody>
+    <body name="bodyA" pos="0 0 0">
+      <geom name="geomA" type="sphere" size="0.5" contype="1" conaffinity="0"/>
+    </body>
+    <body name="bodyB" pos="0 0 0">
+      <geom name="geomB" type="sphere" size="0.5" contype="0" conaffinity="1"/>
+    </body>
+    <body name="bodyC" pos="0 0 0">
+      <geom name="geomC" type="sphere" size="0.5" contype="1" conaffinity="0"/>
+    </body>
+  </worldbody>
+</mujoco>

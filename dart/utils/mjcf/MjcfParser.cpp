@@ -41,6 +41,7 @@
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/XmlHelpers.hpp"
+#include "dart/utils/mjcf/detail/GeomCollisionFilter.hpp"
 #include "dart/utils/mjcf/detail/MujocoModel.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
 #include "dart/utils/mjcf/detail/Worldbody.hpp"
@@ -611,7 +612,8 @@ dynamics::ShapePtr createShape(
 bool createShapeNodes(
     dynamics::BodyNode* bodyNode,
     const detail::Body& mjcfBody,
-    const detail::Asset& mjcfAsset)
+    const detail::Asset& mjcfAsset,
+    detail::GeomCollisionFilter& collisionFilter)
 {
   // Create ShapeNodes for <geom>s
   for (std::size_t i = 0u; i < mjcfBody.getNumGeoms(); ++i) {
@@ -624,17 +626,35 @@ bool createShapeNodes(
       return false;
     }
 
+    const int contype = geom.getConType();
+    const int conaffinity = geom.getConAffinity();
+
+    // Following MuJoCo, a geom with contype == 0 and conaffinity == 0 can
+    // never take part in any collision pair (see the contype/conaffinity
+    // rule at http://mujoco.org/book/computation.html#coCollision), so it is
+    // created as a visual-only ShapeNode. This also matches mocap bodies,
+    // which MuJoCo never collides.
+    const bool hasCollision
+        = !mjcfBody.getMocap() && ((contype != 0) || (conaffinity != 0));
+
     // Create ShapeNode with the shape created above
     dynamics::ShapeNode* shapeNode = nullptr;
-    if (mjcfBody.getMocap()) {
-      // Disable collision and dynamics for mocap bodies
-      shapeNode = bodyNode->createShapeNodeWith<dynamics::VisualAspect>(
-          shape, geom.getName());
-    } else {
+    if (hasCollision) {
       shapeNode = bodyNode->createShapeNodeWith<
           dynamics::VisualAspect,
           dynamics::CollisionAspect,
           dynamics::DynamicsAspect>(shape, geom.getName());
+
+      // Sliding friction coefficient. MuJoCo's friction attribute is
+      // (sliding, torsional, rolling); DART's DynamicsAspect only models a
+      // single (isotropic) Coulomb friction coefficient, so only the sliding
+      // component is applied.
+      shapeNode->getDynamicsAspect()->setFrictionCoeff(geom.getFriction()[0]);
+
+      collisionFilter.setGeomBitmasks(shapeNode, contype, conaffinity);
+    } else {
+      shapeNode = bodyNode->createShapeNodeWith<dynamics::VisualAspect>(
+          shape, geom.getName());
     }
 
     // RGBA
@@ -681,7 +701,8 @@ bool populateSkeletonRecurse(
     dynamics::SkeletonPtr skel,
     dynamics::BodyNode* parentBodyNode,
     const detail::Body& mjcfBody,
-    const detail::Asset& mjcfAsset)
+    const detail::Asset& mjcfAsset,
+    detail::GeomCollisionFilter& collisionFilter)
 {
   dynamics::BodyNode* bodyNode = nullptr;
   dynamics::Joint* joint = nullptr;
@@ -738,12 +759,16 @@ bool populateSkeletonRecurse(
   DART_ASSERT(joint != nullptr);
 
   // Create ShapeNodes for the current BodyNode
-  if (!createShapeNodes(bodyNode, mjcfBody, mjcfAsset))
+  if (!createShapeNodes(bodyNode, mjcfBody, mjcfAsset, collisionFilter))
     return false;
 
   for (auto i = 0u; i < mjcfBody.getNumChildBodies(); ++i) {
     if (!populateSkeletonRecurse(
-            skel, bodyNode, mjcfBody.getChildBody(i), mjcfAsset)) {
+            skel,
+            bodyNode,
+            mjcfBody.getChildBody(i),
+            mjcfAsset,
+            collisionFilter)) {
       return false;
     }
   }
@@ -753,12 +778,14 @@ bool populateSkeletonRecurse(
 
 //==============================================================================
 dynamics::SkeletonPtr createSkeleton(
-    const detail::Body& mjcfBody, const detail::Asset& mjcfAsset)
+    const detail::Body& mjcfBody,
+    const detail::Asset& mjcfAsset,
+    detail::GeomCollisionFilter& collisionFilter)
 {
   dynamics::SkeletonPtr skel = dynamics::Skeleton::create();
 
-  const bool success
-      = populateSkeletonRecurse(skel, nullptr, mjcfBody, mjcfAsset);
+  const bool success = populateSkeletonRecurse(
+      skel, nullptr, mjcfBody, mjcfAsset, collisionFilter);
   if (!success) {
     const std::string bodyName
         = mjcfBody.getName().empty() ? "(noname)" : mjcfBody.getName();
@@ -780,10 +807,16 @@ simulation::WorldPtr createWorld(
   const detail::Asset& mjcfAsset = mujoco.getAsset();
   const detail::Worldbody& mjcfWorldbody = mujoco.getWorldbody();
 
+  // Collects the contype/conaffinity bitmasks of every ShapeNode created from
+  // an MJCF <geom> so that MuJoCo's collision pair rule can be enforced by a
+  // single World-wide CollisionFilter. See GeomCollisionFilter for details.
+  auto collisionFilter = std::make_shared<detail::GeomCollisionFilter>();
+
   // Parse root <body> elements
   for (std::size_t i = 0; i < mjcfWorldbody.getNumRootBodies(); ++i) {
     const detail::Body& mjcfRootBody = mjcfWorldbody.getRootBody(i);
-    const dynamics::SkeletonPtr& skel = createSkeleton(mjcfRootBody, mjcfAsset);
+    const dynamics::SkeletonPtr& skel
+        = createSkeleton(mjcfRootBody, mjcfAsset, *collisionFilter);
 
     if (skel == nullptr) {
       dterr << "[MjcfParser] Failed to parse a Skeleton. Stop parsing the "
@@ -845,10 +878,24 @@ simulation::WorldPtr createWorld(
 
     joint->setTransformFromParentBodyNode(mjcfGeom.getRelativeTransform());
     dynamics::ShapePtr shape = createShape(mjcfGeom, mjcfAsset);
-    dynamics::ShapeNode* shapeNode = body->createShapeNodeWith<
-        dynamics::VisualAspect,
-        dynamics::CollisionAspect,
-        dynamics::DynamicsAspect>(shape);
+
+    const int contype = mjcfGeom.getConType();
+    const int conaffinity = mjcfGeom.getConAffinity();
+    const bool hasCollision = (contype != 0) || (conaffinity != 0);
+
+    dynamics::ShapeNode* shapeNode = nullptr;
+    if (hasCollision) {
+      shapeNode = body->createShapeNodeWith<
+          dynamics::VisualAspect,
+          dynamics::CollisionAspect,
+          dynamics::DynamicsAspect>(shape);
+      shapeNode->getDynamicsAspect()->setFrictionCoeff(
+          mjcfGeom.getFriction()[0]);
+      collisionFilter->setGeomBitmasks(shapeNode, contype, conaffinity);
+    } else {
+      shapeNode = body->createShapeNodeWith<dynamics::VisualAspect>(shape);
+    }
+
     dynamics::VisualAspect* visualAspect = shapeNode->getVisualAspect();
 
     // TODO(JS): Check whether this object use material instead of RGBA
@@ -891,6 +938,12 @@ simulation::WorldPtr createWorld(
 
     world->addSkeleton(skel);
   }
+
+  // Install the MuJoCo contype/conaffinity pair rule on top of DART's default
+  // collision filtering behavior (self-collision/adjacent-body handling,
+  // etc.), which GeomCollisionFilter inherits from BodyNodeCollisionFilter.
+  world->getConstraintSolver()->getCollisionOption().collisionFilter
+      = collisionFilter;
 
   return world;
 }

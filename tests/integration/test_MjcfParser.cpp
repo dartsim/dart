@@ -311,6 +311,213 @@ TEST(MjcfParserTest, Striker)
   ASSERT_NE(goalSkel, nullptr);
 
   EXPECT_TRUE(world->hasSkeleton(options.mGeomSkeletonNamePrefix + "table"));
+
+  // striker.xml's <default> sets contype="0" conaffinity="0" on <geom>, so
+  // every geom that doesn't override these (e.g. the arm's decorative
+  // shoulder geoms) must be visual-only: no CollisionAspect at all. This is
+  // what keeps the density=1e6 "coaster" marker cylinder (nested under the
+  // "goal" body, resting inside the table) from ever generating a contact.
+  auto shoulderPanLink = strikerSkel->getBodyNode("r_shoulder_pan_link");
+  ASSERT_NE(shoulderPanLink, nullptr);
+  ASSERT_GT(shoulderPanLink->getNumShapeNodes(), 0u);
+  EXPECT_FALSE(shoulderPanLink->getShapeNode(0)->has<dynamics::CollisionAspect>());
+
+  auto goalRootBody = goalSkel->getRootBodyNode();
+  ASSERT_NE(goalRootBody, nullptr);
+  ASSERT_GT(goalRootBody->getNumShapeNodes(), 0u);
+  EXPECT_FALSE(goalRootBody->getShapeNode(0)->has<dynamics::CollisionAspect>());
+
+  auto coasterBody = goalSkel->getBodyNode("coaster");
+  ASSERT_NE(coasterBody, nullptr);
+  ASSERT_GT(coasterBody->getNumShapeNodes(), 0u);
+  EXPECT_FALSE(coasterBody->getShapeNode(0)->has<dynamics::CollisionAspect>());
+
+  // Geoms that explicitly re-enable collision (contype="1" conaffinity="1")
+  // must still get a CollisionAspect: the table and the arm-tip geoms.
+  auto tableSkel = world->getSkeleton(options.mGeomSkeletonNamePrefix + "table");
+  ASSERT_NE(tableSkel, nullptr);
+  ASSERT_GT(tableSkel->getNumBodyNodes(), 0u);
+  ASSERT_GT(tableSkel->getBodyNode(0)->getNumShapeNodes(), 0u);
+  auto tableShapeNode = tableSkel->getBodyNode(0)->getShapeNode(0);
+  EXPECT_TRUE(tableShapeNode->has<dynamics::CollisionAspect>());
+  // The table geom doesn't override friction, so it inherits the <default>
+  // class's friction=".0 .0 .0".
+  ASSERT_TRUE(tableShapeNode->has<dynamics::DynamicsAspect>());
+  EXPECT_DOUBLE_EQ(
+      tableShapeNode->getDynamicsAspect()->getFrictionCoeff(), 0.0);
+
+  auto tipsArmBody = strikerSkel->getBodyNode("tips_arm");
+  ASSERT_NE(tipsArmBody, nullptr);
+  ASSERT_GT(tipsArmBody->getNumShapeNodes(), 0u);
+  EXPECT_TRUE(tipsArmBody->getShapeNode(0)->has<dynamics::CollisionAspect>());
+
+  auto wristRollBody = strikerSkel->getBodyNode("r_wrist_roll_link");
+  ASSERT_NE(wristRollBody, nullptr);
+  ASSERT_GT(wristRollBody->getNumShapeNodes(), 0u);
+  EXPECT_TRUE(wristRollBody->getShapeNode(0)->has<dynamics::CollisionAspect>());
+
+  // Before the contype/conaffinity fix, the coaster marker (density 1e6)
+  // would be given a CollisionAspect and collide with the table, producing a
+  // ~1e6 mass-ratio contact that MuJoCo never generates and that makes the
+  // Dantzig primary solver fail every step. With the fix, contype==0 &&
+  // conaffinity==0 geoms (the coaster and the goal-root marker) carry no
+  // CollisionAspect at all, so no contact can ever involve them. Note the
+  // goal's thin side walls are contype=0 conaffinity=1 and DO legitimately
+  // collide with the table and the ball under MuJoCo's pair rule
+  // ((ctA & caB) || (ctB & caA)); asserting zero goal contacts would
+  // contradict the model's own semantics.
+  world->getConstraintSolver()->setCollisionDetector(
+      collision::NativeCollisionDetector::create());
+
+  for (auto i = 0; i < 50; ++i) {
+    world->step();
+
+    const auto& result
+        = world->getConstraintSolver()->getLastCollisionResult();
+    for (auto j = 0u; j < result.getNumContacts(); ++j) {
+      const auto& contact = result.getContact(j);
+      const auto bn1 = contact.getBodyNodePtr1();
+      const auto bn2 = contact.getBodyNodePtr2();
+      const bool involvesCoaster = (bn1 && bn1.get() == coasterBody)
+                                   || (bn2 && bn2.get() == coasterBody);
+      EXPECT_FALSE(involvesCoaster)
+          << "Contact involving the aspect-less coaster marker at step " << i
+          << ", contact index " << j;
+    }
+  }
+
+  // The arm must stay well-behaved. The free ball is deliberately not
+  // asserted: with faithful masks and friction the model exposes ball
+  // contacts against the goal's 1 mm frictionless walls, a thin-geometry
+  // hard-contact stress case (MuJoCo absorbs it with margin/soft contacts)
+  // that is an engine-robustness item, not a parser-fidelity one.
+  EXPECT_TRUE(strikerSkel->getPositions().allFinite());
+  EXPECT_TRUE(strikerSkel->getVelocities().allFinite());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, GeomFriction)
+{
+  // striker.xml's <default> sets friction=".0 .0 .0", and the "table" geom
+  // (contype="1" conaffinity="1", no friction override) inherits it.
+  {
+    auto world = utils::MjcfParser::readWorld(
+        "dart://sample/mjcf/openai/striker.xml");
+    ASSERT_NE(world, nullptr);
+
+    const auto options = utils::MjcfParser::Options();
+    auto tableSkel
+        = world->getSkeleton(options.mGeomSkeletonNamePrefix + "table");
+    ASSERT_NE(tableSkel, nullptr);
+    ASSERT_GT(tableSkel->getBodyNode(0)->getNumShapeNodes(), 0u);
+    auto tableShapeNode = tableSkel->getBodyNode(0)->getShapeNode(0);
+    ASSERT_TRUE(tableShapeNode->has<dynamics::DynamicsAspect>());
+    EXPECT_DOUBLE_EQ(
+        tableShapeNode->getDynamicsAspect()->getFrictionCoeff(), 0.0);
+  }
+
+  // thrower.xml's <default> sets friction=".8 .1 .1", and the (unnamed) floor
+  // geom (contype="1" conaffinity="1", no friction override) inherits it.
+  {
+    auto world = utils::MjcfParser::readWorld(
+        "dart://sample/mjcf/openai/thrower.xml");
+    ASSERT_NE(world, nullptr);
+
+    const auto options = utils::MjcfParser::Options();
+    auto floorSkel = world->getSkeleton(options.mGeomSkeletonNamePrefix + "");
+    ASSERT_NE(floorSkel, nullptr);
+    ASSERT_GT(floorSkel->getBodyNode(0)->getNumShapeNodes(), 0u);
+    auto floorShapeNode = floorSkel->getBodyNode(0)->getShapeNode(0);
+    ASSERT_TRUE(floorShapeNode->has<dynamics::DynamicsAspect>());
+    EXPECT_DOUBLE_EQ(
+        floorShapeNode->getDynamicsAspect()->getFrictionCoeff(), 0.8);
+  }
+
+  // walker2d.xml demonstrates both inheritance and override within the same
+  // file: the "floor" geom doesn't set friction and inherits the <default>
+  // class's friction=".7 .1 .1", while "torso_geom" explicitly overrides it
+  // to 0.9.
+  {
+    auto world = utils::MjcfParser::readWorld(
+        "dart://sample/mjcf/openai/walker2d.xml");
+    ASSERT_NE(world, nullptr);
+
+    auto torsoSkel = world->getSkeleton("torso");
+    ASSERT_NE(torsoSkel, nullptr);
+
+    // "floor" is a root <geom>, which lives in its own kinematic Skeleton
+    // rather than under "torso".
+    const auto options = utils::MjcfParser::Options();
+    auto floorSkel
+        = world->getSkeleton(options.mGeomSkeletonNamePrefix + "floor");
+    ASSERT_NE(floorSkel, nullptr);
+    ASSERT_GT(floorSkel->getBodyNode(0)->getNumShapeNodes(), 0u);
+    auto floorShapeNode = floorSkel->getBodyNode(0)->getShapeNode(0);
+    ASSERT_TRUE(floorShapeNode->has<dynamics::DynamicsAspect>());
+    EXPECT_DOUBLE_EQ(
+        floorShapeNode->getDynamicsAspect()->getFrictionCoeff(), 0.7);
+
+    auto torsoBody = torsoSkel->getBodyNode("torso");
+    ASSERT_NE(torsoBody, nullptr);
+    ASSERT_GT(torsoBody->getNumShapeNodes(), 0u);
+    auto torsoShapeNode = torsoBody->getShapeNode(0);
+    ASSERT_TRUE(torsoShapeNode->has<dynamics::DynamicsAspect>());
+    EXPECT_DOUBLE_EQ(
+        torsoShapeNode->getDynamicsAspect()->getFrictionCoeff(), 0.9);
+  }
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ContypeConaffinityPairRule)
+{
+  // A minimal scene with three mutually-overlapping static spheres exercising
+  // MuJoCo's contype/conaffinity pair rule in isolation:
+  //   collides(A, B) := (contype_A & conaffinity_B) || (contype_B & conaffinity_A)
+  // bodyA: contype=1 conaffinity=0
+  // bodyB: contype=0 conaffinity=1
+  // bodyC: contype=1 conaffinity=0 (same masks as bodyA)
+  // A vs B -> (1 & 1) || (0 & 0) = 1 -> collide
+  // A vs C -> (1 & 0) || (1 & 0) = 0 -> do not collide
+  const auto uri = "dart://sample/mjcf/test/contype_conaffinity.xml";
+  auto world = utils::MjcfParser::readWorld(uri);
+  ASSERT_NE(world, nullptr);
+
+  auto skelA = world->getSkeleton("bodyA");
+  auto skelB = world->getSkeleton("bodyB");
+  auto skelC = world->getSkeleton("bodyC");
+  ASSERT_NE(skelA, nullptr);
+  ASSERT_NE(skelB, nullptr);
+  ASSERT_NE(skelC, nullptr);
+
+  world->getConstraintSolver()->setCollisionDetector(
+      collision::NativeCollisionDetector::create());
+
+  world->step();
+
+  const auto& result = world->getConstraintSolver()->getLastCollisionResult();
+
+  auto hasContactBetween = [&](const dynamics::SkeletonPtr& s1,
+                                const dynamics::SkeletonPtr& s2) {
+    for (auto i = 0u; i < result.getNumContacts(); ++i) {
+      const auto& contact = result.getContact(i);
+      const auto bn1 = contact.getBodyNodePtr1();
+      const auto bn2 = contact.getBodyNodePtr2();
+      if (!bn1 || !bn2)
+        continue;
+
+      const bool matches
+          = (bn1->getSkeleton().get() == s1.get()
+             && bn2->getSkeleton().get() == s2.get())
+            || (bn1->getSkeleton().get() == s2.get()
+                && bn2->getSkeleton().get() == s1.get());
+      if (matches)
+        return true;
+    }
+    return false;
+  };
+
+  EXPECT_TRUE(hasContactBetween(skelA, skelB));
+  EXPECT_FALSE(hasContactBetween(skelA, skelC));
 }
 
 //==============================================================================
