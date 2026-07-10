@@ -301,11 +301,23 @@ def _mujoco_command(
     return cmd
 
 
-def _run(cmd: list[str], dry_run: bool) -> None:
+def _run(cmd: list[str], dry_run: bool) -> bool:
     print(" ".join(cmd))
     if dry_run:
-        return
-    subprocess.run(cmd, check=True, cwd=REPO_ROOT)
+        return True
+    # A failing runner (e.g. a scene the engine cannot load yet, such as
+    # humanoid MJCF on a DART build without stacked-joint parser support)
+    # must not abort the whole matrix; the scenario is reported as blocked
+    # and the remaining scenes still run.
+    result = subprocess.run(cmd, cwd=REPO_ROOT)
+    if result.returncode != 0:
+        print(
+            f"WARNING: runner exited with {result.returncode}; "
+            "marking this scenario blocked and continuing.",
+            file=sys.stderr,
+        )
+        return False
+    return True
 
 
 def _generate_scene_files(scenario: Scenario, seed: int, work_dir: Path) -> tuple[Path, Path]:
@@ -437,6 +449,7 @@ def main(argv: list[str]) -> int:
 
     raw_rows: dict[str, dict[str, list[common.ResultRow]]] = {}
     sensitivity: dict[str, dict[str, float]] = {}
+    blocked: dict[str, str] = {}
 
     with tempfile.TemporaryDirectory(prefix="mujoco_comparison_") as tmp:
         work_dir = Path(tmp)
@@ -444,6 +457,7 @@ def main(argv: list[str]) -> int:
             dart_scene, mujoco_scene = _generate_scene_files(scenario, args.seed, work_dir)
             raw_rows[scenario.scene_id] = {"dart": [], "mujoco": []}
 
+            scenario_blocked = False
             for rep in range(args.reps):
                 dart_out = args.out_dir / "raw" / f"{scenario.scene_id}-dart-rep{rep}.json"
                 mujoco_out = (
@@ -458,7 +472,10 @@ def main(argv: list[str]) -> int:
                     config="headline",
                     detector_override=args.detector,
                 )
-                _run(dart_cmd, args.dry_run)
+                if not _run(dart_cmd, args.dry_run):
+                    blocked[scenario.scene_id] = "dart runner failed"
+                    scenario_blocked = True
+                    break
 
                 mujoco_cmd = _mujoco_command(
                     args.mujoco_python,
@@ -468,7 +485,10 @@ def main(argv: list[str]) -> int:
                     config="headline",
                     integrator="euler",
                 )
-                _run(mujoco_cmd, args.dry_run)
+                if not _run(mujoco_cmd, args.dry_run):
+                    blocked[scenario.scene_id] = "mujoco runner failed"
+                    scenario_blocked = True
+                    break
 
                 if not args.dry_run:
                     raw_rows[scenario.scene_id]["dart"].append(
@@ -477,6 +497,8 @@ def main(argv: list[str]) -> int:
                     raw_rows[scenario.scene_id]["mujoco"].append(
                         common.read_result_row(mujoco_out)
                     )
+            if scenario_blocked:
+                continue
 
             if (
                 scenario.category == "mjcf"
@@ -492,7 +514,8 @@ def main(argv: list[str]) -> int:
                     config="model-default-integrator",
                     integrator=None,
                 )
-                _run(sens_cmd, args.dry_run)
+                if not _run(sens_cmd, args.dry_run):
+                    continue
                 headline_median = _median_row(raw_rows[scenario.scene_id]["mujoco"])
                 sens_row = common.read_result_row(sens_out)
                 sensitivity[scenario.scene_id] = {
@@ -510,12 +533,18 @@ def main(argv: list[str]) -> int:
         mujoco_rows = raw_rows[scenario.scene_id]["mujoco"]
         dart_median = _median_row(dart_rows) if dart_rows else None
         mujoco_median = _median_row(mujoco_rows) if mujoco_rows else None
-        if dart_median is None or mujoco_median is None:
+        if scenario.scene_id in blocked:
+            verdict = f"blocked: {blocked[scenario.scene_id]}"
+        elif dart_median is None or mujoco_median is None:
             verdict = "missing engine row"
         elif scenario.category == "overhead":
             # FFI-OVERHEAD is a reference measurement (per-step call
             # overhead), not one of the scored scenes; see README.md.
             verdict = "not scored (overhead reference)"
+        elif not dart_median["finite"] or not mujoco_median["finite"]:
+            # A physically invalid run must never receive a performance
+            # verdict; the fairness contract scores plausible runs only.
+            verdict = "inconclusive (non-finite run)"
         else:
             verdict = _verdict(dart_median["steps_per_s"], mujoco_median["steps_per_s"])
         scenes_summary[scenario.scene_id] = {

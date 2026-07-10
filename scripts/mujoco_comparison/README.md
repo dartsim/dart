@@ -19,7 +19,8 @@ benchmark; see "Known gaps and risks").
 | `gen_scenes.py` | Deterministic, seeded generator for the box-pile scenes (`pile-120`, `pile-900`, `dyn-stir-120`) and the `ffi-overhead` probe scene. Emits either an MJCF XML string or a JSON body list from the same materialized layout. |
 | `mujoco_runner.py` | CLI that loads one scene, steps it with `mujoco.mj_step`, and writes one `ResultRow` JSON. Only file that imports `mujoco`. |
 | `dart_runner.py` | CLI mirror of `mujoco_runner.py` using `dartpy`. Only file that imports `dartpy`. |
-| `run_comparison.py` | Orchestrator: runs both runners as subprocesses across the scene matrix, aggregates medians across reps, and writes `results.json` + `results.md`. |
+| `run_comparison.py` | Orchestrator: runs both runners as subprocesses across the scene matrix, aggregates medians across reps, and writes `results.json` + `results.md`. A runner failure marks that scene `blocked` and the rest of the matrix still runs; non-finite runs are reported `inconclusive`, never scored. |
+| `fetch_models.py` | Downloads current, license-vetted upstream MJCF models from URLs pinned to release tags, verifies SHA-256 digests, and records per-model license provenance next to the cached file (`.model_cache/`, git-ignored). The bundled `data/mjcf/openai` models are historical gym-era files; per maintainer direction, headline rows should prefer current upstream models. Registered so far: `humanoid` (google-deepmind/mujoco @ 3.3.0, Apache-2.0). Mesh-based models (e.g. MuJoCo Menagerie arms) need multi-asset fetching — tracked in the WS-G lane doc. Point either runner at the cached file via `--scene scripts/mujoco_comparison/.model_cache/humanoid.xml`. |
 
 ## Fairness contract
 
