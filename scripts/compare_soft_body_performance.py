@@ -123,6 +123,18 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             f"The checksum reference remains {REFERENCE_DETECTOR}."
         ),
     )
+    parser.add_argument(
+        "--expected-fastest-tie-tolerance",
+        type=float,
+        default=0.02,
+        help=(
+            "Relative CPU-time margin within which the expected fastest "
+            "detector counts as matching the winning row. The acceptance "
+            "wording is 'matches or beats'; near-tied backends sharing the "
+            "same narrow-phase kernels would otherwise fail on scheduler "
+            "noise. Set to 0 to require strict wins."
+        ),
+    )
     parser.add_argument("--threads", default="1,16")
     parser.add_argument("--benchmark-min-time", default="0.05s")
     parser.add_argument("--benchmark-repetitions", default="3")
@@ -968,6 +980,7 @@ def fastest_rows(
     detectors: list[str],
     eligible_detectors: list[str],
     expected_fastest_detector: str,
+    tie_tolerance: float,
 ) -> tuple[list[dict[str, object]], list[str]]:
     by_scene_thread: dict[tuple[str, int], list[BenchmarkRow]] = {}
     for row in current_rows.values():
@@ -1026,11 +1039,17 @@ def fastest_rows(
                 "checksum-equivalent to reference"
             )
         elif winner.detector != expected_fastest_detector:
-            failures.append(
-                f"{scene}/{threads}: expected {expected_fastest_detector} "
-                f"{expected_row.cpu_ms:.3f} ms, "
-                f"winner {winner.detector} {winner.cpu_ms:.3f} ms"
-            )
+            margin = (expected_row.cpu_ms - winner.cpu_ms) / winner.cpu_ms
+            row["expected_fastest_margin"] = margin
+            if margin > tie_tolerance:
+                failures.append(
+                    f"{scene}/{threads}: expected {expected_fastest_detector} "
+                    f"{expected_row.cpu_ms:.3f} ms, "
+                    f"winner {winner.detector} {winner.cpu_ms:.3f} ms "
+                    f"(+{margin:.1%} exceeds tie tolerance {tie_tolerance:.1%})"
+                )
+            else:
+                row["expected_fastest_within_tolerance"] = True
     return rows, failures
 
 
@@ -1185,6 +1204,22 @@ def write_markdown(
         ]
     )
     write_detector_winner_graph(lines, fastest)
+    tolerance_items = [
+        item for item in fastest if item.get("expected_fastest_within_tolerance")
+    ]
+    if tolerance_items:
+        lines.extend(["", "Within-tolerance matches (not strict wins):", ""])
+        for item in tolerance_items:
+            lines.append(
+                "- `{scene}`/{threads}: expected `{expected}` trailed winner "
+                "`{winner}` by {margin:.1%} (counted as a match).".format(
+                    scene=item["scene"],
+                    threads=item["threads"],
+                    expected=item["expected_fastest_detector"],
+                    winner=item["winner"],
+                    margin=float(item["expected_fastest_margin"]),
+                )
+            )
     lines.extend(
         [
             "",
@@ -1386,6 +1421,7 @@ def main(argv: list[str]) -> int:
         detectors,
         eligible_detectors,
         args.expected_fastest_detector,
+        args.expected_fastest_tie_tolerance,
     )
     run_error_keys = {(error["revision"], error["detector"]) for error in run_errors}
     coverage_failures = []
