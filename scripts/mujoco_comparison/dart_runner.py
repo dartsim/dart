@@ -149,9 +149,10 @@ def _build_boxes(world, boxes: list[common.BoxBody]) -> None:
     # sleeping unit, so a shared multi-tree Skeleton would fuse every contact
     # into one dense LCP island and disable per-body deactivation (measured
     # 125 ms/step vs sub-ms for PILE-120). Free bodies as individual
-    # Skeletons is also how DART's own contact fixtures are built. The
-    # runner's telemetry only iterates skeletons outside the timed loop, so
-    # the extra Python objects do not affect measured step time.
+    # Skeletons is also how DART's own contact fixtures are built. Telemetry
+    # that iterates skeletons (finite check, sleep count) runs outside the
+    # timed loop, so the extra Python objects do not affect measured step
+    # time.
     for box in boxes:
         skel = dart.dynamics.Skeleton(box.name)
         joint, body = skel.createFreeJointAndBodyNodePair(None)
@@ -341,8 +342,13 @@ def main(argv: list[str]) -> int:
         world.step()
         t += timestep
 
+    # Fairness: keep the timed loop's telemetry symmetric with
+    # mujoco_runner.py — only the per-step contact count is recorded inside
+    # the timed region. A per-step finite check here would iterate every
+    # skeleton through the bindings (hundreds of calls/step on pile scenes)
+    # while MuJoCo reads two contiguous arrays, so finiteness is asserted
+    # once after timing in both runners instead.
     ncon_values: list[int] = []
-    finite = True
     completed = 0
     start = time.perf_counter()
     for _ in range(args.steps):
@@ -352,10 +358,8 @@ def main(argv: list[str]) -> int:
         t += timestep
         completed += 1
         ncon_values.append(world.getLastCollisionResult().getNumContacts())
-        if not _finite_check(world):
-            finite = False
-            break
     wall_s = time.perf_counter() - start
+    finite = _finite_check(world)
 
     total_dofs = sum(
         world.getSkeleton(i).getNumDofs() for i in range(world.getNumSkeletons())

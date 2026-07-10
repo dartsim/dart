@@ -220,7 +220,9 @@ def main(argv: list[str]) -> int:
         t += timestep
 
     ncon_values: list[int] = []
-    finite = True
+    # Fairness: mirror dart_runner.py — only the per-step contact count is
+    # recorded inside the timed region; finiteness is asserted once after
+    # timing in both runners.
     completed = 0
     start = time.perf_counter()
     for _ in range(args.steps):
@@ -230,10 +232,8 @@ def main(argv: list[str]) -> int:
         t += timestep
         completed += 1
         ncon_values.append(int(data.ncon))
-        if not common.finite_all(data.qpos, data.qvel):
-            finite = False
-            break
     wall_s = time.perf_counter() - start
+    finite = common.finite_all(data.qpos, data.qvel)
 
     row = common.make_result_row(
         scene=args.scene_id or args.scene.stem,
