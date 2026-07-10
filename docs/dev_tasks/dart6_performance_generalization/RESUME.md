@@ -36,13 +36,16 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 Open PRs from this cycle: #3366, #3367, #3368, #3369 — all awaiting review/
 merge; docs refresh is this PR.
 
-Current `release-6.20` head is #3361 merge commit `91c158fc3e5`
-(`WP-PG.14: add opt-in matrix-free contact LCP`). A fresh session should start
-from that head, re-read this README plus the lane docs, and do a current-base
-completion/evidence audit before claiming any new packet. The maintainer's
-north-star requirement is still broader than "latest packet merged": finish
-issue #3056 on DART 6.20 with enough tests, benchmarks, and GUI/headless
-evidence to show the result is general and not overfit to one fixture.
+A fresh session should start from current `origin/release-6.20` (the audited
+head above or later; re-fetch — the maintainer merges frequently), read this
+README plus the lane docs, and continue from the WS-G lane + the open-PR
+queue above rather than redoing the completed audit. The maintainer's
+north-star requirement is broader than "latest packet merged": finish issue
+#3056 on DART 6.20 with cross-engine evidence (WS-G) showing the result is
+general, and respect the 2026-07-10 maintainer directives — the native
+engine merges INTO the dart detector (see the dep-min Phase 5 decision doc)
+and the whole remaining effort should land in few, large, cohesive PRs
+(total budget across both dev tasks roughly 10-20).
 
 Do not open a small follow-up PR merely because a packet exists. Prefer one
 consolidated evidence/closeout branch unless the audit identifies a real
@@ -63,10 +66,11 @@ original fuller artifact remains
 `/tmp/wp_pg14_matrix_free_ab_20260709T040443Z` with S3 active-3k option-on
 fallback preserving hash `0xcf0ba6eaa97be038`.
 
-Recommended next session plan:
+Recommended next session plan (items 1-2 are DONE for the 2026-07-10 cycle;
+kept for the method):
 
-1. Verify live state: `git fetch origin release-6.20`, confirm head contains
-   #3361, inspect open PRs/issues, and avoid touching dirty sibling worktrees
+1. Verify live state: `git fetch origin release-6.20`, inspect open
+   PRs/issues, and avoid touching dirty sibling worktrees
    such as `/home/js/dev/dartsim/dart/task_3-fix-simd`.
 2. Run a current-head acceptance audit against the README north-star gate:
    tests, benchmark matrix, GUI/headless artifacts, decision status, and
