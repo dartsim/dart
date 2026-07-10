@@ -1,5 +1,37 @@
 # RESUME - DART 6 deformable body feature and performance
 
+## 2026-07-10 overnight state
+
+- A 64-agent adversarial stitch review of merge `4286fd53097` confirmed zero
+  semantic merge defects; surviving minor findings were fixed in
+  `7d1615b2795` (PointMass::setMass dirty protocol via
+  `SoftBodyNode::handlePointMassMassChange()`, dead FCL friend removal, dead
+  `findContainingBoxFace()` removal) with a new equation-gate assertion
+  pinning the pre-existing rigid-only `Skeleton::getMass()` accounting split
+  (recorded in `07-equation-correctness.md`).
+- The WP-DB.05 design (`08-adaptive-contact-activation.md`, commit
+  `d689aa660f5`) was rewritten after a three-lens design review: frozen
+  points are rigid lumps (full articulated inertia + rigid-ride bias +
+  boundary-spring reactions), constraint-time seeding, explicit one-step lag
+  with rigid first-contact semantics, rest-gated linger with decay to rest
+  shape, all-active public matrix semantics, notifier-subclass storage with
+  clone/copy transfer, and honestly scoped performance rows.
+- WP-DB.06 "retained SoA scratch" completed as a measured reject
+  (`c743a451e96` records it in `04-data-layout-and-memory-hardening.md`):
+  three mirror variants were all slower than baseline; next step is
+  contiguous point-mass object storage with profiler scopes added to the
+  soft phases first (the merged `SoftBodyNode.cpp` currently has none).
+- The comparison evaluator now implements the documented "matches or beats"
+  wording via `--expected-fastest-tie-tolerance` (default 2%,
+  `1deef52b8d7`), reported explicitly in `summary.md`.
+- A formal current/parent/base matrix run was launched overnight at
+  `c743a451e96` with parent `c0fd6742566` (pre-reunification) and base
+  `origin/release-6.20`, output dir
+  `.benchmark_results/wp-db-reunified-c743a45-parent-c0fd674-base-db255a0`.
+  It self-gates on host idleness. Treat its `summary.md` as the reunified
+  branch's first full-matrix evidence; the final PR matrix still reruns on
+  final history.
+
 ## 2026-07-09 evening reunification update
 
 This update corrects the current-reality picture; bullets below it describe
