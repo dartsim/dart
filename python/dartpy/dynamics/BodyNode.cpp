@@ -971,7 +971,8 @@ void BodyNode(py::module& m)
           +[](const dart::dynamics::BodyNode* self)
               -> const std::vector<const dart::dynamics::DegreeOfFreedom*> {
             return self->getChainDofs();
-          })
+          },
+          ::py::return_value_policy::reference_internal)
       .def(
           "addExtForce",
           +[](dart::dynamics::BodyNode* self, const Eigen::Vector3d& _force) {
