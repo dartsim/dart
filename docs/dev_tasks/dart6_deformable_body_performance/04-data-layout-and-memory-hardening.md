@@ -620,6 +620,30 @@ soft-dynamics windows and a contact-producing `soft_cubes.skel` window are
 heap-free after warmup. It does not yet prove contiguous point-mass object
 storage or SIMD-friendly SoA layout.
 
+## Retained SoA mirror: measured reject (2026-07-10)
+
+A GPT-5.5 (xhigh) executor implemented and measured the "retained SoA scratch
+for phase inputs" candidate (sequence step 2 below) on the reunified branch:
+a `.cpp`-private `PointMassNotifier` subclass carried retained SoA mirrors of
+point positions, velocities, masses, local positions, and flattened
+connectivity for `updateBiasForce`/`updateArtInertia`, in three variants
+(full mirror, guarded topology refresh, narrow mirror).
+
+Result: **rejected on measurement**. Baseline `soft_bodies` 200-step
+single-thread native-lane elapsed median was 13.691 ms (5 runs, loaded
+host); the variants measured 17.551 ms, 18.558 ms, and 17.284 ms — all
+consistently worse, because the per-step mirror copy costs more than the
+pointer-chasing it removes at these point counts. One variant also initially
+violated the `INTEGRATION_StepAllocation` soft gates through unconditional
+profiler scopes. All candidate code was reverted; lint, the focused CTest
+battery (5/5), the full suite (151/151), and the 30-row checksum battery
+(bit-identical) passed after the revert.
+
+Consequence for the sequence below: skip separate per-phase mirrors. The
+next measured step is real contiguous point-mass storage (step 4) or
+producer-phase-maintained scratch, evaluated on an idle host with profiler
+scopes present in both baseline and candidate builds.
+
 ## Candidate implementation sequence
 
 1. Extend the internal phase view into retained SoA scratch that can expose
