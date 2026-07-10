@@ -468,7 +468,8 @@ compatibility remains on the active DART 6 LTS branch._
   replacing gcov-heavy monolithic variational, deformable, and VBD CTest entries
   with representative coverage smoke shards, and pruned already-excluded
   directories before `lcov` capture, while keeping the full tests active in
-  normal Release and Debug CI.
+  normal Release and Debug CI and keeping changed-line Codecov patch coverage
+  as the required PR gate.
 - Restored main-branch Windows IO builds and dartpy simulation stub parity checks
   while preserving canonical `dartpy.simulation` aliases for IO loader types.
 - Added a lint/check-lint guard that keeps SDF IO on libsdformat typed DOM APIs
