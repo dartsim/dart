@@ -72,7 +72,7 @@ bool GeomCollisionFilter::ignoresCollision(
 
   // MuJoCo pair rule: http://mujoco.org/book/computation.html#coCollision
   const bool mayCollide = ((b1.mContype & b2.mConaffinity) != 0)
-                           || ((b2.mContype & b1.mConaffinity) != 0);
+                          || ((b2.mContype & b1.mConaffinity) != 0);
 
   return !mayCollide;
 }

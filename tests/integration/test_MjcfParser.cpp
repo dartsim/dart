@@ -320,7 +320,8 @@ TEST(MjcfParserTest, Striker)
   auto shoulderPanLink = strikerSkel->getBodyNode("r_shoulder_pan_link");
   ASSERT_NE(shoulderPanLink, nullptr);
   ASSERT_GT(shoulderPanLink->getNumShapeNodes(), 0u);
-  EXPECT_FALSE(shoulderPanLink->getShapeNode(0)->has<dynamics::CollisionAspect>());
+  EXPECT_FALSE(
+      shoulderPanLink->getShapeNode(0)->has<dynamics::CollisionAspect>());
 
   auto goalRootBody = goalSkel->getRootBodyNode();
   ASSERT_NE(goalRootBody, nullptr);
@@ -334,7 +335,8 @@ TEST(MjcfParserTest, Striker)
 
   // Geoms that explicitly re-enable collision (contype="1" conaffinity="1")
   // must still get a CollisionAspect: the table and the arm-tip geoms.
-  auto tableSkel = world->getSkeleton(options.mGeomSkeletonNamePrefix + "table");
+  auto tableSkel
+      = world->getSkeleton(options.mGeomSkeletonNamePrefix + "table");
   ASSERT_NE(tableSkel, nullptr);
   ASSERT_GT(tableSkel->getNumBodyNodes(), 0u);
   ASSERT_GT(tableSkel->getBodyNode(0)->getNumShapeNodes(), 0u);
@@ -372,8 +374,7 @@ TEST(MjcfParserTest, Striker)
   for (auto i = 0; i < 50; ++i) {
     world->step();
 
-    const auto& result
-        = world->getConstraintSolver()->getLastCollisionResult();
+    const auto& result = world->getConstraintSolver()->getLastCollisionResult();
     for (auto j = 0u; j < result.getNumContacts(); ++j) {
       const auto& contact = result.getContact(j);
       const auto bn1 = contact.getBodyNodePtr1();
@@ -401,8 +402,8 @@ TEST(MjcfParserTest, GeomFriction)
   // striker.xml's <default> sets friction=".0 .0 .0", and the "table" geom
   // (contype="1" conaffinity="1", no friction override) inherits it.
   {
-    auto world = utils::MjcfParser::readWorld(
-        "dart://sample/mjcf/openai/striker.xml");
+    auto world
+        = utils::MjcfParser::readWorld("dart://sample/mjcf/openai/striker.xml");
     ASSERT_NE(world, nullptr);
 
     const auto options = utils::MjcfParser::Options();
@@ -419,8 +420,8 @@ TEST(MjcfParserTest, GeomFriction)
   // thrower.xml's <default> sets friction=".8 .1 .1", and the (unnamed) floor
   // geom (contype="1" conaffinity="1", no friction override) inherits it.
   {
-    auto world = utils::MjcfParser::readWorld(
-        "dart://sample/mjcf/openai/thrower.xml");
+    auto world
+        = utils::MjcfParser::readWorld("dart://sample/mjcf/openai/thrower.xml");
     ASSERT_NE(world, nullptr);
 
     const auto options = utils::MjcfParser::Options();
@@ -472,7 +473,8 @@ TEST(MjcfParserTest, ContypeConaffinityPairRule)
 {
   // A minimal scene with three mutually-overlapping static spheres exercising
   // MuJoCo's contype/conaffinity pair rule in isolation:
-  //   collides(A, B) := (contype_A & conaffinity_B) || (contype_B & conaffinity_A)
+  //   collides(A, B) := (contype_A & conaffinity_B) || (contype_B &
+  //   conaffinity_A)
   // bodyA: contype=1 conaffinity=0
   // bodyB: contype=0 conaffinity=1
   // bodyC: contype=1 conaffinity=0 (same masks as bodyA)
@@ -496,25 +498,24 @@ TEST(MjcfParserTest, ContypeConaffinityPairRule)
 
   const auto& result = world->getConstraintSolver()->getLastCollisionResult();
 
-  auto hasContactBetween = [&](const dynamics::SkeletonPtr& s1,
-                                const dynamics::SkeletonPtr& s2) {
-    for (auto i = 0u; i < result.getNumContacts(); ++i) {
-      const auto& contact = result.getContact(i);
-      const auto bn1 = contact.getBodyNodePtr1();
-      const auto bn2 = contact.getBodyNodePtr2();
-      if (!bn1 || !bn2)
-        continue;
+  auto hasContactBetween
+      = [&](const dynamics::SkeletonPtr& s1, const dynamics::SkeletonPtr& s2) {
+          for (auto i = 0u; i < result.getNumContacts(); ++i) {
+            const auto& contact = result.getContact(i);
+            const auto bn1 = contact.getBodyNodePtr1();
+            const auto bn2 = contact.getBodyNodePtr2();
+            if (!bn1 || !bn2)
+              continue;
 
-      const bool matches
-          = (bn1->getSkeleton().get() == s1.get()
-             && bn2->getSkeleton().get() == s2.get())
-            || (bn1->getSkeleton().get() == s2.get()
-                && bn2->getSkeleton().get() == s1.get());
-      if (matches)
-        return true;
-    }
-    return false;
-  };
+            const bool matches = (bn1->getSkeleton().get() == s1.get()
+                                  && bn2->getSkeleton().get() == s2.get())
+                                 || (bn1->getSkeleton().get() == s2.get()
+                                     && bn2->getSkeleton().get() == s1.get());
+            if (matches)
+              return true;
+          }
+          return false;
+        };
 
   EXPECT_TRUE(hasContactBetween(skelA, skelB));
   EXPECT_FALSE(hasContactBetween(skelA, skelC));
