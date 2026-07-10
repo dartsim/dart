@@ -175,9 +175,8 @@ Wave 2 (dependency-driven):   WP-PG.12 (after PG.10, ideally PG.30),
                               WP-PG.32
 Evidence-gated:               WP-PG.13 (only if PG.10's island census shows
                               groups coarser than contact connectivity)
-Decision-gated:               WP-PG.04 (D4), WP-PG.14 (D3 opt-in PR active),
-                              WP-PG.23 (D8), WP-PG.33 (PG.30; D1/D2 for the
-                              SIMD variant), WP-PG.42 (PG.40 + WS-F coord)
+Decision-gated:               WP-PG.04 (D4), WP-PG.23 (D8),
+                              WP-PG.33 (PG.30; D1/D2 for the SIMD variant)
 WS-F (native port) runs its own phases 0–7; its phase 4 consumes WS-D
 kernels; WS-B depth is re-reviewed at its phase 5/6 (D5).
 ```
@@ -212,13 +211,16 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
   gains only, or build a small runtime-dispatch layer (per-backend TUs +
   CPU feature check). Naive per-file `-mavx2` on unconditional code would
   SIGILL on older CPUs.
-- **D3 — Matrix-free large-island solver**: current implementation direction
-  is a DART 6 default-off solver option on WP-PG.14
-  (`wp-pg-14-matrix-free-lcp`). The #3353/D7 default remediation now satisfies
-  the primary-fixture default-on target, so D3 no longer needs to be promoted
-  by default on 6.20. The WP-PG.14 PR must still carry explicit option-off
-  hash guards and option-on finite/convergence/re-baseline evidence because
-  matrix-free PGS has different solver semantics from Dantzig.
+- **D3 — Matrix-free large-island solver**: resolved by merged #3361
+  (`WP-PG.14: add opt-in matrix-free contact LCP`). DART 6.20 keeps dense
+  Dantzig as the default and exposes matrix-free contact PGS only as an
+  explicit default-off `BoxedLcpConstraintSolver` option plus
+  `contact_benchmark`/dartpy controls. The #3353/D7 default remediation
+  satisfies the primary-fixture default-on target, so D3 is not promoted to a
+  default behavior on 6.20. Future work may tune or broaden the option only
+  with explicit option-off hash guards and option-on finite/convergence/
+  re-baseline evidence because matrix-free PGS has different solver semantics
+  from Dantzig.
 - **D4 — Executor tooling**: keep `/dart-resume` + RESUME.md as the 6.20
   entry point, or backport a 6.20-adapted `dart-execute-packet` command
   (WP-PG.04).

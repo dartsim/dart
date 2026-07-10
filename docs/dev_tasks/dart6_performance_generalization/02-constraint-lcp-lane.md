@@ -164,7 +164,7 @@ final-state hashes on all guard scenes for default-on packets.
 
 #### WP-PG.14 — Island-size-gated matrix-free solve path (gated, opt-in)
 
-- Status: claimed on `wp-pg-14-matrix-free-lcp`
+- Status: done — #3361 (`wp-pg-14-matrix-free-lcp`)
 - Objective: for islands above a size threshold, offer a matrix-free
   sequential-impulse/PGS path over cached Jacobians (no dense (3n)^2 A),
   as an opt-in `BoxedLcpConstraintSolver` option defaulting to current
@@ -175,22 +175,28 @@ final-state hashes on all guard scenes for default-on packets.
   trivially additive.
 - Non-goals: changing the default solve; friction-cone semantics changes
   silently (must be documented as solver-option semantics).
-- Assumptions/open decisions: D3 direction is default-off opt-in on DART 6;
+- Resolved D3 decision: DART 6.20 ships this as a default-off opt-in option;
   solution non-uniqueness vs Dantzig means hashes differ by construction when
   the option is enabled — guard scenes run with the option OFF must stay
   bit-identical.
 - Acceptance evidence: option-off = bit-identical everywhere; option-on
   evidence table with contacts/resting/finite checks + convergence
   metrics at 900/3000 objects.
-- Dependencies: D3, WP-PG.10, WP-PG.13 insights. The original D3 revisit
-  trigger fired when WP-PG.10 confirmed solve-proper dominance, but merged
-  WP-PG.15/#3353 now supplies the default-on primary-fixture win; WP-PG.14
-  therefore remains an explicit opt-in solve-side option.
-- Current implementation evidence (2026-07-09): adds a default-off
+- Dependencies: D3 (resolved by #3361), WP-PG.10, WP-PG.13 insights. The
+  original D3 revisit trigger fired when WP-PG.10 confirmed solve-proper
+  dominance, but merged WP-PG.15/#3353 now supplies the default-on
+  primary-fixture win; WP-PG.14 therefore remains an explicit opt-in
+  solve-side option.
+- Completion evidence (2026-07-09): merged as #3361 (`91c158fc3e5`) after
+  Codex review reported no major issues on PR head `5751c7ed84c`. Adds a
+  default-off
   `BoxedLcpConstraintSolver::MatrixFreeContactSolverOptions` path, exact
   built-in `ContactConstraint` gating, single-free-body support checks,
   `contact_benchmark` opt-in flags, and profiler counters for rows,
-  iterations, and convergence. Artifact:
+  iterations, and convergence. Review-hardening before merge added reserved
+  thread-scratch body lookup storage, cached-impulse residual seeding before
+  the first sweep, dense fallback when matrix-free PGS does not converge, and
+  mixed per-DoF FreeJoint actuator rejection. Original full artifact:
   `/tmp/wp_pg14_matrix_free_ab_20260709T040443Z`.
 
   | Row | Median RTF | Median avg step | Contacts / pairs | Finite | Hash |
@@ -211,6 +217,11 @@ final-state hashes on all guard scenes for default-on packets.
   passed `pixi run lint`, `pixi run check-lint`, focused/full
   `test_ConstraintSolver`, dartpy constraint pytest, capped `ALL`, and
   `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
+  Final current-head smoke after review hardening:
+  `/tmp/wp_pg14_matrix_free_review_5751c7ed84c_repeat_20260709T223525Z`;
+  dense option-off S1 120 DART median avg step `7.93478` ms, hash
+  `0x123ee9779bccacfb`; option-on 30-iteration matrix-free median avg step
+  `1.38782` ms, finite, hash `0xa5548e1abe05b52`.
 
 #### WP-PG.15 — Penetration creep vs island-rest veto (root cause)
 

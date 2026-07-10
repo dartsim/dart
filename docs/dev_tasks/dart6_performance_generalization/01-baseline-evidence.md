@@ -205,7 +205,7 @@ Additional current-candidate examples:
   `20000 / 20000` capture frames, `71/71` resting, zero contacts, and
   `pixi run image-verdict` passed the non-blank verdict.
 
-### WP-PG.14 D3 matrix-free opt-in A/B (candidate)
+### WP-PG.14 D3 matrix-free opt-in A/B (landed as #3361)
 
 Artifact: `/tmp/wp_pg14_matrix_free_ab_20260709T040443Z` on
 `wp-pg-14-matrix-free-lcp`, using
@@ -236,6 +236,16 @@ Profile evidence from the same artifact:
 Validation on the same branch: `pixi run lint`, `pixi run check-lint`,
 focused/full `test_ConstraintSolver`, dartpy constraint pytest, capped
 `ALL`, and `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz` all passed.
+
+PR #3361 merged as `91c158fc3e5` after review hardening on head
+`5751c7ed84c`. Final current-head smoke artifact:
+`/tmp/wp_pg14_matrix_free_review_5751c7ed84c_repeat_20260709T223525Z`;
+S1 120 DART dense option-off median avg step `7.93478` ms, hash
+`0x123ee9779bccacfb`; option-on 30-iteration matrix-free median avg step
+`1.38782` ms, finite, hash `0xa5548e1abe05b52`. The post-review changes
+preserve the same semantics boundary: option-off remains the default guard,
+while option-on is an explicit D3 solver mode with its own convergence and
+finite-state evidence.
 
 ### Headline findings (round-2 evidence; supersedes the pre-plan smoke run)
 
