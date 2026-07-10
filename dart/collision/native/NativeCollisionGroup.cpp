@@ -43,7 +43,7 @@ namespace collision {
 NativeCollisionGroup::NativeCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
   : CollisionGroup(collisionDetector),
-    mBroadPhase(std::make_unique<native::BruteForceBroadPhase>())
+    mBroadPhase(std::make_unique<native::AabbTreeBroadPhase>())
 {
   // Do nothing
 }

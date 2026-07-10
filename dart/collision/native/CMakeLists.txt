@@ -19,6 +19,7 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/shapes/Shape.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/sdf/SignedDistanceField.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/BroadPhase.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/AabbTree.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/BruteForce.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Gjk.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/Gjk-impl.hpp
@@ -102,6 +103,7 @@ set(
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/PrimitiveCcd.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/SphereBox.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/narrow_phase/SphereSphere.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/AabbTree.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/broad_phase/BruteForce.cpp
 )
 
