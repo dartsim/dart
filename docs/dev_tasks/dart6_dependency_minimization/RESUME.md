@@ -104,14 +104,20 @@ fastest incumbent per row):
    interaction; next probe is a shape-type bisect of the pile (box-only vs
    cylinder-only) under native vs dart.
 
-**Phase 5 decision draft exists:**
-[08-phase5-facade-decision.md](08-phase5-facade-decision.md) — canonical key
-`native`; 6.21 deprecates FCL/Bullet/ODE via messaged attributes on
-create()/ctors; 6.22 removes the external deps with facades-over-native
-(only `OdeCollisionDetector` needs subclassability for gz). Maintainer
-ratification points are listed in that doc. Note doc 03's ConstraintSolver
-line numbers were stale: the FCL ctor sites are `ConstraintSolver.cpp:416`
-and `:433`.
+**Phase 5 decision (maintainer-directed 2026-07-10):**
+[08-phase5-facade-decision.md](08-phase5-facade-decision.md) — the native
+engine merges INTO the dart detector (`dart/collision/native/` folds into
+`dart/collision/dart/`, `NativeCollisionDetector` merges into
+`DARTCollisionDetector`, canonical key `"dart"`; the interim `"native"` key
+never shipped and is folded in the consolidation PR). 6.21 deprecates
+FCL/Bullet/ODE via messaged attributes on create()/ctors; 6.22 removes the
+external deps with facades over the dart detector (only
+`OdeCollisionDetector` needs subclassability for gz). Remaining ratification
+point: facade-vs-coordinated-gz-change for ODE. Note doc 03's
+ConstraintSolver line numbers were stale: the FCL ctor sites are
+`ConstraintSolver.cpp:416` and `:433`. The maintainer also set a total PR
+budget for the whole effort (prefer fewer, larger cohesive PRs; ~10-20 total
+across both dev tasks).
 
 Historical context for #3364 (superseded rows above):
 

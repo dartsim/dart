@@ -12,40 +12,50 @@ Consolidate DART's built-in collision detection into one backend; deprecate
 the FCL, Bullet, and ODE collision backends in DART 6.21.0 and remove them in
 DART 6.22.0, while preserving the downstream gz-physics/gz-sim contract.
 
-## Decision 1 — canonical backend and naming
+## Decision 1 — canonical backend and naming (maintainer-directed, 2026-07-10)
 
-**The native engine (`dart::collision::native`, class
-`NativeCollisionDetector`) is the single built-in backend; canonical factory
-key `"native"`. The legacy keys `"dart"`, `"fcl"`, `"bullet"`, `"ode"` remain
-permanently resolvable and, from 6.22, create native-backed implementations.**
+**The native engine merges INTO the `dart` detector: `dart/collision/native/`
+folds into `dart/collision/dart/`, and `NativeCollisionDetector` merges into
+`DARTCollisionDetector`, replacing its legacy narrowphase-only
+implementation. The single built-in backend is the `dart` detector, canonical
+factory key `"dart"`. The keys `"fcl"`, `"bullet"`, `"ode"` remain resolvable
+and, from 6.22, create dart-backed facade implementations.**
 
-Rationale:
+Maintainer direction (2026-07-10): "NativeDetector must merged into
+DartDetector (so native/ into dart/ as well)."
 
-- During the 6.20/6.21 transition `"dart"` still names the legacy limited
-  `DARTCollisionDetector`; documenting `"dart"` as canonical would be
-  ambiguous exactly when users migrate. `"native"` is unambiguous across the
-  whole window and already shipped as the opt-in key in 6.20.
-- The legacy `dart` detector is a strict subset of native (six primitive
-  pairs, narrowphase-only, `distance()` stub, no raycast, no broadphase), so
-  aliasing `"dart"` to native at 6.22 loses nothing.
-- gz-physics keeps working: all four names keep resolving
-  (`WorldFeatures.cc:47-70`), and gz's actual default is its own
-  `GzOdeCollisionDetector` subclass (`EntityManagementFeatures.cc:728`), so
-  DART's default flip does not change gz behavior by itself.
-- Phase 6 adds `CollisionDetectorType::Native` (World enum) and the dartpy
-  `NATIVE` enum value; the dartpy `NativeCollisionDetector` class binding
-  already landed with the comparison harness PR.
+Mechanics, and why this is clean now:
 
-## Decision 2 — facades over native, not component removal
+- 6.20.0 is unreleased, so the interim `"native"` factory key, the
+  `NativeCollisionDetector` class name, and its dartpy binding have never
+  shipped; the consolidation PR renames/folds them with no deprecation cycle.
+  All in-tree users are updated in the same PR (`contact_benchmark
+  --collision native`, dashboard detector index 4, native unit tests, the
+  comparison harness's `--detector native`, the dartpy binding).
+- The legacy `DARTCollisionDetector` narrowphase (six primitive pairs, no
+  broadphase, `distance()` stub, no raycast) is a strict subset of the engine
+  replacing it, so the `"dart"` key only gains capability. `dart`-detector
+  guard rows re-baseline with the consolidation PR's A/B evidence
+  (pre-release change, allowed with recorded old/new rows).
+- gz-physics keeps working: `SetWorldCollisionDetector("dart")` returns the
+  consolidated engine; the other names keep resolving; gz's own default
+  remains its `GzOdeCollisionDetector` subclass until 6.22
+  (`EntityManagementFeatures.cc:728`).
+- No new enum value is needed: `CollisionDetectorType::Dart` and the dartpy
+  `DARTCollisionDetector` binding now denote the consolidated engine, and the
+  phase-6 flip simply changes the default from Fcl to Dart across the flip
+  surface (`ConstraintSolver.cpp:416`/`:433`, `WorldConfig`, `SkelParser`).
+
+## Decision 2 — facades over the dart detector, not component removal
 
 **6.22 removes the external fcl/bullet/ode dependencies; the detector classes
-and CMake components survive as compatibility facades over the native
-engine.** The source-verified gz obligations and how facades satisfy them:
+and CMake components survive as compatibility facades over the consolidated
+`dart` detector.** The source-verified gz obligations and how facades satisfy them:
 
 | gz obligation (evidence) | facade answer |
 | --- | --- |
 | `find_package(DART COMPONENTS collision-bullet collision-ode ...)` (`gz-physics/CMakeLists.txt:74-84`) | components remain, containing facade libs with no external dep |
-| `GzOdeCollisionDetector : public OdeCollisionDetector`, overrides `collide()x2`, adds per-pair capping (`GzOdeCollisionDetector.hh:26-69`) | `OdeCollisionDetector` stays a real subclassable class whose `collide()` delegates to native and honors `CollisionOption.maxNumContactsPerPair` |
+| `GzOdeCollisionDetector : public OdeCollisionDetector`, overrides `collide()x2`, adds per-pair capping (`GzOdeCollisionDetector.hh:26-69`) | `OdeCollisionDetector` stays a real subclassable class whose `collide()` delegates to the dart engine and honors `CollisionOption.maxNumContactsPerPair` |
 | keys "fcl"/"bullet"/"ode"/"dart" resolve via `create()` (`WorldFeatures.cc:47-70`) | facade factories keep all four registrations |
 | `getLastCollisionResult()` Contact fields {point, normal, penetrationDepth, force, collisionObject1/2} (`SimulationFeatures.cc:213-256`) | native populates the same DART 6 `Contact` (proven by adapter parity tests) |
 | raycast (Bullet incumbent, `SimulationFeatures.cc:176-185`) | native raycast merged (#3355) |
@@ -56,7 +66,7 @@ Notes: gz subclasses **only** `OdeCollisionDetector` (there is no
 `GzBulletCollisionDetector`; the doc-03 matrix row overstated this). Bullet
 and FCL only need `create()` + name resolution + `getType()`.
 
-Behavior disclosure: facades emit native contact profiles (counts/normals may
+Behavior disclosure: facades emit the dart engine's contact profiles (counts/normals may
 differ from real FCL/Bullet/ODE). That is the documented semantic of the 6.22
 removal; 6.21's deprecation cycle is the migration window, and the gz gate
 must pass against facades before 6.22 ships.
@@ -79,7 +89,7 @@ must pass against facades before 6.22 ships.
   `dart_check_required_package(fcl)` (`cmake/DARTFindDependencies.cmake:21-22`).
 - `DART_DEPRECATED(version)` ignores its argument and carries no message
   (`dart/common/Deprecated.hpp:44-53`). 6.21 deprecations should use
-  `[[deprecated("...use the native collision detector...")]]` (or a new
+  `[[deprecated("...use the dart collision detector...")]]` (or a new
   `DART_DEPRECATED_MESSAGE`) on `create()`/constructors — NOT on the classes
   gz subclasses; warning-cleanliness of `GzOdeCollisionDetector` under
   -Werror must be prototyped before 6.21 ships.
@@ -96,21 +106,20 @@ must pass against facades before 6.22 ships.
   DEFAULT detector (both ctors + WorldConfig/SkelParser surface). All legacy
   detectors stay real and selectable; no deprecations on the LTS branch.
 - **6.21:** deprecation attributes with migration messages on
-  FCL/Bullet/ODE/legacy-dart `create()`/ctors; CHANGELOG + migration guide;
+  FCL/Bullet/ODE `create()`/ctors; CHANGELOG + migration guide;
   CMake configure-time notices. Everything still functional.
 - **6.22:** drop external fcl/bullet/ode from the required surface; classes
-  become facades-over-native; `"dart"` key resolves to the native engine;
-  legacy `DARTCollisionDetector` narrowphase retired; FCL decoupled from core
+  become facades over the dart detector; FCL decoupled from core
   (`phase 7`), bullet/ode components rebuilt as facade components; package/
   export smoke tests.
 
 ## Maintainer ratification points
 
-1. Facade-over-native for `OdeCollisionDetector` vs coordinating a gz-physics
+1. Facade-over-dart for `OdeCollisionDetector` vs coordinating a gz-physics
    change that drops the `GzOdeCollisionDetector` subclass first (facade is
    the recommended default; both keep the gz gate green in 6.22).
-2. Canonical name `"native"` (recommended) vs `"dart"` — both keys resolve to
-   the same engine from 6.22 either way; this only decides documentation and
-   the eventual class naming.
-3. Whether 6.21 should also deprecate the legacy `DARTCollisionDetector`
-   engine explicitly (recommended: yes, same cycle).
+2. ~~Canonical name~~ RESOLVED by maintainer direction 2026-07-10: canonical
+   `"dart"`, with `dart/collision/native/` merged into `dart/collision/dart/`
+   and `NativeCollisionDetector` merged into `DARTCollisionDetector`.
+3. (retired) The legacy `DARTCollisionDetector` engine question is subsumed
+   by the consolidation: its narrowphase is replaced in 6.20, not deprecated.
