@@ -298,6 +298,21 @@
     default dense LCP solver behavior:
     [#3361](https://github.com/dartsim/dart/pull/3361)
 
+  * Add an opt-in `ExactCoulombFbfConstraintSolver` implementing the exact
+    reduced Coulomb friction forward-backward-forward splitting architecture
+    from Song, Fan, Ascher, and Pai (SCA 2026), with a scratch-backed
+    contact-row Delassus operator, cross-step contact-manifold warm starts,
+    boxed-LCP fallback, paper-scene fixtures/benchmarks/traces, nine
+    `dart-demos` inspection scenes, and an author-faithful Rigid-IPC
+    masonry-arch generator. The default contact path is unchanged:
+    [#3377](https://github.com/dartsim/dart/pull/3377)
+
+  * Fix the opt-in split-impulse position pass discarding all velocity-phase
+    constraint impulses (resting bodies free-fell through geometry while
+    their contacts persisted) by preserving body and joint constraint
+    impulses across the position-correction LCP assembly:
+    [#3377](https://github.com/dartsim/dart/pull/3377)
+
   * Add an opt-in per-DoF actuator type API to `Joint`
     (`setActuatorType(index, type)`, `setActuatorTypes(vector)`,
     `getActuatorType(index)`, `getActuatorTypes()`, `hasActuatorType()`) so
