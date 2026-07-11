@@ -74,6 +74,14 @@ def test_size_mismatch_is_rejected(tmp_path: Path) -> None:
         diff_heatmap(read_image(a), read_image(b))
 
 
+def test_ppm_reader_skips_header_whitespace_without_eating_pixel_whitespace(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "whitespace.ppm"
+    path.write_bytes(b"P6\n1 1\n255\n\n" + bytes([10, 20, 30]))
+    assert read_image(path).pixels == bytes([10, 20, 30])
+
+
 def test_cli_diff_manifest(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
     a = tmp_path / "a.png"
     b = tmp_path / "b.png"
