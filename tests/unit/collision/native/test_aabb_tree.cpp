@@ -401,11 +401,13 @@ TEST(AabbTreeBroadPhase, FatAabbOptimization)
 TEST(AabbTreeBroadPhase, RejectsInvalidFatAabbMargins)
 {
   EXPECT_THROW(AabbTreeBroadPhase(-0.1), std::invalid_argument);
+  // Parenthesized so the temporary is an expression, not a vexing-parse
+  // declaration of ::infinity/::quiet_NaN, which AppleClang rejects.
   EXPECT_THROW(
-      AabbTreeBroadPhase(std::numeric_limits<double>::infinity()),
+      (AabbTreeBroadPhase(std::numeric_limits<double>::infinity())),
       std::invalid_argument);
   EXPECT_THROW(
-      AabbTreeBroadPhase(std::numeric_limits<double>::quiet_NaN()),
+      (AabbTreeBroadPhase(std::numeric_limits<double>::quiet_NaN())),
       std::invalid_argument);
 
   AabbTreeBroadPhase bp(0.25);
