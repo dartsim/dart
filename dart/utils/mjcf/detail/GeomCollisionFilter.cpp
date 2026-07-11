@@ -47,6 +47,7 @@ void GeomCollisionFilter::setGeomBitmasks(
     return;
 
   mBitmasks[shapeFrame] = Bitmasks{contype, conaffinity};
+  ++mBitmaskRevision;
 }
 
 //==============================================================================
@@ -75,6 +76,14 @@ bool GeomCollisionFilter::ignoresCollision(
                           || ((b2.mContype & b1.mConaffinity) != 0);
 
   return !mayCollide;
+}
+
+//==============================================================================
+std::size_t GeomCollisionFilter::getCollisionFilterSnapshotRevision() const
+{
+  std::size_t seed = getBodyNodePairBlackListRevision();
+  seed ^= mBitmaskRevision + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+  return seed;
 }
 
 } // namespace detail

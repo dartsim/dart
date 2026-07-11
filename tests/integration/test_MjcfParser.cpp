@@ -33,6 +33,7 @@
 #include "TestHelpers.hpp"
 #include "dart/collision/native/NativeCollisionDetector.hpp"
 #include "dart/dart.hpp"
+#include "dart/utils/mjcf/detail/GeomCollisionFilter.hpp"
 #include "dart/utils/mjcf/detail/MujocoModel.hpp"
 #include "dart/utils/mjcf/detail/Types.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
@@ -804,4 +805,43 @@ TEST(MjcfParserTest, UnnamedRootBodyWithUnnamedJointStack)
 
   EXPECT_TRUE(stacked->getPositions().allFinite());
   EXPECT_TRUE(stacked->getVelocities().allFinite());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, GeomFilterPreservesDeactivationSnapshots)
+{
+  auto world = utils::MjcfParser::readWorld(
+      "dart://sample/mjcf/test/deactivation_filter.xml");
+  ASSERT_NE(world, nullptr);
+
+  auto box = world->getSkeleton("box");
+  ASSERT_NE(box, nullptr);
+  ASSERT_TRUE(box->isMobile());
+
+  // Establish a stable contact before forcing the already-settled fixture
+  // into the resting state. This isolates snapshot preservation from the
+  // separate sleep-candidate dwell policy.
+  for (std::size_t i = 0u; i < 10u; ++i)
+    world->step();
+  box->setVelocities(Eigen::VectorXd::Zero(box->getNumDofs()));
+  box->setResting(true);
+  ASSERT_TRUE(box->isResting());
+
+  const Eigen::VectorXd frozenPositions = box->getPositions();
+  for (std::size_t i = 0u; i < 100u; ++i) {
+    world->step();
+    ASSERT_TRUE(box->isResting()) << "MJCF box spuriously woke at step " << i;
+    EXPECT_TRUE(box->getPositions().isApprox(frozenPositions, 1e-12));
+  }
+
+  auto* geomFilter = dynamic_cast<GeomCollisionFilter*>(
+      world->getConstraintSolver()->getCollisionOption().collisionFilter.get());
+  ASSERT_NE(geomFilter, nullptr);
+  auto* boxShape = box->getBodyNode(0u)->getShapeNode(0u);
+  ASSERT_NE(boxShape, nullptr);
+  geomFilter->setGeomBitmasks(boxShape, 0, 0);
+
+  world->step();
+  EXPECT_FALSE(box->isResting())
+      << "collision-filter revision change did not invalidate the snapshot";
 }

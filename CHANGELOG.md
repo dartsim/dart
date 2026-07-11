@@ -355,6 +355,11 @@
 
 * Simulation
 
+  * Improve MJCF loading fidelity by supporting stacked hinge/slide joint
+    compositions, enforcing `contype`/`conaffinity` collision filtering, and
+    applying per-geom friction while preserving automatic deactivation:
+    [#3369](https://github.com/dartsim/dart/pull/3369)
+
   * Add World-owned simulation memory management and optional
     `World::enterSimulationMode()` preparation so DART-owned native-collision
     same-shape simulation steps can run without steady-state heap allocations

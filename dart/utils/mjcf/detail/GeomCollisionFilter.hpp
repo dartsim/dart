@@ -34,6 +34,7 @@
 #define DART_UTILS_MJCF_DETAIL_GEOMCOLLISIONFILTER_HPP_
 
 #include <dart/collision/CollisionFilter.hpp>
+#include <dart/collision/detail/CollisionFilterSnapshotTracker.hpp>
 
 #include <unordered_map>
 
@@ -62,7 +63,9 @@ namespace detail {
 /// ShapeNodes that were not registered with setGeomBitmasks() (i.e. not
 /// created from an MJCF <geom>) are unaffected by the bitmask rule: the pair
 /// falls back to the inherited BodyNodeCollisionFilter behavior only.
-class GeomCollisionFilter final : public collision::BodyNodeCollisionFilter
+class GeomCollisionFilter final
+  : public collision::BodyNodeCollisionFilter,
+    public collision::detail::CollisionFilterSnapshotTracker
 {
 public:
   /// Registers the contype/conaffinity bitmasks of the MJCF <geom> that
@@ -76,6 +79,9 @@ public:
       const collision::CollisionObject* object1,
       const collision::CollisionObject* object2) const override;
 
+  // Documentation inherited
+  std::size_t getCollisionFilterSnapshotRevision() const override;
+
 private:
   struct Bitmasks
   {
@@ -86,6 +92,9 @@ private:
   /// contype/conaffinity bitmasks keyed by the ShapeFrame of the ShapeNode
   /// created for the owning MJCF <geom>.
   std::unordered_map<const dynamics::ShapeFrame*, Bitmasks> mBitmasks;
+
+  /// Revision for changes to the parser-owned geom bitmask table.
+  std::size_t mBitmaskRevision = 0u;
 };
 
 } // namespace detail
