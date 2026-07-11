@@ -408,7 +408,23 @@ def _verdict(dart_steps_per_s: float, mujoco_steps_per_s: float) -> str:
 
 
 def _write_markdown(out_dir: Path, summary: dict) -> None:
-    lines = ["# DART vs MuJoCo Comparison", ""]
+    detector_override = summary.get("detector_override")
+    dart_sleep_override = summary.get("dart_sleep_override")
+    lines = [
+        "# DART vs MuJoCo Comparison",
+        "",
+        "## Run provenance",
+        "",
+        "- DART detector override: "
+        + (f"`{detector_override}`" if detector_override else "scenario defaults"),
+        "- DART sleep override: "
+        + (
+            f"`{dart_sleep_override}` for every selected scenario"
+            if dart_sleep_override
+            else "scenario defaults"
+        ),
+        "",
+    ]
     lines += [
         "| Scene | DART steps/s | MuJoCo steps/s | Ratio (DART/MuJoCo) | Verdict | Finite (D/M) |",
         "| --- | ---: | ---: | ---: | --- | --- |",
@@ -600,6 +616,7 @@ def main(argv: list[str]) -> int:
         "reps": args.reps,
         "seed": args.seed,
         "detector_override": args.detector,
+        "dart_sleep_override": args.dart_sleep,
         "scenes": scenes_summary,
         "sensitivity": sensitivity,
         "raw_rows": {
