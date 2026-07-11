@@ -7,9 +7,10 @@ pick better ones, mirroring the DART 7 `dart.gui.assess_view` /
 (`Viewer.captureOffscreen(eye, center, up, fovYDeg, ...)` from WP-ASV).
 
 Everything is pure Python + numpy over the classic dartpy surface: body
-bounds come from shape bounding boxes, occlusion from ray/AABB slab tests,
-projection from the same look-at + vertical-FOV model the capture helper
-pins. No GL context is needed to assess a view.
+bounds come from the core ``Shape.getBoundingBox()`` local AABB (with a typed
+shape-accessor fallback), occlusion from ray/AABB slab tests, projection from
+the same look-at + vertical-FOV model the capture helper pins. No GL context
+is needed to assess a view.
 """
 
 from __future__ import annotations
@@ -153,14 +154,17 @@ def _iter_shape_owners(world: Any):
             yield str(frame.getName()), frame
 
 
+# Shapes that are not bounded solids: an infinite ground plane and the
+# overlay's own line segments must never contribute assessment bounds.
+_UNBOUNDED_SHAPE_TYPES = frozenset({"PlaneShape", "LineSegmentShape"})
+
+
 def _shape_local_half_extents(shape: Any) -> np.ndarray | None:
     """Conservative shape-local AABB half extents from typed accessors.
 
-    dartpy on this branch binds Shape.getBoundingBox() but not
-    math::BoundingBox itself, so the returned object has no usable
-    accessors; sizes come from the concrete shape types instead. Unbounded
-    or unsupported shapes (planes, meshes without size info) return None
-    and are skipped.
+    Fallback for the rare shape whose ``getBoundingBox()`` reports
+    non-finite bounds; sizes come from the concrete shape types instead.
+    Unbounded or unsupported shapes return None and are skipped.
     """
     kind = type(shape).__name__
     if kind == "BoxShape":
@@ -176,10 +180,6 @@ def _shape_local_half_extents(shape: Any) -> np.ndarray | None:
         if kind == "CapsuleShape":
             half_height += radius
         return np.array([radius, radius, half_height])
-    if kind == "LineSegmentShape":
-        return None
-    if kind == "PlaneShape":
-        return None
     if hasattr(shape, "getSize"):
         try:
             return np.asarray(shape.getSize(), dtype=float).reshape(3) * 0.5
@@ -188,22 +188,53 @@ def _shape_local_half_extents(shape: Any) -> np.ndarray | None:
     return None
 
 
+def _shape_local_aabb(shape: Any) -> tuple[np.ndarray, np.ndarray] | None:
+    """Shape-local AABB (min, max) from the core ``getBoundingBox()``.
+
+    ``math::BoundingBox`` is now bound in dartpy, so the engine-computed
+    local bounds are the source of truth; they may be off-center (e.g. a
+    mesh), so the full min/max box is used rather than an origin-centered
+    half-extent. Falls back to typed shape accessors only when the core
+    bounds are missing or non-finite.
+    """
+    if type(shape).__name__ in _UNBOUNDED_SHAPE_TYPES:
+        return None
+    try:
+        bounding_box = shape.getBoundingBox()
+        low = np.asarray(bounding_box.getMin(), dtype=float).reshape(3)
+        high = np.asarray(bounding_box.getMax(), dtype=float).reshape(3)
+    except Exception:  # noqa: BLE001 - fall back to typed accessors below
+        low = high = None
+    if (
+        low is not None
+        and np.isfinite(low).all()
+        and np.isfinite(high).all()
+        and np.all(high >= low)
+    ):
+        return low, high
+    half = _shape_local_half_extents(shape)
+    if half is None or not np.isfinite(half).all():
+        return None
+    return -half, half
+
+
 def _shape_frame_world_corners(shape_frame: Any) -> np.ndarray | None:
     shape = shape_frame.getShape()
     if shape is None:
         return None
-    half = _shape_local_half_extents(shape)
-    if half is None or not np.isfinite(half).all():
+    aabb = _shape_local_aabb(shape)
+    if aabb is None:
         return None
+    low, high = aabb
     transform = shape_frame.getWorldTransform()
     rotation = np.asarray(transform.rotation(), dtype=float).reshape(3, 3)
     translation = np.asarray(transform.translation(), dtype=float).reshape(3)
     local = np.array(
         [
             [x, y, z]
-            for x in (-half[0], half[0])
-            for y in (-half[1], half[1])
-            for z in (-half[2], half[2])
+            for x in (low[0], high[0])
+            for y in (low[1], high[1])
+            for z in (low[2], high[2])
         ]
     )
     return local @ rotation.T + translation

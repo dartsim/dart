@@ -143,6 +143,52 @@ void Geometry(py::module& m)
         return dart::math::verifyTransform(_T);
       },
       ::py::arg("T"));
+
+  ::py::class_<dart::math::BoundingBox>(m, "BoundingBox")
+      .def(::py::init<>())
+      .def(
+          ::py::init<const Eigen::Vector3d&, const Eigen::Vector3d&>(),
+          ::py::arg("min"),
+          ::py::arg("max"))
+      .def(
+          "getMin",
+          +[](const dart::math::BoundingBox* self) -> const Eigen::Vector3d& {
+            return self->getMin();
+          },
+          ::py::return_value_policy::reference_internal)
+      .def(
+          "getMax",
+          +[](const dart::math::BoundingBox* self) -> const Eigen::Vector3d& {
+            return self->getMax();
+          },
+          ::py::return_value_policy::reference_internal)
+      .def(
+          "setMin",
+          +[](dart::math::BoundingBox* self, const Eigen::Vector3d& min) {
+            self->setMin(min);
+          },
+          ::py::arg("min"))
+      .def(
+          "setMax",
+          +[](dart::math::BoundingBox* self, const Eigen::Vector3d& max) {
+            self->setMax(max);
+          },
+          ::py::arg("max"))
+      .def(
+          "computeCenter",
+          +[](const dart::math::BoundingBox* self) -> Eigen::Vector3d {
+            return self->computeCenter();
+          })
+      .def(
+          "computeHalfExtents",
+          +[](const dart::math::BoundingBox* self) -> Eigen::Vector3d {
+            return self->computeHalfExtents();
+          })
+      .def(
+          "computeFullExtents",
+          +[](const dart::math::BoundingBox* self) -> Eigen::Vector3d {
+            return self->computeFullExtents();
+          });
 }
 
 } // namespace python

@@ -54,6 +54,24 @@ def _add_wall(world):
     )
 
 
+def test_bounding_box_binding_roundtrip():
+    # math::BoundingBox is now bound: getBoundingBox() returns a usable object,
+    # and the class round-trips through its own constructor and setters.
+    shape = dart.dynamics.BoxShape([0.2, 0.4, 0.6])
+    box = shape.getBoundingBox()
+    assert np.asarray(box.getMin()) == pytest.approx([-0.1, -0.2, -0.3])
+    assert np.asarray(box.getMax()) == pytest.approx([0.1, 0.2, 0.3])
+    assert np.asarray(box.computeCenter()) == pytest.approx([0.0, 0.0, 0.0])
+    assert np.asarray(box.computeHalfExtents()) == pytest.approx([0.1, 0.2, 0.3])
+
+    made = dart.math.BoundingBox([-1.0, -2.0, -3.0], [4.0, 5.0, 6.0])
+    assert np.asarray(made.getMin()) == pytest.approx([-1.0, -2.0, -3.0])
+    assert np.asarray(made.computeFullExtents()) == pytest.approx([5.0, 7.0, 9.0])
+    made.setMin([0.0, 0.0, 0.0])
+    made.setMax([2.0, 2.0, 2.0])
+    assert np.asarray(made.computeCenter()) == pytest.approx([1.0, 1.0, 1.0])
+
+
 def test_body_bounds_cover_shapes():
     world = _world_with_marker()
     bounds = {b.name: b for b in avq.body_bounds(world)}
