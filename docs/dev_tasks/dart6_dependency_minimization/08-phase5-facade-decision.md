@@ -56,6 +56,31 @@ Mechanics, and why this is clean now:
   phase-6 flip simply changes the default from Fcl to Dart across the flip
   surface (`ConstraintSolver.cpp:416`/`:433`, `WorldConfig`, `SkelParser`).
 
+> **Correction recorded during execution (2026-07-11):** the "strict subset"
+> premise above does not hold for `SoftMeshShape` (deformable body) contacts.
+> The legacy narrowphase-only `DARTCollisionDetector` supported `SoftMeshShape`
+> point contacts (against Box/Plane/Sphere/Ellipsoid/SoftMesh, matching
+> FCL/Bullet/ODE); the native engine's shape conversion has no `SoftMeshShape`
+> case. Deleting the legacy engine therefore drops `SoftMeshShape` support
+> from the `"dart"`/`"native"` keys until a follow-up ports it into the native
+> shape/narrowphase layer. See the consolidation commit message for the full
+> enumeration of affected call sites.
+>
+> **Resolution (2026-07-11, same branch):** both capability gaps closed
+> before the flip PR:
+> - `SoftMeshShape` ported into the consolidated detector (`SoftCollision.*`,
+>   soft caches on `DARTCollisionObject`, soft AABBs in both broadphases;
+>   soft pairs bypass the persistent manifold cache). All eight soft
+>   StepAllocation gates report contacts with zero steady-state allocations.
+>   Parallel soft-soft batching is deferred (serial path only, TODO in
+>   source).
+> - `EllipsoidShape` support added to the native shape conversion (exact
+>   sphere for equal radii, deterministic icosphere convex hull otherwise).
+>
+> Rigid determinism guards stayed bit-identical throughout (S1
+> `0xd6736cd716faf01d`, S3 `0x6088ea0177efa6a`, S4 `0x55bf77ebc1c491b2`,
+> S5 `0x4f265a803b596035`).
+
 ## Decision 2 — facades over the dart detector, not component removal
 
 **6.22 removes the external fcl/bullet/ode dependencies; the detector classes

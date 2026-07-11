@@ -198,9 +198,12 @@ alias (remove in 6.21). This is a separate commit from the phase-6 default
 flip, which is still pending and out of scope here. The legacy
 narrowphase-only `DARTCollisionDetector` implementation (and its
 `DARTCollide.{hpp,cpp}` helpers) was deleted as part of this merge; see that
-commit's message for the enumerated behavior-change risks (notably
-SoftMeshShape narrowphase support, previously legacy-only, has no native
-equivalent yet).
+commit's message for the enumerated behavior-change risks. The two capability
+gaps this opened were closed on the same branch before the flip PR:
+SoftMeshShape support was ported into the consolidated detector
+(`SoftCollision.*`, soft gates green with zero steady-state allocations,
+serial soft-soft only) and EllipsoidShape gained a native conversion (exact
+sphere for equal radii, icosphere convex hull otherwise).
 
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
 PRs, worktrees, gotchas, and exact Phase 4 next steps).
