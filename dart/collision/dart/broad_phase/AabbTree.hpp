@@ -78,6 +78,15 @@ public:
   [[nodiscard]] bool validate() const;
 
 private:
+  /// Scratch buffer reused by visitPairs() so steady-state stepping stays
+  /// allocation-free once the buffer reaches the scene's working size
+  /// (StepAllocation gate discipline). Mutable because visitPairs() is
+  /// const; the tree is single-query at a time by contract.
+  // Reused by visitPairs() so steady-state stepping stays allocation-free.
+  mutable std::vector<std::size_t> mOrderedIdScratch;
+  mutable std::vector<std::size_t> mOverlapScratch;
+
+private:
   struct Node
   {
     Aabb fatAabb;

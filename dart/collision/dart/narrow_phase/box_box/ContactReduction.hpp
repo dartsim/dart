@@ -35,14 +35,12 @@
 #include <dart/collision/dart/Export.hpp>
 #include <dart/collision/dart/narrow_phase/box_box/FaceClip.hpp>
 
-#include <vector>
-
 #include <cstddef>
 
 namespace dart::collision::native::box_box {
 
-[[nodiscard]] DART_COLLISION_NATIVE_API std::vector<ContactCandidate>
+[[nodiscard]] DART_COLLISION_NATIVE_API ContactCandidates
 reduceContactCandidates(
-    const std::vector<ContactCandidate>& candidates, std::size_t maxContacts);
+    const ContactCandidates& candidates, std::size_t maxContacts);
 
 } // namespace dart::collision::native::box_box

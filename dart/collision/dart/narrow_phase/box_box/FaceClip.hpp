@@ -33,11 +33,10 @@
 #pragma once
 
 #include <dart/collision/dart/Export.hpp>
+#include <dart/collision/dart/detail/InlineVector.hpp>
 #include <dart/collision/dart/narrow_phase/box_box/Sat.hpp>
 
 #include <Eigen/Core>
-
-#include <vector>
 
 namespace dart::collision::native::box_box {
 
@@ -47,7 +46,13 @@ struct ContactCandidate
   double depth = 0.0;
 };
 
-[[nodiscard]] DART_COLLISION_NATIVE_API std::vector<ContactCandidate>
+/// Clipping a convex quad against the five reference-face planes grows the
+/// polygon by at most one vertex per plane (4 -> 9); capacity 12 leaves slack.
+/// Inline storage keeps the per-pair narrowphase free of heap allocations
+/// (StepAllocation gate discipline).
+using ContactCandidates = InlineVector<ContactCandidate, 12>;
+
+[[nodiscard]] DART_COLLISION_NATIVE_API ContactCandidates
 computeBoxBoxContactCandidates(
     const BoxData& box1, const BoxData& box2, const SatResult& sat);
 

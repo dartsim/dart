@@ -32,6 +32,9 @@
 
 #include "dart/collision/dart/PersistentManifoldCache.hpp"
 
+#include "dart/collision/dart/detail/InlineVector.hpp"
+#include "dart/common/Macros.hpp"
+
 #include <algorithm>
 #include <array>
 #include <limits>
@@ -103,14 +106,22 @@ bool hasMatchingFrictionBasis(
 }
 
 //==============================================================================
+// Fixed-capacity candidate buffer: the reduce/overflow paths handle at most
+// kMaxContacts + 1 entries, so inline storage keeps them allocation-free.
+using FixedCandidates
+    = InlineVector<CachedContact, PersistentManifold::kMaxContacts + 4>;
+
 std::array<int, PersistentManifold::kMaxContacts> selectContactIndices(
-    const std::vector<CachedContact>& candidates)
+    const FixedCandidates& candidates)
 {
   std::array<int, PersistentManifold::kMaxContacts> selected{-1, -1, -1, -1};
   if (candidates.empty())
     return selected;
 
-  std::vector<bool> used(candidates.size(), false);
+  // Bounded: callers pass at most kMaxContacts + 1 candidates; keep the
+  // used-flags on the stack so the steady-state cache path never allocates.
+  DART_ASSERT(candidates.size() <= 8u);
+  std::array<bool, 8> used{};
 
   int deepest = 0;
   double maxDepth = candidates[0].penetrationDepth;
@@ -203,7 +214,7 @@ std::array<int, PersistentManifold::kMaxContacts> selectContactIndices(
 
 //==============================================================================
 void writeReducedContacts(
-    const std::vector<CachedContact>& candidates, PersistentManifold& manifold)
+    const FixedCandidates& candidates, PersistentManifold& manifold)
 {
   const auto selected = selectContactIndices(candidates);
   int count = 0;
@@ -284,8 +295,7 @@ void PersistentManifold::addOrReplace(const CachedContact& contact)
 
   reduce();
 
-  std::vector<CachedContact> candidates;
-  candidates.reserve(static_cast<std::size_t>(kMaxContacts + 1));
+  FixedCandidates candidates;
   for (int i = 0; i < numContacts; ++i)
     candidates.push_back(contacts[static_cast<std::size_t>(i)]);
 
@@ -302,8 +312,7 @@ void PersistentManifold::reduce()
   if (numContacts <= kMaxContacts)
     return;
 
-  std::vector<CachedContact> candidates;
-  candidates.reserve(static_cast<std::size_t>(numContacts));
+  FixedCandidates candidates;
   for (int i = 0; i < numContacts; ++i)
     candidates.push_back(contacts[static_cast<std::size_t>(i)]);
 
@@ -409,22 +418,7 @@ void PersistentManifoldCache::removeObject(std::size_t id)
 void PersistentManifoldCache::refreshAll(
     const TransformProvider& transformProvider, double breakingThreshold)
 {
-  for (auto it = mManifolds.begin(); it != mManifolds.end();) {
-    const auto transformPair = transformProvider(it->first.idA, it->first.idB);
-    if (!transformPair.has_value()) {
-      ++it;
-      continue;
-    }
-
-    it->second.refresh(
-        transformPair->first, transformPair->second, breakingThreshold);
-    if (it->second.numContacts == 0) {
-      it = mManifolds.erase(it);
-      continue;
-    }
-
-    ++it;
-  }
+  refreshAllWith(transformProvider, breakingThreshold);
 }
 
 //==============================================================================

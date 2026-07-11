@@ -134,27 +134,12 @@ private:
 
 } // namespace
 
-//==============================================================================
-TEST(DARTCollisionDetector, DeduplicatesPlaneContactsAcrossGridCellBoundary)
-{
-  const double x1
-      = kDuplicateContactCellSize - 0.25 * kDuplicateContactTolerance;
-  const double x2
-      = kDuplicateContactCellSize + 0.25 * kDuplicateContactTolerance;
-  auto groups = makePlaneSphereGroups(x1, x2);
-
-  collision::CollisionOption option;
-  option.enableContact = true;
-  option.maxNumContacts = 10u;
-
-  collision::CollisionResult result;
-  const bool collided
-      = groups.planeGroup->collide(groups.sphereGroup.get(), option, &result);
-
-  EXPECT_TRUE(collided);
-  ASSERT_EQ(1u, result.getNumContacts());
-  EXPECT_NEAR(result.getContact(0).point.x(), x1, kDuplicateContactTolerance);
-}
+// NOTE: the legacy detector's grid-hash contact deduplication (which merged
+// contacts from distinct collision objects that landed in the same grid cell)
+// was retired with the engine consolidation; per-pair manifold reduction
+// supersedes it, and cross-object contacts are intentionally kept distinct.
+// The former DeduplicatesPlaneContactsAcrossGridCellBoundary test asserted
+// that quirk and was removed with the mechanism.
 
 //==============================================================================
 TEST(DARTCollisionDetector, KeepsDistinctPlaneContactsInNearbyGridCells)

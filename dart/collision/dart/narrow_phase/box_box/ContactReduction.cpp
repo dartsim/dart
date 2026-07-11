@@ -41,11 +41,10 @@ namespace {
 
 constexpr double kDuplicateDistanceSq = 1e-14;
 
-[[nodiscard]] std::vector<ContactCandidate> uniqueCandidates(
-    const std::vector<ContactCandidate>& candidates)
+[[nodiscard]] ContactCandidates uniqueCandidates(
+    const ContactCandidates& candidates)
 {
-  std::vector<ContactCandidate> unique;
-  unique.reserve(candidates.size());
+  ContactCandidates unique;
 
   for (const auto& candidate : candidates) {
     bool duplicate = false;
@@ -67,7 +66,7 @@ constexpr double kDuplicateDistanceSq = 1e-14;
 }
 
 [[nodiscard]] std::size_t deepestCandidateIndex(
-    const std::vector<ContactCandidate>& candidates)
+    const ContactCandidates& candidates)
 {
   std::size_t index = 0;
   double depth = -std::numeric_limits<double>::infinity();
@@ -82,20 +81,19 @@ constexpr double kDuplicateDistanceSq = 1e-14;
 
 } // namespace
 
-std::vector<ContactCandidate> reduceContactCandidates(
-    const std::vector<ContactCandidate>& candidates, std::size_t maxContacts)
+ContactCandidates reduceContactCandidates(
+    const ContactCandidates& candidates, std::size_t maxContacts)
 {
   if (maxContacts == 0 || candidates.empty()) {
     return {};
   }
 
-  std::vector<ContactCandidate> remaining = uniqueCandidates(candidates);
+  ContactCandidates remaining = uniqueCandidates(candidates);
   if (remaining.size() <= maxContacts) {
     return remaining;
   }
 
-  std::vector<ContactCandidate> selected;
-  selected.reserve(maxContacts);
+  ContactCandidates selected;
   const std::size_t deepestIndex = deepestCandidateIndex(remaining);
   selected.push_back(remaining[deepestIndex]);
   remaining.erase(

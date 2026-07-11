@@ -1366,7 +1366,7 @@ TEST(BoxBox, BinaryCheckShapeOverloadLeavesResultEmpty)
 
 TEST(BoxBox, ContactReductionDeduplicatesAndBreaksDistanceTiesByDepth)
 {
-  std::vector<box_box::ContactCandidate> candidates{
+  box_box::ContactCandidates candidates{
       {Eigen::Vector3d::Zero(), 0.1},
       {Eigen::Vector3d(1e-8, 0.0, 0.0), 0.5},
       {Eigen::Vector3d(2.0, 0.0, 0.0), 0.2},

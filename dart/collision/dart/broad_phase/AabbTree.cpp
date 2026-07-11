@@ -214,16 +214,17 @@ bool AabbTreeBroadPhase::visitPairs(const BroadPhasePairVisitor& visitor) const
   // Visit in the same lexicographic (min,max) order as BruteForceBroadPhase,
   // but materialize only one object's higher-id overlaps at a time. This keeps
   // capped result queries deterministic while allowing the first visitor
-  // rejection to avoid collecting and sorting the full pair set.
-  std::vector<std::size_t> orderedIds;
-  orderedIds.reserve(objectToNode_.size());
+  // rejection to avoid collecting and sorting the full pair set. The id and
+  // overlap buffers are reused member scratch: rebuilding them on every
+  // collide() heap-allocates and trips the StepAllocation gates.
+  auto& orderedIds = mOrderedIdScratch;
+  orderedIds.clear();
   for (const auto& entry : objectToNode_) {
     orderedIds.push_back(entry.first);
   }
   std::sort(orderedIds.begin(), orderedIds.end());
 
-  std::vector<std::size_t> overlaps;
-  overlaps.reserve(objectToNode_.size());
+  auto& overlaps = mOverlapScratch;
   for (const std::size_t id : orderedIds) {
     overlaps.clear();
     const Node& leaf = nodes_[objectToNode_.at(id)];

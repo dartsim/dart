@@ -413,7 +413,7 @@ private:
 
 //==============================================================================
 ConstraintSolver::ConstraintSolver(double timeStep)
-  : mCollisionDetector(collision::FCLCollisionDetector::create()),
+  : mCollisionDetector(collision::DARTCollisionDetector::create()),
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
     mCollisionOption(collision::CollisionOption(
         true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
@@ -430,7 +430,7 @@ ConstraintSolver::ConstraintSolver(double timeStep)
 
 //==============================================================================
 ConstraintSolver::ConstraintSolver()
-  : mCollisionDetector(collision::FCLCollisionDetector::create()),
+  : mCollisionDetector(collision::DARTCollisionDetector::create()),
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
     mCollisionOption(collision::CollisionOption(
         true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),

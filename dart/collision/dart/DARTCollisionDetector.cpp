@@ -173,9 +173,23 @@ std::size_t getManifoldCacheId(const CollisionObject* object)
 }
 
 //==============================================================================
+// Per-detector engine state: the persistent manifold cache plus scratch
+// buffers reused across collide() calls so steady-state stepping performs no
+// heap allocations (StepAllocation gate discipline). Guarded by the registry
+// mutex only for lookup; concurrent collide() on the same detector instance
+// is not supported, matching the manifold cache's existing contract.
+struct DetectorEngineState
+{
+  native::PersistentManifoldCache manifoldCache;
+  native::CollisionResult narrowphaseScratch;
+  std::vector<std::pair<std::size_t, CollisionObject*>> objectsByIdScratch;
+  std::vector<std::size_t> pendingContactIndicesScratch;
+  std::vector<Eigen::Vector3d> pendingLocalPointsScratch;
+};
+
 using ManifoldCacheMap = std::unordered_map<
     const DARTCollisionDetector*,
-    std::unique_ptr<native::PersistentManifoldCache>>;
+    std::unique_ptr<DetectorEngineState>>;
 
 //==============================================================================
 struct ManifoldCacheRegistry
@@ -201,20 +215,20 @@ native::PersistentManifoldCache* findManifoldCache(
   if (it == registry.caches.end())
     return nullptr;
 
-  return it->second.get();
+  return &it->second->manifoldCache;
 }
 
 //==============================================================================
-native::PersistentManifoldCache& getOrCreateManifoldCache(
+DetectorEngineState& getOrCreateEngineState(
     const DARTCollisionDetector* detector)
 {
   auto& registry = getManifoldCacheRegistry();
   std::lock_guard<std::mutex> lock(registry.mutex);
-  auto& cache = registry.caches[detector];
-  if (!cache)
-    cache = std::make_unique<native::PersistentManifoldCache>();
+  auto& state = registry.caches[detector];
+  if (!state)
+    state = std::make_unique<DetectorEngineState>();
 
-  return *cache;
+  return *state;
 }
 
 //==============================================================================
@@ -380,9 +394,10 @@ void addPairOnlyContact(
 
 //==============================================================================
 void attachCachedContactImpulses(
-    CollisionResult* result, native::PersistentManifoldCache* manifoldCache)
+    CollisionResult* result, DetectorEngineState& engineState)
 {
-  if (!result || !manifoldCache)
+  auto* manifoldCache = &engineState.manifoldCache;
+  if (!result)
     return;
 
   if (result->getNumContacts() == 1u) {
@@ -445,8 +460,10 @@ void attachCachedContactImpulses(
   std::size_t id2 = 0u;
   bool swapped = false;
   native::PersistentManifold* manifold = nullptr;
-  std::vector<std::size_t> pendingContactIndices;
-  std::vector<Eigen::Vector3d> pendingLocalPoints;
+  auto& pendingContactIndices = engineState.pendingContactIndicesScratch;
+  auto& pendingLocalPoints = engineState.pendingLocalPointsScratch;
+  pendingContactIndices.clear();
+  pendingLocalPoints.clear();
   pendingContactIndices.reserve(result->getNumContacts());
   pendingLocalPoints.reserve(result->getNumContacts());
 
@@ -532,68 +549,84 @@ void attachCachedContactImpulses(
   flushPair();
 }
 
-//==============================================================================
-void refreshManifoldCache(
-    const std::vector<CollisionObject*>& objects,
-    native::PersistentManifoldCache* manifoldCache)
-{
-  if (!manifoldCache)
-    return;
+namespace {
 
-  std::unordered_map<std::size_t, CollisionObject*> objectsById;
-  objectsById.reserve(objects.size());
+// Sorted id->object scratch lookup: a rebuilt std::unordered_map would
+// allocate one hash node per object on every collide() and trip the
+// StepAllocation gates; a capacity-retaining sorted vector allocates nothing
+// in steady state.
+using ObjectsByIdScratch
+    = std::vector<std::pair<std::size_t, CollisionObject*>>;
+
+void appendManifoldCacheIds(
+    const std::vector<CollisionObject*>& objects, ObjectsByIdScratch& scratch)
+{
   for (auto* object : objects) {
     const auto id = getManifoldCacheId(object);
     if (id != 0u)
-      objectsById[id] = object;
+      scratch.emplace_back(id, object);
   }
+}
 
-  manifoldCache->refreshAll(
-      [&](std::size_t idA, std::size_t idB)
+void refreshManifoldCacheImpl(
+    native::PersistentManifoldCache& manifoldCache, ObjectsByIdScratch& scratch)
+{
+  std::sort(
+      scratch.begin(), scratch.end(), [](const auto& lhs, const auto& rhs) {
+        return lhs.first < rhs.first;
+      });
+
+  const auto findObject = [&scratch](std::size_t id) -> CollisionObject* {
+    const auto it = std::lower_bound(
+        scratch.begin(),
+        scratch.end(),
+        id,
+        [](const auto& entry, std::size_t value) {
+          return entry.first < value;
+        });
+    if (it == scratch.end() || it->first != id)
+      return nullptr;
+
+    return it->second;
+  };
+
+  manifoldCache.refreshAllWith(
+      [&findObject](std::size_t idA, std::size_t idB)
           -> std::optional<std::pair<Eigen::Isometry3d, Eigen::Isometry3d>> {
-        const auto itA = objectsById.find(idA);
-        const auto itB = objectsById.find(idB);
-        if (itA == objectsById.end() || itB == objectsById.end())
+        auto* objectA = findObject(idA);
+        auto* objectB = findObject(idB);
+        if (!objectA || !objectB)
           return std::nullopt;
 
-        return std::make_pair(
-            itA->second->getTransform(), itB->second->getTransform());
-      });
+        return std::make_pair(objectA->getTransform(), objectB->getTransform());
+      },
+      /*breakingThreshold=*/0.04);
+}
+
+} // namespace
+
+//==============================================================================
+void refreshManifoldCache(
+    const std::vector<CollisionObject*>& objects,
+    DetectorEngineState& engineState)
+{
+  auto& scratch = engineState.objectsByIdScratch;
+  scratch.clear();
+  appendManifoldCacheIds(objects, scratch);
+  refreshManifoldCacheImpl(engineState.manifoldCache, scratch);
 }
 
 //==============================================================================
 void refreshManifoldCache(
     const std::vector<CollisionObject*>& objects1,
     const std::vector<CollisionObject*>& objects2,
-    native::PersistentManifoldCache* manifoldCache)
+    DetectorEngineState& engineState)
 {
-  if (!manifoldCache)
-    return;
-
-  std::unordered_map<std::size_t, CollisionObject*> objectsById;
-  objectsById.reserve(objects1.size() + objects2.size());
-  for (auto* object : objects1) {
-    const auto id = getManifoldCacheId(object);
-    if (id != 0u)
-      objectsById[id] = object;
-  }
-  for (auto* object : objects2) {
-    const auto id = getManifoldCacheId(object);
-    if (id != 0u)
-      objectsById[id] = object;
-  }
-
-  manifoldCache->refreshAll(
-      [&](std::size_t idA, std::size_t idB)
-          -> std::optional<std::pair<Eigen::Isometry3d, Eigen::Isometry3d>> {
-        const auto itA = objectsById.find(idA);
-        const auto itB = objectsById.find(idB);
-        if (itA == objectsById.end() || itB == objectsById.end())
-          return std::nullopt;
-
-        return std::make_pair(
-            itA->second->getTransform(), itB->second->getTransform());
-      });
+  auto& scratch = engineState.objectsByIdScratch;
+  scratch.clear();
+  appendManifoldCacheIds(objects1, scratch);
+  appendManifoldCacheIds(objects2, scratch);
+  refreshManifoldCacheImpl(engineState.manifoldCache, scratch);
 }
 
 //==============================================================================
@@ -646,7 +679,8 @@ bool processNativePair(
     DARTCollisionObject* object2,
     const CollisionOption& option,
     CollisionResult* result,
-    bool& collisionFound)
+    bool& collisionFound,
+    native::CollisionResult& nativeResult)
 {
   if (shouldSkipPair(object1, object2, option))
     return false;
@@ -654,7 +688,9 @@ bool processNativePair(
   if (result && result->getNumContacts() >= option.maxNumContacts)
     return true;
 
-  native::CollisionResult nativeResult;
+  // Reused across pairs by the caller so steady-state stepping stays
+  // allocation-free (StepAllocation gate discipline).
+  nativeResult.clear();
   const native::CollisionOption nativeOption = makeNativeOption(option, result);
   const bool hit = native::NarrowPhase::collide(
       object1->getNativeShape(),
@@ -820,20 +856,38 @@ bool DARTCollisionDetector::collide(
     DART_PROFILE_SCOPED_N("Native::updateEngineData");
     nativeGroup->updateEngineData();
   }
-  auto& manifoldCache = getOrCreateManifoldCache(this);
+  auto& engineState = getOrCreateEngineState(this);
   {
     DART_PROFILE_SCOPED_N("Native::refreshManifoldCache");
-    refreshManifoldCache(nativeGroup->mCollisionObjects, &manifoldCache);
+    refreshManifoldCache(nativeGroup->mCollisionObjects, engineState);
   }
 
+  native::CollisionResult& scratchResult = engineState.narrowphaseScratch;
   bool collisionFound = false;
   {
     DART_PROFILE_SCOPED_N("Native::visitPairs+narrowphase");
-    const auto pairVisitor = [&](std::size_t id1, std::size_t id2) {
-      auto* object1 = nativeGroup->mIdToObject.at(id1);
-      auto* object2 = nativeGroup->mIdToObject.at(id2);
+    // Bundle the visitor state behind one pointer so the std::function
+    // conversion stays within its small-buffer optimization: a multi-capture
+    // lambda heap-allocates on every collide and trips the StepAllocation
+    // gates.
+    struct PairVisitContext
+    {
+      DARTCollisionGroup* group;
+      const CollisionOption* option;
+      CollisionResult* result;
+      bool* collisionFound;
+      native::CollisionResult* scratchResult;
+    } context{nativeGroup, &option, result, &collisionFound, &scratchResult};
+    const auto pairVisitor = [&context](std::size_t id1, std::size_t id2) {
+      auto* object1 = context.group->mIdToObject.at(id1);
+      auto* object2 = context.group->mIdToObject.at(id2);
       return !processNativePair(
-          object1, object2, option, result, collisionFound);
+          object1,
+          object2,
+          *context.option,
+          context.result,
+          *context.collisionFound,
+          *context.scratchResult);
     };
     if (result) {
       // Result-carrying queries need the sorted, deduplicated visitation
@@ -850,7 +904,7 @@ bool DARTCollisionDetector::collide(
 
   if (option.enableContact) {
     DART_PROFILE_SCOPED_N("Native::attachCachedImpulses");
-    attachCachedContactImpulses(result, &manifoldCache);
+    attachCachedContactImpulses(result, engineState);
   }
 
   return collisionFound;
@@ -882,12 +936,13 @@ bool DARTCollisionDetector::collide(
   auto* nativeGroup2 = static_cast<DARTCollisionGroup*>(group2);
   nativeGroup1->updateEngineData();
   nativeGroup2->updateEngineData();
-  auto& manifoldCache = getOrCreateManifoldCache(this);
+  auto& engineState = getOrCreateEngineState(this);
   refreshManifoldCache(
       nativeGroup1->mCollisionObjects,
       nativeGroup2->mCollisionObjects,
-      &manifoldCache);
+      engineState);
 
+  native::CollisionResult& scratchResult = engineState.narrowphaseScratch;
   bool collisionFound = false;
   for (auto* object1 : nativeGroup1->mCollisionObjects) {
     for (auto* object2 : nativeGroup2->mCollisionObjects) {
@@ -896,16 +951,17 @@ bool DARTCollisionDetector::collide(
               static_cast<DARTCollisionObject*>(object2),
               option,
               result,
-              collisionFound)) {
+              collisionFound,
+              scratchResult)) {
         if (option.enableContact)
-          attachCachedContactImpulses(result, &manifoldCache);
+          attachCachedContactImpulses(result, engineState);
         return collisionFound;
       }
     }
   }
 
   if (option.enableContact)
-    attachCachedContactImpulses(result, &manifoldCache);
+    attachCachedContactImpulses(result, engineState);
 
   return collisionFound;
 }
@@ -1025,7 +1081,7 @@ bool DARTCollisionDetector::raycast(
 //==============================================================================
 DARTCollisionDetector::DARTCollisionDetector() : CollisionDetector()
 {
-  getOrCreateManifoldCache(this);
+  getOrCreateEngineState(this);
   mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
 }
 

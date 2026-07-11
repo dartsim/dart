@@ -118,6 +118,31 @@ public:
       const TransformProvider& transformProvider,
       double breakingThreshold = 0.04);
 
+  /// Template variant of refreshAll() that avoids the std::function
+  /// conversion: constructing a TransformProvider on every collide heap
+  /// allocates and trips the StepAllocation gates.
+  template <typename Provider>
+  void refreshAllWith(Provider&& transformProvider, double breakingThreshold)
+  {
+    for (auto it = mManifolds.begin(); it != mManifolds.end();) {
+      const auto transformPair
+          = transformProvider(it->first.idA, it->first.idB);
+      if (!transformPair.has_value()) {
+        ++it;
+        continue;
+      }
+
+      it->second.refresh(
+          transformPair->first, transformPair->second, breakingThreshold);
+      if (it->second.numContacts == 0) {
+        it = mManifolds.erase(it);
+        continue;
+      }
+
+      ++it;
+    }
+  }
+
   void clear();
 
   [[nodiscard]] std::size_t size() const;

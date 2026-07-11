@@ -34,7 +34,6 @@
 
 #include <algorithm>
 #include <array>
-#include <functional>
 
 #include <cmath>
 
@@ -91,8 +90,9 @@ struct FaceBasis
   return makeFaceBasis(box, axis, outwardNormal);
 }
 
-[[nodiscard]] std::vector<Eigen::Vector3d> makeFaceVertices(
-    const FaceBasis& face)
+using ClipPolygon = InlineVector<Eigen::Vector3d, 12>;
+
+[[nodiscard]] ClipPolygon makeFaceVertices(const FaceBasis& face)
 {
   return {
       face.center - face.halfExtent1 * face.tangent1
@@ -105,16 +105,14 @@ struct FaceBasis
           + face.halfExtent2 * face.tangent2};
 }
 
-void clipPolygon(
-    std::vector<Eigen::Vector3d>& polygon,
-    const std::function<double(const Eigen::Vector3d&)>& signedDistance)
+template <typename SignedDistance>
+void clipPolygon(ClipPolygon& polygon, const SignedDistance& signedDistance)
 {
   if (polygon.empty()) {
     return;
   }
 
-  std::vector<Eigen::Vector3d> clipped;
-  clipped.reserve(polygon.size() + 1);
+  ClipPolygon clipped;
 
   Eigen::Vector3d previous = polygon.back();
   double previousDistance = signedDistance(previous);
@@ -141,11 +139,10 @@ void clipPolygon(
     previousInside = currentInside;
   }
 
-  polygon = std::move(clipped);
+  polygon = clipped;
 }
 
-void clipToReferenceFace(
-    std::vector<Eigen::Vector3d>& polygon, const FaceBasis& reference)
+void clipToReferenceFace(ClipPolygon& polygon, const FaceBasis& reference)
 {
   clipPolygon(polygon, [&](const Eigen::Vector3d& point) {
     const double coordinate
@@ -214,7 +211,7 @@ void clipToReferenceFace(
       sat.penetration};
 }
 
-[[nodiscard]] std::vector<ContactCandidate> computeFaceContactCandidates(
+[[nodiscard]] ContactCandidates computeFaceContactCandidates(
     const BoxData& box1, const BoxData& box2, const SatResult& sat)
 {
   if (sat.referenceBox < 0 || sat.referenceAxis < 0) {
@@ -232,11 +229,10 @@ void clipToReferenceFace(
   const FaceBasis incidentFace
       = makeBestFaceBasis(incident, -referenceFace.normal);
 
-  std::vector<Eigen::Vector3d> polygon = makeFaceVertices(incidentFace);
+  ClipPolygon polygon = makeFaceVertices(incidentFace);
   clipToReferenceFace(polygon, referenceFace);
 
-  std::vector<ContactCandidate> candidates;
-  candidates.reserve(polygon.size());
+  ContactCandidates candidates;
   for (const auto& point : polygon) {
     const double signedDistance
         = referenceFace.normal.dot(point - referenceFace.center);
@@ -254,7 +250,7 @@ void clipToReferenceFace(
 
 } // namespace
 
-std::vector<ContactCandidate> computeBoxBoxContactCandidates(
+ContactCandidates computeBoxBoxContactCandidates(
     const BoxData& box1, const BoxData& box2, const SatResult& sat)
 {
   if (sat.axisType == SatAxisType::Face) {
