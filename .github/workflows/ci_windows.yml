@@ -36,8 +36,10 @@ jobs:
     env:
       CMAKE_GENERATOR: Visual Studio 18 2026
     # Keep the job bounded, but allow large native-collision PRs enough time
-    # for MSVC Release test linking on hosted runners.
-    timeout-minutes: 180
+    # for MSVC Release test linking on hosted runners. Release-branch Windows
+    # builds can exceed three hours on cold hosted runners after the DART 6.20
+    # native-collision test expansion.
+    timeout-minutes: 300
     strategy:
       fail-fast: false
       matrix:
