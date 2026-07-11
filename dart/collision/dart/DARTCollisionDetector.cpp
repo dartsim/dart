@@ -918,14 +918,16 @@ bool DARTCollisionDetector::collide(
   if (!checkGroupValidity(this, group))
     return false;
 
+  const bool profileRecording
+      = dart::common::profile::isProfileRecordingEnabled();
   auto* nativeGroup = static_cast<DARTCollisionGroup*>(group);
   {
-    DART_PROFILE_SCOPED_N("Native::updateEngineData");
+    DART_PROFILE_SCOPED_IF_N(profileRecording, "Native::updateEngineData");
     nativeGroup->updateEngineData();
   }
   auto& engineState = getOrCreateEngineState(this);
   {
-    DART_PROFILE_SCOPED_N("Native::refreshManifoldCache");
+    DART_PROFILE_SCOPED_IF_N(profileRecording, "Native::refreshManifoldCache");
     refreshManifoldCache(nativeGroup->mCollisionObjects, engineState);
   }
 
@@ -933,7 +935,8 @@ bool DARTCollisionDetector::collide(
   CollisionResult& softPairScratch = engineState.softPairScratch;
   bool collisionFound = false;
   {
-    DART_PROFILE_SCOPED_N("Native::visitPairs+narrowphase");
+    DART_PROFILE_SCOPED_IF_N(
+        profileRecording, "Native::visitPairs+narrowphase");
     // Bundle the visitor state behind one pointer so the std::function
     // conversion stays within its small-buffer optimization: a multi-capture
     // lambda heap-allocates on every collide and trips the StepAllocation
@@ -979,7 +982,7 @@ bool DARTCollisionDetector::collide(
   }
 
   if (option.enableContact) {
-    DART_PROFILE_SCOPED_N("Native::attachCachedImpulses");
+    DART_PROFILE_SCOPED_IF_N(profileRecording, "Native::attachCachedImpulses");
     attachCachedContactImpulses(result, engineState);
   }
 
