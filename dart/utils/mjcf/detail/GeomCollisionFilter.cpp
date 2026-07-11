@@ -34,6 +34,7 @@
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
@@ -48,7 +49,10 @@ void GeomCollisionFilter::setGeomBitmasks(
   if (!shapeFrame)
     return;
 
-  mBitmasks[shapeFrame] = Bitmasks{contype, conaffinity};
+  const auto* shapeNode = shapeFrame->asShapeNode();
+  const auto* bodyNode = shapeNode ? shapeNode->getBodyNode() : nullptr;
+  mBitmasks[shapeFrame] = Bitmasks{
+      contype, conaffinity, dynamics::WeakConstBodyNodePtr(bodyNode)};
   ++mDecisionRevision;
 }
 
@@ -60,6 +64,10 @@ void GeomCollisionFilter::addLogicalAdjacentBodyPair(
     return;
 
   mLogicalAdjacentBodyPairs.addPair(bodyNode1, bodyNode2);
+  mLogicalAdjacentBodyOwners[bodyNode1]
+      = dynamics::WeakConstBodyNodePtr(bodyNode1);
+  mLogicalAdjacentBodyOwners[bodyNode2]
+      = dynamics::WeakConstBodyNodePtr(bodyNode2);
   ++mDecisionRevision;
 }
 
@@ -80,7 +88,10 @@ bool GeomCollisionFilter::ignoresCollision(
     const auto* skeleton = bodyNode1->getSkeletonRawPtr();
     if (skeleton && !skeleton->isEnabledAdjacentBodyCheck()
         && mLogicalAdjacentBodyPairs.contains(bodyNode1, bodyNode2)) {
-      return true;
+      const auto tracked1 = mLogicalAdjacentBodyOwners.at(bodyNode1).lock();
+      const auto tracked2 = mLogicalAdjacentBodyOwners.at(bodyNode2).lock();
+      if (tracked1.get() == bodyNode1 && tracked2.get() == bodyNode2)
+        return true;
     }
   }
 
@@ -91,6 +102,14 @@ bool GeomCollisionFilter::ignoresCollision(
     // default behavior for this pair.
     return false;
   }
+
+  // ShapeFrame and BodyNode addresses can be recycled after a Skeleton is
+  // removed from a mutable World. Only apply a registration while its owning
+  // BodyNode is still the one associated with the current collision object.
+  const auto owner1 = it1->second.mOwner.lock();
+  const auto owner2 = it2->second.mOwner.lock();
+  if (owner1.get() != bodyNode1 || owner2.get() != bodyNode2)
+    return false;
 
   const Bitmasks& b1 = it1->second;
   const Bitmasks& b2 = it2->second;

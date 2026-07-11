@@ -36,6 +36,8 @@
 #include <dart/collision/CollisionFilter.hpp>
 #include <dart/collision/detail/CollisionFilterSnapshotTracker.hpp>
 
+#include <dart/dynamics/SmartPointer.hpp>
+
 #include <unordered_map>
 
 namespace dart {
@@ -92,6 +94,7 @@ private:
   {
     int mContype;
     int mConaffinity;
+    dynamics::WeakConstBodyNodePtr mOwner;
   };
 
   /// contype/conaffinity bitmasks keyed by the ShapeFrame of the ShapeNode
@@ -101,6 +104,10 @@ private:
   /// Body pairs that remain logically adjacent across synthetic joint links.
   collision::detail::UnorderedPairs<dynamics::BodyNode>
       mLogicalAdjacentBodyPairs;
+
+  /// Lifetime tokens for BodyNodes referenced by logical-adjacency pairs.
+  std::unordered_map<const dynamics::BodyNode*, dynamics::WeakConstBodyNodePtr>
+      mLogicalAdjacentBodyOwners;
 
   /// Revision for changes to parser-owned collision-filter decisions.
   std::size_t mDecisionRevision = 0u;

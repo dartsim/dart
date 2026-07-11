@@ -847,6 +847,47 @@ TEST(MjcfParserTest, GeomFilterPreservesDeactivationSnapshots)
 }
 
 //==============================================================================
+TEST(MjcfParserTest, GeomFilterDoesNotRetainRemovedSkeletons)
+{
+  auto world = utils::MjcfParser::readWorld(
+      "dart://sample/mjcf/test/contype_conaffinity.xml");
+  ASSERT_NE(world, nullptr);
+  ASSERT_GT(world->getNumSkeletons(), 0u);
+
+  auto collisionFilter
+      = world->getConstraintSolver()->getCollisionOption().collisionFilter;
+  ASSERT_NE(collisionFilter, nullptr);
+
+  std::vector<dynamics::WeakSkeletonPtr> removedSkeletons;
+  while (world->getNumSkeletons() > 0u) {
+    auto skeleton = world->getSkeleton(0u);
+    removedSkeletons.emplace_back(skeleton);
+    world->removeSkeleton(skeleton);
+  }
+
+  for (const auto& skeleton : removedSkeletons)
+    EXPECT_TRUE(skeleton.expired());
+
+  const auto addOverlappingBox = [&world](const std::string& name) {
+    auto skeleton = dynamics::Skeleton::create(name);
+    auto pair = skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>();
+    pair.second->createShapeNodeWith<dynamics::CollisionAspect>(
+        std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+    world->addSkeleton(skeleton);
+    return skeleton;
+  };
+
+  const auto box1 = addOverlappingBox("replacement_1");
+  const auto box2 = addOverlappingBox("replacement_2");
+  auto collisionGroup = world->getConstraintSolver()
+                            ->getCollisionDetector()
+                            ->createCollisionGroup(box1.get(), box2.get());
+  collision::CollisionOption option;
+  option.collisionFilter = collisionFilter;
+  EXPECT_TRUE(collisionGroup->collide(option));
+}
+
+//==============================================================================
 TEST(MjcfParserTest, StackedJointPreservesLogicalBodyAdjacency)
 {
   auto world = utils::MjcfParser::readWorld(
