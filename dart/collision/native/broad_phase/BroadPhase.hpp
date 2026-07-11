@@ -153,6 +153,16 @@ public:
     return true;
   }
 
+  /// Like visitPairs(), but with no ordering or uniqueness guarantee, so
+  /// implementations may stream candidates and stop at the first visitor
+  /// rejection without materializing the full pair set. Only valid for
+  /// callers whose outcome is order-independent (e.g. boolean existence
+  /// queries); anything that emits per-pair data must use visitPairs().
+  virtual bool visitPairsAnyOrder(const BroadPhasePairVisitor& visitor) const
+  {
+    return visitPairs(visitor);
+  }
+
   template <typename FilterFunc>
   void queryPairsFiltered(
       std::vector<BroadPhasePair>& out, FilterFunc&& filter) const

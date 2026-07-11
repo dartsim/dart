@@ -799,12 +799,23 @@ bool NativeCollisionDetector::collide(
   bool collisionFound = false;
   {
     DART_PROFILE_SCOPED_N("Native::visitPairs+narrowphase");
-    nativeGroup->mBroadPhase->visitPairs([&](std::size_t id1, std::size_t id2) {
+    const auto pairVisitor = [&](std::size_t id1, std::size_t id2) {
       auto* object1 = nativeGroup->mIdToObject.at(id1);
       auto* object2 = nativeGroup->mIdToObject.at(id2);
       return !processNativePair(
           object1, object2, option, result, collisionFound);
-    });
+    };
+    if (result) {
+      // Result-carrying queries need the sorted, deduplicated visitation
+      // order: which contacts survive a maxNumContacts cap is part of the
+      // observable behavior, and the ordered walk reproduces BruteForce
+      // bit-for-bit.
+      nativeGroup->mBroadPhase->visitPairs(pairVisitor);
+    } else {
+      // Boolean existence queries return no per-pair data, so traversal
+      // order cannot leak; stream the tree walk and stop at the first hit.
+      nativeGroup->mBroadPhase->visitPairsAnyOrder(pairVisitor);
+    }
   }
 
   if (option.enableContact) {

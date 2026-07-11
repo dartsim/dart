@@ -132,6 +132,67 @@ void AabbTreeBroadPhase::queryPairs(std::vector<BroadPhasePair>& out) const
   out.erase(std::unique(out.begin(), out.end()), out.end());
 }
 
+bool AabbTreeBroadPhase::visitPairsAnyOrder(
+    const BroadPhasePairVisitor& visitor) const
+{
+  // Streams candidates straight out of the tree walk with no sort/dedup, so
+  // an early visitor rejection (e.g. a boolean query's first hit) aborts the
+  // traversal without materializing the pair set. The tree self-query may
+  // visit a pair more than once; callers must be idempotent and
+  // order-independent (see BroadPhase::visitPairsAnyOrder).
+  if (root_ == kNullNode) {
+    return true;
+  }
+
+  return visitPairsRecursiveAnyOrder(root_, root_, visitor);
+}
+
+bool AabbTreeBroadPhase::visitPairsRecursiveAnyOrder(
+    std::size_t nodeA,
+    std::size_t nodeB,
+    const BroadPhasePairVisitor& visitor) const
+{
+  if (nodeA == kNullNode || nodeB == kNullNode) {
+    return true;
+  }
+
+  if (nodeA == nodeB) {
+    if (nodes_[nodeA].isLeaf()) {
+      return true;
+    }
+
+    return visitPairsRecursiveAnyOrder(
+               nodes_[nodeA].left, nodes_[nodeA].right, visitor)
+           && visitPairsRecursiveAnyOrder(
+               nodes_[nodeA].left, nodes_[nodeA].left, visitor)
+           && visitPairsRecursiveAnyOrder(
+               nodes_[nodeA].right, nodes_[nodeA].right, visitor);
+  }
+
+  if (!nodes_[nodeA].fatAabb.overlaps(nodes_[nodeB].fatAabb)) {
+    return true;
+  }
+
+  if (nodes_[nodeA].isLeaf() && nodes_[nodeB].isLeaf()) {
+    if (nodes_[nodeA].tightAabb.overlaps(nodes_[nodeB].tightAabb)) {
+      const std::size_t id1 = nodes_[nodeA].objectId;
+      const std::size_t id2 = nodes_[nodeB].objectId;
+      return visitor(std::min(id1, id2), std::max(id1, id2));
+    }
+    return true;
+  }
+
+  if (nodes_[nodeB].isLeaf()
+      || (!nodes_[nodeA].isLeaf()
+          && nodes_[nodeA].height > nodes_[nodeB].height)) {
+    return visitPairsRecursiveAnyOrder(nodes_[nodeA].left, nodeB, visitor)
+           && visitPairsRecursiveAnyOrder(nodes_[nodeA].right, nodeB, visitor);
+  }
+
+  return visitPairsRecursiveAnyOrder(nodeA, nodes_[nodeB].left, visitor)
+         && visitPairsRecursiveAnyOrder(nodeA, nodes_[nodeB].right, visitor);
+}
+
 bool AabbTreeBroadPhase::visitPairs(const BroadPhasePairVisitor& visitor) const
 {
   // Materializing and sorting the candidate pairs before visiting is

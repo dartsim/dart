@@ -39,6 +39,7 @@
 #include <memory>
 #include <numeric>
 #include <random>
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -698,5 +699,45 @@ TEST(AabbTreeBroadPhase, RandomizedExactEquivalenceWithBruteForce)
     tree.updateRange(updateIds, updateAabbs);
     brute.updateRange(updateIds, updateAabbs);
     expectExactBruteForceMatch(tree, brute);
+  }
+}
+
+//==============================================================================
+TEST(AabbTreeBroadPhase, VisitPairsAnyOrderMatchesPairSetAndStopsEarly)
+{
+  AabbTreeBroadPhase tree;
+  std::mt19937 rng(20260710u);
+  std::uniform_real_distribution<double> pos(-5.0, 5.0);
+  std::uniform_real_distribution<double> extent(0.2, 1.5);
+  for (std::size_t id = 0; id < 128; ++id) {
+    const Eigen::Vector3d center(pos(rng), pos(rng), pos(rng));
+    const Eigen::Vector3d half = Eigen::Vector3d::Constant(extent(rng)) * 0.5;
+    tree.add(id, Aabb(center - half, center + half));
+  }
+
+  const auto ordered = tree.queryPairs();
+  std::set<BroadPhasePair> orderedSet(ordered.begin(), ordered.end());
+
+  // The any-order walk may emit duplicates but must cover exactly the same
+  // pair set as the ordered walk.
+  std::set<BroadPhasePair> streamedSet;
+  const bool completed
+      = tree.visitPairsAnyOrder([&](std::size_t first, std::size_t second) {
+          streamedSet.emplace(first, second);
+          return true;
+        });
+  EXPECT_TRUE(completed);
+  EXPECT_EQ(streamedSet, orderedSet);
+
+  // Early exit: the traversal must stop at the first rejection instead of
+  // materializing/visiting the remaining candidates.
+  if (!orderedSet.empty()) {
+    std::size_t visited = 0;
+    const bool aborted = tree.visitPairsAnyOrder([&](std::size_t, std::size_t) {
+      ++visited;
+      return false;
+    });
+    EXPECT_FALSE(aborted);
+    EXPECT_EQ(visited, 1u);
   }
 }

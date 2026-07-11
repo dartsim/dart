@@ -63,6 +63,7 @@ public:
 
   void queryPairs(std::vector<BroadPhasePair>& out) const override;
   bool visitPairs(const BroadPhasePairVisitor& visitor) const override;
+  bool visitPairsAnyOrder(const BroadPhasePairVisitor& visitor) const override;
   void buildDebugSnapshot(BroadPhaseDebugSnapshot& out) const override;
 
   void build(span<const std::size_t> ids, span<const Aabb> aabbs) override;
@@ -107,6 +108,11 @@ private:
   [[nodiscard]] std::size_t balance(std::size_t nodeIndex);
   [[nodiscard]] static Aabb combine(const Aabb& a, const Aabb& b);
   [[nodiscard]] static double surfaceArea(const Aabb& aabb);
+
+  bool visitPairsRecursiveAnyOrder(
+      std::size_t nodeA,
+      std::size_t nodeB,
+      const BroadPhasePairVisitor& visitor) const;
 
   void queryPairsRecursive(
       std::size_t nodeA,
