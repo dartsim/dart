@@ -263,16 +263,16 @@ def _dartpy() -> Any:
     return dartpy
 
 
-def _bullet_detector(dart: Any) -> Any:
-    """Core Bullet collision detector, DART 6's only raycast-capable backend."""
-    factory = getattr(dart.collision, "BulletCollisionDetector", None)
-    if factory is None:
-        raise RuntimeError(
-            "view-quality occlusion uses core raycast, which DART 6 supports "
-            "only through the Bullet collision backend; this dartpy build has "
-            "no BulletCollisionDetector. Rebuild dartpy with Bullet enabled."
-        )
-    return factory()
+def _raycast_detector(dart: Any) -> Any:
+    """Prefer Bullet raycasts, with the core native detector as fallback."""
+    for name in ("BulletCollisionDetector", "NativeCollisionDetector"):
+        factory = getattr(dart.collision, name, None)
+        if factory is not None:
+            return factory()
+    raise RuntimeError(
+        "view-quality occlusion requires a raycast-capable Bullet or native "
+        "collision detector in dartpy"
+    )
 
 
 def _hit_body_name(hit: Any) -> str | None:
@@ -367,7 +367,7 @@ def _raycast_occlusion(
     DART 7's nearest-renderable pick against the same engine geometry.
     """
     dart = _dartpy()
-    group = _bullet_detector(dart).createCollisionGroup()
+    group = _raycast_detector(dart).createCollisionGroup()
     for index in range(world.getNumSkeletons()):
         group.addShapeFramesOf(world.getSkeleton(index))
     for _, shape_frame in _iter_shape_owners(world):
@@ -592,7 +592,7 @@ def select_viewpoints(
         for choice in candidates:
             if len(selected) >= max(1, int(count)):
                 break
-            if choice in selected:
+            if any(choice is other for other in selected):
                 continue
             choice.reason = (
                 f"rank={len(selected) + 1} (diversity relaxed); " + choice.reason

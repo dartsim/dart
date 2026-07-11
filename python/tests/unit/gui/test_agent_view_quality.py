@@ -71,6 +71,12 @@ def test_bounding_box_binding_roundtrip():
     made.setMax([2.0, 2.0, 2.0])
     assert np.asarray(made.computeCenter()) == pytest.approx([1.0, 1.0, 1.0])
 
+    borrowed_copy = shape.getBoundingBox()
+    borrowed_copy.setMin([-9.0, -9.0, -9.0])
+    assert np.asarray(shape.getBoundingBox().getMin()) == pytest.approx(
+        [-0.1, -0.2, -0.3]
+    )
+
 
 def test_body_bounds_cover_shapes():
     world = _world_with_marker()
@@ -158,6 +164,24 @@ def test_selection_is_deterministic():
     first = avq.select_viewpoints(world, (320, 240), focus="marker", count=3)
     second = avq.select_viewpoints(world, (320, 240), focus="marker", count=3)
     assert [c.reason for c in first] == [c.reason for c in second]
+
+
+def test_selection_relaxes_diversity_without_array_equality():
+    world = _world_with_marker()
+    assert len(avq.select_viewpoints(world, (320, 240), focus="marker", count=9)) == 9
+
+
+def test_raycast_detector_falls_back_to_native():
+    class Native:
+        pass
+
+    class Collision:
+        NativeCollisionDetector = Native
+
+    class Dart:
+        collision = Collision()
+
+    assert isinstance(avq._raycast_detector(Dart()), Native)
 
 
 def test_report_json_schema():
