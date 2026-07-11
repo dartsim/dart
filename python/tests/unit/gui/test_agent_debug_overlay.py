@@ -1,5 +1,6 @@
-"""Tests for DART 6 debug-overlay composition and rasterization (no GL)."""
+"""Tests for DART 6 debug-overlay composition and engine injection."""
 
+import os
 import sys
 from pathlib import Path
 
@@ -15,7 +16,14 @@ if str(SCRIPTS) not in sys.path:
 
 import agent_debug_overlay as ado
 import agent_view_quality as avq
-from _image_tools import ImageData
+
+requires_display = pytest.mark.skipif(
+    not os.environ.get("DISPLAY"),
+    reason="off-screen GLX capture needs a DISPLAY (run under xvfb-run on "
+    "headless hosts)",
+)
+
+_HAS_OSG = hasattr(dart.gui, "osg")
 
 
 def _settled_world():
@@ -155,24 +163,104 @@ def test_labels_layer_names_bodies():
     assert sorted(text for _anchor, text in scene.labels) == ["box", "ground"]
 
 
-def test_composite_overlay_draws_pixels():
+def test_inject_overlay_adds_and_removes_line_segment_frames():
     world = _settled_world()
-    camera = avq.frame_body(world, "box", margin=3.0)
-    scene = ado.build_overlay(world, layers=("contacts", "body_frames", "labels"))
-    blank = ImageData(
-        path=Path("blank"),
-        width=320,
-        height=240,
-        pixels=bytes(3 * 320 * 240),
-    )
-    annotated = ado.composite_overlay(blank, scene, camera)
-    assert annotated.pixels != blank.pixels
-    # Deterministic compositing: same inputs, same bytes.
-    again = ado.composite_overlay(blank, scene, camera)
-    assert annotated.pixels == again.pixels
+    scene = ado.build_overlay(world, layers=("contacts", "body_frames"))
+    before = world.getNumSimpleFrames()
+
+    frames = ado.inject_overlay(world, scene)
+    assert frames, "overlay with segments should create frames"
+    assert world.getNumSimpleFrames() == before + len(frames)
+    for frame in frames:
+        shape = frame.getShape()
+        assert isinstance(shape, dart.dynamics.LineSegmentShape)
+        assert frame.getName().startswith(ado.OVERLAY_FRAME_PREFIX)
+        assert frame.hasVisualAspect()
+
+    ado.remove_overlay(world, frames)
+    assert world.getNumSimpleFrames() == before
 
 
-def test_draw_line_clips_at_borders():
-    pixels = bytearray(3 * 32 * 32)
-    ado._draw_line_rgb(pixels, 32, 32, -10.0, -10.0, 60.0, 60.0, (255, 0, 0), 1)
-    assert bytes((255, 0, 0)) in bytes(pixels)
+def test_inject_overlay_groups_segments_by_color():
+    world = _settled_world()
+    scene = ado.build_overlay(world, layers=("body_frames",))
+    # Three axis colors across two bodies -> three color groups -> three frames.
+    distinct_colors = {rgb for _s, _e, rgb in scene.segments}
+    frames = ado.inject_overlay(world, scene)
+    try:
+        assert len(frames) == len(distinct_colors) == 3
+    finally:
+        ado.remove_overlay(world, frames)
+
+
+def test_inject_overlay_empty_scene_adds_no_frames():
+    world = _settled_world()
+    scene = ado.build_overlay(world, layers=("contacts",), contacts=[])
+    before = world.getNumSimpleFrames()
+    frames = ado.inject_overlay(world, scene)
+    assert frames == []
+    assert world.getNumSimpleFrames() == before
+
+
+@pytest.mark.skipif(not _HAS_OSG, reason="dartpy built without gui.osg")
+def test_populate_labels_loads_text_overlay():
+    world = _settled_world()
+    scene = ado.build_overlay(world, layers=("labels",))
+    overlay = dart.gui.osg.TextOverlay()
+    count = ado.populate_labels(overlay, scene)
+    assert count == len(scene.labels) == 2
+    assert overlay.getNumLabels() == 2
+    # Re-populating clears the previous labels first.
+    again = ado.populate_labels(overlay, scene)
+    assert again == 2
+    assert overlay.getNumLabels() == 2
+
+
+@pytest.mark.skipif(not _HAS_OSG, reason="dartpy built without gui.osg")
+@requires_display
+def test_engine_rendered_overlay_changes_pixels(tmp_path):
+    world = _settled_world()
+    viewer = dart.gui.osg.ImGuiViewer()
+    viewer.addWorldNode(dart.gui.osg.WorldNode(world))
+    overlay = dart.gui.osg.TextOverlay()
+    font = ado.find_default_font()
+    if font:
+        overlay.setFont(font)
+    viewer.addAttachment(overlay)
+    camera = avq.frame_body(world, "box", margin=2.8)
+
+    def shoot(name):
+        path = tmp_path / name
+        ok = viewer.captureOffscreen(
+            str(path),
+            camera.eye,
+            camera.center,
+            camera.up,
+            width=200,
+            height=150,
+            fovYDeg=camera.fovy_deg,
+            warmupFrames=10,
+        )
+        if not ok:
+            pytest.skip("no off-screen GL context (needs a usable DISPLAY)")
+        return path.read_bytes()
+
+    base = shoot("base.png")
+
+    # Geometry layers render through the engine and revert cleanly on removal.
+    scene = ado.build_overlay(world, layers=("contacts", "body_frames"))
+    frames = ado.inject_overlay(world, scene)
+    with_geometry = shoot("geometry.png")
+    ado.remove_overlay(world, frames)
+    after_geometry = shoot("after_geometry.png")
+    assert with_geometry != base, "engine-rendered geometry must change pixels"
+    assert after_geometry == base, "removing the overlay must restore the scene"
+
+    # osgText labels render through the engine and revert cleanly on clear.
+    label_scene = ado.build_overlay(world, layers=("labels",))
+    ado.populate_labels(overlay, label_scene)
+    with_labels = shoot("labels.png")
+    overlay.clear()
+    after_labels = shoot("after_labels.png")
+    assert with_labels != base, "engine-rendered labels must change pixels"
+    assert after_labels == base, "clearing labels must restore the scene"
