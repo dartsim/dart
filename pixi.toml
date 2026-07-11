@@ -463,6 +463,23 @@ image-golden = { cmd = ["python", "scripts/image_golden.py"] }
 
 image-sheet = { cmd = ["python", "scripts/image_sheet.py"] }
 
+image-compose = { cmd = ["python", "scripts/image_compose.py"] }
+
+evidence-select = { cmd = ["python", "scripts/evidence_select.py"] }
+
+evidence-publish = { cmd = ["python", "scripts/evidence_publish.py"] }
+
+# Deterministic headless capture with active camera control (view-quality
+# scored auto viewpoints, focus framing, turntable/motion) and image-space
+# debug-layer compositing (contacts, frames, velocities, trajectories,
+# labels). Needs a GLX-capable X server; see docs/ai/verification.md.
+agent-capture = { cmd = [
+  "python",
+  "scripts/agent_capture.py",
+], depends-on = [
+  "build-py-dev",
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy:$PIXI_PROJECT_ROOT/scripts" } }
+
 bm-empty = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
