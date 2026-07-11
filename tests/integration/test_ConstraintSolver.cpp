@@ -47,9 +47,12 @@
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
+#include "dart/constraint/detail/ExactCoulombConstraintAdapter.hpp"
+#include "dart/constraint/detail/ExactCoulombContactRowOperator.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -736,6 +739,14 @@ std::shared_ptr<World> createSingleFreeBodyContactWorld(bool legacyAssembly)
 }
 
 //==============================================================================
+void limitWorldToSingleContact(const std::shared_ptr<World>& world)
+{
+  auto& option = world->getConstraintSolver()->getCollisionOption();
+  option.maxNumContacts = 1u;
+  option.maxNumContactsPerPair = 1u;
+}
+
+//==============================================================================
 std::shared_ptr<World> createManySingleFreeBodyContactWorld(
     std::size_t numBoxes,
     std::size_t numThreads,
@@ -891,6 +902,368 @@ TEST(ConstraintSolver, DirectSingleFreeBodyContactsMatchLegacyAssembly)
       legacyBody->getWorldTransform().matrix(), 1e-12));
   EXPECT_TRUE(directBody->getSpatialVelocity().isApprox(
       legacyBody->getSpatialVelocity(), 1e-12));
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ExactCoulombFbfWorldSmokeComparesDefaultSingleContact)
+{
+  auto defaultWorld = createSingleFreeBodyContactWorld(false);
+  auto exactWorld = createSingleFreeBodyContactWorld(false);
+  limitWorldToSingleContact(defaultWorld);
+  limitWorldToSingleContact(exactWorld);
+
+  constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.maxOuterIterations = 100;
+  options.tolerance = 1e-8;
+  options.innerMaxSweeps = 20;
+  options.innerLocalIterations = 10;
+
+  auto solver
+      = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(options);
+  auto* exactSolver = solver.get();
+  exactWorld->setConstraintSolver(std::move(solver));
+  limitWorldToSingleContact(exactWorld);
+
+  defaultWorld->step();
+  exactWorld->step();
+
+  const auto defaultContactCount = defaultWorld->getConstraintSolver()
+                                       ->getLastCollisionResult()
+                                       .getNumContacts();
+  const auto exactContactCount = exactWorld->getConstraintSolver()
+                                     ->getLastCollisionResult()
+                                     .getNumContacts();
+  ASSERT_EQ(defaultContactCount, 1u);
+  ASSERT_EQ(exactContactCount, defaultContactCount);
+
+  EXPECT_EQ(
+      exactSolver->getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_EQ(
+      exactSolver->getLastExactCoulombBuildStatus(),
+      constraint::detail::ExactCoulombConstraintBuildStatus::Success);
+  EXPECT_EQ(
+      exactSolver->getLastExactCoulombFbfStatus(),
+      math::detail::ExactCoulombFbfStatus::Success);
+  EXPECT_EQ(exactSolver->getNumExactCoulombSolves(), 1u);
+  EXPECT_EQ(exactSolver->getNumBoxedLcpFallbacks(), 0u);
+  EXPECT_TRUE(std::isfinite(exactSolver->getLastExactCoulombResidual()));
+  EXPECT_LE(exactSolver->getLastExactCoulombResidual(), options.tolerance);
+
+  const auto defaultBox = defaultWorld->getSkeleton("box");
+  const auto exactBox = exactWorld->getSkeleton("box");
+  ASSERT_NE(nullptr, defaultBox);
+  ASSERT_NE(nullptr, exactBox);
+
+  EXPECT_TRUE(exactBox->getPositions().allFinite());
+  EXPECT_TRUE(exactBox->getVelocities().allFinite());
+  const double positionError
+      = (defaultBox->getPositions() - exactBox->getPositions()).norm();
+  const double velocityError
+      = (defaultBox->getVelocities() - exactBox->getVelocities()).norm();
+  EXPECT_LE(positionError, 1e-5)
+      << "default=" << defaultBox->getPositions().transpose()
+      << " exact=" << exactBox->getPositions().transpose();
+  EXPECT_LE(velocityError, 1e-2)
+      << "default=" << defaultBox->getVelocities().transpose()
+      << " exact=" << exactBox->getVelocities().transpose();
+
+  const auto* defaultBody = defaultBox->getBodyNode(0);
+  const auto* exactBody = exactBox->getBodyNode(0);
+  ASSERT_NE(nullptr, defaultBody);
+  ASSERT_NE(nullptr, exactBody);
+  EXPECT_TRUE(exactBody->getWorldTransform().matrix().allFinite());
+  EXPECT_TRUE(exactBody->getSpatialVelocity().allFinite());
+  EXPECT_TRUE(defaultBody->getWorldTransform().matrix().isApprox(
+      exactBody->getWorldTransform().matrix(), 1e-5));
+  const double spatialVelocityError
+      = (defaultBody->getSpatialVelocity() - exactBody->getSpatialVelocity())
+            .norm();
+  EXPECT_LE(spatialVelocityError, 1e-2)
+      << "default=" << defaultBody->getSpatialVelocity().transpose()
+      << " exact=" << exactBody->getSpatialVelocity().transpose();
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ExactCoulombFbfWorldSmokeCanUseMatrixFreeDelassus)
+{
+  auto exactWorld = createSingleFreeBodyContactWorld(false);
+  limitWorldToSingleContact(exactWorld);
+
+  constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.maxOuterIterations = 100;
+  options.tolerance = 1e-8;
+  options.innerMaxSweeps = 20;
+  options.innerLocalIterations = 10;
+  options.useMatrixFreeDelassusOperator = true;
+  // This smoke verifies the legacy impulse-test product route, so keep the
+  // scratch-backed contact-row operator out of the way.
+  options.useContactRowDelassusOperator = false;
+
+  auto solver
+      = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(options);
+  auto* exactSolver = solver.get();
+  exactWorld->setConstraintSolver(std::move(solver));
+  limitWorldToSingleContact(exactWorld);
+
+  exactWorld->step();
+
+  const auto exactContactCount = exactWorld->getConstraintSolver()
+                                     ->getLastCollisionResult()
+                                     .getNumContacts();
+  ASSERT_EQ(exactContactCount, 1u);
+
+  EXPECT_EQ(
+      exactSolver->getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_EQ(
+      exactSolver->getLastExactCoulombBuildStatus(),
+      constraint::detail::ExactCoulombConstraintBuildStatus::Success);
+  EXPECT_EQ(
+      exactSolver->getLastExactCoulombFbfStatus(),
+      math::detail::ExactCoulombFbfStatus::Success);
+  EXPECT_TRUE(exactSolver->getLastExactCoulombMatrixFreeDelassusOperatorUsed());
+  EXPECT_EQ(exactSolver->getNumExactCoulombSolves(), 1u);
+  EXPECT_EQ(exactSolver->getNumBoxedLcpFallbacks(), 0u);
+  EXPECT_TRUE(std::isfinite(exactSolver->getLastExactCoulombResidual()));
+  EXPECT_LE(exactSolver->getLastExactCoulombResidual(), options.tolerance);
+
+  const auto exactBox = exactWorld->getSkeleton("box");
+  ASSERT_NE(nullptr, exactBox);
+  EXPECT_TRUE(exactBox->getPositions().allFinite());
+  EXPECT_TRUE(exactBox->getVelocities().allFinite());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ExactCoulombFbfWorldSmokeUsesContactRowOperator)
+{
+  auto rowOperatorWorld = createSingleFreeBodyContactWorld(false);
+  auto impulseTestWorld = createSingleFreeBodyContactWorld(false);
+  limitWorldToSingleContact(rowOperatorWorld);
+  limitWorldToSingleContact(impulseTestWorld);
+
+  constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.maxOuterIterations = 100;
+  options.tolerance = 1e-8;
+  options.innerMaxSweeps = 20;
+  options.innerLocalIterations = 10;
+  ASSERT_TRUE(options.useContactRowDelassusOperator);
+
+  auto rowSolverOwned
+      = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(options);
+  auto* rowSolver = rowSolverOwned.get();
+  rowOperatorWorld->setConstraintSolver(std::move(rowSolverOwned));
+  limitWorldToSingleContact(rowOperatorWorld);
+
+  auto impulseOptions = options;
+  impulseOptions.useContactRowDelassusOperator = false;
+  auto impulseSolverOwned
+      = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(
+          impulseOptions);
+  auto* impulseSolver = impulseSolverOwned.get();
+  impulseTestWorld->setConstraintSolver(std::move(impulseSolverOwned));
+  limitWorldToSingleContact(impulseTestWorld);
+
+  rowOperatorWorld->step();
+  impulseTestWorld->step();
+
+  EXPECT_EQ(
+      rowSolver->getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_TRUE(rowSolver->getLastExactCoulombContactRowOperatorUsed());
+  EXPECT_FALSE(rowSolver->getLastExactCoulombMatrixFreeDelassusOperatorUsed());
+  EXPECT_EQ(rowSolver->getNumBoxedLcpFallbacks(), 0u);
+  EXPECT_LE(rowSolver->getLastExactCoulombResidual(), options.tolerance);
+
+  EXPECT_EQ(
+      impulseSolver->getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_FALSE(impulseSolver->getLastExactCoulombContactRowOperatorUsed());
+
+  const auto rowBox = rowOperatorWorld->getSkeleton("box");
+  const auto impulseBox = impulseTestWorld->getSkeleton("box");
+  ASSERT_NE(nullptr, rowBox);
+  ASSERT_NE(nullptr, impulseBox);
+  EXPECT_TRUE(rowBox->getPositions().allFinite());
+  EXPECT_TRUE(rowBox->getVelocities().allFinite());
+  // The row-assembled snapshot equals the impulse-test snapshot to solver
+  // precision, so the one-step states must agree far below contact scales.
+  EXPECT_LE((rowBox->getPositions() - impulseBox->getPositions()).norm(), 1e-9)
+      << "row=" << rowBox->getPositions().transpose()
+      << " impulse=" << impulseBox->getPositions().transpose();
+  EXPECT_LE(
+      (rowBox->getVelocities() - impulseBox->getVelocities()).norm(), 1e-7)
+      << "row=" << rowBox->getVelocities().transpose()
+      << " impulse=" << impulseBox->getVelocities().transpose();
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SplitImpulsePreservesVelocityPhaseContactResponse)
+{
+  // Regression guard for the split-impulse position pass: its LCP assembly
+  // runs the same unit-impulse tests as the velocity pass, and those clear
+  // each touched skeleton's accumulated constraint impulses. Without the
+  // save/restore in ConstraintSolver::solvePositionConstrainedGroups the
+  // velocity-phase contact response is silently discarded before World::step
+  // integrates it, so a resting box free-falls through the ground while its
+  // contact persists.
+  auto world = createSingleFreeBodyContactWorld(false);
+  world->getConstraintSolver()->setSplitImpulseEnabled(true);
+
+  for (std::size_t step = 0u; step < 120u; ++step) {
+    world->step();
+  }
+
+  const auto box = world->getSkeleton("box");
+  ASSERT_NE(nullptr, box);
+  const auto* body = box->getBodyNode(0);
+  ASSERT_NE(nullptr, body);
+  const double height = body->getWorldTransform().translation().z();
+  // The box starts with its bottom face 0.01 below the plane (z = 0.49) and
+  // must remain resting near z = 0.5; free fall would put it far below.
+  EXPECT_GT(height, 0.45) << "box fell through the ground: z=" << height;
+  EXPECT_LT(height, 0.55);
+  EXPECT_LT(box->getVelocities().norm(), 0.05);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ExactCoulombFbfWorldSmokeManifoldWarmStartAcrossSteps)
+{
+  auto world = createSingleFreeBodyContactWorld(false);
+  limitWorldToSingleContact(world);
+
+  constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.maxOuterIterations = 200;
+  options.tolerance = 1e-8;
+  options.innerMaxSweeps = 20;
+  options.innerLocalIterations = 10;
+  ASSERT_TRUE(options.enableWarmStart);
+
+  auto solverOwned
+      = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(options);
+  auto* solver = solverOwned.get();
+  world->setConstraintSolver(std::move(solverOwned));
+  limitWorldToSingleContact(world);
+
+  world->step();
+  EXPECT_EQ(
+      solver->getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  // Contact constraints are recreated per step, so the first step is cold.
+  EXPECT_FALSE(solver->getLastExactCoulombWarmStartUsed());
+
+  world->step();
+  EXPECT_EQ(
+      solver->getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  // The persistent box/ground contact must warm start through manifold
+  // matching even though the constraint pointers changed.
+  EXPECT_TRUE(solver->getLastExactCoulombWarmStartUsed());
+  EXPECT_GE(solver->getLastExactCoulombWarmStartMatchedContacts(), 1u);
+  EXPECT_EQ(solver->getNumBoxedLcpFallbacks(), 0u);
+  EXPECT_LE(solver->getLastExactCoulombResidual(), options.tolerance);
+
+  const auto box = world->getSkeleton("box");
+  ASSERT_NE(nullptr, box);
+  EXPECT_TRUE(box->getPositions().allFinite());
+  EXPECT_TRUE(box->getVelocities().allFinite());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ExactCoulombFbfManifoldWarmStartMatchesMultipleContacts)
+{
+  // A two-box stack forms one constrained group with two persistent
+  // contacts (ground/box and box/box), so the second step must warm start
+  // both contacts through body-pair / nearest-point matching.
+  auto world = createSingleFreeBodyContactWorld(false);
+  world->addSkeleton(createSolverTestBox(
+      "box_two",
+      Eigen::Vector3d::Ones(),
+      Eigen::Vector3d(0.0, 0.0, 1.47),
+      true));
+
+  constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.maxOuterIterations = 2000;
+  options.tolerance = 1e-8;
+  options.innerMaxSweeps = 40;
+  options.innerLocalIterations = 16;
+
+  auto solverOwned
+      = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(options);
+  auto* solver = solverOwned.get();
+  world->setConstraintSolver(std::move(solverOwned));
+
+  world->step();
+  ASSERT_EQ(
+      solver->getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  const auto firstStepContacts
+      = world->getConstraintSolver()->getLastCollisionResult().getNumContacts();
+  ASSERT_GE(firstStepContacts, 2u);
+
+  world->step();
+  EXPECT_EQ(
+      solver->getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_TRUE(solver->getLastExactCoulombWarmStartUsed());
+  EXPECT_GE(solver->getLastExactCoulombWarmStartMatchedContacts(), 2u);
+  EXPECT_EQ(solver->getNumBoxedLcpFallbacks(), 0u);
+  EXPECT_LE(solver->getLastExactCoulombResidual(), options.tolerance);
+}
+
+//==============================================================================
+TEST(
+    ConstraintSolver,
+    ExactCoulombFbfManifoldWarmStartSurvivesContactCountChange)
+{
+  // Shrinking the contact cap between steps leaves stale cached records; the
+  // warm start must degrade to a partial (or skipped) seed and the solve must
+  // still succeed - never fail or corrupt results.
+  auto world = createSingleFreeBodyContactWorld(false);
+  world->addSkeleton(createSolverTestBox(
+      "box_two",
+      Eigen::Vector3d::Ones(),
+      Eigen::Vector3d(2.5, 0.0, 0.49),
+      true));
+
+  constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.maxOuterIterations = 2000;
+  options.tolerance = 1e-8;
+  options.innerMaxSweeps = 40;
+  options.innerLocalIterations = 16;
+
+  auto solverOwned
+      = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(options);
+  auto* solver = solverOwned.get();
+  world->setConstraintSolver(std::move(solverOwned));
+
+  world->step();
+  ASSERT_EQ(
+      solver->getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  ASSERT_GE(
+      world->getConstraintSolver()->getLastCollisionResult().getNumContacts(),
+      2u);
+
+  limitWorldToSingleContact(world);
+  world->step();
+  ASSERT_EQ(
+      world->getConstraintSolver()->getLastCollisionResult().getNumContacts(),
+      1u);
+  EXPECT_EQ(
+      solver->getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_EQ(solver->getNumBoxedLcpFallbacks(), 0u);
+  EXPECT_LE(solver->getLastExactCoulombResidual(), options.tolerance);
+  if (solver->getLastExactCoulombWarmStartUsed()) {
+    EXPECT_GE(solver->getLastExactCoulombWarmStartMatchedContacts(), 1u);
+    EXPECT_LE(solver->getLastExactCoulombWarmStartMatchedContacts(), 1u);
+  }
+
+  const auto box = world->getSkeleton("box");
+  ASSERT_NE(nullptr, box);
+  EXPECT_TRUE(box->getPositions().allFinite());
+  EXPECT_TRUE(box->getVelocities().allFinite());
 }
 
 //==============================================================================
@@ -1905,6 +2278,139 @@ TEST(ConstraintSolver, ContactConstraintIgnoresForeignNativeUserData)
   EXPECT_NEAR(10.0, payload.value1, 1e-12);
   EXPECT_NEAR(20.0, payload.value2, 1e-12);
   EXPECT_NEAR(30.0, payload.value3, 1e-12);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ExactCoulombAdapterBuildsFromRealContactConstraint)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* fixedJoint
+      = static_cast<dynamics::FreeJoint*>(fixedBody->getParentJoint());
+  fixedJoint->setLinearVelocity(Eigen::Vector3d(0.0, 0.0, 0.25));
+
+  auto* dynamicBody = createFreeBody("dynamic", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShapeNode);
+  FakeCollisionObject dynamicObject(&detector, dynamicShapeNode);
+
+  auto contact = createContact(&dynamicObject, &fixedObject);
+  auto constraint
+      = createContactConstraint<constraint::ContactConstraint>(contact);
+
+  constraint::detail::ExactCoulombConstraintBuildOptions options;
+  options.invTimeStep = 1000.0;
+
+  auto result = constraint::detail::buildExactCoulombConstraintProblem(
+      {constraint.get()}, options);
+
+  ASSERT_EQ(
+      result.status,
+      constraint::detail::ExactCoulombConstraintBuildStatus::Success);
+  ASSERT_EQ(result.contactProblem.getDimension(), 3);
+  EXPECT_NEAR(result.contactProblem.coefficients[0], 1.0, 1e-12);
+  EXPECT_NEAR(result.contactProblem.freeVelocity[0], -0.25, 1e-12);
+  EXPECT_NEAR(result.contactProblem.freeVelocity[1], 0.0, 1e-12);
+  EXPECT_NEAR(result.contactProblem.freeVelocity[2], 0.0, 1e-12);
+  EXPECT_TRUE(result.delassus.allFinite());
+  EXPECT_TRUE(result.delassus.isApprox(result.delassus.transpose(), 1e-12));
+  EXPECT_GT(result.delassus(0, 0), 0.0);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ExactCoulombContactRowOperatorMatchesImpulseTests)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* dynamicBodyA = createFreeBody("dynamicA", true, skeletons);
+  auto* dynamicBodyB = createFreeBody("dynamicB", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNodeA = dynamicBodyA->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNodeB = dynamicBodyB->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShapeNode);
+  FakeCollisionObject dynamicObjectA(&detector, dynamicShapeNodeA);
+  FakeCollisionObject dynamicObjectB(&detector, dynamicShapeNodeB);
+
+  // Mix fixed-dynamic and dynamic-dynamic contacts so the row operator has
+  // to reproduce shared-body Delassus coupling, not only diagonal blocks.
+  auto contactAFixed = createContact(&dynamicObjectA, &fixedObject);
+  auto contactBFixed = createContact(&dynamicObjectB, &fixedObject);
+  auto contactAB = createContact(&dynamicObjectA, &dynamicObjectB);
+
+  auto constraintAFixed
+      = createContactConstraint<constraint::ContactConstraint>(contactAFixed);
+  auto constraintBFixed
+      = createContactConstraint<constraint::ContactConstraint>(contactBFixed);
+  auto constraintAB
+      = createContactConstraint<constraint::ContactConstraint>(contactAB);
+
+  const std::vector<constraint::ConstraintBase*> constraints{
+      constraintAFixed.get(), constraintBFixed.get(), constraintAB.get()};
+
+  constraint::detail::ExactCoulombConstraintBuildOptions buildOptions;
+  buildOptions.invTimeStep = 1000.0;
+  auto problem = constraint::detail::buildExactCoulombConstraintProblem(
+      constraints, buildOptions);
+  ASSERT_EQ(
+      problem.status,
+      constraint::detail::ExactCoulombConstraintBuildStatus::Success);
+  const Eigen::Index dimension = problem.contactProblem.getDimension();
+  ASSERT_EQ(dimension, 9);
+  ASSERT_TRUE(problem.delassus.allFinite());
+
+  constraint::detail::ExactCoulombContactRowOperator rowOperator;
+  ASSERT_TRUE(rowOperator.build(constraints));
+  ASSERT_EQ(rowOperator.getDimension(), dimension);
+
+  Eigen::MatrixXd rowDelassus;
+  rowOperator.assembleDense(rowDelassus);
+  ASSERT_EQ(rowDelassus.rows(), dimension);
+  EXPECT_TRUE(rowDelassus.allFinite());
+  EXPECT_TRUE(rowDelassus.isApprox(problem.delassus, 1e-9))
+      << "row-assembled Delassus deviates from the impulse-test snapshot:\n"
+      << (rowDelassus - problem.delassus);
+
+  Eigen::VectorXd input(dimension);
+  input << 0.75, -0.25, 0.5, 1.25, 0.0, -0.75, 0.375, 0.625, -0.125;
+  Eigen::VectorXd rowProduct(dimension);
+  rowOperator.apply(input, rowProduct);
+  const Eigen::VectorXd denseProduct = problem.delassus * input;
+  EXPECT_TRUE(rowProduct.isApprox(denseProduct, 1e-9))
+      << "row product deviates: " << (rowProduct - denseProduct).transpose();
+
+  for (Eigen::Index contact = 0; contact < dimension / 3; ++contact) {
+    const Eigen::Matrix3d denseBlock
+        = problem.delassus.block<3, 3>(3 * contact, 3 * contact);
+    EXPECT_TRUE(rowOperator.diagonalBlock(contact).isApprox(denseBlock, 1e-9));
+
+    const Eigen::Vector3d delta(0.5, -0.25, 0.125);
+    Eigen::VectorXd accumulator = Eigen::VectorXd::Zero(dimension);
+    rowOperator.accumulateBlockColumns(contact, delta, accumulator);
+    const Eigen::VectorXd denseColumns
+        = problem.delassus.middleCols<3>(3 * contact) * delta;
+    EXPECT_TRUE(accumulator.isApprox(denseColumns, 1e-9))
+        << "block columns deviate for contact " << contact << ": "
+        << (accumulator - denseColumns).transpose();
+  }
 }
 
 //==============================================================================

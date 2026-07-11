@@ -1,0 +1,515 @@
+<mujoco>
+    <option timestep="0.005" gravity="0 0 -9.8" cone="elliptic"/>
+    <asset>
+        <mesh file="arch/num_stones=101/stone-01.obj" name="arch/num_stones=101/stone-01" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-02.obj" name="arch/num_stones=101/stone-02" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-03.obj" name="arch/num_stones=101/stone-03" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-04.obj" name="arch/num_stones=101/stone-04" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-05.obj" name="arch/num_stones=101/stone-05" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-06.obj" name="arch/num_stones=101/stone-06" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-07.obj" name="arch/num_stones=101/stone-07" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-08.obj" name="arch/num_stones=101/stone-08" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-09.obj" name="arch/num_stones=101/stone-09" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-10.obj" name="arch/num_stones=101/stone-10" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-11.obj" name="arch/num_stones=101/stone-11" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-12.obj" name="arch/num_stones=101/stone-12" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-13.obj" name="arch/num_stones=101/stone-13" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-14.obj" name="arch/num_stones=101/stone-14" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-15.obj" name="arch/num_stones=101/stone-15" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-16.obj" name="arch/num_stones=101/stone-16" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-17.obj" name="arch/num_stones=101/stone-17" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-18.obj" name="arch/num_stones=101/stone-18" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-19.obj" name="arch/num_stones=101/stone-19" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-20.obj" name="arch/num_stones=101/stone-20" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-21.obj" name="arch/num_stones=101/stone-21" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-22.obj" name="arch/num_stones=101/stone-22" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-23.obj" name="arch/num_stones=101/stone-23" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-24.obj" name="arch/num_stones=101/stone-24" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-25.obj" name="arch/num_stones=101/stone-25" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-26.obj" name="arch/num_stones=101/stone-26" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-27.obj" name="arch/num_stones=101/stone-27" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-28.obj" name="arch/num_stones=101/stone-28" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-29.obj" name="arch/num_stones=101/stone-29" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-30.obj" name="arch/num_stones=101/stone-30" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-31.obj" name="arch/num_stones=101/stone-31" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-32.obj" name="arch/num_stones=101/stone-32" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-33.obj" name="arch/num_stones=101/stone-33" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-34.obj" name="arch/num_stones=101/stone-34" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-35.obj" name="arch/num_stones=101/stone-35" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-36.obj" name="arch/num_stones=101/stone-36" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-37.obj" name="arch/num_stones=101/stone-37" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-38.obj" name="arch/num_stones=101/stone-38" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-39.obj" name="arch/num_stones=101/stone-39" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-40.obj" name="arch/num_stones=101/stone-40" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-41.obj" name="arch/num_stones=101/stone-41" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-42.obj" name="arch/num_stones=101/stone-42" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-43.obj" name="arch/num_stones=101/stone-43" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-44.obj" name="arch/num_stones=101/stone-44" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-45.obj" name="arch/num_stones=101/stone-45" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-46.obj" name="arch/num_stones=101/stone-46" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-47.obj" name="arch/num_stones=101/stone-47" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-48.obj" name="arch/num_stones=101/stone-48" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-49.obj" name="arch/num_stones=101/stone-49" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-50.obj" name="arch/num_stones=101/stone-50" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-51.obj" name="arch/num_stones=101/stone-51" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-52.obj" name="arch/num_stones=101/stone-52" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-53.obj" name="arch/num_stones=101/stone-53" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-54.obj" name="arch/num_stones=101/stone-54" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-55.obj" name="arch/num_stones=101/stone-55" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-56.obj" name="arch/num_stones=101/stone-56" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-57.obj" name="arch/num_stones=101/stone-57" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-58.obj" name="arch/num_stones=101/stone-58" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-59.obj" name="arch/num_stones=101/stone-59" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-60.obj" name="arch/num_stones=101/stone-60" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-61.obj" name="arch/num_stones=101/stone-61" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-62.obj" name="arch/num_stones=101/stone-62" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-63.obj" name="arch/num_stones=101/stone-63" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-64.obj" name="arch/num_stones=101/stone-64" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-65.obj" name="arch/num_stones=101/stone-65" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-66.obj" name="arch/num_stones=101/stone-66" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-67.obj" name="arch/num_stones=101/stone-67" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-68.obj" name="arch/num_stones=101/stone-68" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-69.obj" name="arch/num_stones=101/stone-69" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-70.obj" name="arch/num_stones=101/stone-70" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-71.obj" name="arch/num_stones=101/stone-71" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-72.obj" name="arch/num_stones=101/stone-72" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-73.obj" name="arch/num_stones=101/stone-73" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-74.obj" name="arch/num_stones=101/stone-74" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-75.obj" name="arch/num_stones=101/stone-75" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-76.obj" name="arch/num_stones=101/stone-76" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-77.obj" name="arch/num_stones=101/stone-77" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-78.obj" name="arch/num_stones=101/stone-78" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-79.obj" name="arch/num_stones=101/stone-79" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-80.obj" name="arch/num_stones=101/stone-80" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-81.obj" name="arch/num_stones=101/stone-81" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-82.obj" name="arch/num_stones=101/stone-82" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-83.obj" name="arch/num_stones=101/stone-83" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-84.obj" name="arch/num_stones=101/stone-84" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-85.obj" name="arch/num_stones=101/stone-85" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-86.obj" name="arch/num_stones=101/stone-86" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-87.obj" name="arch/num_stones=101/stone-87" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-88.obj" name="arch/num_stones=101/stone-88" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-89.obj" name="arch/num_stones=101/stone-89" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-90.obj" name="arch/num_stones=101/stone-90" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-91.obj" name="arch/num_stones=101/stone-91" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-92.obj" name="arch/num_stones=101/stone-92" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-93.obj" name="arch/num_stones=101/stone-93" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-94.obj" name="arch/num_stones=101/stone-94" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-95.obj" name="arch/num_stones=101/stone-95" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-96.obj" name="arch/num_stones=101/stone-96" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-97.obj" name="arch/num_stones=101/stone-97" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-98.obj" name="arch/num_stones=101/stone-98" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-99.obj" name="arch/num_stones=101/stone-99" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-100.obj" name="arch/num_stones=101/stone-100" scale="0.01000000 0.01000000 0.01000000"/>
+        <mesh file="arch/num_stones=101/stone-101.obj" name="arch/num_stones=101/stone-101" scale="0.01000000 0.01000000 0.01000000"/>
+    </asset>
+    <worldbody>
+        <body name="rigid_ipc_arch_plane" pos="0 0 0">
+            <geom type="plane" size="10 10 1" friction="0.500000"/>
+        </body>
+        <body name="rigid_ipc_arch_stone_001" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-01" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_002" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-02" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_003" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-03" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_004" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-04" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_005" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-05" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_006" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-06" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_007" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-07" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_008" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-08" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_009" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-09" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_010" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-10" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_011" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-11" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_012" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-12" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_013" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-13" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_014" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-14" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_015" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-15" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_016" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-16" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_017" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-17" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_018" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-18" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_019" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-19" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_020" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-20" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_021" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-21" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_022" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-22" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_023" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-23" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_024" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-24" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_025" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-25" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_026" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-26" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_027" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-27" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_028" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-28" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_029" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-29" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_030" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-30" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_031" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-31" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_032" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-32" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_033" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-33" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_034" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-34" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_035" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-35" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_036" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-36" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_037" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-37" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_038" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-38" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_039" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-39" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_040" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-40" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_041" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-41" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_042" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-42" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_043" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-43" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_044" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-44" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_045" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-45" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_046" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-46" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_047" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-47" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_048" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-48" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_049" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-49" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_050" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-50" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_051" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-51" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_052" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-52" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_053" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-53" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_054" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-54" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_055" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-55" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_056" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-56" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_057" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-57" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_058" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-58" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_059" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-59" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_060" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-60" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_061" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-61" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_062" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-62" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_063" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-63" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_064" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-64" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_065" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-65" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_066" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-66" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_067" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-67" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_068" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-68" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_069" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-69" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_070" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-70" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_071" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-71" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_072" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-72" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_073" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-73" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_074" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-74" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_075" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-75" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_076" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-76" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_077" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-77" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_078" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-78" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_079" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-79" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_080" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-80" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_081" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-81" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_082" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-82" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_083" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-83" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_084" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-84" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_085" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-85" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_086" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-86" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_087" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-87" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_088" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-88" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_089" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-89" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_090" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-90" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_091" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-91" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_092" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-92" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_093" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-93" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_094" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-94" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_095" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-95" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_096" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-96" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_097" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-97" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_098" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-98" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_099" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-99" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_100" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-100" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+        <body name="rigid_ipc_arch_stone_101" pos="0 0 0" quat="0 0 0.707107 0.707107">
+            <geom mesh="arch/num_stones=101/stone-101" type="mesh" friction="0.500000"/>
+            <freejoint/>
+        </body>
+    </worldbody>
+</mujoco>

@@ -42,6 +42,26 @@ dart_benchmarks(
     dart
 )
 
+dart_benchmarks(
+  TYPE BM_INTEGRATION
+  SOURCES
+    bm_exact_coulomb_fbf_paper.cpp
+  LINK_LIBRARIES
+    dart
+)
+
+add_executable(fbf_paper_trace fbf_paper_trace.cpp)
+target_link_libraries(fbf_paper_trace PRIVATE dart)
+
+add_executable(fbf_paper_gamma_sweep fbf_paper_gamma_sweep.cpp)
+target_link_libraries(fbf_paper_gamma_sweep PRIVATE dart)
+
+add_executable(fbf_paper_card_house_probe fbf_paper_card_house_probe.cpp)
+target_link_libraries(fbf_paper_card_house_probe PRIVATE dart)
+
+add_executable(fbf_paper_arch_probe fbf_paper_arch_probe.cpp)
+target_link_libraries(fbf_paper_arch_probe PRIVATE dart)
+
 if(TARGET dart-collision-bullet)
   dart_benchmarks(
     TYPE BM_INTEGRATION
