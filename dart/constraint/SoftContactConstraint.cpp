@@ -148,6 +148,12 @@ void SoftContactConstraint::reset(collision::Contact& contact, double timeStep)
       mPointMass1 = selectCollidingPointMass(
           mSoftBodyNode1, contact.point, contact.triID1);
       mSoftBodyNode1->seedAdaptiveContactActivationFace(contact.triID1);
+      if (mPointMass1) {
+        // Face seeding is skipped for invalid face ids; seeding the selected
+        // point directly guarantees a demoted contact activates next step.
+        mSoftBodyNode1->seedAdaptiveContactActivationPoint(
+            mPointMass1->getIndexInSoftBodyNode());
+      }
       if (mPointMass1
           && !mSoftBodyNode1->isAdaptiveContactPointMassActive(
               mPointMass1->getIndexInSoftBodyNode())) {
@@ -163,6 +169,12 @@ void SoftContactConstraint::reset(collision::Contact& contact, double timeStep)
       mPointMass2 = selectCollidingPointMass(
           mSoftBodyNode2, contact.point, contact.triID2);
       mSoftBodyNode2->seedAdaptiveContactActivationFace(contact.triID2);
+      if (mPointMass2) {
+        // Face seeding is skipped for invalid face ids; seeding the selected
+        // point directly guarantees a demoted contact activates next step.
+        mSoftBodyNode2->seedAdaptiveContactActivationPoint(
+            mPointMass2->getIndexInSoftBodyNode());
+      }
       if (mPointMass2
           && !mSoftBodyNode2->isAdaptiveContactPointMassActive(
               mPointMass2->getIndexInSoftBodyNode())) {

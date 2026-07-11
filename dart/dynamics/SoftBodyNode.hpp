@@ -222,6 +222,14 @@ protected:
   /// BodyNode::setInertia.
   void handlePointMassMassChange();
 
+  /// Used by PointMass when its resting position changes so retained
+  /// adaptive-activation rest geometry stays consistent.
+  void handlePointMassRestingPositionChange();
+
+  /// Seed a single point mass into the adaptive contact activation set, used
+  /// when a contact cannot provide a valid face id.
+  void seedAdaptiveContactActivationPoint(std::size_t index);
+
   /// Seed adaptive activation from a collision face. Used by soft contacts.
   void seedAdaptiveContactActivationFace(int faceId);
 

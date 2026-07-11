@@ -614,7 +614,7 @@ void PointMass::setRestingPosition(const Eigen::Vector3d& _p)
     return;
 
   mRest = _p;
-  mParentSoftBodyNode->incrementVersion();
+  mParentSoftBodyNode->handlePointMassRestingPositionChange();
   mNotifier->dirtyTransform();
 }
 
