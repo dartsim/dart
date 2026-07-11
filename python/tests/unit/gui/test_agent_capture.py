@@ -92,6 +92,15 @@ def test_acceptable_view_reports_pass_capture_gate():
     )
 
 
+def test_prestep_layers_defer_unseeded_trajectory():
+    assert agent_capture._prestep_layers(
+        _args(layers=["labels", "trajectories"], steps=0, turntable=3)
+    ) == ["labels"]
+    assert agent_capture._prestep_layers(
+        _args(layers=["trajectories"], steps=2, turntable=3)
+    ) == ["trajectories"]
+
+
 def test_builtin_scenes_construct_and_step():
     dartpy_module = agent_capture._import_dartpy()
     for name, factory in agent_capture._BUILTIN_SCENES.items():

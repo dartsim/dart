@@ -213,8 +213,10 @@ def _capture_view(
     tracker: Any,
     contacts: list[Any],
     overlay: Any = None,
+    layers: list[str] | None = None,
 ) -> bool:
-    if not args.layers or overlay is None:
+    active_layers = args.layers if layers is None else layers
+    if not active_layers or overlay is None:
         return _shoot(viewer, camera, path, args)
 
     # Render the debug layers through the engine: populate the always-on-top
@@ -222,8 +224,8 @@ def _capture_view(
     # top of the scene, then clear it so the next view starts fresh.
     scene = ado.build_overlay(
         world,
-        layers=tuple(args.layers),
-        contacts=contacts if "contacts" in args.layers else None,
+        layers=tuple(active_layers),
+        contacts=contacts if "contacts" in active_layers else None,
         trajectories=tracker,
     )
     ado.populate_overlay(
@@ -233,6 +235,13 @@ def _capture_view(
         return _shoot(viewer, camera, path, args)
     finally:
         overlay.clear()
+
+
+def _prestep_layers(args: argparse.Namespace) -> list[str]:
+    layers = list(args.layers)
+    if args.steps < 2:
+        layers = [layer for layer in layers if layer != "trajectories"]
+    return layers
 
 
 def _camera_json(camera: avq.AgentCamera) -> dict[str, Any]:
@@ -365,6 +374,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             tracker,
             contacts,
             overlay,
+            layers=_prestep_layers(args),
         ):
             raise RuntimeError(
                 "captureOffscreen failed: no off-screen GL context (needs a "
@@ -396,6 +406,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 tracker,
                 contacts,
                 overlay,
+                layers=_prestep_layers(args),
             ):
                 raise RuntimeError("captureOffscreen failed during turntable")
         entry: dict[str, Any] = {
