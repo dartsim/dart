@@ -39,6 +39,7 @@
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/dart/PersistentManifoldCache.hpp"
+#include "dart/collision/dart/SoftCollision.hpp"
 #include "dart/collision/dart/narrow_phase/NarrowPhase.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Profile.hpp"
@@ -110,7 +111,8 @@ bool shouldSkipPair(
     const DARTCollisionObject* object2,
     const CollisionOption& option)
 {
-  if (!object1->getNativeShape() || !object2->getNativeShape())
+  const bool softPair = detail::isSoftCollisionPair(object1, object2);
+  if (!softPair && (!object1->getNativeShape() || !object2->getNativeShape()))
     return true;
 
   if (option.collisionFilter
@@ -169,6 +171,10 @@ struct NativeRayHitCandidate
 //==============================================================================
 std::size_t getManifoldCacheId(const CollisionObject* object)
 {
+  const auto* dartObject = dynamic_cast<const DARTCollisionObject*>(object);
+  if (dartObject != nullptr && dartObject->isSoftMeshShape())
+    return 0u;
+
   return static_cast<std::size_t>(reinterpret_cast<std::uintptr_t>(object));
 }
 
@@ -182,6 +188,7 @@ struct DetectorEngineState
 {
   native::PersistentManifoldCache manifoldCache;
   native::CollisionResult narrowphaseScratch;
+  CollisionResult softPairScratch;
   std::vector<std::pair<std::size_t, CollisionObject*>> objectsByIdScratch;
   std::vector<std::size_t> pendingContactIndicesScratch;
   std::vector<Eigen::Vector3d> pendingLocalPointsScratch;
@@ -674,19 +681,75 @@ bool emitContacts(
 }
 
 //==============================================================================
+bool emitSoftContacts(
+    const CollisionResult& softResult,
+    const CollisionOption& option,
+    CollisionResult& result)
+{
+  const std::size_t maxPairContacts
+      = option.getEffectiveMaxNumContactsPerPair();
+  std::size_t emittedForPair = 0u;
+
+  const std::size_t numContacts = softResult.getNumContacts();
+  for (std::size_t i = 0u; i < numContacts; ++i) {
+    if (result.getNumContacts() >= option.maxNumContacts)
+      return true;
+
+    if (emittedForPair >= maxPairContacts)
+      return false;
+
+    const auto& contact = softResult.getContact(i);
+    if (contact.penetrationDepth < 0.0
+        && !option.allowNegativePenetrationDepthContacts) {
+      continue;
+    }
+
+    result.addContact(contact);
+    ++emittedForPair;
+  }
+
+  return result.getNumContacts() >= option.maxNumContacts;
+}
+
+//==============================================================================
 bool processNativePair(
     DARTCollisionObject* object1,
     DARTCollisionObject* object2,
     const CollisionOption& option,
     CollisionResult* result,
     bool& collisionFound,
-    native::CollisionResult& nativeResult)
+    native::CollisionResult& nativeResult,
+    CollisionResult& softPairScratch)
 {
   if (shouldSkipPair(object1, object2, option))
     return false;
 
   if (result && result->getNumContacts() >= option.maxNumContacts)
     return true;
+
+  if (detail::isSoftCollisionPair(object1, object2)) {
+    softPairScratch.clear();
+    detail::collideSoftPair(object1, object2, softPairScratch);
+    if (softPairScratch.getNumContacts() == 0u)
+      return false;
+
+    collisionFound = true;
+
+    if (!result) {
+      softPairScratch.clear();
+      return true;
+    }
+
+    if (!option.enableContact) {
+      addPairOnlyContact(object1, object2, *result);
+      softPairScratch.clear();
+      return result->getNumContacts() >= option.maxNumContacts;
+    }
+
+    const bool shouldStop = emitSoftContacts(softPairScratch, option, *result);
+    softPairScratch.clear();
+    return shouldStop;
+  }
 
   // Reused across pairs by the caller so steady-state stepping stays
   // allocation-free (StepAllocation gate discipline).
@@ -863,6 +926,7 @@ bool DARTCollisionDetector::collide(
   }
 
   native::CollisionResult& scratchResult = engineState.narrowphaseScratch;
+  CollisionResult& softPairScratch = engineState.softPairScratch;
   bool collisionFound = false;
   {
     DART_PROFILE_SCOPED_N("Native::visitPairs+narrowphase");
@@ -877,7 +941,14 @@ bool DARTCollisionDetector::collide(
       CollisionResult* result;
       bool* collisionFound;
       native::CollisionResult* scratchResult;
-    } context{nativeGroup, &option, result, &collisionFound, &scratchResult};
+      CollisionResult* softPairScratch;
+    } context{
+        nativeGroup,
+        &option,
+        result,
+        &collisionFound,
+        &scratchResult,
+        &softPairScratch};
     const auto pairVisitor = [&context](std::size_t id1, std::size_t id2) {
       auto* object1 = context.group->mIdToObject.at(id1);
       auto* object2 = context.group->mIdToObject.at(id2);
@@ -887,7 +958,8 @@ bool DARTCollisionDetector::collide(
           *context.option,
           context.result,
           *context.collisionFound,
-          *context.scratchResult);
+          *context.scratchResult,
+          *context.softPairScratch);
     };
     if (result) {
       // Result-carrying queries need the sorted, deduplicated visitation
@@ -943,6 +1015,7 @@ bool DARTCollisionDetector::collide(
       engineState);
 
   native::CollisionResult& scratchResult = engineState.narrowphaseScratch;
+  CollisionResult& softPairScratch = engineState.softPairScratch;
   bool collisionFound = false;
   for (auto* object1 : nativeGroup1->mCollisionObjects) {
     for (auto* object2 : nativeGroup2->mCollisionObjects) {
@@ -952,7 +1025,8 @@ bool DARTCollisionDetector::collide(
               option,
               result,
               collisionFound,
-              scratchResult)) {
+              scratchResult,
+              softPairScratch)) {
         if (option.enableContact)
           attachCachedContactImpulses(result, engineState);
         return collisionFound;
