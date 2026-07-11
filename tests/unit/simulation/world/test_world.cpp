@@ -14668,6 +14668,50 @@ TEST(World, CollisionQuerySupportsMeshShape)
   EXPECT_NEAR(contacts.front().depth, 0.05, 1e-6);
 }
 
+// Test that malformed native-query shapes are skipped before native shape
+// construction while valid shapes in the same query still participate.
+TEST(World, CollisionQuerySkipsInvalidNativeShapes)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+
+  auto invalid = world.addRigidBody("invalid_shapes");
+  auto& registry = sx::detail::registryOf(world);
+  auto& invalidGeometry
+      = registry.emplace_or_replace<sx::comps::CollisionGeometry>(
+          sx::detail::toRegistryEntity(invalid.getEntity()));
+  invalidGeometry.revision = 1;
+
+  sx::CollisionShape nonfiniteLocal = sx::CollisionShape::makeSphere(0.5);
+  nonfiniteLocal.localTransform.translation().x()
+      = std::numeric_limits<double>::quiet_NaN();
+  invalidGeometry.shapes.push_back(nonfiniteLocal);
+
+  invalidGeometry.shapes.push_back(sx::CollisionShape::makeMesh({}, {}));
+  invalidGeometry.shapes.push_back(
+      sx::CollisionShape::makeMesh(
+          {Eigen::Vector3d(0.0, 0.0, 0.0),
+           Eigen::Vector3d(1.0, 0.0, 0.0),
+           Eigen::Vector3d(0.0, 1.0, 0.0)},
+          {Eigen::Vector3i(-1, 1, 2)}));
+
+  auto validA = world.addRigidBody("valid_a");
+  validA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions validBOptions;
+  validBOptions.position = Eigen::Vector3d(0.8, 0.0, 0.0);
+  auto validB = world.addRigidBody("valid_b", validBOptions);
+  validB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  for (const auto& contact : contacts) {
+    EXPECT_NE(contact.bodyA.getName(), "invalid_shapes");
+    EXPECT_NE(contact.bodyB.getName(), "invalid_shapes");
+  }
+}
+
 // Test that multibody links with collision shapes participate in collision
 // queries and are reported as CollisionBody links (not rigid bodies).
 TEST(World, CollisionQueryIncludesMultibodyLinks)

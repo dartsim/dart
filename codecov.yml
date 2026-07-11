@@ -1,8 +1,10 @@
 # Reference: https://docs.codecov.com/docs/codecovyml-reference
 #
 # Test Coverage Audit: docs/dev_tasks/test-coverage-audit/
-# Project: 'auto' ratchets coverage upward over time
-# Patch: 80% floor for new/changed lines (industry standard)
+# Project: reports aggregate coverage drift without blocking PRs; the coverage
+# lane intentionally bounds expensive tests and capture scope, so full-repo
+# percentage changes can include indirect coverage-shape effects.
+# Patch: required 80% floor for new/changed lines (industry standard)
 
 codecov:
   require_ci_to_pass: true
@@ -17,6 +19,7 @@ coverage:
       default:
         target: auto
         threshold: 2% # Allow 2% fluctuation from baseline
+        informational: true # Report aggregate drift; patch coverage remains required.
     patch:
       default:
         target: 80%
