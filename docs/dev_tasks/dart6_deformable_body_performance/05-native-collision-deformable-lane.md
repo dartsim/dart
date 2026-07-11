@@ -334,3 +334,24 @@ Native soft/deformable collision should not replace FCL until:
   scene set,
 - downstream collision/constraint compatibility gates are run because this
   surface can affect Gazebo and gz-physics.
+
+## Long-run determinism rows (2026-07-11)
+
+2000-step `soft_body_headless` checksum rows at commit `578ea17a049` across
+{drop_box, soft_cubes, soft_bodies, soft_open_chain, adaptive_deformable} x
+{dart, native}:
+
+- **Thread invariance**: `THREADS=1` vs `THREADS=16` step-2000 checksums are
+  bit-identical for all 10 scene/detector combinations.
+- **Rerun repeatability**: repeated single-thread 2000-step runs are
+  bit-identical per backend (spot-checked on the two scenes below).
+- **Cross-backend**: `dart` and direct `native` step-2000 checksums are
+  bit-identical on `soft_cubes`, `soft_open_chain`, and
+  `adaptive_deformable`; `drop_box` and `soft_bodies` diverge by step 2000
+  even though both matched bit-exactly at step 200. The two backends share
+  the narrow-phase kernels but not every FP evaluation path, so ULP-scale
+  differences amplify chaotically over long contact-rich runs. The codified
+  equivalence bar remains the 200-step tolerance-based correctness gate in
+  the comparison harness; per-backend determinism (thread invariance and
+  rerun repeatability) is the long-run acceptance component and holds
+  everywhere.
