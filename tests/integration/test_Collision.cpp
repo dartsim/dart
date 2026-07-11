@@ -31,9 +31,8 @@
  */
 
 #include "dart/collision/collision.hpp"
-#include "dart/collision/dart/DARTCollide.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/fcl.hpp"
-#include "dart/collision/native/NativeCollisionDetector.hpp"
 #include "dart/common/common.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/dynamics.hpp"
@@ -939,30 +938,6 @@ TEST_F(Collision, DartPlanePrimitiveContacts)
 }
 
 //==============================================================================
-TEST_F(Collision, DartCollideAcceptsGenericCollisionObjects)
-{
-  auto cd = DARTCollisionDetector::create();
-
-  auto frameA = SimpleFrame::createShared(Frame::World());
-  auto frameB = SimpleFrame::createShared(Frame::World());
-
-  frameA->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
-  frameB->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
-
-  frameA->setTranslation(Eigen::Vector3d::Zero());
-  frameB->setTranslation(Eigen::Vector3d(0.5, 0.0, 0.0));
-
-  TestCollisionObject objectA(cd.get(), frameA.get());
-  TestCollisionObject objectB(cd.get(), frameB.get());
-
-  CollisionResult result;
-  EXPECT_GT(::dart::collision::collide(&objectA, &objectB, result), 0);
-  ASSERT_GE(result.getNumContacts(), 1u);
-  EXPECT_EQ(result.getContact(0).collisionObject1, &objectA);
-  EXPECT_EQ(result.getContact(0).collisionObject2, &objectB);
-}
-
-//==============================================================================
 TEST_F(Collision, DartParallelFinitePlaneContactsMatchSerial)
 {
   constexpr std::size_t kNumBoxes = 140u;
@@ -1821,27 +1796,6 @@ TEST_F(Collision, DartSphereCylinderOrderSymmetry)
   EXPECT_TRUE(cylinderCapTouch.getContact(0).point.isApprox(
       sphereCapTouch.getContact(0).point, 1e-12));
   EXPECT_NEAR(cylinderCapTouch.getContact(0).penetrationDepth, 0.0, 1e-12);
-}
-
-//==============================================================================
-TEST_F(Collision, DartCylinderPlaneLegacyHelperLinkage)
-{
-  Eigen::Isometry3d cylinderTf = Eigen::Isometry3d::Identity();
-  cylinderTf.translation() = Eigen::Vector3d(0.0, 0.0, 10.0);
-
-  CollisionResult result;
-  EXPECT_EQ(
-      collideCylinderPlane(
-          nullptr,
-          nullptr,
-          0.5,
-          0.5,
-          cylinderTf,
-          Eigen::Vector3d::UnitZ(),
-          Eigen::Isometry3d::Identity(),
-          result),
-      0);
-  EXPECT_EQ(result.getNumContacts(), 0u);
 }
 
 //==============================================================================
@@ -3745,7 +3699,7 @@ TEST_F(Collision, Factory)
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("fcl"));
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("dart"));
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate(
-      collision::NativeCollisionDetector::getStaticType()));
+      collision::DARTCollisionDetector::getStaticType()));
 
 #if HAVE_BULLET
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("bullet"));

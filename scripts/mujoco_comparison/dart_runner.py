@@ -26,7 +26,10 @@ _DETECTOR_CLASS_NAMES = {
     "fcl": "FCLCollisionDetector",
     "bullet": "BulletCollisionDetector",
     "ode": "OdeCollisionDetector",
-    "native": "NativeCollisionDetector",
+    # "native" was the interim key for the engine now folded into
+    # DARTCollisionDetector (canonical key "dart"); kept as an alias so
+    # existing --detector native invocations keep working.
+    "native": "DARTCollisionDetector",
 }
 
 
@@ -230,14 +233,6 @@ def _apply_detector(world, name: str) -> None:
     class_name = _DETECTOR_CLASS_NAMES[name]
     factory = getattr(dart.collision, class_name, None)
     if factory is None:
-        if name == "native":
-            raise SystemExit(
-                "dartpy.collision.NativeCollisionDetector is not bound yet. "
-                "This is tracked separately (bind NativeCollisionDetector in "
-                "dartpy) and must land before --detector native can be used "
-                "here; see docs/dev_tasks/dart6_dependency_minimization/ for "
-                "status."
-            )
         raise SystemExit(
             f"dartpy.collision.{class_name} is not available in this build "
             "(likely built without the corresponding optional backend)."

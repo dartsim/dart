@@ -50,7 +50,6 @@
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
-#include <dart/collision/native/NativeCollisionDetector.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
@@ -123,7 +122,6 @@ enum class CollisionEngine
 {
   Default,
   Dart,
-  Native,
   Fcl,
   Bullet,
   Ode,
@@ -308,7 +306,9 @@ void printUsage(const std::string& programName)
       << "  --gui                     Open an OSG viewer instead of "
          "benchmarking.\n"
       << "  --profile                 Dump DART text profiler summary.\n"
-      << "  --collision default|dart|native|fcl|bullet|ode\n"
+      << "  --collision default|dart|fcl|bullet|ode\n"
+      << "                            (\"native\" is accepted as an alias "
+         "for \"dart\")\n"
       << "  --lcp-solver default|dantzig|pgs\n"
       << "                            Set the boxed-LCP primary solver for "
          "measurement.\n"
@@ -461,10 +461,10 @@ CollisionEngine parseCollisionEngine(const std::string& value)
 {
   if (value == "default")
     return CollisionEngine::Default;
-  if (value == "dart")
+  // "native" was the interim key for the engine now folded into
+  // DARTCollisionDetector (canonical key "dart"); accept it as an alias.
+  if (value == "dart" || value == "native")
     return CollisionEngine::Dart;
-  if (value == "native")
-    return CollisionEngine::Native;
   if (value == "fcl")
     return CollisionEngine::Fcl;
   if (value == "bullet")
@@ -482,8 +482,6 @@ const char* collisionEngineName(CollisionEngine engine)
       return "default";
     case CollisionEngine::Dart:
       return "dart";
-    case CollisionEngine::Native:
-      return "native";
     case CollisionEngine::Fcl:
       return "fcl";
     case CollisionEngine::Bullet:
@@ -773,8 +771,6 @@ dart::collision::CollisionDetectorPtr makeCollisionDetector(
 
   if (engine == CollisionEngine::Dart)
     return dart::collision::DARTCollisionDetector::create();
-  if (engine == CollisionEngine::Native)
-    return dart::collision::NativeCollisionDetector::create();
   if (engine == CollisionEngine::Bullet)
     return dart::collision::BulletCollisionDetector::create();
   if (engine == CollisionEngine::Fcl) {
@@ -1987,14 +1983,12 @@ int collisionEngineToIndex(CollisionEngine engine)
       return 0;
     case CollisionEngine::Dart:
       return 1;
-    case CollisionEngine::Native:
-      return 2;
     case CollisionEngine::Fcl:
-      return 3;
+      return 2;
     case CollisionEngine::Bullet:
-      return 4;
+      return 3;
     case CollisionEngine::Ode:
-      return 5;
+      return 4;
   }
 
   return 0;
@@ -2006,12 +2000,10 @@ CollisionEngine collisionEngineFromIndex(int index)
     case 1:
       return CollisionEngine::Dart;
     case 2:
-      return CollisionEngine::Native;
-    case 3:
       return CollisionEngine::Fcl;
-    case 4:
+    case 3:
       return CollisionEngine::Bullet;
-    case 5:
+    case 4:
       return CollisionEngine::Ode;
     default:
       return CollisionEngine::Default;
@@ -2020,7 +2012,7 @@ CollisionEngine collisionEngineFromIndex(int index)
 
 bool collisionEngineAllowsPrimitiveShapes(int index)
 {
-  return index == 0 || index == 3;
+  return index == 0 || index == 2;
 }
 
 class ContactBenchmarkGuiEventHandler final : public ::osgGA::GUIEventHandler
@@ -2385,8 +2377,8 @@ private:
         ImGui::SliderFloat("Drop height", &mDropHeight, 0.0f, 4.0f, "%.2f m"));
 
     static const char* kCollisionItems[]
-        = {"default", "dart", "native", "fcl", "bullet", "ode"};
-    if (ImGui::Combo("Collision", &mCollisionIndex, kCollisionItems, 6)) {
+        = {"default", "dart", "fcl", "bullet", "ode"};
+    if (ImGui::Combo("Collision", &mCollisionIndex, kCollisionItems, 5)) {
       if (!collisionEngineAllowsPrimitiveShapes(mCollisionIndex))
         mPrimitiveShapes = false;
       noteEdit(true);

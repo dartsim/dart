@@ -5,6 +5,14 @@
 > ([05-phase0-baseline-packet.md](05-phase0-baseline-packet.md)), and the
 > 2026-07-10 current-head audit (`/tmp/audit_head_20260710T011207Z`).
 > Maintainer ratification points are listed at the end.
+>
+> **Executed (2026-07-11):** Decision 1 below was implemented in the
+> detector-consolidation branch — `dart/collision/native/` folded into
+> `dart/collision/dart/`, `NativeCollisionDetector`/`Group`/`Object` renamed
+> to `DARTCollisionDetector`/`Group`/`Object`, canonical key `"dart"`,
+> `"native"` kept as a transition alias. The legacy narrowphase-only
+> implementation (and `DARTCollide.{hpp,cpp}`) was deleted in the same
+> commit; the default flip ships on the same branch.
 
 ## Goal restated
 

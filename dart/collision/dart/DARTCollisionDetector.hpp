@@ -34,15 +34,14 @@
 #define DART_COLLISION_DART_DARTCOLLISIONDETECTOR_HPP_
 
 #include <dart/collision/CollisionDetector.hpp>
+#include <dart/collision/dart/Fwd.hpp>
 
 #include <memory>
-#include <vector>
 
 namespace dart {
 namespace collision {
 
 class DARTCollisionObject;
-class CollisionThreadPool;
 
 class DARTCollisionDetector : public CollisionDetector
 {
@@ -51,7 +50,6 @@ public:
 
   static std::shared_ptr<DARTCollisionDetector> create();
 
-  /// Destructor
   ~DARTCollisionDetector() override;
 
   // Documentation inherited
@@ -61,15 +59,17 @@ public:
   // Documentation inherited
   const std::string& getType() const override;
 
-  /// Get collision detector type for this class
+  /// Get collision detector type for this class.
   static const std::string& getStaticType();
 
-  /// Sets the number of worker participants for parallel native collision
-  /// queries. A value of 0 maps to hardware concurrency.
+  /// Sets the number of worker participants requested for this detector.
+  /// Preserved for source compatibility with the pre-consolidation
+  /// DARTCollisionDetector API (and ConstraintSolver's thread-count
+  /// propagation); the underlying engine does not yet parallelize collision
+  /// queries across threads, so this is bookkeeping only.
   void setNumCollisionThreads(std::size_t numThreads);
 
-  /// Returns the number of worker participants for parallel native collision
-  /// queries.
+  /// Returns the value most recently passed to setNumCollisionThreads().
   std::size_t getNumCollisionThreads() const;
 
   // Documentation inherited
@@ -101,8 +101,20 @@ public:
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr) override;
 
+  // Documentation inherited
+  bool raycast(
+      CollisionGroup* group,
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option = RaycastOption(),
+      RaycastResult* result = nullptr) override;
+
+  [[nodiscard]] native::CachedContact* getCachedContact(
+      const DARTCollisionObject* object1,
+      const DARTCollisionObject* object2,
+      void* userData) const;
+
 protected:
-  /// Constructor
   DARTCollisionDetector();
 
   // Documentation inherited
@@ -112,10 +124,17 @@ protected:
   // Documentation inherited
   void refreshCollisionObject(CollisionObject* object) override;
 
+  // Documentation inherited
+  void notifyCollisionObjectDestroying(CollisionObject* object) override;
+
 private:
   static Registrar<DARTCollisionDetector> mRegistrar;
+  // Transition alias: "native" was the interim key for this engine before
+  // it was folded into DARTCollisionDetector as "dart". 6.20.0 is
+  // unreleased, so no in-tree caller should rely on it going forward.
+  // Remove in 6.21.
+  static Registrar<DARTCollisionDetector> mNativeAliasRegistrar;
 
-  std::unique_ptr<CollisionThreadPool> mCollisionThreadPool;
   std::size_t mNumCollisionThreads{1u};
 };
 

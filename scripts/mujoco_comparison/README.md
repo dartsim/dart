@@ -203,9 +203,9 @@ collision backend via
 - `dart`/`fcl`/`bullet`/`ode` construct
   `dartpy.collision.{DART,FCL,Bullet,Ode}CollisionDetector()`; `bullet`/`ode`
   exit with a clear error if the optional backend wasn't compiled in.
-- `native` constructs `dartpy.collision.NativeCollisionDetector()`, which is
-  bound by this change. Use `--detector native` to run the comparison with
-  DART's opt-in native collision backend.
+- `native` is an alias for `dart`: the native engine merged into
+  `DARTCollisionDetector` (canonical key `"dart"`), so `--detector native`
+  constructs the same `dartpy.collision.DARTCollisionDetector()`.
 
 `run_comparison.py` uses `default` for every scenario in this v1 (no
 per-detector sweep yet); pass `--detector <name>` to override every

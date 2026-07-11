@@ -53,7 +53,6 @@
 #endif
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
-#include "dart/collision/native/NativeCollisionDetector.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
@@ -519,7 +518,7 @@ TEST(World, NativeSkelDetectorUsesNativeAfterRegistration)
   ASSERT_NE(factory, nullptr);
 
   ASSERT_TRUE(
-      factory->canCreate(collision::NativeCollisionDetector::getStaticType()));
+      factory->canCreate(collision::DARTCollisionDetector::getStaticType()));
 
   const std::string skel = R"(
 <skel version="1.0">
@@ -537,11 +536,11 @@ TEST(World, NativeSkelDetectorUsesNativeAfterRegistration)
   ASSERT_NE(nullptr, world);
 
   auto nativeDetector
-      = std::dynamic_pointer_cast<collision::NativeCollisionDetector>(
+      = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
           world->getCollisionDetector());
   ASSERT_TRUE(nativeDetector);
   EXPECT_EQ(
-      collision::NativeCollisionDetector::getStaticType(),
+      collision::DARTCollisionDetector::getStaticType(),
       nativeDetector->getType());
 }
 

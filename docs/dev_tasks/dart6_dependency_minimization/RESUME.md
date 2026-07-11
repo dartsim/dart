@@ -186,6 +186,22 @@ defaults, `ConstraintSolver` detector defaults, `WorldConfig`, or
 dependency/package metadata before the explicit phase that owns it; FCL remains
 the default until phase 6.
 
+**Detector consolidation executed (2026-07-11):** per maintainer direction
+2026-07-10, recorded in
+[08-phase5-facade-decision.md](08-phase5-facade-decision.md), the native
+engine merged INTO the dart detector: `dart/collision/native/` no longer
+exists (folded into `dart/collision/dart/`), and
+`dart::collision::NativeCollisionDetector`/`Group`/`Object` are gone —
+`DARTCollisionDetector`/`Group`/`Object` now denote the former native
+engine, canonical factory key `"dart"`, with `"native"` kept as a transition
+alias (remove in 6.21). This is a separate commit from the phase-6 default
+flip, which is still pending and out of scope here. The legacy
+narrowphase-only `DARTCollisionDetector` implementation (and its
+`DARTCollide.{hpp,cpp}` helpers) was deleted as part of this merge; see that
+commit's message for the enumerated behavior-change risks (notably
+SoftMeshShape narrowphase support, previously legacy-only, has no native
+equivalent yet).
+
 See [HANDOFF.md](HANDOFF.md) for the full session handoff (merged/open
 PRs, worktrees, gotchas, and exact Phase 4 next steps).
 

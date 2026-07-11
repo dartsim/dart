@@ -36,9 +36,8 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
-#include "dart/collision/native/NativeCollisionDetector.hpp"
-#include "dart/collision/native/NativeCollisionObject.hpp"
-#include "dart/collision/native/PersistentManifoldCache.hpp"
+#include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/collision/dart/PersistentManifoldCache.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
@@ -272,14 +271,13 @@ public:
   using ContactConstraint::getInformation;
 };
 
-class ExposedNativeCollisionObject final
-  : public collision::NativeCollisionObject
+class ExposedDARTCollisionObject final : public collision::DARTCollisionObject
 {
 public:
-  ExposedNativeCollisionObject(
+  ExposedDARTCollisionObject(
       collision::CollisionDetector* detector,
       const dynamics::ShapeFrame* shapeFrame)
-    : NativeCollisionObject(detector, shapeFrame)
+    : DARTCollisionObject(detector, shapeFrame)
   {
   }
 };
@@ -1238,7 +1236,7 @@ TEST(ConstraintSolver, MatrixFreeContactSolverSeedsCachedImpulseResidual)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto collisionGroup
       = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
@@ -1289,7 +1287,7 @@ TEST(ConstraintSolver, MatrixFreeContactSolverFallsBackWhenNotConverged)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto collisionGroup
       = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
@@ -1339,7 +1337,7 @@ TEST(ConstraintSolver, MatrixFreeContactSolverRejectsMixedFreeJointActuators)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto collisionGroup
       = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
@@ -1580,7 +1578,7 @@ TEST(ConstraintSolver, ContactConstraintCachesSolvedImpulse)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto group = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
   collision::CollisionResult result;
@@ -1671,7 +1669,7 @@ TEST(ConstraintSolver, ContactConstraintClearsFrictionForChangedFrictionBasis)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto group = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
   collision::CollisionResult result;
@@ -1738,7 +1736,7 @@ TEST(ConstraintSolver, ContactConstraintDoesNotSeedFrictionInPositionPhase)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
+  auto detector = collision::DARTCollisionDetector::create();
   auto group = detector->createCollisionGroup(dynamicShapeNode, fixedShapeNode);
 
   collision::CollisionResult result;
@@ -1861,9 +1859,9 @@ TEST(ConstraintSolver, ContactConstraintIgnoresForeignNativeUserData)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
 
-  auto detector = collision::NativeCollisionDetector::create();
-  ExposedNativeCollisionObject fixedObject(detector.get(), fixedShapeNode);
-  ExposedNativeCollisionObject dynamicObject(detector.get(), dynamicShapeNode);
+  auto detector = collision::DARTCollisionDetector::create();
+  ExposedDARTCollisionObject fixedObject(detector.get(), fixedShapeNode);
+  ExposedDARTCollisionObject dynamicObject(detector.get(), dynamicShapeNode);
 
   struct ForeignPayload
   {

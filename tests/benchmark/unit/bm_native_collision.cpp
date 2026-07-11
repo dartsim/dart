@@ -11,11 +11,11 @@
 #if HAVE_BULLET
   #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #endif
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
+#include <dart/collision/dart/Types.hpp>
+#include <dart/collision/dart/narrow_phase/NarrowPhase.hpp>
+#include <dart/collision/dart/shapes/Shape.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
-#include <dart/collision/native/NativeCollisionDetector.hpp>
-#include <dart/collision/native/Types.hpp>
-#include <dart/collision/native/narrow_phase/NarrowPhase.hpp>
-#include <dart/collision/native/shapes/Shape.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/Frame.hpp>
@@ -195,7 +195,7 @@ void runNativeDetectorCollision(
 {
   runDetectorCollision(
       state,
-      dart::collision::NativeCollisionDetector::create(),
+      dart::collision::DARTCollisionDetector::create(),
       shapeA,
       translationA,
       shapeB,
@@ -258,7 +258,7 @@ void runNativeDetectorDistance(
 {
   runDetectorDistance(
       state,
-      dart::collision::NativeCollisionDetector::create(),
+      dart::collision::DARTCollisionDetector::create(),
       shapeA,
       translationA,
       shapeB,
@@ -315,7 +315,7 @@ void runNativeDetectorRaycast(
 {
   runDetectorRaycast(
       state,
-      dart::collision::NativeCollisionDetector::create(),
+      dart::collision::DARTCollisionDetector::create(),
       shape,
       translation);
 }
