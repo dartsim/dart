@@ -120,7 +120,7 @@ def _capture_view(
 
 def _initial_still_layers(args: argparse.Namespace) -> list[str]:
     layers = list(args.layers)
-    if args.motion_frames > 0 and args.steps < 2:
+    if args.steps < 2:
         layers = [layer for layer in layers if layer != "trajectories"]
     return layers
 
@@ -286,7 +286,15 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 distance=float(base_camera.distance),
                 target=base_camera.target,
             )
-            pixels = _capture_view(dart, world, camera, args, tracker, contacts)
+            pixels = _capture_view(
+                dart,
+                world,
+                camera,
+                args,
+                tracker,
+                contacts,
+                layers=_initial_still_layers(args),
+            )
             _write_png_rgba(frame_dir / f"turn{frame:04d}.png", pixels)
         entry: dict[str, Any] = {
             "kind": "turntable",

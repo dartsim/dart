@@ -111,6 +111,9 @@ def test_initial_still_defers_unseeded_motion_trajectory() -> None:
     assert agent_capture._initial_still_layers(
         _args(layers=["trajectories"], steps=2, motion_frames=3)
     ) == ["trajectories"]
+    assert agent_capture._initial_still_layers(
+        _args(layers=["labels", "trajectories"], steps=0, turntable=3)
+    ) == ["labels"]
 
 
 def _display_available() -> bool:
