@@ -1,8 +1,9 @@
 """Engine-rendered debug overlays for DART 6 headless captures.
 
-This module builds world-derived debug layers — contact markers/normals/forces,
-body frames, velocity arrows, trajectory polylines, and name labels — and
-renders them *through the DART core OSG pipeline* via a
+This module builds world-derived debug layers — a ground grid, the world frame,
+contact markers/normals/forces, body frames, velocity arrows, centers of mass,
+inertia-equivalent boxes, collision bounding boxes, trajectory polylines, and
+name labels — and renders them *through the DART core OSG pipeline* via a
 ``dart.gui.osg.DebugOverlay`` viewer attachment. Segments become always-on-top
 overlay lines and labels become world-anchored osgText, both drawn unlit with
 depth testing disabled in a late render bin, so the debug primitives stay
@@ -36,14 +37,24 @@ CONTACT_FORCE_RGB = (237, 79, 171)
 LINEAR_VELOCITY_RGB = (82, 189, 250)
 ANGULAR_VELOCITY_RGB = (189, 133, 250)
 TRAJECTORY_RGB = (250, 140, 64)
+# Parity layers mirrored from DART 7 dart/gui/debug.cpp float colors.
+GRID_RGB = (117, 125, 128)  # rgba(0.46, 0.49, 0.5)
+COM_RGB = (56, 209, 219)  # DART 7 COM teal (0.22, 0.82, 0.86)
+INERTIA_RGB = (148, 112, 242)  # DART 7 inertia purple (0.58, 0.44, 0.95)
+COLLISION_BOUNDS_RGB = (51, 219, 110)  # DART 7 bounds green (0.2, 0.86, 0.43)
 # osgText labels render on the Viewer's light-gray (0.9) background, so a dark
 # slate reads far more clearly than the white DART 7 uses on its dark overlay.
 LABEL_RGB = (33, 33, 40)
 
 DEBUG_LAYERS = (
+    "grid",
+    "world_frame",
     "body_frames",
     "contacts",
     "velocities",
+    "coms",
+    "inertia_boxes",
+    "collision_bounds",
     "trajectories",
     "labels",
 )
@@ -68,8 +79,7 @@ class OverlayScene:
 
 def _is_plausible_point(point: np.ndarray) -> bool:
     return bool(
-        np.isfinite(point).all()
-        and (np.abs(point) < PLAUSIBLE_COORDINATE_LIMIT).all()
+        np.isfinite(point).all() and (np.abs(point) < PLAUSIBLE_COORDINATE_LIMIT).all()
     )
 
 
@@ -108,6 +118,29 @@ def _append_arrow(scene: OverlayScene, start, end, rgb) -> None:
     base = end - direction * head_length
     _append_segment(scene, end, base + side * head_width, rgb)
     _append_segment(scene, end, base - side * head_width, rgb)
+
+
+def _append_box(scene: OverlayScene, center, edges, rgb) -> None:
+    """Draw the 12 edges of a box from its center and three half-extent edge
+    vectors (each ``edges[k] = half_extent_k * axis_k`` in world coordinates).
+
+    The eight corners are indexed by the three sign bits of ``center +/-
+    edges[0] +/- edges[1] +/- edges[2]``; an edge joins two corners that differ
+    in exactly one axis, giving the 12 wireframe segments.
+    """
+    center = np.asarray(center, dtype=float).reshape(3)
+    vectors = [np.asarray(edge, dtype=float).reshape(3) for edge in edges]
+    corners = []
+    for bits in range(8):
+        corner = center.copy()
+        for axis in range(3):
+            sign = 1.0 if (bits >> axis) & 1 else -1.0
+            corner = corner + sign * vectors[axis]
+        corners.append(corner)
+    for bits in range(8):
+        for axis in range(3):
+            if not (bits >> axis) & 1:
+                _append_segment(scene, corners[bits], corners[bits | (1 << axis)], rgb)
 
 
 def _iter_bodies(world: Any):
@@ -158,6 +191,12 @@ def build_overlay(
     force_scale: float = 0.01,
     force_min_length: float = 0.05,
     force_max_length: float = 0.5,
+    grid_half_extent: float = 4.0,
+    grid_spacing: float = 0.5,
+    grid_z: float = 0.0,
+    world_frame_axis_length: float = 0.5,
+    com_marker_radius: float = 0.05,
+    inertia_box_scale: float = 1.0,
 ) -> OverlayScene:
     """Compose world-space overlay primitives from named layers."""
     unknown = sorted(set(layers) - set(DEBUG_LAYERS))
@@ -166,6 +205,26 @@ def build_overlay(
             f"unknown debug layers {unknown}; available: {list(DEBUG_LAYERS)}"
         )
     scene = OverlayScene()
+
+    if "grid" in layers:
+        half = float(grid_half_extent)
+        spacing = float(grid_spacing)
+        z = float(grid_z)
+        if spacing > 1e-9 and half > 0.0:
+            count = int(math.floor(half / spacing + 1e-9))
+            for index in range(-count, count + 1):
+                offset = index * spacing
+                _append_segment(scene, [-half, offset, z], [half, offset, z], GRID_RGB)
+                _append_segment(scene, [offset, -half, z], [offset, half, z], GRID_RGB)
+
+    if "world_frame" in layers:
+        origin = np.zeros(3)
+        for axis, rgb in (
+            (np.array([1.0, 0.0, 0.0]), AXIS_X_RGB),
+            (np.array([0.0, 1.0, 0.0]), AXIS_Y_RGB),
+            (np.array([0.0, 0.0, 1.0]), AXIS_Z_RGB),
+        ):
+            _append_segment(scene, origin, origin + axis * world_frame_axis_length, rgb)
 
     if "body_frames" in layers:
         for body in _iter_bodies(world):
@@ -222,9 +281,7 @@ def build_overlay(
     if "velocities" in layers:
         for body in _iter_bodies(world):
             com = np.asarray(body.getCOM(), dtype=float).reshape(3)
-            linear = np.asarray(
-                body.getCOMLinearVelocity(), dtype=float
-            ).reshape(3)
+            linear = np.asarray(body.getCOMLinearVelocity(), dtype=float).reshape(3)
             magnitude = float(np.linalg.norm(linear))
             if np.isfinite(linear).all() and magnitude > 1e-9:
                 length = float(
@@ -257,6 +314,78 @@ def build_overlay(
                     ANGULAR_VELOCITY_RGB,
                 )
 
+    if "coms" in layers:
+        for body in _iter_bodies(world):
+            com = np.asarray(body.getCOM(), dtype=float).reshape(3)
+            if not np.isfinite(com).all():
+                continue
+            for axis in (
+                np.array([1.0, 0.0, 0.0]),
+                np.array([0.0, 1.0, 0.0]),
+                np.array([0.0, 0.0, 1.0]),
+            ):
+                _append_segment(
+                    scene,
+                    com - axis * com_marker_radius,
+                    com + axis * com_marker_radius,
+                    COM_RGB,
+                )
+
+    if "inertia_boxes" in layers:
+        for body in _iter_bodies(world):
+            mass = float(body.getMass())
+            if not math.isfinite(mass) or mass <= 0.0:
+                continue
+            moment = np.asarray(body.getInertia().getMoment(), dtype=float).reshape(
+                3, 3
+            )
+            moment = 0.5 * (moment + moment.T)
+            if not np.isfinite(moment).all():
+                continue
+            # Eigendecompose the symmetric moment: eigenvalues are the principal
+            # moments, eigenvectors the principal axes in the body frame. For a
+            # solid box of mass m the principal moment about axis i is
+            # (m/3)(sum(other half-extents^2)); inverting gives the box that
+            # reproduces this inertia, half-extent_i = sqrt(6/m*(sum-2*I_i))/2.
+            eigenvalues, eigenvectors = np.linalg.eigh(moment)
+            total = float(np.sum(eigenvalues))
+            half_extents = [
+                math.sqrt(max(0.0, (6.0 / mass) * (total - 2.0 * value)))
+                / 2.0
+                * inertia_box_scale
+                for value in eigenvalues
+            ]
+            com = np.asarray(body.getCOM(), dtype=float).reshape(3)
+            rotation = np.asarray(
+                body.getWorldTransform().rotation(), dtype=float
+            ).reshape(3, 3)
+            principal_world = rotation @ eigenvectors
+            edges = [principal_world[:, axis] * half_extents[axis] for axis in range(3)]
+            _append_box(scene, com, edges, INERTIA_RGB)
+
+    if "collision_bounds" in layers:
+        for body in _iter_bodies(world):
+            for shape_index in range(body.getNumShapeNodes()):
+                shape_node = body.getShapeNode(shape_index)
+                shape = shape_node.getShape()
+                if shape is None:
+                    continue
+                bounding = shape.getBoundingBox()
+                minimum = np.asarray(bounding.getMin(), dtype=float).reshape(3)
+                maximum = np.asarray(bounding.getMax(), dtype=float).reshape(3)
+                if not (np.isfinite(minimum).all() and np.isfinite(maximum).all()):
+                    continue
+                if np.any(maximum < minimum):
+                    continue
+                transform = shape_node.getWorldTransform()
+                origin = np.asarray(transform.translation(), dtype=float).reshape(3)
+                rotation = np.asarray(transform.rotation(), dtype=float).reshape(3, 3)
+                center_local = 0.5 * (minimum + maximum)
+                half_local = 0.5 * (maximum - minimum)
+                center_world = origin + rotation @ center_local
+                edges = [rotation[:, axis] * half_local[axis] for axis in range(3)]
+                _append_box(scene, center_world, edges, COLLISION_BOUNDS_RGB)
+
     if "trajectories" in layers:
         if trajectories is None:
             raise ValueError(
@@ -270,9 +399,7 @@ def build_overlay(
             else trajectories
         )
         for name in sorted(history):
-            positions = [
-                np.asarray(p, dtype=float).reshape(3) for p in history[name]
-            ]
+            positions = [np.asarray(p, dtype=float).reshape(3) for p in history[name]]
             for start, end in zip(positions, positions[1:]):
                 _append_segment(scene, start, end, TRAJECTORY_RGB)
 

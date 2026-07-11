@@ -4,7 +4,8 @@ Drives a DART 6 world through the OSG offscreen path (WP-ASV
 `Viewer.captureOffscreen`) with active camera control: explicit orbit
 parameters, focus-framed reframing, view-quality-scored auto viewpoints,
 turntables, and motion sequences with optional camera sweep. Debug layers
-(contacts, body frames, velocities, trajectories, labels) are rendered
+(grid, world frame, contacts, body frames, velocities, centers of mass,
+inertia boxes, collision bounds, trajectories, labels) are rendered
 *through the DART core OSG pipeline* via a dart.gui.osg.DebugOverlay viewer
 attachment: segments become always-on-top overlay lines and labels become
 world-anchored osgText, drawn unlit and depth-test disabled so they stay
