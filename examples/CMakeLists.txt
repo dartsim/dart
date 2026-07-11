@@ -10,3 +10,5 @@ add_subdirectory(speed_test)
 # OSG renderer examples
 add_subdirectory(contact_benchmark)
 add_subdirectory(demos)
+add_subdirectory(adaptive_soft_contact)
+add_subdirectory(soft_worm)
