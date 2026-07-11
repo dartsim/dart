@@ -141,5 +141,6 @@ If you use DART in an academic publication, please consider citing this
    :caption: Community
 
    community/who_uses_dart
+   community/research_papers
    community/performance_dashboard
    license

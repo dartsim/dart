@@ -80,6 +80,33 @@ namespace dart_demos {
 /// independent box-stack solver islands, ported from examples/sleeping.
 [[nodiscard]] DemoScene makeSleepingScene();
 
+/// Research > FBF incline: exact-Coulomb paper incline threshold fixture.
+[[nodiscard]] DemoScene makeFbfPaperInclineScene();
+
+/// Research > FBF backspin: exact-Coulomb paper backspin sphere fixture.
+[[nodiscard]] DemoScene makeFbfPaperBackspinScene();
+
+/// Research > FBF turntable: exact-Coulomb paper turntable capture/ejection.
+[[nodiscard]] DemoScene makeFbfPaperTurntableScene();
+
+/// Research > FBF Painleve proxy: headless paper-proxy fixture as a GUI scene.
+[[nodiscard]] DemoScene makeFbfPaperPainleveScene();
+
+/// Research > FBF card A-frame: two-card Fig. 6 precursor.
+[[nodiscard]] DemoScene makeFbfPaperCardAFrameScene();
+
+/// Research > FBF card house: reduced-contact dynamic 26-card Fig. 6 scaffold.
+[[nodiscard]] DemoScene makeFbfPaperCardHouse26Scene();
+
+/// Research > FBF card house: construction-only 10-level GPU-table scaffold.
+[[nodiscard]] DemoScene makeFbfPaperCardHouse10Scene();
+
+/// Research > FBF masonry arch: reduced-contact 25-stone Fig. 7 scaffold.
+[[nodiscard]] DemoScene makeFbfPaperMasonryArch25Scene();
+
+/// Research > FBF masonry arch: reduced-contact 101-stone Fig. 8 scaffold.
+[[nodiscard]] DemoScene makeFbfPaperMasonryArch101Scene();
+
 /// Constraints & Joints > hardcoded_design: a hand-built revolute chain
 /// driven from the keyboard, ported from examples/hardcoded_design.
 [[nodiscard]] DemoScene makeHardcodedDesignScene();

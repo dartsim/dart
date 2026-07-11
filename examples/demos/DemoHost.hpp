@@ -174,6 +174,9 @@ public:
   /// returns 0.
   int listScenes() const;
 
+  /// Verifies every FBF paper scene has self-contained Scene-tab metadata.
+  int verifyFbfSceneDocs() const;
+
   /// Advances through every scene in the catalog, `framesPerScene` steps
   /// each, twice in a row (the repeat proves rapid re-switching does not leak
   /// world nodes). No window or GPU context is required. Returns 0 if every
@@ -202,6 +205,12 @@ public:
   /// Applied by runHeadlessShot() right after the scene installs.
   void setDebugSelectBodyName(const std::string& name);
   void setDebugRecordProfile(bool on);
+
+  /// Adds a scene key action to invoke after a headless scene installs and
+  /// before deterministic capture steps are taken. This lets visual smoke
+  /// tests exercise scene actions without hardcoding scene-specific hooks in
+  /// the host.
+  void addHeadlessActionKey(int key);
 
   /// Number of world nodes currently registered with the viewer. Exactly one
   /// whenever a scene is active; used by cycleScenes() as a leak audit.
@@ -304,6 +313,7 @@ private:
   std::function<void()> mCurrentRenderPanel;
   std::vector<KeyAction> mCurrentKeyActions;
   std::optional<CameraHome> mCurrentCameraHome;
+  ScenePanelDocumentation mCurrentSceneDocumentation;
   std::vector<std::function<void()>> mExtraTeardowns;
 
   std::string mCurrentSceneId;
@@ -351,6 +361,7 @@ private:
 
   std::string mDebugSelectBodyName;
   bool mDebugRecordProfile = false;
+  std::vector<int> mHeadlessActionKeys;
 
   ScenePanelTab mRequestedScenePanelTab = ScenePanelTab::Scene;
   bool mHasRequestedScenePanelTab = false;

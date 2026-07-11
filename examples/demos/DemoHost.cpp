@@ -87,6 +87,14 @@ bool matchesFilter(const DemoScene& scene, const std::string& filterLower)
 }
 
 //==============================================================================
+bool startsWith(const std::string& value, const char* prefix)
+{
+  const std::string prefixString(prefix);
+  return value.size() >= prefixString.size()
+         && value.compare(0, prefixString.size(), prefixString) == 0;
+}
+
+//==============================================================================
 /// Renders "f - Shoot sphere" when the key is a plain printable character, or
 /// just the label otherwise (e.g. arrow keys).
 std::string formatKeyActionLabel(const KeyAction& action)
@@ -94,6 +102,44 @@ std::string formatKeyActionLabel(const KeyAction& action)
   if (action.key >= 32 && action.key < 127)
     return std::string(1, static_cast<char>(action.key)) + " - " + action.label;
   return action.label;
+}
+
+//==============================================================================
+std::string formatKeyForMessage(int key)
+{
+  if (key >= 32 && key < 127)
+    return std::string("'") + static_cast<char>(key) + "'";
+  return std::to_string(key);
+}
+
+//==============================================================================
+bool renderDocumentationSection(
+    const char* label, const std::string& text, bool hasPrevious)
+{
+  if (text.empty())
+    return false;
+
+  if (hasPrevious)
+    ImGui::Spacing();
+  ImGui::TextDisabled("%s", label);
+  ImGui::TextWrapped("%s", text.c_str());
+  return true;
+}
+
+//==============================================================================
+bool renderScenePanelDocumentation(const ScenePanelDocumentation& documentation)
+{
+  bool rendered = false;
+  rendered |= renderDocumentationSection(
+      "Overview", documentation.overview, rendered);
+  rendered |= renderDocumentationSection(
+      "Expected Result", documentation.expectedResult, rendered);
+  rendered |= renderDocumentationSection(
+      "Coverage", documentation.coverage, rendered);
+
+  if (rendered)
+    ImGui::Separator();
+  return rendered;
 }
 
 //==============================================================================
@@ -539,6 +585,12 @@ void DemoHost::setDebugRecordProfile(bool on)
 }
 
 //==============================================================================
+void DemoHost::addHeadlessActionKey(int key)
+{
+  mHeadlessActionKeys.push_back(key);
+}
+
+//==============================================================================
 void DemoHost::requestScenePanelTab(ScenePanelTab tab)
 {
   mRequestedScenePanelTab = tab;
@@ -794,6 +846,7 @@ void DemoHost::teardownCurrentScene()
   mCurrentRenderPanel = nullptr;
   mCurrentKeyActions.clear();
   mCurrentCameraHome.reset();
+  mCurrentSceneDocumentation = ScenePanelDocumentation{};
   mCurrentSceneId.clear();
   mCurrentSceneTitle.clear();
 }
@@ -861,6 +914,7 @@ void DemoHost::installScene(const DemoScene& scene, DemoSceneSetup setup)
   mCurrentRenderPanel = setup.renderPanel;
   mCurrentKeyActions = std::move(setup.keyActions);
   mCurrentCameraHome = setup.cameraHome;
+  mCurrentSceneDocumentation = scene.scenePanelDocumentation;
 
   for (const auto& frame : setup.dragFrames) {
     if (!frame)
@@ -945,6 +999,49 @@ int DemoHost::listScenes() const
     }
   }
   return 0;
+}
+
+//==============================================================================
+int DemoHost::verifyFbfSceneDocs() const
+{
+  bool ok = true;
+  std::size_t checked = 0u;
+  for (const auto& scene : mScenes) {
+    if (!startsWith(scene.id, "fbf_paper_"))
+      continue;
+
+    ++checked;
+    if (scene.category != "Research") {
+      std::cerr << "[verify-fbf-scene-docs] " << scene.id
+                << " is not in the Research category.\n";
+      ok = false;
+    }
+    if (scene.summary.empty()) {
+      std::cerr << "[verify-fbf-scene-docs] " << scene.id
+                << " has an empty catalog summary.\n";
+      ok = false;
+    }
+    if (!scene.scenePanelDocumentation.isComplete()) {
+      std::cerr << "[verify-fbf-scene-docs] " << scene.id
+                << " is missing Scene-tab overview, expected result, or "
+                   "coverage text.\n";
+      ok = false;
+    }
+    if (!scene.factory) {
+      std::cerr << "[verify-fbf-scene-docs] " << scene.id
+                << " has no scene factory.\n";
+      ok = false;
+    }
+  }
+
+  if (checked == 0u) {
+    std::cerr << "[verify-fbf-scene-docs] no fbf_paper_* scenes found.\n";
+    return 1;
+  }
+
+  std::cout << "[verify-fbf-scene-docs] checked " << checked
+            << " FBF paper scene(s): " << (ok ? "OK" : "FAILED") << "\n";
+  return ok ? 0 : 1;
 }
 
 //==============================================================================
@@ -1089,6 +1186,14 @@ int DemoHost::runHeadlessShot(
   if (mDebugRecordProfile) {
     mProfiler.setRecordingForTest(true);
     requestScenePanelTab(ScenePanelTab::Tools);
+  }
+
+  for (const int key : mHeadlessActionKeys) {
+    if (!handleKey(key)) {
+      std::cerr << "[headless] action key " << formatKeyForMessage(key)
+                << " is not registered for demo '" << initial << "'.\n";
+      return 1;
+    }
   }
 
   const CameraHome defaultHome{
@@ -1578,6 +1683,8 @@ void DemoHost::renderInspectorSection()
 //==============================================================================
 void DemoHost::renderSceneControlsSection()
 {
+  renderScenePanelDocumentation(mCurrentSceneDocumentation);
+
   if (mCurrentRenderPanel) {
     try {
       mCurrentRenderPanel();
@@ -1639,7 +1746,13 @@ void DemoHost::renderScenePanel()
   if (ImGui::BeginTabBar("##scene_panel_tabs")) {
     if (ImGui::BeginTabItem(
             "Scene", nullptr, tabSelectionFlags(ScenePanelTab::Scene))) {
+      ImGui::BeginChild(
+          "##scene_panel_scroll",
+          ImVec2(0.0f, 0.0f),
+          false,
+          ImGuiWindowFlags_AlwaysVerticalScrollbar);
       renderSceneControlsSection();
+      ImGui::EndChild();
       ImGui::EndTabItem();
     }
 

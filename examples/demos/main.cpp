@@ -40,6 +40,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <cstdlib>
 #include <cstring>
@@ -66,6 +67,7 @@ struct Options
 {
   double guiScale = 1.0;
   bool listScenes = false;
+  bool verifyFbfSceneDocs = false;
   bool cycleScenes = false;
   int cycleFrames = 30;
   bool headless = false;
@@ -76,6 +78,7 @@ struct Options
   int height = kDefaultWindowHeight;
   std::string collisionDetectorName;
   std::size_t simulationThreads = 1u;
+  std::vector<int> headlessActionKeys;
 
   // Hidden test/debug hooks (undocumented -- not in printUsage()): let a
   // headless --shot capture exercise UI state that normally requires
@@ -92,6 +95,9 @@ void printUsage(const char* prog)
       << "Usage: " << prog << " [options]\n"
       << "  --list-scenes   Print the demo catalog grouped by category and "
          "exit.\n"
+      << "  --verify-fbf-scene-docs\n"
+         "                  Verify FBF paper scenes have self-contained "
+         "Scene-tab text and exit.\n"
       << "  --scene <id>    Select the initial demo (default: first in the "
          "catalog).\n"
       << "  --cycle-scenes  Advance through every demo without opening a "
@@ -100,6 +106,10 @@ void printUsage(const char* prog)
          "30).\n"
       << "  --headless      Render one frame off-screen to a PNG and exit "
          "(no window).\n"
+      << "  --headless-action <key>\n"
+         "                  Invoke a scene key action before --headless "
+         "capture "
+         "steps; may be repeated.\n"
       << "  --shot <path>   Output PNG path for --headless (default "
          "dart-demos.png).\n"
       << "  --steps <n>     Sim steps to settle before the --headless shot "
@@ -130,6 +140,15 @@ std::size_t parseThreadCount(const char* value, std::size_t fallback)
 }
 
 //==============================================================================
+int parseHeadlessActionKey(const char* value)
+{
+  if (value == nullptr || std::strlen(value) != 1u)
+    return -1;
+
+  return static_cast<unsigned char>(value[0]);
+}
+
+//==============================================================================
 /// Parses command-line options.
 ParseResult parseArgs(int argc, char** argv, Options& opt)
 {
@@ -150,6 +169,8 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
     const char* a = argv[i];
     if (std::strcmp(a, "--list-scenes") == 0) {
       opt.listScenes = true;
+    } else if (std::strcmp(a, "--verify-fbf-scene-docs") == 0) {
+      opt.verifyFbfSceneDocs = true;
     } else if (std::strcmp(a, "--scene") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
@@ -162,6 +183,15 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
       opt.cycleFrames = std::stoi(argv[++i]);
     } else if (std::strcmp(a, "--headless") == 0) {
       opt.headless = true;
+    } else if (std::strcmp(a, "--headless-action") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      const int key = parseHeadlessActionKey(argv[++i]);
+      if (key < 0) {
+        std::cerr << "--headless-action expects a single key character.\n";
+        return ParseResult::Error;
+      }
+      opt.headlessActionKeys.push_back(key);
     } else if (std::strcmp(a, "--shot") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
@@ -233,9 +263,14 @@ int main(int argc, char** argv)
     host.setDebugSelectBodyName(opt.debugSelectBody);
   if (opt.debugRecordProfile)
     host.setDebugRecordProfile(true);
+  for (const int key : opt.headlessActionKeys)
+    host.addHeadlessActionKey(key);
 
   if (opt.listScenes)
     return host.listScenes();
+
+  if (opt.verifyFbfSceneDocs)
+    return host.verifyFbfSceneDocs();
 
   if (opt.cycleScenes)
     return host.cycleScenes(opt.cycleFrames);

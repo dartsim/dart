@@ -162,6 +162,22 @@ struct DemoSceneSetup
 };
 
 //==============================================================================
+/// Text that must make a scene self-contained in the Scene tab. Most examples
+/// leave this empty; paper/research examples should fill all fields so the
+/// catalog can verify their in-app explanation coverage.
+struct ScenePanelDocumentation
+{
+  std::string overview;
+  std::string expectedResult;
+  std::string coverage;
+
+  bool isComplete() const
+  {
+    return !overview.empty() && !expectedResult.empty() && !coverage.empty();
+  }
+};
+
+//==============================================================================
 /// One entry in the demo catalog. `factory` is only invoked lazily -- the
 /// first time the demo is selected (and again on Rebuild/Reset) -- and may
 /// throw to signal a startup failure; the host will surface the reason and
@@ -179,6 +195,9 @@ struct DemoScene
 
   /// One-line summary shown as a row tooltip.
   std::string summary;
+
+  /// Optional Scene-tab documentation metadata used by catalog checks.
+  ScenePanelDocumentation scenePanelDocumentation;
 
   /// Builds (or rebuilds) the scene. May throw.
   std::function<DemoSceneSetup()> factory;

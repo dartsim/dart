@@ -8,6 +8,53 @@ the scattered per-example programs that used to live under `examples/*`.
 Run it with `pixi run demos` (or `pixi run demos --scene <id>`). The dartpy
 counterpart is `pixi run py-demos` (see `python/examples/demos/`).
 
+The FBF exact-Coulomb paper inspection scenes live under the `Research`
+category. Each FBF scene's `Scene` panel includes a self-contained overview,
+expected result, coverage-limit note, solver-mode controls, contact count, and
+available exact-FBF diagnostics so the example can be understood without reading
+the source:
+
+```bash
+pixi run demos -- --list-scenes
+pixi run demos -- --verify-fbf-scene-docs
+pixi run demos -- --scene fbf_paper_incline
+pixi run demos -- --scene fbf_paper_backspin
+pixi run demos -- --scene fbf_paper_turntable
+pixi run demos -- --scene fbf_paper_painleve
+pixi run demos -- --scene fbf_paper_card_aframe
+pixi run demos -- --scene fbf_paper_card_house_26
+pixi run demos -- --scene fbf_paper_card_house_10
+pixi run demos -- --scene fbf_paper_masonry_arch_25
+pixi run demos -- --scene fbf_paper_masonry_arch_101
+```
+
+For a bounded off-screen GUI smoke of one scene, use the same app through the
+Pixi capture task. The final argument is the number of deterministic simulation
+steps before the screenshot:
+
+```bash
+pixi run capture fbf_paper_backspin /tmp/fbf_paper_backspin.png 640 480 1
+pixi run image-verdict /tmp/fbf_paper_backspin.png
+```
+
+For a bounded capture of a scene state exposed through a GUI/key action, use
+the action-aware capture task. The 26-card FBF paper scene binds `p` to the
+reduced four-projectile launch scaffold, and the 25-stone arch scene binds `p`
+to its reduced crown-projectile scaffold:
+
+```bash
+pixi run capture-action fbf_paper_card_house_26 p /tmp/fbf_card_house_projectiles.png 640 480 0
+pixi run image-verdict /tmp/fbf_card_house_projectiles.png
+pixi run capture-action fbf_paper_masonry_arch_25 p /tmp/fbf_arch_projectile.png 640 480 0
+pixi run image-verdict /tmp/fbf_arch_projectile.png
+```
+
+FBF paper-parity scenes may extend the reusable OSG renderer, `dart-demos`
+host, or ImGui widgets when a fixture needs better overlays, camera/snapshot
+capture, inspection controls, or in-GUI explanation. A GUI scene is not enough
+for this task unless its `Scene` panel explains the example's overview,
+expected result, and coverage limits without requiring source-code context.
+
 ## Architecture
 
 - **Host** (`DemoHost`, `main.cpp`): owns the one window, the ImGui theme
@@ -17,7 +64,9 @@ counterpart is `pixi run py-demos` (see `python/examples/demos/`).
 - **Registry** (`Registry.cpp`, `Scenes.hpp`): `makeDemoScenes()` returns an
   ordered `std::vector<DemoScene>`. A `DemoScene` is data — `{id, title,
   category, summary, factory}` — where `factory` is a lazily-invoked
-  `std::function` that builds the scene only when it is first selected.
+  `std::function` that builds the scene only when it is first selected. Research
+  scenes that need to be self-contained also fill `scenePanelDocumentation`,
+  which can be checked with `pixi run demos -- --verify-fbf-scene-docs`.
   Categories render in first-appearance order; scenes in registry order
   within a category.
 - **Scenes** (`scenes/*.cpp`, one factory each; multi-file scenes in
@@ -83,6 +132,8 @@ whatever the user changes at runtime:
   each, twice (a leak/robustness audit); exit nonzero on any factory failure.
 - `--headless --shot <path> [--steps N]` — off-screen pbuffer capture
   (requires a DISPLAY/GPU; a local self-verification tool, not a CI gate).
+- `--headless-action <key>` — invoke a scene key action before an off-screen
+  capture step sequence; may be repeated.
 - `--collision-detector <name>` / `COLLISION_DETECTOR=<name>` — start a
   scene with a specific registered backend (`fcl`, `dart`, `native`, `bullet`,
   or `ode` when available). The toolbar can switch backends while the scene is
