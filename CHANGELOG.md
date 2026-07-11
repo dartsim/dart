@@ -299,6 +299,14 @@
 
 * Dynamics
 
+  * Add opt-in adaptive soft contact activation to `SoftBodyNode`
+    (`setAdaptiveContactActivationEnabled` plus ring-count, linger, and
+    deactivation-tolerance tuning and a `getNumActivePointMasses` counter):
+    point masses near contact stay simulated while the rest ride rigidly
+    with the parent body as rigid lumps, following Jain and Liu's soft
+    contact model. Default-off behavior is bit-identical to the previous
+    all-active dynamics.
+
   * Add a default-off `BoxedLcpConstraintSolver` matrix-free contact solver
     option, plus dartpy bindings and `contact_benchmark` flags, for explicitly
     benchmarking large supported contact-only islands without changing the
@@ -504,6 +512,13 @@
     [#3092](https://github.com/dartsim/dart/pull/3092)
 
 * Examples
+
+  * Add two deformable-body flagship examples: `adaptive_soft_contact`, a
+    soft ellipsoid with a moving pusher demonstrating the adaptive contact
+    activation API with live active/inactive instrumentation, and
+    `soft_worm`, an internally actuated five-link chain with soft flesh that
+    crawls through soft contact using a phase-offset sinusoidal gait. Both
+    support headless deterministic runs and offscreen capture.
 
   * Consolidate the scattered GUI examples into a single `dart-demos`
     application: a `dart::gui::osg` `ImGuiViewer` host with a categorized
