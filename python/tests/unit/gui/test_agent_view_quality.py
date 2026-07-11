@@ -80,6 +80,15 @@ def test_body_bounds_cover_shapes():
     assert bounds["marker"].aabb_max == pytest.approx([0.38, -0.12, 0.48])
 
 
+def test_body_bounds_include_child_simple_frames():
+    world = dart.simulation.World()
+    parent = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "parent")
+    child = parent.spawnChildSimpleFrame("child")
+    child.setShape(dart.dynamics.BoxShape([0.2, 0.4, 0.6]))
+    world.addSimpleFrame(parent)
+    assert "child" in {b.name for b in avq.body_bounds(world)}
+
+
 def test_clean_view_passes():
     world = _world_with_marker()
     camera = avq.frame_body(world, "marker", azimuth=0.8, elevation=0.45)
@@ -217,3 +226,17 @@ def test_raycast_occlusion_attributes_hits_to_bodies():
     _add_wall(world)  # marker_holder slab sits between the eye and the marker
     blocked_eye = avq.orbit_camera([0.0, 0.0, 0.2], 2.2, 0.8, 0.45).eye
     assert avq._raycast_occlusion(world, {"marker"}, samples, blocked_eye) > 0.5
+
+
+def test_simple_frame_is_included_in_occlusion_raycast():
+    world = _world_with_marker()
+    wall = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), "wall")
+    wall.setShape(dart.dynamics.BoxShape([0.05, 2.4, 2.4]))
+    transform = dart.math.Isometry3()
+    transform.set_translation([0.8, 0.35, 0.4])
+    wall.setRelativeTransform(transform)
+    world.addSimpleFrame(wall)
+    corners = {b.name: b for b in avq.body_bounds(world)}["marker"].corners
+    samples = np.vstack([corners, corners.mean(axis=0).reshape(1, 3)])
+    eye = avq.orbit_camera([0.0, 0.0, 0.2], 2.2, 0.8, 0.45).eye
+    assert avq._raycast_occlusion(world, {"marker"}, samples, eye) > 0.5

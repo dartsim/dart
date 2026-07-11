@@ -148,9 +148,18 @@ def _iter_shape_owners(world: Any):
             body = skeleton.getBodyNode(body_index)
             for shape_node in body.getShapeNodes():
                 yield str(body.getName()), shape_node
-    for frame_index in range(world.getNumSimpleFrames()):
-        frame = world.getSimpleFrame(frame_index)
-        if frame.getShape() is not None:
+    seen: set[int] = set()
+    pending = [
+        world.getSimpleFrame(index) for index in range(world.getNumSimpleFrames())
+    ]
+    while pending:
+        frame = pending.pop()
+        identity = id(frame)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        pending.extend(frame.getChildFrames())
+        if hasattr(frame, "getShape") and frame.getShape() is not None:
             yield str(frame.getName()), frame
 
 
@@ -268,9 +277,10 @@ def _bullet_detector(dart: Any) -> Any:
 
 def _hit_body_name(hit: Any) -> str | None:
     """Name of the body owning a ray hit, or None if it cannot be attributed."""
-    shape_node = hit.mCollisionObject.getShapeFrame().asShapeNode()
+    shape_frame = hit.mCollisionObject.getShapeFrame()
+    shape_node = shape_frame.asShapeNode()
     if shape_node is None:
-        return None
+        return str(shape_frame.getName()) if hasattr(shape_frame, "getName") else None
     body = shape_node.getBodyNodePtr()
     return str(body.getName()) if body is not None else None
 
@@ -360,6 +370,9 @@ def _raycast_occlusion(
     group = _bullet_detector(dart).createCollisionGroup()
     for index in range(world.getNumSkeletons()):
         group.addShapeFramesOf(world.getSkeleton(index))
+    for _, shape_frame in _iter_shape_owners(world):
+        if shape_frame.asShapeNode() is None:
+            group.addShapeFrame(shape_frame)
     option = dart.collision.RaycastOption()
     option.mSortByClosest = True
 
