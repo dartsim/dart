@@ -6,11 +6,11 @@ pick better ones, mirroring the DART 7 `dart.gui.assess_view` /
 `select_viewpoints` workflow over this branch's OSG offscreen path
 (`Viewer.captureOffscreen(eye, center, up, fovYDeg, ...)` from WP-ASV).
 
-Everything is pure Python + numpy over the classic dartpy surface: body
-bounds come from the core ``Shape.getBoundingBox()`` local AABB (with a typed
-shape-accessor fallback), occlusion from ray/AABB slab tests, projection from
-the same look-at + vertical-FOV model the capture helper pins. No GL context
-is needed to assess a view.
+Body bounds come from the core ``Shape.getBoundingBox()`` local AABB and
+occlusion from core raycasts against the world's real collision geometry (the
+Bullet backend, DART 6's only raycast provider); projection uses the same
+look-at + vertical-FOV model the capture helper pins. No GL context is needed
+to assess a view.
 """
 
 from __future__ import annotations
@@ -31,10 +31,10 @@ MAX_SUBJECT_FRACTION = 0.75
 MIN_CORNER_COVERAGE = 0.999
 MAX_OCCLUSION_FRACTION = 0.35
 MAX_AMBIGUITY_IOU = 0.55
-# Shadow-ray bias as a fraction of ray length: DART 6's contact solver leaves
-# millimetre-scale penetration at rest, so sample corners can sit slightly
-# inside a neighbor's volume; ignore "occlusion" within this last stretch of
-# the ray. Real occluders sit far closer to the camera than 2% of the ray.
+# Contact bias as a fraction of the eye->sample ray: DART 6's contact solver
+# leaves millimetre-scale penetration at rest, so a sampled corner can sit just
+# inside a neighbor's surface. A nearest hit within this last stretch of the ray
+# counts as contact, not occlusion; real occluders sit far closer to the eye.
 OCCLUSION_CONTACT_BIAS = 0.02
 
 DEFAULT_FOVY_DEG = 30.0
@@ -159,63 +159,26 @@ def _iter_shape_owners(world: Any):
 _UNBOUNDED_SHAPE_TYPES = frozenset({"PlaneShape", "LineSegmentShape"})
 
 
-def _shape_local_half_extents(shape: Any) -> np.ndarray | None:
-    """Conservative shape-local AABB half extents from typed accessors.
-
-    Fallback for the rare shape whose ``getBoundingBox()`` reports
-    non-finite bounds; sizes come from the concrete shape types instead.
-    Unbounded or unsupported shapes return None and are skipped.
-    """
-    kind = type(shape).__name__
-    if kind == "BoxShape":
-        return np.asarray(shape.getSize(), dtype=float).reshape(3) * 0.5
-    if kind == "SphereShape":
-        radius = float(shape.getRadius())
-        return np.full(3, radius)
-    if kind == "EllipsoidShape":
-        return np.asarray(shape.getDiameters(), dtype=float).reshape(3) * 0.5
-    if kind in ("CylinderShape", "ConeShape", "CapsuleShape"):
-        radius = float(shape.getRadius())
-        half_height = float(shape.getHeight()) * 0.5
-        if kind == "CapsuleShape":
-            half_height += radius
-        return np.array([radius, radius, half_height])
-    if hasattr(shape, "getSize"):
-        try:
-            return np.asarray(shape.getSize(), dtype=float).reshape(3) * 0.5
-        except Exception:  # noqa: BLE001
-            return None
-    return None
-
-
 def _shape_local_aabb(shape: Any) -> tuple[np.ndarray, np.ndarray] | None:
-    """Shape-local AABB (min, max) from the core ``getBoundingBox()``.
+    """Shape-local AABB (min, max) from the core ``Shape.getBoundingBox()``.
 
-    ``math::BoundingBox`` is now bound in dartpy, so the engine-computed
-    local bounds are the source of truth; they may be off-center (e.g. a
+    ``math::BoundingBox`` is bound in dartpy, so the engine-computed local
+    bounds are the single source of truth. They may be off-center (e.g. a
     mesh), so the full min/max box is used rather than an origin-centered
-    half-extent. Falls back to typed shape accessors only when the core
-    bounds are missing or non-finite.
+    half-extent. Shapes whose core bounds are non-finite (an infinite plane)
+    or degenerate (an empty shape reports inverted ``DBL_MAX`` bounds) return
+    None and are skipped.
     """
     if type(shape).__name__ in _UNBOUNDED_SHAPE_TYPES:
         return None
-    try:
-        bounding_box = shape.getBoundingBox()
-        low = np.asarray(bounding_box.getMin(), dtype=float).reshape(3)
-        high = np.asarray(bounding_box.getMax(), dtype=float).reshape(3)
-    except Exception:  # noqa: BLE001 - fall back to typed accessors below
-        low = high = None
-    if (
-        low is not None
-        and np.isfinite(low).all()
-        and np.isfinite(high).all()
-        and np.all(high >= low)
-    ):
-        return low, high
-    half = _shape_local_half_extents(shape)
-    if half is None or not np.isfinite(half).all():
+    bounding_box = shape.getBoundingBox()
+    low = np.asarray(bounding_box.getMin(), dtype=float).reshape(3)
+    high = np.asarray(bounding_box.getMax(), dtype=float).reshape(3)
+    if not (np.isfinite(low).all() and np.isfinite(high).all()):
         return None
-    return -half, half
+    if not np.all(high >= low):
+        return None
+    return low, high
 
 
 def _shape_frame_world_corners(shape_frame: Any) -> np.ndarray | None:
@@ -285,23 +248,31 @@ def _split_focus(
     return matched, sorted(b.name for b in matched)
 
 
-def _ray_aabb_distance(
-    origin: np.ndarray,
-    direction: np.ndarray,
-    aabb_min: np.ndarray,
-    aabb_max: np.ndarray,
-) -> float | None:
-    """Slab-test entry distance of a ray into an AABB, or None if missed."""
-    near_zero = np.abs(direction) < 1e-12
-    with np.errstate(divide="ignore"):
-        inverse = np.where(near_zero, np.inf, 1.0 / np.where(near_zero, 1.0, direction))
-    t1 = (aabb_min - origin) * inverse
-    t2 = (aabb_max - origin) * inverse
-    t_near = float(np.max(np.minimum(t1, t2)))
-    t_far = float(np.min(np.maximum(t1, t2)))
-    if t_near > t_far or t_far < 0.0:
+def _dartpy() -> Any:
+    import dartpy
+
+    return dartpy
+
+
+def _bullet_detector(dart: Any) -> Any:
+    """Core Bullet collision detector, DART 6's only raycast-capable backend."""
+    factory = getattr(dart.collision, "BulletCollisionDetector", None)
+    if factory is None:
+        raise RuntimeError(
+            "view-quality occlusion uses core raycast, which DART 6 supports "
+            "only through the Bullet collision backend; this dartpy build has "
+            "no BulletCollisionDetector. Rebuild dartpy with Bullet enabled."
+        )
+    return factory()
+
+
+def _hit_body_name(hit: Any) -> str | None:
+    """Name of the body owning a ray hit, or None if it cannot be attributed."""
+    shape_node = hit.mCollisionObject.getShapeFrame().asShapeNode()
+    if shape_node is None:
         return None
-    return max(t_near, 0.0)
+    body = shape_node.getBodyNodePtr()
+    return str(body.getName()) if body is not None else None
 
 
 # --- Assessment -------------------------------------------------------------
@@ -369,39 +340,48 @@ def _box_iou(a: tuple[float, float, float, float], b) -> float:
     return inter / union if union > 0.0 else 0.0
 
 
-def _occlusion_fraction(
-    all_bounds: list[BodyBounds],
+def _raycast_occlusion(
+    world: Any,
     focus_names: set[str],
     samples: np.ndarray,
     eye: np.ndarray,
 ) -> float:
-    focus_bounds = [b for b in all_bounds if b.name in focus_names]
-    other_bounds = [b for b in all_bounds if b.name not in focus_names]
+    """Fraction of sample sightlines a non-focus body blocks, via core raycast.
+
+    Casts a core ray from the eye to each sampled focus point against the
+    world's real collision geometry (Bullet backend) and takes the nearest hit.
+    A neighbor blocks the sightline when the nearest hit belongs to another body
+    and sits meaningfully in front of the sample; the contact bias ignores the
+    last stretch of the ray so resting-contact penetration (a corner a couple of
+    millimetres inside the ground) does not read as occlusion. This mirrors
+    DART 7's nearest-renderable pick against the same engine geometry.
+    """
+    dart = _dartpy()
+    group = _bullet_detector(dart).createCollisionGroup()
+    for index in range(world.getNumSkeletons()):
+        group.addShapeFramesOf(world.getSkeleton(index))
+    option = dart.collision.RaycastOption()
+    option.mSortByClosest = True
+
     blocked = 0
     total = 0
+    origin = np.asarray(eye, dtype=float).reshape(3)
     for sample in samples:
-        offset = sample - eye
-        distance = float(np.linalg.norm(offset))
-        if distance <= 1e-9:
+        target = np.asarray(sample, dtype=float).reshape(3)
+        if float(np.linalg.norm(target - origin)) <= 1e-9:
             continue
-        direction = offset / distance
         total += 1
-        # Nearest-hit semantics (mirrors DART 7's pick_nearest_renderable):
-        # a neighbor only blocks the line of sight when the ray enters it
-        # before both the sample point and the focus body itself. Without the
-        # focus comparison, resting-contact penetration (a corner a couple of
-        # millimetres inside the ground slab) reads as occlusion.
-        focus_entry = math.inf
-        for bounds in focus_bounds:
-            hit = _ray_aabb_distance(eye, direction, bounds.aabb_min, bounds.aabb_max)
-            if hit is not None:
-                focus_entry = min(focus_entry, hit)
-        limit = min(distance, focus_entry) - OCCLUSION_CONTACT_BIAS * distance
-        for bounds in other_bounds:
-            hit = _ray_aabb_distance(eye, direction, bounds.aabb_min, bounds.aabb_max)
-            if hit is not None and hit < limit:
-                blocked += 1
-                break
+        result = dart.collision.RaycastResult()
+        if not group.raycast(origin, target, option, result):
+            continue
+        if not result.hasHit():
+            continue
+        hit = result.mRayHits[0]
+        body = _hit_body_name(hit)
+        if body is None or body in focus_names:
+            continue
+        if float(hit.mFraction) < 1.0 - OCCLUSION_CONTACT_BIAS:
+            blocked += 1
     return blocked / total if total else 0.0
 
 
@@ -449,8 +429,8 @@ def assess_view(
         report.subject_fraction = (clipped_w * clipped_h) / float(width * height)
 
     samples = np.vstack([corners, center.reshape(1, 3)])
-    report.occlusion_fraction = _occlusion_fraction(
-        bounds, set(focus_names), samples, camera.eye
+    report.occlusion_fraction = _raycast_occlusion(
+        world, set(focus_names), samples, camera.eye
     )
 
     # Ambiguity: visible, depth-separated bodies stacking up on screen.
