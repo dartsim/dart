@@ -160,6 +160,11 @@
 
 * Collision
 
+  * Speed up many-object DART-native collision queries by replacing the
+    quadratic brute-force broadphase with a dynamic AABB tree, while preserving
+    deterministic result ordering and streaming boolean-query early exits:
+    [#3368](https://github.com/dartsim/dart/pull/3368)
+
   * Speed up the DART-native collision backend by caching collision-object
     shape metadata and local bounds, refreshing the cache only when the
     associated `ShapeFrame` geometry version changes:
@@ -369,6 +374,11 @@
     [#2490](https://github.com/dartsim/dart/pull/2490)
 
 * Simulation
+
+  * Improve MJCF loading fidelity by supporting stacked hinge/slide joint
+    compositions, enforcing `contype`/`conaffinity` collision filtering, and
+    applying per-geom friction while preserving automatic deactivation:
+    [#3369](https://github.com/dartsim/dart/pull/3369)
 
   * Add World-owned simulation memory management and optional
     `World::enterSimulationMode()` preparation so DART-owned native-collision
