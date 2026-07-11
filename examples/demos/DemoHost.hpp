@@ -39,6 +39,7 @@
 #include "Inspector.hpp"
 #include "LogCapture.hpp"
 #include "Profiler.hpp"
+#include "memory_diagnostics_model.hpp"
 
 #include <dart/gui/osg/PerformanceStatsPanel.hpp>
 #include <dart/gui/osg/osg.hpp>
@@ -199,6 +200,8 @@ public:
   /// Test/debug-only hooks (main.cpp's hidden --debug-* flags) so a headless
   /// capture can exercise UI state that normally requires interactive input:
   /// a body selected in the Inspector, and the Profiler actively recording.
+  /// Memory diagnostics use the DART_DEMOS_MEMORY_DIAGNOSTICS=1 environment
+  /// hook so no additional public command-line option is needed.
   /// Applied by runHeadlessShot() right after the scene installs.
   void setDebugSelectBodyName(const std::string& name);
   void setDebugRecordProfile(bool on);
@@ -233,7 +236,8 @@ private:
   {
     Scene,
     Inspector,
-    Tools
+    Tools,
+    Memory
   };
 
   struct CategoryGroup
@@ -283,6 +287,7 @@ private:
   void renderInspectorSection();
   void renderSceneControlsSection();
   void renderToolsSection();
+  void renderMemorySection();
   void renderLogSection(float height);
   void renderViewMenu();
   void renderRuntimeControls();
@@ -326,6 +331,8 @@ private:
   ContactVisualizer mContactVisualizer;
   Profiler mProfiler;
   dart::gui::osg::PerformanceStatsPanel mPerformanceStatsPanel;
+  dart::examples::demos::DiagnosticSession mMemoryDiagnosticsSession;
+  std::uint64_t mMemoryDiagnosticsGeneration = 0;
 
   bool mGravityEnabled = true;
   Eigen::Vector3d mSavedGravity = Eigen::Vector3d(0.0, 0.0, -9.81);
@@ -351,6 +358,7 @@ private:
 
   std::string mDebugSelectBodyName;
   bool mDebugRecordProfile = false;
+  bool mDebugMemoryDiagnostics = false;
 
   ScenePanelTab mRequestedScenePanelTab = ScenePanelTab::Scene;
   bool mHasRequestedScenePanelTab = false;

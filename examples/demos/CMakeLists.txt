@@ -103,6 +103,12 @@ function(dart_demos_link_optional_collision_backends target)
   endforeach()
 endfunction()
 
+function(dart_demos_link_memory_diagnostics_platform target)
+  if(WIN32)
+    target_link_libraries(${target} Psapi)
+  endif()
+endfunction()
+
 # Optional TinyDNN + Threads dependency for the human_joint_limits scene
 # (scenes/human_joint_limits/), mirroring examples/human_joint_limits/
 # CMakeLists.txt's own optional-dependency guard. When unavailable, that
@@ -204,6 +210,62 @@ endfunction()
 
 file(GLOB srcs "*.cpp" "*.hpp")
 
+# The demo helper globs top-level sources internally, so these sources compile
+# directly into each executable. This small library gives the focused tests a
+# single link owner for the same collector/view and shared C++17 model.
+set(
+  demos_memory_diagnostics_sources
+  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics_model.cpp"
+)
+add_library(demos_memory_diagnostics STATIC ${demos_memory_diagnostics_sources})
+target_include_directories(
+  demos_memory_diagnostics
+  PUBLIC "${CMAKE_CURRENT_LIST_DIR}"
+)
+target_link_libraries(demos_memory_diagnostics PUBLIC dart dart-gui-osg)
+if(WIN32)
+  target_link_libraries(demos_memory_diagnostics PRIVATE Psapi)
+endif()
+target_compile_features(demos_memory_diagnostics PUBLIC cxx_std_17)
+set_target_properties(
+  demos_memory_diagnostics
+  PROPERTIES POSITION_INDEPENDENT_CODE ON
+)
+if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
+  dart_format_add(${demos_memory_diagnostics_sources})
+endif()
+
+if(
+  BUILD_TESTING
+  AND COMMAND dart_add_test
+  AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics_model.cpp"
+)
+  if(NOT TARGET GTest::gtest)
+    find_package(GTest MODULE REQUIRED)
+  endif()
+  dart_add_test(
+    "unit"
+    UNIT_examples_demos_MemoryDiagnostics
+    "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics_model.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics.cpp"
+  )
+  target_link_libraries(
+    UNIT_examples_demos_MemoryDiagnostics
+    demos_memory_diagnostics
+  )
+  set_tests_properties(
+    UNIT_examples_demos_MemoryDiagnostics
+    PROPERTIES LABELS "examples;gui;memory-diagnostics"
+  )
+  if(TARGET tests)
+    add_dependencies(tests UNIT_examples_demos_MemoryDiagnostics)
+  endif()
+  if(TARGET tests_and_run)
+    add_dependencies(tests_and_run UNIT_examples_demos_MemoryDiagnostics)
+  endif()
+endif()
+
 # The scene ports (examples/demos/scenes/*.cpp) live in a subdirectory, so they
 # cannot be picked up by dart_build_target_in_source()'s non-recursive
 # `file(GLOB srcs "*.cpp" "*.hpp")`. Compile them into a small static library
@@ -236,6 +298,7 @@ if(DART_IN_SOURCE_BUILD)
 
   if(TARGET ${example_name})
     dart_demos_link_optional_collision_backends(${example_name})
+    dart_demos_link_memory_diagnostics_platform(${example_name})
   endif()
 
   foreach(alias_scene soft_bodies soft_cubes soft_open_chain)
@@ -254,6 +317,7 @@ if(DART_IN_SOURCE_BUILD)
       dart-demos-scenes
     )
     dart_demos_link_optional_collision_backends(${alias_scene})
+    dart_demos_link_memory_diagnostics_platform(${alias_scene})
   endforeach()
 
   if(TARGET examples)
@@ -270,6 +334,7 @@ dart_demos_configure_scenes_target(dart-demos-scenes)
 add_executable(${example_name} ${srcs})
 target_link_libraries(${example_name} ${required_libraries} dart-demos-scenes)
 dart_demos_link_optional_collision_backends(${example_name})
+dart_demos_link_memory_diagnostics_platform(${example_name})
 
 foreach(alias_scene soft_bodies soft_cubes soft_open_chain)
   add_executable(${alias_scene} ${srcs})
@@ -283,4 +348,5 @@ foreach(alias_scene soft_bodies soft_cubes soft_open_chain)
   )
   target_link_libraries(${alias_scene} ${required_libraries} dart-demos-scenes)
   dart_demos_link_optional_collision_backends(${alias_scene})
+  dart_demos_link_memory_diagnostics_platform(${alias_scene})
 endforeach()

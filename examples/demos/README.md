@@ -31,6 +31,56 @@ counterpart is `pixi run py-demos` (see `python/examples/demos/`).
   `LogCapture`, `Profiler`): host-level, scene-agnostic facilities wired into
   the composed step/refresh hooks and the Diagnostics panel.
 
+## Memory diagnostics
+
+The persistent **Memory** tab provides opt-in process and active-World memory
+inspection. Collection is off by default. Enable it in the tab, or launch with
+`DART_DEMOS_MEMORY_DIAGNOSTICS=1` to start enabled and select the tab during a
+headless capture. The sample interval is adjustable from 0.1 to 5 seconds
+(default 0.5 seconds); World traversal and formatting occur only on a due or
+manually requested sample.
+
+The tab deliberately separates values with different scopes:
+
+- **Process resident memory** is the OS-reported current resident set,
+  process-lifetime peak, and peak observed by this sampled session. It includes
+  OSG/ImGui, collision backends, libraries, assets, allocator-retained pages,
+  and the diagnostics buffers themselves; it is not DART-owned heap
+  attribution. A scene switch can briefly overlap the outgoing and candidate
+  Worlds, so the process-lifetime peak may include both.
+- **DART 6 graph counts** traverse the active World and report Skeletons,
+  rigid/soft BodyNodes, PointMasses, Joints, degrees of freedom, ShapeNodes,
+  unique Shape objects, SimpleFrames, collision-group ShapeFrames, last-step
+  contacts, and manually registered constraints. The last item is not the full
+  set of solver-generated/contact constraints.
+- **World MemoryManager reservation arena** reports the frame arena's
+  capacity/use/overflow and pool backing blocks. The World reserves and resets
+  this arena, but current classic DART 6 solver paths do not allocate their
+  scratch from it. These rows therefore do not measure legacy solver
+  temporaries or the Skeleton/BodyNode/Joint/Shape graph.
+- **Known object shallow-size floor** multiplies measured object counts by
+  `sizeof` for known base/concrete objects. It is an estimate that omits
+  derived-class tails, nested/container capacity, shared-pointer control
+  blocks, collision-backend state, alignment, and other allocations.
+- **Address buckets, transitions, and adjacent gaps** are virtual-address
+  layout proxies over one traversal. They do not establish physical placement,
+  fragmentation, cache misses, prefetch behavior, or execution speed. Normal
+  demo builds do not interpose global allocation functions, so active heap
+  allocation counts/bytes remain explicitly unavailable rather than zero.
+
+**Capture now** records a sample and makes it the comparison baseline; **Set
+baseline** uses the latest sample. Compatible rows show current-minus-baseline
+deltas. **Reset** clears the latest sample, baseline, bounded history, and
+session-observed peak while retaining the allocated history ring; it cannot
+reset the OS process-lifetime peak. Scene changes start a new generation so
+deltas never silently compare different Worlds. Sampling continues at the
+configured cadence while another scene-panel tab is active.
+
+Linux reads `/proc/self/status` (`VmRSS`/`VmHWM`), Windows uses
+`GetProcessMemoryInfo` working-set counters, and macOS uses Mach task resident
+size. Missing platform values stay unavailable because the APIs differ in
+accounting and update timing.
+
 ## Adding a scene
 
 1. Write `scenes/MyScene.cpp` with a `dart_demos::makeMyScene()` factory

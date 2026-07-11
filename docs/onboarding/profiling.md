@@ -127,6 +127,28 @@ Use Tracy to locate and understand hot regions. Do not use a Tracy-connected
 run as the acceptance timing for a performance PR; run the normal Release
 before/after matrix separately.
 
+## Interactive Memory Inspection
+
+The consolidated `dart-demos` Memory tab is a diagnostic lead generator, not a
+heap or cache profiler. Its shared `examples/demos/memory_diagnostics_model.*`
+owns opt-in cadence, process probes, bounded history, reset, and compatible
+snapshot comparisons. The branch-local `memory_diagnostics.*` collector/view
+owns DART 6 World traversal and raw-ImGui presentation inside `DemoHost`.
+
+Keep the disabled path before every OS probe, World walk, address collection,
+history mutation, and value-formatting pass. Each metric needs an exact scope,
+source, limitation, unit, and measured/estimate/proxy classification; use an
+absent value for unavailable instrumentation rather than zero. Never describe
+virtual-address gaps or page buckets as fragmentation, cache misses, or a
+performance improvement without separate allocator/hardware-counter and
+benchmark evidence.
+
+The DART 6 World `MemoryManager` rows are reservation-arena counters. The World
+reserves and resets that frame arena, but current classic solver paths do not
+allocate their scratch through it. Do not present those rows as legacy solver
+scratch usage; use a solver-specific profiler or instrumentation point for that
+question.
+
 ## Reporting
 
 Every performance PR should match the #3307-style comparison and report bar,

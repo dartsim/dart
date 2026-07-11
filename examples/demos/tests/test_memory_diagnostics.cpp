@@ -1,0 +1,205 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the "BSD-style" License.
+ */
+
+#include "../memory_diagnostics.hpp"
+
+#include <dart/constraint/ConstraintSolver.hpp>
+#include <dart/constraint/WeldJointConstraint.hpp>
+
+#include <dart/collision/CollisionGroup.hpp>
+
+#include <dart/dynamics/dynamics.hpp>
+
+#include <gtest/gtest.h>
+
+#include <memory>
+#include <string>
+
+namespace dart::examples::demos {
+namespace {
+
+//==============================================================================
+ProcessMemoryReading makeSyntheticProcessReading()
+{
+  ProcessMemoryReading reading;
+  reading.residentBytes = 12u * 1024u * 1024u;
+  reading.peakResidentBytes = 18u * 1024u * 1024u;
+  reading.platform = "test";
+  reading.source = "synthetic process probe";
+  reading.limitation = "synthetic test reading";
+  return reading;
+}
+
+//==============================================================================
+TEST(MemoryDiagnostics, SyntheticWorldReportsExactGraphAndScratchCounts)
+{
+  using dynamics::BodyNode;
+  using dynamics::BoxShape;
+  using dynamics::CollisionAspect;
+  using dynamics::FreeJoint;
+  using dynamics::GenericJoint;
+  using dynamics::RevoluteJoint;
+  using dynamics::ShapeNode;
+  using dynamics::Skeleton;
+  using dynamics::SoftBodyNode;
+  using dynamics::SoftBodyNodeHelper;
+  using dynamics::SphereShape;
+  using dynamics::VisualAspect;
+  using dynamics::WeldJoint;
+
+  auto world = simulation::World::create("memory_diagnostics_test");
+
+  auto rigidSkeleton = Skeleton::create("rigid");
+  auto rootPair = rigidSkeleton->createJointAndBodyNodePair<WeldJoint>(nullptr);
+  auto* rootBody = rootPair.second;
+  auto childPair
+      = rigidSkeleton->createJointAndBodyNodePair<RevoluteJoint>(rootBody);
+  auto* childBody = childPair.second;
+
+  const auto sharedBox
+      = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4));
+  const auto uniqueSphere = std::make_shared<SphereShape>(0.1);
+  ASSERT_NE(
+      (rootBody->createShapeNodeWith<VisualAspect, CollisionAspect>(sharedBox)),
+      nullptr);
+  ASSERT_NE(rootBody->createShapeNodeWith<VisualAspect>(uniqueSphere), nullptr);
+  ASSERT_NE(
+      (childBody->createShapeNodeWith<VisualAspect, CollisionAspect>(
+          sharedBox)),
+      nullptr);
+
+  auto softSkeleton = Skeleton::create("soft");
+  GenericJoint<math::SE3Space>::Properties softJointProperties(
+      std::string("soft_joint"));
+  BodyNode::Properties softBodyProperties(
+      BodyNode::AspectProperties("soft_body"));
+  softBodyProperties.mInertia.setMass(1.0);
+  SoftBodyNode::Properties softProperties(
+      softBodyProperties,
+      SoftBodyNodeHelper::makeSinglePointMassProperties(1.0, 0.0, 0.0, 0.0));
+  auto softPair
+      = softSkeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>(
+          nullptr, softJointProperties, softProperties);
+  auto* softBody = softPair.second;
+  ASSERT_NE(softBody, nullptr);
+  ASSERT_NE(softBody->createShapeNodeWith<VisualAspect>(sharedBox), nullptr);
+
+  world->addSkeleton(rigidSkeleton);
+  world->addSkeleton(softSkeleton);
+  auto manualConstraint
+      = std::make_shared<constraint::WeldJointConstraint>(rootBody);
+  world->getConstraintSolver()->addConstraint(manualConstraint);
+
+  auto& memoryManager = world->getMemoryManager();
+  auto& frameAllocator = memoryManager.getFrameAllocator();
+  ASSERT_NE(frameAllocator.allocate(96u), nullptr);
+  const std::size_t expectedFrameUsed = frameAllocator.used();
+  auto& poolAllocator = memoryManager.getPoolAllocator();
+  void* poolAllocation = poolAllocator.allocate(64u);
+  ASSERT_NE(poolAllocation, nullptr);
+  const int expectedPoolBlocks = poolAllocator.getNumAllocatedMemoryBlocks();
+
+  DiagnosticSnapshot snapshot
+      = collectMemoryDiagnostics(world, 17u, makeSyntheticProcessReading());
+  poolAllocator.deallocate(poolAllocation, 64u);
+
+  const auto requireValue = [&snapshot](const char* key) -> double {
+    const DiagnosticMetric* metric = findMetric(snapshot, key);
+    EXPECT_NE(metric, nullptr) << key;
+    if (metric == nullptr) {
+      return 0.0;
+    }
+    EXPECT_TRUE(metric->value.has_value()) << key;
+    return metric->value.value_or(0.0);
+  };
+
+  EXPECT_EQ(snapshot.engine, "DART 6");
+  EXPECT_EQ(snapshot.platform, "test");
+  EXPECT_EQ(snapshot.generation, 17u);
+  EXPECT_DOUBLE_EQ(requireValue("world.count"), 1.0);
+  EXPECT_DOUBLE_EQ(requireValue("world.skeleton_count"), 2.0);
+  EXPECT_DOUBLE_EQ(requireValue("world.body_node_count"), 3.0);
+  EXPECT_DOUBLE_EQ(requireValue("world.rigid_body_node_count"), 2.0);
+  EXPECT_DOUBLE_EQ(requireValue("world.soft_body_node_count"), 1.0);
+  EXPECT_DOUBLE_EQ(requireValue("world.point_mass_count"), 1.0);
+  EXPECT_DOUBLE_EQ(requireValue("world.joint_count"), 3.0);
+  EXPECT_DOUBLE_EQ(requireValue("world.dof_count"), 7.0);
+  // SoftBodyNode creates its own SoftMeshShape node in addition to the four
+  // ShapeNodes explicitly attached above.
+  EXPECT_DOUBLE_EQ(requireValue("world.shape_node_count"), 5.0);
+  EXPECT_DOUBLE_EQ(requireValue("world.simple_frame_count"), 0.0);
+  EXPECT_DOUBLE_EQ(requireValue("world.unique_shape_count"), 3.0);
+  EXPECT_DOUBLE_EQ(requireValue("world.last_contact_count"), 0.0);
+  EXPECT_DOUBLE_EQ(requireValue("world.manual_constraint_count"), 1.0);
+  EXPECT_DOUBLE_EQ(
+      requireValue("world.collision_shape_frame_count"),
+      static_cast<double>(world->getConstraintSolver()
+                              ->getCollisionGroup()
+                              ->getNumShapeFrames()));
+  EXPECT_DOUBLE_EQ(
+      requireValue("world.scratch.frame_used_bytes"),
+      static_cast<double>(expectedFrameUsed));
+  EXPECT_DOUBLE_EQ(
+      requireValue("world.scratch.pool_block_count"),
+      static_cast<double>(expectedPoolBlocks));
+  EXPECT_DOUBLE_EQ(
+      requireValue(kProcessResidentBytesKey), 12.0 * 1024.0 * 1024.0);
+
+  const DiagnosticMetric* shallowFloor
+      = findMetric(snapshot, "world.object_shallow_floor_bytes");
+  ASSERT_NE(shallowFloor, nullptr);
+  ASSERT_TRUE(shallowFloor->value);
+  EXPECT_GT(*shallowFloor->value, 0.0);
+  EXPECT_EQ(shallowFloor->quality, MetricQuality::Estimate);
+
+  const DiagnosticMetric* locality
+      = findMetric(snapshot, "world.locality.address_page_count");
+  ASSERT_NE(locality, nullptr);
+  ASSERT_TRUE(locality->value);
+  EXPECT_GT(*locality->value, 0.0);
+  EXPECT_EQ(locality->quality, MetricQuality::Proxy);
+  EXPECT_NE(locality->limitation.find("cache misses"), std::string::npos);
+
+  const DiagnosticMetric* activeAllocations
+      = findMetric(snapshot, "allocation.active_count");
+  ASSERT_NE(activeAllocations, nullptr);
+  EXPECT_FALSE(activeAllocations->value);
+
+  const DiagnosticMetric* manualConstraints
+      = findMetric(snapshot, "world.manual_constraint_count");
+  ASSERT_NE(manualConstraints, nullptr);
+  EXPECT_NE(manualConstraints->label.find("Manually"), std::string::npos);
+
+  world.reset();
+  EXPECT_DOUBLE_EQ(requireValue("world.body_node_count"), 3.0);
+}
+
+//==============================================================================
+TEST(MemoryDiagnostics, MissingWorldKeepsUnavailableValuesDistinctFromZero)
+{
+  const simulation::WorldPtr world;
+  const DiagnosticSnapshot snapshot
+      = collectMemoryDiagnostics(world, 4u, makeSyntheticProcessReading());
+
+  const DiagnosticMetric* worldCount = findMetric(snapshot, "world.count");
+  ASSERT_NE(worldCount, nullptr);
+  ASSERT_TRUE(worldCount->value);
+  EXPECT_DOUBLE_EQ(*worldCount->value, 0.0);
+
+  const DiagnosticMetric* activeBytes
+      = findMetric(snapshot, "allocation.active_bytes");
+  ASSERT_NE(activeBytes, nullptr);
+  EXPECT_FALSE(activeBytes->value);
+  EXPECT_FALSE(activeBytes->limitation.empty());
+  EXPECT_FALSE(snapshot.guidance.empty());
+}
+
+} // namespace
+} // namespace dart::examples::demos

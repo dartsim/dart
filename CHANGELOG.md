@@ -503,6 +503,12 @@
 
 * Examples
 
+  * Add opt-in memory and layout diagnostics to `dart-demos`, with
+    process-resident current/lifetime/session peaks, exact DART 6 World/object
+    counts, MemoryManager reservation-arena counters, explicitly limited
+    shallow-size estimates and address-layout proxies, bounded history, and
+    baseline comparisons.
+
   * Consolidate the scattered GUI examples into a single `dart-demos`
     application: a `dart::gui::osg` `ImGuiViewer` host with a categorized
     scene navigator that switches between 31 demo scenes at runtime without
