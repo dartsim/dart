@@ -99,7 +99,6 @@ def _publish_gh_release(
                 str(path),
                 "--repo",
                 repo,
-                "--clobber",
             ]
         )
         urls[artifact["path"]] = (
