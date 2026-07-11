@@ -24,9 +24,11 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 - Criterion 4 (general evidence): the maintainer broadened the bar to
   cross-engine evidence vs MuJoCo across DART's major workloads. New lane
   **WS-G**: [08-mujoco-comparison-lane.md](08-mujoco-comparison-lane.md).
-  Harness + mujoco pixi env + dartpy native binding: PR #3367. First
-  standings: DART+native already beats MuJoCo on ant (+30%); gaps and root
-  causes recorded in the lane doc with packets (MJCF stacked joints PR
+  Harness + mujoco pixi env + dartpy native binding: PR #3367. The earlier
+  prototype ant result is deferred because its exact command, artifact, and
+  engine SHAs were not retained; do not count it as accepted cross-engine
+  evidence. Reproducible standings, gaps, and root causes are recorded in the
+  lane doc with packets (MJCF stacked joints PR
   #3369; MJCF contype/conaffinity+friction fidelity packet in flight;
   WP-SS small-scene-overhead family evidence-gated on fidelity).
 - Side products: #3366 fixes a dartpy `getDofs`/`getChainDofs` ownership bug
