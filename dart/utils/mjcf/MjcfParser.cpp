@@ -758,6 +758,13 @@ bool populateSkeletonRecurse(
   DART_ASSERT(bodyNode != nullptr);
   DART_ASSERT(joint != nullptr);
 
+  // Expanding a stacked joint inserts synthetic BodyNodes between the MJCF
+  // parent and its real child. Preserve their original adjacency so ordinary
+  // self-collision still suppresses the pair unless adjacent checks are
+  // explicitly enabled.
+  if (parentBodyNode && bodyNode->getParentBodyNode() != parentBodyNode)
+    collisionFilter.addLogicalAdjacentBodyPair(parentBodyNode, bodyNode);
+
   // Create ShapeNodes for the current BodyNode
   if (!createShapeNodes(bodyNode, mjcfBody, mjcfAsset, collisionFilter))
     return false;

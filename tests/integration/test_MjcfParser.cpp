@@ -845,3 +845,31 @@ TEST(MjcfParserTest, GeomFilterPreservesDeactivationSnapshots)
   EXPECT_FALSE(box->isResting())
       << "collision-filter revision change did not invalidate the snapshot";
 }
+
+//==============================================================================
+TEST(MjcfParserTest, StackedJointPreservesLogicalBodyAdjacency)
+{
+  auto world = utils::MjcfParser::readWorld(
+      "dart://sample/mjcf/test/stacked_joint_adjacency.xml");
+  ASSERT_NE(world, nullptr);
+
+  auto skeleton = world->getSkeleton("parent");
+  ASSERT_NE(skeleton, nullptr);
+  skeleton->enableSelfCollisionCheck();
+
+  auto collisionGroup = world->getConstraintSolver()
+                            ->getCollisionDetector()
+                            ->createCollisionGroup(skeleton.get());
+  ASSERT_EQ(collisionGroup->getNumShapeFrames(), 2u);
+  collision::CollisionOption option;
+  option.collisionFilter
+      = world->getConstraintSolver()->getCollisionOption().collisionFilter;
+  collision::CollisionResult result;
+
+  EXPECT_FALSE(collisionGroup->collide(option, &result));
+
+  skeleton->enableAdjacentBodyCheck();
+  result.clear();
+  EXPECT_TRUE(collisionGroup->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+}

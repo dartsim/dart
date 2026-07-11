@@ -74,6 +74,11 @@ public:
   void setGeomBitmasks(
       const dynamics::ShapeFrame* shapeFrame, int contype, int conaffinity);
 
+  /// Registers a BodyNode pair that was directly adjacent in the MJCF model
+  /// before a stacked joint was expanded into synthetic intermediate links.
+  void addLogicalAdjacentBodyPair(
+      const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2);
+
   // Documentation inherited
   bool ignoresCollision(
       const collision::CollisionObject* object1,
@@ -93,8 +98,12 @@ private:
   /// created for the owning MJCF <geom>.
   std::unordered_map<const dynamics::ShapeFrame*, Bitmasks> mBitmasks;
 
-  /// Revision for changes to the parser-owned geom bitmask table.
-  std::size_t mBitmaskRevision = 0u;
+  /// Body pairs that remain logically adjacent across synthetic joint links.
+  collision::detail::UnorderedPairs<dynamics::BodyNode>
+      mLogicalAdjacentBodyPairs;
+
+  /// Revision for changes to parser-owned collision-filter decisions.
+  std::size_t mDecisionRevision = 0u;
 };
 
 } // namespace detail

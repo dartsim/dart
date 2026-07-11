@@ -33,6 +33,8 @@
 #include "dart/utils/mjcf/detail/GeomCollisionFilter.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
 namespace utils {
@@ -47,7 +49,18 @@ void GeomCollisionFilter::setGeomBitmasks(
     return;
 
   mBitmasks[shapeFrame] = Bitmasks{contype, conaffinity};
-  ++mBitmaskRevision;
+  ++mDecisionRevision;
+}
+
+//==============================================================================
+void GeomCollisionFilter::addLogicalAdjacentBodyPair(
+    const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
+{
+  if (!bodyNode1 || !bodyNode2)
+    return;
+
+  mLogicalAdjacentBodyPairs.addPair(bodyNode1, bodyNode2);
+  ++mDecisionRevision;
 }
 
 //==============================================================================
@@ -59,6 +72,17 @@ bool GeomCollisionFilter::ignoresCollision(
   // filtering behavior.
   if (BodyNodeCollisionFilter::ignoresCollision(object1, object2))
     return true;
+
+  const auto* bodyNode1 = object1->getBodyNode();
+  const auto* bodyNode2 = object2->getBodyNode();
+  if (bodyNode1 && bodyNode2
+      && bodyNode1->getSkeletonRawPtr() == bodyNode2->getSkeletonRawPtr()) {
+    const auto* skeleton = bodyNode1->getSkeletonRawPtr();
+    if (skeleton && !skeleton->isEnabledAdjacentBodyCheck()
+        && mLogicalAdjacentBodyPairs.contains(bodyNode1, bodyNode2)) {
+      return true;
+    }
+  }
 
   const auto it1 = mBitmasks.find(object1->getShapeFrame());
   const auto it2 = mBitmasks.find(object2->getShapeFrame());
@@ -82,7 +106,7 @@ bool GeomCollisionFilter::ignoresCollision(
 std::size_t GeomCollisionFilter::getCollisionFilterSnapshotRevision() const
 {
   std::size_t seed = getBodyNodePairBlackListRevision();
-  seed ^= mBitmaskRevision + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+  seed ^= mDecisionRevision + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
   return seed;
 }
 
