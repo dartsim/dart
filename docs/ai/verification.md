@@ -90,7 +90,7 @@ reported but only gates when you pass `--require-contrast`.
   ```
 
   `scripts/agent_view_quality.py` assesses a camera before rendering
-  (coverage/crop, subject size, ray/AABB occlusion, ambiguity; issues named
+  (coverage/crop, subject size, core-raycast occlusion, ambiguity; issues named
   `cropped`/`off-frame`/`too-far`/`too-close`/`occluded`/`ambiguous`) and
   `select_viewpoints` deterministically picks azimuth-diverse better views —
   when a report lists issues, reframe or reselect instead of shipping the

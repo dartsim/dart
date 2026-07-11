@@ -203,16 +203,17 @@ def test_project_points_puts_target_at_image_center():
     assert projected[0, 2] == pytest.approx(3.0, abs=1e-6)
 
 
-def test_ray_aabb_distance():
-    origin = np.array([0.0, 0.0, 0.0])
-    direction = np.array([1.0, 0.0, 0.0])
-    hit = avq._ray_aabb_distance(
-        origin, direction, np.array([2.0, -1.0, -1.0]), np.array([3.0, 1.0, 1.0])
-    )
-    assert hit == pytest.approx(2.0)
-    assert (
-        avq._ray_aabb_distance(
-            origin, direction, np.array([2.0, 2.0, -1.0]), np.array([3.0, 3.0, 1.0])
-        )
-        is None
-    )
+def test_raycast_occlusion_attributes_hits_to_bodies():
+    # Occlusion is a core raycast against real collision geometry; hits are
+    # attributed to the owning body, so a neighbor between the eye and the focus
+    # blocks the sightline while the focus never occludes itself.
+    world = _world_with_marker()
+    corners = {b.name: b for b in avq.body_bounds(world)}["marker"].corners
+    samples = np.vstack([corners, corners.mean(axis=0).reshape(1, 3)])
+
+    clear_eye = avq.frame_body(world, "marker", azimuth=0.8, elevation=0.45).eye
+    assert avq._raycast_occlusion(world, {"marker"}, samples, clear_eye) == 0.0
+
+    _add_wall(world)  # marker_holder slab sits between the eye and the marker
+    blocked_eye = avq.orbit_camera([0.0, 0.0, 0.2], 2.2, 0.8, 0.45).eye
+    assert avq._raycast_occlusion(world, {"marker"}, samples, blocked_eye) > 0.5
