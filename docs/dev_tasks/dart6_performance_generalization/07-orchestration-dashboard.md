@@ -16,9 +16,9 @@ Current handoff (2026-07-10): the completion audit ran (see RESUME.md —
 criteria 1-3 MET on the merged head). The maintainer broadened criterion 4 to
 cross-engine evidence vs MuJoCo across DART's major workloads; lane **WS-G**
 (08-mujoco-comparison-lane.md) owns that work. #3366 (dartpy getDofs ownership
-bugfix) has merged. Open PRs from the 2026-07-10 cycle: #3367 (MuJoCo
-comparison harness + mujoco env + dartpy native binding), #3368 (native
-AABB-tree broadphase, dep-min lane), and #3369 (MJCF stacked hinge/slide joint
+bugfix) and #3367 (MuJoCo comparison harness + mujoco env + dartpy native
+binding) have merged. Open PRs from the 2026-07-10 cycle: #3368 (native
+AABB-tree broadphase, dep-min lane) and #3369 (MJCF stacked hinge/slide joint
 support). In-flight packets: MJCF contype/conaffinity+friction fidelity and
 native small-scene overhead (WP-SS family); the S6 native resting-profile row
 is resolved by the dep-min lane's documented acceptance re-scope.

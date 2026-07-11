@@ -33,7 +33,7 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
   (heap corruption, SIGSEGV at teardown); #3368 (dep-min lane) removes the
   native detector's O(n^2) broadphase with bit-identical guards.
 
-#3366 has merged. Open PRs from this cycle: #3367, #3368, and #3369 — all
+#3366 and #3367 have merged. Open PRs from this cycle: #3368 and #3369 — both
 awaiting review/merge; docs refresh is this PR.
 
 A fresh session should start from current `origin/release-6.20` (the audited
