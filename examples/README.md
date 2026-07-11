@@ -37,6 +37,44 @@ collision sandbox placeholder is retired; use the concrete Python GUI rows
 `--perf-hud`). `--cycle-scenes` advances through every scene for a few frames and
 exits; it backs the headless smoke test.
 
+### Inspecting memory and layout
+
+The built-in rigid-body and deformable scenes include a **Memory Diagnostics**
+panel. Collection is off by default. Enable it in the panel to sample at a
+bounded cadence, or set `DART_DEMOS_MEMORY_DIAGNOSTICS=1` when launching the app
+to start enabled (useful for UI capture and automated inspection).
+
+The panel separates evidence by scope and does not add the rows into a total:
+
+- **Process memory** is the current and process-lifetime peak resident set from
+  the host OS, plus the peak observed by the current sampled session. It
+  includes the renderer, libraries, assets, retained allocator pages, and the
+  diagnostic buffers themselves; it is not DART-owned heap attribution.
+- **World allocator categories** report user-requested live/peak bytes and live
+  allocation counts where the allocator has counters enabled. Unavailable
+  instrumentation is shown as unavailable, never as zero.
+- **Frame scratch** reports current use, arena capacity, peak use, resets, and
+  overflow allocations for the current World.
+- **ECS aggregate and storage layout** report live/capacity slot counts,
+  materialized packed slots, unused reserved slots, holes, sparse index extent,
+  and packed-region/layout proxies. These are slot counts and virtual layout
+  observations, not component byte totals or cache-miss measurements. Storage
+  rows have best-effort human-readable roles; their numeric tokens remain
+  internal grouping labels for the current build, not stable component
+  identifiers. The demo requests the opt-in detailed scan only at its bounded
+  sample cadence; ordinary World diagnostic summaries do not scan packed slots.
+
+Use **Sample + set baseline** or **Baseline = latest** to create a comparison;
+compatible rows then show signed deltas. **Reset session** clears the baseline,
+bounded history, and session-observed peak while retaining history storage. It
+cannot reset the OS process-lifetime peak. The default 0.5-second interval is
+adjustable from 0.1 to 5 seconds.
+
+Resident-memory sources are `/proc/self/status` (`VmRSS`/`VmHWM`) on Linux,
+`GetProcessMemoryInfo` working-set counters on Windows, and Mach task resident
+size on macOS. A missing platform value remains explicitly unavailable because
+these APIs have different accounting semantics and update timing.
+
 ### Adding a scene
 
 1. Add `examples/demos/scenes/<name>.cpp` defining

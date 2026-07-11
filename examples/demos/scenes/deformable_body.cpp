@@ -29,6 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "memory_diagnostics.hpp"
 #include "scenes.hpp"
 
 #include <dart/gui/application.hpp>
@@ -797,6 +798,8 @@ dart::gui::ApplicationOptions makeDeformableBodyScene()
     state->step();
   };
   options.panels.push_back(createControlsPanel(state));
+  options.panels.push_back(createMemoryDiagnosticsPanel(
+      "Deformable Body", [state]() { return &state->physicsWorld; }));
   options.keyboardActions = createKeyboardActions(state);
   options.renderableProvider = [state]() {
     state->syncRenderFrames();
@@ -822,6 +825,8 @@ dart::gui::ApplicationOptions makeVbdDeformableScene()
     state->step();
   };
   options.panels.push_back(createVbdControlsPanel(state));
+  options.panels.push_back(createMemoryDiagnosticsPanel(
+      "Deformable VBD", [state]() { return &state->physicsWorld; }));
   options.keyboardActions = createKeyboardActions(state);
   options.renderableProvider = [state]() {
     state->syncRenderFrames();

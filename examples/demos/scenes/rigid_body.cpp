@@ -8,6 +8,7 @@
  * This file is provided under the "BSD-style" License.
  */
 
+#include "memory_diagnostics.hpp"
 #include "scenes.hpp"
 
 #include <dart/gui/renderable.hpp>
@@ -266,6 +267,8 @@ dart::gui::ApplicationOptions makeRigidBodyScene()
     state->syncRenderFrames();
     return state->renderables();
   };
+  options.panels.push_back(createMemoryDiagnosticsPanel(
+      "Rigid Body", [state]() { return &state->physicsWorld; }));
   options.keyboardActions = createKeyboardActions(state);
   return options;
 }

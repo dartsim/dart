@@ -70,6 +70,7 @@ __all__: list[str] = [
     "WorldEcsDiagnostics",
     "WorldEcsStorageDiagnostics",
     "WorldMemoryDiagnostics",
+    "WorldMemoryDiagnosticsOptions",
     "WorldStepProfile",
     "WorldStepStageProfile",
     "WorldSyncStage",
@@ -1654,15 +1655,45 @@ class MemoryManagerDebugDiagnostics:
     @property
     def pool_allocator(self) -> AllocatorDebugDiagnostics: ...
 
+class WorldMemoryDiagnosticsOptions:
+    def __init__(self) -> None: ...
+
+    @property
+    def include_storage_layout_details(self) -> bool: ...
+
+    @include_storage_layout_details.setter
+    def include_storage_layout_details(self, arg: bool, /) -> None: ...
+
 class WorldEcsStorageDiagnostics:
     @property
     def storage_id(self) -> int: ...
+
+    @property
+    def diagnostic_label(self) -> str: ...
 
     @property
     def size(self) -> int: ...
 
     @property
     def capacity(self) -> int: ...
+
+    @property
+    def packed_slot_count(self) -> int: ...
+
+    @property
+    def sparse_extent(self) -> int: ...
+
+    @property
+    def unused_capacity(self) -> int: ...
+
+    @property
+    def hole_count(self) -> int: ...
+
+    @property
+    def live_packed_region_count(self) -> int: ...
+
+    @property
+    def packed_contiguous(self) -> bool: ...
 
 class WorldEcsDiagnostics:
     @property
@@ -1679,6 +1710,9 @@ class WorldEcsDiagnostics:
 
     @property
     def component_capacity(self) -> int: ...
+
+    @property
+    def storage_layout_details_included(self) -> bool: ...
 
     @property
     def storages(self) -> list[WorldEcsStorageDiagnostics]: ...
@@ -2359,6 +2393,10 @@ class World:
 
     @property
     def memory_diagnostics(self) -> WorldMemoryDiagnostics: ...
+
+    def get_memory_diagnostics(
+        self, options: WorldMemoryDiagnosticsOptions
+    ) -> WorldMemoryDiagnostics: ...
 
     @property
     def step_profiling_enabled(self) -> bool: ...

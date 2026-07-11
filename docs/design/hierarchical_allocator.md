@@ -44,7 +44,32 @@ The public facade exposes this through `World::getMemoryManager()` and
 `World::getMemoryDiagnostics()`. Diagnostics report allocator debug counters,
 frame-scratch capacity/usage/overflow/reset counts, and aggregate ECS registry
 storage layout counters without exposing EnTT storage types or solver-private
-component IDs.
+component IDs. A detailed type-erased storage row distinguishes live
+components, materialized packed slots, reserved capacity, holes, live packed
+regions, and sparse entity-index extent. A summary row instead uses the
+type-erased storage size, which may include tombstones. Capacity and extent are
+slot/index-space values, not payload bytes; packed-region fields are layout
+observations rather than cache or timing measurements. `storageId` is an
+internal diagnostic token for grouping a snapshot and is not a stable public
+component identifier.
+
+The accompanying human-readable role is best-effort presentation metadata; it
+does not expose an EnTT type and may change when internal storage ownership
+changes.
+
+`World` remains the public facade and allocator owner, but it does not own the
+diagnostic bookkeeping directly. The branch-neutral public value types live in
+`dart/simulation/memory_diagnostics.hpp`; an internal
+`detail::MemoryDiagnosticsTracker` lives with the ECS registry in opaque
+`WorldStorage`. The tracker owns frame-scratch peak/reset state and performs the
+type-erased per-storage summary when `World::getMemoryDiagnostics()` is called.
+The default summary walks materialized storages and scans the entity storage to
+count live entities, but does not scan packed component slots. Interactive
+tools that need hole/live-region detail opt in with
+`WorldMemoryDiagnosticsOptions::includeStorageLayoutDetails`. This keeps the
+per-component linear packed-slot scan out of ordinary editor frames and keeps
+presentation labels out of the already broad `World` implementation without
+moving the allocator hierarchy itself.
 
 ## Allocation Roles
 

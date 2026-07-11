@@ -80,6 +80,19 @@ The built-in **Demos** sidebar is an ordinary `dart::gui::Panel`: it lists
 categories and scenes and calls `dart::gui::requestSceneSwitch` on selection, so
 no renderer/UI-toolkit code leaks above the `dart::gui` boundary (PLAN-060).
 
+Each implemented World scene also installs a renderer-neutral **Memory
+Diagnostics** panel from `examples/demos/memory_diagnostics.*`. The shared
+`memory_diagnostics_model.*` owns opt-in cadence, bounded history, baselines,
+comparison compatibility, process-resident probes, and evidence quality. The
+branch-local adapter owns World collection and `PanelBuilder` presentation.
+Construction is deliberately cheap: until enabled, the panel does not query the
+OS, walk World/ECS diagnostics, allocate its history ring, or format a sample.
+The panel consumes the public type-erased `WorldMemoryDiagnostics` facade; it
+does not expose EnTT types, component types, registry access, or stable
+component IDs through the examples layer. It explicitly requests packed-layout
+detail only on a due sample; default World diagnostics consumers retain the
+per-storage summary path without scanning every packed component slot.
+
 CLI: `--scene <id>` selects the initial scene; `--cycle-scenes` advances through
 every scene for a few frames and exits (the headless smoke,
 `EXAMPLE_dart_demos_cycle_headless_smoke`).
@@ -142,9 +155,11 @@ splitters.
 ### Build layout
 
 `examples/demos/` builds the `dart-demos` executable via the shared
-`dart_build_gui_example` helper, linking `dart-io`, `dart-collision-native`, and
-`dart-simulation` while the World implementation still lives in
-that component.
+`dart_build_gui_example` helper. The scene registry is compiled in
+`demos_scenes`; the branch-local panel and shared session/process model are in
+`demos_memory_diagnostics`. The app links those libraries with `dart-io`,
+`dart-collision-native`, and `dart-simulation` while the World implementation
+still lives in that component.
 
 ## Examples vs renderer test fixtures
 
@@ -168,6 +183,6 @@ the renderer.
 - No renderer/backend changes; demos builds on `dart::gui`.
 - No Python-side scene authoring API; `py-demos` is an examples workspace for
   playback, controls, diagnostics, and capture, not an editor.
-- `examples/demos` builds the scenes straight into the `dart-demos` executable.
-  Splitting them into a `demos_scenes` library is a future option, only needed if
-  something other than the app (e.g. a test) must link the scene registry.
+- The examples diagnostics are not a general heap profiler, allocation hook, or
+  GPU-memory surface. Their categories intentionally retain distinct scopes and
+  must not be summed into process RSS.

@@ -380,10 +380,32 @@ void defSimPartCompute(nb::module_& m)
           "pool_allocator",
           &dart::common::MemoryManager::DebugDiagnostics::poolAllocator);
 
+  nb::class_<sim::WorldMemoryDiagnosticsOptions>(
+      m, "WorldMemoryDiagnosticsOptions")
+      .def(nb::init<>())
+      .def_rw(
+          "include_storage_layout_details",
+          &sim::WorldMemoryDiagnosticsOptions::includeStorageLayoutDetails);
+
   nb::class_<sim::WorldEcsStorageDiagnostics>(m, "WorldEcsStorageDiagnostics")
       .def_ro("storage_id", &sim::WorldEcsStorageDiagnostics::storageId)
+      .def_ro(
+          "diagnostic_label", &sim::WorldEcsStorageDiagnostics::diagnosticLabel)
       .def_ro("size", &sim::WorldEcsStorageDiagnostics::size)
-      .def_ro("capacity", &sim::WorldEcsStorageDiagnostics::capacity);
+      .def_ro("capacity", &sim::WorldEcsStorageDiagnostics::capacity)
+      .def_ro(
+          "packed_slot_count",
+          &sim::WorldEcsStorageDiagnostics::packedSlotCount)
+      .def_ro("sparse_extent", &sim::WorldEcsStorageDiagnostics::sparseExtent)
+      .def_ro(
+          "unused_capacity", &sim::WorldEcsStorageDiagnostics::unusedCapacity)
+      .def_ro("hole_count", &sim::WorldEcsStorageDiagnostics::holeCount)
+      .def_ro(
+          "live_packed_region_count",
+          &sim::WorldEcsStorageDiagnostics::livePackedRegionCount)
+      .def_ro(
+          "packed_contiguous",
+          &sim::WorldEcsStorageDiagnostics::packedContiguous);
 
   nb::class_<sim::WorldEcsDiagnostics>(m, "WorldEcsDiagnostics")
       .def_ro("entity_count", &sim::WorldEcsDiagnostics::entityCount)
@@ -392,6 +414,9 @@ void defSimPartCompute(nb::module_& m)
       .def_ro("component_count", &sim::WorldEcsDiagnostics::componentCount)
       .def_ro(
           "component_capacity", &sim::WorldEcsDiagnostics::componentCapacity)
+      .def_ro(
+          "storage_layout_details_included",
+          &sim::WorldEcsDiagnostics::storageLayoutDetailsIncluded)
       .def_ro("storages", &sim::WorldEcsDiagnostics::storages);
 
   nb::class_<sim::WorldMemoryDiagnostics>(m, "WorldMemoryDiagnostics")

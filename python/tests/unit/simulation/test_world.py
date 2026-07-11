@@ -345,11 +345,15 @@ def test_simulation_world_memory_diagnostics_expose_allocator_and_ecs_counters()
     assert empty.frame_scratch_used_bytes == 0
     assert empty.ecs_diagnostics.entity_count == 0
     assert empty.ecs_diagnostics.component_count == 0
+    assert not empty.ecs_diagnostics.storage_layout_details_included
 
     world.add_free_frame("diagnostic_frame")
-    diagnostics = world.memory_diagnostics
+    options = sx.WorldMemoryDiagnosticsOptions()
+    options.include_storage_layout_details = True
+    diagnostics = world.get_memory_diagnostics(options)
     ecs = diagnostics.ecs_diagnostics
 
+    assert ecs.storage_layout_details_included
     assert ecs.entity_count == 1
     assert ecs.entity_capacity >= ecs.entity_count
     assert ecs.storage_count == len(ecs.storages)
@@ -359,7 +363,22 @@ def test_simulation_world_memory_diagnostics_expose_allocator_and_ecs_counters()
     assert any(
         isinstance(storage, sx.WorldEcsStorageDiagnostics) for storage in ecs.storages
     )
-    assert all(storage.capacity >= storage.size for storage in ecs.storages)
+    assert all(storage.diagnostic_label for storage in ecs.storages)
+    assert all(storage.capacity >= storage.packed_slot_count for storage in ecs.storages)
+    assert all(
+        storage.capacity == storage.packed_slot_count + storage.unused_capacity
+        for storage in ecs.storages
+    )
+    assert all(
+        storage.packed_slot_count == storage.size + storage.hole_count
+        for storage in ecs.storages
+    )
+    assert all(
+        storage.packed_contiguous == (storage.hole_count == 0)
+        for storage in ecs.storages
+    )
+    assert all(storage.sparse_extent >= 0 for storage in ecs.storages)
+    assert all(storage.live_packed_region_count <= storage.size for storage in ecs.storages)
 
 
 def test_simulation_stub_tracks_public_runtime_symbols():
@@ -394,6 +413,7 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         "WorldEcsStorageDiagnostics",
         "WorldEcsDiagnostics",
         "WorldMemoryDiagnostics",
+        "WorldMemoryDiagnosticsOptions",
     )
     io_alias_symbols = (
         "ModelFormat",

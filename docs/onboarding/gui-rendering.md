@@ -243,6 +243,17 @@ renderer's internal test fixtures (renderable-extraction +
 `EXAMPLE_dartsim_<scene>` smokes), distinct from the examples. Design rationale:
 `docs/design/demos_app.md`.
 
+Implemented scenes attach their memory panel with the branch-local
+`examples/demos/memory_diagnostics.*` adapter. Keep process probing, sampling,
+history, and comparison logic in `memory_diagnostics_model.*`, and keep the UI
+on `PanelBuilder`; renderer code must not learn about World or allocator
+diagnostics. The panel must remain runtime opt-in and return before every OS
+probe, World/ECS walk, history allocation, and sample-formatting path while
+disabled. New metrics need a precise scope, source, limitation, unit, and one of
+measured/estimate/proxy; represent unsupported instrumentation as unavailable
+rather than zero. Never turn address gaps, packed slots, holes, or page counts
+into cache-performance claims without separate hardware-counter evidence.
+
 ## Migration Notes
 
 The removed OSG and Raylib paths are not compatibility targets for new work.

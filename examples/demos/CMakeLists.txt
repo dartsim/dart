@@ -10,6 +10,32 @@ if(NOT TARGET dart-simulation)
   return()
 endif()
 
+# Branch-local renderer adapter plus the shared diagnostic session/process
+# model. Collection is runtime opt-in; merely constructing a panel does not
+# query the OS or walk the World.
+set(
+  demos_memory_diagnostics_sources
+  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics_model.cpp"
+)
+add_library(demos_memory_diagnostics STATIC ${demos_memory_diagnostics_sources})
+target_include_directories(
+  demos_memory_diagnostics
+  PUBLIC "${CMAKE_CURRENT_LIST_DIR}"
+)
+target_link_libraries(demos_memory_diagnostics PUBLIC dart-gui dart-simulation)
+if(WIN32)
+  target_link_libraries(demos_memory_diagnostics PRIVATE Psapi)
+endif()
+target_compile_features(demos_memory_diagnostics PUBLIC cxx_std_23)
+set_target_properties(
+  demos_memory_diagnostics
+  PROPERTIES POSITION_INDEPENDENT_CODE ON
+)
+if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
+  dart_format_add(${demos_memory_diagnostics_sources})
+endif()
+
 # Scene modules + the ordered registry, compiled into a static library so the
 # dart-demos executable and cycle smoke consume the same scene set.
 set(
@@ -24,6 +50,7 @@ target_include_directories(demos_scenes PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
 target_link_libraries(
   demos_scenes
   PUBLIC dart-gui dart-io dart-collision-native dart-simulation
+  PRIVATE demos_memory_diagnostics
 )
 # deformable_body.cpp compiles an internal (non-promoted) experimental header,
 # detail/world_registry_access.hpp, which includes <entt/entt.hpp>. EnTT is a
@@ -152,4 +179,36 @@ if(TARGET dart-demos)
       endif()
     endif()
   endif()
+endif()
+
+if(
+  BUILD_TESTING
+  AND DART_BUILD_TESTS
+  AND COMMAND dart_add_test
+  AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics_model.cpp"
+)
+  # System-GTest imported targets are directory-scoped and the tests tree is
+  # configured before examples, so recreate them in this directory when needed.
+  if(NOT TARGET GTest::gtest)
+    find_package(GTest MODULE REQUIRED)
+  endif()
+  dart_add_test(
+    "unit"
+    UNIT_examples_demos_MemoryDiagnostics
+    "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics_model.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics.cpp"
+  )
+  target_link_libraries(
+    UNIT_examples_demos_MemoryDiagnostics
+    demos_memory_diagnostics
+  )
+  set_tests_properties(
+    UNIT_examples_demos_MemoryDiagnostics
+    PROPERTIES LABELS "examples;gui;memory-diagnostics;simulation"
+  )
+  foreach(test_target IN ITEMS tests tests_and_run)
+    if(TARGET ${test_target})
+      add_dependencies(${test_target} UNIT_examples_demos_MemoryDiagnostics)
+    endif()
+  endforeach()
 endif()
