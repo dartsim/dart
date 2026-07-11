@@ -36,6 +36,13 @@ def test_collision_detector_change():
     solver = world.getConstraintSolver()
     assert solver is not None
 
+    # The dart collision detector is the built-in default since 6.20.
+    assert (
+        solver.getCollisionDetector().getType()
+        == dart.collision.DARTCollisionDetector().getStaticType()
+    )
+
+    solver.setCollisionDetector(dart.collision.FCLCollisionDetector())
     assert (
         solver.getCollisionDetector().getType()
         == dart.collision.FCLCollisionDetector().getStaticType()
