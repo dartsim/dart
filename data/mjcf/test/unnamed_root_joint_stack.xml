@@ -1,0 +1,10 @@
+<mujoco model="unnamed_root_joint_stack">
+  <worldbody>
+    <geom name="floor" type="plane" size="2 2 0.1"/>
+    <body pos="0 0 0.5">
+      <joint type="hinge" axis="1 0 0" pos="0 0 0"/>
+      <joint type="hinge" axis="0 1 0" pos="0 0 0"/>
+      <geom name="rotor" type="capsule" fromto="0 0 0 0 0 0.3" size="0.05"/>
+    </body>
+  </worldbody>
+</mujoco>

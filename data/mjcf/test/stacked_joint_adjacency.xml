@@ -1,0 +1,14 @@
+<mujoco model="stacked_joint_adjacency">
+  <option gravity="0 0 0"/>
+  <worldbody>
+    <body name="parent">
+      <freejoint/>
+      <geom name="parent_geom" type="sphere" size="0.2"/>
+      <body name="stacked_child" pos="0.1 0 0">
+        <joint name="child_hinge_x" type="hinge" axis="1 0 0"/>
+        <joint name="child_hinge_y" type="hinge" axis="0 1 0"/>
+        <geom name="child_geom" type="sphere" size="0.2"/>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>

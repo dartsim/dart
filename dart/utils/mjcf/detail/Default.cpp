@@ -144,8 +144,15 @@ const Default* Defaults::getDefault(const std::string& className) const
 //==============================================================================
 const Default* Defaults::getRootDefault() const
 {
-  DART_ASSERT(hasDefault(mRootClassName));
-  return getDefault(mRootClassName);
+  if (const Default* root = getDefault(mRootClassName)) {
+    return root;
+  }
+
+  // MJCF files are valid without a <default> element; fall back to MuJoCo's
+  // built-in attribute defaults so downstream readers never receive a null
+  // root class.
+  static const Default defaultRoot;
+  return &defaultRoot;
 }
 
 //==============================================================================
