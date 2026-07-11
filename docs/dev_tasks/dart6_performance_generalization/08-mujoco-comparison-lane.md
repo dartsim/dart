@@ -8,7 +8,7 @@
 
 ## Harness
 
-`scripts/mujoco_comparison/` (landed in #3367): split-process runners
+`scripts/mujoco_comparison/` (proposed in open PR #3367): split-process runners
 (`dart_runner.py` in the default env against the dartpy dev build;
 `mujoco_runner.py` in the lean `mujoco` pixi env pinning conda-forge
 `mujoco-python`), one seeded SceneSpec emitting both a dartpy world and MJCF,
@@ -18,7 +18,7 @@ engines, warmup excluded, median-of-reps, finite/contact telemetry,
 FFI-overhead calibration row, MuJoCo integrator normalized to Euler with
 model-default sensitivity row, 1.1x win/noise band).
 
-Reproduce (the harness and the `mujoco` pixi environment land with #3367;
+Reproduce (the harness and the `mujoco` pixi environment are in open PR #3367;
 until that merges, run from the `feature/mujoco-comparison-harness` branch —
 and the humanoid rows additionally need #3369's MJCF stacked-joint support):
 
