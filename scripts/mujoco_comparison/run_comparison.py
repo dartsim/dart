@@ -223,8 +223,7 @@ def _selected_scenarios(ids: list[str]) -> list[Scenario]:
         return [
             scenario
             for scenario in all_scenarios
-            if scenario.scene_id in DEFAULT_SCENE_IDS
-            or scenario is OVERHEAD_SCENARIO
+            if scenario.scene_id in DEFAULT_SCENE_IDS or scenario is OVERHEAD_SCENARIO
         ]
     wanted = {i.upper() for i in ids}
     selected = [s for s in all_scenarios if s.scene_id.upper() in wanted]
@@ -336,7 +335,9 @@ def _run(cmd: list[str], dry_run: bool) -> bool:
     return True
 
 
-def _generate_scene_files(scenario: Scenario, seed: int, work_dir: Path) -> tuple[Path, Path]:
+def _generate_scene_files(
+    scenario: Scenario, seed: int, work_dir: Path
+) -> tuple[Path, Path]:
     """Return (dart_scene_path, mujoco_scene_path) for a scenario.
 
     For "mjcf" scenarios both engines read the same file directly. For
@@ -431,7 +432,10 @@ def _write_markdown(out_dir: Path, summary: dict) -> None:
 
     if summary.get("sensitivity"):
         lines += ["", "## MuJoCo Model-Default-Integrator Sensitivity", ""]
-        lines += ["| Scene | Euler steps/s | Model-default steps/s |", "| --- | ---: | ---: |"]
+        lines += [
+            "| Scene | Euler steps/s | Model-default steps/s |",
+            "| --- | ---: | ---: |",
+        ]
         for scene_id, entry in summary["sensitivity"].items():
             lines.append(
                 f"| `{scene_id}` | {entry['euler_steps_per_s']:.1f} | "
@@ -475,12 +479,16 @@ def main(argv: list[str]) -> int:
     with tempfile.TemporaryDirectory(prefix="mujoco_comparison_") as tmp:
         work_dir = Path(tmp)
         for scenario in scenarios:
-            dart_scene, mujoco_scene = _generate_scene_files(scenario, args.seed, work_dir)
+            dart_scene, mujoco_scene = _generate_scene_files(
+                scenario, args.seed, work_dir
+            )
             raw_rows[scenario.scene_id] = {"dart": [], "mujoco": []}
 
             scenario_blocked = False
             for rep in range(args.reps):
-                dart_out = args.out_dir / "raw" / f"{scenario.scene_id}-dart-rep{rep}.json"
+                dart_out = (
+                    args.out_dir / "raw" / f"{scenario.scene_id}-dart-rep{rep}.json"
+                )
                 mujoco_out = (
                     args.out_dir / "raw" / f"{scenario.scene_id}-mujoco-rep{rep}.json"
                 )
@@ -526,7 +534,11 @@ def main(argv: list[str]) -> int:
                 and not args.skip_sensitivity
                 and not args.dry_run
             ):
-                sens_out = args.out_dir / "raw" / f"{scenario.scene_id}-mujoco-sensitivity.json"
+                sens_out = (
+                    args.out_dir
+                    / "raw"
+                    / f"{scenario.scene_id}-mujoco-sensitivity.json"
+                )
                 sens_cmd = _mujoco_command(
                     args.mujoco_python,
                     mujoco_scene,
