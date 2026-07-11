@@ -160,6 +160,7 @@ class StirrerSpec:
     radius: float
     half_height: float
     half_thickness: float
+    friction: float
     angular_velocity_rad_s: float
     pivot_xyz: tuple[float, float, float]
 

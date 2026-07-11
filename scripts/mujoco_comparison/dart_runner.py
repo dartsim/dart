@@ -181,7 +181,7 @@ def _build_stirrer(world, stirrer: common.StirrerSpec):
     shape_node = body.createShapeNode(shape)
     shape_node.createVisualAspect()
     shape_node.createCollisionAspect()
-    shape_node.createDynamicsAspect().setFrictionCoeff(0.5)
+    shape_node.createDynamicsAspect().setFrictionCoeff(stirrer.friction)
     joint.setTransform(_isometry(np.eye(3), np.array(stirrer.pivot_xyz)))
     skel.setMobile(False)
     world.addSkeleton(skel)

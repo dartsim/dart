@@ -95,6 +95,7 @@ def _pile_layout(
             radius=footprint_half_extent,
             half_height=max(pitch, wall_height * 0.3),
             half_thickness=0.02,
+            friction=0.5,
             angular_velocity_rad_s=1.5,
             pivot_xyz=(0.0, 0.0, drop_height * 0.5 + box_half_extent),
         )
@@ -215,7 +216,7 @@ def to_mjcf_xml(layout: common.GeneratedLayout) -> str:
         lines.append(f'    <body name="stirrer" mocap="true" pos="{px} {py} {pz}">')
         lines.append(
             f'      <geom type="box" size="{s.radius} {s.half_thickness} '
-            f'{s.half_height}"/>'
+            f'{s.half_height}" friction="{s.friction} 0.005 0.0001"/>'
         )
         lines.append("    </body>")
 
