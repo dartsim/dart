@@ -160,6 +160,11 @@
 
 * Collision
 
+  * Speed up many-object DART-native collision queries by replacing the
+    quadratic brute-force broadphase with a dynamic AABB tree, while preserving
+    deterministic result ordering and streaming boolean-query early exits:
+    [#3368](https://github.com/dartsim/dart/pull/3368)
+
   * Speed up the DART-native collision backend by caching collision-object
     shape metadata and local bounds, refreshing the cache only when the
     associated `ShapeFrame` geometry version changes:
@@ -355,6 +360,11 @@
 
 * Simulation
 
+  * Improve MJCF loading fidelity by supporting stacked hinge/slide joint
+    compositions, enforcing `contype`/`conaffinity` collision filtering, and
+    applying per-geom friction while preserving automatic deactivation:
+    [#3369](https://github.com/dartsim/dart/pull/3369)
+
   * Add World-owned simulation memory management and optional
     `World::enterSimulationMode()` preparation so DART-owned native-collision
     same-shape simulation steps can run without steady-state heap allocations
@@ -490,6 +500,11 @@
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
 * Python
+
+  * Expose `NativeCollisionDetector` in dartpy and add an opt-in,
+    split-process DART-vs-MuJoCo comparison harness with deterministic
+    generated contact scenes and a pinned MuJoCo Pixi environment:
+    [#3367](https://github.com/dartsim/dart/pull/3367)
 
   * Fix dartpy DOF-list accessors so `Skeleton.getDofs()` and related chain
     DOF helpers return wrappers for DART-owned `DegreeOfFreedom` objects

@@ -30,7 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
+#include <dart/collision/native/NativeCollisionDetector.hpp>
+
+#include <dart/dart.hpp>
 
 #include <pybind11/pybind11.h>
 
@@ -39,73 +41,39 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void Contact(py::module& sm);
-
-void CollisionFilter(py::module& sm);
-void CollisionObject(py::module& sm);
-void CollisionOption(py::module& sm);
-void CollisionResult(py::module& sm);
-
-void DistanceOption(py::module& sm);
-void DistanceResult(py::module& sm);
-
-void RaycastOption(py::module& sm);
-void RaycastResult(py::module& sm);
-
-void CollisionDetector(py::module& sm);
-void FCLCollisionDetector(py::module& sm);
-void DARTCollisionDetector(py::module& sm);
-void NativeCollisionDetector(py::module& sm);
-
-void CollisionGroup(py::module& sm);
-void FCLCollisionGroup(py::module& sm);
-void DARTCollisionGroup(py::module& sm);
-
-#if HAVE_BULLET
-void BulletCollisionDetector(py::module& sm);
-void BulletCollisionGroup(py::module& sm);
-#endif // HAVE_BULLET
-
-#if HAVE_ODE
-void OdeCollisionDetector(py::module& sm);
-void OdeCollisionGroup(py::module& sm);
-#endif // HAVE_ODE
-
-void dart_collision(py::module& m)
+void NativeCollisionDetector(py::module& m)
 {
-  auto sm = m.def_submodule("collision");
-
-  Contact(sm);
-
-  CollisionFilter(sm);
-  CollisionObject(sm);
-  CollisionOption(sm);
-  CollisionResult(sm);
-
-  DistanceOption(sm);
-  DistanceResult(sm);
-
-  RaycastOption(sm);
-  RaycastResult(sm);
-
-  CollisionDetector(sm);
-  FCLCollisionDetector(sm);
-  DARTCollisionDetector(sm);
-  NativeCollisionDetector(sm);
-
-  CollisionGroup(sm);
-  FCLCollisionGroup(sm);
-  DARTCollisionGroup(sm);
-
-#if HAVE_BULLET
-  BulletCollisionDetector(sm);
-  BulletCollisionGroup(sm);
-#endif // HAVE_BULLET
-
-#if HAVE_ODE
-  OdeCollisionDetector(sm);
-  OdeCollisionGroup(sm);
-#endif // HAVE_ODE
+  ::py::class_<
+      dart::collision::NativeCollisionDetector,
+      std::shared_ptr<dart::collision::NativeCollisionDetector>,
+      dart::collision::CollisionDetector>(m, "NativeCollisionDetector")
+      .def(::py::init(
+          +[]() -> std::shared_ptr<dart::collision::NativeCollisionDetector> {
+            return dart::collision::NativeCollisionDetector::create();
+          }))
+      .def(
+          "cloneWithoutCollisionObjects",
+          +[](const dart::collision::NativeCollisionDetector* self)
+              -> std::shared_ptr<dart::collision::CollisionDetector> {
+            return self->cloneWithoutCollisionObjects();
+          })
+      .def(
+          "getType",
+          +[](const dart::collision::NativeCollisionDetector* self)
+              -> const std::string& { return self->getType(); },
+          ::py::return_value_policy::reference_internal)
+      .def(
+          "createCollisionGroup",
+          +[](dart::collision::NativeCollisionDetector* self)
+              -> std::shared_ptr<dart::collision::CollisionGroup> {
+            return self->createCollisionGroupAsSharedPtr();
+          })
+      .def_static(
+          "getStaticType",
+          +[]() -> const std::string& {
+            return dart::collision::NativeCollisionDetector::getStaticType();
+          },
+          ::py::return_value_policy::reference_internal);
 }
 
 } // namespace python
