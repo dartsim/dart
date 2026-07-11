@@ -401,11 +401,15 @@ TEST(AabbTreeBroadPhase, FatAabbOptimization)
 TEST(AabbTreeBroadPhase, RejectsInvalidFatAabbMargins)
 {
   EXPECT_THROW(AabbTreeBroadPhase(-0.1), std::invalid_argument);
+  // Extra parentheses force an expression parse: without them, clang/libc++
+  // reads `AabbTreeBroadPhase(std::numeric_limits<double>::infinity())` as a
+  // declaration of the qualified-id `std::...::infinity`, which is ill-formed
+  // inside a function body (the most vexing parse).
   EXPECT_THROW(
-      AabbTreeBroadPhase(std::numeric_limits<double>::infinity()),
+      (AabbTreeBroadPhase(std::numeric_limits<double>::infinity())),
       std::invalid_argument);
   EXPECT_THROW(
-      AabbTreeBroadPhase(std::numeric_limits<double>::quiet_NaN()),
+      (AabbTreeBroadPhase(std::numeric_limits<double>::quiet_NaN())),
       std::invalid_argument);
 
   AabbTreeBroadPhase bp(0.25);
