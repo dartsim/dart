@@ -96,13 +96,34 @@ fastest incumbent per row):
 2. Small scenes: native ~1.21 vs dart 1.06 ms/step on S1-60; ~40% slower
    than dart on a small MJCF arm-scene bisect. Native small-scene collide
    overhead packet.
-3. S6 dense-pile resting profile: native 0/71 resting vs dart 71/71 — the
-   pile physically jitters (max smoothed linear speed 0.24 m/s at 20k
-   steps); NOT a sleep-gating bug. A solver-facing manifold cap 3 -> 4 A/B
-   was decisively REJECTED (penetration 0.0046 -> 0.158 m, S1-120 +102%;
-   `/tmp/cap4_ab_20260710T014124Z`). Root cause is contact-quality/solver
-   interaction; next probe is a shape-type bisect of the pile (box-only vs
-   cylinder-only) under native vs dart.
+3. S6 dense-pile resting profile: RESOLVED as a documented re-scope
+   (2026-07-11, maintainer-authorized best-path with self-run A/B). Five
+   approaches were falsified with evidence: naive cap-4 (creep 0.158 m,
+   S1-120 +102%), an ERV dead-zone inside the resting band (reintroduced
+   #3209 creep: the 0.1 ERV push is simultaneously the anti-creep mechanism
+   and the jitter pump), split impulse as shipped (untuned; pen 0.182),
+   all cached-state toggles (warm-start/friction-basis/refresh-threshold:
+   zero effect; the Dantzig fallback fires ~1/89k solves so impulse seeds
+   are inert), and quad-area 4th point + cap 4 (fixed the naive-cap-4
+   degeneracy and produced the only transient rest ever observed — 5/71 at
+   20k steps — but 40k-horizon re-wakes to 0/71). Meanwhile the REAL
+   acceptance surfaces all rest BETTER under native than legacy dart:
+   S2 gz 3k 3003/3003, S4 900/900 (dart: 600/900), S5 90/90 (dart: 60/90);
+   legacy dart itself fails the S6 fixture on 1/5 seeds, and rolling-shape
+   piles never rest under ANY detector (physically correct without rolling
+   resistance). The consolidated-detector S6 acceptance row becomes:
+   bounded max_penetration within the dense-island band (anti-creep, the
+   actual #3209 finding: 0.005 at 40k steps vs 0.36 unbounded pre-D7) +
+   finite + documented non-resting attributable to rolling dynamics. A
+   rolling-resistance contact parameter (condim>=4 analog; D7-style
+   adaptive defaults) graduates to a designed 6.21 feature. Salvage: the
+   quad-area 4th-point criterion fix for the manifold cache is
+   independently correct (the volume criterion degenerates on coplanar
+   face manifolds) and ships separately with its own hash A/B (cap stays
+   3); probe branch exp/quadcap4-manifold; artifacts
+   ~/dart-bench-artifacts/ (note: earlier /tmp artifact paths in this file
+   were lost to a host reboot; the numbers are preserved here and in the
+   PR bodies).
 
 **Phase 5 decision (maintainer-directed 2026-07-10):**
 [08-phase5-facade-decision.md](08-phase5-facade-decision.md) — the native
