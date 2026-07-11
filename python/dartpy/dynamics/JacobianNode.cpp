@@ -100,7 +100,8 @@ void JacobianNode(py::module& m)
           +[](const dart::dynamics::JacobianNode* self)
               -> const std::vector<const dart::dynamics::DegreeOfFreedom*> {
             return self->getChainDofs();
-          })
+          },
+          ::py::return_value_policy::reference_internal)
       .def(
           "getJacobian",
           +[](const dart::dynamics::JacobianNode* self,
