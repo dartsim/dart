@@ -42,6 +42,7 @@
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/detail/CollisionFilterSnapshotTracker.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Logging.hpp"
@@ -2296,13 +2297,23 @@ bool World::isCollisionFilterSnapshotTrackable(
   if (filter == nullptr)
     return true;
 
-  return typeid(*filter) == typeid(collision::BodyNodeCollisionFilter);
+  return typeid(*filter) == typeid(collision::BodyNodeCollisionFilter)
+         || dynamic_cast<
+                const collision::detail::CollisionFilterSnapshotTracker*>(
+                filter)
+                != nullptr;
 }
 
 //==============================================================================
 std::size_t World::getCollisionFilterSnapshotRevision(
     const collision::CollisionFilter* filter) const
 {
+  const auto* snapshotTracker
+      = dynamic_cast<const collision::detail::CollisionFilterSnapshotTracker*>(
+          filter);
+  if (snapshotTracker != nullptr)
+    return snapshotTracker->getCollisionFilterSnapshotRevision();
+
   const auto* bodyNodeFilter
       = dynamic_cast<const collision::BodyNodeCollisionFilter*>(filter);
   if (bodyNodeFilter == nullptr)
