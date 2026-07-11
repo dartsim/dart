@@ -392,6 +392,40 @@ TEST(GuiDebugVisuals, AssessViewAcceptsAWellFramedSubject)
   EXPECT_LE(report.score, 1.0);
 }
 
+TEST(GuiDebugVisuals, AssessViewIgnoresHiddenRenderables)
+{
+  const dart::gui::RenderableDescriptor visible = makeBoundedBoxDescriptor(
+      1u, Eigen::Vector3d::Zero(), Eigen::Vector3d::Constant(0.25));
+  dart::gui::RenderableDescriptor hidden = makeBoundedBoxDescriptor(
+      2u, Eigen::Vector3d(20.0, 0.0, 0.0), Eigen::Vector3d::Constant(10.0));
+  hidden.material.visible = false;
+
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.distance = 2.5;
+  camera.yaw = -0.75;
+  camera.pitch = 0.35;
+
+  const dart::gui::ViewQualityReport visibleOnly
+      = dart::gui::assessView({visible}, camera, 320, 240);
+  const dart::gui::ViewQualityReport withHidden
+      = dart::gui::assessView({visible, hidden}, camera, 320, 240);
+
+  EXPECT_EQ(withHidden.issues, visibleOnly.issues);
+  EXPECT_DOUBLE_EQ(withHidden.cornerCoverage, visibleOnly.cornerCoverage);
+  EXPECT_DOUBLE_EQ(withHidden.subjectFraction, visibleOnly.subjectFraction);
+  EXPECT_DOUBLE_EQ(withHidden.ambiguityIoU, visibleOnly.ambiguityIoU);
+  EXPECT_DOUBLE_EQ(withHidden.score, visibleOnly.score);
+
+  const dart::gui::ViewQualityReport hiddenFocus = dart::gui::assessView(
+      {visible, hidden},
+      camera,
+      320,
+      240,
+      std::vector<dart::gui::RenderableId>{hidden.id});
+  EXPECT_EQ(hiddenFocus.issues, std::vector<std::string>{"no-bounded-focus"});
+}
+
 TEST(GuiDebugVisuals, AssessViewFlagsAnOccludedFocus)
 {
   // Camera at +X looking toward the origin along -X.

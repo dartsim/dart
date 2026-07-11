@@ -216,7 +216,8 @@ ViewQualityReport assessView(
       focusIds.begin(), focusIds.end());
   const bool assessAll = focusSet.empty();
   const auto isFocus = [&](const RenderableDescriptor& descriptor) {
-    return assessAll || focusSet.count(descriptor.id) > 0u;
+    return descriptor.material.visible
+           && (assessAll || focusSet.count(descriptor.id) > 0u);
   };
 
   std::vector<Eigen::Vector3d> focusCorners;
@@ -291,6 +292,9 @@ ViewQualityReport assessView(
   };
   std::vector<AmbiguityBox> boxes;
   for (const RenderableDescriptor& descriptor : descriptors) {
+    if (!descriptor.material.visible) {
+      continue;
+    }
     const std::vector<Eigen::Vector3d> corners
         = descriptorWorldCorners(descriptor);
     if (corners.empty()) {
