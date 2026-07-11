@@ -4,11 +4,13 @@ Drives a DART 6 world through the OSG offscreen path (WP-ASV
 `Viewer.captureOffscreen`) with active camera control: explicit orbit
 parameters, focus-framed reframing, view-quality-scored auto viewpoints,
 turntables, and motion sequences with optional camera sweep. Debug layers
-(contacts, body frames, velocities, trajectories, labels) are composited
-onto each capture in image space — DART 7 draws its overlay always-on-top,
-so the composite carries the same information. Every run writes a sidecar
-JSON recording camera parameters, layers, view reports, and the exact
-reproduction command.
+(contacts, body frames, velocities, trajectories, labels) are rendered
+*through the DART core OSG pipeline*: segments become LineSegmentShape
+geometry on world SimpleFrames and labels become world-anchored osgText on a
+TextOverlay attachment, injected before each capture and removed afterward, so
+the debug geometry is depth-correct and part of the rendered scene. Every run
+writes a sidecar JSON recording camera parameters, layers, view reports, and
+the exact reproduction command.
 
 Requires a GLX-capable X server (run under ``xvfb-run`` on headless hosts);
 see docs/ai/verification.md.
@@ -173,16 +175,10 @@ def _sweep_camera(
     )
 
 
-def _capture_view(
-    viewer: Any,
-    world: Any,
-    camera: avq.AgentCamera,
-    path: Path,
-    args: argparse.Namespace,
-    tracker: Any,
-    contacts: list[Any],
+def _shoot(
+    viewer: Any, camera: avq.AgentCamera, path: Path, args: argparse.Namespace
 ) -> bool:
-    ok = viewer.captureOffscreen(
+    return viewer.captureOffscreen(
         str(path),
         camera.eye,
         camera.center,
@@ -192,17 +188,39 @@ def _capture_view(
         fovYDeg=camera.fovy_deg,
         warmupFrames=args.warmup_frames,
     )
-    if not ok:
-        return False
-    if args.layers:
-        scene = ado.build_overlay(
-            world,
-            layers=tuple(args.layers),
-            contacts=contacts if "contacts" in args.layers else None,
-            trajectories=tracker,
-        )
-        ado.composite_overlay_file(path, scene, camera)
-    return True
+
+
+def _capture_view(
+    viewer: Any,
+    world: Any,
+    camera: avq.AgentCamera,
+    path: Path,
+    args: argparse.Namespace,
+    tracker: Any,
+    contacts: list[Any],
+    label_overlay: Any = None,
+) -> bool:
+    if not args.layers:
+        return _shoot(viewer, camera, path, args)
+
+    # Render the debug layers through the engine: inject world geometry (and
+    # world-anchored labels) so captureOffscreen draws them as part of the
+    # scene, then remove the geometry so the world is left untouched.
+    scene = ado.build_overlay(
+        world,
+        layers=tuple(args.layers),
+        contacts=contacts if "contacts" in args.layers else None,
+        trajectories=tracker,
+    )
+    frames = ado.inject_overlay(world, scene)
+    if label_overlay is not None:
+        ado.populate_labels(label_overlay, scene)
+    try:
+        return _shoot(viewer, camera, path, args)
+    finally:
+        ado.remove_overlay(world, frames)
+        if label_overlay is not None:
+            label_overlay.clear()
 
 
 def _camera_json(camera: avq.AgentCamera) -> dict[str, Any]:
@@ -261,6 +279,14 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
     viewer = dart.gui.osg.ImGuiViewer()
     viewer.addWorldNode(dart.gui.osg.WorldNode(world))
 
+    label_overlay = None
+    if "labels" in args.layers:
+        label_overlay = dart.gui.osg.TextOverlay()
+        font = ado.find_default_font()
+        if font:
+            label_overlay.setFont(font)
+        viewer.addAttachment(label_overlay)
+
     out_dir = args.out
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -300,7 +326,14 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
     for view in views:
         still_path = out_dir / f"{args.prefix}_{view['name']}.png"
         if not _capture_view(
-            viewer, world, view["camera"], still_path, args, tracker, contacts
+            viewer,
+            world,
+            view["camera"],
+            still_path,
+            args,
+            tracker,
+            contacts,
+            label_overlay,
         ):
             raise RuntimeError(
                 "captureOffscreen failed: no off-screen GL context (needs a "
@@ -331,6 +364,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 args,
                 tracker,
                 contacts,
+                label_overlay,
             ):
                 raise RuntimeError("captureOffscreen failed during turntable")
         entry: dict[str, Any] = {
@@ -371,6 +405,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 args,
                 tracker,
                 contacts,
+                label_overlay,
             ):
                 raise RuntimeError("captureOffscreen failed during motion capture")
         entry = {

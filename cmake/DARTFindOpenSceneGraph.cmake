@@ -10,7 +10,7 @@ find_package(
   OpenSceneGraph
   3.0.0
   QUIET
-  COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgUtil
+  COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgText osgUtil
 )
 
 # OpenSceneGraph 3.6.5 or less are not compatible with macOS 10.15 (Catalina) or greater

@@ -82,8 +82,8 @@ reported but only gates when you pass `--require-contrast`.
 
   ```bash
   # Deterministic capture: auto-selected viewpoints (view-quality scored),
-  # focus framing, turntable/motion video, debug layers composited in image
-  # space, and a sidecar JSON with the exact reproduce command.
+  # focus framing, turntable/motion video, debug layers rendered through the
+  # core OSG pipeline, and a sidecar JSON with the exact reproduce command.
   pixi run agent-capture -- --scene box_stack --steps 150 \
       --layers contacts body_frames labels --focus stack1 --auto-views 2 \
       --out /tmp/evidence
@@ -94,10 +94,16 @@ reported but only gates when you pass `--require-contrast`.
   `cropped`/`off-frame`/`too-far`/`too-close`/`occluded`/`ambiguous`) and
   `select_viewpoints` deterministically picks azimuth-diverse better views —
   when a report lists issues, reframe or reselect instead of shipping the
-  shot. `scripts/agent_debug_overlay.py` composites contacts (implausible
-  sentinel contact points are skipped and counted), body frames, velocity
-  arrows, trajectory polylines, and labels onto captures, matching the DART 7
-  overlay colors. No GL context is needed for assessment itself.
+  shot. Body bounds come from the core `Shape.getBoundingBox()` (now bound in
+  dartpy). `scripts/agent_debug_overlay.py` renders the debug layers *through
+  the engine*: contacts (implausible sentinel contact points are skipped and
+  counted), body frames, velocity arrows, and trajectory polylines become
+  `dart.dynamics.LineSegmentShape` geometry on world `SimpleFrame`s, and labels
+  become world-anchored `dart.gui.osg.TextOverlay` (osgText) text — so the
+  overlay is depth-correct and part of the rendered scene rather than
+  composited in image space. The harness injects the overlay, renders through
+  `captureOffscreen`, then removes it. No GL context is needed for assessment
+  itself. Overlay colors match the DART 7 debug producers.
 
 - Select a small claim-tied evidence set and generate the PR section:
 

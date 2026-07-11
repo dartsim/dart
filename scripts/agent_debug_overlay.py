@@ -1,26 +1,29 @@
-"""Debug overlay compositing for DART 6 headless captures.
+"""Engine-rendered debug overlays for DART 6 headless captures.
 
-DART 6's OSG offscreen path (WP-ASV) renders the plain scene; this module
-draws world-derived debug layers — contact markers/normals/forces, body
-frames, velocity arrows, trajectory polylines, and name labels — onto the
-captured PNG in image space. DART 7 renders its debug overlay unlit and
-always-on-top, so 2D compositing after projection is visually equivalent
-evidence. Colors and arrow geometry mirror dart::gui's debug producers so
-both branches speak the same visual language.
+This module builds world-derived debug layers — contact markers/normals/forces,
+body frames, velocity arrows, trajectory polylines, and name labels — and
+renders them *through the DART core OSG pipeline* rather than compositing them
+onto the captured PNG in image space. Segments become
+``dart.dynamics.LineSegmentShape`` geometry on ``SimpleFrame``s added to the
+world (so ``WorldNode`` draws them as real, depth-correct scene geometry), and
+labels become world-anchored text on a ``dart.gui.osg.TextOverlay`` viewer
+attachment (osgText). The capture harness injects the overlay, renders through
+``captureOffscreen``, then removes it. Colors and arrow geometry mirror
+dart::gui's debug producers so DART 6 and DART 7 speak the same visual language.
 
-Pure Python + numpy over the classic dartpy surface; pairs with
-agent_view_quality.AgentCamera for the projection.
+``build_overlay`` and ``OverlayScene`` stay pure Python + numpy over the classic
+dartpy surface; only the rendering backend (``inject_overlay`` /
+``remove_overlay`` / ``populate_labels``) touches the OSG scene.
 """
 
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Iterable, Sequence
 
 import numpy as np
-from _image_tools import ImageData, draw_text_rgb, read_image, write_image
-from agent_view_quality import AgentCamera, project_points
 
 # Colors mirrored from dart/gui debug producers (DART 7 dart/gui/debug.cpp).
 AXIS_X_RGB = (230, 71, 71)
@@ -32,7 +35,9 @@ CONTACT_FORCE_RGB = (237, 79, 171)
 LINEAR_VELOCITY_RGB = (82, 189, 250)
 ANGULAR_VELOCITY_RGB = (189, 133, 250)
 TRAJECTORY_RGB = (250, 140, 64)
-LABEL_RGB = (255, 255, 255)
+# osgText labels render on the Viewer's light-gray (0.9) background, so a dark
+# slate reads far more clearly than the white DART 7 uses on its dark overlay.
+LABEL_RGB = (33, 33, 40)
 
 DEBUG_LAYERS = (
     "body_frames",
@@ -280,94 +285,122 @@ def build_overlay(
     return scene
 
 
-# --- Rasterization ----------------------------------------------------------
+# --- Engine rendering backend -----------------------------------------------
+
+# World SimpleFrames created for the overlay carry this name prefix so they are
+# easy to identify; inject_overlay/remove_overlay manage their lifetime.
+OVERLAY_FRAME_PREFIX = "agent_overlay"
+DEFAULT_LINE_THICKNESS = 2.0
+# Label size is in screen pixels (TextOverlay uses SCREEN_COORDS), so labels
+# stay legible at any camera distance.
+DEFAULT_LABEL_CHARACTER_SIZE = 20.0
+
+# Font files tried, in order, when none is set explicitly. osgText renders
+# nothing without a usable font, so the harness resolves one from the runtime
+# environment (the pixi/conda env ships DejaVuSans).
+_FONT_CANDIDATES = ("DejaVuSans.ttf", "Arial.ttf", "arial.ttf", "Vera.ttf")
 
 
-def _draw_line_rgb(
-    pixels: bytearray,
-    width: int,
-    height: int,
-    x0: float,
-    y0: float,
-    x1: float,
-    y1: float,
-    rgb: tuple[int, int, int],
-    thickness: int = 2,
-) -> None:
-    steps = int(max(abs(x1 - x0), abs(y1 - y0))) + 1
-    xs = np.linspace(x0, x1, steps)
-    ys = np.linspace(y0, y1, steps)
-    half = max(int(thickness) // 2, 0)
-    color = bytes(rgb)
-    for x, y in zip(xs, ys):
-        xi, yi = int(round(x)), int(round(y))
-        for dy in range(-half, half + 1):
-            py = yi + dy
-            if py < 0 or py >= height:
-                continue
-            for dx in range(-half, half + 1):
-                px = xi + dx
-                if px < 0 or px >= width:
-                    continue
-                offset = (py * width + px) * 3
-                pixels[offset : offset + 3] = color
+def _dartpy() -> Any:
+    import dartpy
+
+    return dartpy
 
 
-def composite_overlay(
-    image: ImageData,
+def _color01(rgb: tuple[int, int, int]) -> list[float]:
+    return [float(channel) / 255.0 for channel in rgb]
+
+
+def find_default_font() -> str | None:
+    """Locate a TrueType font for osgText labels, or None for osgText's default.
+
+    Searches the active conda/pixi environment's font directory and the common
+    system DejaVu locations. Returning an absolute path keeps label rendering
+    deterministic across hosts.
+    """
+    import os
+
+    search_dirs: list[Path] = []
+    prefix = os.environ.get("CONDA_PREFIX")
+    if prefix:
+        search_dirs.append(Path(prefix) / "fonts")
+    search_dirs += [
+        Path("/usr/share/fonts/truetype/dejavu"),
+        Path("/usr/share/fonts/dejavu"),
+        Path("/usr/share/fonts"),
+    ]
+    for directory in search_dirs:
+        for name in _FONT_CANDIDATES:
+            candidate = directory / name
+            if candidate.is_file():
+                return str(candidate)
+    # Last resort: a recursive scan of the env font dir for any candidate.
+    if prefix:
+        for name in _FONT_CANDIDATES:
+            matches = sorted((Path(prefix)).rglob(name))
+            if matches:
+                return str(matches[0])
+    return None
+
+
+def inject_overlay(
+    world: Any,
     scene: OverlayScene,
-    camera: AgentCamera,
     *,
-    thickness: int = 2,
-    label_scale: int = 2,
-) -> ImageData:
-    """Project overlay primitives with ``camera`` and draw them onto a copy."""
-    width, height = image.width, image.height
-    pixels = bytearray(image.pixels)
+    thickness: float = DEFAULT_LINE_THICKNESS,
+) -> list[Any]:
+    """Render ``scene``'s segments through the engine as world geometry.
+
+    Segments are grouped by color into one ``LineSegmentShape`` each, wrapped in
+    a world ``SimpleFrame`` whose visual aspect carries that color. ``WorldNode``
+    then draws them as real, depth-correct scene geometry in every capture.
+    Returns the frames added; pass them to :func:`remove_overlay`.
+    """
+    dart = _dartpy()
+    by_color: dict[tuple[int, int, int], list[tuple[np.ndarray, np.ndarray]]] = {}
     for start, end, rgb in scene.segments:
-        projected = project_points(camera, (width, height), [start, end])
-        if projected[0, 2] <= 0.0 or projected[1, 2] <= 0.0:
-            continue
-        _draw_line_rgb(
-            pixels,
-            width,
-            height,
-            projected[0, 0],
-            projected[0, 1],
-            projected[1, 0],
-            projected[1, 1],
-            rgb,
-            thickness,
+        by_color.setdefault(rgb, []).append((start, end))
+
+    frames: list[Any] = []
+    for index, rgb in enumerate(sorted(by_color)):
+        line = dart.dynamics.LineSegmentShape(float(thickness))
+        for start, end in by_color[rgb]:
+            first = line.addVertex([float(v) for v in start])
+            second = line.addVertex([float(v) for v in end])
+            line.addConnection(first, second)
+        frame = dart.dynamics.SimpleFrame(
+            dart.dynamics.Frame.World(), f"{OVERLAY_FRAME_PREFIX}_{index}"
         )
-    for anchor, text in scene.labels:
-        projected = project_points(camera, (width, height), [anchor])[0]
-        if projected[2] <= 0.0:
-            continue
-        if not (math.isfinite(projected[0]) and math.isfinite(projected[1])):
-            continue
-        draw_text_rgb(
-            pixels,
-            width,
-            height,
-            text,
-            (int(round(projected[0])) + 3, int(round(projected[1])) - 3 * label_scale),
-            LABEL_RGB,
-            scale=label_scale,
-        )
-    return ImageData(path=image.path, width=width, height=height, pixels=bytes(pixels))
+        frame.setShape(line)
+        frame.createVisualAspect().setColor(_color01(rgb))
+        world.addSimpleFrame(frame)
+        frames.append(frame)
+    return frames
 
 
-def composite_overlay_file(
-    png_path: Any,
+def remove_overlay(world: Any, frames: Sequence[Any]) -> None:
+    """Remove overlay frames previously added by :func:`inject_overlay`."""
+    for frame in frames:
+        world.removeSimpleFrame(frame)
+
+
+def populate_labels(
+    overlay: Any,
     scene: OverlayScene,
-    camera: AgentCamera,
     *,
-    thickness: int = 2,
-    label_scale: int = 2,
-) -> None:
-    """Read a captured PNG, composite the overlay, and write it back."""
-    image = read_image(png_path)
-    annotated = composite_overlay(
-        image, scene, camera, thickness=thickness, label_scale=label_scale
-    )
-    write_image(png_path, annotated)
+    color: tuple[int, int, int] = LABEL_RGB,
+    character_size: float = DEFAULT_LABEL_CHARACTER_SIZE,
+) -> int:
+    """Load ``scene``'s labels into a ``dart.gui.osg.TextOverlay`` attachment.
+
+    Clears any previous labels first so the overlay tracks the current scene.
+    Each label is world-anchored, screen-facing text rendered by osgText.
+    Returns the number of labels added.
+    """
+    overlay.clear()
+    rgba = _color01(color) + [1.0]
+    for anchor, text in scene.labels:
+        overlay.addLabel(
+            [float(v) for v in anchor], str(text), rgba, float(character_size)
+        )
+    return len(scene.labels)
