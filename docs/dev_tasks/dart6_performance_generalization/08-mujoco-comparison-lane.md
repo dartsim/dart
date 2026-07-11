@@ -34,7 +34,6 @@ PYTHONPATH=$PWD/build/default/cpp/Release/python/dartpy \
 
 | Class | Scene | DART (native det) | MuJoCo | Verdict |
 | --- | --- | ---: | ---: | --- |
-| Locomotion | ant | 0.0306 ms/step | 0.0398 | **DART +30%** |
 | Arms | reacher | 0.0200 | 0.0086 | MJ 2.3x (µs-scale) |
 | Arms | pusher | 0.0373 | 0.0065 | MJ 5.7x |
 | Arms | striker/thrower | — | — | INVALID until contype fidelity lands |
@@ -42,6 +41,11 @@ PYTHONPATH=$PWD/build/default/cpp/Release/python/dartpy \
 | Many objects | PILE-120 active | 1.55 ms/step | 0.57 | MJ ~2.7x |
 | Dynamic | DYN-STIR-120 | 1.82 | 0.61 | MJ ~3.0x |
 | Sleeping | settled 3k | 0.034 ms/step (deactivation) | ~2 (no sleeping exists) | **DART ~60x** (to be formalized) |
+
+The prototype ant row is deferred: the merged orchestrator does not register
+an ant scenario, and no exact direct-runner command, artifact, and engine SHAs
+were retained for the earlier measurement. Do not treat that result as accepted
+evidence; restore a locomotion row only with reproducible provenance.
 
 ## Gap analysis -> packets
 

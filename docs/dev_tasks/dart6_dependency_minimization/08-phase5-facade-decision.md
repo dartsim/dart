@@ -16,9 +16,9 @@ DART 6.22.0, while preserving the downstream gz-physics/gz-sim contract.
 
 **The native engine merges INTO the `dart` detector: `dart/collision/native/`
 folds into `dart/collision/dart/`, and `NativeCollisionDetector` merges into
-`DARTCollisionDetector`, replacing its legacy narrowphase-only
-implementation. The single built-in backend is the `dart` detector, canonical
-factory key `"dart"`. The keys `"fcl"`, `"bullet"`, `"ode"` remain resolvable
+`DARTCollisionDetector`, replacing its legacy collision implementation. The
+single built-in backend is the `dart` detector, canonical factory key `"dart"`.
+The keys `"fcl"`, `"bullet"`, `"ode"` remain resolvable
 and, from 6.22, create dart-backed facade implementations.**
 
 Maintainer direction (2026-07-10): "NativeDetector must merged into
@@ -32,11 +32,13 @@ Mechanics, and why this is clean now:
   All in-tree users are updated in the same PR (`contact_benchmark
   --collision native`, dashboard detector index 4, native unit tests, the
   comparison harness's `--detector native`, the dartpy binding).
-- The legacy `DARTCollisionDetector` narrowphase (six primitive pairs, no
-  broadphase, `distance()` stub, no raycast) is a strict subset of the engine
-  replacing it, so the `"dart"` key only gains capability. `dart`-detector
-  guard rows re-baseline with the consolidation PR's A/B evidence
-  (pre-release change, allowed with recorded old/new rows).
+- The incumbent `DARTCollisionDetector` has six primitive narrowphase pairs,
+  an in-detector AABB sweep broadphase (including plane pruning and parallel
+  scratch paths), a `distance()` stub, and no raycast. The consolidated engine
+  must preserve or deliberately replace and re-baseline that existing
+  broadphase behavior while extending the `"dart"` key's shape and query
+  capabilities. `dart`-detector guard rows re-baseline with the consolidation
+  PR's A/B evidence (pre-release change, allowed with recorded old/new rows).
 - gz-physics keeps working: `SetWorldCollisionDetector("dart")` returns the
   consolidated engine; the other names keep resolving; gz's own default
   remains its `GzOdeCollisionDetector` subclass until 6.22
