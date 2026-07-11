@@ -43,6 +43,7 @@
 #include "dart/collision/native/PersistentManifoldCache.hpp"
 #include "dart/collision/native/narrow_phase/NarrowPhase.hpp"
 #include "dart/common/Console.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
@@ -765,6 +766,9 @@ bool emitDartFallbackContacts(
     const CollisionOption& option,
     CollisionResult& result)
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "Native fallback emit");
   const std::size_t maxPairContacts
       = option.getEffectiveMaxNumContactsPerPair();
   std::size_t emittedForPair = 0u;
@@ -804,6 +808,9 @@ bool processDartFallbackPair(
     bool& collisionFound,
     ScratchCollisionResult& pairResult)
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "Native soft fallback pair");
   if (result && result->getNumContacts() >= option.maxNumContacts)
     return true;
 
@@ -1027,6 +1034,9 @@ bool NativeCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "NativeCollisionDetector::collide");
   if (result)
     result->clear();
 

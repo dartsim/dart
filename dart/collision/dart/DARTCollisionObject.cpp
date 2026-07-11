@@ -32,6 +32,7 @@
 
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 
+#include "dart/common/Profile.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
@@ -278,6 +279,9 @@ void DARTCollisionObject::refreshShapeCache()
 //==============================================================================
 void DARTCollisionObject::refreshSoftMeshCache()
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "DARTCollisionObject::refreshSoftMeshCache");
   const auto* softMesh
       = static_cast<const dynamics::SoftMeshShape*>(mCachedShape.get());
   const auto* softBodyNode

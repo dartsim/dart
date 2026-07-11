@@ -33,6 +33,7 @@
 #include "dart/collision/native/NativeCollisionGroup.hpp"
 
 #include "dart/collision/native/NativeCollisionObject.hpp"
+#include "dart/common/Profile.hpp"
 
 #include <algorithm>
 
@@ -144,6 +145,9 @@ void NativeCollisionGroup::updateCollisionGroupEngineData()
 //==============================================================================
 void NativeCollisionGroup::updateEngineDataForCollide()
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "NativeCollisionGroup::updateObjects");
   const auto numObjects = mNativeObjects.size();
   for (std::size_t i = 0u; i < numObjects; ++i) {
     auto* nativeObject = mNativeObjects[i];

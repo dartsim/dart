@@ -97,6 +97,33 @@ Verified baseline: today the soft point-mass gather is NOT doubled — the fallb
 - New: `native/shapes/SoftMeshShape.{hpp,cpp}`, `native/narrow_phase/SoftMeshKernels.{hpp,cpp}` (+ shared `native/shapes/SoftMeshCache.hpp`).
 - Edit: `native/shapes/Shape.hpp` (ShapeType), `native/detail/NativeShapeConversion.cpp:203` (conversion), `native/NativeCollisionObject.{hpp,cpp}` (predicates, soft refresh branch, `mIsNativeSoftShape`), `native/narrow_phase/NarrowPhase.cpp:122` (dispatch + isSupported), `native/NativeCollisionDetector.cpp` (`shouldUseDartFallback:121`, manifold gates `:163-215,1042-1048`, soft emit copy-through), `native/NativeCollisionGroup.cpp` (group soft flag), optionally `native/broad_phase/BruteForce.{hpp,cpp}` (stage 8 SAP+SIMD).
 - Source-of-truth to mirror (do not edit): `dart/collision/dart/DARTCollide.cpp:1464-2401` (kernels), `dart/collision/dart/DARTCollisionObject.{hpp,cpp}` (cache structs + refresh pipeline), `dart/dynamics/SoftMeshShape.cpp:102-231` (vertex formula).
+## Stage-0 measured attribution (2026-07-11) — port deferred
+
+Conditional profiler scopes now cover both detector pipelines
+(`NativeCollisionDetector::collide`, `NativeCollisionGroup::updateObjects`,
+the soft fallback pair/emit path, `DARTCollisionDetector::collide`, the
+finite-finite pair path, and `DARTCollisionObject::refreshSoftMeshCache`).
+First same-host attribution runs (5 repeats per lane, cleanest runs
+compared; host loaded, so ratios matter more than absolutes):
+
+- `soft_cubes` 200 steps: native collision ~163 us nested in
+  `updateConstraints` vs dart ~230 us; totals 4.13 ms vs 4.26 ms.
+- `soft_bodies` 200 steps: `NativeCollisionDetector::collide` 1.644 ms vs
+  `DARTCollisionDetector::collide` 1.636 ms (0.5% apart); totals tied at
+  ~14.15 ms; the shared kernels dominate both lanes (fallback pair 1.149 ms
+  vs finite-finite 1.209 ms).
+
+No structural native penalty near the benchmark's 3.8-6.4% appears anywhere
+in the scoped pipeline. The failing winner rows from the
+`wp-db-reunified-c743a45` matrix are therefore most plausibly
+load-structured measurement artifacts: that run's own log shows its "idle"
+windows hovering at 1-minute load 4.0-4.5 while sibling sessions ran in
+bursts. Decision: the kernel port below stays a documented endgame but is
+NOT dispatched on current evidence; the winner gate is re-judged from the
+next genuinely idle full matrix, which is now self-diagnosing thanks to the
+scopes. The coverage extension (face-interior contacts) remains justified on
+correctness grounds independent of this question.
+
 ## Adversarial critique findings (2026-07-11) — binding revisions
 
 Two independent verification passes against the code confirmed the
