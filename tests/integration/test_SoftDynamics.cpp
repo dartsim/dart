@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/collision/CollisionResult.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -45,6 +46,7 @@
 
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -76,6 +78,14 @@ struct SoftStateSnapshot
   std::size_t dofs = 0u;
   std::size_t softBodies = 0u;
   std::size_t pointMasses = 0u;
+};
+
+struct ContactMetrics
+{
+  Eigen::Vector3d force = Eigen::Vector3d::Zero();
+  Eigen::Vector3d centerOfPressure = Eigen::Vector3d::Zero();
+  std::size_t contacts = 0u;
+  bool hasCenterOfPressure = false;
 };
 
 constexpr double kMaxPointMassPositionNorm = 1.0e4;
@@ -489,6 +499,113 @@ double maxAbsDifference(
     maxDifference = std::max(maxDifference, std::abs(lhs[i] - rhs[i]));
 
   return maxDifference;
+}
+
+void configureDetector(
+    const simulation::WorldPtr& world, bool useNativeDetector)
+{
+  DART_ASSERT(world != nullptr);
+  if (useNativeDetector)
+    world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+}
+
+double computeSoftMechanicalEnergy(
+    const dynamics::SkeletonPtr& skeleton, const Eigen::Vector3d& gravity)
+{
+  DART_ASSERT(skeleton != nullptr);
+
+  // Skeleton energy covers the rigid parent bodies and joints. Point masses
+  // are not Skeleton DOFs in DART 6, so add their kinetic, gravitational, and
+  // spring energies explicitly through the public soft-body API.
+  double energy
+      = skeleton->computeKineticEnergy() + skeleton->computePotentialEnergy();
+  for (std::size_t i = 0; i < skeleton->getNumSoftBodyNodes(); ++i) {
+    const dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(i);
+    DART_ASSERT(softBody != nullptr);
+    const double vertexStiffness = softBody->getVertexSpringStiffness();
+    const double edgeStiffness = softBody->getEdgeSpringStiffness();
+
+    for (std::size_t j = 0; j < softBody->getNumPointMasses(); ++j) {
+      const dynamics::PointMass* pointMass = softBody->getPointMass(j);
+      DART_ASSERT(pointMass != nullptr);
+      energy += 0.5 * pointMass->getMass()
+                * pointMass->getWorldVelocity().squaredNorm();
+      if (softBody->getGravityMode())
+        energy -= pointMass->getMass()
+                  * gravity.dot(pointMass->getWorldPosition());
+      energy += 0.5 * vertexStiffness * pointMass->getPositions().squaredNorm();
+
+      for (std::size_t k = 0; k < pointMass->getNumConnectedPointMasses();
+           ++k) {
+        const dynamics::PointMass* neighbor
+            = pointMass->getConnectedPointMass(k);
+        DART_ASSERT(neighbor != nullptr);
+        if (neighbor->getIndexInSoftBodyNode() <= j)
+          continue;
+        energy += 0.5 * edgeStiffness
+                  * (pointMass->getPositions() - neighbor->getPositions())
+                        .squaredNorm();
+      }
+    }
+  }
+
+  return energy;
+}
+
+double computeSoftSystemMass(const dynamics::SkeletonPtr& skeleton)
+{
+  DART_ASSERT(skeleton != nullptr);
+  double mass = 0.0;
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i)
+    mass += skeleton->getBodyNode(i)->getInertia().getMass();
+
+  for (std::size_t i = 0; i < skeleton->getNumSoftBodyNodes(); ++i) {
+    const dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(i);
+    DART_ASSERT(softBody != nullptr);
+    for (std::size_t j = 0; j < softBody->getNumPointMasses(); ++j)
+      mass += softBody->getPointMass(j)->getMass();
+  }
+
+  return mass;
+}
+
+ContactMetrics computeContactMetrics(
+    const simulation::WorldPtr& world,
+    const dynamics::SkeletonPtr& targetSkeleton)
+{
+  DART_ASSERT(world != nullptr);
+  DART_ASSERT(targetSkeleton != nullptr);
+
+  ContactMetrics metrics;
+  Eigen::Vector3d weightedContactPoint = Eigen::Vector3d::Zero();
+  double verticalWeight = 0.0;
+  const auto& result = world->getLastCollisionResult();
+  for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
+    const collision::Contact& contact = result.getContact(i);
+    const dynamics::ConstBodyNodePtr body1 = contact.getBodyNodePtr1();
+    const dynamics::ConstBodyNodePtr body2 = contact.getBodyNodePtr2();
+    const bool targetIsBody1
+        = body1 && body1->getSkeleton().get() == targetSkeleton.get();
+    const bool targetIsBody2
+        = body2 && body2->getSkeleton().get() == targetSkeleton.get();
+    if (targetIsBody1 == targetIsBody2)
+      continue;
+
+    const Eigen::Vector3d forceOnTarget
+        = targetIsBody1 ? contact.force : -contact.force;
+    metrics.force += forceOnTarget;
+    ++metrics.contacts;
+
+    const double upwardForce = std::max(0.0, forceOnTarget.y());
+    weightedContactPoint += upwardForce * contact.point;
+    verticalWeight += upwardForce;
+  }
+
+  if (verticalWeight > 1.0e-12) {
+    metrics.centerOfPressure = weightedContactPoint / verticalWeight;
+    metrics.hasCenterOfPressure = true;
+  }
+  return metrics;
 }
 
 } // namespace
@@ -1071,6 +1188,249 @@ TEST_F(SoftDynamicsTest, adaptiveContactActivationDeterministicAcrossThreads)
       snapshots[0], snapshots[1], "activation repeat determinism threads=1");
   expectSnapshotsNear(
       snapshots[0], snapshots[2], "activation determinism threads=1-vs-4");
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, softMechanicalEnergyGrowthIsBounded)
+{
+  struct DetectorConfig
+  {
+    const char* name;
+    bool useNativeDetector;
+  };
+  const std::array<DetectorConfig, 2> detectors
+      = {{{"default", false}, {"dart", true}}};
+
+  for (const DetectorConfig& detector : detectors) {
+    simulation::WorldPtr freeWorld = utils::SkelParser::readWorld(
+        "dart://sample/skel/test/test_drop_low_stiffness.skel");
+    ASSERT_TRUE(freeWorld != nullptr) << detector.name;
+    freeWorld->removeSkeleton(freeWorld->getSkeleton("ground skeleton"));
+    freeWorld->setGravity(Eigen::Vector3d::Zero());
+    configureDetector(freeWorld, detector.useNativeDetector);
+
+    const dynamics::SkeletonPtr freeSoft = freeWorld->getSkeleton("skeleton 1");
+    ASSERT_TRUE(freeSoft != nullptr) << detector.name;
+    dynamics::SoftBodyNode* freeSoftBody = freeSoft->getSoftBodyNode(0);
+    ASSERT_TRUE(freeSoftBody != nullptr) << detector.name;
+    ASSERT_GT(freeSoftBody->getNumPointMasses(), 1u) << detector.name;
+    freeSoftBody->getPointMass(0)->setPositions(
+        Eigen::Vector3d(0.02, 0.0, 0.0));
+    freeSoftBody->getPointMass(1)->setPositions(
+        Eigen::Vector3d(-0.01, 0.015, 0.0));
+
+    const double initialEnergy
+        = computeSoftMechanicalEnergy(freeSoft, freeWorld->getGravity());
+    expectFinite(initialEnergy, std::string(detector.name) + " initial energy");
+    ASSERT_GT(initialEnergy, 1.0e-8) << detector.name;
+    double previousEnergy = initialEnergy;
+    double maxEnergyIncrease = 0.0;
+    for (std::size_t step = 0; step < 500u; ++step) {
+      freeWorld->step();
+      EXPECT_EQ(freeWorld->getLastCollisionResult().getNumContacts(), 0u)
+          << detector.name << " step=" << step;
+      const double energy
+          = computeSoftMechanicalEnergy(freeSoft, freeWorld->getGravity());
+      expectFinite(
+          energy,
+          std::string(detector.name)
+              + " free energy step=" + std::to_string(step));
+      maxEnergyIncrease = std::max(maxEnergyIncrease, energy - previousEnergy);
+      previousEnergy = energy;
+    }
+
+    // One nanjoule per step (scaled only for energies above one joule) absorbs
+    // floating-point summation noise while rejecting integrator energy growth.
+    const double freeStepTolerance
+        = 1.0e-9 * std::max(1.0, std::abs(initialEnergy));
+    EXPECT_LE(maxEnergyIncrease, freeStepTolerance) << detector.name;
+    EXPECT_LT(previousEnergy, initialEnergy) << detector.name;
+
+    simulation::WorldPtr contactWorld = utils::SkelParser::readWorld(
+        "dart://sample/skel/test/test_drop_low_stiffness.skel");
+    ASSERT_TRUE(contactWorld != nullptr) << detector.name;
+    configureDetector(contactWorld, detector.useNativeDetector);
+    const dynamics::SkeletonPtr contactSoft
+        = contactWorld->getSkeleton("skeleton 1");
+    ASSERT_TRUE(contactSoft != nullptr) << detector.name;
+
+    previousEnergy
+        = computeSoftMechanicalEnergy(contactSoft, contactWorld->getGravity());
+    maxEnergyIncrease = 0.0;
+    bool sawContact = false;
+    for (std::size_t step = 0; step < 800u; ++step) {
+      contactWorld->step();
+      sawContact
+          = sawContact
+            || contactWorld->getLastCollisionResult().getNumContacts() > 0u;
+      const double energy = computeSoftMechanicalEnergy(
+          contactSoft, contactWorld->getGravity());
+      expectFinite(
+          energy,
+          std::string(detector.name)
+              + " contact energy step=" + std::to_string(step));
+      maxEnergyIncrease = std::max(maxEnergyIncrease, energy - previousEnergy);
+      previousEnergy = energy;
+    }
+
+    ASSERT_TRUE(sawContact) << detector.name;
+    // Contact impulses may inject correction energy. Limiting one-step growth
+    // to the system weight times 1 cm permits that impulse-scale correction
+    // while rejecting macroscopic energy spikes or runaway contact response.
+    const double contactStepBound = computeSoftSystemMass(contactSoft)
+                                    * std::abs(contactWorld->getGravity().y())
+                                    * 0.01;
+    EXPECT_LE(maxEnergyIncrease, contactStepBound) << detector.name;
+  }
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, restingSoftContactForceAndCenterOfPressureAreSmooth)
+{
+  struct DetectorConfig
+  {
+    const char* name;
+    bool useNativeDetector;
+  };
+  const std::array<DetectorConfig, 2> detectors
+      = {{{"default", false}, {"dart", true}}};
+
+  for (const DetectorConfig& detector : detectors) {
+    for (const bool adaptive : {false, true}) {
+      simulation::WorldPtr world = utils::SkelParser::readWorld(
+          "dart://sample/skel/test/test_drop_low_stiffness.skel");
+      ASSERT_TRUE(world != nullptr) << detector.name;
+      configureDetector(world, detector.useNativeDetector);
+      if (adaptive)
+        enableAdaptiveContactActivation(world);
+
+      const dynamics::SkeletonPtr softSkeleton
+          = world->getSkeleton("skeleton 1");
+      ASSERT_TRUE(softSkeleton != nullptr) << detector.name;
+      for (std::size_t step = 0; step < 3000u; ++step)
+        world->step();
+
+      const std::string context = std::string(detector.name)
+                                  + (adaptive ? " adaptive" : " all-active");
+      const double weight = computeSoftSystemMass(softSkeleton)
+                            * std::abs(world->getGravity().y());
+      double minVerticalForce = std::numeric_limits<double>::infinity();
+      double maxVerticalForce = 0.0;
+      double maxCopDisplacement = 0.0;
+      Eigen::Vector3d previousCop = Eigen::Vector3d::Zero();
+      bool havePreviousCop = false;
+      std::size_t sampledContacts = 0u;
+
+      for (std::size_t step = 0; step < 300u; ++step) {
+        world->step();
+        const ContactMetrics metrics
+            = computeContactMetrics(world, softSkeleton);
+        expectFinite(metrics.force, context + " contact force");
+        ASSERT_TRUE(metrics.hasCenterOfPressure) << context << " step=" << step;
+        expectFinite(metrics.centerOfPressure, context + " center of pressure");
+        sampledContacts += metrics.contacts;
+        minVerticalForce = std::min(minVerticalForce, metrics.force.y());
+        maxVerticalForce = std::max(maxVerticalForce, metrics.force.y());
+        if (havePreviousCop) {
+          const Eigen::Vector2d displacement(
+              metrics.centerOfPressure.x() - previousCop.x(),
+              metrics.centerOfPressure.z() - previousCop.z());
+          maxCopDisplacement
+              = std::max(maxCopDisplacement, displacement.norm());
+        }
+        previousCop = metrics.centerOfPressure;
+        havePreviousCop = true;
+      }
+
+      ASSERT_GT(sampledContacts, 0u) << context;
+      // The native manifold is held to +/-25% of weight and 2 cm CoP motion.
+      // Legacy FCL needs a 0.25x-3x force band and 11 cm CoP bound for its
+      // larger contact-point churn. Both still reject lost support, impulses
+      // above 3x weight, and a one-step jump across the 20 cm footprint; each
+      // backend uses the same bounds with adaptive activation on and off.
+      const double minForceFactor = detector.useNativeDetector ? 0.75 : 0.25;
+      const double maxForceFactor = detector.useNativeDetector ? 1.25 : 3.0;
+      const double copDisplacementBound
+          = detector.useNativeDetector ? 0.02 : 0.11;
+      EXPECT_GE(minVerticalForce, minForceFactor * weight) << context;
+      EXPECT_LE(maxVerticalForce, maxForceFactor * weight) << context;
+      EXPECT_LE(maxCopDisplacement, copDisplacementBound) << context;
+    }
+  }
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, softContactForcesAreRobustToLcpInitialPoint)
+{
+  struct DetectorConfig
+  {
+    const char* name;
+    bool useNativeDetector;
+  };
+  const std::array<DetectorConfig, 2> detectors
+      = {{{"default", false}, {"dart", true}}};
+
+  for (const DetectorConfig& detector : detectors) {
+    simulation::WorldPtr continuousWorld = utils::SkelParser::readWorld(
+        "dart://sample/skel/test/test_drop_low_stiffness.skel");
+    ASSERT_TRUE(continuousWorld != nullptr) << detector.name;
+    configureDetector(continuousWorld, detector.useNativeDetector);
+    for (std::size_t step = 0; step < 3000u; ++step)
+      continuousWorld->step();
+
+    simulation::WorldPtr restoredWorld = utils::SkelParser::readWorld(
+        "dart://sample/skel/test/test_drop_low_stiffness.skel");
+    ASSERT_TRUE(restoredWorld != nullptr) << detector.name;
+    configureDetector(restoredWorld, detector.useNativeDetector);
+    restoredWorld->reset();
+    ASSERT_EQ(
+        restoredWorld->getNumSkeletons(), continuousWorld->getNumSkeletons())
+        << detector.name;
+    for (std::size_t i = 0; i < continuousWorld->getNumSkeletons(); ++i) {
+      restoredWorld->getSkeleton(i)->setState(
+          continuousWorld->getSkeleton(i)->getState());
+    }
+
+    const dynamics::SkeletonPtr continuousSoft
+        = continuousWorld->getSkeleton("skeleton 1");
+    const dynamics::SkeletonPtr restoredSoft
+        = restoredWorld->getSkeleton("skeleton 1");
+    ASSERT_TRUE(continuousSoft != nullptr) << detector.name;
+    ASSERT_TRUE(restoredSoft != nullptr) << detector.name;
+
+    // Let the restored world rebuild contact/LCP caches from the same public
+    // state before comparing its steady window with uninterrupted simulation.
+    for (std::size_t step = 0; step < 300u; ++step) {
+      continuousWorld->step();
+      restoredWorld->step();
+    }
+
+    double continuousForceMagnitudeSum = 0.0;
+    double restoredForceMagnitudeSum = 0.0;
+    for (std::size_t step = 0; step < 300u; ++step) {
+      continuousWorld->step();
+      restoredWorld->step();
+      const ContactMetrics continuousMetrics
+          = computeContactMetrics(continuousWorld, continuousSoft);
+      const ContactMetrics restoredMetrics
+          = computeContactMetrics(restoredWorld, restoredSoft);
+      ASSERT_GT(continuousMetrics.contacts, 0u)
+          << detector.name << " continuous step=" << step;
+      ASSERT_GT(restoredMetrics.contacts, 0u)
+          << detector.name << " restored step=" << step;
+      continuousForceMagnitudeSum += continuousMetrics.force.norm();
+      restoredForceMagnitudeSum += restoredMetrics.force.norm();
+    }
+
+    const double continuousMeanForce = continuousForceMagnitudeSum / 300.0;
+    const double restoredMeanForce = restoredForceMagnitudeSum / 300.0;
+    const double weight = computeSoftSystemMass(continuousSoft)
+                          * std::abs(continuousWorld->getGravity().y());
+    // Five percent of weight permits cache-rebuild transients while rejecting
+    // a warm-start history that materially changes steady contact load.
+    EXPECT_NEAR(continuousMeanForce, restoredMeanForce, 0.05 * weight)
+        << detector.name;
+  }
 }
 
 //==============================================================================
