@@ -705,3 +705,34 @@ counts, skeleton/body-node counts, and current contact count. The clean capture
 keeps the same camera framing with `--hide-widget`.
 
 No new standalone GUI example or local video artifact was added by this branch.
+
+## 2026-07-11 flagship demo evidence (WP-DB.09)
+
+Two self-contained GUI examples land the mandatory demo subset from
+`decisions.md`:
+
+- `examples/adaptive_soft_contact` (Jain/Liu lane): a soft ellipsoid on
+  ground with a moving pusher, runtime adaptive-activation toggle, exact
+  active/inactive counts, and gold contact-nearest region markers. Headless
+  2000-step run stays finite with the adaptive lifecycle visible (40/86
+  active in steady contact) and reruns bit-identically.
+- `examples/soft_worm` (Kim/Pollard worm-roll lane): a five-link chain with
+  soft flesh driven by a phase-offset sinusoidal gait. Headless 3000-step
+  run stays finite with 1.637 m forward displacement (locomotion bar was
+  0.2 m) and reruns bit-identically.
+
+Captures on the workstation display, both passing `pixi run image-verdict`
+(non-blank):
+
+```bash
+./build/default/cpp/Release/bin/adaptive_soft_contact \
+  --headless --steps 500 --shot /tmp/claude-demo-captures/adaptive_soft_contact.png
+./build/default/cpp/Release/bin/soft_worm \
+  --headless --steps 3000 --shot /tmp/claude-demo-captures/soft_worm.png
+```
+
+The adaptive capture shows the gold active region hugging the ground ring
+and pusher side with the stats panel reporting 40 active / 46 inactive and
+32 contacts at step 500; the worm capture shows the mid-gait pose at frame
+3000 with the displacement readout. Interactive runs:
+`pixi run ex adaptive_soft_contact`, `pixi run ex soft_worm`.
