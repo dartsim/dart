@@ -52,6 +52,18 @@ std::vector<DemoScene> makeDemoScenes()
   scenes.push_back(makeSimulationEventHandlerScene());
   scenes.push_back(makeRigidShapesScene());
   scenes.push_back(makeSleepingScene());
+
+  // Research (new category; first appearance here).
+  scenes.push_back(makeFbfPaperInclineScene());
+  scenes.push_back(makeFbfPaperBackspinScene());
+  scenes.push_back(makeFbfPaperTurntableScene());
+  scenes.push_back(makeFbfPaperPainleveScene());
+  scenes.push_back(makeFbfPaperCardAFrameScene());
+  scenes.push_back(makeFbfPaperCardHouse26Scene());
+  scenes.push_back(makeFbfPaperCardHouse10Scene());
+  scenes.push_back(makeFbfPaperMasonryArch25Scene());
+  scenes.push_back(makeFbfPaperMasonryArch101Scene());
+
   scenes.push_back(makeHardcodedDesignScene());
   scenes.push_back(makeRigidLoopScene());
   scenes.push_back(makeBoxStackingScene());

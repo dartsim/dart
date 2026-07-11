@@ -1,0 +1,72 @@
+{
+  "checks": {
+    "contrast": {
+      "bright_pixels": 1751,
+      "dark_pixels": 73815,
+      "mid_pixels": 1916,
+      "p05": 23.936,
+      "p95": 67.599,
+      "pass": false,
+      "reasons": [
+        "luminance spread 43.7 < 90.0"
+      ],
+      "region": {
+        "x0": 256,
+        "x1": 620,
+        "y0": 216,
+        "y1": 432
+      },
+      "sample_count": 78624,
+      "spread": 43.663,
+      "thresholds": {
+        "bright_luminance_gt": 190.0,
+        "dark_luminance_lt": 55.0,
+        "mid_luminance_max": 170.0,
+        "mid_luminance_min": 70.0,
+        "min_bright_pixels": 393,
+        "min_dark_pixels": 393,
+        "min_mid_pixels": 196,
+        "min_spread": 90.0
+      }
+    },
+    "non_blank": {
+      "nonzero_pixels": 307200,
+      "pass": true,
+      "reasons": [],
+      "total_pixels": 307200,
+      "unique_colors_seen": 2
+    }
+  },
+  "image": {
+    "height": 480,
+    "path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/gui_captures/fbf_paper_backspin.png",
+    "width": 640
+  },
+  "metadata": {},
+  "pass": true,
+  "reasons": [],
+  "schema_version": "dart.image_verdict/v1",
+  "thresholds_used": {
+    "contrast": {
+      "bright_luminance_gt": 190.0,
+      "dark_luminance_lt": 55.0,
+      "mid_luminance_max": 170.0,
+      "mid_luminance_min": 70.0,
+      "min_bright_pixels": 393,
+      "min_dark_pixels": 393,
+      "min_mid_pixels": 196,
+      "min_spread": 90.0
+    },
+    "diff": {
+      "fail": 0.016,
+      "failpercent": 1.0,
+      "ignore_aa": true,
+      "relnorm": null
+    },
+    "non_blank": {
+      "min_nonzero_pixels": 1,
+      "min_unique_colors": 2
+    },
+    "require_contrast": false
+  }
+}
