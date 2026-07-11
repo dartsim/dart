@@ -34,7 +34,7 @@
 #define DART_COLLISION_NATIVE_NATIVECOLLISIONGROUP_HPP_
 
 #include <dart/collision/CollisionGroup.hpp>
-#include <dart/collision/native/broad_phase/BruteForce.hpp>
+#include <dart/collision/native/broad_phase/AabbTree.hpp>
 
 #include <memory>
 #include <unordered_map>
@@ -80,7 +80,9 @@ protected:
 private:
   std::size_t assignId(NativeCollisionObject* object);
 
-  std::unique_ptr<native::BroadPhase> mBroadPhase;
+  // Keep the concrete type so NativeCollisionDetector can use AABB-tree-only
+  // fast paths without extending the release-line BroadPhase vtable.
+  std::unique_ptr<native::AabbTreeBroadPhase> mBroadPhase;
   std::vector<CollisionObject*> mCollisionObjects;
   std::unordered_map<std::size_t, NativeCollisionObject*> mIdToObject;
   std::unordered_map<CollisionObject*, std::size_t> mObjectToId;
