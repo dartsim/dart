@@ -26,7 +26,7 @@ collision-fidelity work needed by the affected rows):
 pixi run build-py-dev && pixi install -e mujoco
 PYTHONPATH=$PWD/build/default/cpp/Release/python/dartpy \
   pixi run python scripts/mujoco_comparison/run_comparison.py \
-  --reps 5 --detector native \
+  --reps 5 --detector native --dart-sleep off \
   --scene ARM-REACHER --scene ARM-PUSHER \
   --scene HUM-FALL --scene HUM-ACTIVE \
   --scene PILE-120 --scene PILE-900 --scene DYN-STIR-120 \
@@ -35,7 +35,8 @@ PYTHONPATH=$PWD/build/default/cpp/Release/python/dartpy \
 ```
 
 The explicit scene list is required: the runner's default set still omits the
-two HUM rows. Do not accept the cross-engine matrix unless both HUM rows run;
+two HUM rows. `--dart-sleep off` makes every active comparison independent of
+deactivation. Do not accept the cross-engine matrix unless both HUM rows run;
 a parser or runtime failure remains a blocked row rather than evidence.
 
 ## Standings (2026-07-10 prototype rows; quiet-host full matrix pending)

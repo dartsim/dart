@@ -196,6 +196,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="Override every scenario's --detector for dart_runner.py.",
     )
     parser.add_argument(
+        "--dart-sleep",
+        choices=("on", "off"),
+        default=None,
+        help="Override every scenario's --sleep setting for dart_runner.py.",
+    )
+    parser.add_argument(
         "--seed", type=int, default=0, help="Seed for all generated scenes."
     )
     parser.add_argument(
@@ -240,8 +246,10 @@ def _dart_command(
     out_path: Path,
     config: str,
     detector_override: Optional[str],
+    sleep_override: Optional[str],
 ) -> list[str]:
     detector = detector_override or scenario.detector
+    sleep = sleep_override or scenario.sleep
     cmd = [
         python_exe,
         str(DART_RUNNER),
@@ -256,7 +264,7 @@ def _dart_command(
         "--detector",
         detector,
         "--sleep",
-        scenario.sleep,
+        sleep,
         "--scene-id",
         scenario.scene_id,
         "--config",
@@ -500,6 +508,7 @@ def main(argv: list[str]) -> int:
                     dart_out,
                     config="headline",
                     detector_override=args.detector,
+                    sleep_override=args.dart_sleep,
                 )
                 if not _run(dart_cmd, args.dry_run):
                     blocked[scenario.scene_id] = "dart runner failed"
