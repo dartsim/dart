@@ -132,7 +132,9 @@ def _mocap_id_for_body(model: "mujoco.MjModel", name: str) -> int | None:
     return mocap_id if mocap_id >= 0 else None
 
 
-def _drive_joint_dof_addrs(model: "mujoco.MjModel", joint_names: list[str]) -> dict[str, int]:
+def _drive_joint_dof_addrs(
+    model: "mujoco.MjModel", joint_names: list[str]
+) -> dict[str, int]:
     """Map joint name -> its (first, and assumed only) DOF address.
 
     Every joint the harness drives (reacher/pusher/humanoid actuator
@@ -187,7 +189,9 @@ def main(argv: list[str]) -> int:
                 file=sys.stderr,
             )
 
-    stirrer_mocap_id = _mocap_id_for_body(model, "stirrer") if stirrer is not None else None
+    stirrer_mocap_id = (
+        _mocap_id_for_body(model, "stirrer") if stirrer is not None else None
+    )
 
     def apply_drive(t: float) -> None:
         if not drive_addrs:
