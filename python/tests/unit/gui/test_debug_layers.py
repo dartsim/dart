@@ -89,6 +89,33 @@ def test_trajectories_layer_without_history_raises():
         dart.gui.debug_scene_for_world(world, layers=("trajectories",))
 
 
+def test_trajectories_layer_rejects_fewer_than_two_samples():
+    world = _settled_world()
+    tracker = dart.gui.TrajectoryTracker(world, bodies=["box"])
+    with pytest.raises(ValueError, match="at least two sampled positions"):
+        dart.gui.debug_scene_for_world(
+            world, layers=("trajectories",), trajectories=tracker
+        )
+
+    tracker.sample()
+    with pytest.raises(ValueError, match="at least two sampled positions"):
+        dart.gui.debug_scene_for_world(
+            world, layers=("trajectories",), trajectories=tracker
+        )
+
+    with pytest.raises(ValueError, match="at least two sampled positions"):
+        dart.gui.debug_scene_for_world(
+            world, layers=("trajectories",), trajectories={"box": []}
+        )
+
+    with pytest.raises(ValueError, match="at least two sampled positions"):
+        dart.gui.debug_scene_for_world(
+            world,
+            layers=("trajectories",),
+            trajectories={"box": [np.zeros(3)]},
+        )
+
+
 def test_labels_layer_names_bodies():
     world = _settled_world()
     scene = dart.gui.debug_scene_for_world(world, layers=("labels",))

@@ -89,6 +89,11 @@ def contact_debug_lines(contacts: Iterable[Any], options: Any | None = None) -> 
 
 def _trajectory_lines(name: str, positions: Iterable[Any]) -> list:
     points = [np.asarray(point, dtype=float).reshape(3) for point in positions]
+    if len(points) < 2:
+        raise ValueError(
+            f"trajectory history for {name!r} needs at least two sampled positions; "
+            f"got {len(points)}"
+        )
     return list(
         dart.gui.make_polyline_debug_lines(
             points,
@@ -125,6 +130,11 @@ class TrajectoryTracker:
         return self._history
 
     def debug_lines(self) -> list:
+        if not self._history:
+            raise ValueError(
+                "trajectory history needs at least two sampled positions per body; "
+                "call sample() after at least two steps"
+            )
         lines: list = []
         for name, positions in sorted(self._history.items()):
             lines.extend(_trajectory_lines(name, positions))
@@ -251,6 +261,10 @@ def debug_scene_for_world(
         if isinstance(trajectories, TrajectoryTracker):
             lines.extend(trajectories.debug_lines())
         else:
+            if not trajectories:
+                raise ValueError(
+                    "trajectory history needs at least two sampled positions per body"
+                )
             for name, positions in sorted(trajectories.items()):
                 lines.extend(_trajectory_lines(name, positions))
 

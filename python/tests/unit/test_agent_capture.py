@@ -69,6 +69,23 @@ def test_reproduce_command_records_auto_views() -> None:
     assert "--camera-azimuth" not in command
 
 
+def test_failed_view_report_rejects_capture() -> None:
+    views = [
+        {
+            "name": "main",
+            "report": {"pass": False, "issues": ["off-frame", "too-far"]},
+        }
+    ]
+    with pytest.raises(ValueError, match="main: off-frame, too-far"):
+        agent_capture._require_acceptable_views(views)
+
+
+def test_acceptable_view_reports_pass_capture_gate() -> None:
+    agent_capture._require_acceptable_views(
+        [{"name": "main", "report": {"pass": True, "issues": []}}]
+    )
+
+
 def _display_available() -> bool:
     try:
         import dartpy

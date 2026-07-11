@@ -157,6 +157,21 @@ def _encode_video(frame_dir: Path, pattern: str, out: Path, fps: int) -> bool:
     return True
 
 
+def _require_acceptable_views(views: list[dict[str, Any]]) -> None:
+    failures = []
+    for view in views:
+        report = view["report"]
+        if not bool(report.get("pass", False)):
+            issues = ", ".join(str(issue) for issue in report.get("issues", []))
+            failures.append(f"{view['name']}: {issues or 'view assessment failed'}")
+    if failures:
+        raise ValueError(
+            "capture rejected because view quality failed ("
+            + "; ".join(failures)
+            + "); adjust the camera or use --auto-views"
+        )
+
+
 def run_capture(args: argparse.Namespace) -> dict[str, Any]:
     dart = _import_dartpy()
     gui = dart.gui
@@ -215,6 +230,10 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 "reason": "explicit camera parameters",
             }
         )
+
+    # View assessment is a capture gate, not advisory metadata. Refuse to
+    # render or publish artifacts from a camera that the report rejects.
+    _require_acceptable_views(views)
 
     for view in views:
         pixels = _capture_view(dart, world, view["camera"], args, tracker, contacts)
