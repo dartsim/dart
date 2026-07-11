@@ -104,6 +104,24 @@ def test_coverage_beats_quality_under_tight_budget(tmp_path: Path) -> None:
     assert [entry["path"] for entry in result["selected"]] == ["cover.png"]
 
 
+def test_exact_cover_reconsiders_an_earlier_greedy_pick(tmp_path: Path) -> None:
+    artifacts = [
+        {"path": "a.png", "kind": "still", "claims": ["C1", "C2", "C3"], "quality": 0.99},
+        {"path": "b.png", "kind": "still", "claims": ["C1", "C2", "C4"], "quality": 0.90},
+        {"path": "c.png", "kind": "still", "claims": ["C3", "C5", "C6"], "quality": 0.80},
+    ]
+    manifest = _candidates(tmp_path, artifacts)
+    manifest["claims"] = [
+        {"id": f"C{index}", "text": f"claim {index}"} for index in range(1, 7)
+    ]
+
+    result = evidence_select.select_evidence(manifest, tmp_path, max_artifacts=2)
+
+    assert result["pass"] is True
+    assert result["uncovered_claims"] == []
+    assert [entry["path"] for entry in result["selected"]] == ["b.png", "c.png"]
+
+
 def test_budgets_are_enforced(tmp_path: Path) -> None:
     manifest = _candidates(
         tmp_path,
