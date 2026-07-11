@@ -77,8 +77,8 @@ artifact:
 | --- | --- | --- | --- | --- |
 | `ARM-REACHER` | MJCF file (`data/mjcf/openai/reacher.xml`) | 2-DOF planar arm | torque-driven | on |
 | `ARM-PUSHER` | MJCF file (`data/mjcf/openai/pusher.xml`) | 7-DOF arm + free object | torque-driven | on |
-| `HUM-FALL` | MJCF file (`data/mjcf/openai/humanoid.xml`) | passive humanoid drop | none | on |
-| `HUM-ACTIVE` | MJCF file (`data/mjcf/openai/humanoid.xml`) | humanoid with sinusoidal joint torques | torque-driven | on |
+| `HUM-FALL` | MJCF file (`data/mjcf/openai/humanoid.xml`) | passive humanoid drop (explicit opt-in; blocked by DART 6.20 stacked-hinge parsing) | none | on |
+| `HUM-ACTIVE` | MJCF file (`data/mjcf/openai/humanoid.xml`) | humanoid with sinusoidal joint torques (explicit opt-in; blocked by DART 6.20 stacked-hinge parsing) | torque-driven | on |
 | `PILE-120` | Generated | 120-box pile settling in a walled container | none | on |
 | `PILE-900` | Generated | 900-box pile settling in a walled container | none | on |
 | `DYN-STIR-120` | Generated | 120-box pile swept by a kinematic bar | kinematic stirrer (not torque) | off (both engines) |
@@ -88,6 +88,10 @@ For `PILE-120`/`PILE-900`/`DYN-STIR-120`, `run_comparison.py` uses
 100 warmup steps + 2000 measured steps, matching the "measured during active
 settling phase" requirement — the pile is still actively colliding/settling
 during the measured window, not already at rest.
+
+The default matrix excludes `HUM-FALL` and `HUM-ACTIVE` because DART 6.20's
+MJCF parser does not support the model's stacked hinge joints. They remain
+selectable with an explicit `--scene` for parser-development validation.
 
 ### Drive-torque design (MJCF-file scenes)
 

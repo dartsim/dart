@@ -144,6 +144,17 @@ SCENARIOS: list[Scenario] = [
     ),
 ]
 
+# DART 6.20 cannot yet load the stacked hinge joints in humanoid.xml. Keep the
+# scenarios available for explicit parser-development runs, but do not let an
+# ordinary comparison spend time on rows that are known to be blocked.
+DEFAULT_SCENE_IDS = {
+    "ARM-REACHER",
+    "ARM-PUSHER",
+    "PILE-120",
+    "PILE-900",
+    "DYN-STIR-120",
+}
+
 OVERHEAD_SCENARIO = Scenario(
     scene_id="FFI-OVERHEAD",
     category="overhead",
@@ -166,7 +177,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         action="append",
         default=[],
         help="Restrict the run to these scene ids (repeatable); defaults to "
-        "all 7 scenario ids plus FFI-OVERHEAD.",
+        "the 5 DART-supported scenario ids plus FFI-OVERHEAD.",
     )
     parser.add_argument("--reps", type=int, default=5, help="Reps per (scene, engine).")
     parser.add_argument(
@@ -209,7 +220,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def _selected_scenarios(ids: list[str]) -> list[Scenario]:
     all_scenarios = [*SCENARIOS, OVERHEAD_SCENARIO]
     if not ids:
-        return all_scenarios
+        return [
+            scenario
+            for scenario in all_scenarios
+            if scenario.scene_id in DEFAULT_SCENE_IDS
+            or scenario is OVERHEAD_SCENARIO
+        ]
     wanted = {i.upper() for i in ids}
     selected = [s for s in all_scenarios if s.scene_id.upper() in wanted]
     missing = wanted - {s.scene_id.upper() for s in selected}
