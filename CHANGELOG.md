@@ -568,6 +568,13 @@
     image-verification scripts/docs for DART 6 agent visual checks:
     [#3314](https://github.com/dartsim/dart/pull/3314)
 
+  * Add active camera control with view-quality-scored adaptive viewpoints,
+    image-space debug-overlay compositing (contacts, frames, velocities,
+    trajectories, labels), a deterministic agent capture harness, and
+    claim-tied evidence selection/publication tooling for agent visual
+    verification:
+    [#3374](https://github.com/dartsim/dart/pull/3374)
+
   * Add shared `dart-gui-osg` helpers for parsing and applying GUI scale, and
     route ImGui font/style scaling through `ImGuiHandler`:
     [#3092](https://github.com/dartsim/dart/pull/3092)
