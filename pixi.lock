@@ -1968,7 +1968,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tiledb-2.29.1-h015992b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tinyxml2-11.0.0-ha1acc90_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-h010d191_3.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tzcode-2026b-h1a92334_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tzcode-2026c-h1a92334_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/urdfdom-4.0.1-h0fa9b28_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/urdfdom_headers-1.1.2-h7b3277c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uriparser-0.9.8-h00cdb27_0.conda
@@ -26074,16 +26074,15 @@ packages:
   run_exports: {}
   size: 3090362
   timestamp: 1739464806514
-- conda: https://conda.anaconda.org/conda-forge/osx-arm64/tzcode-2026b-h1a92334_0.conda
-  sha256: 9b81a80ffad060a6120ae7acf85c6d36e5bd988c286a4cd7ca523767d735e94e
-  md5: 0b3d2910b2d5ac37f2c465fc59313b5d
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/tzcode-2026c-h1a92334_0.conda
+  sha256: fdfb259d47f3f4ef24f3b20709d60ef84366269c19fd83df4c31d67375c73705
+  md5: 159a55035b2226f55e74c706e3447722
   depends:
   - __osx >=11.0
   license: BSD-3-Clause
-  license_family: BSD
   run_exports: {}
-  size: 66995
-  timestamp: 1776960443135
+  size: 66771
+  timestamp: 1783787984134
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/urdfdom-4.0.1-h0fa9b28_4.conda
   sha256: f7b7669caba3ecbcc5fbfc69bd7484d3697830a05a03e80773ea047ee14fbc26
   md5: 1ba64ffde2c58a4150e655a27384b5ab
