@@ -100,6 +100,11 @@ dart_add_test(
 )
 dart_add_test(
   "unit"
+  UNIT_collision_native_aabb_tree
+  test_aabb_tree.cpp
+)
+dart_add_test(
+  "unit"
   UNIT_collision_native_brute_force
   test_brute_force.cpp
 )

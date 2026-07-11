@@ -160,6 +160,11 @@
 
 * Collision
 
+  * Speed up many-object DART-native collision queries by replacing the
+    quadratic brute-force broadphase with a dynamic AABB tree, while preserving
+    deterministic result ordering and streaming boolean-query early exits:
+    [#3368](https://github.com/dartsim/dart/pull/3368)
+
   * Speed up the DART-native collision backend by caching collision-object
     shape metadata and local bounds, refreshing the cache only when the
     associated `ShapeFrame` geometry version changes:
