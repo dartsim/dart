@@ -336,8 +336,12 @@ def _generate_scene_files(scenario: Scenario, seed: int, work_dir: Path) -> tupl
     json_path = work_dir / f"{scenario.scene_id}.json"
     xml_path = work_dir / f"{scenario.scene_id}.xml"
     common.save_generated_layout(layout, json_path)
+    # The XML is emitted for inspection/debugging only. Both runners consume
+    # the spec JSON: mujoco_runner builds its model from the same layout AND
+    # reconstructs the StirrerSpec, whereas an .xml input would leave the
+    # stirrer as a static mocap body and silently unbalance DYN-* scenes.
     xml_path.write_text(gen_scenes.to_mjcf_xml(layout), encoding="utf-8")
-    return json_path, xml_path
+    return json_path, json_path
 
 
 def _median_row(rows: list[common.ResultRow]) -> dict:
@@ -388,7 +392,8 @@ def _write_markdown(out_dir: Path, summary: dict) -> None:
         dart_row = entry.get("dart")
         mujoco_row = entry.get("mujoco")
         if dart_row is None or mujoco_row is None:
-            lines.append(f"| `{scene_id}` | n/a | n/a | n/a | missing engine row | n/a |")
+            reason = entry.get("verdict", "missing engine row")
+            lines.append(f"| `{scene_id}` | n/a | n/a | n/a | {reason} | n/a |")
             continue
         ratio = (
             dart_row["steps_per_s"] / mujoco_row["steps_per_s"]
