@@ -85,9 +85,13 @@ reported but only gates when you pass `--require-contrast`.
   # focus framing, turntable/motion video, debug layers rendered through the
   # core OSG pipeline, and a sidecar JSON with the exact reproduce command.
   pixi run agent-capture -- --scene box_stack --steps 150 \
-      --layers contacts body_frames labels --focus stack1 --auto-views 2 \
-      --out /tmp/evidence
+      --layers contacts body_frames collision_bounds labels --focus stack1 \
+      --auto-views 2 --out /tmp/evidence
   ```
+
+  Available `--layers`: `grid`, `world_frame`, `body_frames`, `contacts`,
+  `velocities`, `coms`, `inertia_boxes`, `collision_bounds`, `trajectories`,
+  `labels` (matching DART 7's overlay set).
 
   `scripts/agent_view_quality.py` assesses a camera before rendering
   (coverage/crop, subject size, core-raycast occlusion, ambiguity; issues named
@@ -96,10 +100,13 @@ reported but only gates when you pass `--require-contrast`.
   when a report lists issues, reframe or reselect instead of shipping the
   shot. Body bounds come from the core `Shape.getBoundingBox()` (now bound in
   dartpy). `scripts/agent_debug_overlay.py` renders the debug layers *through
-  the engine* via a `dart.gui.osg.DebugOverlay` viewer attachment: contacts
-  (implausible sentinel contact points are skipped and counted), body frames,
-  velocity arrows, and trajectory polylines become always-on-top overlay lines
-  and labels become world-anchored osgText — all drawn unlit, with depth
+  the engine* via a `dart.gui.osg.DebugOverlay` viewer attachment: a ground
+  grid, the world frame, contacts (implausible sentinel contact points are
+  skipped and counted), body frames, velocity arrows, centers of mass,
+  inertia-equivalent boxes (eigendecomposed moment of inertia), collision
+  bounding boxes (world-transformed local AABBs), and trajectory polylines
+  become always-on-top overlay lines and labels become world-anchored osgText
+  — all drawn unlit, with depth
   testing disabled, in a late render bin, so the debug primitives stay legible
   on top of the geometry they annotate (matching DART 7's core debug overlay)
   instead of being buried in depth or composited in image space. The harness
