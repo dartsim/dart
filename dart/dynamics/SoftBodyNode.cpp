@@ -34,6 +34,7 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -614,6 +615,9 @@ void SoftBodyNode::checkArticulatedInertiaUpdate() const
 //==============================================================================
 void SoftBodyNode::updateTransform()
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "SoftBodyNode::updateTransform");
   BodyNode::updateTransform();
 
   auto phase = makePointMassPhaseView(
@@ -636,6 +640,9 @@ void SoftBodyNode::updateTransform()
 //==============================================================================
 void SoftBodyNode::updateVelocity()
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "SoftBodyNode::updateVelocity");
   BodyNode::updateVelocity();
 
   if (mNotifier->needsTransformUpdate())
@@ -806,6 +813,9 @@ void SoftBodyNode::updateJointImpulseFD()
 //==============================================================================
 void SoftBodyNode::updateArtInertia(double _timeStep) const
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "SoftBodyNode::updateArtInertia");
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   const double dampingCoefficient = getDampingCoefficient();
@@ -867,6 +877,9 @@ void SoftBodyNode::updateArtInertia(double _timeStep) const
 void SoftBodyNode::updateBiasForce(
     const Eigen::Vector3d& _gravity, double _timeStep)
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "SoftBodyNode::updateBiasForce");
   const Eigen::Matrix6d& mI
       = BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   const bool gravityMode = BodyNode::mAspectProperties.mGravityMode;

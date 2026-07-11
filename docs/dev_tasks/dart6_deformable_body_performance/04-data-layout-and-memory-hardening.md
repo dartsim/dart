@@ -644,7 +644,30 @@ next measured step is real contiguous point-mass storage (step 4) or
 producer-phase-maintained scratch, evaluated on an idle host with profiler
 scopes present in both baseline and candidate builds.
 
-## Candidate implementation sequence
+## Soft-phase profiler scopes and contiguous-storage disposition (2026-07-11)
+
+The merged `SoftBodyNode.cpp` carried no profiler scopes, so phase-level
+claims could not be measured. Conditional
+`DART_PROFILE_SCOPED_IF_N(isProfileRecordingEnabled(), ...)` scopes now cover
+`updateBiasForce`, `updateArtInertia`, `updateTransform`, and
+`updateVelocity` — no-ops when the profiler is not recording, so the
+`INTEGRATION_StepAllocation` windows stay allocation-free (the unconditional
+form measured by the earlier executor tripped them). First captured rows on
+the native-lane `soft_bodies` 200-step run: `updateBiasForce` 4.88 ms
+(59.3% recorded share, 1000 calls) with nested `updateArtInertia` 3.12 ms
+(37.9%), `updateVelocity` 0.45 ms, `updateTransform` 0.27 ms — on this lane
+the point-mass dynamics phases, not collision refresh, now dominate.
+
+Contiguous point-mass object storage (sequence step 4) is parked with an
+evidence-backed disposition rather than implemented: `PointMass` has a
+virtual destructor (vtable pointer in every object), and
+`configurePointMasses` burst-allocates all point masses of a body in one
+loop, which general-purpose allocators already lay out near-contiguously.
+Combined with the retained-mirror measured reject above (copy cost dominates
+at these point counts), an arena is unlikely to pay for its lifecycle
+complexity (clone, shrink, addPointMass growth with address stability).
+Revisit only if the new profiler rows show pointer-chase stalls dominating a
+phase after the activation and native-kernel packets land.
 
 1. Extend the internal phase view into retained SoA scratch that can expose
    contiguous spans of point positions, velocities, accelerations, forces,
