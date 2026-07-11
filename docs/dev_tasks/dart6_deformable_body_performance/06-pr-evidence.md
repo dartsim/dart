@@ -1,5 +1,40 @@
 # WP-DB PR evidence packet
 
+## 2026-07-11 reunified-branch full matrix (evaluator FAIL, evidence usable)
+
+Artifact:
+`.benchmark_results/wp-db-reunified-c743a45-parent-c0fd674-base-db255a0/summary.md`
+(current `c743a451e96`, parent `c0fd6742566` = pre-reunification tip, base
+`db255a08e8e` = `origin/release-6.20` at reunification time; detectors
+fcl,dart,native,bullet,ode; threads 1,16; 7 reps x 2 cycles; measured in
+opportunistic idle windows on the shared workstation — treat exact deltas as
+same-host evidence, not exclusive-idle thresholds).
+
+Checksum eligibility: `dart` reference; `fcl` and direct `native`
+checksum-equivalent; `bullet` divergent; `ode` unsupported soft fallback —
+both correctly diagnostic.
+
+Reunification effect (current vs parent, apples rows): faster nearly
+everywhere — `dart` rows -3.7% to -12.2%, direct `native` rows up to -10.3%
+with only noise-level positives, `fcl` mixed to -10.3%. Current vs base:
+every `dart` row -4.6% to -11.2%, every `fcl` row at-or-better. The
+reunification merge is a measured net performance win on the tracked scenes.
+
+Evaluator verdict: FAIL, isolated to the expected-fastest component. Direct
+`native` trailed `dart` beyond the 2% tie tolerance on 4 of 8 rows
+(adaptive_deformable/1 +5.9%, soft_bodies/1 +6.4%, soft_cubes/1 +6.4%,
+soft_cubes/16 +3.8%). Analysis: direct native bridges soft/ellipsoid pairs
+to the same DARTCollide kernels through cached fallback objects; the merged
+optimization slices made those shared kernels faster, so the bridge's fixed
+per-step overhead (native broadphase + fallback object update + dispatch)
+became a larger fraction of scene time. The gap grew relative to the
+pre-merge near-ties for exactly the reason the branch got faster.
+
+Consequence: the winner gate is now owned by the planned native-owned soft
+kernels (05-native-collision-deformable-lane.md "Remaining native work" item
+2) rather than further bridge shaving. The final matrix reruns on final
+history after that packet lands.
+
 Captured on 2026-07-05 from local branch
 `js/dart6-deformable-performance`.
 
