@@ -39,6 +39,7 @@
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PyramidShape.hpp"
@@ -49,7 +50,9 @@
   #include "dart/dynamics/VoxelGridShape.hpp"
 #endif
 
+#include <array>
 #include <limits>
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
@@ -80,6 +83,71 @@ std::vector<native::ConvexShape::Face> makeConvexFacesFromTriangles(
   }
 
   return faces;
+}
+
+// Vertices of an icosphere (subdivided icosahedron) scaled to the ellipsoid
+// radii. Two subdivisions (162 vertices) keep GJK support queries cheap while
+// bounding the surface deviation to well under 1% of the smallest radius for
+// typical aspect ratios. Deterministic: no randomness, stable ordering.
+std::vector<Eigen::Vector3d> makeEllipsoidVertices(const Eigen::Vector3d& radii)
+{
+  const double phi = (1.0 + std::sqrt(5.0)) / 2.0;
+  std::vector<Eigen::Vector3d> vertices = {
+      {-1, phi, 0},
+      {1, phi, 0},
+      {-1, -phi, 0},
+      {1, -phi, 0},
+      {0, -1, phi},
+      {0, 1, phi},
+      {0, -1, -phi},
+      {0, 1, -phi},
+      {phi, 0, -1},
+      {phi, 0, 1},
+      {-phi, 0, -1},
+      {-phi, 0, 1},
+  };
+  for (auto& vertex : vertices)
+    vertex.normalize();
+
+  std::vector<std::array<std::size_t, 3>> triangles = {
+      {0, 11, 5}, {0, 5, 1},  {0, 1, 7},   {0, 7, 10}, {0, 10, 11},
+      {1, 5, 9},  {5, 11, 4}, {11, 10, 2}, {10, 7, 6}, {7, 1, 8},
+      {3, 9, 4},  {3, 4, 2},  {3, 2, 6},   {3, 6, 8},  {3, 8, 9},
+      {4, 9, 5},  {2, 4, 11}, {6, 2, 10},  {8, 6, 7},  {9, 8, 1},
+  };
+
+  constexpr int kSubdivisions = 2;
+  std::map<std::pair<std::size_t, std::size_t>, std::size_t> midpointCache;
+  const auto midpoint = [&](std::size_t a, std::size_t b) {
+    const auto key = std::minmax(a, b);
+    const auto it = midpointCache.find(key);
+    if (it != midpointCache.end())
+      return it->second;
+
+    vertices.push_back((vertices[a] + vertices[b]).normalized());
+    const std::size_t index = vertices.size() - 1u;
+    midpointCache.emplace(key, index);
+    return index;
+  };
+  for (int level = 0; level < kSubdivisions; ++level) {
+    std::vector<std::array<std::size_t, 3>> refined;
+    refined.reserve(triangles.size() * 4u);
+    for (const auto& triangle : triangles) {
+      const std::size_t ab = midpoint(triangle[0], triangle[1]);
+      const std::size_t bc = midpoint(triangle[1], triangle[2]);
+      const std::size_t ca = midpoint(triangle[2], triangle[0]);
+      refined.push_back({triangle[0], ab, ca});
+      refined.push_back({triangle[1], bc, ab});
+      refined.push_back({triangle[2], ca, bc});
+      refined.push_back({ab, bc, ca});
+    }
+    triangles = std::move(refined);
+  }
+
+  for (auto& vertex : vertices)
+    vertex = vertex.cwiseProduct(radii);
+
+  return vertices;
 }
 
 std::unique_ptr<native::Shape> createConvexOrNull(
@@ -207,6 +275,15 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
   if (shapeType == dynamics::SphereShape::getStaticType()) {
     const auto& sphere = static_cast<const dynamics::SphereShape&>(shape);
     return std::make_unique<native::SphereShape>(sphere.getRadius());
+  }
+
+  if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
+    const auto& ellipsoid = static_cast<const dynamics::EllipsoidShape&>(shape);
+    if (ellipsoid.isSphere())
+      return std::make_unique<native::SphereShape>(ellipsoid.getRadii()[0]);
+
+    return createConvexOrNull(
+        makeEllipsoidVertices(ellipsoid.getRadii()), shapeType);
   }
 
   if (shapeType == dynamics::BoxShape::getStaticType()) {

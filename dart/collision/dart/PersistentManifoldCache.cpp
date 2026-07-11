@@ -190,18 +190,25 @@ std::array<int, PersistentManifold::kMaxContacts> selectContactIndices(
 
   const Eigen::Vector3d& p2
       = candidates[static_cast<std::size_t>(selected[2])].localPointA;
-  const Eigen::Vector3d e02 = p2 - p0;
 
-  double maxVolume = -1.0;
+  // Fourth point: maximize the represented contact-patch area (the largest
+  // of the three diagonal cross products over {p0, p1, p2, c}), matching the
+  // classical persistent-manifold criterion. A volume criterion degenerates
+  // on coplanar face contacts (every candidate scores ~0), which used to
+  // pick near-duplicate points and ill-condition the contact solve.
+  double maxArea = -1.0;
   int bestFourth = -1;
   for (std::size_t i = 0; i < candidates.size(); ++i) {
     if (used[i])
       continue;
 
-    const Eigen::Vector3d e03 = candidates[i].localPointA - p0;
-    const double volume6 = std::abs(e01.dot(e02.cross(e03)));
-    if (volume6 > maxVolume) {
-      maxVolume = volume6;
+    const Eigen::Vector3d& c = candidates[i].localPointA;
+    const double area = std::max(
+        {((p1 - p0).cross(c - p2)).squaredNorm(),
+         ((p2 - p0).cross(c - p1)).squaredNorm(),
+         ((c - p0).cross(p2 - p1)).squaredNorm()});
+    if (area > maxArea) {
+      maxArea = area;
       bestFourth = static_cast<int>(i);
     }
   }
