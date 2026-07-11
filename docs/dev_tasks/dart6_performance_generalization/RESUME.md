@@ -9,15 +9,45 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
-**Current claimed packet: none. Stop and audit before writing more code.**
+**2026-07-10: the current-head completion audit RAN** (release-6.20 @
+`db255a08e8e`; artifacts `/tmp/audit_head_20260710T011207Z`):
 
-Current `release-6.20` head is #3361 merge commit `91c158fc3e5`
-(`WP-PG.14: add opt-in matrix-free contact LCP`). A fresh session should start
-from that head, re-read this README plus the lane docs, and do a current-base
-completion/evidence audit before claiming any new packet. The maintainer's
-north-star requirement is still broader than "latest packet merged": finish
-issue #3056 on DART 6.20 with enough tests, benchmarks, and GUI/headless
-evidence to show the result is general and not overfit to one fixture.
+- Criterion 1 (S1 primary fixture 3x): **MET** — 120/dart/1 RTF 0.126447
+  (3.51x the 0.036 round-2 baseline), avg step 7.908 ms, hash
+  `0x123ee9779bccacfb`.
+- Criterion 2 (S6 pile-sleep): **MET** — 71/71 resting, max_pen 0, hash
+  `0xec80f734df6d5e74` (exact #3353 accepted value), RTF 0.21.
+- Criterion 3 (no regressions): all S2/S3 guard hashes bit-identical across
+  dart/fcl/bullet/ode; S4/S5 fcl match the recorded drift values; S4/S5
+  bullet re-baselined by merged #3355's analytic PlaneShape path (new values
+  in the audit dir are the current guards).
+- Criterion 4 (general evidence): the maintainer broadened the bar to
+  cross-engine evidence vs MuJoCo across DART's major workloads. New lane
+  **WS-G**: [08-mujoco-comparison-lane.md](08-mujoco-comparison-lane.md).
+  Harness + mujoco pixi env + dartpy native binding: PR #3367. The earlier
+  prototype ant result is deferred because its exact command, artifact, and
+  engine SHAs were not retained; do not count it as accepted cross-engine
+  evidence. Reproducible standings, gaps, and root causes are recorded in the
+  lane doc with packets. #3369 merged the MJCF stacked-joint and collision
+  fidelity work; the WP-SS small-scene-overhead family remains.
+- Side products: #3366 fixes a dartpy `getDofs`/`getChainDofs` ownership bug
+  (heap corruption, SIGSEGV at teardown); #3368 (dep-min lane) removes the
+  native detector's O(n^2) broadphase with bit-identical guards.
+
+#3366, #3367, #3368, and #3369 have merged; docs refresh is this PR. Re-baseline
+the WS-G and native Phase 4 rows on the current merged base before cutting the
+next evidence-driven packet.
+
+A fresh session should start from current `origin/release-6.20` (the audited
+head above or later; re-fetch — the maintainer merges frequently), read this
+README plus the lane docs, and continue from the WS-G lane on the merged base
+rather than redoing the completed audit. The maintainer's
+north-star requirement is broader than "latest packet merged": finish issue
+#3056 on DART 6.20 with cross-engine evidence (WS-G) showing the result is
+general, and respect the 2026-07-10 maintainer directives — the native
+engine merges INTO the dart detector (see the dep-min Phase 5 decision doc)
+and the whole remaining effort should land in few, large, cohesive PRs
+(total budget across both dev tasks roughly 10-20).
 
 Do not open a small follow-up PR merely because a packet exists. Prefer one
 consolidated evidence/closeout branch unless the audit identifies a real
@@ -38,10 +68,11 @@ original fuller artifact remains
 `/tmp/wp_pg14_matrix_free_ab_20260709T040443Z` with S3 active-3k option-on
 fallback preserving hash `0xcf0ba6eaa97be038`.
 
-Recommended next session plan:
+Recommended next session plan (items 1-2 are DONE for the 2026-07-10 cycle;
+kept for the method):
 
-1. Verify live state: `git fetch origin release-6.20`, confirm head contains
-   #3361, inspect open PRs/issues, and avoid touching dirty sibling worktrees
+1. Verify live state: `git fetch origin release-6.20`, inspect open
+   PRs/issues, and avoid touching dirty sibling worktrees
    such as `/home/js/dev/dartsim/dart/task_3-fix-simd`.
 2. Run a current-head acceptance audit against the README north-star gate:
    tests, benchmark matrix, GUI/headless artifacts, decision status, and
