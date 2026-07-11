@@ -595,6 +595,28 @@ TEST(AabbTreeBroadPhase, VisitPairsCanStopEarly)
   EXPECT_EQ(visited, bp.queryPairs());
 }
 
+//==============================================================================
+TEST(AabbTreeBroadPhase, VisitPairsStopsEarlyInDenseGroup)
+{
+  AabbTreeBroadPhase bp;
+  constexpr std::size_t numObjects = 2048u;
+  for (std::size_t id = 0; id < numObjects; ++id) {
+    bp.add(id, makeAabb(0, 1));
+  }
+
+  std::size_t visited = 0u;
+  const bool completed
+      = bp.visitPairs([&](std::size_t first, std::size_t second) {
+          ++visited;
+          EXPECT_EQ(first, 0u);
+          EXPECT_EQ(second, 1u);
+          return false;
+        });
+
+  EXPECT_FALSE(completed);
+  EXPECT_EQ(visited, 1u);
+}
+
 TEST(AabbTreeBroadPhase, QueryPairsFiltered)
 {
   AabbTreeBroadPhase bp;

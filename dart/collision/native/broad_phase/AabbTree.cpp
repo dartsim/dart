@@ -195,19 +195,31 @@ bool AabbTreeBroadPhase::visitPairsRecursiveAnyOrder(
 
 bool AabbTreeBroadPhase::visitPairs(const BroadPhasePairVisitor& visitor) const
 {
-  // Materializing and sorting the candidate pairs before visiting is
-  // load-bearing, not incidental: callers that stop early (contact caps,
-  // boolean queries) terminate on whichever pair they see first, so the
-  // visitation order is behavior. Sorted (min,max) order reproduces
-  // BruteForceBroadPhase's ordered scan bit-for-bit, which is what keeps the
-  // native detector's results independent of tree topology. Collection costs
-  // O(k log k) in the number of overlapping candidates; the previous
-  // BruteForce scan was O(n^2) in object count regardless of overlap, so
-  // even early-exit queries do not regress asymptotically.
-  const auto pairs = queryPairs();
-  for (const auto& pair : pairs) {
-    if (!visitor(pair.first, pair.second)) {
-      return false;
+  // Visit in the same lexicographic (min,max) order as BruteForceBroadPhase,
+  // but materialize only one object's higher-id overlaps at a time. This keeps
+  // capped result queries deterministic while allowing the first visitor
+  // rejection to avoid collecting and sorting the full pair set.
+  std::vector<std::size_t> orderedIds;
+  orderedIds.reserve(objectToNode_.size());
+  for (const auto& entry : objectToNode_) {
+    orderedIds.push_back(entry.first);
+  }
+  std::sort(orderedIds.begin(), orderedIds.end());
+
+  std::vector<std::size_t> overlaps;
+  overlaps.reserve(objectToNode_.size());
+  for (const std::size_t id : orderedIds) {
+    overlaps.clear();
+    const Node& leaf = nodes_[objectToNode_.at(id)];
+    queryOverlappingRecursive(root_, leaf.tightAabb, overlaps);
+    std::sort(overlaps.begin(), overlaps.end());
+
+    for (auto it = std::upper_bound(overlaps.begin(), overlaps.end(), id);
+         it != overlaps.end();
+         ++it) {
+      if (!visitor(id, *it)) {
+        return false;
+      }
     }
   }
 
