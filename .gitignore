@@ -180,3 +180,5 @@ compile_flags.txt
 
 # Temporary apt downloads
 .tmp_apt/
+scripts/mujoco_comparison/.model_cache/
+.mujoco_comparison_results/
