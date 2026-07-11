@@ -19,8 +19,8 @@ FFI-overhead calibration row, MuJoCo integrator normalized to Euler with
 model-default sensitivity row, 1.1x win/noise band).
 
 Reproduce from current `release-6.20` (the harness and the `mujoco` pixi
-environment merged in #3367; the humanoid rows additionally need open PR
-#3369's MJCF stacked-joint support):
+environment merged in #3367; #3369 merged the MJCF stacked-joint support and
+collision-fidelity work needed by the affected rows):
 
 ```sh
 pixi run build-py-dev && pixi install -e mujoco
@@ -49,13 +49,9 @@ evidence; restore a locomotion row only with reproducible provenance.
 
 ## Gap analysis -> packets
 
-1. **MJCF stacked-joint compositions** (humanoid/walker2d/hopper/half_cheetah/
-   swimmer fail to load; MjcfParser.cpp:386): chain-of-1-DOF-joints design;
-   packet delegated (in flight).
-2. **MJCF collision/friction fidelity**: contype/conaffinity ignored (DART
-   collides marker geoms MuJoCo excludes — striker's density-1e6 cylinder
-   makes Dantzig fail every step and forces the PGS fallback + double
-   constructLcpTerms); per-geom friction ignored. Blocks fair arm rows.
+1. **MJCF stacked-joint and collision fidelity**: #3369 merged stacked
+   hinge/slide support, contype/conaffinity filtering, and per-geom friction.
+   Re-run the affected rows on the merged base before accepting standings.
 3. **Small-scene per-step overhead** (arms class): pusher profile shows
    ~11.35 µs per tiny LCP group (constructLcpTerms ~5 µs/call),
    updateConstraints self ~11.8 µs, integration ~12 µs, vs MuJoCo's whole
@@ -63,11 +59,10 @@ evidence; restore a locomotion row only with reproducible provenance.
    path), WP-SS.2 (native small-scene collide overhead; also the S1-60
    parity gap), WP-SS.3 (integration overhead for small skeletons). Cut
    after fidelity packets land (do not optimize against invalid scenes).
-4. **Active-pile gap (~2.7x)**: on open PR #3368's branch, the AABB-tree
-   removes the many-object broadphase bottleneck and leaves solver-side cost
-   (Dantzig per-island + contact allocation churn). This conclusion is
-   branch-local until #3368 merges; re-baseline on the merged base with the
-   fidelity fixes before deciding packets (matrix-free option rows are
+4. **Active-pile gap (~2.7x)**: #3368's merged AABB-tree removes the
+   many-object broadphase bottleneck and leaves solver-side cost (Dantzig
+   per-island + contact allocation churn). Re-baseline on the merged base
+   with the fidelity fixes before deciding packets (matrix-free option rows are
    diagnostic only, default-off per D3).
 5. **dartpy getDofs ownership bug** (#3366): fixed; harness torque-drive
    depends on it.

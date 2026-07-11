@@ -27,7 +27,7 @@ default detector until the phase-6 flip**, and every phase is gz-gated.
 | 1 | Native math core (Aabb/Gjk/Mpr/BoxBox/SphereSphere/shapes/Span shim) internal-only | ✅ merged (#3281) |
 | 2 | DART 6 detector adapter over the native core (bridge, sliced P1–P9 + P10 coverage) | ✅ complete (#3350) |
 | 3 | Capability parity (distance→FCL, raycast→Bullet, CCD, manifolds, voxel) | ✅ complete (#3360) |
-| 4 | Evidence-driven performance optimization (broadphase, SIMD, manifold reuse) | 🔄 **active** — #3364 merged; AABB-tree broadphase PR #3368 open (bit-identical guards, S3 −65%); remaining: S3 narrowphase delta and small-scene overhead; S6 resolved by documented acceptance re-scope (see RESUME) |
+| 4 | Evidence-driven performance optimization (broadphase, SIMD, manifold reuse) | 🔄 **active** — #3364 and AABB-tree broadphase #3368 merged (bit-identical guards, S3 −65%); remaining: S3 narrowphase delta and small-scene overhead; S6 resolved by documented acceptance re-scope (see RESUME) |
 | 5 | Bullet/ODE/FCL facade decision (must keep gz subclassing) | 🔄 **active** — decision doc drafted with maintainer direction; ODE facade-vs-coordinated-gz change remains to ratify |
 | 6 | Default flip in both `ConstraintSolver` ctors (point of no return) | ⬜ not started |
 | 7 | FCL decoupling from core (the dependency win) + retire this task folder | ⬜ not started |

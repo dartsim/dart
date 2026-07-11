@@ -28,20 +28,20 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
   prototype ant result is deferred because its exact command, artifact, and
   engine SHAs were not retained; do not count it as accepted cross-engine
   evidence. Reproducible standings, gaps, and root causes are recorded in the
-  lane doc with packets (MJCF stacked joints PR
-  #3369; MJCF contype/conaffinity+friction fidelity packet in flight;
-  WP-SS small-scene-overhead family evidence-gated on fidelity).
+  lane doc with packets. #3369 merged the MJCF stacked-joint and collision
+  fidelity work; the WP-SS small-scene-overhead family remains.
 - Side products: #3366 fixes a dartpy `getDofs`/`getChainDofs` ownership bug
   (heap corruption, SIGSEGV at teardown); #3368 (dep-min lane) removes the
   native detector's O(n^2) broadphase with bit-identical guards.
 
-#3366 and #3367 have merged. Open PRs from this cycle: #3368 and #3369 — both
-awaiting review/merge; docs refresh is this PR.
+#3366, #3367, #3368, and #3369 have merged; docs refresh is this PR. Re-baseline
+the WS-G and native Phase 4 rows on the current merged base before cutting the
+next evidence-driven packet.
 
 A fresh session should start from current `origin/release-6.20` (the audited
 head above or later; re-fetch — the maintainer merges frequently), read this
-README plus the lane docs, and continue from the WS-G lane + the open-PR
-queue above rather than redoing the completed audit. The maintainer's
+README plus the lane docs, and continue from the WS-G lane on the merged base
+rather than redoing the completed audit. The maintainer's
 north-star requirement is broader than "latest packet merged": finish issue
 #3056 on DART 6.20 with cross-engine evidence (WS-G) showing the result is
 general, and respect the 2026-07-10 maintainer directives — the native

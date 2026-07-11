@@ -107,8 +107,8 @@ must pass against facades before 6.22 ships.
 ## Timeline
 
 - **6.20 (now, phases 4-6 of the port plan):** close the remaining native
-  performance gaps (#3368 carries the branch-local broadphase work and must
-  merge before it is a base-branch precondition; S3 narrowphase delta and
+  performance gaps (#3368's AABB-tree broadphase is merged base-branch
+  evidence; S3 narrowphase delta and
   small-scene overhead remain; the S6 dense-pile row was resolved by the
   documented acceptance re-scope), then flip only the DEFAULT detector (both ctors +
   WorldConfig/SkelParser surface). All legacy detectors stay real and
