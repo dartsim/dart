@@ -72,3 +72,20 @@ if((OPENSCENEGRAPH_FOUND OR OpenSceneGraph_FOUND) AND NOT TARGET osg::osg)
   target_include_directories(osg::osg INTERFACE ${OPENSCENEGRAPH_INCLUDE_DIRS})
   target_link_libraries(osg::osg INTERFACE ${OPENSCENEGRAPH_LIBRARIES})
 endif()
+
+# osg::osg is only the core library with some OpenSceneGraph package configs.
+# Keep osgText explicit because dart-gui-osg directly uses its symbols.
+if((OPENSCENEGRAPH_FOUND OR OpenSceneGraph_FOUND) AND NOT TARGET osg::osgText)
+  add_library(osg::osgText INTERFACE IMPORTED)
+  if(TARGET osgText)
+    target_link_libraries(osg::osgText INTERFACE osgText)
+  elseif(TARGET OpenSceneGraph::osgText)
+    target_link_libraries(osg::osgText INTERFACE OpenSceneGraph::osgText)
+  else()
+    target_include_directories(
+      osg::osgText
+      INTERFACE ${OPENSCENEGRAPH_INCLUDE_DIRS}
+    )
+    target_link_libraries(osg::osgText INTERFACE ${OSGTEXT_LIBRARY})
+  endif()
+endif()
