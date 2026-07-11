@@ -43,6 +43,12 @@ class DARTCollisionObject;
 
 } // namespace collision
 
+namespace constraint {
+
+class SoftContactConstraint;
+
+} // namespace constraint
+
 namespace dynamics {
 
 /// SoftBodyNode represent a soft body that has one deformable skin
@@ -57,6 +63,7 @@ public:
   using Base = detail::SoftBodyNodeBase;
 
   friend class Skeleton;
+  friend class constraint::SoftContactConstraint;
   friend class collision::DARTCollisionObject;
   friend class SoftMeshShape;
   friend class PointMass;
@@ -126,6 +133,39 @@ public:
   /// \brief
   double getDampingCoefficient() const;
 
+  /// Enable opt-in adaptive soft contact activation.
+  void setAdaptiveContactActivationEnabled(bool enabled);
+
+  /// Return whether adaptive soft contact activation is enabled.
+  bool isAdaptiveContactActivationEnabled() const;
+
+  /// Set how many connectivity rings are activated around contact faces.
+  void setAdaptiveContactActivationRingCount(std::size_t ringCount);
+
+  /// Return the number of connectivity rings activated around contact faces.
+  std::size_t getAdaptiveContactActivationRingCount() const;
+
+  /// Set how many out-of-contact steps a point remains active before freezing.
+  void setAdaptiveContactActivationLingerSteps(std::size_t lingerSteps);
+
+  /// Return the out-of-contact active linger window.
+  std::size_t getAdaptiveContactActivationLingerSteps() const;
+
+  /// Set the local velocity tolerance used before deactivating a point.
+  void setAdaptiveContactActivationVelocityTolerance(double tolerance);
+
+  /// Return the local velocity tolerance used before deactivating a point.
+  double getAdaptiveContactActivationVelocityTolerance() const;
+
+  /// Set the rest-displacement tolerance used before deactivating a point.
+  void setAdaptiveContactActivationPositionTolerance(double tolerance);
+
+  /// Return the rest-displacement tolerance used before deactivating a point.
+  double getAdaptiveContactActivationPositionTolerance() const;
+
+  /// Return the number of point masses active in the current dynamics step.
+  std::size_t getNumActivePointMasses() const;
+
   /// \brief
   void removeAllPointMasses();
 
@@ -181,6 +221,21 @@ protected:
   /// mass and deactivation state stay consistent, mirroring
   /// BodyNode::setInertia.
   void handlePointMassMassChange();
+
+  /// Seed adaptive activation from a collision face. Used by soft contacts.
+  void seedAdaptiveContactActivationFace(int faceId);
+
+  /// Return whether a point may be addressed as a soft DOF this step.
+  bool isAdaptiveContactPointMassActive(std::size_t index) const;
+
+  /// Integrate point positions while preserving frozen adaptive points.
+  void integratePointMassPositions(double dt);
+
+  /// Integrate point velocities while preserving frozen adaptive points.
+  void integratePointMassVelocities(double dt);
+
+  /// Prepare adaptive active flags for the current forward-dynamics step.
+  void prepareAdaptiveContactActivationForDynamics(double timeStep) const;
 
   //--------------------------------------------------------------------------
   // Sub-functions for Recursive Kinematics Algorithms

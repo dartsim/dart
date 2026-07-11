@@ -102,6 +102,7 @@ struct Checksum
   std::size_t dofs = 0u;
   std::size_t softBodies = 0u;
   std::size_t pointMasses = 0u;
+  std::size_t activePointMasses = 0u;
 };
 
 std::size_t parseSize(const char* value, std::size_t fallback)
@@ -115,6 +116,16 @@ std::size_t parseSize(const char* value, std::size_t fallback)
     return fallback;
 
   return static_cast<std::size_t>(parsed);
+}
+
+bool parseBoolEnv(const char* value)
+{
+  if (value == nullptr || value[0] == '\0')
+    return false;
+
+  const std::string text(value);
+  return text == "1" || text == "true" || text == "TRUE" || text == "on"
+         || text == "ON" || text == "yes" || text == "YES";
 }
 
 SceneRef resolveScene(const char* requested)
@@ -157,6 +168,7 @@ Checksum computeChecksum(const dart::simulation::WorldPtr& world)
       if (softBody == nullptr)
         continue;
 
+      checksum.activePointMasses += softBody->getNumActivePointMasses();
       for (std::size_t k = 0; k < softBody->getNumPointMasses(); ++k) {
         const auto* pointMass = softBody->getPointMass(k);
         if (pointMass == nullptr)
@@ -182,13 +194,14 @@ Checksum computeChecksum(const dart::simulation::WorldPtr& world)
   return checksum;
 }
 
-void printChecksum(std::size_t step, const Checksum& checksum)
+void printChecksum(
+    std::size_t step, const Checksum& checksum, bool printActivation)
 {
   std::printf(
       "step %6zu  dofs %5zu  soft_bodies %4zu  point_masses %5zu  "
       "skelPosL1 %.17g  skelPosSq %.17g  skelVelL1 %.17g  skelVelSq %.17g  "
       "pointPosL1 %.17g  pointPosSq %.17g  pointVelL1 %.17g  pointVelSq %.17g  "
-      "pointWorldPosL1 %.17g  pointWorldPosSq %.17g\n",
+      "pointWorldPosL1 %.17g  pointWorldPosSq %.17g",
       step,
       checksum.dofs,
       checksum.softBodies,
@@ -203,6 +216,13 @@ void printChecksum(std::size_t step, const Checksum& checksum)
       checksum.pointVelSq,
       checksum.pointWorldPosL1,
       checksum.pointWorldPosSq);
+  if (printActivation) {
+    std::printf(
+        "  active_point_masses %5zu  inactive_point_masses %5zu",
+        checksum.activePointMasses,
+        checksum.pointMasses - checksum.activePointMasses);
+  }
+  std::printf("\n");
 }
 
 void keepOptionalCollisionBackendsLinked()
@@ -252,6 +272,21 @@ int main(int argc, char** argv)
     world->getConstraintSolver()->setCollisionDetector(detector);
   }
 
+  const bool enableAdaptiveContactActivation
+      = parseBoolEnv(std::getenv("ADAPTIVE_CONTACT_ACTIVATION"));
+  if (enableAdaptiveContactActivation) {
+    for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+      const auto skeleton = world->getSkeleton(i);
+      if (!skeleton)
+        continue;
+      for (std::size_t j = 0; j < skeleton->getNumSoftBodyNodes(); ++j) {
+        auto* softBody = skeleton->getSoftBodyNode(j);
+        if (softBody)
+          softBody->setAdaptiveContactActivationEnabled(true);
+      }
+    }
+  }
+
   world->setNumSimulationThreads(threads);
 
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
@@ -268,7 +303,7 @@ int main(int argc, char** argv)
       threads,
       detectorName.c_str(),
       world->getTimeStep());
-  printChecksum(0u, initial);
+  printChecksum(0u, initial, enableAdaptiveContactActivation);
 
   const bool previousProfileRecording
       = dart::common::profile::setProfileRecordingEnabled(true);
@@ -280,7 +315,8 @@ int main(int argc, char** argv)
 
     const std::size_t done = i + 1u;
     if ((checkpoint != 0u && done % checkpoint == 0u) || done == steps)
-      printChecksum(done, computeChecksum(world));
+      printChecksum(
+          done, computeChecksum(world), enableAdaptiveContactActivation);
   }
   const auto stop = std::chrono::steady_clock::now();
 

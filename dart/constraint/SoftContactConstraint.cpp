@@ -147,7 +147,14 @@ void SoftContactConstraint::reset(collision::Contact& contact, double timeStep)
         == dynamics::SoftMeshShape::getStaticType()) {
       mPointMass1 = selectCollidingPointMass(
           mSoftBodyNode1, contact.point, contact.triID1);
-      mPointMass1->setColliding(true);
+      mSoftBodyNode1->seedAdaptiveContactActivationFace(contact.triID1);
+      if (mPointMass1
+          && !mSoftBodyNode1->isAdaptiveContactPointMassActive(
+              mPointMass1->getIndexInSoftBodyNode())) {
+        mPointMass1 = nullptr;
+      }
+      if (mPointMass1)
+        mPointMass1->setColliding(true);
     }
   }
   if (mSoftBodyNode2) {
@@ -155,7 +162,14 @@ void SoftContactConstraint::reset(collision::Contact& contact, double timeStep)
         == dynamics::SoftMeshShape::getStaticType()) {
       mPointMass2 = selectCollidingPointMass(
           mSoftBodyNode2, contact.point, contact.triID2);
-      mPointMass2->setColliding(true);
+      mSoftBodyNode2->seedAdaptiveContactActivationFace(contact.triID2);
+      if (mPointMass2
+          && !mSoftBodyNode2->isAdaptiveContactPointMassActive(
+              mPointMass2->getIndexInSoftBodyNode())) {
+        mPointMass2 = nullptr;
+      }
+      if (mPointMass2)
+        mPointMass2->setColliding(true);
     }
   }
 
