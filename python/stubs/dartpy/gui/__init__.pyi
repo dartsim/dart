@@ -1598,6 +1598,9 @@ def composite_debug_labels(
     options: ProjectionOptions = ...,
 ) -> None: ...
 def draw_debug_text(
+    # Must be an (H, W, >=3) uint8 C-contiguous array; the binding rejects
+    # (noconvert) anything else so in-place drawing can never silently write
+    # into a discarded temporary.
     pixels: Annotated[NDArray[numpy.uint8], dict(order="C")],
     text: str,
     origin_x: int,

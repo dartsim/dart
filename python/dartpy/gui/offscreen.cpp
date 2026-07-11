@@ -334,9 +334,11 @@ void defGuiOffscreen(nb::module_& m)
       nb::arg("scale") = 2,
       nb::arg("options") = dart::gui::ProjectionOptions{});
 
-  // Writes the built-in debug-label font directly into an (H, W, 4) uint8 RGBA
-  // numpy array in place, so the Python label compositor reuses the core glyph
-  // table instead of shipping a second copy.
+  // Writes the built-in debug-label font directly into an (H, W, >=3) uint8
+  // RGB/RGBA numpy array in place, so the Python label compositor reuses the
+  // core glyph table instead of shipping a second copy. `noconvert` is
+  // essential: without it nanobind would silently convert a non-uint8 or
+  // non-contiguous array into a temporary copy and the draw would be lost.
   m.def(
       "draw_debug_text",
       [](nb::ndarray<std::uint8_t, nb::ndim<3>, nb::c_contig, nb::device::cpu>
@@ -346,6 +348,11 @@ void defGuiOffscreen(nb::module_& m)
          int originY,
          const Eigen::Vector4d& rgba,
          int scale) {
+        if (pixels.shape(2) < 3) {
+          throw std::invalid_argument(
+              "draw_debug_text needs an (H, W, >=3) RGB/RGBA array; got "
+              + std::to_string(pixels.shape(2)) + " channel(s)");
+        }
         dart::gui::drawDebugLabelText(
             pixels.data(),
             static_cast<int>(pixels.shape(1)),
@@ -357,7 +364,7 @@ void defGuiOffscreen(nb::module_& m)
             rgba,
             scale);
       },
-      nb::arg("pixels"),
+      nb::arg("pixels").noconvert(),
       nb::arg("text"),
       nb::arg("origin_x"),
       nb::arg("origin_y"),

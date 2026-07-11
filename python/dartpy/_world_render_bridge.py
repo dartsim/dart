@@ -441,7 +441,14 @@ def render_annotated(
     if debug_scene is None:
         image = renderer.render(renderables, camera)
         return np.array(memoryview(image), copy=True)
-    image = renderer.render(renderables, camera, debug=debug_scene)
+    # The core render composites DebugScene labels itself (at its default
+    # scale), so render with a label-stripped scene and composite exactly
+    # once at the requested scale — otherwise every label would be drawn
+    # twice and ghost whenever label_scale differs from the core default.
+    stripped = dart.gui.DebugScene()
+    stripped.lines = debug_scene.lines
+    stripped.triangles = debug_scene.triangles
+    image = renderer.render(renderables, camera, debug=stripped)
     from . import _debug_layers
 
     return _debug_layers.composite_labels(

@@ -329,23 +329,26 @@ def composite_labels(
 ) -> np.ndarray:
     """Composite DebugLabelDescriptors onto a rendered image.
 
-    Accepts a RenderedImage or an (H, W, 4) uint8 array; returns the annotated
-    array (a copy when given a RenderedImage). A RenderedImage is annotated by
-    the core ``composite_debug_labels``; a raw array is projected here and
-    rasterized through the core ``draw_debug_text`` font.
+    Accepts a RenderedImage or an (H, W, >=3) uint8 C-contiguous array;
+    returns the annotated array. A RenderedImage is never mutated — its
+    pixels are copied first and the copy is annotated (callers can keep
+    using the original). Projection and glyph rasterization both run in
+    core (``project_to_pixels`` / ``draw_debug_text``).
     """
     label_list = list(labels)
     if hasattr(image, "png_bytes"):
-        if projection_options is None:
-            projection_options = dart.gui.ProjectionOptions()
-        dart.gui.composite_debug_labels(
-            image, camera, label_list, scale, projection_options
-        )
-        return np.array(memoryview(image), copy=True)
-
-    pixels = np.asarray(image)
-    if not label_list:
-        return pixels
+        pixels = np.array(memoryview(image), copy=True)
+        if not label_list:
+            return pixels
+    else:
+        pixels = np.asarray(image)
+        if pixels.dtype != np.uint8 or pixels.ndim != 3 or pixels.shape[2] < 3:
+            raise ValueError(
+                "composite_labels needs an (H, W, >=3) uint8 array or a "
+                f"RenderedImage; got dtype={pixels.dtype} shape={pixels.shape}"
+            )
+        if not label_list:
+            return pixels
     height, width = pixels.shape[:2]
     projected = project_points(
         camera,

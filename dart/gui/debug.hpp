@@ -209,6 +209,11 @@ DART_GUI_API std::vector<DebugLineDescriptor> extractDebugLines(
 /// `extractContactDebugLines(std::vector<simulation::Contact>, ...)` overload
 /// so captures stay deterministic relative to a chosen step. Takes the world
 /// non-const because rigid-body handles resolve through it.
+///
+/// Line-label conventions: frame axes are `<body>.x/.y/.z`, center-of-mass
+/// markers `<body>.com.x/.y/.z` (axis-marker convention), inertia boxes
+/// `<body>.inertia`, collision bounds `<body>.bounds` (one label for all of
+/// a body's shapes), velocities `<body>.vel_linear` / `<body>.vel_angular`.
 DART_GUI_API std::vector<DebugLineDescriptor> extractDebugLines(
     simulation::World& world, const DebugDrawOptions& options = {});
 

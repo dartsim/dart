@@ -193,4 +193,5 @@ Capabilities this policy has already driven into core: the offscreen
 (`extractDebugLines(World&)`, wiring the previously dead body-frame/COM
 flags), the shared projection primitive (`projectToPixels`), core view
 adequacy (`assessView`), `World::getRigidBodyNames`, and on DART 6 the
-`TextOverlay` osgText attachment plus the `math::BoundingBox` binding.
+`DebugOverlay` attachment (always-on-top lines + osgText labels) plus the
+`math::BoundingBox` binding.

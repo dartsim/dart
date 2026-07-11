@@ -487,7 +487,7 @@ void compositeDebugLabels(
         height,
         static_cast<int>(image.channels),
         label.text,
-        static_cast<int>(std::lround(projected[0])) + 3,
+        static_cast<int>(std::lround(projected[0])) + 2,
         static_cast<int>(std::lround(projected[1])) - 3 * safeScale,
         label.rgba,
         safeScale);

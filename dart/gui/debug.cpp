@@ -868,12 +868,17 @@ void appendRigidBodyDebugLines(
         continue;
       }
       const Eigen::Isometry3d shapeTransform = transform * shape.localTransform;
+      // Clamp so flat shapes (a zero-thickness box axis) still draw as a
+      // degenerate rectangle instead of being rejected by the box helper.
+      const Eigen::Vector3d paddedHalfExtents
+          = (*halfExtents
+             + Eigen::Vector3d::Constant(options.collisionBoundsPadding))
+                .cwiseMax(1e-9);
       appendBoxEdges(
           lines,
           shapeTransform.translation(),
           shapeTransform.linear(),
-          *halfExtents
-              + Eigen::Vector3d::Constant(options.collisionBoundsPadding),
+          paddedHalfExtents,
           rgba(0.2, 0.86, 0.43, 0.72),
           name + ".bounds");
     }
