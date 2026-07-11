@@ -125,7 +125,11 @@ def _ffi_overhead_layout(seed: int) -> common.GeneratedLayout:
     scenes.
     """
     box = common.BoxBody(
-        name="box0000", half_extent=0.1, mass=1.0, friction=0.8, position=(0.0, 0.0, 1.0)
+        name="box0000",
+        half_extent=0.1,
+        mass=1.0,
+        friction=0.8,
+        position=(0.0, 0.0, 1.0),
     )
     spec = common.GeneratedSceneSpec(
         scene_id="ffi-overhead",
