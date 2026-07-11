@@ -590,8 +590,10 @@
 
   * Add active camera control with view-quality-scored adaptive viewpoints, an
     always-on-top core `dart::gui::osg::DebugOverlay` viewer attachment that
-    renders debug layers (contacts, frames, velocities, trajectories, and body
-    labels) unlit and depth-test disabled, a `math::BoundingBox` dartpy binding,
+    renders debug layers (a ground grid, the world frame, contacts, frames,
+    velocities, centers of mass, inertia-equivalent boxes, collision bounds,
+    trajectories, and body labels) unlit and depth-test disabled, a
+    `math::BoundingBox` dartpy binding,
     core-raycast view occlusion, a deterministic agent capture harness, and
     claim-tied evidence selection/publication tooling for agent visual
     verification:
