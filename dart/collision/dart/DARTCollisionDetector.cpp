@@ -171,8 +171,12 @@ struct NativeRayHitCandidate
 //==============================================================================
 std::size_t getManifoldCacheId(const CollisionObject* object)
 {
-  const auto* dartObject = dynamic_cast<const DARTCollisionObject*>(object);
-  if (dartObject != nullptr && dartObject->isSoftMeshShape())
+  // Every caller passes objects created by this detector (group members,
+  // contacts of an in-flight collide(), or objects pre-checked against
+  // getCollisionDetector()), so they are always DARTCollisionObjects; this
+  // runs per contact per step, so avoid the dynamic_cast.
+  const auto* dartObject = static_cast<const DARTCollisionObject*>(object);
+  if (dartObject->isSoftMeshShape())
     return 0u;
 
   return static_cast<std::size_t>(reinterpret_cast<std::uintptr_t>(object));
