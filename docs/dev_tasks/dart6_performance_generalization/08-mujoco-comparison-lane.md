@@ -27,8 +27,16 @@ pixi run build-py-dev && pixi install -e mujoco
 PYTHONPATH=$PWD/build/default/cpp/Release/python/dartpy \
   pixi run python scripts/mujoco_comparison/run_comparison.py \
   --reps 5 --detector native \
+  --scene ARM-REACHER --scene ARM-PUSHER \
+  --scene HUM-FALL --scene HUM-ACTIVE \
+  --scene PILE-120 --scene PILE-900 --scene DYN-STIR-120 \
+  --scene FFI-OVERHEAD \
   --mujoco-python $PWD/.pixi/envs/mujoco/bin/python --out-dir /tmp/mj_cmp
 ```
+
+The explicit scene list is required: the runner's default set still omits the
+two HUM rows. Do not accept the cross-engine matrix unless both HUM rows run;
+a parser or runtime failure remains a blocked row rather than evidence.
 
 ## Standings (2026-07-10 prototype rows; quiet-host full matrix pending)
 
@@ -36,8 +44,8 @@ PYTHONPATH=$PWD/build/default/cpp/Release/python/dartpy \
 | --- | --- | ---: | ---: | --- |
 | Arms | reacher | 0.0200 | 0.0086 | MJ 2.3x (µs-scale) |
 | Arms | pusher | 0.0373 | 0.0065 | MJ 5.7x |
-| Arms | striker/thrower | — | — | INVALID until contype fidelity lands |
-| Humanoid | humanoid.xml | parse fails | 0.113 | blocked on stacked-joint parser |
+| Arms | striker/thrower | — | — | scenario registration + merged-base rerun pending |
+| Humanoid | humanoid.xml | — | — | merged-base HUM-FALL/HUM-ACTIVE rerun pending |
 | Many objects | PILE-120 active | 1.55 ms/step | 0.57 | MJ ~2.7x |
 | Dynamic | DYN-STIR-120 | 1.82 | 0.61 | MJ ~3.0x |
 | Sleeping | settled 3k | 0.034 ms/step (deactivation) | ~2 (no sleeping exists) | **DART ~60x** (to be formalized) |
