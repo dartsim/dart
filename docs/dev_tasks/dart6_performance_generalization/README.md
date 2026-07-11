@@ -95,9 +95,7 @@ claiming any packet that overlaps them**.
    scene keeps bit-identical hashes for untouched detectors.
 4. **General evidence trigger**: issue-specific wins are insufficient. The
    final report must include broad tests, benchmark matrices, and GUI/headless
-   example evidence across representative arm, humanoid, many-object, resting,
-   and dynamic workloads, comparing DART revisions on the same host to prove
-   the optimized path is not overfit to one fixture.
+   example evidence proving the optimized path is not overfit to one fixture.
 5. **Completion trigger**: criteria 1–4 met (or maintainer-approved
    exceptions recorded), D3/D4/D5/D7/D8 resolved with their packets landed
    or explicitly deferred, issue #3056 ready for closure, then the closeout
