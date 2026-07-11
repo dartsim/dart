@@ -37,6 +37,7 @@
 #include "dart/collision/dart/DARTCollide.hpp"
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/common/Profile.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
@@ -609,6 +610,9 @@ bool DARTCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "DARTCollisionDetector::collide");
   if (result)
     result->clear();
 
@@ -2596,6 +2600,9 @@ bool processFiniteFinitePairs(
     CollisionThreadPool* threadPool,
     std::size_t numCollisionThreads)
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "DART finite-finite pairs");
   auto& pairs = scratch.finiteFinitePairs;
   pairs.clear();
   const bool streamPairs = result == nullptr || threadPool == nullptr
@@ -2699,6 +2706,9 @@ bool processFiniteFinitePairs(
     CollisionThreadPool* threadPool,
     std::size_t numCollisionThreads)
 {
+  DART_PROFILE_SCOPED_IF_N(
+      dart::common::profile::isProfileRecordingEnabled(),
+      "DART finite-finite pairs");
   auto& pairs = scratch.finiteFinitePairs;
   pairs.clear();
   const bool streamPairs = result == nullptr || threadPool == nullptr
