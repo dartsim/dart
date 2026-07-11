@@ -5,12 +5,12 @@ Drives a DART 6 world through the OSG offscreen path (WP-ASV
 parameters, focus-framed reframing, view-quality-scored auto viewpoints,
 turntables, and motion sequences with optional camera sweep. Debug layers
 (contacts, body frames, velocities, trajectories, labels) are rendered
-*through the DART core OSG pipeline*: segments become LineSegmentShape
-geometry on world SimpleFrames and labels become world-anchored osgText on a
-TextOverlay attachment, injected before each capture and removed afterward, so
-the debug geometry is depth-correct and part of the rendered scene. Every run
-writes a sidecar JSON recording camera parameters, layers, view reports, and
-the exact reproduction command.
+*through the DART core OSG pipeline* via a dart.gui.osg.DebugOverlay viewer
+attachment: segments become always-on-top overlay lines and labels become
+world-anchored osgText, drawn unlit and depth-test disabled so they stay
+legible on top of the geometry they annotate. The overlay is populated before
+each capture and cleared afterward. Every run writes a sidecar JSON recording
+camera parameters, layers, view reports, and the exact reproduction command.
 
 Requires a GLX-capable X server (run under ``xvfb-run`` on headless hosts);
 see docs/ai/verification.md.
@@ -190,6 +190,20 @@ def _shoot(
     )
 
 
+# Overlay label height as a fraction of the vertical view, converted to the
+# world-unit character size OBJECT_COORDS text needs so labels stay a constant
+# on-screen size regardless of the camera distance to the subject.
+LABEL_VIEW_FRACTION = 0.05
+
+
+def _label_character_size(camera: avq.AgentCamera) -> float:
+    distance = float(
+        np.linalg.norm(np.asarray(camera.eye) - np.asarray(camera.center))
+    )
+    half_fov = math.radians(camera.fovy_deg) * 0.5
+    return LABEL_VIEW_FRACTION * 2.0 * distance * math.tan(half_fov)
+
+
 def _capture_view(
     viewer: Any,
     world: Any,
@@ -198,29 +212,27 @@ def _capture_view(
     args: argparse.Namespace,
     tracker: Any,
     contacts: list[Any],
-    label_overlay: Any = None,
+    overlay: Any = None,
 ) -> bool:
-    if not args.layers:
+    if not args.layers or overlay is None:
         return _shoot(viewer, camera, path, args)
 
-    # Render the debug layers through the engine: inject world geometry (and
-    # world-anchored labels) so captureOffscreen draws them as part of the
-    # scene, then remove the geometry so the world is left untouched.
+    # Render the debug layers through the engine: populate the always-on-top
+    # DebugOverlay attachment so captureOffscreen draws the lines and labels on
+    # top of the scene, then clear it so the next view starts fresh.
     scene = ado.build_overlay(
         world,
         layers=tuple(args.layers),
         contacts=contacts if "contacts" in args.layers else None,
         trajectories=tracker,
     )
-    frames = ado.inject_overlay(world, scene)
-    if label_overlay is not None:
-        ado.populate_labels(label_overlay, scene)
+    ado.populate_overlay(
+        overlay, scene, character_size=_label_character_size(camera)
+    )
     try:
         return _shoot(viewer, camera, path, args)
     finally:
-        ado.remove_overlay(world, frames)
-        if label_overlay is not None:
-            label_overlay.clear()
+        overlay.clear()
 
 
 def _camera_json(camera: avq.AgentCamera) -> dict[str, Any]:
@@ -279,13 +291,13 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
     viewer = dart.gui.osg.ImGuiViewer()
     viewer.addWorldNode(dart.gui.osg.WorldNode(world))
 
-    label_overlay = None
-    if "labels" in args.layers:
-        label_overlay = dart.gui.osg.TextOverlay()
+    overlay = None
+    if args.layers:
+        overlay = dart.gui.osg.DebugOverlay()
         font = ado.find_default_font()
         if font:
-            label_overlay.setFont(font)
-        viewer.addAttachment(label_overlay)
+            overlay.setFont(font)
+        viewer.addAttachment(overlay)
 
     out_dir = args.out
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -333,7 +345,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             args,
             tracker,
             contacts,
-            label_overlay,
+            overlay,
         ):
             raise RuntimeError(
                 "captureOffscreen failed: no off-screen GL context (needs a "
@@ -364,7 +376,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 args,
                 tracker,
                 contacts,
-                label_overlay,
+                overlay,
             ):
                 raise RuntimeError("captureOffscreen failed during turntable")
         entry: dict[str, Any] = {
@@ -405,7 +417,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 args,
                 tracker,
                 contacts,
-                label_overlay,
+                overlay,
             ):
                 raise RuntimeError("captureOffscreen failed during motion capture")
         entry = {

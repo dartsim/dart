@@ -568,12 +568,13 @@
     image-verification scripts/docs for DART 6 agent visual checks:
     [#3314](https://github.com/dartsim/dart/pull/3314)
 
-  * Add active camera control with view-quality-scored adaptive viewpoints,
-    engine-rendered debug overlays (contacts, frames, velocities, trajectories
-    as `LineSegmentShape` geometry on world `SimpleFrame`s, and labels as a
-    world-anchored `TextOverlay` osgText attachment), a `math::BoundingBox`
-    dartpy binding, a deterministic agent capture harness, and claim-tied
-    evidence selection/publication tooling for agent visual verification:
+  * Add active camera control with view-quality-scored adaptive viewpoints, an
+    always-on-top core `dart::gui::osg::DebugOverlay` viewer attachment that
+    renders debug layers (contacts, frames, velocities, trajectories, and body
+    labels) unlit and depth-test disabled, a `math::BoundingBox` dartpy binding,
+    core-raycast view occlusion, a deterministic agent capture harness, and
+    claim-tied evidence selection/publication tooling for agent visual
+    verification:
     [#3374](https://github.com/dartsim/dart/pull/3374)
 
   * Add shared `dart-gui-osg` helpers for parsing and applying GUI scale, and

@@ -163,57 +163,34 @@ def test_labels_layer_names_bodies():
     assert sorted(text for _anchor, text in scene.labels) == ["box", "ground"]
 
 
-def test_inject_overlay_adds_and_removes_line_segment_frames():
+@pytest.mark.skipif(not _HAS_OSG, reason="dartpy built without gui.osg")
+def test_populate_overlay_loads_lines_and_labels():
     world = _settled_world()
-    scene = ado.build_overlay(world, layers=("contacts", "body_frames"))
-    before = world.getNumSimpleFrames()
-
-    frames = ado.inject_overlay(world, scene)
-    assert frames, "overlay with segments should create frames"
-    assert world.getNumSimpleFrames() == before + len(frames)
-    for frame in frames:
-        shape = frame.getShape()
-        assert isinstance(shape, dart.dynamics.LineSegmentShape)
-        assert frame.getName().startswith(ado.OVERLAY_FRAME_PREFIX)
-        assert frame.hasVisualAspect()
-
-    ado.remove_overlay(world, frames)
-    assert world.getNumSimpleFrames() == before
-
-
-def test_inject_overlay_groups_segments_by_color():
-    world = _settled_world()
-    scene = ado.build_overlay(world, layers=("body_frames",))
-    # Three axis colors across two bodies -> three color groups -> three frames.
-    distinct_colors = {rgb for _s, _e, rgb in scene.segments}
-    frames = ado.inject_overlay(world, scene)
-    try:
-        assert len(frames) == len(distinct_colors) == 3
-    finally:
-        ado.remove_overlay(world, frames)
-
-
-def test_inject_overlay_empty_scene_adds_no_frames():
-    world = _settled_world()
-    scene = ado.build_overlay(world, layers=("contacts",), contacts=[])
-    before = world.getNumSimpleFrames()
-    frames = ado.inject_overlay(world, scene)
-    assert frames == []
-    assert world.getNumSimpleFrames() == before
+    scene = ado.build_overlay(world, layers=("body_frames", "labels"))
+    overlay = dart.gui.osg.DebugOverlay()
+    lines, labels = ado.populate_overlay(overlay, scene)
+    assert lines == len(scene.segments)
+    assert labels == len(scene.labels) == 2
+    assert overlay.getNumLines() == len(scene.segments)
+    assert overlay.getNumLabels() == 2
+    # Re-populating clears the previous content first.
+    again_lines, again_labels = ado.populate_overlay(overlay, scene)
+    assert (again_lines, again_labels) == (len(scene.segments), 2)
+    assert overlay.getNumLines() == len(scene.segments)
+    assert overlay.getNumLabels() == 2
 
 
 @pytest.mark.skipif(not _HAS_OSG, reason="dartpy built without gui.osg")
-def test_populate_labels_loads_text_overlay():
+def test_populate_overlay_empty_scene_clears_overlay():
     world = _settled_world()
-    scene = ado.build_overlay(world, layers=("labels",))
-    overlay = dart.gui.osg.TextOverlay()
-    count = ado.populate_labels(overlay, scene)
-    assert count == len(scene.labels) == 2
-    assert overlay.getNumLabels() == 2
-    # Re-populating clears the previous labels first.
-    again = ado.populate_labels(overlay, scene)
-    assert again == 2
-    assert overlay.getNumLabels() == 2
+    overlay = dart.gui.osg.DebugOverlay()
+    ado.populate_overlay(overlay, ado.build_overlay(world, layers=("body_frames",)))
+    assert overlay.getNumLines() > 0
+    empty = ado.build_overlay(world, layers=("contacts",), contacts=[])
+    lines, labels = ado.populate_overlay(overlay, empty)
+    assert (lines, labels) == (0, 0)
+    assert overlay.getNumLines() == 0
+    assert overlay.getNumLabels() == 0
 
 
 @pytest.mark.skipif(not _HAS_OSG, reason="dartpy built without gui.osg")
@@ -222,7 +199,7 @@ def test_engine_rendered_overlay_changes_pixels(tmp_path):
     world = _settled_world()
     viewer = dart.gui.osg.ImGuiViewer()
     viewer.addWorldNode(dart.gui.osg.WorldNode(world))
-    overlay = dart.gui.osg.TextOverlay()
+    overlay = dart.gui.osg.DebugOverlay()
     font = ado.find_default_font()
     if font:
         overlay.setFont(font)
@@ -236,8 +213,8 @@ def test_engine_rendered_overlay_changes_pixels(tmp_path):
             camera.eye,
             camera.center,
             camera.up,
-            width=200,
-            height=150,
+            width=240,
+            height=180,
             fovYDeg=camera.fovy_deg,
             warmupFrames=10,
         )
@@ -247,20 +224,11 @@ def test_engine_rendered_overlay_changes_pixels(tmp_path):
 
     base = shoot("base.png")
 
-    # Geometry layers render through the engine and revert cleanly on removal.
-    scene = ado.build_overlay(world, layers=("contacts", "body_frames"))
-    frames = ado.inject_overlay(world, scene)
-    with_geometry = shoot("geometry.png")
-    ado.remove_overlay(world, frames)
-    after_geometry = shoot("after_geometry.png")
-    assert with_geometry != base, "engine-rendered geometry must change pixels"
-    assert after_geometry == base, "removing the overlay must restore the scene"
-
-    # osgText labels render through the engine and revert cleanly on clear.
-    label_scene = ado.build_overlay(world, layers=("labels",))
-    ado.populate_labels(overlay, label_scene)
-    with_labels = shoot("labels.png")
+    # Lines and labels render through the engine and revert cleanly on clear.
+    scene = ado.build_overlay(world, layers=("contacts", "body_frames", "labels"))
+    ado.populate_overlay(overlay, scene, character_size=0.05)
+    with_overlay = shoot("overlay.png")
     overlay.clear()
-    after_labels = shoot("after_labels.png")
-    assert with_labels != base, "engine-rendered labels must change pixels"
-    assert after_labels == base, "clearing labels must restore the scene"
+    after_clear = shoot("after_clear.png")
+    assert with_overlay != base, "engine-rendered overlay must change pixels"
+    assert after_clear == base, "clearing the overlay must restore the scene"

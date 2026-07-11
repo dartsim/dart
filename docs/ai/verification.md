@@ -96,14 +96,16 @@ reported but only gates when you pass `--require-contrast`.
   when a report lists issues, reframe or reselect instead of shipping the
   shot. Body bounds come from the core `Shape.getBoundingBox()` (now bound in
   dartpy). `scripts/agent_debug_overlay.py` renders the debug layers *through
-  the engine*: contacts (implausible sentinel contact points are skipped and
-  counted), body frames, velocity arrows, and trajectory polylines become
-  `dart.dynamics.LineSegmentShape` geometry on world `SimpleFrame`s, and labels
-  become world-anchored `dart.gui.osg.TextOverlay` (osgText) text — so the
-  overlay is depth-correct and part of the rendered scene rather than
-  composited in image space. The harness injects the overlay, renders through
-  `captureOffscreen`, then removes it. No GL context is needed for assessment
-  itself. Overlay colors match the DART 7 debug producers.
+  the engine* via a `dart.gui.osg.DebugOverlay` viewer attachment: contacts
+  (implausible sentinel contact points are skipped and counted), body frames,
+  velocity arrows, and trajectory polylines become always-on-top overlay lines
+  and labels become world-anchored osgText — all drawn unlit, with depth
+  testing disabled, in a late render bin, so the debug primitives stay legible
+  on top of the geometry they annotate (matching DART 7's core debug overlay)
+  instead of being buried in depth or composited in image space. The harness
+  populates the overlay, renders through `captureOffscreen`, then clears it. No
+  GL context is needed for assessment itself. Overlay colors match the DART 7
+  debug producers.
 
 - Select a small claim-tied evidence set and generate the PR section:
 

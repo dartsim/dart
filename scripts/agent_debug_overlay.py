@@ -2,18 +2,19 @@
 
 This module builds world-derived debug layers — contact markers/normals/forces,
 body frames, velocity arrows, trajectory polylines, and name labels — and
-renders them *through the DART core OSG pipeline* rather than compositing them
-onto the captured PNG in image space. Segments become
-``dart.dynamics.LineSegmentShape`` geometry on ``SimpleFrame``s added to the
-world (so ``WorldNode`` draws them as real, depth-correct scene geometry), and
-labels become world-anchored text on a ``dart.gui.osg.TextOverlay`` viewer
-attachment (osgText). The capture harness injects the overlay, renders through
-``captureOffscreen``, then removes it. Colors and arrow geometry mirror
-dart::gui's debug producers so DART 6 and DART 7 speak the same visual language.
+renders them *through the DART core OSG pipeline* via a
+``dart.gui.osg.DebugOverlay`` viewer attachment. Segments become always-on-top
+overlay lines and labels become world-anchored osgText, both drawn unlit with
+depth testing disabled in a late render bin, so the debug primitives stay
+legible on top of the geometry they annotate (matching DART 7's core debug
+overlay treatment) instead of being buried in depth or composited onto the PNG.
+The capture harness populates the overlay, renders through ``captureOffscreen``,
+then clears it. Colors and arrow geometry mirror dart::gui's debug producers so
+DART 6 and DART 7 speak the same visual language.
 
 ``build_overlay`` and ``OverlayScene`` stay pure Python + numpy over the classic
-dartpy surface; only the rendering backend (``inject_overlay`` /
-``remove_overlay`` / ``populate_labels``) touches the OSG scene.
+dartpy surface; only the rendering backend (``populate_overlay``) touches the
+OSG scene.
 """
 
 from __future__ import annotations
@@ -287,24 +288,15 @@ def build_overlay(
 
 # --- Engine rendering backend -----------------------------------------------
 
-# World SimpleFrames created for the overlay carry this name prefix so they are
-# easy to identify; inject_overlay/remove_overlay manage their lifetime.
-OVERLAY_FRAME_PREFIX = "agent_overlay"
-DEFAULT_LINE_THICKNESS = 2.0
-# Label size is in screen pixels (TextOverlay uses SCREEN_COORDS), so labels
-# stay legible at any camera distance.
-DEFAULT_LABEL_CHARACTER_SIZE = 20.0
+# Default label height in world units when the caller does not scale it to the
+# scene; comparable to the frame-axis length so labels read at the same scale as
+# the axes they sit beside.
+DEFAULT_LABEL_CHARACTER_SIZE = 0.1
 
 # Font files tried, in order, when none is set explicitly. osgText renders
 # nothing without a usable font, so the harness resolves one from the runtime
 # environment (the pixi/conda env ships DejaVuSans).
 _FONT_CANDIDATES = ("DejaVuSans.ttf", "Arial.ttf", "arial.ttf", "Vera.ttf")
-
-
-def _dartpy() -> Any:
-    import dartpy
-
-    return dartpy
 
 
 def _color01(rgb: tuple[int, int, int]) -> list[float]:
@@ -343,64 +335,31 @@ def find_default_font() -> str | None:
     return None
 
 
-def inject_overlay(
-    world: Any,
-    scene: OverlayScene,
-    *,
-    thickness: float = DEFAULT_LINE_THICKNESS,
-) -> list[Any]:
-    """Render ``scene``'s segments through the engine as world geometry.
-
-    Segments are grouped by color into one ``LineSegmentShape`` each, wrapped in
-    a world ``SimpleFrame`` whose visual aspect carries that color. ``WorldNode``
-    then draws them as real, depth-correct scene geometry in every capture.
-    Returns the frames added; pass them to :func:`remove_overlay`.
-    """
-    dart = _dartpy()
-    by_color: dict[tuple[int, int, int], list[tuple[np.ndarray, np.ndarray]]] = {}
-    for start, end, rgb in scene.segments:
-        by_color.setdefault(rgb, []).append((start, end))
-
-    frames: list[Any] = []
-    for index, rgb in enumerate(sorted(by_color)):
-        line = dart.dynamics.LineSegmentShape(float(thickness))
-        for start, end in by_color[rgb]:
-            first = line.addVertex([float(v) for v in start])
-            second = line.addVertex([float(v) for v in end])
-            line.addConnection(first, second)
-        frame = dart.dynamics.SimpleFrame(
-            dart.dynamics.Frame.World(), f"{OVERLAY_FRAME_PREFIX}_{index}"
-        )
-        frame.setShape(line)
-        frame.createVisualAspect().setColor(_color01(rgb))
-        world.addSimpleFrame(frame)
-        frames.append(frame)
-    return frames
-
-
-def remove_overlay(world: Any, frames: Sequence[Any]) -> None:
-    """Remove overlay frames previously added by :func:`inject_overlay`."""
-    for frame in frames:
-        world.removeSimpleFrame(frame)
-
-
-def populate_labels(
+def populate_overlay(
     overlay: Any,
     scene: OverlayScene,
     *,
-    color: tuple[int, int, int] = LABEL_RGB,
+    label_color: tuple[int, int, int] = LABEL_RGB,
     character_size: float = DEFAULT_LABEL_CHARACTER_SIZE,
-) -> int:
-    """Load ``scene``'s labels into a ``dart.gui.osg.TextOverlay`` attachment.
+) -> tuple[int, int]:
+    """Load an ``OverlayScene`` into a ``dart.gui.osg.DebugOverlay`` attachment.
 
-    Clears any previous labels first so the overlay tracks the current scene.
-    Each label is world-anchored, screen-facing text rendered by osgText.
-    Returns the number of labels added.
+    Segments become always-on-top overlay lines carrying their per-layer color,
+    and labels become world-anchored osgText, both rendered by the engine unlit
+    and depth-test disabled so debug primitives stay legible over the geometry
+    they annotate. Clears any previous content first so the overlay tracks the
+    current scene. Returns ``(num_lines, num_labels)``.
     """
     overlay.clear()
-    rgba = _color01(color) + [1.0]
+    for start, end, rgb in scene.segments:
+        overlay.addLine(
+            [float(v) for v in start],
+            [float(v) for v in end],
+            _color01(rgb) + [1.0],
+        )
+    label_rgba = _color01(label_color) + [1.0]
     for anchor, text in scene.labels:
         overlay.addLabel(
-            [float(v) for v in anchor], str(text), rgba, float(character_size)
+            [float(v) for v in anchor], str(text), label_rgba, float(character_size)
         )
-    return len(scene.labels)
+    return len(scene.segments), len(scene.labels)
