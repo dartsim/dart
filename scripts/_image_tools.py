@@ -322,3 +322,201 @@ def _require_rgb_size(width: int, height: int, pixels: bytes) -> None:
     expected = width * height * 3
     if len(pixels) != expected:
         raise ValueError(f"RGB payload has {len(pixels)} bytes, expected {expected}")
+
+
+# --- Composite helpers (side-by-side, blend, diff heatmap, text) -----------
+
+# Compact 3x5 uppercase bitmap font shared by composite labels; mirrors the
+# glyph set used by dartpy's debug-label compositing.
+FONT_3X5_TEXT = {
+    "A": ("010", "101", "111", "101", "101"),
+    "B": ("110", "101", "110", "101", "110"),
+    "C": ("011", "100", "100", "100", "011"),
+    "D": ("110", "101", "101", "101", "110"),
+    "E": ("111", "100", "110", "100", "111"),
+    "F": ("111", "100", "110", "100", "100"),
+    "G": ("011", "100", "101", "101", "011"),
+    "H": ("101", "101", "111", "101", "101"),
+    "I": ("111", "010", "010", "010", "111"),
+    "J": ("001", "001", "001", "101", "010"),
+    "K": ("101", "110", "100", "110", "101"),
+    "L": ("100", "100", "100", "100", "111"),
+    "M": ("101", "111", "111", "101", "101"),
+    "N": ("101", "111", "111", "111", "101"),
+    "O": ("010", "101", "101", "101", "010"),
+    "P": ("110", "101", "110", "100", "100"),
+    "Q": ("010", "101", "101", "011", "001"),
+    "R": ("110", "101", "110", "110", "101"),
+    "S": ("011", "100", "010", "001", "110"),
+    "T": ("111", "010", "010", "010", "010"),
+    "U": ("101", "101", "101", "101", "111"),
+    "V": ("101", "101", "101", "010", "010"),
+    "W": ("101", "101", "111", "111", "101"),
+    "X": ("101", "010", "010", "010", "101"),
+    "Y": ("101", "101", "010", "010", "010"),
+    "Z": ("111", "001", "010", "100", "111"),
+    "0": ("111", "101", "101", "101", "111"),
+    "1": ("010", "110", "010", "010", "111"),
+    "2": ("111", "001", "111", "100", "111"),
+    "3": ("111", "001", "011", "001", "111"),
+    "4": ("101", "101", "111", "001", "001"),
+    "5": ("111", "100", "111", "001", "111"),
+    "6": ("111", "100", "111", "101", "111"),
+    "7": ("111", "001", "001", "010", "010"),
+    "8": ("111", "101", "111", "101", "111"),
+    "9": ("111", "101", "111", "001", "111"),
+    "-": ("000", "000", "111", "000", "000"),
+    "_": ("000", "000", "000", "000", "111"),
+    ".": ("000", "000", "000", "000", "010"),
+    ":": ("000", "010", "000", "010", "000"),
+    "/": ("001", "001", "010", "100", "100"),
+    "+": ("000", "010", "111", "010", "000"),
+    "(": ("010", "100", "100", "100", "010"),
+    ")": ("010", "001", "001", "001", "010"),
+    " ": ("000", "000", "000", "000", "000"),
+}
+
+
+def draw_text_rgb(
+    pixels: bytearray,
+    width: int,
+    height: int,
+    text: str,
+    origin: tuple[int, int],
+    color: tuple[int, int, int] = (255, 255, 255),
+    scale: int = 2,
+) -> None:
+    """Draw uppercase bitmap text into a raw RGB byte buffer."""
+    x_cursor, y_origin = int(origin[0]), int(origin[1])
+    for character in str(text).upper():
+        glyph = FONT_3X5_TEXT.get(character, FONT_3X5_TEXT[" "])
+        for row_index, row in enumerate(glyph):
+            for column_index, bit in enumerate(row):
+                if bit != "1":
+                    continue
+                for dy in range(scale):
+                    y = y_origin + row_index * scale + dy
+                    if y < 0 or y >= height:
+                        continue
+                    for dx in range(scale):
+                        x = x_cursor + column_index * scale + dx
+                        if x < 0 or x >= width:
+                            continue
+                        offset = (y * width + x) * 3
+                        pixels[offset : offset + 3] = bytes(color)
+        x_cursor += (3 + 1) * scale
+
+
+def side_by_side(
+    images: list[ImageData],
+    labels: list[str] | None = None,
+    gap: int = 8,
+    background: tuple[int, int, int] = (24, 28, 32),
+    label_scale: int = 2,
+) -> ImageData:
+    """Compose images horizontally with optional per-panel labels."""
+    if not images:
+        raise ValueError("side_by_side requires at least one image")
+    if labels is not None and len(labels) != len(images):
+        raise ValueError("labels must match images one-to-one")
+    tile_height = max(image.height for image in images)
+    label_band = (5 * label_scale + 6) if labels else 0
+    total_width = sum(image.width for image in images) + gap * (len(images) + 1)
+    total_height = tile_height + 2 * gap + label_band
+    canvas = bytearray(bytes(background) * (total_width * total_height))
+    x_offset = gap
+    for index, image in enumerate(images):
+        paste_rgb(
+            canvas,
+            total_width,
+            x_offset,
+            gap + label_band,
+            image.width,
+            image.height,
+            image.pixels,
+        )
+        if labels:
+            draw_text_rgb(
+                canvas,
+                total_width,
+                total_height,
+                labels[index],
+                (x_offset, 3),
+                scale=label_scale,
+            )
+        x_offset += image.width + gap
+    return ImageData(
+        path=Path("side_by_side"),
+        width=total_width,
+        height=total_height,
+        pixels=bytes(canvas),
+    )
+
+
+def overlay_blend(a: ImageData, b: ImageData, alpha: float = 0.5) -> ImageData:
+    """Blend two equal-size images: result = (1-alpha)*a + alpha*b."""
+    if (a.width, a.height) != (b.width, b.height):
+        raise ValueError("overlay_blend requires equal image sizes")
+    alpha = min(max(float(alpha), 0.0), 1.0)
+    blended = bytearray(len(a.pixels))
+    inverse = 1.0 - alpha
+    for index in range(len(a.pixels)):
+        blended[index] = int(a.pixels[index] * inverse + b.pixels[index] * alpha)
+    return ImageData(
+        path=Path("overlay_blend"),
+        width=a.width,
+        height=a.height,
+        pixels=bytes(blended),
+    )
+
+
+def diff_heatmap(
+    a: ImageData, b: ImageData, amplify: float = 4.0
+) -> tuple[ImageData, dict]:
+    """Colorized absolute difference plus summary statistics.
+
+    Unchanged pixels stay dark; differences map through a blue->yellow->red
+    ramp scaled by ``amplify`` so subtle changes stay visible.
+    """
+    if (a.width, a.height) != (b.width, b.height):
+        raise ValueError("diff_heatmap requires equal image sizes")
+    heat = bytearray(len(a.pixels))
+    total = a.width * a.height
+    changed = 0
+    accumulated = 0
+    peak = 0
+    for pixel in range(total):
+        offset = pixel * 3
+        delta = max(
+            abs(a.pixels[offset] - b.pixels[offset]),
+            abs(a.pixels[offset + 1] - b.pixels[offset + 1]),
+            abs(a.pixels[offset + 2] - b.pixels[offset + 2]),
+        )
+        accumulated += delta
+        peak = max(peak, delta)
+        if delta > 0:
+            changed += 1
+        magnitude = min(int(delta * amplify), 255)
+        if magnitude <= 0:
+            continue
+        # Continuous blue -> yellow -> red ramp over the amplified magnitude.
+        position = magnitude / 255.0
+        if position < 0.5:
+            blend = position * 2.0
+            heat[offset] = int(255 * blend)
+            heat[offset + 1] = int(255 * blend)
+            heat[offset + 2] = int(255 * (1.0 - blend))
+        else:
+            blend = (position - 0.5) * 2.0
+            heat[offset] = 255
+            heat[offset + 1] = int(255 * (1.0 - blend))
+            heat[offset + 2] = 0
+    stats = {
+        "changed_pixel_fraction": changed / total if total else 0.0,
+        "mean_abs": accumulated / total if total else 0.0,
+        "max_abs": peak,
+    }
+    image = ImageData(
+        path=Path("diff_heatmap"), width=a.width, height=a.height, pixels=bytes(heat)
+    )
+    return image, stats

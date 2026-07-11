@@ -78,6 +78,41 @@ The verdict JSON (`schema_version dart.image_verdict/v1`) sets `pass` from the
 non-blank check plus any golden diff. Contrast is scene-dependent, so it is
 reported but only gates when you pass `--require-contrast`.
 
+- Active camera control, view quality, and debug overlays (agent evidence):
+
+  ```bash
+  # Deterministic capture: auto-selected viewpoints (view-quality scored),
+  # focus framing, turntable/motion video, debug layers composited in image
+  # space, and a sidecar JSON with the exact reproduce command.
+  pixi run agent-capture -- --scene box_stack --steps 150 \
+      --layers contacts body_frames labels --focus stack1 --auto-views 2 \
+      --out /tmp/evidence
+  ```
+
+  `scripts/agent_view_quality.py` assesses a camera before rendering
+  (coverage/crop, subject size, ray/AABB occlusion, ambiguity; issues named
+  `cropped`/`off-frame`/`too-far`/`too-close`/`occluded`/`ambiguous`) and
+  `select_viewpoints` deterministically picks azimuth-diverse better views —
+  when a report lists issues, reframe or reselect instead of shipping the
+  shot. `scripts/agent_debug_overlay.py` composites contacts (implausible
+  sentinel contact points are skipped and counted), body frames, velocity
+  arrows, trajectory polylines, and labels onto captures, matching the DART 7
+  overlay colors. No GL context is needed for assessment itself.
+
+- Select a small claim-tied evidence set and generate the PR section:
+
+  ```bash
+  pixi run image-compose -- side-by-side before.png after.png \
+      --labels BEFORE AFTER --out compare.png     # also: blend, diff
+  pixi run evidence-select -- candidates.json --out selection.json
+  pixi run evidence-publish -- selection.json --environment "..." \
+      --out pr_section.md   # manual placeholders; gh-release needs --yes
+  ```
+
+  Every artifact must support an explicit claim (`evidence-select` rejects
+  unclaimed ones and records per-artifact rationale); media is GitHub-hosted,
+  never committed to the repository.
+
 For physics determinism (rather than visual appearance), use the text path that
 already exists on the branch: `pixi run bm-boxes-headless` prints per-step
 position/velocity checksums with no rendering, so diffing two builds' output
