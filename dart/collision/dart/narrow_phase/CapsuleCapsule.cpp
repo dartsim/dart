@@ -155,13 +155,19 @@ bool collideVerticalCapsules(
 
     const double penetration = sumRadii - dist;
     if (dist < 1e-10) {
+      // Coaxial overlap: the closest-point delta degenerates to zero, so
+      // derive the separation direction from the capsule center offset (the
+      // capsule above gets pushed up). Fall back to +Z only when the centers
+      // coincide exactly.
+      const double centerDz = translation1.z() - translation2.z();
+      const double normalZ = (centerDz < 0.0) ? -1.0 : 1.0;
       result.addContact(
           translation2.x(),
           translation2.y(),
-          z2 + radius2 - penetration * 0.5,
+          z2 + normalZ * (radius2 - penetration * 0.5),
           0.0,
           0.0,
-          1.0,
+          normalZ,
           penetration);
     } else {
       const double normalX = dx / dist;
@@ -206,7 +212,9 @@ bool collideVerticalCapsules(
 
   Eigen::Vector3d normal;
   if (dist < 1e-10) {
-    normal = Eigen::Vector3d::UnitZ();
+    const Eigen::Vector3d centerDelta = translation1 - translation2;
+    normal = (centerDelta.squaredNorm() > 1e-20) ? centerDelta.normalized()
+                                                 : Eigen::Vector3d::UnitZ();
   } else {
     normal = Eigen::Vector3d(dx, dy, dz) / dist;
   }
@@ -304,7 +312,20 @@ bool collideCapsules(
 
   Eigen::Vector3d normal;
   if (dist < 1e-10) {
-    normal = Eigen::Vector3d::UnitZ();
+    // Intersecting axes: use the center delta, then an axis-perpendicular
+    // direction, before the arbitrary +Z fallback.
+    const Eigen::Vector3d centerDelta
+        = transform1.translation() - transform2.translation();
+    if (centerDelta.squaredNorm() > 1e-20) {
+      normal = centerDelta.normalized();
+    } else {
+      const Eigen::Vector3d axis2 = (top2 - bottom2).normalized();
+      const Eigen::Vector3d perpendicular
+          = Eigen::Vector3d::UnitZ().cross(axis2);
+      normal = (perpendicular.squaredNorm() > 1e-20)
+                   ? perpendicular.normalized()
+                   : Eigen::Vector3d::UnitZ();
+    }
   } else {
     normal = (closest.point1 - closest.point2) / dist;
   }
