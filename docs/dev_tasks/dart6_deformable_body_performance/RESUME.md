@@ -1,5 +1,37 @@
 # RESUME - DART 6 deformable body feature and performance
 
+## 2026-07-11 state
+
+- **WP-DB.05 adaptive contact activation is implemented and reviewed**
+  (`578ea17a049` + review fixes `2382b971244`): opt-in per-soft-body
+  activation per `08-adaptive-contact-activation.md`, rigid-lump frozen
+  points, constraint-time seeding, rest-gated linger, notifier-subclass
+  storage, additive public API. Default-off is bit-identical (30-row
+  battery, verified three times). Eight design tests + two
+  activation-enabled zero-allocation gates + a frozen-state matrix identity
+  regression. A four-lens adversarial review produced six findings: one
+  refuted with code evidence, four fixed, one accepted-with-documentation
+  (dispositions in the design doc).
+- **Soft phases and both collision pipelines now carry conditional profiler
+  scopes** (`1d1eab1c485`, `03bc71412a8`). Stage-0 attribution found no
+  structural direct-native penalty (native collision measured at or below
+  dart on the tracked scenes), so the native-owned kernel port
+  (`09-native-soft-kernel-port-spec.md`) is deferred pending one genuinely
+  idle self-diagnosing matrix; the failing winner rows from the
+  `wp-db-reunified-c743a45` artifact are attributed to marginal-idle load
+  structure.
+- **WP-DB.06 contiguous storage is parked with evidence** (virtual
+  destructor, burst allocation, prior mirror reject) in
+  `04-data-layout-and-memory-hardening.md`.
+- **Long-run determinism evidence recorded** (`299c9fe99ed`): 2000-step
+  rows thread-invariant 10/10 and rerun-repeatable; cross-backend
+  divergence on two scenes documented as chaotic ULP amplification.
+- WP-DB.09 flagship demos (adaptive_soft_contact, soft_worm) are being
+  implemented by a GPT-5.5 executor; extended stability gates (WP-DB.02
+  follow-up), full validation incl. Gazebo, docs/changelog batch, second
+  clean review pass, final idle-host matrix, and the push/PR approval
+  interview remain.
+
 ## 2026-07-10 overnight state
 
 - A 64-agent adversarial stitch review of merge `4286fd53097` confirmed zero
