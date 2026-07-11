@@ -969,6 +969,36 @@ TEST_F(SoftDynamicsTest, adaptiveContactActivationKeepsPublicMatricesAllActive)
       onSkeleton->getInvAugMassMatrix(),
       1.0e-12,
       "activation on inverse augmented mass matrix");
+
+  // The all-active guarantee must survive frozen points: soft trees compute
+  // inverse matrices from the public (all-active) mass matrices, so the
+  // identity products discriminate against any activity-dependent inverse.
+  dynamics::SoftBodyNode* softBody = onSkeleton->getSoftBodyNode(0);
+  ASSERT_TRUE(softBody != nullptr);
+  for (std::size_t i = 0; i < 400; ++i) {
+    activationOn->step();
+    if (softBody->getNumActivePointMasses() < softBody->getNumPointMasses())
+      break;
+  }
+  ASSERT_LT(softBody->getNumActivePointMasses(), softBody->getNumPointMasses())
+      << "scene never froze a point; frozen-state matrix check not exercised";
+
+  const Eigen::MatrixXd frozenM = onSkeleton->getMassMatrix();
+  const Eigen::MatrixXd frozenInvM = onSkeleton->getInvMassMatrix();
+  const Eigen::MatrixXd frozenAugM = onSkeleton->getAugMassMatrix();
+  const Eigen::MatrixXd frozenInvAugM = onSkeleton->getInvAugMassMatrix();
+  const Eigen::MatrixXd identity
+      = Eigen::MatrixXd::Identity(frozenM.rows(), frozenM.cols());
+  expectMatrixNear(
+      frozenM * frozenInvM,
+      identity,
+      1.0e-9,
+      "frozen-state mass/inverse identity");
+  expectMatrixNear(
+      frozenAugM * frozenInvAugM,
+      identity,
+      1.0e-9,
+      "frozen-state augmented mass/inverse identity");
 }
 
 //==============================================================================
@@ -1011,7 +1041,9 @@ TEST_F(
   restoredState.mPointStates.resize(softBody->getNumPointMasses());
   restoredState.mPointStates[0].mPositions[0] = 1.0e-5;
   softBody->setAspectState(restoredState);
-  EXPECT_EQ(softBody->getNumActivePointMasses(), 0u);
+  // A state restore resets activation bookkeeping to all-active immediately
+  // so instrumentation never reports stale pre-restore counts.
+  EXPECT_EQ(softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
   world->step();
   EXPECT_EQ(softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
 }

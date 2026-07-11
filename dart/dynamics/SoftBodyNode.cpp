@@ -238,6 +238,19 @@ public:
     }
   }
 
+  void refreshRestGeometry(const std::vector<PointMass::Properties>& properties)
+  {
+    mAllFrozenRestArtInertiaContribution.setZero();
+    const std::size_t count
+        = std::min(properties.size(), mFrozenLocalPositions.size());
+    for (std::size_t i = 0; i < count; ++i) {
+      addPointInertiaContribution(
+          mAllFrozenRestArtInertiaContribution,
+          properties[i].mX0,
+          properties[i].mMass);
+    }
+  }
+
   std::uint32_t nextVisitStamp()
   {
     if (mVisitStamp == std::numeric_limits<std::uint32_t>::max()) {
@@ -349,6 +362,12 @@ void SoftBodyNode::setAspectState(const AspectState& state)
   activation.mCurrentTargetAll = true;
   activation.mCurrentTargetStamp = 0u;
   std::fill(activation.mSeeded.begin(), activation.mSeeded.end(), 0u);
+  // Restored state is immediately all-active so instrumentation such as
+  // getNumActivePointMasses() does not report stale pre-restore counts.
+  std::fill(activation.mActive.begin(), activation.mActive.end(), 1u);
+  std::fill(
+      activation.mLingerCounters.begin(), activation.mLingerCounters.end(), 0u);
+  activation.mActiveCount = activation.mActive.size();
   mNotifier->dirtyTransform();
 }
 
@@ -622,12 +641,27 @@ double SoftBodyNode::getMass() const
 //==============================================================================
 void SoftBodyNode::handlePointMassMassChange()
 {
+  adaptiveContactActivation(*this).refreshRestGeometry(
+      mAspectProperties.mPointProps);
   dirtyArticulatedInertia();
   const SkeletonPtr& skel = getSkeleton();
   if (skel) {
     skel->updateTotalMass();
     skel->incrementDeactivationStateVersion();
   }
+  incrementVersion();
+}
+
+//==============================================================================
+void SoftBodyNode::handlePointMassRestingPositionChange()
+{
+  auto& activation = adaptiveContactActivation(*this);
+  activation.refreshRestGeometry(mAspectProperties.mPointProps);
+  // Frozen hold positions and linger decay targets are relative to the rest
+  // shape, so a rest-position change re-derives the activation state from
+  // scratch.
+  activation.mForceAllActiveNextStep = true;
+  dirtyArticulatedInertia();
   incrementVersion();
 }
 
@@ -874,15 +908,44 @@ void SoftBodyNode::seedAdaptiveContactActivationFace(int faceId)
     return;
 
   const Eigen::Vector3i& face = getFace(static_cast<std::size_t>(faceId));
+  bool seededFrozenPoint = false;
   for (int i = 0; i < 3; ++i) {
     const int pointIndex = face[i];
     if (pointIndex < 0)
       continue;
 
     const std::size_t index = static_cast<std::size_t>(pointIndex);
-    if (index < activation.mSeeded.size())
+    if (index < activation.mSeeded.size()) {
+      if (activation.mSeeded[index] == 0u && !activation.isActive(index))
+        seededFrozenPoint = true;
       activation.mSeeded[index] = 1u;
+    }
   }
+
+  // A quiescent body (for example a weld-jointed soft link) may never
+  // re-dirty its articulated inertia, and the activation tick only runs from
+  // updateArtInertia. Force the tick only for a genuine activation event —
+  // seeding an already-active point neither changes the set nor lets linger
+  // advance, and unconditional dirtying would churn caches every step.
+  if (seededFrozenPoint)
+    dirtyArticulatedInertia();
+}
+
+//==============================================================================
+void SoftBodyNode::seedAdaptiveContactActivationPoint(std::size_t index)
+{
+  auto& activation = adaptiveContactActivation(*this);
+  if (!activation.mEnabled)
+    return;
+
+  if (index >= activation.mSeeded.size())
+    return;
+
+  const bool activationEvent
+      = activation.mSeeded[index] == 0u && !activation.isActive(index);
+  activation.mSeeded[index] = 1u;
+  if (activationEvent)
+    dirtyArticulatedInertia();
 }
 
 //==============================================================================

@@ -195,3 +195,29 @@ Acceptance rows are scoped accordingly:
 - Reduced matrix semantics for frozen DOFs (documented follow-up).
 - Reduced-coordinate or FEM flesh models.
 - Making activation the default.
+
+## Post-implementation review dispositions (2026-07-11)
+
+A four-lens adversarial review of the implementation commit produced six
+findings; dispositions:
+
+- **Inverse-matrix activity dependence — refuted.** Soft-containing trees
+  compute `getInvMassMatrix`/`getInvAugMassMatrix` by dense LDLT of the
+  public (all-active) mass matrices (`Skeleton::updateInvMassMatrix` soft
+  branch), so the articulated-inertia aggregation the finding traced never
+  runs for them. The matrices test now steps until points freeze and gates
+  the mass/inverse identity products as a regression.
+- **Stale all-frozen rest cache — fixed.** `PointMass::setMass` and
+  `setRestingPosition` now refresh the cached all-frozen articulated-inertia
+  contribution (and a rest-position change re-derives activation state).
+- **Seed-drain stall on quiescent bodies — fixed.** New activation seeds
+  dirty the articulated inertia so the tick always runs on the next step.
+- **Invalid contact face id never seeding — fixed.** The selected point mass
+  is seeded directly alongside face seeding.
+- **Stale active count after state restore — fixed.** `setAspectState`
+  resets the active flags and count immediately.
+- **Const articulated-inertia accessors advance the activation state
+  machine — accepted with documentation.** Activation is designed for
+  stepping worlds; an out-of-band `getArticulatedInertia()` query between
+  steps can advance freeze/thaw bookkeeping once. Restructuring the tick
+  site is deliberately deferred; the behavior is bounded and opt-in.
