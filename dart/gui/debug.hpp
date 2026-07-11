@@ -48,6 +48,7 @@
 
 namespace dart::simulation {
 class World;
+struct Contact;
 } // namespace dart::simulation
 
 namespace dart::gui {
@@ -183,11 +184,33 @@ DART_GUI_API std::vector<DebugLineDescriptor> extractContactDebugLines(
     const collision::CollisionResult& result,
     const DebugDrawOptions& options = {});
 
+/// Contact markers/normals for the promoted `simulation::World` contact type
+/// (as returned by `World::collide()`). Contact forces are not part of the
+/// simulation contact payload, so only points and normals are drawn.
+DART_GUI_API std::vector<DebugLineDescriptor> extractContactDebugLines(
+    const std::vector<simulation::Contact>& contacts,
+    const DebugDrawOptions& options = {});
+
+/// A polyline (e.g. a recorded body trajectory) as consecutive debug-line
+/// segments; zero-length segments are dropped.
+DART_GUI_API std::vector<DebugLineDescriptor> makePolylineDebugLines(
+    const std::vector<Eigen::Vector3d>& points,
+    const Eigen::Vector4d& rgba,
+    const std::string& label = {});
+
 DART_GUI_API std::vector<DebugLineDescriptor> extractDebugLines(
     const DebugDrawOptions& options = {});
 
+/// World-aware debug extraction for the promoted `simulation::World`: the
+/// static layers (grid, world frame) plus per-rigid-body layers selected by
+/// the options — body frames, center-of-mass markers, inertia boxes
+/// (solid-box equivalents of the body inertia), collision-shape bounds, and
+/// linear/angular velocity arrows. Contacts come from the explicit
+/// `extractContactDebugLines(std::vector<simulation::Contact>, ...)` overload
+/// so captures stay deterministic relative to a chosen step. Takes the world
+/// non-const because rigid-body handles resolve through it.
 DART_GUI_API std::vector<DebugLineDescriptor> extractDebugLines(
-    const simulation::World& world, const DebugDrawOptions& options = {});
+    simulation::World& world, const DebugDrawOptions& options = {});
 
 } // namespace dart::gui
 

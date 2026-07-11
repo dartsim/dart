@@ -312,7 +312,14 @@ compatibility remains on the active DART 6 LTS branch._
   claim-driven evidence selection with recorded rationale, and a PR
   visual-verification section generator with GitHub-hosted media backends
   (`pixi run agent-capture`, `image-compose`, `evidence-select`,
-  `evidence-publish`).
+  `evidence-publish`). These capabilities are core-first per maintainer
+  policy: `dart::gui` owns world-aware debug extraction
+  (`extractDebugLines(World&)`, wiring the previously dead body-frame and
+  center-of-mass flags), the shared projection primitive `projectToPixels`,
+  view adequacy (`assessView`), offscreen debug-label compositing with a
+  built-in font, and `World::getRigidBodyNames`; the gui component now
+  depends on the simulation component, and Python layers only orchestrate
+  the core APIs.
 - Added visual-verification workflows, screenshot review indexes, UI capture
   guards, runtime scene-switch hardening, and demo panels aimed at debugging
   DART 7 simulation behavior instead of preserving every historical demo detail.

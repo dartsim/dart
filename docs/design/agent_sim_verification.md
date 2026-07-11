@@ -173,7 +173,24 @@ Known limits and future work: occlusion probes sample bounds corners (a
 depth/ID-buffer readback would make visibility exact), thresholds are fixed
 constants calibrated on primitive scenes, multibody/deformable layers reuse
 only the transform-based subset, inline PR video still requires the manual
-user-attachments flow, and the DART 6 port of adaptive viewpoints, image-space
-debug overlays, the capture harness, and evidence tooling is in flight on
-`release-6.20` via #3374 (until it lands, DART 6 keeps the fixed
-`defaultAgentCamera` rather than adaptive selection).
+user-attachments flow, and the DART 6 port of adaptive viewpoints,
+engine-rendered debug overlays, the capture harness, and evidence tooling is
+in flight on `release-6.20` via #3374.
+
+## Core-first policy for agent visual tooling
+
+Maintainer directive (2026-07): agent-facing visual debugging/verification
+capabilities are implemented in the core rendering/GUI codebase — `dart::gui`
+on DART 7, `dart::gui::osg` on DART 6 — and exposed through dartpy, never as
+parallel Python reimplementations. Scripts and pixi tasks orchestrate core
+APIs (scene setup, capture sequencing, claims/evidence workflow, GitHub
+publication) but must not reimplement rendering, overlay drawing, text,
+projection, or view-adequacy math. Rationale: agent needs are a driving
+factor for core rendering/GUI capability, quality, and interfaces — a gap
+found by agent tooling is fixed in the engine, where every consumer benefits.
+Capabilities this policy has already driven into core: the offscreen
+`DebugScene` channel with label compositing, world-aware debug extraction
+(`extractDebugLines(World&)`, wiring the previously dead body-frame/COM
+flags), the shared projection primitive (`projectToPixels`), core view
+adequacy (`assessView`), `World::getRigidBodyNames`, and on DART 6 the
+`TextOverlay` osgText attachment plus the `math::BoundingBox` binding.

@@ -398,6 +398,10 @@ void defSimPartWorld(nb::module_& m)
           },
           nb::arg("name"),
           nb::keep_alive<0, 1>())
+      .def(
+          "get_rigid_body_names",
+          [](const sim::World& self) { return self.getRigidBodyNames(); },
+          "Sorted names of all rigid bodies currently in the world.")
       .def_prop_ro("is_simulation_mode", &sim::World::isSimulationMode)
       .def("enter_simulation_mode", &sim::World::enterSimulationMode)
       .def(

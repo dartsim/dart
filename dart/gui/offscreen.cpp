@@ -44,12 +44,14 @@
 #include <filament/Scene.h>
 
 #include <algorithm>
+#include <iterator>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
 
 #include <cctype>
+#include <cmath>
 
 namespace dart::gui {
 namespace {
@@ -61,6 +63,75 @@ std::string toLowerAscii(std::string value)
         return static_cast<char>(std::tolower(c));
       });
   return value;
+}
+
+/// Compact 3x5 uppercase bitmap font for deterministic, dependency-free
+/// debug-label text on headless captures. Each glyph is five rows of three
+/// bits (most significant bit = left column).
+struct GlyphRows
+{
+  char character;
+  std::uint8_t rows[5];
+};
+
+constexpr GlyphRows kDebugLabelFont[] = {
+    {'A', {0b010, 0b101, 0b111, 0b101, 0b101}},
+    {'B', {0b110, 0b101, 0b110, 0b101, 0b110}},
+    {'C', {0b011, 0b100, 0b100, 0b100, 0b011}},
+    {'D', {0b110, 0b101, 0b101, 0b101, 0b110}},
+    {'E', {0b111, 0b100, 0b110, 0b100, 0b111}},
+    {'F', {0b111, 0b100, 0b110, 0b100, 0b100}},
+    {'G', {0b011, 0b100, 0b101, 0b101, 0b011}},
+    {'H', {0b101, 0b101, 0b111, 0b101, 0b101}},
+    {'I', {0b111, 0b010, 0b010, 0b010, 0b111}},
+    {'J', {0b001, 0b001, 0b001, 0b101, 0b010}},
+    {'K', {0b101, 0b110, 0b100, 0b110, 0b101}},
+    {'L', {0b100, 0b100, 0b100, 0b100, 0b111}},
+    {'M', {0b101, 0b111, 0b111, 0b101, 0b101}},
+    {'N', {0b101, 0b111, 0b111, 0b111, 0b101}},
+    {'O', {0b010, 0b101, 0b101, 0b101, 0b010}},
+    {'P', {0b110, 0b101, 0b110, 0b100, 0b100}},
+    {'Q', {0b010, 0b101, 0b101, 0b011, 0b001}},
+    {'R', {0b110, 0b101, 0b110, 0b110, 0b101}},
+    {'S', {0b011, 0b100, 0b010, 0b001, 0b110}},
+    {'T', {0b111, 0b010, 0b010, 0b010, 0b010}},
+    {'U', {0b101, 0b101, 0b101, 0b101, 0b111}},
+    {'V', {0b101, 0b101, 0b101, 0b010, 0b010}},
+    {'W', {0b101, 0b101, 0b111, 0b111, 0b101}},
+    {'X', {0b101, 0b010, 0b010, 0b010, 0b101}},
+    {'Y', {0b101, 0b101, 0b010, 0b010, 0b010}},
+    {'Z', {0b111, 0b001, 0b010, 0b100, 0b111}},
+    {'0', {0b111, 0b101, 0b101, 0b101, 0b111}},
+    {'1', {0b010, 0b110, 0b010, 0b010, 0b111}},
+    {'2', {0b111, 0b001, 0b111, 0b100, 0b111}},
+    {'3', {0b111, 0b001, 0b011, 0b001, 0b111}},
+    {'4', {0b101, 0b101, 0b111, 0b001, 0b001}},
+    {'5', {0b111, 0b100, 0b111, 0b001, 0b111}},
+    {'6', {0b111, 0b100, 0b111, 0b101, 0b111}},
+    {'7', {0b111, 0b001, 0b001, 0b010, 0b010}},
+    {'8', {0b111, 0b101, 0b111, 0b101, 0b111}},
+    {'9', {0b111, 0b101, 0b111, 0b001, 0b111}},
+    {'-', {0b000, 0b000, 0b111, 0b000, 0b000}},
+    {'_', {0b000, 0b000, 0b000, 0b000, 0b111}},
+    {'.', {0b000, 0b000, 0b000, 0b000, 0b010}},
+    {':', {0b000, 0b010, 0b000, 0b010, 0b000}},
+    {'/', {0b001, 0b001, 0b010, 0b100, 0b100}},
+    {'+', {0b000, 0b010, 0b111, 0b010, 0b000}},
+    {'(', {0b010, 0b100, 0b100, 0b100, 0b010}},
+    {')', {0b010, 0b001, 0b001, 0b001, 0b010}},
+    {' ', {0b000, 0b000, 0b000, 0b000, 0b000}},
+};
+
+const std::uint8_t* debugLabelGlyph(char character)
+{
+  const char upper
+      = static_cast<char>(std::toupper(static_cast<unsigned char>(character)));
+  for (const auto& glyph : kDebugLabelFont) {
+    if (glyph.character == upper) {
+      return glyph.rows;
+    }
+  }
+  return kDebugLabelFont[std::size(kDebugLabelFont) - 1].rows; // space
 }
 
 OffscreenRenderOptions validatedOptions(OffscreenRenderOptions options)
@@ -151,7 +222,11 @@ struct OffscreenRenderer::Impl
         debug.lines,
         debug.triangles,
         debugOverlay);
-    return renderWithCurrentOverlay(descriptors, camera);
+    RenderedImage image = renderWithCurrentOverlay(descriptors, camera);
+    // The viewer draws labels in its ImGui pass; the offscreen path
+    // composites them here so the full DebugScene renders headlessly.
+    compositeDebugLabels(image, camera, debug.labels);
+    return image;
   }
 
   RenderedImage render(
@@ -325,6 +400,98 @@ RenderedImage OffscreenRenderer::render(
     const DebugScene& debug)
 {
   return mImpl->render(descriptors, camera, debug);
+}
+
+//==============================================================================
+void drawDebugLabelText(
+    std::uint8_t* pixels,
+    int width,
+    int height,
+    int channels,
+    const std::string& text,
+    int originX,
+    int originY,
+    const Eigen::Vector4d& rgba,
+    int scale)
+{
+  if (pixels == nullptr || width <= 0 || height <= 0 || channels < 3) {
+    return;
+  }
+  const int safeScale = std::max(1, scale);
+  const auto channel = [](double value) {
+    return static_cast<std::uint8_t>(std::clamp(value, 0.0, 1.0) * 255.0 + 0.5);
+  };
+  const std::uint8_t red = channel(rgba[0]);
+  const std::uint8_t green = channel(rgba[1]);
+  const std::uint8_t blue = channel(rgba[2]);
+
+  int cursorX = originX;
+  for (const char character : text) {
+    const std::uint8_t* rows = debugLabelGlyph(character);
+    for (int row = 0; row < 5; ++row) {
+      for (int column = 0; column < 3; ++column) {
+        if ((rows[row] & (0b100 >> column)) == 0) {
+          continue;
+        }
+        for (int dy = 0; dy < safeScale; ++dy) {
+          const int y = originY + row * safeScale + dy;
+          if (y < 0 || y >= height) {
+            continue;
+          }
+          for (int dx = 0; dx < safeScale; ++dx) {
+            const int x = cursorX + column * safeScale + dx;
+            if (x < 0 || x >= width) {
+              continue;
+            }
+            const std::size_t offset
+                = (static_cast<std::size_t>(y) * static_cast<std::size_t>(width)
+                   + static_cast<std::size_t>(x))
+                  * static_cast<std::size_t>(channels);
+            pixels[offset] = red;
+            pixels[offset + 1] = green;
+            pixels[offset + 2] = blue;
+            if (channels > 3) {
+              pixels[offset + 3] = 255;
+            }
+          }
+        }
+      }
+    }
+    cursorX += (3 + 1) * safeScale;
+  }
+}
+
+//==============================================================================
+void compositeDebugLabels(
+    RenderedImage& image,
+    const OrbitCamera& camera,
+    const std::vector<DebugLabelDescriptor>& labels,
+    int scale,
+    const ProjectionOptions& options)
+{
+  if (labels.empty() || image.pixels.empty() || image.channels < 3) {
+    return;
+  }
+  const int width = static_cast<int>(image.width);
+  const int height = static_cast<int>(image.height);
+  const int safeScale = std::max(1, scale);
+  for (const auto& label : labels) {
+    const Eigen::Vector3d projected
+        = projectToPixels(camera, width, height, label.position, options);
+    if (projected[2] <= 0.0 || !projected.allFinite()) {
+      continue;
+    }
+    drawDebugLabelText(
+        image.pixels.data(),
+        width,
+        height,
+        static_cast<int>(image.channels),
+        label.text,
+        static_cast<int>(std::lround(projected[0])) + 3,
+        static_cast<int>(std::lround(projected[1])) - 3 * safeScale,
+        label.rgba,
+        safeScale);
+  }
 }
 
 } // namespace dart::gui

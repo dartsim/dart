@@ -412,6 +412,10 @@ public:
   std::optional<RigidBody> getRigidBody(std::string_view name);
   bool hasRigidBody(std::string_view name) const;
   std::size_t getRigidBodyCount() const;
+  /// Names of all rigid bodies currently in the world, sorted so callers
+  /// (scene dumps, debug extraction, capture tooling) iterate
+  /// deterministically without tracking creation order themselves.
+  [[nodiscard]] std::vector<std::string> getRigidBodyNames() const;
 
   //--------------------------------------------------------------------------
   // Deformable body management

@@ -68,10 +68,15 @@ debug=(...layers...))` draws world-derived overlay layers through the same
   `contacts` (from `world.collide()`), and `labels`; the `trajectories`
   layer requires a sampled `dart.gui.TrajectoryTracker` (or recorded
   positions) passed through `debug_scene_for_world` and raises without one.
-  `dart.gui.render_annotated(...)` additionally composites label text into
-  the returned RGBA array (offscreen has no UI text pass). Compose custom
-  scenes with `dart.gui.debug_scene_for_world(...)`. Enable only the layers
-  the claim needs; pair with step metrics/scene dumps.
+  Everything renders in core: `dart::gui::extractDebugLines(World&)` walks
+  the world, and the offscreen renderer composites `DebugScene` labels with
+  the core font (`compositeDebugLabels`), so the full scene renders
+  headlessly with no Python-side geometry. `dart.gui.render_annotated(...)`
+  returns the labeled RGBA array. Compose custom scenes with
+  `dart.gui.debug_scene_for_world(...)`. Enable only the layers the claim
+  needs; pair with step metrics/scene dumps. Policy: these capabilities are
+  core-first — see the policy section in
+  `docs/design/agent_sim_verification.md` and `dart/gui/AGENTS.md`.
 - **Agent capture harness** — `pixi run agent-capture` renders deterministic
   stills/turntables/motion sequences (optional MP4) from the built-in scene
   registry or a `module:callable` world factory, with explicit or

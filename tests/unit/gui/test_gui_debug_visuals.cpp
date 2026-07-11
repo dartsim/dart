@@ -38,6 +38,14 @@
 #include <dart/gui/debug.hpp>
 #include <dart/gui/detail/scenes.hpp>
 #include <dart/gui/renderable.hpp>
+#include <dart/gui/view_quality.hpp>
+#include <dart/gui/viewer.hpp>
+
+#include <dart/simulation/body/collision_shape.hpp>
+#include <dart/simulation/body/contact.hpp>
+#include <dart/simulation/body/rigid_body.hpp>
+#include <dart/simulation/body/rigid_body_options.hpp>
+#include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
@@ -47,7 +55,12 @@
 #include <dart/dynamics/skeleton.hpp>
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
+
+#include <algorithm>
+#include <string>
+#include <vector>
 
 #include <cmath>
 #include <cstdlib>
@@ -73,6 +86,45 @@ void expectFiniteNonZeroLines(
     EXPECT_TRUE(line.to.allFinite()) << line.label;
     EXPECT_GT((line.to - line.from).norm(), 1e-12) << line.label;
   }
+}
+
+bool hasLabel(
+    const std::vector<dart::gui::DebugLineDescriptor>& lines,
+    const std::string& label)
+{
+  return std::any_of(lines.begin(), lines.end(), [&](const auto& line) {
+    return line.label == label;
+  });
+}
+
+std::size_t countLabel(
+    const std::vector<dart::gui::DebugLineDescriptor>& lines,
+    const std::string& label)
+{
+  return static_cast<std::size_t>(
+      std::count_if(lines.begin(), lines.end(), [&](const auto& line) {
+        return line.label == label;
+      }));
+}
+
+dart::gui::RenderableDescriptor makeBoundedBoxDescriptor(
+    dart::gui::RenderableId id,
+    const Eigen::Vector3d& center,
+    const Eigen::Vector3d& halfExtents)
+{
+  dart::gui::RenderableDescriptor descriptor;
+  descriptor.id = id;
+  descriptor.shapeFrameName = "box";
+  descriptor.shapeNodeName = "box";
+  descriptor.geometry.kind = dart::gui::ShapeKind::Box;
+  descriptor.geometry.size = 2.0 * halfExtents;
+  descriptor.geometry.localBoundsMin = -halfExtents;
+  descriptor.geometry.localBoundsMax = halfExtents;
+  descriptor.geometry.hasLocalBounds = true;
+  descriptor.material.visible = true;
+  descriptor.worldTransform = Eigen::Isometry3d::Identity();
+  descriptor.worldTransform.translation() = center;
+  return descriptor;
 }
 
 TEST(GuiDebugVisuals, JointAxisDebugLinesFollowRevoluteAxis)
@@ -224,6 +276,148 @@ TEST(GuiDebugVisuals, DebugProviderPropagatesToDartScene)
   EXPECT_EQ(provided.triangles.front().label, "provider.triangle");
   ASSERT_EQ(provided.labels.size(), 1u);
   EXPECT_EQ(provided.labels.front().text, "provider label");
+}
+
+TEST(GuiDebugVisuals, ExtractWorldDebugLinesEmitsPerBodyLayers)
+{
+  dart::simulation::World world;
+
+  dart::simulation::RigidBodyOptions groundOptions;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.05);
+  groundOptions.isStatic = true;
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      dart::simulation::CollisionShape::makeBox(
+          Eigen::Vector3d(0.8, 0.8, 0.05)));
+
+  dart::simulation::RigidBodyOptions boxOptions;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.3);
+  boxOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto box = world.addRigidBody("box", boxOptions);
+  box.setCollisionShape(
+      dart::simulation::CollisionShape::makeBox(
+          Eigen::Vector3d(0.1, 0.1, 0.1)));
+
+  dart::gui::DebugDrawOptions options;
+  options.drawGrid = false;
+  options.drawWorldFrame = false;
+  options.drawBodyFrames = true;
+  options.drawCentersOfMass = true;
+  options.drawLinearVelocities = true;
+
+  const auto lines = dart::gui::extractDebugLines(world, options);
+  ASSERT_FALSE(lines.empty());
+  expectFiniteNonZeroLines(lines);
+
+  // Body frames: three axes per body.
+  for (const char* axis : {"box.x", "box.y", "box.z", "ground.x"}) {
+    EXPECT_TRUE(hasLabel(lines, axis)) << axis;
+  }
+  // Center-of-mass markers.
+  EXPECT_TRUE(hasLabel(lines, "box.com.x"));
+  EXPECT_TRUE(hasLabel(lines, "ground.com.x"));
+  // Only the moving body draws a velocity arrow.
+  EXPECT_TRUE(hasLabel(lines, "box.vel_linear"));
+  EXPECT_FALSE(hasLabel(lines, "ground.vel_linear"));
+}
+
+TEST(GuiDebugVisuals, ExtractSimulationContactDebugLinesMarkContactPoints)
+{
+  std::vector<dart::simulation::Contact> contacts;
+  dart::simulation::Contact contact;
+  contact.point = Eigen::Vector3d(0.1, 0.2, 0.3);
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contacts.push_back(contact);
+
+  dart::gui::DebugDrawOptions options;
+  const auto lines = dart::gui::extractContactDebugLines(contacts, options);
+  ASSERT_FALSE(lines.empty());
+  expectFiniteNonZeroLines(lines);
+
+  EXPECT_EQ(countLabel(lines, "contact.point"), 2u);
+  EXPECT_TRUE(hasLabel(lines, "contact.normal"));
+
+  // Markers must be centered on the reported contact point.
+  for (const auto& line : lines) {
+    if (line.label == "contact.point") {
+      const Eigen::Vector3d midpoint = 0.5 * (line.from + line.to);
+      EXPECT_TRUE(midpoint.isApprox(contact.point, 1e-9));
+    }
+  }
+}
+
+TEST(GuiDebugVisuals, MakePolylineDebugLinesDropsZeroLengthSegments)
+{
+  const std::vector<Eigen::Vector3d> points = {
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 1.0, 0.0),
+      Eigen::Vector3d(1.0, 1.0, 0.0)}; // final duplicate -> zero-length segment
+  const auto lines = dart::gui::makePolylineDebugLines(
+      points, Eigen::Vector4d(0.98, 0.55, 0.25, 0.95), "path");
+  EXPECT_EQ(lines.size(), 2u);
+  for (const auto& line : lines) {
+    EXPECT_EQ(line.label, "path");
+  }
+
+  EXPECT_TRUE(
+      dart::gui::makePolylineDebugLines(
+          {Eigen::Vector3d::Zero()}, Eigen::Vector4d::Ones(), "p")
+          .empty());
+}
+
+TEST(GuiDebugVisuals, AssessViewAcceptsAWellFramedSubject)
+{
+  const dart::gui::RenderableDescriptor box = makeBoundedBoxDescriptor(
+      1u, Eigen::Vector3d::Zero(), Eigen::Vector3d::Constant(0.25));
+
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.distance = 2.5;
+  camera.yaw = -0.75;
+  camera.pitch = 0.35;
+
+  const dart::gui::ViewQualityReport report
+      = dart::gui::assessView({box}, camera, 320, 240);
+
+  std::string issues;
+  for (const auto& issue : report.issues) {
+    issues += issue + " ";
+  }
+  EXPECT_TRUE(report.issues.empty()) << issues;
+  EXPECT_DOUBLE_EQ(report.cornerCoverage, 1.0);
+  EXPECT_EQ(report.occlusionFraction, 0.0);
+  EXPECT_TRUE(report.centerVisible);
+  EXPECT_GT(report.score, 0.0);
+  EXPECT_LE(report.score, 1.0);
+}
+
+TEST(GuiDebugVisuals, AssessViewFlagsAnOccludedFocus)
+{
+  // Camera at +X looking toward the origin along -X.
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.distance = 2.0;
+  camera.yaw = 0.0;
+  camera.pitch = 0.0;
+
+  const dart::gui::RenderableDescriptor focus = makeBoundedBoxDescriptor(
+      1u, Eigen::Vector3d::Zero(), Eigen::Vector3d::Constant(0.15));
+  // A large, near wall between the eye and the focus blocks every focus ray.
+  const dart::gui::RenderableDescriptor wall = makeBoundedBoxDescriptor(
+      2u, Eigen::Vector3d(1.0, 0.0, 0.0), Eigen::Vector3d(0.05, 1.0, 1.0));
+
+  const dart::gui::ViewQualityReport report = dart::gui::assessView(
+      {focus, wall},
+      camera,
+      320,
+      240,
+      std::vector<dart::gui::RenderableId>{1u});
+
+  EXPECT_GT(report.occlusionFraction, 0.5);
+  EXPECT_TRUE(
+      std::find(report.issues.begin(), report.issues.end(), "occluded")
+      != report.issues.end());
 }
 
 } // namespace

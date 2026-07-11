@@ -34,14 +34,17 @@ __all__: list[str] = [
     "RunOptions",
     "ShapeKind",
     "TrajectoryTracker",
+    "ViewQualityReport",
     "ViewReport",
     "ViewerLifecycleState",
     "ViewpointChoice",
     "WorldRenderBridge",
     "add_orbit_camera_scroll",
     "assess_view",
+    "assess_view_quality",
     "body_labels",
     "camera_eye",
+    "composite_debug_labels",
     "composite_labels",
     "compute_axis_drag_translation",
     "compute_camera_relative_nudge",
@@ -49,9 +52,11 @@ __all__: list[str] = [
     "contact_debug_lines",
     "debug_scene_for_world",
     "describe_shape",
+    "draw_debug_text",
     "draw_text",
     "extract_contact_debug_lines",
     "extract_debug_lines",
+    "extract_world_debug_lines",
     "frame_body",
     "frame_region",
     "intersect_plane",
@@ -66,6 +71,7 @@ __all__: list[str] = [
     "make_orbit_camera_basis",
     "make_perspective_pick_ray",
     "make_perspective_projection",
+    "make_polyline_debug_lines",
     "make_selection_debug_lines",
     "make_support_polygon_debug_lines",
     "mark_frame_rendered",
@@ -77,6 +83,7 @@ __all__: list[str] = [
     "pick_nearest_renderable",
     "plan_renderable_set_update",
     "project_points",
+    "project_to_pixels",
     "render",
     "render_annotated",
     "request_scene_replay",
@@ -107,6 +114,7 @@ from typing import Annotated, overload
 import dartpy.collision
 import dartpy.dynamics
 import dartpy.math
+import dartpy.simulation
 import numpy
 from dartpy._world_render_bridge import DescriptorRenderScene as DescriptorRenderScene
 from dartpy._world_render_bridge import WorldRenderBridge as WorldRenderBridge
@@ -999,6 +1007,22 @@ class PickHit:
         self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order="C")], /
     ) -> None: ...
 
+class ViewQualityReport:
+    @property
+    def corner_coverage(self) -> float: ...
+    @property
+    def subject_fraction(self) -> float: ...
+    @property
+    def center_visible(self) -> bool: ...
+    @property
+    def occlusion_fraction(self) -> float: ...
+    @property
+    def ambiguity_iou(self) -> float: ...
+    @property
+    def issues(self) -> list[str]: ...
+    @property
+    def score(self) -> float: ...
+
 class DebugLineDescriptor:
     def __init__(self) -> None: ...
     @property
@@ -1530,12 +1554,57 @@ def make_velocity_debug_lines(
     options: DebugDrawOptions = ...,
     label_prefix: str = ...,
 ) -> list[DebugLineDescriptor]: ...
+@overload
 def extract_contact_debug_lines(
     result: dartpy.collision.CollisionResult, options: DebugDrawOptions = ...
+) -> list[DebugLineDescriptor]: ...
+@overload
+def extract_contact_debug_lines(
+    contacts: Sequence[dartpy.simulation.Contact], options: DebugDrawOptions = ...
 ) -> list[DebugLineDescriptor]: ...
 def extract_debug_lines(
     options: DebugDrawOptions = ...,
 ) -> list[DebugLineDescriptor]: ...
+def extract_world_debug_lines(
+    world: dartpy.simulation.World, options: DebugDrawOptions = ...
+) -> list[DebugLineDescriptor]: ...
+def make_polyline_debug_lines(
+    points: Sequence[
+        Annotated[NDArray[numpy.float64], dict(shape=(3), order="C")]
+    ],
+    rgba: Annotated[NDArray[numpy.float64], dict(shape=(4), order="C")],
+    label: str = ...,
+) -> list[DebugLineDescriptor]: ...
+def project_to_pixels(
+    camera: OrbitCamera,
+    width: int,
+    height: int,
+    point: Annotated[NDArray[numpy.float64], dict(shape=(3), order="C")],
+    options: ProjectionOptions = ...,
+) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order="C")]: ...
+def assess_view_quality(
+    descriptors: Sequence[RenderableDescriptor],
+    camera: OrbitCamera,
+    width: int,
+    height: int,
+    focus_ids: Sequence[int] = ...,
+    options: ProjectionOptions = ...,
+) -> ViewQualityReport: ...
+def composite_debug_labels(
+    image: RenderedImage,
+    camera: OrbitCamera,
+    labels: Sequence[DebugLabelDescriptor],
+    scale: int = ...,
+    options: ProjectionOptions = ...,
+) -> None: ...
+def draw_debug_text(
+    pixels: Annotated[NDArray[numpy.uint8], dict(order="C")],
+    text: str,
+    origin_x: int,
+    origin_y: int,
+    rgba: Annotated[NDArray[numpy.float64], dict(shape=(4), order="C")],
+    scale: int = ...,
+) -> None: ...
 
 class PanelBuilder:
     def text(self, arg: str, /) -> None: ...

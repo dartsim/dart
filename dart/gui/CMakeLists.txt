@@ -16,6 +16,7 @@ if(DART_BUILD_GUI)
     profile.hpp
     renderable.hpp
     scene.hpp
+    view_quality.hpp
     viewer.hpp
   )
   set(
@@ -28,6 +29,7 @@ if(DART_BUILD_GUI)
     profile.cpp
     renderable.cpp
     shape_descriptions.cpp
+    view_quality.cpp
     viewer.cpp
   )
 
@@ -44,7 +46,7 @@ if(DART_BUILD_GUI)
       $<INSTALL_INTERFACE:include>
   )
   target_compile_definitions(${core_target_name} PRIVATE DART_BUILDING_DART_GUI)
-  target_link_libraries(${core_target_name} PUBLIC dart)
+  target_link_libraries(${core_target_name} PUBLIC dart dart-simulation)
 
   include("${CMAKE_CURRENT_LIST_DIR}/detail/backend_sources.cmake")
   dart_gui_filament_configure_backend_target(
@@ -58,7 +60,12 @@ if(DART_BUILD_GUI)
     ${core_component_name}
     ${core_target_name}
   )
-  add_component_dependencies(${PROJECT_NAME} ${core_component_name} dart)
+  add_component_dependencies(
+    ${PROJECT_NAME}
+    ${core_component_name}
+    dart
+    simulation
+  )
 
   dart_format_add(${dart_gui_core_hdrs} ${dart_gui_core_srcs})
 endif()
@@ -89,6 +96,7 @@ set(
   profile.hpp
   renderable.hpp
   scene.hpp
+  view_quality.hpp
   viewer.hpp
 )
 set(dart_gui_srcs gui.cpp)
@@ -127,6 +135,7 @@ install(
     profile.hpp
     renderable.hpp
     scene.hpp
+    view_quality.hpp
     viewer.hpp
     "${CMAKE_CURRENT_BINARY_DIR}/gui.hpp"
   DESTINATION include/dart/gui

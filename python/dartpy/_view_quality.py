@@ -2,10 +2,14 @@
 
 Geometry-first checks (projection and CPU ray picks, no GPU needed) that let
 a headless agent detect inadequate captures — cropped, too close/far,
-occluded, or ambiguous views — and deterministically pick better ones.
-Pixel-level checks (blank/contrast) stay in the image tooling; this module
-answers "is this camera worth rendering from?" before pixels exist, mirroring
-the repo's text-first verification policy.
+occluded, or ambiguous views — and deterministically pick better ones. The
+projection, occlusion, and ambiguity geometry lives in ``dart::gui``
+(``gui.assess_view_quality``); this module is the thin Python orchestration
+that resolves focus names to descriptor ids, adapts the core report into the
+public ``ViewReport`` dataclass, and drives candidate selection. Pixel-level
+checks (blank/contrast) stay in the image tooling; this module answers "is this
+camera worth rendering from?" before pixels exist, mirroring the repo's
+text-first verification policy.
 """
 
 from __future__ import annotations
@@ -18,19 +22,6 @@ from typing import Any, Sequence
 
 import dartpy as dart
 import numpy as np
-
-# Subject screen-area fractions outside this band flag too-far / too-close.
-_MIN_SUBJECT_FRACTION = 0.015
-_MAX_SUBJECT_FRACTION = 0.75
-# A subject with corners past the viewport while its center is visible is
-# cropped; below this on-screen corner fraction the view is discarded.
-_MIN_CORNER_COVERAGE = 0.999
-# Fraction of focus-sample rays that may hit another body before the view
-# counts as occluded.
-_MAX_OCCLUSION_FRACTION = 0.35
-# Pairwise screen-box IoU above this for depth-separated bodies flags an
-# ambiguous (axis-aligned, stacked) viewpoint.
-_MAX_AMBIGUITY_IOU = 0.55
 
 
 @dataclass
@@ -155,60 +146,6 @@ def _split_focus(
     return matched, sorted({_descriptor_name(d) for d in matched})
 
 
-def _screen_box(projected: np.ndarray) -> tuple[float, float, float, float] | None:
-    in_front = projected[:, 2] > 0.0
-    if not in_front.any():
-        return None
-    points = projected[in_front]
-    return (
-        float(points[:, 0].min()),
-        float(points[:, 1].min()),
-        float(points[:, 0].max()),
-        float(points[:, 1].max()),
-    )
-
-
-def _box_iou(a: tuple[float, float, float, float], b) -> float:
-    inter_w = min(a[2], b[2]) - max(a[0], b[0])
-    inter_h = min(a[3], b[3]) - max(a[1], b[1])
-    if inter_w <= 0.0 or inter_h <= 0.0:
-        return 0.0
-    inter = inter_w * inter_h
-    area_a = (a[2] - a[0]) * (a[3] - a[1])
-    area_b = (b[2] - b[0]) * (b[3] - b[1])
-    union = area_a + area_b - inter
-    return inter / union if union > 0.0 else 0.0
-
-
-def _occlusion_fraction(
-    descriptors: Sequence[Any],
-    focus_ids: set[int],
-    focus_samples: np.ndarray,
-    eye: np.ndarray,
-) -> float:
-    if len(focus_samples) == 0:
-        return 0.0
-    blocked = 0
-    total = 0
-    for sample in focus_samples:
-        offset = sample - eye
-        distance = float(np.linalg.norm(offset))
-        if distance <= 1e-9:
-            continue
-        ray = dart.gui.PickRay()
-        ray.origin = eye
-        ray.direction = offset / distance
-        hit = dart.gui.pick_nearest_renderable(descriptors, ray)
-        total += 1
-        if hit is None:
-            continue
-        # A hit meaningfully closer than the sample that belongs to another
-        # renderable blocks the line of sight to the focus subject.
-        if int(hit.id) not in focus_ids and float(hit.distance) < distance - 1e-6:
-            blocked += 1
-    return blocked / total if total else 0.0
-
-
 def assess_view(
     world: Any,
     camera: Any,
@@ -217,137 +154,37 @@ def assess_view(
     focus: str | Sequence[str] | None = None,
     projection_options: Any | None = None,
 ) -> ViewReport:
-    """Assess one camera against the world's renderables, without rendering."""
-    from . import _debug_layers, _world_render_bridge
+    """Assess one camera against the world's renderables, without rendering.
+
+    Resolves the focus names to descriptor ids, delegates the projection,
+    occlusion, and ambiguity geometry to the core ``gui.assess_view_quality``,
+    and adapts the result into the public :class:`ViewReport`.
+    """
+    from . import _world_render_bridge
 
     width, height = int(size[0]), int(size[1])
     descriptors = _world_render_bridge._renderables_from_world(world)
     focus_descriptors, focus_names = _split_focus(descriptors, focus)
+    focus_ids = [int(getattr(d, "id", 0)) for d in focus_descriptors]
 
-    report = ViewReport(
-        camera=_camera_params(camera), size=(width, height), focus=focus_names
+    if projection_options is None:
+        projection_options = dart.gui.ProjectionOptions()
+
+    core_report = dart.gui.assess_view_quality(
+        descriptors, camera, width, height, focus_ids, projection_options
     )
 
-    corners_list = [
-        corners
-        for corners in (_descriptor_world_corners(d) for d in focus_descriptors)
-        if corners is not None
-    ]
-    if not corners_list:
-        report.issues.append("no-bounded-focus")
-        return report
-    corners = np.vstack(corners_list)
-    projected = _debug_layers.project_points(
-        camera, (width, height), corners, projection_options
-    )
-
-    in_front = projected[:, 2] > 0.0
-    on_screen = (
-        in_front
-        & (projected[:, 0] >= 0.0)
-        & (projected[:, 0] <= width)
-        & (projected[:, 1] >= 0.0)
-        & (projected[:, 1] <= height)
-    )
-    report.corner_coverage = float(on_screen.sum()) / float(len(projected))
-
-    center = corners.mean(axis=0)
-    center_projected = _debug_layers.project_points(
-        camera, (width, height), [center], projection_options
-    )[0]
-    report.center_visible = bool(
-        center_projected[2] > 0.0
-        and 0.0 <= center_projected[0] <= width
-        and 0.0 <= center_projected[1] <= height
-    )
-
-    box = _screen_box(projected)
-    if box is not None:
-        clipped_w = max(0.0, min(box[2], width) - max(box[0], 0.0))
-        clipped_h = max(0.0, min(box[3], height) - max(box[1], 0.0))
-        report.subject_fraction = (clipped_w * clipped_h) / float(width * height)
-
-    focus_ids = {int(getattr(d, "id", 0)) for d in focus_descriptors}
-    basis = dart.gui.make_orbit_camera_basis(camera)
-    eye = np.asarray(basis.eye, dtype=float).reshape(3)
-    samples = np.vstack([corners, center.reshape(1, 3)])
-    report.occlusion_fraction = _occlusion_fraction(
-        descriptors, focus_ids, samples, eye
-    )
-
-    # Ambiguity: distinct bodies whose screen boxes pile up while separated
-    # in depth suggest a degenerate view axis (e.g. a stack seen from above).
-    boxes = []
-    for descriptor in descriptors:
-        descriptor_corners = _descriptor_world_corners(descriptor)
-        if descriptor_corners is None:
-            continue
-        descriptor_projected = _debug_layers.project_points(
-            camera, (width, height), descriptor_corners, projection_options
-        )
-        # Bodies straddling the camera plane project to unbounded boxes and
-        # signed depths; they cannot be judged for overlap, so skip them.
-        descriptor_in_front = descriptor_projected[:, 2] > 0.0
-        if not descriptor_in_front.all():
-            continue
-        descriptor_box = _screen_box(descriptor_projected)
-        if descriptor_box is None:
-            continue
-        # Only overlap that is actually visible can make a view ambiguous.
-        clipped_box = (
-            max(descriptor_box[0], 0.0),
-            max(descriptor_box[1], 0.0),
-            min(descriptor_box[2], float(width)),
-            min(descriptor_box[3], float(height)),
-        )
-        if clipped_box[2] <= clipped_box[0] or clipped_box[3] <= clipped_box[1]:
-            continue
-        depth = float(np.median(descriptor_projected[:, 2]))
-        extent = float(
-            np.linalg.norm(
-                descriptor_corners.max(axis=0) - descriptor_corners.min(axis=0)
-            )
-        )
-        boxes.append((clipped_box, depth, extent))
-    worst_iou = 0.0
-    for index, (box_a, depth_a, extent_a) in enumerate(boxes):
-        for box_b, depth_b, extent_b in boxes[index + 1 :]:
-            depth_gap = abs(depth_a - depth_b)
-            min_extent = max(min(extent_a, extent_b), 1e-9)
-            if depth_gap < 0.5 * min_extent:
-                continue
-            worst_iou = max(worst_iou, _box_iou(box_a, box_b))
-    report.ambiguity_iou = worst_iou
-
-    if report.corner_coverage < _MIN_CORNER_COVERAGE:
-        report.issues.append("cropped" if report.center_visible else "off-frame")
-    if report.subject_fraction < _MIN_SUBJECT_FRACTION:
-        report.issues.append("too-far")
-    elif report.subject_fraction > _MAX_SUBJECT_FRACTION:
-        report.issues.append("too-close")
-    if report.occlusion_fraction > _MAX_OCCLUSION_FRACTION:
-        report.issues.append("occluded")
-    if report.ambiguity_iou > _MAX_AMBIGUITY_IOU:
-        report.issues.append("ambiguous")
-
-    report.score = _score(report)
-    return report
-
-
-def _score(report: ViewReport) -> float:
-    # Deterministic, monotone score in [0, 1]: coverage and line-of-sight
-    # dominate; framing prefers a mid-band subject size; ambiguity discounts.
-    framing_mid = math.sqrt(_MIN_SUBJECT_FRACTION * _MAX_SUBJECT_FRACTION)
-    if report.subject_fraction <= 0.0:
-        framing = 0.0
-    else:
-        framing = 1.0 - min(
-            1.0, abs(math.log(report.subject_fraction / framing_mid)) / 4.0
-        )
-    visibility = 1.0 - report.occlusion_fraction
-    clarity = 1.0 - report.ambiguity_iou
-    return max(
-        0.0, report.corner_coverage * visibility * (0.5 + 0.35 * framing + 0.15 * clarity)
+    return ViewReport(
+        camera=_camera_params(camera),
+        size=(width, height),
+        focus=focus_names,
+        corner_coverage=float(core_report.corner_coverage),
+        subject_fraction=float(core_report.subject_fraction),
+        center_visible=bool(core_report.center_visible),
+        occlusion_fraction=float(core_report.occlusion_fraction),
+        ambiguity_iou=float(core_report.ambiguity_iou),
+        issues=list(core_report.issues),
+        score=float(core_report.score),
     )
 
 

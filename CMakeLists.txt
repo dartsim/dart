@@ -842,6 +842,14 @@ else()
   )
 endif()
 
+# DART GUI renders the promoted simulation World's debug state natively
+# (world-aware debug extraction, offscreen debug overlays), so it
+# configures after dart/simulation and requires that component. Its own
+# DART_BUILD_GUI guard still applies inside the subdirectory.
+if(TARGET dart-simulation)
+  add_subdirectory(dart/gui)
+endif()
+
 set(DART_IN_SOURCE_BUILD TRUE)
 
 if(TARGET dart)

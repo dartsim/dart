@@ -7,6 +7,7 @@
 #include <Python.h>
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
+#include <nanobind/ndarray.h>
 #include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
@@ -317,6 +318,51 @@ void defGuiOffscreen(nb::module_& m)
           nb::arg("descriptors"),
           nb::arg("camera"),
           nb::arg("debug") = nb::none());
+
+  m.def(
+      "composite_debug_labels",
+      [](RenderedImage& image,
+         const OrbitCamera& camera,
+         const std::vector<dart::gui::DebugLabelDescriptor>& labels,
+         int scale,
+         const dart::gui::ProjectionOptions& options) {
+        dart::gui::compositeDebugLabels(image, camera, labels, scale, options);
+      },
+      nb::arg("image"),
+      nb::arg("camera"),
+      nb::arg("labels"),
+      nb::arg("scale") = 2,
+      nb::arg("options") = dart::gui::ProjectionOptions{});
+
+  // Writes the built-in debug-label font directly into an (H, W, 4) uint8 RGBA
+  // numpy array in place, so the Python label compositor reuses the core glyph
+  // table instead of shipping a second copy.
+  m.def(
+      "draw_debug_text",
+      [](nb::ndarray<std::uint8_t, nb::ndim<3>, nb::c_contig, nb::device::cpu>
+             pixels,
+         const std::string& text,
+         int originX,
+         int originY,
+         const Eigen::Vector4d& rgba,
+         int scale) {
+        dart::gui::drawDebugLabelText(
+            pixels.data(),
+            static_cast<int>(pixels.shape(1)),
+            static_cast<int>(pixels.shape(0)),
+            static_cast<int>(pixels.shape(2)),
+            text,
+            originX,
+            originY,
+            rgba,
+            scale);
+      },
+      nb::arg("pixels"),
+      nb::arg("text"),
+      nb::arg("origin_x"),
+      nb::arg("origin_y"),
+      nb::arg("rgba"),
+      nb::arg("scale") = 2);
 }
 
 } // namespace dart::python_nb

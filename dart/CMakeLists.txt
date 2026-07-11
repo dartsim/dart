@@ -93,7 +93,9 @@ add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(sensor)
 add_subdirectory(io) # tinyxml2, libsdformat, urdfdom
-add_subdirectory(gui) # DART GUI
+# DART GUI is added from the top level after dart/simulation: it renders
+# the promoted simulation World's debug state natively, so it takes a
+# component dependency on simulation.
 add_subdirectory(simd)
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)

@@ -5225,6 +5225,18 @@ std::size_t World::getRigidBodyCount() const
 }
 
 //==============================================================================
+std::vector<std::string> World::getRigidBodyNames() const
+{
+  std::vector<std::string> names;
+  auto view = m_storage->registry.view<comps::RigidBodyTag, comps::Name>();
+  for (auto entity : view) {
+    names.push_back(view.get<comps::Name>(entity).name);
+  }
+  std::sort(names.begin(), names.end());
+  return names;
+}
+
+//==============================================================================
 DeformableBody World::addDeformableBody(
     std::string_view name, const DeformableBodyOptions& options)
 {
