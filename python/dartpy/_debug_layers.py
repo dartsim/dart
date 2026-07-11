@@ -40,9 +40,9 @@ DEBUG_LAYERS = (
 
 
 def _tracked_rigid_bodies(world: Any) -> list[Any]:
-    from . import _scene_dump
-
-    return _scene_dump._tracked_rigid_bodies(world)
+    return [
+        world.get_rigid_body(name) for name in world.get_rigid_body_names()
+    ]
 
 
 def _body_transform(body: Any) -> np.ndarray:

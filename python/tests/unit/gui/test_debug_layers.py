@@ -83,6 +83,20 @@ def test_trajectory_tracker_grows_polyline():
     assert len(scene.lines) == len(lines)
 
 
+def test_trajectory_tracker_uses_world_body_enumeration(monkeypatch):
+    from dartpy import _scene_dump
+
+    world = _settled_world()
+    monkeypatch.setattr(
+        _scene_dump,
+        "_tracked_rigid_bodies",
+        lambda _world: (_ for _ in ()).throw(AssertionError("registry used")),
+    )
+    tracker = dart.gui.TrajectoryTracker(world)
+    tracker.sample()
+    assert set(tracker.history) == set(world.get_rigid_body_names())
+
+
 def test_trajectories_layer_without_history_raises():
     world = _settled_world()
     with pytest.raises(ValueError, match="TrajectoryTracker"):
