@@ -12,11 +12,15 @@ Related open queue at last refresh: none blocking (enablers merged:
 #3270 was closed by maintainer direction and its D1/D2 evidence now rides
 with the first real SIMD-kernel PR.
 
-Current handoff (2026-07-09): no packet is claimed after #3361. The next
-session should run the current-head completion/evidence audit in RESUME.md
-before writing more code. If the audit finds a real remaining bottleneck, claim
-the smallest matching packet; otherwise prepare the closeout/promote-docs path
-for issue #3056 rather than creating more small PRs.
+Current handoff (2026-07-10): the completion audit ran (see RESUME.md —
+criteria 1-3 MET on the merged head). The maintainer broadened criterion 4 to
+cross-engine evidence vs MuJoCo across DART's major workloads; lane **WS-G**
+(08-mujoco-comparison-lane.md) owns that work. #3366 (dartpy getDofs ownership
+bugfix) and #3367 (MuJoCo comparison harness + mujoco env + dartpy native
+binding), #3368 (native AABB-tree broadphase), and #3369 (MJCF stacked joints
+and collision fidelity) have merged. The native small-scene overhead WP-SS
+family remains in flight; the S6 native resting-profile row is resolved by the
+dep-min lane's documented acceptance re-scope.
 
 ## Lane status
 
@@ -27,7 +31,7 @@ for issue #3056 rather than creating more small PRs.
 | WS-C dynamics batching | 04-dynamics-batching-lane.md | PG.30–PG.33 | gated (PG.30 #3310; PG.31 #3341; PG.32 delivered by #3297/#3307; PG.33 gated) |
 | WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | active (PG.40 folded into PG.42; PG.41 waits for PG.10 seam evidence) |
 | WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 done; PG.02 #3327; PG.03 #3337; PG.04 blocked D4) |
-| WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; phase 1 internal math core merged (#3281); no DART 6 detector adapter or phase-4 broadphase SIMD yet |
+| WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; phases 0–3 complete (native adapter + capability parity); phase 4 active after #3364, with AABB-tree broadphase merged in #3368 |
 
 ## Packet board
 
@@ -63,9 +67,10 @@ against the packet's acceptance evidence.
 
 ## Cross-lane coordination notes
 
-- WS-F consumes WS-D kernels in its phase 4; WS-D's WP-PG.42 checked live
-  phase status before claiming. As of #3281, WS-F has internal native
-  collision math only, with no DART 6 detector adapter or broadphase SIMD.
+- WS-F consumes WS-D kernels in its phase 4. Phases 0–3 are complete, including
+  the DART 6 native detector adapter and capability parity; phase 4 is active
+  after #3364, and #3368's AABB-tree broadphase is now merged base-branch
+  evidence.
 - WS-B investment is re-reviewed when WS-F reaches phase 5 (facade
   decision) — see D5 in the README.
 - WS-A WP-PG.12 and WS-C WP-PG.30 share the single-free-body
