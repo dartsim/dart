@@ -43,38 +43,60 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void TextOverlay(py::module& m)
+void DebugOverlay(py::module& m)
 {
   ::py::class_<
-      dart::gui::osg::TextOverlay,
+      dart::gui::osg::DebugOverlay,
       dart::gui::osg::ViewerAttachment,
-      ::osg::ref_ptr<dart::gui::osg::TextOverlay>>(m, "TextOverlay")
+      ::osg::ref_ptr<dart::gui::osg::DebugOverlay>>(m, "DebugOverlay")
       .def(py::init<>())
       .def(
           "setFont",
-          +[](dart::gui::osg::TextOverlay* self, const std::string& fontPath) {
+          +[](dart::gui::osg::DebugOverlay* self, const std::string& fontPath) {
             self->setFont(fontPath);
           },
           ::py::arg("fontPath"))
       .def(
           "getFont",
-          +[](const dart::gui::osg::TextOverlay* self) -> std::string {
+          +[](const dart::gui::osg::DebugOverlay* self) -> std::string {
             return self->getFont();
           })
       .def(
+          "setLineWidth",
+          +[](dart::gui::osg::DebugOverlay* self, float width) {
+            self->setLineWidth(width);
+          },
+          ::py::arg("width"))
+      .def(
+          "getLineWidth",
+          +[](const dart::gui::osg::DebugOverlay* self) -> float {
+            return self->getLineWidth();
+          })
+      .def(
           "setCharacterSize",
-          +[](dart::gui::osg::TextOverlay* self, double size) {
+          +[](dart::gui::osg::DebugOverlay* self, double size) {
             self->setCharacterSize(size);
           },
           ::py::arg("size"))
       .def(
           "getCharacterSize",
-          +[](const dart::gui::osg::TextOverlay* self) -> double {
+          +[](const dart::gui::osg::DebugOverlay* self) -> double {
             return self->getCharacterSize();
           })
       .def(
+          "addLine",
+          +[](dart::gui::osg::DebugOverlay* self,
+              const Eigen::Vector3d& start,
+              const Eigen::Vector3d& end,
+              const Eigen::Vector4d& color) -> std::size_t {
+            return self->addLine(start, end, color);
+          },
+          ::py::arg("start"),
+          ::py::arg("end"),
+          ::py::arg("color"))
+      .def(
           "addLabel",
-          +[](dart::gui::osg::TextOverlay* self,
+          +[](dart::gui::osg::DebugOverlay* self,
               const Eigen::Vector3d& position,
               const std::string& text,
               const Eigen::Vector4d& color) -> std::size_t {
@@ -85,7 +107,7 @@ void TextOverlay(py::module& m)
           ::py::arg("color"))
       .def(
           "addLabel",
-          +[](dart::gui::osg::TextOverlay* self,
+          +[](dart::gui::osg::DebugOverlay* self,
               const Eigen::Vector3d& position,
               const std::string& text,
               const Eigen::Vector4d& color,
@@ -97,15 +119,20 @@ void TextOverlay(py::module& m)
           ::py::arg("color"),
           ::py::arg("characterSize"))
       .def(
-          "clear", +[](dart::gui::osg::TextOverlay* self) { self->clear(); })
+          "clear", +[](dart::gui::osg::DebugOverlay* self) { self->clear(); })
+      .def(
+          "getNumLines",
+          +[](const dart::gui::osg::DebugOverlay* self) -> std::size_t {
+            return self->getNumLines();
+          })
       .def(
           "getNumLabels",
-          +[](const dart::gui::osg::TextOverlay* self) -> std::size_t {
+          +[](const dart::gui::osg::DebugOverlay* self) -> std::size_t {
             return self->getNumLabels();
           })
       .def(
           "refresh",
-          +[](dart::gui::osg::TextOverlay* self) { self->refresh(); });
+          +[](dart::gui::osg::DebugOverlay* self) { self->refresh(); });
 }
 
 } // namespace python
