@@ -73,8 +73,8 @@ PYTHONPATH=$PWD/build/default/cpp/Release/python/dartpy \
 - Wins on ARM/HUM-ACTIVE/PILE(active)/DYN classes must show zero sleeping
   bodies in DART (deactivation disabled on DYN rows; asserted).
 - SLEEP class is the only row where deactivation is the measured feature.
-- Detector rows: native is the headline once phase 6 flips; until then
-  report native explicitly (FCL default mangles capsules -> MJCF rows under
-  the default detector are invalid).
+- Detector rows: `dart` is the headline after the phase-6 consolidation and
+  default flip; reserve `native` for explicit pre-consolidation runs (FCL
+  default mangles capsules -> MJCF rows under the default detector are invalid).
 - Every claimed row needs: exact command, SHAs, versions, governor, median
   of >=5 reps, finite + contact telemetry both engines.
