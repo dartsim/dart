@@ -704,6 +704,22 @@ dart::simulation::WorldPtr createCountedNativeSoftSkelWorld(
   return world;
 }
 
+void enableAdaptiveContactActivation(const dart::simulation::WorldPtr& world)
+{
+  ASSERT_TRUE(world != nullptr);
+  for (std::size_t i = 0u; i < world->getNumSkeletons(); ++i) {
+    const auto skeleton = world->getSkeleton(i);
+    if (!skeleton)
+      continue;
+
+    for (std::size_t j = 0u; j < skeleton->getNumSoftBodyNodes(); ++j) {
+      auto* softBody = skeleton->getSoftBodyNode(j);
+      ASSERT_TRUE(softBody != nullptr);
+      softBody->setAdaptiveContactActivationEnabled(true);
+    }
+  }
+}
+
 enum class PreparationMode
 {
   Explicit,
@@ -771,6 +787,16 @@ StepAllocationMeasurement measureNativeSoftSkelSteadyState(
   }
 
   return measureWorldStepsNow(world, allocator, kMeasuredSteps, warmupSteps);
+}
+
+StepAllocationMeasurement measureNativeSoftAdaptiveActivationSteadyState(
+    const std::string& label, dart::test::CountingMemoryAllocator& allocator)
+{
+  auto world = createCountedNativeSoftSkelWorld(
+      label, "dart://sample/skel/soft_cubes.skel", allocator);
+  enableAdaptiveContactActivation(world);
+  return measureNativeSoftSkelSteadyState(
+      world, allocator, kSoftSkelContactWarmupSteps);
 }
 
 ::testing::AssertionResult hasNoGlobalHeapAllocations(
@@ -1207,6 +1233,44 @@ TEST(StepAllocation, NativeSoftCubesSkelSteadyStateHasNoRawMallocWhenAvailable)
       true,
       false,
       kSoftSkelContactWarmupSteps);
+}
+
+TEST(
+    StepAllocation,
+    NativeSoftAdaptiveActivationSteadyStateHasNoGlobalOrAllocatorGrowth)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement = measureNativeSoftAdaptiveActivationSteadyState(
+      "native_dart_soft_adaptive_activation_steady_state_gate", allocator);
+  reportMeasurement(
+      "native_dart_soft_adaptive_activation_steady_state_gate", measurement);
+  expectNoGlobalHeapAllocationsWhenReliable(
+      "native_dart_soft_adaptive_activation_steady_state_gate", measurement);
+  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+}
+
+TEST(
+    StepAllocation,
+    NativeSoftAdaptiveActivationSteadyStateHasNoRawMallocWhenAvailable)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement = measureNativeSoftAdaptiveActivationSteadyState(
+      "native_dart_soft_adaptive_activation_steady_state_raw_gate", allocator);
+  reportMeasurement(
+      "native_dart_soft_adaptive_activation_steady_state_raw_gate",
+      measurement);
+  if (measurement.rawHeap.skipped) {
+    recordProperty(
+        "native_dart_soft_adaptive_activation_steady_state_raw_gate_"
+        "raw_malloc_skipped",
+        "true");
+    recordProperty(
+        "native_dart_soft_adaptive_activation_steady_state_raw_gate_"
+        "raw_malloc_skip_reason",
+        measurement.rawHeap.skipReason);
+    GTEST_SKIP() << measurement.rawHeap.skipReason;
+  }
+  EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
 }
 
 TEST(

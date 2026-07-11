@@ -1568,10 +1568,8 @@ void Skeleton::integratePositions(double _dt)
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     mSkelCache.mBodyNodes[i]->getParentJoint()->integratePositions(_dt);
 
-  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i) {
-    for (std::size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
-      mSoftBodyNodes[i]->getPointMass(j)->integratePositions(_dt);
-  }
+  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i)
+    mSoftBodyNodes[i]->integratePointMassPositions(_dt);
 }
 
 //==============================================================================
@@ -1608,11 +1606,8 @@ void Skeleton::integratePositions(
     joint->setPositions(q);
   }
 
-  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i) {
-    for (std::size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j) {
-      mSoftBodyNodes[i]->getPointMass(j)->integratePositions(_dt);
-    }
-  }
+  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i)
+    mSoftBodyNodes[i]->integratePointMassPositions(_dt);
 }
 
 //==============================================================================
@@ -1621,10 +1616,8 @@ void Skeleton::integrateVelocities(double _dt)
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     mSkelCache.mBodyNodes[i]->getParentJoint()->integrateVelocities(_dt);
 
-  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i) {
-    for (std::size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
-      mSoftBodyNodes[i]->getPointMass(j)->integrateVelocities(_dt);
-  }
+  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i)
+    mSoftBodyNodes[i]->integratePointMassVelocities(_dt);
 }
 
 //==============================================================================
