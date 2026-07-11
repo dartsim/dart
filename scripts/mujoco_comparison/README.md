@@ -227,13 +227,10 @@ MuJoCo has no sleeping/deactivation concept, so `sleeping_bodies` is always
 
 ## Known gaps and risks (v1)
 
-- **Not runtime-validated.** This package was authored writing files only
-  (no build, no pixi install/run, no benchmark execution); only
-  `python -m py_compile` syntax checks were run. The first real invocation
-  of `run_comparison.py` should be treated as also validating this code,
-  not just collecting numbers.
-- **`NativeCollisionDetector` isn't bound in dartpy yet** — `--detector
-  native` is a placeholder until that binding lands.
+- **Limited runtime validation.** The one-repetition smoke covers
+  `ARM-REACHER`, `PILE-120`, and `DYN-STIR-120`; the larger matrices and
+  representative multi-repetition benchmark runs still need validation on a
+  quiet host before their results are treated as evidence.
 - **`Skeleton.isResting()` isn't bound in dartpy yet** — DART
   `sleeping_bodies` is `None` until that binding lands.
 - **MJCF parser fidelity**: DART's MJCF parser may not fully honor
