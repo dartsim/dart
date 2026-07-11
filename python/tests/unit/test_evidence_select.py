@@ -82,6 +82,28 @@ def test_redundant_and_no_new_coverage_artifacts_are_rejected(tmp_path: Path) ->
     assert "no claim coverage" in reasons["other_angle.png"]
 
 
+def test_coverage_beats_quality_under_tight_budget(tmp_path: Path) -> None:
+    # With only one artifact allowed, a covering set exists (cover.png proves
+    # both claims), so the selector must prefer it over the higher-quality
+    # single-claim still instead of failing to cover C2.
+    manifest = _candidates(
+        tmp_path,
+        [
+            {"path": "high.png", "kind": "still", "claims": ["C1"], "quality": 0.99},
+            {
+                "path": "cover.png",
+                "kind": "still",
+                "claims": ["C1", "C2"],
+                "quality": 0.90,
+            },
+        ],
+    )
+    result = evidence_select.select_evidence(manifest, tmp_path, max_artifacts=1)
+    assert result["pass"] is True
+    assert result["uncovered_claims"] == []
+    assert [entry["path"] for entry in result["selected"]] == ["cover.png"]
+
+
 def test_budgets_are_enforced(tmp_path: Path) -> None:
     manifest = _candidates(
         tmp_path,

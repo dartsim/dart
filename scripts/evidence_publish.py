@@ -82,7 +82,7 @@ def _publish_gh_release(
                 f"Verification media ({tag})",
                 "--notes",
                 "GitHub-hosted media for PR visual-verification sections. "
-                "Not a software release.",
+                + "Not a software release.",
                 "--prerelease",
             ]
         )

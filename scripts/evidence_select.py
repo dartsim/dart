@@ -3,8 +3,9 @@
 Takes a candidate manifest — artifacts (stills, grids, composites, videos)
 annotated with the claims they support, a quality score, and an optional
 view azimuth — and picks a minimal high-quality subset: greedy set cover by
-claim, quality-ranked, with redundancy pruning (same kind + same claims +
-similar viewpoint keeps only the best) and size budgets. Every selection and
+claim (most new claims first, quality as the tiebreak), with redundancy
+pruning (same kind + same claims + similar viewpoint keeps only the best) and
+size budgets. Every selection and
 rejection records its rationale so the PR evidence trail explains why each
 artifact exists and what it proves.
 
@@ -115,7 +116,6 @@ def select_evidence(
     ranked = sorted(artifacts, key=lambda a: (-a["quality"], a["declared_path"]))
 
     selected: list[dict[str, Any]] = []
-    rejected: list[dict[str, Any]] = []
     covered: set[str] = set()
     total_bytes = 0
 
@@ -141,51 +141,61 @@ def select_evidence(
             )
         return None
 
-    for candidate in ranked:
-        new_claims = set(candidate["claims"]) - covered
-        redundancy = redundant_against_selected(candidate)
-        if redundancy is not None and not new_claims:
-            rejected.append({"path": candidate["declared_path"], "reason": redundancy})
-            continue
-        if len(selected) >= max_artifacts:
-            rejected.append(
-                {
-                    "path": candidate["declared_path"],
-                    "reason": f"artifact budget reached ({max_artifacts})",
-                }
-            )
-            continue
-        if total_bytes + candidate["bytes"] > max_total_bytes:
-            rejected.append(
-                {
-                    "path": candidate["declared_path"],
-                    "reason": (f"size budget reached ({max_total_bytes} bytes total)"),
-                }
-            )
-            continue
-        if not new_claims:
-            # Minimality: an extra angle earns its place only through an
-            # explicit claim of its own (e.g. "no penetration from the side").
-            rejected.append(
-                {
-                    "path": candidate["declared_path"],
-                    "reason": "adds no claim coverage beyond already-selected evidence",
-                }
-            )
-            continue
+    # Greedy set cover: each round takes the candidate that covers the most
+    # still-uncovered claims, breaking ties by quality then declared path (the
+    # ranked order). Coverage leads quality so a tight --max-artifacts budget
+    # still finds a covering set when one exists instead of spending the budget
+    # on a higher-quality artifact that proves fewer claims.
+    remaining = list(ranked)
+    while len(selected) < max_artifacts:
+        best: dict[str, Any] | None = None
+        best_new: set[str] = set()
+        for candidate in remaining:
+            new_claims = set(candidate["claims"]) - covered
+            if not new_claims:
+                continue
+            if total_bytes + candidate["bytes"] > max_total_bytes:
+                continue
+            if len(new_claims) > len(best_new):
+                best = candidate
+                best_new = new_claims
+        if best is None:
+            break
         rationale_parts = [
-            "covers claim(s) " + ", ".join(sorted(new_claims)),
-            f"quality={candidate['quality']:.3f}",
+            "covers claim(s) " + ", ".join(sorted(best_new)),
+            f"quality={best['quality']:.3f}",
         ]
         selected.append(
             {
-                **candidate,
+                **best,
                 "rationale": "; ".join(rationale_parts),
-                "sha256": _sha256(candidate["path"]),
+                "sha256": _sha256(best["path"]),
             }
         )
-        covered |= set(candidate["claims"])
-        total_bytes += candidate["bytes"]
+        covered |= set(best["claims"])
+        total_bytes += best["bytes"]
+        remaining.remove(best)
+
+    # Record why each unselected artifact was dropped so the evidence trail is
+    # auditable: redundancy, no new coverage, or a budget ceiling.
+    rejected: list[dict[str, Any]] = []
+    selected_paths = {artifact["declared_path"] for artifact in selected}
+    for candidate in ranked:
+        if candidate["declared_path"] in selected_paths:
+            continue
+        new_claims = set(candidate["claims"]) - covered
+        redundancy = redundant_against_selected(candidate)
+        if redundancy is not None and not new_claims:
+            reason = redundancy
+        elif not new_claims:
+            # Minimality: an extra angle earns its place only through an
+            # explicit claim of its own (e.g. "no penetration from the side").
+            reason = "adds no claim coverage beyond already-selected evidence"
+        elif len(selected) >= max_artifacts:
+            reason = f"artifact budget reached ({max_artifacts})"
+        else:
+            reason = f"size budget reached ({max_total_bytes} bytes total)"
+        rejected.append({"path": candidate["declared_path"], "reason": reason})
 
     uncovered = sorted(set(claims) - covered)
     result = {

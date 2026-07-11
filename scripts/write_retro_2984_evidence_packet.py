@@ -147,7 +147,7 @@ def capture_fidelity_pair(
     ball = world.add_rigid_body("ball", position=(0.35, 0.25, 0.2))
     ball.set_collision_shape(dart.CollisionShape.sphere(0.14))
 
-    from dartpy import _world_render_bridge as bridge
+    import dartpy._world_render_bridge as bridge
 
     descriptors = bridge._renderables_from_world(world)
     # A whole-scene fit leaves the subject too small to judge shading

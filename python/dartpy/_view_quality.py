@@ -14,7 +14,7 @@ import json
 import math
 import re
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Sequence
+from typing import Any, Sequence
 
 import dartpy as dart
 import numpy as np
