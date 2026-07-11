@@ -96,14 +96,16 @@ def _capture_view(
     args: argparse.Namespace,
     tracker: Any,
     contacts: list[Any],
+    layers: list[str] | None = None,
 ) -> Any:
     gui = dart.gui
-    if args.layers:
+    active_layers = args.layers if layers is None else layers
+    if active_layers:
         options = gui.DebugDrawOptions()
         scene = gui.debug_scene_for_world(
             world,
             options=options,
-            layers=tuple(args.layers),
+            layers=tuple(active_layers),
             trajectories=tracker,
             contacts=contacts,
         )
@@ -114,6 +116,13 @@ def _capture_view(
 
     image = gui.render(world, camera, (args.width, args.height))
     return np.array(memoryview(image), copy=True)
+
+
+def _initial_still_layers(args: argparse.Namespace) -> list[str]:
+    layers = list(args.layers)
+    if args.motion_frames > 0 and args.steps < 2:
+        layers = [layer for layer in layers if layer != "trajectories"]
+    return layers
 
 
 def _camera_json(camera: Any) -> dict[str, Any]:
@@ -244,7 +253,15 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
     _require_acceptable_views(views)
 
     for view in views:
-        pixels = _capture_view(dart, world, view["camera"], args, tracker, contacts)
+        pixels = _capture_view(
+            dart,
+            world,
+            view["camera"],
+            args,
+            tracker,
+            contacts,
+            layers=_initial_still_layers(args),
+        )
         still_path = out_dir / f"{args.prefix}_{view['name']}.png"
         _write_png_rgba(still_path, pixels)
         artifacts.append(
