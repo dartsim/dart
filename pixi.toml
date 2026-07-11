@@ -1081,6 +1081,16 @@ test-gz = { depends-on = ["test-gz-physics", "test-gz-sim"] }
 [feature.assimp6.dependencies]
 assimp = ">=6.0.4,<7"
 
+# MuJoCo comparison benchmarks (scripts/mujoco_comparison): a lean environment
+# holding only the MuJoCo python bindings. The DART side of the harness runs in
+# the default environment against the dartpy dev build; the two halves talk
+# through scene-spec/result JSON files, so this env intentionally excludes the
+# DART build stack (`no-default-feature`). Opt in with `pixi run -e mujoco ...`.
+[feature.mujoco.dependencies]
+python = ">=3.10"
+numpy = "*"
+mujoco-python = ">=3.10,<4"
+
 # Profiling: the Tracy client (linked only when -DDART_PROFILE_TRACY=ON) plus the
 # standalone Tracy viewer. Kept out of the default environment because Tracy is
 # off by default; opt in with `pixi run -e profile <task>`.
@@ -1385,6 +1395,7 @@ wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp313"] }] }
 [environments]
 default = ["assimp6"]
 gazebo = ["gazebo"]
+mujoco = { features = ["mujoco"], no-default-feature = true }
 py310-wheel = ["assimp6", "py310-wheel"]
 py311-wheel = ["assimp6", "py311-wheel"]
 py312-wheel = ["assimp6", "py312-wheel"]
