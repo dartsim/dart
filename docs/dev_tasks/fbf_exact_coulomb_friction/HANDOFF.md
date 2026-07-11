@@ -1,5 +1,15 @@
 # Fresh Session Handoff Prompt
 
+> 2026-07-11 STALENESS NOTICE: the prompt below captures the 2026-07-09
+> pre-breakthrough state and is retained as history. Before using it, read
+> `AGENT_CONTINUATION.md` (canonical, current) — since this prompt was
+> written: the 60/64-contact boundary was resolved, full natural manifolds
+> solve everywhere, the author Rigid-IPC arch geometry landed, the Fig. 6
+> 10 s settle/projectile sequence completed end-to-end, MuJoCo/Kamino
+> baselines were wired, a base split-impulse bug was found and fixed, and
+> draft PR #3377 now exists on `release-6.20`. The "no PR", "60-contact
+> boundary", and approximate-arch statements below are superseded.
+
 Copy the prompt below into a fresh AI session that starts in this worktree.
 It is intentionally explicit because this task has already suffered from
 premature completion claims.

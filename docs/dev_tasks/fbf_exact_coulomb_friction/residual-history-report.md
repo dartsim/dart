@@ -140,3 +140,33 @@ This is useful Figure 9 evidence, but it remains reduced-scaffold evidence.
 Paper parity still requires full-contact and long-run histories,
 paper-matched comparison plots, and external baseline data when those
 implementations are available.
+
+## 2026-07-11 Update: Full-Manifold Artifacts And Boundary Resolution
+
+The 60-contact cap-probe fallback boundary described above is RESOLVED (see
+the tracker's 2026-07-11 verification-ledger rows: incremental inner solver,
+contact-row operator, split impulse, and the base split-impulse fix). The
+Figure 9 artifacts were regenerated at the promoted full natural manifolds
+under author Rigid-IPC arch geometry, into the assets directory directly:
+
+```bash
+T=./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace
+A=docs/dev_tasks/fbf_exact_coulomb_friction/assets
+$T backspin exact_fbf 1 1 nan residual_history > $A/fbf_residual_history_backspin.csv
+$T card_house_26_reduced_contact exact_fbf 1 1 nan residual_history > $A/fbf_residual_history_card_house_26.csv
+$T masonry_arch_25_full_manifold exact_fbf 1 1 nan residual_history > $A/fbf_residual_history_masonry_arch_25.csv
+$T masonry_arch_101_full_manifold exact_fbf 1 1 nan residual_history > $A/fbf_residual_history_masonry_arch_101.csv
+```
+
+| Scenario | Contacts | Rows | Final residual |
+| --- | ---: | ---: | --- |
+| `backspin` | 1 | 19 | at tolerance |
+| `card_house_26_reduced_contact` (now the full 108-contact manifold) | 108 | 8481 | `9.995e-7` |
+| `masonry_arch_25_full_manifold` | 52 | 892 | `9.70e-7` |
+| `masonry_arch_101_full_manifold` | 204 | 28489 | `9.996e-7` |
+
+Individual SVGs (`fbf_residual_history_<scene>.svg`) and the combined
+`fbf_residual_history_panel.svg` were re-rendered from those CSVs. The two
+multi-megabyte raw CSVs (card house and 101-stone arch) are intentionally not
+committed; regenerate them with the commands above. The earlier
+reduced-scaffold SVGs referenced above are retained as history.

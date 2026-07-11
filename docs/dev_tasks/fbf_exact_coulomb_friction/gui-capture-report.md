@@ -170,3 +170,23 @@ shows the reduced projectile at the crown with the self-contained `Scene`
 explanation visible. This proves the GUI control, key action, capture path, and
 pre-solve diagnostics are usable for the reduced Fig. 7 scaffold, but it is not
 a paper-matched post-impact arch snapshot.
+
+## 2026-07-11 Update: Author-Geometry Arch Captures And Full-Manifold Card House
+
+After the Rigid-IPC author-geometry arch port and the full-manifold
+promotion, the arch captures were refreshed and visually inspected: the
+25-stone capture shows the weighted-catenary profile with tapering voussoirs
+on a ground plane, the Scene-tab text now describes the author geometry and
+the source boundary condition, and all verdicts pass:
+
+```bash
+pixi run capture fbf_paper_masonry_arch_25 docs/dev_tasks/fbf_exact_coulomb_friction/assets/gui_captures/fbf_paper_masonry_arch_25.png 640 480 1
+pixi run capture fbf_paper_masonry_arch_101 docs/dev_tasks/fbf_exact_coulomb_friction/assets/gui_captures/fbf_paper_masonry_arch_101.png 640 480 1
+pixi run capture-action fbf_paper_masonry_arch_25 p docs/dev_tasks/fbf_exact_coulomb_friction/assets/fbf_paper_masonry_arch_25_projectile.png 1280 720 0
+```
+
+The `fbf_paper_card_house_26` scene now steps the full natural 108-contact
+manifold (~2.5 s per exact solve, stated in its Scene tab). Long-run
+settle/projectile and post-impact snapshots remain the honest missing GUI
+item; the corresponding headless long-run evidence lives in
+`assets/card_house_full_sequence_10s.csv` and the tracker ledger.
