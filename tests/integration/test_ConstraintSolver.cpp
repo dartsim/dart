@@ -819,7 +819,9 @@ void expectManySingleFreeBodyContactWorldsMatch(
       = expectedWorld->getConstraintSolver()->getLastCollisionResult();
   const auto& actualContacts
       = actualWorld->getConstraintSolver()->getLastCollisionResult();
-  EXPECT_GE(expectedContacts.getNumContacts(), numBoxes * 3u);
+  // The dart detector (default since 6.20) emits one centroid contact per
+  // flat box-vs-plane pair, not a per-corner manifold.
+  EXPECT_GE(expectedContacts.getNumContacts(), numBoxes);
   EXPECT_EQ(expectedContacts.getNumContacts(), actualContacts.getNumContacts());
 
   for (std::size_t i = 0u; i < numBoxes; ++i) {
@@ -907,7 +909,7 @@ TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerial)
       = serialWorld->getConstraintSolver()->getLastCollisionResult();
   const auto& threadedContacts
       = threadedWorld->getConstraintSolver()->getLastCollisionResult();
-  EXPECT_GE(serialContacts.getNumContacts(), kNumBoxes * 3u);
+  EXPECT_GE(serialContacts.getNumContacts(), kNumBoxes);
   EXPECT_EQ(serialContacts.getNumContacts(), threadedContacts.getNumContacts());
 
   for (std::size_t i = 0u; i < kNumBoxes; ++i) {
@@ -954,7 +956,7 @@ TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerialSurfaceParams)
       = serialWorld->getConstraintSolver()->getLastCollisionResult();
   const auto& threadedContacts
       = threadedWorld->getConstraintSolver()->getLastCollisionResult();
-  EXPECT_GE(serialContacts.getNumContacts(), kNumBoxes * 3u);
+  EXPECT_GE(serialContacts.getNumContacts(), kNumBoxes);
   EXPECT_EQ(serialContacts.getNumContacts(), threadedContacts.getNumContacts());
 
   for (std::size_t i = 0u; i < kNumBoxes; ++i) {
@@ -2613,7 +2615,7 @@ TEST(ConstraintSolver, MatrixFreeContactSolverOptInKeepsContactWorldFinite)
   common::profile::resetProfile();
 
   const auto& contacts = world->getConstraintSolver()->getLastCollisionResult();
-  EXPECT_GE(contacts.getNumContacts(), kNumBoxes * 3u);
+  EXPECT_GE(contacts.getNumContacts(), kNumBoxes);
 
   for (std::size_t i = 0u; i < kNumBoxes; ++i) {
     const auto skeleton = world->getSkeleton("box_" + std::to_string(i));

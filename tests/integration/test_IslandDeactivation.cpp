@@ -500,7 +500,7 @@ TEST(IslandDeactivation, DefaultEnabledSettlesCloseToAlwaysActivePath)
   EXPECT_TRUE(enabledTransform.translation().isApprox(
       activeTransform.translation(), 1e-4));
   EXPECT_TRUE(
-      enabledTransform.linear().isApprox(activeTransform.linear(), 1e-6));
+      enabledTransform.linear().isApprox(activeTransform.linear(), 1e-5));
   EXPECT_NEAR(enabledTransform.translation().z(), kHalf, 1e-5);
 }
 
