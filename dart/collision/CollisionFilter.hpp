@@ -124,6 +124,10 @@ public:
       const CollisionObject* object1,
       const CollisionObject* object2) const override;
 
+protected:
+  /// Returns the blacklist-only revision for snapshot tracking in subclasses.
+  std::size_t getBodyNodePairBlackListRevision() const;
+
 private:
   friend class detail::BodyNodeCollisionFilterAccessor;
   friend class constraint::ConstraintSolver;
@@ -141,9 +145,6 @@ private:
   bool areAdjacentBodies(
       const dynamics::BodyNode* bodyNode1,
       const dynamics::BodyNode* bodyNode2) const;
-
-  /// Returns the blacklist-only revision for world-level rest snapshots.
-  std::size_t getBodyNodePairBlackListRevision() const;
 
   /// Returns true if solver-only resting-pair filtering is active on this
   /// thread.
