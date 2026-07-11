@@ -52,7 +52,11 @@ Mechanics, and why this is clean now:
 
 **6.22 removes the external fcl/bullet/ode dependencies; the detector classes
 and CMake components survive as compatibility facades over the consolidated
-`dart` detector.** The source-verified gz obligations and how facades satisfy them:
+`dart` detector.** Dependency removal is gated on migrating the installed public
+detector headers and API types so they no longer include or expose FCL, Bullet,
+or ODE headers. Header-only downstream compile checks and component smoke tests
+must pass without those packages installed. The source-verified gz obligations
+and how facades satisfy them:
 
 | gz obligation (evidence) | facade answer |
 | --- | --- |

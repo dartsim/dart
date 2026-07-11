@@ -74,8 +74,10 @@ evidence; restore a locomotion row only with reproducible provenance.
 
 ## Rules
 
-- Wins on ARM/HUM-ACTIVE/PILE(active)/DYN classes must show zero sleeping
-  bodies in DART (deactivation disabled on DYN rows; asserted).
+- Wins on ARM/HUM-ACTIVE/PILE(active)/DYN classes are accepted only when DART
+  deactivation is disabled for the row, or when a bound resting-state API
+  reports and the harness asserts zero sleeping bodies. A missing/unknown
+  sleeping-body count is not evidence of zero sleeping bodies.
 - SLEEP class is the only row where deactivation is the measured feature.
 - Detector rows: `dart` is the headline after the phase-6 consolidation and
   default flip; reserve `native` for explicit pre-consolidation runs (FCL
