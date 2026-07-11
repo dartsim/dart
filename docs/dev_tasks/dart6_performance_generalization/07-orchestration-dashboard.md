@@ -17,11 +17,10 @@ criteria 1-3 MET on the merged head). The maintainer broadened criterion 4 to
 cross-engine evidence vs MuJoCo across DART's major workloads; lane **WS-G**
 (08-mujoco-comparison-lane.md) owns that work. #3366 (dartpy getDofs ownership
 bugfix) and #3367 (MuJoCo comparison harness + mujoco env + dartpy native
-binding) have merged. Open PRs from the 2026-07-10 cycle: #3368 (native
-AABB-tree broadphase, dep-min lane) and #3369 (MJCF stacked hinge/slide joint
-support). In-flight packets: MJCF contype/conaffinity+friction fidelity and
-native small-scene overhead (WP-SS family); the S6 native resting-profile row
-is resolved by the dep-min lane's documented acceptance re-scope.
+binding), #3368 (native AABB-tree broadphase), and #3369 (MJCF stacked joints
+and collision fidelity) have merged. The native small-scene overhead WP-SS
+family remains in flight; the S6 native resting-profile row is resolved by the
+dep-min lane's documented acceptance re-scope.
 
 ## Lane status
 
@@ -32,7 +31,7 @@ is resolved by the dep-min lane's documented acceptance re-scope.
 | WS-C dynamics batching | 04-dynamics-batching-lane.md | PG.30–PG.33 | gated (PG.30 #3310; PG.31 #3341; PG.32 delivered by #3297/#3307; PG.33 gated) |
 | WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | active (PG.40 folded into PG.42; PG.41 waits for PG.10 seam evidence) |
 | WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 done; PG.02 #3327; PG.03 #3337; PG.04 blocked D4) |
-| WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; phases 0–3 complete (native adapter + capability parity); phase 4 active after #3364, with AABB-tree broadphase in open PR #3368 |
+| WS-F native collision port | ../dart6_dependency_minimization/03-native-collision-port-scoping.md | phases 0–7 | external owner; phases 0–3 complete (native adapter + capability parity); phase 4 active after #3364, with AABB-tree broadphase merged in #3368 |
 
 ## Packet board
 
@@ -70,8 +69,8 @@ against the packet's acceptance evidence.
 
 - WS-F consumes WS-D kernels in its phase 4. Phases 0–3 are complete, including
   the DART 6 native detector adapter and capability parity; phase 4 is active
-  after #3364. Open PR #3368 carries the branch-local AABB-tree broadphase and
-  must merge before that result is treated as base-branch evidence.
+  after #3364, and #3368's AABB-tree broadphase is now merged base-branch
+  evidence.
 - WS-B investment is re-reviewed when WS-F reaches phase 5 (facade
   decision) — see D5 in the README.
 - WS-A WP-PG.12 and WS-C WP-PG.30 share the single-free-body
