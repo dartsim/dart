@@ -59,11 +59,12 @@ PYTHONPATH=$PWD/build/default/cpp/Release/python/dartpy \
    path), WP-SS.2 (native small-scene collide overhead; also the S1-60
    parity gap), WP-SS.3 (integration overhead for small skeletons). Cut
    after fidelity packets land (do not optimize against invalid scenes).
-4. **Active-pile gap (~2.7x)**: post-AabbTree (#3368) the many-object
-   broadphase is fixed; remaining active-pile cost is solver-side (Dantzig
-   per-island + contact allocation churn). Re-baseline after #3368 +
-   fidelity, then decide packets (matrix-free option rows are diagnostic
-   only, default-off per D3).
+4. **Active-pile gap (~2.7x)**: on open PR #3368's branch, the AABB-tree
+   removes the many-object broadphase bottleneck and leaves solver-side cost
+   (Dantzig per-island + contact allocation churn). This conclusion is
+   branch-local until #3368 merges; re-baseline on the merged base with the
+   fidelity fixes before deciding packets (matrix-free option rows are
+   diagnostic only, default-off per D3).
 5. **dartpy getDofs ownership bug** (#3366): fixed; harness torque-drive
    depends on it.
 
