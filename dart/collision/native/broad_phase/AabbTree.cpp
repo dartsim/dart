@@ -33,14 +33,30 @@
 #include <dart/collision/native/broad_phase/AabbTree.hpp>
 
 #include <algorithm>
+#include <stdexcept>
 #include <unordered_set>
 
 #include <cassert>
+#include <cmath>
 
 namespace dart::collision::native {
 
+namespace {
+
+double validateFatAabbMargin(double margin)
+{
+  if (!std::isfinite(margin) || margin < 0.0) {
+    throw std::invalid_argument(
+        "AabbTreeBroadPhase fat AABB margin must be finite and non-negative");
+  }
+
+  return margin;
+}
+
+} // namespace
+
 AabbTreeBroadPhase::AabbTreeBroadPhase(double fatAabbMargin)
-  : fatAabbMargin_(fatAabbMargin)
+  : fatAabbMargin_(validateFatAabbMargin(fatAabbMargin))
 {
 }
 
@@ -139,7 +155,7 @@ bool AabbTreeBroadPhase::visitPairsAnyOrder(
   // an early visitor rejection (e.g. a boolean query's first hit) aborts the
   // traversal without materializing the pair set. The tree self-query may
   // visit a pair more than once; callers must be idempotent and
-  // order-independent (see BroadPhase::visitPairsAnyOrder).
+  // order-independent.
   if (root_ == kNullNode) {
     return true;
   }
@@ -334,7 +350,7 @@ double AabbTreeBroadPhase::getFatAabbMargin() const
 
 void AabbTreeBroadPhase::setFatAabbMargin(double margin)
 {
-  fatAabbMargin_ = margin;
+  fatAabbMargin_ = validateFatAabbMargin(margin);
 }
 
 std::size_t AabbTreeBroadPhase::getHeight() const

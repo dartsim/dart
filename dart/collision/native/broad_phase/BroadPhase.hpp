@@ -182,18 +182,6 @@ public:
       update(ids[i], aabbs[i]);
     }
   }
-
-  /// Like visitPairs(), but with no ordering or uniqueness guarantee, so
-  /// implementations may stream candidates and stop at the first visitor
-  /// rejection without materializing the full pair set. Only valid for
-  /// callers whose outcome is order-independent (e.g. boolean existence
-  /// queries); anything that emits per-pair data must use visitPairs().
-  /// Appended after the DART 6.20 virtual interface to preserve existing
-  /// vtable slots.
-  virtual bool visitPairsAnyOrder(const BroadPhasePairVisitor& visitor) const
-  {
-    return visitPairs(visitor);
-  }
 };
 
 } // namespace dart::collision::native

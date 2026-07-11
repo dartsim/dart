@@ -63,7 +63,9 @@ public:
 
   void queryPairs(std::vector<BroadPhasePair>& out) const override;
   bool visitPairs(const BroadPhasePairVisitor& visitor) const override;
-  bool visitPairsAnyOrder(const BroadPhasePairVisitor& visitor) const override;
+  /// Visits candidates without an ordering or uniqueness guarantee, allowing
+  /// order-independent queries to stop without materializing the pair set.
+  bool visitPairsAnyOrder(const BroadPhasePairVisitor& visitor) const;
   void buildDebugSnapshot(BroadPhaseDebugSnapshot& out) const override;
 
   void build(span<const std::size_t> ids, span<const Aabb> aabbs) override;

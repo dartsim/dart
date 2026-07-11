@@ -36,10 +36,12 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <numeric>
 #include <random>
 #include <set>
+#include <stdexcept>
 #include <unordered_map>
 #include <vector>
 
@@ -394,6 +396,30 @@ TEST(AabbTreeBroadPhase, FatAabbOptimization)
 
   EXPECT_EQ(bp.size(), 1u);
   EXPECT_TRUE(bp.validate());
+}
+
+TEST(AabbTreeBroadPhase, RejectsInvalidFatAabbMargins)
+{
+  EXPECT_THROW(AabbTreeBroadPhase(-0.1), std::invalid_argument);
+  EXPECT_THROW(
+      AabbTreeBroadPhase(std::numeric_limits<double>::infinity()),
+      std::invalid_argument);
+  EXPECT_THROW(
+      AabbTreeBroadPhase(std::numeric_limits<double>::quiet_NaN()),
+      std::invalid_argument);
+
+  AabbTreeBroadPhase bp(0.25);
+  EXPECT_THROW(bp.setFatAabbMargin(-0.1), std::invalid_argument);
+  EXPECT_THROW(
+      bp.setFatAabbMargin(std::numeric_limits<double>::infinity()),
+      std::invalid_argument);
+  EXPECT_THROW(
+      bp.setFatAabbMargin(std::numeric_limits<double>::quiet_NaN()),
+      std::invalid_argument);
+  EXPECT_DOUBLE_EQ(bp.getFatAabbMargin(), 0.25);
+
+  EXPECT_NO_THROW(bp.setFatAabbMargin(0.0));
+  EXPECT_DOUBLE_EQ(bp.getFatAabbMargin(), 0.0);
 }
 
 TEST(AabbTreeBroadPhase, FatAabbDoesNotReportLoosePairs)
