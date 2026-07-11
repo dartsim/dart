@@ -39,6 +39,7 @@
 #include "dart/utils/mjcf/detail/Utils.hpp"
 #include "dart/utils/utils.hpp"
 
+#include <Eigen/Eigenvalues>
 #include <gtest/gtest.h>
 
 #include <iostream>
@@ -579,6 +580,28 @@ std::size_t countStackedJointDummyBodies(const dynamics::SkeletonPtr& skel)
 }
 
 //==============================================================================
+// A stacked joint needs inertialess carrier links to preserve the MJCF body's
+// mass and spatial inertia exactly. Individual zero-inertia BodyNodes trigger
+// DART's conservative local-link warning, but the relevant dynamics invariant
+// is that descendant body inertia makes the generalized mass matrix positive
+// definite and forward dynamics finite.
+void expectStackedJointDynamicsWellPosed(const dynamics::SkeletonPtr& skeleton)
+{
+  ASSERT_NE(skeleton, nullptr);
+  const Eigen::MatrixXd massMatrix = skeleton->getMassMatrix();
+  ASSERT_TRUE(massMatrix.allFinite());
+
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigensolver(massMatrix);
+  ASSERT_EQ(eigensolver.info(), Eigen::Success);
+  EXPECT_GT(eigensolver.eigenvalues().minCoeff(), 1e-10);
+
+  skeleton->setForces(Eigen::VectorXd::LinSpaced(
+      skeleton->getNumDofs(), 0.01, 0.01 * skeleton->getNumDofs()));
+  skeleton->computeForwardDynamics();
+  EXPECT_TRUE(skeleton->getAccelerations().allFinite());
+}
+
+//==============================================================================
 TEST(MjcfParserTest, HumanoidStackedHingeJoints)
 {
   // The humanoid model has several bodies with 2 or 3 stacked hinge joints
@@ -624,6 +647,8 @@ TEST(MjcfParserTest, HumanoidStackedHingeJoints)
   EXPECT_EQ(
       humanoidSkel->getRootJoint()->getType(),
       dynamics::FreeJoint::getStaticType());
+
+  expectStackedJointDynamicsWellPosed(humanoidSkel);
 
   world->getConstraintSolver()->setCollisionDetector(
       collision::NativeCollisionDetector::create());
@@ -759,6 +784,8 @@ TEST(MjcfParserTest, SwimmerMixedJointStack)
   EXPECT_EQ(countStackedJointDummyBodies(skel), 2u);
   EXPECT_EQ(skel->getNumDofs(), 5u);
 
+  expectStackedJointDynamicsWellPosed(skel);
+
   for (auto i = 0; i < 10; ++i) {
     world->step();
   }
@@ -798,6 +825,8 @@ TEST(MjcfParserTest, UnnamedRootBodyWithUnnamedJointStack)
   // The skeleton name must come from the real (non-synthetic) BodyNode.
   EXPECT_EQ(stacked->getName().find("__mjcf_dof"), std::string::npos);
   EXPECT_FALSE(stacked->getName().empty());
+
+  expectStackedJointDynamicsWellPosed(stacked);
 
   for (auto i = 0; i < 10; ++i) {
     world->step();
