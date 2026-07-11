@@ -172,6 +172,14 @@ def _require_acceptable_views(views: list[dict[str, Any]]) -> None:
         )
 
 
+def _assess_capture_view(gui, world, camera, args, name: str) -> dict[str, Any]:
+    report = gui.assess_view(
+        world, camera, (args.width, args.height), focus=args.focus or None
+    ).to_json()
+    _require_acceptable_views([{"name": name, "report": report}])
+    return report
+
+
 def run_capture(args: argparse.Namespace) -> dict[str, Any]:
     dart = _import_dartpy()
     gui = dart.gui
@@ -282,6 +290,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         frame_dir.mkdir(parents=True, exist_ok=True)
         base_camera = views[0]["camera"]
         sweep = math.radians(args.motion_orbit_degrees)
+        motion_reports = []
         for frame in range(args.motion_frames):
             for _ in range(args.motion_substeps):
                 world.step()
@@ -295,6 +304,9 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 distance=float(base_camera.distance),
                 target=base_camera.target,
             )
+            motion_reports.append(
+                _assess_capture_view(gui, world, camera, args, f"motion{frame}")
+            )
             pixels = _capture_view(dart, world, camera, args, tracker, contacts)
             _write_png_rgba(frame_dir / f"frame{frame:04d}.png", pixels)
         entry = {
@@ -304,6 +316,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             "frames": args.motion_frames,
             "substeps": args.motion_substeps,
             "orbit_degrees": args.motion_orbit_degrees,
+            "view_reports": motion_reports,
         }
         if args.video:
             video_path = out_dir / f"{args.prefix}_motion.mp4"

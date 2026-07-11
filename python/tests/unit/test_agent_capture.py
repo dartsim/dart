@@ -86,6 +86,24 @@ def test_acceptable_view_reports_pass_capture_gate() -> None:
     )
 
 
+def test_motion_frame_assessment_rejects_updated_bad_view() -> None:
+    class Report:
+        def to_json(self):
+            return {"pass": False, "issues": ["off-frame"]}
+
+    class Gui:
+        @staticmethod
+        def assess_view(world, camera, size, focus=None):
+            assert size == (96, 72)
+            assert focus == "box"
+            return Report()
+
+    with pytest.raises(ValueError, match="motion2: off-frame"):
+        agent_capture._assess_capture_view(
+            Gui(), object(), object(), _args(focus="box"), "motion2"
+        )
+
+
 def _display_available() -> bool:
     try:
         import dartpy
