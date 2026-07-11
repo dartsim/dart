@@ -53,11 +53,13 @@ def read_ppm_bytes(data: bytes, path: Path | None = None) -> tuple[int, int, byt
     if maxval != 255:
         raise ValueError(f"{label}: expected an 8-bit PPM maxval of 255")
 
-    if data[index : index + 2] == b"\r\n":
-        index += 2
-    elif index < len(data) and data[index] in b" \t\r\n":
-        index += 1
     expected = width * height * 3
+    while (
+        index < len(data)
+        and data[index] in b" \t\r\n"
+        and len(data) - (index + 1) >= expected
+    ):
+        index += 1
     pixels = data[index : index + expected]
     if len(pixels) < expected:
         raise ValueError(f"{label}: truncated PPM pixel payload")
