@@ -1081,9 +1081,6 @@ test-gz = { depends-on = ["test-gz-physics", "test-gz-sim"] }
 [feature.assimp6.dependencies]
 assimp = ">=6.0.4,<7"
 
-# Profiling: the Tracy client (linked only when -DDART_PROFILE_TRACY=ON) plus the
-# standalone Tracy viewer. Kept out of the default environment because Tracy is
-# off by default; opt in with `pixi run -e profile <task>`.
 [feature.profile.dependencies]
 tracy-profiler-client = ">=0.11.1,<0.12"
 tracy-profiler-gui = ">=0.11.1,<0.12"
