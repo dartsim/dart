@@ -23,7 +23,12 @@ requires_display = pytest.mark.skipif(
     "headless hosts)",
 )
 
-_HAS_OSG = hasattr(dart.gui, "osg")
+try:
+    _osg = dart.gui.osg
+except AttributeError:  # pragma: no cover - depends on build config
+    pytest.skip("dartpy built without gui.osg", allow_module_level=True)
+
+_HAS_OSG = True
 
 
 def _settled_world():
