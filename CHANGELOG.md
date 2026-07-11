@@ -223,6 +223,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Hardened collision/contact behavior for malformed contacts, invalid surface
   parameters, non-finite dynamics inputs, plane/ground contacts, capsule/box
   stability, mesh contact metadata, and Gazebo-driven regression cases.
+- Hardened native collision-query cache validation so malformed internal mesh
+  geometry is skipped before native shape construction instead of aborting
+  collision queries.
 - Added native collision benchmarks, reference-engine comparisons, runtime source
   isolation checks, and a Filament collision sandbox for interactive inspection.
 
@@ -461,6 +464,12 @@ compatibility remains on the active DART 6 LTS branch._
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.
+- Bounded the Debug coverage lane for production-scale simulation tests by
+  replacing gcov-heavy monolithic variational, deformable, and VBD CTest entries
+  with representative coverage smoke shards, and pruned already-excluded
+  directories before `lcov` capture, while keeping the full tests active in
+  normal Release and Debug CI and keeping changed-line Codecov patch coverage
+  as the required PR gate.
 - Restored main-branch Windows IO builds and dartpy simulation stub parity checks
   while preserving canonical `dartpy.simulation` aliases for IO loader types.
 - Added a lint/check-lint guard that keeps SDF IO on libsdformat typed DOM APIs

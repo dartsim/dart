@@ -77,6 +77,11 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Local lint may fail if clang-format is missing or a stale CMake cache references an old version; clean the build directory (`rm -rf build/`) and reconfigure to pick up the pixi-provided clang-format.
   - Codecov patch failures usually mean new lines or branches are uncovered; add targeted tests and re-run coverage.
   - Codecov patch status can lag until coverage jobs complete; confirm Coverage (Debug) finished before acting.
+  - Codecov `codecov/patch` is the required changed-line coverage gate. The
+    aggregate `codecov/project` status reports full-repository drift without
+    blocking PRs because the Debug coverage lane is intentionally bounded and
+    capture-pruned; investigate aggregate drops as trend signals when patch and
+    relevant component statuses are green.
   - CodeQL alerts under generated dependency paths like `build/**/_deps` need
     SARIF filtering before upload; CodeQL config `paths-ignore` is not enough.
     Confirm Code Scanning has processed the relevant C++ analysis for the target

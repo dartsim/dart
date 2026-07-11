@@ -28,6 +28,14 @@ LCOV_REMOVE_PATTERNS = [
     "*/dart/gui/*",
 ]
 
+PRE_CAPTURE_EXCLUDED_PARTS = {
+    ".deps",
+    ".pixi",
+    "examples",
+    "tests",
+    "tutorials",
+}
+
 _COMPUTE_PARALLEL_JOBS = None
 
 
@@ -81,8 +89,33 @@ def prune_nested_directories(directories: Iterable[Path]) -> list[Path]:
     return result
 
 
+def has_path_part_sequence(path: Path, *sequence: str) -> bool:
+    if not sequence:
+        return False
+
+    parts = path.parts
+    sequence_length = len(sequence)
+    return any(
+        tuple(parts[index : index + sequence_length]) == sequence
+        for index in range(0, len(parts) - sequence_length + 1)
+    )
+
+
+def is_pre_capture_excluded_directory(directory: Path) -> bool:
+    if any(part in PRE_CAPTURE_EXCLUDED_PARTS for part in directory.parts):
+        return True
+
+    return has_path_part_sequence(directory, "dart", "gui") or has_path_part_sequence(
+        directory, "dart.dir", "gui"
+    )
+
+
 def collect_gcda_directories(build_dir: Path) -> list[Path]:
-    return prune_nested_directories(path.parent for path in build_dir.rglob("*.gcda"))
+    return prune_nested_directories(
+        path.parent
+        for path in build_dir.rglob("*.gcda")
+        if not is_pre_capture_excluded_directory(path.parent)
+    )
 
 
 def round_robin_chunks(items: Sequence[Path], chunk_count: int) -> list[list[Path]]:
