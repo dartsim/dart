@@ -75,6 +75,23 @@ def test_reproduce_command_prefers_explicit_distance():
     assert "--frame-margin" not in command
 
 
+def test_failed_view_report_rejects_capture():
+    views = [
+        {
+            "name": "main",
+            "report": {"pass": False, "issues": ["off-frame", "too-far"]},
+        }
+    ]
+    with pytest.raises(ValueError, match="main: off-frame, too-far"):
+        agent_capture._require_acceptable_views(views)
+
+
+def test_acceptable_view_reports_pass_capture_gate():
+    agent_capture._require_acceptable_views(
+        [{"name": "main", "report": {"pass": True, "issues": []}}]
+    )
+
+
 def test_builtin_scenes_construct_and_step():
     dartpy_module = agent_capture._import_dartpy()
     for name, factory in agent_capture._BUILTIN_SCENES.items():

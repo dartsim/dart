@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import itertools
 import json
 import math
 import sys
@@ -41,6 +42,7 @@ _DEFAULT_MAX_ARTIFACTS = 5
 _DEFAULT_MAX_TOTAL_BYTES = 25 * 1024 * 1024
 # Views closer than this (radians) show the same information for pruning.
 _SIMILAR_AZIMUTH = math.tau / 12.0
+_EXACT_SEARCH_MAX_COMBINATIONS = 100_000
 
 
 def _sha256(path: Path) -> str:
@@ -100,6 +102,43 @@ def _validate(manifest: dict[str, Any], base_dir: Path) -> list[dict[str, Any]]:
             }
         )
     return prepared
+
+
+def _find_exact_cover(
+    ranked: list[dict[str, Any]],
+    claim_ids: set[str],
+    max_artifacts: int,
+    max_total_bytes: int,
+) -> list[dict[str, Any]] | None:
+    """Find the smallest feasible cover when the bounded search is tractable."""
+    max_count = min(max_artifacts, len(ranked))
+    search_size = sum(
+        math.comb(len(ranked), count) for count in range(1, max_count + 1)
+    )
+    if search_size > _EXACT_SEARCH_MAX_COMBINATIONS:
+        return None
+
+    for count in range(1, max_count + 1):
+        best: tuple[dict[str, Any], ...] | None = None
+        best_key: tuple[Any, ...] | None = None
+        for candidates in itertools.combinations(ranked, count):
+            total_bytes = sum(candidate["bytes"] for candidate in candidates)
+            if total_bytes > max_total_bytes:
+                continue
+            covered = set().union(*(set(candidate["claims"]) for candidate in candidates))
+            if not claim_ids <= covered:
+                continue
+            key = (
+                -sum(candidate["quality"] for candidate in candidates),
+                total_bytes,
+                tuple(candidate["declared_path"] for candidate in candidates),
+            )
+            if best_key is None or key < best_key:
+                best = candidates
+                best_key = key
+        if best is not None:
+            return list(best)
+    return None
 
 
 def select_evidence(
@@ -175,6 +214,34 @@ def select_evidence(
         covered |= set(best["claims"])
         total_bytes += best["bytes"]
         remaining.remove(best)
+
+    # Greedy set cover is fast but can spend a tight artifact budget on a
+    # locally attractive choice that prevents a complete cover. For the small
+    # candidate sets used by evidence packets, replace it with the smallest
+    # feasible exact cover (quality, bytes, then path break ties). The search is
+    # explicitly bounded so large manifests retain the deterministic greedy
+    # fallback instead of growing exponentially.
+    exact = _find_exact_cover(
+        ranked, set(claims), max_artifacts, max_total_bytes
+    )
+    if exact is not None:
+        selected = []
+        covered = set()
+        total_bytes = 0
+        for candidate in exact:
+            new_claims = set(candidate["claims"]) - covered
+            selected.append(
+                {
+                    **candidate,
+                    "rationale": (
+                        "covers claim(s) " + ", ".join(sorted(new_claims))
+                        + f"; quality={candidate['quality']:.3f}"
+                    ),
+                    "sha256": _sha256(candidate["path"]),
+                }
+            )
+            covered |= set(candidate["claims"])
+            total_bytes += candidate["bytes"]
 
     # Record why each unselected artifact was dropped so the evidence trail is
     # auditable: redundancy, no new coverage, or a budget ceiling.
