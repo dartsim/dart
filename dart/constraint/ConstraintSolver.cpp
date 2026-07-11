@@ -2592,6 +2592,30 @@ void ConstraintSolver::solvePositionConstrainedGroups()
     impulseAppliedStates.push_back(skeleton->isImpulseApplied());
   }
 
+  // Preserve the velocity-phase constraint impulses themselves as well: the
+  // position pass assembles its LCP with the same unit-impulse tests as the
+  // velocity pass, and ConstraintBase::applyUnitImpulse clears each touched
+  // skeleton's accumulated constraint impulses. World::step integrates the
+  // velocity-phase impulses only after this function returns, so without
+  // this snapshot every velocity-phase contact response would be silently
+  // discarded (resting bodies free-fall and tunnel while their contacts
+  // persist).
+  std::vector<Eigen::Vector6d> savedBodyConstraintImpulses;
+  std::vector<double> savedJointConstraintImpulses;
+  for (const auto& skeleton : mSkeletons) {
+    for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+      savedBodyConstraintImpulses.push_back(
+          skeleton->getBodyNode(i)->getConstraintImpulse());
+    }
+    for (std::size_t i = 0; i < skeleton->getNumJoints(); ++i) {
+      const auto* joint = skeleton->getJoint(i);
+      for (std::size_t dof = 0; dof < joint->getNumDofs(); ++dof) {
+        savedJointConstraintImpulses.push_back(
+            joint->getConstraintImpulse(dof));
+      }
+    }
+  }
+
   for (auto& constraintGroup : mConstrainedGroups) {
     solvePositionConstrainedGroup(constraintGroup);
   }
@@ -2599,6 +2623,22 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   for (auto& skeleton : mSkeletons) {
     if (skeleton->isPositionImpulseApplied()) {
       skeleton->computePositionVelocityChanges();
+    }
+  }
+
+  std::size_t bodyImpulseIndex = 0u;
+  std::size_t jointImpulseIndex = 0u;
+  for (const auto& skeleton : mSkeletons) {
+    for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+      skeleton->getBodyNode(i)->setConstraintImpulse(
+          savedBodyConstraintImpulses[bodyImpulseIndex++]);
+    }
+    for (std::size_t i = 0; i < skeleton->getNumJoints(); ++i) {
+      auto* joint = skeleton->getJoint(i);
+      for (std::size_t dof = 0; dof < joint->getNumDofs(); ++dof) {
+        joint->setConstraintImpulse(
+            dof, savedJointConstraintImpulses[jointImpulseIndex++]);
+      }
     }
   }
 
