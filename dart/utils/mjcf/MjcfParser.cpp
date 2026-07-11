@@ -41,6 +41,7 @@
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/XmlHelpers.hpp"
+#include "dart/utils/mjcf/detail/GeomCollisionFilter.hpp"
 #include "dart/utils/mjcf/detail/MujocoModel.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
 #include "dart/utils/mjcf/detail/Worldbody.hpp"
@@ -92,8 +93,12 @@ void createJointCommonProperties(
   // Name
   if (!mjcfJoint.getName().empty()) {
     props.mName = mjcfJoint.getName();
-  } else {
+  } else if (parentBodyNode) {
     props.mName = parentBodyNode->getName() + "_Joint";
+  } else {
+    // Root joint without a name and without a parent BodyNode (e.g. the
+    // first joint of a root body's joint stack).
+    props.mName = "World_Joint";
   }
 }
 
@@ -255,6 +260,139 @@ dynamics::RevoluteJoint::Properties createRevoluteJointProperties(
 }
 
 //==============================================================================
+bool canChainJointStack(const detail::Body& mjcfBody)
+{
+  // The generic joint-stack chain built by createJointChainForStackedJoints()
+  // below only knows how to translate hinge and slide joints into Revolute-
+  // and PrismaticJoints respectively. Free and ball joints cannot appear
+  // alongside other joints under a valid MJCF <body> in the first place, so
+  // excluding them here just makes that assumption explicit.
+  for (auto i = 0u; i < mjcfBody.getNumJoints(); ++i) {
+    const auto type = mjcfBody.getJoint(i).getType();
+    if (type != detail::JointType::HINGE && type != detail::JointType::SLIDE)
+      return false;
+  }
+  return true;
+}
+
+//==============================================================================
+// Creates a chain of single-DOF joints for a MJCF <body> that lists more
+// <joint> elements than DART has a predefined multi-DOF joint for (i.e. any
+// combination of hinges/slides other than 2 or 3 slides).
+//
+// Per the MuJoCo XML reference, when several joints are defined on the same
+// body, they are applied in listed order (the first joint is closest to the
+// parent body) and every joint's pos/axis is expressed in the same
+// undisplaced frame of the owning body -- not chained relative to whatever
+// the previous joint in the stack did. We reproduce that by threading a chain
+// of massless, shapeless intermediate BodyNodes (one per joint except the
+// last) between the real parent body and the real (final) BodyNode, with one
+// RevoluteJoint per hinge and one PrismaticJoint per slide.
+//
+// Each intermediate BodyNode's local frame is defined to coincide with the
+// owning body's nominal (rest) frame, i.e. mjcfBody.getRelativeTransform()
+// relative to the real parent. That is what lets every sub-joint use its own
+// pos/axis directly as T_ChildBodyToJoint: only the first joint in the chain
+// additionally needs mjcfBody.getRelativeTransform() to reach that nominal
+// frame from the real parent; every later joint's immediate parent already
+// *is* that frame by construction, so its T_ParentBodyToJoint collapses to
+// exactly its own T_ChildBodyToJoint.
+std::pair<dynamics::Joint*, dynamics::BodyNode*>
+createJointChainForStackedJoints(
+    dynamics::SkeletonPtr skel,
+    dynamics::BodyNode* parentBodyNode,
+    const dynamics::BodyNode::Properties& bodyProps,
+    const detail::Body& mjcfBody)
+{
+  const auto numJoints = mjcfBody.getNumJoints();
+  DART_ASSERT(numJoints >= 2u);
+
+  dynamics::BodyNode* currentParent = parentBodyNode;
+  dynamics::Joint* joint = nullptr;
+  dynamics::BodyNode* bodyNode = nullptr;
+
+  for (auto i = 0u; i < numJoints; ++i) {
+    const detail::Joint& mjcfJoint = mjcfBody.getJoint(i);
+    const bool isFinalJoint = (i + 1u == numJoints);
+
+    // Joint pos/axis are given in the owning body's nominal (undisplaced)
+    // local frame, regardless of this joint's position in the stack.
+    Eigen::Isometry3d childBodyToJoint = Eigen::Isometry3d::Identity();
+    childBodyToJoint.translation() = mjcfJoint.getPos();
+    childBodyToJoint.linear()
+        = Eigen::Quaterniond::FromTwoVectors(
+              Eigen::Vector3d::UnitZ(), mjcfJoint.getAxis())
+              .toRotationMatrix();
+
+    const Eigen::Isometry3d parentBodyToJoint
+        = (i == 0u) ? mjcfBody.getRelativeTransform() * childBodyToJoint
+                    : childBodyToJoint;
+
+    dynamics::BodyNode::Properties currentBodyProps;
+    if (isFinalJoint) {
+      currentBodyProps = bodyProps;
+    } else {
+      currentBodyProps.mName
+          = mjcfBody.getName() + "__mjcf_dof" + std::to_string(i);
+      // Intermediate links only exist to carry a single DOF each; they have
+      // no shape and no mass of their own.
+      currentBodyProps.mInertia = dynamics::Inertia(
+          0.0, Eigen::Vector3d::Zero(), Eigen::Matrix3d::Zero());
+    }
+
+    if (mjcfJoint.getType() == detail::JointType::HINGE) {
+      dynamics::RevoluteJoint::Properties props;
+      createJointCommonProperties(props, currentParent, mjcfBody, mjcfJoint);
+
+      props.mAxis = Eigen::Vector3d::UnitZ();
+      props.mT_ChildBodyToJoint = childBodyToJoint;
+      props.mT_ParentBodyToJoint = parentBodyToJoint;
+
+      props.mIsPositionLimitEnforced = mjcfJoint.isLimited();
+      props.mPositionLowerLimits[0] = mjcfJoint.getRange()[0];
+      props.mPositionUpperLimits[0] = mjcfJoint.getRange()[1];
+
+      props.mDampingCoefficients[0] = mjcfJoint.getDamping();
+      props.mRestPositions[0] = mjcfJoint.getSpringRef();
+
+      props.mDofNames[0] = mjcfJoint.getName();
+      props.mPreserveDofNames[0] = true;
+
+      std::tie(joint, bodyNode)
+          = skel->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+              currentParent, props, currentBodyProps);
+    } else {
+      DART_ASSERT(mjcfJoint.getType() == detail::JointType::SLIDE);
+
+      dynamics::PrismaticJoint::Properties props;
+      createJointCommonProperties(props, currentParent, mjcfBody, mjcfJoint);
+
+      props.mAxis = Eigen::Vector3d::UnitZ();
+      props.mT_ChildBodyToJoint = childBodyToJoint;
+      props.mT_ParentBodyToJoint = parentBodyToJoint;
+
+      props.mIsPositionLimitEnforced = mjcfJoint.isLimited();
+      props.mPositionLowerLimits[0] = mjcfJoint.getRange()[0];
+      props.mPositionUpperLimits[0] = mjcfJoint.getRange()[1];
+
+      props.mDampingCoefficients[0] = mjcfJoint.getDamping();
+      props.mRestPositions[0] = mjcfJoint.getSpringRef();
+
+      props.mDofNames[0] = mjcfJoint.getName();
+      props.mPreserveDofNames[0] = true;
+
+      std::tie(joint, bodyNode)
+          = skel->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
+              currentParent, props, currentBodyProps);
+    }
+
+    currentParent = bodyNode;
+  }
+
+  return std::make_pair(joint, bodyNode);
+}
+
+//==============================================================================
 std::pair<dynamics::Joint*, dynamics::BodyNode*>
 createJointAndBodyNodePairForMultipleJoints(
     dynamics::SkeletonPtr skel,
@@ -383,6 +521,13 @@ createJointAndBodyNodePairForMultipleJoints(
     }
   }
 
+  // Fall back to a chain of single-DOF joints for any other stack of
+  // hinge/slide joints (e.g. hinge+hinge, or hinge mixed with slide).
+  if (canChainJointStack(mjcfBody)) {
+    return createJointChainForStackedJoints(
+        skel, parentBodyNode, bodyProps, mjcfBody);
+  }
+
   dterr << "[MjcfParser] Attempted to create unsupported joint composition.\n";
 
   return std::make_pair(nullptr, nullptr);
@@ -467,7 +612,8 @@ dynamics::ShapePtr createShape(
 bool createShapeNodes(
     dynamics::BodyNode* bodyNode,
     const detail::Body& mjcfBody,
-    const detail::Asset& mjcfAsset)
+    const detail::Asset& mjcfAsset,
+    detail::GeomCollisionFilter& collisionFilter)
 {
   // Create ShapeNodes for <geom>s
   for (std::size_t i = 0u; i < mjcfBody.getNumGeoms(); ++i) {
@@ -480,17 +626,35 @@ bool createShapeNodes(
       return false;
     }
 
+    const int contype = geom.getConType();
+    const int conaffinity = geom.getConAffinity();
+
+    // Following MuJoCo, a geom with contype == 0 and conaffinity == 0 can
+    // never take part in any collision pair (see the contype/conaffinity
+    // rule at http://mujoco.org/book/computation.html#coCollision), so it is
+    // created as a visual-only ShapeNode. This also matches mocap bodies,
+    // which MuJoCo never collides.
+    const bool hasCollision
+        = !mjcfBody.getMocap() && ((contype != 0) || (conaffinity != 0));
+
     // Create ShapeNode with the shape created above
     dynamics::ShapeNode* shapeNode = nullptr;
-    if (mjcfBody.getMocap()) {
-      // Disable collision and dynamics for mocap bodies
-      shapeNode = bodyNode->createShapeNodeWith<dynamics::VisualAspect>(
-          shape, geom.getName());
-    } else {
+    if (hasCollision) {
       shapeNode = bodyNode->createShapeNodeWith<
           dynamics::VisualAspect,
           dynamics::CollisionAspect,
           dynamics::DynamicsAspect>(shape, geom.getName());
+
+      // Sliding friction coefficient. MuJoCo's friction attribute is
+      // (sliding, torsional, rolling); DART's DynamicsAspect only models a
+      // single (isotropic) Coulomb friction coefficient, so only the sliding
+      // component is applied.
+      shapeNode->getDynamicsAspect()->setFrictionCoeff(geom.getFriction()[0]);
+
+      collisionFilter.setGeomBitmasks(shapeNode, contype, conaffinity);
+    } else {
+      shapeNode = bodyNode->createShapeNodeWith<dynamics::VisualAspect>(
+          shape, geom.getName());
     }
 
     // RGBA
@@ -537,7 +701,8 @@ bool populateSkeletonRecurse(
     dynamics::SkeletonPtr skel,
     dynamics::BodyNode* parentBodyNode,
     const detail::Body& mjcfBody,
-    const detail::Asset& mjcfAsset)
+    const detail::Asset& mjcfAsset,
+    detail::GeomCollisionFilter& collisionFilter)
 {
   dynamics::BodyNode* bodyNode = nullptr;
   dynamics::Joint* joint = nullptr;
@@ -593,13 +758,24 @@ bool populateSkeletonRecurse(
   DART_ASSERT(bodyNode != nullptr);
   DART_ASSERT(joint != nullptr);
 
+  // Expanding a stacked joint inserts synthetic BodyNodes between the MJCF
+  // parent and its real child. Preserve their original adjacency so ordinary
+  // self-collision still suppresses the pair unless adjacent checks are
+  // explicitly enabled.
+  if (parentBodyNode && bodyNode->getParentBodyNode() != parentBodyNode)
+    collisionFilter.addLogicalAdjacentBodyPair(parentBodyNode, bodyNode);
+
   // Create ShapeNodes for the current BodyNode
-  if (!createShapeNodes(bodyNode, mjcfBody, mjcfAsset))
+  if (!createShapeNodes(bodyNode, mjcfBody, mjcfAsset, collisionFilter))
     return false;
 
   for (auto i = 0u; i < mjcfBody.getNumChildBodies(); ++i) {
     if (!populateSkeletonRecurse(
-            skel, bodyNode, mjcfBody.getChildBody(i), mjcfAsset)) {
+            skel,
+            bodyNode,
+            mjcfBody.getChildBody(i),
+            mjcfAsset,
+            collisionFilter)) {
       return false;
     }
   }
@@ -609,12 +785,14 @@ bool populateSkeletonRecurse(
 
 //==============================================================================
 dynamics::SkeletonPtr createSkeleton(
-    const detail::Body& mjcfBody, const detail::Asset& mjcfAsset)
+    const detail::Body& mjcfBody,
+    const detail::Asset& mjcfAsset,
+    detail::GeomCollisionFilter& collisionFilter)
 {
   dynamics::SkeletonPtr skel = dynamics::Skeleton::create();
 
-  const bool success
-      = populateSkeletonRecurse(skel, nullptr, mjcfBody, mjcfAsset);
+  const bool success = populateSkeletonRecurse(
+      skel, nullptr, mjcfBody, mjcfAsset, collisionFilter);
   if (!success) {
     const std::string bodyName
         = mjcfBody.getName().empty() ? "(noname)" : mjcfBody.getName();
@@ -636,10 +814,16 @@ simulation::WorldPtr createWorld(
   const detail::Asset& mjcfAsset = mujoco.getAsset();
   const detail::Worldbody& mjcfWorldbody = mujoco.getWorldbody();
 
+  // Collects the contype/conaffinity bitmasks of every ShapeNode created from
+  // an MJCF <geom> so that MuJoCo's collision pair rule can be enforced by a
+  // single World-wide CollisionFilter. See GeomCollisionFilter for details.
+  auto collisionFilter = std::make_shared<detail::GeomCollisionFilter>();
+
   // Parse root <body> elements
   for (std::size_t i = 0; i < mjcfWorldbody.getNumRootBodies(); ++i) {
     const detail::Body& mjcfRootBody = mjcfWorldbody.getRootBody(i);
-    const dynamics::SkeletonPtr& skel = createSkeleton(mjcfRootBody, mjcfAsset);
+    const dynamics::SkeletonPtr& skel
+        = createSkeleton(mjcfRootBody, mjcfAsset, *collisionFilter);
 
     if (skel == nullptr) {
       dterr << "[MjcfParser] Failed to parse a Skeleton. Stop parsing the "
@@ -650,8 +834,27 @@ simulation::WorldPtr createWorld(
     // MuJoCo doesn't have a concept that corresponds to DART Skeleton so no
     // name for Skeleton. We use the name of the root body instead. The root
     // body name will be unique anyway because all the MuJoCo body name are
-    // unique in the same <worldbody>.
-    skel->setName(skel->getRootBodyNode()->getName());
+    // unique in the same <worldbody>. Note this must be mjcfRootBody's own
+    // name rather than skel->getRootBodyNode()->getName(): if mjcfRootBody
+    // itself has a stack of joints, DART's actual root BodyNode is one of
+    // the synthetic intermediate links created for that stack, not the body
+    // named in the MJCF file. Unnamed root bodies keep the pre-existing
+    // behavior of inheriting a generated BodyNode name, taken from the last
+    // (real) BodyNode so a synthetic intermediate link never names the
+    // skeleton.
+    if (!mjcfRootBody.getName().empty()) {
+      skel->setName(mjcfRootBody.getName());
+    } else {
+      // Synthetic links are created before the real root body, so the first
+      // BodyNode without the marker is the real one.
+      for (std::size_t i = 0u; i < skel->getNumBodyNodes(); ++i) {
+        const auto* bodyNode = skel->getBodyNode(i);
+        if (bodyNode->getName().find("__mjcf_dof") == std::string::npos) {
+          skel->setName(bodyNode->getName());
+          break;
+        }
+      }
+    }
 
     // Skeleton name should be unique in the World.
     if (world->hasSkeleton(skel->getName())) {
@@ -682,10 +885,24 @@ simulation::WorldPtr createWorld(
 
     joint->setTransformFromParentBodyNode(mjcfGeom.getRelativeTransform());
     dynamics::ShapePtr shape = createShape(mjcfGeom, mjcfAsset);
-    dynamics::ShapeNode* shapeNode = body->createShapeNodeWith<
-        dynamics::VisualAspect,
-        dynamics::CollisionAspect,
-        dynamics::DynamicsAspect>(shape);
+
+    const int contype = mjcfGeom.getConType();
+    const int conaffinity = mjcfGeom.getConAffinity();
+    const bool hasCollision = (contype != 0) || (conaffinity != 0);
+
+    dynamics::ShapeNode* shapeNode = nullptr;
+    if (hasCollision) {
+      shapeNode = body->createShapeNodeWith<
+          dynamics::VisualAspect,
+          dynamics::CollisionAspect,
+          dynamics::DynamicsAspect>(shape);
+      shapeNode->getDynamicsAspect()->setFrictionCoeff(
+          mjcfGeom.getFriction()[0]);
+      collisionFilter->setGeomBitmasks(shapeNode, contype, conaffinity);
+    } else {
+      shapeNode = body->createShapeNodeWith<dynamics::VisualAspect>(shape);
+    }
+
     dynamics::VisualAspect* visualAspect = shapeNode->getVisualAspect();
 
     // TODO(JS): Check whether this object use material instead of RGBA
@@ -728,6 +945,12 @@ simulation::WorldPtr createWorld(
 
     world->addSkeleton(skel);
   }
+
+  // Install the MuJoCo contype/conaffinity pair rule on top of DART's default
+  // collision filtering behavior (self-collision/adjacent-body handling,
+  // etc.), which GeomCollisionFilter inherits from BodyNodeCollisionFilter.
+  world->getConstraintSolver()->getCollisionOption().collisionFilter
+      = collisionFilter;
 
   return world;
 }
