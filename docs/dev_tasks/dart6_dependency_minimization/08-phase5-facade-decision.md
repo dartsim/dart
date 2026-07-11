@@ -101,10 +101,11 @@ must pass against facades before 6.22 ships.
 ## Timeline
 
 - **6.20 (now, phases 4-6 of the port plan):** close the remaining native
-  performance gaps (broadphase landed; S3 narrowphase delta, small-scene
-  overhead, and the S6 dense-pile resting profile remain), then flip only the
-  DEFAULT detector (both ctors + WorldConfig/SkelParser surface). All legacy
-  detectors stay real and selectable; no deprecations on the LTS branch.
+  performance gaps (broadphase landed; S3 narrowphase delta and small-scene
+  overhead remain; the S6 dense-pile row was resolved by the documented
+  acceptance re-scope), then flip only the DEFAULT detector (both ctors +
+  WorldConfig/SkelParser surface). All legacy detectors stay real and
+  selectable; no deprecations on the LTS branch.
 - **6.21:** deprecation attributes with migration messages on
   FCL/Bullet/ODE `create()`/ctors; CHANGELOG + migration guide;
   CMake configure-time notices. Everything still functional.

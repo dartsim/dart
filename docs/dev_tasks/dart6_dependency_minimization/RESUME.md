@@ -125,7 +125,7 @@ fastest incumbent per row):
    were lost to a host reboot; the numbers are preserved here and in the
    PR bodies).
 
-**Phase 5 decision (maintainer-directed 2026-07-10):**
+**Phase 5 decision is active (maintainer-directed 2026-07-10):**
 [08-phase5-facade-decision.md](08-phase5-facade-decision.md) — the native
 engine merges INTO the dart detector (`dart/collision/native/` folds into
 `dart/collision/dart/`, `NativeCollisionDetector` merges into
