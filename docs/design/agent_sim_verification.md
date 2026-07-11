@@ -173,5 +173,7 @@ Known limits and future work: occlusion probes sample bounds corners (a
 depth/ID-buffer readback would make visibility exact), thresholds are fixed
 constants calibrated on primitive scenes, multibody/deformable layers reuse
 only the transform-based subset, inline PR video still requires the manual
-user-attachments flow, and DART 6 has the fixed `defaultAgentCamera` rather
-than adaptive selection.
+user-attachments flow, and the DART 6 port of adaptive viewpoints, image-space
+debug overlays, the capture harness, and evidence tooling is in flight on
+`release-6.20` via #3374 (until it lands, DART 6 keeps the fixed
+`defaultAgentCamera` rather than adaptive selection).
