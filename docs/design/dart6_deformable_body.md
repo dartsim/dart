@@ -84,6 +84,45 @@ triangle-mesh collision, adaptive active-contact neighborhoods, or both. That
 choice stays open until a bounded follow-up proves coverage and scaling; it is
 not implied by the fallback bridge.
 
+### Native-owned soft-kernel follow-up contract
+
+The follow-up that removes the cached DART-object bridge must make native own
+the five soft pair families that the bridge currently implements:
+soft x plane, sphere, box, ellipsoid, and soft. Unsupported pair families must
+keep their current no-contact behavior until their own kernels and correctness
+evidence exist. The port is staged per pair family rather than by globally
+flipping a soft-shape flag.
+
+The native soft shape owns one retained deforming-geometry cache. Native and
+still-bridged pairs must read that same cache during a staged rollout; they must
+not maintain parallel mirrors. Each ported pair preserves object order, contact
+point, normal, depth, soft-side face IDs, the full configured per-pair contact
+budget, and the established non-finite-bounds behavior. Native soft contacts
+bypass the rigid persistent-manifold cache because deforming local points
+violate its rigid-transform assumption; this guard lands with the first pair
+predicate change, while rigid-rigid neighbors remain cache-eligible.
+
+Land the work in independently gated stages:
+
+1. add the native soft shape/cache and bit-identical AABB refresh without
+   changing dispatch;
+2. port plane, sphere/box, soft-soft, and ellipsoid pairs separately, retaining
+   the bridge for each pair until its native kernel passes parity;
+3. add deterministic per-pair threading only after serial parity is proven;
+4. change broadphase structure only if measured attribution still shows it is
+   needed; and
+5. add soft-face-interior coverage only as an opt-in, checksum-changing
+   correctness extension with its own reference tests.
+
+Every parity stage requires both object orderings, contact-field comparison,
+single- and multi-thread checksum evidence, zero steady-state allocation, and
+manifold-cache ownership tests. The completed native path must then pass the
+paired same-host detector protocol, representative allocation and physical
+regressions, and Gazebo/gz-physics gates before any preferred/default-backend
+proposal. Profiling on the current bridge has not shown a structural native
+penalty, so measurement remains the gate for dispatching this port rather than
+an assumed speedup.
+
 ## Paper-scope decisions
 
 The DART 6 point-mass surface model is close to the Jain/Liu contact model but

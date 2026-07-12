@@ -47,7 +47,10 @@ Priority order is document order. Active implementation handoff remains in
   implement or defer the still-open four-link flexible-rigid-foot versus
   deformable-foot comparison. After stabilization, retain WP-DB.07
   larger-workload scaling and WP-DB.08 native-owned coverage/default work as
-  explicit follow-ups rather than widening #3382 implicitly.
+  explicit follow-ups rather than widening #3382 implicitly. Track a separate
+  `main` fix for the zero-DoF soft point-mass assertion already corrected by
+  release commit `10c6b6055e4`, and use the staged native-owned soft-kernel
+  contract in `docs/design/dart6_deformable_body.md` for the WP-DB.08 follow-up.
 - Gate: `pixi run lint`; focused soft-body integration tests; headless
   soft-body benchmarks with exact commands/raw rows; one-thread and host-capped
   multi-thread determinism/scaling evidence; allocation gates and Gazebo
