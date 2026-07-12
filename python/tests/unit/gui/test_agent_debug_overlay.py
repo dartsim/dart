@@ -306,6 +306,29 @@ def test_collision_bounds_layer_matches_known_box():
     assert np.allclose(center, [0.0, 0.0, 0.6], atol=1e-9)
 
 
+def test_collision_bounds_layer_skips_visual_only_shapes():
+    # A visual-only helper shape is invisible to the collision detector, so
+    # the collision_bounds layer must not draw its bounds: only the shape
+    # node with a CollisionAspect gets a 12-edge wireframe.
+    world = dart.simulation.World()
+    skeleton = dart.dynamics.Skeleton("box")
+    joint, body = skeleton.createFreeJointAndBodyNodePair()
+    body.setName("box")
+    collision_node = body.createShapeNode(dart.dynamics.BoxShape([0.4, 0.7, 1.0]))
+    collision_node.createVisualAspect()
+    collision_node.createCollisionAspect()
+    marker_node = body.createShapeNode(dart.dynamics.BoxShape([3.0, 3.0, 3.0]))
+    marker_node.createVisualAspect()  # visual-only: no CollisionAspect
+    joint.setPositions(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.6]))
+    world.addSkeleton(skeleton)
+
+    scene = ado.build_overlay(world, layers=("collision_bounds",))
+    assert len(scene.segments) == 12  # only the collision shape's wireframe
+    points = np.array([p for segment in scene.segments for p in segment[:2]])
+    extent = points.max(axis=0) - points.min(axis=0)
+    assert np.allclose(extent, [0.4, 0.7, 1.0], atol=1e-9)
+
+
 @pytest.mark.skipif(not _HAS_OSG, reason="dartpy built without gui.osg")
 def test_populate_overlay_loads_lines_and_labels():
     world = _settled_world()

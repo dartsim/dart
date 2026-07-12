@@ -382,6 +382,11 @@ def build_overlay(
         for body in _iter_bodies(world):
             for shape_index in range(body.getNumShapeNodes()):
                 shape_node = body.getShapeNode(shape_index)
+                # Visual-only helper shapes are invisible to the collision
+                # detector; drawing their bounds would misrepresent what
+                # contact/penetration reviews are actually checking.
+                if shape_node.getCollisionAspect() is None:
+                    continue
                 shape = shape_node.getShape()
                 if shape is None:
                     continue
