@@ -55,6 +55,7 @@ void RaycastResult(py::module& sm);
 void CollisionDetector(py::module& sm);
 void FCLCollisionDetector(py::module& sm);
 void DARTCollisionDetector(py::module& sm);
+void NativeCollisionDetector(py::module& sm);
 
 void CollisionGroup(py::module& sm);
 void FCLCollisionGroup(py::module& sm);
@@ -90,6 +91,7 @@ void dart_collision(py::module& m)
   CollisionDetector(sm);
   FCLCollisionDetector(sm);
   DARTCollisionDetector(sm);
+  NativeCollisionDetector(sm);
 
   CollisionGroup(sm);
   FCLCollisionGroup(sm);

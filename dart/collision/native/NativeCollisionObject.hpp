@@ -87,6 +87,10 @@ private:
   std::unique_ptr<native::Shape> mNativeShape;
   std::unique_ptr<DARTCollisionObject> mDartFallbackObject;
   Eigen::Isometry3d mNativeTransform{Eigen::Isometry3d::Identity()};
+  /// Local-space AABB of mNativeShape, recomputed only when the native shape
+  /// is rebuilt; shapes are immutable between version bumps, so recomputing
+  /// it per step (a virtual call per object per step) is wasted work.
+  native::Aabb mNativeLocalAabb;
   native::Aabb mNativeAabb;
   bool mUsesDartFallbackShape{false};
   bool mUsesSoftMeshFallbackShape{false};

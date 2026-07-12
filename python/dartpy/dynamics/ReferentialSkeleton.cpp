@@ -192,10 +192,11 @@ void ReferentialSkeleton(py::module& m)
           })
       .def(
           "getDofs",
-          +[](const dart::dynamics::ReferentialSkeleton* self)
-              -> std::vector<const dart::dynamics::DegreeOfFreedom*> {
+          +[](dart::dynamics::ReferentialSkeleton* self)
+              -> std::vector<dart::dynamics::DegreeOfFreedom*> {
             return self->getDofs();
-          })
+          },
+          ::py::return_value_policy::reference_internal)
       .def(
           "getIndexOf",
           +[](const dart::dynamics::ReferentialSkeleton* self,
