@@ -279,12 +279,16 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         base_camera = views[0]["camera"]
         frame_dir = out_dir / f"{args.prefix}_turntable"
         frame_dir.mkdir(parents=True, exist_ok=True)
+        turntable_reports = []
         for frame in range(args.turntable):
             camera = gui.orbit_camera(
                 azimuth=float(base_camera.yaw) + math.tau * frame / args.turntable,
                 elevation=float(base_camera.pitch),
                 distance=float(base_camera.distance),
                 target=base_camera.target,
+            )
+            turntable_reports.append(
+                _assess_capture_view(gui, world, camera, args, f"turn{frame}")
             )
             pixels = _capture_view(
                 dart,
@@ -301,6 +305,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             "view": views[0]["name"],
             "path": frame_dir.name,
             "frames": args.turntable,
+            "view_reports": turntable_reports,
         }
         if args.video:
             video_path = out_dir / f"{args.prefix}_turntable.mp4"
