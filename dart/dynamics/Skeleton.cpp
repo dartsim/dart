@@ -3906,7 +3906,9 @@ void Skeleton::updateBiasImpulse(
 {
   // Assertions
   DART_ASSERT(_softBodyNode != nullptr);
-  DART_ASSERT(getNumDofs() > 0);
+  // Unlike the rigid-body overloads, a zero-DoF skeleton is valid here: the
+  // point-mass flesh responds to contact impulses even when the skeleton base
+  // has no generalized freedom (for example a welded soft body).
 
   // This skeleton should contain _bodyNode
   DART_ASSERT(
