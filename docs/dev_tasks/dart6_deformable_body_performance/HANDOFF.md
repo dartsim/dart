@@ -35,8 +35,10 @@ runner    9a7bab76948  (balanced final-head evidence infrastructure)
 correction a122c5ab437 (pair-start thermal gate)
 follow-up ab6e8edede4 (durable native-kernel and main-fix owners)
 contract  b615f5f1f6e (binding native-kernel details)
+evidence  babca41f70d (records the sustained paired-run host blocker)
+merge     52ff108437d (merges current release-6.20 through #3384)
 origin    b25462ca5c0
-base      fa17fad79b9
+base      4ddfe712b359
 PR        https://github.com/dartsim/dart/pull/3382
 ```
 
@@ -80,10 +82,28 @@ Commits `ab6e8edede4` and `b615f5f1f6e` promote and complete the staged
 native-owned soft-kernel contract in the durable design owner and the separate
 `main` zero-DoF fix in PLAN-622.
 
+The base advanced through #3384 after the published head. Merge commit
+`52ff108437d` retains both changelog entries and passes `pixi run check-lint`, a
+292/292 no-cache Release build, the 152/152 Release C++ suite, the 213/213
+Python suite, and a no-cache assert-enabled focused gate covering
+`test_ConstraintSolver`, `test_ContactConstraint`, and `test_MjcfParser` (3/3).
+#3384 resolves the historical non-finite-LCP `test_MjcfParser` failure on the
+composed branch. No GitHub mutation has published that merge yet.
+
+A later attempt at `babca41f70de` also completed its dedicated build and
+checksum gates, but was interrupted after the base moved and before timing. Its
+12 preflight polls all failed load, six also failed thermal, load peaked at
+`30.64`, and one sensor reached `102 C`. It has no timing rows, summary,
+verdict, or `COMPLETE.json` and is explicit non-evidence.
+
 ## Hosted blockers
 
-- Linux coverage/assert failures reproduce on exact base run `29178779447` in
-  `test_MjcfParser` at the same NaN assertion.
+- The published head still shows the historical Linux coverage/assert failures
+  from `test_MjcfParser`; exact-base run `29178779447` reproduced them on old
+  base `fa17fad79b9`. #3384 addresses that path and the locally merged
+  assert-enabled gate is green. New-head hosted CI is pending publication.
+- The published PR is conflicting/dirty until the local target-base merge is
+  approved and pushed.
 - Windows run `29188317164` reached the 300-minute workflow timeout mid-build.
 - The automated mass-matrix review thread remains unresolved until the local
   fix is published.

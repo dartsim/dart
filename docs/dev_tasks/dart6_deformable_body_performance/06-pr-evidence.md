@@ -4,9 +4,9 @@
 
 PR [#3382](https://github.com/dartsim/dart/pull/3382) is open from
 `wp-db-native-soft-fallback` to `release-6.20`. Published head
-`b25462ca5c0` is current with base `fa17fad79b9`; the local nine-commit stack
-through durable-contract correction `b615f5f1f6e` and this task-home refresh
-have not been pushed.
+`b25462ca5c0` is behind current base `4ddfe712b359` and is reported
+conflicting/dirty; the local stack through target-base merge `52ff108437d` and
+this task-home refresh has not been pushed.
 
 Local implementation commit `2ad156e7b82` fixes the current WP-DB.04
 mass-matrix review finding and adds
@@ -33,6 +33,15 @@ Hosted check classification at published head:
   signal.
 - The mass-matrix review thread remains unresolved pending approval to push the
   local fix. A fresh Codex review is also temporarily quota-blocked.
+
+The historical exact-base failure was addressed upstream by #3384's
+non-finite-LCP guard. After merging `4ddfe712b359`, local head `52ff108437d`
+passes `pixi run check-lint`, a no-cache 292/292 Release build, the full 152/152
+Release C++ suite, the full 213/213 Python suite, and a no-cache assert-enabled
+focused gate for `test_ConstraintSolver`, `test_ContactConstraint`, and
+`test_MjcfParser` (3/3). The only merge conflict was `CHANGELOG.md`, whose
+resolution retains both upstream and branch entries. New-head hosted CI remains
+pending an approved push.
 
 No benchmark was rerun for this correction because it changes public
 matrix-query correctness, not the measured `World::step` hot paths or the final
@@ -234,6 +243,14 @@ still encountered external DART workloads and 99-100 C package temperatures.
 The attempt was interrupted with `status: interrupted`, no raw timing rows,
 summary, verdict, or `COMPLETE.json`. It is host-contamination evidence and
 explicit non-winner evidence, not a partial matrix to resume.
+
+A subsequent attempt at `babca41f70de` also completed its dedicated build and
+all detector-equivalence rows before preflight. All 12 recorded polls failed
+the load gate, six failed a thermal gate, 1-minute load reached `30.64`, and an
+observed sensor reached `102 C`. The target base then advanced through #3384,
+making the pre-merge revision stale before publication. The attempt was
+interrupted with `status: interrupted`, no raw timing rows, summary, verdict,
+or `COMPLETE.json`; it is explicit non-evidence and must not be resumed.
 
 Post-merge revalidation after composing the upstream AABB-tree broadphase
 (#3368) with the soft-fallback lane: focused battery 5/5, full suite

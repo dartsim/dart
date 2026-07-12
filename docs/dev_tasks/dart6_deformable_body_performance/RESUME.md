@@ -32,10 +32,16 @@ unresolved. The immediate work is review/CI stewardship and honest closeout.
   contracts`)
 - Latest durable-contract correction: `b615f5f1f6e` (`Complete native
   soft-kernel contract`)
+- Latest recorded host-blocker commit: `babca41f70d` (`Record paired benchmark
+  host blocker`)
+- Latest target-base merge: `52ff108437d` (`Merge remote-tracking branch
+  'origin/release-6.20' into wp-db-native-soft-fallback`)
 - Published head: `origin/wp-db-native-soft-fallback` at `b25462ca5c0`
-- Local state: the implementation and following handoff/durable-owner updates
-  are not published; verify the exact current HEAD and ahead count
-- Target base observed: `origin/release-6.20` at `fa17fad79b9`
+- Local state: the implementation, handoff/durable-owner updates, runner, and
+  target-base merge are not published; this task-home refresh follows merged
+  head `52ff108437d`. Verify the exact current HEAD and ahead count.
+- Target base observed and merged: `origin/release-6.20` at `4ddfe712b359`
+  (#3384)
 - PR: #3382, open, non-draft, milestone `DART 6.20.0`
 - `wp-db-soft-skel-allocation-gates` is fully ancestral to the active branch
   and fully incorporated. Do not resume, merge, or cherry-pick that branch
@@ -93,6 +99,29 @@ Results:
 No performance claim changed, so the final benchmark matrix was not rerun for
 this correctness-only matrix-query fix.
 
+## 2026-07-12 target-base merge verification
+
+`origin/release-6.20` advanced to `4ddfe712b359` through #3384, which guards
+non-finite LCP solutions and fixes the exact assert-only failure previously
+observed in `test_MjcfParser`. The base was merged, not rebased. The only
+conflict was `CHANGELOG.md`; the resolution retains both the upstream
+non-finite-LCP entry and this branch's adaptive soft-contact entry.
+
+Verification on merged head `52ff108437d`:
+
+- `pixi run check-lint`: passed, including C++, CMake, Python, codespell, and
+  AI-command parity checks;
+- no-cache Release build: passed (292/292 build steps);
+- full Release C++ suite: 152/152 passed, including `test_MjcfParser`,
+  `test_SoftDynamics`, and `test_NonFiniteContact`;
+- full Python suite: 213/213 passed; and
+- no-cache assert-enabled (`CMAKE_BUILD_TYPE=None`) focused gate:
+  `test_ConstraintSolver`, `test_ContactConstraint`, and `test_MjcfParser`
+  passed 3/3.
+
+The old exact-base run on `fa17fad79b9` is historical evidence, not a current
+base blocker. New-head hosted CI remains pending an approved push.
+
 ## 2026-07-12 balanced-evidence runner packet
 
 Local commits `9a7bab76948` and `a122c5ab437` provide the bounded replacement
@@ -132,16 +161,28 @@ timing rows, summary, verdict, or `COMPLETE.json`, so the directory is explicit
 non-evidence. The final paired artifact remains an action for a genuinely
 isolated or maintainer-provided quiet host.
 
+A third attempt at `babca41f70de` completed its dedicated build and all
+scene/thread checksum gates, then reached preflight. It recorded 12 polls: all
+12 failed the load gate, six failed a thermal gate, the 1-minute load peaked at
+`30.64`, and an observed sensor peaked at `102 C`. Before timing could begin,
+`origin/release-6.20` advanced through #3384, so this pre-merge revision was no
+longer the publication candidate. The attempt was interrupted with
+`status: interrupted`, no timing rows, summary, verdict, or `COMPLETE.json`; it
+is explicit non-evidence and must not be resumed.
+
 ## Live PR blockers and external evidence
 
-At published head `b25462ca5c0`, GitHub reports #3382 mergeable but blocked:
+At published head `b25462ca5c0`, GitHub reports #3382 conflicting/dirty because
+the target base advanced after that head was published:
 
 - Linux `coverage` and `Asserts enabled (no -DNDEBUG)` fail only in
   `test_MjcfParser`, aborting at
   `BodyNode::addConstraintImpulse()` on a NaN assertion.
-- Exact-base run `29178779447` on `fa17fad79b9` fails the same two jobs in the
-  same test and assertion. Treat these as current base-branch failures, not
-  evidence against the deformable-body changes.
+- Exact-base run `29178779447` on historical base `fa17fad79b9` fails the same
+  two jobs in the same test and assertion. #3384 addresses that non-finite LCP
+  path; the locally merged branch now passes Release and assert-enabled
+  `test_MjcfParser`. Treat the old run as historical base evidence, not a
+  current composed-head failure.
 - Windows Release run `29188317164` was cancelled at the workflow's 300-minute
   limit while still compiling/linking. Its primary error is
   `The operation was canceled.`; the later `EBUSY` cleanup message is
@@ -177,20 +218,23 @@ At published head `b25462ca5c0`, GitHub reports #3382 mergeable but blocked:
 
 1. Obtain explicit maintainer/user approval for the follow-up push and related
    PR mutations.
-2. Immediately before any push, fetch `release-6.20`. If it moved, merge
-   `origin/release-6.20` into the published topic branch (never rebase), resolve
+2. Immediately before any push, fetch `release-6.20`. The branch already merges
+   `4ddfe712b359` at `52ff108437d`; if the base moved again, merge the new
+   `origin/release-6.20` tip into the topic branch (never rebase), resolve
    conflicts, and rerun the relevant gates on the merged state.
 3. Push the complete unpublished stack: review fix `2ad156e7b82`, handoff
    `dbfed2fdd88`, durable owners `574dc2a28cf`, runner `9a7bab76948`, evidence
    refresh `8553203db25`, runner correction `a122c5ab437`, handoff refresh
    `3704865daa9`, durable follow-up promotion `ab6e8edede4`, contract correction
-   `b615f5f1f6e`, and this task-home refresh. Resolve the addressed
+   `b615f5f1f6e`, host-blocker record `babca41f70d`, target-base merge
+   `52ff108437d`, and this task-home refresh. Resolve the addressed
    automated-review thread only if approval covers thread mutation, and request
    a fresh top-level Codex review only if approval covers the PR comment and
    review capacity is available.
-4. Monitor the new head through CI. Do not rerun or weaken the exact-base MJCF
-   failure without explicit approval; keep its base-run evidence attached to
-   any disposition. Treat the Windows timeout as infrastructure until a rerun
+4. Monitor the new head through CI. The old exact-base MJCF failure is resolved
+   locally after #3384; investigate any failure on the new hosted head from its
+   current logs rather than carrying the historical classification forward.
+   Treat the old Windows timeout as infrastructure until a new-head run
    completes with a product failure.
 5. Track the PLAN-622 dual-PR follow-up for `10c6b6055e4`: the same over-strict
    zero-DoF soft point-mass assertion exists on `origin/main`, unlike the
