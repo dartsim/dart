@@ -63,12 +63,14 @@ def _layer_lines(
 
     A fresh ``DebugDrawOptions`` with the static grid/world-frame layers off
     isolates a single per-body layer so ``extract_world_debug_lines`` returns
-    only that layer's lines; the requested tunables are copied from the
-    caller's options so per-layer sizing still applies.
+    only that layer's lines; the requested tunables and the universal
+    ``line_thickness`` are copied from the caller's options so per-layer
+    sizing and hairline-vs-ribbon rendering still apply.
     """
     layer_options = dart.gui.DebugDrawOptions()
     layer_options.draw_grid = False
     layer_options.draw_world_frame = False
+    layer_options.line_thickness = source_options.line_thickness
     for flag in flags:
         setattr(layer_options, flag, True)
     for name in tunables:

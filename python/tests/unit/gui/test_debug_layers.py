@@ -40,6 +40,27 @@ def test_body_frames_layer_emits_three_axes_per_body():
     assert {"box.x", "box.y", "box.z", "ground.x"} <= labels
 
 
+def test_caller_line_thickness_reaches_per_body_layers():
+    # Per-body layers isolate flags on a fresh options object; the caller's
+    # line_thickness must survive that isolation — thickness 0 keeps hairline
+    # captures, a custom value renders PR-scale ribbons.
+    world = _settled_world()
+
+    hairline = dart.gui.DebugDrawOptions()
+    hairline.line_thickness = 0.0
+    scene = dart.gui.debug_scene_for_world(
+        world, layers=("body_frames",), options=hairline
+    )
+    assert all(line.thickness == 0.0 for line in scene.lines)
+
+    thick = dart.gui.DebugDrawOptions()
+    thick.line_thickness = 0.02
+    scene = dart.gui.debug_scene_for_world(
+        world, layers=("body_frames",), options=thick
+    )
+    assert all(line.thickness == pytest.approx(0.02) for line in scene.lines)
+
+
 def test_contacts_layer_marks_contact_points_and_normals():
     world = _settled_world()
     contacts = world.collide()
