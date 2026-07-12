@@ -76,7 +76,7 @@ reversible.
    reordering; thread-count determinism and dart==native equivalence stayed
    bit-exact, so the drift is accepted within task tolerance.
 
-## Deferral list (needs maintainer sign-off at PR time)
+## Deferral list (maintainer-approved 2026-07-11)
 
 Tracked in `02-paper-parity-matrix.md` rows whose acceptance requires
 infrastructure beyond the DART 6 point-mass soft-body model:
@@ -89,4 +89,7 @@ infrastructure beyond the DART 6 point-mass soft-body model:
   scenes stand in for the contact/performance claims.
 
 Each deferred row keeps its matrix entry with current evidence and the reason
-it is deferred, so the release branch records the gap honestly.
+it is deferred, so the release branch records the gap honestly. The
+maintainer approved this list as recorded on 2026-07-11; representative
+reduced scenes (soft_worm, adaptive_soft_contact) stand in for the deferred
+rows' contact and performance claims.
