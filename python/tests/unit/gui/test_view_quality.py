@@ -57,6 +57,17 @@ def test_occlusion_detected_and_reselection_avoids_it():
         assert choice.report.score > report.score
 
 
+def test_auto_selection_prefers_acceptable_views():
+    # Ranking partitions on acceptability before score: a high-scoring but
+    # failing candidate (e.g. marginally occluded) must never shadow a usable
+    # view and make the downstream capture gate abort needlessly.
+    world = _world_with_marker()
+    _add_wall(world)
+    choices = dart.gui.select_viewpoints(world, (320, 240), focus="marker", count=2)
+    assert len(choices) == 2
+    assert all(choice.report.acceptable for choice in choices)
+
+
 def test_cropped_and_distance_issues_detected():
     world = _world_with_marker()
     far = dart.gui.orbit_camera(

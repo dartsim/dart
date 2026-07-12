@@ -307,7 +307,16 @@ def select_viewpoints(
                 )
                 candidates.append(ViewpointChoice(camera, report, reason))
 
-    candidates.sort(key=lambda choice: (-choice.report.score, choice.reason))
+    # Acceptable views rank ahead of any failing view regardless of score:
+    # a high-scoring-but-cropped candidate must not shadow a usable one and
+    # make the downstream capture gate abort needlessly.
+    candidates.sort(
+        key=lambda choice: (
+            not choice.report.acceptable,
+            -choice.report.score,
+            choice.reason,
+        )
+    )
     selected: list[ViewpointChoice] = []
     for choice in candidates:
         if len(selected) >= max(1, int(count)):
