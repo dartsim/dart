@@ -1,5 +1,41 @@
 # WP-DB PR evidence packet
 
+## 2026-07-12 PR stabilization evidence
+
+PR [#3382](https://github.com/dartsim/dart/pull/3382) is open from
+`wp-db-native-soft-fallback` to `release-6.20`. Published head
+`b25462ca5c0` is current with base `fa17fad79b9`; local review-fix commit
+`2ad156e7b82` and the following handoff/docs update have not been pushed.
+
+The local commit fixes the current WP-DB.04 mass-matrix review finding and adds
+`SoftDynamicsTest.pointMassAccelerationsDoNotAffectMassMatrices`. The regression
+failed before the production correction, then passed afterward. Current local
+gates:
+
+```text
+pixi run lint                                      PASS
+DART_DISABLE_COMPILER_CACHE=ON pixi run build     PASS
+DART_DISABLE_COMPILER_CACHE=ON pixi run test      PASS (152/152)
+test_SoftDynamics                                 PASS (16/16)
+INTEGRATION_StepAllocation                        PASS
+independent post-fix reviews                      CLEAN x2
+```
+
+Hosted check classification at published head:
+
+- Linux coverage and assert-enabled jobs fail only in `test_MjcfParser` at
+  `BodyNode::addConstraintImpulse()`; exact-base run `29178779447` fails the
+  same jobs, test, and assertion.
+- Windows run `29188317164` was cancelled at the workflow's 300-minute limit
+  while compiling/linking; `The operation was canceled.` is the primary
+  signal.
+- The mass-matrix review thread remains unresolved pending approval to push the
+  local fix. A fresh Codex review is also temporarily quota-blocked.
+
+No benchmark was rerun for this correction because it changes public
+matrix-query correctness, not the measured `World::step` hot paths or the final
+performance claim.
+
 ## 2026-07-11 final matrix and winner-gate resolution
 
 Artifact:
@@ -50,6 +86,15 @@ with win counts split evenly - inside the "matches" tolerance. The
 block-ordered matrix is the artifact; the winner criterion is met on the
 interleaved evidence. The native-owned kernel port remains the documented
 follow-up if a future exclusive-idle matrix disagrees.
+
+Evidence limitation: the interleaved A/B values were recorded in this task
+doc and commit history, but their exact command/output was not retained in a
+durable artifact directory. The machine-readable final matrix therefore still
+reports evaluator `FAIL` for the expected-fastest component. Before retiring
+this task or presenting that override as independently reproducible, either
+capture a fresh interleaved artifact with its command and raw rows or obtain an
+explicit maintainer acceptance of the documented manual disposition. Do not
+silently describe the generated `summary.md` itself as passing.
 
 Post-merge revalidation after composing the upstream AABB-tree broadphase
 (#3368) with the soft-fallback lane: focused battery 5/5, full suite

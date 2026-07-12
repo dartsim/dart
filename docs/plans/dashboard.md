@@ -39,9 +39,12 @@ Priority order is document order. Active implementation handoff remains in
 - Status: Active
 - Horizon: Next
 - Dimension: Research feature parity, CPU performance, and compatibility.
-- Next step: Continue the open WP-DB stability, native soft-collision,
-  contiguous point-mass storage, SIMD, and paper-parity evidence gaps without
-  importing DART 7 clean-break APIs as the implementation target.
+- Next step: Publish the validated mass-matrix review fix after approval,
+  shepherd #3382 through current review/CI blockers, and promote the unmet
+  WP-DB.07/WP-DB.08 and paper-matrix contracts to durable follow-up owners.
+  Resolve the competitive-envelope and deferral scope before retiring the
+  temporary task surface; do not widen PR stabilization to implement those
+  follow-ups implicitly.
 - Gate: `pixi run lint`; focused soft-body integration tests; headless
   soft-body benchmarks; allocation gates and Gazebo coverage when the touched
   surface affects collision, constraints, or downstream behavior.

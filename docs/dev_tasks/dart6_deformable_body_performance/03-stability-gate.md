@@ -1,7 +1,8 @@
 # WP-DB.02 stability gate
 
-Captured on 2026-07-07 from `release-6.20` plus local WP-DB.01/WP-DB.02
-edits on branch `wp-db-soft-skel-allocation-gates`.
+Initially captured on 2026-07-07 from `release-6.20` plus local
+WP-DB.01/WP-DB.02 edits on branch `wp-db-soft-skel-allocation-gates`.
+Updated on 2026-07-12 from the reunified PR #3382 branch.
 
 ## Command
 
@@ -61,14 +62,37 @@ as `<soft_shape>` with explicit `<frags>3 3 3</frags>`. This prevents
 `SkelParser` from silently treating one link as rigid or throwing when loading
 the converted soft box.
 
+## Extended release-slice gates
+
+The final #3382 test surface extends the original finite-state/thread gate with:
+
+- `SoftDynamicsTest.softMechanicalEnergyGrowthIsBounded`, covering both vertex
+  and edge springs;
+- `SoftDynamicsTest.restingSoftContactForceAndCenterOfPressureAreSmooth`, under
+  FCL and DART collision with adaptive activation both off and on. The
+  cross-platform gate uses 5th/95th force percentiles, preserves a raw
+  never-lost-support minimum, and bounds isolated spikes explicitly;
+- `SoftDynamicsTest.softContactForcesAreRobustToLcpInitialPoint`, the available
+  DART 6 reset/rebuild proxy because there is no public LCP initial-guess hook;
+- deterministic 2000-step headless checksum rows at 1 and 16 threads, recorded
+  in `06-pr-evidence.md`;
+- the WP-DB.04 matrix/vector and retained-point-acceleration independence gates
+  in `07-equation-correctness.md`.
+
+On local review-fix commit `2ad156e7b82`, the complete
+`test_SoftDynamics` executable passed 16/16 tests and the full C++ suite passed
+152/152.
+
 ## Remaining gaps
 
 - Equation matrix/vector coverage now lives in
   `07-equation-correctness.md`, including representative rigid-only,
   soft-only, and mixed rigid/soft worlds. This stability gate remains focused
   on finite state and deterministic threaded final-state behavior.
-- The gate does not yet check energy drift, contact force variance, or CoP
-  smoothness. It also does not pin historical golden states across revisions.
+- The gate now checks bounded mechanical-energy growth and resting-contact
+  force/CoP behavior. It does not pin a repository-wide historical golden state
+  across revisions; long-run thread/rerun determinism is the durable text
+  evidence used for this release slice.
 - Multi-core coverage currently proves finite state under a threaded world
   setting; it does not prove speedup. WP-DB.07 owns scaling.
 - SIMD is not exercised by this gate. WP-DB.06 owns `dart/simd/` profiling and
