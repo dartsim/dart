@@ -117,6 +117,6 @@ rows' contact and performance claims.
 
 This approval does not explicitly cover the Jain/Liu flexible-rigid-foot versus
 deformable-foot comparison. Keep that row open unless a maintainer expands the
-deferral list or a representative comparison lands. The approved decisions
-must also move to a durable design/roadmap owner before this temporary task
-folder is retired.
+deferral list or a representative comparison lands. The approved decisions are
+now also preserved in `docs/design/dart6_deformable_body.md`, while PLAN-622
+owns the remaining open decision.

@@ -40,11 +40,14 @@ Priority order is document order. Active implementation handoff remains in
 - Horizon: Next
 - Dimension: Research feature parity, CPU performance, and compatibility.
 - Next step: Publish the validated mass-matrix review fix after approval,
-  shepherd #3382 through current review/CI blockers, and promote the unmet
-  WP-DB.07/WP-DB.08 and paper-matrix contracts to durable follow-up owners.
-  Resolve the competitive-envelope and deferral scope before retiring the
-  temporary task surface; do not widen PR stabilization to implement those
-  follow-ups implicitly.
+  shepherd #3382 through current review/CI blockers, and capture a balanced
+  raw native-vs-DART timing artifact or obtain explicit acceptance of the
+  current manual disposition. Decide the proposed competitive envelope and
+  whether to implement or defer the still-open four-link flexible-rigid-foot
+  versus deformable-foot comparison. After stabilization, retain WP-DB.07
+  larger-workload scaling and WP-DB.08 native-owned coverage/default work as
+  explicit follow-ups rather than widening #3382 implicitly.
 - Gate: `pixi run lint`; focused soft-body integration tests; headless
-  soft-body benchmarks; allocation gates and Gazebo coverage when the touched
-  surface affects collision, constraints, or downstream behavior.
+  soft-body benchmarks with exact commands/raw rows; one-thread and host-capped
+  multi-thread determinism/scaling evidence; allocation gates and Gazebo
+  coverage before any collision, constraint, or backend-default change.

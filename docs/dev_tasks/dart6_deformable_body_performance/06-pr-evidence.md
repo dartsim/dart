@@ -36,7 +36,7 @@ No benchmark was rerun for this correction because it changes public
 matrix-query correctness, not the measured `World::step` hot paths or the final
 performance claim.
 
-## 2026-07-11 final matrix and winner-gate resolution
+## 2026-07-11 final matrix and unresolved winner gate
 
 Artifact:
 `.benchmark_results/wp-db-final-6cfa4fa-parent-c743a45-base-72ebe16/summary.md`
@@ -75,26 +75,111 @@ WP-DB.07 per-scene multi-thread record: scaling on these small scenes stays
 flat, as documented since the baseline evidence, while thread determinism is
 bit-exact everywhere.
 
-Winner-gate resolution: the evaluator flagged direct `native` trailing
+Winner-gate analysis: the evaluator flagged direct `native` trailing
 `dart` beyond the 2% tolerance on several rows, but the three matrix-style
 measurements of that delta disagree irreconcilably (+6%, -3%, +19% across
-runs) while two better-conditioned methods agree on a tie: per-scope
+runs). Supporting evidence suggests a tie on two single-thread rows: per-scope
 profiler attribution shows no structural native overhead
-(`09-native-soft-kernel-port-spec.md`, stage 0), and tightly interleaved
-A/B runs give medians of -1.0% (`soft_cubes`) and +0.9% (`soft_bodies`)
-with win counts split evenly - inside the "matches" tolerance. The
-block-ordered matrix is the artifact; the winner criterion is met on the
-interleaved evidence. The native-owned kernel port remains the documented
-follow-up if a future exclusive-idle matrix disagrees.
+(`09-native-soft-kernel-port-spec.md`, stage 0), while manual A/B runs give
+median direct-native deltas of -1.0% for `soft_cubes/1` and +0.9% for
+`soft_bodies/1`. Direct native won 7/12 `soft_cubes` pairs and 6/12
+`soft_bodies` pairs. This evidence does not cover the full five-row failure,
+so the expected-fastest winner criterion remains unresolved. The native-owned
+kernel port remains the documented follow-up if a balanced final-head artifact
+does not establish the tie.
 
 Evidence limitation: the interleaved A/B values were recorded in this task
-doc and commit history, but their exact command/output was not retained in a
-durable artifact directory. The machine-readable final matrix therefore still
-reports evaluator `FAIL` for the expected-fastest component. Before retiring
-this task or presenting that override as independently reproducible, either
-capture a fresh interleaved artifact with its command and raw rows or obtain an
-explicit maintainer acceptance of the documented manual disposition. Do not
-silently describe the generated `summary.md` itself as passing.
+doc and commit history. Their exact method and scratch output were later
+recovered, but they were not captured as a revision-pinned durable artifact and
+do not cover the full failed gate. The machine-readable final matrix therefore
+still reports evaluator `FAIL` for the expected-fastest component. Before
+retiring this task or presenting that override as independently reproducible,
+either capture a fresh balanced artifact with its command and raw rows or
+obtain explicit maintainer acceptance of the documented manual disposition.
+Do not silently describe the generated `summary.md` itself as passing.
+
+The original full-matrix invocation was recovered from session history:
+
+```bash
+pixi run python scripts/compare_soft_body_performance.py \
+  --current 3340e1d3df2 \
+  --parent c743a451e96 \
+  --base origin/release-6.20 \
+  --detectors fcl,dart,native,bullet,ode \
+  --threads 1,16 \
+  --benchmark-min-time 0.1s \
+  --benchmark-repetitions 7 \
+  --benchmark-cycles 2 \
+  --benchmark-run-order detector \
+  --correctness-scenes soft_cubes,soft_bodies \
+  --correctness-steps 200 \
+  --wait-for-local-dart-builds \
+  --idle-timeout 172800 \
+  --idle-max-load-1m 4 \
+  --idle-cooldown 5 \
+  --output-dir \
+    .benchmark_results/wp-db-final-6cfa4fa-parent-c743a45-base-72ebe16
+```
+
+The artifact resolved the mutable base ref to `72ebe164e8c`. Its 30 raw JSON
+files and logs reproduce the generated failure, but not the manual override.
+`--benchmark-run-order detector` interleaves revisions for each detector; it
+does not alternate `dart` and direct `native`. The two cycles also show large
+block drift (for example, current `dart` `soft_cubes/1` moved from 6.267 ms to
+3.693 ms, while direct `native` moved from 7.987 ms to 3.854 ms).
+
+The previously unretained scratch rows were also recovered locally. Their exact
+method ran 12 `soft_body_headless` pairs for each of `soft_cubes` and
+`soft_bodies` at one thread and 200 steps, always direct `native` first and
+`dart` second; each raw row is `native_elapsed_ms dart_elapsed_ms`. The
+recovered command was:
+
+```bash
+sp=/tmp/claude-1000/-home-js-dev-dartsim-dart-task-2/\
+4ff6f7a5-0665-41f2-a50c-ddd283c9bb27/scratchpad
+for scene in soft_cubes soft_bodies; do
+  for i in $(seq 1 12); do
+    n=$(COLLISION_DETECTOR=native THREADS=1 \
+      ./build/default/cpp/Release/tests/benchmark/integration/\
+soft_body_headless "$scene" 200 200 2>/dev/null \
+      | grep elapsed_ms | awk '{print $2}')
+    d=$(COLLISION_DETECTOR=dart THREADS=1 \
+      ./build/default/cpp/Release/tests/benchmark/integration/\
+soft_body_headless "$scene" 200 200 2>/dev/null \
+      | grep elapsed_ms | awk '{print $2}')
+    echo "$n $d"
+  done | tee "$sp/ab-$scene.txt"
+done
+```
+
+Those rows remain supporting context only because they:
+
+- use wall elapsed time rather than the evaluator's Google Benchmark CPU time;
+- use a mutable default build rather than a recorded revision-specific build;
+- omit commit and host metadata;
+- do not alternate detector order;
+- cover only two scenes at one thread, while five failed matrix rows include
+  16-thread and `soft_open_chain` cases; and
+- have wide per-pair spreads despite near-tied medians.
+
+No current repository runner emits the required paired artifact. Before the
+replacement run, add or review a bounded runner that:
+
+- pins the final implementation SHA and uses a dedicated Release/profile build;
+- covers all four matrix scenes at threads 1 and 16;
+- performs one unrecorded warmup followed by 20 measured pairs per row;
+- alternates which of `dart` and direct `native` runs first in each pair;
+- uses Google Benchmark CPU time with `--benchmark_min_time=0.5s` and one
+  repetition per invocation, with a 10-second cooldown between pairs;
+- retains one JSON and log per backend/pair plus revision, command, affinity,
+  CPU-scaling, thermal, and load metadata; and
+- reports the median paired delta `(native / dart) - 1` for every row, applying
+  the existing 2% match tolerance independently to all eight rows.
+
+The artifact passes only if every row meets that rule. Run it only after the
+machine has remained idle and thermally stable; the 2026-07-12 continuation
+observed 1-minute load above 34 with sibling DART builds active and correctly
+did not benchmark.
 
 Post-merge revalidation after composing the upstream AABB-tree broadphase
 (#3368) with the soft-fallback lane: focused battery 5/5, full suite

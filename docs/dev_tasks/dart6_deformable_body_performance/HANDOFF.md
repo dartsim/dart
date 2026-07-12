@@ -30,6 +30,7 @@ failures with failures already present on `release-6.20`.
 worktree  /home/js/dev/dartsim/dart/task_2
 branch    wp-db-native-soft-fallback
 impl      2ad156e7b82  (followed locally by this handoff/docs update)
+handoff   dbfed2fdd88  (followed locally by durable-owner promotion)
 origin    b25462ca5c0
 base      fa17fad79b9
 PR        https://github.com/dartsim/dart/pull/3382
@@ -65,8 +66,10 @@ state.
 - The automated mass-matrix review thread remains unresolved until the local
   fix is published.
 - A fresh Codex review is temporarily quota-blocked; avoid duplicate triggers.
-- The original WP-DB.07/WP-DB.08 contracts and several paper-matrix rows are
-  not complete; promote or explicitly disposition them before task retirement.
+- The original WP-DB.07/WP-DB.08 contracts are not complete, and the four-link
+  flexible-rigid-foot versus deformable-foot row is not covered by the approved
+  deferral. Their durable owners exist, but the open work or disposition must
+  remain explicit before task retirement.
 - The formal competitive-implementation envelope still needs maintainer
   sign-off.
 

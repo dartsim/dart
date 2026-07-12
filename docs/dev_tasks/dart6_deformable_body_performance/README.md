@@ -14,17 +14,18 @@ published real-time or near-real-time targets from the reference papers on CPU.
 The completing release slice is open as
 [#3382](https://github.com/dartsim/dart/pull/3382), from
 `wp-db-native-soft-fallback` into `release-6.20`. The implementation,
-representative demos, final same-host matrix, and the recorded subset of
-maintainer-approved paper deferrals are published. Current work is review/CI
-stabilization and closeout decisions, not another speculative optimization
-lane inside #3382.
+representative demos, and recorded subset of maintainer-approved paper
+deferrals are published; the final same-host matrix and its evaluator
+limitation are recorded locally. Current work is review/CI stabilization and
+closeout decisions, not another speculative optimization lane inside #3382.
 
-Local commit `2ad156e7b82` is one additive commit ahead of the published PR
-head. It closes the current WP-DB.04 review finding by keeping retained
-point-mass accelerations out of public mass-matrix columns and adds a regression
-for mass and augmented-mass state independence. The fix has a clean full build,
-152/152 C++ tests, and two clean independent reviews; it still needs approval
-to push. Exact takeover state is in `RESUME.md`.
+Local implementation commit `2ad156e7b82` and the following handoff/durable
+owner updates are not published. The implementation commit closes the current
+WP-DB.04 review finding by keeping retained point-mass accelerations out of
+public mass-matrix columns and adds a regression for mass and augmented-mass
+state independence. The fix has a clean full build, 152/152 C++ tests, and two
+clean independent reviews; it still needs approval to push. Exact takeover
+state is in `RESUME.md`.
 
 ## Reference scope
 
@@ -184,13 +185,13 @@ below.
 | --- | --- | --- |
 | WP-DB.01 baseline harness | Complete. | Headless benchmark rows cover representative soft scenes, point-mass/body counts, and thread settings (`01-baseline-evidence.md`). |
 | WP-DB.02 stability gate | Complete for the release slice. | Finite-state, thread-determinism, energy, contact-force/CoP smoothness, LCP robustness, and equation gates run in `test_SoftDynamics` (`03-stability-gate.md`, `07-equation-correctness.md`). |
-| WP-DB.03 paper parity matrix | Ledger complete; parity closeout still conditional. | Every paper row has an owner and gate, but rows without landed evidence need a maintainer-approved deferral in a durable owner. The recorded approval covers the named volumetric-FEM, SIMBICON, and hand-scene subset; do not infer coverage for other rows (`02-paper-parity-matrix.md`, `decisions.md`). |
+| WP-DB.03 paper parity matrix | Ledger complete; parity closeout still conditional. | Static paper targets now live in `docs/background/deformable_body_paper_targets.md`, and approved scope decisions live in `docs/design/dart6_deformable_body.md`. The four-link flexible-rigid-foot versus deformable-foot row remains neither implemented nor deferred (`02-paper-parity-matrix.md`, `decisions.md`). |
 | WP-DB.04 coupled equation correctness | Local review fix complete; publication pending. | Matrix/vector projection and inverse-identity gates plus the new retained-acceleration independence regression pass on `2ad156e7b82` (`07-equation-correctness.md`). |
 | WP-DB.05 adaptive contact activation | Complete. | Opt-in ABI-safe activation is default-off bit-identical, deterministic when enabled, allocation-gated, and covered by two recorded review rounds (`08-adaptive-contact-activation.md`). |
 | WP-DB.06 CPU data layout and SIMD | #3382 disposition complete; follow-up research remains. | Kept cache/data-access slices produce the measured win; retained SoA mirrors and contiguous-object prototypes were rejected or parked because measurements/design gates did not justify keeping them. No unsupported SIMD speedup is claimed (`04-data-layout-and-memory-hardening.md`). |
-| WP-DB.07 multi-core scaling | Original acceptance unmet; promote as an open follow-up. | Pair-level work and 1/4/16-thread determinism landed, but the tracked small scenes are flat or slower at 16 threads. The original `threads=16` improvement contract therefore remains open and needs larger workloads or a maintainer-approved negative disposition in a durable roadmap owner (`06-pr-evidence.md`). |
-| WP-DB.08 native collision deformables | #3382 landing slice implemented; original acceptance unmet. | Primitive/cached soft lanes, face-interior coverage, allocation gates, and determinism landed. Native is not yet the preferred/default backend, required coverage remains in `05-native-collision-deformable-lane.md`, and the only direct-native/DART tie override is not independently reproducible. Promote the native-owned/default/performance contract as an open follow-up. |
-| WP-DB.09 flagship demos | Representative demos complete; parity closeout conditional. | `adaptive_soft_contact` and `soft_worm` are runnable, deterministic, and visually captured. Paper-matrix rows outside the explicitly approved deferral subset remain open until implemented or durably deferred (`02-paper-parity-matrix.md`, `decisions.md`). |
+| WP-DB.07 multi-core scaling | Original acceptance unmet; retained as an open PLAN-622 follow-up. | Pair-level work and 1/4/16-thread determinism landed, but the tracked small scenes are flat or slower at 16 threads. The original `threads=16` improvement contract therefore remains open and needs a larger workload or a maintainer-approved negative disposition (`06-pr-evidence.md`, `docs/plans/dashboard.md`). |
+| WP-DB.08 native collision deformables | #3382 landing slice implemented; original acceptance unmet. | Primitive/cached soft lanes, face-interior coverage, allocation gates, and determinism landed. Native is not yet the preferred/default backend, required coverage remains in `05-native-collision-deformable-lane.md`, and the only direct-native/DART tie override is not independently reproducible. The durable architecture and pre-default gates now live in `docs/design/dart6_deformable_body.md` and PLAN-622. |
+| WP-DB.09 flagship demos | Representative demos complete; parity closeout conditional. | `adaptive_soft_contact` and `soft_worm` are runnable, deterministic, and visually captured. The four-link flexible-rigid-foot versus deformable-foot comparison remains open until implemented or explicitly deferred (`02-paper-parity-matrix.md`, `decisions.md`). |
 
 The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
 
@@ -227,6 +228,10 @@ The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
 - The zero-DoF soft point-mass assertion fix in `10c6b6055e4` also applies to
   `main` and requires the dual-PR follow-up. The current mass-matrix review fix
   is release-only because DART 7 still has point-mass mass aggregation disabled.
-- Before retiring this temporary task folder, promote the unresolved WP-DB.03,
-  WP-DB.07, WP-DB.08, and WP-DB.09 contracts to durable roadmap/design owners,
-  obtain the remaining scope decisions, and update `docs/plans/dashboard.md`.
+- Durable promotion has started in
+  `docs/background/deformable_body_paper_targets.md`,
+  `docs/design/dart6_deformable_body.md`, and PLAN-622. Before retiring this
+  temporary task folder, publish and stabilize #3382, obtain the remaining
+  competitive-envelope and flexible-foot decisions, preserve WP-DB.07 and
+  WP-DB.08 as explicit follow-ups, and verify that no required fact remains
+  owned only by this folder.
