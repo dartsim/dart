@@ -1,11 +1,14 @@
 #include "gui/offscreen.hpp"
 
+#include "dart/gui/debug.hpp"
 #include "dart/gui/offscreen.hpp"
 #include "dart/gui/viewer.hpp"
 
 #include <Python.h>
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
+#include <nanobind/ndarray.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
@@ -289,22 +292,95 @@ void defGuiOffscreen(nb::module_& m)
           "render",
           [](OffscreenRenderer& renderer,
              const std::vector<RenderableDescriptor>& descriptors,
-             const OrbitCamera& camera) {
+             const OrbitCamera& camera,
+             const std::optional<dart::gui::DebugScene>& debug) {
             nb::gil_scoped_release release;
+            if (debug.has_value()) {
+              return renderer.render(descriptors, camera, *debug);
+            }
             return renderer.render(descriptors, camera);
           },
           nb::arg("descriptors"),
-          nb::arg("camera"))
+          nb::arg("camera"),
+          nb::arg("debug") = nb::none())
       .def(
           "render_descriptors",
           [](OffscreenRenderer& renderer,
              const std::vector<RenderableDescriptor>& descriptors,
-             const OrbitCamera& camera) {
+             const OrbitCamera& camera,
+             const std::optional<dart::gui::DebugScene>& debug) {
             nb::gil_scoped_release release;
+            if (debug.has_value()) {
+              return renderer.render(descriptors, camera, *debug);
+            }
             return renderer.render(descriptors, camera);
           },
           nb::arg("descriptors"),
-          nb::arg("camera"));
+          nb::arg("camera"),
+          nb::arg("debug") = nb::none());
+
+  m.def(
+      "composite_debug_labels",
+      [](RenderedImage& image,
+         const OrbitCamera& camera,
+         const std::vector<dart::gui::DebugLabelDescriptor>& labels,
+         int scale,
+         const dart::gui::ProjectionOptions& options,
+         double fontSize,
+         bool backdrop) {
+        dart::gui::compositeDebugLabels(
+            image, camera, labels, scale, options, fontSize, backdrop);
+      },
+      nb::arg("image"),
+      nb::arg("camera"),
+      nb::arg("labels"),
+      nb::arg("scale") = 2,
+      nb::arg("options") = dart::gui::ProjectionOptions{},
+      nb::arg("font_size") = 0.0,
+      nb::arg("backdrop") = true);
+
+  // Writes the built-in debug-label font directly into an (H, W, >=3) uint8
+  // RGB/RGBA numpy array in place, so the Python label compositor reuses the
+  // core glyph table instead of shipping a second copy. `noconvert` is
+  // essential: without it nanobind would silently convert a non-uint8 or
+  // non-contiguous array into a temporary copy and the draw would be lost.
+  m.def(
+      "draw_debug_text",
+      [](nb::ndarray<std::uint8_t, nb::ndim<3>, nb::c_contig, nb::device::cpu>
+             pixels,
+         const std::string& text,
+         int originX,
+         int originY,
+         const Eigen::Vector4d& rgba,
+         int scale,
+         double fontSize,
+         bool backdrop) {
+        if (pixels.shape(2) < 3) {
+          throw std::invalid_argument(
+              "draw_debug_text needs an (H, W, >=3) RGB/RGBA array; got "
+              + std::to_string(pixels.shape(2)) + " channel(s)");
+        }
+        dart::gui::drawDebugLabelText(
+            pixels.data(),
+            static_cast<int>(pixels.shape(1)),
+            static_cast<int>(pixels.shape(0)),
+            static_cast<int>(pixels.shape(2)),
+            text,
+            originX,
+            originY,
+            rgba,
+            scale,
+            fontSize,
+            backdrop);
+      },
+      nb::arg("pixels").noconvert(),
+      nb::arg("text"),
+      nb::arg("origin_x"),
+      nb::arg("origin_y"),
+      nb::arg("rgba"),
+      nb::arg("scale") = 2,
+      nb::arg("font_size") = 0.0,
+      nb::arg("backdrop") = false);
 }
 
 } // namespace dart::python_nb

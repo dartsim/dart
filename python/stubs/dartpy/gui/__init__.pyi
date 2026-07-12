@@ -2,6 +2,7 @@ from __future__ import annotations
 
 __all__: list[str] = [
     "ActiveRenderableState",
+    "DEBUG_LAYERS",
     "DebugDrawOptions",
     "DebugLabelDescriptor",
     "DebugLineDescriptor",
@@ -32,16 +33,32 @@ __all__: list[str] = [
     "RenderedImage",
     "RunOptions",
     "ShapeKind",
+    "TrajectoryTracker",
+    "ViewQualityReport",
+    "ViewReport",
     "ViewerLifecycleState",
+    "ViewpointChoice",
     "WorldRenderBridge",
     "add_orbit_camera_scroll",
+    "assess_view",
+    "assess_view_quality",
+    "body_labels",
     "camera_eye",
+    "composite_debug_labels",
+    "composite_labels",
     "compute_axis_drag_translation",
     "compute_camera_relative_nudge",
     "compute_plane_drag_translation",
+    "contact_debug_lines",
+    "debug_scene_for_world",
     "describe_shape",
+    "draw_debug_text",
+    "draw_text",
     "extract_contact_debug_lines",
     "extract_debug_lines",
+    "extract_world_debug_lines",
+    "frame_body",
+    "frame_region",
     "intersect_plane",
     "intersect_renderable",
     "is_docking_available",
@@ -54,6 +71,7 @@ __all__: list[str] = [
     "make_orbit_camera_basis",
     "make_perspective_pick_ray",
     "make_perspective_projection",
+    "make_polyline_debug_lines",
     "make_selection_debug_lines",
     "make_support_polygon_debug_lines",
     "mark_frame_rendered",
@@ -64,13 +82,17 @@ __all__: list[str] = [
     "orbit_camera",
     "pick_nearest_renderable",
     "plan_renderable_set_update",
+    "project_points",
+    "project_to_pixels",
     "render",
+    "render_annotated",
     "request_scene_replay",
     "request_scene_switch",
     "request_single_step",
     "reset_orbit_camera_tracking",
     "run_application",
     "run_demos",
+    "select_viewpoints",
     "should_advance_simulation",
     "should_capture_frame_output",
     "should_request_screenshot",
@@ -92,6 +114,7 @@ from typing import Annotated, overload
 import dartpy.collision
 import dartpy.dynamics
 import dartpy.math
+import dartpy.simulation
 import numpy
 from dartpy._world_render_bridge import DescriptorRenderScene as DescriptorRenderScene
 from dartpy._world_render_bridge import WorldRenderBridge as WorldRenderBridge
@@ -582,10 +605,16 @@ class OffscreenRenderer:
         high_fidelity: bool = ...,
     ) -> None: ...
     def render(
-        self, descriptors: Sequence[RenderableDescriptor], camera: OrbitCamera
+        self,
+        descriptors: Sequence[RenderableDescriptor],
+        camera: OrbitCamera,
+        debug: DebugScene | None = ...,
     ) -> RenderedImage: ...
     def render_descriptors(
-        self, descriptors: Sequence[RenderableDescriptor], camera: OrbitCamera
+        self,
+        descriptors: Sequence[RenderableDescriptor],
+        camera: OrbitCamera,
+        debug: DebugScene | None = ...,
     ) -> RenderedImage: ...
 
 class RenderableSetUpdatePlan:
@@ -978,6 +1007,22 @@ class PickHit:
         self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order="C")], /
     ) -> None: ...
 
+class ViewQualityReport:
+    @property
+    def corner_coverage(self) -> float: ...
+    @property
+    def subject_fraction(self) -> float: ...
+    @property
+    def center_visible(self) -> bool: ...
+    @property
+    def occlusion_fraction(self) -> float: ...
+    @property
+    def ambiguity_iou(self) -> float: ...
+    @property
+    def issues(self) -> list[str]: ...
+    @property
+    def score(self) -> float: ...
+
 class DebugLineDescriptor:
     def __init__(self) -> None: ...
     @property
@@ -1216,6 +1261,10 @@ class DebugDrawOptions:
     def velocity_max_length(self) -> float: ...
     @velocity_max_length.setter
     def velocity_max_length(self, arg: float, /) -> None: ...
+    @property
+    def line_thickness(self) -> float: ...
+    @line_thickness.setter
+    def line_thickness(self, arg: float, /) -> None: ...
 
 def describe_shape(shape: dartpy.dynamics.Shape) -> GeometryDescriptor | None: ...
 @overload
@@ -1296,8 +1345,149 @@ def write_rgba_ppm(
     origin_bottom_left: bool = ...,
 ) -> None: ...
 def render(
-    world: object, camera: OrbitCamera | None = ..., size: tuple[int, int] = ...
+    world: object,
+    camera: OrbitCamera | None = ...,
+    size: tuple[int, int] = ...,
+    *,
+    debug: DebugScene | Sequence[str] | None = ...,
 ) -> RenderedImage: ...
+def render_annotated(
+    world: object,
+    camera: OrbitCamera | None = ...,
+    size: tuple[int, int] = ...,
+    *,
+    debug: DebugScene | Sequence[str] | None = ...,
+    label_scale: int = ...,
+) -> NDArray[numpy.uint8]: ...
+
+DEBUG_LAYERS: tuple[str, ...]
+
+class TrajectoryTracker:
+    def __init__(
+        self,
+        world: object,
+        bodies: Sequence[str] | None = ...,
+        max_samples: int = ...,
+    ) -> None: ...
+    def sample(self) -> None: ...
+    @property
+    def history(self) -> dict[str, list[NDArray[numpy.float64]]]: ...
+    def debug_lines(self) -> list[DebugLineDescriptor]: ...
+
+def debug_scene_for_world(
+    world: object,
+    options: DebugDrawOptions | None = ...,
+    *,
+    layers: Sequence[str] = ...,
+    contacts: Sequence[object] | None = ...,
+    trajectories: TrajectoryTracker | dict[str, Sequence[object]] | None = ...,
+    extra_lines: Sequence[DebugLineDescriptor] | None = ...,
+    extra_labels: Sequence[DebugLabelDescriptor] | None = ...,
+) -> DebugScene: ...
+def contact_debug_lines(
+    contacts: Sequence[object], options: DebugDrawOptions | None = ...
+) -> list[DebugLineDescriptor]: ...
+def body_labels(
+    world: object, *, offset: Sequence[float] = ...
+) -> list[DebugLabelDescriptor]: ...
+def project_points(
+    camera: OrbitCamera,
+    size: tuple[int, int],
+    points: Sequence[object],
+    projection_options: ProjectionOptions | None = ...,
+) -> NDArray[numpy.float64]: ...
+def composite_labels(
+    image: object,
+    camera: OrbitCamera,
+    labels: Sequence[DebugLabelDescriptor],
+    *,
+    scale: int = ...,
+    projection_options: ProjectionOptions | None = ...,
+) -> NDArray[numpy.uint8]: ...
+def draw_text(
+    pixels: NDArray[numpy.uint8],
+    text: str,
+    origin: tuple[int, int],
+    rgba: Sequence[float] = ...,
+    scale: int = ...,
+) -> None: ...
+
+class ViewReport:
+    def __init__(
+        self,
+        camera: dict[str, object],
+        size: tuple[int, int],
+        focus: list[str],
+        corner_coverage: float = ...,
+        subject_fraction: float = ...,
+        center_visible: bool = ...,
+        occlusion_fraction: float = ...,
+        ambiguity_iou: float = ...,
+        issues: list[str] = ...,
+        score: float = ...,
+    ) -> None: ...
+    camera: dict[str, object]
+    size: tuple[int, int]
+    focus: list[str]
+    corner_coverage: float
+    subject_fraction: float
+    center_visible: bool
+    occlusion_fraction: float
+    ambiguity_iou: float
+    issues: list[str]
+    score: float
+    @property
+    def acceptable(self) -> bool: ...
+    def to_json(self) -> dict[str, object]: ...
+    def to_json_text(self) -> str: ...
+
+class ViewpointChoice:
+    def __init__(
+        self, camera: OrbitCamera, report: ViewReport, reason: str
+    ) -> None: ...
+    camera: OrbitCamera
+    report: ViewReport
+    reason: str
+
+def assess_view(
+    world: object,
+    camera: OrbitCamera,
+    size: tuple[int, int] = ...,
+    *,
+    focus: str | Sequence[str] | None = ...,
+    projection_options: ProjectionOptions | None = ...,
+) -> ViewReport: ...
+def select_viewpoints(
+    world: object,
+    size: tuple[int, int] = ...,
+    *,
+    focus: str | Sequence[str] | None = ...,
+    count: int = ...,
+    azimuths: Sequence[float] = ...,
+    elevations: Sequence[float] = ...,
+    distance_scales: Sequence[float] = ...,
+    min_azimuth_separation: float = ...,
+    projection_options: ProjectionOptions | None = ...,
+) -> list[ViewpointChoice]: ...
+def frame_body(
+    world: object,
+    name: str | Sequence[str],
+    *,
+    azimuth: float = ...,
+    elevation: float = ...,
+    size: tuple[int, int] = ...,
+    margin: float = ...,
+) -> OrbitCamera: ...
+def frame_region(
+    center: Sequence[float],
+    radius: float,
+    *,
+    azimuth: float = ...,
+    elevation: float = ...,
+    size: tuple[int, int] = ...,
+    margin: float = ...,
+    vertical_fov_degrees: float = ...,
+) -> OrbitCamera: ...
 def orbit_camera(
     azimuth: float | None = ...,
     elevation: float | None = ...,
@@ -1368,12 +1558,69 @@ def make_velocity_debug_lines(
     options: DebugDrawOptions = ...,
     label_prefix: str = ...,
 ) -> list[DebugLineDescriptor]: ...
+@overload
 def extract_contact_debug_lines(
     result: dartpy.collision.CollisionResult, options: DebugDrawOptions = ...
+) -> list[DebugLineDescriptor]: ...
+@overload
+def extract_contact_debug_lines(
+    contacts: Sequence[dartpy.simulation.Contact], options: DebugDrawOptions = ...
+) -> list[DebugLineDescriptor]: ...
+def extract_contact_force_debug_lines(
+    forces: Sequence[dartpy.simulation.ContactForce],
+    options: DebugDrawOptions = ...,
 ) -> list[DebugLineDescriptor]: ...
 def extract_debug_lines(
     options: DebugDrawOptions = ...,
 ) -> list[DebugLineDescriptor]: ...
+def extract_world_debug_lines(
+    world: dartpy.simulation.World, options: DebugDrawOptions = ...
+) -> list[DebugLineDescriptor]: ...
+def make_polyline_debug_lines(
+    points: Sequence[
+        Annotated[NDArray[numpy.float64], dict(shape=(3), order="C")]
+    ],
+    rgba: Annotated[NDArray[numpy.float64], dict(shape=(4), order="C")],
+    label: str = ...,
+    thickness: float = ...,
+) -> list[DebugLineDescriptor]: ...
+def project_to_pixels(
+    camera: OrbitCamera,
+    width: int,
+    height: int,
+    point: Annotated[NDArray[numpy.float64], dict(shape=(3), order="C")],
+    options: ProjectionOptions = ...,
+) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order="C")]: ...
+def assess_view_quality(
+    descriptors: Sequence[RenderableDescriptor],
+    camera: OrbitCamera,
+    width: int,
+    height: int,
+    focus_ids: Sequence[int] = ...,
+    options: ProjectionOptions = ...,
+) -> ViewQualityReport: ...
+def composite_debug_labels(
+    image: RenderedImage,
+    camera: OrbitCamera,
+    labels: Sequence[DebugLabelDescriptor],
+    scale: int = ...,
+    options: ProjectionOptions = ...,
+    font_size: float = ...,
+    backdrop: bool = ...,
+) -> None: ...
+def draw_debug_text(
+    # Must be an (H, W, >=3) uint8 C-contiguous array; the binding rejects
+    # (noconvert) anything else so in-place drawing can never silently write
+    # into a discarded temporary.
+    pixels: Annotated[NDArray[numpy.uint8], dict(order="C")],
+    text: str,
+    origin_x: int,
+    origin_y: int,
+    rgba: Annotated[NDArray[numpy.float64], dict(shape=(4), order="C")],
+    scale: int = ...,
+    font_size: float = ...,
+    backdrop: bool = ...,
+) -> None: ...
 
 class PanelBuilder:
     def text(self, arg: str, /) -> None: ...

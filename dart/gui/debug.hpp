@@ -48,6 +48,8 @@
 
 namespace dart::simulation {
 class World;
+struct Contact;
+struct ContactForce;
 } // namespace dart::simulation
 
 namespace dart::gui {
@@ -126,6 +128,11 @@ struct DebugDrawOptions
   double angularVelocityScale = 0.15;
   double velocityMinLength = 0.03;
   double velocityMaxLength = 1.2;
+  /// World-space half-thickness applied to the per-body, velocity, and contact
+  /// debug lines produced by the world-aware extraction so headless overlays
+  /// render as legible ribbons/tubes instead of single-pixel hairlines. The
+  /// grid is intentionally left thin. Set to 0 to keep every line a hairline.
+  double lineThickness = 0.006;
 };
 
 /// Applies the standard debug visual styling to a world-backed shape frame.
@@ -183,11 +190,50 @@ DART_GUI_API std::vector<DebugLineDescriptor> extractContactDebugLines(
     const collision::CollisionResult& result,
     const DebugDrawOptions& options = {});
 
+/// Contact markers/normals for the promoted `simulation::World` contact type
+/// (as returned by `World::collide()`). The simulation contact payload has no
+/// force, so only points and normals are drawn; use
+/// `extractContactForceDebugLines` with `World::getLastContactForces()` for
+/// force arrows.
+DART_GUI_API std::vector<DebugLineDescriptor> extractContactDebugLines(
+    const std::vector<simulation::Contact>& contacts,
+    const DebugDrawOptions& options = {});
+
+/// Contact-force arrows for the reaction forces recovered from the most recent
+/// world step (`World::getLastContactForces()`). Each force is drawn as an
+/// arrow from its contact point, scaled by `contactForceScale` and clamped to
+/// `[contactForceMinLength, contactForceMaxLength]`, matching the DART 6
+/// contact-force overlay. Gated by `drawContactForces`.
+DART_GUI_API std::vector<DebugLineDescriptor> extractContactForceDebugLines(
+    const std::vector<simulation::ContactForce>& forces,
+    const DebugDrawOptions& options = {});
+
+/// A polyline (e.g. a recorded body trajectory) as consecutive debug-line
+/// segments; zero-length segments are dropped.
+DART_GUI_API std::vector<DebugLineDescriptor> makePolylineDebugLines(
+    const std::vector<Eigen::Vector3d>& points,
+    const Eigen::Vector4d& rgba,
+    const std::string& label = {},
+    double thickness = 0.0);
+
 DART_GUI_API std::vector<DebugLineDescriptor> extractDebugLines(
     const DebugDrawOptions& options = {});
 
+/// World-aware debug extraction for the promoted `simulation::World`: the
+/// static layers (grid, world frame) plus per-rigid-body layers selected by
+/// the options — body frames, center-of-mass markers, inertia boxes
+/// (solid-box equivalents of the body inertia), collision-shape bounds, and
+/// linear/angular velocity arrows. Contacts come from the explicit
+/// `extractContactDebugLines(std::vector<simulation::Contact>, ...)` overload
+/// so captures stay deterministic relative to a chosen step. Takes the world
+/// non-const because rigid-body handles resolve through it.
+///
+/// Line-label conventions: frame axes are `<body>.x/.y/.z`, center-of-mass
+/// markers `<body>.com.x/.y/.z` (axis-marker convention), inertia boxes
+/// `<body>.inertia`, collision bounds `<body>.bounds` (one label for all of
+/// a body's shapes), velocities `<body>.vel_linear` / `<body>.vel_angular`.
 DART_GUI_API std::vector<DebugLineDescriptor> extractDebugLines(
-    const simulation::World& world, const DebugDrawOptions& options = {});
+    simulation::World& world, const DebugDrawOptions& options = {});
 
 } // namespace dart::gui
 

@@ -124,3 +124,94 @@ image verdict/golden/sheet, text metrics/scene-dump/trajectory). DART 6
 helper, dartpy binding, ported image tooling) verified on a real X server;
 conda-forge has no linux-64 Xvfb build, so DART 6 headless capture needs a real
 display or a system-installed Xvfb.
+
+## Active views, debug layers, and PR evidence (2026-07)
+
+A review of the merged visual-verification lineage (#2690, #2836, #2984,
+#2992, #3063, #3084, #3304, #3313, #3314, #3320) found four recurring gaps:
+no PR ever embedded its visual evidence (bodies cite local `/tmp/*.png`
+paths; GitHub user-attachments can only be minted in the web editor), cameras
+were fixed enumerations with no notion of view adequacy, debug overlays never
+reached the headless path, and artifacts were not tied to explicit claims.
+The follow-up workflow closes these:
+
+- **View adequacy is measured, not assumed.** `dart.gui.assess_view` scores a
+  camera against the world geometrically (bounds-corner coverage, subject
+  screen fraction, CPU pick-ray occlusion, screen-overlap ambiguity) and
+  names issues (`cropped`, `too-far`, `too-close`, `occluded`, `ambiguous`);
+  `select_viewpoints` deterministically searches a candidate grid and returns
+  azimuth-diverse choices with recorded reasons. Geometry-first keeps
+  assessment GPU-free and mirrors the text-first oracle policy.
+- **Debug layers are world-derived and offscreen-capable.**
+  `OffscreenRenderer` accepts a `DebugScene` through the viewer's unlit
+  always-on-top overlay path (a plain render always clears it, so captures
+  stay pure functions of their arguments); `dart.gui.debug_scene_for_world`
+  composes named layers (frames, centers of mass, inertia, collision bounds,
+  velocities, contacts from `world.collide()`, trajectory polylines,
+  labels) that the built-in loop never aggregated. Labels are composited in
+  Python because offscreen rendering has no UI text pass.
+- **Evidence is claim-driven and rationale-carrying.** `evidence-select`
+  performs greedy claim cover with redundancy pruning and size budgets and
+  rejects artifacts that support no claim; `evidence-publish` renders the PR
+  "Visual verification" section (environment, per-artifact what-to-observe,
+  not-proven statements, limitations, repro commands). Media is
+  GitHub-hosted, never committed: the default backend emits web-editor
+  upload placeholders, and the `gh-release` backend uploads release assets
+  but only behind `--yes` plus maintainer approval (release-asset images
+  render inline in PR bodies; videos render as links — only
+  user-attachments URLs get the inline player).
+- **Case study (#2984 retrospective).** Re-verifying the renderer-fidelity
+  PR with this workflow (`scripts/write_retro_2984_evidence_packet.py`)
+  produced claim-tied evidence its own body declined to attach: a PBR
+  metallic/roughness sweep, a default-vs-high-fidelity side-by-side with
+  diff heatmap, and a world-derived debug-layer offscreen render — the
+  "world-derived debug overlays" follow-up #2984 itself deferred. The
+  view-adequacy loop caught a too-far framing before it shipped as weak
+  evidence.
+
+Known limits and future work: occlusion probes sample bounds corners (a
+depth/ID-buffer readback would make visibility exact), thresholds are fixed
+constants calibrated on primitive scenes, multibody/deformable layers reuse
+only the transform-based subset, inline PR video still requires the manual
+user-attachments flow, and the DART 6 port of adaptive viewpoints,
+engine-rendered debug overlays, the capture harness, and evidence tooling is
+in flight on `release-6.20` via #3374.
+
+Contact force arrows (DART 6 parity): DART 6 draws per-contact force arrows;
+DART 7's `simulation::Contact` (`dart/simulation/body/contact.hpp`) is pure
+collision-query output and carries no force. The solved per-contact impulses
+persist post-step in the rigid contact scratch
+(`m_contactScratch->problem.constraints`; `BoxedLcpContactSnapshot.f`), so the
+first cut is now implemented as a bounded core exposure:
+`World::getLastContactForces()` returns `ContactForce{point, force, bodyA,
+bodyB}` captured at solve time (force = impulse / timeStep) for the rigid
+SequentialImpulse and BoxedLcp paths, without ever mutating `collide()`
+results. The GUI draws these as arrows through
+`extractContactForceDebugLines` (reusing the DART 6 force color and
+`contactForceScale`/clamps), wired into the `contacts` debug layer. Mapping
+impulses to contacts for the unified AVBD/variational rigid path and for
+multibody/deformable contacts remains deferred: those store per-row descent
+state without a stable contact key, and forcing a force field onto the
+query-time `Contact` would create a post-integration pose mismatch. For those
+paths (and for replayed/rewound frames, which do not restore the transient
+force list) the overlay draws contact points and normals but not force
+magnitude.
+
+## Core-first policy for agent visual tooling
+
+Maintainer directive (2026-07): agent-facing visual debugging/verification
+capabilities are implemented in the core rendering/GUI codebase — `dart::gui`
+on DART 7, `dart::gui::osg` on DART 6 — and exposed through dartpy, never as
+parallel Python reimplementations. Scripts and pixi tasks orchestrate core
+APIs (scene setup, capture sequencing, claims/evidence workflow, GitHub
+publication) but must not reimplement rendering, overlay drawing, text,
+projection, or view-adequacy math. Rationale: agent needs are a driving
+factor for core rendering/GUI capability, quality, and interfaces — a gap
+found by agent tooling is fixed in the engine, where every consumer benefits.
+Capabilities this policy has already driven into core: the offscreen
+`DebugScene` channel with label compositing, world-aware debug extraction
+(`extractDebugLines(World&)`, wiring the previously dead body-frame/COM
+flags), the shared projection primitive (`projectToPixels`), core view
+adequacy (`assessView`), `World::getRigidBodyNames`, and on DART 6 the
+`DebugOverlay` attachment (always-on-top lines + osgText labels) plus the
+`math::BoundingBox` binding.

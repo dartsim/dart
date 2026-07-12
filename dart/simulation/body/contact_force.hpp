@@ -32,64 +32,31 @@
 
 #pragma once
 
-#include <dart/simulation/export.hpp>
+#include <dart/simulation/body/collision_body.hpp>
+
+#include <Eigen/Core>
 
 namespace dart::simulation {
 
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class DeformableBody;
-class Joint;
-class Link;
-class LoopClosure;
-class Multibody;
-class RigidBody;
-class World;
-enum class ContactSolverMethod;
-enum class ContactGradientMode;
-enum class RigidBodySolver;
-enum class JointType;
-enum class WorldSyncStage;
-enum class PhysicalParameter;
-struct PhysicalParameterSelector;
-
-namespace compute {
-class ComputeExecutor;
-class ParallelExecutor;
-class WorldKinematicsGraph;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
-
-// Value objects
-struct Contact;
-struct ContactForce;
-struct StepDerivatives;
-struct StepGradient;
-struct DeformableDirichletBoundaryCondition;
-struct DeformableMaterialProperties;
-struct DeformableNeumannBoundaryCondition;
-struct DeformableObstaclePolicy;
-struct DeformableSurfaceTriangle;
-struct DeformableTetrahedron;
-struct JointConstraintProjectionPolicy;
-
-// Options structs
-struct CollisionQueryOptions;
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct DeformableBodyOptions;
-struct DeformableEdge;
-struct JointOptions;
-struct JointSpec;
-struct LinkOptions;
-struct LoopClosureRuntimePolicy;
-struct LoopClosureResidual;
-struct LoopClosureSpec;
-struct MultibodyOptions;
-struct RigidBodyOptions;
-struct DeactivationOptions;
-struct WorldOptions;
+/// A per-contact reaction force recovered from the most recent world step.
+///
+/// Unlike `Contact` (pure collision-query output), this is a post-solve
+/// diagnostic: `force` is the world-space reaction acting on `bodyB` at `point`
+/// (Newtons), reconstructed from the solved contact impulse as
+/// `impulse / timeStep`. It is captured for the rigid-body contact paths
+/// (sequential-impulse and boxed-LCP); the unified/variational rigid path and
+/// multibody/deformable contacts do not yet contribute (see
+/// `docs/design/agent_sim_verification.md`). Available through
+/// `World::getLastContactForces()` after `step()`; empty after a reset or a
+/// step with no rigid contacts.
+struct ContactForce
+{
+  /// World-space contact point.
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  /// World-space reaction force on `bodyB` (Newtons); `bodyA` feels `-force`.
+  Eigen::Vector3d force = Eigen::Vector3d::Zero();
+  CollisionBody bodyA;
+  CollisionBody bodyB;
+};
 
 } // namespace dart::simulation

@@ -5225,6 +5225,18 @@ std::size_t World::getRigidBodyCount() const
 }
 
 //==============================================================================
+std::vector<std::string> World::getRigidBodyNames() const
+{
+  std::vector<std::string> names;
+  auto view = m_storage->registry.view<comps::RigidBodyTag, comps::Name>();
+  for (auto entity : view) {
+    names.push_back(view.get<comps::Name>(entity).name);
+  }
+  std::sort(names.begin(), names.end());
+  return names;
+}
+
+//==============================================================================
 DeformableBody World::addDeformableBody(
     std::string_view name, const DeformableBodyOptions& options)
 {
@@ -6585,6 +6597,7 @@ bool World::tryStepCleanNoWorkDefaultPipeline()
   m_memoryDiagnostics.frameScratchOverflowBytes = 0;
   m_lastDeformableSolverDiagnostics = {};
   m_storage->lastStepDiagnostics = {};
+  m_storage->lastContactForces.clear();
   m_time += m_timeStep;
   ++m_frame;
   if (m_replay && m_replay->recordingEnabled) {
@@ -6751,6 +6764,7 @@ void World::stepPipelineOnce(
 
   resetFrameScratchForStep();
   m_storage->lastStepDiagnostics = {};
+  m_storage->lastContactForces.clear();
   prepareDeactivationForStep();
 
   // Differentiable opt-in: record the analytic contact-free step Jacobians at
@@ -6993,6 +7007,12 @@ const DeformableSolverDiagnostics& World::getLastDeformableSolverDiagnostics()
     const
 {
   return m_lastDeformableSolverDiagnostics;
+}
+
+//==============================================================================
+const std::vector<ContactForce>& World::getLastContactForces() const
+{
+  return m_storage->lastContactForces;
 }
 
 //==============================================================================

@@ -412,6 +412,10 @@ public:
   std::optional<RigidBody> getRigidBody(std::string_view name);
   bool hasRigidBody(std::string_view name) const;
   std::size_t getRigidBodyCount() const;
+  /// Names of all rigid bodies currently in the world, sorted so callers
+  /// (scene dumps, debug extraction, capture tooling) iterate
+  /// deterministically without tracking creation order themselves.
+  [[nodiscard]] std::vector<std::string> getRigidBodyNames() const;
 
   //--------------------------------------------------------------------------
   // Deformable body management
@@ -791,6 +795,16 @@ public:
   /// step. The user-supplied-pipeline overloads do not update this (read the
   /// stage's own ``getLastStats`` there); it stays at its previous value.
   const DeformableSolverDiagnostics& getLastDeformableSolverDiagnostics() const;
+
+  /// Per-contact reaction forces recovered from the most recent ``step`` that
+  /// used the built-in pipeline, for the rigid-body contact paths
+  /// (sequential-impulse and boxed-LCP). Each entry pairs a world-space contact
+  /// point with the reaction force on ``bodyB`` (the solved contact impulse
+  /// divided by the time step). Empty after a reset, a step with no rigid
+  /// contacts, or a user-supplied-pipeline step. The unified/variational rigid
+  /// path and multibody/deformable contacts do not yet contribute; see
+  /// ``docs/design/agent_sim_verification.md``.
+  [[nodiscard]] const std::vector<ContactForce>& getLastContactForces() const;
 
   //--------------------------------------------------------------------------
   // Profiling

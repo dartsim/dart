@@ -167,6 +167,12 @@ def _install_world_render_bridge() -> None:
     gui.world_render_frame = _bridge_impl.world_render_frame
     _bridge_impl.install_world_render_helpers(sys.modules[__name__], gui)
 
+    from . import _debug_layers as _debug_layers_impl
+    from . import _view_quality as _view_quality_impl
+
+    _debug_layers_impl.install_debug_layer_helpers(sys.modules[__name__], gui)
+    _view_quality_impl.install_view_quality_helpers(sys.modules[__name__], gui)
+
 
 _install_world_render_bridge()
 

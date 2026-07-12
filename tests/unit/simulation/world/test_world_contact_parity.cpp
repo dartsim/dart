@@ -44,6 +44,7 @@
 // evidence belongs on release-6.* branches.
 
 #include <dart/simulation/body/collision_shape.hpp>
+#include <dart/simulation/body/contact_force.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
 #include <dart/simulation/common/exceptions.hpp>
@@ -826,6 +827,70 @@ TEST(ContactParity, FrictionBrakesLateralSliding)
       std::abs(simHigh.sphereLinearVelocity.x()),
       std::abs(simZero.sphereLinearVelocity.x()))
       << "Friction should reduce lateral speed";
+}
+
+//==============================================================================
+// Test: recovered contact forces balance gravity for a resting box
+//
+// A box settling on static ground reaches a steady state where the reaction it
+// receives through its contact points must, in the vertical direction, equal
+// its weight (m*g). World::getLastContactForces() exposes the solved
+// per-contact reactions; summed over the box's contacts they should balance
+// gravity. Both rigid contact solver paths are checked.
+//==============================================================================
+static double restingBoxVerticalReaction(sx::ContactSolverMethod method)
+{
+  sx::World world;
+  world.setTimeStep(0.002);
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setContactSolverMethod(method);
+
+  sx::RigidBodyOptions groundOpts;
+  groundOpts.isStatic = true;
+  groundOpts.position = Eigen::Vector3d(0.0, 0.0, -0.05);
+  auto ground = world.addRigidBody("ground", groundOpts);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.05)));
+
+  constexpr double kMass = 1.5;
+  sx::RigidBodyOptions boxOpts;
+  boxOpts.mass = kMass;
+  // Half-height 0.1 resting on the ground top at z = 0.
+  boxOpts.position = Eigen::Vector3d(0.0, 0.0, 0.1);
+  auto box = world.addRigidBody("box", boxOpts);
+  box.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.1, 0.1, 0.1)));
+
+  world.enterSimulationMode();
+  world.step(600);
+
+  double vertical = 0.0;
+  for (const auto& contactForce : world.getLastContactForces()) {
+    EXPECT_TRUE(contactForce.force.allFinite());
+    // The reaction on bodyB is +force; bodyA feels the opposite.
+    if (contactForce.bodyB.getName() == "box") {
+      vertical += contactForce.force.z();
+    } else if (contactForce.bodyA.getName() == "box") {
+      vertical -= contactForce.force.z();
+    }
+  }
+  return vertical;
+}
+
+TEST(ContactParity, RecoveredContactForcesBalanceGravitySequentialImpulse)
+{
+  const double weight = 1.5 * 9.81;
+  const double reaction
+      = restingBoxVerticalReaction(sx::ContactSolverMethod::SequentialImpulse);
+  EXPECT_NEAR(reaction, weight, 0.2 * weight);
+}
+
+TEST(ContactParity, RecoveredContactForcesBalanceGravityBoxedLcp)
+{
+  const double weight = 1.5 * 9.81;
+  const double reaction
+      = restingBoxVerticalReaction(sx::ContactSolverMethod::BoxedLcp);
+  EXPECT_NEAR(reaction, weight, 0.2 * weight);
 }
 
 //==============================================================================

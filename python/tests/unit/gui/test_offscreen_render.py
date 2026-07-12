@@ -112,6 +112,78 @@ def test_descriptor_offscreen_render_buffer_and_png():
     assert _decode_png_size(image.png_bytes()) == (96, 72)
 
 
+def _settled_debug_world():
+    world = dart.World()
+    ground = world.add_rigid_body("debug_ground", position=(0.0, 0.0, -0.05))
+    ground.is_static = True
+    ground.set_collision_shape(dart.CollisionShape.box((1.4, 1.4, 0.1)))
+    box = world.add_rigid_body("debug_box", position=(0.0, 0.0, 0.12))
+    box.set_collision_shape(dart.CollisionShape.box((0.22, 0.22, 0.22)))
+    for _ in range(50):
+        world.step()
+    return world
+
+
+def _bytes_over_tolerance(a, b, tolerance: int = 4) -> int:
+    pa = np.asarray(memoryview(a), dtype=np.uint8).astype(int)
+    pb = np.asarray(memoryview(b), dtype=np.uint8).astype(int)
+    return int((np.abs(pa - pb) > tolerance).sum())
+
+
+def test_debug_scene_overlay_lifecycle_on_shared_renderer():
+    # The overlay clear path only matters when one renderer is reused; a
+    # fresh renderer per call could never leak. Same-renderer replays drift
+    # by a few levels on some driver stacks, so compare with a noise budget:
+    # the overlay signal must dwarf it and the cleared frames must sit
+    # inside it (mirrors the C++ lifecycle test).
+    world = _settled_debug_world()
+    camera = dart.gui.frame_body(world, "debug_box", margin=3.0)
+    from dartpy import _world_render_bridge as bridge
+
+    descriptors = bridge._renderables_from_world(world)
+    scene = dart.gui.debug_scene_for_world(
+        world, layers=("grid", "body_frames", "contacts")
+    )
+    renderer = dart.gui.OffscreenRenderer(width=160, height=120)
+
+    plain = renderer.render(descriptors, camera)
+    debugged = renderer.render(descriptors, camera, debug=scene)
+    plain_again = renderer.render(descriptors, camera)
+    emptied = renderer.render(descriptors, camera, debug=dart.gui.DebugScene())
+
+    assert _bytes_over_tolerance(debugged, plain) >= 256
+    # The overlay must not leak into a plain render or survive an empty
+    # DebugScene on the same renderer.
+    assert _bytes_over_tolerance(plain_again, plain) <= 64
+    assert _bytes_over_tolerance(emptied, plain) <= 64
+
+
+def test_debug_scene_render_is_pure_across_fresh_renderers():
+    world = _settled_debug_world()
+    camera = dart.gui.frame_body(world, "debug_box", margin=3.0)
+    debugged = dart.gui.render(
+        world, camera, size=(160, 120), debug=("grid", "body_frames", "contacts")
+    )
+    debugged_again = dart.gui.render(
+        world, camera, size=(160, 120), debug=("grid", "body_frames", "contacts")
+    )
+    assert bytes(memoryview(debugged)) == bytes(memoryview(debugged_again))
+
+
+def test_render_annotated_composites_labels():
+    world = dart.World()
+    box = world.add_rigid_body("labeled_box", position=(0.0, 0.0, 0.3))
+    box.set_collision_shape(dart.CollisionShape.box((0.2, 0.2, 0.2)))
+    camera = dart.gui.frame_body(world, "labeled_box", margin=3.0)
+
+    without_labels = dart.gui.render_annotated(world, camera, (160, 120))
+    with_labels = dart.gui.render_annotated(
+        world, camera, (160, 120), debug=("labels",)
+    )
+    assert with_labels.shape == (120, 160, 4)
+    assert not np.array_equal(without_labels, with_labels)
+
+
 def test_world_render_default_camera_is_stable():
     world = dart.World()
     ground = world.add_rigid_body("render_ground", position=(0.0, 0.0, -0.05))

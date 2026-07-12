@@ -231,3 +231,82 @@ TEST(OffscreenRenderer, RendersDescriptorSceneDeterministically)
   ASSERT_EQ(second.channels, first.channels);
   EXPECT_EQ(second.pixels, first.pixels);
 }
+
+TEST(OffscreenRenderer, DebugSceneOverlayIsAppliedAndCleared)
+{
+  forceSoftwareGl();
+  if (!canOpenLinuxDisplay()) {
+    GTEST_SKIP()
+        << "Filament OpenGL headless rendering requires a usable DISPLAY/Xvfb";
+  }
+
+  dart::gui::OffscreenRenderOptions options;
+  options.width = 160;
+  options.height = 120;
+  options.renderBackend = "opengl";
+  options.warmupFrames = 2;
+
+  dart::gui::OffscreenRenderer renderer(options);
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.distance = 3.0;
+  camera.yaw = -0.75;
+  camera.pitch = 0.32;
+
+  const std::vector<dart::gui::RenderableDescriptor> descriptors{
+      makeBoxDescriptor()};
+
+  dart::gui::DebugScene debug;
+  dart::gui::DebugLineDescriptor line;
+  line.from = Eigen::Vector3d(-1.0, 0.0, 0.6);
+  line.to = Eigen::Vector3d(1.0, 0.0, 0.6);
+  line.rgba = Eigen::Vector4d(1.0, 0.9, 0.1, 1.0);
+  debug.lines.push_back(line);
+
+  const dart::gui::RenderedImage plain = renderer.render(descriptors, camera);
+  const dart::gui::RenderedImage withDebug
+      = renderer.render(descriptors, camera, debug);
+  const dart::gui::RenderedImage plainAgain
+      = renderer.render(descriptors, camera);
+  dart::gui::DebugScene empty;
+  const dart::gui::RenderedImage withEmptyDebug
+      = renderer.render(descriptors, camera, empty);
+
+  // Same-renderer replays can drift by a few levels (temporal pipeline
+  // state; the offscreen parity gate tolerates this too), so compare with a
+  // small per-pixel budget: the overlay must move many pixels far beyond
+  // that budget, and clearing it must fall back inside the budget.
+  const auto countPixelsOver =
+      [](const dart::gui::RenderedImage& a,
+         const dart::gui::RenderedImage& b,
+         int threshold) {
+        std::size_t count = 0;
+        const std::size_t size = std::min(a.pixels.size(), b.pixels.size());
+        for (std::size_t i = 0; i < size; ++i) {
+          const int delta = std::abs(
+              static_cast<int>(a.pixels[i]) - static_cast<int>(b.pixels[i]));
+          if (delta > threshold) {
+            ++count;
+          }
+        }
+        return count;
+      };
+  constexpr int kReplayTolerance = 4;
+  // Same-renderer replays showed a ~6-byte noise floor at this tolerance on
+  // llvmpipe; the overlay line changes hundreds of bytes. Keep an order of
+  // magnitude between the leak budget and the required overlay signal.
+  constexpr std::size_t kReplayNoiseBudgetBytes = 64;
+  constexpr std::size_t kOverlayMinChangedBytes = 256;
+
+  EXPECT_GE(
+      countPixelsOver(withDebug, plain, kReplayTolerance),
+      kOverlayMinChangedBytes);
+  // The overlay must not leak into a subsequent plain render or survive an
+  // empty DebugScene.
+  EXPECT_LE(
+      countPixelsOver(plainAgain, plain, kReplayTolerance),
+      kReplayNoiseBudgetBytes);
+  EXPECT_LE(
+      countPixelsOver(withEmptyDebug, plain, kReplayTolerance),
+      kReplayNoiseBudgetBytes);
+}

@@ -32,6 +32,12 @@
 
 #include <dart/gui/debug.hpp>
 
+#include <dart/simulation/body/collision_shape.hpp>
+#include <dart/simulation/body/contact.hpp>
+#include <dart/simulation/body/contact_force.hpp>
+#include <dart/simulation/body/rigid_body.hpp>
+#include <dart/simulation/world.hpp>
+
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/contact.hpp>
 
@@ -86,6 +92,22 @@ void appendLine(
   line.rgba = color;
   line.label = std::move(label);
   lines.push_back(std::move(line));
+}
+
+/// Stamps a world-space thickness on emitted debug lines so the overlay
+/// renderer expands them into ribbons/tubes. The grid is skipped so it stays a
+/// light hairline reference instead of a heavy tangle of tubes.
+void applyLineThickness(
+    std::vector<DebugLineDescriptor>& lines, double thickness)
+{
+  if (!(thickness > 0.0) || !std::isfinite(thickness)) {
+    return;
+  }
+  for (DebugLineDescriptor& line : lines) {
+    if (line.label != "grid") {
+      line.thickness = thickness;
+    }
+  }
 }
 
 void appendArrowLines(
@@ -181,7 +203,7 @@ void appendAxisMarker(
       markerPrefix + ".z");
 }
 
-[[maybe_unused]] void appendCenterOfMassMarker(
+void appendCenterOfMassMarker(
     std::vector<DebugLineDescriptor>& lines,
     const Eigen::Vector3d& center,
     double radius,
@@ -704,6 +726,7 @@ std::vector<DebugLineDescriptor> extractContactDebugLines(
     }
   }
 
+  applyLineThickness(lines, options.lineThickness);
   return lines;
 }
 
@@ -721,10 +744,255 @@ std::vector<DebugLineDescriptor> extractDebugLines(
   return lines;
 }
 
-std::vector<DebugLineDescriptor> extractDebugLines(
-    const simulation::World&, const DebugDrawOptions& options)
+std::vector<DebugLineDescriptor> extractContactDebugLines(
+    const std::vector<simulation::Contact>& contacts,
+    const DebugDrawOptions& options)
 {
-  return extractDebugLines(options);
+  std::vector<DebugLineDescriptor> lines;
+  if (!options.drawContacts) {
+    return lines;
+  }
+
+  lines.reserve(contacts.size() * 8u);
+  const Eigen::Vector4d pointColor = rgba(1.0, 0.92, 0.38);
+  const Eigen::Vector4d normalColor = rgba(1.0, 0.75, 0.25);
+  for (const auto& contact : contacts) {
+    const Eigen::Vector3d point = contact.point;
+    appendLine(
+        lines,
+        point - Eigen::Vector3d::UnitX() * options.contactMarkerHalfExtent,
+        point + Eigen::Vector3d::UnitX() * options.contactMarkerHalfExtent,
+        pointColor,
+        "contact.point");
+    appendLine(
+        lines,
+        point - Eigen::Vector3d::UnitY() * options.contactMarkerHalfExtent,
+        point + Eigen::Vector3d::UnitY() * options.contactMarkerHalfExtent,
+        pointColor,
+        "contact.point");
+
+    if (options.drawContactNormals && contact.normal.squaredNorm() > 1e-12) {
+      appendArrowLines(
+          lines,
+          point,
+          point + contact.normal.normalized() * options.contactNormalLength,
+          normalColor,
+          "contact.normal");
+    }
+  }
+
+  applyLineThickness(lines, options.lineThickness);
+  return lines;
+}
+
+std::vector<DebugLineDescriptor> extractContactForceDebugLines(
+    const std::vector<simulation::ContactForce>& forces,
+    const DebugDrawOptions& options)
+{
+  std::vector<DebugLineDescriptor> lines;
+  if (!options.drawContactForces) {
+    return lines;
+  }
+
+  lines.reserve(forces.size() * 3u);
+  const Eigen::Vector4d forceColor = rgba(0.93, 0.31, 0.67);
+  for (const auto& contactForce : forces) {
+    const double magnitude = contactForce.force.norm();
+    if (!std::isfinite(magnitude) || magnitude <= 1e-9) {
+      continue;
+    }
+    const double length = std::clamp(
+        magnitude * options.contactForceScale,
+        options.contactForceMinLength,
+        options.contactForceMaxLength);
+    appendArrowLines(
+        lines,
+        contactForce.point,
+        contactForce.point + contactForce.force.normalized() * length,
+        forceColor,
+        "contact.force");
+  }
+
+  applyLineThickness(lines, options.lineThickness);
+  return lines;
+}
+
+std::vector<DebugLineDescriptor> makePolylineDebugLines(
+    const std::vector<Eigen::Vector3d>& points,
+    const Eigen::Vector4d& rgba,
+    const std::string& label,
+    double thickness)
+{
+  std::vector<DebugLineDescriptor> lines;
+  if (points.size() < 2u) {
+    return lines;
+  }
+  lines.reserve(points.size() - 1u);
+  for (std::size_t i = 0; i + 1u < points.size(); ++i) {
+    appendLine(lines, points[i], points[i + 1u], rgba, label);
+  }
+  if (thickness > 0.0 && std::isfinite(thickness)) {
+    for (DebugLineDescriptor& line : lines) {
+      line.thickness = thickness;
+    }
+  }
+  return lines;
+}
+
+namespace {
+
+std::optional<Eigen::Vector3d> collisionShapeLocalHalfExtents(
+    const simulation::CollisionShape& shape)
+{
+  using Type = simulation::CollisionShapeType;
+  switch (shape.type) {
+    case Type::Sphere:
+      return Eigen::Vector3d::Constant(shape.radius);
+    case Type::Box:
+      return shape.halfExtents;
+    case Type::Capsule:
+      return Eigen::Vector3d(
+          shape.radius, shape.radius, shape.halfExtents.z() + shape.radius);
+    case Type::Cylinder:
+      return Eigen::Vector3d(shape.radius, shape.radius, shape.halfExtents.z());
+    case Type::Mesh: {
+      if (shape.vertices.empty()) {
+        return std::nullopt;
+      }
+      Eigen::Vector3d boundsMin = shape.vertices.front();
+      Eigen::Vector3d boundsMax = shape.vertices.front();
+      for (const auto& vertex : shape.vertices) {
+        boundsMin = boundsMin.cwiseMin(vertex);
+        boundsMax = boundsMax.cwiseMax(vertex);
+      }
+      // Mesh bounds may be off-center; return the enclosing centered box so
+      // the shared box-edge helper applies (conservative for offset meshes).
+      return 0.5 * (boundsMax - boundsMin)
+             + (0.5 * (boundsMax + boundsMin)).cwiseAbs();
+    }
+    case Type::Plane:
+      return std::nullopt; // unbounded
+  }
+  return std::nullopt;
+}
+
+void appendRigidBodyDebugLines(
+    std::vector<DebugLineDescriptor>& lines,
+    simulation::RigidBody& body,
+    const std::string& name,
+    const DebugDrawOptions& options)
+{
+  const Eigen::Isometry3d transform = body.getTransform();
+
+  if (options.drawBodyFrames) {
+    appendFrameAxes(lines, transform, options.bodyFrameAxisLength, name);
+  }
+
+  if (options.drawCentersOfMass) {
+    // RigidBody's center of mass is at its frame origin by convention.
+    appendCenterOfMassMarker(
+        lines, transform.translation(), options.centerOfMassMarkerRadius, name);
+  }
+
+  if (options.drawInertiaBoxes && body.getMass() > 0.0) {
+    const Eigen::Matrix3d inertia = body.getInertia();
+    if (inertia.allFinite()) {
+      const Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(
+          0.5 * (inertia + inertia.transpose()));
+      const Eigen::Vector3d moments = solver.eigenvalues();
+      if ((moments.array() > 0.0).all()) {
+        // Solid-box equivalence: I_x = m/12 (b^2 + c^2), etc.
+        const Eigen::Vector3d sums
+            = 6.0 / body.getMass()
+              * (Eigen::Vector3d::Constant(moments.sum()) - 2.0 * moments);
+        if ((sums.array() > 0.0).all()) {
+          appendBoxEdges(
+              lines,
+              transform.translation(),
+              transform.linear() * solver.eigenvectors(),
+              sums.cwiseSqrt() * 0.5 * options.inertiaBoxScale,
+              rgba(0.58, 0.44, 0.95, 0.82),
+              name + ".inertia");
+        }
+      }
+    }
+  }
+
+  if (options.drawCollisionShapeBounds) {
+    for (const auto& shape : body.getCollisionShapes()) {
+      const auto halfExtents = collisionShapeLocalHalfExtents(shape);
+      if (!halfExtents.has_value()) {
+        continue;
+      }
+      const Eigen::Isometry3d shapeTransform = transform * shape.localTransform;
+      // Clamp so flat shapes (a zero-thickness box axis) still draw as a
+      // degenerate rectangle instead of being rejected by the box helper.
+      const Eigen::Vector3d paddedHalfExtents
+          = (*halfExtents
+             + Eigen::Vector3d::Constant(options.collisionBoundsPadding))
+                .cwiseMax(1e-9);
+      appendBoxEdges(
+          lines,
+          shapeTransform.translation(),
+          shapeTransform.linear(),
+          paddedHalfExtents,
+          rgba(0.2, 0.86, 0.43, 0.72),
+          name + ".bounds");
+    }
+  }
+
+  const auto scaledLength = [&](double magnitude, double scale) {
+    return std::clamp(
+        magnitude * scale,
+        options.velocityMinLength,
+        options.velocityMaxLength);
+  };
+
+  if (options.drawLinearVelocities && options.linearVelocityScale > 0.0) {
+    const Eigen::Vector3d velocity = body.getLinearVelocity();
+    const double magnitude = velocity.norm();
+    if (velocity.allFinite() && magnitude > 1e-9) {
+      appendArrowLines(
+          lines,
+          transform.translation(),
+          transform.translation()
+              + velocity.normalized()
+                    * scaledLength(magnitude, options.linearVelocityScale),
+          rgba(0.32, 0.74, 0.98, 0.95),
+          name + ".vel_linear");
+    }
+  }
+
+  if (options.drawAngularVelocities && options.angularVelocityScale > 0.0) {
+    const Eigen::Vector3d velocity = body.getAngularVelocity();
+    const double magnitude = velocity.norm();
+    if (velocity.allFinite() && magnitude > 1e-9) {
+      appendArrowLines(
+          lines,
+          transform.translation(),
+          transform.translation()
+              + velocity.normalized()
+                    * scaledLength(magnitude, options.angularVelocityScale),
+          rgba(0.74, 0.52, 0.98, 0.95),
+          name + ".vel_angular");
+    }
+  }
+}
+
+} // namespace
+
+std::vector<DebugLineDescriptor> extractDebugLines(
+    simulation::World& world, const DebugDrawOptions& options)
+{
+  std::vector<DebugLineDescriptor> lines = extractDebugLines(options);
+  for (const std::string& name : world.getRigidBodyNames()) {
+    auto body = world.getRigidBody(name);
+    if (body.has_value()) {
+      appendRigidBodyDebugLines(lines, *body, name, options);
+    }
+  }
+  applyLineThickness(lines, options.lineThickness);
+  return lines;
 }
 
 } // namespace dart::gui
