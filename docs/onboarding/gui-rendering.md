@@ -33,6 +33,14 @@ These types are stable DART concepts. They are suitable for C++ and Python
 bindings because they do not require applications to include renderer,
 windowing, or UI toolkit headers.
 
+`PanelBuilder::blockGrid()` supports renderer-neutral ordered proportional
+segments inside a display cell and a small pattern vocabulary. Use semantic hue
+for category and pattern/border/text for state when a diagnostic has multiple
+independent axes. Segment order must preserve the source geometry; do not
+replace several address ranges with one synthetic "mixed" color. Tooltips and
+labels remain required because color and hatching alone are not a numeric or
+accessible evidence surface.
+
 ## Backend Boundary
 
 The private Filament backend lives under
@@ -147,6 +155,15 @@ that mutating a `VisualAspect` will invalidate an existing drawable when the
 refresh path is gated by shape version, first-frame initialization, or dynamic
 color flags; either mark and handle dynamic color explicitly or re-read the
 current visual aspect color and alpha in the per-frame refresh path.
+
+For memory-layout UI changes, validate the renderer-neutral range model before
+the screenshot: exact-region spans must partition their backing allocation,
+mixed display bins must preserve proportional address order, and independent
+allocations must remain separate rows. Then inspect a full application capture
+and a readable panel crop for clipping, patterns, legends, and discontinuity
+language. See
+[`../design/memory_layout_diagnostics.md`](../design/memory_layout_diagnostics.md)
+for the evidence and security boundaries.
 
 At high `--gui-scale` values, avoid long labels trailing after wide widgets.
 Put the visible label on its own line, give the control a hidden ImGui ID such

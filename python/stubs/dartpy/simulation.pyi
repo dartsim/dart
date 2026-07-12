@@ -69,8 +69,15 @@ __all__: list[str] = [
     "World",
     "WorldEcsDiagnostics",
     "WorldEcsStorageDiagnostics",
+    "WorldMemoryDataCategory",
     "WorldMemoryDiagnostics",
     "WorldMemoryDiagnosticsOptions",
+    "WorldMemoryEvidenceKind",
+    "WorldMemoryLogicalUse",
+    "WorldMemoryRegionDiagnostics",
+    "WorldMemoryRegionKind",
+    "WorldMemorySpanDiagnostics",
+    "WorldMemorySpanState",
     "WorldStepProfile",
     "WorldStepStageProfile",
     "WorldSyncStage",
@@ -1655,6 +1662,65 @@ class MemoryManagerDebugDiagnostics:
     @property
     def pool_allocator(self) -> AllocatorDebugDiagnostics: ...
 
+class WorldMemoryRegionKind(enum.Enum):
+    FREE_LIST_BACKING = 0
+
+    FRAME_ARENA = 1
+
+    FRAME_OVERFLOW = 2
+
+class WorldMemorySpanState(enum.Enum):
+    METADATA = 0
+
+    ALLOCATED = 1
+
+    FREE = 2
+
+    RESERVED = 3
+
+    PADDING = 4
+
+class WorldMemoryDataCategory(enum.Enum):
+    NONE = 0
+
+    ALLOCATOR_INFRASTRUCTURE = 1
+
+    SIMULATION_MODEL = 2
+
+    COLLISION_GEOMETRY = 3
+
+    SIMULATION_STATE = 4
+
+    SIMULATION_CONTROL = 5
+
+    CONTACT_SOLVER = 6
+
+    SIMULATION_CACHE = 7
+
+    ENTITY_INDEX = 8
+
+    SIMULATION_METADATA = 9
+
+    FRAME_SCRATCH = 10
+
+    UNCLASSIFIED = 11
+
+class WorldMemoryEvidenceKind(enum.Enum):
+    ACTUAL_BACKING_REGION = 0
+
+    ALLOCATOR_BOOKKEEPING = 1
+
+    TYPED_PAYLOAD_OVERLAY = 2
+
+class WorldMemoryLogicalUse(enum.Enum):
+    NOT_APPLICABLE = 0
+
+    LIVE = 1
+
+    TOMBSTONE = 2
+
+    SPARE = 3
+
 class WorldMemoryDiagnosticsOptions:
     def __init__(self) -> None: ...
 
@@ -1663,6 +1729,53 @@ class WorldMemoryDiagnosticsOptions:
 
     @include_storage_layout_details.setter
     def include_storage_layout_details(self, arg: bool, /) -> None: ...
+
+    @property
+    def include_memory_layout_details(self) -> bool: ...
+
+    @include_memory_layout_details.setter
+    def include_memory_layout_details(self, arg: bool, /) -> None: ...
+
+class WorldMemorySpanDiagnostics:
+    @property
+    def offset_bytes(self) -> int: ...
+
+    @property
+    def size_bytes(self) -> int: ...
+
+    @property
+    def state(self) -> WorldMemorySpanState: ...
+
+    @property
+    def category(self) -> WorldMemoryDataCategory: ...
+
+    @property
+    def evidence(self) -> WorldMemoryEvidenceKind: ...
+
+    @property
+    def logical_use(self) -> WorldMemoryLogicalUse: ...
+
+    @property
+    def diagnostic_label(self) -> str: ...
+
+class WorldMemoryRegionDiagnostics:
+    @property
+    def address_order(self) -> int: ...
+
+    @property
+    def kind(self) -> WorldMemoryRegionKind: ...
+
+    @property
+    def evidence(self) -> WorldMemoryEvidenceKind: ...
+
+    @property
+    def diagnostic_label(self) -> str: ...
+
+    @property
+    def size_bytes(self) -> int: ...
+
+    @property
+    def spans(self) -> list[WorldMemorySpanDiagnostics]: ...
 
 class WorldEcsStorageDiagnostics:
     @property
@@ -1723,6 +1836,12 @@ class WorldMemoryDiagnostics:
 
     @property
     def ecs_diagnostics(self) -> WorldEcsDiagnostics: ...
+
+    @property
+    def memory_layout_details_included(self) -> bool: ...
+
+    @property
+    def memory_regions(self) -> list[WorldMemoryRegionDiagnostics]: ...
 
     @property
     def frame_scratch_capacity_bytes(self) -> int: ...

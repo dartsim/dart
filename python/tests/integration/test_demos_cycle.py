@@ -12451,11 +12451,45 @@ def test_panel_block_grid_binding_validates_and_renders() -> None:
             match="block_grid tooltips must be empty or match colors",
         ):
             builder.block_grid("invalid", colors, ["one tooltip"])
+        with pytest.raises(
+            ValueError,
+            match="block_grid patterns must be empty or match colors",
+        ):
+            builder.block_grid(
+                "invalid patterns",
+                colors,
+                preferred_columns=2,
+                patterns=[dart.gui.PanelBlockPattern.DOTS],
+            )
+        with pytest.raises(
+            ValueError,
+            match="block_grid segments must be empty or match colors",
+        ):
+            builder.block_grid(
+                "invalid segments",
+                colors,
+                preferred_columns=2,
+                segments=[[]],
+            )
+        live = dart.gui.PanelBlockSegment()
+        live.rgba = colors[0]
+        # Exercise normalization without overflowing the sum of finite weights.
+        live.weight = sys.float_info.max
+        live.pattern = dart.gui.PanelBlockPattern.SOLID
+        spare = dart.gui.PanelBlockSegment()
+        spare.rgba = colors[1]
+        spare.weight = sys.float_info.max
+        spare.pattern = dart.gui.PanelBlockPattern.DOTS
         builder.block_grid(
             "Capacity map",
             colors,
             ["active", "reserved"],
             preferred_columns=2,
+            patterns=[
+                dart.gui.PanelBlockPattern.FORWARD_HATCH,
+                dart.gui.PanelBlockPattern.BACKWARD_HATCH,
+            ],
+            segments=[[live, spare], [spare, live]],
         )
         callback_count += 1
 

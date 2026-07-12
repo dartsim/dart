@@ -51,6 +51,106 @@ struct WorldMemoryDiagnosticsOptions
   /// scan. Summary collection still walks materialized storages and scans the
   /// entity storage to count live entities.
   bool includeStorageLayoutDetails = false;
+
+  /// Capture exact World-owned allocator backing regions and byte ranges.
+  ///
+  /// The resulting diagnostics use offsets relative to each region and never
+  /// publish process addresses. Collection walks allocator bookkeeping and is
+  /// therefore opt-in.
+  bool includeMemoryLayoutDetails = false;
+};
+
+/// Kind of real contiguous backing allocation represented by a memory region.
+enum class WorldMemoryRegionKind
+{
+  FreeListBacking,
+  FrameArena,
+  FrameOverflow,
+};
+
+/// Allocator state of an exact byte range inside a backing region.
+enum class WorldMemorySpanState
+{
+  Metadata,
+  Allocated,
+  Free,
+  Reserved,
+  Padding,
+};
+
+/// Best-known semantic owner of a byte range.
+///
+/// `Unclassified` is intentional: allocator bookkeeping proves that a range is
+/// live without necessarily proving which simulation subsystem owns it. This
+/// includes nested container buffers and translation-unit-local compute scratch
+/// whose stable typed address is unavailable to the collector.
+enum class WorldMemoryDataCategory
+{
+  None,
+  AllocatorInfrastructure,
+  SimulationModel,
+  CollisionGeometry,
+  SimulationState,
+  SimulationControl,
+  ContactSolver,
+  SimulationCache,
+  EntityIndex,
+  SimulationMetadata,
+  FrameScratch,
+  Unclassified,
+};
+
+/// Direct evidence used to classify a region or span.
+enum class WorldMemoryEvidenceKind
+{
+  /// The region is a real contiguous allocation observed from its owner.
+  ActualBackingRegion,
+  /// State comes directly from allocator cursor/header bookkeeping.
+  AllocatorBookkeeping,
+  /// Semantic category comes from an exact typed payload buffer/page address.
+  TypedPayloadOverlay,
+};
+
+/// Logical occupancy of a typed ECS slot range.
+enum class WorldMemoryLogicalUse
+{
+  /// Range is allocator metadata, untyped payload, or non-ECS scratch.
+  NotApplicable,
+  /// Materialized ECS slot containing a live component/entity index.
+  Live,
+  /// Materialized in-place-deletion slot without a live component.
+  Tombstone,
+  /// Typed component-page capacity beyond the materialized packed range.
+  Spare,
+};
+
+/// Exact relative byte range in one World-owned backing allocation.
+struct WorldMemorySpanDiagnostics
+{
+  /// Byte offset from the start of the containing region.
+  std::size_t offsetBytes = 0;
+  std::size_t sizeBytes = 0;
+  WorldMemorySpanState state{WorldMemorySpanState::Reserved};
+  WorldMemoryDataCategory category{WorldMemoryDataCategory::Unclassified};
+  WorldMemoryEvidenceKind evidence{
+      WorldMemoryEvidenceKind::AllocatorBookkeeping};
+  WorldMemoryLogicalUse logicalUse{WorldMemoryLogicalUse::NotApplicable};
+  /// Human-readable evidence label; not a stable component identifier.
+  std::string diagnosticLabel;
+};
+
+/// One real contiguous allocation, sanitized to region-relative geometry.
+struct WorldMemoryRegionDiagnostics
+{
+  /// Snapshot-local ordinal in ascending virtual-address order.
+  std::size_t addressOrder = 0;
+  WorldMemoryRegionKind kind{WorldMemoryRegionKind::FreeListBacking};
+  WorldMemoryEvidenceKind evidence{
+      WorldMemoryEvidenceKind::ActualBackingRegion};
+  std::string diagnosticLabel;
+  std::size_t sizeBytes = 0;
+  /// Non-overlapping ranges in ascending offset order that cover the region.
+  std::vector<WorldMemorySpanDiagnostics> spans;
 };
 
 /// Per-component-storage ECS memory diagnostics. Storage IDs are internal
@@ -134,6 +234,13 @@ struct WorldMemoryDiagnostics
 
   /// ECS registry/component storage diagnostics.
   WorldEcsDiagnostics ecsDiagnostics;
+
+  /// True when `memoryRegions` were captured by an explicit detailed query.
+  bool memoryLayoutDetailsIncluded = false;
+  /// Actual backing allocations in ascending virtual-address order.
+  ///
+  /// Raw addresses and inter-region address gaps are deliberately omitted.
+  std::vector<WorldMemoryRegionDiagnostics> memoryRegions;
 
   /// Current usable frame-scratch arena capacity after alignment padding.
   std::size_t frameScratchCapacityBytes = 0;

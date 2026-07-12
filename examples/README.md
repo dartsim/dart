@@ -64,18 +64,38 @@ The panel separates evidence by scope and does not add the rows into a total:
   identifiers. The demo requests the opt-in detailed scan only at its bounded
   sample cadence; ordinary World diagnostic summaries do not scan packed slots.
 
-The default-open **2D memory maps** section turns the frame-scratch reservation
-arena and each detailed ECS storage row into bounded colored block grids:
-green is active/used, amber is a materialized hole, slate is reserved/unused,
-and purple is a display bin containing more than one state. Small capacities
-use one block per byte or slot; larger capacities are aggregated into at most
-64 bins while hover text preserves the exact counts represented by each bin.
-ECS cells are grouped by state to show capacity composition. They do not
-reproduce packed-slot order, component payload adjacency, virtual addresses, or
-physical allocation layout, and storage rows are independently normalized
-because slots from different component types are not byte-comparable. Process
-RSS and overlapping allocator categories therefore remain tables rather than a
-misleading global memory map.
+The default-open **Address map (actual regions)** section is the byte-layout
+view. Each row is one real contiguous virtual-memory allocation owned by the
+World free-list or frame allocator. Bytes run from relative offset zero
+left-to-right and then top-to-bottom; separate rows are discontinuous and are
+never concatenated into a synthetic global arena. The map partitions allocator
+metadata, allocated payload, free payload, reserved arena capacity, and padding.
+Known component payload pages and entity-index ranges refine allocated spans
+with Model, Geometry, State, Control, Contact/Solver, Cache, Entity/Index, and
+Metadata categories. Allocator headers use the separate allocator-infrastructure
+category. Allocated bytes that cannot be attributed safely remain Unknown.
+
+Large regions use between 32 and 4096 user-adjustable display cells, but a
+mixed cell keeps its contributing byte ranges in address order as
+proportional stripes and its tooltip reports exact offsets and byte counts. A
+collapsed exact-range table provides the same labels and evidence without
+requiring pointer hover. Hue identifies semantic category; patterns, borders,
+labels, and tooltips also encode storage/logical state so the map does not
+depend on color alone. ECS tombstones and spare slots remain allocated
+component-page bytes; they are not rendered as allocator-free holes.
+
+The collapsed **Capacity composition (logical)** section retains the earlier
+grouped frame/ECS summaries. Those cells communicate used/live, hole, and
+reserved counts, not address order. Process RSS remains a table because it
+includes the whole process and overlaps the World-owned observations.
+
+Both maps describe process virtual-address layout only. They can expose
+adjacency, alignment, fragmentation, and potential locality opportunities, but
+they do not measure access order, physical-page adjacency, cache residency,
+cache misses, latency, or GPU memory. Those claims require a separately named
+hardware-counter, sampling, or cache-simulation result. This version does not
+capture the host page/cache-line geometry and scrubbed base-address remainders
+needed to place boundary guides; the UI reports that evidence as unavailable.
 
 Use **Sample + set baseline** or **Baseline = latest** to create a comparison;
 compatible rows then show signed deltas. **Reset session** clears the baseline,

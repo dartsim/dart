@@ -380,12 +380,86 @@ void defSimPartCompute(nb::module_& m)
           "pool_allocator",
           &dart::common::MemoryManager::DebugDiagnostics::poolAllocator);
 
+  nb::enum_<sim::WorldMemoryRegionKind>(m, "WorldMemoryRegionKind")
+      .value("FREE_LIST_BACKING", sim::WorldMemoryRegionKind::FreeListBacking)
+      .value("FRAME_ARENA", sim::WorldMemoryRegionKind::FrameArena)
+      .value("FRAME_OVERFLOW", sim::WorldMemoryRegionKind::FrameOverflow);
+
+  nb::enum_<sim::WorldMemorySpanState>(m, "WorldMemorySpanState")
+      .value("METADATA", sim::WorldMemorySpanState::Metadata)
+      .value("ALLOCATED", sim::WorldMemorySpanState::Allocated)
+      .value("FREE", sim::WorldMemorySpanState::Free)
+      .value("RESERVED", sim::WorldMemorySpanState::Reserved)
+      .value("PADDING", sim::WorldMemorySpanState::Padding);
+
+  nb::enum_<sim::WorldMemoryDataCategory>(m, "WorldMemoryDataCategory")
+      .value("NONE", sim::WorldMemoryDataCategory::None)
+      .value(
+          "ALLOCATOR_INFRASTRUCTURE",
+          sim::WorldMemoryDataCategory::AllocatorInfrastructure)
+      .value("SIMULATION_MODEL", sim::WorldMemoryDataCategory::SimulationModel)
+      .value(
+          "COLLISION_GEOMETRY", sim::WorldMemoryDataCategory::CollisionGeometry)
+      .value("SIMULATION_STATE", sim::WorldMemoryDataCategory::SimulationState)
+      .value(
+          "SIMULATION_CONTROL", sim::WorldMemoryDataCategory::SimulationControl)
+      .value("CONTACT_SOLVER", sim::WorldMemoryDataCategory::ContactSolver)
+      .value("SIMULATION_CACHE", sim::WorldMemoryDataCategory::SimulationCache)
+      .value("ENTITY_INDEX", sim::WorldMemoryDataCategory::EntityIndex)
+      .value(
+          "SIMULATION_METADATA",
+          sim::WorldMemoryDataCategory::SimulationMetadata)
+      .value("FRAME_SCRATCH", sim::WorldMemoryDataCategory::FrameScratch)
+      .value("UNCLASSIFIED", sim::WorldMemoryDataCategory::Unclassified);
+
+  nb::enum_<sim::WorldMemoryEvidenceKind>(m, "WorldMemoryEvidenceKind")
+      .value(
+          "ACTUAL_BACKING_REGION",
+          sim::WorldMemoryEvidenceKind::ActualBackingRegion)
+      .value(
+          "ALLOCATOR_BOOKKEEPING",
+          sim::WorldMemoryEvidenceKind::AllocatorBookkeeping)
+      .value(
+          "TYPED_PAYLOAD_OVERLAY",
+          sim::WorldMemoryEvidenceKind::TypedPayloadOverlay);
+
+  nb::enum_<sim::WorldMemoryLogicalUse>(m, "WorldMemoryLogicalUse")
+      .value("NOT_APPLICABLE", sim::WorldMemoryLogicalUse::NotApplicable)
+      .value("LIVE", sim::WorldMemoryLogicalUse::Live)
+      .value("TOMBSTONE", sim::WorldMemoryLogicalUse::Tombstone)
+      .value("SPARE", sim::WorldMemoryLogicalUse::Spare);
+
   nb::class_<sim::WorldMemoryDiagnosticsOptions>(
       m, "WorldMemoryDiagnosticsOptions")
       .def(nb::init<>())
       .def_rw(
           "include_storage_layout_details",
-          &sim::WorldMemoryDiagnosticsOptions::includeStorageLayoutDetails);
+          &sim::WorldMemoryDiagnosticsOptions::includeStorageLayoutDetails)
+      .def_rw(
+          "include_memory_layout_details",
+          &sim::WorldMemoryDiagnosticsOptions::includeMemoryLayoutDetails);
+
+  nb::class_<sim::WorldMemorySpanDiagnostics>(m, "WorldMemorySpanDiagnostics")
+      .def_ro("offset_bytes", &sim::WorldMemorySpanDiagnostics::offsetBytes)
+      .def_ro("size_bytes", &sim::WorldMemorySpanDiagnostics::sizeBytes)
+      .def_ro("state", &sim::WorldMemorySpanDiagnostics::state)
+      .def_ro("category", &sim::WorldMemorySpanDiagnostics::category)
+      .def_ro("evidence", &sim::WorldMemorySpanDiagnostics::evidence)
+      .def_ro("logical_use", &sim::WorldMemorySpanDiagnostics::logicalUse)
+      .def_ro(
+          "diagnostic_label",
+          &sim::WorldMemorySpanDiagnostics::diagnosticLabel);
+
+  nb::class_<sim::WorldMemoryRegionDiagnostics>(
+      m, "WorldMemoryRegionDiagnostics")
+      .def_ro("address_order", &sim::WorldMemoryRegionDiagnostics::addressOrder)
+      .def_ro("kind", &sim::WorldMemoryRegionDiagnostics::kind)
+      .def_ro("evidence", &sim::WorldMemoryRegionDiagnostics::evidence)
+      .def_ro(
+          "diagnostic_label",
+          &sim::WorldMemoryRegionDiagnostics::diagnosticLabel)
+      .def_ro("size_bytes", &sim::WorldMemoryRegionDiagnostics::sizeBytes)
+      .def_ro("spans", &sim::WorldMemoryRegionDiagnostics::spans);
 
   nb::class_<sim::WorldEcsStorageDiagnostics>(m, "WorldEcsStorageDiagnostics")
       .def_ro("storage_id", &sim::WorldEcsStorageDiagnostics::storageId)
@@ -424,6 +498,10 @@ void defSimPartCompute(nb::module_& m)
           "allocator_debug_diagnostics",
           &sim::WorldMemoryDiagnostics::allocatorDebugDiagnostics)
       .def_ro("ecs_diagnostics", &sim::WorldMemoryDiagnostics::ecsDiagnostics)
+      .def_ro(
+          "memory_layout_details_included",
+          &sim::WorldMemoryDiagnostics::memoryLayoutDetailsIncluded)
+      .def_ro("memory_regions", &sim::WorldMemoryDiagnostics::memoryRegions)
       .def_ro(
           "frame_scratch_capacity_bytes",
           &sim::WorldMemoryDiagnostics::frameScratchCapacityBytes)

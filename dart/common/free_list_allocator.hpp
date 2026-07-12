@@ -45,6 +45,10 @@
 
 namespace dart::common {
 
+namespace detail {
+class AllocatorMemoryLayoutInspector;
+}
+
 /// Most general heap memory allocator for allocating memory of various sizes.
 ///
 /// This allocator preallocates a large chunk of contiguous memory on
@@ -129,6 +133,8 @@ public:
   void print(std::ostream& os = std::cout, int indent = 0) const override;
 
 private:
+  friend class detail::AllocatorMemoryLayoutInspector;
+
   struct alignas(std::max_align_t) MemoryBlockHeader
   {
     /// Memory block size in bytes

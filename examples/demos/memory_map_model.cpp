@@ -78,7 +78,123 @@ std::string cellTooltip(const MemoryMapRow& row, const MemoryMapCell& cell)
          + "\nsource: " + row.source + "\n" + row.limitation;
 }
 
+std::string addressCellTooltip(
+    const MemoryAddressMapRow& row,
+    const MemoryAddressCell& cell,
+    const std::vector<MemoryAddressSpan>& spans,
+    std::size_t firstSpan,
+    std::size_t onePastLastSpan)
+{
+  const std::size_t cellEnd = cell.firstByte + cell.byteCount;
+  std::string tooltip = row.label + "\nactual region-relative bytes ["
+                        + std::to_string(cell.firstByte) + ", "
+                        + std::to_string(cellEnd) + ")\ncomposition:";
+  for (const MemoryAddressCellSegment& segment : cell.segments) {
+    tooltip += "\n- ";
+    tooltip += memoryAddressCategoryLabel(segment.category);
+    tooltip += " / ";
+    tooltip += memoryAddressStateLabel(segment.state);
+    tooltip += " / ";
+    tooltip += memoryAddressLogicalUseLabel(segment.logicalUse);
+    tooltip += ": " + std::to_string(segment.sizeBytes) + " bytes";
+  }
+  tooltip += "\nexact contributing spans:";
+  for (std::size_t spanIndex = firstSpan; spanIndex < onePastLastSpan;
+       ++spanIndex) {
+    const MemoryAddressSpan& span = spans[spanIndex];
+    const std::size_t spanEnd = span.offsetBytes + span.sizeBytes;
+    const std::size_t overlap
+        = intervalOverlap(cell.firstByte, cellEnd, span.offsetBytes, spanEnd);
+    if (overlap == 0u) {
+      continue;
+    }
+    tooltip += "\n- " + span.label + ": " + std::to_string(overlap) + " bytes ("
+               + memoryAddressEvidenceLabel(span.evidence) + ")";
+  }
+  return tooltip + "\n\nscope: " + row.scope + "\nsource: " + row.source + "\n"
+         + row.limitation;
+}
+
 } // namespace
+
+//==============================================================================
+const char* memoryAddressStateLabel(MemoryAddressState state) noexcept
+{
+  switch (state) {
+    case MemoryAddressState::Metadata:
+      return "metadata";
+    case MemoryAddressState::Allocated:
+      return "allocated";
+    case MemoryAddressState::Free:
+      return "free";
+    case MemoryAddressState::Reserved:
+      return "reserved";
+    case MemoryAddressState::Padding:
+      return "padding";
+  }
+  return "unknown state";
+}
+
+//==============================================================================
+const char* memoryAddressCategoryLabel(MemoryAddressCategory category) noexcept
+{
+  switch (category) {
+    case MemoryAddressCategory::None:
+      return "not applicable";
+    case MemoryAddressCategory::AllocatorInfrastructure:
+      return "allocator infrastructure";
+    case MemoryAddressCategory::SimulationModel:
+      return "simulation model";
+    case MemoryAddressCategory::CollisionGeometry:
+      return "collision / geometry";
+    case MemoryAddressCategory::SimulationState:
+      return "simulation state";
+    case MemoryAddressCategory::SimulationControl:
+      return "simulation control";
+    case MemoryAddressCategory::ContactSolver:
+      return "contact / solver";
+    case MemoryAddressCategory::SimulationCache:
+      return "cached derived data";
+    case MemoryAddressCategory::EntityIndex:
+      return "entity index";
+    case MemoryAddressCategory::SimulationMetadata:
+      return "simulation metadata";
+    case MemoryAddressCategory::FrameScratch:
+      return "frame scratch";
+    case MemoryAddressCategory::Unknown:
+      return "unknown live allocation";
+  }
+  return "unknown";
+}
+
+//==============================================================================
+const char* memoryAddressLogicalUseLabel(
+    MemoryAddressLogicalUse logicalUse) noexcept
+{
+  switch (logicalUse) {
+    case MemoryAddressLogicalUse::NotApplicable:
+      return "not applicable";
+    case MemoryAddressLogicalUse::Live:
+      return "live slot";
+    case MemoryAddressLogicalUse::Tombstone:
+      return "tombstone slot";
+    case MemoryAddressLogicalUse::Spare:
+      return "spare slot";
+  }
+  return "unknown logical use";
+}
+
+//==============================================================================
+const char* memoryAddressEvidenceLabel(MemoryAddressEvidence evidence) noexcept
+{
+  switch (evidence) {
+    case MemoryAddressEvidence::AllocatorBookkeeping:
+      return "allocator bookkeeping";
+    case MemoryAddressEvidence::TypedPayloadOverlay:
+      return "typed payload overlay";
+  }
+  return "unknown evidence";
+}
 
 //==============================================================================
 MemoryMapRow makeMemoryMapRow(
@@ -130,6 +246,94 @@ MemoryMapRow makeMemoryMapRow(
   }
 
   return row;
+}
+
+//==============================================================================
+MemoryAddressMapRow makeMemoryAddressMapRow(
+    std::string key,
+    std::string label,
+    std::size_t totalBytes,
+    std::vector<MemoryAddressSpan> spans,
+    std::string scope,
+    std::string source,
+    std::string limitation,
+    std::size_t maximumCells)
+{
+  MemoryAddressMapRow row;
+  row.key = std::move(key);
+  row.label = std::move(label);
+  row.totalBytes = totalBytes;
+  row.scope = std::move(scope);
+  row.source = std::move(source);
+  row.limitation = std::move(limitation);
+
+  std::size_t expectedOffset = 0u;
+  for (const MemoryAddressSpan& span : spans) {
+    if (span.sizeBytes == 0u || span.offsetBytes != expectedOffset
+        || span.sizeBytes > totalBytes - expectedOffset) {
+      throw std::invalid_argument(
+          "address-map spans must exactly cover one ordered region");
+    }
+    expectedOffset += span.sizeBytes;
+  }
+  if (expectedOffset != totalBytes) {
+    throw std::invalid_argument(
+        "address-map spans must exactly cover one ordered region");
+  }
+
+  row.spans = std::move(spans);
+  rebinMemoryAddressMapRow(row, maximumCells);
+  return row;
+}
+
+//==============================================================================
+void rebinMemoryAddressMapRow(
+    MemoryAddressMapRow& row, std::size_t maximumCells)
+{
+  row.cells.clear();
+  if (row.totalBytes == 0u || maximumCells == 0u) {
+    return;
+  }
+  const std::size_t cellCount = std::min(
+      row.totalBytes, std::min(maximumCells, kHardMaximumDisplayCells));
+  row.cells.reserve(cellCount);
+  std::size_t firstCandidateSpan = 0u;
+  for (std::size_t index = 0; index < cellCount; ++index) {
+    MemoryAddressCell cell;
+    cell.firstByte = cellBoundary(index, row.totalBytes, cellCount);
+    const std::size_t end = cellBoundary(index + 1u, row.totalBytes, cellCount);
+    cell.byteCount = end - cell.firstByte;
+    while (firstCandidateSpan < row.spans.size()) {
+      const MemoryAddressSpan& span = row.spans[firstCandidateSpan];
+      if (span.offsetBytes + span.sizeBytes > cell.firstByte) {
+        break;
+      }
+      ++firstCandidateSpan;
+    }
+    std::size_t onePastLastSpan = firstCandidateSpan;
+    while (onePastLastSpan < row.spans.size()) {
+      const MemoryAddressSpan& span = row.spans[onePastLastSpan];
+      if (span.offsetBytes >= end) {
+        break;
+      }
+      ++onePastLastSpan;
+      const std::size_t spanEnd = span.offsetBytes + span.sizeBytes;
+      const std::size_t overlap
+          = intervalOverlap(cell.firstByte, end, span.offsetBytes, spanEnd);
+      if (overlap == 0u) {
+        continue;
+      }
+      cell.segments.push_back(
+          MemoryAddressCellSegment{
+              .state = span.state,
+              .category = span.category,
+              .logicalUse = span.logicalUse,
+              .sizeBytes = overlap});
+    }
+    cell.tooltip = addressCellTooltip(
+        row, cell, row.spans, firstCandidateSpan, onePastLastSpan);
+    row.cells.push_back(std::move(cell));
+  }
 }
 
 } // namespace dart::examples::demos

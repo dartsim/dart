@@ -336,9 +336,10 @@ SnapshotComparison compareSnapshots(
     const DiagnosticSnapshot& baseline, const DiagnosticSnapshot& current)
 {
   SnapshotComparison comparison;
+  comparison.schemaMatches = baseline.schema == current.schema;
   comparison.generationMatches = baseline.generation == current.generation;
   comparison.generation = current.generation;
-  if (!comparison.generationMatches) {
+  if (!comparison.schemaMatches || !comparison.generationMatches) {
     return comparison;
   }
 
@@ -463,6 +464,28 @@ void DiagnosticSession::setSampleIntervalSeconds(double seconds) noexcept
 {
   if (std::isfinite(seconds) && seconds >= 0.0) {
     mSampleIntervalSeconds = seconds;
+  }
+}
+
+std::size_t DiagnosticSession::addressMapCellLimit() const noexcept
+{
+  return mAddressMapCellLimit;
+}
+
+void DiagnosticSession::setAddressMapCellLimit(std::size_t maximumCells)
+{
+  constexpr std::size_t minimumCells = 32u;
+  constexpr std::size_t maximumAllowedCells = 4096u;
+  const std::size_t bounded
+      = std::clamp(maximumCells, minimumCells, maximumAllowedCells);
+  if (bounded == mAddressMapCellLimit) {
+    return;
+  }
+  mAddressMapCellLimit = bounded;
+  if (mLatest) {
+    for (MemoryAddressMapRow& row : mLatest->addressMaps) {
+      rebinMemoryAddressMapRow(row, mAddressMapCellLimit);
+    }
   }
 }
 
@@ -606,6 +629,9 @@ bool DiagnosticSession::collect(double monotonicNowSeconds, bool makeBaseline)
     snapshot.schema = kMemoryDiagnosticsSchema;
   }
   appendGenericMemoryGuidance(snapshot);
+  for (MemoryAddressMapRow& row : snapshot.addressMaps) {
+    rebinMemoryAddressMapRow(row, mAddressMapCellLimit);
+  }
 
   if (mGeneration && *mGeneration != snapshot.generation) {
     clearGenerationLocalState();
@@ -687,6 +713,7 @@ void DiagnosticSession::recordHistory(const DiagnosticSnapshot& snapshot)
       slot.metrics.push_back(metric);
     }
   }
+  slot.addressMaps.clear();
   slot.memoryMaps.clear();
   slot.guidance.clear();
 }

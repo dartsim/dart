@@ -25,9 +25,10 @@ TEST(MemoryDiagnostics, CollectsWorldAllocatorAndEcsScopes)
 {
   simulation::World world;
   auto body = world.addRigidBody("diagnostic_body");
-  (void)body;
+  body.setCollisionShape(simulation::CollisionShape::makeSphere(0.5));
 
   const DiagnosticSnapshot snapshot = collectMemoryDiagnostics(world, 42u);
+  EXPECT_EQ(snapshot.schema, "dart.memory-diagnostics.v2");
   EXPECT_EQ(snapshot.engine, "DART 7 EnTT World");
   EXPECT_EQ(snapshot.generation, 42u);
   EXPECT_EQ(snapshot.frame, world.getFrame());
@@ -101,6 +102,45 @@ TEST(MemoryDiagnostics, CollectsWorldAllocatorAndEcsScopes)
   EXPECT_NE(
       storageMap->limitation.find("do not reproduce packed-slot order"),
       std::string::npos);
+
+  ASSERT_FALSE(snapshot.addressMaps.empty());
+  bool foundTypedSimulationBytes = false;
+  bool foundGeometryBytes = false;
+  bool foundAllocatorInfrastructure = false;
+  for (const MemoryAddressMapRow& row : snapshot.addressMaps) {
+    ASSERT_FALSE(row.cells.empty());
+    std::size_t coveredBytes = 0u;
+    for (const MemoryAddressCell& cell : row.cells) {
+      EXPECT_EQ(cell.firstByte, coveredBytes);
+      coveredBytes += cell.byteCount;
+      foundTypedSimulationBytes |= std::any_of(
+          cell.segments.begin(),
+          cell.segments.end(),
+          [](const MemoryAddressCellSegment& segment) {
+            return segment.category == MemoryAddressCategory::SimulationModel
+                   || segment.category
+                          == MemoryAddressCategory::SimulationState;
+          });
+      foundGeometryBytes |= std::any_of(
+          cell.segments.begin(),
+          cell.segments.end(),
+          [](const MemoryAddressCellSegment& segment) {
+            return segment.category == MemoryAddressCategory::CollisionGeometry;
+          });
+      foundAllocatorInfrastructure |= std::any_of(
+          cell.segments.begin(),
+          cell.segments.end(),
+          [](const MemoryAddressCellSegment& segment) {
+            return segment.category
+                   == MemoryAddressCategory::AllocatorInfrastructure;
+          });
+    }
+    EXPECT_EQ(coveredBytes, row.totalBytes);
+    EXPECT_NE(row.limitation.find("Raw process addresses"), std::string::npos);
+  }
+  EXPECT_TRUE(foundTypedSimulationBytes);
+  EXPECT_TRUE(foundGeometryBytes);
+  EXPECT_TRUE(foundAllocatorInfrastructure);
 }
 
 TEST(MemoryDiagnostics, KeepsUnavailableInstrumentationDistinctFromZero)

@@ -40,6 +40,8 @@
 #include <limits>
 #include <string>
 
+#include <cmath>
+
 namespace {
 
 // Bounds for the built-in debug-tuning sliders (doubles so they can back
@@ -58,6 +60,92 @@ std::string visiblePanelLabel(std::string_view label)
     return std::string(label);
   }
   return std::string(label.substr(0, idMarker));
+}
+
+ImU32 panelBlockColor(const Eigen::Vector4d& rgba)
+{
+  return ImGui::ColorConvertFloat4ToU32(ImVec4(
+      static_cast<float>(std::clamp(rgba[0], 0.0, 1.0)),
+      static_cast<float>(std::clamp(rgba[1], 0.0, 1.0)),
+      static_cast<float>(std::clamp(rgba[2], 0.0, 1.0)),
+      static_cast<float>(std::clamp(rgba[3], 0.0, 1.0))));
+}
+
+void drawPanelBlockPattern(
+    ImDrawList& drawList,
+    const ImVec2& minimum,
+    const ImVec2& maximum,
+    const Eigen::Vector4d& rgba,
+    dart::gui::PanelBlockPattern pattern)
+{
+  using Pattern = dart::gui::PanelBlockPattern;
+  if (pattern == Pattern::Solid || maximum.x <= minimum.x
+      || maximum.y <= minimum.y) {
+    return;
+  }
+
+  const double luminance
+      = 0.2126 * rgba[0] + 0.7152 * rgba[1] + 0.0722 * rgba[2];
+  const ImU32 patternColor = ImGui::ColorConvertFloat4ToU32(
+      luminance > 0.55 ? ImVec4(0.0F, 0.0F, 0.0F, 0.72F)
+                       : ImVec4(1.0F, 1.0F, 1.0F, 0.72F));
+  constexpr float spacing = 4.0F;
+  const float height = maximum.y - minimum.y;
+  drawList.PushClipRect(minimum, maximum, true);
+  const auto drawForwardHatch = [&] {
+    for (float x = minimum.x - height; x < maximum.x; x += spacing) {
+      drawList.AddLine(
+          ImVec2(x, maximum.y),
+          ImVec2(x + height, minimum.y),
+          patternColor,
+          1.0F);
+    }
+  };
+  const auto drawBackwardHatch = [&] {
+    for (float x = minimum.x; x < maximum.x + height; x += spacing) {
+      drawList.AddLine(
+          ImVec2(x, minimum.y),
+          ImVec2(x - height, maximum.y),
+          patternColor,
+          1.0F);
+    }
+  };
+  switch (pattern) {
+    case Pattern::Solid:
+      break;
+    case Pattern::ForwardHatch:
+      drawForwardHatch();
+      break;
+    case Pattern::BackwardHatch:
+      drawBackwardHatch();
+      break;
+    case Pattern::CrossHatch:
+      drawForwardHatch();
+      drawBackwardHatch();
+      break;
+    case Pattern::Dots:
+      for (float y = minimum.y + 2.0F; y < maximum.y; y += spacing) {
+        for (float x = minimum.x + 2.0F; x < maximum.x; x += spacing) {
+          drawList.AddCircleFilled(ImVec2(x, y), 0.8F, patternColor);
+        }
+      }
+      break;
+  }
+  drawList.PopClipRect();
+}
+
+void drawPanelBlockFill(
+    ImDrawList& drawList,
+    const ImVec2& minimum,
+    const ImVec2& maximum,
+    const Eigen::Vector4d& rgba,
+    dart::gui::PanelBlockPattern pattern)
+{
+  if (maximum.x <= minimum.x || maximum.y <= minimum.y) {
+    return;
+  }
+  drawList.AddRectFilled(minimum, maximum, panelBlockColor(rgba), 1.5F);
+  drawPanelBlockPattern(drawList, minimum, maximum, rgba, pattern);
 }
 
 void renderPlotLines(
@@ -347,13 +435,48 @@ public:
       const ImVec2 clippedMaximum(
           std::min(maximum.x, clipMaximum.x),
           std::min(maximum.y, clipMaximum.y));
-      const Eigen::Vector4d& rgba = blocks[index].rgba;
-      const ImU32 fillColor = ImGui::ColorConvertFloat4ToU32(ImVec4(
-          static_cast<float>(std::clamp(rgba[0], 0.0, 1.0)),
-          static_cast<float>(std::clamp(rgba[1], 0.0, 1.0)),
-          static_cast<float>(std::clamp(rgba[2], 0.0, 1.0)),
-          static_cast<float>(std::clamp(rgba[3], 0.0, 1.0))));
-      drawList->AddRectFilled(clippedMinimum, clippedMaximum, fillColor, 1.5F);
+      const auto& block = blocks[index];
+      double maximumWeight = 0.0;
+      for (const auto& segment : block.segments) {
+        if (std::isfinite(segment.weight) && segment.weight > 0.0) {
+          maximumWeight = std::max(maximumWeight, segment.weight);
+        }
+      }
+      if (maximumWeight <= 0.0) {
+        drawPanelBlockFill(
+            *drawList,
+            clippedMinimum,
+            clippedMaximum,
+            block.rgba,
+            block.pattern);
+      } else {
+        double totalWeight = 0.0;
+        for (const auto& segment : block.segments) {
+          if (std::isfinite(segment.weight) && segment.weight > 0.0) {
+            totalWeight += segment.weight / maximumWeight;
+          }
+        }
+        double cumulativeWeight = 0.0;
+        for (const auto& segment : block.segments) {
+          if (!std::isfinite(segment.weight) || segment.weight <= 0.0) {
+            continue;
+          }
+          const float segmentBegin
+              = minimum.x
+                + cellSize * static_cast<float>(cumulativeWeight / totalWeight);
+          cumulativeWeight += segment.weight / maximumWeight;
+          const float segmentEnd
+              = minimum.x
+                + cellSize * static_cast<float>(cumulativeWeight / totalWeight);
+          drawPanelBlockFill(
+              *drawList,
+              ImVec2(std::max(segmentBegin, clipMinimum.x), clippedMinimum.y),
+              ImVec2(std::min(segmentEnd, clipMaximum.x), clippedMaximum.y),
+              segment.rgba,
+              segment.pattern);
+        }
+      }
+      drawList->AddRect(clippedMinimum, clippedMaximum, borderColor, 1.5F);
     }
     const ImVec2 gridMaximum(origin.x + gridWidth, origin.y + gridHeight);
     if (origin.x >= clipMinimum.x && origin.y >= clipMinimum.y

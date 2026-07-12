@@ -126,6 +126,19 @@ TEST(MemoryDiagnosticsModel, HistoryIsBoundedAndSeriesIsChronological)
         DiagnosticSnapshot snapshot
             = makeSnapshot(7, collectorCalls, collectorCalls * 10.0);
         snapshot.metrics.push_back(makeMetric("not.history", 999.0, false));
+        snapshot.addressMaps.push_back(makeMemoryAddressMapRow(
+            "address.region.0",
+            "Region",
+            64u,
+            {MemoryAddressSpan{
+                .offsetBytes = 0u,
+                .sizeBytes = 64u,
+                .state = MemoryAddressState::Allocated,
+                .category = MemoryAddressCategory::Unknown,
+                .label = "unknown"}},
+            "scope",
+            "source",
+            "limitation"));
         snapshot.memoryMaps.push_back(makeMemoryMapRow(
             "test.map",
             "Test map",
@@ -152,8 +165,18 @@ TEST(MemoryDiagnosticsModel, HistoryIsBoundedAndSeriesIsChronological)
   EXPECT_EQ(session.historyAt(0)->frame, 3u);
   EXPECT_EQ(session.historyAt(2)->frame, 5u);
   EXPECT_EQ(findMetric(*session.historyAt(0), "not.history"), nullptr);
+  EXPECT_TRUE(session.historyAt(0)->addressMaps.empty());
   EXPECT_TRUE(session.historyAt(0)->memoryMaps.empty());
   ASSERT_TRUE(session.latest());
+  EXPECT_EQ(session.latest()->addressMaps.size(), 1u);
+  ASSERT_EQ(session.latest()->addressMaps[0].cells.size(), 64u);
+  session.setAddressMapCellLimit(32u);
+  EXPECT_EQ(session.addressMapCellLimit(), 32u);
+  ASSERT_TRUE(session.latest());
+  EXPECT_EQ(session.latest()->addressMaps[0].cells.size(), 32u);
+  session.setAddressMapCellLimit(5000u);
+  EXPECT_EQ(session.addressMapCellLimit(), 4096u);
+  EXPECT_EQ(session.latest()->addressMaps[0].cells.size(), 64u);
   EXPECT_EQ(session.latest()->memoryMaps.size(), 1u);
 
   const auto series = session.historySeries("test.bytes");
@@ -236,6 +259,19 @@ TEST(MemoryDiagnosticsModel, BaselinesOmitCurrentSamplePresentationPayload)
         ++collectorCalls;
         DiagnosticSnapshot snapshot
             = makeSnapshot(3, collectorCalls, collectorCalls * 10.0);
+        snapshot.addressMaps.push_back(makeMemoryAddressMapRow(
+            "address.region.0",
+            "Region",
+            64u,
+            {MemoryAddressSpan{
+                .offsetBytes = 0u,
+                .sizeBytes = 64u,
+                .state = MemoryAddressState::Allocated,
+                .category = MemoryAddressCategory::Unknown,
+                .label = "unknown"}},
+            "scope",
+            "source",
+            "limitation"));
         snapshot.memoryMaps.push_back(makeMemoryMapRow(
             "test.map",
             "Test map",
@@ -255,10 +291,12 @@ TEST(MemoryDiagnosticsModel, BaselinesOmitCurrentSamplePresentationPayload)
 
   ASSERT_TRUE(session.update(0.0));
   ASSERT_TRUE(session.latest());
+  ASSERT_EQ(session.latest()->addressMaps.size(), 1u);
   ASSERT_EQ(session.latest()->memoryMaps.size(), 1u);
   ASSERT_EQ(session.latest()->guidance.size(), 1u);
   ASSERT_TRUE(session.captureLatestAsBaseline());
   ASSERT_TRUE(session.baseline());
+  EXPECT_TRUE(session.baseline()->addressMaps.empty());
   EXPECT_TRUE(session.baseline()->memoryMaps.empty());
   EXPECT_TRUE(session.baseline()->guidance.empty());
   EXPECT_EQ(session.baseline()->metrics.size(), 1u);
@@ -266,9 +304,11 @@ TEST(MemoryDiagnosticsModel, BaselinesOmitCurrentSamplePresentationPayload)
   session.clearBaseline();
   ASSERT_TRUE(session.captureNow(1.0));
   ASSERT_TRUE(session.latest());
+  ASSERT_EQ(session.latest()->addressMaps.size(), 1u);
   ASSERT_EQ(session.latest()->memoryMaps.size(), 1u);
   ASSERT_EQ(session.latest()->guidance.size(), 1u);
   ASSERT_TRUE(session.baseline());
+  EXPECT_TRUE(session.baseline()->addressMaps.empty());
   EXPECT_TRUE(session.baseline()->memoryMaps.empty());
   EXPECT_TRUE(session.baseline()->guidance.empty());
   EXPECT_EQ(session.baseline()->metrics.size(), 1u);
@@ -306,6 +346,19 @@ TEST(MemoryDiagnosticsModel, ComparisonRequiresAllSemanticFieldsToMatch)
       = compareSnapshots(baseline, current);
   EXPECT_FALSE(differentGeneration.generationMatches);
   EXPECT_TRUE(differentGeneration.metrics.empty());
+}
+
+TEST(MemoryDiagnosticsModel, SchemaV2DoesNotCompareAgainstGroupedV1)
+{
+  DiagnosticSnapshot baseline = makeSnapshot(4, 1, 10.0);
+  DiagnosticSnapshot current = makeSnapshot(4, 2, 12.0);
+  EXPECT_EQ(current.schema, "dart.memory-diagnostics.v2");
+  baseline.schema = "dart.memory-diagnostics.v1";
+
+  const SnapshotComparison comparison = compareSnapshots(baseline, current);
+  EXPECT_FALSE(comparison.schemaMatches);
+  EXPECT_TRUE(comparison.generationMatches);
+  EXPECT_TRUE(comparison.metrics.empty());
 }
 
 TEST(MemoryDiagnosticsModel, GenerationChangeStartsANewLocalSegment)

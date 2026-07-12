@@ -133,6 +133,19 @@ std::vector<std::string_view> toStringViews(
 
 void defGuiPanels(nb::module_& m)
 {
+  nb::enum_<dart::gui::PanelBlockPattern>(m, "PanelBlockPattern")
+      .value("SOLID", dart::gui::PanelBlockPattern::Solid)
+      .value("FORWARD_HATCH", dart::gui::PanelBlockPattern::ForwardHatch)
+      .value("BACKWARD_HATCH", dart::gui::PanelBlockPattern::BackwardHatch)
+      .value("CROSS_HATCH", dart::gui::PanelBlockPattern::CrossHatch)
+      .value("DOTS", dart::gui::PanelBlockPattern::Dots);
+
+  nb::class_<dart::gui::PanelBlockSegment>(m, "PanelBlockSegment")
+      .def(nb::init<>())
+      .def_rw("rgba", &dart::gui::PanelBlockSegment::rgba)
+      .def_rw("weight", &dart::gui::PanelBlockSegment::weight)
+      .def_rw("pattern", &dart::gui::PanelBlockSegment::pattern);
+
   nb::class_<PanelBuilderView>(m, "PanelBuilder")
       .def(
           "text",
@@ -283,26 +296,49 @@ void defGuiPanels(nb::module_& m)
              const std::string& label,
              const std::vector<Eigen::Vector4d>& colors,
              const std::vector<std::string>& tooltips,
-             std::size_t preferredColumns) {
+             std::size_t preferredColumns,
+             const std::vector<dart::gui::PanelBlockPattern>& patterns,
+             const std::vector<std::vector<dart::gui::PanelBlockSegment>>&
+                 segments) {
             if (!tooltips.empty() && tooltips.size() != colors.size()) {
               throw std::invalid_argument(
                   "block_grid tooltips must be empty or match colors");
             }
+            if (!patterns.empty() && patterns.size() != colors.size()) {
+              throw std::invalid_argument(
+                  "block_grid patterns must be empty or match colors");
+            }
+            if (!segments.empty() && segments.size() != colors.size()) {
+              throw std::invalid_argument(
+                  "block_grid segments must be empty or match colors");
+            }
             std::vector<dart::gui::PanelBlock> blocks;
             blocks.reserve(colors.size());
             for (std::size_t index = 0; index < colors.size(); ++index) {
+              const std::span<const dart::gui::PanelBlockSegment> cellSegments
+                  = segments.empty()
+                        ? std::span<const dart::gui::PanelBlockSegment>{}
+                        : std::span<const dart::gui::PanelBlockSegment>{
+                              segments[index]};
               blocks.push_back(
                   dart::gui::PanelBlock{
                       .rgba = colors[index],
-                      .tooltip = tooltips.empty() ? std::string_view{}
-                                                  : tooltips[index]});
+                      .tooltip
+                      = tooltips.empty() ? std::string_view{} : tooltips[index],
+                      .pattern = patterns.empty()
+                                     ? dart::gui::PanelBlockPattern::Solid
+                                     : patterns[index],
+                      .segments = cellSegments});
             }
             self.builder().blockGrid(label, blocks, preferredColumns);
           },
           nb::arg("label"),
           nb::arg("colors"),
           nb::arg("tooltips") = std::vector<std::string>{},
-          nb::arg("preferred_columns") = 32u)
+          nb::arg("preferred_columns") = 32u,
+          nb::arg("patterns") = std::vector<dart::gui::PanelBlockPattern>{},
+          nb::arg("segments")
+          = std::vector<std::vector<dart::gui::PanelBlockSegment>>{})
       .def(
           "plot_lines",
           [](PanelBuilderView& self,

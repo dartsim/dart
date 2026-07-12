@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gc
 import importlib
+import itertools
 import math
 import os
 from pathlib import Path
@@ -346,10 +347,13 @@ def test_simulation_world_memory_diagnostics_expose_allocator_and_ecs_counters()
     assert empty.ecs_diagnostics.entity_count == 0
     assert empty.ecs_diagnostics.component_count == 0
     assert not empty.ecs_diagnostics.storage_layout_details_included
+    assert not empty.memory_layout_details_included
+    assert empty.memory_regions == []
 
     world.add_free_frame("diagnostic_frame")
     options = sx.WorldMemoryDiagnosticsOptions()
     options.include_storage_layout_details = True
+    options.include_memory_layout_details = True
     diagnostics = world.get_memory_diagnostics(options)
     ecs = diagnostics.ecs_diagnostics
 
@@ -379,6 +383,59 @@ def test_simulation_world_memory_diagnostics_expose_allocator_and_ecs_counters()
     )
     assert all(storage.sparse_extent >= 0 for storage in ecs.storages)
     assert all(storage.live_packed_region_count <= storage.size for storage in ecs.storages)
+    assert diagnostics.memory_layout_details_included
+    assert diagnostics.memory_regions
+    assert all(
+        isinstance(region, sx.WorldMemoryRegionDiagnostics)
+        for region in diagnostics.memory_regions
+    )
+    assert [region.address_order for region in diagnostics.memory_regions] == list(
+        range(len(diagnostics.memory_regions))
+    )
+    assert all(
+        region.evidence == sx.WorldMemoryEvidenceKind.ACTUAL_BACKING_REGION
+        for region in diagnostics.memory_regions
+    )
+    assert all(
+        sum(span.size_bytes for span in region.spans) == region.size_bytes
+        for region in diagnostics.memory_regions
+    )
+    assert all(
+        [span.offset_bytes for span in region.spans]
+        == list(
+            itertools.accumulate(
+                [0] + [span.size_bytes for span in region.spans[:-1]]
+            )
+        )
+        for region in diagnostics.memory_regions
+    )
+    assert any(
+        span.evidence == sx.WorldMemoryEvidenceKind.TYPED_PAYLOAD_OVERLAY
+        for region in diagnostics.memory_regions
+        for span in region.spans
+    )
+    assert all(
+        isinstance(span, sx.WorldMemorySpanDiagnostics)
+        and isinstance(span.state, sx.WorldMemorySpanState)
+        and isinstance(span.category, sx.WorldMemoryDataCategory)
+        and isinstance(span.logical_use, sx.WorldMemoryLogicalUse)
+        for region in diagnostics.memory_regions
+        for span in region.spans
+    )
+    assert any(
+        span.logical_use == sx.WorldMemoryLogicalUse.LIVE
+        for region in diagnostics.memory_regions
+        for span in region.spans
+    )
+    assert hasattr(sx.WorldMemoryDataCategory, "ALLOCATOR_INFRASTRUCTURE")
+    assert hasattr(sx.WorldMemoryDataCategory, "COLLISION_GEOMETRY")
+    assert any(
+        span.state == sx.WorldMemorySpanState.METADATA
+        and span.category
+        == sx.WorldMemoryDataCategory.ALLOCATOR_INFRASTRUCTURE
+        for region in diagnostics.memory_regions
+        for span in region.spans
+    )
 
 
 def test_simulation_stub_tracks_public_runtime_symbols():
@@ -412,6 +469,13 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         "MemoryManagerDebugDiagnostics",
         "WorldEcsStorageDiagnostics",
         "WorldEcsDiagnostics",
+        "WorldMemoryRegionKind",
+        "WorldMemorySpanState",
+        "WorldMemoryDataCategory",
+        "WorldMemoryEvidenceKind",
+        "WorldMemoryLogicalUse",
+        "WorldMemorySpanDiagnostics",
+        "WorldMemoryRegionDiagnostics",
         "WorldMemoryDiagnostics",
         "WorldMemoryDiagnosticsOptions",
     )

@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/body/rigid_body.hpp>
+#include <dart/simulation/comps/all.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/world.hpp>
 
@@ -37,6 +39,8 @@
 
 #include <algorithm>
 #include <array>
+#include <string>
+#include <string_view>
 
 #include <cstddef>
 #include <cstdint>
@@ -86,7 +90,9 @@ TEST(WorldMemoryDiagnostics, ReportsEcsStorageHolesAndRegions)
   EXPECT_FALSE(summaryStorage->packedContiguous);
 
   const auto diagnostics = world.getMemoryDiagnostics(
-      sx::WorldMemoryDiagnosticsOptions{.includeStorageLayoutDetails = true});
+      sx::WorldMemoryDiagnosticsOptions{
+          .includeStorageLayoutDetails = true,
+          .includeMemoryLayoutDetails = true});
   EXPECT_TRUE(diagnostics.ecsDiagnostics.storageLayoutDetailsIncluded);
   const auto storageIt = findStorage(diagnostics);
 
@@ -110,4 +116,202 @@ TEST(WorldMemoryDiagnostics, ReportsEcsStorageHolesAndRegions)
   }
   EXPECT_EQ(diagnostics.ecsDiagnostics.componentCount, liveComponentCount);
   EXPECT_EQ(packedComponentSlotCount, liveComponentCount + 2u);
+
+  bool foundExactTombstoneIndexRange = false;
+  for (const auto& region : diagnostics.memoryRegions) {
+    for (const auto& span : region.spans) {
+      foundExactTombstoneIndexRange
+          |= span.category == sx::WorldMemoryDataCategory::EntityIndex
+             && span.logicalUse == sx::WorldMemoryLogicalUse::Tombstone
+             && span.diagnosticLabel.find("Other/internal storage packed")
+                    != std::string::npos;
+    }
+  }
+  EXPECT_TRUE(foundExactTombstoneIndexRange);
+}
+
+TEST(WorldMemoryDiagnostics, PreservesKnownComponentPageSlotOrderAndSpareBytes)
+{
+  namespace sx = dart::simulation;
+
+  constexpr std::size_t pageSlots
+      = entt::component_traits<sx::comps::Transform>::page_size;
+  static_assert(pageSlots > 0u);
+  const std::size_t entityCount = pageSlots + 3u;
+
+  sx::World world;
+  auto& registry = sx::detail::registryOf(world);
+  for (std::size_t index = 0; index < entityCount; ++index) {
+    const auto entity = registry.create();
+    registry.emplace<sx::comps::Transform>(entity);
+  }
+  const auto& constRegistry = registry;
+  const auto* storage = constRegistry.storage<sx::comps::Transform>();
+  ASSERT_NE(storage, nullptr);
+  ASSERT_EQ(storage->capacity(), 2u * pageSlots);
+
+  const auto diagnostics = world.getMemoryDiagnostics(
+      sx::WorldMemoryDiagnosticsOptions{.includeMemoryLayoutDetails = true});
+  std::size_t liveBytes = 0u;
+  std::size_t spareBytes = 0u;
+  bool foundSecondPageLiveRun = false;
+  bool foundSecondPageSpareRun = false;
+  for (const auto& region : diagnostics.memoryRegions) {
+    for (const auto& span : region.spans) {
+      if (span.category != sx::WorldMemoryDataCategory::SimulationState
+          || span.diagnosticLabel.find("Transforms payload page")
+                 == std::string::npos) {
+        continue;
+      }
+      if (span.logicalUse == sx::WorldMemoryLogicalUse::Live) {
+        liveBytes += span.sizeBytes;
+        foundSecondPageLiveRun |= span.diagnosticLabel.find("page 1 live slots")
+                                  != std::string::npos;
+      } else if (span.logicalUse == sx::WorldMemoryLogicalUse::Spare) {
+        spareBytes += span.sizeBytes;
+        foundSecondPageSpareRun
+            |= span.diagnosticLabel.find("page 1 spare slots")
+               != std::string::npos;
+      }
+    }
+  }
+
+  EXPECT_EQ(liveBytes, entityCount * sizeof(sx::comps::Transform));
+  EXPECT_EQ(
+      spareBytes,
+      (storage->capacity() - entityCount) * sizeof(sx::comps::Transform));
+  EXPECT_TRUE(foundSecondPageLiveRun);
+  EXPECT_TRUE(foundSecondPageSpareRun);
+}
+
+TEST(WorldMemoryDiagnostics, ReportsExactRelativeAllocatorRegionsAndTypedPages)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto rigidBody = world.addRigidBody("layout_body");
+  (void)rigidBody;
+  auto& registry = sx::detail::registryOf(world);
+  const auto geometryEntity = registry.create();
+  registry.emplace<sx::comps::CollisionGeometry>(geometryEntity);
+
+  const auto summary = world.getMemoryDiagnostics();
+  EXPECT_FALSE(summary.memoryLayoutDetailsIncluded);
+  EXPECT_TRUE(summary.memoryRegions.empty());
+
+  const auto diagnostics = world.getMemoryDiagnostics(
+      sx::WorldMemoryDiagnosticsOptions{
+          .includeStorageLayoutDetails = true,
+          .includeMemoryLayoutDetails = true});
+  ASSERT_TRUE(diagnostics.memoryLayoutDetailsIncluded);
+  ASSERT_FALSE(diagnostics.memoryRegions.empty());
+
+  bool foundFreeList = false;
+  bool foundFrameArena = false;
+  bool foundTypedModel = false;
+  bool foundTypedGeometry = false;
+  bool foundTypedState = false;
+  bool foundAllocatorBookkeeping = false;
+  bool foundAllocatorInfrastructure = false;
+  for (std::size_t regionIndex = 0;
+       regionIndex < diagnostics.memoryRegions.size();
+       ++regionIndex) {
+    const auto& region = diagnostics.memoryRegions[regionIndex];
+    EXPECT_EQ(region.addressOrder, regionIndex);
+    EXPECT_EQ(
+        region.evidence, sx::WorldMemoryEvidenceKind::ActualBackingRegion);
+    EXPECT_GT(region.sizeBytes, 0u);
+    foundFreeList |= region.kind == sx::WorldMemoryRegionKind::FreeListBacking;
+    foundFrameArena |= region.kind == sx::WorldMemoryRegionKind::FrameArena;
+
+    std::size_t expectedOffset = 0u;
+    for (const auto& span : region.spans) {
+      EXPECT_EQ(span.offsetBytes, expectedOffset);
+      EXPECT_GT(span.sizeBytes, 0u);
+      expectedOffset += span.sizeBytes;
+      foundTypedModel
+          |= span.category == sx::WorldMemoryDataCategory::SimulationModel
+             && span.evidence
+                    == sx::WorldMemoryEvidenceKind::TypedPayloadOverlay;
+      foundTypedGeometry
+          |= span.category == sx::WorldMemoryDataCategory::CollisionGeometry
+             && span.evidence
+                    == sx::WorldMemoryEvidenceKind::TypedPayloadOverlay;
+      foundTypedState
+          |= span.category == sx::WorldMemoryDataCategory::SimulationState
+             && span.evidence
+                    == sx::WorldMemoryEvidenceKind::TypedPayloadOverlay;
+      foundAllocatorBookkeeping
+          |= span.evidence == sx::WorldMemoryEvidenceKind::AllocatorBookkeeping;
+      foundAllocatorInfrastructure
+          |= span.state == sx::WorldMemorySpanState::Metadata
+             && span.category
+                    == sx::WorldMemoryDataCategory::AllocatorInfrastructure;
+      if (span.state == sx::WorldMemorySpanState::Metadata) {
+        EXPECT_EQ(
+            span.category,
+            sx::WorldMemoryDataCategory::AllocatorInfrastructure);
+      } else if (span.state != sx::WorldMemorySpanState::Allocated) {
+        EXPECT_EQ(span.category, sx::WorldMemoryDataCategory::None);
+        EXPECT_EQ(span.logicalUse, sx::WorldMemoryLogicalUse::NotApplicable);
+      }
+    }
+    EXPECT_EQ(expectedOffset, region.sizeBytes);
+  }
+
+  EXPECT_TRUE(foundFreeList);
+  EXPECT_TRUE(foundFrameArena);
+  EXPECT_TRUE(foundTypedModel);
+  EXPECT_TRUE(foundTypedGeometry);
+  EXPECT_TRUE(foundTypedState);
+  EXPECT_TRUE(foundAllocatorBookkeeping);
+  EXPECT_TRUE(foundAllocatorInfrastructure);
+}
+
+TEST(WorldMemoryDiagnostics, ClassifiesStableConfigStateAndScratchComponents)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto& registry = sx::detail::registryOf(world);
+  const auto entity = registry.create();
+  registry.emplace<sx::comps::KinematicBodyTag>(entity);
+  registry.emplace<sx::comps::KinematicBodyStepTrace>(entity);
+  registry.emplace<sx::comps::RigidAvbdContactConfig>(entity);
+  registry.emplace<sx::comps::DeformableVbdConfig>(entity);
+  registry.emplace<sx::comps::DeformableSolverScratch>(
+      entity, world.getMemoryManager().getFreeAllocator());
+
+  const auto diagnostics = world.getMemoryDiagnostics(
+      sx::WorldMemoryDiagnosticsOptions{.includeMemoryLayoutDetails = true});
+  const auto hasTypedOverlay = [&diagnostics](
+                                   sx::WorldMemoryDataCategory category,
+                                   std::string_view label) {
+    for (const auto& region : diagnostics.memoryRegions) {
+      for (const auto& span : region.spans) {
+        if (span.category == category
+            && span.evidence == sx::WorldMemoryEvidenceKind::TypedPayloadOverlay
+            && span.diagnosticLabel.find(label) != std::string::npos) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  EXPECT_TRUE(hasTypedOverlay(
+      sx::WorldMemoryDataCategory::SimulationControl,
+      "Kinematic-body configuration"));
+  EXPECT_TRUE(hasTypedOverlay(
+      sx::WorldMemoryDataCategory::SimulationCache,
+      "Kinematic-body step trace"));
+  EXPECT_TRUE(hasTypedOverlay(
+      sx::WorldMemoryDataCategory::ContactSolver,
+      "Rigid AVBD contact configuration"));
+  EXPECT_TRUE(hasTypedOverlay(
+      sx::WorldMemoryDataCategory::ContactSolver,
+      "Deformable VBD configuration"));
+  EXPECT_TRUE(hasTypedOverlay(
+      sx::WorldMemoryDataCategory::SimulationCache,
+      "Deformable solver scratch"));
 }

@@ -20,6 +20,7 @@
 #include <chrono>
 #include <iomanip>
 #include <memory>
+#include <numeric>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -224,7 +225,8 @@ std::string formatDelta(double delta, std::string_view unit)
 const MetricDelta* findDelta(
     const SnapshotComparison* comparison, std::string_view key)
 {
-  if (comparison == nullptr || !comparison->generationMatches) {
+  if (comparison == nullptr || !comparison->schemaMatches
+      || !comparison->generationMatches) {
     return nullptr;
   }
   const auto found = std::find_if(
@@ -253,6 +255,158 @@ const Eigen::Vector4d& memoryMapColor(MemoryMapCellKind kind)
   return reserved;
 }
 
+MemoryAddressState addressState(simulation::WorldMemorySpanState state)
+{
+  using State = simulation::WorldMemorySpanState;
+  switch (state) {
+    case State::Metadata:
+      return MemoryAddressState::Metadata;
+    case State::Allocated:
+      return MemoryAddressState::Allocated;
+    case State::Free:
+      return MemoryAddressState::Free;
+    case State::Reserved:
+      return MemoryAddressState::Reserved;
+    case State::Padding:
+      return MemoryAddressState::Padding;
+  }
+  return MemoryAddressState::Reserved;
+}
+
+MemoryAddressCategory addressCategory(
+    simulation::WorldMemoryDataCategory category)
+{
+  using Category = simulation::WorldMemoryDataCategory;
+  switch (category) {
+    case Category::None:
+      return MemoryAddressCategory::None;
+    case Category::AllocatorInfrastructure:
+      return MemoryAddressCategory::AllocatorInfrastructure;
+    case Category::SimulationModel:
+      return MemoryAddressCategory::SimulationModel;
+    case Category::CollisionGeometry:
+      return MemoryAddressCategory::CollisionGeometry;
+    case Category::SimulationState:
+      return MemoryAddressCategory::SimulationState;
+    case Category::SimulationControl:
+      return MemoryAddressCategory::SimulationControl;
+    case Category::ContactSolver:
+      return MemoryAddressCategory::ContactSolver;
+    case Category::SimulationCache:
+      return MemoryAddressCategory::SimulationCache;
+    case Category::EntityIndex:
+      return MemoryAddressCategory::EntityIndex;
+    case Category::SimulationMetadata:
+      return MemoryAddressCategory::SimulationMetadata;
+    case Category::FrameScratch:
+      return MemoryAddressCategory::FrameScratch;
+    case Category::Unclassified:
+      return MemoryAddressCategory::Unknown;
+  }
+  return MemoryAddressCategory::Unknown;
+}
+
+MemoryAddressLogicalUse addressLogicalUse(
+    simulation::WorldMemoryLogicalUse logicalUse)
+{
+  using LogicalUse = simulation::WorldMemoryLogicalUse;
+  switch (logicalUse) {
+    case LogicalUse::NotApplicable:
+      return MemoryAddressLogicalUse::NotApplicable;
+    case LogicalUse::Live:
+      return MemoryAddressLogicalUse::Live;
+    case LogicalUse::Tombstone:
+      return MemoryAddressLogicalUse::Tombstone;
+    case LogicalUse::Spare:
+      return MemoryAddressLogicalUse::Spare;
+  }
+  return MemoryAddressLogicalUse::NotApplicable;
+}
+
+MemoryAddressEvidence addressEvidence(
+    simulation::WorldMemoryEvidenceKind evidence)
+{
+  switch (evidence) {
+    case simulation::WorldMemoryEvidenceKind::TypedPayloadOverlay:
+      return MemoryAddressEvidence::TypedPayloadOverlay;
+    case simulation::WorldMemoryEvidenceKind::AllocatorBookkeeping:
+    case simulation::WorldMemoryEvidenceKind::ActualBackingRegion:
+      return MemoryAddressEvidence::AllocatorBookkeeping;
+  }
+  return MemoryAddressEvidence::AllocatorBookkeeping;
+}
+
+const Eigen::Vector4d& memoryAddressColor(MemoryAddressCategory category)
+{
+  static const Eigen::Vector4d none(0.36, 0.39, 0.44, 1.0);
+  static const Eigen::Vector4d allocatorInfrastructure(0.63, 0.59, 0.48, 1.0);
+  static const Eigen::Vector4d model(0.24, 0.53, 0.84, 1.0);
+  static const Eigen::Vector4d geometry(0.46, 0.72, 0.21, 1.0);
+  static const Eigen::Vector4d state(0.11, 0.70, 0.72, 1.0);
+  static const Eigen::Vector4d control(0.95, 0.67, 0.18, 1.0);
+  static const Eigen::Vector4d contact(0.88, 0.34, 0.33, 1.0);
+  static const Eigen::Vector4d simulationCache(0.62, 0.43, 0.83, 1.0);
+  static const Eigen::Vector4d entityIndex(0.87, 0.45, 0.67, 1.0);
+  static const Eigen::Vector4d simulationMetadata(0.48, 0.64, 0.80, 1.0);
+  static const Eigen::Vector4d frameScratch(0.30, 0.69, 0.45, 1.0);
+  static const Eigen::Vector4d unknown(0.48, 0.50, 0.54, 1.0);
+  switch (category) {
+    case MemoryAddressCategory::None:
+      return none;
+    case MemoryAddressCategory::AllocatorInfrastructure:
+      return allocatorInfrastructure;
+    case MemoryAddressCategory::SimulationModel:
+      return model;
+    case MemoryAddressCategory::CollisionGeometry:
+      return geometry;
+    case MemoryAddressCategory::SimulationState:
+      return state;
+    case MemoryAddressCategory::SimulationControl:
+      return control;
+    case MemoryAddressCategory::ContactSolver:
+      return contact;
+    case MemoryAddressCategory::SimulationCache:
+      return simulationCache;
+    case MemoryAddressCategory::EntityIndex:
+      return entityIndex;
+    case MemoryAddressCategory::SimulationMetadata:
+      return simulationMetadata;
+    case MemoryAddressCategory::FrameScratch:
+      return frameScratch;
+    case MemoryAddressCategory::Unknown:
+      return unknown;
+  }
+  return unknown;
+}
+
+gui::PanelBlockPattern memoryAddressPattern(
+    MemoryAddressState state, MemoryAddressLogicalUse logicalUse)
+{
+  using Pattern = gui::PanelBlockPattern;
+  if (state == MemoryAddressState::Allocated) {
+    if (logicalUse == MemoryAddressLogicalUse::Tombstone) {
+      return Pattern::CrossHatch;
+    }
+    if (logicalUse == MemoryAddressLogicalUse::Spare) {
+      return Pattern::Dots;
+    }
+    return Pattern::Solid;
+  }
+  switch (state) {
+    case MemoryAddressState::Metadata:
+      return Pattern::CrossHatch;
+    case MemoryAddressState::Allocated:
+      return Pattern::Solid;
+    case MemoryAddressState::Free:
+      return Pattern::ForwardHatch;
+    case MemoryAddressState::Reserved:
+      return Pattern::Dots;
+    case MemoryAddressState::Padding:
+      return Pattern::BackwardHatch;
+  }
+  return Pattern::Solid;
+}
+
 std::string formatMapUnits(std::size_t value, std::string_view unit)
 {
   if (unit == "bytes") {
@@ -264,7 +418,7 @@ std::string formatMapUnits(std::size_t value, std::string_view unit)
 void renderMemoryMaps(
     gui::PanelBuilder& builder, const DiagnosticSnapshot& snapshot)
 {
-  if (!builder.collapsingHeader("2D memory maps", true)) {
+  if (!builder.collapsingHeader("Capacity composition (logical)", false)) {
     return;
   }
 
@@ -298,13 +452,170 @@ void renderMemoryMaps(
     for (const MemoryMapCell& cell : row.cells) {
       blocks.push_back(
           gui::PanelBlock{
-              .rgba = memoryMapColor(cell.kind), .tooltip = cell.tooltip});
+              .rgba = memoryMapColor(cell.kind),
+              .tooltip = cell.tooltip,
+              .pattern = gui::PanelBlockPattern::Solid,
+              .segments = {}});
     }
     builder.blockGrid(summary + "##" + row.key, blocks, 32);
   }
 
   if (!rendered) {
     builder.text("No non-empty logical capacity maps are available.");
+  }
+}
+
+void addressLegendItem(
+    gui::PanelBuilder& builder, MemoryAddressCategory category, bool sameLine)
+{
+  if (sameLine) {
+    builder.sameLine();
+  }
+  builder.colorSwatch(
+      memoryAddressCategoryLabel(category), memoryAddressColor(category));
+}
+
+void renderAddressMaps(
+    gui::PanelBuilder& builder, const DiagnosticSnapshot& snapshot)
+{
+  if (!builder.collapsingHeader("Address map (actual regions)", true)) {
+    return;
+  }
+
+  builder.text(
+      "Each row is one real contiguous virtual-memory backing allocation. "
+      "Cells run from relative offset +0 left-to-right, then top-to-bottom; "
+      "separate rows are discontinuous and raw bases/gaps are hidden.");
+  builder.text(
+      "Page/cache-line boundary guides are unavailable in this portable "
+      "snapshot; the visible scale is adaptive bytes per cell.");
+  addressLegendItem(builder, MemoryAddressCategory::SimulationModel, false);
+  addressLegendItem(builder, MemoryAddressCategory::CollisionGeometry, true);
+  addressLegendItem(builder, MemoryAddressCategory::SimulationState, true);
+  addressLegendItem(builder, MemoryAddressCategory::SimulationControl, false);
+  addressLegendItem(builder, MemoryAddressCategory::ContactSolver, true);
+  addressLegendItem(builder, MemoryAddressCategory::SimulationCache, true);
+  addressLegendItem(builder, MemoryAddressCategory::FrameScratch, false);
+  addressLegendItem(builder, MemoryAddressCategory::EntityIndex, true);
+  addressLegendItem(builder, MemoryAddressCategory::SimulationMetadata, true);
+  addressLegendItem(builder, MemoryAddressCategory::Unknown, false);
+  addressLegendItem(
+      builder, MemoryAddressCategory::AllocatorInfrastructure, true);
+  addressLegendItem(builder, MemoryAddressCategory::None, true);
+  builder.text(
+      "Patterns: solid=allocated/live | cross=tombstone or metadata | "
+      "dots=spare or reserved");
+  builder.text("Patterns continued: /=free | \\=padding");
+
+  if (snapshot.addressMaps.empty()) {
+    builder.text("No allocator backing regions are available.");
+    return;
+  }
+  for (const MemoryAddressMapRow& row : snapshot.addressMaps) {
+    if (row.cells.empty()) {
+      continue;
+    }
+    const std::size_t minimumBytesPerCell = row.totalBytes / row.cells.size();
+    const std::size_t maximumBytesPerCell
+        = minimumBytesPerCell
+          + static_cast<std::size_t>(row.totalBytes % row.cells.size() != 0u);
+    std::string scale = formatBytes(static_cast<double>(minimumBytesPerCell));
+    if (minimumBytesPerCell != maximumBytesPerCell) {
+      scale += "-" + formatBytes(static_cast<double>(maximumBytesPerCell));
+    }
+    const std::string summary
+        = row.label + ": " + formatBytes(static_cast<double>(row.totalBytes))
+          + " | " + std::to_string(row.cells.size()) + " cells | " + scale
+          + "/cell";
+    std::vector<std::vector<gui::PanelBlockSegment>> segmentStorage;
+    segmentStorage.reserve(row.cells.size());
+    std::vector<gui::PanelBlock> blocks;
+    blocks.reserve(row.cells.size());
+    for (const MemoryAddressCell& cell : row.cells) {
+      segmentStorage.emplace_back();
+      auto& renderedSegments = segmentStorage.back();
+      renderedSegments.reserve(cell.segments.size());
+      for (const MemoryAddressCellSegment& segment : cell.segments) {
+        renderedSegments.push_back(
+            gui::PanelBlockSegment{
+                .rgba = memoryAddressColor(segment.category),
+                .weight = static_cast<double>(segment.sizeBytes),
+                .pattern
+                = memoryAddressPattern(segment.state, segment.logicalUse)});
+      }
+      blocks.push_back(
+          gui::PanelBlock{
+              .rgba = memoryAddressColor(MemoryAddressCategory::Unknown),
+              .tooltip = cell.tooltip,
+              .pattern = gui::PanelBlockPattern::Solid,
+              .segments = renderedSegments});
+    }
+    builder.blockGrid(summary + "##" + row.key, blocks, 32);
+  }
+
+  if (builder.collapsingHeader("Address-map exact range table", false)) {
+    constexpr std::size_t maximumRows = 512u;
+    const std::size_t totalRows = std::accumulate(
+        snapshot.addressMaps.begin(),
+        snapshot.addressMaps.end(),
+        std::size_t{0},
+        [](std::size_t sum, const MemoryAddressMapRow& row) {
+          return sum + row.spans.size();
+        });
+    builder.text(
+        "Showing first " + std::to_string(std::min(totalRows, maximumRows))
+        + " of " + std::to_string(totalRows) + " exact spans.");
+    for (const MemoryAddressMapRow& row : snapshot.addressMaps) {
+      builder.text(
+          row.label + " | source: " + row.source
+          + " | limitation: " + row.limitation);
+    }
+    constexpr std::array<std::string_view, 5> columns{
+        "Region / relative range",
+        "State / use",
+        "Category",
+        "Evidence",
+        "Diagnostic label"};
+    if (builder.beginTable("address_map_exact_ranges", columns)) {
+      std::size_t renderedRows = 0u;
+      bool truncated = false;
+      for (const MemoryAddressMapRow& row : snapshot.addressMaps) {
+        for (const MemoryAddressSpan& span : row.spans) {
+          if (renderedRows == maximumRows) {
+            truncated = true;
+            break;
+          }
+          builder.tableNextRow();
+          if (builder.tableNextColumn()) {
+            builder.text(
+                row.label + " +[" + std::to_string(span.offsetBytes) + ", "
+                + std::to_string(span.offsetBytes + span.sizeBytes) + ")");
+          }
+          if (builder.tableNextColumn()) {
+            builder.text(
+                std::string(memoryAddressStateLabel(span.state)) + " / "
+                + memoryAddressLogicalUseLabel(span.logicalUse));
+          }
+          if (builder.tableNextColumn()) {
+            builder.text(memoryAddressCategoryLabel(span.category));
+          }
+          if (builder.tableNextColumn()) {
+            builder.text(memoryAddressEvidenceLabel(span.evidence));
+          }
+          if (builder.tableNextColumn()) {
+            builder.text(span.label);
+          }
+          ++renderedRows;
+        }
+        if (truncated) {
+          break;
+        }
+      }
+      builder.endTable();
+      if (truncated) {
+        builder.text("Range table truncated after 512 exact spans.");
+      }
+    }
   }
 }
 
@@ -417,6 +728,15 @@ void renderPanelContents(
   if (builder.slider("Sample interval (s)", interval, 0.1, 5.0)) {
     session.setSampleIntervalSeconds(interval);
   }
+  double addressMapCells = static_cast<double>(session.addressMapCellLimit());
+  if (builder.slider(
+          "Address-map detail (cells / region)",
+          addressMapCells,
+          32.0,
+          4096.0)) {
+    session.setAddressMapCellLimit(
+        static_cast<std::size_t>(std::llround(addressMapCells)));
+  }
 
   const double now = monotonicNowSeconds();
   bool sampledManually = false;
@@ -460,13 +780,17 @@ void renderPanelContents(
         "Session-observed RSS peak: "
         + formatBytes(*session.observedResidentPeakBytes()));
   }
-  if (comparisonPtr != nullptr && !comparisonPtr->generationMatches) {
+  if (comparisonPtr != nullptr && !comparisonPtr->schemaMatches) {
+    builder.text(
+        "Baseline uses an incompatible diagnostics schema; deltas hidden.");
+  } else if (comparisonPtr != nullptr && !comparisonPtr->generationMatches) {
     builder.text(
         "Baseline belongs to another World generation; deltas hidden.");
   } else if (!session.baseline()) {
     builder.text("No baseline selected; delta column is inactive.");
   }
 
+  renderAddressMaps(builder, snapshot);
   renderMemoryMaps(builder, snapshot);
   renderHistory(builder, session);
   renderMetricSection(
@@ -566,11 +890,44 @@ DiagnosticSnapshot collectMemoryDiagnostics(
       std::string(objectLimitation));
   const simulation::WorldMemoryDiagnostics memory = world.getMemoryDiagnostics(
       simulation::WorldMemoryDiagnosticsOptions{
-          .includeStorageLayoutDetails = true});
+          .includeStorageLayoutDetails = true,
+          .includeMemoryLayoutDetails = true});
   const common::MemoryManager& manager = world.getMemoryManager();
   const common::FreeListAllocator& freeAllocator
       = manager.getFreeListAllocator();
   const common::PoolAllocator& poolAllocator = manager.getPoolAllocator();
+
+  constexpr std::string_view addressSource
+      = "WorldMemoryDiagnostics allocator bookkeeping and typed ECS payload "
+        "page overlays";
+  for (const simulation::WorldMemoryRegionDiagnostics& region :
+       memory.memoryRegions) {
+    std::vector<MemoryAddressSpan> spans;
+    spans.reserve(region.spans.size());
+    for (const simulation::WorldMemorySpanDiagnostics& span : region.spans) {
+      spans.push_back(
+          MemoryAddressSpan{
+              .offsetBytes = span.offsetBytes,
+              .sizeBytes = span.sizeBytes,
+              .state = addressState(span.state),
+              .category = addressCategory(span.category),
+              .logicalUse = addressLogicalUse(span.logicalUse),
+              .evidence = addressEvidence(span.evidence),
+              .label = span.diagnosticLabel});
+    }
+    snapshot.addressMaps.push_back(makeMemoryAddressMapRow(
+        "address.region." + std::to_string(region.addressOrder),
+        region.diagnosticLabel,
+        region.sizeBytes,
+        std::move(spans),
+        "one actual World-owned contiguous backing allocation",
+        std::string(addressSource),
+        "Offsets are relative to this region. Raw process addresses and "
+        "inter-region gaps are omitted. Typed colors identify exact known "
+        "payload pages; TU-local compute scratch and nested container buffers "
+        "without a stable typed address remain unattributed. This layout does "
+        "not measure memory accesses or hardware cache behavior."));
+  }
 
   constexpr std::string_view freeSource
       = "World MemoryManager FreeListAllocator counters";
@@ -1011,7 +1368,7 @@ gui::Panel createMemoryDiagnosticsPanel(
 
   gui::Panel panel;
   panel.title = "Memory Diagnostics";
-  panel.initialSize = std::array<double, 2>{640.0, 640.0};
+  panel.initialSize = std::array<double, 2>{720.0, 900.0};
   panel.autoResize = false;
   panel.horizontalScrollbar = true;
   panel.dockSide = gui::DockSide::Right;

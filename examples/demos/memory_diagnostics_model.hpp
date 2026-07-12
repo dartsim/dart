@@ -24,7 +24,7 @@
 
 namespace dart::examples::demos {
 
-inline constexpr char kMemoryDiagnosticsSchema[] = "dart.memory-diagnostics.v1";
+inline constexpr char kMemoryDiagnosticsSchema[] = "dart.memory-diagnostics.v2";
 inline constexpr char kProcessResidentBytesKey[] = "process.resident_bytes";
 inline constexpr char kProcessPeakResidentBytesKey[]
     = "process.peak_resident_bytes";
@@ -66,6 +66,8 @@ struct DiagnosticSnapshot
   std::uint64_t frame{0};
   double simulationTimeSeconds{0.0};
   std::vector<DiagnosticMetric> metrics;
+  /// Current-sample actual backing-region maps. History/baselines omit them.
+  std::vector<MemoryAddressMapRow> addressMaps;
   /// Current-sample logical maps. History and baseline snapshots omit them.
   std::vector<MemoryMapRow> memoryMaps;
   std::vector<std::string> guidance;
@@ -111,12 +113,14 @@ struct MetricDelta
 
 struct SnapshotComparison
 {
+  bool schemaMatches{false};
   bool generationMatches{false};
   std::uint64_t generation{0};
   std::vector<MetricDelta> metrics;
 };
 
-/// Compares only values with matching key/unit/quality/scope/source/generation.
+/// Compares only values with matching schema/key/unit/quality/scope/source and
+/// World generation.
 SnapshotComparison compareSnapshots(
     const DiagnosticSnapshot& baseline, const DiagnosticSnapshot& current);
 
@@ -168,6 +172,9 @@ public:
   double sampleIntervalSeconds() const noexcept;
   void setSampleIntervalSeconds(double seconds) noexcept;
 
+  std::size_t addressMapCellLimit() const noexcept;
+  void setAddressMapCellLimit(std::size_t maximumCells);
+
   /// Collects when enabled and the cadence is due. Returns true on collection.
   bool update(double monotonicNowSeconds);
 
@@ -207,6 +214,7 @@ private:
   std::optional<DiagnosticSnapshot> mLatest;
   std::optional<DiagnosticSnapshot> mBaseline;
   std::optional<double> mObservedResidentPeakBytes;
+  std::size_t mAddressMapCellLimit{256};
   std::size_t mHistoryLimit{0};
   std::vector<DiagnosticSnapshot> mHistorySlots;
   std::size_t mHistoryStart{0};

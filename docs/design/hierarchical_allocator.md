@@ -202,8 +202,16 @@ caller-owned or stage-owned reuse path is part of the built-in World loop.
 
 The current implementation is exercised by focused allocator tests, comparative
 benchmark checkers, `World` memory diagnostics tests, registry rebuild-boundary
-tests, and baked-step no-growth/no-heap gates. Prefer evidence in code and
-verifiers over large copied scene inventories in this design doc:
+tests, and baked-step no-growth/no-heap gates. The opt-in detailed diagnostics
+also snapshot each real free-list/frame backing allocation as a complete
+region-relative partition and refine known allocated ranges with exact typed ECS
+page overlays. Collection stays below the World facade and adds no allocation
+tagging to the normal hot path. It exposes virtual layout and fragmentation,
+not access frequency or cache misses; the full evidence contract lives in
+[`memory_layout_diagnostics.md`](memory_layout_diagnostics.md).
+
+Prefer evidence in code and verifiers over large copied scene inventories in
+this design doc:
 
 - allocator contracts: `tests/unit/common/`;
 - allocator comparative checks: `tests/benchmark/common/` and
