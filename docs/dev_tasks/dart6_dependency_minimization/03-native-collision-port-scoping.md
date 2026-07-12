@@ -109,7 +109,7 @@ the incumbent for each capability.
 ## The target (DART 6.20) - `dart/collision/`
 
 - Clean factory interface: `CollisionDetector` (virtuals: `collide×2`, `distance×2`, `raycast`, `createCollisionGroup`, `createCollisionObject`, `refreshCollisionObject`, `getType`, `cloneWithoutCollisionObjects`), `CollisionGroup`, `CollisionObject`, `CollisionResult`, `Contact`, `CollisionOption`.
-- Detectors: **`dart`** (basic, narrowphase-only, no broadphase/distance/raycast, limited shapes), **`fcl`** (full; **hardcoded default** created in *both* `ConstraintSolver` constructors via `FCLCollisionDetector::create()` - `dart/constraint/ConstraintSolver.cpp:322` & `:342`; core), `ode`, `bullet`.
+- Detectors: **`dart`** (basic, narrowphase-only, no broadphase/distance/raycast, limited shapes), **`fcl`** (full; **hardcoded default** created in *both* `ConstraintSolver` constructors via `FCLCollisionDetector::create()` - `dart/constraint/ConstraintSolver.cpp:416` & `:433`; core), `ode`, `bullet`.
 - FCL coupling to break: default detector, `VoxelGridShape`/octree (only FCL, via `fcl::OcTree`), distance queries (**FCL-only** - Bullet/ODE/DART `distance()` are warn-and-return stubs).
 - Capability incumbents (verified in-tree, for parity targeting): **distance -> FCL only** (`::fcl::distance`; others stub), **raycast -> Bullet only** (only `BulletCollisionDetector` overrides `raycast()`; FCL/ODE/DART fall back to the base "not supported"), **VoxelGrid/octree -> FCL only**.
 
@@ -127,10 +127,10 @@ The port is **not a copy**:
 | gz requirement | Evidence | Native-port obligation |
 | --- | --- | --- |
 | `find_package(DART COMPONENTS collision-bullet collision-ode utils utils-urdf)` | `.deps/gz-physics/CMakeLists.txt` | Keep `collision-bullet` + `collision-ode` **components resolvable** (real or facade). |
-| Subclasses `BulletCollisionDetector` / `OdeCollisionDetector` (`GzBulletCollisionDetector`/`GzOdeCollisionDetector` add `SetCollisionPairMaxContacts`) | `dartsim/src/GzCollisionDetector.*` | Those detector classes must stay **subclassable** with the same interface (facade-over-native is OK only if it preserves it). |
+| Subclasses `OdeCollisionDetector` **only** (`GzOdeCollisionDetector` adds `SetCollisionPairMaxContacts`; there is no `GzBulletCollisionDetector` — Bullet is used via plain `create()`) | `dartsim/src/GzOdeCollisionDetector.{hh,cc}` | `OdeCollisionDetector` must stay **subclassable** with overridable `collide()` (facade-over-native is OK only if it preserves that); Bullet/FCL only need `create()` + name resolution. |
 | `SetWorldCollisionDetector("bullet"/"ode"/"fcl"/"dart")` | `dartsim/src/WorldFeatures.cc` | All four names must keep resolving. |
 | `world->getLastCollisionResult().getContacts()`; `Contact{point,normal,penetrationDepth,force,collisionObject1/2}` | `dartsim/src/SimulationFeatures.cc` | Native `Contact` must populate the same fields with equivalent semantics. |
-| Per-pair contact capping | `GzCollisionDetector::LimitCollisionPairMaxContacts` | Native must honor `CollisionOption.maxNumContactsPerPair`. |
+| Per-pair contact capping | `GzOdeCollisionDetector::LimitCollisionPairMaxContacts` | Native must honor `CollisionOption.maxNumContactsPerPair`. |
 | CI gate | `scripts/run_gz_physics_task.sh` (ctest + plugin-links-DART check) | `pixi run -e gazebo test-gz` must stay green on every phase. |
 
 ## Feature-parity matrix (native must match the default detector)
@@ -220,7 +220,7 @@ Success means **both**:
    components. This phase must prove gz subclassing still works, not just
    `find_package`.
 6. **Default flip.** Flip native in *both* `ConstraintSolver` constructors
-   (`ConstraintSolver.cpp:322` & `:342`) and confirm runtime
+   (`ConstraintSolver.cpp:416` & `:433`) and confirm runtime
    `setCollisionDetector` remains unaffected. Require the full A/B packet,
    `pixi run test-all`, and `pixi run -e gazebo test-gz` before merge.
 7. **FCL decoupling.** Only after the default flip is green, drop FCL from the
