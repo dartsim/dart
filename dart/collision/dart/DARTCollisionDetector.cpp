@@ -64,6 +64,8 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 
 namespace dart {
 namespace collision {
@@ -542,6 +544,7 @@ DARTCollisionDetector::cloneWithoutCollisionObjects() const
 {
   auto clone = DARTCollisionDetector::create();
   clone->setNumCollisionThreads(mNumCollisionThreads);
+  clone->setSoftFaceInteriorContactsEnabled(mSoftFaceInteriorContactsEnabled);
   return clone;
 }
 
@@ -582,6 +585,18 @@ void DARTCollisionDetector::setNumCollisionThreads(std::size_t numThreads)
 std::size_t DARTCollisionDetector::getNumCollisionThreads() const
 {
   return mNumCollisionThreads;
+}
+
+//==============================================================================
+void DARTCollisionDetector::setSoftFaceInteriorContactsEnabled(bool enabled)
+{
+  mSoftFaceInteriorContactsEnabled = enabled;
+}
+
+//==============================================================================
+bool DARTCollisionDetector::getSoftFaceInteriorContactsEnabled() const
+{
+  return mSoftFaceInteriorContactsEnabled;
 }
 
 //==============================================================================
@@ -973,6 +988,10 @@ double DARTCollisionDetector::distance(
 //==============================================================================
 DARTCollisionDetector::DARTCollisionDetector() : CollisionDetector()
 {
+  if (const char* value = std::getenv("DART_SOFT_FACE_INTERIOR_CONTACTS")) {
+    mSoftFaceInteriorContactsEnabled
+        = value[0] != '\0' && std::strcmp(value, "0") != 0;
+  }
   mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
 }
 
