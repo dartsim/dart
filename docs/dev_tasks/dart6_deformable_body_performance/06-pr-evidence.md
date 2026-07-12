@@ -4,14 +4,15 @@
 
 PR [#3382](https://github.com/dartsim/dart/pull/3382) is open from
 `wp-db-native-soft-fallback` to `release-6.20`. Published head
-`b25462ca5c0` is current with base `fa17fad79b9`; the local four-commit stack
-through runner commit `9a7bab76948` and this final evidence refresh have not
-been pushed.
+`b25462ca5c0` is current with base `fa17fad79b9`; the local six-commit stack
+through runner correction `a122c5ab437` and this final evidence refresh have
+not been pushed.
 
-The local commit fixes the current WP-DB.04 mass-matrix review finding and adds
-`SoftDynamicsTest.pointMassAccelerationsDoNotAffectMassMatrices`. The regression
-failed before the production correction, then passed afterward. Current local
-gates:
+Local implementation commit `2ad156e7b82` fixes the current WP-DB.04
+mass-matrix review finding and adds
+`SoftDynamicsTest.pointMassAccelerationsDoNotAffectMassMatrices`. The
+regression failed before the production correction, then passed afterward.
+Current local gates:
 
 ```text
 pixi run lint                                      PASS
@@ -163,8 +164,8 @@ Those rows remain supporting context only because they:
   16-thread and `soft_open_chain` cases; and
 - have wide per-pair spreads despite near-tied medians.
 
-Local commit `9a7bab76948` now provides the required bounded runner through
-`pixi run bm-soft-body-paired`. Its full protocol:
+Local commits `9a7bab76948` and `a122c5ab437` now provide the required bounded
+runner through `pixi run bm-soft-body-paired`. Its full protocol:
 
 - resolves the requested revision once, requires it to be the clean current
   HEAD, and builds that SHA in a detached dedicated Release/profile tree without
@@ -177,10 +178,14 @@ Local commit `9a7bab76948` now provides the required bounded runner through
   `--benchmark_min_time=0.5s` and one repetition, and cools down for at least 10
   seconds between pairs;
 - requires an initial continuous 600-second idle window at 1-minute load at or
-  below `1.0`, then rejects a pair if load rises by more than `0.5`, a sibling
-  DART workload appears, or available thermal sensors exceed `80 C` or the idle
-  baseline by more than `15 C`; total sensor absence remains explicit metadata
-  and relies on the load/idle window rather than inventing temperature data;
+  below `1.0`; requires each pair to start with available thermal sensors below
+  `80 C` and no more than `15 C` above the idle baseline; and rejects the pair
+  if load rises by more than `0.5` or a sibling DART workload appears in any
+  before/after snapshot. Temperatures after a detector runs are observational:
+  the workload itself heats this host, detector order alternates to balance that
+  effect, and the next pair waits for the start gate again. Total sensor absence
+  remains explicit metadata and relies on the load/idle window rather than
+  inventing temperature data;
 - preserves every backend JSON/log, executable provenance, pair ratio,
   affinity, CPU-scaling state, thermal/load snapshots, and the complete idle
   sample history; and
@@ -200,12 +205,25 @@ pixi run bm-soft-body-paired \
   --output-dir ".benchmark_results/wp-db-native-paired-${sha}"
 ```
 
-No timing artifact was captured while implementing the runner. The 2026-07-12
-continuation first observed 1-minute load above 34; the later final probe still
-showed sibling DART builds, load `14.74`, and package temperature `100 C`.
-Deferring the run is required by the protocol, not missing validation. The
-runner itself passed 37/37 focused tests, 212/212 full Python tests, repository
-lint and AI-command checks, and two independent clean reviews.
+No final timing artifact was captured while implementing the runner. The first
+full attempt at `8553203db25` completed its dedicated build and both-thread
+checksum qualification, then was interrupted during preflight with no raw
+timing rows, summary, verdict, or `COMPLETE.json`; its directory is explicit
+non-evidence. A bounded follow-up diagnostic used that pinned binary for one
+canonical `soft_cubes/16` invocation per detector from a clean 55-57 C start.
+`dart` heated the observed package maximum to 93 C and direct `native` to 86 C,
+while 1-minute load stayed within 0.04 and both rows were warning-free. Those
+two rows are thermal-gate design evidence only, not winner evidence. They prove
+that post-run temperature is workload-induced on this host, so only pair-start
+temperature gates validity; post-run values remain recorded and detector order
+alternates. The next pair still waits for thermal recovery.
+
+The 2026-07-12 continuation first observed 1-minute load above 34; a later
+probe still showed sibling DART builds, load `14.74`, and package temperature
+`100 C`. Deferring the final run is required by the protocol, not missing
+validation. The corrected runner passed 38/38 focused tests, 213/213 full
+Python tests, repository lint and AI-command checks, and two independent clean
+reviews.
 
 Post-merge revalidation after composing the upstream AABB-tree broadphase
 (#3368) with the soft-fallback lane: focused battery 5/5, full suite

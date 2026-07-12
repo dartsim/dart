@@ -32,6 +32,7 @@ branch    wp-db-native-soft-fallback
 impl      2ad156e7b82  (followed locally by this handoff/docs update)
 handoff   dbfed2fdd88  (followed locally by durable-owner promotion)
 runner    9a7bab76948  (balanced final-head evidence infrastructure)
+correction a122c5ab437 (pair-start thermal gate)
 origin    b25462ca5c0
 base      fa17fad79b9
 PR        https://github.com/dartsim/dart/pull/3382
@@ -59,14 +60,14 @@ No GitHub mutation was made for this packet. Before an approved push, fetch and
 merge the latest `origin/release-6.20` if it moved, then reverify the merged
 state.
 
-Commit `9a7bab76948` adds the reviewed `bm-soft-body-paired` evidence runner.
-It has 37/37 focused tests, 212/212 full Python tests, clean lint/AI-command
-checks, and two clean independent reviews. It resolves the old manual A/B
-reproducibility gap at the tooling level, but no final artifact has been
-captured: sibling DART builds still drove the observed host to load `14.74` and
-package temperature `100 C`. Use the exact clean-HEAD command and completion
-rules in `RESUME.md`; do not bypass its idle/thermal gates or resume a partial
-artifact.
+Commits `9a7bab76948` and `a122c5ab437` provide the reviewed
+`bm-soft-body-paired` evidence runner. The current runner stack has 38/38
+focused tests, 213/213 full Python tests, clean lint/AI-command checks, and two
+clean independent reviews. It resolves the old manual A/B reproducibility gap
+at the tooling level, but no final artifact has been captured: sibling DART
+builds still drove the observed host to load `14.74` and package temperature
+`100 C`. Use the exact clean-HEAD command and completion rules in `RESUME.md`;
+do not bypass its idle/thermal gates or resume a partial artifact.
 
 ## Hosted blockers
 

@@ -26,6 +26,8 @@ unresolved. The immediate work is review/CI stewardship and honest closeout.
   owners`)
 - Latest balanced-evidence runner commit: `9a7bab76948` (`Add balanced soft-body
   detector runner`)
+- Latest runner correction commit: `a122c5ab437` (`Correct paired benchmark
+  thermal gate`)
 - Published head: `origin/wp-db-native-soft-fallback` at `b25462ca5c0`
 - Local state: the implementation and following handoff/durable-owner updates
   are not published; verify the exact current HEAD and ahead count
@@ -89,26 +91,33 @@ this correctness-only matrix-query fix.
 
 ## 2026-07-12 balanced-evidence runner packet
 
-Local commit `9a7bab76948` adds the bounded replacement for the manual
-native-vs-DART A/B method. It pins one clean HEAD in a detached dedicated
-Release/profile build, qualifies checksums at threads 1 and 16, keeps each
-row's warmup adjacent to its 20 alternating measured pairs, gates load and
-available thermal sensors before and across each pair, preserves raw JSON/logs
-and idle history, and writes authoritative `COMPLETE.json` last.
+Local commits `9a7bab76948` and `a122c5ab437` provide the bounded replacement
+for the manual native-vs-DART A/B method. The runner pins one clean HEAD in a
+detached dedicated Release/profile build, qualifies checksums at threads 1 and
+16, keeps each row's warmup adjacent to its 20 alternating measured pairs,
+gates load and sibling work across each pair, requires a recovered thermal
+state when each pair starts, records post-run heating observationally,
+preserves raw JSON/logs and idle history, and writes authoritative
+`COMPLETE.json` last.
 
-Verification on that commit:
+Verification on the current runner stack:
 
-- focused synthetic and mocked-orchestration tests: 37/37 passed;
-- full Python suite: 212/212 passed;
+- focused synthetic and mocked-orchestration tests: 38/38 passed;
+- full Python suite: 213/213 passed;
 - `pixi run lint`: passed;
 - `pixi run check-ai-commands`: passed;
 - `git diff --check`: passed;
 - independent protocol/evidence review: clean;
 - independent adversarial runner/test review: clean.
 
-No real timing run was used as verification for the runner itself. The final
-paired artifact remains an explicit next action once the shared host is idle
-and cool.
+The first full attempt completed its build and checksum gates but was
+interrupted during idle preflight, so it has no timing rows or completion
+marker. A two-row `soft_cubes/16` diagnostic then proved canonical invocations
+heat this host from 55-57 C to 86-93 C without materially moving 1-minute load.
+That diagnostic corrected the gate: thermal recovery is required at pair
+start, while post-run temperatures are observational and alternating order
+balances self-heating. The diagnostic is not winner evidence. The final paired
+artifact remains an explicit next action once the shared host is idle and cool.
 
 ## Live PR blockers and external evidence
 
@@ -134,12 +143,12 @@ At published head `b25462ca5c0`, GitHub reports #3382 mergeable but blocked:
   tie on only two single-thread rows; they do not resolve the five failed rows.
   The original matrix command and recovered scratch method are now documented
   in `06-pr-evidence.md`, including why the scratch rows do not satisfy the
-  gate. Local commit `9a7bab76948` now provides the reviewed, revision-pinned
-  replacement runner, but no final artifact exists yet. The 2026-07-12 host
-  probe still showed sibling builds, 1-minute load `14.74`, and package
-  temperature `100 C`; running under that state would be invalid. Capture the
-  balanced artifact once the runner's own idle/thermal gates can pass, or
-  obtain explicit maintainer acceptance before task retirement.
+  gate. Local commits `9a7bab76948` and `a122c5ab437` now provide the reviewed,
+  revision-pinned replacement runner, but no final artifact exists yet. The
+  2026-07-12 host probe still showed sibling builds, 1-minute load `14.74`, and
+  package temperature `100 C`; running under that state would be invalid.
+  Capture the balanced artifact once the runner's own idle/thermal gates can
+  pass, or obtain explicit maintainer acceptance before task retirement.
 - The formal definition of "competitive implementations" still needs
   maintainer sign-off. The current proposal is in-tree CPU/backend comparison
   plus normalized paper metrics; do not treat PR publication as approval.
@@ -158,8 +167,9 @@ At published head `b25462ca5c0`, GitHub reports #3382 mergeable but blocked:
    `origin/release-6.20` into the published topic branch (never rebase), resolve
    conflicts, and rerun the relevant gates on the merged state.
 3. Push the complete unpublished stack: review fix `2ad156e7b82`, handoff
-   `dbfed2fdd88`, durable owners `574dc2a28cf`, runner `9a7bab76948`, and this
-   final handoff refresh. Resolve the addressed automated-review thread only if
+   `dbfed2fdd88`, durable owners `574dc2a28cf`, runner `9a7bab76948`, evidence
+   refresh `8553203db25`, runner correction `a122c5ab437`, and this final
+   handoff refresh. Resolve the addressed automated-review thread only if
    approval covers thread mutation, and request a fresh top-level Codex review
    only if approval covers the PR comment and review capacity is available.
 4. Monitor the new head through CI. Do not rerun or weaken the exact-base MJCF
