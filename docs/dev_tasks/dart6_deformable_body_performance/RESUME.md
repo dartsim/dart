@@ -1,5 +1,13 @@
 # RESUME - DART 6 deformable body feature and performance
 
+## 2026-07-11 completion
+
+The completing PR is open:
+[#3382](https://github.com/dartsim/dart/pull/3382) (base `release-6.20`,
+head `wp-db-native-soft-fallback`), carrying the final matrix evidence, the
+winner-gate tie resolution, demos, deferrals, and follow-ups. Remaining
+stewardship: CI + review shepherding on the PR.
+
 ## 2026-07-11 endgame state
 
 All implementation packets are landed and validated on
