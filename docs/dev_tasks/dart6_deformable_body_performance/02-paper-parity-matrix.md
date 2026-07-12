@@ -1,6 +1,9 @@
 # Paper parity matrix
 
 This file converts the requested papers into tracked DART 6 acceptance targets.
+The paper models and published numbers are also preserved in the durable
+reference `docs/background/deformable_body_paper_targets.md`; approved DART 6
+scope decisions live in `docs/design/dart6_deformable_body.md`.
 
 Sources:
 
@@ -47,7 +50,7 @@ contact, and mixed LCP/friction soft contact.
 | Pinch-grasp | 1,427 total DOFs, 258 +/- 22 simulated DOFs, 29 +/- 4 contacts, 5.2 +/- 3.2 fps, 85 +/- 6% LCP time, 1.7 ms step, stiffness 1.5e4. | No soft-hand manipulation scene. | Add or defer manipulation contact scene with contact-count stability and object-state checksum. Owner: WP-DB.08, WP-DB.09. |
 | Biped walk | 334 total DOFs, 197 +/- 43 simulated DOFs, 16 +/- 3 contacts, 18.5 +/- 4.5 fps, 63 +/- 5% LCP time, 4.0 ms step, stiffness 1e3; LCP solved every 8 SIMBICON steps with a 0.5 ms SIMBICON step. | No soft-contact SIMBICON scene. | Add or defer a soft-foot walking scene with soft-contact contact counts, solver-time share, and deterministic controller outcome. Owner: WP-DB.08, WP-DB.09. |
 | LCP initial-point robustness | Contact-force magnitudes remain close when the LCP initial point is all zeros, all ones, or random values. | **Gated via reset proxy (WP-DB.02)**: `BoxedLcpConstraintSolver` exposes no public initial-guess policy hook (investigated and recorded in the test), so `test_SoftDynamics` compares steady contact-force magnitudes between an uninterrupted run and a fresh world after reset/state restoration, agreeing within 5% of system weight under both detectors (`370ac803e00`). | Met at the level the public API allows; a direct initial-guess sweep remains follow-up if a solver hook is ever exposed. Owner: WP-DB.02, WP-DB.05. |
-| Flexible rigid foot comparison | Four-link rigid foot is more stable than a simpler rigid foot, but deformable foot remains more stable because contact changes are more continuous. | No paired comparison scene. | Add or defer a paired rigid-flexible-foot and deformable-foot comparison with the same controller and seeded perturbations. Owner: WP-DB.08, WP-DB.09. |
+| Flexible rigid foot comparison | Four-link rigid foot is more stable than a simpler rigid foot, but deformable foot remains more stable because contact changes are more continuous. | DART has `atlas_v3_no_head_soft_feet.sdf`, and the Atlas SIMBICON terminal condition recognizes `SoftBodyNode` contact, but the current demo hardcodes the simple rigid-foot asset. The soft-foot asset's test only parses and steps it without ground, controller, perturbation, or comparison assertions. No four-link rigid comparator or paired evidence exists. | Add or defer a same-model comparison among simple rigid, four-link flexible-rigid, and deformable feet with the same controller and seeded perturbations. Record stability/contact metrics and deterministic outcomes. Owner: WP-DB.08, WP-DB.09. |
 
 ## Approved-deferral mapping
 
@@ -58,9 +61,9 @@ scenes. `soft_worm` and `adaptive_soft_contact` are representative reduced
 scenes, not claims of full paper-scale parity.
 
 The flexible rigid-foot versus deformable-foot comparison is not explicitly in
-the approved list and remains open. Before this temporary task folder is
-retired, move the approved deferral mapping and every remaining open row to a
-durable roadmap/design owner.
+the approved list and remains open. The approved mapping is now preserved in
+`docs/design/dart6_deformable_body.md`, and PLAN-622 names this exact remaining
+decision so the temporary task folder is no longer its only owner.
 
 ## Acceptance rule
 

@@ -20,9 +20,11 @@ unresolved. The immediate work is review/CI stewardship and honest closeout.
 - Branch: `wp-db-native-soft-fallback`
 - Latest implementation commit: `2ad156e7b82` (`Keep soft accelerations out
   of mass matrix columns`)
+- Latest completed handoff commit: `dbfed2fdd88` (`Refresh deformable PR
+  stabilization handoff`)
 - Published head: `origin/wp-db-native-soft-fallback` at `b25462ca5c0`
-- Local state: the implementation commit plus this following handoff/docs
-  update are not published; verify the exact current HEAD and ahead count
+- Local state: the implementation and following handoff/durable-owner updates
+  are not published; verify the exact current HEAD and ahead count
 - Target base observed: `origin/release-6.20` at `fa17fad79b9`
 - PR: #3382, open, non-draft, milestone `DART 6.20.0`
 - `wp-db-soft-skel-allocation-gates` is fully ancestral to the active branch
@@ -101,17 +103,21 @@ At published head `b25462ca5c0`, GitHub reports #3382 mergeable but blocked:
   quota. Do not post duplicate triggers until review capacity is available or
   the approved follow-up push is ready.
 - The final matrix artifact's machine-readable evaluator verdict is `FAIL` on
-  the expected-fastest detector gate. `06-pr-evidence.md` resolves that gate
-  from manual interleaved A/B results, but no durable command/raw artifact for
-  those interleaved rows is currently present. Capture reproducible evidence or
-  obtain explicit maintainer acceptance before task retirement.
+  the expected-fastest detector gate. Manual interleaved A/B results suggest a
+  tie on only two single-thread rows; they do not resolve the five failed rows.
+  The original matrix command and recovered scratch method are now documented
+  in `06-pr-evidence.md`, including why the scratch rows do not satisfy the
+  gate. Capture reproducible balanced CPU-time evidence or obtain explicit
+  maintainer acceptance before task retirement.
 - The formal definition of "competitive implementations" still needs
   maintainer sign-off. The current proposal is in-tree CPU/backend comparison
   plus normalized paper metrics; do not treat PR publication as approval.
-- Original WP-DB.07 and WP-DB.08 acceptance remains unmet, and some
-  paper-matrix rows fall outside the explicitly approved deferral list. Promote
-  those contracts to durable roadmap/design owners or obtain explicit closeout
-  decisions before retiring this task folder.
+- Original WP-DB.07 and WP-DB.08 acceptance remains unmet. The only identified
+  paper-matrix row outside the explicitly approved deferral list is the
+  four-link flexible-rigid-foot versus deformable-foot comparison. Durable
+  background/design owners and PLAN-622 now preserve these gaps, but the
+  flexible-foot and competitive-envelope decisions still require maintainer
+  closeout before retiring this task folder.
 
 ## Next actions
 
@@ -132,13 +138,15 @@ At published head `b25462ca5c0`, GitHub reports #3382 mergeable but blocked:
    zero-DoF soft point-mass assertion exists on `origin/main`, unlike the
    mass-matrix correction (DART 7 still has point-mass mass aggregation
    disabled). Do not fold unrelated main-branch work into #3382.
-6. Obtain the remaining competitive-envelope and packet-closeout decisions;
-   promote any accepted open work to durable owner docs.
+6. Obtain the remaining competitive-envelope and flexible-foot decisions.
+   Keep the already-created durable background/design owners and PLAN-622
+   synchronized with the result.
 7. Close the final-matrix evidence limitation documented in
    `06-pr-evidence.md` before claiming independently reproducible winner-gate
-   completion.
-8. After merge, promote durable compatibility/design facts, update the plan
-   dashboard, remove the temporary task folder in the completing closeout
+   completion. Do not benchmark while sibling builds or high host load make a
+   paired result untrustworthy.
+8. After merge, audit the new durable compatibility/design/reference owners,
+   update PLAN-622, remove the temporary task folder in the completing closeout
    change, and clean branches only with explicit approval.
 
 ## Approval boundaries
