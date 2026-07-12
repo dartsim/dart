@@ -63,10 +63,9 @@ void Shape(py::module& m)
             .def(
                 "getBoundingBox",
                 +[](const dart::dynamics::Shape* self)
-                    -> const dart::math::BoundingBox& {
+                    -> dart::math::BoundingBox {
                   return self->getBoundingBox();
-                },
-                ::py::return_value_policy::reference_internal)
+                })
             .def(
                 "computeInertia",
                 +[](const dart::dynamics::Shape* self, double mass)

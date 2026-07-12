@@ -160,6 +160,11 @@
 
 * Collision
 
+  * Speed up many-object DART-native collision queries by replacing the
+    quadratic brute-force broadphase with a dynamic AABB tree, while preserving
+    deterministic result ordering and streaming boolean-query early exits:
+    [#3368](https://github.com/dartsim/dart/pull/3368)
+
   * Speed up the DART-native collision backend by caching collision-object
     shape metadata and local bounds, refreshing the cache only when the
     associated `ShapeFrame` geometry version changes:
@@ -370,6 +375,11 @@
 
 * Simulation
 
+  * Improve MJCF loading fidelity by supporting stacked hinge/slide joint
+    compositions, enforcing `contype`/`conaffinity` collision filtering, and
+    applying per-geom friction while preserving automatic deactivation:
+    [#3369](https://github.com/dartsim/dart/pull/3369)
+
   * Add World-owned simulation memory management and optional
     `World::enterSimulationMode()` preparation so DART-owned native-collision
     same-shape simulation steps can run without steady-state heap allocations
@@ -506,6 +516,16 @@
 
 * Python
 
+  * Expose `NativeCollisionDetector` in dartpy and add an opt-in,
+    split-process DART-vs-MuJoCo comparison harness with deterministic
+    generated contact scenes and a pinned MuJoCo Pixi environment:
+    [#3367](https://github.com/dartsim/dart/pull/3367)
+
+  * Fix dartpy DOF-list accessors so `Skeleton.getDofs()` and related chain
+    DOF helpers return wrappers for DART-owned `DegreeOfFreedom` objects
+    without transferring ownership or requiring movable/copyable DOF values:
+    [#3375](https://github.com/dartsim/dart/pull/3375)
+
   * Add dartpy bindings for inverse-kinematics gradient and analytical methods,
     including a Python analytical callback bridge that lets ssik-like solvers
     feed DART's native analytical and whole-body IK pipeline:
@@ -589,6 +609,17 @@
   * Add OSG headless capture helpers, dartpy capture bindings, and
     image-verification scripts/docs for DART 6 agent visual checks:
     [#3314](https://github.com/dartsim/dart/pull/3314)
+
+  * Add active camera control with view-quality-scored adaptive viewpoints, an
+    always-on-top core `dart::gui::osg::DebugOverlay` viewer attachment that
+    renders debug layers (a ground grid, the world frame, contacts, frames,
+    velocities, centers of mass, inertia-equivalent boxes, collision bounds,
+    trajectories, and body labels) unlit and depth-test disabled, a
+    `math::BoundingBox` dartpy binding,
+    core-raycast view occlusion, a deterministic agent capture harness, and
+    claim-tied evidence selection/publication tooling for agent visual
+    verification:
+    [#3374](https://github.com/dartsim/dart/pull/3374)
 
   * Add shared `dart-gui-osg` helpers for parsing and applying GUI scale, and
     route ImGui font/style scaling through `ImGuiHandler`:

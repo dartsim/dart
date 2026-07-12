@@ -74,6 +74,7 @@ explicit, is the **active** regime and why scenes stay active:
 | WS-D | SIMD enablement | [05-simd-enablement-lane.md](05-simd-enablement-lane.md) | PG.40–PG.42 | Make merged `dart/simd` (#3229) earn its keep at proven seams; FP/ISA contracts first |
 | WS-E | Infra + evidence | [06-infra-evidence-lane.md](06-infra-evidence-lane.md) | PG.01–PG.04 | Durable baselines, profiling doc, benchmark matrix extensions, executor tooling |
 | WS-F | Native collision port | [../dart6_dependency_minimization/03-native-collision-port-scoping.md](../dart6_dependency_minimization/03-native-collision-port-scoping.md) | phases 0–7 | **External owner** — 8-phase port plan (#3234). Tracked here for sequencing only; do not duplicate its packets |
+| WS-G | MuJoCo cross-engine comparison | [08-mujoco-comparison-lane.md](08-mujoco-comparison-lane.md) | harness + gap packets | Maintainer-directed generalization bar: DART must outperform MuJoCo across arms, humanoids, many-object, sleeping, and highly dynamic workloads (full pipelines; no sleep-shortcut wins on dynamic classes) |
 
 Status across lanes lives in
 [07-orchestration-dashboard.md](07-orchestration-dashboard.md).

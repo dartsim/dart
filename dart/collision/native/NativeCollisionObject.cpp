@@ -228,8 +228,7 @@ void NativeCollisionObject::updateEngineData()
     rebuildNativeShape();
 
   if (mNativeShape) {
-    mNativeAabb = native::Aabb::transformed(
-        mNativeShape->computeLocalAabb(), mNativeTransform);
+    mNativeAabb = native::Aabb::transformed(mNativeLocalAabb, mNativeTransform);
   } else {
     mNativeAabb = native::Aabb();
   }
@@ -247,11 +246,14 @@ void NativeCollisionObject::rebuildNativeShape()
 
   if (!shape) {
     mNativeShape.reset();
+    mNativeLocalAabb = native::Aabb();
     mNativeAabb = native::Aabb();
     return;
   }
 
   mNativeShape = detail::NativeShapeConversion::create(*shape);
+  mNativeLocalAabb
+      = mNativeShape ? mNativeShape->computeLocalAabb() : native::Aabb();
 }
 
 } // namespace collision

@@ -188,11 +188,11 @@ bool ownsNativeManifoldShape(const NativeCollisionObject* object)
 
 //==============================================================================
 bool mayUseNativeManifoldContacts(
-    const std::vector<NativeCollisionObject*>& objects)
+    const std::unordered_map<std::size_t, NativeCollisionObject*>& objects)
 {
   std::size_t nativeShapeCount = 0u;
-  for (const auto* object : objects) {
-    if (!ownsNativeManifoldShape(object))
+  for (const auto& entry : objects) {
+    if (!ownsNativeManifoldShape(entry.second))
       continue;
 
     ++nativeShapeCount;
@@ -205,10 +205,10 @@ bool mayUseNativeManifoldContacts(
 
 //==============================================================================
 bool hasSoftMeshFallbackShape(
-    const std::vector<NativeCollisionObject*>& objects)
+    const std::unordered_map<std::size_t, NativeCollisionObject*>& objects)
 {
-  for (const auto* object : objects) {
-    if (object != nullptr && object->usesSoftMeshFallbackShape())
+  for (const auto& entry : objects) {
+    if (entry.second != nullptr && entry.second->usesSoftMeshFallbackShape())
       return true;
   }
 
@@ -217,12 +217,12 @@ bool hasSoftMeshFallbackShape(
 
 //==============================================================================
 bool mayUseNativeManifoldContacts(
-    const std::vector<NativeCollisionObject*>& objects1,
-    const std::vector<NativeCollisionObject*>& objects2)
+    const std::unordered_map<std::size_t, NativeCollisionObject*>& objects1,
+    const std::unordered_map<std::size_t, NativeCollisionObject*>& objects2)
 {
   bool hasNativeShape1 = false;
-  for (const auto* object : objects1) {
-    if (ownsNativeManifoldShape(object)) {
+  for (const auto& entry : objects1) {
+    if (ownsNativeManifoldShape(entry.second)) {
       hasNativeShape1 = true;
       break;
     }
@@ -231,8 +231,8 @@ bool mayUseNativeManifoldContacts(
   if (!hasNativeShape1)
     return false;
 
-  for (const auto* object : objects2) {
-    if (ownsNativeManifoldShape(object))
+  for (const auto& entry : objects2) {
+    if (ownsNativeManifoldShape(entry.second))
       return true;
   }
 
@@ -1047,12 +1047,17 @@ bool NativeCollisionDetector::collide(
     return false;
 
   auto* nativeGroup = static_cast<NativeCollisionGroup*>(group);
-  nativeGroup->updateEngineDataForCollide();
+  {
+    DART_PROFILE_SCOPED_IF_N(
+        dart::common::profile::isProfileRecordingEnabled(),
+        "NativeCollisionGroup::updateObjects");
+    nativeGroup->updateEngineData();
+  }
   native::PersistentManifoldCache* manifoldCache = nullptr;
   const bool cacheNativeManifoldContacts
-      = !hasSoftMeshFallbackShape(nativeGroup->mNativeObjects);
+      = !hasSoftMeshFallbackShape(nativeGroup->mIdToObject);
   if (cacheNativeManifoldContacts && mHasManifoldCache && option.enableContact
-      && mayUseNativeManifoldContacts(nativeGroup->mNativeObjects)) {
+      && mayUseNativeManifoldContacts(nativeGroup->mIdToObject)) {
     manifoldCache = findManifoldCache(this);
     refreshManifoldCache(nativeGroup->mCollisionObjects, manifoldCache);
   }
@@ -1060,19 +1065,29 @@ bool NativeCollisionDetector::collide(
   bool collisionFound = false;
   bool nativeManifoldContactFound = false;
   ScratchCollisionResult fallbackPairResult;
-  nativeGroup->mBroadPhase->visitPairsInline(
-      [&](std::size_t id1, std::size_t id2) {
-        auto* object1 = nativeGroup->mIdToObject[id1];
-        auto* object2 = nativeGroup->mIdToObject[id2];
-        return !processNativePair(
-            object1,
-            object2,
-            option,
-            result,
-            collisionFound,
-            nativeManifoldContactFound,
-            fallbackPairResult);
-      });
+  const auto pairVisitor = [&](std::size_t id1, std::size_t id2) {
+    auto* object1 = nativeGroup->mIdToObject.at(id1);
+    auto* object2 = nativeGroup->mIdToObject.at(id2);
+    return !processNativePair(
+        object1,
+        object2,
+        option,
+        result,
+        collisionFound,
+        nativeManifoldContactFound,
+        fallbackPairResult);
+  };
+  if (result) {
+    // Result-carrying queries need the sorted, deduplicated visitation
+    // order: which contacts survive a maxNumContacts cap is part of the
+    // observable behavior, and the ordered walk reproduces BruteForce
+    // bit-for-bit.
+    nativeGroup->mBroadPhase->visitPairs(pairVisitor);
+  } else {
+    // Boolean existence queries return no per-pair data, so traversal
+    // order cannot leak; stream the tree walk and stop at the first hit.
+    nativeGroup->mBroadPhase->visitPairsAnyOrder(pairVisitor);
+  }
 
   if (cacheNativeManifoldContacts && nativeManifoldContactFound) {
     if (!manifoldCache) {
@@ -1109,15 +1124,15 @@ bool NativeCollisionDetector::collide(
 
   auto* nativeGroup1 = static_cast<NativeCollisionGroup*>(group1);
   auto* nativeGroup2 = static_cast<NativeCollisionGroup*>(group2);
-  nativeGroup1->updateEngineDataForCollide();
-  nativeGroup2->updateEngineDataForCollide();
+  nativeGroup1->updateEngineData();
+  nativeGroup2->updateEngineData();
   native::PersistentManifoldCache* manifoldCache = nullptr;
   const bool cacheNativeManifoldContacts
-      = !hasSoftMeshFallbackShape(nativeGroup1->mNativeObjects)
-        && !hasSoftMeshFallbackShape(nativeGroup2->mNativeObjects);
+      = !hasSoftMeshFallbackShape(nativeGroup1->mIdToObject)
+        && !hasSoftMeshFallbackShape(nativeGroup2->mIdToObject);
   if (cacheNativeManifoldContacts && mHasManifoldCache && option.enableContact
       && mayUseNativeManifoldContacts(
-          nativeGroup1->mNativeObjects, nativeGroup2->mNativeObjects)) {
+          nativeGroup1->mIdToObject, nativeGroup2->mIdToObject)) {
     manifoldCache = findManifoldCache(this);
     refreshManifoldCache(
         nativeGroup1->mCollisionObjects,
@@ -1172,7 +1187,7 @@ double NativeCollisionDetector::distance(
     return 0.0;
 
   auto* nativeGroup = static_cast<NativeCollisionGroup*>(group);
-  nativeGroup->updateEngineDataForCollide();
+  nativeGroup->updateEngineData();
 
   NativeDistanceCandidate best;
   for (std::size_t i = 0u; i < nativeGroup->mCollisionObjects.size(); ++i) {
@@ -1212,8 +1227,8 @@ double NativeCollisionDetector::distance(
 
   auto* nativeGroup1 = static_cast<NativeCollisionGroup*>(group1);
   auto* nativeGroup2 = static_cast<NativeCollisionGroup*>(group2);
-  nativeGroup1->updateEngineDataForCollide();
-  nativeGroup2->updateEngineDataForCollide();
+  nativeGroup1->updateEngineData();
+  nativeGroup2->updateEngineData();
 
   NativeDistanceCandidate best;
   for (auto* object1 : nativeGroup1->mCollisionObjects) {
@@ -1253,7 +1268,7 @@ bool NativeCollisionDetector::raycast(
   native::Ray ray(from, displacement, rayLength);
 
   auto* nativeGroup = static_cast<NativeCollisionGroup*>(group);
-  nativeGroup->updateEngineDataForCollide();
+  nativeGroup->updateEngineData();
 
   std::vector<NativeRayHitCandidate> hits;
   for (auto* object : nativeGroup->mCollisionObjects) {

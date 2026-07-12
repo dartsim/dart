@@ -33,7 +33,6 @@
 #include "dart/collision/native/NativeCollisionGroup.hpp"
 
 #include "dart/collision/native/NativeCollisionObject.hpp"
-#include "dart/common/Profile.hpp"
 
 #include <algorithm>
 
@@ -44,7 +43,7 @@ namespace collision {
 NativeCollisionGroup::NativeCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
   : CollisionGroup(collisionDetector),
-    mBroadPhase(std::make_unique<native::BruteForceBroadPhase>())
+    mBroadPhase(std::make_unique<native::AabbTreeBroadPhase>())
 {
   // Do nothing
 }
@@ -66,13 +65,8 @@ void NativeCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 
   const std::size_t id = assignId(nativeObject);
   mObjectToId[object] = id;
-  if (id >= mIdToObject.size())
-    mIdToObject.resize(id + 1u, nullptr);
   mIdToObject[id] = nativeObject;
   mCollisionObjects.push_back(object);
-  mNativeObjects.push_back(nativeObject);
-  mCollisionObjectIds.push_back(id);
-  mCollisionObjectAabbs.push_back(nativeObject->getNativeAabb());
   mBroadPhase->add(id, nativeObject->getNativeAabb());
 }
 
@@ -80,11 +74,6 @@ void NativeCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 void NativeCollisionGroup::addCollisionObjectsToEngine(
     const std::vector<CollisionObject*>& collObjects)
 {
-  mCollisionObjects.reserve(mCollisionObjects.size() + collObjects.size());
-  mNativeObjects.reserve(mNativeObjects.size() + collObjects.size());
-  mCollisionObjectIds.reserve(mCollisionObjectIds.size() + collObjects.size());
-  mCollisionObjectAabbs.reserve(
-      mCollisionObjectAabbs.size() + collObjects.size());
   for (auto* collObject : collObjects)
     addCollisionObjectToEngine(collObject);
 }
@@ -100,22 +89,11 @@ void NativeCollisionGroup::removeCollisionObjectFromEngine(
   const std::size_t id = search->second;
   mBroadPhase->remove(id);
   mObjectToId.erase(search);
-  if (id < mIdToObject.size())
-    mIdToObject[id] = nullptr;
+  mIdToObject.erase(id);
   mFreeIds.push_back(id);
-  const auto objectIt
-      = std::find(mCollisionObjects.begin(), mCollisionObjects.end(), object);
-  if (objectIt != mCollisionObjects.end()) {
-    const auto index = static_cast<std::size_t>(
-        std::distance(mCollisionObjects.begin(), objectIt));
-    mCollisionObjects.erase(objectIt);
-    mNativeObjects.erase(
-        mNativeObjects.begin() + static_cast<std::ptrdiff_t>(index));
-    mCollisionObjectIds.erase(
-        mCollisionObjectIds.begin() + static_cast<std::ptrdiff_t>(index));
-    mCollisionObjectAabbs.erase(
-        mCollisionObjectAabbs.begin() + static_cast<std::ptrdiff_t>(index));
-  }
+  mCollisionObjects.erase(
+      std::remove(mCollisionObjects.begin(), mCollisionObjects.end(), object),
+      mCollisionObjects.end());
 }
 
 //==============================================================================
@@ -123,9 +101,6 @@ void NativeCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
   mBroadPhase->clear();
   mCollisionObjects.clear();
-  mNativeObjects.clear();
-  mCollisionObjectIds.clear();
-  mCollisionObjectAabbs.clear();
   mIdToObject.clear();
   mObjectToId.clear();
   mFreeIds.clear();
@@ -135,27 +110,12 @@ void NativeCollisionGroup::removeAllCollisionObjectsFromEngine()
 //==============================================================================
 void NativeCollisionGroup::updateCollisionGroupEngineData()
 {
-  const auto numObjects = mNativeObjects.size();
-  for (std::size_t i = 0u; i < numObjects; ++i)
-    mCollisionObjectAabbs[i] = mNativeObjects[i]->getNativeAabb();
-
-  mBroadPhase->updateRange(mCollisionObjectIds, mCollisionObjectAabbs);
-}
-
-//==============================================================================
-void NativeCollisionGroup::updateEngineDataForCollide()
-{
-  DART_PROFILE_SCOPED_IF_N(
-      dart::common::profile::isProfileRecordingEnabled(),
-      "NativeCollisionGroup::updateObjects");
-  const auto numObjects = mNativeObjects.size();
-  for (std::size_t i = 0u; i < numObjects; ++i) {
-    auto* nativeObject = mNativeObjects[i];
-    nativeObject->NativeCollisionObject::updateEngineData();
-    mCollisionObjectAabbs[i] = nativeObject->getNativeAabb();
+  // Iterate the id map directly instead of hashing every object through
+  // mObjectToId each step; broadphase update order cannot leak into results
+  // because pair queries are normalized and sorted before visitation.
+  for (const auto& entry : mIdToObject) {
+    mBroadPhase->update(entry.first, entry.second->getNativeAabb());
   }
-
-  mBroadPhase->updateRange(mCollisionObjectIds, mCollisionObjectAabbs);
 }
 
 //==============================================================================
