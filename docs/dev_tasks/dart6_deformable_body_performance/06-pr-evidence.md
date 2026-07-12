@@ -4,9 +4,9 @@
 
 PR [#3382](https://github.com/dartsim/dart/pull/3382) is open from
 `wp-db-native-soft-fallback` to `release-6.20`. Published head
-`b25462ca5c0` is current with base `fa17fad79b9`; the local six-commit stack
-through runner correction `a122c5ab437` and this final evidence refresh have
-not been pushed.
+`b25462ca5c0` is current with base `fa17fad79b9`; the local nine-commit stack
+through durable-contract correction `b615f5f1f6e` and this task-home refresh
+have not been pushed.
 
 Local implementation commit `2ad156e7b82` fixes the current WP-DB.04
 mass-matrix review finding and adds
@@ -224,6 +224,16 @@ probe still showed sibling DART builds, load `14.74`, and package temperature
 validation. The corrected runner passed 38/38 focused tests, 213/213 full
 Python tests, repository lint and AI-command checks, and two independent clean
 reviews.
+
+A corrected final-head attempt at `3704865daa95` then completed its dedicated
+build and all detector-equivalence rows before preflight. Across 286 host polls,
+84 failed the load gate, 74 failed a thermal gate, and 10 observed local DART
+workloads; categories overlap. The longest continuous clean interval was 141
+of 600 seconds. An explicit 11-minute interval with no task agent or tool calls
+still encountered external DART workloads and 99-100 C package temperatures.
+The attempt was interrupted with `status: interrupted`, no raw timing rows,
+summary, verdict, or `COMPLETE.json`. It is host-contamination evidence and
+explicit non-winner evidence, not a partial matrix to resume.
 
 Post-merge revalidation after composing the upstream AABB-tree broadphase
 (#3368) with the soft-fallback lane: focused battery 5/5, full suite
