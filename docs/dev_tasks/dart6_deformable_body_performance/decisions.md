@@ -39,7 +39,8 @@ reversible.
    deferrals: they require controller/FEM infrastructure that DART 6's
    point-mass `SoftBodyNode` model does not provide, and adding a volumetric
    FEM backend is not a compatibility-preserving release-branch change. Needs
-   maintainer sign-off on the deferral list.
+   maintainer sign-off on the deferral list. The named list was approved on
+   2026-07-11; rows outside it remain open rather than implicitly deferred.
 4. **Adaptive contact activation (WP-DB.05) ships opt-in.** Default behavior
    stays all-active so existing soft bodies and downstream consumers are
    unchanged; activation is enabled per soft body or per world through
@@ -76,13 +77,33 @@ reversible.
    reordering; thread-count determinism and dart==native equivalence stayed
    bit-exact, so the drift is accepted within task tolerance.
 
+8. **Public mass matrices exclude retained point-mass acceleration
+   (2026-07-12).** PR review correctly identified that the first WP-DB.04
+   implementation added `PointMass::State::mAccelerations` to every
+   generalized-coordinate mass-matrix column. Point masses are not exposed as
+   DART 6 `Skeleton` DOFs, so retained simulation acceleration is not a basis
+   acceleration for this public matrix. Decision: use only the parent body
+   response for mass and augmented-mass column assembly, keep the physical
+   acceleration term in inverse dynamics, and gate the distinction with a
+   nonzero-retained-acceleration regression. This exact correction does not
+   backport to DART 7 because `main` still has point-mass mass aggregation
+   disabled.
+9. **Dual-PR applicability for the zero-DoF assertion fix (2026-07-12).** The
+   soft point-mass `Skeleton::updateBiasImpulse` overload on live
+   `origin/main` still carries the same over-strict `getNumDofs() > 0`
+   assertion removed by release commit `10c6b6055e4`. That bug therefore
+   requires a `main` follow-up under the dual-PR policy. Keep it separate from
+   #3382 stabilization and do not use the unrelated MJCF baseline failure as a
+   reason to widen this release PR.
+
 ## Deferral list (maintainer-approved 2026-07-11)
 
 Tracked in `02-paper-parity-matrix.md` rows whose acceptance requires
 infrastructure beyond the DART 6 point-mass soft-body model:
 
-- Kim/Pollard reduced nonlinear FEM characters (Fatman jiggle, starfish, fish,
-  worm at paper scale) — requires a volumetric FEM backend.
+- Kim/Pollard reduced nonlinear FEM characters (Fatman jiggle, starfish and its
+  obstacle-escape row, fish, worm at paper scale) — requires a volumetric FEM
+  backend.
 - Jain/Liu SIMBICON-driven locomotion rows (biped push recovery, noisy floor,
   biped walk) and hand scenes (finger flick, arm fold, pinch grasp) at full
   paper scale — require controller infrastructure; representative reduced
@@ -93,3 +114,9 @@ it is deferred, so the release branch records the gap honestly. The
 maintainer approved this list as recorded on 2026-07-11; representative
 reduced scenes (soft_worm, adaptive_soft_contact) stand in for the deferred
 rows' contact and performance claims.
+
+This approval does not explicitly cover the Jain/Liu flexible-rigid-foot versus
+deformable-foot comparison. Keep that row open unless a maintainer expands the
+deferral list or a representative comparison lands. The approved decisions
+must also move to a durable design/roadmap owner before this temporary task
+folder is retired.

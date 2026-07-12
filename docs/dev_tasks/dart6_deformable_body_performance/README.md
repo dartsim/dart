@@ -9,6 +9,23 @@ Make DART 6 deformable-body simulation feature-complete, stable, and fast
 enough to beat representative competing implementations and at least match the
 published real-time or near-real-time targets from the reference papers on CPU.
 
+## Current milestone - PR stabilization
+
+The completing release slice is open as
+[#3382](https://github.com/dartsim/dart/pull/3382), from
+`wp-db-native-soft-fallback` into `release-6.20`. The implementation,
+representative demos, final same-host matrix, and the recorded subset of
+maintainer-approved paper deferrals are published. Current work is review/CI
+stabilization and closeout decisions, not another speculative optimization
+lane inside #3382.
+
+Local commit `2ad156e7b82` is one additive commit ahead of the published PR
+head. It closes the current WP-DB.04 review finding by keeping retained
+point-mass accelerations out of public mass-matrix columns and adds a regression
+for mass and augmented-mass state independence. The fix has a clean full build,
+152/152 C++ tests, and two clean independent reviews; it still needs approval
+to push. Exact takeover state is in `RESUME.md`.
+
 ## Reference scope
 
 - Kim and Pollard, "Fast Simulation of Skeleton-driven Deformable Body
@@ -20,9 +37,12 @@ published real-time or near-real-time targets from the reference papers on CPU.
   bodies, vertex and edge springs, adaptive active surface vertices near
   contact, and LCP contact/friction coupling for controller robustness.
 
-Current DART 6 `SoftBodyNode` resembles the Jain/Liu point-mass surface model,
-but it does not yet prove the full coupled equations, adaptive activation,
-contact correctness, or performance envelope.
+Before this task, DART 6 `SoftBodyNode` resembled the Jain/Liu point-mass
+surface model without proving the coupled equations, adaptive activation,
+contact correctness, or a measured performance envelope. #3382 closes a
+representative release slice of those gaps; the original paper-scale,
+large-scene scaling, and native-default contracts that remain unmet stay open
+below.
 
 ## Compatibility envelope
 
@@ -44,9 +64,10 @@ contact correctness, or performance envelope.
 - `dart/dynamics/PointMass.*` implements transform, velocity, acceleration,
   implicit point-mass bias, and contact impulse paths, but several matrix/vector
   aggregation routines remain TODO or commented out.
-- `dart/dynamics/SoftBodyNode` currently stores `std::vector<PointMass*>`, so
-  point-mass state is pointer-chased rather than contiguous. WP-DB.06 must
-  treat data layout and allocator ownership as first-class performance work.
+- `dart/dynamics/SoftBodyNode` still stores `std::vector<PointMass*>`.
+  Contiguous object storage and retained mirrors were investigated and parked
+  or rejected on design/measurement evidence; they are follow-up research, not
+  unfinished edits to smuggle into #3382.
 - `dart/constraint/SoftContactConstraint.*` supports soft-body contact plumbing
   through `SoftMeshShape` point selection and friction directions.
 - `tests/integration/test_SoftDynamics.cpp` contains active finite-state,
@@ -65,9 +86,9 @@ contact correctness, or performance envelope.
   `01-baseline-evidence.md`.
 - WP-DB.03 now converts Kim/Pollard 2011 and Jain/Liu 2011 into a concrete
   parity ledger in `02-paper-parity-matrix.md`, including paper scene metrics,
-  current DART 6 evidence, and acceptance gates. The matrix itself is complete;
-  the runnable scene, adaptive-contact, native-collision, and flagship-demo
-  follow-through remains owned by WP-DB.05, WP-DB.08, and WP-DB.09.
+  current DART 6 evidence, and acceptance gates. Representative demos and
+  adaptive-contact work landed, while rows lacking a scene or an explicitly
+  covered durable deferral remain open.
 - WP-DB.06 groundwork adds `soft_body_headless`, a deterministic checksum and
   text-profiler runner for soft-body scenes. Initial profile evidence and the
   `origin/dart6-memory-hardening` dependency analysis are recorded in
@@ -101,21 +122,22 @@ contact correctness, or performance envelope.
   rejected the simplified point-mass articulated-inertia scalar formula,
   restored the prior two-pass `updateArtInertia()` timing, and kept only a
   conservative connection-loop cleanup in `updateBiasForce()`. The latest
-  same-host comparison is recorded in `06-pr-evidence.md`; it passes checksum
-  equivalence and native-detector winner checks, but strict per-row CPU
-  threshold claims still need an exclusive idle-host rerun. A follow-up
+  intermediate same-host comparison is recorded in `06-pr-evidence.md`;
+  later final-matrix and interleaved evidence supersede its detector ranking,
+  with the remaining reproducibility limitation stated explicitly. A follow-up
   aggregation-temporary cleanup removes avoidable heap-temporary and no-op
   point-loop work from soft-body mass/gravity/force aggregation paths while
-  preserving checksums and allocation gates. The branch is now
-  stacked on
-  `origin/dart6-memory-hardening` and
-  uses its `World`/`MemoryManager`/`FrameAllocator` surfaces for native soft
-  allocation gates. The latest local gates prove the measured native soft-box
+  preserving checksums and allocation gates. The branch incorporates the
+  former `dart6-memory-hardening` stack's
+  `World`/`MemoryManager`/`FrameAllocator` surfaces for native soft allocation
+  gates; that historical remote branch is not a current integration target.
+  The latest local gates prove the measured native soft-box
   post-bake steps, a two-soft-box native stack steady-state window, and the
   `softBodies.skel`, `soft_open_chain.skel`, and contact-producing
   `soft_cubes.skel` SKEL-authored windows perform zero `operator new`, zero
-  raw `malloc`, and zero base allocator growth.
-  Contiguous point-mass storage and SIMD remain open.
+  raw `malloc`, and zero base allocator growth. Contiguous point-mass storage
+  and SIMD remain follow-up research under the measured dispositions in
+  `04-data-layout-and-memory-hardening.md`.
 - WP-DB.08 native collision slices add dynamic `SoftMeshShape` bounds and native
   point-mass contacts for soft-vs-plane, soft-vs-box, soft-vs-sphere, and
   soft-vs-ellipsoid pairs, plus a first soft-vs-soft vertex-face lane. The
@@ -132,9 +154,10 @@ contact correctness, or performance envelope.
   faster with `COLLISION_DETECTOR=dart` on this host, and the broader
   `soft_bodies` native diagnostic now runs without shape-creation or
   unsupported-pair warnings.
-  Broader scenes still need fuller triangle/contact-neighborhood coverage and
-  stronger multicore scaling beyond small pair counts before native can replace
-  FCL. Native soft allocation gates now cover the soft-box contact lane, a
+  The original native-preferred contract still needs broader triangle/contact
+  coverage and stronger multicore scaling beyond small pair counts before
+  native can replace FCL; this is an open post-#3382 packet. Native soft
+  allocation gates now cover the soft-box contact lane, a
   soft-soft stack steady-state window, and the `softBodies.skel` no-contact
   soft-dynamics window, plus `soft_open_chain` and contact-heavy `soft_cubes`
   SKEL-authored windows.
@@ -150,24 +173,24 @@ contact correctness, or performance envelope.
   native broadphase, detector, soft-dynamics, DART-detector, and allocation
   gates passed after `pixi run lint`. Current direct
   `COLLISION_DETECTOR=native` soft-scene smokes are warning-free and
-  checksum-equivalent to `COLLISION_DETECTOR=dart`; the final
-  current/parent/base matrix still gates threshold claims. The 2026-07-09
-  comparison attempt was intentionally stopped before timing rows were
-  produced, so it is not benchmark evidence.
+  checksum-equivalent to `COLLISION_DETECTOR=dart`. The 2026-07-09 comparison
+  attempt was intentionally stopped before timing rows were produced, so it is
+  not benchmark evidence; the later final matrix and its limitation are in
+  `06-pr-evidence.md`.
 
 ## Work packets
 
-| Packet | Scope | Done when |
+| Packet | Current disposition | Acceptance evidence |
 | --- | --- | --- |
-| WP-DB.01 baseline harness | Add headless Google Benchmark rows for existing soft-body scenes across single-core and multi-core CPU. | Benchmark target builds; rows report sim seconds per second, point masses, soft bodies, and threads. |
-| WP-DB.02 stability gate | Re-enable or replace `test_SoftDynamics` with finite-state and equations-of-motion checks for representative soft scenes. | Focused integration test fails on NaN/Inf, gross state blow-up, one-thread versus four-thread final-state divergence, or representative matrix/vector equation inconsistency. Current default/native-detector finite-state and deterministic final-state coverage is recorded in `03-stability-gate.md`; equation correctness coverage is recorded in `07-equation-correctness.md`. |
-| WP-DB.03 paper parity matrix | Convert both papers into a scene/feature/performance checklist. | Every representative paper demo has an owner row, current DART 6 status, target evidence, and acceptance gate in `02-paper-parity-matrix.md`. Follow-through scene implementation remains in WP-DB.05, WP-DB.08, and WP-DB.09. |
-| WP-DB.04 coupled equation correctness | Finish or replace stubbed point-mass mass, inverse-mass, gravity, combined-force, and external-force aggregation paths. | Point-mass mass-matrix, augmented-mass, inverse-mass, inverse-augmented-mass, gravity, combined-vector, external-force, and representative rigid-only/soft-only/mixed-world matrix/vector checks now have active regressions in `07-equation-correctness.md`. |
-| WP-DB.05 adaptive contact activation | Implement Jain/Liu-style active vertex neighborhoods without breaking existing all-active soft bodies. | Done: opt-in per-soft-body activation with rigid-lump frozen points, constraint-time seeding, rest-gated linger, and additive public API (`578ea17a049` + review fixes `2382b971244`). Default-off is bit-identical on the 30-row checksum battery; activation-on has deterministic thread-invariant hashes, activation-enabled zero-allocation gates, and verified free-fall/impact/settle lifecycle with fewer active DOFs. Design and review dispositions live in `08-adaptive-contact-activation.md`. |
-| WP-DB.06 CPU data layout and SIMD | Profile point-mass loops, identify contiguous/SoA/SIMD candidates, and use `dart/simd/` where it wins. | Benchmarks show single-core speedup without changing results beyond approved tolerances. Initial profiling, FCL soft-mesh refit reduction, parent-term scalar caching, vector-backed point-state/property reads in the bias-force edge loop, kinematics preflight, inverse-dynamics force updates, impulse/constrained-term state updates, matrix/vector aggregation state reads, the internal span-backed `PointMassPhaseView`, fused cached point-force aggregation, the articulated-inertia timing correction, conservative bias-force connection-loop cleanup, soft aggregation temporary cleanup, the `dart6-memory-hardening` stack, zero-allocation native soft-box plus soft-soft stack gates, and the heap-free `softBodies.skel`, `soft_open_chain`, and contact-producing `soft_cubes` SKEL gates are in `04-data-layout-and-memory-hardening.md`; heap-free contiguous point-mass object storage, retained SoA scratch, SIMD, and final idle-host threshold evidence remain open. |
-| WP-DB.07 multi-core scaling | Parallelize independent soft-body loops or scene islands behind existing thread controls. | `threads=16` rows improve on representative scenes while `threads=1` remains deterministic. Pair-level native soft-soft worker scheduling exists; broader scaling evidence still needs larger scenes or intra-pair/active-neighborhood work. |
-| WP-DB.08 native collision deformables | Make `dart/collision/native` the preferred collision solution for soft/deformable scenes instead of treating FCL as the destination backend. | Native soft-vs-plane, soft-vs-box, soft-vs-sphere, soft-vs-ellipsoid, and cached soft-vs-soft vertex-face contact lanes now have focused tests, with retained soft-face BVH pruning, pair-level finite-finite soft worker scheduling, primitive-frame soft-vs-primitive classification, direct `NativeCollisionDetector` soft/ellipsoid fallback coverage, native-detector `test_SoftDynamics` coverage, `drop_box` FCL/native checksum parity for the soft-box lane, warning-free native dispatch on the representative `soft_bodies` diagnostic, zero-allocation native soft-box plus soft-soft stack gates, and heap-free `softBodies.skel`, `soft_open_chain`, and contact-producing `soft_cubes` SKEL gates. Remaining acceptance requires fuller triangle/contact-neighborhood coverage, deterministic longer-run headless checksums, and threshold-quality performance rows where direct `native` matches or beats every checksum-equivalent backend on representative soft scenes. Current gap analysis is in `05-native-collision-deformable-lane.md`. |
-| WP-DB.09 flagship demos | Add paper-parity basic and flagship examples that are runnable headlessly and, where useful, visually. | Each representative feature/performance/correctness claim has a demo or benchmark artifact. |
+| WP-DB.01 baseline harness | Complete. | Headless benchmark rows cover representative soft scenes, point-mass/body counts, and thread settings (`01-baseline-evidence.md`). |
+| WP-DB.02 stability gate | Complete for the release slice. | Finite-state, thread-determinism, energy, contact-force/CoP smoothness, LCP robustness, and equation gates run in `test_SoftDynamics` (`03-stability-gate.md`, `07-equation-correctness.md`). |
+| WP-DB.03 paper parity matrix | Ledger complete; parity closeout still conditional. | Every paper row has an owner and gate, but rows without landed evidence need a maintainer-approved deferral in a durable owner. The recorded approval covers the named volumetric-FEM, SIMBICON, and hand-scene subset; do not infer coverage for other rows (`02-paper-parity-matrix.md`, `decisions.md`). |
+| WP-DB.04 coupled equation correctness | Local review fix complete; publication pending. | Matrix/vector projection and inverse-identity gates plus the new retained-acceleration independence regression pass on `2ad156e7b82` (`07-equation-correctness.md`). |
+| WP-DB.05 adaptive contact activation | Complete. | Opt-in ABI-safe activation is default-off bit-identical, deterministic when enabled, allocation-gated, and covered by two recorded review rounds (`08-adaptive-contact-activation.md`). |
+| WP-DB.06 CPU data layout and SIMD | #3382 disposition complete; follow-up research remains. | Kept cache/data-access slices produce the measured win; retained SoA mirrors and contiguous-object prototypes were rejected or parked because measurements/design gates did not justify keeping them. No unsupported SIMD speedup is claimed (`04-data-layout-and-memory-hardening.md`). |
+| WP-DB.07 multi-core scaling | Original acceptance unmet; promote as an open follow-up. | Pair-level work and 1/4/16-thread determinism landed, but the tracked small scenes are flat or slower at 16 threads. The original `threads=16` improvement contract therefore remains open and needs larger workloads or a maintainer-approved negative disposition in a durable roadmap owner (`06-pr-evidence.md`). |
+| WP-DB.08 native collision deformables | #3382 landing slice implemented; original acceptance unmet. | Primitive/cached soft lanes, face-interior coverage, allocation gates, and determinism landed. Native is not yet the preferred/default backend, required coverage remains in `05-native-collision-deformable-lane.md`, and the only direct-native/DART tie override is not independently reproducible. Promote the native-owned/default/performance contract as an open follow-up. |
+| WP-DB.09 flagship demos | Representative demos complete; parity closeout conditional. | `adaptive_soft_contact` and `soft_worm` are runnable, deterministic, and visually captured. Paper-matrix rows outside the explicitly approved deferral subset remain open until implemented or durably deferred (`02-paper-parity-matrix.md`, `decisions.md`). |
 
 The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
 
@@ -187,21 +210,23 @@ The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
 - For contact or solver changes: add the Gazebo gate from `docs/ai/verification.md`
   when the touched surface can affect downstream collision/constraint behavior.
 
-## Open decisions
+## Closeout decisions and follow-ups
 
-- Whether DART 6 should preserve `SoftBodyNode` as the public API and replace
-  internals, or introduce an opt-in compatibility-preserving deformable solver
-  alongside it.
-- Which external implementations are the formal "competitive implementations"
-  for measured comparison on DART 6.
-- Which paper demos are mandatory for the first release-branch PR versus later
-  follow-up packets.
-- Whether native soft collision should initially support full triangle meshes,
-  adaptive active-vertex contact neighborhoods, or both. The long-term target is
-  native as the best DART collision backend; the current FCL work is an interim
-  measured fix for the existing soft-body path.
-- The completing PR should include same-host baseline-vs-branch performance
-  rows plus commands and locally captured videos for any newly added GUI
-  deformable-body examples. Current smoke rows are in `06-pr-evidence.md`, but
-  the final PR should still use a cleaner host run before setting threshold
-  claims.
+- `SoftBodyNode` remains the DART 6 public API; implementation state stays out
+  of public layouts. The completing PR uses additive non-virtual controls only.
+- The first-PR demo subset and paper-scale deferrals are maintainer-approved in
+  `decisions.md`; approval does not automatically cover matrix rows omitted from
+  that explicit list.
+- The proposed formal competitive-implementation envelope is the in-tree
+  CPU/backend comparison plus normalized paper metrics. It still needs
+  maintainer sign-off before the broad objective or task retirement can be
+  claimed; external-engine comparison remains a follow-up.
+- Direct native and DART share the current soft kernels and are treated as a
+  measured tie; the native-owned kernel port is specified but not smuggled into
+  this stabilization phase.
+- The zero-DoF soft point-mass assertion fix in `10c6b6055e4` also applies to
+  `main` and requires the dual-PR follow-up. The current mass-matrix review fix
+  is release-only because DART 7 still has point-mass mass aggregation disabled.
+- Before retiring this temporary task folder, promote the unresolved WP-DB.03,
+  WP-DB.07, WP-DB.08, and WP-DB.09 contracts to durable roadmap/design owners,
+  obtain the remaining scope decisions, and update `docs/plans/dashboard.md`.

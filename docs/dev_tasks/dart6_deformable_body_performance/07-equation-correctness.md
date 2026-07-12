@@ -1,6 +1,8 @@
 # WP-DB.04 equation correctness
 
-Captured on 2026-07-07 from branch `wp-db-soft-skel-allocation-gates`.
+Initially captured on 2026-07-07 from branch
+`wp-db-soft-skel-allocation-gates`. Updated on 2026-07-12 for the PR #3382
+mass-matrix review correction.
 
 ## Command
 
@@ -75,6 +77,46 @@ vectors:
 
 This completes the current public DART 6 `Skeleton` matrix/vector equation
 gate for WP-DB.04. It is not a claim of paper-level deformable solver parity.
+
+## 2026-07-12 review correction
+
+The current PR review found that the first implementation still composed each
+point-mass mass-matrix column with the retained
+`PointMass::State::mAccelerations`. `Skeleton::updateMassMatrix()` sets one
+Skeleton DOF acceleration at a time, but does not overwrite point-mass state;
+therefore previous soft simulation acceleration leaked as a constant term into
+every public mass and augmented-mass column.
+
+Local follow-up commit `2ad156e7b82` removes that state term from
+`SoftBodyNode::updateMassMatrix()`. The point-mass column now contains only the
+parent body response to the generalized-coordinate basis acceleration. Physical
+inverse dynamics continues to include real point-mass accelerations through its
+separate path.
+
+`SoftDynamicsTest.pointMassAccelerationsDoNotAffectMassMatrices` is the
+regression:
+
+1. compute baseline public mass and augmented-mass matrices and compare them to
+   the analytical Jacobian projection;
+2. inject deterministic nonzero retained accelerations into every point mass;
+3. explicitly dirty the articulated-inertia/matrix caches;
+4. prove both freshly assembled public matrices are unchanged.
+
+The test failed before the production correction with large state-dependent
+terms and passed afterward. Final local evidence on `2ad156e7b82`:
+
+```text
+pixi run lint                                      PASS
+DART_DISABLE_COMPILER_CACHE=ON pixi run build     PASS
+DART_DISABLE_COMPILER_CACHE=ON pixi run test      PASS (152/152)
+test_SoftDynamics                                 PASS (16/16)
+INTEGRATION_StepAllocation                        PASS
+independent semantic and regression reviews      CLEAN x2
+```
+
+This exact correction is release-only: DART 7 `main` still has point-mass mass
+aggregation disabled. The separate zero-DoF soft bias-impulse assertion fix on
+this PR does apply to `main` and remains subject to the dual-PR policy.
 
 ## Remaining gaps
 
