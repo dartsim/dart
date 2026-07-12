@@ -12,6 +12,10 @@ import tomllib
 from pathlib import Path
 from typing import Iterable
 
+PROFILE_READ_ERRORS = (OSError, json.JSONDecodeError, AttributeError)
+PATH_RESOLUTION_ERRORS = (OSError, ValueError)
+JSON_READ_ERRORS = (OSError, json.JSONDecodeError)
+
 PROFILES = ("main", "release-6.20")
 MAX_AGENTS_BYTES = 32 * 1024
 EXCLUDED_DIRS = {".git", ".pixi", "build", "external", "node_modules"}
@@ -171,7 +175,7 @@ def detect_profile(root: Path, requested: str = "auto") -> str:
     profile_path = root / BRANCH_PROFILE
     try:
         declared = json.loads(profile_path.read_text()).get("profile")
-    except OSError, json.JSONDecodeError, AttributeError:
+    except PROFILE_READ_ERRORS:
         declared = None
     if declared in PROFILES:
         return declared
@@ -486,7 +490,7 @@ def _is_repo_relative(root: Path, value: str) -> bool:
         return False
     try:
         (root / candidate).resolve().relative_to(root.resolve())
-    except OSError, ValueError:
+    except PATH_RESOLUTION_ERRORS:
         return False
     return True
 
@@ -688,7 +692,7 @@ def check_generated_adapters(root: Path) -> list[str]:
     skills_root = root / ".agents" / "skills"
     try:
         skills_root.resolve().relative_to(root.resolve())
-    except OSError, ValueError:
+    except PATH_RESOLUTION_ERRORS:
         return [".agents/skills: generated root escapes repository"]
     if skills_root.is_symlink():
         return [".agents/skills: generated root must not be a symlink"]
@@ -1466,7 +1470,7 @@ def is_related_worktree_ai_path(root: Path, path: str) -> bool:
     manifest_path = root / ".agents" / "skills" / ".dart-generated.json"
     try:
         manifest = json.loads(manifest_path.read_text())
-    except OSError, json.JSONDecodeError:
+    except JSON_READ_ERRORS:
         manifest = {}
     owned_paths = manifest.get("paths", []) if isinstance(manifest, dict) else []
     if isinstance(owned_paths, list) and f"{skill_name}/SKILL.md" in owned_paths:

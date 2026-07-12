@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import subprocess
@@ -21,6 +22,19 @@ import install_git_hooks  # noqa: E402
 import lint_cmake  # noqa: E402
 import lint_toml  # noqa: E402
 import sync_ai_commands as sync  # noqa: E402
+
+
+@pytest.mark.parametrize(
+    "script_name",
+    ("ai_doctor.py", "ai_infrastructure.py", "sync_ai_commands.py"),
+)
+def test_ai_runtime_scripts_support_python_3_11_syntax(script_name):
+    path = SCRIPTS / script_name
+    ast.parse(
+        path.read_text(encoding="utf-8"),
+        filename=str(path),
+        feature_version=11,
+    )
 
 
 def _write(root: Path, relative: str, text: str = "fixture\n") -> Path:

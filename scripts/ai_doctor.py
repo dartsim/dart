@@ -25,6 +25,9 @@ from ai_infrastructure import (
 )
 from install_git_hooks import HOOK_TEMPLATE, SENTINEL
 
+JSON_READ_ERRORS = (OSError, json.JSONDecodeError)
+TOML_READ_ERRORS = (OSError, tomllib.TOMLDecodeError)
+
 AI_TASKS = {
     "ai-doctor",
     "ai-setup",
@@ -49,7 +52,7 @@ def parse_args() -> argparse.Namespace:
 def _read_json(path: Path) -> dict:
     try:
         data = json.loads(path.read_text())
-    except OSError, json.JSONDecodeError:
+    except JSON_READ_ERRORS:
         return {}
     return data if isinstance(data, dict) else {}
 
@@ -60,7 +63,7 @@ def _codex_trust(root: Path) -> dict[str, str]:
     try:
         with config_path.open("rb") as stream:
             config = tomllib.load(stream)
-    except OSError, tomllib.TOMLDecodeError:
+    except TOML_READ_ERRORS:
         return {
             "user_config": str(config_path),
             "project": "not-observed",

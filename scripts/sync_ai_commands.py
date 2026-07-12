@@ -27,6 +27,9 @@ import sys
 import tomllib
 from pathlib import Path
 
+PROFILE_READ_ERRORS = (OSError, json.JSONDecodeError, AttributeError)
+PATH_RESOLUTION_ERRORS = (OSError, ValueError)
+
 CODEX_NAME_LIMIT = 100
 CODEX_DESC_LIMIT = 500
 MAX_SKILL_LINES = 500
@@ -492,7 +495,7 @@ def detect_branch_profile(repo_root: Path) -> str:
     profile_path = repo_root / "docs" / "ai" / "branch-profile.json"
     try:
         declared = json.loads(profile_path.read_text()).get("profile")
-    except OSError, json.JSONDecodeError, AttributeError:
+    except PROFILE_READ_ERRORS:
         declared = None
     if declared in {"main", "release-6.20"}:
         return declared
@@ -510,7 +513,7 @@ def is_repo_relative_path(repo_root: Path, candidate: str) -> bool:
         return False
     try:
         (repo_root / path).resolve().relative_to(repo_root.resolve())
-    except OSError, ValueError:
+    except PATH_RESOLUTION_ERRORS:
         return False
     return True
 
@@ -1572,7 +1575,7 @@ def generated_target_root_error(target_dir: Path) -> str | None:
     repo_root = get_repo_root().resolve()
     try:
         target_dir.resolve().relative_to(repo_root)
-    except OSError, ValueError:
+    except PATH_RESOLUTION_ERRORS:
         return f"{display_path(target_dir)}: generated target escapes repository"
     current = target_dir
     while current != repo_root:
@@ -1860,6 +1863,7 @@ def cleanup_legacy_codex_skills(
         try:
             skill_path.parent.rmdir()
         except OSError:
+            # Cleanup is best effort; the directory may be non-empty or raced.
             pass
         print(f"  REMOVED:  {rel_path}")
 
@@ -1867,6 +1871,7 @@ def cleanup_legacy_codex_skills(
         try:
             legacy_dir.rmdir()
         except OSError:
+            # Cleanup is best effort; the directory may be non-empty or raced.
             pass
 
     clean = not generated_paths and not conflicting_paths and not unsafe_paths
@@ -2053,6 +2058,7 @@ def sync_codex_skills(
         try:
             orphan_path.rmdir()
         except OSError:
+            # Cleanup is best effort; the directory may be non-empty or raced.
             pass
         print(f"  REMOVED:  {orphan}/SKILL.md")
 
