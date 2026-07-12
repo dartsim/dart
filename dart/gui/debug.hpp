@@ -127,6 +127,11 @@ struct DebugDrawOptions
   double angularVelocityScale = 0.15;
   double velocityMinLength = 0.03;
   double velocityMaxLength = 1.2;
+  /// World-space half-thickness applied to the per-body, velocity, and contact
+  /// debug lines produced by the world-aware extraction so headless overlays
+  /// render as legible ribbons/tubes instead of single-pixel hairlines. The
+  /// grid is intentionally left thin. Set to 0 to keep every line a hairline.
+  double lineThickness = 0.006;
 };
 
 /// Applies the standard debug visual styling to a world-backed shape frame.
@@ -196,7 +201,8 @@ DART_GUI_API std::vector<DebugLineDescriptor> extractContactDebugLines(
 DART_GUI_API std::vector<DebugLineDescriptor> makePolylineDebugLines(
     const std::vector<Eigen::Vector3d>& points,
     const Eigen::Vector4d& rgba,
-    const std::string& label = {});
+    const std::string& label = {},
+    double thickness = 0.0);
 
 DART_GUI_API std::vector<DebugLineDescriptor> extractDebugLines(
     const DebugDrawOptions& options = {});

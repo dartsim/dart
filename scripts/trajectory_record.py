@@ -112,10 +112,36 @@ def _make_two_body_contact() -> Any:
     return world
 
 
+def _make_box_stack() -> Any:
+    """Ground plus three resting boxes of decreasing size.
+
+    Mirrors the DART 6 stack evidence scene: a static ground and three stacked
+    boxes (bottom, middle, top) that start in contact so the contacts,
+    body-frame, and label overlays all have something to draw. The bridge gives
+    the dynamic bodies distinct colors by creation order.
+    """
+
+    sx = _import_dartpy()
+    world = sx.World(time_step=0.005, gravity=(0.0, 0.0, -9.81))
+    ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.05))
+    ground.is_static = True
+    ground.set_collision_shape(sx.CollisionShape.box((2.0, 2.0, 0.1)))
+
+    # Ground top sits at z = 0; each box rests on the one below it.
+    bottom = world.add_rigid_body("box_bottom", mass=1.0, position=(0.0, 0.0, 0.2))
+    bottom.set_collision_shape(sx.CollisionShape.box((0.4, 0.4, 0.4)))
+    middle = world.add_rigid_body("box_middle", mass=0.6, position=(0.0, 0.0, 0.55))
+    middle.set_collision_shape(sx.CollisionShape.box((0.3, 0.3, 0.3)))
+    top = world.add_rigid_body("box_top", mass=0.3, position=(0.0, 0.0, 0.8))
+    top.set_collision_shape(sx.CollisionShape.box((0.2, 0.2, 0.2)))
+    return world
+
+
 _BUILTIN_SCENES: dict[str, Callable[[], Any]] = {
     "free_fall": _make_free_fall,
     "box_on_ground": _make_box_on_ground,
     "two_body_contact": _make_two_body_contact,
+    "box_stack": _make_box_stack,
 }
 
 

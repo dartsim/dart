@@ -1261,6 +1261,10 @@ class DebugDrawOptions:
     def velocity_max_length(self) -> float: ...
     @velocity_max_length.setter
     def velocity_max_length(self, arg: float, /) -> None: ...
+    @property
+    def line_thickness(self) -> float: ...
+    @line_thickness.setter
+    def line_thickness(self, arg: float, /) -> None: ...
 
 def describe_shape(shape: dartpy.dynamics.Shape) -> GeometryDescriptor | None: ...
 @overload
@@ -1574,6 +1578,7 @@ def make_polyline_debug_lines(
     ],
     rgba: Annotated[NDArray[numpy.float64], dict(shape=(4), order="C")],
     label: str = ...,
+    thickness: float = ...,
 ) -> list[DebugLineDescriptor]: ...
 def project_to_pixels(
     camera: OrbitCamera,
@@ -1596,6 +1601,8 @@ def composite_debug_labels(
     labels: Sequence[DebugLabelDescriptor],
     scale: int = ...,
     options: ProjectionOptions = ...,
+    font_size: float = ...,
+    backdrop: bool = ...,
 ) -> None: ...
 def draw_debug_text(
     # Must be an (H, W, >=3) uint8 C-contiguous array; the binding rejects
@@ -1607,6 +1614,8 @@ def draw_debug_text(
     origin_y: int,
     rgba: Annotated[NDArray[numpy.float64], dict(shape=(4), order="C")],
     scale: int = ...,
+    font_size: float = ...,
+    backdrop: bool = ...,
 ) -> None: ...
 
 class PanelBuilder:

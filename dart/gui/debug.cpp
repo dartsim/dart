@@ -93,6 +93,22 @@ void appendLine(
   lines.push_back(std::move(line));
 }
 
+/// Stamps a world-space thickness on emitted debug lines so the overlay
+/// renderer expands them into ribbons/tubes. The grid is skipped so it stays a
+/// light hairline reference instead of a heavy tangle of tubes.
+void applyLineThickness(
+    std::vector<DebugLineDescriptor>& lines, double thickness)
+{
+  if (!(thickness > 0.0) || !std::isfinite(thickness)) {
+    return;
+  }
+  for (DebugLineDescriptor& line : lines) {
+    if (line.label != "grid") {
+      line.thickness = thickness;
+    }
+  }
+}
+
 void appendArrowLines(
     std::vector<DebugLineDescriptor>& lines,
     const Eigen::Vector3d& from,
@@ -709,6 +725,7 @@ std::vector<DebugLineDescriptor> extractContactDebugLines(
     }
   }
 
+  applyLineThickness(lines, options.lineThickness);
   return lines;
 }
 
@@ -763,13 +780,15 @@ std::vector<DebugLineDescriptor> extractContactDebugLines(
     }
   }
 
+  applyLineThickness(lines, options.lineThickness);
   return lines;
 }
 
 std::vector<DebugLineDescriptor> makePolylineDebugLines(
     const std::vector<Eigen::Vector3d>& points,
     const Eigen::Vector4d& rgba,
-    const std::string& label)
+    const std::string& label,
+    double thickness)
 {
   std::vector<DebugLineDescriptor> lines;
   if (points.size() < 2u) {
@@ -778,6 +797,11 @@ std::vector<DebugLineDescriptor> makePolylineDebugLines(
   lines.reserve(points.size() - 1u);
   for (std::size_t i = 0; i + 1u < points.size(); ++i) {
     appendLine(lines, points[i], points[i + 1u], rgba, label);
+  }
+  if (thickness > 0.0 && std::isfinite(thickness)) {
+    for (DebugLineDescriptor& line : lines) {
+      line.thickness = thickness;
+    }
   }
   return lines;
 }
@@ -934,6 +958,7 @@ std::vector<DebugLineDescriptor> extractDebugLines(
       appendRigidBodyDebugLines(lines, *body, name, options);
     }
   }
+  applyLineThickness(lines, options.lineThickness);
   return lines;
 }
 

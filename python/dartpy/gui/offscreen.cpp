@@ -325,14 +325,19 @@ void defGuiOffscreen(nb::module_& m)
          const OrbitCamera& camera,
          const std::vector<dart::gui::DebugLabelDescriptor>& labels,
          int scale,
-         const dart::gui::ProjectionOptions& options) {
-        dart::gui::compositeDebugLabels(image, camera, labels, scale, options);
+         const dart::gui::ProjectionOptions& options,
+         double fontSize,
+         bool backdrop) {
+        dart::gui::compositeDebugLabels(
+            image, camera, labels, scale, options, fontSize, backdrop);
       },
       nb::arg("image"),
       nb::arg("camera"),
       nb::arg("labels"),
       nb::arg("scale") = 2,
-      nb::arg("options") = dart::gui::ProjectionOptions{});
+      nb::arg("options") = dart::gui::ProjectionOptions{},
+      nb::arg("font_size") = 0.0,
+      nb::arg("backdrop") = true);
 
   // Writes the built-in debug-label font directly into an (H, W, >=3) uint8
   // RGB/RGBA numpy array in place, so the Python label compositor reuses the
@@ -347,7 +352,9 @@ void defGuiOffscreen(nb::module_& m)
          int originX,
          int originY,
          const Eigen::Vector4d& rgba,
-         int scale) {
+         int scale,
+         double fontSize,
+         bool backdrop) {
         if (pixels.shape(2) < 3) {
           throw std::invalid_argument(
               "draw_debug_text needs an (H, W, >=3) RGB/RGBA array; got "
@@ -362,14 +369,18 @@ void defGuiOffscreen(nb::module_& m)
             originX,
             originY,
             rgba,
-            scale);
+            scale,
+            fontSize,
+            backdrop);
       },
       nb::arg("pixels").noconvert(),
       nb::arg("text"),
       nb::arg("origin_x"),
       nb::arg("origin_y"),
       nb::arg("rgba"),
-      nb::arg("scale") = 2);
+      nb::arg("scale") = 2,
+      nb::arg("font_size") = 0.0,
+      nb::arg("backdrop") = false);
 }
 
 } // namespace dart::python_nb

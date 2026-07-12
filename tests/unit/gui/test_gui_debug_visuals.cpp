@@ -37,6 +37,7 @@
 
 #include <dart/gui/debug.hpp>
 #include <dart/gui/detail/scenes.hpp>
+#include <dart/gui/offscreen.hpp>
 #include <dart/gui/renderable.hpp>
 #include <dart/gui/view_quality.hpp>
 #include <dart/gui/viewer.hpp>
@@ -63,6 +64,7 @@
 #include <vector>
 
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 
 namespace dart::gui::detail {
@@ -321,6 +323,66 @@ TEST(GuiDebugVisuals, ExtractWorldDebugLinesEmitsPerBodyLayers)
   EXPECT_FALSE(hasLabel(lines, "ground.vel_linear"));
 }
 
+TEST(GuiDebugVisuals, ExtractWorldDebugLinesAppliesThicknessExceptGrid)
+{
+  dart::simulation::World world;
+
+  dart::simulation::RigidBodyOptions boxOptions;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.3);
+  auto box = world.addRigidBody("box", boxOptions);
+  box.setCollisionShape(
+      dart::simulation::CollisionShape::makeBox(
+          Eigen::Vector3d(0.1, 0.1, 0.1)));
+
+  dart::gui::DebugDrawOptions options;
+  options.drawGrid = true;
+  options.drawWorldFrame = true;
+  options.drawBodyFrames = true;
+  options.drawCentersOfMass = true;
+  options.lineThickness = 0.01;
+
+  const auto lines = dart::gui::extractDebugLines(world, options);
+  ASSERT_FALSE(lines.empty());
+
+  bool sawGrid = false;
+  bool sawBody = false;
+  for (const auto& line : lines) {
+    if (line.label == "grid") {
+      sawGrid = true;
+      EXPECT_DOUBLE_EQ(line.thickness, 0.0) << "grid stays a hairline";
+    } else {
+      sawBody = true;
+      EXPECT_DOUBLE_EQ(line.thickness, 0.01) << line.label;
+    }
+  }
+  EXPECT_TRUE(sawGrid);
+  EXPECT_TRUE(sawBody);
+
+  // A zero thickness keeps every line a hairline.
+  options.lineThickness = 0.0;
+  const auto thinLines = dart::gui::extractDebugLines(world, options);
+  for (const auto& line : thinLines) {
+    EXPECT_DOUBLE_EQ(line.thickness, 0.0) << line.label;
+  }
+}
+
+TEST(GuiDebugVisuals, ExtractSimulationContactDebugLinesApplyThickness)
+{
+  std::vector<dart::simulation::Contact> contacts;
+  dart::simulation::Contact contact;
+  contact.point = Eigen::Vector3d(0.1, 0.2, 0.3);
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contacts.push_back(contact);
+
+  dart::gui::DebugDrawOptions options;
+  options.lineThickness = 0.008;
+  const auto lines = dart::gui::extractContactDebugLines(contacts, options);
+  ASSERT_FALSE(lines.empty());
+  for (const auto& line : lines) {
+    EXPECT_DOUBLE_EQ(line.thickness, 0.008) << line.label;
+  }
+}
+
 TEST(GuiDebugVisuals, ExtractSimulationContactDebugLinesMarkContactPoints)
 {
   std::vector<dart::simulation::Contact> contacts;
@@ -344,6 +406,68 @@ TEST(GuiDebugVisuals, ExtractSimulationContactDebugLinesMarkContactPoints)
       EXPECT_TRUE(midpoint.isApprox(contact.point, 1e-9));
     }
   }
+}
+
+TEST(GuiDebugVisuals, DrawDebugLabelTextRendersAntiAliasedGlyphs)
+{
+  const int width = 160;
+  const int height = 40;
+  const int channels = 4;
+  std::vector<std::uint8_t> pixels(
+      static_cast<std::size_t>(width) * height * channels, 0);
+
+  dart::gui::drawDebugLabelText(
+      pixels.data(),
+      width,
+      height,
+      channels,
+      "Ag1",
+      12,
+      6,
+      Eigen::Vector4d(1.0, 1.0, 1.0, 1.0),
+      2,
+      18.0,
+      false);
+
+  std::size_t lit = 0;
+  std::size_t partial = 0;
+  std::size_t solid = 0;
+  for (std::size_t i = 0; i < pixels.size(); i += channels) {
+    const std::uint8_t value = pixels[i];
+    if (value > 0) {
+      ++lit;
+    }
+    if (value > 20 && value < 235) {
+      ++partial;
+    }
+    if (value >= 235) {
+      ++solid;
+    }
+  }
+  // The atlas font must actually paint pixels, and anti-aliasing means the
+  // glyph edges land at intermediate coverage rather than a hard 1-bit mask.
+  EXPECT_GT(lit, 40u);
+  EXPECT_GT(partial, 0u);
+  EXPECT_GT(solid, 0u);
+
+  // Empty text is a no-op.
+  std::vector<std::uint8_t> untouched(
+      static_cast<std::size_t>(width) * height * channels, 0);
+  dart::gui::drawDebugLabelText(
+      untouched.data(),
+      width,
+      height,
+      channels,
+      "",
+      12,
+      6,
+      Eigen::Vector4d::Ones(),
+      2,
+      18.0,
+      false);
+  EXPECT_EQ(
+      std::count(untouched.begin(), untouched.end(), std::uint8_t{0}),
+      static_cast<std::ptrdiff_t>(untouched.size()));
 }
 
 TEST(GuiDebugVisuals, MakePolylineDebugLinesDropsZeroLengthSegments)

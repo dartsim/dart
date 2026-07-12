@@ -410,7 +410,8 @@ void defGuiDescriptors(nb::module_& m)
           "angular_velocity_scale",
           &gui::DebugDrawOptions::angularVelocityScale)
       .def_rw("velocity_min_length", &gui::DebugDrawOptions::velocityMinLength)
-      .def_rw("velocity_max_length", &gui::DebugDrawOptions::velocityMaxLength);
+      .def_rw("velocity_max_length", &gui::DebugDrawOptions::velocityMaxLength)
+      .def_rw("line_thickness", &gui::DebugDrawOptions::lineThickness);
 
   m.def("describe_shape", &gui::describeShape, nb::arg("shape"));
   m.def(
@@ -700,7 +701,8 @@ void defGuiDescriptors(nb::module_& m)
       &gui::makePolylineDebugLines,
       nb::arg("points"),
       nb::arg("rgba"),
-      nb::arg("label") = std::string{});
+      nb::arg("label") = std::string{},
+      nb::arg("thickness") = 0.0);
   m.def(
       "project_to_pixels",
       &gui::projectToPixels,

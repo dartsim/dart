@@ -42,16 +42,20 @@
 
 #include <filament/Engine.h>
 #include <filament/Scene.h>
+#include <imgui.h>
 
 #include <algorithm>
+#include <array>
 #include <iterator>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <cctype>
 #include <cmath>
+#include <cstdint>
 
 namespace dart::gui {
 namespace {
@@ -65,73 +69,162 @@ std::string toLowerAscii(std::string value)
   return value;
 }
 
-/// Compact 3x5 uppercase bitmap font for deterministic, dependency-free
-/// debug-label text on headless captures. Each glyph is five rows of three
-/// bits (most significant bit = left column).
-struct GlyphRows
+/// A `scale` unit maps to this many pixels of font height, so the historical
+/// default scale of 2 resolves to a legible ~16 px label. `fontSizePixels`
+/// overrides this mapping when a caller wants an explicit pixel height.
+constexpr double kScaleToPixels = 8.0;
+
+/// Pixel height the debug-label atlas is rasterized at. Labels are drawn by
+/// bilinearly resampling this base into the requested size, so a larger base
+/// keeps typical 12-32 px labels crisp while bounding the one-time atlas cost.
+constexpr float kDebugFontBaseSize = 32.0f;
+
+/// One cached glyph from the anti-aliased debug-label atlas: its coverage rect
+/// in atlas pixels plus the layout offsets/advance at the base font size.
+struct DebugFontGlyph
 {
-  char character;
-  std::uint8_t rows[5];
+  bool visible = false;
+  float advance = 0.0f;
+  float x0 = 0.0f, y0 = 0.0f, x1 = 0.0f, y1 = 0.0f;
+  int u0 = 0, v0 = 0, u1 = 0, v1 = 0;
 };
 
-constexpr GlyphRows kDebugLabelFont[] = {
-    {'A', {0b010, 0b101, 0b111, 0b101, 0b101}},
-    {'B', {0b110, 0b101, 0b110, 0b101, 0b110}},
-    {'C', {0b011, 0b100, 0b100, 0b100, 0b011}},
-    {'D', {0b110, 0b101, 0b101, 0b101, 0b110}},
-    {'E', {0b111, 0b100, 0b110, 0b100, 0b111}},
-    {'F', {0b111, 0b100, 0b110, 0b100, 0b100}},
-    {'G', {0b011, 0b100, 0b101, 0b101, 0b011}},
-    {'H', {0b101, 0b101, 0b111, 0b101, 0b101}},
-    {'I', {0b111, 0b010, 0b010, 0b010, 0b111}},
-    {'J', {0b001, 0b001, 0b001, 0b101, 0b010}},
-    {'K', {0b101, 0b110, 0b100, 0b110, 0b101}},
-    {'L', {0b100, 0b100, 0b100, 0b100, 0b111}},
-    {'M', {0b101, 0b111, 0b111, 0b101, 0b101}},
-    {'N', {0b101, 0b111, 0b111, 0b111, 0b101}},
-    {'O', {0b010, 0b101, 0b101, 0b101, 0b010}},
-    {'P', {0b110, 0b101, 0b110, 0b100, 0b100}},
-    {'Q', {0b010, 0b101, 0b101, 0b011, 0b001}},
-    {'R', {0b110, 0b101, 0b110, 0b110, 0b101}},
-    {'S', {0b011, 0b100, 0b010, 0b001, 0b110}},
-    {'T', {0b111, 0b010, 0b010, 0b010, 0b010}},
-    {'U', {0b101, 0b101, 0b101, 0b101, 0b111}},
-    {'V', {0b101, 0b101, 0b101, 0b010, 0b010}},
-    {'W', {0b101, 0b101, 0b111, 0b111, 0b101}},
-    {'X', {0b101, 0b010, 0b010, 0b010, 0b101}},
-    {'Y', {0b101, 0b101, 0b010, 0b010, 0b010}},
-    {'Z', {0b111, 0b001, 0b010, 0b100, 0b111}},
-    {'0', {0b111, 0b101, 0b101, 0b101, 0b111}},
-    {'1', {0b010, 0b110, 0b010, 0b010, 0b111}},
-    {'2', {0b111, 0b001, 0b111, 0b100, 0b111}},
-    {'3', {0b111, 0b001, 0b011, 0b001, 0b111}},
-    {'4', {0b101, 0b101, 0b111, 0b001, 0b001}},
-    {'5', {0b111, 0b100, 0b111, 0b001, 0b111}},
-    {'6', {0b111, 0b100, 0b111, 0b101, 0b111}},
-    {'7', {0b111, 0b001, 0b001, 0b010, 0b010}},
-    {'8', {0b111, 0b101, 0b111, 0b101, 0b111}},
-    {'9', {0b111, 0b101, 0b111, 0b001, 0b111}},
-    {'-', {0b000, 0b000, 0b111, 0b000, 0b000}},
-    {'_', {0b000, 0b000, 0b000, 0b000, 0b111}},
-    {'.', {0b000, 0b000, 0b000, 0b000, 0b010}},
-    {':', {0b000, 0b010, 0b000, 0b010, 0b000}},
-    {'/', {0b001, 0b001, 0b010, 0b100, 0b100}},
-    {'+', {0b000, 0b010, 0b111, 0b010, 0b000}},
-    {'(', {0b010, 0b100, 0b100, 0b100, 0b010}},
-    {')', {0b010, 0b001, 0b001, 0b001, 0b010}},
-    {' ', {0b000, 0b000, 0b000, 0b000, 0b000}},
+/// A CPU-side, anti-aliased, mixed-case proportional font baked once from Dear
+/// ImGui's default font atlas (`ImFontAtlas::AddFontDefault` +
+/// `GetTexDataAsAlpha8`). The offscreen path has no ImGui draw pass, so the
+/// alpha coverage and per-glyph metrics are copied out of a standalone atlas
+/// and owned here; nothing else touches an ImGui context. Immutable after
+/// construction, so the shared instance is safe to read from any thread.
+struct DebugFont
+{
+  std::vector<std::uint8_t> alpha; // atlasWidth * atlasHeight coverage
+  int atlasWidth = 0;
+  int atlasHeight = 0;
+  float baseSize = 0.0f;
+  float lineHeight = 0.0f;
+  std::array<DebugFontGlyph, 128> glyphs{}; // indexed by ASCII code point
 };
 
-const std::uint8_t* debugLabelGlyph(char character)
+DebugFont buildDebugFont()
 {
-  const char upper
-      = static_cast<char>(std::toupper(static_cast<unsigned char>(character)));
-  for (const auto& glyph : kDebugLabelFont) {
-    if (glyph.character == upper) {
-      return glyph.rows;
-    }
+  DebugFont font;
+  ImFontConfig config;
+  config.SizePixels = kDebugFontBaseSize;
+  ImFontAtlas atlas;
+  ImFont* imFont = atlas.AddFontDefault(&config);
+  if (imFont == nullptr) {
+    return font;
   }
-  return kDebugLabelFont[std::size(kDebugLabelFont) - 1].rows; // space
+
+  ImFontBaked* baked = imFont->GetFontBaked(kDebugFontBaseSize);
+  if (baked == nullptr) {
+    return font;
+  }
+  // Force every printable ASCII glyph to bake before the atlas is read, so the
+  // dynamic atlas has finished growing and the glyph vector no longer moves.
+  for (int code = 32; code < 127; ++code) {
+    baked->FindGlyph(static_cast<ImWchar>(code));
+  }
+
+  unsigned char* pixels = nullptr;
+  int width = 0;
+  int height = 0;
+  int bytesPerPixel = 0;
+  atlas.GetTexDataAsAlpha8(&pixels, &width, &height, &bytesPerPixel);
+  if (pixels == nullptr || width <= 0 || height <= 0) {
+    return font;
+  }
+
+  font.baseSize = kDebugFontBaseSize;
+  font.atlasWidth = width;
+  font.atlasHeight = height;
+  font.lineHeight = baked->Ascent - baked->Descent;
+  font.alpha.assign(
+      pixels,
+      pixels
+          + static_cast<std::size_t>(width) * static_cast<std::size_t>(height));
+
+  for (int code = 32; code < 127; ++code) {
+    const ImFontGlyph* glyph = baked->FindGlyph(static_cast<ImWchar>(code));
+    if (glyph == nullptr) {
+      continue;
+    }
+    DebugFontGlyph& out = font.glyphs[static_cast<std::size_t>(code)];
+    out.visible = glyph->Visible != 0;
+    out.advance = glyph->AdvanceX;
+    out.x0 = glyph->X0;
+    out.y0 = glyph->Y0;
+    out.x1 = glyph->X1;
+    out.y1 = glyph->Y1;
+    out.u0 = static_cast<int>(std::lround(glyph->U0 * width));
+    out.v0 = static_cast<int>(std::lround(glyph->V0 * height));
+    out.u1 = static_cast<int>(std::lround(glyph->U1 * width));
+    out.v1 = static_cast<int>(std::lround(glyph->V1 * height));
+  }
+  return font;
+}
+
+const DebugFont& debugFont()
+{
+  // Thread-safe, one-time initialization guaranteed by the C++ static-local
+  // rules; the atlas is built on first label render and never mutated after.
+  static const DebugFont font = buildDebugFont();
+  return font;
+}
+
+/// Bilinearly samples the atlas alpha coverage at fractional pixel (u, v).
+double sampleFontAlpha(const DebugFont& font, double u, double v)
+{
+  if (font.alpha.empty()) {
+    return 0.0;
+  }
+  const double clampedU
+      = std::clamp(u, 0.0, static_cast<double>(font.atlasWidth - 1));
+  const double clampedV
+      = std::clamp(v, 0.0, static_cast<double>(font.atlasHeight - 1));
+  const int x0 = static_cast<int>(std::floor(clampedU));
+  const int y0 = static_cast<int>(std::floor(clampedV));
+  const int x1 = std::min(x0 + 1, font.atlasWidth - 1);
+  const int y1 = std::min(y0 + 1, font.atlasHeight - 1);
+  const double tx = clampedU - x0;
+  const double ty = clampedV - y0;
+  const auto at = [&](int x, int y) {
+    return static_cast<double>(
+        font.alpha[static_cast<std::size_t>(y) * font.atlasWidth + x]);
+  };
+  const double top = at(x0, y0) * (1.0 - tx) + at(x1, y0) * tx;
+  const double bottom = at(x0, y1) * (1.0 - tx) + at(x1, y1) * tx;
+  return top * (1.0 - ty) + bottom * ty;
+}
+
+/// Alpha-composites an RGB color over one pixel of a tightly packed buffer.
+void blendPixel(
+    std::uint8_t* pixels,
+    std::size_t offset,
+    int channels,
+    const std::uint8_t rgb[3],
+    double alpha)
+{
+  if (alpha <= 0.0) {
+    return;
+  }
+  const double a = std::clamp(alpha, 0.0, 1.0);
+  for (int channel = 0; channel < 3; ++channel) {
+    const double base = static_cast<double>(pixels[offset + channel]);
+    pixels[offset + channel] = static_cast<std::uint8_t>(
+        base * (1.0 - a) + static_cast<double>(rgb[channel]) * a + 0.5);
+  }
+  if (channels > 3) {
+    pixels[offset + 3] = 255;
+  }
+}
+
+double resolveFontHeight(int scale, double fontSizePixels)
+{
+  if (fontSizePixels > 0.0) {
+    return fontSizePixels;
+  }
+  return static_cast<double>(std::max(1, scale)) * kScaleToPixels;
 }
 
 OffscreenRenderOptions validatedOptions(OffscreenRenderOptions options)
@@ -412,52 +505,119 @@ void drawDebugLabelText(
     int originX,
     int originY,
     const Eigen::Vector4d& rgba,
-    int scale)
+    int scale,
+    double fontSizePixels,
+    bool backdrop)
 {
-  if (pixels == nullptr || width <= 0 || height <= 0 || channels < 3) {
+  if (pixels == nullptr || width <= 0 || height <= 0 || channels < 3
+      || text.empty()) {
     return;
   }
-  const int safeScale = std::max(1, scale);
-  const auto channel = [](double value) {
+  const DebugFont& font = debugFont();
+  if (font.alpha.empty() || font.baseSize <= 0.0f) {
+    return;
+  }
+
+  const double glyphScale
+      = resolveFontHeight(scale, fontSizePixels) / font.baseSize;
+  const auto toByte = [](double value) {
     return static_cast<std::uint8_t>(std::clamp(value, 0.0, 1.0) * 255.0 + 0.5);
   };
-  const std::uint8_t red = channel(rgba[0]);
-  const std::uint8_t green = channel(rgba[1]);
-  const std::uint8_t blue = channel(rgba[2]);
+  const std::uint8_t rgb[3]
+      = {toByte(rgba[0]), toByte(rgba[1]), toByte(rgba[2])};
+  const double textAlpha = std::clamp(rgba[3], 0.0, 1.0);
 
-  int cursorX = originX;
+  const auto glyphFor = [&](char character) -> const DebugFontGlyph& {
+    auto code = static_cast<unsigned char>(character);
+    if (code < 32 || code >= 127) {
+      code = static_cast<unsigned char>('?');
+    }
+    return font.glyphs[code];
+  };
+
+  double advanceTotal = 0.0;
   for (const char character : text) {
-    const std::uint8_t* rows = debugLabelGlyph(character);
-    for (int row = 0; row < 5; ++row) {
-      for (int column = 0; column < 3; ++column) {
-        if ((rows[row] & (0b100 >> column)) == 0) {
+    advanceTotal += glyphFor(character).advance;
+  }
+  const double textWidth = advanceTotal * glyphScale;
+  const double textHeight = font.lineHeight * glyphScale;
+
+  const auto blendRect = [&](double minX,
+                             double minY,
+                             double maxX,
+                             double maxY,
+                             const std::uint8_t color[3],
+                             double alpha) {
+    const int startX = std::max(0, static_cast<int>(std::floor(minX)));
+    const int startY = std::max(0, static_cast<int>(std::floor(minY)));
+    const int endX = std::min(width, static_cast<int>(std::ceil(maxX)));
+    const int endY = std::min(height, static_cast<int>(std::ceil(maxY)));
+    for (int y = startY; y < endY; ++y) {
+      for (int x = startX; x < endX; ++x) {
+        const std::size_t offset
+            = (static_cast<std::size_t>(y) * static_cast<std::size_t>(width)
+               + static_cast<std::size_t>(x))
+              * static_cast<std::size_t>(channels);
+        blendPixel(pixels, offset, channels, color, alpha);
+      }
+    }
+  };
+
+  if (backdrop && textWidth > 0.0 && textAlpha > 0.0) {
+    const double pad = std::max(1.0, glyphScale * font.baseSize * 0.12);
+    const std::uint8_t dark[3] = {0, 0, 0};
+    blendRect(
+        originX - pad,
+        originY - pad,
+        originX + textWidth + pad,
+        originY + textHeight + pad,
+        dark,
+        0.5 * textAlpha);
+  }
+
+  double cursor = originX;
+  for (const char character : text) {
+    const DebugFontGlyph& glyph = glyphFor(character);
+    if (glyph.visible && glyph.u1 > glyph.u0 && glyph.v1 > glyph.v0) {
+      const double destX0 = cursor + glyph.x0 * glyphScale;
+      const double destY0 = originY + glyph.y0 * glyphScale;
+      const double destX1 = cursor + glyph.x1 * glyphScale;
+      const double destY1 = originY + glyph.y1 * glyphScale;
+      const int startX = static_cast<int>(std::floor(destX0));
+      const int startY = static_cast<int>(std::floor(destY0));
+      const int endX = static_cast<int>(std::ceil(destX1));
+      const int endY = static_cast<int>(std::ceil(destY1));
+      for (int y = startY; y < endY; ++y) {
+        if (y < 0 || y >= height) {
           continue;
         }
-        for (int dy = 0; dy < safeScale; ++dy) {
-          const int y = originY + row * safeScale + dy;
-          if (y < 0 || y >= height) {
+        for (int x = startX; x < endX; ++x) {
+          if (x < 0 || x >= width) {
             continue;
           }
-          for (int dx = 0; dx < safeScale; ++dx) {
-            const int x = cursorX + column * safeScale + dx;
-            if (x < 0 || x >= width) {
-              continue;
-            }
-            const std::size_t offset
-                = (static_cast<std::size_t>(y) * static_cast<std::size_t>(width)
-                   + static_cast<std::size_t>(x))
-                  * static_cast<std::size_t>(channels);
-            pixels[offset] = red;
-            pixels[offset + 1] = green;
-            pixels[offset + 2] = blue;
-            if (channels > 3) {
-              pixels[offset + 3] = 255;
-            }
+          const double fx
+              = destX1 > destX0 ? (x + 0.5 - destX0) / (destX1 - destX0) : 0.0;
+          const double fy
+              = destY1 > destY0 ? (y + 0.5 - destY0) / (destY1 - destY0) : 0.0;
+          if (fx < 0.0 || fx > 1.0 || fy < 0.0 || fy > 1.0) {
+            continue;
           }
+          const double u = glyph.u0 + fx * (glyph.u1 - glyph.u0);
+          const double v = glyph.v0 + fy * (glyph.v1 - glyph.v0);
+          const double coverage
+              = sampleFontAlpha(font, u, v) / 255.0 * textAlpha;
+          if (coverage <= 0.003) {
+            continue;
+          }
+          const std::size_t offset
+              = (static_cast<std::size_t>(y) * static_cast<std::size_t>(width)
+                 + static_cast<std::size_t>(x))
+                * static_cast<std::size_t>(channels);
+          blendPixel(pixels, offset, channels, rgb, coverage);
         }
       }
     }
-    cursorX += (3 + 1) * safeScale;
+    cursor += glyph.advance * glyphScale;
   }
 }
 
@@ -467,14 +627,16 @@ void compositeDebugLabels(
     const OrbitCamera& camera,
     const std::vector<DebugLabelDescriptor>& labels,
     int scale,
-    const ProjectionOptions& options)
+    const ProjectionOptions& options,
+    double fontSizePixels,
+    bool backdrop)
 {
   if (labels.empty() || image.pixels.empty() || image.channels < 3) {
     return;
   }
   const int width = static_cast<int>(image.width);
   const int height = static_cast<int>(image.height);
-  const int safeScale = std::max(1, scale);
+  const double fontHeight = resolveFontHeight(scale, fontSizePixels);
   for (const auto& label : labels) {
     const Eigen::Vector3d projected
         = projectToPixels(camera, width, height, label.position, options);
@@ -487,10 +649,12 @@ void compositeDebugLabels(
         height,
         static_cast<int>(image.channels),
         label.text,
-        static_cast<int>(std::lround(projected[0])) + 2,
-        static_cast<int>(std::lround(projected[1])) - 3 * safeScale,
+        static_cast<int>(std::lround(projected[0])) + 3,
+        static_cast<int>(std::lround(projected[1] - fontHeight)),
         label.rgba,
-        safeScale);
+        scale,
+        fontSizePixels,
+        backdrop);
   }
 }
 
