@@ -212,7 +212,7 @@ lint-py = { cmd = """
 """ }
 
 lint-yaml = { cmd = """
-    prettier --write '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
+    prettier --write '**/*.{yml,yaml}' '!**/.pixi/**' '!**/.claude/worktrees/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
 lint-toml = { cmd = ["bash", "-lc", "python scripts/lint_toml.py"] }
@@ -220,7 +220,7 @@ lint-toml = { cmd = ["bash", "-lc", "python scripts/lint_toml.py"] }
 lint-cmake = { cmd = ["python", "scripts/lint_cmake.py"] }
 
 lint-md = { cmd = """
-    prettier --write '**/*.md' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**' '!.codex/**' '!.opencode/**'
+    prettier --write '**/*.md' '!**/.pixi/**' '!**/.claude/worktrees/**' '!**/build/**' '!**/external/**' '!**/node_modules/**' '!.agents/skills/**' '!.opencode/**'
 """ }
 
 lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
@@ -357,7 +357,7 @@ check-lint-py = { cmd = """
 """ }
 
 check-lint-yaml = { cmd = """
-    prettier --check '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
+    prettier --check '**/*.{yml,yaml}' '!**/.pixi/**' '!**/.claude/worktrees/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
 check-lint-toml = { cmd = [
@@ -367,7 +367,7 @@ check-lint-toml = { cmd = [
 ] }
 
 check-lint-md = { cmd = """
-    prettier --check '**/*.md' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**' '!.codex/**' '!.opencode/**'
+    prettier --check '**/*.md' '!**/.pixi/**' '!**/.claude/worktrees/**' '!**/build/**' '!**/external/**' '!**/node_modules/**' '!.agents/skills/**' '!.opencode/**'
 """ }
 
 check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
@@ -449,6 +449,39 @@ check-ai-commands = { cmd = [
   "scripts/sync_ai_commands.py",
   "--check",
 ] }
+ai-setup = { cmd = ["python", "scripts/setup_ai.py"] }
+ai-doctor = { cmd = ["python", "scripts/ai_doctor.py", "--profile", "auto"] }
+check-agent-hook = { cmd = [
+  "python",
+  "scripts/check_agent_hook.py",
+  "--profile",
+  "staged",
+] }
+check-ai-infra = { cmd = [
+  "python",
+  "scripts/check_ai_infrastructure.py",
+  "--check",
+  "--profile",
+  "auto",
+] }
+exercise-agent-scenarios = { cmd = [
+  "python",
+  "scripts/exercise_agent_scenarios.py",
+  "--profile",
+  "auto",
+] }
+test-ai-infra = { cmd = [
+  "python",
+  "-m",
+  "pytest",
+  "tests/test_sync_ai_commands.py",
+  "tests/test_ai_infrastructure.py",
+  "tests/test_install_git_hooks.py",
+  "tests/test_check_agent_hook.py",
+  "tests/test_setup_ai.py",
+  "tests/test_check_docs_policy.py",
+  "-q",
+] }
 
 check-lint = { depends-on = [
   "check-lint-cpp",
@@ -487,6 +520,7 @@ check-lint = { depends-on = [
   "check-avbd-packets",
   "check-architecture-page",
   "check-ai-commands",
+  "check-ai-infra",
 ] }
 
 build = { cmd = [
@@ -1123,6 +1157,18 @@ evidence-publish = { cmd = ["python", "scripts/evidence_publish.py"] }
 agent-capture = { cmd = [
   "python",
   "scripts/agent_capture.py",
+], depends-on = [
+  "build-py-dev-docking",
+], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python:scripts" } }
+
+# Display-backed A/B proof that every debug layer used by the agent capture CI
+# changes pixels through the real Filament renderer.
+test-agent-visual-e2e = { cmd = [
+  "python",
+  "-m",
+  "pytest",
+  "python/tests/unit/test_agent_capture.py::test_run_capture_debug_layers_change_pixels_end_to_end",
+  "-q",
 ], depends-on = [
   "build-py-dev-docking",
 ], env = { BUILD_TYPE = "Release-docking", PYTHONPATH = "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:python:scripts" } }
@@ -2339,7 +2385,7 @@ api-docs-serve-py = { cmd = """
 verify-full = { cmd = "python scripts/test_all.py" }
 test-all = { depends-on = ["verify-full"] }          # backward-compatible alias
 
-# One-time setup: install the pre-commit git hook that runs check-lint-quick.
+# One-time setup: install the pre-commit git hook that runs check-agent-hook.
 install-hooks = { cmd = "python scripts/install_git_hooks.py" }
 
 # Tier 0 — inner loop: fast lint subset + fast unit tests (long poles skipped).
@@ -2673,6 +2719,7 @@ check-lint = { depends-on = [
   "check-sdf-sdformat-boundary",
   "check-lcp-solver-roster",
   "check-ai-commands",
+  "check-ai-infra",
 ] }
 
 build = { cmd = """

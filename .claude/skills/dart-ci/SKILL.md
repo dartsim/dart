@@ -7,6 +7,11 @@ description: "DART CI: GitHub Actions, cache debugging, and platform-specific fa
 
 Load this skill when debugging CI failures or working with GitHub Actions.
 
+When the failing claim depends on model/scene structure, physics behavior, or
+GUI/rendering output, also load `dart-verify-sim` and reproduce it with a text
+oracle plus assessed visual evidence. Document a visual exception when that
+renderer is unavailable or not applicable in the failing environment.
+
 ## Quick Commands
 
 ```bash
@@ -78,16 +83,9 @@ runtime validation, but it must never run untrusted fork-PR code. Consequences:
 4. Push only after explicit maintainer/user approval, then monitor:
    `gh run watch <RUN_ID>`
 
-## Caching
+## Caching And Timing
 
-- sccache/ccache reduces build time 50-70%
-- Check cache hit rates in workflow logs
-- Force cache bust by changing cache key if needed
-
-## Expected CI Times
-
-| Platform | Cached    | Uncached  |
-| -------- | --------- | --------- |
-| Ubuntu   | 20-30 min | 45-60 min |
-| macOS    | 15-25 min | 30-45 min |
-| Windows  | 15-20 min | 25-35 min |
+Use the cache policy, current timing guidance, and investigation steps in
+`docs/onboarding/ci-cd.md`. Treat observed job duration and cache diagnostics
+from the affected run as the current evidence; do not copy mutable timing or
+hit-rate estimates into this skill.

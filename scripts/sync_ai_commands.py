@@ -4,7 +4,7 @@
 Different AI coding tools read from different directories:
 - Claude Code: .claude/commands/, .claude/skills/
 - OpenCode: .opencode/command/
-- Codex: .codex/skills/ (domain-skill adapters plus workflow skill adapters)
+- Codex: .agents/skills/ (domain-skill adapters plus workflow skill adapters)
 
 This script keeps them in sync using .claude/ as the current editable source
 for workflow sources and domain skills.
@@ -22,8 +22,9 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import shutil
+import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 CODEX_NAME_LIMIT = 100
@@ -37,6 +38,9 @@ DOCS_UPDATE_REQUIRED_READING = (
 )
 NEW_TASK_REQUIRED_READING = ("docs/information-architecture.md",)
 CAPABILITY_SCHEMA_VERSION = 1
+GENERATED_SKILLS_SCHEMA_VERSION = 1
+GENERATED_SKILLS_MANIFEST = ".dart-generated.json"
+GENERATED_BY = "scripts/sync_ai_commands.py"
 CAPABILITY_STATUS_VALUES = {"active", "deprecated", "parked", "proposed"}
 CAPABILITY_WORKFLOW_GATE_PROFILE_VALUES = {
     "approval-boundary",
@@ -217,7 +221,9 @@ def list_command_names(command_dir: Path) -> set[str]:
     return {path.stem for path in command_dir.glob("*.md")}
 
 
-def list_skill_names(skill_dir: Path) -> tuple[set[str], list[str]]:
+def list_skill_names(
+    skill_dir: Path, include_names: set[str] | None = None
+) -> tuple[set[str], list[str]]:
     """Return declared skill names and frontmatter/folder consistency errors."""
     if not skill_dir.exists():
         return set(), []
@@ -227,6 +233,8 @@ def list_skill_names(skill_dir: Path) -> tuple[set[str], list[str]]:
 
     for skill_path in sorted(skill_dir.glob("*/SKILL.md")):
         folder_name = skill_path.parent.name
+        if include_names is not None and folder_name not in include_names:
+            continue
         rel_path = display_path(skill_path)
         meta = parse_skill_frontmatter(skill_path.read_text())
         declared_name = meta.get("name", "")
@@ -269,7 +277,13 @@ def check_capability_parity(repo_root: Path) -> bool:
     shared_skills, shared_skill_errors = list_skill_names(
         repo_root / ".claude" / "skills"
     )
-    codex_skills, codex_skill_errors = list_skill_names(repo_root / ".codex" / "skills")
+    codex_target = repo_root / ".agents" / "skills"
+    managed_codex_skills, manifest_errors, manifest_exists = (
+        read_generated_skills_manifest(codex_target)
+    )
+    codex_skills, codex_skill_errors = list_skill_names(
+        codex_target, managed_codex_skills
+    )
 
     expected = claude_commands | shared_skills
     agent_sets = {
@@ -280,12 +294,21 @@ def check_capability_parity(repo_root: Path) -> bool:
 
     ok = True
 
+    if not manifest_exists:
+        ok = False
+        print(
+            f"  MANIFEST ERROR: {display_path(codex_target / GENERATED_SKILLS_MANIFEST)}: "
+            "missing generated-skill ownership manifest"
+        )
+    for error in manifest_errors:
+        ok = False
+        print(f"  MANIFEST ERROR: {error}")
     if shared_skill_errors:
         ok = False
         print_skill_name_errors(".claude/skills", shared_skill_errors)
     if codex_skill_errors:
         ok = False
-        print_skill_name_errors(".codex/skills", codex_skill_errors)
+        print_skill_name_errors(".agents/skills", codex_skill_errors)
 
     if claude_commands & shared_skills:
         ok = False
@@ -315,17 +338,33 @@ def validate_style_and_budget(repo_root: Path) -> bool:
     """Validate concise, consistent command and skill metadata across agents."""
     errors: list[str] = []
 
+    codex_target = repo_root / ".agents" / "skills"
+    managed_codex_skills, manifest_errors, manifest_exists = (
+        read_generated_skills_manifest(codex_target)
+    )
+    if not manifest_exists:
+        errors.append(
+            f"{display_path(codex_target / GENERATED_SKILLS_MANIFEST)}: "
+            "missing generated-skill ownership manifest"
+        )
+    errors.extend(manifest_errors)
+
     skill_dirs = [
-        (".claude/skills", repo_root / ".claude" / "skills"),
-        (".codex/skills", repo_root / ".codex" / "skills"),
+        (".claude/skills", repo_root / ".claude" / "skills", None),
+        (".agents/skills", codex_target, managed_codex_skills),
     ]
     command_dirs = [
         (".claude/commands", repo_root / ".claude" / "commands"),
         (".opencode/command", repo_root / ".opencode" / "command"),
     ]
 
-    for label, skill_dir in skill_dirs:
+    for label, skill_dir, include_names in skill_dirs:
         for skill_path in sorted(skill_dir.glob("*/SKILL.md")):
+            if (
+                include_names is not None
+                and skill_path.parent.name not in include_names
+            ):
+                continue
             content = skill_path.read_text()
             meta = parse_skill_frontmatter(content)
             name = meta.get("name", "")
@@ -349,7 +388,7 @@ def validate_style_and_budget(repo_root: Path) -> bool:
                     f"{MAX_SKILL_LINES}-line skill budget"
                 )
 
-            if label == ".codex/skills":
+            if label == ".agents/skills":
                 for warning in validate_codex_skill(skill_path):
                     errors.append(f"{path_label}: {warning}")
 
@@ -388,6 +427,164 @@ def validate_style_and_budget(repo_root: Path) -> bool:
         "  OK: skill descriptions use display-name prefixes; command descriptions "
         "stay concise; files are within context budgets"
     )
+    return True
+
+
+def collect_pixi_task_names(pixi_path: Path) -> set[str]:
+    """Collect task names from every Pixi task table in the project manifest."""
+    manifest = tomllib.loads(pixi_path.read_text())
+    names: set[str] = set()
+
+    def visit(value: object, key: str | None = None) -> None:
+        if not isinstance(value, dict):
+            return
+        if key == "tasks":
+            names.update(str(name) for name in value)
+        for child_key, child_value in value.items():
+            visit(child_value, str(child_key))
+
+    visit(manifest)
+    return names
+
+
+def profile_skill_lines(content: str, profile: str) -> list[tuple[int, str]]:
+    """Return numbered lines outside sections owned by the other branch."""
+    if profile not in {"main", "release-6.20"}:
+        raise ValueError(f"unknown branch profile: {profile}")
+
+    excluded_level: int | None = None
+    included: list[tuple[int, str]] = []
+    excluded_marker = "dart 6" if profile == "main" else "dart 7"
+    fence_char = ""
+    fence_length = 0
+
+    for line_number, line in enumerate(content.splitlines(), start=1):
+        stripped = line.lstrip()
+        if fence_char:
+            if re.match(rf"^{re.escape(fence_char)}{{{fence_length},}}\s*$", stripped):
+                fence_char = ""
+                fence_length = 0
+            if excluded_level is None:
+                included.append((line_number, line))
+            continue
+        fence = re.match(r"^(`{3,}|~{3,})", stripped)
+        if fence:
+            fence_char = fence.group(1)[0]
+            fence_length = len(fence.group(1))
+            if excluded_level is None:
+                included.append((line_number, line))
+            continue
+        heading = re.match(r"^(#{1,6})\s+(.+?)\s*$", stripped)
+        if heading:
+            level = len(heading.group(1))
+            if excluded_level is not None and level <= excluded_level:
+                excluded_level = None
+            if excluded_marker in heading.group(2).casefold():
+                excluded_level = level
+        if excluded_level is None:
+            included.append((line_number, line))
+
+    return included
+
+
+def detect_branch_profile(repo_root: Path) -> str:
+    """Return the branch profile used for branch-headed skill sections."""
+    profile_path = repo_root / "docs" / "ai" / "branch-profile.json"
+    try:
+        declared = json.loads(profile_path.read_text()).get("profile")
+    except OSError, json.JSONDecodeError, AttributeError:
+        declared = None
+    if declared in {"main", "release-6.20"}:
+        return declared
+    result = subprocess.run(
+        ["git", "-C", str(repo_root), "branch", "--show-current"],
+        capture_output=True,
+        text=True,
+    )
+    return "release-6.20" if "release-6.20" in result.stdout else "main"
+
+
+def is_repo_relative_path(repo_root: Path, candidate: str) -> bool:
+    path = Path(candidate)
+    if path.is_absolute() or not candidate:
+        return False
+    try:
+        (repo_root / path).resolve().relative_to(repo_root.resolve())
+    except OSError, ValueError:
+        return False
+    return True
+
+
+def skill_repository_reference_errors(
+    repo_root: Path, profile: str | None = None
+) -> list[str]:
+    """Return errors for literal Pixi tasks and repo paths in source skills."""
+    errors: list[str] = []
+    profile = profile or detect_branch_profile(repo_root)
+    pixi_path = repo_root / "pixi.toml"
+    if not pixi_path.exists():
+        return [f"{display_path(pixi_path)}: missing Pixi manifest"]
+
+    try:
+        pixi_tasks = collect_pixi_task_names(pixi_path)
+    except tomllib.TOMLDecodeError as error:
+        return [f"{display_path(pixi_path)}: invalid TOML: {error}"]
+
+    pixi_run_pattern = re.compile(
+        r"\bpixi\s+run\s+"
+        r"(?:(?:--locked|--frozen)\s+|(?:-e|--environment)\s+\S+\s+)*"
+        r"([A-Za-z0-9][A-Za-z0-9_.-]*)"
+    )
+    inline_code_pattern = re.compile(r"`([^`\n]+)`")
+    repo_path_prefixes = (
+        ".agents/",
+        ".claude/",
+        ".github/",
+        "dart/",
+        "docs/",
+        "scripts/",
+        "tests/",
+    )
+
+    for skill_path in sorted((repo_root / ".claude" / "skills").glob("*/SKILL.md")):
+        for line_number, line in profile_skill_lines(skill_path.read_text(), profile):
+            for match in pixi_run_pattern.finditer(line):
+                task_name = match.group(1)
+                if task_name not in pixi_tasks:
+                    errors.append(
+                        f"{display_path(skill_path)}:{line_number}: Pixi task "
+                        f"`{task_name}` does not exist"
+                    )
+
+            for inline_value in inline_code_pattern.findall(line):
+                candidate = inline_value.rstrip(".,:;")
+                if not candidate.startswith(repo_path_prefixes):
+                    continue
+                if any(char in candidate for char in " <>*{}$[]"):
+                    continue
+                if not is_repo_relative_path(repo_root, candidate):
+                    errors.append(
+                        f"{display_path(skill_path)}:{line_number}: repo path "
+                        f"`{candidate}` escapes the repository"
+                    )
+                elif not (repo_root / candidate).exists():
+                    errors.append(
+                        f"{display_path(skill_path)}:{line_number}: repo path "
+                        f"`{candidate}` does not exist"
+                    )
+
+    return errors
+
+
+def validate_skill_repository_references(repo_root: Path) -> bool:
+    """Validate source-skill task and path references against the checkout."""
+    errors = skill_repository_reference_errors(repo_root)
+    if errors:
+        for error in errors:
+            print(f"  REFERENCE ERROR: {error}")
+        return False
+
+    print("  OK: source-skill Pixi tasks and literal repo paths exist")
     return True
 
 
@@ -1295,8 +1492,8 @@ def validate_ai_docs(repo_root: Path) -> bool:
             errors.append("AGENTS.md: missing docs/ai/workflows.md catalog pointer")
         if ".claude/commands/" not in agents_content:
             errors.append("AGENTS.md: missing .claude/commands/ source pointer")
-        if ".codex/skills/" not in agents_content:
-            errors.append("AGENTS.md: missing .codex/skills/ generated pointer")
+        if ".agents/skills/" not in agents_content:
+            errors.append("AGENTS.md: missing .agents/skills/ generated pointer")
 
     errors.extend(validate_approval_boundary(repo_root))
 
@@ -1324,21 +1521,34 @@ def has_auto_gen_header(content: str) -> bool:
 
 def strip_auto_gen_header(content: str) -> str:
     """Remove auto-generated header from content for comparison."""
-    lines = content.split("\n")
-    result_lines = []
-    in_header = False
+    lines = content.splitlines()
+    header_start = next(
+        (
+            index
+            for index, line in enumerate(lines)
+            if line.startswith("<!-- AUTO-GENERATED FILE")
+        ),
+        None,
+    )
+    if header_start is None:
+        return content
 
-    for line in lines:
-        if line.startswith("<!-- AUTO-GENERATED FILE"):
-            in_header = True
-            continue
-        if in_header:
-            if line.startswith("<!--"):
-                continue
-            in_header = False
-        result_lines.append(line)
+    header_end = header_start
+    while header_end < len(lines) and lines[header_end].startswith("<!--"):
+        header_end += 1
 
-    return "\n".join(result_lines)
+    before = lines[:header_start]
+    after = lines[header_end:]
+    while before and not before[-1]:
+        before.pop()
+    while after and not after[0]:
+        after.pop(0)
+
+    sections = ["\n".join(section) for section in (before, after) if section]
+    result = "\n\n".join(sections)
+    if content.endswith("\n"):
+        result += "\n"
+    return result
 
 
 def add_auto_gen_header(content: str, source_path: str) -> str:
@@ -1350,9 +1560,28 @@ def add_auto_gen_header(content: str, source_path: str) -> str:
         for i, line in enumerate(lines[1:], start=1):
             if line.strip() == "---":
                 frontmatter = "\n".join(lines[: i + 1])
-                rest = "\n".join(lines[i + 1 :])
-                return frontmatter + "\n" + header + "\n" + rest
-    return header + "\n\n" + content
+                rest = "\n".join(lines[i + 1 :]).lstrip("\n")
+                return frontmatter + "\n\n" + header + "\n\n" + rest
+    return header + "\n\n" + content.lstrip("\n")
+
+
+def generated_target_root_error(target_dir: Path) -> str | None:
+    """Return an error when a generated root escapes the repository via symlinks."""
+    if target_dir.exists() and not target_dir.is_dir():
+        return f"{display_path(target_dir)}: generated target must be a directory"
+    repo_root = get_repo_root().resolve()
+    try:
+        target_dir.resolve().relative_to(repo_root)
+    except OSError, ValueError:
+        return f"{display_path(target_dir)}: generated target escapes repository"
+    current = target_dir
+    while current != repo_root:
+        if current.is_symlink():
+            return f"{display_path(current)}: generated target must not be a symlink"
+        if current.parent == current:
+            break
+        current = current.parent
+    return None
 
 
 def sync_flat_files(
@@ -1371,10 +1600,21 @@ def sync_flat_files(
         print(f"Source directory not found: {source_dir}")
         return False, -1, 0, 0
 
+    target_error = generated_target_root_error(target_dir)
+    if target_error:
+        print(f"  ERROR:    {target_error}")
+        return False, -1, 0, 0
+
     if not check_only:
         target_dir.mkdir(parents=True, exist_ok=True)
 
     source_files = sorted(source_dir.glob(pattern))
+    target_files = sorted(target_dir.glob(pattern)) if target_dir.exists() else []
+    unsafe_targets = [path for path in target_files if path.is_symlink()]
+    if unsafe_targets:
+        for path in unsafe_targets:
+            print(f"  ERROR:    {display_path(path)}: generated file is a symlink")
+        return False, -1, 0, 0
     all_synced = True
     synced_count = 0
     skipped_count = 0
@@ -1447,8 +1687,8 @@ description: {json.dumps(skill_description)}
 # {command_name}
 
 Use this skill in Codex to run the DART `{command_name}` workflow. The editable
-workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a generated Codex adapter entrypoint.
+workflow source lives in `.claude/commands/`; this file is its generated adapter
+in the shared `.agents/skills/` catalog.
 
 ## Invocation
 
@@ -1465,18 +1705,191 @@ user.
 """
 
 
+def is_generated_skill_adapter(content: str) -> bool:
+    """Return whether content carries this generator's ownership markers."""
+    return has_auto_gen_header(content) and (
+        f"<!-- Sync script: {GENERATED_BY} -->" in content
+    )
+
+
+def generated_skills_manifest_content(managed_skills: set[str]) -> str:
+    """Render the ownership manifest for generated skill directories."""
+    manifest = {
+        "schema_version": GENERATED_SKILLS_SCHEMA_VERSION,
+        "generator": GENERATED_BY,
+        "paths": [f"{name}/SKILL.md" for name in sorted(managed_skills)],
+    }
+    return json.dumps(manifest, indent=2) + "\n"
+
+
+def read_generated_skills_manifest(
+    target_dir: Path,
+) -> tuple[set[str], list[str], bool]:
+    """Read and validate generated-skill ownership metadata."""
+    manifest_path = target_dir / GENERATED_SKILLS_MANIFEST
+    if manifest_path.is_symlink():
+        return (
+            set(),
+            [f"{display_path(manifest_path)}: manifest must not be a symlink"],
+            True,
+        )
+    if not manifest_path.exists():
+        return set(), [], False
+
+    try:
+        manifest = json.loads(manifest_path.read_text())
+    except json.JSONDecodeError as error:
+        return (
+            set(),
+            [f"{display_path(manifest_path)}:{error.lineno}: invalid JSON"],
+            True,
+        )
+
+    if not isinstance(manifest, dict):
+        return (
+            set(),
+            [f"{display_path(manifest_path)}: manifest must be an object"],
+            True,
+        )
+
+    errors: list[str] = []
+    if (
+        type(manifest.get("schema_version")) is not int
+        or manifest["schema_version"] != GENERATED_SKILLS_SCHEMA_VERSION
+    ):
+        errors.append(
+            f"{display_path(manifest_path)}: schema_version must be "
+            f"{GENERATED_SKILLS_SCHEMA_VERSION}"
+        )
+    legacy_schema = set(manifest) == {
+        "schema_version",
+        "generated_by",
+        "managed_skills",
+    }
+    if not legacy_schema and set(manifest) != {"schema_version", "generator", "paths"}:
+        errors.append(
+            f"{display_path(manifest_path)}: keys must equal generator, paths, "
+            "schema_version"
+        )
+    generator = manifest.get("generated_by" if legacy_schema else "generator")
+    if generator != GENERATED_BY:
+        errors.append(
+            f"{display_path(manifest_path)}: generator must be `{GENERATED_BY}`"
+        )
+
+    declared = manifest.get("managed_skills" if legacy_schema else "paths")
+    if not isinstance(declared, list):
+        errors.append(f"{display_path(manifest_path)}: paths must be a list")
+        return set(), errors, True
+    if legacy_schema:
+        declared = [
+            f"{name}/SKILL.md" if isinstance(name, str) else name for name in declared
+        ]
+
+    managed: set[str] = set()
+    for index, path in enumerate(declared):
+        match = (
+            re.fullmatch(r"([a-z0-9][a-z0-9-]*)/SKILL\.md", path)
+            if isinstance(path, str)
+            else None
+        )
+        if not match:
+            errors.append(
+                f"{display_path(manifest_path)}: paths[{index}] must be a safe "
+                "lowercase `<skill>/SKILL.md` path"
+            )
+            continue
+        name = match.group(1)
+        if name in managed:
+            errors.append(
+                f"{display_path(manifest_path)}: duplicate generated path `{path}`"
+            )
+        managed.add(name)
+
+    return managed, errors, True
+
+
+def cleanup_legacy_codex_skills(
+    legacy_dir: Path,
+    canonical_names: set[str],
+    check_only: bool = False,
+) -> tuple[bool, int, int]:
+    """Remove generated legacy adapters and report unowned name collisions."""
+    if legacy_dir.is_symlink():
+        print("  CONFLICT: legacy skill root is a symlink; preserved without reading")
+        return False, 0, 1
+    if legacy_dir.exists() and not legacy_dir.is_dir():
+        print("  CONFLICT: legacy skill root is not a directory; preserved")
+        return False, 0, 1
+    generated_paths: list[Path] = []
+    conflicting_paths: list[Path] = []
+    unsafe_paths: list[Path] = []
+    if legacy_dir.exists():
+        unsafe_paths.extend(
+            child / "SKILL.md"
+            for child in sorted(legacy_dir.iterdir())
+            if child.is_symlink()
+        )
+        for path in sorted(legacy_dir.glob("*/SKILL.md")):
+            if path.is_symlink() or path.parent.is_symlink():
+                if path not in unsafe_paths:
+                    unsafe_paths.append(path)
+                continue
+            if is_generated_skill_adapter(path.read_text()):
+                generated_paths.append(path)
+            elif path.parent.name in canonical_names:
+                conflicting_paths.append(path)
+
+    for skill_path in conflicting_paths:
+        rel_path = f"{skill_path.parent.name}/SKILL.md"
+        print(
+            f"  CONFLICT: {rel_path} is unowned and collides with the canonical "
+            ".agents/skills catalog; preserved"
+        )
+
+    for skill_path in unsafe_paths:
+        rel_path = f"{skill_path.parent.name}/SKILL.md"
+        print(f"  CONFLICT: {rel_path} is a symlink; preserved without reading")
+
+    for skill_path in generated_paths:
+        rel_path = f"{skill_path.parent.name}/SKILL.md"
+        if check_only:
+            print(f"  LEGACY:   {rel_path}")
+            continue
+        skill_path.unlink()
+        try:
+            skill_path.parent.rmdir()
+        except OSError:
+            pass
+        print(f"  REMOVED:  {rel_path}")
+
+    if not check_only:
+        try:
+            legacy_dir.rmdir()
+        except OSError:
+            pass
+
+    clean = not generated_paths and not conflicting_paths and not unsafe_paths
+    return clean, len(generated_paths), len(conflicting_paths) + len(unsafe_paths)
+
+
 def sync_codex_skills(
     skill_source_dir: Path,
     command_source_dir: Path,
     target_dir: Path,
     check_only: bool = False,
 ) -> tuple[bool, int, int, int]:
-    """Sync domain skills plus workflow skill adapters to Codex."""
+    """Sync domain skills and workflow adapters without deleting user skills."""
     if not skill_source_dir.exists():
         print(f"Source directory not found: {skill_source_dir}")
         return False, -1, 0, 0
     if not command_source_dir.exists():
         print(f"Source directory not found: {command_source_dir}")
+        return False, -1, 0, 0
+
+    target_error = generated_target_root_error(target_dir)
+    if target_error:
+        print(f"  ERROR:    {target_error}")
         return False, -1, 0, 0
 
     if not check_only:
@@ -1502,6 +1915,36 @@ def sync_codex_skills(
         return False, -1, 0, 0
 
     expected_names = set(source_skill_names) | set(source_command_names)
+    owned_names, manifest_errors, manifest_exists = read_generated_skills_manifest(
+        target_dir
+    )
+    if manifest_errors:
+        for error in manifest_errors:
+            print(f"  ERROR:    {error}")
+        return False, -1, 0, 0
+    unsafe_owned_dirs = [
+        target_dir / name
+        for name in sorted(expected_names | owned_names)
+        if (target_dir / name).is_symlink()
+    ]
+    if unsafe_owned_dirs:
+        for path in unsafe_owned_dirs:
+            print(
+                f"  ERROR:    {display_path(path)}: generated skill directory is a symlink"
+            )
+        return False, -1, 0, 0
+    unsafe_owned_files = [
+        target_dir / name / "SKILL.md"
+        for name in sorted(expected_names | owned_names)
+        if (target_dir / name / "SKILL.md").is_symlink()
+    ]
+    if unsafe_owned_files:
+        for path in unsafe_owned_files:
+            print(
+                f"  ERROR:    {display_path(path)}: generated skill file is a symlink"
+            )
+        return False, -1, 0, 0
+
     all_synced = True
     synced_count = 0
     skipped_count = 0
@@ -1523,17 +1966,67 @@ def sync_codex_skills(
             (command_file.stem, command_file, render_codex_command_skill(command_file))
         )
 
+    marker_owned_names = {
+        path.parent.name
+        for path in target_dir.glob("*/SKILL.md")
+        if not path.parent.is_symlink()
+        and not path.is_symlink()
+        and is_generated_skill_adapter(path.read_text())
+    }
+
+    # Refuse to overwrite or delete entries that do not carry this generator's
+    # marker. Marker-owned leftovers are safe to remove even if a damaged or
+    # older manifest omitted their names; unrelated unowned skills are kept.
+    conflicts: list[str] = []
+    for skill_name, _, _ in items:
+        target_skill_dir = target_dir / skill_name
+        target_skill = target_skill_dir / "SKILL.md"
+        if target_skill.is_symlink():
+            conflicts.append(
+                f"{display_path(target_skill)}: generated skill file is a symlink"
+            )
+            continue
+        if target_skill.exists():
+            if not is_generated_skill_adapter(target_skill.read_text()):
+                conflicts.append(
+                    f"{display_path(target_skill)}: refusing to overwrite "
+                    "an unowned skill"
+                )
+        elif (
+            target_skill_dir.exists()
+            and any(target_skill_dir.iterdir())
+            and skill_name not in owned_names
+        ):
+            conflicts.append(
+                f"{display_path(target_skill_dir)}: refusing to add a generated "
+                "skill inside a non-empty unowned directory"
+            )
+
+    orphaned = (owned_names | marker_owned_names) - expected_names
+    for orphan in sorted(orphaned):
+        orphan_skill = target_dir / orphan / "SKILL.md"
+        if orphan_skill.exists() and not is_generated_skill_adapter(
+            orphan_skill.read_text()
+        ):
+            conflicts.append(
+                f"{display_path(orphan_skill)}: ownership manifest names this "
+                "orphan, but its generator marker is missing; refusing to delete"
+            )
+
+    if conflicts:
+        for error in conflicts:
+            print(f"  ERROR:    {error}")
+        return False, -1, 0, len(orphaned)
+
     for skill_name, source_path, content in items:
         target_skill_dir = target_dir / skill_name
         target_skill = target_skill_dir / "SKILL.md"
         source_rel_path = source_path.relative_to(get_repo_root())
+        content_with_header = add_auto_gen_header(content, str(source_rel_path))
 
         if target_skill.exists():
             target_content = target_skill.read_text()
-            target_content_stripped = strip_auto_gen_header(target_content)
-            if content == target_content_stripped and has_auto_gen_header(
-                target_content
-            ):
+            if target_content == content_with_header:
                 skipped_count += 1
                 continue
 
@@ -1544,25 +2037,36 @@ def sync_codex_skills(
             print(f"  {status}: {skill_name}/SKILL.md")
         else:
             target_skill_dir.mkdir(parents=True, exist_ok=True)
-            content_with_header = add_auto_gen_header(content, str(source_rel_path))
             target_skill.write_text(content_with_header)
             print(f"  SYNCED:   {skill_name}/SKILL.md")
             synced_count += 1
 
-    if target_dir.exists():
-        target_skills = set(d.parent.name for d in target_dir.glob("*/SKILL.md"))
-        orphaned = target_skills - expected_names
+    for orphan in sorted(orphaned):
+        all_synced = False
+        orphan_path = target_dir / orphan
+        orphan_skill = orphan_path / "SKILL.md"
+        if check_only:
+            print(f"  ORPHAN:   {orphan}/SKILL.md")
+            continue
+        if orphan_skill.exists():
+            orphan_skill.unlink()
+        try:
+            orphan_path.rmdir()
+        except OSError:
+            pass
+        print(f"  REMOVED:  {orphan}/SKILL.md")
 
-        for orphan in sorted(orphaned):
-            all_synced = False
-            orphan_path = target_dir / orphan
-            if check_only:
-                print(f"  ORPHAN:   {orphan}/")
-            else:
-                shutil.rmtree(orphan_path)
-                print(f"  REMOVED:  {orphan}/")
-    else:
-        orphaned = set()
+    manifest_path = target_dir / GENERATED_SKILLS_MANIFEST
+    expected_manifest = generated_skills_manifest_content(expected_names)
+    current_manifest = manifest_path.read_text() if manifest_exists else None
+    if current_manifest != expected_manifest:
+        all_synced = False
+        if check_only:
+            status = "MISMATCH" if manifest_exists else "MISSING"
+            print(f"  {status}: {GENERATED_SKILLS_MANIFEST}")
+        else:
+            manifest_path.write_text(expected_manifest)
+            print(f"  SYNCED:   {GENERATED_SKILLS_MANIFEST}")
 
     return all_synced, synced_count, skipped_count, len(orphaned)
 
@@ -1594,17 +2098,46 @@ def sync_all(check_only: bool = False) -> bool:
         print(f"  Total: {s} synced, {k} unchanged, {o} orphans removed")
     print()
 
-    print("Domain skills + workflow adapters (.claude/ -> .codex/skills/):")
+    print("Domain skills + workflow adapters (.claude/ -> .agents/skills/):")
     synced, s, k, o = sync_codex_skills(
         repo_root / ".claude" / "skills",
         repo_root / ".claude" / "commands",
-        repo_root / ".codex" / "skills",
+        repo_root / ".agents" / "skills",
         check_only=check_only,
     )
     if s < 0 or (check_only and not synced):
         all_synced = False
-    if not check_only:
+    codex_sync_preflight_ok = s >= 0
+    if not check_only and codex_sync_preflight_ok:
         print(f"  Total: {s} synced, {k} unchanged, {o} orphans removed")
+    elif not check_only:
+        print("  Total: canonical skill sync failed")
+    print()
+
+    print("Legacy generated Codex adapters (.codex/skills/):")
+    if codex_sync_preflight_ok:
+        canonical_names = list_command_names(repo_root / ".claude" / "commands")
+        canonical_names.update(list_skill_names(repo_root / ".claude" / "skills")[0])
+        legacy_clean, legacy_count, legacy_conflicts = cleanup_legacy_codex_skills(
+            repo_root / ".codex" / "skills",
+            canonical_names,
+            check_only=check_only,
+        )
+        if legacy_conflicts:
+            all_synced = False
+        if not legacy_clean:
+            if check_only:
+                all_synced = False
+            else:
+                print(f"  Total: {legacy_count} generated adapters removed")
+                if legacy_conflicts:
+                    print(
+                        f"  Total: {legacy_conflicts} unowned name conflicts preserved"
+                    )
+        elif not check_only:
+            print("  Total: no generated adapters remain")
+    else:
+        print("  SKIPPED: canonical skill sync failed; legacy catalog preserved")
     print()
 
     print("Effective capability parity (Claude Code, OpenCode, Codex):")
@@ -1614,6 +2147,11 @@ def sync_all(check_only: bool = False) -> bool:
 
     print("Skill and command style:")
     if not validate_style_and_budget(repo_root):
+        all_synced = False
+    print()
+
+    print("Source-skill repository references:")
+    if not validate_skill_repository_references(repo_root):
         all_synced = False
     print()
 

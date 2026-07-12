@@ -11,6 +11,7 @@ Review or respond to PR: $ARGUMENTS
 @AGENTS.md
 @docs/onboarding/code-style.md
 @docs/onboarding/ai-tools.md (for AI-generated review handling)
+@docs/ai/verification.md
 
 ## Workflow
 
@@ -22,8 +23,11 @@ Pick the sub-workflow from `mode=` in `$ARGUMENTS`, defaulting to `review`.
 gh pr view $1 && gh pr diff $1
 ```
 
-Check code style, tests, docs, and focused commits. Record findings as
-read-only output; do not push, comment, resolve threads, or re-trigger review
+Check code style, tests, docs, and focused commits. When a claim depends on 3D
+structure or behavior, require the `dart-verify-sim` text oracle and
+claim-relevant assessed visual/debug-layer evidence (or a justified
+replacement), and inspect both rather than accepting a screenshot alone.
+Record findings as read-only output; do not push, comment, resolve threads, or re-trigger review
 without explicit maintainer/user approval for that external mutation.
 
 ### Address Feedback

@@ -3,6 +3,7 @@ description: debug and fix failing CI checks on any base branch
 argument-hint: "<pr-number|run-id> [base=<branch>]"
 agent: build
 ---
+
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-fix-ci.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
@@ -17,6 +18,11 @@ Fix CI failure: $ARGUMENTS
 @docs/onboarding/release-management.md
 
 ## Workflow
+
+For a failure involving model/scene structure, physics behavior, or GUI output,
+use `dart-verify-sim` to reproduce the claim with text and assessed visual
+evidence. Document a visual exception when the relevant renderer is unavailable
+or not applicable.
 
 1. Identify the base branch. Default to `main`; use `base=<branch>` from
    `$ARGUMENTS` or the PR's own base when it is a `release-*` branch. For a

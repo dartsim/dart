@@ -16,6 +16,17 @@ image alone misses static geometry defects (penetration, interpenetration).
 Decide correctness from text; use images for scene comprehension and gross
 dynamic failures.
 
+## Applicability contract
+
+Use this skill for any task whose claim depends on 3D structure or behavior:
+model/scene loading, dynamics, collision/contact/constraints, simulation
+stepping, GUI/rendering, or visual examples. First run a text oracle (metrics,
+scene diff, trajectory/contact comparison, or focused behavioral test), then
+corroborate it end to end with an assessed headless view and only the debug
+layers needed by the claim. If rendering is unavailable or genuinely
+irrelevant, record why and name the replacement evidence; never treat an image
+as the sole correctness oracle.
+
 ## Full documentation
 
 [`docs/onboarding/agent-sim-verification.md`](../../../docs/onboarding/agent-sim-verification.md)

@@ -31,7 +31,8 @@ FrameAllocator maintains a 32-byte alignment invariant: `allocate()` assumes `mC
 ## Testing
 
 Unit tests: `tests/unit/common/`
-Benchmarks: `tests/benchmark/dynamics/bm_dynamics_cache.cpp` (allocator-intensive)
+Benchmarks: `tests/benchmark/common/bm_allocators.cpp` and
+`tests/benchmark/common/bm_allocators_comparative.cpp`
 
 ## See Also
 

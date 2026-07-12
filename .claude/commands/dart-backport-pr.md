@@ -15,6 +15,11 @@ Backport PR or commits: $ARGUMENTS
 
 ## Workflow
 
+For a source change involving model/scene structure, physics behavior, or GUI
+output, use the target branch's `dart-verify-sim` workflow to preserve the text
+oracle and assessed visual evidence. Document a visual exception when the
+target branch cannot render the claim.
+
 1. Verify the source PR or commit is merged to `main`:
    ```bash
    gh pr view <SOURCE_PR> --json state,mergedAt,baseRefName,mergeCommit

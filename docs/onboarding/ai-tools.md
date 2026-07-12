@@ -2,10 +2,10 @@
 
 This document tracks AI coding assistant compatibility with DART's documentation structure.
 
-> **Last Verified**: 2026-07-05. Command/skill/adapter surfaces are
+> **Last Verified**: 2026-07-11. Command/skill/adapter surfaces are
 > continuously machine-verified by `pixi run check-ai-commands` in CI. Claude
 > Code and OpenCode terminology notes were checked against current public docs;
-> Codex notes were checked against local `codex-cli 0.142.5` prompt input plus
+> Codex notes were checked against local `codex-cli 0.144.1` discovery plus
 > current OpenAI Codex docs. Gemini notes remain a manual-reference path.
 > **Review Cadence**: Verify when updating tool versions or experiencing unexpected behavior.
 
@@ -24,7 +24,7 @@ This document tracks AI coding assistant compatibility with DART's documentation
 | --------------- | ---------------------------------------------------------------------------- |
 | **Claude Code** | `CLAUDE.md` auto-loaded; use `/dart-*` commands                              |
 | **OpenCode**    | `AGENTS.md` auto-loaded; use `/dart-*` commands; skills in `.claude/skills/` |
-| **Codex**       | `AGENTS.md` auto-loaded; use generated `$dart-*` skill adapters              |
+| **Codex**       | Trust checkout; `pixi run ai-setup`; use generated `$dart-*` skills          |
 | **Gemini CLI**  | Read `GEMINI.md` or `AGENTS.md`; read `.claude/commands/` manually if needed |
 
 ---
@@ -35,7 +35,7 @@ This document tracks AI coding assistant compatibility with DART's documentation
 | --------------- | -------------------------- | ---------------------------- | -------------------------- |
 | **Claude Code** | `CLAUDE.md` -> `AGENTS.md` | `.claude/commands/`          | `.claude/skills/`          |
 | **OpenCode**    | `AGENTS.md`                | `.opencode/command/`         | `.claude/skills/`          |
-| **Codex**       | `AGENTS.md`                | `.codex/skills/`             | `.codex/skills/`           |
+| **Codex**       | `AGENTS.md`                | `.agents/skills/`            | `.agents/skills/`          |
 | **Gemini CLI**  | `GEMINI.md` -> `AGENTS.md` | `.claude/commands/` manually | `.claude/skills/` manually |
 
 ---
@@ -56,7 +56,7 @@ This document tracks AI coding assistant compatibility with DART's documentation
 | **Tool-specific language**      | Use generic terms except in compatibility or routing docs where tool behavior is the subject                          |
 | **Placeholders**                | Use `$ARGUMENTS`, `$1`, `$2` for command args                                                                         |
 | **Tracked file references**     | Use repo-relative `@file` syntax; home-directory references are only for untracked personal files                     |
-| **Generated adapters**          | `.codex/` and `.opencode/` files are generated adapter entrypoints, not editable sources                              |
+| **Generated adapters**          | `.agents/skills/` and `.opencode/command/` are generated entrypoints, not editable sources                            |
 | **Manual public path required** | Every AI workflow must map back to public docs and `pixi run ...` commands for non-AI contributors                    |
 
 ### @file Import Syntax
@@ -92,18 +92,21 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 
 ### File Ownership
 
-| File/Directory                | Purpose                             | When to Update                                 |
-| ----------------------------- | ----------------------------------- | ---------------------------------------------- |
-| `AGENTS.md`                   | Root pointer board                  | When workflows or gates change                 |
-| `docs/ai/`                    | Durable AI-native policy            | When AI workflow policy changes                |
-| `docs/ai/terminology.md`      | Canonical AI-facing terms           | When names, roles, or adapter structure change |
-| `docs/ai/capabilities.json`   | Capability status/category          | When workflows or skills change                |
-| `CLAUDE.md`, `GEMINI.md`      | Redirects only                      | Rarely (keep minimal)                          |
-| `.claude/commands/`           | Editable workflow source            | When adding workflows                          |
-| `.opencode/command/`          | Generated OpenCode command adapters | Auto-synced from `.claude/`                    |
-| `.claude/skills/`             | Editable domain-skill source        | When adding domain knowledge                   |
-| `.codex/skills/`              | Generated Codex skill adapters      | Auto-generated from `.claude/`                 |
-| `docs/onboarding/ai-tools.md` | Tool compatibility details          | When tool compatibility changes                |
+| File/Directory                | Purpose                             | When to Update                                  |
+| ----------------------------- | ----------------------------------- | ----------------------------------------------- |
+| `AGENTS.md`                   | Root pointer board                  | When workflows or gates change                  |
+| `docs/ai/`                    | Durable AI-native policy            | When AI workflow policy changes                 |
+| `docs/ai/terminology.md`      | Canonical AI-facing terms           | When names, roles, or adapter structure change  |
+| `docs/ai/capabilities.json`   | Capability status/category          | When workflows or skills change                 |
+| `CLAUDE.md`, `GEMINI.md`      | Redirects only                      | Rarely (keep minimal)                           |
+| `.claude/commands/`           | Editable workflow source            | When adding workflows                           |
+| `.opencode/command/`          | Generated OpenCode command adapters | Auto-synced from `.claude/`                     |
+| `.claude/skills/`             | Editable domain-skill source        | When adding domain knowledge                    |
+| `.agents/skills/`             | Generated Codex skill adapters      | Auto-generated from `.claude/`                  |
+| `.codex/config.toml`          | Codex project delegation policy     | When concurrency or delegation depth changes    |
+| `.codex/agents/`              | Codex project agent profiles        | When a stable specialist responsibility changes |
+| `.codex/hooks.json`           | Codex project command hooks         | When a lifecycle trigger or hook gate changes   |
+| `docs/onboarding/ai-tools.md` | Tool compatibility details          | When tool compatibility changes                 |
 
 ### Adding a New Command
 
@@ -112,10 +115,10 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
    ```markdown
    ---
    description: brief description
-   agent: build
+   argument-hint: "<topic>"
    ---
 
-   Task: $ARGUMENTS
+   ## Required Reading
 
    @AGENTS.md
    @docs/onboarding/relevant-doc.md
@@ -124,6 +127,10 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 
    1. Step one
    2. Step two
+
+   ## Output
+
+   - Summarize the outcome and validation for `$ARGUMENTS`.
    ```
 
 2. Sync to OpenCode and Codex: `pixi run lint` (includes `sync-ai-commands`)
@@ -245,11 +252,11 @@ To add a new DART-specific skill:
 
 Skills work across multiple AI tools through automatic syncing:
 
-| Source              | Target                  | Tool                          |
-| ------------------- | ----------------------- | ----------------------------- |
-| `.claude/skills/`   | (native)                | Claude Code, OpenCode         |
-| `.claude/skills/`   | `.codex/skills/`        | Codex                         |
-| `.claude/commands/` | `.codex/skills/dart-*/` | Codex workflow skill adapters |
+| Source              | Target                   | Tool                          |
+| ------------------- | ------------------------ | ----------------------------- |
+| `.claude/skills/`   | (native)                 | Claude Code, OpenCode         |
+| `.claude/skills/`   | `.agents/skills/`        | Codex                         |
+| `.claude/commands/` | `.agents/skills/dart-*/` | Codex workflow skill adapters |
 
 **Sync is automatic** via `pixi run lint` (includes `sync-ai-commands`).
 
@@ -274,16 +281,17 @@ their tools, but they are overwritten by sync.
 ```bash
 pixi run lint               # Includes sync-ai-commands (recommended)
 pixi run sync-ai-commands   # Sync commands + skills to all tool directories
-pixi run check-ai-commands  # Check if in sync (CI mode, no changes)
+pixi run check-ai-commands  # Check adapter parity (CI mode, no changes)
+pixi run check-ai-infra     # Check runtime, references, and scenarios
 ```
 
 **What gets synced**:
 
-| Source              | Target                  | Purpose                       |
-| ------------------- | ----------------------- | ----------------------------- |
-| `.claude/commands/` | `.opencode/command/`    | OpenCode command adapters     |
-| `.claude/commands/` | `.codex/skills/dart-*/` | Codex workflow skill adapters |
-| `.claude/skills/`   | `.codex/skills/`        | Codex domain-skill adapters   |
+| Source              | Target                   | Purpose                       |
+| ------------------- | ------------------------ | ----------------------------- |
+| `.claude/commands/` | `.opencode/command/`     | OpenCode command adapters     |
+| `.claude/commands/` | `.agents/skills/dart-*/` | Codex workflow skill adapters |
+| `.claude/skills/`   | `.agents/skills/`        | Codex domain-skill adapters   |
 
 Generated Codex skill adapters are adapter entrypoints even when
 their editable workflow source currently lives in `.claude/commands/`.
@@ -312,7 +320,7 @@ Different tools expose the same workflows differently:
 
 - Claude Code: `.claude/commands/` plus `.claude/skills/`
 - OpenCode: `.opencode/command/` plus `.claude/skills/`
-- Codex: `.codex/skills/` for both domain-skill and workflow skill adapters
+- Codex: `.agents/skills/` for both domain-skill and workflow skill adapters
 
 `pixi run check-ai-commands` compares those effective sets and runs the
 structural AI-component checks owned by `docs/ai/components.md`.
@@ -320,22 +328,25 @@ structural AI-component checks owned by `docs/ai/components.md`.
 **Sync details**:
 
 - Synced files get an auto-generated header (placed AFTER frontmatter to preserve tool parsing)
-- Target directories (`.codex/`, `.opencode/`) are excluded from prettier to prevent re-sync loops
+- Generated target directories (`.agents/skills/`, `.opencode/command/`) are
+  excluded from prettier to prevent re-sync loops. Maintained `.codex/` TOML
+  and JSON remain linted.
 - Edit source files only; synced files are overwritten on each sync
 - NEW generated files can be silently skipped by plain `git add` when a
   personal global gitignore excludes a parent directory (for example
-  `.codex`): git cannot re-include files under an excluded directory, and
+  `.agents`): git cannot re-include files under an excluded directory, and
   `check-ai-commands` compares disk state, so the local check stays green
   while CI fails on the missing adapter in a fresh clone. After adding a
   command or skill, stage new adapter directories with `git add -f` and
-  confirm with `git ls-files .codex/skills/<name>`
+  confirm with `git ls-files .agents/skills/<name>`
 
 **Manual fallback**:
 
 If adapter sync is unavailable, fix or run the generator instead of manually
-maintaining generated files. `.codex/` and `.opencode/` outputs are overwritten
-by `pixi run sync-ai-commands`; edit `.claude/` source files, then regenerate
-and verify with `pixi run check-ai-commands`.
+maintaining generated files. `.agents/skills/` and `.opencode/command/` outputs
+are overwritten by `pixi run sync-ai-commands`; edit `.claude/` source files,
+then regenerate and verify with `pixi run check-ai-infra`. Maintained `.codex/`
+configuration is never overwritten by adapter sync.
 
 Manual-only tools should read the `.claude/commands/dart-*.md` source files
 directly. There is no separate prompt-template folder.
@@ -409,29 +420,58 @@ hand-checked 2026-07
 
 ### OpenAI Codex
 
-**Tested Version**: Codex CLI 0.142.5 (local prompt-input check, 2026-07-05)
+**Tested Version**: Codex CLI 0.144.1 (local discovery/config/hook checks,
+2026-07-11)
 
-| Feature           | Location                   | Status                                |
-| ----------------- | -------------------------- | ------------------------------------- |
-| Instructions      | `AGENTS.md`                | ✅ Primary entry point                |
-| Skills            | `.codex/skills/*/SKILL.md` | ✅ `$dart-*` skills available         |
-| Workflow adapters | `.codex/skills/dart-*/`    | ✅ Generated from `.claude/commands/` |
+| Feature           | Location                    | Status                                |
+| ----------------- | --------------------------- | ------------------------------------- |
+| Instructions      | `AGENTS.md`                 | ✅ Root-to-CWD scoped discovery       |
+| Skills            | `.agents/skills/*/SKILL.md` | ✅ `$dart-*` skills available         |
+| Workflow adapters | `.agents/skills/dart-*/`    | ✅ Generated from `.claude/commands/` |
+| Project agents    | `.codex/agents/*.toml`      | ✅ Bounded read-only specialists      |
+| Project hooks     | `.codex/hooks.json`         | ✅ Fast Bash pre-tool guard           |
 
-**Notes**:
+**Setup and diagnosis**:
 
-- `AGENTS.md` is the standard for Codex (same as Claude Code convention)
-- Supports subdirectory `AGENTS.md` files (walks from root to CWD)
-- Skills use `$skill-name` syntax (e.g., `$dart-build`)
-- Command workflows use the same syntax (e.g., `$dart-fix-ci <arguments>`)
-- For Codex goal mode, put the generated skill adapter in the goal text, such
-  as `/goal $dart-ultrawork <task>`.
-- Codex CLI slash commands are built-in controls; project workflows are exposed
-  through skills instead of repo-local `/dart-*` slash files
-- Current OpenAI docs describe `.agents/skills` as the repository skill
-  convention. This checkout still exposes DART skills from generated
-  `.codex/skills/`; migrate deliberately rather than checking in duplicate
-  skill names under both locations.
-- Full documentation: https://developers.openai.com/codex/
+1. Trust the checkout so project `.codex/` layers may load.
+2. Run `pixi run ai-setup` to synchronize generated adapters and install the
+   cross-tool Git hook.
+3. Run `pixi run ai-doctor`. Resolve every reported missing or stale surface.
+4. Open `/hooks`, review the exact project hook definition, and trust it if it
+   matches the tracked file. Changed definitions require review again.
+5. Use `$dart-*` skills; use `dart_scout`, `dart_reviewer`, or
+   `dart_release_auditor` only for the bounded read-only contracts documented
+   in `docs/ai/orchestration.md`.
+
+Codex walks instruction files from repository root to the current directory;
+the closest `AGENTS.md` augments or overrides broader guidance. Skills use
+`$skill-name` syntax, including workflow-derived `$dart-*` adapters. CLI slash
+commands are built-in session controls, not repository workflows. For goal
+mode, put the generated adapter in the goal text, such as
+`/goal $dart-ultrawork <task>`.
+
+For complex, high-value autonomous work, prefer Codex 5.6 Sol with Ultra
+reasoning when available. The repository does not pin a model: project agents
+inherit the active parent model, and smaller work should use the lightest
+capable choice. Keep prompts lean, state the objective/constraints/done-when
+once, and let progressively loaded skills and owner docs supply procedures.
+
+Project hooks are trusted-project automation, not complete enforcement.
+`PreToolUse` does not intercept every possible mutation path, and a hook may be
+skipped until trusted. The Codex hook therefore runs only the bounded,
+noninteractive `check-agent-hook`; the installed Git hook and explicit
+pre-commit/full gates remain authoritative.
+
+On native Windows, `.claude/hooks/pre-commit-guard.ps1` launches
+`scripts/pretool_guard_bridge.py`, which forwards the unchanged hook payload to
+the same Git Bash guard used on POSIX; commit classification has one shared
+implementation.
+
+Current references: [models and reasoning](https://learn.chatgpt.com/docs/models),
+[Agent Skills](https://learn.chatgpt.com/docs/build-skills),
+[subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents),
+[project configuration](https://learn.chatgpt.com/docs/config-file/config-advanced#project-config-files-codexconfigtoml), and
+[hooks](https://learn.chatgpt.com/docs/hooks).
 
 ---
 
@@ -448,9 +488,14 @@ hand-checked 2026-07
 └── command/               # OpenCode command adapter entrypoints
     └── dart-*.md
 
-.codex/                    # Generated Codex adapter entrypoints
+.agents/                   # Portable generated Agent Skills
 └── skills/                # Codex domain + workflow skill adapters
     └── dart-*/SKILL.md    # Includes workflow-derived $dart-* adapters
+
+.codex/                    # Maintained Codex project runtime
+├── config.toml            # Bounded project agent settings
+├── agents/                # Read-only specialist profiles
+└── hooks.json             # Trusted-project fast command guard
 ```
 
 ---
@@ -459,11 +504,33 @@ hand-checked 2026-07
 
 When verifying compatibility:
 
-1. **Check tool documentation** for changes to config file locations
-2. **Test commands** - Run `/dart-new-task test` and verify it works
-3. **Test skills** - Check if skills appear in tool's skill list
-4. **Test file references** - Verify `@file` syntax loads files correctly
-5. **Update this document** with findings and date
+1. Run `pixi run ai-doctor` and inspect every reported surface.
+2. Run `pixi run check-ai-infra` and `pixi run test-ai-infra`.
+3. Run `pixi run exercise-agent-scenarios` for routing/profile changes.
+4. Test one generated workflow and domain skill in each supported tool.
+5. Verify current tool documentation for discovery/config/hook changes.
+6. Update the tested version, evidence, and date in this document.
+
+---
+
+## Failure Recovery And Branch Differences
+
+| Symptom                                | Recovery                                                                                                                        |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `$dart-*` skill missing or stale       | Run `pixi run ai-doctor`, then `pixi run sync-ai-commands` and `pixi run check-ai-infra`                                        |
+| Project agents or hooks do not appear  | Confirm the checkout is trusted; inspect `/hooks`; validate `.codex/` with `pixi run check-ai-infra`                            |
+| Frequent hook blocks unexpectedly      | Run `pixi run check-agent-hook` directly; inspect JSON/input diagnostics; use the documented emergency bypass only if necessary |
+| Full validation fails after quick gate | Select the task-specific focused/full gates in `docs/ai/verification.md`; the fast hook is not completion evidence              |
+| A documented command/path is absent    | Confirm the current branch; run `pixi run ai-doctor`; fix the source owner rather than adding an unverified alias               |
+| Generated file differs                 | Edit `.claude/` source, regenerate, and never patch `.agents/skills/` or `.opencode/command/` directly                          |
+
+`main` is DART 7: C++23, nanobind, `dart::io`, the clean-break architecture,
+CUDA validation, planning packets, benchmark packets, and DART 7 verification
+skills belong there. `release-6.20` is DART 6: C++17, pybind11,
+`dart::utils`, OSG, Gazebo compatibility, and release-maintenance workflows
+belong there. The release catalog is intentionally smaller. Common AI-infra
+changes use an apply/adapt/omit audit and branch-local gates; never copy a task,
+path, command, or toolchain fact merely because it exists on the other branch.
 
 ---
 
@@ -787,7 +854,7 @@ when nothing is pending, any check fails, or the head SHA moves.
 - **Generated adapter copies**: Claude Code, OpenCode, and Codex read different
   directories, so generated adapter copies exist for tool compatibility.
 - **Editable source of truth**: Maintain `.claude/` sources, then run
-  `pixi run sync-ai-commands` and `pixi run check-ai-commands`.
+  `pixi run sync-ai-commands` and `pixi run check-ai-infra`.
 - **Skill sharing works for manual tools**: Claude Code and OpenCode can read
   `.claude/skills/` directly.
 
@@ -795,8 +862,9 @@ when nothing is pending, any check fails, or the head SHA moves.
 
 ## Changelog
 
-| Date     | Change                                                                                    |
-| -------- | ----------------------------------------------------------------------------------------- |
-| Jan 2025 | Initial setup with Claude Code, OpenCode, Gemini CLI, Codex support                       |
-| Jan 2025 | Added collaborator guide and maintenance conventions                                      |
-| Jul 2026 | Refreshed verification metadata to CI-checked adapter sync; added independent review lane |
+| Date     | Change                                                                                       |
+| -------- | -------------------------------------------------------------------------------------------- |
+| Jan 2025 | Initial setup with Claude Code, OpenCode, Gemini CLI, Codex support                          |
+| Jan 2025 | Added collaborator guide and maintenance conventions                                         |
+| Jul 2026 | Refreshed verification metadata to CI-checked adapter sync; added independent review lane    |
+| Jul 2026 | Migrated Codex skills, added project agents/hooks, diagnosis, scenarios, and branch profiles |

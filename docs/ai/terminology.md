@@ -27,10 +27,10 @@ slash command, a skill, or a manual recipe.
 | Domain skill                 | On-demand DART domain knowledge or procedure, usually a lightweight pointer to full docs.                                            | Workflow commands with task lifecycle steps.                                         | `.claude/skills/`                                      |
 | Agent Skill                  | A portable `SKILL.md` package with metadata, instructions, and optional scripts or references.                                       | MCP tools, slash commands, or always-loaded instructions.                            | `.claude/skills/`, generated Codex skill adapters      |
 | Slash command                | A leading-slash UI invocation, such as `/dart-next` in Claude Code or OpenCode.                                                      | Codex project workflows, because Codex slash commands are built-in session controls. | `.claude/commands/`, `.opencode/command/`              |
-| Generated adapter entrypoint | A tool-specific file generated from an editable DART source so a supported agent can invoke the same capability.                     | An editable source of truth.                                                         | `.codex/skills/`, `.opencode/command/`                 |
+| Generated adapter entrypoint | A tool-specific file generated from an editable DART source so a supported agent can invoke the same capability.                     | An editable source of truth.                                                         | `.agents/skills/`, `.opencode/command/`                |
 | MCP server                   | External provider of tools, resources, prompts, or context through Model Context Protocol.                                           | Local docs, workflow files, or generated adapters.                                   | Tool configuration outside this repo unless checked in |
 | MCP tool                     | Callable action exposed by an MCP server.                                                                                            | Shell commands, Pixi tasks, DART workflow capabilities, or skill instructions.       | MCP server metadata                                    |
-| Hook                         | Deterministic lifecycle automation that runs at configured agent events.                                                             | Prompt-based reusable workflows.                                                     | `.claude/hooks/`, tool settings                        |
+| Hook                         | Deterministic lifecycle automation that runs at configured agent events.                                                             | Prompt-based reusable workflows or a substitute for explicit validation.             | `.claude/hooks/`, `.codex/hooks.json`, Git hooks       |
 | Subagent                     | A separate worker context used for isolated or delegated work.                                                                       | A DART capability, workflow, or skill.                                               | `docs/ai/orchestration.md`                             |
 | Orchestrator                 | The role that decomposes, sequences, and reviews work packets.                                                                       | A specific AI product.                                                               | `docs/ai/orchestration.md`                             |
 | Executor                     | The role that implements one packet and returns evidence.                                                                            | A specific AI product.                                                               | `docs/ai/orchestration.md`                             |
@@ -83,9 +83,10 @@ entrypoints. The sync script renders equivalent generated adapters for Codex.
 DART keeps `.claude/skills/` as the editable domain-skill source. The sync
 script renders equivalent generated Codex skill adapters.
 
-Generated `.codex/` and `.opencode/` files are first-class entrypoints for
-their tools, but not sources of truth. Change the editable source, then run the
-AI adapter sync checks.
+Generated `.agents/skills/` and `.opencode/command/` files are first-class
+entrypoints for their tools, but not sources of truth. Change the editable
+source, then run the AI adapter sync checks. `.codex/` contains maintained
+project configuration, agents, and hooks; it is not a generated adapter tree.
 
 ## Migration Candidates
 
@@ -93,13 +94,9 @@ Do not perform these migrations opportunistically during ordinary docs work.
 Track them as explicit AI-infra changes because they affect discovery,
 generated files, and CI checks:
 
-1. Evaluate moving Codex repo-skill output from `.codex/skills/` to the current
-   `.agents/skills/` convention. Avoid checking in duplicate skill names under
-   both directories unless the active Codex version proves it de-duplicates or
-   scopes them clearly.
-2. Evaluate moving reusable workflow authoring from `.claude/commands/` to an
+1. Evaluate moving reusable workflow authoring from `.claude/commands/` to an
    Agent Skills source once Claude Code, OpenCode, and Codex all expose the
    same behavior from that source without weakening slash-command ergonomics.
-3. Add MCP only for external systems or deterministic local services that need
+2. Add MCP only for external systems or deterministic local services that need
    structured callable actions or resources. Do not add MCP as a wrapper around
    plain docs links or Pixi commands.

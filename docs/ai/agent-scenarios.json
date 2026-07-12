@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "profile": "main",
+  "scenarios": [
+    {
+      "id": "orientation",
+      "prompt_class": "read-only repository orientation",
+      "start_dir": ".",
+      "instruction_chain": ["AGENTS.md"],
+      "expected_route": {
+        "kind": "agent",
+        "name": "dart_scout",
+        "path": ".codex/agents/dart_scout.toml"
+      },
+      "specialist_agent": null,
+      "owner_docs": ["docs/ai/README.md", "docs/ai/principles.md"],
+      "permitted_scopes": ["read-only repository evidence"],
+      "focused_gates": ["pixi run ai-doctor"],
+      "full_gates": ["pixi run check-ai-infra"],
+      "recovery": "docs/ai/README.md",
+      "forbidden_paths": [".claude/commands/dart-release-ci-fix.md"]
+    },
+    {
+      "id": "small-change",
+      "prompt_class": "one bounded common-component change",
+      "start_dir": "dart/common",
+      "instruction_chain": ["AGENTS.md", "dart/common/AGENTS.md"],
+      "expected_route": {
+        "kind": "workflow",
+        "name": "dart-new-task",
+        "path": ".agents/skills/dart-new-task/SKILL.md"
+      },
+      "specialist_agent": "dart_reviewer",
+      "owner_docs": [
+        "docs/onboarding/code-style.md",
+        "docs/onboarding/testing.md"
+      ],
+      "permitted_scopes": [
+        "named common owner file",
+        "focused regression test"
+      ],
+      "focused_gates": ["pixi run check-agent-hook", "pixi run test-unit"],
+      "full_gates": ["pixi run lint", "pixi run test-all"],
+      "recovery": "docs/onboarding/contributing.md",
+      "forbidden_paths": [".claude/commands/dart-release-ci-fix.md"]
+    },
+    {
+      "id": "failure-diagnosis",
+      "prompt_class": "root-cause a failing main CI check",
+      "start_dir": ".github/workflows",
+      "instruction_chain": ["AGENTS.md"],
+      "expected_route": {
+        "kind": "workflow",
+        "name": "dart-fix-ci",
+        "path": ".agents/skills/dart-fix-ci/SKILL.md"
+      },
+      "specialist_agent": "dart_scout",
+      "owner_docs": ["docs/onboarding/ci-cd.md", "docs/onboarding/ai-tools.md"],
+      "permitted_scopes": ["read-only failure evidence", "smallest proved fix"],
+      "focused_gates": ["pixi run check-lint"],
+      "full_gates": ["pixi run test-all"],
+      "recovery": "docs/onboarding/ci-cd.md",
+      "forbidden_paths": [".claude/commands/dart-release-ci-fix.md"]
+    },
+    {
+      "id": "documentation-update",
+      "prompt_class": "one AI owner-doc update with generated parity",
+      "start_dir": "docs/ai",
+      "instruction_chain": ["AGENTS.md", "docs/AGENTS.md"],
+      "expected_route": {
+        "kind": "workflow",
+        "name": "dart-docs-update",
+        "path": ".agents/skills/dart-docs-update/SKILL.md"
+      },
+      "specialist_agent": "dart_reviewer",
+      "owner_docs": [
+        "docs/README.md",
+        "docs/information-architecture.md",
+        "docs/AGENTS.md"
+      ],
+      "permitted_scopes": ["named AI owner docs", "generator-owned adapters"],
+      "focused_gates": ["pixi run check-ai-infra"],
+      "full_gates": ["pixi run test-ai-infra", "pixi run lint"],
+      "recovery": "docs/ai/verification.md",
+      "forbidden_paths": [".claude/commands/dart-release-ci-fix.md"]
+    },
+    {
+      "id": "component-work",
+      "prompt_class": "DART 7 component work at an owned architecture boundary",
+      "start_dir": "python",
+      "instruction_chain": ["AGENTS.md", "python/AGENTS.md"],
+      "expected_route": {
+        "kind": "domain_skill",
+        "name": "dart-architecture",
+        "path": ".agents/skills/dart-architecture/SKILL.md"
+      },
+      "specialist_agent": "dart_reviewer",
+      "owner_docs": [
+        "docs/onboarding/architecture.md",
+        "docs/onboarding/python-bindings.md",
+        "python/AGENTS.md"
+      ],
+      "permitted_scopes": ["named component subtree", "matching tests"],
+      "focused_gates": ["pixi run build"],
+      "full_gates": ["pixi run test-all"],
+      "recovery": "docs/onboarding/testing.md",
+      "forbidden_paths": [".claude/commands/dart-release-ci-fix.md"]
+    },
+    {
+      "id": "simulation-verification",
+      "prompt_class": "verify claim-dependent DART 7 simulation, dynamics, collision/contact/constraints, model/scene, or GUI behavior",
+      "start_dir": "dart/simulation",
+      "instruction_chain": ["AGENTS.md", "dart/simulation/AGENTS.md"],
+      "expected_route": {
+        "kind": "domain_skill",
+        "name": "dart-verify-sim",
+        "path": ".agents/skills/dart-verify-sim/SKILL.md"
+      },
+      "specialist_agent": "dart_reviewer",
+      "owner_docs": [
+        "docs/onboarding/agent-sim-verification.md",
+        "docs/onboarding/testing.md",
+        "docs/ai/verification.md"
+      ],
+      "permitted_scopes": [
+        "dart/simulation",
+        "dart/dynamics",
+        "dart/collision",
+        "dart/constraint",
+        "dart/gui",
+        "dart/io",
+        "python",
+        "examples",
+        "tutorials",
+        "matching tests",
+        "temporary claim-tied evidence"
+      ],
+      "evidence_policy": "text-first-with-claim-tied-visual-or-documented-exception",
+      "focused_gates": ["pixi run test-unit"],
+      "full_gates": ["pixi run test-py", "pixi run test-all"],
+      "recovery": "docs/onboarding/agent-sim-verification.md",
+      "forbidden_paths": [".claude/commands/dart-release-ci-fix.md"]
+    },
+    {
+      "id": "release-maintenance",
+      "prompt_class": "decide whether main work should adapt to release-6.20",
+      "start_dir": "docs/onboarding",
+      "instruction_chain": ["AGENTS.md", "docs/AGENTS.md"],
+      "expected_route": {
+        "kind": "workflow",
+        "name": "dart-backport-pr",
+        "path": ".agents/skills/dart-backport-pr/SKILL.md"
+      },
+      "specialist_agent": "dart_release_auditor",
+      "owner_docs": [
+        "docs/onboarding/release-management.md",
+        "docs/onboarding/contributing.md"
+      ],
+      "permitted_scopes": [
+        "one branch worktree at a time",
+        "explicit apply adapt or omit verdict"
+      ],
+      "focused_gates": ["pixi run check-ai-infra"],
+      "full_gates": ["pixi run test-ai-infra"],
+      "recovery": "docs/onboarding/release-management.md",
+      "forbidden_paths": [".claude/commands/dart-release-ci-fix.md"]
+    }
+  ]
+}

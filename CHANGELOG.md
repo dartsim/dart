@@ -377,10 +377,14 @@ compatibility remains on the active DART 6 LTS branch._
   published install, dartpy smoke-test, and Python example paths match the
   current `package.xml`, wheel workflow, and `dart::simulation::World` API
   surface. ([#3347](https://github.com/dartsim/dart/pull/3347))
+- Upgraded the AI-native contributor infrastructure for current Codex with
+  manifest-owned skills, bounded project agents and hooks, deterministic
+  branch-aware drift/scenario gates, and a text-first plus claim-tied visual
+  verification route, while preserving Claude Code and OpenCode adapters.
 - Hardened the AI-native contributor workflow: `pixi run install-hooks` now
-  installs a pre-commit hook running the Tier-0 lint gate (with a tracked
-  Claude Code commit guard as fallback), the plan dashboard is bounded by
-  enforced entry budgets with completed plans archived to
+  installs the bounded staged agent-structure gate, with tracked Claude Code
+  and Codex pre-tool guards enforcing the same policy during agent sessions;
+  the plan dashboard is bounded by enforced entry budgets with completed plans archived to
   `docs/plans/archive.md`, and the `dart-*` workflow catalog was consolidated
   (`dart-fix-ci` absorbs the release-branch CI lane, `dart-manage-pr` absorbs
   merge with milestone and independent-review gates) with new `dart-deps` and

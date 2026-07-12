@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "profile": "main",
+  "base_ref": "origin/main",
+  "cpp_standard": "C++23",
+  "python_binding": "nanobind",
+  "io_namespace": "dart::io",
+  "gui_backend": "Filament/GLFW3/Dear ImGui",
+  "required_markers": ["C++23", "DART 7"],
+  "required_paths": [
+    "docs/readthedocs/architecture.md",
+    "docs/design/simulation_solver_architecture.md",
+    "docs/onboarding/agent-sim-verification.md",
+    ".claude/skills/dart-verify-sim/SKILL.md",
+    "dart/io",
+    "dart/gui",
+    "dart/simulation/compute/cuda",
+    "python/dartpy",
+    "scripts/agent_capture.py"
+  ],
+  "forbidden_markers": [
+    "C++17 compatibility profile",
+    "pybind11-owned public bindings"
+  ],
+  "forbidden_paths": [".claude/commands/dart-release-ci-fix.md"],
+  "downstream_gates": ["pixi run -e cuda test-all"]
+}

@@ -11,13 +11,21 @@ import sys
 import time
 from typing import Iterable
 
-SKIP_DIRS = {".pixi", "build", "external", "node_modules"}
+SKIP_DIRS = {".git", ".pixi", "build", "external", "node_modules"}
+
+
+def is_skipped_path(root: pathlib.Path, path: pathlib.Path) -> bool:
+    relative = path.relative_to(root)
+    return any(part in SKIP_DIRS for part in relative.parts) or relative.parts[:2] == (
+        ".claude",
+        "worktrees",
+    )
 
 
 def find_toml_files(root: pathlib.Path) -> list[pathlib.Path]:
     files = []
     for path in root.rglob("*.toml"):
-        if any(part in SKIP_DIRS for part in path.parts):
+        if is_skipped_path(root, path):
             continue
         files.append(path.relative_to(root))
     files.sort()

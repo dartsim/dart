@@ -158,11 +158,26 @@ compile_flags.txt
 !.opencode/command/**/*.md
 !.opencode/AGENTS.md
 
-# Codex project skills.
+# Cross-agent project skills. Codex discovers this standards-based catalog.
+!.agents/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/.dart-generated.json
+!.agents/skills/*/
+.agents/skills/*/*
+!.agents/skills/*/SKILL.md
+!.agents/AGENTS.md
+
+# Codex project configuration, hooks, and specialized agents. Generated DART
+# skills live in .agents/skills; the former .codex/skills catalog is retired.
+!.codex/
 .codex/*
-!.codex/skills/
-!.codex/skills/**/
-!.codex/skills/**/SKILL.md
+!.codex/agents/
+.codex/agents/*
+!.codex/agents/*.toml
+!.codex/config.toml
+!.codex/hooks.json
 !.codex/AGENTS.md
 
 # Claude Code project files: team-shared commands + skills ARE
