@@ -45,6 +45,7 @@
 #include <utility>
 #include <vector>
 
+#include <cctype>
 #include <cerrno>
 #include <cmath>
 #include <cstdio>
@@ -119,7 +120,15 @@ struct Checksum
 
 bool parseSize(const char* text, std::size_t& value)
 {
-  if (!text || text[0] == '\0' || text[0] == '-')
+  if (!text || text[0] == '\0')
+    return false;
+
+  // strtoull silently wraps whitespace-prefixed negatives, so require the
+  // first non-space character to be a digit or an explicit plus sign.
+  const char* scan = text;
+  while (*scan == ' ' || *scan == '\t')
+    ++scan;
+  if (*scan != '+' && !std::isdigit(static_cast<unsigned char>(*scan)))
     return false;
 
   errno = 0;

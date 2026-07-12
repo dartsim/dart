@@ -1405,6 +1405,9 @@ TEST_F(SoftDynamicsTest, softMechanicalEnergyGrowthIsBounded)
     dynamics::SoftBodyNode* freeSoftBody = freeSoft->getSoftBodyNode(0);
     ASSERT_TRUE(freeSoftBody != nullptr) << detector.name;
     ASSERT_GT(freeSoftBody->getNumPointMasses(), 1u) << detector.name;
+    // The fixture ships with ke=0; a nonzero edge stiffness keeps the
+    // edge-spring energy term exercised instead of multiplying to zero.
+    freeSoftBody->setEdgeSpringStiffness(5.0);
     freeSoftBody->getPointMass(0)->setPositions(
         Eigen::Vector3d(0.02, 0.0, 0.0));
     freeSoftBody->getPointMass(1)->setPositions(

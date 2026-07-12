@@ -293,6 +293,7 @@ public:
   std::uint32_t mCurrentTargetStamp = 0u;
   bool mCurrentTargetAll = true;
   bool mForceAllActiveNextStep = true;
+  bool mHasPendingFrozenSeed = false;
   std::size_t mActiveCount = 0u;
   Eigen::Matrix6d mAllFrozenRestArtInertiaContribution
       = Eigen::Matrix6d::Zero();
@@ -924,11 +925,13 @@ void SoftBodyNode::seedAdaptiveContactActivationFace(int faceId)
 
   // A quiescent body (for example a weld-jointed soft link) may never
   // re-dirty its articulated inertia, and the activation tick only runs from
-  // updateArtInertia. Force the tick only for a genuine activation event —
-  // seeding an already-active point neither changes the set nor lets linger
-  // advance, and unconditional dirtying would churn caches every step.
+  // updateArtInertia. Record the activation event and apply the dirtying in
+  // the post-solve integration hook: dirtying here would let the constraint
+  // solver's own getArticulatedInertia() re-run the tick mid-LCP-build,
+  // consuming this step's seeds against forward dynamics that already used
+  // the prior active set.
   if (seededFrozenPoint)
-    dirtyArticulatedInertia();
+    activation.mHasPendingFrozenSeed = true;
 }
 
 //==============================================================================
@@ -945,7 +948,7 @@ void SoftBodyNode::seedAdaptiveContactActivationPoint(std::size_t index)
       = activation.mSeeded[index] == 0u && !activation.isActive(index);
   activation.mSeeded[index] = 1u;
   if (activationEvent)
-    dirtyArticulatedInertia();
+    activation.mHasPendingFrozenSeed = true;
 }
 
 //==============================================================================
@@ -962,6 +965,14 @@ bool SoftBodyNode::isAdaptiveContactPointMassActive(std::size_t index) const
 void SoftBodyNode::integratePointMassPositions(double dt)
 {
   auto& activation = adaptiveContactActivation(*this);
+  // Deferred seed dirtying: post-solve is the single safe site, so the next
+  // step's forward dynamics runs the activation tick exactly once even for
+  // otherwise-quiescent bodies (a new contact wakes the skeleton, so this
+  // hook is guaranteed to run on the seeding step).
+  if (activation.mEnabled && activation.mHasPendingFrozenSeed) {
+    activation.mHasPendingFrozenSeed = false;
+    dirtyArticulatedInertia();
+  }
   if (!activation.mEnabled) {
     for (std::size_t i = 0; i < getNumPointMasses(); ++i)
       getPointMass(i)->integratePositions(dt);
