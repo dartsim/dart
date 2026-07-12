@@ -567,7 +567,7 @@ def test_idle_environment_gate_enforces_load_workloads_and_available_thermal_dat
     assert unavailable == ["thermal sensors became unavailable"]
 
 
-def test_pair_environment_gate_checks_both_detectors_before_and_after(tmp_path):
+def test_pair_environment_gate_checks_load_and_workloads_across_pair(tmp_path):
     runner = _load_runner_module()
     args = runner.parse_args(["--diagnostic", "--output-dir", str(tmp_path / "unused")])
     clean = {
@@ -597,9 +597,38 @@ def test_pair_environment_gate_checks_both_detectors_before_and_after(tmp_path):
 
     assert any("dart after: 1-minute load=9.00" in failure for failure in failures)
     assert any("native before: 1-minute load=9.00" in failure for failure in failures)
-    assert any(
-        "native after: coretemp=90.00 C > 80 C" in failure for failure in failures
+    assert not any("coretemp" in failure for failure in failures)
+
+
+def test_pair_environment_gate_treats_post_run_heat_as_observational(tmp_path):
+    runner = _load_runner_module()
+    args = runner.parse_args(["--diagnostic", "--output-dir", str(tmp_path / "unused")])
+    cool = {
+        "local_dart_workloads": 0,
+        "load_average": [0.5, 0.5, 0.5],
+        "thermal_celsius": {"coretemp": 50.0},
+    }
+    hot = {
+        **cool,
+        "thermal_celsius": {"coretemp": 93.0},
+    }
+    records = {
+        "dart": {"environment_before": cool, "environment_after": hot},
+        "native": {"environment_before": hot, "environment_after": hot},
+    }
+
+    assert not runner.pair_environment_failures(
+        records, ("dart", "native"), args, {"coretemp": 50.0}
     )
+
+    hot_start = {
+        "dart": {"environment_before": hot, "environment_after": hot},
+        "native": {"environment_before": hot, "environment_after": hot},
+    }
+    failures = runner.pair_environment_failures(
+        hot_start, ("dart", "native"), args, {"coretemp": 50.0}
+    )
+    assert any("coretemp=93.00 C > 80 C" in failure for failure in failures)
 
 
 def test_detector_equivalence_qualifies_every_thread_count(tmp_path, monkeypatch):

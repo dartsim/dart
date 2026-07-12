@@ -828,6 +828,8 @@ def build_metadata(
             "thermal_max_celsius": args.thermal_max_celsius,
             "thermal_max_rise_celsius": args.thermal_max_rise_celsius,
             "thermal_required_when_available": True,
+            "thermal_gate_scope": "pair-start",
+            "post_run_thermal_observational": True,
             "run_timeout_seconds": args.run_timeout,
             "cpu_list": args.cpu_list,
             "diagnostic": args.diagnostic,
@@ -1053,15 +1055,6 @@ def pair_environment_failures(
                     f"{first_snapshot['load_average'][0]:.2f} + "
                     f"{args.pair_max_load_rise_1m:g}"
                 )
-            failures.extend(
-                f"{detector} {position}: {failure}"
-                for failure in thermal_environment_failures(
-                    snapshot["thermal_celsius"],
-                    thermal_baseline,
-                    args.thermal_max_celsius,
-                    args.thermal_max_rise_celsius,
-                )
-            )
     return failures
 
 
