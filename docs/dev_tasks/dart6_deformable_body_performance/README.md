@@ -20,9 +20,10 @@ limitation are recorded locally. Current work is review/CI stabilization and
 closeout decisions, not another speculative optimization lane inside #3382.
 
 The unpublished local stack starts with implementation commit `2ad156e7b82`,
-continues through the handoff and durable-owner updates, and now includes
-balanced-evidence runner commit `9a7bab76948` plus thermal-gate correction
-`a122c5ab437` and durable follow-up commits `ab6e8edede4` and `b615f5f1f6e`.
+continues through the handoff and durable-owner updates, and includes
+balanced-evidence runner commit `9a7bab76948`, thermal-gate correction
+`a122c5ab437`, durable follow-up commits `ab6e8edede4` and `b615f5f1f6e`, and
+the current `release-6.20` merge at `52ff108437d`.
 The implementation commit closes the current WP-DB.04 review finding by
 keeping retained point-mass
 accelerations out of public mass-matrix columns and adds a regression for mass
@@ -30,9 +31,11 @@ and augmented-mass state independence. The runner replaces the previously
 manual native-vs-DART timing method with a protocol that produces a
 revision-pinned, thermally gated, eight-row paired artifact. Both packets are
 reviewed and locally verified but still need approval before publication. No
-final paired timing artifact has been captured: both full attempts remained in
-preflight while sibling builds kept the shared host hot and busy. Exact
-takeover state is in `RESUME.md`.
+final paired timing artifact has been captured: the completed pre-merge
+attempts remained in preflight while sibling builds kept the shared host hot
+and busy, and a third attempt became stale when the target base moved. The
+merged head passes the full Release, Python, repository-lint, and focused
+assert-enabled gates. Exact takeover state is in `RESUME.md`.
 
 ## Reference scope
 
