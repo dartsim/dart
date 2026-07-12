@@ -72,6 +72,16 @@ public:
   /// queries.
   std::size_t getNumCollisionThreads() const;
 
+  /// Enables contacts for primitive penetration through soft triangle
+  /// interiors when no vertex contact covers that face. This is disabled by
+  /// default to preserve legacy contact results. The
+  /// DART_SOFT_FACE_INTERIOR_CONTACTS environment variable overrides the
+  /// construction default when set to a non-empty value other than "0".
+  void setSoftFaceInteriorContactsEnabled(bool enabled);
+
+  /// Returns whether soft face-interior contacts are enabled.
+  bool getSoftFaceInteriorContactsEnabled() const;
+
   // Documentation inherited
   std::unique_ptr<CollisionGroup> createCollisionGroup() override;
 
@@ -117,6 +127,7 @@ private:
 
   std::unique_ptr<CollisionThreadPool> mCollisionThreadPool;
   std::size_t mNumCollisionThreads{1u};
+  bool mSoftFaceInteriorContactsEnabled{false};
 };
 
 } // namespace collision

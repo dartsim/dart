@@ -31,12 +31,19 @@
  */
 
 #include "dart/collision/CollisionResult.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Inertia.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PointMass.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
@@ -51,6 +58,7 @@
 #include <vector>
 
 #include <cmath>
+#include <cstdlib>
 
 using namespace std;
 using namespace Eigen;
@@ -416,6 +424,122 @@ dynamics::SoftBodyNode* firstSoftBody(const simulation::WorldPtr& world)
   }
 
   return nullptr;
+}
+
+class ScopedEnvironmentVariable
+{
+public:
+  ScopedEnvironmentVariable(const char* name, const char* value) : mName(name)
+  {
+    if (const char* original = std::getenv(name)) {
+      mHadOriginal = true;
+      mOriginal = original;
+    }
+    set(value);
+  }
+
+  ~ScopedEnvironmentVariable()
+  {
+    if (mHadOriginal)
+      set(mOriginal.c_str());
+    else
+      clear();
+  }
+
+private:
+  void set(const char* value)
+  {
+#ifdef _WIN32
+    _putenv_s(mName.c_str(), value);
+#else
+    setenv(mName.c_str(), value, 1);
+#endif
+  }
+
+  void clear()
+  {
+#ifdef _WIN32
+    _putenv_s(mName.c_str(), "");
+#else
+    unsetenv(mName.c_str());
+#endif
+  }
+
+  std::string mName;
+  std::string mOriginal;
+  bool mHadOriginal{false};
+};
+
+struct SoftFaceRestScene
+{
+  simulation::WorldPtr world;
+  dynamics::SoftBodyNode* softBody{nullptr};
+  dynamics::BodyNode* sphereBody{nullptr};
+  double sphereRadius{0.15};
+};
+
+SoftFaceRestScene makeSoftFaceRestScene(bool enableFaceInteriorContacts)
+{
+  ScopedEnvironmentVariable environment(
+      "DART_SOFT_FACE_INTERIOR_CONTACTS",
+      enableFaceInteriorContacts ? "1" : "0");
+
+  SoftFaceRestScene scene;
+  scene.world = simulation::World::create();
+  scene.world->setTimeStep(0.001);
+  scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  scene.world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+
+  auto softSkeleton = dynamics::Skeleton::create("coarse_soft_support");
+  const auto softProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d(1.0, 1.0, 0.2),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      1000.0,
+      1000.0,
+      10.0);
+  const dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties("coarse_soft_support_body"));
+  const dynamics::SoftBodyNode::Properties softBodyProperties(
+      bodyProperties, softProperties);
+  auto softPair = softSkeleton->createJointAndBodyNodePair<
+      dynamics::WeldJoint,
+      dynamics::SoftBodyNode>(
+      nullptr, dynamics::WeldJoint::Properties(), softBodyProperties);
+  scene.softBody = softPair.second;
+  softSkeleton->setMobile(false);
+  scene.world->addSkeleton(softSkeleton);
+
+  auto sphereSkeleton = dynamics::Skeleton::create("heavy_sphere");
+  auto spherePair
+      = sphereSkeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  scene.sphereBody = spherePair.second;
+  const auto sphereShape
+      = std::make_shared<dynamics::SphereShape>(scene.sphereRadius);
+  scene.sphereBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(sphereShape);
+
+  dynamics::Inertia inertia;
+  inertia.setMass(5.0);
+  inertia.setMoment(sphereShape->computeInertia(inertia.getMass()));
+  scene.sphereBody->setInertia(inertia);
+
+  Eigen::Isometry3d sphereTransform = Eigen::Isometry3d::Identity();
+  sphereTransform.translation() = Eigen::Vector3d(-0.25, -0.25, 0.22);
+  dynamics::FreeJoint::setTransformOf(spherePair.first, sphereTransform);
+  scene.world->addSkeleton(sphereSkeleton);
+  return scene;
+}
+
+double softBodyLowerBound(const dynamics::SoftBodyNode* softBody)
+{
+  double lowerBound = std::numeric_limits<double>::infinity();
+  for (std::size_t i = 0u; i < softBody->getNumPointMasses(); ++i) {
+    lowerBound = std::min(
+        lowerBound, softBody->getPointMass(i)->getWorldPosition().z());
+  }
+  return lowerBound;
 }
 
 void enableAdaptiveContactActivation(
@@ -907,6 +1031,73 @@ TEST_F(SoftDynamicsTest, finiteStateForRepresentativeSoftScenes)
               + " threads=1-vs-4 final state");
     }
   }
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, softFaceInteriorContactPreventsSphereTunneling)
+{
+  SoftFaceRestScene enabled = makeSoftFaceRestScene(true);
+  SoftFaceRestScene disabled = makeSoftFaceRestScene(false);
+  ASSERT_TRUE(enabled.world != nullptr);
+  ASSERT_TRUE(disabled.world != nullptr);
+  ASSERT_TRUE(enabled.softBody != nullptr);
+  ASSERT_TRUE(disabled.softBody != nullptr);
+  ASSERT_TRUE(enabled.sphereBody != nullptr);
+  ASSERT_TRUE(disabled.sphereBody != nullptr);
+
+  const auto enabledDetector
+      = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
+          enabled.world->getCollisionDetector());
+  const auto disabledDetector
+      = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
+          disabled.world->getCollisionDetector());
+  ASSERT_TRUE(enabledDetector != nullptr);
+  ASSERT_TRUE(disabledDetector != nullptr);
+  ASSERT_TRUE(enabledDetector->getSoftFaceInteriorContactsEnabled());
+  ASSERT_FALSE(disabledDetector->getSoftFaceInteriorContactsEnabled());
+
+  bool sawEnabledContact = false;
+  for (std::size_t step = 1u; step <= 500u; ++step) {
+    enabled.world->step();
+    disabled.world->step();
+
+    const Eigen::Vector3d enabledPosition
+        = enabled.sphereBody->getWorldTransform().translation();
+    expectFinite(enabledPosition, "enabled sphere position");
+    expectFinite(
+        enabled.sphereBody->getLinearVelocity(), "enabled sphere velocity");
+    const double enabledLowerBound = softBodyLowerBound(enabled.softBody);
+    expectFinite(enabledLowerBound, "enabled soft lower bound");
+    ASSERT_GT(
+        enabledPosition.z() - enabled.sphereRadius, enabledLowerBound - 1.0e-6)
+        << "step=" << step;
+
+    sawEnabledContact
+        = sawEnabledContact
+          || enabled.world->getLastCollisionResult().getNumContacts() > 0u;
+    if (step % 50u == 0u) {
+      expectFiniteSoftBodyState(
+          enabled.softBody,
+          "enabled soft face support step=" + std::to_string(step));
+    }
+  }
+  EXPECT_TRUE(sawEnabledContact);
+
+  const double disabledSphereBottom
+      = disabled.sphereBody->getWorldTransform().translation().z()
+        - disabled.sphereRadius;
+  const double disabledLowerBound = softBodyLowerBound(disabled.softBody);
+  expectFinite(disabledSphereBottom, "disabled sphere bottom");
+  expectFinite(disabledLowerBound, "disabled soft lower bound");
+
+  // The disabled lane is a diagnostic control, not a behavioral contract:
+  // other vertex contacts may happen to catch a changed scene in the future.
+  // Record the observed outcome without requiring that it tunnel.
+  RecordProperty("disabled_sphere_bottom", disabledSphereBottom);
+  RecordProperty("disabled_soft_lower_bound", disabledLowerBound);
+  RecordProperty(
+      "disabled_sphere_sank_through",
+      disabledSphereBottom < disabledLowerBound ? "true" : "false");
 }
 
 //==============================================================================
