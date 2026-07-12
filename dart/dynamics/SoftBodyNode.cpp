@@ -1919,8 +1919,7 @@ void SoftBodyNode::updateMassMatrix()
       mPointMasses, mAspectState.mPointStates, mAspectProperties.mPointProps);
   for (std::size_t i = 0; i < phase.size(); ++i) {
     PointMass& pointMass = *phase.pointMasses[i];
-    pointMass.mM_dV = phase.states[i].mAccelerations
-                      + mM_dV.head<3>().cross(pointMass.mX) + mM_dV.tail<3>();
+    pointMass.mM_dV = mM_dV.head<3>().cross(pointMass.mX) + mM_dV.tail<3>();
     DART_ASSERT(!math::isNan(pointMass.mM_dV));
   }
 }

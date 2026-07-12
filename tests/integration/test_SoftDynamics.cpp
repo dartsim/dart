@@ -1804,3 +1804,62 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
       1.0e-12,
       "soft point-mass external force clear");
 }
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, pointMassAccelerationsDoNotAffectMassMatrices)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+
+  const dynamics::SkeletonPtr skeleton = world->getSkeleton("skeleton 1");
+  ASSERT_TRUE(skeleton != nullptr);
+  ASSERT_EQ(skeleton->getNumSoftBodyNodes(), 1u);
+
+  dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(0);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+  const Eigen::MatrixXd baselineMass = skeleton->getMassMatrix();
+  const Eigen::MatrixXd baselineAugMass = skeleton->getAugMassMatrix();
+  expectMatrixNear(
+      baselineMass,
+      getMassMatrix(skeleton),
+      1.0e-10,
+      "soft point-mass baseline mass matrix");
+  expectMatrixNear(
+      baselineAugMass,
+      getAugMassMatrix(skeleton),
+      1.0e-10,
+      "soft point-mass baseline augmented mass matrix");
+
+  std::vector<Eigen::Vector3d> originalAccelerations;
+  originalAccelerations.reserve(softBody->getNumPointMasses());
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    ASSERT_TRUE(pointMass != nullptr);
+    originalAccelerations.push_back(pointMass->getAccelerations());
+
+    const double scale = static_cast<double>(i + 1u);
+    pointMass->setAccelerations(
+        Eigen::Vector3d(0.25 * scale, -0.5 * scale, 0.75 * scale));
+  }
+
+  // Point-mass accelerations are simulation state, not generalized-coordinate
+  // basis accelerations. Force a fresh column assembly to prove that retained
+  // point state cannot leak into either public mass matrix.
+  softBody->dirtyArticulatedInertia();
+  expectMatrixNear(
+      skeleton->getMassMatrix(),
+      baselineMass,
+      1.0e-10,
+      "soft point-mass acceleration-independent mass matrix");
+  expectMatrixNear(
+      skeleton->getAugMassMatrix(),
+      baselineAugMass,
+      1.0e-10,
+      "soft point-mass acceleration-independent augmented mass matrix");
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i)
+    softBody->getPointMass(i)->setAccelerations(originalAccelerations[i]);
+}
