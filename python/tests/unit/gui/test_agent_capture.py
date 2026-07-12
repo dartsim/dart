@@ -75,6 +75,15 @@ def test_reproduce_command_prefers_explicit_distance():
     assert "--frame-margin" not in command
 
 
+def test_reproduce_command_records_custom_warmup():
+    # Warmup frames affect OSG initialization before the screenshot; a
+    # non-default value must survive into the recorded reproduce command.
+    command = agent_capture._reproduce_command(_args(warmup_frames=25))
+    assert "--warmup-frames 25" in command
+    default = agent_capture._reproduce_command(_args())
+    assert "--warmup-frames" not in default
+
+
 def test_failed_view_report_rejects_capture():
     views = [
         {

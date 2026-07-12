@@ -34,6 +34,10 @@ import numpy as np
 
 SCHEMA_VERSION = "dart.agent_capture/v1"
 
+# Default OSG warmup frames before each screenshot; shared by the argument
+# parser and the reproduce-command writer so non-default runs record the flag.
+DEFAULT_WARMUP_FRAMES = 10
+
 
 def _import_dartpy() -> Any:
     try:
@@ -548,6 +552,10 @@ def _reproduce_command(args: argparse.Namespace) -> str:
     parts.append(f"--width {args.width} --height {args.height}")
     if args.fovy_deg != avq.DEFAULT_FOVY_DEG:
         parts.append(f"--fovy-deg {args.fovy_deg}")
+    if args.warmup_frames != DEFAULT_WARMUP_FRAMES:
+        # Warmup frames affect OSG initialization before the screenshot, so
+        # replaying without them can produce different evidence.
+        parts.append(f"--warmup-frames {args.warmup_frames}")
     if args.layers:
         parts.append("--layers " + " ".join(args.layers))
     if args.focus:
@@ -601,7 +609,9 @@ def main(argv: list[str] | None = None) -> int:
         "--camera-target", nargs=3, type=float, default=[0.0, 0.0, 0.0]
     )
     parser.add_argument("--frame-margin", type=float, default=2.2)
-    parser.add_argument("--warmup-frames", type=int, default=10)
+    parser.add_argument(
+        "--warmup-frames", type=int, default=DEFAULT_WARMUP_FRAMES
+    )
     parser.add_argument("--turntable", type=int, default=0)
     parser.add_argument("--motion-frames", type=int, default=0)
     parser.add_argument("--motion-substeps", type=int, default=8)

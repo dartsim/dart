@@ -151,6 +151,17 @@ def test_reselection_avoids_occluder():
         assert "occluded" not in choice.report.issues
 
 
+def test_auto_selection_prefers_acceptable_views():
+    # Ranking partitions on acceptability before score: a high-scoring but
+    # failing candidate (e.g. marginally occluded) must never shadow a usable
+    # view and make the downstream capture gate abort needlessly.
+    world = _world_with_marker()
+    _add_wall(world)
+    choices = avq.select_viewpoints(world, (320, 240), focus="marker", count=2)
+    assert len(choices) == 2
+    assert all(choice.report.acceptable for choice in choices)
+
+
 def test_distance_and_crop_issues():
     world = _world_with_marker()
     far = avq.orbit_camera([0.0, 0.0, 0.2], 60.0, azimuth=0.8, elevation=0.45)
