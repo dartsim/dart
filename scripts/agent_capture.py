@@ -20,6 +20,7 @@ see docs/ai/verification.md.
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import math
 import shutil
@@ -50,6 +51,19 @@ def _import_dartpy() -> Any:
     if not hasattr(dartpy.gui, "osg"):
         raise RuntimeError("this dartpy build has no gui.osg module")
     return dartpy
+
+
+def _load_factory(spec: str) -> Callable[[], Any]:
+    """Resolve a claim-specific ``module:callable`` world factory."""
+    if ":" not in spec:
+        raise ValueError("--factory must be in module:callable form")
+    module_name, attr_path = spec.split(":", 1)
+    target: Any = importlib.import_module(module_name)
+    for name in attr_path.split("."):
+        target = getattr(target, name)
+    if not callable(target):
+        raise TypeError(f"{spec!r} did not resolve to a callable")
+    return target
 
 
 def _box_skeleton(
@@ -320,11 +334,18 @@ def _assess_capture_view(world, camera, args, name: str) -> dict[str, Any]:
 
 def run_capture(args: argparse.Namespace) -> dict[str, Any]:
     dart = _import_dartpy()
-    if args.scene not in _BUILTIN_SCENES:
-        raise ValueError(
-            f"unknown scene {args.scene!r}; available: {sorted(_BUILTIN_SCENES)}"
-        )
-    world = _BUILTIN_SCENES[args.scene](dart)
+    if args.factory:
+        world = _load_factory(args.factory)()
+        scene_id = args.factory
+    else:
+        if args.scene not in _BUILTIN_SCENES:
+            raise ValueError(
+                f"unknown scene {args.scene!r}; available: {sorted(_BUILTIN_SCENES)}"
+            )
+        world = _BUILTIN_SCENES[args.scene](dart)
+        scene_id = args.scene
+    if not hasattr(world, "step") or not hasattr(world, "getNumSkeletons"):
+        raise TypeError("scene factory must return a dartpy.simulation.World")
 
     tracker = (
         ado.TrajectoryTracker(world) if "trajectories" in args.layers else None
@@ -515,7 +536,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
 
     sidecar = {
         "schema_version": SCHEMA_VERSION,
-        "scene": args.scene,
+        "scene": scene_id,
         "steps": args.steps,
         "size": [args.width, args.height],
         "fovy_deg": args.fovy_deg,
@@ -547,7 +568,10 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
 
 def _reproduce_command(args: argparse.Namespace) -> str:
     parts = ["pixi run agent-capture --"]
-    parts.append(f"--scene {args.scene}")
+    if args.factory:
+        parts.append(f"--factory {args.factory}")
+    else:
+        parts.append(f"--scene {args.scene}")
     parts.append(f"--steps {args.steps}")
     parts.append(f"--width {args.width} --height {args.height}")
     if args.fovy_deg != avq.DEFAULT_FOVY_DEG:
@@ -590,6 +614,7 @@ def _reproduce_command(args: argparse.Namespace) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scene", default="box_on_ground")
+    parser.add_argument("--factory", help="module:callable world factory")
     parser.add_argument("--steps", type=int, default=0)
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=960)
@@ -598,7 +623,7 @@ def main(argv: list[str] | None = None) -> int:
         "--layers",
         nargs="*",
         default=[],
-        help=f"debug layers to composite (available: {list(ado.DEBUG_LAYERS)})",
+        help=f"engine-rendered debug layers (available: {list(ado.DEBUG_LAYERS)})",
     )
     parser.add_argument("--focus", default="")
     parser.add_argument("--auto-views", type=int, default=0)
@@ -624,7 +649,14 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         sidecar = run_capture(args)
-    except (OSError, ValueError, RuntimeError) as error:
+    except (
+        ImportError,
+        AttributeError,
+        OSError,
+        TypeError,
+        ValueError,
+        RuntimeError,
+    ) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
     print(json.dumps(sidecar, indent=2, sort_keys=True))

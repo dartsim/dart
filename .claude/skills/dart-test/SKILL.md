@@ -54,6 +54,14 @@ pixi run test
 gh run view <RUN_ID> --log-failed
 ```
 
+## Simulation And Visual End-to-End Checks
+
+When a failure or change depends on scene structure, dynamics,
+collision/contact, simulation stepping, OSG output, or a visual example, also
+load `dart-verify-sim`. Use its text-first oracle and then an assessed,
+claim-tied capture through `DebugOverlay`. Record a concrete no-visual reason
+only when capture is unavailable or not applicable.
+
 ## Gotchas
 
 - `pixi run build` builds libraries only, NOT every test binary. If you run

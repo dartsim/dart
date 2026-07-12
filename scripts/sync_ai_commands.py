@@ -4,7 +4,7 @@
 Different AI coding tools read from different directories:
 - Claude Code: .claude/commands/, .claude/skills/
 - OpenCode: .opencode/command/
-- Codex: .codex/skills/ (domain skills plus command-derived workflow skills)
+- Codex: .agents/skills/ (domain skills plus command-derived workflow skills)
 
 This script keeps them in sync using .claude/ as the current editable source
 for workflow commands and domain skills.
@@ -22,7 +22,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import shutil
 import sys
 from pathlib import Path
 
@@ -32,6 +31,8 @@ MAX_SKILL_LINES = 500
 MAX_COMMAND_LINES = 200
 REQUIRED_COMMAND_SECTIONS = ("Required Reading", "Workflow", "Output")
 CAPABILITY_SCHEMA_VERSION = 1
+GENERATED_MANIFEST = ".dart-generated.json"
+GENERATED_MANIFEST_SCHEMA_VERSION = 1
 CAPABILITY_STATUS_VALUES = {"active", "deprecated", "parked", "proposed"}
 CAPABILITY_WORKFLOW_GATE_PROFILE_VALUES = {
     "approval-boundary",
@@ -244,6 +245,45 @@ def list_skill_names(skill_dir: Path) -> tuple[set[str], list[str]]:
     return names, errors
 
 
+def list_generated_skill_paths(skill_dir: Path) -> tuple[list[Path], list[str]]:
+    """Return only DART-manifest-owned skills from a shared discovery root."""
+    owned_paths, errors = load_generated_manifest(skill_dir)
+    paths: list[Path] = []
+    for relative in sorted(owned_paths):
+        path = skill_dir / relative
+        if not path.is_file():
+            errors.append(f"{display_path(path)}: manifest-owned skill is missing")
+        else:
+            paths.append(path)
+    return paths, errors
+
+
+def list_generated_skill_names(skill_dir: Path) -> tuple[set[str], list[str]]:
+    """Return declared names for DART-owned generated skills only."""
+    paths, errors = list_generated_skill_paths(skill_dir)
+    names: set[str] = set()
+    for path in paths:
+        meta = parse_skill_frontmatter(path.read_text())
+        name = meta.get("name", "")
+        folder_name = path.parent.name
+        if not name:
+            errors.append(
+                f"{display_path(path)}: missing required frontmatter field `name`"
+            )
+            continue
+        if name != folder_name:
+            errors.append(
+                f"{display_path(path)}: folder name `{folder_name}` does not "
+                f"match declared skill name `{name}`"
+            )
+        if name in names:
+            errors.append(
+                f"{display_path(path)}: duplicate declared skill name `{name}`"
+            )
+        names.add(name)
+    return names, errors
+
+
 def print_skill_name_errors(label: str, errors: list[str]) -> None:
     """Print skill name validation errors with an agent/tool label."""
     for error in errors:
@@ -264,7 +304,9 @@ def check_capability_parity(repo_root: Path) -> bool:
     shared_skills, shared_skill_errors = list_skill_names(
         repo_root / ".claude" / "skills"
     )
-    codex_skills, codex_skill_errors = list_skill_names(repo_root / ".codex" / "skills")
+    codex_skills, codex_skill_errors = list_generated_skill_names(
+        repo_root / ".agents" / "skills"
+    )
 
     expected = claude_commands | shared_skills
     agent_sets = {
@@ -280,7 +322,7 @@ def check_capability_parity(repo_root: Path) -> bool:
         print_skill_name_errors(".claude/skills", shared_skill_errors)
     if codex_skill_errors:
         ok = False
-        print_skill_name_errors(".codex/skills", codex_skill_errors)
+        print_skill_name_errors(".agents/skills", codex_skill_errors)
 
     if claude_commands & shared_skills:
         ok = False
@@ -311,16 +353,21 @@ def validate_style_and_budget(repo_root: Path) -> bool:
     errors: list[str] = []
 
     skill_dirs = [
-        (".claude/skills", repo_root / ".claude" / "skills"),
-        (".codex/skills", repo_root / ".codex" / "skills"),
+        (".claude/skills", repo_root / ".claude" / "skills", False),
+        (".agents/skills", repo_root / ".agents" / "skills", True),
     ]
     command_dirs = [
         (".claude/commands", repo_root / ".claude" / "commands"),
         (".opencode/command", repo_root / ".opencode" / "command"),
     ]
 
-    for label, skill_dir in skill_dirs:
-        for skill_path in sorted(skill_dir.glob("*/SKILL.md")):
+    for label, skill_dir, generated_only in skill_dirs:
+        if generated_only:
+            skill_paths, manifest_errors = list_generated_skill_paths(skill_dir)
+            errors.extend(manifest_errors)
+        else:
+            skill_paths = sorted(skill_dir.glob("*/SKILL.md"))
+        for skill_path in skill_paths:
             content = skill_path.read_text()
             meta = parse_skill_frontmatter(content)
             name = meta.get("name", "")
@@ -344,7 +391,7 @@ def validate_style_and_budget(repo_root: Path) -> bool:
                     f"{MAX_SKILL_LINES}-line skill budget"
                 )
 
-            if label == ".codex/skills":
+            if label == ".agents/skills":
                 for warning in validate_codex_skill(skill_path):
                     errors.append(f"{path_label}: {warning}")
 
@@ -1271,8 +1318,8 @@ def validate_ai_docs(repo_root: Path) -> bool:
             errors.append("AGENTS.md: missing docs/ai/workflows.md catalog pointer")
         if ".claude/commands/" not in agents_content:
             errors.append("AGENTS.md: missing .claude/commands/ source pointer")
-        if ".codex/skills/" not in agents_content:
-            errors.append("AGENTS.md: missing .codex/skills/ generated pointer")
+        if ".agents/skills/" not in agents_content:
+            errors.append("AGENTS.md: missing .agents/skills/ generated pointer")
 
     errors.extend(validate_approval_boundary(repo_root))
 
@@ -1441,6 +1488,85 @@ user.
 """
 
 
+def generated_manifest_content(paths: set[str]) -> str:
+    """Return the deterministic DART ownership manifest for generated skills."""
+    return (
+        json.dumps(
+            {
+                "schema_version": GENERATED_MANIFEST_SCHEMA_VERSION,
+                "generator": "scripts/sync_ai_commands.py",
+                "paths": sorted(paths),
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+
+
+def load_generated_manifest(target_dir: Path) -> tuple[set[str], list[str]]:
+    """Load and validate generated paths without trusting arbitrary file names."""
+    manifest_path = target_dir / GENERATED_MANIFEST
+    if not manifest_path.exists():
+        return set(), []
+
+    try:
+        data = json.loads(manifest_path.read_text())
+    except (OSError, json.JSONDecodeError) as error:
+        return set(), [f"{display_path(manifest_path)}: invalid JSON: {error}"]
+    if not isinstance(data, dict):
+        return set(), [f"{display_path(manifest_path)}: top level must be an object"]
+
+    errors: list[str] = []
+    if (
+        type(data.get("schema_version")) is not int
+        or data["schema_version"] != GENERATED_MANIFEST_SCHEMA_VERSION
+    ):
+        errors.append(
+            f"{display_path(manifest_path)}: unsupported schema_version "
+            f"{data.get('schema_version')!r}"
+        )
+    if data.get("generator") != "scripts/sync_ai_commands.py":
+        errors.append(f"{display_path(manifest_path)}: unexpected generator ownership")
+
+    raw_paths = data.get("paths")
+    if not isinstance(raw_paths, list) or not all(
+        isinstance(path, str) for path in raw_paths
+    ):
+        errors.append(f"{display_path(manifest_path)}: `paths` must be a string list")
+        return set(), errors
+
+    paths = set(raw_paths)
+    if len(paths) != len(raw_paths):
+        errors.append(f"{display_path(manifest_path)}: duplicate generated paths")
+
+    safe_path = re.compile(r"^[a-z0-9][a-z0-9-]*/SKILL\.md$")
+    for path in sorted(paths):
+        if not safe_path.fullmatch(path):
+            errors.append(
+                f"{display_path(manifest_path)}: unsafe generated path `{path}`"
+            )
+
+    return paths, errors
+
+
+def generated_target_is_safe(target_dir: Path, relative: str) -> bool:
+    """Return whether a generated target resolves inside the repository root."""
+    try:
+        repository = get_repo_root().resolve()
+        target_lexical = target_dir.absolute()
+        target_root = target_dir.resolve()
+        if target_root != target_lexical:
+            return False
+        target_root.relative_to(repository)
+        target = (target_dir / relative).resolve()
+        target.relative_to(target_root)
+        if target != target_root / relative:
+            return False
+    except (OSError, ValueError):
+        return False
+    return True
+
+
 def sync_codex_skills(
     skill_source_dir: Path,
     command_source_dir: Path,
@@ -1453,6 +1579,9 @@ def sync_codex_skills(
         return False, -1, 0, 0
     if not command_source_dir.exists():
         print(f"Source directory not found: {command_source_dir}")
+        return False, -1, 0, 0
+    if not generated_target_is_safe(target_dir, GENERATED_MANIFEST):
+        print(f"  ERROR:    generated target escapes repository: {target_dir}")
         return False, -1, 0, 0
 
     if not check_only:
@@ -1478,6 +1607,13 @@ def sync_codex_skills(
         return False, -1, 0, 0
 
     expected_names = set(source_skill_names) | set(source_command_names)
+    expected_paths = {f"{name}/SKILL.md" for name in expected_names}
+    owned_paths, manifest_errors = load_generated_manifest(target_dir)
+    if manifest_errors:
+        for error in manifest_errors:
+            print(f"  ERROR:    {error}")
+        return False, -1, 0, 0
+
     all_synced = True
     synced_count = 0
     skipped_count = 0
@@ -1498,6 +1634,45 @@ def sync_codex_skills(
         items.append(
             (command_file.stem, command_file, render_codex_command_skill(command_file))
         )
+
+    # Preflight every destination before writing anything. A shared
+    # `.agents/skills/` directory may contain user-owned skills; one collision
+    # must not leave earlier DART items partially updated.
+    for skill_name, _, _ in items:
+        target_skill = target_dir / skill_name / "SKILL.md"
+        target_rel_path = f"{skill_name}/SKILL.md"
+        if not generated_target_is_safe(target_dir, target_rel_path):
+            print(
+                "  ERROR:    generated target escapes .agents/skills: "
+                f"{target_rel_path}"
+            )
+            return False, -1, 0, 0
+        if not target_skill.exists():
+            continue
+        if target_rel_path not in owned_paths:
+            print(
+                "  ERROR:    refusing to overwrite manifest-unowned skill "
+                f"{target_rel_path}"
+            )
+            return False, -1, 0, 0
+
+    if target_dir.exists():
+        for skill_path in sorted(target_dir.glob("*/SKILL.md")):
+            rel_path = skill_path.relative_to(target_dir).as_posix()
+            if not generated_target_is_safe(target_dir, rel_path):
+                print(
+                    "  ERROR:    generated target escapes .agents/skills: "
+                    f"{rel_path}"
+                )
+                return False, -1, 0, 0
+            if rel_path in expected_paths or rel_path in owned_paths:
+                continue
+            if has_auto_gen_header(skill_path.read_text()):
+                print(
+                    "  ERROR:    unowned generated-looking skill requires manual "
+                    f"classification: {rel_path}"
+                )
+                return False, -1, 0, 0
 
     for skill_name, source_path, content in items:
         target_skill_dir = target_dir / skill_name
@@ -1525,20 +1700,39 @@ def sync_codex_skills(
             print(f"  SYNCED:   {skill_name}/SKILL.md")
             synced_count += 1
 
-    if target_dir.exists():
-        target_skills = set(d.parent.name for d in target_dir.glob("*/SKILL.md"))
-        orphaned = target_skills - expected_names
-
-        for orphan in sorted(orphaned):
+    orphaned = owned_paths - expected_paths
+    for orphan in sorted(orphaned):
+        orphan_path = target_dir / orphan
+        if not generated_target_is_safe(target_dir, orphan):
+            print(f"  ERROR:    generated target escapes .agents/skills: {orphan}")
+            return False, -1, 0, 0
+        if not orphan_path.exists():
             all_synced = False
-            orphan_path = target_dir / orphan
             if check_only:
-                print(f"  ORPHAN:   {orphan}/")
-            else:
-                shutil.rmtree(orphan_path)
-                print(f"  REMOVED:  {orphan}/")
-    else:
-        orphaned = set()
+                print(f"  STALE MANIFEST: {orphan}")
+            continue
+
+        all_synced = False
+        if check_only:
+            print(f"  ORPHAN:   {orphan}")
+        else:
+            orphan_path.unlink()
+            try:
+                orphan_path.parent.rmdir()
+            except OSError:
+                pass
+            print(f"  REMOVED:  {orphan}")
+
+    manifest_path = target_dir / GENERATED_MANIFEST
+    expected_manifest = generated_manifest_content(expected_paths)
+    if not manifest_path.exists() or manifest_path.read_text() != expected_manifest:
+        all_synced = False
+        if check_only:
+            status = "MISMATCH" if manifest_path.exists() else "MISSING"
+            print(f"  {status}: {GENERATED_MANIFEST}")
+        else:
+            manifest_path.write_text(expected_manifest)
+            print(f"  SYNCED:   {GENERATED_MANIFEST}")
 
     return all_synced, synced_count, skipped_count, len(orphaned)
 
@@ -1570,11 +1764,11 @@ def sync_all(check_only: bool = False) -> bool:
         print(f"  Total: {s} synced, {k} unchanged, {o} orphans removed")
     print()
 
-    print("Skills + command workflows (.claude/ -> .codex/skills/):")
+    print("Skills + command workflows (.claude/ -> .agents/skills/):")
     synced, s, k, o = sync_codex_skills(
         repo_root / ".claude" / "skills",
         repo_root / ".claude" / "commands",
-        repo_root / ".codex" / "skills",
+        repo_root / ".agents" / "skills",
         check_only=check_only,
     )
     if s < 0 or (check_only and not synced):

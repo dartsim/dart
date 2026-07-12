@@ -1,8 +1,8 @@
 #!/bin/sh
-# DART Claude Code PreToolUse guard for Bash `git commit` calls.
+# DART PreToolUse guard for Codex/Claude Bash `git commit` calls.
 #
-# Wired via .claude/settings.json (PreToolUse, matcher "Bash"). It enforces the
-# Tier-0 lint gate for agent sessions even before `pixi run install-hooks` has
+# Wired via `.codex/hooks.json` and `.claude/settings.json`. It enforces the
+# fast Tier-0 gate for agent sessions even before `pixi run install-hooks` has
 # been run, so an agent cannot commit past the gate by forgetting it.
 #
 # Contract:
@@ -16,19 +16,20 @@
 #         exit 0 (emergency bypass, same as the git hook)
 #       - if the commit targets another repository (`git -C /other/repo
 #         commit`), exit 0 (not this gate's business)
-#       - otherwise run `pixi run check-lint-quick`; on failure exit 2 with a
+#       - otherwise run the selected Python interpreter with
+#         `scripts/check_agent_hook.py --profile staged`; on failure exit 2 with a
 #         concise message (exit 2 blocks the tool call and surfaces stderr)
 #   * DART_HOOK_DRY_RUN=1 prints the command it would run and exits 0 (test aid)
-#   * if python3 is unavailable the guard prints a one-line notice and exits 0
-#     (fail-open: a lint guard must never brick every Bash call)
+#   * without an injected interpreter, unavailable python3 prints a notice and
+#     exits 0; an injected interpreter fails closed
 #
-# JSON is parsed with python3 (no jq dependency). No heavy subprocess runs
+# JSON is parsed with the selected Python interpreter (no jq dependency). No heavy subprocess runs
 # unless the command is an actual git commit.
 
 input=$(cat)
 
 # Fast path: ordinary non-git/non-commit Bash calls can be skipped before
-# spawning the python3 tokenizer (measured ~70 ms per spawn, paid on every Bash
+# spawning the Python tokenizer (measured ~70 ms per spawn, paid on every Bash
 # tool call). A real git commit may spell the subcommand through shell quote or
 # backslash removal (`git com\mit`, `git com"mit"`), so the conservative sentinel
 # also falls through when the raw hook JSON contains g-i-t followed by c-o-m-m-i-t
@@ -38,19 +39,38 @@ case "$input" in
     *) exit 0 ;;
 esac
 
-if ! command -v python3 >/dev/null 2>&1; then
+python_cmd=${DART_HOOK_PYTHON:-}
+if [ -z "$python_cmd" ]; then
+    hook_project_dir=${CLAUDE_PROJECT_DIR:-${CODEX_PROJECT_DIR:-}}
+    if [ -z "$hook_project_dir" ]; then
+        hook_project_dir=$(git rev-parse --show-toplevel 2>/dev/null || true)
+    fi
+    for candidate in \
+        "$hook_project_dir/.pixi/envs/default/bin/python" \
+        "$hook_project_dir/.pixi/envs/default/python.exe"
+    do
+        if [ -n "$hook_project_dir" ] && [ -x "$candidate" ]; then
+            python_cmd=$candidate
+            break
+        fi
+    done
+    if [ -z "$python_cmd" ] && command -v python3 >/dev/null 2>&1; then
+        python_cmd=python3
+    fi
+fi
+if [ -z "$python_cmd" ]; then
     echo "DART guard: python3 unavailable; commit guard disabled" >&2
     exit 0
 fi
 
 # Extract the command and decide whether it is a `git commit` against THIS
-# repository, in one python3 pass. Handles env-var prefixes (quote-aware),
+# repository, in one Python pass. Handles env-var prefixes (quote-aware),
 # wrapper prefixes (command/exec/time/nice/nohup/env), subshell and brace-group
 # openers, backslash-escaped/path-qualified git, `git -C dir commit`,
 # `git -c k=v commit`, hook overrides via `--config-env` or command-scoped Git
 # config file environment, and && / || / & / ; / | command chains; ignores "commit"
 # as a substring elsewhere.
-verdict=$(printf '%s' "$input" | python3 -c '
+guard_result=$(printf '%s' "$input" | "$python_cmd" -c '
 import json
 import os
 import re
@@ -369,6 +389,99 @@ def commit_args_disable_hooks(args):
     return False
 
 
+def unwrap_wrapper(tokens, i, head):
+    """Return the wrapped command index, or None when the wrapper only queries."""
+    i += 1
+    if head == "command":
+        while i < len(tokens):
+            token = tokens[i]
+            if token == "--":
+                return i + 1
+            if token == "-p" or (
+                token.startswith("-")
+                and token != "-"
+                and set(token[1:]) == {"p"}
+            ):
+                i += 1
+                continue
+            if token in {"-v", "-V"} or (
+                token.startswith("-")
+                and token != "-"
+                and any(option in token[1:] for option in "vV")
+            ):
+                return None
+            return i
+        return i
+    if head == "exec":
+        while i < len(tokens):
+            token = tokens[i]
+            if token == "--":
+                return i + 1
+            if token in {"-a", "--argv0"}:
+                i += 2
+                continue
+            if token.startswith("--argv0=") or token in {"-c", "-l"}:
+                i += 1
+                continue
+            if token.startswith("-") and token != "-" and set(token[1:]) <= {
+                "c",
+                "l",
+            }:
+                i += 1
+                continue
+            return i
+        return i
+    if head == "time":
+        while i < len(tokens):
+            token = tokens[i]
+            if token == "--":
+                return i + 1
+            if token in {"--help", "--version"}:
+                return None
+            if token in {"-f", "--format", "-o", "--output"}:
+                i += 2
+                continue
+            if token.startswith(("--format=", "--output=")):
+                i += 1
+                continue
+            if token in {
+                "-a",
+                "--append",
+                "-p",
+                "--portability",
+                "-q",
+                "--quiet",
+                "-v",
+                "--verbose",
+            }:
+                i += 1
+                continue
+            return i
+        return i
+    if head == "nice":
+        while i < len(tokens):
+            token = tokens[i]
+            if token == "--":
+                return i + 1
+            if token in {"--help", "--version"}:
+                return None
+            if token in {"-n", "--adjustment"}:
+                i += 2
+                continue
+            if token.startswith("--adjustment=") or re.fullmatch(r"[-+]\d+", token):
+                i += 1
+                continue
+            return i
+        return i
+    if head == "nohup":
+        if i < len(tokens) and tokens[i] == "--":
+            return i + 1
+        if i < len(tokens) and tokens[i] in {"--help", "--version"}:
+            return None
+        return i
+    return i
+
+
 def is_git_commit(text):
     current_cwd = os.getcwd()
     for part, separator in split_shell_segments(text):
@@ -397,9 +510,12 @@ def is_git_commit(text):
             i = next_i
             if bypass or i >= len(tokens):
                 break
-            head = command_word(tokens[i])
+            head = command_basename(tokens[i])
             if head in WRAPPERS:
-                i += 1
+                i = unwrap_wrapper(tokens, i, head)
+                if i is None:
+                    i = len(tokens)
+                    break
                 continue
             if head == "env":
                 i += 1
@@ -504,6 +620,7 @@ def is_git_commit(text):
             ):
                 hooks_path_override = True
             no_verify = commit_args_disable_hooks(tokens[i + 1 :])
+            target_repo_root = ""
             if target_dir:
                 project = os.environ.get("CLAUDE_PROJECT_DIR")
                 try:
@@ -517,6 +634,8 @@ def is_git_commit(text):
                         capture_output=True,
                         text=True,
                     ) if project else None
+                    if target_top.returncode == 0:
+                        target_repo_root = target_top.stdout.strip()
                     if (
                         project
                         and target_top.returncode == 0
@@ -525,7 +644,37 @@ def is_git_commit(text):
                         and os.path.realpath(target_top.stdout.strip())
                         != os.path.realpath(project_top.stdout.strip())
                     ):
-                        continue  # commit into another repository
+                        target_common = subprocess.run(
+                            [
+                                "git",
+                                "-C",
+                                target_dir,
+                                "rev-parse",
+                                "--path-format=absolute",
+                                "--git-common-dir",
+                            ],
+                            capture_output=True,
+                            text=True,
+                        )
+                        project_common = subprocess.run(
+                            [
+                                "git",
+                                "-C",
+                                project,
+                                "rev-parse",
+                                "--path-format=absolute",
+                                "--git-common-dir",
+                            ],
+                            capture_output=True,
+                            text=True,
+                        )
+                        if not (
+                            target_common.returncode == 0
+                            and project_common.returncode == 0
+                            and os.path.realpath(target_common.stdout.strip())
+                            == os.path.realpath(project_common.stdout.strip())
+                        ):
+                            continue  # commit into an unrelated repository
                     if (
                         project
                         and target_top.returncode != 0
@@ -537,26 +686,45 @@ def is_git_commit(text):
                 except OSError:
                     pass
             if no_verify:
-                return "commit-no-verify"
+                return "commit-no-verify", target_repo_root
             if hooks_path_override:
-                return "commit-hooks-override"
-            return "commit"
-    return "skip"
+                return "commit-hooks-override", target_repo_root
+            return "commit", target_repo_root
+    return "skip", ""
 
 
-print(is_git_commit(cmd))
+verdict, target_repo_root = is_git_commit(cmd)
+print(verdict)
+print(target_repo_root)
 ')
+guard_status=$?
+if [ "$guard_status" -ne 0 ]; then
+    echo "DART guard: commit detection failed" >&2
+    if [ -n "${DART_HOOK_PYTHON:-}" ]; then
+        exit 2
+    fi
+    echo "DART guard: guard disabled for this call" >&2
+    exit 0
+fi
+
+verdict=$(printf '%s\n' "$guard_result" | sed -n '1p' | tr -d '\r')
+target_repo_root=$(printf '%s\n' "$guard_result" | sed -n '2p' | tr -d '\r')
 
 if [ "$verdict" != "commit" ] \
     && [ "$verdict" != "commit-no-verify" ] \
     && [ "$verdict" != "commit-hooks-override" ]; then
-    if [ -z "$verdict" ]; then
-        echo "DART guard: commit detection failed; guard disabled for this call" >&2
+    if [ "$verdict" = "skip" ]; then
+        exit 0
     fi
+    echo "DART guard: invalid commit-detection result" >&2
+    if [ -n "${DART_HOOK_PYTHON:-}" ]; then
+        exit 2
+    fi
+    echo "DART guard: guard disabled for this call" >&2
     exit 0
 fi
 
-repo_root="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+repo_root="${target_repo_root:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}}"
 
 if [ "$verdict" = "commit" ]; then
     # If the executable git pre-commit hook is DART-managed, let it enforce;
@@ -580,14 +748,32 @@ if [ "${DART_SKIP_HOOKS:-0}" = "1" ]; then
 fi
 
 if [ -n "${DART_HOOK_DRY_RUN:-}" ]; then
-    echo "DART guard (dry run): would run 'pixi run check-lint-quick' in $repo_root" >&2
+    echo "DART guard (dry run): would run 'python3 scripts/check_agent_hook.py --profile staged' in $repo_root" >&2
     exit 0
 fi
 
-if ! (cd "$repo_root" && pixi run check-lint-quick >&2); then
+if [ ! -f "$repo_root/scripts/check_agent_hook.py" ]; then
+    echo "DART guard: full agent gate unavailable in this worktree; running staged diff fallback" >&2
+    if ! git -C "$repo_root" diff --cached --check >&2; then
+        echo "DART guard: staged diff check FAILED — commit blocked." >&2
+        exit 2
+    fi
+    exit 0
+fi
+
+if ! "$python_cmd" -c 'import tomllib' >/dev/null 2>&1; then
+    echo "DART guard: compatible Python unavailable; running staged diff fallback" >&2
+    if ! git -C "$repo_root" diff --cached --check >&2; then
+        echo "DART guard: staged diff check FAILED — commit blocked." >&2
+        exit 2
+    fi
+    exit 0
+fi
+
+if ! (cd "$repo_root" && "$python_cmd" scripts/check_agent_hook.py --profile staged >&2); then
     echo "" >&2
-    echo "DART guard: 'pixi run check-lint-quick' FAILED — commit blocked." >&2
-    echo "  Run 'pixi run lint' to auto-fix, then retry the commit." >&2
+    echo "DART guard: 'python3 scripts/check_agent_hook.py --profile staged' FAILED — commit blocked." >&2
+    echo "  Run 'pixi run lint', re-stage, then retry the commit." >&2
     echo "  One-time install of the git hook: pixi run install-hooks" >&2
     echo "  Emergency bypass: set DART_SKIP_HOOKS=1." >&2
     exit 2

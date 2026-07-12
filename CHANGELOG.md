@@ -55,12 +55,18 @@
     Docker dev/wheel images.
 
   * Harden the release-branch contributor workflow: `pixi run install-hooks`
-    installs a pre-commit hook running the lint gate (with a tracked Claude
-    Code commit guard as fallback), `check-ai-commands` now runs inside
+    installs a pre-commit hook running a fast staged safety gate (with tracked
+    Codex and Claude commit guards as fallbacks), `check-ai-commands` runs inside
     `pixi run check-lint` so the AI workflow adapters are CI-enforced, the
     workflow commands carry the structural metadata validated on `main`, and
     the `dart-changelog` routine is available for backport changelog
     decisions.
+
+  * Make DART 6.20 agent workflows discoverable and self-checking in current
+    Codex with manifest-owned skills, bounded read-only reviewers, fast commit
+    hooks, setup diagnostics, deterministic drift/scenario tests, and a
+    text-first plus claim-tied OSG visual-debugging route, while preserving
+    Claude Code and OpenCode adapters.
 
   * Add a release-tailored documentation information architecture owner and
     route docs-update workflows through it so DART 6.20 agents promote durable

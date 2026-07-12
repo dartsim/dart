@@ -29,7 +29,7 @@ branch and adapt it to the DART-6 layout:
   since much is already backported (e.g. `CouplerConstraint`).
 - For AI workflow or generated-adapter backports, compare
   `docs/ai/capabilities.json`, `docs/ai/workflows.md`, `.claude/commands/`,
-  `.claude/skills/`, `.codex/skills/`, and `.opencode/command/` before
+  `.claude/skills/`, `.agents/skills/`, and `.opencode/command/` before
   cherry-picking. If the requested outcome names a workflow that is absent on
   this branch, add a release-tailored capability only when that is the explicit
   request; otherwise adapt the guidance to the existing DART 6.20 workflow
@@ -39,7 +39,7 @@ branch and adapt it to the DART-6 layout:
 Verify before merging: `pixi run test-all` (full C++ + Python) and, for any
 collision/constraint/parser/default-solver/public-header change,
 `pixi run -e gazebo test-gz`. Run the **full** `pixi run check-lint` (clang-format
-+ gersemi + black/isort + codespell) — the CI "Check Lint" step runs the whole
+with gersemi, black/isort, and codespell) — the CI "Check Lint" step runs the whole
 aggregate, so checking only the sub-check you touched misses failures.
 
 Platform gotchas the default Linux/gcc build does not catch:

@@ -54,6 +54,38 @@ jobs:
           cache: true
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi.exe
 
+      - name: Native Windows hook smoke
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          pixi run python -c "import sys; print(sys.executable)"
+          $launcher = Join-Path $env:GITHUB_WORKSPACE ".claude/hooks/pre-commit-guard.ps1"
+          # The malformed probe writes expected native stderr. PowerShell 5.1
+          # must continue long enough to preserve and assert the exit code.
+          $ErrorActionPreference = "Continue"
+          '{"tool_input":{"command":"git status"}}' |
+            powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $launcher
+          $successExit = $LASTEXITCODE
+          if ($successExit -ne 0) {
+            throw "non-commit hook payload exited $successExit instead of 0"
+          }
+          $env:DART_HOOK_DRY_RUN = "1"
+          '{"tool_input":{"command":"git commit --no-verify -m x"}}' |
+            powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $launcher
+          $diagnosticExit = $LASTEXITCODE
+          Remove-Item Env:DART_HOOK_DRY_RUN
+          if ($diagnosticExit -ne 0) {
+            throw "successful diagnostic hook payload exited $diagnosticExit instead of 0"
+          }
+          '{}' |
+            powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $launcher
+          $blockedExit = $LASTEXITCODE
+          $ErrorActionPreference = "Stop"
+          if ($blockedExit -ne 2) {
+            throw "malformed hook payload exited $blockedExit instead of 2"
+          }
+          cmd.exe /c exit 0
+
       - name: Check Lint
         run: |
           pixi run check-lint
