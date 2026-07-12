@@ -1,5 +1,40 @@
 # RESUME - DART 6 deformable body feature and performance
 
+## 2026-07-11 endgame state
+
+All implementation packets are landed and validated on
+`wp-db-native-soft-fallback` (tip `6cfa4fab721`, 11 commits ahead of the
+pushed origin ref):
+
+- WP-DB.05 adaptive activation (implementation + two adversarial review
+  rounds with every finding fixed or dispositioned in
+  `08-adaptive-contact-activation.md`).
+- WP-DB.08 opt-in soft face-interior contact coverage (tunneling gap proven
+  and closed; default off and byte-identical).
+- WP-DB.02 extended gates: energy (vertex AND edge springs exercised),
+  contact-force/CoP smoothness under both detectors with activation on and
+  off, and the LCP reset-proxy robustness gate.
+- WP-DB.09 flagship demos (`adaptive_soft_contact`, `soft_worm`) with
+  headless acceptance bars, determinism, and image-verdict-passing captures.
+- WP-DB.06/07 dispositions: SoA mirror and contiguous storage parked with
+  measured evidence; profiler scopes cover soft phases and both collision
+  pipelines; thread determinism proven at 1/4/16 threads everywhere, with
+  per-scene 16-thread rows supplied by the benchmark matrix and the honest
+  finding that the tracked small scenes do not gain from 16 threads.
+- Full validation green on the final code state: build 298/298,
+  `pixi run test` 151/151, `test-py` 101/101, and the downstream Gazebo
+  gate (gz-physics + gz-sim smoke against the source-built plugin).
+- Changelog entries recorded; paper-parity matrix rows refreshed with
+  landed evidence; deferral list awaiting maintainer sign-off in
+  `decisions.md`.
+
+In flight: the final current/parent/base matrix
+(`.benchmark_results/wp-db-final-6cfa4fa-parent-c743a45-base-72ebe16`,
+48-hour idle-gated) supplies the PR performance tables, the winner-gate
+re-judgment under the 2% tie tolerance, and the WP-DB.07 thread rows.
+Remaining human decisions: push approval, PR creation, and the deferral
+list.
+
 ## 2026-07-11 state
 
 - **WP-DB.05 adaptive contact activation is implemented and reviewed**
