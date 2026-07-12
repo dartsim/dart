@@ -92,6 +92,26 @@ def test_acceptable_view_reports_pass_capture_gate():
     )
 
 
+def test_motion_frame_assessment_gates_moved_subject():
+    # Motion sequences re-run the view-quality gate per frame against the
+    # advanced world: a camera that frames the subject passes, one aimed away
+    # from it aborts the capture with the frame name in the error.
+    world = agent_capture._BUILTIN_SCENES["box_on_ground"](
+        agent_capture._import_dartpy()
+    )
+    args = _args(focus="box", width=320, height=240)
+
+    import agent_view_quality as avq
+
+    good = avq.frame_body(world, "box", azimuth=0.8, elevation=0.45)
+    report = agent_capture._assess_capture_view(world, good, args, "motion0")
+    assert report["pass"] is True
+
+    away = avq.orbit_camera([50.0, 50.0, 0.2], 2.0, 0.8, 0.45)
+    with pytest.raises(ValueError, match="motion1"):
+        agent_capture._assess_capture_view(world, away, args, "motion1")
+
+
 def test_prestep_layers_defer_unseeded_trajectory():
     assert agent_capture._prestep_layers(
         _args(layers=["labels", "trajectories"], steps=0, turntable=3)

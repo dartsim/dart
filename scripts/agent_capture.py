@@ -292,6 +292,21 @@ def _require_acceptable_views(views: list[dict[str, Any]]) -> None:
         )
 
 
+def _assess_capture_view(world, camera, args, name: str) -> dict[str, Any]:
+    """Assess one camera against the current world state and gate on it.
+
+    Motion sequences advance the world and sweep the camera after the initial
+    still gate has run, so every frame re-runs the view-quality gate; a frame
+    the report rejects aborts the capture instead of publishing motion
+    artifacts the gate would have refused as stills.
+    """
+    report = avq.assess_view(
+        world, camera, (args.width, args.height), focus=args.focus or None
+    ).to_json()
+    _require_acceptable_views([{"name": name, "report": report}])
+    return report
+
+
 def run_capture(args: argparse.Namespace) -> dict[str, Any]:
     dart = _import_dartpy()
     if args.scene not in _BUILTIN_SCENES:
@@ -427,6 +442,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         frame_dir = out_dir / f"{args.prefix}_motion"
         frame_dir.mkdir(parents=True, exist_ok=True)
         sweep = math.radians(args.motion_orbit_degrees)
+        motion_reports = []
         for frame in range(args.motion_frames):
             for _ in range(args.motion_substeps):
                 world.step()
@@ -439,6 +455,9 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             )
             camera = _sweep_camera(
                 base, sweep * frame / max(args.motion_frames - 1, 1)
+            )
+            motion_reports.append(
+                _assess_capture_view(world, camera, args, f"motion{frame}")
             )
             if not _capture_view(
                 viewer,
@@ -458,6 +477,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             "frames": args.motion_frames,
             "substeps": args.motion_substeps,
             "orbit_degrees": args.motion_orbit_degrees,
+            "view_reports": motion_reports,
         }
         if args.video:
             video_path = out_dir / f"{args.prefix}_motion.mp4"
