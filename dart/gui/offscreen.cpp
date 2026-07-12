@@ -138,11 +138,22 @@ DebugFont buildDebugFont()
   font.baseSize = kDebugFontBaseSize;
   font.atlasWidth = width;
   font.atlasHeight = height;
-  font.lineHeight = baked->Ascent - baked->Descent;
   font.alpha.assign(
       pixels,
       pixels
           + static_cast<std::size_t>(width) * static_cast<std::size_t>(height));
+
+  // GetTexDataAsAlpha8() runs the legacy Build() path, which rebuilds and
+  // compacts the dynamic atlas and reallocates the per-size ImFontBaked cache.
+  // That invalidates the `baked` pointer obtained before the build (the header
+  // warns LastBaked must never be cached across such calls), so re-acquire it
+  // now that the atlas is final before reading any metrics or glyphs from it.
+  baked = imFont->GetFontBaked(kDebugFontBaseSize);
+  if (baked == nullptr) {
+    return font;
+  }
+
+  font.lineHeight = baked->Ascent - baked->Descent;
 
   for (int code = 32; code < 127; ++code) {
     const ImFontGlyph* glyph = baked->FindGlyph(static_cast<ImWchar>(code));
