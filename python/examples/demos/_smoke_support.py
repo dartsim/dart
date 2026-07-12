@@ -53,6 +53,8 @@ class FakePanelBuilder:
         colors: Sequence[Any],
         tooltips: Sequence[str] = (),
         preferred_columns: int = 32,
+        patterns: Sequence[Any] = (),
+        segments: Sequence[Sequence[Any]] = (),
     ) -> None:
         pass
 
