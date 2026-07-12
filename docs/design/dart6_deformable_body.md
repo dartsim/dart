@@ -96,18 +96,25 @@ flipping a soft-shape flag.
 The native soft shape owns one retained deforming-geometry cache. Native and
 still-bridged pairs must read that same cache during a staged rollout; they must
 not maintain parallel mirrors. Each ported pair preserves object order, contact
-point, normal, depth, soft-side face IDs, the full configured per-pair contact
-budget, and the established non-finite-bounds behavior. Native soft contacts
-bypass the rigid persistent-manifold cache because deforming local points
-violate its rigid-transform assumption; this guard lands with the first pair
-predicate change, while rigid-rigid neighbors remain cache-eligible.
+point, normal, depth, soft-side face IDs, the established non-finite-bounds
+behavior, and the full configured per-pair contact budget at both generation
+and emission; the rigid-native three-contact generation clamp must not truncate
+soft contacts before emission. Cache access uses the canonical local vertex
+formula, point position plus resting offset. A missing or mismatched native
+cache view fails loudly rather than falling back to `getLocalPosition()`, which
+does not provide the same vertex formula. Native soft contacts bypass the rigid
+persistent-manifold cache because deforming local points violate its
+rigid-transform assumption; this guard lands with the first pair predicate
+change, while rigid-rigid neighbors remain cache-eligible.
 
 Land the work in independently gated stages:
 
 1. add the native soft shape/cache and bit-identical AABB refresh without
    changing dispatch;
 2. port plane, sphere/box, soft-soft, and ellipsoid pairs separately, retaining
-   the bridge for each pair until its native kernel passes parity;
+   the bridge for each pair until its native kernel passes parity; the
+   ellipsoid stage adds explicit no-contact guards for rigid-primitive pairs so
+   a convex fallback cannot create contacts that DART 6 previously omitted;
 3. add deterministic per-pair threading only after serial parity is proven;
 4. change broadphase structure only if measured attribution still shows it is
    needed; and
@@ -121,7 +128,8 @@ paired same-host detector protocol, representative allocation and physical
 regressions, and Gazebo/gz-physics gates before any preferred/default-backend
 proposal. Profiling on the current bridge has not shown a structural native
 penalty, so measurement remains the gate for dispatching this port rather than
-an assumed speedup.
+an assumed speedup. Cost accounting must not claim one-time mirror construction
+or the fallback branch's no-op native-shape reset as recurring per-step savings.
 
 ## Paper-scope decisions
 
