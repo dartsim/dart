@@ -22,6 +22,10 @@ unresolved. The immediate work is review/CI stewardship and honest closeout.
   of mass matrix columns`)
 - Latest completed handoff commit: `dbfed2fdd88` (`Refresh deformable PR
   stabilization handoff`)
+- Latest durable-owner commit: `574dc2a28cf` (`Promote deformable closeout
+  owners`)
+- Latest balanced-evidence runner commit: `9a7bab76948` (`Add balanced soft-body
+  detector runner`)
 - Published head: `origin/wp-db-native-soft-fallback` at `b25462ca5c0`
 - Local state: the implementation and following handoff/durable-owner updates
   are not published; verify the exact current HEAD and ahead count
@@ -83,6 +87,29 @@ Results:
 No performance claim changed, so the final benchmark matrix was not rerun for
 this correctness-only matrix-query fix.
 
+## 2026-07-12 balanced-evidence runner packet
+
+Local commit `9a7bab76948` adds the bounded replacement for the manual
+native-vs-DART A/B method. It pins one clean HEAD in a detached dedicated
+Release/profile build, qualifies checksums at threads 1 and 16, keeps each
+row's warmup adjacent to its 20 alternating measured pairs, gates load and
+available thermal sensors before and across each pair, preserves raw JSON/logs
+and idle history, and writes authoritative `COMPLETE.json` last.
+
+Verification on that commit:
+
+- focused synthetic and mocked-orchestration tests: 37/37 passed;
+- full Python suite: 212/212 passed;
+- `pixi run lint`: passed;
+- `pixi run check-ai-commands`: passed;
+- `git diff --check`: passed;
+- independent protocol/evidence review: clean;
+- independent adversarial runner/test review: clean.
+
+No real timing run was used as verification for the runner itself. The final
+paired artifact remains an explicit next action once the shared host is idle
+and cool.
+
 ## Live PR blockers and external evidence
 
 At published head `b25462ca5c0`, GitHub reports #3382 mergeable but blocked:
@@ -107,8 +134,12 @@ At published head `b25462ca5c0`, GitHub reports #3382 mergeable but blocked:
   tie on only two single-thread rows; they do not resolve the five failed rows.
   The original matrix command and recovered scratch method are now documented
   in `06-pr-evidence.md`, including why the scratch rows do not satisfy the
-  gate. Capture reproducible balanced CPU-time evidence or obtain explicit
-  maintainer acceptance before task retirement.
+  gate. Local commit `9a7bab76948` now provides the reviewed, revision-pinned
+  replacement runner, but no final artifact exists yet. The 2026-07-12 host
+  probe still showed sibling builds, 1-minute load `14.74`, and package
+  temperature `100 C`; running under that state would be invalid. Capture the
+  balanced artifact once the runner's own idle/thermal gates can pass, or
+  obtain explicit maintainer acceptance before task retirement.
 - The formal definition of "competitive implementations" still needs
   maintainer sign-off. The current proposal is in-tree CPU/backend comparison
   plus normalized paper metrics; do not treat PR publication as approval.
@@ -126,10 +157,11 @@ At published head `b25462ca5c0`, GitHub reports #3382 mergeable but blocked:
 2. Immediately before any push, fetch `release-6.20`. If it moved, merge
    `origin/release-6.20` into the published topic branch (never rebase), resolve
    conflicts, and rerun the relevant gates on the merged state.
-3. Push local commit `2ad156e7b82`, resolve the addressed automated-review
-   thread only if approval covers thread mutation, and request a fresh top-level
-   Codex review only if approval covers the PR comment and review capacity is
-   available.
+3. Push the complete unpublished stack: review fix `2ad156e7b82`, handoff
+   `dbfed2fdd88`, durable owners `574dc2a28cf`, runner `9a7bab76948`, and this
+   final handoff refresh. Resolve the addressed automated-review thread only if
+   approval covers thread mutation, and request a fresh top-level Codex review
+   only if approval covers the PR comment and review capacity is available.
 4. Monitor the new head through CI. Do not rerun or weaken the exact-base MJCF
    failure without explicit approval; keep its base-run evidence attached to
    any disposition. Treat the Windows timeout as infrastructure until a rerun
@@ -141,10 +173,21 @@ At published head `b25462ca5c0`, GitHub reports #3382 mergeable but blocked:
 6. Obtain the remaining competitive-envelope and flexible-foot decisions.
    Keep the already-created durable background/design owners and PLAN-622
    synchronized with the result.
-7. Close the final-matrix evidence limitation documented in
-   `06-pr-evidence.md` before claiming independently reproducible winner-gate
-   completion. Do not benchmark while sibling builds or high host load make a
-   paired result untrustworthy.
+7. On the final clean local head and only when no sibling build is active, run:
+
+   ```bash
+   sha=$(git rev-parse --short=12 HEAD)
+   pixi run bm-soft-body-paired \
+     --revision HEAD \
+     --cpu-list 0-15 \
+     --output-dir ".benchmark_results/wp-db-native-paired-${sha}"
+   ```
+
+   Treat the artifact as complete only when `COMPLETE.json` exists. A full PASS
+   requires all eight row medians to satisfy `native / dart <= 1.02`; otherwise
+   retain the FAIL artifact and follow the native-owned kernel disposition in
+   `06-pr-evidence.md`. Never resume a partial artifact or benchmark around the
+   runner's load/thermal gates.
 8. After merge, audit the new durable compatibility/design/reference owners,
    update PLAN-622, remove the temporary task folder in the completing closeout
    change, and clean branches only with explicit approval.

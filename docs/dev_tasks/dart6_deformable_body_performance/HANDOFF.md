@@ -31,6 +31,7 @@ worktree  /home/js/dev/dartsim/dart/task_2
 branch    wp-db-native-soft-fallback
 impl      2ad156e7b82  (followed locally by this handoff/docs update)
 handoff   dbfed2fdd88  (followed locally by durable-owner promotion)
+runner    9a7bab76948  (balanced final-head evidence infrastructure)
 origin    b25462ca5c0
 base      fa17fad79b9
 PR        https://github.com/dartsim/dart/pull/3382
@@ -58,6 +59,15 @@ No GitHub mutation was made for this packet. Before an approved push, fetch and
 merge the latest `origin/release-6.20` if it moved, then reverify the merged
 state.
 
+Commit `9a7bab76948` adds the reviewed `bm-soft-body-paired` evidence runner.
+It has 37/37 focused tests, 212/212 full Python tests, clean lint/AI-command
+checks, and two clean independent reviews. It resolves the old manual A/B
+reproducibility gap at the tooling level, but no final artifact has been
+captured: sibling DART builds still drove the observed host to load `14.74` and
+package temperature `100 C`. Use the exact clean-HEAD command and completion
+rules in `RESUME.md`; do not bypass its idle/thermal gates or resume a partial
+artifact.
+
 ## Hosted blockers
 
 - Linux coverage/assert failures reproduce on exact base run `29178779447` in
@@ -72,6 +82,8 @@ state.
   remain explicit before task retirement.
 - The formal competitive-implementation envelope still needs maintainer
   sign-off.
+- The balanced runner is ready locally, but the eight-row artifact and its
+  independent winner-gate verdict remain pending a genuinely idle, cool host.
 
 See `RESUME.md` for the ordered next actions, dual-PR applicability, and
 approval boundaries.

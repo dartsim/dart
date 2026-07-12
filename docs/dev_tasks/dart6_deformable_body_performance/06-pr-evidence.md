@@ -4,8 +4,9 @@
 
 PR [#3382](https://github.com/dartsim/dart/pull/3382) is open from
 `wp-db-native-soft-fallback` to `release-6.20`. Published head
-`b25462ca5c0` is current with base `fa17fad79b9`; local review-fix commit
-`2ad156e7b82` and the following handoff/docs update have not been pushed.
+`b25462ca5c0` is current with base `fa17fad79b9`; the local four-commit stack
+through runner commit `9a7bab76948` and this final evidence refresh have not
+been pushed.
 
 The local commit fixes the current WP-DB.04 mass-matrix review finding and adds
 `SoftDynamicsTest.pointMassAccelerationsDoNotAffectMassMatrices`. The regression
@@ -162,24 +163,49 @@ Those rows remain supporting context only because they:
   16-thread and `soft_open_chain` cases; and
 - have wide per-pair spreads despite near-tied medians.
 
-No current repository runner emits the required paired artifact. Before the
-replacement run, add or review a bounded runner that:
+Local commit `9a7bab76948` now provides the required bounded runner through
+`pixi run bm-soft-body-paired`. Its full protocol:
 
-- pins the final implementation SHA and uses a dedicated Release/profile build;
-- covers all four matrix scenes at threads 1 and 16;
-- performs one unrecorded warmup followed by 20 measured pairs per row;
-- alternates which of `dart` and direct `native` runs first in each pair;
-- uses Google Benchmark CPU time with `--benchmark_min_time=0.5s` and one
-  repetition per invocation, with a 10-second cooldown between pairs;
-- retains one JSON and log per backend/pair plus revision, command, affinity,
-  CPU-scaling, thermal, and load metadata; and
-- reports the median paired delta `(native / dart) - 1` for every row, applying
-  the existing 2% match tolerance independently to all eight rows.
+- resolves the requested revision once, requires it to be the clean current
+  HEAD, and builds that SHA in a detached dedicated Release/profile tree without
+  grafting a live-checkout harness;
+- checksum-qualifies both `dart` and direct `native` for all four scenes at
+  threads 1 and 16 before timing;
+- performs one excluded two-detector warmup immediately before 20 measured
+  pairs for each of the eight rows;
+- alternates which detector runs first, uses Google Benchmark CPU time with
+  `--benchmark_min_time=0.5s` and one repetition, and cools down for at least 10
+  seconds between pairs;
+- requires an initial continuous 600-second idle window at 1-minute load at or
+  below `1.0`, then rejects a pair if load rises by more than `0.5`, a sibling
+  DART workload appears, or available thermal sensors exceed `80 C` or the idle
+  baseline by more than `15 C`; total sensor absence remains explicit metadata
+  and relies on the load/idle window rather than inventing temperature data;
+- preserves every backend JSON/log, executable provenance, pair ratio,
+  affinity, CPU-scaling state, thermal/load snapshots, and the complete idle
+  sample history; and
+- reports the median paired delta `(native / dart) - 1` independently for every
+  row. A full PASS requires every median ratio to satisfy
+  `native / dart <= 1.02`.
 
-The artifact passes only if every row meets that rule. Run it only after the
-machine has remained idle and thermally stable; the 2026-07-12 continuation
-observed 1-minute load above 34 with sibling DART builds active and correctly
-did not benchmark.
+`COMPLETE.json` is the authoritative finalization marker and is written last.
+An interrupted, failed, or partial directory is non-evidence and must never be
+resumed. Run the final protocol from the clean final head with:
+
+```bash
+sha=$(git rev-parse --short=12 HEAD)
+pixi run bm-soft-body-paired \
+  --revision HEAD \
+  --cpu-list 0-15 \
+  --output-dir ".benchmark_results/wp-db-native-paired-${sha}"
+```
+
+No timing artifact was captured while implementing the runner. The 2026-07-12
+continuation first observed 1-minute load above 34; the later final probe still
+showed sibling DART builds, load `14.74`, and package temperature `100 C`.
+Deferring the run is required by the protocol, not missing validation. The
+runner itself passed 37/37 focused tests, 212/212 full Python tests, repository
+lint and AI-command checks, and two independent clean reviews.
 
 Post-merge revalidation after composing the upstream AABB-tree broadphase
 (#3368) with the soft-fallback lane: focused battery 5/5, full suite

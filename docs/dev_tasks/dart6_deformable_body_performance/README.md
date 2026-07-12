@@ -19,13 +19,18 @@ deferrals are published; the final same-host matrix and its evaluator
 limitation are recorded locally. Current work is review/CI stabilization and
 closeout decisions, not another speculative optimization lane inside #3382.
 
-Local implementation commit `2ad156e7b82` and the following handoff/durable
-owner updates are not published. The implementation commit closes the current
-WP-DB.04 review finding by keeping retained point-mass accelerations out of
-public mass-matrix columns and adds a regression for mass and augmented-mass
-state independence. The fix has a clean full build, 152/152 C++ tests, and two
-clean independent reviews; it still needs approval to push. Exact takeover
-state is in `RESUME.md`.
+The unpublished local stack starts with implementation commit `2ad156e7b82`,
+continues through the handoff and durable-owner updates, and now includes
+balanced-evidence runner commit `9a7bab76948`. The implementation commit closes
+the current WP-DB.04 review finding by keeping retained point-mass
+accelerations out of public mass-matrix columns and adds a regression for mass
+and augmented-mass state independence. The runner replaces the previously
+manual native-vs-DART timing method with a protocol that produces a
+revision-pinned, thermally gated, eight-row paired artifact. Both packets are
+reviewed and locally verified but still need approval before publication. No
+final paired artifact has been run
+while sibling builds keep the shared host hot and busy. Exact takeover state is
+in `RESUME.md`.
 
 ## Reference scope
 
@@ -94,6 +99,11 @@ below.
   text-profiler runner for soft-body scenes. Initial profile evidence and the
   `origin/dart6-memory-hardening` dependency analysis are recorded in
   `04-data-layout-and-memory-hardening.md`.
+- Commit `9a7bab76948` adds `bm-soft-body-paired`, a clean-HEAD evidence runner
+  that checks `dart`/direct-`native` equivalence at threads 1 and 16, preserves
+  raw CPU-time rows and host-state history, alternates detector order across 20
+  pairs per row, and requires `COMPLETE.json` before any verdict is valid. Its
+  reviewed protocol and deferred final command are in `06-pr-evidence.md`.
 - `06-pr-evidence.md` records the current same-host baseline-vs-branch
   benchmark smoke rows, native/FCL headless parity evidence, and the current
   GUI-video status for PR preparation.
