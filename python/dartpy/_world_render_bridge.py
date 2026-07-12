@@ -204,8 +204,20 @@ def _tracked_rigid_bodies(world: Any) -> list[Any]:
     get_rigid_body = getattr(world, "get_rigid_body", None)
     if get_rigid_body is None:
         return bodies
+    # Enumerate through the World API so bodies created outside the Python
+    # add_rigid_body wrapper (load_binary, C++ factories) are seen too; the
+    # Python-side registry only knows wrapper-created names. Registry names
+    # come first so wrapper-built scenes keep their creation order.
+    names = list(_WORLD_RIGID_BODY_NAMES.get(id(world), []))
+    get_names = getattr(world, "get_rigid_body_names", None)
+    if get_names is not None:
+        try:
+            known = set(names)
+            names.extend(n for n in get_names() if n not in known)
+        except Exception:  # noqa: BLE001
+            pass
     seen: set[int] = set()
-    for name in _WORLD_RIGID_BODY_NAMES.get(id(world), []):
+    for name in names:
         try:
             body = get_rigid_body(name)
         except Exception:  # noqa: BLE001

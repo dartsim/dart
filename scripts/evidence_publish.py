@@ -235,6 +235,11 @@ def main(argv: list[str] | None = None) -> int:
         )
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(section, encoding="utf-8")
+        # The publication inherits the selection's verdict: a non-passing
+        # selection still renders its section honestly (uncovered claims show
+        # as "✘ (no evidence)"), but automation must not read the publication
+        # as ready — the manifest fails and the CLI exits non-zero.
+        selection_pass = bool(selection.get("pass", False))
         manifest = {
             "schema_version": SCHEMA_VERSION,
             "backend": args.backend,
@@ -242,9 +247,21 @@ def main(argv: list[str] | None = None) -> int:
             "urls": urls,
             "section": str(args.out),
             "artifact_count": len(selection["selected"]),
-            "pass": True,
+            "pass": selection_pass,
         }
-        if args.backend == "gh-release" and not args.yes:
+        if not selection_pass:
+            uncovered = sorted(
+                claim["id"]
+                for claim in selection.get("claims", [])
+                if not claim.get("covered", False)
+            )
+            manifest["note"] = (
+                "selection is not passing"
+                + (f" (uncovered claims: {', '.join(uncovered)})" if uncovered else "")
+                + "; the section marks the gaps — do not treat this "
+                "publication as complete evidence"
+            )
+        elif args.backend == "gh-release" and not args.yes:
             manifest["note"] = (
                 "dry-run: URLs are predicted, nothing was uploaded; re-run with "
                 "--yes after maintainer approval"
@@ -265,7 +282,10 @@ def main(argv: list[str] | None = None) -> int:
         args.manifest_out.parent.mkdir(parents=True, exist_ok=True)
         args.manifest_out.write_text(text + "\n", encoding="utf-8")
     print(text)
-    return 0
+    # Non-zero for a rendered-but-failing publication (uncovered claims) so
+    # automation cannot mistake incomplete evidence for success; hard errors
+    # above return 2.
+    return 0 if manifest["pass"] else 1
 
 
 if __name__ == "__main__":

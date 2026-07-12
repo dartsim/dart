@@ -68,6 +68,22 @@ def test_auto_selection_prefers_acceptable_views():
     assert all(choice.report.acceptable for choice in choices)
 
 
+def test_assess_view_sees_bodies_unknown_to_python_registry():
+    # Worlds populated outside the Python add_rigid_body wrapper (e.g.
+    # load_binary or a C++ factory) have no entries in the module-level name
+    # registry; view assessment must enumerate bodies through the World API
+    # instead of reporting no focus renderables.
+    from dartpy import _world_render_bridge
+
+    world = _world_with_marker()
+    _world_render_bridge._WORLD_RIGID_BODY_NAMES.pop(id(world), None)
+
+    camera = dart.gui.frame_body(world, "marker", azimuth=0.8, elevation=0.45)
+    report = dart.gui.assess_view(world, camera, (320, 240), focus="marker")
+    assert report.focus  # the marker was found without registry help
+    assert report.corner_coverage > 0.0
+
+
 def test_cropped_and_distance_issues_detected():
     world = _world_with_marker()
     far = dart.gui.orbit_camera(

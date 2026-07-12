@@ -16,14 +16,16 @@ if str(SCRIPTS) not in sys.path:
 import evidence_publish
 
 
-def _selection(tmp_path: Path) -> Path:
+def _selection(tmp_path: Path, passing: bool = True) -> Path:
     (tmp_path / "shot.png").write_bytes(b"png")
     (tmp_path / "clip.mp4").write_bytes(b"mp4")
+    # When passing, the clip covers C2 so every claim is covered; when not,
+    # C2 stays uncovered to exercise the failing-publication path.
     manifest = {
         "schema_version": "dart.evidence_selection/v1",
         "claims": [
             {"id": "C1", "text": "no penetration at rest", "covered": True},
-            {"id": "C2", "text": "stack stays upright", "covered": False},
+            {"id": "C2", "text": "stack stays upright", "covered": passing},
         ],
         "selected": [
             {
@@ -40,7 +42,7 @@ def _selection(tmp_path: Path) -> Path:
             {
                 "path": "clip.mp4",
                 "kind": "video",
-                "claims": ["C1"],
+                "claims": ["C2"] if passing else ["C1"],
                 "caption": "settling clip",
                 "observe": "",
                 "quality": 0.7,
@@ -51,8 +53,8 @@ def _selection(tmp_path: Path) -> Path:
         ],
         "rejected": [],
         "total_bytes": 6,
-        "uncovered_claims": ["C2"],
-        "pass": False,
+        "uncovered_claims": [] if passing else ["C2"],
+        "pass": passing,
     }
     path = tmp_path / "selection.json"
     path.write_text(json.dumps(manifest), encoding="utf-8")
@@ -86,10 +88,35 @@ def test_manual_backend_emits_placeholders_and_context(tmp_path: Path) -> None:
     assert "**Environment**: Linux x86_64, llvmpipe" in text
     assert "What to look for: yellow cross at interface" in text
     assert "Why this artifact" in text
-    assert "✘ (no evidence)" in text  # uncovered claim surfaces to the reviewer
     assert "static frame only" in text
     assert "penetration depth tolerance" in text
     assert "pixi run agent-capture" in text
+
+
+def test_non_passing_selection_fails_publication(tmp_path: Path) -> None:
+    # The section still renders honestly (uncovered claims surface to the
+    # reviewer as gaps), but the publication manifest and exit code must not
+    # report success, so automation cannot treat incomplete evidence as ready.
+    selection = _selection(tmp_path, passing=False)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--environment",
+            "Linux",
+            "--out",
+            str(out),
+            "--manifest-out",
+            str(manifest_out),
+        ]
+    )
+    assert code == 1
+    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["pass"] is False
+    assert "uncovered claims: C2" in manifest["note"]
+    text = out.read_text(encoding="utf-8")
+    assert "✘ (no evidence)" in text  # uncovered claim surfaces to the reviewer
 
 
 def test_gh_release_dry_run_predicts_urls_without_uploading(tmp_path: Path) -> None:
