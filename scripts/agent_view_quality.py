@@ -132,22 +132,37 @@ def project_points(
 
 @dataclass
 class BodyBounds:
-    """World-space oriented bounds of one body (all its shape nodes)."""
+    """World-space oriented bounds of one body (all its shape nodes).
+
+    ``name`` is the bare body name used for focus matching and display;
+    ``key`` is world-unique (``skeleton:body`` for skeleton bodies, the frame
+    name for simple frames) so same-named bodies across skeletons never
+    collapse into one bounds entry.
+    """
 
     name: str
+    key: str
     corners: np.ndarray  # (8*k, 3) world-space corners
     aabb_min: np.ndarray
     aabb_max: np.ndarray
 
 
 def _iter_shape_owners(world: Any):
-    """Yield (name, shape-frame) pairs for skeleton bodies and simple frames."""
+    """Yield (key, label, shape-frame) triples for bodies and simple frames.
+
+    The key is world-unique for skeleton bodies (``skeleton:body`` — DART
+    enforces unique body names within a skeleton and unique skeleton names
+    within a world); the label is the bare body name. Simple frames use their
+    name for both (frame names are assumed unique among assessed frames).
+    """
     for skeleton_index in range(world.getNumSkeletons()):
         skeleton = world.getSkeleton(skeleton_index)
+        skeleton_name = str(skeleton.getName())
         for body_index in range(skeleton.getNumBodyNodes()):
             body = skeleton.getBodyNode(body_index)
+            label = str(body.getName())
             for shape_node in body.getShapeNodes():
-                yield str(body.getName()), shape_node
+                yield f"{skeleton_name}:{label}", label, shape_node
     seen: set[int] = set()
     pending = [
         world.getSimpleFrame(index) for index in range(world.getNumSimpleFrames())
@@ -160,7 +175,8 @@ def _iter_shape_owners(world: Any):
         seen.add(identity)
         pending.extend(frame.getChildFrames())
         if hasattr(frame, "getShape") and frame.getShape() is not None:
-            yield str(frame.getName()), frame
+            name = str(frame.getName())
+            yield name, name, frame
 
 
 # Shapes that are not bounded solids: an infinite ground plane and the
@@ -214,16 +230,19 @@ def _shape_frame_world_corners(shape_frame: Any) -> np.ndarray | None:
 
 def body_bounds(world: Any) -> list[BodyBounds]:
     corner_sets: dict[str, list[np.ndarray]] = {}
-    for name, shape_frame in _iter_shape_owners(world):
+    labels: dict[str, str] = {}
+    for key, label, shape_frame in _iter_shape_owners(world):
         corners = _shape_frame_world_corners(shape_frame)
         if corners is not None:
-            corner_sets.setdefault(name, []).append(corners)
+            corner_sets.setdefault(key, []).append(corners)
+            labels[key] = label
     result: list[BodyBounds] = []
-    for name in sorted(corner_sets):
-        corners = np.vstack(corner_sets[name])
+    for key in sorted(corner_sets):
+        corners = np.vstack(corner_sets[key])
         result.append(
             BodyBounds(
-                name=name,
+                name=labels[key],
+                key=key,
                 corners=corners,
                 aabb_min=corners.min(axis=0),
                 aabb_max=corners.max(axis=0),
@@ -239,20 +258,23 @@ def _split_focus(
         return bounds, sorted(b.name for b in bounds)
     wanted = {focus} if isinstance(focus, str) else set(focus)
 
-    def matches(name: str) -> bool:
-        if name in wanted:
+    def matches(item: BodyBounds) -> bool:
+        # A bare name matches every instance carrying it (so duplicate-named
+        # bodies are all treated as focus, not silently merged); the qualified
+        # skeleton:body key selects a single instance.
+        if item.name in wanted or item.key in wanted:
             return True
         # Allow an indexed suffix only ("box" matches "box_0", never
         # "box_holder"): over-matching would hide real occluders.
         return any(
-            re.fullmatch(rf"{re.escape(target)}_\d+", name) for target in wanted
+            re.fullmatch(rf"{re.escape(target)}_\d+", item.name) for target in wanted
         )
 
-    matched = [b for b in bounds if matches(b.name)]
+    matched = [b for b in bounds if matches(b)]
     if not matched:
         raise ValueError(
             f"focus {sorted(wanted)} matched no bodies; "
-            f"available: {sorted(b.name for b in bounds)}"
+            f"available: {sorted(b.key for b in bounds)}"
         )
     return matched, sorted(b.name for b in matched)
 
@@ -275,14 +297,23 @@ def _raycast_detector(dart: Any) -> Any:
     )
 
 
-def _hit_body_name(hit: Any) -> str | None:
-    """Name of the body owning a ray hit, or None if it cannot be attributed."""
+def _hit_body_key(hit: Any) -> str | None:
+    """World-unique key of the body owning a ray hit, or None if unattributable.
+
+    Uses the same ``skeleton:body`` scheme as `_iter_shape_owners` so occlusion
+    attribution distinguishes same-named bodies across skeletons; non-skeleton
+    shape frames fall back to their frame name.
+    """
     shape_frame = hit.mCollisionObject.getShapeFrame()
     shape_node = shape_frame.asShapeNode()
     if shape_node is None:
         return str(shape_frame.getName()) if hasattr(shape_frame, "getName") else None
     body = shape_node.getBodyNodePtr()
-    return str(body.getName()) if body is not None else None
+    if body is None:
+        return None
+    skeleton = body.getSkeleton()
+    name = str(body.getName())
+    return f"{skeleton.getName()}:{name}" if skeleton is not None else name
 
 
 # --- Assessment -------------------------------------------------------------
@@ -352,7 +383,7 @@ def _box_iou(a: tuple[float, float, float, float], b) -> float:
 
 def _raycast_occlusion(
     world: Any,
-    focus_names: set[str],
+    focus_keys: set[str],
     samples: np.ndarray,
     eye: np.ndarray,
 ) -> float:
@@ -370,7 +401,7 @@ def _raycast_occlusion(
     group = _raycast_detector(dart).createCollisionGroup()
     for index in range(world.getNumSkeletons()):
         group.addShapeFramesOf(world.getSkeleton(index))
-    for _, shape_frame in _iter_shape_owners(world):
+    for _, _, shape_frame in _iter_shape_owners(world):
         if shape_frame.asShapeNode() is None:
             group.addShapeFrame(shape_frame)
     option = dart.collision.RaycastOption()
@@ -390,8 +421,8 @@ def _raycast_occlusion(
         if not result.hasHit():
             continue
         hit = result.mRayHits[0]
-        body = _hit_body_name(hit)
-        if body is None or body in focus_names:
+        body = _hit_body_key(hit)
+        if body is None or body in focus_keys:
             continue
         if float(hit.mFraction) < 1.0 - OCCLUSION_CONTACT_BIAS:
             blocked += 1
@@ -443,7 +474,7 @@ def assess_view(
 
     samples = np.vstack([corners, center.reshape(1, 3)])
     report.occlusion_fraction = _raycast_occlusion(
-        world, set(focus_names), samples, camera.eye
+        world, {b.key for b in focus_bounds}, samples, camera.eye
     )
 
     # Ambiguity: visible, depth-separated bodies stacking up on screen.

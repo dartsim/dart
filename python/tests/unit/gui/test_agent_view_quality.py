@@ -95,6 +95,31 @@ def test_body_bounds_include_child_simple_frames():
     assert "child" in {b.name for b in avq.body_bounds(world)}
 
 
+def test_duplicate_body_names_keep_distinct_bounds():
+    # Two skeletons whose bodies share the name "box" must yield two bounds
+    # entries with distinct world-unique keys — merged bounds would let the
+    # view-quality gate pass a view that hides or overlaps one instance.
+    world = dart.simulation.World()
+    for skeleton_name, x in (("skel_a", -0.4), ("skel_b", 0.4)):
+        skeleton = _box_skeleton(skeleton_name, [0.2, 0.2, 0.2], [x, 0.0, 0.1])
+        skeleton.getBodyNode(0).setName("box")
+        world.addSkeleton(skeleton)
+
+    bounds = avq.body_bounds(world)
+    boxes = [b for b in bounds if b.name == "box"]
+    assert len(boxes) == 2
+    assert {b.key for b in boxes} == {"skel_a:box", "skel_b:box"}
+    centers_x = sorted(float((b.aabb_min[0] + b.aabb_max[0]) / 2) for b in boxes)
+    assert centers_x == pytest.approx([-0.4, 0.4])
+
+    # A bare focus name matches every instance; a qualified key selects one.
+    matched, names = avq._split_focus(bounds, "box")
+    assert {b.key for b in matched} == {"skel_a:box", "skel_b:box"}
+    assert names == ["box", "box"]
+    matched_one, _ = avq._split_focus(bounds, "skel_b:box")
+    assert [b.key for b in matched_one] == ["skel_b:box"]
+
+
 def test_clean_view_passes():
     world = _world_with_marker()
     camera = avq.frame_body(world, "marker", azimuth=0.8, elevation=0.45)
@@ -241,15 +266,17 @@ def test_raycast_occlusion_attributes_hits_to_bodies():
     # attributed to the owning body, so a neighbor between the eye and the focus
     # blocks the sightline while the focus never occludes itself.
     world = _world_with_marker()
-    corners = {b.name: b for b in avq.body_bounds(world)}["marker"].corners
-    samples = np.vstack([corners, corners.mean(axis=0).reshape(1, 3)])
+    marker = {b.name: b for b in avq.body_bounds(world)}["marker"]
+    samples = np.vstack([marker.corners, marker.corners.mean(axis=0).reshape(1, 3)])
 
+    # The occlusion probe works on world-unique keys (skeleton:body), as
+    # passed by assess_view, so same-named bodies never mask each other.
     clear_eye = avq.frame_body(world, "marker", azimuth=0.8, elevation=0.45).eye
-    assert avq._raycast_occlusion(world, {"marker"}, samples, clear_eye) == 0.0
+    assert avq._raycast_occlusion(world, {marker.key}, samples, clear_eye) == 0.0
 
     _add_wall(world)  # marker_holder slab sits between the eye and the marker
     blocked_eye = avq.orbit_camera([0.0, 0.0, 0.2], 2.2, 0.8, 0.45).eye
-    assert avq._raycast_occlusion(world, {"marker"}, samples, blocked_eye) > 0.5
+    assert avq._raycast_occlusion(world, {marker.key}, samples, blocked_eye) > 0.5
 
 
 def test_simple_frame_is_included_in_occlusion_raycast():
@@ -260,7 +287,7 @@ def test_simple_frame_is_included_in_occlusion_raycast():
     transform.set_translation([0.8, 0.35, 0.4])
     wall.setRelativeTransform(transform)
     world.addSimpleFrame(wall)
-    corners = {b.name: b for b in avq.body_bounds(world)}["marker"].corners
-    samples = np.vstack([corners, corners.mean(axis=0).reshape(1, 3)])
+    marker = {b.name: b for b in avq.body_bounds(world)}["marker"]
+    samples = np.vstack([marker.corners, marker.corners.mean(axis=0).reshape(1, 3)])
     eye = avq.orbit_camera([0.0, 0.0, 0.2], 2.2, 0.8, 0.45).eye
-    assert avq._raycast_occlusion(world, {"marker"}, samples, eye) > 0.5
+    assert avq._raycast_occlusion(world, {marker.key}, samples, eye) > 0.5

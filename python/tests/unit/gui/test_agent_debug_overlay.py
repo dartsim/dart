@@ -144,7 +144,35 @@ def test_trajectory_tracker_grows_polyline():
     assert all(s[2] == ado.TRAJECTORY_RGB for s in scene.segments)
 
 
-def test_velocities_layer_skips_static_bodies():
+def test_trajectory_histories_stay_separate_per_body():
+    # Two skeletons whose bodies share the name "box" must record separate
+    # histories — a name-keyed merge would draw polyline segments jumping
+    # between the two COMs, fabricating motion evidence.
+    world = dart.simulation.World()
+    world.setGravity([0.0, 0.0, 0.0])
+    for skeleton_name, x in (("skel_a", -0.5), ("skel_b", 0.5)):
+        skeleton = dart.dynamics.Skeleton(skeleton_name)
+        joint, body = skeleton.createFreeJointAndBodyNodePair()
+        body.setName("box")
+        shape_node = body.createShapeNode(dart.dynamics.BoxShape([0.1, 0.1, 0.1]))
+        shape_node.createVisualAspect()
+        shape_node.createCollisionAspect()
+        shape_node.createDynamicsAspect()
+        joint.setPositions(np.array([0.0, 0.0, 0.0, x, 0.0, 0.2]))
+        world.addSkeleton(skeleton)
+
+    tracker = ado.TrajectoryTracker(world, bodies=["box"])
+    for _ in range(3):
+        world.step()
+        tracker.sample()
+
+    assert set(tracker.history) == {"skel_a:box", "skel_b:box"}
+    # Each history stays on its own side of the world: no cross-body jumps.
+    for key, positions in tracker.history.items():
+        assert len(positions) == 3
+        xs = [float(p[0]) for p in positions]
+        expected = -0.5 if key == "skel_a:box" else 0.5
+        assert xs == pytest.approx([expected] * 3, abs=1e-6)
     world = _settled_world()  # settled: box at rest, ground static
     scene = ado.build_overlay(world, layers=("velocities",))
     # Neither body moves; no arrows should be drawn for the static ground.

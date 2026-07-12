@@ -151,7 +151,13 @@ def _iter_bodies(world: Any):
 
 
 class TrajectoryTracker:
-    """Records per-body COM positions to draw motion-history polylines."""
+    """Records per-body COM positions to draw motion-history polylines.
+
+    Histories are keyed by the world-unique ``skeleton:body`` key so bodies
+    that share a name across skeletons each get their own polyline instead of
+    one merged sequence jumping between COMs. The ``bodies`` filter accepts
+    either bare body names (matching every instance) or qualified keys.
+    """
 
     def __init__(
         self, world: Any, bodies: Sequence[str] | None = None, max_samples: int = 512
@@ -162,14 +168,23 @@ class TrajectoryTracker:
         self._history: dict[str, list[np.ndarray]] = {}
 
     def sample(self) -> None:
-        for body in _iter_bodies(self._world):
-            name = str(body.getName())
-            if self._bodies is not None and name not in self._bodies:
-                continue
-            positions = self._history.setdefault(name, [])
-            positions.append(np.asarray(body.getCOM(), dtype=float).reshape(3).copy())
-            if len(positions) > self._max_samples:
-                del positions[0 : len(positions) - self._max_samples]
+        for skeleton_index in range(self._world.getNumSkeletons()):
+            skeleton = self._world.getSkeleton(skeleton_index)
+            skeleton_name = str(skeleton.getName())
+            for body_index in range(skeleton.getNumBodyNodes()):
+                body = skeleton.getBodyNode(body_index)
+                name = str(body.getName())
+                key = f"{skeleton_name}:{name}"
+                if self._bodies is not None and not (
+                    name in self._bodies or key in self._bodies
+                ):
+                    continue
+                positions = self._history.setdefault(key, [])
+                positions.append(
+                    np.asarray(body.getCOM(), dtype=float).reshape(3).copy()
+                )
+                if len(positions) > self._max_samples:
+                    del positions[0 : len(positions) - self._max_samples]
 
     @property
     def history(self) -> dict[str, list[np.ndarray]]:
