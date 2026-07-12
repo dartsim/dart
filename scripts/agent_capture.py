@@ -215,6 +215,7 @@ def _capture_view(
     contacts: list[Any],
     overlay: Any = None,
     layers: list[str] | None = None,
+    stats: dict[str, int] | None = None,
 ) -> bool:
     active_layers = args.layers if layers is None else layers
     if not active_layers or overlay is None:
@@ -229,6 +230,12 @@ def _capture_view(
         contacts=contacts if "contacts" in active_layers else None,
         trajectories=tracker,
     )
+    if stats is not None and scene.skipped_contacts:
+        # Sentinel/garbage contact points the overlay filtered out: the
+        # evidence must say so instead of silently omitting markers.
+        stats["skipped_contacts"] = (
+            stats.get("skipped_contacts", 0) + scene.skipped_contacts
+        )
     ado.populate_overlay(
         overlay, scene, character_size=_label_character_size(camera)
     )
@@ -379,6 +386,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
     _require_acceptable_views(views)
 
     artifacts: list[dict[str, Any]] = []
+    capture_stats: dict[str, int] = {}
     for view in views:
         still_path = out_dir / f"{args.prefix}_{view['name']}.png"
         if not _capture_view(
@@ -391,6 +399,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             contacts,
             overlay,
             layers=_prestep_layers(args),
+            stats=capture_stats,
         ):
             raise RuntimeError(
                 "captureOffscreen failed: no off-screen GL context (needs a "
@@ -411,6 +420,10 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         base = views[0]["camera"]
         frame_dir = out_dir / f"{args.prefix}_turntable"
         frame_dir.mkdir(parents=True, exist_ok=True)
+        # A rerun with the same --out/--prefix must not leave stale frames:
+        # ffmpeg's image2 pattern would append them to the new sequence.
+        for stale in frame_dir.glob("turn*.png"):
+            stale.unlink()
         turntable_reports = []
         for frame in range(args.turntable):
             camera = _sweep_camera(base, math.tau * frame / args.turntable)
@@ -427,6 +440,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 contacts,
                 overlay,
                 layers=_prestep_layers(args),
+                stats=capture_stats,
             ):
                 raise RuntimeError("captureOffscreen failed during turntable")
         entry: dict[str, Any] = {
@@ -446,6 +460,10 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         base = views[0]["camera"]
         frame_dir = out_dir / f"{args.prefix}_motion"
         frame_dir.mkdir(parents=True, exist_ok=True)
+        # A rerun with the same --out/--prefix must not leave stale frames:
+        # ffmpeg's image2 pattern would append them to the new sequence.
+        for stale in frame_dir.glob("frame*.png"):
+            stale.unlink()
         sweep = math.radians(args.motion_orbit_degrees)
         motion_reports = []
         for frame in range(args.motion_frames):
@@ -473,6 +491,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 tracker,
                 contacts,
                 overlay,
+                stats=capture_stats,
             ):
                 raise RuntimeError("captureOffscreen failed during motion capture")
         entry = {
@@ -504,7 +523,18 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         "artifacts": artifacts,
         "reproduce": _reproduce_command(args),
         "pass": True,
+        # Sentinel/garbage contact points the overlay filtered out of the
+        # contacts layer (0 for healthy scenes): reviewers must know when the
+        # rendered evidence omits markers the detector reported.
+        "skipped_contacts": capture_stats.get("skipped_contacts", 0),
     }
+    if sidecar["skipped_contacts"]:
+        print(
+            f"warning: contacts layer filtered "
+            f"{sidecar['skipped_contacts']} implausible contact point(s); "
+            "see skipped_contacts in the sidecar",
+            file=sys.stderr,
+        )
     (out_dir / f"{args.prefix}_capture.json").write_text(
         json.dumps(sidecar, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
