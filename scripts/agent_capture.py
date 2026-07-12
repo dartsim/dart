@@ -101,13 +101,15 @@ def _make_box_on_ground(dart: Any) -> Any:
     world = dart.simulation.World()
     world.addSkeleton(
         _box_skeleton(
-            dart, "ground", (2.0, 2.0, 0.1), (0.0, 0.0, -0.05), static=True,
+            dart,
+            "ground",
+            (2.0, 2.0, 0.1),
+            (0.0, 0.0, -0.05),
+            static=True,
             color=(0.75, 0.75, 0.78),
         )
     )
-    world.addSkeleton(
-        _box_skeleton(dart, "box", (0.2, 0.2, 0.2), (0.0, 0.0, 0.35))
-    )
+    world.addSkeleton(_box_skeleton(dart, "box", (0.2, 0.2, 0.2), (0.0, 0.0, 0.35)))
     return world
 
 
@@ -115,7 +117,11 @@ def _make_box_stack(dart: Any) -> Any:
     world = dart.simulation.World()
     world.addSkeleton(
         _box_skeleton(
-            dart, "ground", (2.0, 2.0, 0.1), (0.0, 0.0, -0.05), static=True,
+            dart,
+            "ground",
+            (2.0, 2.0, 0.1),
+            (0.0, 0.0, -0.05),
+            static=True,
             color=(0.75, 0.75, 0.78),
         )
     )
@@ -136,7 +142,11 @@ def _make_two_body_contact(dart: Any) -> Any:
     world = dart.simulation.World()
     world.addSkeleton(
         _box_skeleton(
-            dart, "ground", (1.2, 1.2, 0.1), (0.0, 0.0, -0.05), static=True,
+            dart,
+            "ground",
+            (1.2, 1.2, 0.1),
+            (0.0, 0.0, -0.05),
+            static=True,
             color=(0.75, 0.75, 0.78),
         )
     )
@@ -173,9 +183,7 @@ def _camera_from_args(args: argparse.Namespace, world: Any) -> avq.AgentCamera:
     )
 
 
-def _sweep_camera(
-    camera: avq.AgentCamera, azimuth_offset: float
-) -> avq.AgentCamera:
+def _sweep_camera(camera: avq.AgentCamera, azimuth_offset: float) -> avq.AgentCamera:
     offset = np.asarray(camera.eye) - np.asarray(camera.center)
     distance_xy = math.hypot(offset[0], offset[1])
     azimuth = math.atan2(offset[1], offset[0]) + azimuth_offset
@@ -216,9 +224,7 @@ LABEL_VIEW_FRACTION = 0.05
 
 
 def _label_character_size(camera: avq.AgentCamera) -> float:
-    distance = float(
-        np.linalg.norm(np.asarray(camera.eye) - np.asarray(camera.center))
-    )
+    distance = float(np.linalg.norm(np.asarray(camera.eye) - np.asarray(camera.center)))
     half_fov = math.radians(camera.fovy_deg) * 0.5
     return LABEL_VIEW_FRACTION * 2.0 * distance * math.tan(half_fov)
 
@@ -254,9 +260,7 @@ def _capture_view(
         stats["skipped_contacts"] = (
             stats.get("skipped_contacts", 0) + scene.skipped_contacts
         )
-    ado.populate_overlay(
-        overlay, scene, character_size=_label_character_size(camera)
-    )
+    ado.populate_overlay(overlay, scene, character_size=_label_character_size(camera))
     try:
         return _shoot(viewer, camera, path, args)
     finally:
@@ -347,9 +351,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
     if not hasattr(world, "step") or not hasattr(world, "getNumSkeletons"):
         raise TypeError("scene factory must return a dartpy.simulation.World")
 
-    tracker = (
-        ado.TrajectoryTracker(world) if "trajectories" in args.layers else None
-    )
+    tracker = ado.TrajectoryTracker(world) if "trajectories" in args.layers else None
     for _ in range(args.steps):
         world.step()
         if tracker is not None:
@@ -501,9 +503,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
                 if "contacts" in args.layers
                 else []
             )
-            camera = _sweep_camera(
-                base, sweep * frame / max(args.motion_frames - 1, 1)
-            )
+            camera = _sweep_camera(base, sweep * frame / max(args.motion_frames - 1, 1))
             motion_reports.append(
                 _assess_capture_view(world, camera, args, f"motion{frame}")
             )
@@ -630,13 +630,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--camera-azimuth", type=float, default=math.tau / 8.0)
     parser.add_argument("--camera-elevation", type=float, default=math.tau / 12.0)
     parser.add_argument("--camera-distance", type=float, default=None)
-    parser.add_argument(
-        "--camera-target", nargs=3, type=float, default=[0.0, 0.0, 0.0]
-    )
+    parser.add_argument("--camera-target", nargs=3, type=float, default=[0.0, 0.0, 0.0])
     parser.add_argument("--frame-margin", type=float, default=2.2)
-    parser.add_argument(
-        "--warmup-frames", type=int, default=DEFAULT_WARMUP_FRAMES
-    )
+    parser.add_argument("--warmup-frames", type=int, default=DEFAULT_WARMUP_FRAMES)
     parser.add_argument("--turntable", type=int, default=0)
     parser.add_argument("--motion-frames", type=int, default=0)
     parser.add_argument("--motion-substeps", type=int, default=8)
