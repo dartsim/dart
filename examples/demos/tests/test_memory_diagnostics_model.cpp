@@ -126,6 +126,16 @@ TEST(MemoryDiagnosticsModel, HistoryIsBoundedAndSeriesIsChronological)
         DiagnosticSnapshot snapshot
             = makeSnapshot(7, collectorCalls, collectorCalls * 10.0);
         snapshot.metrics.push_back(makeMetric("not.history", 999.0, false));
+        snapshot.memoryMaps.push_back(makeMemoryMapRow(
+            "test.map",
+            "Test map",
+            "slots",
+            2u,
+            1u,
+            1u,
+            "test scope",
+            "test source",
+            "test limitation"));
         return snapshot;
       },
       3,
@@ -142,6 +152,9 @@ TEST(MemoryDiagnosticsModel, HistoryIsBoundedAndSeriesIsChronological)
   EXPECT_EQ(session.historyAt(0)->frame, 3u);
   EXPECT_EQ(session.historyAt(2)->frame, 5u);
   EXPECT_EQ(findMetric(*session.historyAt(0), "not.history"), nullptr);
+  EXPECT_TRUE(session.historyAt(0)->memoryMaps.empty());
+  ASSERT_TRUE(session.latest());
+  EXPECT_EQ(session.latest()->memoryMaps.size(), 1u);
 
   const auto series = session.historySeries("test.bytes");
   ASSERT_TRUE(series);
@@ -213,6 +226,52 @@ TEST(MemoryDiagnosticsModel, CaptureCreatesCompatibleSignedDelta)
   EXPECT_DOUBLE_EQ(comparison->metrics[0].baselineValue, 20.0);
   EXPECT_DOUBLE_EQ(comparison->metrics[0].currentValue, 15.0);
   EXPECT_DOUBLE_EQ(comparison->metrics[0].delta, -5.0);
+}
+
+TEST(MemoryDiagnosticsModel, BaselinesOmitCurrentSamplePresentationPayload)
+{
+  std::size_t collectorCalls = 0;
+  DiagnosticSession session(
+      [&collectorCalls]() {
+        ++collectorCalls;
+        DiagnosticSnapshot snapshot
+            = makeSnapshot(3, collectorCalls, collectorCalls * 10.0);
+        snapshot.memoryMaps.push_back(makeMemoryMapRow(
+            "test.map",
+            "Test map",
+            "slots",
+            2u,
+            1u,
+            1u,
+            "test scope",
+            "test source",
+            "test limitation"));
+        snapshot.guidance.push_back("current-sample guidance");
+        return snapshot;
+      },
+      4,
+      0.0);
+  session.setEnabled(true);
+
+  ASSERT_TRUE(session.update(0.0));
+  ASSERT_TRUE(session.latest());
+  ASSERT_EQ(session.latest()->memoryMaps.size(), 1u);
+  ASSERT_EQ(session.latest()->guidance.size(), 1u);
+  ASSERT_TRUE(session.captureLatestAsBaseline());
+  ASSERT_TRUE(session.baseline());
+  EXPECT_TRUE(session.baseline()->memoryMaps.empty());
+  EXPECT_TRUE(session.baseline()->guidance.empty());
+  EXPECT_EQ(session.baseline()->metrics.size(), 1u);
+
+  session.clearBaseline();
+  ASSERT_TRUE(session.captureNow(1.0));
+  ASSERT_TRUE(session.latest());
+  ASSERT_EQ(session.latest()->memoryMaps.size(), 1u);
+  ASSERT_EQ(session.latest()->guidance.size(), 1u);
+  ASSERT_TRUE(session.baseline());
+  EXPECT_TRUE(session.baseline()->memoryMaps.empty());
+  EXPECT_TRUE(session.baseline()->guidance.empty());
+  EXPECT_EQ(session.baseline()->metrics.size(), 1u);
 }
 
 TEST(MemoryDiagnosticsModel, ComparisonRequiresAllSemanticFieldsToMatch)

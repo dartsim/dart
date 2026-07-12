@@ -92,6 +92,13 @@ does not expose EnTT types, component types, registry access, or stable
 component IDs through the examples layer. It explicitly requests packed-layout
 detail only on a due sample; default World diagnostics consumers retain the
 per-storage summary path without scanning every packed component slot.
+The panel presents the detailed sample as bounded renderer-neutral 2D block
+grids for the frame-scratch arena and per-storage logical capacity composition.
+Those cells are deliberately grouped by used/live, hole, and reserved state;
+they are not an address map or a claim about component byte size, payload
+adjacency, cache behavior, or physical allocation order. Heavy map rows stay on
+the current sample and are omitted from the 180-sample history ring and
+comparison baseline snapshots.
 
 CLI: `--scene <id>` selects the initial scene; `--cycle-scenes` advances through
 every scene for a few frames and exits (the headless smoke,

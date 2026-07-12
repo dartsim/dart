@@ -17,6 +17,7 @@ set(
   demos_memory_diagnostics_sources
   "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics_model.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/memory_map_model.cpp"
 )
 add_library(demos_memory_diagnostics STATIC ${demos_memory_diagnostics_sources})
 target_include_directories(
@@ -197,6 +198,7 @@ if(
     UNIT_examples_demos_MemoryDiagnostics
     "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics_model.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_map_model.cpp"
   )
   target_link_libraries(
     UNIT_examples_demos_MemoryDiagnostics

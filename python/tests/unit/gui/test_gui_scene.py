@@ -47,6 +47,7 @@ def test_gui_stub_surface_is_backend_hidden():
     assert "def request_scene_replay(self, scene_id: str) -> None" in gui_stub_text
     assert "def request_scene_switch(state: ViewerLifecycleState" in gui_stub_text
     assert "def request_scene_replay(state: ViewerLifecycleState" in gui_stub_text
+    assert "def block_grid(" in gui_stub_text
     assert "automodule:: dartpy.gui" in gui_docs.read_text()
     assert "dartpy.gui.experimental" not in gui_docs.read_text()
     assert "dartpy.gui" in rtd_conf.read_text()
@@ -64,6 +65,11 @@ def test_gui_stub_surface_is_backend_hidden():
         "filament::",
     ):
         assert token not in gui_stub_text
+
+
+@requires_gui_bindings
+def test_gui_panel_builder_exposes_block_grid():
+    assert hasattr(dart.gui.PanelBuilder, "block_grid")
 
 
 @requires_gui_bindings

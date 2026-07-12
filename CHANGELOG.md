@@ -287,10 +287,11 @@ compatibility remains on the active DART 6 LTS branch._
 
 - Added opt-in memory and layout diagnostics to `dart-demos`, including
   process-resident current/lifetime/session peaks, World allocator and frame
-  scratch categories, EnTT storage capacity/hole/utilization views, bounded
-  history and baseline comparisons, and explicit measured/proxy/unavailable
-  evidence labels. Extended the type-erased C++ and dartpy World diagnostics
-  snapshots with opt-in packed-storage layout detail.
+  scratch categories, bounded 2D block maps for scratch and logical ECS storage
+  capacity composition, EnTT storage capacity/hole/utilization views, history
+  and baseline comparisons, and explicit measured/proxy/unavailable evidence
+  labels. Extended the type-erased C++ and dartpy World diagnostics snapshots
+  with opt-in packed-storage layout detail.
 - Rebuilt the maintained GUI stack on Filament, GLFW3, and Dear ImGui, including
   headless rendering/capture paths for CI and visual verification.
   ([#2466](https://github.com/dartsim/dart/pull/2466))

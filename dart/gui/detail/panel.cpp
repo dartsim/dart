@@ -280,6 +280,115 @@ public:
     ImGui::TextUnformatted(labelValue.c_str());
   }
 
+  void blockGrid(
+      std::string_view label,
+      std::span<const dart::gui::PanelBlock> blocks,
+      std::size_t preferredColumns) override
+  {
+    const std::string labelValue(label);
+    const std::string displayLabel = visiblePanelLabel(label);
+    ImGui::PushID(labelValue.c_str());
+    if (!displayLabel.empty()) {
+      ImGui::TextWrapped("%s", displayLabel.c_str());
+    }
+    if (blocks.empty()) {
+      ImGui::TextDisabled("No blocks to display.");
+      ImGui::PopID();
+      return;
+    }
+
+    constexpr float gap = 2.0F;
+    constexpr float minimumCellSize = 6.0F;
+    constexpr float maximumCellSize = 16.0F;
+    const float availableWidth
+        = std::max(ImGui::GetContentRegionAvail().x, 1.0F);
+    const std::size_t maximumFittingColumns = std::max<std::size_t>(
+        1u,
+        static_cast<std::size_t>(
+            (availableWidth + gap) / (minimumCellSize + gap)));
+    const std::size_t requestedColumns
+        = preferredColumns == 0u ? maximumFittingColumns : preferredColumns;
+    const std::size_t columns = std::max<std::size_t>(
+        1u,
+        std::min(
+            blocks.size(), std::min(requestedColumns, maximumFittingColumns)));
+    const float cellSize = std::max(
+        1.0F,
+        std::min(
+            maximumCellSize,
+            (availableWidth - gap * static_cast<float>(columns - 1u))
+                / static_cast<float>(columns)));
+    const std::size_t rows = (blocks.size() + columns - 1u) / columns;
+    const float gridWidth = cellSize * static_cast<float>(columns)
+                            + gap * static_cast<float>(columns - 1u);
+    const float gridHeight = cellSize * static_cast<float>(rows)
+                             + gap * static_cast<float>(rows - 1u);
+    const ImVec2 origin = ImGui::GetCursorScreenPos();
+
+    ImGui::InvisibleButton("##blocks", ImVec2(gridWidth, gridHeight));
+    ImDrawList* const drawList = ImGui::GetWindowDrawList();
+    const ImU32 borderColor = ImGui::GetColorU32(ImGuiCol_Border);
+    const ImVec2 clipMinimum = drawList->GetClipRectMin();
+    const ImVec2 clipMaximum = drawList->GetClipRectMax();
+    for (std::size_t index = 0; index < blocks.size(); ++index) {
+      const std::size_t row = index / columns;
+      const std::size_t column = index % columns;
+      const ImVec2 minimum(
+          origin.x + static_cast<float>(column) * (cellSize + gap),
+          origin.y + static_cast<float>(row) * (cellSize + gap));
+      const ImVec2 maximum(minimum.x + cellSize, minimum.y + cellSize);
+      if (maximum.x <= clipMinimum.x || minimum.x >= clipMaximum.x
+          || maximum.y <= clipMinimum.y || minimum.y >= clipMaximum.y) {
+        continue;
+      }
+      const ImVec2 clippedMinimum(
+          std::max(minimum.x, clipMinimum.x),
+          std::max(minimum.y, clipMinimum.y));
+      const ImVec2 clippedMaximum(
+          std::min(maximum.x, clipMaximum.x),
+          std::min(maximum.y, clipMaximum.y));
+      const Eigen::Vector4d& rgba = blocks[index].rgba;
+      const ImU32 fillColor = ImGui::ColorConvertFloat4ToU32(ImVec4(
+          static_cast<float>(std::clamp(rgba[0], 0.0, 1.0)),
+          static_cast<float>(std::clamp(rgba[1], 0.0, 1.0)),
+          static_cast<float>(std::clamp(rgba[2], 0.0, 1.0)),
+          static_cast<float>(std::clamp(rgba[3], 0.0, 1.0))));
+      drawList->AddRectFilled(clippedMinimum, clippedMaximum, fillColor, 1.5F);
+    }
+    const ImVec2 gridMaximum(origin.x + gridWidth, origin.y + gridHeight);
+    if (origin.x >= clipMinimum.x && origin.y >= clipMinimum.y
+        && gridMaximum.x <= clipMaximum.x && gridMaximum.y <= clipMaximum.y) {
+      drawList->AddRect(origin, gridMaximum, borderColor, 1.5F);
+    }
+
+    if (ImGui::IsItemHovered()) {
+      const ImVec2 mouse = ImGui::GetIO().MousePos;
+      for (std::size_t index = 0; index < blocks.size(); ++index) {
+        const std::size_t row = index / columns;
+        const std::size_t column = index % columns;
+        const ImVec2 minimum(
+            origin.x + static_cast<float>(column) * (cellSize + gap),
+            origin.y + static_cast<float>(row) * (cellSize + gap));
+        const ImVec2 maximum(minimum.x + cellSize, minimum.y + cellSize);
+        if (mouse.x < minimum.x || mouse.x >= maximum.x || mouse.y < minimum.y
+            || mouse.y >= maximum.y || blocks[index].tooltip.empty()) {
+          continue;
+        }
+
+        ImGui::BeginTooltip();
+        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 30.0F);
+        ImGui::TextUnformatted(
+            blocks[index].tooltip.data(),
+            blocks[index].tooltip.data() + blocks[index].tooltip.size());
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+        break;
+      }
+    }
+
+    ImGui::PopID();
+  }
+
   void plotLines(
       std::string_view label, std::span<const double> values) override
   {

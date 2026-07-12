@@ -47,6 +47,15 @@ class FakePanelBuilder:
     def color_swatch(self, label: str, rgba: Any) -> None:
         pass
 
+    def block_grid(
+        self,
+        label: str,
+        colors: Sequence[Any],
+        tooltips: Sequence[str] = (),
+        preferred_columns: int = 32,
+    ) -> None:
+        pass
+
     # --- input widgets: report "no change", echo current value ------------
     def slider(
         self, label: str, value: float, minimum: float, maximum: float

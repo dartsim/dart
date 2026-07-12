@@ -12430,6 +12430,70 @@ def test_rigid_body_scripted_selection_force_drag_is_stable(
     assert len(data) > 1024, f"PPM too small: {len(data)} bytes"
 
 
+def test_panel_block_grid_binding_validates_and_renders() -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    import dartpy as dart
+    import numpy as np
+    from examples.demos.runner import PythonDemoScene, ScenePanel, SceneSetup
+
+    callback_count = 0
+
+    def build_panel(builder, _context) -> None:
+        nonlocal callback_count
+        colors = [
+            np.array([0.2, 0.8, 0.4, 1.0], dtype=np.float64),
+            np.array([0.4, 0.5, 0.7, 1.0], dtype=np.float64),
+        ]
+        with pytest.raises(
+            ValueError,
+            match="block_grid tooltips must be empty or match colors",
+        ):
+            builder.block_grid("invalid", colors, ["one tooltip"])
+        builder.block_grid(
+            "Capacity map",
+            colors,
+            ["active", "reserved"],
+            preferred_columns=2,
+        )
+        callback_count += 1
+
+    def build_scene() -> SceneSetup:
+        setup = _make_box_scene_setup(
+            dart, SceneSetup, name="block_grid_smoke", frame_name="box"
+        )
+        setup.panels.append(ScenePanel("Memory map", build_panel))
+        return setup
+
+    rc = run(
+        [
+            "--scene",
+            "block_grid_smoke",
+            "--frames",
+            "2",
+            "--headless",
+            "--show-ui",
+            "--width",
+            "640",
+            "--height",
+            "360",
+        ],
+        [
+            PythonDemoScene(
+                id="block_grid_smoke",
+                title="Block Grid Smoke",
+                category="Test",
+                summary="Exercises the Python block-grid panel binding.",
+                build=build_scene,
+            )
+        ],
+    )
+
+    assert rc == 0
+    assert callback_count > 0
+
+
 def test_show_ui_uses_docked_workspace_regions(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

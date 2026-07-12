@@ -51,6 +51,16 @@ namespace dart::gui {
 
 struct ViewerLifecycleState;
 
+/// One renderer-neutral cell in a panel block grid.
+///
+/// The tooltip is a non-owning view that only needs to remain valid for the
+/// duration of PanelBuilder::blockGrid().
+struct PanelBlock
+{
+  Eigen::Vector4d rgba = Eigen::Vector4d(0.4, 0.4, 0.4, 1.0);
+  std::string_view tooltip;
+};
+
 class DART_GUI_API PanelBuilder
 {
 public:
@@ -156,6 +166,20 @@ public:
   virtual void colorSwatch(std::string_view label, const Eigen::Vector4d& rgba)
   {
     (void)rgba;
+    text(label);
+  }
+
+  /// Draw a responsive two-dimensional grid of colored diagnostic blocks.
+  ///
+  /// Renderers may reduce the requested column count when the panel is narrow.
+  /// Builders without a block-grid implementation fall back to the label.
+  virtual void blockGrid(
+      std::string_view label,
+      std::span<const PanelBlock> blocks,
+      std::size_t preferredColumns = 32)
+  {
+    (void)blocks;
+    (void)preferredColumns;
     text(label);
   }
 

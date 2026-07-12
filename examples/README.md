@@ -64,6 +64,19 @@ The panel separates evidence by scope and does not add the rows into a total:
   identifiers. The demo requests the opt-in detailed scan only at its bounded
   sample cadence; ordinary World diagnostic summaries do not scan packed slots.
 
+The default-open **2D memory maps** section turns the frame-scratch reservation
+arena and each detailed ECS storage row into bounded colored block grids:
+green is active/used, amber is a materialized hole, slate is reserved/unused,
+and purple is a display bin containing more than one state. Small capacities
+use one block per byte or slot; larger capacities are aggregated into at most
+64 bins while hover text preserves the exact counts represented by each bin.
+ECS cells are grouped by state to show capacity composition. They do not
+reproduce packed-slot order, component payload adjacency, virtual addresses, or
+physical allocation layout, and storage rows are independently normalized
+because slots from different component types are not byte-comparable. Process
+RSS and overlapping allocator categories therefore remain tables rather than a
+misleading global memory map.
+
 Use **Sample + set baseline** or **Baseline = latest** to create a comparison;
 compatible rows then show signed deltas. **Reset session** clears the baseline,
 bounded history, and session-observed peak while retaining history storage. It

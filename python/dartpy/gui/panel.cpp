@@ -15,6 +15,7 @@
 #include <exception>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -276,6 +277,32 @@ void defGuiPanels(nb::module_& m)
           },
           nb::arg("label"),
           nb::arg("rgba"))
+      .def(
+          "block_grid",
+          [](PanelBuilderView& self,
+             const std::string& label,
+             const std::vector<Eigen::Vector4d>& colors,
+             const std::vector<std::string>& tooltips,
+             std::size_t preferredColumns) {
+            if (!tooltips.empty() && tooltips.size() != colors.size()) {
+              throw std::invalid_argument(
+                  "block_grid tooltips must be empty or match colors");
+            }
+            std::vector<dart::gui::PanelBlock> blocks;
+            blocks.reserve(colors.size());
+            for (std::size_t index = 0; index < colors.size(); ++index) {
+              blocks.push_back(
+                  dart::gui::PanelBlock{
+                      .rgba = colors[index],
+                      .tooltip = tooltips.empty() ? std::string_view{}
+                                                  : tooltips[index]});
+            }
+            self.builder().blockGrid(label, blocks, preferredColumns);
+          },
+          nb::arg("label"),
+          nb::arg("colors"),
+          nb::arg("tooltips") = std::vector<std::string>{},
+          nb::arg("preferred_columns") = 32u)
       .def(
           "plot_lines",
           [](PanelBuilderView& self,

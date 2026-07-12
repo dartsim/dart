@@ -253,6 +253,11 @@ disabled. New metrics need a precise scope, source, limitation, unit, and one of
 measured/estimate/proxy; represent unsupported instrumentation as unavailable
 rather than zero. Never turn address gaps, packed slots, holes, or page counts
 into cache-performance claims without separate hardware-counter evidence.
+Use the renderer-neutral PanelBuilder::blockGrid primitive for bounded
+two-dimensional diagnostic compositions. Callers own the semantic model and
+tooltips; the private ImGui implementation owns responsive sizing, drawing, and
+hover hit testing. A block grid does not by itself establish byte size, address
+order, or physical adjacency.
 
 ## Migration Notes
 

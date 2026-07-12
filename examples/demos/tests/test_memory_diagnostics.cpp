@@ -73,6 +73,34 @@ TEST(MemoryDiagnostics, CollectsWorldAllocatorAndEcsScopes)
   ASSERT_NE(proxy, snapshot.metrics.end());
   EXPECT_EQ(proxy->quality, MetricQuality::Proxy);
   EXPECT_NE(proxy->limitation.find("cache"), std::string::npos);
+
+  const auto scratchMap = std::find_if(
+      snapshot.memoryMaps.begin(),
+      snapshot.memoryMaps.end(),
+      [](const MemoryMapRow& row) { return row.key == "scratch.arena"; });
+  ASSERT_NE(scratchMap, snapshot.memoryMaps.end());
+  EXPECT_EQ(
+      scratchMap->activeUnits + scratchMap->holeUnits
+          + scratchMap->reservedUnits,
+      scratchMap->totalUnits);
+  EXPECT_EQ(scratchMap->unit, "bytes");
+
+  const auto storageMap = std::find_if(
+      snapshot.memoryMaps.begin(),
+      snapshot.memoryMaps.end(),
+      [](const MemoryMapRow& row) {
+        return row.key.starts_with("ecs.storage.")
+               && row.key.ends_with(".capacity_map");
+      });
+  ASSERT_NE(storageMap, snapshot.memoryMaps.end());
+  EXPECT_EQ(
+      storageMap->activeUnits + storageMap->holeUnits
+          + storageMap->reservedUnits,
+      storageMap->totalUnits);
+  EXPECT_EQ(storageMap->unit, "slots");
+  EXPECT_NE(
+      storageMap->limitation.find("do not reproduce packed-slot order"),
+      std::string::npos);
 }
 
 TEST(MemoryDiagnostics, KeepsUnavailableInstrumentationDistinctFromZero)

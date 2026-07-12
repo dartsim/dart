@@ -11,6 +11,8 @@
 #ifndef DART_EXAMPLES_DEMOS_MEMORY_DIAGNOSTICS_MODEL_HPP_
 #define DART_EXAMPLES_DEMOS_MEMORY_DIAGNOSTICS_MODEL_HPP_
 
+#include "memory_map_model.hpp"
+
 #include <functional>
 #include <optional>
 #include <string>
@@ -64,6 +66,8 @@ struct DiagnosticSnapshot
   std::uint64_t frame{0};
   double simulationTimeSeconds{0.0};
   std::vector<DiagnosticMetric> metrics;
+  /// Current-sample logical maps. History and baseline snapshots omit them.
+  std::vector<MemoryMapRow> memoryMaps;
   std::vector<std::string> guidance;
 };
 
@@ -167,10 +171,10 @@ public:
   /// Collects when enabled and the cadence is due. Returns true on collection.
   bool update(double monotonicNowSeconds);
 
-  /// Collects immediately when enabled and makes that sample the baseline.
+  /// Collects immediately and stores its comparison fields as the baseline.
   bool captureNow(double monotonicNowSeconds);
 
-  /// Uses the already collected latest sample as the baseline.
+  /// Stores the latest sample's comparison fields as the baseline.
   bool captureLatestAsBaseline();
 
   void clearBaseline() noexcept;

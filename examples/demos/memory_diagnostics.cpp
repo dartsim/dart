@@ -234,6 +234,80 @@ const MetricDelta* findDelta(
   return found == comparison->metrics.end() ? nullptr : &*found;
 }
 
+const Eigen::Vector4d& memoryMapColor(MemoryMapCellKind kind)
+{
+  static const Eigen::Vector4d active(0.20, 0.68, 0.52, 1.0);
+  static const Eigen::Vector4d hole(0.95, 0.55, 0.16, 1.0);
+  static const Eigen::Vector4d reserved(0.30, 0.34, 0.40, 1.0);
+  static const Eigen::Vector4d mixed(0.57, 0.44, 0.82, 1.0);
+  switch (kind) {
+    case MemoryMapCellKind::Active:
+      return active;
+    case MemoryMapCellKind::Hole:
+      return hole;
+    case MemoryMapCellKind::Reserved:
+      return reserved;
+    case MemoryMapCellKind::Mixed:
+      return mixed;
+  }
+  return reserved;
+}
+
+std::string formatMapUnits(std::size_t value, std::string_view unit)
+{
+  if (unit == "bytes") {
+    return formatBytes(static_cast<double>(value));
+  }
+  return std::to_string(value) + " " + std::string(unit);
+}
+
+void renderMemoryMaps(
+    gui::PanelBuilder& builder, const DiagnosticSnapshot& snapshot)
+{
+  if (!builder.collapsingHeader("2D memory maps", true)) {
+    return;
+  }
+
+  builder.text(
+      "Logical capacity composition only; these blocks are not a process heap "
+      "or address map.");
+  builder.colorSwatch(
+      "active / used", memoryMapColor(MemoryMapCellKind::Active));
+  builder.sameLine();
+  builder.colorSwatch("hole", memoryMapColor(MemoryMapCellKind::Hole));
+  builder.sameLine();
+  builder.colorSwatch(
+      "reserved / unused", memoryMapColor(MemoryMapCellKind::Reserved));
+  builder.sameLine();
+  builder.colorSwatch("mixed bin", memoryMapColor(MemoryMapCellKind::Mixed));
+
+  bool rendered = false;
+  for (const MemoryMapRow& row : snapshot.memoryMaps) {
+    if (row.cells.empty()) {
+      continue;
+    }
+
+    rendered = true;
+    const std::string summary
+        = row.label + ": " + formatMapUnits(row.activeUnits, row.unit)
+          + " live/used | " + formatMapUnits(row.holeUnits, row.unit)
+          + " holes | " + formatMapUnits(row.reservedUnits, row.unit)
+          + " reserved";
+    std::vector<gui::PanelBlock> blocks;
+    blocks.reserve(row.cells.size());
+    for (const MemoryMapCell& cell : row.cells) {
+      blocks.push_back(
+          gui::PanelBlock{
+              .rgba = memoryMapColor(cell.kind), .tooltip = cell.tooltip});
+    }
+    builder.blockGrid(summary + "##" + row.key, blocks, 32);
+  }
+
+  if (!rendered) {
+    builder.text("No non-empty logical capacity maps are available.");
+  }
+}
+
 void renderMetricSection(
     gui::PanelBuilder& builder,
     const DiagnosticSnapshot& snapshot,
@@ -393,6 +467,7 @@ void renderPanelContents(
     builder.text("No baseline selected; delta column is inactive.");
   }
 
+  renderMemoryMaps(builder, snapshot);
   renderHistory(builder, session);
   renderMetricSection(
       builder, snapshot, comparisonPtr, "Process memory", "process.", true);
@@ -640,6 +715,26 @@ DiagnosticSnapshot collectMemoryDiagnostics(
       "current World lifetime",
       std::string(scratchSource),
       "Reset count is a lifetime event counter, not allocated memory.");
+  const std::size_t scratchArenaUsed
+      = memory.frameScratchUsedBytes > memory.frameScratchOverflowBytes
+            ? memory.frameScratchUsedBytes - memory.frameScratchOverflowBytes
+            : 0u;
+  const std::size_t boundedScratchArenaUsed
+      = std::min(scratchArenaUsed, memory.frameScratchCapacityBytes);
+  if (memory.frameScratchCapacityBytes > 0u) {
+    snapshot.memoryMaps.push_back(makeMemoryMapRow(
+        "scratch.arena",
+        "Frame scratch reservation arena",
+        "bytes",
+        boundedScratchArenaUsed,
+        0u,
+        memory.frameScratchCapacityBytes - boundedScratchArenaUsed,
+        "current World frame-scratch reservation arena",
+        std::string(scratchSource),
+        "Blocks aggregate arena bytes into bounded display bins. They do not "
+        "show individual allocations or addresses; overflow bytes are excluded "
+        "from this row and reported separately."));
+  }
 
   const simulation::WorldEcsDiagnostics& ecs = memory.ecsDiagnostics;
   constexpr std::string_view ecsSource
@@ -746,6 +841,20 @@ DiagnosticSnapshot collectMemoryDiagnostics(
     const std::string limitation
         = "The storage token is internal and not stable across builds. Slot "
           "layout does not expose component bytes or measure cache behavior.";
+    if (ecs.storageLayoutDetailsIncluded && storage.capacity > 0u) {
+      snapshot.memoryMaps.push_back(makeMemoryMapRow(
+          prefix + "capacity_map",
+          storage.diagnosticLabel,
+          "slots",
+          storage.size,
+          storage.holeCount,
+          storage.unusedCapacity,
+          scope,
+          std::string(ecsSource),
+          "Cells are grouped by live, hole, and reserved state. They do not "
+          "reproduce packed-slot order, component payload adjacency, virtual "
+          "addresses, or physical allocation layout."));
+    }
     addCountMetric(
         snapshot,
         prefix + "live_slots",

@@ -94,6 +94,20 @@ bool compatibleMetrics(
          && baseline.source == current.source;
 }
 
+DiagnosticSnapshot makeBaselineSnapshot(const DiagnosticSnapshot& snapshot)
+{
+  DiagnosticSnapshot baseline;
+  baseline.schema = snapshot.schema;
+  baseline.engine = snapshot.engine;
+  baseline.platform = snapshot.platform;
+  baseline.generation = snapshot.generation;
+  baseline.monotonicTimeSeconds = snapshot.monotonicTimeSeconds;
+  baseline.frame = snapshot.frame;
+  baseline.simulationTimeSeconds = snapshot.simulationTimeSeconds;
+  baseline.metrics = snapshot.metrics;
+  return baseline;
+}
+
 } // namespace
 
 const char* metricQualityLabel(MetricQuality quality) noexcept
@@ -479,7 +493,7 @@ bool DiagnosticSession::captureLatestAsBaseline()
   if (!mEnabled || !mLatest) {
     return false;
   }
-  mBaseline = *mLatest;
+  mBaseline = makeBaselineSnapshot(*mLatest);
   return true;
 }
 
@@ -635,7 +649,7 @@ bool DiagnosticSession::collect(double monotonicNowSeconds, bool makeBaseline)
   recordHistory(snapshot);
   mLatest = std::move(snapshot);
   if (makeBaseline) {
-    mBaseline = *mLatest;
+    mBaseline = makeBaselineSnapshot(*mLatest);
   }
   mLastCollectionTimeSeconds = monotonicNowSeconds;
   return true;
@@ -673,6 +687,7 @@ void DiagnosticSession::recordHistory(const DiagnosticSnapshot& snapshot)
       slot.metrics.push_back(metric);
     }
   }
+  slot.memoryMaps.clear();
   slot.guidance.clear();
 }
 
