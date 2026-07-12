@@ -1091,8 +1091,8 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 
   // Treat a finite fallback solution as usable even if the solver reported
   // failure to avoid discarding potentially valid impulses. Note this uses the
-  // pre-scrub non-finite state (hadNonFinite), NOT a post-scrub recheck, so a failed
-  // fallback that wrote NaNs cannot be promoted to success by scrubbing.
+  // pre-scrub non-finite state (hadNonFinite), NOT a post-scrub recheck, so a
+  // failed fallback that wrote NaNs cannot be promoted to success by scrubbing.
   const bool finalSuccess
       = success || fallbackSuccess || (fallbackRan && !hadNonFinite);
 
