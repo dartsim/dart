@@ -10,6 +10,7 @@
 #include "dart/gui/view_quality.hpp"
 #include "dart/gui/viewer.hpp"
 #include "dart/simulation/body/contact.hpp"
+#include "dart/simulation/body/contact_force.hpp"
 #include "dart/simulation/world.hpp"
 
 #include <nanobind/eigen/dense.h>
@@ -681,6 +682,11 @@ void defGuiDescriptors(nb::module_& m)
           const std::vector<simulation::Contact>&,
           const gui::DebugDrawOptions&)>(&gui::extractContactDebugLines),
       nb::arg("contacts"),
+      nb::arg("options") = gui::DebugDrawOptions{});
+  m.def(
+      "extract_contact_force_debug_lines",
+      &gui::extractContactForceDebugLines,
+      nb::arg("forces"),
       nb::arg("options") = gui::DebugDrawOptions{});
   m.def(
       "extract_debug_lines",

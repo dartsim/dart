@@ -320,6 +320,14 @@ compatibility remains on the active DART 6 LTS branch._
   built-in font, and `World::getRigidBodyNames`; the gui component now
   depends on the simulation component, and Python layers only orchestrate
   the core APIs.
+- Raised the headless overlay to DART 6 fidelity: debug labels are now
+  anti-aliased, mixed-case, and proportional (rasterized once from Dear
+  ImGui's font atlas, CPU-side, replacing the uppercase bitmap font);
+  per-body, velocity, and contact debug lines render as world-space thick
+  ribbons via `DebugDrawOptions.lineThickness`; and per-contact force arrows
+  are drawn from reaction forces recovered from the rigid contact solve
+  (`World::getLastContactForces()` for the sequential-impulse and boxed-LCP
+  paths, plus `extractContactForceDebugLines`).
 - Added visual-verification workflows, screenshot review indexes, UI capture
   guards, runtime scene-switch hardening, and demo panels aimed at debugging
   DART 7 simulation behavior instead of preserving every historical demo detail.

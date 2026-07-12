@@ -44,6 +44,7 @@
 
 #include <dart/simulation/body/collision_shape.hpp>
 #include <dart/simulation/body/contact.hpp>
+#include <dart/simulation/body/contact_force.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/body/rigid_body_options.hpp>
 #include <dart/simulation/world.hpp>
@@ -381,6 +382,47 @@ TEST(GuiDebugVisuals, ExtractSimulationContactDebugLinesApplyThickness)
   for (const auto& line : lines) {
     EXPECT_DOUBLE_EQ(line.thickness, 0.008) << line.label;
   }
+}
+
+TEST(GuiDebugVisuals, ExtractContactForceDebugLinesDrawArrows)
+{
+  std::vector<dart::simulation::ContactForce> forces;
+  dart::simulation::ContactForce contactForce;
+  contactForce.point = Eigen::Vector3d(0.1, 0.2, 0.3);
+  contactForce.force = Eigen::Vector3d(0.0, 0.0, 20.0); // 20 N upward
+  forces.push_back(contactForce);
+
+  dart::gui::DebugDrawOptions options;
+  options.lineThickness = 0.006;
+  const auto lines = dart::gui::extractContactForceDebugLines(forces, options);
+  ASSERT_FALSE(lines.empty());
+  expectFiniteNonZeroLines(lines);
+
+  // Every emitted line is a force arrow drawn at the DART 6 force color and the
+  // requested world-space thickness (assert on labels/colors, not counts).
+  const Eigen::Vector4d forceColor(0.93, 0.31, 0.67, 1.0);
+  for (const auto& line : lines) {
+    EXPECT_EQ(line.label, "contact.force");
+    EXPECT_TRUE(line.rgba.isApprox(forceColor, 1e-9));
+    EXPECT_DOUBLE_EQ(line.thickness, 0.006);
+  }
+
+  // The arrow shaft starts at the contact point and points along the force.
+  bool sawShaftFromPoint = false;
+  for (const auto& line : lines) {
+    if (line.from.isApprox(contactForce.point, 1e-9)
+        && (line.to - line.from)
+               .normalized()
+               .isApprox(Eigen::Vector3d::UnitZ(), 1e-6)) {
+      sawShaftFromPoint = true;
+    }
+  }
+  EXPECT_TRUE(sawShaftFromPoint);
+
+  // Gated by drawContactForces.
+  options.drawContactForces = false;
+  EXPECT_TRUE(
+      dart::gui::extractContactForceDebugLines(forces, options).empty());
 }
 
 TEST(GuiDebugVisuals, ExtractSimulationContactDebugLinesMarkContactPoints)

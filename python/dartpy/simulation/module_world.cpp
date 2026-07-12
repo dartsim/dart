@@ -530,6 +530,16 @@ void defSimPartWorld(nb::module_& m)
           "Curated diagnostics from the deformable solve on the most recent "
           "step that used the built-in pipeline (mesh sizes, projected-Newton "
           "convergence, self-contact activity, contact closest-approach).")
+      .def(
+          "get_last_contact_forces",
+          [](const sim::World& self) { return self.getLastContactForces(); },
+          "Per-contact reaction forces from the most recent built-in-pipeline "
+          "step, for the rigid-body sequential-impulse and boxed-LCP paths. "
+          "Each entry pairs a world-space contact point with the reaction "
+          "force "
+          "on body_b (the solved impulse divided by the time step). Empty "
+          "after "
+          "a reset or a step with no rigid contacts.")
       .def_prop_ro(
           "memory_diagnostics",
           &sim::World::getMemoryDiagnostics,

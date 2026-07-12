@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/simulation/body/contact_force.hpp>
 #include <dart/simulation/compute/multibody_dynamics.hpp>
 #include <dart/simulation/compute/world_step_profile.hpp>
 #include <dart/simulation/detail/smooth_jacobians.hpp>
@@ -183,6 +184,13 @@ struct WorldStorage
   /// stages. `World::computeStepMetrics()` folds these into its read-only
   /// physical snapshot without running a narrow-phase query itself.
   compute::StepMetrics lastStepDiagnostics;
+
+  /// Per-contact reaction forces recovered from the most recent rigid-body
+  /// contact solve (`force = impulse / timeStep`), exposed through
+  /// `World::getLastContactForces()`. Populated by the rigid contact stage for
+  /// the sequential-impulse and boxed-LCP paths and cleared alongside
+  /// `lastStepDiagnostics`; empty otherwise.
+  std::vector<ContactForce> lastContactForces;
 
   /// Persistent pair-level collision-query exclusions, stored with canonical
   /// endpoint ordering. This scene-level filter is applied after broad-phase

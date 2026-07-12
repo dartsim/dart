@@ -87,6 +87,28 @@ def contact_debug_lines(contacts: Iterable[Any], options: Any | None = None) -> 
     return list(dart.gui.extract_contact_debug_lines(list(contacts), options))
 
 
+def contact_force_debug_lines(forces: Iterable[Any], options: Any | None = None) -> list:
+    """Force arrows for ``simulation.ContactForce`` reaction forces.
+
+    Delegates to the core ``extract_contact_force_debug_lines``; pass the list
+    returned by ``world.get_last_contact_forces()`` after stepping.
+    """
+    if options is None:
+        options = _default_options()
+    return list(dart.gui.extract_contact_force_debug_lines(list(forces), options))
+
+
+def _last_contact_forces(world: Any) -> list:
+    """Reaction forces from the last step, or [] when the world can't report them."""
+    getter = getattr(world, "get_last_contact_forces", None)
+    if getter is None:
+        return []
+    try:
+        return list(getter())
+    except Exception:  # noqa: BLE001
+        return []
+
+
 def _trajectory_lines(name: str, positions: Iterable[Any]) -> list:
     points = [np.asarray(point, dtype=float).reshape(3) for point in positions]
     if len(points) < 2:
@@ -250,6 +272,13 @@ def debug_scene_for_world(
     if "contacts" in layers:
         contact_list = list(contacts) if contacts is not None else world.collide()
         lines.extend(contact_debug_lines(contact_list, options))
+        # Force arrows accompany the contacts being drawn, so an explicit empty
+        # `contacts` stays verbatim (no forces). They come from the last solve
+        # (world.get_last_contact_forces()), independent of the collide() query.
+        if contact_list and getattr(options, "draw_contact_forces", True):
+            forces = _last_contact_forces(world)
+            if forces:
+                lines.extend(contact_force_debug_lines(forces, options))
 
     if "trajectories" in layers:
         if trajectories is None:
@@ -389,6 +418,7 @@ def install_debug_layer_helpers(root: Any, gui: Any) -> None:
     gui.DEBUG_LAYERS = DEBUG_LAYERS
     gui.debug_scene_for_world = debug_scene_for_world
     gui.contact_debug_lines = contact_debug_lines
+    gui.contact_force_debug_lines = contact_force_debug_lines
     gui.TrajectoryTracker = TrajectoryTracker
     gui.body_labels = body_labels
     gui.project_points = project_points

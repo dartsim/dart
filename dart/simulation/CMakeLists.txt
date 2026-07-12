@@ -172,6 +172,7 @@ set(
   body/collision_body.hpp
   body/collision_shape.hpp
   body/contact.hpp
+  body/contact_force.hpp
   body/deformable_body.hpp
   body/deformable_body_options.hpp
   body/rigid_body.hpp

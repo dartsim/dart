@@ -180,17 +180,21 @@ in flight on `release-6.20` via #3374.
 Contact force arrows (DART 6 parity): DART 6 draws per-contact force arrows;
 DART 7's `simulation::Contact` (`dart/simulation/body/contact.hpp`) is pure
 collision-query output and carries no force. The solved per-contact impulses
-do persist post-step in the rigid contact scratch
-(`m_contactScratch->problem.constraints`; `BoxedLcpContactSnapshot.f`), so a
-bounded core exposure — `World::getLastContactForces()` returning `{point,
-force, bodyA, bodyB}` captured at solve time (force = impulse / timeStep),
-never mapped back onto `collide()` results — is feasible for the rigid
-SequentialImpulse and BoxedLcp paths and is the recommended first cut.
-Mapping impulses to contacts for the unified AVBD/variational rigid path and
-for multibody/deformable contacts is deferred: those store per-row descent
+persist post-step in the rigid contact scratch
+(`m_contactScratch->problem.constraints`; `BoxedLcpContactSnapshot.f`), so the
+first cut is now implemented as a bounded core exposure:
+`World::getLastContactForces()` returns `ContactForce{point, force, bodyA,
+bodyB}` captured at solve time (force = impulse / timeStep) for the rigid
+SequentialImpulse and BoxedLcp paths, without ever mutating `collide()`
+results. The GUI draws these as arrows through
+`extractContactForceDebugLines` (reusing the DART 6 force color and
+`contactForceScale`/clamps), wired into the `contacts` debug layer. Mapping
+impulses to contacts for the unified AVBD/variational rigid path and for
+multibody/deformable contacts remains deferred: those store per-row descent
 state without a stable contact key, and forcing a force field onto the
-query-time `Contact` would create a post-integration pose mismatch. Until
-then DART 7 contact overlays draw points and normals but not force
+query-time `Contact` would create a post-integration pose mismatch. For those
+paths (and for replayed/rewound frames, which do not restore the transient
+force list) the overlay draws contact points and normals but not force
 magnitude.
 
 ## Core-first policy for agent visual tooling

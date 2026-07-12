@@ -429,6 +429,16 @@ void defSimPartBodies(nb::module_& m)
         return self.localPointB;
       });
 
+  nb::class_<sim::ContactForce>(m, "ContactForce")
+      .def_prop_ro(
+          "body_a", [](const sim::ContactForce& self) { return self.bodyA; })
+      .def_prop_ro(
+          "body_b", [](const sim::ContactForce& self) { return self.bodyB; })
+      .def_prop_ro(
+          "point", [](const sim::ContactForce& self) { return self.point; })
+      .def_prop_ro(
+          "force", [](const sim::ContactForce& self) { return self.force; });
+
   nb::class_<sim::CollisionQueryOptions>(m, "CollisionQueryOptions")
       .def(
           "__init__",

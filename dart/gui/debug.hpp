@@ -49,6 +49,7 @@
 namespace dart::simulation {
 class World;
 struct Contact;
+struct ContactForce;
 } // namespace dart::simulation
 
 namespace dart::gui {
@@ -190,10 +191,21 @@ DART_GUI_API std::vector<DebugLineDescriptor> extractContactDebugLines(
     const DebugDrawOptions& options = {});
 
 /// Contact markers/normals for the promoted `simulation::World` contact type
-/// (as returned by `World::collide()`). Contact forces are not part of the
-/// simulation contact payload, so only points and normals are drawn.
+/// (as returned by `World::collide()`). The simulation contact payload has no
+/// force, so only points and normals are drawn; use
+/// `extractContactForceDebugLines` with `World::getLastContactForces()` for
+/// force arrows.
 DART_GUI_API std::vector<DebugLineDescriptor> extractContactDebugLines(
     const std::vector<simulation::Contact>& contacts,
+    const DebugDrawOptions& options = {});
+
+/// Contact-force arrows for the reaction forces recovered from the most recent
+/// world step (`World::getLastContactForces()`). Each force is drawn as an
+/// arrow from its contact point, scaled by `contactForceScale` and clamped to
+/// `[contactForceMinLength, contactForceMaxLength]`, matching the DART 6
+/// contact-force overlay. Gated by `drawContactForces`.
+DART_GUI_API std::vector<DebugLineDescriptor> extractContactForceDebugLines(
+    const std::vector<simulation::ContactForce>& forces,
     const DebugDrawOptions& options = {});
 
 /// A polyline (e.g. a recorded body trajectory) as consecutive debug-line

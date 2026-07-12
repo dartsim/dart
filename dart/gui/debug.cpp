@@ -34,6 +34,7 @@
 
 #include <dart/simulation/body/collision_shape.hpp>
 #include <dart/simulation/body/contact.hpp>
+#include <dart/simulation/body/contact_force.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/world.hpp>
 
@@ -778,6 +779,38 @@ std::vector<DebugLineDescriptor> extractContactDebugLines(
           normalColor,
           "contact.normal");
     }
+  }
+
+  applyLineThickness(lines, options.lineThickness);
+  return lines;
+}
+
+std::vector<DebugLineDescriptor> extractContactForceDebugLines(
+    const std::vector<simulation::ContactForce>& forces,
+    const DebugDrawOptions& options)
+{
+  std::vector<DebugLineDescriptor> lines;
+  if (!options.drawContactForces) {
+    return lines;
+  }
+
+  lines.reserve(forces.size() * 3u);
+  const Eigen::Vector4d forceColor = rgba(0.93, 0.31, 0.67);
+  for (const auto& contactForce : forces) {
+    const double magnitude = contactForce.force.norm();
+    if (!std::isfinite(magnitude) || magnitude <= 1e-9) {
+      continue;
+    }
+    const double length = std::clamp(
+        magnitude * options.contactForceScale,
+        options.contactForceMinLength,
+        options.contactForceMaxLength);
+    appendArrowLines(
+        lines,
+        contactForce.point,
+        contactForce.point + contactForce.force.normalized() * length,
+        forceColor,
+        "contact.force");
   }
 
   applyLineThickness(lines, options.lineThickness);

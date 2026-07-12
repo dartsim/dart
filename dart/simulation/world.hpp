@@ -796,6 +796,16 @@ public:
   /// stage's own ``getLastStats`` there); it stays at its previous value.
   const DeformableSolverDiagnostics& getLastDeformableSolverDiagnostics() const;
 
+  /// Per-contact reaction forces recovered from the most recent ``step`` that
+  /// used the built-in pipeline, for the rigid-body contact paths
+  /// (sequential-impulse and boxed-LCP). Each entry pairs a world-space contact
+  /// point with the reaction force on ``bodyB`` (the solved contact impulse
+  /// divided by the time step). Empty after a reset, a step with no rigid
+  /// contacts, or a user-supplied-pipeline step. The unified/variational rigid
+  /// path and multibody/deformable contacts do not yet contribute; see
+  /// ``docs/design/agent_sim_verification.md``.
+  [[nodiscard]] const std::vector<ContactForce>& getLastContactForces() const;
+
   //--------------------------------------------------------------------------
   // Profiling
   //--------------------------------------------------------------------------
