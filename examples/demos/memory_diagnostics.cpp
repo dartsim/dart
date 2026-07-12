@@ -44,12 +44,20 @@
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/SoftBodyNode.hpp>
 
-#include <dart/common/FrameAllocator.hpp>
-#include <dart/common/MemoryManager.hpp>
-#include <dart/common/PoolAllocator.hpp>
-#include <dart/common/detail/AllocatorMemoryLayout.hpp>
+// CMake anchors this capability to the selected DART package. Keep the
+// remaining diagnostics available when a standalone installation predates the
+// exact allocator layout inspector added for DART 6.20.
+#ifndef DART_DEMOS_HAS_ALLOCATOR_MEMORY_LAYOUT
+  #define DART_DEMOS_HAS_ALLOCATOR_MEMORY_LAYOUT 0
+#endif
+#if DART_DEMOS_HAS_ALLOCATOR_MEMORY_LAYOUT
+  #include <dart/common/FrameAllocator.hpp>
+  #include <dart/common/MemoryManager.hpp>
+  #include <dart/common/PoolAllocator.hpp>
+  #include <dart/common/detail/AllocatorMemoryLayout.hpp>
+#endif
 
-#include <imgui.h>
+#include <dart/gui/osg/IncludeImGui.hpp>
 
 #include <algorithm>
 #include <iomanip>
@@ -224,6 +232,7 @@ std::string observationEvidence(const char* typeName, MemoryExtentKind kind)
 }
 
 //==============================================================================
+#if DART_DEMOS_HAS_ALLOCATOR_MEMORY_LAYOUT
 MemoryStorageState convertAllocatorStorageState(
     common::detail::AllocatorMemorySpanKind kind) noexcept
 {
@@ -391,6 +400,7 @@ void appendAllocatorRegions(
     snapshot.allocatorMemoryMap.push_back(std::move(region));
   }
 }
+#endif
 
 } // namespace
 
@@ -790,6 +800,7 @@ DiagnosticSnapshot collectMemoryDiagnostics(
         "The World has no constraint solver.");
   }
 
+#if DART_DEMOS_HAS_ALLOCATOR_MEMORY_LAYOUT
   auto& memoryManager = world->getMemoryManager();
   appendAllocatorRegions(
       snapshot,
@@ -875,6 +886,7 @@ DiagnosticSnapshot collectMemoryDiagnostics(
       "World MemoryManager PoolAllocator",
       "This allocator does not own Skeleton, BodyNode, Joint, or Shape "
       "objects and does not measure classic DART 6 solver scratch.");
+#endif
 
   addMetric(
       snapshot,
@@ -964,6 +976,7 @@ DiagnosticSnapshot collectMemoryDiagnostics(
       locality.limitation);
 
   addUnavailableAllocationMetrics(snapshot);
+#if DART_DEMOS_HAS_ALLOCATOR_MEMORY_LAYOUT
   snapshot.guidance.push_back(
       "DART 6 graph counts are measured from the active World. Its "
       "MemoryManager rows cover a reserved/reset arena, not the legacy object "
@@ -972,6 +985,14 @@ DiagnosticSnapshot collectMemoryDiagnostics(
       "Allocator map rows are exact contiguous backing allocations with "
       "region-relative byte offsets; separate rows are not assumed "
       "contiguous.");
+#else
+  snapshot.guidance.push_back(
+      "Exact World MemoryManager allocator maps are unavailable because this "
+      "standalone demo was built against an installed DART without the "
+      "allocator layout inspector. World MemoryManager reservation counters "
+      "are unavailable for the same reason; process, graph, and typed-address "
+      "diagnostics remain available.");
+#endif
   snapshot.guidance.push_back(
       "The typed object atlas uses exact virtual-address points and only draws "
       "a sizeof shallow lower bound when runtime type identity proves the "

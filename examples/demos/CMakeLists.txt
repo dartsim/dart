@@ -27,6 +27,32 @@ if(NOT DART_IN_SOURCE_BUILD)
   find_package(DART 6.17 QUIET COMPONENTS collision-bullet collision-ode CONFIG)
 endif()
 
+# Exact allocator-region capture is available in the in-source DART 6.20
+# build. For standalone examples, inspect only the selected `dart` target's
+# include directory so another DART installation later on the compiler search
+# path cannot make the capability appear available accidentally.
+set(dart_demos_has_allocator_memory_layout 0)
+if(DART_IN_SOURCE_BUILD)
+  set(dart_demos_has_allocator_memory_layout 1)
+elseif(TARGET dart)
+  get_target_property(
+    dart_demos_dart_include_dirs
+    dart
+    INTERFACE_INCLUDE_DIRECTORIES
+  )
+  foreach(dart_demos_dart_include_dir ${dart_demos_dart_include_dirs})
+    if(
+      NOT dart_demos_dart_include_dir MATCHES "^\\$<"
+      AND
+        EXISTS
+          "${dart_demos_dart_include_dir}/dart/common/detail/AllocatorMemoryLayout.hpp"
+    )
+      set(dart_demos_has_allocator_memory_layout 1)
+      break()
+    endif()
+  endforeach()
+endif()
+
 # Single owner of where the wam_ikfast scene's dlopen'd IK shared library is
 # written: this demos project's own build dir. Used both as the ikfast target's
 # LIBRARY_OUTPUT_DIRECTORY (in scenes/wam_ikfast/ikfast/CMakeLists.txt, which
@@ -103,7 +129,12 @@ function(dart_demos_link_optional_collision_backends target)
   endforeach()
 endfunction()
 
-function(dart_demos_link_memory_diagnostics_platform target)
+function(dart_demos_configure_memory_diagnostics target)
+  target_compile_definitions(
+    ${target}
+    PRIVATE
+      DART_DEMOS_HAS_ALLOCATOR_MEMORY_LAYOUT=${dart_demos_has_allocator_memory_layout}
+  )
   if(WIN32)
     target_link_libraries(${target} Psapi)
   endif()
@@ -224,9 +255,7 @@ target_include_directories(
   PUBLIC "${CMAKE_CURRENT_LIST_DIR}"
 )
 target_link_libraries(demos_memory_diagnostics PUBLIC dart dart-gui-osg)
-if(WIN32)
-  target_link_libraries(demos_memory_diagnostics PRIVATE Psapi)
-endif()
+dart_demos_configure_memory_diagnostics(demos_memory_diagnostics)
 target_compile_features(demos_memory_diagnostics PUBLIC cxx_std_17)
 set_target_properties(
   demos_memory_diagnostics
@@ -298,7 +327,7 @@ if(DART_IN_SOURCE_BUILD)
 
   if(TARGET ${example_name})
     dart_demos_link_optional_collision_backends(${example_name})
-    dart_demos_link_memory_diagnostics_platform(${example_name})
+    dart_demos_configure_memory_diagnostics(${example_name})
   endif()
 
   foreach(alias_scene soft_bodies soft_cubes soft_open_chain)
@@ -317,7 +346,7 @@ if(DART_IN_SOURCE_BUILD)
       dart-demos-scenes
     )
     dart_demos_link_optional_collision_backends(${alias_scene})
-    dart_demos_link_memory_diagnostics_platform(${alias_scene})
+    dart_demos_configure_memory_diagnostics(${alias_scene})
   endforeach()
 
   if(TARGET examples)
@@ -334,7 +363,7 @@ dart_demos_configure_scenes_target(dart-demos-scenes)
 add_executable(${example_name} ${srcs})
 target_link_libraries(${example_name} ${required_libraries} dart-demos-scenes)
 dart_demos_link_optional_collision_backends(${example_name})
-dart_demos_link_memory_diagnostics_platform(${example_name})
+dart_demos_configure_memory_diagnostics(${example_name})
 
 foreach(alias_scene soft_bodies soft_cubes soft_open_chain)
   add_executable(${alias_scene} ${srcs})
@@ -348,5 +377,5 @@ foreach(alias_scene soft_bodies soft_cubes soft_open_chain)
   )
   target_link_libraries(${alias_scene} ${required_libraries} dart-demos-scenes)
   dart_demos_link_optional_collision_backends(${alias_scene})
-  dart_demos_link_memory_diagnostics_platform(${alias_scene})
+  dart_demos_configure_memory_diagnostics(${alias_scene})
 endforeach()
