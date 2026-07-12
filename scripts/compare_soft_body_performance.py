@@ -255,6 +255,7 @@ def count_local_dart_workloads(root: Path) -> int:
     workspace = str(local_dart_workspace_root(root))
     build_tools = {"cc1plus", "clang-format", "cmake", "ninja"}
     python_tools = {"python", "python3", "python3.14", "pytest"}
+    benchmark_markers = ("/BM_", "BM_INTEGRATION_", "/soft_body_headless")
     try:
         result = subprocess.run(
             ["ps", "-eo", "comm=,args="],
@@ -286,6 +287,8 @@ def count_local_dart_workloads(root: Path) -> int:
         elif command in python_tools and (
             "cmake_build.py" in arguments or "pytest" in arguments
         ):
+            count += 1
+        elif any(marker in arguments for marker in benchmark_markers):
             count += 1
     return count
 
@@ -384,7 +387,7 @@ def prepare_revision(
     output_dir: Path,
     label: str,
     rev: str,
-    harness_source: Path,
+    harness_source: Path | None,
 ) -> Revision:
     sha = git(root, "rev-parse", rev)
     source_dir = output_dir / "worktrees" / f"{label}-{sha[:12]}"
@@ -398,7 +401,20 @@ def prepare_revision(
                 f"Existing worktree {source_dir} is at {existing}, expected {sha}."
             )
 
-    patched = ensure_harness(source_dir, harness_source)
+    patched = False
+    if harness_source is not None:
+        patched = ensure_harness(source_dir, harness_source)
+    else:
+        missing = [
+            str(relative)
+            for relative in HARNESS_FILES
+            if not (source_dir / relative).is_file()
+        ]
+        if missing:
+            raise SystemExit(
+                f"Revision {sha} does not own the soft-body benchmark harness: "
+                + ", ".join(missing)
+            )
     build_dir = output_dir / "build" / f"{label}-{sha[:12]}"
     metadata = {
         "label": label,
@@ -699,11 +715,16 @@ def run_headless_checksum(
     scene: str,
     steps: str,
     output_dir: Path,
+    thread_count: int = 1,
 ) -> tuple[dict[str, float] | None, str]:
-    log_path = output_dir / "logs" / f"{revision.label}-{detector}-{scene}-headless.log"
+    log_path = (
+        output_dir
+        / "logs"
+        / f"{revision.label}-{detector}-{scene}-t{thread_count}-headless.log"
+    )
     env = os.environ.copy()
     env["COLLISION_DETECTOR"] = detector
-    env["THREADS"] = "1"
+    env["THREADS"] = str(thread_count)
     command = [str(headless_binary), scene, steps, steps]
     try:
         result = run(command, cwd=revision.source_dir, env=env, capture_path=log_path)
@@ -722,6 +743,7 @@ def evaluate_detector_equivalence(
     steps: str,
     tolerance: float,
     output_dir: Path,
+    thread_count: int = 1,
 ) -> tuple[dict[str, dict[str, object]], list[str]]:
     detector_results: dict[str, dict[str, object]] = {}
     eligible = []
@@ -735,6 +757,7 @@ def evaluate_detector_equivalence(
             scene,
             steps,
             output_dir,
+            thread_count,
         )
         if checksum is None:
             detector_results[REFERENCE_DETECTOR] = {
@@ -751,6 +774,7 @@ def evaluate_detector_equivalence(
                 "eligible": True,
                 "reason": "reference detector",
                 "scenes": scenes,
+                "threads": thread_count,
             }
             eligible.append(detector)
             continue
@@ -759,7 +783,13 @@ def evaluate_detector_equivalence(
         reasons = []
         for scene in scenes:
             checksum, output = run_headless_checksum(
-                current, headless_binary, detector, scene, steps, output_dir
+                current,
+                headless_binary,
+                detector,
+                scene,
+                steps,
+                output_dir,
+                thread_count,
             )
             if checksum is None:
                 detector_ok = False
@@ -781,6 +811,7 @@ def evaluate_detector_equivalence(
             "eligible": detector_ok,
             "reason": "checksum-equivalent" if detector_ok else "; ".join(reasons),
             "scenes": scenes,
+            "threads": thread_count,
         }
         if detector_ok:
             eligible.append(detector)

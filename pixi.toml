@@ -515,6 +515,8 @@ bm-soft-body = { cmd = """
   "config",
 ], env = { BUILD_TYPE = "Release" } }
 
+bm-soft-body-paired = { cmd = "python scripts/compare_soft_body_detector_pairs.py" }
+
 bm-soft-body-headless = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
