@@ -21,8 +21,9 @@ closeout decisions, not another speculative optimization lane inside #3382.
 
 The unpublished local stack starts with implementation commit `2ad156e7b82`,
 continues through the handoff and durable-owner updates, and now includes
-balanced-evidence runner commit `9a7bab76948`. The implementation commit closes
-the current WP-DB.04 review finding by keeping retained point-mass
+balanced-evidence runner commit `9a7bab76948` plus thermal-gate correction
+`a122c5ab437`. The implementation commit closes the current WP-DB.04 review
+finding by keeping retained point-mass
 accelerations out of public mass-matrix columns and adds a regression for mass
 and augmented-mass state independence. The runner replaces the previously
 manual native-vs-DART timing method with a protocol that produces a
@@ -99,11 +100,12 @@ below.
   text-profiler runner for soft-body scenes. Initial profile evidence and the
   `origin/dart6-memory-hardening` dependency analysis are recorded in
   `04-data-layout-and-memory-hardening.md`.
-- Commit `9a7bab76948` adds `bm-soft-body-paired`, a clean-HEAD evidence runner
-  that checks `dart`/direct-`native` equivalence at threads 1 and 16, preserves
-  raw CPU-time rows and host-state history, alternates detector order across 20
-  pairs per row, and requires `COMPLETE.json` before any verdict is valid. Its
-  reviewed protocol and deferred final command are in `06-pr-evidence.md`.
+- Commits `9a7bab76948` and `a122c5ab437` add and correct
+  `bm-soft-body-paired`, a clean-HEAD evidence runner that checks
+  `dart`/direct-`native` equivalence at threads 1 and 16, preserves raw CPU-time
+  rows and host-state history, alternates detector order across 20 pairs per
+  row, and requires `COMPLETE.json` before any verdict is valid. Its reviewed
+  protocol and deferred final command are in `06-pr-evidence.md`.
 - `06-pr-evidence.md` records the current same-host baseline-vs-branch
   benchmark smoke rows, native/FCL headless parity evidence, and the current
   GUI-video status for PR preparation.
