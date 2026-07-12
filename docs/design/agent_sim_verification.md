@@ -177,6 +177,22 @@ user-attachments flow, and the DART 6 port of adaptive viewpoints,
 engine-rendered debug overlays, the capture harness, and evidence tooling is
 in flight on `release-6.20` via #3374.
 
+Contact force arrows (DART 6 parity): DART 6 draws per-contact force arrows;
+DART 7's `simulation::Contact` (`dart/simulation/body/contact.hpp`) is pure
+collision-query output and carries no force. The solved per-contact impulses
+do persist post-step in the rigid contact scratch
+(`m_contactScratch->problem.constraints`; `BoxedLcpContactSnapshot.f`), so a
+bounded core exposure — `World::getLastContactForces()` returning `{point,
+force, bodyA, bodyB}` captured at solve time (force = impulse / timeStep),
+never mapped back onto `collide()` results — is feasible for the rigid
+SequentialImpulse and BoxedLcp paths and is the recommended first cut.
+Mapping impulses to contacts for the unified AVBD/variational rigid path and
+for multibody/deformable contacts is deferred: those store per-row descent
+state without a stable contact key, and forcing a force field onto the
+query-time `Contact` would create a post-integration pose mismatch. Until
+then DART 7 contact overlays draw points and normals but not force
+magnitude.
+
 ## Core-first policy for agent visual tooling
 
 Maintainer directive (2026-07): agent-facing visual debugging/verification
