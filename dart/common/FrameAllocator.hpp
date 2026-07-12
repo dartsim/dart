@@ -49,6 +49,14 @@
 
 namespace dart::common {
 
+class FrameAllocator;
+
+namespace detail {
+struct AllocatorMemoryLayout;
+inline AllocatorMemoryLayout captureAllocatorMemoryLayout(
+    const FrameAllocator& allocator);
+} // namespace detail
+
 template <typename T>
 class FrameStlAllocator;
 
@@ -236,6 +244,9 @@ public:
   [[nodiscard]] size_t overflowBytes() const noexcept;
 
 private:
+  friend detail::AllocatorMemoryLayout detail::captureAllocatorMemoryLayout(
+      const FrameAllocator& allocator);
+
   template <typename T>
   friend class FrameStlAllocator;
 

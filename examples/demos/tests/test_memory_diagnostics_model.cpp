@@ -12,6 +12,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <limits>
 #include <string>
 #include <utility>
@@ -247,6 +248,343 @@ TEST(MemoryDiagnosticsModel, ComparisonRequiresAllSemanticFieldsToMatch)
       = compareSnapshots(baseline, current);
   EXPECT_FALSE(differentGeneration.generationMatches);
   EXPECT_TRUE(differentGeneration.metrics.empty());
+
+  current = makeSnapshot(4, 2, 12.0);
+  current.schema = "dart.memory-diagnostics.v1";
+  const SnapshotComparison differentSchema
+      = compareSnapshots(baseline, current);
+  EXPECT_FALSE(differentSchema.schemaMatches);
+  EXPECT_TRUE(differentSchema.generationMatches);
+  EXPECT_TRUE(differentSchema.metrics.empty());
+}
+
+TEST(MemoryDiagnosticsModel, HostPageSizeProbeIsGuardedAndExplicit)
+{
+  const HostPageSizeReading reading = collectHostPageSize();
+  EXPECT_FALSE(reading.source.empty());
+  if (reading.bytes) {
+    EXPECT_GT(*reading.bytes, 0u);
+  } else {
+    EXPECT_FALSE(reading.limitation.empty());
+  }
+}
+
+TEST(MemoryDiagnosticsModel, AddressRangeAndPageRoundingRejectOverflow)
+{
+  constexpr std::uintptr_t maximum = std::numeric_limits<std::uintptr_t>::max();
+  EXPECT_EQ(checkedAddressRangeEnd(100u, 24u), 124u);
+  EXPECT_FALSE(checkedAddressRangeEnd(maximum - 3u, 4u));
+
+  EXPECT_EQ(checkedRoundAddressUp(4097u, 4096u), 8192u);
+  EXPECT_EQ(checkedRoundAddressUp(8192u, 4096u), 8192u);
+  EXPECT_FALSE(checkedRoundAddressUp(100u, 0u));
+  EXPECT_FALSE(checkedRoundAddressUp(maximum - 3u, 8u));
+}
+
+TEST(MemoryDiagnosticsModel, ObjectAtlasIsDeterministicAndExplicitAboutOverlap)
+{
+  HostPageSizeReading pageSize;
+  pageSize.bytes = 64u;
+  pageSize.source = "synthetic 64-byte host page";
+
+  const auto makeExtent
+      = [](std::uintptr_t address,
+           std::size_t sizeBytes,
+           MemoryDataCategory category,
+           std::string label,
+           MemoryExtentKind extentKind = MemoryExtentKind::ShallowLowerBound) {
+          AddressAtlasExtent extent;
+          extent.address = address;
+          extent.sizeBytes = sizeBytes;
+          extent.dataCategory = category;
+          extent.extentKind = extentKind;
+          extent.quality = extentKind == MemoryExtentKind::AddressPoint
+                               ? MetricQuality::Proxy
+                               : MetricQuality::Estimate;
+          extent.label = std::move(label);
+          extent.evidence = "synthetic exact address";
+          return extent;
+        };
+
+  const std::vector<AddressAtlasExtent> extents{
+      makeExtent(0x1080u, 16u, MemoryDataCategory::Geometry, "geometry extent"),
+      makeExtent(0x1010u, 32u, MemoryDataCategory::State, "state extent"),
+      makeExtent(0x1010u, 32u, MemoryDataCategory::Model, "model extent"),
+      makeExtent(
+          0x1018u,
+          1u,
+          MemoryDataCategory::ConstraintSolver,
+          "constraint point",
+          MemoryExtentKind::AddressPoint),
+      makeExtent(
+          0x1018u,
+          1u,
+          MemoryDataCategory::Geometry,
+          "geometry point",
+          MemoryExtentKind::AddressPoint)};
+
+  const auto forward = makeObjectAddressAtlas(extents, pageSize);
+  std::vector<AddressAtlasExtent> reversed = extents;
+  std::reverse(reversed.begin(), reversed.end());
+  const auto backward = makeObjectAddressAtlas(std::move(reversed), pageSize);
+
+  ASSERT_EQ(forward.size(), 2u);
+  ASSERT_EQ(backward.size(), forward.size());
+  for (std::size_t regionIndex = 0; regionIndex < forward.size();
+       ++regionIndex) {
+    const auto& lhs = forward[regionIndex];
+    const auto& rhs = backward[regionIndex];
+    EXPECT_EQ(lhs.id, rhs.id);
+    EXPECT_EQ(lhs.label, rhs.label);
+    EXPECT_EQ(lhs.sizeBytes, rhs.sizeBytes);
+    EXPECT_EQ(lhs.pageSizeBytes, rhs.pageSizeBytes);
+    ASSERT_EQ(lhs.spans.size(), rhs.spans.size());
+    ASSERT_EQ(lhs.observations.size(), rhs.observations.size());
+
+    std::size_t cursor = 0;
+    for (std::size_t spanIndex = 0; spanIndex < lhs.spans.size(); ++spanIndex) {
+      const auto& lhsSpan = lhs.spans[spanIndex];
+      const auto& rhsSpan = rhs.spans[spanIndex];
+      EXPECT_EQ(lhsSpan.offsetBytes, cursor);
+      cursor += lhsSpan.sizeBytes;
+      EXPECT_EQ(lhsSpan.offsetBytes, rhsSpan.offsetBytes);
+      EXPECT_EQ(lhsSpan.sizeBytes, rhsSpan.sizeBytes);
+      EXPECT_EQ(lhsSpan.storageState, rhsSpan.storageState);
+      EXPECT_EQ(lhsSpan.dataCategory, rhsSpan.dataCategory);
+      EXPECT_EQ(lhsSpan.extentKind, rhsSpan.extentKind);
+      EXPECT_EQ(lhsSpan.label, rhsSpan.label);
+    }
+    EXPECT_EQ(cursor, lhs.sizeBytes);
+    for (std::size_t observationIndex = 0;
+         observationIndex < lhs.observations.size();
+         ++observationIndex) {
+      const auto& lhsObservation = lhs.observations[observationIndex];
+      const auto& rhsObservation = rhs.observations[observationIndex];
+      EXPECT_EQ(lhsObservation.offsetBytes, rhsObservation.offsetBytes);
+      EXPECT_EQ(lhsObservation.sizeBytes, rhsObservation.sizeBytes);
+      EXPECT_EQ(lhsObservation.storageState, rhsObservation.storageState);
+      EXPECT_EQ(lhsObservation.dataCategory, rhsObservation.dataCategory);
+      EXPECT_EQ(lhsObservation.extentKind, rhsObservation.extentKind);
+      EXPECT_EQ(lhsObservation.label, rhsObservation.label);
+      ASSERT_LE(lhsObservation.offsetBytes, lhs.sizeBytes);
+      EXPECT_LE(
+          lhsObservation.sizeBytes, lhs.sizeBytes - lhsObservation.offsetBytes);
+    }
+    EXPECT_EQ(lhs.id.find("0x"), std::string::npos);
+    EXPECT_EQ(lhs.label.find("0x"), std::string::npos);
+    EXPECT_EQ(lhs.source.find("0x"), std::string::npos);
+  }
+  ASSERT_EQ(forward[0].spans.size(), 1u);
+  EXPECT_EQ(forward[0].spans[0].offsetBytes, 0u);
+  EXPECT_EQ(forward[0].spans[0].sizeBytes, forward[0].sizeBytes);
+  EXPECT_EQ(forward[0].spans[0].extentKind, MemoryExtentKind::UnobservedRange);
+  ASSERT_EQ(forward[0].observations.size(), 4u);
+  EXPECT_NE(
+      forward[0].label.find("overlapping observations:"), std::string::npos);
+
+  const auto findObservation = [&forward](const std::string& label) {
+    return std::find_if(
+        forward[0].observations.begin(),
+        forward[0].observations.end(),
+        [&label](const MemoryMapSpan& span) { return span.label == label; });
+  };
+  const auto model = findObservation("model extent");
+  const auto state = findObservation("state extent");
+  const auto constraintPoint = findObservation("constraint point");
+  const auto geometryPoint = findObservation("geometry point");
+  ASSERT_NE(model, forward[0].observations.end());
+  ASSERT_NE(state, forward[0].observations.end());
+  ASSERT_NE(constraintPoint, forward[0].observations.end());
+  ASSERT_NE(geometryPoint, forward[0].observations.end());
+  EXPECT_EQ(model->offsetBytes, state->offsetBytes);
+  EXPECT_EQ(model->sizeBytes, state->sizeBytes);
+  EXPECT_EQ(constraintPoint->offsetBytes, geometryPoint->offsetBytes);
+  EXPECT_EQ(constraintPoint->sizeBytes, 1u);
+  EXPECT_EQ(constraintPoint->extentKind, MemoryExtentKind::AddressPoint);
+  EXPECT_EQ(constraintPoint->quality, MetricQuality::Proxy);
+  EXPECT_GE(constraintPoint->offsetBytes, model->offsetBytes);
+  EXPECT_LT(
+      constraintPoint->offsetBytes, model->offsetBytes + model->sizeBytes);
+
+  HostPageSizeReading unavailable;
+  unavailable.source = "synthetic unavailable query";
+  unavailable.limitation = "unavailable by test";
+  EXPECT_TRUE(makeObjectAddressAtlas(extents, unavailable).empty());
+
+  const std::vector<AddressAtlasExtent> overflowing{makeExtent(
+      std::numeric_limits<std::uintptr_t>::max() - 3u,
+      8u,
+      MemoryDataCategory::Model,
+      "overflowing extent")};
+  EXPECT_TRUE(makeObjectAddressAtlas(overflowing, pageSize).empty());
+}
+
+TEST(MemoryDiagnosticsModel, CellCompositionPreservesDenseBoundariesAndOverlays)
+{
+  MemoryMapRegion region;
+  region.sizeBytes = 64u;
+  const auto makeSpan = [](std::size_t offset,
+                           std::size_t size,
+                           MemoryStorageState state,
+                           MemoryDataCategory category,
+                           MemoryExtentKind extent,
+                           std::string label) {
+    return MemoryMapSpan{
+        offset,
+        size,
+        state,
+        category,
+        extent,
+        std::move(label),
+        MetricQuality::Measured,
+        "synthetic evidence"};
+  };
+  region.spans
+      = {makeSpan(
+             0u,
+             3u,
+             MemoryStorageState::Metadata,
+             MemoryDataCategory::Metadata,
+             MemoryExtentKind::ExactByteRange,
+             "metadata"),
+         makeSpan(
+             3u,
+             4u,
+             MemoryStorageState::Allocated,
+             MemoryDataCategory::Unknown,
+             MemoryExtentKind::ExactByteRange,
+             "allocated"),
+         makeSpan(
+             7u,
+             9u,
+             MemoryStorageState::Free,
+             MemoryDataCategory::None,
+             MemoryExtentKind::ExactByteRange,
+             "free"),
+         makeSpan(
+             16u,
+             1u,
+             MemoryStorageState::Padding,
+             MemoryDataCategory::None,
+             MemoryExtentKind::ExactByteRange,
+             "padding"),
+         makeSpan(
+             17u,
+             47u,
+             MemoryStorageState::Reserved,
+             MemoryDataCategory::Scratch,
+             MemoryExtentKind::ExactByteRange,
+             "reserved")};
+  region.observations
+      = {makeSpan(
+             2u,
+             12u,
+             MemoryStorageState::Observed,
+             MemoryDataCategory::State,
+             MemoryExtentKind::ShallowLowerBound,
+             "state overlay"),
+         makeSpan(
+             3u,
+             1u,
+             MemoryStorageState::Observed,
+             MemoryDataCategory::Model,
+             MemoryExtentKind::AddressPoint,
+             "model point"),
+         makeSpan(
+             3u,
+             1u,
+             MemoryStorageState::Observed,
+             MemoryDataCategory::Geometry,
+             MemoryExtentKind::AddressPoint,
+             "geometry point")};
+
+  const auto oneCell = composeMemoryMapCells(region, 64u);
+  ASSERT_EQ(oneCell.size(), 1u);
+  ASSERT_EQ(oneCell[0].segments.size(), 8u);
+  EXPECT_TRUE(std::is_sorted(
+      oneCell[0].segments.begin(),
+      oneCell[0].segments.end(),
+      [](const MemoryMapCellSegment& lhs, const MemoryMapCellSegment& rhs) {
+        return lhs.offsetBytes < rhs.offsetBytes;
+      }));
+  EXPECT_EQ(
+      std::count_if(
+          oneCell[0].segments.begin(),
+          oneCell[0].segments.end(),
+          [](const MemoryMapCellSegment& segment) {
+            return segment.layer == MemoryMapLayer::Partition;
+          }),
+      5);
+  EXPECT_EQ(
+      std::count_if(
+          oneCell[0].segments.begin(),
+          oneCell[0].segments.end(),
+          [](const MemoryMapCellSegment& segment) {
+            return segment.layer == MemoryMapLayer::Observation;
+          }),
+      3);
+
+  const auto cells = composeMemoryMapCells(region, 8u);
+  ASSERT_EQ(cells.size(), 8u);
+  std::vector<std::size_t> partitionCoverage(region.spans.size(), 0u);
+  std::vector<std::size_t> observationCoverage(region.observations.size(), 0u);
+  for (const auto& cell : cells) {
+    for (const auto& segment : cell.segments) {
+      auto& coverage = segment.layer == MemoryMapLayer::Partition
+                           ? partitionCoverage[segment.spanIndex]
+                           : observationCoverage[segment.spanIndex];
+      coverage += segment.sizeBytes;
+    }
+  }
+  for (std::size_t index = 0; index < region.spans.size(); ++index) {
+    EXPECT_EQ(partitionCoverage[index], region.spans[index].sizeBytes);
+  }
+  for (std::size_t index = 0; index < region.observations.size(); ++index) {
+    EXPECT_EQ(observationCoverage[index], region.observations[index].sizeBytes);
+  }
+}
+
+TEST(MemoryDiagnosticsModel, CellCompositionScalesAcrossDenseOverlays)
+{
+  constexpr std::size_t kRegionBytes = 4096u;
+  constexpr std::size_t kObservationCount = 512u;
+  MemoryMapRegion region;
+  region.sizeBytes = kRegionBytes;
+  region.spans.push_back(MemoryMapSpan{
+      0u,
+      kRegionBytes,
+      MemoryStorageState::Unobserved,
+      MemoryDataCategory::None,
+      MemoryExtentKind::UnobservedRange,
+      "background",
+      MetricQuality::Proxy,
+      "synthetic background"});
+  region.observations.assign(
+      kObservationCount,
+      MemoryMapSpan{
+          0u,
+          kRegionBytes,
+          MemoryStorageState::Observed,
+          MemoryDataCategory::Model,
+          MemoryExtentKind::ShallowLowerBound,
+          "overlapping observation",
+          MetricQuality::Estimate,
+          "synthetic overlap"});
+
+  const auto cells = composeMemoryMapCells(region, 64u);
+  ASSERT_EQ(cells.size(), 64u);
+  for (const auto& cell : cells) {
+    ASSERT_EQ(cell.segments.size(), kObservationCount + 1u);
+    EXPECT_EQ(cell.segments.front().layer, MemoryMapLayer::Partition);
+    EXPECT_EQ(
+        std::count_if(
+            cell.segments.begin(),
+            cell.segments.end(),
+            [](const MemoryMapCellSegment& segment) {
+              return segment.layer == MemoryMapLayer::Observation;
+            }),
+        static_cast<std::ptrdiff_t>(kObservationCount));
+  }
 }
 
 TEST(MemoryDiagnosticsModel, GenerationChangeStartsANewLocalSegment)
@@ -349,7 +687,8 @@ TEST(MemoryDiagnosticsModel, LocalitySummaryUsesIterationOrderMath)
   const AddressLocalitySummary summary
       = summarizeAddressLocality(addresses, 4096);
 
-  EXPECT_TRUE(summary.available);
+  EXPECT_TRUE(summary.addressStatisticsAvailable);
+  EXPECT_TRUE(summary.pageStatisticsAvailable);
   EXPECT_EQ(summary.quality, MetricQuality::Proxy);
   EXPECT_EQ(summary.addressCount, 5u);
   EXPECT_EQ(summary.distinctPageCount, 3u);
@@ -362,14 +701,24 @@ TEST(MemoryDiagnosticsModel, LocalitySummaryUsesIterationOrderMath)
 
   const AddressLocalitySummary singleton
       = summarizeAddressLocality({0x1234u}, 4096);
-  EXPECT_TRUE(singleton.available);
+  EXPECT_TRUE(singleton.addressStatisticsAvailable);
+  EXPECT_TRUE(singleton.pageStatisticsAvailable);
   EXPECT_EQ(singleton.distinctPageCount, 1u);
   EXPECT_EQ(singleton.pageTransitions, 0u);
   EXPECT_FALSE(singleton.medianGapBytes);
   EXPECT_FALSE(singleton.p95GapBytes);
 
   const AddressLocalitySummary invalid = summarizeAddressLocality(addresses, 0);
-  EXPECT_FALSE(invalid.available);
+  EXPECT_TRUE(invalid.addressStatisticsAvailable);
+  EXPECT_FALSE(invalid.pageStatisticsAvailable);
+  EXPECT_EQ(invalid.addressCount, addresses.size());
+  EXPECT_EQ(invalid.distinctPageCount, 0u);
+  EXPECT_EQ(invalid.pageTransitions, 0u);
+  EXPECT_EQ(invalid.medianGapBytes, summary.medianGapBytes);
+  EXPECT_EQ(invalid.p95GapBytes, summary.p95GapBytes);
+  EXPECT_NE(
+      invalid.limitation.find("page-bucket metrics are unavailable"),
+      std::string::npos);
 }
 
 TEST(MemoryDiagnosticsModel, GenericGuidanceKeepsQualityClaimsCautious)

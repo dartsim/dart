@@ -19,6 +19,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <memory>
 #include <string>
 
@@ -177,6 +178,124 @@ TEST(MemoryDiagnostics, SyntheticWorldReportsExactGraphAndScratchCounts)
   ASSERT_NE(manualConstraints, nullptr);
   EXPECT_NE(manualConstraints->label.find("Manually"), std::string::npos);
 
+  ASSERT_FALSE(snapshot.allocatorMemoryMap.empty());
+  const auto findAllocatorRegion = [&snapshot](const std::string& prefix) {
+    return std::find_if(
+        snapshot.allocatorMemoryMap.begin(),
+        snapshot.allocatorMemoryMap.end(),
+        [&prefix](const MemoryMapRegion& region) {
+          return region.id.find(prefix) == 0u;
+        });
+  };
+  EXPECT_NE(
+      findAllocatorRegion("free-list-"), snapshot.allocatorMemoryMap.end());
+  const auto frameRegion = findAllocatorRegion("frame-primary-");
+  ASSERT_NE(frameRegion, snapshot.allocatorMemoryMap.end());
+  const auto frameSpanWithLabel = [&frameRegion](const std::string& label) {
+    return std::find_if(
+        frameRegion->spans.begin(),
+        frameRegion->spans.end(),
+        [&label](const MemoryMapSpan& span) { return span.label == label; });
+  };
+  const auto consumed
+      = frameSpanWithLabel("frame cursor-consumed backing extent");
+  ASSERT_NE(consumed, frameRegion->spans.end());
+  EXPECT_EQ(consumed->storageState, MemoryStorageState::Allocated);
+  EXPECT_EQ(consumed->dataCategory, MemoryDataCategory::Scratch);
+  const auto available
+      = frameSpanWithLabel("frame reserved available backing extent");
+  ASSERT_NE(available, frameRegion->spans.end());
+  EXPECT_EQ(available->storageState, MemoryStorageState::Reserved);
+  EXPECT_EQ(available->dataCategory, MemoryDataCategory::None);
+  for (const auto& region : snapshot.allocatorMemoryMap) {
+    EXPECT_GT(region.sizeBytes, 0u);
+    EXPECT_EQ(region.quality, MetricQuality::Measured);
+    EXPECT_NE(region.limitation.find("classic DART 6"), std::string::npos);
+    EXPECT_EQ(region.id.find("0x"), std::string::npos);
+    EXPECT_EQ(region.label.find("0x"), std::string::npos);
+    EXPECT_EQ(region.source.find("0x"), std::string::npos);
+    EXPECT_TRUE(region.observations.empty());
+    for (const auto& span : region.spans) {
+      EXPECT_LE(span.offsetBytes, region.sizeBytes);
+      EXPECT_LE(span.sizeBytes, region.sizeBytes - span.offsetBytes);
+      EXPECT_EQ(span.quality, MetricQuality::Measured);
+      EXPECT_EQ(span.extentKind, MemoryExtentKind::ExactByteRange);
+      if (span.storageState == MemoryStorageState::Free
+          || span.storageState == MemoryStorageState::Padding) {
+        EXPECT_EQ(span.dataCategory, MemoryDataCategory::None);
+      }
+    }
+  }
+
+  ASSERT_FALSE(snapshot.objectAddressAtlas.empty());
+  const auto atlasHasCategory = [&snapshot](MemoryDataCategory category) {
+    for (const auto& region : snapshot.objectAddressAtlas) {
+      for (const auto& span : region.observations) {
+        if (span.dataCategory == category) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+  EXPECT_TRUE(atlasHasCategory(MemoryDataCategory::Model));
+  EXPECT_TRUE(atlasHasCategory(MemoryDataCategory::State));
+  EXPECT_TRUE(atlasHasCategory(MemoryDataCategory::Geometry));
+  EXPECT_TRUE(atlasHasCategory(MemoryDataCategory::ConstraintSolver));
+  const auto findAtlasSpan = [&snapshot](const std::string& labelFragment) {
+    for (const auto& region : snapshot.objectAddressAtlas) {
+      for (const auto& span : region.observations) {
+        if (span.label.find(labelFragment) != std::string::npos) {
+          return &span;
+        }
+      }
+    }
+    return static_cast<const MemoryMapSpan*>(nullptr);
+  };
+  EXPECT_NE(findAtlasSpan("Skeleton"), nullptr);
+  EXPECT_NE(findAtlasSpan("BodyNode"), nullptr);
+  EXPECT_NE(findAtlasSpan("DegreeOfFreedom"), nullptr);
+  EXPECT_NE(findAtlasSpan("ShapeNode"), nullptr);
+  EXPECT_NE(findAtlasSpan("PointMass"), nullptr);
+  const MemoryMapSpan* jointPoint = findAtlasSpan("Joint address point");
+  const MemoryMapSpan* shapePoint = findAtlasSpan("Shape address point");
+  const MemoryMapSpan* constraintPoint
+      = findAtlasSpan("ConstraintBase address point");
+  ASSERT_NE(jointPoint, nullptr);
+  ASSERT_NE(shapePoint, nullptr);
+  ASSERT_NE(constraintPoint, nullptr);
+  EXPECT_EQ(jointPoint->extentKind, MemoryExtentKind::AddressPoint);
+  EXPECT_EQ(shapePoint->extentKind, MemoryExtentKind::AddressPoint);
+  EXPECT_EQ(constraintPoint->extentKind, MemoryExtentKind::AddressPoint);
+  EXPECT_EQ(jointPoint->quality, MetricQuality::Proxy);
+  for (const auto& region : snapshot.objectAddressAtlas) {
+    ASSERT_TRUE(region.pageSizeBytes);
+    EXPECT_GT(*region.pageSizeBytes, 0u);
+    EXPECT_EQ(region.sizeBytes % *region.pageSizeBytes, 0u);
+    EXPECT_FALSE(region.pageSizeEvidence.empty());
+    EXPECT_NE(region.quality, MetricQuality::Measured);
+    EXPECT_NE(region.limitation.find("lower bounds"), std::string::npos);
+    EXPECT_EQ(region.id.find("0x"), std::string::npos);
+    EXPECT_EQ(region.label.find("0x"), std::string::npos);
+    EXPECT_EQ(region.source.find("0x"), std::string::npos);
+    std::size_t partitionCursor = 0;
+    for (const auto& span : region.spans) {
+      EXPECT_EQ(span.offsetBytes, partitionCursor);
+      ASSERT_LE(span.sizeBytes, region.sizeBytes - partitionCursor);
+      partitionCursor += span.sizeBytes;
+      EXPECT_NE(span.storageState, MemoryStorageState::Observed);
+    }
+    EXPECT_EQ(partitionCursor, region.sizeBytes);
+    ASSERT_FALSE(region.observations.empty());
+    for (const auto& observation : region.observations) {
+      ASSERT_LE(observation.offsetBytes, region.sizeBytes);
+      EXPECT_LE(
+          observation.sizeBytes, region.sizeBytes - observation.offsetBytes);
+      EXPECT_EQ(observation.storageState, MemoryStorageState::Observed);
+      EXPECT_NE(observation.dataCategory, MemoryDataCategory::None);
+    }
+  }
+
   world.reset();
   EXPECT_DOUBLE_EQ(requireValue("world.body_node_count"), 3.0);
 }
@@ -198,6 +317,8 @@ TEST(MemoryDiagnostics, MissingWorldKeepsUnavailableValuesDistinctFromZero)
   ASSERT_NE(activeBytes, nullptr);
   EXPECT_FALSE(activeBytes->value);
   EXPECT_FALSE(activeBytes->limitation.empty());
+  EXPECT_TRUE(snapshot.allocatorMemoryMap.empty());
+  EXPECT_TRUE(snapshot.objectAddressAtlas.empty());
   EXPECT_FALSE(snapshot.guidance.empty());
 }
 

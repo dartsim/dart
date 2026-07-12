@@ -54,19 +54,42 @@ The tab deliberately separates values with different scopes:
   contacts, and manually registered constraints. The last item is not the full
   set of solver-generated/contact constraints.
 - **World MemoryManager reservation arena** reports the frame arena's
-  capacity/use/overflow and pool backing blocks. The World reserves and resets
-  this arena, but current classic DART 6 solver paths do not allocate their
-  scratch from it. These rows therefore do not measure legacy solver
-  temporaries or the Skeleton/BodyNode/Joint/Shape graph.
-- **Known object shallow-size floor** multiplies measured object counts by
-  `sizeof` for known base/concrete objects. It is an estimate that omits
-  derived-class tails, nested/container capacity, shared-pointer control
-  blocks, collision-backend state, alignment, and other allocations.
-- **Address buckets, transitions, and adjacent gaps** are virtual-address
-  layout proxies over one traversal. They do not establish physical placement,
-  fragmentation, cache misses, prefetch behavior, or execution speed. Normal
-  demo builds do not interpose global allocation functions, so active heap
-  allocation counts/bytes remain explicitly unavailable rather than zero.
+  capacity/use/overflow and pool backing blocks. Its exact address map draws
+  each real free-list backing chunk, frame arena, and frame overflow allocation
+  independently, with relative byte offsets and a complete allocator-state
+  partition. The World reserves and resets these arenas, but current classic
+  DART 6 solver paths do not allocate their scratch from them. These rows
+  therefore do not measure legacy solver temporaries or the
+  Skeleton/BodyNode/Joint/Shape graph.
+- **Known object shallow-size floor** adds `sizeof` only when a traversed
+  object's runtime type exactly matches a known concrete type. It is an
+  estimate that omits derived objects without an exact match,
+  nested/container capacity, shared-pointer control blocks, collision-backend
+  state, alignment, and other allocations.
+- **Typed classic-object address atlas** orders the traversed Skeleton,
+  BodyNode, Joint, degree-of-freedom, Shape, PointMass, SimpleFrame, and manual
+  constraint observations by virtual address. Contiguous host-page runs use the
+  runtime page-size query. Colored ranges are `sizeof`-based shallow lower
+  bounds; dotted gaps are unobserved address space, never allocator-free
+  memory. The atlas does not establish complete allocation extents, allocator
+  ownership, physical placement, fragmentation, cache misses, prefetch
+  behavior, or execution speed. Normal demo builds do not interpose global
+  allocation functions, so active heap allocation counts/bytes remain
+  explicitly unavailable rather than zero.
+
+The map legends use hue for semantic data category and hatch, border, opacity,
+and text for storage state. Increase **Address-map detail rows / region** to
+resolve smaller spans without changing their address order. Raw process
+addresses are capture-local and never shown; offsets are relative to each exact
+region or host-page run. A collapsed exact-range table exposes the same labels,
+extent evidence, and limitations without requiring pointer hover.
+
+The runtime host page size groups the object atlas into virtual-page runs, but
+this version does not draw page separators. Allocator-region page placement and
+all cache-line placement are unavailable because the snapshot does not retain
+the required scrubbed base-address remainders or a host cache-line size. Atlas
+pages are virtual buckets, not proof of residency or physical contiguity; no
+raster element measures memory accesses or cache misses.
 
 **Capture now** records a sample and makes it the comparison baseline; **Set
 baseline** uses the latest sample. Compatible rows show current-minus-baseline

@@ -518,11 +518,10 @@
 
 * Examples
 
-  * Add opt-in memory and layout diagnostics to `dart-demos`, with
-    process-resident current/lifetime/session peaks, exact DART 6 World/object
-    counts, MemoryManager reservation-arena counters, explicitly limited
-    shallow-size estimates and address-layout proxies, bounded history, and
-    baseline comparisons.
+  * Add opt-in memory diagnostics to `dart-demos` with exact World
+    `MemoryManager` region maps, a typed virtual-address atlas for classic graph
+    objects, process RSS/history/baselines, and explicit evidence limits.
+    ([#3379](https://github.com/dartsim/dart/pull/3379))
 
   * Consolidate the scattered GUI examples into a single `dart-demos`
     application: a `dart::gui::osg` `ImGuiViewer` host with a categorized

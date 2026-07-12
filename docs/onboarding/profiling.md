@@ -138,15 +138,31 @@ owns DART 6 World traversal and raw-ImGui presentation inside `DemoHost`.
 Keep the disabled path before every OS probe, World walk, address collection,
 history mutation, and value-formatting pass. Each metric needs an exact scope,
 source, limitation, unit, and measured/estimate/proxy classification; use an
-absent value for unavailable instrumentation rather than zero. Never describe
-virtual-address gaps or page buckets as fragmentation, cache misses, or a
-performance improvement without separate allocator/hardware-counter and
-benchmark evidence.
+absent value for unavailable instrumentation rather than zero.
 
-The DART 6 World `MemoryManager` rows are reservation-arena counters. The World
-reserves and resets that frame arena, but current classic solver paths do not
-allocate their scratch through it. Do not present those rows as legacy solver
-scratch usage; use a solver-specific profiler or instrumentation point for that
+The exact allocator map and the classic-object atlas answer different
+questions. Free-list/frame region maps can show allocator metadata, allocated,
+free, reserved, and padding byte ranges because their backing allocations and
+bookkeeping are observed directly. The classic graph is separately allocated,
+so its typed atlas uses exact object addresses plus explicitly shallow
+`sizeof` lower bounds, grouped only into host-page runs from a runtime page-size
+query. Atlas gaps are unobserved address space, not fragmentation or free
+memory. Raw addresses stay inside collection; the UI uses relative offsets.
+
+Never describe virtual-address adjacency, gaps, or page buckets as physical
+placement, cache misses, or a performance improvement without separate
+hardware-counter/access-sampling and benchmark evidence. Hue identifies data
+category, while hatch, border, opacity, and text also identify storage state so
+the map is not color-only. The current runtime page-size observation groups the
+object atlas into virtual-page runs but does not place page or cache-line
+separators: the snapshot intentionally lacks raw bases and does not yet capture
+the scrubbed base remainders and host cache-line size required for those guides.
+
+The DART 6 World `MemoryManager` rows and exact maps cover reservation arenas.
+The World reserves and resets the frame arena, but current classic solver paths
+do not allocate their scratch through it. Do not present those rows as legacy
+solver scratch usage or color the arena as though it owns the classic object
+graph; use a solver-specific profiler or instrumentation point for that
 question.
 
 ## Reporting
