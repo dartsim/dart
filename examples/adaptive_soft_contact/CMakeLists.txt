@@ -12,6 +12,9 @@ if(DART_IN_SOURCE_BUILD)
   return()
 endif()
 
+# 6.20 is the first release carrying the adaptive contact activation API this
+# example calls; in-source builds skip this check, and a source build of the
+# release-6.20 branch satisfies it once the package version is bumped.
 find_package(DART 6.20 REQUIRED COMPONENTS ${required_components} CONFIG)
 
 file(GLOB srcs "*.cpp" "*.hpp")

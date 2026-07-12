@@ -59,6 +59,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+#include <type_traits>
 
 namespace {
 
@@ -86,6 +87,42 @@ struct SceneRef
   std::string name;
   std::string uri;
 };
+
+// This harness is overlaid onto older revisions by the benchmark comparison
+// script, so adaptive-activation touchpoints feature-detect the API instead
+// of assuming it exists.
+template <typename T, typename = void>
+struct HasAdaptiveContactActivation : std::false_type
+{
+};
+
+template <typename T>
+struct HasAdaptiveContactActivation<
+    T,
+    std::void_t<decltype(std::declval<T&>().setAdaptiveContactActivationEnabled(
+        true))>> : std::true_type
+{
+};
+
+template <typename SoftBody>
+std::size_t getActivePointMassCount(const SoftBody& softBody)
+{
+  if constexpr (HasAdaptiveContactActivation<SoftBody>::value)
+    return softBody.getNumActivePointMasses();
+  else
+    return softBody.getNumPointMasses();
+}
+
+template <typename SoftBody>
+bool tryEnableAdaptiveContactActivation(SoftBody& softBody)
+{
+  if constexpr (HasAdaptiveContactActivation<SoftBody>::value) {
+    softBody.setAdaptiveContactActivationEnabled(true);
+    return true;
+  } else {
+    return false;
+  }
+}
 
 struct Checksum
 {
@@ -168,7 +205,7 @@ Checksum computeChecksum(const dart::simulation::WorldPtr& world)
       if (softBody == nullptr)
         continue;
 
-      checksum.activePointMasses += softBody->getNumActivePointMasses();
+      checksum.activePointMasses += getActivePointMassCount(*softBody);
       for (std::size_t k = 0; k < softBody->getNumPointMasses(); ++k) {
         const auto* pointMass = softBody->getPointMass(k);
         if (pointMass == nullptr)
@@ -281,8 +318,12 @@ int main(int argc, char** argv)
         continue;
       for (std::size_t j = 0; j < skeleton->getNumSoftBodyNodes(); ++j) {
         auto* softBody = skeleton->getSoftBodyNode(j);
-        if (softBody)
-          softBody->setAdaptiveContactActivationEnabled(true);
+        if (softBody && !tryEnableAdaptiveContactActivation(*softBody)) {
+          std::fprintf(
+              stderr,
+              "ADAPTIVE_CONTACT_ACTIVATION requested but this revision has "
+              "no adaptive activation API; running all-active\n");
+        }
       }
     }
   }
