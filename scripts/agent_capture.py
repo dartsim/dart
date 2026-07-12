@@ -279,6 +279,10 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         base_camera = views[0]["camera"]
         frame_dir = out_dir / f"{args.prefix}_turntable"
         frame_dir.mkdir(parents=True, exist_ok=True)
+        # A rerun with the same --out/--prefix must not leave stale frames:
+        # ffmpeg's image2 pattern would append them to the new sequence.
+        for stale in frame_dir.glob("turn*.png"):
+            stale.unlink()
         turntable_reports = []
         for frame in range(args.turntable):
             camera = gui.orbit_camera(
@@ -318,6 +322,10 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         # view (with optional simultaneous orbit for camera-motion video).
         frame_dir = out_dir / f"{args.prefix}_motion"
         frame_dir.mkdir(parents=True, exist_ok=True)
+        # A rerun with the same --out/--prefix must not leave stale frames:
+        # ffmpeg's image2 pattern would append them to the new sequence.
+        for stale in frame_dir.glob("frame*.png"):
+            stale.unlink()
         base_camera = views[0]["camera"]
         sweep = math.radians(args.motion_orbit_degrees)
         motion_reports = []
