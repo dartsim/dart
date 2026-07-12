@@ -8,6 +8,20 @@ head `wp-db-native-soft-fallback`), carrying the final matrix evidence, the
 winner-gate tie resolution, demos, deferrals, and follow-ups. Remaining
 stewardship: CI + review shepherding on the PR.
 
+Shepherding notes (2026-07-12):
+
+- FreeBSD CI exposed a single-step force spike in the FCL+adaptive contact
+  lane; the smoothness gate now judges 5th/95th force percentiles with
+  documented spike caps (`6301fa8d17f`).
+- The assert-enabled and coverage jobs exposed a latent zero-DoF assertion
+  in the soft point-mass `Skeleton::updateBiasImpulse` overload, fixed in
+  `10c6b6055e4`. Follow-up: check whether the same over-strict assertion
+  exists on `main` and apply the dual-PR policy if so.
+- `test_MjcfParser` (Subprocess aborted) fails identically on the
+  `release-6.20` baseline coverage job (pre-existing from the upstream MJCF
+  work, unrelated to this PR); noted on the PR for reviewers and left to
+  the owning lane.
+
 ## 2026-07-11 endgame state
 
 All implementation packets are landed and validated on
