@@ -221,3 +221,26 @@ findings; dispositions:
   stepping worlds; an out-of-band `getArticulatedInertia()` query between
   steps can advance freeze/thaw bookkeeping once. Restructuring the tick
   site is deliberately deferred; the behavior is bounded and opt-in.
+
+## Second review pass dispositions (2026-07-11)
+
+The second four-lens pass over the post-first-review delta confirmed zero
+findings and surfaced four plausible minors, all fixed:
+
+- **Mid-solve activation tick — fixed.** Seed-time articulated-inertia
+  dirtying could let the constraint solver's own `getArticulatedInertia()`
+  re-run the activation tick mid-LCP-build. Seeding now records a pending
+  flag consumed in the post-solve integration hook, giving the tick a single
+  per-step site while keeping the quiescent-body stall fix (a new contact
+  wakes the skeleton, so the hook runs on the seeding step).
+- **Edge-spring energy term unexercised — fixed.** The energy gate's scene
+  ships with zero edge stiffness; the test now sets a nonzero edge stiffness
+  so the edge-spring energy accounting is genuinely covered.
+- **Example version floor — fixed.** `adaptive_soft_contact`'s standalone
+  `find_package` floor now names DART 6.20, matching the activation API it
+  calls.
+- **Whitespace-negative size parsing — fixed.** Both demos' unsigned size
+  parsers reject whitespace-prefixed negatives after conversion instead of
+  relying on a first-character check.
+
+The face-interior contact lens returned no findings.
