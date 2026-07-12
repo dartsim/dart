@@ -967,8 +967,10 @@ void SoftBodyNode::integratePointMassPositions(double dt)
   auto& activation = adaptiveContactActivation(*this);
   // Deferred seed dirtying: post-solve is the single safe site, so the next
   // step's forward dynamics runs the activation tick exactly once even for
-  // otherwise-quiescent bodies (a new contact wakes the skeleton, so this
-  // hook is guaranteed to run on the seeding step).
+  // otherwise-quiescent bodies. A new contact normally wakes the skeleton so
+  // this hook runs on the seeding step; in the final solve of a
+  // sleep-candidate island the hook is skipped and the pending seed is
+  // consumed on the eventual wake step instead (deferred, never lost).
   if (activation.mEnabled && activation.mHasPendingFrozenSeed) {
     activation.mHasPendingFrozenSeed = false;
     dirtyArticulatedInertia();
