@@ -357,6 +357,18 @@ DART_GUI_API PerspectiveProjection makePerspectiveProjection(
     int height,
     const ProjectionOptions& options = {});
 
+/// Projects a world-space point to pixel coordinates for an orbit camera.
+/// Returns (x_pixels, y_pixels, view_depth) with the pixel origin at the
+/// top-left corner; points behind the camera get a negative depth. This is
+/// the shared projection primitive for debug-label compositing and
+/// view-adequacy assessment, matching the offscreen render's framing.
+DART_GUI_API Eigen::Vector3d projectToPixels(
+    const OrbitCamera& camera,
+    int width,
+    int height,
+    const Eigen::Vector3d& point,
+    const ProjectionOptions& options = {});
+
 /// Looks up a canonical camera view preset by name. On success writes the
 /// preset azimuth/elevation (degrees) and returns true. Recognized names:
 /// "three-quarter" (-45, 25), "front" (-90, 0), "side" (0, 0), "top" (-90, 89).

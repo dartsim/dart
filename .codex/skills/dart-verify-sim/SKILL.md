@@ -40,11 +40,28 @@ Text (primary):
 
 Visual (corroboration):
 
-- `dart.gui.render(world, camera=None, size=(w, h))` → headless image;
-  `.png_bytes()` for notebooks; `dart.gui.orbit_camera(...)` / `look_at(...)`
+- `dart.gui.render(world, camera=None, size=(w, h), debug=(...layers...))` →
+  headless image with optional world-derived debug layers (`grid`,
+  `world_frame`, `body_frames`, `coms`, `inertia_boxes`, `collision_bounds`,
+  `velocities`, `contacts`, `labels`; `trajectories` additionally requires a
+  sampled `dart.gui.TrajectoryTracker` via `debug_scene_for_world`);
+  `dart.gui.render_annotated(...)` composites label text; `.png_bytes()` for
+  notebooks; `dart.gui.orbit_camera(...)` / `look_at(...)`
+- `dart.gui.assess_view(world, camera, size, focus=...)` → ViewReport with
+  issues (`cropped`/`too-far`/`too-close`/`occluded`/`ambiguous`);
+  `dart.gui.select_viewpoints(...)` picks deterministic best views;
+  `dart.gui.frame_body`/`frame_region` reframe onto a subject. Assess first;
+  fix flagged views before capturing evidence.
 - viewer camera flags: `--view {three-quarter|front|side|top}`,
   `--camera-azimuth/-elevation/-distance/-target`, `--turntable N`, `--fit`
 - `pixi run py-demo-capture` — headless PNG/MP4 capture from Python
+- `pixi run agent-capture` — deterministic evidence harness: auto/explicit
+  cameras, debug layers, stills/turntable/motion video, reproducible sidecar
+- `pixi run image-compose` — side-by-side / blend / diff-heatmap composites
+- `pixi run evidence-select` — claim-driven artifact selection with recorded
+  rationale; `pixi run evidence-publish` — PR "Visual verification" section
+  with GitHub-hosted media (manual placeholders by default; `gh-release`
+  upload only with `--yes` + maintainer approval)
 - `pixi run image-verdict` / `image-golden` / `image-sheet` — JSON verdict,
   golden diff, contact sheet (contrast is report-only; `--require-contrast` to
   gate)

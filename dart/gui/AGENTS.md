@@ -24,6 +24,15 @@ than renderer or windowing types.
 - Promote concepts only when they are stable DART concepts such as viewer
   options, renderables, debug draws, selections, tools, panels, screenshots,
   cameras, or simulation run control.
+- **Agent visual tooling is core-first (maintainer directive).** Visual
+  debugging/verification capabilities for AI workflows — rendering, debug
+  overlays, labels, projection, view-adequacy assessment, capture — are
+  implemented HERE (and exposed through dartpy), never as parallel Python
+  reimplementations in `scripts/`. Scripts and pixi tasks may only
+  orchestrate these core APIs. When agent tooling needs something the core
+  lacks, add the core capability; those gaps are the point — agent needs
+  drive GUI capability, quality, and interfaces. See
+  `docs/design/agent_sim_verification.md`.
 - See `docs/onboarding/gui-rendering.md` before changing the public GUI
   boundary.
 

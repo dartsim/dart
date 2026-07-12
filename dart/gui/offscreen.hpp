@@ -33,8 +33,10 @@
 #ifndef DART_GUI_OFFSCREEN_HPP_
 #define DART_GUI_OFFSCREEN_HPP_
 
+#include <dart/gui/debug.hpp>
 #include <dart/gui/export.hpp>
 #include <dart/gui/renderable.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <memory>
 #include <string>
@@ -79,10 +81,63 @@ public:
       const std::vector<RenderableDescriptor>& descriptors,
       const OrbitCamera& camera);
 
+  /// Renders the descriptors with an application-supplied debug overlay drawn
+  /// through the same unlit, always-on-top path as the interactive viewer.
+  /// Debug labels are composited onto the returned image with
+  /// `compositeDebugLabels` (the viewer draws them in its ImGui pass, which
+  /// the offscreen path lacks), so the full DebugScene renders headlessly.
+  RenderedImage render(
+      const std::vector<RenderableDescriptor>& descriptors,
+      const OrbitCamera& camera,
+      const DebugScene& debug);
+
 private:
   struct Impl;
   std::unique_ptr<Impl> mImpl;
 };
+
+/// Draws anti-aliased, mixed-case, proportional text into a tightly packed
+/// 8-bit RGBA pixel buffer (`channels` >= 3) at the given pixel origin. Glyphs
+/// come from an atlas baked once from Dear ImGui's default font
+/// (`ImFontAtlas` on the CPU, no GPU or ImGui context), then bilinearly
+/// resampled to the requested size. This is the low-level primitive behind
+/// `compositeDebugLabels`; it is exposed so headless callers (e.g. a numpy
+/// image annotator) can render the same font onto an arbitrary buffer without
+/// duplicating the atlas. Out-of-bounds glyph pixels are clipped.
+///
+/// The label height in pixels is `fontSizePixels` when positive; otherwise it
+/// is derived from the legacy `scale` unit (scale 2 => ~16 px). When
+/// `backdrop` is set, a translucent dark rectangle is drawn behind the text
+/// for contrast on light scenes.
+DART_GUI_API void drawDebugLabelText(
+    std::uint8_t* pixels,
+    int width,
+    int height,
+    int channels,
+    const std::string& text,
+    int originX,
+    int originY,
+    const Eigen::Vector4d& rgba = Eigen::Vector4d::Ones(),
+    int scale = 2,
+    double fontSizePixels = 0.0,
+    bool backdrop = false);
+
+/// Composites debug labels onto a rendered RGBA image by projecting their
+/// world-space anchors with the same camera the frame was rendered with
+/// (`projectToPixels`). Text uses an anti-aliased, mixed-case, proportional
+/// font baked once from Dear ImGui's default atlas so headless captures stay
+/// legible without an ImGui draw pass; labels behind the camera or with
+/// non-finite projections are skipped. `fontSizePixels` (or the legacy
+/// `scale`) sets the label height and `backdrop` toggles a translucent dark
+/// panel behind each label.
+DART_GUI_API void compositeDebugLabels(
+    RenderedImage& image,
+    const OrbitCamera& camera,
+    const std::vector<DebugLabelDescriptor>& labels,
+    int scale = 2,
+    const ProjectionOptions& options = {},
+    double fontSizePixels = 0.0,
+    bool backdrop = true);
 
 } // namespace dart::gui
 

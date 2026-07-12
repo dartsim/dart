@@ -618,6 +618,35 @@ PerspectiveProjection makePerspectiveProjection(
   return projection;
 }
 
+//==============================================================================
+Eigen::Vector3d projectToPixels(
+    const OrbitCamera& camera,
+    int width,
+    int height,
+    const Eigen::Vector3d& point,
+    const ProjectionOptions& options)
+{
+  const int safeWidth = std::max(1, width);
+  const int safeHeight = std::max(1, height);
+  const PerspectiveProjection projection
+      = makePerspectiveProjection(camera, safeWidth, safeHeight, options);
+  const OrbitCameraBasis basis = makeOrbitCameraBasis(camera);
+
+  const Eigen::Vector3d offset = point - basis.eye;
+  const double depth = offset.dot(basis.forward);
+  const double safeDepth = std::abs(depth) < 1e-12 ? 1e-12 : depth;
+  constexpr double kDegreesToRadians = 3.14159265358979323846 / 180.0;
+  const double focal
+      = 1.0 / std::tan(projection.verticalFovDegrees * kDegreesToRadians * 0.5);
+  const double aspect = std::max(projection.aspectRatio, 1e-6);
+  const double ndcX = offset.dot(basis.right) / safeDepth * (focal / aspect);
+  const double ndcY = offset.dot(basis.up) / safeDepth * focal;
+  return {
+      (ndcX * 0.5 + 0.5) * safeWidth,
+      (1.0 - (ndcY * 0.5 + 0.5)) * safeHeight,
+      depth};
+}
+
 namespace {
 
 constexpr double kPi = 3.14159265358979323846;

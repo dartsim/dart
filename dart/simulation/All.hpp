@@ -22,6 +22,7 @@
 #include <dart/simulation/body/collision_body.hpp>
 #include <dart/simulation/body/collision_shape.hpp>
 #include <dart/simulation/body/contact.hpp>
+#include <dart/simulation/body/contact_force.hpp>
 #include <dart/simulation/body/deformable_body.hpp>
 #include <dart/simulation/body/deformable_body_options.hpp>
 #include <dart/simulation/body/rigid_body.hpp>

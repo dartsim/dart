@@ -173,6 +173,73 @@ void recordSolverDiagnostics(
 }
 
 //==============================================================================
+// Records one world-space reaction force per solved rigid-body contact into the
+// World's last-step storage so `World::getLastContactForces()` and the debug
+// overlay can draw force arrows. Called after the velocity solve but before the
+// position projection, so each `point` stays consistent with the assembled
+// `armA` (only velocities, not poses, change during the solve). The reaction on
+// `bodyB` is `impulse / timeStep`; `bodyA` feels the opposite.
+void captureRigidContactForces(
+    detail::WorldRegistry& registry,
+    World& world,
+    std::span<const RigidBodyContactConstraint> constraints,
+    double timeStep)
+{
+  if (!(timeStep > 0.0) || constraints.empty()) {
+    return;
+  }
+  const double inverseTimeStep = 1.0 / timeStep;
+  auto& forces = detail::storageOf(world).lastContactForces;
+  forces.reserve(forces.size() + constraints.size());
+  for (const RigidBodyContactConstraint& constraint : constraints) {
+    const Eigen::Vector3d impulse
+        = constraint.normal * constraint.normalImpulse
+          + constraint.tangent1 * constraint.tangentImpulse1
+          + constraint.tangent2 * constraint.tangentImpulse2;
+    if (!impulse.allFinite() || impulse.squaredNorm() <= 0.0) {
+      continue;
+    }
+    ContactForce contactForce;
+    contactForce.force = impulse * inverseTimeStep;
+    contactForce.point
+        = registry.get<comps::Transform>(constraint.bodyA).position
+          + constraint.armA;
+    contactForce.bodyA
+        = CollisionBody(detail::fromRegistryEntity(constraint.bodyA), &world);
+    contactForce.bodyB
+        = CollisionBody(detail::fromRegistryEntity(constraint.bodyB), &world);
+    forces.push_back(std::move(contactForce));
+  }
+}
+
+//==============================================================================
+// The boxed-LCP solver returns its impulses in a stacked snapshot (normal rows
+// [0, n) then two friction rows per contact) rather than on the constraints, so
+// copy them back onto the constraints to share the capture path above.
+void writeBoxedLcpImpulsesIntoConstraints(
+    std::span<RigidBodyContactConstraint> constraints,
+    const detail::BoxedLcpContactSnapshot& snapshot)
+{
+  const Eigen::Index n = static_cast<Eigen::Index>(constraints.size());
+  if (n == 0 || snapshot.f.size() < n) {
+    return;
+  }
+  const bool hasFrictionRows = snapshot.f.size() == 3 * n;
+  for (Eigen::Index i = 0; i < n; ++i) {
+    RigidBodyContactConstraint& constraint
+        = constraints[static_cast<std::size_t>(i)];
+    constraint.normalImpulse = snapshot.f[i];
+    if (hasFrictionRows) {
+      constraint.tangentImpulse1 = snapshot.f[n + 2 * i];
+      constraint.tangentImpulse2 = snapshot.f[n + 2 * i + 1];
+    } else {
+      constraint.tangentImpulse1 = 0.0;
+      constraint.tangentImpulse2 = 0.0;
+    }
+  }
+}
+
+//==============================================================================
 detail::WorldStorage::CollisionPairKey makeCollisionPairKey(
     entt::entity first, entt::entity second)
 {
@@ -826,8 +893,16 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
     detail::BoxedLcpContactScratch frameScratch(
         world.getMemoryManager().getFrameAllocator());
-    detail::applyBoxedLcpContacts(
-        registry, contacts, world.getTimeStep(), frameScratch);
+    // solveBoxedLcpContacts applies the same velocity impulses as
+    // applyBoxedLcpContacts but also leaves the solved impulses in the
+    // snapshot, which the force capture needs.
+    const detail::BoxedLcpContactSnapshot& snapshot
+        = detail::solveBoxedLcpContacts(
+            registry, contacts, world.getTimeStep(), frameScratch);
+    writeBoxedLcpImpulsesIntoConstraints(
+        frameScratch.problem.constraints, snapshot);
+    captureRigidContactForces(
+        registry, world, frameScratch.problem.constraints, world.getTimeStep());
     resolveRigidBodyContactPositions(registry, contacts, world.getTimeStep());
     return;
   }
@@ -934,6 +1009,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     }
   }
 
+  captureRigidContactForces(registry, world, constraints, world.getTimeStep());
   resolveRigidBodyContactPositions(registry, contacts, world.getTimeStep());
 }
 

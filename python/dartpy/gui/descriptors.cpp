@@ -5,7 +5,13 @@
 #include "dart/dynamics/shape.hpp"
 #include "dart/dynamics/shape_node.hpp"
 #include "dart/dynamics/skeleton.hpp"
+#include "dart/gui/debug.hpp"
 #include "dart/gui/scene.hpp"
+#include "dart/gui/view_quality.hpp"
+#include "dart/gui/viewer.hpp"
+#include "dart/simulation/body/contact.hpp"
+#include "dart/simulation/body/contact_force.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
@@ -16,6 +22,7 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <cstdint>
 
@@ -301,6 +308,15 @@ void defGuiDescriptors(nb::module_& m)
       .def_rw("point", &gui::PickHit::point)
       .def_rw("normal", &gui::PickHit::normal);
 
+  nb::class_<gui::ViewQualityReport>(m, "ViewQualityReport")
+      .def_ro("corner_coverage", &gui::ViewQualityReport::cornerCoverage)
+      .def_ro("subject_fraction", &gui::ViewQualityReport::subjectFraction)
+      .def_ro("center_visible", &gui::ViewQualityReport::centerVisible)
+      .def_ro("occlusion_fraction", &gui::ViewQualityReport::occlusionFraction)
+      .def_ro("ambiguity_iou", &gui::ViewQualityReport::ambiguityIoU)
+      .def_ro("issues", &gui::ViewQualityReport::issues)
+      .def_ro("score", &gui::ViewQualityReport::score);
+
   nb::class_<gui::DebugLineDescriptor>(m, "DebugLineDescriptor")
       .def(nb::init<>())
       .def_rw("from_point", &gui::DebugLineDescriptor::from)
@@ -395,7 +411,8 @@ void defGuiDescriptors(nb::module_& m)
           "angular_velocity_scale",
           &gui::DebugDrawOptions::angularVelocityScale)
       .def_rw("velocity_min_length", &gui::DebugDrawOptions::velocityMinLength)
-      .def_rw("velocity_max_length", &gui::DebugDrawOptions::velocityMaxLength);
+      .def_rw("velocity_max_length", &gui::DebugDrawOptions::velocityMaxLength)
+      .def_rw("line_thickness", &gui::DebugDrawOptions::lineThickness);
 
   m.def("describe_shape", &gui::describeShape, nb::arg("shape"));
   m.def(
@@ -651,14 +668,64 @@ void defGuiDescriptors(nb::module_& m)
       nb::arg("label_prefix") = std::string{});
   m.def(
       "extract_contact_debug_lines",
-      &gui::extractContactDebugLines,
+      static_cast<std::vector<gui::DebugLineDescriptor> (*)(
+          const collision::CollisionResult&, const gui::DebugDrawOptions&)>(
+          &gui::extractContactDebugLines),
       nb::arg("result"),
+      nb::arg("options") = gui::DebugDrawOptions{});
+  // Overload for the promoted simulation contact type returned by
+  // World::collide(); nanobind tries the registered overloads in order, so a
+  // Python list falls through to this one after the CollisionResult overload.
+  m.def(
+      "extract_contact_debug_lines",
+      static_cast<std::vector<gui::DebugLineDescriptor> (*)(
+          const std::vector<simulation::Contact>&,
+          const gui::DebugDrawOptions&)>(&gui::extractContactDebugLines),
+      nb::arg("contacts"),
+      nb::arg("options") = gui::DebugDrawOptions{});
+  m.def(
+      "extract_contact_force_debug_lines",
+      &gui::extractContactForceDebugLines,
+      nb::arg("forces"),
       nb::arg("options") = gui::DebugDrawOptions{});
   m.def(
       "extract_debug_lines",
       static_cast<std::vector<gui::DebugLineDescriptor> (*)(
           const gui::DebugDrawOptions&)>(&gui::extractDebugLines),
       nb::arg("options") = gui::DebugDrawOptions{});
+  // World-aware debug extraction bound under a distinct name so it never shares
+  // an overload set with the options-only extract_debug_lines above.
+  m.def(
+      "extract_world_debug_lines",
+      static_cast<std::vector<gui::DebugLineDescriptor> (*)(
+          simulation::World&, const gui::DebugDrawOptions&)>(
+          &gui::extractDebugLines),
+      nb::arg("world"),
+      nb::arg("options") = gui::DebugDrawOptions{});
+  m.def(
+      "make_polyline_debug_lines",
+      &gui::makePolylineDebugLines,
+      nb::arg("points"),
+      nb::arg("rgba"),
+      nb::arg("label") = std::string{},
+      nb::arg("thickness") = 0.0);
+  m.def(
+      "project_to_pixels",
+      &gui::projectToPixels,
+      nb::arg("camera"),
+      nb::arg("width"),
+      nb::arg("height"),
+      nb::arg("point"),
+      nb::arg("options") = gui::ProjectionOptions{});
+  m.def(
+      "assess_view_quality",
+      &gui::assessView,
+      nb::arg("descriptors"),
+      nb::arg("camera"),
+      nb::arg("width"),
+      nb::arg("height"),
+      nb::arg("focus_ids") = std::vector<gui::RenderableId>{},
+      nb::arg("options") = gui::ProjectionOptions{});
 }
 
 } // namespace dart::python_nb
