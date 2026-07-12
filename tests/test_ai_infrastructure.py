@@ -3,6 +3,7 @@
 import copy
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -30,6 +31,24 @@ setup = _load("setup_ai", ROOT / "scripts" / "setup_ai.py")
 
 def test_repository_ai_infrastructure_is_valid():
     assert infra.run_checks(ROOT) == []
+
+
+def test_repository_check_works_without_python_utf8_mode():
+    env = {
+        **os.environ,
+        "LC_ALL": "C",
+        "PYTHONCOERCECLOCALE": "0",
+        "PYTHONUTF8": "0",
+    }
+    result = subprocess.run(
+        [sys.executable, "scripts/check_ai_infrastructure.py", "--check"],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_release_scenarios_are_exercisable():

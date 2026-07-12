@@ -99,7 +99,7 @@ WINDOWS_BRIDGE_MARKERS = (
 
 
 def read_json(path: Path) -> Any:
-    with path.open() as stream:
+    with path.open(encoding="utf-8") as stream:
         return json.load(stream)
 
 
@@ -289,7 +289,9 @@ def check_branch_profile(
         root / "docs" / "onboarding" / "architecture.md",
     )
     marker_content = "\n".join(
-        owner.read_text() for owner in marker_owners if owner.is_file()
+        owner.read_text(encoding="utf-8")
+        for owner in marker_owners
+        if owner.is_file()
     )
     for marker in string_lists["required_markers"]:
         if marker not in marker_content:
@@ -475,7 +477,7 @@ def check_hooks(root: Path, errors: list[str]) -> None:
     installer = root / "scripts" / "install_git_hooks.py"
     guard = root / ".claude" / "hooks" / "pre-commit-guard.sh"
     for path in (installer, guard):
-        content = path.read_text() if path.exists() else ""
+        content = path.read_text(encoding="utf-8") if path.exists() else ""
         if (
             "scripts/check_agent_hook.py" not in content
             or "--profile staged" not in content
@@ -484,7 +486,9 @@ def check_hooks(root: Path, errors: list[str]) -> None:
                 f"{path.relative_to(root)}: must invoke the staged agent hook profile"
             )
     launcher = root / ".claude" / "hooks" / "pre-commit-guard.ps1"
-    launcher_text = launcher.read_text() if launcher.exists() else ""
+    launcher_text = (
+        launcher.read_text(encoding="utf-8") if launcher.exists() else ""
+    )
     for marker in WINDOWS_LAUNCHER_MARKERS:
         if marker not in launcher_text:
             errors.append(
@@ -492,7 +496,7 @@ def check_hooks(root: Path, errors: list[str]) -> None:
                 f"{marker!r}"
             )
     bridge = root / "scripts" / "pretool_guard_bridge.py"
-    bridge_text = bridge.read_text() if bridge.exists() else ""
+    bridge_text = bridge.read_text(encoding="utf-8") if bridge.exists() else ""
     for marker in WINDOWS_BRIDGE_MARKERS:
         if marker not in bridge_text:
             errors.append(
@@ -514,7 +518,9 @@ def check_pixi_references(root: Path, errors: list[str]) -> None:
     for path in source_paths(root):
         if not path.exists():
             continue
-        for line_number, line in enumerate(path.read_text().splitlines(), start=1):
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8").splitlines(), start=1
+        ):
             for task in run_pattern.findall(line):
                 if task in tasks or task in DIRECT_PIXI_COMMANDS:
                     continue
@@ -532,7 +538,9 @@ def check_path_references(root: Path, errors: list[str]) -> None:
     for path in source_paths(root):
         if not path.exists():
             continue
-        for line_number, line in enumerate(path.read_text().splitlines(), start=1):
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8").splitlines(), start=1
+        ):
             candidates = required_pattern.findall(line)
             if not re.search(
                 r"\b(?:intentionally not|does not exist|no longer exists|"
@@ -568,7 +576,9 @@ def markdown_link_errors(root: Path, path: Path) -> list[str]:
     """Return broken repository-relative Markdown links for one source file."""
     errors: list[str] = []
     link_pattern = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
-    for line_number, line in enumerate(path.read_text().splitlines(), start=1):
+    for line_number, line in enumerate(
+        path.read_text(encoding="utf-8").splitlines(), start=1
+    ):
         for raw_target in link_pattern.findall(line):
             target = raw_target.strip().strip("<>").split(maxsplit=1)[0]
             if not target or target.startswith(
@@ -647,13 +657,13 @@ def check_instruction_budget(root: Path, errors: list[str]) -> None:
 def check_release_guidance(root: Path, errors: list[str]) -> None:
     python_skill = (
         root / ".claude" / "skills" / "dart-python" / "SKILL.md"
-    ).read_text()
+    ).read_text(encoding="utf-8")
     python_frontmatter = python_skill.split("---", 2)[1]
     if "nanobind" in python_frontmatter or "pybind11" not in python_skill:
         errors.append("dart-python: DART 6.20 metadata must name pybind11")
 
     ci_skill_path = root / ".claude" / "skills" / "dart-ci" / "SKILL.md"
-    ci_skill = ci_skill_path.read_text()
+    ci_skill = ci_skill_path.read_text(encoding="utf-8")
     if "Expected CI Times" in ci_skill or "reduces build time" in ci_skill:
         errors.append(
             "dart-ci: volatile timing/cache claims belong in live run evidence"
@@ -662,14 +672,16 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
         if not (root / ".github" / "workflows" / workflow).is_file():
             errors.append(f"dart-ci: nonexistent workflow `{workflow}`")
 
-    release_fix = (root / ".claude" / "commands" / "dart-release-ci-fix.md").read_text()
+    release_fix = (
+        root / ".claude" / "commands" / "dart-release-ci-fix.md"
+    ).read_text(encoding="utf-8")
     if "release-6.20" not in release_fix or "release-6.19" in release_fix:
         errors.append("dart-release-ci-fix: release default must be release-6.20")
 
     for path in source_paths(root):
         if not path.exists():
             continue
-        content = path.read_text()
+        content = path.read_text(encoding="utf-8")
         if ".codex/skills" in content:
             errors.append(f"{path.relative_to(root)}: use current `.agents/skills/`")
         if re.search(r"generated[^\n]*`?\.codex/?`?", content, re.IGNORECASE):
@@ -679,7 +691,7 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
     if (root / ".codex" / "skills").exists():
         errors.append("legacy generated directory `.codex/skills/` must be absent")
 
-    agents = (root / "AGENTS.md").read_text()
+    agents = (root / "AGENTS.md").read_text(encoding="utf-8")
     for marker in (
         "## Quick Commands",
         "## Task-specific Context",
@@ -699,7 +711,7 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
     if not workflow.exists():
         errors.append(".github/workflows/ci_ubuntu.yml: missing workflow")
     else:
-        content = workflow.read_text()
+        content = workflow.read_text(encoding="utf-8")
         expected_commands = (
             "pixi run check-ai-commands",
             "scripts/check_ai_infrastructure.py --check",
@@ -753,7 +765,7 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
                 )
         overlay_test = root / "python/tests/unit/gui/test_agent_debug_overlay.py"
         try:
-            overlay_text = overlay_test.read_text()
+            overlay_text = overlay_test.read_text(encoding="utf-8")
         except OSError as error:
             errors.append(f"{overlay_test.relative_to(root)}: unable to read: {error}")
         else:
@@ -769,7 +781,7 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
                     )
         capture_test = root / "python/tests/unit/gui/test_agent_capture.py"
         try:
-            capture_text = capture_test.read_text()
+            capture_text = capture_test.read_text(encoding="utf-8")
         except OSError as error:
             errors.append(f"{capture_test.relative_to(root)}: unable to read: {error}")
         else:
@@ -795,7 +807,7 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
                     )
         pixi_path = root / "pixi.toml"
         try:
-            pixi_text = pixi_path.read_text()
+            pixi_text = pixi_path.read_text(encoding="utf-8")
         except OSError as error:
             errors.append(f"pixi.toml: unable to read: {error}")
         else:
@@ -814,7 +826,7 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
     if not windows.exists():
         errors.append(".github/workflows/ci_windows.yml: missing workflow")
         return
-    windows_content = windows.read_text()
+    windows_content = windows.read_text(encoding="utf-8")
     for marker in (
         "Native Windows hook smoke",
         'pixi run python -c "import sys; print(sys.executable)"',
@@ -1190,7 +1202,7 @@ def exercise_scenarios(
                 )
             skill_path = root / ".claude/skills/dart-verify-sim/SKILL.md"
             try:
-                skill_text = skill_path.read_text()
+                skill_text = skill_path.read_text(encoding="utf-8")
             except OSError:
                 skill_text = ""
             for marker in (
@@ -1220,7 +1232,7 @@ def exercise_scenarios(
             try:
                 new_task_text = (
                     root / ".claude/commands/dart-new-task.md"
-                ).read_text()
+                ).read_text(encoding="utf-8")
             except OSError:
                 new_task_text = ""
             for marker in (
@@ -1304,7 +1316,7 @@ def exercise_scenarios(
             }
             for relative, markers in consumer_markers.items():
                 try:
-                    consumer_text = (root / relative).read_text()
+                    consumer_text = (root / relative).read_text(encoding="utf-8")
                 except OSError:
                     consumer_text = ""
                 for marker in markers:
