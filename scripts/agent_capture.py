@@ -411,8 +411,12 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         base = views[0]["camera"]
         frame_dir = out_dir / f"{args.prefix}_turntable"
         frame_dir.mkdir(parents=True, exist_ok=True)
+        turntable_reports = []
         for frame in range(args.turntable):
             camera = _sweep_camera(base, math.tau * frame / args.turntable)
+            turntable_reports.append(
+                _assess_capture_view(world, camera, args, f"turn{frame}")
+            )
             if not _capture_view(
                 viewer,
                 world,
@@ -430,6 +434,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             "view": views[0]["name"],
             "path": frame_dir.name,
             "frames": args.turntable,
+            "view_reports": turntable_reports,
         }
         if args.video:
             video_path = out_dir / f"{args.prefix}_turntable.mp4"
