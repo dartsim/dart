@@ -618,8 +618,7 @@ def select_viewpoints(
             break
         azimuth = camera_azimuth(choice)
         if any(
-            _angular_distance(azimuth, camera_azimuth(other))
-            < min_azimuth_separation
+            _angular_distance(azimuth, camera_azimuth(other)) < min_azimuth_separation
             for other in selected
         ):
             continue

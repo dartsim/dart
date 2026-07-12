@@ -304,6 +304,15 @@
 
 * Dynamics
 
+  * Fix `BoxedLcpConstraintSolver` propagating non-finite constraint impulses:
+    a near-singular contact (e.g. a thin, hard, frictionless geometry) could
+    make the primary solver report success while emitting an *infinite* impulse
+    that slipped past the NaN-only sanity check and produced NaN body impulses
+    (`inf * 0` in the spatial Jacobian moment-arm rows). Both NaN and infinite
+    LCP solutions are now rejected so the secondary/fail-safe zeroing path runs,
+    guaranteeing finite impulses:
+    [#3384](https://github.com/dartsim/dart/pull/3384)
+
   * Add opt-in adaptive soft contact activation to `SoftBodyNode`
     (`setAdaptiveContactActivationEnabled` plus ring-count, linger, and
     deactivation-tolerance tuning and a `getNumActivePointMasses` counter):
