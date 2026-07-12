@@ -94,7 +94,8 @@ reversible.
    assertion removed by release commit `10c6b6055e4`. That bug therefore
    requires a `main` follow-up under the dual-PR policy. Keep it separate from
    #3382 stabilization and do not use the unrelated MJCF baseline failure as a
-   reason to widen this release PR.
+   reason to widen this release PR. PLAN-622 now owns this cross-branch
+   follow-up after the temporary task folder is retired.
 
 ## Deferral list (maintainer-approved 2026-07-11)
 

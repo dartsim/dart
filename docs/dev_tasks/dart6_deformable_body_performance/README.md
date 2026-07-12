@@ -22,16 +22,17 @@ closeout decisions, not another speculative optimization lane inside #3382.
 The unpublished local stack starts with implementation commit `2ad156e7b82`,
 continues through the handoff and durable-owner updates, and now includes
 balanced-evidence runner commit `9a7bab76948` plus thermal-gate correction
-`a122c5ab437`. The implementation commit closes the current WP-DB.04 review
-finding by keeping retained point-mass
+`a122c5ab437` and durable follow-up commits `ab6e8edede4` and `b615f5f1f6e`.
+The implementation commit closes the current WP-DB.04 review finding by
+keeping retained point-mass
 accelerations out of public mass-matrix columns and adds a regression for mass
 and augmented-mass state independence. The runner replaces the previously
 manual native-vs-DART timing method with a protocol that produces a
 revision-pinned, thermally gated, eight-row paired artifact. Both packets are
 reviewed and locally verified but still need approval before publication. No
-final paired artifact has been run
-while sibling builds keep the shared host hot and busy. Exact takeover state is
-in `RESUME.md`.
+final paired timing artifact has been captured: both full attempts remained in
+preflight while sibling builds kept the shared host hot and busy. Exact
+takeover state is in `RESUME.md`.
 
 ## Reference scope
 
@@ -109,6 +110,10 @@ below.
 - `06-pr-evidence.md` records the current same-host baseline-vs-branch
   benchmark smoke rows, native/FCL headless parity evidence, and the current
   GUI-video status for PR preparation.
+- `docs/design/dart6_deformable_body.md` now owns the staged native-owned
+  soft-kernel follow-up contract, and PLAN-622 owns the separate `main`
+  zero-DoF assertion fix. These facts no longer depend on this temporary task
+  folder for survival.
 - WP-DB.06 first optimization changes FCL soft meshes to retain shared vertex
   topology, prime FCL's previous-vertex update buffer at geometry creation, and
   skip BVH refits when local point-mass positions have not changed. It improves
@@ -245,5 +250,6 @@ The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
   `docs/design/dart6_deformable_body.md`, and PLAN-622. Before retiring this
   temporary task folder, publish and stabilize #3382, obtain the remaining
   competitive-envelope and flexible-foot decisions, preserve WP-DB.07 and
-  WP-DB.08 as explicit follow-ups, and verify that no required fact remains
-  owned only by this folder.
+  WP-DB.08 as explicit follow-ups, record the final paired artifact or approved
+  disposition, and verify that no required fact remains owned only by this
+  folder.

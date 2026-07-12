@@ -28,6 +28,10 @@ unresolved. The immediate work is review/CI stewardship and honest closeout.
   detector runner`)
 - Latest runner correction commit: `a122c5ab437` (`Correct paired benchmark
   thermal gate`)
+- Latest durable follow-up commit: `ab6e8edede4` (`Promote deformable follow-up
+  contracts`)
+- Latest durable-contract correction: `b615f5f1f6e` (`Complete native
+  soft-kernel contract`)
 - Published head: `origin/wp-db-native-soft-fallback` at `b25462ca5c0`
 - Local state: the implementation and following handoff/durable-owner updates
   are not published; verify the exact current HEAD and ahead count
@@ -110,14 +114,23 @@ Verification on the current runner stack:
 - independent protocol/evidence review: clean;
 - independent adversarial runner/test review: clean.
 
-The first full attempt completed its build and checksum gates but was
-interrupted during idle preflight, so it has no timing rows or completion
-marker. A two-row `soft_cubes/16` diagnostic then proved canonical invocations
-heat this host from 55-57 C to 86-93 C without materially moving 1-minute load.
-That diagnostic corrected the gate: thermal recovery is required at pair
-start, while post-run temperatures are observational and alternating order
-balances self-heating. The diagnostic is not winner evidence. The final paired
-artifact remains an explicit next action once the shared host is idle and cool.
+The first full attempt at `8553203db25` completed its build and checksum gates
+but was interrupted during idle preflight, so it has no timing rows or
+completion marker. A two-row `soft_cubes/16` diagnostic then proved canonical
+invocations heat this host from 55-57 C to 86-93 C without materially moving
+1-minute load. That diagnostic corrected the gate: thermal recovery is
+required at pair start, while post-run temperatures are observational and
+alternating order balances self-heating. The diagnostic is not winner evidence.
+
+The corrected final-head attempt at `3704865daa95` also completed its dedicated
+build and all scene/thread checksum gates. Across 286 preflight polls it saw 84
+load failures, 74 thermal failures, and 10 local-DART-workload failures; the
+longest continuous clean interval was only 141/600 seconds. An explicit
+11-minute no-tool interval still encountered external DART workloads and
+99-100 C package temperatures. The attempt was cleanly interrupted with no raw
+timing rows, summary, verdict, or `COMPLETE.json`, so the directory is explicit
+non-evidence. The final paired artifact remains an action for a genuinely
+isolated or maintainer-provided quiet host.
 
 ## Live PR blockers and external evidence
 
@@ -145,10 +158,11 @@ At published head `b25462ca5c0`, GitHub reports #3382 mergeable but blocked:
   in `06-pr-evidence.md`, including why the scratch rows do not satisfy the
   gate. Local commits `9a7bab76948` and `a122c5ab437` now provide the reviewed,
   revision-pinned replacement runner, but no final artifact exists yet. The
-  2026-07-12 host probe still showed sibling builds, 1-minute load `14.74`, and
-  package temperature `100 C`; running under that state would be invalid.
-  Capture the balanced artifact once the runner's own idle/thermal gates can
-  pass, or obtain explicit maintainer acceptance before task retirement.
+  corrected final-head attempt still recorded recurring sibling DART work and
+  package temperatures up to `100 C`; its longest clean interval was only 141
+  of the required 600 seconds. Capture the balanced artifact once the runner's
+  own idle/thermal gates can pass on an isolated or explicitly quiet host, or
+  obtain explicit maintainer acceptance before task retirement.
 - The formal definition of "competitive implementations" still needs
   maintainer sign-off. The current proposal is in-tree CPU/backend comparison
   plus normalized paper metrics; do not treat PR publication as approval.
@@ -168,15 +182,17 @@ At published head `b25462ca5c0`, GitHub reports #3382 mergeable but blocked:
    conflicts, and rerun the relevant gates on the merged state.
 3. Push the complete unpublished stack: review fix `2ad156e7b82`, handoff
    `dbfed2fdd88`, durable owners `574dc2a28cf`, runner `9a7bab76948`, evidence
-   refresh `8553203db25`, runner correction `a122c5ab437`, and this final
-   handoff refresh. Resolve the addressed automated-review thread only if
-   approval covers thread mutation, and request a fresh top-level Codex review
-   only if approval covers the PR comment and review capacity is available.
+   refresh `8553203db25`, runner correction `a122c5ab437`, handoff refresh
+   `3704865daa9`, durable follow-up promotion `ab6e8edede4`, contract correction
+   `b615f5f1f6e`, and this task-home refresh. Resolve the addressed
+   automated-review thread only if approval covers thread mutation, and request
+   a fresh top-level Codex review only if approval covers the PR comment and
+   review capacity is available.
 4. Monitor the new head through CI. Do not rerun or weaken the exact-base MJCF
    failure without explicit approval; keep its base-run evidence attached to
    any disposition. Treat the Windows timeout as infrastructure until a rerun
    completes with a product failure.
-5. Track the dual-PR follow-up for `10c6b6055e4`: the same over-strict
+5. Track the PLAN-622 dual-PR follow-up for `10c6b6055e4`: the same over-strict
    zero-DoF soft point-mass assertion exists on `origin/main`, unlike the
    mass-matrix correction (DART 7 still has point-mass mass aggregation
    disabled). Do not fold unrelated main-branch work into #3382.

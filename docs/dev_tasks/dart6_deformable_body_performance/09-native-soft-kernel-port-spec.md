@@ -1,5 +1,10 @@
 # SPEC — Native-Owned Soft Kernels (packet: remove soft/ellipsoid fallback bridge)
 
+The durable staged contract now lives in
+`docs/design/dart6_deformable_body.md`. This task file retains detailed source
+mapping and implementation notes only while the active task folder exists; it
+is not the sole owner of the follow-up.
+
 Branch `wp-db-native-soft-fallback` @ 79acb2b06bd. Goal: soft×{plane,sphere,box,ellipsoid,soft} resolve inside `dart/collision/native` with NO `DARTCollisionObject` mirror, output BIT-EQUAL to today's bridge (`emitDartFallbackContacts`), per-step cost strictly < dart factory. Verified coverage: DARTCollide soft dispatch (`DARTCollide.cpp:4360,4429,4691-4783`) covers soft×{plane,sphere,ellipsoid,box,soft} ONLY — no soft×capsule/cylinder/mesh kernel exists, so those currently emit nothing; native lanes covering the five pairs match 100% of bridge soft coverage.
 
 ## 1. Native soft shape kind (first-class)

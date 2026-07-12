@@ -33,6 +33,8 @@ impl      2ad156e7b82  (followed locally by this handoff/docs update)
 handoff   dbfed2fdd88  (followed locally by durable-owner promotion)
 runner    9a7bab76948  (balanced final-head evidence infrastructure)
 correction a122c5ab437 (pair-start thermal gate)
+follow-up ab6e8edede4 (durable native-kernel and main-fix owners)
+contract  b615f5f1f6e (binding native-kernel details)
 origin    b25462ca5c0
 base      fa17fad79b9
 PR        https://github.com/dartsim/dart/pull/3382
@@ -69,6 +71,15 @@ builds still drove the observed host to load `14.74` and package temperature
 `100 C`. Use the exact clean-HEAD command and completion rules in `RESUME.md`;
 do not bypass its idle/thermal gates or resume a partial artifact.
 
+The corrected final-head attempt at `3704865daa95` completed its dedicated
+build and checksum qualification but never passed preflight. Its best clean
+interval was 141/600 seconds; even an 11-minute no-tool interval encountered
+external DART workloads and 99-100 C package temperatures. It was interrupted
+with no timing rows, summary, verdict, or `COMPLETE.json` and is non-evidence.
+Commits `ab6e8edede4` and `b615f5f1f6e` promote and complete the staged
+native-owned soft-kernel contract in the durable design owner and the separate
+`main` zero-DoF fix in PLAN-622.
+
 ## Hosted blockers
 
 - Linux coverage/assert failures reproduce on exact base run `29178779447` in
@@ -84,7 +95,8 @@ do not bypass its idle/thermal gates or resume a partial artifact.
 - The formal competitive-implementation envelope still needs maintainer
   sign-off.
 - The balanced runner is ready locally, but the eight-row artifact and its
-  independent winner-gate verdict remain pending a genuinely idle, cool host.
+  independent winner-gate verdict remain pending a genuinely isolated or
+  maintainer-provided quiet host.
 
 See `RESUME.md` for the ordered next actions, dual-PR applicability, and
 approval boundaries.
