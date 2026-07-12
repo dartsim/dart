@@ -125,7 +125,9 @@ def _find_exact_cover(
             total_bytes = sum(candidate["bytes"] for candidate in candidates)
             if total_bytes > max_total_bytes:
                 continue
-            covered = set().union(*(set(candidate["claims"]) for candidate in candidates))
+            covered = set().union(
+                *(set(candidate["claims"]) for candidate in candidates)
+            )
             if not claim_ids <= covered:
                 continue
             key = (
@@ -221,9 +223,7 @@ def select_evidence(
     # feasible exact cover (quality, bytes, then path break ties). The search is
     # explicitly bounded so large manifests retain the deterministic greedy
     # fallback instead of growing exponentially.
-    exact = _find_exact_cover(
-        ranked, set(claims), max_artifacts, max_total_bytes
-    )
+    exact = _find_exact_cover(ranked, set(claims), max_artifacts, max_total_bytes)
     if exact is not None:
         selected = []
         covered = set()
@@ -234,7 +234,8 @@ def select_evidence(
                 {
                     **candidate,
                     "rationale": (
-                        "covers claim(s) " + ", ".join(sorted(new_claims))
+                        "covers claim(s) "
+                        + ", ".join(sorted(new_claims))
                         + f"; quality={candidate['quality']:.3f}"
                     ),
                     "sha256": _sha256(candidate["path"]),
