@@ -48,7 +48,13 @@ if(NOT DART_USE_SYSTEM_IMGUI)
       $<INSTALL_INTERFACE:include/dart/external/imgui>
   )
 endif()
-target_link_libraries(${target_name} dart-utils ${link_libraries} osg::osg)
+target_link_libraries(
+  ${target_name}
+  dart-utils
+  ${link_libraries}
+  osg::osg
+  osg::osgText
+)
 if(APPLE)
   target_compile_definitions(${target_name} PRIVATE GL_SILENCE_DEPRECATION)
 endif()

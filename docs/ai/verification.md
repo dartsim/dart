@@ -78,6 +78,56 @@ The verdict JSON (`schema_version dart.image_verdict/v1`) sets `pass` from the
 non-blank check plus any golden diff. Contrast is scene-dependent, so it is
 reported but only gates when you pass `--require-contrast`.
 
+- Active camera control, view quality, and debug overlays (agent evidence):
+
+  ```bash
+  # Deterministic capture: auto-selected viewpoints (view-quality scored),
+  # focus framing, turntable/motion video, debug layers rendered through the
+  # core OSG pipeline, and a sidecar JSON with the exact reproduce command.
+  pixi run agent-capture -- --scene box_stack --steps 150 \
+      --layers contacts body_frames collision_bounds labels --focus stack1 \
+      --auto-views 2 --out /tmp/evidence
+  ```
+
+  Available `--layers`: `grid`, `world_frame`, `body_frames`, `contacts`,
+  `velocities`, `coms`, `inertia_boxes`, `collision_bounds`, `trajectories`,
+  `labels` (matching DART 7's overlay set).
+
+  `scripts/agent_view_quality.py` assesses a camera before rendering
+  (coverage/crop, subject size, core-raycast occlusion, ambiguity; issues named
+  `cropped`/`off-frame`/`too-far`/`too-close`/`occluded`/`ambiguous`) and
+  `select_viewpoints` deterministically picks azimuth-diverse better views —
+  when a report lists issues, reframe or reselect instead of shipping the
+  shot. Body bounds come from the core `Shape.getBoundingBox()` (now bound in
+  dartpy). `scripts/agent_debug_overlay.py` renders the debug layers *through
+  the engine* via a `dart.gui.osg.DebugOverlay` viewer attachment: a ground
+  grid, the world frame, contacts (implausible sentinel contact points are
+  skipped and counted), body frames, velocity arrows, centers of mass,
+  inertia-equivalent boxes (eigendecomposed moment of inertia), collision
+  bounding boxes (world-transformed local AABBs), and trajectory polylines
+  become always-on-top overlay lines and labels become world-anchored osgText
+  — all drawn unlit, with depth
+  testing disabled, in a late render bin, so the debug primitives stay legible
+  on top of the geometry they annotate (matching DART 7's core debug overlay)
+  instead of being buried in depth or composited in image space. The harness
+  populates the overlay, renders through `captureOffscreen`, then clears it. No
+  GL context is needed for assessment itself. Overlay colors match the DART 7
+  debug producers.
+
+- Select a small claim-tied evidence set and generate the PR section:
+
+  ```bash
+  pixi run image-compose -- side-by-side before.png after.png \
+      --labels BEFORE AFTER --out compare.png     # also: blend, diff
+  pixi run evidence-select -- candidates.json --out selection.json
+  pixi run evidence-publish -- selection.json --environment "..." \
+      --out pr_section.md   # manual placeholders; gh-release needs --yes
+  ```
+
+  Every artifact must support an explicit claim (`evidence-select` rejects
+  unclaimed ones and records per-artifact rationale); media is GitHub-hosted,
+  never committed to the repository.
+
 For physics determinism (rather than visual appearance), use the text path that
 already exists on the branch: `pixi run bm-boxes-headless` prints per-step
 position/velocity checksums with no rendering, so diffing two builds' output

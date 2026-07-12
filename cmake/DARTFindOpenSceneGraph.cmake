@@ -10,7 +10,7 @@ find_package(
   OpenSceneGraph
   3.0.0
   QUIET
-  COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgUtil
+  COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgText osgUtil
 )
 
 # OpenSceneGraph 3.6.5 or less are not compatible with macOS 10.15 (Catalina) or greater
@@ -71,4 +71,21 @@ if((OPENSCENEGRAPH_FOUND OR OpenSceneGraph_FOUND) AND NOT TARGET osg::osg)
   add_library(osg::osg INTERFACE IMPORTED)
   target_include_directories(osg::osg INTERFACE ${OPENSCENEGRAPH_INCLUDE_DIRS})
   target_link_libraries(osg::osg INTERFACE ${OPENSCENEGRAPH_LIBRARIES})
+endif()
+
+# osg::osg is only the core library with some OpenSceneGraph package configs.
+# Keep osgText explicit because dart-gui-osg directly uses its symbols.
+if((OPENSCENEGRAPH_FOUND OR OpenSceneGraph_FOUND) AND NOT TARGET osg::osgText)
+  add_library(osg::osgText INTERFACE IMPORTED)
+  if(TARGET osgText)
+    target_link_libraries(osg::osgText INTERFACE osgText)
+  elseif(TARGET OpenSceneGraph::osgText)
+    target_link_libraries(osg::osgText INTERFACE OpenSceneGraph::osgText)
+  else()
+    target_include_directories(
+      osg::osgText
+      INTERFACE ${OPENSCENEGRAPH_INCLUDE_DIRS}
+    )
+    target_link_libraries(osg::osgText INTERFACE ${OSGTEXT_LIBRARY})
+  endif()
 endif()
