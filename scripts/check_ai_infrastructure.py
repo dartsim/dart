@@ -839,7 +839,7 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
         'pixi run python -c "import sys; print(sys.executable)"',
         "$launcher",
         "$hookCommand",
-            "$payload = [Console]::In.ReadToEnd(); $payload | &",
+            "$env:DART_HOOK_PAYLOAD | &",
         '$ErrorActionPreference = "Continue"',
         '"git status"',
         "DART_HOOK_DRY_RUN",
