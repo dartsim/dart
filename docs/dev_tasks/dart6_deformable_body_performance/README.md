@@ -165,7 +165,8 @@ below.
   cache for local vertices, point-to-face metadata, and precomputed triangle
   geometry, early face-side separation rejection before barycentric projection,
   retained soft-face BVH traversal once a penetrating candidate exists, and
-  pair-level worker scheduling for eligible finite-finite soft pairs. The
+  pair-level worker scheduling in `DARTCollisionDetector` for eligible
+  finite-finite soft pairs. The
   soft-vs-primitive lanes also reuse cached local vertices and representative
   face IDs. A follow-up primitive-frame slice classifies soft-vs-plane,
   soft-vs-sphere, and soft-vs-box point contacts in primitive-local
@@ -208,7 +209,7 @@ below.
 | WP-DB.04 coupled equation correctness | Review fix published and thread resolved. | Matrix/vector projection and inverse-identity gates plus the retained-acceleration independence regression pass on published commit `2ad156e7b82` (`07-equation-correctness.md`). |
 | WP-DB.05 adaptive contact activation | Complete. | Opt-in ABI-safe activation is default-off bit-identical, deterministic when enabled, allocation-gated, and covered by two recorded review rounds (`08-adaptive-contact-activation.md`). |
 | WP-DB.06 CPU data layout and SIMD | #3382 disposition complete; follow-up research remains. | Kept cache/data-access slices produce the measured win; retained SoA mirrors and contiguous-object prototypes were rejected or parked because measurements/design gates did not justify keeping them. No unsupported SIMD speedup is claimed (`04-data-layout-and-memory-hardening.md`). |
-| WP-DB.07 multi-core scaling | Original acceptance unmet; retained as an open PLAN-622 follow-up. | Pair-level work and 1/4/16-thread determinism landed, but the tracked small scenes are flat or slower at 16 threads. The original `threads=16` improvement contract therefore remains open and needs a larger workload or a maintainer-approved negative disposition (`06-pr-evidence.md`, `docs/plans/dashboard.md`). |
+| WP-DB.07 multi-core scaling | Original acceptance unmet; retained as an open PLAN-622 follow-up. | `DARTCollisionDetector` pair-level work and 1/4/16-thread determinism landed, but the tracked small scenes are flat or slower at 16 threads. The direct `NativeCollisionDetector` path remains serial. The original `threads=16` improvement contract therefore remains open and needs a larger workload or a maintainer-approved negative disposition (`06-pr-evidence.md`, `docs/plans/dashboard.md`). |
 | WP-DB.08 native collision deformables | #3382 landing slice implemented; original acceptance unmet. | Primitive/cached soft lanes, face-interior coverage, allocation gates, and determinism landed. Native is not yet the preferred/default backend, required coverage remains in `05-native-collision-deformable-lane.md`, and the only direct-native/DART tie override is not independently reproducible. The durable architecture and pre-default gates now live in `docs/design/dart6_deformable_body.md` and PLAN-622. |
 | WP-DB.09 flagship demos | Representative demos complete; parity closeout conditional. | The `dart-demos` scenes `adaptive_soft_contact` and `soft_worm` are runnable and visually captured. GUI-free model tests preserve the adaptive 2000-step finite/repeat/all-active comparison contract and prove finite 3000-step worm locomotion beyond 0.2 m with exact repeated displacement/checksum; historical standalone evidence remains recorded in `06-pr-evidence.md`. The four-link flexible-rigid-foot versus deformable-foot comparison remains open until implemented or explicitly deferred (`02-paper-parity-matrix.md`, `decisions.md`). |
 

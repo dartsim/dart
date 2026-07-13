@@ -823,7 +823,7 @@ pointWorldPosSq 1.3492978157859996
 The native row is about 5.7x faster for this limited soft-box contact lane on
 this host. Treat the exact ratio as load-sensitive.
 
-Threaded native soft-scene smoke:
+Threaded `DARTCollisionDetector` soft-scene smoke:
 
 ```bash
 COLLISION_DETECTOR=dart THREADS=4 \
@@ -846,9 +846,11 @@ pointWorldPosL1 213.75594489383639
 pointWorldPosSq 77.599935310371123
 ```
 
-The profile contained `DART native finite-finite soft workers`, confirming that
-the threaded native soft-soft path was exercised. This run is worker-activation
-evidence only; the host load was too high for a scaling claim.
+The historical profile contained `DART native finite-finite soft workers`,
+confirming that the `DARTCollisionDetector` worker path was exercised. The
+scope is now named `DART finite-finite pairs`; this run is not evidence that the
+direct `NativeCollisionDetector` path is threaded. It is worker-activation
+evidence only, and the host load was too high for a scaling claim.
 
 ## Local validation gates
 
