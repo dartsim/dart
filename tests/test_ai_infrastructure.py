@@ -783,7 +783,7 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
         'pixi run python -c "import sys; print(sys.executable)"\n'
         "$launcher\n"
         "$hookCommand\n"
-        "$input | &\n"
+        "$payload = [Console]::In.ReadToEnd(); $payload | &\n"
         '$ErrorActionPreference = "Continue"\n'
         '"git status"\n'
         "DART_HOOK_DRY_RUN\n"
