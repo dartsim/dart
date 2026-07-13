@@ -249,6 +249,95 @@ void configureCollisionThreads(
     nativeCollisionDetector->setNumCollisionThreads(numThreads);
 }
 
+namespace {
+
+//==============================================================================
+struct ConstraintSolverClearState
+{
+  bool hasConstraintImpulsesToClear{false};
+  bool hasCollidingBodiesToClear{false};
+};
+
+//==============================================================================
+struct ConstraintSolverClearStateRegistry
+{
+  std::unordered_map<const ConstraintSolver*, ConstraintSolverClearState>
+      states;
+  std::mutex mutex;
+};
+
+//==============================================================================
+ConstraintSolverClearStateRegistry& getConstraintSolverClearStateRegistry()
+{
+  // Solvers can be owned by static/global objects and therefore destroyed
+  // after ordinary function-local objects. Keep this registry alive through
+  // process teardown so every solver destructor can safely erase its state.
+  static auto* const registry = new ConstraintSolverClearStateRegistry;
+  return *registry;
+}
+
+//==============================================================================
+void initializeStoredConstraintSolverClearState(const ConstraintSolver* solver)
+{
+  auto& registry = getConstraintSolverClearStateRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  registry.states.emplace(solver, ConstraintSolverClearState{});
+}
+
+//==============================================================================
+ConstraintSolverClearState getStoredConstraintSolverClearState(
+    const ConstraintSolver* solver)
+{
+  auto& registry = getConstraintSolverClearStateRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  const auto it = registry.states.find(solver);
+  if (it == registry.states.end())
+    return {};
+
+  return it->second;
+}
+
+//==============================================================================
+void markStoredConstraintSolverClearState(
+    const ConstraintSolver* solver,
+    bool constraintImpulses,
+    bool collidingBodies)
+{
+  auto& registry = getConstraintSolverClearStateRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  auto& state = registry.states[solver];
+  state.hasConstraintImpulsesToClear |= constraintImpulses;
+  state.hasCollidingBodiesToClear |= collidingBodies;
+}
+
+//==============================================================================
+void clearStoredConstraintSolverClearState(
+    const ConstraintSolver* solver,
+    bool constraintImpulses,
+    bool collidingBodies)
+{
+  auto& registry = getConstraintSolverClearStateRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  const auto it = registry.states.find(solver);
+  if (it == registry.states.end())
+    return;
+
+  if (constraintImpulses)
+    it->second.hasConstraintImpulsesToClear = false;
+  if (collidingBodies)
+    it->second.hasCollidingBodiesToClear = false;
+}
+
+//==============================================================================
+void removeStoredConstraintSolverClearState(const ConstraintSolver* solver)
+{
+  auto& registry = getConstraintSolverClearStateRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  registry.states.erase(solver);
+}
+
+} // namespace
+
 //==============================================================================
 class ConstraintThreadPool
 {
@@ -435,6 +524,7 @@ ConstraintSolver::ConstraintSolver(double timeStep)
       mCollisionDetector);
 
   cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
+  initializeStoredConstraintSolverClearState(this);
 }
 
 //==============================================================================
@@ -450,10 +540,14 @@ ConstraintSolver::ConstraintSolver()
       mCollisionDetector);
 
   cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
+  initializeStoredConstraintSolverClearState(this);
 }
 
 //==============================================================================
-ConstraintSolver::~ConstraintSolver() = default;
+ConstraintSolver::~ConstraintSolver()
+{
+  removeStoredConstraintSolverClearState(this);
+}
 
 //==============================================================================
 void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
@@ -473,8 +567,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
   mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
   mConstrainedGroups.reserve(mSkeletons.size());
-  mHasConstraintImpulsesToClear = true;
-  mHasCollidingBodiesToClear = true;
+  markStoredConstraintSolverClearState(this, true, true);
 }
 
 //==============================================================================
@@ -800,8 +893,9 @@ void ConstraintSolver::solve()
   DART_PROFILE_SCOPED_IF_N(profileRecording, "ConstraintSolver::solve");
 
   const bool splitImpulse = mSplitImpulseEnabled;
-  const bool clearConstraintImpulses = mHasConstraintImpulsesToClear;
-  const bool clearCollidingBodies = mHasCollidingBodiesToClear;
+  const auto clearState = getStoredConstraintSolverClearState(this);
+  const bool clearConstraintImpulses = clearState.hasConstraintImpulsesToClear;
+  const bool clearCollidingBodies = clearState.hasCollidingBodiesToClear;
 
   {
     DART_PROFILE_SCOPED_IF_N(
@@ -831,10 +925,10 @@ void ConstraintSolver::solve()
         clearSkeletonAt(i);
     }
 
-    if (clearConstraintImpulses)
-      mHasConstraintImpulsesToClear = false;
-    if (clearCollidingBodies)
-      mHasCollidingBodiesToClear = false;
+    if (clearConstraintImpulses || clearCollidingBodies) {
+      clearStoredConstraintSolverClearState(
+          this, clearConstraintImpulses, clearCollidingBodies);
+    }
   }
 
   // Update constraints and collect active constraints
@@ -849,7 +943,7 @@ void ConstraintSolver::solve()
     return;
   }
 
-  mHasConstraintImpulsesToClear = true;
+  markStoredConstraintSolverClearState(this, true, false);
 
   // Build constrained groups
   {
@@ -1360,7 +1454,7 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
       }
 
       if (markedCollidingBodies)
-        mHasCollidingBodiesToClear = true;
+        markStoredConstraintSolverClearState(this, false, true);
     }
 
     // Add the new contact constraints to dynamic constraint list

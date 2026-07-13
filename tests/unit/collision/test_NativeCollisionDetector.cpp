@@ -2174,6 +2174,28 @@ TEST(NativeCollisionDetector, ClaimedObjectTracksNativeAabb)
 }
 
 //==============================================================================
+TEST(NativeCollisionDetector, MovedFromObjectCanRebuildItsPrivateState)
+{
+  ExposedNativeCollisionDetector detector;
+  auto frame = makeFrame(std::make_shared<dynamics::SphereShape>(0.5));
+
+  ExposedNativeCollisionObject source(&detector, frame.get());
+  const auto* nativeShape = source.getNativeShape();
+  ASSERT_NE(nullptr, nativeShape);
+
+  ExposedNativeCollisionObject destination(std::move(source));
+  EXPECT_EQ(nativeShape, destination.getNativeShape());
+  EXPECT_EQ(nullptr, source.getNativeShape());
+  EXPECT_FALSE(source.usesDartFallbackShape());
+  EXPECT_FALSE(source.usesSoftMeshFallbackShape());
+  EXPECT_FALSE(source.isPlaneShape());
+
+  source.updateEngineData();
+  ASSERT_NE(nullptr, source.getNativeShape());
+  EXPECT_EQ(native::ShapeType::Sphere, source.getNativeShape()->getType());
+}
+
+//==============================================================================
 TEST(NativeCollisionDetector, DartFallbackTracksShapeNodeRelativeTransform)
 {
   ExposedNativeCollisionDetector detector;
@@ -2187,8 +2209,12 @@ TEST(NativeCollisionDetector, DartFallbackTracksShapeNodeRelativeTransform)
   auto* nativeObject
       = dynamic_cast<ExposedNativeCollisionObject*>(object.get());
   ASSERT_NE(nullptr, nativeObject);
+  const auto* nativeShape = nativeObject->getNativeShape();
+  ASSERT_NE(nullptr, nativeShape);
   auto* fallbackObject = nativeObject->getDartFallbackObject();
   ASSERT_NE(nullptr, fallbackObject);
+  EXPECT_EQ(nativeShape, nativeObject->getNativeShape());
+  EXPECT_EQ(fallbackObject, nativeObject->getDartFallbackObject());
   EXPECT_TRUE(fallbackObject->getWorldTransformForCollision().isApprox(
       pair.second->getWorldTransform(), 1e-12));
 
@@ -2200,6 +2226,8 @@ TEST(NativeCollisionDetector, DartFallbackTracksShapeNodeRelativeTransform)
 
   nativeObject->updateEngineData();
 
+  EXPECT_EQ(nativeShape, nativeObject->getNativeShape());
+  EXPECT_EQ(fallbackObject, nativeObject->getDartFallbackObject());
   EXPECT_TRUE(fallbackObject->getWorldTransformForCollision().isApprox(
       shapeNode->getWorldTransform(), 1e-12));
   EXPECT_FALSE(fallbackObject->getWorldTransformForCollision().isApprox(

@@ -37,6 +37,8 @@
 #include <algorithm>
 #include <array>
 #include <memory>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace dart::collision::native;
@@ -96,6 +98,22 @@ public:
   std::size_t numObjects = 0;
   int clearCount = 0;
 };
+
+class Release620BruteForceBroadPhaseLayout : public BroadPhase
+{
+private:
+  std::unordered_map<std::size_t, Aabb> objects_;
+  std::vector<std::size_t> orderedIds_;
+};
+
+static_assert(
+    sizeof(BruteForceBroadPhase)
+        == sizeof(Release620BruteForceBroadPhaseLayout),
+    "BruteForceBroadPhase must preserve its DART 6.20 binary layout");
+static_assert(
+    alignof(BruteForceBroadPhase)
+        == alignof(Release620BruteForceBroadPhaseLayout),
+    "BruteForceBroadPhase must preserve its DART 6.20 alignment");
 
 } // namespace
 
@@ -355,6 +373,38 @@ TEST(BruteForceBroadPhase, NonContiguousIds)
   ASSERT_EQ(pairs.size(), 1);
   EXPECT_EQ(pairs[0].first, 100);
   EXPECT_EQ(pairs[0].second, 200);
+}
+
+TEST(BruteForceBroadPhase, CopyAndMovePreserveIndependentSparseEntries)
+{
+  BruteForceBroadPhase original;
+  original.add(100, makeAabb(0, 2));
+  original.add(5, makeAabb(1, 3));
+  original.add(900, makeAabb(10, 11));
+
+  BruteForceBroadPhase copied = original;
+  original.update(5, makeAabb(20, 21));
+
+  ASSERT_EQ(copied.queryPairs().size(), 1u);
+  EXPECT_EQ(copied.queryPairs()[0], BroadPhasePair(5, 100));
+  EXPECT_TRUE(original.queryPairs().empty());
+
+  BruteForceBroadPhase moved = std::move(copied);
+  ASSERT_EQ(moved.queryPairs().size(), 1u);
+  EXPECT_EQ(moved.queryPairs()[0], BroadPhasePair(5, 100));
+
+  BruteForceBroadPhase copyAssigned;
+  copyAssigned = original;
+  EXPECT_TRUE(copyAssigned.queryPairs().empty());
+  copyAssigned.update(5, makeAabb(1, 3));
+  ASSERT_EQ(copyAssigned.queryPairs().size(), 1u);
+  EXPECT_EQ(copyAssigned.queryPairs()[0], BroadPhasePair(5, 100));
+  EXPECT_TRUE(original.queryPairs().empty());
+
+  BruteForceBroadPhase moveAssigned;
+  moveAssigned = std::move(copyAssigned);
+  ASSERT_EQ(moveAssigned.queryPairs().size(), 1u);
+  EXPECT_EQ(moveAssigned.queryPairs()[0], BroadPhasePair(5, 100));
 }
 
 TEST(BruteForceBroadPhase, Touching)

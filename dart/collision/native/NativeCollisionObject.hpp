@@ -57,8 +57,6 @@ public:
   friend class NativeCollisionDetector;
   friend class NativeCollisionGroup;
 
-  ~NativeCollisionObject() override;
-
   const native::Shape* getNativeShape() const;
 
   const Eigen::Isometry3d& getNativeTransform() const;
@@ -85,16 +83,12 @@ private:
   void rebuildNativeShape();
 
   std::unique_ptr<native::Shape> mNativeShape;
-  std::unique_ptr<DARTCollisionObject> mDartFallbackObject;
   Eigen::Isometry3d mNativeTransform{Eigen::Isometry3d::Identity()};
   /// Local-space AABB of mNativeShape, recomputed only when the native shape
   /// is rebuilt; shapes are immutable between version bumps, so recomputing
   /// it per step (a virtual call per object per step) is wasted work.
   native::Aabb mNativeLocalAabb;
   native::Aabb mNativeAabb;
-  bool mUsesDartFallbackShape{false};
-  bool mUsesSoftMeshFallbackShape{false};
-  bool mIsPlaneShape{false};
   std::size_t mLastKnownShapeId{std::numeric_limits<std::size_t>::max()};
   std::size_t mLastKnownShapeVersion{0u};
 };

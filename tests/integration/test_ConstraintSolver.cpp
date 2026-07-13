@@ -67,9 +67,11 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <new>
 #include <set>
 #include <string>
 #include <thread>
+#include <type_traits>
 #include <typeinfo>
 #include <vector>
 
@@ -1183,6 +1185,61 @@ TEST(ConstraintSolver, PrepareForSimulationDoesNotUpdateManualConstraints)
 
   solver.solve();
   EXPECT_EQ(1u, manualConstraint->getNumUpdates());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, OutOfLineClearStateIsIsolatedPerSolver)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* firstBody = createFreeBody("first", true, skeletons);
+  auto* secondBody = createFreeBody("second", true, skeletons);
+
+  ExposedThreadedConstraintSolver firstSolver;
+  ExposedThreadedConstraintSolver secondSolver;
+  firstSolver.addSkeletonForTest(skeletons[0]);
+  secondSolver.addSkeletonForTest(skeletons[1]);
+
+  firstSolver.addSkeleton(dynamics::Skeleton::create("marker"));
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  firstBody->setColliding(true);
+  secondBody->setColliding(true);
+  DART_SUPPRESS_DEPRECATED_END
+
+  secondSolver.solve();
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_TRUE(secondBody->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
+
+  firstSolver.solve();
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_FALSE(firstBody->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
+}
+
+//==============================================================================
+TEST(ConstraintSolver, OutOfLineClearStateDoesNotSurviveAddressReuse)
+{
+  using Solver = ExposedThreadedConstraintSolver;
+  using Storage = std::aligned_storage_t<sizeof(Solver), alignof(Solver)>;
+  Storage storage;
+
+  auto* firstSolver = new (&storage) Solver;
+  firstSolver->addSkeleton(dynamics::Skeleton::create("stale"));
+  firstSolver->~Solver();
+
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* probeBody = createFreeBody("probe", true, skeletons);
+  auto* secondSolver = new (&storage) Solver;
+  secondSolver->addSkeletonForTest(skeletons[0]);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  probeBody->setColliding(true);
+  DART_SUPPRESS_DEPRECATED_END
+
+  secondSolver->solve();
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_TRUE(probeBody->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
+  secondSolver->~Solver();
 }
 
 //==============================================================================

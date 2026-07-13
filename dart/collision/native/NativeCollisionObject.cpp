@@ -41,12 +41,39 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 
 #include <limits>
+#include <utility>
 
 namespace dart {
 namespace collision {
 namespace {
 
 constexpr std::size_t kNoShapeId = std::numeric_limits<std::size_t>::max();
+
+// Keep this snapshot in sync with the released DART 6.20 object layout. The
+// fallback bridge must reuse existing storage instead of growing the exported,
+// subclassable NativeCollisionObject base.
+class NativeCollisionObject620Layout : public CollisionObject
+{
+private:
+  void updateEngineData() override
+  {
+    // Do nothing
+  }
+
+  std::unique_ptr<native::Shape> mNativeShape;
+  Eigen::Isometry3d mNativeTransform;
+  native::Aabb mNativeLocalAabb;
+  native::Aabb mNativeAabb;
+  std::size_t mLastKnownShapeId;
+  std::size_t mLastKnownShapeVersion;
+};
+
+static_assert(
+    sizeof(NativeCollisionObject) == sizeof(NativeCollisionObject620Layout),
+    "NativeCollisionObject must preserve its released DART 6.20 ABI layout");
+static_assert(
+    alignof(NativeCollisionObject) == alignof(NativeCollisionObject620Layout),
+    "NativeCollisionObject must preserve its released DART 6.20 alignment");
 
 //==============================================================================
 class DartFallbackCollisionObject final : public DARTCollisionObject
@@ -74,6 +101,107 @@ public:
 private:
   std::size_t mLastKnownShapeFrameVersion;
 };
+
+//==============================================================================
+// Object state is stored behind the existing mNativeShape slot so old
+// downstream subclasses keep the allocation size and member offsets they were
+// compiled against. The wrapper adds one allocation when an object is created,
+// then keeps the per-step path lock-free and preserves native/fallback object
+// identity across shape refreshes.
+class NativeCollisionObjectState final : public native::Shape
+{
+public:
+  native::Shape* getNativeShape()
+  {
+    return mNativeShape.get();
+  }
+
+  const native::Shape* getNativeShape() const
+  {
+    return mNativeShape.get();
+  }
+
+  void setNativeShape(std::unique_ptr<native::Shape> nativeShape)
+  {
+    mNativeShape = std::move(nativeShape);
+  }
+
+  void setShapeClassification(
+      bool usesDartFallbackShape,
+      bool usesSoftMeshFallbackShape,
+      bool isPlaneShape)
+  {
+    mUsesDartFallbackShape = usesDartFallbackShape;
+    mUsesSoftMeshFallbackShape = usesSoftMeshFallbackShape;
+    mIsPlaneShape = isPlaneShape;
+  }
+
+  bool usesDartFallbackShape() const
+  {
+    return mUsesDartFallbackShape;
+  }
+
+  bool usesSoftMeshFallbackShape() const
+  {
+    return mUsesSoftMeshFallbackShape;
+  }
+
+  bool isPlaneShape() const
+  {
+    return mIsPlaneShape;
+  }
+
+  DARTCollisionObject* getDartFallbackObject() const
+  {
+    return mDartFallbackObject.get();
+  }
+
+  DARTCollisionObject* getOrCreateDartFallbackObject(
+      CollisionDetector* collisionDetector,
+      const dynamics::ShapeFrame* shapeFrame)
+  {
+    if (!mDartFallbackObject) {
+      mDartFallbackObject = std::make_unique<DartFallbackCollisionObject>(
+          collisionDetector, shapeFrame);
+    }
+
+    return mDartFallbackObject.get();
+  }
+
+  native::ShapeType getType() const override
+  {
+    return mNativeShape ? mNativeShape->getType() : native::ShapeType::Compound;
+  }
+
+  native::Aabb computeLocalAabb() const override
+  {
+    return mNativeShape ? mNativeShape->computeLocalAabb() : native::Aabb();
+  }
+
+private:
+  std::unique_ptr<native::Shape> mNativeShape;
+  std::unique_ptr<DARTCollisionObject> mDartFallbackObject;
+  bool mUsesDartFallbackShape{false};
+  bool mUsesSoftMeshFallbackShape{false};
+  bool mIsPlaneShape{false};
+};
+
+//==============================================================================
+const NativeCollisionObjectState* findNativeCollisionObjectState(
+    const std::unique_ptr<native::Shape>& state)
+{
+  return static_cast<const NativeCollisionObjectState*>(state.get());
+}
+
+//==============================================================================
+NativeCollisionObjectState& getOrCreateNativeCollisionObjectState(
+    std::unique_ptr<native::Shape>& state)
+{
+  if (!state)
+    state = std::make_unique<NativeCollisionObjectState>();
+
+  return *static_cast<NativeCollisionObjectState*>(state.get());
+}
 
 //==============================================================================
 void refreshDartFallbackObject(DARTCollisionObject* object, bool force)
@@ -135,18 +263,17 @@ native::Aabb getDartFallbackAabb(
 NativeCollisionObject::NativeCollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame)
-  : CollisionObject(collisionDetector, shapeFrame)
+  : CollisionObject(collisionDetector, shapeFrame),
+    mNativeShape(std::make_unique<NativeCollisionObjectState>())
 {
   updateEngineData();
 }
 
 //==============================================================================
-NativeCollisionObject::~NativeCollisionObject() = default;
-
-//==============================================================================
 const native::Shape* NativeCollisionObject::getNativeShape() const
 {
-  return mNativeShape.get();
+  const auto* state = findNativeCollisionObjectState(mNativeShape);
+  return state ? state->getNativeShape() : nullptr;
 }
 
 //==============================================================================
@@ -164,54 +291,58 @@ const native::Aabb& NativeCollisionObject::getNativeAabb() const
 //==============================================================================
 DARTCollisionObject* NativeCollisionObject::getDartFallbackObject()
 {
-  if (!mDartFallbackObject) {
-    mDartFallbackObject = std::make_unique<DartFallbackCollisionObject>(
-        getCollisionDetector(), getShapeFrame());
-  }
-
-  return mDartFallbackObject.get();
+  auto& state = getOrCreateNativeCollisionObjectState(mNativeShape);
+  return state.getOrCreateDartFallbackObject(
+      getCollisionDetector(), getShapeFrame());
 }
 
 //==============================================================================
 bool NativeCollisionObject::usesDartFallbackShape() const
 {
-  return mUsesDartFallbackShape;
+  const auto* state = findNativeCollisionObjectState(mNativeShape);
+  return state && state->usesDartFallbackShape();
 }
 
 //==============================================================================
 bool NativeCollisionObject::usesSoftMeshFallbackShape() const
 {
-  return mUsesSoftMeshFallbackShape;
+  const auto* state = findNativeCollisionObjectState(mNativeShape);
+  return state && state->usesSoftMeshFallbackShape();
 }
 
 //==============================================================================
 bool NativeCollisionObject::isPlaneShape() const
 {
-  return mIsPlaneShape;
+  const auto* state = findNativeCollisionObjectState(mNativeShape);
+  return state && state->isPlaneShape();
 }
 
 //==============================================================================
 void NativeCollisionObject::updateEngineData()
 {
+  const bool stateMissing = !mNativeShape;
   const auto shape = getShape();
   const auto* shapePtr = shape.get();
   const std::size_t shapeId = shapePtr ? shapePtr->getID() : kNoShapeId;
   const std::size_t shapeVersion = shapePtr ? shapePtr->getVersion() : 0u;
-  const bool shapeChanged
-      = shapeId != mLastKnownShapeId || shapeVersion != mLastKnownShapeVersion;
+  const bool shapeChanged = stateMissing || shapeId != mLastKnownShapeId
+                            || shapeVersion != mLastKnownShapeVersion;
+  auto& state = getOrCreateNativeCollisionObjectState(mNativeShape);
   if (shapeChanged) {
-    mUsesDartFallbackShape = shapeUsesDartFallback(shapePtr);
-    mUsesSoftMeshFallbackShape = shapeUsesSoftMeshFallback(shapePtr);
-    mIsPlaneShape = shapeIsPlane(shapePtr);
+    state.setShapeClassification(
+        shapeUsesDartFallback(shapePtr),
+        shapeUsesSoftMeshFallback(shapePtr),
+        shapeIsPlane(shapePtr));
   }
 
-  if (mUsesDartFallbackShape) {
+  if (state.usesDartFallbackShape()) {
     mLastKnownShapeId = shapeId;
     mLastKnownShapeVersion = shapeVersion;
-    mNativeShape.reset();
+    state.setNativeShape(nullptr);
+
     auto* fallbackObject = getDartFallbackObject();
     refreshDartFallbackObject(
-        fallbackObject, mUsesSoftMeshFallbackShape || shapeChanged);
+        fallbackObject, state.usesSoftMeshFallbackShape() || shapeChanged);
     mNativeTransform = fallbackObject->getWorldTransformForCollision();
     mNativeAabb = getDartFallbackAabb(*fallbackObject, mNativeTransform);
     return;
@@ -222,13 +353,14 @@ void NativeCollisionObject::updateEngineData()
   if (shapeChanged)
     rebuildNativeShape();
 
-  if (mNativeShape) {
+  const auto* nativeShape = state.getNativeShape();
+  if (nativeShape != nullptr) {
     mNativeAabb = native::Aabb::transformed(mNativeLocalAabb, mNativeTransform);
   } else {
     mNativeAabb = native::Aabb();
   }
 
-  refreshDartFallbackObject(mDartFallbackObject.get(), shapeChanged);
+  refreshDartFallbackObject(state.getDartFallbackObject(), shapeChanged);
 }
 
 //==============================================================================
@@ -237,17 +369,22 @@ void NativeCollisionObject::rebuildNativeShape()
   const auto shape = getShape();
   mLastKnownShapeId = shape ? shape->getID() : kNoShapeId;
   mLastKnownShapeVersion = shape ? shape->getVersion() : 0u;
+  auto& state = getOrCreateNativeCollisionObjectState(mNativeShape);
 
   if (!shape) {
-    mNativeShape.reset();
+    state.setNativeShape(nullptr);
+
     mNativeLocalAabb = native::Aabb();
     mNativeAabb = native::Aabb();
     return;
   }
 
-  mNativeShape = detail::NativeShapeConversion::create(*shape);
-  mNativeLocalAabb
-      = mNativeShape ? mNativeShape->computeLocalAabb() : native::Aabb();
+  auto nativeShape = detail::NativeShapeConversion::create(*shape);
+  state.setNativeShape(std::move(nativeShape));
+
+  const auto* storedNativeShape = state.getNativeShape();
+  mNativeLocalAabb = storedNativeShape ? storedNativeShape->computeLocalAabb()
+                                       : native::Aabb();
 }
 
 } // namespace collision

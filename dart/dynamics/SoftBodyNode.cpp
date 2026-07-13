@@ -45,7 +45,10 @@
 #include <algorithm>
 #include <limits>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -204,16 +207,8 @@ inline void addPointInertiaContribution(
   _spatialInertia(5, 5) += _mass;
 }
 
-class AdaptiveContactActivationNotifier final : public PointMassNotifier
+struct AdaptiveContactActivationState
 {
-public:
-  AdaptiveContactActivationNotifier(
-      SoftBodyNode* _parentSoftBody, const std::string& _name)
-    : PointMassNotifier(_parentSoftBody, _name)
-  {
-    // Do nothing
-  }
-
   void resize(const std::vector<PointMass::Properties>& properties)
   {
     const std::size_t count = properties.size();
@@ -301,18 +296,100 @@ public:
       = Eigen::Matrix6d::Zero();
 };
 
-AdaptiveContactActivationNotifier& adaptiveContactActivation(
-    SoftBodyNode& softBody)
+class AdaptiveContactActivationNotifier final : public PointMassNotifier
 {
-  return *static_cast<AdaptiveContactActivationNotifier*>(
-      softBody.getNotifier());
+public:
+  AdaptiveContactActivationNotifier(
+      SoftBodyNode* parentSoftBody,
+      const std::string& name,
+      AdaptiveContactActivationState& state)
+    : PointMassNotifier(parentSoftBody, name), mState(&state)
+  {
+    // Do nothing
+  }
+
+  AdaptiveContactActivationState& getState()
+  {
+    return *mState;
+  }
+
+  const AdaptiveContactActivationState& getState() const
+  {
+    return *mState;
+  }
+
+private:
+  AdaptiveContactActivationState* mState;
+};
+
+struct AdaptiveContactActivationStateRegistry
+{
+  std::mutex mMutex;
+  std::unordered_map<
+      const SoftBodyNode*,
+      std::unique_ptr<AdaptiveContactActivationState>>
+      mStates;
+};
+
+AdaptiveContactActivationStateRegistry&
+getAdaptiveContactActivationStateRegistry()
+{
+  // Keep this registry alive until process exit so a SoftBodyNode destroyed
+  // during static teardown never observes a registry that has already gone
+  // away.
+  static auto* const registry = new AdaptiveContactActivationStateRegistry;
+  return *registry;
 }
 
-const AdaptiveContactActivationNotifier& adaptiveContactActivation(
+AdaptiveContactActivationState& getOrCreateAdaptiveContactActivationState(
+    SoftBodyNode& softBody,
+    const std::vector<PointMass::Properties>& pointProperties)
+{
+  auto& registry = getAdaptiveContactActivationStateRegistry();
+  std::lock_guard<std::mutex> lock(registry.mMutex);
+
+  const auto found = registry.mStates.find(&softBody);
+  if (found != registry.mStates.end())
+    return *found->second;
+
+  auto state = std::make_unique<AdaptiveContactActivationState>();
+  state->resize(pointProperties);
+  AdaptiveContactActivationState* result = state.get();
+  registry.mStates.emplace(&softBody, std::move(state));
+  return *result;
+}
+
+void eraseAdaptiveContactActivationState(const SoftBodyNode* softBody)
+{
+  auto& registry = getAdaptiveContactActivationStateRegistry();
+  std::lock_guard<std::mutex> lock(registry.mMutex);
+  registry.mStates.erase(softBody);
+}
+
+AdaptiveContactActivationState& adaptiveContactActivation(
+    SoftBodyNode& softBody)
+{
+  if (auto* activation = dynamic_cast<AdaptiveContactActivationNotifier*>(
+          softBody.getNotifier())) {
+    return activation->getState();
+  }
+
+  return getOrCreateAdaptiveContactActivationState(
+      softBody, softBody.getSoftBodyNodeProperties().mPointProps);
+}
+
+const AdaptiveContactActivationState& adaptiveContactActivation(
     const SoftBodyNode& softBody)
 {
-  return *static_cast<const AdaptiveContactActivationNotifier*>(
-      softBody.getNotifier());
+  if (const auto* activation
+      = dynamic_cast<const AdaptiveContactActivationNotifier*>(
+          softBody.getNotifier())) {
+    return activation->getState();
+  }
+
+  return getOrCreateAdaptiveContactActivationState(
+      const_cast<SoftBodyNode&>(softBody),
+      softBody.getSoftBodyNodeProperties().mPointProps);
 }
 
 } // namespace
@@ -324,6 +401,7 @@ SoftBodyNode::~SoftBodyNode()
     delete mPointMasses[i];
 
   delete mNotifier;
+  eraseAdaptiveContactActivationState(this);
 }
 
 //==============================================================================
@@ -471,19 +549,37 @@ SoftBodyNode::SoftBodyNode(
     mSoftShapeNode(nullptr)
 {
   createSoftBodyAspect();
-  mNotifier = new AdaptiveContactActivationNotifier(
-      this, getName() + "_PointMassNotifier");
-  ShapeNode* softNode
-      = createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
-          std::make_shared<SoftMeshShape>(this), getName() + "_SoftMeshShape");
-  mSoftShapeNode = softNode;
+  mNotifier = nullptr;
+  bool activationRegistered = false;
+  try {
+    auto& activation = getOrCreateAdaptiveContactActivationState(
+        *this, _properties.mPointProps);
+    activationRegistered = true;
+    mNotifier = new AdaptiveContactActivationNotifier(
+        this, getName() + "_PointMassNotifier", activation);
+    ShapeNode* softNode
+        = createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+            std::make_shared<SoftMeshShape>(this),
+            getName() + "_SoftMeshShape");
+    mSoftShapeNode = softNode;
 
-  // Dev's Note: We do this workaround (instead of just using setProperties(~))
-  // because mSoftShapeNode cannot be used until init(SkeletonPtr) has been
-  // called on this BodyNode, but that happens after construction is finished.
-  mAspectProperties = _properties;
-  configurePointMasses(softNode);
-  mNotifier->dirtyTransform();
+    // Dev's Note: We do this workaround (instead of just using
+    // setProperties(~)) because mSoftShapeNode cannot be used until
+    // init(SkeletonPtr) has been called on this BodyNode, but that happens
+    // after construction is finished.
+    mAspectProperties = _properties;
+    configurePointMasses(softNode);
+    mNotifier->dirtyTransform();
+  } catch (...) {
+    for (PointMass* pointMass : mPointMasses)
+      delete pointMass;
+    mPointMasses.clear();
+    delete mNotifier;
+    mNotifier = nullptr;
+    if (activationRegistered)
+      eraseAdaptiveContactActivationState(this);
+    throw;
+  }
 }
 
 //==============================================================================

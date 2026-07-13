@@ -55,6 +55,7 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -469,6 +470,72 @@ private:
   std::string mName;
   std::string mOriginal;
   bool mHadOriginal{false};
+};
+
+class CustomPointMassNotifier final : public dynamics::PointMassNotifier
+{
+public:
+  CustomPointMassNotifier(
+      dynamics::SoftBodyNode* parent, const std::string& name, bool* destroyed)
+    : PointMassNotifier(parent, name), mDestroyed(destroyed)
+  {
+    // Do nothing
+  }
+
+  ~CustomPointMassNotifier() override
+  {
+    if (mDestroyed != nullptr)
+      *mDestroyed = true;
+  }
+
+private:
+  bool* mDestroyed;
+};
+
+class CustomNotifierSoftBodyNode final : public dynamics::SoftBodyNode
+{
+public:
+  CustomNotifierSoftBodyNode(
+      dynamics::BodyNode* parentBodyNode,
+      dynamics::Joint* parentJoint,
+      const Properties& properties)
+    : dynamics::Entity(dynamics::Frame::World(), false),
+      dynamics::Frame(dynamics::Frame::World()),
+      SoftBodyNode(parentBodyNode, parentJoint, properties)
+  {
+    // Do nothing
+  }
+
+  ~CustomNotifierSoftBodyNode() override
+  {
+    restoreOriginalNotifier();
+  }
+
+  void installCustomNotifier(bool* destroyed)
+  {
+    if (!mCustomNotifier) {
+      mOriginalNotifier = mNotifier;
+      mCustomNotifier = std::make_unique<CustomPointMassNotifier>(
+          this, getName() + "_CustomPointMassNotifier", destroyed);
+    }
+
+    mNotifier = mCustomNotifier.get();
+  }
+
+  void restoreOriginalNotifier()
+  {
+    if (mOriginalNotifier != nullptr)
+      mNotifier = mOriginalNotifier;
+  }
+
+  const dynamics::PointMassNotifier* getOriginalNotifier() const
+  {
+    return mOriginalNotifier;
+  }
+
+private:
+  dynamics::PointMassNotifier* mOriginalNotifier{nullptr};
+  std::unique_ptr<CustomPointMassNotifier> mCustomNotifier;
 };
 
 struct SoftFaceRestScene
@@ -1125,6 +1192,110 @@ TEST_F(SoftDynamicsTest, adaptiveContactActivationDefaultOffMatchesControlWorld)
       computeSoftStateSnapshot(lhs),
       computeSoftStateSnapshot(rhs),
       "adaptive activation default-off control equivalence");
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest, adaptiveContactActivationSupportsCustomPointMassNotifier)
+{
+  bool customNotifierDestroyed = false;
+  {
+    auto world = simulation::World::create();
+    world->setGravity(Eigen::Vector3d::Zero());
+
+    auto skeleton = dynamics::Skeleton::create("custom_notifier_soft_body");
+    const auto uniqueProperties
+        = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+            Eigen::Vector3d::Ones(),
+            Eigen::Isometry3d::Identity(),
+            1.0,
+            100.0,
+            100.0,
+            1.0);
+    const dynamics::BodyNode::Properties bodyProperties(
+        dynamics::BodyNode::AspectProperties("custom_notifier_body"));
+    const dynamics::SoftBodyNode::Properties softProperties(
+        bodyProperties, uniqueProperties);
+    auto pair = skeleton->createJointAndBodyNodePair<
+        dynamics::WeldJoint,
+        CustomNotifierSoftBodyNode>(
+        nullptr, dynamics::WeldJoint::Properties(), softProperties);
+    CustomNotifierSoftBodyNode* softBody = pair.second;
+    ASSERT_TRUE(softBody != nullptr);
+    ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+    const dynamics::PointMassNotifier* originalNotifier
+        = softBody->getNotifier();
+    const auto expectAdaptiveState = [softBody](
+                                         bool enabled,
+                                         std::size_t activePointMasses) {
+      EXPECT_EQ(softBody->isAdaptiveContactActivationEnabled(), enabled);
+      EXPECT_EQ(softBody->getAdaptiveContactActivationRingCount(), 1u);
+      EXPECT_EQ(softBody->getAdaptiveContactActivationLingerSteps(), 2u);
+      EXPECT_DOUBLE_EQ(
+          softBody->getAdaptiveContactActivationVelocityTolerance(), 2.0e-4);
+      EXPECT_DOUBLE_EQ(
+          softBody->getAdaptiveContactActivationPositionTolerance(), 3.0e-4);
+      EXPECT_EQ(softBody->getNumActivePointMasses(), activePointMasses);
+    };
+
+    softBody->setAdaptiveContactActivationRingCount(1u);
+    softBody->setAdaptiveContactActivationLingerSteps(2u);
+    softBody->setAdaptiveContactActivationVelocityTolerance(2.0e-4);
+    softBody->setAdaptiveContactActivationPositionTolerance(3.0e-4);
+    softBody->setAdaptiveContactActivationEnabled(true);
+    expectAdaptiveState(true, softBody->getNumPointMasses());
+
+    softBody->installCustomNotifier(&customNotifierDestroyed);
+    EXPECT_NE(softBody->getNotifier(), originalNotifier);
+    EXPECT_EQ(softBody->getOriginalNotifier(), originalNotifier);
+    expectAdaptiveState(true, softBody->getNumPointMasses());
+
+    softBody->removeAllShapeNodes();
+    ASSERT_EQ(softBody->getNumShapeNodes(), 0u);
+    const std::size_t oldPointMassCount = softBody->getNumPointMasses();
+    const auto topologyProperties
+        = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+            Eigen::Vector3d::Ones(),
+            Eigen::Isometry3d::Identity(),
+            Eigen::Vector3i(3, 3, 3),
+            1.0,
+            100.0,
+            100.0,
+            1.0);
+    softBody->setProperties(topologyProperties);
+    ASSERT_GT(softBody->getNumPointMasses(), oldPointMassCount);
+    expectAdaptiveState(true, softBody->getNumPointMasses());
+
+    softBody->restoreOriginalNotifier();
+    EXPECT_EQ(softBody->getNotifier(), originalNotifier);
+    expectAdaptiveState(true, softBody->getNumPointMasses());
+
+    world->addSkeleton(skeleton);
+    world->step();
+    expectFiniteSoftBodyState(softBody, "restored point-mass notifier");
+    const std::size_t activeAfterRestoredStep
+        = softBody->getNumActivePointMasses();
+    expectAdaptiveState(true, activeAfterRestoredStep);
+
+    // Leave the custom notifier installed so the derived destructor must
+    // restore the original before PointMass and base-notifier teardown.
+    softBody->installCustomNotifier(&customNotifierDestroyed);
+    expectAdaptiveState(true, activeAfterRestoredStep);
+    world->step();
+    expectFiniteSoftBodyState(softBody, "custom point-mass notifier");
+
+    softBody->setAdaptiveContactActivationEnabled(false);
+    expectAdaptiveState(false, softBody->getNumPointMasses());
+    world->step();
+    expectAdaptiveState(false, softBody->getNumPointMasses());
+
+    softBody->setAdaptiveContactActivationEnabled(true);
+    world->step();
+    expectFiniteSoftBodyState(softBody, "re-enabled custom notifier");
+  }
+
+  EXPECT_TRUE(customNotifierDestroyed);
 }
 
 //==============================================================================
