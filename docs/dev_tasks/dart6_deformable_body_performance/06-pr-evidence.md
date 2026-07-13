@@ -848,9 +848,12 @@ pointWorldPosSq 77.599935310371123
 
 The historical profile contained `DART native finite-finite soft workers`,
 confirming that the `DARTCollisionDetector` worker path was exercised. The
-scope is now named `DART finite-finite pairs`; this run is not evidence that the
-direct `NativeCollisionDetector` path is threaded. It is worker-activation
-evidence only, and the host load was too high for a scaling claim.
+worker-specific scope was subsequently removed; the current broader
+`DART finite-finite pairs` scope covers both serial and parallel traversal and
+does not independently establish worker activation. This run is not evidence
+that the direct `NativeCollisionDetector` path is threaded. It is historical
+worker-activation evidence only, and the host load was too high for a scaling
+claim.
 
 ## Local validation gates
 
