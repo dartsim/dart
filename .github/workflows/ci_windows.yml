@@ -60,7 +60,7 @@ jobs:
           $ErrorActionPreference = "Stop"
           pixi run python -c "import sys; print(sys.executable)"
           $launcher = Join-Path $env:GITHUB_WORKSPACE ".claude/hooks/pre-commit-guard.ps1"
-          $hookCommand = '$env:DART_HOOK_PAYLOAD | & (Join-Path (git rev-parse --show-toplevel) ''.claude/hooks/pre-commit-guard.ps1''); if (-not $?) { exit 2 }; if ($LASTEXITCODE -ne 0) { exit 2 }; exit 0'
+          $hookCommand = '& (Join-Path (git rev-parse --show-toplevel) ''.claude/hooks/pre-commit-guard.ps1''); if (-not $?) { exit 2 }; if ($LASTEXITCODE -ne 0) { exit 2 }; exit 0'
           # The malformed probe writes expected native stderr. PowerShell 5.1
           # must continue long enough to preserve and assert the exit code.
           $ErrorActionPreference = "Continue"

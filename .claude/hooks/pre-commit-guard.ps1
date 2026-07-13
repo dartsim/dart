@@ -5,6 +5,9 @@ try {
   # Read stdin directly: Windows PowerShell's `$input` enumerator is not
   # reliable when this script is invoked through a nested `-Command` pipeline.
   $payload = [Console]::In.ReadToEnd()
+  if ([string]::IsNullOrEmpty($payload)) {
+    $payload = $env:DART_HOOK_PAYLOAD
+  }
   $pipelineInput = if ($payload.Length -gt 0) { @($payload) } else { @() }
   $repoRoot = (git rev-parse --show-toplevel)
   if (-not $repoRoot) {
