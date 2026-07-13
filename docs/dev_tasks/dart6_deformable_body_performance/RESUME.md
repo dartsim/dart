@@ -42,10 +42,12 @@ unresolved. The immediate work is review/CI stewardship and honest closeout.
   benchmark host blocker`)
 - Latest activation-toggle review fix: `b8fe9a23093` (`Invalidate soft caches
   on activation toggle`)
+- Latest runner-test review fix: `8c68e900641` (`Stabilize paired runner timeout
+  test`)
 - Last published head inspected while authoring this refresh:
-  `origin/wp-db-native-soft-fallback` at `92ccfce567c`
-- Current branch adds review fix `b8fe9a23093` and this task-home refresh after
-  that baseline. Verify the exact current HEAD, remote tip, and ahead count.
+  `origin/wp-db-native-soft-fallback` at `551d7d34817`
+- Current branch adds runner-test fix `8c68e900641` and this task-home refresh
+  after that baseline. Verify the exact current HEAD, remote tip, and ahead count.
 - Target base observed and merged: `origin/release-6.20` at `4ddfe712b359`
   (#3384)
 - PR: #3382, open, non-draft, milestone `DART 6.20.0`
@@ -127,7 +129,7 @@ Follow-up commit `b8fe9a23093`:
 - changes no public API, class layout, or default-off behavior.
 
 Before the production fix, the regression observed stale diagonal values such
-as `1.0` where a fresh recomputation produced `0.5`. Current local verification:
+as `1.0` where a fresh recomputation produced `0.5`. Verification on that fix:
 
 - `pixi run lint`: passed;
 - no-cache Release build: passed (292/292 build steps);
@@ -139,6 +141,28 @@ as `1.0` where a fresh recomputation produced `0.5`. Current local verification:
 
 No benchmark was rerun because this is an immediate-query cache-correctness
 fix, not a changed performance claim.
+
+## 2026-07-12 paired-runner timeout-test review fix
+
+Codex review of published head `551d7d34817` identified a test-only race in
+`test_captured_command_times_out_and_terminates_process_group`. Its 50 ms
+timeout could terminate the Python child before it executed and flushed
+`started`, making the nonempty-output assertion dependent on host scheduling.
+
+Follow-up commit `8c68e900641` keeps the production runner unchanged. The test
+now proves the requested timeout is reported and the capture log equals the
+output attached to `TimeoutExpired`, accepting either empty or partial output.
+This preserves the production wall-time guarantee and process-group cleanup
+semantics without adding a readiness bypass.
+
+Verification:
+
+- focused timeout test: 100/100 repeated launches passed;
+- full paired-runner test file: 38/38 passed;
+- `pixi run lint`: passed;
+- full Python suite after a complete rebuild: 213/213 passed;
+- `git diff --check`: passed; and
+- two independent final reviews: clean.
 
 ## 2026-07-12 target-base merge verification
 
@@ -223,10 +247,17 @@ summary, verdict, or `COMPLETE.json`. This is the current exact-composed-head
 host blocker and explicit non-evidence; do not resume its directory or weaken
 the runner's gates.
 
-## Pre-fix PR snapshot and external blockers
+## Published-head PR snapshots and external blockers
 
-At the last pre-fix inspection, published head `92ccfce567c` was mergeable but
-blocked by pending or failed checks:
+At the last inspection of published head `551d7d34817`, #3382 was mergeable
+but blocked on hosted checks. The fresh Codex review had one unresolved thread,
+`PRRT_kwDOACTnoM6QQ7aW`, for the timeout-test race addressed by follow-up commit
+`8c68e900641`. Seven checks had passed, twelve were still running, and no
+current-head CI failure had appeared. Treat this as a snapshot and inspect the
+exact live head before acting.
+
+Earlier published head `92ccfce567c` was mergeable but blocked by pending or
+failed checks:
 
 - The mass-matrix review thread is resolved. A fresh Codex review completed on
   this exact head and found the activation-toggle cache issue addressed by
@@ -274,11 +305,11 @@ blocked by pending or failed checks:
    `4ddfe712b359` at `52ff108437d`; if the base moved again, merge the new
    `origin/release-6.20` tip into the topic branch (never rebase), resolve
    conflicts, and rerun the relevant gates on the merged state.
-2. If review fix `b8fe9a23093` and this task-home refresh are not yet published,
-   push them. Update the PR body to the resulting exact head, record the
-   activation-toggle correction and 17/17 `test_SoftDynamics` gate, resolve
-   review thread `PRRT_kwDOACTnoM6QQkkC`, and post one fresh top-level
-   `@codex review` for that head.
+2. If runner-test fix `8c68e900641` and this task-home refresh are not yet
+   published, push them. Update the PR body to the resulting exact head and
+   record the timeout-test correction and its 100/100, 38/38, lint, and 213/213
+   gates. Resolve review thread `PRRT_kwDOACTnoM6QQ7aW`, then post one fresh
+   top-level `@codex review` for that head.
 3. Monitor the new head through CI. Rerun only exact-current-head
    infrastructure failures, and investigate any product failure from its own
    logs rather than carrying the old-head runner collisions forward.

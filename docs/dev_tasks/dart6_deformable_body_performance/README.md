@@ -19,23 +19,22 @@ deferrals are published; the final same-host matrix and its evaluator
 limitation are recorded locally. Current work is review/CI stabilization and
 closeout decisions, not another speculative optimization lane inside #3382.
 
-The complete stack through host-blocker record `92ccfce567c` is published. It
-includes the mass-matrix review correction `2ad156e7b82`, the balanced-evidence
-runner and thermal-gate correction, durable follow-up owners, and the current
-`release-6.20` merge at `52ff108437d`. The original mass-matrix review thread
-is resolved, and the PR title and body now describe this as a representative
-release slice rather than feature completion.
+The complete stack through review/handoff head `551d7d34817` is published. It
+includes the mass-matrix correction, balanced-evidence runner, durable
+follow-up owners, current `release-6.20` merge, and activation-toggle cache fix
+`b8fe9a23093`. Both physics review threads are resolved, and the PR title/body
+describe this as a representative release slice rather than feature
+completion.
 
-A review of published head `92ccfce567c` then found that disabling adaptive contact activation
-could leave articulated-inertia caches in their frozen/lumped state until a
-later unrelated invalidation. Follow-up commit `b8fe9a23093` invalidates the soft
-cache dependency chain on either activation-mode transition and adds an
-immediate-query regression. The fix passes the full Release, Python, lint, and
-focused soft-dynamics gates and is carried by the current branch with this
-task-home refresh. No final paired timing artifact has been captured: the
-exact composed attempt remained in preflight for 26 minutes while sibling
-builds kept the shared host hot and busy, with no valid poll. Exact takeover
-state is in `RESUME.md`.
+Review of `551d7d34817` found one test-only race: the paired-runner timeout test
+required its child process to start and flush output within 50 ms. Follow-up
+commit `8c68e900641` instead proves the timeout value and persisted output
+contract whether startup produced empty or partial output; production timeout
+semantics are unchanged. The test passes 100 repeated launches, the full runner
+file, lint, and the 213-test Python suite. No final paired timing artifact has
+been captured: the exact composed attempt remained in preflight for 26 minutes
+while sibling builds kept the shared host hot and busy, with no valid poll.
+Exact takeover state is in `RESUME.md`.
 
 ## Reference scope
 

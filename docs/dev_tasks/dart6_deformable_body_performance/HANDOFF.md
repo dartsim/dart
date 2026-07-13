@@ -38,8 +38,9 @@ contract  b615f5f1f6e (binding native-kernel details)
 evidence  babca41f70d (records the sustained paired-run host blocker)
 merge     52ff108437d (merges current release-6.20 through #3384)
 docs      af7ae4ccedd (merged-head verification and takeover state)
-published 92ccfce567c (complete pre-review-fix stack)
+published 551d7d34817 (activation fix and refreshed handoff)
 review    b8fe9a23093 (activation-toggle cache invalidation)
+test-fix  8c68e900641 (timeout-test startup-race correction)
 base      4ddfe712b359
 PR        https://github.com/dartsim/dart/pull/3382
 ```
@@ -106,20 +107,32 @@ peaks were 50 workloads, load `52.61`, and `105 C`. It was interrupted with no
 timing rows, summary, verdict, or `COMPLETE.json`. This is explicit host-blocker
 evidence, not a result to resume or reinterpret.
 
-Current review fix `b8fe9a23093` invalidates the soft cache dependency chain
+Published review fix `b8fe9a23093` invalidates the soft cache dependency chain
 when adaptive contact activation changes mode and adds
 `SoftDynamicsTest.adaptiveContactActivationToggleInvalidatesArticulatedInertia`.
 The regression failed before the fix with stale frozen/lumped articulated
 inertia and passes after it. Verification is clean: lint; 292/292 no-cache
 Release build; 152/152 C++; 213/213 Python; 17/17 `test_SoftDynamics`;
-`git diff --check`; and two independent reviews. If it is not yet published,
-publish it with this task-home refresh. Then update the PR body to the resulting
-head and 17/17 `test_SoftDynamics` gate, resolve thread
-`PRRT_kwDOACTnoM6QQkkC`, and request one fresh current-head Codex review.
+`git diff --check`; and two independent reviews. Its review thread is resolved.
 
-## Pre-fix hosted snapshot and blockers
+Follow-up review of published head `551d7d34817` found a test-only race in the
+50 ms paired-runner timeout test. Commit `8c68e900641` removes the assumption
+that the child must flush `started` before timeout and instead verifies the
+timeout value and exact persisted exception output. Production code is
+unchanged. Verification passes 100/100 focused launches, the 38/38 runner-test
+file, lint, 213/213 Python tests, `git diff --check`, and two independent
+reviews. If not yet published, push it with this task-home refresh, update the
+PR body, resolve thread `PRRT_kwDOACTnoM6QQ7aW`, and request one fresh
+current-head Codex review.
 
-- At the last pre-fix snapshot, published head `92ccfce567c` was mergeable with
+## Published-head snapshots and blockers
+
+- At the last inspection of published head `551d7d34817`, seven checks passed,
+  twelve remained in progress, and no current-head CI failure had appeared. The
+  only unresolved review thread was the timeout-test race addressed by
+  `8c68e900641`. Inspect the live exact head before acting on this snapshot.
+
+- At the earlier pre-fix snapshot, published head `92ccfce567c` was mergeable with
   checks pending or failed. Its failures were self-hosted-runner workspace
   collisions, not observed product failures: coverage and AVX2 lost Pixi during
   setup, Debug was cancelled mid-compile, and the first gz-physics attempt was
