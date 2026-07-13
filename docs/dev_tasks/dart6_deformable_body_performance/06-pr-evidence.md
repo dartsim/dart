@@ -6,7 +6,8 @@ PR [#3382](https://github.com/dartsim/dart/pull/3382) is open from
 `wp-db-native-soft-fallback` to `release-6.20`. Published head
 `b25462ca5c0` is behind current base `4ddfe712b359` and is reported
 conflicting/dirty; the local stack through target-base merge `52ff108437d` and
-this task-home refresh has not been pushed.
+merged-head handoff `af7ae4ccedd`, plus this blocker refresh, has not been
+pushed.
 
 Local implementation commit `2ad156e7b82` fixes the current WP-DB.04
 mass-matrix review finding and adds
@@ -251,6 +252,17 @@ observed sensor reached `102 C`. The target base then advanced through #3384,
 making the pre-merge revision stale before publication. The attempt was
 interrupted with `status: interrupted`, no raw timing rows, summary, verdict,
 or `COMPLETE.json`; it is explicit non-evidence and must not be resumed.
+
+The next attempt pinned clean merged/docs head `af7ae4ccedde`, completed its
+dedicated build and all detector-equivalence rows, then ran for 28 minutes
+overall, including 26 minutes in preflight. Independent DART worktrees
+repeatedly launched builds during that window: the runner recorded 156 polls,
+156 load failures, 151 thermal failures, 110 sibling-workload failures, zero
+clean polls, and peaks of 50 sibling DART workloads, 1-minute load `52.61`, and
+`105 C`. The attempt was interrupted with `status: interrupted`, no raw timing
+rows, summary, verdict, or `COMPLETE.json`. It is the current
+exact-composed-head host-blocker record and explicit non-evidence; do not resume
+it or weaken the admission protocol.
 
 Post-merge revalidation after composing the upstream AABB-tree broadphase
 (#3368) with the soft-fallback lane: focused battery 5/5, full suite
