@@ -25,6 +25,7 @@ install(
 # minimize diff noise; only the detector-facing classes changed names.
 set(
   collision_dart_engine_headers
+  ${CMAKE_CURRENT_SOURCE_DIR}/detail/InlineVector.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/detail/Span.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/detail/NativeShapeConversion.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/shapes/Shape.hpp
