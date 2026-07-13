@@ -7,6 +7,12 @@ description: "DART Python: dartpy bindings, nanobind, wheels, and API patterns"
 
 Load this skill when working with Python bindings or dartpy.
 
+When a binding exposes or changes model/scene loading, dynamics,
+collision/contact/constraints, simulation stepping, GUI/rendering output, or a visual
+example, also load `dart-verify-sim`. Pair a focused Python text/behavior oracle
+with an assessed, claim-tied headless capture; document a visual exception when
+rendering is unavailable or not applicable.
+
 ## Quick Start
 
 ```python

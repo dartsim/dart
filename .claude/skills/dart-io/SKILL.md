@@ -7,10 +7,14 @@ description: "DART IO: URDF, SDF, MJCF parsers, and dart::io loading"
 
 Load this skill when working with robot model files or parsers.
 
+When correctness depends on the loaded model's 3D hierarchy, transforms,
+collision geometry, or simulated behavior, also load `dart-verify-sim` for a
+text scene/behavior oracle plus claim-tied visual corroboration.
+
 ## Quick Start
 
 ```cpp
-#include <dart/io/Read.hpp>
+#include <dart/io/read.hpp>
 
 // Format auto-detection
 auto skel = dart::io::readSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
@@ -44,5 +48,5 @@ options.format = dart::io::ModelFormat::Sdf;
 
 ## Key Files
 
-- API: `dart/io/Read.hpp`
-- Tests: `tests/unit/io/test_Read.cpp`
+- API: `dart/io/read.hpp`
+- Tests: `tests/unit/io/test_read.cpp`

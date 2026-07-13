@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -15,6 +16,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 import agent_capture
+from _image_tools import read_image
 
 
 def _args(**overrides) -> argparse.Namespace:
@@ -125,17 +127,62 @@ def _display_available() -> bool:
         return False
 
 
-@pytest.mark.skipif(
-    not _display_available(),
-    reason="agent_capture smoke needs a dartpy GUI build",
-)
-def test_run_capture_smoke_writes_stills_and_sidecar(tmp_path: Path) -> None:
-    import ctypes.util
-    import os
+def _require_visual_backend() -> None:
+    if _display_available():
+        return
+    if os.environ.get("DART_REQUIRE_VISUAL_E2E") == "1":
+        pytest.fail(
+            "visual e2e is required but "
+            "dartpy.gui.OffscreenRenderer is unavailable"
+        )
+    pytest.skip("agent_capture needs a dartpy GUI build")
 
-    if sys.platform.startswith("linux"):
-        if not os.environ.get("DISPLAY") or not ctypes.util.find_library("X11"):
-            pytest.skip("Filament headless rendering needs a usable DISPLAY")
+
+def _require_usable_display() -> None:
+    import ctypes.util
+
+    if not sys.platform.startswith("linux"):
+        return
+    if not os.environ.get("DISPLAY"):
+        if os.environ.get("DART_REQUIRE_VISUAL_E2E") == "1":
+            pytest.fail("visual e2e is required but DISPLAY is unavailable")
+        pytest.skip("Filament headless rendering needs DISPLAY or Xvfb")
+    if not ctypes.util.find_library("X11"):
+        pytest.fail("DISPLAY is configured but the X11 runtime is unavailable")
+
+
+def test_required_visual_e2e_rejects_missing_renderer(monkeypatch) -> None:
+    monkeypatch.setenv("DART_REQUIRE_VISUAL_E2E", "1")
+    monkeypatch.setattr(
+        sys.modules[__name__], "_display_available", lambda: False
+    )
+
+    with pytest.raises(
+        pytest.fail.Exception,
+        match="dartpy.gui.OffscreenRenderer is unavailable",
+    ):
+        _require_visual_backend()
+
+
+def _changed_pixel_count(first, second, tolerance: int = 8) -> int:
+    assert first.width == second.width
+    assert first.height == second.height
+    return sum(
+        any(
+            abs(
+                first.pixels[pixel * 3 + channel]
+                - second.pixels[pixel * 3 + channel]
+            )
+            > tolerance
+            for channel in range(3)
+        )
+        for pixel in range(first.pixel_count)
+    )
+
+
+def test_run_capture_smoke_writes_stills_and_sidecar(tmp_path: Path) -> None:
+    _require_visual_backend()
+    _require_usable_display()
 
     args = _args(
         out=tmp_path,
@@ -156,3 +203,54 @@ def test_run_capture_smoke_writes_stills_and_sidecar(tmp_path: Path) -> None:
     assert "pixi run agent-capture" in sidecar["reproduce"]
     saved = json.loads((tmp_path / "smoke_capture.json").read_text("utf-8"))
     assert saved == sidecar
+
+
+def test_run_capture_debug_layers_change_pixels_end_to_end(tmp_path: Path) -> None:
+    _require_visual_backend()
+    _require_usable_display()
+    common = {
+        "steps": 250,
+        "width": 320,
+        "height": 240,
+        "focus": "box",
+        "auto_views": 1,
+    }
+    plain = agent_capture.run_capture(
+        _args(out=tmp_path / "plain", prefix="plain", layers=[], **common)
+    )
+    plain_artifact = plain["artifacts"][0]
+    plain_image = read_image(tmp_path / "plain" / plain_artifact["path"])
+
+    debug_layers = ["contacts", "collision_bounds", "labels"]
+    combined = agent_capture.run_capture(
+        _args(
+            out=tmp_path / "combined",
+            prefix="combined",
+            layers=debug_layers,
+            **common,
+        )
+    )
+    combined_artifact = combined["artifacts"][0]
+    assert combined["layers"] == debug_layers
+    assert plain_artifact["camera"] == combined_artifact["camera"]
+    combined_image = read_image(
+        tmp_path / "combined" / combined_artifact["path"]
+    )
+    assert _changed_pixel_count(plain_image, combined_image) >= 128
+
+    # Prove each CI-requested layer contributes pixels; a labels-only delta
+    # must not hide a missing contacts or collision-bounds renderer.
+    for layer in debug_layers:
+        debug = agent_capture.run_capture(
+            _args(
+                out=tmp_path / layer,
+                prefix=layer,
+                layers=[layer],
+                **common,
+            )
+        )
+        debug_artifact = debug["artifacts"][0]
+        assert debug["layers"] == [layer]
+        assert plain_artifact["camera"] == debug_artifact["camera"]
+        debug_image = read_image(tmp_path / layer / debug_artifact["path"])
+        assert _changed_pixel_count(plain_image, debug_image) >= 32, layer

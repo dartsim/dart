@@ -3,6 +3,7 @@ description: fix a DART bug reported through gz-physics or Gazebo
 argument-hint: "<downstream-issue-url> [issue-number]"
 agent: build
 ---
+
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-downstream-fix.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
@@ -21,6 +22,11 @@ Fix downstream-reported DART issue: $ARGUMENTS
 Use for downstream issues in gz-physics, Gazebo, or gz-sim that trace back to DART behavior: crashes, assertions, NaN/Inf propagation, missing validation, or DART performance regressions.
 
 ## Workflow
+
+If the downstream symptom depends on scene/model structure, simulation,
+collision/contact, or GUI output, route through `dart-verify-sim`: establish a
+text oracle, add assessed claim-tied visual evidence, or document a
+visual exception when rendering is unavailable or not applicable.
 
 1. Read the downstream issue, logs, stack traces, and reproduction steps.
 2. Identify the DART API, component, and invalid usage pattern involved.

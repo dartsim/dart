@@ -55,6 +55,9 @@ jobs:
       - name: Check Lint
         run: pixi run check-lint
 
+      - name: Test AI infrastructure
+        run: pixi run test-ai-infra
+
   docs:
     name: Documentation
     if: >-

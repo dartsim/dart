@@ -155,6 +155,9 @@ DART addresses the need for:
 - Working on Gazebo / gz-physics compatibility? Jump to [build-system.md](build-system.md#gazebo-integration-feature).
 - Working on Python examples or the dartpy example runner? Start with `python/examples/README.md` and `pixi.toml`.
 - Need to understand CI workflows or monitor runs? See [ci-cd.md](ci-cd.md).
+- Verifying model, simulation, collision/contact, or GUI behavior? Use
+  [agent-sim-verification.md](agent-sim-verification.md) for text-first plus
+  claim-tied visual/debug evidence.
 
 <details>
 <summary>Deep dive (optional): GUI architecture, data flow, and patterns</summary>

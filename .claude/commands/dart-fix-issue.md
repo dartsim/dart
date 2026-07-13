@@ -11,8 +11,15 @@ Fix GitHub issue: $ARGUMENTS
 @AGENTS.md
 @docs/onboarding/contributing.md
 @docs/onboarding/changelog.md
+@docs/ai/verification.md
 
 ## Workflow
+
+If the issue's fix depends on model/scene structure, simulation, dynamics,
+collision/contact/constraints, or GUI output, route through `dart-verify-sim`:
+pair the focused behavioral oracle with assessed, claim-tied visual evidence,
+or document a visual exception when rendering is unavailable or not
+applicable.
 
 1. `gh issue view $1` - Validate issue
 2. Classify whether the issue is a bug fix that applies to the active DART 6

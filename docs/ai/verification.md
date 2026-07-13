@@ -20,9 +20,9 @@ Before finalizing substantial AI-assisted work:
 5. Verify review evidence: at least two clean independent or role-separated
    review passes on the current post-fix state, with substantive findings
    investigated rather than blindly accepted.
-6. For behavior-bearing physics or simulation work, verify a high-quality,
-   self-contained GUI example or demos-app artifact exists, or that the owner
-   docs explicitly justify a different user-level visual artifact.
+6. For model/scene, behavior-bearing physics/simulation, or GUI work, verify
+   `dart-verify-sim` paired a text correctness oracle with assessed claim-tied
+   visual/debug evidence, or recorded a justified unavailable exception.
 7. If the work used `docs/dev_tasks/<task>/`, verify durable artifacts were
    promoted and the completed task folder was removed.
 8. If remaining dev-task work is blocked by a substantial maintainer decision,
@@ -68,16 +68,16 @@ the broader CPU/GPU, demo, benchmark, and performance requirements.
 
 ## Gate Selection
 
-| Change type         | Required gates                                                                                                                                                     |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| AI docs or adapters | `pixi run lint-md`, `pixi run check-lint-md`, `pixi run sync-ai-commands`, `pixi run check-ai-commands`, `pixi run check-docs-policy`, `pixi run check-lint-spell` |
-| Docs only           | `pixi run lint-md`, `pixi run check-lint-md`, `pixi run check-docs-policy`, `pixi run check-lint-spell`                                                            |
-| C++ code            | `pixi run lint`, `pixi run build`, focused tests or `pixi run test-unit`                                                                                           |
-| Python bindings     | `pixi run lint`, `pixi run build`, `pixi run test-py`                                                                                                              |
-| IO/model parsing    | `pixi run lint`, focused parser tests, relevant examples if affected                                                                                               |
-| Simulation behavior | `pixi run lint`, focused simulation tests, a self-contained GUI/demo artifact when user-visible, and visual or artifact inspection evidence                        |
-| CI workflow         | local reproduction when possible, `pixi run check-lint`, relevant build/test gate                                                                                  |
-| Release work        | release-management docs, changelog/version checks, target branch gates                                                                                             |
+| Change type         | Required gates                                                                                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| AI docs or adapters | `pixi run lint-md`, `pixi run check-lint-md`, `pixi run sync-ai-commands`, `pixi run check-ai-infra`, `pixi run test-ai-infra`, `pixi run check-lint-spell`  |
+| Docs only           | `pixi run lint-md`, `pixi run check-lint-md`, `pixi run check-docs-policy`, `pixi run check-lint-spell`                                                      |
+| C++ code            | `pixi run lint`, `pixi run build`, focused tests or `pixi run test-unit`                                                                                     |
+| Python bindings     | `pixi run lint`, `pixi run build`, `pixi run test-py`                                                                                                        |
+| IO/model parsing    | `pixi run lint`, focused parser tests, relevant examples if affected                                                                                         |
+| Simulation behavior | `pixi run lint`, focused simulation tests, and `dart-verify-sim`: text correctness evidence plus assessed headless/debug-layer corroboration when applicable |
+| CI workflow         | local reproduction when possible, `pixi run check-lint`, relevant build/test gate                                                                            |
+| Release work        | release-management docs, changelog/version checks, target branch gates                                                                                       |
 
 Before any commit, run `pixi run lint` as required by `AGENTS.md`.
 
@@ -89,20 +89,25 @@ when the sub-check you ran is clean.
 
 ## GUI And Demo Evidence
 
-Physics simulator behavior is easiest to review through a working scene. When a
-task changes behavior that users should understand visually or interactively,
-the deliverable normally includes a high-quality GUI example, ideally in the
-demos app or another durable DART demo surface. The example must be
-self-contained: a user should be able to run it, manipulate the scene or
-controls, and understand the result without reading implementation code or
-developer explanation.
+Use the `dart-verify-sim` workflow and durable guide at
+`docs/onboarding/agent-sim-verification.md`. Establish correctness with metrics,
+scene/trajectory/contact comparison, or focused behavioral tests; then use
+view assessment, `agent-capture`, and only the engine debug layers needed by
+the claim. Record the runnable command, view report, expected observation,
+`image-verdict` or inspected artifact, limitations, and what the image does not
+prove. A self-contained GUI or demos-app example remains the preferred durable
+user surface. If rendering is unavailable or genuinely irrelevant, record why
+and name replacement evidence.
 
-Record the runnable command, expected interaction, and visual evidence in the
-owning plan, dev-task `verification.md`, or PR Testing section. Use headless
-capture, image verdict/golden comparison, screenshots, or manual artifact
-inspection as appropriate. If the work is deliberately non-visual, the
-acceptance evidence must say why and name the replacement user-level artifact
-or check.
+Linux CI runs an explicit settled-contact `agent-capture` under Xvfb with
+contacts, collision bounds, and labels, then requires `image-verdict` to accept
+the emitted frame. The same blocking step runs a focused A/B regression under
+Xvfb: it holds the world and camera fixed, compares a plain capture with the
+combined debug capture, then proves contacts, collision bounds, and labels each
+change pixels independently. The Python suite also asserts that a same-renderer
+debug overlay clears cleanly. Together these gates exercise view assessment,
+the Filament renderer, every claim-relevant debug layer, artifact writing, and
+image validation without relying on an optional display test.
 
 ## Review Evidence
 
@@ -134,7 +139,15 @@ adapters, planning workflows, or agent rules, run the principle audit in
 `docs/ai/principles.md` and record the result as evidence. This file owns gate
 selection and evidence mapping; `docs/ai/principles.md` owns the manual audit
 questions; `docs/ai/components.md` owns the exact structural checks performed
-by `pixi run check-ai-commands`.
+by `pixi run check-ai-commands` and `pixi run check-ai-infra`.
+
+Use `pixi run ai-doctor` to diagnose discovery or setup failures without
+mutating the checkout. Use `pixi run check-agent-hook` for frequent hook-sized
+feedback only; it is intentionally not completion evidence. The focused
+`test-ai-infra` suite and aggregate `check-ai-infra` gate must pass in addition
+to generated-adapter sync. Run `pixi run exercise-agent-scenarios` directly
+when changing routing fixtures or branch profiles so failures identify the
+specific scenario.
 
 When AI workflow changes derive implementation tasks, verify that the owning
 plan packet or `docs/dev_tasks/<task>/README.md` records the DART

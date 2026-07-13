@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Install DART's git ``pre-commit`` hook (the Tier-0 lint gate).
+"""Install DART's git ``pre-commit`` hook (the fast staged-file gate).
 
 Idempotently writes ``<git-hooks-dir>/pre-commit`` so every ``git commit`` runs
-``pixi run check-lint-quick`` first. Behaviour:
+``scripts/check_agent_hook.py --profile staged`` with a compatible Python
+interpreter first. Behaviour:
 
 * The managed hook carries a sentinel line (``DART-MANAGED-HOOK``); re-running
   this installer detects it and rewrites the hook in place, so the command is
@@ -36,16 +37,17 @@ import sys
 from pathlib import Path
 
 SENTINEL = "DART-MANAGED-HOOK"
-HOOK_VERSION = "1"
+HOOK_VERSION = "5"
 
-# POSIX sh hook body. Kept dependency-free; only assumes ``git`` and ``pixi`` are
-# on PATH (both are already required to work in this repo).
+# POSIX sh hook body. Kept dependency-free. It prefers the repository Pixi
+# interpreter, then a compatible PATH python3. In an older linked worktree or
+# without Python 3.11+, it safely falls back to Git's staged whitespace check.
 HOOK_TEMPLATE = f"""\
 #!/bin/sh
 # DART pre-commit hook — installed by scripts/install_git_hooks.py
 # {SENTINEL} v{HOOK_VERSION}  (sentinel line: do not edit; the installer keys on it)
 #
-# Runs the Tier-0 lint gate (`pixi run check-lint-quick`) before every commit.
+# Runs the fast staged-file gate (`scripts/check_agent_hook.py --profile staged`) before every commit.
 # Emergency bypass: DART_SKIP_HOOKS=1 git commit ...
 
 if [ "${{DART_SKIP_HOOKS:-0}}" = "1" ]; then
@@ -53,8 +55,30 @@ if [ "${{DART_SKIP_HOOKS:-0}}" = "1" ]; then
     exit 0
 fi
 
+repo_root=$(git rev-parse --show-toplevel) || exit 1
+
+select_hook_python() {{
+    for candidate in \
+        "${{DART_HOOK_PYTHON:-}}" \
+        "$repo_root/.pixi/envs/default/bin/python" \
+        "$repo_root/.pixi/envs/default/python.exe" \
+        python3
+    do
+        [ -n "$candidate" ] || continue
+        if [ -x "$candidate" ] || command -v "$candidate" >/dev/null 2>&1; then
+            if "$candidate" -c 'import tomllib' >/dev/null 2>&1; then
+                printf '%s\n' "$candidate"
+                return 0
+            fi
+        fi
+    done
+    return 1
+}}
+
+python_cmd=$(select_hook_python) || python_cmd=
+
 if [ -n "${{DART_HOOK_DRY_RUN:-}}" ]; then
-    echo "DART pre-commit (dry run): would run 'pixi run check-lint-quick'" >&2
+    echo "DART pre-commit (dry run): would run selected Python: scripts/check_agent_hook.py --profile staged" >&2
     exit 0
 fi
 
@@ -64,13 +88,22 @@ if [ -x "$hooks_dir/pre-commit.local" ]; then
     "$hooks_dir/pre-commit.local" "$@" || exit $?
 fi
 
-repo_root=$(git rev-parse --show-toplevel) || exit 1
 cd "$repo_root" || exit 1
 
-echo "DART pre-commit: running Tier-0 lint gate (pixi run check-lint-quick)..." >&2
-if ! pixi run check-lint-quick; then
+if [ ! -f scripts/check_agent_hook.py ] \
+    || [ -z "$python_cmd" ]; then
+    echo "DART pre-commit: full agent gate unavailable in this worktree; running staged diff fallback..." >&2
+    if ! git diff --cached --check; then
+        echo "DART pre-commit: staged diff check FAILED — commit blocked." >&2
+        exit 1
+    fi
+    exit 0
+fi
+
+echo "DART pre-commit: running fast agent gate ($python_cmd scripts/check_agent_hook.py --profile staged)..." >&2
+if ! "$python_cmd" scripts/check_agent_hook.py --profile staged; then
     echo "" >&2
-    echo "DART pre-commit: check-lint-quick FAILED — commit blocked." >&2
+    echo "DART pre-commit: agent hook FAILED — commit blocked." >&2
     echo "  Fix with: pixi run lint   (then re-stage and commit)" >&2
     echo "  Emergency bypass: DART_SKIP_HOOKS=1 git commit ..." >&2
     exit 1
@@ -112,7 +145,7 @@ def resolve_hooks_dir() -> Path:
             f"({hooks_path}); refusing to install into a custom hooks\n"
             "  directory that may be shared across repositories. Add the gate "
             "to your own\n"
-            "  hook manager (run `pixi run check-lint-quick` from pre-commit), "
+            "  hook manager (run `python3 scripts/check_agent_hook.py --profile staged` from pre-commit), "
             "or unset\n"
             "  core.hooksPath and re-run `pixi run install-hooks`."
         )
@@ -160,7 +193,9 @@ def main() -> int:
 
     write_hook(pre_commit)
     print(f"Installed DART pre-commit hook: {pre_commit}")
-    print("  Runs `pixi run check-lint-quick` before every commit.")
+    print(
+        "  Runs `scripts/check_agent_hook.py --profile staged` with the repository Pixi Python when available."
+    )
     print("  Emergency bypass: DART_SKIP_HOOKS=1 git commit ...")
     return 0
 

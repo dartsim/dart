@@ -925,6 +925,22 @@ jobs:
           test "$(head -c 2 /tmp/headless_output/rigid_body.ppm)" = "P6"
           echo "Headless rendering test passed!"
 
+      - name: Agent visual verification smoke
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          rm -rf /tmp/dart-agent-visual-smoke
+          xvfb-run -a -s '-screen 0 640x480x24' \
+            pixi run agent-capture -- \
+              --scene box_on_ground --steps 250 --focus box --auto-views 1 \
+              --layers contacts collision_bounds labels \
+              --width 320 --height 240 \
+              --out /tmp/dart-agent-visual-smoke --prefix smoke
+          pixi run image-verdict -- \
+            /tmp/dart-agent-visual-smoke/smoke_auto0.png
+          xvfb-run -a -s '-screen 0 640x480x24' \
+            env DART_REQUIRE_VISUAL_E2E=1 pixi run test-agent-visual-e2e
+
   filament-gui-smoke:
     needs: changes
     if: >-

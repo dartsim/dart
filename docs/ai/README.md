@@ -83,37 +83,69 @@ asks for the autonomous project-home loop.
 
 ## Source Ownership
 
-| Surface                       | Role                                                                                  |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| `AGENTS.md`                   | Root pointer board and mandatory high-level rules                                     |
-| `docs/ai/principles.md`       | AI-infra axioms and manual audit checklist                                            |
-| `docs/ai/terminology.md`      | Canonical AI-facing terms and migration candidates                                    |
-| `docs/ai/`                    | Durable AI-native mission, workflow map, session rules, and verification expectations |
-| `docs/ai/capabilities.json`   | Machine-readable capability status, category, and gate profile                        |
-| `docs/ai/orchestration.md`    | Orchestrator/executor roles and the work-packet contract                              |
-| `docs/onboarding/ai-tools.md` | Tool compatibility and adapter maintenance details                                    |
-| `.claude/commands/`           | Editable workflow source for DART user-invoked workflow capabilities                  |
-| `.claude/skills/`             | Editable domain-skill source for DART on-demand Agent Skills                          |
-| `.codex/skills/`              | Generated Codex adapter entrypoints for DART workflow and domain-skill capabilities   |
-| `.opencode/command/`          | Generated OpenCode command adapter entrypoints                                        |
-| `scripts/sync_ai_commands.py` | Adapter sync and AI docs consistency checker                                          |
+| Surface                        | Role                                                                                  |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| `AGENTS.md`                    | Root pointer board and mandatory high-level rules                                     |
+| `docs/ai/principles.md`        | AI-infra axioms and manual audit checklist                                            |
+| `docs/ai/terminology.md`       | Canonical AI-facing terms and migration candidates                                    |
+| `docs/ai/`                     | Durable AI-native mission, workflow map, session rules, and verification expectations |
+| `docs/ai/capabilities.json`    | Machine-readable capability status, category, and gate profile                        |
+| `docs/ai/branch-profile.json`  | Machine-readable branch facts, required paths, exclusions, and AI-infra gates         |
+| `docs/ai/agent-scenarios.json` | Seven deterministic fresh-session routing and verification contracts                  |
+| `docs/ai/orchestration.md`     | Orchestrator/executor roles and the work-packet contract                              |
+| `docs/onboarding/ai-tools.md`  | Tool compatibility and adapter maintenance details                                    |
+| `.claude/commands/`            | Editable workflow source for DART user-invoked workflow capabilities                  |
+| `.claude/skills/`              | Editable domain-skill source for DART on-demand Agent Skills                          |
+| `.agents/skills/`              | Generated Codex adapter entrypoints for DART workflow and domain-skill capabilities   |
+| `.codex/config.toml`           | Trusted-project bounded agent concurrency and delegation-depth policy                 |
+| `.codex/agents/`               | Discoverable read-only scout, reviewer, and release-auditor profiles                  |
+| `.codex/hooks.json`            | Maintained fast Codex command-hook configuration                                      |
+| `.opencode/command/`           | Generated OpenCode command adapter entrypoints                                        |
+| `scripts/sync_ai_commands.py`  | Adapter sync and AI docs consistency checker                                          |
 
-Do not hand-edit generated `.codex/` or `.opencode/` files. Update the source
-surface, then run `pixi run sync-ai-commands`.
+Do not hand-edit generated `.agents/skills/` or `.opencode/command/` files.
+Update the source surface, then run `pixi run sync-ai-commands`. Files under
+`.codex/` are maintained project runtime configuration and must be reviewed
+like scripts rather than regenerated.
+
+## Agent-Friendly Setup And Diagnosis
+
+Run `pixi run ai-setup` once in a checkout to synchronize adapters and install
+the cross-tool Git pre-commit guard. Run `pixi run ai-doctor` at session start
+or after a discovery/setup failure; it reports versions, project trust-sensitive
+surfaces, instruction chains, skills, agents, hooks, tasks, and recovery
+commands without modifying the checkout.
+
+Use `pixi run check-agent-hook` for the fast staged-file structural gate,
+`pixi run test-ai-infra` for focused infrastructure tests, and
+`pixi run check-ai-infra` for the aggregate non-mutating gate. The aggregate
+also exercises deterministic orientation, small-change, failure-diagnosis,
+documentation, component, simulation-verification, and release-maintenance
+scenarios. Full build/test
+selection remains owned by `docs/ai/verification.md` and the task-specific
+developer docs.
+
+Codex loads project `.codex/` configuration and hooks only after the checkout
+is trusted. Review project hooks with `/hooks`; changed hook definitions require
+review again. A skipped Codex hook is not a correctness boundary: the installed
+Git hook and explicit pre-commit gates remain authoritative.
 
 ## Model Routing
 
 DART uses the two-role operating model in `docs/ai/orchestration.md`: an
-orchestrator session owns understanding, decomposition, sequencing, and
-review, while executor sessions implement one well-defined work packet at a
-time. The current default routing is Claude Code as the orchestrator and
-Codex — via the generated `$dart-*` skills, especially
-`$dart-execute-packet` — as the executor for orchestrator-sized chunks of
-work. Either role may be filled by any capable agent, and independent review
-should use a different session than the one that authored the change. This
-routing affects agent workflow design, not human contributor requirements:
-every AI workflow must map back to public docs and `pixi run ...` commands
-that a contributor can run without any AI tool.
+orchestrator session owns understanding, decomposition, sequencing, and review,
+while executor sessions implement one well-defined work packet at a time. No
+project model is pinned. For complex, high-value, multi-workstream work, prefer
+Codex 5.6 Sol with Ultra reasoning when available; use a lean task contract and
+delegate bounded read-only scouting or review to the project profiles in
+`.codex/agents/`. Those profiles inherit the selected parent model. Smaller
+tasks should use the lightest capable model and a focused workflow.
+
+Claude Code, OpenCode, Gemini CLI, future Codex models, and human contributors
+remain supported: roles are not products, authoring and review stay separate,
+and every workflow maps to public docs and `pixi run ...` commands. DART 6.20
+has a separately maintained compatibility-first catalog; never infer that a
+`main` path, task, or language/toolchain fact exists on the release branch.
 
 ## Safety Boundary
 

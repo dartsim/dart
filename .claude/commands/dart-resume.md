@@ -121,12 +121,11 @@ Before editing, write explicit pass/fail criteria for the resumed task:
   candidate comparison when possible, and only then choose the implementation
   path. If the existing verification is weak, improve the check or debugging
   surface before trusting the result.
-- For text-based behavior, prefer concrete command output, failing/passing
-  tests, focused scripts, logs, structured packets, assertions, and diffable
-  artifacts. For GUI or visual behavior, capture screenshots, rendered assets,
-  pixel/visual comparisons, smoke runs, or videos where the surface supports
-  them; verify both the expected pass path and at least one failure-sensitive
-  condition when practical.
+- For model/scene, simulation, dynamics, collision/contact, GUI, or visual
+  behavior, route through `dart-verify-sim`: establish a text correctness
+  oracle first, then capture assessed claim-tied images/debug layers or record
+  an unavailable/not-applicable reason. Verify the expected pass path and a
+  failure-sensitive condition when practical; a screenshot alone is not proof.
 - When the decision depends on behavior outside the repository, search the
   relevant upstream docs, papers, issues, standards, or release notes and record
   the source-backed conclusion in the task docs, durable owner doc, or PR

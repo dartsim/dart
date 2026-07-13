@@ -52,7 +52,7 @@ For merge commits, use `git cherry-pick -x -m 1 <MERGE_COMMIT_HASH>`.
 
 AI-infra and workflow-doc backports need one extra check before cherry-picking.
 Compare the release branch's `docs/ai/capabilities.json`, `docs/ai/workflows.md`,
-`.claude/commands/`, `.claude/skills/`, `.codex/skills/`, and
+`.claude/commands/`, `.claude/skills/`, `.agents/skills/`, and
 `.opencode/command/` against `main`. If the release branch intentionally has a
 smaller workflow surface, adapt the guidance to the release owners and
 regenerate only the affected adapters; do not add main-only workflows just to
@@ -64,8 +64,10 @@ contributor or agent behavior.
 When release-branch CI fails:
 
 1. Inspect the failing run and job logs.
-2. Search `main` for an existing fix before writing a new one.
-3. Prefer cherry-picking proven fixes from `main`.
+2. Search `main` for existing evidence or a fix before writing a new one.
+3. Apply or cherry-pick a proven fix only when its paths, toolchain, and
+   compatibility semantics match the release branch; otherwise adapt it
+   locally and preserve the release-specific behavior.
 4. If the release branch needs a unique fix, keep it minimal and document why.
 5. Run `pixi run lint` before committing and run the smallest relevant tests.
 6. Open or update the release-branch PR and monitor CI until green.

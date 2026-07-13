@@ -3,6 +3,7 @@ description: backport a merged main PR to a release branch
 argument-hint: "<source-pr> base=<release-branch>"
 agent: build
 ---
+
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-backport-pr.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
@@ -18,6 +19,11 @@ Backport PR or commits: $ARGUMENTS
 @docs/onboarding/changelog.md
 
 ## Workflow
+
+For a source change involving model/scene structure, physics behavior, or GUI
+output, use the target branch's `dart-verify-sim` workflow to preserve the text
+oracle and assessed visual evidence. Document a visual exception when the
+target branch cannot render the claim.
 
 1. Verify the source PR or commit is merged to `main`:
    ```bash

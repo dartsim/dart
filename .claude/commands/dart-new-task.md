@@ -41,7 +41,10 @@ Read these files first:
 4. **Implement** - Keep commits focused, follow code style
 5. **Verify** - Run `pixi run lint` before committing, then
    `pixi run test-all`; on Linux hosts with a visible NVIDIA CUDA runtime, also
-   run `pixi run -e cuda test-all`
+   run `pixi run -e cuda test-all`. If the claim depends on scene structure,
+   simulation, dynamics, collision/contact, GUI output, or a visual example,
+   route through `dart-verify-sim`: prove correctness with text first, then add
+   assessed headless/debug-layer evidence or record why it is not applicable.
 6. **PR** - After explicit maintainer/user approval, `git push -u origin HEAD`
    then `gh pr create --draft --base <target-branch> --milestone "<milestone>"`
    (`DART 7.0` for `main`, branch-matching DART 6.x patch milestone for the

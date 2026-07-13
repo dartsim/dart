@@ -16,7 +16,9 @@ workflow source is `.claude/commands/`, and the current editable domain-skill
 source is `.claude/skills/`.
 `docs/ai/capabilities.json` owns machine-readable capability status, category,
 and gate profile; `docs/ai/workflows.md` owns the human-readable public paths
-and gate details.
+and gate details. `docs/ai/branch-profile.json` owns branch facts and forbidden
+cross-branch surfaces; `docs/ai/agent-scenarios.json` owns the seven deterministic
+fresh-session scenario contracts.
 
 The Markdown files directly under `docs/ai/` use a narrow frontmatter pilot
 with only stable identity fields: `type` and `owner`. The pilot does not carry
@@ -29,10 +31,27 @@ workflow required reading, and generated-adapter sync instead of duplication.
 
 Generated adapter entrypoints are first-class entrypoints for their tools:
 
-- `.codex/skills/` for Codex;
+- `.agents/skills/` for Codex;
 - `.opencode/command/` for OpenCode.
 
-Generated files include source metadata and must not be hand-edited.
+Generated files include source metadata and must not be hand-edited. The sync
+manifest owns only DART-generated skill directories; synchronization must
+preserve unrelated user or plugin skills in `.agents/skills/`.
+
+Codex runtime components are maintained sources under `.codex/`:
+
+- `config.toml` bounds project agent concurrency and delegation depth without
+  pinning a model or weakening user sandbox/approval policy;
+- `agents/*.toml` defines read-only, input/output-specific scouts and reviewers;
+  and
+- `hooks.json` defines a trusted-project, fast command guard.
+
+Native Windows hook execution uses `.claude/hooks/pre-commit-guard.ps1` and
+`scripts/pretool_guard_bridge.py` to forward into the shared Git Bash guard.
+
+The hook is advisory because tool interception is not a complete enforcement
+boundary. The installed Git pre-commit hook is cross-tool enforcement, while
+explicit `pixi run lint` and task-specific gates remain required.
 
 ## Adding A Workflow
 
@@ -110,12 +129,14 @@ faster; it must not be the only path.
 `scripts/sync_ai_commands.py` is the implementation behind
 `pixi run sync-ai-commands` and `pixi run check-ai-commands`.
 
-`pixi run sync-ai-commands` updates generated `.codex/skills/` and
+`pixi run sync-ai-commands` updates generated `.agents/skills/` and
 `.opencode/command/` files from `.claude/` sources.
 
 `pixi run check-ai-commands` is the non-mutating CI check. It verifies:
 
 - generated adapter sync;
+- DART-owned generated-skill manifest safety and preservation of unrelated
+  skills;
 - machine-readable capability manifest coverage;
 - effective capability parity across Claude Code, OpenCode, and Codex;
 - command and skill frontmatter, descriptions, and size budgets;
@@ -135,6 +156,17 @@ faster; it must not be the only path.
 - approval-boundary wording around GitHub, CI, branch, and review-thread
   mutations;
 - private-path references in `docs/ai/`.
+
+`pixi run check-ai-infra` adds runtime and drift validation beyond adapter
+parity. It checks Codex agent/config/hook schema and safety, documented Pixi
+tasks and tracked paths, nested `AGENTS.md` discovery, branch-profile
+references, generated ownership, and the machine-readable routing scenarios.
+The simulation-verification scenario is a required domain-skill route with a
+focused correctness gate and a machine-checked text-first plus claim-tied visual
+evidence policy, including an honest unavailable exception.
+`pixi run test-ai-infra` runs the focused top-level regression suite in normal
+lint CI. `pixi run ai-doctor` is a non-mutating diagnosis surface; it reports
+recovery commands but never synchronizes files or installs hooks.
 
 `pixi run check-docs-policy` also enforces documentation lifecycle rules that
 are outside generated-adapter sync, including docs bucket visibility,
