@@ -136,7 +136,11 @@ function(dart_demos_configure_memory_diagnostics target)
       DART_DEMOS_HAS_ALLOCATOR_MEMORY_LAYOUT=${dart_demos_has_allocator_memory_layout}
   )
   if(WIN32)
-    target_link_libraries(${target} Psapi)
+    if(ARGN)
+      target_link_libraries(${target} ${ARGN} Psapi)
+    else()
+      target_link_libraries(${target} Psapi)
+    endif()
   endif()
 endfunction()
 
@@ -255,7 +259,7 @@ target_include_directories(
   PUBLIC "${CMAKE_CURRENT_LIST_DIR}"
 )
 target_link_libraries(demos_memory_diagnostics PUBLIC dart dart-gui-osg)
-dart_demos_configure_memory_diagnostics(demos_memory_diagnostics)
+dart_demos_configure_memory_diagnostics(demos_memory_diagnostics PRIVATE)
 target_compile_features(demos_memory_diagnostics PUBLIC cxx_std_17)
 set_target_properties(
   demos_memory_diagnostics
