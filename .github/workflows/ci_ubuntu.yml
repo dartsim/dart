@@ -100,6 +100,8 @@ jobs:
           files: ./coverage.info
           flags: unittests
           name: codecov-umbrella
+          disable_search: true
+          plugins: noop
           fail_ci_if_error: false
 
   build:
