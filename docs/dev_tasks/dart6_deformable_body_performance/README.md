@@ -35,7 +35,9 @@ final paired timing artifact has been captured: the completed pre-merge
 attempts remained in preflight while sibling builds kept the shared host hot
 and busy, and a third attempt became stale when the target base moved. The
 merged head passes the full Release, Python, repository-lint, and focused
-assert-enabled gates. Exact takeover state is in `RESUME.md`.
+assert-enabled gates. A fourth attempt pinned that merged state but likewise
+observed no valid preflight poll during repeated builds in other DART
+worktrees. Exact takeover state is in `RESUME.md`.
 
 ## Reference scope
 

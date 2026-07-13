@@ -36,10 +36,13 @@ unresolved. The immediate work is review/CI stewardship and honest closeout.
   host blocker`)
 - Latest target-base merge: `52ff108437d` (`Merge remote-tracking branch
   'origin/release-6.20' into wp-db-native-soft-fallback`)
+- Latest merged-head handoff commit: `af7ae4ccedd` (`Refresh deformable handoff
+  after base merge`); this blocker refresh follows it
 - Published head: `origin/wp-db-native-soft-fallback` at `b25462ca5c0`
 - Local state: the implementation, handoff/durable-owner updates, runner, and
-  target-base merge are not published; this task-home refresh follows merged
-  head `52ff108437d`. Verify the exact current HEAD and ahead count.
+  target-base merge are not published; the committed merged-head handoff is
+  `af7ae4ccedd`, and this blocker refresh follows it. Verify the exact current
+  HEAD and ahead count.
 - Target base observed and merged: `origin/release-6.20` at `4ddfe712b359`
   (#3384)
 - PR: #3382, open, non-draft, milestone `DART 6.20.0`
@@ -170,6 +173,18 @@ longer the publication candidate. The attempt was interrupted with
 `status: interrupted`, no timing rows, summary, verdict, or `COMPLETE.json`; it
 is explicit non-evidence and must not be resumed.
 
+The next attempt pinned clean merged/docs head `af7ae4ccedde`, completed its
+dedicated build and all checksum gates, and ran for 28 minutes overall,
+including 26 minutes in preflight. Other worktrees repeatedly launched DART
+builds, including `ninja ALL` in `task_3-release620-publish` and format checks in
+`task_1`/`task_1_release620`. Across 156 polls, all 156 failed the load gate,
+151 failed a thermal gate, 110 observed sibling DART work, and none was clean.
+Observed peaks were 50 sibling workloads, 1-minute load `52.61`, and `105 C`.
+The attempt was interrupted with `status: interrupted`, no timing rows,
+summary, verdict, or `COMPLETE.json`. This is the current exact-composed-head
+host blocker and explicit non-evidence; do not resume its directory or weaken
+the runner's gates.
+
 ## Live PR blockers and external evidence
 
 At published head `b25462ca5c0`, GitHub reports #3382 conflicting/dirty because
@@ -227,7 +242,8 @@ the target base advanced after that head was published:
    refresh `8553203db25`, runner correction `a122c5ab437`, handoff refresh
    `3704865daa9`, durable follow-up promotion `ab6e8edede4`, contract correction
    `b615f5f1f6e`, host-blocker record `babca41f70d`, target-base merge
-   `52ff108437d`, and this task-home refresh. Resolve the addressed
+   `52ff108437d`, merged-head handoff `af7ae4ccedd`, and this blocker refresh.
+   Resolve the addressed
    automated-review thread only if approval covers thread mutation, and request
    a fresh top-level Codex review only if approval covers the PR comment and
    review capacity is available.

@@ -37,6 +37,7 @@ follow-up ab6e8edede4 (durable native-kernel and main-fix owners)
 contract  b615f5f1f6e (binding native-kernel details)
 evidence  babca41f70d (records the sustained paired-run host blocker)
 merge     52ff108437d (merges current release-6.20 through #3384)
+docs      af7ae4ccedd (merged-head verification and takeover state)
 origin    b25462ca5c0
 base      4ddfe712b359
 PR        https://github.com/dartsim/dart/pull/3382
@@ -95,6 +96,14 @@ checksum gates, but was interrupted after the base moved and before timing. Its
 12 preflight polls all failed load, six also failed thermal, load peaked at
 `30.64`, and one sensor reached `102 C`. It has no timing rows, summary,
 verdict, or `COMPLETE.json` and is explicit non-evidence.
+
+The exact merged/docs-head attempt at `af7ae4ccedde` completed its build and
+checksum gates, then ran for 28 minutes overall, including 26 minutes in
+preflight while other DART worktrees repeatedly built. All 156 polls failed
+load, 151 failed thermal, 110 detected sibling DART work, and none was clean;
+peaks were 50 workloads, load `52.61`, and `105 C`. It was interrupted with no
+timing rows, summary, verdict, or `COMPLETE.json`. This is explicit host-blocker
+evidence, not a result to resume or reinterpret.
 
 ## Hosted blockers
 
