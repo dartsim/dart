@@ -209,6 +209,18 @@ inline void addPointInertiaContribution(
 
 struct AdaptiveContactActivationState
 {
+  void resetTransientState()
+  {
+    std::fill(mActive.begin(), mActive.end(), 1u);
+    std::fill(mSeeded.begin(), mSeeded.end(), 0u);
+    std::fill(mLingerCounters.begin(), mLingerCounters.end(), 0u);
+    mActiveCount = mActive.size();
+    mCurrentTargetAll = true;
+    mCurrentTargetStamp = 0u;
+    mForceAllActiveNextStep = true;
+    mHasPendingFrozenSeed = false;
+  }
+
   void resize(const std::vector<PointMass::Properties>& properties)
   {
     const std::size_t count = properties.size();
@@ -218,10 +230,7 @@ struct AdaptiveContactActivationState
     mFrozenLocalPositions.resize(count);
     mVisitedStamps.assign(count, 0u);
     mRingQueue.resize(count);
-    mActiveCount = count;
-    mCurrentTargetAll = true;
-    mCurrentTargetStamp = 0u;
-    mForceAllActiveNextStep = true;
+    resetTransientState();
     mAllFrozenRestArtInertiaContribution.setZero();
 
     for (std::size_t i = 0; i < count; ++i) {
@@ -434,21 +443,18 @@ void SoftBodyNode::setProperties(const UniqueProperties& _properties)
 //==============================================================================
 void SoftBodyNode::setAspectState(const AspectState& state)
 {
-  if (mAspectState.mPointStates == state.mPointStates)
+  auto& activation = adaptiveContactActivation(*this);
+  const bool pointStatesChanged
+      = mAspectState.mPointStates != state.mPointStates;
+  if (!pointStatesChanged && !activation.mEnabled)
     return;
 
-  mAspectState = state;
-  auto& activation = adaptiveContactActivation(*this);
-  activation.mForceAllActiveNextStep = true;
-  activation.mCurrentTargetAll = true;
-  activation.mCurrentTargetStamp = 0u;
-  std::fill(activation.mSeeded.begin(), activation.mSeeded.end(), 0u);
+  if (pointStatesChanged)
+    mAspectState = state;
+
+  activation.resetTransientState();
   // Restored state is immediately all-active so instrumentation such as
   // getNumActivePointMasses() does not report stale pre-restore counts.
-  std::fill(activation.mActive.begin(), activation.mActive.end(), 1u);
-  std::fill(
-      activation.mLingerCounters.begin(), activation.mLingerCounters.end(), 0u);
-  activation.mActiveCount = activation.mActive.size();
   mNotifier->dirtyTransform();
 }
 
@@ -483,15 +489,15 @@ void SoftBodyNode::copy(const SoftBodyNode& _otherSoftBodyNode)
 
   const auto& otherActivation = adaptiveContactActivation(_otherSoftBodyNode);
   auto& activation = adaptiveContactActivation(*this);
+  const bool activationWasEnabled = activation.mEnabled;
   activation.mEnabled = otherActivation.mEnabled;
   activation.mRingCount = otherActivation.mRingCount;
   activation.mLingerSteps = otherActivation.mLingerSteps;
   activation.mVelocityTolerance = otherActivation.mVelocityTolerance;
   activation.mPositionTolerance = otherActivation.mPositionTolerance;
-  activation.mForceAllActiveNextStep = true;
-  activation.mCurrentTargetAll = true;
-  activation.mCurrentTargetStamp = 0u;
-  std::fill(activation.mSeeded.begin(), activation.mSeeded.end(), 0u);
+  activation.resetTransientState();
+  if (activationWasEnabled || activation.mEnabled)
+    mNotifier->dirtyTransform();
 }
 
 //==============================================================================
@@ -598,11 +604,7 @@ BodyNode* SoftBodyNode::clone(
   clonedActivation.mLingerSteps = activation.mLingerSteps;
   clonedActivation.mVelocityTolerance = activation.mVelocityTolerance;
   clonedActivation.mPositionTolerance = activation.mPositionTolerance;
-  clonedActivation.mForceAllActiveNextStep = true;
-  clonedActivation.mCurrentTargetAll = true;
-  clonedActivation.mCurrentTargetStamp = 0u;
-  std::fill(
-      clonedActivation.mSeeded.begin(), clonedActivation.mSeeded.end(), 0u);
+  clonedActivation.resetTransientState();
 
   if (cloneNodes)
     clonedBn->matchNodes(this);
@@ -621,6 +623,8 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
   auto& activation = adaptiveContactActivation(*this);
   if (newCount == oldCount) {
     activation.resize(softProperties.mPointProps);
+    if (activation.mEnabled)
+      mNotifier->dirtyTransform();
     return;
   }
 
@@ -834,14 +838,7 @@ void SoftBodyNode::setAdaptiveContactActivationEnabled(bool enabled)
     return;
 
   activation.mEnabled = enabled;
-  activation.mForceAllActiveNextStep = true;
-  activation.mCurrentTargetAll = true;
-  activation.mCurrentTargetStamp = 0u;
-  activation.mActiveCount = mPointMasses.size();
-  std::fill(activation.mActive.begin(), activation.mActive.end(), 1u);
-  std::fill(activation.mSeeded.begin(), activation.mSeeded.end(), 0u);
-  std::fill(
-      activation.mLingerCounters.begin(), activation.mLingerCounters.end(), 0u);
+  activation.resetTransientState();
   for (std::size_t i = 0; i < activation.mFrozenLocalPositions.size(); ++i)
     activation.mFrozenLocalPositions[i] = mAspectProperties.mPointProps[i].mX0;
 
@@ -863,6 +860,8 @@ void SoftBodyNode::setAdaptiveContactActivationRingCount(std::size_t ringCount)
 
   activation.mRingCount = ringCount;
   activation.mForceAllActiveNextStep = true;
+  if (activation.mEnabled)
+    mNotifier->dirtyTransform();
 }
 
 //==============================================================================
@@ -880,6 +879,8 @@ void SoftBodyNode::setAdaptiveContactActivationLingerSteps(
     return;
 
   activation.mLingerSteps = lingerSteps;
+  if (activation.mEnabled)
+    dirtyArticulatedInertia();
 }
 
 //==============================================================================
@@ -902,7 +903,13 @@ void SoftBodyNode::setAdaptiveContactActivationVelocityTolerance(
     tolerance = 0.0;
   }
 
-  adaptiveContactActivation(*this).mVelocityTolerance = tolerance;
+  auto& activation = adaptiveContactActivation(*this);
+  if (activation.mVelocityTolerance == tolerance)
+    return;
+
+  activation.mVelocityTolerance = tolerance;
+  if (activation.mEnabled)
+    dirtyArticulatedInertia();
 }
 
 //==============================================================================
@@ -925,7 +932,13 @@ void SoftBodyNode::setAdaptiveContactActivationPositionTolerance(
     tolerance = 0.0;
   }
 
-  adaptiveContactActivation(*this).mPositionTolerance = tolerance;
+  auto& activation = adaptiveContactActivation(*this);
+  if (activation.mPositionTolerance == tolerance)
+    return;
+
+  activation.mPositionTolerance = tolerance;
+  if (activation.mEnabled)
+    dirtyArticulatedInertia();
 }
 
 //==============================================================================
@@ -1138,15 +1151,7 @@ void SoftBodyNode::prepareAdaptiveContactActivationForDynamics(
 
   bool stateChanged = false;
   if (activation.mForceAllActiveNextStep) {
-    std::fill(activation.mActive.begin(), activation.mActive.end(), 1u);
-    std::fill(
-        activation.mLingerCounters.begin(),
-        activation.mLingerCounters.end(),
-        0u);
-    std::fill(activation.mSeeded.begin(), activation.mSeeded.end(), 0u);
-    activation.mActiveCount = count;
-    activation.mCurrentTargetAll = true;
-    activation.mCurrentTargetStamp = 0u;
+    activation.resetTransientState();
     activation.mForceAllActiveNextStep = false;
     return;
   }
