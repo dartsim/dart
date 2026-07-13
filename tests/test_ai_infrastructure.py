@@ -1060,7 +1060,10 @@ def test_windows_hook_components_cannot_be_missing_or_drifted(
     assert any(marker in error for error in drift_errors)
 
 
-def test_native_pretool_forwards_payload_to_shared_guard(tmp_path, monkeypatch):
+@pytest.mark.parametrize("input_key", ("command", "cmd"))
+def test_native_pretool_forwards_payload_to_shared_guard(
+    tmp_path, monkeypatch, input_key
+):
     guard = tmp_path / ".claude" / "hooks" / "pre-commit-guard.sh"
     guard.parent.mkdir(parents=True)
     guard.write_text("#!/bin/sh\nexit 0\n")
@@ -1073,7 +1076,7 @@ def test_native_pretool_forwards_payload_to_shared_guard(tmp_path, monkeypatch):
         lambda args, **kwargs: calls.append((args, kwargs))
         or subprocess.CompletedProcess(args, 0, b"", b""),
     )
-    status = json.dumps({"tool_input": {"command": "git status"}}).encode()
+    status = json.dumps({"tool_input": {input_key: "git status"}}).encode()
 
     assert bridge.forward(tmp_path, status) == 0
     assert calls[0][0] == [

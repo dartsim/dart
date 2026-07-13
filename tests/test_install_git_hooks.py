@@ -215,8 +215,10 @@ def test_refuses_when_core_hookspath_is_set(tmp_path):
     assert not (repo / ".githooks" / "pre-commit").exists()
 
 
-def _run_guard(repo: Path, env: dict[str, str], command: str):
-    payload = json.dumps({"tool_input": {"command": command}})
+def _run_guard(
+    repo: Path, env: dict[str, str], command: str, input_key: str = "command"
+):
+    payload = json.dumps({"tool_input": {input_key: command}})
     run = subprocess.run(
         [str(GUARD)],
         cwd=repo,
@@ -241,6 +243,16 @@ def _guard_verdict(tmp_path: Path, command: str, extra_env: dict | None = None):
     if extra_env:
         env.update(extra_env)
     return _run_guard(repo, env, command)
+
+
+def test_guard_accepts_codex_cmd_input(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    env.update({"CODEX_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, "git commit -m x", input_key="cmd")
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
 def test_guard_prefers_repository_pixi_python(tmp_path):

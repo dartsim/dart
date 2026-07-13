@@ -23,6 +23,7 @@ import argparse
 import importlib
 import json
 import math
+import os
 import shutil
 import subprocess
 import sys
@@ -58,6 +59,9 @@ def _load_factory(spec: str) -> Callable[[], Any]:
     if ":" not in spec:
         raise ValueError("--factory must be in module:callable form")
     module_name, attr_path = spec.split(":", 1)
+    invocation_dir = os.environ.get("INIT_CWD") or str(Path.cwd())
+    if invocation_dir not in sys.path:
+        sys.path.insert(0, invocation_dir)
     target: Any = importlib.import_module(module_name)
     for name in attr_path.split("."):
         target = getattr(target, name)

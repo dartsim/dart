@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -105,6 +106,34 @@ def test_load_factory_resolves_module_callable(tmp_path, monkeypatch):
         agent_capture._load_factory("claim_scene")
     with pytest.raises(TypeError, match="did not resolve to a callable"):
         agent_capture._load_factory("claim_scene:value")
+
+
+def test_script_loads_factory_from_pixi_invocation_directory(tmp_path):
+    (tmp_path / "claim_scene.py").write_text(
+        "def make_world():\n"
+        "    raise RuntimeError('factory loaded from invocation directory')\n",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPTS / "agent_capture.py"),
+            "--factory",
+            "claim_scene:make_world",
+            "--out",
+            str(tmp_path / "capture"),
+        ],
+        cwd=ROOT,
+        env={**os.environ, "INIT_CWD": str(tmp_path)},
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "factory loaded from invocation directory" in result.stderr
+    assert "No module named 'claim_scene'" not in result.stderr
 
 
 @pytest.mark.parametrize(

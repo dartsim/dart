@@ -31,9 +31,15 @@ def validate_payload(payload: bytes) -> None:
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ValueError("invalid hook JSON: {}".format(exc)) from exc
     tool_input = data.get("tool_input") if isinstance(data, dict) else None
-    command = tool_input.get("command") if isinstance(tool_input, dict) else None
+    command = (
+        tool_input.get("command") or tool_input.get("cmd")
+        if isinstance(tool_input, dict)
+        else None
+    )
     if not isinstance(command, str):
-        raise ValueError("hook JSON must contain string tool_input.command")
+        raise ValueError(
+            "hook JSON must contain string tool_input.command or tool_input.cmd"
+        )
 
 
 def find_git_bash() -> Optional[Path]:

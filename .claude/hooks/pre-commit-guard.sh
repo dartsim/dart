@@ -6,7 +6,7 @@
 # been run, so an agent cannot commit past the gate by forgetting it.
 #
 # Contract:
-#   * reads the hook JSON from stdin, extracts .tool_input.command
+#   * reads the hook JSON from stdin, extracts .tool_input.command or .cmd
 #   * exits 0 fast for anything that is not a `git commit` invocation
 #   * for a git commit:
 #       - if the executable git pre-commit hook is DART-managed and the commit
@@ -84,7 +84,8 @@ except Exception:
     print("skip")
     sys.exit(0)
 
-cmd = ((data.get("tool_input") or {}).get("command") or "")
+tool_input = data.get("tool_input") or {}
+cmd = tool_input.get("command") or tool_input.get("cmd") or ""
 
 OPTS_WITH_ARG = {
     "-C",
