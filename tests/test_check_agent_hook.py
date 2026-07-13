@@ -48,7 +48,8 @@ def _args(root: Path) -> argparse.Namespace:
     return argparse.Namespace(root=root, profile="main")
 
 
-def test_pretool_forwards_payload_to_shared_guard(tmp_path, monkeypatch):
+@pytest.mark.parametrize("input_key", ("command", "cmd"))
+def test_pretool_forwards_payload_to_shared_guard(tmp_path, monkeypatch, input_key):
     root = _repo(tmp_path)
     guard = root / ".claude" / "hooks" / "pre-commit-guard.sh"
     guard.parent.mkdir(parents=True)
@@ -62,7 +63,7 @@ def test_pretool_forwards_payload_to_shared_guard(tmp_path, monkeypatch):
         lambda args, **kwargs: calls.append((args, kwargs))
         or subprocess.CompletedProcess(args, 0, b"", b""),
     )
-    payload = json.dumps({"tool_input": {"command": "git status"}}).encode()
+    payload = json.dumps({"tool_input": {input_key: "git status"}}).encode()
 
     assert bridge.forward(root, payload) == 0
     assert calls[0][0] == [
