@@ -3,10 +3,10 @@
 ## 2026-07-12 PR stabilization evidence
 
 PR [#3382](https://github.com/dartsim/dart/pull/3382) is open from
-`wp-db-native-soft-fallback` to `release-6.20`. At the last pre-fix inspection,
-published head `92ccfce567c` included target-base merge `52ff108437d`, was
-mergeable, and was blocked by pending or failed checks. The current branch adds
-review fix `b8fe9a23093` and this evidence refresh after that inspected baseline.
+`wp-db-native-soft-fallback` to `release-6.20`. At the last inspection,
+published head `551d7d34817` was mergeable and blocked on pending hosted checks.
+The current branch adds runner-test review fix `8c68e900641` and this evidence
+refresh after that inspected baseline.
 
 Published implementation commit `2ad156e7b82` fixes the original WP-DB.04
 mass-matrix review finding and adds
@@ -65,6 +65,21 @@ only exact-current-head failures.
 No benchmark was rerun for this correction because it changes immediate
 articulated-inertia query/cache correctness, not the measured `World::step` hot
 paths or the final performance claim.
+
+Codex review of published head `551d7d34817` found a test-only startup race in
+the paired-runner timeout test. The 50 ms timeout could fire before the child
+executed and flushed `started`, so the old nonempty-output assertion was not a
+valid invariant. Commit `8c68e900641` keeps production code unchanged and
+instead verifies the requested timeout plus equality between the persisted log
+and `TimeoutExpired.output`, whether empty or partial. Verification passes
+100/100 repeated focused launches, 38/38 paired-runner tests, lint, the full
+213/213 Python suite after a rebuild, `git diff --check`, and two clean
+independent reviews.
+
+At the last `551d7d34817` hosted snapshot, seven checks passed, twelve remained
+in progress, and no current-head CI failure had appeared. That suite becomes
+historical after the runner-test fix is published; classify only the exact live
+head.
 
 ## 2026-07-11 final matrix and unresolved winner gate
 
