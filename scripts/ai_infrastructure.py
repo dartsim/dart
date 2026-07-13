@@ -116,6 +116,7 @@ WINDOWS_LAUNCHER_MARKERS = (
     "Get-Command python",
     "pixi run python scripts/setup_ai.py",
     "$payload = [Console]::In.ReadToEnd()",
+    "$pipelineInput = @($input | ForEach-Object { $_ })",
     "$pipelineInput.Count -gt 0",
     "$payload | &",
     "$OutputEncoding = New-Object System.Text.UTF8Encoding($false)",
