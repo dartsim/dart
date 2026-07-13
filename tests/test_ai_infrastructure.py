@@ -358,13 +358,21 @@ def make_repo(tmp_path: Path, profile: str) -> Path:
         ".github/workflows/ci_windows.yml",
         "Native Windows hook smoke\n"
         'pixi run python -c "import sys; print(sys.executable)"\n'
+        "$launcher\n"
+        "$hookCommand\n"
+        "$input | &\n"
         '$ErrorActionPreference = "Continue"\n'
         '"git status"\n'
         "DART_HOOK_DRY_RUN\n"
         '"git commit --no-verify -m x"\n'
+        "$diagnosticOutput\n"
+        "check_agent_hook.py --profile staged\n"
         "$diagnosticExit -ne 0\n"
         "$successExit -ne 0\n"
         "$blockedExit -ne 2\n"
+        "-File $launcher\n"
+        "$rawSuccessExit\n"
+        "$rawBlockedExit\n"
         "cmd.exe /c exit 0\n",
     )
     _write(
@@ -397,6 +405,7 @@ def make_repo(tmp_path: Path, profile: str) -> Path:
         "assert _changed_pixel_count(plain_image, combined_image) >= 128\n"
         "assert _changed_pixel_count(plain_image, debug_image) >= 32\n"
         "DART_REQUIRE_VISUAL_E2E\n"
+        "dartpy.gui.OffscreenRenderer is unavailable\n"
         'pytest.fail("visual e2e is required but DISPLAY is unavailable")\n',
     )
     _write(
@@ -938,6 +947,18 @@ def test_hook_config_requires_exact_windows_override(tmp_path):
             "$LASTEXITCODE = $null",
         ),
         (
+            ".claude/hooks/pre-commit-guard.ps1",
+            "$pipelineInput = @($input)",
+        ),
+        (
+            ".claude/hooks/pre-commit-guard.ps1",
+            "$pipelineInput.Count -gt 0",
+        ),
+        (
+            ".claude/hooks/pre-commit-guard.ps1",
+            "$OutputEncoding = New-Object System.Text.UTF8Encoding($false)",
+        ),
+        (
             "scripts/pretool_guard_bridge.py",
             'env["CLAUDE_PROJECT_DIR"] = str(root)',
         ),
@@ -1034,6 +1055,10 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
             "assert _changed_pixel_count(plain_image, debug_image) >= 32",
         ),
         ("python/tests/unit/test_agent_capture.py", "DART_REQUIRE_VISUAL_E2E"),
+        (
+            "python/tests/unit/test_agent_capture.py",
+            "dartpy.gui.OffscreenRenderer is unavailable",
+        ),
         (
             "python/tests/unit/test_agent_capture.py",
             'pytest.fail("visual e2e is required but DISPLAY is unavailable")',

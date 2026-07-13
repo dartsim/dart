@@ -102,7 +102,7 @@ CODEX_HOOK_COMMAND = (
 )
 CODEX_HOOK_COMMAND_WINDOWS = (
     "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "
-    '"& (Join-Path (git rev-parse --show-toplevel) '
+    '"$input | & (Join-Path (git rev-parse --show-toplevel) '
     "'.claude/hooks/pre-commit-guard.ps1'); "
     'if (-not $?) { exit 2 }; if ($LASTEXITCODE -ne 0) { exit 2 }; exit 0"'
 )
@@ -115,6 +115,11 @@ WINDOWS_LAUNCHER_MARKERS = (
     "Get-Command py",
     "Get-Command python",
     "pixi run python scripts/setup_ai.py",
+    "$pipelineInput = @($input)",
+    "$pipelineInput.Count -gt 0",
+    "$payload | &",
+    "$OutputEncoding = New-Object System.Text.UTF8Encoding($false)",
+    "$OutputEncoding = $previousOutputEncoding",
     '$ErrorActionPreference = "Continue"',
     "$ErrorActionPreference = $previousErrorActionPreference",
     "$LASTEXITCODE = $null",
@@ -890,13 +895,21 @@ def check_ci_wiring(root: Path) -> list[str]:
         for marker in (
             "Native Windows hook smoke",
             'pixi run python -c "import sys; print(sys.executable)"',
+            "$launcher",
+            "$hookCommand",
+            "$input | &",
             '$ErrorActionPreference = "Continue"',
             '"git status"',
             "DART_HOOK_DRY_RUN",
             '"git commit --no-verify -m x"',
+            "$diagnosticOutput",
+            "check_agent_hook.py --profile staged",
             "$diagnosticExit -ne 0",
             "$successExit -ne 0",
             "$blockedExit -ne 2",
+            "-File $launcher",
+            "$rawSuccessExit",
+            "$rawBlockedExit",
             "cmd.exe /c exit 0",
         ):
             if marker not in windows_content:
@@ -918,6 +931,7 @@ def check_ci_wiring(root: Path) -> list[str]:
                 "assert _changed_pixel_count(plain_image, combined_image) >= 128",
                 "assert _changed_pixel_count(plain_image, debug_image) >= 32",
                 "DART_REQUIRE_VISUAL_E2E",
+                "dartpy.gui.OffscreenRenderer is unavailable",
                 'pytest.fail("visual e2e is required but DISPLAY is unavailable")',
             ),
         ),

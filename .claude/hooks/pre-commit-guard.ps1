@@ -2,6 +2,8 @@
 $ErrorActionPreference = "Stop"
 
 try {
+  $pipelineInput = @($input)
+  $payload = $pipelineInput -join [Environment]::NewLine
   $repoRoot = (git rev-parse --show-toplevel)
   if (-not $repoRoot) {
     throw "git did not return a repository root"
@@ -11,16 +13,31 @@ try {
 
   # Windows PowerShell 5.1 promotes native stderr under Stop. Keep it
   # non-terminating only while the child runs so its exact exit code survives.
+  # Use BOM-less UTF-8 when piping the hook JSON into the native interpreter.
   $previousErrorActionPreference = $ErrorActionPreference
+  $previousOutputEncoding = $OutputEncoding
   $ErrorActionPreference = "Continue"
+  $OutputEncoding = New-Object System.Text.UTF8Encoding($false)
   try {
     $LASTEXITCODE = $null
     if (Test-Path -LiteralPath $pixiPython -PathType Leaf) {
-      & $pixiPython $entrypoint --root $repoRoot
+      if ($pipelineInput.Count -gt 0) {
+        $payload | & $pixiPython $entrypoint --root $repoRoot
+      } else {
+        & $pixiPython $entrypoint --root $repoRoot
+      }
     } elseif (Get-Command py -ErrorAction SilentlyContinue) {
-      & py -3 $entrypoint --root $repoRoot
+      if ($pipelineInput.Count -gt 0) {
+        $payload | & py -3 $entrypoint --root $repoRoot
+      } else {
+        & py -3 $entrypoint --root $repoRoot
+      }
     } elseif (Get-Command python -ErrorAction SilentlyContinue) {
-      & python $entrypoint --root $repoRoot
+      if ($pipelineInput.Count -gt 0) {
+        $payload | & python $entrypoint --root $repoRoot
+      } else {
+        & python $entrypoint --root $repoRoot
+      }
     } else {
       Write-Warning "DART pre-tool hook disabled until 'pixi run python scripts/setup_ai.py' creates Python"
       exit 0
@@ -28,6 +45,7 @@ try {
 
     $nativeExitCode = $LASTEXITCODE
   } finally {
+    $OutputEncoding = $previousOutputEncoding
     $ErrorActionPreference = $previousErrorActionPreference
   }
 

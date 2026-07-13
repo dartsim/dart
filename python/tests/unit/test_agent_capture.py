@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -126,9 +127,19 @@ def _display_available() -> bool:
         return False
 
 
+def _require_visual_backend() -> None:
+    if _display_available():
+        return
+    if os.environ.get("DART_REQUIRE_VISUAL_E2E") == "1":
+        pytest.fail(
+            "visual e2e is required but "
+            "dartpy.gui.OffscreenRenderer is unavailable"
+        )
+    pytest.skip("agent_capture needs a dartpy GUI build")
+
+
 def _require_usable_display() -> None:
     import ctypes.util
-    import os
 
     if not sys.platform.startswith("linux"):
         return
@@ -138,6 +149,19 @@ def _require_usable_display() -> None:
         pytest.skip("Filament headless rendering needs DISPLAY or Xvfb")
     if not ctypes.util.find_library("X11"):
         pytest.fail("DISPLAY is configured but the X11 runtime is unavailable")
+
+
+def test_required_visual_e2e_rejects_missing_renderer(monkeypatch) -> None:
+    monkeypatch.setenv("DART_REQUIRE_VISUAL_E2E", "1")
+    monkeypatch.setattr(
+        sys.modules[__name__], "_display_available", lambda: False
+    )
+
+    with pytest.raises(
+        pytest.fail.Exception,
+        match="dartpy.gui.OffscreenRenderer is unavailable",
+    ):
+        _require_visual_backend()
 
 
 def _changed_pixel_count(first, second, tolerance: int = 8) -> int:
@@ -156,11 +180,8 @@ def _changed_pixel_count(first, second, tolerance: int = 8) -> int:
     )
 
 
-@pytest.mark.skipif(
-    not _display_available(),
-    reason="agent_capture smoke needs a dartpy GUI build",
-)
 def test_run_capture_smoke_writes_stills_and_sidecar(tmp_path: Path) -> None:
+    _require_visual_backend()
     _require_usable_display()
 
     args = _args(
@@ -184,11 +205,8 @@ def test_run_capture_smoke_writes_stills_and_sidecar(tmp_path: Path) -> None:
     assert saved == sidecar
 
 
-@pytest.mark.skipif(
-    not _display_available(),
-    reason="agent_capture visual A/B needs a dartpy GUI build",
-)
 def test_run_capture_debug_layers_change_pixels_end_to_end(tmp_path: Path) -> None:
+    _require_visual_backend()
     _require_usable_display()
     common = {
         "steps": 250,
