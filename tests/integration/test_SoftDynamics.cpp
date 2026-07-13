@@ -1477,6 +1477,188 @@ TEST_F(
 }
 
 //==============================================================================
+TEST_F(
+    SoftDynamicsTest,
+    adaptiveContactActivationRingChangeInvalidatesArticulatedInertia)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+  softBody->setVertexSpringStiffness(0.0);
+  softBody->setEdgeSpringStiffness(0.0);
+  softBody->setDampingCoefficient(0.0);
+  softBody->dirtyArticulatedInertia();
+
+  const Eigen::Matrix6d allActive = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d allActiveImplicit
+      = softBody->getArticulatedInertiaImplicit();
+
+  enableAdaptiveContactActivation(world, 0u, 0u);
+  world->step();
+  world->step();
+  ASSERT_EQ(softBody->getNumActivePointMasses(), 0u);
+
+  const Eigen::Matrix6d allFrozen = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d allFrozenImplicit
+      = softBody->getArticulatedInertiaImplicit();
+  EXPECT_GT((allFrozen - allActive).norm(), 1.0e-6);
+  EXPECT_GT((allFrozenImplicit - allActiveImplicit).norm(), 1.0e-6);
+
+  softBody->setAdaptiveContactActivationRingCount(1u);
+  const Eigen::Matrix6d ringChanged = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d ringChangedImplicit
+      = softBody->getArticulatedInertiaImplicit();
+  EXPECT_EQ(softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
+  expectMatrixNear(
+      ringChanged, allActive, 1.0e-12, "ring-change articulated inertia");
+  expectMatrixNear(
+      ringChangedImplicit,
+      allActiveImplicit,
+      1.0e-12,
+      "ring-change implicit articulated inertia");
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest,
+    adaptiveContactActivationControlChangesInvalidateArticulatedInertia)
+{
+  const auto makeQuiescentWorld = []() {
+    simulation::WorldPtr world = utils::SkelParser::readWorld(
+        "dart://sample/skel/test/test_drop_box.skel");
+    if (!world)
+      return world;
+
+    world->setGravity(Eigen::Vector3d::Zero());
+    dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+    if (softBody != nullptr) {
+      softBody->setVertexSpringStiffness(0.0);
+      softBody->setEdgeSpringStiffness(0.0);
+      softBody->setDampingCoefficient(0.0);
+    }
+    return world;
+  };
+
+  {
+    simulation::WorldPtr world = makeQuiescentWorld();
+    ASSERT_TRUE(world != nullptr);
+    dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+    ASSERT_TRUE(softBody != nullptr);
+
+    enableAdaptiveContactActivation(world, 0u, 8u);
+    world->step();
+    ASSERT_EQ(
+        softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
+    const Eigen::Matrix6d active = softBody->getArticulatedInertia();
+
+    softBody->setAdaptiveContactActivationLingerSteps(0u);
+    const Eigen::Matrix6d lingerChanged = softBody->getArticulatedInertia();
+    EXPECT_EQ(softBody->getNumActivePointMasses(), 0u);
+    EXPECT_GT((lingerChanged - active).norm(), 1.0e-6);
+    softBody->dirtyArticulatedInertia();
+    expectMatrixNear(
+        softBody->getArticulatedInertia(),
+        lingerChanged,
+        1.0e-12,
+        "linger-change articulated inertia");
+  }
+
+  {
+    simulation::WorldPtr world = makeQuiescentWorld();
+    ASSERT_TRUE(world != nullptr);
+    dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+    ASSERT_TRUE(softBody != nullptr);
+    ASSERT_GT(softBody->getNumPointMasses(), 0u);
+    softBody->getPointMass(0)->setVelocities(Eigen::Vector3d(1.0e-3, 0.0, 0.0));
+
+    enableAdaptiveContactActivation(world, 0u, 0u, 1.0e-4, 1.0);
+    world->step();
+    world->step();
+    ASSERT_GT(softBody->getNumActivePointMasses(), 0u);
+    const Eigen::Matrix6d strictVelocity = softBody->getArticulatedInertia();
+
+    softBody->setAdaptiveContactActivationVelocityTolerance(1.0e-2);
+    const Eigen::Matrix6d relaxedVelocity = softBody->getArticulatedInertia();
+    EXPECT_EQ(softBody->getNumActivePointMasses(), 0u);
+    EXPECT_GT((relaxedVelocity - strictVelocity).norm(), 1.0e-6);
+    softBody->dirtyArticulatedInertia();
+    expectMatrixNear(
+        softBody->getArticulatedInertia(),
+        relaxedVelocity,
+        1.0e-12,
+        "velocity-tolerance articulated inertia");
+  }
+
+  {
+    simulation::WorldPtr world = makeQuiescentWorld();
+    ASSERT_TRUE(world != nullptr);
+    dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+    ASSERT_TRUE(softBody != nullptr);
+    ASSERT_GT(softBody->getNumPointMasses(), 0u);
+    softBody->getPointMass(0)->setPositions(Eigen::Vector3d(1.0e-3, 0.0, 0.0));
+
+    enableAdaptiveContactActivation(world, 0u, 0u, 1.0, 1.0e-4);
+    world->step();
+    world->step();
+    ASSERT_GT(softBody->getNumActivePointMasses(), 0u);
+    const Eigen::Matrix6d strictPosition = softBody->getArticulatedInertia();
+
+    softBody->setAdaptiveContactActivationPositionTolerance(1.0e-2);
+    const Eigen::Matrix6d relaxedPosition = softBody->getArticulatedInertia();
+    EXPECT_EQ(softBody->getNumActivePointMasses(), 0u);
+    EXPECT_GT((relaxedPosition - strictPosition).norm(), 1.0e-6);
+    softBody->dirtyArticulatedInertia();
+    expectMatrixNear(
+        softBody->getArticulatedInertia(),
+        relaxedPosition,
+        1.0e-12,
+        "position-tolerance articulated inertia");
+  }
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest,
+    adaptiveContactActivationSameCountRebuildInvalidatesArticulatedInertia)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+  ASSERT_GT(softBody->getNumFaces(), 0u);
+  softBody->setVertexSpringStiffness(0.0);
+  softBody->setEdgeSpringStiffness(0.0);
+  softBody->setDampingCoefficient(0.0);
+  softBody->dirtyArticulatedInertia();
+
+  const Eigen::Matrix6d allActive = softBody->getArticulatedInertia();
+  enableAdaptiveContactActivation(world, 0u, 0u);
+  world->step();
+  world->step();
+  ASSERT_EQ(softBody->getNumActivePointMasses(), 0u);
+  const Eigen::Matrix6d allFrozen = softBody->getArticulatedInertia();
+  EXPECT_GT((allFrozen - allActive).norm(), 1.0e-6);
+
+  const Eigen::Vector3i repeatedFace = softBody->getFace(0u);
+  softBody->addFace(repeatedFace);
+  EXPECT_EQ(softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
+  expectMatrixNear(
+      softBody->getArticulatedInertia(),
+      allActive,
+      1.0e-12,
+      "same-count rebuild articulated inertia");
+}
+
+//==============================================================================
 TEST_F(SoftDynamicsTest, adaptiveContactActivationKeepsPublicMatricesAllActive)
 {
   simulation::WorldPtr activationOff = utils::SkelParser::readWorld(
@@ -1582,15 +1764,24 @@ TEST_F(
     world->step();
   EXPECT_EQ(softBody->getNumActivePointMasses(), 0u);
 
-  dynamics::SoftBodyNode::AspectState restoredState;
-  restoredState.mPointStates.resize(softBody->getNumPointMasses());
-  restoredState.mPointStates[0].mPositions[0] = 1.0e-5;
+  const dynamics::SoftBodyNode::AspectState restoredState
+      = softBody->getAspectState();
+  const Eigen::Matrix6d frozenArticulatedInertia
+      = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d frozenImplicitArticulatedInertia
+      = softBody->getArticulatedInertiaImplicit();
   softBody->setAspectState(restoredState);
-  // A state restore resets activation bookkeeping to all-active immediately
-  // so instrumentation never reports stale pre-restore counts.
+  // Even when the public point state is identical, a restore resets the hidden
+  // activation bookkeeping and invalidates the frozen articulated inertia.
   EXPECT_EQ(softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
-  world->step();
-  EXPECT_EQ(softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
+  EXPECT_GT(
+      (softBody->getArticulatedInertia() - frozenArticulatedInertia).norm(),
+      1.0e-6);
+  EXPECT_GT(
+      (softBody->getArticulatedInertiaImplicit()
+       - frozenImplicitArticulatedInertia)
+          .norm(),
+      1.0e-6);
 }
 
 //==============================================================================
@@ -1694,6 +1885,59 @@ TEST_F(
   EXPECT_TRUE(shape->getBoundingBox().getMax().isApprox(expectedMax, 1.0e-12));
 
   softBody->setAspectState(state);
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest,
+    adaptiveContactActivationCopyInvalidatesArticulatedInertia)
+{
+  simulation::WorldPtr sourceWorld = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  simulation::WorldPtr targetWorld = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(sourceWorld != nullptr);
+  ASSERT_TRUE(targetWorld != nullptr);
+  sourceWorld->setGravity(Eigen::Vector3d::Zero());
+  targetWorld->setGravity(Eigen::Vector3d::Zero());
+
+  dynamics::SoftBodyNode* source = firstSoftBody(sourceWorld);
+  dynamics::SoftBodyNode* target = firstSoftBody(targetWorld);
+  ASSERT_TRUE(source != nullptr);
+  ASSERT_TRUE(target != nullptr);
+  source->setVertexSpringStiffness(0.0);
+  source->setEdgeSpringStiffness(0.0);
+  source->setDampingCoefficient(0.0);
+  target->setVertexSpringStiffness(0.0);
+  target->setEdgeSpringStiffness(0.0);
+  target->setDampingCoefficient(0.0);
+
+  enableAdaptiveContactActivation(sourceWorld, 3u, 5u);
+  enableAdaptiveContactActivation(targetWorld, 0u, 0u);
+  targetWorld->step();
+  targetWorld->step();
+  ASSERT_EQ(target->getNumActivePointMasses(), 0u);
+  const Eigen::Matrix6d frozen = target->getArticulatedInertia();
+
+  target->copy(*source);
+  const Eigen::Matrix6d copied = target->getArticulatedInertia();
+  EXPECT_EQ(target->getNumActivePointMasses(), target->getNumPointMasses());
+  EXPECT_GT((copied - frozen).norm(), 1.0e-6);
+  EXPECT_EQ(target->getAdaptiveContactActivationRingCount(), 3u);
+  EXPECT_EQ(target->getAdaptiveContactActivationLingerSteps(), 5u);
+
+  target->setAdaptiveContactActivationRingCount(0u);
+  target->setAdaptiveContactActivationLingerSteps(0u);
+  targetWorld->step();
+  targetWorld->step();
+  ASSERT_EQ(target->getNumActivePointMasses(), 0u);
+
+  *target = *source;
+  const Eigen::Matrix6d assigned = target->getArticulatedInertia();
+  EXPECT_EQ(target->getNumActivePointMasses(), target->getNumPointMasses());
+  EXPECT_GT((assigned - frozen).norm(), 1.0e-6);
+  EXPECT_EQ(target->getAdaptiveContactActivationRingCount(), 3u);
+  EXPECT_EQ(target->getAdaptiveContactActivationLingerSteps(), 5u);
 }
 
 //==============================================================================
