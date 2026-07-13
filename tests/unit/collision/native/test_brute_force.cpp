@@ -252,6 +252,24 @@ TEST(BruteForceBroadPhase, UpdateRangeHandlesOutOfOrderIds)
   EXPECT_EQ(pairs[0].second, 1);
 }
 
+TEST(BruteForceBroadPhase, UpdatesExistingEntryAndSameOrderRange)
+{
+  BruteForceBroadPhase bp;
+  bp.add(0, makeAabb(0, 1));
+  bp.add(1, makeAabb(4, 5));
+
+  bp.add(1, makeAabb(0.5, 1.5));
+  EXPECT_EQ(bp.size(), 2u);
+  ASSERT_EQ(bp.queryPairs().size(), 1u);
+
+  const std::array<std::size_t, 2> ids{{0, 1}};
+  const std::array<Aabb, 2> aabbs{{makeAabb(0, 1), makeAabb(4, 5)}};
+  bp.updateRange(ids, aabbs);
+
+  EXPECT_EQ(bp.size(), 2u);
+  EXPECT_TRUE(bp.queryPairs().empty());
+}
+
 TEST(BruteForceBroadPhase, Clear)
 {
   BruteForceBroadPhase bp;

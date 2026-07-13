@@ -1567,9 +1567,6 @@ int getSoftFirstFace(const SoftPointCacheView& view, std::size_t pointMassIndex)
 
 bool softFaceInteriorContactsEnabled(const CollisionObject* object)
 {
-  if (object == nullptr)
-    return false;
-
   const auto* detector = dynamic_cast<const DARTCollisionDetector*>(
       object->getCollisionDetector());
   return detector != nullptr && detector->getSoftFaceInteriorContactsEnabled();
@@ -2064,10 +2061,6 @@ void visitCachedSoftFaces(
   }
 
   const auto visitNode = [&](auto&& self, int nodeIndex) -> void {
-    if (nodeIndex < 0 || static_cast<std::size_t>(nodeIndex) >= nodes.size()) {
-      return;
-    }
-
     const auto& node = nodes[static_cast<std::size_t>(nodeIndex)];
     if (!nodeOverlaps(node.boundsMin, node.boundsMax))
       return;
@@ -2075,9 +2068,6 @@ void visitCachedSoftFaces(
     if (node.left < 0 && node.right < 0) {
       for (int i = 0; i < node.count; ++i) {
         const std::size_t cursor = static_cast<std::size_t>(node.first + i);
-        if (cursor >= indices.size())
-          continue;
-
         const int faceIndex = indices[cursor];
         if (faceIndex >= 0)
           visitFace(static_cast<std::size_t>(faceIndex));
@@ -2099,14 +2089,9 @@ bool cachedFaceHasSphereVertexContact(
     double contactRadiusSquared)
 {
   for (int i = 0; i < 3; ++i) {
-    const int vertexIndex = face.indices[i];
-    if (vertexIndex < 0
-        || static_cast<std::size_t>(vertexIndex) >= vertices.size()) {
-      continue;
-    }
+    const auto vertexIndex = static_cast<std::size_t>(face.indices[i]);
 
-    if ((vertices[static_cast<std::size_t>(vertexIndex)] - sphereCenter)
-            .squaredNorm()
+    if ((vertices[vertexIndex] - sphereCenter).squaredNorm()
         <= contactRadiusSquared) {
       return true;
     }
@@ -2146,7 +2131,9 @@ int addSphereSoftFaceInteriorContacts(
 
   visitCachedSoftFaces(
       softObject,
+      // LCOV_EXCL_START: gcov separates the closure entry from its body.
       [&](const Eigen::Vector3d& boundsMin, const Eigen::Vector3d& boundsMax) {
+        // LCOV_EXCL_STOP
         return distanceSquaredToAabb(sphereCenter, boundsMin, boundsMax)
                <= contactRadiusSquared;
       },
@@ -2204,14 +2191,9 @@ bool cachedFaceHasBoxVertexContact(
 {
   constexpr double contactTolerance = 1e-9;
   for (int i = 0; i < 3; ++i) {
-    const int vertexIndex = face.indices[i];
-    if (vertexIndex < 0
-        || static_cast<std::size_t>(vertexIndex) >= vertices.size()) {
-      continue;
-    }
+    const auto vertexIndex = static_cast<std::size_t>(face.indices[i]);
 
-    const Eigen::Vector3d pointInBox
-        = softToBox.apply(vertices[static_cast<std::size_t>(vertexIndex)]);
+    const Eigen::Vector3d pointInBox = softToBox.apply(vertices[vertexIndex]);
     if ((pointInBox.array().abs() <= (halfExtents.array() + contactTolerance))
             .all()) {
       return true;
@@ -2280,7 +2262,9 @@ int addBoxSoftFaceInteriorContacts(
 
   visitCachedSoftFaces(
       softObject,
+      // LCOV_EXCL_START: gcov separates the closure entry from its body.
       [&](const Eigen::Vector3d& boundsMin, const Eigen::Vector3d& boundsMax) {
+        // LCOV_EXCL_STOP
         return (queryMin.array() <= boundsMax.array()).all()
                && (queryMax.array() >= boundsMin.array()).all();
       },

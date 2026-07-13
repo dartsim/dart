@@ -2119,13 +2119,6 @@ bool ConstraintSolver::clearInactiveConstrainedGroups()
       recordConstrainedGroupProfileCounters();
       return true;
     }
-
-    for (auto& skeleton : mSkeletons) {
-      if (skeleton->isResting() || skeleton->getIslandIndex() >= 0) {
-        skeleton->setResting(false);
-        skeleton->setIslandIndex(-1);
-      }
-    }
   }
 
   mHadDeactivationGroups = false;

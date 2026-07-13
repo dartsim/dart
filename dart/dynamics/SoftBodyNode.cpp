@@ -254,8 +254,10 @@ public:
   std::uint32_t nextVisitStamp()
   {
     if (mVisitStamp == std::numeric_limits<std::uint32_t>::max()) {
+      // LCOV_EXCL_START: requires more than 2^32 activation traversals.
       std::fill(mVisitedStamps.begin(), mVisitedStamps.end(), 0u);
       mVisitStamp = 1u;
+      // LCOV_EXCL_STOP
     } else {
       ++mVisitStamp;
     }

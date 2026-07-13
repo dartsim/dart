@@ -169,7 +169,7 @@ void SoftMeshShape::_buildMesh()
       mAssimpMesh->mVertices[i] = itAIVector3d;
       mAssimpMesh->mNormals[i] = itAIVector3d;
     }
-  } else {
+  } else { // LCOV_EXCL_START: PointMass count follows point properties.
     for (int i = 0; i < nVertices; ++i) {
       PointMass* itPointMass = mSoftBodyNode->getPointMass(i);
       const Eigen::Vector3d& vertex = itPointMass->getRestingPosition();
@@ -177,7 +177,7 @@ void SoftMeshShape::_buildMesh()
       mAssimpMesh->mVertices[i] = itAIVector3d;
       mAssimpMesh->mNormals[i] = itAIVector3d;
     }
-  }
+  } // LCOV_EXCL_STOP
 
   // Set faces
   mAssimpMesh->mNumFaces = nFaces;
