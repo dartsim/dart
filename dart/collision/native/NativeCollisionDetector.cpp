@@ -63,6 +63,13 @@
 namespace dart {
 namespace collision {
 
+static_assert(
+    sizeof(NativeCollisionDetector) == sizeof(CollisionDetector),
+    "NativeCollisionDetector must not add state to its exported ABI layout");
+static_assert(
+    alignof(NativeCollisionDetector) == alignof(CollisionDetector),
+    "NativeCollisionDetector must preserve its exported ABI alignment");
+
 namespace {
 
 //==============================================================================
@@ -285,44 +292,52 @@ std::size_t getManifoldCacheId(const CollisionObject* object)
 }
 
 //==============================================================================
-using ManifoldCacheMap = std::unordered_map<
-    const NativeCollisionDetector*,
-    std::unique_ptr<native::PersistentManifoldCache>>;
+struct NativeDetectorState
+{
+  std::size_t numCollisionThreads{1u};
+  std::unique_ptr<native::PersistentManifoldCache> manifoldCache;
+};
+
+using NativeDetectorStateMap
+    = std::unordered_map<const NativeCollisionDetector*, NativeDetectorState>;
 
 //==============================================================================
-struct ManifoldCacheRegistry
+struct NativeDetectorStateRegistry
 {
-  ManifoldCacheMap caches;
+  NativeDetectorStateMap states;
   std::mutex mutex;
 };
 
 //==============================================================================
-ManifoldCacheRegistry& getManifoldCacheRegistry()
+NativeDetectorStateRegistry& getNativeDetectorStateRegistry()
 {
-  static ManifoldCacheRegistry registry;
-  return registry;
+  // Detectors can be owned by static/global objects and therefore destroyed
+  // after ordinary function-local statics. Keep this registry alive through
+  // process teardown so every detector destructor can safely erase its state.
+  static auto* const registry = new NativeDetectorStateRegistry;
+  return *registry;
 }
 
 //==============================================================================
 native::PersistentManifoldCache* findManifoldCache(
     const NativeCollisionDetector* detector)
 {
-  auto& registry = getManifoldCacheRegistry();
+  auto& registry = getNativeDetectorStateRegistry();
   std::lock_guard<std::mutex> lock(registry.mutex);
-  const auto it = registry.caches.find(detector);
-  if (it == registry.caches.end())
+  const auto it = registry.states.find(detector);
+  if (it == registry.states.end())
     return nullptr;
 
-  return it->second.get();
+  return it->second.manifoldCache.get();
 }
 
 //==============================================================================
 native::PersistentManifoldCache& getOrCreateManifoldCache(
     const NativeCollisionDetector* detector)
 {
-  auto& registry = getManifoldCacheRegistry();
+  auto& registry = getNativeDetectorStateRegistry();
   std::lock_guard<std::mutex> lock(registry.mutex);
-  auto& cache = registry.caches[detector];
+  auto& cache = registry.states[detector].manifoldCache;
   if (!cache)
     cache = std::make_unique<native::PersistentManifoldCache>();
 
@@ -330,11 +345,33 @@ native::PersistentManifoldCache& getOrCreateManifoldCache(
 }
 
 //==============================================================================
-void removeManifoldCache(const NativeCollisionDetector* detector)
+void setStoredNumCollisionThreads(
+    const NativeCollisionDetector* detector, std::size_t numThreads)
 {
-  auto& registry = getManifoldCacheRegistry();
+  auto& registry = getNativeDetectorStateRegistry();
   std::lock_guard<std::mutex> lock(registry.mutex);
-  registry.caches.erase(detector);
+  registry.states[detector].numCollisionThreads = numThreads;
+}
+
+//==============================================================================
+std::size_t getStoredNumCollisionThreads(
+    const NativeCollisionDetector* detector)
+{
+  auto& registry = getNativeDetectorStateRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  const auto it = registry.states.find(detector);
+  if (it == registry.states.end())
+    return 1u;
+
+  return it->second.numCollisionThreads;
+}
+
+//==============================================================================
+void removeNativeDetectorState(const NativeCollisionDetector* detector)
+{
+  auto& registry = getNativeDetectorStateRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  registry.states.erase(detector);
 }
 
 //==============================================================================
@@ -922,8 +959,7 @@ std::shared_ptr<NativeCollisionDetector> NativeCollisionDetector::create()
 //==============================================================================
 NativeCollisionDetector::~NativeCollisionDetector()
 {
-  if (mHasManifoldCache)
-    removeManifoldCache(this);
+  removeNativeDetectorState(this);
 }
 
 //==============================================================================
@@ -939,9 +975,6 @@ native::CachedContact* NativeCollisionDetector::getCachedContact(
       || object2->getCollisionDetector() != this) {
     return nullptr;
   }
-
-  if (!mHasManifoldCache)
-    return nullptr;
 
   const auto* manifoldCache = findManifoldCache(this);
   if (!manifoldCache)
@@ -964,9 +997,6 @@ void NativeCollisionDetector::notifyCollisionObjectDestroying(
   if (!object)
     return;
 
-  if (!mHasManifoldCache)
-    return;
-
   auto* manifoldCache = findManifoldCache(this);
   if (!manifoldCache)
     return;
@@ -979,7 +1009,7 @@ std::shared_ptr<CollisionDetector>
 NativeCollisionDetector::cloneWithoutCollisionObjects() const
 {
   auto clone = NativeCollisionDetector::create();
-  clone->setNumCollisionThreads(mNumCollisionThreads);
+  clone->setNumCollisionThreads(getNumCollisionThreads());
   return clone;
 }
 
@@ -1011,13 +1041,13 @@ void NativeCollisionDetector::setNumCollisionThreads(std::size_t numThreads)
       numThreads = 1u; // LCOV_EXCL_LINE: requires unavailable hardware count.
   }
 
-  mNumCollisionThreads = std::max<std::size_t>(1u, numThreads);
+  setStoredNumCollisionThreads(this, std::max<std::size_t>(1u, numThreads));
 }
 
 //==============================================================================
 std::size_t NativeCollisionDetector::getNumCollisionThreads() const
 {
-  return mNumCollisionThreads;
+  return getStoredNumCollisionThreads(this);
 }
 
 //==============================================================================
@@ -1048,7 +1078,7 @@ bool NativeCollisionDetector::collide(
   native::PersistentManifoldCache* manifoldCache = nullptr;
   const bool cacheNativeManifoldContacts
       = !hasSoftMeshFallbackShape(nativeGroup->mIdToObject);
-  if (cacheNativeManifoldContacts && mHasManifoldCache && option.enableContact
+  if (cacheNativeManifoldContacts && option.enableContact
       && mayUseNativeManifoldContacts(nativeGroup->mIdToObject)) {
     manifoldCache = findManifoldCache(this);
     refreshManifoldCache(nativeGroup->mCollisionObjects, manifoldCache);
@@ -1083,7 +1113,6 @@ bool NativeCollisionDetector::collide(
 
   if (cacheNativeManifoldContacts && nativeManifoldContactFound) {
     if (!manifoldCache) {
-      mHasManifoldCache = true;
       manifoldCache = &getOrCreateManifoldCache(this);
     }
     attachCachedContactImpulses(result, manifoldCache);
@@ -1122,7 +1151,7 @@ bool NativeCollisionDetector::collide(
   const bool cacheNativeManifoldContacts
       = !hasSoftMeshFallbackShape(nativeGroup1->mIdToObject)
         && !hasSoftMeshFallbackShape(nativeGroup2->mIdToObject);
-  if (cacheNativeManifoldContacts && mHasManifoldCache && option.enableContact
+  if (cacheNativeManifoldContacts && option.enableContact
       && mayUseNativeManifoldContacts(
           nativeGroup1->mIdToObject, nativeGroup2->mIdToObject)) {
     manifoldCache = findManifoldCache(this);
@@ -1147,7 +1176,6 @@ bool NativeCollisionDetector::collide(
               fallbackPairResult)) {
         if (cacheNativeManifoldContacts && nativeManifoldContactFound) {
           if (!manifoldCache) {
-            mHasManifoldCache = true;
             manifoldCache = &getOrCreateManifoldCache(this);
           }
           attachCachedContactImpulses(result, manifoldCache);
@@ -1159,7 +1187,6 @@ bool NativeCollisionDetector::collide(
 
   if (cacheNativeManifoldContacts && nativeManifoldContactFound) {
     if (!manifoldCache) {
-      mHasManifoldCache = true;
       manifoldCache = &getOrCreateManifoldCache(this);
     }
     attachCachedContactImpulses(result, manifoldCache);

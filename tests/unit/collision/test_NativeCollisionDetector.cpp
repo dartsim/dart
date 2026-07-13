@@ -629,9 +629,18 @@ TEST(NativeCollisionDetector, CreatesDetectorGroupAndCollidesSphereSphere)
   auto detector = collision::NativeCollisionDetector::create();
   ASSERT_NE(nullptr, detector);
   EXPECT_EQ("native", detector->getType());
+  EXPECT_EQ(1u, detector->getNumCollisionThreads());
+
+  auto independentDetector = collision::NativeCollisionDetector::create();
+  ASSERT_NE(nullptr, independentDetector);
+  EXPECT_EQ(1u, independentDetector->getNumCollisionThreads());
 
   detector->setNumCollisionThreads(3u);
   EXPECT_EQ(3u, detector->getNumCollisionThreads());
+  EXPECT_EQ(1u, independentDetector->getNumCollisionThreads());
+  independentDetector->setNumCollisionThreads(5u);
+  EXPECT_EQ(3u, detector->getNumCollisionThreads());
+  EXPECT_EQ(5u, independentDetector->getNumCollisionThreads());
 
   auto clone = detector->cloneWithoutCollisionObjects();
   ASSERT_NE(nullptr, clone);

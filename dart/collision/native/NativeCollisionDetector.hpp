@@ -128,8 +128,6 @@ protected:
 
 private:
   static Registrar<NativeCollisionDetector> mRegistrar;
-  std::size_t mNumCollisionThreads{1u};
-  bool mHasManifoldCache{false};
 };
 
 } // namespace collision
