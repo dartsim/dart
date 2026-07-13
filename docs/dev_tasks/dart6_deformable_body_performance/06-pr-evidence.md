@@ -3,17 +3,16 @@
 ## 2026-07-12 PR stabilization evidence
 
 PR [#3382](https://github.com/dartsim/dart/pull/3382) is open from
-`wp-db-native-soft-fallback` to `release-6.20`. Published head
-`b25462ca5c0` is behind current base `4ddfe712b359` and is reported
-conflicting/dirty; the local stack through target-base merge `52ff108437d` and
-merged-head handoff `af7ae4ccedd`, plus this blocker refresh, has not been
-pushed.
+`wp-db-native-soft-fallback` to `release-6.20`. At the last pre-fix inspection,
+published head `92ccfce567c` included target-base merge `52ff108437d`, was
+mergeable, and was blocked by pending or failed checks. The current branch adds
+review fix `b8fe9a23093` and this evidence refresh after that inspected baseline.
 
-Local implementation commit `2ad156e7b82` fixes the current WP-DB.04
+Published implementation commit `2ad156e7b82` fixes the original WP-DB.04
 mass-matrix review finding and adds
 `SoftDynamicsTest.pointMassAccelerationsDoNotAffectMassMatrices`. The
 regression failed before the production correction, then passed afterward.
-Current local gates:
+Verification on that commit:
 
 ```text
 pixi run lint                                      PASS
@@ -24,7 +23,7 @@ INTEGRATION_StepAllocation                        PASS
 independent post-fix reviews                      CLEAN x2
 ```
 
-Hosted check classification at published head:
+Historical hosted check classification at `b25462ca5c0`:
 
 - Linux coverage and assert-enabled jobs fail only in `test_MjcfParser` at
   `BodyNode::addConstraintImpulse()`; exact-base run `29178779447` fails the
@@ -32,8 +31,8 @@ Hosted check classification at published head:
 - Windows run `29188317164` was cancelled at the workflow's 300-minute limit
   while compiling/linking; `The operation was canceled.` is the primary
   signal.
-- The mass-matrix review thread remains unresolved pending approval to push the
-  local fix. A fresh Codex review is also temporarily quota-blocked.
+- #3384 later fixed the exact-base `test_MjcfParser` failure, and the
+  mass-matrix review thread was resolved after the correction was published.
 
 The historical exact-base failure was addressed upstream by #3384's
 non-finite-LCP guard. After merging `4ddfe712b359`, local head `52ff108437d`
@@ -42,11 +41,30 @@ Release C++ suite, the full 213/213 Python suite, and a no-cache assert-enabled
 focused gate for `test_ConstraintSolver`, `test_ContactConstraint`, and
 `test_MjcfParser` (3/3). The only merge conflict was `CHANGELOG.md`, whose
 resolution retains both upstream and branch entries. New-head hosted CI remains
-pending an approved push.
+classified by the current evidence below.
 
-No benchmark was rerun for this correction because it changes public
-matrix-query correctness, not the measured `World::step` hot paths or the final
-performance claim.
+Codex review of published head `92ccfce567c` found that disabling adaptive
+contact activation did not invalidate articulated-inertia caches assembled
+while points were frozen. Follow-up commit `b8fe9a23093` notifies the existing
+cache dependency chain on either mode transition and adds
+`SoftDynamicsTest.adaptiveContactActivationToggleInvalidatesArticulatedInertia`.
+The regression failed before the production fix, observing stale diagonal
+values such as `1.0` instead of a freshly recomputed `0.5`, then passed after
+the fix. Current gates are lint, 292/292 no-cache Release build, 152/152 C++,
+213/213 Python, 17/17 `test_SoftDynamics`, `git diff --check`, and two clean
+independent reviews.
+
+The pre-fix hosted snapshot on `92ccfce567c` exposed a self-hosted-runner
+workspace collision rather than a product failure. Coverage failed during Pixi
+setup after another job removed the shared `_work/dart/dart` directory; AVX2
+failed at the same boundary; Debug and gz-physics were cancelled mid-build. API
+docs, both Read the Docs builds, newest GCC/Clang, macOS arm64 Debug and
+Release, SSE4.2, AVX, and Eigen 64-byte alignment passed. Classify and rerun
+only exact-current-head failures.
+
+No benchmark was rerun for this correction because it changes immediate
+articulated-inertia query/cache correctness, not the measured `World::step` hot
+paths or the final performance claim.
 
 ## 2026-07-11 final matrix and unresolved winner gate
 
@@ -174,7 +192,7 @@ Those rows remain supporting context only because they:
   16-thread and `soft_open_chain` cases; and
 - have wide per-pair spreads despite near-tied medians.
 
-Local commits `9a7bab76948` and `a122c5ab437` now provide the required bounded
+Published commits `9a7bab76948` and `a122c5ab437` provide the required bounded
 runner through `pixi run bm-soft-body-paired`. Its full protocol:
 
 - resolves the requested revision once, requires it to be the clean current

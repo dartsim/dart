@@ -38,7 +38,8 @@ contract  b615f5f1f6e (binding native-kernel details)
 evidence  babca41f70d (records the sustained paired-run host blocker)
 merge     52ff108437d (merges current release-6.20 through #3384)
 docs      af7ae4ccedd (merged-head verification and takeover state)
-origin    b25462ca5c0
+published 92ccfce567c (complete pre-review-fix stack)
+review    b8fe9a23093 (activation-toggle cache invalidation)
 base      4ddfe712b359
 PR        https://github.com/dartsim/dart/pull/3382
 ```
@@ -48,9 +49,9 @@ against the release branch. Do not resume it.
 
 ## Completed locally
 
-Commit `2ad156e7b82` fixes the current P2 mass-matrix review finding and adds a
-regression proving retained point-mass accelerations cannot affect public mass
-or augmented-mass matrices. Verification on that commit:
+Published commit `2ad156e7b82` fixes the original P2 mass-matrix review finding
+and adds a regression proving retained point-mass accelerations cannot affect
+public mass or augmented-mass matrices. Verification on that commit:
 
 ```text
 pixi run lint                                      PASS
@@ -61,9 +62,9 @@ INTEGRATION_StepAllocation                        PASS
 independent post-fix reviews                      CLEAN x2
 ```
 
-No GitHub mutation was made for this packet. Before an approved push, fetch and
-merge the latest `origin/release-6.20` if it moved, then reverify the merged
-state.
+The complete stack through `92ccfce567c` is published, the mass-matrix thread is
+resolved, and the PR title/body now state the representative release scope and
+failed winner gate accurately.
 
 Commits `9a7bab76948` and `a122c5ab437` provide the reviewed
 `bm-soft-body-paired` evidence runner. The current runner stack has 38/38
@@ -83,13 +84,13 @@ Commits `ab6e8edede4` and `b615f5f1f6e` promote and complete the staged
 native-owned soft-kernel contract in the durable design owner and the separate
 `main` zero-DoF fix in PLAN-622.
 
-The base advanced through #3384 after the published head. Merge commit
-`52ff108437d` retains both changelog entries and passes `pixi run check-lint`, a
-292/292 no-cache Release build, the 152/152 Release C++ suite, the 213/213
-Python suite, and a no-cache assert-enabled focused gate covering
+The base advanced through #3384 after prior published head `b25462ca5c0`.
+Merge commit `52ff108437d` retains both changelog entries and passes
+`pixi run check-lint`, a 292/292 no-cache Release build, the 152/152 Release C++
+suite, the 213/213 Python suite, and a no-cache assert-enabled focused gate covering
 `test_ConstraintSolver`, `test_ContactConstraint`, and `test_MjcfParser` (3/3).
 #3384 resolves the historical non-finite-LCP `test_MjcfParser` failure on the
-composed branch. No GitHub mutation has published that merge yet.
+composed branch. The merge is published in head `92ccfce567c`.
 
 A later attempt at `babca41f70de` also completed its dedicated build and
 checksum gates, but was interrupted after the base moved and before timing. Its
@@ -105,18 +106,27 @@ peaks were 50 workloads, load `52.61`, and `105 C`. It was interrupted with no
 timing rows, summary, verdict, or `COMPLETE.json`. This is explicit host-blocker
 evidence, not a result to resume or reinterpret.
 
-## Hosted blockers
+Current review fix `b8fe9a23093` invalidates the soft cache dependency chain
+when adaptive contact activation changes mode and adds
+`SoftDynamicsTest.adaptiveContactActivationToggleInvalidatesArticulatedInertia`.
+The regression failed before the fix with stale frozen/lumped articulated
+inertia and passes after it. Verification is clean: lint; 292/292 no-cache
+Release build; 152/152 C++; 213/213 Python; 17/17 `test_SoftDynamics`;
+`git diff --check`; and two independent reviews. If it is not yet published,
+publish it with this task-home refresh. Then update the PR body to the resulting
+head and 17/17 `test_SoftDynamics` gate, resolve thread
+`PRRT_kwDOACTnoM6QQkkC`, and request one fresh current-head Codex review.
 
-- The published head still shows the historical Linux coverage/assert failures
-  from `test_MjcfParser`; exact-base run `29178779447` reproduced them on old
-  base `fa17fad79b9`. #3384 addresses that path and the locally merged
-  assert-enabled gate is green. New-head hosted CI is pending publication.
-- The published PR is conflicting/dirty until the local target-base merge is
-  approved and pushed.
-- Windows run `29188317164` reached the 300-minute workflow timeout mid-build.
-- The automated mass-matrix review thread remains unresolved until the local
-  fix is published.
-- A fresh Codex review is temporarily quota-blocked; avoid duplicate triggers.
+## Pre-fix hosted snapshot and blockers
+
+- At the last pre-fix snapshot, published head `92ccfce567c` was mergeable with
+  checks pending or failed. Its failures were self-hosted-runner workspace
+  collisions, not observed product failures: coverage and AVX2 lost Pixi during
+  setup, Debug was cancelled mid-compile, and the first gz-physics attempt was
+  cancelled while building. Classify only exact-current-head results.
+- The mass-matrix review thread is resolved. At that snapshot, the only
+  actionable Codex thread was the activation-toggle issue addressed by
+  follow-up commit `b8fe9a23093`.
 - The original WP-DB.07/WP-DB.08 contracts are not complete, and the four-link
   flexible-rigid-foot versus deformable-foot row is not covered by the approved
   deferral. Their durable owners exist, but the open work or disposition must

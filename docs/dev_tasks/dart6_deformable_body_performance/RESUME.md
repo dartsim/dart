@@ -18,8 +18,8 @@ unresolved. The immediate work is review/CI stewardship and honest closeout.
 
 - Worktree: `/home/js/dev/dartsim/dart/task_2`
 - Branch: `wp-db-native-soft-fallback`
-- Latest implementation commit: `2ad156e7b82` (`Keep soft accelerations out
-  of mass matrix columns`)
+- Mass-matrix implementation commit: `2ad156e7b82` (`Keep soft accelerations
+  out of mass matrix columns`)
 - Latest completed handoff commit: `dbfed2fdd88` (`Refresh deformable PR
   stabilization handoff`)
 - Latest durable-owner commit: `574dc2a28cf` (`Promote deformable closeout
@@ -37,12 +37,15 @@ unresolved. The immediate work is review/CI stewardship and honest closeout.
 - Latest target-base merge: `52ff108437d` (`Merge remote-tracking branch
   'origin/release-6.20' into wp-db-native-soft-fallback`)
 - Latest merged-head handoff commit: `af7ae4ccedd` (`Refresh deformable handoff
-  after base merge`); this blocker refresh follows it
-- Published head: `origin/wp-db-native-soft-fallback` at `b25462ca5c0`
-- Local state: the implementation, handoff/durable-owner updates, runner, and
-  target-base merge are not published; the committed merged-head handoff is
-  `af7ae4ccedd`, and this blocker refresh follows it. Verify the exact current
-  HEAD and ahead count.
+  after base merge`)
+- Latest published host-blocker commit: `92ccfce567c` (`Record merged-head
+  benchmark host blocker`)
+- Latest activation-toggle review fix: `b8fe9a23093` (`Invalidate soft caches
+  on activation toggle`)
+- Last published head inspected while authoring this refresh:
+  `origin/wp-db-native-soft-fallback` at `92ccfce567c`
+- Current branch adds review fix `b8fe9a23093` and this task-home refresh after
+  that baseline. Verify the exact current HEAD, remote tip, and ahead count.
 - Target base observed and merged: `origin/release-6.20` at `4ddfe712b359`
   (#3384)
 - PR: #3382, open, non-draft, milestone `DART 6.20.0`
@@ -53,16 +56,16 @@ unresolved. The immediate work is review/CI stewardship and honest closeout.
 Run `git status --short --branch`, fetch the base and PR refs, and re-check the
 live PR before relying on these hashes.
 
-## 2026-07-12 review-fix packet
+## 2026-07-12 mass-matrix review-fix packet
 
-The only current unresolved review thread on published head `b25462ca5c0`
-identified a real WP-DB.04 bug: `SoftBodyNode::updateMassMatrix()` included
-retained point-mass accelerations in every generalized-coordinate basis
-column. `Skeleton::updateMassMatrix()` changes only Skeleton DOF
-accelerations, so public mass and augmented-mass matrices could depend on prior
-soft simulation state.
+The original review thread on historical head `b25462ca5c0` identified a real
+WP-DB.04 bug: `SoftBodyNode::updateMassMatrix()` included retained point-mass
+accelerations in every generalized-coordinate basis column.
+`Skeleton::updateMassMatrix()` changes only Skeleton DOF accelerations, so
+public mass and augmented-mass matrices could depend on prior soft simulation
+state.
 
-Local commit `2ad156e7b82`:
+Published commit `2ad156e7b82`:
 
 - constructs each point-mass matrix-column acceleration only from the parent
   body's generalized-coordinate basis acceleration;
@@ -75,9 +78,10 @@ Local commit `2ad156e7b82`:
   belong.
 
 The regression failed before the production fix with large state-dependent
-matrix terms, then passed after the fix.
+matrix terms, then passed after the fix. The fix was published in head
+`92ccfce567c`, and its review thread is resolved.
 
-## Verification on local implementation commit
+## Verification on mass-matrix implementation commit
 
 Passed with compiler cache disabled after `pixi run lint` reconfigured the
 tree:
@@ -102,6 +106,40 @@ Results:
 No performance claim changed, so the final benchmark matrix was not rerun for
 this correctness-only matrix-query fix.
 
+## 2026-07-12 activation-toggle review fix
+
+Codex review of published head `92ccfce567c` identified a separate cache
+correctness bug. When adaptive contact activation was disabled after inactive
+points had been frozen, `setAdaptiveContactActivationEnabled(false)` changed
+the active-point policy without invalidating cached articulated inertia. An
+immediate query could therefore return the previous frozen/lumped tensor even
+though all points were active again.
+
+Follow-up commit `b8fe9a23093`:
+
+- notifies the existing soft-body cache dependency chain on either
+  activation-mode transition while preserving the same-value early return;
+- adds
+  `SoftDynamicsTest.adaptiveContactActivationToggleInvalidatesArticulatedInertia`,
+  which primes the frozen cache, disables activation without stepping, and
+  compares immediate ordinary and implicit articulated tensors to an
+  independently dirtied recomputation and the original all-active state; and
+- changes no public API, class layout, or default-off behavior.
+
+Before the production fix, the regression observed stale diagonal values such
+as `1.0` where a fresh recomputation produced `0.5`. Current local verification:
+
+- `pixi run lint`: passed;
+- no-cache Release build: passed (292/292 build steps);
+- full Release C++ suite: 152/152 passed;
+- full Python suite: 213/213 passed;
+- full `test_SoftDynamics`: 17/17 passed;
+- `git diff --check`: passed; and
+- two independent final reviews: clean.
+
+No benchmark was rerun because this is an immediate-query cache-correctness
+fix, not a changed performance claim.
+
 ## 2026-07-12 target-base merge verification
 
 `origin/release-6.20` advanced to `4ddfe712b359` through #3384, which guards
@@ -123,11 +161,11 @@ Verification on merged head `52ff108437d`:
   passed 3/3.
 
 The old exact-base run on `fa17fad79b9` is historical evidence, not a current
-base blocker. New-head hosted CI remains pending an approved push.
+base blocker. This merge was published in head `92ccfce567c`.
 
 ## 2026-07-12 balanced-evidence runner packet
 
-Local commits `9a7bab76948` and `a122c5ab437` provide the bounded replacement
+Published commits `9a7bab76948` and `a122c5ab437` provide the bounded replacement
 for the manual native-vs-DART A/B method. The runner pins one clean HEAD in a
 detached dedicated Release/profile build, qualifies checksums at threads 1 and
 16, keeps each row's warmup adjacent to its 20 alternating measured pairs,
@@ -185,34 +223,35 @@ summary, verdict, or `COMPLETE.json`. This is the current exact-composed-head
 host blocker and explicit non-evidence; do not resume its directory or weaken
 the runner's gates.
 
-## Live PR blockers and external evidence
+## Pre-fix PR snapshot and external blockers
 
-At published head `b25462ca5c0`, GitHub reports #3382 conflicting/dirty because
-the target base advanced after that head was published:
+At the last pre-fix inspection, published head `92ccfce567c` was mergeable but
+blocked by pending or failed checks:
 
-- Linux `coverage` and `Asserts enabled (no -DNDEBUG)` fail only in
-  `test_MjcfParser`, aborting at
-  `BodyNode::addConstraintImpulse()` on a NaN assertion.
-- Exact-base run `29178779447` on historical base `fa17fad79b9` fails the same
-  two jobs in the same test and assertion. #3384 addresses that non-finite LCP
-  path; the locally merged branch now passes Release and assert-enabled
-  `test_MjcfParser`. Treat the old run as historical base evidence, not a
-  current composed-head failure.
-- Windows Release run `29188317164` was cancelled at the workflow's 300-minute
-  limit while still compiling/linking. Its primary error is
-  `The operation was canceled.`; the later `EBUSY` cleanup message is
-  secondary.
-- The current mass-matrix review thread remains unresolved on GitHub until the
-  local fix is approved, pushed, and reviewed.
-- The most recent current-head `@codex review` request hit the Codex review
-  quota. Do not post duplicate triggers until review capacity is available or
-  the approved follow-up push is ready.
+- The mass-matrix review thread is resolved. A fresh Codex review completed on
+  this exact head and found the activation-toggle cache issue addressed by
+  follow-up commit `b8fe9a23093`. At this pre-fix-head snapshot, that thread was
+  the only unresolved review thread.
+- Hosted run `29218455336` did not expose a product failure in the failed
+  `coverage` or cancelled `Debug` jobs. On self-hosted runner
+  `dartsim-mark13-4`, concurrent jobs reused the same `_work/dart/dart`
+  directory: checkout removed another job's workspace, Pixi cache restore then
+  failed with `ENOENT`, and another compile was cancelled. The AVX2 job in run
+  `29218455356` failed at the same Pixi setup boundary.
+- gz-physics run `29218455355` was cancelled while building and had one
+  infrastructure retry in progress. These old-head jobs do not classify later
+  heads; classify and rerun only failures on the exact current head.
+- Other checks on `92ccfce567c` had completed successfully, including
+  API docs, both Read the Docs builds, newest GCC/Clang, macOS arm64 Debug and
+  Release, SSE4.2, AVX, and Eigen 64-byte alignment. Linux Release, assertions,
+  Windows, FreeBSD, scalar SIMD, and the gz retry were still running at the
+  last live inspection.
 - The final matrix artifact's machine-readable evaluator verdict is `FAIL` on
   the expected-fastest detector gate. Manual interleaved A/B results suggest a
   tie on only two single-thread rows; they do not resolve the five failed rows.
   The original matrix command and recovered scratch method are now documented
   in `06-pr-evidence.md`, including why the scratch rows do not satisfy the
-  gate. Local commits `9a7bab76948` and `a122c5ab437` now provide the reviewed,
+  gate. Commits `9a7bab76948` and `a122c5ab437` provide the reviewed,
   revision-pinned replacement runner, but no final artifact exists yet. The
   corrected final-head attempt still recorded recurring sibling DART work and
   package temperatures up to `100 C`; its longest clean interval was only 141
@@ -231,35 +270,26 @@ the target base advanced after that head was published:
 
 ## Next actions
 
-1. Obtain explicit maintainer/user approval for the follow-up push and related
-   PR mutations.
-2. Immediately before any push, fetch `release-6.20`. The branch already merges
+1. Fetch `release-6.20` before publication. The branch already merges
    `4ddfe712b359` at `52ff108437d`; if the base moved again, merge the new
    `origin/release-6.20` tip into the topic branch (never rebase), resolve
    conflicts, and rerun the relevant gates on the merged state.
-3. Push the complete unpublished stack: review fix `2ad156e7b82`, handoff
-   `dbfed2fdd88`, durable owners `574dc2a28cf`, runner `9a7bab76948`, evidence
-   refresh `8553203db25`, runner correction `a122c5ab437`, handoff refresh
-   `3704865daa9`, durable follow-up promotion `ab6e8edede4`, contract correction
-   `b615f5f1f6e`, host-blocker record `babca41f70d`, target-base merge
-   `52ff108437d`, merged-head handoff `af7ae4ccedd`, and this blocker refresh.
-   Resolve the addressed
-   automated-review thread only if approval covers thread mutation, and request
-   a fresh top-level Codex review only if approval covers the PR comment and
-   review capacity is available.
-4. Monitor the new head through CI. The old exact-base MJCF failure is resolved
-   locally after #3384; investigate any failure on the new hosted head from its
-   current logs rather than carrying the historical classification forward.
-   Treat the old Windows timeout as infrastructure until a new-head run
-   completes with a product failure.
-5. Track the PLAN-622 dual-PR follow-up for `10c6b6055e4`: the same over-strict
+2. If review fix `b8fe9a23093` and this task-home refresh are not yet published,
+   push them. Update the PR body to the resulting exact head, record the
+   activation-toggle correction and 17/17 `test_SoftDynamics` gate, resolve
+   review thread `PRRT_kwDOACTnoM6QQkkC`, and post one fresh top-level
+   `@codex review` for that head.
+3. Monitor the new head through CI. Rerun only exact-current-head
+   infrastructure failures, and investigate any product failure from its own
+   logs rather than carrying the old-head runner collisions forward.
+4. Track the PLAN-622 dual-PR follow-up for `10c6b6055e4`: the same over-strict
    zero-DoF soft point-mass assertion exists on `origin/main`, unlike the
    mass-matrix correction (DART 7 still has point-mass mass aggregation
    disabled). Do not fold unrelated main-branch work into #3382.
-6. Obtain the remaining competitive-envelope and flexible-foot decisions.
+5. Obtain the remaining competitive-envelope and flexible-foot decisions.
    Keep the already-created durable background/design owners and PLAN-622
    synchronized with the result.
-7. On the final clean local head and only when no sibling build is active, run:
+6. On the final clean local head and only when no sibling build is active, run:
 
    ```bash
    sha=$(git rev-parse --short=12 HEAD)
@@ -274,12 +304,15 @@ the target base advanced after that head was published:
    retain the FAIL artifact and follow the native-owned kernel disposition in
    `06-pr-evidence.md`. Never resume a partial artifact or benchmark around the
    runner's load/thermal gates.
-8. After merge, audit the new durable compatibility/design/reference owners,
+7. After merge, audit the new durable compatibility/design/reference owners,
    update PLAN-622, remove the temporary task folder in the completing closeout
    change, and clean branches only with explicit approval.
 
 ## Approval boundaries
 
-No push, PR-body edit, CI rerun, review-thread resolution, review trigger,
-merge, or branch deletion is authorized by this handoff alone. Preserve the
-no-AI-attribution commit/PR rule.
+The user authorized routine #3382 maintenance with "go ahead": additive
+commits and pushes, PR title/body updates, resolving addressed automated-review
+threads, CI reruns, and fresh automated review requests. That instruction does
+not authorize merging or closing the PR, force-pushing or rewriting history,
+requesting human reviewers, changing the base, or deleting branches. Preserve
+the no-AI-attribution commit/PR rule.
