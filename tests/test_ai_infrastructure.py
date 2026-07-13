@@ -971,7 +971,7 @@ def test_hook_config_requires_exact_windows_override(tmp_path):
         ),
         (
             ".claude/hooks/pre-commit-guard.ps1",
-            "$pipelineInput = @($input | ForEach-Object { $_ })",
+            "$payload = [Console]::In.ReadToEnd()",
         ),
         (
             ".claude/hooks/pre-commit-guard.ps1",
