@@ -4422,12 +4422,11 @@ void Skeleton::clearCollidingBodies()
   for (auto i = 0u; i < getNumBodyNodes(); ++i) {
     auto bodyNode = getBodyNode(i);
     DART_SUPPRESS_DEPRECATED_BEGIN
-    const bool wasColliding = bodyNode->isColliding();
     bodyNode->setColliding(false);
     DART_SUPPRESS_DEPRECATED_END
 
     auto softBodyNode = bodyNode->asSoftBodyNode();
-    if (softBodyNode && wasColliding) {
+    if (softBodyNode) {
       auto& pointMasses = softBodyNode->getPointMasses();
 
       for (auto pointMass : pointMasses)
