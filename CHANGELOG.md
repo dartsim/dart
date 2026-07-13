@@ -287,8 +287,14 @@ compatibility remains on the active DART 6 LTS branch._
 
 - Added opt-in memory-layout diagnostics to `dart-demos` with exact
   address-ordered World allocator regions, typed ECS page overlays, separate
-  logical capacity/history/process RSS, and explicit evidence limits; extended
-  the C++ and dartpy snapshots with opt-in region details.
+  logical capacity/history/process RSS, and explicit evidence limits. The demo
+  panel/session/model are excluded from the `dart-demos` executable by the
+  default-OFF `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS` build option, while enabled
+  builds retain a separate runtime collection toggle. In diagnostics-enabled
+  builds, large ImGui panels now preserve command-local vertex offsets and clip
+  rectangles through grow-only 32-bit overlay buffers, preventing
+  scrolling-induced index wrap and offscreen-geometry corruption. Extended the
+  C++ and dartpy snapshots with opt-in region details.
   ([#3378](https://github.com/dartsim/dart/pull/3378))
 - Rebuilt the maintained GUI stack on Filament, GLFW3, and Dear ImGui, including
   headless rendering/capture paths for CI and visual verification.

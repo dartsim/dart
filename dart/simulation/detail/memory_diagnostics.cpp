@@ -930,19 +930,9 @@ WorldEcsDiagnostics collectEcsDiagnostics(
 } // namespace
 
 //==============================================================================
-void MemoryDiagnosticsTracker::resetFrameScratch(
-    common::MemoryManager& memoryManager)
-{
-  memoryManager.getFrameAllocator().reset();
-  ++m_cached.frameScratchResetCount;
-  recordFrameScratch(memoryManager);
-}
-
-//==============================================================================
 void MemoryDiagnosticsTracker::recordFrameScratch(
     const common::MemoryManager& memoryManager)
 {
-  m_cached.allocatorDebugDiagnostics = memoryManager.getDebugDiagnostics();
   const auto& frameAllocator = memoryManager.getFrameAllocator();
   const auto overflowBytes = frameAllocator.overflowBytes();
   m_cached.frameScratchCapacityBytes = frameAllocator.usableCapacity();
@@ -959,7 +949,13 @@ WorldMemoryDiagnostics MemoryDiagnosticsTracker::collect(
     const WorldRegistry& registry,
     const WorldMemoryDiagnosticsOptions& options) const
 {
-  WorldMemoryDiagnostics diagnostics = m_cached;
+  WorldMemoryDiagnostics diagnostics;
+  diagnostics.frameScratchCapacityBytes = m_cached.frameScratchCapacityBytes;
+  diagnostics.frameScratchUsedBytes = m_cached.frameScratchUsedBytes;
+  diagnostics.frameScratchPeakUsedBytes = m_cached.frameScratchPeakUsedBytes;
+  diagnostics.frameScratchOverflowCount = m_cached.frameScratchOverflowCount;
+  diagnostics.frameScratchOverflowBytes = m_cached.frameScratchOverflowBytes;
+  diagnostics.frameScratchResetCount = m_cached.frameScratchResetCount;
   diagnostics.allocatorDebugDiagnostics = memoryManager.getDebugDiagnostics();
   diagnostics.memoryLayoutDetailsIncluded = options.includeMemoryLayoutDetails;
   diagnostics.memoryRegions.clear();

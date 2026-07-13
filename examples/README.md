@@ -39,10 +39,20 @@ exits; it backs the headless smoke test.
 
 ### Inspecting memory and layout
 
-The built-in rigid-body and deformable scenes include a **Memory Diagnostics**
-panel. Collection is off by default. Enable it in the panel to sample at a
-bounded cadence, or set `DART_DEMOS_MEMORY_DIAGNOSTICS=1` when launching the app
-to start enabled (useful for UI capture and automated inspection).
+The **Memory Diagnostics** panel is compiled out of ordinary `dart-demos`
+builds. Build and launch the opt-in diagnostic variant with:
+
+```bash
+DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS_OVERRIDE=ON pixi run demos
+```
+
+This default-OFF build boundary omits the panel, diagnostic session/model object
+code, process probes, platform-specific links, and every feature call from the
+`dart-demos` executable. Test builds still compile the isolated model/collector
+library to retain coverage; it is not linked into the app. Once compiled into
+the app, collection is still off by default. Enable it in the panel to sample
+at a bounded cadence, or set `DART_DEMOS_MEMORY_DIAGNOSTICS=1` when launching
+the app to start enabled (useful for UI capture and automated inspection).
 
 The panel separates evidence by scope and does not add the rows into a total:
 

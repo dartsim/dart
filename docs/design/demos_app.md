@@ -80,13 +80,19 @@ The built-in **Demos** sidebar is an ordinary `dart::gui::Panel`: it lists
 categories and scenes and calls `dart::gui::requestSceneSwitch` on selection, so
 no renderer/UI-toolkit code leaks above the `dart::gui` boundary (PLAN-060).
 
-Each implemented World scene also installs a renderer-neutral **Memory
-Diagnostics** panel from `examples/demos/memory_diagnostics.*`. The shared
+When `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`, each implemented World scene also
+installs a renderer-neutral **Memory Diagnostics** panel from
+`examples/demos/memory_diagnostics.*`. The option defaults to `OFF`; that build
+omits panel/session/model object code, platform process-memory links, and scene
+calls from the `dart-demos` executable instead of paying for a runtime toggle.
+Test builds still compile the isolated library and its unit tests so default CI
+does not lose collector/model coverage. The shared
 `memory_diagnostics_model.*` owns opt-in cadence, bounded history, baselines,
 comparison compatibility, process-resident probes, and evidence quality. The
 branch-local adapter owns World collection and `PanelBuilder` presentation.
-Construction is deliberately cheap: until enabled, the panel does not query the
-OS, walk World/ECS diagnostics, allocate its history ring, or format a sample.
+Within an enabled diagnostic build, collection is still runtime opt-in: until
+enabled, the panel does not query the OS, walk World/ECS diagnostics, allocate
+its history ring, or format a sample.
 The panel consumes the public type-erased `WorldMemoryDiagnostics` facade; it
 does not expose EnTT types, component types, registry access, or stable
 component IDs through the examples layer. It explicitly requests packed-layout
@@ -178,10 +184,14 @@ splitters.
 
 `examples/demos/` builds the `dart-demos` executable via the shared
 `dart_build_gui_example` helper. The scene registry is compiled in
-`demos_scenes`; the branch-local panel and shared session/process model are in
-`demos_memory_diagnostics`. The app links those libraries with `dart-io`,
-`dart-collision-native`, and `dart-simulation` while the World implementation
-still lives in that component.
+`demos_scenes`. With `DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON`, the branch-local
+panel and shared session/process model are compiled into
+`demos_memory_diagnostics` and linked into those scenes. With the default
+`OFF`, every scene reference and executable link to it are absent. Test builds
+retain the static library solely for the diagnostics unit target; non-test OFF
+builds omit it altogether. The app links the remaining scene library with
+`dart-io`, `dart-collision-native`, and `dart-simulation` while the World
+implementation still lives in that component.
 
 ## Examples vs renderer test fixtures
 

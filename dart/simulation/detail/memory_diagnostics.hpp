@@ -35,6 +35,8 @@
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/memory_diagnostics.hpp>
 
+#include <cstddef>
+
 namespace dart::simulation::detail {
 
 /// Owns cached World memory counters and the opt-in ECS snapshot scan.
@@ -45,7 +47,14 @@ class MemoryDiagnosticsTracker
 {
 public:
   /// Reset the frame allocator at a step boundary and record the new state.
-  void resetFrameScratch(common::MemoryManager& memoryManager);
+  void resetFrameScratch(common::MemoryManager& memoryManager)
+  {
+    memoryManager.getFrameAllocator().reset();
+    ++m_cached.frameScratchResetCount;
+    m_cached.frameScratchUsedBytes = 0u;
+    m_cached.frameScratchOverflowCount = 0u;
+    m_cached.frameScratchOverflowBytes = 0u;
+  }
 
   /// Refresh cached allocator/frame counters after a simulation step.
   void recordFrameScratch(const common::MemoryManager& memoryManager);
@@ -58,7 +67,19 @@ public:
       const WorldMemoryDiagnosticsOptions& options) const;
 
 private:
-  WorldMemoryDiagnostics m_cached;
+  /// Hot-path state only. Rich ECS and region vectors are constructed by an
+  /// explicit collect() call and never live in every World.
+  struct CachedCounters
+  {
+    std::size_t frameScratchCapacityBytes = 0u;
+    std::size_t frameScratchUsedBytes = 0u;
+    std::size_t frameScratchPeakUsedBytes = 0u;
+    std::size_t frameScratchOverflowCount = 0u;
+    std::size_t frameScratchOverflowBytes = 0u;
+    std::size_t frameScratchResetCount = 0u;
+  };
+
+  CachedCounters m_cached;
 };
 
 } // namespace dart::simulation::detail

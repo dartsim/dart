@@ -10,31 +10,41 @@ if(NOT TARGET dart-simulation)
   return()
 endif()
 
-# Branch-local renderer adapter plus the shared diagnostic session/process
-# model. Collection is runtime opt-in; merely constructing a panel does not
-# query the OS or walk the World.
-set(
-  demos_memory_diagnostics_sources
-  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics_model.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/memory_map_model.cpp"
-)
-add_library(demos_memory_diagnostics STATIC ${demos_memory_diagnostics_sources})
-target_include_directories(
-  demos_memory_diagnostics
-  PUBLIC "${CMAKE_CURRENT_LIST_DIR}"
-)
-target_link_libraries(demos_memory_diagnostics PUBLIC dart-gui dart-simulation)
-if(WIN32)
-  target_link_libraries(demos_memory_diagnostics PRIVATE Psapi)
-endif()
-target_compile_features(demos_memory_diagnostics PUBLIC cxx_std_23)
-set_target_properties(
-  demos_memory_diagnostics
-  PROPERTIES POSITION_INDEPENDENT_CODE ON
-)
-if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
-  dart_format_add(${demos_memory_diagnostics_sources})
+# The diagnostic session, process probes, layout model, and panel are excluded
+# from ordinary runtime artifacts. Test builds still compile the implementation
+# so the default CI configuration retains its model/collector coverage, but the
+# OFF dart-demos executable never links or calls it.
+if(DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS OR (BUILD_TESTING AND DART_BUILD_TESTS))
+  set(
+    demos_memory_diagnostics_sources
+    "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics_model.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/memory_map_model.cpp"
+  )
+  add_library(
+    demos_memory_diagnostics
+    STATIC
+    ${demos_memory_diagnostics_sources}
+  )
+  target_include_directories(
+    demos_memory_diagnostics
+    PUBLIC "${CMAKE_CURRENT_LIST_DIR}"
+  )
+  target_link_libraries(
+    demos_memory_diagnostics
+    PUBLIC dart-gui dart-simulation
+  )
+  if(WIN32)
+    target_link_libraries(demos_memory_diagnostics PRIVATE Psapi)
+  endif()
+  target_compile_features(demos_memory_diagnostics PUBLIC cxx_std_23)
+  set_target_properties(
+    demos_memory_diagnostics
+    PROPERTIES POSITION_INDEPENDENT_CODE ON
+  )
+  if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
+    dart_format_add(${demos_memory_diagnostics_sources})
+  endif()
 endif()
 
 # Scene modules + the ordered registry, compiled into a static library so the
@@ -51,8 +61,14 @@ target_include_directories(demos_scenes PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
 target_link_libraries(
   demos_scenes
   PUBLIC dart-gui dart-io dart-collision-native dart-simulation
-  PRIVATE demos_memory_diagnostics
 )
+if(DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS)
+  target_link_libraries(demos_scenes PRIVATE demos_memory_diagnostics)
+  target_compile_definitions(
+    demos_scenes
+    PRIVATE DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=1
+  )
+endif()
 # deformable_body.cpp compiles an internal (non-promoted) experimental header,
 # detail/world_registry_access.hpp, which includes <entt/entt.hpp>. EnTT is a
 # PRIVATE dependency of dart-simulation (the public surface is
@@ -109,6 +125,35 @@ if(TARGET dart-demos)
       unset(_dart_demos_list_env_mods)
       unset(_dart_demos_path_var)
     endif()
+    if(DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS)
+      set(
+        _dart_demos_memory_artifact_test
+        EXAMPLE_dart_demos_memory_diagnostics_included
+      )
+      set(_dart_demos_memory_artifact_label "feature-enabled")
+    else()
+      set(
+        _dart_demos_memory_artifact_test
+        EXAMPLE_dart_demos_memory_diagnostics_excluded
+      )
+      set(_dart_demos_memory_artifact_label "zero-overhead")
+    endif()
+    add_test(
+      NAME ${_dart_demos_memory_artifact_test}
+      COMMAND
+        "${CMAKE_COMMAND}" "-DDART_DEMOS_EXECUTABLE=$<TARGET_FILE:dart-demos>"
+        "-DDART_EXPECT_MEMORY_DIAGNOSTICS=${DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS}"
+        "-DDART_NM_EXECUTABLE=${CMAKE_NM}" -P
+        "${CMAKE_CURRENT_LIST_DIR}/tests/check_memory_diagnostics_artifact.cmake"
+    )
+    set_tests_properties(
+      ${_dart_demos_memory_artifact_test}
+      PROPERTIES
+        LABELS
+          "examples;gui;memory-diagnostics;${_dart_demos_memory_artifact_label}"
+    )
+    unset(_dart_demos_memory_artifact_label)
+    unset(_dart_demos_memory_artifact_test)
     foreach(test_target IN ITEMS tests tests_and_run)
       if(TARGET ${test_target})
         add_dependencies(${test_target} dart-demos)
