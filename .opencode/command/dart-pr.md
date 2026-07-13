@@ -3,6 +3,7 @@ description: create a branch, commit, push, and open a DART pull request
 argument-hint: "[base=<branch>] [draft]"
 agent: build
 ---
+
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-pr.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
@@ -54,8 +55,10 @@ Use these practices:
 - In Testing, list exact commands, targets, or test names that ran. For CI,
   performance, or infrastructure work, include evidence such as CI observations,
   timing, reruns, benchmark output, or why a skipped check is expected.
-- For rendering, model, mesh, texture, GUI, or visual-example changes, include a
-  before/after visual comparison when practical:
+- For model/scene, dynamics, collision/contact, simulation, rendering, mesh,
+  texture, GUI, or visual-example changes, use `dart-verify-sim`: report the
+  text correctness oracle and include assessed, claim-relevant visual/debug
+  evidence when applicable (an image alone is not correctness proof):
   - Prefer an existing headless example path (`--headless`, `--frames`,
     `--width`, `--height`, `--screenshot`) over manual screenshots. Capture
     before and after with the same camera, dimensions, frame count, and

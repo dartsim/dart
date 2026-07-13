@@ -84,6 +84,10 @@ gh pr checks <PR_NUMBER>
      videos) is hosted as GitHub PR/issue attachments rather than committed to
      the branch; if committed only for the PR body, replace it with an
      attachment URL or ask a maintainer to upload.
+   - When the claim depends on 3D structure or behavior, accept an optional
+     `Visual verification` subsection after Testing and verify it agrees with
+     the text oracle, covers explicit claims, names what is not proved and any
+     limitations, records view/debug layers, and includes reproduce commands.
    - Inspect local state before editing:
      ```bash
      git status --short --branch

@@ -8,7 +8,23 @@ import pathlib
 import subprocess
 import sys
 
-SKIP_DIRS = {".build", ".deps", ".git", ".pixi", "build", "external", "node_modules"}
+SKIP_DIRS = {
+    ".build",
+    ".deps",
+    ".git",
+    ".pixi",
+    "build",
+    "external",
+    "node_modules",
+}
+
+
+def is_skipped_path(root: pathlib.Path, path: pathlib.Path) -> bool:
+    relative = path.relative_to(root)
+    return any(part in SKIP_DIRS for part in relative.parts) or relative.parts[:2] == (
+        ".claude",
+        "worktrees",
+    )
 
 
 def find_cmake_files(root: pathlib.Path) -> list[pathlib.Path]:
@@ -20,11 +36,11 @@ def find_cmake_files(root: pathlib.Path) -> list[pathlib.Path]:
     # substitution runs.
     files = []
     for path in root.rglob("CMakeLists.txt"):
-        if any(part in SKIP_DIRS for part in path.parts):
+        if is_skipped_path(root, path):
             continue
         files.append(path.relative_to(root))
     for path in root.rglob("*.cmake"):
-        if any(part in SKIP_DIRS for part in path.parts):
+        if is_skipped_path(root, path):
             continue
         files.append(path.relative_to(root))
     files = sorted(set(files))

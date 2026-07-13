@@ -259,8 +259,8 @@ find docs/dev_tasks -maxdepth 2 -type d -print
 **Before committing:**
 
 - **Required**: Run `pixi run lint` before every commit (MANDATORY per
-  `AGENTS.md`). `pixi run install-hooks` adds a Tier-0
-  `check-lint-quick` pre-commit hook; it does not replace the full lint run.
+  `AGENTS.md`). `pixi run install-hooks` adds a fast staged whitespace and
+  AI-infrastructure pre-commit gate; it does not replace the full lint run.
 - Update task status in tracker
 - No author names or ownership attribution
 

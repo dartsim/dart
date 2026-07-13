@@ -10,7 +10,7 @@ Load this skill when working with DART's build system.
 ## Quick Commands
 
 ```bash
-pixi run configure    # Configure CMake
+pixi run config       # Configure CMake
 pixi run build        # Build
 pixi run test         # Run tests
 pixi run test-all     # Full validation (lint + build + tests)
@@ -26,12 +26,12 @@ For build system internals (CMake, dependencies): `docs/onboarding/build-system.
 
 ## Common Issues
 
-| Issue              | Solution                                   |
-| ------------------ | ------------------------------------------ |
-| CMake not found    | `pixi install`                             |
-| Missing dependency | Check `pixi.toml`                          |
-| Build failure      | `pixi run configure` then `pixi run build` |
-| Linking error      | Check CMakeLists.txt in relevant module    |
+| Issue              | Solution                                |
+| ------------------ | --------------------------------------- |
+| CMake not found    | `pixi install`                          |
+| Missing dependency | Check `pixi.toml`                       |
+| Build failure      | `pixi run config` then `pixi run build` |
+| Linking error      | Check CMakeLists.txt in relevant module |
 
 ## CUDA Notes
 
@@ -53,12 +53,10 @@ For build system internals (CMake, dependencies): `docs/onboarding/build-system.
 
 ## Filament GUI Visual Checks
 
-- For Filament GUI rendering changes, run a bounded headless capture through
-  `pixi run ex dartsim --headless --frames ... --width ... --height ... --screenshot ...`.
-  Prefer at least 1280px width when judging visual quality.
-- Inspect the rendered image yourself; do not rely only on command success.
-  The headless smoke analyzer under the private Filament test helpers is useful
-  for a smoke signal, but it is not a substitute for visual inspection.
+- For Filament GUI, scene, or simulation rendering changes, load
+  `dart-verify-sim`. Pair a text correctness oracle with `agent-capture`, view
+  assessment, and claim-relevant engine debug layers; inspect the artifact and
+  sidecar instead of relying only on command success.
 - If the user explicitly asks for `pixi run ex dartsim`, also run that exact
   entry point and terminate it after confirming the GUI binary launches.
 

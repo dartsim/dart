@@ -51,7 +51,7 @@ DART already has a different AI-native substrate:
 - `docs/ai/workflows.md` and `docs/ai/capabilities.json` own workflow
   discoverability and machine-readable capability state.
 - `.claude/commands/` and `.claude/skills/` are editable sources, while
-  `.codex/skills/` and `.opencode/command/` are generated surfaces.
+  `.agents/skills/` and `.opencode/command/` are generated surfaces.
 - `docs/plans/dashboard.md` owns operating state for living plans.
 - Numbered plans and `docs/ai/orchestration.md` own work packets.
 - `docs/dev_tasks/<task>/` owns active multi-session implementation state.

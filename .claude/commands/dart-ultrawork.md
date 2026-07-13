@@ -15,11 +15,13 @@ Start a team-scale or autonomous DART task: $ARGUMENTS
 @docs/ai/sessions.md
 @docs/ai/verification.md
 @docs/dev_tasks/README.md
-@docs/information-architecture.md
-@docs/plans/dashboard.md
-@docs/onboarding/contributing.md
-@docs/onboarding/changelog.md
-@docs/onboarding/ai-tools.md
+
+Load additional owners only when the matching phase needs them:
+
+- placement or cleanup: `docs/information-architecture.md`;
+- numbered-plan selection or packet state: `docs/plans/dashboard.md`;
+- version control, changelog, tools, or review:
+  `docs/onboarding/{contributing,changelog,ai-tools}.md`.
 
 ## Arguments
 
@@ -50,8 +52,9 @@ handling.
    project directory. If it exists, read its `README.md`, `RESUME.md`, and any
    autonomous sidecars such as `decisions.md`, `verification.md`, or
    `progress-log.md`; then verify checkout state, current branch, and any
-   branch/PR evidence named by the docs. If the docs are stale, update the
-   handoff/current-reality note before relying on them. If no project home
+   branch/PR evidence named by the docs. Run `pixi run ai-doctor` when setup,
+   discovery, instruction, agent, or hook state is uncertain. If the docs are
+   stale, update the handoff/current-reality note before relying on them. If no project home
    exists and the task is multi-session, team-scale, design-heavy, risky, or
    explicitly autonomous, create `docs/dev_tasks/<task>/` before
    implementation. If prior work exists elsewhere, first absorb or summarize
@@ -59,9 +62,9 @@ handling.
 2. **Understand and scout** - Restate the north star, final deliverable,
    acceptance criteria, quality bar, non-goals, constraints, risks, and target
    branch line (DART 7 `main`, DART 6 LTS, or both). Scout the territory first
-   with named docs/code, read-only searches, a `dart-analyze` pass, or focused
-   reference review; draft a candidate decomposition privately before asking
-   anything.
+   with named docs/code, read-only searches, a `dart-analyze` pass, the Codex
+   `dart_scout` profile, or focused reference review; draft a candidate
+   decomposition privately before asking anything.
 3. **Interview decisions; self-resolve uncertainties** - Ask at most one
    up-front batch of critical questions. Escalate before destructive
    operations, history rewrites, irreversible migrations, meaningful cost,
@@ -87,8 +90,9 @@ handling.
 4. **Create or refresh the tracking surface** - Populate the project home with
    value, north star, deliverable, scope, non-goals, assumptions, risks,
    acceptance evidence, gates, dependencies, milestone, next actions, and
-   blockers. Behavior-bearing physics/simulation work needs a high-quality,
-   self-contained GUI or demos-app artifact unless explicitly out of scope.
+   blockers. Claim-dependent physics/simulation, collision/contact, model, GUI,
+   and visual-example work routes through `dart-verify-sim`: require a text
+   oracle plus assessed visual/debug evidence, or a justified replacement.
    Keep `RESUME.md` as the handoff; add `decisions.md`, `verification.md`,
    and `progress-log.md` sidecars when they improve resumability or evidence.
 5. **Set the goal contract** - Express done-when as verifiable outcomes
@@ -101,13 +105,12 @@ handling.
    sentence), DONE WHEN (verifiable), EVIDENCE (what to record), RISKS, and
    NEXT STEP.
 6. **Decompose and route to workers** - Cut work packets per
-   `docs/ai/orchestration.md`, then route by the current model routing in
-   `docs/ai/README.md`: implementation packets to Codex executors, iterative
-   build/test lanes to team workers when available, review lanes to an
-   independent session, and critical decisions or stuck failures to the oracle.
-   Without team tooling, execute packets sequentially through
-   `dart-execute-packet`. Use parallelism only when the environment supports it
-   and file ownership can stay disjoint.
+   `docs/ai/orchestration.md`, then route by `docs/ai/README.md`. For Codex,
+   use `dart_scout` for read-only territory mapping, built-in workers or
+   `dart-execute-packet` for bounded implementation, `dart_reviewer` for
+   independent acceptance review, and `dart_release_auditor` for branch
+   adaptation. Without team tooling, execute packets sequentially. Use
+   parallel writers only when file ownership is explicit and disjoint.
 7. **Run the autonomous work/review cycle** - For each meaningful chunk: plan,
    execute, verify, then run an independent/specialized review lane. Treat
    review findings as hypotheses: investigate, fix or record no-fix evidence,
@@ -115,9 +118,9 @@ handling.
    post-fix state has at least two clean review passes recorded.
 8. **Supervise and steer** - Monitor progress; unblock, reassign, or re-cut
    packets on scope mismatch. Workers return Task, Summary, Files changed,
-   Evidence/tests, Risks, and Recommended next step. Use Codex from Claude,
-   Claude from Codex, subagents, or specialist reviewers when available; fall
-   back to role-separated local review only when unavailable. Root-cause
+   Evidence/tests, Risks, and Recommended next step. Use another tool, an
+   independent session, or the bounded specialist profiles when available;
+   fall back to role-separated local review only when unavailable. Root-cause
    failures and fold newly discovered unknowns back into step 3.
 9. **Update docs at each stopping point** - Every meaningful cycle updates the
    project home: `README.md` for status/plan/risks, `RESUME.md` for the next
@@ -167,10 +170,11 @@ Logistics:
   satisfied, verification is recorded, docs are current, and known gaps are
   documented. Manage resources responsibly; avoid endless exploration and
   low-value polishing.
-- Route well-defined implementation packets to Codex executors with GOAL /
+- Route well-defined implementation packets to bounded workers with GOAL /
   DONE WHEN / EVIDENCE. Use team mode only when available and file ownership
-  can stay disjoint. Keep authoring and review separate. Use the oracle for
-  critical decisions, hard failures, and research synthesis.
+  can stay disjoint. Keep authoring and review separate; use the strongest
+  available reasoning for critical decisions, hard failures, and research
+  synthesis.
 - Set goal mode to Done-when; use Claude `/goal Run /dart-ultrawork with:
   <real prompt>` or Codex `/goal $dart-ultrawork <real prompt>`. Treat Claude
   goal text beginning `ulw:` or `ultrawok:` as shorthand for the same canonical
@@ -179,8 +183,8 @@ Logistics:
   docs/ai/orchestration.md, and docs/ai/sessions.md before starting.
 - Review loop: use specialized reviewers when available, investigate findings,
   and require two clean passes on the current state before done.
-- Verification first: task-specific gates, GUI/demo evidence when relevant,
-  pixi run lint before commits; GitHub mutations only with approval.
+- Verification first: task-specific gates and dart-verify-sim evidence when
+  applicable; pixi run lint before commits; GitHub mutations only with approval.
 ```
 
 ## Output

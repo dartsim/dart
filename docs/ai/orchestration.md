@@ -28,11 +28,9 @@ from public docs and `pixi run ...` commands without a specific AI tool.
   `dart-ultrawork`, which uses `docs/dev_tasks/<task>/` as the project
   home, front-loads a decision interview or provided brief, and routes
   evidence-resolvable uncertainties to spikes and research instead of
-  questions. The
-  orchestrator's strongest model also serves as the oracle: critical
-  decisions, escalations executors cannot resolve, and research synthesis
-  get its deepest reasoning, while routine implementation stays with
-  executors.
+  questions. Critical decisions, escalations executors cannot resolve, and
+  research synthesis use the strongest available reasoning; routine work uses
+  the lightest capable worker.
 - **Executor** — owns implementation of one packet at a time. The executor
   takes a well-defined packet, makes the local edits, runs the packet's
   gates, records the evidence, and hands back. Executors do not widen scope,
@@ -40,9 +38,22 @@ from public docs and `pixi run ...` commands without a specific AI tool.
   returning to the orchestrator. Executors enter through
   `dart-execute-packet`.
 
-The current default role-to-tool assignments live in the Model Routing
-section of `docs/ai/README.md`; this file owns only the roles and the
-contract.
+Current model guidance lives in `docs/ai/README.md`; this file owns the roles
+and contract. Codex provides three project-defined read-only profiles:
+
+- `dart_scout` receives an objective, branch, scope, and evidence questions;
+  it returns ranked evidence, inferences, and unknowns without edits.
+- `dart_reviewer` receives a base/diff, acceptance criteria, and gates; it
+  returns severity-ranked findings with proof and missing tests, or a clean
+  verdict.
+- `dart_release_auditor` receives both branch refs and a proposed common
+  change; it returns an apply/adapt/omit matrix plus branch-specific gates.
+
+These profiles isolate context; they do not own implementation. Use built-in
+workers or sequential `dart-execute-packet` for mutation, with explicit and
+disjoint file ownership whenever parallel writers are used. Custom profiles
+inherit the parent model and cannot widen sandbox, approval, or GitHub
+authority.
 
 Authoring and review stay separated: the agent that implemented a packet does
 not approve it. The orchestrator (or an independent reviewer session)
@@ -110,13 +121,15 @@ DART work. Before implementation starts, the owning surface must answer:
 - what acceptance evidence will prove the objective; and
 - which `pixi run ...` gates cover that evidence.
 
-For behavior-bearing physics or simulation work, acceptance evidence normally
-includes a high-quality GUI example, ideally in the demos app or another durable
-DART demo surface. The example should be self-contained enough that a user can
-understand the behavior by running and interacting with it, without reading the
-implementation or a developer explanation. If a GUI/demo artifact is not
-appropriate, the task must say why and name the replacement visual or user-level
-evidence.
+When a claim depends on 3D structure or behavior — model/scene loading,
+dynamics, collision/contact/constraints, simulation stepping, GUI/rendering,
+or a visual example — route verification through `dart-verify-sim`. Acceptance
+evidence pairs a text correctness oracle (metrics, scene/trajectory/contact
+diff, or focused behavioral test) with an assessed headless capture using only
+the debug layers needed by the claim. A self-contained GUI or demos-app
+artifact remains the preferred durable user surface. If visual corroboration
+is unavailable or genuinely irrelevant, the task must say why and name the
+replacement evidence; a screenshot alone never proves correctness.
 
 For numbered plans, this information belongs in the work packet. For
 multi-session implementation tasks, it belongs in
