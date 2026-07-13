@@ -30,11 +30,43 @@ Start with:
 - [`sessions.md`](sessions.md)
 - [`components.md`](components.md)
 - [`capabilities.json`](capabilities.json)
+- [`branch-profile.json`](branch-profile.json): machine-readable DART 6.20
+  facts, required surfaces, and DART 7 exclusions.
+- [`agent-scenarios.json`](agent-scenarios.json): the seven deterministic agent
+  contracts, including simulation verification, from orientation through
+  release maintenance.
 
-Editable workflow sources live in `.claude/commands/` and `.claude/skills/`.
-Generated Codex and OpenCode surfaces live in `.codex/skills/` and
-`.opencode/command/`. Run `python scripts/sync_ai_commands.py --check` to
-verify parity.
+## Architecture And Setup
+
+Editable workflow and domain-skill sources live in `.claude/`. The sync tool
+generates current Codex skills under `.agents/skills/` and OpenCode commands
+under `.opencode/command/`. `.codex/` owns maintained Codex config, bounded
+read-only subagents, and the advisory PreToolUse hook. The installed git hook is
+the cross-tool commit safety path.
+
+```bash
+pixi run python scripts/setup_ai.py
+pixi run python scripts/check_ai_infrastructure.py --doctor
+```
+
+Codex loads project config, agents, and hooks only for a trusted repository.
+Inspect the project hook with `/hooks`. If hooks are unavailable, run
+`pixi run python scripts/check_agent_hook.py --profile staged` manually; always
+run `pixi run lint` before a commit.
+
+## Focused And Full Checks
+
+```bash
+pixi run check-ai-commands
+pixi run python scripts/check_ai_infrastructure.py --check
+pixi run python -m pytest tests/test_sync_ai_commands.py tests/test_ai_infrastructure.py tests/test_install_git_hooks.py -q
+pixi run python scripts/check_ai_infrastructure.py --scenarios
+pixi run lint
+```
+
+Edit `.claude/`, run `pixi run sync-ai-commands`, and never hand-edit generated
+adapters. `.agents/skills/.dart-generated.json` owns only DART-generated paths;
+unrelated skills in the shared discovery directory must be preserved.
 
 For documentation placement, use
 [`docs/information-architecture.md`](../information-architecture.md).
@@ -49,3 +81,11 @@ state before routing bounded work through the release-branch
 orchestrator/executor model. Use `dart-new-task` for ordinary bounded
 single-session work unless the user explicitly asks for autonomous project
 handling.
+
+## Release Profile
+
+`release-6.20` preserves C++17, pybind11, `dart::utils`, OSG, and
+Gazebo/gz-physics compatibility. DART 7's C++23, nanobind, `dart::io`, solver,
+and backend workflows remain on `main`. Use DART 7 as comparison evidence only;
+adapt or omit each difference instead of copying the larger workflow surface.
+The release component map is [`architecture.md`](../onboarding/architecture.md).

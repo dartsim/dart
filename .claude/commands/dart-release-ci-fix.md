@@ -1,6 +1,6 @@
 ---
-description: debug and fix CI failures on a release branch
-argument-hint: "<pr-number|run-id> [release-branch]"
+description: debug and fix CI failures on the DART 6.20 release branch
+argument-hint: "<pr-number|run-id> [release-branch=release-6.20]"
 agent: build
 ---
 
@@ -14,24 +14,35 @@ Fix release-branch CI: $ARGUMENTS
 
 ## Workflow
 
+For a failure involving model/scene structure, physics behavior, or OSG output,
+use `dart-verify-sim` to reproduce the claim with text and assessed visual
+evidence. Document a visual exception when OSG/Xvfb is unavailable or not
+applicable.
+
 1. Inspect the failing run:
    ```bash
    gh run view <RUN_ID> --log-failed
    gh run view <RUN_ID> --job <JOB_ID> --log
    ```
-2. Check whether an equivalent fix already exists on `main`.
+2. Resolve the target from live state. Default to `release-6.20`; for a PR,
+   verify its base rather than trusting a stale handoff. Check whether an
+   equivalent fix already exists on `main`, but treat it as reference evidence.
 3. If continuing an existing PR, fetch and checkout that branch. Otherwise
-   branch from the release branch without resetting an existing local branch:
+   branch from the resolved release branch without resetting an existing local
+   branch:
    ```bash
-   git fetch origin <RELEASE_BRANCH>
-   BRANCH=fix/<issue>-<release-branch>
+   RELEASE_BRANCH=${RELEASE_BRANCH:-release-6.20}
+   git fetch origin "$RELEASE_BRANCH"
+   BRANCH=fix/<issue>-${RELEASE_BRANCH}
    if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
      git switch "$BRANCH"
    else
-     git switch --no-track -c "$BRANCH" origin/<RELEASE_BRANCH>
+     git switch --no-track -c "$BRANCH" "origin/$RELEASE_BRANCH"
    fi
    ```
-4. Prefer cherry-picking a proven `main` fix. If a new fix is required, keep it release-scoped and minimal.
+4. Adapt a proven `main` fix only when its assumptions exist here. Preserve
+   C++17, pybind11, `dart::utils`, OSG, and downstream Gazebo/gz-physics
+   behavior; otherwise make the smallest release-scoped fix.
 5. Explain why the failure was not caught earlier and whether workflow coverage should change.
 6. Run `pixi run lint` and release-relevant build/tests.
 7. Ask for explicit maintainer/user approval before pushing, creating, or

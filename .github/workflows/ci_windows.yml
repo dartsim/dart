@@ -54,6 +54,51 @@ jobs:
           cache: true
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi.exe
 
+      - name: Native Windows hook smoke
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          pixi run python -c "import sys; print(sys.executable)"
+          $launcher = Join-Path $env:GITHUB_WORKSPACE ".claude/hooks/pre-commit-guard.ps1"
+          $hookCommand = '& (Join-Path (git rev-parse --show-toplevel) ''.claude/hooks/pre-commit-guard.ps1''); if (-not $?) { exit 2 }; if ($LASTEXITCODE -ne 0) { exit 2 }; exit 0'
+          # The malformed probe writes expected native stderr. PowerShell 5.1
+          # must continue long enough to preserve and assert the exit code.
+          $ErrorActionPreference = "Continue"
+          $env:DART_HOOK_PAYLOAD = '{"tool_input":{"command":"git status"}}'
+          powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $hookCommand
+          $successExit = $LASTEXITCODE
+          Remove-Item Env:DART_HOOK_PAYLOAD
+          if ($successExit -ne 0) {
+            throw "non-commit hook payload exited $successExit instead of 0"
+          }
+          $env:DART_HOOK_DRY_RUN = "1"
+          $env:DART_HOOK_PAYLOAD = '{"tool_input":{"command":"git commit --no-verify -m x"}}'
+          $diagnosticOutput = powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $hookCommand 2>&1
+          $diagnosticExit = $LASTEXITCODE
+          Remove-Item Env:DART_HOOK_PAYLOAD
+          Remove-Item Env:DART_HOOK_DRY_RUN
+          if ($diagnosticExit -ne 0) {
+            throw "successful diagnostic hook payload exited $diagnosticExit instead of 0"
+          }
+          $env:DART_HOOK_PAYLOAD = '{}'
+          powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $hookCommand
+          $blockedExit = $LASTEXITCODE
+          Remove-Item Env:DART_HOOK_PAYLOAD
+          '{"tool_input":{"command":"git status"}}' |
+            powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $launcher
+          $rawSuccessExit = $LASTEXITCODE
+          '{}' |
+            powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $launcher
+          $rawBlockedExit = $LASTEXITCODE
+          $ErrorActionPreference = "Stop"
+          if ($blockedExit -ne 2) {
+            throw "malformed hook payload exited $blockedExit instead of 2"
+          }
+          if ($rawSuccessExit -ne 0 -or $rawBlockedExit -ne 2) {
+            throw "raw-stdin fallback exited $rawSuccessExit/$rawBlockedExit instead of 0/2"
+          }
+          cmd.exe /c exit 0
+
       - name: Check Lint
         run: |
           pixi run check-lint

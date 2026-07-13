@@ -3,12 +3,9 @@ description: manage an open DART pull request through CI, review, and cleanup
 argument-hint: "<pr-number> [status]"
 agent: build
 ---
-
 Manage an open DART pull request after explicit maintainer/user approval for
 mutations: $ARGUMENTS
-
 ## Required Reading
-
 @AGENTS.md
 @docs/onboarding/contributing.md
 @docs/onboarding/ci-cd.md
@@ -82,6 +79,9 @@ gh pr checks <PR_NUMBER>
      the current tooling cannot upload an attachment, ask a maintainer to upload
      the local artifact through the PR editor instead of keeping it under
      `docs/assets/`.
+   - For claim-dependent 3D behavior, verify an optional `Visual verification`
+     subsection agrees with the text oracle and records claims, limitations,
+     view/debug layers, and reproduce commands.
    - Inspect local state before editing:
      ```bash
      git status --short --branch

@@ -385,7 +385,7 @@ def test_engine_rendered_overlay_changes_pixels(tmp_path):
             warmupFrames=10,
         )
         if not ok:
-            pytest.skip("no off-screen GL context (needs a usable DISPLAY)")
+            pytest.fail("no off-screen GL context despite a configured DISPLAY")
         return path.read_bytes()
 
     base = shoot("base.png")

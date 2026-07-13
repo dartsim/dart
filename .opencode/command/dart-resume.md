@@ -84,6 +84,11 @@ evidence ledger first, not as cleanup inventory:
 - Run relevant tests; use `pixi run test-all` before done when feasible, and
   `pixi run -e gazebo test-gz` when package or downstream Gazebo/gz-physics
   compatibility could be affected.
+- For model/scene, simulation, dynamics, collision/contact, OSG, or visual
+  behavior, route through `dart-verify-sim`: establish a text correctness
+  oracle first, then capture assessed claim-tied images/debug layers or record
+  a DISPLAY/Xvfb unavailable/not-applicable reason. A screenshot alone is not
+  proof.
 - Push with the same local and remote topic-branch name only after explicit
   maintainer/user approval:
   `branch=$(git branch --show-current); git push -u origin "HEAD:${branch}"`.
