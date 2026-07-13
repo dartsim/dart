@@ -76,6 +76,27 @@ using namespace dart;
 
 namespace {
 
+DART_SUPPRESS_DEPRECATED_BEGIN
+class ConstructorProbeConstraintSolver final
+  : public constraint::ConstraintSolver
+{
+public:
+  ConstructorProbeConstraintSolver() = default;
+
+  explicit ConstructorProbeConstraintSolver(double timeStep)
+    : ConstraintSolver(timeStep)
+  {
+    // Do nothing
+  }
+
+private:
+  void solveConstrainedGroup(constraint::ConstrainedGroup&) override
+  {
+    // Do nothing
+  }
+};
+DART_SUPPRESS_DEPRECATED_END
+
 class FakeConstraint final : public constraint::ConstraintBase
 {
 public:
@@ -703,6 +724,28 @@ bool solvesGroupsInParallel(ExposedThreadedConstraintSolver& solver)
 std::shared_ptr<World> createWorld()
 {
   return simulation::World::create();
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ConstructorsInstallDARTCollisionDetector)
+{
+  const ConstructorProbeConstraintSolver defaultSolver;
+  EXPECT_DOUBLE_EQ(0.001, defaultSolver.getTimeStep());
+  const auto defaultDetector
+      = std::dynamic_pointer_cast<const collision::DARTCollisionDetector>(
+          defaultSolver.getCollisionDetector());
+  ASSERT_NE(nullptr, defaultDetector);
+  EXPECT_EQ(1u, defaultDetector->getNumCollisionThreads());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const ConstructorProbeConstraintSolver explicitSolver(0.002);
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_DOUBLE_EQ(0.002, explicitSolver.getTimeStep());
+  const auto explicitDetector
+      = std::dynamic_pointer_cast<const collision::DARTCollisionDetector>(
+          explicitSolver.getCollisionDetector());
+  ASSERT_NE(nullptr, explicitDetector);
+  EXPECT_EQ(1u, explicitDetector->getNumCollisionThreads());
 }
 
 //==============================================================================
