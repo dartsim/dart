@@ -2068,6 +2068,39 @@ TEST(NativeCollisionDetector, ClaimedObjectTracksNativeAabb)
 }
 
 //==============================================================================
+TEST(NativeCollisionDetector, DartFallbackTracksShapeNodeRelativeTransform)
+{
+  ExposedNativeCollisionDetector detector;
+  auto skeleton = dynamics::Skeleton::create("native_fallback_transform");
+  auto pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  auto* shapeNode = pair.second->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+  ASSERT_NE(nullptr, shapeNode);
+
+  auto object = detector.claimCollisionObject(shapeNode);
+  auto* nativeObject
+      = dynamic_cast<ExposedNativeCollisionObject*>(object.get());
+  ASSERT_NE(nullptr, nativeObject);
+  auto* fallbackObject = nativeObject->getDartFallbackObject();
+  ASSERT_NE(nullptr, fallbackObject);
+  EXPECT_TRUE(fallbackObject->getWorldTransformForCollision().isApprox(
+      pair.second->getWorldTransform(), 1e-12));
+
+  const auto initialShapeFrameVersion = shapeNode->getVersion();
+  Eigen::Isometry3d relativeTransform = Eigen::Isometry3d::Identity();
+  relativeTransform.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+  shapeNode->setRelativeTransform(relativeTransform);
+  EXPECT_GT(shapeNode->getVersion(), initialShapeFrameVersion);
+
+  nativeObject->updateEngineData();
+
+  EXPECT_TRUE(fallbackObject->getWorldTransformForCollision().isApprox(
+      shapeNode->getWorldTransform(), 1e-12));
+  EXPECT_FALSE(fallbackObject->getWorldTransformForCollision().isApprox(
+      pair.second->getWorldTransform(), 1e-12));
+}
+
+//==============================================================================
 TEST(NativeCollisionDetector, SoftFallbackTracksMismatchedAndNonFiniteState)
 {
   auto scene = makeNativePlaneSoftMeshScene(0.45);
