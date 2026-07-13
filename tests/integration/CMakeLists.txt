@@ -60,6 +60,25 @@ dart_add_test("integration" test_Optimizer)
 dart_add_test("integration" test_ScrewJoint)
 dart_add_test("integration" test_Subscriptions)
 
+dart_add_test(
+  "integration"
+  test_AdaptiveSoftContactModel
+  test_AdaptiveSoftContactModel.cpp
+  "${PROJECT_SOURCE_DIR}/examples/demos/scenes/AdaptiveSoftContactModel.cpp"
+)
+target_include_directories(
+  test_AdaptiveSoftContactModel
+  PRIVATE "${PROJECT_SOURCE_DIR}"
+)
+
+dart_add_test(
+  "integration"
+  test_SoftWormModel
+  test_SoftWormModel.cpp
+  "${PROJECT_SOURCE_DIR}/examples/demos/scenes/SoftWormModel.cpp"
+)
+target_include_directories(test_SoftWormModel PRIVATE "${PROJECT_SOURCE_DIR}")
+
 if(TARGET dart-utils)
   dart_add_test("integration" test_CompositeResourceRetriever)
   target_link_libraries(test_CompositeResourceRetriever dart-utils)

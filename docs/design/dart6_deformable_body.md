@@ -143,10 +143,10 @@ release-slice deferrals are:
   biped walking; and
 - Jain/Liu hand scenes: finger flick, arm fold, and pinch grasp.
 
-The `soft_worm` and `adaptive_soft_contact` examples are representative reduced
-evidence. They do not establish full paper-scale parity. The Jain/Liu
-four-link flexible-rigid-foot versus deformable-foot comparison is not in the
-approved deferral list and remains an explicit roadmap decision.
+The `soft_worm` and `adaptive_soft_contact` `dart-demos` scenes are
+representative reduced evidence. They do not establish full paper-scale parity.
+The Jain/Liu four-link flexible-rigid-foot versus deformable-foot comparison is
+not in the approved deferral list and remains an explicit roadmap decision.
 
 ## Related owners
 
@@ -155,5 +155,5 @@ approved deferral list and remains an explicit roadmap decision.
 - Current roadmap state and gates: `docs/plans/dashboard.md`, PLAN-622
 - Active implementation and PR evidence:
   `docs/dev_tasks/dart6_deformable_body_performance/`
-- User-visible examples: `examples/adaptive_soft_contact` and
-  `examples/soft_worm`
+- User-visible demos: `examples/demos/scenes/AdaptiveSoftContactScene.cpp` and
+  `examples/demos/scenes/SoftWormScene.cpp`

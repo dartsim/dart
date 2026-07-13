@@ -23,8 +23,8 @@ if(DART_IN_SOURCE_BUILD AND NOT TARGET dart-gui-osg)
 endif()
 
 if(NOT DART_IN_SOURCE_BUILD)
-  find_package(DART 6.17 REQUIRED COMPONENTS ${required_components} CONFIG)
-  find_package(DART 6.17 QUIET COMPONENTS collision-bullet collision-ode CONFIG)
+  find_package(DART 6.20 REQUIRED COMPONENTS ${required_components} CONFIG)
+  find_package(DART 6.20 QUIET COMPONENTS collision-bullet collision-ode CONFIG)
 endif()
 
 # Single owner of where the wam_ikfast scene's dlopen'd IK shared library is

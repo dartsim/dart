@@ -144,6 +144,14 @@ namespace dart_demos {
 /// rigid/soft chain, ported from examples/mixed_chain.
 [[nodiscard]] DemoScene makeMixedChainScene();
 
+/// Soft Bodies > adaptive_soft_contact: visualize contact-local point-mass
+/// activation around a soft ellipsoid contacted by a periodic pusher.
+[[nodiscard]] DemoScene makeAdaptiveSoftContactScene();
+
+/// Soft Bodies > soft_worm: a five-link articulated soft body driven by a
+/// traveling-wave gait.
+[[nodiscard]] DemoScene makeSoftWormScene();
+
 /// Soft Bodies > soft_bodies: soft-body simulation with recorded-state
 /// playback, ported from examples/soft_bodies.
 [[nodiscard]] DemoScene makeSoftBodiesScene();

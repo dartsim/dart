@@ -1008,23 +1008,23 @@ keeps the same camera framing with `--hide-widget`.
 
 No new standalone GUI example or local video artifact was added by this branch.
 
-## 2026-07-11 flagship demo evidence (WP-DB.09)
+## 2026-07-11 flagship example evidence (WP-DB.09)
 
-Two self-contained GUI examples land the mandatory demo subset from
-`decisions.md`:
+Two self-contained GUI examples originally landed the mandatory demo subset
+from `decisions.md`; they were consolidated into `dart-demos` on 2026-07-13:
 
-- `examples/adaptive_soft_contact` (Jain/Liu lane): a soft ellipsoid on
+- `adaptive_soft_contact` (Jain/Liu lane): a soft ellipsoid on
   ground with a moving pusher, runtime adaptive-activation toggle, exact
-  active/inactive counts, and gold contact-nearest region markers. Headless
-  2000-step run stays finite with the adaptive lifecycle visible (40/86
-  active in steady contact) and reruns bit-identically.
-- `examples/soft_worm` (Kim/Pollard worm-roll lane): a five-link chain with
-  soft flesh driven by a phase-offset sinusoidal gait. Headless 3000-step
-  run stays finite with 1.637 m forward displacement (locomotion bar was
-  0.2 m) and reruns bit-identically.
+  active/inactive counts, and gold contact-nearest region markers. The
+  pre-consolidation 2000-step verification stayed finite with the adaptive
+  lifecycle visible (40/86 active in steady contact) and reran bit-identically.
+- `soft_worm` (Kim/Pollard worm-roll lane): a five-link chain with soft flesh
+  driven by a phase-offset sinusoidal gait. The pre-consolidation 3000-step
+  verification stayed finite with 1.637 m forward displacement (locomotion bar
+  was 0.2 m) and reran bit-identically.
 
-Captures on the workstation display, both passing `pixi run image-verdict`
-(non-blank):
+The following pre-consolidation captures ran on the workstation display and
+both passed `pixi run image-verdict` (non-blank):
 
 ```bash
 ./build/default/cpp/Release/bin/adaptive_soft_contact \
@@ -1036,5 +1036,52 @@ Captures on the workstation display, both passing `pixi run image-verdict`
 The adaptive capture shows the gold active region hugging the ground ring
 and pusher side with the stats panel reporting 40 active / 46 inactive and
 32 contacts at step 500; the worm capture shows the mid-gait pose at frame
-3000 with the displacement readout. Interactive runs:
-`pixi run ex adaptive_soft_contact`, `pixi run ex soft_worm`.
+3000 with the displacement readout. The corresponding pre-consolidation
+interactive commands were `pixi run ex adaptive_soft_contact` and
+`pixi run ex soft_worm`.
+
+## 2026-07-13 consolidated demo migration validation
+
+The two flagship examples now run as `dart-demos` scenes rather than separate
+GUI executables. Their models and controllers are GUI-free and shared by the
+host scenes and focused integration tests, which preserve the current
+reproducible numerical gates. The earlier standalone commands and results
+above remain historical evidence.
+
+```bash
+DART_DISABLE_COMPILER_CACHE=ON pixi run config
+pixi run -- cmake --build build/default/cpp/Release \
+  --target dart-demos test_AdaptiveSoftContactModel test_SoftWormModel \
+  --parallel 8
+/usr/bin/time -f 'elapsed_seconds=%e' \
+  build/default/cpp/Release/tests/integration/test_AdaptiveSoftContactModel
+/usr/bin/time -f 'elapsed_seconds=%e' \
+  build/default/cpp/Release/tests/integration/test_SoftWormModel
+build/default/cpp/Release/bin/dart-demos --list-scenes
+build/default/cpp/Release/bin/dart-demos --cycle-scenes --frames 1
+DISPLAY=:0 build/default/cpp/Release/bin/dart-demos \
+  --scene adaptive_soft_contact --headless --steps 500 \
+  --shot /tmp/pr3382-demo-migration/adaptive_soft_contact.png
+DISPLAY=:0 build/default/cpp/Release/bin/dart-demos \
+  --scene soft_worm --headless --steps 3000 \
+  --shot /tmp/pr3382-demo-migration/soft_worm.png
+pixi run image-verdict \
+  /tmp/pr3382-demo-migration/adaptive_soft_contact.png
+pixi run image-verdict /tmp/pr3382-demo-migration/soft_worm.png
+```
+
+The adaptive gate passed in 2.72 seconds. It ran fresh adaptive and all-active
+worlds for 2000 steps twice, kept all state finite, reduced the active set on
+1987 steps, made contact on 1596 steps in both worlds, finished at 37 / 86
+active point masses, stayed within the former comparison contract
+(`0.059594777286144596` maximum surface-pose delta versus the `0.25` limit),
+and reproduced checkpoint counts, contacts, pose deltas, and position checksums
+exactly. The worm gate passed in 2.30 seconds. Both
+3000-step runs remained finite, each moved 1.6374483483834361 m (above the
+0.2 m bar), and exact equality held for the repeated displacement and position
+checksum `91066.047228482203`. The current catalog lists both migrated scene
+IDs, and the cycle smoke completed all 36 registered scenes twice with one
+frame per scene. Both current captures passed the non-blank `image-verdict`;
+the adaptive capture showed its bounded ring/linger controls and 40 active /
+46 inactive point masses at frame 500, while the worm capture showed the gait
+enabled and 1.638 m displacement at frame 3000.
