@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -25,7 +26,7 @@ def repository_root(requested: Optional[Path] = None) -> Path:
     return Path(result.stdout.strip()).resolve()
 
 
-def validate_payload(payload: bytes) -> None:
+def validate_payload(payload: bytes) -> str:
     try:
         data = json.loads(payload)
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -40,6 +41,20 @@ def validate_payload(payload: bytes) -> None:
         raise ValueError(
             "hook JSON must contain string tool_input.command or tool_input.cmd"
         )
+    return command
+
+
+def may_invoke_git_commit(command: str) -> bool:
+    """Return whether a command may contain a git commit invocation."""
+    return (
+        "commit" in command.lower()
+        or re.search(
+            r"g.*i.*t.*c.*o.*m.*m.*i.*t",
+            command,
+            re.IGNORECASE | re.DOTALL,
+        )
+        is not None
+    )
 
 
 def find_git_bash() -> Optional[Path]:
@@ -103,10 +118,12 @@ def run_guard(root: Path, payload: bytes, bash: Path) -> int:
 
 def forward(root: Path, payload: bytes) -> int:
     try:
-        validate_payload(payload)
+        command = validate_payload(payload)
     except ValueError as exc:
         print("DART pre-tool hook: {}".format(exc), file=sys.stderr)
         return 2
+    if not may_invoke_git_commit(command):
+        return 0
     bash = find_git_bash()
     if bash is None:
         print(

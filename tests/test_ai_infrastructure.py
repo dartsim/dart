@@ -962,6 +962,14 @@ def test_hook_config_requires_exact_windows_override(tmp_path):
             "scripts/pretool_guard_bridge.py",
             'env["CLAUDE_PROJECT_DIR"] = str(root)',
         ),
+        (
+            "scripts/pretool_guard_bridge.py",
+            "def may_invoke_git_commit(command: str) -> bool",
+        ),
+        (
+            "scripts/pretool_guard_bridge.py",
+            "if not may_invoke_git_commit(command):",
+        ),
     ),
 )
 def test_windows_hook_components_cannot_be_missing_or_drifted(

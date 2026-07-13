@@ -49,7 +49,9 @@ def _args(root: Path) -> argparse.Namespace:
 
 
 @pytest.mark.parametrize("input_key", ("command", "cmd"))
-def test_pretool_forwards_payload_to_shared_guard(tmp_path, monkeypatch, input_key):
+def test_pretool_forwards_commit_payload_to_shared_guard(
+    tmp_path, monkeypatch, input_key
+):
     root = _repo(tmp_path)
     guard = root / ".claude" / "hooks" / "pre-commit-guard.sh"
     guard.parent.mkdir(parents=True)
@@ -63,7 +65,7 @@ def test_pretool_forwards_payload_to_shared_guard(tmp_path, monkeypatch, input_k
         lambda args, **kwargs: calls.append((args, kwargs))
         or subprocess.CompletedProcess(args, 0, b"", b""),
     )
-    payload = json.dumps({"tool_input": {input_key: "git status"}}).encode()
+    payload = json.dumps({"tool_input": {input_key: "git commit -m test"}}).encode()
 
     assert bridge.forward(root, payload) == 0
     assert calls[0][0] == [
@@ -79,6 +81,35 @@ def test_pretool_forwards_payload_to_shared_guard(tmp_path, monkeypatch, input_k
     assert calls[0][1]["env"]["DART_HOOK_PYTHON"] == str(
         Path(sys.executable).resolve()
     ).replace("\\", "/")
+
+
+@pytest.mark.parametrize("command", ("git status", "echo hello"))
+def test_pretool_skips_non_commit_without_git_bash(tmp_path, monkeypatch, command):
+    root = _repo(tmp_path)
+    monkeypatch.setattr(
+        bridge,
+        "find_git_bash",
+        lambda: pytest.fail("non-commit payload must not discover Git Bash"),
+    )
+    payload = json.dumps({"tool_input": {"command": command}}).encode()
+
+    assert bridge.forward(root, payload) == 0
+
+
+@pytest.mark.parametrize(
+    "command",
+    (
+        "GIT COMMIT -m test",
+        "g---i---t\nc---o---m---m---i---t",
+    ),
+)
+def test_pretool_requires_git_bash_for_commit(tmp_path, monkeypatch, capsys, command):
+    root = _repo(tmp_path)
+    monkeypatch.setattr(bridge, "find_git_bash", lambda: None)
+    payload = json.dumps({"tool_input": {"command": command}}).encode()
+
+    assert bridge.forward(root, payload) == 2
+    assert "Git Bash is required" in capsys.readouterr().err
 
 
 def test_pretool_maps_guard_failure_to_codex_block(tmp_path, monkeypatch, capsys):

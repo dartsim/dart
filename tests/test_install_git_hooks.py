@@ -408,6 +408,8 @@ def test_guard_validates_target_linked_worktree_index(tmp_path):
         "/usr/bin/git commit -m x",
         "command /usr/local/bin/git commit -m x",
         "git -c user.name='DART Bot' commit -m x",
+        "GIT commit -m x",
+        "GIT.EXE commit -m x",
         "command git commit -m x",
         "command -- git commit -m x",
         "command -p git commit -m x",

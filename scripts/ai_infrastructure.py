@@ -130,6 +130,8 @@ WINDOWS_LAUNCHER_MARKERS = (
 )
 WINDOWS_BRIDGE_MARKERS = (
     "def validate_payload(payload: bytes)",
+    "def may_invoke_git_commit(command: str) -> bool",
+    "if not may_invoke_git_commit(command):",
     'env["CLAUDE_PROJECT_DIR"] = str(root)',
     'env["CODEX_PROJECT_DIR"] = str(root)',
     'env["DART_HOOK_PYTHON"]',

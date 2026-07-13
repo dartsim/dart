@@ -210,6 +210,10 @@ def command_basename(token):
     return os.path.basename(command_word(token))
 
 
+def is_git_executable(token):
+    return command_basename(token).lower() in {"git", "git.exe"}
+
+
 def skip_shell_prefixes(tokens, i):
     while i < len(tokens):
         if tokens[i] in SHELL_GROUP_OPENERS:
@@ -587,7 +591,7 @@ def is_git_commit(text):
             continue
         if i >= len(tokens):
             continue
-        if command_basename(tokens[i]) != "git":
+        if not is_git_executable(tokens[i]):
             current_cwd = maybe_update_shell_cwd(
                 tokens,
                 i,
