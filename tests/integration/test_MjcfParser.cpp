@@ -771,10 +771,43 @@ TEST(MjcfParserTest, HalfCheetahMixedJointStack)
 TEST(MjcfParserTest, SwimmerMixedJointStack)
 {
   const auto uri = "dart://sample/mjcf/openai/swimmer.xml";
-  auto world = utils::MjcfParser::readWorld(uri);
+  const auto options = utils::MjcfParser::Options();
+  auto world = utils::MjcfParser::readWorld(uri, options);
   ASSERT_NE(world, nullptr);
 
   ASSERT_EQ(world->getNumSkeletons(), 2);
+
+  auto floorSkel
+      = world->getSkeleton(options.mGeomSkeletonNamePrefix + "floor");
+  ASSERT_NE(floorSkel, nullptr);
+  ASSERT_EQ(floorSkel->getNumBodyNodes(), 1u);
+  ASSERT_EQ(floorSkel->getBodyNode(0)->getNumShapeNodes(), 1u);
+
+  auto floorShapeNode = floorSkel->getBodyNode(0)->getShapeNode(0);
+  ASSERT_NE(floorShapeNode, nullptr);
+  ASSERT_EQ(
+      floorShapeNode->getShape()->getType(),
+      dynamics::PlaneShape::getStaticType());
+
+  auto floorPlane = std::dynamic_pointer_cast<dynamics::PlaneShape>(
+      floorShapeNode->getShape());
+  ASSERT_NE(floorPlane, nullptr);
+  EXPECT_TRUE(floorPlane->getNormal().isApprox(Eigen::Vector3d::UnitZ()));
+  EXPECT_DOUBLE_EQ(floorPlane->getOffset(), 0.0);
+
+  const Eigen::Isometry3d& floorWorldTransform
+      = floorShapeNode->getWorldTransform();
+  EXPECT_TRUE(
+      floorWorldTransform.linear().isApprox(Eigen::Matrix3d::Identity()));
+  EXPECT_TRUE(floorWorldTransform.translation().isApprox(
+      Eigen::Vector3d(0.0, 0.0, -0.1)));
+  const Eigen::Vector3d floorWorldNormal
+      = floorWorldTransform.linear() * floorPlane->getNormal();
+  const double floorWorldOffset
+      = floorPlane->getOffset()
+        + floorWorldNormal.dot(floorWorldTransform.translation());
+  EXPECT_TRUE(floorWorldNormal.isApprox(Eigen::Vector3d::UnitZ()));
+  EXPECT_DOUBLE_EQ(floorWorldOffset, -0.1);
 
   auto skel = world->getSkeleton("torso");
   ASSERT_NE(skel, nullptr);
@@ -784,6 +817,25 @@ TEST(MjcfParserTest, SwimmerMixedJointStack)
   EXPECT_EQ(countStackedJointDummyBodies(skel), 2u);
   EXPECT_EQ(skel->getNumDofs(), 5u);
 
+  auto* torso = skel->getBodyNode("torso");
+  ASSERT_NE(torso, nullptr);
+  const math::LinearJacobian torsoLinearJacobian
+      = skel->getLinearJacobian(torso);
+  const auto expectWorldSlideAxis
+      = [&](const std::string& dofName, const Eigen::Vector3d& expectedAxis) {
+          auto* dof = skel->getDof(dofName);
+          ASSERT_NE(dof, nullptr) << dofName;
+
+          const Eigen::Vector3d worldAxis
+              = torsoLinearJacobian.col(dof->getIndexInSkeleton());
+          EXPECT_TRUE(worldAxis.isApprox(expectedAxis, 1e-15)) << dofName;
+          // Cardinal in-plane axes must not leak into an ill-conditioned
+          // floor-normal contact row.
+          EXPECT_DOUBLE_EQ(worldAxis.z(), 0.0) << dofName;
+        };
+  expectWorldSlideAxis("slider1", Eigen::Vector3d::UnitX());
+  expectWorldSlideAxis("slider2", Eigen::Vector3d::UnitY());
+
   expectStackedJointDynamicsWellPosed(skel);
 
   for (auto i = 0; i < 10; ++i) {
@@ -792,6 +844,8 @@ TEST(MjcfParserTest, SwimmerMixedJointStack)
 
   EXPECT_TRUE(skel->getPositions().allFinite());
   EXPECT_TRUE(skel->getVelocities().allFinite());
+  EXPECT_LT(skel->getPositions().cwiseAbs().maxCoeff(), 1.0);
+  EXPECT_LT(skel->getVelocities().cwiseAbs().maxCoeff(), 10.0);
 }
 
 //==============================================================================
