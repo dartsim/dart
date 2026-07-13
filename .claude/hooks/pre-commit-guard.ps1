@@ -19,7 +19,9 @@ try {
   $ErrorActionPreference = "Continue"
   $OutputEncoding = New-Object System.Text.UTF8Encoding($false)
   try {
-    $LASTEXITCODE = $null
+    # Qualify the automatic variable explicitly. An unscoped assignment here
+    # would create a script-scoped shadow on Windows PowerShell 5.1.
+    $global:LASTEXITCODE = $null
     if (Test-Path -LiteralPath $pixiPython -PathType Leaf) {
       if ($pipelineInput.Count -gt 0) {
         $payload | & $pixiPython $entrypoint --root $repoRoot
@@ -43,7 +45,7 @@ try {
       exit 0
     }
 
-    $nativeExitCode = $LASTEXITCODE
+    $nativeExitCode = $global:LASTEXITCODE
   } finally {
     $OutputEncoding = $previousOutputEncoding
     $ErrorActionPreference = $previousErrorActionPreference

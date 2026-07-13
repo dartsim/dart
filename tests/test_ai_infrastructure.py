@@ -944,7 +944,7 @@ def test_hook_config_requires_exact_windows_override(tmp_path):
     (
         (
             ".claude/hooks/pre-commit-guard.ps1",
-            "$LASTEXITCODE = $null",
+            "$global:LASTEXITCODE = $null",
         ),
         (
             ".claude/hooks/pre-commit-guard.ps1",
@@ -988,6 +988,14 @@ def test_windows_hook_components_cannot_be_missing_or_drifted(
     drift_errors = infra.check_codex_hooks(root)
 
     assert any(marker in error for error in drift_errors)
+
+
+def test_windows_launcher_does_not_shadow_native_exit_code():
+    launcher = (ROOT / ".claude/hooks/pre-commit-guard.ps1").read_text()
+
+    assert "$LASTEXITCODE = $null" not in launcher
+    assert "$global:LASTEXITCODE = $null" in launcher
+    assert "$nativeExitCode = $global:LASTEXITCODE" in launcher
 
 
 def test_claude_hook_requires_cross_platform_bash_guard(tmp_path):
