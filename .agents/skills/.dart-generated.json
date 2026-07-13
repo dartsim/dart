@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "generator": "scripts/sync_ai_commands.py",
+  "paths": [
+    "dart-analyze/SKILL.md",
+    "dart-backport-pr/SKILL.md",
+    "dart-branch-cleanup/SKILL.md",
+    "dart-build/SKILL.md",
+    "dart-changelog/SKILL.md",
+    "dart-ci/SKILL.md",
+    "dart-contribute/SKILL.md",
+    "dart-docs-update/SKILL.md",
+    "dart-downstream-fix/SKILL.md",
+    "dart-fix-ci/SKILL.md",
+    "dart-io/SKILL.md",
+    "dart-manage-pr/SKILL.md",
+    "dart-mechanical-refactor/SKILL.md",
+    "dart-new-task/SKILL.md",
+    "dart-pr/SKILL.md",
+    "dart-python/SKILL.md",
+    "dart-release-ci-fix/SKILL.md",
+    "dart-resume/SKILL.md",
+    "dart-retro/SKILL.md",
+    "dart-review-pr/SKILL.md",
+    "dart-test/SKILL.md",
+    "dart-ultrawork/SKILL.md",
+    "dart-verify-sim/SKILL.md"
+  ]
+}

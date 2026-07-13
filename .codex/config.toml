@@ -1,0 +1,5 @@
+# Project-local Codex defaults. Model and reasoning effort intentionally inherit
+# the parent session so maintainers can choose the current appropriate model.
+[agents]
+max_threads = 4
+max_depth = 1

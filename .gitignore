@@ -148,9 +148,11 @@ compile_flags.txt
 
 !.codex/
 .codex/*
-!.codex/skills/
-!.codex/skills/**/
-!.codex/skills/**/SKILL.md
+!.codex/agents/
+.codex/agents/*
+!.codex/agents/*.toml
+!.codex/config.toml
+!.codex/hooks.json
 !.codex/AGENTS.md
 
 .claude/*
