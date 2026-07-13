@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import time
@@ -35,6 +36,28 @@ def test_ai_runtime_scripts_support_python_3_11_syntax(script_name):
         filename=str(path),
         feature_version=11,
     )
+
+
+def test_repository_sync_check_reads_utf8_without_python_utf8_mode():
+    source = ROOT / ".claude" / "skills" / "dart-contribute" / "SKILL.md"
+    assert "❌" in source.read_text(encoding="utf-8")
+    env = {
+        **os.environ,
+        "LC_ALL": "C",
+        "PYTHONCOERCECLOCALE": "0",
+        "PYTHONUTF8": "0",
+    }
+    result = subprocess.run(
+        [sys.executable, "scripts/sync_ai_commands.py", "--check"],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    output = result.stdout + result.stderr
+
+    assert "UnicodeDecodeError" not in output
+    assert result.returncode == 0, output
 
 
 def _write(root: Path, relative: str, text: str = "fixture\n") -> Path:

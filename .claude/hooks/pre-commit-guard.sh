@@ -101,6 +101,9 @@ WRAPPERS = {"command", "exec", "time", "nice", "nohup"}
 SHELL_CONTROL_PREFIXES = {"!", "if", "then", "else", "elif", "while", "until", "do"}
 SHELL_GROUP_OPENERS = {"(", "{"}
 CWD_UNCERTAIN_PREFIXES = {"then", "else", "elif", "do"}
+EXEC_ALWAYS = "always"
+EXEC_NEVER = "never"
+EXEC_MAYBE = "maybe"
 ENV_OPTS_WITH_ARG = {
     "-C",
     "--chdir",
@@ -301,11 +304,133 @@ def strip_heredoc_bodies(text):
 
 def split_shell_segments(text):
     text = strip_heredoc_bodies(text)
-    pieces = re.split(r"(&&|\|\||[;&|\n])", text)
-    for index in range(0, len(pieces), 2):
-        part = pieces[index]
-        separator = pieces[index + 1] if index + 1 < len(pieces) else ""
-        yield part, separator
+    part = []
+    quote = ""
+    contexts = []
+    part_isolated = False
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if quote:
+            if quote == "\"" and ch == "\\":
+                part.append(ch)
+                if i + 1 < len(text):
+                    part.append(text[i + 1])
+                    i += 2
+                else:
+                    i += 1
+                continue
+            if quote == "\"" and text.startswith("$(", i):
+                contexts.append(("command-substitution", ")", quote, part))
+                part = []
+                part_isolated = True
+                quote = ""
+                i += 2
+                continue
+            if quote == "\"" and ch == "`":
+                contexts.append(("command-substitution", "`", quote, part))
+                part = []
+                part_isolated = True
+                quote = ""
+                i += 1
+                continue
+            part.append(ch)
+            if ch == quote:
+                quote = ""
+            i += 1
+            continue
+        if ch == "\\":
+            part.append(ch)
+            if i + 1 < len(text):
+                part.append(text[i + 1])
+                i += 2
+            else:
+                i += 1
+            continue
+        if ch in "\"'\''":
+            quote = ch
+            part.append(ch)
+            i += 1
+            continue
+        if ch == "`":
+            if contexts and contexts[-1][1] == "`":
+                if part:
+                    yield "".join(part), "", True, True
+                _, _, restore_quote, outer_part = contexts.pop()
+                part = outer_part
+                quote = restore_quote
+            else:
+                contexts.append(("command-substitution", "`", "", part))
+                part = []
+                part_isolated = True
+            i += 1
+            continue
+        if text.startswith("$(", i):
+            contexts.append(("command-substitution", ")", "", part))
+            part = []
+            part_isolated = True
+            i += 2
+            continue
+        if ch == "(":
+            if re.search(
+                r"(?:^|\s)(?:function\s+)?[A-Za-z_][A-Za-z0-9_]*\s*$",
+                "".join(part),
+            ) and re.match(r"\(\s*\)", text[i:]):
+                part.append(ch)
+                i += 1
+                continue
+            contexts.append(("subshell", ")", "", part))
+            part = []
+            part_isolated = True
+            i += 1
+            continue
+        if ch == "{" and (
+            (contexts and contexts[-1][0] == "function-body")
+            or re.search(
+                r"(?:^|\s)(?:[A-Za-z_][A-Za-z0-9_]*\s*\(\s*\)"
+                r"|function\s+[A-Za-z_][A-Za-z0-9_]*)\s*$",
+                "".join(part),
+            )
+        ):
+            contexts.append(("function-body", "}", "", part))
+            part = []
+            part_isolated = True
+            i += 1
+            continue
+        if contexts and ch == contexts[-1][1]:
+            context_kind = contexts[-1][0]
+            if part and context_kind != "function-body":
+                yield "".join(part), "", True, True
+            _, _, restore_quote, outer_part = contexts.pop()
+            part = outer_part
+            quote = restore_quote
+            part_isolated = True
+            i += 1
+            continue
+        separator = ""
+        if text.startswith("&&", i) or text.startswith("||", i):
+            separator = text[i : i + 2]
+        elif ch in ";&|\n":
+            separator = ch
+        if separator:
+            segment = (
+                ""
+                if any(context[0] == "function-body" for context in contexts)
+                else "".join(part)
+            )
+            yield (
+                segment,
+                separator,
+                part_isolated or bool(contexts),
+                bool(contexts),
+            )
+            part = []
+            part_isolated = bool(contexts)
+            i += len(separator)
+            continue
+        part.append(ch)
+        i += 1
+    yield "".join(part), "", part_isolated or bool(contexts), bool(contexts)
 
 
 def env_config_has_hooks_path_override(env):
@@ -338,7 +463,11 @@ def shell_expand_path_token(value, base_cwd=None):
     if quote != "'\''":
         path = os.path.expandvars(path)
     path = os.path.expanduser(path)
-    if base_cwd and path and not os.path.isabs(path):
+    if not path:
+        return None
+    if not os.path.isabs(path) and base_cwd is None:
+        return None
+    if base_cwd and not os.path.isabs(path):
         path = os.path.join(base_cwd, path)
     return os.path.normpath(path)
 
@@ -362,18 +491,66 @@ def shell_cd_target(tokens, i, current_cwd):
     return shell_expand_path_token(target, current_cwd)
 
 
-def maybe_update_shell_cwd(
-    tokens, i, current_cwd, separator, subshell_like, cwd_update_allowed
-):
-    if (
-        not cwd_update_allowed
-        or subshell_like
-        or separator not in {"&&", ";", "\n"}
-    ):
-        return current_cwd
+def known_shell_status(tokens, current_cwd):
+    """Return a segment status only when it can be determined statically."""
+    i, _ = skip_env_prefix(tokens, 0)
+    while i < len(tokens):
+        if tokens[i] in SHELL_GROUP_OPENERS:
+            i += 1
+            continue
+        head = command_word(tokens[i])
+        if head == "!":
+            return None
+        if head in SHELL_CONTROL_PREFIXES:
+            i += 1
+            continue
+        break
+    i, _ = skip_env_prefix(tokens, i)
+    if i >= len(tokens):
+        return None
+    head = command_word(tokens[i]).rstrip(")}")
+    if head in {":", "true"}:
+        return True
+    if head == "false":
+        return False
+    if head != "cd":
+        return None
     target = shell_cd_target(tokens, i, current_cwd)
-    if not target or not os.path.isdir(target):
+    if target is None:
+        return None
+    return os.path.isdir(target)
+
+
+def next_segment_execution(separator, current_execution, status):
+    if separator == "&&":
+        if current_execution == EXEC_ALWAYS and status is True:
+            return EXEC_ALWAYS
+        if current_execution == EXEC_ALWAYS and status is False:
+            return EXEC_NEVER
+        return EXEC_MAYBE
+    if separator == "||":
+        if current_execution == EXEC_ALWAYS and status is False:
+            return EXEC_ALWAYS
+        if current_execution == EXEC_ALWAYS and status is True:
+            return EXEC_NEVER
+        return EXEC_MAYBE
+    return EXEC_ALWAYS
+
+
+def maybe_update_shell_cwd(
+    tokens, i, current_cwd, separator, subshell_like, execution, mutation_policy
+):
+    if i >= len(tokens) or command_word(tokens[i]) != "cd":
         return current_cwd
+    if execution == EXEC_NEVER or subshell_like or separator in {"&", "|"}:
+        return current_cwd
+    if mutation_policy != "allow":
+        return None
+    target = shell_cd_target(tokens, i, current_cwd)
+    if target is not None and not os.path.isdir(target):
+        return current_cwd
+    if execution != EXEC_ALWAYS or target is None:
+        return None
     return target
 
 
@@ -503,15 +680,34 @@ def git_worktree_root(path):
 
 def is_git_commit(text):
     current_cwd = os.getcwd()
-    for part, separator in split_shell_segments(text):
+    segment_execution = EXEC_ALWAYS
+    previous_separator = ""
+    for (
+        part,
+        separator,
+        isolated_context,
+        separator_isolated,
+    ) in split_shell_segments(text):
         raw_part = part.strip()
-        subshell_like = raw_part.startswith("(")
+        subshell_like = isolated_context or previous_separator == "|"
         part = raw_part.lstrip("({").strip()
         try:
             tokens = shlex.split(part)
         except ValueError:
             tokens = part.split()
-        cwd_update_allowed = segment_allows_cwd_update(tokens)
+        cwd_execution = segment_execution
+        if not segment_allows_cwd_update(tokens) and cwd_execution != EXEC_NEVER:
+            cwd_execution = EXEC_MAYBE
+        if not separator_isolated:
+            status = (
+                None
+                if isolated_context
+                else known_shell_status(tokens, current_cwd)
+            )
+            segment_execution = next_segment_execution(
+                separator, cwd_execution, status
+            )
+        previous_separator = separator
         command_env = {}
         i, bypass = skip_env_prefix(tokens, 0, command_env)
         i = skip_shell_prefixes(tokens, i)
@@ -519,6 +715,7 @@ def is_git_commit(text):
         bypass = bypass or env_bypass
         i = next_i
         command_cwd = None
+        cwd_mutation_policy = "allow"
         if bypass:
             continue  # command-level bypass, same as the git hook
         # unwrap common wrappers: command git commit, time git commit, env X=1 git commit
@@ -530,13 +727,31 @@ def is_git_commit(text):
             if bypass or i >= len(tokens):
                 break
             head = command_basename(tokens[i])
+            if head == "builtin" and command_word(tokens[i]) == "builtin":
+                builtin_i = i + 1
+                if builtin_i < len(tokens) and tokens[builtin_i] == "--":
+                    builtin_i += 1
+                if builtin_i < len(tokens) and command_word(tokens[builtin_i]) in {
+                    "cd",
+                    "eval",
+                    "source",
+                    ".",
+                }:
+                    i = builtin_i
+                    continue
+                break
             if head in WRAPPERS:
+                if not (
+                    head == "command" and command_word(tokens[i]) == "command"
+                ):
+                    cwd_mutation_policy = "unknown"
                 i = unwrap_wrapper(tokens, i, head)
                 if i is None:
                     i = len(tokens)
                     break
                 continue
             if head == "env":
+                cwd_mutation_policy = "unknown"
                 i += 1
                 while i < len(tokens):
                     t = tokens[i]
@@ -598,8 +813,18 @@ def is_git_commit(text):
                 current_cwd,
                 separator,
                 subshell_like,
-                cwd_update_allowed,
+                cwd_execution,
+                cwd_mutation_policy,
             )
+            if (
+                cwd_execution != EXEC_NEVER
+                and not subshell_like
+                and separator not in {"&", "|"}
+                and i < len(tokens)
+                and command_word(tokens[i]).rstrip(")}")
+                in {"eval", "source", "."}
+            ):
+                current_cwd = None
             continue
         i += 1
         target_dir = None
@@ -639,12 +864,12 @@ def is_git_commit(text):
             ):
                 hooks_path_override = True
             no_verify = commit_args_disable_hooks(tokens[i + 1 :])
+            project = (
+                os.environ.get("CLAUDE_PROJECT_DIR")
+                or os.environ.get("CODEX_PROJECT_DIR")
+                or os.getcwd()
+            )
             if target_dir:
-                project = (
-                    os.environ.get("CLAUDE_PROJECT_DIR")
-                    or os.environ.get("CODEX_PROJECT_DIR")
-                    or os.getcwd()
-                )
                 try:
                     target_common = git_common_dir(target_dir)
                     project_common = git_common_dir(project) if project else None
@@ -665,11 +890,12 @@ def is_git_commit(text):
                         continue  # non-repo path outside this project
                 except OSError:
                     pass
+            gate_target_dir = target_dir or project
             if no_verify:
-                return "commit-no-verify", git_worktree_root(target_dir)
+                return "commit-no-verify", git_worktree_root(gate_target_dir)
             if hooks_path_override:
-                return "commit-hooks-override", git_worktree_root(target_dir)
-            return "commit", git_worktree_root(target_dir)
+                return "commit-hooks-override", git_worktree_root(gate_target_dir)
+            return "commit", git_worktree_root(gate_target_dir)
     return "skip", ""
 
 

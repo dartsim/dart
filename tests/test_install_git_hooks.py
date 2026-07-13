@@ -681,6 +681,309 @@ def test_guard_does_not_preserve_failed_cd_cwd_for_or_chain(tmp_path):
 @pytest.mark.parametrize(
     "command_template",
     [
+        "false && cd {other}; git commit -m x",
+        "true || cd {other}; git commit -m x",
+    ],
+)
+def test_guard_does_not_carry_cwd_from_skipped_conditional_cd(
+    tmp_path, command_template
+):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, command_template.format(other=other))
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+@pytest.mark.parametrize(
+    "command_template",
+    [
+        "true && cd {other}; git commit -m x",
+        "false || cd {other}; git commit -m x",
+    ],
+)
+def test_guard_carries_cwd_from_executed_conditional_cd(tmp_path, command_template):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, command_template.format(other=other))
+
+    assert returncode == 0
+    assert "would run" not in stderr
+
+
+def test_guard_keeps_uncertain_conditional_cd_cwd_fail_closed(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(
+        other, env, f"test -d {repo} && cd {repo}; git commit -m x"
+    )
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+def test_guard_treats_unparsed_cd_status_as_uncertain(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(
+        repo, env, f"cd -P . || cd {other}; git commit -m x"
+    )
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+def test_guard_does_not_carry_pipeline_cd_cwd(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, f"true | cd {other}; git commit -m x")
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+def test_guard_does_not_carry_multisegment_subshell_cd_cwd(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(
+        repo, env, f"(true; cd {other}; true); git commit -m x"
+    )
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+def test_guard_does_not_carry_command_substitution_cd_cwd(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(
+        repo, env, f"echo $(true; cd {other}; pwd); git commit -m x"
+    )
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+def test_guard_does_not_use_command_substitution_status_for_outer_chain(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    command = f"echo $(true; false) && cd {repo}; git commit -m x"
+    returncode, stderr = _run_guard(other, env, command)
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+def test_guard_does_not_carry_backtick_command_substitution_cd_cwd(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    command = f"echo `true; cd {other}; pwd`; git commit -m x"
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    (
+        "echo $(git commit -m x)",
+        "value=$(git commit -m x)",
+        "echo `git commit -m x`",
+    ),
+)
+def test_guard_detects_embedded_command_substitution_commit(tmp_path, command):
+    repo, env = _init_repo(tmp_path)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+def test_guard_preserves_outer_git_command_around_substitution(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, 'git -C "$(pwd)" commit -m x')
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+@pytest.mark.parametrize("definition", ("change_dir()", "function change_dir"))
+def test_guard_does_not_carry_function_definition_body_cwd(tmp_path, definition):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    command = f"{definition} {{ true; cd {other}; }}; git commit -m x"
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+def test_guard_does_not_execute_function_definition_body_commit(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    command = "commit_later() { git commit -m x; }"
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 0
+    assert "would run" not in stderr
+
+
+def test_guard_does_not_treat_path_qualified_builtin_as_shell_builtin(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    command = f"/usr/bin/builtin cd {other}; git commit -m x"
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+def test_guard_carries_brace_group_cd_cwd(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(
+        repo, env, f"{{ true; cd {other}; true; }}; git commit -m x"
+    )
+
+    assert returncode == 0
+    assert "would run" not in stderr
+
+
+def test_guard_ignores_quoted_shell_separators(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    command = f"echo 'text; cd {other}; more'; git commit -m x"
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+@pytest.mark.parametrize("wrapper", ("env", "nice", "nohup", "exec"))
+def test_guard_does_not_carry_external_wrapper_cd_cwd(tmp_path, wrapper):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, f"{wrapper} cd {other}; git commit -m x")
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+def test_guard_tracks_builtin_cd_from_foreign_repo(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(other, env, f"builtin cd {repo}; git commit -m x")
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+def test_guard_poison_cwd_for_builtin_eval(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(
+        other, env, f"builtin eval 'cd {repo}'; git commit -m x"
+    )
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+@pytest.mark.parametrize(
+    "command_template",
+    (
+        "eval 'cd {repo}'; git commit -m x",
+        "source change-dir.sh; git commit -m x",
+        ". change-dir.sh; git commit -m x",
+    ),
+)
+def test_guard_poison_cwd_for_opaque_parent_shell_mutators(tmp_path, command_template):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(other, env, command_template.format(repo=repo))
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+@pytest.mark.parametrize(
+    "command_template",
+    [
         "cd {missing}; git commit -m x",
         "cd {missing}\ngit commit -m x",
         "cd {missing} && true; git commit -m x",
