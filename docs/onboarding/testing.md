@@ -12,6 +12,10 @@ pixi run test-all
 runs the Python binding tests. `pixi run test-all` is the broad default gate for
 the release branch.
 
+For model, simulation, collision/contact, or OSG claims, also use
+`dart-verify-sim` with the text-first and claim-tied visual/debug path in
+[`docs/ai/verification.md`](../ai/verification.md).
+
 For dependency minimization, run focused tests for the touched component and
 then broaden when the dependency affects shared package, collision, constraint,
 or GUI behavior.

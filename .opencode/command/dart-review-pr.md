@@ -15,6 +15,7 @@ Review or respond to PR: $ARGUMENTS
 @AGENTS.md
 @docs/onboarding/code-style.md
 @docs/onboarding/ai-tools.md (for AI-generated review handling)
+@docs/ai/verification.md
 
 ## Workflow
 
@@ -24,7 +25,10 @@ Review or respond to PR: $ARGUMENTS
 gh pr view $1 && gh pr diff $1
 ```
 
-Check: code style, tests, docs, focused commits
+Check code style, tests, docs, and focused commits. For claims involving 3D
+structure or behavior, require the `dart-verify-sim` text oracle plus assessed
+claim-tied OSG/debug-overlay evidence, or a justified replacement; a screenshot
+alone is not correctness evidence.
 
 ### To Address Feedback
 
