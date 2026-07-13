@@ -312,7 +312,7 @@ struct NativeDetectorStateRegistry
 NativeDetectorStateRegistry& getNativeDetectorStateRegistry()
 {
   // Detectors can be owned by static/global objects and therefore destroyed
-  // after ordinary function-local statics. Keep this registry alive through
+  // after ordinary function-local objects. Keep this registry alive through
   // process teardown so every detector destructor can safely erase its state.
   static auto* const registry = new NativeDetectorStateRegistry;
   return *registry;
