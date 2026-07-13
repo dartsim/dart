@@ -1053,10 +1053,14 @@ def test_ci_wiring_requires_factory_capture_and_visual_task(
             ".claude/hooks/pre-commit-guard.ps1",
             "$global:LASTEXITCODE = $null",
         ),
-        (
-            ".claude/hooks/pre-commit-guard.ps1",
-            "$payload = [Console]::In.ReadToEnd()",
-        ),
+            (
+                ".claude/hooks/pre-commit-guard.ps1",
+                "$payload = [Console]::In.ReadToEnd()",
+            ),
+            (
+                ".claude/hooks/pre-commit-guard.ps1",
+                "$pipelineInput = @($input | ForEach-Object { $_ })",
+            ),
         (
             ".claude/hooks/pre-commit-guard.ps1",
             "$pipelineInput.Count -gt 0",

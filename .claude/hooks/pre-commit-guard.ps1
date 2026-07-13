@@ -4,7 +4,11 @@ $ErrorActionPreference = "Stop"
 try {
   # Read stdin directly: Windows PowerShell's `$input` enumerator is not
   # reliable when this script is invoked through a nested `-Command` pipeline.
-  $payload = [Console]::In.ReadToEnd()
+  $pipelineInput = @($input | ForEach-Object { $_ })
+  $payload = $pipelineInput -join [Environment]::NewLine
+  if ([string]::IsNullOrEmpty($payload)) {
+    $payload = [Console]::In.ReadToEnd()
+  }
   if ([string]::IsNullOrEmpty($payload)) {
     $payload = $env:DART_HOOK_PAYLOAD
   }
