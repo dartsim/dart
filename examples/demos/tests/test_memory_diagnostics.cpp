@@ -10,6 +10,8 @@
 
 #include "../memory_diagnostics.hpp"
 
+#include <dart/gui/osg/IncludeImGui.hpp>
+
 #include <dart/constraint/ConstraintSolver.hpp>
 #include <dart/constraint/WeldJointConstraint.hpp>
 
@@ -20,6 +22,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -320,6 +323,130 @@ TEST(MemoryDiagnostics, MissingWorldKeepsUnavailableValuesDistinctFromZero)
   EXPECT_TRUE(snapshot.allocatorMemoryMap.empty());
   EXPECT_TRUE(snapshot.objectAddressAtlas.empty());
   EXPECT_FALSE(snapshot.guidance.empty());
+}
+
+//==============================================================================
+TEST(MemoryDiagnostics, DenseMapStaysBelowTheOpenGL2DrawIndexLimit)
+{
+  constexpr std::size_t kRegionBytes = 4096u;
+  constexpr std::size_t kObservationCount = 512u;
+  MemoryMapRegion region;
+  region.id = "dense";
+  region.label = "Dense synthetic region";
+  region.sizeBytes = kRegionBytes;
+  region.quality = MetricQuality::Proxy;
+  region.scope = "synthetic renderer stress";
+  region.source = "unit test";
+  region.limitation = "synthetic renderer stress";
+  region.spans.push_back(MemoryMapSpan{
+      0u,
+      kRegionBytes,
+      MemoryStorageState::Unobserved,
+      MemoryDataCategory::None,
+      MemoryExtentKind::UnobservedRange,
+      "background",
+      MetricQuality::Proxy,
+      "synthetic background"});
+  region.observations.assign(
+      kObservationCount,
+      MemoryMapSpan{
+          0u,
+          kRegionBytes,
+          MemoryStorageState::Observed,
+          MemoryDataCategory::Model,
+          MemoryExtentKind::ShallowLowerBound,
+          "overlapping observation",
+          MetricQuality::Estimate,
+          "synthetic overlap"});
+
+  DiagnosticSnapshot snapshot;
+  snapshot.generation = 1u;
+  snapshot.allocatorMemoryMap.push_back(std::move(region));
+  DiagnosticSession session([snapshot] { return snapshot; }, 1u);
+  session.setEnabled(true);
+  ASSERT_TRUE(session.captureNow(0.0));
+
+  ImGuiContext* previousContext = ImGui::GetCurrentContext();
+  ImGuiContext* testContext = ImGui::CreateContext();
+  ImGui::SetCurrentContext(testContext);
+  ImGuiIO& io = ImGui::GetIO();
+  io.DisplaySize = ImVec2(1600.0f, 1400.0f);
+  io.DeltaTime = 1.0f / 60.0f;
+  io.IniFilename = nullptr;
+  unsigned char* pixels = nullptr;
+  int textureWidth = 0;
+  int textureHeight = 0;
+  io.Fonts->GetTexDataAsRGBA32(&pixels, &textureWidth, &textureHeight);
+
+  struct FrameDrawStats
+  {
+    bool windowVisible{false};
+    int drawListCount{0};
+    int maximumVertices{0};
+    int lastDrawListVertices{0};
+  };
+  const auto renderFrame = [&](const ImVec2& mousePosition) {
+    io.MousePos = mousePosition;
+    ImGui::NewFrame();
+    ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
+    ImGui::SetNextWindowSize(io.DisplaySize);
+    const bool windowVisible = ImGui::Begin(
+        "Memory diagnostics draw-list bound",
+        nullptr,
+        ImGuiWindowFlags_NoSavedSettings);
+    if (windowVisible) {
+      renderMemoryDiagnostics(session, 0.0, 1.0);
+    }
+    ImGui::End();
+    ImGui::Render();
+
+    FrameDrawStats stats;
+    stats.windowVisible = windowVisible;
+    const ImDrawData* drawData = ImGui::GetDrawData();
+    if (drawData != nullptr) {
+      stats.drawListCount = drawData->CmdListsCount;
+      for (int index = 0; index < drawData->CmdListsCount; ++index) {
+        stats.maximumVertices = std::max(
+            stats.maximumVertices, drawData->CmdLists[index]->VtxBuffer.Size);
+      }
+      if (drawData->CmdListsCount > 0) {
+        stats.lastDrawListVertices
+            = drawData->CmdLists[drawData->CmdListsCount - 1]->VtxBuffer.Size;
+      }
+    }
+    return stats;
+  };
+
+  const FrameDrawStats baseline = renderFrame(ImVec2(-1000.0f, -1000.0f));
+  int maximumDrawListVertices = baseline.maximumVertices;
+  bool tooltipExercised = false;
+  for (float mouseY = 180.0f; mouseY <= 800.0f; mouseY += 8.0f) {
+    const FrameDrawStats hovered = renderFrame(ImVec2(300.0f, mouseY));
+    maximumDrawListVertices
+        = std::max(maximumDrawListVertices, hovered.maximumVertices);
+    // A map-cell tooltip contains the bounded evidence list and is therefore
+    // materially larger than the short checkbox/metric tooltips encountered
+    // while scanning down the window.
+    if (hovered.drawListCount > baseline.drawListCount
+        && hovered.lastDrawListVertices > 2048) {
+      tooltipExercised = true;
+      break;
+    }
+  }
+
+  EXPECT_TRUE(baseline.windowVisible);
+  EXPECT_GT(baseline.drawListCount, 0);
+  EXPECT_GT(maximumDrawListVertices, 32 * 1024)
+      << "the dense synthetic map did not exercise the renderer cap";
+  EXPECT_TRUE(tooltipExercised)
+      << "the dense synthetic cell tooltip was not exercised";
+  EXPECT_LT(maximumDrawListVertices, 60 * 1024);
+  EXPECT_LT(
+      maximumDrawListVertices,
+      static_cast<std::uintmax_t>(std::numeric_limits<ImDrawIdx>::max()));
+
+  ImGui::DestroyContext(testContext);
+  ImGui::SetCurrentContext(previousContext);
 }
 
 } // namespace

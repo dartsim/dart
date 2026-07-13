@@ -1284,18 +1284,33 @@ std::size_t chooseBytesPerRow(std::size_t sizeBytes, std::size_t maxRows)
 }
 
 //==============================================================================
-void drawMemoryMapPattern(
+bool hasMemoryMapVertexCapacity(
+    const ImDrawList* drawList, int vertexLimit, int requiredVertices)
+{
+  return requiredVertices >= 0 && vertexLimit >= requiredVertices
+         && drawList->VtxBuffer.Size <= vertexLimit - requiredVertices;
+}
+
+//==============================================================================
+bool drawMemoryMapPattern(
     ImDrawList* drawList,
     const ImVec2& minimum,
     const ImVec2& maximum,
-    MemoryStorageState state)
+    MemoryStorageState state,
+    int vertexLimit = std::numeric_limits<int>::max())
 {
   drawList->PushClipRect(minimum, maximum, true);
   const ImU32 patternColor = IM_COL32(235, 239, 245, 72);
   const float height = maximum.y - minimum.y;
   constexpr float kHatchSpacing = 11.0f;
+  bool complete = true;
   const auto drawForwardHatch = [&] {
     for (float x = minimum.x - height; x < maximum.x; x += kHatchSpacing) {
+      // An anti-aliased two-point line uses at most eight vertices.
+      if (!hasMemoryMapVertexCapacity(drawList, vertexLimit, 8)) {
+        complete = false;
+        return;
+      }
       drawList->AddLine(
           ImVec2(x, maximum.y),
           ImVec2(x + height, minimum.y),
@@ -1305,6 +1320,10 @@ void drawMemoryMapPattern(
   };
   const auto drawBackwardHatch = [&] {
     for (float x = minimum.x; x < maximum.x + height; x += kHatchSpacing) {
+      if (!hasMemoryMapVertexCapacity(drawList, vertexLimit, 8)) {
+        complete = false;
+        return;
+      }
       drawList->AddLine(
           ImVec2(x, minimum.y),
           ImVec2(x - height, maximum.y),
@@ -1331,7 +1350,17 @@ void drawMemoryMapPattern(
       const float radius = std::max(0.25f, std::min(0.8f, height * 0.35f));
       for (float y = firstY; y < maximum.y; y += 9.0f) {
         for (float x = firstX; x < maximum.x; x += 9.0f) {
+          // This sub-pixel dot uses far fewer than 64 vertices; retaining the
+          // conservative bound keeps the draw-list limit independent of
+          // ImGui's circle tessellation policy.
+          if (!hasMemoryMapVertexCapacity(drawList, vertexLimit, 64)) {
+            complete = false;
+            break;
+          }
           drawList->AddCircleFilled(ImVec2(x, y), radius, patternColor);
+        }
+        if (!complete) {
+          break;
         }
       }
     } break;
@@ -1341,6 +1370,7 @@ void drawMemoryMapPattern(
       break;
   }
   drawList->PopClipRect();
+  return complete;
 }
 
 //==============================================================================
@@ -1509,6 +1539,28 @@ void renderMemoryMapRegion(
       "and observation; raise detail rows to resolve byte boundaries.");
   ImGui::PopTextWrapPos();
 
+  // OpenGL2 does not advertise ImGuiBackendFlags_RendererHasVtxOffset and
+  // DART's packaged ImDrawIdx is 16-bit. A separate child gives every region
+  // its own draw list, while the fixed viewport and explicit culling keep the
+  // visible primitive count independent of the requested logical row count.
+  constexpr std::size_t kVisibleRows = 8u;
+  constexpr int kDrawListVertexLimit = 56 * 1024;
+  constexpr int kCellVertexLimit = kDrawListVertexLimit - 2048;
+  static_assert(
+      static_cast<std::uintmax_t>(kDrawListVertexLimit)
+          < static_cast<std::uintmax_t>(std::numeric_limits<ImDrawIdx>::max()),
+      "memory map draw-list limit must fit the configured ImDrawIdx");
+  const std::size_t visibleRowCount = std::min(rowCount, kVisibleRows);
+  const float childHeight = rowHeight * static_cast<float>(visibleRowCount)
+                            + 2.0f
+                                  * (ImGui::GetStyle().WindowPadding.y
+                                     + ImGui::GetStyle().ChildBorderSize);
+  const ImGuiWindowFlags childFlags
+      = rowCount > visibleRowCount ? ImGuiWindowFlags_AlwaysVerticalScrollbar
+                                   : ImGuiWindowFlags_None;
+  ImGui::BeginChild(
+      "##map_scroll", ImVec2(0.0f, childHeight), true, childFlags);
+
   const ImVec2 canvasSize(
       std::max(1.0f, ImGui::GetContentRegionAvail().x),
       rowHeight * static_cast<float>(rowCount));
@@ -1516,7 +1568,31 @@ void renderMemoryMapRegion(
   const ImVec2 origin = ImGui::GetItemRectMin();
   const ImVec2 canvasEnd = ImGui::GetItemRectMax();
   ImDrawList* drawList = ImGui::GetWindowDrawList();
-  drawList->AddRectFilled(origin, canvasEnd, IM_COL32(27, 30, 37, 255));
+  const ImVec2 clipMinimum = drawList->GetClipRectMin();
+  const ImVec2 clipMaximum = drawList->GetClipRectMax();
+  const ImVec2 visibleMinimum(
+      std::max(origin.x, clipMinimum.x), std::max(origin.y, clipMinimum.y));
+  const ImVec2 visibleMaximum(
+      std::min(canvasEnd.x, clipMaximum.x),
+      std::min(canvasEnd.y, clipMaximum.y));
+  const std::size_t firstVisibleRow = std::min<std::size_t>(
+      rowCount - 1u,
+      static_cast<std::size_t>(
+          std::floor(std::max(0.0f, visibleMinimum.y - origin.y) / rowHeight)));
+  const std::size_t pastVisibleRow = std::min<std::size_t>(
+      rowCount,
+      static_cast<std::size_t>(
+          std::ceil(std::max(0.0f, visibleMaximum.y - origin.y) / rowHeight)));
+  const auto cellIsVisible = [&](const MemoryMapCell& cell) {
+    const std::size_t row = cell.offsetBytes / bytesPerRow;
+    return row >= firstVisibleRow && row < pastVisibleRow;
+  };
+  bool detailTruncated = false;
+  if (visibleMinimum.x < visibleMaximum.x && visibleMinimum.y < visibleMaximum.y
+      && hasMemoryMapVertexCapacity(drawList, kDrawListVertexLimit, 4)) {
+    drawList->AddRectFilled(
+        visibleMinimum, visibleMaximum, IM_COL32(27, 30, 37, 255));
+  }
 
   const auto sourceSpan
       = [&region](const MemoryMapCellSegment& segment) -> const MemoryMapSpan& {
@@ -1550,63 +1626,141 @@ void renderMemoryMapRegion(
             x1,
             segmentIndex + 1u == cell.segments.size() ? y1 : y0 + laneHeight)};
   };
+  const auto clippedSegmentRectangle
+      = [&](const MemoryMapCell& cell, std::size_t segmentIndex) {
+          auto [minimum, maximum] = segmentRectangle(cell, segmentIndex);
+          minimum.x = std::max(minimum.x, visibleMinimum.x);
+          minimum.y = std::max(minimum.y, visibleMinimum.y);
+          maximum.x = std::min(maximum.x, visibleMaximum.x);
+          maximum.y = std::min(maximum.y, visibleMaximum.y);
+          return std::pair<ImVec2, ImVec2>{minimum, maximum};
+        };
 
   // A source span gets its own lane within each raster cell. Partition
   // boundaries and overlapping typed observations therefore remain visible as
   // an ordered composition instead of later spans overwriting earlier ones.
+  bool stopCellRendering = false;
   for (const auto& cell : cells) {
+    if (!cellIsVisible(cell)) {
+      continue;
+    }
     for (std::size_t segmentIndex = 0; segmentIndex < cell.segments.size();
          ++segmentIndex) {
+      auto [minimum, maximum] = clippedSegmentRectangle(cell, segmentIndex);
+      if (minimum.x >= maximum.x || minimum.y >= maximum.y) {
+        continue;
+      }
+      // Four fill vertices plus at most sixteen for the anti-aliased border.
+      if (!hasMemoryMapVertexCapacity(drawList, kCellVertexLimit, 20)) {
+        detailTruncated = true;
+        stopCellRendering = true;
+        break;
+      }
       const auto& span = sourceSpan(cell.segments[segmentIndex]);
-      const auto [minimum, maximum] = segmentRectangle(cell, segmentIndex);
       drawList->AddRectFilled(
           minimum,
           maximum,
           ImGui::ColorConvertFloat4ToU32(
               memoryMapColor(span.dataCategory, span.storageState)));
+      bool patternComplete = true;
       if (memoryStorageStateUsesPattern(span.storageState)) {
-        drawMemoryMapPattern(drawList, minimum, maximum, span.storageState);
+        patternComplete = drawMemoryMapPattern(
+            drawList,
+            minimum,
+            maximum,
+            span.storageState,
+            kCellVertexLimit - 16);
       }
-      drawList->AddRect(
-          minimum,
-          maximum,
-          memoryStorageStateBorder(span.storageState),
-          0.0f,
-          0,
-          span.storageState == MemoryStorageState::Metadata ? 2.0f : 1.0f);
+      if (hasMemoryMapVertexCapacity(drawList, kCellVertexLimit, 16)) {
+        drawList->AddRect(
+            minimum,
+            maximum,
+            memoryStorageStateBorder(span.storageState),
+            0.0f,
+            0,
+            span.storageState == MemoryStorageState::Metadata ? 2.0f : 1.0f);
+      } else {
+        patternComplete = false;
+      }
+      if (!patternComplete) {
+        detailTruncated = true;
+        stopCellRendering = true;
+        break;
+      }
+    }
+    if (stopCellRendering) {
+      break;
     }
   }
 
   const ImU32 gridColor = IM_COL32(225, 231, 239, 40);
-  for (std::size_t row = 0; row <= rowCount; ++row) {
+  for (std::size_t row = firstVisibleRow; row <= pastVisibleRow; ++row) {
     const float y = origin.y + static_cast<float>(row) * rowHeight;
-    drawList->AddLine(ImVec2(origin.x, y), ImVec2(canvasEnd.x, y), gridColor);
+    if (y < visibleMinimum.y || y > visibleMaximum.y) {
+      continue;
+    }
+    if (!hasMemoryMapVertexCapacity(drawList, kDrawListVertexLimit, 8)) {
+      detailTruncated = true;
+      break;
+    }
+    drawList->AddLine(
+        ImVec2(visibleMinimum.x, y), ImVec2(visibleMaximum.x, y), gridColor);
   }
   for (std::size_t column = 0; column <= kColumns; ++column) {
     const float x = origin.x
                     + canvasSize.x * static_cast<float>(column)
                           / static_cast<float>(kColumns);
-    drawList->AddLine(ImVec2(x, origin.y), ImVec2(x, canvasEnd.y), gridColor);
+    if (x < visibleMinimum.x || x > visibleMaximum.x) {
+      continue;
+    }
+    if (!hasMemoryMapVertexCapacity(drawList, kDrawListVertexLimit, 8)) {
+      detailTruncated = true;
+      break;
+    }
+    drawList->AddLine(
+        ImVec2(x, visibleMinimum.y), ImVec2(x, visibleMaximum.y), gridColor);
   }
+  bool stopPointRendering = false;
   for (const auto& cell : cells) {
+    if (!cellIsVisible(cell)) {
+      continue;
+    }
     for (std::size_t segmentIndex = 0; segmentIndex < cell.segments.size();
          ++segmentIndex) {
       const auto& span = sourceSpan(cell.segments[segmentIndex]);
-      if (span.extentKind == MemoryExtentKind::AddressPoint) {
-        const auto [minimum, maximum] = segmentRectangle(cell, segmentIndex);
-        drawList->AddLine(
-            ImVec2(minimum.x, minimum.y),
-            ImVec2(minimum.x, maximum.y),
-            IM_COL32(255, 255, 255, 245),
-            3.0f);
-        drawList->AddCircleFilled(
-            ImVec2(minimum.x, (minimum.y + maximum.y) * 0.5f),
-            2.0f,
-            IM_COL32(255, 255, 255, 245));
+      if (span.extentKind != MemoryExtentKind::AddressPoint) {
+        continue;
       }
+      const auto [minimum, maximum]
+          = clippedSegmentRectangle(cell, segmentIndex);
+      if (minimum.x >= maximum.x || minimum.y >= maximum.y) {
+        continue;
+      }
+      // The marker is one line and one radius-2 filled circle.
+      if (!hasMemoryMapVertexCapacity(drawList, kDrawListVertexLimit, 72)) {
+        detailTruncated = true;
+        stopPointRendering = true;
+        break;
+      }
+      drawList->AddLine(
+          ImVec2(minimum.x, minimum.y),
+          ImVec2(minimum.x, maximum.y),
+          IM_COL32(255, 255, 255, 245),
+          3.0f);
+      drawList->AddCircleFilled(
+          ImVec2(minimum.x, (minimum.y + maximum.y) * 0.5f),
+          2.0f,
+          IM_COL32(255, 255, 255, 245));
+    }
+    if (stopPointRendering) {
+      break;
     }
   }
-  drawList->AddRect(origin, canvasEnd, IM_COL32(225, 231, 239, 100));
+  if (visibleMinimum.x < visibleMaximum.x && visibleMinimum.y < visibleMaximum.y
+      && hasMemoryMapVertexCapacity(drawList, kDrawListVertexLimit, 16)) {
+    drawList->AddRect(
+        visibleMinimum, visibleMaximum, IM_COL32(225, 231, 239, 100));
+  }
 
   if (ImGui::IsItemHovered()) {
     const ImVec2 mouse = ImGui::GetIO().MousePos;
@@ -1624,7 +1778,7 @@ void renderMemoryMapRegion(
 
     ImGui::BeginTooltip();
     ImGui::PushTextWrapPos(ImGui::GetFontSize() * 36.0f);
-    ImGui::TextUnformatted(region.label.c_str());
+    ImGui::TextWrapped("%.512s", region.label.c_str());
     ImGui::Text(
         "Relative offset: +%s",
         formatBytes(static_cast<double>(offset), false).c_str());
@@ -1635,11 +1789,23 @@ void renderMemoryMapRegion(
             static_cast<double>(cell.offsetBytes + cell.sizeBytes), false)
             .c_str(),
         cell.segments.size());
+    constexpr std::size_t kTooltipEntryLimit = 32u;
+    constexpr int kTooltipVertexStop = 40 * 1024;
+    std::size_t shownSegmentCount = 0;
     for (const auto& segment : cell.segments) {
+      // Tooltips have their own draw lists, but OpenGL2 applies the same
+      // 16-bit index limit. Leave ample room for this entry and the bounded
+      // region-scope footer before emitting more evidence rows.
+      if (shownSegmentCount == kTooltipEntryLimit
+          || !hasMemoryMapVertexCapacity(
+              ImGui::GetWindowDrawList(), kTooltipVertexStop, 4096)) {
+        break;
+      }
+      ++shownSegmentCount;
       const auto& span = sourceSpan(segment);
       ImGui::Separator();
       ImGui::Text(
-          "%s layer | %s",
+          "%s layer | %.512s",
           segment.layer == MemoryMapLayer::Partition ? "partition"
                                                      : "observation",
           span.label.c_str());
@@ -1663,20 +1829,34 @@ void renderMemoryMapRegion(
             formatBytes(static_cast<double>(span.sizeBytes), false).c_str());
       }
       ImGui::Text("Evidence: %s", metricQualityLabel(span.quality));
-      ImGui::TextWrapped("Source: %s", span.evidence.c_str());
+      ImGui::TextWrapped("Source: %.1024s", span.evidence.c_str());
+    }
+    if (shownSegmentCount < cell.segments.size()) {
+      ImGui::Separator();
+      ImGui::TextDisabled(
+          "%zu additional evidence lanes omitted to keep the OpenGL2 "
+          "tooltip below its 16-bit draw-index limit.",
+          cell.segments.size() - shownSegmentCount);
     }
     ImGui::Separator();
-    ImGui::TextWrapped("Scope: %s", region.scope.c_str());
+    ImGui::TextWrapped("Scope: %.1024s", region.scope.c_str());
     if (region.pageSizeBytes) {
       ImGui::TextWrapped(
-          "Host page size: %s (%s)",
+          "Host page size: %s (%.512s)",
           formatBytes(static_cast<double>(*region.pageSizeBytes), false)
               .c_str(),
           region.pageSizeEvidence.c_str());
     }
-    ImGui::TextWrapped("Limitation: %s", region.limitation.c_str());
+    ImGui::TextWrapped("Limitation: %.1024s", region.limitation.c_str());
     ImGui::PopTextWrapPos();
     ImGui::EndTooltip();
+  }
+  ImGui::EndChild();
+
+  if (detailTruncated) {
+    ImGui::TextDisabled(
+        "Visible detail capped to keep the OpenGL2 draw list below the "
+        "16-bit index limit; zoom or scroll to inspect another area.");
   }
 
   if (objectAtlas) {

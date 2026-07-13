@@ -39,7 +39,10 @@
 #include "Inspector.hpp"
 #include "LogCapture.hpp"
 #include "Profiler.hpp"
-#include "memory_diagnostics_model.hpp"
+
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  #include "memory_diagnostics_model.hpp"
+#endif
 
 #include <dart/gui/osg/PerformanceStatsPanel.hpp>
 #include <dart/gui/osg/osg.hpp>
@@ -237,7 +240,9 @@ private:
     Scene,
     Inspector,
     Tools,
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
     Memory
+#endif
   };
 
   struct CategoryGroup
@@ -287,7 +292,9 @@ private:
   void renderInspectorSection();
   void renderSceneControlsSection();
   void renderToolsSection();
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   void renderMemorySection();
+#endif
   void renderLogSection(float height);
   void renderViewMenu();
   void renderRuntimeControls();
@@ -331,8 +338,10 @@ private:
   ContactVisualizer mContactVisualizer;
   Profiler mProfiler;
   dart::gui::osg::PerformanceStatsPanel mPerformanceStatsPanel;
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   dart::examples::demos::DiagnosticSession mMemoryDiagnosticsSession;
   std::uint64_t mMemoryDiagnosticsGeneration = 0;
+#endif
 
   bool mGravityEnabled = true;
   Eigen::Vector3d mSavedGravity = Eigen::Vector3d(0.0, 0.0, -9.81);
@@ -358,7 +367,9 @@ private:
 
   std::string mDebugSelectBodyName;
   bool mDebugRecordProfile = false;
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   bool mDebugMemoryDiagnostics = false;
+#endif
 
   ScenePanelTab mRequestedScenePanelTab = ScenePanelTab::Scene;
   bool mHasRequestedScenePanelTab = false;

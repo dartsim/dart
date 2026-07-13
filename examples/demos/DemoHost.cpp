@@ -33,7 +33,10 @@
 #include "DemoHost.hpp"
 
 #include "Theme.hpp"
-#include "memory_diagnostics.hpp"
+
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  #include "memory_diagnostics.hpp"
+#endif
 
 #include <dart/collision/CollisionDetector.hpp>
 
@@ -55,8 +58,11 @@
 #include <cerrno>
 #include <cmath>
 #include <cstdio>
-#include <cstdlib>
-#include <cstring>
+
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  #include <cstdlib>
+  #include <cstring>
+#endif
 
 namespace dart_demos {
 
@@ -456,21 +462,25 @@ DemoHost::DemoHost(
     std::size_t simulationThreads)
   : mScenes(std::move(scenes)),
     mPerformanceStatsPanel(240u),
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
     mMemoryDiagnosticsSession([this] {
       return dart::examples::demos::collectMemoryDiagnostics(
           mCurrentWorld, mMemoryDiagnosticsGeneration);
     }),
+#endif
     mRequestedCollisionDetectorName(toLower(collisionDetectorName)),
     mSimulationThreads(static_cast<int>(std::min<std::size_t>(
         simulationThreads,
         static_cast<std::size_t>(std::numeric_limits<int>::max())))),
     mGuiScale(dart::gui::osg::sanitizeGuiScale(guiScale))
 {
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   const char* memoryDiagnosticsEnv
       = std::getenv("DART_DEMOS_MEMORY_DIAGNOSTICS");
   mDebugMemoryDiagnostics
       = memoryDiagnosticsEnv && std::strcmp(memoryDiagnosticsEnv, "1") == 0;
   mMemoryDiagnosticsSession.setEnabled(mDebugMemoryDiagnostics);
+#endif
 
   buildCategories();
   mAvailableCollisionDetectors = getAvailableCollisionDetectorNames();
@@ -776,10 +786,12 @@ void DemoHost::processPendingSwitch()
 //==============================================================================
 void DemoHost::teardownCurrentScene()
 {
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   // A snapshot must never retain comparison/history state from the World that
   // is about to be released. DiagnosticSession::reset() preserves the user's
   // enable preference and its already-reserved bounded ring storage.
   mMemoryDiagnosticsSession.reset();
+#endif
 
   // Host-level facilities first: they hold raw BodyNode/DegreeOfFreedom
   // pointers and SimpleFrame/InteractiveFrame objects that belong to the
@@ -818,8 +830,10 @@ void DemoHost::teardownCurrentScene()
 //==============================================================================
 void DemoHost::installScene(const DemoScene& scene, DemoSceneSetup setup)
 {
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   ++mMemoryDiagnosticsGeneration;
   mMemoryDiagnosticsSession.reset();
+#endif
   mCurrentWorld = setup.world;
   applyRuntimeOptionsToWorld();
   mPerformanceStatsPanel.reset();
@@ -1109,10 +1123,12 @@ int DemoHost::runHeadlessShot(
     mProfiler.setRecordingForTest(true);
     requestScenePanelTab(ScenePanelTab::Tools);
   }
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   if (mDebugMemoryDiagnostics) {
     mMemoryDiagnosticsSession.setEnabled(true);
     requestScenePanelTab(ScenePanelTab::Memory);
   }
+#endif
 
   const CameraHome defaultHome{
       ::osg::Vec3d(6.0, 8.0, 4.0),
@@ -1650,17 +1666,21 @@ void DemoHost::renderToolsSection()
   }
 }
 
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
 //==============================================================================
 void DemoHost::renderMemorySection()
 {
   dart::examples::demos::renderMemoryDiagnostics(
       mMemoryDiagnosticsSession, ImGui::GetTime(), mGuiScale);
 }
+#endif
 
 //==============================================================================
 void DemoHost::renderScenePanel()
 {
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   bool memoryTabVisible = false;
+#endif
   const auto tabSelectionFlags = [this](ScenePanelTab tab) {
     return mHasRequestedScenePanelTab && mRequestedScenePanelTab == tab
                ? ImGuiTabItemFlags_SetSelected
@@ -1688,21 +1708,25 @@ void DemoHost::renderScenePanel()
       ImGui::EndTabItem();
     }
 
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
     if (ImGui::BeginTabItem(
             "Memory", nullptr, tabSelectionFlags(ScenePanelTab::Memory))) {
       memoryTabVisible = true;
       renderMemorySection();
       ImGui::EndTabItem();
     }
+#endif
     ImGui::EndTabBar();
   }
 
+#if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   // Sampling belongs to the session, not tab visibility. The visible Memory
   // tab ticks after processing manual actions; hidden tabs tick here so
   // history continues at the configured cadence.
   if (!memoryTabVisible) {
     mMemoryDiagnosticsSession.update(ImGui::GetTime());
   }
+#endif
 
   mHasRequestedScenePanelTab = false;
 }

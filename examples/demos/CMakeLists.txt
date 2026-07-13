@@ -4,6 +4,68 @@ set(example_name dart-demos)
 
 project(${example_name})
 
+option(
+  DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
+  "Build memory diagnostics into the consolidated GUI demos"
+  OFF
+)
+
+set(
+  demos_memory_diagnostics_sources
+  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics_model.cpp"
+)
+set(
+  demos_memory_diagnostics_headers
+  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics.hpp"
+  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics_model.hpp"
+)
+
+function(dart_demos_configure_memory_diagnostics target)
+  if(DEFINED dart_demos_has_allocator_memory_layout)
+    set(
+      dart_demos_target_has_allocator_memory_layout
+      ${dart_demos_has_allocator_memory_layout}
+    )
+  elseif(DART_IN_SOURCE_BUILD)
+    set(dart_demos_target_has_allocator_memory_layout 1)
+  else()
+    set(dart_demos_target_has_allocator_memory_layout 0)
+  endif()
+  target_compile_definitions(
+    ${target}
+    PRIVATE
+      DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=$<BOOL:${DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS}>
+      DART_DEMOS_HAS_ALLOCATOR_MEMORY_LAYOUT=${dart_demos_target_has_allocator_memory_layout}
+  )
+  if(DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS)
+    if(WIN32)
+      if(ARGN)
+        target_link_libraries(${target} ${ARGN} Psapi)
+      else()
+        target_link_libraries(${target} Psapi)
+      endif()
+    endif()
+  else()
+    get_target_property(dart_demos_target_sources ${target} SOURCES)
+    list(
+      FILTER dart_demos_target_sources
+      EXCLUDE
+      REGEX "(^|[/\\\\])memory_diagnostics(_model)?\\.(cpp|hpp)$"
+    )
+    set_property(TARGET ${target} PROPERTY SOURCES ${dart_demos_target_sources})
+    add_custom_command(
+      TARGET ${target}
+      POST_BUILD
+      COMMAND
+        ${CMAKE_COMMAND} "-DDART_DEMOS_EXECUTABLE=$<TARGET_FILE:${target}>" -P
+        "${CMAKE_CURRENT_LIST_DIR}/tests/check_memory_diagnostics_compiled_out.cmake"
+      COMMENT "Verifying memory diagnostics are absent from ${target}"
+      VERBATIM
+    )
+  endif()
+endfunction()
+
 set(required_components utils-urdf gui-osg)
 set(
   required_libraries
@@ -19,6 +81,9 @@ if(DART_IN_SOURCE_BUILD AND NOT TARGET dart-gui-osg)
     ${example_name}
     LINK_LIBRARIES ${required_libraries}
   )
+  if(TARGET ${example_name})
+    dart_demos_configure_memory_diagnostics(${example_name})
+  endif()
   return()
 endif()
 
@@ -129,10 +194,11 @@ function(dart_demos_link_optional_collision_backends target)
   endforeach()
 endfunction()
 
-function(dart_demos_configure_memory_diagnostics target)
+function(dart_demos_configure_memory_diagnostics_library target)
   target_compile_definitions(
     ${target}
     PRIVATE
+      DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=1
       DART_DEMOS_HAS_ALLOCATOR_MEMORY_LAYOUT=${dart_demos_has_allocator_memory_layout}
   )
   if(WIN32)
@@ -244,58 +310,74 @@ function(dart_demos_configure_scenes_target target)
 endfunction()
 
 file(GLOB srcs "*.cpp" "*.hpp")
-
-# The demo helper globs top-level sources internally, so these sources compile
-# directly into each executable. This small library gives the focused tests a
-# single link owner for the same collector/view and shared C++17 model.
-set(
-  demos_memory_diagnostics_sources
-  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/memory_diagnostics_model.cpp"
-)
-add_library(demos_memory_diagnostics STATIC ${demos_memory_diagnostics_sources})
-target_include_directories(
-  demos_memory_diagnostics
-  PUBLIC "${CMAKE_CURRENT_LIST_DIR}"
-)
-target_link_libraries(demos_memory_diagnostics PUBLIC dart dart-gui-osg)
-dart_demos_configure_memory_diagnostics(demos_memory_diagnostics PRIVATE)
-target_compile_features(demos_memory_diagnostics PUBLIC cxx_std_17)
-set_target_properties(
-  demos_memory_diagnostics
-  PROPERTIES POSITION_INDEPENDENT_CODE ON
-)
-if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
-  dart_format_add(${demos_memory_diagnostics_sources})
+if(NOT DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS)
+  list(
+    REMOVE_ITEM srcs
+    ${demos_memory_diagnostics_sources}
+    ${demos_memory_diagnostics_headers}
+  )
 endif()
 
-if(
-  BUILD_TESTING
-  AND COMMAND dart_add_test
-  AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics_model.cpp"
-)
-  if(NOT TARGET GTest::gtest)
-    find_package(GTest MODULE REQUIRED)
-  endif()
-  dart_add_test(
-    "unit"
-    UNIT_examples_demos_MemoryDiagnostics
-    "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics_model.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics.cpp"
+if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
+  dart_format_add(
+    ${demos_memory_diagnostics_sources}
+    ${demos_memory_diagnostics_headers}
   )
-  target_link_libraries(
-    UNIT_examples_demos_MemoryDiagnostics
+endif()
+
+# The app feature remains default-OFF, but ordinary test builds still compile
+# and exercise the collector/model through this test-only library.
+if(BUILD_TESTING)
+  add_library(
     demos_memory_diagnostics
+    STATIC
+    ${demos_memory_diagnostics_sources}
+    ${demos_memory_diagnostics_headers}
   )
-  set_tests_properties(
-    UNIT_examples_demos_MemoryDiagnostics
-    PROPERTIES LABELS "examples;gui;memory-diagnostics"
+  target_include_directories(
+    demos_memory_diagnostics
+    PUBLIC "${CMAKE_CURRENT_LIST_DIR}"
   )
-  if(TARGET tests)
-    add_dependencies(tests UNIT_examples_demos_MemoryDiagnostics)
-  endif()
-  if(TARGET tests_and_run)
-    add_dependencies(tests_and_run UNIT_examples_demos_MemoryDiagnostics)
+  target_link_libraries(demos_memory_diagnostics PUBLIC dart dart-gui-osg)
+  dart_demos_configure_memory_diagnostics_library(
+    demos_memory_diagnostics
+    PRIVATE
+  )
+  target_compile_features(demos_memory_diagnostics PUBLIC cxx_std_17)
+  set_target_properties(
+    demos_memory_diagnostics
+    PROPERTIES POSITION_INDEPENDENT_CODE ON
+  )
+
+  if(
+    BUILD_TESTING
+    AND COMMAND dart_add_test
+    AND
+      EXISTS "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics_model.cpp"
+  )
+    if(NOT TARGET GTest::gtest)
+      find_package(GTest MODULE REQUIRED)
+    endif()
+    dart_add_test(
+      "unit"
+      UNIT_examples_demos_MemoryDiagnostics
+      "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics_model.cpp"
+      "${CMAKE_CURRENT_LIST_DIR}/tests/test_memory_diagnostics.cpp"
+    )
+    target_link_libraries(
+      UNIT_examples_demos_MemoryDiagnostics
+      demos_memory_diagnostics
+    )
+    set_tests_properties(
+      UNIT_examples_demos_MemoryDiagnostics
+      PROPERTIES LABELS "examples;gui;memory-diagnostics"
+    )
+    if(TARGET tests)
+      add_dependencies(tests UNIT_examples_demos_MemoryDiagnostics)
+    endif()
+    if(TARGET tests_and_run)
+      add_dependencies(tests_and_run UNIT_examples_demos_MemoryDiagnostics)
+    endif()
   endif()
 endif()
 

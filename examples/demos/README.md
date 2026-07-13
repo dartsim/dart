@@ -33,12 +33,27 @@ counterpart is `pixi run py-demos` (see `python/examples/demos/`).
 
 ## Memory diagnostics
 
-The persistent **Memory** tab provides opt-in process and active-World memory
-inspection. Collection is off by default. Enable it in the tab, or launch with
-`DART_DEMOS_MEMORY_DIAGNOSTICS=1` to start enabled and select the tab during a
-headless capture. The sample interval is adjustable from 0.1 to 5 seconds
-(default 0.5 seconds); World traversal and formatting occur only on a due or
-manually requested sample.
+Memory diagnostics are compiled out by default so ordinary `dart-demos` and
+scene-alias executables contain no diagnostics session, environment probe,
+Memory tab, per-frame branch, collector code, or diagnostics-only platform
+link. Enable the feature explicitly in the existing Pixi-configured build:
+
+```bash
+pixi run config
+pixi run cmake -S . -B build/default/cpp/Release \
+  -DDART_BUILD_DEMOS_MEMORY_DIAGNOSTICS=ON
+pixi run cmake --build build/default/cpp/Release --target dart-demos
+```
+
+The enabled build adds a persistent **Memory** tab for opt-in process and
+active-World inspection. Collection remains off until it is enabled in the tab,
+or the application is launched with `DART_DEMOS_MEMORY_DIAGNOSTICS=1` to start
+enabled and select the tab during a headless capture. The sample interval is
+adjustable from 0.1 to 5 seconds (default 0.5 seconds); World traversal and
+formatting occur only on a due or manually requested sample. A compiled-in
+build with collection unchecked still renders the diagnostics UI integration;
+the strict zero-overhead guarantee applies to the default compile-time-OFF
+configuration.
 
 The tab deliberately separates values with different scopes:
 
@@ -79,10 +94,13 @@ The tab deliberately separates values with different scopes:
 
 The map legends use hue for semantic data category and hatch, border, opacity,
 and text for storage state. Increase **Address-map detail rows / region** to
-resolve smaller spans without changing their address order. Raw process
-addresses are capture-local and never shown; offsets are relative to each exact
-region or host-page run. A collapsed exact-range table exposes the same labels,
-extent evidence, and limitations without requiring pointer hover.
+resolve smaller spans without changing their address order. Each region keeps
+up to 48 logical rows in an inner scroll area with about eight visible at once;
+offscreen primitives are culled and each region has a conservatively bounded
+draw list for the 16-bit-index OpenGL2 backend. Raw process addresses are
+capture-local and never shown; offsets are relative to each exact region or
+host-page run. A collapsed exact-range table exposes the same labels, extent
+evidence, and limitations without requiring pointer hover.
 
 The runtime host page size groups the object atlas into virtual-page runs, but
 this version does not draw page separators. Allocator-region page placement and
