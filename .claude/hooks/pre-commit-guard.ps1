@@ -2,7 +2,9 @@
 $ErrorActionPreference = "Stop"
 
 try {
-  $pipelineInput = @($input)
+  # `$input` is an enumerator in Windows PowerShell; enumerate it explicitly
+  # before joining so pipeline JSON reaches the native bridge.
+  $pipelineInput = @($input | ForEach-Object { $_ })
   $payload = $pipelineInput -join [Environment]::NewLine
   $repoRoot = (git rev-parse --show-toplevel)
   if (-not $repoRoot) {
