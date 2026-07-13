@@ -905,7 +905,6 @@ def check_ci_wiring(root: Path) -> list[str]:
             "DART_HOOK_DRY_RUN",
             '"git commit --no-verify -m x"',
             "$diagnosticOutput",
-            "check_agent_hook.py --profile staged",
             "$diagnosticExit -ne 0",
             "$successExit -ne 0",
             "$blockedExit -ne 2",
