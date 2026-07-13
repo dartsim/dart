@@ -55,24 +55,33 @@ public:
   DartFallbackCollisionObject(
       CollisionDetector* collisionDetector,
       const dynamics::ShapeFrame* shapeFrame)
-    : DARTCollisionObject(collisionDetector, shapeFrame)
+    : DARTCollisionObject(collisionDetector, shapeFrame),
+      mLastKnownShapeFrameVersion(shapeFrame->getVersion())
   {
     // Do nothing
   }
 
-  void refresh()
+  void refresh(bool force)
   {
+    const auto shapeFrameVersion = getShapeFrame()->getVersion();
+    if (!force && shapeFrameVersion == mLastKnownShapeFrameVersion)
+      return;
+
     updateEngineData();
+    mLastKnownShapeFrameVersion = shapeFrameVersion;
   }
+
+private:
+  std::size_t mLastKnownShapeFrameVersion;
 };
 
 //==============================================================================
-void refreshDartFallbackObject(DARTCollisionObject* object)
+void refreshDartFallbackObject(DARTCollisionObject* object, bool force)
 {
   if (object == nullptr)
     return;
 
-  static_cast<DartFallbackCollisionObject*>(object)->refresh();
+  static_cast<DartFallbackCollisionObject*>(object)->refresh(force);
 }
 
 //==============================================================================
@@ -201,8 +210,8 @@ void NativeCollisionObject::updateEngineData()
     mLastKnownShapeVersion = shapeVersion;
     mNativeShape.reset();
     auto* fallbackObject = getDartFallbackObject();
-    if (mUsesSoftMeshFallbackShape || shapeChanged)
-      refreshDartFallbackObject(fallbackObject);
+    refreshDartFallbackObject(
+        fallbackObject, mUsesSoftMeshFallbackShape || shapeChanged);
     mNativeTransform = fallbackObject->getWorldTransformForCollision();
     mNativeAabb = getDartFallbackAabb(*fallbackObject, mNativeTransform);
     return;
@@ -219,8 +228,7 @@ void NativeCollisionObject::updateEngineData()
     mNativeAabb = native::Aabb();
   }
 
-  if (shapeChanged)
-    refreshDartFallbackObject(mDartFallbackObject.get());
+  refreshDartFallbackObject(mDartFallbackObject.get(), shapeChanged);
 }
 
 //==============================================================================
