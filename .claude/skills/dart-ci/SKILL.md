@@ -7,16 +7,20 @@ description: "DART CI: GitHub Actions, cache debugging, and platform-specific fa
 
 Load this skill when debugging CI failures or working with GitHub Actions.
 
+When the failing claim depends on model/scene structure, physics behavior, or
+OSG output, also load `dart-verify-sim` and reproduce it with a text oracle plus
+assessed visual evidence. Document a visual exception when OSG/Xvfb is
+unavailable or not applicable in the failing environment.
+
 ## Quick Commands
 
 ```bash
 # Monitor PR checks
 gh pr checks <PR_NUMBER>
-gh pr checks <PR_NUMBER> --watch --interval 30 --fail-fast
+gh pr view <PR_NUMBER> --json headRefOid,mergeStateStatus,statusCheckRollup
 
 # View run details
 gh run list --branch <BRANCH> -e pull_request -L 20
-gh run watch <RUN_ID> --interval 30
 gh run view <RUN_ID> --json status,conclusion,url
 
 # Debug failures
@@ -45,14 +49,13 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 
 ## Workflow Architecture
 
-| Workflow            | Purpose                 | Platforms  |
-| ------------------- | ----------------------- | ---------- |
-| `ci_lint.yml`       | Formatting              | Ubuntu     |
-| `ci_ubuntu.yml`     | Build + test + coverage | Ubuntu     |
-| `ci_macos.yml`      | Build + test            | macOS      |
-| `ci_windows.yml`    | Build + test            | Windows    |
-| `ci_freebsd.yml`    | Build + test (VM)       | FreeBSD    |
-| `ci_gz_physics.yml` | Gazebo integration      | Ubuntu     |
+| Workflow            | Purpose                                | Platforms |
+| ------------------- | -------------------------------------- | --------- |
+| `ci_ubuntu.yml`     | AI checks, lint, build, test, coverage | Ubuntu    |
+| `ci_macos.yml`      | Lint, build, test                      | macOS     |
+| `ci_windows.yml`    | Lint, build, test                      | Windows   |
+| `ci_freebsd.yml`    | Build + test (VM)                      | FreeBSD   |
+| `ci_gz_physics.yml` | Gazebo integration                     | Ubuntu    |
 
 ## Downstream Compatibility Policy
 
@@ -67,18 +70,10 @@ failures with the Gazebo Pixi environment when practical:
 2. Reproduce locally with same build toggles
 3. Fix the smallest failing test
 4. Push only after explicit maintainer/user approval, then monitor:
-   `gh run watch <RUN_ID>`
+   `gh run view <RUN_ID> --json status,conclusion,url`
 
-## Caching
+## Caching And Duration
 
-- sccache/ccache reduces build time 50-70%
-- Check cache hit rates in workflow logs
-- Force cache bust by changing cache key if needed
-
-## Expected CI Times
-
-| Platform | Cached    | Uncached  |
-| -------- | --------- | --------- |
-| Ubuntu   | 20-30 min | 45-60 min |
-| macOS    | 15-25 min | 30-45 min |
-| Windows  | 15-20 min | 25-35 min |
+Treat the current run and job logs as authoritative. Inspect cache restore/save
+steps and job timestamps before changing a key; do not rely on fixed duration
+or cache-speed estimates in this skill.

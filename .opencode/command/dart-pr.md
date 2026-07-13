@@ -56,8 +56,10 @@ Use these practices:
 - For CI, performance, or infrastructure work, include evidence such as CI run
   observations, timing, reruns, benchmark output, or why a skipped check is
   expected.
-- For rendering, model, mesh, texture, GUI, or visual-example changes, include
-  a before/after visual comparison when practical:
+- For model/scene, dynamics, collision/contact, simulation, rendering, mesh,
+  texture, GUI, or visual-example changes, use `dart-verify-sim`: report the
+  text correctness oracle and include assessed, claim-tied OSG/debug-overlay
+  evidence when applicable (an image alone is not correctness proof):
   - Prefer an existing headless example path such as `--headless`,
     `--frames`, `--width`, `--height`, and `--screenshot` over manual
     screenshots.
