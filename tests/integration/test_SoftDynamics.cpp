@@ -1240,6 +1240,71 @@ TEST_F(SoftDynamicsTest, adaptiveContactActivationAllFrozenPointsRideRigidly)
 }
 
 //==============================================================================
+TEST_F(
+    SoftDynamicsTest,
+    adaptiveContactActivationToggleInvalidatesArticulatedInertia)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  dynamics::SoftBodyNode* softBody = firstSoftBody(world);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+  softBody->setVertexSpringStiffness(0.0);
+  softBody->setEdgeSpringStiffness(0.0);
+  softBody->setDampingCoefficient(0.0);
+  softBody->dirtyArticulatedInertia();
+
+  const Eigen::Matrix6d allActive = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d allActiveImplicit
+      = softBody->getArticulatedInertiaImplicit();
+
+  enableAdaptiveContactActivation(world, 0u, 0u);
+  world->step();
+  world->step();
+  ASSERT_EQ(softBody->getNumActivePointMasses(), 0u);
+
+  const Eigen::Matrix6d allFrozen = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d allFrozenImplicit
+      = softBody->getArticulatedInertiaImplicit();
+  EXPECT_GT((allFrozen - allActive).norm(), 1.0e-6);
+  EXPECT_GT((allFrozenImplicit - allActiveImplicit).norm(), 1.0e-6);
+
+  softBody->setAdaptiveContactActivationEnabled(false);
+  EXPECT_FALSE(softBody->isAdaptiveContactActivationEnabled());
+  EXPECT_EQ(softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
+  const Eigen::Matrix6d disabled = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d disabledImplicit
+      = softBody->getArticulatedInertiaImplicit();
+
+  // Force an independent recomputation to discriminate a stale toggle cache
+  // from the correct disabled/all-active articulated inertia.
+  softBody->dirtyArticulatedInertia();
+  const Eigen::Matrix6d recomputed = softBody->getArticulatedInertia();
+  const Eigen::Matrix6d recomputedImplicit
+      = softBody->getArticulatedInertiaImplicit();
+  expectMatrixNear(
+      disabled, recomputed, 1.0e-12, "disabled adaptive articulated inertia");
+  expectMatrixNear(
+      disabledImplicit,
+      recomputedImplicit,
+      1.0e-12,
+      "disabled adaptive implicit articulated inertia");
+  expectMatrixNear(
+      recomputed,
+      allActive,
+      1.0e-12,
+      "recomputed all-active articulated inertia");
+  expectMatrixNear(
+      recomputedImplicit,
+      allActiveImplicit,
+      1.0e-12,
+      "recomputed all-active implicit articulated inertia");
+}
+
+//==============================================================================
 TEST_F(SoftDynamicsTest, adaptiveContactActivationKeepsPublicMatricesAllActive)
 {
   simulation::WorldPtr activationOff = utils::SkelParser::readWorld(

@@ -747,8 +747,7 @@ void SoftBodyNode::setAdaptiveContactActivationEnabled(bool enabled)
   for (std::size_t i = 0; i < activation.mFrozenLocalPositions.size(); ++i)
     activation.mFrozenLocalPositions[i] = mAspectProperties.mPointProps[i].mX0;
 
-  if (enabled)
-    mNotifier->dirtyTransform();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================
