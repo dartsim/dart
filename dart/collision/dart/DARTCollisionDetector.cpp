@@ -58,6 +58,7 @@
 #include <thread>
 #include <type_traits>
 #include <typeinfo>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -266,6 +267,49 @@ private:
 };
 
 namespace {
+
+struct DARTDetectorRuntimeOptionsRegistry
+{
+  std::unordered_set<const DARTCollisionDetector*>
+      softFaceInteriorContactsEnabled;
+  std::mutex mutex;
+};
+
+DARTDetectorRuntimeOptionsRegistry& getDARTDetectorRuntimeOptionsRegistry()
+{
+  // Detectors can be owned by static/global objects and therefore destroyed
+  // after ordinary function-local objects. Keep this registry alive through
+  // process teardown so every detector destructor can safely erase its state.
+  static auto* const registry = new DARTDetectorRuntimeOptionsRegistry;
+  return *registry;
+}
+
+void setStoredSoftFaceInteriorContactsEnabled(
+    const DARTCollisionDetector* detector, bool enabled)
+{
+  auto& registry = getDARTDetectorRuntimeOptionsRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  if (enabled)
+    registry.softFaceInteriorContactsEnabled.insert(detector);
+  else
+    registry.softFaceInteriorContactsEnabled.erase(detector);
+}
+
+bool getStoredSoftFaceInteriorContactsEnabled(
+    const DARTCollisionDetector* detector)
+{
+  auto& registry = getDARTDetectorRuntimeOptionsRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  return registry.softFaceInteriorContactsEnabled.count(detector) > 0u;
+}
+
+void removeStoredDARTDetectorRuntimeOptions(
+    const DARTCollisionDetector* detector)
+{
+  auto& registry = getDARTDetectorRuntimeOptionsRegistry();
+  std::lock_guard<std::mutex> lock(registry.mutex);
+  registry.softFaceInteriorContactsEnabled.erase(detector);
+}
 
 struct BroadphaseEntry
 {
@@ -536,7 +580,10 @@ std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create()
 }
 
 //==============================================================================
-DARTCollisionDetector::~DARTCollisionDetector() = default;
+DARTCollisionDetector::~DARTCollisionDetector()
+{
+  removeStoredDARTDetectorRuntimeOptions(this);
+}
 
 //==============================================================================
 std::shared_ptr<CollisionDetector>
@@ -544,7 +591,8 @@ DARTCollisionDetector::cloneWithoutCollisionObjects() const
 {
   auto clone = DARTCollisionDetector::create();
   clone->setNumCollisionThreads(mNumCollisionThreads);
-  clone->setSoftFaceInteriorContactsEnabled(mSoftFaceInteriorContactsEnabled);
+  clone->setSoftFaceInteriorContactsEnabled(
+      getSoftFaceInteriorContactsEnabled());
   return clone;
 }
 
@@ -590,13 +638,13 @@ std::size_t DARTCollisionDetector::getNumCollisionThreads() const
 //==============================================================================
 void DARTCollisionDetector::setSoftFaceInteriorContactsEnabled(bool enabled)
 {
-  mSoftFaceInteriorContactsEnabled = enabled;
+  setStoredSoftFaceInteriorContactsEnabled(this, enabled);
 }
 
 //==============================================================================
 bool DARTCollisionDetector::getSoftFaceInteriorContactsEnabled() const
 {
-  return mSoftFaceInteriorContactsEnabled;
+  return getStoredSoftFaceInteriorContactsEnabled(this);
 }
 
 //==============================================================================
@@ -988,11 +1036,11 @@ double DARTCollisionDetector::distance(
 //==============================================================================
 DARTCollisionDetector::DARTCollisionDetector() : CollisionDetector()
 {
-  if (const char* value = std::getenv("DART_SOFT_FACE_INTERIOR_CONTACTS")) {
-    mSoftFaceInteriorContactsEnabled
-        = value[0] != '\0' && std::strcmp(value, "0") != 0;
-  }
   mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
+  if (const char* value = std::getenv("DART_SOFT_FACE_INTERIOR_CONTACTS")) {
+    setSoftFaceInteriorContactsEnabled(
+        value[0] != '\0' && std::strcmp(value, "0") != 0);
+  }
 }
 
 //==============================================================================

@@ -804,8 +804,17 @@ TEST(DARTCollisionDetector, ParallelDisjointSinglePlaneContactsMatchSerial)
 TEST(DARTCollisionDetector, ClonePreservesRuntimeOptions)
 {
   auto detector = collision::DARTCollisionDetector::create();
-  detector->setNumCollisionThreads(3u);
+  auto independentDetector = collision::DARTCollisionDetector::create();
+  detector->setSoftFaceInteriorContactsEnabled(false);
+  independentDetector->setSoftFaceInteriorContactsEnabled(false);
+  EXPECT_FALSE(detector->getSoftFaceInteriorContactsEnabled());
+  EXPECT_FALSE(independentDetector->getSoftFaceInteriorContactsEnabled());
+
   detector->setSoftFaceInteriorContactsEnabled(true);
+  EXPECT_TRUE(detector->getSoftFaceInteriorContactsEnabled());
+  EXPECT_FALSE(independentDetector->getSoftFaceInteriorContactsEnabled());
+
+  detector->setNumCollisionThreads(3u);
 
   const auto clone
       = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
