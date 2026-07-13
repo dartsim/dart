@@ -1030,7 +1030,7 @@ def test_ci_wiring_requires_factory_capture_and_visual_task(
     (
         (
             ".claude/hooks/pre-commit-guard.ps1",
-            "$LASTEXITCODE = $null",
+            "$global:LASTEXITCODE = $null",
         ),
         (
             ".claude/hooks/pre-commit-guard.ps1",
@@ -1086,6 +1086,14 @@ def test_windows_hook_components_cannot_be_missing_or_drifted(
     infra.check_hooks(tmp_path, drift_errors)
 
     assert any(marker in error for error in drift_errors)
+
+
+def test_windows_launcher_does_not_shadow_native_exit_code():
+    launcher = (ROOT / ".claude/hooks/pre-commit-guard.ps1").read_text()
+
+    assert "$LASTEXITCODE = $null" not in launcher
+    assert "$global:LASTEXITCODE = $null" in launcher
+    assert "$nativeExitCode = $global:LASTEXITCODE" in launcher
 
 
 @pytest.mark.parametrize("input_key", ("command", "cmd"))
