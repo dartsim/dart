@@ -27,8 +27,17 @@ surface affects shared behavior.
   ```bash
   pixi run sync-ai-commands
   pixi run check-ai-commands
+  pixi run python scripts/check_ai_infrastructure.py --check
+  pixi run python -m pytest tests/test_sync_ai_commands.py tests/test_ai_infrastructure.py tests/test_install_git_hooks.py -q
+  pixi run python scripts/check_ai_infrastructure.py --scenarios
   pixi run lint
   ```
+
+  `check-ai-commands` proves generated parity and manifest ownership. The
+  structural checker validates task/path references, instruction budgets,
+  branch profile, agent/config/hook wiring, and CI coverage. The focused tests
+  cover regressions; the scenario command exercises release routing and
+  unavailable-hook fallbacks without network or model calls.
 
 - For ordinary docs-only changes on this release branch, run `pixi run lint`.
 - For docs placement, AI operating-model, plan/dashboard, or workflow-source
@@ -36,6 +45,21 @@ surface affects shared behavior.
   `pixi run sync-ai-commands` first when `.claude/` sources changed.
 - If the docs affect Read the Docs pages, run `pixi run docs-build` when
   practical.
+
+The frequent `pixi run python scripts/check_agent_hook.py --profile staged`
+gate is intentionally fast and staged-file aware. It runs
+`git diff --cached --check` and the AI checks only when their inputs are staged;
+it never configures, builds, prompts, or uses the network. It does not replace
+`pixi run lint` before a commit.
+
+## Simulation Verification Route
+
+Use `dart-verify-sim` whenever a claim depends on model/scene structure,
+dynamics, collision/contact/constraints, simulation stepping, OSG rendering,
+or a visual example. Pair a focused text correctness oracle with an assessed,
+claim-tied capture and core `DebugOverlay` layers. If DISPLAY/Xvfb or the
+required renderer is unavailable, record that limitation. Name the replacement
+evidence; never use a screenshot as the sole correctness oracle.
 
 ## Visual Verification (Headless Capture)
 
@@ -77,6 +101,18 @@ is set.
 The verdict JSON (`schema_version dart.image_verdict/v1`) sets `pass` from the
 non-blank check plus any golden diff. Contrast is scene-dependent, so it is
 reported but only gates when you pass `--require-contrast`.
+
+The Release Linux CI job runs a settled-contact `agent-capture` under Xvfb with
+contacts, collision bounds, and labels, requires `image-verdict` to accept the
+emitted frame, and runs the engine-rendered overlay on/off pixel regression
+under Xvfb. A second A/B runs through `agent-capture` itself with identical
+cameras and requires the contact/bounds/label layers to change at least 128
+pixels; it also requires rendered contact-marker color pixels, while retaining
+the sidecar's count of any filtered DART 6 sentinel contacts, then proves
+contacts, collision bounds, and labels each change pixels independently. This
+keeps the camera assessment, core OSG debug overlay, off-screen
+renderer, artifact write, overlay injection, and image-verdict path covered end
+to end without a display-dependent skip.
 
 - Active camera control, view quality, and debug overlays (agent evidence):
 

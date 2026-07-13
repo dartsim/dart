@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "repo_root=\"$(git rev-parse --show-toplevel)\" && CLAUDE_PROJECT_DIR=\"$repo_root\" CODEX_PROJECT_DIR=\"$repo_root\" \"$repo_root/.claude/hooks/pre-commit-guard.sh\"",
+            "commandWindows": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"$payload = [Console]::In.ReadToEnd(); $payload | & (Join-Path (git rev-parse --show-toplevel) '.claude/hooks/pre-commit-guard.ps1'); if (-not $?) { exit 2 }; if ($LASTEXITCODE -ne 0) { exit 2 }; exit 0\"",
+            "timeout": 15,
+            "statusMessage": "Checking DART commit command"
+          }
+        ]
+      }
+    ]
+  }
+}
