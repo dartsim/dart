@@ -721,6 +721,34 @@ def test_guard_runs_when_only_foreign_executable_hook_installed(tmp_path):
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
+@pytest.mark.parametrize(
+    "body",
+    [
+        "#!/bin/sh\n# DART-MANAGED-HOOK v1\npixi run check-lint-quick\n",
+        "#!/bin/sh\n# DART-MANAGED-HOOK v5\npixi run check-lint-quick\n",
+        (
+            "#!/bin/sh\n# DART-MANAGED-HOOK v50\n"
+            'if ! "$python_cmd" scripts/check_agent_hook.py --profile staged; then\n'
+            "    exit 1\nfi\n"
+        ),
+    ],
+)
+def test_guard_runs_when_dart_managed_hook_is_stale_or_incomplete(
+    tmp_path, body
+):
+    repo, env = _init_repo(tmp_path)
+    hook = _hook(repo)
+    hook.parent.mkdir(parents=True, exist_ok=True)
+    hook.write_text(body)
+    hook.chmod(0o755)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+
+    returncode, stderr = _run_guard(repo, env, "git commit -m x")
+
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
 def test_guard_stands_down_when_dart_managed_executable_hook_installed(tmp_path):
     repo, env = _init_repo(tmp_path)
     assert _install(repo, env).returncode == 0

@@ -728,17 +728,19 @@ fi
 repo_root="${target_repo_root:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}}"
 
 if [ "$verdict" = "commit" ]; then
-    # If the executable git pre-commit hook is DART-managed, let it enforce;
-    # don't double-run. Foreign hooks are not guaranteed to include DART's lint
-    # gate, and --no-verify/-n plus core.hooksPath overrides bypass even a
-    # DART-managed hook.
+    # If the executable git pre-commit hook is the current DART-managed hook,
+    # let it enforce; don't double-run. Stale or incomplete managed hooks and
+    # foreign hooks are not guaranteed to include DART's staged gate, while
+    # --no-verify/-n and core.hooksPath overrides bypass even a current hook.
     hook_path=$(git -C "$repo_root" rev-parse --git-path hooks/pre-commit 2>/dev/null)
     if [ -n "$hook_path" ]; then
         case "$hook_path" in
             /*) : ;;
             *) hook_path="$repo_root/$hook_path" ;;
         esac
-        if [ -x "$hook_path" ] && grep -q "DART-MANAGED-HOOK" "$hook_path" 2>/dev/null; then
+        if [ -x "$hook_path" ] \
+            && grep -Fq "DART-MANAGED-HOOK v5  (sentinel line: do not edit; the installer keys on it)" "$hook_path" 2>/dev/null \
+            && grep -Fq 'if ! "$python_cmd" scripts/check_agent_hook.py --profile staged; then' "$hook_path" 2>/dev/null; then
             exit 0
         fi
     fi

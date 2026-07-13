@@ -759,12 +759,20 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
     (workflows / "ci_windows.yml").write_text(
         "Native Windows hook smoke\n"
         'pixi run python -c "import sys; print(sys.executable)"\n'
+        "$launcher\n"
+        "$hookCommand\n"
+        "$input | &\n"
         '$ErrorActionPreference = "Continue"\n'
         '"git status"\n'
         "DART_HOOK_DRY_RUN\n"
         '"git commit --no-verify -m x"\n'
+        "$diagnosticOutput\n"
+        "check_agent_hook.py --profile staged\n"
         "$diagnosticExit -ne 0\n"
         "$successExit -ne 0\n"
+        "-File $launcher\n"
+        "$rawSuccessExit\n"
+        "$rawBlockedExit\n"
         "cmd.exe /c exit 0\n"
     )
     _write_visual_runtime_fixtures(tmp_path)
@@ -1023,6 +1031,18 @@ def test_ci_wiring_requires_factory_capture_and_visual_task(
         (
             ".claude/hooks/pre-commit-guard.ps1",
             "$LASTEXITCODE = $null",
+        ),
+        (
+            ".claude/hooks/pre-commit-guard.ps1",
+            "$pipelineInput = @($input)",
+        ),
+        (
+            ".claude/hooks/pre-commit-guard.ps1",
+            "$pipelineInput.Count -gt 0",
+        ),
+        (
+            ".claude/hooks/pre-commit-guard.ps1",
+            "$OutputEncoding = New-Object System.Text.UTF8Encoding($false)",
         ),
         (
             "scripts/pretool_guard_bridge.py",
