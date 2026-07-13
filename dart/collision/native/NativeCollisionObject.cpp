@@ -64,8 +64,8 @@ private:
   Eigen::Isometry3d mNativeTransform;
   native::Aabb mNativeLocalAabb;
   native::Aabb mNativeAabb;
-  std::size_t mLastKnownShapeId;
-  std::size_t mLastKnownShapeVersion;
+  [[maybe_unused]] std::size_t mLastKnownShapeId;
+  [[maybe_unused]] std::size_t mLastKnownShapeVersion;
 };
 
 static_assert(
