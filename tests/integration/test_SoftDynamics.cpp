@@ -36,6 +36,7 @@
 #include "dart/common/Macros.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Group.hpp"
 #include "dart/dynamics/Inertia.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PointMass.hpp"
@@ -2452,6 +2453,50 @@ TEST_F(SoftDynamicsTest, pointMassGravityContributesToGeneralizedForceVectors)
       Eigen::VectorXd::Zero(skeleton->getNumDofs()),
       1.0e-12,
       "soft point-mass external force clear");
+}
+
+//==============================================================================
+TEST_F(SoftDynamicsTest, clearCollidingBodiesClearsPointMassOnlyState)
+{
+  simulation::WorldPtr world = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(world != nullptr);
+
+  const dynamics::SkeletonPtr skeleton = world->getSkeleton("skeleton 1");
+  ASSERT_TRUE(skeleton != nullptr);
+  ASSERT_EQ(skeleton->getNumSoftBodyNodes(), 1u);
+
+  dynamics::SoftBodyNode* softBody = skeleton->getSoftBodyNode(0);
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+  dynamics::PointMass* pointMass = softBody->getPointMass(0);
+  ASSERT_TRUE(pointMass != nullptr);
+
+  pointMass->setColliding(true);
+  ASSERT_TRUE(pointMass->isColliding());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  ASSERT_FALSE(softBody->isColliding());
+  skeleton->clearCollidingBodies();
+  EXPECT_FALSE(softBody->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_FALSE(pointMass->isColliding());
+
+  const dynamics::GroupPtr group
+      = dynamics::Group::create("soft_body_group", {softBody});
+  ASSERT_TRUE(group != nullptr);
+  ASSERT_EQ(group->getNumBodyNodes(), 1u);
+
+  pointMass->setColliding(true);
+  ASSERT_TRUE(pointMass->isColliding());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  ASSERT_FALSE(softBody->isColliding());
+  group->clearCollidingBodies();
+  EXPECT_FALSE(softBody->isColliding());
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_FALSE(pointMass->isColliding());
 }
 
 //==============================================================================
