@@ -383,7 +383,7 @@ def make_repo(tmp_path: Path, profile: str) -> Path:
         'pixi run python -c "import sys; print(sys.executable)"\n'
         "$launcher\n"
         "$hookCommand\n"
-        "$payload = [Console]::In.ReadToEnd(); $payload | &\n"
+        "$env:DART_HOOK_PAYLOAD | &\n"
         '$ErrorActionPreference = "Continue"\n'
         '"git status"\n'
         "DART_HOOK_DRY_RUN\n"

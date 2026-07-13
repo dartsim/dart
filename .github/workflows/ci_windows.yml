@@ -94,20 +94,22 @@ jobs:
           $ErrorActionPreference = "Stop"
           pixi run python -c "import sys; print(sys.executable)"
           $launcher = Join-Path $env:GITHUB_WORKSPACE ".claude/hooks/pre-commit-guard.ps1"
-          $hookCommand = '$payload = [Console]::In.ReadToEnd(); $payload | & (Join-Path (git rev-parse --show-toplevel) ''.claude/hooks/pre-commit-guard.ps1''); if (-not $?) { exit 2 }; if ($LASTEXITCODE -ne 0) { exit 2 }; exit 0'
+          $hookCommand = '$env:DART_HOOK_PAYLOAD | & (Join-Path (git rev-parse --show-toplevel) ''.claude/hooks/pre-commit-guard.ps1''); if (-not $?) { exit 2 }; if ($LASTEXITCODE -ne 0) { exit 2 }; exit 0'
           # The malformed probe writes expected native stderr. PowerShell 5.1
           # must continue long enough to preserve and assert the exit code.
           $ErrorActionPreference = "Continue"
-          '{"tool_input":{"command":"git status"}}' |
-            powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $hookCommand
+          $env:DART_HOOK_PAYLOAD = '{"tool_input":{"command":"git status"}}'
+          powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $hookCommand
           $successExit = $LASTEXITCODE
+          Remove-Item Env:DART_HOOK_PAYLOAD
           if ($successExit -ne 0) {
             throw "non-commit hook payload exited $successExit instead of 0"
           }
           $env:DART_HOOK_DRY_RUN = "1"
-          $diagnosticOutput = '{"tool_input":{"command":"git commit --no-verify -m x"}}' |
-            powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $hookCommand 2>&1
+          $env:DART_HOOK_PAYLOAD = '{"tool_input":{"command":"git commit --no-verify -m x"}}'
+          $diagnosticOutput = powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $hookCommand 2>&1
           $diagnosticExit = $LASTEXITCODE
+          Remove-Item Env:DART_HOOK_PAYLOAD
           Remove-Item Env:DART_HOOK_DRY_RUN
           if ($diagnosticExit -ne 0) {
             throw "successful diagnostic hook payload exited $diagnosticExit instead of 0"
@@ -115,9 +117,10 @@ jobs:
           if (-not (($diagnosticOutput -join [Environment]::NewLine) -match "check_agent_hook.py --profile staged")) {
             throw "diagnostic hook payload did not reach the staged gate"
           }
-          '{}' |
-            powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $hookCommand
+          $env:DART_HOOK_PAYLOAD = '{}'
+          powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $hookCommand
           $blockedExit = $LASTEXITCODE
+          Remove-Item Env:DART_HOOK_PAYLOAD
           '{"tool_input":{"command":"git status"}}' |
             powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $launcher
           $rawSuccessExit = $LASTEXITCODE
