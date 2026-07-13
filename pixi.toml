@@ -145,16 +145,23 @@ check-lint = { depends-on = [
   "check-lint-py",
   "check-lint-spell",
   "check-ai-commands",
+  "check-ai-infra",
 ] }
 
-# Tier-0 pre-commit gate (same set as check-lint; named for hook parity with main).
-check-lint-quick = { depends-on = ["check-lint"] }
+# Fast compatibility alias retained for older local workflows.
+check-lint-quick = { depends-on = ["check-agent-hook"] }
 
-# One-time setup: install the pre-commit git hook that runs check-lint-quick.
+# One-time setup: install the pre-commit git hook that runs check-agent-hook.
 install-hooks = { cmd = "python scripts/install_git_hooks.py" }
 
 sync-ai-commands = { cmd = "python scripts/sync_ai_commands.py" }
 check-ai-commands = { cmd = "python scripts/sync_ai_commands.py --check" }
+ai-setup = { cmd = "python scripts/setup_ai.py" }
+ai-doctor = { cmd = "python scripts/check_ai_infrastructure.py --doctor" }
+check-agent-hook = { cmd = "python scripts/check_agent_hook.py --profile staged" }
+check-ai-infra = { cmd = "python scripts/check_ai_infrastructure.py --check" }
+exercise-agent-scenarios = { cmd = "python scripts/check_ai_infrastructure.py --scenarios" }
+test-ai-infra = { cmd = "python -m pytest tests/test_sync_ai_commands.py tests/test_ai_infrastructure.py tests/test_install_git_hooks.py -q" }
 
 # ssik is an optional, PyPI-only analytical IK solver used only by the
 # ssik_ik_gui scene (dart-demos, C++) and the ssik_analytical_ik (Python)
@@ -463,6 +470,38 @@ image-golden = { cmd = ["python", "scripts/image_golden.py"] }
 
 image-sheet = { cmd = ["python", "scripts/image_sheet.py"] }
 
+image-compose = { cmd = ["python", "scripts/image_compose.py"] }
+
+evidence-select = { cmd = ["python", "scripts/evidence_select.py"] }
+
+evidence-publish = { cmd = ["python", "scripts/evidence_publish.py"] }
+
+# Deterministic headless capture with active camera control (view-quality
+# scored auto viewpoints, focus framing, turntable/motion) and engine-rendered
+# core OSG debug layers (contacts, frames, velocities, trajectories, labels).
+# Needs a GLX-capable X server; see docs/ai/verification.md.
+agent-capture = { cmd = [
+  "python",
+  "scripts/agent_capture.py",
+], depends-on = [
+  "build-py-dev",
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy:$PIXI_PROJECT_ROOT/scripts" } }
+
+# Claim-tied text/geometry and engine-rendered DebugOverlay regressions. The
+# rendered case is non-skippable whenever DISPLAY is set; CI runs it under Xvfb.
+test-agent-debug-overlay = { cmd = [
+  "python",
+  "-m",
+  "pytest",
+  "python/tests/unit/gui/test_agent_debug_overlay.py::test_contacts_layer_marks_points_and_normals",
+  "python/tests/unit/gui/test_agent_debug_overlay.py::test_engine_rendered_overlay_changes_pixels",
+  "python/tests/unit/gui/test_agent_capture.py::test_run_capture_smoke_writes_stills_and_sidecar",
+  "python/tests/unit/gui/test_agent_capture.py::test_run_capture_debug_layers_change_pixels_end_to_end",
+  "-q",
+], depends-on = [
+  "build-py-dev",
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy:$PIXI_PROJECT_ROOT/scripts" } }
+
 bm-empty = { cmd = """
     cmake \
         --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -765,7 +804,11 @@ check-lint-py = { cmd = """
 
 check-lint-spell = { cmd = "codespell --config .codespellrc" }
 
-check-lint = { depends-on = ["check-lint-spell", "check-lint-py"] }
+check-lint = { depends-on = [
+  "check-lint-spell",
+  "check-lint-py",
+  "check-ai-infra",
+] }
 
 build = { cmd = """
     cmake \

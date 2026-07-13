@@ -27,8 +27,17 @@ surface affects shared behavior.
   ```bash
   pixi run sync-ai-commands
   pixi run check-ai-commands
+  pixi run python scripts/check_ai_infrastructure.py --check
+  pixi run python -m pytest tests/test_sync_ai_commands.py tests/test_ai_infrastructure.py tests/test_install_git_hooks.py -q
+  pixi run python scripts/check_ai_infrastructure.py --scenarios
   pixi run lint
   ```
+
+  `check-ai-commands` proves generated parity and manifest ownership. The
+  structural checker validates task/path references, instruction budgets,
+  branch profile, agent/config/hook wiring, and CI coverage. The focused tests
+  cover regressions; the scenario command exercises release routing and
+  unavailable-hook fallbacks without network or model calls.
 
 - For ordinary docs-only changes on this release branch, run `pixi run lint`.
 - For docs placement, AI operating-model, plan/dashboard, or workflow-source
@@ -36,6 +45,21 @@ surface affects shared behavior.
   `pixi run sync-ai-commands` first when `.claude/` sources changed.
 - If the docs affect Read the Docs pages, run `pixi run docs-build` when
   practical.
+
+The frequent `pixi run python scripts/check_agent_hook.py --profile staged`
+gate is intentionally fast and staged-file aware. It runs
+`git diff --cached --check` and the AI checks only when their inputs are staged;
+it never configures, builds, prompts, or uses the network. It does not replace
+`pixi run lint` before a commit.
+
+## Simulation Verification Route
+
+Use `dart-verify-sim` whenever a claim depends on model/scene structure,
+dynamics, collision/contact/constraints, simulation stepping, OSG rendering,
+or a visual example. Pair a focused text correctness oracle with an assessed,
+claim-tied capture and core `DebugOverlay` layers. If DISPLAY/Xvfb or the
+required renderer is unavailable, record that limitation. Name the replacement
+evidence; never use a screenshot as the sole correctness oracle.
 
 ## Visual Verification (Headless Capture)
 
@@ -77,6 +101,68 @@ is set.
 The verdict JSON (`schema_version dart.image_verdict/v1`) sets `pass` from the
 non-blank check plus any golden diff. Contrast is scene-dependent, so it is
 reported but only gates when you pass `--require-contrast`.
+
+The Release Linux CI job runs a settled-contact `agent-capture` under Xvfb with
+contacts, collision bounds, and labels, requires `image-verdict` to accept the
+emitted frame, and runs the engine-rendered overlay on/off pixel regression
+under Xvfb. A second A/B runs through `agent-capture` itself with identical
+cameras and requires the contact/bounds/label layers to change at least 128
+pixels; it also requires rendered contact-marker color pixels, while retaining
+the sidecar's count of any filtered DART 6 sentinel contacts, then proves
+contacts, collision bounds, and labels each change pixels independently. This
+keeps the camera assessment, core OSG debug overlay, off-screen
+renderer, artifact write, overlay injection, and image-verdict path covered end
+to end without a display-dependent skip.
+
+- Active camera control, view quality, and debug overlays (agent evidence):
+
+  ```bash
+  # Deterministic capture: auto-selected viewpoints (view-quality scored),
+  # focus framing, turntable/motion video, debug layers rendered through the
+  # core OSG pipeline, and a sidecar JSON with the exact reproduce command.
+  pixi run agent-capture -- --scene box_stack --steps 150 \
+      --layers contacts body_frames collision_bounds labels --focus stack1 \
+      --auto-views 2 --out /tmp/evidence
+  ```
+
+  Available `--layers`: `grid`, `world_frame`, `body_frames`, `contacts`,
+  `velocities`, `coms`, `inertia_boxes`, `collision_bounds`, `trajectories`,
+  `labels` (matching DART 7's overlay set).
+
+  `scripts/agent_view_quality.py` assesses a camera before rendering
+  (coverage/crop, subject size, core-raycast occlusion, ambiguity; issues named
+  `cropped`/`off-frame`/`too-far`/`too-close`/`occluded`/`ambiguous`) and
+  `select_viewpoints` deterministically picks azimuth-diverse better views —
+  when a report lists issues, reframe or reselect instead of shipping the
+  shot. Body bounds come from the core `Shape.getBoundingBox()` (now bound in
+  dartpy). `scripts/agent_debug_overlay.py` renders the debug layers *through
+  the engine* via a `dart.gui.osg.DebugOverlay` viewer attachment: a ground
+  grid, the world frame, contacts (implausible sentinel contact points are
+  skipped and counted), body frames, velocity arrows, centers of mass,
+  inertia-equivalent boxes (eigendecomposed moment of inertia), collision
+  bounding boxes (world-transformed local AABBs), and trajectory polylines
+  become always-on-top overlay lines and labels become world-anchored osgText
+  — all drawn unlit, with depth
+  testing disabled, in a late render bin, so the debug primitives stay legible
+  on top of the geometry they annotate (matching DART 7's core debug overlay)
+  instead of being buried in depth or composited in image space. The harness
+  populates the overlay, renders through `captureOffscreen`, then clears it. No
+  GL context is needed for assessment itself. Overlay colors match the DART 7
+  debug producers.
+
+- Select a small claim-tied evidence set and generate the PR section:
+
+  ```bash
+  pixi run image-compose -- side-by-side before.png after.png \
+      --labels BEFORE AFTER --out compare.png     # also: blend, diff
+  pixi run evidence-select -- candidates.json --out selection.json
+  pixi run evidence-publish -- selection.json --environment "..." \
+      --out pr_section.md   # manual placeholders; gh-release needs --yes
+  ```
+
+  Every artifact must support an explicit claim (`evidence-select` rejects
+  unclaimed ones and records per-artifact rationale); media is GitHub-hosted,
+  never committed to the repository.
 
 For physics determinism (rather than visual appearance), use the text path that
 already exists on the branch: `pixi run bm-boxes-headless` prints per-step

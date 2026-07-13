@@ -22,6 +22,8 @@ criteria, see
 - [`doxygen/`](doxygen/): Doxygen inputs consumed by C++ API docs.
 - [`onboarding/`](onboarding/): build, test, CI, contribution, and release
   workflow references for maintainers and agents.
+  Start with [`onboarding/architecture.md`](onboarding/architecture.md) for the
+  DART 6.20 component map and compatibility boundaries.
 - [`plans/`](plans/README.md): living release-branch roadmap state, priority,
   gates, and sequencing.
 - [`readthedocs/`](readthedocs/): public user documentation source.

@@ -55,12 +55,18 @@
     Docker dev/wheel images.
 
   * Harden the release-branch contributor workflow: `pixi run install-hooks`
-    installs a pre-commit hook running the lint gate (with a tracked Claude
-    Code commit guard as fallback), `check-ai-commands` now runs inside
+    installs a pre-commit hook running a fast staged safety gate (with tracked
+    Codex and Claude commit guards as fallbacks), `check-ai-commands` runs inside
     `pixi run check-lint` so the AI workflow adapters are CI-enforced, the
     workflow commands carry the structural metadata validated on `main`, and
     the `dart-changelog` routine is available for backport changelog
     decisions.
+
+  * Make DART 6.20 agent workflows discoverable and self-checking in current
+    Codex with manifest-owned skills, bounded read-only reviewers, fast commit
+    hooks, setup diagnostics, deterministic drift/scenario tests, and a
+    text-first plus claim-tied OSG visual-debugging route, while preserving
+    Claude Code and OpenCode adapters.
 
   * Add a release-tailored documentation information architecture owner and
     route docs-update workflows through it so DART 6.20 agents promote durable
@@ -296,6 +302,15 @@
     [#3136](https://github.com/dartsim/dart/pull/3136)
 
 * Dynamics
+
+  * Fix `BoxedLcpConstraintSolver` propagating non-finite constraint impulses:
+    a near-singular contact (e.g. a thin, hard, frictionless geometry) could
+    make the primary solver report success while emitting an *infinite* impulse
+    that slipped past the NaN-only sanity check and produced NaN body impulses
+    (`inf * 0` in the spatial Jacobian moment-arm rows). Both NaN and infinite
+    LCP solutions are now rejected so the secondary/fail-safe zeroing path runs,
+    guaranteeing finite impulses:
+    [#3384](https://github.com/dartsim/dart/pull/3384)
 
   * Add a default-off `BoxedLcpConstraintSolver` matrix-free contact solver
     option, plus dartpy bindings and `contact_benchmark` flags, for explicitly
@@ -587,6 +602,17 @@
   * Add OSG headless capture helpers, dartpy capture bindings, and
     image-verification scripts/docs for DART 6 agent visual checks:
     [#3314](https://github.com/dartsim/dart/pull/3314)
+
+  * Add active camera control with view-quality-scored adaptive viewpoints, an
+    always-on-top core `dart::gui::osg::DebugOverlay` viewer attachment that
+    renders debug layers (a ground grid, the world frame, contacts, frames,
+    velocities, centers of mass, inertia-equivalent boxes, collision bounds,
+    trajectories, and body labels) unlit and depth-test disabled, a
+    `math::BoundingBox` dartpy binding,
+    core-raycast view occlusion, a deterministic agent capture harness, and
+    claim-tied evidence selection/publication tooling for agent visual
+    verification:
+    [#3374](https://github.com/dartsim/dart/pull/3374)
 
   * Add shared `dart-gui-osg` helpers for parsing and applying GUI scale, and
     route ImGui font/style scaling through `ImGuiHandler`:
