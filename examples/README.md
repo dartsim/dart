@@ -17,6 +17,11 @@ Build and run it:
 
     $ pixi run demos
 
+The flagship deformable-body scenes can be opened directly:
+
+    $ pixi run demos --scene adaptive_soft_contact
+    $ pixi run demos --scene soft_worm
+
 Soft-body scene aliases are also available for compatibility with the former
 standalone examples:
 
@@ -25,8 +30,9 @@ standalone examples:
     $ pixi run ex soft_open_chain -- --collision-detector dart --threads 4
 
 Use `dart` or `fcl` for apples-to-apples soft-body comparisons. The `native`
-adapter can be selected for diagnostics, but it does not yet cover
-`SoftMeshShape` in these scenes.
+adapter can run these `SoftMeshShape` scenes through the cached DART fallback
+bridge, but it remains diagnostic rather than preferred until native owns the
+complete soft-mesh kernels and passes the parity and performance gates.
 
 or, from a manual build directory:
 

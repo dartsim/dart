@@ -210,7 +210,7 @@ below.
 | WP-DB.06 CPU data layout and SIMD | #3382 disposition complete; follow-up research remains. | Kept cache/data-access slices produce the measured win; retained SoA mirrors and contiguous-object prototypes were rejected or parked because measurements/design gates did not justify keeping them. No unsupported SIMD speedup is claimed (`04-data-layout-and-memory-hardening.md`). |
 | WP-DB.07 multi-core scaling | Original acceptance unmet; retained as an open PLAN-622 follow-up. | Pair-level work and 1/4/16-thread determinism landed, but the tracked small scenes are flat or slower at 16 threads. The original `threads=16` improvement contract therefore remains open and needs a larger workload or a maintainer-approved negative disposition (`06-pr-evidence.md`, `docs/plans/dashboard.md`). |
 | WP-DB.08 native collision deformables | #3382 landing slice implemented; original acceptance unmet. | Primitive/cached soft lanes, face-interior coverage, allocation gates, and determinism landed. Native is not yet the preferred/default backend, required coverage remains in `05-native-collision-deformable-lane.md`, and the only direct-native/DART tie override is not independently reproducible. The durable architecture and pre-default gates now live in `docs/design/dart6_deformable_body.md` and PLAN-622. |
-| WP-DB.09 flagship demos | Representative demos complete; parity closeout conditional. | `adaptive_soft_contact` and `soft_worm` are runnable, deterministic, and visually captured. The four-link flexible-rigid-foot versus deformable-foot comparison remains open until implemented or explicitly deferred (`02-paper-parity-matrix.md`, `decisions.md`). |
+| WP-DB.09 flagship demos | Representative demos complete; parity closeout conditional. | The `dart-demos` scenes `adaptive_soft_contact` and `soft_worm` are runnable and visually captured. GUI-free model tests preserve the adaptive 2000-step finite/repeat/all-active comparison contract and prove finite 3000-step worm locomotion beyond 0.2 m with exact repeated displacement/checksum; historical standalone evidence remains recorded in `06-pr-evidence.md`. The four-link flexible-rigid-foot versus deformable-foot comparison remains open until implemented or explicitly deferred (`02-paper-parity-matrix.md`, `decisions.md`). |
 
 The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
 
@@ -229,6 +229,10 @@ The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
   tests, and the soft-body benchmark before/after on the same host.
 - For contact or solver changes: add the Gazebo gate from `docs/ai/verification.md`
   when the touched surface can affect downstream collision/constraint behavior.
+- For the flagship scenes/models: build and run
+  `test_AdaptiveSoftContactModel` and `test_SoftWormModel`; they are the
+  current GUI-free finite-state, comparison, locomotion, and exact-repeat
+  gates.
 
 ## Closeout decisions and follow-ups
 

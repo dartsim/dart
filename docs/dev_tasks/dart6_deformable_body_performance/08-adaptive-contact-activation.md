@@ -236,11 +236,17 @@ findings and surfaced four plausible minors, all fixed:
 - **Edge-spring energy term unexercised — fixed.** The energy gate's scene
   ships with zero edge stiffness; the test now sets a nonzero edge stiffness
   so the edge-spring energy accounting is genuinely covered.
-- **Example version floor — fixed.** `adaptive_soft_contact`'s standalone
-  `find_package` floor now names DART 6.20, matching the activation API it
-  calls.
-- **Whitespace-negative size parsing — fixed.** Both demos' unsigned size
-  parsers reject whitespace-prefixed negatives after conversion instead of
-  relying on a first-character check.
+- **Demo version floor — fixed.** The consolidated `dart-demos` standalone
+  `find_package` floor names DART 6.20, matching the activation API the
+  `adaptive_soft_contact` scene calls.
+- **Demo control bounds — fixed.** The consolidated scene removes the custom
+  unsigned CLI parser; its ring-count and linger controls use bounded integer
+  sliders and clamp values before applying them to the soft body.
+
+The subsequent `dart-demos` consolidation also keeps the numerical contract
+outside the GUI: `test_AdaptiveSoftContactModel` runs the former 2000-step
+adaptive/all-active comparison twice, checks finite state at every step,
+requires meaningful active-set reduction, enforces the `0.25` surface-pose
+tolerance, and compares the repeated observables exactly.
 
 The face-interior contact lens returned no findings.

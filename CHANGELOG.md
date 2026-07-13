@@ -548,12 +548,14 @@
 
 * Examples
 
-  * Add two deformable-body flagship examples: `adaptive_soft_contact`, a
-    soft ellipsoid with a moving pusher demonstrating the adaptive contact
-    activation API with live active/inactive instrumentation, and
-    `soft_worm`, an internally actuated five-link chain with soft flesh that
-    crawls through soft contact using a phase-offset sinusoidal gait. Both
-    support headless deterministic runs and offscreen capture.
+  * Add two deformable-body flagship scenes to `dart-demos`:
+    `adaptive_soft_contact`, a soft ellipsoid with a moving pusher
+    demonstrating the adaptive contact activation API with live
+    active/inactive instrumentation, and `soft_worm`, an internally actuated
+    five-link chain with soft flesh that crawls through soft contact using a
+    phase-offset sinusoidal gait. Both support the host's headless offscreen
+    capture route, with GUI-free integration gates preserving the adaptive
+    comparison and worm-locomotion contracts.
 
   * Consolidate the scattered GUI examples into a single `dart-demos`
     application: a `dart::gui::osg` `ImGuiViewer` host with a categorized
