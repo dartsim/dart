@@ -102,7 +102,7 @@ CODEX_HOOK_COMMAND = (
 )
 CODEX_HOOK_COMMAND_WINDOWS = (
     "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "
-    '"$input | & (Join-Path (git rev-parse --show-toplevel) '
+    '"$payload = [Console]::In.ReadToEnd(); $payload | & (Join-Path (git rev-parse --show-toplevel) '
     "'.claude/hooks/pre-commit-guard.ps1'); "
     'if (-not $?) { exit 2 }; if ($LASTEXITCODE -ne 0) { exit 2 }; exit 0"'
 )
@@ -899,7 +899,7 @@ def check_ci_wiring(root: Path) -> list[str]:
             'pixi run python -c "import sys; print(sys.executable)"',
             "$launcher",
             "$hookCommand",
-            "$input | &",
+            "$payload = [Console]::In.ReadToEnd(); $payload | &",
             '$ErrorActionPreference = "Continue"',
             '"git status"',
             "DART_HOOK_DRY_RUN",
