@@ -466,6 +466,12 @@ On native Windows, `.claude/hooks/pre-commit-guard.ps1` launches
 `scripts/pretool_guard_bridge.py`, which forwards the unchanged hook payload to
 the same Git Bash guard used on POSIX; commit classification has one shared
 implementation.
+The launcher must consume both script pipeline input (`$input`) and direct
+console input: `commandWindows` already reads the hook JSON before invoking the
+`.ps1` script, so relying only on `[Console]::In` can turn valid payloads into
+empty or invalid JSON. Windows smoke tests should assert bridge exit semantics
+for valid, malformed, and raw-stdin payloads; nested PowerShell command output
+capture is not a reliable oracle for the child hook's stderr.
 
 Current references: [models and reasoning](https://learn.chatgpt.com/docs/models),
 [Agent Skills](https://learn.chatgpt.com/docs/build-skills),
