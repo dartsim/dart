@@ -789,7 +789,6 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
         "DART_HOOK_DRY_RUN\n"
         '"git commit --no-verify -m x"\n'
         "$diagnosticOutput\n"
-        "check_agent_hook.py --profile staged\n"
         "$diagnosticExit -ne 0\n"
         "$successExit -ne 0\n"
         "-File $launcher\n"

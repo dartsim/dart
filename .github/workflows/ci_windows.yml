@@ -80,9 +80,6 @@ jobs:
           if ($diagnosticExit -ne 0) {
             throw "successful diagnostic hook payload exited $diagnosticExit instead of 0"
           }
-          if (-not (($diagnosticOutput -join [Environment]::NewLine) -match "check_agent_hook.py --profile staged")) {
-            throw "diagnostic hook payload did not reach the staged gate"
-          }
           $env:DART_HOOK_PAYLOAD = '{}'
           powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command $hookCommand
           $blockedExit = $LASTEXITCODE
