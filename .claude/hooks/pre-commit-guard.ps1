@@ -2,10 +2,10 @@
 $ErrorActionPreference = "Stop"
 
 try {
-  # `$input` is an enumerator in Windows PowerShell; enumerate it explicitly
-  # before joining so pipeline JSON reaches the native bridge.
-  $pipelineInput = @($input | ForEach-Object { $_ })
-  $payload = $pipelineInput -join [Environment]::NewLine
+  # Read stdin directly: Windows PowerShell's `$input` enumerator is not
+  # reliable when this script is invoked through a nested `-Command` pipeline.
+  $payload = [Console]::In.ReadToEnd()
+  $pipelineInput = if ($payload.Length -gt 0) { @($payload) } else { @() }
   $repoRoot = (git rev-parse --show-toplevel)
   if (-not $repoRoot) {
     throw "git did not return a repository root"
