@@ -204,19 +204,6 @@ bool mayUseNativeManifoldContacts(
   return false;
 }
 
-//==============================================================================
-bool hasSoftMeshFallbackShape(
-    const std::unordered_map<std::size_t, NativeCollisionObject*>& objects)
-{
-  for (const auto& entry : objects) {
-    if (entry.second != nullptr && entry.second->usesSoftMeshFallbackShape())
-      return true;
-  }
-
-  return false;
-}
-
-//==============================================================================
 bool mayUseNativeManifoldContacts(
     const std::unordered_map<std::size_t, NativeCollisionObject*>& objects1,
     const std::unordered_map<std::size_t, NativeCollisionObject*>& objects2)
@@ -1077,9 +1064,9 @@ bool NativeCollisionDetector::collide(
   }
   native::PersistentManifoldCache* manifoldCache = nullptr;
   const bool cacheNativeManifoldContacts
-      = !hasSoftMeshFallbackShape(nativeGroup->mIdToObject);
-  if (cacheNativeManifoldContacts && option.enableContact
-      && mayUseNativeManifoldContacts(nativeGroup->mIdToObject)) {
+      = option.enableContact
+        && mayUseNativeManifoldContacts(nativeGroup->mIdToObject);
+  if (cacheNativeManifoldContacts) {
     manifoldCache = findManifoldCache(this);
     refreshManifoldCache(nativeGroup->mCollisionObjects, manifoldCache);
   }
@@ -1149,11 +1136,10 @@ bool NativeCollisionDetector::collide(
   nativeGroup2->updateEngineData();
   native::PersistentManifoldCache* manifoldCache = nullptr;
   const bool cacheNativeManifoldContacts
-      = !hasSoftMeshFallbackShape(nativeGroup1->mIdToObject)
-        && !hasSoftMeshFallbackShape(nativeGroup2->mIdToObject);
-  if (cacheNativeManifoldContacts && option.enableContact
-      && mayUseNativeManifoldContacts(
-          nativeGroup1->mIdToObject, nativeGroup2->mIdToObject)) {
+      = option.enableContact
+        && mayUseNativeManifoldContacts(
+            nativeGroup1->mIdToObject, nativeGroup2->mIdToObject);
+  if (cacheNativeManifoldContacts) {
     manifoldCache = findManifoldCache(this);
     refreshManifoldCache(
         nativeGroup1->mCollisionObjects,

@@ -417,6 +417,40 @@ ShapeFramePair makeShapeFramePair(
 }
 
 //==============================================================================
+void checkMixedSoftFallbackContacts(
+    collision::CollisionResult& result,
+    const ShapeFramePair& nativePair,
+    const ShapeFramePair& fallbackPair,
+    double expectedImpulse,
+    bool seedImpulse)
+{
+  std::size_t nativeContactCount = 0u;
+  std::size_t fallbackContactCount = 0u;
+  for (auto& contact : result.getContacts()) {
+    ASSERT_NE(nullptr, contact.collisionObject1);
+    ASSERT_NE(nullptr, contact.collisionObject2);
+    const auto pair = makeShapeFramePair(
+        contact.collisionObject1->getShapeFrame(),
+        contact.collisionObject2->getShapeFrame());
+    if (pair == nativePair) {
+      ++nativeContactCount;
+      ASSERT_NE(nullptr, contact.userData);
+      auto* cached = static_cast<native::CachedContact*>(contact.userData);
+      if (seedImpulse)
+        cached->cachedNormalImpulse = expectedImpulse;
+      else
+        EXPECT_NEAR(expectedImpulse, cached->cachedNormalImpulse, 1e-12);
+    } else if (pair == fallbackPair) {
+      ++fallbackContactCount;
+      EXPECT_EQ(nullptr, contact.userData);
+    }
+  }
+
+  EXPECT_EQ(1u, nativeContactCount);
+  EXPECT_GT(fallbackContactCount, 0u);
+}
+
+//==============================================================================
 ShapeFramePairSet collectShapeFramePairs(
     const collision::CollisionResult& result)
 {
@@ -1632,6 +1666,69 @@ TEST(NativeCollisionDetector, PersistentManifoldReusesCachedSingleContact)
       warmCached->cachedFrictionBasis1.isApprox(Eigen::Vector3d::UnitY()));
   EXPECT_TRUE(
       warmCached->cachedFrictionBasis2.isApprox(Eigen::Vector3d::UnitZ()));
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, PersistentManifoldSurvivesMixedSoftFallbackGroup)
+{
+  auto softScene = makeNativePlaneSoftMeshScene(0.45);
+  auto detector = collision::NativeCollisionDetector::create();
+  auto frame1 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(1.0),
+      Eigen::Vector3d(0.0, 0.0, 3.0));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(1.0),
+      Eigen::Vector3d(1.5, 0.0, 3.0));
+  auto group = detector->createCollisionGroup(
+      frame1.get(),
+      frame2.get(),
+      softScene.planeFrame.get(),
+      softScene.softShapeNode);
+
+  const auto nativePair = makeShapeFramePair(frame1.get(), frame2.get());
+  const auto fallbackPair
+      = makeShapeFramePair(softScene.planeFrame.get(), softScene.softShapeNode);
+
+  collision::CollisionOption option(true, 10u);
+  collision::CollisionResult first;
+  ASSERT_TRUE(group->collide(option, &first));
+  checkMixedSoftFallbackContacts(first, nativePair, fallbackPair, 3.25, true);
+
+  collision::CollisionResult second;
+  ASSERT_TRUE(group->collide(option, &second));
+  checkMixedSoftFallbackContacts(second, nativePair, fallbackPair, 3.25, false);
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, PersistentManifoldSurvivesMixedSoftFallbackGroups)
+{
+  auto softScene = makeNativePlaneSoftMeshScene(0.45);
+  auto detector = collision::NativeCollisionDetector::create();
+  auto frame1 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(1.0),
+      Eigen::Vector3d(0.0, 0.0, 3.0));
+  auto frame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(1.0),
+      Eigen::Vector3d(1.5, 0.0, 3.0));
+  auto group1 = detector->createCollisionGroup(
+      frame1.get(), softScene.planeFrame.get());
+  auto group2
+      = detector->createCollisionGroup(frame2.get(), softScene.softShapeNode);
+
+  const auto nativePair = makeShapeFramePair(frame1.get(), frame2.get());
+  const auto fallbackPair
+      = makeShapeFramePair(softScene.planeFrame.get(), softScene.softShapeNode);
+
+  collision::CollisionOption option(true, 2u);
+  collision::CollisionResult first;
+  ASSERT_TRUE(group1->collide(group2.get(), option, &first));
+  ASSERT_EQ(2u, first.getNumContacts());
+  checkMixedSoftFallbackContacts(first, nativePair, fallbackPair, 4.5, true);
+
+  collision::CollisionResult second;
+  ASSERT_TRUE(group1->collide(group2.get(), option, &second));
+  ASSERT_EQ(2u, second.getNumContacts());
+  checkMixedSoftFallbackContacts(second, nativePair, fallbackPair, 4.5, false);
 }
 
 //==============================================================================
