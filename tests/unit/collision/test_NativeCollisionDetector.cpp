@@ -40,6 +40,7 @@
 #include <dart/collision/RaycastOption.hpp>
 #include <dart/collision/RaycastResult.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
+#include <dart/collision/dart/DARTCollisionObject.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/native/NativeCollisionDetector.hpp>
 #include <dart/collision/native/NativeCollisionGroup.hpp>
@@ -76,6 +77,7 @@
 #include <algorithm>
 #include <atomic>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <set>
 #include <string>
@@ -628,9 +630,19 @@ TEST(NativeCollisionDetector, CreatesDetectorGroupAndCollidesSphereSphere)
   ASSERT_NE(nullptr, detector);
   EXPECT_EQ("native", detector->getType());
 
+  detector->setNumCollisionThreads(3u);
+  EXPECT_EQ(3u, detector->getNumCollisionThreads());
+
   auto clone = detector->cloneWithoutCollisionObjects();
   ASSERT_NE(nullptr, clone);
   EXPECT_EQ("native", clone->getType());
+  const auto nativeClone
+      = std::dynamic_pointer_cast<collision::NativeCollisionDetector>(clone);
+  ASSERT_NE(nullptr, nativeClone);
+  EXPECT_EQ(3u, nativeClone->getNumCollisionThreads());
+
+  detector->setNumCollisionThreads(0u);
+  EXPECT_GE(detector->getNumCollisionThreads(), 1u);
 
   auto frame = makeFrame(std::make_shared<dynamics::SphereShape>(0.5));
   auto group = detector->createCollisionGroup(frame.get());
@@ -692,6 +704,62 @@ TEST(NativeCollisionDetector, DetectsSoftMeshPlaneContactThroughFallback)
   }
 
   EXPECT_TRUE(sawSoftContact);
+
+  auto planeGroup
+      = scene.detector->createCollisionGroup(scene.planeFrame.get());
+  auto softGroup = scene.detector->createCollisionGroup(scene.softShapeNode);
+
+  collision::CollisionResult softFirstResult;
+  EXPECT_TRUE(softGroup->collide(planeGroup.get(), option, &softFirstResult));
+  ASSERT_GT(softFirstResult.getNumContacts(), 0u);
+  EXPECT_EQ(
+      scene.softShapeNode,
+      softFirstResult.getContact(0u).collisionObject1->getShapeFrame());
+
+  EXPECT_TRUE(softGroup->collide(planeGroup.get(), option, nullptr));
+
+  collision::CollisionResult pairOnlyResult;
+  EXPECT_TRUE(softGroup->collide(
+      planeGroup.get(),
+      collision::CollisionOption(false, 10u),
+      &pairOnlyResult));
+  ASSERT_EQ(1u, pairOnlyResult.getNumContacts());
+  EXPECT_TRUE(pairOnlyResult.getContact(0u).normal.isZero());
+
+  collision::CollisionResult globalCapResult;
+  EXPECT_TRUE(scene.group->collide(
+      collision::CollisionOption(true, 1u), &globalCapResult));
+  EXPECT_EQ(1u, globalCapResult.getNumContacts());
+
+  collision::CollisionOption pairCapOption(true, 10u);
+  pairCapOption.maxNumContactsPerPair = 1u;
+  collision::CollisionResult pairCapResult;
+  EXPECT_TRUE(scene.group->collide(pairCapOption, &pairCapResult));
+  EXPECT_EQ(1u, pairCapResult.getNumContacts());
+
+  auto separatedScene = makeNativePlaneSoftMeshScene(2.0);
+  collision::CollisionResult separatedResult;
+  EXPECT_FALSE(separatedScene.group->collide(option, &separatedResult));
+  EXPECT_EQ(0u, separatedResult.getNumContacts());
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, FiltersZeroNormalSoftFallbackContact)
+{
+  auto scene = makeNativePlaneSoftMeshScene(0.45);
+  ASSERT_NE(nullptr, scene.softBody);
+  ASSERT_GT(scene.softBody->getNumPointMasses(), 0u);
+
+  const auto sphereFrame = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.1),
+      scene.softBody->getPointMass(0u)->getWorldPosition());
+  auto sphereGroup = scene.detector->createCollisionGroup(sphereFrame.get());
+  auto softGroup = scene.detector->createCollisionGroup(scene.softShapeNode);
+
+  collision::CollisionResult result;
+  EXPECT_TRUE(sphereGroup->collide(
+      softGroup.get(), collision::CollisionOption(true, 10u), &result));
+  EXPECT_EQ(0u, result.getNumContacts());
 }
 
 //==============================================================================
@@ -1475,10 +1543,45 @@ TEST(NativeCollisionDetector, CollidesAcrossGroups)
 
   collision::CollisionResult result;
   EXPECT_TRUE(group1->collide(
-      group2.get(), collision::CollisionOption(true, 10u), &result));
+      group2.get(), collision::CollisionOption(true, 1u), &result));
   ASSERT_EQ(1u, result.getNumContacts());
   EXPECT_EQ(frame1.get(), result.getContact(0).getShapeFrame1());
   EXPECT_EQ(frame2.get(), result.getContact(0).getShapeFrame2());
+}
+
+//==============================================================================
+TEST(NativeCollisionDetector, ManifoldEligibilitySkipsUnsupportedShapes)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  auto seedFrame1 = makeFrame(std::make_shared<dynamics::SphereShape>(0.5));
+  auto seedFrame2 = makeFrame(
+      std::make_shared<dynamics::SphereShape>(0.5),
+      Eigen::Vector3d(0.75, 0.0, 0.0));
+  auto seedGroup
+      = detector->createCollisionGroup(seedFrame1.get(), seedFrame2.get());
+
+  collision::CollisionResult seedResult;
+  ASSERT_TRUE(
+      seedGroup->collide(collision::CollisionOption(true, 4u), &seedResult));
+  ASSERT_GT(seedResult.getNumContacts(), 0u);
+
+  auto sphereFrame = makeFrame(std::make_shared<dynamics::SphereShape>(0.5));
+  auto unsupportedFrame
+      = makeFrame(std::make_shared<dynamics::ConeShape>(1.0, 2.0));
+  auto mixedGroup = detector->createCollisionGroup(
+      sphereFrame.get(), unsupportedFrame.get());
+
+  collision::CollisionResult result;
+  EXPECT_FALSE(
+      mixedGroup->collide(collision::CollisionOption(true, 4u), &result));
+
+  auto sphereGroup = detector->createCollisionGroup(sphereFrame.get());
+  auto unsupportedGroup
+      = detector->createCollisionGroup(unsupportedFrame.get());
+  EXPECT_FALSE(unsupportedGroup->collide(
+      sphereGroup.get(), collision::CollisionOption(true, 4u), &result));
+  EXPECT_FALSE(sphereGroup->collide(
+      unsupportedGroup.get(), collision::CollisionOption(true, 4u), &result));
 }
 
 //==============================================================================
@@ -1723,6 +1826,17 @@ TEST(NativeCollisionDetector, ConvertsSphereAndBoxShapes)
       0.75,
       static_cast<const native::SphereShape*>(nativeSphere.get())->getRadius());
 
+  const dynamics::EllipsoidShape sphereLikeEllipsoid(
+      Eigen::Vector3d::Constant(1.5));
+  auto nativeSphereLikeEllipsoid
+      = collision::detail::NativeShapeConversion::create(sphereLikeEllipsoid);
+  ASSERT_NE(nullptr, nativeSphereLikeEllipsoid);
+  ASSERT_EQ(native::ShapeType::Sphere, nativeSphereLikeEllipsoid->getType());
+  EXPECT_DOUBLE_EQ(
+      0.75,
+      static_cast<const native::SphereShape*>(nativeSphereLikeEllipsoid.get())
+          ->getRadius());
+
   const dynamics::BoxShape box(Eigen::Vector3d(2.0, 4.0, 6.0));
   auto nativeBox = collision::detail::NativeShapeConversion::create(box);
   ASSERT_NE(nullptr, nativeBox);
@@ -1954,6 +2068,46 @@ TEST(NativeCollisionDetector, ClaimedObjectTracksNativeAabb)
 }
 
 //==============================================================================
+TEST(NativeCollisionDetector, SoftFallbackTracksMismatchedAndNonFiniteState)
+{
+  auto scene = makeNativePlaneSoftMeshScene(0.45);
+  ASSERT_NE(nullptr, scene.softBody);
+  ASSERT_NE(nullptr, scene.softShapeNode);
+
+  ExposedNativeCollisionDetector detector;
+  auto object = detector.claimCollisionObject(scene.softShapeNode);
+  auto* nativeObject
+      = dynamic_cast<ExposedNativeCollisionObject*>(object.get());
+  ASSERT_NE(nullptr, nativeObject);
+  auto* fallbackObject = nativeObject->getDartFallbackObject();
+  ASSERT_NE(nullptr, fallbackObject);
+
+  const auto initialVertex = fallbackObject->getCachedSoftLocalVertices()[0u];
+  const auto initialBoundsMin = fallbackObject->getCachedLocalBoundsMin();
+  auto state = scene.softBody->getAspectState();
+  state.mPointStates.emplace_back();
+  state.mPointStates[0u].mPositions.x() -= 1.0;
+  scene.softBody->setAspectState(state);
+  nativeObject->updateEngineData();
+
+  EXPECT_EQ(
+      initialVertex - Eigen::Vector3d::UnitX(),
+      fallbackObject->getCachedSoftLocalVertices()[0u]);
+  EXPECT_LT(
+      fallbackObject->getCachedLocalBoundsMin().x(), initialBoundsMin.x());
+
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  for (std::size_t i = 0u; i < scene.softBody->getNumPointMasses(); ++i)
+    state.mPointStates[i].mPositions.setConstant(nan);
+  scene.softBody->setAspectState(state);
+  nativeObject->updateEngineData();
+
+  EXPECT_FALSE(fallbackObject->hasFiniteCachedLocalBounds());
+  EXPECT_EQ(Eigen::Vector3d::Zero(), nativeObject->getNativeAabb().min);
+  EXPECT_EQ(Eigen::Vector3d::Zero(), nativeObject->getNativeAabb().max);
+}
+
+//==============================================================================
 TEST(NativeCollisionDetector, ShapeIdentitySwapRebuildsNativeShape)
 {
   ExposedNativeCollisionDetector detector;
@@ -1976,6 +2130,13 @@ TEST(NativeCollisionDetector, ShapeIdentitySwapRebuildsNativeShape)
   EXPECT_EQ(
       Eigen::Vector3d(-1.0, -2.0, -3.0), nativeObject->getNativeAabb().min);
   EXPECT_EQ(Eigen::Vector3d(1.0, 2.0, 3.0), nativeObject->getNativeAabb().max);
+
+  frame->setShape(nullptr);
+  nativeObject->updateEngineData();
+
+  EXPECT_EQ(nullptr, nativeObject->getNativeShape());
+  EXPECT_EQ(Eigen::Vector3d::Zero(), nativeObject->getNativeAabb().min);
+  EXPECT_EQ(Eigen::Vector3d::Zero(), nativeObject->getNativeAabb().max);
 }
 
 //==============================================================================

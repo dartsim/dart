@@ -164,16 +164,10 @@ bool shouldSkipPair(
 bool shouldUseNativeManifoldContact(
     const CollisionObject* object1, const CollisionObject* object2)
 {
-  if (!object1 || !object2)
-    return false;
-
   const auto* nativeObject1
       = static_cast<const NativeCollisionObject*>(object1);
   const auto* nativeObject2
       = static_cast<const NativeCollisionObject*>(object2);
-
-  if (shouldUseDartFallback(nativeObject1, nativeObject2))
-    return false;
 
   return nativeObject1->getNativeShape() != nullptr
          && nativeObject2->getNativeShape() != nullptr;
@@ -782,10 +776,14 @@ bool emitDartFallbackContacts(
       return false;
 
     auto contact = pairResult.getContact(i);
+    // DART fallback kernels currently report only penetrating contacts. Keep
+    // the adapter check in case a future kernel violates that contract.
+    // LCOV_EXCL_START: requires negative depth from a fallback kernel.
     if (contact.penetrationDepth < 0.0
         && !option.allowNegativePenetrationDepthContacts) {
       continue;
     }
+    // LCOV_EXCL_STOP
 
     if (Contact::isZeroNormal(contact.normal))
       continue;
@@ -811,9 +809,6 @@ bool processDartFallbackPair(
   DART_PROFILE_SCOPED_IF_N(
       dart::common::profile::isProfileRecordingEnabled(),
       "Native soft fallback pair");
-  if (result && result->getNumContacts() >= option.maxNumContacts)
-    return true;
-
   pairResult.clear();
   auto* dartFallback1 = object1->getDartFallbackObject();
   auto* dartFallback2 = object2->getDartFallbackObject();
@@ -875,9 +870,6 @@ bool processNativePair(
     return processDartFallbackPair(
         object1, object2, option, result, collisionFound, fallbackPairResult);
   }
-
-  if (!object1->getNativeShape() || !object2->getNativeShape())
-    return false;
 
   if (result && result->getNumContacts() >= option.maxNumContacts)
     return true;
@@ -1016,7 +1008,7 @@ void NativeCollisionDetector::setNumCollisionThreads(std::size_t numThreads)
   if (numThreads == 0u) {
     numThreads = std::thread::hardware_concurrency();
     if (numThreads == 0u)
-      numThreads = 1u;
+      numThreads = 1u; // LCOV_EXCL_LINE: requires unavailable hardware count.
   }
 
   mNumCollisionThreads = std::max<std::size_t>(1u, numThreads);

@@ -42,6 +42,7 @@
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/math/Helpers.hpp"
@@ -1419,6 +1420,174 @@ TEST_F(
   EXPECT_EQ(softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
   world->step();
   EXPECT_EQ(softBody->getNumActivePointMasses(), softBody->getNumPointMasses());
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest, softMeshShapeUsesContiguousStateAndCachedFallbackStorage)
+{
+  auto emptySkeleton = dynamics::Skeleton::create("empty_soft_mesh");
+  auto emptyPair = emptySkeleton->createJointAndBodyNodePair<
+      dynamics::WeldJoint,
+      dynamics::SoftBodyNode>();
+  ASSERT_TRUE(emptyPair.second != nullptr);
+  ASSERT_EQ(emptyPair.second->getNumPointMasses(), 0u);
+  ASSERT_EQ(emptyPair.second->getNumShapeNodes(), 1u);
+
+  auto emptyShape = std::dynamic_pointer_cast<dynamics::SoftMeshShape>(
+      emptyPair.second->getShapeNode(0)->getShape());
+  ASSERT_TRUE(emptyShape != nullptr);
+  EXPECT_TRUE(emptyShape->getBoundingBox().getMin().isZero(0.0));
+  EXPECT_TRUE(emptyShape->getBoundingBox().getMax().isZero(0.0));
+
+  auto skeleton = dynamics::Skeleton::create("soft_mesh_storage");
+  const auto uniqueProperties = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d(1.0, 2.0, 3.0),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      100.0,
+      200.0,
+      1.0);
+  const dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties("soft_mesh_body"));
+  const dynamics::SoftBodyNode::Properties softProperties(
+      bodyProperties, uniqueProperties);
+  auto pair = skeleton->createJointAndBodyNodePair<
+      dynamics::WeldJoint,
+      dynamics::SoftBodyNode>(
+      nullptr, dynamics::WeldJoint::Properties(), softProperties);
+  dynamics::SoftBodyNode* softBody = pair.second;
+  ASSERT_TRUE(softBody != nullptr);
+  ASSERT_EQ(softBody->getNumPointMasses(), 8u);
+  ASSERT_EQ(softBody->getNumShapeNodes(), 1u);
+
+  auto shape = std::dynamic_pointer_cast<dynamics::SoftMeshShape>(
+      softBody->getShapeNode(0)->getShape());
+  ASSERT_TRUE(shape != nullptr);
+
+  dynamics::SoftBodyNode::AspectState state = softBody->getAspectState();
+  ASSERT_EQ(state.mPointStates.size(), softBody->getNumPointMasses());
+  state.mPointStates[0].mPositions = Eigen::Vector3d(0.25, -0.5, 0.75);
+  state.mPointStates[7].mPositions = Eigen::Vector3d(-0.5, 0.25, -0.75);
+  softBody->setAspectState(state);
+  shape->refreshData();
+
+  std::vector<Eigen::Vector3d> expectedVertices;
+  expectedVertices.reserve(softBody->getNumPointMasses());
+  Eigen::Vector3d expectedMin
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d expectedMax
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+  for (std::size_t i = 0u; i < softBody->getNumPointMasses(); ++i) {
+    const dynamics::PointMass* pointMass = softBody->getPointMass(i);
+    ASSERT_TRUE(pointMass != nullptr);
+    const Eigen::Vector3d vertex
+        = state.mPointStates[i].mPositions + pointMass->getRestingPosition();
+    expectedVertices.push_back(vertex);
+    expectedMin = expectedMin.cwiseMin(vertex);
+    expectedMax = expectedMax.cwiseMax(vertex);
+  }
+
+  const aiMesh* mesh = shape->getAssimpMesh();
+  ASSERT_TRUE(mesh != nullptr);
+  ASSERT_EQ(mesh->mNumVertices, expectedVertices.size());
+  for (std::size_t i = 0u; i < expectedVertices.size(); ++i) {
+    EXPECT_TRUE(
+        Eigen::Vector3d(
+            mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z)
+            .isApprox(expectedVertices[i], 1.0e-6));
+  }
+  EXPECT_TRUE(shape->getBoundingBox().getMin().isApprox(expectedMin, 1.0e-12));
+  EXPECT_TRUE(shape->getBoundingBox().getMax().isApprox(expectedMax, 1.0e-12));
+
+  // SoftMeshShape retains a defensive fallback for temporarily mismatched
+  // aspect storage. Preserve the last coherent PointMass transforms while
+  // constructing that state so the fallback can be exercised in isolation.
+  for (std::size_t i = 0u; i < softBody->getNumPointMasses(); ++i)
+    EXPECT_TRUE(softBody->getPointMass(i)->getLocalPosition().isApprox(
+        expectedVertices[i], 1.0e-12));
+  dynamics::SoftBodyNode::AspectState mismatchedState;
+  softBody->setAspectState(mismatchedState);
+  softBody->getNotifier()->clearTransformNotice();
+  shape->refreshData();
+
+  mesh = shape->getAssimpMesh();
+  ASSERT_TRUE(mesh != nullptr);
+  for (std::size_t i = 0u; i < expectedVertices.size(); ++i) {
+    EXPECT_TRUE(
+        Eigen::Vector3d(
+            mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z)
+            .isApprox(expectedVertices[i], 1.0e-6));
+  }
+  EXPECT_TRUE(shape->getBoundingBox().getMin().isApprox(expectedMin, 1.0e-12));
+  EXPECT_TRUE(shape->getBoundingBox().getMax().isApprox(expectedMax, 1.0e-12));
+
+  softBody->setAspectState(state);
+}
+
+//==============================================================================
+TEST_F(
+    SoftDynamicsTest,
+    adaptiveContactActivationCopyClampsAndInvalidatesRestGeometry)
+{
+  simulation::WorldPtr sourceWorld = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  simulation::WorldPtr targetWorld = utils::SkelParser::readWorld(
+      "dart://sample/skel/test/test_drop_box.skel");
+  ASSERT_TRUE(sourceWorld != nullptr);
+  ASSERT_TRUE(targetWorld != nullptr);
+
+  dynamics::SoftBodyNode* source = firstSoftBody(sourceWorld);
+  dynamics::SoftBodyNode* target = firstSoftBody(targetWorld);
+  ASSERT_TRUE(source != nullptr);
+  ASSERT_TRUE(target != nullptr);
+  source->setAdaptiveContactActivationEnabled(true);
+  source->setAdaptiveContactActivationRingCount(3u);
+  source->setAdaptiveContactActivationLingerSteps(5u);
+  source->setAdaptiveContactActivationVelocityTolerance(2.0e-4);
+  source->setAdaptiveContactActivationPositionTolerance(3.0e-4);
+
+  target->copy(*source);
+  EXPECT_TRUE(target->isAdaptiveContactActivationEnabled());
+  EXPECT_EQ(target->getAdaptiveContactActivationRingCount(), 3u);
+  EXPECT_EQ(target->getAdaptiveContactActivationLingerSteps(), 5u);
+  EXPECT_DOUBLE_EQ(
+      target->getAdaptiveContactActivationVelocityTolerance(), 2.0e-4);
+  EXPECT_DOUBLE_EQ(
+      target->getAdaptiveContactActivationPositionTolerance(), 3.0e-4);
+
+  target->setAdaptiveContactActivationVelocityTolerance(-1.0);
+  EXPECT_DOUBLE_EQ(
+      target->getAdaptiveContactActivationVelocityTolerance(), 0.0);
+  target->setAdaptiveContactActivationVelocityTolerance(
+      std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(
+      target->getAdaptiveContactActivationVelocityTolerance(), 0.0);
+  target->setAdaptiveContactActivationPositionTolerance(-1.0);
+  EXPECT_DOUBLE_EQ(
+      target->getAdaptiveContactActivationPositionTolerance(), 0.0);
+  target->setAdaptiveContactActivationPositionTolerance(
+      std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(
+      target->getAdaptiveContactActivationPositionTolerance(), 0.0);
+
+  ASSERT_GT(target->getNumPointMasses(), 0u);
+  dynamics::PointMass* pointMass = target->getPointMass(0);
+  ASSERT_TRUE(pointMass != nullptr);
+  const Eigen::Matrix6d inertiaBefore = target->getArticulatedInertiaImplicit();
+  const std::size_t versionBefore = target->getVersion();
+  const Eigen::Vector3d updatedRestingPosition
+      = pointMass->getRestingPosition() + Eigen::Vector3d(0.2, -0.1, 0.3);
+  pointMass->setRestingPosition(updatedRestingPosition);
+  EXPECT_EQ(pointMass->getRestingPosition(), updatedRestingPosition);
+  EXPECT_GT(target->getVersion(), versionBefore);
+
+  const Eigen::Matrix6d inertiaAfter = target->getArticulatedInertiaImplicit();
+  EXPECT_GT((inertiaAfter - inertiaBefore).norm(), 1.0e-12);
+
+  const std::size_t unchangedVersion = target->getVersion();
+  pointMass->setRestingPosition(updatedRestingPosition);
+  EXPECT_EQ(target->getVersion(), unchangedVersion);
 }
 
 //==============================================================================

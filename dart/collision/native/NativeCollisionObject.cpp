@@ -108,15 +108,6 @@ bool shapeIsPlane(const dynamics::Shape* shape)
 }
 
 //==============================================================================
-native::Aabb getShapeAabb(
-    const dynamics::Shape& shape, const Eigen::Isometry3d& transform)
-{
-  const auto& bounds = shape.getBoundingBox();
-  return native::Aabb::transformed(
-      native::Aabb(bounds.getMin(), bounds.getMax()), transform);
-}
-
-//==============================================================================
 native::Aabb getDartFallbackAabb(
     const DARTCollisionObject& object, const Eigen::Isometry3d& transform)
 {
@@ -212,13 +203,8 @@ void NativeCollisionObject::updateEngineData()
     auto* fallbackObject = getDartFallbackObject();
     if (mUsesSoftMeshFallbackShape || shapeChanged)
       refreshDartFallbackObject(fallbackObject);
-    if (fallbackObject != nullptr) {
-      mNativeTransform = fallbackObject->getWorldTransformForCollision();
-      mNativeAabb = getDartFallbackAabb(*fallbackObject, mNativeTransform);
-    } else {
-      mNativeTransform = getTransform();
-      mNativeAabb = getShapeAabb(*shapePtr, mNativeTransform);
-    }
+    mNativeTransform = fallbackObject->getWorldTransformForCollision();
+    mNativeAabb = getDartFallbackAabb(*fallbackObject, mNativeTransform);
     return;
   }
 
