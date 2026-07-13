@@ -54,7 +54,6 @@
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -281,7 +280,6 @@ std::size_t getManifoldCacheId(const CollisionObject* object)
 //==============================================================================
 struct NativeDetectorState
 {
-  std::size_t numCollisionThreads{1u};
   std::unique_ptr<native::PersistentManifoldCache> manifoldCache;
 };
 
@@ -329,28 +327,6 @@ native::PersistentManifoldCache& getOrCreateManifoldCache(
     cache = std::make_unique<native::PersistentManifoldCache>();
 
   return *cache;
-}
-
-//==============================================================================
-void setStoredNumCollisionThreads(
-    const NativeCollisionDetector* detector, std::size_t numThreads)
-{
-  auto& registry = getNativeDetectorStateRegistry();
-  std::lock_guard<std::mutex> lock(registry.mutex);
-  registry.states[detector].numCollisionThreads = numThreads;
-}
-
-//==============================================================================
-std::size_t getStoredNumCollisionThreads(
-    const NativeCollisionDetector* detector)
-{
-  auto& registry = getNativeDetectorStateRegistry();
-  std::lock_guard<std::mutex> lock(registry.mutex);
-  const auto it = registry.states.find(detector);
-  if (it == registry.states.end())
-    return 1u;
-
-  return it->second.numCollisionThreads;
 }
 
 //==============================================================================
@@ -995,9 +971,7 @@ void NativeCollisionDetector::notifyCollisionObjectDestroying(
 std::shared_ptr<CollisionDetector>
 NativeCollisionDetector::cloneWithoutCollisionObjects() const
 {
-  auto clone = NativeCollisionDetector::create();
-  clone->setNumCollisionThreads(getNumCollisionThreads());
-  return clone;
+  return NativeCollisionDetector::create();
 }
 
 //==============================================================================
@@ -1017,24 +991,6 @@ const std::string& NativeCollisionDetector::getStaticType()
 std::unique_ptr<CollisionGroup> NativeCollisionDetector::createCollisionGroup()
 {
   return std::make_unique<NativeCollisionGroup>(shared_from_this());
-}
-
-//==============================================================================
-void NativeCollisionDetector::setNumCollisionThreads(std::size_t numThreads)
-{
-  if (numThreads == 0u) {
-    numThreads = std::thread::hardware_concurrency();
-    if (numThreads == 0u)
-      numThreads = 1u; // LCOV_EXCL_LINE: requires unavailable hardware count.
-  }
-
-  setStoredNumCollisionThreads(this, std::max<std::size_t>(1u, numThreads));
-}
-
-//==============================================================================
-std::size_t NativeCollisionDetector::getNumCollisionThreads() const
-{
-  return getStoredNumCollisionThreads(this);
 }
 
 //==============================================================================

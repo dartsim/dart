@@ -38,7 +38,6 @@
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
-#include "dart/collision/native/NativeCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
@@ -231,22 +230,14 @@ bool canUseParallelBuiltInBoxedSolvers(const ConstraintSolver& solver)
 }
 
 //==============================================================================
-void configureCollisionThreads(
+void configureDARTCollisionThreads(
     const collision::CollisionDetectorPtr& collisionDetector,
     std::size_t numThreads)
 {
   auto* dartCollisionDetector = dynamic_cast<collision::DARTCollisionDetector*>(
       collisionDetector.get());
-  if (dartCollisionDetector != nullptr) {
+  if (dartCollisionDetector != nullptr)
     dartCollisionDetector->setNumCollisionThreads(numThreads);
-    return;
-  }
-
-  auto* nativeCollisionDetector
-      = dynamic_cast<collision::NativeCollisionDetector*>(
-          collisionDetector.get());
-  if (nativeCollisionDetector != nullptr)
-    nativeCollisionDetector->setNumCollisionThreads(numThreads);
 }
 
 namespace {
@@ -767,7 +758,7 @@ void ConstraintSolver::setNumSimulationThreads(std::size_t numThreads)
   }
 
   mNumSimulationThreads = std::max<std::size_t>(1u, numThreads);
-  configureCollisionThreads(mCollisionDetector, mNumSimulationThreads);
+  configureDARTCollisionThreads(mCollisionDetector, mNumSimulationThreads);
   if (mNumSimulationThreads <= 1u) {
     mConstraintThreadPool.reset();
     return;
@@ -807,7 +798,7 @@ void ConstraintSolver::setCollisionDetector(
     return;
 
   mCollisionDetector = collisionDetector;
-  configureCollisionThreads(mCollisionDetector, mNumSimulationThreads);
+  configureDARTCollisionThreads(mCollisionDetector, mNumSimulationThreads);
 
   mCollisionGroup = mCollisionDetector->createCollisionGroupAsSharedPtr();
 

@@ -38,8 +38,6 @@
 
 #include <memory>
 
-#include <cstddef>
-
 namespace dart {
 namespace collision {
 
@@ -66,13 +64,6 @@ public:
 
   // Documentation inherited
   std::unique_ptr<CollisionGroup> createCollisionGroup() override;
-
-  /// Set the number of collision worker threads used by native internals that
-  /// can safely parallelize pair work.
-  void setNumCollisionThreads(std::size_t numThreads);
-
-  /// Get the number of collision worker threads requested for native internals.
-  std::size_t getNumCollisionThreads() const;
 
   // Documentation inherited
   bool collide(

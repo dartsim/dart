@@ -104,10 +104,10 @@ The first WP-DB.08 implementation supports:
 - retained soft-face BVH traversal for the soft-soft lane once a penetrating
   candidate exists, with a linear prepass fallback for no-contact and
   non-penetrating shell cases,
-- finite-finite native soft pair worker scheduling that collides eligible
-  soft-soft candidate pairs in worker-local `CollisionResult`s and merges them
-  in the original sweep order to preserve duplicate-contact handling and
-  contact-cap behavior,
+- finite-finite soft pair worker scheduling in `DARTCollisionDetector` that
+  collides eligible soft-soft candidate pairs in worker-local
+  `CollisionResult`s and merges them in the original sweep order to preserve
+  duplicate-contact handling and contact-cap behavior,
 - primitive-frame classification for soft-vs-plane, soft-vs-sphere, and
   soft-vs-box point contacts so non-contact vertices avoid unnecessary world
   contact-point transforms,
@@ -258,7 +258,8 @@ measured:
 | `DARTCollide soft-soft vertex-face` | 1.015 ms | 60 | 34.4% |
 
 That short early-scene diagnostic is mostly a coverage smoke; it is not the
-case where BVH pruning pays for itself. Before the finite-finite worker slice,
+case where BVH pruning pays for itself. Before the `DARTCollisionDetector`
+finite-finite worker slice,
 a 200-step same-scene run exercised the later contact-heavy span and gave a
 clearer signal:
 
@@ -269,16 +270,19 @@ clearer signal:
 | FCL | 4 | 116.931 | 1710.4 | Same FCL checksum row as `THREADS=1`; refit remained dominant. |
 | Native | 4 | 38.211 | 5234.1 | Same native checksum row as `THREADS=1`; finite-finite soft-soft collision remains serial. |
 
-After adding finite-finite soft pair worker scheduling, the 200-step native
-`soft_bodies` checksum row still matched exactly between `THREADS=1` and
-`THREADS=4`. A same-host local repeat that was not run as a stable benchmark
-measured 44.199 ms for `THREADS=1` and 41.988 ms for `THREADS=4`; later
-follow-up runs on the same busy host varied substantially but continued to show
-the worker scope (`DART native finite-finite soft workers`) and identical
-checksums. Treat this as correctness and worker-activation evidence, not as a
-settled scaling number. The scene only has a few soft-soft finite-finite pairs,
-so larger multicore gains likely require intra-pair point/face parallelism,
-larger representative scenes, or active-neighborhood contact work.
+After adding finite-finite soft pair worker scheduling to
+`DARTCollisionDetector`, the 200-step `COLLISION_DETECTOR=dart` `soft_bodies`
+checksum row still matched exactly between `THREADS=1` and `THREADS=4`. A
+same-host local repeat that was not run as a stable benchmark measured
+44.199 ms for `THREADS=1` and 41.988 ms for `THREADS=4`; later follow-up runs on
+the same busy host varied substantially but continued to show the then-current
+worker scope (`DART native finite-finite soft workers`) and identical
+checksums. Treat this as historical `DARTCollisionDetector` correctness and
+worker-activation evidence, not as evidence that the direct
+`NativeCollisionDetector` path is threaded or as a settled scaling number. The
+scene only has a few soft-soft finite-finite pairs, so larger multicore gains
+likely require intra-pair point/face parallelism, larger representative scenes,
+or active-neighborhood contact work.
 
 The native and FCL step-200 checksum rows are not identical on the broader
 `soft_bodies` scene because the native soft-soft lane is still a different
@@ -292,8 +296,10 @@ profile rows but does not change the remaining native soft-soft coverage gap.
 The cache-backed lane is still not the destination implementation for dense or
 contact-heavy soft scenes. It removes repeated `PointMass*` lookups and
 triangle setup from the inner loop, rejects separated faces before projection,
-now prunes retained BVH nodes after a penetrating candidate exists, and can run
-eligible soft-soft finite pairs through the collision thread pool. The next
+now prunes retained BVH nodes after a penetrating candidate exists, and the
+`DARTCollisionDetector` path can run eligible soft-soft finite pairs through
+the collision thread pool. The direct `NativeCollisionDetector` path remains
+serial. The next
 native soft-soft packet should still add full triangle/contact-neighborhood
 coverage and stronger multicore scaling before native can be the default
 deformable backend.
