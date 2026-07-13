@@ -184,7 +184,7 @@ def sentence_case(text: str) -> str:
 def validate_codex_skill(skill_path: Path) -> list[str]:
     """Validate skill meets Codex format requirements. Returns list of warnings."""
     warnings = []
-    content = skill_path.read_text()
+    content = skill_path.read_text(encoding="utf-8")
     meta = parse_skill_frontmatter(content)
 
     name = meta.get("name", "")
@@ -224,7 +224,7 @@ def list_skill_names(skill_dir: Path) -> tuple[set[str], list[str]]:
     for skill_path in sorted(skill_dir.glob("*/SKILL.md")):
         folder_name = skill_path.parent.name
         rel_path = display_path(skill_path)
-        meta = parse_skill_frontmatter(skill_path.read_text())
+        meta = parse_skill_frontmatter(skill_path.read_text(encoding="utf-8"))
         declared_name = meta.get("name", "")
 
         if not declared_name:
@@ -263,7 +263,7 @@ def list_generated_skill_names(skill_dir: Path) -> tuple[set[str], list[str]]:
     paths, errors = list_generated_skill_paths(skill_dir)
     names: set[str] = set()
     for path in paths:
-        meta = parse_skill_frontmatter(path.read_text())
+        meta = parse_skill_frontmatter(path.read_text(encoding="utf-8"))
         name = meta.get("name", "")
         folder_name = path.parent.name
         if not name:
@@ -368,7 +368,7 @@ def validate_style_and_budget(repo_root: Path) -> bool:
         else:
             skill_paths = sorted(skill_dir.glob("*/SKILL.md"))
         for skill_path in skill_paths:
-            content = skill_path.read_text()
+            content = skill_path.read_text(encoding="utf-8")
             meta = parse_skill_frontmatter(content)
             name = meta.get("name", "")
             desc = meta.get("description", "")
@@ -397,7 +397,7 @@ def validate_style_and_budget(repo_root: Path) -> bool:
 
     for label, command_dir in command_dirs:
         for command_path in sorted(command_dir.glob("*.md")):
-            content = command_path.read_text()
+            content = command_path.read_text(encoding="utf-8")
             meta = parse_command_frontmatter(content)
             desc = meta.get("description", "")
             path_label = display_path(command_path)
@@ -514,7 +514,7 @@ def validate_command_structure(repo_root: Path) -> bool:
     for command_path in sorted((repo_root / ".claude" / "commands").glob("*.md")):
         errors.extend(
             command_structure_errors(
-                display_path(command_path), command_path.read_text()
+                display_path(command_path), command_path.read_text(encoding="utf-8")
             )
         )
 
@@ -601,7 +601,9 @@ def extract_required_reading_from_content(content: str) -> list[str]:
 
 def extract_required_reading(command_path: Path) -> list[str]:
     """Extract @file entries from a command's Required Reading section."""
-    return extract_required_reading_from_content(command_path.read_text())
+    return extract_required_reading_from_content(
+        command_path.read_text(encoding="utf-8")
+    )
 
 
 def required_reading_path_errors(repo_root: Path, command_path: Path) -> list[str]:
@@ -737,7 +739,7 @@ def validate_capability_manifest(
         return [f"{display_path(manifest_path)}: missing capability manifest"]
 
     try:
-        manifest = json.loads(manifest_path.read_text())
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as error:
         return [f"{display_path(manifest_path)}:{error.lineno}: invalid JSON"]
 
@@ -1131,7 +1133,7 @@ def validate_approval_boundary(repo_root: Path) -> list[str]:
     ]
 
     for path in scan_paths:
-        scan_lines(display_path(path), path.read_text().splitlines())
+        scan_lines(display_path(path), path.read_text(encoding="utf-8").splitlines())
 
     for command_path in sorted((repo_root / ".claude" / "commands").glob("*.md")):
         rendered_wrapper = render_codex_command_skill(command_path).split(
@@ -1144,7 +1146,9 @@ def validate_approval_boundary(repo_root: Path) -> list[str]:
 
     ai_tools = repo_root / "docs" / "onboarding" / "ai-tools.md"
     if ai_tools.exists() and re.search(
-        r"resolve (?:all|every) unresolved thread", ai_tools.read_text(), re.I
+        r"resolve (?:all|every) unresolved thread",
+        ai_tools.read_text(encoding="utf-8"),
+        re.I,
     ):
         errors.append(
             f"{display_path(ai_tools)}: bulk review-thread resolution is forbidden"
@@ -1174,8 +1178,8 @@ def validate_ai_docs(repo_root: Path) -> bool:
         if not path.exists():
             errors.append(f"{display_path(path)}: missing required AI doc")
 
-    agents_content = (repo_root / "AGENTS.md").read_text()
-    docs_readme_content = (repo_root / "docs" / "README.md").read_text()
+    agents_content = (repo_root / "AGENTS.md").read_text(encoding="utf-8")
+    docs_readme_content = (repo_root / "docs" / "README.md").read_text(encoding="utf-8")
     if "docs/ai/README.md" not in agents_content:
         errors.append("AGENTS.md: missing docs/ai/README.md pointer")
     if "docs/ai/principles.md" not in agents_content:
@@ -1189,7 +1193,7 @@ def validate_ai_docs(repo_root: Path) -> bool:
 
     workflows_path = docs_dir / "workflows.md"
     if workflows_path.exists():
-        workflow_content = workflows_path.read_text()
+        workflow_content = workflows_path.read_text(encoding="utf-8")
         command_names = list_command_names(repo_root / ".claude" / "commands")
         skill_names, skill_errors = list_skill_names(repo_root / ".claude" / "skills")
         errors.extend(skill_errors)
@@ -1325,7 +1329,9 @@ def validate_ai_docs(repo_root: Path) -> bool:
 
     private_pattern = re.compile(r"(?:/home/|/Users/|~/|fbsource|arvr/libraries)")
     for path in docs_dir.glob("*.md"):
-        for line_number, line in enumerate(path.read_text().splitlines(), start=1):
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8").splitlines(), start=1
+        ):
             if private_pattern.search(line):
                 errors.append(
                     f"{display_path(path)}:{line_number}: private path reference"
@@ -1404,11 +1410,11 @@ def sync_flat_files(
 
     for source_file in source_files:
         target_file = target_dir / source_file.name
-        source_content = source_file.read_text()
+        source_content = source_file.read_text(encoding="utf-8")
         source_rel_path = source_file.relative_to(get_repo_root())
 
         if target_file.exists():
-            target_content = target_file.read_text()
+            target_content = target_file.read_text(encoding="utf-8")
             target_content_stripped = strip_auto_gen_header(target_content)
             if source_content == target_content_stripped and has_auto_gen_header(
                 target_content
@@ -1425,7 +1431,7 @@ def sync_flat_files(
             content_with_header = add_auto_gen_header(
                 source_content, str(source_rel_path)
             )
-            target_file.write_text(content_with_header)
+            target_file.write_text(content_with_header, encoding="utf-8")
             print(f"  SYNCED:   {source_file.name}")
             synced_count += 1
 
@@ -1452,7 +1458,7 @@ def sync_flat_files(
 def render_codex_command_skill(command_path: Path) -> str:
     """Render a Claude/OpenCode command as a Codex skill."""
     command_name = command_path.stem
-    command_content = command_path.read_text()
+    command_content = command_path.read_text(encoding="utf-8")
     meta = parse_command_frontmatter(command_content)
     description = meta.get("description", f"Run the {command_name} workflow")
     command_body = strip_frontmatter(command_content).strip()
@@ -1510,7 +1516,7 @@ def load_generated_manifest(target_dir: Path) -> tuple[set[str], list[str]]:
         return set(), []
 
     try:
-        data = json.loads(manifest_path.read_text())
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         return set(), [f"{display_path(manifest_path)}: invalid JSON: {error}"]
     if not isinstance(data, dict):
@@ -1622,7 +1628,7 @@ def sync_codex_skills(
 
     for skill_name in source_skill_names:
         source_skill = skill_source_dir / skill_name / "SKILL.md"
-        source_content = source_skill.read_text()
+        source_content = source_skill.read_text(encoding="utf-8")
 
         warnings = validate_codex_skill(source_skill)
         for warning in warnings:
@@ -1667,7 +1673,7 @@ def sync_codex_skills(
                 return False, -1, 0, 0
             if rel_path in expected_paths or rel_path in owned_paths:
                 continue
-            if has_auto_gen_header(skill_path.read_text()):
+            if has_auto_gen_header(skill_path.read_text(encoding="utf-8")):
                 print(
                     "  ERROR:    unowned generated-looking skill requires manual "
                     f"classification: {rel_path}"
@@ -1680,7 +1686,7 @@ def sync_codex_skills(
         source_rel_path = source_path.relative_to(get_repo_root())
 
         if target_skill.exists():
-            target_content = target_skill.read_text()
+            target_content = target_skill.read_text(encoding="utf-8")
             target_content_stripped = strip_auto_gen_header(target_content)
             if content == target_content_stripped and has_auto_gen_header(
                 target_content
@@ -1696,7 +1702,7 @@ def sync_codex_skills(
         else:
             target_skill_dir.mkdir(parents=True, exist_ok=True)
             content_with_header = add_auto_gen_header(content, str(source_rel_path))
-            target_skill.write_text(content_with_header)
+            target_skill.write_text(content_with_header, encoding="utf-8")
             print(f"  SYNCED:   {skill_name}/SKILL.md")
             synced_count += 1
 
@@ -1725,13 +1731,16 @@ def sync_codex_skills(
 
     manifest_path = target_dir / GENERATED_MANIFEST
     expected_manifest = generated_manifest_content(expected_paths)
-    if not manifest_path.exists() or manifest_path.read_text() != expected_manifest:
+    if (
+        not manifest_path.exists()
+        or manifest_path.read_text(encoding="utf-8") != expected_manifest
+    ):
         all_synced = False
         if check_only:
             status = "MISMATCH" if manifest_path.exists() else "MISSING"
             print(f"  {status}: {GENERATED_MANIFEST}")
         else:
-            manifest_path.write_text(expected_manifest)
+            manifest_path.write_text(expected_manifest, encoding="utf-8")
             print(f"  SYNCED:   {GENERATED_MANIFEST}")
 
     return all_synced, synced_count, skipped_count, len(orphaned)
@@ -1800,9 +1809,9 @@ def sync_all(check_only: bool = False) -> bool:
     # Summary
     if check_only:
         if all_synced:
-            print("✓ All AI tool files are in sync")
+            print("OK: All AI tool files are in sync")
         else:
-            print("✗ Files are out of sync. Run: pixi run sync-ai-commands")
+            print("ERROR: Files are out of sync. Run: pixi run sync-ai-commands")
 
     return all_synced
 

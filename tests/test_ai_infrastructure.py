@@ -51,6 +51,28 @@ def test_repository_check_works_without_python_utf8_mode():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_repository_sync_check_reads_utf8_without_python_utf8_mode():
+    source = ROOT / ".claude" / "skills" / "dart-contribute" / "SKILL.md"
+    assert "❌" in source.read_text(encoding="utf-8")
+    env = {
+        **os.environ,
+        "LC_ALL": "C",
+        "PYTHONCOERCECLOCALE": "0",
+        "PYTHONUTF8": "0",
+    }
+    result = subprocess.run(
+        [sys.executable, "scripts/sync_ai_commands.py", "--check"],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    output = result.stdout + result.stderr
+
+    assert "UnicodeDecodeError" not in output
+    assert result.returncode == 0, output
+
+
 def test_release_scenarios_are_exercisable():
     assert infra.exercise_scenarios(ROOT) == []
 
