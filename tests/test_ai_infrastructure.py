@@ -1056,7 +1056,7 @@ def test_ci_wiring_requires_factory_capture_and_visual_task(
         ),
         (
             ".claude/hooks/pre-commit-guard.ps1",
-            "$pipelineInput = @($input)",
+            "$pipelineInput = @($input | ForEach-Object { $_ })",
         ),
         (
             ".claude/hooks/pre-commit-guard.ps1",
