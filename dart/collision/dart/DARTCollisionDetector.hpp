@@ -127,7 +127,6 @@ private:
 
   std::unique_ptr<CollisionThreadPool> mCollisionThreadPool;
   std::size_t mNumCollisionThreads{1u};
-  bool mSoftFaceInteriorContactsEnabled{false};
 };
 
 } // namespace collision
