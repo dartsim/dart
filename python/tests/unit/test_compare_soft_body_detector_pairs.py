@@ -258,7 +258,7 @@ def test_captured_command_times_out_and_terminates_process_group(tmp_path):
     runner = _load_runner_module()
     log_path = tmp_path / "timeout.log"
 
-    with pytest.raises(subprocess.TimeoutExpired):
+    with pytest.raises(subprocess.TimeoutExpired) as timeout_error:
         runner.run_captured_command(
             [
                 sys.executable,
@@ -271,7 +271,10 @@ def test_captured_command_times_out_and_terminates_process_group(tmp_path):
             timeout=0.05,
         )
 
-    assert "started" in log_path.read_text(encoding="utf-8")
+    assert timeout_error.value.timeout == pytest.approx(0.05)
+    assert log_path.read_text(encoding="utf-8") == (
+        timeout_error.value.output or ""
+    )
 
 
 def test_exact_two_percent_boundary_passes_and_just_over_fails():
