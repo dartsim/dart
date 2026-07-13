@@ -326,6 +326,8 @@ def test_guard_fails_closed_for_unknown_injected_classifier_result(tmp_path):
         "/usr/bin/git commit -m x",
         "command /usr/local/bin/git commit -m x",
         "git -c user.name='DART Bot' commit -m x",
+        "GIT commit -m x",
+        "GIT.EXE commit -m x",
         "command git commit -m x",
         "command -- git commit -m x",
         "command -p git commit -m x",

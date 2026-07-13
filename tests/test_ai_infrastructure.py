@@ -1048,6 +1048,14 @@ def test_ci_wiring_requires_factory_capture_and_visual_task(
             "scripts/pretool_guard_bridge.py",
             'env["CLAUDE_PROJECT_DIR"] = str(root)',
         ),
+        (
+            "scripts/pretool_guard_bridge.py",
+            "def may_invoke_git_commit(command: str) -> bool",
+        ),
+        (
+            "scripts/pretool_guard_bridge.py",
+            "if not may_invoke_git_commit(command):",
+        ),
     ),
 )
 def test_windows_hook_components_cannot_be_missing_or_drifted(
@@ -1096,22 +1104,49 @@ def test_native_pretool_forwards_payload_to_shared_guard(
         lambda args, **kwargs: calls.append((args, kwargs))
         or subprocess.CompletedProcess(args, 0, b"", b""),
     )
-    status = json.dumps({"tool_input": {input_key: "git status"}}).encode()
+    payload = json.dumps({"tool_input": {input_key: "git commit -m x"}}).encode()
 
-    assert bridge.forward(tmp_path, status) == 0
+    assert bridge.forward(tmp_path, payload) == 0
     assert calls[0][0] == [
         str(bash),
         "--noprofile",
         "--norc",
         str(guard),
     ]
-    assert calls[0][1]["input"] == status
+    assert calls[0][1]["input"] == payload
     assert calls[0][1]["cwd"] == tmp_path
     assert calls[0][1]["env"]["CLAUDE_PROJECT_DIR"] == str(tmp_path)
     assert calls[0][1]["env"]["CODEX_PROJECT_DIR"] == str(tmp_path)
     assert calls[0][1]["env"]["DART_HOOK_PYTHON"] == str(
         Path(sys.executable).resolve()
     ).replace("\\", "/")
+
+
+@pytest.mark.parametrize("command", ("git status", "echo hello"))
+def test_native_pretool_noncommit_bypasses_missing_git_bash(
+    tmp_path, monkeypatch, command
+):
+    monkeypatch.setattr(bridge, "find_git_bash", lambda: None)
+    payload = json.dumps({"tool_input": {"command": command}}).encode()
+
+    assert bridge.forward(tmp_path, payload) == 0
+
+
+@pytest.mark.parametrize(
+    "command",
+    (
+        "GIT COMMIT -m x",
+        "g---i---t\nc---o---m---m---i---t",
+    ),
+)
+def test_native_pretool_commit_without_git_bash_fails_closed(
+    tmp_path, monkeypatch, capsys, command
+):
+    monkeypatch.setattr(bridge, "find_git_bash", lambda: None)
+    payload = json.dumps({"tool_input": {"command": command}}).encode()
+
+    assert bridge.forward(tmp_path, payload) == 2
+    assert "Git Bash is required" in capsys.readouterr().err
 
 
 def test_native_pretool_maps_guard_failure_to_codex_block(
