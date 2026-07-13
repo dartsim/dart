@@ -19,25 +19,23 @@ deferrals are published; the final same-host matrix and its evaluator
 limitation are recorded locally. Current work is review/CI stabilization and
 closeout decisions, not another speculative optimization lane inside #3382.
 
-The unpublished local stack starts with implementation commit `2ad156e7b82`,
-continues through the handoff and durable-owner updates, and includes
-balanced-evidence runner commit `9a7bab76948`, thermal-gate correction
-`a122c5ab437`, durable follow-up commits `ab6e8edede4` and `b615f5f1f6e`, and
-the current `release-6.20` merge at `52ff108437d`.
-The implementation commit closes the current WP-DB.04 review finding by
-keeping retained point-mass
-accelerations out of public mass-matrix columns and adds a regression for mass
-and augmented-mass state independence. The runner replaces the previously
-manual native-vs-DART timing method with a protocol that produces a
-revision-pinned, thermally gated, eight-row paired artifact. Both packets are
-reviewed and locally verified but still need approval before publication. No
-final paired timing artifact has been captured: the completed pre-merge
-attempts remained in preflight while sibling builds kept the shared host hot
-and busy, and a third attempt became stale when the target base moved. The
-merged head passes the full Release, Python, repository-lint, and focused
-assert-enabled gates. A fourth attempt pinned that merged state but likewise
-observed no valid preflight poll during repeated builds in other DART
-worktrees. Exact takeover state is in `RESUME.md`.
+The complete stack through host-blocker record `92ccfce567c` is published. It
+includes the mass-matrix review correction `2ad156e7b82`, the balanced-evidence
+runner and thermal-gate correction, durable follow-up owners, and the current
+`release-6.20` merge at `52ff108437d`. The original mass-matrix review thread
+is resolved, and the PR title and body now describe this as a representative
+release slice rather than feature completion.
+
+A review of published head `92ccfce567c` then found that disabling adaptive contact activation
+could leave articulated-inertia caches in their frozen/lumped state until a
+later unrelated invalidation. Follow-up commit `b8fe9a23093` invalidates the soft
+cache dependency chain on either activation-mode transition and adds an
+immediate-query regression. The fix passes the full Release, Python, lint, and
+focused soft-dynamics gates and is carried by the current branch with this
+task-home refresh. No final paired timing artifact has been captured: the
+exact composed attempt remained in preflight for 26 minutes while sibling
+builds kept the shared host hot and busy, with no valid poll. Exact takeover
+state is in `RESUME.md`.
 
 ## Reference scope
 
@@ -208,7 +206,7 @@ below.
 | WP-DB.01 baseline harness | Complete. | Headless benchmark rows cover representative soft scenes, point-mass/body counts, and thread settings (`01-baseline-evidence.md`). |
 | WP-DB.02 stability gate | Complete for the release slice. | Finite-state, thread-determinism, energy, contact-force/CoP smoothness, LCP robustness, and equation gates run in `test_SoftDynamics` (`03-stability-gate.md`, `07-equation-correctness.md`). |
 | WP-DB.03 paper parity matrix | Ledger complete; parity closeout still conditional. | Static paper targets now live in `docs/background/deformable_body_paper_targets.md`, and approved scope decisions live in `docs/design/dart6_deformable_body.md`. The four-link flexible-rigid-foot versus deformable-foot row remains neither implemented nor deferred (`02-paper-parity-matrix.md`, `decisions.md`). |
-| WP-DB.04 coupled equation correctness | Local review fix complete; publication pending. | Matrix/vector projection and inverse-identity gates plus the new retained-acceleration independence regression pass on `2ad156e7b82` (`07-equation-correctness.md`). |
+| WP-DB.04 coupled equation correctness | Review fix published and thread resolved. | Matrix/vector projection and inverse-identity gates plus the retained-acceleration independence regression pass on published commit `2ad156e7b82` (`07-equation-correctness.md`). |
 | WP-DB.05 adaptive contact activation | Complete. | Opt-in ABI-safe activation is default-off bit-identical, deterministic when enabled, allocation-gated, and covered by two recorded review rounds (`08-adaptive-contact-activation.md`). |
 | WP-DB.06 CPU data layout and SIMD | #3382 disposition complete; follow-up research remains. | Kept cache/data-access slices produce the measured win; retained SoA mirrors and contiguous-object prototypes were rejected or parked because measurements/design gates did not justify keeping them. No unsupported SIMD speedup is claimed (`04-data-layout-and-memory-hardening.md`). |
 | WP-DB.07 multi-core scaling | Original acceptance unmet; retained as an open PLAN-622 follow-up. | Pair-level work and 1/4/16-thread determinism landed, but the tracked small scenes are flat or slower at 16 threads. The original `threads=16` improvement contract therefore remains open and needs a larger workload or a maintainer-approved negative disposition (`06-pr-evidence.md`, `docs/plans/dashboard.md`). |
@@ -244,9 +242,10 @@ The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
   CPU/backend comparison plus normalized paper metrics. It still needs
   maintainer sign-off before the broad objective or task retirement can be
   claimed; external-engine comparison remains a follow-up.
-- Direct native and DART share the current soft kernels and are treated as a
-  measured tie; the native-owned kernel port is specified but not smuggled into
-  this stabilization phase.
+- Direct native and DART share the current soft kernels. Supporting manual
+  evidence suggests a tie on two single-thread rows, but it does not cover the
+  full failed winner gate or justify a final winner claim; the native-owned
+  kernel port remains the specified follow-up.
 - The zero-DoF soft point-mass assertion fix in `10c6b6055e4` also applies to
   `main` and requires the dual-PR follow-up. The current mass-matrix review fix
   is release-only because DART 7 still has point-mass mass aggregation disabled.
