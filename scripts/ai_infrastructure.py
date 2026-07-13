@@ -899,7 +899,7 @@ def check_ci_wiring(root: Path) -> list[str]:
             'pixi run python -c "import sys; print(sys.executable)"',
             "$launcher",
             "$hookCommand",
-            "$env:DART_HOOK_PAYLOAD | &",
+            "& (Join-Path (git rev-parse --show-toplevel)",
             '$ErrorActionPreference = "Continue"',
             '"git status"',
             "DART_HOOK_DRY_RUN",
