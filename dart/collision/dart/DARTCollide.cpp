@@ -5444,6 +5444,14 @@ int collidePlaneShape(
 //==============================================================================
 int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 {
+  auto* dartObject1 = dynamic_cast<DARTCollisionObject*>(o1);
+  if (dartObject1 != nullptr)
+    dartObject1->updateEngineData();
+
+  auto* dartObject2 = dynamic_cast<DARTCollisionObject*>(o2);
+  if (dartObject2 != nullptr && dartObject2 != dartObject1)
+    dartObject2->updateEngineData();
+
   const auto shape1 = o1->getShape();
   const auto shape2 = o2->getShape();
 
