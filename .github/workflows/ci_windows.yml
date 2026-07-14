@@ -105,8 +105,13 @@ jobs:
 
       - name: Test DART and dartpy
         run: |
-          $env:DART_VERBOSE = "ON"; `
-          $env:BUILD_TYPE = "${{ matrix.build_type }}"; `
+          $env:DART_VERBOSE = "ON"
+          $env:BUILD_TYPE = "${{ matrix.build_type }}"
+          # Static DART test executables repeat expensive LTCG links with /GL.
+          # Use Visual Studio's default Release tuning in hosted CI so the
+          # unchanged full target and test set fits within the runner limit.
+          pixi run config -- -DDART_MSVC_DEFAULT_OPTIONS=ON
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           pixi run test-all
 
       # Linux CI covers install. On Windows, pixi run install configures a
