@@ -926,6 +926,34 @@ TEST(DARTCollisionDetector, PublicSoftMeshCollideFallsBackForNonDartObjects)
 }
 
 //==============================================================================
+TEST(DARTCollisionDetector, PublicSoftMeshCollideRefreshesDartObjectCache)
+{
+  auto groups = makePlaneSoftMeshGroups(0.45);
+
+  collision::CollisionResult initialResult;
+  ASSERT_TRUE(groups.planeGroup->collide(
+      groups.softGroup.get(),
+      collision::CollisionOption(true, 10u),
+      &initialResult));
+  ASSERT_GT(initialResult.getNumContacts(), 0u);
+
+  auto* planeObject = initialResult.getContact(0u).collisionObject1;
+  auto* softObject = initialResult.getContact(0u).collisionObject2;
+  ASSERT_EQ(groups.planeFrame.get(), planeObject->getShapeFrame());
+  ASSERT_EQ(groups.softShapeNode, softObject->getShapeFrame());
+
+  for (std::size_t i = 0u; i < groups.softBody->getNumPointMasses(); ++i) {
+    auto* pointMass = groups.softBody->getPointMass(i);
+    pointMass->setPositions(
+        pointMass->getPositions() + Eigen::Vector3d::UnitZ());
+  }
+
+  collision::CollisionResult directResult;
+  EXPECT_EQ(collision::collide(planeObject, softObject, directResult), 0);
+  EXPECT_EQ(directResult.getNumContacts(), 0u);
+}
+
+//==============================================================================
 TEST(DARTCollisionDetector, PublicSoftSoftCollideIgnoresNonDartObjects)
 {
   auto groups = makeSoftSoftMeshGroups();
