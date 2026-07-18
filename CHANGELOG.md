@@ -2,6 +2,15 @@
 
 ## DART 6
 
+### [DART 6.19.4 (TBD)](https://github.com/dartsim/dart/milestone/103?closed=1)
+
+* Build
+
+  * Keep source builds configurable without OpenSceneGraph when
+    `DART_BUILD_GUI_OSG=OFF` by skipping the OSG-only dynamic-joint-constraints
+    example before it requests `osgText`:
+    [#3387](https://github.com/dartsim/dart/issues/3387)
+
 ### [DART 6.19.3 (2026-06-27)](https://github.com/dartsim/dart/milestone/101?closed=1)
 
 DART 6.19.3 is a patch release on the DART 6 LTS line. It hardens contact
