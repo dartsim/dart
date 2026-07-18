@@ -7,6 +7,10 @@ project(${example_name})
 set(required_components gui-osg)
 set(required_libraries dart dart-gui-osg)
 
+if(DART_IN_SOURCE_BUILD AND NOT TARGET dart-gui-osg)
+  return()
+endif()
+
 find_package(OpenSceneGraph 3.0.0 REQUIRED COMPONENTS osgText)
 set(osg_text_library ${OSGTEXT_LIBRARY})
 if(NOT osg_text_library)

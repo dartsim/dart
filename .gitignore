@@ -80,6 +80,9 @@ dist/
 # pixi environments
 .pixi
 
+# AI tool local state
+.omx/
+
 # ImGui configuration
 imgui.ini
 
