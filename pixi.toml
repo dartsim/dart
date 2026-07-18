@@ -305,6 +305,7 @@ config-asan = { cmd = """
         -DCMAKE_C_FLAGS="-fsanitize=address -fno-omit-frame-pointer" \
         -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" \
         -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address" \
+        -DCMAKE_DISABLE_FIND_PACKAGE_OpenSceneGraph=TRUE \
         -DDART_BUILD_DARTPY=OFF \
         -DDART_BUILD_GUI_OSG=OFF \
         -DDART_BUILD_PROFILE=OFF \
