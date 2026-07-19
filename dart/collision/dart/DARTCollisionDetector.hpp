@@ -35,14 +35,12 @@
 
 #include <dart/collision/CollisionDetector.hpp>
 
-#include <memory>
 #include <vector>
 
 namespace dart {
 namespace collision {
 
 class DARTCollisionObject;
-class CollisionThreadPool;
 
 class DARTCollisionDetector : public CollisionDetector
 {
@@ -50,9 +48,6 @@ public:
   using CollisionDetector::createCollisionGroup;
 
   static std::shared_ptr<DARTCollisionDetector> create();
-
-  /// Destructor
-  ~DARTCollisionDetector() override;
 
   // Documentation inherited
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
@@ -123,10 +118,9 @@ protected:
   void refreshCollisionObject(CollisionObject* object) override;
 
 private:
-  static Registrar<DARTCollisionDetector> mRegistrar;
+  class DARTCollisionObjectManager;
 
-  std::unique_ptr<CollisionThreadPool> mCollisionThreadPool;
-  std::size_t mNumCollisionThreads{1u};
+  static Registrar<DARTCollisionDetector> mRegistrar;
 };
 
 } // namespace collision

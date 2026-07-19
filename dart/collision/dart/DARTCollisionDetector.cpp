@@ -51,6 +51,7 @@
 #include "dart/simd/simd.hpp"
 
 #include <algorithm>
+#include <atomic>
 #include <condition_variable>
 #include <limits>
 #include <memory>
@@ -58,7 +59,6 @@
 #include <thread>
 #include <type_traits>
 #include <typeinfo>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -70,6 +70,13 @@
 
 namespace dart {
 namespace collision {
+
+static_assert(
+    sizeof(DARTCollisionDetector) == sizeof(CollisionDetector),
+    "DARTCollisionDetector must not add state to its exported ABI layout");
+static_assert(
+    alignof(DARTCollisionDetector) == alignof(CollisionDetector),
+    "DARTCollisionDetector must preserve its exported ABI alignment");
 
 namespace detail {
 
@@ -266,50 +273,62 @@ private:
   TaskInvoker mTaskInvoker = nullptr;
 };
 
-namespace {
-
-struct DARTDetectorRuntimeOptionsRegistry
+//==============================================================================
+// DARTCollisionDetector historically added no state beyond CollisionDetector.
+// Keep DART-specific runtime options behind the base class's existing manager
+// pointer so binaries built with released DART 6 headers retain their derived
+// member offsets and destruction behavior.
+class DARTCollisionDetector::DARTCollisionObjectManager final
+  : public CollisionDetector::CollisionObjectManager
 {
-  std::unordered_set<const DARTCollisionDetector*>
-      softFaceInteriorContactsEnabled;
-  std::mutex mutex;
+public:
+  explicit DARTCollisionObjectManager(DARTCollisionDetector* detector)
+    : CollisionObjectManager(detector), mObjectManager(detector)
+  {
+  }
+
+  std::shared_ptr<CollisionObject> claimCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame) override
+  {
+    return mObjectManager.claimCollisionObject(shapeFrame);
+  }
+
+  void setNumCollisionThreads(std::size_t numThreads)
+  {
+    std::lock_guard<std::mutex> lock(mThreadConfigMutex);
+    mCollisionThreadPool.setWorkerCount(numThreads > 1u ? numThreads - 1u : 0u);
+    mNumCollisionThreads.store(numThreads);
+  }
+
+  std::size_t getNumCollisionThreads() const
+  {
+    return mNumCollisionThreads.load();
+  }
+
+  CollisionThreadPool* getCollisionThreadPool()
+  {
+    return &mCollisionThreadPool;
+  }
+
+  void setSoftFaceInteriorContactsEnabled(bool enabled)
+  {
+    mSoftFaceInteriorContactsEnabled.store(enabled);
+  }
+
+  bool getSoftFaceInteriorContactsEnabled() const
+  {
+    return mSoftFaceInteriorContactsEnabled.load();
+  }
+
+private:
+  ManagerForSharableCollisionObjects mObjectManager;
+  std::mutex mThreadConfigMutex;
+  CollisionThreadPool mCollisionThreadPool;
+  std::atomic<std::size_t> mNumCollisionThreads{1u};
+  std::atomic<bool> mSoftFaceInteriorContactsEnabled{false};
 };
 
-DARTDetectorRuntimeOptionsRegistry& getDARTDetectorRuntimeOptionsRegistry()
-{
-  // Detectors can be owned by static/global objects and therefore destroyed
-  // after ordinary function-local objects. Keep this registry alive through
-  // process teardown so every detector destructor can safely erase its state.
-  static auto* const registry = new DARTDetectorRuntimeOptionsRegistry;
-  return *registry;
-}
-
-void setStoredSoftFaceInteriorContactsEnabled(
-    const DARTCollisionDetector* detector, bool enabled)
-{
-  auto& registry = getDARTDetectorRuntimeOptionsRegistry();
-  std::lock_guard<std::mutex> lock(registry.mutex);
-  if (enabled)
-    registry.softFaceInteriorContactsEnabled.insert(detector);
-  else
-    registry.softFaceInteriorContactsEnabled.erase(detector);
-}
-
-bool getStoredSoftFaceInteriorContactsEnabled(
-    const DARTCollisionDetector* detector)
-{
-  auto& registry = getDARTDetectorRuntimeOptionsRegistry();
-  std::lock_guard<std::mutex> lock(registry.mutex);
-  return registry.softFaceInteriorContactsEnabled.count(detector) > 0u;
-}
-
-void removeStoredDARTDetectorRuntimeOptions(
-    const DARTCollisionDetector* detector)
-{
-  auto& registry = getDARTDetectorRuntimeOptionsRegistry();
-  std::lock_guard<std::mutex> lock(registry.mutex);
-  registry.softFaceInteriorContactsEnabled.erase(detector);
-}
+namespace {
 
 struct BroadphaseEntry
 {
@@ -580,17 +599,11 @@ std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create()
 }
 
 //==============================================================================
-DARTCollisionDetector::~DARTCollisionDetector()
-{
-  removeStoredDARTDetectorRuntimeOptions(this);
-}
-
-//==============================================================================
 std::shared_ptr<CollisionDetector>
 DARTCollisionDetector::cloneWithoutCollisionObjects() const
 {
   auto clone = DARTCollisionDetector::create();
-  clone->setNumCollisionThreads(mNumCollisionThreads);
+  clone->setNumCollisionThreads(getNumCollisionThreads());
   clone->setSoftFaceInteriorContactsEnabled(
       getSoftFaceInteriorContactsEnabled());
   return clone;
@@ -618,33 +631,35 @@ void DARTCollisionDetector::setNumCollisionThreads(std::size_t numThreads)
       numThreads = 1u;
   }
 
-  mNumCollisionThreads = std::max<std::size_t>(1u, numThreads);
-  if (mNumCollisionThreads <= 1u) {
-    mCollisionThreadPool.reset();
-    return;
-  }
-
-  if (!mCollisionThreadPool)
-    mCollisionThreadPool = std::make_unique<CollisionThreadPool>();
-  mCollisionThreadPool->setWorkerCount(mNumCollisionThreads - 1u);
+  auto* const manager = dynamic_cast<DARTCollisionObjectManager*>(
+      mCollisionObjectManager.get());
+  if (manager)
+    manager->setNumCollisionThreads(std::max<std::size_t>(1u, numThreads));
 }
 
 //==============================================================================
 std::size_t DARTCollisionDetector::getNumCollisionThreads() const
 {
-  return mNumCollisionThreads;
+  const auto* const manager = dynamic_cast<const DARTCollisionObjectManager*>(
+      mCollisionObjectManager.get());
+  return manager ? manager->getNumCollisionThreads() : 1u;
 }
 
 //==============================================================================
 void DARTCollisionDetector::setSoftFaceInteriorContactsEnabled(bool enabled)
 {
-  setStoredSoftFaceInteriorContactsEnabled(this, enabled);
+  auto* const manager = dynamic_cast<DARTCollisionObjectManager*>(
+      mCollisionObjectManager.get());
+  if (manager)
+    manager->setSoftFaceInteriorContactsEnabled(enabled);
 }
 
 //==============================================================================
 bool DARTCollisionDetector::getSoftFaceInteriorContactsEnabled() const
 {
-  return getStoredSoftFaceInteriorContactsEnabled(this);
+  const auto* const manager = dynamic_cast<const DARTCollisionObjectManager*>(
+      mCollisionObjectManager.get());
+  return manager && manager->getSoftFaceInteriorContactsEnabled();
 }
 
 //==============================================================================
@@ -692,6 +707,13 @@ bool DARTCollisionDetector::collide(
   if (objects.empty())
     return false;
 
+  auto* const manager = dynamic_cast<DARTCollisionObjectManager*>(
+      mCollisionObjectManager.get());
+  auto* const collisionThreadPool
+      = manager ? manager->getCollisionThreadPool() : nullptr;
+  const auto numCollisionThreads
+      = manager ? manager->getNumCollisionThreads() : 1u;
+
   auto& scratch = getBroadphaseScratch();
   scratch.clear();
   if (result)
@@ -702,8 +724,8 @@ bool DARTCollisionDetector::collide(
       scratch.planeEntries1,
       scratch.otherEntries1,
       scratch.broadphaseEntries,
-      mCollisionThreadPool.get(),
-      mNumCollisionThreads);
+      collisionThreadPool,
+      numCollisionThreads);
 
   auto collisionFound = false;
   const bool finitePlaneFilterCanSkip
@@ -726,8 +748,8 @@ bool DARTCollisionDetector::collide(
           result,
           collisionFound,
           scratch,
-          mCollisionThreadPool.get(),
-          mNumCollisionThreads,
+          collisionThreadPool,
+          numCollisionThreads,
           true,
           !finitePlaneFastPathHasNoLaterDuplicateConsumers)) {
     return true;
@@ -741,8 +763,8 @@ bool DARTCollisionDetector::collide(
           result,
           collisionFound,
           scratch,
-          mCollisionThreadPool.get(),
-          mNumCollisionThreads)) {
+          collisionThreadPool,
+          numCollisionThreads)) {
     return true;
   }
 
@@ -843,6 +865,13 @@ bool DARTCollisionDetector::collide(
   if (objects1.empty() || objects2.empty())
     return false;
 
+  auto* const manager = dynamic_cast<DARTCollisionObjectManager*>(
+      mCollisionObjectManager.get());
+  auto* const collisionThreadPool
+      = manager ? manager->getCollisionThreadPool() : nullptr;
+  const auto numCollisionThreads
+      = manager ? manager->getNumCollisionThreads() : 1u;
+
   auto& scratch = getBroadphaseScratch();
   scratch.clear();
   if (result)
@@ -853,16 +882,16 @@ bool DARTCollisionDetector::collide(
       scratch.planeEntries1,
       scratch.otherEntries1,
       scratch.broadphaseEntries,
-      mCollisionThreadPool.get(),
-      mNumCollisionThreads);
+      collisionThreadPool,
+      numCollisionThreads);
   buildBroadphaseEntries(
       objects2,
       scratch.finiteEntries2,
       scratch.planeEntries2,
       scratch.otherEntries2,
       scratch.broadphaseEntries,
-      mCollisionThreadPool.get(),
-      mNumCollisionThreads);
+      collisionThreadPool,
+      numCollisionThreads);
 
   auto collisionFound = false;
   if (processFinitePlanePairs(
@@ -872,8 +901,8 @@ bool DARTCollisionDetector::collide(
           result,
           collisionFound,
           scratch,
-          mCollisionThreadPool.get(),
-          mNumCollisionThreads,
+          collisionThreadPool,
+          numCollisionThreads,
           false,
           true)) {
     return true;
@@ -886,8 +915,8 @@ bool DARTCollisionDetector::collide(
           result,
           collisionFound,
           scratch,
-          mCollisionThreadPool.get(),
-          mNumCollisionThreads,
+          collisionThreadPool,
+          numCollisionThreads,
           true,
           true)) {
     return true;
@@ -902,8 +931,8 @@ bool DARTCollisionDetector::collide(
           result,
           collisionFound,
           scratch,
-          mCollisionThreadPool.get(),
-          mNumCollisionThreads)) {
+          collisionThreadPool,
+          numCollisionThreads)) {
     return true;
   }
 
@@ -1036,7 +1065,7 @@ double DARTCollisionDetector::distance(
 //==============================================================================
 DARTCollisionDetector::DARTCollisionDetector() : CollisionDetector()
 {
-  mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
+  mCollisionObjectManager.reset(new DARTCollisionObjectManager(this));
   if (const char* value = std::getenv("DART_SOFT_FACE_INTERIOR_CONTACTS")) {
     setSoftFaceInteriorContactsEnabled(
         value[0] != '\0' && std::strcmp(value, "0") != 0);

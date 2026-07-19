@@ -771,32 +771,44 @@ TEST(DARTCollisionDetector, ParallelDisjointSinglePlaneContactsMatchSerial)
   option.enableContact = true;
   option.maxNumContacts = kNumSpheres;
 
+  EXPECT_EQ(1u, detector->getNumCollisionThreads());
   detector->setNumCollisionThreads(1u);
   collision::CollisionResult serialResult;
   ASSERT_TRUE(group->collide(option, &serialResult));
   ASSERT_EQ(kNumSpheres, serialResult.getNumContacts());
 
-  detector->setNumCollisionThreads(4u);
-  collision::CollisionResult parallelResult;
-  ASSERT_TRUE(group->collide(option, &parallelResult));
-  ASSERT_EQ(serialResult.getNumContacts(), parallelResult.getNumContacts());
+  const auto expectMatchesSerial
+      = [&](const collision::CollisionResult& candidate) {
+          ASSERT_EQ(serialResult.getNumContacts(), candidate.getNumContacts());
 
-  for (std::size_t i = 0u; i < serialResult.getNumContacts(); ++i) {
-    SCOPED_TRACE(i);
-    const auto& serialContact = serialResult.getContact(i);
-    const auto& parallelContact = parallelResult.getContact(i);
-    EXPECT_EQ(
-        serialContact.collisionObject1->getShapeFrame(),
-        parallelContact.collisionObject1->getShapeFrame());
-    EXPECT_EQ(
-        serialContact.collisionObject2->getShapeFrame(),
-        parallelContact.collisionObject2->getShapeFrame());
-    EXPECT_TRUE(serialContact.point.isApprox(parallelContact.point, 1e-12));
-    EXPECT_TRUE(serialContact.normal.isApprox(parallelContact.normal, 1e-12));
-    EXPECT_NEAR(
-        serialContact.penetrationDepth,
-        parallelContact.penetrationDepth,
-        1e-12);
+          for (std::size_t i = 0u; i < serialResult.getNumContacts(); ++i) {
+            SCOPED_TRACE(i);
+            const auto& serialContact = serialResult.getContact(i);
+            const auto& candidateContact = candidate.getContact(i);
+            EXPECT_EQ(
+                serialContact.collisionObject1->getShapeFrame(),
+                candidateContact.collisionObject1->getShapeFrame());
+            EXPECT_EQ(
+                serialContact.collisionObject2->getShapeFrame(),
+                candidateContact.collisionObject2->getShapeFrame());
+            EXPECT_TRUE(
+                serialContact.point.isApprox(candidateContact.point, 1e-12));
+            EXPECT_TRUE(
+                serialContact.normal.isApprox(candidateContact.normal, 1e-12));
+            EXPECT_NEAR(
+                serialContact.penetrationDepth,
+                candidateContact.penetrationDepth,
+                1e-12);
+          }
+        };
+
+  for (const auto numThreads : {4u, 1u, 3u}) {
+    detector->setNumCollisionThreads(numThreads);
+    EXPECT_EQ(numThreads, detector->getNumCollisionThreads());
+
+    collision::CollisionResult candidateResult;
+    ASSERT_TRUE(group->collide(option, &candidateResult));
+    expectMatchesSerial(candidateResult);
   }
 }
 
@@ -814,7 +826,11 @@ TEST(DARTCollisionDetector, ClonePreservesRuntimeOptions)
   EXPECT_TRUE(detector->getSoftFaceInteriorContactsEnabled());
   EXPECT_FALSE(independentDetector->getSoftFaceInteriorContactsEnabled());
 
+  EXPECT_EQ(1u, detector->getNumCollisionThreads());
+  EXPECT_EQ(1u, independentDetector->getNumCollisionThreads());
   detector->setNumCollisionThreads(3u);
+  EXPECT_EQ(3u, detector->getNumCollisionThreads());
+  EXPECT_EQ(1u, independentDetector->getNumCollisionThreads());
 
   const auto clone
       = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
@@ -822,6 +838,14 @@ TEST(DARTCollisionDetector, ClonePreservesRuntimeOptions)
   ASSERT_NE(nullptr, clone);
   EXPECT_EQ(3u, clone->getNumCollisionThreads());
   EXPECT_TRUE(clone->getSoftFaceInteriorContactsEnabled());
+
+  detector->setNumCollisionThreads(1u);
+  EXPECT_EQ(1u, detector->getNumCollisionThreads());
+  EXPECT_EQ(3u, clone->getNumCollisionThreads());
+
+  clone->setNumCollisionThreads(2u);
+  EXPECT_EQ(1u, detector->getNumCollisionThreads());
+  EXPECT_EQ(2u, clone->getNumCollisionThreads());
 }
 
 //==============================================================================
