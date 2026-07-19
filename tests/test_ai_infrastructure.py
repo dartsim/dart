@@ -283,7 +283,9 @@ def test_simulation_consumer_routes_are_required(monkeypatch, relative, marker):
 
     errors = infra.exercise_scenarios(ROOT, emit=False)
 
-    assert any(relative in error and "simulation route marker" in error for error in errors)
+    assert any(
+        relative in error and "simulation route marker" in error for error in errors
+    )
 
 
 def test_boolean_schema_versions_are_rejected():
@@ -495,9 +497,7 @@ def test_agent_hook_path_routing_is_bounded():
     assert hook.is_ai_infrastructure_path("docs/onboarding/testing.md")
     assert hook.is_ai_infrastructure_path(".codex/agents/dart_scout.toml")
     assert hook.is_ai_infrastructure_path(".github/workflows/ci_macos.yml")
-    assert hook.is_ai_infrastructure_path(
-        "python/tests/unit/gui/test_agent_capture.py"
-    )
+    assert hook.is_ai_infrastructure_path("python/tests/unit/gui/test_agent_capture.py")
     assert hook.is_ai_infrastructure_path(
         "python/tests/unit/gui/test_agent_debug_overlay.py"
     )
@@ -774,9 +774,9 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
         "--width 320 --height 240\n"
         "--out /tmp/dart-agent-visual-smoke --prefix smoke\n"
         "pixi run image-verdict\n"
-            "/tmp/dart-agent-visual-smoke/smoke_auto0.png\n"
-            "xvfb-run\n"
-            "pixi run test-agent-debug-overlay\n"
+        "/tmp/dart-agent-visual-smoke/smoke_auto0.png\n"
+        "xvfb-run\n"
+        "pixi run test-agent-debug-overlay\n"
     )
     (workflows / "ci_windows.yml").write_text(
         "Native Windows hook smoke\n"
@@ -833,12 +833,12 @@ def test_ci_wiring_requires_visual_verification_smoke(tmp_path, marker):
             "- name: Agent visual verification smoke"
         )
         assert separator
-        mutated = before + separator + visual_and_after.replace(
-            marker, "missing-visual-marker", 1
+        mutated = (
+            before
+            + separator
+            + visual_and_after.replace(marker, "missing-visual-marker", 1)
         )
-    (workflows / "ci_ubuntu.yml").write_text(
-        mutated
-    )
+    (workflows / "ci_ubuntu.yml").write_text(mutated)
     (workflows / "ci_windows.yml").write_text(
         (ROOT / ".github/workflows/ci_windows.yml").read_text()
     )
@@ -858,9 +858,7 @@ def test_ci_wiring_requires_visual_verification_smoke(tmp_path, marker):
         ("soft-fail", "must not use continue-on-error"),
     ),
 )
-def test_visual_smoke_cannot_be_skipped_or_soft_failed(
-    tmp_path, mutation, expected
-):
+def test_visual_smoke_cannot_be_skipped_or_soft_failed(tmp_path, mutation, expected):
     workflows = tmp_path / ".github" / "workflows"
     workflows.mkdir(parents=True)
     ubuntu = (ROOT / ".github/workflows/ci_ubuntu.yml").read_text()
@@ -902,9 +900,7 @@ def test_visual_smoke_cannot_be_skipped_or_soft_failed(
         "assert after_clear == base",
     ),
 )
-def test_ci_wiring_requires_non_skippable_overlay_pixel_assertions(
-    tmp_path, marker
-):
+def test_ci_wiring_requires_non_skippable_overlay_pixel_assertions(tmp_path, marker):
     workflows = tmp_path / ".github" / "workflows"
     workflows.mkdir(parents=True)
     (workflows / "ci_ubuntu.yml").write_text(
@@ -1053,14 +1049,14 @@ def test_ci_wiring_requires_factory_capture_and_visual_task(
             ".claude/hooks/pre-commit-guard.ps1",
             "$global:LASTEXITCODE = $null",
         ),
-            (
-                ".claude/hooks/pre-commit-guard.ps1",
-                "$payload = [Console]::In.ReadToEnd()",
-            ),
-            (
-                ".claude/hooks/pre-commit-guard.ps1",
-                "$pipelineInput = @($input | ForEach-Object { $_ })",
-            ),
+        (
+            ".claude/hooks/pre-commit-guard.ps1",
+            "$payload = [Console]::In.ReadToEnd()",
+        ),
+        (
+            ".claude/hooks/pre-commit-guard.ps1",
+            "$pipelineInput = @($input | ForEach-Object { $_ })",
+        ),
         (
             ".claude/hooks/pre-commit-guard.ps1",
             "$pipelineInput.Count -gt 0",
