@@ -32,20 +32,13 @@ DEFAULT_COLLISION_PROBE = (
     ROOT / "build/default/cpp/Release/tests/benchmark/integration/"
     "fbf_paper_arch_wedge_collision_probe"
 )
-DEFAULT_DYNAMICS_PROBE = (
-    ROOT / "build/default/cpp/Release/tests/benchmark/integration/"
-    "fbf_paper_arch_wedge_dynamics_probe"
-)
 PROTOCOL = ROOT / "docs/dev_tasks/fbf_exact_coulomb_friction/LITERAL_ARCH_101_V1.md"
 TRACE_SOURCE = ROOT / "tests/benchmark/integration/fbf_paper_trace.cpp"
 COLLISION_PROBE_SOURCE = (
     ROOT / "tests/benchmark/integration/fbf_paper_arch_wedge_collision_probe.cpp"
 )
-DYNAMICS_PROBE_SOURCE = (
-    ROOT / "tests/benchmark/integration/fbf_paper_arch_wedge_dynamics_probe.cpp"
-)
 
-SCHEMA_VERSION = "dart.fbf_literal_arch101_v1/v2"
+SCHEMA_VERSION = "dart.fbf_literal_arch101_v1/v1"
 SCENARIO = "masonry_arch_101_literal_wedge"
 SCENE_CONTRACT = "reconstructed_literal_wedge_arch_nonpaper_native_collision_frontend"
 SOLVER_CONTRACT = "dart_best_nonpaper_colored_inner_bgs_threaded_world"
@@ -283,31 +276,6 @@ def _build_collision_probe_command(probe: Path) -> list[str]:
     return [str(probe), "2"]
 
 
-def _build_dynamics_probe_command(probe: Path) -> list[str]:
-    return [
-        "taskset",
-        "--cpu-list",
-        ",".join(str(cpu) for cpu in EXPECTED_CPUS),
-        str(probe),
-        "101",
-        "1",
-        "native",
-        "exact",
-        "closure_1um",
-        "35",
-        "5000",
-        "30",
-        "adaptive",
-        "0",
-        "zero",
-        "none",
-        "4",
-        "colored",
-        "1.1",
-        "fresh",
-    ]
-
-
 def _parse_probe_record(line: str) -> tuple[str, dict[str, str]]:
     parts = line.split(",")
     if not parts or parts[0] not in {"metadata", "sample", "pair", "verdict"}:
@@ -531,506 +499,6 @@ def _validate_collision_probe(stdout: str, returncode: int) -> dict[str, Any]:
             "scene. Positive long-run promotion still requires dynamic "
             "pair-identity evidence for the FourPointPlanar trace."
         ),
-    }
-
-
-def _parse_dynamics_probe_record(line: str) -> tuple[str, dict[str, str]]:
-    parts = line.split(",")
-    if not parts or parts[0] not in {"metadata", "step", "pair", "verdict"}:
-        raise EvidenceError("dynamics probe emitted an unknown record type")
-    values: dict[str, str] = {}
-    for item in parts[1:]:
-        key, separator, value = item.partition("=")
-        if not separator or not key or key in values:
-            raise EvidenceError("dynamics probe emitted a malformed record")
-        values[key] = value
-    return parts[0], values
-
-
-def _dynamics_int(values: dict[str, str], field: str) -> int:
-    try:
-        return int(values[field])
-    except (KeyError, ValueError) as error:
-        raise EvidenceError(f"invalid dynamics probe integer {field!r}") from error
-
-
-def _dynamics_float(values: dict[str, str], field: str) -> float:
-    try:
-        value = float(values[field])
-    except (KeyError, ValueError) as error:
-        raise EvidenceError(f"invalid dynamics probe float {field!r}") from error
-    if not math.isfinite(value):
-        raise EvidenceError(f"non-finite dynamics probe field {field!r}")
-    return value
-
-
-def _dynamics_cpu_set(value: str, field: str) -> set[int]:
-    if value == "none":
-        return set()
-    parts = value.split(":")
-    try:
-        cpus = {int(part) for part in parts}
-    except ValueError as error:
-        raise EvidenceError(f"invalid dynamics probe CPU field {field!r}") from error
-    if len(parts) != len(cpus):
-        raise EvidenceError(f"duplicate dynamics probe CPU in field {field!r}")
-    return cpus
-
-
-def _validate_dynamics_probe(
-    stdout: str, returncode: int, trace_row: dict[str, str]
-) -> dict[str, Any]:
-    if returncode != 0:
-        raise EvidenceError(f"dynamics probe returned {returncode}, expected zero")
-
-    records: dict[str, list[dict[str, str]]] = {
-        "metadata": [],
-        "step": [],
-        "pair": [],
-        "verdict": [],
-    }
-    for line in stdout.splitlines():
-        kind, values = _parse_dynamics_probe_record(line)
-        records[kind].append(values)
-    if len(records["metadata"]) != 1 or len(records["step"]) != 1:
-        raise EvidenceError("dynamics probe metadata/step record is not unique")
-    if len(records["verdict"]) != 1:
-        raise EvidenceError("dynamics probe verdict record is not unique")
-
-    metadata_fields = {
-        "stone_count",
-        "steps_requested",
-        "backend",
-        "manifold_mode",
-        "solver",
-        "gap_policy",
-        "barrier_offsets",
-        "end_face_expansion_m",
-        "downward_shift_m",
-        "dt_s",
-        "friction",
-        "density_kg_m3",
-        "step_size_scale",
-        "outer_iterations",
-        "inner_sweeps",
-        "adaptive_step_size",
-        "bootstrap_diagnostic",
-        "bootstrap_outer_iterations",
-        "bootstrap_steps",
-        "bootstrap_paper_comparable",
-        "seed_diagnostic",
-        "seed_mode",
-        "seed_paper_comparable",
-        "seed_operator_contract",
-        "seed_parallel_contract",
-        "stabilization_diagnostic",
-        "stabilization_mode",
-        "stabilization_paper_comparable",
-        "simulation_threads",
-        "inner_schedule",
-        "outer_relaxation",
-        "step_size_persistence",
-        "inner_schedule_paper_comparable",
-        "inner_schedule_contract",
-        "paper_velocity_baumgarte_published",
-        "paper_velocity_baumgarte_parameter_published",
-        "exact_volume_m3",
-        "exact_mass_kg",
-        "pinned_springers",
-        "split_impulse",
-        "error_reduction_parameter",
-        "error_reduction_parameter_scope",
-        "max_contacts",
-        "max_contacts_per_pair",
-        "minimum_stability_steps",
-        "crown_displacement_gate_m",
-        "crown_upright_cos_gate",
-        "max_body_displacement_gate_m",
-        "min_body_upright_cos_gate",
-        "author_scene_available",
-        "paper_parity_claim",
-    }
-    step_fields = {
-        "index",
-        "bootstrap_step",
-        "outer_iteration_budget",
-        "sim_time_s",
-        "elapsed_ms",
-        "contacts",
-        "unique_body_pairs",
-        "max_contacts_on_body_pair",
-        "contacts_finite",
-        "state_finite",
-        "crown_displacement_m",
-        "crown_vertical_displacement_m",
-        "crown_upright_cos",
-        "max_body_displacement_m",
-        "min_body_upright_cos",
-        "max_linear_speed_m_s",
-        "max_angular_speed_rad_s",
-        "exact_attempts",
-        "exact_solves",
-        "exact_failures",
-        "boxed_fallbacks",
-        "max_iterations_accepted",
-        "exact_status",
-        "fbf_status",
-        "residual",
-        "best_residual",
-        "primal_residual",
-        "dual_residual",
-        "complementarity_residual",
-        "step_size",
-        "safe_step_size",
-        "coupling_variation_ratio",
-        "iterations",
-        "colored_bgs_requested",
-        "colored_bgs_used",
-        "colored_bgs_solves",
-        "colored_bgs_dispatches",
-        "colored_bgs_max_participants",
-        "colored_bgs_manifolds",
-        "colored_bgs_colors",
-        "colored_bgs_max_manifolds_per_color",
-        "colored_bgs_logical_cpus",
-        "colored_bgs_max_phase_logical_cpus",
-    }
-    pair_fields = {"step", "first", "second", "contacts"}
-    verdict_fields = {
-        "completed",
-        "steps_completed",
-        "finite",
-        "stability_duration_met",
-        "bounded_stability_gate",
-        "crown_displacement_m",
-        "crown_upright_cos",
-        "max_body_displacement_m",
-        "min_body_upright_cos",
-        "min_contacts",
-        "max_contacts",
-        "elapsed_total_ms",
-        "elapsed_mean_step_ms",
-        "exact_attempts",
-        "exact_solves",
-        "exact_failures",
-        "boxed_fallbacks",
-        "max_iterations_accepted",
-        "worst_residual",
-        "author_scene_available",
-        "paper_parity_claim",
-    }
-    metadata = records["metadata"][0]
-    step = records["step"][0]
-    verdict = records["verdict"][0]
-    if set(metadata) != metadata_fields:
-        raise EvidenceError("dynamics probe metadata schema drifted")
-    if set(step) != step_fields:
-        raise EvidenceError("dynamics probe step schema drifted")
-    if set(verdict) != verdict_fields:
-        raise EvidenceError("dynamics probe verdict schema drifted")
-    if any(set(pair) != pair_fields for pair in records["pair"]):
-        raise EvidenceError("dynamics probe pair schema drifted")
-
-    expected_metadata_strings = {
-        "backend": "native",
-        "manifold_mode": "four_point_planar",
-        "solver": "exact_fbf",
-        "gap_policy": "closure_1um",
-        "barrier_offsets": "omitted",
-        "adaptive_step_size": "true",
-        "bootstrap_diagnostic": "false",
-        "bootstrap_paper_comparable": "false",
-        "seed_diagnostic": "false",
-        "seed_mode": "zero",
-        "seed_paper_comparable": "false",
-        "seed_operator_contract": "contact_row_matrix_free",
-        "seed_parallel_contract": "preserved",
-        "stabilization_diagnostic": "false",
-        "stabilization_mode": "none",
-        "stabilization_paper_comparable": "false",
-        "inner_schedule": "colored",
-        "step_size_persistence": "fresh",
-        "inner_schedule_paper_comparable": "false",
-        "inner_schedule_contract": (
-            "dart_deterministic_manifold_colored_bgs_diagnostic"
-        ),
-        "paper_velocity_baumgarte_published": "true",
-        "paper_velocity_baumgarte_parameter_published": "false",
-        "pinned_springers": "0:100",
-        "split_impulse": "true",
-        "error_reduction_parameter_scope": "process_global_static",
-        "author_scene_available": "false",
-        "paper_parity_claim": "false",
-    }
-    for field, expected in expected_metadata_strings.items():
-        if metadata[field] != expected:
-            raise EvidenceError(f"dynamics probe metadata {field!r} drifted")
-    expected_metadata_integers = {
-        "stone_count": 101,
-        "steps_requested": 1,
-        "outer_iterations": 5000,
-        "inner_sweeps": 30,
-        "bootstrap_outer_iterations": 0,
-        "bootstrap_steps": 0,
-        "simulation_threads": 4,
-        "max_contacts": 1616,
-        "max_contacts_per_pair": 8,
-        "minimum_stability_steps": 25,
-    }
-    for field, expected in expected_metadata_integers.items():
-        if _dynamics_int(metadata, field) != expected:
-            raise EvidenceError(f"dynamics probe metadata {field!r} drifted")
-    for field, expected in (
-        ("end_face_expansion_m", 1e-6),
-        ("downward_shift_m", 0.001001),
-        ("dt_s", 1.0 / 60.0),
-        ("friction", 0.8),
-        ("density_kg_m3", 1000.0),
-        ("step_size_scale", 35.0),
-        ("outer_relaxation", 1.1),
-        ("error_reduction_parameter", 0.0),
-        ("crown_displacement_gate_m", 0.02),
-        ("crown_upright_cos_gate", 0.95),
-        ("max_body_displacement_gate_m", 0.05),
-        ("min_body_upright_cos_gate", 0.80),
-    ):
-        if not math.isclose(
-            _dynamics_float(metadata, field),
-            expected,
-            rel_tol=1e-12,
-            abs_tol=1e-15,
-        ):
-            raise EvidenceError(f"dynamics probe metadata {field!r} drifted")
-    for field in ("exact_volume_m3", "exact_mass_kg"):
-        if _dynamics_float(metadata, field) <= 0.0:
-            raise EvidenceError(f"dynamics probe metadata {field!r} is not positive")
-
-    expected_step_strings = {
-        "bootstrap_step": "false",
-        "contacts_finite": "true",
-        "state_finite": "true",
-        "exact_status": "max_iterations_accepted",
-        "fbf_status": "max_iterations",
-        "colored_bgs_requested": "true",
-        "colored_bgs_used": "true",
-    }
-    for field, expected in expected_step_strings.items():
-        if step[field] != expected:
-            raise EvidenceError(f"dynamics probe step {field!r} drifted")
-    expected_step_integers = {
-        "index": 1,
-        "outer_iteration_budget": 5000,
-        "contacts": 400,
-        "unique_body_pairs": 100,
-        "max_contacts_on_body_pair": 4,
-        "exact_attempts": 1,
-        "exact_solves": 1,
-        "exact_failures": 0,
-        "boxed_fallbacks": 0,
-        "max_iterations_accepted": 1,
-        "iterations": 5000,
-        "colored_bgs_solves": 5000,
-        "colored_bgs_dispatches": 1,
-        "colored_bgs_max_participants": 4,
-        "colored_bgs_manifolds": 100,
-        "colored_bgs_colors": 3,
-        "colored_bgs_max_manifolds_per_color": 34,
-    }
-    for field, expected in expected_step_integers.items():
-        if _dynamics_int(step, field) != expected:
-            raise EvidenceError(f"dynamics probe step {field!r} drifted")
-    if not math.isclose(
-        _dynamics_float(step, "sim_time_s"),
-        1.0 / 60.0,
-        rel_tol=1e-12,
-        abs_tol=1e-15,
-    ):
-        raise EvidenceError("dynamics probe step simulation time drifted")
-    for field in (
-        "elapsed_ms",
-        "crown_displacement_m",
-        "crown_vertical_displacement_m",
-        "crown_upright_cos",
-        "max_body_displacement_m",
-        "min_body_upright_cos",
-        "max_linear_speed_m_s",
-        "max_angular_speed_rad_s",
-        "residual",
-        "best_residual",
-        "primal_residual",
-        "dual_residual",
-        "complementarity_residual",
-        "step_size",
-        "safe_step_size",
-        "coupling_variation_ratio",
-    ):
-        _dynamics_float(step, field)
-    for field in (
-        "elapsed_ms",
-        "crown_displacement_m",
-        "max_body_displacement_m",
-        "max_linear_speed_m_s",
-        "max_angular_speed_rad_s",
-        "residual",
-        "best_residual",
-        "primal_residual",
-        "dual_residual",
-        "complementarity_residual",
-        "step_size",
-        "safe_step_size",
-        "coupling_variation_ratio",
-    ):
-        if _dynamics_float(step, field) < 0.0:
-            raise EvidenceError(f"dynamics probe step {field!r} is negative")
-
-    allowed_cpus = set(EXPECTED_CPUS)
-    logical_cpus = _dynamics_cpu_set(
-        step["colored_bgs_logical_cpus"], "colored_bgs_logical_cpus"
-    )
-    phase_cpus = _dynamics_cpu_set(
-        step["colored_bgs_max_phase_logical_cpus"],
-        "colored_bgs_max_phase_logical_cpus",
-    )
-    if not logical_cpus or not logical_cpus.issubset(allowed_cpus):
-        raise EvidenceError("dynamics probe colored CPU residency escaped taskset")
-    if not phase_cpus or not phase_cpus.issubset(logical_cpus):
-        raise EvidenceError("dynamics probe max-phase CPU residency is inconsistent")
-
-    adjacent_edges: set[tuple[int, int]] = set()
-    body_pattern = re.compile(r"^masonry_arch_wedge_([0-9]+)_body$")
-    if len(records["pair"]) != 100:
-        raise EvidenceError("dynamics probe pair record count drifted")
-    for pair in records["pair"]:
-        if _dynamics_int(pair, "step") != 1:
-            raise EvidenceError("dynamics probe pair step drifted")
-        if _dynamics_int(pair, "contacts") != 4:
-            raise EvidenceError("dynamics probe pair contact multiplicity drifted")
-        matches = (
-            body_pattern.fullmatch(pair["first"]),
-            body_pattern.fullmatch(pair["second"]),
-        )
-        if not all(matches):
-            raise EvidenceError("dynamics probe emitted a non-stone body pair")
-        indices = sorted(int(match.group(1)) for match in matches if match)
-        if indices[1] - indices[0] != 1:
-            raise EvidenceError("dynamics probe emitted a non-adjacent stone pair")
-        adjacent_edges.add((indices[0], indices[1]))
-    expected_edges = {(index, index + 1) for index in range(100)}
-    if adjacent_edges != expected_edges:
-        raise EvidenceError("dynamics probe adjacent-pair identity set drifted")
-
-    trace_integer_matches = {
-        "contacts": "contacts",
-        "unique_body_pairs": "unique_colliding_body_pairs",
-        "iterations": "step_fbf_iterations",
-        "colored_bgs_solves": "last_exact_colored_bgs_solves",
-        "colored_bgs_manifolds": "last_exact_colored_bgs_manifolds",
-        "colored_bgs_colors": "last_exact_colored_bgs_colors",
-        "colored_bgs_max_manifolds_per_color": (
-            "last_exact_colored_bgs_max_manifolds_per_color"
-        ),
-    }
-    for probe_field, trace_field in trace_integer_matches.items():
-        if _dynamics_int(step, probe_field) != _int(trace_row, trace_field):
-            raise EvidenceError(
-                f"dynamics probe field {probe_field!r} does not match frozen trace"
-            )
-    residual = _dynamics_float(step, "residual")
-    trace_residual = _float(trace_row, "residual")
-    if not math.isclose(residual, trace_residual, rel_tol=1e-12, abs_tol=1e-15):
-        raise EvidenceError("dynamics probe residual does not match frozen trace")
-    if (
-        trace_row.get("status") != "fbf_failed"
-        or _int(trace_row, "accept_outer_max_iterations") != 0
-        or _int(trace_row, "step_exact_failures") != 1
-    ):
-        raise EvidenceError("frozen trace cap-rejection taxonomy drifted")
-
-    expected_verdict_strings = {
-        "completed": "true",
-        "finite": "true",
-        "stability_duration_met": "false",
-        "bounded_stability_gate": "not_evaluated",
-        "author_scene_available": "false",
-        "paper_parity_claim": "false",
-    }
-    for field, expected in expected_verdict_strings.items():
-        if verdict[field] != expected:
-            raise EvidenceError(f"dynamics probe verdict {field!r} drifted")
-    expected_verdict_integers = {
-        "steps_completed": 1,
-        "min_contacts": 400,
-        "max_contacts": 400,
-        "exact_attempts": 1,
-        "exact_solves": 1,
-        "exact_failures": 0,
-        "boxed_fallbacks": 0,
-        "max_iterations_accepted": 1,
-    }
-    for field, expected in expected_verdict_integers.items():
-        if _dynamics_int(verdict, field) != expected:
-            raise EvidenceError(f"dynamics probe verdict {field!r} drifted")
-    for field in (
-        "crown_displacement_m",
-        "crown_upright_cos",
-        "max_body_displacement_m",
-        "min_body_upright_cos",
-        "elapsed_total_ms",
-        "elapsed_mean_step_ms",
-        "worst_residual",
-    ):
-        _dynamics_float(verdict, field)
-    for verdict_field, step_field in (
-        ("crown_displacement_m", "crown_displacement_m"),
-        ("crown_upright_cos", "crown_upright_cos"),
-        ("max_body_displacement_m", "max_body_displacement_m"),
-        ("min_body_upright_cos", "min_body_upright_cos"),
-        ("worst_residual", "residual"),
-    ):
-        if not math.isclose(
-            _dynamics_float(verdict, verdict_field),
-            _dynamics_float(step, step_field),
-            rel_tol=1e-12,
-            abs_tol=1e-15,
-        ):
-            raise EvidenceError(
-                f"dynamics probe verdict {verdict_field!r} disagrees with step"
-            )
-    if not math.isclose(
-        _dynamics_float(verdict, "elapsed_total_ms"),
-        _dynamics_float(verdict, "elapsed_mean_step_ms"),
-        rel_tol=1e-12,
-        abs_tol=1e-12,
-    ):
-        raise EvidenceError("dynamics probe one-step timing fields disagree")
-
-    return {
-        "returncode": returncode,
-        "scope": "failed_step_1_four_point_planar_pre_solve_collision_graph",
-        "contacts": 400,
-        "unique_pairs": 100,
-        "adjacent_stone_pairs": 100,
-        "nonadjacent_stone_pairs": 0,
-        "ground_pairs": 0,
-        "contacts_per_pair": 4,
-        "outer_iterations": 5000,
-        "residual": residual,
-        "trace_aggregate_match": True,
-        "trace_residual_match": True,
-        "dynamic_step1_pair_identity_evidence": True,
-        "solver_acceptance_taxonomy_equivalent": False,
-        "participant_affinity_contract_equivalent": False,
-        "source_equivalent_evidence": False,
-        "standing_evidence": False,
-        "timing_evidence_eligible": False,
-        "positive_long_run_promotion_eligible": False,
-        "claim_boundary": (
-            "Identity-resolved evidence is limited to the failed step-1 "
-            "FourPointPlanar collision graph. The companion accepts the 5,000-outer "
-            "cap and does not enable the frozen trace participant-affinity contract."
-        ),
-        "observed_colored_logical_cpus": sorted(logical_cpus),
-        "observed_colored_max_phase_logical_cpus": sorted(phase_cpus),
     }
 
 
@@ -1465,9 +933,7 @@ def _executable_identity(binary: Path) -> dict[str, Any]:
     }
 
 
-def _execution_identity(
-    binary: Path, collision_probe: Path, dynamics_probe: Path
-) -> dict[str, Any]:
+def _execution_identity(binary: Path, collision_probe: Path) -> dict[str, Any]:
     return {
         "protocol_contract_sha256": _protocol_contract_sha256(),
         "runner_source_sha256": _sha256_file(Path(__file__).resolve()),
@@ -1475,8 +941,6 @@ def _execution_identity(
         "trace_executable": _executable_identity(binary),
         "collision_probe_source_sha256": _sha256_file(COLLISION_PROBE_SOURCE),
         "collision_probe_executable": _executable_identity(collision_probe),
-        "dynamics_probe_source_sha256": _sha256_file(DYNAMICS_PROBE_SOURCE),
-        "dynamics_probe_executable": _executable_identity(dynamics_probe),
         "taskset_tool": _tool_identity("taskset"),
     }
 
@@ -1494,11 +958,10 @@ gates. The normalized scene/work fingerprint is
 
 The collision-only Compact probe proves the constructed time-zero graph:
 102 pairs comprise 100 adjacent stone pairs plus two pinned-springer ground
-pairs. The separate one-step dynamics companion resolves the 100
-FourPointPlanar pairs as the complete adjacent-stone chain and matches the
-trace's step-1 aggregates and residual. It accepts a capped iterate and lacks
-the trace's participant-affinity contract, so it supplies neither
-source-equivalent evidence nor pair identities beyond step 1.
+pairs. The dynamic FourPointPlanar trace exposes the 400-contact, 100-constraint
+pair, three-color, width-34 aggregate graph beginning at step 1, but not pair
+identities. Positive long-run promotion still requires dynamic pair-identity
+evidence.
 
 This is local evidence for the frozen DART reconstruction only. Timings are
 diagnostic and are not paper-comparison evidence.
@@ -1517,12 +980,9 @@ status `{summary['terminal_status']}` and residual
 The raw prefix and stderr are retained for diagnosis. This prefix is not a
 valid standing artifact and must never be used as timing evidence.
 
-The collision-only Compact probe covers constructed time zero. The separate
-one-step dynamics companion resolves the failed step-1 FourPointPlanar graph as
-the complete 100-edge adjacent-stone chain and matches the frozen trace's
-aggregates and residual. It accepts the capped iterate and lacks the trace's
-participant-affinity contract; this narrow graph result is not source-equivalent,
-standing, timing, physical-outcome, or long-run evidence.
+The collision-only Compact probe covers only constructed time zero. The dynamic
+FourPointPlanar trace reports aggregate counts and coloring beginning at step 1,
+not pair identities.
 """
     return f"""# Literal 101-Stone Standing Protocol v1 Invalid Artifact
 
@@ -1539,7 +999,6 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     parser.add_argument("--collision-probe", type=Path, default=DEFAULT_COLLISION_PROBE)
-    parser.add_argument("--dynamics-probe", type=Path, default=DEFAULT_DYNAMICS_PROBE)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--timeout", type=float, default=3600.0)
     args = parser.parse_args(argv)
@@ -1581,28 +1040,23 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
     binary = args.binary.resolve()
     collision_probe = args.collision_probe.resolve()
-    dynamics_probe = args.dynamics_probe.resolve()
     output = args.output_dir.resolve()
     if not binary.is_file():
         raise SystemExit(f"trace binary not found: {binary}")
     if not collision_probe.is_file():
         raise SystemExit(f"collision probe binary not found: {collision_probe}")
-    if not dynamics_probe.is_file():
-        raise SystemExit(f"dynamics probe binary not found: {dynamics_probe}")
     try:
         _prepare_output(output)
         affinity = _affinity_metadata()
-        identity = _execution_identity(binary, collision_probe, dynamics_probe)
+        identity = _execution_identity(binary, collision_probe)
     except (EvidenceError, OSError, ValueError) as error:
         raise SystemExit(str(error)) from error
 
     command = _build_command(binary)
     collision_probe_command = _build_collision_probe_command(collision_probe)
-    dynamics_probe_command = _build_dynamics_probe_command(dynamics_probe)
     invocation: dict[str, Any] = {
         "command": command,
         "collision_probe_command": collision_probe_command,
-        "dynamics_probe_command": dynamics_probe_command,
         "cwd": str(ROOT),
         "affinity": affinity,
         "timeout_seconds": args.timeout,
@@ -1615,15 +1069,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     probe_stderr = ""
     probe_returncode: int | None = None
     probe_validation: dict[str, Any] | None = None
-    dynamics_stdout = ""
-    dynamics_stderr = ""
-    dynamics_returncode: int | None = None
-    dynamics_validation: dict[str, Any] | None = None
     try:
         probe_stdout, probe_stderr, probe_returncode = _run_captured(
             collision_probe_command, args.timeout
         )
-        if _execution_identity(binary, collision_probe, dynamics_probe) != identity:
+        if _execution_identity(binary, collision_probe) != identity:
             raise EvidenceError(
                 "full executable, source, library, protocol, or runner identity "
                 "drifted after collision probe"
@@ -1631,7 +1081,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         invocation["identity_rechecks"].append("after_collision_probe")
         probe_validation = _validate_collision_probe(probe_stdout, probe_returncode)
         stdout, stderr, returncode = _run_captured(command, args.timeout)
-        if _execution_identity(binary, collision_probe, dynamics_probe) != identity:
+        if _execution_identity(binary, collision_probe) != identity:
             raise EvidenceError(
                 "full executable, source, library, protocol, or runner identity "
                 "drifted after trace"
@@ -1639,25 +1089,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         invocation["identity_rechecks"].append("after_trace")
         header, rows = _parse_trace(stdout)
         summary = _validate_trace(header=header, rows=rows, returncode=returncode)
-        dynamics_stdout, dynamics_stderr, dynamics_returncode = _run_captured(
-            dynamics_probe_command, args.timeout
-        )
-        if _execution_identity(binary, collision_probe, dynamics_probe) != identity:
-            raise EvidenceError(
-                "full executable, source, library, protocol, or runner identity "
-                "drifted after dynamics probe"
-            )
-        invocation["identity_rechecks"].append("after_dynamics_probe")
-        dynamics_validation = _validate_dynamics_probe(
-            dynamics_stdout, dynamics_returncode, rows[0]
-        )
         summary["collision_probe"] = probe_validation
-        summary["dynamic_pair_probe"] = dynamics_validation
-        summary["dynamic_step1_pair_identity_evidence"] = True
-        summary["dynamic_pair_identity_scope"] = dynamics_validation["scope"]
-        summary["solver_acceptance_taxonomy_equivalent"] = False
-        summary["participant_affinity_contract_equivalent"] = False
-        summary["source_equivalent_evidence"] = False
+        summary["dynamic_pair_identity_evidence"] = False
         summary["positive_long_run_promotion_eligible"] = False
     except (EvidenceError, OSError, ValueError) as error:
         summary = {
@@ -1669,14 +1102,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             "timing_statistics": None,
             "child_returncode": returncode,
             "collision_probe_returncode": probe_returncode,
-            "dynamics_probe_returncode": dynamics_returncode,
             "collision_probe": probe_validation,
-            "dynamic_pair_probe": dynamics_validation,
-            "dynamic_step1_pair_identity_evidence": False,
-            "dynamic_pair_identity_scope": None,
-            "solver_acceptance_taxonomy_equivalent": False,
-            "participant_affinity_contract_equivalent": False,
-            "source_equivalent_evidence": False,
+            "dynamic_pair_identity_evidence": False,
             "positive_long_run_promotion_eligible": False,
             "error": str(error),
         }
@@ -1685,25 +1112,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     stderr_path = output / "stderr.txt"
     probe_stdout_path = output / "collision_probe_stdout.txt"
     probe_stderr_path = output / "collision_probe_stderr.txt"
-    dynamics_stdout_path = output / "dynamics_probe_stdout.txt"
-    dynamics_stderr_path = output / "dynamics_probe_stderr.txt"
     raw_path.write_text(stdout, encoding="utf-8")
     stderr_path.write_text(stderr, encoding="utf-8")
     probe_stdout_path.write_text(probe_stdout, encoding="utf-8")
     probe_stderr_path.write_text(probe_stderr, encoding="utf-8")
-    dynamics_stdout_path.write_text(dynamics_stdout, encoding="utf-8")
-    dynamics_stderr_path.write_text(dynamics_stderr, encoding="utf-8")
     invocation.update(
         {
             "child_returncode": returncode,
             "collision_probe_returncode": probe_returncode,
-            "dynamics_probe_returncode": dynamics_returncode,
             "raw_stdout_bytes": len(stdout.encode()),
             "stderr_bytes": len(stderr.encode()),
             "collision_probe_stdout_bytes": len(probe_stdout.encode()),
             "collision_probe_stderr_bytes": len(probe_stderr.encode()),
-            "dynamics_probe_stdout_bytes": len(dynamics_stdout.encode()),
-            "dynamics_probe_stderr_bytes": len(dynamics_stderr.encode()),
         }
     )
 
@@ -1724,30 +1144,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         "timing_evidence_eligible": False,
         "command": command,
         "collision_probe_command": collision_probe_command,
-        "dynamics_probe_command": dynamics_probe_command,
         "cwd": str(ROOT),
         "child_returncode": returncode,
         "collision_probe_returncode": probe_returncode,
-        "dynamics_probe_returncode": dynamics_returncode,
         "affinity": affinity,
         "binary": str(binary),
         "collision_probe_binary": str(collision_probe),
-        "dynamics_probe_binary": str(dynamics_probe),
         "trace_source": str(TRACE_SOURCE.relative_to(ROOT)),
         "collision_probe_source": str(COLLISION_PROBE_SOURCE.relative_to(ROOT)),
-        "dynamics_probe_source": str(DYNAMICS_PROBE_SOURCE.relative_to(ROOT)),
         "runner_source": str(Path(__file__).resolve().relative_to(ROOT)),
         "protocol": str(PROTOCOL.relative_to(ROOT)),
         "source_identity": identity,
         "collision_probe": probe_validation,
-        "dynamic_pair_probe": dynamics_validation,
-        "dynamic_step1_pair_identity_evidence": summary[
-            "dynamic_step1_pair_identity_evidence"
-        ],
-        "dynamic_pair_identity_scope": summary["dynamic_pair_identity_scope"],
-        "solver_acceptance_taxonomy_equivalent": False,
-        "participant_affinity_contract_equivalent": False,
-        "source_equivalent_evidence": False,
+        "dynamic_pair_identity_evidence": False,
         "positive_long_run_promotion_eligible": False,
         "scene_graph_evidence_scope": {
             "collision_probe": (
@@ -1756,12 +1165,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             ),
             "trace": (
                 "FourPointPlanar aggregate 400-contact, 100-constraint-pair, "
-                "three-color, width-34 fields beginning at step 1"
-            ),
-            "dynamic_pair_probe": (
-                "Identity-resolved failed step-1 FourPointPlanar companion: the "
-                "100 pairs are exactly the adjacent-stone chain at multiplicity "
-                "four; cap taxonomy and participant affinity are not equivalent"
+                "three-color, width-34 fields beginning at step 1; dynamic pair "
+                "identities are not present"
             ),
         },
         "runtime_provenance_scope": (
@@ -1787,8 +1192,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             "stderr.txt": _sha256_file(stderr_path),
             "collision_probe_stdout.txt": _sha256_file(probe_stdout_path),
             "collision_probe_stderr.txt": _sha256_file(probe_stderr_path),
-            "dynamics_probe_stdout.txt": _sha256_file(dynamics_stdout_path),
-            "dynamics_probe_stderr.txt": _sha256_file(dynamics_stderr_path),
             "invocation.json": _sha256_file(invocation_path),
             "summary.json": _sha256_file(summary_path),
             "REPORT.md": _sha256_file(report_path),

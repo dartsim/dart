@@ -55,7 +55,7 @@ def _write_producer_root_records(repo_root: Path, roots: list[str]) -> None:
     records = (
         (validator.CARD_V2_BUNDLE, "invocation.json"),
         (validator.IMPACT_V7_BUNDLE, "metadata.json"),
-        (validator.ARCH101_V5_BUNDLE, "invocation.json"),
+        (validator.ARCH101_V7_BUNDLE, "invocation.json"),
     )
     for (bundle, filename), producer_root in zip(records, roots):
         path = repo_root / bundle / filename
@@ -796,7 +796,12 @@ def _isolated_complete_teaser(manifest: dict, repo_root: Path) -> tuple[dict, di
 def test_repository_manifest_covers_the_canonical_source_set(
     manifest: dict,
 ) -> None:
-    assert validator.validate_manifest(manifest, ROOT) == []
+    assert (
+        validator.validate_manifest(
+            manifest, ROOT, live_host_identity_rechecks=False
+        )
+        == []
+    )
     ids = [requirement["id"] for requirement in manifest["requirements"]]
     assert ids == list(validator.CANONICAL_REQUIREMENT_IDS)
     assert manifest["overall_status"] == "partial"
@@ -880,7 +885,7 @@ def test_current_truth_rejects_promoted_card_verdicts(
                 "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/"
                 "fig08_arch101_literal_v1_negative_final_v3"
             ),
-            validator.ARCH101_V5_BUNDLE,
+            validator.ARCH101_V7_BUNDLE,
         ),
     ],
 )
@@ -1358,7 +1363,7 @@ def test_current_truth_hash_targets_do_not_require_local_build_artifacts() -> No
         validator.CURRENT_SMALL_CPU_ARTIFACT_TARGETS,
         validator.VISUAL_ARTIFACT_TARGETS,
         validator.IMPACT_V7_ARTIFACT_TARGETS,
-        validator.ARCH101_V5_ARTIFACT_TARGETS,
+        validator.ARCH101_V7_ARTIFACT_TARGETS,
     )
 
     assert all(
@@ -1415,6 +1420,11 @@ def test_current_truth_hash_targets_do_not_require_local_build_artifacts() -> No
             "literal_arch_101_v1_nonpaper",
             "collision_probe_binary",
             "metadata.source_identity.collision_probe_executable.sha256",
+        ),
+        (
+            "literal_arch_101_v1_nonpaper",
+            "dynamics_probe_binary",
+            "metadata.source_identity.dynamics_probe_executable.sha256",
         ),
     ],
 )
@@ -1803,6 +1813,18 @@ def test_cpu_summary_cannot_falsify_multicore_antecedents(
             "summary.collision_probe.genuine_contact_graph",
         ),
         (
+            lambda data: _truth(data, "literal_arch_101_v1_nonpaper")[
+                "dynamic_pair_probe"
+            ].update({"dynamic_step1_pair_identity_evidence": False}),
+            "summary.dynamic_pair_probe.dynamic_step1_pair_identity_evidence",
+        ),
+        (
+            lambda data: _truth(data, "literal_arch_101_v1_nonpaper").update(
+                {"source_equivalent_evidence": True}
+            ),
+            "source_equivalent_evidence: expected False, got True",
+        ),
+        (
             lambda data: _truth(data, "literal_wedge_exact_dynamics_nonpaper").update(
                 {"closure_meters": 0.0}
             ),
@@ -1875,7 +1897,7 @@ def test_arch_runtime_rechecks_are_bound_to_archived_invocation(
             payload is not None
             and name == "invocation.json"
             and bundle is not None
-            and bundle.as_posix().endswith(validator.ARCH101_V5_BUNDLE)
+            and bundle.as_posix().endswith(validator.ARCH101_V7_BUNDLE)
         ):
             payload = copy.deepcopy(payload)
             payload["identity_rechecks"] = ["after_trace"]
@@ -1887,6 +1909,318 @@ def test_arch_runtime_rechecks_are_bound_to_archived_invocation(
 
     assert any("invocation.identity_rechecks" in error for error in errors)
     assert any("runtime_provenance.identity_rechecks" in error for error in errors)
+
+
+def _arch101_dynamics_probe_inputs() -> tuple[str, dict[str, str]]:
+    bundle = ROOT / validator.ARCH101_V7_BUNDLE
+    errors: list[str] = []
+    parsed = validator._read_csv(bundle / "raw.csv", "arch101.raw", errors)
+    assert errors == []
+    assert parsed is not None
+    _, rows = parsed
+    assert len(rows) == 1
+    return (
+        (bundle / "dynamics_probe_stdout.txt").read_text(encoding="utf-8"),
+        rows[0],
+    )
+
+
+def _arch101_collision_probe_stdout() -> str:
+    return (
+        ROOT / validator.ARCH101_V7_BUNDLE / "collision_probe_stdout.txt"
+    ).read_text(encoding="utf-8")
+
+
+def test_arch101_outer_parser_reconstructs_sealed_compact_collision_claim(
+    manifest: dict,
+) -> None:
+    parsed = validator._parse_arch101_collision_probe_stdout(
+        _arch101_collision_probe_stdout()
+    )
+
+    assert parsed == _truth(manifest, "literal_arch_101_v1_nonpaper")["collision_probe"]
+
+
+def test_arch101_outer_parser_reconstructs_sealed_dynamic_pair_claim(
+    manifest: dict,
+) -> None:
+    stdout, trace_row = _arch101_dynamics_probe_inputs()
+
+    parsed = validator._parse_arch101_dynamics_probe_stdout(stdout, trace_row)
+
+    assert (
+        parsed == _truth(manifest, "literal_arch_101_v1_nonpaper")["dynamic_pair_probe"]
+    )
+
+
+def test_arch101_v7_outer_truth_accepts_repository_bundle(manifest: dict) -> None:
+    errors: list[str] = []
+
+    with validator._validation_context(
+        ROOT, live_host_identity_rechecks=False
+    ) as root_errors:
+        assert root_errors == []
+        validator._validate_arch101_v7_truth(manifest["current_truth"], ROOT, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (
+            lambda stdout: stdout.replace("metadata,", "unknown,", 1),
+            "unknown record type",
+        ),
+        (
+            lambda stdout: stdout
+            + next(
+                line
+                for line in stdout.splitlines()
+                if line.startswith(
+                    "pair,stone_count=101,backend=native,policy=closure_1um,"
+                )
+            )
+            + "\n",
+            "duplicate record",
+        ),
+        (
+            lambda stdout: stdout.replace(
+                next(
+                    line
+                    for line in stdout.splitlines()
+                    if line.startswith(
+                        "sample,stone_count=101,backend=native,policy=closure_1um,"
+                    )
+                )
+                + "\n",
+                "",
+                1,
+            ),
+            "record membership changed",
+        ),
+        (
+            lambda stdout: stdout.replace(
+                "pair,stone_count=101,backend=native,policy=closure_1um,"
+                "gap_policy=omitted_offsets,first=masonry_arch_wedge_0_shape,"
+                "second=masonry_arch_wedge_1_shape,kind=adjacent_stones,contacts=1",
+                "pair,stone_count=101,backend=native,policy=closure_1um,"
+                "gap_policy=omitted_offsets,first=masonry_arch_wedge_0_shape,"
+                "second=masonry_arch_wedge_2_shape,kind=adjacent_stones,contacts=1",
+                1,
+            ),
+            "non-adjacent stone pair",
+        ),
+        (
+            lambda stdout: stdout.replace(
+                "sample,stone_count=101,backend=native,policy=closure_1um,"
+                "gap_policy=omitted_offsets,repeat=0,contacts=102,",
+                "sample,stone_count=101,backend=native,policy=closure_1um,"
+                "gap_policy=omitted_offsets,repeat=0,contacts=101,",
+                1,
+            ),
+            "sample 'contacts' changed",
+        ),
+        (
+            lambda stdout: stdout.replace(
+                "verdict,stone_count=101,backend=native,policy=closure_1um,"
+                "gap_policy=omitted_offsets,repeated_collision_stable=true,",
+                "verdict,stone_count=101,backend=native,policy=closure_1um,"
+                "gap_policy=omitted_offsets,repeated_collision_stable=false,",
+                1,
+            ),
+            "verdict 'repeated_collision_stable' changed",
+        ),
+    ],
+)
+def test_arch101_outer_parser_rejects_tampered_collision_stdout(
+    mutate, message: str
+) -> None:
+    stdout = _arch101_collision_probe_stdout()
+    tampered = mutate(stdout)
+    assert tampered != stdout
+
+    with pytest.raises(ValueError, match=message):
+        validator._parse_arch101_collision_probe_stdout(tampered)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        ("unbound", "unexpected=['UNBOUND.txt']"),
+        ("missing", "missing=['REPORT.md']"),
+        ("directory", "directories=['UNBOUND']"),
+        ("symlink", "symlinks are forbidden: ['UNBOUND.txt']"),
+    ],
+)
+def test_arch101_v7_bundle_membership_is_exact(
+    tmp_path: Path, mutation: str, message: str
+) -> None:
+    source = ROOT / validator.ARCH101_V7_BUNDLE
+    bundle = tmp_path / "arch101-v7"
+    shutil.copytree(source, bundle)
+    if mutation == "unbound":
+        (bundle / "UNBOUND.txt").write_text("unbound\n", encoding="utf-8")
+    elif mutation == "missing":
+        (bundle / "REPORT.md").unlink()
+    elif mutation == "directory":
+        (bundle / "UNBOUND").mkdir()
+    else:
+        (bundle / "UNBOUND.txt").symlink_to(bundle / "REPORT.md")
+    errors: list[str] = []
+
+    validator._validate_arch101_v7_bundle_membership(bundle, "arch101", errors)
+
+    assert any(message in error for error in errors)
+
+
+def test_arch101_collision_stdout_semantics_survive_rebound_hashes(
+    manifest: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    replacement = "metadata,stone_count=101\n"
+    replacement_digest = hashlib.sha256(replacement.encode()).hexdigest()
+    bundle = ROOT / validator.ARCH101_V7_BUNDLE
+    metadata = json.loads((bundle / "metadata.json").read_text(encoding="utf-8"))
+    metadata["artifact_sha256"]["collision_probe_stdout.txt"] = replacement_digest
+    metadata_digest = hashlib.sha256(
+        json.dumps(metadata, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    truth = _truth(manifest, "literal_arch_101_v1_nonpaper")
+    truth["artifact_hashes"]["collision_probe_stdout.txt"] = replacement_digest
+    truth["artifact_hashes"]["metadata.json"] = metadata_digest
+    original_sha256 = validator._sha256
+    original_read_json = validator._read_bundle_json
+    original_read_text = validator._read_arch101_bundle_text
+
+    def sha256(path: Path) -> str:
+        if path == bundle / "collision_probe_stdout.txt":
+            return replacement_digest
+        if path == bundle / "metadata.json":
+            return metadata_digest
+        return original_sha256(path)
+
+    def read_json(root, name, location, errors):
+        if root == bundle and name == "metadata.json":
+            return copy.deepcopy(metadata)
+        return original_read_json(root, name, location, errors)
+
+    def read_text(root, name, location, errors):
+        if root == bundle and name == "collision_probe_stdout.txt":
+            return replacement
+        return original_read_text(root, name, location, errors)
+
+    monkeypatch.setattr(validator, "_sha256", sha256)
+    monkeypatch.setattr(validator, "_read_bundle_json", read_json)
+    monkeypatch.setattr(validator, "_read_arch101_bundle_text", read_text)
+    errors: list[str] = []
+    with validator._validation_context(
+        ROOT, live_host_identity_rechecks=False
+    ) as root_errors:
+        assert root_errors == []
+        validator._validate_arch101_v7_truth(manifest["current_truth"], ROOT, errors)
+
+    assert any("collision probe metadata schema changed" in error for error in errors)
+    assert not any(
+        "artifact_hashes['collision_probe_stdout.txt']: digest mismatch" in error
+        or "artifact_hashes['metadata.json']: digest mismatch" in error
+        for error in errors
+    )
+
+
+def test_arch101_metadata_collision_payload_is_truth_bound(
+    manifest: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = validator._read_bundle_json
+
+    def read_bundle(bundle, name, location, errors):
+        payload = original(bundle, name, location, errors)
+        if (
+            payload is not None
+            and name == "metadata.json"
+            and bundle is not None
+            and bundle.as_posix().endswith(validator.ARCH101_V7_BUNDLE)
+        ):
+            payload = copy.deepcopy(payload)
+            payload["collision_probe"]["contacts"] = 101
+        return payload
+
+    monkeypatch.setattr(validator, "_read_bundle_json", read_bundle)
+    errors: list[str] = []
+    with validator._validation_context(
+        ROOT, live_host_identity_rechecks=False
+    ) as root_errors:
+        assert root_errors == []
+        validator._validate_arch101_v7_truth(manifest["current_truth"], ROOT, errors)
+
+    assert any("metadata.collision_probe.contacts" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "message"),
+    [
+        (
+            "pair,step=1,first=masonry_arch_wedge_0_body,"
+            "second=masonry_arch_wedge_1_body,contacts=4",
+            "pair,step=1,first=masonry_arch_wedge_0_body,"
+            "second=masonry_arch_wedge_2_body,contacts=4",
+            "non-adjacent stone pair",
+        ),
+        (
+            "pair,step=1,first=masonry_arch_wedge_0_body,"
+            "second=masonry_arch_wedge_1_body,contacts=4",
+            "pair,step=1,first=masonry_arch_wedge_0_body,"
+            "second=masonry_arch_wedge_1_body,contacts=3",
+            "contact multiplicity changed",
+        ),
+        (
+            ",colored_bgs_logical_cpus=8:10:12:14,",
+            ",colored_bgs_logical_cpus=8:10:12:16,",
+            "CPU residency escaped taskset",
+        ),
+        (
+            "exact_status=max_iterations_accepted,",
+            "exact_status=converged,",
+            "step 'exact_status' changed",
+        ),
+    ],
+)
+def test_arch101_outer_parser_rejects_tampered_dynamics_stdout(
+    old: str, new: str, message: str
+) -> None:
+    stdout, trace_row = _arch101_dynamics_probe_inputs()
+    assert stdout.count(old) == 1
+
+    with pytest.raises(ValueError, match=message):
+        validator._parse_arch101_dynamics_probe_stdout(
+            stdout.replace(old, new), trace_row
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("contacts", "399", "field 'contacts' disagrees with raw trace"),
+        ("residual", "0.5", "residual disagrees with raw trace"),
+        (
+            "accept_outer_max_iterations",
+            "1",
+            "raw trace cap-rejection taxonomy changed",
+        ),
+        (
+            "inner_bgs_schedule_contract",
+            "dart_deterministic_manifold_colored_bgs_diagnostic",
+            "participant-affinity contract unexpectedly matches",
+        ),
+    ],
+)
+def test_arch101_outer_parser_rejects_tampered_trace_semantics(
+    field: str, value: str, message: str
+) -> None:
+    stdout, trace_row = _arch101_dynamics_probe_inputs()
+    tampered_trace = {**trace_row, field: value}
+
+    with pytest.raises(ValueError, match=message):
+        validator._parse_arch101_dynamics_probe_stdout(stdout, tampered_trace)
 
 
 @pytest.mark.parametrize(
@@ -1905,10 +2239,17 @@ def test_arch_runtime_rechecks_are_bound_to_archived_invocation(
             "resolved_regular_shared_libraries[0].sha256",
         ),
         (
-            "ARCH101_V5_BUNDLE",
+            "ARCH101_V7_BUNDLE",
             ("source_identity", "collision_probe_executable"),
             "literal_arch_101_v1_nonpaper.metadata.source_identity."
             "collision_probe_executable.resolved_regular_shared_libraries[0]."
+            "sha256",
+        ),
+        (
+            "ARCH101_V7_BUNDLE",
+            ("source_identity", "dynamics_probe_executable"),
+            "literal_arch_101_v1_nonpaper.metadata.source_identity."
+            "dynamics_probe_executable.resolved_regular_shared_libraries[0]."
             "sha256",
         ),
     ],
@@ -2015,21 +2356,35 @@ def test_successor_runtime_recheck_stages_are_bound(
             "four_point_planar[1:][2]",
         ),
         (
-            "ARCH101_V5_BUNDLE",
+            "ARCH101_V7_BUNDLE",
             lambda payload: payload["command"].__setitem__(0, "/tmp/forged-taskset"),
             "literal_arch_101_v1_nonpaper.invocation.command[0]",
         ),
         (
-            "ARCH101_V5_BUNDLE",
+            "ARCH101_V7_BUNDLE",
             lambda payload: payload["command"].__setitem__(3, "/tmp/forged-trace"),
             "literal_arch_101_v1_nonpaper.invocation.command[1:][2]",
         ),
         (
-            "ARCH101_V5_BUNDLE",
+            "ARCH101_V7_BUNDLE",
             lambda payload: payload["collision_probe_command"].__setitem__(
                 0, "/tmp/forged-probe"
             ),
             "literal_arch_101_v1_nonpaper.invocation.collision_probe_command[0]",
+        ),
+        (
+            "ARCH101_V7_BUNDLE",
+            lambda payload: payload["dynamics_probe_command"].__setitem__(
+                0, "/tmp/forged-taskset"
+            ),
+            "literal_arch_101_v1_nonpaper.invocation.dynamics_probe_command[0]",
+        ),
+        (
+            "ARCH101_V7_BUNDLE",
+            lambda payload: payload["dynamics_probe_command"].__setitem__(
+                3, "/tmp/forged-dynamics-probe"
+            ),
+            "literal_arch_101_v1_nonpaper.invocation.dynamics_probe_command[1:][2]",
         ),
     ],
 )
@@ -2203,7 +2558,12 @@ def test_incline_truth_and_requirement_boundaries_accept_sealed_bundle(
     assert boundary_errors == []
     assert truth["capture_contacts_per_post_initial_step"] == 8
     assert truth["trace_aggregate_contacts_per_post_initial_step"] == 6
-    assert validator.validate_manifest(manifest, ROOT) == []
+    assert (
+        validator.validate_manifest(
+            manifest, ROOT, live_host_identity_rechecks=False
+        )
+        == []
+    )
 
 
 @pytest.mark.parametrize(
@@ -5637,11 +5997,22 @@ def test_author_card_house_requirement_boundary_mutations_fail_closed(
     assert any(message in error for error in errors)
 
 
-def test_cli_accepts_the_repository_manifest(
+def test_cli_accepts_the_repository_manifest_in_archive_mode(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    assert validator.main([str(MANIFEST), "--repo-root", str(ROOT)]) == 0
+    assert (
+        validator.main(
+            [
+                str(MANIFEST),
+                "--repo-root",
+                str(ROOT),
+                "--archive-host-identities",
+            ]
+        )
+        == 0
+    )
     output = capsys.readouterr().out
     assert "29 canonical requirements" in output
-    assert "host_identities=live" in output
-    assert "skipped_live_file_identity_rechecks=0" in output
+    assert "host_identities=archive" in output
+    assert "live_file_identity_rechecks=0" in output
+    assert "skipped_live_file_identity_rechecks=118" in output

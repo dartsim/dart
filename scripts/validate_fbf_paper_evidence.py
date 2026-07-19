@@ -350,12 +350,17 @@ CURRENT_TRUTH_RECORD_KEYS = {
     "literal_arch_101_v1_nonpaper": set(
         "artifact_hashes artifact_valid boxed_lcp_fallbacks bundle claim_boundary "
         "colliding_body_pairs collision_probe colored_schedule contacts "
-        "emitted_steps exact_failures first_failed_step historical_invalid_bundles "
-        "historical_superseded_bundles max_arch_body_displacement_m "
+        "dynamic_pair_identity_scope dynamic_pair_probe "
+        "dynamic_step1_pair_identity_evidence emitted_steps exact_failures "
+        "first_failed_step historical_invalid_bundles historical_superseded_bundles "
+        "max_arch_body_displacement_m "
         "min_arch_body_orientation_alignment normalized_fingerprint_sha256 "
-        "outer_iterations protocol protocol_contract_sha256 requested_steps runner "
-        "runtime_provenance scene_graph_evidence_scope standing_claim_passed status "
-        "terminal_residual terminal_status timing_evidence_eligible".split()
+        "outer_iterations participant_affinity_contract_equivalent "
+        "positive_long_run_promotion_eligible protocol protocol_contract_sha256 "
+        "requested_steps runner runtime_provenance scene_graph_evidence_scope "
+        "solver_acceptance_taxonomy_equivalent source_equivalent_evidence "
+        "standing_claim_passed status terminal_residual terminal_status "
+        "timing_evidence_eligible".split()
     ),
     "literal_wedge_collision_audit": set(
         "collision_only dynamic_claim exact_polyhedral_inertia inertia "
@@ -494,9 +499,22 @@ CURRENT_TRUTH_NESTED_OBJECT_KEYS = {
         "repeat_count repeated_collision_stable scope springer_ground_pairs "
         "unexpected_ground_pairs unique_pairs".split()
     ),
+    "literal_arch_101_v1_nonpaper.dynamic_pair_probe": set(
+        "adjacent_stone_pairs claim_boundary contacts contacts_per_pair "
+        "dynamic_step1_pair_identity_evidence ground_pairs "
+        "nonadjacent_stone_pairs observed_colored_logical_cpus "
+        "observed_colored_max_phase_logical_cpus outer_iterations "
+        "participant_affinity_contract_equivalent "
+        "positive_long_run_promotion_eligible residual returncode scope "
+        "solver_acceptance_taxonomy_equivalent source_equivalent_evidence "
+        "standing_evidence timing_evidence_eligible trace_aggregate_match "
+        "trace_residual_match unique_pairs".split()
+    ),
     "literal_arch_101_v1_nonpaper.runtime_provenance": set(
         "collision_probe_ldd_map_sha256 "
-        "collision_probe_resolved_regular_shared_libraries identity_rechecks "
+        "collision_probe_resolved_regular_shared_libraries "
+        "dynamics_probe_ldd_map_sha256 "
+        "dynamics_probe_resolved_regular_shared_libraries identity_rechecks "
         "ldd_tool_sha256 resolved_build_libdart_sha256 scope taskset_tool_sha256 "
         "trace_ldd_map_sha256 trace_resolved_regular_shared_libraries".split()
     ),
@@ -1013,6 +1031,14 @@ CARD_V2_PROTOCOL = (
     "docs/dev_tasks/fbf_exact_coulomb_friction/" "CARD_HOUSE_MANIFOLD_SENSITIVITY_V2.md"
 )
 CARD_V2_RUNNER = "scripts/run_fbf_card_manifold_sensitivity_v2.py"
+# The card packet seals the helper bytes used at capture time. Keep that
+# producer snapshot immutable so later ARCH101 runner versions cannot rewrite
+# an older packet's source identity.
+CARD_V2_IDENTITY_HELPER_SOURCE = (
+    "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/"
+    "producer_sources/card_house_26_manifold_sensitivity_v2_r3/"
+    "run_fbf_literal_arch101_v1.py"
+)
 VISUAL_BUNDLE = (
     "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/"
     "fig07_arch25_literal"
@@ -1038,9 +1064,9 @@ IMPACT_V7_BUNDLE = (
     "fig07_arch25_literal_impact_v1_negative_final_v9"
 )
 IMPACT_V7_RUNNER = "scripts/run_fbf_literal_crown_impact_negative.py"
-ARCH101_V5_BUNDLE = (
+ARCH101_V7_BUNDLE = (
     "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/"
-    "fig08_arch101_literal_v1_negative_final_v6"
+    "fig08_arch101_literal_v1_negative_final_v7"
 )
 AUTHOR_MASONRY_ARCH_V1_BUNDLE = (
     "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/"
@@ -1288,6 +1314,9 @@ ARCH101_V1_RUNNER = "scripts/run_fbf_literal_arch101_v1.py"
 TRACE_SOURCE = "tests/benchmark/integration/fbf_paper_trace.cpp"
 COLLISION_PROBE_SOURCE = (
     "tests/benchmark/integration/fbf_paper_arch_wedge_collision_probe.cpp"
+)
+DYNAMICS_PROBE_SOURCE = (
+    "tests/benchmark/integration/fbf_paper_arch_wedge_dynamics_probe.cpp"
 )
 PRIOR_SOURCE_ARCHIVE = (
     "docs/dev_tasks/fbf_exact_coulomb_friction/assets/dart_cpu_evidence/"
@@ -1557,7 +1586,7 @@ CURRENT_SMALL_CPU_ARTIFACT_TARGETS = {
 CARD_V2_ARTIFACT_TARGETS = {
     "runner": CARD_V2_RUNNER,
     "runner_test": "python/tests/unit/test_run_fbf_card_manifold_sensitivity_v2.py",
-    "identity_helper_source": ARCH101_V1_RUNNER,
+    "identity_helper_source": CARD_V2_IDENTITY_HELPER_SOURCE,
     "trace_contract_test": (
         "python/tests/unit/test_fbf_card_manifold_sensitivity_trace.py"
     ),
@@ -2071,20 +2100,42 @@ IMPACT_V7_ARTIFACT_TARGETS = {
     "metadata.json": f"{IMPACT_V7_BUNDLE}/metadata.json",
     "REPORT.md": f"{IMPACT_V7_BUNDLE}/REPORT.md",
 }
-ARCH101_V5_ARTIFACT_TARGETS = {
+ARCH101_V7_ARTIFACT_TARGETS = {
     "runner": ARCH101_V1_RUNNER,
     "runner_test": "python/tests/unit/test_run_fbf_literal_arch101_v1.py",
     "trace_source": TRACE_SOURCE,
     "collision_probe_source": COLLISION_PROBE_SOURCE,
-    "raw.csv": f"{ARCH101_V5_BUNDLE}/raw.csv",
-    "stderr.txt": f"{ARCH101_V5_BUNDLE}/stderr.txt",
-    "collision_probe_stdout.txt": (f"{ARCH101_V5_BUNDLE}/collision_probe_stdout.txt"),
-    "collision_probe_stderr.txt": (f"{ARCH101_V5_BUNDLE}/collision_probe_stderr.txt"),
-    "invocation.json": f"{ARCH101_V5_BUNDLE}/invocation.json",
-    "summary.json": f"{ARCH101_V5_BUNDLE}/summary.json",
-    "metadata.json": f"{ARCH101_V5_BUNDLE}/metadata.json",
-    "REPORT.md": f"{ARCH101_V5_BUNDLE}/REPORT.md",
+    "dynamics_probe_source": DYNAMICS_PROBE_SOURCE,
+    "raw.csv": f"{ARCH101_V7_BUNDLE}/raw.csv",
+    "stderr.txt": f"{ARCH101_V7_BUNDLE}/stderr.txt",
+    "collision_probe_stdout.txt": (f"{ARCH101_V7_BUNDLE}/collision_probe_stdout.txt"),
+    "collision_probe_stderr.txt": (f"{ARCH101_V7_BUNDLE}/collision_probe_stderr.txt"),
+    "dynamics_probe_stdout.txt": (f"{ARCH101_V7_BUNDLE}/dynamics_probe_stdout.txt"),
+    "dynamics_probe_stderr.txt": (f"{ARCH101_V7_BUNDLE}/dynamics_probe_stderr.txt"),
+    "invocation.json": f"{ARCH101_V7_BUNDLE}/invocation.json",
+    "summary.json": f"{ARCH101_V7_BUNDLE}/summary.json",
+    "metadata.json": f"{ARCH101_V7_BUNDLE}/metadata.json",
+    "REPORT.md": f"{ARCH101_V7_BUNDLE}/REPORT.md",
 }
+ARCH101_V7_EXPECTED_BUNDLE_FILES = frozenset(
+    {
+        "REPORT.md",
+        "collision_probe_stderr.txt",
+        "collision_probe_stdout.txt",
+        "dynamics_probe_stderr.txt",
+        "dynamics_probe_stdout.txt",
+        "invocation.json",
+        "metadata.json",
+        "raw.csv",
+        "stderr.txt",
+        "summary.json",
+    }
+)
+ARCH101_COLLISION_PROBE_PROMOTION_BOUNDARY = (
+    "The probe proves pair identities only for the constructed initial scene. "
+    "Positive long-run promotion still requires dynamic pair-identity evidence "
+    "for the FourPointPlanar trace."
+)
 
 
 def _nonempty_string(value: Any) -> bool:
@@ -11644,7 +11695,883 @@ def _validate_impact_v7_truth(
                     )
 
 
-def _validate_arch101_v5_truth(
+def _validate_arch101_v7_bundle_membership(
+    bundle: Path, location: str, errors: list[str]
+) -> None:
+    actual_files: set[str] = set()
+    directories: list[str] = []
+    unsafe: list[str] = []
+    non_regular: list[str] = []
+    for path in bundle.rglob("*"):
+        relative = path.relative_to(bundle).as_posix()
+        if path.is_symlink():
+            unsafe.append(relative)
+        elif path.is_file():
+            actual_files.add(relative)
+        elif path.is_dir():
+            directories.append(relative)
+        else:
+            non_regular.append(relative)
+    if unsafe:
+        errors.append(f"{location}.bundle: symlinks are forbidden: {sorted(unsafe)}")
+    if non_regular:
+        errors.append(
+            f"{location}.bundle: non-regular entries are forbidden: "
+            f"{sorted(non_regular)}"
+        )
+    missing = sorted(ARCH101_V7_EXPECTED_BUNDLE_FILES - actual_files)
+    unexpected = sorted(actual_files - ARCH101_V7_EXPECTED_BUNDLE_FILES)
+    if missing or unexpected or directories:
+        errors.append(
+            f"{location}.bundle: exact membership changed; missing={missing}, "
+            f"unexpected={unexpected}, directories={sorted(directories)}"
+        )
+
+
+def _read_arch101_bundle_text(
+    bundle: Path | None, name: str, location: str, errors: list[str]
+) -> str | None:
+    if bundle is None:
+        return None
+    path = bundle / name
+    if not path.is_file():
+        errors.append(f"{location}: current bundle text does not exist: {name}")
+        return None
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as error:
+        errors.append(f"{location}: current bundle text is unreadable: {error}")
+        return None
+
+
+def _arch101_recorded_collision_probe_payload(
+    truth: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        **truth,
+        "returncode": 0,
+        "constructed_initial_scene_passed": True,
+        "promotion_boundary": ARCH101_COLLISION_PROBE_PROMOTION_BOUNDARY,
+    }
+
+
+def _parse_arch101_collision_record(line: str) -> tuple[str, dict[str, str]]:
+    parts = line.split(",")
+    if not parts or parts[0] not in {"metadata", "sample", "pair", "verdict"}:
+        raise ValueError("collision probe emitted an unknown record type")
+    values: dict[str, str] = {}
+    for item in parts[1:]:
+        key, separator, value = item.partition("=")
+        if not separator or not key or key in values:
+            raise ValueError("collision probe emitted a malformed record")
+        values[key] = value
+    return parts[0], values
+
+
+def _arch101_collision_int(values: dict[str, str], field: str) -> int:
+    try:
+        return int(values[field])
+    except (KeyError, ValueError) as error:
+        raise ValueError(f"invalid collision probe integer {field!r}") from error
+
+
+def _arch101_collision_float(values: dict[str, str], field: str) -> float:
+    try:
+        value = float(values[field])
+    except (KeyError, ValueError) as error:
+        raise ValueError(f"invalid collision probe number {field!r}") from error
+    if not math.isfinite(value):
+        raise ValueError(f"non-finite collision probe number {field!r}")
+    return value
+
+
+def _parse_arch101_collision_probe_stdout(stdout: str) -> dict[str, Any]:
+    """Independently validate the sealed collision matrix and Compact target."""
+
+    identity_fields = {"stone_count", "backend", "policy", "gap_policy"}
+    metadata_fields = identity_fields | {
+        "end_face_expansion_m",
+        "downward_shift_m",
+        "friction",
+        "pinned_springers",
+        "pinned_springers_valid",
+        "mobile_skeletons",
+        "collision_only",
+        "dynamic_claim",
+        "exact_polyhedral_inertia",
+        "source_density_kg_m3",
+        "exact_volume_m3",
+        "nominal_mass_from_exact_volume_kg",
+        "convex_shape_aabb_volume_m3",
+    }
+    unsupported_metadata_fields = identity_fields | {
+        "backend_supported",
+        "unsupported_reason",
+    }
+    record_fields = {
+        "sample": identity_fields
+        | {
+            "repeat",
+            "contacts",
+            "unique_pairs",
+            "adjacent_stone_pairs",
+            "nonadjacent_stone_pairs",
+            "springer_ground_pairs",
+            "unexpected_ground_pairs",
+            "min_penetration_m",
+            "max_penetration_m",
+            "mean_penetration_m",
+            "nonfinite_contacts",
+        },
+        "pair": identity_fields | {"first", "second", "kind", "contacts"},
+        "verdict": identity_fields
+        | {
+            "repeated_collision_stable",
+            "numerical_100_contact_target_observed",
+            "genuine_contact_graph",
+            "dynamic_path_candidate",
+            "paper_contract_proven",
+        },
+    }
+    policy_identities = {
+        ("source_offsets", "source_offsets"),
+        ("nominal_touching", "omitted_offsets"),
+        ("ground_gap_removed", "omitted_offsets"),
+        ("closure_1um", "omitted_offsets"),
+        ("closure_10um", "omitted_offsets"),
+        ("closure_100um", "omitted_offsets"),
+    }
+    expected_identities = {
+        (stone_count, backend, policy, gap_policy)
+        for stone_count in ("25", "101")
+        for backend in (
+            "native",
+            "fcl_convex",
+            "dart_legacy",
+            "bullet_convex_hull",
+        )
+        for policy, gap_policy in policy_identities
+    }
+    by_identity: dict[tuple[str, str, str, str], dict[str, list[dict[str, str]]]] = {}
+    counts = {"metadata": 0, "sample": 0, "pair": 0, "verdict": 0}
+    seen_records: set[tuple[str, tuple[tuple[str, str], ...]]] = set()
+    for line in stdout.splitlines():
+        kind, values = _parse_arch101_collision_record(line)
+        fields = set(values)
+        expected_fields = (
+            (metadata_fields, unsupported_metadata_fields)
+            if kind == "metadata"
+            else (record_fields[kind],)
+        )
+        if fields not in expected_fields:
+            raise ValueError(f"collision probe {kind} schema changed")
+        record_key = (kind, tuple(sorted(values.items())))
+        if record_key in seen_records:
+            raise ValueError("collision probe emitted a duplicate record")
+        seen_records.add(record_key)
+        identity = (
+            values["stone_count"],
+            values["backend"],
+            values["policy"],
+            values["gap_policy"],
+        )
+        if identity not in expected_identities:
+            raise ValueError("collision probe emitted an unknown configuration")
+        bucket = by_identity.setdefault(
+            identity,
+            {"metadata": [], "sample": [], "pair": [], "verdict": []},
+        )
+        bucket[kind].append(values)
+        counts[kind] += 1
+
+    expected_counts = {
+        "metadata": 48,
+        "sample": 72,
+        "pair": 1654,
+        "verdict": 48,
+    }
+    if counts != expected_counts:
+        raise ValueError(
+            f"collision probe record membership changed; expected "
+            f"{expected_counts}, got {counts}"
+        )
+    if set(by_identity) != expected_identities:
+        raise ValueError("collision probe configuration membership changed")
+    for identity in expected_identities:
+        bucket = by_identity[identity]
+        if len(bucket["metadata"]) != 1 or len(bucket["verdict"]) != 1:
+            raise ValueError("collision probe metadata/verdict is not unique")
+        metadata_record = bucket["metadata"][0]
+        if identity[1] == "dart_legacy":
+            if (
+                set(metadata_record) != unsupported_metadata_fields
+                or metadata_record["backend_supported"] != "false"
+                or not metadata_record["unsupported_reason"]
+            ):
+                raise ValueError("collision probe unsupported backend record changed")
+        elif set(metadata_record) != metadata_fields:
+            raise ValueError("collision probe supported metadata schema changed")
+        expected_repeats = [] if identity[1] == "dart_legacy" else [0, 1]
+        actual_repeats = sorted(
+            _arch101_collision_int(sample, "repeat") for sample in bucket["sample"]
+        )
+        if actual_repeats != expected_repeats:
+            raise ValueError("collision probe sample membership changed")
+
+    target_identity = ("101", "native", "closure_1um", "omitted_offsets")
+    target = by_identity[target_identity]
+    if len(target["pair"]) != 102:
+        raise ValueError("collision probe Compact pair record count changed")
+    metadata = target["metadata"][0]
+    samples = sorted(
+        target["sample"], key=lambda values: _arch101_collision_int(values, "repeat")
+    )
+    verdict = target["verdict"][0]
+
+    for field, expected in {
+        "pinned_springers": "0:100",
+        "pinned_springers_valid": "true",
+        "collision_only": "true",
+        "dynamic_claim": "false",
+        "exact_polyhedral_inertia": "true",
+    }.items():
+        if metadata[field] != expected:
+            raise ValueError(f"collision probe metadata {field!r} changed")
+    if _arch101_collision_int(metadata, "mobile_skeletons") != 99:
+        raise ValueError("collision probe mobile skeleton count changed")
+    for field, expected in (
+        ("end_face_expansion_m", 1e-6),
+        ("downward_shift_m", 0.001001),
+        ("friction", 0.8),
+        ("source_density_kg_m3", 1000.0),
+    ):
+        if not math.isclose(
+            _arch101_collision_float(metadata, field),
+            expected,
+            rel_tol=1e-12,
+            abs_tol=1e-15,
+        ):
+            raise ValueError(f"collision probe metadata {field!r} changed")
+    if any(
+        _arch101_collision_float(metadata, field) <= 0.0
+        for field in (
+            "exact_volume_m3",
+            "nominal_mass_from_exact_volume_kg",
+            "convex_shape_aabb_volume_m3",
+        )
+    ):
+        raise ValueError("collision probe exact mass properties are not positive")
+
+    expected_sample = {
+        "contacts": 102,
+        "unique_pairs": 102,
+        "adjacent_stone_pairs": 100,
+        "nonadjacent_stone_pairs": 0,
+        "springer_ground_pairs": 2,
+        "unexpected_ground_pairs": 0,
+        "nonfinite_contacts": 0,
+    }
+    penetration_summaries: list[tuple[float, float, float]] = []
+    for repeat, sample in enumerate(samples):
+        if _arch101_collision_int(sample, "repeat") != repeat:
+            raise ValueError("collision probe repeats are not exactly 0 and 1")
+        for field, expected in expected_sample.items():
+            if _arch101_collision_int(sample, field) != expected:
+                raise ValueError(f"collision probe sample {field!r} changed")
+        minimum = _arch101_collision_float(sample, "min_penetration_m")
+        maximum = _arch101_collision_float(sample, "max_penetration_m")
+        mean = _arch101_collision_float(sample, "mean_penetration_m")
+        if minimum < 0.0 or not minimum <= mean <= maximum:
+            raise ValueError("collision probe penetration summary is inconsistent")
+        penetration_summaries.append((minimum, maximum, mean))
+    if any(
+        not math.isclose(first, second, rel_tol=0.0, abs_tol=1e-12)
+        for first, second in zip(
+            penetration_summaries[0], penetration_summaries[1], strict=True
+        )
+    ):
+        raise ValueError("collision probe repeated penetration summary changed")
+
+    stone_pattern = re.compile(r"^masonry_arch_wedge_([0-9]+)_shape$")
+    ground_name = "masonry_arch_ground_shape"
+    adjacent_edges: set[tuple[int, int]] = set()
+    ground_indices: set[int] = set()
+    for pair in target["pair"]:
+        if _arch101_collision_int(pair, "contacts") != 1:
+            raise ValueError("collision probe Compact pair multiplicity changed")
+        names = (pair["first"], pair["second"])
+        matches = [stone_pattern.fullmatch(name) for name in names]
+        if all(matches):
+            indices = sorted(int(match.group(1)) for match in matches if match)
+            if pair["kind"] != "adjacent_stones" or indices[1] - indices[0] != 1:
+                raise ValueError("collision probe emitted a non-adjacent stone pair")
+            adjacent_edges.add((indices[0], indices[1]))
+        elif ground_name in names and sum(match is not None for match in matches) == 1:
+            match = next(match for match in matches if match is not None)
+            index = int(match.group(1))
+            if pair["kind"] != "springer_ground" or index not in {0, 100}:
+                raise ValueError("collision probe emitted an unexpected ground pair")
+            ground_indices.add(index)
+        else:
+            raise ValueError("collision probe emitted an unknown Compact pair")
+    if adjacent_edges != {(index, index + 1) for index in range(100)}:
+        raise ValueError("collision probe adjacent-pair identity set changed")
+    if ground_indices != {0, 100}:
+        raise ValueError("collision probe springer-ground identity set changed")
+
+    for field, expected in {
+        "repeated_collision_stable": "true",
+        "numerical_100_contact_target_observed": "not_applicable",
+        "genuine_contact_graph": "true",
+        "dynamic_path_candidate": "not_applicable",
+        "paper_contract_proven": "false",
+    }.items():
+        if verdict[field] != expected:
+            raise ValueError(f"collision probe verdict {field!r} changed")
+
+    return {
+        "scope": "constructed_initial_scene_collision_only_compact_manifold",
+        "repeat_count": 2,
+        "contacts": 102,
+        "unique_pairs": 102,
+        "adjacent_stone_pairs": 100,
+        "springer_ground_pairs": 2,
+        "nonadjacent_stone_pairs": 0,
+        "unexpected_ground_pairs": 0,
+        "nonfinite_contacts": 0,
+        "repeated_collision_stable": True,
+        "genuine_contact_graph": True,
+        "dynamic_pair_identity_evidence": False,
+    }
+
+
+def _parse_arch101_dynamics_record(line: str) -> tuple[str, dict[str, str]]:
+    parts = line.split(",")
+    if not parts or parts[0] not in {"metadata", "step", "pair", "verdict"}:
+        raise ValueError("dynamics companion emitted an unknown record type")
+    values: dict[str, str] = {}
+    for item in parts[1:]:
+        key, separator, value = item.partition("=")
+        if not separator or not key or key in values:
+            raise ValueError("dynamics companion emitted a malformed record")
+        values[key] = value
+    return parts[0], values
+
+
+def _arch101_dynamics_int(values: dict[str, str], field: str) -> int:
+    try:
+        return int(values[field])
+    except (KeyError, ValueError) as error:
+        raise ValueError(f"invalid dynamics companion integer {field!r}") from error
+
+
+def _arch101_dynamics_float(values: dict[str, str], field: str) -> float:
+    try:
+        value = float(values[field])
+    except (KeyError, ValueError) as error:
+        raise ValueError(f"invalid dynamics companion number {field!r}") from error
+    if not math.isfinite(value):
+        raise ValueError(f"non-finite dynamics companion number {field!r}")
+    return value
+
+
+def _arch101_dynamics_cpu_set(value: str, field: str) -> set[int]:
+    parts = value.split(":")
+    try:
+        cpus = {int(part) for part in parts}
+    except ValueError as error:
+        raise ValueError(f"invalid dynamics companion CPU field {field!r}") from error
+    if not parts or "" in parts or len(cpus) != len(parts):
+        raise ValueError(f"invalid dynamics companion CPU field {field!r}")
+    return cpus
+
+
+def _arch101_trace_int(trace_row: dict[str, str], field: str) -> int:
+    try:
+        return int(trace_row[field])
+    except (KeyError, ValueError) as error:
+        raise ValueError(f"invalid frozen trace integer {field!r}") from error
+
+
+def _arch101_trace_float(trace_row: dict[str, str], field: str) -> float:
+    try:
+        value = float(trace_row[field])
+    except (KeyError, ValueError) as error:
+        raise ValueError(f"invalid frozen trace number {field!r}") from error
+    if not math.isfinite(value):
+        raise ValueError(f"non-finite frozen trace number {field!r}")
+    return value
+
+
+def _parse_arch101_dynamics_probe_stdout(
+    stdout: str, trace_row: dict[str, str]
+) -> dict[str, Any]:
+    """Independently validate the sealed step-1 dynamics companion stdout."""
+
+    records: dict[str, list[dict[str, str]]] = {
+        "metadata": [],
+        "step": [],
+        "pair": [],
+        "verdict": [],
+    }
+    for line in stdout.splitlines():
+        kind, values = _parse_arch101_dynamics_record(line)
+        records[kind].append(values)
+    if len(records["metadata"]) != 1 or len(records["step"]) != 1:
+        raise ValueError("dynamics companion metadata/step record is not unique")
+    if len(records["verdict"]) != 1:
+        raise ValueError("dynamics companion verdict record is not unique")
+    if len(records["pair"]) != 100:
+        raise ValueError("dynamics companion pair record count changed")
+
+    metadata_fields = {
+        "stone_count",
+        "steps_requested",
+        "backend",
+        "manifold_mode",
+        "solver",
+        "gap_policy",
+        "barrier_offsets",
+        "end_face_expansion_m",
+        "downward_shift_m",
+        "dt_s",
+        "friction",
+        "density_kg_m3",
+        "step_size_scale",
+        "outer_iterations",
+        "inner_sweeps",
+        "adaptive_step_size",
+        "bootstrap_diagnostic",
+        "bootstrap_outer_iterations",
+        "bootstrap_steps",
+        "bootstrap_paper_comparable",
+        "seed_diagnostic",
+        "seed_mode",
+        "seed_paper_comparable",
+        "seed_operator_contract",
+        "seed_parallel_contract",
+        "stabilization_diagnostic",
+        "stabilization_mode",
+        "stabilization_paper_comparable",
+        "simulation_threads",
+        "inner_schedule",
+        "outer_relaxation",
+        "step_size_persistence",
+        "inner_schedule_paper_comparable",
+        "inner_schedule_contract",
+        "paper_velocity_baumgarte_published",
+        "paper_velocity_baumgarte_parameter_published",
+        "exact_volume_m3",
+        "exact_mass_kg",
+        "pinned_springers",
+        "split_impulse",
+        "error_reduction_parameter",
+        "error_reduction_parameter_scope",
+        "max_contacts",
+        "max_contacts_per_pair",
+        "minimum_stability_steps",
+        "crown_displacement_gate_m",
+        "crown_upright_cos_gate",
+        "max_body_displacement_gate_m",
+        "min_body_upright_cos_gate",
+        "author_scene_available",
+        "paper_parity_claim",
+    }
+    step_fields = {
+        "index",
+        "bootstrap_step",
+        "outer_iteration_budget",
+        "sim_time_s",
+        "elapsed_ms",
+        "contacts",
+        "unique_body_pairs",
+        "max_contacts_on_body_pair",
+        "contacts_finite",
+        "state_finite",
+        "crown_displacement_m",
+        "crown_vertical_displacement_m",
+        "crown_upright_cos",
+        "max_body_displacement_m",
+        "min_body_upright_cos",
+        "max_linear_speed_m_s",
+        "max_angular_speed_rad_s",
+        "exact_attempts",
+        "exact_solves",
+        "exact_failures",
+        "boxed_fallbacks",
+        "max_iterations_accepted",
+        "exact_status",
+        "fbf_status",
+        "residual",
+        "best_residual",
+        "primal_residual",
+        "dual_residual",
+        "complementarity_residual",
+        "step_size",
+        "safe_step_size",
+        "coupling_variation_ratio",
+        "iterations",
+        "colored_bgs_requested",
+        "colored_bgs_used",
+        "colored_bgs_solves",
+        "colored_bgs_dispatches",
+        "colored_bgs_max_participants",
+        "colored_bgs_manifolds",
+        "colored_bgs_colors",
+        "colored_bgs_max_manifolds_per_color",
+        "colored_bgs_logical_cpus",
+        "colored_bgs_max_phase_logical_cpus",
+    }
+    pair_fields = {"step", "first", "second", "contacts"}
+    verdict_fields = {
+        "completed",
+        "steps_completed",
+        "finite",
+        "stability_duration_met",
+        "bounded_stability_gate",
+        "crown_displacement_m",
+        "crown_upright_cos",
+        "max_body_displacement_m",
+        "min_body_upright_cos",
+        "min_contacts",
+        "max_contacts",
+        "elapsed_total_ms",
+        "elapsed_mean_step_ms",
+        "exact_attempts",
+        "exact_solves",
+        "exact_failures",
+        "boxed_fallbacks",
+        "max_iterations_accepted",
+        "worst_residual",
+        "author_scene_available",
+        "paper_parity_claim",
+    }
+    metadata = records["metadata"][0]
+    step = records["step"][0]
+    verdict = records["verdict"][0]
+    if set(metadata) != metadata_fields:
+        raise ValueError("dynamics companion metadata schema changed")
+    if set(step) != step_fields:
+        raise ValueError("dynamics companion step schema changed")
+    if set(verdict) != verdict_fields:
+        raise ValueError("dynamics companion verdict schema changed")
+    if any(set(pair) != pair_fields for pair in records["pair"]):
+        raise ValueError("dynamics companion pair schema changed")
+
+    expected_metadata_strings = {
+        "backend": "native",
+        "manifold_mode": "four_point_planar",
+        "solver": "exact_fbf",
+        "gap_policy": "closure_1um",
+        "barrier_offsets": "omitted",
+        "adaptive_step_size": "true",
+        "bootstrap_diagnostic": "false",
+        "bootstrap_paper_comparable": "false",
+        "seed_diagnostic": "false",
+        "seed_mode": "zero",
+        "seed_paper_comparable": "false",
+        "seed_operator_contract": "contact_row_matrix_free",
+        "seed_parallel_contract": "preserved",
+        "stabilization_diagnostic": "false",
+        "stabilization_mode": "none",
+        "stabilization_paper_comparable": "false",
+        "inner_schedule": "colored",
+        "step_size_persistence": "fresh",
+        "inner_schedule_paper_comparable": "false",
+        "inner_schedule_contract": "dart_deterministic_manifold_colored_bgs_diagnostic",
+        "paper_velocity_baumgarte_published": "true",
+        "paper_velocity_baumgarte_parameter_published": "false",
+        "pinned_springers": "0:100",
+        "split_impulse": "true",
+        "error_reduction_parameter_scope": "process_global_static",
+        "author_scene_available": "false",
+        "paper_parity_claim": "false",
+    }
+    for field, expected in expected_metadata_strings.items():
+        if metadata[field] != expected:
+            raise ValueError(f"dynamics companion metadata {field!r} changed")
+    for field, expected in {
+        "stone_count": 101,
+        "steps_requested": 1,
+        "outer_iterations": 5000,
+        "inner_sweeps": 30,
+        "bootstrap_outer_iterations": 0,
+        "bootstrap_steps": 0,
+        "simulation_threads": 4,
+        "max_contacts": 1616,
+        "max_contacts_per_pair": 8,
+        "minimum_stability_steps": 25,
+    }.items():
+        if _arch101_dynamics_int(metadata, field) != expected:
+            raise ValueError(f"dynamics companion metadata {field!r} changed")
+    for field, expected in (
+        ("end_face_expansion_m", 1e-6),
+        ("downward_shift_m", 0.001001),
+        ("dt_s", 1.0 / 60.0),
+        ("friction", 0.8),
+        ("density_kg_m3", 1000.0),
+        ("step_size_scale", 35.0),
+        ("outer_relaxation", 1.1),
+        ("error_reduction_parameter", 0.0),
+        ("crown_displacement_gate_m", 0.02),
+        ("crown_upright_cos_gate", 0.95),
+        ("max_body_displacement_gate_m", 0.05),
+        ("min_body_upright_cos_gate", 0.8),
+    ):
+        if not math.isclose(
+            _arch101_dynamics_float(metadata, field),
+            expected,
+            rel_tol=1e-12,
+            abs_tol=1e-15,
+        ):
+            raise ValueError(f"dynamics companion metadata {field!r} changed")
+    if any(
+        _arch101_dynamics_float(metadata, field) <= 0.0
+        for field in ("exact_volume_m3", "exact_mass_kg")
+    ):
+        raise ValueError("dynamics companion exact mass properties are not positive")
+
+    for field, expected in {
+        "bootstrap_step": "false",
+        "contacts_finite": "true",
+        "state_finite": "true",
+        "exact_status": "max_iterations_accepted",
+        "fbf_status": "max_iterations",
+        "colored_bgs_requested": "true",
+        "colored_bgs_used": "true",
+    }.items():
+        if step[field] != expected:
+            raise ValueError(f"dynamics companion step {field!r} changed")
+    for field, expected in {
+        "index": 1,
+        "outer_iteration_budget": 5000,
+        "contacts": 400,
+        "unique_body_pairs": 100,
+        "max_contacts_on_body_pair": 4,
+        "exact_attempts": 1,
+        "exact_solves": 1,
+        "exact_failures": 0,
+        "boxed_fallbacks": 0,
+        "max_iterations_accepted": 1,
+        "iterations": 5000,
+        "colored_bgs_solves": 5000,
+        "colored_bgs_dispatches": 1,
+        "colored_bgs_max_participants": 4,
+        "colored_bgs_manifolds": 100,
+        "colored_bgs_colors": 3,
+        "colored_bgs_max_manifolds_per_color": 34,
+    }.items():
+        if _arch101_dynamics_int(step, field) != expected:
+            raise ValueError(f"dynamics companion step {field!r} changed")
+    if not math.isclose(
+        _arch101_dynamics_float(step, "sim_time_s"),
+        1.0 / 60.0,
+        rel_tol=1e-12,
+        abs_tol=1e-15,
+    ):
+        raise ValueError("dynamics companion simulation time changed")
+    finite_step_fields = (
+        "elapsed_ms",
+        "crown_displacement_m",
+        "crown_vertical_displacement_m",
+        "crown_upright_cos",
+        "max_body_displacement_m",
+        "min_body_upright_cos",
+        "max_linear_speed_m_s",
+        "max_angular_speed_rad_s",
+        "residual",
+        "best_residual",
+        "primal_residual",
+        "dual_residual",
+        "complementarity_residual",
+        "step_size",
+        "safe_step_size",
+        "coupling_variation_ratio",
+    )
+    for field in finite_step_fields:
+        _arch101_dynamics_float(step, field)
+    nonnegative_step_fields = set(finite_step_fields) - {
+        "crown_vertical_displacement_m",
+        "crown_upright_cos",
+        "min_body_upright_cos",
+    }
+    if any(
+        _arch101_dynamics_float(step, field) < 0.0 for field in nonnegative_step_fields
+    ):
+        raise ValueError("dynamics companion step contains a negative magnitude")
+
+    allowed_cpus = {8, 10, 12, 14}
+    logical_cpus = _arch101_dynamics_cpu_set(
+        step["colored_bgs_logical_cpus"], "colored_bgs_logical_cpus"
+    )
+    phase_cpus = _arch101_dynamics_cpu_set(
+        step["colored_bgs_max_phase_logical_cpus"],
+        "colored_bgs_max_phase_logical_cpus",
+    )
+    if not logical_cpus.issubset(allowed_cpus):
+        raise ValueError("dynamics companion colored CPU residency escaped taskset")
+    if not phase_cpus.issubset(logical_cpus):
+        raise ValueError("dynamics companion max-phase CPU residency is inconsistent")
+
+    body_pattern = re.compile(r"^masonry_arch_wedge_([0-9]+)_body$")
+    adjacent_edges: set[tuple[int, int]] = set()
+    for pair in records["pair"]:
+        if _arch101_dynamics_int(pair, "step") != 1:
+            raise ValueError("dynamics companion pair step changed")
+        if _arch101_dynamics_int(pair, "contacts") != 4:
+            raise ValueError("dynamics companion pair contact multiplicity changed")
+        first = body_pattern.fullmatch(pair["first"])
+        second = body_pattern.fullmatch(pair["second"])
+        if first is None or second is None:
+            raise ValueError("dynamics companion emitted a non-stone body pair")
+        indices = sorted((int(first.group(1)), int(second.group(1))))
+        if indices[1] - indices[0] != 1:
+            raise ValueError("dynamics companion emitted a non-adjacent stone pair")
+        adjacent_edges.add((indices[0], indices[1]))
+    if adjacent_edges != {(index, index + 1) for index in range(100)}:
+        raise ValueError("dynamics companion adjacent-pair identity set changed")
+
+    for probe_field, trace_field in {
+        "outer_iteration_budget": "max_outer_iterations",
+        "contacts": "contacts",
+        "unique_body_pairs": "unique_colliding_body_pairs",
+        "iterations": "step_fbf_iterations",
+        "colored_bgs_solves": "last_exact_colored_bgs_solves",
+        "colored_bgs_dispatches": "last_exact_colored_bgs_dispatches",
+        "colored_bgs_max_participants": "last_exact_colored_bgs_max_participants",
+        "colored_bgs_manifolds": "last_exact_colored_bgs_manifolds",
+        "colored_bgs_colors": "last_exact_colored_bgs_colors",
+        "colored_bgs_max_manifolds_per_color": (
+            "last_exact_colored_bgs_max_manifolds_per_color"
+        ),
+    }.items():
+        if _arch101_dynamics_int(step, probe_field) != _arch101_trace_int(
+            trace_row, trace_field
+        ):
+            raise ValueError(
+                f"dynamics companion field {probe_field!r} disagrees with raw trace"
+            )
+    residual = _arch101_dynamics_float(step, "residual")
+    if not math.isclose(
+        residual,
+        _arch101_trace_float(trace_row, "residual"),
+        rel_tol=1e-12,
+        abs_tol=1e-15,
+    ):
+        raise ValueError("dynamics companion residual disagrees with raw trace")
+    trace_logical_cpus = {
+        int(cpu)
+        for cpu in trace_row.get("exact_colored_bgs_logical_cpus", "").split(";")
+    }
+    trace_phase_cpus = {
+        int(cpu)
+        for cpu in trace_row.get("max_phase_exact_colored_bgs_logical_cpus", "").split(
+            ";"
+        )
+    }
+    if logical_cpus != trace_logical_cpus or phase_cpus != trace_phase_cpus:
+        raise ValueError("dynamics companion CPU observations disagree with raw trace")
+    if (
+        trace_row.get("status") != "fbf_failed"
+        or _arch101_trace_int(trace_row, "accept_outer_max_iterations") != 0
+        or _arch101_trace_int(trace_row, "step_exact_solves") != 0
+        or _arch101_trace_int(trace_row, "step_exact_failures") != 1
+        or _arch101_trace_int(trace_row, "step_fallbacks") != 0
+    ):
+        raise ValueError("raw trace cap-rejection taxonomy changed")
+    if (
+        trace_row.get("inner_bgs_schedule_contract")
+        == metadata["inner_schedule_contract"]
+    ):
+        raise ValueError("companion participant-affinity contract unexpectedly matches")
+
+    for field, expected in {
+        "completed": "true",
+        "finite": "true",
+        "stability_duration_met": "false",
+        "bounded_stability_gate": "not_evaluated",
+        "author_scene_available": "false",
+        "paper_parity_claim": "false",
+    }.items():
+        if verdict[field] != expected:
+            raise ValueError(f"dynamics companion verdict {field!r} changed")
+    for field, expected in {
+        "steps_completed": 1,
+        "min_contacts": 400,
+        "max_contacts": 400,
+        "exact_attempts": 1,
+        "exact_solves": 1,
+        "exact_failures": 0,
+        "boxed_fallbacks": 0,
+        "max_iterations_accepted": 1,
+    }.items():
+        if _arch101_dynamics_int(verdict, field) != expected:
+            raise ValueError(f"dynamics companion verdict {field!r} changed")
+    for field in (
+        "crown_displacement_m",
+        "crown_upright_cos",
+        "max_body_displacement_m",
+        "min_body_upright_cos",
+        "elapsed_total_ms",
+        "elapsed_mean_step_ms",
+        "worst_residual",
+    ):
+        _arch101_dynamics_float(verdict, field)
+    for verdict_field, step_field in (
+        ("crown_displacement_m", "crown_displacement_m"),
+        ("crown_upright_cos", "crown_upright_cos"),
+        ("max_body_displacement_m", "max_body_displacement_m"),
+        ("min_body_upright_cos", "min_body_upright_cos"),
+        ("worst_residual", "residual"),
+    ):
+        if not math.isclose(
+            _arch101_dynamics_float(verdict, verdict_field),
+            _arch101_dynamics_float(step, step_field),
+            rel_tol=1e-12,
+            abs_tol=1e-15,
+        ):
+            raise ValueError(
+                f"dynamics companion verdict {verdict_field!r} disagrees with step"
+            )
+    if not math.isclose(
+        _arch101_dynamics_float(verdict, "elapsed_total_ms"),
+        _arch101_dynamics_float(verdict, "elapsed_mean_step_ms"),
+        rel_tol=1e-12,
+        abs_tol=1e-12,
+    ):
+        raise ValueError("dynamics companion one-step timing fields disagree")
+
+    return {
+        "returncode": 0,
+        "scope": "failed_step_1_four_point_planar_pre_solve_collision_graph",
+        "contacts": 400,
+        "unique_pairs": 100,
+        "adjacent_stone_pairs": 100,
+        "nonadjacent_stone_pairs": 0,
+        "ground_pairs": 0,
+        "contacts_per_pair": 4,
+        "outer_iterations": 5000,
+        "residual": residual,
+        "trace_aggregate_match": True,
+        "trace_residual_match": True,
+        "dynamic_step1_pair_identity_evidence": True,
+        "solver_acceptance_taxonomy_equivalent": False,
+        "participant_affinity_contract_equivalent": False,
+        "source_equivalent_evidence": False,
+        "standing_evidence": False,
+        "timing_evidence_eligible": False,
+        "positive_long_run_promotion_eligible": False,
+        "claim_boundary": (
+            "Identity-resolved evidence is limited to the failed step-1 "
+            "FourPointPlanar collision graph. The companion accepts the 5,000-outer "
+            "cap and does not enable the frozen trace participant-affinity contract."
+        ),
+        "observed_colored_logical_cpus": sorted(logical_cpus),
+        "observed_colored_max_phase_logical_cpus": sorted(phase_cpus),
+    }
+
+
+def _validate_arch101_v7_truth(
     current_truth: dict[str, Any], repo_root: Path, errors: list[str]
 ) -> None:
     location = "current_truth.literal_arch_101_v1_nonpaper"
@@ -11655,12 +12582,14 @@ def _validate_arch101_v5_truth(
     bundle = _validate_current_path(
         data,
         "bundle",
-        ARCH101_V5_BUNDLE,
+        ARCH101_V7_BUNDLE,
         location,
         repo_root,
         errors,
         directory=True,
     )
+    if bundle is not None:
+        _validate_arch101_v7_bundle_membership(bundle, location, errors)
     protocol = _validate_current_path(
         data,
         "protocol",
@@ -11688,6 +12617,14 @@ def _validate_arch101_v5_truth(
             "terminal_status": "fbf_failed",
             "exact_failures": 1,
             "boxed_lcp_fallbacks": 0,
+            "dynamic_step1_pair_identity_evidence": True,
+            "dynamic_pair_identity_scope": (
+                "failed_step_1_four_point_planar_pre_solve_collision_graph"
+            ),
+            "solver_acceptance_taxonomy_equivalent": False,
+            "participant_affinity_contract_equivalent": False,
+            "source_equivalent_evidence": False,
+            "positive_long_run_promotion_eligible": False,
         },
         location,
         errors,
@@ -11704,21 +12641,60 @@ def _validate_arch101_v5_truth(
         )
     hashes = _validate_artifact_hashes(
         data,
-        ARCH101_V5_ARTIFACT_TARGETS,
+        ARCH101_V7_ARTIFACT_TARGETS,
         location,
         repo_root,
         errors,
-        recorded_hash_keys={"trace_binary", "collision_probe_binary"},
+        recorded_hash_keys={
+            "trace_binary",
+            "collision_probe_binary",
+            "dynamics_probe_binary",
+        },
     )
+    collision_stdout = _read_arch101_bundle_text(
+        bundle,
+        "collision_probe_stdout.txt",
+        f"{location}.collision_probe",
+        errors,
+    )
+    if collision_stdout is not None:
+        try:
+            parsed_collision_probe = _parse_arch101_collision_probe_stdout(
+                collision_stdout
+            )
+        except (ValueError, OverflowError) as error:
+            errors.append(f"{location}.collision_probe: {error}")
+        else:
+            truth_collision_probe = _object(
+                data.get("collision_probe"), f"{location}.collision_probe", errors
+            )
+            if truth_collision_probe is not None:
+                _expect_exact_payload(
+                    parsed_collision_probe,
+                    truth_collision_probe,
+                    f"{location}.collision_probe",
+                    errors,
+                )
 
     invocation = _read_bundle_json(
         bundle, "invocation.json", f"{location}.invocation", errors
     )
-    expected_identity_rechecks = ["after_collision_probe", "after_trace"]
+    expected_identity_rechecks = [
+        "after_collision_probe",
+        "after_trace",
+        "after_dynamics_probe",
+    ]
     if invocation is not None:
         _expect_fields(
             invocation,
-            {"identity_rechecks": expected_identity_rechecks},
+            {
+                "identity_rechecks": expected_identity_rechecks,
+                "child_returncode": 1,
+                "collision_probe_returncode": 0,
+                "dynamics_probe_returncode": 0,
+                "dynamics_probe_stderr_bytes": 0,
+                "dynamics_probe_stdout_bytes": 12369,
+            },
             f"{location}.invocation",
             errors,
         )
@@ -11728,13 +12704,20 @@ def _validate_arch101_v5_truth(
         _expect_fields(
             summary,
             {
-                "schema_version": "dart.fbf_literal_arch101_v1/v1",
+                "schema_version": "dart.fbf_literal_arch101_v1/v2",
                 "artifact_valid": False,
                 "classification": "failed_prefix_scientific_negative",
                 "standing_claim_passed": False,
                 "timing_evidence_eligible": False,
                 "timing_statistics": None,
                 "positive_long_run_promotion_eligible": False,
+                "dynamic_step1_pair_identity_evidence": True,
+                "dynamic_pair_identity_scope": (
+                    "failed_step_1_four_point_planar_pre_solve_collision_graph"
+                ),
+                "solver_acceptance_taxonomy_equivalent": False,
+                "participant_affinity_contract_equivalent": False,
+                "source_equivalent_evidence": False,
                 "requested_steps": 600,
                 "emitted_steps": 1,
                 "first_failed_step": 1,
@@ -11765,7 +12748,6 @@ def _validate_arch101_v5_truth(
             {
                 "terminal_status": data.get("terminal_status"),
                 "terminal_residual": data.get("terminal_residual"),
-                "dynamic_pair_identity_evidence": False,
             },
             f"{location}.summary",
             errors,
@@ -11779,10 +12761,27 @@ def _validate_arch101_v5_truth(
             data.get("collision_probe"), f"{location}.collision_probe", errors
         )
         if summary_probe is not None and truth_probe is not None:
-            _expect_fields(
+            _expect_exact_payload(
                 summary_probe,
-                truth_probe,
+                _arch101_recorded_collision_probe_payload(truth_probe),
                 f"{location}.summary.collision_probe",
+                errors,
+            )
+        summary_dynamic_probe = _object(
+            summary.get("dynamic_pair_probe"),
+            f"{location}.summary.dynamic_pair_probe",
+            errors,
+        )
+        truth_dynamic_probe = _object(
+            data.get("dynamic_pair_probe"),
+            f"{location}.dynamic_pair_probe",
+            errors,
+        )
+        if summary_dynamic_probe is not None and truth_dynamic_probe is not None:
+            _expect_exact_payload(
+                summary_dynamic_probe,
+                truth_dynamic_probe,
+                f"{location}.summary.dynamic_pair_probe",
                 errors,
             )
 
@@ -11793,12 +12792,19 @@ def _validate_arch101_v5_truth(
         _expect_fields(
             metadata,
             {
-                "schema_version": "dart.fbf_literal_arch101_v1/v1",
+                "schema_version": "dart.fbf_literal_arch101_v1/v2",
                 "classification": "failed_prefix_scientific_negative",
                 "artifact_valid": False,
                 "standing_claim_passed": False,
                 "timing_evidence_eligible": False,
                 "positive_long_run_promotion_eligible": False,
+                "dynamic_step1_pair_identity_evidence": True,
+                "dynamic_pair_identity_scope": (
+                    "failed_step_1_four_point_planar_pre_solve_collision_graph"
+                ),
+                "solver_acceptance_taxonomy_equivalent": False,
+                "participant_affinity_contract_equivalent": False,
+                "source_equivalent_evidence": False,
                 "protocol": ARCH101_V1_PROTOCOL,
                 "runner_source": ARCH101_V1_RUNNER,
                 "runtime_provenance_scope": (
@@ -11806,6 +12812,9 @@ def _validate_arch101_v5_truth(
                     "shared-library file identities; this is not a claim over "
                     "all host runtime state"
                 ),
+                "child_returncode": 1,
+                "collision_probe_returncode": 0,
+                "dynamics_probe_returncode": 0,
             },
             f"{location}.metadata",
             errors,
@@ -11821,6 +12830,59 @@ def _validate_arch101_v5_truth(
                 f"{location}.metadata",
                 errors,
             )
+        if invocation is not None:
+            _expect_exact_payload(
+                metadata.get("command"),
+                invocation.get("command"),
+                f"{location}.metadata.command",
+                errors,
+            )
+            _expect_exact_payload(
+                metadata.get("collision_probe_command"),
+                invocation.get("collision_probe_command"),
+                f"{location}.metadata.collision_probe_command",
+                errors,
+            )
+            _expect_exact_payload(
+                metadata.get("dynamics_probe_command"),
+                invocation.get("dynamics_probe_command"),
+                f"{location}.metadata.dynamics_probe_command",
+                errors,
+            )
+        metadata_collision_probe = _object(
+            metadata.get("collision_probe"),
+            f"{location}.metadata.collision_probe",
+            errors,
+        )
+        truth_collision_probe = _object(
+            data.get("collision_probe"),
+            f"{location}.collision_probe",
+            errors,
+        )
+        if metadata_collision_probe is not None and truth_collision_probe is not None:
+            _expect_exact_payload(
+                metadata_collision_probe,
+                _arch101_recorded_collision_probe_payload(truth_collision_probe),
+                f"{location}.metadata.collision_probe",
+                errors,
+            )
+        metadata_dynamic_probe = _object(
+            metadata.get("dynamic_pair_probe"),
+            f"{location}.metadata.dynamic_pair_probe",
+            errors,
+        )
+        truth_dynamic_probe = _object(
+            data.get("dynamic_pair_probe"),
+            f"{location}.dynamic_pair_probe",
+            errors,
+        )
+        if metadata_dynamic_probe is not None and truth_dynamic_probe is not None:
+            _expect_exact_payload(
+                metadata_dynamic_probe,
+                truth_dynamic_probe,
+                f"{location}.metadata.dynamic_pair_probe",
+                errors,
+            )
         source_identity = _object(
             metadata.get("source_identity"),
             f"{location}.metadata.source_identity",
@@ -11832,6 +12894,7 @@ def _validate_arch101_v5_truth(
                 "runner_source_sha256": hashes.get("runner"),
                 "trace_source_sha256": hashes.get("trace_source"),
                 "collision_probe_source_sha256": hashes.get("collision_probe_source"),
+                "dynamics_probe_source_sha256": hashes.get("dynamics_probe_source"),
             }
             _expect_fields(
                 source_identity,
@@ -11853,6 +12916,13 @@ def _validate_arch101_v5_truth(
                 errors,
                 expected_sha256=hashes.get("collision_probe_binary"),
             )
+            dynamics_executable = _validate_structured_executable_identity(
+                source_identity.get("dynamics_probe_executable"),
+                f"{location}.metadata.source_identity.dynamics_probe_executable",
+                repo_root,
+                errors,
+                expected_sha256=hashes.get("dynamics_probe_binary"),
+            )
             taskset_tool = _validate_tool_identity(
                 source_identity.get("taskset_tool"),
                 "taskset",
@@ -11862,6 +12932,7 @@ def _validate_arch101_v5_truth(
             if (
                 trace_executable is not None
                 and collision_executable is not None
+                and dynamics_executable is not None
                 and taskset_tool is not None
             ):
                 _expect_fields(
@@ -11871,6 +12942,8 @@ def _validate_arch101_v5_truth(
                         "trace_source": TRACE_SOURCE,
                         "collision_probe_binary": collision_executable.get("path"),
                         "collision_probe_source": COLLISION_PROBE_SOURCE,
+                        "dynamics_probe_binary": dynamics_executable.get("path"),
+                        "dynamics_probe_source": DYNAMICS_PROBE_SOURCE,
                         "taskset": {
                             "path": taskset_tool.get("path"),
                             "sha256": taskset_tool.get("sha256"),
@@ -11893,10 +12966,25 @@ def _validate_arch101_v5_truth(
                     "collision_probe_executable.resolved_build_libdart",
                     errors,
                 )
+                _expect_exact_payload(
+                    dynamics_executable.get("ldd_tool"),
+                    trace_executable.get("ldd_tool"),
+                    f"{location}.metadata.source_identity."
+                    "dynamics_probe_executable.ldd_tool",
+                    errors,
+                )
+                _expect_exact_payload(
+                    dynamics_executable.get("resolved_build_libdart"),
+                    trace_executable.get("resolved_build_libdart"),
+                    f"{location}.metadata.source_identity."
+                    "dynamics_probe_executable.resolved_build_libdart",
+                    errors,
+                )
             if (
                 invocation is not None
                 and trace_executable is not None
                 and collision_executable is not None
+                and dynamics_executable is not None
                 and taskset_tool is not None
             ):
                 command = invocation.get("command")
@@ -11941,6 +13029,48 @@ def _validate_arch101_v5_truth(
                     f"{location}.invocation.collision_probe_command",
                     errors,
                 )
+                dynamics_command = invocation.get("dynamics_probe_command")
+                if (
+                    not isinstance(dynamics_command, list)
+                    or len(dynamics_command) != 20
+                ):
+                    errors.append(
+                        f"{location}.invocation.dynamics_probe_command: "
+                        "expected 20 arguments"
+                    )
+                else:
+                    _validate_recorded_tool_command(
+                        dynamics_command[0],
+                        taskset_tool,
+                        f"{location}.invocation.dynamics_probe_command[0]",
+                        errors,
+                    )
+                    _expect_exact_payload(
+                        dynamics_command[1:],
+                        [
+                            "--cpu-list",
+                            "8,10,12,14",
+                            dynamics_executable.get("path"),
+                            "101",
+                            "1",
+                            "native",
+                            "exact",
+                            "closure_1um",
+                            "35",
+                            "5000",
+                            "30",
+                            "adaptive",
+                            "0",
+                            "zero",
+                            "none",
+                            "4",
+                            "colored",
+                            "1.1",
+                            "fresh",
+                        ],
+                        f"{location}.invocation.dynamics_probe_command[1:]",
+                        errors,
+                    )
             runtime = _object(
                 data.get("runtime_provenance"),
                 f"{location}.runtime_provenance",
@@ -11951,11 +13081,13 @@ def _validate_arch101_v5_truth(
                 "identity_rechecks",
                 "trace_ldd_map_sha256",
                 "collision_probe_ldd_map_sha256",
+                "dynamics_probe_ldd_map_sha256",
                 "resolved_build_libdart_sha256",
                 "ldd_tool_sha256",
                 "taskset_tool_sha256",
                 "trace_resolved_regular_shared_libraries",
                 "collision_probe_resolved_regular_shared_libraries",
+                "dynamics_probe_resolved_regular_shared_libraries",
             }:
                 errors.append(
                     f"{location}.runtime_provenance: exact runtime-provenance "
@@ -11965,7 +13097,8 @@ def _validate_arch101_v5_truth(
                 expected_scope = (
                     "Executable, ldd, taskset, and resolved regular shared-library "
                     "file identities were recorded and rechecked after the collision "
-                    "probe and trace; this is not a claim over all host runtime state."
+                    "probe, trace, and dynamics companion; this is not a claim over "
+                    "all host runtime state."
                 )
                 _expect_fields(
                     runtime,
@@ -11983,6 +13116,7 @@ def _validate_arch101_v5_truth(
                 if (
                     isinstance(trace_executable, dict)
                     and isinstance(collision_executable, dict)
+                    and isinstance(dynamics_executable, dict)
                     and isinstance(taskset_tool, dict)
                 ):
                     trace_libdart = trace_executable.get("resolved_build_libdart")
@@ -11993,6 +13127,9 @@ def _validate_arch101_v5_truth(
                                 "ldd_resolution_output_normalized_sha256"
                             ),
                             "collision_probe_ldd_map_sha256": collision_executable.get(
+                                "ldd_resolution_output_normalized_sha256"
+                            ),
+                            "dynamics_probe_ldd_map_sha256": dynamics_executable.get(
                                 "ldd_resolution_output_normalized_sha256"
                             ),
                             "resolved_build_libdart_sha256": (
@@ -12016,6 +13153,11 @@ def _validate_arch101_v5_truth(
                                     "resolved_regular_shared_library_count"
                                 )
                             ),
+                            "dynamics_probe_resolved_regular_shared_libraries": (
+                                dynamics_executable.get(
+                                    "resolved_regular_shared_library_count"
+                                )
+                            ),
                         },
                         f"{location}.runtime_provenance",
                         errors,
@@ -12031,6 +13173,8 @@ def _validate_arch101_v5_truth(
                 "stderr.txt",
                 "collision_probe_stdout.txt",
                 "collision_probe_stderr.txt",
+                "dynamics_probe_stdout.txt",
+                "dynamics_probe_stderr.txt",
                 "invocation.json",
                 "summary.json",
                 "REPORT.md",
@@ -12108,6 +13252,35 @@ def _validate_arch101_v5_truth(
                     ):
                         errors.append(
                             f"{location}.raw[0].{field}: expected {expected}, got {value}"
+                        )
+                dynamics_stdout_path = bundle / "dynamics_probe_stdout.txt"
+                dynamics_stderr_path = bundle / "dynamics_probe_stderr.txt"
+                try:
+                    dynamics_stdout = dynamics_stdout_path.read_text(encoding="utf-8")
+                    dynamics_stderr = dynamics_stderr_path.read_text(encoding="utf-8")
+                except (OSError, UnicodeDecodeError) as error:
+                    errors.append(
+                        f"{location}.dynamics_probe: companion output is unreadable: "
+                        f"{error}"
+                    )
+                else:
+                    if dynamics_stderr:
+                        errors.append(
+                            f"{location}.dynamics_probe.stderr: expected empty output"
+                        )
+                    try:
+                        parsed_dynamic_probe = _parse_arch101_dynamics_probe_stdout(
+                            dynamics_stdout, row
+                        )
+                    except (ValueError, OverflowError) as error:
+                        errors.append(f"{location}.dynamics_probe: {error}")
+                    else:
+                        truth_dynamic_probe = data.get("dynamic_pair_probe")
+                        _expect_exact_payload(
+                            parsed_dynamic_probe,
+                            truth_dynamic_probe,
+                            f"{location}.dynamics_probe",
+                            errors,
                         )
 
 
@@ -16673,7 +17846,7 @@ def _validate_current_truth(value: Any, repo_root: Path, errors: list[str]) -> N
     _validate_painleve_v1_truth(current_truth, repo_root, errors)
     _validate_visual_truth(current_truth, repo_root, errors)
     _validate_impact_v7_truth(current_truth, repo_root, errors)
-    _validate_arch101_v5_truth(current_truth, repo_root, errors)
+    _validate_arch101_v7_truth(current_truth, repo_root, errors)
 
 
 def _expected_kind(requirement_id: str) -> str:
@@ -17197,7 +18370,7 @@ def _recorded_producer_repo_roots(
     records = (
         (CARD_V2_BUNDLE, "invocation.json"),
         (IMPACT_V7_BUNDLE, "metadata.json"),
-        (ARCH101_V5_BUNDLE, "invocation.json"),
+        (ARCH101_V7_BUNDLE, "invocation.json"),
     )
     roots: list[PurePath] = []
     for bundle, filename in records:

@@ -179,6 +179,94 @@ def _probe_text() -> str:
     return "\n".join(lines) + "\n"
 
 
+def _failed_row(module) -> dict[str, str]:
+    row = _valid_row(module, 1)
+    row.update(
+        {
+            "step_exact_solves": "0",
+            "step_exact_failures": "1",
+            "step_fbf_iterations": "5000",
+            "residual": "0.78153646143524735",
+            "status": "fbf_failed",
+            "last_exact_colored_bgs_solves": "5000",
+        }
+    )
+    return row
+
+
+def _dynamics_probe_text() -> str:
+    lines = [
+        (
+            "metadata,stone_count=101,steps_requested=1,backend=native,"
+            "manifold_mode=four_point_planar,solver=exact_fbf,"
+            "gap_policy=closure_1um,barrier_offsets=omitted,"
+            "end_face_expansion_m=1e-6,downward_shift_m=0.001001,"
+            "dt_s=0.016666666666666666,friction=0.8,density_kg_m3=1000,"
+            "step_size_scale=35,outer_iterations=5000,inner_sweeps=30,"
+            "adaptive_step_size=true,bootstrap_diagnostic=false,"
+            "bootstrap_outer_iterations=0,bootstrap_steps=0,"
+            "bootstrap_paper_comparable=false,seed_diagnostic=false,"
+            "seed_mode=zero,seed_paper_comparable=false,"
+            "seed_operator_contract=contact_row_matrix_free,"
+            "seed_parallel_contract=preserved,stabilization_diagnostic=false,"
+            "stabilization_mode=none,stabilization_paper_comparable=false,"
+            "simulation_threads=4,inner_schedule=colored,outer_relaxation=1.1,"
+            "step_size_persistence=fresh,inner_schedule_paper_comparable=false,"
+            "inner_schedule_contract="
+            "dart_deterministic_manifold_colored_bgs_diagnostic,"
+            "paper_velocity_baumgarte_published=true,"
+            "paper_velocity_baumgarte_parameter_published=false,"
+            "exact_volume_m3=0.01,exact_mass_kg=10,pinned_springers=0:100,"
+            "split_impulse=true,error_reduction_parameter=0,"
+            "error_reduction_parameter_scope=process_global_static,"
+            "max_contacts=1616,max_contacts_per_pair=8,"
+            "minimum_stability_steps=25,crown_displacement_gate_m=0.02,"
+            "crown_upright_cos_gate=0.95,max_body_displacement_gate_m=0.05,"
+            "min_body_upright_cos_gate=0.8,author_scene_available=false,"
+            "paper_parity_claim=false"
+        ),
+        (
+            "step,index=1,bootstrap_step=false,outer_iteration_budget=5000,"
+            "sim_time_s=0.016666666666666666,elapsed_ms=12.5,contacts=400,"
+            "unique_body_pairs=100,max_contacts_on_body_pair=4,"
+            "contacts_finite=true,state_finite=true,crown_displacement_m=0.001,"
+            "crown_vertical_displacement_m=-0.001,crown_upright_cos=1,"
+            "max_body_displacement_m=0.002725,min_body_upright_cos=1,"
+            "max_linear_speed_m_s=0.1,max_angular_speed_rad_s=0.2,"
+            "exact_attempts=1,exact_solves=1,exact_failures=0,"
+            "boxed_fallbacks=0,max_iterations_accepted=1,"
+            "exact_status=max_iterations_accepted,fbf_status=max_iterations,"
+            "residual=0.78153646143524735,best_residual=0.75,"
+            "primal_residual=0,dual_residual=0.78153646143524735,"
+            "complementarity_residual=0.1,step_size=0.01,"
+            "safe_step_size=0.001,coupling_variation_ratio=0.2,iterations=5000,"
+            "colored_bgs_requested=true,colored_bgs_used=true,"
+            "colored_bgs_solves=5000,colored_bgs_dispatches=1,"
+            "colored_bgs_max_participants=4,colored_bgs_manifolds=100,"
+            "colored_bgs_colors=3,colored_bgs_max_manifolds_per_color=34,"
+            "colored_bgs_logical_cpus=8:10:12:14,"
+            "colored_bgs_max_phase_logical_cpus=8:10:12:14"
+        ),
+    ]
+    for index in range(100):
+        lines.append(
+            f"pair,step=1,first=masonry_arch_wedge_{index}_body,"
+            f"second=masonry_arch_wedge_{index + 1}_body,contacts=4"
+        )
+    lines.append(
+        "verdict,completed=true,steps_completed=1,finite=true,"
+        "stability_duration_met=false,bounded_stability_gate=not_evaluated,"
+        "crown_displacement_m=0.001,crown_upright_cos=1,"
+        "max_body_displacement_m=0.002725,min_body_upright_cos=1,"
+        "min_contacts=400,max_contacts=400,elapsed_total_ms=12.5,"
+        "elapsed_mean_step_ms=12.5,exact_attempts=1,exact_solves=1,"
+        "exact_failures=0,boxed_fallbacks=0,max_iterations_accepted=1,"
+        "worst_residual=0.78153646143524735,author_scene_available=false,"
+        "paper_parity_claim=false"
+    )
+    return "\n".join(lines) + "\n"
+
+
 def test_fixed_command_uses_frozen_scenario_threads_and_affinity():
     module = _load_module()
 
@@ -210,6 +298,33 @@ def test_collision_probe_command_uses_two_nonvacuous_repeats():
     assert module._build_collision_probe_command(Path("/tmp/probe")) == [
         "/tmp/probe",
         "2",
+    ]
+
+
+def test_dynamics_probe_command_matches_frozen_step1_companion():
+    module = _load_module()
+
+    assert module._build_dynamics_probe_command(Path("/tmp/dynamics_probe")) == [
+        "taskset",
+        "--cpu-list",
+        "8,10,12,14",
+        "/tmp/dynamics_probe",
+        "101",
+        "1",
+        "native",
+        "exact",
+        "closure_1um",
+        "35",
+        "5000",
+        "30",
+        "adaptive",
+        "0",
+        "zero",
+        "none",
+        "4",
+        "colored",
+        "1.1",
+        "fresh",
     ]
 
 
@@ -275,6 +390,85 @@ def test_collision_probe_pair_identity_tampering_is_rejected():
 
     with pytest.raises(module.EvidenceError, match="non-adjacent|identity"):
         module._validate_collision_probe(tampered, 0)
+
+
+def test_dynamics_probe_resolves_only_failed_step1_adjacent_pair_graph():
+    module = _load_module()
+
+    summary = module._validate_dynamics_probe(
+        _dynamics_probe_text(), 0, _failed_row(module)
+    )
+
+    assert summary["dynamic_step1_pair_identity_evidence"] is True
+    assert summary["scope"] == (
+        "failed_step_1_four_point_planar_pre_solve_collision_graph"
+    )
+    assert summary["adjacent_stone_pairs"] == 100
+    assert summary["contacts_per_pair"] == 4
+    assert summary["trace_aggregate_match"] is True
+    assert summary["trace_residual_match"] is True
+    assert summary["solver_acceptance_taxonomy_equivalent"] is False
+    assert summary["participant_affinity_contract_equivalent"] is False
+    assert summary["source_equivalent_evidence"] is False
+    assert summary["standing_evidence"] is False
+    assert summary["timing_evidence_eligible"] is False
+    assert summary["positive_long_run_promotion_eligible"] is False
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "message"),
+    [
+        ("manifold_mode=four_point_planar", "manifold_mode=compact", "manifold"),
+        ("contacts=400", "contacts=399", "contacts"),
+        (
+            "second=masonry_arch_wedge_1_body,contacts=4",
+            "second=masonry_arch_wedge_1_body,contacts=3",
+            "multiplicity",
+        ),
+        (
+            "second=masonry_arch_wedge_100_body,contacts=4",
+            "second=masonry_arch_wedge_99_body,contacts=4",
+            "non-adjacent|identity",
+        ),
+        (
+            "residual=0.78153646143524735",
+            "residual=0.7",
+            "residual.*frozen trace",
+        ),
+    ],
+)
+def test_dynamics_probe_tampering_is_rejected(old: str, new: str, message: str):
+    module = _load_module()
+
+    with pytest.raises(module.EvidenceError, match=message):
+        module._validate_dynamics_probe(
+            _dynamics_probe_text().replace(old, new, 1), 0, _failed_row(module)
+        )
+
+
+def test_dynamics_probe_missing_pair_is_rejected():
+    module = _load_module()
+    lines = _dynamics_probe_text().splitlines()
+    text = "\n".join(line for line in lines if "wedge_50_body,contacts=4" not in line)
+
+    with pytest.raises(module.EvidenceError, match="pair record count|identity"):
+        module._validate_dynamics_probe(text + "\n", 0, _failed_row(module))
+
+
+def test_dynamics_probe_must_match_frozen_trace_aggregates():
+    module = _load_module()
+    row = _failed_row(module)
+    row["last_exact_colored_bgs_colors"] = "4"
+
+    with pytest.raises(module.EvidenceError, match="colored_bgs_colors.*frozen trace"):
+        module._validate_dynamics_probe(_dynamics_probe_text(), 0, row)
+
+
+def test_dynamics_probe_nonzero_return_is_rejected():
+    module = _load_module()
+
+    with pytest.raises(module.EvidenceError, match="returned 1"):
+        module._validate_dynamics_probe(_dynamics_probe_text(), 1, _failed_row(module))
 
 
 def test_fake_complete_600_row_positive_passes_all_gates():
@@ -493,6 +687,8 @@ def test_main_preserves_probe_output_and_fails_closed_on_probe_identity_drift(
     binary.write_bytes(b"binary")
     probe = tmp_path / "collision_probe"
     probe.write_bytes(b"probe")
+    dynamics_probe = tmp_path / "dynamics_probe"
+    dynamics_probe.write_bytes(b"dynamics probe")
     output = tmp_path / "evidence"
     identities = iter(
         [
@@ -502,7 +698,9 @@ def test_main_preserves_probe_output_and_fails_closed_on_probe_identity_drift(
     )
     monkeypatch.setattr(module, "_affinity_metadata", lambda: {"checked": True})
     monkeypatch.setattr(
-        module, "_execution_identity", lambda unused, also_unused: next(identities)
+        module,
+        "_execution_identity",
+        lambda unused, also_unused, third_unused: next(identities),
     )
     monkeypatch.setattr(
         module,
@@ -517,6 +715,8 @@ def test_main_preserves_probe_output_and_fails_closed_on_probe_identity_drift(
                 str(binary),
                 "--collision-probe",
                 str(probe),
+                "--dynamics-probe",
+                str(dynamics_probe),
                 "--output-dir",
                 str(output),
             ]
@@ -530,6 +730,8 @@ def test_main_preserves_probe_output_and_fails_closed_on_probe_identity_drift(
     assert (output / "collision_probe_stderr.txt").read_text(
         encoding="utf-8"
     ) == "probe stderr\n"
+    assert (output / "dynamics_probe_stdout.txt").read_text(encoding="utf-8") == ""
+    assert (output / "dynamics_probe_stderr.txt").read_text(encoding="utf-8") == ""
     summary = __import__("json").loads(
         (output / "summary.json").read_text(encoding="utf-8")
     )
@@ -545,6 +747,8 @@ def test_main_preserves_probe_output_and_fails_closed_on_probe_identity_drift(
         "stderr.txt",
         "collision_probe_stdout.txt",
         "collision_probe_stderr.txt",
+        "dynamics_probe_stdout.txt",
+        "dynamics_probe_stderr.txt",
         "invocation.json",
         "summary.json",
         "REPORT.md",
@@ -558,6 +762,8 @@ def test_main_rechecks_full_identity_after_trace_child(tmp_path, monkeypatch):
     binary.write_bytes(b"binary")
     probe = tmp_path / "collision_probe"
     probe.write_bytes(b"probe")
+    dynamics_probe = tmp_path / "dynamics_probe"
+    dynamics_probe.write_bytes(b"dynamics probe")
     output = tmp_path / "evidence"
     before = {"trace_executable": {"sha256": "before"}}
     identities = iter([before, before, {"trace_executable": {"sha256": "after"}}])
@@ -569,7 +775,9 @@ def test_main_rechecks_full_identity_after_trace_child(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(module, "_affinity_metadata", lambda: {"checked": True})
     monkeypatch.setattr(
-        module, "_execution_identity", lambda unused, also_unused: next(identities)
+        module,
+        "_execution_identity",
+        lambda unused, also_unused, third_unused: next(identities),
     )
     monkeypatch.setattr(
         module, "_run_captured", lambda command, timeout: next(captures)
@@ -582,6 +790,8 @@ def test_main_rechecks_full_identity_after_trace_child(tmp_path, monkeypatch):
                 str(binary),
                 "--collision-probe",
                 str(probe),
+                "--dynamics-probe",
+                str(dynamics_probe),
                 "--output-dir",
                 str(output),
             ]
@@ -593,3 +803,142 @@ def test_main_rechecks_full_identity_after_trace_child(tmp_path, monkeypatch):
     )
     assert "drifted after trace" in summary["error"]
     assert (output / "raw.csv").read_text(encoding="utf-8") == "trace stdout\n"
+
+
+def test_main_rechecks_full_identity_after_dynamics_probe(tmp_path, monkeypatch):
+    module = _load_module()
+    binary = tmp_path / "fbf_paper_trace"
+    binary.write_bytes(b"binary")
+    collision_probe = tmp_path / "collision_probe"
+    collision_probe.write_bytes(b"collision probe")
+    dynamics_probe = tmp_path / "dynamics_probe"
+    dynamics_probe.write_bytes(b"dynamics probe")
+    output = tmp_path / "evidence"
+    before = {"trace_executable": {"sha256": "before"}}
+    identities = iter(
+        [before, before, before, {"trace_executable": {"sha256": "after"}}]
+    )
+    captures = iter(
+        [
+            (_probe_text(), "collision warning\n", 0),
+            (_csv_text(module, [_failed_row(module)]), "", 1),
+            (_dynamics_probe_text(), "dynamics warning\n", 0),
+        ]
+    )
+    monkeypatch.setattr(module, "_affinity_metadata", lambda: {"checked": True})
+    monkeypatch.setattr(
+        module,
+        "_execution_identity",
+        lambda unused, also_unused, third_unused: next(identities),
+    )
+    monkeypatch.setattr(
+        module, "_run_captured", lambda command, timeout: next(captures)
+    )
+
+    assert (
+        module.main(
+            [
+                "--binary",
+                str(binary),
+                "--collision-probe",
+                str(collision_probe),
+                "--dynamics-probe",
+                str(dynamics_probe),
+                "--output-dir",
+                str(output),
+            ]
+        )
+        == 1
+    )
+    summary = __import__("json").loads(
+        (output / "summary.json").read_text(encoding="utf-8")
+    )
+    assert "drifted after dynamics probe" in summary["error"]
+    assert (output / "dynamics_probe_stdout.txt").read_text(
+        encoding="utf-8"
+    ) == _dynamics_probe_text()
+    assert (output / "dynamics_probe_stderr.txt").read_text(
+        encoding="utf-8"
+    ) == "dynamics warning\n"
+
+
+def test_main_preserves_validated_dynamics_probe_and_narrow_claims(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    binary = tmp_path / "fbf_paper_trace"
+    binary.write_bytes(b"binary")
+    collision_probe = tmp_path / "collision_probe"
+    collision_probe.write_bytes(b"collision probe")
+    dynamics_probe = tmp_path / "dynamics_probe"
+    dynamics_probe.write_bytes(b"dynamics probe")
+    output = tmp_path / "evidence"
+    identity = {"trace_executable": {"sha256": "stable"}}
+    captures = iter(
+        [
+            (_probe_text(), "", 0),
+            (_csv_text(module, [_failed_row(module)]), "", 1),
+            (_dynamics_probe_text(), "", 0),
+        ]
+    )
+    monkeypatch.setattr(module, "_affinity_metadata", lambda: {"checked": True})
+    monkeypatch.setattr(
+        module,
+        "_execution_identity",
+        lambda unused, also_unused, third_unused: identity,
+    )
+    monkeypatch.setattr(
+        module, "_run_captured", lambda command, timeout: next(captures)
+    )
+
+    assert (
+        module.main(
+            [
+                "--binary",
+                str(binary),
+                "--collision-probe",
+                str(collision_probe),
+                "--dynamics-probe",
+                str(dynamics_probe),
+                "--output-dir",
+                str(output),
+            ]
+        )
+        == 0
+    )
+    summary = __import__("json").loads(
+        (output / "summary.json").read_text(encoding="utf-8")
+    )
+    invocation = __import__("json").loads(
+        (output / "invocation.json").read_text(encoding="utf-8")
+    )
+    metadata = __import__("json").loads(
+        (output / "metadata.json").read_text(encoding="utf-8")
+    )
+    assert summary["schema_version"] == "dart.fbf_literal_arch101_v1/v2"
+    assert summary["dynamic_step1_pair_identity_evidence"] is True
+    assert summary["solver_acceptance_taxonomy_equivalent"] is False
+    assert summary["participant_affinity_contract_equivalent"] is False
+    assert summary["source_equivalent_evidence"] is False
+    assert summary["positive_long_run_promotion_eligible"] is False
+    assert invocation["identity_rechecks"] == [
+        "after_collision_probe",
+        "after_trace",
+        "after_dynamics_probe",
+    ]
+    assert invocation["dynamics_probe_command"] == (
+        module._build_dynamics_probe_command(dynamics_probe)
+    )
+    assert metadata["dynamic_pair_probe"] == summary["dynamic_pair_probe"]
+    for name in (
+        "raw.csv",
+        "stderr.txt",
+        "collision_probe_stdout.txt",
+        "collision_probe_stderr.txt",
+        "dynamics_probe_stdout.txt",
+        "dynamics_probe_stderr.txt",
+        "invocation.json",
+        "summary.json",
+        "REPORT.md",
+    ):
+        assert metadata["artifact_sha256"][name] == module._sha256_file(output / name)
