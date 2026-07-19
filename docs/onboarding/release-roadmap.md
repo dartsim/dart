@@ -24,11 +24,15 @@ remote; this checkout currently sees `release-6.20`.
 
 - The active DART 6 LTS branch is the newest maintained `release-6.*` branch;
   at the time this roadmap was updated, that branch is `release-6.20`.
-- The current release milestone for this support lane is `DART 6.20.0`.
-  Remaining fixes that would have gone to a `6.19.x` patch lane are collected
-  there instead of opening a `DART 6.19.4` patch milestone.
-- The pinned gz-physics branch for the current support lane is
-  `gz-physics9_9.0.0`, matching the `pixi.toml` Gazebo integration task.
+- The normal release milestone for this support lane is `DART 6.20.0`. The
+  DART 6.19.4 release and milestone were a narrowly scoped emergency exception for
+  [#3387](https://github.com/dartsim/dart/issues/3387), not a reopened 6.19
+  maintenance lane; subsequent DART 6 fixes continue to target
+  `release-6.20` and `DART 6.20.0`.
+- The pinned Gazebo branches on `release-6.20` are
+  `gz-physics8_8.0.0` and `gz-sim9_9.0.0`, matching that branch's `pixi.toml`
+  integration tasks. Main separately pins `gz-physics9_9.0.0` for its DART 7
+  migration canary.
 - Backport critical bug fixes, build fixes, security fixes, and
   Gazebo/gz-physics compatibility fixes that released downstream users need.
 - Do not backport normal DART 7 features by default.
@@ -47,22 +51,26 @@ in scope for this document update.
 
 **Gazebo support window**
 
-- Pinned gz-physics branch: `gz-physics9_9.0.0` (the branch cloned by the
-  `pixi.toml` Gazebo integration task; see `feature.gazebo.tasks` `download-gz`).
+- Pinned `release-6.20` downstream branches: `gz-physics8_8.0.0` and
+  `gz-sim9_9.0.0` (the branches cloned by that branch's `pixi.toml` Gazebo
+  integration tasks).
+- Main's DART 7 migration canary separately pins `gz-physics9_9.0.0` through
+  its `pixi.toml` `feature.gazebo.tasks.download-gz` task.
 - Validation command: `pixi run -e gazebo test-gz`, run on the active DART 6
   LTS branch or affected release branch when compatibility surfaces change.
   Main-branch runs are migration canaries, not a DART 7 API design constraint.
-- DART version compatibility floor for the pinned gz-physics checkout: DART
-  6.10+ (`scripts/patch_gz_physics.py` `MIN_COMPATIBLE_VERSION = (6, 10)`,
+- Main's DART version compatibility window for the pinned
+  `gz-physics9_9.0.0` canary is DART 6.10 through 7.0
+  (`scripts/patch_gz_physics.py` `MIN_COMPATIBLE_VERSION = (6, 10)`,
   `MAX_COMPATIBLE_VERSION = (7, 0)`), so DART 7's generated
-  `DARTConfigVersion.cmake` still satisfies pinned gz-physics `find_package`
-  requests during migration.
+  `DARTConfigVersion.cmake` still satisfies the downstream `find_package`
+  request during migration.
 
 **Branch / version matrix**
 
-| Branch                                         | DART line        | Public API target      | gz-physics pin                         | Backport policy                                              |
+| Branch                                         | DART line        | Public API target      | Gazebo pins                            | Backport policy                                              |
 | ---------------------------------------------- | ---------------- | ---------------------- | -------------------------------------- | ------------------------------------------------------------ |
-| Active `release-6.*`, currently `release-6.20` | DART 6 (6.x LTS) | Established DART 6 API | `gz-physics9_9.0.0`                    | Compatibility-critical fixes only (see scope below)          |
+| Active `release-6.*`, currently `release-6.20` | DART 6 (6.x LTS) | Established DART 6 API | `gz-physics8_8.0.0`; `gz-sim9_9.0.0`   | Compatibility-critical fixes only (see scope below)          |
 | `main`                                         | DART 7 (7.0.0)   | DART 7 clean-break API | `gz-physics9_9.0.0` (migration canary) | DART 7 development; no DART 6 compatibility shims by default |
 
 **Backport scope (DART 6 LTS)**

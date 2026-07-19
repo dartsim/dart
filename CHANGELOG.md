@@ -469,9 +469,11 @@ compatibility remains on the active DART 6 LTS branch._
   queue behavior.
 - Taught CMake linting to skip ignored `.build/` trees so local generated build
   artifacts cannot block `pixi run lint`.
-- Clarified DART 6 LTS release routing so remaining `6.19.x` fixes target the
-  active `release-6.20` branch and `DART 6.20.0` milestone instead of opening a
-  `DART 6.19.4` patch lane.
+- Clarified DART 6 LTS release routing: normal maintenance targets the active
+  `release-6.20` branch and `DART 6.20.0` milestone. DART 6.19.4 was published
+  only as a focused emergency exception for
+  [#3387](https://github.com/dartsim/dart/issues/3387), without reopening the
+  older 6.19 line for routine fixes.
 - Clarified DART's AI task-intake guidance to treat Spec Kit as reference
   material rather than an installed workflow, keeping agent plans, packets,
   dev-task acceptance evidence, and gates in DART-owned docs.
@@ -528,6 +530,28 @@ compatibility remains on the active DART 6 LTS branch._
   ([#3235](https://github.com/dartsim/dart/pull/3235))
 
 ## DART 6
+
+### [DART 6.19.4 (2026-07-18)](https://github.com/dartsim/dart/milestone/103?closed=1)
+
+DART 6.19.4 is a focused patch release on the DART 6 LTS line. It restores
+source builds that disable the OpenSceneGraph GUI component and makes that
+optional-dependency contract deterministic in CI. The only additional
+maintenance change ignores local `.omx/` state.
+
+- Build
+
+  - Keep source builds configurable without OpenSceneGraph when
+    `DART_BUILD_GUI_OSG=OFF` by skipping the OSG-only dynamic-joint-constraints
+    example before it requests `osgText`. The ASan configuration now disables
+    OpenSceneGraph discovery so CI fails if this dependency becomes mandatory
+    again:
+    [#3391](https://github.com/dartsim/dart/pull/3391),
+    [#3387](https://github.com/dartsim/dart/issues/3387)
+
+- Tooling and Docs
+
+  - Ignore local `.omx/` state so it is not accidentally committed:
+    [#3391](https://github.com/dartsim/dart/pull/3391)
 
 ### [DART 6.19.3 (2026-06-27)](https://github.com/dartsim/dart/milestone/101?closed=1)
 

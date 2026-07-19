@@ -28,6 +28,15 @@ remote; currently `release-6.20`) rather than an older minor line. If the fix
 already exists on `main`, backport with `git cherry-pick -x` so the release
 commit records its source.
 
+## DART 6 Patch-Release Closeout
+
+Before tagging any DART 6.x.y release, record passing compatibility evidence on
+the exact candidate SHA for the forced optional-dependency-off gate and
+`pixi run -e gazebo test-gz`, confirming that both `test-gz-physics` and
+`test-gz-sim` ran. Evidence from a different SHA is not release evidence. When
+activating a new `release-6.x` branch, confirm its branch protection requires
+uniquely named contexts for both gates.
+
 ## Backport Checks
 
 Before opening a backport PR:
