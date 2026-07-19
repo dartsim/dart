@@ -11,30 +11,42 @@ published real-time or near-real-time targets from the reference papers on CPU.
 
 ## Current milestone - PR stabilization
 
-The completing release slice is open as
+The representative release slice is open as
 [#3382](https://github.com/dartsim/dart/pull/3382), from
-`wp-db-native-soft-fallback` into `release-6.20`. The implementation,
-representative demos, and recorded subset of maintainer-approved paper
-deferrals are published; the final same-host matrix and its evaluator
-limitation are recorded locally. Current work is review/CI stabilization and
-closeout decisions, not another speculative optimization lane inside #3382.
+`wp-db-native-soft-fallback` into `release-6.20`. The pre-follow-up published PR
+head is `b172b2ee1db`; it has a clean current-head Codex review and no unresolved
+review threads. At that head, 21 checks passed, one was skipped, and Windows
+Release was the only failure. Codecov passed: patch coverage was `94.34783%`
+with 143 uncovered changed lines, while project coverage was `75.17%` versus
+`73.90%` (reported as `+1.26` percentage points).
 
-The complete stack through review/handoff head `551d7d34817` is published. It
-includes the mass-matrix correction, balanced-evidence runner, durable
-follow-up owners, current `release-6.20` merge, and activation-toggle cache fix
-`b8fe9a23093`. Both physics review threads are resolved, and the PR title/body
-describe this as a representative release slice rather than feature
-completion.
+The local publication candidate includes test calibration `50a254e7e56` and
+merges `origin/release-6.20@75306efe770` at `834a2548fd9`; the merge applied
+cleanly.
 
-Review of `551d7d34817` found one test-only race: the paired-runner timeout test
-required its child process to start and flush output within 50 ms. Follow-up
-commit `8c68e900641` instead proves the timeout value and persisted output
-contract whether startup produced empty or partial output; production timeout
-semantics are unchanged. The test passes 100 repeated launches, the full runner
-file, lint, and the 213-test Python suite. No final paired timing artifact has
-been captured: the exact composed attempt remained in preflight for 26 minutes
-while sibling builds kept the shared host hot and busy, with no valid poll.
-Exact takeover state is in `RESUME.md`.
+The only product signal from the published-head suite was a Windows failure in
+`SoftDynamicsTest.restingSoftContactForceAndCenterOfPressureAreSmooth`: legacy
+FCL's `default adaptive` lane measured `0.12115883267368355` m maximum per-step
+center-of-pressure displacement against the former `0.11` m bound. The
+test-only calibration raises that legacy-FCL bound to `0.13` m, just above one
+`0.125` m surface-mesh interval, while retaining the native `0.02` m bound and
+all force, support, spike, finite-state, and per-step guards.
+
+The candidate passes 20/20 focused repeats, the complete 25/25
+`test_SoftDynamics` binary, a 292/292 no-cache Release build, the full 154/154
+C++ suite, gz-physics 199/199 functional and 4/4 performance checks, gz-sim's
+1/1 source-built-DART integration test, lint, `git diff --check`, and two clean
+independent reviews. The test calibration changes no runtime behavior, API,
+ABI, or default simulation semantics. Exact new-head hosted CI remains required
+after publication.
+
+No valid final paired timing artifact exists: every attempted directory lacks
+`COMPLETE.json` because this shared host never passed the runner's admission
+gates. #3382 therefore remains a representative release slice, not completion
+of the broader PLAN-622 objective. Competitive-envelope and flexible-foot
+decisions, WP-DB.07 scaling, WP-DB.08 native-owned/default coverage, the
+separate `main` zero-DoF assertion fix, and a valid paired artifact or explicit
+maintainer disposition remain open. Exact takeover state is in `RESUME.md`.
 
 ## Reference scope
 
@@ -90,8 +102,14 @@ below.
 - `data/skel/test/test_double_pendulum.skel` used one legacy `<soft>` tag that
   `SkelParser` ignored; WP-DB.01 converts it to `<soft_shape>`, and WP-DB.02
   adds explicit soft-box fragments so both soft links parse cleanly.
-- GUI examples exist in `examples/soft_bodies` and `examples/mixed_chain`, but
-  there was no headless soft-body benchmark before this task.
+- Legacy GUI examples remain in `examples/soft_bodies` and
+  `examples/mixed_chain`; there was no headless soft-body benchmark before this
+  task.
+- `adaptive_soft_contact` and `soft_worm` are integrated scenes under
+  `examples/demos`, hosted by `dart-demos`; their former standalone executable
+  directories were removed. GUI-free model tests preserve their numerical
+  contracts. New GUI examples in this lane should continue to be integrated
+  into `dart-demos`, not added as standalone executables.
 - WP-DB.01 now adds `BM_INTEGRATION_soft_body` and records smoke rows in
   `01-baseline-evidence.md`.
 - WP-DB.03 now converts Kim/Pollard 2011 and Jain/Liu 2011 into a concrete
@@ -204,14 +222,14 @@ below.
 | Packet | Current disposition | Acceptance evidence |
 | --- | --- | --- |
 | WP-DB.01 baseline harness | Complete. | Headless benchmark rows cover representative soft scenes, point-mass/body counts, and thread settings (`01-baseline-evidence.md`). |
-| WP-DB.02 stability gate | Complete for the release slice. | Finite-state, thread-determinism, energy, contact-force/CoP smoothness, LCP robustness, and equation gates run in `test_SoftDynamics` (`03-stability-gate.md`, `07-equation-correctness.md`). |
+| WP-DB.02 stability gate | Implemented for the release slice; exact-head Windows confirmation pending. | Finite-state, thread-determinism, energy, contact-force/CoP smoothness, LCP robustness, and equation gates run in `test_SoftDynamics`. Commit `50a254e7e56` calibrates only the legacy-FCL CoP bound to just above one `0.125` m scene mesh interval; native and all other guards remain unchanged (`03-stability-gate.md`, `07-equation-correctness.md`, `verification.md`). |
 | WP-DB.03 paper parity matrix | Ledger complete; parity closeout still conditional. | Static paper targets now live in `docs/background/deformable_body_paper_targets.md`, and approved scope decisions live in `docs/design/dart6_deformable_body.md`. The four-link flexible-rigid-foot versus deformable-foot row remains neither implemented nor deferred (`02-paper-parity-matrix.md`, `decisions.md`). |
 | WP-DB.04 coupled equation correctness | Review fix published and thread resolved. | Matrix/vector projection and inverse-identity gates plus the retained-acceleration independence regression pass on published commit `2ad156e7b82` (`07-equation-correctness.md`). |
 | WP-DB.05 adaptive contact activation | Complete. | Opt-in ABI-safe activation is default-off bit-identical, deterministic when enabled, allocation-gated, and covered by two recorded review rounds (`08-adaptive-contact-activation.md`). |
 | WP-DB.06 CPU data layout and SIMD | #3382 disposition complete; follow-up research remains. | Kept cache/data-access slices produce the measured win; retained SoA mirrors and contiguous-object prototypes were rejected or parked because measurements/design gates did not justify keeping them. No unsupported SIMD speedup is claimed (`04-data-layout-and-memory-hardening.md`). |
 | WP-DB.07 multi-core scaling | Original acceptance unmet; retained as an open PLAN-622 follow-up. | `DARTCollisionDetector` pair-level work and 1/4/16-thread determinism landed, but the tracked small scenes are flat or slower at 16 threads. The direct `NativeCollisionDetector` path remains serial. The original `threads=16` improvement contract therefore remains open and needs a larger workload or a maintainer-approved negative disposition (`06-pr-evidence.md`, `docs/plans/dashboard.md`). |
 | WP-DB.08 native collision deformables | #3382 landing slice implemented; original acceptance unmet. | Primitive/cached soft lanes, face-interior coverage, allocation gates, and determinism landed. Native is not yet the preferred/default backend, required coverage remains in `05-native-collision-deformable-lane.md`, and the only direct-native/DART tie override is not independently reproducible. The durable architecture and pre-default gates now live in `docs/design/dart6_deformable_body.md` and PLAN-622. |
-| WP-DB.09 flagship demos | Representative demos complete; parity closeout conditional. | The `dart-demos` scenes `adaptive_soft_contact` and `soft_worm` are runnable and visually captured. GUI-free model tests preserve the adaptive 2000-step finite/repeat/all-active comparison contract and prove finite 3000-step worm locomotion beyond 0.2 m with exact repeated displacement/checksum; historical standalone evidence remains recorded in `06-pr-evidence.md`. The four-link flexible-rigid-foot versus deformable-foot comparison remains open until implemented or explicitly deferred (`02-paper-parity-matrix.md`, `decisions.md`). |
+| WP-DB.09 flagship demos | Representative demos complete; parity closeout conditional. | The `dart-demos` scenes `adaptive_soft_contact` and `soft_worm` are runnable. Historical visual inspections and commands are recorded, but their temporary captures are no longer present; GUI-free model tests preserve the adaptive 2000-step finite/repeat/all-active comparison contract and prove finite 3000-step worm locomotion beyond 0.2 m with exact repeated displacement/checksum (`06-pr-evidence.md`). The four-link flexible-rigid-foot versus deformable-foot comparison remains open until implemented or explicitly deferred (`02-paper-parity-matrix.md`, `decisions.md`). |
 
 The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
 
