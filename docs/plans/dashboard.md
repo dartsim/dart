@@ -39,18 +39,17 @@ Priority order is document order. Active implementation handoff remains in
 - Status: Active
 - Horizon: Next
 - Dimension: Research feature parity, CPU performance, and compatibility.
-- Next step: Publish the validated mass-matrix review fix after approval,
-  shepherd #3382 through current review/CI blockers, and run the reviewed
-  `bm-soft-body-paired` final-head protocol once the shared host passes its
-  load/thermal gates (or obtain explicit acceptance of the current manual
-  disposition). Decide the proposed competitive envelope and whether to
-  implement or defer the still-open four-link flexible-rigid-foot versus
-  deformable-foot comparison. After stabilization, retain WP-DB.07
-  larger-workload scaling and WP-DB.08 native-owned coverage/default work as
-  explicit follow-ups rather than widening #3382 implicitly. Track a separate
-  `main` fix for the zero-DoF soft point-mass assertion already corrected by
-  release commit `10c6b6055e4`, and use the staged native-owned soft-kernel
-  contract in `docs/design/dart6_deformable_body.md` for the WP-DB.08 follow-up.
+- Next step: Publish the verified `origin/release-6.20@75306efe770` merge and
+  test-only Windows legacy-FCL CoP calibration, then shepherd #3382 through a
+  fresh exact-head automated review and hosted CI. Keep PLAN-622 active after
+  that representative release slice: capture the reviewed
+  `bm-soft-body-paired` artifact only when the host passes its load/thermal
+  gates (or obtain explicit maintainer disposition), decide the competitive
+  envelope and the four-link flexible-rigid-foot versus deformable-foot row,
+  retain WP-DB.07 larger-workload scaling and WP-DB.08 native-owned
+  coverage/default work, and track a separate `main` PR for the zero-DoF soft
+  point-mass assertion corrected by release commit `10c6b6055e4`. New GUI
+  examples in this lane belong in `dart-demos`, not standalone executables.
 - Gate: `pixi run lint`; focused soft-body integration tests; headless
   soft-body benchmarks with exact commands/raw rows; one-thread and host-capped
   multi-thread determinism/scaling evidence; allocation gates and Gazebo

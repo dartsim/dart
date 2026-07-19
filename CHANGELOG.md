@@ -325,7 +325,8 @@
     point masses near contact stay simulated while the rest ride rigidly
     with the parent body as rigid lumps, following Jain and Liu's soft
     contact model. Default-off behavior is bit-identical to the previous
-    all-active dynamics.
+    all-active dynamics:
+    [#3382](https://github.com/dartsim/dart/pull/3382)
 
   * Add a default-off `BoxedLcpConstraintSolver` matrix-free contact solver
     option, plus dartpy bindings and `contact_benchmark` flags, for explicitly
@@ -555,7 +556,8 @@
     five-link chain with soft flesh that crawls through soft contact using a
     phase-offset sinusoidal gait. Both support the host's headless offscreen
     capture route, with GUI-free integration gates preserving the adaptive
-    comparison and worm-locomotion contracts.
+    comparison and worm-locomotion contracts:
+    [#3382](https://github.com/dartsim/dart/pull/3382)
 
   * Consolidate the scattered GUI examples into a single `dart-demos`
     application: a `dart::gui::osg` `ImGuiViewer` host with a categorized

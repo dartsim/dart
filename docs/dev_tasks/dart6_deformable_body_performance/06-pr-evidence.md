@@ -1,6 +1,64 @@
 # WP-DB PR evidence packet
 
-## 2026-07-12 PR stabilization evidence
+## 2026-07-18 current PR stabilization evidence
+
+PR [#3382](https://github.com/dartsim/dart/pull/3382) remains open from
+`wp-db-native-soft-fallback` to `release-6.20`. The pre-follow-up published head
+is `b172b2ee1db`; the local publication candidate merges
+`origin/release-6.20@75306efe770` at `834a2548fd9` and includes test-only
+Windows calibration `50a254e7e56`. This paragraph is the pre-publication
+baseline; after the additive push, use the live PR head and exact-head checks as
+the authority.
+
+Published-head review is clean with zero unresolved threads. Its terminal check
+snapshot is 21 passed, one failed, and one skipped. Both Codecov checks passed:
+patch coverage `94.34783%` with 143 uncovered changed lines, and project
+coverage `75.17%` versus `73.90%` (reported `+1.26` percentage points). The
+comment's red patch marker is informational because `codecov.yml` does not make
+patch status a required threshold.
+
+Windows Release completed 150/151 tests and was the sole failure. The only
+failing test was
+`SoftDynamicsTest.restingSoftContactForceAndCenterOfPressureAreSmooth`; the
+legacy-FCL `default adaptive` lane measured `0.12115883267368355` m maximum
+per-step center-of-pressure displacement against the former `0.11` m cap. This
+excursion is consistent with a one-interval manifold handoff; it is not the
+earlier 300-minute link timeout.
+
+Commit `50a254e7e56` raises only the legacy-FCL cap to `0.13` m. That cap is just
+above one `0.125` m surface-mesh interval and remains below a two-cell,
+footprint-scale jump. Native remains at `0.02` m; percentile force,
+support-loss, spike, and finite-state guards are unchanged, and the per-step
+CoP assertion remains in place at the calibrated FCL threshold. Verification:
+
+```text
+focused calibrated case                           PASS (20/20)
+test_SoftDynamics                                 PASS (25/25)
+DART_DISABLE_COMPILER_CACHE=ON pixi run build     PASS (292/292)
+DART_DISABLE_COMPILER_CACHE=ON pixi run test      PASS (154/154)
+pixi run -e gazebo test-gz                        PASS (199/199 + 4/4 + 1/1)
+pixi run lint                                     PASS
+git diff --check                                  PASS
+independent post-fix reviews                      CLEAN x2
+```
+
+The correction changes test calibration only, so it requires neither a new
+benchmark nor a new visual capture. Text evidence is the correct oracle for the
+numeric per-step CoP limit. Exact new-head hosted Windows CI remains required.
+No new changelog entry is needed for this test-only change.
+
+The flagship examples are already migrated into `dart-demos` as the
+`adaptive_soft_contact` and `soft_worm` scenes under `examples/demos`; the old
+standalone executables were removed. Their GUI-free integration gates and the
+historical visual commands and verdicts are recorded below; the temporary
+capture files no longer exist and are not durable current evidence. Future GUI
+examples in this lane should use the same integrated demo host.
+
+This stabilizes a representative #3382 slice only. No paired artifact has a
+`COMPLETE.json`, and the competitive-envelope, flexible-foot, WP-DB.07,
+WP-DB.08, and separate `main` assertion-fix work keep PLAN-622 open.
+
+## Historical 2026-07-12 PR stabilization evidence
 
 PR [#3382](https://github.com/dartsim/dart/pull/3382) is open from
 `wp-db-native-soft-fallback` to `release-6.20`. At the last inspection,
@@ -971,11 +1029,10 @@ Results:
 
 ## Changelog decision
 
-This branch includes user-visible performance and allocation improvements, so
-`CHANGELOG.md` carries a DART 6.20.0 Simulation entry for the World-owned
-simulation memory-management and no-steady-state-allocation preparation path.
-If maintainers require the entry to include the final PR number, add that link
-in a follow-up commit after PR publication.
+#3382 contains user-visible adaptive-contact and demo integration, so the
+existing DART 6.20.0 Dynamics and Examples bullets are retained and finalized
+with the #3382 link. The Windows CoP change is test calibration only and needs
+no separate changelog entry.
 
 ## GUI examples and visual debugging
 
@@ -1011,7 +1068,8 @@ measured physics RTF, sample count, step-time range, soft-body/point-mass
 counts, skeleton/body-node counts, and current contact count. The clean capture
 keeps the same camera framing with `--hide-widget`.
 
-No new standalone GUI example or local video artifact was added by this branch.
+New flagship examples are integrated into `dart-demos`; this lane should not
+reintroduce standalone GUI executables.
 
 ## 2026-07-11 flagship example evidence (WP-DB.09)
 
