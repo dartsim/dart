@@ -1,0 +1,43 @@
+{
+  "binary": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+  "binary_sha256": "235cc43a76985101f3145e50699a6a8758ba097db1a352179ddaa413bca9082d",
+  "child_returncode": 1,
+  "classification": "valid_scientific_negative",
+  "command": [
+    "taskset",
+    "-c",
+    "8",
+    "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+    "masonry_arch_25_literal_wedge_crown_impact_v1",
+    "exact_fbf",
+    "1",
+    "720",
+    "nan",
+    "performance",
+    "default",
+    "default",
+    "1",
+    "dart_best_colored_bgs",
+    "native",
+    "default",
+    "0",
+    "0"
+  ],
+  "created_utc": "2026-07-12T21:59:30.868622+00:00",
+  "cwd": "/home/js/dev/dartsim/dart/task_6",
+  "environment": {
+    "DART_DISABLE_COMPILER_CACHE": null,
+    "OMP_NUM_THREADS": null
+  },
+  "impact_claim_passed": false,
+  "platform": "Linux-7.0.0-27-generic-x86_64-with-glibc2.43",
+  "python": "3.14.6 | packaged by conda-forge | (main, Jun 12 2026, 08:51:42) [GCC 14.3.0]",
+  "raw_csv_sha256": "ba49b7de813644706d060ea540433ed903b6140f43c2fac435511dc49f8c5821",
+  "runner_source": "scripts/run_fbf_literal_crown_impact_negative.py",
+  "runner_source_sha256": "04c670a41ff6ad4ad773535f2d355884d4f5a08ae35fcc1c405b831d0a876c23",
+  "schema_version": "dart.fbf_literal_crown_impact_negative/v1",
+  "selected_cpu": "8",
+  "stderr_sha256": "7964b07fd5396f10013ff8d9100d2b36e7dfc151764210d8c60bd0ae853a2d94",
+  "trace_source": "tests/benchmark/integration/fbf_paper_trace.cpp",
+  "trace_source_sha256": "66f6234d7d15b8a89de712edde772df083d25954f36584435f17979c4d39483c"
+}

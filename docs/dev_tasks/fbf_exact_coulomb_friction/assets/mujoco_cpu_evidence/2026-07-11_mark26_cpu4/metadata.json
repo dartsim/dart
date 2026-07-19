@@ -1,0 +1,904 @@
+{
+  "artifacts": {
+    "REPORT.md": {
+      "sha256": "116b91503164364f083b0d5284ed6f005920a7794ce4333cba1c92e8b4da053c",
+      "size_bytes": 2836
+    },
+    "raw.csv": {
+      "sha256": "9e01b7e09fc3c6705c1f72ad12d48edc98dedf2dae5a791d05ff1245ce014a37",
+      "size_bytes": 7953443
+    },
+    "summary.csv": {
+      "sha256": "7f79c8e28773564b00a4d136ec4f629e4de8494bdbaf6caf794b2a38fb8a44f0",
+      "size_bytes": 3658
+    },
+    "summary.json": {
+      "sha256": "b42d0937ee2b4e623fb35fea4416b49f01e8a2ba43da3796ec10114bdc77b5e2",
+      "size_bytes": 10584
+    }
+  },
+  "compiled_models": {
+    "backspin": {
+      "options": {
+        "cone_enum": 1,
+        "disableflags": 0,
+        "enableflags": 0,
+        "geom_friction": [
+          [
+            0.5,
+            0.0,
+            0.0
+          ],
+          [
+            0.5,
+            0.0,
+            0.0
+          ]
+        ],
+        "geom_solimp": [
+          [
+            0.9,
+            0.95,
+            0.001,
+            0.5,
+            2.0
+          ],
+          [
+            0.9,
+            0.95,
+            0.001,
+            0.5,
+            2.0
+          ]
+        ],
+        "geom_solref": [
+          [
+            0.02,
+            1.0
+          ],
+          [
+            0.02,
+            1.0
+          ]
+        ],
+        "impratio": 1.0,
+        "integrator_enum": 0,
+        "iterations": 500,
+        "jacobian_enum": 2,
+        "ls_iterations": 50,
+        "ls_tolerance": 0.01,
+        "nbody": 2,
+        "ngeom": 2,
+        "noslip_iterations": 0,
+        "nq": 7,
+        "numeric_dtype": "float64",
+        "nv": 6,
+        "solver_enum": 2,
+        "timestep_s": 0.016666666666666666,
+        "tolerance": 1e-08
+      },
+      "warnings": [],
+      "xml_sha256": "10040c68a6f9f92de436f23c7afff1626c45dc6516f1ba450b4a39b4df84d1a2"
+    },
+    "incline_mu_0_4": {
+      "options": {
+        "cone_enum": 1,
+        "disableflags": 0,
+        "enableflags": 0,
+        "geom_friction": [
+          [
+            0.4,
+            0.0,
+            0.0
+          ],
+          [
+            0.4,
+            0.0,
+            0.0
+          ]
+        ],
+        "geom_solimp": [
+          [
+            0.9,
+            0.95,
+            0.001,
+            0.5,
+            2.0
+          ],
+          [
+            0.9,
+            0.95,
+            0.001,
+            0.5,
+            2.0
+          ]
+        ],
+        "geom_solref": [
+          [
+            0.02,
+            1.0
+          ],
+          [
+            0.02,
+            1.0
+          ]
+        ],
+        "impratio": 1.0,
+        "integrator_enum": 0,
+        "iterations": 500,
+        "jacobian_enum": 2,
+        "ls_iterations": 50,
+        "ls_tolerance": 0.01,
+        "nbody": 2,
+        "ngeom": 2,
+        "noslip_iterations": 0,
+        "nq": 7,
+        "numeric_dtype": "float64",
+        "nv": 6,
+        "solver_enum": 2,
+        "timestep_s": 0.016666666666666666,
+        "tolerance": 1e-08
+      },
+      "warnings": [],
+      "xml_sha256": "99c58b15d6c10e1823c9550520de8074b27033debb2bd03f2f149468e49f9d3b"
+    },
+    "incline_mu_0_5": {
+      "options": {
+        "cone_enum": 1,
+        "disableflags": 0,
+        "enableflags": 0,
+        "geom_friction": [
+          [
+            0.5,
+            0.0,
+            0.0
+          ],
+          [
+            0.5,
+            0.0,
+            0.0
+          ]
+        ],
+        "geom_solimp": [
+          [
+            0.9,
+            0.95,
+            0.001,
+            0.5,
+            2.0
+          ],
+          [
+            0.9,
+            0.95,
+            0.001,
+            0.5,
+            2.0
+          ]
+        ],
+        "geom_solref": [
+          [
+            0.02,
+            1.0
+          ],
+          [
+            0.02,
+            1.0
+          ]
+        ],
+        "impratio": 1.0,
+        "integrator_enum": 0,
+        "iterations": 500,
+        "jacobian_enum": 2,
+        "ls_iterations": 50,
+        "ls_tolerance": 0.01,
+        "nbody": 2,
+        "ngeom": 2,
+        "noslip_iterations": 0,
+        "nq": 7,
+        "numeric_dtype": "float64",
+        "nv": 6,
+        "solver_enum": 2,
+        "timestep_s": 0.016666666666666666,
+        "tolerance": 1e-08
+      },
+      "warnings": [],
+      "xml_sha256": "5dc5e587592436f559e96009aaa5d8f4cab2784304c190dddfe6428bc95d6989"
+    },
+    "turntable_mu_0_2_omega_2": {
+      "options": {
+        "cone_enum": 1,
+        "disableflags": 0,
+        "enableflags": 0,
+        "geom_friction": [
+          [
+            0.2,
+            0.0,
+            0.0
+          ],
+          [
+            0.2,
+            0.0,
+            0.0
+          ]
+        ],
+        "geom_solimp": [
+          [
+            0.9,
+            0.95,
+            0.001,
+            0.5,
+            2.0
+          ],
+          [
+            0.9,
+            0.95,
+            0.001,
+            0.5,
+            2.0
+          ]
+        ],
+        "geom_solref": [
+          [
+            0.02,
+            1.0
+          ],
+          [
+            0.02,
+            1.0
+          ]
+        ],
+        "impratio": 1.0,
+        "integrator_enum": 0,
+        "iterations": 500,
+        "jacobian_enum": 2,
+        "ls_iterations": 50,
+        "ls_tolerance": 0.01,
+        "nbody": 3,
+        "ngeom": 2,
+        "noslip_iterations": 0,
+        "nq": 8,
+        "numeric_dtype": "float64",
+        "nv": 7,
+        "solver_enum": 2,
+        "timestep_s": 0.016666666666666666,
+        "tolerance": 1e-08
+      },
+      "warnings": [],
+      "xml_sha256": "e938ccaa3e28c7d8e5c419400137e365ea745b167075b103843ae89482a22eea"
+    },
+    "turntable_mu_0_2_omega_5": {
+      "options": {
+        "cone_enum": 1,
+        "disableflags": 0,
+        "enableflags": 0,
+        "geom_friction": [
+          [
+            0.2,
+            0.0,
+            0.0
+          ],
+          [
+            0.2,
+            0.0,
+            0.0
+          ]
+        ],
+        "geom_solimp": [
+          [
+            0.9,
+            0.95,
+            0.001,
+            0.5,
+            2.0
+          ],
+          [
+            0.9,
+            0.95,
+            0.001,
+            0.5,
+            2.0
+          ]
+        ],
+        "geom_solref": [
+          [
+            0.02,
+            1.0
+          ],
+          [
+            0.02,
+            1.0
+          ]
+        ],
+        "impratio": 1.0,
+        "integrator_enum": 0,
+        "iterations": 500,
+        "jacobian_enum": 2,
+        "ls_iterations": 50,
+        "ls_tolerance": 0.01,
+        "nbody": 3,
+        "ngeom": 2,
+        "noslip_iterations": 0,
+        "nq": 8,
+        "numeric_dtype": "float64",
+        "nv": 7,
+        "solver_enum": 2,
+        "timestep_s": 0.016666666666666666,
+        "tolerance": 1e-08
+      },
+      "warnings": [],
+      "xml_sha256": "e938ccaa3e28c7d8e5c419400137e365ea745b167075b103843ae89482a22eea"
+    },
+    "turntable_mu_0_5_omega_2": {
+      "options": {
+        "cone_enum": 1,
+        "disableflags": 0,
+        "enableflags": 0,
+        "geom_friction": [
+          [
+            0.5,
+            0.0,
+            0.0
+          ],
+          [
+            0.5,
+            0.0,
+            0.0
+          ]
+        ],
+        "geom_solimp": [
+          [
+            0.9,
+            0.95,
+            0.001,
+            0.5,
+            2.0
+          ],
+          [
+            0.9,
+            0.95,
+            0.001,
+            0.5,
+            2.0
+          ]
+        ],
+        "geom_solref": [
+          [
+            0.02,
+            1.0
+          ],
+          [
+            0.02,
+            1.0
+          ]
+        ],
+        "impratio": 1.0,
+        "integrator_enum": 0,
+        "iterations": 500,
+        "jacobian_enum": 2,
+        "ls_iterations": 50,
+        "ls_tolerance": 0.01,
+        "nbody": 3,
+        "ngeom": 2,
+        "noslip_iterations": 0,
+        "nq": 8,
+        "numeric_dtype": "float64",
+        "nv": 7,
+        "solver_enum": 2,
+        "timestep_s": 0.016666666666666666,
+        "tolerance": 1e-08
+      },
+      "warnings": [],
+      "xml_sha256": "72a5d11d149a6459f0daeeaf9bb136e8f4772616173ae598f0a596c17ccc83a6"
+    },
+    "turntable_mu_0_5_omega_5": {
+      "options": {
+        "cone_enum": 1,
+        "disableflags": 0,
+        "enableflags": 0,
+        "geom_friction": [
+          [
+            0.5,
+            0.0,
+            0.0
+          ],
+          [
+            0.5,
+            0.0,
+            0.0
+          ]
+        ],
+        "geom_solimp": [
+          [
+            0.9,
+            0.95,
+            0.001,
+            0.5,
+            2.0
+          ],
+          [
+            0.9,
+            0.95,
+            0.001,
+            0.5,
+            2.0
+          ]
+        ],
+        "geom_solref": [
+          [
+            0.02,
+            1.0
+          ],
+          [
+            0.02,
+            1.0
+          ]
+        ],
+        "impratio": 1.0,
+        "integrator_enum": 0,
+        "iterations": 500,
+        "jacobian_enum": 2,
+        "ls_iterations": 50,
+        "ls_tolerance": 0.01,
+        "nbody": 3,
+        "ngeom": 2,
+        "noslip_iterations": 0,
+        "nq": 8,
+        "numeric_dtype": "float64",
+        "nv": 7,
+        "solver_enum": 2,
+        "timestep_s": 0.016666666666666666,
+        "tolerance": 1e-08
+      },
+      "warnings": [],
+      "xml_sha256": "72a5d11d149a6459f0daeeaf9bb136e8f4772616173ae598f0a596c17ccc83a6"
+    }
+  },
+  "created_at_utc": "2026-07-12T00:48:59.461360+00:00",
+  "elapsed_wall_s": 0.282527,
+  "host": {
+    "cpu": {
+      "logical_cpu_count": 32,
+      "model": "13th Gen Intel(R) Core(TM) i9-13950HX",
+      "per_affinity_cpu": {
+        "4": {
+          "current_khz": "4614987",
+          "governor": "powersave",
+          "max_khz": "5500000",
+          "min_khz": "800000"
+        }
+      },
+      "process_affinity": [
+        4
+      ]
+    },
+    "cpu_at_end": {
+      "logical_cpu_count": 32,
+      "model": "13th Gen Intel(R) Core(TM) i9-13950HX",
+      "per_affinity_cpu": {
+        "4": {
+          "current_khz": "4600046",
+          "governor": "powersave",
+          "max_khz": "5500000",
+          "min_khz": "800000"
+        }
+      },
+      "process_affinity": [
+        4
+      ]
+    },
+    "hostname": "mark26",
+    "load_average_end": [
+      0.73876953125,
+      0.80419921875,
+      1.5947265625
+    ],
+    "load_average_start": [
+      0.73876953125,
+      0.80419921875,
+      1.5947265625
+    ],
+    "machine": "x86_64",
+    "original_process_affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "platform": "Linux-7.0.0-27-generic-x86_64-with-glibc2.43",
+    "python": "3.12.13 | packaged by conda-forge | (main, Mar  5 2026, 16:50:00) [GCC 14.3.0]",
+    "requested_process_affinity": [
+      4
+    ]
+  },
+  "invocation": {
+    "argv": [
+      "scripts/run_fbf_mujoco_evidence.py",
+      "--output-dir",
+      "docs/dev_tasks/fbf_exact_coulomb_friction/assets/mujoco_cpu_evidence/2026-07-11_mark26_cpu4",
+      "--repetitions",
+      "10",
+      "--cpu-list",
+      "4",
+      "--note",
+      "Full reconstructed small-fixture matrix; CPU 4 is a 5.5 GHz-capable P-core on mark26; no paper-parity claim.",
+      "--force"
+    ],
+    "cwd": "/home/js/dev/dartsim/dart/task_6",
+    "execution_order": "repetition-major, scenarios sequential",
+    "model_compilation_timed": false,
+    "note": "Full reconstructed small-fixture matrix; CPU 4 is a 5.5 GHz-capable P-core on mark26; no paper-parity claim.",
+    "output_dir": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/mujoco_cpu_evidence/2026-07-11_mark26_cpu4",
+    "repetitions": 10,
+    "scenarios": [
+      "backspin",
+      "incline_mu_0_5",
+      "incline_mu_0_4",
+      "turntable_mu_0_2_omega_2",
+      "turntable_mu_0_2_omega_5",
+      "turntable_mu_0_5_omega_2",
+      "turntable_mu_0_5_omega_5"
+    ],
+    "state_extraction_timed": false,
+    "timing_scope": "synchronous mujoco.mj_step only",
+    "turntable_control_assignment_timed": false,
+    "warmup_repetitions": 0
+  },
+  "paper_contract": {
+    "non_comparability_reasons": [
+      "Local official MuJoCo pypi uses float64; the paper reports single-precision CPU runs.",
+      "Local CPU is not the paper's Apple-silicon Mac.",
+      "The author code and scene assets are unavailable, so adapter/backend equivalence cannot be established; this runner uses standalone MuJoCo pypi.",
+      "The paper does not publish the numeric native tolerance, MuJoCo contact solref/solimp, or all integrator settings.",
+      "Initial penetrations are DART reconstruction choices, not published paper parameters.",
+      "Turntable dimensions, mass, radius, exact ramp, drive implementation, and duration are unpublished and reconstructed.",
+      "Only mj_step is timed; the exact timing boundary used by the paper implementation is unavailable."
+    ],
+    "paper_comparable": false,
+    "paper_location": "Appendix B, Table 5 and accompanying performance contract",
+    "paper_title": "A Splitting Architecture for Exact Reduced Coulomb Friction",
+    "paper_url": "https://www.cs.ubc.ca/research/fbf-friction/paper.pdf",
+    "published_cone": "elliptic",
+    "published_cpu_execution": "single precision, sequential, one Apple-silicon Mac",
+    "published_max_iterations": 500,
+    "published_solver": "MuJoCo Newton",
+    "published_timestep_s": 0.016666666666666666,
+    "published_tolerance": "native tolerance; numeric value not stated"
+  },
+  "repository": {
+    "branch": "research/fbf-friction-release620",
+    "dirty": true,
+    "head": "2ddd9f56a45437cf1c55e3433bd8aae080acff1e",
+    "status_porcelain": [
+      "M dart/constraint/ExactCoulombFbfConstraintSolver.cpp",
+      " M dart/constraint/ExactCoulombFbfConstraintSolver.hpp",
+      " M dart/math/detail/ExactCoulombFbfSolver.hpp",
+      " M dart/math/detail/MasonryArchGeometry.hpp",
+      " M data/mjcf/rigid_ipc_arch/README.md",
+      " M docs/dev_tasks/fbf_exact_coulomb_friction/AGENT_CONTINUATION.md",
+      " D docs/dev_tasks/fbf_exact_coulomb_friction/assets/arch25_alldynamic_seating_collapse.csv",
+      " M examples/demos/DemoHost.cpp",
+      " M examples/demos/DemoHost.hpp",
+      " M examples/demos/main.cpp",
+      " M examples/demos/scenes/FbfPaperFrictionScene.cpp",
+      " M pixi.toml",
+      " M tests/benchmark/integration/CMakeLists.txt",
+      " M tests/benchmark/integration/bm_exact_coulomb_fbf_paper.cpp",
+      " M tests/benchmark/integration/fbf_paper_arch_probe.cpp",
+      " M tests/benchmark/integration/fbf_paper_card_house_probe.cpp",
+      " M tests/benchmark/integration/fbf_paper_gamma_sweep.cpp",
+      " M tests/benchmark/integration/fbf_paper_mujoco_baseline.py",
+      " M tests/benchmark/integration/fbf_paper_trace.cpp",
+      " M tests/integration/test_ExactCoulombFbfPaperFixtures.cpp",
+      " M tests/unit/constraint/test_ExactCoulombFbfConstraintSolver.cpp",
+      " M tests/unit/math/test_ExactCoulombFbfSolver.cpp",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/KAMINO_BASELINE.md",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/MUJOCO_BASELINE.md",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/PROVENANCE.txt",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/assets/arch25_alldynamic_seating_collapse.INVALID.md",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/assets/fbf_residual_history_card_house_26.csv",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/assets/fbf_residual_history_masonry_arch_101.csv",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/assets/kamino_cuda_evidence/",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/assets/mujoco_cpu_evidence/",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/paper-evidence-manifest.json",
+      "?? python/tests/unit/test_run_fbf_cpu_evidence.py",
+      "?? python/tests/unit/test_run_fbf_kamino_evidence.py",
+      "?? python/tests/unit/test_run_fbf_mujoco_evidence.py",
+      "?? python/tests/unit/test_validate_fbf_paper_evidence.py",
+      "?? scripts/run_fbf_cpu_evidence.py",
+      "?? scripts/run_fbf_kamino_evidence.py",
+      "?? scripts/run_fbf_mujoco_evidence.py",
+      "?? scripts/validate_fbf_paper_evidence.py",
+      "?? tests/benchmark/integration/fbf_paper_arch_wedge_collision_probe.cpp",
+      "?? tests/unit/math/test_MasonryArchGeometry.cpp"
+    ]
+  },
+  "scene_contracts": {
+    "backspin": {
+      "local_reconstruction": {
+        "initial_penetration_m": 0.005,
+        "mass_kg": 1.0,
+        "trajectory_end_s": 2.1666666666666665
+      },
+      "published": {
+        "figure_instants_s": [
+          0.0,
+          0.16666666666666666,
+          0.8333333333333334,
+          2.0,
+          2.1666666666666665
+        ],
+        "friction": 0.5,
+        "initial_angular_velocity_rad_s": [
+          0.0,
+          -200.0,
+          0.0
+        ],
+        "initial_linear_velocity_mps": [
+          4.0,
+          0.0,
+          0.0
+        ],
+        "radius_m": 0.25,
+        "shape": "uniform solid sphere",
+        "timestep_s": 0.016666666666666666
+      },
+      "unknown_or_unpublished": [
+        "sphere mass",
+        "initial contact penetration or gap",
+        "MuJoCo contact solref and solimp"
+      ]
+    },
+    "incline_mu_0_4": {
+      "local_reconstruction": {
+        "cube_size_m": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "initial_penetration_m": 0.01,
+        "mass_kg": 1.0
+      },
+      "published": {
+        "duration_s": 2.0,
+        "friction": 0.4,
+        "shape": "cube",
+        "slope_tangent": 0.5,
+        "timestep_s": 0.016666666666666666
+      },
+      "unknown_or_unpublished": [
+        "cube size and mass",
+        "initial contact penetration or gap",
+        "MuJoCo contact solref and solimp"
+      ]
+    },
+    "incline_mu_0_5": {
+      "local_reconstruction": {
+        "cube_size_m": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "initial_penetration_m": 0.01,
+        "mass_kg": 1.0
+      },
+      "published": {
+        "duration_s": 2.0,
+        "friction": 0.5,
+        "shape": "cube",
+        "slope_tangent": 0.5,
+        "timestep_s": 0.016666666666666666
+      },
+      "unknown_or_unpublished": [
+        "cube size and mass",
+        "initial contact penetration or gap",
+        "MuJoCo contact solref and solimp"
+      ]
+    },
+    "turntable_mu_0_2_omega_2": {
+      "local_reconstruction": {
+        "drive": "hinge qvel overwritten before each mj_step",
+        "initial_penetration_m": 0.005,
+        "initial_radius_m": 1.0,
+        "linear_ramp_duration_s": 1.0,
+        "rider_mass_kg": 1.0,
+        "rider_size_m": [
+          0.25,
+          0.25,
+          0.25
+        ],
+        "trajectory_end_s": 4.0,
+        "turntable_size_m": [
+          4.0,
+          4.0,
+          0.1
+        ]
+      },
+      "published": {
+        "angular_velocity_profile": "ramped smoothly from rest",
+        "friction": 0.2,
+        "shape": "cube on rotating turntable",
+        "target_angular_velocity_rad_s": 2.0,
+        "timestep_s": 0.016666666666666666
+      },
+      "unknown_or_unpublished": [
+        "turntable and rider dimensions and mass",
+        "initial radius and contact penetration or gap",
+        "ramp function and duration",
+        "simulation duration",
+        "kinematic drive implementation",
+        "MuJoCo contact solref and solimp"
+      ]
+    },
+    "turntable_mu_0_2_omega_5": {
+      "local_reconstruction": {
+        "drive": "hinge qvel overwritten before each mj_step",
+        "initial_penetration_m": 0.005,
+        "initial_radius_m": 1.0,
+        "linear_ramp_duration_s": 1.0,
+        "rider_mass_kg": 1.0,
+        "rider_size_m": [
+          0.25,
+          0.25,
+          0.25
+        ],
+        "trajectory_end_s": 4.0,
+        "turntable_size_m": [
+          4.0,
+          4.0,
+          0.1
+        ]
+      },
+      "published": {
+        "angular_velocity_profile": "ramped smoothly from rest",
+        "friction": 0.2,
+        "shape": "cube on rotating turntable",
+        "target_angular_velocity_rad_s": 5.0,
+        "timestep_s": 0.016666666666666666
+      },
+      "unknown_or_unpublished": [
+        "turntable and rider dimensions and mass",
+        "initial radius and contact penetration or gap",
+        "ramp function and duration",
+        "simulation duration",
+        "kinematic drive implementation",
+        "MuJoCo contact solref and solimp"
+      ]
+    },
+    "turntable_mu_0_5_omega_2": {
+      "local_reconstruction": {
+        "drive": "hinge qvel overwritten before each mj_step",
+        "initial_penetration_m": 0.005,
+        "initial_radius_m": 1.0,
+        "linear_ramp_duration_s": 1.0,
+        "rider_mass_kg": 1.0,
+        "rider_size_m": [
+          0.25,
+          0.25,
+          0.25
+        ],
+        "trajectory_end_s": 4.0,
+        "turntable_size_m": [
+          4.0,
+          4.0,
+          0.1
+        ]
+      },
+      "published": {
+        "angular_velocity_profile": "ramped smoothly from rest",
+        "friction": 0.5,
+        "shape": "cube on rotating turntable",
+        "target_angular_velocity_rad_s": 2.0,
+        "timestep_s": 0.016666666666666666
+      },
+      "unknown_or_unpublished": [
+        "turntable and rider dimensions and mass",
+        "initial radius and contact penetration or gap",
+        "ramp function and duration",
+        "simulation duration",
+        "kinematic drive implementation",
+        "MuJoCo contact solref and solimp"
+      ]
+    },
+    "turntable_mu_0_5_omega_5": {
+      "local_reconstruction": {
+        "drive": "hinge qvel overwritten before each mj_step",
+        "initial_penetration_m": 0.005,
+        "initial_radius_m": 1.0,
+        "linear_ramp_duration_s": 1.0,
+        "rider_mass_kg": 1.0,
+        "rider_size_m": [
+          0.25,
+          0.25,
+          0.25
+        ],
+        "trajectory_end_s": 4.0,
+        "turntable_size_m": [
+          4.0,
+          4.0,
+          0.1
+        ]
+      },
+      "published": {
+        "angular_velocity_profile": "ramped smoothly from rest",
+        "friction": 0.5,
+        "shape": "cube on rotating turntable",
+        "target_angular_velocity_rad_s": 5.0,
+        "timestep_s": 0.016666666666666666
+      },
+      "unknown_or_unpublished": [
+        "turntable and rider dimensions and mass",
+        "initial radius and contact penetration or gap",
+        "ramp function and duration",
+        "simulation duration",
+        "kinematic drive implementation",
+        "MuJoCo contact solref and solimp"
+      ]
+    }
+  },
+  "schema_version": 1,
+  "software": {
+    "mujoco_module": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/fbf-baselines/lib/python3.12/site-packages/mujoco/__init__.py",
+    "mujoco_runtime_version": "3.10.0",
+    "mujoco_version": "3.10.0",
+    "numeric_precision": "float64",
+    "package_versions": {
+      "mujoco": "3.10.0",
+      "numpy": "2.5.1"
+    },
+    "thread_environment_effective": {
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1"
+    },
+    "thread_environment_original": {
+      "MKL_NUM_THREADS": null,
+      "NUMEXPR_NUM_THREADS": null,
+      "OMP_NUM_THREADS": null,
+      "OPENBLAS_NUM_THREADS": null,
+      "VECLIB_MAXIMUM_THREADS": null
+    }
+  },
+  "source_files": {
+    "pixi.lock": "104371265aa53e0603874a0f59847a4711ed3864f3aa718d8ddd4ace1a29f6f7",
+    "scripts/run_fbf_mujoco_evidence.py": "3a4ebcb49a93fd1f3712b8bde39c6fe831f249dcd8cfd1399a5b1e4a12e49b68",
+    "tests/benchmark/integration/fbf_paper_mujoco_baseline.py": "f4349417e0eab5115bd289d85bddd8e26ddad06c04820c1e02bc99f3e1a5449c"
+  },
+  "validation": {
+    "complete_small_fixture_matrix": true,
+    "errors": [],
+    "raw_row_count": 13370,
+    "timed_step_count": 13300,
+    "valid": true
+  }
+}

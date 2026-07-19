@@ -37,6 +37,8 @@
 
 #include <dart/config.hpp>
 
+#include <string>
+
 namespace dart_demos {
 
 /// Getting Started > empty: minimal world with an InteractiveFrame gizmo
@@ -89,8 +91,48 @@ namespace dart_demos {
 /// Research > FBF turntable: exact-Coulomb paper turntable capture/ejection.
 [[nodiscard]] DemoScene makeFbfPaperTurntableScene();
 
+/// Research > FBF turntable: fixed mu=.2, omega=2 capture cell.
+[[nodiscard]] DemoScene makeFbfPaperTurntableMu02Omega2Scene();
+
+/// Research > FBF turntable: fixed mu=.2, omega=5 capture cell.
+[[nodiscard]] DemoScene makeFbfPaperTurntableMu02Omega5Scene();
+
+/// Research > FBF turntable: fixed mu=.5, omega=5 capture cell.
+[[nodiscard]] DemoScene makeFbfPaperTurntableMu05Omega5Scene();
+
+/// Research > FBF author turntable: source-pinned mu=.2, omega=2 cell.
+[[nodiscard]] DemoScene makeFbfAuthorTurntableMu02Omega2Scene();
+
+/// Research > FBF author turntable: source-pinned mu=.2, omega=5 cell.
+[[nodiscard]] DemoScene makeFbfAuthorTurntableMu02Omega5Scene();
+
+/// Research > FBF author turntable: source-pinned mu=.5, omega=2 cell.
+[[nodiscard]] DemoScene makeFbfAuthorTurntableMu05Omega2Scene();
+
+/// Research > FBF author turntable: source-pinned mu=.5, omega=5 cell.
+[[nodiscard]] DemoScene makeFbfAuthorTurntableMu05Omega5Scene();
+
+/// Returns the canonical runtime-inspected physics/control contract for one
+/// fbf_author_turntable_* scene. Renderer assets are intentionally excluded.
+/// Throws std::invalid_argument for any other scene id.
+[[nodiscard]] std::string fbfAuthorTurntablePhysicsContractJson(
+    const std::string& sceneId);
+
+/// Research > FBF author card house: source-pinned five-level construction.
+[[nodiscard]] DemoScene makeFbfAuthorCardHouseScene();
+
+/// Returns the canonical runtime-inspected configuration-only contract for
+/// fbf_author_card_house_5_construction. Renderer styling is disclosed but
+/// intentionally excluded from source parity. Throws std::invalid_argument
+/// for any other scene id.
+[[nodiscard]] std::string fbfAuthorCardHouseConfigurationContractJson(
+    const std::string& sceneId);
+
 /// Research > FBF Painleve proxy: headless paper-proxy fixture as a GUI scene.
 [[nodiscard]] DemoScene makeFbfPaperPainleveScene();
+
+/// Research > FBF Painleve proxy: fixed mu=.55 outcome cell.
+[[nodiscard]] DemoScene makeFbfPaperPainleveMu055Scene();
 
 /// Research > FBF card A-frame: two-card Fig. 6 precursor.
 [[nodiscard]] DemoScene makeFbfPaperCardAFrameScene();
@@ -100,6 +142,9 @@ namespace dart_demos {
 
 /// Research > FBF card house: construction-only 10-level GPU-table scaffold.
 [[nodiscard]] DemoScene makeFbfPaperCardHouse10Scene();
+
+/// Research > FBF card house: dynamic exact-FBF 10-level capped adapter.
+[[nodiscard]] DemoScene makeFbfPaperCardHouse10DynamicScene();
 
 /// Research > FBF masonry arch: reduced-contact 25-stone Fig. 7 scaffold.
 [[nodiscard]] DemoScene makeFbfPaperMasonryArch25Scene();

@@ -1,0 +1,74 @@
+{
+  "durable_capture_records": {
+    "group": {
+      "clip_sha256": "dd4cdda2410b71f8e86035f1c0ff278f9dda77133c702e409ee5d533da443a4b",
+      "metadata_sha256": "91cb6d7d63450ce165c8060be8faa002d1a913aa0e94870758e32c15b42e73c0",
+      "panel_sha256": "bef97d04d59e2937195151cbf36a0b713bb2c2bef43d111513c05885595546e2"
+    },
+    "members": [
+      {
+        "capture_id": "painleve_mu05",
+        "clip_sha256": "3bb8a59e5ea4d180dc7badcbc07755cf3e2d0acf2b405e80f0cecfad30ca993b",
+        "metadata_sha256": "c5ffb28cddbaf3c83227f4262ec7411ac5c28dfd664f86a16e72b5abe58794e6",
+        "panel_sha256": "ccccf58ae6f1af1e34065f3670619dc25b10479f4c1040bb4d4be3337828b030",
+        "timeline_sha256": "d03eacb182dce419fb77150d781271329d776ef46b140fbe43bb2f994ed8bc9f"
+      },
+      {
+        "capture_id": "painleve_mu055",
+        "clip_sha256": "bfd3d151e091b990d5005c1b01d7fe9d0e8ec2660a7aeb605a1abad1bbc69f40",
+        "metadata_sha256": "653f1d994d9bf1e48487487beeedb6b7575e5417a1960eba82317d520f198bf9",
+        "panel_sha256": "0044f8ccc69989dcdf6020db1aa54f2dbc052248126e2cedce84a835ab0dd1a0",
+        "timeline_sha256": "d46eb63fab889c03c771f767d18a1ba2bc5462312879a3d3232a32e28ba8fdf0"
+      }
+    ]
+  },
+  "run_summary": {
+    "path": "run-summary.json",
+    "sha256": "befda78eff1fd5da7da4adf22dca92a76abbbc6c242f57c7d4ddf209a55c0089"
+  },
+  "schema_version": "dart.fbf_painleve_proxy_capture_provenance/v1",
+  "staging_pruned": true,
+  "verification": {
+    "argv": [
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/bin/python",
+      "/home/js/dev/dartsim/dart/task_6/scripts/run_fbf_visual_evidence.py",
+      "verify",
+      "--scenario",
+      "painleve_mu05",
+      "--scenario",
+      "painleve_mu055",
+      "--demo",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+      "--output-root",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig05_painleve_proxy_current_v1",
+      "--ffmpeg",
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+      "--ffprobe",
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffprobe"
+    ],
+    "path": "verification.json",
+    "payload_sha256": "12b4847120fcb5ad93c2fbb73efdbc77289ccede5ab9fe2915986a9d51a91214",
+    "returncode": 0,
+    "sha256": "6fd34e54f7958c45777731ab888fe3a5e8e24d06b9fdddb96bdace269fcb515e"
+  },
+  "verification_resources": {
+    "demo_binary": {
+      "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+      "sha256": "d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4"
+    },
+    "ffmpeg_binary": {
+      "path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+      "sha256": "c94d28bd8be3ecad11c2c00a136b585c7a413273e5a5804766c98e7e3200c17e"
+    },
+    "ffprobe_binary": {
+      "path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffprobe",
+      "sha256": "585d52f16c12507e660a541ee5e0e1a0fc7a872744fcf0f5acde2a6134a96951"
+    },
+    "visual_runner": {
+      "path": "/home/js/dev/dartsim/dart/task_6/scripts/run_fbf_visual_evidence.py",
+      "sha256": "d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432"
+    }
+  },
+  "verification_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "verification_stdout_sha256": "6fd34e54f7958c45777731ab888fe3a5e8e24d06b9fdddb96bdace269fcb515e"
+}

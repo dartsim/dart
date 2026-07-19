@@ -170,6 +170,30 @@ TEST(ExactCoulombContactProblem, EstimatesLargestDelassusEigenvalue)
   EXPECT_NEAR(estimate, 2.0, 1e-8);
 }
 
+TEST(ExactCoulombContactProblem, RestartsWhenInitialSeedIsInNullspace)
+{
+  dart::math::detail::ExactCoulombContactProblem problem;
+  problem.freeVelocity = Eigen::VectorXd::Zero(6);
+  problem.coefficients = Eigen::Vector2d(0.5, 0.8);
+
+  Eigen::MatrixXd incidence = Eigen::MatrixXd::Zero(3, 6);
+  for (Eigen::Index axis = 0; axis < 3; ++axis) {
+    incidence(axis, axis) = 1.0;
+    incidence(axis, axis + 3) = -1.0;
+  }
+  const Eigen::MatrixXd delassus = incidence.transpose() * incidence;
+
+  ASSERT_TRUE(delassus.isApprox(delassus.transpose()));
+  expectVectorNear(
+      delassus * Eigen::VectorXd::Ones(6), Eigen::VectorXd::Zero(6));
+
+  const double estimate
+      = dart::math::detail::estimateLargestExactCoulombDelassusEigenvalue(
+          problem, makeDenseDelassusOperator(delassus), 10);
+
+  EXPECT_NEAR(estimate, 2.0, 1e-12);
+}
+
 TEST(ExactCoulombContactProblem, EstimatesZeroForEmptyProblem)
 {
   dart::math::detail::ExactCoulombContactProblem problem;

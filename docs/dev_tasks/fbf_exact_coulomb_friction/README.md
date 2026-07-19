@@ -2,794 +2,671 @@
 
 ## Status
 
-Active research and implementation task for integrating the SCA 2026
-"A Splitting Architecture for Exact Reduced Coulomb Friction" method into the
-DART 6.20 release lane.
+This task is active and incomplete. It is a DART-side reconstruction of the
+SCA 2026 paper "A Splitting Architecture for Exact Reduced Coulomb Friction,"
+not yet a source-equivalent reproduction of the authors' public reference
+implementation pinned at
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`. Do not retire this folder.
 
-Before making or reporting progress, read
-[AGENT_CONTINUATION.md](AGENT_CONTINUATION.md). It is the task-local progress
-ledger, active work board, todo list, verification ledger, and guardrail
-against prematurely calling this work complete. Focused passing tests,
-small-fixture benchmarks, and demo smoke tests are progress evidence, not
-proof that all paper tests, benchmarks, and GUI examples exist. Each slice that
-changes implementation state must update that tracker and mirror user-facing
-commands/results into [PR_REPORT.md](PR_REPORT.md).
-
-Current branch: `research/fbf-friction-release620`, originally based on
-`origin/release-6.20` at `c1deaca67b8`. As of 2026-07-08,
-`origin/release-6.20` has advanced to `f343528708e`; merge or otherwise
-refresh the topic branch before publishing.
-
-Current conclusion: the method is implementable in DART 6.20, but it is not a
-drop-in replacement for the existing boxed-LCP backend. It needs a new
-reduced contact-space exact-Coulomb solver path, contact-problem assembly that
-preserves a circular Coulomb cone per contact, shared cone math/residual
-utilities, and paper-specific benchmark scenes. The default solver and gz
-compatibility surfaces must remain unchanged until parity evidence justifies
-any broader exposure.
-
-## Source Material Checked
-
-- Project page:
-  <https://www.cs.ubc.ca/research/fbf-friction/>
-- Paper PDF:
-  <https://www.cs.ubc.ca/research/fbf-friction/paper.pdf>
-- Video:
-  <https://www.youtube.com/watch?v=5THad4PAGmI>
-- Video metadata checked on 2026-07-08: published
-  `2026-07-06T20:53:01-07:00`, length 82 seconds, description links the
-  project page, paper, and code repository.
-- Code repository named by the video:
-  <https://github.com/matthcsong/fbf-sca-2026>. Rechecked on 2026-07-09:
-  the GitHub page still returned HTTP 404 and unauthenticated `git ls-remote`
-  could not read it. Treat paper and video as the source of record until that
-  repository becomes available.
-- The paper credits the masonry-arch geometry to the Rigid-IPC dataset:
-  <https://github.com/ipc-sim/rigid-ipc>.
-
-## Paper Summary
-
-The paper targets the exact reduced Coulomb friction law in contact space.
-After semi-implicit Euler time stepping, velocities are eliminated to obtain
+The required answer to "Do we have all tests, benchmarks, and GUI examples
+from the paper?" remains:
 
 ```text
-v(lambda) = W lambda + v_free,       W = J M^-1 J^T
+No.
 ```
 
-where each contact reaction has one normal and two tangential components. The
-Coulomb cone is
+[AGENT_CONTINUATION.md](AGENT_CONTINUATION.md) is the authoritative truth
+ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
+[HANDOFF.md](HANDOFF.md) is a copyable fresh-session prompt.
 
-```text
-K_mu = { lambda | lambda_n >= 0, ||lambda_t|| <= mu lambda_n }.
-```
+## Current Reality
 
-The exact law uses the De Saxce-Feng augmented velocity
+| Area | Current truth | Verdict |
+| --- | --- | --- |
+| Author source | The MIT-licensed `matthcsong/fbf-sca-2026` reference implementation is public and pinned at `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`; it contains the Warp/Newton FBF solver, six runnable examples, current scene/configuration source, optional MuJoCo/Kamino runners, and masonry meshes | Source-port and matched-run work are internal; current author invocations were independently run and preserved, but historical renderer/camera/material/golden assets, original invocation/timing logs and warmup/aggregation attestation, and the exact Apple-silicon model remain unavailable |
+| PR integration | PR #3374 is historically merged at `fa17fad`; as observed on 2026-07-18, the topic is `2ddd9f56`, `origin/release-6.20` is `75306efe770`, and the refs have 34 topic-only plus 5 target-only commits; PR #3377 remains `DIRTY` and its body overclaims the current result | #3377 is work in progress, not completion evidence |
+| Exact math | Contact-row signs and conventions are validated; row-operator versus impulse-test `W` has relative error `1.33e-16`; spectral-nullspace regressions pass | The tested algebraic path is supported |
+| Literal 25-stone exact trajectory | The reconstructed Native FourPointPlanar `1 um`-closure wedge arch completes 600 steps in every warmup and measured run at both one and four threads | Valid local non-paper exact-FBF evidence |
+| Colored inner BGS | The arch has 96 contacts, 24 colliding pairs/manifolds, 3 deterministic colors, and maximum color width 8 throughout | Four pinned workers execute the measured colored phases; one- and four-thread trajectories and outcomes match |
+| Local timing | Three measured 600-step runs per thread count give 1-thread mean `6.122883343333333 ms` and 4-thread mean `4.26939745 ms`, with validated speedup `1.4341328993236115x` | Both means meet 60 Hz; neither run set meets an every-step deadline |
+| Paper timing | The durable timing row is reconstructed float64 DART on x86-64 Linux, not the public Warp/Newton float32 workload, and the historical Apple host/timing protocol is unattested | Paper target and timing verdict remain null |
+| Current small CPU matrix | Current-source `paper_cpu`/Native bundle has 60 indexed artifacts, 27 complete pinned invocations, and 5,220 raw rows: all 9 physical classifiers pass, while 7/9 scenarios pass the strict solver and local real-time contracts | Valid current-source reconstructed evidence; zero warmups and unmatched paper contracts make every paper timing verdict null |
+| Literal 25-stone visual evidence | Finalized current-source bundle has 19 indexed artifacts / 21 physical files, five durable stills, a 61-frame decoded clip schedule, 600 zero-difference trace rows, and bound manual inspection | Valid reconstructed no-projectile, non-paper visual evidence; the 6.1 s clip is a 1.639344x time-lapse |
+| Incline visual evidence | Finalized `fig01_02_incline_current_v1` has 21 indexed artifacts / 23 physical files, five durable stills, a 61-frame decoded clip schedule, two independent 121-row traces, a passing manual inspection, and byte-identical aggregate exact-solve/fallback projections | Valid current-source DART threshold evidence only; capture contacts are 8 while the traces report 6 in aggregate, and `fig.01`, `fig.02`, and `video.03` remain partial |
+| Painleve proxy visual evidence | Finalized `current_v1` repository bundle has 27 indexed artifacts / 29 physical files, two 151-row tracked traces, fully decoded paired media, and bound manual inspection | Valid DART-side nonpaper proxy evidence only; rendered demos and tracked fixtures are not trace-equivalent, and no paper, external-solver, golden, timing, real-time, or strict-rest claim follows |
+| Backspin visual evidence | Finalized `fig03_backspin_current_v3` has 18 indexed artifacts / 20 physical files, three durable stills, MP4/GIF media, 129 exact attempts/solves, zero caps/failures/fallbacks, a corroborating translational trace, and a passing manual inspection of the renderer-applied high-contrast 6x4 ivory/charcoal checker texture and coral registration tile | Valid current-source DART evidence only; `fig.03` and `video.02_backspin` both remain partial |
+| Author-pinned turntable visual evidence | Finalized `fig04_turntable_author_current_v1` has 58 indexed artifacts / 60 physical files, four timeline-bound outcome stills, and all four 360-step author-configured cells; the current visual lane records three ejections and `mu=.5, omega=2` retained on support through 6 s | Valid author-source-pinned non-paper finite-horizon DART evidence only; zero slip, co-rotation, full-state equivalence, paper timing, approved-golden, and paper-parity claims remain unproven |
+| Author card-house construction | Finalized `card_house_author_5_construction_current_v1` has 12 indexed artifacts / 14 physical files and shows the public-author default five-level, 40-card configuration at step zero | Construction-only evidence: zero simulation substeps; no release, standing, trajectory, solver, contact-dynamics, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
+| Reconstructed crown impact | Frozen three-cube v1 completes 720 steps and contacts the arch before the ground, but fails exactness and far-field preservation gates | Valid scientific negative; impact claim is false and no parameter was tuned |
+| Card-manifold sensitivity | Current-source v2 compares only Native `Compact` versus `FourPointPlanar`; both emit 600 rows but have zero strict-success rows and accepted capped groups on every row | Integrity-valid reconstruction diagnostic; physical, timing, real-time, and paper verdicts are null |
+| Paper-media parity | The passing literal video has no projectile; paper impact media and 101-stone coverage remain incomplete, while the public author repository contains no renderer camera/material bundle or approved frame goldens | No paper impact, GUI, or golden-frame parity claim |
+| Evidence manifest | Current audit: 29 requirements, 24 `partial`, 5 `blocked`, 0 complete; the local visual inventory includes six finalized durable bundles and the visual workflow declares 17 schedules; the gate hashes repository artifacts, materializes bundle indexes, binds provenance, recomputes CPU claims, and enforces semantic boundaries | Honest overall status remains `partial` |
 
-```text
-v_tilde = v + mu ||v_t|| e_n
-```
+## Current Small CPU Matrix
 
-and requires `v_tilde` in the dual cone, `lambda` in the primal cone, and
-orthogonality between them.
+The repository-finalized current-source bundle is
+[`assets/dart_cpu_evidence/2026-07-19_current_source_paper_cpu_small_r7/`](assets/dart_cpu_evidence/2026-07-19_current_source_paper_cpu_small_r7/).
+It binds the runner, trace source, evidence binary, resolved runtime-library
+closure, all 27 CPU-4 invocations, 5,220 raw rows, and 60 indexed artifacts.
+Across three repetitions of each of the nine small reconstructed scenarios, all
+nine physical classifiers pass and seven satisfy both the strict solver and
+local real-time contracts.
 
-The solver splits the reduced inclusion into:
+The two strict negatives are deliberate evidence, not missing data. Incline
+`mu=.5` moves only `8.63436433e-7 m`, but one accepted-cap row per repetition
+raises its maximum residual to `1.4392081500753078e-6`. Turntable `mu=.5,
+omega=5` passes the physical ejection classifier in all three repetitions, but
+all three measured processes fail; they each contain one
+`max_iterations_accepted` row, and the maximum residual is
+`3.050386527672585e-4`. The run used zero warmups, and its precision, workload,
+hardware, scene/frontend, kernel, and timer contracts do not match the paper.
+Its local timings therefore cannot be used as an apples-to-apples paper
+comparison. Core r7 hashes are report
+`008bc94667893cd26bfc04a720caca3d3a5703601c8739bc06856f93818c63d5`,
+artifact index
+`06594c1e1cc3c6858bc78a80630aefb0e85eeef92204b0a09b99425411c3ebeb`,
+summary JSON
+`9137f1b2db0909a96897632a66617f2cfa58476a369d2adfe232b73e46cd0fa2`,
+and metadata
+`e227d7aef3b273ff81385f227f9e6766a7e40a622bc4298e1807b7c2068bc417`.
 
-- `A(lambda) = W lambda + v_free + N_K(lambda)`, a cone-constrained linear
-  response.
-- `B(lambda) = mu ||v_t(lambda)|| e_n`, the scalar non-associated coupling.
+## Durable Arch Performance And Scaling Evidence
 
-The outer loop is a Tseng-style forward-backward-forward iteration:
+The authoritative mark26 schema-v8 P-core performance/scaling bundle for the
+reconstructed literal arch is
+[`assets/dart_cpu_evidence/2026-07-19_mark26_native25_colored_v10_archwide_pcore/`](assets/dart_cpu_evidence/2026-07-19_mark26_native25_colored_v10_archwide_pcore/).
+It contains one successful warmup plus three successful measured 600-step
+trajectories for each of one and four threads, or 1,800 measured steps per
+thread count. `raw.csv` contains 4,800 rows because it preserves the warmups;
+the summary timings use only the 1,800 measured rows per thread count.
 
-1. Evaluate `v(lambda_k)` and the coupling `g_k = B(lambda_k)`.
-2. Solve a strongly convex cone QP with `W + gamma^-1 I` and frozen `g_k`.
-3. Evaluate `B` at the intermediate reaction.
-4. Correct explicitly by the coupling change and project back to the Coulomb
-   cone.
-5. Stop on a dimensionless Coulomb residual that separately measures primal
-   cone feasibility, dual cone feasibility, and complementarity gap.
+Across all measured steps:
 
-Important numerical details from the paper:
+- contacts remain 96 and colliding body pairs remain 24;
+- the colored schedule remains 24 manifolds, 3 colors, and width 8;
+- exact FBF succeeds on every step with maximum residual
+  `9.999807145410957e-7`;
+- exact failures, accepted caps, and fallbacks are all zero; and
+- the physical outcome contract passes and the one- and four-thread
+  trajectories are identical.
 
-- The outer step size `gamma` is algorithmic, not the time step.
-- The base step is `0.5 / (mu_max * lambda_max(W))`, with `lambda_max(W)`
-  estimated by about ten power iterations.
-- The safeguarded rule accepts a trial if the local coupling-variation ratio is
-  at most `0.9`, otherwise shrinks by `0.7`. Growth is asymmetric: no growth
-  inside a solve, and cross-step growth is capped by the safe base step.
-- The reported tolerance is `1e-6`; the implementation is single precision, so
-  tighter residuals would mostly test rounding noise on large contact sets.
-- Residual normalization uses fixed per-solve impulse and velocity scales:
-  `s_r = max(||lambda_0||, ||v_f|| / lambda_max(W), 1e-12)` and
-  `s_u = max(||v_tilde(lambda_0)||, ||v_f||, 1e-12)`.
-- The default inner solver is matrix-free block Gauss-Seidel, with 10 sweeps
-  per outer iteration and 30 on the arch. The outer architecture is intended
-  to allow other strongly convex SOCP solvers.
+| Threads | Mean ms | Median ms | p95 ms | Max ms | 60 Hz mean | Every step below 60 Hz | Validated speedup |
+| ---: | ---: | ---: | ---: | ---: | --- | --- | ---: |
+| 1 | `6.122883343333333` | `2.4966535` | `21.663236899999994` | `287.473818` | Pass | No | `1.0x` |
+| 4 | `4.26939745` | `1.9047965` | `14.396602399999995` | `180.504588` | Pass | No | `1.4341328993236115x` |
 
-See [paper-notes.md](paper-notes.md) for the retained source digest and
-[paper-parity-matrix.md](paper-parity-matrix.md) for the examples, figures,
-tables, and benchmark targets that DART needs to reproduce. See
-[PR_REPORT.md](PR_REPORT.md) for the PR-facing command and result summary,
-[residual-history-report.md](residual-history-report.md) for the current
-Figure 9 residual-history evidence, and
-[gui-capture-report.md](gui-capture-report.md) for the current one-step
-`dart-demos` GUI capture evidence. The GUI examples are run through the
-consolidated app with commands like
-`pixi run demos -- --scene fbf_paper_backspin`; the FBF Scene-tab explanation
-metadata is checked by `pixi run demos -- --verify-fbf-scene-docs`; bounded
-headless GUI smoke uses
-`pixi run capture fbf_paper_backspin /tmp/fbf_paper_backspin.png 640 480 1`
-followed by `pixi run image-verdict /tmp/fbf_paper_backspin.png`. For
-action-state GUI scaffolds, use `pixi run capture-action`; current examples
-include `fbf_paper_card_house_26 p` for the reduced four-projectile phase and
-`fbf_paper_masonry_arch_25 p` for the reduced crown-projectile scaffold.
+This supports local mean-real-time throughput and validated multicore scaling
+for this reconstructed arch. It is not a worst-case deadline guarantee and
+does not establish impact/media parity or an apples-to-apples paper result.
 
-## DART 6.20 Baseline
+Schema v8 preserves the default 83-column trace contract byte-for-byte. The
+newline-terminated default header SHA-256 is
+`396c866d782e626b5c5b52e74c392de1175f5e46dfd90b809d1f219417092e50`.
+The explicitly non-paper colored contract uses a separate 95-column trace;
+its newline-terminated header SHA-256 is
+`424195336cb42753179130c9f6fcba3a8ddea9bf669cfa70c0f77fcb4c6335a5`.
+Its final two columns harden the literal-arch outcome against a tracked-crown
+blind spot by recording maximum all-stone displacement and minimum all-stone
+orientation alignment from constructed t0. Both thread counts have the same
+measured-work fingerprint:
+`9d8df2edba609314432ff17f63768fded23577703537040d75ce082ab4233a36`.
+The trace binary SHA-256 is
+`0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff`.
 
-The current DART 6.20 contact path is the legacy `ConstraintSolver` /
-`BoxedLcpConstraintSolver` pipeline:
+Authoritative bundle file SHA-256 values are:
 
-- `ContactConstraint` contributes one normal row and two tangential rows per
-  contact when friction is enabled.
-- Tangential rows use ODE-style `findex` coupling with box bounds
-  `[-mu, +mu]` scaled by the normal impulse.
-- `BoxedLcpConstraintSolver` assembles a dense Delassus matrix by impulse
-  tests, solves with the configured boxed-LCP solver, and falls back to a
-  secondary solver when configured.
-- This representation approximates the Coulomb disk with two fixed tangent
-  directions. It does not represent the exact circular cone projection used by
-  the FBF paper and does not contain the De Saxce-Feng coupling.
+- `artifact-index.json`: `a60899cc12a53f03424c02c2647f233d5c75f3ccce367ea2a604f9a7ee18bf11`;
+- `metadata.json`: `5507ed80140a146d4247c4f0b05fd9503879ce79856189a15759b101c2cab789`;
+- `invocations.json`: `719ba3491fad8ac12aa290faa401d0c46b10af52da7eb7a28487a5b2aac44812`;
+- `raw.csv`: `91a379f832ca52bbce7011308640012d9f199b98e39cba4eaf661cf17fb0f017`;
+- `summary.csv`: `3c08b251c340aa9ae7909d715ebcc2985ba34350a6e03b0b6b351d82d1ec82a2`;
+- `summary.json`: `304736d6b871c4498a6c0de4c4448635e712fb3a8a455dd54d9ffefeef2ec170`; and
+- `REPORT.md`: `4e55d7f4dc0532ab15b86cfeb72ea9526d3f9b63194dc5a25f3974186b1a7ba7`.
 
-Therefore, replacing `DantzigBoxedLcpSolver` or `PgsBoxedLcpSolver` alone is
-not enough. FBF needs a separate contact-space solver family that can own the
-exact cone law while preserving the existing boxed-LCP default.
+## Current Literal-Arch Visual Evidence
 
-## Shared Components Landed
+The current-source bundle is
+[`assets/paper_evidence/fig07_arch25_literal/`](assets/paper_evidence/fig07_arch25_literal/).
+It binds an independently rendered off-screen capture to the current
+`fbf_paper_trace` workload with 600 compared rows and zero differences in all
+declared integer and floating-point fields.
 
-Current state note: a later slice added an incremental inner block-Gauss-Seidel
-solver and a default-on scratch-backed `ExactCoulombContactRowOperator`, which
-together cleared the 60/64-contact one-step card-house fallback boundary
-described below and made full natural contact manifolds solve one-step (card
-house 108 contacts clean in `2.5 s`). A subsequent slice replaced the
-approximate arch scaffolds' static-endpoint geometry with an author-faithful
-Rigid-IPC weighted-catenary port (`dart/math/detail/MasonryArchGeometry.hpp`,
-MIT, commit `23b6ba6fbf8`, all stones dynamic), under which the natural
-manifolds are 52 contacts (25-stone) and 204 contacts (101-stone), both clean
-one-step. The current open frontier is multi-step convergence: probing the
-full-manifold card-house settle across steps shows steps 2+ reaching
-122-138 contacts, cross-step warm-started, that still fall back at residuals
-`2.9e-6`-`1.5e-4`. See `AGENT_CONTINUATION.md` for the full current-state
-ledger; the 56/58/59/60/64-contact one-step boundary narrative and the
-approximate/static-endpoint arch description below are historical and
-superseded where noted.
+- The exact trajectory completes 600/600 steps with zero exact failures and
+  zero boxed-LCP fallbacks. Worst residual is
+  `9.9998071454109575e-7`.
+- All-stone displacement from constructed time zero is at most
+  `5.431169776791696e-6 m`; minimum orientation alignment is
+  `0.9999999999111284`.
+- The bundle contains 19 indexed artifacts / 21 physical files, including five
+  durable 1280x720 stills, a five-panel timeline, a 61-frame decoded H.264
+  schedule, and a separately decoded midpoint.
+- The video compresses 10 simulation seconds into 6.1 playback seconds at
+  10 fps, a `1.639344262295082x` time-lapse rather than real-time playback.
+- The five durable stills, the timeline, and the separately
+  decoded video midpoint passed manual inspection.
+- Finalization retained the immutable pending metadata and verified its hash
+  DAG before writing the final provenance, artifact index, and metadata.
 
-This branch adds reusable normal-first exact-Coulomb math utilities:
+The capture source, capture binary, numeric trajectory, and decoded media are
+unchanged. The 70-file raw capture staging directory was pruned after sealing;
+its schedule and hashes remain bound by provenance, while the five durable
+stills carry repository-visible frame evidence. A clean-checkout verify-only
+run therefore needs no ignored staging files. The bundle was freshly
+revalidated against the final current trace and Native source after later
+additive scenario work. Finalization regenerated the standing reference trace
+with the current executable and again proved all 600 standing rows
+zero-difference. Original trace hashes remain bound separately for capture
+provenance.
 
-- `dart/math/detail/CoulombCone.hpp`
-  - `projectCoulombConeNormalFirst([normal, tangent1, tangent2], mu)`
-  - `projectCoulombDualConeNormalFirst([normal, tangent1, tangent2], mu)`
-  - `computeCoulombConeResidualNormalFirst(...)`
-- `dart/math/detail/ExactCoulombContactProblem.hpp`
-  - `ExactCoulombContactProblem`
-  - `computeExactCoulombContactVelocityNormalFirst(...)`
-  - `computeExactCoulombAugmentedVelocityNormalFirst(...)`
-  - `computeExactCoulombContactResidualNormalFirst(...)`
-  - `estimateLargestExactCoulombDelassusEigenvalue(...)`
-- `dart/math/detail/ExactCoulombFbfSolver.hpp`
-  - `solveExactCoulombFrozenConeProjectedGradient(...)`
-  - `solveExactCoulombFrozenConeBlockGaussSeidel(...)`
-  - `computeExactCoulombDelassusDiagonalBlocksNormalFirst(...)`
-  - `computeExactCoulombFbfSafeStepSize(...)`
-  - `computeExactCoulombFbfCouplingNormalFirst(...)`
-  - `computeExactCoulombFbfCouplingVariationRatio(...)`
-  - `computeExactCoulombFbfResidualScales(...)`
-  - `solveExactCoulombFbf(...)`
-  - bounded opt-in `residualHistory` diagnostics for per-outer residual
-    convergence sampling
-- `dart/constraint/detail/ExactCoulombConstraintAdapter.hpp`
-  - `buildExactCoulombConstraintProblem(...)`
-  - `applyExactCoulombConstraintDelassus(...)`
-  - `applyExactCoulombConstraintImpulses(...)`
-- `dart/constraint/ExactCoulombFbfConstraintSolver.hpp`
-  - `ExactCoulombFbfConstraintSolver`
-  - `ExactCoulombFbfConstraintSolverOptions`
-  - boxed-LCP fallback diagnostics for unsupported or failed groups
-  - opt-in last exact solve residual-history diagnostics
+Final visual source, binary, workflow, and media SHA-256 values are:
 
-The residual helper reports the paper's dimensionless primal cone feasibility,
-dual cone feasibility, complementarity gap, and max residual for one contact or
-a product of contact cones. These helpers use DART's contact row order, handle
-zero friction explicitly, take explicit reaction/velocity scales, and have unit
-coverage in `tests/unit/math/test_CoulombCone.cpp`.
+- 12-function/16-case visual unit file: `f06ba295006cf7e1f0fb692fc5eacf62e4e7f3be89bd166c041752d915779bdd`;
+- driver: `0f4e27b0c58e9dd3774c6be48ad4c70a857e2956fd81f11710837561f08f7243`;
+- C++ capture source: `c3efeac52d02a0c373f733598db81e545d062195ba6e96c2a65bcb607cd0207f`;
+- capture binary: `8b3cad15220c8fdb69c3ebdf7fa3923fda6fd812a49d0e54c8aeb07e62f0a7e9`;
+- current trace source: `b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76`;
+- current trace binary: `0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff`;
+- original trace source: `2e55298496d76a3a3fe002fcfaf5391332fdcf2da813b5df400affbea431e7cd`;
+- original trace binary: `0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff`;
+- final `metadata.json`: `b217b0a43200ca558f09776e464d50f0f9dc5c5a175bcfa66ae1b656076871d1`;
+- retained `pending-metadata.json`: `e300103dbb950b97e217ca0bea6f1c1dc78598ddf485cdaca26cc7ad58835b3c`;
+- `manual-inspection.json`: `4b52bcd26ed88d184bd695d77070420aeec2c95edfb203efda7ae6241150c343`;
+- final `provenance.json`: `eca349842e4121584145cd039a554aa13c51e5242ff924b37f5f49a9dee0ac2f`;
+- final `artifact-index.json`: `4d173c78e2c6584d6d8a85867160cc0c0687fe0f35e6878f66b0cfcd7c1c15ee`;
+- current reference trace: `0e41af230fb4c27143966c3f8522702280e6746b31e84155a9a047326e46dbb3`;
+- trace equivalence: `537f6e497b6fb6810240f006db47c91304581741370e319787635e6bcbfdd2e3`;
+- frame validation: `a00dd7f4971756589ea834ac1a04f302ba8b7b7af96300d98e9cbc17413b3330`;
+- video: `e0c111f96511bbda41af145787bd9f68782b8c9e8a909d45eb03d3c3d647feb1`;
+- timeline: `926380c5c5768cc9ca1e414cbfe2631584daa99387090926d5a1f035d62b6ec9`; and
+- decoded midpoint: `75a88bb317441ed71803f784b2eaa099211c4e026f8547d6fe5f2ff3ee95909f`.
 
-The contact-problem helper keeps `W = J M^-1 J^T` matrix-free: callers supply a
-Delassus operator, while the reusable math layer owns contact-space velocity,
-De Saxce-Feng augmentation, residual assembly, and deterministic power
-iteration for the safe FBF base-step eigenvalue estimate. Focused coverage
-lives in `tests/unit/math/test_ExactCoulombContactProblem.cpp`.
+The allowed claim is narrow: this reconstructed float64 x86-64 literal arch
+remains standing and visually stable for the declared 600-step no-projectile
+run. It is not a projectile-impact result, a paper or author-scene parity
+result, a 101-stone result, or an author-golden image comparison.
 
-The FBF helper implements the paper's outer-loop structure, a matrix-free
-projected-gradient frozen cone-QP reference, and a reference contact-block
-Gauss-Seidel frozen cone-QP solver using per-contact 3x3 diagonal Delassus
-blocks plus matrix-free global products. It covers safe spectral step
-initialization, local coupling-variation acceptance, safeguarded shrink by
-`0.7`, explicit FBF correction, projection back to the Coulomb cone, the
-paper's fixed per-solve residual scales, and residual-based stopping.
-Residual-history recording is off by default and is bounded by an explicit
-sample cap when enabled, so normal solver use does not store per-outer
-diagnostics. Focused coverage lives in
-`tests/unit/math/test_ExactCoulombFbfSolver.cpp`.
-The helper itself remains an internal math path, but it is now exercised
-through the opt-in DART 6 constraint solver route described below. Production
-performance tuning, full paper-scene validation, and contact-manifold-level
-warm starts remain open.
+## Finalized Fig. 01/02 And Video.03 Incline Evidence
 
-The first DART 6 contact-assembly bridge now builds an exact-Coulomb contact
-problem from existing three-row contact-style `ConstraintBase` rows. It
-validates isotropic ODE-style friction rows, converts the boxed-LCP right-hand
-side into `v_free = -b`, assembles a dense Delassus snapshot with the same
-impulse-test mechanism used by `BoxedLcpConstraintSolver`, can apply solved
-reaction triples back through the original constraints, and now has a helper
-for applying the adapted Delassus operator through the retained constraint rows
-without reading that dense snapshot. Focused coverage lives in
-`tests/unit/constraint/test_ExactCoulombConstraintAdapter.cpp`, with real
-`ContactConstraint` smokes in `tests/integration/test_ConstraintSolver.cpp`.
-This is a staging bridge, not the final solver route: unsupported
-non-contact/scalar/anisotropic groups still need to remain on boxed LCP, and
-the production path still needs to remove dense snapshot dependence from
-seeding and recovery, add scratch reuse, harden split or mixed-group policy,
-and decide opt-in `World` exposure.
+The repository-finalized current-source bundle is
+[`assets/paper_evidence/fig01_02_incline_current_v1/`](assets/paper_evidence/fig01_02_incline_current_v1/).
+Finalization and clean-checkout verify-only pass with status
+`valid_current_source_nonpaper_incline`. The directory contains 23 physical
+files; its exact-membership index binds 21 artifacts because
+`artifact-index.json` and `metadata.json` are the two declared exclusions.
 
-The first opt-in DART 6 solver route now exists as
-`ExactCoulombFbfConstraintSolver`. It subclasses `BoxedLcpConstraintSolver`,
-attempts the adapter + FBF + block-Gauss-Seidel solve for supported
-isotropic contact groups, applies solved reaction triples through the original
-constraints, and falls back to the existing boxed-LCP group solve for
-unsupported or failed groups unless fallback is disabled in options. Focused
-coverage lives in
-`tests/unit/constraint/test_ExactCoulombFbfConstraintSolver.cpp`.
-It now carries a conservative warm-start cache: after a successful exact solve,
-the next solve reuses the previous reaction only when the constraint pointer
-sequence is identical, projects that cached reaction back into the current
-Coulomb cones, and exposes diagnostics for whether warm start was used and how
-many outer FBF iterations ran.
-The opt-in solver also now has a reference robustness retry: if the default
-contact-block Gauss-Seidel frozen cone solve fails the exact-FBF outer solve,
-it can retry the same exact problem with the matrix-free projected-gradient
-frozen cone solver. When the block-GS FBF attempt reaches a finite
-near-converged reaction, the projected-gradient retry now continues from that
-reaction instead of restarting from the cold row guess. This is slower than
-the paper-style block-GS route but keeps unsupported groups on the existing
-boxed-LCP fallback and has focused unit coverage in
-`test_ExactCoulombFbfConstraintSolver.cpp`. The solver exposes the last
-exact-Coulomb residual components and projected-gradient retry diagnostics so
-contact-rich failures can distinguish primal cone, dual cone, and
-complementarity errors. It also has a bounded dense residual-polish attempt
-for failed solves after block-GS FBF and projected-gradient retry have not
-reached tolerance. This polish path is a DART 6 dense-prototype recovery aid,
-not the paper-style matrix-free route; it is covered by a focused solver
-regression and currently improves failed card-house residual reporting without
-clearing the 60-contact boundary. The solver can also retain bounded
-residual-history samples for the last exact solve when explicitly requested
-by tests or benchmark/example trace tools.
-The solver also has an opt-in `useMatrixFreeDelassusOperator` route that uses
-the adapter's constraint-row Delassus helper for FBF `W*x` products. Focused
-adapter tests, a synthetic solver test, and a one-contact `World` smoke verify
-this route against the dense snapshot on small cases. This is partial
-matrix-free integration only: the DART 6 bridge still assembles and retains the
-dense snapshot for current staging and prototype dense residual polish. A new
-benchmark/staging option, `useMatrixFreeDelassusSeed`, lets the solver seed
-zero contact guesses from operator-extracted local diagonal Delassus blocks
-when the matrix-free product route is requested; this removes the dense global
-seed from that opt-in route but does not remove dense assembly. The card-house
-cap probe can request this route with benchmark-only
-`use_matrix_free_delassus_operator` and `use_matrix_free_delassus_seed`
-arguments and records both requested options plus whether the solver used the
-operator product and operator seed. Reduced-card probe rows confirm matching
-residual behavior on 16/32/40-contact capped rows, but the repeated
-impulse-test product route is much slower than dense multiplication and is not
-the final paper-style performance path.
-An opt-in `World` smoke in `tests/integration/test_ConstraintSolver.cpp`
-installs this solver through `World::setConstraintSolver`, runs a capped
-single-contact box/ground scene, checks exact-path diagnostics and residual,
-and performs a bounded one-step state comparison against the default boxed-LCP
-path.
-The first paper-parameter fixture now lives in
-`tests/integration/test_ExactCoulombFbfPaperFixtures.cpp`: it recreates the
-incline cube threshold with slope `atan(0.5)`, `dt = 1/60`, `T = 2 s`, and
-`mu = 0.5`/`0.4`, checks stick/slide behavior against the analytical
-displacement, records per-step exact-path residual/fallback diagnostics, and
-runs the same setup through the existing boxed-LCP solver as the DART 6
-baseline.
-The same test file now also covers the backspin sphere fixture with
-`r = 0.25 m`, `v0 = 4 m/s`, `omega0 = -200 rad/s`, `mu = 0.5`, and
-`dt = 1/60`, checking convergence to the analytical rolling state
-`v_inf = -11.429 m/s`, `omega_inf = -45.71 rad/s` while keeping boxed-LCP as a
-finite DART 6 baseline and checking the sampled exact residual trace.
-It also now covers the turntable capture/ejection grid from Figure 4:
-`mu = 0.2` with `omega = 2` and `5` ejects, while `mu = 0.5` with
-`omega = 2` captures and `omega = 5` ejects. This is a headless
-classification regression with DART boxed-LCP finite-baseline runs and sampled
-exact residual trace checks; it is not yet the full radial-trajectory, visual
-snapshot, residual-convergence plot, or timing report from the paper.
-The same integration file now includes a Painleve-style proxy fixture for
-Figure 5. The paper gives qualitative outcomes for a sliding box at
-`mu = 0.5` and `mu = 0.55`, but does not publish the exact scene parameters;
-the authors' code repository is still not anonymously readable in this
-environment. The proxy therefore uses a slightly leaned tall box on a rough
-horizontal plane, verifies that the `mu = 0.5` exact run slides/rests upright,
-verifies that the `mu = 0.55` exact run reaches the tumble threshold after a
-shorter travel distance, and keeps the existing DART 6 boxed-LCP solver as a
-finite baseline while checking the sampled exact residual trace. This is not
-yet author-scene parity and should be replaced or backed by the paper
-implementation if the scene becomes available.
-The first in-tree timing harness now lives in
-`tests/benchmark/integration/bm_exact_coulomb_fbf_paper.cpp`. It registers
-Google Benchmark rows for the small incline, backspin, turntable,
-Painleve-proxy, reduced-contact 26-card one-step, and reduced-contact 26-card
-settle/projectile scaffold scenes under both the opt-in exact-Coulomb FBF
-solver and the existing DART 6 boxed-LCP solver. The FBF rows report exact
-solve counts, warm starts, exact-FBF failure counts, boxed fallback counts,
-contact counts, and max sampled residual so timing output cannot silently hide
-a failed exact solve. This is DART-side
-timing infrastructure only; it is not yet a paper hardware match, external
-Kamino/MuJoCo comparison, or contact-rich benchmark result.
-The first headless trace exporter now lives in
-`tests/benchmark/integration/fbf_paper_trace.cpp`. It emits CSV rows for the
-same small paper fixtures under either `exact_fbf` or `boxed_lcp`, including
-body state, contact count, exact solve/warm-start/fallback counters, residual,
-and exact-path status. It also covers the reduced-contact 26-card card-house
-and 25/101-stone masonry-arch scaffolds as one-step top-card/crown-stone trace
-probes. The optional sixth argument accepts `dynamic_bodies` or `full_scene`
-to emit one row per mobile body instead of only the representative tracked
-body, which gives scene-level CSV state rows for the reduced contact-rich
-scaffolds. The same sixth argument accepts `residual_history` for exact-FBF
-runs; that scope emits bounded per-outer residual rows for retained exact-solve
-records, including multiple exact groups from one `World::step()` when the
-solver is configured to keep them. The dedicated scenario
-`card_house_26_settle_projectile_reduced_contact` accepts `phase_summary` as
-the sixth argument and emits initial, settle, and projectile rows for a bounded
-two-step reduced 26-card scaffold. This is a comparison artifact producer for
-later trajectory/residual parity work; it is not an installed API, visual
-snapshot, paper-hardware timing report, or external-baseline comparison.
-The first contact-rich scaffold now exists as an enabled compiled test in
-`tests/integration/test_ExactCoulombFbfPaperFixtures.cpp`:
-`CardHouseAFramePrecursorStands`. It builds a two-card A-frame with
-`mu = 0.8` as a minimal Fig. 6 precursor. Earlier runs with a `1200` outer cap
-and relaxed `1e-5` tolerance fell back on most steps (`59` boxed-LCP fallbacks
-over `60` steps, final residual about `3.7e-5`) and showed a dual-feasibility
-dominated gap. Raising only the contact-rich precursor budget to a `5000`
-outer cap and the paper `1e-6` tolerance makes the two-card A-frame solve with
-zero boxed-LCP fallbacks, so it is now an enabled regression.
+- The combined capture retains five durable 660x506 stills and a 61-frame
+  decoded H.264 schedule at 30 fps. The 70-file raw capture staging directory
+  is pruned after sealing, so verify-only needs no ignored staging. It records
+  240 exact attempts/solves, zero accepted caps,
+  exact failures, or boxed-LCP fallbacks, and worst residual
+  `9.999836962261359e-7`. It reports eight contacts per post-initial step.
+- The independent `mu=.4` and `mu=.5` traces each contain 121 rows, 120 exact
+  solves, 119 warm starts, zero fallbacks, and three contacts per
+  post-initial step. Both preserve continuous post-initial tracked contact.
+- At `mu=.4`, downhill displacement is `1.7686892884927794 m` versus the
+  analytical `1.7548661487418349 m`; final downhill speed is
+  `1.7544655347780056 m/s`, and maximum residual is
+  `9.986952135669881e-7`.
+- At `mu=.5`, downhill displacement is `0.0008905412965980523 m`, maximum and
+  final stick speed are `0.001116442058867632 m/s`, and maximum residual is
+  `9.997210606407098e-7`. The two tracked outcomes are separated by
+  `1.7677987471961814 m` of downhill displacement.
+- The capture and summed traces have byte-identical projections only for
+  `step`, cumulative exact solves, and cumulative boxed-LCP fallbacks, at
+  SHA-256
+  `f03dff0aaec5f0fa6615609c2ea97aa31f072c14c6212fffe15858ea969d88c2`.
+  Capture contact count 8 does not match aggregate trace contact count 6, so
+  `contact_count_match=false` and `contact_counts_compared=false`.
+  Full-state, residual, status, warm-start, per-cell, and full-trace
+  equivalence are not claimed; the combined renderer and independent tracked
+  traces use different placements.
 
-The first four-level, 26-card Fig. 6 scene scaffold also exists as the enabled
-construction regression `CardHouseFourLevelSceneBuilds`. It constructs the
-paper's plate count using four base A-frames, 3/2/1 support cards, and 3/2/1
-upper A-frame rows. The scene remains approximate until the authors' files are
-available. A manual one-step exact-FBF probe did not finish within 30 seconds
-on the current dense Delassus prototype, so the next card-house blocker is
-paper-style matrix-free/scratch contact solving, not just more fixture
-layering. A reduced-contact dynamic rung now exists as
-`CardHouseFourLevelOneStepReducedContactProbe`: it runs one exact-FBF step on
-the same 26-card world with a practical default `max_contacts = 56` and
-`max_contacts_per_pair = 1`, `step_size_scale = 10`,
-`outer_relaxation = 1.5`, records residual/iteration/timing properties, and
-passes locally after the paper residual-scale update at residual `2.218e-16`
-with 3 exact solves, zero boxed-LCP fallbacks, zero exact-FBF failures,
-last-group FBF iterations `0`, max group FBF iterations `1908`, and total FBF
-iterations `1908`. The DART 6 contact adapter gives zero contact-row guesses a
-residual-selected projected local/global Delassus cold-start seed with a
-diagonal fallback, which preserves explicit row guesses and later solver warm
-starts while improving the dense card-house cold start. The FBF loop recovers
-the configured base step after an accepted shrink instead of permanently
-pinning the step to an early reduced value, and the optional outer-relaxation
-knob lets the reduced card-house rung over-relax accepted corrections without
-changing the core solver default. The benchmark-only
-`fbf_paper_card_house_probe`
-helper records CSV rows for contact-cap, option, FBF step-size, and
-outer-relaxation diagnostics. It also reports best residual/best iteration for
-last and failed exact-FBF attempts, and now has a benchmark-only switch for
-the opt-in constraint-row Delassus product route. It confirmed 56 contacts as the
-practical clean default rung at a 30000 outer-iteration card-house budget at
-the time; this is superseded (see the note at the top of this section) now
-that the full natural manifold (108 contacts) solves clean one-step.
-After switching the FBF residual to the paper's fixed per-solve scales, 56
-contacts remains clean (`4971.0 ms`, max FBF iterations `1908`), 58 contacts
-remains clean but slow (`68879.1 ms`, one projected-gradient retry), and 59
-contacts remains clean but too slow (`76402.9 ms`, one projected-gradient
-retry, max FBF iterations `7888`). The 60-contact row was the one-step
-fallback boundary at `step_size_scale=10` at the time (superseded: the
-incremental inner solver and contact-row operator now clear this boundary and
-the full 108-contact manifold solves clean, per the note at the top of this
-section). A history-enabled cap-probe
-run retaining 30001 samples confirms the 60-contact failed group reaches
-iteration 30000, moves from residual `1.146e-5` to pre-polish history residual
-`5.338e-6`, and then dense-polishes the failed final residual to the best
-failed residual `5.334e-6` at iteration `29355` with tail ratio `1.0000019`.
-The current failure is slow near-cap dual convergence above the `1e-6`
-paper-scaled tolerance, not a discarded converged iterate, missing final
-success row, or renderer/reporting issue. Earlier 60-contact option probes
-with `step_size_scale=12` and `outer_relaxation=2.0` did not clear the
-boundary under the previous unit-scaled residual and need rechecking only if
-that option path becomes active again.
-The first dense-vs-matrix-free product probe rows show that the current
-constraint-row route is correctness-compatible but not performance-ready: 16
-and 32 contacts solve with the same iteration counts as dense rows while taking
-`324.2 ms` versus `24.4 ms` and `3203.0 ms` versus `170.4 ms`; a 40-contact
-1000-outer capped row fails at the same `3.966e-5` residual while taking
-`18937.8 ms` versus `1057.4 ms`. A later operator-seed diagnostic rebuilt the
-probe and ran final-code 16-contact matrix-free rows with
-`use_matrix_free_delassus_seed=0` and `1`: both solved exactly with residual
-`3.212e-16`, `336` total FBF iterations, and matching state diagnostics, while
-the CSV proved `matrix_free_delassus_seed_used` toggled from `0` to `1`
-(`354.1 ms` versus `354.5 ms`). Larger `32,40` and `56,60` row attempts with
-the repeated impulse-test product were stopped by a 120 s bound before the
-first CSV row, so the current blocker is still product cost/scratch design, not
-seed selection. A solver-side batched scatter/gather product was investigated
-and rejected in this slice because the generic `ConstraintBase` API does not
-expose enough touched-body bias-impulse propagation to make it safe without a
-broader dynamics API change.
-The 64-contact row still has
-no clean no-fallback result; the latest recorded 64-contact diagnostic failed
-after 30000 outer iterations with failed dual residual `6.955e-6` and one
-boxed-LCP fallback. This is useful progress against the contact-rich blocker,
-but it is not the full Fig. 6 contact budget or dynamic parity. The trace
-exporter now supports
-`card_house_26_reduced_contact` for the same reduced-contact cap; exact-FBF and
-boxed-LCP smoke commands emit one-step rows for `card_house_l3_f0_left_body`,
-with the exact row reporting 56 contacts, 3 exact solves, zero fallbacks,
-residual `2.218e-16`, and `success`. This is a top-card trace sanity check,
-not the paper's full 6.7 s settle trace, projectile sequence, or convergence
-plot.
-The optional `dynamic_bodies` scope now emits 26 mobile-card rows at each
-sample; the one-step exact-FBF full-scene smoke reports 56 contacts, 3 exact
-solves, zero fallbacks, residual `2.218e-16`, and `success`. The
-`residual_history` scope emits 1911 rows across the three exact groups on the
-same one-step reduced scene: one 54-contact group ending at iteration `1908`
-with residual `9.943e-7` and two one-contact groups already below tolerance at
-iteration 0. Individual and combined reduced-scaffold Figure 9-style SVG plots
-now exist, but paper-matched comparison plots, long-run histories, and
-full-contact histories remain open.
+Core finalized SHA-256 values are metadata
+`7a5f973a9b7264911058ec91e253dfcf5d72a7ec46fa7020df0020af1a259b7d`,
+artifact index
+`b758bd28965bf9a96be7668c0dbb738b72c1493d83f195a3e726ae891f8f6e85`,
+manual inspection
+`3c3af65d62c629ae836302910a2fe7f928ab398628f280221f6d0b5d94d5a848`,
+trace summary
+`4df130e878f1e58d478870c8f132ee165061a752520e926f44c331d32f14f20d`,
+verification
+`2681073ee44f7fecd2782081826b414ee6541bb930149ced91f60a17dc2416d5`,
+report
+`f75efcd40bd0452bcbdc7bbc82eee0fdbd78d7a1059f974e83999467b1688fa5`,
+panel
+`f9f211fb376c97d98bccc67806ba3e1c9905d7d27764c794e1c480af7b4df9d3`,
+and clip
+`ad6d00ae6a614b0edbc836396c30621b589295a0eec826d060663f6782cee3f9`.
+The `mu=.4` and `mu=.5` trace hashes are respectively
+`449acf19feef2e0aa7fb04bb9f45f865727ba59f626b3964114cd900169ecd8a`
+and
+`2b30e8033b123876ad1cdea755741fd230a4d72d3747e55b907e6427962659c5`.
+Finalizer/test, visual-runner/test, demo-source/binary, trace-source/binary,
+fixture-source, and resolved-libdart hashes are respectively
+`705da2a308697b4b4b923894d10f23622310e024aeab49862a24593c79142e23`,
+`02f3800cf7cf5df5d85b1950512e78df6e413fea42cfa89880775f010d208e1c`,
+`d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432`,
+`6e378252fa6a7cb51c6813c9d5a2b30b8c8129eacdb01df0ee19a58a270cbc5e`,
+`84fd1330a13d548760e537f9734790ab1b5c91fcda3e446bf76b9b36f3e1aa99`,
+`d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4`,
+`b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76`,
+`0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff`,
+`a4bed7372213d544fef62923b88bc9accee7086165d7b3cb20245bee8bade05f`,
+and
+`8fae2320858e49fdda309d89df8cb1158c1cc5dc11d345e14f5adca0ff63cf3d`.
 
-A reduced settle/projectile phase scaffold now exists but remains deliberately
-bounded. `CardHouseFourLevelSettleProjectileScaffoldRuns` launches four
-projectiles after one settle step at a 16-contact smoke cap so CTest has a fast
-guard for the phase wiring. The trace scenario
-`card_house_26_settle_projectile_reduced_contact` runs the same phase shape at
-the promoted 56-contact reduced cap: the exact-FBF phase-summary smoke emits
-initial, settle, and projectile rows, ends with 26 cards, 4 projectiles, finite
-state, 56 contacts, 6 exact solves, zero fallbacks, residual
-`4.8919831295901383e-17`, and `success`. The matching boxed-LCP trace also
-emits phase rows. Benchmark rows
-`card_house_26_settle_projectile_reduced_contact_boxed_lcp` and
-`card_house_26_settle_projectile_reduced_contact_exact_fbf` are registered; the
-latest exact-FBF row ran in `12057 ms` with 56 contacts, 6 exact solves, zero
-failures/fallbacks, max FBF iterations `3631`, total FBF iterations `5539`, and
-max residual `2.218e-16`. The GUI scene `fbf_paper_card_house_26` has a
-Scene-panel control to launch the same four projectiles. This is not the
-paper's 6.7 s no-creep settle, real projectile-impact outcome, full-contact
-run, long-run trace, paper snapshot, or timing parity.
+This visual/trace result does not erase the separate strict
+`paper_cpu`/Native result: `mu=.5` moves only `8.63436433e-7 m` there, but one
+accepted cap per repetition raises the maximum residual to
+`1.4392081500753078e-6`, so its strict solver/local-real-time contract remains
+failed. Fig. 1, Fig. 2, and video.03 remain `partial`: the full friction sweep
+and plot, matched external-solver rows, approved source golden/diff, paper
+contact-count match, full 11 s semantic edit, paper timing, and real-time
+parity remain unproven.
 
-The first 10-level card-house scaffold now exists as
-`CardHouseTenLevelSceneBuilds`, benchmark row
-`card_house_10_construction_boxed_lcp`, and GUI scene
-`fbf_paper_card_house_10`. It builds the triangular 10-level construction with
-155 cards plus ground. The GUI scene is intentionally static and defaults to
-boxed-LCP diagnostics because exact-FBF dynamics for this contact-rich scene are
-not implemented yet; the Scene panel explains that limitation. The boxed-LCP
-one-step construction benchmark reports 155 cards, 512 contacts, zero exact-FBF
-solves, and `1010 ms` local smoke time. This is construction/default-solver
-evidence only, not the paper's dynamic 10-level stand/topple comparison,
-residual trace, timing parity, external baseline, or snapshot evidence.
+## Finalized Painleve Proxy Visual Evidence
 
-The first 25-stone masonry-arch scaffold now exists as
-`MasonryArch25SceneBuilds` and `MasonryArch25OneStepReducedContactProbe`, plus
-benchmark rows and GUI scene `fbf_paper_masonry_arch_25`. It was originally an
-approximate DART-side scaffold with static endpoint supports and 23 dynamic
-interior stones, not the author's Rigid-IPC geometry; this is superseded by
-the author-faithful Rigid-IPC weighted-catenary port noted at the top of this
-section, which makes all 25 stones dynamic and produces a 52-contact natural
-manifold. The default
-one-step exact-FBF probe now uses `max_contacts = 48` and
-`max_contacts_per_pair = 2` with a 20000 outer-iteration arch budget; the
-latest XML probe passes with `step_size_scale = 10`, residual
-`9.9650461738801354e-07`, one exact solve, zero exact-FBF failures, zero
-boxed-LCP fallback, and `2645` FBF iterations (`6693.7547709999999 ms`). This
-is a reduced-contact Fig. 7 scaffold
-only. The trace exporter can now emit
-one-step exact-FBF and boxed-LCP crown-stone rows for
-`masonry_arch_25_reduced_contact`, and the benchmark-only
-`fbf_paper_arch_probe` records higher cap diagnostics. Current probe rows show
-49/2 still produces only 48 actual contacts with this approximate geometry,
-64/4 solves in `31118.9 ms`, 80/4 solves in `117628.4 ms`, and 100/4 did not
-produce a row under a 120 s timeout. Full author geometry, pinned/projectile
-physical outcome, a bounded 100-contact row, long-run traces, snapshots, and
-timing remain open. The optional `dynamic_bodies` trace scope emits 23
-mobile-stone rows at each sample for the reduced scaffold.
+The repository-finalized current-source bundle is
+[`assets/paper_evidence/fig05_painleve_proxy_current_v1/`](assets/paper_evidence/fig05_painleve_proxy_current_v1/).
+It replaces the Painleve cells from the older session-local `/tmp` visual
+matrix as the durable DART-side proxy evidence. Finalization and clean-checkout
+verify-only both pass with status `valid_current_source_nonpaper_proxy`, 27
+indexed artifacts, and 29 physical files; ignored capture staging is not
+required.
 
-The same approximate 25-stone arch now has a reduced crown-projectile scaffold.
-`MasonryArch25ProjectileScaffoldRuns` launches one reduced sphere toward the
-crown after a bounded settle step and passes in about `10611 ms` with finite
-state, one projectile, residual at tolerance, zero exact-FBF failures, and zero
-boxed-LCP fallback. The new trace scenario
-`masonry_arch_25_projectile_reduced_contact` emits tracked projectile rows and
-optional `dynamic_bodies` rows; the exact-FBF one-step trace ends with 48
-contacts, one exact solve, zero fallbacks, residual
-`9.9901843912475669e-07`, and `success`. The benchmark rows
-`masonry_arch_25_projectile_reduced_contact_boxed_lcp` and
-`masonry_arch_25_projectile_reduced_contact_exact_fbf` are registered; the
-focused exact-FBF row reports `4921 ms`, 48 contacts, one exact solve, zero
-failures/fallbacks, max residual `999.018n`, and `2205` FBF iterations. The
-GUI scene exposes a `Launch projectile` button and `p` key action. This is a
-reduced GUI/test/trace scaffold only; it does not prove the paper's arch
-post-impact physical outcome.
+- The artifact index binds 27 files by exact membership, byte size, and
+  SHA-256. The durable member and paired clips each fully decode to 76 frames;
+  the synchronized pair is 1320x530 at 30 fps. Raw capture frames are pruned
+  after sealing.
+- Both separately tracked fixtures complete 150 steps and write 151 rows with
+  zero exact failures and zero boxed-LCP fallbacks. The maximum tracked
+  residual is `9.998574150559113e-7`.
+- At `mu=.50`, the tracked box remains upright and reaches its settled proxy at
+  `x=1.298081699724907 m`, with final `up_z=0.999998178998452`.
+- At `mu=.55`, the first fixture-defined tumble occurs at step 36,
+  `t=0.6000000000000002 s`, and `x=1.2597198197697048 m`, which is
+  `0.03836187995520213 m` before the `mu=.50` rest distance.
+- Recorded manual inspection confirms that the rendered `mu=.50` member
+  returns upright and the `mu=.55` member tumbles and remains visually
+  horizontal. The physical trace, not the paired panel alone, supports the
+  shorter-pre-tumble-distance classifier.
 
-The first 101-stone masonry-arch scaffold now exists as
-`MasonryArch101SceneBuilds` and `MasonryArch101OneStepReducedContactProbe`,
-plus benchmark rows, trace rows, and GUI scene
-`fbf_paper_masonry_arch_101`. It originally used the same approximate
-DART-side arch construction with static endpoint supports; this is superseded
-by the same author-faithful Rigid-IPC geometry port, which produces a
-204-contact natural manifold. The default one-step exact-FBF probe now uses
-`max_contacts = 38` and
-`max_contacts_per_pair = 2` with a 20000 outer-iteration arch budget; the
-latest XML probe passes with `step_size_scale = 10`, residual
-`9.9001648754006507e-07`, one exact solve, zero exact-FBF failures, zero
-boxed-LCP fallback, and `3912` FBF iterations (`2458.3270210000001 ms`). This
-is a reduced-contact Fig. 8 scaffold only. The new
-`fbf_paper_arch_probe` invalidates the older 39/2 fallback-boundary note:
-39/2, 40/2, 48/2, 56/2, 64/2, 80/2, and 100/2 all solve without fallback on
-the current approximate one-step scaffold; the 100/2 row takes `56137.1 ms`
-and ends at residual `9.9444848815471616e-07`. Full author geometry, long-run
-balance outcome, full-contact physical parity, long-run traces, snapshots, and
-timing remain open. The
-optional `dynamic_bodies` trace scope emits 99 mobile-stone rows at each sample
-for the reduced scaffold.
-The `residual_history` trace scope now retains up to 22000 samples and emits
-2646 data rows for the reduced 25-stone 48-contact exact group and 3913 data
-rows for the reduced 101-stone 38-contact exact group, ending at residuals
-`9.9650461738801354e-07` and `9.9001648754006507e-07` respectively. These are
-one-step reduced-scaffold convergence artifacts, not full paper plots.
-GUI work for this dev task is not limited to registering scenes. If the
-paper-parity examples need richer OSG rendering, reusable ImGui widgets,
-camera/snapshot capture, overlays, or inspection controls to be self-contained
-and visually verifiable, those viewer improvements are in scope for the FBF
-task.
-The FBF scenes also carry catalog-level Scene-tab documentation metadata, and
-the shared `dart-demos` host renders that metadata before the scene-specific
-controls. `pixi run demos -- --verify-fbf-scene-docs` can fail fast if any
-`fbf_paper_*` scene loses its overview, expected-result, or coverage text, and
-the same text is visible in the GUI rather than living only in a verifier.
-The current one-step GUI capture smoke is recorded in
-[gui-capture-report.md](gui-capture-report.md). It shows all nine
-`fbf_paper_*` scenes with the `Scene` tab visible and passing non-blank image
-verdicts, but it is not paper snapshot parity.
-For scene states exposed through a key action, the demo host now supports
-`--headless-action <key>` and Pixi exposes `capture-action`. The current
-26-card phase-scaffold GUI evidence uses
-`pixi run capture-action fbf_paper_card_house_26 p
-docs/dev_tasks/fbf_exact_coulomb_friction/assets/gui_captures/fbf_paper_card_house_26_projectiles.png
-1280 720 0` followed by `pixi run image-verdict` on that PNG. The saved
-projectile capture shows the four launched spheres beside the reduced
-card-house scaffold with the Scene-tab explanation visible, and the verdict
-JSON passes the default non-blank gate. This is still a reduced GUI smoke, not
-paper-matched Fig. 6 snapshot parity.
-The current 25-stone arch projectile GUI evidence uses
-`pixi run capture-action fbf_paper_masonry_arch_25 p
-docs/dev_tasks/fbf_exact_coulomb_friction/assets/fbf_paper_masonry_arch_25_projectile.png
-1280 720 0` followed by `pixi run image-verdict` on that PNG. The saved
-capture shows the reduced projectile at the crown, visible Scene-tab
-overview/expected/coverage text, and the shared diagnostics widget correctly
-reports `not run yet` before the first exact solve. This is still a reduced
-GUI smoke, not paper-matched Fig. 7 snapshot parity.
-This still keeps the default DART 6 solver unchanged and retains the dense
-snapshot for key prototype paths; it is not yet full paper fixture parity,
-contact-manifold warm-started, fully matrix-free at the DART integration
-layer, or optimized.
+The verified current-source source/binary SHA-256 values are:
 
-## DART 7 Candidate Ports
+- finalizer: `31b2b560a3a6a7f06e514a8bc3dce9f4b766b3c4e62fe520435bfaa1e3ba77a9`;
+- visual runner: `d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432`;
+- visual runner test: `6e378252fa6a7cb51c6813c9d5a2b30b8c8129eacdb01df0ee19a58a270cbc5e`;
+- demo source: `84fd1330a13d548760e537f9734790ab1b5c91fcda3e446bf76b9b36f3e1aa99`;
+- demo binary: `d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4`;
+- trace source: `b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76`;
+- trace binary: `0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff`; and
+- fixture source: `a4bed7372213d544fef62923b88bc9accee7086165d7b3cb20245bee8bade05f`.
 
-Use `origin/main` as the comparison source, not a machine-local path.
+Final bundle SHA-256 values are:
 
-Useful candidates:
+- `metadata.json`: `0845988dd05b18c965eba5fb5163d43dafc901ca8f30f66b01b4f37163d72f30`;
+- `artifact-index.json`: `7880c62d39c3f47109b50394cd84e20919565b70af19c1473c618841f682ff43`;
+- `manual-inspection.json`: `27c2632e427ec83b3612de6003cd16523fd483ab066d6618f9cdee38efdd2d0c`;
+- `trace-summary.json`: `115b50d92338477022435911df38d53a54e880c1daed4004dedd7d8507336164`;
+- `verification.json`: `6fd34e54f7958c45777731ab888fe3a5e8e24d06b9fdddb96bdace269fcb515e`;
+- paired panel: `bef97d04d59e2937195151cbf36a0b713bb2c2bef43d111513c05885595546e2`;
+- paired clip: `dd4cdda2410b71f8e86035f1c0ff278f9dda77133c702e409ee5d533da443a4b`; and
+- `REPORT.md`: `a04c37f9f3db428994252c8486030aa6b97b367a627fc3a1a22106dfa8a9f51f`.
 
-- `dart/math/lcp/*`: solver interface, problem classification, validation, and
-  Dantzig/PGS solver modernization. This is useful infrastructure, but it is
-  still boxed-LCP oriented and does not implement FBF.
-- `dart/simulation/detail/rigid_contact/boxed_lcp_contact.*`: clean DART 7
-  rigid contact assembly with an explicit Delassus snapshot and `J` matrix.
-  The assembly pattern is useful evidence for a DART 6 FBF contact-problem
-  builder, though DART 6 lacks the same ECS `World` pipeline.
-- `dart/simulation/world_options.hpp`: `ContactSolverMethod` demonstrates a
-  minimal public option shape in DART 7. DART 6 should not copy this wholesale,
-  but it is useful when deciding eventual opt-in exposure.
-- `dart/common/memory_manager` and solver scratch patterns: useful for the
-  no-allocation and warm-start requirements once the FBF loop exists.
-- Native collision additions on `main` that are still missing or incomplete on
-  `release-6.20`: collision world, AABB-tree/spatial-hash/sweep broadphases,
-  persistent manifold cache, CCD/raycast support, and denser SDF fields. These
-  matter for paper-parity contact-rich scenes.
+The scientific claim boundary remains strict: the rendered demo and tracked
+fixture are separate proxy implementations and are not trace-equivalent.
+Angular velocity is not exported, so strict rigid-body rest is not proven.
+This bundle does not establish author-scene or paper parity, faithful
+external-solver parity, an approved source golden/diff, paper timing, or
+real-time performance.
 
-Non-candidates for DART 6.20:
+## Finalized Fig. 03 And Video.02 Backspin Evidence
 
-- CUDA-specific kernels and GPU-only execution paths. The user explicitly
-  excluded CUDA for this release-lane work.
-- DART 7 ECS `World` plumbing as a wholesale backport. The release branch
-  compatibility surface is different, and gz-physics integration still depends
-  on the legacy `ConstraintSolver` path.
-- Rigid-IPC friction as a direct substitute. It is a smoothed/lagged
-  barrier-friction formulation, whereas FBF targets the exact reduced law.
-  Its scratch, stats, and friction-iteration patterns are still useful.
+The repository-finalized current-source bundle is
+[`assets/paper_evidence/fig03_backspin_current_v3/`](assets/paper_evidence/fig03_backspin_current_v3/).
+Its exact-membership index binds 18 artifacts in a 20-file physical directory.
+The MP4/GIF media preserve the full motion schedule, and three durable stills
+retain steps 0, 1, and 2 where the checker orientation changes are easiest to
+inspect. The 140-file raw capture staging directory is pruned after sealing,
+so clean-checkout verify-only needs no ignored staging. The capture records 129
+exact attempts and solves, zero accepted caps,
+exact failures, or boxed-LCP fallbacks, and maximum residual
+`9.96497154974839e-7`. The separate 131-row trace has maximum residual
+`9.964971544991853e-7`; it reaches maximum forward travel
+`x=1.5959314363310166` at step 48, first records negative `vx` at step 49,
+and ends at `x=-2.9362508912363654`, `vx=-6.628158971623909`. Step 120 is
+the sole contact-free post-initial step.
 
-## Integration Strategy
+The sphere uses a renderer-applied high-contrast 6x4 ivory/charcoal checker
+texture with a coral registration tile. Its UV `MeshShape` is attached with
+`VisualAspect` only; collision, inertia, friction, and dynamics continue to use
+the unchanged physical `SphereShape`.
 
-Proposed staged path:
+The trace and capture solver/contact projections are byte-identical with
+SHA-256
+`973d544311bac3b5927cc73b335b1a375d0339403a2f713707bb928076aa2b22`.
+Manual inspection passes the checker pattern and coral registration tile as
+legible in consecutive source frames. The finalized artifact SHA-256 values
+are:
 
-1. Keep the default DART 6 solver unchanged. Add FBF as an opt-in solver path
-   until paper-parity and downstream gates are proved.
-2. Build an internal `ExactCoulombContactProblem` representation using
-   normal-first per-contact triples, circular cone coefficients, deterministic
-   contact frames, free contact velocities, and matrix-free `W` products.
-   The math-detail problem prototype exists; DART 6 `World` assembly still
-   needs to feed it from real contacts.
-3. Implement and unit-test shared cone math, dual cone projection, scaled
-   residual computation, and step-size adaptation independently of `World`.
-   Cone math, residuals, matrix-free problem evaluation, and the FBF outer-loop
-   shell now exist.
-4. Implement a CPU/double-precision FBF reference solver first. It should be
-   correct and inspectable before performance work starts. Matrix-free
-   projected-gradient and block Gauss-Seidel inner solves now exist for unit
-   problems and the opt-in DART 6 route; they still need broader paper-scene
-   validation and performance tuning.
-5. Add a DART 6 integration path that can solve all-contact groups through FBF
-   and route unsupported/mixed groups through the existing boxed-LCP solver
-   until joint/multibody coupling policy is decided. A dense internal adapter
-   can now build and apply exact-Coulomb contact rows from DART 6 constraints,
-   and an opt-in solver subclass can route supported groups through FBF without
-   changing defaults. The first capped single-contact `World` smoke is now
-   covered, the incline, backspin, turntable, and Painleve-proxy fixtures are
-   covered at headless regression level, and a conservative
-   same-constraint-sequence warm start now exists. The remaining integration
-   work is broader multi-contact and mixed-group `World` coverage, true
-   contact-manifold identity, mixed-group policy hardening, and matrix-free
-   performance.
-6. Recreate the paper fixtures and run them against FBF, the existing DART 6
-   solver, and paper baselines where available.
-7. Optimize only after correctness gates exist: matrix-free `W`, warm starts,
-   contact graph/coloring, scratch reuse, and native-collision manifold
-   stability.
+- metadata: `a42ce0521a7c2af31662eff6a000ef5e68fe8bddf631d4f323be1ea8230c25a7`;
+- index: `429a0888fa7a002cbc0c93e708569e4bf8e18195421c9663d5ce3b3a1968ab7f`;
+- manual inspection: `b86c596da631503a3831fd55adeb934505cf758dfc8a612d0a0f32b2a55067cb`;
+- trace summary: `0f6221fd32742b849e9ac79ec750de71b46ec24ba66b8d6e5a0e25048223ab48`;
+- verification: `fb9de609e52df648465dc0dbe73af7fbbd1b98c1c4671cde504200ff72c15c01`;
+- trace: `dc205297fa4cbffa1b497f12507b919f344bbee45a5820ae46145e0ed91bbd98`;
+- panel: `72bf8d6098e8fb17b98bbedeaa00cc539866cf570d91d725f77dc75f1971b067`;
+- MP4: `7d4606f4da0a57ffbdfa0528906b21a20d7e1a4e47a6e7eb5387242aecc71928`;
+  and
+- GIF: `773365f624ba1326855f2ad99c0196f761ab776001da568f7cdaa84054adacc8`;
+- `REPORT.md`: `f9178c14c1930361afc1d97cb5bf08afe04d3fd451e8a94144b02bb0b46e61cf`.
 
-The most likely DART 6 API shape is an opt-in solver object or option that does
-not change the default `World` behavior. Avoid adding virtual methods to
-gz-visible classes (`ConstraintSolver`, `BoxedLcpConstraintSolver`,
-`ContactSurfaceHandler`) unless maintainers explicitly approve the ABI/API
-impact.
+The claim boundary remains strict. At `-200 rad/s`, the 30/15 fps media can
+alias and do not prove signed angular direction. The contact-free step rules
+out continuous contact, and the bundle proves neither rest nor an airborne
+landing phase. The rendered demo and CSV exporter are separate scene
+implementations, so the shared diagnostic projection is not full-state trace
+equivalence. No faithful external-solver, paper, approved-golden, timing, or
+real-time parity follows. Both `fig.03` and `video.02_backspin` remain
+`partial`.
 
-## Current Blockers And Risks
+## Finalized Author-Pinned Fig. 04 Turntable Evidence
 
-- The paper's code repository is not anonymously readable yet. Exact parameter
-  files, scene construction details, and any non-paper implementation choices
-  are unavailable.
-- The paper benchmarks use NVIDIA Warp/Newton, Kamino, and MuJoCo. DART 6.20
-  does not ship these as in-tree comparison backends. External comparison
-  dependencies such as Kamino, MuJoCo, or the paper implementation are allowed
-  for tests, examples, and benchmarks when available, but they must remain out
-  of the core library dependency surface.
-- Initial public/source credit now exists in the exact-FBF implementation
-  comments and in `docs/readthedocs/community/research_papers.rst`. Keep this
-  citation current if the authors publish canonical BibTeX or additional scene
-  assets.
-- DART 6.20 has partial native collision support, but not all DART 7 native
-  collision infrastructure needed for robust contact-rich paper fixtures.
-- Exact paper performance parity cannot be claimed from focused unit tests.
-  Completion requires the full fixture suite, residual checks, physical outcome
-  checks, and timing reports.
+The repository-finalized bundle is
+[`assets/paper_evidence/fig04_turntable_author_current_v1/`](assets/paper_evidence/fig04_turntable_author_current_v1/).
+It pins the public author configuration at commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, binds 58 indexed artifacts in a
+60-file physical directory, and preserves the source order `mu=.2, omega=2`,
+`mu=.2, omega=5`,
+`mu=.5, omega=2`, `mu=.5, omega=5`.
 
-## Verification Expectations
+All four current visual-lane runs use `dart_best` with Native
+`FourPointPlanar`, complete 360 steps, pass the solver contract, and record no
+fallbacks. Their exact finite-horizon outcome is ejected, ejected, retained on
+support through 6 s, ejected. The retained `mu=.5, omega=2` cell proves only
+that 6-second support-retention predicate; it does not prove zero slip,
+perfect sticking, co-rotation, or behavior beyond the six-second horizon.
+Manual inspection passes the segmented disc, one coral registration wedge,
+labels, and source order. The segmented disc and wedge are visual-only; the
+physical cylinder remains the sole collision and dynamics geometry.
+Four durable, timeline-selected outcome stills bind the decisive steps for the
+four cells (136, 120, 360, and 90 in source order). Raw capture staging was
+pruned after sealing; clean-checkout verify-only uses the durable clips,
+panels, timelines, stills, traces, and provenance without ignored files.
 
-Near-term gates for this tracker:
+For all four cells, capture and trace projections of `step`, `contacts`,
+`exact_solves`, `warm_starts`, `boxed_lcp_fallbacks`, and `status` are
+byte-identical. This is not full-state equivalence. The separately recorded
+strict `paper_cpu_native` lane is not substituted for the visual lane and has
+no capture comparison: its `mu=.5, omega=2` row fails at step 40 with residual
+`7.407835021099202e-6`, while its other three rows pass. Thus
+`paper_cpu_native_all_solver_contract_valid=false` does not invalidate the
+current visual-lane finite-horizon outcome, and the visual result does not
+erase the strict-lane failure.
 
-- `pixi run cmake --build build/default/cpp/Release --target UNIT_math_CoulombCone --parallel 8`
-- `pixi run cmake --build build/default/cpp/Release --target UNIT_math_ExactCoulombContactProblem --parallel 8`
-- `pixi run cmake --build build/default/cpp/Release --target UNIT_math_ExactCoulombFbfSolver --parallel 8`
-- `pixi run cmake --build build/default/cpp/Release --target test_ExactCoulombConstraintAdapter --parallel 8`
-- `pixi run cmake --build build/default/cpp/Release --target test_ExactCoulombFbfConstraintSolver --parallel 8`
-- `pixi run cmake --build build/default/cpp/Release --target test_ConstraintSolver --parallel 8`
-- `pixi run cmake --build build/default/cpp/Release --target test_ExactCoulombFbfPaperFixtures --parallel 8`
-- `pixi run cmake --build build/default/cpp/Release --target BM_INTEGRATION_exact_coulomb_fbf_paper --parallel 8`
-- `pixi run cmake --build build/default/cpp/Release --target fbf_paper_trace --parallel 8`
-- `pixi run cmake --build build/default/cpp/Release --target fbf_paper_gamma_sweep --parallel 8`
-- `pixi run cmake --build build/default/cpp/Release --target fbf_paper_card_house_probe --parallel 8`
-- `ctest --test-dir build/default/cpp/Release -R UNIT_math_CoulombCone --output-on-failure`
-- `ctest --test-dir build/default/cpp/Release -R UNIT_math_ExactCoulombContactProblem --output-on-failure`
-- `ctest --test-dir build/default/cpp/Release -R UNIT_math_ExactCoulombFbfSolver --output-on-failure`
-- `ctest --test-dir build/default/cpp/Release -R '(test_ExactCoulombConstraintAdapter|test_ExactCoulombFbfConstraintSolver|test_ConstraintSolver|test_ExactCoulombFbfPaperFixtures)' --output-on-failure`
-- `./build/default/cpp/Release/bin/BM_INTEGRATION_exact_coulomb_fbf_paper --benchmark_list_tests`
-- `./build/default/cpp/Release/bin/BM_INTEGRATION_exact_coulomb_fbf_paper --benchmark_filter='BM_PaperFixtureStepTime/(backspin_boxed_lcp|backspin_exact_fbf)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-- `./build/default/cpp/Release/tests/integration/test_ExactCoulombFbfPaperFixtures --gtest_filter='ExactCoulombFbfPaperFixtures.MasonryArch25*' --gtest_output=xml:/tmp/fbf_arch25.xml`
-- `./build/default/cpp/Release/tests/integration/test_ExactCoulombFbfPaperFixtures --gtest_filter='ExactCoulombFbfPaperFixtures.MasonryArch101*' --gtest_output=xml:/tmp/fbf_arch101.xml`
-- `./build/default/cpp/Release/tests/integration/test_ExactCoulombFbfPaperFixtures --gtest_filter='ExactCoulombFbfPaperFixtures.CardHouseFourLevelSettleProjectileScaffoldRuns'`
-- `./build/default/cpp/Release/tests/integration/test_ExactCoulombFbfPaperFixtures --gtest_filter='ExactCoulombFbfPaperFixtures.MasonryArch25ProjectileScaffoldRuns'`
-- `./build/default/cpp/Release/bin/BM_INTEGRATION_exact_coulomb_fbf_paper --benchmark_filter='BM_PaperFixtureStepTime/card_house_26_settle_projectile_reduced_contact_(boxed_lcp|exact_fbf)$' --benchmark_min_time=0.001s --benchmark_repetitions=1`
-- `./build/default/cpp/Release/bin/BM_INTEGRATION_exact_coulomb_fbf_paper --benchmark_filter='BM_PaperFixtureStepTime/masonry_arch_25_projectile_reduced_contact_(boxed_lcp|exact_fbf)$' --benchmark_min_time=0.01s --benchmark_repetitions=1`
-- `pixi run capture-action fbf_paper_card_house_26 p docs/dev_tasks/fbf_exact_coulomb_friction/assets/gui_captures/fbf_paper_card_house_26_projectiles.png 1280 720 0`
-- `pixi run image-verdict docs/dev_tasks/fbf_exact_coulomb_friction/assets/gui_captures/fbf_paper_card_house_26_projectiles.png`
-- `pixi run capture-action fbf_paper_masonry_arch_25 p docs/dev_tasks/fbf_exact_coulomb_friction/assets/fbf_paper_masonry_arch_25_projectile.png 1280 720 0`
-- `pixi run image-verdict docs/dev_tasks/fbf_exact_coulomb_friction/assets/fbf_paper_masonry_arch_25_projectile.png`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace backspin exact_fbf 120`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace backspin boxed_lcp 120`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace backspin exact_fbf 1 1 nan residual_history`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace card_house_26_reduced_contact exact_fbf 1`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace card_house_26_reduced_contact boxed_lcp 1`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace card_house_26_reduced_contact exact_fbf 1 1 nan dynamic_bodies`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace card_house_26_reduced_contact boxed_lcp 1 1 nan dynamic_bodies`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace card_house_26_reduced_contact exact_fbf 1 1 nan residual_history`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace card_house_26_settle_projectile_reduced_contact exact_fbf 1 2 nan phase_summary`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace card_house_26_settle_projectile_reduced_contact boxed_lcp 1 2 nan phase_summary`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace masonry_arch_25_reduced_contact exact_fbf 1`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace masonry_arch_25_reduced_contact boxed_lcp 1`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace masonry_arch_25_reduced_contact exact_fbf 1 1 nan dynamic_bodies`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace masonry_arch_25_reduced_contact exact_fbf 1 1 nan residual_history`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace masonry_arch_25_projectile_reduced_contact exact_fbf 1 1 nan tracked`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace masonry_arch_25_projectile_reduced_contact boxed_lcp 1 1 nan tracked`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace masonry_arch_25_projectile_reduced_contact exact_fbf 1 1 nan dynamic_bodies`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace masonry_arch_101_reduced_contact exact_fbf 1`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace masonry_arch_101_reduced_contact boxed_lcp 1`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace masonry_arch_101_reduced_contact exact_fbf 1 1 nan dynamic_bodies`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace masonry_arch_101_reduced_contact exact_fbf 1 1 nan residual_history`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_gamma_sweep backspin nan,0.5,0.05,0.01 240 1 1`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_card_house_probe 56,58,59,60,64`
-- `./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_card_house_probe 16 1 30000 120 32 200 nan 0 0 0.9 10 1.5 0 0.003 0.55 1 1`
-- `pixi run demos -- --list-scenes`
-- `pixi run demos -- --cycle-scenes --frames 1`
-- `pixi run docs-build`
-- `pixi run lint`
-- `pixi run build`
+The bundle status is
+`valid_author_source_pinned_nonpaper_turntable_matrix`, with
+`artifact_valid=true`, visual-lane `solver_contract_valid=true`,
+`physical_outcome_valid=true`, `manual_inspection.pass=true`, and `pass=true`.
+Core SHA-256 values are report
+`930cc12b95ab78c6e61d084064b584f5872633f2432e434c68d071818cec7fb1`,
+artifact index
+`209b677ce35e2b9c11248ab414727016394831084881a5e9c2866f68b51f6cdf`,
+metadata
+`854ef0c8aad75b4b200f512951d56b4dbef7aa82c46cc5e82123f0583dcc6ac5`,
+verification
+`455da7686eaeeb989e0d122c4724ea66ff161e8d652230eff9fb8ad20590bacd`,
+group clip
+`b241463658e6b48dfb2c74815e85317c2f0eccd46a7f7ab978b8f2701ce80d6d`.
+The pinned author spec, visual disc OBJ/MTL, and manual-inspection hashes are
+`1680cd8351fa62937c0318826f7abc75917234cb3888f983acce06f13698bc6c`,
+`bc86f1ef1f5fae1510f23b1586ae20efe788c499373370a66af81b06818f1b14`,
+`619352b9ac14e89a4d467dde867019e0d01540b6f11852df565f23fb26a01752`,
+and `095652d3df70a144be31be49b0e25b3265df54a3815df21742333d5fdfb4529a`.
+The current visual runner and runner-test hashes bound by the reseal are
+`d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432`
+and `6e378252fa6a7cb51c6813c9d5a2b30b8c8129eacdb01df0ee19a58a270cbc5e`.
+The invocation, run-summary, capture-provenance, and group-metadata hashes are
+`ed0bcce48f4c70ef6fb0a6ca37dda736e0023aae2278d29fc121290d4c249ff8`,
+`3970da8be868c512ff0e1aafe4eb8add2814e3a6394b4cbfe2422ad870cc7829`,
+`b38c9adccd6de4d6dcd90d8fdadde9cd61234b4822dfb3eb444bba0787198e4b`,
+and `a8b7f0e6d76fa1a6993aec2038b0f0bda403e79024ef8a559d9ff938f031cfc3`.
+The demo and trace CMake source hashes are
+`3f4c9ac29ac5bd2c7eee07e970d5ad03a9f4b3c7fce88a5582c5027c00cfa0e5`
+and `4574bc5b1243c4722c2d8f1e3849715b566c5b7ab2d6b853f3659c3fc653e2d9`.
+This remains non-paper, non-golden, non-timing, and non-real-time evidence.
 
-Later implementation gates:
+## Finalized Author Card-House Construction Evidence
 
-- DART 6 contact-assembly tests that feed real `ConstraintSolver` contact data
-  into the exact-Coulomb problem without changing the default boxed-LCP path.
-- Broader opt-in `World` smoke tests beyond the first capped single-contact
-  box/ground case, including multi-contact contact sets and unsupported mixed
-  groups that intentionally fall back to boxed LCP.
-- True contact-manifold warm-start identity and scratch-reuse tests for the FBF
-  path once it is connected to real contact sets.
-- Keep `ExactCoulombFbfPaperFixtures.CardHouseAFramePrecursorStands` enabled
-  at the paper residual tolerance, keep
-  `ExactCoulombFbfPaperFixtures.CardHouseFourLevelSceneBuilds` covering the
-  26-card scaffold, keep the reduced-contact
-  `ExactCoulombFbfPaperFixtures.CardHouseFourLevelOneStepReducedContactProbe`
-  and `CardHouseFourLevelSettleProjectileScaffoldRuns` green, then raise the
-  one-step and phase probes toward the full contact budget before extending
-  them to the 6.7 s no-creep settle, real projectile impacts, and 10 s
-  post-impact outcome.
-- Keep `ExactCoulombFbfPaperFixtures.CardHouseTenLevelSceneBuilds` covering the
-  10-level construction scaffold while adding exact-FBF dynamic outcome,
-  residual trace, timing, snapshots, and external comparisons.
-- Keep the reduced-contact
-  `ExactCoulombFbfPaperFixtures.MasonryArch25OneStepReducedContactProbe`
-  green while replacing the approximate scaffold with author/Rigid-IPC
-  geometry, raising the cap beyond the current 48/2 default and 80/4
-  near-timeout probe toward a bounded 100-contact row, and adding projectile
-  outcome, trace, snapshot, and timing evidence. A 49/2 diagnostic still
-  produced only 48 actual contacts with the current approximate scaffold, so
-  geometry/contact generation is still part of the next step.
-- Keep the reduced-contact
-  `ExactCoulombFbfPaperFixtures.MasonryArch101OneStepReducedContactProbe`
-  green while replacing the approximate scaffold with author/Rigid-IPC
-  geometry, turning the new 100/2 one-step cap evidence into long-run balance,
-  trace, snapshot, and timing evidence. The older 39/2 fallback-boundary note
-  is stale on the current code.
-- Expand the incline, backspin, turntable, and Painleve fixtures into the full
-  displacement/trajectory sweeps, snapshots, residual traces, and timing
-  evidence from the paper, replace or corroborate the Painleve proxy with the
-  authors' scene when available, and add full-parity headless scene tests for
-  house of cards, 25-stone arch, 101-stone arch, and 10-level house of cards.
-- Benchmark comparison against existing DART 6 boxed LCP and, if available,
-  the paper code, MuJoCo, and Kamino.
-- Keep optional parity/comparison dependencies scoped to tests, examples, or
-  benchmarks; do not add them as core DART library dependencies.
-- Gazebo/gz-physics gate for any default solver, collision, public header, or
-  package-surface change.
-- Keep the source comments and DART 6 RTD paper citation page current as the
-  experimental exact-FBF route moves toward public exposure.
+The repository-finalized bundle is
+[`assets/paper_evidence/card_house_author_5_construction_current_v1/`](assets/paper_evidence/card_house_author_5_construction_current_v1/).
+It contains 12 indexed artifacts / 14 physical files and records the public
+author default five-level, 40-card construction with four suspended cubes at
+step zero. The exact-membership index, metadata, and manual-inspection hashes
+are respectively
+`d6cbc6f9600b8bc5c3094dd85974eae8e71d64a9e3d6e99c1783ace36be9741d`,
+`b97ac795c9368f2632fe422f975914f412e8d1cb0667023e8d83c6224547df00`,
+and `7bc672e9dd95b52853c5c7e56680190d564fc9514add9b263de0c33c3f94e2a4`.
+
+This is construction-only evidence. The capture executes zero simulation
+substeps and makes no claim about release, standing, trajectory, solver
+behavior, contact dynamics, physical outcome, the historical four-level,
+26-card paper trajectory, Fig. 6 or video parity, source renderer colors,
+paper timing, or performance.
+
+## Preregistered Crown-Impact v1 Negative
+
+The frozen non-paper contract and result are documented in
+[LITERAL_CROWN_IMPACT_V1.md](LITERAL_CROWN_IMPACT_V1.md). The final durable
+bundle is
+[`assets/paper_evidence/fig07_arch25_literal_impact_v1_negative_final_v9/`](assets/paper_evidence/fig07_arch25_literal_impact_v1_negative_final_v9/).
+It launches three fixed 35 mm cubes after the unchanged 600-step standing
+prefix, then observes 120 impact steps. The prefix matches the standalone
+standing scenario across 88 eligible fields with zero mismatches.
+
+The run completed 720/720 steps, stayed finite, and recorded first arch
+contact at step 607 before first ground contact at step 616, with zero exact
+failures or boxed-LCP fallbacks. It nevertheless failed the preregistered
+claim: five solves were accepted at the cap, worst residual was
+`9.154531704265396e-5`, final maximum arch displacement was
+`0.07093964431215687 m` versus a `0.07 m` limit, and far-field displacement
+was `0.060523747030465196 m` versus a `0.007 m` limit. The runner requires
+this fail-closed pattern and sets `impact_claim_passed=false`; it rejects a
+zero child exit or a passing-impact interpretation. The current runner recomputes
+all gates from finite metrics, requires post-launch exact progress, pins the
+normalized fingerprint and frozen preregistration hash, and stores the
+independent 600-step by 88-field standing reference. No parameter or threshold
+was changed after observing the result.
+
+Final lint-clean bundle hashes are:
+
+- runner: `622b388142fed881191dcb6efb103266eb2ea1e3ffbadaf402f63b89c558bb67`;
+- preregistration contract: `4cdea674f366fc2d18eadf11ef4333d491786d5d85e3fc16fa611ea7dede3f37`;
+- normalized fingerprint: `86b37ec37d28259514453c9ecc9e7d5f12afe08118a0b04abd40e72acd147384`;
+- standing reference: `22fabfe2e8f35bf329f32873845a60599ed2df171c15728f14311b91d888c387`;
+- `raw.csv`: `42cc94f5f111442da42b03af33722f713d66b853d3ac21f21083f28ba24e7ba4`;
+- `stderr.txt`: `7964b07fd5396f10013ff8d9100d2b36e7dfc151764210d8c60bd0ae853a2d94`;
+- `summary.json`: `e3baa479111a999d03359a0642533cad1baa3a48c415609bafb9a7a7cfa18e7c`;
+- `metadata.json`: `0bd19797953a10223bbd7183f6e8002e490b21c29b2304befee7e6618ff9ee73`; and
+- `REPORT.md`: `c5711b0fe06e679f889f6a7ca3812aa955c3b8c61270ef038def06b2a3f173ff`.
+
+The v6, v7, and v8 paths are historical current-at-capture evidence. The v9
+rebaseline has the same frozen negative semantics and records the executed
+`taskset` identity in its runtime closure.
+
+## Frozen Literal 101-Stone v1 Negative
+
+[LITERAL_ARCH_101_V1.md](LITERAL_ARCH_101_V1.md) freezes the separately
+labeled Native exact-inertia reconstruction before its authoritative run. The
+current provenance-bound bundle is
+[`assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v6/`](assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v6/).
+
+The run fails closed at step 1 after all 5,000 outer iterations. It records
+aggregate dynamic `FourPointPlanar` fields of 400 contacts, 100 constraint
+pairs, three colors, width 34, and four colored participants on P-cores
+`8,10,12,14`, plus one exact failure, zero fallbacks, and residual
+`0.78153646143524735`. The dynamic trace does not serialize pair identities.
+Separately, the repeat-2 collision-only Compact probe proves the constructed
+time-zero graph has 102 pairs: 100 adjacent-stone pairs and two
+springer-ground pairs. These two scopes must not be conflated. The failed
+prefix remains finite but is not an admissible trajectory. The runner sets
+`artifact_valid=false`,
+`standing_claim_passed=false`, and `timing_evidence_eligible=false`; no media
+may be promoted. No v1 parameter or threshold was changed after the result.
+
+The runner binds and rechecks the protocol, runner, trace/probe sources,
+executables, `taskset`, `ldd`, and every resolved regular shared-library file.
+This is source/executable/shared-library-bound provenance, not a claim over all
+host runtime state. The earlier
+`assets/paper_evidence/fig08_arch101_literal_v1_negative_final/` bundle is
+retained only as invalid historical evidence because it lacked those
+shared-library and independent graph bindings.
+The v2 bundle is provenance-complete historical evidence, but a
+clang-format-only collision-probe source identity change superseded it for
+current-source claims. The v3 bundle was superseded after additive
+card-sensitivity instrumentation, and v4 is historical current-at-capture
+evidence. The unchanged command was rebaselined as v5 and again as v6 after the
+current-build libdart identity advanced; the scientific result is unchanged.
+
+The normalized fingerprint is
+`8d275edcaa82a2f628fdd5d9f846b2daed7e6864fdc4b7e80eca9a8c93bcf527`.
+Current hashes are runner
+`e3e3b7c998e038f6bf1499b1b4a8eea04261dc0aa7a6e4cf668486482c56a6f5`,
+raw `03fba1d83f9209b0ade3698bdada42ca3927c176397a5ddee8ce0ca175e82947`,
+summary `2e03653745a1e8d94c7b18d446004d16bfd4e176d7b9315aa198e3c08538bbfa`,
+metadata `5e0b166171e08349847664b504b0a9b15cc1f582514388b532259ad6edad2bec`,
+report `52e5592ba5ad32a919f221e1a8e98ecb4b4f82c0228e16de44318b436bf58958`,
+and whole tree
+`ce5731fa6e4f967845d664341761eca7b0ce9ffb4cb93d55ac71df79f9243947`.
+
+## Current Card-Manifold Sensitivity v2
+
+[CARD_HOUSE_MANIFOLD_SENSITIVITY_V2.md](CARD_HOUSE_MANIFOLD_SENSITIVITY_V2.md)
+freezes a one-factor Native `Compact`-versus-`FourPointPlanar` comparison for
+the reconstructed 26-card scene. The current provenance-complete bundle is
+[`assets/paper_evidence/card_house_26_manifold_sensitivity_v2_r3/`](assets/paper_evidence/card_house_26_manifold_sensitivity_v2_r3/).
+It holds every `paper_cpu` solver knob fixed and excludes raw wall time from
+all scientific verdicts.
+
+Both modes emit all 600 requested rows with zero exact failures or boxed
+fallbacks, but both have zero strict-success rows and accepted capped groups on
+every row. `Compact` records 3,495 capped groups across 5,757 exact attempts and
+a successful terminal last group at residual `8.525678738415048e-7`.
+`FourPointPlanar` records 682 capped groups across 745 attempts and exits
+through the represented terminal convergence gate at residual
+`0.016582575623909489`.
+
+The preregistered directional hypothesis is supported: `FourPointPlanar`
+increases mean contacts by `93.7983333333` and mean pair multiplicity by
+`1.9548548971`. Strict convergence is not improved. Both trajectories remain
+non-strict, so physical, timing, real-time, and paper-parity verdicts are null.
+The earlier prior-source strict paper-profile artifact remains a separate
+step-89 fail-closed negative, repository-archived at
+`assets/dart_cpu_evidence/2026-07-12_prior_source_paper_cpu_card600_negative/`;
+v2 does not replace or relabel it.
+
+Current SHA-256 values are protocol
+`eeb1c8c1d09a29e197a3c402217ecd0af9a9878749cb4756cf94bc714f2b60e9`,
+runner
+`e03356c772560f061e9b90fb4cd9f5df0c569631cd5e9fdd0857c337ff840562`,
+trace source
+`b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76`,
+trace executable
+`0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff`,
+summary
+`52a082ab15e8b9c314d706474cc7be557ddfc58c4961faad0d3da9d347f59f4f`,
+comparison
+`051605c25ccd5aa4de2f243c4dafe547c82f7298f8018cee53a8701d018ff297`,
+metadata
+`5890ab138179f4d7aaee6cd04c63799086439bae58fbde4f994048785dd0b8ac`,
+artifact index
+`1703f995bd5d2c6edeb12ba936010a80609c3e952f2c782b554bd0be7ca40627`,
+invocation
+`6e48eb835ab9aafca0b8d4bd29acb5ec932645fb37ca6124ce3c23b3265847f0`,
+report
+`0429b12f90e4fef534c9b707324a180eaac78829a3b3667505111228aba58d2e`,
+and whole tree
+`953d8efd4d43ee2a74cede6b5e3a0a766ecd1fd8914485b50b340f515b7ecb77`.
+The unsuffixed v2 path is historical current-at-capture evidence; v2_r3 is the
+current-source rebaseline with unchanged diagnostic semantics.
+
+## Historical Negative Diagnostics
+
+Keep these results as solver-history evidence, not as the current result:
+
+- Under the older scale-1 profile, the literal arch needed 28,981 cold outer
+  iterations. A standard 200-outer continuation passed steps 60 and 180,
+  capped near 240, and collapsed by 300/600. A 2,000-outer continuation was
+  stable through 300 but capped near 420/480 and was too slow.
+- Local-diagonal seeding reduced that cold count to 22,726; dense-global
+  seeding gave no material benefit, and velocity ERP `0.01` or `0.1` worsened
+  or failed convergence.
+- The strict paper-parameter card bootstrap reached residual `0.004311` after
+  30,000 outers in `15.167 s` on step 1, then residual `0.026233` after 200
+  outers in `0.136 s` on step 2. It failed residual, trajectory, and timing
+  contracts despite zero local-kernel failures and zero fallbacks.
+
+None of those historical rows is a paper parameter match or current
+performance artifact.
+
+## Current Recorded Local Gates
+
+The latest recorded focused results on the current source are:
+
+- exact-Coulomb math: 47/47 in Release;
+- exact constraint solver: 25/25;
+- `ConstraintSolver` integration: 64/64;
+- Native collision: 42/42;
+- masonry wedge dynamics: 3/3;
+- default paper fixtures: 19 passed, 3 explicit stress cases skipped;
+- focused Release and Debug CTest matrices: 9/9 in each configuration;
+- schema-v8 CPU evidence tests: 230/230;
+- literal-wedge visual finalization tests: 16/16;
+- crown-impact trace and negative-runner tests: 25/25;
+- literal 101-stone trace/probe/runner tests: 35/35;
+- finalized incline finalizer unit tests: 62/62; clean-checkout verify-only
+  passes with status `valid_current_source_nonpaper_incline`, 21 indexed
+  artifacts, and no ignored staging dependency;
+- integrated 17-file CPU/visual/impact/101/card/manifest/publication evidence
+  suite: 638 passed in 81.95 s; and
+- deterministic colored-scheduler stress: 1,000 runs passed.
+
+## Immediate Next Work
+
+1. Preserve the authoritative P-core, standing-visual, frozen impact-v1, and
+   frozen 101-v1 negative bundles. The 101 reconstruction is now precisely
+   blocked at step 1, and card-manifold v2 is complete as non-strict diagnostic
+   evidence. Preserve the finalized incline, current-source Painleve
+   proxy, and finalized backspin bundles, then continue with the other
+   smaller-figure recaptures,
+   strict card/media work, and source-equivalent impact work without tuning
+   either frozen v1
+   contract or promoting the v2 raw timings.
+2. Keep all 29 manifest rows synchronized with every new sidecar, hash,
+   semantic verdict, and report binding from one identified build.
+3. Keep the parity matrix and PR-facing report synchronized with that evidence.
+4. Run the final integrated gates and obtain two clean independent reviews.
+5. Only with explicit approval, update the branch, PR body, and current-head
+   CI.
+
+## Official Sources
+
+- project page: <https://www.cs.ubc.ca/research/fbf-friction/>;
+- paper: <https://www.cs.ubc.ca/research/fbf-friction/paper.pdf>;
+- video: <https://www.youtube.com/watch?v=5THad4PAGmI>; and
+- named repository: <https://github.com/matthcsong/fbf-sca-2026>.
+
+## Completion Bar
+
+Do not mark the task complete until every paper requirement is reproduced or
+precisely blocked, every exact trajectory satisfies its full residual,
+fallback, and physical-outcome contract, current-build visual artifacts are
+fully decoded and manually inspected, performance metadata proves each local
+claim, source comparability is either matched or its remaining historical gap
+is stated precisely, lane-specific count mismatches and equivalence boundaries
+remain explicit, the
+manifest and reports agree, default and downstream behavior remain covered,
+and final independent reviews are clean.
+
+For PR-facing wording and the required replacement for the currently
+overclaiming PR body, use [PR_REPORT.md](PR_REPORT.md).

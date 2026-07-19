@@ -35,11 +35,13 @@
 
 #include <dart/math/detail/ExactCoulombContactProblem.hpp>
 
+#include <Eigen/Cholesky>
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 
 #include <algorithm>
 #include <limits>
+#include <type_traits>
 #include <vector>
 
 #include <cmath>
@@ -78,7 +80,16 @@ struct ExactCoulombFbfOptions
   /// Optional initial gamma. NaN means use the safe spectral estimate.
   double initialStepSize = std::numeric_limits<double>::quiet_NaN();
 
-  /// Multiplier applied to the safe spectral estimate when choosing gamma.
+  /// Cap an explicitly configured gamma at the safe spectral estimate.
+  ///
+  /// Keep this enabled for normal adaptive solves. Disable it only for a
+  /// diagnostic fixed-gamma experiment where `initialStepSize` must be used
+  /// exactly even when it exceeds the conservative estimate.
+  bool capInitialStepSizeAtSafeBound = true;
+
+  /// Multiplier applied to the safe spectral estimate when choosing gamma
+  /// automatically (`initialStepSize` is NaN). Explicit gamma values are
+  /// capped at the unscaled safe estimate when the cap is enabled.
   double stepSizeScale = 1.0;
 
   /// Relaxation applied to the accepted FBF correction.
@@ -92,6 +103,14 @@ struct ExactCoulombFbfOptions
 
   /// Maximum shrink/retry attempts per outer iteration.
   int maxStepShrinkIterations = 20;
+
+  /// Adapt gamma when the local coupling-variation test rejects a trial.
+  ///
+  /// Disabling this preserves the configured gamma for every outer iteration.
+  /// The coupling-variation ratio is still computed and reported, but it does
+  /// not reject the trial. This is intended for reproducing fixed-gamma sweep
+  /// experiments, not as the default solve policy.
+  bool enableAdaptiveStepSize = true;
 
   /// Power iterations used when deriving the safe base step.
   int spectralIterations = 10;
@@ -125,22 +144,50 @@ struct ExactCoulombFrozenConeOptions
   int spectralIterations = 10;
 };
 
+struct ExactCoulombFrozenConeBlockGaussSeidelWorkspace;
+
+/// Per-contact update used inside a frozen cone-QP block-Gauss-Seidel sweep.
+enum class ExactCoulombFrozenConeLocalSolver
+{
+  /// Apply the inverse 3x3 block, then project in the Euclidean cone metric.
+  ///
+  /// This is an explicit inexpensive approximation. For an anisotropic block
+  /// it is not the exact H-metric minimizer of the local quadratic.
+  InverseEuclideanProjection,
+
+  /// Solve the local SPD quadratic exactly in the Hessian metric. This is the
+  /// correctness-preserving default.
+  ExactMetricProjection,
+
+  /// Retain the original scalar-step projected-gradient approximation.
+  ProjectedGradient,
+};
+
 /// Options for a matrix-free block Gauss-Seidel frozen cone-QP solve.
 struct ExactCoulombFrozenConeBlockGaussSeidelOptions
 {
   /// Maximum contact-block sweeps.
   int maxSweeps = 10;
 
-  /// Maximum local projected-gradient steps per 3D contact block update.
+  /// Per-contact local update.
+  ExactCoulombFrozenConeLocalSolver localSolver
+      = ExactCoulombFrozenConeLocalSolver::ExactMetricProjection;
+
+  /// Maximum local steps in `ProjectedGradient` mode.
   int localIterations = 8;
 
   /// Relative sweep-change tolerance.
   double tolerance = 1e-10;
 
-  /// Relative tolerance for the local 3D projected-gradient subproblem.
+  /// Run the full sweep budget even when the change tolerance is reached.
+  bool runFixedSweeps = false;
+
+  /// Relative local change tolerance in `ProjectedGradient` mode.
   double localTolerance = 1e-12;
 
-  /// Optional diagonal padding used only to choose conservative local steps.
+  /// Diagonal padding used only to choose the `ProjectedGradient` step.
+  ///
+  /// It never changes the local quadratic objective in any mode.
   double diagonalRegularization = 0.0;
 
   /// Optional cached per-contact 3x3 diagonal Delassus blocks.
@@ -152,6 +199,26 @@ struct ExactCoulombFrozenConeBlockGaussSeidelOptions
   /// extracted with matrix-free products inside the call. The pointee must
   /// outlive the call and match the problem's contact count.
   const std::vector<Eigen::Matrix3d>* cachedDiagonalBlocks = nullptr;
+
+  /// Optional initial iterate for the cone-QP solve.
+  ///
+  /// The proximal center remains the `referenceReaction` argument. This only
+  /// selects the block Gauss-Seidel starting point, allowing consecutive FBF
+  /// outer iterations to reuse the previous cone-QP solution as described in
+  /// the paper. When null, the proximal center is also the initial iterate.
+  /// The pointee must outlive the call and match the problem dimension.
+  const Eigen::VectorXd* initialReaction = nullptr;
+
+  /// Optional reusable workspace for consecutive solves of the same local
+  /// systems.
+  ///
+  /// The workspace owns its cache keys and never retains pointers to
+  /// `cachedDiagonalBlocks`. It automatically rebuilds the local Hessians and
+  /// mode-specific 3x3 data when the contact count, a diagonal block, a
+  /// friction coefficient, local solver mode, `stepSizeGamma`, or
+  /// projected-gradient regularization changes. A workspace must outlive the
+  /// call and must not be used by concurrent solves.
+  ExactCoulombFrozenConeBlockGaussSeidelWorkspace* workspace = nullptr;
 };
 
 /// Residual sample from one accepted FBF outer iteration.
@@ -252,18 +319,20 @@ inline bool projectExactCoulombReactionNormalFirst(
 /// `s_r = max(||lambda_0||, ||v_f|| / lambda_max(W), eps_0)` and
 /// `s_u = max(||v_tilde(lambda_0)||, ||v_f||, eps_0)`.
 template <typename DelassusOperator>
-CoulombConeResidualScales computeExactCoulombFbfResidualScales(
+CoulombConeResidualScales
+computeExactCoulombFbfResidualScalesWithSpectralRadius(
     const ExactCoulombContactProblem& problem,
     const Eigen::Ref<const Eigen::VectorXd>& initialReaction,
     const DelassusOperator& applyDelassus,
-    int spectralIterations = 10)
+    double spectralRadius)
 {
   constexpr double kResidualScaleFloor = 1e-12;
   CoulombConeResidualScales scales{kResidualScaleFloor, kResidualScaleFloor};
 
   if (!isValidExactCoulombContactProblem(problem)
       || initialReaction.size() != problem.getDimension()
-      || !initialReaction.allFinite() || spectralIterations <= 0) {
+      || !initialReaction.allFinite() || std::isnan(spectralRadius)
+      || spectralRadius < 0.0) {
     DART_ASSERT(false && "Invalid exact-Coulomb residual-scale input.");
     return scales;
   }
@@ -288,8 +357,6 @@ CoulombConeResidualScales computeExactCoulombFbfResidualScales(
 
   scales.reactionScale
       = (std::max)(projectedReaction.norm(), kResidualScaleFloor);
-  const double spectralRadius = estimateLargestExactCoulombDelassusEigenvalue(
-      problem, applyDelassus, spectralIterations);
   if (std::isfinite(spectralRadius) && spectralRadius > 0.0) {
     scales.reactionScale = (std::max)(
         scales.reactionScale, problem.freeVelocity.norm() / spectralRadius);
@@ -300,6 +367,24 @@ CoulombConeResidualScales computeExactCoulombFbfResidualScales(
        problem.freeVelocity.norm(),
        kResidualScaleFloor});
   return scales;
+}
+
+template <typename DelassusOperator>
+CoulombConeResidualScales computeExactCoulombFbfResidualScales(
+    const ExactCoulombContactProblem& problem,
+    const Eigen::Ref<const Eigen::VectorXd>& initialReaction,
+    const DelassusOperator& applyDelassus,
+    int spectralIterations = 10)
+{
+  if (spectralIterations <= 0) {
+    DART_ASSERT(false && "Invalid exact-Coulomb residual-scale input.");
+    return CoulombConeResidualScales{1e-12, 1e-12};
+  }
+
+  const double spectralRadius = estimateLargestExactCoulombDelassusEigenvalue(
+      problem, applyDelassus, spectralIterations);
+  return computeExactCoulombFbfResidualScalesWithSpectralRadius(
+      problem, initialReaction, applyDelassus, spectralRadius);
 }
 
 inline bool isValidExactCoulombFrozenConeOptions(
@@ -317,12 +402,23 @@ inline bool isValidExactCoulombFrozenConeOptions(
 inline bool isValidExactCoulombFrozenConeBlockGaussSeidelOptions(
     const ExactCoulombFrozenConeBlockGaussSeidelOptions& options)
 {
-  return options.maxSweeps >= 0 && options.localIterations > 0
-         && std::isfinite(options.tolerance) && options.tolerance >= 0.0
-         && std::isfinite(options.localTolerance)
-         && options.localTolerance >= 0.0
-         && std::isfinite(options.diagonalRegularization)
-         && options.diagonalRegularization >= 0.0;
+  const bool validLocalSolver
+      = options.localSolver
+            == ExactCoulombFrozenConeLocalSolver::InverseEuclideanProjection
+        || options.localSolver
+               == ExactCoulombFrozenConeLocalSolver::ExactMetricProjection
+        || options.localSolver
+               == ExactCoulombFrozenConeLocalSolver::ProjectedGradient;
+  const bool validProjectedGradientOptions
+      = options.localSolver
+            != ExactCoulombFrozenConeLocalSolver::ProjectedGradient
+        || (options.localIterations > 0 && std::isfinite(options.localTolerance)
+            && options.localTolerance >= 0.0
+            && std::isfinite(options.diagonalRegularization)
+            && options.diagonalRegularization >= 0.0);
+  return validLocalSolver && options.maxSweeps >= 0
+         && validProjectedGradientOptions && std::isfinite(options.tolerance)
+         && options.tolerance >= 0.0;
 }
 
 /// Project a product of normal-first contact triples onto their Coulomb cones.
@@ -367,14 +463,12 @@ inline bool computeExactCoulombFbfCouplingNormalFirst(
   return true;
 }
 
-/// Compute gamma_safe = 0.5 / (mu_max * lambda_max(W)).
-template <typename DelassusOperator>
-double computeExactCoulombFbfSafeStepSize(
-    const ExactCoulombContactProblem& problem,
-    const DelassusOperator& applyDelassus,
-    int spectralIterations = 10)
+/// Compute gamma_safe from a retained Delassus spectral estimate.
+inline double computeExactCoulombFbfSafeStepSizeFromSpectralRadius(
+    const ExactCoulombContactProblem& problem, double spectralRadius)
 {
-  if (!isValidExactCoulombContactProblem(problem) || spectralIterations <= 0) {
+  if (!isValidExactCoulombContactProblem(problem) || std::isnan(spectralRadius)
+      || spectralRadius < 0.0) {
     DART_ASSERT(false && "Invalid exact-Coulomb FBF safe-step input.");
     return std::numeric_limits<double>::infinity();
   }
@@ -388,8 +482,6 @@ double computeExactCoulombFbfSafeStepSize(
     return std::numeric_limits<double>::infinity();
   }
 
-  const double spectralRadius = estimateLargestExactCoulombDelassusEigenvalue(
-      problem, applyDelassus, spectralIterations);
   if (!std::isfinite(spectralRadius)) {
     return std::numeric_limits<double>::infinity();
   }
@@ -398,6 +490,24 @@ double computeExactCoulombFbfSafeStepSize(
   }
 
   return 0.5 / (maxCoefficient * spectralRadius);
+}
+
+/// Compute gamma_safe = 0.5 / (mu_max * lambda_max(W)).
+template <typename DelassusOperator>
+double computeExactCoulombFbfSafeStepSize(
+    const ExactCoulombContactProblem& problem,
+    const DelassusOperator& applyDelassus,
+    int spectralIterations = 10)
+{
+  if (spectralIterations <= 0) {
+    DART_ASSERT(false && "Invalid exact-Coulomb FBF safe-step input.");
+    return std::numeric_limits<double>::infinity();
+  }
+
+  const double spectralRadius = estimateLargestExactCoulombDelassusEigenvalue(
+      problem, applyDelassus, spectralIterations);
+  return computeExactCoulombFbfSafeStepSizeFromSpectralRadius(
+      problem, spectralRadius);
 }
 
 inline double computeExactCoulombFbfCouplingVariationRatio(
@@ -466,6 +576,64 @@ bool computeExactCoulombDelassusDiagonalBlocksNormalFirst(
   return true;
 }
 
+inline bool prepareExactCoulombLocalSpdHessian(
+    const Eigen::Matrix3d& hessian, Eigen::Matrix3d& symmetricHessian)
+{
+  if (!hessian.allFinite()) {
+    return false;
+  }
+  const double matrixScale = hessian.cwiseAbs().maxCoeff();
+  if (!std::isfinite(matrixScale) || matrixScale <= 0.0) {
+    return false;
+  }
+  const double symmetryTolerance
+      = 256.0 * std::numeric_limits<double>::epsilon() * matrixScale;
+  if ((hessian - hessian.transpose()).cwiseAbs().maxCoeff()
+      > symmetryTolerance) {
+    return false;
+  }
+
+  symmetricHessian = 0.5 * (hessian + hessian.transpose());
+  Eigen::LLT<Eigen::Matrix3d> factorization(symmetricHessian);
+  return factorization.info() == Eigen::Success;
+}
+
+inline bool prepareExactCoulombLocalSpdInverse(
+    const Eigen::Matrix3d& hessian,
+    Eigen::Matrix3d& symmetricHessian,
+    Eigen::Matrix3d& inverseHessian)
+{
+  if (!prepareExactCoulombLocalSpdHessian(hessian, symmetricHessian)) {
+    return false;
+  }
+  Eigen::LLT<Eigen::Matrix3d> factorization(symmetricHessian);
+  inverseHessian = factorization.solve(Eigen::Matrix3d::Identity());
+  return factorization.info() == Eigen::Success && inverseHessian.allFinite();
+}
+
+/// Apply a cached inverse block followed by Euclidean Coulomb-cone projection.
+///
+/// This is an explicit inexpensive per-contact approximation. For a general
+/// anisotropic Hessian it is not the exact H-metric projection and therefore
+/// need not satisfy the local quadratic KKT conditions after one update.
+inline bool solveExactCoulombLocalConeInverseEuclideanProjection(
+    const Eigen::Matrix3d& inverseHessian,
+    const Eigen::Vector3d& linearTerm,
+    double coefficient,
+    Eigen::Vector3d& reaction)
+{
+  if (!inverseHessian.allFinite() || !linearTerm.allFinite()
+      || !isValidCoulombConeCoefficient(coefficient)) {
+    return false;
+  }
+  const Eigen::Vector3d unconstrained = -inverseHessian * linearTerm;
+  if (!unconstrained.allFinite()) {
+    return false;
+  }
+  reaction = projectCoulombConeNormalFirst(unconstrained, coefficient);
+  return reaction.allFinite();
+}
+
 inline double computeExactCoulombLocalBlockLipschitz(
     const Eigen::Matrix3d& hessian, double diagonalRegularization)
 {
@@ -473,17 +641,732 @@ inline double computeExactCoulombLocalBlockLipschitz(
       || diagonalRegularization < 0.0) {
     return std::numeric_limits<double>::infinity();
   }
-
-  Eigen::Matrix3d symmetricHessian = 0.5 * (hessian + hessian.transpose());
-  symmetricHessian.diagonal().array() += diagonalRegularization;
-
-  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(symmetricHessian);
+  Eigen::Matrix3d regularizedHessian = hessian;
+  regularizedHessian.diagonal().array() += diagonalRegularization;
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(regularizedHessian);
   if (solver.info() != Eigen::Success) {
     return std::numeric_limits<double>::infinity();
   }
-
   return (std::max)(solver.eigenvalues().maxCoeff(), 0.0);
 }
+
+/// Cached factorization for an exact SPD quadratic solve on one Coulomb cone.
+///
+/// For positive friction, `reaction = D * z` maps the Coulomb cone to the
+/// standard Lorentz cone. The transformed Hessian is factored once and reduced
+/// to a three-term secular equation. The two dense transforms make each later
+/// solve two 3x3 matrix-vector products plus scalar root arithmetic.
+struct ExactCoulombLocalConeQuadraticFactorization
+{
+  Eigen::Matrix3d hessian = Eigen::Matrix3d::Zero();
+  Eigen::Matrix3d linearToSpectral = Eigen::Matrix3d::Zero();
+  Eigen::Matrix3d spectralToReaction = Eigen::Matrix3d::Zero();
+  Eigen::Vector2d negativeRatios = Eigen::Vector2d::Zero();
+  double coefficient = std::numeric_limits<double>::quiet_NaN();
+  bool frictionless = false;
+  bool valid = false;
+};
+
+/// Prepare an exact local cone-QP factorization without perturbing the Hessian.
+inline bool prepareExactCoulombLocalConeQuadraticFactorization(
+    const Eigen::Matrix3d& hessian,
+    double coefficient,
+    ExactCoulombLocalConeQuadraticFactorization& factorization)
+{
+  factorization = ExactCoulombLocalConeQuadraticFactorization();
+  if (!isValidCoulombConeCoefficient(coefficient)) {
+    return false;
+  }
+
+  Eigen::Matrix3d symmetricHessian;
+  if (!prepareExactCoulombLocalSpdHessian(hessian, symmetricHessian)) {
+    return false;
+  }
+  factorization.hessian = symmetricHessian;
+  factorization.coefficient = coefficient;
+  factorization.frictionless = coefficient == 0.0;
+  if (factorization.frictionless) {
+    if (!std::isfinite(symmetricHessian(0, 0))
+        || symmetricHessian(0, 0) <= 0.0) {
+      return false;
+    }
+    factorization.valid = true;
+    return true;
+  }
+
+  Eigen::Matrix3d coneScale = Eigen::Matrix3d::Identity();
+  coneScale(1, 1) = coefficient;
+  coneScale(2, 2) = coefficient;
+  const Eigen::Matrix3d transformedHessian
+      = coneScale * symmetricHessian * coneScale;
+  if (!transformedHessian.allFinite()) {
+    return false;
+  }
+
+  Eigen::LLT<Eigen::Matrix3d> transformedFactorization(transformedHessian);
+  if (transformedFactorization.info() != Eigen::Success) {
+    return false;
+  }
+
+  const Eigen::Matrix3d upper = transformedFactorization.matrixU();
+  const Eigen::Matrix3d inverseUpper
+      = upper.triangularView<Eigen::Upper>().solve(Eigen::Matrix3d::Identity());
+  if (!inverseUpper.allFinite()) {
+    return false;
+  }
+
+  Eigen::Matrix3d lorentzSignature = -Eigen::Matrix3d::Identity();
+  lorentzSignature(0, 0) = 1.0;
+  Eigen::Matrix3d reducedSignature
+      = inverseUpper.transpose() * lorentzSignature * inverseUpper;
+  reducedSignature = 0.5 * (reducedSignature + reducedSignature.transpose());
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> signatureSolver(
+      reducedSignature);
+  if (signatureSolver.info() != Eigen::Success
+      || !signatureSolver.eigenvalues().allFinite()
+      || !signatureSolver.eigenvectors().allFinite()) {
+    return false;
+  }
+
+  const Eigen::Vector3d orderedEigenvalues{
+      signatureSolver.eigenvalues()[2],
+      signatureSolver.eigenvalues()[0],
+      signatureSolver.eigenvalues()[1],
+  };
+  const double eigenvalueScale = orderedEigenvalues.cwiseAbs().maxCoeff();
+  const double signTolerance
+      = 128.0 * std::numeric_limits<double>::epsilon() * eigenvalueScale;
+  if (!std::isfinite(eigenvalueScale) || eigenvalueScale <= 0.0
+      || orderedEigenvalues[0] <= signTolerance
+      || orderedEigenvalues[1] >= -signTolerance
+      || orderedEigenvalues[2] >= -signTolerance) {
+    return false;
+  }
+
+  Eigen::Matrix3d orderedEigenvectors;
+  orderedEigenvectors.col(0) = signatureSolver.eigenvectors().col(2);
+  orderedEigenvectors.col(1) = signatureSolver.eigenvectors().col(0);
+  orderedEigenvectors.col(2) = signatureSolver.eigenvectors().col(1);
+
+  factorization.negativeRatios
+      = -orderedEigenvalues.tail<2>() / orderedEigenvalues[0];
+  factorization.linearToSpectral
+      = orderedEigenvectors.transpose() * inverseUpper.transpose() * coneScale;
+  factorization.spectralToReaction
+      = coneScale * inverseUpper * orderedEigenvectors;
+  if (!factorization.negativeRatios.allFinite()
+      || (factorization.negativeRatios.array() <= 0.0).any()
+      || !factorization.linearToSpectral.allFinite()
+      || !factorization.spectralToReaction.allFinite()) {
+    return false;
+  }
+
+  factorization.valid = true;
+  return true;
+}
+
+template <typename Function, typename Derivative>
+inline bool solveExactCoulombMonotoneUnitIntervalRoot(
+    const Function& function,
+    const Derivative& derivative,
+    long double functionAtZero,
+    long double& root)
+{
+  if (!std::isfinite(functionAtZero) || functionAtZero >= 0.0L) {
+    return false;
+  }
+
+  long double lower = 0.0L;
+  long double upper = 1.0L;
+  long double iterate = 0.5L;
+  constexpr int kMaxIterations = 80;
+  const long double intervalTolerance
+      = 64.0L * std::numeric_limits<double>::epsilon();
+  for (int iteration = 0; iteration < kMaxIterations; ++iteration) {
+    const long double value = function(iterate);
+    if (!std::isfinite(value)) {
+      upper = iterate;
+      iterate = 0.5L * (lower + upper);
+      continue;
+    }
+
+    if (value < 0.0L) {
+      lower = iterate;
+    } else {
+      upper = iterate;
+    }
+    if (upper - lower <= intervalTolerance) {
+      root = 0.5L * (lower + upper);
+      return std::isfinite(root) && root > 0.0L && root < 1.0L;
+    }
+
+    const long double slope = derivative(iterate);
+    long double candidate = std::numeric_limits<long double>::quiet_NaN();
+    if (std::isfinite(slope) && slope > 0.0L) {
+      candidate = iterate - value / slope;
+    }
+    if (!std::isfinite(candidate) || candidate <= lower || candidate >= upper) {
+      candidate = 0.5L * (lower + upper);
+    }
+    iterate = candidate;
+  }
+
+  root = 0.5L * (lower + upper);
+  return std::isfinite(root) && root > 0.0L && root < 1.0L;
+}
+
+inline bool isExactCoulombLocalConeQuadraticKktPoint(
+    const ExactCoulombLocalConeQuadraticFactorization& factorization,
+    const Eigen::Vector3d& linearTerm,
+    const Eigen::Vector3d& reaction)
+{
+  if (!factorization.valid || !linearTerm.allFinite()
+      || !reaction.allFinite()) {
+    return false;
+  }
+
+  const double coefficient = factorization.coefficient;
+  const Eigen::Vector3d gradient
+      = factorization.hessian * reaction + linearTerm;
+  if (!gradient.allFinite()) {
+    return false;
+  }
+
+  const double reactionScale = (std::max)(1.0, reaction.norm());
+  const double gradientScale = (std::max)(1.0, gradient.norm());
+  const double coefficientScale = (std::max)(1.0, coefficient);
+  const double coneTolerance
+      = 4096.0 * std::numeric_limits<double>::epsilon() * coefficientScale;
+  const double reactionTolerance = coneTolerance * reactionScale;
+  const double gradientTolerance = coneTolerance * gradientScale;
+  const double tangentNorm = std::hypot(reaction[1], reaction[2]);
+  const double gradientTangentNorm = std::hypot(gradient[1], gradient[2]);
+
+  const bool primalFeasible
+      = coefficient == 0.0 ? reaction[0] >= -reactionTolerance
+                                 && tangentNorm <= reactionTolerance
+                           : reaction[0] >= -reactionTolerance
+                                 && tangentNorm <= coefficient * reaction[0]
+                                                       + reactionTolerance;
+  if (!primalFeasible) {
+    return false;
+  }
+
+  // The normal cone is exactly zero at a strictly interior reaction, so
+  // stationarity is the complete dual/complementarity certificate there.
+  // Requiring reaction.dot(gradient) as well only repeats stationarity after
+  // multiplying by a potentially large reaction and can reject a solution
+  // because of cancellation in hessian * reaction + linearTerm.
+  const bool strictlyInterior
+      = coefficient > 0.0 && reaction[0] > reactionTolerance
+        && tangentNorm + reactionTolerance < coefficient * reaction[0];
+  if (strictlyInterior) {
+    return gradient.norm() <= gradientTolerance;
+  }
+
+  const bool dualFeasible
+      = gradient[0] >= coefficient * gradientTangentNorm - gradientTolerance;
+  const double gapTolerance = 8192.0 * std::numeric_limits<double>::epsilon()
+                              * (1.0 + reaction.norm() * gradient.norm());
+  return dualFeasible && std::abs(reaction.dot(gradient)) <= gapTolerance;
+}
+
+/// Try the closed-form spectral solve for one SPD quadratic contact block.
+inline bool trySolveExactCoulombLocalConeQuadraticAnalytically(
+    const ExactCoulombLocalConeQuadraticFactorization& factorization,
+    const Eigen::Vector3d& linearTerm,
+    Eigen::Vector3d& reaction)
+{
+  if (!factorization.valid || !linearTerm.allFinite()) {
+    return false;
+  }
+
+  const double coefficient = factorization.coefficient;
+  if (factorization.frictionless) {
+    reaction = Eigen::Vector3d::Zero();
+    reaction[0] = (std::max)(0.0, -linearTerm[0] / factorization.hessian(0, 0));
+    return reaction.allFinite()
+           && isExactCoulombLocalConeQuadraticKktPoint(
+               factorization, linearTerm, reaction);
+  }
+
+  const Eigen::Vector3d transformedLinearTerm{
+      linearTerm[0], coefficient * linearTerm[1], coefficient * linearTerm[2]};
+  if (!transformedLinearTerm.allFinite()) {
+    return false;
+  }
+
+  if (transformedLinearTerm[0]
+      >= std::hypot(transformedLinearTerm[1], transformedLinearTerm[2])) {
+    reaction.setZero();
+    return isExactCoulombLocalConeQuadraticKktPoint(
+        factorization, linearTerm, reaction);
+  }
+
+  const Eigen::Vector3d spectralLinearTerm
+      = factorization.linearToSpectral * linearTerm;
+  if (!spectralLinearTerm.allFinite()) {
+    return false;
+  }
+
+  const Eigen::Vector3d unconstrainedReaction
+      = factorization.spectralToReaction * (-spectralLinearTerm);
+  if (!unconstrainedReaction.allFinite()) {
+    return false;
+  }
+  if (unconstrainedReaction[0] >= 0.0
+      && std::hypot(unconstrainedReaction[1], unconstrainedReaction[2])
+             <= coefficient * unconstrainedReaction[0]) {
+    reaction = unconstrainedReaction;
+    return isExactCoulombLocalConeQuadraticKktPoint(
+        factorization, linearTerm, reaction);
+  }
+
+  const double spectralScale = spectralLinearTerm.cwiseAbs().maxCoeff();
+  if (!std::isfinite(spectralScale) || spectralScale <= 0.0) {
+    return false;
+  }
+  const Eigen::Vector3d scaledLinearTerm = spectralLinearTerm / spectralScale;
+  const long double positiveCoefficient
+      = std::abs(static_cast<long double>(scaledLinearTerm[0]));
+  const long double scaledNorm
+      = static_cast<long double>(scaledLinearTerm.norm());
+  const long double poleTolerance
+      = 128.0L * std::numeric_limits<double>::epsilon() * scaledNorm;
+  const Eigen::Vector2d& ratios = factorization.negativeRatios;
+
+  const auto acceptSpectralCandidate = [&](const Eigen::Vector3d& spectral) {
+    const Eigen::Vector3d candidate
+        = factorization.spectralToReaction * spectral;
+    if (!isExactCoulombLocalConeQuadraticKktPoint(
+            factorization, linearTerm, candidate)) {
+      return false;
+    }
+    reaction = candidate;
+    return true;
+  };
+
+  // If the linear term lies in the range of the singular shifted system, the
+  // unique cone solution sits exactly at the positive generalized pole.
+  if (positiveCoefficient <= poleTolerance) {
+    Eigen::Vector3d poleSpectral = Eigen::Vector3d::Zero();
+    for (Eigen::Index index = 0; index < 2; ++index) {
+      poleSpectral[index + 1]
+          = -spectralLinearTerm[index + 1] / (1.0 + ratios[index]);
+    }
+    const double positiveMagnitude = std::sqrt(
+        (ratios.array() * poleSpectral.tail<2>().array().square()).sum());
+    poleSpectral[0] = positiveMagnitude;
+    if (acceptSpectralCandidate(poleSpectral)) {
+      return true;
+    }
+    poleSpectral[0] = -positiveMagnitude;
+    if (acceptSpectralCandidate(poleSpectral)) {
+      return true;
+    }
+  }
+
+  const long double firstNegative
+      = static_cast<long double>(scaledLinearTerm[1]);
+  const long double secondNegative
+      = static_cast<long double>(scaledLinearTerm[2]);
+  const long double firstRatio = static_cast<long double>(ratios[0]);
+  const long double secondRatio = static_cast<long double>(ratios[1]);
+
+  const auto leftFunction = [&](long double value) {
+    const long double firstDenominator = 1.0L + firstRatio * value;
+    const long double secondDenominator = 1.0L + secondRatio * value;
+    const long double negativeSquared
+        = firstRatio * firstNegative * firstNegative
+              / (firstDenominator * firstDenominator)
+          + secondRatio * secondNegative * secondNegative
+                / (secondDenominator * secondDenominator);
+    return positiveCoefficient / (1.0L - value)
+           - std::sqrt((std::max)(0.0L, negativeSquared));
+  };
+  const auto leftDerivative = [&](long double value) {
+    const long double firstDenominator = 1.0L + firstRatio * value;
+    const long double secondDenominator = 1.0L + secondRatio * value;
+    const long double negativeSquared
+        = firstRatio * firstNegative * firstNegative
+              / (firstDenominator * firstDenominator)
+          + secondRatio * secondNegative * secondNegative
+                / (secondDenominator * secondDenominator);
+    const long double negativeNorm
+        = std::sqrt((std::max)(0.0L, negativeSquared));
+    if (negativeNorm == 0.0L) {
+      return std::numeric_limits<long double>::infinity();
+    }
+    const long double negativeDerivative
+        = firstRatio * firstRatio * firstNegative * firstNegative
+              / (firstDenominator * firstDenominator * firstDenominator)
+          + secondRatio * secondRatio * secondNegative * secondNegative
+                / (secondDenominator * secondDenominator * secondDenominator);
+    return positiveCoefficient / ((1.0L - value) * (1.0L - value))
+           + negativeDerivative / negativeNorm;
+  };
+
+  long double root = std::numeric_limits<long double>::quiet_NaN();
+  const long double leftAtZero = leftFunction(0.0L);
+  if (solveExactCoulombMonotoneUnitIntervalRoot(
+          leftFunction, leftDerivative, leftAtZero, root)) {
+    const double leftRoot = static_cast<double>(root);
+    Eigen::Vector3d spectral;
+    spectral[0] = -spectralLinearTerm[0] / (1.0 - leftRoot);
+    spectral[1] = -spectralLinearTerm[1] / (1.0 + ratios[0] * leftRoot);
+    spectral[2] = -spectralLinearTerm[2] / (1.0 + ratios[1] * leftRoot);
+    if (spectral.allFinite() && acceptSpectralCandidate(spectral)) {
+      return true;
+    }
+  }
+
+  const auto rightFunction = [&](long double value) {
+    const long double firstDenominator = value + firstRatio;
+    const long double secondDenominator = value + secondRatio;
+    const long double negativeSquared
+        = firstRatio * firstNegative * firstNegative
+              / (firstDenominator * firstDenominator)
+          + secondRatio * secondNegative * secondNegative
+                / (secondDenominator * secondDenominator);
+    return positiveCoefficient / (1.0L - value)
+           - std::sqrt((std::max)(0.0L, negativeSquared));
+  };
+  const auto rightDerivative = [&](long double value) {
+    const long double firstDenominator = value + firstRatio;
+    const long double secondDenominator = value + secondRatio;
+    const long double negativeSquared
+        = firstRatio * firstNegative * firstNegative
+              / (firstDenominator * firstDenominator)
+          + secondRatio * secondNegative * secondNegative
+                / (secondDenominator * secondDenominator);
+    const long double negativeNorm
+        = std::sqrt((std::max)(0.0L, negativeSquared));
+    if (negativeNorm == 0.0L) {
+      return std::numeric_limits<long double>::infinity();
+    }
+    const long double negativeDerivative
+        = firstRatio * firstNegative * firstNegative
+              / (firstDenominator * firstDenominator * firstDenominator)
+          + secondRatio * secondNegative * secondNegative
+                / (secondDenominator * secondDenominator * secondDenominator);
+    return positiveCoefficient / ((1.0L - value) * (1.0L - value))
+           + negativeDerivative / negativeNorm;
+  };
+
+  const long double rightAtZero = rightFunction(0.0L);
+  if (solveExactCoulombMonotoneUnitIntervalRoot(
+          rightFunction, rightDerivative, rightAtZero, root)) {
+    const double rightRoot = static_cast<double>(root);
+    Eigen::Vector3d spectral;
+    spectral[0] = -spectralLinearTerm[0] * rightRoot / (rightRoot - 1.0);
+    spectral[1] = -spectralLinearTerm[1] * rightRoot / (rightRoot + ratios[0]);
+    spectral[2] = -spectralLinearTerm[2] * rightRoot / (rightRoot + ratios[1]);
+    if (spectral.allFinite() && acceptSpectralCandidate(spectral)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/// Solve a local SPD cone QP with a contractive projected-gradient map.
+///
+/// This is the rare numerical fallback for a closed-form spectral solve whose
+/// candidate cannot pass the KKT certificate, most commonly when the solution
+/// lies extremely close to a generalized pole. For eigenvalues `m` and `L`,
+/// the step `2 / (m + L)` makes the affine gradient map contractive with
+/// factor `(L - m) / (L + m)`. Euclidean projection is non-expansive, so the
+/// complete fixed-point iteration is contractive as well. A candidate is
+/// returned only after it passes the same primal, dual, and complementarity
+/// KKT certificate as the analytical path.
+inline bool solveExactCoulombLocalConeQuadraticProjectedGradientFallback(
+    const ExactCoulombLocalConeQuadraticFactorization& factorization,
+    const Eigen::Vector3d& linearTerm,
+    Eigen::Vector3d& reaction)
+{
+  if (!factorization.valid || !linearTerm.allFinite()) {
+    return false;
+  }
+
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigenSolver(
+      factorization.hessian, Eigen::EigenvaluesOnly);
+  if (eigenSolver.info() != Eigen::Success
+      || !eigenSolver.eigenvalues().allFinite()) {
+    return false;
+  }
+  const double minimumEigenvalue = eigenSolver.eigenvalues().minCoeff();
+  const double maximumEigenvalue = eigenSolver.eigenvalues().maxCoeff();
+  if (!std::isfinite(minimumEigenvalue) || !std::isfinite(maximumEigenvalue)
+      || minimumEigenvalue <= 0.0 || maximumEigenvalue < minimumEigenvalue) {
+    return false;
+  }
+
+  // Form the optimal constant step without overflowing m + L.
+  const double stepSize = (2.0 / maximumEigenvalue)
+                          / (1.0 + minimumEigenvalue / maximumEigenvalue);
+  if (!std::isfinite(stepSize) || stepSize <= 0.0) {
+    return false;
+  }
+
+  reaction = projectCoulombConeNormalFirst(
+      -stepSize * linearTerm, factorization.coefficient);
+  if (!reaction.allFinite()) {
+    return false;
+  }
+
+  constexpr int kMaximumIterations = 4096;
+  for (int iteration = 0; iteration < kMaximumIterations; ++iteration) {
+    if (isExactCoulombLocalConeQuadraticKktPoint(
+            factorization, linearTerm, reaction)) {
+      return true;
+    }
+    const Eigen::Vector3d gradient
+        = factorization.hessian * reaction + linearTerm;
+    if (!gradient.allFinite()) {
+      return false;
+    }
+    const Eigen::Vector3d nextReaction = projectCoulombConeNormalFirst(
+        reaction - stepSize * gradient, factorization.coefficient);
+    if (!nextReaction.allFinite()) {
+      return false;
+    }
+    reaction = nextReaction;
+  }
+
+  return isExactCoulombLocalConeQuadraticKktPoint(
+      factorization, linearTerm, reaction);
+}
+
+/// Solve one SPD quadratic contact block exactly over its Coulomb cone.
+inline bool solveExactCoulombLocalConeQuadratic(
+    const ExactCoulombLocalConeQuadraticFactorization& factorization,
+    const Eigen::Vector3d& linearTerm,
+    Eigen::Vector3d& reaction)
+{
+  if (trySolveExactCoulombLocalConeQuadraticAnalytically(
+          factorization, linearTerm, reaction)) {
+    return true;
+  }
+  return solveExactCoulombLocalConeQuadraticProjectedGradientFallback(
+      factorization, linearTerm, reaction);
+}
+
+/// Reusable storage for consecutive block Gauss-Seidel cone-QP solves.
+///
+/// Local Hessians and mode-specific inverse, exact-metric, or scalar-step data
+/// are keyed by value, not by the address of caller-owned data. This makes
+/// cache reuse explicit while ensuring resized or mutated inputs cannot leave
+/// stale pointers in the workspace.
+struct ExactCoulombFrozenConeBlockGaussSeidelWorkspace
+{
+  /// Drop cached local systems and reusable scratch storage.
+  void clear()
+  {
+    mDiagonalBlocks.clear();
+    mCoefficients.resize(0);
+    mLocalHessians.clear();
+    mLocalInverses.clear();
+    mLocalConeFactorizations.clear();
+    mLocalSteps.clear();
+    mComputedDiagonalBlocksScratch.clear();
+    mDelassusReactionScratch.resize(0);
+    mBasisDeltaScratch.resize(0);
+    mColumnProductScratch.resize(0);
+    mStepSizeGamma = std::numeric_limits<double>::quiet_NaN();
+    mDiagonalRegularization = std::numeric_limits<double>::quiet_NaN();
+    mMinimumLocalStep = std::numeric_limits<double>::infinity();
+    mLocalSystemsValid = false;
+    mLocalSystemBuildCount = 0;
+  }
+
+  /// Number of successful local-system cache builds since construction or
+  /// `clear()`. Intended for focused diagnostics and regression tests.
+  std::size_t getLocalSystemBuildCount() const
+  {
+    return mLocalSystemBuildCount;
+  }
+
+  bool prepareLocalSystems(
+      const std::vector<Eigen::Matrix3d>& diagonalBlocks,
+      const Eigen::Ref<const Eigen::VectorXd>& coefficients,
+      double stepSizeGamma,
+      ExactCoulombFrozenConeLocalSolver localSolver,
+      double diagonalRegularization)
+  {
+    const double effectiveDiagonalRegularization
+        = localSolver == ExactCoulombFrozenConeLocalSolver::ProjectedGradient
+              ? diagonalRegularization
+              : 0.0;
+    bool cacheMatches
+        = mLocalSystemsValid && mStepSizeGamma == stepSizeGamma
+          && mLocalSolver == localSolver
+          && mDiagonalRegularization == effectiveDiagonalRegularization
+          && mDiagonalBlocks.size() == diagonalBlocks.size()
+          && mCoefficients.size() == coefficients.size()
+          && (mCoefficients.array() == coefficients.array()).all();
+    if (cacheMatches) {
+      for (std::size_t block = 0; block < diagonalBlocks.size(); ++block) {
+        if (!(mDiagonalBlocks[block].array() == diagonalBlocks[block].array())
+                 .all()) {
+          cacheMatches = false;
+          break;
+        }
+      }
+    }
+    if (cacheMatches) {
+      return true;
+    }
+
+    mLocalSystemsValid = false;
+    if (!std::isfinite(stepSizeGamma) || stepSizeGamma <= 0.0
+        || !std::isfinite(effectiveDiagonalRegularization)
+        || effectiveDiagonalRegularization < 0.0
+        || coefficients.size()
+               != static_cast<Eigen::Index>(diagonalBlocks.size())
+        || !coefficients.allFinite() || (coefficients.array() < 0.0).any()) {
+      return false;
+    }
+
+    mDiagonalBlocks = diagonalBlocks;
+    mCoefficients = coefficients;
+    mLocalHessians.resize(diagonalBlocks.size());
+    mLocalInverses.clear();
+    mLocalConeFactorizations.clear();
+    mLocalSteps.clear();
+    if (localSolver
+        == ExactCoulombFrozenConeLocalSolver::InverseEuclideanProjection) {
+      mLocalInverses.resize(diagonalBlocks.size());
+    } else if (
+        localSolver
+        == ExactCoulombFrozenConeLocalSolver::ExactMetricProjection) {
+      mLocalConeFactorizations.resize(diagonalBlocks.size());
+    } else if (
+        localSolver == ExactCoulombFrozenConeLocalSolver::ProjectedGradient) {
+      mLocalSteps.resize(diagonalBlocks.size());
+    } else {
+      return false;
+    }
+    const double inverseGamma = 1.0 / stepSizeGamma;
+    if (!std::isfinite(inverseGamma)) {
+      return false;
+    }
+    const Eigen::Matrix3d gammaHessian
+        = inverseGamma * Eigen::Matrix3d::Identity();
+    double minimumLocalStep = std::numeric_limits<double>::infinity();
+    for (std::size_t block = 0; block < diagonalBlocks.size(); ++block) {
+      const Eigen::Matrix3d requestedHessian
+          = diagonalBlocks[block] + gammaHessian;
+      if (localSolver
+          == ExactCoulombFrozenConeLocalSolver::InverseEuclideanProjection) {
+        if (!prepareExactCoulombLocalSpdInverse(
+                requestedHessian,
+                mLocalHessians[block],
+                mLocalInverses[block])) {
+          return false;
+        }
+      } else if (
+          localSolver
+          == ExactCoulombFrozenConeLocalSolver::ExactMetricProjection) {
+        if (!prepareExactCoulombLocalConeQuadraticFactorization(
+                requestedHessian,
+                coefficients[static_cast<Eigen::Index>(block)],
+                mLocalConeFactorizations[block])) {
+          return false;
+        }
+        mLocalHessians[block] = mLocalConeFactorizations[block].hessian;
+      } else {
+        if (!prepareExactCoulombLocalSpdHessian(
+                requestedHessian, mLocalHessians[block])) {
+          return false;
+        }
+        const double localLipschitz = computeExactCoulombLocalBlockLipschitz(
+            mLocalHessians[block], effectiveDiagonalRegularization);
+        if (!std::isfinite(localLipschitz) || localLipschitz <= 0.0) {
+          return false;
+        }
+        mLocalSteps[block] = 1.0 / localLipschitz;
+        minimumLocalStep = (std::min)(minimumLocalStep, mLocalSteps[block]);
+      }
+    }
+
+    mStepSizeGamma = stepSizeGamma;
+    mLocalSolver = localSolver;
+    mDiagonalRegularization = effectiveDiagonalRegularization;
+    mMinimumLocalStep = minimumLocalStep;
+    mLocalSystemsValid = true;
+    ++mLocalSystemBuildCount;
+    return true;
+  }
+
+  const std::vector<Eigen::Matrix3d>& getLocalHessians() const
+  {
+    return mLocalHessians;
+  }
+
+  const std::vector<ExactCoulombLocalConeQuadraticFactorization>&
+  getLocalConeFactorizations() const
+  {
+    return mLocalConeFactorizations;
+  }
+
+  const std::vector<Eigen::Matrix3d>& getLocalInverses() const
+  {
+    return mLocalInverses;
+  }
+
+  const std::vector<double>& getLocalSteps() const
+  {
+    return mLocalSteps;
+  }
+
+  double getMinimumLocalStep() const
+  {
+    return mMinimumLocalStep;
+  }
+
+  std::vector<Eigen::Matrix3d>& getComputedDiagonalBlocksScratch()
+  {
+    return mComputedDiagonalBlocksScratch;
+  }
+
+  Eigen::VectorXd& getDelassusReactionScratch(Eigen::Index dimension)
+  {
+    mDelassusReactionScratch.resize(dimension);
+    return mDelassusReactionScratch;
+  }
+
+  Eigen::VectorXd& getBasisDeltaScratch(Eigen::Index dimension)
+  {
+    mBasisDeltaScratch.setZero(dimension);
+    return mBasisDeltaScratch;
+  }
+
+  Eigen::VectorXd& getColumnProductScratch(Eigen::Index dimension)
+  {
+    mColumnProductScratch.resize(dimension);
+    return mColumnProductScratch;
+  }
+
+private:
+  std::vector<Eigen::Matrix3d> mDiagonalBlocks;
+  Eigen::VectorXd mCoefficients;
+  std::vector<Eigen::Matrix3d> mLocalHessians;
+  std::vector<Eigen::Matrix3d> mLocalInverses;
+  std::vector<ExactCoulombLocalConeQuadraticFactorization>
+      mLocalConeFactorizations;
+  std::vector<double> mLocalSteps;
+  std::vector<Eigen::Matrix3d> mComputedDiagonalBlocksScratch;
+  Eigen::VectorXd mDelassusReactionScratch;
+  Eigen::VectorXd mBasisDeltaScratch;
+  Eigen::VectorXd mColumnProductScratch;
+  double mStepSizeGamma = std::numeric_limits<double>::quiet_NaN();
+  double mDiagonalRegularization = std::numeric_limits<double>::quiet_NaN();
+  double mMinimumLocalStep = std::numeric_limits<double>::infinity();
+  ExactCoulombFrozenConeLocalSolver mLocalSolver
+      = ExactCoulombFrozenConeLocalSolver::ExactMetricProjection;
+  bool mLocalSystemsValid = false;
+  std::size_t mLocalSystemBuildCount = 0;
+};
 
 /// Solve the frozen cone QP with a matrix-free projected-gradient iteration.
 ///
@@ -514,7 +1397,9 @@ ExactCoulombFrozenConeResult solveExactCoulombFrozenConeProjectedGradient(
       || frozenCoupling.size() != problem.getDimension()
       || !referenceReaction.allFinite() || !frozenCoupling.allFinite()
       || !std::isfinite(stepSizeGamma) || stepSizeGamma <= 0.0) {
-    DART_ASSERT(false && "Invalid exact-Coulomb frozen cone-QP input.");
+    // Invalid caller-controlled solver input is part of this helper's status
+    // contract.  Do not assert here: assert-enabled builds must return the
+    // same fail-closed result as release builds.
     result.status = ExactCoulombFrozenConeStatus::InvalidInput;
     return result;
   }
@@ -596,9 +1481,8 @@ ExactCoulombFrozenConeResult solveExactCoulombFrozenConeProjectedGradient(
 ///
 /// Each sweep visits one normal-first contact triple at a time, keeps the
 /// off-diagonal Delassus response fixed through the current global iterate, and
-/// approximately solves the resulting 3D cone subproblem with projected
-/// gradient. This mirrors the paper's matrix-free inner-solve structure while
-/// staying small enough to validate against the projected-gradient reference.
+/// applies the selected per-contact inverse/projection, exact metric solve, or
+/// scalar projected-gradient update using cached 3x3 local data.
 ///
 /// `accumulateDelassusBlockColumns(contact, delta, accumulator)` must perform
 /// `accumulator += W.middleCols(3 * contact, 3) * delta`. The tracked Delassus
@@ -625,13 +1509,27 @@ ExactCoulombFrozenConeResult solveExactCoulombFrozenConeBlockGaussSeidel(
       || frozenCoupling.size() != problem.getDimension()
       || !referenceReaction.allFinite() || !frozenCoupling.allFinite()
       || !std::isfinite(stepSizeGamma) || stepSizeGamma <= 0.0) {
-    DART_ASSERT(false && "Invalid exact-Coulomb block-GS input.");
+    // Invalid caller-controlled solver input is part of this helper's status
+    // contract. Do not assert here: assert-enabled builds must return the same
+    // fail-closed result as release builds.
     result.status = ExactCoulombFrozenConeStatus::InvalidInput;
     return result;
   }
 
-  if (!projectExactCoulombReactionNormalFirst(
-          referenceReaction, problem.coefficients, result.reaction)) {
+  const bool hasInitialReaction = options.initialReaction != nullptr;
+  if (hasInitialReaction
+      && (options.initialReaction->size() != problem.getDimension()
+          || !options.initialReaction->allFinite())) {
+    result.status = ExactCoulombFrozenConeStatus::InvalidInput;
+    return result;
+  }
+  const bool projected
+      = hasInitialReaction
+            ? projectExactCoulombReactionNormalFirst(
+                *options.initialReaction, problem.coefficients, result.reaction)
+            : projectExactCoulombReactionNormalFirst(
+                referenceReaction, problem.coefficients, result.reaction);
+  if (!projected) {
     result.status = ExactCoulombFrozenConeStatus::InvalidInput;
     return result;
   }
@@ -648,44 +1546,63 @@ ExactCoulombFrozenConeResult solveExactCoulombFrozenConeBlockGaussSeidel(
   const std::vector<Eigen::Matrix3d>* diagonalBlocks
       = options.cachedDiagonalBlocks;
   if (diagonalBlocks == nullptr) {
+    std::vector<Eigen::Matrix3d>* computedDiagonalBlocks = &localDiagonalBlocks;
+    if (options.workspace != nullptr) {
+      computedDiagonalBlocks
+          = &options.workspace->getComputedDiagonalBlocksScratch();
+    }
     if (!computeExactCoulombDelassusDiagonalBlocksNormalFirst(
-            problem, applyDelassus, localDiagonalBlocks)) {
+            problem, applyDelassus, *computedDiagonalBlocks)) {
       result.status = ExactCoulombFrozenConeStatus::InvalidInput;
       return result;
     }
-    diagonalBlocks = &localDiagonalBlocks;
+    diagonalBlocks = computedDiagonalBlocks;
   } else if (diagonalBlocks->size() != static_cast<std::size_t>(contactCount)) {
-    DART_ASSERT(false && "Cached exact-Coulomb diagonal-block count mismatch.");
+    // The optional cache is supplied by the caller.  Treat a stale/mismatched
+    // cache as invalid input in assert-enabled and release builds alike.
     result.status = ExactCoulombFrozenConeStatus::InvalidInput;
     return result;
   }
 
   const double inverseGamma = 1.0 / stepSizeGamma;
-  const Eigen::Matrix3d gammaHessian
-      = inverseGamma * Eigen::Matrix3d::Identity();
-
-  // The Delassus blocks and gamma are fixed for this call, so the local
-  // Hessians and conservative projected-gradient steps are cached once per
-  // call instead of once per contact visit.
-  std::vector<Eigen::Matrix3d> localHessians(
-      static_cast<std::size_t>(contactCount));
-  std::vector<double> localSteps(static_cast<std::size_t>(contactCount));
-  double minimumLocalStep = std::numeric_limits<double>::infinity();
-  for (Eigen::Index contact = 0; contact < contactCount; ++contact) {
-    const std::size_t blockIndex = static_cast<std::size_t>(contact);
-    localHessians[blockIndex] = (*diagonalBlocks)[blockIndex] + gammaHessian;
-    const double localLipschitz = computeExactCoulombLocalBlockLipschitz(
-        localHessians[blockIndex], options.diagonalRegularization);
-    if (!std::isfinite(localLipschitz) || localLipschitz <= 0.0) {
-      result.status = ExactCoulombFrozenConeStatus::InvalidInput;
-      return result;
-    }
-
-    localSteps[blockIndex] = 1.0 / localLipschitz;
-    minimumLocalStep = (std::min)(minimumLocalStep, localSteps[blockIndex]);
+  if (!std::isfinite(inverseGamma)) {
+    result.status = ExactCoulombFrozenConeStatus::InvalidInput;
+    return result;
   }
 
-  Eigen::VectorXd delassusReaction(dimension);
+  // The Delassus blocks, coefficients, mode, and gamma are fixed for this call,
+  // so all mode-specific local data is prepared once per solve.
+  ExactCoulombFrozenConeBlockGaussSeidelWorkspace localSystemWorkspace;
+  ExactCoulombFrozenConeBlockGaussSeidelWorkspace* systemWorkspace
+      = options.workspace == nullptr ? &localSystemWorkspace
+                                     : options.workspace;
+  if (!systemWorkspace->prepareLocalSystems(
+          *diagonalBlocks,
+          problem.coefficients,
+          stepSizeGamma,
+          options.localSolver,
+          options.diagonalRegularization)) {
+    result.status = ExactCoulombFrozenConeStatus::InvalidInput;
+    return result;
+  }
+  const auto& preparedLocalHessians = systemWorkspace->getLocalHessians();
+  const auto& preparedLocalInverses = systemWorkspace->getLocalInverses();
+  const auto& preparedLocalConeFactorizations
+      = systemWorkspace->getLocalConeFactorizations();
+  const auto& preparedLocalSteps = systemWorkspace->getLocalSteps();
+  if (options.localSolver
+      == ExactCoulombFrozenConeLocalSolver::ProjectedGradient) {
+    result.stepSize = systemWorkspace->getMinimumLocalStep();
+  }
+
+  Eigen::VectorXd localDelassusReaction;
+  if (options.workspace == nullptr) {
+    localDelassusReaction.resize(dimension);
+  }
+  Eigen::VectorXd& delassusReaction
+      = options.workspace == nullptr
+            ? localDelassusReaction
+            : options.workspace->getDelassusReactionScratch(dimension);
   applyDelassus(result.reaction, delassusReaction);
   if (!delassusReaction.allFinite()) {
     result.status = ExactCoulombFrozenConeStatus::InvalidInput;
@@ -703,8 +1620,7 @@ ExactCoulombFrozenConeResult solveExactCoulombFrozenConeBlockGaussSeidel(
     for (Eigen::Index contact = 0; contact < contactCount; ++contact) {
       const Eigen::Index offset = 3 * contact;
       const std::size_t blockIndex = static_cast<std::size_t>(contact);
-      const Eigen::Matrix3d& localHessian = localHessians[blockIndex];
-      const double localStep = localSteps[blockIndex];
+      const Eigen::Matrix3d& localHessian = preparedLocalHessians[blockIndex];
 
       const Eigen::Vector3d previousBlock = result.reaction.segment<3>(offset);
       const Eigen::Vector3d previousGradient
@@ -718,20 +1634,46 @@ ExactCoulombFrozenConeResult solveExactCoulombFrozenConeBlockGaussSeidel(
         return result;
       }
 
-      Eigen::Vector3d block = previousBlock;
-      for (int localIteration = 0; localIteration < options.localIterations;
-           ++localIteration) {
-        const Eigen::Vector3d localGradient
-            = previousGradient + localHessian * (block - previousBlock);
-        const Eigen::Vector3d candidate = block - localStep * localGradient;
-        const Eigen::Vector3d nextBlock = projectCoulombConeNormalFirst(
-            candidate, problem.coefficients[contact]);
-        const double localChange
-            = (nextBlock - block).norm() / (1.0 + nextBlock.norm());
-        block = nextBlock;
-        if (localChange <= options.localTolerance) {
-          break;
+      const Eigen::Vector3d localLinearTerm
+          = previousGradient - localHessian * previousBlock;
+      Eigen::Vector3d block;
+      bool localSolved = false;
+      if (options.localSolver
+          == ExactCoulombFrozenConeLocalSolver::InverseEuclideanProjection) {
+        localSolved = solveExactCoulombLocalConeInverseEuclideanProjection(
+            preparedLocalInverses[blockIndex],
+            localLinearTerm,
+            problem.coefficients[contact],
+            block);
+      } else if (
+          options.localSolver
+          == ExactCoulombFrozenConeLocalSolver::ExactMetricProjection) {
+        localSolved = solveExactCoulombLocalConeQuadratic(
+            preparedLocalConeFactorizations[blockIndex],
+            localLinearTerm,
+            block);
+      } else {
+        block = previousBlock;
+        const double localStep = preparedLocalSteps[blockIndex];
+        for (int localIteration = 0; localIteration < options.localIterations;
+             ++localIteration) {
+          const Eigen::Vector3d localGradient
+              = previousGradient + localHessian * (block - previousBlock);
+          const Eigen::Vector3d candidate = block - localStep * localGradient;
+          const Eigen::Vector3d nextBlock = projectCoulombConeNormalFirst(
+              candidate, problem.coefficients[contact]);
+          const double localChange
+              = (nextBlock - block).norm() / (1.0 + nextBlock.norm());
+          block = nextBlock;
+          if (localChange <= options.localTolerance) {
+            break;
+          }
         }
+        localSolved = block.allFinite();
+      }
+      if (!localSolved) {
+        result.status = ExactCoulombFrozenConeStatus::InvalidInput;
+        return result;
       }
 
       const Eigen::Vector3d delta = block - previousBlock;
@@ -748,8 +1690,8 @@ ExactCoulombFrozenConeResult solveExactCoulombFrozenConeBlockGaussSeidel(
     result.fixedPointError
         = std::sqrt(sweepChangeSquared) / (1.0 + result.reaction.norm());
     result.iterations = sweep + 1;
-    result.stepSize = minimumLocalStep;
-    if (result.fixedPointError <= options.tolerance) {
+    if (!options.runFixedSweeps
+        && result.fixedPointError <= options.tolerance) {
       result.status = ExactCoulombFrozenConeStatus::Success;
       return result;
     }
@@ -763,7 +1705,6 @@ ExactCoulombFrozenConeResult solveExactCoulombFrozenConeBlockGaussSeidel(
     }
   }
 
-  result.stepSize = minimumLocalStep;
   result.status = ExactCoulombFrozenConeStatus::MaxIterations;
   return result;
 }
@@ -787,17 +1728,26 @@ ExactCoulombFrozenConeResult solveExactCoulombFrozenConeBlockGaussSeidel(
     = ExactCoulombFrozenConeBlockGaussSeidelOptions())
 {
   const Eigen::Index dimension = problem.getDimension();
-  Eigen::VectorXd basisDelta = Eigen::VectorXd::Zero(dimension);
-  Eigen::VectorXd columnProduct(dimension);
+  Eigen::VectorXd localBasisDelta;
+  Eigen::VectorXd localColumnProduct;
+  Eigen::VectorXd* basisDelta = &localBasisDelta;
+  Eigen::VectorXd* columnProduct = &localColumnProduct;
+  if (options.workspace == nullptr) {
+    localBasisDelta.setZero(dimension);
+    localColumnProduct.resize(dimension);
+  } else {
+    basisDelta = &options.workspace->getBasisDeltaScratch(dimension);
+    columnProduct = &options.workspace->getColumnProductScratch(dimension);
+  }
   const auto accumulateThroughFullProduct
-      = [&applyDelassus, &basisDelta, &columnProduct](
+      = [&applyDelassus, basisDelta, columnProduct](
             Eigen::Index contact,
             const Eigen::Vector3d& delta,
             Eigen::Ref<Eigen::VectorXd> accumulator) {
-          basisDelta.segment<3>(3 * contact) = delta;
-          applyDelassus(basisDelta, columnProduct);
-          accumulator += columnProduct;
-          basisDelta.segment<3>(3 * contact).setZero();
+          basisDelta->segment<3>(3 * contact) = delta;
+          applyDelassus(*basisDelta, *columnProduct);
+          accumulator += *columnProduct;
+          basisDelta->segment<3>(3 * contact).setZero();
         };
 
   return solveExactCoulombFrozenConeBlockGaussSeidel(
@@ -814,9 +1764,11 @@ ExactCoulombFrozenConeResult solveExactCoulombFrozenConeBlockGaussSeidel(
 /// and Pai, "A Splitting Architecture for Exact Reduced Coulomb Friction"
 /// (SCA 2026), using an injected inner cone solver.
 ///
-/// `solveFrozenConeProblem(problem, reaction, coupling, gamma, output)` must
-/// solve the strongly convex cone subproblem with frozen coupling and write the
-/// intermediate reaction into `output`.
+/// `solveFrozenConeProblem(problem, reaction, coupling, gamma, initial,
+/// output)` must solve the strongly convex cone subproblem with frozen coupling
+/// and write the intermediate reaction into `output`. `initial` is the previous
+/// accepted cone-QP solution and remains fixed across rejected step-size
+/// trials. A legacy five-argument callback without `initial` is also accepted.
 template <typename DelassusOperator, typename FrozenConeSolver>
 ExactCoulombFbfResult solveExactCoulombFbf(
     const ExactCoulombContactProblem& problem,
@@ -832,7 +1784,9 @@ ExactCoulombFbfResult solveExactCoulombFbf(
       || !isValidExactCoulombFbfOptions(options)
       || initialReaction.size() != problem.getDimension()
       || !initialReaction.allFinite()) {
-    DART_ASSERT(false && "Invalid exact-Coulomb FBF solve input.");
+    // Invalid caller-controlled solver input is part of this helper's status
+    // contract. Do not assert here: assert-enabled builds must return the same
+    // fail-closed result as release builds.
     result.status = ExactCoulombFbfStatus::InvalidInput;
     return result;
   }
@@ -843,19 +1797,28 @@ ExactCoulombFbfResult solveExactCoulombFbf(
     return result;
   }
 
-  result.safeStepSize = computeExactCoulombFbfSafeStepSize(
+  // Equation (17)'s power-iteration estimate is also used by the fixed
+  // residual scale in equation (21), so compute it once per FBF solve.
+  const double spectralRadius = estimateLargestExactCoulombDelassusEigenvalue(
       problem, applyDelassus, options.spectralIterations);
+  result.safeStepSize = computeExactCoulombFbfSafeStepSizeFromSpectralRadius(
+      problem, spectralRadius);
 
   double baseStepSize = options.initialStepSize;
-  double maxStepSize = std::numeric_limits<double>::infinity();
+  double automaticStepSize = std::numeric_limits<double>::infinity();
   if (std::isfinite(result.safeStepSize)) {
-    maxStepSize = result.safeStepSize * options.stepSizeScale;
+    automaticStepSize = result.safeStepSize * options.stepSizeScale;
   }
   if (std::isnan(baseStepSize)) {
-    baseStepSize = std::isfinite(maxStepSize) ? maxStepSize : 1.0;
+    baseStepSize = std::isfinite(automaticStepSize) ? automaticStepSize : 1.0;
   }
-  if (std::isfinite(maxStepSize)) {
-    baseStepSize = (std::min)(baseStepSize, maxStepSize);
+  if (options.capInitialStepSizeAtSafeBound
+      && std::isfinite(options.initialStepSize)
+      && std::isfinite(result.safeStepSize)) {
+    // Explicit gamma values, including a constraint solver's persisted gamma,
+    // are capped at the fresh unscaled spectral bound. `stepSizeScale` applies
+    // only when this solve chooses gamma automatically from a NaN request.
+    baseStepSize = (std::min)(baseStepSize, result.safeStepSize);
   }
   if (!std::isfinite(baseStepSize) || baseStepSize <= 0.0) {
     result.status = ExactCoulombFbfStatus::InvalidInput;
@@ -865,8 +1828,8 @@ ExactCoulombFbfResult solveExactCoulombFbf(
 
   CoulombConeResidualScales residualScales = options.residualScales;
   if (options.useAutomaticResidualScales) {
-    residualScales = computeExactCoulombFbfResidualScales(
-        problem, result.reaction, applyDelassus, options.spectralIterations);
+    residualScales = computeExactCoulombFbfResidualScalesWithSpectralRadius(
+        problem, result.reaction, applyDelassus, spectralRadius);
   }
   if (!isValidCoulombConeResidualScale(residualScales.reactionScale)
       || !isValidCoulombConeResidualScale(residualScales.velocityScale)) {
@@ -895,6 +1858,7 @@ ExactCoulombFbfResult solveExactCoulombFbf(
   Eigen::VectorXd correctedReaction(dimension);
   Eigen::VectorXd projectedCorrection(dimension);
   Eigen::VectorXd relaxedReaction(dimension);
+  Eigen::VectorXd previousInnerReaction = result.reaction;
 
   for (int iteration = 0; iteration < options.maxOuterIterations; ++iteration) {
     double stepSize = baseStepSize;
@@ -908,10 +1872,31 @@ ExactCoulombFbfResult solveExactCoulombFbf(
     }
 
     bool accepted = false;
-    for (int shrink = 0; shrink <= options.maxStepShrinkIterations; ++shrink) {
-      if (!solveFrozenConeProblem(
-              problem, result.reaction, coupling, stepSize, trialReaction)
-          || !trialReaction.allFinite()) {
+    const int maxShrinkIterations
+        = options.enableAdaptiveStepSize ? options.maxStepShrinkIterations : 0;
+    for (int shrink = 0; shrink <= maxShrinkIterations; ++shrink) {
+      bool innerSolved = false;
+      if constexpr (std::is_invocable_r_v<
+                        bool,
+                        const FrozenConeSolver&,
+                        const ExactCoulombContactProblem&,
+                        const Eigen::VectorXd&,
+                        const Eigen::VectorXd&,
+                        double,
+                        const Eigen::VectorXd&,
+                        Eigen::VectorXd&>) {
+        innerSolved = solveFrozenConeProblem(
+            problem,
+            result.reaction,
+            coupling,
+            stepSize,
+            previousInnerReaction,
+            trialReaction);
+      } else {
+        innerSolved = solveFrozenConeProblem(
+            problem, result.reaction, coupling, stepSize, trialReaction);
+      }
+      if (!innerSolved || !trialReaction.allFinite()) {
         result.status = ExactCoulombFbfStatus::InnerSolverFailed;
         return result;
       }
@@ -931,10 +1916,17 @@ ExactCoulombFbfResult solveExactCoulombFbf(
               coupling,
               trialCoupling,
               stepSize);
-      if (result.couplingVariationRatio <= options.couplingVariationTolerance) {
+      if (!options.enableAdaptiveStepSize
+          || result.couplingVariationRatio
+                 <= options.couplingVariationTolerance) {
         accepted = true;
         break;
       }
+
+      // The current gamma was the final permitted trial. Do not report a
+      // smaller value that was never passed to the inner solver.
+      if (shrink == maxShrinkIterations)
+        break;
 
       stepSize *= options.shrinkFactor;
       ++result.shrinkIterations;
@@ -949,6 +1941,13 @@ ExactCoulombFbfResult solveExactCoulombFbf(
       result.status = ExactCoulombFbfStatus::StepSizeUnderflow;
       return result;
     }
+
+    // The paper's asymmetric policy never grows gamma again within one FBF
+    // solve after a rejected trial. A new simulation substep may start from
+    // the safe bound again, but later outer iterations in this solve inherit
+    // the accepted shrunken value.
+    baseStepSize = stepSize;
+    previousInnerReaction = trialReaction;
 
     correctedReaction = trialReaction - stepSize * (trialCoupling - coupling);
     if (!projectExactCoulombReactionNormalFirst(

@@ -1,0 +1,24 @@
+{
+  "manual_inspected": true,
+  "pass": true,
+  "representative_artifacts": [
+    {
+      "observation": "The full DART view shows five stacked card-house levels and four suspended cubes at frame 0 and time 0.00 s; the construction is fully inside the viewport.",
+      "path": "card_house_author_5_construction/construction-step-0.png",
+      "sha256": "7b7000307da9a467b3b6d28d627f75897a17de8d6ee3f9192183d4bcf47f3a16"
+    },
+    {
+      "observation": "The cropped configuration-only panel clearly shows all five levels and all four cubes, and its substep-0 label preserves the no-trajectory boundary.",
+      "path": "card_house_author_5_construction/panel.png",
+      "sha256": "27444f40b53a81857ad752da2157c46251d5c46eb07eb2826b1324fd0e1765a2"
+    }
+  ],
+  "schema_version": "dart.fbf_author_card_house_construction_manual_inspection/v1",
+  "verdicts": {
+    "cards_and_cubes_are_not_visibly_clipped": true,
+    "configuration_only_nonparity_boundary_confirmed": true,
+    "five_level_card_house_configuration_visible": true,
+    "four_projectile_cubes_visible": true,
+    "step_zero_only_confirmed": true
+  }
+}

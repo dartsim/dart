@@ -27,10 +27,17 @@ friction, Tseng-style FBF outer iteration, modular strongly convex cone-QP
 inner stage, matrix-free contact-parallel implementation, and rigid-body
 benchmarks covering stick-slip transitions, house of cards, and masonry arches.
 
-The video description links a code repository,
-<https://github.com/matthcsong/fbf-sca-2026>, but that repository was not
-publicly readable from this environment on 2026-07-08 or when rechecked
-unauthenticated on 2026-07-09.
+The video description identifies
+<https://github.com/matthcsong/fbf-sca-2026>. Historically, on 2026-07-12, the
+official project page still displayed **Code (coming soon)** and that GitHub
+URL returned 404 to an unauthenticated request. That availability observation
+is superseded: on 2026-07-18 the MIT-licensed repository was public and was
+pinned for this task at
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`. It contains the current solver,
+six runnable example/configuration sources, pinned dependencies, optional
+MuJoCo/Kamino runners, and masonry-arch meshes. It does not contain the
+historical renderer cameras/materials/goldens or the original Apple timing-run
+attestation.
 
 ## Mathematical Core
 
@@ -91,11 +98,14 @@ coupling:
 gamma_safe = 0.5 / (mu_max * lambda_max(W)).
 ```
 
-`lambda_max(W)` is estimated by a short power iteration. The adaptive rule
-accepts a trial step if the local variation ratio is at most `0.9`; otherwise
-it shrinks the step by `0.7` and resolves the cone QP. Growth is intentionally
-asymmetric: no growth after a shrink inside one solve, and cross-step growth is
-capped at `gamma_safe`.
+`lambda_max(W)` is estimated by a short power iteration. The paper publishes
+that the adaptive rule accepts a trial step when the local variation ratio is
+at most `0.9`; otherwise it shrinks the step by `0.7` and resolves the cone QP.
+
+The paper does **not** publish an author cross-step gamma recovery/growth rule.
+DART's persisted-gamma recovery (currently a local `1.05` growth factor capped
+by the freshly computed safe bound) is an implementation policy, not a paper
+fact. Paper-comparison metadata must retain that difference.
 
 ## Residual
 
@@ -145,3 +155,8 @@ contact counts.
 - Performance results are tied to the authors' Warp/Newton implementation and
   single-precision pipeline; DART needs its own baselines before claiming
   matching or better performance.
+- The current public source exposes the local 3x3 block kernel and cross-step
+  gamma controller. The exact historical Apple-silicon model and paper
+  timer/warmup/aggregation attestation remain unavailable, and DART's x86-64
+  float64 implementation is structurally different, so local results still
+  cannot be apples-to-apples paper comparisons.

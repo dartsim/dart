@@ -57,10 +57,20 @@ std::vector<DemoScene> makeDemoScenes()
   scenes.push_back(makeFbfPaperInclineScene());
   scenes.push_back(makeFbfPaperBackspinScene());
   scenes.push_back(makeFbfPaperTurntableScene());
+  scenes.push_back(makeFbfPaperTurntableMu02Omega2Scene());
+  scenes.push_back(makeFbfPaperTurntableMu02Omega5Scene());
+  scenes.push_back(makeFbfPaperTurntableMu05Omega5Scene());
+  scenes.push_back(makeFbfAuthorTurntableMu02Omega2Scene());
+  scenes.push_back(makeFbfAuthorTurntableMu02Omega5Scene());
+  scenes.push_back(makeFbfAuthorTurntableMu05Omega2Scene());
+  scenes.push_back(makeFbfAuthorTurntableMu05Omega5Scene());
+  scenes.push_back(makeFbfAuthorCardHouseScene());
   scenes.push_back(makeFbfPaperPainleveScene());
+  scenes.push_back(makeFbfPaperPainleveMu055Scene());
   scenes.push_back(makeFbfPaperCardAFrameScene());
   scenes.push_back(makeFbfPaperCardHouse26Scene());
   scenes.push_back(makeFbfPaperCardHouse10Scene());
+  scenes.push_back(makeFbfPaperCardHouse10DynamicScene());
   scenes.push_back(makeFbfPaperMasonryArch25Scene());
   scenes.push_back(makeFbfPaperMasonryArch101Scene());
 

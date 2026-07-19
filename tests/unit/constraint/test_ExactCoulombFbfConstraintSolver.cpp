@@ -31,12 +31,27 @@
  */
 
 #include <dart/constraint/ConstrainedGroup.hpp>
+#include <dart/constraint/ContactConstraint.hpp>
+#include <dart/constraint/ContactSurface.hpp>
 #include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
 
+#include <dart/collision/CollisionDetector.hpp>
+#include <dart/collision/CollisionGroup.hpp>
+#include <dart/collision/CollisionObject.hpp>
+#include <dart/collision/Contact.hpp>
+
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <array>
 #include <limits>
 #include <memory>
+#include <string>
 
 #include <cmath>
 
@@ -143,6 +158,11 @@ public:
     return mAppliedImpulse;
   }
 
+  void setRhs(const Eigen::Vector3d& rhs)
+  {
+    mRhs = rhs;
+  }
+
 private:
   Eigen::Index mOffset;
   Eigen::MatrixXd mDelassus;
@@ -225,6 +245,152 @@ private:
   double mAppliedImpulse = 0.0;
 };
 
+class FakeCollisionObject final : public dart::collision::CollisionObject
+{
+public:
+  FakeCollisionObject(
+      dart::collision::CollisionDetector* detector,
+      const dart::dynamics::ShapeFrame* shapeFrame)
+    : dart::collision::CollisionObject(detector, shapeFrame)
+  {
+  }
+
+protected:
+  void updateEngineData() override {}
+};
+
+class FakeCollisionDetector final : public dart::collision::CollisionDetector
+{
+public:
+  std::shared_ptr<dart::collision::CollisionDetector>
+  cloneWithoutCollisionObjects() const override
+  {
+    return std::make_shared<FakeCollisionDetector>();
+  }
+
+  const std::string& getType() const override
+  {
+    static const std::string type = "FakeCollisionDetector";
+    return type;
+  }
+
+  std::unique_ptr<dart::collision::CollisionGroup> createCollisionGroup()
+      override
+  {
+    return nullptr;
+  }
+
+  bool collide(
+      dart::collision::CollisionGroup*,
+      const dart::collision::CollisionOption& = dart::collision::
+          CollisionOption(),
+      dart::collision::CollisionResult* = nullptr) override
+  {
+    return false;
+  }
+
+  bool collide(
+      dart::collision::CollisionGroup*,
+      dart::collision::CollisionGroup*,
+      const dart::collision::CollisionOption& = dart::collision::
+          CollisionOption(),
+      dart::collision::CollisionResult* = nullptr) override
+  {
+    return false;
+  }
+
+  double distance(
+      dart::collision::CollisionGroup*,
+      const dart::collision::DistanceOption& = dart::collision::
+          DistanceOption(),
+      dart::collision::DistanceResult* = nullptr) override
+  {
+    return 0.0;
+  }
+
+  double distance(
+      dart::collision::CollisionGroup*,
+      dart::collision::CollisionGroup*,
+      const dart::collision::DistanceOption& = dart::collision::
+          DistanceOption(),
+      dart::collision::DistanceResult* = nullptr) override
+  {
+    return 0.0;
+  }
+
+protected:
+  std::unique_ptr<dart::collision::CollisionObject> createCollisionObject(
+      const dart::dynamics::ShapeFrame*) override
+  {
+    return nullptr;
+  }
+
+  void refreshCollisionObject(dart::collision::CollisionObject*) override {}
+};
+
+struct FreeContactBody
+{
+  dart::dynamics::SkeletonPtr skeleton;
+  dart::dynamics::FreeJoint* joint = nullptr;
+  dart::dynamics::BodyNode* body = nullptr;
+  dart::dynamics::ShapeNode* shape = nullptr;
+};
+
+FreeContactBody createFreeContactBody(const std::string& name, bool mobile)
+{
+  FreeContactBody result;
+  result.skeleton = dart::dynamics::Skeleton::create(name);
+  const auto pair
+      = result.skeleton
+            ->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  result.joint = pair.first;
+  result.body = pair.second;
+  result.shape = result.body->createShapeNodeWith<
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(
+      std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+  result.skeleton->setMobile(mobile);
+  return result;
+}
+
+dart::collision::Contact makePhysicalContact(
+    dart::collision::CollisionObject* objectA,
+    dart::collision::CollisionObject* objectB,
+    const Eigen::Vector3d& point,
+    const Eigen::Vector3d& normal)
+{
+  dart::collision::Contact contact;
+  contact.collisionObject1 = objectA;
+  contact.collisionObject2 = objectB;
+  contact.point = point;
+  contact.normal = normal;
+  contact.penetrationDepth = 0.0;
+  return contact;
+}
+
+std::shared_ptr<dart::constraint::ContactConstraint> makePhysicalConstraint(
+    dart::collision::Contact& contact)
+{
+  auto constraint = std::make_shared<dart::constraint::ContactConstraint>(
+      contact, 0.001, dart::constraint::ContactSurfaceParams{});
+  dart::constraint::ConstraintBase& base = *constraint;
+  base.update();
+  return constraint;
+}
+
+dart::constraint::ExactCoulombFbfConstraintSolverOptions
+makeZeroBudgetWarmStartOptions()
+{
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.maxOuterIterations = 0;
+  options.tolerance = 0.0;
+  options.seedNormalImpulseFromDiagonal = false;
+  options.enableProjectedGradientRetry = false;
+  options.enableDenseResidualPolish = false;
+  options.fallbackToBoxedLcp = false;
+  return options;
+}
+
 dart::constraint::ConstrainedGroup makeGroup(
     const std::shared_ptr<dart::constraint::ConstraintBase>& constraint)
 {
@@ -260,9 +426,15 @@ TEST(ExactCoulombFbfConstraintSolver, SolvesSupportedContactGroup)
       dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
   EXPECT_FALSE(solver.getLastExactCoulombProjectedGradientRetryUsed());
   EXPECT_EQ(solver.getNumExactCoulombSolves(), 1u);
+  EXPECT_EQ(solver.getNumExactCoulombAttempts(), 1u);
+  EXPECT_EQ(solver.getNumExactCoulombMaxIterationsAccepted(), 0u);
   EXPECT_EQ(solver.getNumBoxedLcpFallbacks(), 0u);
   EXPECT_EQ(solver.getNumExactCoulombProjectedGradientRetries(), 0u);
   EXPECT_NEAR(solver.getLastExactCoulombResidual(), 0.0, 1e-10);
+  EXPECT_NEAR(
+      solver.getWorstExactCoulombResidual(),
+      solver.getLastExactCoulombResidual(),
+      1e-10);
   EXPECT_TRUE(std::isfinite(solver.getLastExactCoulombBestResidual()));
   EXPECT_LE(
       solver.getLastExactCoulombBestResidual(),
@@ -405,6 +577,142 @@ TEST(
 
 TEST(
     ExactCoulombFbfConstraintSolver,
+    AcceptsFiniteIterateFromFixedInnerSweepBudget)
+{
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0, delassus, Eigen::Vector3d(1.0, 0.0, 0.0), 0.5, 0.5, activeRow);
+  auto group = makeGroup(contact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.initialStepSize = 1.0;
+  options.maxOuterIterations = 80;
+  options.tolerance = 1e-10;
+  options.innerMaxSweeps = 1;
+  options.innerLocalIterations = 1;
+  options.innerTolerance = 0.0;
+  options.seedNormalImpulseFromDiagonal = false;
+  options.enableProjectedGradientRetry = false;
+  options.enableDenseResidualPolish = false;
+  options.fallbackToBoxedLcp = false;
+
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  solver.setTimeStep(0.001);
+  solver.solveConstrainedGroup(group);
+
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_EQ(solver.getNumExactCoulombSolves(), 1u);
+  EXPECT_EQ(solver.getNumExactCoulombAttempts(), 1u);
+  EXPECT_EQ(solver.getNumExactCoulombMaxIterationsAccepted(), 0u);
+  EXPECT_EQ(solver.getNumExactCoulombFailures(), 0u);
+  EXPECT_EQ(solver.getNumBoxedLcpFallbacks(), 0u);
+  EXPECT_LE(solver.getLastExactCoulombResidual(), options.tolerance);
+  EXPECT_NEAR(contact->getAppliedImpulse()[0], 1.0, 1e-9);
+  EXPECT_NEAR(contact->getAppliedImpulse()[1], 0.0, 1e-12);
+  EXPECT_NEAR(contact->getAppliedImpulse()[2], 0.0, 1e-12);
+}
+
+TEST(ExactCoulombFbfConstraintSolver, CanRequireEveryInnerSolveToConverge)
+{
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0, delassus, Eigen::Vector3d(1.0, 0.0, 0.0), 0.5, 0.5, activeRow);
+  auto group = makeGroup(contact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.initialStepSize = 1.0;
+  options.maxOuterIterations = 80;
+  options.tolerance = 1e-10;
+  options.innerMaxSweeps = 1;
+  options.innerLocalIterations = 1;
+  options.innerTolerance = 0.0;
+  options.acceptInnerMaxIterations = false;
+  options.seedNormalImpulseFromDiagonal = false;
+  options.enableProjectedGradientRetry = false;
+  options.enableDenseResidualPolish = false;
+  options.fallbackToBoxedLcp = false;
+
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  solver.setTimeStep(0.001);
+  solver.solveConstrainedGroup(group);
+
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::FbfFailed);
+  EXPECT_EQ(
+      solver.getLastFailedExactCoulombFbfStatus(),
+      dart::math::detail::ExactCoulombFbfStatus::InnerSolverFailed);
+  EXPECT_EQ(solver.getNumExactCoulombSolves(), 0u);
+  EXPECT_EQ(solver.getNumExactCoulombFailures(), 1u);
+  EXPECT_EQ(solver.getNumBoxedLcpFallbacks(), 0u);
+  EXPECT_TRUE(contact->getAppliedImpulse().isZero());
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    CanApplyFiniteReactionAtOuterIterationBudget)
+{
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0, delassus, Eigen::Vector3d(1.0, 0.0, 0.0), 0.5, 0.5, activeRow);
+  auto group = makeGroup(contact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.maxOuterIterations = 0;
+  options.tolerance = 0.0;
+  options.acceptOuterMaxIterations = true;
+  options.seedNormalImpulseFromDiagonal = false;
+  options.enableProjectedGradientRetry = false;
+  options.enableDenseResidualPolish = false;
+  options.fallbackToBoxedLcp = false;
+
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  solver.setTimeStep(0.001);
+  solver.solveConstrainedGroup(group);
+
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+          MaxIterationsAccepted);
+  EXPECT_EQ(
+      solver.getLastExactCoulombFbfStatus(),
+      dart::math::detail::ExactCoulombFbfStatus::MaxIterations);
+  EXPECT_EQ(solver.getNumExactCoulombSolves(), 1u);
+  EXPECT_EQ(solver.getNumExactCoulombAttempts(), 1u);
+  EXPECT_EQ(solver.getNumExactCoulombMaxIterationsAccepted(), 1u);
+  EXPECT_EQ(solver.getNumExactCoulombFailures(), 0u);
+  EXPECT_EQ(solver.getNumBoxedLcpFallbacks(), 0u);
+  EXPECT_FALSE(solver.getLastExactCoulombProjectedGradientRetryUsed());
+  EXPECT_EQ(solver.getNumExactCoulombProjectedGradientRetries(), 0u);
+  EXPECT_EQ(solver.getNumExactCoulombPersistentStepSizeRetries(), 0u);
+  EXPECT_GT(solver.getLastExactCoulombResidual(), options.tolerance);
+  const double firstCappedResidual = solver.getLastExactCoulombResidual();
+  EXPECT_EQ(solver.getWorstExactCoulombResidual(), firstCappedResidual);
+
+  // A persisted hint on the next capped solve must not trigger a hidden fresh
+  // automatic retry or silently double the configured outer budget.
+  solver.solveConstrainedGroup(group);
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+          MaxIterationsAccepted);
+  EXPECT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_EQ(solver.getNumExactCoulombAttempts(), 2u);
+  EXPECT_EQ(solver.getNumExactCoulombMaxIterationsAccepted(), 2u);
+  EXPECT_EQ(
+      solver.getWorstExactCoulombResidual(),
+      std::max(firstCappedResidual, solver.getLastExactCoulombResidual()));
+  EXPECT_EQ(solver.getNumExactCoulombPersistentStepSizeRetries(), 0u);
+  EXPECT_EQ(solver.getTotalExactCoulombIterations(), 0u);
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
     MatrixFreeDelassusSeedDiagnosticYieldsToWarmStart)
 {
   const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
@@ -440,6 +748,53 @@ TEST(
   EXPECT_TRUE(solver.getLastExactCoulombWarmStartUsed());
   EXPECT_FALSE(solver.getLastExactCoulombMatrixFreeDelassusSeedUsed());
   EXPECT_EQ(solver.getNumExactCoulombWarmStarts(), 1u);
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    RestoresDenseColdSeedAfterUnsupportedContactRowFallback)
+{
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto fallbackContact = std::make_shared<ContactLikeConstraint>(
+      0, delassus, Eigen::Vector3d(1.0, 0.0, 0.0), 0.5, 0.5, activeRow);
+  auto fallbackGroup = makeGroup(fallbackContact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions fallbackOptions;
+  fallbackOptions.maxOuterIterations = 0;
+  fallbackOptions.tolerance = 0.0;
+  fallbackOptions.fallbackToBoxedLcp = false;
+  fallbackOptions.enableProjectedGradientRetry = false;
+  fallbackOptions.enableDenseResidualPolish = false;
+  ASSERT_TRUE(fallbackOptions.useContactRowDelassusOperator);
+  ASSERT_TRUE(fallbackOptions.seedNormalImpulseFromDiagonal);
+
+  ExposedExactCoulombFbfConstraintSolver fallbackSolver(fallbackOptions);
+  fallbackSolver.setTimeStep(0.001);
+  fallbackSolver.solveConstrainedGroup(fallbackGroup);
+
+  EXPECT_EQ(
+      fallbackSolver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_FALSE(fallbackSolver.getLastExactCoulombContactRowOperatorUsed());
+  EXPECT_EQ(fallbackSolver.getLastExactCoulombIterations(), 0);
+  EXPECT_NEAR(fallbackContact->getAppliedImpulse()[0], 1.0, 1e-12);
+
+  auto denseContact = std::make_shared<ContactLikeConstraint>(
+      0, delassus, Eigen::Vector3d(1.0, 0.0, 0.0), 0.5, 0.5, activeRow);
+  auto denseGroup = makeGroup(denseContact);
+  auto denseOptions = fallbackOptions;
+  denseOptions.useContactRowDelassusOperator = false;
+  ExposedExactCoulombFbfConstraintSolver denseSolver(denseOptions);
+  denseSolver.setTimeStep(0.001);
+  denseSolver.solveConstrainedGroup(denseGroup);
+
+  EXPECT_EQ(
+      denseSolver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_EQ(denseSolver.getLastExactCoulombIterations(), 0);
+  EXPECT_TRUE(denseContact->getAppliedImpulse().isApprox(
+      fallbackContact->getAppliedImpulse(), 1e-12));
 }
 
 TEST(ExactCoulombFbfConstraintSolver, ReusesWarmStartForSameConstraintSequence)
@@ -479,6 +834,123 @@ TEST(ExactCoulombFbfConstraintSolver, ReusesWarmStartForSameConstraintSequence)
   EXPECT_EQ(solver.getNumExactCoulombSolves(), 2u);
   EXPECT_EQ(solver.getNumBoxedLcpFallbacks(), 0u);
   EXPECT_NEAR(contact->getAppliedImpulse()[0], 1.0, 1e-9);
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    BodyLocalWarmStartSurvivesWorldMotionFromRigidRotation)
+{
+  FakeCollisionDetector detector;
+  auto dynamicBody = createFreeContactBody("dynamic", true);
+  auto fixedBody = createFreeContactBody("fixed", false);
+  FakeCollisionObject dynamicObject(&detector, dynamicBody.shape);
+  FakeCollisionObject fixedObject(&detector, fixedBody.shape);
+
+  const Eigen::Vector3d firstPoint(0.2, 0.0, 0.0);
+  const Eigen::Vector3d firstNormal = Eigen::Vector3d::UnitX();
+  auto firstContact = makePhysicalContact(
+      &dynamicObject, &fixedObject, firstPoint, firstNormal);
+  auto firstGroup = makeGroup(makePhysicalConstraint(firstContact));
+
+  const auto options = makeZeroBudgetWarmStartOptions();
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  solver.setTimeStep(0.001);
+  solver.solveConstrainedGroup(firstGroup);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  ASSERT_FALSE(solver.getLastExactCoulombWarmStartUsed());
+
+  Eigen::Isometry3d rotatedTransform = Eigen::Isometry3d::Identity();
+  rotatedTransform.linear()
+      = Eigen::AngleAxisd(0.5 * std::acos(-1.0), Eigen::Vector3d::UnitZ())
+            .toRotationMatrix();
+  dynamicBody.joint->setTransform(rotatedTransform);
+  const Eigen::Vector3d secondPoint = rotatedTransform * firstPoint;
+  const Eigen::Vector3d secondNormal = rotatedTransform.linear() * firstNormal;
+  ASSERT_GT((secondPoint - firstPoint).norm(), options.warmStartMatchDistance);
+
+  auto secondContact = makePhysicalContact(
+      &dynamicObject, &fixedObject, secondPoint, secondNormal);
+  auto secondGroup = makeGroup(makePhysicalConstraint(secondContact));
+  solver.solveConstrainedGroup(secondGroup);
+
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_TRUE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_EQ(solver.getLastExactCoulombWarmStartMatchedContacts(), 1u);
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver, BodyLocalWarmStartMatchesReversedBodyOrder)
+{
+  FakeCollisionDetector detector;
+  auto dynamicBody = createFreeContactBody("dynamic", true);
+  auto fixedBody = createFreeContactBody("fixed", false);
+  FakeCollisionObject dynamicObject(&detector, dynamicBody.shape);
+  FakeCollisionObject fixedObject(&detector, fixedBody.shape);
+
+  const Eigen::Vector3d point(0.2, 0.0, 0.0);
+  auto firstContact = makePhysicalContact(
+      &dynamicObject, &fixedObject, point, Eigen::Vector3d::UnitX());
+  auto firstGroup = makeGroup(makePhysicalConstraint(firstContact));
+
+  const auto options = makeZeroBudgetWarmStartOptions();
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  solver.setTimeStep(0.001);
+  solver.solveConstrainedGroup(firstGroup);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+
+  auto reversedContact = makePhysicalContact(
+      &fixedObject, &dynamicObject, point, -Eigen::Vector3d::UnitX());
+  auto reversedGroup = makeGroup(makePhysicalConstraint(reversedContact));
+  solver.solveConstrainedGroup(reversedGroup);
+
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_TRUE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_EQ(solver.getLastExactCoulombWarmStartMatchedContacts(), 1u);
+}
+
+TEST(ExactCoulombFbfConstraintSolver, BodyLocalWarmStartRejectsNormalMismatch)
+{
+  FakeCollisionDetector detector;
+  auto dynamicBody = createFreeContactBody("dynamic", true);
+  auto fixedBody = createFreeContactBody("fixed", false);
+  FakeCollisionObject dynamicObject(&detector, dynamicBody.shape);
+  FakeCollisionObject fixedObject(&detector, fixedBody.shape);
+
+  const Eigen::Vector3d point(0.2, 0.0, 0.0);
+  auto firstContact = makePhysicalContact(
+      &dynamicObject, &fixedObject, point, Eigen::Vector3d::UnitX());
+  auto firstGroup = makeGroup(makePhysicalConstraint(firstContact));
+
+  const auto options = makeZeroBudgetWarmStartOptions();
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  solver.setTimeStep(0.001);
+  solver.solveConstrainedGroup(firstGroup);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+
+  auto changedNormalContact = makePhysicalContact(
+      &dynamicObject, &fixedObject, point, Eigen::Vector3d::UnitY());
+  auto changedNormalGroup
+      = makeGroup(makePhysicalConstraint(changedNormalContact));
+  solver.solveConstrainedGroup(changedNormalGroup);
+
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_FALSE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_FALSE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_EQ(solver.getLastExactCoulombWarmStartMatchedContacts(), 0u);
 }
 
 TEST(ExactCoulombFbfConstraintSolver, WarmStartRequiresSameConstraintSequence)
@@ -612,6 +1084,9 @@ TEST(ExactCoulombFbfConstraintSolver, FallsBackForUnsupportedGroup)
       dart::constraint::detail::ExactCoulombConstraintBuildStatus::
           UnsupportedDimension);
   EXPECT_EQ(solver.getNumExactCoulombSolves(), 0u);
+  EXPECT_EQ(solver.getNumExactCoulombAttempts(), 1u);
+  EXPECT_EQ(solver.getNumExactCoulombMaxIterationsAccepted(), 0u);
+  EXPECT_TRUE(std::isnan(solver.getWorstExactCoulombResidual()));
   EXPECT_EQ(solver.getNumBoxedLcpFallbacks(), 1u);
   EXPECT_TRUE(scalar->wasApplied());
   EXPECT_TRUE(std::isfinite(scalar->getAppliedImpulse()));
@@ -686,4 +1161,310 @@ TEST(ExactCoulombFbfConstraintSolver, RejectsInvalidOuterRelaxation)
   EXPECT_EQ(solver.getNumBoxedLcpFallbacks(), 0u);
   EXPECT_EQ(solver.getNumExactCoulombFailures(), 1u);
   EXPECT_NEAR(contact->getAppliedImpulse().norm(), 0.0, 1e-12);
+}
+
+TEST(ExactCoulombFbfConstraintSolver, MapsAndValidatesLocalBlockSolverModes)
+{
+  using LocalSolver = dart::constraint::ExactCoulombFbfLocalBlockSolver;
+  EXPECT_EQ(
+      dart::constraint::ExactCoulombFbfConstraintSolverOptions{}
+          .innerLocalSolver,
+      LocalSolver::ExactMetricProjection);
+  const std::array<LocalSolver, 3> localSolvers{
+      LocalSolver::InverseEuclideanProjection,
+      LocalSolver::ExactMetricProjection,
+      LocalSolver::ProjectedGradient};
+
+  for (const LocalSolver localSolver : localSolvers) {
+    const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+    const auto activeRow = std::make_shared<Eigen::Index>(-1);
+    auto contact = std::make_shared<ContactLikeConstraint>(
+        0, delassus, Eigen::Vector3d(1.0, 0.0, 0.0), 0.5, 0.5, activeRow);
+    auto group = makeGroup(contact);
+
+    dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+    options.initialStepSize = 1.0;
+    options.innerLocalSolver = localSolver;
+    options.innerLocalIterations
+        = localSolver == LocalSolver::ProjectedGradient ? 8 : 0;
+    options.seedNormalImpulseFromDiagonal = false;
+    options.enableProjectedGradientRetry = false;
+    options.enableDenseResidualPolish = false;
+    options.fallbackToBoxedLcp = false;
+
+    ExposedExactCoulombFbfConstraintSolver solver(options);
+    solver.setTimeStep(0.001);
+    solver.solveConstrainedGroup(group);
+    EXPECT_EQ(
+        solver.getLastExactCoulombStatus(),
+        dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  }
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions invalidOptions;
+  invalidOptions.innerLocalSolver = static_cast<LocalSolver>(-1);
+  invalidOptions.fallbackToBoxedLcp = false;
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0,
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      0.5,
+      0.5,
+      activeRow);
+  auto group = makeGroup(contact);
+  ExposedExactCoulombFbfConstraintSolver invalidSolver(invalidOptions);
+  invalidSolver.setTimeStep(0.001);
+  invalidSolver.solveConstrainedGroup(group);
+  EXPECT_EQ(
+      invalidSolver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::InvalidOptions);
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    PersistentStepSizeGrowsAcrossStableSolvesAndRespectsFreshSafeCap)
+{
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0,
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      0.5,
+      0.5,
+      activeRow);
+  auto group = makeGroup(contact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.stepSizeRecoveryGrowthFactor = 1.25;
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  solver.setTimeStep(0.001);
+
+  solver.solveConstrainedGroup(group);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  ASSERT_FALSE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  const double firstStepSize = solver.getLastExactCoulombStepSize();
+  ASSERT_TRUE(std::isfinite(firstStepSize));
+
+  solver.solveConstrainedGroup(group);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_NEAR(
+      solver.getLastExactCoulombPersistentStepSizeRequest(),
+      1.25 * firstStepSize,
+      1e-12);
+  EXPECT_NEAR(solver.getLastExactCoulombStepSize(), firstStepSize, 1e-12);
+  EXPECT_NEAR(
+      solver.getLastExactCoulombStepSize(),
+      solver.getLastExactCoulombSafeStepSize(),
+      1e-12);
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    PersistedGammaCapsAtRawSafeStepWhenAutomaticScaleExceedsOne)
+{
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0,
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      0.5,
+      0.5,
+      activeRow);
+  auto group = makeGroup(contact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.stepSizeScale = 2.0;
+  options.stepSizeRecoveryGrowthFactor = 1.25;
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  solver.setTimeStep(0.001);
+
+  solver.solveConstrainedGroup(group);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  ASSERT_FALSE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  const double automaticStepSize = solver.getLastExactCoulombStepSize();
+  const double safeStepSize = solver.getLastExactCoulombSafeStepSize();
+  ASSERT_TRUE(std::isfinite(automaticStepSize));
+  ASSERT_TRUE(std::isfinite(safeStepSize));
+  EXPECT_NEAR(automaticStepSize, 2.0 * safeStepSize, 1e-12);
+
+  solver.solveConstrainedGroup(group);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_NEAR(
+      solver.getLastExactCoulombPersistentStepSizeRequest(),
+      1.25 * automaticStepSize,
+      1e-12);
+  EXPECT_NEAR(solver.getLastExactCoulombStepSize(), safeStepSize, 1e-12);
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    PersistentStepSizeHoldsAfterAnyRejectedTrial)
+{
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0,
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1.0, 1.0, 0.0),
+      0.5,
+      0.5,
+      activeRow);
+  auto group = makeGroup(contact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.maxOuterIterations = 1;
+  options.acceptOuterMaxIterations = true;
+  options.tolerance = 0.0;
+  options.couplingVariationTolerance = 0.05;
+  options.maxStepShrinkIterations = 20;
+  options.stepSizeRecoveryGrowthFactor = 2.0;
+  options.seedNormalImpulseFromDiagonal = false;
+  options.enableProjectedGradientRetry = false;
+  options.enableDenseResidualPolish = false;
+  options.fallbackToBoxedLcp = false;
+
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  solver.setTimeStep(0.001);
+  solver.solveConstrainedGroup(group);
+  ASSERT_GT(solver.getLastExactCoulombShrinkIterations(), 0);
+  const double shrunkenStepSize = solver.getLastExactCoulombStepSize();
+
+  solver.solveConstrainedGroup(group);
+  EXPECT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_NEAR(
+      solver.getLastExactCoulombPersistentStepSizeRequest(),
+      shrunkenStepSize,
+      1e-12);
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    PersistentStepSizeDoesNotCrossGroupsAndOptionsResetIt)
+{
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto first = std::make_shared<ContactLikeConstraint>(
+      0, delassus, Eigen::Vector3d(1.0, 0.0, 0.0), 0.5, 0.5, activeRow);
+  auto second = std::make_shared<ContactLikeConstraint>(
+      0, delassus, Eigen::Vector3d(1.0, 0.0, 0.0), 0.5, 0.5, activeRow);
+  auto firstGroup = makeGroup(first);
+  auto secondGroup = makeGroup(second);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  solver.setTimeStep(0.001);
+  solver.solveConstrainedGroup(firstGroup);
+  solver.solveConstrainedGroup(secondGroup);
+  EXPECT_FALSE(solver.getLastExactCoulombPersistentStepSizeUsed());
+
+  solver.solveConstrainedGroup(secondGroup);
+  ASSERT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  solver.setExactCoulombOptions(options);
+  solver.solveConstrainedGroup(secondGroup);
+  EXPECT_FALSE(solver.getLastExactCoulombPersistentStepSizeUsed());
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    PersistentStepSizeNeverOverridesExplicitOrFixedGammaOptions)
+{
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0,
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      0.5,
+      0.5,
+      activeRow);
+  auto group = makeGroup(contact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions explicitOptions;
+  explicitOptions.initialStepSize = 0.25;
+  ExposedExactCoulombFbfConstraintSolver explicitSolver(explicitOptions);
+  explicitSolver.setTimeStep(0.001);
+  explicitSolver.solveConstrainedGroup(group);
+  explicitSolver.solveConstrainedGroup(group);
+  EXPECT_FALSE(explicitSolver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_NEAR(explicitSolver.getLastExactCoulombStepSize(), 0.25, 1e-12);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions fixedOptions;
+  fixedOptions.enableAdaptiveStepSize = false;
+  ExposedExactCoulombFbfConstraintSolver fixedSolver(fixedOptions);
+  fixedSolver.setTimeStep(0.001);
+  fixedSolver.solveConstrainedGroup(group);
+  fixedSolver.solveConstrainedGroup(group);
+  EXPECT_FALSE(fixedSolver.getLastExactCoulombPersistentStepSizeUsed());
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    FailedPersistentGammaRetriesAutomaticPolicyBeforeFallback)
+{
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0,
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      0.5,
+      0.5,
+      activeRow);
+  auto group = makeGroup(contact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.maxOuterIterations = 13;
+  options.tolerance = 1e-6;
+  options.stepSizeScale = 2.0;
+  options.seedNormalImpulseFromDiagonal = false;
+  options.enableProjectedGradientRetry = false;
+  options.enableDenseResidualPolish = false;
+  options.fallbackToBoxedLcp = false;
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  solver.setTimeStep(0.001);
+
+  solver.solveConstrainedGroup(group);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  ASSERT_EQ(solver.getNumExactCoulombPersistentStepSizeRetries(), 0u);
+  const std::size_t firstTotalIterations
+      = solver.getTotalExactCoulombIterations();
+
+  // Reuse the same group with a changed free velocity. The raw-safe persisted
+  // gamma exhausts this deliberately small budget, while the current step's
+  // normal automatic 2x-safe policy converges within it.
+  contact->setRhs(Eigen::Vector3d(0.2, 1.0, 0.0));
+  solver.solveConstrainedGroup(group);
+
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_EQ(solver.getNumExactCoulombPersistentStepSizeRetries(), 1u);
+  EXPECT_EQ(solver.getNumExactCoulombFailures(), 0u);
+  EXPECT_EQ(solver.getNumBoxedLcpFallbacks(), 0u);
+  EXPECT_FALSE(solver.getLastExactCoulombProjectedGradientRetryUsed());
+  EXPECT_LE(solver.getLastExactCoulombResidual(), options.tolerance);
+  EXPECT_NEAR(
+      solver.getLastExactCoulombStepSize(),
+      options.stepSizeScale * solver.getLastExactCoulombSafeStepSize(),
+      1e-12);
+  EXPECT_GT(
+      solver.getTotalExactCoulombIterations() - firstTotalIterations,
+      static_cast<std::size_t>(solver.getLastExactCoulombIterations()));
+
+  // A recovery invalidates only the failed gamma hint. The successful
+  // reaction remains a warm start, but the next solve must choose gamma fresh.
+  solver.solveConstrainedGroup(group);
+  EXPECT_FALSE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_TRUE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_EQ(solver.getNumExactCoulombPersistentStepSizeRetries(), 1u);
 }

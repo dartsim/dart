@@ -34,6 +34,8 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
+
 #include <cmath>
 
 namespace {
@@ -141,6 +143,22 @@ TEST(CoulombConeResidual, ReportsZeroForExactContact)
           reaction, augmentedVelocity, 0.5);
 
   expectResidualNear(residual, 0.0, 0.0, 0.0, 0.0);
+}
+
+TEST(CoulombConeResidual, FinitePredicateChecksEveryComponent)
+{
+  dart::math::detail::CoulombConeResidual residual;
+  EXPECT_TRUE(dart::math::detail::isFiniteCoulombConeResidual(residual));
+
+  residual.primalFeasibility = std::numeric_limits<double>::infinity();
+  EXPECT_FALSE(dart::math::detail::isFiniteCoulombConeResidual(residual));
+
+  residual = dart::math::detail::CoulombConeResidual();
+  residual.dualFeasibility = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_FALSE(dart::math::detail::isFiniteCoulombConeResidual(residual));
+
+  EXPECT_FALSE(dart::math::detail::isFiniteCoulombConeResidual(
+      dart::math::detail::makeInvalidCoulombConeResidual()));
 }
 
 TEST(CoulombConeResidual, MeasuresScaledPrimalConeDistance)

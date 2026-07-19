@@ -1,0 +1,190 @@
+{
+  "schema_version": "dart.fbf_paper_claim_map/v1",
+  "requirement_ids": [
+    "fig.03",
+    "video.02_backspin"
+  ],
+  "status": "partial",
+  "scope": "DART exact-FBF backspin trajectory only",
+  "source_claim": {
+    "url": "https://www.cs.ubc.ca/research/fbf-friction/paper.pdf",
+    "locator": "Figure 3, Equation 24, and Section 5.2, PDF pages 7-8",
+    "paper_instants_seconds": [
+      0.0,
+      0.17,
+      0.83,
+      2.0,
+      2.17
+    ]
+  },
+  "capture": {
+    "scene": "fbf_paper_backspin",
+    "solver": "ExactCoulombFbfConstraintSolver",
+    "collision_detector": "dart",
+    "time_step_seconds": 0.016666666666666666,
+    "completed_step_range": [
+      0,
+      130
+    ],
+    "source_frame_count": 131,
+    "resolution": [
+      1920,
+      720
+    ],
+    "timeline_sidecar": "timeline.json",
+    "command": "out=docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig03_backspin; args=(--scene fbf_paper_backspin --headless --steps 130 --width 1920 --height 720 --headless-sidecar $out/timeline.json); for step in {0..130}; do args+=(--headless-shot-at $step:$out/frames/frame_$(printf '%03d' $step).png); done; build/default/cpp/Release/bin/dart-demos ${args[@]}",
+    "note": "The sidecar runtime_command records the fully expanded 131-shot invocation. Every image came from one deterministic world run."
+  },
+  "paper_timed_frames": [
+    {
+      "step": 0,
+      "sim_time_seconds": 0.0,
+      "paper_label_seconds": 0.0,
+      "path": "frames/frame_000.png",
+      "capture_success": true,
+      "fbf_status": "not_run",
+      "residual": null,
+      "exact_failures": 0,
+      "boxed_lcp_fallbacks": 0,
+      "orange_centroid_x_pixels": 964.54
+    },
+    {
+      "step": 10,
+      "sim_time_seconds": 0.16666666666666666,
+      "paper_label_seconds": 0.17,
+      "path": "frames/frame_010.png",
+      "capture_success": true,
+      "fbf_status": "success",
+      "residual": 4.0498227459595767e-7,
+      "exact_failures": 0,
+      "boxed_lcp_fallbacks": 0,
+      "orange_centroid_x_pixels": 1066.96
+    },
+    {
+      "step": 50,
+      "sim_time_seconds": 0.8333333333333343,
+      "paper_label_seconds": 0.83,
+      "path": "frames/frame_050.png",
+      "capture_success": true,
+      "fbf_status": "success",
+      "residual": 6.970653458647708e-7,
+      "exact_failures": 0,
+      "boxed_lcp_fallbacks": 0,
+      "orange_centroid_x_pixels": 1275.37
+    },
+    {
+      "step": 120,
+      "sim_time_seconds": 1.9999999999999978,
+      "paper_label_seconds": 2.0,
+      "path": "frames/frame_120.png",
+      "capture_success": true,
+      "fbf_status": "success",
+      "residual": 6.315420981590062e-7,
+      "exact_failures": 0,
+      "boxed_lcp_fallbacks": 0,
+      "orange_centroid_x_pixels": 706.29
+    },
+    {
+      "step": 130,
+      "sim_time_seconds": 2.166666666666664,
+      "paper_label_seconds": 2.17,
+      "path": "frames/frame_130.png",
+      "capture_success": true,
+      "fbf_status": "success",
+      "residual": 4.928898739023949e-7,
+      "exact_failures": 0,
+      "boxed_lcp_fallbacks": 0,
+      "orange_centroid_x_pixels": 597.11
+    }
+  ],
+  "orange_centroid_method": "For each inspected 1920x720 PNG, scan the rendered-world region x=260..1559 and y=58..564; retain pixels with r>=95, 35<=g<=150, b<=75, and r>1.45*g; report the arithmetic mean x. This is a coarse, reproducible direction check only.",
+  "diagnostics": {
+    "all_131_captures_succeeded": true,
+    "all_post_initial_fbf_statuses_succeeded": true,
+    "maximum_residual_over_post_initial_frames": 9.97634187041893e-7,
+    "final_exact_solves": 130,
+    "final_exact_failures": 0,
+    "final_boxed_lcp_fallbacks": 0,
+    "final_warm_starts": 129,
+    "evidence": "timeline.json"
+  },
+  "physical_trajectory": {
+    "path": "trajectory.csv",
+    "sha256": "0d9e1293fa8c5b3faf0a701b1d4586e760eaf5f3f782cefc5172ee8c60f34099",
+    "command": "build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace backspin exact_fbf 1 130 > docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig03_backspin/trajectory.csv",
+    "selected_x_meters": {
+      "step_0": 0.0,
+      "step_10": 0.5913983323223215,
+      "step_50": 1.5954362649378946,
+      "step_120": -1.8926458732638836,
+      "step_130": -2.9358969951245997
+    },
+    "selected_vx_meters_per_second": {
+      "step_0": 4.0,
+      "step_10": 3.1809653668871216,
+      "step_50": -0.08789250056247733,
+      "step_120": -5.809893922526564,
+      "step_130": -6.627371756413348
+    },
+    "final_contacts": 1,
+    "final_fallbacks": 0,
+    "final_status": "success"
+  },
+  "visual_claims": [
+    {
+      "claim": "The DART sphere first advances and then reverses direction by the paper's five requested instants.",
+      "support": "The inspected orange-sphere image centroid moves right from x=964.54 at step 0 to x=1275.37 at step 50, then left to x=706.29 at step 120 and x=597.11 at step 130. This is an image-space direction check, not a replacement for the physical trajectory regression."
+    },
+    {
+      "claim": "The shown trajectory used exact FBF without a boxed-LCP fallback.",
+      "support": "The timeline sidecar reports 130 exact solves, zero exact failures, zero boxed-LCP fallbacks, and residual below 1e-6 at every post-initial captured state."
+    },
+    {
+      "claim": "The five stills are synchronized to Figure 3's displayed times.",
+      "support": "Steps 0, 10, 50, 120, and 130 at dt=1/60 map to 0, 0.1667, 0.8333, 2.0, and 2.1667 seconds, labeled as 0, 0.17, 0.83, 2.0, and 2.17 seconds."
+    }
+  ],
+  "image_verification": {
+    "manually_inspected_at_original_resolution": [
+      "frames/frame_000.png",
+      "frames/frame_010.png",
+      "frames/frame_050.png",
+      "frames/frame_120.png",
+      "frames/frame_130.png",
+      "fig03_dart_fbf_5panel.png"
+    ],
+    "standard_nonblank_verdicts_pass": true,
+    "strict_contrast_verdicts_pass": false,
+    "strict_contrast_note": "The optional strict gate rejects these dark renders: sampled luminance spread ranges from 4.7 on the cropped sheet to 27.9 on the full host frames, below the generic 90.0 threshold, with additional bright/mid-tone count failures on some images. The failures are retained rather than hidden; the sphere, ground, timestamps, and exact-solver diagnostics are visually legible in all six inspected images."
+  },
+  "composition": {
+    "output": "fig03_dart_fbf_5panel.png",
+    "manifest": "fig03_dart_fbf_5panel.compose.json",
+    "panel_preparation": "python3 docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig03_backspin/prepare_panels.py",
+    "panel_crop_full_frame_pixels": [
+      260,
+      58,
+      1560,
+      565
+    ],
+    "panel_size_pixels": [
+      800,
+      312
+    ],
+    "command": "python3 scripts/image_compose.py side-by-side panels/frame_000.png panels/frame_010.png panels/frame_050.png panels/frame_120.png panels/frame_130.png --out fig03_dart_fbf_5panel.png --labels 't=0.00 s (step 0)' 't=0.17 s (step 10)' 't=0.83 s (step 50)' 't=2.00 s (step 120)' 't=2.17 s (step 130)' --gap 8 --manifest fig03_dart_fbf_5panel.compose.json",
+    "sha256": "b2d3831391b616c962aaee262b1b2260584d507f342e13dc0f9b29ebbc4bbfbf"
+  },
+  "not_claimed": [
+    "No Kamino image, trajectory, or performance parity is claimed.",
+    "No MuJoCo image, trajectory, or performance parity is claimed.",
+    "No pixel-diff against a paper-author-approved golden is claimed.",
+    "No airborne landing phase is claimed; the current DART fixture starts the sphere at z=0.245 m with radius 0.25 m against a plane whose top is z=0.",
+    "The DART-only GIF is not a reproduction of the source video's narration, slow-motion edit, or three-solver layout."
+  ],
+  "remaining_blockers": [
+    "A faithful runnable Kamino comparison is unavailable locally.",
+    "The existing MuJoCo harness has not been rendered through the same five-instant camera/layout contract.",
+    "There is no approved paper-source golden/reference policy for a pixel diff.",
+    "The semantic 00:02-00:24 source-video comparison needs matched Ours, MuJoCo, and Kamino rows plus slow motion."
+  ]
+}

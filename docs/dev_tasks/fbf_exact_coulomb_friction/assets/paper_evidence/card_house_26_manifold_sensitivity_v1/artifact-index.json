@@ -1,0 +1,41 @@
+{
+  "files": {
+    "REPORT.md": {
+      "sha256": "2444e0d95f8449877eafd48ba1d3e8ea4f89e9f1cbb81f9911defd5eded90d58",
+      "size_bytes": 111
+    },
+    "compact/raw.csv": {
+      "sha256": "a2d2dac7f4b34898eb7115e7ff5ac58956a6784a10b5a9c040a80debb6074414",
+      "size_bytes": 3110341
+    },
+    "compact/stderr.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    "comparison.json": {
+      "sha256": "967e25d86886e773604cc5abad158076e79590fa08d4e6e18f3498ddeebcc767",
+      "size_bytes": 191
+    },
+    "four_point_planar/raw.csv": {
+      "sha256": "68eed79d2c61e93c9dd1cba1a8c0276c045e4dee4e338cdfed2479ca5a12e642",
+      "size_bytes": 3658204
+    },
+    "four_point_planar/stderr.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    "invocation.json": {
+      "sha256": "dc2c4adb2749e6c0ffffa92e708abaecd2d3f79713cafae778dac49559986518",
+      "size_bytes": 1386
+    },
+    "metadata.json": {
+      "sha256": "d37ae852f3213ba8f3d45ae9bcc80a993c6924ad2aace563a0cdbdf5dfe400ec",
+      "size_bytes": 10604
+    },
+    "summary.json": {
+      "sha256": "a2607b331c1f8d7fe3811438ea1ed71ebf31e7760ff64d0fbe35b43135418aa0",
+      "size_bytes": 9861
+    }
+  },
+  "schema_version": "dart.fbf_card_manifold_sensitivity_v1/v1"
+}

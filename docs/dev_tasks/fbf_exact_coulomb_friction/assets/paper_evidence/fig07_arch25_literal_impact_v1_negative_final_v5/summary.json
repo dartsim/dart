@@ -1,0 +1,85 @@
+{
+  "artifact_valid": true,
+  "claim_boundary": "This is a valid fail-closed artifact for a reconstructed, non-paper scientific negative. It is not a passing impact or paper-parity claim.",
+  "classification": "valid_scientific_negative",
+  "contact_order": {
+    "first_projectile_arch_contact_step": 607,
+    "first_projectile_arch_contact_time": 10.116666666666667,
+    "first_projectile_ground_contact_step": 616,
+    "first_projectile_ground_contact_time": 10.266666666666666,
+    "gate_passed": true
+  },
+  "expected_fail_closed_process_observed": true,
+  "failed_gates": [
+    "impact_exact_gate",
+    "impact_residual_gate",
+    "final_all_body_displacement_gate",
+    "final_far_field_displacement_gate",
+    "final_impact_acceptance_gate"
+  ],
+  "final_gate_values": {
+    "crown_response_gate": true,
+    "final_all_body_displacement_gate": false,
+    "final_far_field_adjacency_gate": true,
+    "final_far_field_displacement_gate": false,
+    "final_impact_acceptance_gate": false,
+    "final_orientation_gate": true,
+    "final_springer_gate": true,
+    "impact_exact_gate": false,
+    "impact_finite_gate": true,
+    "impact_residual_gate": false,
+    "preimpact_standing_gate": true,
+    "projectile_contact_order_gate": true
+  },
+  "impact_claim_passed": false,
+  "normalized_trace_fingerprint": "86b37ec37d28259514453c9ecc9e7d5f12afe08118a0b04abd40e72acd147384",
+  "preservation": {
+    "final_far_field_adjacent_pairs": 16,
+    "final_maximum_arch_displacement": 0.07093964431215687,
+    "final_maximum_far_field_displacement": 0.060523747030465196,
+    "final_maximum_springer_displacement": 0.0,
+    "final_minimum_orientation_alignment": 0.9919471199543635,
+    "final_minimum_springer_alignment": 1.0,
+    "maximum_arch_displacement_limit": 0.07,
+    "maximum_crown_displacement": 0.07093964431215687,
+    "maximum_far_field_displacement_limit": 0.007,
+    "minimum_crown_response": 0.0001,
+    "minimum_orientation_alignment": 0.8660254037844386
+  },
+  "scenario": "masonry_arch_25_literal_wedge_crown_impact_v1",
+  "scene_contract": "reconstructed_literal_wedge_crown_impact_v1_nonpaper_native_collision_frontend",
+  "schema_version": "dart.fbf_literal_crown_impact_negative/v1",
+  "solver": {
+    "accepted_iteration_caps": 5,
+    "boxed_fallbacks": 0,
+    "exact_failures": 0,
+    "exact_solves": 854,
+    "residual_limit": 1e-06,
+    "worst_residual": 9.154531704265396e-05
+  },
+  "standing_prefix": {
+    "preimpact_standing_gate": true,
+    "projectile_free": true,
+    "steps": 600
+  },
+  "standing_prefix_comparison": {
+    "excluded_fields": [
+      "exact_colored_bgs_logical_cpus",
+      "exact_contact_row_logical_cpus_to_date",
+      "max_phase_contact_row_logical_cpus_to_date",
+      "max_phase_exact_colored_bgs_logical_cpus",
+      "scenario",
+      "scene_contract",
+      "wall_ms"
+    ],
+    "fields_compared": 88,
+    "mismatches": 0,
+    "pass": true,
+    "reference_csv_sha256": "2bbc5cdc25b9757c1a759207fa1534a80c9e944ec425c0ea472e72300210021d",
+    "reference_scenario": "masonry_arch_25_literal_wedge",
+    "steps_compared": 600
+  },
+  "trace_columns": 136,
+  "trace_header_sha256": "47ccfd25d7ef942287a4f1fb54ecbf3b19dabc93cd9bd791057e77fc2339f1e8",
+  "trace_rows": 720
+}

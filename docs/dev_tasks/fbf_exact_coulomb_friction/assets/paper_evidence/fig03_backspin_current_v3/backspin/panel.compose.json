@@ -1,0 +1,23 @@
+{
+  "height": 538,
+  "inputs": [
+    "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig03_backspin_current_v3/backspin/panel_frames/step_000000.png",
+    "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig03_backspin_current_v3/backspin/panel_frames/step_000010.png",
+    "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig03_backspin_current_v3/backspin/panel_frames/step_000050.png",
+    "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig03_backspin_current_v3/backspin/panel_frames/step_000120.png",
+    "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig03_backspin_current_v3/backspin/panel_frames/step_000130.png"
+  ],
+  "labels": [
+    "t=0.00s",
+    "t=0.17s",
+    "t=0.83s",
+    "t=2.00s",
+    "t=2.17s"
+  ],
+  "mode": "side-by-side",
+  "out": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig03_backspin_current_v3/backspin/panel.png",
+  "pass": true,
+  "schema_version": "dart.image_compose/v1",
+  "stats": {},
+  "width": 6548
+}

@@ -1,0 +1,73 @@
+{
+  "checks": {
+    "contrast": {
+      "bright_pixels": 954652,
+      "dark_pixels": 132961,
+      "mid_pixels": 106776,
+      "p05": 21.004,
+      "p95": 239.723,
+      "pass": true,
+      "reasons": [],
+      "region": {
+        "x0": 2579,
+        "x1": 6254,
+        "y0": 338,
+        "y1": 676
+      },
+      "sample_count": 1242150,
+      "spread": 218.719,
+      "thresholds": {
+        "bright_luminance_gt": 190.0,
+        "dark_luminance_lt": 55.0,
+        "mid_luminance_max": 170.0,
+        "mid_luminance_min": 70.0,
+        "min_bright_pixels": 6210,
+        "min_dark_pixels": 6210,
+        "min_mid_pixels": 3105,
+        "min_spread": 90.0
+      }
+    },
+    "non_blank": {
+      "nonzero_pixels": 4848896,
+      "pass": true,
+      "reasons": [],
+      "total_pixels": 4848896,
+      "unique_colors_seen": 2
+    }
+  },
+  "image": {
+    "height": 752,
+    "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig07_arch25_literal/fig07_literal_wedge_timeline.png",
+    "width": 6448
+  },
+  "metadata": {
+    "claim_scope": "current-source DART reconstruction; not paper parity",
+    "scenario": "masonry_arch_25_literal_wedge"
+  },
+  "pass": true,
+  "reasons": [],
+  "schema_version": "dart.image_verdict/v1",
+  "thresholds_used": {
+    "contrast": {
+      "bright_luminance_gt": 190.0,
+      "dark_luminance_lt": 55.0,
+      "mid_luminance_max": 170.0,
+      "mid_luminance_min": 70.0,
+      "min_bright_pixels": 6210,
+      "min_dark_pixels": 6210,
+      "min_mid_pixels": 3105,
+      "min_spread": 90.0
+    },
+    "diff": {
+      "fail": 0.016,
+      "failpercent": 1.0,
+      "ignore_aa": true,
+      "relnorm": null
+    },
+    "non_blank": {
+      "min_nonzero_pixels": 1,
+      "min_unique_colors": 2
+    },
+    "require_contrast": false
+  }
+}

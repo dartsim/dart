@@ -1,0 +1,900 @@
+FBF exact-Coulomb paper-parity provenance
+==========================================
+
+Original paper/media snapshot date: 2026-07-12
+Public-source availability addendum: 2026-07-18
+Task home: docs/dev_tasks/fbf_exact_coulomb_friction/
+
+1. Paper and project page
+-------------------------
+
+Paper: Hongcheng Song, Ye Fan, Uri M. Ascher, and Dinesh K. Pai,
+"A Splitting Architecture for Exact Reduced Coulomb Friction," SCA 2026,
+Computer Graphics Forum 45(8).
+
+Project page: https://www.cs.ubc.ca/research/fbf-friction/
+Paper PDF: https://www.cs.ubc.ca/research/fbf-friction/paper.pdf
+Video: https://youtu.be/5THad4PAGmI
+
+The paper, project page, 82-second video, figures, tables, and appendix were
+inspected through 2026-07-12. The machine-readable requirement ledger is
+paper-evidence-manifest.json. No paper image, video frame, or author code is
+vendored by this task folder.
+
+2. Paper implementation availability
+-------------------------------------
+
+Historical observation: on 2026-07-12 the official project page still said
+"Code (coming soon)," and
+https://github.com/matthcsong/fbf-sca-2026 returned 404 to an unauthenticated
+request.
+
+That availability observation is superseded for current work. On 2026-07-18
+the MIT-licensed repository was public and was pinned for this task at commit
+b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0. It contains the Warp/Newton FBF
+solver, six runnable paper-example scene/configuration sources, a pinned
+dependency snapshot, optional MuJoCo/Kamino runners, and masonry-arch meshes.
+It does not contain the historical paper renderer cameras/materials/goldens,
+non-arch visual assets, exact Apple-silicon model, or original timing-run and
+warmup/aggregation attestation.
+
+DART scenes created before that release remain reconstructions until each is
+audited against the pinned source and matched numerically. They must not be
+described as byte-identical author scenes merely because the source is now
+available.
+
+2a. Paper and current-source gamma policy
+-----------------------------------------
+
+The paper publishes the safe spectral base step, the local coupling-variation
+acceptance threshold 0.9, and the 0.7 shrink applied when that test rejects a
+trial. The paper text does not publish a cross-step recovery/growth rule, but
+the pinned public reference now exposes its current `GammaController` carry,
+growth, shrink, and warm-start-cap policy. DART's persisted-gamma recovery,
+including its current 1.05 growth factor and fresh safe-bound cap, remains a
+local implementation policy until a source-equivalence audit proves otherwise.
+The current source and historical paper-text distinctions must both remain
+explicit.
+
+3. PR #3374 visual-evidence tooling
+-----------------------------------
+
+Upstream pull request: https://github.com/dartsim/dart/pull/3374
+Final upstream head: 1f816bcdd8711e867cd24290f98dac25561a36d8
+State: MERGED on 2026-07-12
+Merge commit: fa17fad79b9f77ce10911f3080500903e370ace0
+Local state: the final upstream content is integrated in this worktree.
+
+The imported tooling supplies debug overlays, deterministic capture helpers,
+image verdict/golden/compose tools, and evidence selection/publication
+helpers. FBF-specific timed captures use the DART demo host; generated
+sidecars must record the exact scene, completed steps, actions, solver
+diagnostics, and fallback counts.
+
+3a. PR #3377 exact-Coulomb implementation snapshot
+---------------------------------------------------
+
+Upstream pull request: https://github.com/dartsim/dart/pull/3377
+Observed head: 2ddd9f56a45437cf1c55e3433bd8aae080acff1e
+Observed state on 2026-07-12: OPEN, non-draft, mergeStateStatus=DIRTY.
+
+The observed head is stale relative to the release target: it has 34 unique PR
+commits, the target has one unique commit, their merge base is abbreviated
+e1bd, and fa17fad is not an ancestor of the PR head. The target must be merged
+before any approved follow-up push.
+
+The live failed-check audit distinguishes the published-branch SplitImpulse
+regression from base/workflow failures. Linux, Eigen64, current-toolchain,
+macOS, and FreeBSD jobs reproduce a +0.001 resting-contact velocity because
+the published BoxedLCP velocity assembly leaves useSplitImpulse false; a dirty
+local one-line propagation passes the focused local test but lacks fresh CI.
+FreeBSD also reaches the 1,800-second paper-fixture timeout; the dirty local
+stress-fixture opt-in gate still needs a FreeBSD rerun. The MJCF NaN assertion
+is base-owned because fa17fad fails it too. Windows times out after five hours
+while compiling and then reports cancellation/EBUSY cleanup on both the PR and
+current target, without running a product test. The PR is useful as
+implementation provenance but is not a merged, current-base, or CI-clean
+release artifact.
+
+4. Rigid-IPC upstream
+---------------------
+
+Repository: https://github.com/ipc-sim/rigid-ipc
+Pinned commit: 23b6ba6fbf8434056444ae106356fd2209136988
+Commit title/date as recorded at extraction: "Write GLTF in input
+orientation," 2025-06-13.
+License: MIT, Copyright (c) 2021 Zachary Ferguson and the IPC Simulation
+organization. A local copy is data/mjcf/rigid_ipc_arch/LICENSE.md.
+
+Relevant upstream paths:
+
+- tools/meshes/large_arch.py
+- fixtures/3D/friction/arch/arch-25-stones.json
+- fixtures/3D/friction/arch/arch-101-stones.json
+- meshes/arch/num_stones=101/
+- comparisons/MuJoCo/friction/arch/arch-101-stones_mjc.xml
+- src/io/read_rb_scene.cpp
+
+Rigid-IPC is an author-adjacent source credited for the masonry-arch dataset;
+it is not the pinned public FBF reference implementation and does not establish
+that every Rigid-IPC simulation parameter equals either the current author
+scene or the historical paper timing configuration.
+
+5. DART geometry port
+---------------------
+
+Implementation: dart/math/detail/MasonryArchGeometry.hpp
+
+The port reproduces the weighted-catenary generator parameters fc=60 cm,
+Qb=100 cm^2, Qt=49 cm^2, and L=30 cm, converts centimeters to meters, and
+retains base flattening. It exposes two distinct fidelity tiers: the existing
+oriented-box approximation used by the dynamic DART scenes, and literal
+eight-vertex wedge collision geometry. The wedge generator can either retain
+Rigid-IPC's alternating 0.1 cm IPC barrier offsets or omit them so adjacent
+end faces share their nominal plane. Neither tier is a byte-identical FBF
+author scene. In particular, the dynamic box scenes must not be called
+author-faithful or described as literal tapered voussoirs.
+
+The literal wedge generator supplies exact uniform-prism centroid, volume,
+mass, and inertia rather than ConvexMeshShape's AABB approximation. The
+collision probe remains collision-only. A distinct, explicitly non-paper
+`masonry_arch_25_literal_wedge` trace now uses the same exact-inertia geometry
+for a numeric dynamic reconstruction without replacing the production
+oriented-box scenes. Its standing, solver, and timing evidence is scoped in
+section 7a; it supplies no author-scene, crown-impact, or GUI claim.
+
+Snapshot SHA-256 on 2026-07-12:
+eaa5ffce2f2e2de7b6b493e1edfbca2caa09fb1931c943cc7477bd699303eaa7
+  dart/math/detail/MasonryArchGeometry.hpp
+a31e3472c3ec4a914bcd1f2c62a32471993154eb00fdabcc230b33d08cbf9c18
+  tests/benchmark/integration/fbf_paper_arch_wedge_collision_probe.cpp
+
+6. Optional MuJoCo comparison asset
+------------------------------------
+
+Location: data/mjcf/rigid_ipc_arch/
+
+The directory contains Rigid-IPC's 101-stone MuJoCo comparison scene, OBJ
+meshes, plane, license, and a README describing every adaptation. It is a
+benchmark/example-only asset and is not a core DART dependency.
+
+Representative snapshot SHA-256 values on 2026-07-12:
+
+732b3d6dd045ddd22e18a6477108cbdf538add60945fbd39c33f41cbc8f84d2a
+  data/mjcf/rigid_ipc_arch/LICENSE.md
+3e82689039b0a050f6e6d846828167e6b7441a88bde15c9799dfaca103728100
+  data/mjcf/rigid_ipc_arch/arch-101-stones_mjc.xml
+d77c9dd773a8ea02c1698c7ae6a9221b35cb13bc91673780c9273969e8b54278
+  data/mjcf/rigid_ipc_arch/plane.obj
+
+6a. Card-house reconstruction
+------------------------------
+
+The paper publishes 26 plates across four levels, mu = 0.8, dt = 1/60 s,
+settling through 6.7 s, and four projectiles before the 10 s view. It does not
+publish plate dimensions, mass or inertia, A-frame angle, level spacing,
+initial penetration, projectile parameters, collision margin, or manifold
+reduction policy. The current DART card scene therefore remains a
+reconstruction and is never an author-scene fixture.
+
+Current reconstruction values are 1.0 x 0.45 x 0.03 m plates, 0.05 kg per
+plate, a 0.23 rad A-frame angle, and a nominal 0.003 m interface overlap.
+A-frame centers are derived from the oriented boxes' horizontal half extents
+rather than a fitted contact-count constant. Horizontal one-meter supports are
+spaced by 0.997 m so adjacent supports have the same nominal 0.003 m overlap.
+The earlier 0.96-half-span and 0.55 m-spacing heuristics were removed because
+they created approximately 0.037 m apex penetration and 0.45 m coplanar
+support overlap, respectively.
+
+Actual contacts, unique body pairs, penetration statistics, residuals, and
+timings must be measured for every run. Neither detector caps nor geometry may
+be tuned merely until a row equals the paper's reported contact count.
+
+7. Arch simulation parameters and boundary-condition distinction
+------------------------------------------------------------------
+
+Rigid-IPC source scene values used by the current DART geometry route:
+
+- coefficient_friction = 0.5, uniform;
+- density = 1000 kg/m^3 when unspecified by the source scene;
+- gravity magnitude = 9.8 m/s^2 in the source JSON;
+- all stones dynamic and only the ground fixed.
+
+Published FBF evidence is a separate contract:
+
+- contact-rich tables and gamma sweeps report mu = 0.8;
+- the 25-stone paper scene describes two pinned end stones and 23 dynamic
+  interior stones;
+- the paper timing row reports 100 contacts for 25 stones;
+- the paper text does not publish all projectile, initialization, collision,
+  or stabilization parameters; and
+- the pinned public author source now supplies current masonry-arch meshes,
+  scene defaults, projectile/drop controls, solver configuration, and timeline,
+  but equivalence to the historical table run still requires an explicit
+  audit.
+
+Accordingly, current DART runs using mu=0.5 and all-dynamic Rigid-IPC
+boundaries are geometry-source experiments, not paper-timing parity. A
+paper-contract arch run must set mu=0.8, pin the two springers, record its
+actual contact count, stabilization policy, residual distribution, physical
+outcome, and zero-fallback status, and retain these differences in its capture
+sidecar/performance metadata.
+
+The production dynamic scenes use source-derived weighted-catenary oriented
+boxes, not literal wedges. The 25-stone production construction measures 96
+natural box-manifold contacts before its GUI reduction to 48; the 101-stone
+full construction reaches its 512-contact cap, so its uncapped natural count
+is unknown (the GUI profile reduces to 38).
+
+The separate literal 25-wedge collision audit applies mu=0.8, pins springers 0
+and 24, uses exact uniform-prism mass properties, and does not step dynamics.
+Across the audited Native/FCL/Bullet configurations it yields 24 nominal
+adjacent pairs; adding the audit's bounded closure and ground yields 26. No
+audited backend reaches the paper timing row's 100-contact 25-stone contract.
+The collision-probe metadata therefore remains
+exact_polyhedral_inertia=true, collision_only=true, and dynamic_claim=false.
+
+Reproduce the audit without stepping dynamics:
+
+  ./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_arch_wedge_collision_probe 10
+
+7a. Durable literal-wedge exact dynamics and scaling
+-----------------------------------------------------
+
+Bundle:
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/dart_cpu_evidence/
+2026-07-19_mark26_native25_colored_v10_archwide_pcore
+
+This is a separate explicit
+reconstructed_literal_wedge_arch_nonpaper_native_collision_frontend contract,
+not a promotion of the collision probe and not a replacement for the
+production oriented-box scene. It uses exact-inertia wedges, a 1 um closure,
+pinned springers, mu=0.8, Native FourPointPlanar collision, split impulse,
+float64 DART on x86-64 Linux, and the opt-in deterministic manifold-colored
+inner BGS. The solver options are step-size scale 35, 5,000 outer iterations,
+30 fixed inner sweeps, outer relaxation 1.1, fresh per-step gamma, and no
+diagonal or matrix-free seed.
+
+The bundle records one completed warmup plus three completed measured 600-step
+trajectories at each of one and four threads. That is 1,800 measured steps per
+thread count. Every measured step reports 96 contacts, 24 colliding body
+pairs/manifolds, three colors, maximum color width eight, exact success, and
+zero accepted caps, exact failures, or boxed-LCP fallbacks. The maximum
+residual is 9.999807145410957e-7 and both thread counts have the same valid
+standing physical outcome. The all-stone initial-pose gate reports maximum
+displacement 5.431169776791696e-6 m and minimum orientation alignment
+0.9999999999111284 across all 25 stones.
+
+One-thread timing is mean 6.122883343333333 ms, median 2.4966535 ms, p95
+21.663236899999994 ms, and maximum 287.473818 ms. Four-thread timing is mean
+4.26939745 ms, median 1.9047965 ms, p95 14.396602399999995 ms, and maximum
+180.504588 ms. The validated matched-work speedup is 1.4341328993236115x.
+Both means meet a 60 Hz throughput target, but neither thread count meets an
+every-step deadline.
+
+The binary and bundle files are pinned by SHA-256:
+
+a60899cc12a53f03424c02c2647f233d5c75f3ccce367ea2a604f9a7ee18bf11
+  artifact-index.json
+5507ed80140a146d4247c4f0b05fd9503879ce79856189a15759b101c2cab789
+  metadata.json
+719ba3491fad8ac12aa290faa401d0c46b10af52da7eb7a28487a5b2aac44812
+  invocations.json
+91a379f832ca52bbce7011308640012d9f199b98e39cba4eaf661cf17fb0f017
+  raw.csv
+3c08b251c340aa9ae7909d715ebcc2985ba34350a6e03b0b6b351d82d1ec82a2
+  summary.csv
+304736d6b871c4498a6c0de4c4448635e712fb3a8a455dd54d9ffefeef2ec170
+  summary.json
+4e55d7f4dc0532ab15b86cfeb72ea9526d3f9b63194dc5a25f3974186b1a7ba7
+  REPORT.md
+0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff
+  fbf_paper_trace binary
+
+The metadata records source HEAD 2ddd9f56a45437cf1c55e3433bd8aae080acff1e
+with a dirty worktree, so the binary hash and complete bundle are the exact
+source/build identity for this run; the result is not a clean-PR-head artifact.
+Schema v8 preserves the default 83-column trace byte-for-byte. The
+newline-terminated default header SHA-256 is
+396c866d782e626b5c5b52e74c392de1175f5e46dfd90b809d1f219417092e50;
+the explicitly non-paper colored trace has 95 columns and newline-terminated
+header SHA-256
+424195336cb42753179130c9f6fcba3a8ddea9bf669cfa70c0f77fcb4c6335a5.
+
+This bundle validates local standing dynamics, exact-solver success,
+mean-real-time throughput, and 1-to-4-thread scaling only for the named
+reconstruction. It is not paper timing, author parity, a worst-case real-time
+guarantee, or impact evidence.
+
+7b. Finalized literal-wedge standing capture
+----------------------------------------------
+
+A matching non-paper standing-capture directory exists at:
+
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/
+fig07_arch25_literal/
+
+The bundle status is valid_current_source_nonpaper_reconstruction, with
+claim_valid=true only for the current-source no-projectile standing claim. It
+contains five durable 1280 x 720 stills, a fully decoded 61-frame H.264
+schedule, a five-panel timeline, a 600-row trajectory, and an independently generated
+reference trace. All 600 rows compare with zero differences in the nine mapped
+integer and five mapped floating-point fields, with fixed reference and scene
+contract checks.
+
+The five durable stills, timeline, and a separately decoded 3.0-second video
+midpoint were manually inspected. The full retained pending hash DAG passed
+before final metadata/index writes. The final artifact index validates 19
+artifacts in a 21-file physical directory. The 70-file raw capture staging
+directory was pruned after sealing; clean-checkout verify-only needs no
+ignored staging files.
+
+Ten simulated seconds are sampled into 61 frames and played in 6.1 seconds at
+10 fps. The playback acceleration is 1.639344262295082x, so the video is a
+time-lapse and not real-time playback evidence.
+
+Final SHA-256 values:
+
+b217b0a43200ca558f09776e464d50f0f9dc5c5a175bcfa66ae1b656076871d1
+  metadata.json
+eca349842e4121584145cd039a554aa13c51e5242ff924b37f5f49a9dee0ac2f
+  provenance.json
+4d173c78e2c6584d6d8a85867160cc0c0687fe0f35e6878f66b0cfcd7c1c15ee
+  artifact-index.json
+4b52bcd26ed88d184bd695d77070420aeec2c95edfb203efda7ae6241150c343
+  manual-inspection.json
+e300103dbb950b97e217ca0bea6f1c1dc78598ddf485cdaca26cc7ad58835b3c
+  pending-metadata.json
+e0c111f96511bbda41af145787bd9f68782b8c9e8a909d45eb03d3c3d647feb1
+  fig07_literal_wedge_stability.mp4
+926380c5c5768cc9ca1e414cbfe2631584daa99387090926d5a1f035d62b6ec9
+  fig07_literal_wedge_timeline.png
+75a88bb317441ed71803f784b2eaa099211c4e026f8547d6fe5f2ff3ee95909f
+  decoded/video_midpoint_t3.0.png
+
+The trace-equivalence record SHA-256 is
+537f6e497b6fb6810240f006db47c91304581741370e319787635e6bcbfdd2e3.
+
+The separately named crown-impact trace was an additive source change. The
+standing capture's durable media and numeric trajectory remain bound to the
+unchanged capture source and binary:
+
+c3efeac52d02a0c373f733598db81e545d062195ba6e96c2a65bcb607cd0207f
+  tests/benchmark/integration/fbf_literal_wedge_visual_capture.cpp
+8b3cad15220c8fdb69c3ebdf7fa3923fda6fd812a49d0e54c8aeb07e62f0a7e9
+  fbf_literal_wedge_visual_capture binary
+
+The current trace source and binary are:
+
+b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76
+  tests/benchmark/integration/fbf_paper_trace.cpp
+0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff
+  fbf_paper_trace binary
+
+Finalizer source/test identity and the current regenerated reference are:
+
+0f4e27b0c58e9dd3774c6be48ad4c70a857e2956fd81f11710837561f08f7243
+  scripts/run_fbf_literal_wedge_visual_capture.py
+f06ba295006cf7e1f0fb692fc5eacf62e4e7f3be89bd166c041752d915779bdd
+  python/tests/unit/test_run_fbf_literal_wedge_visual_capture.py
+0e41af230fb4c27143966c3f8522702280e6746b31e84155a9a047326e46dbb3
+  reference-fbf-paper-trace.csv
+
+The current trace source/binary and defining contract were freshly bound in
+provenance, and the regenerated reference again compared 600/600 rows with
+zero numeric or integer difference. The expanded CPU, visual, impact, 101,
+card-manifold, validator, selection, and publication gates are rerun in the
+task owner workflow; obsolete aggregate test counts are not promoted here.
+
+The finalized standing capture does not establish the paper's crown-impact
+sequence, author-scene identity, paper timing parity, or real-time playback.
+
+7c. Preregistered literal-wedge crown-impact v1 negative
+---------------------------------------------------------
+
+Bundle:
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/
+fig07_arch25_literal_impact_v1_negative_final_v9/
+
+Runner: scripts/run_fbf_literal_crown_impact_negative.py
+Runner SHA-256:
+622b388142fed881191dcb6efb103266eb2ea1e3ffbadaf402f63b89c558bb67
+
+Executed taskset: /usr/bin/taskset
+Executed taskset SHA-256:
+3ac0b42cbe242b78c63b3ecef3023f3bcc17432b9d4731ac874848df6a87c914
+Executed taskset size: 31184 bytes
+
+The frozen reconstructed/non-paper contract completed all 720 requested steps
+and returned the expected fail-closed status. The first 600 steps contain no
+projectile and match the ordinary standing trace across all 88 eligible fields
+with zero mismatches. First projectile-arch contact is step 607; first
+projectile-ground contact is step 616, so contact order passes.
+
+The result is finite with zero exact failures and zero boxed-LCP fallbacks, but
+the preregistered impact claim is false. Five exact solves are accepted at the
+iteration cap, worst residual is 9.1545317042653963e-5 versus 1e-6, final
+maximum arch displacement is 0.07093964431215687 m versus 0.07 m, and final
+far-field displacement is 0.060523747030465196 m versus 0.007 m. No parameter
+or threshold was changed after the result.
+
+The valid claim is only that this is a durable scientific negative. It is not
+a passing impact example, visual artifact, or paper-parity result.
+
+The current runner recomputes every emitted gate from finite numeric/counter fields, requires
+post-launch exact-solve progress, pins the normalized fingerprint, binds the
+frozen preregistration contract, and stores an independently rerun 600-step
+standing reference with 88 exact field matches per row.
+
+Bundle SHA-256 values:
+
+42cc94f5f111442da42b03af33722f713d66b853d3ac21f21083f28ba24e7ba4
+  raw.csv
+7964b07fd5396f10013ff8d9100d2b36e7dfc151764210d8c60bd0ae853a2d94
+  stderr.txt
+e3baa479111a999d03359a0642533cad1baa3a48c415609bafb9a7a7cfa18e7c
+  summary.json
+0bd19797953a10223bbd7183f6e8002e490b21c29b2304befee7e6618ff9ee73
+  metadata.json
+c5711b0fe06e679f889f6a7ca3812aa955c3b8c61270ef038def06b2a3f173ff
+  REPORT.md
+
+Normalized trace fingerprint:
+86b37ec37d28259514453c9ecc9e7d5f12afe08118a0b04abd40e72acd147384
+
+Frozen preregistration-contract SHA-256:
+4cdea674f366fc2d18eadf11ef4333d491786d5d85e3fc16fa611ea7dede3f37
+
+Standing-reference CSV SHA-256:
+22fabfe2e8f35bf329f32873845a60599ed2df171c15728f14311b91d888c387
+
+7d. Card-house Native manifold sensitivity v2
+-----------------------------------------------
+
+The current-source one-factor comparison is stored at:
+
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/
+card_house_26_manifold_sensitivity_v2_r3/
+
+Compact and FourPointPlanar both emit all 600 requested rows with zero exact
+failures and zero boxed-LCP fallbacks, but neither trajectory is strict.
+Compact records 3,495 accepted capped groups across 5,757 attempts and ends
+with a successful last group at residual 8.525678738415048e-7.
+FourPointPlanar records 682 capped groups across 745 attempts, then returns the
+frozen terminal-convergence-gate failure with residual 0.016582575623909489.
+
+The preregistered directional contact hypothesis is supported:
+FourPointPlanar increases mean contacts by 93.7983333333 and mean per-pair
+multiplicity by 1.9548548971. The convergence result is mixed and does not show
+strict improvement. Timing is diagnostic only, while physical, real-time, and
+paper-parity verdicts remain null.
+
+Protocol, source, executable, and bundle SHA-256 values:
+
+eeb1c8c1d09a29e197a3c402217ecd0af9a9878749cb4756cf94bc714f2b60e9
+  CARD_HOUSE_MANIFOLD_SENSITIVITY_V2.md frozen contract
+e03356c772560f061e9b90fb4cd9f5df0c569631cd5e9fdd0857c337ff840562
+  scripts/run_fbf_card_manifold_sensitivity_v2.py
+b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76
+  tests/benchmark/integration/fbf_paper_trace.cpp
+0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff
+  fbf_paper_trace binary
+051605c25ccd5aa4de2f243c4dafe547c82f7298f8018cee53a8701d018ff297
+  comparison.json
+5890ab138179f4d7aaee6cd04c63799086439bae58fbde4f994048785dd0b8ac
+  metadata.json
+1703f995bd5d2c6edeb12ba936010a80609c3e952f2c782b554bd0be7ca40627
+  artifact-index.json
+0429b12f90e4fef534c9b707324a180eaac78829a3b3667505111228aba58d2e
+  REPORT.md
+
+7e. Prior-source strict card-house negative archive
+----------------------------------------------------
+
+The earlier fail-fast paper_cpu artifact is now durably archived at:
+
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/dart_cpu_evidence/
+2026-07-12_prior_source_paper_cpu_card600_negative/
+
+The copied bytes retain their original /tmp output path and prior-source trace
+executable identity. The run emits 89/600 rows, records 88 accepted capped
+steps, one exact failure, terminal residual 0.018611716007362732, and zero
+boxed-LCP fallbacks. It is historical scientific-negative evidence only.
+
+Key SHA-256 values:
+
+1688bcd13703dc9f58411bf2e83628f07ebd92fbf0e2eeb4b325748ef4182dfd
+  recorded trace executable
+402d6df7377ce06a1c260e45fdf7189813876a006a5babab99434c0524b2c774
+  metadata.json
+ddd4b4db83932eedb7424e180955c0b2ffb4e431139c1e98c908daf20896a326
+  raw.csv
+794b2b0340b5a6057bf5ee25dfb4eabbc9217b9255096c85ff850bb38ca152f5
+  summary.json
+1f21021e06b4b7d622d4ae52ef4b1246865a8d8f82e19da3031f903aa65e0cfd
+  artifact-index.json
+
+7f. Current-source small paper_cpu diagnostic matrix
+-----------------------------------------------------
+
+The final no-op Release build is bound by the current-source bundle at:
+
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/dart_cpu_evidence/
+2026-07-19_current_source_paper_cpu_small_r7/
+
+It contains 27 measured trajectories and 5,220 rows: three repetitions for
+each of the nine small reconstructed scenarios, one simulation thread pinned
+to logical CPU 4, and zero warmups. All 9/9 physical classifiers pass. Seven
+of nine scenarios are strict and eligible for the local mean/all-step 60 Hz
+contract. Incline mu=0.5 has three accepted caps and residual
+1.4392081500753078e-6. Legacy turntable mu=0.5, omega=5 physically ejects in
+all repetitions, but every process fails and each contains one accepted cap;
+its maximum residual is 3.050386527672585e-4. Both rows are excluded from the
+strict and real-time verdicts.
+
+Those legacy turntable rows retain the serialized historical contract label
+`reconstructed_scene_author_assets_unavailable`. It identifies the older
+square-support reconstruction and is not a current source-availability claim;
+the public-author configuration is the separate lane in Section 7h.
+
+This bundle is a current DART float64/native diagnostic. It contains no
+paper-comparable timing verdict, no Apple-silicon attestation, no external
+baseline, no warmup/aggregation parity, and no multicore result. The nine exact
+mean/median/p95/maximum timing rows are preserved in summary.json.
+
+Key SHA-256 values are:
+
+06594c1e1cc3c6858bc78a80630aefb0e85eeef92204b0a09b99425411c3ebeb
+  artifact-index.json
+e227d7aef3b273ff81385f227f9e6766a7e40a622bc4298e1807b7c2068bc417
+  metadata.json
+dacc2ba8f8df17dad7cc378881b0064f4aa57c2e14bebba8c547916e34c2b9c7
+  invocations.json
+ba062cf359da85d21b5ea83b722d26375267212dfc44a4ce9f48701ad8a79a5a
+  raw.csv
+2cf061bb0b70d9db4818d94f88bb68f10159a4a4d7eaa21598821607f3123be8
+  summary.csv
+9137f1b2db0909a96897632a66617f2cfa58476a369d2adfe232b73e46cd0fa2
+  summary.json
+008bc94667893cd26bfc04a720caca3d3a5703601c8739bc06856f93818c63d5
+  REPORT.md
+0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff
+  fbf_paper_trace binary
+b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76
+  tests/benchmark/integration/fbf_paper_trace.cpp
+8fae2320858e49fdda309d89df8cb1158c1cc5dc11d345e14f5adca0ff63cf3d
+  resolved Release libdart.so.6.19.3
+
+7g. Finalized checker-textured backspin visual
+------------------------------------------------
+
+The finalized current-source DART-only bundle is:
+
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/
+fig03_backspin_current_v3/
+
+Its physical sphere remains the sole collision/dynamics geometry. A separate
+UV mesh on VisualAspect supplies a high-contrast 6x4 ivory/charcoal checker
+texture and coral registration tile, making angular motion visible without
+changing inertia, contact, or the 131-row solver/contact projection. Manual
+inspection validates translational advance and reversal only; it does not
+promote signed angular direction, uninterrupted contact, rest, landing-phase,
+paper, external-solver, golden, timing, or real-time claims.
+
+The bundle has 18 indexed artifacts in a 20-file physical directory and
+passes clean-checkout verify-only without ignored staging. The MP4/GIF retain
+the motion schedule, three durable stills retain steps 0, 1, and 2, and the
+140-file raw capture staging directory is pruned after sealing. Key SHA-256
+values are:
+
+429a0888fa7a002cbc0c93e708569e4bf8e18195421c9663d5ce3b3a1968ab7f
+  artifact-index.json
+a42ce0521a7c2af31662eff6a000ef5e68fe8bddf631d4f323be1ea8230c25a7
+  metadata.json
+b86c596da631503a3831fd55adeb934505cf758dfc8a612d0a0f32b2a55067cb
+  manual-inspection.json
+0f6221fd32742b849e9ac79ec750de71b46ec24ba66b8d6e5a0e25048223ab48
+  trace-summary.json
+fb9de609e52df648465dc0dbe73af7fbbd1b98c1c4671cde504200ff72c15c01
+  verification.json
+72bf8d6098e8fb17b98bbedeaa00cc539866cf570d91d725f77dc75f1971b067
+  backspin/panel.png
+7d4606f4da0a57ffbdfa0528906b21a20d7e1a4e47a6e7eb5387242aecc71928
+  backspin/clip.mp4
+773365f624ba1326855f2ad99c0196f761ab776001da568f7cdaa84054adacc8
+  backspin/clip.gif
+
+7h. Public-author turntable matrix
+----------------------------------
+
+The public MIT-licensed author repository is pinned at commit
+b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0. The raw author-reference run and
+configuration audit are sealed at:
+
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/
+author_turntable_reference_v1/
+
+The DART port uses the author's radius, height, cube size/density, initial
+radius/gap/drop, settle/ramp/horizon, friction, and angular-speed matrix. Its
+circular support is rendered with a segmented VisualAspect-only OBJ/MTL mesh;
+the analytical cylinder remains the sole collision/dynamics geometry. The
+author mu=0.5, omega=2 case is retained through six seconds but exhibits radial
+slip, so it is not labeled zero-slip sticking or co-rotation.
+
+The finalized DART visual/trace bundle is:
+
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/
+fig04_turntable_author_current_v1/
+
+All four current_visual captures have byte-identical solver projections to
+their paired traces and the 2x2 visual classifier is ejected, ejected,
+retained-through-6-seconds, ejected. The separate paper_cpu/native diagnostic
+lane is not all strict; it is not substituted for the renderer lane. No
+Warp/Newton full-state equivalence, paper parity, approved golden, external
+solver, timing, or real-time claim follows.
+
+The bundle has 58 indexed artifacts in a 60-file physical directory and
+passes clean-checkout verify-only without ignored staging. Four durable
+timeline-selected outcome stills bind steps 136, 120, 360, and 90 in source
+order; raw capture staging is pruned after sealing. Key SHA-256 values are:
+
+209b677ce35e2b9c11248ab414727016394831084881a5e9c2866f68b51f6cdf
+  artifact-index.json
+854ef0c8aad75b4b200f512951d56b4dbef7aa82c46cc5e82123f0583dcc6ac5
+  metadata.json
+095652d3df70a144be31be49b0e25b3265df54a3815df21742333d5fdfb4529a
+  manual-inspection.json
+c50ad532d1c95564c2dc7d236ebb263e83932cafcd0ec77013ed8a433336ab22
+  trace-summary.json
+455da7686eaeeb989e0d122c4724ea66ff161e8d652230eff9fb8ad20590bacd
+  verification.json
+ed0bcce48f4c70ef6fb0a6ca37dda736e0023aae2278d29fc121290d4c249ff8
+  invocations.json
+3970da8be868c512ff0e1aafe4eb8add2814e3a6394b4cbfe2422ad870cc7829
+  run-summary.json
+b38c9adccd6de4d6dcd90d8fdadde9cd61234b4822dfb3eb444bba0787198e4b
+  capture-provenance.json
+a8b7f0e6d76fa1a6993aec2038b0f0bda403e79024ef8a559d9ff938f031cfc3
+  groups/turntable_author/metadata.json
+cf3fa8fed649adc7958f6307a4471d9e1af5651a65c2f48ec74b29066334eff8
+  turntable_author_mu02_omega2/metadata.json
+c140c26ef2504a26d7b2349e2a8e76d58e302c0e19c5e0a3111da3a844747634
+  turntable_author_mu02_omega5/metadata.json
+07a6a2ead3311483f81ec9a3f22c5bb77c17bbb31e4cc2916c55f03a45367c5a
+  turntable_author_mu05_omega2/metadata.json
+7ee013065d81fe5e2f7beefa9e20efd981fab3e01abd805f01dd37fb386adaa6
+  turntable_author_mu05_omega5/metadata.json
+d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432
+  scripts/run_fbf_visual_evidence.py
+6e378252fa6a7cb51c6813c9d5a2b30b8c8129eacdb01df0ee19a58a270cbc5e
+  python/tests/unit/test_run_fbf_visual_evidence.py
+3f4c9ac29ac5bd2c7eee07e970d5ad03a9f4b3c7fce88a5582c5027c00cfa0e5
+  examples/demos/CMakeLists.txt
+4574bc5b1243c4722c2d8f1e3849715b566c5b7ab2d6b853f3659c3fc653e2d9
+  tests/benchmark/integration/CMakeLists.txt
+a02804cc61e2966e95048746e9db4fd83ebf506a56f3efc3ad466cf4d2b1deb0
+  groups/turntable_author/panel.png
+b241463658e6b48dfb2c74815e85317c2f0eccd46a7f7ab978b8f2701ce80d6d
+  groups/turntable_author/clip.mp4
+94404b6138bca78e4a20aefcee41d24b104204565a019b7160b00f58ffec7def
+  author_turntable_reference_v1/manifest.json
+7i. Finalized Painleve-style proxy visual
+-----------------------------------------
+
+The current-source two-cell DART proxy bundle is:
+
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/
+fig05_painleve_proxy_current_v1/
+
+The paired visual shows mu=0.5 returning upright and mu=0.55 tumbling and
+remaining horizontal. Its separately tracked 151-row traces corroborate the
+local classifier and shorter pre-tumble distance, but the renderer and trace
+implementations are not trace-equivalent. The scene remains a DART proxy, not
+the author scene, and paper/external/golden/timing/real-time claims remain
+false or null.
+
+The bundle has 27 indexed artifacts in a 29-file physical directory. Durable
+clips/panels/timelines replace raw capture frames, which are pruned after
+sealing; clean-checkout verify-only needs no ignored staging. Key SHA-256
+values are:
+
+7880c62d39c3f47109b50394cd84e20919565b70af19c1473c618841f682ff43
+  artifact-index.json
+0845988dd05b18c965eba5fb5163d43dafc901ca8f30f66b01b4f37163d72f30
+  metadata.json
+27c2632e427ec83b3612de6003cd16523fd483ab066d6618f9cdee38efdd2d0c
+  manual-inspection.json
+115b50d92338477022435911df38d53a54e880c1daed4004dedd7d8507336164
+  trace-summary.json
+6fd34e54f7958c45777731ab888fe3a5e8e24d06b9fdddb96bdace269fcb515e
+  verification.json
+bef97d04d59e2937195151cbf36a0b713bb2c2bef43d111513c05885595546e2
+  groups/painleve/panel.png
+dd4cdda2410b71f8e86035f1c0ff278f9dda77133c702e409ee5d533da443a4b
+  groups/painleve/clip.mp4
+
+7j. Finalized incline threshold visual
+--------------------------------------
+
+The current-source two-cell DART incline bundle is:
+
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/
+fig01_02_incline_current_v1/
+
+Finalization and clean-checkout verify-only pass with status
+valid_current_source_nonpaper_incline. The directory contains 23 physical
+files. Its exact-membership artifact index binds 21 files and declares only
+artifact-index.json and metadata.json as exclusions.
+
+The combined renderer retains five durable 660x506 stills and a 61-frame
+decoded 30 fps H.264 schedule. The 70-file raw capture staging directory is
+pruned after sealing, so verify-only needs no ignored staging. Capture
+diagnostics record 240 exact attempts/solves, zero
+accepted caps, exact failures, or boxed-LCP fallbacks, maximum residual
+9.999836962261359e-7, and eight contacts per post-initial step.
+
+The independent mu=.4 and mu=.5 tracked traces each contain 121 rows, 120
+exact solves, 119 warm starts, zero fallbacks, three contacts per post-initial
+step, and continuous post-initial tracked contact. The mu=.4 trace travels
+1.7686892884927794 m downhill versus analytical 1.7548661487418349 m, reaches
+final downhill speed 1.7544655347780056 m/s, and has maximum residual
+9.986952135669881e-7. The mu=.5 trace travels 0.0008905412965980523 m
+downhill, has maximum and final stick speed 0.001116442058867632 m/s, and has
+maximum residual 9.997210606407098e-7. The tracked downhill-displacement
+separation is 1.7677987471961814 m.
+
+Only the aggregate step, exact-solve, and boxed-LCP-fallback projections are
+byte-identical, at SHA-256:
+
+f03dff0aaec5f0fa6615609c2ea97aa31f072c14c6212fffe15858ea969d88c2
+
+The capture reports eight contacts while the traces report six in aggregate.
+Accordingly, contact_count_match=false and contact_counts_compared=false.
+The combined rendered scene and independent tracked traces use different
+placements; state, residual, status, warm-start, per-cell, and full-trace
+equivalence are not claimed.
+
+Key sealed bundle SHA-256 values are:
+
+7a5f973a9b7264911058ec91e253dfcf5d72a7ec46fa7020df0020af1a259b7d
+  metadata.json
+b758bd28965bf9a96be7668c0dbb738b72c1493d83f195a3e726ae891f8f6e85
+  artifact-index.json
+3c3af65d62c629ae836302910a2fe7f928ab398628f280221f6d0b5d94d5a848
+  manual-inspection.json
+4df130e878f1e58d478870c8f132ee165061a752520e926f44c331d32f14f20d
+  trace-summary.json
+2681073ee44f7fecd2782081826b414ee6541bb930149ced91f60a17dc2416d5
+  verification.json
+b4e199a8e06ac6dd0c638b261a4d969fa973fb0bdbb376e0579f19fb2f6c56c3
+  invocations.json
+cfed42cb3b09ab8559d84a1dae4041a26d2e0937374787f34193c8363795b5d1
+  run-summary.json
+7ee89bb22ee5868a0e494788e077361c007cbe3d0baa2323121874bd5972bfb3
+  capture-provenance.json
+f75efcd40bd0452bcbdc7bbc82eee0fdbd78d7a1059f974e83999467b1688fa5
+  REPORT.md
+f9f211fb376c97d98bccc67806ba3e1c9905d7d27764c794e1c480af7b4df9d3
+  incline/panel.png
+ad6d00ae6a614b0edbc836396c30621b589295a0eec826d060663f6782cee3f9
+  incline/clip.mp4
+172572577e171049f670783aef6452d2e6e1e6030458070bb430eec21f5f83ec
+  incline/metadata.json
+19d12947507be7d8d7a20de53b13565a23b0b9a6dfe1c907c4be3dc504f48e25
+  incline/timeline.json
+449acf19feef2e0aa7fb04bb9f45f865727ba59f626b3964114cd900169ecd8a
+  traces/incline_mu_0_4.csv
+2b30e8033b123876ad1cdea755741fd230a4d72d3747e55b907e6427962659c5
+  traces/incline_mu_0_5.csv
+
+Bound implementation/runtime SHA-256 values are:
+
+705da2a308697b4b4b923894d10f23622310e024aeab49862a24593c79142e23
+  scripts/finalize_fbf_incline_visual.py
+02f3800cf7cf5df5d85b1950512e78df6e413fea42cfa89880775f010d208e1c
+  python/tests/unit/test_finalize_fbf_incline_visual.py
+d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432
+  scripts/run_fbf_visual_evidence.py
+6e378252fa6a7cb51c6813c9d5a2b30b8c8129eacdb01df0ee19a58a270cbc5e
+  python/tests/unit/test_run_fbf_visual_evidence.py
+84fd1330a13d548760e537f9734790ab1b5c91fcda3e446bf76b9b36f3e1aa99
+  examples/demos/scenes/FbfPaperFrictionScene.cpp
+d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4
+  dart-demos binary
+b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76
+  tests/benchmark/integration/fbf_paper_trace.cpp
+0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff
+  fbf_paper_trace binary
+a4bed7372213d544fef62923b88bc9accee7086165d7b3cb20245bee8bade05f
+  tests/integration/test_ExactCoulombFbfPaperFixtures.cpp
+8fae2320858e49fdda309d89df8cb1158c1cc5dc11d345e14f5adca0ff63cf3d
+  resolved libdart.so.6.19.3
+
+This valid dart_best visual/trace lane does not replace the separately
+finalized strict paper_cpu/Native matrix. In that strict lane, mu=.5 passes
+the physical classifier with only 8.63436433e-7 m displacement, but one
+accepted cap per repetition raises maximum residual to
+1.4392081500753078e-6. Its strict solver/local-real-time contract therefore
+remains failed.
+
+Fig. 1, Fig. 2, and video.03 remain partial. The bundle does not provide the
+full friction sweep and plot, matched external-solver rows, an approved source
+golden/diff, paper contact-count match, the complete 11-second semantic edit,
+paper timing, or real-time parity. The generic capture-sidecar deliverable
+also remains unpromoted.
+
+7k. Public-author card-house construction
+-------------------------------------------
+
+The finalized current-source construction-only bundle is:
+
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/
+card_house_author_5_construction_current_v1/
+
+It records the public-author default five-level, 40-card configuration with
+four suspended cubes at step zero. The directory has 14 physical files, and
+the exact-membership index binds 12 artifacts. Key SHA-256 values are:
+
+d6cbc6f9600b8bc5c3094dd85974eae8e71d64a9e3d6e99c1783ace36be9741d
+  artifact-index.json
+b97ac795c9368f2632fe422f975914f412e8d1cb0667023e8d83c6224547df00
+  metadata.json
+7bc672e9dd95b52853c5c7e56680190d564fc9514add9b263de0c33c3f94e2a4
+  manual-inspection.json
+
+This is construction-only evidence. The capture executes zero simulation
+substeps and establishes no release, standing, trajectory, solver behavior,
+contact dynamics, physical outcome, historical four-level/26-card trajectory,
+Fig. 6 or video parity, source-renderer color parity, paper timing, or
+performance claim.
+
+8. Integrity rule
+------------------
+
+Only artifacts listed in paper-evidence-manifest.json with existing paths and
+validated metadata count as evidence. Malformed, interrupted, concatenated,
+fallback-contaminated, or unverifiable runs remain explicitly invalid or
+partial and must never be used for completion or performance claims. Timing
+and real-time claims additionally require a validated physical outcome and a
+controlled affinity contract. Pre-hardening visual artifacts lack the
+every-step/all-group diagnostic contract and are stale until recaptured.
+
+The validator hashes repository artifacts, materializes the CPU,
+standing-visual, incline, and prior-source indexes, and binds recorded process results,
+taskset commands, per-CPU topology aggregates, worker-residency identities,
+and archived-prior-source provenance without requiring ignored local build
+products. It independently recomputes the CPU timing, thread-residency,
+colored-dispatch, physical, and solver-option claims from the 3,600-row scale
+bundle and 5,220-row current-small bundle, then cross-checks the card-v2-r3,
+impact-v8, and arch101-v6 semantic
+fields and promotion boundaries.
+
+The finalized Painleve proxy bundle is independently validated as an exact
+27-artifact membership set in a 29-file physical directory. Validation
+recomputes every indexed byte size and
+hash; binds source/test/binary identities; checks both member sidecars, media
+streams, paired composition, full decode, manual panel verdicts, and separate
+151-row tracked traces; and recomputes the first-tumble and shorter pre-tumble
+contracts. Paper/external/golden/timing/real-time promotion and rendered-demo
+to tracked-trace equivalence remain explicitly false or null.
+
+The finalized incline bundle is independently validated as an exact
+21-artifact membership set in a 23-file physical directory. Validation
+recomputes indexed sizes and hashes, binds source/test/binary/runtime
+identities, checks five durable stills and the decoded clip/panel/manual
+verdict, replays both 121-row traces, and recomputes
+the tracked threshold separation. Only aggregate exact-solve/fallback counts
+are equivalent; capture contacts 8 versus trace contacts 6 remain explicitly
+excluded, and the strict paper_cpu mu=.5 failure remains authoritative for
+that lane.
+
+The repository contains six finalized durable visual bundles: literal wedge,
+incline threshold, checker backspin, author-configuration turntable, Painleve
+proxy, and public-author card-house construction. Clean-checkout verify-only
+uses durable artifacts and provenance without ignored raw capture staging. The
+manifest remains 29 requirements = 24 partial + 5 blocked + 0
+complete, the visual workflow remains 17 schedules, and the overall task
+remains incomplete.
+The generic DemoHost capture-sidecar completion attestation remains
+unavailable, and no bundle is promoted beyond the explicit scope recorded
+above.

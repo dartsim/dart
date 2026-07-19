@@ -1,0 +1,718 @@
+[
+  {
+    "collision_frontend": "native",
+    "command": [
+      "/usr/bin/taskset",
+      "--cpu-list",
+      "8",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+      "masonry_arch_25_literal_wedge",
+      "exact_fbf",
+      "1",
+      "600",
+      "nan",
+      "performance",
+      "default",
+      "default",
+      "1",
+      "dart_best_colored_bgs",
+      "native",
+      "default"
+    ],
+    "complete_rows": true,
+    "cpu_affinity": {
+      "core_classes_khz": [
+        5300000
+      ],
+      "logical_cpu_count": 1,
+      "logical_cpu_physical_core_keys": {
+        "8": "0:16"
+      },
+      "logical_cpu_topology": {
+        "8": {
+          "core_id": "16",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "8-9"
+        }
+      },
+      "logical_cpus": [
+        8
+      ],
+      "one_logical_per_physical_core": true,
+      "package_count": 1,
+      "package_ids": [
+        "0"
+      ],
+      "physical_core_count": 1,
+      "physical_core_keys": [
+        "0:16"
+      ],
+      "scaling_governors": [
+        "powersave"
+      ],
+      "smt_sibling_counts": [
+        2
+      ],
+      "source": "explicit_taskset"
+    },
+    "cpu_list": "8",
+    "expected_rows": 600,
+    "paper_hardware_contract": "linux_x86_64_vs_paper_apple_silicon",
+    "repetition": 1,
+    "returncode": 0,
+    "rows": 600,
+    "scenario": "masonry_arch_25_literal_wedge",
+    "stderr_file": "raw/masonry_arch_25_literal_wedge-n600-t1-warmup001.stderr.txt",
+    "stdout_file": "raw/masonry_arch_25_literal_wedge-n600-t1-warmup001.csv",
+    "steps": 600,
+    "threads": 1,
+    "timed_out": false,
+    "warmup": true
+  },
+  {
+    "collision_frontend": "native",
+    "command": [
+      "/usr/bin/taskset",
+      "--cpu-list",
+      "8",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+      "masonry_arch_25_literal_wedge",
+      "exact_fbf",
+      "1",
+      "600",
+      "nan",
+      "performance",
+      "default",
+      "default",
+      "1",
+      "dart_best_colored_bgs",
+      "native",
+      "default"
+    ],
+    "complete_rows": true,
+    "cpu_affinity": {
+      "core_classes_khz": [
+        5300000
+      ],
+      "logical_cpu_count": 1,
+      "logical_cpu_physical_core_keys": {
+        "8": "0:16"
+      },
+      "logical_cpu_topology": {
+        "8": {
+          "core_id": "16",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "8-9"
+        }
+      },
+      "logical_cpus": [
+        8
+      ],
+      "one_logical_per_physical_core": true,
+      "package_count": 1,
+      "package_ids": [
+        "0"
+      ],
+      "physical_core_count": 1,
+      "physical_core_keys": [
+        "0:16"
+      ],
+      "scaling_governors": [
+        "powersave"
+      ],
+      "smt_sibling_counts": [
+        2
+      ],
+      "source": "explicit_taskset"
+    },
+    "cpu_list": "8",
+    "expected_rows": 600,
+    "paper_hardware_contract": "linux_x86_64_vs_paper_apple_silicon",
+    "repetition": 1,
+    "returncode": 0,
+    "rows": 600,
+    "scenario": "masonry_arch_25_literal_wedge",
+    "stderr_file": "raw/masonry_arch_25_literal_wedge-n600-t1-rep001.stderr.txt",
+    "stdout_file": "raw/masonry_arch_25_literal_wedge-n600-t1-rep001.csv",
+    "steps": 600,
+    "threads": 1,
+    "timed_out": false,
+    "warmup": false
+  },
+  {
+    "collision_frontend": "native",
+    "command": [
+      "/usr/bin/taskset",
+      "--cpu-list",
+      "8",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+      "masonry_arch_25_literal_wedge",
+      "exact_fbf",
+      "1",
+      "600",
+      "nan",
+      "performance",
+      "default",
+      "default",
+      "1",
+      "dart_best_colored_bgs",
+      "native",
+      "default"
+    ],
+    "complete_rows": true,
+    "cpu_affinity": {
+      "core_classes_khz": [
+        5300000
+      ],
+      "logical_cpu_count": 1,
+      "logical_cpu_physical_core_keys": {
+        "8": "0:16"
+      },
+      "logical_cpu_topology": {
+        "8": {
+          "core_id": "16",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "8-9"
+        }
+      },
+      "logical_cpus": [
+        8
+      ],
+      "one_logical_per_physical_core": true,
+      "package_count": 1,
+      "package_ids": [
+        "0"
+      ],
+      "physical_core_count": 1,
+      "physical_core_keys": [
+        "0:16"
+      ],
+      "scaling_governors": [
+        "powersave"
+      ],
+      "smt_sibling_counts": [
+        2
+      ],
+      "source": "explicit_taskset"
+    },
+    "cpu_list": "8",
+    "expected_rows": 600,
+    "paper_hardware_contract": "linux_x86_64_vs_paper_apple_silicon",
+    "repetition": 2,
+    "returncode": 0,
+    "rows": 600,
+    "scenario": "masonry_arch_25_literal_wedge",
+    "stderr_file": "raw/masonry_arch_25_literal_wedge-n600-t1-rep002.stderr.txt",
+    "stdout_file": "raw/masonry_arch_25_literal_wedge-n600-t1-rep002.csv",
+    "steps": 600,
+    "threads": 1,
+    "timed_out": false,
+    "warmup": false
+  },
+  {
+    "collision_frontend": "native",
+    "command": [
+      "/usr/bin/taskset",
+      "--cpu-list",
+      "8",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+      "masonry_arch_25_literal_wedge",
+      "exact_fbf",
+      "1",
+      "600",
+      "nan",
+      "performance",
+      "default",
+      "default",
+      "1",
+      "dart_best_colored_bgs",
+      "native",
+      "default"
+    ],
+    "complete_rows": true,
+    "cpu_affinity": {
+      "core_classes_khz": [
+        5300000
+      ],
+      "logical_cpu_count": 1,
+      "logical_cpu_physical_core_keys": {
+        "8": "0:16"
+      },
+      "logical_cpu_topology": {
+        "8": {
+          "core_id": "16",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "8-9"
+        }
+      },
+      "logical_cpus": [
+        8
+      ],
+      "one_logical_per_physical_core": true,
+      "package_count": 1,
+      "package_ids": [
+        "0"
+      ],
+      "physical_core_count": 1,
+      "physical_core_keys": [
+        "0:16"
+      ],
+      "scaling_governors": [
+        "powersave"
+      ],
+      "smt_sibling_counts": [
+        2
+      ],
+      "source": "explicit_taskset"
+    },
+    "cpu_list": "8",
+    "expected_rows": 600,
+    "paper_hardware_contract": "linux_x86_64_vs_paper_apple_silicon",
+    "repetition": 3,
+    "returncode": 0,
+    "rows": 600,
+    "scenario": "masonry_arch_25_literal_wedge",
+    "stderr_file": "raw/masonry_arch_25_literal_wedge-n600-t1-rep003.stderr.txt",
+    "stdout_file": "raw/masonry_arch_25_literal_wedge-n600-t1-rep003.csv",
+    "steps": 600,
+    "threads": 1,
+    "timed_out": false,
+    "warmup": false
+  },
+  {
+    "collision_frontend": "native",
+    "command": [
+      "/usr/bin/taskset",
+      "--cpu-list",
+      "8,10,12,14",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+      "masonry_arch_25_literal_wedge",
+      "exact_fbf",
+      "1",
+      "600",
+      "nan",
+      "performance",
+      "default",
+      "default",
+      "4",
+      "dart_best_colored_bgs",
+      "native",
+      "default"
+    ],
+    "complete_rows": true,
+    "cpu_affinity": {
+      "core_classes_khz": [
+        5300000
+      ],
+      "logical_cpu_count": 4,
+      "logical_cpu_physical_core_keys": {
+        "10": "0:20",
+        "12": "0:24",
+        "14": "0:28",
+        "8": "0:16"
+      },
+      "logical_cpu_topology": {
+        "10": {
+          "core_id": "20",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "10-11"
+        },
+        "12": {
+          "core_id": "24",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "12-13"
+        },
+        "14": {
+          "core_id": "28",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "14-15"
+        },
+        "8": {
+          "core_id": "16",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "8-9"
+        }
+      },
+      "logical_cpus": [
+        8,
+        10,
+        12,
+        14
+      ],
+      "one_logical_per_physical_core": true,
+      "package_count": 1,
+      "package_ids": [
+        "0"
+      ],
+      "physical_core_count": 4,
+      "physical_core_keys": [
+        "0:16",
+        "0:20",
+        "0:24",
+        "0:28"
+      ],
+      "scaling_governors": [
+        "powersave"
+      ],
+      "smt_sibling_counts": [
+        2
+      ],
+      "source": "explicit_taskset"
+    },
+    "cpu_list": "8,10,12,14",
+    "expected_rows": 600,
+    "paper_hardware_contract": "linux_x86_64_vs_paper_apple_silicon",
+    "repetition": 1,
+    "returncode": 0,
+    "rows": 600,
+    "scenario": "masonry_arch_25_literal_wedge",
+    "stderr_file": "raw/masonry_arch_25_literal_wedge-n600-t4-warmup001.stderr.txt",
+    "stdout_file": "raw/masonry_arch_25_literal_wedge-n600-t4-warmup001.csv",
+    "steps": 600,
+    "threads": 4,
+    "timed_out": false,
+    "warmup": true
+  },
+  {
+    "collision_frontend": "native",
+    "command": [
+      "/usr/bin/taskset",
+      "--cpu-list",
+      "8,10,12,14",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+      "masonry_arch_25_literal_wedge",
+      "exact_fbf",
+      "1",
+      "600",
+      "nan",
+      "performance",
+      "default",
+      "default",
+      "4",
+      "dart_best_colored_bgs",
+      "native",
+      "default"
+    ],
+    "complete_rows": true,
+    "cpu_affinity": {
+      "core_classes_khz": [
+        5300000
+      ],
+      "logical_cpu_count": 4,
+      "logical_cpu_physical_core_keys": {
+        "10": "0:20",
+        "12": "0:24",
+        "14": "0:28",
+        "8": "0:16"
+      },
+      "logical_cpu_topology": {
+        "10": {
+          "core_id": "20",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "10-11"
+        },
+        "12": {
+          "core_id": "24",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "12-13"
+        },
+        "14": {
+          "core_id": "28",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "14-15"
+        },
+        "8": {
+          "core_id": "16",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "8-9"
+        }
+      },
+      "logical_cpus": [
+        8,
+        10,
+        12,
+        14
+      ],
+      "one_logical_per_physical_core": true,
+      "package_count": 1,
+      "package_ids": [
+        "0"
+      ],
+      "physical_core_count": 4,
+      "physical_core_keys": [
+        "0:16",
+        "0:20",
+        "0:24",
+        "0:28"
+      ],
+      "scaling_governors": [
+        "powersave"
+      ],
+      "smt_sibling_counts": [
+        2
+      ],
+      "source": "explicit_taskset"
+    },
+    "cpu_list": "8,10,12,14",
+    "expected_rows": 600,
+    "paper_hardware_contract": "linux_x86_64_vs_paper_apple_silicon",
+    "repetition": 1,
+    "returncode": 0,
+    "rows": 600,
+    "scenario": "masonry_arch_25_literal_wedge",
+    "stderr_file": "raw/masonry_arch_25_literal_wedge-n600-t4-rep001.stderr.txt",
+    "stdout_file": "raw/masonry_arch_25_literal_wedge-n600-t4-rep001.csv",
+    "steps": 600,
+    "threads": 4,
+    "timed_out": false,
+    "warmup": false
+  },
+  {
+    "collision_frontend": "native",
+    "command": [
+      "/usr/bin/taskset",
+      "--cpu-list",
+      "8,10,12,14",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+      "masonry_arch_25_literal_wedge",
+      "exact_fbf",
+      "1",
+      "600",
+      "nan",
+      "performance",
+      "default",
+      "default",
+      "4",
+      "dart_best_colored_bgs",
+      "native",
+      "default"
+    ],
+    "complete_rows": true,
+    "cpu_affinity": {
+      "core_classes_khz": [
+        5300000
+      ],
+      "logical_cpu_count": 4,
+      "logical_cpu_physical_core_keys": {
+        "10": "0:20",
+        "12": "0:24",
+        "14": "0:28",
+        "8": "0:16"
+      },
+      "logical_cpu_topology": {
+        "10": {
+          "core_id": "20",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "10-11"
+        },
+        "12": {
+          "core_id": "24",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "12-13"
+        },
+        "14": {
+          "core_id": "28",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "14-15"
+        },
+        "8": {
+          "core_id": "16",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "8-9"
+        }
+      },
+      "logical_cpus": [
+        8,
+        10,
+        12,
+        14
+      ],
+      "one_logical_per_physical_core": true,
+      "package_count": 1,
+      "package_ids": [
+        "0"
+      ],
+      "physical_core_count": 4,
+      "physical_core_keys": [
+        "0:16",
+        "0:20",
+        "0:24",
+        "0:28"
+      ],
+      "scaling_governors": [
+        "powersave"
+      ],
+      "smt_sibling_counts": [
+        2
+      ],
+      "source": "explicit_taskset"
+    },
+    "cpu_list": "8,10,12,14",
+    "expected_rows": 600,
+    "paper_hardware_contract": "linux_x86_64_vs_paper_apple_silicon",
+    "repetition": 2,
+    "returncode": 0,
+    "rows": 600,
+    "scenario": "masonry_arch_25_literal_wedge",
+    "stderr_file": "raw/masonry_arch_25_literal_wedge-n600-t4-rep002.stderr.txt",
+    "stdout_file": "raw/masonry_arch_25_literal_wedge-n600-t4-rep002.csv",
+    "steps": 600,
+    "threads": 4,
+    "timed_out": false,
+    "warmup": false
+  },
+  {
+    "collision_frontend": "native",
+    "command": [
+      "/usr/bin/taskset",
+      "--cpu-list",
+      "8,10,12,14",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+      "masonry_arch_25_literal_wedge",
+      "exact_fbf",
+      "1",
+      "600",
+      "nan",
+      "performance",
+      "default",
+      "default",
+      "4",
+      "dart_best_colored_bgs",
+      "native",
+      "default"
+    ],
+    "complete_rows": true,
+    "cpu_affinity": {
+      "core_classes_khz": [
+        5300000
+      ],
+      "logical_cpu_count": 4,
+      "logical_cpu_physical_core_keys": {
+        "10": "0:20",
+        "12": "0:24",
+        "14": "0:28",
+        "8": "0:16"
+      },
+      "logical_cpu_topology": {
+        "10": {
+          "core_id": "20",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "10-11"
+        },
+        "12": {
+          "core_id": "24",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "12-13"
+        },
+        "14": {
+          "core_id": "28",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "14-15"
+        },
+        "8": {
+          "core_id": "16",
+          "cpuinfo_max_frequency_khz": 5300000,
+          "physical_package_id": "0",
+          "scaling_governor": "powersave",
+          "thread_sibling_count": 2,
+          "thread_siblings_list": "8-9"
+        }
+      },
+      "logical_cpus": [
+        8,
+        10,
+        12,
+        14
+      ],
+      "one_logical_per_physical_core": true,
+      "package_count": 1,
+      "package_ids": [
+        "0"
+      ],
+      "physical_core_count": 4,
+      "physical_core_keys": [
+        "0:16",
+        "0:20",
+        "0:24",
+        "0:28"
+      ],
+      "scaling_governors": [
+        "powersave"
+      ],
+      "smt_sibling_counts": [
+        2
+      ],
+      "source": "explicit_taskset"
+    },
+    "cpu_list": "8,10,12,14",
+    "expected_rows": 600,
+    "paper_hardware_contract": "linux_x86_64_vs_paper_apple_silicon",
+    "repetition": 3,
+    "returncode": 0,
+    "rows": 600,
+    "scenario": "masonry_arch_25_literal_wedge",
+    "stderr_file": "raw/masonry_arch_25_literal_wedge-n600-t4-rep003.stderr.txt",
+    "stdout_file": "raw/masonry_arch_25_literal_wedge-n600-t4-rep003.csv",
+    "steps": 600,
+    "threads": 4,
+    "timed_out": false,
+    "warmup": false
+  }
+]

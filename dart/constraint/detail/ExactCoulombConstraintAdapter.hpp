@@ -356,6 +356,7 @@ inline void seedExactCoulombImpulseFromDelassus(
 template <typename DelassusOperator>
 inline bool seedExactCoulombImpulseFromDelassusOperator(
     ExactCoulombConstraintProblem& problem,
+    const std::vector<Eigen::Matrix3d>& diagonalBlocks,
     const DelassusOperator& applyDelassus)
 {
   const Eigen::Index contactCount = problem.contactProblem.getContactCount();
@@ -363,12 +364,6 @@ inline bool seedExactCoulombImpulseFromDelassusOperator(
       || !problem.contactProblem.freeVelocity.allFinite()
       || !problem.contactProblem.coefficients.allFinite()) {
     DART_ASSERT(false && "Invalid exact-Coulomb operator seed input.");
-    return false;
-  }
-
-  std::vector<Eigen::Matrix3d> diagonalBlocks;
-  if (!math::detail::computeExactCoulombDelassusDiagonalBlocksNormalFirst(
-          problem.contactProblem, applyDelassus, diagonalBlocks)) {
     return false;
   }
 
@@ -401,6 +396,22 @@ inline bool seedExactCoulombImpulseFromDelassusOperator(
   return problem.initialGuess.allFinite()
          && std::isfinite(computeExactCoulombConstraintSeedResidual(
              problem, problem.initialGuess, applyDelassus));
+}
+
+/// Extract local Delassus blocks through an operator and seed from them.
+template <typename DelassusOperator>
+inline bool seedExactCoulombImpulseFromDelassusOperator(
+    ExactCoulombConstraintProblem& problem,
+    const DelassusOperator& applyDelassus)
+{
+  std::vector<Eigen::Matrix3d> diagonalBlocks;
+  if (!math::detail::computeExactCoulombDelassusDiagonalBlocksNormalFirst(
+          problem.contactProblem, applyDelassus, diagonalBlocks)) {
+    return false;
+  }
+
+  return seedExactCoulombImpulseFromDelassusOperator(
+      problem, diagonalBlocks, applyDelassus);
 }
 
 /// Apply the adapted contact-space Delassus operator without reading the dense

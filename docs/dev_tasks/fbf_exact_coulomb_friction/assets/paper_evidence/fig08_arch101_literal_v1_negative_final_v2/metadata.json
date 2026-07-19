@@ -1,0 +1,427 @@
+{
+  "affinity": {
+    "logical_cpus": [
+      8,
+      10,
+      12,
+      14
+    ],
+    "one_logical_per_physical_core": true,
+    "physical_core_keys": [
+      [
+        "0",
+        "16"
+      ],
+      [
+        "0",
+        "20"
+      ],
+      [
+        "0",
+        "24"
+      ],
+      [
+        "0",
+        "28"
+      ]
+    ],
+    "source": "explicit_taskset",
+    "topology": {
+      "10": {
+        "core_id": "20",
+        "cpuinfo_max_freq_khz": 5300000,
+        "declared_p_core": true,
+        "physical_package_id": "0",
+        "scaling_governor": "powersave",
+        "thread_siblings_list": "10-11"
+      },
+      "12": {
+        "core_id": "24",
+        "cpuinfo_max_freq_khz": 5300000,
+        "declared_p_core": true,
+        "physical_package_id": "0",
+        "scaling_governor": "powersave",
+        "thread_siblings_list": "12-13"
+      },
+      "14": {
+        "core_id": "28",
+        "cpuinfo_max_freq_khz": 5300000,
+        "declared_p_core": true,
+        "physical_package_id": "0",
+        "scaling_governor": "powersave",
+        "thread_siblings_list": "14-15"
+      },
+      "8": {
+        "core_id": "16",
+        "cpuinfo_max_freq_khz": 5300000,
+        "declared_p_core": true,
+        "physical_package_id": "0",
+        "scaling_governor": "powersave",
+        "thread_siblings_list": "8-9"
+      }
+    }
+  },
+  "artifact_sha256": {
+    "REPORT.md": "52e5592ba5ad32a919f221e1a8e98ecb4b4f82c0228e16de44318b436bf58958",
+    "collision_probe_stderr.txt": "526d79acfb872e6b0eb141f6447a99ef376cb9dcbd1addcaeecbd2dafeeca39b",
+    "collision_probe_stdout.txt": "de2a0184e24cebf3bcbde181108ccc39e73d1263f428d3cd2179011fde87c073",
+    "invocation.json": "558c40f5200dcbcf0d5417c92ad9f2f5375b96bd9f8c7c26545d88e6a07392b6",
+    "raw.csv": "c67af9ad2e8bba6f5c43891c432180245d29c505054b8d308aea074f515ba3c9",
+    "stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "summary.json": "2e03653745a1e8d94c7b18d446004d16bfd4e176d7b9315aa198e3c08538bbfa"
+  },
+  "artifact_valid": false,
+  "binary": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+  "child_returncode": 1,
+  "classification": "failed_prefix_scientific_negative",
+  "collision_probe": {
+    "adjacent_stone_pairs": 100,
+    "constructed_initial_scene_passed": true,
+    "contacts": 102,
+    "dynamic_pair_identity_evidence": false,
+    "genuine_contact_graph": true,
+    "nonadjacent_stone_pairs": 0,
+    "nonfinite_contacts": 0,
+    "promotion_boundary": "The probe proves pair identities only for the constructed initial scene. Positive long-run promotion still requires dynamic pair-identity evidence for the FourPointPlanar trace.",
+    "repeat_count": 2,
+    "repeated_collision_stable": true,
+    "returncode": 0,
+    "scope": "constructed_initial_scene_collision_only_compact_manifold",
+    "springer_ground_pairs": 2,
+    "unexpected_ground_pairs": 0,
+    "unique_pairs": 102
+  },
+  "collision_probe_binary": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_arch_wedge_collision_probe",
+  "collision_probe_command": [
+    "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_arch_wedge_collision_probe",
+    "2"
+  ],
+  "collision_probe_returncode": 0,
+  "collision_probe_source": "tests/benchmark/integration/fbf_paper_arch_wedge_collision_probe.cpp",
+  "command": [
+    "taskset",
+    "--cpu-list",
+    "8,10,12,14",
+    "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+    "masonry_arch_101_literal_wedge",
+    "exact_fbf",
+    "1",
+    "600",
+    "nan",
+    "performance",
+    "default",
+    "default",
+    "4",
+    "dart_best_colored_bgs",
+    "native",
+    "default",
+    "0",
+    "0"
+  ],
+  "created_utc": "2026-07-12T23:29:01.460866+00:00",
+  "cwd": "/home/js/dev/dartsim/dart/task_6",
+  "dynamic_pair_identity_evidence": false,
+  "environment": {
+    "DART_DISABLE_COMPILER_CACHE": null,
+    "OMP_NUM_THREADS": null
+  },
+  "normalized_scene_work_fingerprint_sha256": "8d275edcaa82a2f628fdd5d9f846b2daed7e6864fdc4b7e80eca9a8c93bcf527",
+  "platform": "Linux-7.0.0-27-generic-x86_64-with-glibc2.43",
+  "positive_long_run_promotion_eligible": false,
+  "protocol": "docs/dev_tasks/fbf_exact_coulomb_friction/LITERAL_ARCH_101_V1.md",
+  "python": "3.14.6 | packaged by conda-forge | (main, Jun 12 2026, 08:51:42) [GCC 14.3.0]",
+  "runner_source": "scripts/run_fbf_literal_arch101_v1.py",
+  "runtime_provenance_scope": "Recorded executable, ldd, taskset, and resolved regular shared-library file identities; this is not a claim over all host runtime state",
+  "scene_graph_evidence_scope": {
+    "collision_probe": "Compact collision-only constructed time-zero graph: 102 pairs are 100 adjacent stone pairs plus two springer-ground pairs",
+    "trace": "FourPointPlanar aggregate 400-contact, 100-constraint-pair, three-color, width-34 fields beginning at step 1; dynamic pair identities are not present"
+  },
+  "schema_version": "dart.fbf_literal_arch101_v1/v1",
+  "source_identity": {
+    "collision_probe_executable": {
+      "ldd_resolution_output_normalized": "ld-linux-x86-64.so.2 => /lib64/ld-linux-x86-64.so.2 => /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2\nlibBulletCollision.so.3.25 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libBulletCollision.so.3.25 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libBulletCollision.so.3.25\nlibLinearMath.so.3.25 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libLinearMath.so.3.25 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libLinearMath.so.3.25\nlibassimp.so.6 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libassimp.so.6 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libassimp.so.6.0.5\nlibc.so.6 => /usr/lib/x86_64-linux-gnu/libc.so.6 => /usr/lib/x86_64-linux-gnu/libc.so.6\nlibccd.so.2 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libccd.so.2 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libccd.so.2.0\nlibdart-collision-bullet.so.6.19 => /home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-collision-bullet.so.6.19 => /home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-collision-bullet.so.6.19.3\nlibdart.so.6.19 => /home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19 => /home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19.3\nlibdl.so.2 => /usr/lib/x86_64-linux-gnu/libdl.so.2 => /usr/lib/x86_64-linux-gnu/libdl.so.2\nlibfcl.so.0.7 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libfcl.so.0.7 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libfcl.so.0.7.0\nlibgcc_s.so.1 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libgcc_s.so.1 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libgcc_s.so.1\nlibm.so.6 => /usr/lib/x86_64-linux-gnu/libm.so.6 => /usr/lib/x86_64-linux-gnu/libm.so.6\nliboctomap.so.1.10 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomap.so.1.10 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomap.so.1.10.0\nliboctomath.so.1.10 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomath.so.1.10 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomath.so.1.10.0\nlibrt.so.1 => /usr/lib/x86_64-linux-gnu/librt.so.1 => /usr/lib/x86_64-linux-gnu/librt.so.1\nlibstdc++.so.6 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libstdc++.so.6 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libstdc++.so.6.0.34\nlibz.so.1 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libz.so.1 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libz.so.1.3.2\n",
+      "ldd_resolution_output_normalized_sha256": "c2e87ab93cc406bcab70c59938d82b915c6e55806c28d507a002bd40be843717",
+      "ldd_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ldd_tool": {
+        "name": "ldd",
+        "path": "/usr/bin/ldd",
+        "resolved_path": "/usr/bin/ldd",
+        "sha256": "5af792061ad344564c8305df2914d9b0f007ed1c108df9bab0068c598f4aec15",
+        "size_bytes": 5388
+      },
+      "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_arch_wedge_collision_probe",
+      "resolved_build_libdart": {
+        "reported_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19",
+        "resolved_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19.3",
+        "sha256": "484e64762b9f69b1c14ed152413b15d9eab1c188187d5d151e00f9b771fd0dfe",
+        "size_bytes": 14724936,
+        "soname": "libdart.so.6.19"
+      },
+      "resolved_regular_shared_libraries": [
+        {
+          "reported_path": "/lib64/ld-linux-x86-64.so.2",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+          "sha256": "223b94a42758f2434da331cc0aa62db1af5b456481762c5caceefa1a2d1eb8fb",
+          "size_bytes": 254864,
+          "soname": "ld-linux-x86-64.so.2"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libBulletCollision.so.3.25",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libBulletCollision.so.3.25",
+          "sha256": "f96eb02c9002d9fa768604e3f387689a86a391897ba61da9aaf50c2687ac72a1",
+          "size_bytes": 1281768,
+          "soname": "libBulletCollision.so.3.25"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libLinearMath.so.3.25",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libLinearMath.so.3.25",
+          "sha256": "71568d02b1b718cd63045d2a2a9eb7fe6a0323a6832bd3556df1934f5718fe0d",
+          "size_bytes": 175688,
+          "soname": "libLinearMath.so.3.25"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libassimp.so.6",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libassimp.so.6.0.5",
+          "sha256": "fe12369fae57d84d5e900e26334cf495a178df9e5b8ad494a3b9e1354d247570",
+          "size_bytes": 14084376,
+          "soname": "libassimp.so.6"
+        },
+        {
+          "reported_path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "sha256": "d763925433ff9b757390549e1b20c085f5e6de27ae700fe89194178d96a8a2b0",
+          "size_bytes": 2186512,
+          "soname": "libc.so.6"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libccd.so.2",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libccd.so.2.0",
+          "sha256": "4f119cf424119761136b2f3c46bb1fbbc92d673264168628f7ec16b840ba6821",
+          "size_bytes": 46736,
+          "soname": "libccd.so.2"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-collision-bullet.so.6.19",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-collision-bullet.so.6.19.3",
+          "sha256": "4052072c83cc34ea5cfcbdb2f4d01d4b2cb9e9af30f3e940e90d22a3d0a70700",
+          "size_bytes": 667656,
+          "soname": "libdart-collision-bullet.so.6.19"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19.3",
+          "sha256": "484e64762b9f69b1c14ed152413b15d9eab1c188187d5d151e00f9b771fd0dfe",
+          "size_bytes": 14724936,
+          "soname": "libdart.so.6.19"
+        },
+        {
+          "reported_path": "/usr/lib/x86_64-linux-gnu/libdl.so.2",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libdl.so.2",
+          "sha256": "d822d2db61dfc44ba839ebd6d3552dcd2030e1b762f13f35b25702017e5fe707",
+          "size_bytes": 14408,
+          "soname": "libdl.so.2"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libfcl.so.0.7",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libfcl.so.0.7.0",
+          "sha256": "d0f02da2e99fc0f0d37cc3566cb752e6cf05fd950d9819c3262fbb3fa4db2a9a",
+          "size_bytes": 10216360,
+          "soname": "libfcl.so.0.7"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libgcc_s.so.1",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libgcc_s.so.1",
+          "sha256": "e1e904051f77f9569c2ea53c83bb4083c26575e0fbd4010e46f1cb8b21037ad1",
+          "size_bytes": 902640,
+          "soname": "libgcc_s.so.1"
+        },
+        {
+          "reported_path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "sha256": "670fb59bd462ee2f833e2ed7c0a1814e0dcdbec0b8bfa048bec46e2e6fd66334",
+          "size_bytes": 1198376,
+          "soname": "libm.so.6"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomap.so.1.10",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomap.so.1.10.0",
+          "sha256": "38e56f99177cfc890fbdb8c104fc04b992fdddd9fb1ee86e62685475b7829934",
+          "size_bytes": 482976,
+          "soname": "liboctomap.so.1.10"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomath.so.1.10",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomath.so.1.10.0",
+          "sha256": "bff2644241d38969f21a99fbaa1dbe723fc64214f300d8939082f5d6e29591a0",
+          "size_bytes": 36400,
+          "soname": "liboctomath.so.1.10"
+        },
+        {
+          "reported_path": "/usr/lib/x86_64-linux-gnu/librt.so.1",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/librt.so.1",
+          "sha256": "882fb78b405f88b1280b3d8d1936abd30beb1d419bdc972b7cb62a621b003653",
+          "size_bytes": 14624,
+          "soname": "librt.so.1"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libstdc++.so.6",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libstdc++.so.6.0.34",
+          "sha256": "9581ad615b7c073423f57b69a3b148a89f8ea76fc909124211f9007909b807a6",
+          "size_bytes": 21295144,
+          "soname": "libstdc++.so.6"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libz.so.1",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libz.so.1.3.2",
+          "sha256": "22f1601237b86f0f48ed5b83071d1505167ae2e16365b33b4eed6e96dbf71ab0",
+          "size_bytes": 117128,
+          "soname": "libz.so.1"
+        }
+      ],
+      "resolved_regular_shared_library_count": 17,
+      "sha256": "bf61ff3b430d75c8a988eda614e82914b00bc4cd460d2f0a3c0da137fc633e54",
+      "size_bytes": 586656
+    },
+    "collision_probe_source_sha256": "ae58191887bd0d05e8c38080f81d73e98f6457601b4c842d3f8eec8e8015ae4a",
+    "protocol_contract_sha256": "031140a359fcb1c59f8b7377ce95e31720ec00368f175b70c7daed5fe761ffc3",
+    "runner_source_sha256": "e3e3b7c998e038f6bf1499b1b4a8eea04261dc0aa7a6e4cf668486482c56a6f5",
+    "taskset_tool": {
+      "name": "taskset",
+      "path": "/usr/bin/taskset",
+      "resolved_path": "/usr/bin/taskset",
+      "sha256": "3ac0b42cbe242b78c63b3ecef3023f3bcc17432b9d4731ac874848df6a87c914",
+      "size_bytes": 31184
+    },
+    "trace_executable": {
+      "ldd_resolution_output_normalized": "ld-linux-x86-64.so.2 => /lib64/ld-linux-x86-64.so.2 => /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2\nlibassimp.so.6 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libassimp.so.6 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libassimp.so.6.0.5\nlibc.so.6 => /usr/lib/x86_64-linux-gnu/libc.so.6 => /usr/lib/x86_64-linux-gnu/libc.so.6\nlibccd.so.2 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libccd.so.2 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libccd.so.2.0\nlibdart.so.6.19 => /home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19 => /home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19.3\nlibdl.so.2 => /usr/lib/x86_64-linux-gnu/libdl.so.2 => /usr/lib/x86_64-linux-gnu/libdl.so.2\nlibfcl.so.0.7 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libfcl.so.0.7 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libfcl.so.0.7.0\nlibgcc_s.so.1 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libgcc_s.so.1 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libgcc_s.so.1\nlibm.so.6 => /usr/lib/x86_64-linux-gnu/libm.so.6 => /usr/lib/x86_64-linux-gnu/libm.so.6\nliboctomap.so.1.10 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomap.so.1.10 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomap.so.1.10.0\nliboctomath.so.1.10 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomath.so.1.10 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomath.so.1.10.0\nlibrt.so.1 => /usr/lib/x86_64-linux-gnu/librt.so.1 => /usr/lib/x86_64-linux-gnu/librt.so.1\nlibstdc++.so.6 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libstdc++.so.6 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libstdc++.so.6.0.34\nlibz.so.1 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libz.so.1 => /home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libz.so.1.3.2\n",
+      "ldd_resolution_output_normalized_sha256": "8706fb6af371df72f31279ef6ced098d3826c0cc46409ed5f4e40e5fa32846b1",
+      "ldd_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ldd_tool": {
+        "name": "ldd",
+        "path": "/usr/bin/ldd",
+        "resolved_path": "/usr/bin/ldd",
+        "sha256": "5af792061ad344564c8305df2914d9b0f007ed1c108df9bab0068c598f4aec15",
+        "size_bytes": 5388
+      },
+      "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+      "resolved_build_libdart": {
+        "reported_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19",
+        "resolved_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19.3",
+        "sha256": "484e64762b9f69b1c14ed152413b15d9eab1c188187d5d151e00f9b771fd0dfe",
+        "size_bytes": 14724936,
+        "soname": "libdart.so.6.19"
+      },
+      "resolved_regular_shared_libraries": [
+        {
+          "reported_path": "/lib64/ld-linux-x86-64.so.2",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+          "sha256": "223b94a42758f2434da331cc0aa62db1af5b456481762c5caceefa1a2d1eb8fb",
+          "size_bytes": 254864,
+          "soname": "ld-linux-x86-64.so.2"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libassimp.so.6",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libassimp.so.6.0.5",
+          "sha256": "fe12369fae57d84d5e900e26334cf495a178df9e5b8ad494a3b9e1354d247570",
+          "size_bytes": 14084376,
+          "soname": "libassimp.so.6"
+        },
+        {
+          "reported_path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "sha256": "d763925433ff9b757390549e1b20c085f5e6de27ae700fe89194178d96a8a2b0",
+          "size_bytes": 2186512,
+          "soname": "libc.so.6"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libccd.so.2",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libccd.so.2.0",
+          "sha256": "4f119cf424119761136b2f3c46bb1fbbc92d673264168628f7ec16b840ba6821",
+          "size_bytes": 46736,
+          "soname": "libccd.so.2"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19.3",
+          "sha256": "484e64762b9f69b1c14ed152413b15d9eab1c188187d5d151e00f9b771fd0dfe",
+          "size_bytes": 14724936,
+          "soname": "libdart.so.6.19"
+        },
+        {
+          "reported_path": "/usr/lib/x86_64-linux-gnu/libdl.so.2",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libdl.so.2",
+          "sha256": "d822d2db61dfc44ba839ebd6d3552dcd2030e1b762f13f35b25702017e5fe707",
+          "size_bytes": 14408,
+          "soname": "libdl.so.2"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libfcl.so.0.7",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libfcl.so.0.7.0",
+          "sha256": "d0f02da2e99fc0f0d37cc3566cb752e6cf05fd950d9819c3262fbb3fa4db2a9a",
+          "size_bytes": 10216360,
+          "soname": "libfcl.so.0.7"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libgcc_s.so.1",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libgcc_s.so.1",
+          "sha256": "e1e904051f77f9569c2ea53c83bb4083c26575e0fbd4010e46f1cb8b21037ad1",
+          "size_bytes": 902640,
+          "soname": "libgcc_s.so.1"
+        },
+        {
+          "reported_path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "sha256": "670fb59bd462ee2f833e2ed7c0a1814e0dcdbec0b8bfa048bec46e2e6fd66334",
+          "size_bytes": 1198376,
+          "soname": "libm.so.6"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomap.so.1.10",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomap.so.1.10.0",
+          "sha256": "38e56f99177cfc890fbdb8c104fc04b992fdddd9fb1ee86e62685475b7829934",
+          "size_bytes": 482976,
+          "soname": "liboctomap.so.1.10"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomath.so.1.10",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/liboctomath.so.1.10.0",
+          "sha256": "bff2644241d38969f21a99fbaa1dbe723fc64214f300d8939082f5d6e29591a0",
+          "size_bytes": 36400,
+          "soname": "liboctomath.so.1.10"
+        },
+        {
+          "reported_path": "/usr/lib/x86_64-linux-gnu/librt.so.1",
+          "resolved_path": "/usr/lib/x86_64-linux-gnu/librt.so.1",
+          "sha256": "882fb78b405f88b1280b3d8d1936abd30beb1d419bdc972b7cb62a621b003653",
+          "size_bytes": 14624,
+          "soname": "librt.so.1"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libstdc++.so.6",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libstdc++.so.6.0.34",
+          "sha256": "9581ad615b7c073423f57b69a3b148a89f8ea76fc909124211f9007909b807a6",
+          "size_bytes": 21295144,
+          "soname": "libstdc++.so.6"
+        },
+        {
+          "reported_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libz.so.1",
+          "resolved_path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/lib/libz.so.1.3.2",
+          "sha256": "22f1601237b86f0f48ed5b83071d1505167ae2e16365b33b4eed6e96dbf71ab0",
+          "size_bytes": 117128,
+          "soname": "libz.so.1"
+        }
+      ],
+      "resolved_regular_shared_library_count": 14,
+      "sha256": "ade205aa332ae0425052014f419fa5850978c8feec1953eef0354e49e0916fea",
+      "size_bytes": 718880
+    },
+    "trace_source_sha256": "88dba6af1dd8d44e49a8d5683c22d4ab7c0fb1e2966e2963f04b03a54163d8ff"
+  },
+  "standing_claim_passed": false,
+  "taskset": {
+    "path": "/usr/bin/taskset",
+    "sha256": "3ac0b42cbe242b78c63b3ecef3023f3bcc17432b9d4731ac874848df6a87c914"
+  },
+  "timing_evidence_eligible": false,
+  "trace_source": "tests/benchmark/integration/fbf_paper_trace.cpp"
+}

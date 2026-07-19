@@ -29,11 +29,13 @@
 #   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 
-"""External-baseline harness: reproduce the FBF paper's small fixture scenes
-in MuJoCo and print CSV rows in the same shape as
-tests/benchmark/integration/fbf_paper_trace.cpp's default "tracked" scope, so
-a MuJoCo row can be pasted next to a DART exact-FBF/boxed-LCP row for a quick
-side-by-side comparison.
+"""External-baseline harness for reconstructed FBF paper fixtures in MuJoCo.
+
+The command-line interface prints sparse state rows that remain compatible
+with ``fbf_paper_trace.cpp``'s tracked-body CSV.  The reusable
+``simulate_small_fixture`` function additionally returns a complete,
+per-step trajectory with synchronized ``mj_step`` wall times.  The durable
+evidence wrapper in ``scripts/run_fbf_mujoco_evidence.py`` consumes that API.
 
 This is a benchmark/example-only external-comparison artifact:
   - It is not part of the DART library and is not read by any DART library
@@ -42,10 +44,15 @@ This is a benchmark/example-only external-comparison artifact:
     clear message if that package is not installed, so no default build or
     CTest gate depends on it. See pixi.toml's optional "mujoco-baseline"
     feature/environment and the "fbf-mujoco-baseline" task.
-  - Fixture parameters (radius, velocities, friction, slope, timings) mirror
-    the constants in fbf_paper_trace.cpp and
-    docs/dev_tasks/fbf_exact_coulomb_friction/README.md so the two traces are
-    directly comparable.
+  - Published parameters are reproduced where available.  Initial
+    penetrations and the turntable geometry/control are DART reconstruction
+    choices because the paper does not publish the author scene files.  This
+    harness must therefore not be presented as paper-parity evidence.
+  - Appendix B's published MuJoCo solver settings are explicit: Newton,
+    elliptic cone, and 500 maximum iterations.  The paper says "native
+    tolerance" without publishing a number, so the version-specific MuJoCo
+    default is intentionally left unset in XML and recorded after model
+    compilation by the evidence wrapper.
   - Credits: masonry-arch geometry adapted from ipc-sim/rigid-ipc (MIT); see
     data/mjcf/rigid_ipc_arch/README.md and LICENSE.md.
 
@@ -74,6 +81,7 @@ import argparse
 import math
 import os
 import sys
+import time
 
 CSV_HEADER = (
     "step,time,scenario,solver,body,x,y,z,vx,vy,vz,up_z,"
@@ -95,6 +103,32 @@ TURNTABLE_INITIAL_RADIUS = 1.0
 TURNTABLE_RAMP_DURATION = 1.0
 TURNTABLE_RIDER_INITIAL_PENETRATION = 0.005
 TURNTABLE_RIDER_SIZE = 0.25
+
+# Appendix B publishes these settings for MuJoCo.  It does not publish a
+# numeric tolerance, so do not bake the local MuJoCo default into the XML.
+PAPER_MUJOCO_SOLVER = "Newton"
+PAPER_MUJOCO_CONE = "elliptic"
+PAPER_MUJOCO_MAX_ITERATIONS = 500
+
+PAPER_FIGURE_TIMES_S = {
+    "backspin": [0.0, 10.0 / 60.0, 50.0 / 60.0, 2.0, 130.0 / 60.0],
+    "incline_mu_0_5": [0.0, 2.0],
+    "incline_mu_0_4": [0.0, 2.0],
+}
+
+SCENARIO_DEFAULT_DURATIONS_S = {
+    # Figure 3's final published instant is step 130 at dt=1/60.
+    "backspin": 130.0 / 60.0,
+    # Section 5.1 explicitly publishes T=2 s.
+    "incline_mu_0_5": 2.0,
+    "incline_mu_0_4": 2.0,
+    # Section 5.3 does not publish a duration. Four seconds matches the DART
+    # reconstruction's evidence horizon and is labelled as such in metadata.
+    "turntable_mu_0_2_omega_2": 4.0,
+    "turntable_mu_0_2_omega_5": 4.0,
+    "turntable_mu_0_5_omega_2": 4.0,
+    "turntable_mu_0_5_omega_5": 4.0,
+}
 
 SMALL_FIXTURE_SCENARIOS = [
     "backspin",
@@ -172,7 +206,9 @@ def build_backspin_xml(dt):
     r = BACKSPIN_RADIUS
     return f"""
 <mujoco>
-  <option timestep="{dt}" gravity="0 0 -9.81" cone="elliptic"/>
+  <option timestep="{dt}" gravity="0 0 -9.81"
+          solver="{PAPER_MUJOCO_SOLVER}" cone="{PAPER_MUJOCO_CONE}"
+          iterations="{PAPER_MUJOCO_MAX_ITERATIONS}"/>
   <worldbody>
     <geom name="floor" type="plane" size="0 0 1"
           friction="{BACKSPIN_FRICTION} 0 0"/>
@@ -202,7 +238,9 @@ def build_incline_xml(dt, mu):
     px, pz = nx * offset, nz * offset
     return f"""
 <mujoco>
-  <option timestep="{dt}" gravity="0 0 -9.81" cone="elliptic"/>
+  <option timestep="{dt}" gravity="0 0 -9.81"
+          solver="{PAPER_MUJOCO_SOLVER}" cone="{PAPER_MUJOCO_CONE}"
+          iterations="{PAPER_MUJOCO_MAX_ITERATIONS}"/>
   <worldbody>
     <geom name="incline" type="plane" size="0 0 1" quat="{quat}"
           friction="{mu} 0 0"/>
@@ -229,7 +267,9 @@ def build_turntable_xml(dt, mu):
     # every step, which is a kinematic override backed by a genuine DOF.
     return f"""
 <mujoco>
-  <option timestep="{dt}" gravity="0 0 -9.81" cone="elliptic"/>
+  <option timestep="{dt}" gravity="0 0 -9.81"
+          solver="{PAPER_MUJOCO_SOLVER}" cone="{PAPER_MUJOCO_CONE}"
+          iterations="{PAPER_MUJOCO_MAX_ITERATIONS}"/>
   <worldbody>
     <body name="turntable_body" pos="0 0 {-0.5 * thickness}">
       <joint name="turntable_hinge" type="hinge" axis="0 0 1"/>
@@ -255,32 +295,69 @@ def turntable_mu(scenario):
     return 0.2 if "mu_0_2" in scenario else 0.5
 
 
-# --------------------------------------------------------------------------
-# Small-fixture runner (backspin / incline / turntable): one tracked body,
-# CSV schema identical to fbf_paper_trace.cpp's default "tracked" scope.
-# --------------------------------------------------------------------------
-
-
-def run_small_fixture(mujoco, scenario, dt, duration, sample_stride):
+def small_fixture_setup(scenario, dt):
+    """Return reconstructed XML and tracked-body information for a scenario."""
     if scenario == "backspin":
         xml = build_backspin_xml(dt)
         body_name = "backspin_sphere_body"
-        default_duration = 4.0
     elif scenario in ("incline_mu_0_5", "incline_mu_0_4"):
         mu = 0.5 if scenario == "incline_mu_0_5" else 0.4
         xml = build_incline_xml(dt, mu)
         body_name = "incline_cube_body"
-        default_duration = 2.0
     elif scenario.startswith("turntable_"):
         xml = build_turntable_xml(dt, turntable_mu(scenario))
         body_name = "turntable_rider_body"
-        default_duration = 4.0
     else:
         raise ValueError(f"unknown small-fixture scenario: {scenario}")
+    return xml, body_name, SCENARIO_DEFAULT_DURATIONS_S[scenario]
+
+
+def _warning_snapshot(mujoco, data):
+    warnings = []
+    for warning_id in range(int(mujoco.mjtWarning.mjNWARNING)):
+        warning = data.warning[warning_id]
+        if warning.number:
+            warnings.append(
+                {
+                    "warning_id": warning_id,
+                    "number": int(warning.number),
+                    "last_info": int(warning.lastinfo),
+                }
+            )
+    return warnings
+
+
+def _contact_min_distance(data):
+    if data.ncon == 0:
+        return float("nan")
+    return min(float(data.contact[i].dist) for i in range(data.ncon))
+
+
+def simulate_small_fixture(
+    mujoco,
+    scenario,
+    dt=PAPER_DT,
+    duration=None,
+    repetition=0,
+    run_id=None,
+):
+    """Run one complete reconstructed small-fixture trajectory.
+
+    Every completed call to ``mujoco.mj_step`` is timed with the monotonic
+    high-resolution clock. Model compilation, initial ``mj_forward``, row
+    extraction, and the turntable's per-step velocity override are outside
+    the timed interval. The call is synchronous on the CPU, so the elapsed
+    interval is the completed step rather than an enqueue time.
+    """
+
+    xml, body_name, default_duration = small_fixture_setup(scenario, dt)
 
     if duration is None:
         duration = default_duration
     steps = int(round(duration / dt))
+    if steps <= 0:
+        raise ValueError("duration must contain at least one simulation step")
+    duration = steps * dt
 
     model = mujoco.MjModel.from_xml_string(xml)
     data = mujoco.MjData(model)
@@ -288,23 +365,103 @@ def run_small_fixture(mujoco, scenario, dt, duration, sample_stride):
         backspin_initial_velocity(data)
 
     body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, body_name)
+    body_dof_adr = int(model.body_dofadr[body_id])
+    if body_dof_adr < 0 or int(model.body_dofnum[body_id]) != 6:
+        raise RuntimeError(f"{body_name} is not backed by one free joint")
+
     turntable_dof = None
+    turntable_qpos = None
     omega = 0.0
     if scenario.startswith("turntable_"):
         turntable_joint_id = mujoco.mj_name2id(
             model, mujoco.mjtObj.mjOBJ_JOINT, "turntable_hinge"
         )
-        turntable_dof = model.jnt_dofadr[turntable_joint_id]
+        turntable_dof = int(model.jnt_dofadr[turntable_joint_id])
+        turntable_qpos = int(model.jnt_qposadr[turntable_joint_id])
         omega = turntable_omega(scenario)
 
-    def sample(step, time_s):
-        pos = data.xpos[body_id]
-        vel = data.qvel[0:3]
-        up_z = data.xmat[body_id][8]
-        print_row(step, time_s, scenario, body_name, pos, vel, up_z, data.ncon)
-
     mujoco.mj_forward(model, data)
-    sample(0, data.time)
+    initial_pos = [float(v) for v in data.xpos[body_id]]
+    theta = math.atan(INCLINE_TAN)
+    downhill = (-math.cos(theta), 0.0, -math.sin(theta))
+    rows = []
+
+    def capture(step, wall_ns):
+        pos = [float(v) for v in data.xpos[body_id]]
+        qvel = [float(v) for v in data.qvel[body_dof_adr : body_dof_adr + 6]]
+        quat = [float(v) for v in data.xquat[body_id]]
+        displacement = [pos[i] - initial_pos[i] for i in range(3)]
+        tangential_displacement = float("nan")
+        if scenario.startswith("incline_"):
+            tangential_displacement = sum(
+                displacement[i] * downhill[i] for i in range(3)
+            )
+        radial_distance = float("nan")
+        azimuth = float("nan")
+        turntable_angle = float("nan")
+        relative_phase = float("nan")
+        commanded_omega = float("nan")
+        if scenario.startswith("turntable_"):
+            radial_distance = math.hypot(pos[0], pos[1])
+            azimuth = math.atan2(pos[1], pos[0])
+            turntable_angle = float(data.qpos[turntable_qpos])
+            relative_phase = math.atan2(
+                math.sin(azimuth - turntable_angle),
+                math.cos(azimuth - turntable_angle),
+            )
+            control_time = max((step - 1) * dt, 0.0)
+            commanded_omega = min(control_time / TURNTABLE_RAMP_DURATION, 1.0) * omega
+
+        solver_niter = [int(v) for v in data.solver_niter]
+        solver_nnz = [int(v) for v in data.solver_nnz]
+        rows.append(
+            {
+                "run_id": run_id or f"{scenario}-r{repetition + 1:03d}",
+                "repetition": repetition + 1,
+                "step": step,
+                "sim_time_s": float(data.time),
+                "scenario": scenario,
+                "solver": "mujoco_newton_elliptic",
+                "timed_step": int(step > 0),
+                "step_wall_ns": int(wall_ns),
+                "step_wall_ms": wall_ns / 1.0e6,
+                "body": body_name,
+                "x_m": pos[0],
+                "y_m": pos[1],
+                "z_m": pos[2],
+                "vx_mps": qvel[0],
+                "vy_mps": qvel[1],
+                "vz_mps": qvel[2],
+                "wx_rad_s": qvel[3],
+                "wy_rad_s": qvel[4],
+                "wz_rad_s": qvel[5],
+                "quat_w": quat[0],
+                "quat_x": quat[1],
+                "quat_y": quat[2],
+                "quat_z": quat[3],
+                "up_z": float(data.xmat[body_id][8]),
+                "speed_mps": math.sqrt(sum(v * v for v in qvel[:3])),
+                "angular_speed_rad_s": math.sqrt(sum(v * v for v in qvel[3:])),
+                "dx_m": displacement[0],
+                "dy_m": displacement[1],
+                "dz_m": displacement[2],
+                "down_slope_displacement_m": tangential_displacement,
+                "radial_distance_m": radial_distance,
+                "azimuth_rad": azimuth,
+                "turntable_angle_rad": turntable_angle,
+                "turntable_relative_phase_rad": relative_phase,
+                "turntable_command_omega_rad_s": commanded_omega,
+                "contacts": int(data.ncon),
+                "contact_constraints": int(data.nefc),
+                "min_contact_distance_m": _contact_min_distance(data),
+                "airborne": int(data.ncon == 0),
+                "solver_iterations_sum": sum(solver_niter),
+                "solver_iterations_max_island": max(solver_niter, default=0),
+                "solver_nnz_sum": sum(solver_nnz),
+            }
+        )
+
+    capture(0, 0)
 
     for step in range(steps):
         if turntable_dof is not None:
@@ -312,14 +469,78 @@ def run_small_fixture(mujoco, scenario, dt, duration, sample_stride):
             ramp = min(t / TURNTABLE_RAMP_DURATION, 1.0)
             data.qvel[turntable_dof] = ramp * omega
 
+        wall_start = time.perf_counter_ns()
         mujoco.mj_step(model, data)
+        wall_end = time.perf_counter_ns()
         completed = step + 1
-        if completed % sample_stride == 0 or completed == steps:
-            sample(completed, data.time)
+        capture(completed, wall_end - wall_start)
+
+    model_options = {
+        "timestep_s": float(model.opt.timestep),
+        "solver_enum": int(model.opt.solver),
+        "cone_enum": int(model.opt.cone),
+        "iterations": int(model.opt.iterations),
+        "tolerance": float(model.opt.tolerance),
+        "ls_iterations": int(model.opt.ls_iterations),
+        "ls_tolerance": float(model.opt.ls_tolerance),
+        "noslip_iterations": int(model.opt.noslip_iterations),
+        "integrator_enum": int(model.opt.integrator),
+        "jacobian_enum": int(model.opt.jacobian),
+        "impratio": float(model.opt.impratio),
+        "disableflags": int(model.opt.disableflags),
+        "enableflags": int(model.opt.enableflags),
+        "numeric_dtype": str(data.qpos.dtype),
+        "nq": int(model.nq),
+        "nv": int(model.nv),
+        "nbody": int(model.nbody),
+        "ngeom": int(model.ngeom),
+        "geom_friction": [[float(v) for v in row] for row in model.geom_friction],
+        "geom_solref": [[float(v) for v in row] for row in model.geom_solref],
+        "geom_solimp": [[float(v) for v in row] for row in model.geom_solimp],
+    }
+
+    return {
+        "scenario": scenario,
+        "body_name": body_name,
+        "dt_s": dt,
+        "duration_s": duration,
+        "steps": steps,
+        "xml": xml,
+        "rows": rows,
+        "model_options": model_options,
+        "warnings": _warning_snapshot(mujoco, data),
+    }
+
+
+# --------------------------------------------------------------------------
+# Small-fixture stdout runner (backspin / incline / turntable): one tracked
+# body, with the legacy sparse CSV schema used by fbf_paper_trace.cpp.
+# --------------------------------------------------------------------------
+
+
+def run_small_fixture(mujoco, scenario, dt, duration, sample_stride):
+    result = simulate_small_fixture(mujoco, scenario, dt, duration)
+    for row in result["rows"]:
+        if (
+            row["step"] == 0
+            or row["step"] % sample_stride == 0
+            or row["step"] == result["steps"]
+        ):
+            print_row(
+                row["step"],
+                row["sim_time_s"],
+                scenario,
+                result["body_name"],
+                (row["x_m"], row["y_m"], row["z_m"]),
+                (row["vx_mps"], row["vy_mps"], row["vz_mps"]),
+                row["up_z"],
+                row["contacts"],
+            )
 
     if scenario == "backspin":
-        vx_final = data.qvel[0]
-        wy_final = data.qvel[4]
+        final = result["rows"][-1]
+        vx_final = final["vx_mps"]
+        wy_final = final["wy_rad_s"]
         dv_pct = (
             abs(vx_final - BACKSPIN_ANALYTIC_V_INF)
             / abs(BACKSPIN_ANALYTIC_V_INF)
@@ -528,6 +749,19 @@ def parse_args(argv):
         help="Print every Nth completed step for the arch scenario (default 20).",
     )
     args = parser.parse_args(argv)
+
+    if not math.isfinite(args.dt) or args.dt <= 0.0:
+        parser.error("--dt must be finite and positive")
+    if args.duration is not None and (
+        not math.isfinite(args.duration) or args.duration <= 0.0
+    ):
+        parser.error("--duration must be finite and positive")
+    if args.sample_stride <= 0:
+        parser.error("--sample-stride must be positive")
+    if not math.isfinite(args.arch_duration) or args.arch_duration <= 0.0:
+        parser.error("--arch-duration must be finite and positive")
+    if args.arch_sample_stride <= 0:
+        parser.error("--arch-sample-stride must be positive")
 
     if not args.scenarios:
         args.scenarios = list(SMALL_FIXTURE_SCENARIOS)

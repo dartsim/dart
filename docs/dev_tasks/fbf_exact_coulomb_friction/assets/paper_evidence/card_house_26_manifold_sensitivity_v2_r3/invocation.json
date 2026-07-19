@@ -1,0 +1,68 @@
+{
+  "children": {
+    "compact": {
+      "returncode": 0,
+      "stderr_bytes": 0,
+      "stdout_bytes": 3110327
+    },
+    "four_point_planar": {
+      "returncode": 1,
+      "stderr_bytes": 0,
+      "stdout_bytes": 3658183
+    }
+  },
+  "commands": {
+    "compact": [
+      "taskset",
+      "--cpu-list",
+      "8",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+      "card_house_26_settle_projectile_full",
+      "exact_fbf",
+      "1",
+      "600",
+      "nan",
+      "performance",
+      "default",
+      "default",
+      "1",
+      "paper_cpu",
+      "native",
+      "default",
+      "0",
+      "0",
+      "compact"
+    ],
+    "four_point_planar": [
+      "taskset",
+      "--cpu-list",
+      "8",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+      "card_house_26_settle_projectile_full",
+      "exact_fbf",
+      "1",
+      "600",
+      "nan",
+      "performance",
+      "default",
+      "default",
+      "1",
+      "paper_cpu",
+      "native",
+      "default",
+      "0",
+      "0",
+      "four_point_planar"
+    ]
+  },
+  "cwd": "/home/js/dev/dartsim/dart/task_6",
+  "identity_rechecks": [
+    "after_compact",
+    "after_four_point_planar"
+  ],
+  "run_order": [
+    "compact",
+    "four_point_planar"
+  ],
+  "timeout_seconds_per_child": 600.0
+}

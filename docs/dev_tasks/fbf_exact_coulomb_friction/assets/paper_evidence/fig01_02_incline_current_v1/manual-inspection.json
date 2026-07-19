@@ -1,0 +1,61 @@
+{
+  "schema_version": "dart.fbf_incline_manual_inspection/v1",
+  "manual_inspected": true,
+  "pass": true,
+  "verdicts": {
+    "two_cell_threshold_comparison_visible": true,
+    "mu_0_4_downhill_slide_visible": true,
+    "mu_0_5_near_threshold_stick_visible": true,
+    "panel_time_labels_legible": true,
+    "physical_outcome_claim_requires_independent_traces": true,
+    "aggregate_count_projection_only": true,
+    "full_state_trace_equivalence": false,
+    "maximum_penetration_proven": false,
+    "paper_reference_contact_count_match": false,
+    "paper_parity": false,
+    "external_solver_parity": false,
+    "approved_source_golden": false,
+    "approved_source_golden_diff": false,
+    "capture_sidecar_deliverable_validated": false,
+    "full_friction_sweep": false,
+    "timing_verdict": null,
+    "realtime_verdict": null
+  },
+  "representative_artifacts": [
+    {
+      "path": "incline/panel.png",
+      "sha256": "f9f211fb376c97d98bccc67806ba3e1c9905d7d27764c794e1c480af7b4df9d3",
+      "observation": "The five labeled instants clearly show the orange mu=0.4 cube moving downhill and out of the crop while the green mu=0.5 cube remains in its initial region through t=2.00 s."
+    },
+    {
+      "path": "incline/clip.mp4",
+      "sha256": "ad6d00ae6a614b0edbc836396c30621b589295a0eec826d060663f6782cee3f9",
+      "observation": "The decoded 61-frame, 30 fps clip visibly preserves the progressive orange-slide versus green-stick separation; the media alone is not used to prove the physical trace contract."
+    },
+    {
+      "path": "incline/stills/step_000000.png",
+      "sha256": "cd56403cf7fc686357096aa998b7e496d1bd54cab88bf128cb4752a262dfb65a",
+      "observation": "At step 0 the orange low-friction and green high-friction cubes occupy their aligned starting regions on the two presentation-offset incline cells."
+    },
+    {
+      "path": "incline/stills/step_000030.png",
+      "sha256": "e298e0553c2ea8b72d13357ad92796a4e9cca43e690276ac1ce1c18222c00d63",
+      "observation": "At step 30 the orange cube has begun a visible downhill separation while the green cube remains visually fixed relative to its board."
+    },
+    {
+      "path": "incline/stills/step_000060.png",
+      "sha256": "2cc2bc20cc917f984f333150513be0c1f92e9d6e72ed6ad54eaf3365af3200c4",
+      "observation": "At step 60 the orange cube is substantially farther downhill, with the stationary green cube providing an unambiguous visual reference."
+    },
+    {
+      "path": "incline/stills/step_000090.png",
+      "sha256": "c40b16f3f56a624713fdd32747ebabfda236abaf613c5cf9452b57eedb07dce0",
+      "observation": "At step 90 the orange cube has nearly left the cropped world view while the green cube still occupies its starting region."
+    },
+    {
+      "path": "incline/stills/step_000120.png",
+      "sha256": "c1e0a2db75a6d47c9621af04c43dc9e3685fb6c81c82560a3a509f3ffdb50452",
+      "observation": "At step 120 the orange slide cube has exited the crop and the green threshold-stick cube remains visible in place, completing the visual classification."
+    }
+  ]
+}

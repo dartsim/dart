@@ -22,9 +22,12 @@ Backends:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +35,129 @@ SCHEMA_VERSION = "dart.evidence_publication/v1"
 SELECTION_SCHEMA_VERSION = "dart.evidence_selection/v1"
 
 _IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif"}
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _source_state() -> dict[str, Any]:
+    """Identify the exact publisher source tree used for the publication."""
+
+    root = Path(__file__).resolve().parents[1]
+    try:
+        revision = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        status = subprocess.run(
+            ["git", "status", "--porcelain=v1", "-z", "--untracked-files=all"],
+            cwd=root,
+            capture_output=True,
+            check=True,
+        ).stdout
+        diff = subprocess.run(
+            ["git", "diff", "--binary", "HEAD", "--"],
+            cwd=root,
+            capture_output=True,
+            check=True,
+        ).stdout
+        untracked = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+            cwd=root,
+            capture_output=True,
+            check=True,
+        ).stdout.split(b"\0")
+    except (OSError, subprocess.CalledProcessError):
+        return {"revision": None, "dirty": None}
+    return {
+        "revision": revision,
+        "dirty": bool(status),
+        "status_sha256": hashlib.sha256(status).hexdigest(),
+        "dirty_content_sha256": _dirty_content_digest(root, status, diff, untracked),
+        "publisher_sha256": _sha256(Path(__file__).resolve()),
+    }
+
+
+def _dirty_content_digest(
+    root: Path, status: bytes, diff: bytes, untracked: list[bytes]
+) -> str:
+    """Bind the dirty source identity to bytes, not just porcelain path names."""
+
+    digest = hashlib.sha256()
+    digest.update(b"status\0" + status)
+    digest.update(b"diff\0" + diff)
+    for raw_path in sorted(path for path in untracked if path):
+        relative = Path(raw_path.decode("utf-8", errors="surrogateescape"))
+        path = (root / relative).resolve()
+        if root != path and root not in path.parents:
+            raise ValueError(f"untracked source path escapes repository: {relative}")
+        digest.update(b"untracked\0" + raw_path + b"\0")
+        if path.is_file():
+            digest.update(bytes.fromhex(_sha256(path)))
+        else:
+            digest.update(b"not-a-regular-file")
+    return digest.hexdigest()
+
+
+def _resolve_artifact_path(base_dir: Path, value: str) -> Path:
+    relative = Path(value)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ValueError(
+            f"artifact path must stay below the selection directory: {value!r}"
+        )
+    root = base_dir.resolve()
+    path = (root / relative).resolve()
+    if root not in path.parents:
+        raise ValueError(f"artifact path escapes the selection directory: {value!r}")
+    if not path.is_file():
+        raise ValueError(f"selected artifact does not exist as a file: {value!r}")
+    return path
+
+
+def _artifact_set_digest(selection: dict[str, Any]) -> str:
+    """Return a stable digest of the verified path/size/content set."""
+
+    digest = hashlib.sha256()
+    for artifact in sorted(selection["selected"], key=lambda item: item["path"]):
+        record = f"{artifact['path']}\0{artifact['bytes']}\0{artifact['sha256']}\n"
+        digest.update(record.encode("utf-8"))
+    return digest.hexdigest()
+
+
+def _content_addressed_tag(base_tag: str, artifact_digest: str) -> str:
+    return f"{base_tag}-{artifact_digest[:16]}"
+
+
+def _stage_artifacts(
+    selection: dict[str, Any], base_dir: Path, stage_dir: Path
+) -> dict[str, Path]:
+    """Copy verified bytes to an immutable upload set and verify the copies."""
+
+    staged: dict[str, Path] = {}
+    stage_dir.mkdir(parents=True, exist_ok=True)
+    for artifact in selection["selected"]:
+        source = _resolve_artifact_path(base_dir, artifact["path"])
+        destination = stage_dir / source.name
+        shutil.copyfile(source, destination, follow_symlinks=False)
+        if destination.stat().st_size != artifact["bytes"]:
+            raise ValueError(f"staged artifact changed size: {artifact['path']!r}")
+        digest = _sha256(destination)
+        if digest != artifact["sha256"].lower():
+            raise ValueError(
+                f"staged artifact changed content: {artifact['path']!r}; "
+                f"manifest={artifact['sha256']}, staged={digest}"
+            )
+        destination.chmod(0o444)
+        staged[artifact["path"]] = destination
+    return staged
 
 
 def _load_selection(path: Path) -> dict[str, Any]:
@@ -43,10 +169,37 @@ def _load_selection(path: Path) -> dict[str, Any]:
         )
     if not manifest.get("selected"):
         raise ValueError("selection manifest has no selected artifacts")
-    # Release assets are keyed by basename, so duplicates would silently
-    # clobber each other under the shared tag (and collide in placeholders).
+    # Verify the bytes immediately before publication. The selector's digest is
+    # an input claim, not proof that the file has not changed since selection.
+    base_dir = path.parent
     basenames: dict[str, str] = {}
     for artifact in manifest["selected"]:
+        artifact_path = _resolve_artifact_path(base_dir, artifact["path"])
+        expected_size = artifact.get("bytes")
+        if isinstance(expected_size, bool) or not isinstance(expected_size, int):
+            raise ValueError(
+                f"selected artifact {artifact['path']!r} has no integer byte count"
+            )
+        actual_size = artifact_path.stat().st_size
+        if actual_size != expected_size:
+            raise ValueError(
+                f"selected artifact {artifact['path']!r} changed size: "
+                f"manifest={expected_size}, actual={actual_size}"
+            )
+        expected_sha256 = artifact.get("sha256")
+        if not isinstance(expected_sha256, str) or len(expected_sha256) != 64:
+            raise ValueError(
+                f"selected artifact {artifact['path']!r} has no SHA-256 digest"
+            )
+        actual_sha256 = _sha256(artifact_path)
+        if actual_sha256 != expected_sha256.lower():
+            raise ValueError(
+                f"selected artifact {artifact['path']!r} changed content: "
+                f"manifest={expected_sha256}, actual={actual_sha256}"
+            )
+
+        # Release assets are keyed by basename. Duplicates inside one
+        # content-addressed release would still collide.
         name = Path(artifact["path"]).name
         if name in basenames:
             raise ValueError(
@@ -64,7 +217,7 @@ def _gh(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess:
 
 def _publish_gh_release(
     selection: dict[str, Any],
-    base_dir: Path,
+    staged_paths: dict[str, Path],
     repo: str,
     tag: str,
 ) -> dict[str, str]:
@@ -88,11 +241,18 @@ def _publish_gh_release(
         )
     urls: dict[str, str] = {}
     for artifact in selection["selected"]:
-        path = Path(artifact["path"])
-        if not path.is_absolute():
-            path = base_dir / path
-        # --clobber overwrites an asset of the same name so regenerated
-        # evidence keeps a stable download URL instead of failing on re-upload.
+        path = staged_paths[artifact["path"]]
+        if path.stat().st_size != artifact["bytes"]:
+            raise ValueError(f"staged artifact changed size: {artifact['path']!r}")
+        digest = _sha256(path)
+        if digest != artifact["sha256"].lower():
+            raise ValueError(
+                f"staged artifact changed before upload: {artifact['path']!r}"
+            )
+        # The release tag is content-addressed over all verified artifact
+        # digests. Clobber is therefore idempotent: the same URL can only be
+        # rewritten with the same selected bytes, while changed evidence gets
+        # a new tag and cannot mutate media embedded in an older PR.
         _gh(
             [
                 "release",
@@ -209,15 +369,23 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         selection = _load_selection(args.selection)
+        artifact_set_sha256 = _artifact_set_digest(selection)
+        release_tag = _content_addressed_tag(args.tag, artifact_set_sha256)
         urls: dict[str, str] = {}
         uploaded = False
         if args.backend == "gh-release":
             if not args.repo:
                 raise ValueError("--backend gh-release requires --repo owner/repo")
             if args.yes:
-                urls = _publish_gh_release(
-                    selection, args.selection.parent, args.repo, args.tag
-                )
+                with tempfile.TemporaryDirectory(
+                    prefix="dart-evidence-publish-"
+                ) as temp:
+                    staged_paths = _stage_artifacts(
+                        selection, args.selection.parent, Path(temp)
+                    )
+                    urls = _publish_gh_release(
+                        selection, staged_paths, args.repo, release_tag
+                    )
                 uploaded = True
             else:
                 # Dry-run: emit the URLs the upload would produce.
@@ -225,7 +393,7 @@ def main(argv: list[str] | None = None) -> int:
                     name = Path(artifact["path"]).name
                     urls[artifact["path"]] = (
                         f"https://github.com/{args.repo}/releases/download/"
-                        f"{args.tag}/{name}"
+                        f"{release_tag}/{name}"
                     )
         section = render_section(
             selection,
@@ -242,10 +410,27 @@ def main(argv: list[str] | None = None) -> int:
             "schema_version": SCHEMA_VERSION,
             "backend": args.backend,
             "uploaded": uploaded,
+            "base_tag": args.tag if args.backend == "gh-release" else None,
+            "release_tag": release_tag if args.backend == "gh-release" else None,
+            "selection_manifest_sha256": _sha256(args.selection),
+            "source": _source_state(),
+            "artifact_set_sha256": artifact_set_sha256,
+            "artifacts": [
+                {
+                    "path": artifact["path"],
+                    "bytes": artifact["bytes"],
+                    "sha256": artifact["sha256"],
+                    "url": urls.get(artifact["path"]),
+                }
+                for artifact in selection["selected"]
+            ],
             "urls": urls,
             "section": str(args.out),
             "artifact_count": len(selection["selected"]),
-            "pass": True,
+            "operation_succeeded": True,
+            "selection_pass": selection.get("pass") is True,
+            "publication_complete": uploaded,
+            "pass": uploaded and selection.get("pass") is True,
         }
         if args.backend == "gh-release" and not args.yes:
             manifest["note"] = (

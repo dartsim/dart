@@ -76,42 +76,47 @@ constexpr double kCardHouseAngle = 0.23;
 constexpr double kCardHouseHeight = 1.0;
 constexpr double kCardHouseWidth = 0.45;
 constexpr double kCardHouseThickness = 0.03;
+// Source-informed reconstruction: Newton 1.3 defaults rigid shapes to
+// 1000 kg/m^3. The unavailable paper scene may override this value.
+constexpr double kCardHouseDensity = 1000.0;
 constexpr double kCardHouseInitialPenetration = 0.003;
-constexpr double kCardHouseFrameSpacing = 0.55;
+// Reconstruction choice: adjacent horizontal one-meter cards meet with the
+// same nominal 3 mm overlap used at the other interfaces. The paper does not
+// publish this spacing.
+constexpr double kCardHouseFrameSpacing
+    = kCardHouseHeight - kCardHouseInitialPenetration;
 constexpr double kCardHouseStepSizeScale = 10.0;
 constexpr double kCardHouseOuterRelaxation = 1.5;
 constexpr std::size_t kCardHouseSettleProjectileSettleSteps = 1u;
 constexpr std::size_t kCardHouseSettleProjectileSteps = 2u;
 constexpr std::size_t kCardHouseProjectileCount = 4u;
-constexpr double kCardHouseProjectileRadius = 0.055;
-constexpr double kCardHouseProjectileMass = 0.02;
+// Official paper imagery shows cube projectiles. The edge length preserves the
+// former sphere diameter but remains reconstructed: the author dimensions,
+// mass, and launch speed are unpublished.
+constexpr double kCardHouseProjectileEdgeLength = 0.11;
+constexpr double kCardHouseProjectileMass
+    = kCardHouseDensity * kCardHouseProjectileEdgeLength
+      * kCardHouseProjectileEdgeLength * kCardHouseProjectileEdgeLength;
 constexpr double kCardHouseProjectileSpeed = 4.0;
+constexpr double kCardHouseProjectileDropHeight = 4.45;
 constexpr double kSmallFixtureStepSizeScale = 2.0;
 constexpr std::size_t kCardHouseFourLevelCount = 4u;
 constexpr std::size_t kCardHouseTenLevelCount = 10u;
-// Full natural manifold for the 26-card one-step/settle-projectile rung:
-// 512/4 caps observe 108 actual contacts and solve clean (~2.5 s, zero
-// fallbacks) with the card-house step-size-scale/outer-relaxation options
-// below.
+// Full natural manifold for the repaired 26-card reconstruction: 512/4 caps
+// observe 96 contacts in the initial configuration. This is a measured DART
+// reconstruction count, not the paper timing row's 214-contact contract.
 constexpr std::size_t kCardHouseReducedMaxContacts = 512u;
 constexpr std::size_t kCardHouseReducedMaxContactsPerPair = 4u;
 constexpr std::size_t kCardHouseTenLevelConstructionMaxContacts = 512u;
 constexpr std::size_t kCardHouseTenLevelConstructionMaxContactsPerPair = 8u;
-// Author-faithful masonry-arch friction coefficient: Rigid-IPC's
-// arch-{25,101}-stones.json both specify coefficient_friction = 0.5
-// uniformly (see docs/dev_tasks/fbf_exact_coulomb_friction/ PROVENANCE.txt
-// section 7). DART's other paper fixtures use 0.8; the ported arch keeps
-// the source's own coefficient for scientific fidelity.
-constexpr double kArchFriction = 0.5;
+// The paper's contact-rich arch experiments explicitly use mu=0.8. The
+// credited Rigid-IPC geometry scene uses 0.5, but that source value is not the
+// paper experiment's contact contract.
+constexpr double kArchFriction = 0.8;
 // Rigid-IPC's default body density ("plastic", src/io/read_rb_scene.cpp:68).
 constexpr double kArchDensity = 1000.0;
 constexpr std::size_t kArchStoneCount = 25u;
 constexpr std::size_t kArch101StoneCount = 101u;
-// Crown (topmost) centroid height and cross-section width, in meters, from
-// the weighted-catenary generator (fc=60cm, sqrt(Qt)=7cm); used to place
-// the projectile at the arch's crown regardless of stone count.
-constexpr double kArchCrownHeight = 0.60;
-constexpr double kArchCrownWidth = 0.07;
 constexpr std::size_t kArchReducedMaxContacts = 48u;
 constexpr std::size_t kArchReducedMaxContactsPerPair = 2u;
 constexpr std::size_t kArch101ReducedMaxContacts = 38u;
@@ -124,9 +129,16 @@ constexpr std::size_t kArchFullManifoldMaxContactsPerPair = 4u;
 constexpr int kArchMaxOuterIterations = 120000;
 constexpr double kArchOuterRelaxation = 1.5;
 constexpr double kArchStepSizeScale = 10.0;
-constexpr double kArchProjectileRadius = 0.08;
-constexpr double kArchProjectileMass = 0.05;
+// Official paper imagery shows a horizontal row of about twelve small cubes
+// dropping over the crown. These numerical values remain reconstructed.
+constexpr std::size_t kArchProjectileCount = 12u;
+constexpr double kArchProjectileEdgeLength = 0.035;
+constexpr double kArchProjectileMass = kArchDensity * kArchProjectileEdgeLength
+                                       * kArchProjectileEdgeLength
+                                       * kArchProjectileEdgeLength;
 constexpr double kArchProjectileSpeed = 3.0;
+constexpr double kArchProjectileSpacing = 0.045;
+constexpr double kArchProjectileDropHeight = 0.95;
 
 enum class Scenario
 {
@@ -612,9 +624,14 @@ Eigen::Isometry3d createCardHouseAFrameTransform(
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.linear()
       = Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitY()).toRotationMatrix();
-  const double halfSpan = 0.5 * kCardHouseHeight * std::sin(kCardHouseAngle);
+  const double horizontalHalfExtent
+      = 0.5
+        * (kCardHouseHeight * std::sin(kCardHouseAngle)
+           + kCardHouseThickness * std::cos(kCardHouseAngle));
+  const double centerOffset
+      = horizontalHalfExtent - 0.5 * kCardHouseInitialPenetration;
   transform.translation().x()
-      = centerX + (leftCard ? -0.96 * halfSpan : 0.96 * halfSpan);
+      = centerX + (leftCard ? -centerOffset : centerOffset);
   transform.translation().z()
       = baseZ + computeCardHouseVerticalHalfExtent(transform.linear())
         - kCardHouseInitialPenetration;
@@ -638,16 +655,16 @@ dart::dynamics::SkeletonPtr createCardPlate(
 {
   const Eigen::Vector3d size(
       kCardHouseThickness, kCardHouseWidth, kCardHouseHeight);
-  constexpr double kMass = 0.05;
+  const double mass = kCardHouseDensity * size.x() * size.y() * size.z();
 
   auto skeleton = dart::dynamics::Skeleton::create(name);
   dart::dynamics::GenericJoint<dart::math::SE3Space>::Properties
       jointProperties(name + "_joint");
   dart::dynamics::BodyNode::Properties bodyProperties(
       dart::dynamics::BodyNode::AspectProperties(name + "_body"));
-  bodyProperties.mInertia.setMass(kMass);
+  bodyProperties.mInertia.setMass(mass);
   bodyProperties.mInertia.setMoment(
-      dart::dynamics::BoxShape::computeInertia(size, kMass));
+      dart::dynamics::BoxShape::computeInertia(size, mass));
 
   auto pair = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
       nullptr, jointProperties, bodyProperties);
@@ -672,8 +689,9 @@ dart::dynamics::SkeletonPtr createCardHouseProjectile(std::size_t index)
       dart::dynamics::BodyNode::AspectProperties(
           skeleton->getName() + "_body"));
   bodyProperties.mInertia.setMass(kCardHouseProjectileMass);
-  bodyProperties.mInertia.setMoment(dart::dynamics::SphereShape::computeInertia(
-      kCardHouseProjectileRadius, kCardHouseProjectileMass));
+  bodyProperties.mInertia.setMoment(dart::dynamics::BoxShape::computeInertia(
+      Eigen::Vector3d::Constant(kCardHouseProjectileEdgeLength),
+      kCardHouseProjectileMass));
 
   auto pair = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
       nullptr, jointProperties, bodyProperties);
@@ -682,18 +700,18 @@ dart::dynamics::SkeletonPtr createCardHouseProjectile(std::size_t index)
   auto* shapeNode = body->createShapeNodeWith<
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(
-      std::make_shared<dart::dynamics::SphereShape>(
-          kCardHouseProjectileRadius));
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(kCardHouseProjectileEdgeLength)));
   shapeNode->getDynamicsAspect()->setFrictionCoeff(kCardHouseFriction);
 
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(
-      -1.35,
       (static_cast<double>(index) - 1.5) * 0.15,
-      0.35 + 0.28 * static_cast<double>(index));
+      0.0,
+      kCardHouseProjectileDropHeight);
   joint->setPositions(dart::dynamics::FreeJoint::convertToPositions(transform));
   joint->setLinearVelocity(
-      Eigen::Vector3d(kCardHouseProjectileSpeed, 0.0, 0.0));
+      Eigen::Vector3d(0.0, 0.0, -kCardHouseProjectileSpeed));
   return skeleton;
 }
 
@@ -726,22 +744,23 @@ dart::dynamics::SkeletonPtr createMasonryArchStone(
   shapeNode->getDynamicsAspect()->setFrictionCoeff(kArchFriction);
   joint->setPositions(
       dart::dynamics::FreeJoint::convertToPositions(geometry.transform));
-  // All stones are fully dynamic; the source scene fixes only the ground
-  // plane (see PROVENANCE.txt section 7 in the geometry-port task notes).
+  // Mobility is assigned by the paper-scene builder below.
   return skeleton;
 }
 
-dart::dynamics::SkeletonPtr createMasonryArchProjectile()
+dart::dynamics::SkeletonPtr createMasonryArchProjectile(std::size_t index)
 {
-  auto skeleton = dart::dynamics::Skeleton::create("masonry_arch_projectile");
+  auto skeleton = dart::dynamics::Skeleton::create(
+      "masonry_arch_projectile_" + std::to_string(index));
   dart::dynamics::GenericJoint<dart::math::SE3Space>::Properties
       jointProperties(skeleton->getName() + "_joint");
   dart::dynamics::BodyNode::Properties bodyProperties(
       dart::dynamics::BodyNode::AspectProperties(
           skeleton->getName() + "_body"));
   bodyProperties.mInertia.setMass(kArchProjectileMass);
-  bodyProperties.mInertia.setMoment(dart::dynamics::SphereShape::computeInertia(
-      kArchProjectileRadius, kArchProjectileMass));
+  bodyProperties.mInertia.setMoment(dart::dynamics::BoxShape::computeInertia(
+      Eigen::Vector3d::Constant(kArchProjectileEdgeLength),
+      kArchProjectileMass));
 
   auto pair = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
       nullptr, jointProperties, bodyProperties);
@@ -750,18 +769,21 @@ dart::dynamics::SkeletonPtr createMasonryArchProjectile()
   auto* shapeNode = body->createShapeNodeWith<
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(
-      std::make_shared<dart::dynamics::SphereShape>(kArchProjectileRadius));
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(kArchProjectileEdgeLength)));
   shapeNode->getDynamicsAspect()->setFrictionCoeff(kArchFriction);
 
   // Aim at the crown (topmost, narrowest) stone, just outside its depth
   // face, regardless of stone count.
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(
+      (static_cast<double>(index)
+       - 0.5 * static_cast<double>(kArchProjectileCount - 1u))
+          * kArchProjectileSpacing,
       0.0,
-      -0.5 * kArchCrownWidth - kArchProjectileRadius + 0.005,
-      kArchCrownHeight);
+      kArchProjectileDropHeight);
   joint->setPositions(dart::dynamics::FreeJoint::convertToPositions(transform));
-  joint->setLinearVelocity(Eigen::Vector3d(0.0, kArchProjectileSpeed, 0.0));
+  joint->setLinearVelocity(Eigen::Vector3d(0.0, 0.0, -kArchProjectileSpeed));
   return skeleton;
 }
 
@@ -769,15 +791,17 @@ void addMasonryArch(
     const std::shared_ptr<dart::simulation::World>& world,
     std::size_t stoneCount)
 {
-  // Author boundary condition: only the ground plane is fixed; every stone
-  // (including both springers) is a fully dynamic rigid body (see
-  // PROVENANCE.txt section 7 in the geometry-port task notes).
+  // Paper Fig. 7 pins the 25-stone springers. Fig. 8 calls the 101-stone case
+  // the same setup, so both endpoints are pinned at either scale.
   world->addSkeleton(createHorizontalPlane(kArchFriction));
 
   const auto stoneGeometry
       = dart::math::detail::generateMasonryArchStoneBoxes(stoneCount);
   for (std::size_t i = 0u; i < stoneCount; ++i) {
-    world->addSkeleton(createMasonryArchStone(i, stoneGeometry[i]));
+    auto stone = createMasonryArchStone(i, stoneGeometry[i]);
+    if (i == 0u || i + 1u == stoneCount)
+      stone->setMobile(false);
+    world->addSkeleton(stone);
   }
 }
 
@@ -922,7 +946,8 @@ std::shared_ptr<dart::simulation::World> createBenchmarkWorld(
       break;
     case Scenario::MasonryArch25ProjectileReduced:
       addMasonryArch(world, kArchStoneCount);
-      world->addSkeleton(createMasonryArchProjectile());
+      for (std::size_t i = 0u; i < kArchProjectileCount; ++i)
+        world->addSkeleton(createMasonryArchProjectile(i));
       break;
     case Scenario::MasonryArch101Reduced:
       addMasonryArch(world, kArch101StoneCount);
@@ -1102,7 +1127,7 @@ void BM_PaperFixtureStepTime(
     state.counters["cards"] = static_cast<double>(
         computeCardHouseCardCount(kCardHouseTenLevelCount));
   } else if (scenario == Scenario::MasonryArch25ProjectileReduced) {
-    state.counters["projectiles"] = 1.0;
+    state.counters["projectiles"] = static_cast<double>(kArchProjectileCount);
   }
   state.counters["steps"] = static_cast<double>(steps);
   state.counters["exact_solves"] = static_cast<double>(lastMetrics.exactSolves);

@@ -1,0 +1,80 @@
+{
+  "claim_scope": "Current-source DART reconstruction of the literal 25-wedge stable trajectory; not paper parity.",
+  "inspection_date": "2026-07-19",
+  "inspection_note": "The fresh post-merge, cache-disabled capture produced representative stills, timeline, clip, midpoint decode, and trajectory evidence. The start, timeline, midpoint decode, and end clearly show the full stable arch. The view interface displayed the individually forwarded step-300 PNG as a mostly blank transparency-like image, while that exact hash is clear in the timeline and remains nonblank under the stored pixel gates; this is a display-side artifact, not media drift. Raw frames and tool logs were pruned only after their hashes were recorded in provenance.",
+  "inspection_session": {
+    "inspector_label": "/root",
+    "label": "fresh_post_release_merge_cache_disabled_reseal_2026-07-19"
+  },
+  "inspection_tool": {
+    "commands": [
+      "view_image(path=docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig07_arch25_literal/stills/step_000000.png, detail=original)",
+      "view_image(path=docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig07_arch25_literal/stills/step_000300.png, detail=original)",
+      "view_image(path=docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig07_arch25_literal/stills/step_000600.png, detail=original)",
+      "view_image(path=docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig07_arch25_literal/fig07_literal_wedge_timeline.png, detail=original)",
+      "view_image(path=docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig07_arch25_literal/decoded/video_midpoint_t3.0.png, detail=original)"
+    ],
+    "name": "view_image",
+    "version": "session interface; no semantic version exposed"
+  },
+  "manual_inspected": true,
+  "pass": true,
+  "pending_metadata_sha256": "e300103dbb950b97e217ca0bea6f1c1dc78598ddf485cdaca26cc7ad58835b3c",
+  "representative_images": [
+    {
+      "observation": "Clear constructed-t0 side view with 25 tapered wedges, visible interfaces, pinned springers, and the nonphysical floor proxy.",
+      "path": "stills/step_000000.png",
+      "sha256": "7d05642de622aaa7e0a68a9fd6272e44524cfd16ef8ecac6a363237c65f4afa9"
+    },
+    {
+      "observation": "The hash-bound midpoint still is nonblank under the stored pixel gates and appears clearly in the five-step timeline without visible collapse or separation.",
+      "path": "stills/step_000300.png",
+      "sha256": "e311e55eb58d4b721716ff0656c5c9b3314eb5457b4a4126d30d195f6feddb58"
+    },
+    {
+      "observation": "Clear 10-second final side view with the full arch unobstructed and visually stable.",
+      "path": "stills/step_000600.png",
+      "sha256": "f6a78a989c3ed05a3c524b467e1eb3b0d822bdd0ef9d7a918a40ebbfaccd14f8"
+    },
+    {
+      "observation": "All five labeled timeline panels are clear, consistently framed, and show the arch remaining visually stable.",
+      "path": "fig07_literal_wedge_timeline.png",
+      "sha256": "926380c5c5768cc9ca1e414cbfe2631584daa99387090926d5a1f035d62b6ec9"
+    }
+  ],
+  "schema_version": "dart.fbf_literal_wedge_manual_inspection/v2",
+  "timing_disclosure": {
+    "captured_frames": 61,
+    "meaning": "The stability clip is approximately 1.639x faster than real time; it is not a real-time playback claim.",
+    "playback_acceleration_factor": 1.639344262295082,
+    "playback_duration_seconds": 6.1,
+    "playback_fps": 10,
+    "simulation_duration_seconds": 10.0
+  },
+  "video": {
+    "decoded_midpoint": {
+      "decode_command": [
+        "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-ss",
+        "3.0",
+        "-i",
+        "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig07_arch25_literal/fig07_literal_wedge_stability.mp4",
+        "-frames:v",
+        "1",
+        "-y",
+        "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig07_arch25_literal/decoded/video_midpoint_t3.0.png"
+      ],
+      "inspection_command": "view_image(path=docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig07_arch25_literal/decoded/video_midpoint_t3.0.png, detail=original)",
+      "observation": "The separately decoded midpoint is clear, unobstructed, and consistently framed.",
+      "path": "decoded/video_midpoint_t3.0.png",
+      "seconds": 3.0,
+      "sha256": "75a88bb317441ed71803f784b2eaa099211c4e026f8547d6fe5f2ff3ee95909f"
+    },
+    "observation": "ffprobe decoded all 61 frames; the durable midpoint frame was inspected separately.",
+    "path": "fig07_literal_wedge_stability.mp4",
+    "sha256": "e0c111f96511bbda41af145787bd9f68782b8c9e8a909d45eb03d3c3d647feb1"
+  }
+}

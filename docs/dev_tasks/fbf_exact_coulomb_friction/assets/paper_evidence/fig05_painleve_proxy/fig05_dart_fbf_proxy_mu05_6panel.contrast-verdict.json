@@ -1,0 +1,81 @@
+{
+  "checks": {
+    "contrast": {
+      "bright_pixels": 0,
+      "dark_pixels": 89705,
+      "mid_pixels": 22476,
+      "p05": 28.932,
+      "p95": 58.414,
+      "pass": false,
+      "reasons": [
+        "bright pixels 0 < 2769",
+        "luminance spread 29.5 < 90.0"
+      ],
+      "region": {
+        "x0": 1606,
+        "x1": 3895,
+        "y0": 242,
+        "y1": 484
+      },
+      "sample_count": 553938,
+      "spread": 29.482,
+      "thresholds": {
+        "bright_luminance_gt": 190.0,
+        "dark_luminance_lt": 55.0,
+        "mid_luminance_max": 170.0,
+        "mid_luminance_min": 70.0,
+        "min_bright_pixels": 2769,
+        "min_dark_pixels": 2769,
+        "min_mid_pixels": 1384,
+        "min_spread": 90.0
+      }
+    },
+    "non_blank": {
+      "nonzero_pixels": 2160608,
+      "pass": true,
+      "reasons": [],
+      "total_pixels": 2160608,
+      "unique_colors_seen": 2
+    }
+  },
+  "image": {
+    "height": 538,
+    "path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig05_painleve_proxy/fig05_dart_fbf_proxy_mu05_6panel.png",
+    "width": 4016
+  },
+  "metadata": {
+    "cell": "mu0.5",
+    "proxy": "true",
+    "scene": "fbf_paper_painleve",
+    "solver": "exact_fbf"
+  },
+  "pass": false,
+  "reasons": [
+    "bright pixels 0 < 2769",
+    "luminance spread 29.5 < 90.0"
+  ],
+  "schema_version": "dart.image_verdict/v1",
+  "thresholds_used": {
+    "contrast": {
+      "bright_luminance_gt": 190.0,
+      "dark_luminance_lt": 55.0,
+      "mid_luminance_max": 170.0,
+      "mid_luminance_min": 70.0,
+      "min_bright_pixels": 2769,
+      "min_dark_pixels": 2769,
+      "min_mid_pixels": 1384,
+      "min_spread": 90.0
+    },
+    "diff": {
+      "fail": 0.016,
+      "failpercent": 1.0,
+      "ignore_aa": true,
+      "relnorm": null
+    },
+    "non_blank": {
+      "min_nonzero_pixels": 1,
+      "min_unique_colors": 2
+    },
+    "require_contrast": true
+  }
+}

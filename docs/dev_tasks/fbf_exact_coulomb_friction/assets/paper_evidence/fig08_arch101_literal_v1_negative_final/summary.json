@@ -1,0 +1,26 @@
+{
+  "artifact_valid": false,
+  "child_returncode": 1,
+  "claim_boundary": "Failed prefix retained as a scientific negative. It is not a valid standing artifact and must never be used as timing evidence.",
+  "classification": "failed_prefix_scientific_negative",
+  "emitted_steps": 1,
+  "failed_gates": [
+    "one_exact_solve",
+    "success_status",
+    "residual_at_most_1e-6",
+    "zero_exact_failures"
+  ],
+  "first_failed_step": 1,
+  "normalized_scene_work_fingerprint_sha256": "8d275edcaa82a2f628fdd5d9f846b2daed7e6864fdc4b7e80eca9a8c93bcf527",
+  "protocol_contract_sha256": "031140a359fcb1c59f8b7377ce95e31720ec00368f175b70c7daed5fe761ffc3",
+  "requested_steps": 600,
+  "scenario": "masonry_arch_101_literal_wedge",
+  "schema_version": "dart.fbf_literal_arch101_v1/v1",
+  "standing_claim_passed": false,
+  "terminal_residual": 0.7815364614352474,
+  "terminal_status": "fbf_failed",
+  "timing_evidence_eligible": false,
+  "timing_statistics": null,
+  "trace_columns": 95,
+  "trace_header_sha256": "424195336cb42753179130c9f6fcba3a8ddea9bf669cfa70c0f77fcb4c6335a5"
+}

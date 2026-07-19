@@ -1,0 +1,55 @@
+{
+  "schema_version": "dart.fbf_backspin_manual_inspection/v3",
+  "manual_inspected": true,
+  "pass": true,
+  "verdicts": {
+    "checker_texture_legible": true,
+    "coral_registration_tile_visible": true,
+    "orientation_change_visible_in_consecutive_source_frames": true,
+    "texture_loading_warnings_observed": false,
+    "translational_advance_then_reversal_visible": true,
+    "translational_reversal_claim_requires_physical_trace": true,
+    "physics_neutrality_requires_source_contract": true,
+    "media_sampling_alias_disclosed": true,
+    "signed_angular_direction_proven_by_media": false,
+    "continuous_contact_proven": false,
+    "strict_rigid_body_rest_proven": false,
+    "paper_parity": false,
+    "external_solver_parity": false,
+    "approved_source_golden": false,
+    "timing_verdict": null,
+    "realtime_verdict": null
+  },
+  "representative_artifacts": [
+    {
+      "path": "backspin/panel.png",
+      "sha256": "72bf8d6098e8fb17b98bbedeaa00cc539866cf570d91d725f77dc75f1971b067",
+      "observation": "The five fixed instants show the sphere advance right by 0.83 s and return left past its starting region by 2.17 s. The fully framed high-contrast ivory/charcoal checker is clearly legible, the coral registration tile is visible at multiple instants, and no force arrows are present."
+    },
+    {
+      "path": "backspin/clip.mp4",
+      "sha256": "7d4606f4da0a57ffbdfa0528906b21a20d7e1a4e47a6e7eb5387242aecc71928",
+      "observation": "Decoded samples at 0.00, 0.17, 0.83, 1.08, 2.00, and 2.16 s from the 30 fps stream show translational advance and return with visibly changing checker cells; the coral tile appears during the advance and midpoint samples. The sphere remains fully framed without force arrows, while the sampling rate does not establish signed angular direction."
+    },
+    {
+      "path": "backspin/clip.gif",
+      "sha256": "773365f624ba1326855f2ad99c0196f761ab776001da568f7cdaa84054adacc8",
+      "observation": "Decoded beginning, midpoint, and ending samples from the 15 fps GIF preserve the fully framed translational reversal and changing checker orientation without force arrows, with stronger angular aliasing than the MP4."
+    },
+    {
+      "path": "backspin/stills/step_000000.png",
+      "sha256": "558d658cfad9fa583afdb4711e724835f24407463c2ab693741467ff5f07b176",
+      "observation": "At step 0, several large ivory and charcoal cells are clearly visible, with the coral registration tile on the upper-right surface; the sphere is fully framed and no force arrows are present."
+    },
+    {
+      "path": "backspin/stills/step_000001.png",
+      "sha256": "e069ac301b0509956658b4f119f98cff5e650beb3ca4b33f315434b265d65e8d",
+      "observation": "At step 1, the checker occupies a visibly different orientation and the coral registration tile has rotated out of view; the sphere remains fully framed without force arrows."
+    },
+    {
+      "path": "backspin/stills/step_000002.png",
+      "sha256": "2a83b5643ae3ff2f1caa6f8def5c0c2178e2bbf8742c4c9e2537280155846209",
+      "observation": "At step 2, the checker changes orientation again and the coral tile reappears on the upper-right surface, independently confirming consecutive-frame rotation legibility; the sphere remains fully framed without force arrows."
+    }
+  ]
+}

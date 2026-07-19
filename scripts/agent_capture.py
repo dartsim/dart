@@ -24,6 +24,7 @@ import importlib
 import json
 import math
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -39,6 +40,56 @@ SCHEMA_VERSION = "dart.agent_capture/v1"
 # Default OSG warmup frames before each screenshot; shared by the argument
 # parser and the reproduce-command writer so non-default runs record the flag.
 DEFAULT_WARMUP_FRAMES = 10
+
+_SAFE_PREFIX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def _validate_prefix(value: str) -> str:
+    """Return a safe runner-owned artifact basename prefix."""
+
+    if not _SAFE_PREFIX.fullmatch(value) or value in {".", ".."}:
+        raise ValueError(
+            "--prefix must be one safe basename containing only letters, "
+            "digits, '.', '_', or '-'"
+        )
+    return value
+
+
+def _owned_path(out_dir: Path, name: str) -> Path:
+    """Resolve a runner-owned output while proving it stays below ``out_dir``."""
+
+    root = out_dir.resolve()
+    path = (root / name).resolve(strict=False)
+    if root not in path.parents:
+        raise ValueError(f"runner-owned output escapes --out: {name!r}")
+    return path
+
+
+def _remove_owned_path(path: Path) -> None:
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+    elif path.is_dir():
+        shutil.rmtree(path)
+
+
+def _prepare_owned_output(out_dir: Path, prefix: str) -> Path:
+    """Invalidate a previous bundle before any new capture can fail."""
+
+    prefix = _validate_prefix(prefix)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    root = out_dir.resolve()
+    for suffix in (
+        "_capture.json",
+        "_capture.json.tmp",
+        "_turntable.mp4",
+        "_motion.mp4",
+        "_turntable",
+        "_motion",
+    ):
+        _remove_owned_path(_owned_path(root, f"{prefix}{suffix}"))
+    for stale in root.glob(f"{prefix}_*.png"):
+        _remove_owned_path(stale)
+    return root
 
 
 def _import_dartpy() -> Any:
@@ -341,6 +392,9 @@ def _assess_capture_view(world, camera, args, name: str) -> dict[str, Any]:
 
 
 def run_capture(args: argparse.Namespace) -> dict[str, Any]:
+    prefix = _validate_prefix(args.prefix)
+    out_dir = _prepare_owned_output(args.out, prefix)
+
     dart = _import_dartpy()
     if args.factory:
         world = _load_factory(args.factory)()
@@ -376,9 +430,6 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
         if font:
             overlay.setFont(font)
         viewer.addAttachment(overlay)
-
-    out_dir = args.out
-    out_dir.mkdir(parents=True, exist_ok=True)
 
     views: list[dict[str, Any]] = []
     if args.auto_views > 0:
@@ -419,7 +470,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
     artifacts: list[dict[str, Any]] = []
     capture_stats: dict[str, int] = {}
     for view in views:
-        still_path = out_dir / f"{args.prefix}_{view['name']}.png"
+        still_path = _owned_path(out_dir, f"{prefix}_{view['name']}.png")
         if not _capture_view(
             viewer,
             world,
@@ -449,7 +500,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
 
     if args.turntable > 0:
         base = views[0]["camera"]
-        frame_dir = out_dir / f"{args.prefix}_turntable"
+        frame_dir = _owned_path(out_dir, f"{prefix}_turntable")
         frame_dir.mkdir(parents=True, exist_ok=True)
         # A rerun with the same --out/--prefix must not leave stale frames:
         # ffmpeg's image2 pattern would append them to the new sequence.
@@ -482,14 +533,15 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             "view_reports": turntable_reports,
         }
         if args.video:
-            video_path = out_dir / f"{args.prefix}_turntable.mp4"
-            if _encode_video(frame_dir, "turn%04d.png", video_path, args.fps):
-                entry["video"] = video_path.name
+            video_path = _owned_path(out_dir, f"{prefix}_turntable.mp4")
+            if not _encode_video(frame_dir, "turn%04d.png", video_path, args.fps):
+                raise RuntimeError("ffmpeg failed to encode requested turntable video")
+            entry["video"] = video_path.name
         artifacts.append(entry)
 
     if args.motion_frames > 0:
         base = views[0]["camera"]
-        frame_dir = out_dir / f"{args.prefix}_motion"
+        frame_dir = _owned_path(out_dir, f"{prefix}_motion")
         frame_dir.mkdir(parents=True, exist_ok=True)
         # A rerun with the same --out/--prefix must not leave stale frames:
         # ffmpeg's image2 pattern would append them to the new sequence.
@@ -533,9 +585,10 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             "view_reports": motion_reports,
         }
         if args.video:
-            video_path = out_dir / f"{args.prefix}_motion.mp4"
-            if _encode_video(frame_dir, "frame%04d.png", video_path, args.fps):
-                entry["video"] = video_path.name
+            video_path = _owned_path(out_dir, f"{prefix}_motion.mp4")
+            if not _encode_video(frame_dir, "frame%04d.png", video_path, args.fps):
+                raise RuntimeError("ffmpeg failed to encode requested motion video")
+            entry["video"] = video_path.name
         artifacts.append(entry)
 
     sidecar = {
@@ -564,9 +617,13 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             "see skipped_contacts in the sidecar",
             file=sys.stderr,
         )
-    (out_dir / f"{args.prefix}_capture.json").write_text(
-        json.dumps(sidecar, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    sidecar_path = _owned_path(out_dir, f"{prefix}_capture.json")
+    sidecar_tmp = _owned_path(out_dir, f"{prefix}_capture.json.tmp")
+    sidecar_tmp.write_text(
+        json.dumps(sidecar, indent=2, sort_keys=True, allow_nan=False) + "\n",
+        encoding="utf-8",
     )
+    sidecar_tmp.replace(sidecar_path)
     return sidecar
 
 

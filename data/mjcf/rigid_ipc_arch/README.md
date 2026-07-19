@@ -40,8 +40,9 @@ policy on this kind of optional external-comparison asset.
    vertex coordinates are unitless numbers on the order of the paper's
    stated "cm" dimensions (roughly 0-65 for the 101-stone arch); taken
    literally as meters the stones would be tens of meters tall. This is
-   exactly the cm -> m conversion recommended by this extraction's own
-   `PROVENANCE.txt` data manifest, so the arch here is close to the
+   exactly the cm -> m conversion recorded in
+   [`PROVENANCE.txt`](../../../docs/dev_tasks/fbf_exact_coulomb_friction/PROVENANCE.txt),
+   so the arch here is close to the
    ~0.6 m-tall scale the source generator's own parameters describe
    (`fc=60`, `Qb=100`, `Qt=49`, `L=30`, all in cm).
 3. An explicit `<option timestep="0.005" gravity="0 0 -9.8" cone="elliptic"/>`

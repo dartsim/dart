@@ -1,0 +1,63 @@
+{
+  "capture": {
+    "argv": [
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/bin/python3.14",
+      "/home/js/dev/dartsim/dart/task_6/scripts/run_fbf_visual_evidence.py",
+      "run",
+      "--scenario",
+      "card_house_author_5_construction",
+      "--demo",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+      "--output-root",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/card_house_author_5_construction_current_v1",
+      "--ffmpeg",
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+      "--ffprobe",
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffprobe",
+      "--python",
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/bin/python3.14",
+      "--out",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/card_house_author_5_construction_current_v1/run-summary.json"
+    ],
+    "returncode": 0,
+    "run_summary_path": "run-summary.json",
+    "run_summary_sha256": "ccce4b213181682893a913a75cfcd36723537a89c1308e3729fa05012ecd73bc",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "1b1ecb280ba09193a2b20a8f51dc2f73a8395215078881b8dbe16daabed804b5"
+  },
+  "capture_verification": {
+    "argv": [
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/bin/python3.14",
+      "/home/js/dev/dartsim/dart/task_6/scripts/run_fbf_visual_evidence.py",
+      "verify",
+      "--scenario",
+      "card_house_author_5_construction",
+      "--demo",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+      "--output-root",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/card_house_author_5_construction_current_v1",
+      "--ffmpeg",
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+      "--ffprobe",
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffprobe"
+    ],
+    "raw_stdout_sha256": "c9135a6360e8703dfe1a586defcbc52b36f1c90db7c90d35fee08676aeeb0394",
+    "returncode": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_path": "verification.json",
+    "stdout_sha256": "c9135a6360e8703dfe1a586defcbc52b36f1c90db7c90d35fee08676aeeb0394"
+  },
+  "contract_query": {
+    "argv": [
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+      "--fbf-author-card-house-contract",
+      "fbf_author_card_house_5_construction"
+    ],
+    "payload_path": "contract.json",
+    "payload_sha256": "5ad04efeaf9185c62405d44f9067c8e66229dabd7ccaff4469a5c690b2f34b01",
+    "returncode": 0,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_sha256": "bf9db1bb2ad3db1721c6e7ee8c86c4762cacc4094dcadf27e16875a288a0b4ad"
+  },
+  "schema_version": "dart.fbf_author_card_house_construction_invocations/v1"
+}

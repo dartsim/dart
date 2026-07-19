@@ -1,0 +1,24 @@
+{
+  "schema_version": "dart.fbf_outcome_report/v1",
+  "requirement_ids": ["video.07_arch_25"],
+  "status": "partial",
+  "outcomes": [
+    {
+      "name": "reconstructed_literal_wedge_no_projectile_video",
+      "pass": true,
+      "support": "The current-source H.264 time-lapse contains 61 distinct validated frames from a 600-step exact DART trajectory and visibly retains the reconstructed 25-wedge arch."
+    },
+    {
+      "name": "claim_boundary_excludes_paper_impact_video_segment",
+      "pass": true,
+      "support": "This partial evidence item is explicitly out of scope for the clip: it has no projectile or external-solver panels and is not a reproduction of the paper video segment."
+    }
+  ],
+  "pass": true,
+  "solver_validation": {
+    "status": "success",
+    "fallback_count": 0,
+    "exact_failure_count": 0,
+    "maximum_residual": 9.999807145410957e-7
+  }
+}

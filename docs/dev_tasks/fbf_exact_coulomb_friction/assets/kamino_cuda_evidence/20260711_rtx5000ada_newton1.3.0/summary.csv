@@ -1,0 +1,4 @@
+scenario,steps,simulated_s,timed_wall_s,mean_step_ms,median_step_ms,p95_step_ms,max_step_ms,trajectory_realtime_factor,realtime_step_fraction,all_steps_within_dt,min_contacts,max_contacts,fixture_check_pass
+backspin,240,4.0,4.113731461,17.14054775416667,6.1246755,33.3530655,35.660518,0.9723532121437131,0.5625,False,1,1,True
+incline_mu_0_5,120,2.0,0.302014232,2.5167852666666666,2.4957205,3.1482225,4.212996,6.622204479423341,1.0,True,4,4,True
+incline_mu_0_4,120,2.0,0.603092182,5.025768183333333,5.001362,5.3375791,6.379125,3.316242623752002,1.0,True,4,4,True

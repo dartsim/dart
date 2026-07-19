@@ -46,11 +46,29 @@ class NativeCollisionObject;
 class NativeCollisionDetector : public CollisionDetector
 {
 public:
+  /// Solver-facing contact reduction policy for Native collision queries.
+  enum class ContactManifoldMode
+  {
+    /// Preserve the default compact manifold: at most three contacts per pair.
+    Compact,
+
+    /// Allow four-point box, plane-box, and planar convex-face manifolds.
+    FourPointPlanar
+  };
+
   using CollisionDetector::createCollisionGroup;
 
   static std::shared_ptr<NativeCollisionDetector> create();
 
   ~NativeCollisionDetector() override;
+
+  /// Set the solver-facing contact reduction policy.
+  ///
+  /// The default is ContactManifoldMode::Compact.
+  void setContactManifoldMode(ContactManifoldMode mode);
+
+  /// Get the solver-facing contact reduction policy.
+  [[nodiscard]] ContactManifoldMode getContactManifoldMode() const;
 
   // Documentation inherited
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()

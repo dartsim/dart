@@ -142,6 +142,16 @@ struct DemoSceneSetup
   /// Camera pose to apply when this scene becomes active. Optional.
   std::optional<CameraHome> cameraHome;
 
+  /// Optional canonical JSON contract for the scene's physics and controls.
+  /// The headless timeline evaluates this provider after host runtime options
+  /// and legacy pre-run actions, immediately before timeline step 0, then
+  /// writes the result as a structured object. This keeps the contract bound
+  /// to the world that actually ran instead of the scene factory's initial
+  /// snapshot.
+  /// Renderer-only meshes, materials, and textures belong to separate visual
+  /// provenance and must not be represented here.
+  std::function<std::string()> physicsContractProvider;
+
   /// Whether the host should attach its default shadow technique.
   bool enableShadows = true;
 
