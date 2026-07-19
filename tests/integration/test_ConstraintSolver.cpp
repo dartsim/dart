@@ -1238,10 +1238,10 @@ TEST(
     ExactCoulombParallelContactRowMatchesSerialWorldStateBitExactly)
 {
   auto defaultWorld = createWorld();
-  ASSERT_NE(nullptr, defaultWorld->getConstraintSolver());
+  auto* defaultSolver = defaultWorld->getConstraintSolver();
+  ASSERT_NE(nullptr, defaultSolver);
   EXPECT_EQ(
-      typeid(constraint::BoxedLcpConstraintSolver),
-      typeid(*defaultWorld->getConstraintSolver()));
+      typeid(constraint::BoxedLcpConstraintSolver), typeid(*defaultSolver));
 
   auto serialWorld = createExactCoulombParallelContactStackWorld(1u);
   auto parallelWorld = createExactCoulombParallelContactStackWorld(4u);
