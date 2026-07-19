@@ -658,6 +658,11 @@
 
 * Tests
 
+  * Force the ASan and required assertions-enabled builds to run without
+    OpenSceneGraph, and require exact-candidate optional-dependency and Gazebo
+    integration evidence before DART 6 releases:
+    [#3393](https://github.com/dartsim/dart/pull/3393)
+
   * Preserve every protected `release-*` post-merge CI run by giving
     release-branch workflow runs a run-specific concurrency group instead of
     relying on GitHub's single-pending default concurrency queue:
@@ -674,6 +679,28 @@
     raise the coverage CTest timeout above the 1500s default, fixing spurious
     `test_Issue1193` timeouts under Debug coverage instrumentation:
     [#3120](https://github.com/dartsim/dart/pull/3120)
+
+### [DART 6.19.4 (2026-07-18)](https://github.com/dartsim/dart/milestone/103?closed=1)
+
+DART 6.19.4 is a focused patch release on the DART 6 LTS line. It restores
+source builds that disable the OpenSceneGraph GUI component and makes that
+optional-dependency contract deterministic in CI. The only additional
+maintenance change ignores local `.omx/` state.
+
+* Build
+
+  * Keep source builds configurable without OpenSceneGraph when
+    `DART_BUILD_GUI_OSG=OFF` by skipping the OSG-only dynamic-joint-constraints
+    example before it requests `osgText`. The ASan configuration now disables
+    OpenSceneGraph discovery so CI fails if this dependency becomes mandatory
+    again:
+    [#3391](https://github.com/dartsim/dart/pull/3391),
+    [#3387](https://github.com/dartsim/dart/issues/3387)
+
+* Tooling and Docs
+
+  * Ignore local `.omx/` state so it is not accidentally committed:
+    [#3391](https://github.com/dartsim/dart/pull/3391)
 
 ### [DART 6.19.3 (2026-06-27)](https://github.com/dartsim/dart/milestone/101?closed=1)
 
