@@ -297,9 +297,7 @@ def check_branch_profile(
         root / "docs" / "onboarding" / "architecture.md",
     )
     marker_content = "\n".join(
-        owner.read_text(encoding="utf-8")
-        for owner in marker_owners
-        if owner.is_file()
+        owner.read_text(encoding="utf-8") for owner in marker_owners if owner.is_file()
     )
     for marker in string_lists["required_markers"]:
         if marker not in marker_content:
@@ -494,9 +492,7 @@ def check_hooks(root: Path, errors: list[str]) -> None:
                 f"{path.relative_to(root)}: must invoke the staged agent hook profile"
             )
     launcher = root / ".claude" / "hooks" / "pre-commit-guard.ps1"
-    launcher_text = (
-        launcher.read_text(encoding="utf-8") if launcher.exists() else ""
-    )
+    launcher_text = launcher.read_text(encoding="utf-8") if launcher.exists() else ""
     for marker in WINDOWS_LAUNCHER_MARKERS:
         if marker not in launcher_text:
             errors.append(
@@ -663,9 +659,9 @@ def check_instruction_budget(root: Path, errors: list[str]) -> None:
 
 
 def check_release_guidance(root: Path, errors: list[str]) -> None:
-    python_skill = (
-        root / ".claude" / "skills" / "dart-python" / "SKILL.md"
-    ).read_text(encoding="utf-8")
+    python_skill = (root / ".claude" / "skills" / "dart-python" / "SKILL.md").read_text(
+        encoding="utf-8"
+    )
     python_frontmatter = python_skill.split("---", 2)[1]
     if "nanobind" in python_frontmatter or "pybind11" not in python_skill:
         errors.append("dart-python: DART 6.20 metadata must name pybind11")
@@ -680,9 +676,9 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
         if not (root / ".github" / "workflows" / workflow).is_file():
             errors.append(f"dart-ci: nonexistent workflow `{workflow}`")
 
-    release_fix = (
-        root / ".claude" / "commands" / "dart-release-ci-fix.md"
-    ).read_text(encoding="utf-8")
+    release_fix = (root / ".claude" / "commands" / "dart-release-ci-fix.md").read_text(
+        encoding="utf-8"
+    )
     if "release-6.20" not in release_fix or "release-6.19" in release_fix:
         errors.append("dart-release-ci-fix: release default must be release-6.20")
 
@@ -840,7 +836,7 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
         'pixi run python -c "import sys; print(sys.executable)"',
         "$launcher",
         "$hookCommand",
-            "& (Join-Path (git rev-parse --show-toplevel)",
+        "& (Join-Path (git rev-parse --show-toplevel)",
         '$ErrorActionPreference = "Continue"',
         '"git status"',
         "DART_HOOK_DRY_RUN",
@@ -1245,9 +1241,9 @@ def exercise_scenarios(
                         f"dart-verify-sim source is missing contract marker {marker!r}"
                     )
             try:
-                new_task_text = (
-                    root / ".claude/commands/dart-new-task.md"
-                ).read_text(encoding="utf-8")
+                new_task_text = (root / ".claude/commands/dart-new-task.md").read_text(
+                    encoding="utf-8"
+                )
             except OSError:
                 new_task_text = ""
             for marker in (
@@ -1276,9 +1272,7 @@ def exercise_scenarios(
                 ".claude/commands/dart-ultrawork.md": (
                     "routes through `dart-verify-sim`",
                 ),
-                ".claude/commands/dart-resume.md": (
-                    "route through `dart-verify-sim`",
-                ),
+                ".claude/commands/dart-resume.md": ("route through `dart-verify-sim`",),
                 ".claude/commands/dart-pr.md": ("use `dart-verify-sim`",),
                 ".claude/commands/dart-manage-pr.md": ("Visual verification",),
                 ".claude/commands/dart-review-pr.md": (
