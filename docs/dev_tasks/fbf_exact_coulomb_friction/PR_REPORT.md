@@ -236,7 +236,7 @@ Current focused gates are:
 - author-incline reference finalizer unit tests: 64/64; verify-only reports 37
   indexed artifacts and 39 physical files;
 - focused manifest/backspin/incline/author-masonry/author-incline evidence
-  suite: 777 passed post-merge in 213.46 s;
+  suite: 859 passed post-merge in 163.95 s;
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s; and
 - colored dispatch/barrier stress: 1,000 consecutive successful runs.
 
@@ -249,8 +249,9 @@ identities without requiring ignored local build products, and recomputes the
 CPU timing/scaling/physical antecedents from all 3,600 measured raw rows. It
 also binds every warmup/measured process result, taskset command, per-CPU
 topology aggregate, worker-residency identity, and archived prior-source
-semantic/provenance claim; cross-checks the card-v2_r3, impact-v8, and arch101-v6
-truth fields; and rejects fabricated paper comparability, all-step real-time,
+semantic/provenance claim; cross-checks the card-v2_r3, impact-v8, and
+arch101-v7 truth fields; and rejects fabricated paper comparability,
+all-step real-time,
 strict-card, physical, timing, or positive-outcome promotions.
 
 ## Pinned-Author Incline Sweep Reference
@@ -648,31 +649,39 @@ passing crown-impact media/outcome nor paper parity.
 
 The separately frozen 101-stone literal protocol is
 `LITERAL_ARCH_101_V1.md`; its current provenance-bound bundle is
-`assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v6/`. It promotes
+`assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v7/`. It promotes
 the exact-inertia 101-wedge reconstruction from collision-only scaffolding to
 a fail-closed dynamics test, but the result is negative on step 1: 5,000
 outers, `fbf_failed`, residual `0.78153646143524735`, one exact failure, and
 zero fallbacks. The dynamic `FourPointPlanar` trace reports aggregate fields
 of 400 contacts, 100 constraint pairs, three colors, width 34, and four-P-core
-colored execution, but it does not serialize dynamic pair identities. The
-separate collision-only Compact repeat-2 probe proves only the constructed
-time-zero graph: 102 pairs are 100 adjacent-stone pairs plus two
-springer-ground pairs. The runner nevertheless sets
+colored execution. The separate collision-only Compact repeat-2 probe proves
+only the constructed time-zero graph: 102 pairs are 100 adjacent-stone pairs
+plus two springer-ground pairs. The v7 one-step FourPointPlanar companion
+resolves the failed step-1 pre-solve graph as exactly the 100-edge
+adjacent-stone chain: 100 unique adjacent pairs, 400 contacts, multiplicity
+four, zero non-adjacent pairs, and zero ground pairs. Its aggregates and
+residual match the frozen trace. The companion accepts the capped iterate and
+does not follow the frozen trace participant-affinity contract, so
+solver-taxonomy and affinity equivalence remain false. This narrow identity
+result supplies no source equivalence, valid trajectory, standing/physical
+outcome, timing, media, long-run behavior, or paper parity. The runner sets
 `artifact_valid=false`, `standing_claim_passed=false`, and
 `timing_evidence_eligible=false`; no trajectory, media, or timing is promoted.
-It binds and rechecks the protocol, runner, trace/probe sources, executables,
-`taskset`, `ldd`, and all resolved regular shared-library files. That is
-source/executable/shared-library-bound provenance, not a claim over all host
-runtime state. Its normalized fingerprint is
+It binds and rechecks the protocol, runner, trace/collision/dynamics-probe
+sources and executables, `taskset`, `ldd`, and all resolved regular
+shared-library files. That is source/executable/shared-library-bound
+provenance, not a claim over all host runtime state. Its normalized fingerprint
+is
 `8d275edcaa82a2f628fdd5d9f846b2daed7e6864fdc4b7e80eca9a8c93bcf527`.
 Runner/raw/summary/metadata/report hashes are
-`e3e3b7c998e038f6bf1499b1b4a8eea04261dc0aa7a6e4cf668486482c56a6f5`,
-`03fba1d83f9209b0ade3698bdada42ca3927c176397a5ddee8ce0ca175e82947`,
-`2e03653745a1e8d94c7b18d446004d16bfd4e176d7b9315aa198e3c08538bbfa`,
-`5e0b166171e08349847664b504b0a9b15cc1f582514388b532259ad6edad2bec`,
-and `52e5592ba5ad32a919f221e1a8e98ecb4b4f82c0228e16de44318b436bf58958`.
-The current v6 whole-tree hash is
-`ce5731fa6e4f967845d664341761eca7b0ce9ffb4cb93d55ac71df79f9243947`.
+`7155b9bc6082e79aca317be6626fea587b58538df2f34e94f865cd54c15eb993`,
+`fc0705ff497b44658dfe186ed27c50b2ab9d19a268f20cf50875a3155d1dc07d`,
+`2cae961048b776c069caeccda2d95f2f0fd0969cae9e3de3782f0e5e5b7b640d`,
+`770d662f7021320982700fe699266bc94d2448679c8c4dc60bd127c660facb8a`,
+and `1ba3987af896f68401faa1153f6b388aed38b087214d07592f5a060cab429e2a`.
+The current v7 whole-tree hash is
+`e65107a6d2e2880742e02d01949bc4b3f9adb2f48b6be552a720fa83c9bcc4b3`.
 The prior `fig08_arch101_literal_v1_negative_final/` bundle is retained only as
 invalid historical evidence because it lacked the current shared-library and
 independent graph bindings.
@@ -681,7 +690,8 @@ clang-format-only collision-probe source identity change superseded it for
 current-source claims. Additive card-manifold trace instrumentation later
 superseded v3, and v4 is historical current-at-capture evidence. The unchanged
 command was rebaselined as v5 and again as v6 after the current-build libdart
-identity advanced; the scientific result remained unchanged.
+identity advanced. V7 adds the identity-resolved one-step dynamics companion;
+the frozen trace and scientific result remain unchanged.
 
 ## Evidence Vocabulary
 
@@ -718,7 +728,7 @@ those production box scenes.
 | 25-stone literal dynamics | Exact-inertia literal wedges, `1 um` closure, Native `FourPointPlanar` | 96 contacts, 24 pairs/manifolds, 3 colors, width 8 for all measured steps | Non-paper 600-step standing trajectory, validated standing media, and matched 1-to-4-thread scaling only |
 | Literal crown-impact v1 | Standing contract plus three frozen projectiles; numeric only | Arch contact step 607 before ground step 616; finite, but 5 caps and residual/outcome gates fail | Preregistered non-paper scientific negative only |
 | Pinned-author 25-stone diagnostic | Author meshes and Warp/Newton float32 pipeline; 500 frames / 2,000 substeps | 100 contacts at release; 40 initial-shortcut and 117 configured-outer-gate convergences, plus 1,843 nonconverged outer solves; no pair identities | Current-source scientific negative only; no DART dynamics, trajectory, outcome, timing, repeatability, media, or paper-invocation parity |
-| Literal 101-stone v1 | Exact-inertia wedges, `1 um` closure; Compact time-zero probe and Native `FourPointPlanar` dynamic trace; numeric only | Compact repeat-2 time zero has 100 adjacent plus 2 springer-ground pairs; step-1 FourPointPlanar aggregates are 400 contacts/100 constraint pairs, 3 colors/width 34, but dynamic pair identities are absent and the solve fails after 5,000 outers at residual `0.7815364614` | Frozen non-paper failed-prefix scientific negative; no standing/timing/media claim |
+| Literal 101-stone v1 | Exact-inertia wedges, `1 um` closure; Compact time-zero probe, Native `FourPointPlanar` trace, and v7 one-step identity companion; numeric only | Compact repeat-2 time zero has 100 adjacent plus 2 springer-ground pairs; the failed step-1 FourPointPlanar graph is identity-resolved as exactly 100 adjacent pairs/400 contacts with multiplicity 4, zero non-adjacent or ground pairs, but solver-taxonomy/affinity equivalence fail and the frozen solve fails after 5,000 outers at residual `0.7815364614` | Frozen non-paper failed-prefix scientific negative; no source-equivalence, standing, physical, timing, media, long-run, or parity claim |
 | Card-house manifold sensitivity v2 | Reconstructed 26-card command with Native `Compact` or `FourPointPlanar`; numeric only | Both emit 600 rows but are non-strict; FourPointPlanar increases mean contacts/multiplicity and fails the terminal convergence gate | Frozen one-factor diagnostic only; no physical/timing/media/paper claim |
 
 The collision probe remains collision-only. The standing bundle establishes a
@@ -755,13 +765,21 @@ publishes no multicore CPU reference.
 - Author-incline reference finalizer unit tests: 64/64; verify-only reports 37
   indexed artifacts and 39 physical files.
 - Focused manifest/backspin/incline/author-masonry/author-incline evidence
-  suite: 777 passed post-merge in 213.46 s.
+  suite: 859 passed post-merge in 163.95 s.
 - Full no-cache dartpy Python suite: 1,555 passed in 165.09 s.
 - Author masonry-arch focused CTest: 1/1 passed; all four current sealed
   bundles pass verify-only.
 - The manifest validates 29 canonical requirements with status `partial`.
-  Live mode performed 102 file-identity rechecks with zero skipped; explicit
-  archive mode reported zero live rechecks and 102 skipped.
+  Under the sealed producer closure, live mode performed 118 file-identity
+  rechecks with zero skipped; explicit archive mode reported zero live
+  rechecks and 118 skipped.
+
+The sealed live closure resolved `libdart.so.6.19` to the recorded
+`libdart.so.6.19.3`. The normal development symlink is restored to
+`libdart.so.6.19.4`; the files are byte-identical, but resolved path is part of
+the fail-closed identity contract, so the current default live run reports five
+path mismatches. Archive mode remains clean; only recreate the historical
+symlink for an explicit live-closure recheck.
 
 ## PR State
 

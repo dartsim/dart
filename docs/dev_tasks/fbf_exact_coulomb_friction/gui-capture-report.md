@@ -429,23 +429,32 @@ video cannot be paper-valid while those trajectory contracts remain failed or
 non-strict.
 
 The current exact-inertia literal 101-stone v1 artifact is
-`assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v6/`. It fails
+`assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v7/`. It fails
 closed on step 1 after 5,000 outer iterations with residual
 `0.7815364614352474`, one exact failure, and zero fallbacks. Its dynamic
 `FourPointPlanar` row reports 400 contacts and 100 constraint pairs; a separate
 Compact collision-only probe proves the constructed time-zero graph of 100
-adjacent-stone pairs plus two springer-ground pairs. This numeric failed prefix
-does not validate the oriented-box media attempt or supply standing, outcome,
-timing, or visual evidence. Raw, metadata, and report hashes are
-`03fba1d83f9209b0ade3698bdada42ca3927c176397a5ddee8ce0ca175e82947`,
-`5e0b166171e08349847664b504b0a9b15cc1f582514388b532259ad6edad2bec`,
-and `52e5592ba5ad32a919f221e1a8e98ecb4b4f82c0228e16de44318b436bf58958`.
-The current v6 whole-tree hash is
-`ce5731fa6e4f967845d664341761eca7b0ce9ffb4cb93d55ac71df79f9243947`.
+adjacent-stone pairs plus two springer-ground pairs. The v7 one-step
+FourPointPlanar companion resolves the failed step-1 pre-solve graph as exactly
+100 adjacent pairs and 400 contacts, four contacts per pair, with zero
+non-adjacent and zero ground pairs. Its aggregates and residual match the
+frozen trace. The companion accepts the capped iterate and does not follow the
+frozen trace participant-affinity contract, so solver-taxonomy and affinity
+equivalence remain false. This numeric identity result is limited to the
+already-failed prefix and does not validate the oriented-box media attempt or
+supply source equivalence, a valid trajectory, standing/physical outcome,
+timing, visual evidence, long-run behavior, or paper parity. Raw, metadata,
+and report hashes are
+`fc0705ff497b44658dfe186ed27c50b2ab9d19a268f20cf50875a3155d1dc07d`,
+`770d662f7021320982700fe699266bc94d2448679c8c4dc60bd127c660facb8a`,
+and `1ba3987af896f68401faa1153f6b388aed38b087214d07592f5a060cab429e2a`.
+The current v7 whole-tree hash is
+`e65107a6d2e2880742e02d01949bc4b3f9adb2f48b6be552a720fa83c9bcc4b3`.
 The v3 bundle was superseded after additive instrumentation, and v4 is
 historical current-at-capture evidence. The unchanged command was rebaselined
-as v5 and again as v6 after the current-build libdart identity advanced; the
-scientific result is unchanged.
+as v5 and again as v6 after the current-build libdart identity advanced. V7
+adds the identity-resolved one-step dynamics companion; the frozen trace and
+scientific result are unchanged.
 
 ## Source Identity Audit
 
@@ -493,9 +502,9 @@ collision probe remains collision-only. A distinct exact-inertia dynamic trace
 now supplies a valid 600-step numeric standing claim, and the finalized
 current-source capture validates its standing presentation. Neither artifact
 supplies a crown-impact or author-parity claim. The separate impact v1 lane is
-numeric-only negative evidence and has no media. The literal 101-stone v6 lane
-is a step-1 failed-prefix negative, and the card-v2 lane is non-strict numeric
-sensitivity; neither supplies valid long media.
+numeric-only negative evidence and has no media. The literal 101-stone v7 lane
+is an identity-resolved step-1 failed-prefix negative, and the card-v2 lane is
+non-strict numeric sensitivity; neither supplies valid long media.
 
 ## Reproduction Entry Points
 

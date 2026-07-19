@@ -569,22 +569,30 @@ preserves the same frozen negative semantics and records the executed
 ## Literal 101-Stone v1 Scientific Negative
 
 Use [LITERAL_ARCH_101_V1.md](LITERAL_ARCH_101_V1.md) and
-[`assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v6/`](assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v6/).
+[`assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v7/`](assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v7/).
 The current Native exact-inertia 101-wedge reconstruction is no longer merely
 a collision audit: it has a frozen, fail-closed dynamics result. Step 1 reaches
 the 5,000-outer cap and returns `fbf_failed` at residual
 `0.78153646143524735`, with one exact failure and zero fallbacks. The
 `FourPointPlanar` dynamic aggregate fields are 400 contacts, 100 constraint
-pairs, three colors, width 34, and four-P-core colored execution, but the trace
-does not carry dynamic pair identities. A separate repeat-2, collision-only
-Compact probe proves only the constructed time-zero graph: 102 pairs equal
-100 adjacent-stone pairs plus two springer-ground pairs. The failed prefix
-cannot support standing, timing, or media claims. No parameter was tuned.
+pairs, three colors, width 34, and four-P-core colored execution. A separate
+repeat-2, collision-only Compact probe proves only the constructed time-zero
+graph: 102 pairs equal 100 adjacent-stone pairs plus two springer-ground pairs.
+The v7 one-step FourPointPlanar companion resolves the failed step-1 pre-solve
+graph as exactly the 100-edge adjacent-stone chain: 100 unique adjacent pairs,
+400 contacts, multiplicity four, zero non-adjacent pairs, and zero ground
+pairs. Its aggregates and residual match the frozen trace. The companion
+accepts the capped iterate and does not follow the frozen trace
+participant-affinity contract, so solver-taxonomy and affinity equivalence
+remain false. This narrow failed-prefix identity result cannot support source
+equivalence, a valid trajectory, standing/physical outcome, timing, media,
+long-run behavior, or paper parity. No parameter was tuned.
 
 The current runner binds and rechecks source, executable, `ldd`, `taskset`, and
-resolved regular shared-library file identities for the trace and collision
-probe. That is source/executable/shared-library-bound provenance, not complete
-host runtime-state provenance. The prior
+resolved regular shared-library file identities for the trace, collision
+probe, and dynamics companion. That is
+source/executable/shared-library-bound provenance, not complete host
+runtime-state provenance. The prior
 `assets/paper_evidence/fig08_arch101_literal_v1_negative_final/` bundle remains
 only as invalid historical evidence because its shared-library and independent
 graph provenance was incomplete.
@@ -593,17 +601,17 @@ clang-format-only collision-probe source identity change superseded it for
 current-source claims. Additive card-manifold trace instrumentation later
 superseded v3, and v4 is historical current-at-capture evidence. The unchanged
 explicit 101-stone command was rebaselined as v5 and again as v6 after the
-current-build libdart identity advanced; the scientific result remained
-unchanged.
+current-build libdart identity advanced. V7 adds the identity-resolved one-step
+dynamics companion; the frozen trace and scientific result remain unchanged.
 
 Result hashes: runner
-`e3e3b7c998e038f6bf1499b1b4a8eea04261dc0aa7a6e4cf668486482c56a6f5`,
+`7155b9bc6082e79aca317be6626fea587b58538df2f34e94f865cd54c15eb993`,
 fingerprint `8d275edcaa82a2f628fdd5d9f846b2daed7e6864fdc4b7e80eca9a8c93bcf527`,
-raw `03fba1d83f9209b0ade3698bdada42ca3927c176397a5ddee8ce0ca175e82947`,
-summary `2e03653745a1e8d94c7b18d446004d16bfd4e176d7b9315aa198e3c08538bbfa`,
-metadata `5e0b166171e08349847664b504b0a9b15cc1f582514388b532259ad6edad2bec`,
-report `52e5592ba5ad32a919f221e1a8e98ecb4b4f82c0228e16de44318b436bf58958`,
-and tree `ce5731fa6e4f967845d664341761eca7b0ce9ffb4cb93d55ac71df79f9243947`.
+raw `fc0705ff497b44658dfe186ed27c50b2ab9d19a268f20cf50875a3155d1dc07d`,
+summary `2cae961048b776c069caeccda2d95f2f0fd0969cae9e3de3782f0e5e5b7b640d`,
+metadata `770d662f7021320982700fe699266bc94d2448679c8c4dc60bd127c660facb8a`,
+report `1ba3987af896f68401faa1153f6b388aed38b087214d07592f5a060cab429e2a`,
+and tree `e65107a6d2e2880742e02d01949bc4b3f9adb2f48b6be552a720fa83c9bcc4b3`.
 
 ## Card-House Native Manifold Sensitivity v2
 
@@ -720,14 +728,21 @@ final integrated closeout run:
 | Schema-v8 CPU evidence unit tests | 230/230 |
 | Literal-wedge visual finalization unit tests | 16/16 |
 | Crown-impact trace and negative-runner unit tests | 25/25 |
-| Literal 101-stone trace/probe/runner unit tests | 35/35 |
+| Literal 101-stone trace/probe/runner unit tests | 41/41 |
 | Finalized incline unit/verify-only gates | 62/62; clean-checkout verify-only passes with 21 indexed artifacts and no ignored staging dependency |
 | Author-incline reference finalizer unit tests | 64/64; verify-only reports 37 indexed artifacts / 39 physical files |
-| Focused manifest/backspin/incline/author-masonry/author-incline evidence suite | 777 passed post-merge in 213.46 s |
+| Focused manifest/backspin/incline/author-masonry/author-incline evidence suite | 859 passed post-merge in 163.95 s |
 | Full no-cache dartpy Python suite | 1,555 passed in 165.09 s |
 | Author masonry-arch focused CTest | 1/1 passed |
-| Manifest host-identity modes | Live: 102 file rechecks, 0 skipped; explicit archive: 0 live, 102 skipped; both validate 29 requirements with status `partial` |
+| Manifest host-identity modes | Sealed producer closure: 118 live file rechecks, 0 skipped; explicit archive: 0 live, 118 skipped; both validate 29 requirements with status `partial` |
 | Deterministic colored-scheduler stress | 1,000 runs passed |
+
+The sealed live closure resolved `libdart.so.6.19` to the recorded
+`libdart.so.6.19.3`. The normal development symlink is restored to
+`libdart.so.6.19.4`; the files are byte-identical, but the resolved path is
+identity, so the current default live run reports five path mismatches. Archive
+mode remains clean; recreate the historical symlink only for an explicit live
+closure check.
 
 ## Active Completion Gates
 
@@ -736,7 +751,7 @@ final integrated closeout run:
 | Literal 25-stone static arch | Exact trajectory, residual, outcome, mean-real-time, multicore, trace-equivalent visual, and manual-inspection gates pass locally | Preserve the authoritative P-core bundle and narrow reconstructed stable/standing claim |
 | Projectile impact sequences | Frozen v1 is a durable scientific negative: contact order/finite/fallback gates pass, but cap/residual/global/far-field gates fail | Preserve v1 without tuning; obtain source-equivalent passing evidence and inspected impact media only from a separately declared contract |
 | Card house | Current-source manifold sensitivity comparison is complete, but both modes are non-strict and no physical/media verdict is promotable | Strict full paper-profile trajectory, physical outcome, and current-build source-matched media |
-| 101-stone arch and 10-level card house | Precise 101-stone v6 step-1 failure and partial reconstructions | Full exact trajectories, physical outcomes, and current-build media or precise blockers |
+| 101-stone arch and 10-level card house | Identity-resolved 101-stone v7 step-1 failure and partial reconstructions | Full exact trajectories, physical outcomes, and current-build media or precise blockers |
 | Small figures and video | Incline `fig01_02_incline_current_v1`, Painleve `current_v1`, backspin `fig03_backspin_current_v3`, and author-pinned turntable `fig04_turntable_author_current_v1` are repository-finalized within narrow DART-only boundaries; the separate author incline sweep is numeric source-run evidence | Preserve and reverify all four visual bundles plus the numeric sweep; retain the incline 8-versus-6 contact mismatch, strict-lane failure, and missing DART/external/history/golden/media comparisons, then finalize only the remaining affected rows before promotion |
 | Paper performance | Current source is available, but matched DART runs are pending and historical comparability remains partly external | Audit and run the pinned author workloads; keep the exact historical Apple host, renderer, and timing-attestation gaps explicit |
 | Manifest | Validator passes with 24 partial, 5 blocked, and 0 complete | Keep every row bound to current artifacts while retaining missing source-equivalence and historical-parity blockers |

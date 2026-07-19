@@ -530,41 +530,55 @@ Current reconstructed crown-impact truth:
 Current reconstructed 101-stone truth:
 
 - Use LITERAL_ARCH_101_V1.md and
-  assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v6/.
+  assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v7/.
 - The frozen Native exact-inertia run fails closed at step 1 after 5,000
   outers: residual 0.78153646143524735, one exact failure, zero fallbacks.
 - The dynamic FourPointPlanar trace records aggregate fields of 400 contacts,
   100 constraint pairs, 3 colors, width 34, and four colored participants on
-  logical CPUs 8,10,12,14. It does not serialize dynamic pair identities.
+  logical CPUs 8,10,12,14.
 - A separate collision-only Compact repeat-2 probe proves the constructed
   time-zero graph: 102 pairs are 100 adjacent-stone pairs plus two
-  springer-ground pairs. Do not merge that graph claim with the dynamic
-  FourPointPlanar aggregates.
+  springer-ground pairs.
+- The v7 one-step FourPointPlanar companion resolves the failed step-1
+  pre-solve graph as exactly 100 adjacent-stone pairs and 400 contacts, four
+  contacts per pair, with zero non-adjacent and zero ground pairs. Its
+  aggregates and residual match the frozen trace. The companion accepts the
+  capped iterate and does not follow the frozen trace participant-affinity
+  contract, so solver-taxonomy and affinity equivalence remain false. This
+  narrow identity result supplies no source equivalence, valid trajectory,
+  standing/physical outcome, timing, media, long-run behavior, or paper
+  parity.
+- Runner artifact schema v2 seals the dynamics-companion validator to this
+  failed-step taxonomy and exact residual. Preserve v7 as valid immutable
+  negative evidence; any future positive-standing candidate requires a newly
+  versioned runner and bundle rather than reusing or relabeling v7.
 - `artifact_valid=false`, `standing_claim_passed=false`, and
   `timing_evidence_eligible=false`; do not promote media or timing.
-- Provenance binds and rechecks the protocol, runner, trace/probe sources,
-  executables, `taskset`, `ldd`, and resolved regular shared-library files. It
-  does not bind all host runtime state.
+- Provenance binds and rechecks the protocol, runner,
+  trace/collision/dynamics-probe sources and executables, `taskset`, `ldd`, and
+  resolved regular shared-library files. It does not bind all host runtime
+  state.
 - Fingerprint:
   8d275edcaa82a2f628fdd5d9f846b2daed7e6864fdc4b7e80eca9a8c93bcf527
 - Runner:
-  e3e3b7c998e038f6bf1499b1b4a8eea04261dc0aa7a6e4cf668486482c56a6f5
+  7155b9bc6082e79aca317be6626fea587b58538df2f34e94f865cd54c15eb993
 - Raw/summary/metadata/report hashes:
-  03fba1d83f9209b0ade3698bdada42ca3927c176397a5ddee8ce0ca175e82947,
-  2e03653745a1e8d94c7b18d446004d16bfd4e176d7b9315aa198e3c08538bbfa,
-  5e0b166171e08349847664b504b0a9b15cc1f582514388b532259ad6edad2bec,
-  52e5592ba5ad32a919f221e1a8e98ecb4b4f82c0228e16de44318b436bf58958.
-- The current v6 whole-tree hash is
-  ce5731fa6e4f967845d664341761eca7b0ce9ffb4cb93d55ac71df79f9243947.
+  fc0705ff497b44658dfe186ed27c50b2ab9d19a268f20cf50875a3155d1dc07d,
+  2cae961048b776c069caeccda2d95f2f0fd0969cae9e3de3782f0e5e5b7b640d,
+  770d662f7021320982700fe699266bc94d2448679c8c4dc60bd127c660facb8a,
+  1ba3987af896f68401faa1153f6b388aed38b087214d07592f5a060cab429e2a.
+- The current v7 whole-tree hash is
+  e65107a6d2e2880742e02d01949bc4b3f9adb2f48b6be552a720fa83c9bcc4b3.
 - Preserve `fig08_arch101_literal_v1_negative_final/` only as invalid
   historical evidence; it omitted the shared-library and independent graph
-  provenance introduced in v2 and carried by v3/v4/v5/v6.
+  provenance introduced in v2 and carried forward through v7.
 - The v2 bundle is provenance-complete historical evidence, but a
   clang-format-only collision-probe source identity change superseded it for
   current-source claims. The v3 bundle was superseded after additive
   card-sensitivity instrumentation, and v4 is historical current-at-capture
   evidence. The unchanged command was rebaselined as v5 and again as v6 after
-  the current-build libdart identity advanced; the scientific result is
+  the current-build libdart identity advanced. V7 adds the identity-resolved
+  one-step dynamics companion; the frozen trace and scientific result are
   unchanged.
 
 Current card-manifold sensitivity truth:
@@ -663,7 +677,8 @@ Evidence truth:
 - Impact v1 is complete only as a preregistered numeric negative. A passing
   source-equivalent impact outcome/media and remaining paper-media artifacts
   are pending.
-- Arch101 v6 is a precise step-1 failed-prefix blocker, and card-manifold v2 is
+- Arch101 v7 is an identity-resolved step-1 failed-prefix blocker, and
+  card-manifold v2 is
   complete non-strict sensitivity evidence. Neither promotes a physical,
   timing, media, real-time, or paper-parity claim.
 
@@ -679,21 +694,29 @@ Latest recorded focused gates:
 - schema-v8 CPU runner tests 230/230;
 - literal-wedge visual finalization tests 16/16;
 - crown-impact trace and negative-runner tests 25/25;
-- literal 101-stone trace/probe/runner tests 35/35;
+- literal 101-stone trace/probe/runner tests 41/41;
 - finalized incline finalizer unit tests passed 62/62; clean-checkout
   verify-only passed with 21 indexed artifacts and no ignored staging
   dependency;
 - author-incline reference finalizer unit tests passed 64/64; verify-only
   reports 37 indexed artifacts and 39 physical files;
 - focused manifest/backspin/incline/author-masonry/author-incline evidence
-  suite: 777 passed post-merge in 213.46 s;
+  suite: 859 passed post-merge in 163.95 s;
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - author masonry-arch focused CTest: 1/1 passed;
-- all four current sealed bundles pass verify-only; the manifest validator
-  passes all 29 canonical requirements with intentional status `partial`, 102
-  live file-identity rechecks and zero skipped, while explicit archive mode
-  reports zero live rechecks and 102 skipped; and
+- all four current sealed bundles pass verify-only; under the sealed producer
+  closure, the manifest validator passes all 29 canonical requirements with
+  intentional status `partial`, 118 live file-identity rechecks, and zero
+  skipped, while explicit archive mode reports zero live rechecks and 118
+  skipped; and
 - deterministic colored-scheduler stress 1,000 runs passed.
+
+That sealed live closure resolved `libdart.so.6.19` to the recorded
+`libdart.so.6.19.3`. The normal development symlink is restored to
+`libdart.so.6.19.4`; the files are byte-identical, but resolved path is part of
+the fail-closed identity contract, so the current default live run reports five
+path mismatches. Archive mode remains clean; only recreate the historical
+symlink for an explicit live-closure recheck.
 
 Immediate order:
 
@@ -701,7 +724,7 @@ Immediate order:
 2. Preserve the P-core, standing-visual, finalized incline, pinned-author
    numeric incline sweep, verified current-source Painleve-proxy, finalized
    backspin, and frozen impact-v1 negative bundles alongside the
-   arch101-v6 and card-v2
+   arch101-v7 and card-v2
    blockers. Continue strict card/media, remaining smaller-figure, and
    separately declared source-equivalent impact work; inspect decoded media
    and do not promote v2 raw timings.

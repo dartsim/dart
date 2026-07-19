@@ -121,7 +121,7 @@ pinned, but this DART reconstruction is still not that source scene and the
 frozen numerical protocol is unchanged.
 
 The provenance-complete current-source authoritative bundle is
-`assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v6/`.
+`assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v7/`.
 
 Classification: `failed_prefix_scientific_negative`. Artifact valid: `false`.
 Standing claim passed: `false`. Timing evidence eligible: `false`.
@@ -143,25 +143,31 @@ The frozen protocol-contract SHA-256 remains
 
 Current source and artifact SHA-256 values are:
 
-- runner: `e3e3b7c998e038f6bf1499b1b4a8eea04261dc0aa7a6e4cf668486482c56a6f5`
-- runner tests: `bc66de20160b91b6db5e2ee56ebde1b60a1d32de2fed4bc1d6f22ba80d10c1fc`
+- runner: `7155b9bc6082e79aca317be6626fea587b58538df2f34e94f865cd54c15eb993`
+- runner tests: `aa71723cd38a0834b18775acc7f7d8540f28116093a26a8bb56b0d6a922599b8`
 - trace source: `b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76`
 - trace binary: `0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff`
 - collision-probe source: `a31e3472c3ec4a914bcd1f2c62a32471993154eb00fdabcc230b33d08cbf9c18`
 - collision-probe binary: `bf61ff3b430d75c8a988eda614e82914b00bc4cd460d2f0a3c0da137fc633e54`
-- `raw.csv`: `03fba1d83f9209b0ade3698bdada42ca3927c176397a5ddee8ce0ca175e82947`
+- dynamics-probe source: `fe96fbfb69a0c34bc6438633ea6f64000e654c16b62b0f9334804235f4458aad`
+- dynamics-probe binary: `3666c0168ea78d7e7ba252e38f4f41582a323ba14c259a40365da48860c91252`
+- `raw.csv`: `fc0705ff497b44658dfe186ed27c50b2ab9d19a268f20cf50875a3155d1dc07d`
 - `stderr.txt`: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
 - `collision_probe_stdout.txt`: `de2a0184e24cebf3bcbde181108ccc39e73d1263f428d3cd2179011fde87c073`
 - `collision_probe_stderr.txt`: `526d79acfb872e6b0eb141f6447a99ef376cb9dcbd1addcaeecbd2dafeeca39b`
-- `invocation.json`: `66dd6f2ceef2b50d5b0960c86fc291d27f6353d228c59161c22f18dd94c12522`
-- `summary.json`: `2e03653745a1e8d94c7b18d446004d16bfd4e176d7b9315aa198e3c08538bbfa`
-- `metadata.json`: `5e0b166171e08349847664b504b0a9b15cc1f582514388b532259ad6edad2bec`
-- `REPORT.md`: `52e5592ba5ad32a919f221e1a8e98ecb4b4f82c0228e16de44318b436bf58958`
+- `dynamics_probe_stdout.txt`: `b35e524badcbf8a7790fa879613935744294f30cb49e0e43332030bf0eebc472`
+- `dynamics_probe_stderr.txt`: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
+- `invocation.json`: `feb21f2094a1ec4103fd79b0474e3ce59e2815d2f502373998861d838fa85b15`
+- `summary.json`: `2cae961048b776c069caeccda2d95f2f0fd0969cae9e3de3782f0e5e5b7b640d`
+- `metadata.json`: `770d662f7021320982700fe699266bc94d2448679c8c4dc60bd127c660facb8a`
+- `REPORT.md`: `1ba3987af896f68401faa1153f6b388aed38b087214d07592f5a060cab429e2a`
+- whole tree: `e65107a6d2e2880742e02d01949bc4b3f9adb2f48b6be552a720fa83c9bcc4b3`
 
-Runtime provenance binds both executables, normalized `ldd` resolution maps,
-all resolved regular shared-library files, `/usr/bin/ldd`, and
-`/usr/bin/taskset`, and rechecks the identities after the collision probe and
-after the trace. The trace and collision-probe normalized `ldd` map hashes are
+Runtime provenance binds all three executables, normalized `ldd` resolution
+maps, all resolved regular shared-library files, `/usr/bin/ldd`, and
+`/usr/bin/taskset`, and rechecks the identities after the collision probe,
+trace, and dynamics probe. The trace/dynamics-probe and collision-probe
+normalized `ldd` map hashes are
 `8706fb6af371df72f31279ef6ced098d3826c0cc46409ed5f4e40e5fa32846b1`
 and `c2e87ab93cc406bcab70c59938d82b915c6e55806c28d507a002bd40be843717`,
 respectively. Their resolved build `libdart.so.6.19.3` hash is
@@ -169,10 +175,18 @@ respectively. Their resolved build `libdart.so.6.19.3` hash is
 the `ldd` and `taskset` hashes are
 `5af792061ad344564c8305df2914d9b0f007ed1c108df9bab0068c598f4aec15`
 and `3ac0b42cbe242b78c63b3ecef3023f3bcc17432b9d4731ac874848df6a87c914`.
-The trace resolves 14 regular shared libraries and the probe resolves 17. This
-file-identity record is not a claim over all host runtime state.
+The trace and dynamics probe each resolve 14 regular shared libraries; the
+collision probe resolves 17. This file-identity record is not a claim over all
+host runtime state.
 
-The graph evidence has two deliberately separate scopes:
+The 118 live manifest rechecks passed with the producer closure's
+`libdart.so.6.19 -> libdart.so.6.19.3` resolution. The normal development
+symlink is restored to `libdart.so.6.19.4`; `.3` and `.4` have the same recorded
+SHA-256 above, but resolved path remains part of the fail-closed identity. The
+current default live validator therefore reports five path mismatches, while
+explicit archive validation remains clean.
+
+The graph evidence has three deliberately separate scopes:
 
 - The Compact collision-only probe audits the constructed time-zero scene. In
   two stable repetitions it finds 102 contacts/unique pairs: exactly 100
@@ -180,13 +194,28 @@ The graph evidence has two deliberately separate scopes:
   unexpected-ground, or non-finite contacts.
 - The FourPointPlanar dynamics trace begins at step 1 and reports aggregate
   fields: 400 contacts, 100 constraint pairs/manifolds, three colors, and
-  maximum color width 34. Its 95-column schema does not expose dynamic pair
-  identities.
+  maximum color width 34.
+- The one-step FourPointPlanar dynamics companion resolves the failed step-1
+  pre-solve collision graph as exactly the 100-edge adjacent-stone chain: 100
+  unique adjacent pairs, 400 contacts, multiplicity four, zero non-adjacent
+  pairs, and zero ground pairs. Its aggregates and residual match the frozen
+  trace.
 
-The first scope proves the intended constructed initial graph only; it does
-not prove the identities of the dynamic FourPointPlanar pairs. Any positive
-long-run promotion would still require dynamic pair-identity evidence. This
-run already fails its standing claim at step 1.
+The companion accepts the capped iterate as `max_iterations_accepted` and
+does not enable or follow the frozen trace participant-affinity contract,
+whereas the frozen trace records `fbf_failed`. Therefore
+`solver_acceptance_taxonomy_equivalent=false`,
+`participant_affinity_contract_equivalent=false`, and
+`source_equivalent_evidence=false`. The identity result is limited to the
+already-failed step-1 prefix. It does not establish a valid trajectory,
+standing or other physical outcome, timing, media, long-run behavior, or paper
+parity; `positive_long_run_promotion_eligible=false`.
+
+Runner artifact schema v2 seals the dynamics-companion validator to this
+failed-step taxonomy and exact residual. This does not invalidate v7; it keeps
+the current scientific negative immutable. Any future positive-standing
+candidate must use a newly versioned runner and bundle rather than overwrite,
+reuse, or relabel the v7 evidence.
 
 Older generations remain explicitly noncurrent historical diagnostics.
 The superseded v2 directory,
@@ -198,10 +227,13 @@ executable identities without changing this explicit 101-stone command or
 scientific result. V4 was then replaced by v5 when the current trace and
 Native-collision identities advanced. V5 was rebaselined as v6 after the
 resolved current-build libdart identity advanced. Neither rebaseline changed
-the frozen command or scientific result. The first invalid directory,
+the frozen command or scientific result. V6 was superseded by v7 when the
+identity-resolved one-step dynamics companion was added; the frozen command,
+failed trace, and scientific classification remain unchanged. The first
+invalid directory,
 `fig08_arch101_literal_v1_negative/`, was rejected because the runner source
 changed during execution. The second,
 `fig08_arch101_literal_v1_negative_final/`, bound neither the dynamically
 resolved DART/shared-library build nor an independent collision-graph probe.
-Only v6 is current outcome evidence; the older bytes are retained only as
+Only v7 is current outcome evidence; the older bytes are retained only as
 superseded diagnostic history.

@@ -224,7 +224,7 @@ colored-inner-BGS contract validated above.
 | Fig. 5 | Painleve coefficients produce distinct slide/tumble outcomes | Finalized 27-indexed/29-physical DART-only paired proxy clip/panel plus separate tracked traces and manual inspection | Local proxy outcome only; the author geometry/configuration is public, but the rendered demo and trace are not source-matched or equivalent, faithful external/golden proof is missing, and historical paper timing is unattested |
 | Fig. 6 | 26-card house settles, then receives four projectiles | Finalized 12-indexed/14-physical public-author default five-level/40-card construction-only bundle, prior-source strict step-89 negative, current-source 600-row manifold sensitivity v2, and bounded visual attempt | Blocked: the author bundle is step zero with zero simulation substeps; both current v2 trajectories are non-strict with null physical verdicts; prior strict trace fails at step 89, visual reaches only step 6, and no valid long media exist |
 | Fig. 7 | 25 tapered voussoirs, pinned springers, crown impact | Finalized literal-wedge standing trace/media, preregistered 720-step DART crown-impact v1 negative, and sealed pinned-author 500-frame scientific negative | Partial: the no-projectile DART reconstruction stands, but DART impact v1 fails its cap/residual/outcome gates and the author run has 1,843/2,000 nonconverged flags; the author run is not the source default or a DART dynamics comparison, and no passing source-matched DART impact/media or paper-timing row exists |
-| Fig. 8 | 101-stone arch remains balanced | Oriented-box bounded visual attempt plus provenance-bound exact-inertia literal v6 numeric run | Blocked: oriented-box attempt collapses by step 120/600; literal v6 fails closed on step 1 at residual `0.7815364614`, so neither supplies a standing trajectory or valid media |
+| Fig. 8 | 101-stone arch remains balanced | Oriented-box bounded visual attempt plus provenance-bound exact-inertia literal v7 numeric run with failed-step-1 pair identities | Blocked: oriented-box attempt collapses by step 120/600; literal v7 identity-resolves the failed graph as the 100-edge adjacent chain but still fails closed on step 1 at residual `0.7815364614`, so neither supplies source-equivalent standing/physical outcome, timing, long-run behavior, or valid media |
 | Fig. 9 | Residual histories for backspin, house, arches | Export infrastructure, prior-source strict card negative, current-source card-manifold sensitivity, positive per-step literal-arch timing rows, and a deterministic pinned-author claim-history projection representing every one of 2,000 substeps | Partial: the author run is a new nonconvergent diagnostic whose configured `coulomb_rel` flag must not be conflated with its projected natural residual; the raw author history is hash/size-bound but omitted, paper-profile/matched per-outer card and arch histories remain incomplete, and the DART literal bundle is per-step |
 | Fig. 10 | Gamma sweeps with physical-outcome interpretation | Sweep/trace infrastructure | Partial: the pinned recovery policy is inspectable, but DART equivalence and paper-profile contact-rich outcomes are not established |
 | GPU table | Card/arch outcomes and timing | Construction adapter and reconstructed Kamino runner | Non-comparable; dynamic 10-level capture does not complete step 1 |
@@ -435,26 +435,34 @@ preserves the same frozen negative semantics and records the executed
 `taskset` identity in its runtime closure.
 
 The current literal 101-stone v1 artifact is
-`assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v6/`. It fails
+`assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v7/`. It fails
 closed on step 1 after 5,000 outer iterations with `fbf_failed`, residual
 `0.7815364614352474`, one exact failure, and zero fallbacks. The dynamic
 `FourPointPlanar` row reports 400 contacts, 100 constraint pairs, three colors,
 and width 34. The separate repeat-2 Compact collision probe proves only the
 constructed time-zero graph of 100 adjacent-stone pairs plus two
-springer-ground pairs. The failed prefix supports no standing, physical,
-timing, or media claim. Raw, invocation, summary, metadata, and report hashes
+springer-ground pairs. The v7 one-step FourPointPlanar companion resolves the
+failed step-1 pre-solve graph as exactly 100 adjacent pairs and 400 contacts,
+four contacts per pair, with zero non-adjacent and zero ground pairs. Its
+aggregates and residual match the frozen trace. The companion accepts the
+capped iterate and does not follow the trace participant-affinity contract, so
+solver-taxonomy and affinity equivalence remain false. This identity result is
+limited to the failed prefix and supports no source equivalence, valid
+trajectory, standing/physical outcome, timing, media, long-run behavior, or
+paper parity. Raw, invocation, summary, metadata, and report hashes
 are
-`03fba1d83f9209b0ade3698bdada42ca3927c176397a5ddee8ce0ca175e82947`,
-`66dd6f2ceef2b50d5b0960c86fc291d27f6353d228c59161c22f18dd94c12522`,
-`2e03653745a1e8d94c7b18d446004d16bfd4e176d7b9315aa198e3c08538bbfa`,
-`5e0b166171e08349847664b504b0a9b15cc1f582514388b532259ad6edad2bec`,
-and `52e5592ba5ad32a919f221e1a8e98ecb4b4f82c0228e16de44318b436bf58958`.
-The current v6 whole-tree hash is
-`ce5731fa6e4f967845d664341761eca7b0ce9ffb4cb93d55ac71df79f9243947`.
+`fc0705ff497b44658dfe186ed27c50b2ab9d19a268f20cf50875a3155d1dc07d`,
+`feb21f2094a1ec4103fd79b0474e3ce59e2815d2f502373998861d838fa85b15`,
+`2cae961048b776c069caeccda2d95f2f0fd0969cae9e3de3782f0e5e5b7b640d`,
+`770d662f7021320982700fe699266bc94d2448679c8c4dc60bd127c660facb8a`,
+and `1ba3987af896f68401faa1153f6b388aed38b087214d07592f5a060cab429e2a`.
+The current v7 whole-tree hash is
+`e65107a6d2e2880742e02d01949bc4b3f9adb2f48b6be552a720fa83c9bcc4b3`.
 The v3 bundle was superseded after additive instrumentation, and v4 is
 historical current-at-capture evidence. The unchanged command was rebaselined
-as v5 and again as v6 after the current-build libdart identity advanced; the
-scientific result is unchanged.
+as v5 and again as v6 after the current-build libdart identity advanced. V7
+adds the identity-resolved one-step dynamics companion; the frozen trace and
+scientific result are unchanged.
 
 The post-review small visual matrix contains eight dynamic schedules with
 cumulative all-group/every-completed-step residual `<=1e-6` and zero caps,
@@ -488,7 +496,7 @@ historical paper timing, or real-time performance.
 | Literal 25-stone exact dynamics | Exact-inertia wedges, `1 um` closure, Native `FourPointPlanar` | 96 contacts, 24 pairs/manifolds, 3 colors, width 8 throughout 600 steps | Non-paper standing/outcome, validated standing media, and matched 1-to-4-thread evidence only |
 | Literal crown-impact v1 | Same standing arch plus three frozen projectiles; numeric only | Contact-order and finite-state gates pass; 5 caps, residual, all-body, and far-field gates fail | Preregistered non-paper scientific negative only |
 | Pinned-author 25-stone diagnostic | Author meshes and Warp/Newton float32 pipeline; 500 frames / 2,000 substeps | Release substep has 100 contacts; 40 initial-shortcut and 117 configured-outer-gate convergences, plus 1,843 nonconverged outer solves; no contact-pair identities | Current-source author scientific negative only; no DART dynamics, trajectory, outcome, timing, repeatability, media, or paper-invocation parity |
-| Literal 101-stone v1 | Exact-inertia wedges, `1 um` closure, Native `FourPointPlanar`; current v6 numeric bundle only | Step 1: 400 contacts, 100 manifolds, 3 colors/width 34; 5,000 outers then `fbf_failed`, residual `0.7815364614` | Frozen non-paper failed-prefix scientific negative only; no standing, timing, or media claim |
+| Literal 101-stone v1 | Exact-inertia wedges, `1 um` closure, Native `FourPointPlanar`; current v7 numeric bundle only | Failed step 1: identity-resolved 100-edge adjacent chain, 400 contacts/100 pairs, multiplicity 4, zero non-adjacent/ground pairs; 5,000 outers then `fbf_failed`, residual `0.7815364614`; companion taxonomy/affinity are not equivalent | Frozen non-paper failed-prefix scientific negative only; no source-equivalence, standing, physical, timing, media, long-run, or parity claim |
 
 The DART dynamic tiers are reconstructions. The pinned-author row is a separate
 source-run diagnostic, not a DART tier. No row reproduces a passing matched
@@ -519,7 +527,7 @@ The last recorded focused gates report 47/47 exact-math tests, 25/25 exact
 constraint-solver tests, 64/64 `ConstraintSolver` tests, 42/42 Native-collision
 tests, 3/3 masonry-geometry tests, 19 passing paper fixtures with 3 skipped,
 9/9 focused CTests in both Release and Debug, 64/64 author-incline finalizer
-tests, 777/777 focused manifest/backspin/incline/author-masonry/author-incline
+tests, 859/859 focused manifest/backspin/incline/author-masonry/author-incline
 evidence tests, and 1,555/1,555 full
 no-cache dartpy Python tests. A clean-checkout finalized-incline verify-only pass also
 succeeds with 21 indexed artifacts and no ignored staging dependency, its
@@ -527,6 +535,14 @@ focused finalizer suite passes 62/62, and 1,000
 consecutive successful colored dispatch/barrier
 stress runs. The prior-source strict full-card failure and current-source v2
 sensitivity result remain retained negative/non-strict evidence.
+
+The 118 live host-identity rechecks passed under the sealed producer closure,
+where `libdart.so.6.19` resolved to the recorded `libdart.so.6.19.3`. The normal
+development symlink is restored to `libdart.so.6.19.4`; `.3` and `.4` are
+byte-identical, but the validator intentionally treats the resolved path as
+identity and therefore reports five live path mismatches until that historical
+closure is explicitly recreated. Archive mode remains the clean validation
+path for the sealed repository evidence.
 
 PR #3374 is merged at final head `1f816` and merge commit `fa17fad` (abbreviated
 hashes). The #3377 topic contains `origin/release-6.20` through `75306efe770`.

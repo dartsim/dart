@@ -248,30 +248,39 @@ preserves the same frozen negative semantics and records the executed
 ## Literal 101-Stone v1 Scientific Negative
 
 The current provenance-bound artifact is
-`assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v6/`. The frozen
+`assets/paper_evidence/fig08_arch101_literal_v1_negative_final_v7/`. The frozen
 Native exact-inertia reconstruction emits one row, then fails closed on step 1
 after 5,000 outer iterations with `fbf_failed`, residual
 `0.7815364614352474`, one exact failure, and zero boxed fallbacks. Its dynamic
 `FourPointPlanar` aggregate fields record 400 contacts, 100 constraint pairs,
 three colors, and width 34. A separate repeat-2 Compact collision-only probe
 proves only the constructed time-zero graph of 100 adjacent-stone pairs plus
-two springer-ground pairs; it is not dynamic pair-identity evidence.
+two springer-ground pairs. The v7 one-step FourPointPlanar companion resolves
+the failed step-1 pre-solve graph as exactly the 100-edge adjacent-stone chain:
+100 unique adjacent pairs, 400 contacts, multiplicity four, zero non-adjacent
+pairs, and zero ground pairs. Its aggregates and residual match the frozen
+trace. The companion accepts the capped iterate and does not follow the frozen
+trace participant-affinity contract, so solver-taxonomy and affinity
+equivalence remain false. This narrow identity result supplies no source
+equivalence, valid trajectory, standing/physical outcome, timing, media,
+long-run behavior, or paper parity.
 
 The artifact remains `artifact_valid=false`, `standing_claim_passed=false`,
 and `timing_evidence_eligible=false`. Its normalized fingerprint is
 `8d275edcaa82a2f628fdd5d9f846b2daed7e6864fdc4b7e80eca9a8c93bcf527`.
 Current raw, invocation, summary, metadata, and report hashes are
-`03fba1d83f9209b0ade3698bdada42ca3927c176397a5ddee8ce0ca175e82947`,
-`66dd6f2ceef2b50d5b0960c86fc291d27f6353d228c59161c22f18dd94c12522`,
-`2e03653745a1e8d94c7b18d446004d16bfd4e176d7b9315aa198e3c08538bbfa`,
-`5e0b166171e08349847664b504b0a9b15cc1f582514388b532259ad6edad2bec`,
-and `52e5592ba5ad32a919f221e1a8e98ecb4b4f82c0228e16de44318b436bf58958`.
-The current v6 whole-tree hash is
-`ce5731fa6e4f967845d664341761eca7b0ce9ffb4cb93d55ac71df79f9243947`.
+`fc0705ff497b44658dfe186ed27c50b2ab9d19a268f20cf50875a3155d1dc07d`,
+`feb21f2094a1ec4103fd79b0474e3ce59e2815d2f502373998861d838fa85b15`,
+`2cae961048b776c069caeccda2d95f2f0fd0969cae9e3de3782f0e5e5b7b640d`,
+`770d662f7021320982700fe699266bc94d2448679c8c4dc60bd127c660facb8a`,
+and `1ba3987af896f68401faa1153f6b388aed38b087214d07592f5a060cab429e2a`.
+The current v7 whole-tree hash is
+`e65107a6d2e2880742e02d01949bc4b3f9adb2f48b6be552a720fa83c9bcc4b3`.
 The v3 bundle was superseded after additive instrumentation, and v4 is
 historical current-at-capture evidence. The unchanged command was rebaselined
-as v5 and again as v6 after the current-build libdart identity advanced; the
-scientific result is unchanged.
+as v5 and again as v6 after the current-build libdart identity advanced. V7
+adds the identity-resolved one-step dynamics companion; the frozen trace and
+scientific result are unchanged.
 
 ## Pinned-Author Masonry-Arch Scientific Negative
 
@@ -593,8 +602,8 @@ were produced for those contracts. The separate finalized literal-wedge bundle
 validates only its no-projectile standing reconstruction and does not override
 the oriented-box failures. The preregistered impact v1 bundle adds durable
 negative crown-impact evidence, not a passing outcome. The separate literal
-101-stone v6 artifact provides a precise step-1 exact-dynamics blocker, not a
-standing trajectory or media claim.
+101-stone v7 artifact provides an identity-resolved step-1 exact-dynamics
+blocker, not a standing trajectory or media claim.
 
 ## Superseded Artifacts
 
