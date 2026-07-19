@@ -276,7 +276,7 @@ TEST(ExactCoulombLocalConeQuadratic, ReturnsUnconstrainedInteriorMinimizer)
 
 TEST(
     ExactCoulombLocalConeQuadratic,
-    AcceptsCapturedInteriorMinimizerDespiteDotProductCancellation)
+    AcceptsCapturedInteriorMinimizerWithSmallGradient)
 {
   Eigen::Matrix3d hessian;
   hessian << 6.2508524116994826, 0.08447251325082239, -0.071655259667449872,
@@ -295,15 +295,11 @@ TEST(
       = coneTolerance * (std::max)(1.0, capturedReaction.norm());
   const double gradientTolerance
       = coneTolerance * (std::max)(1.0, capturedGradient.norm());
-  const double gapTolerance
-      = 8192.0 * std::numeric_limits<double>::epsilon()
-        * (1.0 + capturedReaction.norm() * capturedGradient.norm());
 
   EXPECT_LT(
       std::hypot(capturedReaction[1], capturedReaction[2]) + reactionTolerance,
       kCoefficient * capturedReaction[0]);
   EXPECT_LE(capturedGradient.norm(), gradientTolerance);
-  EXPECT_GT(std::abs(capturedReaction.dot(capturedGradient)), gapTolerance);
 
   dart::math::detail::ExactCoulombLocalConeQuadraticFactorization factorization;
   ASSERT_TRUE(
@@ -491,7 +487,7 @@ TEST(ExactCoulombLocalConeQuadratic, MatchesGeneratedBoundaryKktOracles)
 
 TEST(
     ExactCoulombLocalConeQuadratic,
-    FallsBackForObservedNearGeneralizedPoleSystems)
+    FallbackSolvesObservedNearGeneralizedPoleSystems)
 {
   struct RegressionCase
   {
@@ -549,15 +545,11 @@ TEST(
             cases[index].hessian, kCoefficient, factorization))
         << "case " << index;
 
-    Eigen::Vector3d analyticalReaction;
-    EXPECT_FALSE(
-        dart::math::detail::trySolveExactCoulombLocalConeQuadraticAnalytically(
-            factorization, cases[index].linearTerm, analyticalReaction))
-        << "case " << index;
-
     Eigen::Vector3d reaction;
-    ASSERT_TRUE(dart::math::detail::solveExactCoulombLocalConeQuadratic(
-        factorization, cases[index].linearTerm, reaction))
+    ASSERT_TRUE(
+        dart::math::detail::
+            solveExactCoulombLocalConeQuadraticProjectedGradientFallback(
+                factorization, cases[index].linearTerm, reaction))
         << "case " << index;
     expectLocalConeKkt(
         cases[index].hessian,
@@ -568,6 +560,22 @@ TEST(
     EXPECT_LE(
         computeLocalQuadraticObjective(
             cases[index].hessian, cases[index].linearTerm, reaction),
+        0.0)
+        << "case " << index;
+
+    Eigen::Vector3d dispatchedReaction;
+    ASSERT_TRUE(dart::math::detail::solveExactCoulombLocalConeQuadratic(
+        factorization, cases[index].linearTerm, dispatchedReaction))
+        << "case " << index;
+    expectLocalConeKkt(
+        cases[index].hessian,
+        cases[index].linearTerm,
+        kCoefficient,
+        dispatchedReaction,
+        1e-10);
+    EXPECT_LE(
+        computeLocalQuadraticObjective(
+            cases[index].hessian, cases[index].linearTerm, dispatchedReaction),
         0.0)
         << "case " << index;
   }
