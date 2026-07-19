@@ -233,7 +233,7 @@ Current focused gates are:
 - masonry-arch geometry: 3/3;
 - paper fixtures: 19 passing, 3 explicit stress cases skipped;
 - focused Release and Debug CTest matrices: 9/9 in each configuration;
-- author-incline reference finalizer unit tests: 12/12; verify-only reports 37
+- author-incline reference finalizer unit tests: 64/64; verify-only reports 37
   indexed artifacts and 39 physical files;
 - focused manifest/backspin/incline/author-masonry/author-incline evidence
   suite: 777 passed post-merge in 213.46 s;
@@ -752,7 +752,7 @@ publishes no multicore CPU reference.
 
 ## Current Verification
 
-- Author-incline reference finalizer unit tests: 12/12; verify-only reports 37
+- Author-incline reference finalizer unit tests: 64/64; verify-only reports 37
   indexed artifacts and 39 physical files.
 - Focused manifest/backspin/incline/author-masonry/author-incline evidence
   suite: 777 passed post-merge in 213.46 s.

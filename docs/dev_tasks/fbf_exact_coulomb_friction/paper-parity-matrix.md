@@ -518,7 +518,7 @@ No local row may be labeled as meeting or beating these targets.
 The last recorded focused gates report 47/47 exact-math tests, 25/25 exact
 constraint-solver tests, 64/64 `ConstraintSolver` tests, 42/42 Native-collision
 tests, 3/3 masonry-geometry tests, 19 passing paper fixtures with 3 skipped,
-9/9 focused CTests in both Release and Debug, 12/12 author-incline finalizer
+9/9 focused CTests in both Release and Debug, 64/64 author-incline finalizer
 tests, 777/777 focused manifest/backspin/incline/author-masonry/author-incline
 evidence tests, and 1,555/1,555 full
 no-cache dartpy Python tests. A clean-checkout finalized-incline verify-only pass also
