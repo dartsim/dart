@@ -89,6 +89,7 @@ rigid_frames/
 
 # Reproducible dev-task evidence transaction snapshots.
 /docs/dev_tasks/**/assets/**/.*.backup-*/
+/docs/dev_tasks/**/assets/**/.*.staging-*/
 
 # Standard dev-task evidence-generator staging contract. `frames/` and
 # `panel_frames/` are reserved transient namespaces; finalizers promote durable
