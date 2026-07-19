@@ -626,6 +626,11 @@
 
 * Tests
 
+  * Force the ASan build to run without OpenSceneGraph and require
+    exact-candidate optional-dependency and Gazebo integration evidence before
+    DART 6 patch releases:
+    [#3393](https://github.com/dartsim/dart/pull/3393)
+
   * Preserve every protected `release-*` post-merge CI run by giving
     release-branch workflow runs a run-specific concurrency group instead of
     relying on GitHub's single-pending default concurrency queue:
