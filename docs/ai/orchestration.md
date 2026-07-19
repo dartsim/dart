@@ -23,6 +23,17 @@ DART AI work can split into two roles when the task is large enough:
 The split is role-based, not tool-based. Every workflow must still map to
 tracked docs and `pixi run ...` commands usable without a specific AI tool.
 
+## Codex Read-only Specialists
+
+For a complex session using Codex 5.6 Sol Ultra, use bounded parallel discovery
+when it materially reduces uncertainty: `dart_scout` gathers repository
+evidence, `dart_reviewer` reviews the current diff and gates, and
+`dart_release_auditor` classifies DART 7 material as apply/adapt/omit for this
+branch. They inherit the parent model, stay read-only, and must receive explicit
+inputs and output contracts. Implementation remains with the parent or a
+separately scoped executor; do not give multiple agents overlapping write
+ownership.
+
 ## Review Loop
 
 Review is part of the release-branch work cycle, not a final courtesy pass.
@@ -65,12 +76,14 @@ dev-task folder, never in a separate tracking system. Every packet records:
 - **Dependencies** - packet IDs, merged PRs, or recorded decisions required
   before execution.
 
-For behavior-bearing physics or simulation work, acceptance evidence normally
-includes a high-quality, self-contained GUI example or durable demo artifact.
-The example should let a user understand the behavior by running and
-interacting with it, without reading implementation code or developer notes. If
-a GUI artifact is not appropriate on the release branch, the packet must say
-why and name the replacement visual or user-level evidence.
+When a claim depends on 3D structure or behavior — model/scene loading,
+dynamics, collision/contact/constraints, simulation stepping, OSG rendering,
+or a visual example — route verification through `dart-verify-sim`. Acceptance
+evidence pairs a text correctness oracle with an assessed claim-tied capture
+using core bounds/raycast view selection and only the `DebugOverlay` layers
+needed by the claim. If visual corroboration is unavailable or genuinely
+irrelevant, the packet must say why and name replacement evidence; a screenshot
+alone never proves correctness.
 
 ## DART 6 Compatibility Checks
 

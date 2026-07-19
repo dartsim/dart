@@ -30,6 +30,35 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'schedule' && !startsWith(github.ref, 'refs/heads/release-') }}
 
 jobs:
+  ai-infrastructure:
+    name: AI infrastructure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          cache: true
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Check generated AI adapters
+        run: pixi run check-ai-commands
+
+      - name: Check AI infrastructure
+        run: pixi run python scripts/check_ai_infrastructure.py --check
+
+      - name: Test AI infrastructure
+        run: >-
+          pixi run python -m pytest
+          tests/test_sync_ai_commands.py
+          tests/test_ai_infrastructure.py
+          tests/test_install_git_hooks.py -q
+
+      - name: Exercise agent scenarios
+        run: pixi run python scripts/check_ai_infrastructure.py --scenarios
+
   coverage:
     if: github.event_name != 'workflow_dispatch'
     name: coverage
@@ -92,7 +121,7 @@ jobs:
 
       - uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev
+          packages: libgl1-mesa-dev libglu1-mesa-dev xvfb
           version: "2"
 
       - name: Check Lint
@@ -106,6 +135,21 @@ jobs:
           DART_VERBOSE=ON \
           BUILD_TYPE=${{ matrix.build_type }} \
           pixi run test-all
+
+      - name: Agent visual verification smoke
+        if: matrix.build_type == 'Release'
+        run: |
+          rm -rf /tmp/dart-agent-visual-smoke
+          xvfb-run -a -s '-screen 0 640x480x24' \
+            pixi run agent-capture -- \
+              --scene box_on_ground --steps 250 --focus box --auto-views 1 \
+              --layers contacts collision_bounds labels \
+              --width 320 --height 240 \
+              --out /tmp/dart-agent-visual-smoke --prefix smoke
+          pixi run image-verdict -- \
+            /tmp/dart-agent-visual-smoke/smoke_auto0.png
+          xvfb-run -a -s '-screen 0 640x480x24' \
+            pixi run test-agent-debug-overlay
 
       - name: Test with AddressSanitizer
         if: matrix.build_type == 'Release'

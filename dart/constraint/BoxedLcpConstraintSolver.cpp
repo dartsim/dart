@@ -1053,17 +1053,22 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
         n, a, x, b, 0, lo, hi, fIndex, earlyTermination);
   }
 
-  const auto hasNaN = [](const double* values, std::size_t size) {
+  // A valid LCP solution must be finite. Reject NaN *and* infinite entries: a
+  // near-singular contact (e.g. a thin, hard, frictionless geometry) can make
+  // the primary solver emit an infinite impulse that is not NaN, and feeding
+  // that into the spatial Jacobian yields NaN body impulses (inf * 0 in the
+  // moment-arm rows). Treat both as failure so the fallback/scrub path runs.
+  const auto hasNonFinite = [](const double* values, std::size_t size) {
     for (std::size_t i = 0; i < size; ++i) {
-      if (std::isnan(values[i]))
+      if (!std::isfinite(values[i]))
         return true;
     }
     return false;
   };
 
-  // Sanity check. LCP solvers should not report success with nan values, but
-  // it could happen. So we set the success to false for nan values.
-  if (success && hasNaN(x, n))
+  // Sanity check. LCP solvers should not report success with non-finite
+  // values, but it could happen. So we set the success to false for them.
+  if (success && hasNonFinite(x, n))
     success = false;
 
   bool fallbackSuccess = false;
@@ -1079,35 +1084,35 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     fallbackRan = true;
   }
 
-  // Capture the NaN state of the solution BEFORE any scrubbing so that
-  // usability is decided from the pre-scrub state. Scrubbing NaN entries must
-  // not be allowed to turn a failed solve into an apparently usable one.
-  const bool hadNaN = hasNaN(x, n);
+  // Capture the non-finite state of the solution BEFORE any scrubbing so that
+  // usability is decided from the pre-scrub state. Scrubbing entries must not
+  // be allowed to turn a failed solve into an apparently usable one.
+  const bool hadNonFinite = hasNonFinite(x, n);
 
   // Treat a finite fallback solution as usable even if the solver reported
   // failure to avoid discarding potentially valid impulses. Note this uses the
-  // pre-scrub NaN state (hadNaN), NOT a post-scrub recheck, so a failed
-  // fallback that wrote NaNs cannot be promoted to success by scrubbing.
+  // pre-scrub non-finite state (hadNonFinite), NOT a post-scrub recheck, so a
+  // failed fallback that wrote NaNs cannot be promoted to success by scrubbing.
   const bool finalSuccess
-      = success || fallbackSuccess || (fallbackRan && !hadNaN);
+      = success || fallbackSuccess || (fallbackRan && !hadNonFinite);
 
   if (finalSuccess) {
     // The solution will be used. If an otherwise-usable solution (e.g. a
-    // successful fallback) carries stray NaNs, scrub just those entries to 0
-    // so the remaining finite impulses can propagate.
-    if (hadNaN) {
+    // successful fallback) carries stray non-finite entries (NaN or infinite),
+    // scrub just those to 0 so the remaining finite impulses can propagate.
+    if (hadNonFinite) {
       for (std::size_t i = 0; i < n; ++i) {
-        if (std::isnan(x[i]))
+        if (!std::isfinite(x[i]))
           x[i] = 0.0;
       }
     }
   } else {
     // Fail safe: the solve genuinely failed (including a failed fallback that
-    // produced NaNs), so zero the ENTIRE solution rather than propagating
-    // partial finite impulses.
-    if (hadNaN) {
-      dterr << "[BoxedLcpConstraintSolver] The solution of LCP includes NAN "
-            << "values. We're setting it zero for "
+    // produced non-finite values), so zero the ENTIRE solution rather than
+    // propagating partial finite impulses.
+    if (hadNonFinite) {
+      dterr << "[BoxedLcpConstraintSolver] The solution of LCP includes "
+            << "non-finite (NaN or infinite) values. We're setting it zero for "
             << "safety. Consider using more robust solver such as PGS as a "
             << "secondary solver. If this happens even with PGS solver, please "
             << "report this as a bug.\n";
@@ -1254,15 +1259,15 @@ void BoxedLcpConstraintSolver::solvePositionConstrainedGroup(
       fIndex.data(),
       earlyTermination);
 
-  const auto hasNaN = [](const double* values, std::size_t size) {
+  const auto hasNonFinite = [](const double* values, std::size_t size) {
     for (std::size_t i = 0; i < size; ++i) {
-      if (std::isnan(values[i]))
+      if (!std::isfinite(values[i]))
         return true;
     }
     return false;
   };
 
-  if (success && hasNaN(x.data(), n))
+  if (success && hasNonFinite(x.data(), n))
     success = false;
 
   if (!success && mSecondaryBoxedLcpSolver) {
@@ -1279,9 +1284,10 @@ void BoxedLcpConstraintSolver::solvePositionConstrainedGroup(
         false);
   }
 
-  // If the solve failed or produced NaNs, skip the position correction for this
-  // group (leave positions unchanged) rather than apply garbage impulses.
-  if (!success || hasNaN(x.data(), n))
+  // If the solve failed or produced non-finite values (NaN or infinite), skip
+  // the position correction for this group (leave positions unchanged) rather
+  // than apply garbage impulses.
+  if (!success || hasNonFinite(x.data(), n))
     return;
 
   for (std::size_t i = 0; i < numConstraints; ++i) {

@@ -91,6 +91,8 @@ def _publish_gh_release(
         path = Path(artifact["path"])
         if not path.is_absolute():
             path = base_dir / path
+        # --clobber overwrites an asset of the same name so regenerated
+        # evidence keeps a stable download URL instead of failing on re-upload.
         _gh(
             [
                 "release",
@@ -99,6 +101,7 @@ def _publish_gh_release(
                 str(path),
                 "--repo",
                 repo,
+                "--clobber",
             ]
         )
         urls[artifact["path"]] = (

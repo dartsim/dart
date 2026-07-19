@@ -135,6 +135,12 @@
       "category": "io",
       "status": "active",
       "gate_profile": "reference"
+    },
+    {
+      "name": "dart-verify-sim",
+      "category": "verification",
+      "status": "active",
+      "gate_profile": "reference"
     }
   ]
 }

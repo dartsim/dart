@@ -13,13 +13,8 @@ Start a team-scale or autonomous DART task: $ARGUMENTS
 @docs/ai/north-star.md
 @docs/ai/orchestration.md
 @docs/ai/sessions.md
-@docs/plans/dashboard.md
 @docs/ai/verification.md
 @docs/dev_tasks/README.md
-@docs/information-architecture.md
-@docs/onboarding/contributing.md
-@docs/onboarding/changelog.md
-@docs/onboarding/ai-tools.md
 
 ## Arguments
 
@@ -62,9 +57,12 @@ the real scope materially different stops and reports back.
 2. **Understand and scout** - Restate the north star, final deliverable,
    acceptance criteria, quality bar, non-goals, constraints, risks, and whether
    the work is release-only or must also land on `main`. Scout the territory
-   first with named docs/code, read-only searches, a `dart-analyze` pass, or
-   focused reference review; draft a candidate decomposition privately before
-   asking anything.
+   first with named docs/code, read-only searches, a `dart-analyze` pass, or a
+   focused read-only scout (`dart_scout` when running in Codex). Load
+   `docs/plans/dashboard.md` for roadmap routing,
+   `docs/information-architecture.md` for durable placement, and the relevant
+   onboarding owner docs only when those phases apply. Draft a candidate
+   decomposition privately before asking anything.
 3. **Interview decisions; self-resolve uncertainties** - Ask at most one
    up-front batch of critical questions. Escalate before destructive
    operations, history rewrites, irreversible migrations, meaningful cost,
@@ -89,8 +87,9 @@ the real scope materially different stops and reports back.
 4. **Create or refresh the tracking surface** - Populate the project home with
    value, north star, deliverable, scope, non-goals, assumptions, risks,
    acceptance evidence, gates, dependencies, milestone, next actions, and
-   blockers. Behavior-bearing physics/simulation work needs a high-quality,
-   self-contained GUI example unless explicitly out of scope. Keep `RESUME.md`
+   blockers. Claim-dependent physics/simulation, collision/contact, model, OSG,
+   and visual-example work routes through `dart-verify-sim`: require a text
+   oracle plus assessed visual/debug evidence, or a justified replacement. Keep `RESUME.md`
    as the handoff; add `decisions.md`, `verification.md`, and
    `progress-log.md` sidecars when they improve resumability or evidence.
 5. **Set the goal contract** - Express done-when as verifiable outcomes
@@ -103,12 +102,13 @@ the real scope materially different stops and reports back.
    sentence), DONE WHEN (verifiable), EVIDENCE (what to record), RISKS, and
    NEXT STEP.
 6. **Decompose and route to workers** - Cut work packets per the contract
-   above. Route implementation packets to Codex executors, iterative build/test
-   lanes to team workers when available, review lanes to an independent
-   session, and critical decisions or stuck failures to the oracle. Without
-   team tooling, execute packets sequentially in ordinary sessions via
-   `dart-new-task`. Use parallelism only when the environment supports it and
-   file ownership can stay disjoint.
+   above. In Codex, use the read-only `dart_scout` for bounded discovery,
+   `dart_reviewer` for current-state review, and `dart_release_auditor` for
+   DART 7-to-6 comparison. In Claude, OpenCode, or another client, assign the
+   same contracts to read-only role-separated sessions. Implementation remains
+   with the parent or a scoped executor. With Codex 5.6 Sol Ultra, use bounded
+   parallelism without overlapping write ownership. Without team tooling,
+   execute sequentially via `dart-new-task`.
 7. **Run the autonomous work/review cycle** - For each meaningful chunk: plan,
    execute, verify, then run an independent/specialized review lane. Treat
    review findings as hypotheses: investigate, fix or record no-fix evidence,
@@ -127,18 +127,21 @@ the real scope materially different stops and reports back.
    for completed chunks when that sidecar exists. Keep docs current enough for
    a zero-context session to resume without hidden chat memory.
 10. **Version-control and closeout** - Keep commits and PRs coherent: separate
-   feature work, bug fixes, refactors, docs, experiments, and AI-infra changes
-   when practical; review the diff, remove unrelated changes, make the
-   changelog decision, and run `pixi run lint` before commits. Run
-   task-specific gates from `docs/ai/verification.md`, record evidence per
-   packet, and complete the principle audit. A project is complete only when
-   the north star and acceptance criteria are met, verification evidence is
-   recorded, docs are current, known gaps are documented, unnecessary work is
-   removed or deferred, and final state is summarized in `RESUME.md` or a
-   durable owner. Promote durable artifacts out of `docs/dev_tasks/<task>/`
-   and remove the folder in the completing PR. Bug fixes follow the dual-PR
-   rule (active DART 6 LTS branch plus `main`). GitHub mutations only with
-   explicit maintainer/user approval.
+    feature work, bug fixes, refactors, docs, experiments, and AI-infra changes
+    when practical; review the diff, remove unrelated changes, make the
+    changelog decision, and run `pixi run lint` before commits. Run
+    task-specific gates from `docs/ai/verification.md`, record evidence per
+    packet, and complete the principle audit. Load
+    `docs/onboarding/contributing.md`, `docs/onboarding/changelog.md`, and
+    `docs/onboarding/ai-tools.md` for version-control or external closeout. A
+    project is complete only when
+    the north star and acceptance criteria are met, verification evidence is
+    recorded, docs are current, known gaps are documented, unnecessary work is
+    removed or deferred, and final state is summarized in `RESUME.md` or a
+    durable owner. Promote durable artifacts out of `docs/dev_tasks/<task>/`
+    and remove the folder in the completing PR. Bug fixes follow the dual-PR
+    rule (active DART 6 LTS branch plus `main`). GitHub mutations only with
+    explicit maintainer/user approval.
 
 ## Kickoff Prompt Template
 
@@ -180,8 +183,8 @@ Logistics:
   docs/ai/orchestration.md, and docs/ai/sessions.md before starting.
 - Review loop: use specialized reviewers when available, investigate findings,
   and require two clean passes on the current state before done.
-- Verification first: task-specific gates, GUI/demo evidence when relevant,
-  pixi run lint before commits; GitHub mutations only with approval.
+- Verification first: task-specific gates and dart-verify-sim evidence when
+  applicable; pixi run lint before commits; GitHub mutations only with approval.
 ```
 
 ## Output

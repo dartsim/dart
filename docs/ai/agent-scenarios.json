@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "profile": "release-6.20",
+  "scenarios": [
+    {
+      "id": "orientation",
+      "prompt_class": "Orient to an unfamiliar DART 6.20 checkout without edits",
+      "start_dir": ".",
+      "instruction_chain": ["AGENTS.md"],
+      "expected_route": {
+        "kind": "agent",
+        "name": "dart_scout",
+        "path": ".codex/agents/dart_scout.toml"
+      },
+      "specialist_agent": null,
+      "owner_docs": [
+        "docs/ai/principles.md",
+        "docs/ai/README.md",
+        "docs/onboarding/architecture.md"
+      ],
+      "permitted_scopes": [
+        "AGENTS.md",
+        "docs/ai",
+        "read-only repository inspection"
+      ],
+      "focused_gates": [
+        "pixi run python scripts/check_ai_infrastructure.py --doctor"
+      ],
+      "full_gates": [
+        "pixi run python scripts/check_ai_infrastructure.py --check"
+      ],
+      "recovery": "docs/onboarding/ai-tools.md",
+      "forbidden_paths": ["dart/io", "python/dartpy/nanobind"]
+    },
+    {
+      "id": "small-change",
+      "prompt_class": "Implement one localized DART 6.20 fix with regression evidence",
+      "start_dir": "dart/dynamics",
+      "instruction_chain": ["AGENTS.md"],
+      "expected_route": {
+        "kind": "workflow",
+        "name": "dart-new-task",
+        "path": ".agents/skills/dart-new-task/SKILL.md"
+      },
+      "specialist_agent": null,
+      "owner_docs": [
+        "docs/onboarding/contributing.md",
+        "docs/ai/verification.md"
+      ],
+      "permitted_scopes": ["dart/dynamics", "tests/unit", "CHANGELOG.md"],
+      "focused_gates": ["pixi run test"],
+      "full_gates": ["pixi run lint", "pixi run test-all"],
+      "recovery": "docs/onboarding/testing.md",
+      "forbidden_paths": [
+        "dart/io",
+        "docs/design/simulation_solver_architecture.md"
+      ]
+    },
+    {
+      "id": "failure-diagnosis",
+      "prompt_class": "Diagnose a failing release-6.20 CI run before changing code",
+      "start_dir": ".github/workflows",
+      "instruction_chain": ["AGENTS.md"],
+      "expected_route": {
+        "kind": "workflow",
+        "name": "dart-release-ci-fix",
+        "path": ".agents/skills/dart-release-ci-fix/SKILL.md"
+      },
+      "specialist_agent": "dart_scout",
+      "owner_docs": [
+        "docs/onboarding/ci-cd.md",
+        "docs/onboarding/release-management.md"
+      ],
+      "permitted_scopes": [
+        ".github/workflows",
+        "read-only GitHub run evidence",
+        "smallest reproduced failing surface"
+      ],
+      "focused_gates": [
+        "pixi run python scripts/check_ai_infrastructure.py --check"
+      ],
+      "full_gates": ["pixi run lint", "pixi run test-all"],
+      "recovery": "docs/onboarding/ci-cd.md",
+      "forbidden_paths": ["dart/io", "python/dartpy/nanobind"]
+    },
+    {
+      "id": "documentation-update",
+      "prompt_class": "Update durable release AI guidance and generated adapters",
+      "start_dir": "docs/ai",
+      "instruction_chain": ["AGENTS.md", "docs/AGENTS.md"],
+      "expected_route": {
+        "kind": "workflow",
+        "name": "dart-docs-update",
+        "path": ".agents/skills/dart-docs-update/SKILL.md"
+      },
+      "specialist_agent": "dart_reviewer",
+      "owner_docs": [
+        "docs/README.md",
+        "docs/information-architecture.md",
+        "docs/ai/verification.md"
+      ],
+      "permitted_scopes": [
+        "AGENTS.md",
+        "docs",
+        ".claude",
+        ".agents/skills",
+        ".opencode/command"
+      ],
+      "focused_gates": [
+        "pixi run check-ai-commands",
+        "pixi run python scripts/check_ai_infrastructure.py --check"
+      ],
+      "full_gates": [
+        "pixi run python -m pytest tests/test_ai_infrastructure.py tests/test_sync_ai_commands.py -q",
+        "pixi run lint"
+      ],
+      "recovery": "docs/ai/README.md",
+      "forbidden_paths": [
+        ".codex/skills",
+        "docs/design/simulation_solver_architecture.md"
+      ]
+    },
+    {
+      "id": "component-work",
+      "prompt_class": "Change a DART 6.20 dartpy binding while preserving pybind11 APIs",
+      "start_dir": "python/dartpy",
+      "instruction_chain": ["AGENTS.md"],
+      "expected_route": {
+        "kind": "domain_skill",
+        "name": "dart-python",
+        "path": ".agents/skills/dart-python/SKILL.md"
+      },
+      "specialist_agent": null,
+      "owner_docs": [
+        "docs/onboarding/python-bindings.md",
+        "docs/ai/branch-profile.json"
+      ],
+      "permitted_scopes": ["python/dartpy", "python/tests", "python/examples"],
+      "focused_gates": ["pixi run build-py-dev", "pixi run test-py"],
+      "full_gates": ["pixi run lint", "pixi run test-all"],
+      "recovery": "docs/onboarding/python-bindings.md",
+      "forbidden_paths": ["python/dartpy/nanobind", "dart/io"]
+    },
+    {
+      "id": "simulation-verification",
+      "prompt_class": "verify claim-dependent DART 6.20 simulation, dynamics, collision/contact/constraints, model/scene, GUI, or OSG behavior",
+      "start_dir": "dart/dynamics",
+      "instruction_chain": ["AGENTS.md"],
+      "expected_route": {
+        "kind": "domain_skill",
+        "name": "dart-verify-sim",
+        "path": ".agents/skills/dart-verify-sim/SKILL.md"
+      },
+      "specialist_agent": "dart_reviewer",
+      "owner_docs": [
+        "docs/onboarding/testing.md",
+        "docs/ai/verification.md"
+      ],
+      "permitted_scopes": [
+        "dart/simulation",
+        "dart/dynamics",
+        "dart/collision",
+        "dart/constraint",
+        "dart/gui",
+        "dart/utils",
+        "python",
+        "examples",
+        "tutorials",
+        "matching tests",
+        "temporary claim-tied evidence"
+      ],
+      "evidence_policy": "text-first-with-claim-tied-visual-or-documented-exception",
+      "focused_gates": ["pixi run test"],
+      "full_gates": ["pixi run test-py", "pixi run test-all"],
+      "recovery": "docs/ai/verification.md",
+      "forbidden_paths": [
+        "dart/io",
+        "python/dartpy/nanobind",
+        "docs/design/simulation_solver_architecture.md"
+      ]
+    },
+    {
+      "id": "release-maintenance",
+      "prompt_class": "Adapt a proven main fix to release-6.20 compatibility constraints",
+      "start_dir": "docs/plans",
+      "instruction_chain": [
+        "AGENTS.md",
+        "docs/AGENTS.md",
+        "docs/plans/AGENTS.md"
+      ],
+      "expected_route": {
+        "kind": "workflow",
+        "name": "dart-backport-pr",
+        "path": ".agents/skills/dart-backport-pr/SKILL.md"
+      },
+      "specialist_agent": "dart_release_auditor",
+      "owner_docs": [
+        "docs/onboarding/release-management.md",
+        "docs/onboarding/contributing.md",
+        "docs/onboarding/changelog.md"
+      ],
+      "permitted_scopes": [
+        "release-6.20 topic worktree",
+        "files named by the source fix",
+        "release-specific tests and changelog"
+      ],
+      "focused_gates": ["pixi run test"],
+      "full_gates": [
+        "pixi run lint",
+        "pixi run test-all",
+        "pixi run -e gazebo test-gz"
+      ],
+      "recovery": "docs/onboarding/release-management.md",
+      "forbidden_paths": [
+        "dart/io",
+        "python/dartpy/nanobind",
+        "docs/design/simulation_solver_architecture.md"
+      ]
+    }
+  ]
+}
