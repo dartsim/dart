@@ -78,7 +78,7 @@
       0,
       82
     ],
-    "local_capture_status": "The repository now contains six finalized current-source visual bundles: the two-cell incline threshold, reconstructed no-projectile literal 25-wedge arch, two-cell Painleve-style proxy, checker-textured DART backspin row, synchronized four-cell DART port of the pinned public-author turntable configuration, and the pinned public-author default five-level/40-card card-house construction port. Their artifact indexes, stream/decode contracts, and manual inspections pass. The incline bundle independently binds manual slide/stick classification to two physical traces and only an additive exact-solve/fallback projection; capture contacts are eight per post-initial step while the traces total six. The literal arch has 600-row full-state trace equivalence; Painleve render/trace remain separate proxies; backspin proves only a byte-identical solver/contact projection and translational reversal; turntable binds current_visual media to a shared solver/contact projection while keeping the non-all-strict paper_cpu/native lane separate; and card house validates only a zero-substep configuration render, not the historical four-level/26-card trajectory. Separately, author_masonry_arch_reference_v1 seals a 500-frame current-author CPU diagnostic that extends the 400-frame source default so the cubes release at frame 400. Its 157 true flags split into 40 initial natural-residual shortcut accepts and 117 configured outer coulomb_rel accepts; the other 1,843 outer solves are negative, while retained final_residual is a distinct natural-residual metric. This is a scientific negative, not a historical invocation, all-substep-valid result, DART or cross-solver parity, or timing evidence. No paper crown-impact, external-solver parity, approved source golden/diff, signed-angular-direction, paper timing, or real-time claim follows."
+    "local_capture_status": "The repository now contains six finalized current-source visual bundles: the two-cell incline threshold, reconstructed no-projectile literal 25-wedge arch, two-cell Painleve-style proxy, checker-textured DART backspin row, synchronized four-cell DART port of the pinned public-author turntable configuration, and the pinned public-author default five-level/40-card card-house construction port. Their artifact indexes, stream/decode contracts, and manual inspections pass. The incline bundle independently binds manual slide/stick classification to two physical traces and only an additive exact-solve/fallback projection; capture contacts are eight per post-initial step while the traces total six. The literal arch has 600-row full-state trace equivalence; Painleve render/trace remain separate proxies; backspin proves only a byte-identical solver/contact projection and translational reversal; turntable binds current_visual media to a shared solver/contact projection while keeping the non-all-strict paper_cpu/native lane separate; and card house validates only a zero-substep configuration render, not the historical four-level/26-card trajectory. Separately, author_masonry_arch_reference_v1 seals a 500-frame current-author CPU diagnostic that extends the 400-frame source default so the cubes release at frame 400. Its 157 true flags split into 40 initial natural-residual shortcut accepts and 117 configured outer coulomb_rel accepts; the other 1,843 outer solves are negative, while retained final_residual is a distinct natural-residual metric. This is a scientific negative, not a historical invocation, all-substep-valid result, DART or cross-solver parity, or timing evidence. FBF records 839/840 configured convergence flags, including 119/120 at mu=.55; configured coulomb_rel and natural final_residual are distinct, and all recorded timings remain diagnostic only. This numeric packet is not a seventh visual bundle and establishes no DART, historical-paper, full-state, figure/video, renderer, approved-golden, timing, performance, or cross-solver parity. No paper crown-impact, external-solver parity, approved source golden/diff, signed-angular-direction, paper timing, or real-time claim follows."
   },
   "current_truth": {
     "overall": "Active and partial; not paper parity and not eligible for retirement.",
@@ -542,6 +542,109 @@
       },
       "claim_scope": "Current-source DART step-zero inspection of the author-pinned five-level card-house geometry, initial poses, and construction schedule.",
       "claim_boundary": "Configuration only. The capture executes zero simulation substeps and does not validate release, standing, trajectory, solver behavior, contact dynamics, physical outcome, Fig. 6 parity, video parity, source renderer colors, paper timing, or performance. It is not a canonical Fig. 6 or video deliverable."
+    },
+    "author_incline_sweep_reference_v1": {
+      "bundle": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/author_incline_sweep_reference_v1",
+      "status": "valid_current_source_scientific_negative",
+      "requirement_ids": [
+        "fig.01",
+        "fig.02",
+        "video.03_incline"
+      ],
+      "artifact_valid": true,
+      "current_source_diagnostic_valid": true,
+      "scientific_negative": true,
+      "qualitative_source_grid_outcome_valid": true,
+      "fbf_configured_solver_valid": false,
+      "author_repository": "https://github.com/matthcsong/fbf-sca-2026.git",
+      "author_commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+      "author_tree": "ffcdafb61adeda2239c8366d054b548b50d26685",
+      "author_runner_git_blob": "63cfc28dca1f6c65ce4a27dbfa239cba154580c6",
+      "author_runner_sha256": "881d486f25d85f9ae197bf4164e110b6bc39775c498433f27ec4407ca09ebf82",
+      "author_run_ids": [
+        "20260719T151337Z"
+      ],
+      "solver_lanes": [
+        "fbf"
+      ],
+      "source_grid_mu_values": [
+        0.3,
+        0.4,
+        0.45,
+        0.5,
+        0.55,
+        0.6,
+        0.8
+      ],
+      "source_grid_cell_count": 7,
+      "total_cell_count": 7,
+      "steps_per_cell": 120,
+      "contacts_per_step": 4,
+      "independent_solver_runs": true,
+      "fbf_history_steps": 840,
+      "fbf_contact_records": 3360,
+      "fbf_configured_converged_flag_count": 839,
+      "fbf_configured_nonconverged_flag_count": 1,
+      "fbf_initial_natural_residual_shortcut_converged_count": 235,
+      "fbf_configured_coulomb_rel_outer_gate_converged_count": 604,
+      "fbf_true_flags_natural_final_residual_at_or_below_tolerance_count": 456,
+      "fbf_true_flags_natural_final_residual_above_tolerance_count": 383,
+      "fbf_outer_cap_hit_count": 1,
+      "mu_0_55_configured_converged_count": 119,
+      "mu_0_55_total_steps": 120,
+      "mu_0_55_nonconverged_step": 1,
+      "mu_0_55_nonconverged_outer_iterations": 200,
+      "mu_0_55_nonconverged_natural_final_residual": 3.273267262002487e-08,
+      "mu_0_55_nonconverged_terminal_r_coulomb": 1.5311460572898186e-06,
+      "configured_termination_residual": "coulomb_rel",
+      "configured_termination_tolerance": 1e-06,
+      "natural_final_residual_is_distinct": true,
+      "historical_or_paper_invocation_valid": false,
+      "full_published_sweep_valid": false,
+      "runtime_attestation_complete": false,
+      "source_equivalent_dart_dynamics_executed": false,
+      "dart_dynamics_parity_valid": false,
+      "cross_solver_full_state_parity_valid": false,
+      "paper_comparable": false,
+      "paper_timing_valid": false,
+      "timing_evidence_eligible": false,
+      "timing_verdict": null,
+      "realtime_verdict": null,
+      "fig01_parity": false,
+      "fig02_parity": false,
+      "video03_incline_parity": false,
+      "renderer_or_media_evidence_valid": false,
+      "manual_visual_inspection_valid": false,
+      "approved_source_golden_valid": false,
+      "artifact_count": 19,
+      "physical_file_count": 21,
+      "artifact_hashes": {
+        "finalizer": "ed8f67289284e025f78323166c49b217e87749f70bceada79979ba3a27bdad64",
+        "finalizer_test": "1c45f546b7bf02d342d7fdbaf722be0111e6f3329cc445dd0e1e854475a93051",
+        "REPORT.md": "98a31ba34915cddba92398761a9bd648bb5425d9a73a9917b4a03c44cd9ce45d",
+        "comparison.csv": "707d0feb0e5c1bcfe0aeef6a130dbd77aa89765750adcfa8e28e4ba8c3970487",
+        "comparison.svg": "8ff3ab6f4d4b20ae4bbe0e4dfb7a513923a3eece026d998565adfc833753a83f",
+        "manifest.json": "9256cf28829f07857a936f63d735ecc9e9a57909a1931184f5c74021881a0641",
+        "runs/20260719T151337Z/metadata.json": "656b950f35ddfcada8f190223a9ab722b584a793b93bf18f643f1132f79d60a4",
+        "runs/20260719T151337Z/mu0.3000_fbf/history.json.gz": "cb3e02c0803c00ab25d91e59e25f7c625a437fba909b03ed1babf81fad37f95b",
+        "runs/20260719T151337Z/mu0.3000_fbf/result.json": "b09ca386f64ff5596eb65ced850af1804ad31a2349f374bd2490fb2b2549e321",
+        "runs/20260719T151337Z/mu0.4000_fbf/history.json.gz": "e9ce6a8b65fe1b969814b9f98c861ccbec0e75fc3aee4b9fed80cca6006e5213",
+        "runs/20260719T151337Z/mu0.4000_fbf/result.json": "52d75478a7c955fbc3062e6b1fce49f926dea4d91552a057e0c724838b577bb0",
+        "runs/20260719T151337Z/mu0.4500_fbf/history.json.gz": "ee119bdf71d6d3f8c4e91bdbf6a79e3ed9f2468982bcc868dda13479740d190e",
+        "runs/20260719T151337Z/mu0.4500_fbf/result.json": "b0295a998b27068baf975ba98b3a217dedb3eefc58eb5db30813cc8c04b4a186",
+        "runs/20260719T151337Z/mu0.5000_fbf/history.json.gz": "dd740327875da466193f8cadc611f63073930551110f4baebcc3db7eefaae71e",
+        "runs/20260719T151337Z/mu0.5000_fbf/result.json": "4f61dcbe4126c0ac4a860c7542693ce3b3af8f3486e46da9205acbe8531bcca2",
+        "runs/20260719T151337Z/mu0.5500_fbf/history.json.gz": "c0aa2d65cbbee24447e7ece9aa97bf83da4cc666ccf16da7edd6874abc22422f",
+        "runs/20260719T151337Z/mu0.5500_fbf/result.json": "6073b66a7fd875e8dc787b6bdea6f1dc867cbec82748843220abc14bc0bfb524",
+        "runs/20260719T151337Z/mu0.6000_fbf/history.json.gz": "de121a963ac0b25b5268266079ccc5dd95af33deea4f178b9cd101db357f2052",
+        "runs/20260719T151337Z/mu0.6000_fbf/result.json": "de973eac9f50c0abc274a9934f5ced58512d203e6e6182d7c403e7b76f122dcc",
+        "runs/20260719T151337Z/mu0.8000_fbf/history.json.gz": "648ff725fcc842d6a9a77bfa1b7eeb9eaae1f33447dc71a5c144525c7ea9dc4b",
+        "runs/20260719T151337Z/mu0.8000_fbf/result.json": "cb8e891ffbfeb4b604bec552773907d58da15f03aa10ec00408a8dedeb975815",
+        "runs/20260719T151337Z/sweep_results.json": "f5cc26d2b0ca542b2b98f7fe94a8e2f7f7c9b7cccb3d23c35234ebe45d0d9d12",
+        "verification.json": "e79fc09fc48f5474b98494072994ea05577e109396237b1a4329dd8191d26acc"
+      },
+      "claim_scope": "Pinned current-author CPU diagnostic over all seven friction cells exposed by the public cube-on-incline runner, preserving the FBF results plus every FBF residual-history step.",
+      "claim_boundary": "The retained FBF lane is a current-source run. FBF has one configured nonconvergence at mu=.55 step 1; natural final_residual and the configured nonnegative coulomb_rel gate are distinct. Source step times include uncontrolled first-use/JIT and instrumentation effects and are diagnostic only. This is not a historical paper invocation, full published sweep, DART comparison, full-state or cross-solver parity result, approved golden, renderer/media evidence, paper timing, real-time, or performance evidence."
     },
     "author_masonry_arch_reference_v1": {
       "bundle": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/author_masonry_arch_reference_v1",
@@ -2214,6 +2317,10 @@
           "supports": "Current-source paper_cpu/native evidence covers both incline cells over three repetitions with source, binary, runtime-closure, invocation, affinity, raw-row, and artifact-index bindings. Both physical classifiers pass; mu=.5 is not strict-solver-valid, and zero warmups make the timings non-paper-comparable."
         },
         {
+          "path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/author_incline_sweep_reference_v1/REPORT.md",
+          "supports": "A sealed current-author FBF CPU diagnostic covers all seven source friction cells with 120 steps per cell and four contacts per FBF step. FBF records 839/840 configured convergence flags, including 119/120 at mu=.55; the configured coulomb_rel gate and natural final_residual remain distinct. Timings are diagnostic only, and no DART, historical-paper, full-state, figure/video, renderer, approved-golden, timing, or performance parity is promoted."
+        },
+        {
           "path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline/claim-map.json",
           "supports": "The claim map binds both traces and the timed capture to the published threshold contract and records the missing full sweep, external curves, and contact-count mismatch."
         }
@@ -2227,16 +2334,18 @@
         ],
         "commands": [
           ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --reuse-current-capture --evidence-date 2026-07-18",
-          ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --verify-only"
+          ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --verify-only",
+          "python3 scripts/finalize_fbf_author_incline_reference.py --verify-only"
         ],
         "blockers": [
-          "No full-sweep DART artifact or Figure 1 four-curve comparison plot exists.",
-          "The tracked DART traces report 3 contacts per cell versus 4 in the paper timing table; the combined capture reports 8 aggregate contacts versus 6 across the traces."
+          "No full-sweep DART artifact or Figure 1 four-curve comparison plot exists; the current-author seven-cell numeric diagnostic is not a matched DART sweep or historical paper invocation.",
+          "The tracked DART traces report 3 contacts per cell versus 4 in the current-author source diagnostic; the combined capture reports 8 aggregate contacts versus 6 across the DART traces."
         ]
       },
       "commands": [
         ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --reuse-current-capture --evidence-date 2026-07-18",
-        ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --verify-only"
+        ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --verify-only",
+        "python3 scripts/finalize_fbf_author_incline_reference.py --verify-only"
       ],
       "deliverables": [
         {
@@ -2266,7 +2375,7 @@
       ],
       "fallback_count": 0,
       "blockers": [
-        "The two DART threshold traces and reconstructed external threshold bundles are real, but the canonical full mu sweep, paper-comparable external curves, four-curve plot, source golden, and golden diff are missing; the local contact count is also not paper-equivalent."
+        "The two DART threshold traces and sealed seven-cell current-author numeric diagnostic are real, but no matched DART full sweep, historical paper invocation, paper-comparable full-state external curves, four-curve plot, source golden, or golden diff exists; contact contracts are not equivalent."
       ]
     },
     {
@@ -2315,6 +2424,10 @@
           "supports": "Two independent 121-row traces validate the slide/stick physical thresholds with zero fallback. Only exact-solve/fallback totals match the capture; contact counts differ 8 versus 6 and full-state equivalence is false."
         },
         {
+          "path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/author_incline_sweep_reference_v1/REPORT.md",
+          "supports": "A sealed current-author FBF CPU diagnostic covers all seven source friction cells with 120 steps per cell and four contacts per FBF step. FBF records 839/840 configured convergence flags, including 119/120 at mu=.55; the configured coulomb_rel gate and natural final_residual remain distinct. Timings are diagnostic only, and no DART, historical-paper, full-state, figure/video, renderer, approved-golden, timing, or performance parity is promoted."
+        },
+        {
           "path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/gui_captures/fbf_paper_incline.verdict.json",
           "supports": "The original one-step smoke verdict exists; no paper golden was used."
         },
@@ -2339,15 +2452,17 @@
         ],
         "commands": [
           ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --reuse-current-capture --evidence-date 2026-07-18",
-          ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --verify-only"
+          ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --verify-only",
+          "python3 scripts/finalize_fbf_author_incline_reference.py --verify-only"
         ],
         "blockers": [
-          "No approved source camera or golden exists; render and independent tracked traces are not full-state equivalent."
+          "No approved source camera or golden exists; render, DART traces, and independent author-source runs are not full-state equivalent."
         ]
       },
       "commands": [
         ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --reuse-current-capture --evidence-date 2026-07-18",
-        ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --verify-only"
+        ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --verify-only",
+        "python3 scripts/finalize_fbf_author_incline_reference.py --verify-only"
       ],
       "deliverables": [
         {
@@ -3983,6 +4098,10 @@
           "supports": "The finalized fully decoded 660x506, 30 fps, 61-frame DART clip visibly contrasts sliding at mu=.4 with sticking at mu=.5 over 2.03 seconds."
         },
         {
+          "path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/author_incline_sweep_reference_v1/REPORT.md",
+          "supports": "A sealed current-author FBF CPU diagnostic covers all seven source friction cells with 120 steps per cell and four contacts per FBF step. FBF records 839/840 configured convergence flags, including 119/120 at mu=.55; the configured coulomb_rel gate and natural final_residual remain distinct. Timings are diagnostic only, and no DART, historical-paper, full-state, figure/video, renderer, approved-golden, timing, or performance parity is promoted."
+        },
+        {
           "path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline/incline_dart_fbf_2s.mp4",
           "supports": "A decoded 2.03-second DART exact-FBF clip visibly contrasts sliding at mu=.4 with sticking at mu=.5."
         },
@@ -4000,15 +4119,18 @@
         ],
         "commands": [
           ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --reuse-current-capture --evidence-date 2026-07-18",
-          ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --verify-only"
+          ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --verify-only",
+          "python3 scripts/finalize_fbf_author_incline_reference.py --verify-only"
         ],
         "blockers": [
+          "The sealed current-author numeric packet has no motion media, faithful rendered clips, matched DART trajectory, or paper-comparable scene.",
           "Approved source keyframes are missing, and the current two-second DART clip is not the source's 11-second title and three-solver edit."
         ]
       },
       "commands": [
         ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --reuse-current-capture --evidence-date 2026-07-18",
-        ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --verify-only"
+        ".pixi/envs/default/bin/python scripts/finalize_fbf_incline_visual.py --bundle docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 --verify-only",
+        "python3 scripts/finalize_fbf_author_incline_reference.py --verify-only"
       ],
       "deliverables": [
         {
@@ -4038,7 +4160,7 @@
       ],
       "fallback_count": 0,
       "blockers": [
-        "A real zero-fallback DART-only clip and reconstructed external numerical bundles exist."
+        "A real zero-fallback DART-only clip and sealed current-author seven-cell numeric diagnostic exist, but the source diagnostic supplies no media or."
       ]
     },
     {

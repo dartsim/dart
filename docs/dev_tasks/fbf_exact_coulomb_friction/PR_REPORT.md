@@ -24,6 +24,12 @@ evidence, not a DART comparison: 40 true flags use the initial
 natural-residual shortcut, 117 use the configured outer `coulomb_rel` gate,
 and the other 1,843 outer solves are nonconverged.
 
+The separate pinned-author incline sweep is also numeric current-source
+scientific-negative/reference evidence. It covers all seven Figure 1 friction
+values in the public FBF runners, but it is not a matched
+DART result, a historical paper run, a seventh visual bundle, or timing,
+performance, golden, media, or parity evidence.
+
 ## Durable Literal-Wedge CPU Evidence
 
 The current durable bundle is
@@ -227,8 +233,10 @@ Current focused gates are:
 - masonry-arch geometry: 3/3;
 - paper fixtures: 19 passing, 3 explicit stress cases skipped;
 - focused Release and Debug CTest matrices: 9/9 in each configuration;
-- focused manifest/backspin/incline/author-masonry evidence suite: 715 passed
-  in 149.88 s;
+- author-incline reference finalizer unit tests: 12/12; verify-only reports 37
+  indexed artifacts and 39 physical files;
+- focused manifest/backspin/incline/author-masonry/author-incline evidence
+  suite: 777 passed in 164.41 s;
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s; and
 - colored dispatch/barrier stress: 1,000 consecutive successful runs.
 
@@ -244,6 +252,46 @@ topology aggregate, worker-residency identity, and archived prior-source
 semantic/provenance claim; cross-checks the card-v2_r3, impact-v8, and arch101-v6
 truth fields; and rejects fabricated paper comparability, all-step real-time,
 strict-card, physical, timing, or positive-outcome promotions.
+
+## Pinned-Author Incline Sweep Reference
+
+The numeric packet at
+`assets/paper_evidence/author_incline_sweep_reference_v1/` pins author commit
+`b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` and preserves the FBF CPU run. It uses the exact grid
+`mu=.3,.4,.45,.5,.55,.6,.8`, with 120 steps per cell and four contacts per
+step: seven cells and 840 rows per lane.
+
+FBF records 839/840 configured convergence flags. The `mu=.55` cell is
+119/120 because step 1 reaches the 200-outer cap. Of the 839 true flags, 235
+use the initial natural-residual shortcut and 604 use the configured outer
+nonnegative `coulomb_rel < 1e-6` gate. Natural `final_residual` is not that
+gate: 456 configured-true rows are at or below `1e-6`, 383 configured-true
+rows are above it, and the configured-false row has natural residual
+`3.273267262002487e-8` while terminal
+`r_coulomb=1.5311460572898186e-6`.
+
+The normalized displacements are:
+
+| `mu` | FBF |
+| ---: | ---: |
+| `.3` | `3.5392831695743054` |
+| `.4` | `1.7698922978656797` |
+| `.45` | `0.8851976117115778` |
+| `.5` | `0.0005018926371855115` |
+| `.55` | `0.0004281487924409106` |
+| `.6` | `0.00035627086822120473` |
+| `.8` | `0.00006883913936487685` |
+
+
+First-use JIT work, always-on history collection, ineffective warmup
+exclusion, and lane-dependent timer boundaries make every source timing field
+diagnostic-only. Fig. 1, Fig. 2, and video.03 therefore remain partial.
+
+Verify the numeric packet without rewriting it:
+
+```bash
+python3 scripts/finalize_fbf_author_incline_reference.py --verify-only
+```
 
 ## Visual Evidence
 
@@ -701,8 +749,10 @@ publishes no multicore CPU reference.
 
 ## Current Verification
 
-- Focused manifest/backspin/incline/author-masonry evidence suite: 715 passed
-  in 149.88 s.
+- Author-incline reference finalizer unit tests: 12/12; verify-only reports 37
+  indexed artifacts and 39 physical files.
+- Focused manifest/backspin/incline/author-masonry/author-incline evidence
+  suite: 777 passed in 164.41 s.
 - Full no-cache dartpy Python suite: 1,555 passed in 165.09 s.
 - Author masonry-arch focused CTest: 1/1 passed; all four current sealed
   bundles pass verify-only.
