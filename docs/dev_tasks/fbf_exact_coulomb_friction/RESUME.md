@@ -271,8 +271,9 @@ Preserve
 It is a numeric packet from three independent current-source CPU invocations
 at pinned author commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, not a
 new visual bundle. FBF, MuJoCo, and Kamino each run the exact grid
-`mu=.3,.4,.45,.5,.55,.6,.8`, with 120 steps per cell and four contacts per
-step: seven cells and 840 rows in each lane.
+`mu=.3,.4,.45,.5,.55,.6,.8`, with 120 steps per cell: seven cells and 840
+rows in each lane. The retained FBF histories record four contacts per FBF
+step; the MuJoCo and Kamino result records contain no contact-count field.
 
 FBF has 839/840 configured convergence flags. Its sole false row is
 `mu=.55`, step 1, after 200 outer iterations, so that cell is 119/120. Of the

@@ -53,10 +53,12 @@ External truth:
   not a historical paper invocation or DART parity evidence.
 - The numeric author_incline_sweep_reference_v1 packet preserves independent
   current-source FBF, MuJoCo, and Kamino CPU runs on
-  mu=.3,.4,.45,.5,.55,.6,.8. Each lane has seven 120-step cells and four
-  contacts per step. It is scientific-negative/reference evidence, not a
-  DART match, historical run, golden, media, timing, performance, or parity
-  result, and it does not change the six-bundle visual inventory.
+  mu=.3,.4,.45,.5,.55,.6,.8. Each lane has seven 120-step cells; the retained
+  FBF histories record four contacts per FBF step, while the MuJoCo and Kamino
+  result records contain no contact-count field. It is
+  scientific-negative/reference evidence, not a DART match, historical run,
+  golden, media, timing, performance, or parity result, and it does not change
+  the six-bundle visual inventory.
 
 PR truth:
 
@@ -285,7 +287,9 @@ Pinned-author incline sweep truth:
 - Preserve
   assets/paper_evidence/author_incline_sweep_reference_v1/.
 - FBF, MuJoCo, and Kamino each use the exact seven-cell grid
-  mu=.3,.4,.45,.5,.55,.6,.8, 120 steps per cell, and four contacts per step.
+  mu=.3,.4,.45,.5,.55,.6,.8 and 120 steps per cell. The retained FBF histories
+  record four contacts per FBF step; the MuJoCo and Kamino result records
+  contain no contact-count field.
 - FBF records 839/840 configured convergence flags; mu=.55 is 119/120 and
   step 1 is the sole false flag after the 200-outer cap.
 - Of the 839 true flags, 235 use the initial natural-residual shortcut and

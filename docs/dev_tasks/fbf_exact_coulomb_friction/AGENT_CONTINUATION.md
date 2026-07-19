@@ -38,7 +38,7 @@ historical renderer, Apple hardware, or paper timer boundary.
 | Current small CPU matrix | Repository-finalized current-source `paper_cpu`/Native bundle binds 60 artifacts, 27 complete CPU-4 invocations, and 5,220 rows | 9/9 physical classifiers pass; 7/9 strict-solver/local-real-time contracts pass; zero warmups and unmatched paper contracts prohibit a paper timing claim |
 | Literal 25-stone visual evidence | Finalized current-source bundle has 19 indexed artifacts / 21 physical files, five durable stills, a 61-frame decoded clip schedule, 600 zero-difference trace rows, and bound manual inspection | Pass for the reconstructed no-projectile scene; the 6.1 s clip is a 1.639344x time-lapse |
 | Incline visual evidence | Finalized `fig01_02_incline_current_v1` has 21 indexed artifacts / 23 physical files, five durable stills, a 61-frame decoded clip schedule, two independent 121-row traces, manual inspection, and byte-identical aggregate exact-solve/fallback projections | Valid current-source non-paper threshold evidence; capture contacts 8 versus aggregate trace contacts 6 are explicitly not compared, and Fig. 1/2 plus video.03 remain partial |
-| Pinned-author incline sweep | `author_incline_sweep_reference_v1` preserves separate current-source FBF, MuJoCo, and Kamino CPU runs on `mu=.3,.4,.45,.5,.55,.6,.8`; every lane has seven 120-step cells and four contacts per step | Numeric source-pinned scientific-negative/reference evidence only; FBF records 839/840 configured convergence flags, timing is excluded, and no DART/full-state/historical/golden/media/timing/performance/parity claim follows |
+| Pinned-author incline sweep | `author_incline_sweep_reference_v1` preserves separate current-source FBF, MuJoCo, and Kamino CPU runs on `mu=.3,.4,.45,.5,.55,.6,.8`; every lane has seven 120-step cells, and the retained FBF histories record four contacts per FBF step | Numeric source-pinned scientific-negative/reference evidence only; FBF records 839/840 configured convergence flags, timing is excluded, and no DART/full-state/historical/golden/media/timing/performance/parity claim follows |
 | Painleve proxy visual evidence | Finalized `current_v1` repository bundle has 27 indexed artifacts / 29 physical files, two 151-row traces, fully decoded paired media, and bound manual inspection | Valid DART-side nonpaper proxy evidence only; rendered demos and tracked fixtures are not trace-equivalent, and paper/external/golden/timing/real-time/strict-rest claims remain unproven |
 | Backspin visual evidence | Finalized `fig03_backspin_current_v3` has 18 indexed artifacts / 20 physical files, three durable stills, MP4/GIF media, 129 exact attempts/solves, zero caps/failures/fallbacks, a corroborating translational trace, and a passing manual inspection of the renderer-applied high-contrast 6x4 ivory/charcoal checker texture and coral registration tile | Valid current-source DART evidence only; `fig.03` and `video.02_backspin` remain partial |
 | Author-pinned turntable visual evidence | Finalized `fig04_turntable_author_current_v1` has 58 indexed artifacts / 60 physical files, four timeline-bound outcome stills, and four complete 360-step author-configured visual-lane cells: three eject and `mu=.5, omega=2` remains on support through 6 s | Valid finite-horizon author-source-pinned non-paper DART evidence; no zero-slip, co-rotation, full-state, paper-golden, timing, real-time, or parity claim |
@@ -318,8 +318,9 @@ Preserve
 This numeric packet pins author commit
 `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` and preserves independent FBF,
 MuJoCo, and Kamino CPU invocations. Each lane runs the exact seven-cell grid
-`mu=.3,.4,.45,.5,.55,.6,.8`; every cell emits 120 steps with four contacts
-per step, for 840 rows per lane.
+`mu=.3,.4,.45,.5,.55,.6,.8`; every cell emits 120 steps, for 840 rows per
+lane. The retained FBF histories record four contacts per FBF step; the
+MuJoCo and Kamino result records contain no contact-count field.
 
 | Property | Current-source observation |
 | --- | --- |

@@ -3,9 +3,9 @@
   "claim_scope": "Pinned current-author CPU diagnostic over all seven friction cells exposed by the public cube-on-incline runner, preserving independent FBF, MuJoCo, and Kamino results plus every FBF residual-history step.",
   "derived_artifacts": [
     {
-      "bytes": 1397,
+      "bytes": 1387,
       "path": "comparison.csv",
-      "sha256": "feeed057519603cd46e8385ab1028dcfaa876895b6d71ff45a717f7893b80d63"
+      "sha256": "f9529fb9431338910f6ea824bb0bddf77496f0057cc3ef039cd0461b45d55c2d"
     },
     {
       "bytes": 6840,
@@ -13,9 +13,9 @@
       "sha256": "f3fb69c024c1c88c99e772fee26a10ca1efdfe6d9b1cfe4706648c1c193000a8"
     },
     {
-      "bytes": 2926,
+      "bytes": 3037,
       "path": "REPORT.md",
-      "sha256": "9efc13e843c68c046de3207d7ee28952a37176b1e241acd798aea53b3be943bc"
+      "sha256": "ab7de2b15b16e95df9c54802ad2f35b971aa5c94e5b42a624fe8a7df7fe5eaff"
     }
   ],
   "exact_bundle_members": [
@@ -61,7 +61,6 @@
   ],
   "metrics": {
     "cell_count": 21,
-    "contacts_per_step": 4,
     "displacements_m": {
       "fbf": [
         3.5392831695743054,
@@ -190,6 +189,7 @@
       "true_flags_natural_residual_above_tolerance": 383,
       "true_flags_natural_residual_at_or_below_tolerance": 456
     },
+    "fbf_contacts_per_step": 4,
     "fbf_kamino_max_absolute_delta_m": 9.86272277444535e-07,
     "fbf_kamino_max_absolute_delta_mu": 0.5,
     "fbf_mujoco_max_absolute_delta_m": 1.813103738533326,
@@ -642,9 +642,9 @@
     "reason": "First-use/JIT work, always-on history instrumentation, ineffective warmup exclusion, and scene-dependent source timer boundaries are uncontrolled."
   },
   "workload": {
-    "contacts_per_step": 4,
     "device": "cpu",
     "dt_seconds": 0.016666666666666666,
+    "fbf_contacts_per_step": 4,
     "independent_solver_runs": true,
     "mu_values": [
       0.3,

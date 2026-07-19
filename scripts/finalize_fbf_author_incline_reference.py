@@ -19,6 +19,7 @@ import json
 import math
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import uuid
@@ -47,12 +48,228 @@ RUNNER_GIT_BLOB = "63cfc28dca1f6c65ce4a27dbfa239cba154580c6"
 REQUIREMENTS_PATH = "requirements.txt"
 REQUIREMENTS_SHA256 = "436d6a280e62f0cf5b670bf0475cbed6e95fa87e2fb011bc30334355a3ed9688"
 RECORDED_PYTHON = Path("/tmp/fbf-author-venv/bin/python")
+RECORDED_PYTHON_RESOLVED_PATH = (
+    "/home/js/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/bin/python3.11"
+)
+RECORDED_PYTHON_SHA256 = (
+    "6759dcc6aa5a3fe3377349092f92f6700f1f79017294c1d0085009eb8802cb1e"
+)
+RECORDED_RUNTIME_PROBE = {
+    "platform": "Linux-7.0.0-27-generic-x86_64-with-glibc2.43",
+    "python": "3.11.15 (main, May 10 2026, 19:28:18) [Clang 22.1.3 ]",
+}
 
 MU_VALUES = (0.3, 0.4, 0.45, 0.5, 0.55, 0.6, 0.8)
 DT_SECONDS = 1.0 / 60.0
 STEPS_PER_CELL = 120
 CONTACTS_PER_STEP = 4
 TERMINATION_TOLERANCE = 1.0e-6
+
+METADATA_KEYS = {
+    "T_seconds",
+    "cube_half_extent",
+    "device",
+    "dt",
+    "experiment",
+    "gap",
+    "gravity",
+    "mu_star",
+    "mu_values",
+    "num_steps",
+    "plane_hx",
+    "plane_hy",
+    "plane_hz",
+    "solvers",
+    "theta_deg",
+    "timestamp",
+}
+RESULT_KEYS = {
+    "T_seconds",
+    "avg_outer_iters_per_step",
+    "avg_step_time_ms",
+    "dt",
+    "final_residual",
+    "mu",
+    "normal_dist",
+    "num_steps",
+    "solver",
+    "step_times_ms",
+    "tangential_disp",
+    "tangential_vel",
+    "total_outer_iters",
+    "usd",
+}
+FBF_CONFIG_KEYS = {
+    "adaptive_gamma",
+    "armijo_grow",
+    "armijo_max_backtracks",
+    "armijo_rho_high",
+    "armijo_shrink",
+    "armijo_skip_threshold",
+    "baumgarte_erp",
+    "dump_step_state_idx",
+    "dump_step_state_path",
+    "gamma",
+    "gamma_c",
+    "gamma_max",
+    "gamma_min",
+    "history_path",
+    "inner_gs_sweeps",
+    "inner_max_iter",
+    "inner_solver",
+    "inner_step_size",
+    "inner_tol",
+    "max_contacts",
+    "max_outer",
+    "outer_tol",
+    "per_contact_diag_dir",
+    "per_contact_diag_topk",
+    "plateau_patience",
+    "plateau_rtol",
+    "project_after_correction",
+    "residual_check_interval",
+    "termination_residual",
+    "termination_tol",
+    "warm_start",
+    "warm_start_gamma_cap",
+    "warm_start_gamma_threshold",
+    "warm_start_match_radius",
+    "warm_start_max_age",
+    "warm_start_normal_cos",
+}
+HISTORY_META_KEYS = {
+    "bench",
+    "config",
+    "dt",
+    "inner_solver",
+    "num_bodies",
+    "schema_version",
+    "solver",
+}
+HISTORY_BENCH_KEYS = {
+    "git_sha",
+    "scene",
+    "scene_params",
+    "total_steps",
+    "warmup_steps",
+}
+HISTORY_STEP_KEYS = {
+    "W_lambda_max",
+    "converged",
+    "final_residual",
+    "gamma_final",
+    "gamma_init",
+    "initial_residual",
+    "num_contacts",
+    "outer",
+    "outer_iters",
+    "step_idx",
+    "t_collide_gpu_ms",
+    "t_collide_ms",
+    "t_init_residual_gpu_ms",
+    "t_init_residual_ms",
+    "t_integrate_free_gpu_ms",
+    "t_integrate_free_ms",
+    "t_jacobian_gpu_ms",
+    "t_jacobian_ms",
+    "t_power_iter_gpu_ms",
+    "t_power_iter_ms",
+    "t_recover_gpu_ms",
+    "t_recover_ms",
+    "t_save_warm_cache_gpu_ms",
+    "t_save_warm_cache_ms",
+    "t_total_gpu_ms",
+    "t_total_ms",
+    "t_unattributed_gpu_ms",
+    "t_warm_start_gpu_ms",
+    "t_warm_start_ms",
+    "warm_start_matched",
+    "warm_start_total",
+    "warm_started",
+    "warmup",
+}
+HISTORY_STEP_INTEGER_KEYS = {
+    "num_contacts",
+    "outer_iters",
+    "step_idx",
+    "warm_start_matched",
+    "warm_start_total",
+}
+HISTORY_STEP_BOOLEAN_KEYS = {"converged", "warm_started", "warmup"}
+HISTORY_STEP_CPU_TIME_KEYS = {
+    "t_collide_ms",
+    "t_init_residual_ms",
+    "t_integrate_free_ms",
+    "t_jacobian_ms",
+    "t_power_iter_ms",
+    "t_recover_ms",
+    "t_save_warm_cache_ms",
+    "t_total_ms",
+    "t_warm_start_ms",
+}
+HISTORY_STEP_GPU_TIME_KEYS = {
+    "t_collide_gpu_ms",
+    "t_init_residual_gpu_ms",
+    "t_integrate_free_gpu_ms",
+    "t_jacobian_gpu_ms",
+    "t_power_iter_gpu_ms",
+    "t_recover_gpu_ms",
+    "t_save_warm_cache_gpu_ms",
+    "t_total_gpu_ms",
+    "t_unattributed_gpu_ms",
+    "t_warm_start_gpu_ms",
+}
+HISTORY_OUTER_KEYS = {
+    "backtracks",
+    "eps_force",
+    "eps_gap",
+    "eps_vel",
+    "gamma",
+    "gamma_event",
+    "gamma_start",
+    "inner_iters",
+    "inner_last_change",
+    "k",
+    "r_coulomb",
+    "r_dual",
+    "r_gap",
+    "r_kkt",
+    "r_primal",
+    "residual",
+    "rho",
+    "t_correction_gpu_ms",
+    "t_correction_ms",
+    "t_fwd_bwd_gpu_ms",
+    "t_fwd_bwd_ms",
+    "t_fwd_eval_gpu_ms",
+    "t_fwd_eval_ms",
+    "t_residual_check_gpu_ms",
+    "t_residual_check_ms",
+}
+HISTORY_OUTER_INTEGER_KEYS = {"backtracks", "inner_iters", "k"}
+HISTORY_OUTER_CPU_TIME_KEYS = {
+    "t_correction_ms",
+    "t_fwd_bwd_ms",
+    "t_fwd_eval_ms",
+    "t_residual_check_ms",
+}
+HISTORY_OUTER_GPU_TIME_KEYS = {
+    "t_correction_gpu_ms",
+    "t_fwd_bwd_gpu_ms",
+    "t_fwd_eval_gpu_ms",
+    "t_residual_check_gpu_ms",
+}
+HISTORY_OUTER_RESIDUAL_KEYS = {
+    "eps_force",
+    "eps_gap",
+    "eps_vel",
+    "r_coulomb",
+    "r_dual",
+    "r_gap",
+    "r_kkt",
+    "r_primal",
+    "residual",
+}
 
 RUN_SPECS = (
     {
@@ -166,9 +383,28 @@ def _write_json(path: Path, value: Any) -> None:
     _write_bytes(path, _json_bytes(value))
 
 
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON object key {key!r}")
+        result[key] = value
+    return result
+
+
+def _json_constant(value: str) -> float:
+    if value == "NaN":
+        return math.nan
+    raise ValueError(f"unsupported JSON constant {value!r}")
+
+
 def _load_json(path: Path) -> Any:
     with path.open("r", encoding="utf-8") as stream:
-        return json.load(stream)
+        return json.load(
+            stream,
+            object_pairs_hook=_unique_object,
+            parse_constant=_json_constant,
+        )
 
 
 def _run_git(source_repo: Path, *args: str) -> str:
@@ -200,14 +436,91 @@ def _close(actual: Any, expected: float, location: str, tol: float = 1.0e-12) ->
         raise ValueError(f"{location}: expected {expected!r}, got {value!r}")
 
 
+def _finite_float(value: Any, location: str) -> float:
+    if type(value) is not float or not math.isfinite(value):
+        raise ValueError(f"{location}: expected a finite JSON float")
+    return value
+
+
+def _integer(value: Any, location: str) -> int:
+    if type(value) is not int:
+        raise ValueError(f"{location}: expected a JSON integer")
+    return value
+
+
+def _exact_json_equal(actual: Any, expected: Any) -> bool:
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        return set(actual) == set(expected) and all(
+            _exact_json_equal(actual[key], value) for key, value in expected.items()
+        )
+    if isinstance(expected, list):
+        return len(actual) == len(expected) and all(
+            _exact_json_equal(left, right)
+            for left, right in zip(actual, expected, strict=True)
+        )
+    if isinstance(expected, float) and math.isnan(expected):
+        return math.isnan(actual)
+    return actual == expected
+
+
+def _expect_exact(value: Any, expected: Any, location: str) -> None:
+    if not _exact_json_equal(value, expected):
+        raise ValueError(f"{location}: exact JSON value or type changed")
+
+
+def _expect_exact_keys(value: Any, expected: set[str], location: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{location}: expected an object")
+    actual = set(value)
+    if actual != expected:
+        raise ValueError(
+            f"{location}: exact keys changed; missing={sorted(expected - actual)}, extra={sorted(actual - expected)}"
+        )
+    return value
+
+
 def _safe_relative(value: str, location: str) -> PurePosixPath:
+    if not isinstance(value, str):
+        raise ValueError(f"{location}: expected a path string")
     path = PurePosixPath(value)
-    if path.is_absolute() or not path.parts or ".." in path.parts:
-        raise ValueError(f"{location}: unsafe relative path {value!r}")
+    if (
+        not value
+        or not path.parts
+        or path.is_absolute()
+        or "\\" in value
+        or "\x00" in value
+        or any(part in {"", ".", ".."} for part in path.parts)
+        or path.as_posix() != value
+    ):
+        raise ValueError(f"{location}: unsafe or noncanonical relative path {value!r}")
     return path
 
 
+def _absolute_without_symlink_components(path: Path, location: str) -> Path:
+    absolute = Path(os.path.abspath(path.expanduser()))
+    current = Path(absolute.anchor)
+    for part in absolute.parts[1:]:
+        current /= part
+        if current.is_symlink():
+            raise ValueError(f"{location}: path contains symlink component {current}")
+    return absolute
+
+
+def _remove_path(path: Path) -> None:
+    try:
+        mode = path.lstat().st_mode
+    except FileNotFoundError:
+        return
+    if stat.S_ISDIR(mode) and not stat.S_ISLNK(mode):
+        shutil.rmtree(path)
+    else:
+        path.unlink()
+
+
 def _source_identity(source_repo: Path) -> dict[str, Any]:
+    source_repo = _absolute_without_symlink_components(source_repo, "source repository")
     if source_repo.is_symlink() or not source_repo.is_dir():
         raise ValueError(f"source repository is not a regular directory: {source_repo}")
     if _run_git(source_repo, "rev-parse", "HEAD") != SOURCE_COMMIT:
@@ -250,8 +563,12 @@ def _source_identity(source_repo: Path) -> dict[str, Any]:
     )
     if process.returncode != 0:
         raise ValueError(f"recorded Python probe failed: {process.stderr.strip()}")
-    runtime = json.loads(process.stdout)
-    return {
+    runtime = json.loads(
+        process.stdout,
+        object_pairs_hook=_unique_object,
+        parse_constant=_json_constant,
+    )
+    identity = {
         "repository": SOURCE_REPOSITORY,
         "commit": SOURCE_COMMIT,
         "tree": SOURCE_TREE,
@@ -266,6 +583,28 @@ def _source_identity(source_repo: Path) -> dict[str, Any]:
         "recorded_python_resolved_path": str(python_resolved),
         "recorded_python_sha256": _sha256(python_resolved),
         "recorded_runtime_probe": runtime,
+        "runtime_attestation_complete": False,
+    }
+    _expect_exact(identity, _expected_source_identity(), "source identity")
+    return identity
+
+
+def _expected_source_identity() -> dict[str, Any]:
+    return {
+        "repository": SOURCE_REPOSITORY,
+        "commit": SOURCE_COMMIT,
+        "tree": SOURCE_TREE,
+        "tracked_clean_before": True,
+        "tracked_clean_after": True,
+        "runner_path": RUNNER_PATH,
+        "runner_sha256": RUNNER_SHA256,
+        "runner_git_blob": RUNNER_GIT_BLOB,
+        "requirements_path": REQUIREMENTS_PATH,
+        "requirements_sha256": REQUIREMENTS_SHA256,
+        "recorded_python_path": str(RECORDED_PYTHON),
+        "recorded_python_resolved_path": RECORDED_PYTHON_RESOLVED_PATH,
+        "recorded_python_sha256": RECORDED_PYTHON_SHA256,
+        "recorded_runtime_probe": dict(RECORDED_RUNTIME_PROBE),
         "runtime_attestation_complete": False,
     }
 
@@ -327,6 +666,17 @@ EXACT_BUNDLE_MEMBERS = tuple(
 )
 
 
+def _expected_source_path(bundle_relative: str) -> str:
+    if bundle_relative not in SOURCE_ARTIFACT_PATHS or not bundle_relative.startswith(
+        "runs/"
+    ):
+        raise ValueError(f"unexpected source artifact path {bundle_relative!r}")
+    run_relative = bundle_relative.removeprefix("runs/")
+    if run_relative.endswith(".json.gz"):
+        run_relative = run_relative.removesuffix(".gz")
+    return f"paper_examples/cube-on-incline/results/{run_relative}"
+
+
 def _expected_source_members(solver: str) -> set[str]:
     members = {"metadata.json", "sweep_results.json"}
     for mu in MU_VALUES:
@@ -338,6 +688,7 @@ def _expected_source_members(solver: str) -> set[str]:
 
 
 def _regular_members(root: Path) -> set[str]:
+    root = _absolute_without_symlink_components(root, "bundle/run root")
     if root.is_symlink() or not root.is_dir():
         raise ValueError(f"bundle/run root is not a regular directory: {root}")
     members: set[str] = set()
@@ -352,9 +703,57 @@ def _regular_members(root: Path) -> set[str]:
     return members
 
 
+def _expected_fbf_config(history_path: str) -> dict[str, Any]:
+    return {
+        "gamma": None,
+        "max_outer": 200,
+        "outer_tol": TERMINATION_TOLERANCE,
+        "residual_check_interval": 5,
+        "inner_max_iter": 200,
+        "inner_tol": TERMINATION_TOLERANCE,
+        "inner_step_size": None,
+        "inner_solver": "block_gs",
+        "inner_gs_sweeps": 10,
+        "max_contacts": 4096,
+        "baumgarte_erp": 0.0,
+        "project_after_correction": False,
+        "warm_start": True,
+        "warm_start_match_radius": 0.02,
+        "warm_start_normal_cos": 0.9,
+        "warm_start_max_age": 3,
+        "gamma_min": 1.0e-6,
+        "gamma_max": 1.0e6,
+        "gamma_c": 0.5,
+        "adaptive_gamma": True,
+        "armijo_rho_high": 0.9,
+        "armijo_shrink": 0.7,
+        "armijo_grow": 1.4285714285714286,
+        "armijo_skip_threshold": 1.0e-10,
+        "armijo_max_backtracks": 8,
+        "plateau_patience": 5,
+        "plateau_rtol": 0.01,
+        "warm_start_gamma_threshold": 1.0e-4,
+        "warm_start_gamma_cap": 1.0e4,
+        "history_path": history_path,
+        "termination_residual": "coulomb_rel",
+        "termination_tol": TERMINATION_TOLERANCE,
+        "per_contact_diag_dir": None,
+        "per_contact_diag_topk": 20,
+        "dump_step_state_idx": None,
+        "dump_step_state_path": None,
+    }
+
+
+def _history_source_path(run_id: str, mu: float) -> str:
+    return (
+        f"paper_examples/cube-on-incline/results/{run_id}/"
+        f"mu{mu:.4f}_fbf/history.json"
+    )
+
+
 def _validate_metadata(metadata: Any, solver: str, run_id: str) -> None:
-    if not isinstance(metadata, dict):
-        raise ValueError(f"{run_id}.metadata: expected an object")
+    location = f"{run_id}.metadata"
+    _expect_exact_keys(metadata, METADATA_KEYS, location)
     expected = {
         "experiment": "cube_on_incline_sweep",
         "mu_values": list(MU_VALUES),
@@ -362,13 +761,6 @@ def _validate_metadata(metadata: Any, solver: str, run_id: str) -> None:
         "solvers": [solver],
         "device": "cpu",
         "timestamp": run_id,
-    }
-    for key, value in expected.items():
-        if metadata.get(key) != value:
-            raise ValueError(
-                f"{run_id}.metadata.{key}: expected {value!r}, got {metadata.get(key)!r}"
-            )
-    for key, value in {
         "theta_deg": 26.56505117707799,
         "mu_star": 0.5,
         "cube_half_extent": 0.5,
@@ -379,53 +771,80 @@ def _validate_metadata(metadata: Any, solver: str, run_id: str) -> None:
         "plane_hx": 5.0,
         "plane_hy": 1.5,
         "plane_hz": 0.05,
+    }
+    _expect_exact(metadata, expected, location)
+
+
+def _validate_result(
+    result: Any, solver: str, mu: float, run_id: str, location: str
+) -> None:
+    expected_keys = RESULT_KEYS | ({"config"} if solver == "fbf" else set())
+    _expect_exact_keys(result, expected_keys, location)
+    for key, expected in {
+        "solver": solver,
+        "mu": mu,
+        "dt": DT_SECONDS,
+        "num_steps": STEPS_PER_CELL,
+        "T_seconds": 2.0,
+        "usd": None,
     }.items():
-        _close(metadata.get(key), value, f"{run_id}.metadata.{key}")
-
-
-def _validate_result(result: Any, solver: str, mu: float, location: str) -> None:
-    if not isinstance(result, dict):
-        raise ValueError(f"{location}: expected an object")
-    if result.get("solver") != solver:
-        raise ValueError(f"{location}.solver: expected {solver!r}")
-    _close(result.get("mu"), mu, f"{location}.mu")
-    _close(result.get("dt"), DT_SECONDS, f"{location}.dt")
-    if result.get("num_steps") != STEPS_PER_CELL:
-        raise ValueError(f"{location}.num_steps: expected {STEPS_PER_CELL}")
+        _expect_exact(result[key], expected, f"{location}.{key}")
     index = MU_VALUES.index(mu)
+    _finite_float(result["tangential_disp"], f"{location}.tangential_disp")
     _close(
-        result.get("tangential_disp"),
+        result["tangential_disp"],
         EXPECTED_DISPLACEMENTS[solver][index],
         f"{location}.tangential_disp",
     )
     for key in ("tangential_vel", "normal_dist", "avg_step_time_ms"):
-        _finite_number(result.get(key), f"{location}.{key}")
-    step_times = result.get("step_times_ms")
+        _finite_float(result[key], f"{location}.{key}")
+    step_times = result["step_times_ms"]
     if not isinstance(step_times, list) or len(step_times) != STEPS_PER_CELL:
         raise ValueError(f"{location}.step_times_ms: expected 120 samples")
     for index_, value in enumerate(step_times):
-        _finite_number(value, f"{location}.step_times_ms[{index_}]")
+        _finite_float(value, f"{location}.step_times_ms[{index_}]")
+    _close(
+        result["avg_step_time_ms"],
+        sum(step_times) / STEPS_PER_CELL,
+        f"{location}.avg_step_time_ms",
+    )
+    total_outer = _integer(result["total_outer_iters"], f"{location}.total_outer_iters")
+    if total_outer < 0:
+        raise ValueError(
+            f"{location}.total_outer_iters: expected a nonnegative integer"
+        )
     if solver == "fbf":
-        config = result.get("config")
-        if not isinstance(config, dict):
-            raise ValueError(f"{location}.config: expected an object")
-        for key, value in {
-            "max_outer": 200,
-            "outer_tol": TERMINATION_TOLERANCE,
-            "residual_check_interval": 5,
-            "inner_max_iter": 200,
-            "inner_tol": TERMINATION_TOLERANCE,
-            "inner_solver": "block_gs",
-            "inner_gs_sweeps": 10,
-            "termination_residual": "coulomb_rel",
-            "termination_tol": TERMINATION_TOLERANCE,
-            "gamma_c": 0.5,
-        }.items():
-            actual = config.get(key)
-            if isinstance(value, float):
-                _close(actual, value, f"{location}.config.{key}")
-            elif actual != value:
-                raise ValueError(f"{location}.config.{key}: expected {value!r}")
+        _finite_float(result["final_residual"], f"{location}.final_residual")
+        _finite_float(
+            result["avg_outer_iters_per_step"],
+            f"{location}.avg_outer_iters_per_step",
+        )
+        _close(
+            result["avg_outer_iters_per_step"],
+            total_outer / STEPS_PER_CELL,
+            f"{location}.avg_outer_iters_per_step",
+        )
+        config = _expect_exact_keys(
+            result["config"], FBF_CONFIG_KEYS, f"{location}.config"
+        )
+        _expect_exact(
+            config,
+            _expected_fbf_config(
+                str(DEFAULT_SOURCE_REPO / _history_source_path(run_id, mu))
+            ),
+            f"{location}.config",
+        )
+    else:
+        final_residual = result["final_residual"]
+        if type(final_residual) is not float or not math.isnan(final_residual):
+            raise ValueError(f"{location}.final_residual: expected JSON NaN")
+        _expect_exact(
+            result["avg_outer_iters_per_step"],
+            0,
+            f"{location}.avg_outer_iters_per_step",
+        )
+        if total_outer != 0:
+            raise ValueError(f"{location}.total_outer_iters: expected 0")
 
 
 def _terminal_coulomb_residual(step: dict[str, Any], location: str) -> float | None:
@@ -444,37 +863,50 @@ def _terminal_coulomb_residual(step: dict[str, Any], location: str) -> float | N
     return None
 
 
-def _validate_history(history: Any, mu: float, location: str) -> dict[str, Any]:
-    if not isinstance(history, dict) or set(history) != {"meta", "steps"}:
-        raise ValueError(f"{location}: expected exact meta/steps object")
+def _validate_history(
+    history: Any, mu: float, run_id: str, location: str
+) -> dict[str, Any]:
+    _expect_exact_keys(history, {"meta", "steps"}, location)
     meta = history["meta"]
     steps = history["steps"]
-    if not isinstance(meta, dict) or not isinstance(steps, list):
-        raise ValueError(f"{location}: invalid meta or steps")
+    _expect_exact_keys(meta, HISTORY_META_KEYS, f"{location}.meta")
+    if not isinstance(steps, list):
+        raise ValueError(f"{location}.steps: expected a list")
     if len(steps) != STEPS_PER_CELL:
         raise ValueError(f"{location}.steps: expected 120 rows")
-    if meta.get("schema_version") != 2 or meta.get("solver") != "FBF":
-        raise ValueError(f"{location}.meta: unexpected schema or solver")
-    _close(meta.get("dt"), DT_SECONDS, f"{location}.meta.dt")
-    config = meta.get("config")
-    if not isinstance(config, dict):
-        raise ValueError(f"{location}.meta.config: expected an object")
-    if config.get("termination_residual") != "coulomb_rel":
-        raise ValueError(f"{location}.meta.config.termination_residual changed")
-    _close(
-        config.get("termination_tol"),
-        TERMINATION_TOLERANCE,
-        f"{location}.meta.config.termination_tol",
+    for key, expected in {
+        "schema_version": 2,
+        "solver": "FBF",
+        "inner_solver": "block_gs",
+        "num_bodies": 1,
+        "dt": DT_SECONDS,
+    }.items():
+        _expect_exact(meta[key], expected, f"{location}.meta.{key}")
+    config = _expect_exact_keys(
+        meta["config"], FBF_CONFIG_KEYS, f"{location}.meta.config"
     )
-    bench = meta.get("bench")
-    if not isinstance(bench, dict) or bench.get("git_sha") != SOURCE_SHORT_COMMIT:
-        raise ValueError(f"{location}.meta.bench: source identity changed")
-    if bench.get("total_steps") != STEPS_PER_CELL or bench.get("warmup_steps") != 0:
-        raise ValueError(f"{location}.meta.bench: unexpected step/warmup contract")
-    scene_params = bench.get("scene_params")
-    if not isinstance(scene_params, dict):
-        raise ValueError(f"{location}.meta.bench.scene_params: expected object")
-    _close(scene_params.get("mu"), mu, f"{location}.meta.bench.scene_params.mu")
+    _expect_exact(
+        config,
+        _expected_fbf_config(_history_source_path(run_id, mu)),
+        f"{location}.meta.config",
+    )
+    bench = _expect_exact_keys(
+        meta["bench"], HISTORY_BENCH_KEYS, f"{location}.meta.bench"
+    )
+    _expect_exact(
+        bench,
+        {
+            "scene": "cube-on-incline",
+            "scene_params": {
+                "mu": mu,
+                "theta_deg": 26.56505117707799,
+            },
+            "warmup_steps": 0,
+            "total_steps": STEPS_PER_CELL,
+            "git_sha": SOURCE_SHORT_COMMIT,
+        },
+        f"{location}.meta.bench",
+    )
 
     counts = {
         "converged": 0,
@@ -489,31 +921,147 @@ def _validate_history(history: Any, mu: float, location: str) -> dict[str, Any]:
     nonconverged_steps: list[int] = []
     for index, raw_step in enumerate(steps):
         step_location = f"{location}.steps[{index}]"
-        if not isinstance(raw_step, dict):
-            raise ValueError(f"{step_location}: expected an object")
-        if raw_step.get("step_idx") != index:
-            raise ValueError(f"{step_location}.step_idx: expected {index}")
-        if raw_step.get("num_contacts") != CONTACTS_PER_STEP:
-            raise ValueError(f"{step_location}.num_contacts: expected 4")
-        converged = raw_step.get("converged")
-        if not isinstance(converged, bool):
-            raise ValueError(f"{step_location}.converged: expected bool")
-        outer_iters = raw_step.get("outer_iters")
-        if (
-            isinstance(outer_iters, bool)
-            or not isinstance(outer_iters, int)
-            or not 0 <= outer_iters <= 200
+        _expect_exact_keys(raw_step, HISTORY_STEP_KEYS, step_location)
+        for key in HISTORY_STEP_INTEGER_KEYS:
+            _integer(raw_step[key], f"{step_location}.{key}")
+        for key in HISTORY_STEP_BOOLEAN_KEYS:
+            if type(raw_step[key]) is not bool:
+                raise ValueError(f"{step_location}.{key}: expected a JSON boolean")
+        for key in (
+            HISTORY_STEP_KEYS
+            - HISTORY_STEP_INTEGER_KEYS
+            - HISTORY_STEP_BOOLEAN_KEYS
+            - {"outer"}
         ):
+            _finite_float(raw_step[key], f"{step_location}.{key}")
+        for key in HISTORY_STEP_CPU_TIME_KEYS:
+            if raw_step[key] < 0.0:
+                raise ValueError(f"{step_location}.{key}: expected a nonnegative time")
+        for key in HISTORY_STEP_GPU_TIME_KEYS:
+            _expect_exact(raw_step[key], -1.0, f"{step_location}.{key}")
+        if raw_step["warmup"] is not False:
+            raise ValueError(f"{step_location}.warmup: expected false")
+        if raw_step["step_idx"] != index:
+            raise ValueError(f"{step_location}.step_idx: expected {index}")
+        if raw_step["num_contacts"] != CONTACTS_PER_STEP:
+            raise ValueError(f"{step_location}.num_contacts: expected 4")
+        if raw_step["warm_started"] != (raw_step["warm_start_matched"] > 0):
+            raise ValueError(f"{step_location}: warm-start flag/count mismatch")
+        if not (
+            0
+            <= raw_step["warm_start_matched"]
+            <= raw_step["warm_start_total"]
+            == raw_step["num_contacts"]
+        ):
+            raise ValueError(f"{step_location}: warm-start contact counts changed")
+        converged = raw_step["converged"]
+        outer_iters = raw_step["outer_iters"]
+        if not 0 <= outer_iters <= 200:
             raise ValueError(f"{step_location}.outer_iters: expected 0..200")
+        outer = raw_step["outer"]
+        if not isinstance(outer, list) or len(outer) != outer_iters:
+            raise ValueError(
+                f"{step_location}.outer: expected exactly {outer_iters} records"
+            )
+        for outer_index, record in enumerate(outer):
+            outer_location = f"{step_location}.outer[{outer_index}]"
+            _expect_exact_keys(record, HISTORY_OUTER_KEYS, outer_location)
+            for key in HISTORY_OUTER_INTEGER_KEYS:
+                _integer(record[key], f"{outer_location}.{key}")
+            for key in (
+                HISTORY_OUTER_KEYS - HISTORY_OUTER_INTEGER_KEYS - {"gamma_event"}
+            ):
+                _finite_float(record[key], f"{outer_location}.{key}")
+            if not isinstance(record["gamma_event"], str):
+                raise ValueError(f"{outer_location}.gamma_event: expected a string")
+            if record["gamma_event"] not in {"", "carry", "restore", "shrink"}:
+                raise ValueError(f"{outer_location}.gamma_event: unexpected value")
+            if record["k"] != outer_index:
+                raise ValueError(f"{outer_location}.k: expected {outer_index}")
+            if not 0 <= record["backtracks"] <= 8:
+                raise ValueError(f"{outer_location}.backtracks: expected 0..8")
+            if not 1 <= record["inner_iters"] <= 10:
+                raise ValueError(f"{outer_location}.inner_iters: expected 1..10")
+            for key in HISTORY_OUTER_CPU_TIME_KEYS:
+                if record[key] < 0.0:
+                    raise ValueError(
+                        f"{outer_location}.{key}: expected a nonnegative time"
+                    )
+            for key in HISTORY_OUTER_GPU_TIME_KEYS:
+                _expect_exact(record[key], -1.0, f"{outer_location}.{key}")
+            residual_checked = (outer_index + 1) % 5 == 0 or outer_index == 199
+            if residual_checked:
+                for key in HISTORY_OUTER_RESIDUAL_KEYS:
+                    if record[key] < 0.0:
+                        raise ValueError(
+                            f"{outer_location}.{key}: expected a checked residual"
+                        )
+                _expect_exact(
+                    record["r_kkt"],
+                    max(record["r_primal"], record["r_dual"], record["r_gap"]),
+                    f"{outer_location}.r_kkt",
+                )
+                _expect_exact(
+                    record["r_coulomb"],
+                    max(record["eps_vel"], record["eps_force"], record["eps_gap"]),
+                    f"{outer_location}.r_coulomb",
+                )
+                if (
+                    outer_index + 1 < outer_iters
+                    and record["r_coulomb"] < TERMINATION_TOLERANCE
+                ):
+                    raise ValueError(
+                        f"{outer_location}.r_coulomb: preterminal configured gate passes"
+                    )
+            else:
+                for key in HISTORY_OUTER_RESIDUAL_KEYS:
+                    _expect_exact(record[key], -1.0, f"{outer_location}.{key}")
+                _expect_exact(
+                    record["t_residual_check_ms"],
+                    0.0,
+                    f"{outer_location}.t_residual_check_ms",
+                )
+        if outer_iters == 0:
+            _expect_exact(
+                raw_step["final_residual"],
+                raw_step["initial_residual"],
+                f"{step_location}.final_residual",
+            )
+            _expect_exact(
+                raw_step["gamma_final"],
+                raw_step["gamma_init"],
+                f"{step_location}.gamma_final",
+            )
+        else:
+            _expect_exact(
+                raw_step["final_residual"],
+                outer[-1]["residual"],
+                f"{step_location}.final_residual",
+            )
+            _expect_exact(
+                raw_step["gamma_final"],
+                outer[-1]["gamma"],
+                f"{step_location}.gamma_final",
+            )
+            if (outer_iters % 5 != 0) and outer_iters != 200:
+                raise ValueError(
+                    f"{step_location}.outer: terminal residual is unchecked"
+                )
         counts["max_outer_iterations"] = max(
             counts["max_outer_iterations"], outer_iters
         )
-        natural = _finite_number(
-            raw_step.get("final_residual"), f"{step_location}.final_residual"
-        )
-        initial = _finite_number(
-            raw_step.get("initial_residual"), f"{step_location}.initial_residual"
-        )
+        natural = raw_step["final_residual"]
+        initial = raw_step["initial_residual"]
+        if natural < 0.0 or initial < 0.0:
+            raise ValueError(f"{step_location}: natural residuals must be nonnegative")
+        if outer_iters == 0 and initial >= TERMINATION_TOLERANCE:
+            raise ValueError(
+                f"{step_location}: invalid initial natural-residual shortcut"
+            )
+        if outer_iters > 0 and initial < TERMINATION_TOLERANCE:
+            raise ValueError(
+                f"{step_location}: outer solve has a passing initial residual"
+            )
         terminal = _terminal_coulomb_residual(raw_step, step_location)
         if converged:
             counts["converged"] += 1
@@ -523,10 +1071,6 @@ def _validate_history(history: Any, mu: float, location: str) -> dict[str, Any]:
                 counts["natural_above_true"] += 1
             if outer_iters == 0:
                 counts["initial"] += 1
-                if initial > TERMINATION_TOLERANCE:
-                    raise ValueError(
-                        f"{step_location}: invalid initial natural-residual shortcut"
-                    )
                 if terminal is not None:
                     raise ValueError(
                         f"{step_location}: zero-outer accept unexpectedly has configured residual"
@@ -584,8 +1128,8 @@ def _load_source_runs(source_repo: Path) -> dict[str, Any]:
         for index, mu in enumerate(MU_VALUES):
             directory = root / f"mu{mu:.4f}_{solver}"
             result = _load_json(directory / "result.json")
-            _validate_result(result, solver, mu, f"{run_id}.{solver}.{mu}")
-            if sweep[index] != result:
+            _validate_result(result, solver, mu, run_id, f"{run_id}.{solver}.{mu}")
+            if not _exact_json_equal(sweep[index], result):
                 raise ValueError(
                     f"{run_id}.sweep_results[{index}]: differs from result.json"
                 )
@@ -604,10 +1148,27 @@ def _load_source_runs(source_repo: Path) -> dict[str, Any]:
 
 
 def _metrics(runs: dict[str, Any]) -> dict[str, Any]:
+    fbf_run_id = str(runs["fbf"]["spec"]["run_id"])
+    fbf_results = runs["fbf"]["results"]
+    fbf_histories = runs["fbf"]["histories"]
+    if len(fbf_results) != len(MU_VALUES) or len(fbf_histories) != len(MU_VALUES):
+        raise ValueError("FBF result/history cell membership changed")
     per_mu = [
-        _validate_history(history, mu, f"fbf.history.mu={mu}")
-        for mu, history in zip(MU_VALUES, runs["fbf"]["histories"])
+        _validate_history(history, mu, fbf_run_id, f"fbf.history.mu={mu}")
+        for mu, history in zip(MU_VALUES, fbf_histories, strict=True)
     ]
+    for mu, result, history in zip(MU_VALUES, fbf_results, fbf_histories, strict=True):
+        history_outer_iters = sum(step["outer_iters"] for step in history["steps"])
+        if result["total_outer_iters"] != history_outer_iters:
+            raise ValueError(
+                f"fbf.result.mu={mu}.total_outer_iters: differs from retained history"
+            )
+        if not _exact_json_equal(
+            result["final_residual"], history["steps"][-1]["final_residual"]
+        ):
+            raise ValueError(
+                f"fbf.result.mu={mu}.final_residual: differs from retained history"
+            )
     for record in per_mu:
         expected = EXPECTED_FBF_PER_MU[record["mu"]]
         actual = (
@@ -678,7 +1239,7 @@ def _metrics(runs: dict[str, Any]) -> dict[str, Any]:
         "cell_count": 21,
         "mu_values": list(MU_VALUES),
         "steps_per_cell": STEPS_PER_CELL,
-        "contacts_per_step": CONTACTS_PER_STEP,
+        "fbf_contacts_per_step": CONTACTS_PER_STEP,
         "fbf": {**aggregate, "per_mu": per_mu},
         "displacements_m": displacements,
         "fbf_kamino_max_absolute_delta_m": max(fbf_kamino_deltas),
@@ -698,7 +1259,7 @@ def _comparison_csv(runs: dict[str, Any], metrics: dict[str, Any]) -> bytes:
             "mu",
             "tangential_displacement_m",
             "steps",
-            "contacts_per_step",
+            "fbf_contacts_per_step",
             "configured_converged_flags",
             "configured_nonconverged_flags",
             "timing_evidence_eligible",
@@ -714,7 +1275,7 @@ def _comparison_csv(runs: dict[str, Any], metrics: dict[str, Any]) -> bytes:
                     format(mu, ".17g"),
                     format(float(result["tangential_disp"]), ".17g"),
                     STEPS_PER_CELL,
-                    CONTACTS_PER_STEP,
+                    CONTACTS_PER_STEP if solver == "fbf" else "",
                     convergence["converged_flags"] if convergence else "",
                     convergence["nonconverged_flags"] if convergence else "",
                     "false",
@@ -853,7 +1414,7 @@ def _report(metrics: dict[str, Any]) -> bytes:
     lines.extend(
         (
             "",
-            "Every cell records 120 steps and four contacts per step. FBF has 839/840 true configured convergence flags. The sole false flag is `mu=.55`, step 1, at the 200-outer cap. Its natural `final_residual` is `3.273267262002487e-8`, while the configured terminal `r_coulomb` is `1.5311460572898186e-6`.",
+            "Every solver cell records 120 steps. The retained FBF histories record four contacts per FBF step; the MuJoCo and Kamino result records contain no contact-count field. FBF has 839/840 true configured convergence flags. The sole false flag is `mu=.55`, step 1, at the 200-outer cap. Its natural `final_residual` is `3.273267262002487e-8`, while the configured terminal `r_coulomb` is `1.5311460572898186e-6`.",
             "",
             "Of the 839 true FBF flags, 235 use the initial natural-residual shortcut and 604 use the configured nonnegative `coulomb_rel < 1e-6` outer gate. Only 456 true flags also have natural `final_residual <= 1e-6`; 383 true flags have a larger natural value. The two residual fields are not interchangeable.",
             "",
@@ -988,7 +1549,7 @@ def _manifest(
             "mu_values": list(MU_VALUES),
             "dt_seconds": DT_SECONDS,
             "steps_per_cell": STEPS_PER_CELL,
-            "contacts_per_step": CONTACTS_PER_STEP,
+            "fbf_contacts_per_step": CONTACTS_PER_STEP,
             "device": "cpu",
             "independent_solver_runs": True,
         },
@@ -1042,8 +1603,8 @@ def _load_bundle_runs(bundle: Path) -> dict[str, Any]:
         histories: list[dict[str, Any]] = []
         for index, mu in enumerate(MU_VALUES):
             result = _load_json(bundle / _result_relative(run_id, solver, mu))
-            _validate_result(result, solver, mu, f"{run_id}.{solver}.{mu}")
-            if sweep[index] != result:
+            _validate_result(result, solver, mu, run_id, f"{run_id}.{solver}.{mu}")
+            if not _exact_json_equal(sweep[index], result):
                 raise ValueError(
                     f"{run_id}.sweep_results[{index}]: differs from result.json"
                 )
@@ -1052,7 +1613,13 @@ def _load_bundle_runs(bundle: Path) -> dict[str, Any]:
                 relative = _history_relative(run_id, mu)
                 try:
                     with gzip.open(bundle / relative, "rt", encoding="utf-8") as stream:
-                        histories.append(json.load(stream))
+                        histories.append(
+                            json.load(
+                                stream,
+                                object_pairs_hook=_unique_object,
+                                parse_constant=_json_constant,
+                            )
+                        )
                 except (OSError, json.JSONDecodeError) as error:
                     raise ValueError(
                         f"{relative}: invalid deterministic history: {error}"
@@ -1067,20 +1634,9 @@ def _load_bundle_runs(bundle: Path) -> dict[str, Any]:
     return runs
 
 
-def _expect_exact_keys(value: Any, expected: set[str], location: str) -> dict[str, Any]:
-    if not isinstance(value, dict):
-        raise ValueError(f"{location}: expected an object")
-    actual = set(value)
-    if actual != expected:
-        raise ValueError(
-            f"{location}: exact keys changed; missing={sorted(expected - actual)}, extra={sorted(actual - expected)}"
-        )
-    return value
-
-
 def validate_bundle(bundle: Path) -> dict[str, Any]:
     """Validate exact membership, provenance bindings, and numeric semantics."""
-    bundle = bundle.absolute()
+    bundle = _absolute_without_symlink_components(bundle, "bundle")
     actual_members = _regular_members(bundle)
     expected_members = set(EXACT_BUNDLE_MEMBERS)
     if actual_members != expected_members:
@@ -1106,33 +1662,19 @@ def validate_bundle(bundle: Path) -> dict[str, Any]:
         },
         "manifest",
     )
-    if manifest["schema_version"] != SCHEMA_VERSION or manifest["status"] != STATUS:
-        raise ValueError("manifest schema/status changed")
-    if (
-        manifest["claim_scope"] != CLAIM_SCOPE
-        or manifest["claim_boundary"] != CLAIM_BOUNDARY
-    ):
-        raise ValueError("manifest claim boundary changed")
-    if manifest["exact_bundle_members"] != list(EXACT_BUNDLE_MEMBERS):
-        raise ValueError("manifest exact bundle membership changed")
-    source = manifest["source"]
-    if not isinstance(source, dict):
-        raise ValueError("manifest.source: expected object")
     for key, expected in {
-        "repository": SOURCE_REPOSITORY,
-        "commit": SOURCE_COMMIT,
-        "tree": SOURCE_TREE,
-        "runner_path": RUNNER_PATH,
-        "runner_sha256": RUNNER_SHA256,
-        "runner_git_blob": RUNNER_GIT_BLOB,
-        "requirements_path": REQUIREMENTS_PATH,
-        "requirements_sha256": REQUIREMENTS_SHA256,
-        "tracked_clean_before": True,
-        "tracked_clean_after": True,
-        "runtime_attestation_complete": False,
+        "schema_version": SCHEMA_VERSION,
+        "status": STATUS,
+        "claim_scope": CLAIM_SCOPE,
+        "claim_boundary": CLAIM_BOUNDARY,
+        "exact_bundle_members": list(EXACT_BUNDLE_MEMBERS),
     }.items():
-        if source.get(key) != expected:
-            raise ValueError(f"manifest.source.{key}: expected {expected!r}")
+        _expect_exact(manifest[key], expected, f"manifest.{key}")
+    expected_source = _expected_source_identity()
+    source = _expect_exact_keys(
+        manifest["source"], set(expected_source), "manifest.source"
+    )
+    _expect_exact(source, expected_source, "manifest.source")
     expected_runs = [
         {
             "solver": spec["solver"],
@@ -1146,23 +1688,23 @@ def validate_bundle(bundle: Path) -> dict[str, Any]:
         }
         for spec in RUN_SPECS
     ]
-    if manifest["runs"] != expected_runs:
-        raise ValueError("manifest run invocations changed")
-    if manifest["workload"] != {
+    _expect_exact(manifest["runs"], expected_runs, "manifest.runs")
+    expected_workload = {
         "scene": "cube-on-incline",
         "mu_values": list(MU_VALUES),
         "dt_seconds": DT_SECONDS,
         "steps_per_cell": STEPS_PER_CELL,
-        "contacts_per_step": CONTACTS_PER_STEP,
+        "fbf_contacts_per_step": CONTACTS_PER_STEP,
         "device": "cpu",
         "independent_solver_runs": True,
-    }:
-        raise ValueError("manifest workload changed")
+    }
+    _expect_exact(manifest["workload"], expected_workload, "manifest.workload")
 
     source_records = manifest["retained_source_artifacts"]
     if not isinstance(source_records, list):
         raise ValueError("manifest.retained_source_artifacts: expected list")
     source_by_path: dict[str, dict[str, Any]] = {}
+    ordered_source_paths: list[str] = []
     for index, raw_record in enumerate(source_records):
         record = _expect_exact_keys(
             raw_record,
@@ -1181,47 +1723,64 @@ def validate_bundle(bundle: Path) -> dict[str, Any]:
         if not isinstance(relative, str):
             raise ValueError("source artifact bundle path must be a string")
         _safe_relative(relative, "source artifact bundle path")
+        source_relative = record["source_path"]
+        if not isinstance(source_relative, str):
+            raise ValueError("source artifact source path must be a string")
+        _safe_relative(source_relative, "source artifact source path")
+        expected_source_relative = _expected_source_path(relative)
+        if source_relative != expected_source_relative:
+            raise ValueError(
+                f"{relative}: source path differs; expected {expected_source_relative!r}"
+            )
         if relative in source_by_path:
             raise ValueError(f"duplicate source artifact {relative!r}")
         source_by_path[relative] = record
+        ordered_source_paths.append(relative)
     if set(source_by_path) != set(SOURCE_ARTIFACT_PATHS):
         raise ValueError("manifest source artifact membership changed")
+    if ordered_source_paths != sorted(SOURCE_ARTIFACT_PATHS):
+        raise ValueError("manifest source artifact order changed")
     for relative, record in source_by_path.items():
         path = bundle / relative
-        if (
-            _sha256(path) != record["stored_sha256"]
-            or path.stat().st_size != record["stored_bytes"]
-        ):
-            raise ValueError(f"{relative}: stored digest/size mismatch")
+        location = f"manifest.retained_source_artifacts[{relative}]"
+        _expect_exact(
+            record["stored_sha256"], _sha256(path), f"{location}.stored_sha256"
+        )
+        _expect_exact(
+            record["stored_bytes"], path.stat().st_size, f"{location}.stored_bytes"
+        )
         if relative.endswith(".json.gz"):
-            if record["compression"] != "gzip-mtime0-level9":
-                raise ValueError(f"{relative}: compression contract changed")
+            _expect_exact(
+                record["compression"],
+                "gzip-mtime0-level9",
+                f"{location}.compression",
+            )
             with gzip.open(path, "rb") as stream:
                 raw = stream.read()
-            if (
-                _sha256_bytes(raw) != record["source_sha256"]
-                or len(raw) != record["source_bytes"]
-            ):
-                raise ValueError(
-                    f"{relative}: decompressed source digest/size mismatch"
-                )
+            _expect_exact(
+                record["source_sha256"],
+                _sha256_bytes(raw),
+                f"{location}.source_sha256",
+            )
+            _expect_exact(record["source_bytes"], len(raw), f"{location}.source_bytes")
             if path.read_bytes() != _gzip_bytes(raw):
                 raise ValueError(f"{relative}: gzip stream is not deterministic")
         else:
-            if record["compression"] is not None:
-                raise ValueError(f"{relative}: unexpected compression")
-            if (
-                record["source_sha256"] != record["stored_sha256"]
-                or record["source_bytes"] != record["stored_bytes"]
-            ):
-                raise ValueError(
-                    f"{relative}: uncompressed source/stored identity changed"
-                )
+            _expect_exact(record["compression"], None, f"{location}.compression")
+            _expect_exact(
+                record["source_sha256"],
+                record["stored_sha256"],
+                f"{location}.source_sha256",
+            )
+            _expect_exact(
+                record["source_bytes"],
+                record["stored_bytes"],
+                f"{location}.source_bytes",
+            )
 
     runs = _load_bundle_runs(bundle)
     metrics = _metrics(runs)
-    if manifest["metrics"] != metrics:
-        raise ValueError("manifest metrics differ from retained source artifacts")
+    _expect_exact(manifest["metrics"], metrics, "manifest.metrics")
     expected_predicates = {
         "artifact_integrity_valid": True,
         "qualitative_source_grid_outcome_valid": True,
@@ -1245,13 +1804,16 @@ def validate_bundle(bundle: Path) -> dict[str, Any]:
         "paper_comparable": False,
         "manual_visual_inspection_valid": False,
     }
-    if manifest["predicates"] != expected_predicates:
-        raise ValueError("manifest predicates changed")
-    if manifest["timing_boundary"] != {
+    _expect_exact(manifest["predicates"], expected_predicates, "manifest.predicates")
+    expected_timing_boundary = {
         "eligible_for_verdict": False,
         "reason": "First-use/JIT work, always-on history instrumentation, ineffective warmup exclusion, and scene-dependent source timer boundaries are uncontrolled.",
-    }:
-        raise ValueError("manifest timing boundary changed")
+    }
+    _expect_exact(
+        manifest["timing_boundary"],
+        expected_timing_boundary,
+        "manifest.timing_boundary",
+    )
 
     expected_derived_bytes = {
         "comparison.csv": _comparison_csv(runs, metrics),
@@ -1259,23 +1821,35 @@ def validate_bundle(bundle: Path) -> dict[str, Any]:
         "REPORT.md": _report(metrics),
     }
     derived = manifest["derived_artifacts"]
-    if not isinstance(derived, list):
-        raise ValueError("manifest.derived_artifacts: expected list")
-    derived_by_path = {
-        item.get("path"): item for item in derived if isinstance(item, dict)
-    }
-    if set(derived_by_path) != set(DERIVED_ARTIFACT_PATHS):
-        raise ValueError("manifest derived artifact membership changed")
-    for relative, data in expected_derived_bytes.items():
+    if not isinstance(derived, list) or len(derived) != len(DERIVED_ARTIFACT_PATHS):
+        raise ValueError("manifest.derived_artifacts: exact list length changed")
+    derived_by_path: dict[str, dict[str, Any]] = {}
+    for index, raw_record in enumerate(derived):
         record = _expect_exact_keys(
-            derived_by_path[relative],
+            raw_record,
             {"path", "sha256", "bytes"},
-            f"manifest.derived_artifacts[{relative}]",
+            f"manifest.derived_artifacts[{index}]",
         )
+        relative = record["path"]
+        if not isinstance(relative, str):
+            raise ValueError(
+                f"manifest.derived_artifacts[{index}].path: expected string"
+            )
+        _safe_relative(relative, f"manifest.derived_artifacts[{index}].path")
+        if relative in derived_by_path:
+            raise ValueError(f"duplicate derived artifact {relative!r}")
+        derived_by_path[relative] = record
+    if list(derived_by_path) != list(DERIVED_ARTIFACT_PATHS):
+        raise ValueError("manifest derived artifact membership/order changed")
+    for relative, data in expected_derived_bytes.items():
+        record = derived_by_path[relative]
         if (bundle / relative).read_bytes() != data:
             raise ValueError(f"{relative}: deterministic derived content changed")
-        if record["sha256"] != _sha256_bytes(data) or record["bytes"] != len(data):
-            raise ValueError(f"{relative}: derived digest/size mismatch")
+        _expect_exact(
+            record,
+            {"path": relative, "sha256": _sha256_bytes(data), "bytes": len(data)},
+            f"manifest.derived_artifacts[{relative}]",
+        )
 
     verification = _expect_exact_keys(
         _load_json(bundle / "verification.json"),
@@ -1290,20 +1864,6 @@ def validate_bundle(bundle: Path) -> dict[str, Any]:
         },
         "verification",
     )
-    if (
-        verification["schema_version"] != VALIDATION_SCHEMA_VERSION
-        or verification["status"] != STATUS
-    ):
-        raise ValueError("verification schema/status changed")
-    if verification["manifest_sha256"] != _sha256(bundle / "manifest.json"):
-        raise ValueError("verification manifest digest mismatch")
-    if verification["finalizer_sha256"] != _sha256(Path(__file__)):
-        raise ValueError("verification finalizer digest mismatch")
-    if (
-        verification["artifact_count"] != 37
-        or verification["physical_file_count"] != 39
-    ):
-        raise ValueError("verification artifact/file count changed")
     expected_checks = [
         "exact_bundle_membership",
         "no_symlinks_or_nonregular_entries",
@@ -1315,8 +1875,19 @@ def validate_bundle(bundle: Path) -> dict[str, Any]:
         "deterministic_comparison_csv_svg_report",
         "timing_and_all_parity_promotions_rejected",
     ]
-    if verification["checks"] != expected_checks:
-        raise ValueError("verification checks changed")
+    _expect_exact(
+        verification,
+        {
+            "schema_version": VALIDATION_SCHEMA_VERSION,
+            "status": STATUS,
+            "manifest_sha256": _sha256(bundle / "manifest.json"),
+            "finalizer_sha256": _sha256(Path(__file__)),
+            "artifact_count": 37,
+            "physical_file_count": 39,
+            "checks": expected_checks,
+        },
+        "verification",
+    )
     return {
         "status": STATUS,
         "bundle": str(bundle),
@@ -1330,10 +1901,47 @@ def validate_bundle(bundle: Path) -> dict[str, Any]:
     }
 
 
+def _publish_staged_bundle(staging: Path, bundle: Path) -> dict[str, Any]:
+    staging = _absolute_without_symlink_components(staging, "staged bundle")
+    bundle = _absolute_without_symlink_components(bundle, "bundle destination")
+    backup = bundle.parent / f".{bundle.name}.backup-{uuid.uuid4().hex}"
+    if backup.exists() or backup.is_symlink():
+        raise ValueError("transaction backup collision")
+    backed_up = False
+    promoted = False
+    try:
+        if bundle.exists() or bundle.is_symlink():
+            if bundle.is_symlink() or not bundle.is_dir():
+                raise ValueError(
+                    f"existing bundle is not a regular directory: {bundle}"
+                )
+            os.replace(bundle, backup)
+            backed_up = True
+        _absolute_without_symlink_components(bundle.parent, "bundle parent")
+        os.replace(staging, bundle)
+        promoted = True
+        report = validate_bundle(bundle)
+        if backed_up:
+            _remove_path(backup)
+            backed_up = False
+        return report
+    except Exception:
+        if promoted or backed_up:
+            _remove_path(bundle)
+        if backed_up:
+            os.replace(backup, bundle)
+            backed_up = False
+        raise
+    finally:
+        _remove_path(staging)
+        if not backed_up:
+            _remove_path(backup)
+
+
 def finalize_bundle(source_repo: Path, bundle: Path) -> dict[str, Any]:
     """Build the deterministic bundle transactionally and verify it."""
-    source_repo = source_repo.absolute()
-    bundle = bundle.absolute()
+    source_repo = _absolute_without_symlink_components(source_repo, "source repository")
+    bundle = _absolute_without_symlink_components(bundle, "bundle destination")
     source_identity = _source_identity(source_repo)
     runs = _load_source_runs(source_repo)
     metrics = _metrics(runs)
@@ -1341,12 +1949,11 @@ def finalize_bundle(source_repo: Path, bundle: Path) -> dict[str, Any]:
         raise ValueError("source identity changed while reading run artifacts")
 
     bundle.parent.mkdir(parents=True, exist_ok=True)
+    _absolute_without_symlink_components(bundle.parent, "bundle parent")
     staging = bundle.parent / f".{bundle.name}.staging-{uuid.uuid4().hex}"
-    backup = bundle.parent / f".{bundle.name}.backup-{uuid.uuid4().hex}"
-    if staging.exists() or backup.exists():
+    if staging.exists() or staging.is_symlink():
         raise ValueError("transaction staging collision")
     staging.mkdir()
-    replaced = False
     try:
         source_artifacts = _copy_source_artifacts(source_repo, staging)
         _write_bytes(staging / "comparison.csv", _comparison_csv(runs, metrics))
@@ -1379,24 +1986,9 @@ def finalize_bundle(source_repo: Path, bundle: Path) -> dict[str, Any]:
         validate_bundle(staging)
         if _source_identity(source_repo) != source_identity:
             raise ValueError("source identity changed before bundle promotion")
-        if bundle.exists() or bundle.is_symlink():
-            if bundle.is_symlink() or not bundle.is_dir():
-                raise ValueError(
-                    f"existing bundle is not a regular directory: {bundle}"
-                )
-            os.replace(bundle, backup)
-            replaced = True
-        os.replace(staging, bundle)
-        report = validate_bundle(bundle)
-        if replaced:
-            shutil.rmtree(backup)
-        return report
-    except Exception:
-        if staging.exists():
-            shutil.rmtree(staging)
-        if replaced and backup.exists() and not bundle.exists():
-            os.replace(backup, bundle)
-        raise
+        return _publish_staged_bundle(staging, bundle)
+    finally:
+        _remove_path(staging)
 
 
 def main(argv: Sequence[str] | None = None) -> int:

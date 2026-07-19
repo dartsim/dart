@@ -11,8 +11,8 @@
     "deterministic_comparison_csv_svg_report",
     "timing_and_all_parity_promotions_rejected"
   ],
-  "finalizer_sha256": "4a83ab25ade188f12a7cf8eac78155a321ecc5f00570898fc354426938a13e2b",
-  "manifest_sha256": "f5cf6eb4f560064b5deeb17c60610c1032d73f43515adc8018e145ec4ac3c740",
+  "finalizer_sha256": "1de4d27bdf2bb086eedc6e050143acd2fb7c97269f455091c224279f64ba246c",
+  "manifest_sha256": "42269117da6bc9ca261c69edef8f82a8bbe5589006660a864eeccd21ea521c2b",
   "physical_file_count": 39,
   "schema_version": "dart.fbf_author_incline_sweep_validation/v1",
   "status": "valid_current_source_scientific_negative"

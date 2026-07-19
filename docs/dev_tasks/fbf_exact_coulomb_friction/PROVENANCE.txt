@@ -862,9 +862,11 @@ b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0 and preserves three independent
 CPU invocations of paper_examples/cube-on-incline/run.py. FBF run
 20260719T151337Z, MuJoCo run 20260719T151857Z, and Kamino run
 20260719T152022Z each use the exact grid mu=0.3,0.4,0.45,0.5,0.55,0.6,0.8,
-120 steps per cell, and four contacts per step. Each lane therefore contains
-seven cells and 840 emitted rows. The FBF invocation includes --profile; the
-other two are independent solver-specific invocations. All use --device cpu.
+with 120 steps per cell. Each lane therefore contains seven cells and 840
+emitted rows. The retained FBF histories record four contacts per FBF step;
+the MuJoCo and Kamino result records contain no contact-count field. The FBF
+invocation includes --profile; the other two are independent solver-specific
+invocations. All use --device cpu.
 
 FBF records 839/840 configured convergence flags. The mu=0.55 cell is
 119/120: step 1 is the sole false flag after the 200-outer cap. Of the 839

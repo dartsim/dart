@@ -317,8 +317,9 @@ physical-outcome, Fig. 7/video.07, timing, repeatability, or media parity.
 The numeric current-source packet is
 `assets/paper_evidence/author_incline_sweep_reference_v1/`. Independent FBF,
 MuJoCo, and Kamino CPU invocations each use
-`mu=.3,.4,.45,.5,.55,.6,.8`, 120 steps per cell, and four contacts per step,
-for 840 rows per lane.
+`mu=.3,.4,.45,.5,.55,.6,.8` and 120 steps per cell, for 840 rows per lane.
+The retained FBF histories record four contacts per FBF step; the MuJoCo and
+Kamino result records contain no contact-count field.
 
 | Field | Observation |
 | --- | --- |

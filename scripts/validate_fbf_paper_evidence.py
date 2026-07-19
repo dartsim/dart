@@ -285,7 +285,7 @@ CURRENT_TRUTH_RECORD_KEYS = {
         "artifact_valid author_commit author_repository author_run_ids "
         "author_runner_git_blob author_runner_sha256 author_tree bundle "
         "claim_boundary claim_scope configured_termination_residual "
-        "configured_termination_tolerance contacts_per_step "
+        "configured_termination_tolerance fbf_contacts_per_step "
         "cross_solver_full_state_parity_valid current_source_diagnostic_valid "
         "dart_dynamics_parity_valid fbf_configured_converged_flag_count "
         "fbf_configured_coulomb_rel_outer_gate_converged_count "
@@ -1052,20 +1052,20 @@ AUTHOR_INCLINE_SWEEP_V1_BUNDLE = (
 )
 AUTHOR_INCLINE_SWEEP_V1_SEALED_ARTIFACTS = {
     "REPORT.md": (
-        "9efc13e843c68c046de3207d7ee28952a37176b1e241acd798aea53b3be943bc",
-        2926,
+        "ab7de2b15b16e95df9c54802ad2f35b971aa5c94e5b42a624fe8a7df7fe5eaff",
+        3037,
     ),
     "comparison.csv": (
-        "feeed057519603cd46e8385ab1028dcfaa876895b6d71ff45a717f7893b80d63",
-        1397,
+        "f9529fb9431338910f6ea824bb0bddf77496f0057cc3ef039cd0461b45d55c2d",
+        1387,
     ),
     "comparison.svg": (
         "f3fb69c024c1c88c99e772fee26a10ca1efdfe6d9b1cfe4706648c1c193000a8",
         6840,
     ),
     "manifest.json": (
-        "f5cf6eb4f560064b5deeb17c60610c1032d73f43515adc8018e145ec4ac3c740",
-        28037,
+        "42269117da6bc9ca261c69edef8f82a8bbe5589006660a864eeccd21ea521c2b",
+        28045,
     ),
     "runs/20260719T151337Z/metadata.json": (
         "656b950f35ddfcada8f190223a9ab722b584a793b93bf18f643f1132f79d60a4",
@@ -1204,7 +1204,7 @@ AUTHOR_INCLINE_SWEEP_V1_SEALED_ARTIFACTS = {
         24182,
     ),
     "verification.json": (
-        "40d7a176107a056710878d4050b4ff27b34ad746e81add567275f8700792eeba",
+        "521c633f7f3dbd3583a6212e1d2105274ac799621e64869a9bd005099cd3c6b6",
         811,
     ),
 }
@@ -15177,7 +15177,7 @@ def _validate_author_incline_sweep_v1_truth(
             "source_grid_cell_count": 7,
             "total_cell_count": 21,
             "steps_per_cell": 120,
-            "contacts_per_step": 4,
+            "fbf_contacts_per_step": 4,
             "independent_solver_runs": True,
             "fbf_history_steps": 840,
             "fbf_contact_records": 3360,
@@ -15351,9 +15351,9 @@ def _validate_author_incline_sweep_v1_truth(
             _expect_exact_keys(
                 workload,
                 {
-                    "contacts_per_step",
                     "device",
                     "dt_seconds",
+                    "fbf_contacts_per_step",
                     "independent_solver_runs",
                     "mu_values",
                     "scene",
@@ -15365,9 +15365,9 @@ def _validate_author_incline_sweep_v1_truth(
             _expect_fields(
                 workload,
                 {
-                    "contacts_per_step": 4,
                     "device": "cpu",
                     "dt_seconds": 1.0 / 60.0,
+                    "fbf_contacts_per_step": 4,
                     "independent_solver_runs": True,
                     "mu_values": mu_values,
                     "scene": "cube-on-incline",
@@ -15575,9 +15575,9 @@ def _validate_author_incline_sweep_v1_truth(
                 metrics,
                 {
                     "cell_count",
-                    "contacts_per_step",
                     "displacements_m",
                     "fbf",
+                    "fbf_contacts_per_step",
                     "fbf_kamino_max_absolute_delta_m",
                     "fbf_kamino_max_absolute_delta_mu",
                     "fbf_mujoco_max_absolute_delta_m",
@@ -15593,7 +15593,7 @@ def _validate_author_incline_sweep_v1_truth(
                 metrics,
                 {
                     "cell_count": 21,
-                    "contacts_per_step": 4,
+                    "fbf_contacts_per_step": 4,
                     "mu_values": mu_values,
                     "steps_per_cell": 120,
                     "mujoco_displacement_monotone_nonincreasing": False,
@@ -16967,7 +16967,7 @@ def _validate_author_incline_sweep_requirement_boundaries(
             support = support.lower() if isinstance(support, str) else ""
             for phrase in (
                 "seven",
-                "four contacts",
+                "four contacts per fbf step",
                 "119/120",
                 "coulomb_rel",
                 "final_residual",

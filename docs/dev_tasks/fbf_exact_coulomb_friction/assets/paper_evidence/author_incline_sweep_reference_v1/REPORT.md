@@ -16,7 +16,7 @@ Pinned current-author CPU diagnostic over all seven friction cells exposed by th
 | 0.6 | 0.00035627086822120473 | 1.2524510782262557 | 0.00035632418023620171 | 120/120 | 70 / 50 | 120 / 0 |
 | 0.8 | 6.8839139364876853e-05 | 0.18109838262409816 | 6.8879123376124572e-05 | 120/120 | 72 / 48 | 119 / 1 |
 
-Every cell records 120 steps and four contacts per step. FBF has 839/840 true configured convergence flags. The sole false flag is `mu=.55`, step 1, at the 200-outer cap. Its natural `final_residual` is `3.273267262002487e-8`, while the configured terminal `r_coulomb` is `1.5311460572898186e-6`.
+Every solver cell records 120 steps. The retained FBF histories record four contacts per FBF step; the MuJoCo and Kamino result records contain no contact-count field. FBF has 839/840 true configured convergence flags. The sole false flag is `mu=.55`, step 1, at the 200-outer cap. Its natural `final_residual` is `3.273267262002487e-8`, while the configured terminal `r_coulomb` is `1.5311460572898186e-6`.
 
 Of the 839 true FBF flags, 235 use the initial natural-residual shortcut and 604 use the configured nonnegative `coulomb_rel < 1e-6` outer gate. Only 456 true flags also have natural `final_residual <= 1e-6`; 383 true flags have a larger natural value. The two residual fields are not interchangeable.
 

@@ -27,10 +27,12 @@ bundles, and the visual workflow declares 17 schedules.
   frame 400, so it never releases the cubes.
 - The numeric `author_incline_sweep_reference_v1` packet preserves independent
   current-source FBF, MuJoCo, and Kamino CPU runs on the full Figure 1 grid
-  `mu=.3,.4,.45,.5,.55,.6,.8`. Each lane contains seven 120-step cells with
-  four contacts per step. This is source-run scientific-negative/reference
-  evidence, not historical, DART-matched, golden, media, timing, performance,
-  or parity evidence; the visual bundle count remains six.
+  `mu=.3,.4,.45,.5,.55,.6,.8`. Each lane contains seven 120-step cells. The
+  retained FBF histories record four contacts per FBF step; the MuJoCo and
+  Kamino result records contain no contact-count field. This is source-run
+  scientific-negative/reference evidence, not historical, DART-matched,
+  golden, media, timing, performance, or parity evidence; the visual bundle
+  count remains six.
 - The repository does not contain the historical paper renderer
   cameras/materials/goldens, exact Apple-silicon model, or original timing-run
   and warmup/aggregation attestation. Only masonry-arch meshes are shipped.
