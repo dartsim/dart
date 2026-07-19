@@ -258,8 +258,8 @@ strict-card, physical, timing, or positive-outcome promotions.
 The numeric packet at
 `assets/paper_evidence/author_incline_sweep_reference_v1/` pins author commit
 `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` and preserves the FBF CPU run. It uses the exact grid
-`mu=.3,.4,.45,.5,.55,.6,.8`, with 120 steps per cell and four contacts per
-step: seven cells and 840 rows per lane.
+`mu=.3,.4,.45,.5,.55,.6,.8`, with 120 steps per cell: seven cells and 840
+rows per lane. The retained FBF histories record four contacts per FBF step. 
 
 FBF records 839/840 configured convergence flags. The `mu=.55` cell is
 119/120 because step 1 reaches the 200-outer cap. Of the 839 true flags, 235

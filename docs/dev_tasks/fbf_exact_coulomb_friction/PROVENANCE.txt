@@ -859,8 +859,9 @@ author_incline_sweep_reference_v1/
 
 It pins public author commit
 b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0 and preserves the source-FBF CPU invocation of paper_examples/cube-on-incline/run.py. FBF run 20260719T151337Z uses the exact grid mu=0.3,0.4,0.45,0.5,0.55,0.6,0.8,
-120 steps per cell, and four contacts per step. Each lane therefore contains
-seven cells and 840 emitted rows. The FBF invocation includes --profile. The invocation uses --device cpu.
+with 120 steps per cell. Each lane therefore contains seven cells and 840
+emitted rows. The retained FBF histories record four contacts per FBF step. The FBF
+invocation includes --profile. The invocation uses --device cpu.
 
 FBF records 839/840 configured convergence flags. The mu=0.55 cell is
 119/120: step 1 is the sole false flag after the 200-outer cap. Of the 839

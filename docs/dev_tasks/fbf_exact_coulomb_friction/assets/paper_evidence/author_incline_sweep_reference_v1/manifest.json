@@ -3,9 +3,9 @@
   "claim_scope": "Pinned current-author CPU diagnostic over all seven friction cells exposed by the public cube-on-incline runner, preserving the FBF results plus every FBF residual-history step.",
   "derived_artifacts": [
     {
-      "bytes": 570,
+      "bytes": 574,
       "path": "comparison.csv",
-      "sha256": "707d0feb0e5c1bcfe0aeef6a130dbd77aa89765750adcfa8e28e4ba8c3970487"
+      "sha256": "068fa48c5fd62294ea0f29e429b6f0f010c573dad7584c1d4a7654819effd154"
     },
     {
       "bytes": 4613,
@@ -13,9 +13,9 @@
       "sha256": "8ff3ab6f4d4b20ae4bbe0e4dfb7a513923a3eece026d998565adfc833753a83f"
     },
     {
-      "bytes": 2275,
+      "bytes": 2306,
       "path": "REPORT.md",
-      "sha256": "98a31ba34915cddba92398761a9bd648bb5425d9a73a9917b4a03c44cd9ce45d"
+      "sha256": "0647280e1c51ddaa0ae6d59dfdb2192f7bdd17846c22783139f8a3f2216b81b6"
     }
   ],
   "exact_bundle_members": [
@@ -43,7 +43,6 @@
   ],
   "metrics": {
     "cell_count": 7,
-    "contacts_per_step": 4,
     "displacements_m": {
       "fbf": [
         3.5392831695743054,
@@ -154,6 +153,7 @@
       "true_flags_natural_residual_above_tolerance": 383,
       "true_flags_natural_residual_at_or_below_tolerance": 456
     },
+    "fbf_contacts_per_step": 4,
     "mu_values": [
       0.3,
       0.4,
@@ -387,9 +387,9 @@
     "reason": "First-use/JIT work, always-on history instrumentation, ineffective warmup exclusion, and scene-dependent source timer boundaries are uncontrolled."
   },
   "workload": {
-    "contacts_per_step": 4,
     "device": "cpu",
     "dt_seconds": 0.016666666666666666,
+    "fbf_contacts_per_step": 4,
     "independent_solver_runs": true,
     "mu_values": [
       0.3,

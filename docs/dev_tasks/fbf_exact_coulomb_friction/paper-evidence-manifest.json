@@ -579,7 +579,7 @@
       "source_grid_cell_count": 7,
       "total_cell_count": 7,
       "steps_per_cell": 120,
-      "contacts_per_step": 4,
+      "fbf_contacts_per_step": 4,
       "independent_solver_runs": true,
       "fbf_history_steps": 840,
       "fbf_contact_records": 3360,
@@ -619,12 +619,12 @@
       "artifact_count": 19,
       "physical_file_count": 21,
       "artifact_hashes": {
-        "finalizer": "ed8f67289284e025f78323166c49b217e87749f70bceada79979ba3a27bdad64",
-        "finalizer_test": "1c45f546b7bf02d342d7fdbaf722be0111e6f3329cc445dd0e1e854475a93051",
-        "REPORT.md": "98a31ba34915cddba92398761a9bd648bb5425d9a73a9917b4a03c44cd9ce45d",
-        "comparison.csv": "707d0feb0e5c1bcfe0aeef6a130dbd77aa89765750adcfa8e28e4ba8c3970487",
+        "finalizer": "0cedf94ab89f669b39ca94bdd78f71d0787ca15012968dcb311abffb6fc1ab0f",
+        "finalizer_test": "dbc96e8dc17f7ac1c50999be300eaf6462f0c156db41e162884776d8f77ea4b7",
+        "REPORT.md": "0647280e1c51ddaa0ae6d59dfdb2192f7bdd17846c22783139f8a3f2216b81b6",
+        "comparison.csv": "068fa48c5fd62294ea0f29e429b6f0f010c573dad7584c1d4a7654819effd154",
         "comparison.svg": "8ff3ab6f4d4b20ae4bbe0e4dfb7a513923a3eece026d998565adfc833753a83f",
-        "manifest.json": "9256cf28829f07857a936f63d735ecc9e9a57909a1931184f5c74021881a0641",
+        "manifest.json": "a13159b915e3e28bb2e868e46add1fb9a31b51d3a225c6ca0c9a68532d035808",
         "runs/20260719T151337Z/metadata.json": "656b950f35ddfcada8f190223a9ab722b584a793b93bf18f643f1132f79d60a4",
         "runs/20260719T151337Z/mu0.3000_fbf/history.json.gz": "cb3e02c0803c00ab25d91e59e25f7c625a437fba909b03ed1babf81fad37f95b",
         "runs/20260719T151337Z/mu0.3000_fbf/result.json": "b09ca386f64ff5596eb65ced850af1804ad31a2349f374bd2490fb2b2549e321",
@@ -641,7 +641,7 @@
         "runs/20260719T151337Z/mu0.8000_fbf/history.json.gz": "648ff725fcc842d6a9a77bfa1b7eeb9eaae1f33447dc71a5c144525c7ea9dc4b",
         "runs/20260719T151337Z/mu0.8000_fbf/result.json": "cb8e891ffbfeb4b604bec552773907d58da15f03aa10ec00408a8dedeb975815",
         "runs/20260719T151337Z/sweep_results.json": "f5cc26d2b0ca542b2b98f7fe94a8e2f7f7c9b7cccb3d23c35234ebe45d0d9d12",
-        "verification.json": "e79fc09fc48f5474b98494072994ea05577e109396237b1a4329dd8191d26acc"
+        "verification.json": "0b3ebdd899c20db7a791fc8c195c5c7b39bbb63cd72b1da1975bd50a63de95e8"
       },
       "claim_scope": "Pinned current-author CPU diagnostic over all seven friction cells exposed by the public cube-on-incline runner, preserving the FBF results plus every FBF residual-history step.",
       "claim_boundary": "The retained FBF lane is a current-source run. FBF has one configured nonconvergence at mu=.55 step 1; natural final_residual and the configured nonnegative coulomb_rel gate are distinct. Source step times include uncontrolled first-use/JIT and instrumentation effects and are diagnostic only. This is not a historical paper invocation, full published sweep, DART comparison, full-state or cross-solver parity result, approved golden, renderer/media evidence, paper timing, real-time, or performance evidence."
@@ -2339,7 +2339,7 @@
         ],
         "blockers": [
           "No full-sweep DART artifact or Figure 1 four-curve comparison plot exists; the current-author seven-cell numeric diagnostic is not a matched DART sweep or historical paper invocation.",
-          "The tracked DART traces report 3 contacts per cell versus 4 in the current-author source diagnostic; the combined capture reports 8 aggregate contacts versus 6 across the DART traces."
+          "The tracked DART traces report 3 contacts per step versus four contacts per FBF step in the retained current-author FBF histories; the external solver result records contain no contact-count field; the combined capture reports 8 aggregate contacts versus 6 across the DART traces."
         ]
       },
       "commands": [

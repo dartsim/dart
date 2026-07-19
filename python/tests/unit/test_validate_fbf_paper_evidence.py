@@ -4564,7 +4564,7 @@ def test_author_incline_sweep_truth_and_boundaries_accept_scientific_negative(
         ("source_grid_cell_count", 2),
         ("total_cell_count", 20),
         ("steps_per_cell", 119),
-        ("contacts_per_step", 3),
+        ("fbf_contacts_per_step", 3),
         ("fbf_configured_converged_flag_count", 840),
         ("fbf_configured_nonconverged_flag_count", 0),
         ("fbf_initial_natural_residual_shortcut_converged_count", 0),
@@ -4637,8 +4637,8 @@ def test_author_incline_sweep_artifact_hash_mutation_fails_closed(
         ),
         (
             "manifest.json",
-            lambda payload: payload["workload"].__setitem__("contacts_per_step", 3),
-            ".manifest.workload.contacts_per_step:",
+            lambda payload: payload["workload"].__setitem__("fbf_contacts_per_step", 3),
+            ".manifest.workload.fbf_contacts_per_step:",
         ),
         (
             "manifest.json",
@@ -4651,6 +4651,11 @@ def test_author_incline_sweep_artifact_hash_mutation_fails_closed(
             "manifest.json",
             lambda payload: payload["metrics"].__setitem__("cell_count", 20),
             ".manifest.metrics.cell_count:",
+        ),
+        (
+            "manifest.json",
+            lambda payload: payload["metrics"].__setitem__("fbf_contacts_per_step", 3),
+            ".manifest.metrics.fbf_contacts_per_step:",
         ),
         (
             "manifest.json",
