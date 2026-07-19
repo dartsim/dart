@@ -722,7 +722,7 @@ final integrated closeout run:
 | Literal 101-stone trace/probe/runner unit tests | 35/35 |
 | Finalized incline unit/verify-only gates | 62/62; clean-checkout verify-only passes with 21 indexed artifacts and no ignored staging dependency |
 | Author-incline reference finalizer unit tests | 12/12; verify-only reports 37 indexed artifacts / 39 physical files |
-| Focused manifest/backspin/incline/author-masonry/author-incline evidence suite | 777 passed in 164.41 s |
+| Focused manifest/backspin/incline/author-masonry/author-incline evidence suite | 777 passed post-merge in 213.46 s |
 | Full no-cache dartpy Python suite | 1,555 passed in 165.09 s |
 | Author masonry-arch focused CTest | 1/1 passed |
 | Manifest host-identity modes | Live: 102 file rechecks, 0 skipped; explicit archive: 0 live, 102 skipped; both validate 29 requirements with status `partial` |

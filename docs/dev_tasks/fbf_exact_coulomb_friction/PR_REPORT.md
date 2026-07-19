@@ -236,7 +236,7 @@ Current focused gates are:
 - author-incline reference finalizer unit tests: 12/12; verify-only reports 37
   indexed artifacts and 39 physical files;
 - focused manifest/backspin/incline/author-masonry/author-incline evidence
-  suite: 777 passed in 164.41 s;
+  suite: 777 passed post-merge in 213.46 s;
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s; and
 - colored dispatch/barrier stress: 1,000 consecutive successful runs.
 
@@ -754,7 +754,7 @@ publishes no multicore CPU reference.
 - Author-incline reference finalizer unit tests: 12/12; verify-only reports 37
   indexed artifacts and 39 physical files.
 - Focused manifest/backspin/incline/author-masonry/author-incline evidence
-  suite: 777 passed in 164.41 s.
+  suite: 777 passed post-merge in 213.46 s.
 - Full no-cache dartpy Python suite: 1,555 passed in 165.09 s.
 - Author masonry-arch focused CTest: 1/1 passed; all four current sealed
   bundles pass verify-only.

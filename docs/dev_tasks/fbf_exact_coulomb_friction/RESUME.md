@@ -630,7 +630,7 @@ fail-closed negative, repository-archived at
   rejects promotion-boundary drift.
 - Final local validation completed the focused
   manifest/backspin/incline/author-masonry/author-incline suite with 777 passed
-  in 164.41 s
+  post-merge in 213.46 s
   and the full no-cache dartpy suite with 1,555 passed in 165.09 s. The author
   masonry-arch focused CTest passed 1/1, all four current sealed bundles passed
   verify-only, and the manifest validator covered all 29 canonical
@@ -676,7 +676,7 @@ explicit DART reconstruction choices, not author parameters.
 - author-incline reference finalizer unit tests: 12/12; verify-only passes with
   37 indexed artifacts and 39 physical files;
 - focused manifest/backspin/incline/author-masonry/author-incline evidence
-  suite: 777 passed in 164.41 s;
+  suite: 777 passed post-merge in 213.46 s;
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - author masonry-arch C++ specification: 1/1 focused CTest passed;
 - manifest live mode: 102 file-identity rechecks, zero skipped; explicit

@@ -692,7 +692,7 @@ The latest recorded focused results on the current source are:
   status `valid_current_source_scientific_negative`, 37 indexed artifacts, and
   39 physical files;
 - focused manifest/backspin/incline/author-masonry/author-incline evidence
-  suite: 777 passed in 164.41 s;
+  suite: 777 passed post-merge in 213.46 s;
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - author masonry-arch C++ specification: 1/1 focused CTest passed;
 - manifest validation: live mode performed 102 file-identity rechecks with

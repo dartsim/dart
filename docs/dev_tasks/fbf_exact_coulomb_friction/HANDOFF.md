@@ -682,7 +682,7 @@ Latest recorded focused gates:
 - author-incline reference finalizer unit tests passed 12/12; verify-only
   reports 37 indexed artifacts and 39 physical files;
 - focused manifest/backspin/incline/author-masonry/author-incline evidence
-  suite: 777 passed in 164.41 s;
+  suite: 777 passed post-merge in 213.46 s;
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - author masonry-arch focused CTest: 1/1 passed;
 - all four current sealed bundles pass verify-only; the manifest validator
