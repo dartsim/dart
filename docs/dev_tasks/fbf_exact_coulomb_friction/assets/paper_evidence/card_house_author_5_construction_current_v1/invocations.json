@@ -21,9 +21,9 @@
     ],
     "returncode": 0,
     "run_summary_path": "run-summary.json",
-    "run_summary_sha256": "ccce4b213181682893a913a75cfcd36723537a89c1308e3729fa05012ecd73bc",
+    "run_summary_sha256": "a467aea6f57ae5c5398bfb3e2916f15ea95490076bf33e83e34ca8f509a49d15",
     "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "stdout_sha256": "1b1ecb280ba09193a2b20a8f51dc2f73a8395215078881b8dbe16daabed804b5"
+    "stdout_sha256": "052a9e480a702f47784c4b90c8d651f845be954716c4879f2004bcbe4cd0f604"
   },
   "capture_verification": {
     "argv": [
@@ -41,11 +41,11 @@
       "--ffprobe",
       "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffprobe"
     ],
-    "raw_stdout_sha256": "c9135a6360e8703dfe1a586defcbc52b36f1c90db7c90d35fee08676aeeb0394",
+    "raw_stdout_sha256": "dc3b1f101012075cbb81458cd4f5698a65169eb21a7aebe7490bda8c753b5838",
     "returncode": 0,
     "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "stdout_path": "verification.json",
-    "stdout_sha256": "c9135a6360e8703dfe1a586defcbc52b36f1c90db7c90d35fee08676aeeb0394"
+    "stdout_sha256": "dc3b1f101012075cbb81458cd4f5698a65169eb21a7aebe7490bda8c753b5838"
   },
   "contract_query": {
     "argv": [

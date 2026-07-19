@@ -19,6 +19,11 @@ The manifest remains 29 requirements: 24 partial, 5 blocked, and 0 complete.
 The local visual inventory has six finalized bundles, and the visual workflow
 declares 17 schedules.
 
+The sealed pinned-author masonry-arch run is scientific-negative source
+evidence, not a DART comparison: 40 true flags use the initial
+natural-residual shortcut, 117 use the configured outer `coulomb_rel` gate,
+and the other 1,843 outer solves are nonconverged.
+
 ## Durable Literal-Wedge CPU Evidence
 
 The current durable bundle is
@@ -222,9 +227,9 @@ Current focused gates are:
 - masonry-arch geometry: 3/3;
 - paper fixtures: 19 passing, 3 explicit stress cases skipped;
 - focused Release and Debug CTest matrices: 9/9 in each configuration;
-- expanded 17-file Python evidence gate, including backspin/Painleve visual
-  finalization, card v1/v2, the 94-column trace contract, manifest, selection,
-  and publication tests: 638/638 in 81.95 s; and
+- focused manifest/backspin/incline/author-masonry evidence suite: 715 passed
+  in 149.88 s;
+- full no-cache dartpy Python suite: 1,555 passed in 165.09 s; and
 - colored dispatch/barrier stress: 1,000 consecutive successful runs.
 
 The retained strict full-card failure above is scientific negative evidence,
@@ -460,6 +465,35 @@ does not prove release, standing, trajectory, solver behavior, contact
 dynamics, physical outcome, the historical four-level/26-card trajectory,
 Fig. 6 or video parity, timing, performance, or paper parity.
 
+### Pinned-Author Masonry-Arch Scientific Negative
+
+The sealed bundle is
+`assets/paper_evidence/author_masonry_arch_reference_v1/`. It records a
+500-frame, four-substep-per-frame author invocation that releases three cubes
+at frame 400 / substep 1,600. The source default is 400 frames with release at
+frame 400 and therefore never releases the cubes; this is a newly declared
+current-source diagnostic, not a historical or paper invocation.
+
+A deterministic projection represents every one of the 2,000 substeps and is
+lossless with respect to the declared claim fields. The 382,753,953-byte raw
+source history (SHA-256 `cec0e4b86837e7542c498c7ddad40538983ec023332b88ebddee7766997e3ac1`)
+is size/hash-bound but omitted. In the projection, 40 author convergence flags
+are true through the initial natural-residual shortcut, 117 are true through
+the configured outer nonnegative `coulomb_rel < 1e-6` gate, and 1,843 outer
+solves are false. The projected `final_residual` is the separate natural
+residual, with only 47 values at or below `1e-6`. Release substep 1,600 is
+nonconverged with 100 contacts and natural residual
+`0.017456069692858667`; final substep 1,999 is nonconverged with 108 contacts
+and residual `0.5161195175386001`. The projection has no contact-pair identities,
+so a later count increase is not definitive cube-arch contact evidence.
+
+Exit zero and valid bundle integrity prove preservation only. The companion
+DART spec records configuration but executes no dynamics and does not
+implement the source collision/contact-gap/backend/float32 semantics. This
+artifact establishes no all-substep solver success, DART or cross-solver
+dynamics/trajectory/outcome equivalence, Fig. 7/video.07 parity, timing,
+repeatability, or media/golden evidence.
+
 The selected nine retained schedules and their exact group outputs were also
 reverified successfully against that matrix's recorded `dart-demos` binary
 (`6ac1b6fb167bdcdbfbf2fea831eac7755a751ed72bb6f1d55e4f80a4d4e25165`).
@@ -632,6 +666,7 @@ those production box scenes.
 | 25-stone collision audit | Literal prisms/wedges with exact uniform-prism inertia | 24 nominal adjacent pairs or 26 with closure/ground | Collision/inertia audit only |
 | 25-stone literal dynamics | Exact-inertia literal wedges, `1 um` closure, Native `FourPointPlanar` | 96 contacts, 24 pairs/manifolds, 3 colors, width 8 for all measured steps | Non-paper 600-step standing trajectory, validated standing media, and matched 1-to-4-thread scaling only |
 | Literal crown-impact v1 | Standing contract plus three frozen projectiles; numeric only | Arch contact step 607 before ground step 616; finite, but 5 caps and residual/outcome gates fail | Preregistered non-paper scientific negative only |
+| Pinned-author 25-stone diagnostic | Author meshes and Warp/Newton float32 pipeline; 500 frames / 2,000 substeps | 100 contacts at release; 40 initial-shortcut and 117 configured-outer-gate convergences, plus 1,843 nonconverged outer solves; no pair identities | Current-source scientific negative only; no DART dynamics, trajectory, outcome, timing, repeatability, media, or paper-invocation parity |
 | Literal 101-stone v1 | Exact-inertia wedges, `1 um` closure; Compact time-zero probe and Native `FourPointPlanar` dynamic trace; numeric only | Compact repeat-2 time zero has 100 adjacent plus 2 springer-ground pairs; step-1 FourPointPlanar aggregates are 400 contacts/100 constraint pairs, 3 colors/width 34, but dynamic pair identities are absent and the solve fails after 5,000 outers at residual `0.7815364614` | Frozen non-paper failed-prefix scientific negative; no standing/timing/media claim |
 | Card-house manifold sensitivity v2 | Reconstructed 26-card command with Native `Compact` or `FourPointPlanar`; numeric only | Both emit 600 rows but are non-strict; FourPointPlanar increases mean contacts/multiplicity and fails the terminal convergence gate | Frozen one-factor diagnostic only; no physical/timing/media/paper claim |
 
@@ -654,12 +689,26 @@ controller are therefore inspectable.
 
 This removes source availability as an external blocker; source-port and
 matched-run work are now internal. Current author invocations were independently
-run and preserved. Only masonry-arch mesh assets are shipped; the public
+run and preserved. The sealed 500-frame masonry-arch run is a current-source
+scientific negative with 1,843/2,000 nonconverged flags; it is neither the
+400-frame source default nor a DART or historical-paper comparison. Only
+masonry-arch mesh assets are shipped; the public
 repository does not contain the historical paper renderer,
 cameras/materials/goldens, exact Apple-silicon model, or original paper
 invocation/timing logs and warmup/aggregation attestation. Local
 evidence remains x86-64/float64 DART on reconstructed scenes, and the paper
 publishes no multicore CPU reference.
+
+## Current Verification
+
+- Focused manifest/backspin/incline/author-masonry evidence suite: 715 passed
+  in 149.88 s.
+- Full no-cache dartpy Python suite: 1,555 passed in 165.09 s.
+- Author masonry-arch focused CTest: 1/1 passed; all four current sealed
+  bundles pass verify-only.
+- The manifest validates 29 canonical requirements with status `partial`.
+  Live mode performed 102 file-identity rechecks with zero skipped; explicit
+  archive mode reported zero live rechecks and 102 skipped.
 
 ## PR State
 
@@ -667,33 +716,39 @@ PR #3374 is merged. Its historical final head is abbreviated `1f816` and its
 merge commit is abbreviated `fa17fad`; the relevant visual-evidence changes
 are integrated in this worktree.
 
-On 2026-07-18 the local topic remained at `2ddd9f56` and
-`origin/release-6.20` was `75306efe770`, with 34 topic-only and 5 target-only
-commits. PR #3377 remains open with that topic head and a dirty merge state.
-Its published head is stale relative to the target. The current target branch
-must be merged into the published topic branch before any approved follow-up
-push.
+The #3377 topic contains `origin/release-6.20` through `75306efe770`. Topic
+head, divergence, merge state, checks, and reviews are mutable and are
+deliberately not frozen into this report. Before reporting or publishing, run:
 
-The failed-check audit separates branch regressions from base/workflow issues:
+```bash
+git fetch origin
+git merge-base --is-ancestor origin/release-6.20 HEAD
+gh pr view 3377 --json state,isDraft,headRefOid,baseRefName,mergeable,mergeStateStatus,statusCheckRollup,reviews,reviewRequests
+```
+
+Merge the target only when the ancestry check fails. PR #3377 remains work in
+progress and is not completion evidence.
+
+The historical failed-check audit separated branch regressions from
+base/workflow issues; these observations must not be reported as current-head
+results without fresh logs:
 
 - `SplitImpulseKeepsRestingContactVelocityZero` fails by `+0.001` across Linux
   Release/Debug, Eigen64, newest GCC/Clang, macOS Release/Debug, and FreeBSD.
   The published BoxedLCP velocity assembly leaves
   `ConstraintInfo.useSplitImpulse=false`; the dirty local one-line propagation
-  fixes the focused local test, but has not received cross-platform CI.
+  fixed the focused local test in the then-current local tree.
 - FreeBSD also times out the paper fixtures at 1,800 seconds. The dirty local
   tree gates the three worst scientific stress fixtures behind an explicit
-  environment opt-in, but a FreeBSD rerun is still required. Coverage/assert
-  failures from SplitImpulse, that timeout, and the invalid-gamma assertion are
-  locally addressed only.
+  environment opt-in. Coverage/assert failures from SplitImpulse, that timeout,
+  and the invalid-gamma assertion were locally addressed.
 - The MJCF NaN assertion remains open and base-owned: the current `75306efe770`
   target fails it too. It is not evidence of an exact-Coulomb branch regression.
 - Windows reaches the five-hour job timeout while compiling, then reports
   cancellation and `EBUSY` cleanup. The current target exhibits the same
   workflow/runtime failure and no product test runs.
 
-PR #3377 is therefore work in progress, stale-base, and not completion
-evidence. Local fixes do not substitute for an approved base merge and fresh
+Local fixes and historical classifications do not substitute for current-head
 cross-platform CI.
 
 ## Remaining Completion Gates
@@ -709,9 +764,12 @@ cross-platform CI.
   matched-work, and outcome evidence.
 - Complete strict full-duration physical outcomes for every card and arch row.
 - Audit and port the pinned public author scenes, solver configuration, local
-  kernel, and current external runners; produce matched runs or record exact
-  DART/source differences. Keep the unavailable historical renderer/goldens,
-  Apple hardware, precision, and paper timing-attestation gaps explicit.
+  kernel, and current external runners; preserve the sealed masonry-arch run
+  as a negative and turn its configuration-only DART spec into a dynamics port
+  only through a separately validated contract. Produce matched runs or record
+  exact DART/source differences. Keep the unavailable historical
+  renderer/goldens, Apple hardware, precision, and paper timing-attestation
+  gaps explicit.
 - Preserve the finalized incline, Painleve, backspin, and turntable bundles
   within their lane-specific claim boundaries. Promote only the remaining
   post-review small rows through validated immutable bundles; produce

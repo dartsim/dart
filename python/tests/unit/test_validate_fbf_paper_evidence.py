@@ -32,6 +32,13 @@ def manifest() -> dict:
     return json.loads(MANIFEST.read_text(encoding="utf-8"))
 
 
+@pytest.fixture(autouse=True)
+def validation_context():
+    with validator._validation_context(ROOT) as root_errors:
+        assert root_errors == []
+        yield
+
+
 def _requirement(manifest: dict, requirement_id: str) -> dict:
     return next(
         requirement
@@ -42,6 +49,249 @@ def _requirement(manifest: dict, requirement_id: str) -> dict:
 
 def _truth(manifest: dict, key: str) -> dict:
     return manifest["current_truth"][key]
+
+
+def _write_producer_root_records(repo_root: Path, roots: list[str]) -> None:
+    records = (
+        (validator.CARD_V2_BUNDLE, "invocation.json"),
+        (validator.IMPACT_V7_BUNDLE, "metadata.json"),
+        (validator.ARCH101_V5_BUNDLE, "invocation.json"),
+    )
+    for (bundle, filename), producer_root in zip(records, roots):
+        path = repo_root / bundle / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"cwd": producer_root}), encoding="utf-8")
+
+
+def test_producer_roots_support_independent_sealed_bundle_checkouts(
+    tmp_path: Path,
+) -> None:
+    producer = str((tmp_path / "producer" / "dart").resolve())
+    _write_producer_root_records(tmp_path, [producer, producer, producer])
+
+    assert validator._same_absolute_path(
+        validator._recorded_producer_repo_root(tmp_path), producer
+    )
+    assert validator._recorded_producer_repo_roots(tmp_path) == (
+        validator.PurePosixPath(producer),
+    )
+
+    second_producer = str((tmp_path / "second-producer" / "dart").resolve())
+    _write_producer_root_records(tmp_path, [producer, second_producer, producer])
+    assert validator._recorded_producer_repo_root(tmp_path) is None
+    assert validator._recorded_producer_repo_roots(tmp_path) == (
+        validator.PurePosixPath(producer),
+        validator.PurePosixPath(second_producer),
+    )
+
+
+def test_multiple_producer_roots_require_explicit_archive_mode(
+    tmp_path: Path,
+) -> None:
+    producer = str((tmp_path / "producer" / "dart").resolve())
+    second_producer = str((tmp_path / "second-producer" / "dart").resolve())
+    _write_producer_root_records(tmp_path, [producer, second_producer, producer])
+
+    with validator._validation_context(tmp_path) as root_errors:
+        assert validator._LIVE_HOST_IDENTITY_RECHECKS.get() is True
+        assert len(root_errors) == 1
+        assert "multiple distinct sealed producer roots" in root_errors[0]
+
+    with validator._validation_context(
+        tmp_path, live_host_identity_rechecks=False
+    ) as root_errors:
+        assert validator._LIVE_HOST_IDENTITY_RECHECKS.get() is False
+        assert root_errors == []
+
+
+def test_malformed_producer_root_stays_live_and_reports_error(
+    tmp_path: Path,
+) -> None:
+    producer = str((tmp_path / "producer" / "dart").resolve())
+    _write_producer_root_records(tmp_path, [producer, "relative/dart", producer])
+
+    with validator._validation_context(tmp_path) as root_errors:
+        assert validator._LIVE_HOST_IDENTITY_RECHECKS.get() is True
+        assert root_errors and "absolute normalized cwd" in root_errors[0]
+
+
+def test_unanimous_foreign_producer_root_selects_archive_mode(
+    tmp_path: Path,
+) -> None:
+    producer = "/producer/dart"
+    _write_producer_root_records(tmp_path, [producer, producer, producer])
+
+    with validator._validation_context(tmp_path) as root_errors:
+        assert root_errors == []
+        assert validator._LIVE_HOST_IDENTITY_RECHECKS.get() is False
+
+
+def test_same_path_on_an_unattested_host_can_force_archive_mode(
+    tmp_path: Path,
+) -> None:
+    current = str(tmp_path.resolve())
+    _write_producer_root_records(tmp_path, [current, current, current])
+
+    with validator._validation_context(
+        tmp_path, live_host_identity_rechecks=False
+    ) as root_errors:
+        assert root_errors == []
+        assert validator._LIVE_HOST_IDENTITY_RECHECKS.get() is False
+
+
+def test_repo_path_relocation_is_anchored_to_one_exact_relative_path(
+    tmp_path: Path,
+) -> None:
+    current_root = (tmp_path / "current" / "dart").resolve()
+    current_token = validator._VALIDATION_REPO_ROOT.set(current_root)
+    recorded_token = validator._RECORDED_REPO_ROOT.set(
+        validator.PurePosixPath("/producer/dart")
+    )
+    try:
+        assert validator._repo_relocated_absolute_paths_equal(
+            "/producer/dart/scripts/run.py", str(current_root / "scripts/run.py")
+        )
+        assert not validator._repo_relocated_absolute_paths_equal(
+            "/tmp/forged/scripts/run.py", str(current_root / "scripts/run.py")
+        )
+        assert not validator._repo_relocated_absolute_paths_equal(
+            "/producer/dart/scripts/other.py", str(current_root / "scripts/run.py")
+        )
+        assert not validator._repo_relocated_absolute_paths_equal(
+            "/producer/dart/../dart/scripts/run.py",
+            str(current_root / "scripts/run.py"),
+        )
+    finally:
+        validator._RECORDED_REPO_ROOT.reset(recorded_token)
+        validator._VALIDATION_REPO_ROOT.reset(current_token)
+
+
+def test_posix_producer_path_relocates_to_windows_checkout_path() -> None:
+    current_token = validator._VALIDATION_REPO_ROOT.set(
+        validator.PureWindowsPath("C:/actions/dart")
+    )
+    recorded_token = validator._RECORDED_REPO_ROOT.set(
+        validator.PurePosixPath("/producer/dart")
+    )
+    try:
+        assert validator._repo_relocated_absolute_paths_equal(
+            "/producer/dart/scripts/run.py",
+            r"C:\actions\dart\scripts\run.py",
+        )
+        assert not validator._repo_relocated_absolute_paths_equal(
+            "/tmp/forged/scripts/run.py",
+            r"C:\actions\dart\scripts\run.py",
+        )
+    finally:
+        validator._RECORDED_REPO_ROOT.reset(recorded_token)
+        validator._VALIDATION_REPO_ROOT.reset(current_token)
+
+
+def test_archived_file_identity_is_structural_but_live_mode_is_strict() -> None:
+    identity = {
+        "path": "/producer/dart/build/missing",
+        "sha256": "0" * 64,
+        "size_bytes": 123,
+    }
+    live_token = validator._LIVE_HOST_IDENTITY_RECHECKS.set(False)
+    try:
+        errors: list[str] = []
+        archived_path = validator._validate_live_absolute_file_identity(
+            identity, "path", "identity", errors
+        )
+        assert validator._same_absolute_path(archived_path, identity["path"])
+        assert errors == []
+
+        malformed = {**identity, "sha256": "invalid", "size_bytes": -1}
+        errors = []
+        validator._validate_live_absolute_file_identity(
+            malformed, "path", "identity", errors
+        )
+        assert errors == [
+            "identity.sha256: expected lowercase SHA-256",
+            "identity.size_bytes: expected a non-negative integer",
+        ]
+    finally:
+        validator._LIVE_HOST_IDENTITY_RECHECKS.reset(live_token)
+
+    live_token = validator._LIVE_HOST_IDENTITY_RECHECKS.set(True)
+    try:
+        errors = []
+        assert (
+            validator._validate_live_absolute_file_identity(
+                identity, "path", "identity", errors
+            )
+            is None
+        )
+        assert errors == ["identity.path: recorded file is unavailable"]
+    finally:
+        validator._LIVE_HOST_IDENTITY_RECHECKS.reset(live_token)
+
+
+def test_live_file_identity_rejects_existing_file_hash_and_size_drift(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "tool"
+    target.write_bytes(b"current")
+    identity = {
+        "path": str(target),
+        "sha256": hashlib.sha256(b"stale").hexdigest(),
+        "size_bytes": 999,
+    }
+    live_token = validator._LIVE_HOST_IDENTITY_RECHECKS.set(True)
+    try:
+        errors: list[str] = []
+        validator._validate_live_absolute_file_identity(
+            identity, "path", "identity", errors
+        )
+    finally:
+        validator._LIVE_HOST_IDENTITY_RECHECKS.reset(live_token)
+
+    assert any("identity.sha256: expected" in error for error in errors)
+    assert any("identity.size_bytes: expected 7, got 999" in error for error in errors)
+
+
+def test_live_runtime_identity_rejects_noncanonical_symlink(
+    tmp_path: Path,
+) -> None:
+    build = tmp_path / "build/lib"
+    build.mkdir(parents=True)
+    real_library = build / "libdart.so.6.19.3"
+    real_library.write_bytes(b"libdart")
+    alias = build / "libdart.so.6.19"
+    try:
+        alias.symlink_to(real_library.name)
+    except (OSError, NotImplementedError) as error:
+        pytest.skip(f"symlinks unavailable: {error}")
+    ldd = tmp_path / "ldd"
+    ldd.write_bytes(b"ldd")
+    record = {
+        "sha256": hashlib.sha256(real_library.read_bytes()).hexdigest(),
+        "size_bytes": real_library.stat().st_size,
+    }
+    resolved = {str(alias): record}
+    identity = {
+        "ldd_path": str(ldd),
+        "ldd_sha256": hashlib.sha256(ldd.read_bytes()).hexdigest(),
+        "resolved_regular_files": resolved,
+        "resolved_regular_files_sha256": hashlib.sha256(
+            json.dumps(resolved, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest(),
+    }
+    repo_token = validator._VALIDATION_REPO_ROOT.set(tmp_path)
+    recorded_token = validator._RECORDED_REPO_ROOT.set(
+        validator._absolute_pure_path(str(tmp_path))
+    )
+    live_token = validator._LIVE_HOST_IDENTITY_RECHECKS.set(True)
+    try:
+        errors: list[str] = []
+        validator._validate_cpu_runtime_identity(identity, "runtime", tmp_path, errors)
+    finally:
+        validator._LIVE_HOST_IDENTITY_RECHECKS.reset(live_token)
+        validator._RECORDED_REPO_ROOT.reset(recorded_token)
+        validator._VALIDATION_REPO_ROOT.reset(repo_token)
+
+    assert any("recorded runtime path must be canonical" in error for error in errors)
 
 
 @pytest.mark.parametrize(
@@ -153,6 +403,26 @@ def _patch_author_card_house_bundle_json(
     monkeypatch.setattr(validator, "_read_bundle_json", read_bundle)
 
 
+def _patch_author_masonry_arch_bundle_json(
+    monkeypatch: pytest.MonkeyPatch, name: str, mutate
+) -> None:
+    original = validator._read_bundle_json
+
+    def read_bundle(bundle, requested_name, location, errors):
+        payload = original(bundle, requested_name, location, errors)
+        if (
+            payload is not None
+            and requested_name == name
+            and bundle is not None
+            and bundle.as_posix().endswith(validator.AUTHOR_MASONRY_ARCH_V1_BUNDLE)
+        ):
+            payload = copy.deepcopy(payload)
+            mutate(payload)
+        return payload
+
+    monkeypatch.setattr(validator, "_read_bundle_json", read_bundle)
+
+
 def _author_card_house_truth(manifest: dict) -> dict:
     return _truth(manifest, "author_card_house_5_construction_only_v1")
 
@@ -162,6 +432,26 @@ def _author_card_house_requirement_map(manifest: dict) -> dict[str, dict]:
         requirement["id"]: copy.deepcopy(requirement)
         for requirement in manifest["requirements"]
         if requirement["id"] in {"fig.06", "video.06_card_house"}
+    }
+
+
+def _author_masonry_arch_truth(manifest: dict) -> dict:
+    return _truth(manifest, "author_masonry_arch_reference_v1")
+
+
+def _author_masonry_history_record(payload: dict) -> dict:
+    return next(
+        item
+        for item in payload["retained_source_artifacts"]
+        if item["bundle_path"].endswith("history-claim-projection.json.gz")
+    )
+
+
+def _author_masonry_arch_requirement_map(manifest: dict) -> dict[str, dict]:
+    return {
+        requirement["id"]: copy.deepcopy(requirement)
+        for requirement in manifest["requirements"]
+        if requirement["id"] in {"fig.07", "fig.09", "video.07_arch_25"}
     }
 
 
@@ -838,7 +1128,10 @@ def test_cpu_taskset_identity_and_per_invocation_rechecks_are_bound(
     errors = validator.validate_manifest(manifest, ROOT)
 
     assert any(
-        f"{truth_key}.metadata.executed_tool_closure.taskset.sha256" in error
+        (
+            f"{truth_key}.metadata.executed_tool_closure.taskset.sha256" in error
+            or f"{truth_key}.runtime_provenance.taskset_tool_sha256" in error
+        )
         for error in errors
     )
     assert any(
@@ -860,6 +1153,8 @@ def test_cpu_runtime_file_identity_rejects_noncanonical_symlink_paths(
     bundle_name: str,
     truth_key: str,
 ) -> None:
+    if not validator.live_host_identity_rechecks_available(ROOT):
+        pytest.skip("requires the checkout that produced the runtime closure")
     original = validator._read_bundle_json
     bundle_suffix = getattr(validator, bundle_name)
 
@@ -1573,6 +1868,8 @@ def test_structured_runtime_library_closures_are_checked_live(
     identity_path: tuple[str, ...],
     message: str,
 ) -> None:
+    if not validator.live_host_identity_rechecks_available(ROOT):
+        pytest.skip("requires the checkout that produced the runtime closure")
     original = validator._read_bundle_json
     bundle_suffix = getattr(validator, bundle_name)
 
@@ -4191,6 +4488,206 @@ def test_author_card_house_truth_profile_and_boundaries_accept_sealed_bundle(
     }
 
 
+def test_author_masonry_arch_truth_and_boundaries_accept_scientific_negative(
+    manifest: dict,
+) -> None:
+    truth_errors: list[str] = []
+    validator._validate_author_masonry_arch_v1_truth(
+        manifest["current_truth"], ROOT, truth_errors
+    )
+    boundary_errors: list[str] = []
+    validator._validate_author_masonry_arch_requirement_boundaries(
+        _author_masonry_arch_requirement_map(manifest), boundary_errors
+    )
+
+    assert truth_errors == []
+    assert boundary_errors == []
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    [
+        ("status", "valid_current_source_parity"),
+        ("configured_termination_residual", "final_residual"),
+        ("author_nonconverged_flag_count", 0),
+        ("claim_history_projection_valid", False),
+        ("raw_source_history_retained", True),
+        ("raw_source_history_bytes", 1),
+        ("raw_source_history_sha256", "0" * 64),
+        ("history_projection_decompressed_bytes", 1),
+        ("history_projection_stored_bytes", 1),
+        ("dart_dynamics_parity_valid", True),
+        ("fig09_parity", True),
+    ],
+)
+def test_author_masonry_arch_truth_promotions_fail_closed(
+    manifest: dict, field: str, replacement
+) -> None:
+    _author_masonry_arch_truth(manifest)[field] = replacement
+    errors: list[str] = []
+
+    validator._validate_author_masonry_arch_v1_truth(
+        manifest["current_truth"], ROOT, errors
+    )
+
+    assert any(f".{field}:" in error for error in errors)
+
+
+def test_author_masonry_arch_artifact_hash_mutation_fails_closed(
+    manifest: dict,
+) -> None:
+    _author_masonry_arch_truth(manifest)["artifact_hashes"][
+        "runs/20260719T113826Z/fbf/history-claim-projection.json.gz"
+    ] = ("0" * 64)
+    errors: list[str] = []
+
+    validator._validate_author_masonry_arch_v1_truth(
+        manifest["current_truth"], ROOT, errors
+    )
+
+    assert any(
+        "history-claim-projection.json.gz" in error and "digest mismatch" in error
+        for error in errors
+    )
+
+
+@pytest.mark.parametrize(
+    ("name", "mutate", "message"),
+    [
+        (
+            "manifest.json",
+            lambda payload: payload.__setitem__("paper_parity", True),
+            "unexpected keys ['paper_parity']",
+        ),
+        (
+            "manifest.json",
+            lambda payload: payload["invocation"]["argv"].__setitem__(5, "400"),
+            ".manifest.invocation:",
+        ),
+        (
+            "manifest.json",
+            lambda payload: _author_masonry_history_record(payload)[
+                "source_identity"
+            ].__setitem__("retained", True),
+            ".manifest.retained_source_artifacts:",
+        ),
+        (
+            "manifest.json",
+            lambda payload: _author_masonry_history_record(payload)[
+                "projection"
+            ].__setitem__("schema_version", "invalid/v1"),
+            ".manifest.retained_source_artifacts:",
+        ),
+        (
+            "manifest.json",
+            lambda payload: _author_masonry_history_record(payload)[
+                "projection"
+            ].__setitem__("stored_bytes", 1),
+            ".manifest.retained_source_artifacts:",
+        ),
+        (
+            "summary.json",
+            lambda payload: payload["protocol"].__setitem__("total_substeps", 1999),
+            ".summary.protocol:",
+        ),
+        (
+            "summary.json",
+            lambda payload: payload["trajectory"].__setitem__("sample_count", 499),
+            ".summary.trajectory:",
+        ),
+        (
+            "summary.json",
+            lambda payload: payload["predicates"].__setitem__(
+                "claim_history_projection_valid", False
+            ),
+            ".summary.predicates:",
+        ),
+        (
+            "summary.json",
+            lambda payload: payload["predicates"].__setitem__(
+                "raw_source_history_retained", True
+            ),
+            ".summary.predicates:",
+        ),
+        (
+            "runs/20260719T113826Z/fbf/result.json",
+            lambda payload: payload["config"].__setitem__(
+                "termination_residual", "natural"
+            ),
+            ".result.config.termination_residual:",
+        ),
+        (
+            "verification.json",
+            lambda payload: payload["checks"].pop(),
+            ".verification.checks:",
+        ),
+    ],
+)
+def test_author_masonry_arch_bundle_semantic_mutations_fail_closed(
+    manifest: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    name: str,
+    mutate,
+    message: str,
+) -> None:
+    _patch_author_masonry_arch_bundle_json(monkeypatch, name, mutate)
+    errors: list[str] = []
+
+    validator._validate_author_masonry_arch_v1_truth(
+        manifest["current_truth"], ROOT, errors
+    )
+
+    assert any(message in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("requirement_id", "mutation", "message"),
+    [
+        ("fig.07", "status", ".status"),
+        ("fig.09", "evidence", "missing scientific-negative evidence"),
+        ("video.07_arch_25", "command", "missing bundle verification command"),
+        ("fig.07", "deliverable", "cannot be promoted"),
+        ("fig.09", "support", "report support must retain negative boundary"),
+    ],
+)
+def test_author_masonry_arch_requirement_boundary_mutations_fail_closed(
+    manifest: dict, requirement_id: str, mutation: str, message: str
+) -> None:
+    by_id = _author_masonry_arch_requirement_map(manifest)
+    requirement = by_id[requirement_id]
+    if mutation == "status":
+        requirement["status"] = "complete"
+    elif mutation == "evidence":
+        requirement["current_evidence"] = [
+            item
+            for item in requirement["current_evidence"]
+            if "author_masonry_arch_reference_v1" not in item["path"]
+        ]
+    elif mutation == "command":
+        requirement["commands"] = []
+        requirement["capture_plan"]["commands"] = []
+    elif mutation == "deliverable":
+        requirement["deliverables"].append(
+            {
+                "kind": "raw_data",
+                "path": (f"{validator.AUTHOR_MASONRY_ARCH_V1_BUNDLE}/summary.json"),
+                "validated": True,
+            }
+        )
+    elif mutation == "support":
+        report = next(
+            item
+            for item in requirement["current_evidence"]
+            if "author_masonry_arch_reference_v1" in item["path"]
+        )
+        report["supports"] = "This proves paper parity."
+    errors: list[str] = []
+
+    validator._validate_author_masonry_arch_requirement_boundaries(by_id, errors)
+
+    assert any(message in error for error in errors)
+
+
 @pytest.mark.parametrize(
     ("path", "replacement"),
     [
@@ -4811,4 +5308,7 @@ def test_cli_accepts_the_repository_manifest(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     assert validator.main([str(MANIFEST), "--repo-root", str(ROOT)]) == 0
-    assert "29 canonical requirements" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "29 canonical requirements" in output
+    assert "host_identities=live" in output
+    assert "skipped_live_file_identity_rechecks=0" in output

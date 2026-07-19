@@ -19,7 +19,7 @@
     "stderr_path": "verification.stderr.txt",
     "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "stdout_path": "verification.json",
-    "stdout_sha256": "fb9de609e52df648465dc0dbe73af7fbbd1b98c1c4671cde504200ff72c15c01"
+    "stdout_sha256": "ed9c121f3dc74ac4de293ad67a971978cb10ec6c04ccc5c5a9978fbdd393f133"
   },
   "schema_version": "dart.fbf_backspin_invocations/v1",
   "trace": {

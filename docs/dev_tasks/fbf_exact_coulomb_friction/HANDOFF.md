@@ -1,6 +1,6 @@
 # Fresh Session Handoff Prompt
 
-This prompt reflects the 2026-07-18 checkpoint in
+This prompt reflects the 2026-07-19 checkpoint in
 [RESUME.md](RESUME.md). Copy it into a fresh session without appending an older
 cached status summary.
 
@@ -22,16 +22,15 @@ paper-parity-matrix.md, PR_REPORT.md, gui-capture-report.md,
 residual-history-report.md, and paper-evidence-manifest.json. Treat
 AGENT_CONTINUATION.md as the authoritative truth ledger.
 
-Preserve the broad dirty worktree. Local state observed on 2026-07-18:
+Inspect and preserve any existing worktree changes. Durable branch state:
 
   branch research/fbf-friction-release620
-  topic HEAD 2ddd9f56
-  origin/release-6.20 75306efe770
-  divergence 34 topic-only commits, 5 target-only commits
+  target synchronization verified through 75306efe770
+  topic HEAD/divergence/PR/CI/review state must be verified live
 
-Recheck it. Do not switch trees, revert unrelated changes, commit, push, edit a
-PR, rerun CI, or mutate GitHub without explicit approval. Never add AI/tool
-attribution.
+Fetch origin and verify origin/release-6.20 is an ancestor before publishing.
+Do not switch trees, revert unrelated changes, commit, push, edit a PR, rerun
+CI, or mutate GitHub without explicit approval. Never add AI/tool attribution.
 
 External truth:
 
@@ -50,16 +49,17 @@ External truth:
 - Local work is reconstructed float64 DART on x86-64 Linux. Paper timing
   targets and verdicts remain null; no local time is apples-to-apples with the
   paper.
+- The sealed author masonry-arch run is a current-source scientific negative,
+  not a historical paper invocation or DART parity evidence.
 
 PR truth:
 
 - PR #3374 is merged at fa17fad.
-- On 2026-07-18 the local topic remained at 2ddd9f56 and
-  origin/release-6.20 was 75306efe770, with 34 topic-only and 5 target-only
-  commits.
-- PR #3377 is open at topic head 2ddd9f56, non-draft, DIRTY, and its body
-  overclaims the task's completion and paper coverage. It is not completion
-  evidence.
+- The #3377 topic contains origin/release-6.20 through 75306efe770. Its topic
+  head, divergence, merge state, checks, and reviews are mutable and must be
+  queried live rather than copied from this handoff.
+- PR #3377 is work in progress and its body overclaims the task's completion
+  and paper coverage. It is not completion evidence.
 - Use PR_REPORT.md as the source for a truthful replacement body only after
   explicit approval to mutate GitHub.
 
@@ -434,6 +434,37 @@ Author card-house construction truth:
   dynamics, physical outcome, historical four-level/26-card trajectory,
   Fig. 6/video parity, timing, or performance claim.
 
+Pinned-author masonry-arch truth:
+
+- Preserve
+  assets/paper_evidence/author_masonry_arch_reference_v1/.
+- The pinned author invocation uses 500 frames and four substeps per frame,
+  releasing three cubes at frame 400 / substep 1600. The source default is
+  400 frames with drop_frame=400 and never releases the cubes; this is a new
+  current-source diagnostic, not a historical or paper invocation.
+- A deterministic projection represents every one of the 2000 substeps and is
+  lossless with respect to the declared claim fields. The 382,753,953-byte raw
+  source history (SHA-256
+  `cec0e4b86837e7542c498c7ddad40538983ec023332b88ebddee7766997e3ac1`)
+  is size/hash-bound but omitted. The projection records 157 true and 1843
+  false author convergence flags: 142/1458 before release and 15/385 after
+  release.
+- Of the true flags, 40 are initial natural-residual shortcut accepts and 117
+  are configured outer nonnegative `coulomb_rel < 1e-6` accepts. All 40
+  shortcut accepts occur before release; the outer-gate split is 102 before
+  and 15 after release. `final_residual` is the separate natural residual, and
+  only 47 values are at or below 1e-6.
+  Release substep 1600 is nonconverged at 100 contacts and residual
+  0.017456069692858667; final substep 1999 is nonconverged at 108 contacts and
+  residual 0.5161195175386001.
+- A post-release contact-count increase is not pair-identified cube-arch
+  contact evidence because the projection stores no pair identities.
+- Exit zero proves completion and bundle preservation only. The DART shared
+  spec is configuration-only, executes no dynamics, and does not implement
+  the source collision/contact-gap/backend/float32 semantics. Claim no DART or
+  cross-solver dynamics/trajectory/outcome equivalence, Fig. 7/video.07
+  parity, timing, repeatability, pair-contact, or visual/golden evidence.
+
 Current reconstructed crown-impact truth:
 
 - Use LITERAL_CROWN_IMPACT_V1.md and
@@ -617,12 +648,14 @@ Latest recorded focused gates:
 - finalized incline finalizer unit tests passed 62/62; clean-checkout
   verify-only passed with 21 indexed artifacts and no ignored staging
   dependency;
-- integrated 17-file CPU/visual/impact/101/card/manifest/publication evidence
-  suite with 638 passed in 81.95 s;
-- after the behavior-neutral finalizer isort correction, focused finalizer
-  tests had 9 passed in 0.04 s; Painleve verify-only and the manifest validator
-  both passed, the latter for all 29 canonical requirements with intentional
-  overall status `partial`; and
+- focused manifest/backspin/incline/author-masonry evidence suite: 715 passed
+  in 149.88 s;
+- full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
+- author masonry-arch focused CTest: 1/1 passed;
+- all four current sealed bundles pass verify-only; the manifest validator
+  passes all 29 canonical requirements with intentional status `partial`, 102
+  live file-identity rechecks and zero skipped, while explicit archive mode
+  reports zero live rechecks and 102 skipped; and
 - deterministic colored-scheduler stress 1,000 runs passed.
 
 Immediate order:

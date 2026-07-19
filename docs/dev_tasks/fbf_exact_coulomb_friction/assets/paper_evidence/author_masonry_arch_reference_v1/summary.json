@@ -1,0 +1,125 @@
+{
+  "history": {
+    "author_converged_flag_count": 157,
+    "author_nonconverged_flag_count": 1843,
+    "configured_coulomb_rel_outer_gate_converged_count": 117,
+    "contact_pair_identity_available": false,
+    "contact_positive_step_count": 2000,
+    "convergence_natural_threshold_cross_table": {
+      "converged_and_natural_above": 111,
+      "converged_and_natural_at_or_below": 46,
+      "nonconverged_and_natural_above": 1842,
+      "nonconverged_and_natural_at_or_below": 1
+    },
+    "final_substep": {
+      "converged": false,
+      "natural_final_residual": 0.5161195175386001,
+      "num_contacts": 108,
+      "outer_iters": 200,
+      "step_idx": 1999
+    },
+    "first_inferred_contact_count_increase_after_release": {
+      "count": 102,
+      "previous_count": 100,
+      "step_idx": 1944
+    },
+    "first_nonconverged_step_idx": 53,
+    "initial_natural_residual_shortcut_converged_count": 40,
+    "max_natural_final_residual": {
+      "step_idx": 226,
+      "value": 4.1130565788445415
+    },
+    "natural_final_residual_at_or_below_tolerance_count": 47,
+    "outer_cap_hit_count": 1843,
+    "peak_contact_count": {
+      "count": 109,
+      "step_idx": 1947
+    },
+    "post_release": {
+      "configured_coulomb_rel_outer_gate_converged": 15,
+      "converged": 15,
+      "initial_natural_residual_shortcut_converged": 0,
+      "nonconverged": 385,
+      "substeps": 400
+    },
+    "pre_release": {
+      "configured_coulomb_rel_outer_gate_converged": 102,
+      "converged": 142,
+      "initial_natural_residual_shortcut_converged": 40,
+      "nonconverged": 1458,
+      "substeps": 1600
+    },
+    "release_substep": {
+      "converged": false,
+      "natural_final_residual": 0.017456069692858667,
+      "num_contacts": 100,
+      "outer_iters": 200,
+      "step_idx": 1600
+    },
+    "total_substeps": 2000,
+    "warmup_step_count": 0,
+    "zero_outer_iteration_count": 40
+  },
+  "nonclaims": [
+    "not_a_historical_or_paper_invocation",
+    "not_the_source_default_400_frame_no_release_protocol",
+    "not_an_all_substeps_solver_valid_result",
+    "not_dart_equivalence_or_dynamics_parity",
+    "not_cross_solver_parity",
+    "not_timing_or_real_time_evidence",
+    "not_repeatability_or_statistical_evidence",
+    "contact_count_change_is_not_definitive_cube_arch_pair_contact",
+    "not_visual_renderer_or_approved_golden_evidence",
+    "not_a_contemporaneous_pre_and_post_runtime_attestation",
+    "raw_source_history_not_retained_beyond_claim_projection"
+  ],
+  "predicates": {
+    "all_substeps_solver_contract_valid": false,
+    "artifact_integrity_valid": true,
+    "claim_history_projection_valid": true,
+    "contact_increase_is_pair_identified_cube_arch_contact": false,
+    "cross_solver_parity_valid": false,
+    "current_source_diagnostic_valid": true,
+    "dart_dynamics_parity_valid": false,
+    "historical_or_paper_invocation_valid": false,
+    "raw_source_history_retained": false,
+    "runtime_attestation_complete": false,
+    "scientific_negative": true,
+    "timing_verdict": null
+  },
+  "protocol": {
+    "drop_frame": 400,
+    "frames": 500,
+    "observed_invocation_is_source_default": false,
+    "post_release_substeps": 400,
+    "pre_release_substeps": 1600,
+    "release_substep": 1600,
+    "run_id": "20260719T113826Z",
+    "source_commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+    "source_default_drop_frame": 400,
+    "source_default_frames": 400,
+    "source_default_releases_cubes": false,
+    "substeps_per_frame": 4,
+    "total_substeps": 2000
+  },
+  "residual_semantics": {
+    "author_converged_flag_is_exclusively_configured_gate": false,
+    "configured_coulomb_rel_outer_gate_converged_count": 117,
+    "configured_termination_residual": "coulomb_rel",
+    "configured_termination_tolerance": 1e-06,
+    "final_residual_field_is_natural_residual": true,
+    "initial_natural_residual_shortcut_converged_count": 40,
+    "natural_threshold_count_is_not_configured_convergence_count": true
+  },
+  "schema_version": "dart.fbf_author_masonry_arch_summary/v1",
+  "status": "valid_current_source_scientific_negative",
+  "trajectory": {
+    "keystone_idx": 12,
+    "keystone_z_final": 60.18415069580078,
+    "keystone_z_first_recorded": 61.92604446411133,
+    "keystone_z_init": 61.92774963378906,
+    "max_height_change": 1.7435989379882812,
+    "sample_count": 500,
+    "stone_count": 25
+  }
+}

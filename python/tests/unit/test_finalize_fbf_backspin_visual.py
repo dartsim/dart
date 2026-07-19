@@ -6,12 +6,14 @@ import io
 import json
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / "scripts/finalize_fbf_backspin_visual.py"
+TEST_EXECUTABLE = Path(sys.executable).resolve()
 
 
 def _load_module():
@@ -49,11 +51,11 @@ def test_capture_command_and_provenance_bind_runtime_checker_resources(tmp_path)
     module.write_json(bundle / "run-summary.json", {"pass": True})
     (bundle / "capture.stdout.txt").write_text("renderer log\n", encoding="utf-8")
     (bundle / "capture.stderr.txt").write_text("", encoding="utf-8")
-    python = Path("/bin/true")
-    runner = Path("/bin/true")
-    demo = Path("/bin/true")
-    ffmpeg = Path("/bin/true")
-    ffprobe = Path("/bin/true")
+    python = TEST_EXECUTABLE
+    runner = TEST_EXECUTABLE
+    demo = TEST_EXECUTABLE
+    ffmpeg = TEST_EXECUTABLE
+    ffprobe = TEST_EXECUTABLE
     resources = module._checker_runtime_resource_identity()
     argv = module._capture_argv(python, runner, demo, bundle, ffmpeg, ffprobe)
     payload = {
@@ -314,7 +316,7 @@ def test_sealed_capture_provenance_binds_pruned_staging_and_stills(tmp_path):
             path.write_bytes(relative.encode())
     manifest = module._build_staging_manifest(tmp_path)
     staging = {item["path"]: item for item in manifest["artifacts"]}
-    executable = Path("/bin/true")
+    executable = TEST_EXECUTABLE
     resources = module._checker_runtime_resource_identity()
     payload = {
         "argv": module._capture_argv(
@@ -732,12 +734,12 @@ def test_checker_source_contract_fails_closed_on_asset_mutation(
 def test_source_identity_binds_checker_assets():
     module = _load_module()
     sources = module._source_identity(
-        trace_binary=Path("/bin/true"),
-        demo=Path("/bin/true"),
+        trace_binary=TEST_EXECUTABLE,
+        demo=TEST_EXECUTABLE,
         runner=module.DEFAULT_RUNNER,
-        ffmpeg=Path("/bin/true"),
-        ffprobe=Path("/bin/true"),
-        python=Path("/bin/true"),
+        ffmpeg=TEST_EXECUTABLE,
+        ffprobe=TEST_EXECUTABLE,
+        python=TEST_EXECUTABLE,
     )
 
     for key, path in {

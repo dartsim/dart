@@ -270,6 +270,45 @@ historical current-at-capture evidence. The unchanged command was rebaselined
 as v5 and again as v6 after the current-build libdart identity advanced; the
 scientific result is unchanged.
 
+## Pinned-Author Masonry-Arch Scientific Negative
+
+The sealed current-source bundle is
+`assets/paper_evidence/author_masonry_arch_reference_v1/`. The author
+invocation uses 500 frames, four substeps per frame, and releases three cubes
+at frame 400 / substep 1,600. The checked-in default is 400 frames with
+`drop_frame=400`, so it never releases the cubes. This is therefore a newly
+declared diagnostic, not a historical or paper invocation.
+
+A deterministic projection represents every one of the 2,000 substeps and is
+lossless with respect to the declared claim fields. The 382,753,953-byte raw
+source history (SHA-256 `cec0e4b86837e7542c498c7ddad40538983ec023332b88ebddee7766997e3ac1`)
+is size/hash-bound but omitted. The projection separates two residual concepts
+that must not be conflated:
+
+| Field | Observation |
+| --- | --- |
+| Configured outer termination gate | nonnegative `coulomb_rel < 1e-6` |
+| Initial shortcut | natural initial residual `< 1e-6`; 40 true flags, all before release |
+| Author convergence flags | 157 true: 40 initial-shortcut plus 117 configured-outer-gate; 1,843 false outer solves |
+| Pre-release flags | 142 true (40 initial-shortcut, 102 configured-outer-gate), 1,458 false |
+| Post-release flags | 15 true (all configured-outer-gate), 385 false |
+| Natural `final_residual <= 1e-6` | 47 substeps |
+| Release substep 1,600 | nonconverged; 100 contacts; natural residual `0.017456069692858667` |
+| Final substep 1,999 | nonconverged; 108 contacts; natural residual `0.5161195175386001` |
+| Maximum natural residual | `4.1130565788445415` at substep 226 |
+
+The first post-release contact-count increase is inferred at substep 1,944,
+but the projection carries no pair identities, so it is not definitive
+cube-arch contact evidence. Exit zero and artifact integrity mean that the
+diagnostic completed and was preserved; they do not make the solver contract
+valid.
+
+The companion DART specification records author geometry and solver constants
+but is explicitly configuration-only. It implements no source
+collision/contact-gap/backend/float32 dynamics semantics and executes no DART
+dynamics. The bundle establishes no DART or cross-solver dynamics, trajectory,
+physical-outcome, Fig. 7/video.07, timing, repeatability, or media parity.
+
 ## Rank-Deficiency Diagnosis
 
 The contact-rich system is necessarily semidefinite and highly redundant. At
@@ -511,6 +550,13 @@ successful 600-step outcomes, and residual bound establish local DART dynamics
 for that named contract only. They do not retroactively turn the collision
 probe into dynamics evidence or reproduce the author 100-contact row.
 
+The pinned-author 500-frame diagnostic separately records 100 contacts at
+release. Forty true flags use the initial natural-residual shortcut, 117 use
+the configured outer `coulomb_rel` gate, and 1,843 outer solves are
+nonconverged. Its history does not serialize contact-pair identities. It is an
+author-source scientific negative, not a source-matched DART trajectory or a
+passing Figure 9 curve.
+
 The bounded oriented-box visual runs independently show the 25-stone
 reconstruction collapsed by step 24/360 (0.4 s) and the 101-stone
 reconstruction collapsed by step 120/600 (2 s). No valid long sidecars/media
@@ -581,6 +627,13 @@ modifying the bundle:
   --verify-only
 ```
 
+Verify the sealed author masonry-arch diagnostic without modifying it:
+
+```bash
+.pixi/envs/default/bin/python \
+  scripts/finalize_fbf_author_masonry_arch_reference.py --verify-only
+```
+
 Reproduce the frozen current-source card-manifold comparison with a fresh
 output directory:
 
@@ -602,6 +655,9 @@ evidence, not a reason to omit the run or substitute a reduced scenario.
   tolerance without fallback.
 - Preserve the completed v2 sensitivity result as diagnostic-only evidence;
   do not promote either non-strict trajectory or its raw wall times.
+- Preserve the pinned-author run as scientific-negative source evidence;
+  never equate its natural residual with the configured convergence flag or
+  promote it into a DART-parity curve.
 - Generate full-duration strict card and arch histories from final reviewed
   source.
 - Generate a per-outer literal-wedge residual-history artifact if it is to be

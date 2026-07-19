@@ -24,7 +24,7 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Area | Current truth | Verdict |
 | --- | --- | --- |
 | Author source | The MIT-licensed `matthcsong/fbf-sca-2026` reference implementation is public and pinned at `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`; it contains the Warp/Newton FBF solver, six runnable examples, current scene/configuration source, optional MuJoCo/Kamino runners, and masonry meshes | Source-port and matched-run work are internal; current author invocations were independently run and preserved, but historical renderer/camera/material/golden assets, original invocation/timing logs and warmup/aggregation attestation, and the exact Apple-silicon model remain unavailable |
-| PR integration | PR #3374 is historically merged at `fa17fad`; as observed on 2026-07-18, the topic is `2ddd9f56`, `origin/release-6.20` is `75306efe770`, and the refs have 34 topic-only plus 5 target-only commits; PR #3377 remains `DIRTY` and its body overclaims the current result | #3377 is work in progress, not completion evidence |
+| PR integration | PR #3374 is historically merged at `fa17fad`; the #3377 topic contains `origin/release-6.20` through `75306efe770`, while its mutable topic head, divergence, merge state, checks, and reviews must be verified live | #3377 is work in progress, not completion evidence |
 | Exact math | Contact-row signs and conventions are validated; row-operator versus impulse-test `W` has relative error `1.33e-16`; spectral-nullspace regressions pass | The tested algebraic path is supported |
 | Literal 25-stone exact trajectory | The reconstructed Native FourPointPlanar `1 um`-closure wedge arch completes 600 steps in every warmup and measured run at both one and four threads | Valid local non-paper exact-FBF evidence |
 | Colored inner BGS | The arch has 96 contacts, 24 colliding pairs/manifolds, 3 deterministic colors, and maximum color width 8 throughout | Four pinned workers execute the measured colored phases; one- and four-thread trajectories and outcomes match |
@@ -37,6 +37,7 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Backspin visual evidence | Finalized `fig03_backspin_current_v3` has 18 indexed artifacts / 20 physical files, three durable stills, MP4/GIF media, 129 exact attempts/solves, zero caps/failures/fallbacks, a corroborating translational trace, and a passing manual inspection of the renderer-applied high-contrast 6x4 ivory/charcoal checker texture and coral registration tile | Valid current-source DART evidence only; `fig.03` and `video.02_backspin` both remain partial |
 | Author-pinned turntable visual evidence | Finalized `fig04_turntable_author_current_v1` has 58 indexed artifacts / 60 physical files, four timeline-bound outcome stills, and all four 360-step author-configured cells; the current visual lane records three ejections and `mu=.5, omega=2` retained on support through 6 s | Valid author-source-pinned non-paper finite-horizon DART evidence only; zero slip, co-rotation, full-state equivalence, paper timing, approved-golden, and paper-parity claims remain unproven |
 | Author card-house construction | Finalized `card_house_author_5_construction_current_v1` has 12 indexed artifacts / 14 physical files and shows the public-author default five-level, 40-card configuration at step zero | Construction-only evidence: zero simulation substeps; no release, standing, trajectory, solver, contact-dynamics, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
+| Pinned-author masonry arch | Sealed `author_masonry_arch_reference_v1` records a 500-frame, 2,000-substep run with cube release at substep 1,600; a deterministic claim-history projection represents every substep, with 157 true and 1,843 false author convergence flags | Valid current-source scientific negative only; the invocation is not the 400-frame source default or a historical paper run, and no DART, cross-solver, trajectory, outcome, timing, repeatability, contact-pair, or media parity follows |
 | Reconstructed crown impact | Frozen three-cube v1 completes 720 steps and contacts the arch before the ground, but fails exactness and far-field preservation gates | Valid scientific negative; impact claim is false and no parameter was tuned |
 | Card-manifold sensitivity | Current-source v2 compares only Native `Compact` versus `FourPointPlanar`; both emit 600 rows but have zero strict-success rows and accepted capped groups on every row | Integrity-valid reconstruction diagnostic; physical, timing, real-time, and paper verdicts are null |
 | Paper-media parity | The passing literal video has no projectile; paper impact media and 101-stone coverage remain incomplete, while the public author repository contains no renderer camera/material bundle or approved frame goldens | No paper impact, GUI, or golden-frame parity claim |
@@ -454,6 +455,36 @@ behavior, contact dynamics, physical outcome, the historical four-level,
 26-card paper trajectory, Fig. 6 or video parity, source renderer colors,
 paper timing, or performance.
 
+## Pinned-Author Masonry-Arch Scientific Negative
+
+The sealed current-source bundle is
+[`assets/paper_evidence/author_masonry_arch_reference_v1/`](assets/paper_evidence/author_masonry_arch_reference_v1/).
+It records the pinned author invocation with 500 frames, four substeps per
+frame, and cube release at frame 400 / substep 1,600. The source default is
+400 frames with `drop_frame=400`, so it never releases the cubes; the recorded
+run is a newly declared diagnostic, not a historical or paper invocation.
+
+A deterministic projection represents every one of the 2,000 substeps and is
+lossless with respect to the declared claim fields. The 382,753,953-byte raw
+source history (SHA-256 `cec0e4b86837e7542c498c7ddad40538983ec023332b88ebddee7766997e3ac1`)
+is size/hash-bound but omitted. Of 157 true author convergence flags, 40 use
+the initial natural-residual shortcut and 117 use the configured outer
+nonnegative `coulomb_rel < 1e-6` gate; 1,843 outer solves are nonconverged,
+including 1,458/1,600 substeps before release and 385/400 after release. The
+projected `final_residual` is a different, natural-residual metric: only 47
+values are at or below `1e-6`. Release substep 1,600 is nonconverged with 100
+contacts and natural residual `0.017456069692858667`; the final substep is
+nonconverged with 108 contacts and residual `0.5161195175386001`. A
+contact-count increase at substep 1,944 is only inferred because the projection
+contains no pair identities.
+
+Exit code zero and bundle integrity validate this sealed scientific
+negative, not solver success. The shared DART specification is configuration
+only: it records the author geometry and solver constants but explicitly does
+not implement the source collision/contact-gap/backend/float32 semantics or
+execute DART dynamics. No DART or cross-solver dynamics, trajectory, physical
+outcome, Fig. 7/video.07, timing, repeatability, or media parity is established.
+
 ## Preregistered Crown-Impact v1 Negative
 
 The frozen non-paper contract and result are documented in
@@ -627,8 +658,12 @@ The latest recorded focused results on the current source are:
 - finalized incline finalizer unit tests: 62/62; clean-checkout verify-only
   passes with status `valid_current_source_nonpaper_incline`, 21 indexed
   artifacts, and no ignored staging dependency;
-- integrated 17-file CPU/visual/impact/101/card/manifest/publication evidence
-  suite: 638 passed in 81.95 s; and
+- focused manifest/backspin/incline/author-masonry evidence suite: 715 passed
+  in 149.88 s;
+- full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
+- author masonry-arch C++ specification: 1/1 focused CTest passed;
+- manifest validation: live mode performed 102 file-identity rechecks with
+  zero skipped; explicit archive mode reported all 102 skipped rechecks; and
 - deterministic colored-scheduler stress: 1,000 runs passed.
 
 ## Immediate Next Work

@@ -1,0 +1,24 @@
+{
+  "experiment": "masonry_arch_drop",
+  "mu": 0.8,
+  "num_stones": 25,
+  "num_cubes": 3,
+  "cube_half_size": 1.5,
+  "cube_density": 2000.0,
+  "stone_density": 2000.0,
+  "drop_height": 10.0,
+  "scale": 1.0,
+  "num_frames": 500,
+  "drop_frame": 400,
+  "dt": 0.016666666666666666,
+  "substeps": 4,
+  "sub_dt": 0.004166666666666667,
+  "T_seconds": 8.333333333333334,
+  "gap": 0.005,
+  "mesh_dir": "/tmp/fbf-sca-2026-author/paper_examples/masonry-arch/../../meshes/arch/num_stones=25",
+  "solvers": [
+    "fbf"
+  ],
+  "device": "cpu",
+  "timestamp": "20260719T113826Z"
+}

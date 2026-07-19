@@ -61,14 +61,12 @@
     },
     "pr3377": {
       "url": "https://github.com/dartsim/dart/pull/3377",
-      "status": "open_failed_ci_snapshot",
-      "upstream_head": "2ddd9f56a45437cf1c55e3433bd8aae080acff1e",
-      "live_state": "OPEN, non-draft, mergeStateStatus=DIRTY",
-      "observed": "2026-07-18",
-      "ci_snapshot": "Ten checks fail and one is cancelled among sixteen published status entries on the 2ddd head across FreeBSD, coverage, GCC/Clang, macOS, Linux, and Windows surfaces. Four entries pass and one is skipped. Local dirty fixes and scientific evidence are newer than that published head, so cross-platform current-head reruns remain required after an approved target merge and push.",
-      "base_state": "The head has 34 commits unique to PR #3377 and is missing five target commits through 75306efe770; the real release-6.20 target must be merged before any follow-up publication.",
+      "status": "open_work_in_progress",
+      "target_sync_through": "75306efe770decd70fe88c0e20d0cb4ca212f71a",
+      "live_verification": "Fetch origin, verify origin/release-6.20 is an ancestor of the topic, and query PR #3377 before reporting its head, divergence, merge state, checks, or review state. Topic-head and CI snapshots are intentionally not sealed into this manifest because they change after every checkpoint.",
+      "ci_policy": "Treat only current-head published checks as current evidence. Local fixes and older CI snapshots do not establish cross-platform success, and the PR remains work in progress until current-head required checks pass.",
       "scope": "Exact reduced-Coulomb FBF solver implementation used as local development provenance.",
-      "remaining_limit": "This head is neither merged nor CI-clean, its branch-owned fixes exist only in the dirty worktree, and it cannot be treated as a release artifact."
+      "remaining_limit": "PR #3377 is not a release artifact or completion evidence while open; verify target ancestry, current-head CI, and review state live before any stronger claim."
     }
   },
   "source_audit": {
@@ -77,7 +75,7 @@
     "paper_pdf_sha256": "af7cb8df58288f4323fa4340e1590b09643b8702116a6c47cefe7ffa9a51e2f4",
     "segment_count": 9,
     "coverage_seconds": [0, 82],
-    "local_capture_status": "The repository now contains six finalized current-source visual bundles: the two-cell incline threshold, reconstructed no-projectile literal 25-wedge arch, two-cell Painleve-style proxy, checker-textured DART backspin row, synchronized four-cell DART port of the pinned public-author turntable configuration, and the pinned public-author default five-level/40-card card-house construction port. Their artifact indexes, stream/decode contracts, and manual inspections pass. The incline bundle independently binds manual slide/stick classification to two physical traces and only an additive exact-solve/fallback projection; capture contacts are eight per post-initial step while the traces total six. The literal arch has 600-row full-state trace equivalence; Painleve render/trace remain separate proxies; backspin proves only a byte-identical solver/contact projection and translational reversal; turntable binds current_visual media to a shared solver/contact projection while keeping the non-all-strict paper_cpu/native lane separate; and card house validates only a zero-substep configuration render, not the historical four-level/26-card trajectory. No paper crown-impact, external-solver parity, approved source golden/diff, signed-angular-direction, paper timing, or real-time claim follows."
+    "local_capture_status": "The repository now contains six finalized current-source visual bundles: the two-cell incline threshold, reconstructed no-projectile literal 25-wedge arch, two-cell Painleve-style proxy, checker-textured DART backspin row, synchronized four-cell DART port of the pinned public-author turntable configuration, and the pinned public-author default five-level/40-card card-house construction port. Their artifact indexes, stream/decode contracts, and manual inspections pass. The incline bundle independently binds manual slide/stick classification to two physical traces and only an additive exact-solve/fallback projection; capture contacts are eight per post-initial step while the traces total six. The literal arch has 600-row full-state trace equivalence; Painleve render/trace remain separate proxies; backspin proves only a byte-identical solver/contact projection and translational reversal; turntable binds current_visual media to a shared solver/contact projection while keeping the non-all-strict paper_cpu/native lane separate; and card house validates only a zero-substep configuration render, not the historical four-level/26-card trajectory. Separately, author_masonry_arch_reference_v1 seals a 500-frame current-author CPU diagnostic that extends the 400-frame source default so the cubes release at frame 400. Its 157 true flags split into 40 initial natural-residual shortcut accepts and 117 configured outer coulomb_rel accepts; the other 1,843 outer solves are negative, while retained final_residual is a distinct natural-residual metric. This is a scientific negative, not a historical invocation, all-substep-valid result, DART or cross-solver parity, or timing evidence. No paper crown-impact, external-solver parity, approved source golden/diff, signed-angular-direction, paper timing, or real-time claim follows."
   },
   "current_truth": {
     "overall": "Active and partial; not paper parity and not eligible for retirement.",
@@ -148,7 +146,7 @@
       "artifact_count": 21,
       "artifact_hashes": {
         "finalizer": "705da2a308697b4b4b923894d10f23622310e024aeab49862a24593c79142e23",
-        "finalizer_test": "02f3800cf7cf5df5d85b1950512e78df6e413fea42cfa89880775f010d208e1c",
+        "finalizer_test": "20a7b6eebc81587d7b68e2718d2e63b5d24d5f1de08e34602abdfed5c7d80532",
         "visual_runner": "d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432",
         "visual_runner_test": "6e378252fa6a7cb51c6813c9d5a2b30b8c8129eacdb01df0ee19a58a270cbc5e",
         "image_compose": "f69bcea840d696f2c38528b0532b20c09e843160046eb7f5785e4ea0e6b71c3f",
@@ -161,29 +159,29 @@
         "demo_host_header": "d1cd56b5951cad6745cdac97e61f3509401c9085e4caa13aca326829d566cd4a",
         "registry_source": "089985037502abf31628c98d59ea4d53d518b1d6acb01fc4d7564742ddfcb125",
         "scenes_header": "fb0400b82379ec7e670e7ed7ee5ae9155cb676d4d78fe908f5f0a450869a7fe0",
-        "metadata.json": "7a5f973a9b7264911058ec91e253dfcf5d72a7ec46fa7020df0020af1a259b7d",
-        "artifact-index.json": "b758bd28965bf9a96be7668c0dbb738b72c1493d83f195a3e726ae891f8f6e85",
-        "manual-inspection.json": "3c3af65d62c629ae836302910a2fe7f928ab398628f280221f6d0b5d94d5a848",
+        "metadata.json": "2687d3ee3fbbc9a2ad758fb203947fdd1d474d19e05dbf15894c2b4faa1d3f0c",
+        "artifact-index.json": "b8ed2a3ff0fe6f03c6d162756bfb093977ef1eb380dc04bd662d9f4dfb2a1a72",
+        "manual-inspection.json": "c63e698c5a666d78b36034fa41ea5540bd765a8ee3fb3d4d2c6e6ec570c6831b",
         "trace-summary.json": "4df130e878f1e58d478870c8f132ee165061a752520e926f44c331d32f14f20d",
-        "verification.json": "2681073ee44f7fecd2782081826b414ee6541bb930149ced91f60a17dc2416d5",
-        "invocations.json": "b4e199a8e06ac6dd0c638b261a4d969fa973fb0bdbb376e0579f19fb2f6c56c3",
-        "run-summary.json": "cfed42cb3b09ab8559d84a1dae4041a26d2e0937374787f34193c8363795b5d1",
-        "capture-provenance.json": "7ee89bb22ee5868a0e494788e077361c007cbe3d0baa2323121874bd5972bfb3",
+        "verification.json": "664c2c814010f69c1022315bc94febbce958ba660ada0ca7f8391d4abd31481a",
+        "invocations.json": "b18795d73900f63841ce60dde77271beed381dbb874b2d4f11eae259a86f0206",
+        "run-summary.json": "25b974f2e75e6f2718f910c74518bc37c3769eae468a8c9a4d52c510e244fd92",
+        "capture-provenance.json": "8dee3f0ef5ffca81aa08006a464bdd0afc714c64f3be921a9994f061a91e5ba4",
         "REPORT.md": "f75efcd40bd0452bcbdc7bbc82eee0fdbd78d7a1059f974e83999467b1688fa5",
         "traces/incline_mu_0_4.csv": "449acf19feef2e0aa7fb04bb9f45f865727ba59f626b3964114cd900169ecd8a",
         "traces/incline_mu_0_4.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "traces/incline_mu_0_5.csv": "2b30e8033b123876ad1cdea755741fd230a4d72d3747e55b907e6427962659c5",
         "traces/incline_mu_0_5.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "incline/metadata.json": "172572577e171049f670783aef6452d2e6e1e6030458070bb430eec21f5f83ec",
+        "incline/metadata.json": "60bfe647ebd69edc835b7dd3e24b0089f6087a5283a52261b334526db9efae04",
         "incline/timeline.json": "19d12947507be7d8d7a20de53b13565a23b0b9a6dfe1c907c4be3dc504f48e25",
         "incline/panel.compose.json": "654eceda8bb6546b8f068ce9326b8829ef82c7f98b7fa8449c6ae6ad51c9b67a",
         "incline/panel.png": "f9f211fb376c97d98bccc67806ba3e1c9905d7d27764c794e1c480af7b4df9d3",
         "incline/clip.mp4": "ad6d00ae6a614b0edbc836396c30621b589295a0eec826d060663f6782cee3f9",
-        "incline/stills/step_000000.png": "cd56403cf7fc686357096aa998b7e496d1bd54cab88bf128cb4752a262dfb65a",
-        "incline/stills/step_000030.png": "e298e0553c2ea8b72d13357ad92796a4e9cca43e690276ac1ce1c18222c00d63",
-        "incline/stills/step_000060.png": "2cc2bc20cc917f984f333150513be0c1f92e9d6e72ed6ad54eaf3365af3200c4",
-        "incline/stills/step_000090.png": "c40b16f3f56a624713fdd32747ebabfda236abaf613c5cf9452b57eedb07dce0",
-        "incline/stills/step_000120.png": "c1e0a2db75a6d47c9621af04c43dc9e3685fb6c81c82560a3a509f3ffdb50452",
+        "incline/stills/step_000000.png": "1593f68e5d22178d181f06107219f085e578b6871f07775e7b72a174196be1a6",
+        "incline/stills/step_000030.png": "2499adcb7c444c4352d44066d68769c4bc973e19b7ea6eb6ee0ac6aa734e9375",
+        "incline/stills/step_000060.png": "976c16eecc45172dc5a0d41c58c14b9f7c2cf08a6089ac7d1e7a64b4db6e4497",
+        "incline/stills/step_000090.png": "4e398a9b2eae5f3382efbf47643d9e9354f4f8fd7d2eba52a99583c4ee7ba32c",
+        "incline/stills/step_000120.png": "757d3c5d55cb46810b7c8d354db10cd62552691a9b7423d4840ee9b10eaddddd",
         "demo_binary": "d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4",
         "ffmpeg_binary": "c94d28bd8be3ecad11c2c00a136b585c7a413273e5a5804766c98e7e3200c17e",
         "ffprobe_binary": "585d52f16c12507e660a541ee5e0e1a0fc7a872744fcf0f5acde2a6134a96951",
@@ -256,7 +254,7 @@
       "artifact_count": 18,
       "artifact_hashes": {
         "finalizer": "408d4084b908c9b472392d68a36d97715dd2e4f29da67648bfd8d51c2f972ed8",
-        "finalizer_test": "8f7d855f2de8a59e97da52266f0875aff98507d00f82b3dcb4aad720790a38d6",
+    "finalizer_test": "39f10572a6391de050fde4cfc29a3acb36ef5845108d03edc97e755868db40bf",
         "visual_runner": "d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432",
         "visual_runner_test": "6e378252fa6a7cb51c6813c9d5a2b30b8c8129eacdb01df0ee19a58a270cbc5e",
         "image_compose": "f69bcea840d696f2c38528b0532b20c09e843160046eb7f5785e4ea0e6b71c3f",
@@ -272,26 +270,26 @@
         "demo_host_header": "d1cd56b5951cad6745cdac97e61f3509401c9085e4caa13aca326829d566cd4a",
         "registry_source": "089985037502abf31628c98d59ea4d53d518b1d6acb01fc4d7564742ddfcb125",
         "scenes_header": "fb0400b82379ec7e670e7ed7ee5ae9155cb676d4d78fe908f5f0a450869a7fe0",
-        "metadata.json": "a42ce0521a7c2af31662eff6a000ef5e68fe8bddf631d4f323be1ea8230c25a7",
-        "artifact-index.json": "429a0888fa7a002cbc0c93e708569e4bf8e18195421c9663d5ce3b3a1968ab7f",
-        "manual-inspection.json": "b86c596da631503a3831fd55adeb934505cf758dfc8a612d0a0f32b2a55067cb",
+    "metadata.json": "bf1c16b43b52bf3ff658d4b69bd6cf574c9954c0530ccde2e5429097a01256ad",
+    "artifact-index.json": "a3503db05f5436baf38a11ccadf6d2a216a52eed2418447a07310f6d1e3732cc",
+    "manual-inspection.json": "09762c89800ec6e97bfb004395a7d2e5b45edd2f3d572ce9649e319b1c0a8e61",
         "trace-summary.json": "0f6221fd32742b849e9ac79ec750de71b46ec24ba66b8d6e5a0e25048223ab48",
-        "verification.json": "fb9de609e52df648465dc0dbe73af7fbbd1b98c1c4671cde504200ff72c15c01",
-        "invocations.json": "d1745c3081361970d9b62edb73091668bd27c16df62e5985197a49bb12631951",
-        "run-summary.json": "929565e0a3f44736d64d820dac433d9e3d6bf126c018bec631cd623f1a40b66d",
-        "capture-provenance.json": "8176c167ef08fead1fedb0022ae6d45bae4d83110c3a51f3095e4751531af14f",
+    "verification.json": "ed9c121f3dc74ac4de293ad67a971978cb10ec6c04ccc5c5a9978fbdd393f133",
+    "invocations.json": "697533f0177611d80e2fde12e7cf93ea6ad533acb39f0467932b4323fcb39533",
+    "run-summary.json": "51c11bd7fe9e9a37600569cb43f5408128614afcc90673b0bbc8776e9e056ff2",
+    "capture-provenance.json": "00013fe9346661b53886321b90c68d1da5e1392af3f2a5093945f2bcbf183420",
         "REPORT.md": "f9178c14c1930361afc1d97cb5bf08afe04d3fd451e8a94144b02bb0b46e61cf",
         "traces/backspin.csv": "dc205297fa4cbffa1b497f12507b919f344bbee45a5820ae46145e0ed91bbd98",
         "traces/backspin.stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "backspin/metadata.json": "c94da15165a1fbce8466a432c02dd194133e7416d0e412a240dcbd5106153023",
+    "backspin/metadata.json": "be1510628276cc116989e80cae9afac15ff1dbb08af1169c000e524701fcfed5",
         "backspin/timeline.json": "a5f40ae0fb3bb5705e27d4fbe1dbfae81cb11e437d47ae8f511ee578d2a5a9f5",
         "backspin/panel.compose.json": "78039d095a41c571de485b49973e7281364578df13e35e84d0c001112d624a98",
         "backspin/panel.png": "72bf8d6098e8fb17b98bbedeaa00cc539866cf570d91d725f77dc75f1971b067",
         "backspin/clip.mp4": "7d4606f4da0a57ffbdfa0528906b21a20d7e1a4e47a6e7eb5387242aecc71928",
         "backspin/clip.gif": "773365f624ba1326855f2ad99c0196f761ab776001da568f7cdaa84054adacc8",
-        "backspin/stills/step_000000.png": "558d658cfad9fa583afdb4711e724835f24407463c2ab693741467ff5f07b176",
-        "backspin/stills/step_000001.png": "e069ac301b0509956658b4f119f98cff5e650beb3ca4b33f315434b265d65e8d",
-        "backspin/stills/step_000002.png": "2a83b5643ae3ff2f1caa6f8def5c0c2178e2bbf8742c4c9e2537280155846209",
+    "backspin/stills/step_000000.png": "ad88bb7083967f5ed237516e8132413f508292033f9ae840a4adc83d13129df5",
+    "backspin/stills/step_000001.png": "e27540bfffbce9694ae5c508ee1552a6e00a1856f9b168a8801d6b001ca3ef5a",
+    "backspin/stills/step_000002.png": "f5d93dbc1276cc3acd53283ba94c91877ef022d9c5f50c8370f55f314febf1d5",
         "demo_binary": "d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4",
         "ffmpeg_binary": "c94d28bd8be3ecad11c2c00a136b585c7a413273e5a5804766c98e7e3200c17e",
         "ffprobe_binary": "585d52f16c12507e660a541ee5e0e1a0fc7a872744fcf0f5acde2a6134a96951",
@@ -458,22 +456,22 @@
       ],
       "contract_payload_sha256": "8cd9e29c52f840705bbb111b932a32a717d840a84340ffb4124a5383b332044c",
       "durable_still_path": "card_house_author_5_construction/construction-step-0.png",
-      "durable_still_sha256": "7b7000307da9a467b3b6d28d627f75897a17de8d6ee3f9192183d4bcf47f3a16",
+      "durable_still_sha256": "9f4b1c3540418390fb934b30e0a57820146343566dd96092bd9c9d8e5e262e6f",
       "artifact_hashes": {
         "REPORT.md": "a8995b20a6d4fc82bdcff357885b29905e4f281f12dad7c93c3d8292d1134c3e",
-        "artifact-index.json": "d6cbc6f9600b8bc5c3094dd85974eae8e71d64a9e3d6e99c1783ace36be9741d",
-        "capture-provenance.json": "cb9c10877e9e612b29b7c7b82ef33655b790b76c266d05a25c913b04215dcc2e",
-        "card_house_author_5_construction/construction-step-0.png": "7b7000307da9a467b3b6d28d627f75897a17de8d6ee3f9192183d4bcf47f3a16",
-        "card_house_author_5_construction/metadata.json": "d724e773966ac253b80ec738516532830e7d3121170cdebd67908589c88db0e9",
+        "artifact-index.json": "a39b4f6036ca9b41259b8e5733eac1935f99b4808f512f5dab4988e78df1e04e",
+        "capture-provenance.json": "2f9c0c2e37b013905a2377ba551bda584a5475acecdbd76760de7ac638b26a1f",
+        "card_house_author_5_construction/construction-step-0.png": "9f4b1c3540418390fb934b30e0a57820146343566dd96092bd9c9d8e5e262e6f",
+        "card_house_author_5_construction/metadata.json": "23a25bdee029d57026b5feecdedbf76199da5f01a17ac13e0183044989894607",
         "card_house_author_5_construction/panel.compose.json": "7d60515558e0d811ea90f22d227290f3bd6366acbc1ca2056fb203faa33e67a5",
         "card_house_author_5_construction/panel.png": "27444f40b53a81857ad752da2157c46251d5c46eb07eb2826b1324fd0e1765a2",
         "card_house_author_5_construction/timeline.json": "e88c61124bb1fb2b0d352e260b3b26fbc45ceff2fee88fdbc018740d2a9d40bf",
         "contract.json": "5ad04efeaf9185c62405d44f9067c8e66229dabd7ccaff4469a5c690b2f34b01",
-        "invocations.json": "bc9c38ed05e089517ee6d7a81193b4efabe5a90efd41acbc5643258153b3d820",
-        "manual-inspection.json": "7bc672e9dd95b52853c5c7e56680190d564fc9514add9b263de0c33c3f94e2a4",
-        "metadata.json": "b97ac795c9368f2632fe422f975914f412e8d1cb0667023e8d83c6224547df00",
-        "run-summary.json": "ccce4b213181682893a913a75cfcd36723537a89c1308e3729fa05012ecd73bc",
-        "verification.json": "c9135a6360e8703dfe1a586defcbc52b36f1c90db7c90d35fee08676aeeb0394"
+        "invocations.json": "3584b5f448de18472407ed82f198a4144cc6c9c0e11b742162a43d84c839f6fc",
+        "manual-inspection.json": "67cee2a35df7ea69391b4db3a619934623dc76005faf3881a4662d5c67cff12f",
+        "metadata.json": "12ffbc14913045f31f84f13833ba84fc86490f6db95c7655b709b030c543ed1b",
+        "run-summary.json": "a467aea6f57ae5c5398bfb3e2916f15ea95490076bf33e83e34ca8f509a49d15",
+        "verification.json": "dc3b1f101012075cbb81458cd4f5698a65169eb21a7aebe7490bda8c753b5838"
       },
       "source_identity_sha256": {
         "configuration_spec": "77814782fdedd2e419d23b088fcba3521dda020d8dd167942cf137da56f6aba9",
@@ -495,7 +493,7 @@
         "ffprobe_binary": "585d52f16c12507e660a541ee5e0e1a0fc7a872744fcf0f5acde2a6134a96951",
         "finalizer": "e2843c32cc69d537433c600b6413b08138dfd2b63dea1aa5f5ce220db1a5abcd",
         "finalizer_test": "c052b08c16440cc3b8fba6a6bd37e111ca5b1abfe4fba77890f6f885c1a92237",
-        "fixture_cmake": "846ddae3a1f9dd86f4fd5c0e4e6ce0d817f5f2536612e94f42f1b0c550d229d5",
+        "fixture_cmake": "a1df97f5c2ab1f2132cdeafab733edab9632919040c74511f6fc468990f76a38",
         "fixture_test": "a4bed7372213d544fef62923b88bc9accee7086165d7b3cb20245bee8bade05f",
         "image_compose": "f69bcea840d696f2c38528b0532b20c09e843160046eb7f5785e4ea0e6b71c3f",
         "image_tools": "1962f1f2676c4b5a24c51e03c130ea17574d06b8fe110215c6bf14a7919623c6",
@@ -508,6 +506,82 @@
       },
       "claim_scope": "Current-source DART step-zero inspection of the author-pinned five-level card-house geometry, initial poses, and construction schedule.",
       "claim_boundary": "Configuration only. The capture executes zero simulation substeps and does not validate release, standing, trajectory, solver behavior, contact dynamics, physical outcome, Fig. 6 parity, video parity, source renderer colors, paper timing, or performance. It is not a canonical Fig. 6 or video deliverable."
+    },
+    "author_masonry_arch_reference_v1": {
+      "bundle": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/author_masonry_arch_reference_v1",
+      "status": "valid_current_source_scientific_negative",
+      "requirement_ids": [
+        "fig.07",
+        "fig.09",
+        "video.07_arch_25"
+      ],
+      "artifact_valid": true,
+      "claim_history_projection_valid": true,
+      "raw_source_history_retained": false,
+      "raw_source_history_bytes": 382753953,
+      "raw_source_history_sha256": "cec0e4b86837e7542c498c7ddad40538983ec023332b88ebddee7766997e3ac1",
+      "history_projection_decompressed_bytes": 28606169,
+      "history_projection_stored_bytes": 8080187,
+      "configuration_port_valid": true,
+      "current_source_diagnostic_valid": true,
+      "scientific_negative": true,
+      "author_repository": "https://github.com/matthcsong/fbf-sca-2026.git",
+      "author_commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+      "author_tree": "ffcdafb61adeda2239c8366d054b548b50d26685",
+      "author_runner_git_blob": "35a052d7ef0975e7c828c9678d163054dfbb3ef2",
+      "author_runner_sha256": "7e9158240267bb0ec1d0316b1badd4f3c8e1cd10270322de2e205cfea96f6f73",
+      "author_mesh_tree": "2552017df4061c49f7df064d847a4268a6e02d1a",
+      "author_mesh_manifest_sha256": "a3f4e35073a2f4e74837fff277cd923f104b6af57f2cf995cf7524fe498e483d",
+      "run_id": "20260719T113826Z",
+      "observed_frames": 500,
+      "source_default_frames": 400,
+      "drop_frame": 400,
+      "release_substep": 1600,
+      "total_substeps": 2000,
+      "source_default_releases_cubes": false,
+      "observed_run_releases_cubes": true,
+      "author_converged_flag_count": 157,
+      "author_nonconverged_flag_count": 1843,
+      "initial_natural_residual_shortcut_converged_count": 40,
+      "configured_coulomb_rel_outer_gate_converged_count": 117,
+      "outer_cap_hit_count": 1843,
+      "configured_termination_residual": "coulomb_rel",
+      "configured_termination_tolerance": 0.000001,
+      "natural_final_residual_at_or_below_tolerance_count": 47,
+      "all_substeps_solver_contract_valid": false,
+      "physical_outcome_verdict": null,
+      "contact_pair_identity_available": false,
+      "contact_count_change_only_inferred": true,
+      "historical_or_paper_invocation_valid": false,
+      "runtime_attestation_complete": false,
+      "source_equivalent_dart_dynamics_executed": false,
+      "dart_dynamics_parity_valid": false,
+      "cross_solver_parity_valid": false,
+      "timing_verdict": null,
+      "paper_comparable": false,
+      "fig07_parity": false,
+      "fig09_parity": false,
+      "video07_arch25_parity": false,
+      "artifact_count": 7,
+      "physical_file_count": 9,
+      "artifact_hashes": {
+        "finalizer": "1a753153a1d4211168eda0d2d6c749649b7f67963ee65fb061f502a3e0a7b538",
+        "finalizer_test": "c008cacf4bf6d929e5ea19ed20d3a7fb706dc58d81abec7c7c952d4957c5e246",
+        "configuration_spec": "4dd936cfd548cc1cf295bd73f74f9b02ef81fe18d4526286b38907b462441e04",
+        "configuration_test": "5191ff45ade0875baec06feef42782b8d2b9dc492a442eddd932b98c67e6982d",
+        "fixture_cmake": "a1df97f5c2ab1f2132cdeafab733edab9632919040c74511f6fc468990f76a38",
+        "REPORT.md": "3492ad6623f2ef892cc03cd014fd7ad8e62edc72597d62891ebff0890ebae37b",
+        "artifact-index.json": "247b4dab371ad5c52c5a7018304051cbf19340bf15cf88447fac35c70178c055",
+        "manifest.json": "ed07589a19f13d0266a396b19f78c6302b862e2634115748e1c969335a384a50",
+        "summary.json": "5395c7e24203ed7c163700399db7b4514a5059712b441accd8be8b438dc1af55",
+        "verification.json": "1918e2c883a8a4469638329de5092ee0ab7ee5bd1738cfecdc13eb941ef7b238",
+        "runs/20260719T113826Z/metadata.json": "ac135b4320c4f771db4fd9126e634ff475d932fdfd7912d335bf3d9ff28230fe",
+        "runs/20260719T113826Z/fbf/result.json": "1edb551142eec1d6c58f67e45c8e73fe95d4e22c0c78f477fed507c49d5c8eb4",
+        "runs/20260719T113826Z/fbf/trajectory.npz": "250ba12a329b41d4710929faaa7af2b5a3bdd2c3f28d6f1dcfa3b59cc22d570d",
+        "runs/20260719T113826Z/fbf/history-claim-projection.json.gz": "8a19be46feae8bfbbfc57f3aff194bc18a9fa695f286cc4d13f3c819f9dc701b"
+      },
+      "claim_scope": "Configuration-only DART audit and sealed current-author 500-frame source diagnostic for the pinned public 25-stone masonry-arch workload, retaining every claim-bearing residual field in a deterministic projection.",
+      "claim_boundary": "The observed run overrides the 400-frame source default so the cubes release at frame 400. Of 157 true author convergence flags, 40 use the initial natural-residual shortcut and 117 use the configured outer coulomb_rel gate; the other 1,843 outer solves are negative. The 382,753,953-byte raw history is hash-bound but intentionally omitted in favor of an 8,080,187-byte lossless claim projection. Artifact integrity does not establish all-substep solver validity, a historical or paper invocation, pair-identified impact, DART or cross-solver dynamics parity, renderer or golden parity, repeatability, timing, Fig. 7, Fig. 9, or video.07 parity."
     },
     "historical_scale1_literal_arch_diagnostic": {
       "cold_outer_iterations": 28981,
@@ -2042,6 +2116,14 @@
           "supports": "A separately preregistered reconstructed three-projectile v1 run completed all 720 steps and made crown contact before ground contact, but failed closed with five accepted caps, residual 9.15453e-5, and excessive global/far-field displacement. Its runner recomputes finite gates, requires post-launch exact progress, pins the fingerprint and preregistration contract, and seals an independent 600-step by 88-field standing comparison. It is durable scientific-negative evidence; no parameters or thresholds were tuned."
         },
         {
+          "path": "examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp",
+          "supports": "A pinned configuration-only audit reproduces all 25 public-author OBJ vertex records, source axis ordering, springer/cube setup, float32 pose boundary, and solver constants. It does not implement source collision/contact-gap/backend semantics or execute DART dynamics."
+        },
+        {
+          "path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/author_masonry_arch_reference_v1/REPORT.md",
+          "supports": "A sealed 500-frame current-author diagnostic releases the three cubes at frame 400. Forty true flags use the initial natural-residual shortcut, 117 use the configured outer coulomb_rel gate, and 1,843 outer solves are negative. Its final_residual field is the distinct natural-residual metric, contact-count growth is not pair-identified impact, and no DART, cross-solver, timing, historical-invocation, or paper-parity claim is promoted."
+        },
+        {
           "path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/gui_captures/fbf_paper_masonry_arch_25.png",
           "supports": "A historical one-step oriented-box arch smoke remains superseded by the literal-wedge current-source bundle."
         },
@@ -2061,7 +2143,8 @@
         ],
         "commands": [
           "./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace masonry_arch_25_literal_wedge exact_fbf 1 600 nan performance default default 1 dart_best_colored_bgs native default",
-          "scripts/run_fbf_literal_crown_impact_negative.py --cpu 8 --output-dir /tmp/fbf_literal_crown_impact_v1_recheck"
+          "scripts/run_fbf_literal_crown_impact_negative.py --cpu 8 --output-dir /tmp/fbf_literal_crown_impact_v1_recheck",
+          "python3 scripts/finalize_fbf_author_masonry_arch_reference.py --verify-only"
         ],
         "blockers": [
           "The frozen reconstructed crown-impact v1 is a validated negative, not a preserved-arch impact result, and has no motion capture.",
@@ -2071,7 +2154,8 @@
       },
       "commands": [
         "./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_arch_wedge_collision_probe 10",
-        "./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace masonry_arch_25_literal_wedge exact_fbf 1 600 nan performance default default 1 dart_best_colored_bgs native default"
+        "./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace masonry_arch_25_literal_wedge exact_fbf 1 600 nan performance default default 1 dart_best_colored_bgs native default",
+        "python3 scripts/finalize_fbf_author_masonry_arch_reference.py --verify-only"
       ],
       "deliverables": [
         {
@@ -2210,10 +2294,12 @@
         {"path": "tests/benchmark/integration/fbf_paper_trace.cpp", "supports": "Schema v8 preserves the default 83-column v7 trace byte-for-byte and adds separate 95-column colored and 94-column Native-manifold-sensitivity contracts. The prior-source strict paper_cpu card run fails closed at step 89 of 600; current-source Compact and FourPointPlanar sensitivity runs both emit 600 rows but are non-strict; the non-paper literal Native25 run supplies a complete residual trace but not the paper float32/budget/contact contract."},
         {"path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/card_house_26_manifold_sensitivity_v2_r3/comparison.json", "supports": "The provenance-complete current-source comparison records the one-factor contact/multiplicity direction and explicitly keeps strict-trajectory validity false for both modes and timing out of the verdict."},
         {"path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/fbf_residual_history_panel.svg", "supports": "A four-panel residual smoke exists; it is not the paper's run-wide Figure 9."},
-        {"path": "docs/dev_tasks/fbf_exact_coulomb_friction/residual-history-report.md", "supports": "The report separates the failed strict paper-profile card evidence from the complete non-paper literal Native25 exact trajectory and marks older one-step panels as superseded correctness evidence."}
+        {"path": "docs/dev_tasks/fbf_exact_coulomb_friction/residual-history-report.md", "supports": "The report separates the failed strict paper-profile card evidence from the complete non-paper literal Native25 exact trajectory and marks older one-step panels as superseded correctness evidence."},
+        {"path": "examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp", "supports": "The pinned configuration-only audit records the public-author 25-stone scene and solver constants, including the configured coulomb_rel termination metric and 1e-6 tolerance; it executes no DART dynamics."},
+        {"path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/author_masonry_arch_reference_v1/REPORT.md", "supports": "A deterministic claim-history projection represents every one of the sealed 500-frame diagnostic's 2,000 substeps: 40 true flags use the initial natural-residual shortcut, 117 use the configured outer coulomb_rel gate, and 1,843 outer solves are negative. The raw source history is hash/size-bound but omitted. Only 47 projected natural final_residual values are at or below 1e-6. The metrics are explicitly non-interchangeable, and the run is not the paper invocation or Figure 9 parity."}
       ],
-      "capture_plan": {"profile": "plot_comparison", "shots": ["paper-matched top-left residual distribution", "backspin per-outer curve", "full-run arch per-substep trace", "full-run card per-substep trace", "paper/DART diff"], "commands": ["./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace backspin exact_fbf 1 1 nan residual_history > <backspin-history.csv>", "python3 tests/benchmark/integration/fbf_paper_residual_svg.py <full-run-manifest> --out <fig9.svg>"], "blockers": ["The strict full-card trajectory is available only as prior-source negative convergence evidence. The current-source manifold comparison is complete but both trajectories are non-strict, and final strict full-duration card/arch histories remain incomplete.", "DART uses float64 and different contact counts/budgets, so the paper float32 floor is not apples-to-apples."]},
-      "commands": ["./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace card_house_26_settle_projectile_full exact_fbf 1 600 nan residual_history default default 1 paper_cpu native default"],
+      "capture_plan": {"profile": "plot_comparison", "shots": ["paper-matched top-left residual distribution", "backspin per-outer curve", "full-run arch per-substep trace", "full-run card per-substep trace", "paper/DART diff"], "commands": ["./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace backspin exact_fbf 1 1 nan residual_history > <backspin-history.csv>", "python3 tests/benchmark/integration/fbf_paper_residual_svg.py <full-run-manifest> --out <fig9.svg>", "python3 scripts/finalize_fbf_author_masonry_arch_reference.py --verify-only"], "blockers": ["The strict full-card trajectory is available only as prior-source negative convergence evidence. The current-source manifold comparison is complete but both trajectories are non-strict, and final strict full-duration card/arch histories remain incomplete.", "The current-author arch diagnostic is a scientific negative: 40 true flags use an initial natural-residual shortcut, 117 use the configured outer coulomb_rel gate, and 1,843 outer solves are nonconverged. It is not the historical paper invocation or a Figure 9 reproduction.", "DART uses float64 and different contact counts/budgets, so the paper float32 floor is not apples-to-apples."]},
+      "commands": ["./build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace card_house_26_settle_projectile_full exact_fbf 1 600 nan residual_history default default 1 paper_cpu native default", "python3 scripts/finalize_fbf_author_masonry_arch_reference.py --verify-only"],
       "deliverables": [],
       "fallback_count": null,
       "blockers": ["Full-run paper-contract residual CSVs and source-matched plots are missing."]
@@ -2776,6 +2862,14 @@
         {
           "path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/arch25_balance_partial_collapse.csv",
           "supports": "A local long-run attempt records partial collapse rather than the paper outcome."
+        },
+        {
+          "path": "examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp",
+          "supports": "A pinned configuration-only audit records the current public-author 25-stone scene, springers, three kinematic cubes, release schedule, and solver constants. It does not execute DART dynamics or establish source-equivalent contact semantics."
+        },
+        {
+          "path": "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/author_masonry_arch_reference_v1/REPORT.md",
+          "supports": "A sealed current-author 500-frame diagnostic reaches cube release at frame 400; 40 true flags use the initial natural-residual shortcut, 117 use the configured outer coulomb_rel gate, and 1,843 outer solves are negative. Contact-pair identities are unavailable. It supplies no motion media, verified physical outcome, DART parity, or external-solver comparison."
         }
       ],
       "capture_plan": {
@@ -2789,15 +2883,18 @@
         ],
         "commands": [
           "scripts/run_fbf_literal_wedge_visual_capture.py --revalidate-existing docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig07_arch25_literal",
-          "pixi run agent-capture -- --scene <fbf-paper-arch25-impact-adapter> --motion-frames <frames> --video --out <dir> --prefix arch25-impact"
+          "pixi run agent-capture -- --scene <fbf-paper-arch25-impact-adapter> --motion-frames <frames> --video --out <dir> --prefix arch25-impact",
+          "python3 scripts/finalize_fbf_author_masonry_arch_reference.py --verify-only"
         ],
         "blockers": [
           "The validated current-source clip covers only the reconstructed no-projectile standing phase.",
+          "The sealed current-author release diagnostic is a scientific negative with no pair-identified impact, verified physical outcome, motion media, or all-substep solver validity.",
           "The public-author numerical crown-impact configuration is pinned, but a verified DART port, historical renderer/edit parameters, validated generic capture sidecar, approved source golden/diff, and faithful external clips are missing."
         ]
       },
       "commands": [
-        "scripts/run_fbf_literal_wedge_visual_capture.py --revalidate-existing docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig07_arch25_literal"
+        "scripts/run_fbf_literal_wedge_visual_capture.py --revalidate-existing docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig07_arch25_literal",
+        "python3 scripts/finalize_fbf_author_masonry_arch_reference.py --verify-only"
       ],
       "deliverables": [
         {

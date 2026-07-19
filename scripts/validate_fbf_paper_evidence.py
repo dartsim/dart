@@ -10,6 +10,8 @@ declared deliverable is present, validated, and fallback-free.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import contextvars
 import csv
 import hashlib
 import json
@@ -19,7 +21,7 @@ import shlex
 import shutil
 import statistics
 import sys
-from pathlib import Path
+from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 from typing import Any
 
 SCHEMA_VERSION = "dart.fbf_paper_evidence/v1"
@@ -30,6 +32,24 @@ DEFAULT_MANIFEST = (
     / "dev_tasks"
     / "fbf_exact_coulomb_friction"
     / "paper-evidence-manifest.json"
+)
+
+# Host-runtime closures are rechecked live only in the checkout that produced
+# the committed evidence. A relocated checkout still validates every recorded
+# field, repository artifact, digest, and cross-file binding, but cannot
+# honestly require another operating system to provide the producer's absolute
+# executable and shared-library paths.
+_VALIDATION_REPO_ROOT: contextvars.ContextVar[PurePath] = contextvars.ContextVar(
+    "fbf_validation_repo_root", default=REPO_ROOT
+)
+_RECORDED_REPO_ROOT: contextvars.ContextVar[PurePath | tuple[PurePath, ...] | None] = (
+    contextvars.ContextVar("fbf_recorded_repo_root", default=None)
+)
+_LIVE_HOST_IDENTITY_RECHECKS: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "fbf_live_host_identity_rechecks", default=True
+)
+_HOST_IDENTITY_STATS: contextvars.ContextVar[dict[str, int] | None] = (
+    contextvars.ContextVar("fbf_host_identity_stats", default=None)
 )
 
 VIDEO_SEGMENTS = {
@@ -135,14 +155,12 @@ SOURCE_RECORD_KEYS = {
         "url",
     },
     "pr3377": {
-        "base_state",
-        "ci_snapshot",
-        "live_state",
-        "observed",
+        "ci_policy",
+        "live_verification",
         "remaining_limit",
         "scope",
         "status",
-        "upstream_head",
+        "target_sync_through",
         "url",
     },
 }
@@ -169,6 +187,7 @@ SOURCE_AUDIT_KEYS = {
 }
 CURRENT_TRUTH_KEYS = {
     "author_card_house_5_construction_only_v1",
+    "author_masonry_arch_reference_v1",
     "backspin_visual_v3_nonpaper",
     "card_house_manifold_sensitivity_v2_nonpaper",
     "cpu_evidence_schema",
@@ -258,6 +277,31 @@ CURRENT_TRUTH_RECORD_KEYS = {
         "paper_timing_valid physical_outcome_valid requirement_ids solver_valid "
         "source_identity_sha256 status total_steps trajectory_valid "
         "video06_parity".split()
+    ),
+    "author_masonry_arch_reference_v1": set(
+        "all_substeps_solver_contract_valid artifact_count artifact_hashes "
+        "artifact_valid author_commit author_converged_flag_count "
+        "author_mesh_manifest_sha256 author_mesh_tree "
+        "author_nonconverged_flag_count author_repository author_runner_git_blob "
+        "author_runner_sha256 author_tree bundle claim_boundary claim_scope "
+        "claim_history_projection_valid configuration_port_valid "
+        "configured_termination_residual "
+        "configured_termination_tolerance "
+        "configured_coulomb_rel_outer_gate_converged_count "
+        "contact_count_change_only_inferred "
+        "contact_pair_identity_available cross_solver_parity_valid "
+        "current_source_diagnostic_valid dart_dynamics_parity_valid drop_frame "
+        "fig07_parity historical_or_paper_invocation_valid "
+        "history_projection_decompressed_bytes history_projection_stored_bytes "
+        "initial_natural_residual_shortcut_converged_count "
+        "natural_final_residual_at_or_below_tolerance_count observed_frames "
+        "observed_run_releases_cubes outer_cap_hit_count paper_comparable "
+        "physical_file_count physical_outcome_verdict raw_source_history_bytes "
+        "raw_source_history_retained raw_source_history_sha256 release_substep "
+        "requirement_ids run_id runtime_attestation_complete scientific_negative "
+        "source_default_frames source_default_releases_cubes "
+        "source_equivalent_dart_dynamics_executed status timing_verdict "
+        "total_substeps fig09_parity video07_arch25_parity".split()
     ),
     "historical_scale1_literal_arch_diagnostic": set(
         "cold_outer_iterations historical_only local_diagonal_seed_outer_iterations "
@@ -964,6 +1008,75 @@ ARCH101_V5_BUNDLE = (
     "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/"
     "fig08_arch101_literal_v1_negative_final_v6"
 )
+AUTHOR_MASONRY_ARCH_V1_BUNDLE = (
+    "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/"
+    "author_masonry_arch_reference_v1"
+)
+AUTHOR_MASONRY_ARCH_V1_ARTIFACT_TARGETS = {
+    "finalizer": "scripts/finalize_fbf_author_masonry_arch_reference.py",
+    "finalizer_test": (
+        "python/tests/unit/test_finalize_fbf_author_masonry_arch_reference.py"
+    ),
+    "configuration_spec": "examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp",
+    "configuration_test": "tests/integration/test_FbfAuthorMasonryArchSpec.cpp",
+    "fixture_cmake": "tests/integration/CMakeLists.txt",
+    "REPORT.md": f"{AUTHOR_MASONRY_ARCH_V1_BUNDLE}/REPORT.md",
+    "artifact-index.json": (f"{AUTHOR_MASONRY_ARCH_V1_BUNDLE}/artifact-index.json"),
+    "manifest.json": f"{AUTHOR_MASONRY_ARCH_V1_BUNDLE}/manifest.json",
+    "summary.json": f"{AUTHOR_MASONRY_ARCH_V1_BUNDLE}/summary.json",
+    "verification.json": f"{AUTHOR_MASONRY_ARCH_V1_BUNDLE}/verification.json",
+    "runs/20260719T113826Z/metadata.json": (
+        f"{AUTHOR_MASONRY_ARCH_V1_BUNDLE}/runs/20260719T113826Z/metadata.json"
+    ),
+    "runs/20260719T113826Z/fbf/result.json": (
+        f"{AUTHOR_MASONRY_ARCH_V1_BUNDLE}/runs/20260719T113826Z/fbf/result.json"
+    ),
+    "runs/20260719T113826Z/fbf/trajectory.npz": (
+        f"{AUTHOR_MASONRY_ARCH_V1_BUNDLE}/runs/20260719T113826Z/fbf/trajectory.npz"
+    ),
+    "runs/20260719T113826Z/fbf/history-claim-projection.json.gz": (
+        f"{AUTHOR_MASONRY_ARCH_V1_BUNDLE}/runs/20260719T113826Z/fbf/"
+        "history-claim-projection.json.gz"
+    ),
+}
+AUTHOR_MASONRY_ARCH_V1_SEALED_ARTIFACTS = {
+    "REPORT.md": (
+        "3492ad6623f2ef892cc03cd014fd7ad8e62edc72597d62891ebff0890ebae37b",
+        2181,
+    ),
+    "artifact-index.json": (
+        "247b4dab371ad5c52c5a7018304051cbf19340bf15cf88447fac35c70178c055",
+        1368,
+    ),
+    "manifest.json": (
+        "ed07589a19f13d0266a396b19f78c6302b862e2634115748e1c969335a384a50",
+        7724,
+    ),
+    "summary.json": (
+        "5395c7e24203ed7c163700399db7b4514a5059712b441accd8be8b438dc1af55",
+        4365,
+    ),
+    "verification.json": (
+        "1918e2c883a8a4469638329de5092ee0ab7ee5bd1738cfecdc13eb941ef7b238",
+        1246,
+    ),
+    "runs/20260719T113826Z/metadata.json": (
+        "ac135b4320c4f771db4fd9126e634ff475d932fdfd7912d335bf3d9ff28230fe",
+        566,
+    ),
+    "runs/20260719T113826Z/fbf/result.json": (
+        "1edb551142eec1d6c58f67e45c8e73fe95d4e22c0c78f477fed507c49d5c8eb4",
+        13584,
+    ),
+    "runs/20260719T113826Z/fbf/trajectory.npz": (
+        "250ba12a329b41d4710929faaa7af2b5a3bdd2c3f28d6f1dcfa3b59cc22d570d",
+        9222,
+    ),
+    "runs/20260719T113826Z/fbf/history-claim-projection.json.gz": (
+        "8a19be46feae8bfbbfc57f3aff194bc18a9fa695f286cc4d13f3c819f9dc701b",
+        8080187,
+    ),
+}
 ARCH101_V1_PROTOCOL = "docs/dev_tasks/fbf_exact_coulomb_friction/LITERAL_ARCH_101_V1.md"
 ARCH101_V1_RUNNER = "scripts/run_fbf_literal_arch101_v1.py"
 TRACE_SOURCE = "tests/benchmark/integration/fbf_paper_trace.cpp"
@@ -2023,10 +2136,105 @@ def _expect_fields(
         return
     for field, expected_value in expected.items():
         actual = data.get(field)
-        if type(actual) is not type(expected_value) or actual != expected_value:
+        if type(actual) is not type(expected_value) or not (
+            _values_equal_with_repo_relocation(actual, expected_value)
+        ):
             errors.append(
                 f"{location}.{field}: expected {expected_value!r}, got {actual!r}"
             )
+
+
+def _absolute_pure_path(value: Any) -> PurePath | None:
+    """Parse an absolute POSIX or Windows path without host-flavor assumptions."""
+
+    if not _nonempty_string(value) or "\x00" in value:
+        return None
+    if any(part in {".", ".."} for part in re.split(r"[\\/]", value)):
+        return None
+    posix = PurePosixPath(value)
+    if posix.is_absolute():
+        return posix
+    windows = PureWindowsPath(value)
+    return windows if windows.is_absolute() else None
+
+
+def _same_absolute_path(left: Any, right: Any) -> bool:
+    left_path = _absolute_pure_path(str(left))
+    right_path = _absolute_pure_path(str(right))
+    return (
+        left_path is not None
+        and right_path is not None
+        and type(left_path) is type(right_path)
+        and left_path == right_path
+    )
+
+
+def _repository_relative_parts(value: Any) -> tuple[str, ...] | None:
+    """Return exact relative parts under the active or recorded repository."""
+
+    path = _absolute_pure_path(str(value))
+    if path is None:
+        return None
+    root_values: list[Any] = [_VALIDATION_REPO_ROOT.get()]
+    recorded_roots = _RECORDED_REPO_ROOT.get()
+    if isinstance(recorded_roots, PurePath):
+        root_values.append(recorded_roots)
+    elif isinstance(recorded_roots, tuple):
+        root_values.extend(recorded_roots)
+    for root_value in root_values:
+        root = _absolute_pure_path(str(root_value))
+        if root is None or type(path) is not type(root):
+            continue
+        try:
+            return path.relative_to(root).parts
+        except ValueError:
+            continue
+    return None
+
+
+def _repo_relocated_absolute_paths_equal(actual: str, expected: str) -> bool:
+    """Treat one exact repository-relative path as equal across checkouts."""
+
+    actual_relative = _repository_relative_parts(actual)
+    expected_relative = _repository_relative_parts(expected)
+    return (
+        actual_relative is not None
+        and expected_relative is not None
+        and actual_relative == expected_relative
+    )
+
+
+def _is_recorded_build_tree_path(path: PurePath) -> bool:
+    relative = _repository_relative_parts(path)
+    return relative is not None and bool(relative) and relative[0] == "build"
+
+
+def _values_equal_with_repo_relocation(actual: Any, expected: Any) -> bool:
+    """Exact JSON equality, allowing only absolute checkout-root relocation."""
+
+    if isinstance(expected, dict):
+        return (
+            isinstance(actual, dict)
+            and set(actual) == set(expected)
+            and all(
+                _values_equal_with_repo_relocation(actual[key], expected[key])
+                for key in expected
+            )
+        )
+    if isinstance(expected, list):
+        return (
+            isinstance(actual, list)
+            and len(actual) == len(expected)
+            and all(
+                _values_equal_with_repo_relocation(actual_item, expected_item)
+                for actual_item, expected_item in zip(actual, expected)
+            )
+        )
+    if isinstance(expected, str) and actual != expected:
+        return isinstance(actual, str) and _repo_relocated_absolute_paths_equal(
+            actual, expected
+        )
+    return actual == expected
 
 
 def _expect_exact_payload(
@@ -2067,7 +2275,7 @@ def _expect_exact_payload(
                 errors,
             )
         return
-    if actual != expected:
+    if not _values_equal_with_repo_relocation(actual, expected):
         errors.append(f"{location}: expected {expected!r}, got {actual!r}")
 
 
@@ -2076,11 +2284,40 @@ def _validate_live_absolute_file_identity(
     path_field: str,
     location: str,
     errors: list[str],
-) -> Path | None:
+) -> PurePath | None:
     path_value = identity.get(path_field)
     if not _nonempty_string(path_value):
         errors.append(f"{location}.{path_field}: expected an absolute file path")
         return None
+    archived_path = _absolute_pure_path(path_value)
+    if archived_path is None:
+        errors.append(f"{location}.{path_field}: expected an absolute file path")
+        return None
+
+    sha256 = identity.get("sha256")
+    if not isinstance(sha256, str) or not SHA256_PATTERN.fullmatch(sha256):
+        errors.append(f"{location}.sha256: expected lowercase SHA-256")
+    if "size_bytes" in identity:
+        size_bytes = identity.get("size_bytes")
+        if (
+            not isinstance(size_bytes, int)
+            or isinstance(size_bytes, bool)
+            or size_bytes < 0
+        ):
+            errors.append(f"{location}.size_bytes: expected a non-negative integer")
+
+    live_recheck = _LIVE_HOST_IDENTITY_RECHECKS.get()
+    stats = _HOST_IDENTITY_STATS.get()
+    if stats is not None:
+        key = (
+            "live_file_identity_rechecks"
+            if live_recheck
+            else "skipped_live_file_identity_rechecks"
+        )
+        stats[key] += 1
+    if not live_recheck:
+        return archived_path
+
     path = Path(path_value)
     try:
         if not path.is_absolute() or not path.is_file():
@@ -2112,9 +2349,9 @@ def _validate_tool_identity(
         identity, "resolved_path", location, errors
     )
     original_value = identity.get("path")
-    if not _nonempty_string(original_value) or not Path(original_value).is_absolute():
+    if _absolute_pure_path(original_value) is None:
         errors.append(f"{location}.path: expected an absolute tool path")
-    elif resolved is not None:
+    elif resolved is not None and _LIVE_HOST_IDENTITY_RECHECKS.get():
         try:
             current_resolved = Path(original_value).resolve(strict=True)
         except OSError:
@@ -2140,6 +2377,19 @@ def _validate_recorded_tool_command(
     recorded_resolved = tool_identity.get("resolved_path")
     if not _nonempty_string(recorded_resolved):
         errors.append(f"{location}: recorded tool closure has no resolved path")
+        return
+    if not _LIVE_HOST_IDENTITY_RECHECKS.get():
+        recorded_path = tool_identity.get("path")
+        if _absolute_pure_path(argument) is not None:
+            if argument not in {recorded_path, recorded_resolved}:
+                errors.append(
+                    f"{location}: executable is not bound to the recorded "
+                    "tool identity"
+                )
+        elif argument != tool_identity.get("name"):
+            errors.append(
+                f"{location}: executable is not bound to the recorded tool identity"
+            )
         return
     if Path(argument).is_absolute():
         try:
@@ -2233,7 +2483,6 @@ def _validate_structured_executable_identity(
     )
 
     normalized_rows: list[str] = []
-    build_root = (repo_root / "build").resolve()
     build_libdart: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
     for index, item in enumerate(libraries):
@@ -2256,14 +2505,11 @@ def _validate_structured_executable_identity(
         resolved = _validate_live_absolute_file_identity(
             library, "resolved_path", item_location, errors
         )
-        if (
-            not _nonempty_string(reported_value)
-            or not Path(reported_value).is_absolute()
-        ):
+        if _absolute_pure_path(reported_value) is None:
             errors.append(
                 f"{item_location}.reported_path: expected an absolute file path"
             )
-        elif resolved is not None:
+        elif resolved is not None and _LIVE_HOST_IDENTITY_RECHECKS.get():
             try:
                 current_resolved = Path(reported_value).resolve(strict=True)
             except OSError:
@@ -2282,8 +2528,8 @@ def _validate_structured_executable_identity(
                 errors.append(f"{item_location}: duplicate resolved library identity")
             seen.add(key)
             normalized_rows.append(f"{soname} => {reported_value} => {resolved}")
-            if soname.startswith("libdart.so") and (
-                resolved == build_root or build_root in resolved.parents
+            if soname.startswith("libdart.so") and _is_recorded_build_tree_path(
+                resolved
             ):
                 build_libdart.append(library)
 
@@ -2324,16 +2570,23 @@ def _validate_cpu_runtime_identity(
     if not _nonempty_string(ldd_path_value):
         errors.append(f"{location}.ldd_path: expected an absolute file path")
     else:
-        ldd_path = Path(ldd_path_value)
-        if not ldd_path.is_absolute() or not ldd_path.is_file():
-            errors.append(f"{location}.ldd_path: recorded file is unavailable")
-        else:
-            _expect_fields(
-                identity,
-                {"ldd_sha256": _sha256(ldd_path)},
-                location,
-                errors,
-            )
+        archived_ldd_path = _absolute_pure_path(ldd_path_value)
+        ldd_sha256 = identity.get("ldd_sha256")
+        if not isinstance(ldd_sha256, str) or not SHA256_PATTERN.fullmatch(ldd_sha256):
+            errors.append(f"{location}.ldd_sha256: expected lowercase SHA-256")
+        if archived_ldd_path is None:
+            errors.append(f"{location}.ldd_path: expected an absolute file path")
+        elif _LIVE_HOST_IDENTITY_RECHECKS.get():
+            ldd_path = Path(ldd_path_value)
+            if not ldd_path.is_absolute() or not ldd_path.is_file():
+                errors.append(f"{location}.ldd_path: recorded file is unavailable")
+            else:
+                _expect_fields(
+                    identity,
+                    {"ldd_sha256": _sha256(ldd_path)},
+                    location,
+                    errors,
+                )
 
     resolved = _object(
         identity.get("resolved_regular_files"),
@@ -2354,7 +2607,6 @@ def _validate_cpu_runtime_identity(
         errors,
     )
 
-    build_root = (repo_root / "build").resolve()
     build_libdart: list[str] = []
     for path_value, item in resolved.items():
         item_location = f"{location}.resolved_regular_files[{path_value!r}]"
@@ -2367,22 +2619,23 @@ def _validate_cpu_runtime_identity(
             errors.append(f"{item_location}: path key must be a string")
             continue
         raw_path = Path(path_value)
-        try:
-            canonical_path = raw_path.resolve(strict=True)
-        except OSError:
-            canonical_path = None
-        if canonical_path is not None and raw_path != canonical_path:
-            errors.append(
-                f"{item_location}: recorded runtime path must be canonical; "
-                f"got {path_value!r}, resolved {str(canonical_path)!r}"
-            )
+        if _LIVE_HOST_IDENTITY_RECHECKS.get():
+            try:
+                canonical_path = raw_path.resolve(strict=True)
+            except OSError:
+                canonical_path = None
+            if canonical_path is not None and raw_path != canonical_path:
+                errors.append(
+                    f"{item_location}: recorded runtime path must be canonical; "
+                    f"got {path_value!r}, resolved {str(canonical_path)!r}"
+                )
         path = _validate_live_absolute_file_identity(
             {**record, "path": path_value}, "path", item_location, errors
         )
         if (
             path is not None
             and path.name.startswith("libdart.so.")
-            and (path == build_root or build_root in path.parents)
+            and _is_recorded_build_tree_path(path)
         ):
             build_libdart.append(path_value)
     if len(build_libdart) != 1:
@@ -2453,14 +2706,21 @@ def _validate_cpu_runtime_provenance(
         return
     resolved = runtime_identity.get("resolved_regular_files")
     resolved = resolved if isinstance(resolved, dict) else {}
-    build_root = (repo_root / "build").resolve()
+
+    def is_build_libdart(path_value: Any) -> bool:
+        path = _absolute_pure_path(path_value)
+        return (
+            path is not None
+            and path.name.startswith("libdart.so.")
+            and _is_recorded_build_tree_path(path)
+        )
+
     libdart = [
         record
         for path_value, record in resolved.items()
         if isinstance(path_value, str)
         and isinstance(record, dict)
-        and Path(path_value).name.startswith("libdart.so.")
-        and (Path(path_value) == build_root or build_root in Path(path_value).parents)
+        and is_build_libdart(path_value)
     ]
     expected = {
         "scope": (
@@ -7879,9 +8139,8 @@ def _validate_backspin_v3_truth(
                     location,
                     errors,
                 )
-                if (
-                    metadata is not None
-                    and metadata.get("capture_summary") != capture_summary
+                if metadata is not None and not _values_equal_with_repo_relocation(
+                    metadata.get("capture_summary"), capture_summary
                 ):
                     errors.append(
                         f"{location}.metadata.capture_summary: recomputed binding "
@@ -12917,7 +13176,7 @@ def _validate_turntable_v1_group(
                     "sha256": _sha256(durable),
                 }
             )
-        if sources != expected_sources:
+        if not _values_equal_with_repo_relocation(sources, expected_sources):
             errors.append(
                 f"{group_location}.panel_validation.source_frames: "
                 "outcome-aware step/order binding changed"
@@ -14626,6 +14885,734 @@ def _validate_author_card_house_v1_truth(
         errors.append(f"{location}.durable_still_sha256: artifact hash differs")
 
 
+def _validate_author_masonry_arch_v1_truth(
+    current_truth: dict[str, Any], repo_root: Path, errors: list[str]
+) -> None:
+    location = "current_truth.author_masonry_arch_reference_v1"
+    data = _object(
+        current_truth.get("author_masonry_arch_reference_v1"), location, errors
+    )
+    if data is None:
+        return
+    bundle = _validate_current_path(
+        data,
+        "bundle",
+        AUTHOR_MASONRY_ARCH_V1_BUNDLE,
+        location,
+        repo_root,
+        errors,
+        directory=True,
+    )
+    hashes = _validate_artifact_hashes(
+        data,
+        AUTHOR_MASONRY_ARCH_V1_ARTIFACT_TARGETS,
+        location,
+        repo_root,
+        errors,
+    )
+    _expect_fields(
+        data,
+        {
+            "status": "valid_current_source_scientific_negative",
+            "requirement_ids": ["fig.07", "fig.09", "video.07_arch_25"],
+            "artifact_valid": True,
+            "claim_history_projection_valid": True,
+            "raw_source_history_retained": False,
+            "raw_source_history_bytes": 382753953,
+            "raw_source_history_sha256": (
+                "cec0e4b86837e7542c498c7ddad40538983ec023332b88ebddee7766997e3ac1"
+            ),
+            "history_projection_decompressed_bytes": 28606169,
+            "history_projection_stored_bytes": 8080187,
+            "configuration_port_valid": True,
+            "current_source_diagnostic_valid": True,
+            "scientific_negative": True,
+            "author_repository": "https://github.com/matthcsong/fbf-sca-2026.git",
+            "author_commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+            "author_tree": "ffcdafb61adeda2239c8366d054b548b50d26685",
+            "author_runner_git_blob": "35a052d7ef0975e7c828c9678d163054dfbb3ef2",
+            "author_runner_sha256": (
+                "7e9158240267bb0ec1d0316b1badd4f3c8e1cd10270322de2e205cfea96f6f73"
+            ),
+            "author_mesh_tree": "2552017df4061c49f7df064d847a4268a6e02d1a",
+            "author_mesh_manifest_sha256": (
+                "a3f4e35073a2f4e74837fff277cd923f104b6af57f2cf995cf7524fe498e483d"
+            ),
+            "run_id": "20260719T113826Z",
+            "observed_frames": 500,
+            "source_default_frames": 400,
+            "drop_frame": 400,
+            "release_substep": 1600,
+            "total_substeps": 2000,
+            "source_default_releases_cubes": False,
+            "observed_run_releases_cubes": True,
+            "author_converged_flag_count": 157,
+            "author_nonconverged_flag_count": 1843,
+            "initial_natural_residual_shortcut_converged_count": 40,
+            "configured_coulomb_rel_outer_gate_converged_count": 117,
+            "outer_cap_hit_count": 1843,
+            "configured_termination_residual": "coulomb_rel",
+            "configured_termination_tolerance": 1.0e-6,
+            "natural_final_residual_at_or_below_tolerance_count": 47,
+            "all_substeps_solver_contract_valid": False,
+            "physical_outcome_verdict": None,
+            "contact_pair_identity_available": False,
+            "contact_count_change_only_inferred": True,
+            "historical_or_paper_invocation_valid": False,
+            "runtime_attestation_complete": False,
+            "source_equivalent_dart_dynamics_executed": False,
+            "dart_dynamics_parity_valid": False,
+            "cross_solver_parity_valid": False,
+            "timing_verdict": None,
+            "paper_comparable": False,
+            "fig07_parity": False,
+            "fig09_parity": False,
+            "video07_arch25_parity": False,
+            "artifact_count": 7,
+            "physical_file_count": 9,
+            "claim_scope": (
+                "Configuration-only DART audit and sealed current-author "
+                "500-frame source diagnostic for the pinned public 25-stone "
+                "masonry-arch workload, retaining every claim-bearing residual "
+                "field in a deterministic projection."
+            ),
+            "claim_boundary": (
+                "The observed run overrides the 400-frame source default so the "
+                "cubes release at frame 400. Of 157 true author convergence "
+                "flags, 40 use the initial natural-residual shortcut and 117 "
+                "use the configured outer coulomb_rel gate; the other 1,843 "
+                "outer solves are negative. The 382,753,953-byte raw history "
+                "is hash-bound but intentionally omitted in favor of an "
+                "8,080,187-byte lossless claim projection. Artifact integrity "
+                "does not "
+                "establish all-substep solver validity, a historical or paper "
+                "invocation, pair-identified impact, DART or cross-solver dynamics "
+                "parity, renderer or golden parity, repeatability, timing, Fig. 7, "
+                "Fig. 9, or video.07 parity."
+            ),
+        },
+        location,
+        errors,
+    )
+    if bundle is None:
+        return
+
+    for relative, (
+        expected_sha256,
+        expected_bytes,
+    ) in AUTHOR_MASONRY_ARCH_V1_SEALED_ARTIFACTS.items():
+        hash_location = f"{location}.artifact_hashes[{relative!r}]"
+        if hashes.get(relative) != expected_sha256:
+            errors.append(
+                f"{hash_location}: sealed v1 digest changed; expected "
+                f"{expected_sha256}, got {hashes.get(relative)!r}"
+            )
+        target = bundle / relative
+        if target.is_file() and target.stat().st_size != expected_bytes:
+            errors.append(
+                f"{location}.bundle[{relative!r}]: sealed v1 size changed; "
+                f"expected {expected_bytes}, got {target.stat().st_size}"
+            )
+
+    expected_files = {
+        "REPORT.md",
+        "artifact-index.json",
+        "manifest.json",
+        "summary.json",
+        "verification.json",
+        "runs/20260719T113826Z/metadata.json",
+        "runs/20260719T113826Z/fbf/result.json",
+        "runs/20260719T113826Z/fbf/trajectory.npz",
+        "runs/20260719T113826Z/fbf/history-claim-projection.json.gz",
+    }
+    actual_files: set[str] = set()
+    for path in bundle.rglob("*"):
+        relative = path.relative_to(bundle).as_posix()
+        if path.is_symlink():
+            errors.append(f"{location}.bundle: contains symlink {relative!r}")
+        elif path.is_file():
+            actual_files.add(relative)
+        elif not path.is_dir():
+            errors.append(f"{location}.bundle: contains non-regular entry {relative!r}")
+    if actual_files != expected_files:
+        errors.append(
+            f"{location}.bundle: exact file membership changed; "
+            f"missing={sorted(expected_files - actual_files)}, "
+            f"extra={sorted(actual_files - expected_files)}"
+        )
+
+    manifest = _read_bundle_json(
+        bundle, "manifest.json", f"{location}.manifest", errors
+    )
+    summary = _read_bundle_json(bundle, "summary.json", f"{location}.summary", errors)
+    index = _read_bundle_json(
+        bundle, "artifact-index.json", f"{location}.artifact_index", errors
+    )
+    verification = _read_bundle_json(
+        bundle, "verification.json", f"{location}.verification", errors
+    )
+    metadata = _read_bundle_json(
+        bundle,
+        "runs/20260719T113826Z/metadata.json",
+        f"{location}.run_metadata",
+        errors,
+    )
+    result = _read_bundle_json(
+        bundle,
+        "runs/20260719T113826Z/fbf/result.json",
+        f"{location}.result",
+        errors,
+    )
+    if manifest is not None:
+        _expect_exact_keys(
+            manifest,
+            {
+                "claim_boundary",
+                "environment",
+                "invocation",
+                "nonclaims",
+                "omitted_redundant_source_artifact",
+                "retained_source_artifacts",
+                "run",
+                "schema_version",
+                "source",
+                "status",
+            },
+            f"{location}.manifest",
+            errors,
+        )
+        _expect_fields(
+            manifest,
+            {
+                "schema_version": "dart.fbf_author_masonry_arch_reference/v1",
+                "status": "valid_current_source_scientific_negative",
+                "run": {
+                    "run_id": "20260719T113826Z",
+                    "source_directory": (
+                        "paper_examples/masonry-arch/results/20260719T113826Z"
+                    ),
+                    "source_default": {
+                        "frames": 400,
+                        "drop_frame": 400,
+                        "releases_cubes": False,
+                    },
+                    "observed_override": {
+                        "frames": 500,
+                        "drop_frame": 400,
+                        "releases_cubes": True,
+                    },
+                },
+                "claim_boundary": {
+                    "all_substeps_solver_contract_valid": False,
+                    "claim_history_projection_valid": True,
+                    "contact_count_change_only_inferred": True,
+                    "contact_pairs_recorded": False,
+                    "cross_solver_parity": False,
+                    "current_source_diagnostic": True,
+                    "dart_dynamics_parity": False,
+                    "historical_or_paper_invocation": False,
+                    "raw_source_history_retained": False,
+                    "runtime_attestation_complete": False,
+                    "scientific_negative": True,
+                    "timing_verdict": None,
+                },
+                "invocation": {
+                    "argv": [
+                        "/tmp/fbf-author-venv/bin/python",
+                        "paper_examples/masonry-arch/run.py",
+                        "--solvers",
+                        "fbf",
+                        "--frames",
+                        "500",
+                        "--drop-frame",
+                        "400",
+                        "--device",
+                        "cpu",
+                        "--profile",
+                    ],
+                    "argv_embedded_in_source_result": False,
+                    "cwd": "/tmp/fbf-sca-2026-author",
+                    "observation_source": "orchestration_record",
+                    "repetitions": 1,
+                    "returncode": 0,
+                    "stderr_retained": False,
+                    "stdout_retained": False,
+                    "timing_includes_first_use_compilation": True,
+                    "warmup_steps": 0,
+                },
+                "nonclaims": [
+                    "not_a_historical_or_paper_invocation",
+                    "not_the_source_default_400_frame_no_release_protocol",
+                    "not_an_all_substeps_solver_valid_result",
+                    "not_dart_equivalence_or_dynamics_parity",
+                    "not_cross_solver_parity",
+                    "not_timing_or_real_time_evidence",
+                    "not_repeatability_or_statistical_evidence",
+                    "contact_count_change_is_not_definitive_cube_arch_pair_contact",
+                    "not_visual_renderer_or_approved_golden_evidence",
+                    "not_a_contemporaneous_pre_and_post_runtime_attestation",
+                    "raw_source_history_not_retained_beyond_claim_projection",
+                ],
+                "retained_source_artifacts": [
+                    {
+                        "source_path": (
+                            "paper_examples/masonry-arch/results/"
+                            "20260719T113826Z/metadata.json"
+                        ),
+                        "bundle_path": "runs/20260719T113826Z/metadata.json",
+                        "bytes": 566,
+                        "sha256": (
+                            "ac135b4320c4f771db4fd9126e634ff475d932fdfd7912d335bf3d9ff28230fe"
+                        ),
+                        "encoding": "raw",
+                    },
+                    {
+                        "source_path": (
+                            "paper_examples/masonry-arch/results/"
+                            "20260719T113826Z/fbf/result.json"
+                        ),
+                        "bundle_path": "runs/20260719T113826Z/fbf/result.json",
+                        "bytes": 13584,
+                        "sha256": (
+                            "1edb551142eec1d6c58f67e45c8e73fe95d4e22c0c78f477fed507c49d5c8eb4"
+                        ),
+                        "encoding": "raw",
+                    },
+                    {
+                        "source_path": (
+                            "paper_examples/masonry-arch/results/"
+                            "20260719T113826Z/fbf/trajectory.npz"
+                        ),
+                        "bundle_path": "runs/20260719T113826Z/fbf/trajectory.npz",
+                        "bytes": 9222,
+                        "sha256": (
+                            "250ba12a329b41d4710929faaa7af2b5a3bdd2c3f28d6f1dcfa3b59cc22d570d"
+                        ),
+                        "encoding": "raw",
+                    },
+                    {
+                        "source_path": (
+                            "paper_examples/masonry-arch/results/"
+                            "20260719T113826Z/fbf/history.json"
+                        ),
+                        "bundle_path": (
+                            "runs/20260719T113826Z/fbf/"
+                            "history-claim-projection.json.gz"
+                        ),
+                        "encoding": "claim-projection-json-gzip-n9-mtime0",
+                        "source_identity": {
+                            "bytes": 382753953,
+                            "sha256": (
+                                "cec0e4b86837e7542c498c7ddad40538983ec023332b88ebddee7766997e3ac1"
+                            ),
+                            "retained": False,
+                        },
+                        "projection": {
+                            "stored_bytes": 8080187,
+                            "stored_sha256": (
+                                "8a19be46feae8bfbbfc57f3aff194bc18a9fa695f286cc4d13f3c819f9dc701b"
+                            ),
+                            "decompressed_bytes": 28606169,
+                            "decompressed_sha256": (
+                                "8c9d245b5820950b36fe9b319cde0c256ab1cb404d9dfa1fc7af5fb53a9e0f98"
+                            ),
+                            "outer_fields": ["k", "residual", "r_coulomb"],
+                            "schema_version": (
+                                "dart.fbf_author_masonry_arch_history_"
+                                "claim_projection/v1"
+                            ),
+                            "step_fields": [
+                                "step_idx",
+                                "num_contacts",
+                                "outer_iters",
+                                "converged",
+                                "initial_residual",
+                                "final_residual",
+                                "warmup",
+                                "outer",
+                            ],
+                        },
+                    },
+                ],
+                "omitted_redundant_source_artifact": {
+                    "source_path": (
+                        "paper_examples/masonry-arch/results/"
+                        "20260719T113826Z/sweep_results.json"
+                    ),
+                    "bytes": 14714,
+                    "sha256": (
+                        "610ce014544e549e144bea77ebab50011b4caedf070ebf132dbb8ce203ad7442"
+                    ),
+                    "reason": "semantic duplicate of the retained single-case result.json",
+                },
+            },
+            f"{location}.manifest",
+            errors,
+        )
+        source = _object(manifest.get("source"), f"{location}.manifest.source", errors)
+        if source is not None:
+            _expect_fields(
+                source,
+                {
+                    "repository": data.get("author_repository"),
+                    "commit": data.get("author_commit"),
+                    "tree": data.get("author_tree"),
+                    "runner_sha256": data.get("author_runner_sha256"),
+                    "runner_git_blob": data.get("author_runner_git_blob"),
+                },
+                f"{location}.manifest.source",
+                errors,
+            )
+    if summary is not None:
+        _expect_exact_keys(
+            summary,
+            {
+                "history",
+                "nonclaims",
+                "predicates",
+                "protocol",
+                "residual_semantics",
+                "schema_version",
+                "status",
+                "trajectory",
+            },
+            f"{location}.summary",
+            errors,
+        )
+        _expect_fields(
+            summary,
+            {
+                "schema_version": "dart.fbf_author_masonry_arch_summary/v1",
+                "status": "valid_current_source_scientific_negative",
+                "predicates": {
+                    "all_substeps_solver_contract_valid": False,
+                    "artifact_integrity_valid": True,
+                    "claim_history_projection_valid": True,
+                    "contact_increase_is_pair_identified_cube_arch_contact": False,
+                    "cross_solver_parity_valid": False,
+                    "current_source_diagnostic_valid": True,
+                    "dart_dynamics_parity_valid": False,
+                    "historical_or_paper_invocation_valid": False,
+                    "raw_source_history_retained": False,
+                    "runtime_attestation_complete": False,
+                    "scientific_negative": True,
+                    "timing_verdict": None,
+                },
+                "residual_semantics": {
+                    "configured_termination_residual": "coulomb_rel",
+                    "configured_termination_tolerance": 1.0e-6,
+                    "author_converged_flag_is_exclusively_configured_gate": False,
+                    "initial_natural_residual_shortcut_converged_count": 40,
+                    "configured_coulomb_rel_outer_gate_converged_count": 117,
+                    "final_residual_field_is_natural_residual": True,
+                    "natural_threshold_count_is_not_configured_convergence_count": True,
+                },
+                "protocol": {
+                    "drop_frame": 400,
+                    "frames": 500,
+                    "observed_invocation_is_source_default": False,
+                    "post_release_substeps": 400,
+                    "pre_release_substeps": 1600,
+                    "release_substep": 1600,
+                    "run_id": "20260719T113826Z",
+                    "source_commit": data.get("author_commit"),
+                    "source_default_drop_frame": 400,
+                    "source_default_frames": 400,
+                    "source_default_releases_cubes": False,
+                    "substeps_per_frame": 4,
+                    "total_substeps": 2000,
+                },
+                "trajectory": {
+                    "keystone_idx": 12,
+                    "keystone_z_final": 60.18415069580078,
+                    "keystone_z_first_recorded": 61.92604446411133,
+                    "keystone_z_init": 61.92774963378906,
+                    "max_height_change": 1.7435989379882812,
+                    "sample_count": 500,
+                    "stone_count": 25,
+                },
+            },
+            f"{location}.summary",
+            errors,
+        )
+        history = _object(summary.get("history"), f"{location}.summary.history", errors)
+        if history is not None:
+            _expect_fields(
+                history,
+                {
+                    "total_substeps": 2000,
+                    "author_converged_flag_count": 157,
+                    "author_nonconverged_flag_count": 1843,
+                    "initial_natural_residual_shortcut_converged_count": 40,
+                    "configured_coulomb_rel_outer_gate_converged_count": 117,
+                    "outer_cap_hit_count": 1843,
+                    "natural_final_residual_at_or_below_tolerance_count": 47,
+                    "contact_pair_identity_available": False,
+                    "first_nonconverged_step_idx": 53,
+                },
+                f"{location}.summary.history",
+                errors,
+            )
+    indexed_paths = {
+        "REPORT.md",
+        "manifest.json",
+        "summary.json",
+        "runs/20260719T113826Z/metadata.json",
+        "runs/20260719T113826Z/fbf/result.json",
+        "runs/20260719T113826Z/fbf/trajectory.npz",
+        "runs/20260719T113826Z/fbf/history-claim-projection.json.gz",
+    }
+    if index is not None:
+        _expect_exact_keys(
+            index,
+            {
+                "artifact_count",
+                "artifacts",
+                "excluded",
+                "schema_version",
+                "stored_bytes",
+            },
+            f"{location}.artifact_index",
+            errors,
+        )
+        _expect_fields(
+            index,
+            {
+                "schema_version": "dart.fbf_author_masonry_arch_artifact_index/v1",
+                "artifact_count": 7,
+                "stored_bytes": 8117829,
+                "excluded": ["artifact-index.json", "verification.json"],
+            },
+            f"{location}.artifact_index",
+            errors,
+        )
+        artifacts = index.get("artifacts")
+        if not isinstance(artifacts, list) or len(artifacts) != 7:
+            errors.append(f"{location}.artifact_index.artifacts: expected 7 entries")
+        else:
+            indexed: set[str] = set()
+            for item_index, item in enumerate(artifacts):
+                item_location = f"{location}.artifact_index.artifacts[{item_index}]"
+                artifact = _object(item, item_location, errors)
+                if artifact is None:
+                    continue
+                if set(artifact) != {"path", "sha256", "bytes"}:
+                    errors.append(f"{item_location}: exact artifact contract changed")
+                relative = artifact.get("path")
+                if not isinstance(relative, str) or relative not in indexed_paths:
+                    errors.append(f"{item_location}.path: unexpected indexed path")
+                    continue
+                indexed.add(relative)
+                target = bundle / relative
+                _expect_fields(
+                    artifact,
+                    {
+                        "sha256": hashes.get(relative),
+                        "bytes": target.stat().st_size if target.is_file() else None,
+                    },
+                    item_location,
+                    errors,
+                )
+            if indexed != indexed_paths:
+                errors.append(
+                    f"{location}.artifact_index.artifacts: exact membership changed"
+                )
+    if verification is not None:
+        _expect_exact_keys(
+            verification,
+            {
+                "artifact_count",
+                "artifact_index_sha256",
+                "checks",
+                "finalizer",
+                "manifest_sha256",
+                "pass",
+                "schema_version",
+                "source_commit",
+                "status",
+                "stored_bytes",
+                "summary_sha256",
+            },
+            f"{location}.verification",
+            errors,
+        )
+        _expect_fields(
+            verification,
+            {
+                "schema_version": (
+                    "dart.fbf_author_masonry_arch_reference_validation/v1"
+                ),
+                "pass": True,
+                "status": "valid_current_source_scientific_negative",
+                "source_commit": data.get("author_commit"),
+                "artifact_count": 7,
+                "stored_bytes": 8117829,
+                "artifact_index_sha256": hashes.get("artifact-index.json"),
+                "manifest_sha256": hashes.get("manifest.json"),
+                "summary_sha256": hashes.get("summary.json"),
+                "finalizer": {
+                    "path": "scripts/finalize_fbf_author_masonry_arch_reference.py",
+                    "sha256": hashes.get("finalizer"),
+                },
+                "checks": [
+                    "exact_bundle_membership",
+                    "no_symlinks_or_nonregular_entries",
+                    "raw_source_history_hash_and_size_bound",
+                    "single_member_deterministic_gzip",
+                    "bounded_streaming_claim_projection_validation",
+                    "claim_projection_exact_field_boundary",
+                    "bounded_pickle_disabled_npz_validation",
+                    "result_trajectory_metric_recomputation",
+                    "author_convergence_and_natural_residual_semantics_separated",
+                    "fail_closed_claim_boundary",
+                    "artifact_index_current",
+                    "no_reserved_transient_directories",
+                ],
+            },
+            f"{location}.verification",
+            errors,
+        )
+    if metadata is not None:
+        _expect_exact_keys(
+            metadata,
+            {
+                "T_seconds",
+                "cube_density",
+                "cube_half_size",
+                "device",
+                "drop_frame",
+                "drop_height",
+                "dt",
+                "experiment",
+                "gap",
+                "mesh_dir",
+                "mu",
+                "num_cubes",
+                "num_frames",
+                "num_stones",
+                "scale",
+                "solvers",
+                "stone_density",
+                "sub_dt",
+                "substeps",
+                "timestamp",
+            },
+            f"{location}.run_metadata",
+            errors,
+        )
+        _expect_fields(
+            metadata,
+            {
+                "experiment": "masonry_arch_drop",
+                "mu": 0.8,
+                "num_stones": 25,
+                "num_cubes": 3,
+                "cube_half_size": 1.5,
+                "cube_density": 2000.0,
+                "stone_density": 2000.0,
+                "drop_height": 10.0,
+                "scale": 1.0,
+                "num_frames": 500,
+                "drop_frame": 400,
+                "dt": 1.0 / 60.0,
+                "substeps": 4,
+                "sub_dt": 1.0 / 240.0,
+                "T_seconds": 25.0 / 3.0,
+                "gap": 0.005,
+                "mesh_dir": (
+                    "/tmp/fbf-sca-2026-author/paper_examples/masonry-arch/"
+                    "../../meshes/arch/num_stones=25"
+                ),
+                "solvers": ["fbf"],
+                "device": "cpu",
+                "timestamp": "20260719T113826Z",
+            },
+            f"{location}.run_metadata",
+            errors,
+        )
+    if result is not None:
+        _expect_exact_keys(
+            result,
+            {
+                "T_seconds",
+                "avg_step_time_ms",
+                "config",
+                "cube_density",
+                "cube_half_size",
+                "drop_frame",
+                "drop_height",
+                "drop_z",
+                "dt",
+                "keystone_idx",
+                "keystone_z_final",
+                "keystone_z_init",
+                "max_height_change",
+                "mu",
+                "num_cubes",
+                "num_frames",
+                "num_stones",
+                "scale",
+                "solver",
+                "step_times_ms",
+                "sub_dt",
+                "substeps",
+                "usd",
+            },
+            f"{location}.result",
+            errors,
+        )
+        _expect_fields(
+            result,
+            {
+                "solver": "fbf",
+                "num_frames": 500,
+                "drop_frame": 400,
+                "num_stones": 25,
+                "num_cubes": 3,
+                "cube_half_size": 1.5,
+                "cube_density": 2000.0,
+                "drop_height": 10.0,
+                "scale": 1.0,
+                "mu": 0.8,
+                "dt": 1.0 / 60.0,
+                "substeps": 4,
+                "sub_dt": 1.0 / 240.0,
+                "T_seconds": 25.0 / 3.0,
+                "keystone_idx": 12,
+                "keystone_z_init": 61.92774963378906,
+                "keystone_z_final": 60.18415069580078,
+                "max_height_change": 1.7435989379882812,
+                "drop_z": 75.27337646484375,
+                "usd": None,
+            },
+            f"{location}.result",
+            errors,
+        )
+        config = _object(result.get("config"), f"{location}.result.config", errors)
+        if config is not None:
+            _expect_fields(
+                config,
+                {
+                    "max_outer": 200,
+                    "outer_tol": 1.0e-6,
+                    "residual_check_interval": 1,
+                    "inner_max_iter": 1000,
+                    "inner_tol": 1.0e-6,
+                    "inner_solver": "block_gs",
+                    "inner_gs_sweeps": 30,
+                    "max_contacts": 4096,
+                    "project_after_correction": True,
+                    "termination_residual": "coulomb_rel",
+                    "termination_tol": 1.0e-6,
+                },
+                f"{location}.result.config",
+                errors,
+            )
+        step_times = result.get("step_times_ms")
+        if not isinstance(step_times, list) or len(step_times) != 500:
+            errors.append(f"{location}.result.step_times_ms: expected 500 samples")
+
+
 def _validate_current_truth(value: Any, repo_root: Path, errors: list[str]) -> None:
     current_truth = _object(value, "current_truth", errors)
     if current_truth is None:
@@ -14649,6 +15636,7 @@ def _validate_current_truth(value: Any, repo_root: Path, errors: list[str]) -> N
     _validate_cpu_evidence_truth(current_truth, repo_root, errors)
     _validate_current_small_cpu_truth(current_truth, repo_root, errors)
     _validate_author_card_house_v1_truth(current_truth, repo_root, errors)
+    _validate_author_masonry_arch_v1_truth(current_truth, repo_root, errors)
     _validate_backspin_v3_truth(current_truth, repo_root, errors)
     _validate_turntable_v1_truth(current_truth, repo_root, errors)
     _validate_incline_v1_truth(current_truth, repo_root, errors)
@@ -14819,6 +15807,98 @@ def _validate_author_card_house_requirement_boundaries(
                 errors.append(
                     f"{location}.blockers: missing construction boundary {phrase!r}"
                 )
+
+
+def _validate_author_masonry_arch_requirement_boundaries(
+    by_id: dict[str, dict[str, Any]], errors: list[str]
+) -> None:
+    expected_evidence = {
+        "examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp",
+        f"{AUTHOR_MASONRY_ARCH_V1_BUNDLE}/REPORT.md",
+    }
+    verification_command = (
+        "python3 scripts/finalize_fbf_author_masonry_arch_reference.py --verify-only"
+    )
+    for requirement_id in ("fig.07", "fig.09", "video.07_arch_25"):
+        requirement = by_id.get(requirement_id)
+        if not isinstance(requirement, dict):
+            continue
+        location = f"{requirement_id}.author_masonry_arch_current_boundary"
+        if requirement.get("status") != "partial":
+            errors.append(f"{location}.status: expected 'partial'")
+
+        evidence = requirement.get("current_evidence")
+        evidence_paths = (
+            {item.get("path") for item in evidence if isinstance(item, dict)}
+            if isinstance(evidence, list)
+            else set()
+        )
+        missing_evidence = expected_evidence - evidence_paths
+        if missing_evidence:
+            errors.append(
+                f"{location}.current_evidence: missing scientific-negative "
+                f"evidence {sorted(missing_evidence)}"
+            )
+        if isinstance(evidence, list):
+            evidence_by_path = {
+                item.get("path"): item
+                for item in evidence
+                if isinstance(item, dict) and isinstance(item.get("path"), str)
+            }
+            report = evidence_by_path.get(f"{AUTHOR_MASONRY_ARCH_V1_BUNDLE}/REPORT.md")
+            report_support = (
+                report.get("supports", "").lower() if isinstance(report, dict) else ""
+            )
+            for phrase in ("1,843", "negative", "parity"):
+                if phrase not in report_support:
+                    errors.append(
+                        f"{location}.current_evidence: report support must retain "
+                        f"negative boundary {phrase!r}"
+                    )
+            spec = evidence_by_path.get(
+                "examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp"
+            )
+            spec_support = (
+                spec.get("supports", "").lower() if isinstance(spec, dict) else ""
+            )
+            if not any(phrase in spec_support for phrase in ("does not", "no dart")):
+                errors.append(
+                    f"{location}.current_evidence: configuration support must "
+                    "retain the no-DART-dynamics boundary"
+                )
+
+        capture_plan = requirement.get("capture_plan")
+        command_lists = [requirement.get("commands")]
+        if isinstance(capture_plan, dict):
+            command_lists.append(capture_plan.get("commands"))
+        commands = {
+            command
+            for command_list in command_lists
+            if isinstance(command_list, list)
+            for command in command_list
+            if isinstance(command, str)
+        }
+        if verification_command not in commands:
+            errors.append(f"{location}.commands: missing bundle verification command")
+
+        deliverables = requirement.get("deliverables")
+        if not isinstance(deliverables, list):
+            continue
+        promoted = [
+            item.get("path")
+            for item in deliverables
+            if isinstance(item, dict)
+            and isinstance(item.get("path"), str)
+            and (
+                item["path"] == AUTHOR_MASONRY_ARCH_V1_BUNDLE
+                or item["path"].startswith(f"{AUTHOR_MASONRY_ARCH_V1_BUNDLE}/")
+            )
+        ]
+        if promoted:
+            errors.append(
+                f"{location}.deliverables: scientific-negative bundle cannot be "
+                f"promoted as a canonical deliverable: {promoted}"
+            )
 
 
 def _validate_incline_requirement_boundaries(
@@ -14996,7 +16076,118 @@ def _validate_turntable_requirement_boundaries(
                 errors.append(f"{location}.{kind}: promotion remains unsupported")
 
 
-def validate_manifest(data: Any, repo_root: Path = REPO_ROOT) -> list[str]:
+def _recorded_producer_repo_roots(
+    repo_root: Path, errors: list[str] | None = None
+) -> tuple[PurePath, ...]:
+    """Read every valid producer checkout declared by sealed current bundles."""
+
+    records = (
+        (CARD_V2_BUNDLE, "invocation.json"),
+        (IMPACT_V7_BUNDLE, "metadata.json"),
+        (ARCH101_V5_BUNDLE, "invocation.json"),
+    )
+    roots: list[PurePath] = []
+    for bundle, filename in records:
+        path = repo_root / bundle / filename
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            if errors is not None:
+                errors.append(
+                    "producer_repo_root: sealed root record could not be read: "
+                    f"{path}: {error}"
+                )
+            return ()
+        cwd = payload.get("cwd") if isinstance(payload, dict) else None
+        root = _absolute_pure_path(cwd)
+        if root is None:
+            if errors is not None:
+                errors.append(
+                    "producer_repo_root: sealed root record must contain one "
+                    f"absolute normalized cwd: {path}"
+                )
+            return ()
+        roots.append(root)
+    unique: list[PurePath] = []
+    for root in roots:
+        if not any(type(root) is type(item) and root == item for item in unique):
+            unique.append(root)
+    return tuple(unique)
+
+
+def _recorded_producer_repo_root(
+    repo_root: Path, errors: list[str] | None = None
+) -> PurePath | None:
+    """Return the producer root only when all sealed records share one root."""
+
+    roots = _recorded_producer_repo_roots(repo_root, errors)
+    return roots[0] if len(roots) == 1 else None
+
+
+def live_host_identity_rechecks_available(repo_root: Path = REPO_ROOT) -> bool:
+    """Return whether this is the exact checkout that produced host closures."""
+
+    root_errors: list[str] = []
+    recorded_roots = _recorded_producer_repo_roots(repo_root, root_errors)
+    return bool(root_errors) or (
+        len(recorded_roots) == 1
+        and _same_absolute_path(recorded_roots[0], repo_root.resolve())
+    )
+
+
+@contextlib.contextmanager
+def _validation_context(
+    repo_root: Path,
+    *,
+    live_host_identity_rechecks: bool | None = None,
+    host_identity_stats: dict[str, int] | None = None,
+):
+    """Install one explicit, fail-closed producer/current checkout policy."""
+
+    repo_root = repo_root.resolve()
+    root_errors: list[str] = []
+    recorded_roots = _recorded_producer_repo_roots(repo_root, root_errors)
+    if live_host_identity_rechecks is None:
+        if len(recorded_roots) > 1:
+            root_errors.append(
+                "producer_repo_root: multiple distinct sealed producer roots "
+                "cannot select one automatic host-identity policy; rerun with "
+                "--archive-host-identities only when structural archive "
+                "validation is intended"
+            )
+            live_host_identity_rechecks = True
+        else:
+            live_host_identity_rechecks = bool(root_errors) or (
+                len(recorded_roots) == 1
+                and _same_absolute_path(recorded_roots[0], repo_root)
+            )
+    if host_identity_stats is None:
+        host_identity_stats = {
+            "live_file_identity_rechecks": 0,
+            "skipped_live_file_identity_rechecks": 0,
+        }
+    else:
+        host_identity_stats.clear()
+        host_identity_stats.update(
+            {
+                "live_file_identity_rechecks": 0,
+                "skipped_live_file_identity_rechecks": 0,
+            }
+        )
+    repo_token = _VALIDATION_REPO_ROOT.set(repo_root)
+    recorded_token = _RECORDED_REPO_ROOT.set(recorded_roots)
+    live_token = _LIVE_HOST_IDENTITY_RECHECKS.set(live_host_identity_rechecks)
+    stats_token = _HOST_IDENTITY_STATS.set(host_identity_stats)
+    try:
+        yield root_errors
+    finally:
+        _HOST_IDENTITY_STATS.reset(stats_token)
+        _LIVE_HOST_IDENTITY_RECHECKS.reset(live_token)
+        _RECORDED_REPO_ROOT.reset(recorded_token)
+        _VALIDATION_REPO_ROOT.reset(repo_token)
+
+
+def _validate_manifest_impl(data: Any, repo_root: Path = REPO_ROOT) -> list[str]:
     """Return every validation error found in *data*."""
 
     errors: list[str] = []
@@ -15507,6 +16698,10 @@ def validate_manifest(data: Any, repo_root: Path = REPO_ROOT) -> list[str]:
         "author_card_house_5_construction_only_v1" in current_truth
     ):
         _validate_author_card_house_requirement_boundaries(by_id, errors)
+    if isinstance(current_truth, dict) and (
+        "author_masonry_arch_reference_v1" in current_truth
+    ):
+        _validate_author_masonry_arch_requirement_boundaries(by_id, errors)
 
     for requirement_id, expected_range in VIDEO_SEGMENTS.items():
         requirement = by_id.get(requirement_id)
@@ -15542,6 +16737,24 @@ def validate_manifest(data: Any, repo_root: Path = REPO_ROOT) -> list[str]:
     return errors
 
 
+def validate_manifest(
+    data: Any,
+    repo_root: Path = REPO_ROOT,
+    *,
+    live_host_identity_rechecks: bool | None = None,
+    host_identity_stats: dict[str, int] | None = None,
+) -> list[str]:
+    """Return every validation error found in *data*."""
+
+    repo_root = repo_root.resolve()
+    with _validation_context(
+        repo_root,
+        live_host_identity_rechecks=live_host_identity_rechecks,
+        host_identity_stats=host_identity_stats,
+    ) as root_errors:
+        return [*root_errors, *_validate_manifest_impl(data, repo_root)]
+
+
 def load_manifest(path: Path) -> Any:
     with path.open(encoding="utf-8") as stream:
         return json.load(stream)
@@ -15562,6 +16775,20 @@ def main(argv: list[str] | None = None) -> int:
         default=REPO_ROOT,
         help="repository root used to resolve local evidence paths",
     )
+    host_mode = parser.add_mutually_exclusive_group()
+    host_mode.add_argument(
+        "--archive-host-identities",
+        action="store_true",
+        help=(
+            "validate recorded host closures structurally without dereferencing "
+            "producer-only absolute paths"
+        ),
+    )
+    host_mode.add_argument(
+        "--live-host-identities",
+        action="store_true",
+        help="require live producer-host executable and library identity rechecks",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -15570,7 +16797,18 @@ def main(argv: list[str] | None = None) -> int:
         print(f"paper-evidence manifest could not be read: {error}", file=sys.stderr)
         return 2
 
-    errors = validate_manifest(manifest, args.repo_root)
+    live_host_identity_rechecks = (
+        False
+        if args.archive_host_identities
+        else True if args.live_host_identities else None
+    )
+    host_identity_stats: dict[str, int] = {}
+    errors = validate_manifest(
+        manifest,
+        args.repo_root,
+        live_host_identity_rechecks=live_host_identity_rechecks,
+        host_identity_stats=host_identity_stats,
+    )
     if errors:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
@@ -15580,10 +16818,16 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
+    live_rechecks = host_identity_stats["live_file_identity_rechecks"]
+    skipped_rechecks = host_identity_stats["skipped_live_file_identity_rechecks"]
+    host_identity_mode = "live" if live_rechecks else "archive"
     print(
         "paper-evidence manifest valid: "
         f"{len(manifest['requirements'])} canonical requirements, "
-        f"status={manifest['overall_status']}"
+        f"status={manifest['overall_status']}, "
+        f"host_identities={host_identity_mode}, "
+        f"live_file_identity_rechecks={live_rechecks}, "
+        f"skipped_live_file_identity_rechecks={skipped_rechecks}"
     )
     return 0
 

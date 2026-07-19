@@ -26,7 +26,7 @@ historical renderer, Apple hardware, or paper timer boundary.
 | --- | --- | --- |
 | Public author reference | The MIT-licensed repository is available at pinned commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0` with the solver, six runnable examples, current configurations, pinned dependencies, and optional MuJoCo/Kamino runners | Available and source-auditable; porting and matched runs are now internal work |
 | PR #3374 | Merged at `fa17fad` | Required visual infrastructure is available on the release branch |
-| PR #3377 | Open at topic `2ddd9f56`, non-draft, `DIRTY`; against `origin/release-6.20` at `75306efe770`, the refs had 34 topic-only and 5 target-only commits on 2026-07-18; body overclaims completion and performance | WIP, not completion evidence |
+| PR #3377 | The topic contains `origin/release-6.20` through `75306efe770`; topic head, divergence, merge state, checks, and reviews are mutable and must be queried live; body overclaims completion and performance | WIP, not completion evidence |
 | Exact algebra | Row signs validated; row-operator versus impulse-test `W` relative error `1.33e-16`; spectral-nullspace regressions pass | Tested formulation is internally consistent |
 | Literal 25-stone exact dynamics | Schema-v8 mark26 has eight complete 600-step processes: one warmup plus three measured runs at each of one and four threads | Full local exact trajectory is proven for the reconstructed non-paper scene |
 | Exact solve contract | 1,800 measured steps per thread count; maximum residual `9.999807145410957e-7`; zero exact failures, caps, or fallbacks | Pass |
@@ -42,6 +42,7 @@ historical renderer, Apple hardware, or paper timer boundary.
 | Backspin visual evidence | Finalized `fig03_backspin_current_v3` has 18 indexed artifacts / 20 physical files, three durable stills, MP4/GIF media, 129 exact attempts/solves, zero caps/failures/fallbacks, a corroborating translational trace, and a passing manual inspection of the renderer-applied high-contrast 6x4 ivory/charcoal checker texture and coral registration tile | Valid current-source DART evidence only; `fig.03` and `video.02_backspin` remain partial |
 | Author-pinned turntable visual evidence | Finalized `fig04_turntable_author_current_v1` has 58 indexed artifacts / 60 physical files, four timeline-bound outcome stills, and four complete 360-step author-configured visual-lane cells: three eject and `mu=.5, omega=2` remains on support through 6 s | Valid finite-horizon author-source-pinned non-paper DART evidence; no zero-slip, co-rotation, full-state, paper-golden, timing, real-time, or parity claim |
 | Author card-house construction | Finalized `card_house_author_5_construction_current_v1` has 12 indexed artifacts / 14 physical files and shows the public-author default five-level, 40-card configuration at step zero | Construction-only evidence; zero simulation substeps and no release, standing, dynamics, solver, physical-outcome, Fig. 6/video, timing, performance, or parity claim |
+| Pinned-author masonry arch | `author_masonry_arch_reference_v1` records the 500-frame / 2,000-substep author run with release at substep 1,600; a deterministic projection represents every substep, with only 157 author convergence flags true and 1,843 false | Valid source-pinned scientific negative; not the 400-frame source default or a paper invocation, and not DART/cross-solver dynamics, trajectory, outcome, timing, repeatability, pair-contact, or media parity |
 | Reconstructed crown impact | Frozen three-cube v1 reaches the arch before the ground and stays finite, but fails cap, residual, whole-arch, and far-field gates | Durable scientific negative; `impact_claim_passed=false`, no tuning |
 | Card-house manifold sensitivity | Current-source v2 emits 600 rows for Compact and FourPointPlanar; both are non-strict, while FourPointPlanar raises mean contacts by `93.7983` and mean multiplicity by `1.95485` | Valid one-factor diagnostic only; physical, timing, real-time, and paper verdicts remain null |
 | Paper-media parity | The passing literal bundle contains no projectile; source-matched impact media and 101-stone coverage remain missing, and the public author repository ships no historical camera/material/golden render bundle | No paper impact, GUI, or golden-frame parity claim |
@@ -74,17 +75,18 @@ win.
 - Preserve the broad dirty worktree. Inspect scoped diffs before editing and
   do not revert unrelated changes.
 - PR #3374 is merged at merge commit prefix `fa17fad`.
-- As observed on 2026-07-18, the topic is `2ddd9f56`, the current local target
-  ref is `origin/release-6.20` at `75306efe770`, and the refs have 34
-  topic-only plus 5 target-only commits.
-- PR #3377 remains open at head prefix `2ddd9f56` with merge state `DIRTY`.
+- The topic contains `origin/release-6.20` through `75306efe770`. Fetch origin
+  and verify target ancestry before every publication; do not hard-code the
+  topic head or divergence in owner docs.
+- Query PR #3377 live for its head, merge state, checks, and review state.
 - The live #3377 body describes card/arch coverage and performance more
   strongly than current evidence permits. Use [PR_REPORT.md](PR_REPORT.md) as
   the replacement source when a PR update is explicitly approved.
 - Do not commit, push, edit the PR, rerun CI, post comments, or otherwise
   mutate GitHub without explicit maintainer/user approval.
-- Before any approved follow-up push, fetch and merge the latest real target
-  branch into the topic branch; do not rebase unless explicitly requested.
+- Before any approved follow-up push, fetch the latest real target branch and
+  merge it if it is not already an ancestor; do not rebase unless explicitly
+  requested.
 
 ## Durable Mark26 CPU Evidence
 
@@ -465,6 +467,37 @@ standing, trajectory, solver, contact-dynamics, physical-outcome, historical
 four-level/26-card trajectory, Fig. 6/video, timing, performance, or parity
 claim.
 
+## Pinned-Author Masonry-Arch Scientific Negative
+
+Preserve
+[`assets/paper_evidence/author_masonry_arch_reference_v1/`](assets/paper_evidence/author_masonry_arch_reference_v1/).
+The source-pinned invocation uses 500 frames, four substeps per frame, and
+releases the three cubes at frame 400 / substep 1,600. The checked-in source
+default is 400 frames with `drop_frame=400`, so it never releases the cubes;
+this run is a new diagnostic rather than a historical or paper invocation.
+
+A deterministic projection represents every one of the 2,000 substeps and is
+lossless with respect to the declared claim fields. The 382,753,953-byte raw
+source history (SHA-256 `cec0e4b86837e7542c498c7ddad40538983ec023332b88ebddee7766997e3ac1`)
+is size/hash-bound but omitted. The projection records 157 true and 1,843 false
+author convergence flags: 142/1,458 before release and 15/385 after release.
+Of the true flags, 40 use the initial natural-residual shortcut and 117 use the
+configured outer nonnegative `coulomb_rel < 1e-6` gate; all 40 shortcut accepts
+occur before release. `final_residual` is the separate natural residual, with
+only 47 values at or below `1e-6`. Release
+substep 1,600 is nonconverged at 100 contacts and residual
+`0.017456069692858667`; final substep 1,999 is nonconverged at 108 contacts and
+residual `0.5161195175386001`. The first post-release contact-count increase
+is inferred at substep 1,944, but no pair identities are available in the
+projection.
+
+Treat exit zero as artifact-preservation success only. The corresponding DART
+specification is configuration-only and executes no dynamics; source
+collision/contact-gap/backend/float32 semantics remain unimplemented. Do not
+claim all-substep solver success, cube-arch pair contact, DART or cross-solver
+dynamics/trajectory/outcome equivalence, Fig. 7/video.07 parity, timing,
+repeatability, or visual/golden evidence.
+
 ## Preregistered Crown-Impact v1 Negative
 
 Use [LITERAL_CROWN_IMPACT_V1.md](LITERAL_CROWN_IMPACT_V1.md) and
@@ -653,7 +686,10 @@ final integrated closeout run:
 | Crown-impact trace and negative-runner unit tests | 25/25 |
 | Literal 101-stone trace/probe/runner unit tests | 35/35 |
 | Finalized incline unit/verify-only gates | 62/62; clean-checkout verify-only passes with 21 indexed artifacts and no ignored staging dependency |
-| Integrated 17-file CPU/visual/impact/101/card/manifest/publication evidence suite | 638 passed in 81.95 s |
+| Focused manifest/backspin/incline/author-masonry evidence suite | 715 passed in 149.88 s |
+| Full no-cache dartpy Python suite | 1,555 passed in 165.09 s |
+| Author masonry-arch focused CTest | 1/1 passed |
+| Manifest host-identity modes | Live: 102 file rechecks, 0 skipped; explicit archive: 0 live, 102 skipped; both validate 29 requirements with status `partial` |
 | Deterministic colored-scheduler stress | 1,000 runs passed |
 
 ## Active Completion Gates

@@ -34,27 +34,27 @@
     },
     {
       "path": "incline/stills/step_000000.png",
-      "sha256": "cd56403cf7fc686357096aa998b7e496d1bd54cab88bf128cb4752a262dfb65a",
+      "sha256": "1593f68e5d22178d181f06107219f085e578b6871f07775e7b72a174196be1a6",
       "observation": "At step 0 the orange low-friction and green high-friction cubes occupy their aligned starting regions on the two presentation-offset incline cells."
     },
     {
       "path": "incline/stills/step_000030.png",
-      "sha256": "e298e0553c2ea8b72d13357ad92796a4e9cca43e690276ac1ce1c18222c00d63",
+      "sha256": "2499adcb7c444c4352d44066d68769c4bc973e19b7ea6eb6ee0ac6aa734e9375",
       "observation": "At step 30 the orange cube has begun a visible downhill separation while the green cube remains visually fixed relative to its board."
     },
     {
       "path": "incline/stills/step_000060.png",
-      "sha256": "2cc2bc20cc917f984f333150513be0c1f92e9d6e72ed6ad54eaf3365af3200c4",
+      "sha256": "976c16eecc45172dc5a0d41c58c14b9f7c2cf08a6089ac7d1e7a64b4db6e4497",
       "observation": "At step 60 the orange cube is substantially farther downhill, with the stationary green cube providing an unambiguous visual reference."
     },
     {
       "path": "incline/stills/step_000090.png",
-      "sha256": "c40b16f3f56a624713fdd32747ebabfda236abaf613c5cf9452b57eedb07dce0",
+      "sha256": "4e398a9b2eae5f3382efbf47643d9e9354f4f8fd7d2eba52a99583c4ee7ba32c",
       "observation": "At step 90 the orange cube has nearly left the cropped world view while the green cube still occupies its starting region."
     },
     {
       "path": "incline/stills/step_000120.png",
-      "sha256": "c1e0a2db75a6d47c9621af04c43dc9e3685fb6c81c82560a3a509f3ffdb50452",
+      "sha256": "757d3c5d55cb46810b7c8d354db10cd62552691a9b7423d4840ee9b10eaddddd",
       "observation": "At step 120 the orange slide cube has exited the crop and the green threshold-stick cube remains visible in place, completing the visual classification."
     }
   ]
