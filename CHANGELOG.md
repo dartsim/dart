@@ -181,6 +181,12 @@
     checks when the simulation thread count is greater than one:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Restore the released `DARTCollisionDetector` ABI layout after its native
+    collision thread-pool state enlarged the installed, derivable class. The
+    worker state now lives behind the collision-object manager already owned by
+    the released base layout while preserving the opt-in threaded behavior:
+    [#3382](https://github.com/dartsim/dart/pull/3382)
+
   * Speed up DART-native broadphase setup by computing transformed cached local
     bounds directly from center and half-extents instead of visiting all local
     bounding-box corners:
