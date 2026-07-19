@@ -11,6 +11,21 @@ Release-branch PRs should:
 - keep changelog and version metadata changes separate from unrelated cleanup
   when possible.
 
+## DART 6 Release Closeout
+
+Before tagging any DART 6.x.y release, record passing compatibility evidence on
+the exact candidate SHA for the forced optional-dependency-off gate and
+`pixi run -e gazebo test-gz`, confirming that both `test-gz-physics` and
+`test-gz-sim` ran. Evidence from a different SHA is not release evidence. When
+activating a new `release-6.x` branch, confirm its branch protection requires
+uniquely named contexts for both gates.
+
+`release-6.20` enforces these gates through the required
+`Asserts enabled (no -DNDEBUG)` context, owned only by CI Linux and
+configuring/building with OpenSceneGraph forcibly disabled, and the required
+`ubuntu-latest` context, owned only by CI gz-physics and running both Gazebo
+tasks. Keep each required context single-owner when editing workflows.
+
 ## Backporting `main` (DART 7) → `release-6.20` (DART 6)
 
 Cherry-pick the source commit onto a fresh `backport/<pr>-to-release-6.20`
