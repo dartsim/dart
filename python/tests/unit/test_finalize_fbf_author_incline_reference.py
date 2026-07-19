@@ -33,6 +33,21 @@ def sealed_runs(module):
     return module._load_bundle_runs(module.DEFAULT_BUNDLE)
 
 
+def _materialize_source_repo(module, root: Path) -> Path:
+    """Rebuild the retained source layout without relying on a host clone."""
+
+    source_repo = (root / "source").resolve()
+    for bundle_relative in module.SOURCE_ARTIFACT_PATHS:
+        source_relative = module._expected_source_path(bundle_relative)
+        destination = source_repo / source_relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        data = (module.DEFAULT_BUNDLE / bundle_relative).read_bytes()
+        if bundle_relative.endswith(".json.gz"):
+            data = gzip.decompress(data)
+        destination.write_bytes(data)
+    return source_repo
+
+
 def test_schema_names_are_stable(module):
     assert module.SCHEMA_VERSION == "dart.fbf_author_incline_sweep_reference/v1"
     assert module.VALIDATION_SCHEMA_VERSION == (
@@ -494,13 +509,7 @@ def test_symlinked_ancestor_fails_before_bundle_reads(module, tmp_path):
 
 
 def test_source_membership_extra_file_fails_closed(module, tmp_path):
-    source_copy = tmp_path / "source"
-    for spec in module.RUN_SPECS:
-        run_id = str(spec["run_id"])
-        source = module._source_run_root(module.DEFAULT_SOURCE_REPO, run_id)
-        destination = module._source_run_root(source_copy, run_id)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(source, destination)
+    source_copy = _materialize_source_repo(module, tmp_path)
     extra = module._source_run_root(source_copy, "20260719T151337Z") / "extra.txt"
     extra.write_text("unexpected\n", encoding="utf-8")
 
@@ -509,19 +518,25 @@ def test_source_membership_extra_file_fails_closed(module, tmp_path):
 
 
 def test_finalize_rejects_symlinked_destination_ancestor(module, tmp_path):
+    source_repo = _materialize_source_repo(module, tmp_path)
     real_parent = tmp_path / "real"
     real_parent.mkdir()
     alias = tmp_path / "alias"
     alias.symlink_to(real_parent, target_is_directory=True)
 
     with pytest.raises(ValueError, match="path contains symlink component"):
-        module.finalize_bundle(module.DEFAULT_SOURCE_REPO, alias / "bundle")
+        module.finalize_bundle(source_repo, alias / "bundle")
     assert list(real_parent.iterdir()) == []
 
 
-def test_finalize_builds_and_verifies_missing_destination(module, tmp_path):
+def test_finalize_builds_and_verifies_missing_destination(
+    module, tmp_path, monkeypatch
+):
+    source_repo = _materialize_source_repo(module, tmp_path)
+    source_identity = module._expected_source_identity()
+    monkeypatch.setattr(module, "_source_identity", lambda unused: source_identity)
     bundle = tmp_path / "missing" / "bundle"
-    report = module.finalize_bundle(module.DEFAULT_SOURCE_REPO, bundle)
+    report = module.finalize_bundle(source_repo, bundle)
 
     assert report["status"] == "valid_current_source_scientific_negative"
     assert module._regular_members(bundle) == set(module.EXACT_BUNDLE_MEMBERS)
