@@ -192,6 +192,9 @@ jobs:
             set -euo pipefail
             BUILD_TYPE=None
             DART_VERBOSE=ON
+            # DART 6 dartpy requires dart-gui-osg. The normal Debug job covers
+            # dartpy with assertions; this required variant validates the C++
+            # no-OSG contract without defining NDEBUG.
             cmake \
               -G Ninja \
               -S . \
@@ -199,7 +202,9 @@ jobs:
               -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
               -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
               -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-              -DDART_BUILD_DARTPY=ON \
+              -DCMAKE_DISABLE_FIND_PACKAGE_OpenSceneGraph=TRUE \
+              -DDART_BUILD_DARTPY=OFF \
+              -DDART_BUILD_GUI_OSG=OFF \
               -DDART_BUILD_PROFILE=ON \
               -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
               -DDART_USE_SYSTEM_GOOGLETEST=ON \
