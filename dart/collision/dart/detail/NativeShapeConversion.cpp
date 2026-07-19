@@ -37,6 +37,7 @@
 #include "dart/config.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
@@ -45,6 +46,7 @@
 #include "dart/dynamics/PyramidShape.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+#include "dart/math/Constants.hpp"
 
 #if HAVE_OCTOMAP
   #include "dart/dynamics/VoxelGridShape.hpp"
@@ -56,6 +58,8 @@
 #include <set>
 #include <string>
 #include <vector>
+
+#include <cmath>
 
 namespace dart {
 namespace collision {
@@ -220,6 +224,26 @@ std::unique_ptr<native::Shape> createMeshOrNull(
       std::move(vertices), std::move(triangles));
 }
 
+// Vertices of a cone approximated by its apex plus a discretized base rim.
+// 64 rim segments keep GJK support queries cheap while bounding the radial
+// under-approximation of the base circle to 1 - cos(pi/64) < 0.13% of the
+// base radius. Deterministic: fixed angular sampling, stable ordering. Same
+// local frame as fcl::Cone: base disc at z = -height/2, apex at +height/2.
+std::vector<Eigen::Vector3d> makeConeVertices(double radius, double height)
+{
+  constexpr int kSegments = 64;
+  std::vector<Eigen::Vector3d> vertices;
+  vertices.reserve(kSegments + 1u);
+  const double baseZ = -0.5 * height;
+  for (int i = 0; i < kSegments; ++i) {
+    const double angle = (2.0 * math::constantsd::pi() * i) / kSegments;
+    vertices.emplace_back(
+        radius * std::cos(angle), radius * std::sin(angle), baseZ);
+  }
+  vertices.emplace_back(0.0, 0.0, 0.5 * height);
+  return vertices;
+}
+
 std::vector<Eigen::Vector3d> makePyramidVertices(
     double baseWidth, double baseDepth, double height)
 {
@@ -301,6 +325,12 @@ std::unique_ptr<native::Shape> NativeShapeConversion::create(
     const auto& cylinder = static_cast<const dynamics::CylinderShape&>(shape);
     return std::make_unique<native::CylinderShape>(
         cylinder.getRadius(), cylinder.getHeight());
+  }
+
+  if (shapeType == dynamics::ConeShape::getStaticType()) {
+    const auto& cone = static_cast<const dynamics::ConeShape&>(shape);
+    return createConvexOrNull(
+        makeConeVertices(cone.getRadius(), cone.getHeight()), shapeType);
   }
 
   if (shapeType == dynamics::PlaneShape::getStaticType()) {

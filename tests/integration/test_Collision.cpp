@@ -1844,9 +1844,9 @@ TEST_F(Collision, testConeCone)
 #endif
 
   {
-    // SCOPED_TRACE("DARTCollisionDetector");
-    // auto dart = DARTCollisionDetector::create();
-    // testConeCone(dart);
+    SCOPED_TRACE("DARTCollisionDetector");
+    auto dart = DARTCollisionDetector::create();
+    testConeCone(dart);
   }
 }
 

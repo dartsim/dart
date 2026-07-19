@@ -70,6 +70,7 @@
 #include <algorithm>
 #include <atomic>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <set>
 #include <string>
@@ -1688,14 +1689,83 @@ TEST(DARTCollisionDetector, LeavesUnsupportedShapesNull)
       nullptr,
       collision::detail::NativeShapeConversion::create(emptyMeshShape));
 
-  const dynamics::ConeShape cone(1.0, 2.0);
-  EXPECT_EQ(nullptr, collision::detail::NativeShapeConversion::create(cone));
-
   const dynamics::MultiSphereConvexHullShape multiSphere(
       {{0.25, Eigen::Vector3d::Zero()},
        {0.25, Eigen::Vector3d(0.5, 0.0, 0.0)}});
   EXPECT_EQ(
       nullptr, collision::detail::NativeShapeConversion::create(multiSphere));
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, ConeConvertsToConvex)
+{
+  const dynamics::ConeShape cone(0.5, 2.0);
+  const auto shape = collision::detail::NativeShapeConversion::create(cone);
+  ASSERT_NE(nullptr, shape);
+  ASSERT_EQ(native::ShapeType::Convex, shape->getType());
+
+  const auto& convex = static_cast<const native::ConvexShape&>(*shape);
+  double minZ = std::numeric_limits<double>::max();
+  double maxZ = std::numeric_limits<double>::lowest();
+  double maxRadial = 0.0;
+  for (const auto& vertex : convex.getVertices()) {
+    minZ = std::min(minZ, vertex.z());
+    maxZ = std::max(maxZ, vertex.z());
+    maxRadial = std::max(maxRadial, vertex.head<2>().norm());
+  }
+  EXPECT_NEAR(-1.0, minZ, 1e-12);
+  EXPECT_NEAR(1.0, maxZ, 1e-12);
+  EXPECT_NEAR(0.5, maxRadial, 1e-12);
+
+  const Eigen::Vector3d apex = convex.support(Eigen::Vector3d::UnitZ());
+  EXPECT_TRUE(apex.isApprox(Eigen::Vector3d(0.0, 0.0, 1.0), 1e-12));
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, ConeCollidesThroughAdapter)
+{
+  auto detector = std::make_shared<ExposedDARTCollisionDetector>();
+  auto coneFrame = makeFrame(std::make_shared<dynamics::ConeShape>(0.5, 1.0));
+  auto boxFrame = makeFrame(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(4.0, 4.0, 0.2)));
+
+  // The slab's top face sits at z = 0.1; place the cone so its base circle
+  // (z = center - 0.5) penetrates the slab by 0.05.
+  coneFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.55));
+
+  auto group = detector->createCollisionGroup(coneFrame.get(), boxFrame.get());
+  collision::CollisionOption option(true, 10u);
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GE(result.getNumContacts(), 1u);
+
+  coneFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.7));
+  result.clear();
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+}
+
+//==============================================================================
+TEST(DARTCollisionDetector, ConeRestsOnPlaneThroughAdapter)
+{
+  auto detector = std::make_shared<ExposedDARTCollisionDetector>();
+  auto coneFrame = makeFrame(std::make_shared<dynamics::ConeShape>(0.5, 1.0));
+  auto planeFrame = makeFrame(
+      std::make_shared<dynamics::PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  // Base circle at z = center - 0.5 penetrates the z = 0 plane by 0.05.
+  coneFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.45));
+
+  auto group
+      = detector->createCollisionGroup(coneFrame.get(), planeFrame.get());
+  collision::CollisionOption option(true, 10u);
+  collision::CollisionResult result;
+  EXPECT_TRUE(group->collide(option, &result));
+  ASSERT_GE(result.getNumContacts(), 1u);
+  for (auto i = 0u; i < result.getNumContacts(); ++i) {
+    EXPECT_NEAR(
+        1.0, std::abs(result.getContact(i).normal.normalized().z()), 1e-6);
+  }
 }
 
 //==============================================================================
