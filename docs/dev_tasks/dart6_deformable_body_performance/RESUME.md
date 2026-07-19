@@ -1,6 +1,6 @@
 # RESUME - DART 6 deformable body feature and performance
 
-Updated: 2026-07-18 (PR #3382 Windows stabilization)
+Updated: 2026-07-19 (PR #3382 ABI stabilization)
 
 ## Terminal state
 
@@ -17,19 +17,65 @@ remain open.
 - Worktree: `/home/js/dev/dartsim/dart/task_2`
 - Branch: `wp-db-native-soft-fallback`
 - PR: #3382, open, non-draft, milestone `DART 6.20.0`
-- Pre-follow-up published remote head:
-  `origin/wp-db-native-soft-fallback@b172b2ee1db`
+- Published remote head: `origin/wp-db-native-soft-fallback@05d9de6e3fb`
 - Current target base: `origin/release-6.20@75306efe770`
 - Local target-base merge: `834a2548fd9`; the merge applied cleanly and
   incorporates #3388 and #3390
 - Local Windows calibration: `50a254e7e56`; test-only legacy-FCL
   center-of-pressure bound change from `0.11` m to `0.13` m
+- Local ABI review fix: `9a6796596bc`; restores the released
+  `DARTCollisionDetector` layout while retaining thread-pool and soft-contact
+  runtime options behind the base class's existing collision-object manager
 - `wp-db-soft-skel-allocation-gates` is fully ancestral and incorporated; do
   not resume, merge, or cherry-pick it
 
-This is the pre-publication snapshot for the verified follow-up. Re-fetch both
-refs before acting; after publication, the live PR head and its exact-head
-checks are authoritative rather than this recorded baseline.
+The `05d9de6e3fb` exact-head CI run has successful API docs, Windows Release,
+gz-physics, AVX, and both Read the Docs checks; additional hosted matrix jobs
+were still running or queued at the last refresh, with no CI failure reported.
+Its fresh Codex review contains the ABI finding addressed by local commit
+`9a6796596bc`. Re-fetch both refs before acting; after the next additive push,
+the live PR head and its exact-head checks are authoritative.
+
+## 2026-07-18 DART detector ABI review fix
+
+Fresh Codex review of published head `05d9de6e3fb` identified two private
+thread-pool fields in the installed, derivable `DARTCollisionDetector` class.
+The fields originated in release-branch commit `3e13581f67d` rather than in the
+new #3382 diff, but they are absent from released tag `v6.19.4` and enlarge the
+x86-64 class from 32 to 48 bytes. The compatibility risk is therefore real and
+belongs in this release-branch stabilization packet.
+
+Commit `9a6796596bc`:
+
+- removes the thread-pool pointer and thread count from the installed header
+  and restores the released implicit-destructor surface;
+- owns DART-specific runtime state in a forwarding collision-object manager
+  reached through `CollisionDetector::mCollisionObjectManager`, which already
+  exists in the released base layout;
+- keeps the pool address stable, serializes worker resize, publishes the thread
+  count and soft-contact flag atomically, and preserves clone independence;
+- adds size/alignment assertions against `CollisionDetector`; and
+- extends runtime coverage across default state, independent detectors,
+  cloning, and `1 -> 4 -> 1 -> 3` worker transitions.
+
+Verification on the exact local commit:
+
+- no-cache focused dependency build: passed;
+- `test_DARTCollisionDetector`: 22/22 passed;
+- `test_Collision`: 52/52 passed;
+- `test_NonFiniteContact`: 4/4 passed, including the derived-detector path;
+- exact `v6.19.4`-header/new-library ABI canary: 20/20 process runs passed,
+  with legacy/current detector sizes both 32 bytes and the legacy derived
+  canary beginning at offset 32;
+- `pixi run lint` and `git diff --check`: passed; and
+- two independent post-race-fix reviews: clean.
+
+The ABI canary also configured four collision participants and the soft-face
+option through a current-header translation unit, cloned the legacy-header
+derived object, and destroyed it with an active pool without changing its
+canaries or surrounding guards. This user-visible compatibility repair has its
+own DART 6.20 changelog entry. The review is top-level rather than an inline
+thread; fix it silently and request a fresh top-level review after push.
 
 ## 2026-07-18 Windows Release calibration
 
@@ -59,8 +105,9 @@ local merged candidate:
 No visual capture is required for this correction: it changes a numeric test
 bound, not simulation or rendering behavior, and an image cannot establish the
 per-step CoP limit. The Windows trace, scene's `0.125` m mesh interval, focused
-repeats, and complete text gates are the relevant evidence. Exact new-head
-hosted Windows CI remains required after publication.
+repeats, and complete text gates are the relevant evidence. Windows Release
+passed on published calibration head `05d9de6e3fb`; exact final ABI-fix-head
+hosted CI remains required after publication.
 
 Codecov passed on `b172b2ee1db`: patch coverage was `94.34783%` with 143
 uncovered changed lines; project coverage was `75.17%` versus `73.90%`, reported
@@ -262,13 +309,15 @@ the runner's gates.
 
 ## Current blockers and next actions
 
-- Published head `b172b2ee1db` has a clean current-head Codex review and zero
-  unresolved review threads. Its check snapshot is 21 passed, one failed, and
-  one skipped. Windows Release is the only failure and is addressed by the
-  locally verified test-only CoP calibration above. Both Codecov checks passed.
-- The exact new head does not exist remotely yet. Do not carry the old Windows
-  result forward after publication; classify the new exact-head job from its
-  own logs.
+- Published head `05d9de6e3fb` has a fresh top-level Codex P1 review finding
+  addressed by local ABI fix `9a6796596bc`; it has no inline review thread to
+  resolve. Its exact-head API docs, gz-physics, AVX, and both Read the Docs
+  checks had passed at the last refresh, as had Windows Release, while
+  additional hosted matrix jobs were still running or queued with no CI failure
+  reported.
+- The ABI-fix head does not exist remotely yet. Do not carry any `05d9de6e3fb`
+  check result forward after publication; classify the new exact-head jobs from
+  their own logs and request one fresh top-level Codex review.
 - No paired benchmark directory has `COMPLETE.json`. Interrupted and
   preflight-only directories remain explicit non-evidence and must not be
   resumed or reinterpreted.
@@ -291,7 +340,9 @@ Next actions:
    comments.
 3. Monitor exact-head CI to terminal state. Rerun only demonstrated
    infrastructure failures and investigate product failures from their own
-   exact-head logs. Hosted Windows is required proof for this calibration.
+   exact-head logs. Published head `05d9de6e3fb` supplies the hosted Windows
+   calibration proof; the final ABI-fix head still requires hosted regression
+   CI.
 4. Keep PLAN-622 active after #3382 stabilization. Capture the balanced paired
    artifact only on a host that passes the runner's gates, or obtain explicit
    maintainer disposition; also retain the competitive-envelope,

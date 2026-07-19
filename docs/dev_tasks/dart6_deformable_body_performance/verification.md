@@ -1,13 +1,14 @@
 # Verification - DART 6 deformable body performance
 
-Updated: 2026-07-18
+Updated: 2026-07-19
 
 ## Current publication candidate
 
 - Base: `origin/release-6.20@75306efe770`
 - Base merge: `834a2548fd9`
-- Published PR head before follow-up: `b172b2ee1db`
+- Published PR head: `05d9de6e3fb`
 - Test calibration commit: `50a254e7e56`
+- DART detector ABI fix: `9a6796596bc`
 
 ## Local gates
 
@@ -22,15 +23,28 @@ Updated: 2026-07-18
 - `pixi run lint`: passed.
 - `git diff --check`: passed.
 - `pixi run check-ai-commands`: passed after the task-doc refresh.
+- ABI follow-up no-cache focused dependency build: passed.
+- `test_DARTCollisionDetector`: 22/22 passed.
+- `test_Collision`: 52/52 passed.
+- `test_NonFiniteContact`: 4/4 passed.
+- Exact-v6.19.4-header/new-library ABI canary: 20/20 process runs passed;
+  legacy/current detector sizes were both 32 bytes, and current-header thread
+  and soft-option configuration, cloning, and active-pool destruction preserved
+  the legacy derived canaries and surrounding guards.
+- Independent post-ABI-fix reviews: clean x2.
 
 ## Hosted evidence
 
-At `b172b2ee1db`, 21 checks passed, one failed, and one was skipped. Windows
-Release completed 150/151 tests; only the legacy-FCL `default adaptive` CoP
-assertion failed (`0.12115883267368355` m versus `0.11` m). Codecov passed with
-patch `94.34783%` (143 uncovered changed lines) and project `75.17%` versus
-`73.90%` (reported `+1.26` percentage points). This is the pre-follow-up
-baseline; use the live PR head for exact new-head results after push.
+At `b172b2ee1db`, Windows Release completed 150/151 tests; only the legacy-FCL
+`default adaptive` CoP assertion failed (`0.12115883267368355` m versus `0.11`
+m). Codecov passed with patch `94.34783%` (143 uncovered changed lines) and
+project `75.17%` versus `73.90%` (reported `+1.26` percentage points).
+
+Published head `05d9de6e3fb` had successful API docs, Windows Release,
+gz-physics, AVX, and both Read the Docs checks at the last refresh. Additional
+matrix jobs were running or queued with no CI failure reported. Its fresh top-level
+Codex review contains the detector-layout finding addressed by local commit
+`9a6796596bc`; there is no inline review thread to resolve.
 
 ## Oracle disposition
 
@@ -46,5 +60,5 @@ model gates remain the numerical scene evidence.
 ## Open evidence
 
 No paired benchmark directory contains `COMPLETE.json`; interrupted directories
-are non-evidence. Exact-head Windows CI and fresh automated review remain
-required after push. Broader PLAN-622 acceptance remains open.
+are non-evidence. Exact-head Windows CI and a fresh clean automated review
+remain required after the next push. Broader PLAN-622 acceptance remains open.

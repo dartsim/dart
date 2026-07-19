@@ -39,10 +39,12 @@ Priority order is document order. Active implementation handoff remains in
 - Status: Active
 - Horizon: Next
 - Dimension: Research feature parity, CPU performance, and compatibility.
-- Next step: Publish the verified `origin/release-6.20@75306efe770` merge and
-  test-only Windows legacy-FCL CoP calibration, then shepherd #3382 through a
-  fresh exact-head automated review and hosted CI. Keep PLAN-622 active after
-  that representative release slice: capture the reviewed
+- Next step: Publish `DARTCollisionDetector` ABI repair `9a6796596bc` atop
+  `05d9de6e3fb`, which already publishes the verified
+  `origin/release-6.20@75306efe770` merge and test-only Windows legacy-FCL CoP
+  calibration, then shepherd #3382 through a fresh exact-head automated review
+  and hosted CI. Keep PLAN-622 active after that representative release slice:
+  capture the reviewed
   `bm-soft-body-paired` artifact only when the host passes its load/thermal
   gates (or obtain explicit maintainer disposition), decide the competitive
   envelope and the four-link flexible-rigid-foot versus deformable-foot row,
