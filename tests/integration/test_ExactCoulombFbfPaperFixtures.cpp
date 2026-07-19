@@ -30,9 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../../examples/demos/scenes/FbfAuthorCardHouseSpec.hpp"
+#include "../../examples/demos/scenes/FbfAuthorTurntableSpec.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/native/NativeCollisionDetector.hpp"
 #include "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
@@ -50,10 +54,12 @@
 #include <chrono>
 #include <limits>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
 #include <cmath>
+#include <cstdlib>
 
 using namespace dart;
 
@@ -81,41 +87,45 @@ constexpr double kCardHouseAngle = 0.23;
 constexpr double kCardHouseHeight = 1.0;
 constexpr double kCardHouseWidth = 0.45;
 constexpr double kCardHouseThickness = 0.03;
+// Source-informed reconstruction: Newton 1.3 defaults rigid shapes to
+// 1000 kg/m^3. The unavailable paper scene may override this value.
+constexpr double kCardHouseDensity = 1000.0;
 constexpr double kCardHouseInitialPenetration = 0.003;
-constexpr double kCardHouseFrameSpacing = 0.55;
+// Reconstruction choice: adjacent horizontal one-meter cards meet with the
+// same nominal 3 mm overlap used at the other interfaces. The paper does not
+// publish this spacing.
+constexpr double kCardHouseFrameSpacing
+    = kCardHouseHeight - kCardHouseInitialPenetration;
 constexpr double kCardHouseStepSizeScale = 10.0;
 constexpr double kCardHouseOuterRelaxation = 1.5;
 constexpr std::size_t kCardHouseSettleProjectileSmokeContacts = 16u;
 constexpr std::size_t kCardHouseProjectileCount = 4u;
-constexpr double kCardHouseProjectileRadius = 0.055;
-constexpr double kCardHouseProjectileMass = 0.02;
+// Official paper imagery shows cube projectiles. The 0.11 m edge length is a
+// reconstruction that preserves the former sphere diameter; the author size,
+// mass, and launch speed are not published.
+constexpr double kCardHouseProjectileEdgeLength = 0.11;
+constexpr double kCardHouseProjectileMass
+    = kCardHouseDensity * kCardHouseProjectileEdgeLength
+      * kCardHouseProjectileEdgeLength * kCardHouseProjectileEdgeLength;
 constexpr double kCardHouseProjectileSpeed = 4.0;
+constexpr double kCardHouseProjectileDropHeight = 4.45;
 constexpr double kSmallFixtureStepSizeScale = 2.0;
 constexpr std::size_t kCardHouseFourLevelCount = 4u;
 constexpr std::size_t kCardHouseTenLevelCount = 10u;
-// Full natural manifold for the 26-card one-step/settle-projectile rung:
-// 512/4 caps observe 108 actual contacts and solve clean (~2.5 s, zero
-// fallbacks) with the card-house step-size-scale/outer-relaxation options
-// below.
+// Full natural manifold for the repaired 26-card reconstruction: 512/4 caps
+// observe 96 contacts in the initial configuration. This is a measured DART
+// reconstruction count, not the paper timing row's 214-contact contract.
 constexpr std::size_t kCardHouseReducedMaxContacts = 512u;
 constexpr std::size_t kCardHouseReducedMaxContactsPerPair = 4u;
-// Author-faithful masonry-arch friction coefficient: Rigid-IPC's
-// arch-{25,101}-stones.json both specify coefficient_friction = 0.5
-// uniformly (see docs/dev_tasks/fbf_exact_coulomb_friction/ PROVENANCE.txt
-// section 7). DART's other paper fixtures use 0.8; the ported arch keeps
-// the source's own coefficient for scientific fidelity to the SCA 2026 FBF
-// paper's masonry-arch scenes.
-constexpr double kArchFriction = 0.5;
+// The paper's contact-rich arch experiments explicitly use mu=0.8. The
+// credited Rigid-IPC geometry scene uses 0.5, but that source value is not the
+// paper experiment's contact contract.
+constexpr double kArchFriction = 0.8;
 // Rigid-IPC's default body density ("plastic", src/io/read_rb_scene.cpp:68);
 // neither arch scene specifies a per-body density.
 constexpr double kArchDensity = 1000.0;
 constexpr std::size_t kArchStoneCount = 25u;
 constexpr std::size_t kArch101StoneCount = 101u;
-// Crown (topmost) centroid height and cross-section width, in meters, from
-// the weighted-catenary generator (fc=60cm, sqrt(Qt)=7cm); used to place
-// the projectile at the arch's crown regardless of stone count.
-constexpr double kArchCrownHeight = 0.60;
-constexpr double kArchCrownWidth = 0.07;
 constexpr std::size_t kArchReducedMaxContacts = 48u;
 constexpr std::size_t kArchReducedMaxContactsPerPair = 2u;
 constexpr std::size_t kArch101ReducedMaxContacts = 38u;
@@ -133,9 +143,28 @@ constexpr int kArchMaxOuterIterations = 120000;
 // from 8.87e-6 at relaxation 1.0 to 3.75e-6 at 1.5.
 constexpr double kArchOuterRelaxation = 1.5;
 constexpr double kArchStepSizeScale = 10.0;
-constexpr double kArchProjectileRadius = 0.08;
-constexpr double kArchProjectileMass = 0.05;
+// Official paper imagery shows a horizontal row of about twelve small cubes
+// dropping over the crown. These numerical values remain reconstructed.
+constexpr std::size_t kArchProjectileCount = 12u;
+constexpr double kArchProjectileEdgeLength = 0.035;
+constexpr double kArchProjectileMass = kArchDensity * kArchProjectileEdgeLength
+                                       * kArchProjectileEdgeLength
+                                       * kArchProjectileEdgeLength;
 constexpr double kArchProjectileSpeed = 3.0;
+constexpr double kArchProjectileSpacing = 0.045;
+constexpr double kArchProjectileDropHeight = 0.95;
+constexpr const char* kFbfPaperStressTestEnv
+    = "DART_RUN_FBF_PAPER_STRESS_TESTS";
+
+bool isFbfPaperStressTestValueEnabled(const char* value)
+{
+  return value != nullptr && std::string(value) == "1";
+}
+
+bool areFbfPaperStressTestsEnabled()
+{
+  return isFbfPaperStressTestValueEnabled(std::getenv(kFbfPaperStressTestEnv));
+}
 
 struct ExactResidualTrace
 {
@@ -154,11 +183,14 @@ struct InclineRunResult
 {
   double displacement = std::numeric_limits<double>::quiet_NaN();
   double speed = std::numeric_limits<double>::quiet_NaN();
+  double maxPenetration = std::numeric_limits<double>::quiet_NaN();
   double residual = std::numeric_limits<double>::quiet_NaN();
   double primalResidual = std::numeric_limits<double>::quiet_NaN();
   double dualResidual = std::numeric_limits<double>::quiet_NaN();
   double complementarityResidual = std::numeric_limits<double>::quiet_NaN();
   ExactResidualTrace residualTrace;
+  std::size_t trajectorySteps = 0u;
+  std::size_t contactSteps = 0u;
   std::size_t lastContacts = 0u;
   std::size_t exactSolves = 0u;
   std::size_t boxedFallbacks = 0u;
@@ -225,8 +257,12 @@ struct PainleveRunResult
 struct TurntableRunResult
 {
   double radius = std::numeric_limits<double>::quiet_NaN();
+  double maxRadius = 0.0;
   double radialVelocity = std::numeric_limits<double>::quiet_NaN();
+  double tangentialVelocity = std::numeric_limits<double>::quiet_NaN();
+  double tangentialCoRotationError = std::numeric_limits<double>::quiet_NaN();
   double height = std::numeric_limits<double>::quiet_NaN();
+  double minFullySupportedHeight = std::numeric_limits<double>::infinity();
   double residual = std::numeric_limits<double>::quiet_NaN();
   double primalResidual = std::numeric_limits<double>::quiet_NaN();
   double dualResidual = std::numeric_limits<double>::quiet_NaN();
@@ -241,6 +277,9 @@ struct TurntableRunResult
   int fbfIterations = 0;
   int maxFbfIterations = 0;
   std::size_t totalFbfIterations = 0u;
+  bool finiteState = true;
+  bool sourceExitObserved = false;
+  bool fellThroughSupport = false;
   bool projectedGradientRetryUsed = false;
   bool exactSuccess = false;
 };
@@ -448,23 +487,118 @@ dynamics::SkeletonPtr createTurntableRider(double frictionCoeff)
   return skeleton;
 }
 
+dynamics::SkeletonPtr createAuthorTurntableSupport(double frictionCoeff)
+{
+  auto skeleton = dynamics::Skeleton::create("turntable");
+  dynamics::GenericJoint<math::SE3Space>::Properties jointProperties(
+      std::string("turntable_joint"));
+  dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties("turntable_body"));
+  bodyProperties.mInertia.setMass(1.0);
+
+  auto pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr, jointProperties, bodyProperties);
+  auto* joint = pair.first;
+  auto* body = pair.second;
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(std::make_shared<dynamics::CylinderShape>(
+      fbf_author_turntable::kSupportRadius,
+      2.0 * fbf_author_turntable::kSupportHalfHeight));
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(frictionCoeff);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation().z() = fbf_author_turntable::kSupportHalfHeight;
+  joint->setPositions(dynamics::FreeJoint::convertToPositions(transform));
+  skeleton->setMobile(false);
+  return skeleton;
+}
+
+dynamics::SkeletonPtr createAuthorTurntableRider(double frictionCoeff)
+{
+  constexpr double kSide = 2.0 * fbf_author_turntable::kRiderHalfSize;
+  constexpr double kMass
+      = fbf_author_turntable::kRiderDensity * kSide * kSide * kSide;
+  const Eigen::Vector3d size = Eigen::Vector3d::Constant(kSide);
+
+  auto skeleton = dynamics::Skeleton::create("turntable_rider");
+  dynamics::GenericJoint<math::SE3Space>::Properties jointProperties(
+      std::string("turntable_rider_joint"));
+  dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties("turntable_rider_body"));
+  bodyProperties.mInertia.setMass(kMass);
+  bodyProperties.mInertia.setMoment(
+      dynamics::BoxShape::computeInertia(size, kMass));
+
+  auto pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr, jointProperties, bodyProperties);
+  auto* joint = pair.first;
+  auto* body = pair.second;
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(std::make_shared<dynamics::BoxShape>(size));
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(frictionCoeff);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(
+      fbf_author_turntable::kInitialRadius,
+      0.0,
+      2.0 * fbf_author_turntable::kSupportHalfHeight
+          + fbf_author_turntable::kRiderHalfSize
+          + fbf_author_turntable::kGeometricGap
+          + fbf_author_turntable::kDropHeight);
+  joint->setPositions(dynamics::FreeJoint::convertToPositions(transform));
+  return skeleton;
+}
+
+dynamics::SkeletonPtr createAuthorCardHouseBox(
+    const std::string& name,
+    const Eigen::Vector3d& size,
+    const Eigen::Isometry3d& transform,
+    double density,
+    bool mobile)
+{
+  const double mass = density * size.x() * size.y() * size.z();
+  auto skeleton = dynamics::Skeleton::create(name);
+  dynamics::GenericJoint<math::SE3Space>::Properties jointProperties(
+      name + "_joint");
+  dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties(name + "_body"));
+  bodyProperties.mInertia.setMass(mass);
+  bodyProperties.mInertia.setMoment(
+      dynamics::BoxShape::computeInertia(size, mass));
+
+  auto pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr, jointProperties, bodyProperties);
+  auto* joint = pair.first;
+  auto* body = pair.second;
+  auto* shapeNode = body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(std::make_shared<dynamics::BoxShape>(size));
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(
+      fbf_author_card_house::kFriction);
+  joint->setPositions(dynamics::FreeJoint::convertToPositions(transform));
+  skeleton->setMobile(mobile);
+  return skeleton;
+}
+
 dynamics::SkeletonPtr createCardPlate(
     const std::string& name,
     const Eigen::Isometry3d& transform,
     double frictionCoeff)
 {
-  constexpr double kMass = 0.05;
   const Eigen::Vector3d size(
       kCardHouseThickness, kCardHouseWidth, kCardHouseHeight);
+  const double mass = kCardHouseDensity * size.x() * size.y() * size.z();
 
   auto skeleton = dynamics::Skeleton::create(name);
   dynamics::GenericJoint<math::SE3Space>::Properties jointProperties(
       name + "_joint");
   dynamics::BodyNode::Properties bodyProperties(
       dynamics::BodyNode::AspectProperties(name + "_body"));
-  bodyProperties.mInertia.setMass(kMass);
+  bodyProperties.mInertia.setMass(mass);
   bodyProperties.mInertia.setMoment(
-      dynamics::BoxShape::computeInertia(size, kMass));
+      dynamics::BoxShape::computeInertia(size, mass));
 
   auto pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
       nullptr, jointProperties, bodyProperties);
@@ -488,8 +622,9 @@ dynamics::SkeletonPtr createCardHouseProjectile(std::size_t index)
   dynamics::BodyNode::Properties bodyProperties(
       dynamics::BodyNode::AspectProperties(skeleton->getName() + "_body"));
   bodyProperties.mInertia.setMass(kCardHouseProjectileMass);
-  bodyProperties.mInertia.setMoment(dynamics::SphereShape::computeInertia(
-      kCardHouseProjectileRadius, kCardHouseProjectileMass));
+  bodyProperties.mInertia.setMoment(dynamics::BoxShape::computeInertia(
+      Eigen::Vector3d::Constant(kCardHouseProjectileEdgeLength),
+      kCardHouseProjectileMass));
 
   auto pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
       nullptr, jointProperties, bodyProperties);
@@ -497,18 +632,18 @@ dynamics::SkeletonPtr createCardHouseProjectile(std::size_t index)
   auto* body = pair.second;
   auto* shapeNode = body->createShapeNodeWith<
       dynamics::CollisionAspect,
-      dynamics::DynamicsAspect>(
-      std::make_shared<dynamics::SphereShape>(kCardHouseProjectileRadius));
+      dynamics::DynamicsAspect>(std::make_shared<dynamics::BoxShape>(
+      Eigen::Vector3d::Constant(kCardHouseProjectileEdgeLength)));
   shapeNode->getDynamicsAspect()->setFrictionCoeff(kCardHouseFriction);
 
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(
-      -1.35,
       (static_cast<double>(index) - 1.5) * 0.15,
-      0.35 + 0.28 * static_cast<double>(index));
+      0.0,
+      kCardHouseProjectileDropHeight);
   joint->setPositions(dynamics::FreeJoint::convertToPositions(transform));
   joint->setLinearVelocity(
-      Eigen::Vector3d(kCardHouseProjectileSpeed, 0.0, 0.0));
+      Eigen::Vector3d(0.0, 0.0, -kCardHouseProjectileSpeed));
   return skeleton;
 }
 
@@ -540,22 +675,23 @@ dynamics::SkeletonPtr createMasonryArchStone(
   shapeNode->getDynamicsAspect()->setFrictionCoeff(kArchFriction);
   joint->setPositions(
       dynamics::FreeJoint::convertToPositions(geometry.transform));
-  // All stones are fully dynamic; the source scene fixes only the ground
-  // plane (see PROVENANCE.txt section 7 in the geometry-port task notes),
-  // so `skeleton` is left mobile (the default).
+  // Mobility is assigned by the paper-scene builder below; this helper only
+  // creates the source-derived geometry, mass, and contact properties.
   return skeleton;
 }
 
-dynamics::SkeletonPtr createMasonryArchProjectile()
+dynamics::SkeletonPtr createMasonryArchProjectile(std::size_t index)
 {
-  auto skeleton = dynamics::Skeleton::create("masonry_arch_projectile");
+  auto skeleton = dynamics::Skeleton::create(
+      "masonry_arch_projectile_" + std::to_string(index));
   dynamics::GenericJoint<math::SE3Space>::Properties jointProperties(
       skeleton->getName() + "_joint");
   dynamics::BodyNode::Properties bodyProperties(
       dynamics::BodyNode::AspectProperties(skeleton->getName() + "_body"));
   bodyProperties.mInertia.setMass(kArchProjectileMass);
-  bodyProperties.mInertia.setMoment(dynamics::SphereShape::computeInertia(
-      kArchProjectileRadius, kArchProjectileMass));
+  bodyProperties.mInertia.setMoment(dynamics::BoxShape::computeInertia(
+      Eigen::Vector3d::Constant(kArchProjectileEdgeLength),
+      kArchProjectileMass));
 
   auto pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
       nullptr, jointProperties, bodyProperties);
@@ -563,19 +699,21 @@ dynamics::SkeletonPtr createMasonryArchProjectile()
   auto* body = pair.second;
   auto* shapeNode = body->createShapeNodeWith<
       dynamics::CollisionAspect,
-      dynamics::DynamicsAspect>(
-      std::make_shared<dynamics::SphereShape>(kArchProjectileRadius));
+      dynamics::DynamicsAspect>(std::make_shared<dynamics::BoxShape>(
+      Eigen::Vector3d::Constant(kArchProjectileEdgeLength)));
   shapeNode->getDynamicsAspect()->setFrictionCoeff(kArchFriction);
 
   // Aim at the crown (topmost, narrowest) stone, just outside its depth
   // face, regardless of stone count.
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(
+      (static_cast<double>(index)
+       - 0.5 * static_cast<double>(kArchProjectileCount - 1u))
+          * kArchProjectileSpacing,
       0.0,
-      -0.5 * kArchCrownWidth - kArchProjectileRadius + 0.005,
-      kArchCrownHeight);
+      kArchProjectileDropHeight);
   joint->setPositions(dynamics::FreeJoint::convertToPositions(transform));
-  joint->setLinearVelocity(Eigen::Vector3d(0.0, kArchProjectileSpeed, 0.0));
+  joint->setLinearVelocity(Eigen::Vector3d(0.0, 0.0, -kArchProjectileSpeed));
   return skeleton;
 }
 
@@ -598,9 +736,14 @@ Eigen::Isometry3d createCardHouseAFrameTransform(
   transform.linear()
       = Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitY()).toRotationMatrix();
 
-  const double halfSpan = 0.5 * kCardHouseHeight * std::sin(kCardHouseAngle);
+  const double horizontalHalfExtent
+      = 0.5
+        * (kCardHouseHeight * std::sin(kCardHouseAngle)
+           + kCardHouseThickness * std::cos(kCardHouseAngle));
+  const double centerOffset
+      = horizontalHalfExtent - 0.5 * kCardHouseInitialPenetration;
   transform.translation().x()
-      = centerX + (leftCard ? -0.96 * halfSpan : 0.96 * halfSpan);
+      = centerX + (leftCard ? -centerOffset : centerOffset);
   transform.translation().y() = 0.0;
   const double verticalHalfExtent
       = computeCardHouseVerticalHalfExtent(transform.linear());
@@ -676,6 +819,16 @@ makeMasonryArchSolverOptions()
   return options;
 }
 
+std::shared_ptr<collision::NativeCollisionDetector>
+createFbfPaperNativeCollisionDetector(
+    collision::NativeCollisionDetector::ContactManifoldMode manifoldMode
+    = collision::NativeCollisionDetector::ContactManifoldMode::Compact)
+{
+  auto detector = collision::NativeCollisionDetector::create();
+  detector->setContactManifoldMode(manifoldMode);
+  return detector;
+}
+
 std::shared_ptr<simulation::World> createInclineWorld(
     double frictionCoeff, bool exactCoulomb)
 {
@@ -691,12 +844,16 @@ std::shared_ptr<simulation::World> createInclineWorld(
   if (exactCoulomb) {
     auto solver = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(
         makePaperFixtureSolverOptions());
-    solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+    solver->setCollisionDetector(createFbfPaperNativeCollisionDetector(
+        collision::NativeCollisionDetector::ContactManifoldMode::
+            FourPointPlanar));
     solver->setNumSimulationThreads(1u);
     world->setConstraintSolver(std::move(solver));
   } else {
     auto* solver = world->getConstraintSolver();
-    solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+    solver->setCollisionDetector(createFbfPaperNativeCollisionDetector(
+        collision::NativeCollisionDetector::ContactManifoldMode::
+            FourPointPlanar));
     solver->setNumSimulationThreads(1u);
   }
 
@@ -757,12 +914,16 @@ std::shared_ptr<simulation::World> createTurntableWorld(
   if (exactCoulomb) {
     auto solver = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(
         makePaperFixtureSolverOptions());
-    solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+    solver->setCollisionDetector(createFbfPaperNativeCollisionDetector(
+        collision::NativeCollisionDetector::ContactManifoldMode::
+            FourPointPlanar));
     solver->setNumSimulationThreads(1u);
     world->setConstraintSolver(std::move(solver));
   } else {
     auto* solver = world->getConstraintSolver();
-    solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+    solver->setCollisionDetector(createFbfPaperNativeCollisionDetector(
+        collision::NativeCollisionDetector::ContactManifoldMode::
+            FourPointPlanar));
     solver->setNumSimulationThreads(1u);
   }
 
@@ -772,6 +933,88 @@ std::shared_ptr<simulation::World> createTurntableWorld(
 
   world->addSkeleton(createTurntableSupport(frictionCoeff));
   world->addSkeleton(createTurntableRider(frictionCoeff));
+  return world;
+}
+
+std::shared_ptr<simulation::World> createAuthorTurntableWorld(
+    double frictionCoeff, bool exactCoulomb)
+{
+  auto world = simulation::World::create("exact_coulomb_author_turntable");
+  world->setTimeStep(kInclineDt);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -kGravity));
+  world->setNumSimulationThreads(1u);
+
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+
+  if (exactCoulomb) {
+    auto solver = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(
+        fbf_author_turntable::dartBestSolverOptions());
+    solver->setCollisionDetector(createFbfPaperNativeCollisionDetector(
+        collision::NativeCollisionDetector::ContactManifoldMode::
+            FourPointPlanar));
+    solver->setNumSimulationThreads(1u);
+    world->setConstraintSolver(std::move(solver));
+  } else {
+    auto* solver = world->getConstraintSolver();
+    solver->setCollisionDetector(createFbfPaperNativeCollisionDetector(
+        collision::NativeCollisionDetector::ContactManifoldMode::
+            FourPointPlanar));
+    solver->setNumSimulationThreads(1u);
+  }
+
+  auto& collisionOption = world->getConstraintSolver()->getCollisionOption();
+  collisionOption.maxNumContacts = fbf_author_turntable::kMaxContacts;
+  collisionOption.maxNumContactsPerPair
+      = fbf_author_turntable::kMaxContactsPerPair;
+
+  world->addSkeleton(createAuthorTurntableSupport(frictionCoeff));
+  world->addSkeleton(createAuthorTurntableRider(frictionCoeff));
+  return world;
+}
+
+std::shared_ptr<simulation::World> createAuthorCardHouseConstructionWorld()
+{
+  auto world = simulation::World::create(fbf_author_card_house::kDemoSceneId);
+  world->setTimeStep(fbf_author_card_house::kRuntimeTimeStep);
+  world->setGravity(
+      Eigen::Vector3d(0.0, 0.0, -fbf_author_card_house::kGravity));
+  world->setNumSimulationThreads(1u);
+
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+
+  auto solver = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(
+      fbf_author_card_house::dartConstructionSolverOptions());
+  solver->setCollisionDetector(createFbfPaperNativeCollisionDetector(
+      collision::NativeCollisionDetector::ContactManifoldMode::
+          FourPointPlanar));
+  solver->setNumSimulationThreads(1u);
+  world->setConstraintSolver(std::move(solver));
+  auto& collisionOption = world->getConstraintSolver()->getCollisionOption();
+  collisionOption.maxNumContacts = fbf_author_card_house::kSourceMaxContacts;
+  collisionOption.maxNumContactsPerPair = 4u;
+
+  world->addSkeleton(createHorizontalPlane(fbf_author_card_house::kFriction));
+  for (const auto& spec : fbf_author_card_house::makeCardSpecs(
+           fbf_author_card_house::kDefaultLevelCount)) {
+    world->addSkeleton(createAuthorCardHouseBox(
+        spec.name,
+        spec.size,
+        spec.transform,
+        fbf_author_card_house::kCardDensity,
+        true));
+  }
+  for (const auto& spec : fbf_author_card_house::makeCubeSpecs()) {
+    world->addSkeleton(createAuthorCardHouseBox(
+        spec.name,
+        spec.size,
+        spec.transform,
+        fbf_author_card_house::kCubeDensity,
+        false));
+  }
   return world;
 }
 
@@ -963,15 +1206,19 @@ std::shared_ptr<simulation::World> createMasonryArchWorld(
   collisionOption.maxNumContacts = maxContacts;
   collisionOption.maxNumContactsPerPair = maxContactsPerPair;
 
-  // Author boundary condition: only the ground plane is fixed; every stone
-  // (including both springers) is a fully dynamic rigid body (see
-  // PROVENANCE.txt section 7 in the geometry-port task notes).
+  // The paper explicitly pins both springers in the 25-stone scene. Figure 8
+  // calls the 101-stone experiment the same setup, so the same endpoint
+  // condition is used there. The credited raw Rigid-IPC scenes instead leave
+  // every stone dynamic; that source distinction is retained in provenance.
   world->addSkeleton(createHorizontalPlane(kArchFriction));
 
   const auto stoneGeometry
       = math::detail::generateMasonryArchStoneBoxes(stoneCount);
   for (std::size_t i = 0u; i < stoneCount; ++i) {
-    world->addSkeleton(createMasonryArchStone(i, stoneGeometry[i]));
+    auto stone = createMasonryArchStone(i, stoneGeometry[i]);
+    if (i == 0u || i + 1u == stoneCount)
+      stone->setMobile(false);
+    world->addSkeleton(stone);
   }
 
   return world;
@@ -1180,10 +1427,28 @@ InclineRunResult runInclineCube(double frictionCoeff, bool exactCoulomb)
       = exactCoulomb ? getExactCoulombSolver(world) : nullptr;
   ExactResidualTrace residualTrace;
   std::size_t previousExactSolves = 0u;
+  std::size_t contactSteps = 0u;
+  double maxPenetration = 0.0;
+  bool finitePenetration = true;
 
   for (int i = 0; i < steps; ++i) {
     world->step();
     sampleExactResidualTrace(exactSolver, previousExactSolves, residualTrace);
+    const auto& collisionResult
+        = world->getConstraintSolver()->getLastCollisionResult();
+    if (collisionResult.getNumContacts() > 0u)
+      ++contactSteps;
+    for (std::size_t contactIndex = 0u;
+         contactIndex < collisionResult.getNumContacts();
+         ++contactIndex) {
+      const double penetration
+          = collisionResult.getContact(contactIndex).penetrationDepth;
+      if (!std::isfinite(penetration)) {
+        finitePenetration = false;
+      } else {
+        maxPenetration = std::max(maxPenetration, penetration);
+      }
+    }
   }
 
   InclineRunResult result;
@@ -1191,6 +1456,11 @@ InclineRunResult runInclineCube(double frictionCoeff, bool exactCoulomb)
   const Eigen::Vector3d linearVelocity = body->getLinearVelocity();
   result.displacement = (finalPosition - initialPosition).dot(downhill);
   result.speed = linearVelocity.dot(downhill);
+  result.maxPenetration = finitePenetration
+                              ? maxPenetration
+                              : std::numeric_limits<double>::quiet_NaN();
+  result.trajectorySteps = static_cast<std::size_t>(steps);
+  result.contactSteps = contactSteps;
   result.lastContacts
       = world->getConstraintSolver()->getLastCollisionResult().getNumContacts();
 
@@ -1310,9 +1580,105 @@ TurntableRunResult runTurntable(
   result.radius = radial.norm();
   result.height = position.z();
   if (result.radius > 1e-12) {
-    result.radialVelocity = velocity.head<2>().dot(radial.normalized());
+    const Eigen::Vector2d radialDirection = radial.normalized();
+    const Eigen::Vector2d tangentialDirection(
+        -radialDirection.y(), radialDirection.x());
+    result.radialVelocity = velocity.head<2>().dot(radialDirection);
+    result.tangentialVelocity = velocity.head<2>().dot(tangentialDirection);
+    result.tangentialCoRotationError
+        = std::abs(result.tangentialVelocity - angularVelocity * result.radius);
   } else {
     result.radialVelocity = 0.0;
+    result.tangentialVelocity = 0.0;
+    result.tangentialCoRotationError = 0.0;
+  }
+  result.lastContacts
+      = world->getConstraintSolver()->getLastCollisionResult().getNumContacts();
+
+  if (exactCoulomb)
+    copyExactCoulombDiagnostics(exactSolver, residualTrace, result);
+
+  return result;
+}
+
+TurntableRunResult runAuthorTurntable(
+    double frictionCoeff, double angularVelocity, bool exactCoulomb)
+{
+  auto world = createAuthorTurntableWorld(frictionCoeff, exactCoulomb);
+  const auto turntable = world->getSkeleton("turntable");
+  auto* turntableJoint
+      = static_cast<dynamics::FreeJoint*>(turntable->getJoint(0));
+  const auto rider = world->getSkeleton("turntable_rider");
+  const auto* body = rider->getBodyNode(0);
+  const int steps = static_cast<int>(
+      std::round(fbf_author_turntable::kDuration / kInclineDt));
+  const auto* exactSolver
+      = exactCoulomb ? getExactCoulombSolver(world) : nullptr;
+  ExactResidualTrace residualTrace;
+  std::size_t previousExactSolves = 0u;
+  TurntableRunResult result;
+
+  for (int i = 0; i < steps; ++i) {
+    const double time = static_cast<double>(i) * kInclineDt;
+    Eigen::Isometry3d supportTransform = Eigen::Isometry3d::Identity();
+    supportTransform.linear()
+        = Eigen::AngleAxisd(
+              fbf_author_turntable::integratedYaw(time, angularVelocity),
+              Eigen::Vector3d::UnitZ())
+              .toRotationMatrix();
+    supportTransform.translation().z()
+        = fbf_author_turntable::kSupportHalfHeight;
+    turntableJoint->setPositions(
+        dynamics::FreeJoint::convertToPositions(supportTransform));
+    turntableJoint->setAngularVelocity(Eigen::Vector3d(
+        0.0,
+        0.0,
+        fbf_author_turntable::angularVelocity(time, angularVelocity)));
+    world->step();
+    sampleExactResidualTrace(exactSolver, previousExactSolves, residualTrace);
+
+    const Eigen::Vector3d position = body->getWorldTransform().translation();
+    const double radius = position.head<2>().norm();
+    result.finiteState = result.finiteState && position.allFinite()
+                         && body->getLinearVelocity().allFinite()
+                         && body->getAngularVelocity().allFinite();
+    result.maxRadius = std::max(result.maxRadius, radius);
+
+    const double tableTop = 2.0 * fbf_author_turntable::kSupportHalfHeight;
+    result.sourceExitObserved
+        = result.sourceExitObserved
+          || radius > fbf_author_turntable::kSupportRadius
+                          + fbf_author_turntable::kRiderHalfSize
+          || position.z() < tableTop - 0.5;
+
+    const double fullySupportedRadius = fbf_author_turntable::kSupportRadius
+                                        - fbf_author_turntable::kRiderHalfSize;
+    if (radius <= fullySupportedRadius) {
+      result.minFullySupportedHeight
+          = std::min(result.minFullySupportedHeight, position.z());
+      result.fellThroughSupport
+          = result.fellThroughSupport
+            || position.z() < tableTop - fbf_author_turntable::kRiderHalfSize;
+    }
+  }
+
+  const Eigen::Vector3d position = body->getWorldTransform().translation();
+  const Eigen::Vector3d velocity = body->getLinearVelocity();
+  const Eigen::Vector2d radial(position.x(), position.y());
+  result.radius = radial.norm();
+  result.height = position.z();
+  if (result.radius > 1e-12) {
+    const Eigen::Vector2d radialDirection = radial.normalized();
+    const Eigen::Vector2d tangentialDirection(
+        -radialDirection.y(), radialDirection.x());
+    result.radialVelocity = velocity.head<2>().dot(radialDirection);
+    result.tangentialVelocity = velocity.head<2>().dot(tangentialDirection);
+    result.tangentialCoRotationError
+        = std::abs(result.tangentialVelocity - angularVelocity * result.radius);
+  } else {
+    result.radialVelocity = 0.0;
+    result.tangentialVelocity = 0.0;
+    result.tangentialCoRotationError = 0.0;
   }
   result.lastContacts
       = world->getConstraintSolver()->getLastCollisionResult().getNumContacts();
@@ -1383,10 +1749,11 @@ void launchCardHouseProjectiles(const std::shared_ptr<simulation::World>& world)
 void launchMasonryArchProjectile(
     const std::shared_ptr<simulation::World>& world)
 {
-  if (world->getSkeleton("masonry_arch_projectile") != nullptr)
+  if (world->getSkeleton("masonry_arch_projectile_0") != nullptr)
     return;
 
-  world->addSkeleton(createMasonryArchProjectile());
+  for (std::size_t i = 0u; i < kArchProjectileCount; ++i)
+    world->addSkeleton(createMasonryArchProjectile(i));
 }
 
 CardHouseRunResult runCardHouseFourLevelOneStep(
@@ -1687,8 +2054,32 @@ bool isTurntableCaptured(const TurntableRunResult& result)
 
 bool isTurntableEjected(const TurntableRunResult& result)
 {
-  return result.radius > 1.75 || result.lastContacts == 0u
-         || result.height < 0.0;
+  return result.radius > 1.75 || result.height < 0.0;
+}
+
+bool isAuthorTurntableCaptured(const TurntableRunResult& result)
+{
+  const double tableTop = 2.0 * fbf_author_turntable::kSupportHalfHeight;
+  return result.finiteState && !result.fellThroughSupport
+         && result.radius < 1.25 && result.height > tableTop
+         && result.lastContacts > 0u;
+}
+
+bool hasAuthorTurntableSourceExit(const TurntableRunResult& result)
+{
+  // The public author runner marks either radial departure or a 0.5 m
+  // vertical drop as "left table" for metric bookkeeping. Keep that source
+  // condition explicit, but do not let vertical tunneling count as the paper's
+  // ejected outcome in DART.
+  return result.sourceExitObserved;
+}
+
+bool isAuthorTurntableEjected(const TurntableRunResult& result)
+{
+  return result.finiteState && !result.fellThroughSupport
+         && result.radius > fbf_author_turntable::kSupportRadius
+                                + fbf_author_turntable::kRiderHalfSize
+         && result.lastContacts == 0u;
 }
 
 bool isPainleveUpright(const PainleveRunResult& result)
@@ -1718,10 +2109,134 @@ bool isMasonryArchStoneName(const std::string& name)
 
 bool isMasonryArchProjectileSkeletonName(const std::string& name)
 {
-  return name == "masonry_arch_projectile";
+  return name.rfind("masonry_arch_projectile_", 0u) == 0u;
 }
 
 } // namespace
+
+//==============================================================================
+TEST(ExactCoulombFbfPaperFixtures, StressFixtureOptInRequiresExplicitOne)
+{
+  EXPECT_FALSE(isFbfPaperStressTestValueEnabled(nullptr));
+  EXPECT_FALSE(isFbfPaperStressTestValueEnabled(""));
+  EXPECT_FALSE(isFbfPaperStressTestValueEnabled("0"));
+  EXPECT_FALSE(isFbfPaperStressTestValueEnabled("true"));
+  EXPECT_TRUE(isFbfPaperStressTestValueEnabled("1"));
+}
+
+//==============================================================================
+TEST(
+    ExactCoulombFbfPaperFixtures,
+    SelectsScenarioSpecificCollisionFrontendAndManifoldMode)
+{
+  using ManifoldMode = collision::NativeCollisionDetector::ContactManifoldMode;
+  const auto expectNativeMode
+      = [](const std::shared_ptr<simulation::World>& world,
+           ManifoldMode expected) {
+          const auto detector
+              = std::dynamic_pointer_cast<collision::NativeCollisionDetector>(
+                  world->getConstraintSolver()->getCollisionDetector());
+          ASSERT_NE(nullptr, detector);
+          EXPECT_EQ(expected, detector->getContactManifoldMode());
+        };
+  const auto expectDartFrontend
+      = [](const std::shared_ptr<simulation::World>& world) {
+          const auto detector
+              = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
+                  world->getConstraintSolver()->getCollisionDetector());
+          ASSERT_NE(nullptr, detector);
+        };
+
+  for (const bool exactCoulomb : {false, true}) {
+    expectNativeMode(
+        createInclineWorld(0.5, exactCoulomb), ManifoldMode::FourPointPlanar);
+    expectNativeMode(
+        createTurntableWorld(0.5, exactCoulomb), ManifoldMode::FourPointPlanar);
+  }
+
+  expectDartFrontend(createPainleveWorld(0.5, true));
+  expectDartFrontend(createBackspinWorld(true));
+  expectDartFrontend(createCardHouseFourLevelWorld(true));
+  expectDartFrontend(createMasonryArch25World(true));
+}
+
+//==============================================================================
+TEST(ExactCoulombFbfPaperFixtures, ProjectileGeometryMatchesPublishedVisuals)
+{
+  const Eigen::Vector3d cardSize(
+      kCardHouseThickness, kCardHouseWidth, kCardHouseHeight);
+  const auto card = createCardPlate(
+      "density_probe_card", Eigen::Isometry3d::Identity(), kCardHouseFriction);
+  ASSERT_NE(card, nullptr);
+  const auto* cardBody = card->getBodyNode(0);
+  ASSERT_NE(cardBody, nullptr);
+  const double cardVolume = cardSize.x() * cardSize.y() * cardSize.z();
+  EXPECT_NEAR(
+      cardBody->getInertia().getMass() / cardVolume, kCardHouseDensity, 1e-9);
+  EXPECT_TRUE(cardBody->getInertia().getMoment().isApprox(
+      dynamics::BoxShape::computeInertia(
+          cardSize, kCardHouseDensity * cardVolume),
+      1e-12));
+
+  double previousCardX = -std::numeric_limits<double>::infinity();
+  for (std::size_t i = 0u; i < kCardHouseProjectileCount; ++i) {
+    const auto projectile = createCardHouseProjectile(i);
+    ASSERT_NE(projectile, nullptr);
+    const auto* body = projectile->getBodyNode(0);
+    ASSERT_NE(body, nullptr);
+    const auto* shapeNode = body->getShapeNode(0);
+    ASSERT_NE(shapeNode, nullptr);
+    const auto shape = shapeNode->getShape();
+    ASSERT_NE(shape, nullptr);
+    EXPECT_TRUE(shape->is<dynamics::BoxShape>());
+    const auto box = std::static_pointer_cast<const dynamics::BoxShape>(shape);
+    EXPECT_TRUE(box->getSize().isApprox(
+        Eigen::Vector3d::Constant(kCardHouseProjectileEdgeLength), 1e-12));
+    EXPECT_NEAR(body->getInertia().getMass(), kCardHouseProjectileMass, 1e-12);
+    EXPECT_NEAR(
+        body->getInertia().getMass()
+            / std::pow(kCardHouseProjectileEdgeLength, 3),
+        kCardHouseDensity,
+        1e-9);
+    const Eigen::Vector3d position = body->getWorldTransform().translation();
+    EXPECT_GT(position.x(), previousCardX);
+    EXPECT_NEAR(position.y(), 0.0, 1e-12);
+    EXPECT_NEAR(position.z(), kCardHouseProjectileDropHeight, 1e-12);
+    EXPECT_NEAR(body->getLinearVelocity().x(), 0.0, 1e-12);
+    EXPECT_NEAR(body->getLinearVelocity().y(), 0.0, 1e-12);
+    EXPECT_LT(body->getLinearVelocity().z(), 0.0);
+    previousCardX = position.x();
+  }
+
+  double previousArchX = -std::numeric_limits<double>::infinity();
+  for (std::size_t i = 0u; i < kArchProjectileCount; ++i) {
+    const auto projectile = createMasonryArchProjectile(i);
+    ASSERT_NE(projectile, nullptr);
+    const auto* body = projectile->getBodyNode(0);
+    ASSERT_NE(body, nullptr);
+    const auto* shapeNode = body->getShapeNode(0);
+    ASSERT_NE(shapeNode, nullptr);
+    const auto shape = shapeNode->getShape();
+    ASSERT_NE(shape, nullptr);
+    EXPECT_TRUE(shape->is<dynamics::BoxShape>());
+    const auto box = std::static_pointer_cast<const dynamics::BoxShape>(shape);
+    EXPECT_TRUE(box->getSize().isApprox(
+        Eigen::Vector3d::Constant(kArchProjectileEdgeLength), 1e-12));
+    EXPECT_NEAR(body->getInertia().getMass(), kArchProjectileMass, 1e-12);
+    EXPECT_NEAR(
+        body->getInertia().getMass() / std::pow(kArchProjectileEdgeLength, 3),
+        kArchDensity,
+        1e-9);
+    const Eigen::Vector3d position = body->getWorldTransform().translation();
+    EXPECT_GT(position.x(), previousArchX);
+    EXPECT_NEAR(position.y(), 0.0, 1e-12);
+    EXPECT_NEAR(position.z(), kArchProjectileDropHeight, 1e-12);
+    EXPECT_NEAR(body->getLinearVelocity().x(), 0.0, 1e-12);
+    EXPECT_NEAR(body->getLinearVelocity().y(), 0.0, 1e-12);
+    EXPECT_LT(body->getLinearVelocity().z(), 0.0);
+    previousArchX = position.x();
+  }
+}
 
 //==============================================================================
 TEST(ExactCoulombFbfPaperFixtures, InclineCubeThresholdStickSlide)
@@ -1739,6 +2254,12 @@ TEST(ExactCoulombFbfPaperFixtures, InclineCubeThresholdStickSlide)
   EXPECT_GT(exactSlide.exactSolves, 0u);
   EXPECT_GT(exactStick.lastContacts, 0u);
   EXPECT_GT(exactSlide.lastContacts, 0u);
+  EXPECT_EQ(exactStick.contactSteps, exactStick.trajectorySteps);
+  EXPECT_EQ(exactSlide.contactSteps, exactSlide.trajectorySteps);
+  EXPECT_TRUE(std::isfinite(exactStick.maxPenetration));
+  EXPECT_TRUE(std::isfinite(exactSlide.maxPenetration));
+  EXPECT_LE(exactStick.maxPenetration, 0.02);
+  EXPECT_LE(exactSlide.maxPenetration, 0.02);
   EXPECT_TRUE(std::isfinite(exactStick.residual));
   EXPECT_TRUE(std::isfinite(exactSlide.residual));
   EXPECT_LE(exactStick.residual, 1e-6);
@@ -1866,6 +2387,12 @@ TEST(ExactCoulombFbfPaperFixtures, TurntableCaptureEjectionGrid)
           << "radius=" << exact.radius
           << " radialVelocity=" << exact.radialVelocity
           << " height=" << exact.height << " contacts=" << exact.lastContacts;
+      EXPECT_TRUE(std::isfinite(exact.radialVelocity));
+      EXPECT_TRUE(std::isfinite(exact.tangentialCoRotationError));
+      EXPECT_LE(std::abs(exact.radialVelocity), 0.2);
+      EXPECT_LE(exact.tangentialCoRotationError, 0.05)
+          << "tangentialVelocity=" << exact.tangentialVelocity
+          << " expected=" << cell.angularVelocity * exact.radius;
     } else {
       EXPECT_TRUE(isTurntableEjected(exact))
           << "radius=" << exact.radius
@@ -1876,6 +2403,407 @@ TEST(ExactCoulombFbfPaperFixtures, TurntableCaptureEjectionGrid)
     EXPECT_TRUE(std::isfinite(boxed.radius));
     EXPECT_TRUE(std::isfinite(boxed.height));
   }
+}
+
+//==============================================================================
+TEST(ExactCoulombFbfPaperFixtures, AuthorCardHouseSourceConstructionIsPinned)
+{
+  using namespace fbf_author_card_house;
+
+  EXPECT_STREQ(kAuthorCommit, "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0");
+  EXPECT_STREQ(kAuthorTree, "ffcdafb61adeda2239c8366d054b548b50d26685e");
+  EXPECT_STREQ(
+      kAuthorCardHouseBlob, "35f33651bc9674a259071ac723e47755504152db");
+  EXPECT_STREQ(
+      kAuthorCardHouseRunSha256,
+      "18c58c85eaad865aeef480b46e880a52088f266b79c90226f624637221ee36f8");
+  EXPECT_STREQ(
+      kAuthorConfigSha256,
+      "88f3f9ffd758eccce8496f7897192587a05907109e313c7a86bcf8f9de8cc248");
+  EXPECT_STREQ(
+      kAuthorSolverSha256,
+      "8ec32aa20bf8d6c1173ed6c7f3735e2926fbb4b5059ee2236e26ad27eb22f941");
+
+  EXPECT_EQ(leaningCardCount(kDefaultLevelCount), 30u);
+  EXPECT_EQ(bridgeCardCount(kDefaultLevelCount), 10u);
+  EXPECT_EQ(cardCount(kDefaultLevelCount), 40u);
+  const auto cards = makeCardSpecs(kDefaultLevelCount);
+  ASSERT_EQ(cards.size(), 40u);
+  EXPECT_EQ(
+      std::count_if(
+          cards.begin(),
+          cards.end(),
+          [](const auto& spec) { return spec.kind == CardKind::Bridge; }),
+      10);
+  EXPECT_EQ(
+      std::count_if(
+          cards.begin(),
+          cards.end(),
+          [](const auto& spec) { return spec.kind != CardKind::Bridge; }),
+      30);
+
+  const auto findCard = [&cards](const std::string& name) -> const CardSpec& {
+    const auto found
+        = std::find_if(cards.begin(), cards.end(), [&name](const auto& spec) {
+            return spec.name == name;
+          });
+    if (found == cards.end())
+      throw std::runtime_error("missing test card " + name);
+    return *found;
+  };
+  const auto& firstLeft = findCard("tent_left_L0_T0");
+  EXPECT_TRUE(firstLeft.size.isApprox(Eigen::Vector3d(0.04, 1.25, 2.5)));
+  EXPECT_NEAR(firstLeft.transform.translation().x(), -4.95, 1e-14);
+  EXPECT_NEAR(firstLeft.transform.translation().z(), 0.5 * kTentHeight, 1e-14);
+  EXPECT_TRUE(
+      firstLeft.transform.linear().isApprox(rotationAboutY(25.0), 1e-15));
+  const auto& firstRight = findCard("tent_right_L0_T0");
+  EXPECT_NEAR(firstRight.transform.translation().x(), -3.85, 1e-14);
+  EXPECT_TRUE(
+      firstRight.transform.linear().isApprox(rotationAboutY(-25.0), 1e-15));
+  const auto& firstBridge = findCard("bridge_L1_T0");
+  EXPECT_TRUE(firstBridge.size.isApprox(Eigen::Vector3d(2.5, 1.25, 0.04)));
+  EXPECT_NEAR(firstBridge.transform.translation().x(), -3.3, 1e-14);
+  EXPECT_NEAR(firstBridge.transform.translation().z(), kTentHeight, 1e-14);
+  EXPECT_TRUE(
+      firstBridge.transform.linear().isApprox(rotationAboutY(-1.0), 1e-15));
+  EXPECT_DOUBLE_EQ(
+      kCardDensity * 0.04 * 1.25 * 2.5, fbf_author_card_house::kCardMass);
+
+  const auto cubes = makeCubeSpecs(kDefaultLevelCount);
+  ASSERT_EQ(cubes.size(), 4u);
+  constexpr std::array<double, 4> expectedX{{-1.8, -0.6, 0.6, 1.8}};
+  for (std::size_t index = 0u; index < cubes.size(); ++index) {
+    EXPECT_TRUE(cubes[index].size.isApprox(Eigen::Vector3d::Constant(0.8)));
+    EXPECT_NEAR(
+        cubes[index].transform.translation().x(), expectedX[index], 1e-14);
+    EXPECT_NEAR(
+        cubes[index].transform.translation().z(), kCubeInitialHeight, 1e-14);
+  }
+  EXPECT_DOUBLE_EQ(kCubeDensity * 0.8 * 0.8 * 0.8, kCubeMass);
+  EXPECT_DOUBLE_EQ(kDisplayTimeStep, 1.0 / 60.0);
+  EXPECT_EQ(kSubstepsPerFrame, 4u);
+  EXPECT_DOUBLE_EQ(kRuntimeTimeStep, 1.0 / 240.0);
+  EXPECT_EQ(kReleaseFrame, 400u);
+  EXPECT_EQ(kReleaseSubstep, 1600u);
+  EXPECT_EQ(kTotalFrames, 800u);
+  EXPECT_EQ(kTotalSubsteps, 3200u);
+  EXPECT_FALSE(kTrajectoryEquivalence);
+  EXPECT_FALSE(kSolverEquivalence);
+  EXPECT_FALSE(kPhysicalOutcomeEquivalence);
+  EXPECT_FALSE(kFig06Parity);
+  EXPECT_FALSE(kVideo06Parity);
+  EXPECT_FALSE(kTimingComparability);
+}
+
+//==============================================================================
+TEST(ExactCoulombFbfPaperFixtures, AuthorCardHouseContractIsConstructionOnly)
+{
+  using namespace fbf_author_card_house;
+  const auto world = createAuthorCardHouseConstructionWorld();
+  EXPECT_DOUBLE_EQ(world->getTime(), 0.0);
+
+  const auto contract = inspectConfigurationContract(
+      world, kDefaultLevelCount, "integration_fixture", "not_applicable");
+  EXPECT_EQ(contract.levelCount, 5u);
+  EXPECT_DOUBLE_EQ(contract.timeStep, kRuntimeTimeStep);
+  EXPECT_TRUE(contract.gravity.isApprox(Eigen::Vector3d(0.0, 0.0, -9.81)));
+  EXPECT_EQ(contract.simulationThreads, 1u);
+  EXPECT_FALSE(contract.deactivationEnabled);
+  EXPECT_EQ(contract.collisionDetector, "native");
+  EXPECT_EQ(contract.contactManifold, "four_point_planar");
+  EXPECT_EQ(contract.maxContacts, kSourceMaxContacts);
+  EXPECT_EQ(contract.maxContactsPerPair, 4u);
+  EXPECT_FALSE(contract.splitImpulseEnabled);
+  EXPECT_EQ(
+      contract.solverOptions.maxOuterIterations, kSourceMaxOuterIterations);
+  EXPECT_DOUBLE_EQ(contract.solverOptions.tolerance, kSourceOuterTolerance);
+  EXPECT_EQ(
+      contract.solverOptions.innerMaxSweeps, kSourceInnerGaussSeidelSweeps);
+  EXPECT_DOUBLE_EQ(
+      contract.solverOptions.innerTolerance, kSourceInnerTolerance);
+  EXPECT_TRUE(contract.solverOptions.enableWarmStart);
+  EXPECT_TRUE(contract.solverOptions.runFixedInnerSweeps);
+  EXPECT_FALSE(contract.solverOptions.fallbackToBoxedLcp);
+  EXPECT_FALSE(contract.solverOptions.enableProjectedGradientRetry);
+  EXPECT_FALSE(contract.solverOptions.enableDenseResidualPolish);
+  EXPECT_EQ(contract.groundShape, "plane");
+  EXPECT_DOUBLE_EQ(contract.groundFriction, kFriction);
+  EXPECT_FALSE(contract.groundMobile);
+
+  const auto expectedCards = makeCardSpecs(kDefaultLevelCount);
+  ASSERT_EQ(contract.cards.size(), expectedCards.size());
+  for (std::size_t index = 0u; index < expectedCards.size(); ++index) {
+    const auto& actual = contract.cards[index];
+    const auto& expected = expectedCards[index];
+    EXPECT_EQ(actual.name, expected.name);
+    EXPECT_TRUE(actual.size.isApprox(expected.size, 1e-15));
+    EXPECT_TRUE(
+        actual.pose.matrix().isApprox(expected.transform.matrix(), 1e-14));
+    EXPECT_DOUBLE_EQ(actual.mass, kCardMass);
+    EXPECT_DOUBLE_EQ(actual.friction, kFriction);
+    EXPECT_TRUE(actual.mobile);
+    EXPECT_TRUE(actual.linearVelocity.isZero(0.0));
+    EXPECT_TRUE(actual.angularVelocity.isZero(0.0));
+  }
+
+  const auto expectedCubes = makeCubeSpecs(kDefaultLevelCount);
+  ASSERT_EQ(contract.cubes.size(), expectedCubes.size());
+  for (std::size_t index = 0u; index < expectedCubes.size(); ++index) {
+    const auto& actual = contract.cubes[index];
+    const auto& expected = expectedCubes[index];
+    EXPECT_EQ(actual.name, expected.name);
+    EXPECT_TRUE(actual.size.isApprox(expected.size, 1e-15));
+    EXPECT_TRUE(
+        actual.pose.matrix().isApprox(expected.transform.matrix(), 1e-14));
+    EXPECT_DOUBLE_EQ(actual.mass, kCubeMass);
+    EXPECT_DOUBLE_EQ(actual.friction, kFriction);
+    EXPECT_FALSE(actual.mobile);
+    EXPECT_TRUE(actual.linearVelocity.isZero(0.0));
+    EXPECT_TRUE(actual.angularVelocity.isZero(0.0));
+  }
+
+  const std::string json = configurationContractJson(contract);
+  EXPECT_NE(
+      json.find("\"schema_version\":\"dart.fbf_author_card_house_"
+                "configuration_contract/v1\""),
+      std::string::npos);
+  EXPECT_NE(json.find("\"dynamics_executed\":false"), std::string::npos);
+  EXPECT_NE(json.find("\"configuration_port_valid\":true"), std::string::npos);
+  EXPECT_NE(json.find("\"trajectory_valid\":false"), std::string::npos);
+  EXPECT_NE(json.find("\"solver_valid\":false"), std::string::npos);
+  EXPECT_NE(json.find("\"physical_outcome_valid\":false"), std::string::npos);
+  EXPECT_NE(json.find("\"trajectory_equivalence\":false"), std::string::npos);
+  EXPECT_NE(json.find("\"solver_equivalence\":false"), std::string::npos);
+  EXPECT_NE(
+      json.find("\"physical_outcome_equivalence\":false"), std::string::npos);
+  EXPECT_NE(json.find("\"fig06_parity\":false"), std::string::npos);
+  EXPECT_NE(json.find("\"video06_parity\":false"), std::string::npos);
+  EXPECT_NE(json.find("\"timing_comparability\":false"), std::string::npos);
+  EXPECT_NE(json.find("\"paper_timing_valid\":false"), std::string::npos);
+  EXPECT_NE(
+      json.find("\"source_contact_gap_semantics_implemented\":false"),
+      std::string::npos);
+  EXPECT_NE(
+      json.find("\"source_solver_backend_semantics_implemented\":false"),
+      std::string::npos);
+  EXPECT_DOUBLE_EQ(world->getTime(), 0.0);
+}
+
+//==============================================================================
+TEST(ExactCoulombFbfPaperFixtures, AuthorTurntableSourceContractIsPinned)
+{
+  const auto& scenario = fbf_author_turntable::kScenarios[0];
+  constexpr double friction = fbf_author_turntable::kScenarios[0].friction;
+  constexpr double cubeSide = 2.0 * fbf_author_turntable::kRiderHalfSize;
+  constexpr double cubeMass
+      = fbf_author_turntable::kRiderDensity * cubeSide * cubeSide * cubeSide;
+  auto world = createAuthorTurntableWorld(friction, true);
+
+  const auto contract = fbf_author_turntable::inspectPhysicsContract(
+      world, scenario, "dart_best", "integration_fixture", "not_applicable");
+  EXPECT_EQ(contract.scenario, &scenario);
+  EXPECT_EQ(contract.collisionDetector, "native");
+  EXPECT_EQ(contract.contactManifold, "four_point_planar");
+  EXPECT_EQ(contract.maxContacts, fbf_author_turntable::kMaxContacts);
+  EXPECT_EQ(
+      contract.maxContactsPerPair, fbf_author_turntable::kMaxContactsPerPair);
+  EXPECT_EQ(
+      contract.maxOuterIterations, fbf_author_turntable::kMaxOuterIterations);
+  EXPECT_DOUBLE_EQ(contract.tolerance, fbf_author_turntable::kTolerance);
+
+  EXPECT_NEAR(world->getTimeStep(), 1.0 / 60.0, 1e-15);
+  const auto detector
+      = std::dynamic_pointer_cast<collision::NativeCollisionDetector>(
+          world->getConstraintSolver()->getCollisionDetector());
+  ASSERT_NE(detector, nullptr);
+  EXPECT_EQ(
+      detector->getContactManifoldMode(),
+      collision::NativeCollisionDetector::ContactManifoldMode::FourPointPlanar);
+
+  const auto support = world->getSkeleton("turntable");
+  ASSERT_NE(support, nullptr);
+  EXPECT_FALSE(support->isMobile());
+  const auto* supportBody = support->getBodyNode(0);
+  ASSERT_NE(supportBody, nullptr);
+  const auto* supportNode
+      = supportBody->getShapeNodeWith<dynamics::CollisionAspect>(0u);
+  ASSERT_NE(supportNode, nullptr);
+  const auto supportShape = supportNode->getShape();
+  ASSERT_NE(supportShape, nullptr);
+  ASSERT_TRUE(supportShape->is<dynamics::CylinderShape>());
+  const auto cylinder
+      = std::static_pointer_cast<const dynamics::CylinderShape>(supportShape);
+  EXPECT_NEAR(
+      cylinder->getRadius(), fbf_author_turntable::kSupportRadius, 1e-15);
+  EXPECT_NEAR(
+      cylinder->getHeight(),
+      2.0 * fbf_author_turntable::kSupportHalfHeight,
+      1e-15);
+  EXPECT_NEAR(
+      supportBody->getWorldTransform().translation().z(),
+      fbf_author_turntable::kSupportHalfHeight,
+      1e-15);
+  EXPECT_NEAR(
+      supportNode->getDynamicsAspect()->getFrictionCoeff(), friction, 1e-15);
+
+  const auto rider = world->getSkeleton("turntable_rider");
+  ASSERT_NE(rider, nullptr);
+  const auto* riderBody = rider->getBodyNode(0);
+  ASSERT_NE(riderBody, nullptr);
+  const auto* riderNode
+      = riderBody->getShapeNodeWith<dynamics::CollisionAspect>(0u);
+  ASSERT_NE(riderNode, nullptr);
+  const auto riderShape = riderNode->getShape();
+  ASSERT_NE(riderShape, nullptr);
+  ASSERT_TRUE(riderShape->is<dynamics::BoxShape>());
+  const auto box
+      = std::static_pointer_cast<const dynamics::BoxShape>(riderShape);
+  EXPECT_TRUE(
+      box->getSize().isApprox(Eigen::Vector3d::Constant(cubeSide), 1e-15));
+  EXPECT_NEAR(riderBody->getInertia().getMass(), cubeMass, 1e-12);
+  EXPECT_NEAR(cubeMass, 13.5, 1e-12);
+  EXPECT_NEAR(
+      riderNode->getDynamicsAspect()->getFrictionCoeff(), friction, 1e-15);
+  const Eigen::Vector3d position = riderBody->getWorldTransform().translation();
+  EXPECT_NEAR(position.x(), 1.0, 1e-15);
+  EXPECT_NEAR(position.y(), 0.0, 1e-15);
+  EXPECT_NEAR(position.z(), 0.455, 1e-15);
+}
+
+//==============================================================================
+TEST(ExactCoulombFbfPaperFixtures, AuthorTurntableScheduleIsContinuous)
+{
+  constexpr double omega = 5.0;
+  constexpr double epsilon = 1e-9;
+  const double settle = fbf_author_turntable::kSettleDuration;
+  const double rampEnd = settle + fbf_author_turntable::kRampDuration;
+
+  EXPECT_DOUBLE_EQ(fbf_author_turntable::angularVelocity(settle, omega), 0.0);
+  EXPECT_DOUBLE_EQ(fbf_author_turntable::integratedYaw(settle, omega), 0.0);
+  EXPECT_NEAR(
+      fbf_author_turntable::angularVelocity(settle + epsilon, omega),
+      0.0,
+      1e-14);
+  EXPECT_NEAR(
+      fbf_author_turntable::integratedYaw(settle + epsilon, omega), 0.0, 1e-20);
+
+  EXPECT_NEAR(
+      fbf_author_turntable::angularVelocity(rampEnd - epsilon, omega),
+      omega,
+      1e-14);
+  EXPECT_DOUBLE_EQ(
+      fbf_author_turntable::angularVelocity(rampEnd, omega), omega);
+  const double expectedRampYaw
+      = 0.5 * omega * fbf_author_turntable::kRampDuration;
+  EXPECT_NEAR(
+      fbf_author_turntable::integratedYaw(rampEnd - epsilon, omega),
+      expectedRampYaw,
+      omega * epsilon * 1.01);
+  EXPECT_DOUBLE_EQ(
+      fbf_author_turntable::integratedYaw(rampEnd, omega), expectedRampYaw);
+  EXPECT_DOUBLE_EQ(
+      fbf_author_turntable::integratedYaw(rampEnd + 0.25, omega),
+      expectedRampYaw + 0.25 * omega);
+}
+
+//==============================================================================
+TEST(ExactCoulombFbfPaperFixtures, AuthorTurntableCaptureEjectionGrid)
+{
+  struct Cell
+  {
+    double frictionCoeff;
+    double angularVelocity;
+    bool captured;
+  };
+
+  constexpr std::array<Cell, 4> cells{{
+      {0.2, 2.0, false},
+      {0.2, 5.0, false},
+      {0.5, 2.0, true},
+      {0.5, 5.0, false},
+  }};
+
+  for (const auto& cell : cells) {
+    SCOPED_TRACE(
+        "author b3f3c5c mu=" + std::to_string(cell.frictionCoeff)
+        + " omega=" + std::to_string(cell.angularVelocity));
+    const auto exact
+        = runAuthorTurntable(cell.frictionCoeff, cell.angularVelocity, true);
+
+    EXPECT_TRUE(exact.exactSuccess);
+    EXPECT_EQ(exact.boxedFallbacks, 0u);
+    EXPECT_EQ(exact.exactFailures, 0u);
+    EXPECT_GT(exact.exactSolves, 0u);
+    EXPECT_TRUE(std::isfinite(exact.residual));
+    EXPECT_LE(exact.residual, 1e-6);
+    expectConvergedResidualTrace(exact.residualTrace, 1e-6);
+    EXPECT_TRUE(exact.finiteState);
+    EXPECT_FALSE(exact.fellThroughSupport)
+        << "minimum fully-supported height=" << exact.minFullySupportedHeight
+        << " final radius=" << exact.radius << " final height=" << exact.height;
+    EXPECT_TRUE(std::isfinite(exact.minFullySupportedHeight));
+    EXPECT_EQ(hasAuthorTurntableSourceExit(exact), !cell.captured);
+
+    if (cell.captured) {
+      EXPECT_TRUE(isAuthorTurntableCaptured(exact))
+          << "radius=" << exact.radius
+          << " radialVelocity=" << exact.radialVelocity
+          << " height=" << exact.height << " contacts=" << exact.lastContacts
+          << " maxRadius=" << exact.maxRadius;
+    } else {
+      EXPECT_TRUE(isAuthorTurntableEjected(exact))
+          << "radius=" << exact.radius
+          << " radialVelocity=" << exact.radialVelocity
+          << " height=" << exact.height << " contacts=" << exact.lastContacts
+          << " maxRadius=" << exact.maxRadius
+          << " fellThroughSupport=" << exact.fellThroughSupport;
+    }
+  }
+}
+
+//==============================================================================
+TEST(
+    ExactCoulombFbfPaperFixtures,
+    AuthorTurntableVerticalExitDoesNotCountAsEjection)
+{
+  TurntableRunResult fellThrough;
+  fellThrough.radius = 1.0;
+  fellThrough.height = -1.0;
+  fellThrough.lastContacts = 0u;
+  fellThrough.sourceExitObserved = true;
+  fellThrough.fellThroughSupport = true;
+  EXPECT_TRUE(hasAuthorTurntableSourceExit(fellThrough));
+  EXPECT_FALSE(isAuthorTurntableEjected(fellThrough));
+
+  auto radialExit = fellThrough;
+  radialExit.radius = fbf_author_turntable::kSupportRadius
+                      + fbf_author_turntable::kRiderHalfSize + 0.01;
+  radialExit.fellThroughSupport = false;
+  EXPECT_TRUE(isAuthorTurntableEjected(radialExit));
+
+  radialExit.lastContacts = 1u;
+  EXPECT_FALSE(isAuthorTurntableEjected(radialExit));
+}
+
+//==============================================================================
+TEST(
+    ExactCoulombFbfPaperFixtures,
+    TurntableContactLossAloneDoesNotEstablishEjection)
+{
+  TurntableRunResult contactLost;
+  contactLost.radius = 1.0;
+  contactLost.height = 0.1;
+  contactLost.lastContacts = 0u;
+  EXPECT_FALSE(isTurntableEjected(contactLost));
+
+  auto outward = contactLost;
+  outward.radius = 1.76;
+  EXPECT_TRUE(isTurntableEjected(outward));
+
+  auto fallen = contactLost;
+  fallen.height = -0.01;
+  EXPECT_TRUE(isTurntableEjected(fallen));
 }
 
 //==============================================================================
@@ -1908,6 +2836,41 @@ TEST(ExactCoulombFbfPaperFixtures, CardHouseAFramePrecursorStands)
 
   EXPECT_TRUE(boxed.finiteState);
   EXPECT_GT(boxed.lastContacts, 2u);
+}
+
+TEST(
+    ExactCoulombFbfPaperFixtures,
+    CardHouseReconstructionUsesNominalInterfaceOverlap)
+{
+  const Eigen::Vector3d size(
+      kCardHouseThickness, kCardHouseWidth, kCardHouseHeight);
+  const Eigen::Isometry3d left = createCardHouseAFrameTransform(0.0, 0.0, true);
+  const Eigen::Isometry3d right
+      = createCardHouseAFrameTransform(0.0, 0.0, false);
+
+  const auto horizontalHalfExtent = [&size](const Eigen::Matrix3d& rotation) {
+    return 0.5
+           * (std::abs(rotation(0, 0)) * size.x()
+              + std::abs(rotation(0, 1)) * size.y()
+              + std::abs(rotation(0, 2)) * size.z());
+  };
+  const double apexOverlap
+      = horizontalHalfExtent(left.linear())
+        + horizontalHalfExtent(right.linear())
+        - std::abs(right.translation().x() - left.translation().x());
+  EXPECT_NEAR(apexOverlap, kCardHouseInitialPenetration, 1e-12);
+
+  const double leftGroundOverlap
+      = computeCardHouseVerticalHalfExtent(left.linear())
+        - left.translation().z();
+  EXPECT_NEAR(leftGroundOverlap, kCardHouseInitialPenetration, 1e-12);
+
+  // Horizontal cards have their one-meter local height along world X. Two
+  // adjacent supports therefore meet at the same nominal overlap.
+  EXPECT_NEAR(
+      kCardHouseHeight - kCardHouseFrameSpacing,
+      kCardHouseInitialPenetration,
+      1e-12);
 }
 
 TEST(ExactCoulombFbfPaperFixtures, CardHouseFourLevelSceneBuilds)
@@ -1968,6 +2931,11 @@ TEST(ExactCoulombFbfPaperFixtures, CardHouseTenLevelSceneBuilds)
 
 TEST(ExactCoulombFbfPaperFixtures, CardHouseFourLevelOneStepReducedContactProbe)
 {
+  if (!areFbfPaperStressTestsEnabled()) {
+    GTEST_SKIP() << "Scientific stress fixture is opt-in; set "
+                 << kFbfPaperStressTestEnv << "=1 to run all stress fixtures.";
+  }
+
   const auto exact = runCardHouseFourLevelOneStep(
       true, kCardHouseReducedMaxContacts, kCardHouseReducedMaxContactsPerPair);
 
@@ -2084,6 +3052,11 @@ TEST(
     ExactCoulombFbfPaperFixtures,
     CardHouseFourLevelFullManifoldSplitImpulseSettleProbe)
 {
+  if (!areFbfPaperStressTestsEnabled()) {
+    GTEST_SKIP() << "Scientific stress fixture is opt-in; set "
+                 << kFbfPaperStressTestEnv << "=1 to run all stress fixtures.";
+  }
+
   // Multi-step full-natural-manifold settle regression. DART's ERP
   // position-correction bias in the velocity-phase right-hand side makes
   // settle steps 2+ unsolvable at the paper tolerance (measured fallbacks at
@@ -2184,9 +3157,8 @@ TEST(ExactCoulombFbfPaperFixtures, MasonryArch25SceneBuilds)
 
   EXPECT_NE(nullptr, exactSolver);
   EXPECT_EQ(archStones, kArchStoneCount);
-  // Author boundary condition: all stones are dynamic; only the ground
-  // plane (not counted above) is fixed.
-  EXPECT_EQ(dynamicStones, kArchStoneCount);
+  // Paper Fig. 7 pins the two springers; the other 23 stones are dynamic.
+  EXPECT_EQ(dynamicStones, kArchStoneCount - 2u);
   EXPECT_EQ(
       exactWorld->getConstraintSolver()->getCollisionOption().maxNumContacts,
       kArchReducedMaxContacts);
@@ -2266,7 +3238,7 @@ TEST(ExactCoulombFbfPaperFixtures, MasonryArch25ProjectileScaffoldRuns)
       "total_fbf_iterations", static_cast<int>(exact.totalFbfIterations));
 
   EXPECT_EQ(exact.cardCount, kArchStoneCount);
-  EXPECT_EQ(exact.projectileCount, 1u);
+  EXPECT_EQ(exact.projectileCount, kArchProjectileCount);
   EXPECT_TRUE(exact.finiteState);
   EXPECT_GT(exact.maxProjectileSpeed, 0.0);
   EXPECT_GT(exact.lastContacts, 0u);
@@ -2309,9 +3281,9 @@ TEST(ExactCoulombFbfPaperFixtures, MasonryArch101SceneBuilds)
 
   EXPECT_NE(nullptr, exactSolver);
   EXPECT_EQ(archStones, kArch101StoneCount);
-  // Author boundary condition: all stones are dynamic; only the ground
-  // plane (not counted above) is fixed.
-  EXPECT_EQ(dynamicStones, kArch101StoneCount);
+  // Fig. 8 describes the 101-stone case as the same setup, so its two
+  // springers are pinned and its other 99 stones are dynamic.
+  EXPECT_EQ(dynamicStones, kArch101StoneCount - 2u);
   EXPECT_EQ(
       exactWorld->getConstraintSolver()->getCollisionOption().maxNumContacts,
       kArch101ReducedMaxContacts);
@@ -2429,6 +3401,11 @@ TEST(ExactCoulombFbfPaperFixtures, MasonryArch25FullManifoldOneStepProbe)
 // step_size_scale=10, 120000 outer budget.
 TEST(ExactCoulombFbfPaperFixtures, MasonryArch101FullManifoldOneStepProbe)
 {
+  if (!areFbfPaperStressTestsEnabled()) {
+    GTEST_SKIP() << "Scientific stress fixture is opt-in; set "
+                 << kFbfPaperStressTestEnv << "=1 to run all stress fixtures.";
+  }
+
   const auto exact = runMasonryArch101OneStep(
       true, kArchFullManifoldMaxContacts, kArchFullManifoldMaxContactsPerPair);
 

@@ -88,6 +88,15 @@ inline CoulombConeResidual makeInvalidCoulombConeResidual()
   return residual;
 }
 
+/// Returns true when every scalar residual component is finite.
+inline bool isFiniteCoulombConeResidual(const CoulombConeResidual& residual)
+{
+  return std::isfinite(residual.primalFeasibility)
+         && std::isfinite(residual.dualFeasibility)
+         && std::isfinite(residual.complementarity)
+         && std::isfinite(residual.value);
+}
+
 /// Project a normal-first contact vector onto the Coulomb cone.
 ///
 /// The vector layout is `[normal, tangent_1, tangent_2]`, matching DART's

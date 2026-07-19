@@ -20,13 +20,31 @@ pixi run demos -- --verify-fbf-scene-docs
 pixi run demos -- --scene fbf_paper_incline
 pixi run demos -- --scene fbf_paper_backspin
 pixi run demos -- --scene fbf_paper_turntable
+pixi run demos -- --scene fbf_paper_turntable_mu_0_2_omega_2
+pixi run demos -- --scene fbf_paper_turntable_mu_0_2_omega_5
+pixi run demos -- --scene fbf_paper_turntable_mu_0_5_omega_5
 pixi run demos -- --scene fbf_paper_painleve
+pixi run demos -- --scene fbf_paper_painleve_mu_0_55
 pixi run demos -- --scene fbf_paper_card_aframe
 pixi run demos -- --scene fbf_paper_card_house_26
 pixi run demos -- --scene fbf_paper_card_house_10
+pixi run demos -- --scene fbf_paper_card_house_10_dynamic
 pixi run demos -- --scene fbf_paper_masonry_arch_25
 pixi run demos -- --scene fbf_paper_masonry_arch_101
 ```
+
+The generic turntable scene starts at `mu=.5`, `omega=2 rad/s` and keeps its
+interactive angular-speed slider. The three parameter-suffixed turntable scenes
+are fixed capture targets; together with the generic default they cover the
+paper's four parameter cells. Likewise, the generic Painleve proxy is the
+`mu=.5` cell and the suffixed scene fixes `mu=.55`.
+
+The unsuffixed ten-level card scene remains a static construction inspector.
+`fbf_paper_card_house_10_dynamic` is a separate 155-mobile-card exact-FBF
+adapter. Its 512-contact, eight-per-pair budget is already known to saturate in
+the boxed-LCP construction probe, so the dynamic scene is not full-natural-
+manifold or performance evidence. Accept a timed capture only when its sidecar
+reports exact-FBF solves with zero exact failures and zero boxed-LCP fallbacks.
 
 For a bounded off-screen GUI smoke of one scene, use the same app through the
 Pixi capture task. The final argument is the number of deterministic simulation
@@ -38,9 +56,9 @@ pixi run image-verdict /tmp/fbf_paper_backspin.png
 ```
 
 For a bounded capture of a scene state exposed through a GUI/key action, use
-the action-aware capture task. The 26-card FBF paper scene binds `p` to the
-reduced four-projectile launch scaffold, and the 25-stone arch scene binds `p`
-to its reduced crown-projectile scaffold:
+the action-aware capture task. The 26-card FBF paper scene binds `p` to a
+reconstructed vertical drop of four projectile cubes, and the 25-stone arch
+scene binds `p` to a reconstructed row of small cubes dropped over the crown:
 
 ```bash
 pixi run capture-action fbf_paper_card_house_26 p /tmp/fbf_card_house_projectiles.png 640 480 0

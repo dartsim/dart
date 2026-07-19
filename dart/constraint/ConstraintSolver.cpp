@@ -48,6 +48,7 @@
 #include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/DynamicJointConstraint.hpp"
+#include "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
 #include "dart/constraint/JointConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/LCPSolver.hpp"
@@ -214,6 +215,11 @@ bool isParallelSafeBuiltInBoxedSolver(const ConstBoxedLcpSolverPtr& solver)
 //==============================================================================
 bool canUseParallelBuiltInBoxedSolvers(const ConstraintSolver& solver)
 {
+  // Exact-Coulomb diagnostics, counters, and manifold warm starts are shared
+  // across group solves. Keep that solver serial without adding a
+  // release-branch virtual to ConstraintSolver's ABI.
+  if (dynamic_cast<const ExactCoulombFbfConstraintSolver*>(&solver) != nullptr)
+    return false;
   const auto* boxedSolver
       = dynamic_cast<const BoxedLcpConstraintSolver*>(&solver);
   if (boxedSolver == nullptr)
@@ -271,21 +277,26 @@ public:
   }
 
   template <typename Func>
-  void parallelFor(std::size_t count, std::size_t numThreads, Func&& func)
+  std::size_t parallelFor(
+      std::size_t count, std::size_t numThreads, Func&& func)
   {
     if (count == 0u)
-      return;
+      return 0u;
 
-    const std::size_t totalParticipants = std::min<std::size_t>(
+    const std::size_t requestedParticipants = std::min<std::size_t>(
         std::min<std::size_t>(numThreads, count), mWorkers.size() + 1u);
-    if (totalParticipants <= 1u) {
+    if (requestedParticipants <= 1u) {
       for (std::size_t i = 0; i < count; ++i)
         func(i);
-      return;
+      return 1u;
     }
 
     const std::size_t chunkSize
-        = (count + totalParticipants - 1u) / totalParticipants;
+        = (count + requestedParticipants - 1u) / requestedParticipants;
+    // Ceiling-sized chunks can leave the final requested participant with no
+    // indices (for example, five indices split four ways). Dispatch and report
+    // only participants whose chunks are nonempty.
+    const std::size_t totalParticipants = (count + chunkSize - 1u) / chunkSize;
     const std::size_t workerCount = totalParticipants - 1u;
     using Function = typename std::remove_reference<Func>::type;
 
@@ -321,6 +332,8 @@ public:
       mTaskInvoker = nullptr;
       mWorkerLimit = 1u;
     }
+
+    return totalParticipants;
   }
 
 private:
@@ -2821,6 +2834,35 @@ bool ConstraintSolver::canSolveConstrainedGroupsInParallel() const
   };
 
   return canSolveGroupsInParallel();
+}
+
+//==============================================================================
+std::size_t ConstraintSolver::parallelForConstraintWork(
+    std::size_t count, void* context, ConstraintParallelTask task)
+{
+  if (count == 0u)
+    return 0u;
+
+  if (task == nullptr) {
+    DART_ASSERT(false && "Null constraint parallel-work callback.");
+    return 0u;
+  }
+
+  auto runAt = [context, task](std::size_t index) {
+    task(context, index);
+  };
+  if (mConstraintThreadPool == nullptr || mNumSimulationThreads <= 1u) {
+    for (std::size_t i = 0u; i < count; ++i)
+      runAt(i);
+    return 1u;
+  }
+
+  // Exact-Coulomb constrained groups remain excluded from the outer parallel
+  // group loop, so an exact solver can use this pool internally without nested
+  // dispatch. Keep this bridge synchronous: callers rely on completion as the
+  // phase barrier before consuming callback output.
+  return mConstraintThreadPool->parallelFor(
+      count, mNumSimulationThreads, runAt);
 }
 
 //==============================================================================

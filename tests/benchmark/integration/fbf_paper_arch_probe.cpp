@@ -48,27 +48,26 @@
 //                        [use_matrix_free_delassus_operator=0]
 //                        [use_matrix_free_delassus_seed=0]
 
-#include <dart/collision/dart/DARTCollisionDetector.hpp>
-#include <dart/collision/CollisionResult.hpp>
+#include <dart/simulation/DeactivationOptions.hpp>
+#include <dart/simulation/World.hpp>
+
 #include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
+
+#include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
+
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
 #include <dart/dynamics/ShapeFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
+
 #include <dart/math/detail/MasonryArchGeometry.hpp>
-#include <dart/simulation/DeactivationOptions.hpp>
-#include <dart/simulation/World.hpp>
 
 #include <Eigen/Geometry>
 
 #include <algorithm>
-#include <cerrno>
 #include <chrono>
-#include <cmath>
-#include <cstddef>
-#include <cstdio>
-#include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -77,25 +76,27 @@
 #include <string>
 #include <vector>
 
+#include <cerrno>
+#include <cmath>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+
 namespace {
 
 constexpr double kDt = 1.0 / 60.0;
 constexpr double kGravity = 9.81;
-// Author-faithful masonry-arch friction coefficient: Rigid-IPC's
-// arch-{25,101}-stones.json both specify coefficient_friction = 0.5
-// uniformly (see docs/dev_tasks/fbf_exact_coulomb_friction/ PROVENANCE.txt
-// section 7). DART's other paper fixtures use 0.8; the ported arch keeps
-// the source's own coefficient for scientific fidelity.
-constexpr double kArchFriction = 0.5;
+// The paper's contact-rich arch experiments explicitly use mu=0.8. The
+// credited Rigid-IPC geometry scene uses 0.5, but that source value is not the
+// paper experiment's contact contract.
+constexpr double kArchFriction = 0.8;
 // Rigid-IPC's default body density ("plastic", src/io/read_rb_scene.cpp:68).
 constexpr double kArchDensity = 1000.0;
 constexpr std::size_t kArch25StoneCount = 25u;
 constexpr std::size_t kArch101StoneCount = 101u;
-// Along-arch (chord-length) scale applied to every stone's box, on top of
-// the author-faithful weighted-catenary geometry; a research probing knob
-// (formerly needed to force overlap under the old made-up circular-arc
-// model -- the ported author geometry needs no artificial overlap, so the
-// default is now 1.0, i.e. the unscaled author geometry).
+// Along-arch (chord-length) scale applied to every stone's oriented-box
+// approximation on the source-derived weighted-catenary centerline. This is a
+// research probing knob, not a literal taper or author-scene parameter.
 constexpr double kArchOverlapScaleDefault = 1.0;
 constexpr std::size_t kArch25ReducedMaxContacts = 48u;
 constexpr std::size_t kArch101ReducedMaxContacts = 38u;
@@ -211,8 +212,7 @@ const char* scenarioName(Scenario scenario)
 
 std::size_t scenarioStoneCount(Scenario scenario)
 {
-  return scenario == Scenario::Arch25 ? kArch25StoneCount
-                                      : kArch101StoneCount;
+  return scenario == Scenario::Arch25 ? kArch25StoneCount : kArch101StoneCount;
 }
 
 std::size_t scenarioDefaultMaxContacts(Scenario scenario)
@@ -229,7 +229,11 @@ const char* exactStatusName(
       return "not_run";
     case dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success:
       return "success";
-    case dart::constraint::ExactCoulombFbfConstraintSolverStatus::InvalidOptions:
+    case dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+        MaxIterationsAccepted:
+      return "max_iterations_accepted";
+    case dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+        InvalidOptions:
       return "invalid_options";
     case dart::constraint::ExactCoulombFbfConstraintSolverStatus::
         UnsupportedProblem:
@@ -399,13 +403,11 @@ bool parseScenarioToken(
     scenarios.push_back(Scenario::Arch101);
     return true;
   }
-  if (token == "arch25" || token == "25"
-      || token == "masonry_arch_25") {
+  if (token == "arch25" || token == "25" || token == "masonry_arch_25") {
     scenarios.push_back(Scenario::Arch25);
     return true;
   }
-  if (token == "arch101" || token == "101"
-      || token == "masonry_arch_101") {
+  if (token == "arch101" || token == "101" || token == "masonry_arch_101") {
     scenarios.push_back(Scenario::Arch101);
     return true;
   }
@@ -467,12 +469,13 @@ dart::constraint::ExactCoulombFbfConstraintSolverOptions makeFbfOptions(
 dart::dynamics::SkeletonPtr createMasonryArchGroundPlane()
 {
   auto skeleton = dart::dynamics::Skeleton::create("ground_plane");
-  auto body
-      = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>().second;
+  auto body = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>()
+                  .second;
   auto* shapeNode = body->createShapeNodeWith<
       dart::dynamics::CollisionAspect,
-      dart::dynamics::DynamicsAspect>(std::make_shared<dart::dynamics::PlaneShape>(
-      Eigen::Vector3d::UnitZ(), 0.0));
+      dart::dynamics::DynamicsAspect>(
+      std::make_shared<dart::dynamics::PlaneShape>(
+          Eigen::Vector3d::UnitZ(), 0.0));
   shapeNode->getDynamicsAspect()->setFrictionCoeff(kArchFriction);
   skeleton->setMobile(false);
   return skeleton;
@@ -483,10 +486,9 @@ dart::dynamics::SkeletonPtr createMasonryArchStone(
     const dart::math::detail::MasonryArchStoneBoxGeometry& geometry,
     const ProbeOptions& probeOptions)
 {
-  // `initialOverlapScale` is a research probing knob applied on top of the
-  // author-faithful geometry: it scales only the along-arch (chord-length)
-  // extent, letting a sweep force overlap/gap without distorting the
-  // cross-section tapering.
+  // `initialOverlapScale` changes only the along-arch extent of this oriented
+  // box. It probes overlap/gap without claiming a tapered voussoir cross
+  // section; literal wedges live in the separate collision-only audit.
   Eigen::Vector3d size = geometry.size;
   size.x() *= probeOptions.initialOverlapScale;
   const double mass = kArchDensity * size.x() * size.y() * size.z();
@@ -513,8 +515,7 @@ dart::dynamics::SkeletonPtr createMasonryArchStone(
   shapeNode->getDynamicsAspect()->setFrictionCoeff(kArchFriction);
   joint->setPositions(
       dart::dynamics::FreeJoint::convertToPositions(geometry.transform));
-  // All stones are fully dynamic; the source scene fixes only the ground
-  // plane (see PROVENANCE.txt section 7 in the geometry-port task notes).
+  // Mobility is assigned by the paper-scene builder below.
   return skeleton;
 }
 
@@ -536,7 +537,8 @@ std::shared_ptr<dart::simulation::World> createMasonryArchWorld(
   auto solver
       = std::make_unique<dart::constraint::ExactCoulombFbfConstraintSolver>(
           makeFbfOptions(probeOptions));
-  solver->setCollisionDetector(dart::collision::DARTCollisionDetector::create());
+  solver->setCollisionDetector(
+      dart::collision::DARTCollisionDetector::create());
   solver->setNumSimulationThreads(1u);
   world->setConstraintSolver(std::move(solver));
 
@@ -544,14 +546,16 @@ std::shared_ptr<dart::simulation::World> createMasonryArchWorld(
   collisionOption.maxNumContacts = maxContacts;
   collisionOption.maxNumContactsPerPair = probeOptions.maxContactsPerPair;
 
-  // Author boundary condition from the Rigid-IPC arch scenes: only the
-  // ground plane is fixed; every stone (including both springers) is
-  // dynamic.
+  // Paper Fig. 7 pins the 25-stone springers. Fig. 8 calls the 101-stone case
+  // the same setup, so both endpoints are pinned at either scale.
   world->addSkeleton(createMasonryArchGroundPlane());
   const auto stoneGeometry
       = dart::math::detail::generateMasonryArchStoneBoxes(stoneCount);
   for (std::size_t i = 0u; i < stoneCount; ++i) {
-    world->addSkeleton(createMasonryArchStone(i, stoneGeometry[i], probeOptions));
+    auto stone = createMasonryArchStone(i, stoneGeometry[i], probeOptions);
+    if (i == 0u || i + 1u == stoneCount)
+      stone->setMobile(false);
+    world->addSkeleton(stone);
   }
 
   return world;
@@ -676,12 +680,10 @@ ProbeResult runProbe(
   result.failedFbfStatus
       = fbfStatusName(solver->getLastFailedExactCoulombFbfStatus());
   result.failedFbfIterations = solver->getLastFailedExactCoulombIterations();
-  result.failedBestIteration
-      = solver->getLastFailedExactCoulombBestIteration();
+  result.failedBestIteration = solver->getLastFailedExactCoulombBestIteration();
   result.failedBestResidual = solver->getLastFailedExactCoulombBestResidual();
   result.failedStepSize = solver->getLastFailedExactCoulombStepSize();
-  result.failedSafeStepSize
-      = solver->getLastFailedExactCoulombSafeStepSize();
+  result.failedSafeStepSize = solver->getLastFailedExactCoulombSafeStepSize();
   result.failedCouplingVariationRatio
       = solver->getLastFailedExactCoulombCouplingVariationRatio();
   result.failedShrinkIterations
@@ -725,8 +727,8 @@ ProbeResult runProbe(
     result.failedResidualHistoryLastIteration = record.samples.back().iteration;
 
     if (record.samples.size() >= 2u) {
-      const double previous = record.samples[record.samples.size() - 2u]
-                                  .residual.value;
+      const double previous
+          = record.samples[record.samples.size() - 2u].residual.value;
       if (std::isfinite(previous) && previous > 0.0) {
         result.failedResidualHistoryTailRatio
             = result.failedResidualHistoryLast / previous;
@@ -781,9 +783,7 @@ void printHeader()
 }
 
 void printRow(
-    Scenario scenario,
-    std::size_t maxContacts,
-    const ProbeOptions& options)
+    Scenario scenario, std::size_t maxContacts, const ProbeOptions& options)
 {
   const ProbeResult result = runProbe(scenario, maxContacts, options);
   std::cout << std::setprecision(17) << scenarioName(scenario) << ','
@@ -838,9 +838,8 @@ void printRow(
             << result.failedWorstPrimalContact << ','
             << result.failedWorstDualContact << ','
             << result.failedWorstComplementarityContact << ','
-            << result.failedWorstPrimalPair << ','
-            << result.failedWorstDualPair << ','
-            << result.failedWorstComplementarityPair << ','
+            << result.failedWorstPrimalPair << ',' << result.failedWorstDualPair
+            << ',' << result.failedWorstComplementarityPair << ','
             << result.residualHistoryRecords << ','
             << result.residualHistoryRows << ','
             << result.failedResidualHistoryRows << ','

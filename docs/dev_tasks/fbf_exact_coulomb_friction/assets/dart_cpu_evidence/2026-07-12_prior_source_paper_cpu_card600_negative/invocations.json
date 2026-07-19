@@ -1,0 +1,53 @@
+[
+  {
+    "collision_frontend": "native",
+    "command": [
+      "/usr/bin/taskset",
+      "--cpu-list",
+      "4",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+      "card_house_26_settle_projectile_full",
+      "exact_fbf",
+      "1",
+      "600",
+      "nan",
+      "performance",
+      "default",
+      "default",
+      "1",
+      "paper_cpu",
+      "native",
+      "default"
+    ],
+    "complete_rows": false,
+    "cpu_affinity": {
+      "logical_cpu_count": 1,
+      "logical_cpu_topology": {
+        "4": {
+          "core_id": "8",
+          "physical_package_id": "0",
+          "thread_siblings_list": "4-5"
+        }
+      },
+      "logical_cpus": [
+        4
+      ],
+      "one_logical_per_physical_core": true,
+      "physical_core_count": 1,
+      "source": "explicit_taskset"
+    },
+    "cpu_list": "4",
+    "expected_rows": 600,
+    "paper_hardware_contract": "linux_x86_64_vs_paper_apple_silicon",
+    "repetition": 1,
+    "returncode": 1,
+    "rows": 89,
+    "scenario": "card_house_26_settle_projectile_full",
+    "stderr_file": "raw/card_house_26_settle_projectile_full-n600-t1-rep001.stderr.txt",
+    "stdout_file": "raw/card_house_26_settle_projectile_full-n600-t1-rep001.csv",
+    "steps": 600,
+    "threads": 1,
+    "timed_out": false,
+    "warmup": false
+  }
+]

@@ -168,6 +168,52 @@ def test_reproduce_command_records_custom_warmup():
     assert "--warmup-frames" not in default
 
 
+@pytest.mark.parametrize(
+    "prefix", ["../victim/x", "/tmp/escape", "nested/name", "nested\\name", ""]
+)
+def test_prefix_must_be_a_safe_single_basename(prefix):
+    with pytest.raises(ValueError, match="safe basename"):
+        agent_capture._validate_prefix(prefix)
+
+
+def test_prepare_owned_output_cannot_delete_outside_sentinel(tmp_path):
+    out_dir = tmp_path / "out"
+    outside = tmp_path / "victim"
+    outside.mkdir()
+    sentinel = outside / "turn0000.png"
+    sentinel.write_bytes(b"keep")
+
+    with pytest.raises(ValueError, match="safe basename"):
+        agent_capture._prepare_owned_output(out_dir, "../victim")
+
+    assert sentinel.read_bytes() == b"keep"
+
+
+def test_prepare_owned_output_invalidates_complete_owned_bundle(tmp_path):
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    for name in (
+        "capture_capture.json",
+        "capture_capture.json.tmp",
+        "capture_main.png",
+        "capture_turntable.mp4",
+        "capture_motion.mp4",
+    ):
+        (out_dir / name).write_bytes(b"stale")
+    for name in ("capture_turntable", "capture_motion"):
+        directory = out_dir / name
+        directory.mkdir()
+        (directory / "frame.png").write_bytes(b"stale")
+    unrelated = out_dir / "other_main.png"
+    unrelated.write_bytes(b"keep")
+
+    resolved = agent_capture._prepare_owned_output(out_dir, "capture")
+
+    assert resolved == out_dir.resolve()
+    assert unrelated.read_bytes() == b"keep"
+    assert sorted(path.name for path in out_dir.iterdir()) == ["other_main.png"]
+
+
 def test_failed_view_report_rejects_capture():
     views = [
         {

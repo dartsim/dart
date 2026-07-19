@@ -1,0 +1,1 @@
+literal-wedge crown-impact v1 failed a preregistered acceptance gate; preserve the trace as a scientific negative

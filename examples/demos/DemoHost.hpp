@@ -143,6 +143,32 @@ struct LogEntry
 };
 
 //==============================================================================
+/// One screenshot requested at a completed deterministic simulation step.
+struct HeadlessShotSchedule
+{
+  std::size_t step = 0u;
+  std::string path;
+};
+
+//==============================================================================
+/// One scene key action requested at a completed deterministic simulation step.
+struct HeadlessActionSchedule
+{
+  std::size_t step = 0u;
+  int key = 0;
+};
+
+//==============================================================================
+/// Deterministic multi-shot/action schedule for one headless world run.
+struct HeadlessTimeline
+{
+  std::vector<HeadlessShotSchedule> shots;
+  std::vector<HeadlessActionSchedule> actions;
+  std::string sidecarPath;
+  std::string runtimeCommand;
+};
+
+//==============================================================================
 /// Owns the single ImGuiViewer window, the scene registry, and the safe
 /// runtime scene-switching machinery described in examples/demos/README.md.
 /// Persistent host chrome (window, theme, panel layout) survives scene
@@ -190,6 +216,17 @@ public:
   int runHeadlessShot(
       const std::string& shotPath,
       int steps,
+      const std::string& sceneId,
+      int width,
+      int height);
+
+  /// Runs one deterministic headless world timeline. At each completed step,
+  /// all requested shots are captured first, then all actions scheduled for
+  /// that step are invoked. Step zero is the freshly installed scene. The
+  /// optional JSON sidecar records ordered events and solver diagnostics.
+  int runHeadlessTimeline(
+      const HeadlessTimeline& timeline,
+      int totalSteps,
       const std::string& sceneId,
       int width,
       int height);
@@ -284,6 +321,13 @@ private:
 
   void ensureViewerConfigured();
   bool prepareOffscreenContext(int width, int height, const CameraHome& home);
+  bool prepareHeadlessRun(
+      const std::string& sceneId,
+      int width,
+      int height,
+      CameraHome& home,
+      bool& sceneFailed);
+  bool captureHeadlessShot(const std::string& shotPath, const CameraHome& home);
 
   void renderToolbar();
   void renderNavigator();
@@ -295,7 +339,9 @@ private:
   void renderLogSection(float height);
   void renderViewMenu();
   void renderRuntimeControls();
-  void invokeKeyAction(KeyAction& action);
+  KeyAction* findKeyAction(int key);
+  bool invokeKeyAction(KeyAction& action);
+  bool invokeHeadlessActionKey(int key);
   void requestScenePanelTab(ScenePanelTab tab);
   void applyShadowState();
   void fitCameraToWorld();
@@ -314,6 +360,7 @@ private:
   std::vector<KeyAction> mCurrentKeyActions;
   std::optional<CameraHome> mCurrentCameraHome;
   ScenePanelDocumentation mCurrentSceneDocumentation;
+  std::function<std::string()> mCurrentPhysicsContractProvider;
   std::vector<std::function<void()>> mExtraTeardowns;
 
   std::string mCurrentSceneId;

@@ -1,0 +1,1283 @@
+{
+  "actual_simulator": true,
+  "aggregate_count_projection_equivalent": true,
+  "aggregate_counts_only": true,
+  "approved_source_golden": false,
+  "approved_source_golden_diff": false,
+  "artifact_index": {
+    "artifact_count": 21,
+    "excluded": [
+      "artifact-index.json",
+      "metadata.json"
+    ],
+    "path": "artifact-index.json",
+    "sha256": "b758bd28965bf9a96be7668c0dbb738b72c1493d83f195a3e726ae891f8f6e85"
+  },
+  "artifact_valid": true,
+  "automated_semantic_outcome_validated": false,
+  "capture_provenance": {
+    "argv": [
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/bin/python3.14",
+      "/home/js/dev/dartsim/dart/task_6/scripts/run_fbf_visual_evidence.py",
+      "run",
+      "--scenario",
+      "incline",
+      "--demo",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+      "--output-root",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1",
+      "--ffmpeg",
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+      "--ffprobe",
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffprobe",
+      "--python",
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/bin/python3.14",
+      "--out",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1/run-summary.json"
+    ],
+    "binary_source_bindings_after": {
+      "demo_source_binding": {
+        "binary_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+        "binary_sha256": "d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4",
+        "implementation_source_path": "/home/js/dev/dartsim/dart/task_6/examples/demos/scenes/FbfPaperFrictionScene.cpp",
+        "implementation_source_sha256": "84fd1330a13d548760e537f9734790ab1b5c91fcda3e446bf76b9b36f3e1aa99",
+        "query_argv": [
+          "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+          "--fbf-author-turntable-contract",
+          "fbf_author_turntable_mu_0_2_omega_2"
+        ],
+        "query_payload_sha256": "369fac2c554fb1401ae99d761ea4f0cd170d2aa4efaf22122968eb5f45306eac",
+        "validated_binary_binding": {
+          "implementation_source_sha256": "84fd1330a13d548760e537f9734790ab1b5c91fcda3e446bf76b9b36f3e1aa99",
+          "role": "dart_demos"
+        }
+      },
+      "trace_source_binding": {
+        "binary_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+        "binary_sha256": "0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff",
+        "implementation_source_path": "/home/js/dev/dartsim/dart/task_6/tests/benchmark/integration/fbf_paper_trace.cpp",
+        "implementation_source_sha256": "b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76",
+        "query_argv": [
+          "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+          "--author-turntable-contract",
+          "turntable_author_mu_0_2_omega_2",
+          "dart_best"
+        ],
+        "query_payload_sha256": "a91c4bed1ca348615833abe46039b694b9ff4d3401f18029a799ae702ba3a422",
+        "validated_binary_binding": {
+          "implementation_source_sha256": "b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76",
+          "role": "fbf_paper_trace"
+        }
+      }
+    },
+    "binary_source_bindings_before": {
+      "demo_source_binding": {
+        "binary_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+        "binary_sha256": "d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4",
+        "implementation_source_path": "/home/js/dev/dartsim/dart/task_6/examples/demos/scenes/FbfPaperFrictionScene.cpp",
+        "implementation_source_sha256": "84fd1330a13d548760e537f9734790ab1b5c91fcda3e446bf76b9b36f3e1aa99",
+        "query_argv": [
+          "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+          "--fbf-author-turntable-contract",
+          "fbf_author_turntable_mu_0_2_omega_2"
+        ],
+        "query_payload_sha256": "369fac2c554fb1401ae99d761ea4f0cd170d2aa4efaf22122968eb5f45306eac",
+        "validated_binary_binding": {
+          "implementation_source_sha256": "84fd1330a13d548760e537f9734790ab1b5c91fcda3e446bf76b9b36f3e1aa99",
+          "role": "dart_demos"
+        }
+      },
+      "trace_source_binding": {
+        "binary_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+        "binary_sha256": "0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff",
+        "implementation_source_path": "/home/js/dev/dartsim/dart/task_6/tests/benchmark/integration/fbf_paper_trace.cpp",
+        "implementation_source_sha256": "b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76",
+        "query_argv": [
+          "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+          "--author-turntable-contract",
+          "turntable_author_mu_0_2_omega_2",
+          "dart_best"
+        ],
+        "query_payload_sha256": "a91c4bed1ca348615833abe46039b694b9ff4d3401f18029a799ae702ba3a422",
+        "validated_binary_binding": {
+          "implementation_source_sha256": "b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76",
+          "role": "fbf_paper_trace"
+        }
+      }
+    },
+    "durable_stills": [
+      {
+        "path": "incline/stills/step_000000.png",
+        "run_summary_frame_sha256": "cd56403cf7fc686357096aa998b7e496d1bd54cab88bf128cb4752a262dfb65a",
+        "sha256": "cd56403cf7fc686357096aa998b7e496d1bd54cab88bf128cb4752a262dfb65a",
+        "source_frame_path": "incline/frames/step_000000.png",
+        "step": 0,
+        "timeline_frame_sha256": "cd56403cf7fc686357096aa998b7e496d1bd54cab88bf128cb4752a262dfb65a"
+      },
+      {
+        "path": "incline/stills/step_000030.png",
+        "run_summary_frame_sha256": "e298e0553c2ea8b72d13357ad92796a4e9cca43e690276ac1ce1c18222c00d63",
+        "sha256": "e298e0553c2ea8b72d13357ad92796a4e9cca43e690276ac1ce1c18222c00d63",
+        "source_frame_path": "incline/frames/step_000030.png",
+        "step": 30,
+        "timeline_frame_sha256": "e298e0553c2ea8b72d13357ad92796a4e9cca43e690276ac1ce1c18222c00d63"
+      },
+      {
+        "path": "incline/stills/step_000060.png",
+        "run_summary_frame_sha256": "2cc2bc20cc917f984f333150513be0c1f92e9d6e72ed6ad54eaf3365af3200c4",
+        "sha256": "2cc2bc20cc917f984f333150513be0c1f92e9d6e72ed6ad54eaf3365af3200c4",
+        "source_frame_path": "incline/frames/step_000060.png",
+        "step": 60,
+        "timeline_frame_sha256": "2cc2bc20cc917f984f333150513be0c1f92e9d6e72ed6ad54eaf3365af3200c4"
+      },
+      {
+        "path": "incline/stills/step_000090.png",
+        "run_summary_frame_sha256": "c40b16f3f56a624713fdd32747ebabfda236abaf613c5cf9452b57eedb07dce0",
+        "sha256": "c40b16f3f56a624713fdd32747ebabfda236abaf613c5cf9452b57eedb07dce0",
+        "source_frame_path": "incline/frames/step_000090.png",
+        "step": 90,
+        "timeline_frame_sha256": "c40b16f3f56a624713fdd32747ebabfda236abaf613c5cf9452b57eedb07dce0"
+      },
+      {
+        "path": "incline/stills/step_000120.png",
+        "run_summary_frame_sha256": "c1e0a2db75a6d47c9621af04c43dc9e3685fb6c81c82560a3a509f3ffdb50452",
+        "sha256": "c1e0a2db75a6d47c9621af04c43dc9e3685fb6c81c82560a3a509f3ffdb50452",
+        "source_frame_path": "incline/frames/step_000120.png",
+        "step": 120,
+        "timeline_frame_sha256": "c1e0a2db75a6d47c9621af04c43dc9e3685fb6c81c82560a3a509f3ffdb50452"
+      }
+    ],
+    "pruned_staging": {
+      "artifact_count": 70,
+      "artifacts": [
+        {
+          "bytes": 0,
+          "path": "capture.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "bytes": 232077,
+          "path": "capture.stdout.txt",
+          "sha256": "8c29622cd1b779ba49565c56b534c88fe392c090cec69c2f98d6bc56e25a6844"
+        },
+        {
+          "bytes": 35333,
+          "path": "incline/frames/step_000000.png",
+          "sha256": "cd56403cf7fc686357096aa998b7e496d1bd54cab88bf128cb4752a262dfb65a"
+        },
+        {
+          "bytes": 35827,
+          "path": "incline/frames/step_000002.png",
+          "sha256": "383dd620dc237702a8408eac8b56a0d2bef8591c26838e90dbc5df9bcf13aa92"
+        },
+        {
+          "bytes": 35700,
+          "path": "incline/frames/step_000004.png",
+          "sha256": "cbcdf425b090164706f29d8725e50c1dfc5cd4079527aa3e8ba26d70555516df"
+        },
+        {
+          "bytes": 35798,
+          "path": "incline/frames/step_000006.png",
+          "sha256": "2d156cc26eecf4dbff084e05d5c258192ce36cd36687558269a7ff32cd324e73"
+        },
+        {
+          "bytes": 35766,
+          "path": "incline/frames/step_000008.png",
+          "sha256": "acd83e574adf9af33f5e43ec5a2723481f2690004d65fed93a1cb82c053b55ad"
+        },
+        {
+          "bytes": 35728,
+          "path": "incline/frames/step_000010.png",
+          "sha256": "4d1c0210cc33916e3518042bae8503cfbc561bd00749e22bbeae67145e1f3ef9"
+        },
+        {
+          "bytes": 35826,
+          "path": "incline/frames/step_000012.png",
+          "sha256": "95e915a72ea3e32c17d9ac181853b61dc1ddb853b9e213b70a795c5026cc5f44"
+        },
+        {
+          "bytes": 35859,
+          "path": "incline/frames/step_000014.png",
+          "sha256": "11c9e5427c538216b73bb3748939d839a41c4b2efc68c741c1b7031fe443d1ba"
+        },
+        {
+          "bytes": 35775,
+          "path": "incline/frames/step_000016.png",
+          "sha256": "5e9786eaadfb84e933d0f69ee991b48cb639b3d4859164ac1a781f426b6a027d"
+        },
+        {
+          "bytes": 35730,
+          "path": "incline/frames/step_000018.png",
+          "sha256": "2c6da5a86b505b9143efbc375a7252b519bc41f6fd5c67ed952cada198d03cd8"
+        },
+        {
+          "bytes": 35936,
+          "path": "incline/frames/step_000020.png",
+          "sha256": "f0a05285903547ab52c4e99a036b0fb347e157b447049a8a246d246ab7f382d8"
+        },
+        {
+          "bytes": 35935,
+          "path": "incline/frames/step_000022.png",
+          "sha256": "fca079b9c6acf991075e68f2f4c21ebc60d7cdcb3f45f09947d857a7e821af1b"
+        },
+        {
+          "bytes": 36020,
+          "path": "incline/frames/step_000024.png",
+          "sha256": "5f426226fc81702f2a21f3efdadf6fc8e43c70c5f10a5c4eb7b3eb0a809af67b"
+        },
+        {
+          "bytes": 36102,
+          "path": "incline/frames/step_000026.png",
+          "sha256": "7c8ced32b94a60f5f667aa5bb4eb72ee802fe1caca96602e0f796438a5ddcf9a"
+        },
+        {
+          "bytes": 36010,
+          "path": "incline/frames/step_000028.png",
+          "sha256": "d1b99b752839c245bacf7891c46d047a7b8b35601da481333bda7a431d7c50f6"
+        },
+        {
+          "bytes": 35928,
+          "path": "incline/frames/step_000030.png",
+          "sha256": "e298e0553c2ea8b72d13357ad92796a4e9cca43e690276ac1ce1c18222c00d63"
+        },
+        {
+          "bytes": 35964,
+          "path": "incline/frames/step_000032.png",
+          "sha256": "b8db6373324d2c764f027eaebc545de12a0864c0aff2626acb5b3801ba3c9774"
+        },
+        {
+          "bytes": 36163,
+          "path": "incline/frames/step_000034.png",
+          "sha256": "a3369a86086691e14bdbd165d9017bf32a3322ecc709849ab7b39744089794a1"
+        },
+        {
+          "bytes": 36159,
+          "path": "incline/frames/step_000036.png",
+          "sha256": "d22b314f81fd77081fb99e4a54fe8c72411ec9deadb545cae6139e895717e553"
+        },
+        {
+          "bytes": 36183,
+          "path": "incline/frames/step_000038.png",
+          "sha256": "119c312049e538f97b6d82115a73548723e125544fa30f42870a35d7435e3511"
+        },
+        {
+          "bytes": 36184,
+          "path": "incline/frames/step_000040.png",
+          "sha256": "e634651095b85af9b7846c94e941de090981c6aa46990e72ba6527b08e473cb3"
+        },
+        {
+          "bytes": 36359,
+          "path": "incline/frames/step_000042.png",
+          "sha256": "2d6be90f6410b95ee4d615e1c5adbf30e400c443dcab1bfe806296f36bacccf1"
+        },
+        {
+          "bytes": 36373,
+          "path": "incline/frames/step_000044.png",
+          "sha256": "616263f79ff1483a0ab52de3d4cf1f482f21bac591a4f62f0088f1b695549caa"
+        },
+        {
+          "bytes": 36415,
+          "path": "incline/frames/step_000046.png",
+          "sha256": "671c466f72376ed7ed5fee8fd39cfb425cc1ac52f933108a357488e646fddbd8"
+        },
+        {
+          "bytes": 36379,
+          "path": "incline/frames/step_000048.png",
+          "sha256": "d4788bf3364f4c13006a4a9b8e7b8a8feb8b843c27d561291bc07eaef8892836"
+        },
+        {
+          "bytes": 36413,
+          "path": "incline/frames/step_000050.png",
+          "sha256": "684f8bdf8ae0e0f3cc63d1d93747be49b7dfc831f26c0b147a75ac3baf8e1266"
+        },
+        {
+          "bytes": 36370,
+          "path": "incline/frames/step_000052.png",
+          "sha256": "1701eed9837d4c77d2dd53839e8ef615fced3cd9111342eb08fdc52b9cd1ee4e"
+        },
+        {
+          "bytes": 36374,
+          "path": "incline/frames/step_000054.png",
+          "sha256": "00585af93a9ef32e2e723f208458c34e0c96ac846f1251b1d9d19b34a3f6e85f"
+        },
+        {
+          "bytes": 36380,
+          "path": "incline/frames/step_000056.png",
+          "sha256": "67ab10eac91c380a2af7b94c3649b91e9494466c081a2cb407d7234357c73a01"
+        },
+        {
+          "bytes": 36453,
+          "path": "incline/frames/step_000058.png",
+          "sha256": "6e4f4bd6b362a911147b3d472a76c8003293ad190c89cfdc2ee92ed88994e089"
+        },
+        {
+          "bytes": 36437,
+          "path": "incline/frames/step_000060.png",
+          "sha256": "2cc2bc20cc917f984f333150513be0c1f92e9d6e72ed6ad54eaf3365af3200c4"
+        },
+        {
+          "bytes": 36404,
+          "path": "incline/frames/step_000062.png",
+          "sha256": "2de65c885d55d621dc7a36f62856b83a1d73ab14bc053248cd6becca64c1547d"
+        },
+        {
+          "bytes": 36434,
+          "path": "incline/frames/step_000064.png",
+          "sha256": "5ab6d60df0e2136c77e738d595836fdd8cbe4315b6553befe4297e0bc1470eb8"
+        },
+        {
+          "bytes": 36431,
+          "path": "incline/frames/step_000066.png",
+          "sha256": "c16d023865c663cff33eeb637cc23b7c44cb1f279a1527ad42614a43997c08ce"
+        },
+        {
+          "bytes": 36407,
+          "path": "incline/frames/step_000068.png",
+          "sha256": "d4a84fbdbdb21be688ec952e685544d8e65dd3d134f76bc305e8ab015d3840b7"
+        },
+        {
+          "bytes": 36396,
+          "path": "incline/frames/step_000070.png",
+          "sha256": "30dcc708e8de0c5b2e4fe0560891eba0b886b29d11cb6018457c9bcdc19199b9"
+        },
+        {
+          "bytes": 36499,
+          "path": "incline/frames/step_000072.png",
+          "sha256": "0ef75a1dda9247795dfc89c5a4967a2ec351ec8bd6157693cb4cd602e154b447"
+        },
+        {
+          "bytes": 36571,
+          "path": "incline/frames/step_000074.png",
+          "sha256": "373ff73e3485de0f59ee7f5c4982426892b2d22f598d6e531da27a2b37052f6b"
+        },
+        {
+          "bytes": 36453,
+          "path": "incline/frames/step_000076.png",
+          "sha256": "a5009e1129e14b536bdd740936613205869d0738331fe1ce6b53e3f985f4aadf"
+        },
+        {
+          "bytes": 36619,
+          "path": "incline/frames/step_000078.png",
+          "sha256": "63beb58f9a542c47d5d035400ab66daaa7339098722a861882c426df5eb90088"
+        },
+        {
+          "bytes": 36509,
+          "path": "incline/frames/step_000080.png",
+          "sha256": "90dd1fcc3dfae7360dfbc05db81ce9e9b2ccbf1a5736876aa0ac22764178b086"
+        },
+        {
+          "bytes": 36542,
+          "path": "incline/frames/step_000082.png",
+          "sha256": "b3d888125dbf4635ee6ddbdb1ff11e5306482738e585e4d6858925227bdf6740"
+        },
+        {
+          "bytes": 35653,
+          "path": "incline/frames/step_000084.png",
+          "sha256": "b9289501c950cdcf58cc7eb28c9b7f9fdc9781105fd267e4fd2f6317554bda5f"
+        },
+        {
+          "bytes": 35605,
+          "path": "incline/frames/step_000086.png",
+          "sha256": "ce3a6d0a811135acae87fe75e7a816e0e60b586d3082aa54ff1b826be61730a0"
+        },
+        {
+          "bytes": 35706,
+          "path": "incline/frames/step_000088.png",
+          "sha256": "c82518c972b7709b2bf041d53356fd8caa15f3f2d8773cc2d2403b485ec20985"
+        },
+        {
+          "bytes": 35643,
+          "path": "incline/frames/step_000090.png",
+          "sha256": "c40b16f3f56a624713fdd32747ebabfda236abaf613c5cf9452b57eedb07dce0"
+        },
+        {
+          "bytes": 35668,
+          "path": "incline/frames/step_000092.png",
+          "sha256": "24b7b240e3580e62a42be331fb13b4a70ac4aa16cd2cefd31b53316e97c15e36"
+        },
+        {
+          "bytes": 35570,
+          "path": "incline/frames/step_000094.png",
+          "sha256": "52f52aa7e7128c0c23bcf34b1c2403d8740e8f6a4ea391edc120f729e79f0f44"
+        },
+        {
+          "bytes": 35471,
+          "path": "incline/frames/step_000096.png",
+          "sha256": "e395a18cec3979c6cb458e11ab7c9a5e72d369796d727114fc23bfdf0d669f5f"
+        },
+        {
+          "bytes": 35518,
+          "path": "incline/frames/step_000098.png",
+          "sha256": "55dc3df19d6ec0eb0ee142c392d150a29ff1f52db51b54abaebc13fae07cc45d"
+        },
+        {
+          "bytes": 35537,
+          "path": "incline/frames/step_000100.png",
+          "sha256": "fc98e932427a85662828fd7d9853fa1657ee4e1355e03c5f565c8f7ea218a348"
+        },
+        {
+          "bytes": 35432,
+          "path": "incline/frames/step_000102.png",
+          "sha256": "cf0b0c912ff6e0d094443da2097925782879864fbb8285b68cccfdebd6f42d05"
+        },
+        {
+          "bytes": 35601,
+          "path": "incline/frames/step_000104.png",
+          "sha256": "f6ae58a07bcb54d676b417993ef1862582962dd6091137620dbcb5ce2e45e6f8"
+        },
+        {
+          "bytes": 35546,
+          "path": "incline/frames/step_000106.png",
+          "sha256": "7f5e91ecb65f3dd9d1fb2347d5c5f2403a568e2b3d5d2adeb8cce9b8a30eee42"
+        },
+        {
+          "bytes": 35477,
+          "path": "incline/frames/step_000108.png",
+          "sha256": "c54304540e3ea0c9f316726358b6e2485ce78f73ef76eefec3e9acdecb46309a"
+        },
+        {
+          "bytes": 35636,
+          "path": "incline/frames/step_000110.png",
+          "sha256": "dd950f4dc3898ba27c4c5c743e1a7995feb757708cfb512e607d2145e19d52f5"
+        },
+        {
+          "bytes": 35288,
+          "path": "incline/frames/step_000112.png",
+          "sha256": "d0943103509e4df82233ce34d5af5af8b1252b3de8ad5dc44864cf84ec37fa3e"
+        },
+        {
+          "bytes": 35217,
+          "path": "incline/frames/step_000114.png",
+          "sha256": "b578982093a8f3e47dcbd93cb846631666bdc1fe1cba9435088e40a5226ad263"
+        },
+        {
+          "bytes": 35246,
+          "path": "incline/frames/step_000116.png",
+          "sha256": "edf9b66594907da0e24b0807621444ea70f1ca565f03898f6e335fb1d575990e"
+        },
+        {
+          "bytes": 35202,
+          "path": "incline/frames/step_000118.png",
+          "sha256": "e2ebd64772ed86702cc9235f72d92258e7e563a1a3a88f3da4484321e5f63f11"
+        },
+        {
+          "bytes": 35113,
+          "path": "incline/frames/step_000120.png",
+          "sha256": "c1e0a2db75a6d47c9621af04c43dc9e3685fb6c81c82560a3a509f3ffdb50452"
+        },
+        {
+          "bytes": 10137,
+          "path": "incline/panel_frames/step_000000.png",
+          "sha256": "0c3d2d276a41e8a40446d9e49894f1bbfe28677abb28864bd77f21ffdb22bffb"
+        },
+        {
+          "bytes": 10240,
+          "path": "incline/panel_frames/step_000030.png",
+          "sha256": "d96ee0f0424d04a4b3dbb024ae16aed0b412a94c605fdfe8a296a3ecafc3bb64"
+        },
+        {
+          "bytes": 10709,
+          "path": "incline/panel_frames/step_000060.png",
+          "sha256": "d4731a651e6524e481f9cdcbcb003372304f3bde5784f74310893c741fc34b90"
+        },
+        {
+          "bytes": 9911,
+          "path": "incline/panel_frames/step_000090.png",
+          "sha256": "6d563a4e4fb2485a1541893275891a131a974e9cf60b78cb2f6859a3d6b0927d"
+        },
+        {
+          "bytes": 9568,
+          "path": "incline/panel_frames/step_000120.png",
+          "sha256": "742beff642c2bc394c3a8543871f0f50a7ecf3cfe814cdd998af1730ab856878"
+        },
+        {
+          "bytes": 3651,
+          "path": "incline/video_frames.ffconcat",
+          "sha256": "db31ef1ad435b692e43bf454a0d28501f4887cde85f49adeccb8e8b3aa214181"
+        },
+        {
+          "bytes": 0,
+          "path": "verification.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "disposition": "pruned_before_seal",
+      "schema_version": "dart.fbf_incline_pruned_staging/v1"
+    },
+    "returncode": 0,
+    "run_summary_path": "run-summary.json",
+    "run_summary_sha256": "cfed42cb3b09ab8559d84a1dae4041a26d2e0937374787f34193c8363795b5d1",
+    "run_summary_validated": true,
+    "runtime_inputs_after": {
+      "demo_binary": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+        "sha256": "d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4"
+      },
+      "demo_dependency_examples__demos__libdartDemosWamIk.so": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/examples/demos/libdartDemosWamIk.so",
+        "sha256": "60dd469f1c693f9a429fec9a1cbe88509e945fd9554bcd3308d9377b8a4fe11d"
+      },
+      "demo_dependency_lib__libdart-collision-bullet.so.6.19.3": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-collision-bullet.so.6.19.3",
+        "sha256": "4052072c83cc34ea5cfcbdb2f4d01d4b2cb9e9af30f3e940e90d22a3d0a70700"
+      },
+      "demo_dependency_lib__libdart-collision-ode.so.6.19.3": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-collision-ode.so.6.19.3",
+        "sha256": "afbc7dde0e4688e9f3a5765fb186ebfcd0003b4c45cde9b686934f32cac91b94"
+      },
+      "demo_dependency_lib__libdart-external-imgui.so.6.19.3": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-external-imgui.so.6.19.3",
+        "sha256": "31f13316b22cf0016ccbb13f191d58d8de1fe8c73f4d7fcc7af34b26d1dac186"
+      },
+      "demo_dependency_lib__libdart-gui-osg.so.6.19.3": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-gui-osg.so.6.19.3",
+        "sha256": "9c838353c4c698103e5055921bc236b32c28d02feb0d58a4938325f92a344025"
+      },
+      "demo_dependency_lib__libdart-utils-urdf.so.6.19.3": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-utils-urdf.so.6.19.3",
+        "sha256": "ae96a006abc78cd4d44fe7d70bf9669bdcc9a5bae77653e5b8296e720df55361"
+      },
+      "demo_dependency_lib__libdart-utils.so.6.19.3": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-utils.so.6.19.3",
+        "sha256": "3d980585e25e36acb8dbb0b64381d40747a7036d1fbb2b6e09b4a4d86fdf95b9"
+      },
+      "demo_dependency_lib__libdart.so.6.19.3": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19.3",
+        "sha256": "8fae2320858e49fdda309d89df8cb1158c1cc5dc11d345e14f5adca0ff63cf3d"
+      },
+      "demo_host_header": {
+        "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/DemoHost.hpp",
+        "sha256": "d1cd56b5951cad6745cdac97e61f3509401c9085e4caa13aca326829d566cd4a"
+      },
+      "demo_host_source": {
+        "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/DemoHost.cpp",
+        "sha256": "53b100cc5d204ede3b681417664e5c1190e6031ffe1aa945c42e562b19f3abfe"
+      },
+      "demo_source": {
+        "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/scenes/FbfPaperFrictionScene.cpp",
+        "sha256": "84fd1330a13d548760e537f9734790ab1b5c91fcda3e446bf76b9b36f3e1aa99"
+      },
+      "ffmpeg_binary": {
+        "path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+        "sha256": "c94d28bd8be3ecad11c2c00a136b585c7a413273e5a5804766c98e7e3200c17e"
+      },
+      "ffprobe_binary": {
+        "path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffprobe",
+        "sha256": "585d52f16c12507e660a541ee5e0e1a0fc7a872744fcf0f5acde2a6134a96951"
+      },
+      "image_compose": {
+        "path": "/home/js/dev/dartsim/dart/task_6/scripts/image_compose.py",
+        "sha256": "f69bcea840d696f2c38528b0532b20c09e843160046eb7f5785e4ea0e6b71c3f"
+      },
+      "image_tools": {
+        "path": "/home/js/dev/dartsim/dart/task_6/scripts/_image_tools.py",
+        "sha256": "1962f1f2676c4b5a24c51e03c130ea17574d06b8fe110215c6bf14a7919623c6"
+      },
+      "image_verdict": {
+        "path": "/home/js/dev/dartsim/dart/task_6/scripts/image_verdict.py",
+        "sha256": "fcc6409dc29003506f3a8651ce1120131cb577abe585b9c372e4e044d19bdbee"
+      },
+      "python_binary": {
+        "path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/bin/python3.14",
+        "sha256": "3d977c9d9622153211ad90a4b1e99421c613d3dc238265fab004eb136085e424"
+      },
+      "registry_source": {
+        "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/Registry.cpp",
+        "sha256": "089985037502abf31628c98d59ea4d53d518b1d6acb01fc4d7564742ddfcb125"
+      },
+      "scenes_header": {
+        "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/scenes/Scenes.hpp",
+        "sha256": "fb0400b82379ec7e670e7ed7ee5ae9155cb676d4d78fe908f5f0a450869a7fe0"
+      },
+      "visual_runner": {
+        "path": "/home/js/dev/dartsim/dart/task_6/scripts/run_fbf_visual_evidence.py",
+        "sha256": "d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432"
+      }
+    },
+    "runtime_inputs_before": {
+      "demo_binary": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+        "sha256": "d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4"
+      },
+      "demo_dependency_examples__demos__libdartDemosWamIk.so": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/examples/demos/libdartDemosWamIk.so",
+        "sha256": "60dd469f1c693f9a429fec9a1cbe88509e945fd9554bcd3308d9377b8a4fe11d"
+      },
+      "demo_dependency_lib__libdart-collision-bullet.so.6.19.3": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-collision-bullet.so.6.19.3",
+        "sha256": "4052072c83cc34ea5cfcbdb2f4d01d4b2cb9e9af30f3e940e90d22a3d0a70700"
+      },
+      "demo_dependency_lib__libdart-collision-ode.so.6.19.3": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-collision-ode.so.6.19.3",
+        "sha256": "afbc7dde0e4688e9f3a5765fb186ebfcd0003b4c45cde9b686934f32cac91b94"
+      },
+      "demo_dependency_lib__libdart-external-imgui.so.6.19.3": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-external-imgui.so.6.19.3",
+        "sha256": "31f13316b22cf0016ccbb13f191d58d8de1fe8c73f4d7fcc7af34b26d1dac186"
+      },
+      "demo_dependency_lib__libdart-gui-osg.so.6.19.3": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-gui-osg.so.6.19.3",
+        "sha256": "9c838353c4c698103e5055921bc236b32c28d02feb0d58a4938325f92a344025"
+      },
+      "demo_dependency_lib__libdart-utils-urdf.so.6.19.3": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-utils-urdf.so.6.19.3",
+        "sha256": "ae96a006abc78cd4d44fe7d70bf9669bdcc9a5bae77653e5b8296e720df55361"
+      },
+      "demo_dependency_lib__libdart-utils.so.6.19.3": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-utils.so.6.19.3",
+        "sha256": "3d980585e25e36acb8dbb0b64381d40747a7036d1fbb2b6e09b4a4d86fdf95b9"
+      },
+      "demo_dependency_lib__libdart.so.6.19.3": {
+        "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19.3",
+        "sha256": "8fae2320858e49fdda309d89df8cb1158c1cc5dc11d345e14f5adca0ff63cf3d"
+      },
+      "demo_host_header": {
+        "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/DemoHost.hpp",
+        "sha256": "d1cd56b5951cad6745cdac97e61f3509401c9085e4caa13aca326829d566cd4a"
+      },
+      "demo_host_source": {
+        "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/DemoHost.cpp",
+        "sha256": "53b100cc5d204ede3b681417664e5c1190e6031ffe1aa945c42e562b19f3abfe"
+      },
+      "demo_source": {
+        "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/scenes/FbfPaperFrictionScene.cpp",
+        "sha256": "84fd1330a13d548760e537f9734790ab1b5c91fcda3e446bf76b9b36f3e1aa99"
+      },
+      "ffmpeg_binary": {
+        "path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+        "sha256": "c94d28bd8be3ecad11c2c00a136b585c7a413273e5a5804766c98e7e3200c17e"
+      },
+      "ffprobe_binary": {
+        "path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffprobe",
+        "sha256": "585d52f16c12507e660a541ee5e0e1a0fc7a872744fcf0f5acde2a6134a96951"
+      },
+      "image_compose": {
+        "path": "/home/js/dev/dartsim/dart/task_6/scripts/image_compose.py",
+        "sha256": "f69bcea840d696f2c38528b0532b20c09e843160046eb7f5785e4ea0e6b71c3f"
+      },
+      "image_tools": {
+        "path": "/home/js/dev/dartsim/dart/task_6/scripts/_image_tools.py",
+        "sha256": "1962f1f2676c4b5a24c51e03c130ea17574d06b8fe110215c6bf14a7919623c6"
+      },
+      "image_verdict": {
+        "path": "/home/js/dev/dartsim/dart/task_6/scripts/image_verdict.py",
+        "sha256": "fcc6409dc29003506f3a8651ce1120131cb577abe585b9c372e4e044d19bdbee"
+      },
+      "python_binary": {
+        "path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/bin/python3.14",
+        "sha256": "3d977c9d9622153211ad90a4b1e99421c613d3dc238265fab004eb136085e424"
+      },
+      "registry_source": {
+        "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/Registry.cpp",
+        "sha256": "089985037502abf31628c98d59ea4d53d518b1d6acb01fc4d7564742ddfcb125"
+      },
+      "scenes_header": {
+        "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/scenes/Scenes.hpp",
+        "sha256": "fb0400b82379ec7e670e7ed7ee5ae9155cb676d4d78fe908f5f0a450869a7fe0"
+      },
+      "visual_runner": {
+        "path": "/home/js/dev/dartsim/dart/task_6/scripts/run_fbf_visual_evidence.py",
+        "sha256": "d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432"
+      }
+    },
+    "stderr_path": "capture.stderr.txt",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_ends_with_run_summary": true,
+    "stdout_path": "capture.stdout.txt",
+    "stdout_sha256": "8c29622cd1b779ba49565c56b534c88fe392c090cec69c2f98d6bc56e25a6844"
+  },
+  "capture_sidecar_deliverable_validated": false,
+  "capture_summary": {
+    "accepted_at_cap": 0,
+    "actual_simulator": true,
+    "automated_semantic_outcome_validated": false,
+    "boxed_lcp_fallbacks": 0,
+    "captured_frames": 61,
+    "count_projection_sha256": "f03dff0aaec5f0fa6615609c2ea97aa31f072c14c6212fffe15858ea969d88c2",
+    "exact_attempts": 240,
+    "exact_failures": 0,
+    "exact_solves": 240,
+    "generated_imagery": false,
+    "media": {
+      "bytes": 22257,
+      "full_decode": "pass",
+      "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1/incline/clip.mp4",
+      "sha256": "ad6d00ae6a614b0edbc836396c30621b589295a0eec826d060663f6782cee3f9",
+      "stream_contract": {
+        "frame_count": 61,
+        "frame_rate": "30/1",
+        "frame_rate_rational": "30/1",
+        "height": 506,
+        "width": 660
+      }
+    },
+    "metadata_sha256": "172572577e171049f670783aef6452d2e6e1e6030458070bb430eec21f5f83ec",
+    "observed_contacts_per_post_initial_step": 8,
+    "panel_sha256": "f9f211fb376c97d98bccc67806ba3e1c9905d7d27764c794e1c480af7b4df9d3",
+    "panel_steps": [
+      0,
+      30,
+      60,
+      90,
+      120
+    ],
+    "paper_comparable": false,
+    "pass": true,
+    "run_summary_sha256": "cfed42cb3b09ab8559d84a1dae4041a26d2e0937374787f34193c8363795b5d1",
+    "timeline_sha256": "19d12947507be7d8d7a20de53b13565a23b0b9a6dfe1c907c4be3dc504f48e25",
+    "unique_frames": 61,
+    "verification_sha256": "2681073ee44f7fecd2782081826b414ee6541bb930149ced91f60a17dc2416d5",
+    "worst_residual": 9.999836962261359e-07
+  },
+  "capture_trace_contact_count_equivalent": false,
+  "claim_boundary": "The combined rendered scene and the two tracked CSV exporters use different placements. Only additive exact-solve/fallback counts are equivalent; capture contacts are eight per post-initial step while the traces total six, so contact counts are not equivalent. State, residual, status, warm-start, per-cell, and full-trace equivalence are not claimed. This is not a full friction sweep, paper contact-count match, maximum-penetration proof, author-scene or paper parity, faithful external-solver parity, approved source golden/diff, paper timing, or real-time evidence. The runner timeline is not promoted as a standalone manifest capture-sidecar deliverable.",
+  "claim_scope": "Current-source DART two-second incline threshold: manual combined visual slide/stick classification independently supported by two tracked physical outcome traces and an additive exact-solve/fallback count-only capture/trace projection.",
+  "evidence_date": "2026-07-18",
+  "external_solver_parity": false,
+  "full_friction_sweep": false,
+  "full_state_trace_equivalence": false,
+  "generated_imagery": false,
+  "invocations": {
+    "path": "invocations.json",
+    "sha256": "b4e199a8e06ac6dd0c638b261a4d969fa973fb0bdbb376e0579f19fb2f6c56c3"
+  },
+  "manual_inspection": {
+    "pass": true,
+    "path": "manual-inspection.json",
+    "sha256": "3c3af65d62c629ae836302910a2fe7f928ab398628f280221f6d0b5d94d5a848"
+  },
+  "manual_visual_outcome_validated": true,
+  "maximum_penetration_proven": false,
+  "paper_comparable": false,
+  "paper_parity": false,
+  "paper_reference_contact_count_match": false,
+  "pass": true,
+  "per_cell_trace_equivalence": false,
+  "physical_outcome_valid": true,
+  "realtime_verdict": null,
+  "report": {
+    "path": "REPORT.md",
+    "sha256": "f75efcd40bd0452bcbdc7bbc82eee0fdbd78d7a1059f974e83999467b1688fa5"
+  },
+  "requirement_ids": [
+    "fig.01",
+    "fig.02",
+    "video.03_incline"
+  ],
+  "run_summary": {
+    "path": "run-summary.json",
+    "sha256": "cfed42cb3b09ab8559d84a1dae4041a26d2e0937374787f34193c8363795b5d1"
+  },
+  "schema_version": "dart.fbf_incline_visual_bundle/v1",
+  "solver_contract_valid": true,
+  "source_identity": {
+    "binary_source_bindings": {
+      "demo_source_binding": {
+        "binary_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+        "binary_sha256": "d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4",
+        "implementation_source_path": "/home/js/dev/dartsim/dart/task_6/examples/demos/scenes/FbfPaperFrictionScene.cpp",
+        "implementation_source_sha256": "84fd1330a13d548760e537f9734790ab1b5c91fcda3e446bf76b9b36f3e1aa99",
+        "query_argv": [
+          "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+          "--fbf-author-turntable-contract",
+          "fbf_author_turntable_mu_0_2_omega_2"
+        ],
+        "query_payload_sha256": "369fac2c554fb1401ae99d761ea4f0cd170d2aa4efaf22122968eb5f45306eac",
+        "validated_binary_binding": {
+          "implementation_source_sha256": "84fd1330a13d548760e537f9734790ab1b5c91fcda3e446bf76b9b36f3e1aa99",
+          "role": "dart_demos"
+        }
+      },
+      "trace_source_binding": {
+        "binary_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+        "binary_sha256": "0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff",
+        "implementation_source_path": "/home/js/dev/dartsim/dart/task_6/tests/benchmark/integration/fbf_paper_trace.cpp",
+        "implementation_source_sha256": "b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76",
+        "query_argv": [
+          "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+          "--author-turntable-contract",
+          "turntable_author_mu_0_2_omega_2",
+          "dart_best"
+        ],
+        "query_payload_sha256": "a91c4bed1ca348615833abe46039b694b9ff4d3401f18029a799ae702ba3a422",
+        "validated_binary_binding": {
+          "implementation_source_sha256": "b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76",
+          "role": "fbf_paper_trace"
+        }
+      }
+    },
+    "demo_binary": {
+      "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+      "sha256": "d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4"
+    },
+    "demo_dependency_examples__demos__libdartDemosWamIk.so": {
+      "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/examples/demos/libdartDemosWamIk.so",
+      "sha256": "60dd469f1c693f9a429fec9a1cbe88509e945fd9554bcd3308d9377b8a4fe11d"
+    },
+    "demo_dependency_lib__libdart-collision-bullet.so.6.19.3": {
+      "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-collision-bullet.so.6.19.3",
+      "sha256": "4052072c83cc34ea5cfcbdb2f4d01d4b2cb9e9af30f3e940e90d22a3d0a70700"
+    },
+    "demo_dependency_lib__libdart-collision-ode.so.6.19.3": {
+      "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-collision-ode.so.6.19.3",
+      "sha256": "afbc7dde0e4688e9f3a5765fb186ebfcd0003b4c45cde9b686934f32cac91b94"
+    },
+    "demo_dependency_lib__libdart-external-imgui.so.6.19.3": {
+      "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-external-imgui.so.6.19.3",
+      "sha256": "31f13316b22cf0016ccbb13f191d58d8de1fe8c73f4d7fcc7af34b26d1dac186"
+    },
+    "demo_dependency_lib__libdart-gui-osg.so.6.19.3": {
+      "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-gui-osg.so.6.19.3",
+      "sha256": "9c838353c4c698103e5055921bc236b32c28d02feb0d58a4938325f92a344025"
+    },
+    "demo_dependency_lib__libdart-utils-urdf.so.6.19.3": {
+      "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-utils-urdf.so.6.19.3",
+      "sha256": "ae96a006abc78cd4d44fe7d70bf9669bdcc9a5bae77653e5b8296e720df55361"
+    },
+    "demo_dependency_lib__libdart-utils.so.6.19.3": {
+      "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart-utils.so.6.19.3",
+      "sha256": "3d980585e25e36acb8dbb0b64381d40747a7036d1fbb2b6e09b4a4d86fdf95b9"
+    },
+    "demo_dependency_lib__libdart.so.6.19.3": {
+      "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19.3",
+      "sha256": "8fae2320858e49fdda309d89df8cb1158c1cc5dc11d345e14f5adca0ff63cf3d"
+    },
+    "demo_host_header": {
+      "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/DemoHost.hpp",
+      "sha256": "d1cd56b5951cad6745cdac97e61f3509401c9085e4caa13aca326829d566cd4a"
+    },
+    "demo_host_source": {
+      "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/DemoHost.cpp",
+      "sha256": "53b100cc5d204ede3b681417664e5c1190e6031ffe1aa945c42e562b19f3abfe"
+    },
+    "demo_source": {
+      "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/scenes/FbfPaperFrictionScene.cpp",
+      "sha256": "84fd1330a13d548760e537f9734790ab1b5c91fcda3e446bf76b9b36f3e1aa99"
+    },
+    "ffmpeg_binary": {
+      "path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+      "sha256": "c94d28bd8be3ecad11c2c00a136b585c7a413273e5a5804766c98e7e3200c17e"
+    },
+    "ffprobe_binary": {
+      "path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffprobe",
+      "sha256": "585d52f16c12507e660a541ee5e0e1a0fc7a872744fcf0f5acde2a6134a96951"
+    },
+    "finalizer": {
+      "path": "/home/js/dev/dartsim/dart/task_6/scripts/finalize_fbf_incline_visual.py",
+      "sha256": "705da2a308697b4b4b923894d10f23622310e024aeab49862a24593c79142e23"
+    },
+    "finalizer_test": {
+      "path": "/home/js/dev/dartsim/dart/task_6/python/tests/unit/test_finalize_fbf_incline_visual.py",
+      "sha256": "02f3800cf7cf5df5d85b1950512e78df6e413fea42cfa89880775f010d208e1c"
+    },
+    "fixture_source": {
+      "path": "/home/js/dev/dartsim/dart/task_6/tests/integration/test_ExactCoulombFbfPaperFixtures.cpp",
+      "sha256": "a4bed7372213d544fef62923b88bc9accee7086165d7b3cb20245bee8bade05f"
+    },
+    "image_compose": {
+      "path": "/home/js/dev/dartsim/dart/task_6/scripts/image_compose.py",
+      "sha256": "f69bcea840d696f2c38528b0532b20c09e843160046eb7f5785e4ea0e6b71c3f"
+    },
+    "image_tools": {
+      "path": "/home/js/dev/dartsim/dart/task_6/scripts/_image_tools.py",
+      "sha256": "1962f1f2676c4b5a24c51e03c130ea17574d06b8fe110215c6bf14a7919623c6"
+    },
+    "image_verdict": {
+      "path": "/home/js/dev/dartsim/dart/task_6/scripts/image_verdict.py",
+      "sha256": "fcc6409dc29003506f3a8651ce1120131cb577abe585b9c372e4e044d19bdbee"
+    },
+    "python_binary": {
+      "path": "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/bin/python3.14",
+      "sha256": "3d977c9d9622153211ad90a4b1e99421c613d3dc238265fab004eb136085e424"
+    },
+    "registry_source": {
+      "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/Registry.cpp",
+      "sha256": "089985037502abf31628c98d59ea4d53d518b1d6acb01fc4d7564742ddfcb125"
+    },
+    "scenes_header": {
+      "path": "/home/js/dev/dartsim/dart/task_6/examples/demos/scenes/Scenes.hpp",
+      "sha256": "fb0400b82379ec7e670e7ed7ee5ae9155cb676d4d78fe908f5f0a450869a7fe0"
+    },
+    "trace_binary": {
+      "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+      "sha256": "0923bf7df1eaa518f9a2ffacd0a42fd7330f5cbf6c35cb5749fbc122db1310ff"
+    },
+    "trace_dependency_lib__libdart.so.6.19.3": {
+      "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/lib/libdart.so.6.19.3",
+      "sha256": "8fae2320858e49fdda309d89df8cb1158c1cc5dc11d345e14f5adca0ff63cf3d"
+    },
+    "trace_source": {
+      "path": "/home/js/dev/dartsim/dart/task_6/tests/benchmark/integration/fbf_paper_trace.cpp",
+      "sha256": "b00eea0c87f75f17259fac433bafd98c20a961d14389a80e91742d3c8a678f76"
+    },
+    "visual_runner": {
+      "path": "/home/js/dev/dartsim/dart/task_6/scripts/run_fbf_visual_evidence.py",
+      "sha256": "d848afa53caf14b9fb3ea061d658eef274e8d917151937bd6340283b79ab5432"
+    },
+    "visual_runner_test": {
+      "path": "/home/js/dev/dartsim/dart/task_6/python/tests/unit/test_run_fbf_visual_evidence.py",
+      "sha256": "6e378252fa6a7cb51c6813c9d5a2b30b8c8129eacdb01df0ee19a58a270cbc5e"
+    }
+  },
+  "status": "valid_current_source_nonpaper_incline",
+  "timing_verdict": null,
+  "trace_equivalence_to_rendered_demo": false,
+  "trace_summary": {
+    "aggregate_count_projection_comparison": {
+      "aggregate_counts_only": true,
+      "byte_identical": true,
+      "capture_contacts_per_post_initial_step": 8,
+      "capture_sha256": "f03dff0aaec5f0fa6615609c2ea97aa31f072c14c6212fffe15858ea969d88c2",
+      "contact_count_match": false,
+      "contact_counts_compared": false,
+      "fields": [
+        "step",
+        "exact_solves",
+        "boxed_lcp_fallbacks"
+      ],
+      "full_state_trace_equivalence": false,
+      "limitation": "Only additive cumulative exact-solve and cumulative fallback counts are compared. The combined capture reports eight contacts per post-initial step while the two traces report six in aggregate, so contact counts are explicitly excluded. The rendered scene and independent tracked traces use different placements; state, residual, status, warm-start, and per-cell equivalence are not established.",
+      "pass": true,
+      "per_cell_trace_equivalence": false,
+      "row_count": 121,
+      "trace_aggregate_contacts_per_post_initial_step": 6,
+      "trace_sha256": "f03dff0aaec5f0fa6615609c2ea97aa31f072c14c6212fffe15858ea969d88c2"
+    },
+    "aggregate_count_projection_sha256": "f03dff0aaec5f0fa6615609c2ea97aa31f072c14c6212fffe15858ea969d88c2",
+    "aggregate_projection_fields": [
+      "step",
+      "exact_solves",
+      "boxed_lcp_fallbacks"
+    ],
+    "claim_boundary": "The two tracked traces are independent DART runs. Their additive exact-solve/fallback counts may be compared with the combined capture. Contact counts differ and are excluded; state, residual, status, warm-start, and per-cell equivalence are not claimed.",
+    "full_state_trace_equivalence": false,
+    "pass": true,
+    "physical_outcome_valid": true,
+    "scenarios": [
+      {
+        "boxed_lcp_fallbacks": 0,
+        "claim_scope": "DART two-second downhill displacement threshold and uninterrupted post-initial tracked-trace contact",
+        "completed_steps": 120,
+        "continuous_contact_post_initial": true,
+        "displacement_tolerance_m": 0.2,
+        "downhill_displacement_m": 1.7686892884927794,
+        "exact_solves": 120,
+        "expected_downhill_displacement_m": 1.7548661487418349,
+        "final": {
+          "contacts": 3,
+          "step": 120,
+          "time": 1.9999999999999978,
+          "up_z": 0.894424500780544,
+          "vx": -1.5696895960701593,
+          "vy": -1.495637965307474e-06,
+          "vz": -0.7837250078038234,
+          "x": -1.8019937459093218,
+          "y": -1.8166507947651686e-06,
+          "z": -0.350921988326948
+        },
+        "initial": {
+          "step": 0,
+          "time": 0.0,
+          "up_z": 0.8944271909999159,
+          "x": -0.21913466179497937,
+          "y": 0.0,
+          "z": 0.43826932358995874
+        },
+        "max_residual": 9.986952135669881e-07,
+        "maximum_penetration_proven": false,
+        "mu": 0.4,
+        "observed_contacts_per_step": 3,
+        "paper_reference_contact_count_match": false,
+        "paper_reference_contacts": 4,
+        "physical_outcome_valid": true,
+        "row_count": 121,
+        "scenario": "incline_mu_0_4",
+        "selected_panel_states": [
+          {
+            "contacts": 0,
+            "exact_solves": 0,
+            "fallbacks": 0,
+            "residual": null,
+            "status": "not_run",
+            "step": 0,
+            "time": 0.0,
+            "up_z": 0.8944271909999159,
+            "vx": 0.0,
+            "vy": 0.0,
+            "vz": 0.0,
+            "warm_starts": 0,
+            "x": -0.21913466179497937,
+            "y": 0.0,
+            "z": 0.43826932358995874
+          },
+          {
+            "contacts": 3,
+            "exact_solves": 30,
+            "fallbacks": 0,
+            "residual": 9.784790256910993e-07,
+            "status": "success",
+            "step": 30,
+            "time": 0.49999999999999994,
+            "up_z": 0.8944269722037651,
+            "vx": -0.39248951275127164,
+            "vy": -6.133878737980363e-07,
+            "vz": -0.1951260076294364,
+            "warm_starts": 29,
+            "x": -0.3205494090301793,
+            "y": -2.163502918944713e-07,
+            "z": 0.38812121009121403
+          },
+          {
+            "contacts": 3,
+            "exact_solves": 60,
+            "fallbacks": 0,
+            "residual": 8.523127737034176e-07,
+            "status": "success",
+            "step": 60,
+            "time": 1.0000000000000013,
+            "up_z": 0.8944264491941004,
+            "vx": -0.7848895409654892,
+            "vy": -9.327045882213657e-07,
+            "vz": -0.39132566905924093,
+            "warm_starts": 59,
+            "x": -0.6181641739564205,
+            "y": -6.090962160036176e-07,
+            "z": 0.23987330888364633
+          },
+          {
+            "contacts": 3,
+            "exact_solves": 90,
+            "fallbacks": 0,
+            "residual": 8.875828905048828e-07,
+            "status": "success",
+            "step": 90,
+            "time": 1.4999999999999996,
+            "up_z": 0.8944256309926122,
+            "vx": -1.1772895751568295,
+            "vy": -1.2206820717223545e-06,
+            "vz": -0.5875252587634863,
+            "warm_starts": 89,
+            "x": -1.1119789529515405,
+            "y": -1.1412774066350216e-06,
+            "z": -0.006474423497540429
+          },
+          {
+            "contacts": 3,
+            "exact_solves": 120,
+            "fallbacks": 0,
+            "residual": 9.01708577985799e-07,
+            "status": "success",
+            "step": 120,
+            "time": 1.9999999999999978,
+            "up_z": 0.894424500780544,
+            "vx": -1.5696895960701593,
+            "vy": -1.495637965307474e-06,
+            "vz": -0.7837250078038234,
+            "warm_starts": 119,
+            "x": -1.8019937459093218,
+            "y": -1.8166507947651686e-06,
+            "z": -0.350921988326948
+          }
+        ],
+        "trajectory_invariants": {
+          "cross_slope_displacement_tolerance_m": 0.02,
+          "cross_slope_speed_tolerance_m_s": 0.02,
+          "final_downhill_speed_m_s": 1.7544655347780056,
+          "final_stick_speed_m_s": null,
+          "incline_normal_center_offset_tolerance_m": 0.02,
+          "incline_normal_speed_tolerance_m_s": 0.02,
+          "maximum_abs_stick_displacement_m": null,
+          "maximum_cross_slope_displacement_m": 1.8166507947651686e-06,
+          "maximum_cross_slope_speed_m_s": 1.495637965307474e-06,
+          "maximum_incline_normal_center_offset_error_m": 0.0020019338971680734,
+          "maximum_incline_normal_speed_m_s": 0.0010016804621594266,
+          "maximum_stick_speed_m_s": null,
+          "maximum_up_z_alignment_error": 2.690219371825897e-06,
+          "maximum_velocity_position_component_error_m_s": 6.217248937900877e-15,
+          "pass": true,
+          "slide_displacement_regression_tolerance_m": 0.0001,
+          "slide_final_downhill_speed_minimum_m_s": 0.5,
+          "stick_speed_tolerance_m_s": null,
+          "up_z_alignment_tolerance": 0.05,
+          "velocity_position_component_consistency_tolerance_m_s": 1e-10
+        },
+        "warm_starts": 119
+      },
+      {
+        "boxed_lcp_fallbacks": 0,
+        "claim_scope": "DART two-second downhill displacement threshold and uninterrupted post-initial tracked-trace contact",
+        "completed_steps": 120,
+        "continuous_contact_post_initial": true,
+        "displacement_tolerance_m": 0.02,
+        "downhill_displacement_m": 0.0008905412965980523,
+        "exact_solves": 120,
+        "expected_downhill_displacement_m": 0.0,
+        "final": {
+          "contacts": 3,
+          "step": 120,
+          "time": 1.9999999999999978,
+          "up_z": 0.8944267190984964,
+          "vx": -0.0008908101458899912,
+          "vy": -4.769571727578501e-07,
+          "vz": 0.0006729784003219607,
+          "x": -0.22082585664424006,
+          "y": -1.760798489333664e-06,
+          "z": 0.4396604024125161
+        },
+        "initial": {
+          "step": 0,
+          "time": 0.0,
+          "up_z": 0.8944271909999159,
+          "x": -0.21913466179497937,
+          "y": 0.0,
+          "z": 0.43826932358995874
+        },
+        "max_residual": 9.997210606407098e-07,
+        "maximum_penetration_proven": false,
+        "mu": 0.5,
+        "observed_contacts_per_step": 3,
+        "paper_reference_contact_count_match": false,
+        "paper_reference_contacts": 4,
+        "physical_outcome_valid": true,
+        "row_count": 121,
+        "scenario": "incline_mu_0_5",
+        "selected_panel_states": [
+          {
+            "contacts": 0,
+            "exact_solves": 0,
+            "fallbacks": 0,
+            "residual": null,
+            "status": "not_run",
+            "step": 0,
+            "time": 0.0,
+            "up_z": 0.8944271909999159,
+            "vx": 0.0,
+            "vy": 0.0,
+            "vz": 0.0,
+            "warm_starts": 0,
+            "x": -0.21913466179497937,
+            "y": 0.0,
+            "z": 0.43826932358995874
+          },
+          {
+            "contacts": 3,
+            "exact_solves": 30,
+            "fallbacks": 0,
+            "residual": 9.885148964873878e-07,
+            "status": "success",
+            "step": 30,
+            "time": 0.49999999999999994,
+            "up_z": 0.8944270625900189,
+            "vx": -0.0008419197202830849,
+            "vy": -1.2631309134773918e-06,
+            "vz": 0.0006973611238236255,
+            "warm_starts": 29,
+            "x": -0.21950216925552668,
+            "y": -6.66492675961877e-07,
+            "z": 0.4386446905444175
+          },
+          {
+            "contacts": 3,
+            "exact_solves": 60,
+            "fallbacks": 0,
+            "residual": 9.297510035469317e-07,
+            "status": "success",
+            "step": 60,
+            "time": 1.0000000000000013,
+            "up_z": 0.894426947909194,
+            "vx": -0.0008832604230302255,
+            "vy": -7.900026066905105e-07,
+            "vz": 0.0006767311574510936,
+            "warm_starts": 59,
+            "x": -0.21993685463617738,
+            "y": -1.1681413404666524e-06,
+            "z": 0.43898652426529605
+          },
+          {
+            "contacts": 3,
+            "exact_solves": 90,
+            "fallbacks": 0,
+            "residual": 9.274338709396836e-07,
+            "status": "success",
+            "step": 90,
+            "time": 1.4999999999999996,
+            "up_z": 0.8944268341716047,
+            "vx": -0.0008897569122332535,
+            "vy": -5.656209108449469e-07,
+            "vz": 0.0006734894747392748,
+            "warm_starts": 89,
+            "x": -0.2203806308468226,
+            "y": -1.500945154982102e-06,
+            "z": 0.43932382391277286
+          },
+          {
+            "contacts": 3,
+            "exact_solves": 120,
+            "fallbacks": 0,
+            "residual": 9.60268079385406e-07,
+            "status": "success",
+            "step": 120,
+            "time": 1.9999999999999978,
+            "up_z": 0.8944267190984964,
+            "vx": -0.0008908101458899912,
+            "vy": -4.769571727578501e-07,
+            "vz": 0.0006729784003219607,
+            "warm_starts": 119,
+            "x": -0.22082585664424006,
+            "y": -1.760798489333664e-06,
+            "z": 0.4396604024125161
+          }
+        ],
+        "trajectory_invariants": {
+          "cross_slope_displacement_tolerance_m": 0.02,
+          "cross_slope_speed_tolerance_m_s": 0.02,
+          "final_downhill_speed_m_s": 0.0004957997264008159,
+          "final_stick_speed_m_s": 0.001116442058867632,
+          "incline_normal_center_offset_tolerance_m": 0.02,
+          "incline_normal_speed_tolerance_m_s": 0.02,
+          "maximum_abs_stick_displacement_m": 0.0008905412965980523,
+          "maximum_cross_slope_displacement_m": 1.760798489333664e-06,
+          "maximum_cross_slope_speed_m_s": 1.4614215308367157e-06,
+          "maximum_incline_normal_center_offset_error_m": 0.0020005440529483054,
+          "maximum_incline_normal_speed_m_s": 0.0010003250401592542,
+          "maximum_stick_speed_m_s": 0.001116442058867632,
+          "maximum_up_z_alignment_error": 4.719014194964899e-07,
+          "maximum_velocity_position_component_error_m_s": 1.582067810090848e-15,
+          "pass": true,
+          "slide_displacement_regression_tolerance_m": null,
+          "slide_final_downhill_speed_minimum_m_s": null,
+          "stick_speed_tolerance_m_s": 0.02,
+          "up_z_alignment_tolerance": 0.05,
+          "velocity_position_component_consistency_tolerance_m_s": 1e-10
+        },
+        "warm_starts": 119
+      }
+    ],
+    "schema_version": "dart.fbf_incline_trace_summary/v1",
+    "threshold_separation": {
+      "minimum_exclusive_m": 0.5,
+      "pass": true,
+      "slide_downhill_displacement_m": 1.7686892884927794,
+      "slide_minus_stick_m": 1.7677987471961814,
+      "stick_downhill_displacement_m": 0.0008905412965980523
+    },
+    "trace_aggregate_contacts_per_post_initial_step": 6,
+    "trace_artifacts": [
+      {
+        "path": "traces/incline_mu_0_4.csv",
+        "scenario": "incline_mu_0_4",
+        "sha256": "449acf19feef2e0aa7fb04bb9f45f865727ba59f626b3964114cd900169ecd8a"
+      },
+      {
+        "path": "traces/incline_mu_0_5.csv",
+        "scenario": "incline_mu_0_5",
+        "sha256": "2b30e8033b123876ad1cdea755741fd230a4d72d3747e55b907e6427962659c5"
+      }
+    ]
+  },
+  "tracked_trace_continuous_contact_proven": true,
+  "verification": {
+    "path": "verification.json",
+    "sha256": "2681073ee44f7fecd2782081826b414ee6541bb930149ced91f60a17dc2416d5"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "experiment": "turntable_friction_sweep",
+  "mu": 0.5,
+  "cube_offset_r": 1.0,
+  "cube_half_size": 0.15,
+  "turntable_radius": 2.0,
+  "turntable_half_h": 0.05,
+  "omega_crit_ref": 2.2147234590350102,
+  "omega_crit_note": "sqrt(mu*g/r) is a point-mass reference scale; the finite cube on a finite contact patch does not have an exact bifurcation at this value.",
+  "omega_values": [
+    2.0,
+    5.0
+  ],
+  "gravity": 9.81,
+  "dt": 0.016666666666666666,
+  "T_seconds": 6.0,
+  "num_steps": 360,
+  "ramp_time": 0.5,
+  "steady_window": 1.0,
+  "solvers": [
+    "fbf"
+  ],
+  "device": "cpu",
+  "gap": 0.005,
+  "drop_height": 0.2,
+  "timestamp": "20260718T214609Z"
+}

@@ -44,36 +44,39 @@
 //                              [outer_relaxation=1.5]
 //                              [max_residual_history_samples=0]
 //                              [initial_penetration=0.003]
-//                              [frame_spacing=0.55]
+//                              [frame_spacing=0.997]
 //                              [use_matrix_free_delassus_operator=0]
 //                              [use_matrix_free_delassus_seed=0]
 
-#include <dart/collision/dart/DARTCollisionDetector.hpp>
-#include <dart/collision/CollisionResult.hpp>
+#include <dart/simulation/DeactivationOptions.hpp>
+#include <dart/simulation/World.hpp>
+
 #include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
+
+#include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
+
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
 #include <dart/dynamics/ShapeFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
-#include <dart/simulation/DeactivationOptions.hpp>
-#include <dart/simulation/World.hpp>
 
 #include <Eigen/Geometry>
 
 #include <algorithm>
-#include <cerrno>
 #include <chrono>
-#include <cstdio>
-#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 
+#include <cerrno>
 #include <cmath>
 #include <cstddef>
+#include <cstdio>
+#include <cstdlib>
 
 namespace {
 
@@ -84,8 +87,15 @@ constexpr double kCardHouseAngle = 0.23;
 constexpr double kCardHouseHeight = 1.0;
 constexpr double kCardHouseWidth = 0.45;
 constexpr double kCardHouseThickness = 0.03;
+// Source-informed reconstruction from Newton 1.3's 1000 kg/m^3 rigid-shape
+// default; not confirmed as an author scene override.
+constexpr double kCardHouseDensity = 1000.0;
 constexpr double kCardHouseInitialPenetration = 0.003;
-constexpr double kCardHouseFrameSpacing = 0.55;
+// Reconstruction choice: adjacent horizontal one-meter cards meet with the
+// same nominal 3 mm overlap used at the other interfaces. The paper does not
+// publish this spacing.
+constexpr double kCardHouseFrameSpacing
+    = kCardHouseHeight - kCardHouseInitialPenetration;
 constexpr double kCardHouseStepSizeScale = 10.0;
 constexpr double kCardHouseOuterRelaxation = 1.5;
 constexpr double kPi = 3.141592653589793238462643383279502884;
@@ -184,7 +194,11 @@ const char* exactStatusName(
       return "not_run";
     case dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success:
       return "success";
-    case dart::constraint::ExactCoulombFbfConstraintSolverStatus::InvalidOptions:
+    case dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+        MaxIterationsAccepted:
+      return "max_iterations_accepted";
+    case dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+        InvalidOptions:
       return "invalid_options";
     case dart::constraint::ExactCoulombFbfConstraintSolverStatus::
         UnsupportedProblem:
@@ -400,18 +414,18 @@ dart::dynamics::SkeletonPtr createHorizontalPlane(double frictionCoeff)
 dart::dynamics::SkeletonPtr createCardPlate(
     const std::string& name, const Eigen::Isometry3d& transform)
 {
-  constexpr double kMass = 0.05;
   const Eigen::Vector3d size(
       kCardHouseThickness, kCardHouseWidth, kCardHouseHeight);
+  const double mass = kCardHouseDensity * size.x() * size.y() * size.z();
 
   auto skeleton = dart::dynamics::Skeleton::create(name);
   dart::dynamics::GenericJoint<dart::math::SE3Space>::Properties
       jointProperties(name + "_joint");
   dart::dynamics::BodyNode::Properties bodyProperties(
       dart::dynamics::BodyNode::AspectProperties(name + "_body"));
-  bodyProperties.mInertia.setMass(kMass);
+  bodyProperties.mInertia.setMass(mass);
   bodyProperties.mInertia.setMoment(
-      dart::dynamics::BoxShape::computeInertia(size, kMass));
+      dart::dynamics::BoxShape::computeInertia(size, mass));
 
   auto pair = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
       nullptr, jointProperties, bodyProperties);
@@ -446,9 +460,17 @@ Eigen::Isometry3d createCardHouseAFrameTransform(
   transform.linear()
       = Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitY()).toRotationMatrix();
 
-  const double halfSpan = 0.5 * kCardHouseHeight * std::sin(kCardHouseAngle);
+  // Position the two oriented-box A-frame cards by their horizontal half
+  // extents so their bounding faces overlap by the requested amount. The old
+  // 0.96 * halfSpan heuristic produced about 37 mm of penetration for 30 mm
+  // cards while reporting a 3 mm target.
+  const double horizontalHalfExtent
+      = 0.5
+        * (kCardHouseHeight * std::sin(kCardHouseAngle)
+           + kCardHouseThickness * std::cos(kCardHouseAngle));
+  const double centerOffset = horizontalHalfExtent - 0.5 * initialPenetration;
   transform.translation().x()
-      = centerX + (leftCard ? -0.96 * halfSpan : 0.96 * halfSpan);
+      = centerX + (leftCard ? -centerOffset : centerOffset);
   transform.translation().y() = 0.0;
   const double verticalHalfExtent
       = computeCardHouseVerticalHalfExtent(transform.linear());
@@ -477,8 +499,8 @@ bool isCardHouseSkeletonName(const std::string& name)
 std::shared_ptr<dart::simulation::World> createCardHouseWorld(
     std::size_t maxContacts, const ProbeOptions& probeOptions)
 {
-  auto world = dart::simulation::World::create(
-      "exact_coulomb_card_house_probe");
+  auto world
+      = dart::simulation::World::create("exact_coulomb_card_house_probe");
   world->setTimeStep(kDt);
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -kGravity));
   world->setNumSimulationThreads(1u);
@@ -490,7 +512,8 @@ std::shared_ptr<dart::simulation::World> createCardHouseWorld(
   auto solver
       = std::make_unique<dart::constraint::ExactCoulombFbfConstraintSolver>(
           makeFbfOptions(probeOptions));
-  solver->setCollisionDetector(dart::collision::DARTCollisionDetector::create());
+  solver->setCollisionDetector(
+      dart::collision::DARTCollisionDetector::create());
   solver->setNumSimulationThreads(1u);
   world->setConstraintSolver(std::move(solver));
 
@@ -653,12 +676,10 @@ ProbeResult runProbe(std::size_t maxContacts, const ProbeOptions& options)
   result.failedFbfStatus
       = fbfStatusName(solver->getLastFailedExactCoulombFbfStatus());
   result.failedFbfIterations = solver->getLastFailedExactCoulombIterations();
-  result.failedBestIteration
-      = solver->getLastFailedExactCoulombBestIteration();
+  result.failedBestIteration = solver->getLastFailedExactCoulombBestIteration();
   result.failedBestResidual = solver->getLastFailedExactCoulombBestResidual();
   result.failedStepSize = solver->getLastFailedExactCoulombStepSize();
-  result.failedSafeStepSize
-      = solver->getLastFailedExactCoulombSafeStepSize();
+  result.failedSafeStepSize = solver->getLastFailedExactCoulombSafeStepSize();
   result.failedCouplingVariationRatio
       = solver->getLastFailedExactCoulombCouplingVariationRatio();
   result.failedShrinkIterations
@@ -702,8 +723,8 @@ ProbeResult runProbe(std::size_t maxContacts, const ProbeOptions& options)
     result.failedResidualHistoryLastIteration = record.samples.back().iteration;
 
     if (record.samples.size() >= 2u) {
-      const double previous = record.samples[record.samples.size() - 2u]
-                                  .residual.value;
+      const double previous
+          = record.samples[record.samples.size() - 2u].residual.value;
       if (std::isfinite(previous) && previous > 0.0) {
         result.failedResidualHistoryTailRatio
             = result.failedResidualHistoryLast / previous;
@@ -861,7 +882,7 @@ void printUsage()
       "[inner_diagonal_regularization=0] "
       "[coupling_variation_tolerance=0.9] [step_size_scale=10] "
       "[outer_relaxation=1.5] [max_residual_history_samples=0] "
-      "[initial_penetration=0.003] [frame_spacing=0.55] "
+      "[initial_penetration=0.003] [frame_spacing=0.997] "
       "[use_matrix_free_delassus_operator=0] "
       "[use_matrix_free_delassus_seed=0]\n");
 }

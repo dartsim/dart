@@ -1,0 +1,10 @@
+# Checker material for the exact-FBF backspin visual mesh.
+newmtl FbfBackspinChecker
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.080000 0.080000 0.080000
+Ke 0.180000 0.180000 0.180000
+Ns 12.000000
+d 1.000000
+illum 2
+map_Kd fbf_backspin_checker.ppm

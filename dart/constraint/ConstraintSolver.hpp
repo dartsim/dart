@@ -335,6 +335,18 @@ protected:
   /// parallel.
   bool canSolveConstrainedGroupsInParallel() const;
 
+  /// Run independent constraint work through the solver's persistent pool.
+  ///
+  /// The callback is invoked exactly once for each index in `[0, count)`. The
+  /// return value is the number of participants that actually received work,
+  /// including the calling thread. A return value of zero means `count` was
+  /// zero. This non-virtual, type-erased bridge deliberately adds no object
+  /// state or vtable slot on the DART 6 compatibility branch. It is synchronous
+  /// and must not be called from work already dispatched through this pool.
+  using ConstraintParallelTask = void (*)(void*, std::size_t);
+  std::size_t parallelForConstraintWork(
+      std::size_t count, void* context, ConstraintParallelTask task);
+
   /// Reserve solver scratch for the currently built constrained groups.
   void reserveConstrainedGroupsScratch();
 

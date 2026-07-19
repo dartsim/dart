@@ -1,0 +1,89 @@
+{
+  "affinity": {
+    "logical_cpus": [
+      8,
+      10,
+      12,
+      14
+    ],
+    "one_logical_per_physical_core": true,
+    "physical_core_keys": [
+      [
+        "0",
+        "16"
+      ],
+      [
+        "0",
+        "20"
+      ],
+      [
+        "0",
+        "24"
+      ],
+      [
+        "0",
+        "28"
+      ]
+    ],
+    "source": "explicit_taskset",
+    "topology": {
+      "10": {
+        "core_id": "20",
+        "cpuinfo_max_freq_khz": 5300000,
+        "declared_p_core": true,
+        "physical_package_id": "0",
+        "scaling_governor": "powersave",
+        "thread_siblings_list": "10-11"
+      },
+      "12": {
+        "core_id": "24",
+        "cpuinfo_max_freq_khz": 5300000,
+        "declared_p_core": true,
+        "physical_package_id": "0",
+        "scaling_governor": "powersave",
+        "thread_siblings_list": "12-13"
+      },
+      "14": {
+        "core_id": "28",
+        "cpuinfo_max_freq_khz": 5300000,
+        "declared_p_core": true,
+        "physical_package_id": "0",
+        "scaling_governor": "powersave",
+        "thread_siblings_list": "14-15"
+      },
+      "8": {
+        "core_id": "16",
+        "cpuinfo_max_freq_khz": 5300000,
+        "declared_p_core": true,
+        "physical_package_id": "0",
+        "scaling_governor": "powersave",
+        "thread_siblings_list": "8-9"
+      }
+    }
+  },
+  "child_returncode": 1,
+  "command": [
+    "taskset",
+    "--cpu-list",
+    "8,10,12,14",
+    "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+    "masonry_arch_101_literal_wedge",
+    "exact_fbf",
+    "1",
+    "600",
+    "nan",
+    "performance",
+    "default",
+    "default",
+    "4",
+    "dart_best_colored_bgs",
+    "native",
+    "default",
+    "0",
+    "0"
+  ],
+  "cwd": "/home/js/dev/dartsim/dart/task_6",
+  "raw_stdout_bytes": 3183,
+  "stderr_bytes": 0,
+  "timeout_seconds": 600.0
+}

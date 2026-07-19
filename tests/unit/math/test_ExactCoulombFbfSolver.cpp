@@ -34,6 +34,7 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <vector>
 
 #include <cmath>
@@ -75,6 +76,37 @@ dart::math::detail::ExactCoulombContactProblem makeOneContactProblem(
   return problem;
 }
 
+Eigen::Matrix3d makeCrossCoupledLocalHessian()
+{
+  Eigen::Matrix3d hessian;
+  hessian << 4.0, 1.0, 0.5, 1.0, 3.0, 0.2, 0.5, 0.2, 2.0;
+  return hessian;
+}
+
+double computeLocalQuadraticObjective(
+    const Eigen::Matrix3d& hessian,
+    const Eigen::Vector3d& linearTerm,
+    const Eigen::Vector3d& reaction)
+{
+  return 0.5 * reaction.dot(hessian * reaction) + linearTerm.dot(reaction);
+}
+
+void expectLocalConeKkt(
+    const Eigen::Matrix3d& hessian,
+    const Eigen::Vector3d& linearTerm,
+    double coefficient,
+    const Eigen::Vector3d& reaction,
+    double tolerance = 1e-10)
+{
+  const Eigen::Vector3d gradient = hessian * reaction + linearTerm;
+  const double tangentNorm = std::hypot(reaction[1], reaction[2]);
+  const double gradientTangentNorm = std::hypot(gradient[1], gradient[2]);
+  EXPECT_GE(reaction[0], -tolerance);
+  EXPECT_LE(tangentNorm, coefficient * reaction[0] + tolerance);
+  EXPECT_GE(gradient[0], coefficient * gradientTangentNorm - tolerance);
+  EXPECT_NEAR(reaction.dot(gradient), 0.0, tolerance);
+}
+
 } // namespace
 
 TEST(ExactCoulombFbfSolver, ComputesSafeStepFromSpectralBound)
@@ -89,6 +121,69 @@ TEST(ExactCoulombFbfSolver, ComputesSafeStepFromSpectralBound)
   EXPECT_NEAR(safeStep, 0.25, 1e-12);
 }
 
+TEST(ExactCoulombFbfSolver, AutomaticGammaMayUseScaledSafeStep)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = 4.0 * Eigen::Matrix3d::Identity();
+  const auto unusedInnerSolver = [](const auto&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    double,
+                                    Eigen::Ref<Eigen::VectorXd>) {
+    return false;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.stepSizeScale = 2.0;
+  options.maxOuterIterations = 0;
+  options.tolerance = 0.0;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      makeDenseDelassusOperator(delassus),
+      unusedInnerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status, dart::math::detail::ExactCoulombFbfStatus::MaxIterations);
+  EXPECT_NEAR(result.safeStepSize, 0.25, 1e-12);
+  EXPECT_NEAR(result.stepSize, 0.5, 1e-12);
+}
+
+TEST(ExactCoulombFbfSolver, ExplicitGammaCapsAtUnscaledSafeStep)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = 4.0 * Eigen::Matrix3d::Identity();
+  const auto unusedInnerSolver = [](const auto&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    double,
+                                    Eigen::Ref<Eigen::VectorXd>) {
+    return false;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = 10.0;
+  options.stepSizeScale = 2.0;
+  options.maxOuterIterations = 0;
+  options.tolerance = 0.0;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      makeDenseDelassusOperator(delassus),
+      unusedInnerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status, dart::math::detail::ExactCoulombFbfStatus::MaxIterations);
+  EXPECT_NEAR(result.safeStepSize, 0.25, 1e-12);
+  EXPECT_NEAR(result.stepSize, result.safeStepSize, 1e-12);
+}
+
 TEST(ExactCoulombFbfSolver, ComputesPaperResidualScales)
 {
   const auto problem
@@ -101,6 +196,418 @@ TEST(ExactCoulombFbfSolver, ComputesPaperResidualScales)
 
   EXPECT_NEAR(scales.reactionScale, 2.5, 1e-12);
   EXPECT_NEAR(scales.velocityScale, std::sqrt(67.25), 1e-12);
+}
+
+TEST(ExactCoulombFbfSolver, ReusesSpectralEstimateForResidualScales)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  int operatorCalls = 0;
+  const auto applyDelassus = [&delassus, &operatorCalls](
+                                 const Eigen::Ref<const Eigen::VectorXd>& input,
+                                 Eigen::Ref<Eigen::VectorXd> output) {
+    ++operatorCalls;
+    output.noalias() = delassus * input;
+  };
+  const auto unusedInnerSolver = [](const auto&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    double,
+                                    Eigen::Ref<Eigen::VectorXd>) {
+    return false;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.maxOuterIterations = 0;
+  options.spectralIterations = 4;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      applyDelassus,
+      unusedInnerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status, dart::math::detail::ExactCoulombFbfStatus::MaxIterations);
+  // Four power iterations, one Rayleigh product, one initial-scale velocity,
+  // and one initial residual product. A duplicate spectral estimate would add
+  // five more products.
+  EXPECT_EQ(operatorCalls, 7);
+}
+
+TEST(ExactCoulombLocalConeQuadratic, ReturnsZeroForDualConeLinearTerm)
+{
+  const Eigen::Matrix3d hessian = makeCrossCoupledLocalHessian();
+  const Eigen::Vector3d linearTerm(1.0, 1.0, 0.0);
+  constexpr double kCoefficient = 0.6;
+
+  dart::math::detail::ExactCoulombLocalConeQuadraticFactorization factorization;
+  ASSERT_TRUE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          hessian, kCoefficient, factorization));
+
+  Eigen::Vector3d reaction;
+  ASSERT_TRUE(dart::math::detail::solveExactCoulombLocalConeQuadratic(
+      factorization, linearTerm, reaction));
+  expectVectorNear(reaction, Eigen::Vector3d::Zero());
+  expectLocalConeKkt(hessian, linearTerm, kCoefficient, reaction);
+}
+
+TEST(ExactCoulombLocalConeQuadratic, ReturnsUnconstrainedInteriorMinimizer)
+{
+  const Eigen::Matrix3d hessian = makeCrossCoupledLocalHessian();
+  const Eigen::Vector3d expected(2.0, 0.3, -0.4);
+  const Eigen::Vector3d linearTerm(-8.1, -2.82, -0.26);
+  constexpr double kCoefficient = 0.6;
+
+  dart::math::detail::ExactCoulombLocalConeQuadraticFactorization factorization;
+  ASSERT_TRUE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          hessian, kCoefficient, factorization));
+
+  Eigen::Vector3d reaction;
+  ASSERT_TRUE(dart::math::detail::solveExactCoulombLocalConeQuadratic(
+      factorization, linearTerm, reaction));
+  expectVectorNear(reaction, expected, 1e-12);
+  expectLocalConeKkt(hessian, linearTerm, kCoefficient, reaction);
+}
+
+TEST(
+    ExactCoulombLocalConeQuadratic,
+    AcceptsCapturedInteriorMinimizerDespiteDotProductCancellation)
+{
+  Eigen::Matrix3d hessian;
+  hessian << 6.2508524116994826, 0.08447251325082239, -0.071655259667449872,
+      0.08447251325082239, 6.5776044639887665, 0.02118378221216205,
+      -0.071655259667449872, 0.02118378221216205, 6.3474515650102292;
+  const Eigen::Vector3d linearTerm(
+      -259.58179375663889, 35.903906297983241, -67.104239447047505);
+  const Eigen::Vector3d capturedReaction(
+      41.735732449040448, -6.0301265110008266, 11.063111606382517);
+  constexpr double kCoefficient = 0.8;
+
+  const Eigen::Vector3d capturedGradient
+      = hessian * capturedReaction + linearTerm;
+  const double coneTolerance = 4096.0 * std::numeric_limits<double>::epsilon();
+  const double reactionTolerance
+      = coneTolerance * (std::max)(1.0, capturedReaction.norm());
+  const double gradientTolerance
+      = coneTolerance * (std::max)(1.0, capturedGradient.norm());
+  const double gapTolerance
+      = 8192.0 * std::numeric_limits<double>::epsilon()
+        * (1.0 + capturedReaction.norm() * capturedGradient.norm());
+
+  EXPECT_LT(
+      std::hypot(capturedReaction[1], capturedReaction[2]) + reactionTolerance,
+      kCoefficient * capturedReaction[0]);
+  EXPECT_LE(capturedGradient.norm(), gradientTolerance);
+  EXPECT_GT(std::abs(capturedReaction.dot(capturedGradient)), gapTolerance);
+
+  dart::math::detail::ExactCoulombLocalConeQuadraticFactorization factorization;
+  ASSERT_TRUE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          hessian, kCoefficient, factorization));
+  EXPECT_TRUE(dart::math::detail::isExactCoulombLocalConeQuadraticKktPoint(
+      factorization, linearTerm, capturedReaction));
+
+  Eigen::Vector3d reaction;
+  ASSERT_TRUE(
+      dart::math::detail::trySolveExactCoulombLocalConeQuadraticAnalytically(
+          factorization, linearTerm, reaction));
+  expectVectorNear(reaction, capturedReaction, 1e-12);
+}
+
+TEST(
+    ExactCoulombLocalConeQuadratic,
+    InteriorStationarityDoesNotRequireRedundantScaledDotProduct)
+{
+  const Eigen::Matrix3d hessian = Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d expectedReaction(4.0, 0.0, 0.0);
+  constexpr double kCoefficient = 0.8;
+  const double coneTolerance = 4096.0 * std::numeric_limits<double>::epsilon();
+  const Eigen::Vector3d acceptedGradient(0.75 * coneTolerance, 0.0, 0.0);
+  const Eigen::Vector3d linearTerm = -expectedReaction + acceptedGradient;
+  const Eigen::Vector3d actualGradient
+      = hessian * expectedReaction + linearTerm;
+  const double gradientTolerance
+      = coneTolerance * (std::max)(1.0, actualGradient.norm());
+  const double gapTolerance
+      = 8192.0 * std::numeric_limits<double>::epsilon()
+        * (1.0 + expectedReaction.norm() * actualGradient.norm());
+
+  ASSERT_LE(actualGradient.norm(), gradientTolerance);
+  ASSERT_GT(std::abs(expectedReaction.dot(actualGradient)), gapTolerance);
+
+  dart::math::detail::ExactCoulombLocalConeQuadraticFactorization factorization;
+  ASSERT_TRUE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          hessian, kCoefficient, factorization));
+  EXPECT_TRUE(dart::math::detail::isExactCoulombLocalConeQuadraticKktPoint(
+      factorization, linearTerm, expectedReaction));
+
+  Eigen::Vector3d reaction;
+  ASSERT_TRUE(
+      dart::math::detail::trySolveExactCoulombLocalConeQuadraticAnalytically(
+          factorization, linearTerm, reaction));
+  expectVectorNear(reaction, expectedReaction, 1e-12);
+}
+
+TEST(ExactCoulombLocalConeQuadratic, SolvesCrossCoupledBoundaryMinimizer)
+{
+  const Eigen::Matrix3d hessian = makeCrossCoupledLocalHessian();
+  const Eigen::Vector3d linearTerm(-6.57, -4.328, -2.394);
+  const Eigen::Vector3d expected(1.5, 0.72, 0.54);
+  constexpr double kCoefficient = 0.6;
+
+  dart::math::detail::ExactCoulombLocalConeQuadraticFactorization factorization;
+  ASSERT_TRUE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          hessian, kCoefficient, factorization));
+
+  Eigen::Vector3d reaction;
+  ASSERT_TRUE(dart::math::detail::solveExactCoulombLocalConeQuadratic(
+      factorization, linearTerm, reaction));
+  expectVectorNear(reaction, expected, 1e-11);
+  expectLocalConeKkt(hessian, linearTerm, kCoefficient, reaction);
+}
+
+TEST(
+    ExactCoulombLocalConeQuadratic,
+    InverseEuclideanProjectionDiffersFromExactMetricProjection)
+{
+  const Eigen::Matrix3d hessian = makeCrossCoupledLocalHessian();
+  const Eigen::Vector3d linearTerm(-6.57, -4.328, -2.394);
+  constexpr double kCoefficient = 0.6;
+
+  Eigen::Matrix3d symmetricHessian;
+  Eigen::Matrix3d inverseHessian;
+  ASSERT_TRUE(dart::math::detail::prepareExactCoulombLocalSpdInverse(
+      hessian, symmetricHessian, inverseHessian));
+  Eigen::Vector3d inverseProjected;
+  ASSERT_TRUE(
+      dart::math::detail::solveExactCoulombLocalConeInverseEuclideanProjection(
+          inverseHessian, linearTerm, kCoefficient, inverseProjected));
+  const Eigen::Vector3d expectedInverseProjected(
+      1.5035607320294018, 0.7007049576384029, 0.5682100996156688);
+  expectVectorNear(inverseProjected, expectedInverseProjected, 1e-12);
+
+  dart::math::detail::ExactCoulombLocalConeQuadraticFactorization factorization;
+  ASSERT_TRUE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          hessian, kCoefficient, factorization));
+  Eigen::Vector3d exact;
+  ASSERT_TRUE(dart::math::detail::solveExactCoulombLocalConeQuadratic(
+      factorization, linearTerm, exact));
+  EXPECT_FALSE(dart::math::detail::isExactCoulombLocalConeQuadraticKktPoint(
+      factorization, linearTerm, inverseProjected));
+  EXPECT_TRUE(dart::math::detail::isExactCoulombLocalConeQuadraticKktPoint(
+      factorization, linearTerm, exact));
+  EXPECT_GT(
+      std::abs(inverseProjected.dot(hessian * inverseProjected + linearTerm)),
+      1e-3);
+}
+
+TEST(ExactCoulombLocalConeQuadratic, SolvesBoundaryMinimizerAtPositivePole)
+{
+  const Eigen::Matrix3d hessian = Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d linearTerm(0.0, -2.0, 0.0);
+  const Eigen::Vector3d expected(0.8, 0.4, 0.0);
+  constexpr double kCoefficient = 0.5;
+
+  dart::math::detail::ExactCoulombLocalConeQuadraticFactorization factorization;
+  ASSERT_TRUE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          hessian, kCoefficient, factorization));
+
+  Eigen::Vector3d reaction;
+  ASSERT_TRUE(dart::math::detail::solveExactCoulombLocalConeQuadratic(
+      factorization, linearTerm, reaction));
+  expectVectorNear(reaction, expected, 1e-12);
+  expectLocalConeKkt(hessian, linearTerm, kCoefficient, reaction);
+}
+
+TEST(ExactCoulombLocalConeQuadratic, SolvesFrictionlessNormalRay)
+{
+  const Eigen::Matrix3d hessian = makeCrossCoupledLocalHessian();
+  const Eigen::Vector3d linearTerm(-6.0, 5.0, -7.0);
+  const Eigen::Vector3d expected(1.5, 0.0, 0.0);
+
+  dart::math::detail::ExactCoulombLocalConeQuadraticFactorization factorization;
+  ASSERT_TRUE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          hessian, 0.0, factorization));
+
+  Eigen::Vector3d reaction;
+  ASSERT_TRUE(dart::math::detail::solveExactCoulombLocalConeQuadratic(
+      factorization, linearTerm, reaction));
+  expectVectorNear(reaction, expected, 1e-12);
+  expectLocalConeKkt(hessian, linearTerm, 0.0, reaction);
+}
+
+TEST(ExactCoulombLocalConeQuadratic, MatchesGeneratedBoundaryKktOracles)
+{
+  constexpr int kCases = 32;
+  for (int index = 0; index < kCases; ++index) {
+    Eigen::Matrix3d generator;
+    const double phase = 0.37 * index;
+    generator << 1.0 + 0.03 * index, 0.2 * std::sin(phase),
+        -0.1 * std::cos(phase), 0.15 * std::cos(0.7 * phase),
+        0.8 + 0.01 * index, 0.12 * std::sin(1.3 * phase),
+        -0.08 * std::sin(phase), 0.09 * std::cos(1.1 * phase),
+        0.6 + 0.02 * index;
+    const Eigen::Matrix3d hessian
+        = generator.transpose() * generator
+          + (0.2 + 0.01 * index) * Eigen::Matrix3d::Identity();
+    const double coefficient = 0.15 + 0.025 * (index % 20);
+    const double angle = 0.31 + 0.47 * index;
+    const Eigen::Vector2d tangentDirection(std::cos(angle), std::sin(angle));
+    const double normal = 0.25 + 0.08 * index;
+    const double dualMagnitude = 0.4 + 0.05 * (index % 9);
+
+    Eigen::Vector3d expected;
+    expected[0] = normal;
+    expected.tail<2>() = coefficient * normal * tangentDirection;
+    Eigen::Vector3d gradient;
+    gradient[0] = coefficient * dualMagnitude;
+    gradient.tail<2>() = -dualMagnitude * tangentDirection;
+    const Eigen::Vector3d linearTerm = gradient - hessian * expected;
+
+    dart::math::detail::ExactCoulombLocalConeQuadraticFactorization
+        factorization;
+    ASSERT_TRUE(
+        dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+            hessian, coefficient, factorization))
+        << "case " << index;
+    Eigen::Vector3d reaction;
+    ASSERT_TRUE(dart::math::detail::solveExactCoulombLocalConeQuadratic(
+        factorization, linearTerm, reaction))
+        << "case " << index;
+    expectVectorNear(reaction, expected, 2e-10);
+    expectLocalConeKkt(hessian, linearTerm, coefficient, reaction, 2e-10);
+  }
+}
+
+TEST(
+    ExactCoulombLocalConeQuadratic,
+    FallsBackForObservedNearGeneralizedPoleSystems)
+{
+  struct RegressionCase
+  {
+    Eigen::Matrix3d hessian;
+    Eigen::Vector3d linearTerm;
+  };
+
+  const std::vector<RegressionCase> cases{
+      {(Eigen::Matrix3d() << 8.8694614805585577,
+        0.15660946717152119,
+        0.034864384169893702,
+        0.15660946717152119,
+        8.2393607911363222,
+        -0.1485933754924732,
+        0.034864384169893702,
+        -0.1485933754924732,
+        8.4414104883828571)
+           .finished(),
+       Eigen::Vector3d(
+           -0.00054331100851662956,
+           -0.080070927918681561,
+           0.019111755192014482)},
+      {(Eigen::Matrix3d() << 9.8482144407794969,
+        -0.0043204662416178024,
+        -0.00051226759631371049,
+        -0.0043204662416178024,
+        10.654270300381615,
+        -0.027442870623253166,
+        -0.00051226759631371049,
+        -0.027442870623253166,
+        10.142705037544077)
+           .finished(),
+       Eigen::Vector3d(
+           3.191498553400951e-05, -1.543690630784238, 0.010816871687194661)},
+      {(Eigen::Matrix3d() << 11.562412321554103,
+        -0.095747155820775143,
+        -0.052244072712456027,
+        -0.095747155820775143,
+        11.606083447600202,
+        0.070321708383667886,
+        -0.052244072712456027,
+        0.070321708383667886,
+        11.473863068530736)
+           .finished(),
+       Eigen::Vector3d(
+           0.0020493450982079775, -0.46587625070486771, -0.15949090030121615)},
+  };
+
+  constexpr double kCoefficient = 0.8;
+  for (std::size_t index = 0; index < cases.size(); ++index) {
+    dart::math::detail::ExactCoulombLocalConeQuadraticFactorization
+        factorization;
+    ASSERT_TRUE(
+        dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+            cases[index].hessian, kCoefficient, factorization))
+        << "case " << index;
+
+    Eigen::Vector3d analyticalReaction;
+    EXPECT_FALSE(
+        dart::math::detail::trySolveExactCoulombLocalConeQuadraticAnalytically(
+            factorization, cases[index].linearTerm, analyticalReaction))
+        << "case " << index;
+
+    Eigen::Vector3d reaction;
+    ASSERT_TRUE(dart::math::detail::solveExactCoulombLocalConeQuadratic(
+        factorization, cases[index].linearTerm, reaction))
+        << "case " << index;
+    expectLocalConeKkt(
+        cases[index].hessian,
+        cases[index].linearTerm,
+        kCoefficient,
+        reaction,
+        1e-10);
+    EXPECT_LE(
+        computeLocalQuadraticObjective(
+            cases[index].hessian, cases[index].linearTerm, reaction),
+        0.0)
+        << "case " << index;
+  }
+}
+
+TEST(ExactCoulombLocalConeQuadratic, ExactlyMinimizesOverAFeasibleCoordinate)
+{
+  const Eigen::Matrix3d hessian = makeCrossCoupledLocalHessian();
+  const Eigen::Vector3d linearTerm(-6.57, -4.328, -2.394);
+  constexpr double kCoefficient = 0.6;
+  const Eigen::Vector3d previous(2.0, 0.4, -0.3);
+
+  dart::math::detail::ExactCoulombLocalConeQuadraticFactorization factorization;
+  ASSERT_TRUE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          hessian, kCoefficient, factorization));
+  Eigen::Vector3d reaction;
+  ASSERT_TRUE(dart::math::detail::solveExactCoulombLocalConeQuadratic(
+      factorization, linearTerm, reaction));
+
+  EXPECT_LT(
+      computeLocalQuadraticObjective(hessian, linearTerm, reaction),
+      computeLocalQuadraticObjective(hessian, linearTerm, previous));
+  expectLocalConeKkt(hessian, linearTerm, kCoefficient, reaction);
+}
+
+TEST(ExactCoulombLocalConeQuadratic, RejectsNonSpdOrAsymmetricHessian)
+{
+  dart::math::detail::ExactCoulombLocalConeQuadraticFactorization factorization;
+  Eigen::Matrix3d indefinite = Eigen::Matrix3d::Identity();
+  indefinite(2, 2) = -1.0;
+  EXPECT_FALSE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          indefinite, 0.5, factorization));
+
+  Eigen::Matrix3d asymmetric = Eigen::Matrix3d::Identity();
+  asymmetric(0, 1) = 1e-6;
+  EXPECT_FALSE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          asymmetric, 0.5, factorization));
 }
 
 TEST(ExactCoulombFrozenConeSolver, SolvesSingleContactNormalAnalyticalCase)
@@ -222,6 +729,128 @@ TEST(
 
 TEST(
     ExactCoulombFrozenConeBlockGaussSeidelSolver,
+    DefaultsToExactMetricAndKeepsInverseProjectionExplicit)
+{
+  const Eigen::Matrix3d localHessian = makeCrossCoupledLocalHessian();
+  const Eigen::Matrix3d delassus = localHessian - Eigen::Matrix3d::Identity();
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-6.57, -4.328, -2.394), 0.6);
+
+  dart::math::detail::ExactCoulombFrozenConeBlockGaussSeidelOptions options;
+  options.maxSweeps = 1;
+  options.runFixedSweeps = true;
+  ASSERT_EQ(
+      options.localSolver,
+      dart::math::detail::ExactCoulombFrozenConeLocalSolver::
+          ExactMetricProjection);
+  const auto result
+      = dart::math::detail::solveExactCoulombFrozenConeBlockGaussSeidel(
+          problem,
+          Eigen::Vector3d::Zero(),
+          Eigen::Vector3d::Zero(),
+          1.0,
+          makeDenseDelassusOperator(delassus),
+          options);
+
+  auto inverseOptions = options;
+  inverseOptions.localSolver = dart::math::detail::
+      ExactCoulombFrozenConeLocalSolver::InverseEuclideanProjection;
+  const auto inverseResult
+      = dart::math::detail::solveExactCoulombFrozenConeBlockGaussSeidel(
+          problem,
+          Eigen::Vector3d::Zero(),
+          Eigen::Vector3d::Zero(),
+          1.0,
+          makeDenseDelassusOperator(delassus),
+          inverseOptions);
+
+  ASSERT_EQ(
+      result.status,
+      dart::math::detail::ExactCoulombFrozenConeStatus::MaxIterations);
+  ASSERT_EQ(
+      inverseResult.status,
+      dart::math::detail::ExactCoulombFrozenConeStatus::MaxIterations);
+  expectVectorNear(
+      inverseResult.reaction,
+      Eigen::Vector3d(
+          1.5035607320294018, 0.7007049576384029, 0.5682100996156688),
+      1e-11);
+  expectVectorNear(result.reaction, Eigen::Vector3d(1.5, 0.72, 0.54), 1e-11);
+
+  dart::math::detail::ExactCoulombLocalConeQuadraticFactorization factorization;
+  ASSERT_TRUE(
+      dart::math::detail::prepareExactCoulombLocalConeQuadraticFactorization(
+          localHessian, 0.6, factorization));
+  const Eigen::Vector3d linearTerm = problem.freeVelocity;
+  EXPECT_TRUE(dart::math::detail::isExactCoulombLocalConeQuadraticKktPoint(
+      factorization, linearTerm, result.reaction));
+  EXPECT_FALSE(dart::math::detail::isExactCoulombLocalConeQuadraticKktPoint(
+      factorization, linearTerm, inverseResult.reaction));
+}
+
+TEST(
+    ExactCoulombFrozenConeBlockGaussSeidelSolver, CanRunTheFullFixedSweepBudget)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+
+  dart::math::detail::ExactCoulombFrozenConeBlockGaussSeidelOptions options;
+  options.maxSweeps = 3;
+  options.localIterations = 4;
+  options.tolerance = 1.0;
+  options.runFixedSweeps = true;
+
+  const auto result
+      = dart::math::detail::solveExactCoulombFrozenConeBlockGaussSeidel(
+          problem,
+          Eigen::Vector3d::Zero(),
+          Eigen::Vector3d::Zero(),
+          1.0,
+          makeDenseDelassusOperator(delassus),
+          options);
+
+  EXPECT_EQ(
+      result.status,
+      dart::math::detail::ExactCoulombFrozenConeStatus::MaxIterations);
+  EXPECT_EQ(result.iterations, options.maxSweeps);
+  expectVectorNear(result.reaction, Eigen::Vector3d(0.5, 0.0, 0.0));
+}
+
+TEST(
+    ExactCoulombFrozenConeBlockGaussSeidelSolver,
+    UsesExplicitInitialIterateWithoutChangingProximalCenter)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d referenceReaction = Eigen::Vector3d::Zero();
+  Eigen::VectorXd initialReaction(3);
+  initialReaction << 2.0, 0.5, 0.0;
+  const Eigen::Vector3d frozenCoupling = Eigen::Vector3d::Zero();
+
+  dart::math::detail::ExactCoulombFrozenConeBlockGaussSeidelOptions options;
+  options.maxSweeps = 0;
+  options.initialReaction = &initialReaction;
+
+  const auto result
+      = dart::math::detail::solveExactCoulombFrozenConeBlockGaussSeidel(
+          problem,
+          referenceReaction,
+          frozenCoupling,
+          1.0,
+          makeDenseDelassusOperator(delassus),
+          options);
+
+  EXPECT_EQ(
+      result.status,
+      dart::math::detail::ExactCoulombFrozenConeStatus::MaxIterations);
+  EXPECT_EQ(result.iterations, 0);
+  expectVectorNear(result.reaction, initialReaction);
+}
+
+TEST(
+    ExactCoulombFrozenConeBlockGaussSeidelSolver,
     ProjectsTangentialImpulseOntoCone)
 {
   const auto problem
@@ -335,6 +964,28 @@ TEST(
           stepSizeGamma,
           makeDenseDelassusOperator(delassus),
           bgsOptions);
+  auto exactOptions = bgsOptions;
+  exactOptions.localSolver = dart::math::detail::
+      ExactCoulombFrozenConeLocalSolver::ExactMetricProjection;
+  const auto exactResult
+      = dart::math::detail::solveExactCoulombFrozenConeBlockGaussSeidel(
+          problem,
+          referenceReaction,
+          frozenCoupling,
+          stepSizeGamma,
+          makeDenseDelassusOperator(delassus),
+          exactOptions);
+  auto localProjectedOptions = bgsOptions;
+  localProjectedOptions.localSolver = dart::math::detail::
+      ExactCoulombFrozenConeLocalSolver::ProjectedGradient;
+  const auto localProjectedResult
+      = dart::math::detail::solveExactCoulombFrozenConeBlockGaussSeidel(
+          problem,
+          referenceReaction,
+          frozenCoupling,
+          stepSizeGamma,
+          makeDenseDelassusOperator(delassus),
+          localProjectedOptions);
 
   EXPECT_EQ(
       projectedResult.status,
@@ -342,7 +993,68 @@ TEST(
   EXPECT_EQ(
       bgsResult.status,
       dart::math::detail::ExactCoulombFrozenConeStatus::Success);
+  EXPECT_EQ(
+      exactResult.status,
+      dart::math::detail::ExactCoulombFrozenConeStatus::Success);
+  EXPECT_EQ(
+      localProjectedResult.status,
+      dart::math::detail::ExactCoulombFrozenConeStatus::Success);
   expectVectorNear(bgsResult.reaction, projectedResult.reaction, 1e-8);
+  expectVectorNear(exactResult.reaction, projectedResult.reaction, 1e-8);
+  expectVectorNear(
+      localProjectedResult.reaction, projectedResult.reaction, 1e-8);
+}
+
+TEST(
+    ExactCoulombFrozenConeBlockGaussSeidelSolver,
+    ExactCoordinateSweepDoesNotIncreaseFrozenObjective)
+{
+  dart::math::detail::ExactCoulombContactProblem problem;
+  problem.freeVelocity.resize(6);
+  problem.freeVelocity << -1.2, -0.7, 0.3, -0.8, 0.4, -0.25;
+  problem.coefficients = Eigen::Vector2d(0.6, 0.4);
+
+  Eigen::MatrixXd generator = Eigen::MatrixXd::Identity(6, 6);
+  generator(0, 1) = 0.3;
+  generator(1, 2) = -0.2;
+  generator(2, 3) = 0.15;
+  generator(3, 4) = -0.25;
+  generator(4, 5) = 0.1;
+  generator(0, 5) = 0.12;
+  const Eigen::MatrixXd delassus = generator.transpose() * generator
+                                   + 0.2 * Eigen::MatrixXd::Identity(6, 6);
+  const Eigen::VectorXd referenceReaction = Eigen::VectorXd::Zero(6);
+  const Eigen::VectorXd frozenCoupling = Eigen::VectorXd::Zero(6);
+  Eigen::VectorXd initialReaction(6);
+  initialReaction << 1.0, 0.2, -0.1, 0.8, -0.1, 0.1;
+  constexpr double kStepSizeGamma = 0.7;
+
+  dart::math::detail::ExactCoulombFrozenConeBlockGaussSeidelOptions options;
+  options.maxSweeps = 1;
+  options.runFixedSweeps = true;
+  options.localSolver = dart::math::detail::ExactCoulombFrozenConeLocalSolver::
+      ExactMetricProjection;
+  options.initialReaction = &initialReaction;
+  const auto result
+      = dart::math::detail::solveExactCoulombFrozenConeBlockGaussSeidel(
+          problem,
+          referenceReaction,
+          frozenCoupling,
+          kStepSizeGamma,
+          makeDenseDelassusOperator(delassus),
+          options);
+
+  ASSERT_EQ(
+      result.status,
+      dart::math::detail::ExactCoulombFrozenConeStatus::MaxIterations);
+  const Eigen::MatrixXd hessian
+      = delassus + (1.0 / kStepSizeGamma) * Eigen::MatrixXd::Identity(6, 6);
+  const Eigen::VectorXd linearTerm = problem.freeVelocity + frozenCoupling
+                                     - referenceReaction / kStepSizeGamma;
+  const auto objective = [&](const Eigen::VectorXd& reaction) {
+    return 0.5 * reaction.dot(hessian * reaction) + linearTerm.dot(reaction);
+  };
+  EXPECT_LE(objective(result.reaction), objective(initialReaction) + 1e-12);
 }
 
 TEST(
@@ -384,8 +1096,10 @@ TEST(
 
   std::vector<Eigen::Matrix3d> cachedBlocks{
       delassus.block<3, 3>(0, 0), delassus.block<3, 3>(3, 3)};
+  dart::math::detail::ExactCoulombFrozenConeBlockGaussSeidelWorkspace workspace;
   auto cachedOptions = options;
   cachedOptions.cachedDiagonalBlocks = &cachedBlocks;
+  cachedOptions.workspace = &workspace;
 
   const auto accumulateBlockColumns
       = [&delassus](
@@ -395,7 +1109,27 @@ TEST(
           accumulator.noalias() += delassus.middleCols<3>(3 * contact) * delta;
         };
 
+  auto uncachedIncrementalOptions = options;
+  uncachedIncrementalOptions.cachedDiagonalBlocks = &cachedBlocks;
+  const auto uncachedIncrementalResult
+      = dart::math::detail::solveExactCoulombFrozenConeBlockGaussSeidel(
+          problem,
+          referenceReaction,
+          frozenCoupling,
+          stepSizeGamma,
+          makeDenseDelassusOperator(delassus),
+          accumulateBlockColumns,
+          uncachedIncrementalOptions);
   const auto incrementalResult
+      = dart::math::detail::solveExactCoulombFrozenConeBlockGaussSeidel(
+          problem,
+          referenceReaction,
+          frozenCoupling,
+          stepSizeGamma,
+          makeDenseDelassusOperator(delassus),
+          accumulateBlockColumns,
+          cachedOptions);
+  const auto repeatedResult
       = dart::math::detail::solveExactCoulombFrozenConeBlockGaussSeidel(
           problem,
           referenceReaction,
@@ -411,7 +1145,60 @@ TEST(
   EXPECT_EQ(
       incrementalResult.status,
       dart::math::detail::ExactCoulombFrozenConeStatus::Success);
+  EXPECT_EQ(
+      uncachedIncrementalResult.status,
+      dart::math::detail::ExactCoulombFrozenConeStatus::Success);
+  expectVectorNear(
+      incrementalResult.reaction, uncachedIncrementalResult.reaction, 1e-12);
   expectVectorNear(incrementalResult.reaction, referenceResult.reaction, 1e-10);
+  EXPECT_EQ(
+      repeatedResult.status,
+      dart::math::detail::ExactCoulombFrozenConeStatus::Success);
+  expectVectorNear(repeatedResult.reaction, referenceResult.reaction, 1e-10);
+  EXPECT_EQ(workspace.getLocalSystemBuildCount(), 1u);
+}
+
+TEST(
+    ExactCoulombFrozenConeBlockGaussSeidelSolver,
+    WorkspaceInvalidatesWhenLocalSystemKeyChanges)
+{
+  using Workspace
+      = dart::math::detail::ExactCoulombFrozenConeBlockGaussSeidelWorkspace;
+
+  Workspace workspace;
+  std::vector<Eigen::Matrix3d> diagonalBlocks{Eigen::Matrix3d::Identity()};
+  Eigen::VectorXd coefficients = Eigen::VectorXd::Constant(1, 0.5);
+  constexpr auto kLocalSolver = dart::math::detail::
+      ExactCoulombFrozenConeLocalSolver::ExactMetricProjection;
+
+  ASSERT_TRUE(workspace.prepareLocalSystems(
+      diagonalBlocks, coefficients, 0.4, kLocalSolver, 0.0));
+  EXPECT_EQ(workspace.getLocalSystemBuildCount(), 1u);
+
+  ASSERT_TRUE(workspace.prepareLocalSystems(
+      diagonalBlocks, coefficients, 0.4, kLocalSolver, 0.0));
+  EXPECT_EQ(workspace.getLocalSystemBuildCount(), 1u);
+
+  ASSERT_TRUE(workspace.prepareLocalSystems(
+      diagonalBlocks, coefficients, 0.2, kLocalSolver, 0.0));
+  EXPECT_EQ(workspace.getLocalSystemBuildCount(), 2u);
+
+  diagonalBlocks[0](0, 0) = 1.5;
+  ASSERT_TRUE(workspace.prepareLocalSystems(
+      diagonalBlocks, coefficients, 0.2, kLocalSolver, 0.0));
+  EXPECT_EQ(workspace.getLocalSystemBuildCount(), 3u);
+
+  coefficients[0] = 0.8;
+  ASSERT_TRUE(workspace.prepareLocalSystems(
+      diagonalBlocks, coefficients, 0.2, kLocalSolver, 0.0));
+  EXPECT_EQ(workspace.getLocalSystemBuildCount(), 4u);
+
+  diagonalBlocks.push_back(2.0 * Eigen::Matrix3d::Identity());
+  coefficients.conservativeResize(2);
+  coefficients[1] = 0.3;
+  ASSERT_TRUE(workspace.prepareLocalSystems(
+      diagonalBlocks, coefficients, 0.2, kLocalSolver, 0.0));
+  EXPECT_EQ(workspace.getLocalSystemBuildCount(), 5u);
 }
 
 TEST(
@@ -521,6 +1308,28 @@ TEST(
       dart::math::detail::ExactCoulombFrozenConeStatus::InvalidInput);
 }
 
+TEST(ExactCoulombFrozenConeBlockGaussSeidelSolver, RejectsInvalidOptions)
+{
+  const auto problem = makeOneContactProblem(Eigen::Vector3d::Zero(), 0.5);
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+
+  dart::math::detail::ExactCoulombFrozenConeBlockGaussSeidelOptions options;
+  options.maxSweeps = -1;
+
+  const auto result
+      = dart::math::detail::solveExactCoulombFrozenConeBlockGaussSeidel(
+          problem,
+          Eigen::Vector3d::Zero(),
+          Eigen::Vector3d::Zero(),
+          1.0,
+          makeDenseDelassusOperator(delassus),
+          options);
+
+  EXPECT_EQ(
+      result.status,
+      dart::math::detail::ExactCoulombFrozenConeStatus::InvalidInput);
+}
+
 TEST(ExactCoulombFrozenConeSolver, RejectsInvalidStepSizeGamma)
 {
   const auto problem = makeOneContactProblem(Eigen::Vector3d::Zero(), 0.5);
@@ -537,6 +1346,37 @@ TEST(ExactCoulombFrozenConeSolver, RejectsInvalidStepSizeGamma)
   EXPECT_EQ(
       result.status,
       dart::math::detail::ExactCoulombFrozenConeStatus::InvalidInput);
+}
+
+TEST(ExactCoulombFbfSolver, RejectsInvalidOptions)
+{
+  const auto problem = makeOneContactProblem(Eigen::Vector3d::Zero(), 0.5);
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+
+  int innerCalls = 0;
+  const auto innerSolver = [&innerCalls](
+                               const auto&,
+                               const Eigen::Ref<const Eigen::VectorXd>&,
+                               const Eigen::Ref<const Eigen::VectorXd>&,
+                               double,
+                               Eigen::Ref<Eigen::VectorXd>) {
+    ++innerCalls;
+    return false;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.maxOuterIterations = -1;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      Eigen::Vector3d::Zero(),
+      makeDenseDelassusOperator(delassus),
+      innerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status, dart::math::detail::ExactCoulombFbfStatus::InvalidInput);
+  EXPECT_EQ(innerCalls, 0);
 }
 
 TEST(ExactCoulombFbfSolver, StopsBeforeInnerSolveWhenInitialResidualIsSmall)
@@ -701,12 +1541,15 @@ TEST(ExactCoulombFbfSolver, RetainsBestIterateOnMaxIterations)
   const Eigen::Vector3d initialReaction = Eigen::Vector3d::Zero();
 
   int innerCalls = 0;
-  const auto innerSolver = [&innerCalls](
+  std::vector<Eigen::VectorXd> innerInitialReactions;
+  const auto innerSolver = [&innerCalls, &innerInitialReactions](
                                const auto&,
                                const Eigen::Ref<const Eigen::VectorXd>&,
                                const Eigen::Ref<const Eigen::VectorXd>&,
                                double,
+                               const Eigen::VectorXd& innerInitialReaction,
                                Eigen::Ref<Eigen::VectorXd> output) {
+    innerInitialReactions.push_back(innerInitialReaction);
     output.setZero();
     output[0] = innerCalls == 0 ? 0.25 : 2.0;
     ++innerCalls;
@@ -729,6 +1572,9 @@ TEST(ExactCoulombFbfSolver, RetainsBestIterateOnMaxIterations)
   EXPECT_EQ(
       result.status, dart::math::detail::ExactCoulombFbfStatus::MaxIterations);
   EXPECT_EQ(result.iterations, 2);
+  ASSERT_EQ(innerInitialReactions.size(), 2u);
+  expectVectorNear(innerInitialReactions[0], Eigen::Vector3d::Zero());
+  expectVectorNear(innerInitialReactions[1], Eigen::Vector3d(0.25, 0.0, 0.0));
   EXPECT_EQ(result.bestIteration, 1);
   EXPECT_LT(
       result.bestResidual.value, result.residualHistory.back().residual.value);
@@ -779,7 +1625,95 @@ TEST(ExactCoulombFbfSolver, ShrinksStepUntilCouplingVariationIsAccepted)
   EXPECT_LE(result.couplingVariationRatio, options.couplingVariationTolerance);
 }
 
-TEST(ExactCoulombFbfSolver, RecoversBaseStepAfterAcceptedShrink)
+TEST(ExactCoulombFbfSolver, CanRunAnUncappedFixedGammaExperiment)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d initialReaction = Eigen::Vector3d::Zero();
+
+  std::vector<double> attemptedStepSizes;
+  const auto innerSolver = [&attemptedStepSizes](
+                               const auto&,
+                               const Eigen::Ref<const Eigen::VectorXd>&,
+                               const Eigen::Ref<const Eigen::VectorXd>&,
+                               double stepSizeGamma,
+                               Eigen::Ref<Eigen::VectorXd> output) {
+    attemptedStepSizes.push_back(stepSizeGamma);
+    output << 2.0, 1.0, 0.0;
+    return true;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = 10.0;
+  options.capInitialStepSizeAtSafeBound = false;
+  options.enableAdaptiveStepSize = false;
+  options.couplingVariationTolerance = 1e-12;
+  options.maxOuterIterations = 2;
+  options.tolerance = 0.0;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      initialReaction,
+      makeDenseDelassusOperator(delassus),
+      innerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status, dart::math::detail::ExactCoulombFbfStatus::MaxIterations);
+  ASSERT_EQ(attemptedStepSizes.size(), 2u);
+  EXPECT_EQ(result.shrinkIterations, 0);
+  EXPECT_GT(result.couplingVariationRatio, options.couplingVariationTolerance);
+  EXPECT_NEAR(result.stepSize, options.initialStepSize, 1e-12);
+  for (const double stepSize : attemptedStepSizes)
+    EXPECT_NEAR(stepSize, options.initialStepSize, 1e-12);
+}
+
+TEST(ExactCoulombFbfSolver, DoesNotShrinkPastFinalPermittedTrial)
+{
+  const auto problem
+      = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
+  const Eigen::Matrix3d delassus = Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d initialReaction = Eigen::Vector3d::Zero();
+
+  std::vector<double> attemptedStepSizes;
+  const auto innerSolver = [&attemptedStepSizes](
+                               const auto&,
+                               const Eigen::Ref<const Eigen::VectorXd>&,
+                               const Eigen::Ref<const Eigen::VectorXd>&,
+                               double stepSizeGamma,
+                               Eigen::Ref<Eigen::VectorXd> output) {
+    attemptedStepSizes.push_back(stepSizeGamma);
+    output << 2.0, 1.0, 0.0;
+    return true;
+  };
+
+  dart::math::detail::ExactCoulombFbfOptions options;
+  options.initialStepSize = 1.0;
+  options.couplingVariationTolerance = std::numeric_limits<double>::min();
+  options.maxOuterIterations = 1;
+  options.maxStepShrinkIterations = 2;
+  options.tolerance = 0.0;
+
+  const auto result = dart::math::detail::solveExactCoulombFbf(
+      problem,
+      initialReaction,
+      makeDenseDelassusOperator(delassus),
+      innerSolver,
+      options);
+
+  EXPECT_EQ(
+      result.status,
+      dart::math::detail::ExactCoulombFbfStatus::StepSizeUnderflow);
+  ASSERT_EQ(attemptedStepSizes.size(), 3u);
+  EXPECT_EQ(result.shrinkIterations, 2);
+  EXPECT_NEAR(attemptedStepSizes[0], 1.0, 1e-12);
+  EXPECT_NEAR(attemptedStepSizes[1], 0.7, 1e-12);
+  EXPECT_NEAR(attemptedStepSizes[2], 0.49, 1e-12);
+  EXPECT_NEAR(result.stepSize, attemptedStepSizes.back(), 1e-12);
+}
+
+TEST(ExactCoulombFbfSolver, KeepsShrunkStepForRemainderOfSolve)
 {
   const auto problem
       = makeOneContactProblem(Eigen::Vector3d(-1.0, 0.0, 0.0), 0.5);
@@ -823,7 +1757,9 @@ TEST(ExactCoulombFbfSolver, RecoversBaseStepAfterAcceptedShrink)
       ++baseStepAttempts;
   }
 
-  EXPECT_GE(baseStepAttempts, 2);
+  EXPECT_EQ(baseStepAttempts, 1);
+  ASSERT_GE(attemptedStepSizes.size(), 5u);
+  EXPECT_NEAR(attemptedStepSizes.back(), std::pow(0.7, 3), 1e-12);
 }
 
 TEST(ExactCoulombFbfSolver, RunsWithProjectedGradientInnerSolver)

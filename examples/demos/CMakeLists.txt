@@ -133,6 +133,51 @@ if(Python3_FOUND)
   set(DART_DEMOS_HAVE_PYTHON TRUE)
 endif()
 
+# Bind the queryable author-turntable and author-card-house contracts in
+# dart-demos to their exact shared specs and production scene source.
+# CMAKE_CONFIGURE_DEPENDS refreshes the embedded hashes before either changed
+# source is rebuilt, so a stale binary cannot satisfy the evidence finalizer.
+set(
+  fbf_author_turntable_spec_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorTurntableSpec.hpp"
+)
+set(
+  fbf_paper_friction_demo_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfPaperFrictionScene.cpp"
+)
+set(
+  fbf_author_card_house_spec_source
+  "${CMAKE_CURRENT_SOURCE_DIR}/scenes/FbfAuthorCardHouseSpec.hpp"
+)
+set_property(
+  DIRECTORY
+  APPEND
+  PROPERTY
+    CMAKE_CONFIGURE_DEPENDS
+      "${fbf_author_turntable_spec_source}"
+      "${fbf_author_card_house_spec_source}"
+      "${fbf_paper_friction_demo_source}"
+)
+file(
+  SHA256 "${fbf_author_turntable_spec_source}"
+  fbf_author_turntable_spec_sha256
+)
+file(SHA256 "${fbf_paper_friction_demo_source}" fbf_paper_friction_demo_sha256)
+file(
+  SHA256 "${fbf_author_card_house_spec_source}"
+  fbf_author_card_house_spec_sha256
+)
+set_property(
+  SOURCE "${fbf_paper_friction_demo_source}"
+  APPEND
+  PROPERTY
+    COMPILE_DEFINITIONS
+      DART_FBF_AUTHOR_TURNTABLE_SPEC_SHA256="${fbf_author_turntable_spec_sha256}"
+      DART_FBF_AUTHOR_TURNTABLE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
+      DART_FBF_AUTHOR_CARD_HOUSE_SPEC_SHA256="${fbf_author_card_house_spec_sha256}"
+      DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256="${fbf_paper_friction_demo_sha256}"
+)
+
 # Globs every scene source, including one level of scene subdirectories (for
 # multi-file scenes, e.g. scenes/tinkertoy/), and conditionally adds
 # scenes/human_joint_limits/ only when TinyDNN + Threads were found. Shared by

@@ -1,0 +1,367 @@
+{
+  "argv": [
+    "scripts/run_fbf_cpu_evidence.py",
+    "--binary",
+    "build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+    "--output-dir",
+    "/tmp/fbf_cpu_paper_postreview_20260712_card600",
+    "--case",
+    "card_house_26_settle_projectile_full:600",
+    "--threads",
+    "1",
+    "--repetitions",
+    "1",
+    "--warmup-repetitions",
+    "0",
+    "--solver",
+    "exact_fbf",
+    "--contract",
+    "paper_cpu",
+    "--collision-frontend",
+    "native",
+    "--cpu-list",
+    "4",
+    "--timeout",
+    "3600",
+    "--accept-nonzero"
+  ],
+  "binary": {
+    "path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+    "sha256": "1688bcd13703dc9f58411bf2e83628f07ebd92fbf0e2eeb4b325748ef4182dfd"
+  },
+  "configuration": {
+    "cases": [
+      {
+        "scenario": "card_house_26_settle_projectile_full",
+        "steps": 600
+      }
+    ],
+    "collision_frontend": "native",
+    "contract": "paper_cpu",
+    "cpu_list": "4",
+    "cpu_lists_by_threads": {},
+    "initial_gamma": "nan",
+    "local_solver": "default",
+    "repetitions": 1,
+    "resolved_local_solver": "exact_metric",
+    "solver": "exact_fbf",
+    "split_impulse": "default",
+    "threads": [
+      1
+    ],
+    "timeout_seconds": 3600.0,
+    "warm_start": "default",
+    "warmup_repetitions": 0
+  },
+  "exact_diagnostics_scope": "Public getters describe the last exact constrained group in each World step; warm_start_matched_fraction divides matched contacts by the step collision-result contact count.",
+  "execution_order": "sequential trajectory processes; no concurrent samples",
+  "generated_at_utc": "2026-07-12T05:13:24.041568+00:00",
+  "git": {
+    "branch": "research/fbf-friction-release620",
+    "describe": "v6.19.3-233-g2ddd9f56a45-dirty",
+    "dirty": true,
+    "root": "/home/js/dev/dartsim/dart/task_6",
+    "sha": "2ddd9f56a45437cf1c55e3433bd8aae080acff1e",
+    "status_short": [
+      "M dart/constraint/BoxedLcpConstraintSolver.cpp",
+      " M dart/constraint/ConstraintSolver.cpp",
+      " M dart/constraint/ExactCoulombFbfConstraintSolver.cpp",
+      " M dart/constraint/ExactCoulombFbfConstraintSolver.hpp",
+      " M dart/constraint/detail/ExactCoulombConstraintAdapter.hpp",
+      " M dart/constraint/detail/ExactCoulombContactRowOperator.hpp",
+      " M dart/math/detail/CoulombCone.hpp",
+      " M dart/math/detail/ExactCoulombFbfSolver.hpp",
+      " M dart/math/detail/MasonryArchGeometry.hpp",
+      " M data/mjcf/rigid_ipc_arch/README.md",
+      " M docs/dev_tasks/fbf_exact_coulomb_friction/AGENT_CONTINUATION.md",
+      " M docs/dev_tasks/fbf_exact_coulomb_friction/HANDOFF.md",
+      " M docs/dev_tasks/fbf_exact_coulomb_friction/PR_REPORT.md",
+      " M docs/dev_tasks/fbf_exact_coulomb_friction/README.md",
+      " M docs/dev_tasks/fbf_exact_coulomb_friction/RESUME.md",
+      " D docs/dev_tasks/fbf_exact_coulomb_friction/assets/arch25_alldynamic_seating_collapse.csv",
+      " M docs/dev_tasks/fbf_exact_coulomb_friction/gui-capture-report.md",
+      " M docs/dev_tasks/fbf_exact_coulomb_friction/paper-notes.md",
+      " M docs/dev_tasks/fbf_exact_coulomb_friction/paper-parity-matrix.md",
+      " M docs/dev_tasks/fbf_exact_coulomb_friction/residual-history-report.md",
+      " M examples/demos/DemoHost.cpp",
+      " M examples/demos/DemoHost.hpp",
+      " M examples/demos/README.md",
+      " M examples/demos/Registry.cpp",
+      " M examples/demos/main.cpp",
+      " M examples/demos/scenes/FbfPaperFrictionScene.cpp",
+      " M examples/demos/scenes/Scenes.hpp",
+      " M pixi.toml",
+      " M python/tests/unit/gui/test_agent_capture.py",
+      " M python/tests/unit/gui/test_agent_debug_overlay.py",
+      " M python/tests/unit/gui/test_agent_view_quality.py",
+      " M python/tests/unit/test_evidence_publish.py",
+      " M scripts/agent_capture.py",
+      " M scripts/agent_debug_overlay.py",
+      " M scripts/agent_view_quality.py",
+      " M scripts/evidence_publish.py",
+      " M tests/benchmark/integration/CMakeLists.txt",
+      " M tests/benchmark/integration/bm_exact_coulomb_fbf_paper.cpp",
+      " M tests/benchmark/integration/fbf_paper_arch_probe.cpp",
+      " M tests/benchmark/integration/fbf_paper_card_house_probe.cpp",
+      " M tests/benchmark/integration/fbf_paper_gamma_sweep.cpp",
+      " M tests/benchmark/integration/fbf_paper_mujoco_baseline.py",
+      " M tests/benchmark/integration/fbf_paper_trace.cpp",
+      " M tests/integration/test_ConstraintSolver.cpp",
+      " M tests/integration/test_ExactCoulombFbfPaperFixtures.cpp",
+      " M tests/unit/constraint/test_ExactCoulombFbfConstraintSolver.cpp",
+      " M tests/unit/math/test_CoulombCone.cpp",
+      " M tests/unit/math/test_ExactCoulombFbfSolver.cpp",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/KAMINO_BASELINE.md",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/MUJOCO_BASELINE.md",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/PROVENANCE.txt",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/assets/arch25_alldynamic_seating_collapse.INVALID.md",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/assets/fbf_residual_history_card_house_26.csv",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/assets/fbf_residual_history_masonry_arch_101.csv",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/assets/kamino_cuda_evidence/",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/assets/mujoco_cpu_evidence/",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/",
+      "?? docs/dev_tasks/fbf_exact_coulomb_friction/paper-evidence-manifest.json",
+      "?? python/tests/unit/test_run_fbf_cpu_evidence.py",
+      "?? python/tests/unit/test_run_fbf_kamino_evidence.py",
+      "?? python/tests/unit/test_run_fbf_mujoco_evidence.py",
+      "?? python/tests/unit/test_run_fbf_visual_evidence.py",
+      "?? python/tests/unit/test_validate_fbf_paper_evidence.py",
+      "?? scripts/run_fbf_cpu_evidence.py",
+      "?? scripts/run_fbf_kamino_evidence.py",
+      "?? scripts/run_fbf_mujoco_evidence.py",
+      "?? scripts/run_fbf_visual_evidence.py",
+      "?? scripts/validate_fbf_paper_evidence.py",
+      "?? tests/benchmark/integration/fbf_paper_arch_wedge_collision_probe.cpp",
+      "?? tests/unit/math/test_MasonryArchGeometry.cpp"
+    ]
+  },
+  "host": {
+    "cpu": {
+      "governors_by_cpu": {
+        "4": "powersave"
+      },
+      "load_average": [
+        6.0576171875,
+        7.0302734375,
+        11.49462890625
+      ],
+      "logical_cpu_topology": {
+        "4": {
+          "core_id": "8",
+          "physical_package_id": "0",
+          "thread_siblings_list": "4-5"
+        }
+      },
+      "logical_cpus": 32,
+      "model_names": [
+        "13th Gen Intel(R) Core(TM) i9-13950HX"
+      ],
+      "physical_cores_detected": 24,
+      "process_affinity": [
+        4
+      ],
+      "sampled_frequency_khz_by_cpu": {
+        "4": "4500000"
+      }
+    },
+    "memory_kib": "MemTotal:       129245552 kB\nMemFree:        58591908 kB\nMemAvailable:   95740588 kB\nBuffers:         4415384 kB\nCached:         37590748 kB\nSwapCached:       134312 kB\nActive:         16642020 kB\nInactive:       45482128 kB\nActive(anon):   13256852 kB\nInactive(anon): 16304896 kB\nActive(file):    3385168 kB\nInactive(file): 29177232 kB\nUnevictable:        2140 kB\nMlocked:            2140 kB\nSwapTotal:      134217724 kB\nSwapFree:       131006252 kB\nZswap:                 0 kB\nZswapped:              0 kB\nDirty:              4636 kB\nWriteback:             0 kB\nAnonPages:      20098716 kB\nMapped:          2792716 kB\nShmem:           9442388 kB\nKReclaimable:    5762960 kB\nSlab:            6952940 kB\nSReclaimable:    5762960 kB\nSUnreclaim:      1189980 kB\nKernelStack:       87280 kB\nPageTables:       255512 kB\nSecPageTables:      5656 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:    198840500 kB\nCommitted_AS:   127956208 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:      311140 kB\nVmallocChunk:          0 kB\nPercpu:            49664 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:   1714176 kB\nFilePmdMapped:      2048 kB\nCmaTotal:              0 kB\nCmaFree:         3059012 kB\nUnaccepted:            0 kB\nBalloon:               0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:     6457536 kB\nDirectMap2M:    104402944 kB\nDirectMap1G:    23068672 kB",
+    "platform": "Linux-7.0.0-27-generic-x86_64-with-glibc2.43",
+    "python": "3.14.6",
+    "uname": [
+      "Linux",
+      "mark26",
+      "7.0.0-27-generic",
+      "#27-Ubuntu SMP PREEMPT_DYNAMIC Thu Jun 18 19:13:49 UTC 2026",
+      "x86_64",
+      ""
+    ]
+  },
+  "paper_comparison_policy": "Paper target verdicts remain null unless the disclosed workload, full-trajectory, physical-outcome, convergence, sequential-thread, affinity, and Apple-silicon-family contracts all pass. The paper does not identify the Mac model or fully delimit its per-step timer.",
+  "paper_cpu_contract": {
+    "accept_outer_iteration_cap": true,
+    "adaptive_step_size": true,
+    "backend": "Warp and Newton CPU backend",
+    "boxed_lcp_fallback": false,
+    "dense_residual_polish": false,
+    "designated_reconstructed_frontend": "native",
+    "diagonal_seed": false,
+    "execution": "sequential and uncontended",
+    "host": "one Apple-silicon Mac; exact model not published",
+    "initial_gamma_contract": "automatic_safe_bound",
+    "inner_block_gauss_seidel_sweeps": {
+      "default": 10,
+      "masonry_arch": 30
+    },
+    "inner_local_solver": {
+      "contract": "rigorous DART local cone-QP solve; the paper's local 3x3 kernel formula is unpublished, so kernel equivalence and apples-to-apples timing remain unverified",
+      "mode": "exact_metric"
+    },
+    "matrix_free_seed": false,
+    "outer_iteration_cap": 200,
+    "outer_relaxation": 1.0,
+    "precision": "float32",
+    "projected_gradient_retry": false,
+    "references_contacts": {
+      "backspin": 1,
+      "card_house_26_reduced_contact": 214,
+      "card_house_26_settle_projectile_full": 214,
+      "card_house_26_settle_projectile_reduced_contact": 214,
+      "incline_mu_0_4": 4,
+      "incline_mu_0_5": 4,
+      "masonry_arch_25_full_manifold": 100,
+      "masonry_arch_25_projectile_reduced_contact": 100,
+      "masonry_arch_25_reduced_contact": 100,
+      "painleve_mu_0_5": 4,
+      "painleve_mu_0_55": 4,
+      "turntable_mu_0_2_omega_2": 0,
+      "turntable_mu_0_2_omega_5": 0,
+      "turntable_mu_0_5_omega_2": 4,
+      "turntable_mu_0_5_omega_5": 0
+    },
+    "references_ms": {
+      "backspin": 6.0,
+      "card_house_10_level": 853.0,
+      "card_house_26_reduced_contact": 199.0,
+      "card_house_26_settle_projectile_full": 199.0,
+      "card_house_26_settle_projectile_reduced_contact": 199.0,
+      "incline_mu_0_4": 5.3,
+      "incline_mu_0_5": 5.5,
+      "masonry_arch_101_full_manifold": 1234.0,
+      "masonry_arch_101_reduced_contact": 1234.0,
+      "masonry_arch_25_full_manifold": 595.0,
+      "masonry_arch_25_projectile_reduced_contact": 595.0,
+      "masonry_arch_25_reduced_contact": 595.0,
+      "painleve_mu_0_5": 7.0,
+      "painleve_mu_0_55": 6.4,
+      "turntable_mu_0_2_omega_2": 3.7,
+      "turntable_mu_0_2_omega_5": 3.1,
+      "turntable_mu_0_5_omega_2": 6.8,
+      "turntable_mu_0_5_omega_5": 3.1
+    },
+    "requested_simulation_threads": 1,
+    "solver": "exact_fbf",
+    "source": "Splitting Exact Coulomb Friction, Appendix B and Table 5",
+    "split_impulse": {
+      "contract": "scenario-specific DART stepping choice; equivalence to the paper's position treatment is unpublished",
+      "enabled_scenarios": [
+        "card_house_26_settle_projectile_full",
+        "masonry_arch_101_full_manifold",
+        "masonry_arch_25_full_manifold"
+      ]
+    },
+    "step_size_persistence": {
+      "contract": "the paper says gamma is slowly restored after stable steps but does not publish its recovery rule",
+      "enabled": true,
+      "growth_factor": 1.05
+    },
+    "step_size_scale": 1.0,
+    "time_step_seconds": 0.016666666666666666,
+    "timer_boundary_caveat": "the paper does not state a boundary more precise than wall time per step",
+    "timing_statistic": "mean wall time per step over the run",
+    "tolerance": 1e-06,
+    "trace_scene_gaps": {
+      "card_house_10_level": "paper CPU target is recorded, but fbf_paper_trace has no ten-level card-house scenario"
+    },
+    "trajectory_contracts": {
+      "backspin": {
+        "basis": "figure_endpoint_only_timing_run_length_unpublished",
+        "steps": 130
+      },
+      "card_house_26_settle_projectile_full": {
+        "basis": "published_10_seconds_at_60_hz",
+        "steps": 600
+      },
+      "incline_mu_0_4": {
+        "basis": "published_2_seconds_at_60_hz",
+        "steps": 120
+      },
+      "incline_mu_0_5": {
+        "basis": "published_2_seconds_at_60_hz",
+        "steps": 120
+      }
+    },
+    "warm_start": "previous solution when contacts are unchanged",
+    "warmup_exclusion": "none reported for FBF; only Kamino's first card step is explicitly excluded"
+  },
+  "physical_outcome_policy": {
+    "contracted_scenarios": [
+      "backspin",
+      "incline_mu_0_4",
+      "incline_mu_0_5",
+      "painleve_mu_0_5",
+      "painleve_mu_0_55",
+      "turntable_mu_0_2_omega_2",
+      "turntable_mu_0_2_omega_5",
+      "turntable_mu_0_5_omega_2",
+      "turntable_mu_0_5_omega_5"
+    ],
+    "evaluation": "final state of every complete measured repetition",
+    "source": "tests/integration/test_ExactCoulombFbfPaperFixtures.cpp fixture assertions",
+    "uncontracted_scenarios": [
+      "card_house_26_reduced_contact",
+      "card_house_26_settle_projectile_full",
+      "card_house_26_settle_projectile_reduced_contact",
+      "masonry_arch_101_full_manifold",
+      "masonry_arch_101_reduced_contact",
+      "masonry_arch_25_full_manifold",
+      "masonry_arch_25_projectile_reduced_contact",
+      "masonry_arch_25_reduced_contact"
+    ]
+  },
+  "schema_compatibility": "v5 preserves all 60 v4 performance columns and appends the resolved outer, inner, continuation, seeding, gamma, relaxation, warm-start, fallback, and split-impulse contract knobs",
+  "schema_version": 5,
+  "threading_policy": "requested/actual World thread counts do not prove that one coupled constraint island used multiple CPU cores; current threaded trace labels explicitly identify a serial FBF solve",
+  "timing_scope": {
+    "aggregation": "mean over every measured step of every complete trajectory",
+    "boundary": "steady_clock around each World::step",
+    "excludes": "scene construction and process startup",
+    "includes": "collision detection and constraint solve inside World::step"
+  },
+  "toolchain": {
+    "cmake_version": "cmake version 4.2.3\n\nCMake suite maintained and supported by Kitware (kitware.com/cmake).",
+    "cxx_version": "c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0\nCopyright (C) 2025 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+    "ninja_version": null
+  },
+  "trace_full_trajectory_contracts": {
+    "backspin": {
+      "basis": "trace_full_4_seconds_at_60_hz",
+      "steps": 240
+    },
+    "card_house_26_settle_projectile_full": {
+      "basis": "paper_full_10_seconds_at_60_hz",
+      "steps": 600
+    },
+    "incline_mu_0_4": {
+      "basis": "paper_full_2_seconds_at_60_hz",
+      "steps": 120
+    },
+    "incline_mu_0_5": {
+      "basis": "paper_full_2_seconds_at_60_hz",
+      "steps": 120
+    },
+    "painleve_mu_0_5": {
+      "basis": "trace_full_2_5_seconds_at_60_hz",
+      "steps": 150
+    },
+    "painleve_mu_0_55": {
+      "basis": "trace_full_2_5_seconds_at_60_hz",
+      "steps": 150
+    },
+    "turntable_mu_0_2_omega_2": {
+      "basis": "trace_full_4_seconds_at_60_hz",
+      "steps": 240
+    },
+    "turntable_mu_0_2_omega_5": {
+      "basis": "trace_full_4_seconds_at_60_hz",
+      "steps": 240
+    },
+    "turntable_mu_0_5_omega_2": {
+      "basis": "trace_full_4_seconds_at_60_hz",
+      "steps": 240
+    },
+    "turntable_mu_0_5_omega_5": {
+      "basis": "trace_full_4_seconds_at_60_hz",
+      "steps": 240
+    }
+  }
+}

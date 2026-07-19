@@ -1,0 +1,82 @@
+{
+  "capture_verification": {
+    "argv": [
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/bin/python",
+      "/home/js/dev/dartsim/dart/task_6/scripts/run_fbf_visual_evidence.py",
+      "verify",
+      "--scenario",
+      "painleve_mu05",
+      "--scenario",
+      "painleve_mu055",
+      "--demo",
+      "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+      "--output-root",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig05_painleve_proxy_current_v1",
+      "--ffmpeg",
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+      "--ffprobe",
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffprobe"
+    ],
+    "raw_stdout_sha256": "6fd34e54f7958c45777731ab888fe3a5e8e24d06b9fdddb96bdace269fcb515e",
+    "returncode": 0,
+    "stderr_retained": false,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_path": "verification.json",
+    "stdout_sha256": "6fd34e54f7958c45777731ab888fe3a5e8e24d06b9fdddb96bdace269fcb515e"
+  },
+  "schema_version": "dart.fbf_painleve_proxy_invocations/v1",
+  "trace": [
+    {
+      "argv": [
+        "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+        "painleve_mu_0_5",
+        "exact_fbf",
+        "1",
+        "150",
+        "nan",
+        "tracked",
+        "default",
+        "default",
+        "1",
+        "dart_best",
+        "dart",
+        "default",
+        "0",
+        "0",
+        "default"
+      ],
+      "returncode": 0,
+      "scenario": "painleve_mu_0_5",
+      "stderr_path": "traces/painleve_mu_0_5.stderr.txt",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_path": "traces/painleve_mu_0_5.csv",
+      "stdout_sha256": "48b3c945575f4efa12ea08df48f5e1f7362426fc2f8e0cb070d81deab70a7304"
+    },
+    {
+      "argv": [
+        "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace",
+        "painleve_mu_0_55",
+        "exact_fbf",
+        "1",
+        "150",
+        "nan",
+        "tracked",
+        "default",
+        "default",
+        "1",
+        "dart_best",
+        "dart",
+        "default",
+        "0",
+        "0",
+        "default"
+      ],
+      "returncode": 0,
+      "scenario": "painleve_mu_0_55",
+      "stderr_path": "traces/painleve_mu_0_55.stderr.txt",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_path": "traces/painleve_mu_0_55.csv",
+      "stdout_sha256": "d1a130e19a74ed2be231d401fd987fa8bee1ecf444f41e48d2f7de0b7d75f73a"
+    }
+  ]
+}

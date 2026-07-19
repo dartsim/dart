@@ -1,0 +1,43 @@
+{
+  "inspection_date": "2026-07-19",
+  "inspection_tool": {
+    "commands": [
+      "view_image(path=docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig05_painleve_proxy_current_v1/painleve_mu05/panel.png, detail=original)",
+      "view_image(path=docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig05_painleve_proxy_current_v1/painleve_mu055/panel.png, detail=original)",
+      "view_image(path=docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig05_painleve_proxy_current_v1/groups/painleve/panel.png, detail=original)"
+    ],
+    "name": "view_image",
+    "version": "session interface; no semantic version exposed"
+  },
+  "manual_inspected": true,
+  "pass": true,
+  "representative_images": [
+    {
+      "observation": "The six synchronized panels clearly show the mu=.50 box rocking through the middle of the 2.5-second window and returning to a stable upright pose by the final panels.",
+      "path": "painleve_mu05/panel.png",
+      "sha256": "ccccf58ae6f1af1e34065f3670619dc25b10479f4c1040bb4d4be3337828b030"
+    },
+    {
+      "observation": "The six synchronized panels clearly show the mu=.55 box crossing into a tumble before one second and remaining horizontal through the final panels.",
+      "path": "painleve_mu055/panel.png",
+      "sha256": "0044f8ccc69989dcdf6020db1aa54f2dbc052248126e2cedce84a835ab0dd1a0"
+    },
+    {
+      "observation": "The paired final-state panel clearly distinguishes the upright mu=.50 result from the horizontal mu=.55 result; it does not by itself establish the shorter-travel threshold.",
+      "path": "groups/painleve/panel.png",
+      "sha256": "bef97d04d59e2937195151cbf36a0b713bb2c2bef43d111513c05885595546e2"
+    }
+  ],
+  "schema_version": "dart.fbf_painleve_proxy_manual_inspection/v1",
+  "verdicts": {
+    "approved_source_golden": false,
+    "external_solver_parity": false,
+    "mu055_tumble_and_visually_settled_horizontal_visible": true,
+    "mu05_upright_return_visible": true,
+    "paired_proxy_outcome_supported": true,
+    "paper_parity": false,
+    "realtime_verdict": null,
+    "shorter_travel_requires_physical_trace": true,
+    "timing_verdict": null
+  }
+}

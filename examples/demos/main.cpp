@@ -35,13 +35,20 @@
 
 #include "DemoHost.hpp"
 #include "Registry.hpp"
+#include "scenes/Scenes.hpp"
 
 #include <dart/gui/osg/osg.hpp>
 
+#include <algorithm>
+#include <exception>
 #include <iostream>
+#include <limits>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include <cctype>
+#include <cerrno>
 #include <cstdlib>
 #include <cstring>
 
@@ -68,10 +75,13 @@ struct Options
   double guiScale = 1.0;
   bool listScenes = false;
   bool verifyFbfSceneDocs = false;
+  std::string fbfAuthorTurntableContractScene;
+  std::string fbfAuthorCardHouseContractScene;
   bool cycleScenes = false;
   int cycleFrames = 30;
   bool headless = false;
   std::string shotPath = "dart-demos.png";
+  bool shotPathExplicit = false;
   int steps = 150;
   std::string sceneId = DART_DEMOS_DEFAULT_SCENE;
   int width = kDefaultWindowWidth;
@@ -79,6 +89,7 @@ struct Options
   std::string collisionDetectorName;
   std::size_t simulationThreads = 1u;
   std::vector<int> headlessActionKeys;
+  dart_demos::HeadlessTimeline headlessTimeline;
 
   // Hidden test/debug hooks (undocumented -- not in printUsage()): let a
   // headless --shot capture exercise UI state that normally requires
@@ -98,6 +109,12 @@ void printUsage(const char* prog)
       << "  --verify-fbf-scene-docs\n"
          "                  Verify FBF paper scenes have self-contained "
          "Scene-tab text and exit.\n"
+      << "  --fbf-author-turntable-contract <scene-id>\n"
+         "                  Print the runtime-inspected author-turntable "
+         "physics/control contract and exit.\n"
+      << "  --fbf-author-card-house-contract <scene-id>\n"
+         "                  Print the runtime-inspected author-card-house "
+         "configuration contract and exit.\n"
       << "  --scene <id>    Select the initial demo (default: first in the "
          "catalog).\n"
       << "  --cycle-scenes  Advance through every demo without opening a "
@@ -110,6 +127,15 @@ void printUsage(const char* prog)
          "                  Invoke a scene key action before --headless "
          "capture "
          "steps; may be repeated.\n"
+      << "  --headless-shot-at <step:path>\n"
+         "                  Capture a completed simulation step; may be "
+         "repeated (step 0 is the initial state).\n"
+      << "  --headless-action-at <step:key>\n"
+         "                  Invoke a scene key action after same-step "
+         "captures; may be repeated.\n"
+      << "  --headless-sidecar <path>\n"
+         "                  Write the headless timeline and solver "
+         "diagnostics as JSON.\n"
       << "  --shot <path>   Output PNG path for --headless (default "
          "dart-demos.png).\n"
       << "  --steps <n>     Sim steps to settle before the --headless shot "
@@ -149,6 +175,76 @@ int parseHeadlessActionKey(const char* value)
 }
 
 //==============================================================================
+bool parseScheduledSpec(
+    const char* value, std::size_t& step, std::string& payload)
+{
+  if (value == nullptr)
+    return false;
+
+  const std::string spec(value);
+  const std::size_t separator = spec.find(':');
+  if (separator == std::string::npos || separator == 0u
+      || separator + 1u >= spec.size()) {
+    return false;
+  }
+
+  const std::string stepText = spec.substr(0u, separator);
+  if (!std::all_of(stepText.begin(), stepText.end(), [](unsigned char c) {
+        return std::isdigit(c);
+      })) {
+    return false;
+  }
+
+  errno = 0;
+  char* end = nullptr;
+  const unsigned long long parsed = std::strtoull(stepText.c_str(), &end, 10);
+  if (errno == ERANGE || end == stepText.c_str() || *end != '\0'
+      || parsed > std::numeric_limits<std::size_t>::max()) {
+    return false;
+  }
+
+  step = static_cast<std::size_t>(parsed);
+  payload = spec.substr(separator + 1u);
+  return true;
+}
+
+//==============================================================================
+std::string quoteCommandArgument(const char* value)
+{
+  const std::string argument = value ? value : "";
+  const bool plain
+      = !argument.empty()
+        && std::all_of(argument.begin(), argument.end(), [](unsigned char c) {
+             return std::isalnum(c) || c == '_' || c == '-' || c == '.'
+                    || c == '/' || c == ':' || c == '=' || c == ',';
+           });
+  if (plain)
+    return argument;
+
+  std::string quoted = "'";
+  for (const char c : argument) {
+    if (c == '\'')
+      quoted += "'\\''";
+    else
+      quoted += c;
+  }
+  quoted += "'";
+  return quoted;
+}
+
+//==============================================================================
+std::string buildRuntimeCommand(int argc, char** argv)
+{
+  std::string command;
+  for (int i = 0; i < argc; ++i) {
+    if (!command.empty())
+      command += ' ';
+    command += quoteCommandArgument(argv[i]);
+  }
+  return command;
+}
+
+//==============================================================================
 /// Parses command-line options.
 ParseResult parseArgs(int argc, char** argv, Options& opt)
 {
@@ -171,6 +267,14 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
       opt.listScenes = true;
     } else if (std::strcmp(a, "--verify-fbf-scene-docs") == 0) {
       opt.verifyFbfSceneDocs = true;
+    } else if (std::strcmp(a, "--fbf-author-turntable-contract") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.fbfAuthorTurntableContractScene = argv[++i];
+    } else if (std::strcmp(a, "--fbf-author-card-house-contract") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.fbfAuthorCardHouseContractScene = argv[++i];
     } else if (std::strcmp(a, "--scene") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
@@ -192,10 +296,43 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
         return ParseResult::Error;
       }
       opt.headlessActionKeys.push_back(key);
+    } else if (std::strcmp(a, "--headless-shot-at") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      std::size_t step = 0u;
+      std::string path;
+      if (!parseScheduledSpec(argv[++i], step, path)) {
+        std::cerr << "--headless-shot-at expects STEP:PATH with a nonnegative "
+                     "integer step and nonempty path.\n";
+        return ParseResult::Error;
+      }
+      opt.headlessTimeline.shots.push_back({step, std::move(path)});
+    } else if (std::strcmp(a, "--headless-action-at") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      std::size_t step = 0u;
+      std::string keyText;
+      if (!parseScheduledSpec(argv[++i], step, keyText)
+          || keyText.size() != 1u) {
+        std::cerr << "--headless-action-at expects STEP:KEY with a "
+                     "nonnegative integer step and one key character.\n";
+        return ParseResult::Error;
+      }
+      opt.headlessTimeline.actions.push_back(
+          {step, static_cast<unsigned char>(keyText[0])});
+    } else if (std::strcmp(a, "--headless-sidecar") == 0) {
+      if (needsValue(i) == ParseResult::Error)
+        return ParseResult::Error;
+      opt.headlessTimeline.sidecarPath = argv[++i];
+      if (opt.headlessTimeline.sidecarPath.empty()) {
+        std::cerr << "--headless-sidecar expects a nonempty path.\n";
+        return ParseResult::Error;
+      }
     } else if (std::strcmp(a, "--shot") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
       opt.shotPath = argv[++i];
+      opt.shotPathExplicit = true;
     } else if (std::strcmp(a, "--steps") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
@@ -237,6 +374,36 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
       return ParseResult::Error;
     }
   }
+
+  const bool timelineRequested = !opt.headlessTimeline.shots.empty()
+                                 || !opt.headlessTimeline.actions.empty()
+                                 || !opt.headlessTimeline.sidecarPath.empty();
+  if (timelineRequested && !opt.headless) {
+    std::cerr << "--headless-shot-at, --headless-action-at, and "
+                 "--headless-sidecar require --headless.\n";
+    return ParseResult::Error;
+  }
+  if (timelineRequested && opt.steps < 0) {
+    std::cerr << "--steps must be nonnegative for a headless timeline.\n";
+    return ParseResult::Error;
+  }
+  if (timelineRequested) {
+    const std::size_t totalSteps = static_cast<std::size_t>(opt.steps);
+    for (const auto& shot : opt.headlessTimeline.shots) {
+      if (shot.step > totalSteps) {
+        std::cerr << "--headless-shot-at step " << shot.step
+                  << " exceeds --steps " << totalSteps << ".\n";
+        return ParseResult::Error;
+      }
+    }
+    for (const auto& action : opt.headlessTimeline.actions) {
+      if (action.step > totalSteps) {
+        std::cerr << "--headless-action-at step " << action.step
+                  << " exceeds --steps " << totalSteps << ".\n";
+        return ParseResult::Error;
+      }
+    }
+  }
   return ParseResult::Run;
 }
 
@@ -251,6 +418,30 @@ int main(int argc, char** argv)
     return 0;
   if (parseResult == ParseResult::Error)
     return 1;
+
+  if (!opt.fbfAuthorTurntableContractScene.empty()) {
+    try {
+      std::cout << dart_demos::fbfAuthorTurntablePhysicsContractJson(
+          opt.fbfAuthorTurntableContractScene)
+                << '\n';
+      return 0;
+    } catch (const std::exception& error) {
+      std::cerr << error.what() << '\n';
+      return 1;
+    }
+  }
+
+  if (!opt.fbfAuthorCardHouseContractScene.empty()) {
+    try {
+      std::cout << dart_demos::fbfAuthorCardHouseConfigurationContractJson(
+          opt.fbfAuthorCardHouseContractScene)
+                << '\n';
+      return 0;
+    } catch (const std::exception& error) {
+      std::cerr << error.what() << '\n';
+      return 1;
+    }
+  }
 
   dart_demos::DemoHost host(
       dart_demos::makeDemoScenes(),
@@ -276,6 +467,18 @@ int main(int argc, char** argv)
     return host.cycleScenes(opt.cycleFrames);
 
   if (opt.headless) {
+    const bool timelineRequested = !opt.headlessTimeline.shots.empty()
+                                   || !opt.headlessTimeline.actions.empty()
+                                   || !opt.headlessTimeline.sidecarPath.empty();
+    if (timelineRequested) {
+      opt.headlessTimeline.runtimeCommand = buildRuntimeCommand(argc, argv);
+      if (opt.shotPathExplicit || opt.headlessTimeline.shots.empty()) {
+        opt.headlessTimeline.shots.push_back(
+            {static_cast<std::size_t>(opt.steps), opt.shotPath});
+      }
+      return host.runHeadlessTimeline(
+          opt.headlessTimeline, opt.steps, opt.sceneId, opt.width, opt.height);
+    }
     return host.runHeadlessShot(
         opt.shotPath, opt.steps, opt.sceneId, opt.width, opt.height);
   }

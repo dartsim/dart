@@ -1,0 +1,129 @@
+{
+  "claim_boundary": "Current-source DART proxy physical outcome only; the paper omits the box geometry, mass, launch state, and absolute timestamps.",
+  "paired_contract": {
+    "mu055_first_tumble_step": 36,
+    "mu055_first_tumble_time_seconds": 0.6000000000000002,
+    "mu055_first_tumble_travel": 1.2597198197697048,
+    "mu05_rest_travel": 1.298081699724907,
+    "pass": true,
+    "shorter_by": 0.03836187995520213,
+    "shorter_travel_definition": "mu=.55 x travel at the first fixture tumble threshold (up_z < 0.55 or z < 0.35), compared with mu=.50 final rest travel"
+  },
+  "pass": true,
+  "scenarios": [
+    {
+      "boxed_lcp_fallbacks": 0,
+      "capture_id": "painleve_mu05",
+      "completed_steps": 150,
+      "exact_solves": 150,
+      "expected_outcome": "slide_then_translationally_and_tilt_settled_upright",
+      "final": {
+        "step": 150,
+        "time": 2.499999999999996,
+        "up_z": 0.999998178998452,
+        "vx": -1.5516367143751014e-07,
+        "vy": 2.2319821007323334e-07,
+        "vz": 0.0009998746818659363,
+        "x": 1.298081699724907,
+        "y": 7.284488322801208e-08,
+        "z": 0.4971205700920783
+      },
+      "first_tumble": null,
+      "initial": {
+        "step": 0,
+        "time": 0.0,
+        "up_z": 0.9968017063026194,
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.5173752613420616
+      },
+      "max_residual": 9.998228607203997e-07,
+      "mu": 0.5,
+      "physical_outcome_valid": true,
+      "row_count": 151,
+      "scenario": "painleve_mu_0_5",
+      "settled_proxy": {
+        "drift_threshold": 1e-05,
+        "final_horizontal_speed": 2.718330478692074e-07,
+        "limitation": "The tracked CSV does not export angular velocity.",
+        "max_window_horizontal_excursion_threshold": 0.0001,
+        "max_window_horizontal_speed": 7.154557607292576e-07,
+        "max_window_horizontal_speed_threshold": 0.0001,
+        "max_window_up_z_range_threshold": 0.0001,
+        "max_window_vertical_excursion_threshold": 0.001,
+        "pass": true,
+        "speed_threshold": 1e-05,
+        "strict_rigid_body_rest_proven": false,
+        "window_duration_seconds": 0.5,
+        "window_horizontal_drift": 6.800211888667592e-08,
+        "window_start_step": 120,
+        "window_up_z_range": 2.597528858672149e-10,
+        "window_x_excursion": 8.272908846862492e-08,
+        "window_y_excursion": 8.83111664091923e-08,
+        "window_z_excursion": 0.0004999739114409096
+      },
+      "warm_starts": 149
+    },
+    {
+      "boxed_lcp_fallbacks": 0,
+      "capture_id": "painleve_mu055",
+      "completed_steps": 150,
+      "exact_solves": 142,
+      "expected_outcome": "shorter_travel_to_tumble_then_translationally_and_tilt_settled",
+      "final": {
+        "step": 150,
+        "time": 2.499999999999996,
+        "up_z": -0.05424579707587963,
+        "vx": 7.275224600755231e-08,
+        "vy": -4.6318543384458225e-08,
+        "vz": 0.0009999821726698055,
+        "x": 1.5430482150935836,
+        "y": 0.006780119146175164,
+        "z": 0.2660584153667479
+      },
+      "first_tumble": {
+        "step": 36,
+        "time": 0.6000000000000002,
+        "up_z": 0.5156471866936044,
+        "x": 1.2597198197697048,
+        "y": 2.325652527371051e-12,
+        "z": 0.5140937241172977
+      },
+      "initial": {
+        "step": 0,
+        "time": 0.0,
+        "up_z": 0.9968017063026194,
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.5173752613420616
+      },
+      "max_residual": 9.998574150559113e-07,
+      "mu": 0.55,
+      "physical_outcome_valid": true,
+      "row_count": 151,
+      "scenario": "painleve_mu_0_55",
+      "settled_proxy": {
+        "drift_threshold": 1e-05,
+        "final_horizontal_speed": 8.624556081562315e-08,
+        "limitation": "The tracked CSV does not export angular velocity.",
+        "max_window_horizontal_excursion_threshold": 0.0001,
+        "max_window_horizontal_speed": 1.5677727840210108e-07,
+        "max_window_horizontal_speed_threshold": 0.0001,
+        "max_window_up_z_range_threshold": 0.0001,
+        "max_window_vertical_excursion_threshold": 0.001,
+        "pass": true,
+        "speed_threshold": 1e-05,
+        "strict_rigid_body_rest_proven": false,
+        "window_duration_seconds": 0.5,
+        "window_horizontal_drift": 1.3187175771377388e-08,
+        "window_start_step": 120,
+        "window_up_z_range": 4.606684012031792e-08,
+        "window_x_excursion": 1.1596268612024119e-08,
+        "window_y_excursion": 1.7745206418867676e-08,
+        "window_z_excursion": 0.0004999708515144863
+      },
+      "warm_starts": 140
+    }
+  ],
+  "schema_version": "dart.fbf_painleve_proxy_trace_summary/v1"
+}

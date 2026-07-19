@@ -38,7 +38,37 @@ target_sources(test_ConstraintSolver PRIVATE AllocationCounting.cpp)
 if(DART_CODECOV)
   target_compile_definitions(test_ConstraintSolver PRIVATE DART_CODECOV=1)
 endif()
+set(
+  fbf_author_turntable_spec_source
+  "${DART_SOURCE_DIR}/examples/demos/scenes/FbfAuthorTurntableSpec.hpp"
+)
+set(
+  fbf_author_card_house_spec_source
+  "${DART_SOURCE_DIR}/examples/demos/scenes/FbfAuthorCardHouseSpec.hpp"
+)
+set_property(
+  DIRECTORY
+  APPEND
+  PROPERTY
+    CMAKE_CONFIGURE_DEPENDS
+      "${fbf_author_turntable_spec_source}"
+      "${fbf_author_card_house_spec_source}"
+)
+file(
+  SHA256 "${fbf_author_turntable_spec_source}"
+  fbf_author_turntable_spec_sha256
+)
+file(
+  SHA256 "${fbf_author_card_house_spec_source}"
+  fbf_author_card_house_spec_sha256
+)
 dart_add_test("integration" test_ExactCoulombFbfPaperFixtures)
+target_compile_definitions(
+  test_ExactCoulombFbfPaperFixtures
+  PRIVATE
+    DART_FBF_AUTHOR_TURNTABLE_SPEC_SHA256="${fbf_author_turntable_spec_sha256}"
+    DART_FBF_AUTHOR_CARD_HOUSE_SPEC_SHA256="${fbf_author_card_house_spec_sha256}"
+)
 dart_add_test("integration" test_ContactConstraint)
 dart_add_test("integration" test_SplitImpulse)
 if(TARGET dart-collision-bullet)

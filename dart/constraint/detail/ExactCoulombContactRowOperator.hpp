@@ -42,7 +42,9 @@
 #include <Eigen/Cholesky>
 #include <Eigen/Dense>
 
+#include <algorithm>
 #include <array>
+#include <iterator>
 #include <typeinfo>
 #include <vector>
 
@@ -96,6 +98,38 @@ struct ExactCoulombContactRowOperator
   {
     Eigen::Index row = -1;
     int side = 0;
+  };
+
+  /// One deterministic contact manifold for colored inner BGS.
+  ///
+  /// Contacts are grouped by their canonical reactive-body pair. The first
+  /// occurrence of a pair fixes the manifold order, and contacts within a
+  /// manifold retain the constraint input order. `writeContacts` is the
+  /// sorted unique set of accumulator contact triples touched by all of the
+  /// manifold's block-column updates.
+  struct ColoredBlockGaussSeidelManifold
+  {
+    std::array<int, 2> canonicalBodyPair{{-1, -1}};
+    std::vector<Eigen::Index> contacts;
+    std::vector<Eigen::Index> writeContacts;
+  };
+
+  /// Greedy deterministic coloring of contact manifolds.
+  ///
+  /// Each color stores manifold indices in first-manifold order. Manifolds in
+  /// one color have pairwise-disjoint accumulator write-contact sets, so their
+  /// local contact updates can run concurrently without shared writes.
+  struct ColoredBlockGaussSeidelSchedule
+  {
+    std::vector<ColoredBlockGaussSeidelManifold> manifolds;
+    std::vector<std::vector<std::size_t>> colors;
+
+    bool hasUsableParallelism() const
+    {
+      return std::any_of(colors.begin(), colors.end(), [](const auto& color) {
+        return color.size() > 1u;
+      });
+    }
   };
 
   /// World-space contact identity and reaction frame for manifold-level
@@ -153,10 +187,16 @@ struct ExactCoulombContactRowOperator
   std::vector<BodyScratch> bodies;
   std::vector<Row> rows;
   std::vector<std::vector<BodyRowIncidence>> bodyIncidences;
+  ColoredBlockGaussSeidelSchedule coloredBlockGaussSeidelSchedule;
 
   Eigen::Index getDimension() const
   {
     return static_cast<Eigen::Index>(rows.size());
+  }
+
+  std::size_t getContactCount() const
+  {
+    return rows.size() / 3u;
   }
 
   bool isBuilt() const
@@ -171,6 +211,7 @@ struct ExactCoulombContactRowOperator
     bodies.clear();
     rows.clear();
     bodyIncidences.clear();
+    coloredBlockGaussSeidelSchedule = ColoredBlockGaussSeidelSchedule();
 
     if (constraints.empty())
       return false;
@@ -335,6 +376,8 @@ struct ExactCoulombContactRowOperator
       }
     }
 
+    buildColoredBlockGaussSeidelSchedule();
+
     return true;
   }
 
@@ -343,6 +386,13 @@ struct ExactCoulombContactRowOperator
     bodies.clear();
     rows.clear();
     bodyIncidences.clear();
+    coloredBlockGaussSeidelSchedule = ColoredBlockGaussSeidelSchedule();
+  }
+
+  const ColoredBlockGaussSeidelSchedule& getColoredBlockGaussSeidelSchedule()
+      const
+  {
+    return coloredBlockGaussSeidelSchedule;
   }
 
   /// Compute `output = W * input` with one body scatter/gather pass.
@@ -382,6 +432,53 @@ struct ExactCoulombContactRowOperator
       }
       output[static_cast<Eigen::Index>(rowIndex)] = value;
     }
+  }
+
+  /// Compute `output = W * input` through two deterministic parallel phases.
+  ///
+  /// `parallelFor(count, callback)` must synchronously invoke `callback(i)`
+  /// exactly once for every index and return the number of participants that
+  /// executed work. The first phase owns one body per index and sums that
+  /// body's incidences in stored contact order, so no floating-point reduction
+  /// is shared between workers. Completion of that call is the barrier before
+  /// the second phase gathers into disjoint output rows.
+  template <typename ParallelFor>
+  std::size_t applyParallel(
+      const Eigen::Ref<const Eigen::VectorXd>& input,
+      Eigen::Ref<Eigen::VectorXd> output,
+      ParallelFor& parallelFor)
+  {
+    auto scatterBody = [this, &input](std::size_t bodyIndex) {
+      BodyScratch& body = bodies[bodyIndex];
+      body.velocityChange.setZero();
+      for (const BodyRowIncidence& incidence : bodyIncidences[bodyIndex]) {
+        const double impulse = input[incidence.row];
+        if (impulse == 0.0)
+          continue;
+
+        const Row& row = rows[static_cast<std::size_t>(incidence.row)];
+        body.velocityChange.noalias()
+            += row.unitVelocityChanges[incidence.side] * impulse;
+      }
+    };
+    const std::size_t scatterParticipants
+        = parallelFor(bodies.size(), scatterBody);
+
+    auto gatherRow = [this, &output](std::size_t rowIndex) {
+      const Row& row = rows[rowIndex];
+      double value = 0.0;
+      for (int side = 0; side < 2; ++side) {
+        const int bodyIndex = row.bodyIndices[side];
+        if (bodyIndex < 0)
+          continue;
+
+        value += row.jacobians[side].dot(
+            bodies[static_cast<std::size_t>(bodyIndex)].velocityChange);
+      }
+      output[static_cast<Eigen::Index>(rowIndex)] = value;
+    };
+    const std::size_t gatherParticipants = parallelFor(rows.size(), gatherRow);
+    return std::max(scatterParticipants, gatherParticipants);
   }
 
   /// Accumulate `accumulator += W.middleCols(3 * contact, 3) * delta` by
@@ -492,6 +589,91 @@ struct ExactCoulombContactRowOperator
       for (Eigen::Index col = 0; col < row; ++col) {
         delassus(row, col) = delassus(col, row);
       }
+    }
+  }
+
+private:
+  void buildColoredBlockGaussSeidelSchedule()
+  {
+    auto& schedule = coloredBlockGaussSeidelSchedule;
+    schedule = ColoredBlockGaussSeidelSchedule();
+
+    for (Eigen::Index contact = 0;
+         contact < static_cast<Eigen::Index>(getContactCount());
+         ++contact) {
+      std::array<int, 2> canonicalBodyPair
+          = rows[static_cast<std::size_t>(3 * contact)].bodyIndices;
+      if (canonicalBodyPair[1] < canonicalBodyPair[0])
+        std::swap(canonicalBodyPair[0], canonicalBodyPair[1]);
+
+      auto manifold = std::find_if(
+          schedule.manifolds.begin(),
+          schedule.manifolds.end(),
+          [&canonicalBodyPair](const auto& candidate) {
+            return candidate.canonicalBodyPair == canonicalBodyPair;
+          });
+      if (manifold == schedule.manifolds.end()) {
+        ColoredBlockGaussSeidelManifold next;
+        next.canonicalBodyPair = canonicalBodyPair;
+        schedule.manifolds.push_back(std::move(next));
+        manifold = std::prev(schedule.manifolds.end());
+      }
+      manifold->contacts.push_back(contact);
+    }
+
+    for (auto& manifold : schedule.manifolds) {
+      for (const Eigen::Index contact : manifold.contacts) {
+        const Row& source = rows[static_cast<std::size_t>(3 * contact)];
+        for (const int bodyIndex : source.bodyIndices) {
+          if (bodyIndex < 0)
+            continue;
+          for (const BodyRowIncidence& incidence :
+               bodyIncidences[static_cast<std::size_t>(bodyIndex)]) {
+            manifold.writeContacts.push_back(incidence.row / 3);
+          }
+        }
+      }
+      std::sort(manifold.writeContacts.begin(), manifold.writeContacts.end());
+      manifold.writeContacts.erase(
+          std::unique(
+              manifold.writeContacts.begin(), manifold.writeContacts.end()),
+          manifold.writeContacts.end());
+    }
+
+    std::vector<std::vector<Eigen::Index>> colorWriteContacts;
+    for (std::size_t manifoldIndex = 0u;
+         manifoldIndex < schedule.manifolds.size();
+         ++manifoldIndex) {
+      const auto& manifold = schedule.manifolds[manifoldIndex];
+      std::size_t color = 0u;
+      for (; color < colorWriteContacts.size(); ++color) {
+        std::vector<Eigen::Index> intersection;
+        std::set_intersection(
+            manifold.writeContacts.begin(),
+            manifold.writeContacts.end(),
+            colorWriteContacts[color].begin(),
+            colorWriteContacts[color].end(),
+            std::back_inserter(intersection));
+        if (intersection.empty())
+          break;
+      }
+
+      if (color == colorWriteContacts.size()) {
+        schedule.colors.emplace_back();
+        colorWriteContacts.emplace_back();
+      }
+      schedule.colors[color].push_back(manifoldIndex);
+
+      std::vector<Eigen::Index> mergedWriteContacts;
+      mergedWriteContacts.reserve(
+          colorWriteContacts[color].size() + manifold.writeContacts.size());
+      std::set_union(
+          colorWriteContacts[color].begin(),
+          colorWriteContacts[color].end(),
+          manifold.writeContacts.begin(),
+          manifold.writeContacts.end(),
+          std::back_inserter(mergedWriteContacts));
+      colorWriteContacts[color] = std::move(mergedWriteContacts);
     }
   }
 };

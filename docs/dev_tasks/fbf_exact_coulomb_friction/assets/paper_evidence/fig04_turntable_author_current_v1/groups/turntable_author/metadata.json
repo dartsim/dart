@@ -1,0 +1,860 @@
+{
+  "actual_simulator": true,
+  "automated_semantic_outcome_validated": false,
+  "generated_imagery": false,
+  "group_id": "turntable_author",
+  "kind": "group_capture_result",
+  "labels": [
+    "mu=0.2, omega=2 rad/s",
+    "mu=0.2, omega=5 rad/s",
+    "mu=0.5, omega=2 rad/s",
+    "mu=0.5, omega=5 rad/s"
+  ],
+  "layout": "2x2",
+  "media_validation": {
+    "command": [
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-y",
+      "-i",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu02_omega2/clip.mp4",
+      "-i",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu02_omega5/clip.mp4",
+      "-i",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega2/clip.mp4",
+      "-i",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega5/clip.mp4",
+      "-filter_complex",
+      "[0:v]setpts=PTS-STARTPTS,pad=iw:ih+24:0:24:color=0x181c20,drawtext=text='mu=0.2, omega=2 rad/s':x=8:y=5:fontsize=14:fontcolor=white[v0];[1:v]setpts=PTS-STARTPTS,pad=iw:ih+24:0:24:color=0x181c20,drawtext=text='mu=0.2, omega=5 rad/s':x=8:y=5:fontsize=14:fontcolor=white[v1];[2:v]setpts=PTS-STARTPTS,pad=iw:ih+24:0:24:color=0x181c20,drawtext=text='mu=0.5, omega=2 rad/s':x=8:y=5:fontsize=14:fontcolor=white[v2];[3:v]setpts=PTS-STARTPTS,pad=iw:ih+24:0:24:color=0x181c20,drawtext=text='mu=0.5, omega=5 rad/s':x=8:y=5:fontsize=14:fontcolor=white[v3];[v0][v1]hstack=inputs=2:shortest=1[top];[v2][v3]hstack=inputs=2:shortest=1[bottom];[top][bottom]vstack=inputs=2:shortest=1[outv]",
+      "-map",
+      "[outv]",
+      "-an",
+      "-c:v",
+      "libx264",
+      "-preset",
+      "medium",
+      "-crf",
+      "24",
+      "-pix_fmt",
+      "yuv420p",
+      "-movflags",
+      "+faststart",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/clip.mp4"
+    ],
+    "decode_command": [
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/clip.mp4",
+      "-f",
+      "null",
+      "/dev/null"
+    ],
+    "full_decode": "pass",
+    "kind": "mp4",
+    "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/clip.mp4",
+    "probe": {
+      "format": {
+        "duration": "6.033333"
+      },
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "height": 1060,
+          "nb_frames": "181",
+          "r_frame_rate": "30/1",
+          "width": 1320
+        }
+      ]
+    },
+    "sha256": "b241463658e6b48dfb2c74815e85317c2f0eccd46a7f7ab978b8f2701ce80d6d",
+    "size_bytes": 719226
+  },
+  "member_order": [
+    "turntable_author_mu02_omega2",
+    "turntable_author_mu02_omega5",
+    "turntable_author_mu05_omega2",
+    "turntable_author_mu05_omega5"
+  ],
+  "members": [
+    {
+      "clip_path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu02_omega2/clip.mp4",
+      "clip_probe": {
+        "format": {
+          "duration": "6.033333"
+        },
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "height": 506,
+            "nb_frames": "181",
+            "r_frame_rate": "30/1",
+            "width": 660
+          }
+        ]
+      },
+      "clip_sha256": "ea3d8d01c843bfcf0451b2a0aec8a523f80a6bdd5e8327bdafc7729c7cd8a0ee",
+      "demo_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+      "demo_sha256": "d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4",
+      "id": "turntable_author_mu02_omega2",
+      "label": "mu=0.2, omega=2 rad/s",
+      "metadata_path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu02_omega2/metadata.json",
+      "metadata_sha256": "cf3fa8fed649adc7958f6307a4471d9e1af5651a65c2f48ec74b29066334eff8",
+      "panel_source_frame": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu02_omega2/frames/step_000136.png",
+      "panel_source_frame_sha256": "17ded85fef6ed366e2b23572603c425668d890137bd901e8e91d7de243db3039",
+      "panel_source_step": 136,
+      "panel_source_time_seconds": 2.2666666666666666,
+      "timeline_path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu02_omega2/timeline.json",
+      "timeline_sha256": "3aaf3753136d7539a0a2054aa2852e59288ffc40d02b3ae2b38e02c7bd99564d"
+    },
+    {
+      "clip_path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu02_omega5/clip.mp4",
+      "clip_probe": {
+        "format": {
+          "duration": "6.033333"
+        },
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "height": 506,
+            "nb_frames": "181",
+            "r_frame_rate": "30/1",
+            "width": 660
+          }
+        ]
+      },
+      "clip_sha256": "7fe6dee15ac32b41b3807fd06752393fe29a2fe08a3a34f2702be0675593e7a0",
+      "demo_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+      "demo_sha256": "d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4",
+      "id": "turntable_author_mu02_omega5",
+      "label": "mu=0.2, omega=5 rad/s",
+      "metadata_path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu02_omega5/metadata.json",
+      "metadata_sha256": "c140c26ef2504a26d7b2349e2a8e76d58e302c0e19c5e0a3111da3a844747634",
+      "panel_source_frame": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu02_omega5/frames/step_000120.png",
+      "panel_source_frame_sha256": "5628c863ed5db739834d108cbd7dcfc712f6e520e0c7c6379a47dfd9e015d6e8",
+      "panel_source_step": 120,
+      "panel_source_time_seconds": 2.0,
+      "timeline_path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu02_omega5/timeline.json",
+      "timeline_sha256": "1e0aef8e17b5c0eff3fb7580a10fbf35af1c09f3055d01038276fa56f01bf9fe"
+    },
+    {
+      "clip_path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega2/clip.mp4",
+      "clip_probe": {
+        "format": {
+          "duration": "6.033333"
+        },
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "height": 506,
+            "nb_frames": "181",
+            "r_frame_rate": "30/1",
+            "width": 660
+          }
+        ]
+      },
+      "clip_sha256": "fb816fda0e43503d27eb9cd88ea0596907a90878bc006d3e298850ad0e8c5440",
+      "demo_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+      "demo_sha256": "d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4",
+      "id": "turntable_author_mu05_omega2",
+      "label": "mu=0.5, omega=2 rad/s",
+      "metadata_path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega2/metadata.json",
+      "metadata_sha256": "07a6a2ead3311483f81ec9a3f22c5bb77c17bbb31e4cc2916c55f03a45367c5a",
+      "panel_source_frame": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega2/frames/step_000360.png",
+      "panel_source_frame_sha256": "52398f757d79fd0a470965355fdcf7f6d2cc3f8fd8baa2b8d878505f321f14b2",
+      "panel_source_step": 360,
+      "panel_source_time_seconds": 6.0,
+      "timeline_path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega2/timeline.json",
+      "timeline_sha256": "dba4c3de9eadf57ff812e1db1ab01d2205d70d3770a4adfb1e1b9f17a927c4d6"
+    },
+    {
+      "clip_path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega5/clip.mp4",
+      "clip_probe": {
+        "format": {
+          "duration": "6.033333"
+        },
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "height": 506,
+            "nb_frames": "181",
+            "r_frame_rate": "30/1",
+            "width": 660
+          }
+        ]
+      },
+      "clip_sha256": "7128bdb42de60ac2e7fa0e8c99439cbf0204783e76c8cef3192cbf3a10ec7aa8",
+      "demo_path": "/home/js/dev/dartsim/dart/task_6/build/default/cpp/Release/bin/dart-demos",
+      "demo_sha256": "d838f23e9fb04224ff194658bd6e53d8cbb95ac94ce6676e54c49b8ea25916e4",
+      "id": "turntable_author_mu05_omega5",
+      "label": "mu=0.5, omega=5 rad/s",
+      "metadata_path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega5/metadata.json",
+      "metadata_sha256": "7ee013065d81fe5e2f7beefa9e20efd981fab3e01abd805f01dd37fb386adaa6",
+      "panel_source_frame": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega5/frames/step_000090.png",
+      "panel_source_frame_sha256": "a1d6c9fa4763853d6e80f14f08ee6be1ab480857c8a7ef4089638ad0c1e5325d",
+      "panel_source_step": 90,
+      "panel_source_time_seconds": 1.5,
+      "timeline_path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega5/timeline.json",
+      "timeline_sha256": "bbe6badf89f6797de0db950f9c96b2a3147cb602c307df9ea639708d56b58114"
+    }
+  ],
+  "panel_validation": {
+    "crop_commands": [
+      [
+        "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu02_omega2/frames/step_000136.png",
+        "-vf",
+        "crop=660:506:260:58",
+        "-frames:v",
+        "1",
+        "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu02_omega2.png"
+      ],
+      [
+        "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu02_omega5/frames/step_000120.png",
+        "-vf",
+        "crop=660:506:260:58",
+        "-frames:v",
+        "1",
+        "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu02_omega5.png"
+      ],
+      [
+        "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega2/frames/step_000360.png",
+        "-vf",
+        "crop=660:506:260:58",
+        "-frames:v",
+        "1",
+        "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu05_omega2.png"
+      ],
+      [
+        "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega5/frames/step_000090.png",
+        "-vf",
+        "crop=660:506:260:58",
+        "-frames:v",
+        "1",
+        "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu05_omega5.png"
+      ]
+    ],
+    "cropped_tiles": [
+      {
+        "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu02_omega2.png",
+        "sha256": "ccbfaf556a18019b42ce849a7d568d1ba3039a28855214dcca1e9c38bdb52d7d"
+      },
+      {
+        "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu02_omega5.png",
+        "sha256": "e564f00dd609eac8f5b3d44c5cc04345e5f97247bb4eb4a4f6e9d13b426da523"
+      },
+      {
+        "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu05_omega2.png",
+        "sha256": "0bdf517ec0ffa7c21a0f5cbd816f7db41fe1c561922c1a1b03b999ef070b249c"
+      },
+      {
+        "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu05_omega5.png",
+        "sha256": "ed1c7e9c39b00bd7a736b217597c349db98b361c049f96dc5a79f52cca365d16"
+      }
+    ],
+    "decode_command": [
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-i",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel.png",
+      "-f",
+      "null",
+      "/dev/null"
+    ],
+    "full_decode": "pass",
+    "labels": [
+      "MU 0.2 OMEGA 2 T 2.27S",
+      "MU 0.2 OMEGA 5 T 2.00S",
+      "MU 0.5 OMEGA 2 T 6.00S",
+      "MU 0.5 OMEGA 5 T 1.50S"
+    ],
+    "member_order": [
+      "turntable_author_mu02_omega2",
+      "turntable_author_mu02_omega5",
+      "turntable_author_mu05_omega2",
+      "turntable_author_mu05_omega5"
+    ],
+    "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel.png",
+    "row_compositions": [
+      {
+        "command": [
+          "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/bin/python3.14",
+          "/home/js/dev/dartsim/dart/task_6/scripts/image_compose.py",
+          "side-by-side",
+          "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu02_omega2.png",
+          "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu02_omega5.png",
+          "--out",
+          "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_top.png",
+          "--labels",
+          "MU 0.2 OMEGA 2 T 2.27S",
+          "MU 0.2 OMEGA 5 T 2.00S",
+          "--gap",
+          "8",
+          "--manifest",
+          "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_row_0.compose.json"
+        ],
+        "manifest": {
+          "height": 538,
+          "inputs": [
+            "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu02_omega2.png",
+            "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu02_omega5.png"
+          ],
+          "labels": [
+            "MU 0.2 OMEGA 2 T 2.27S",
+            "MU 0.2 OMEGA 5 T 2.00S"
+          ],
+          "mode": "side-by-side",
+          "out": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_top.png",
+          "pass": true,
+          "schema_version": "dart.image_compose/v1",
+          "stats": {},
+          "width": 1344
+        },
+        "manifest_path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_row_0.compose.json",
+        "manifest_sha256": "4dc1c7661db7531ba62176afb8447cd105a1166da101ff3a3c80c9de33aafa54",
+        "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_top.png",
+        "sha256": "272c0d9793baad87b86f5c893d98b790b2198d6a5748a6a14cce1fd996fcd557",
+        "verdict": {
+          "checks": {
+            "contrast": {
+              "bright_pixels": 0,
+              "dark_pixels": 4064,
+              "mid_pixels": 125345,
+              "p05": 65.298,
+              "p95": 156.452,
+              "pass": false,
+              "reasons": [
+                "bright pixels 0 < 926"
+              ],
+              "region": {
+                "x0": 537,
+                "x1": 1303,
+                "y0": 242,
+                "y1": 484
+              },
+              "sample_count": 185372,
+              "spread": 91.154,
+              "thresholds": {
+                "bright_luminance_gt": 190.0,
+                "dark_luminance_lt": 55.0,
+                "mid_luminance_max": 170.0,
+                "mid_luminance_min": 70.0,
+                "min_bright_pixels": 926,
+                "min_dark_pixels": 926,
+                "min_mid_pixels": 463,
+                "min_spread": 90.0
+              }
+            },
+            "non_blank": {
+              "nonzero_pixels": 723072,
+              "pass": true,
+              "reasons": [],
+              "total_pixels": 723072,
+              "unique_colors_seen": 2
+            }
+          },
+          "image": {
+            "height": 538,
+            "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_top.png",
+            "width": 1344
+          },
+          "metadata": {},
+          "pass": true,
+          "reasons": [],
+          "schema_version": "dart.image_verdict/v1",
+          "thresholds_used": {
+            "contrast": {
+              "bright_luminance_gt": 190.0,
+              "dark_luminance_lt": 55.0,
+              "mid_luminance_max": 170.0,
+              "mid_luminance_min": 70.0,
+              "min_bright_pixels": 926,
+              "min_dark_pixels": 926,
+              "min_mid_pixels": 463,
+              "min_spread": 90.0
+            },
+            "diff": {
+              "fail": 0.016,
+              "failpercent": 1.0,
+              "ignore_aa": true,
+              "relnorm": null
+            },
+            "non_blank": {
+              "min_nonzero_pixels": 1,
+              "min_unique_colors": 2
+            },
+            "require_contrast": false
+          }
+        }
+      },
+      {
+        "command": [
+          "/home/js/dev/dartsim/dart/task_6/.pixi/envs/default/bin/python3.14",
+          "/home/js/dev/dartsim/dart/task_6/scripts/image_compose.py",
+          "side-by-side",
+          "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu05_omega2.png",
+          "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu05_omega5.png",
+          "--out",
+          "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_bottom.png",
+          "--labels",
+          "MU 0.5 OMEGA 2 T 6.00S",
+          "MU 0.5 OMEGA 5 T 1.50S",
+          "--gap",
+          "8",
+          "--manifest",
+          "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_row_1.compose.json"
+        ],
+        "manifest": {
+          "height": 538,
+          "inputs": [
+            "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu05_omega2.png",
+            "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_members/turntable_author_mu05_omega5.png"
+          ],
+          "labels": [
+            "MU 0.5 OMEGA 2 T 6.00S",
+            "MU 0.5 OMEGA 5 T 1.50S"
+          ],
+          "mode": "side-by-side",
+          "out": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_bottom.png",
+          "pass": true,
+          "schema_version": "dart.image_compose/v1",
+          "stats": {},
+          "width": 1344
+        },
+        "manifest_path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_row_1.compose.json",
+        "manifest_sha256": "cc71774c168a98af40e4fa5360dd806563566d1734e8da789197308334d844b6",
+        "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_bottom.png",
+        "sha256": "307c8cbd18843f1ff328a5fe7fe6b5e41907f25aeea5819026dad10f207fe0a2",
+        "verdict": {
+          "checks": {
+            "contrast": {
+              "bright_pixels": 0,
+              "dark_pixels": 3621,
+              "mid_pixels": 126742,
+              "p05": 65.298,
+              "p95": 156.452,
+              "pass": false,
+              "reasons": [
+                "bright pixels 0 < 926"
+              ],
+              "region": {
+                "x0": 537,
+                "x1": 1303,
+                "y0": 242,
+                "y1": 484
+              },
+              "sample_count": 185372,
+              "spread": 91.154,
+              "thresholds": {
+                "bright_luminance_gt": 190.0,
+                "dark_luminance_lt": 55.0,
+                "mid_luminance_max": 170.0,
+                "mid_luminance_min": 70.0,
+                "min_bright_pixels": 926,
+                "min_dark_pixels": 926,
+                "min_mid_pixels": 463,
+                "min_spread": 90.0
+              }
+            },
+            "non_blank": {
+              "nonzero_pixels": 723072,
+              "pass": true,
+              "reasons": [],
+              "total_pixels": 723072,
+              "unique_colors_seen": 2
+            }
+          },
+          "image": {
+            "height": 538,
+            "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_bottom.png",
+            "width": 1344
+          },
+          "metadata": {},
+          "pass": true,
+          "reasons": [],
+          "schema_version": "dart.image_verdict/v1",
+          "thresholds_used": {
+            "contrast": {
+              "bright_luminance_gt": 190.0,
+              "dark_luminance_lt": 55.0,
+              "mid_luminance_max": 170.0,
+              "mid_luminance_min": 70.0,
+              "min_bright_pixels": 926,
+              "min_dark_pixels": 926,
+              "min_mid_pixels": 463,
+              "min_spread": 90.0
+            },
+            "diff": {
+              "fail": 0.016,
+              "failpercent": 1.0,
+              "ignore_aa": true,
+              "relnorm": null
+            },
+            "non_blank": {
+              "min_nonzero_pixels": 1,
+              "min_unique_colors": 2
+            },
+            "require_contrast": false
+          }
+        }
+      }
+    ],
+    "sha256": "a02804cc61e2966e95048746e9db4fd83ebf506a56f3efc3ad466cf4d2b1deb0",
+    "size_bytes": 57706,
+    "source_frames": [
+      {
+        "member": "turntable_author_mu02_omega2",
+        "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu02_omega2/frames/step_000136.png",
+        "sha256": "17ded85fef6ed366e2b23572603c425668d890137bd901e8e91d7de243db3039",
+        "step": 136,
+        "time_seconds": 2.2666666666666666
+      },
+      {
+        "member": "turntable_author_mu02_omega5",
+        "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu02_omega5/frames/step_000120.png",
+        "sha256": "5628c863ed5db739834d108cbd7dcfc712f6e520e0c7c6379a47dfd9e015d6e8",
+        "step": 120,
+        "time_seconds": 2.0
+      },
+      {
+        "member": "turntable_author_mu05_omega2",
+        "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega2/frames/step_000360.png",
+        "sha256": "52398f757d79fd0a470965355fdcf7f6d2cc3f8fd8baa2b8d878505f321f14b2",
+        "step": 360,
+        "time_seconds": 6.0
+      },
+      {
+        "member": "turntable_author_mu05_omega5",
+        "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega5/frames/step_000090.png",
+        "sha256": "a1d6c9fa4763853d6e80f14f08ee6be1ab480857c8a7ef4089638ad0c1e5325d",
+        "step": 90,
+        "time_seconds": 1.5
+      }
+    ],
+    "stack_command": [
+      "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffmpeg",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-y",
+      "-i",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_top.png",
+      "-i",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel_bottom.png",
+      "-filter_complex",
+      "[0:v][1:v]vstack=inputs=2[outv]",
+      "-map",
+      "[outv]",
+      "-frames:v",
+      "1",
+      "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel.png"
+    ],
+    "verdict": {
+      "checks": {
+        "contrast": {
+          "bright_pixels": 612,
+          "dark_pixels": 29011,
+          "mid_pixels": 294572,
+          "p05": 27.438,
+          "p95": 156.452,
+          "pass": false,
+          "reasons": [
+            "bright pixels 612 < 1853"
+          ],
+          "region": {
+            "x0": 537,
+            "x1": 1303,
+            "y0": 484,
+            "y1": 968
+          },
+          "sample_count": 370744,
+          "spread": 129.013,
+          "thresholds": {
+            "bright_luminance_gt": 190.0,
+            "dark_luminance_lt": 55.0,
+            "mid_luminance_max": 170.0,
+            "mid_luminance_min": 70.0,
+            "min_bright_pixels": 1853,
+            "min_dark_pixels": 1853,
+            "min_mid_pixels": 926,
+            "min_spread": 90.0
+          }
+        },
+        "non_blank": {
+          "nonzero_pixels": 1446144,
+          "pass": true,
+          "reasons": [],
+          "total_pixels": 1446144,
+          "unique_colors_seen": 2
+        }
+      },
+      "image": {
+        "height": 1076,
+        "path": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/groups/turntable_author/panel.png",
+        "width": 1344
+      },
+      "metadata": {},
+      "pass": true,
+      "reasons": [],
+      "schema_version": "dart.image_verdict/v1",
+      "thresholds_used": {
+        "contrast": {
+          "bright_luminance_gt": 190.0,
+          "dark_luminance_lt": 55.0,
+          "mid_luminance_max": 170.0,
+          "mid_luminance_min": 70.0,
+          "min_bright_pixels": 1853,
+          "min_dark_pixels": 1853,
+          "min_mid_pixels": 926,
+          "min_spread": 90.0
+        },
+        "diff": {
+          "fail": 0.016,
+          "failpercent": 1.0,
+          "ignore_aa": true,
+          "relnorm": null
+        },
+        "non_blank": {
+          "min_nonzero_pixels": 1,
+          "min_unique_colors": 2
+        },
+        "require_contrast": false
+      }
+    }
+  },
+  "paper_comparable": false,
+  "pass": true,
+  "schema_version": "dart.fbf_visual_evidence/v1",
+  "semantic_outcome_gate": "the composite video remains synchronized while the outcome-aware still uses explicitly recorded per-member source times; manual inspection plus per-member physical trace/test contracts remain required",
+  "source_segment": "turntable",
+  "synchronization": {
+    "duration_seconds": 6.033333,
+    "duration_tolerance_seconds": 0.05,
+    "frame_count": 181,
+    "frame_rate": "30/1",
+    "output_fps": 30,
+    "total_steps": 360,
+    "video_steps": [
+      0,
+      2,
+      4,
+      6,
+      8,
+      10,
+      12,
+      14,
+      16,
+      18,
+      20,
+      22,
+      24,
+      26,
+      28,
+      30,
+      32,
+      34,
+      36,
+      38,
+      40,
+      42,
+      44,
+      46,
+      48,
+      50,
+      52,
+      54,
+      56,
+      58,
+      60,
+      62,
+      64,
+      66,
+      68,
+      70,
+      72,
+      74,
+      76,
+      78,
+      80,
+      82,
+      84,
+      86,
+      88,
+      90,
+      92,
+      94,
+      96,
+      98,
+      100,
+      102,
+      104,
+      106,
+      108,
+      110,
+      112,
+      114,
+      116,
+      118,
+      120,
+      122,
+      124,
+      126,
+      128,
+      130,
+      132,
+      134,
+      136,
+      138,
+      140,
+      142,
+      144,
+      146,
+      148,
+      150,
+      152,
+      154,
+      156,
+      158,
+      160,
+      162,
+      164,
+      166,
+      168,
+      170,
+      172,
+      174,
+      176,
+      178,
+      180,
+      182,
+      184,
+      186,
+      188,
+      190,
+      192,
+      194,
+      196,
+      198,
+      200,
+      202,
+      204,
+      206,
+      208,
+      210,
+      212,
+      214,
+      216,
+      218,
+      220,
+      222,
+      224,
+      226,
+      228,
+      230,
+      232,
+      234,
+      236,
+      238,
+      240,
+      242,
+      244,
+      246,
+      248,
+      250,
+      252,
+      254,
+      256,
+      258,
+      260,
+      262,
+      264,
+      266,
+      268,
+      270,
+      272,
+      274,
+      276,
+      278,
+      280,
+      282,
+      284,
+      286,
+      288,
+      290,
+      292,
+      294,
+      296,
+      298,
+      300,
+      302,
+      304,
+      306,
+      308,
+      310,
+      312,
+      314,
+      316,
+      318,
+      320,
+      322,
+      324,
+      326,
+      328,
+      330,
+      332,
+      334,
+      336,
+      338,
+      340,
+      342,
+      344,
+      346,
+      348,
+      350,
+      352,
+      354,
+      356,
+      358,
+      360
+    ]
+  }
+}

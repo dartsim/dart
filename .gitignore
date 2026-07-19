@@ -82,13 +82,32 @@ docs/python_api/_build/
 
 # Data files
 data/screencap/*
+!data/screencap/.KEEP
 *.ppm
+# Repository source textures under data/obj are durable inputs, not captures.
+!/data/obj/**/*.ppm
 
 # Headless rendering artifacts
 /*.png
 headless_frames*/
 rigid_frames/
-*_frames/
+
+# Reproducible dev-task evidence transaction snapshots.
+/docs/dev_tasks/**/assets/**/.*.backup-*/
+
+# Standard dev-task evidence-generator staging contract. `frames/` and
+# `panel_frames/` are reserved transient namespaces; finalizers promote durable
+# selections to `stills/` and prune the staging paths before sealing a bundle.
+# Sealed media, metadata, and indexed raw scientific traces remain visible.
+/docs/dev_tasks/**/assets/**/.staging/
+/docs/dev_tasks/**/assets/**/frames/
+/docs/dev_tasks/**/assets/**/panel_frames/
+/docs/dev_tasks/**/assets/**/*.ffconcat
+/docs/dev_tasks/**/assets/**/capture.stdout.txt
+/docs/dev_tasks/**/assets/**/capture.stderr.txt
+/docs/dev_tasks/**/assets/**/contract.stdout.txt
+/docs/dev_tasks/**/assets/**/contract.stderr.txt
+/docs/dev_tasks/**/assets/**/verification.stderr.txt
 
 # Temporary directory for dependencies
 .deps/

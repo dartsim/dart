@@ -1,0 +1,100 @@
+{
+  "artifact_count": 18,
+  "artifacts": [
+    {
+      "bytes": 1953,
+      "path": "REPORT.md",
+      "sha256": "f9178c14c1930361afc1d97cb5bf08afe04d3fd451e8a94144b02bb0b46e61cf"
+    },
+    {
+      "bytes": 231716,
+      "path": "backspin/clip.gif",
+      "sha256": "773365f624ba1326855f2ad99c0196f761ab776001da568f7cdaa84054adacc8"
+    },
+    {
+      "bytes": 49752,
+      "path": "backspin/clip.mp4",
+      "sha256": "7d4606f4da0a57ffbdfa0528906b21a20d7e1a4e47a6e7eb5387242aecc71928"
+    },
+    {
+      "bytes": 297207,
+      "path": "backspin/metadata.json",
+      "sha256": "c94da15165a1fbce8466a432c02dd194133e7416d0e412a240dcbd5106153023"
+    },
+    {
+      "bytes": 1244,
+      "path": "backspin/panel.compose.json",
+      "sha256": "78039d095a41c571de485b49973e7281364578df13e35e84d0c001112d624a98"
+    },
+    {
+      "bytes": 131013,
+      "path": "backspin/panel.png",
+      "sha256": "72bf8d6098e8fb17b98bbedeaa00cc539866cf570d91d725f77dc75f1971b067"
+    },
+    {
+      "bytes": 47291,
+      "path": "backspin/stills/step_000000.png",
+      "sha256": "558d658cfad9fa583afdb4711e724835f24407463c2ab693741467ff5f07b176"
+    },
+    {
+      "bytes": 47347,
+      "path": "backspin/stills/step_000001.png",
+      "sha256": "e069ac301b0509956658b4f119f98cff5e650beb3ca4b33f315434b265d65e8d"
+    },
+    {
+      "bytes": 47807,
+      "path": "backspin/stills/step_000002.png",
+      "sha256": "2a83b5643ae3ff2f1caa6f8def5c0c2178e2bbf8742c4c9e2537280155846209"
+    },
+    {
+      "bytes": 236563,
+      "path": "backspin/timeline.json",
+      "sha256": "a5f40ae0fb3bb5705e27d4fbe1dbfae81cb11e437d47ae8f511ee578d2a5a9f5"
+    },
+    {
+      "bytes": 28910,
+      "path": "capture-provenance.json",
+      "sha256": "8176c167ef08fead1fedb0022ae6d45bae4d83110c3a51f3095e4751531af14f"
+    },
+    {
+      "bytes": 1701,
+      "path": "invocations.json",
+      "sha256": "d1745c3081361970d9b62edb73091668bd27c16df62e5985197a49bb12631951"
+    },
+    {
+      "bytes": 3296,
+      "path": "manual-inspection.json",
+      "sha256": "b86c596da631503a3831fd55adeb934505cf758dfc8a612d0a0f32b2a55067cb"
+    },
+    {
+      "bytes": 325704,
+      "path": "run-summary.json",
+      "sha256": "929565e0a3f44736d64d820dac433d9e3d6bf126c018bec631cd623f1a40b66d"
+    },
+    {
+      "bytes": 4437,
+      "path": "trace-summary.json",
+      "sha256": "0f6221fd32742b849e9ac79ec750de71b46ec24ba66b8d6e5a0e25048223ab48"
+    },
+    {
+      "bytes": 27373,
+      "path": "traces/backspin.csv",
+      "sha256": "dc205297fa4cbffa1b497f12507b919f344bbee45a5820ae46145e0ed91bbd98"
+    },
+    {
+      "bytes": 0,
+      "path": "traces/backspin.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 234584,
+      "path": "verification.json",
+      "sha256": "fb9de609e52df648465dc0dbe73af7fbbd1b98c1c4671cde504200ff72c15c01"
+    }
+  ],
+  "excluded": [
+    "artifact-index.json",
+    "metadata.json"
+  ],
+  "schema_version": "dart.fbf_backspin_artifact_index/v1"
+}

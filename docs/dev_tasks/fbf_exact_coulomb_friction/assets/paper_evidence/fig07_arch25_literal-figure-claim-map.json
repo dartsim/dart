@@ -1,0 +1,16 @@
+{
+  "schema_version": "dart.fbf_paper_claim_map/v1",
+  "requirement_ids": ["fig.07"],
+  "manifest_claim": "With only the two end stones pinned, FBF and Kamino preserve the 23-stone dynamic arch through crown impact while MuJoCo slumps before impact and collapses afterward.",
+  "status": "partial",
+  "remaining_blockers": [
+    "The current-source literal-wedge bundle has no projectile and therefore does not reproduce crown impact.",
+    "The author scene, projectile parameters, paper camera/timeline, approved golden and diff, and faithful Kamino and MuJoCo baselines are unavailable."
+  ],
+  "claims": [
+    {
+      "claim": "With only the two end stones pinned, FBF and Kamino preserve the 23-stone dynamic arch through crown impact while MuJoCo slumps before impact and collapses afterward.",
+      "support": "The bundle supports only the pre-impact DART clause: exactly two springers are pinned, all 23 interior literal wedges are dynamic, and the reconstructed arch remains standing for 600 fallback-free exact steps. It does not support the impact or external-solver clauses."
+    }
+  ]
+}

@@ -169,15 +169,24 @@ void ContactVisualizer::applyPostStep()
 }
 
 //==============================================================================
+void ContactVisualizer::setEnabled(bool enabled)
+{
+  mEnabled = enabled;
+  if (!mEnabled) {
+    hideFrom(0);
+    mLastVisualizedCount = 0;
+  }
+}
+
+//==============================================================================
 void ContactVisualizer::renderToggle()
 {
   // Hide synchronously on toggle-off: applyPostStep only runs while the sim is
   // stepping, so a toggle-off while paused would otherwise leave the last
   // step's arrows frozen on screen until play resumes.
-  if (ImGui::Checkbox("Contact force visualizer", &mEnabled) && !mEnabled) {
-    hideFrom(0);
-    mLastVisualizedCount = 0;
-  }
+  bool enabled = mEnabled;
+  if (ImGui::Checkbox("Contact force visualizer", &enabled))
+    setEnabled(enabled);
   ImGui::TextDisabled("Capped at %zu arrows", kMaxArrows);
 }
 

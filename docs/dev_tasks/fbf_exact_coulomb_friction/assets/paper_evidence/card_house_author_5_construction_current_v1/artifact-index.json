@@ -1,0 +1,70 @@
+{
+  "artifact_count": 12,
+  "artifacts": [
+    {
+      "path": "REPORT.md",
+      "sha256": "a8995b20a6d4fc82bdcff357885b29905e4f281f12dad7c93c3d8292d1134c3e",
+      "size_bytes": 1599
+    },
+    {
+      "path": "capture-provenance.json",
+      "sha256": "cb9c10877e9e612b29b7c7b82ef33655b790b76c266d05a25c913b04215dcc2e",
+      "size_bytes": 16353
+    },
+    {
+      "path": "card_house_author_5_construction/construction-step-0.png",
+      "sha256": "7b7000307da9a467b3b6d28d627f75897a17de8d6ee3f9192183d4bcf47f3a16",
+      "size_bytes": 51391
+    },
+    {
+      "path": "card_house_author_5_construction/metadata.json",
+      "sha256": "d724e773966ac253b80ec738516532830e7d3121170cdebd67908589c88db0e9",
+      "size_bytes": 13203
+    },
+    {
+      "path": "card_house_author_5_construction/panel.compose.json",
+      "sha256": "7d60515558e0d811ea90f22d227290f3bd6366acbc1ca2056fb203faa33e67a5",
+      "size_bytes": 616
+    },
+    {
+      "path": "card_house_author_5_construction/panel.png",
+      "sha256": "27444f40b53a81857ad752da2157c46251d5c46eb07eb2826b1324fd0e1765a2",
+      "size_bytes": 17088
+    },
+    {
+      "path": "card_house_author_5_construction/timeline.json",
+      "sha256": "e88c61124bb1fb2b0d352e260b3b26fbc45ceff2fee88fdbc018740d2a9d40bf",
+      "size_bytes": 24843
+    },
+    {
+      "path": "contract.json",
+      "sha256": "5ad04efeaf9185c62405d44f9067c8e66229dabd7ccaff4469a5c690b2f34b01",
+      "size_bytes": 44193
+    },
+    {
+      "path": "invocations.json",
+      "sha256": "bc9c38ed05e089517ee6d7a81193b4efabe5a90efd41acbc5643258153b3d820",
+      "size_bytes": 3023
+    },
+    {
+      "path": "manual-inspection.json",
+      "sha256": "7bc672e9dd95b52853c5c7e56680190d564fc9514add9b263de0c33c3f94e2a4",
+      "size_bytes": 1118
+    },
+    {
+      "path": "run-summary.json",
+      "sha256": "ccce4b213181682893a913a75cfcd36723537a89c1308e3729fa05012ecd73bc",
+      "size_bytes": 14588
+    },
+    {
+      "path": "verification.json",
+      "sha256": "c9135a6360e8703dfe1a586defcbc52b36f1c90db7c90d35fee08676aeeb0394",
+      "size_bytes": 5448
+    }
+  ],
+  "excluded": [
+    "artifact-index.json",
+    "metadata.json"
+  ],
+  "schema_version": "dart.fbf_author_card_house_construction_artifact_index/v1"
+}

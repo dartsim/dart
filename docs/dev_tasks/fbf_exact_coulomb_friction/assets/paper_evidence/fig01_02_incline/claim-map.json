@@ -1,0 +1,202 @@
+{
+  "schema_version": "dart.fbf_paper_claim_map/v1",
+  "requirement_ids": [
+    "fig.01",
+    "fig.02",
+    "video.03_incline"
+  ],
+  "status": "partial",
+  "scope": "DART exact-FBF incline threshold cells at mu=0.4 and mu=0.5",
+  "source_claim": {
+    "paper_url": "https://www.cs.ubc.ca/research/fbf-friction/paper.pdf",
+    "paper_locator": "Figures 1-2 and Section 5.1, PDF page 7",
+    "video_url": "https://youtu.be/5THad4PAGmI",
+    "video_locator": "00:24-00:35",
+    "published_contract": {
+      "slope_tangent": 0.5,
+      "threshold_mu": 0.5,
+      "time_step_seconds": 0.016666666666666666,
+      "terminal_time_seconds": 2.0
+    },
+    "inspection_source_sha256": {
+      "paper_pdf": "af7cb8df58288f4323fa4340e1590b09643b8702116a6c47cefe7ffa9a51e2f4",
+      "combined_video": "d5356e1b31487be62b75af05efbfecdb70ad5d98501a8efd378fcedf066e4794"
+    },
+    "inspection_only_video_keyframes": [
+      {
+        "timestamp_seconds": 27,
+        "sha256": "efbb21c2213f0014954f93bfe62bcbaefacde1bc30ef5c6d6dc2e3dae387963d"
+      },
+      {
+        "timestamp_seconds": 30,
+        "sha256": "3b85f83c7da8d305430b71f215134ae03f0a32221a3eadd4e0717b486cefcdca"
+      },
+      {
+        "timestamp_seconds": 34,
+        "sha256": "de9be41484946ec091a95a5e41b024420952b97109d6dc6f4991570a68715916"
+      }
+    ],
+    "keyframe_note": "The source frames were inspected from a temporary local copy and are not repository goldens or redistributed deliverables."
+  },
+  "capture": {
+    "scene": "fbf_paper_incline",
+    "solver": "ExactCoulombFbfConstraintSolver",
+    "collision_detector": "dart",
+    "simulation_threads": 1,
+    "time_step_seconds": 0.016666666666666666,
+    "completed_step_range": [
+      0,
+      120
+    ],
+    "resolution": [
+      1280,
+      720
+    ],
+    "timeline_sidecar": "timeline.json",
+    "timeline_sha256": "1d7e0cfb0cda6c958f3212f1f9b636c9bcc6556b64b5f9af31277f97c59cf74d",
+    "command": "out=docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline; args=(--scene fbf_paper_incline --headless --steps 120 --width 1280 --height 720 --threads 1 --headless-sidecar $out/timeline.json); for step in 0 30 60 90 120; do args+=(--headless-shot-at $step:$out/frames/frame_$(printf '%03d' $step).png); done; build/default/cpp/Release/bin/dart-demos ${args[@]}",
+    "note": "Both friction cells are rendered in the same world, camera, solver, and deterministic run."
+  },
+  "captured_frames": [
+    {
+      "step": 0,
+      "sim_time_seconds": 0.0,
+      "path": "frames/frame_000.png",
+      "fbf_status": "not_run",
+      "residual": null,
+      "exact_failures": 0,
+      "boxed_lcp_fallbacks": 0
+    },
+    {
+      "step": 30,
+      "sim_time_seconds": 0.5,
+      "path": "frames/frame_030.png",
+      "fbf_status": "success",
+      "residual": 8.1731963736055775e-7,
+      "exact_failures": 0,
+      "boxed_lcp_fallbacks": 0
+    },
+    {
+      "step": 60,
+      "sim_time_seconds": 1.0,
+      "path": "frames/frame_060.png",
+      "fbf_status": "success",
+      "residual": 7.6172415867619034e-7,
+      "exact_failures": 0,
+      "boxed_lcp_fallbacks": 0
+    },
+    {
+      "step": 90,
+      "sim_time_seconds": 1.5,
+      "path": "frames/frame_090.png",
+      "fbf_status": "success",
+      "residual": 4.9271862802704362e-7,
+      "exact_failures": 0,
+      "boxed_lcp_fallbacks": 0
+    },
+    {
+      "step": 120,
+      "sim_time_seconds": 2.0,
+      "path": "frames/frame_120.png",
+      "fbf_status": "success",
+      "residual": 8.9212022066866335e-7,
+      "exact_failures": 0,
+      "boxed_lcp_fallbacks": 0
+    }
+  ],
+  "diagnostics": {
+    "all_five_captures_succeeded": true,
+    "all_post_initial_fbf_statuses_succeeded": true,
+    "final_exact_solves_for_two_cells": 240,
+    "final_exact_failures": 0,
+    "final_boxed_lcp_fallbacks": 0,
+    "final_warm_starts": 221,
+    "maximum_captured_residual": 8.9212022066866335e-7,
+    "evidence": "timeline.json"
+  },
+  "physical_trajectories": [
+    {
+      "mu": 0.4,
+      "path": "trajectory_mu04.csv",
+      "sha256": "9c64d1f3de1b67500828ee19cbf6d947dbb9c6131a669728bab4638baa6635c6",
+      "command": "build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace incline_mu_0_4 exact_fbf 1 120 > docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline/trajectory_mu04.csv",
+      "terminal_downhill_displacement_meters": 1.7686896189773826,
+      "analytic_terminal_displacement_meters": 1.7548661487418349,
+      "relative_error_percent": 0.7877222000925027,
+      "terminal_contacts": 3,
+      "maximum_residual": 9.991423212798622e-7,
+      "fallbacks": 0,
+      "status": "success"
+    },
+    {
+      "mu": 0.5,
+      "path": "trajectory_mu05.csv",
+      "sha256": "74a6037fb9d39c275bb4fbe49e2f1932e5468b29676774ab6b387cc2079ab445",
+      "command": "build/default/cpp/Release/tests/benchmark/integration/fbf_paper_trace incline_mu_0_5 exact_fbf 1 120 > docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline/trajectory_mu05.csv",
+      "terminal_downhill_displacement_meters": 0.0009122041940890438,
+      "terminal_contacts": 3,
+      "maximum_residual": 9.993636897440437e-7,
+      "fallbacks": 0,
+      "status": "success"
+    }
+  ],
+  "visual_claims": [
+    {
+      "claim": "The mu=0.5 DART cube remains visually fixed through T=2 s.",
+      "support": "The green-cube color centroid in the rendered-world region moves from x=756.90 px at step 0 to x=756.47 px at step 120, while the physical trace reports only 0.912 mm downhill displacement."
+    },
+    {
+      "claim": "The mu=0.4 DART cube slides downhill while maintaining the implemented contact response.",
+      "support": "The orange cube moves across the five inspected frames and leaves the cropped camera region by T=2 s; the trace reports 1.76869 m downhill displacement, 3 terminal contacts, and zero fallbacks."
+    },
+    {
+      "claim": "The shown DART run used exact FBF without boxed-LCP fallback.",
+      "support": "The one-world sidecar reports 240 exact solves, zero exact failures, and zero boxed-LCP fallbacks across the two cells."
+    }
+  ],
+  "composition": {
+    "output": "fig02_dart_fbf_5panel.png",
+    "sha256": "6972498c8458e9da535f8a32f244d3be78648bbd916a7fcd6494166c4c683c4c",
+    "manifest": "fig02_dart_fbf_5panel.compose.json",
+    "panel_crop": "crop=660:506:260:58",
+    "panel_preparation_command": "for step in 0 30 60 90 120; do .pixi/envs/gazebo/bin/ffmpeg -y -i frames/frame_$(printf '%03d' $step).png -vf crop=660:506:260:58 -frames:v 1 panels/frame_$(printf '%03d' $step).png; done",
+    "labels": [
+      "t=0.00s",
+      "t=0.50s",
+      "t=1.00s",
+      "t=1.50s",
+      "t=2.00s"
+    ]
+  },
+  "video": {
+    "path": "incline_dart_fbf_2s.mp4",
+    "sha256": "5cbda4008dafef6eb9b16edcdcd7ed311adb2c0e418d663608aa92c684ed687f",
+    "duration_seconds": 2.03,
+    "frame_rate": 30,
+    "resolution": [
+      660,
+      506
+    ],
+    "source_simulation_stride_steps": 2,
+    "encoding_command": ".pixi/envs/gazebo/bin/ffmpeg -y -framerate 30 -i /tmp/fbf_incline_video_frames/frame_%03d.png -vf crop=660:506:260:58 -c:v libx264 -preset veryslow -crf 24 -pix_fmt yuv420p -movflags +faststart incline_dart_fbf_2s.mp4",
+    "note": "This compact DART-only physical clip is not the paper video's 11-second three-solver edit."
+  },
+  "image_verification": {
+    "manually_inspected_at_original_resolution": [
+      "frames/frame_000.png",
+      "frames/frame_060.png",
+      "frames/frame_120.png",
+      "fig02_dart_fbf_5panel.png"
+    ],
+    "standard_nonblank_verdicts_pass": true,
+    "strict_full_frame_contrast_verdicts_pass": true,
+    "strict_sheet_contrast_verdict_pass": false,
+    "strict_sheet_contrast_note": "The optional sheet contrast gate rejects the cropped composition because it has no pixels above its generic bright threshold; the failure is retained."
+  },
+  "unmet_requirements": [
+    "Figure 1 still lacks the full published mu sweep and a source-matched analytic/FBF/Kamino/MuJoCo plot.",
+    "Figure 2 and video.03 still lack synchronized Kamino and MuJoCo views, an approved source golden, and a golden diff.",
+    "The tracked DART plane fixture reports 3 contacts per cell while the paper timing table reports 4; this contact-frontend mismatch prevents a paper-equivalent claim.",
+    "The compact DART clip is 2.03 seconds and does not reproduce the paper video's 11-second title and three-solver edit."
+  ]
+}

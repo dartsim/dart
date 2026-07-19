@@ -48,36 +48,40 @@
 //                         [outer_relaxation=scenario_default]
 //
 // Scenarios include the small fixtures plus one-step contact-rich scaffolds:
-//   card_house_26_reduced_contact (full natural manifold, 108 contacts at
-//   the current base),
+//   card_house_26_reduced_contact (full natural manifold, 96 initial contacts
+//   in the repaired reconstruction),
 //   masonry_arch_25_reduced_contact, masonry_arch_101_reduced_contact.
 
-#include <dart/collision/dart/DARTCollisionDetector.hpp>
+#include <dart/simulation/DeactivationOptions.hpp>
+#include <dart/simulation/World.hpp>
+
 #include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
+
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
+
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
 #include <dart/dynamics/ShapeFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/SphereShape.hpp>
+
 #include <dart/math/detail/MasonryArchGeometry.hpp>
-#include <dart/simulation/DeactivationOptions.hpp>
-#include <dart/simulation/World.hpp>
 
 #include <Eigen/Geometry>
 
 #include <algorithm>
-#include <cerrno>
-#include <cstdio>
-#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 
+#include <cerrno>
 #include <cmath>
 #include <cstddef>
+#include <cstdio>
+#include <cstdlib>
 
 namespace {
 
@@ -97,32 +101,32 @@ constexpr double kCardHouseAngle = 0.23;
 constexpr double kCardHouseHeight = 1.0;
 constexpr double kCardHouseWidth = 0.45;
 constexpr double kCardHouseThickness = 0.03;
+// Source-informed reconstruction from Newton 1.3's 1000 kg/m^3 rigid-shape
+// default; not confirmed as an author scene override.
+constexpr double kCardHouseDensity = 1000.0;
 constexpr double kCardHouseInitialPenetration = 0.003;
-constexpr double kCardHouseFrameSpacing = 0.55;
+// Reconstruction choice: adjacent horizontal one-meter cards meet with the
+// same nominal 3 mm overlap used at the other interfaces. The paper does not
+// publish this spacing.
+constexpr double kCardHouseFrameSpacing
+    = kCardHouseHeight - kCardHouseInitialPenetration;
 constexpr double kCardHouseStepSizeScale = 10.0;
 constexpr double kCardHouseOuterRelaxation = 1.5;
 constexpr double kSmallFixtureStepSizeScale = 2.0;
 constexpr std::size_t kCardHouseFourLevelCount = 4u;
-// Full natural manifold for the 26-card one-step rung: 512/4 caps observe
-// 108 actual contacts and solve clean (~2.5 s, zero fallbacks) with the
-// card-house step-size-scale/outer-relaxation options below.
+// Full natural manifold for the repaired 26-card reconstruction: 512/4 caps
+// observe 96 contacts in the initial configuration. This is a measured DART
+// reconstruction count, not the paper timing row's 214-contact contract.
 constexpr std::size_t kCardHouseReducedMaxContacts = 512u;
 constexpr std::size_t kCardHouseReducedMaxContactsPerPair = 4u;
-// Author-faithful masonry-arch friction coefficient: Rigid-IPC's
-// arch-{25,101}-stones.json both specify coefficient_friction = 0.5
-// uniformly (see docs/dev_tasks/fbf_exact_coulomb_friction/ PROVENANCE.txt
-// section 7). DART's other paper fixtures use 0.8; the ported arch keeps
-// the source's own coefficient for scientific fidelity.
-constexpr double kArchFriction = 0.5;
+// The paper's contact-rich arch experiments explicitly use mu=0.8. The
+// credited Rigid-IPC geometry scene uses 0.5, but that source value is not the
+// paper experiment's contact contract.
+constexpr double kArchFriction = 0.8;
 // Rigid-IPC's default body density ("plastic", src/io/read_rb_scene.cpp:68).
 constexpr double kArchDensity = 1000.0;
 constexpr std::size_t kArchStoneCount = 25u;
 constexpr std::size_t kArch101StoneCount = 101u;
-// Crown (topmost) centroid height and cross-section width, in meters, from
-// the weighted-catenary generator (fc=60cm, sqrt(Qt)=7cm); used to place
-// the projectile at the arch's crown regardless of stone count.
-constexpr double kArchCrownHeight = 0.60;
-constexpr double kArchCrownWidth = 0.07;
 constexpr std::size_t kArchReducedMaxContacts = 48u;
 constexpr std::size_t kArchReducedMaxContactsPerPair = 2u;
 constexpr std::size_t kArch101ReducedMaxContacts = 38u;
@@ -159,6 +163,10 @@ struct SweepMetrics
   std::size_t nonFiniteResiduals = 0u;
   double maxResidual = std::numeric_limits<double>::quiet_NaN();
   double finalResidual = std::numeric_limits<double>::quiet_NaN();
+  double finalStepSize = std::numeric_limits<double>::quiet_NaN();
+  double finalSafeStepSize = std::numeric_limits<double>::quiet_NaN();
+  double finalCouplingVariationRatio = std::numeric_limits<double>::quiet_NaN();
+  int finalShrinkIterations = 0;
   const char* finalStatus = "not_run";
   const char* physicalOutcome = "unknown";
   double finalX = std::numeric_limits<double>::quiet_NaN();
@@ -251,7 +259,11 @@ const char* exactStatusName(
       return "not_run";
     case dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success:
       return "success";
-    case dart::constraint::ExactCoulombFbfConstraintSolverStatus::InvalidOptions:
+    case dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+        MaxIterationsAccepted:
+      return "max_iterations_accepted";
+    case dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+        InvalidOptions:
       return "invalid_options";
     case dart::constraint::ExactCoulombFbfConstraintSolverStatus::
         UnsupportedProblem:
@@ -537,8 +549,12 @@ dart::constraint::ExactCoulombFbfConstraintSolverOptions makeFbfOptions(
   options.tolerance = 1e-6;
   options.innerMaxSweeps = config.innerMaxSweeps;
   options.innerLocalIterations = config.innerLocalIterations;
-  options.projectedGradientMaxIterations = config.projectedGradientMaxIterations;
+  options.projectedGradientMaxIterations
+      = config.projectedGradientMaxIterations;
   options.initialStepSize = initialStepSize;
+  const bool usesFixedGamma = std::isfinite(initialStepSize);
+  options.capInitialStepSizeAtSafeBound = !usesFixedGamma;
+  options.enableAdaptiveStepSize = !usesFixedGamma;
   options.enableWarmStart = !(cardBudget || archBudget);
   options.stepSizeScale = config.stepSizeScale;
   options.outerRelaxation = config.outerRelaxation;
@@ -565,7 +581,8 @@ void configureWorldSolver(
   auto solver
       = std::make_unique<dart::constraint::ExactCoulombFbfConstraintSolver>(
           makeFbfOptions(initialStepSize, config, cardBudget, archBudget));
-  solver->setCollisionDetector(dart::collision::DARTCollisionDetector::create());
+  solver->setCollisionDetector(
+      dart::collision::DARTCollisionDetector::create());
   solver->setNumSimulationThreads(1u);
   world->setConstraintSolver(std::move(solver));
 
@@ -792,9 +809,14 @@ Eigen::Isometry3d createCardHouseAFrameTransform(
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.linear()
       = Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitY()).toRotationMatrix();
-  const double halfSpan = 0.5 * kCardHouseHeight * std::sin(kCardHouseAngle);
+  const double horizontalHalfExtent
+      = 0.5
+        * (kCardHouseHeight * std::sin(kCardHouseAngle)
+           + kCardHouseThickness * std::cos(kCardHouseAngle));
+  const double centerOffset
+      = horizontalHalfExtent - 0.5 * kCardHouseInitialPenetration;
   transform.translation().x()
-      = centerX + (leftCard ? -0.96 * halfSpan : 0.96 * halfSpan);
+      = centerX + (leftCard ? -centerOffset : centerOffset);
   transform.translation().y() = 0.0;
   transform.translation().z()
       = baseZ + computeCardHouseVerticalHalfExtent(transform.linear())
@@ -818,18 +840,18 @@ Eigen::Isometry3d createCardHouseHorizontalSupportTransform(
 dart::dynamics::SkeletonPtr createCardHousePlate(
     const std::string& name, const Eigen::Isometry3d& transform)
 {
-  constexpr double kMass = 0.05;
   const Eigen::Vector3d size(
       kCardHouseThickness, kCardHouseWidth, kCardHouseHeight);
+  const double mass = kCardHouseDensity * size.x() * size.y() * size.z();
 
   auto skeleton = dart::dynamics::Skeleton::create(name);
   dart::dynamics::GenericJoint<dart::math::SE3Space>::Properties
       jointProperties(name + "_joint");
   dart::dynamics::BodyNode::Properties bodyProperties(
       dart::dynamics::BodyNode::AspectProperties(name + "_body"));
-  bodyProperties.mInertia.setMass(kMass);
+  bodyProperties.mInertia.setMass(mass);
   bodyProperties.mInertia.setMoment(
-      dart::dynamics::BoxShape::computeInertia(size, kMass));
+      dart::dynamics::BoxShape::computeInertia(size, mass));
 
   auto pair = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
       nullptr, jointProperties, bodyProperties);
@@ -844,8 +866,7 @@ dart::dynamics::SkeletonPtr createCardHousePlate(
   return skeleton;
 }
 
-void addReducedCardHouse(
-    const std::shared_ptr<dart::simulation::World>& world)
+void addReducedCardHouse(const std::shared_ptr<dart::simulation::World>& world)
 {
   const Eigen::Matrix3d aFrameRotation
       = Eigen::AngleAxisd(kCardHouseAngle, Eigen::Vector3d::UnitY())
@@ -896,9 +917,9 @@ dart::dynamics::SkeletonPtr createMasonryArchStone(
 {
   auto skeleton = dart::dynamics::Skeleton::create(
       "masonry_arch_stone_" + std::to_string(index));
-  auto* joint = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
-                            nullptr)
-                    .first;
+  auto* joint
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(nullptr)
+            .first;
   auto* body = skeleton->getBodyNode(0);
   auto* shapeNode = body->createShapeNodeWith<
       dart::dynamics::CollisionAspect,
@@ -908,10 +929,9 @@ dart::dynamics::SkeletonPtr createMasonryArchStone(
   joint->setPositions(
       dart::dynamics::FreeJoint::convertToPositions(geometry.transform));
 
-  // All stones are fully dynamic; the source scene fixes only the ground
-  // plane (see PROVENANCE.txt section 7 in the geometry-port task notes).
+  // Mobility is assigned by the paper-scene builder below.
   const double mass = kArchDensity * geometry.size.x() * geometry.size.y()
-                       * geometry.size.z();
+                      * geometry.size.z();
   dart::dynamics::Inertia inertia;
   inertia.setMass(mass);
   inertia.setMoment(
@@ -924,15 +944,17 @@ void addReducedMasonryArch(
     const std::shared_ptr<dart::simulation::World>& world,
     std::size_t stoneCount)
 {
-  // Author boundary condition: only the ground plane is fixed; every stone
-  // (including both springers) is a fully dynamic rigid body (see
-  // PROVENANCE.txt section 7 in the geometry-port task notes).
+  // Paper Fig. 7 pins the 25-stone springers. Fig. 8 calls the 101-stone case
+  // the same setup, so both endpoints are pinned at either scale.
   world->addSkeleton(createHorizontalPlane(kArchFriction));
 
   const auto stoneGeometry
       = dart::math::detail::generateMasonryArchStoneBoxes(stoneCount);
   for (std::size_t i = 0u; i < stoneCount; ++i) {
-    world->addSkeleton(createMasonryArchStone(i, stoneGeometry[i]));
+    auto stone = createMasonryArchStone(i, stoneGeometry[i]);
+    if (i == 0u || i + 1u == stoneCount)
+      stone->setMobile(false);
+    world->addSkeleton(stone);
   }
 }
 
@@ -1053,23 +1075,19 @@ const char* classifyPhysicalOutcome(
   const Eigen::Vector3d position = transform.translation();
   const Eigen::Vector3d linearVelocity = body->getLinearVelocity();
   const double radius = std::hypot(position.x(), position.y());
-  const double upZ = transform.linear().col(2).normalized().dot(
-      Eigen::Vector3d::UnitZ());
+  const double upZ
+      = transform.linear().col(2).normalized().dot(Eigen::Vector3d::UnitZ());
 
   switch (scenario) {
-    case Scenario::InclineStick:
-    {
+    case Scenario::InclineStick: {
       const double theta = std::atan(kInclineTan);
-      const Eigen::Vector3d downhill(
-          -std::cos(theta), 0.0, -std::sin(theta));
+      const Eigen::Vector3d downhill(-std::cos(theta), 0.0, -std::sin(theta));
       return std::abs(linearVelocity.dot(downhill)) < 0.2 ? "stick_like"
                                                           : "slide_like";
     }
-    case Scenario::InclineSlide:
-    {
+    case Scenario::InclineSlide: {
       const double theta = std::atan(kInclineTan);
-      const Eigen::Vector3d downhill(
-          -std::cos(theta), 0.0, -std::sin(theta));
+      const Eigen::Vector3d downhill(-std::cos(theta), 0.0, -std::sin(theta));
       return linearVelocity.dot(downhill) > 0.2 ? "slide_like" : "stick_like";
     }
     case Scenario::Backspin:
@@ -1135,6 +1153,11 @@ SweepMetrics runSweepRow(
   metrics.warmStarts = solver->getNumExactCoulombWarmStarts();
   metrics.fallbacks = solver->getNumBoxedLcpFallbacks();
   metrics.finalResidual = solver->getLastExactCoulombResidual();
+  metrics.finalStepSize = solver->getLastExactCoulombStepSize();
+  metrics.finalSafeStepSize = solver->getLastExactCoulombSafeStepSize();
+  metrics.finalCouplingVariationRatio
+      = solver->getLastExactCoulombCouplingVariationRatio();
+  metrics.finalShrinkIterations = solver->getLastExactCoulombShrinkIterations();
   metrics.finalStatus = exactStatusName(solver->getLastExactCoulombStatus());
   metrics.physicalOutcome = classifyPhysicalOutcome(scenario, body);
   metrics.finalX = position.x();
@@ -1143,8 +1166,8 @@ SweepMetrics runSweepRow(
   metrics.finalVx = linearVelocity.x();
   metrics.finalVy = linearVelocity.y();
   metrics.finalVz = linearVelocity.z();
-  metrics.finalUpZ = transform.linear().col(2).normalized().dot(
-      Eigen::Vector3d::UnitZ());
+  metrics.finalUpZ
+      = transform.linear().col(2).normalized().dot(Eigen::Vector3d::UnitZ());
   metrics.finalRadius = std::hypot(position.x(), position.y());
   metrics.finalAngularY = angularVelocity.y();
   return metrics;
@@ -1168,6 +1191,8 @@ void printHeader()
 {
   std::printf(
       "scenario,gamma_mode,gamma,steps,max_contacts,max_contacts_per_pair,"
+      "adaptive_step_size,cap_at_safe_bound,final_gamma,safe_gamma,"
+      "shrink_iterations,coupling_variation_ratio,"
       "max_outer_iterations,inner_sweeps,inner_local_iterations,"
       "projected_gradient_iterations,step_size_scale,outer_relaxation,"
       "clean_exact,physical_outcome,"
@@ -1183,8 +1208,10 @@ void printRow(
     const SweepConfig& config)
 {
   const SweepMetrics metrics = runSweepRow(scenario, gamma, steps, config);
+  const bool usesFixedGamma = std::isfinite(gamma);
   std::printf(
-      "%s,%s,%.17g,%zu,%zu,%zu,%d,%d,%d,%d,%.17g,%.17g,%d,%s,%zu,%zu,%zu,"
+      "%s,%s,%.17g,%zu,%zu,%zu,%d,%d,%.17g,%.17g,%d,%.17g,"
+      "%d,%d,%d,%d,%.17g,%.17g,%d,%s,%zu,%zu,%zu,"
       "%zu,%zu,%zu,%zu,%.17g,"
       "%.17g,%s,%.17g,%.17g,%.17g,%.17g,%.17g,%.17g,%.17g,%.17g,%.17g\n",
       scenarioName(scenario),
@@ -1193,6 +1220,12 @@ void printRow(
       steps,
       config.maxContacts,
       config.maxContactsPerPair,
+      usesFixedGamma ? 0 : 1,
+      usesFixedGamma ? 0 : 1,
+      safeValue(metrics.finalStepSize),
+      safeValue(metrics.finalSafeStepSize),
+      metrics.finalShrinkIterations,
+      safeValue(metrics.finalCouplingVariationRatio),
       config.maxOuterIterations,
       config.innerMaxSweeps,
       config.innerLocalIterations,
@@ -1238,7 +1271,7 @@ void printUsage()
       "[step_size_scale=scenario_default] "
       "[outer_relaxation=scenario_default]\n"
       "Scenarios include card_house_26_reduced_contact (full natural "
-      "manifold, 108 contacts at the current base), "
+      "manifold, 96 initial contacts in the repaired reconstruction), "
       "masonry_arch_25_reduced_contact, and "
       "masonry_arch_101_reduced_contact as one-step scaffolds. "
       "The cap arguments are for reproducing reduced or boundary sweep rows; "
@@ -1271,7 +1304,7 @@ int main(int argc, char** argv)
   if (!parseSizeArg(
           argc > 4 ? argv[4] : nullptr, config.maxContacts, config.maxContacts)
       || !parseSizeArg(
-      argc > 5 ? argv[5] : nullptr,
+          argc > 5 ? argv[5] : nullptr,
           config.maxContactsPerPair,
           config.maxContactsPerPair)
       || !parseIntArg(

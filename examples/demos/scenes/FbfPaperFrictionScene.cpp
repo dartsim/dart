@@ -36,15 +36,20 @@
 // aids; the authoritative parity gates remain the unit/integration tests,
 // benchmark, and CSV trace exporter.
 
+#include "FbfAuthorCardHouseSpec.hpp"
+#include "FbfAuthorTurntableSpec.hpp"
 #include "Scenes.hpp"
 
 #include <dart/gui/osg/osg.hpp>
+
+#include <dart/utils/DartResourceRetriever.hpp>
 
 #include <dart/simulation/DeactivationOptions.hpp>
 
 #include <dart/constraint/ExactCoulombFbfConstraintSolver.hpp>
 
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
+#include <dart/collision/native/NativeCollisionDetector.hpp>
 
 #include <dart/math/detail/MasonryArchGeometry.hpp>
 
@@ -53,7 +58,9 @@
 #include <Eigen/Geometry>
 
 #include <algorithm>
+#include <array>
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 #include <cmath>
@@ -65,8 +72,11 @@ namespace {
 using dart::dynamics::BodyNode;
 using dart::dynamics::BoxShape;
 using dart::dynamics::CollisionAspect;
+using dart::dynamics::CylinderShape;
 using dart::dynamics::DynamicsAspect;
 using dart::dynamics::FreeJoint;
+using dart::dynamics::MeshShape;
+using dart::dynamics::PlaneShape;
 using dart::dynamics::Skeleton;
 using dart::dynamics::SkeletonPtr;
 using dart::dynamics::SphereShape;
@@ -88,36 +98,50 @@ constexpr double kCardHouseAngle = 0.23;
 constexpr double kCardHouseHeight = 1.0;
 constexpr double kCardHouseWidth = 0.45;
 constexpr double kCardHouseThickness = 0.03;
+// Source-informed reconstruction: Newton 1.3 defaults rigid shapes to
+// 1000 kg/m^3. The unavailable paper scene may override this value.
+constexpr double kCardHouseDensity = 1000.0;
 constexpr double kCardHouseInitialPenetration = 0.003;
-constexpr double kCardHouseFrameSpacing = 0.55;
+// Reconstruction choice: adjacent horizontal one-meter cards meet with the
+// same nominal 3 mm overlap used at the other interfaces. The paper does not
+// publish this spacing.
+constexpr double kCardHouseFrameSpacing
+    = kCardHouseHeight - kCardHouseInitialPenetration;
 constexpr double kCardHouseStepSizeScale = 10.0;
 constexpr double kCardHouseOuterRelaxation = 1.5;
 constexpr std::size_t kCardHouseProjectileCount = 4u;
-constexpr double kCardHouseProjectileRadius = 0.055;
-constexpr double kCardHouseProjectileMass = 0.02;
+// The official paper teaser and Fig. 6 show cube projectiles. Their dimensions
+// are unpublished; retain the former 0.11 m diameter as a reconstructed cube
+// edge length so this source-backed shape correction does not masquerade as
+// an author parameter.
+constexpr double kCardHouseProjectileEdgeLength = 0.11;
+constexpr double kCardHouseProjectileMass
+    = kCardHouseDensity * kCardHouseProjectileEdgeLength
+      * kCardHouseProjectileEdgeLength * kCardHouseProjectileEdgeLength;
 constexpr double kCardHouseProjectileSpeed = 4.0;
+constexpr double kCardHouseProjectileDropHeight = 4.45;
 constexpr double kSmallFixtureStepSizeScale = 2.0;
 constexpr std::size_t kCardHouseFourLevelCount = 4u;
 constexpr std::size_t kCardHouseTenLevelCount = 10u;
-// Full natural manifold for the 26-card one-step scaffold: 512/4 caps
-// observe 108 actual contacts and solve clean (~2.5 s/step, zero fallbacks)
-// with the card-house step-size-scale/outer-relaxation options below.
+// Full natural manifold for the repaired 26-card reconstruction: 512/4 caps
+// observe 96 contacts in the initial configuration. This is a measured DART
+// reconstruction count, not the paper timing row's 214-contact contract.
 constexpr std::size_t kCardHouseReducedMaxContacts = 512u;
 constexpr std::size_t kCardHouseReducedMaxContactsPerPair = 4u;
-constexpr std::size_t kCardHouseTenLevelConstructionMaxContacts = 512u;
-constexpr std::size_t kCardHouseTenLevelConstructionMaxContactsPerPair = 8u;
-// Source-faithful Rigid-IPC arch parameters: uniform friction 0.5 and the
-// repository's default density (see dart/math/detail/MasonryArchGeometry.hpp
-// for the shared weighted-catenary generator and provenance).
-constexpr double kArchFriction = 0.5;
+// The existing boxed-LCP construction probe reaches this 512-contact cap.
+// Therefore it is a bounded visual budget, not a measured natural-manifold
+// count. Both the static inspection and dynamic adapter expose that limit.
+constexpr std::size_t kCardHouseTenLevelMaxContacts = 512u;
+constexpr std::size_t kCardHouseTenLevelMaxContactsPerPair = 8u;
+// The paper's contact-rich arch experiments explicitly use mu=0.8. The
+// credited Rigid-IPC geometry scene uses 0.5, but that source value is not the
+// paper experiment's contact contract.
+constexpr double kArchFriction = 0.8;
+// Source-informed reconstruction: Rigid-IPC's default density is 1000 kg/m^3.
+// The unavailable paper scene may override this value.
 constexpr double kArchDensity = 1000.0;
 constexpr std::size_t kArchStoneCount = 25u;
 constexpr std::size_t kArch101StoneCount = 101u;
-// Crown (topmost) centroid height and cross-section width from the
-// weighted-catenary generator (fc = 60 cm, sqrt(Qt) = 7 cm); used to aim
-// the projectile at the crown regardless of stone count.
-constexpr double kArchCrownHeight = 0.60;
-constexpr double kArchCrownWidth = 0.07;
 constexpr std::size_t kArchReducedMaxContacts = 48u;
 constexpr std::size_t kArchReducedMaxContactsPerPair = 2u;
 constexpr std::size_t kArch101ReducedMaxContacts = 38u;
@@ -125,9 +149,17 @@ constexpr std::size_t kArch101ReducedMaxContactsPerPair = 2u;
 constexpr int kArchMaxOuterIterations = 120000;
 constexpr double kArchOuterRelaxation = 1.5;
 constexpr double kArchStepSizeScale = 10.0;
-constexpr double kArchProjectileRadius = 0.08;
-constexpr double kArchProjectileMass = 0.05;
+// The official teaser/video show a horizontal row of about twelve small cube
+// projectiles dropping onto the crown. Count, edge, mass, spacing, and drop
+// state remain reconstructions because the paper does not publish them.
+constexpr std::size_t kArchProjectileCount = 12u;
+constexpr double kArchProjectileEdgeLength = 0.035;
+constexpr double kArchProjectileMass = kArchDensity * kArchProjectileEdgeLength
+                                       * kArchProjectileEdgeLength
+                                       * kArchProjectileEdgeLength;
 constexpr double kArchProjectileSpeed = 3.0;
+constexpr double kArchProjectileSpacing = 0.045;
+constexpr double kArchProjectileDropHeight = 0.95;
 
 enum class SolverMode
 {
@@ -215,13 +247,32 @@ void configureWorldBase(const WorldPtr& world)
 }
 
 //==============================================================================
+std::shared_ptr<dart::collision::CollisionDetector>
+createFbfPaperCollisionDetector(
+    dart::collision::NativeCollisionDetector::ContactManifoldMode manifoldMode
+    = dart::collision::NativeCollisionDetector::ContactManifoldMode::Compact)
+{
+  if (manifoldMode
+      == dart::collision::NativeCollisionDetector::ContactManifoldMode::
+          Compact) {
+    return dart::collision::DARTCollisionDetector::create();
+  }
+
+  auto detector = dart::collision::NativeCollisionDetector::create();
+  detector->setContactManifoldMode(manifoldMode);
+  return detector;
+}
+
+//==============================================================================
 void configureSolver(
     const WorldPtr& world,
     SolverMode mode,
     std::size_t maxContacts,
     std::size_t maxContactsPerPair,
     bool cardBudget = false,
-    bool archBudget = false)
+    bool archBudget = false,
+    dart::collision::NativeCollisionDetector::ContactManifoldMode manifoldMode
+    = dart::collision::NativeCollisionDetector::ContactManifoldMode::Compact)
 {
   if (mode == SolverMode::ExactFbf) {
     auto solver
@@ -229,15 +280,13 @@ void configureSolver(
             archBudget   ? makeArchFbfOptions()
             : cardBudget ? makeCardFbfOptions()
                          : makeFbfOptions());
-    solver->setCollisionDetector(
-        dart::collision::DARTCollisionDetector::create());
+    solver->setCollisionDetector(createFbfPaperCollisionDetector(manifoldMode));
     solver->setNumSimulationThreads(1u);
     world->setConstraintSolver(std::move(solver));
   } else {
     auto solver
         = std::make_unique<dart::constraint::BoxedLcpConstraintSolver>();
-    solver->setCollisionDetector(
-        dart::collision::DARTCollisionDetector::create());
+    solver->setCollisionDetector(createFbfPaperCollisionDetector(manifoldMode));
     solver->setNumSimulationThreads(1u);
     world->setConstraintSolver(std::move(solver));
   }
@@ -245,6 +294,18 @@ void configureSolver(
   auto& option = world->getConstraintSolver()->getCollisionOption();
   option.maxNumContacts = maxContacts;
   option.maxNumContactsPerPair = maxContactsPerPair;
+}
+
+//==============================================================================
+dart::collision::NativeCollisionDetector::ContactManifoldMode
+getConfiguredContactManifoldMode(const WorldPtr& world)
+{
+  const auto detector
+      = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
+          world->getConstraintSolver()->getCollisionDetector());
+  return detector != nullptr ? detector->getContactManifoldMode()
+                             : dart::collision::NativeCollisionDetector::
+                                 ContactManifoldMode::Compact;
 }
 
 //==============================================================================
@@ -307,37 +368,6 @@ SkeletonPtr createDynamicBox(
 }
 
 //==============================================================================
-SkeletonPtr createDynamicSphere(
-    const std::string& name,
-    double radius,
-    double mass,
-    const Eigen::Isometry3d& transform,
-    double friction,
-    const Eigen::Vector4d& color,
-    const Eigen::Vector3d& linearVelocity)
-{
-  auto skeleton = Skeleton::create(name);
-  auto* joint = skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr).first;
-  auto* body = skeleton->getBodyNode(0);
-  auto shape = std::make_shared<SphereShape>(radius);
-  auto* node = body->createShapeNodeWith<
-      VisualAspect,
-      CollisionAspect,
-      DynamicsAspect>(shape);
-  node->getVisualAspect()->setRGBA(color);
-  node->getDynamicsAspect()->setFrictionCoeff(friction);
-
-  dart::dynamics::Inertia inertia;
-  inertia.setMass(mass);
-  inertia.setMoment(SphereShape::computeInertia(radius, mass));
-  body->setInertia(inertia);
-
-  joint->setPositions(FreeJoint::convertToPositions(transform));
-  joint->setLinearVelocity(linearVelocity);
-  return skeleton;
-}
-
-//==============================================================================
 SkeletonPtr createGround(double friction)
 {
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
@@ -351,19 +381,41 @@ SkeletonPtr createGround(double friction)
 }
 
 //==============================================================================
+void addBackspinCheckerTexture(BodyNode* body)
+{
+  const dart::common::Uri meshUri(
+      "dart://sample/obj/fbf_backspin_checker_sphere.obj");
+  const auto retriever = dart::utils::DartResourceRetriever::create();
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* mesh = MeshShape::loadMesh(meshUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  if (!mesh)
+    throw std::runtime_error("failed to load the backspin checker texture");
+
+  // The physical SphereShape owns collision, mass, inertia, and friction.
+  // This UV mesh is deliberately VisualAspect-only and uses DART's existing
+  // MeshShape renderer to bind the OBJ material's checker texture.
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto checker = std::make_shared<MeshShape>(
+      Eigen::Vector3d::Constant(kBackspinRadius), mesh, meshUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  auto* checkerNode = body->createShapeNodeWith<VisualAspect>(checker);
+  checkerNode->getVisualAspect()->setRGBA(Eigen::Vector4d::Ones());
+}
+
+//==============================================================================
 SkeletonPtr createBackspinSphere()
 {
   auto skeleton = Skeleton::create("backspin_sphere");
   auto* joint = skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr).first;
   auto* body = skeleton->getBodyNode(0);
   auto shape = std::make_shared<SphereShape>(kBackspinRadius);
-  auto* node = body->createShapeNodeWith<
-      VisualAspect,
-      CollisionAspect,
-      DynamicsAspect>(shape);
-  node->getVisualAspect()->setRGBA(Eigen::Vector4d(0.92, 0.52, 0.12, 1.0));
+  auto* node
+      = body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
   node->getDynamicsAspect()->setFrictionCoeff(kBackspinFriction);
   setShapeInertia(body, shape);
+  addBackspinCheckerTexture(body);
 
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation().z() = kBackspinRadius - 0.005;
@@ -379,7 +431,15 @@ WorldPtr createInclineWorld(SolverMode mode)
 {
   auto world = dart::simulation::World::create("fbf_paper_incline");
   configureWorldBase(world);
-  configureSolver(world, mode, 16u, 4u);
+  configureSolver(
+      world,
+      mode,
+      16u,
+      4u,
+      false,
+      false,
+      dart::collision::NativeCollisionDetector::ContactManifoldMode::
+          FourPointPlanar);
 
   const double theta = std::atan(kInclineTan);
   const Eigen::Matrix3d rotation
@@ -434,11 +494,23 @@ WorldPtr createBackspinWorld(SolverMode mode)
 
 //==============================================================================
 WorldPtr createTurntableWorld(
-    SolverMode mode, const std::shared_ptr<FbfPaperState>& state)
+    const std::string& name,
+    SolverMode mode,
+    const std::shared_ptr<FbfPaperState>& state,
+    double friction,
+    double angularVelocity)
 {
-  auto world = dart::simulation::World::create("fbf_paper_turntable");
+  auto world = dart::simulation::World::create(name);
   configureWorldBase(world);
-  configureSolver(world, mode, 4u, 4u);
+  configureSolver(
+      world,
+      mode,
+      4u,
+      4u,
+      false,
+      false,
+      dart::collision::NativeCollisionDetector::ContactManifoldMode::
+          FourPointPlanar);
 
   Eigen::Isometry3d turntable = Eigen::Isometry3d::Identity();
   turntable.translation().z() = -0.05;
@@ -446,7 +518,7 @@ WorldPtr createTurntableWorld(
       "turntable",
       Eigen::Vector3d(4.0, 4.0, 0.1),
       turntable,
-      0.5,
+      friction,
       Eigen::Vector4d(0.28, 0.30, 0.34, 1.0)));
 
   Eigen::Isometry3d rider = Eigen::Isometry3d::Identity();
@@ -455,20 +527,274 @@ WorldPtr createTurntableWorld(
       "turntable_rider",
       Eigen::Vector3d::Constant(0.25),
       rider,
-      0.5,
+      friction,
       Eigen::Vector4d(0.20, 0.63, 0.91, 1.0)));
 
-  state->turntableAngularVelocity = 2.0;
+  state->turntableAngularVelocity = angularVelocity;
   return world;
 }
 
 //==============================================================================
-WorldPtr createPainleveWorld(SolverMode mode)
+SkeletonPtr createAuthorTurntableSupport(double friction)
 {
-  auto world = dart::simulation::World::create("fbf_paper_painleve_proxy");
+  auto skeleton = Skeleton::create("turntable");
+  auto* joint = skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr).first;
+  auto* body = skeleton->getBodyNode(0);
+  auto collisionShape = std::make_shared<CylinderShape>(
+      fbf_author_turntable::kSupportRadius,
+      2.0 * fbf_author_turntable::kSupportHalfHeight);
+  auto* node = body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      collisionShape);
+  node->getDynamicsAspect()->setFrictionCoeff(friction);
+
+  const dart::common::Uri meshUri(
+      "dart://sample/obj/fbf_author_turntable_disc.obj");
+  const auto retriever = dart::utils::DartResourceRetriever::create();
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* mesh = MeshShape::loadMesh(meshUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  if (!mesh)
+    throw std::runtime_error("failed to load the segmented turntable visual");
+
+  // The source-pinned CylinderShape remains the sole collision/dynamics
+  // geometry. This paper-style sector mesh is VisualAspect-only: its coral
+  // registration wedge and alternating gray sectors expose the analytic yaw
+  // without changing mass, inertia, contacts, or friction.
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto visualShape = std::make_shared<MeshShape>(
+      Eigen::Vector3d(
+          fbf_author_turntable::kSupportRadius,
+          fbf_author_turntable::kSupportRadius,
+          2.0 * fbf_author_turntable::kSupportHalfHeight),
+      mesh,
+      meshUri,
+      retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  auto* visualNode = body->createShapeNodeWith<VisualAspect>(visualShape);
+  visualNode->getVisualAspect()->setRGBA(Eigen::Vector4d::Ones());
+
+  // Author code places the kinematic cylinder center at z=half_height. DART's
+  // rigid body, exact solver, and renderer remain implementation-local.
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation().z() = fbf_author_turntable::kSupportHalfHeight;
+  joint->setPositions(FreeJoint::convertToPositions(transform));
+  skeleton->setMobile(false);
+  return skeleton;
+}
+
+//==============================================================================
+SkeletonPtr createAuthorTurntableRider(double friction)
+{
+  constexpr double kSide = 2.0 * fbf_author_turntable::kRiderHalfSize;
+  constexpr double kMass
+      = fbf_author_turntable::kRiderDensity * kSide * kSide * kSide;
+  const Eigen::Vector3d size = Eigen::Vector3d::Constant(kSide);
+
+  auto skeleton = Skeleton::create("turntable_rider");
+  auto* joint = skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr).first;
+  auto* body = skeleton->getBodyNode(0);
+  auto shape = std::make_shared<BoxShape>(size);
+  auto* node = body->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(shape);
+  node->getVisualAspect()->setRGBA(Eigen::Vector4d(0.20, 0.63, 0.91, 1.0));
+  node->getDynamicsAspect()->setFrictionCoeff(friction);
+
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(kMass);
+  inertia.setMoment(BoxShape::computeInertia(size, kMass));
+  body->setInertia(inertia);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(
+      fbf_author_turntable::kInitialRadius,
+      0.0,
+      2.0 * fbf_author_turntable::kSupportHalfHeight
+          + fbf_author_turntable::kRiderHalfSize
+          + fbf_author_turntable::kGeometricGap
+          + fbf_author_turntable::kDropHeight);
+  joint->setPositions(FreeJoint::convertToPositions(transform));
+  return skeleton;
+}
+
+//==============================================================================
+WorldPtr createAuthorTurntableWorld(
+    const std::string& name,
+    SolverMode mode,
+    const std::shared_ptr<FbfPaperState>& state,
+    double friction,
+    double angularVelocity)
+{
+  auto world = dart::simulation::World::create(name);
+  configureWorldBase(world);
+  configureSolver(
+      world,
+      mode,
+      4u,
+      4u,
+      false,
+      false,
+      dart::collision::NativeCollisionDetector::ContactManifoldMode::
+          FourPointPlanar);
+  auto* exactSolver
+      = dynamic_cast<dart::constraint::ExactCoulombFbfConstraintSolver*>(
+          world->getConstraintSolver());
+  if (exactSolver == nullptr)
+    throw std::runtime_error("author turntable requires exact FBF");
+  exactSolver->setExactCoulombOptions(
+      fbf_author_turntable::dartBestSolverOptions());
+  world->addSkeleton(createAuthorTurntableSupport(friction));
+  world->addSkeleton(createAuthorTurntableRider(friction));
+  state->turntableAngularVelocity = angularVelocity;
+  return world;
+}
+
+//==============================================================================
+void setAuthorTurntableSupportState(
+    const WorldPtr& world, double time, double targetAngularVelocity)
+{
+  const auto turntable = world->getSkeleton("turntable");
+  auto* joint = dynamic_cast<FreeJoint*>(turntable->getJoint(0));
+  if (joint == nullptr)
+    throw std::runtime_error("author turntable support has no FreeJoint");
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.linear()
+      = Eigen::AngleAxisd(
+            fbf_author_turntable::integratedYaw(time, targetAngularVelocity),
+            Eigen::Vector3d::UnitZ())
+            .toRotationMatrix();
+  transform.translation().z() = fbf_author_turntable::kSupportHalfHeight;
+  joint->setPositions(FreeJoint::convertToPositions(transform));
+  joint->setAngularVelocity(Eigen::Vector3d(
+      0.0,
+      0.0,
+      fbf_author_turntable::angularVelocity(time, targetAngularVelocity)));
+}
+
+//==============================================================================
+Eigen::Vector4d authorCardHouseColor(
+    const fbf_author_card_house::CardSpec& spec)
+{
+  const bool alternate = (spec.level + spec.tent) % 2u != 0u;
+  switch (spec.kind) {
+    case fbf_author_card_house::CardKind::Bridge:
+      return alternate ? Eigen::Vector4d(0.68, 0.57, 0.46, 1.0)
+                       : Eigen::Vector4d(0.79, 0.69, 0.55, 1.0);
+    case fbf_author_card_house::CardKind::LeanLeft:
+      return alternate ? Eigen::Vector4d(0.76, 0.40, 0.37, 1.0)
+                       : Eigen::Vector4d(0.88, 0.58, 0.48, 1.0);
+    case fbf_author_card_house::CardKind::LeanRight:
+      return alternate ? Eigen::Vector4d(0.38, 0.56, 0.66, 1.0)
+                       : Eigen::Vector4d(0.50, 0.68, 0.72, 1.0);
+  }
+  return Eigen::Vector4d(0.7, 0.7, 0.7, 1.0);
+}
+
+//==============================================================================
+SkeletonPtr createAuthorCardHouseGround()
+{
+  auto skeleton = Skeleton::create("ground_plane");
+  auto* body = skeleton->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
+  auto* collisionNode
+      = body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  collisionNode->getDynamicsAspect()->setFrictionCoeff(
+      fbf_author_card_house::kFriction);
+
+  // Newton's infinite ground has no source renderer. This finite slab is a
+  // VisualAspect-only DART presentation aid for the construction still.
+  auto* visualNode = body->createShapeNodeWith<VisualAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(13.0, 4.0, 0.04)));
+  visualNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, -0.02));
+  visualNode->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(0.34, 0.35, 0.36, 1.0));
+  skeleton->setMobile(false);
+  return skeleton;
+}
+
+//==============================================================================
+SkeletonPtr createAuthorCardHouseBox(
+    const std::string& name,
+    const Eigen::Vector3d& size,
+    const Eigen::Isometry3d& transform,
+    double density,
+    const Eigen::Vector4d& color,
+    bool mobile)
+{
+  auto skeleton = createDynamicBox(
+      name, size, transform, fbf_author_card_house::kFriction, color);
+  auto* body = skeleton->getBodyNode(0u);
+  const double mass = density * size.x() * size.y() * size.z();
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(mass);
+  inertia.setMoment(BoxShape::computeInertia(size, mass));
+  body->setInertia(inertia);
+  skeleton->setMobile(mobile);
+  return skeleton;
+}
+
+//==============================================================================
+WorldPtr createAuthorCardHouseWorld(
+    const std::string& name, std::size_t levelCount)
+{
+  auto world = dart::simulation::World::create(name);
+  configureWorldBase(world);
+  world->setTimeStep(fbf_author_card_house::kRuntimeTimeStep);
+  configureSolver(
+      world,
+      SolverMode::ExactFbf,
+      fbf_author_card_house::kSourceMaxContacts,
+      4u,
+      false,
+      false,
+      dart::collision::NativeCollisionDetector::ContactManifoldMode::
+          FourPointPlanar);
+  auto* exactSolver
+      = dynamic_cast<dart::constraint::ExactCoulombFbfConstraintSolver*>(
+          world->getConstraintSolver());
+  if (exactSolver == nullptr)
+    throw std::runtime_error("author card house requires exact FBF");
+  exactSolver->setExactCoulombOptions(
+      fbf_author_card_house::dartConstructionSolverOptions());
+
+  world->addSkeleton(createAuthorCardHouseGround());
+  for (const auto& spec : fbf_author_card_house::makeCardSpecs(levelCount)) {
+    world->addSkeleton(createAuthorCardHouseBox(
+        spec.name,
+        spec.size,
+        spec.transform,
+        fbf_author_card_house::kCardDensity,
+        authorCardHouseColor(spec),
+        true));
+  }
+
+  const std::array<Eigen::Vector4d, fbf_author_card_house::kCubeCount> colors{
+      {Eigen::Vector4d(0.72, 0.48, 0.42, 1.0),
+       Eigen::Vector4d(0.49, 0.61, 0.67, 1.0),
+       Eigen::Vector4d(0.70, 0.63, 0.42, 1.0),
+       Eigen::Vector4d(0.54, 0.49, 0.64, 1.0)}};
+  for (const auto& spec : fbf_author_card_house::makeCubeSpecs(levelCount)) {
+    world->addSkeleton(createAuthorCardHouseBox(
+        spec.name,
+        spec.size,
+        spec.transform,
+        fbf_author_card_house::kCubeDensity,
+        colors[spec.index],
+        false));
+  }
+  return world;
+}
+
+//==============================================================================
+WorldPtr createPainleveWorld(
+    const std::string& name, SolverMode mode, double friction)
+{
+  auto world = dart::simulation::World::create(name);
   configureWorldBase(world);
   configureSolver(world, mode, 4u, 4u);
-  world->addSkeleton(createGround(0.5));
+  world->addSkeleton(createGround(friction));
 
   const Eigen::Vector3d size(0.6, 0.6, 1.0);
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
@@ -485,7 +811,7 @@ WorldPtr createPainleveWorld(SolverMode mode)
       "painleve_proxy_box",
       size,
       transform,
-      0.5,
+      friction,
       Eigen::Vector4d(0.90, 0.58, 0.12, 1.0),
       Eigen::Vector3d(kPainleveInitialVelocity, 0.0, 0.0)));
   return world;
@@ -510,9 +836,14 @@ Eigen::Isometry3d createCardAFrameTransform(
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.linear()
       = Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitY()).toRotationMatrix();
-  const double halfSpan = 0.5 * kCardHouseHeight * std::sin(kCardHouseAngle);
+  const double horizontalHalfExtent
+      = 0.5
+        * (kCardHouseHeight * std::sin(kCardHouseAngle)
+           + kCardHouseThickness * std::cos(kCardHouseAngle));
+  const double centerOffset
+      = horizontalHalfExtent - 0.5 * kCardHouseInitialPenetration;
   transform.translation().x()
-      = centerX + (leftCard ? -0.96 * halfSpan : 0.96 * halfSpan);
+      = centerX + (leftCard ? -centerOffset : centerOffset);
   transform.translation().y() = 0.0;
   transform.translation().z()
       = baseZ + computeCardVerticalHalfExtent(transform.linear())
@@ -556,13 +887,13 @@ SkeletonPtr createCard(
     return createStaticBox(name, size, transform, kCardHouseFriction, color);
   }
 
-  constexpr double kCardMass = 0.05;
+  const double cardMass = kCardHouseDensity * size.x() * size.y() * size.z();
   auto card
       = createDynamicBox(name, size, transform, kCardHouseFriction, color);
   auto* body = card->getBodyNode(0);
   dart::dynamics::Inertia inertia;
-  inertia.setMass(kCardMass);
-  inertia.setMoment(BoxShape::computeInertia(size, kCardMass));
+  inertia.setMass(cardMass);
+  inertia.setMoment(BoxShape::computeInertia(size, cardMass));
   body->setInertia(inertia);
   return card;
 }
@@ -668,17 +999,29 @@ SkeletonPtr createCardHouseProjectile(std::size_t index)
 {
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(
-      -1.35,
       (static_cast<double>(index) - 1.5) * 0.15,
-      0.35 + 0.28 * static_cast<double>(index));
-  return createDynamicSphere(
+      0.0,
+      kCardHouseProjectileDropHeight);
+  const std::array<Eigen::Vector4d, kCardHouseProjectileCount> colors
+      = {Eigen::Vector4d(0.90, 0.48, 0.49, 1.0),
+         Eigen::Vector4d(0.80, 0.66, 0.55, 1.0),
+         Eigen::Vector4d(0.91, 0.62, 0.27, 1.0),
+         Eigen::Vector4d(0.84, 0.55, 0.66, 1.0)};
+  auto projectile = createDynamicBox(
       "fbf_projectile_" + std::to_string(index),
-      kCardHouseProjectileRadius,
-      kCardHouseProjectileMass,
+      Eigen::Vector3d::Constant(kCardHouseProjectileEdgeLength),
       transform,
       kCardHouseFriction,
-      Eigen::Vector4d(0.95, 0.74, 0.18, 1.0),
-      Eigen::Vector3d(kCardHouseProjectileSpeed, 0.0, 0.0));
+      colors[index],
+      Eigen::Vector3d(0.0, 0.0, -kCardHouseProjectileSpeed));
+  auto* body = projectile->getBodyNode(0);
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(kCardHouseProjectileMass);
+  inertia.setMoment(BoxShape::computeInertia(
+      Eigen::Vector3d::Constant(kCardHouseProjectileEdgeLength),
+      kCardHouseProjectileMass));
+  body->setInertia(inertia);
+  return projectile;
 }
 
 //==============================================================================
@@ -715,10 +1058,23 @@ WorldPtr createCardHouseTenLevelConstructionWorld(SolverMode mode)
       "fbf_paper_card_house_10",
       kCardHouseTenLevelCount,
       mode,
-      kCardHouseTenLevelConstructionMaxContacts,
-      kCardHouseTenLevelConstructionMaxContactsPerPair,
+      kCardHouseTenLevelMaxContacts,
+      kCardHouseTenLevelMaxContactsPerPair,
       false,
       false);
+}
+
+//==============================================================================
+WorldPtr createCardHouseTenLevelDynamicWorld(SolverMode mode)
+{
+  return createCardHouseWorld(
+      "fbf_paper_card_house_10_dynamic",
+      kCardHouseTenLevelCount,
+      mode,
+      kCardHouseTenLevelMaxContacts,
+      kCardHouseTenLevelMaxContactsPerPair,
+      true,
+      true);
 }
 
 //==============================================================================
@@ -754,13 +1110,18 @@ WorldPtr createMasonryArchReducedWorld(
   configureWorldBase(world);
   configureSolver(world, mode, maxContacts, maxContactsPerPair, false, true);
 
-  // Author boundary condition from the Rigid-IPC arch scenes: only the
-  // ground is fixed; every stone (including both springers) is dynamic.
+  // The paper explicitly pins both springers in the 25-stone scene. Figure 8
+  // calls the 101-stone experiment the same setup, so the same endpoint
+  // condition is used there. The credited raw Rigid-IPC scenes instead leave
+  // every stone dynamic; that source distinction is retained in provenance.
   world->addSkeleton(createGround(kArchFriction));
   const auto stoneGeometry
       = dart::math::detail::generateMasonryArchStoneBoxes(stoneCount);
   for (std::size_t i = 0u; i < stoneCount; ++i) {
-    world->addSkeleton(createMasonryArchStone(i, stoneGeometry[i]));
+    auto stone = createMasonryArchStone(i, stoneGeometry[i]);
+    if (i == 0u || i + 1u == stoneCount)
+      stone->setMobile(false);
+    world->addSkeleton(stone);
   }
 
   return world;
@@ -787,29 +1148,40 @@ WorldPtr createMasonryArch101ReducedWorld(SolverMode mode)
 }
 
 //==============================================================================
-SkeletonPtr createMasonryArchProjectile()
+SkeletonPtr createMasonryArchProjectile(std::size_t index)
 {
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(
+      (static_cast<double>(index)
+       - 0.5 * static_cast<double>(kArchProjectileCount - 1u))
+          * kArchProjectileSpacing,
       0.0,
-      -0.5 * kArchCrownWidth - kArchProjectileRadius + 0.005,
-      kArchCrownHeight);
-  return createDynamicSphere(
-      "masonry_arch_projectile",
-      kArchProjectileRadius,
-      kArchProjectileMass,
+      kArchProjectileDropHeight);
+  auto projectile = createDynamicBox(
+      "masonry_arch_projectile_" + std::to_string(index),
+      Eigen::Vector3d::Constant(kArchProjectileEdgeLength),
       transform,
       kArchFriction,
-      Eigen::Vector4d(0.96, 0.67, 0.18, 1.0),
-      Eigen::Vector3d(0.0, kArchProjectileSpeed, 0.0));
+      Eigen::Vector4d(0.90, 0.48, 0.55, 1.0),
+      Eigen::Vector3d(0.0, 0.0, -kArchProjectileSpeed));
+  auto* body = projectile->getBodyNode(0);
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(kArchProjectileMass);
+  inertia.setMoment(BoxShape::computeInertia(
+      Eigen::Vector3d::Constant(kArchProjectileEdgeLength),
+      kArchProjectileMass));
+  body->setInertia(inertia);
+  return projectile;
 }
 
 //==============================================================================
 void launchMasonryArchProjectile(
     const WorldPtr& world, const std::shared_ptr<FbfPaperState>& state)
 {
-  if (world->getSkeleton("masonry_arch_projectile") == nullptr)
-    world->addSkeleton(createMasonryArchProjectile());
+  if (world->getSkeleton("masonry_arch_projectile_0") == nullptr) {
+    for (std::size_t i = 0u; i < kArchProjectileCount; ++i)
+      world->addSkeleton(createMasonryArchProjectile(i));
+  }
 
   state->masonryArchProjectileLaunched = true;
 }
@@ -822,17 +1194,20 @@ void renderSolverControls(
     std::size_t maxContactsPerPair,
     bool cardBudget = false,
     bool archBudget = false,
-    bool exactFbfAvailable = true)
+    bool exactFbfAvailable = true,
+    bool solverSelectionEnabled = true)
 {
   ImGui::TextDisabled("Solver");
   int solverIndex = exactFbfAvailable
                         ? (state->solverMode == SolverMode::ExactFbf ? 0 : 1)
                         : 0;
   bool clicked = false;
-  if (exactFbfAvailable) {
+  if (exactFbfAvailable && solverSelectionEnabled) {
     clicked |= ImGui::RadioButton("Exact FBF", &solverIndex, 0);
     ImGui::SameLine();
     clicked |= ImGui::RadioButton("Boxed LCP", &solverIndex, 1);
+  } else if (exactFbfAvailable) {
+    ImGui::TextUnformatted("Exact FBF (fixed by evidence contract)");
   } else {
     ImGui::TextUnformatted(
         "Exact FBF: unavailable for this construction-only scene");
@@ -851,7 +1226,8 @@ void renderSolverControls(
           maxContacts,
           maxContactsPerPair,
           cardBudget,
-          archBudget);
+          archBudget,
+          getConfiguredContactManifoldMode(world));
     }
   }
 
@@ -935,8 +1311,8 @@ void renderCardHousePhaseControls(
   state->cardHouseProjectilesLaunched = projectileCount > 0u;
   ImGui::Text(
       "Projectiles: %zu/%zu", projectileCount, kCardHouseProjectileCount);
-  ImGui::Text("Trace phase: one settle step, then four incoming projectiles");
-  if (ImGui::Button("Launch 4 projectiles")) {
+  ImGui::Text("Trace phase: settle, then four vertically dropped cubes");
+  if (ImGui::Button("Drop 4 projectile cubes")) {
     launchCardHouseProjectiles(world, state);
   }
   ImGui::TextDisabled("Use Reset to rebuild the unlaunched scaffold");
@@ -949,12 +1325,13 @@ void renderMasonryArchProjectileControls(
   ImGui::Separator();
   ImGui::TextDisabled("Projectile scaffold");
   state->masonryArchProjectileLaunched
-      = world->getSkeleton("masonry_arch_projectile") != nullptr;
+      = world->getSkeleton("masonry_arch_projectile_0") != nullptr;
   ImGui::Text(
-      "Projectile: %s",
+      "Projectile row (%zu cubes): %s",
+      kArchProjectileCount,
       state->masonryArchProjectileLaunched ? "launched" : "not launched");
-  ImGui::TextUnformatted("Reduced sphere aimed through the crown stone.");
-  if (ImGui::Button("Launch projectile")) {
+  ImGui::TextUnformatted("Reconstructed vertical drop over the crown.");
+  if (ImGui::Button("Drop projectile row")) {
     launchMasonryArchProjectile(world, state);
   }
   ImGui::TextDisabled("Use Reset to rebuild the unlaunched scaffold");
@@ -1044,7 +1421,8 @@ DemoScene makeFbfPaperScene(
                 maxContacts,
                 maxContactsPerPair,
                 cardBudget,
-                archBudget);
+                archBudget,
+                getConfiguredContactManifoldMode(world));
           }});
     }
     if (configureExtraSetup)
@@ -1052,6 +1430,268 @@ DemoScene makeFbfPaperScene(
     return setup;
   };
   return scene;
+}
+
+//==============================================================================
+DemoScene makeFbfPaperTurntableParameterizedScene(
+    const std::string& id,
+    const std::string& title,
+    double friction,
+    double angularVelocity,
+    bool angularVelocityEditable,
+    const std::string& summary,
+    const std::string& overview,
+    const std::string& expected,
+    const std::string& coverage)
+{
+  DemoScene scene;
+  scene.id = id;
+  scene.title = title;
+  scene.category = "Research";
+  scene.summary = summary;
+  scene.scenePanelDocumentation
+      = ScenePanelDocumentation{overview, expected, coverage};
+
+  scene.factory = [=] {
+    auto state = std::make_shared<FbfPaperState>();
+    auto world = createTurntableWorld(
+        id, state->solverMode, state, friction, angularVelocity);
+
+    DemoSceneSetup setup;
+    setup.world = world;
+    setup.cameraHome = CameraHome{
+        ::osg::Vec3d(4.2, -5.0, 3.0),
+        ::osg::Vec3d(0.0, 0.0, 0.15),
+        ::osg::Vec3d(0.0, 0.0, 1.0)};
+    setup.preStep = [world, state] {
+      const auto turntable = world->getSkeleton("turntable");
+      auto* joint = dynamic_cast<FreeJoint*>(turntable->getJoint(0));
+      if (joint != nullptr) {
+        const double ramp = std::min(world->getTime(), 1.0);
+        joint->setAngularVelocity(
+            Eigen::Vector3d(0.0, 0.0, ramp * state->turntableAngularVelocity));
+      }
+    };
+    setup.renderPanel = [world, state, friction, angularVelocityEditable] {
+      renderSolverControls(world, state, 4u, 4u, false, false, true);
+      ImGui::Separator();
+      ImGui::TextDisabled("Fixture parameters");
+      ImGui::Text("Friction coefficient: %.2f", friction);
+      if (!angularVelocityEditable) {
+        ImGui::Text(
+            "Angular speed: %.2f rad/s (fixed)",
+            state->turntableAngularVelocity);
+        return;
+      }
+
+      double omega = state->turntableAngularVelocity;
+      const double minOmega = 0.0;
+      const double maxOmega = 5.0;
+      if (ImGui::SliderScalar(
+              "omega",
+              ImGuiDataType_Double,
+              &omega,
+              &minOmega,
+              &maxOmega,
+              "%.2f",
+              ImGuiSliderFlags_AlwaysClamp)) {
+        state->turntableAngularVelocity = std::clamp(omega, 0.0, 5.0);
+      }
+    };
+    setup.keyActions.push_back(KeyAction{
+        'e', "Toggle exact/boxed", [world, state] {
+          state->solverMode = state->solverMode == SolverMode::ExactFbf
+                                  ? SolverMode::BoxedLcp
+                                  : SolverMode::ExactFbf;
+          configureSolver(
+              world,
+              state->solverMode,
+              4u,
+              4u,
+              false,
+              false,
+              dart::collision::NativeCollisionDetector::ContactManifoldMode::
+                  FourPointPlanar);
+        }});
+    return setup;
+  };
+  return scene;
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorTurntableParameterizedScene(
+    const std::string& title,
+    const fbf_author_turntable::ScenarioSpec& scenario)
+{
+  DemoScene scene;
+  scene.id = scenario.demoScene;
+  scene.title = title;
+  scene.category = "Research";
+  scene.summary
+      = "Source-pinned author turntable cell with fixed friction and speed.";
+  scene.scenePanelDocumentation = ScenePanelDocumentation{
+      "Numerical scene and control schedule pinned to public author commit "
+      "b3f3c5c: a radius-2 m, height-0.1 m cylinder; a 0.3 m cube at "
+      "radius 1 m with density 500 kg/m^3, 5 mm gap, and 0.2 m drop; then "
+      "0.5 s stationary settle and a 0.5 s smoothstep speed ramp.",
+      "Over the six-second source horizon this cell is expected to be "
+          + std::string(
+              std::string(scenario.expectedOutcome) == "ejected"
+                  ? "ejected"
+                  : "retained on the support through 6 s")
+          + ".",
+      "The geometry, mass, placement, timing, friction, and commanded angular "
+      "speed follow the public float32 Warp/Newton source. DART remains a "
+      "float64 reimplementation with its own exact solver, Native "
+      "FourPointPlanar contact frontend, camera, materials, and renderer."};
+
+  scene.factory = [scenario] {
+    auto state = std::make_shared<FbfPaperState>();
+    auto world = createAuthorTurntableWorld(
+        scenario.demoScene,
+        state->solverMode,
+        state,
+        scenario.friction,
+        scenario.angularVelocity);
+
+    DemoSceneSetup setup;
+    setup.world = world;
+    setup.physicsContractProvider = [world, scenario] {
+      return fbf_author_turntable::physicsContractJson(
+          fbf_author_turntable::inspectPhysicsContract(
+              world,
+              scenario,
+              "dart_best",
+              "dart_demos",
+              DART_FBF_AUTHOR_TURNTABLE_IMPLEMENTATION_SHA256));
+    };
+    setup.cameraHome = CameraHome{
+        ::osg::Vec3d(6.3, -7.4, 4.5),
+        ::osg::Vec3d(0.0, 0.0, 0.15),
+        ::osg::Vec3d(0.0, 0.0, 1.0)};
+    setup.preStep = [world, state] {
+      setAuthorTurntableSupportState(
+          world, world->getTime(), state->turntableAngularVelocity);
+    };
+    setup.postStep = [world, state] {
+      // The support is deliberately immobile, so DART does not integrate its
+      // FreeJoint pose. Reapply the analytic yaw at the completed time to keep
+      // renderer orientation synchronized with the contact surface velocity.
+      setAuthorTurntableSupportState(
+          world, world->getTime(), state->turntableAngularVelocity);
+    };
+    setup.renderPanel = [world, state, scenario] {
+      renderSolverControls(world, state, 4u, 4u, false, false, true, false);
+      ImGui::Separator();
+      ImGui::TextDisabled("Pinned author parameters (b3f3c5c)");
+      ImGui::Text("Friction coefficient: %.2f", scenario.friction);
+      ImGui::Text(
+          "Angular speed: %.2f rad/s (fixed)", state->turntableAngularVelocity);
+      ImGui::Text("Schedule: settle .5 s, smoothstep ramp .5 s, run 6 s");
+    };
+    return setup;
+  };
+  return scene;
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorCardHouseParameterizedScene(std::size_t levelCount)
+{
+  DemoScene scene;
+  scene.id = fbf_author_card_house::kDemoSceneId;
+  scene.title = "FBF Author Card House: 5-Level Construction";
+  scene.category = "Research";
+  scene.summary
+      = "Source-pinned public-author 40-card construction still with four "
+        "suspended cubes.";
+  scene.scenePanelDocumentation = ScenePanelDocumentation{
+      "Configuration pinned to public author commit b3f3c5c: five levels, "
+      "30 leaning cards, 10 bridges, and four 0.8 m cubes. Card dimensions, "
+      "density, mass, friction, poses, and the source release schedule are "
+      "queryable from the scene contract.",
+      "The expected result is a legible time-zero construction still. The "
+      "cards preserve the author's mobile state, the four cubes remain "
+      "immobile, and the construction evidence executes zero simulation "
+      "steps and no release event.",
+      "This source-configuration port proves neither trajectory nor solver "
+      "equivalence, physical outcome, Fig. 6 or video parity, nor timing "
+      "comparability. The alternating paper colors, finite ground slab, "
+      "camera, and renderer are DART-only presentation choices."};
+
+  scene.factory = [levelCount] {
+    auto world = createAuthorCardHouseWorld(
+        fbf_author_card_house::kDemoSceneId, levelCount);
+
+    DemoSceneSetup setup;
+    setup.world = world;
+    setup.physicsContractProvider = [world, levelCount] {
+      return fbf_author_card_house::configurationContractJson(
+          fbf_author_card_house::inspectConfigurationContract(
+              world,
+              levelCount,
+              "dart_demos",
+              DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256));
+    };
+    setup.cameraHome = CameraHome{
+        ::osg::Vec3d(26.8, -35.6, 18.6),
+        ::osg::Vec3d(0.0, 0.0, 5.5),
+        ::osg::Vec3d(0.0, 0.0, 1.0)};
+    setup.renderPanel = [levelCount] {
+      ImGui::TextDisabled("Pinned author construction (b3f3c5c)");
+      ImGui::Text("Levels: %zu", levelCount);
+      ImGui::Text(
+          "Cards: %zu leaning + %zu bridges",
+          fbf_author_card_house::leaningCardCount(levelCount),
+          fbf_author_card_house::bridgeCardCount(levelCount));
+      ImGui::Text("Suspended cubes: %zu", fbf_author_card_house::kCubeCount);
+      ImGui::Text("Friction: %.2f", fbf_author_card_house::kFriction);
+      ImGui::Separator();
+      ImGui::TextDisabled("Construction only: time-zero inspection");
+      ImGui::TextWrapped(
+          "Cards are mobile; cubes remain suspended. No release, trajectory, "
+          "outcome, timing, or paper-frame claim.");
+    };
+    return setup;
+  };
+  return scene;
+}
+
+//==============================================================================
+DemoScene makeFbfPaperPainleveParameterizedScene(
+    const std::string& id,
+    const std::string& title,
+    double friction,
+    const std::string& summary,
+    const std::string& overview,
+    const std::string& expected)
+{
+  return makeFbfPaperScene(
+      id,
+      title,
+      summary,
+      CameraHome{
+          ::osg::Vec3d(4.5, -4.0, 2.4),
+          ::osg::Vec3d(0.8, 0.0, 0.35),
+          ::osg::Vec3d(0.0, 0.0, 1.0)},
+      [id, friction](const auto& state) {
+        return createPainleveWorld(id, state->solverMode, friction);
+      },
+      4u,
+      4u,
+      false,
+      false,
+      overview.c_str(),
+      expected.c_str(),
+      "This scene is an outcome-oriented DART proxy, not author-scene parity. "
+      "Its geometry, mass, initial state, camera, and 2.5-second observation "
+      "window are local reconstruction choices.",
+      true,
+      SolverMode::ExactFbf,
+      [friction](const WorldPtr&, const std::shared_ptr<FbfPaperState>&) {
+        ImGui::Separator();
+        ImGui::TextDisabled("Fixture parameters");
+        ImGui::Text("Friction coefficient: %.2f (fixed)", friction);
+      });
 }
 
 } // namespace
@@ -1090,10 +1730,13 @@ DemoScene makeFbfPaperBackspinScene()
       "fbf_paper_backspin",
       "FBF Paper: Backspin",
       "Backspin sphere fixture with exact-FBF and boxed-LCP diagnostics.",
+      // Keep the view nearly perpendicular to the Y spin axis. This makes the
+      // renderer-applied checker cells read as quadrilaterals and keeps the
+      // full advance/reversal trajectory in frame.
       CameraHome{
-          ::osg::Vec3d(4.0, -4.5, 2.1),
-          ::osg::Vec3d(0.0, 0.0, 0.25),
-          ::osg::Vec3d(0.0, 0.0, 1.0)},
+          ::osg::Vec3d(-0.5, -1.25, 5.5),
+          ::osg::Vec3d(-0.5, 0.0, 0.2),
+          ::osg::Vec3d(0.0, 1.0, 0.0)},
       [](const auto& state) { return createBackspinWorld(state->solverMode); },
       1u,
       1u,
@@ -1111,99 +1754,202 @@ DemoScene makeFbfPaperBackspinScene()
 //==============================================================================
 DemoScene makeFbfPaperTurntableScene()
 {
-  const char* overview
-      = "Rotating turntable capture/ejection fixture from the paper's "
-        "parameter grid.";
-  const char* expected
-      = "Low friction should eject the rider. With higher friction and the "
-        "slower angular speed, the exact-FBF headless regression classifies "
-        "the rider as captured.";
-  const char* coverage
-      = "The GUI exposes the small implemented grid with a live angular "
-        "speed control. Full radial trajectory and snapshot parity remain "
-        "missing.";
+  return makeFbfPaperTurntableParameterizedScene(
+      "fbf_paper_turntable",
+      "FBF Paper: Turntable (mu=.5, omega=2)",
+      0.5,
+      2.0,
+      true,
+      "Generic turntable proxy initialized at mu=.5 and omega=2 rad/s, with "
+      "a live angular-speed control.",
+      "Rotating turntable capture/ejection proxy initialized at friction "
+      "mu=.5 and angular speed omega=2 rad/s. Angular speed is editable in "
+      "the Scene panel; use the fixed parameter scenes for evidence capture.",
+      "At the initial mu=.5, omega=2 setting, the exact-FBF headless "
+      "regression classifies the rider as captured over four seconds.",
+      "The square support, one-second speed ramp, cube properties, camera, "
+      "and four-second horizon are DART reconstruction choices. This generic "
+      "interactive scene is not a stable parameter-cell capture target.");
+}
 
-  DemoScene scene;
-  scene.id = "fbf_paper_turntable";
-  scene.title = "FBF Paper: Turntable";
-  scene.category = "Research";
-  scene.summary
-      = "Rotating turntable capture/ejection fixture with live angular-speed "
-        "control.";
-  scene.scenePanelDocumentation
-      = ScenePanelDocumentation{overview, expected, coverage};
+//==============================================================================
+DemoScene makeFbfPaperTurntableMu02Omega2Scene()
+{
+  return makeFbfPaperTurntableParameterizedScene(
+      "fbf_paper_turntable_mu_0_2_omega_2",
+      "FBF Paper: Turntable mu=.2, omega=2",
+      0.2,
+      2.0,
+      false,
+      "Fixed turntable proxy at mu=.2 and omega=2 rad/s for reproducible "
+      "headless capture.",
+      "Fixed parameter cell from the paper's turntable grid: the support and "
+      "rider both use mu=.2, and the support ramps to omega=2 rad/s in one "
+      "second.",
+      "The exact-FBF headless regression classifies the rider as ejected over "
+      "the four-second observation window.",
+      "The support is square rather than the paper video's segmented disk; "
+      "the ramp, cube properties, camera, and observation horizon are local "
+      "reconstruction choices. This scene fixes parameters but is not asset "
+      "or snapshot parity.");
+}
 
-  scene.factory = [] {
-    auto state = std::make_shared<FbfPaperState>();
-    state->turntableAngularVelocity = 2.0;
-    auto world = createTurntableWorld(state->solverMode, state);
+//==============================================================================
+DemoScene makeFbfPaperTurntableMu02Omega5Scene()
+{
+  return makeFbfPaperTurntableParameterizedScene(
+      "fbf_paper_turntable_mu_0_2_omega_5",
+      "FBF Paper: Turntable mu=.2, omega=5",
+      0.2,
+      5.0,
+      false,
+      "Fixed turntable proxy at mu=.2 and omega=5 rad/s for reproducible "
+      "headless capture.",
+      "Fixed parameter cell from the paper's turntable grid: the support and "
+      "rider both use mu=.2, and the support ramps to omega=5 rad/s in one "
+      "second.",
+      "The exact-FBF headless regression classifies the rider as ejected over "
+      "the four-second observation window.",
+      "The support is square rather than the paper video's segmented disk; "
+      "the ramp, cube properties, camera, and observation horizon are local "
+      "reconstruction choices. This scene fixes parameters but is not asset "
+      "or snapshot parity.");
+}
 
-    DemoSceneSetup setup;
-    setup.world = world;
-    setup.cameraHome = CameraHome{
-        ::osg::Vec3d(4.2, -5.0, 3.0),
-        ::osg::Vec3d(0.0, 0.0, 0.15),
-        ::osg::Vec3d(0.0, 0.0, 1.0)};
-    setup.preStep = [world, state] {
-      const auto turntable = world->getSkeleton("turntable");
-      auto* joint = dynamic_cast<FreeJoint*>(turntable->getJoint(0));
-      if (joint != nullptr) {
-        const double ramp = std::min(world->getTime(), 1.0);
-        joint->setAngularVelocity(
-            Eigen::Vector3d(0.0, 0.0, ramp * state->turntableAngularVelocity));
-      }
-    };
-    setup.renderPanel = [world, state] {
-      renderSolverControls(world, state, 4u, 4u, false, false, true);
-      double omega = state->turntableAngularVelocity;
-      const double minOmega = 0.0;
-      const double maxOmega = 5.0;
-      if (ImGui::SliderScalar(
-              "omega",
-              ImGuiDataType_Double,
-              &omega,
-              &minOmega,
-              &maxOmega,
-              "%.2f",
-              ImGuiSliderFlags_AlwaysClamp)) {
-        state->turntableAngularVelocity = std::clamp(omega, 0.0, 5.0);
-      }
-    };
-    setup.keyActions.push_back(KeyAction{
-        'e', "Toggle exact/boxed", [world, state] {
-          state->solverMode = state->solverMode == SolverMode::ExactFbf
-                                  ? SolverMode::BoxedLcp
-                                  : SolverMode::ExactFbf;
-          configureSolver(world, state->solverMode, 4u, 4u);
-        }});
-    return setup;
-  };
-  return scene;
+//==============================================================================
+DemoScene makeFbfPaperTurntableMu05Omega5Scene()
+{
+  return makeFbfPaperTurntableParameterizedScene(
+      "fbf_paper_turntable_mu_0_5_omega_5",
+      "FBF Paper: Turntable mu=.5, omega=5",
+      0.5,
+      5.0,
+      false,
+      "Fixed turntable proxy at mu=.5 and omega=5 rad/s for reproducible "
+      "headless capture.",
+      "Fixed parameter cell from the paper's turntable grid: the support and "
+      "rider both use mu=.5, and the support ramps to omega=5 rad/s in one "
+      "second.",
+      "The exact-FBF headless regression classifies the rider as ejected over "
+      "the four-second observation window.",
+      "The support is square rather than the paper video's segmented disk; "
+      "the ramp, cube properties, camera, and observation horizon are local "
+      "reconstruction choices. This scene fixes parameters but is not asset "
+      "or snapshot parity.");
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorTurntableMu02Omega2Scene()
+{
+  return makeFbfAuthorTurntableParameterizedScene(
+      "FBF Author Turntable: mu=.2, omega=2",
+      fbf_author_turntable::kScenarios[0]);
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorTurntableMu02Omega5Scene()
+{
+  return makeFbfAuthorTurntableParameterizedScene(
+      "FBF Author Turntable: mu=.2, omega=5",
+      fbf_author_turntable::kScenarios[1]);
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorTurntableMu05Omega2Scene()
+{
+  return makeFbfAuthorTurntableParameterizedScene(
+      "FBF Author Turntable: mu=.5, omega=2",
+      fbf_author_turntable::kScenarios[2]);
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorTurntableMu05Omega5Scene()
+{
+  return makeFbfAuthorTurntableParameterizedScene(
+      "FBF Author Turntable: mu=.5, omega=5",
+      fbf_author_turntable::kScenarios[3]);
+}
+
+//==============================================================================
+std::string fbfAuthorTurntablePhysicsContractJson(const std::string& sceneId)
+{
+  const auto* scenario = fbf_author_turntable::findByDemoScene(sceneId);
+  if (scenario == nullptr) {
+    throw std::invalid_argument(
+        "unknown FBF author-turntable scene id '" + sceneId + "'");
+  }
+
+  auto state = std::make_shared<FbfPaperState>();
+  const auto world = createAuthorTurntableWorld(
+      scenario->demoScene,
+      SolverMode::ExactFbf,
+      state,
+      scenario->friction,
+      scenario->angularVelocity);
+  return fbf_author_turntable::physicsContractJson(
+      fbf_author_turntable::inspectPhysicsContract(
+          world,
+          *scenario,
+          "dart_best",
+          "dart_demos",
+          DART_FBF_AUTHOR_TURNTABLE_IMPLEMENTATION_SHA256));
+}
+
+//==============================================================================
+DemoScene makeFbfAuthorCardHouseScene()
+{
+  return makeFbfAuthorCardHouseParameterizedScene(
+      fbf_author_card_house::kDefaultLevelCount);
+}
+
+//==============================================================================
+std::string fbfAuthorCardHouseConfigurationContractJson(
+    const std::string& sceneId)
+{
+  if (sceneId != fbf_author_card_house::kDemoSceneId) {
+    throw std::invalid_argument(
+        "unknown FBF author-card-house scene id '" + sceneId + "'");
+  }
+
+  const auto world = createAuthorCardHouseWorld(
+      sceneId, fbf_author_card_house::kDefaultLevelCount);
+  return fbf_author_card_house::configurationContractJson(
+      fbf_author_card_house::inspectConfigurationContract(
+          world,
+          fbf_author_card_house::kDefaultLevelCount,
+          "dart_demos",
+          DART_FBF_AUTHOR_CARD_HOUSE_IMPLEMENTATION_SHA256));
 }
 
 //==============================================================================
 DemoScene makeFbfPaperPainleveScene()
 {
-  return makeFbfPaperScene(
+  return makeFbfPaperPainleveParameterizedScene(
       "fbf_paper_painleve",
-      "FBF Paper: Painleve Proxy",
+      "FBF Paper: Painleve Proxy mu=.5",
+      0.5,
       "DART-side Painleve-style proxy pending the authors' exact scene files.",
-      CameraHome{
-          ::osg::Vec3d(4.5, -4.0, 2.4),
-          ::osg::Vec3d(0.8, 0.0, 0.35),
-          ::osg::Vec3d(0.0, 0.0, 1.0)},
-      [](const auto& state) { return createPainleveWorld(state->solverMode); },
-      4u,
-      4u,
-      false,
-      false,
-      "Painleve-style sliding box proxy. The paper gives qualitative outcomes "
-      "but the authors' exact scene files are not available here.",
-      "The implemented proxy checks an upright slide/rest case and a higher "
-      "friction tumble case in headless tests.",
-      "This scene is explicitly not author-scene parity. Replace or "
-      "corroborate it if the paper implementation or scene parameters become "
-      "available.");
+      "Fixed mu=.5 Painleve-style sliding-box proxy. Both the ground and box "
+      "use friction coefficient 0.5; the authors' exact scene assets and "
+      "numerical parameters are unavailable.",
+      "At mu=.5, the exact-FBF proxy should slide, slow, and remain upright "
+      "over the 2.5-second headless observation window.");
+}
+
+//==============================================================================
+DemoScene makeFbfPaperPainleveMu055Scene()
+{
+  return makeFbfPaperPainleveParameterizedScene(
+      "fbf_paper_painleve_mu_0_55",
+      "FBF Paper: Painleve Proxy mu=.55",
+      0.55,
+      "Fixed mu=.55 DART-side Painleve-style proxy for reproducible headless "
+      "capture.",
+      "Fixed mu=.55 Painleve-style sliding-box proxy. Both the ground and box "
+      "use friction coefficient 0.55; the authors' exact scene assets and "
+      "numerical parameters are unavailable.",
+      "At mu=.55, the exact-FBF proxy should travel less than the mu=.5 cell "
+      "and then tumble within the 2.5-second headless observation window.");
 }
 
 //==============================================================================
@@ -1237,7 +1983,8 @@ DemoScene makeFbfPaperCardHouse26Scene()
   return makeFbfPaperScene(
       "fbf_paper_card_house_26",
       "FBF Paper: Card House 26",
-      "Full natural manifold (108 contacts at the current base) dynamic "
+      "Full natural manifold (96 initial contacts in this reconstruction) "
+      "dynamic "
       "26-card scaffold for the paper's four-level house-of-cards scene.",
       CameraHome{
           ::osg::Vec3d(2.8, -4.5, 2.4),
@@ -1250,12 +1997,12 @@ DemoScene makeFbfPaperCardHouse26Scene()
       kCardHouseReducedMaxContactsPerPair,
       true,
       false,
-      "Full natural manifold (108 contacts at the current base) dynamic "
+      "Full natural manifold (96 initial contacts in this reconstruction) "
+      "dynamic "
       "26-card scaffold for the paper's four-level house-of-cards scene.",
       "The current exact-FBF smoke runs one bounded step at the full "
-      "natural manifold (512-contact cap, 4 contacts per pair, 108 actual "
-      "contacts) and should report zero boxed-LCP fallback in roughly 2.5 s "
-      "per step. A separate phase scaffold can launch four incoming "
+      "natural manifold (512-contact cap, 4 contacts per pair, 96 initial "
+      "contacts). A separate phase scaffold can drop four cube "
       "projectiles after the first settle step; the matching CSV trace "
       "records initial, settle, and projectile rows.",
       "This is not Fig. 6 parity. The 6.7 s no-creep settle, impact "
@@ -1267,7 +2014,7 @@ DemoScene makeFbfPaperCardHouse26Scene()
          const WorldPtr& world,
          const std::shared_ptr<FbfPaperState>& state) {
         setup.keyActions.push_back(
-            KeyAction{'p', "Launch 4 projectiles", [world, state] {
+            KeyAction{'p', "Drop 4 projectile cubes", [world, state] {
                         launchCardHouseProjectiles(world, state);
                       }});
       });
@@ -1288,8 +2035,8 @@ DemoScene makeFbfPaperCardHouse10Scene()
       [](const auto& state) {
         return createCardHouseTenLevelConstructionWorld(state->solverMode);
       },
-      kCardHouseTenLevelConstructionMaxContacts,
-      kCardHouseTenLevelConstructionMaxContactsPerPair,
+      kCardHouseTenLevelMaxContacts,
+      kCardHouseTenLevelMaxContactsPerPair,
       false,
       false,
       "Construction-only 10-level card-house scaffold with 155 cards. The "
@@ -1304,6 +2051,39 @@ DemoScene makeFbfPaperCardHouse10Scene()
       "missing.",
       false,
       SolverMode::BoxedLcp);
+}
+
+//==============================================================================
+DemoScene makeFbfPaperCardHouse10DynamicScene()
+{
+  return makeFbfPaperScene(
+      "fbf_paper_card_house_10_dynamic",
+      "FBF Paper: Card House 10 (Dynamic, Capped)",
+      "Dynamic exact-FBF adapter for the reconstructed 155-card, ten-level "
+      "house, using an explicitly saturated 512-contact visual budget.",
+      CameraHome{
+          ::osg::Vec3d(5.0, -7.5, 5.0),
+          ::osg::Vec3d(0.0, 0.0, 2.4),
+          ::osg::Vec3d(0.0, 0.0, 1.0)},
+      [](const auto& state) {
+        return createCardHouseTenLevelDynamicWorld(state->solverMode);
+      },
+      kCardHouseTenLevelMaxContacts,
+      kCardHouseTenLevelMaxContactsPerPair,
+      true,
+      false,
+      "Dynamic adapter for the reconstructed triangular ten-level card house: "
+      "155 mobile cards, mu=.8, dt=1/60 s, and exact FBF by default. Collision "
+      "output is capped at 512 contacts and eight contacts per pair.",
+      "This scene exposes actual dynamics and solver diagnostics, but makes no "
+      "standing-outcome claim. A visual run is acceptable only when its timed "
+      "sidecar reports exact-FBF solves with zero exact failures and zero "
+      "boxed-LCP fallbacks for every sampled post-step frame.",
+      "The prior boxed-LCP construction probe reached exactly 512 contacts, so "
+      "this budget is known to saturate and is not the natural manifold. The "
+      "authors' full asset recipe and duration are unavailable; full-manifold "
+      "stability, paper timing, realtime performance, and external-solver "
+      "parity remain unproven.");
 }
 
 //==============================================================================
@@ -1325,18 +2105,20 @@ DemoScene makeFbfPaperMasonryArch25Scene()
       kArchReducedMaxContactsPerPair,
       false,
       true,
-      "Author-faithful 25-stone masonry arch using the Rigid-IPC "
-      "weighted-catenary generator (MIT, commit 23b6ba6): tapering voussoir "
-      "stones, uniform friction 0.5, and the source boundary condition where "
-      "only the ground is fixed and all 25 stones are dynamic.",
+      "DART reconstruction of the 25-stone masonry arch using source-derived "
+      "Rigid-IPC weighted-catenary placement (MIT, commit 23b6ba6), an "
+      "oriented-box approximation of each tapered voussoir, uniform friction "
+      "0.8, both endpoint stones pinned, and all 23 interior stones dynamic.",
       "The current exact-FBF smoke runs one bounded step with a 48-contact, "
       "two-contacts-per-pair cap and should report zero boxed-LCP fallback. "
-      "The Scene tab can launch a reduced projectile aimed through the crown "
-      "so the missing Fig. 7 impact phase is visible in the GUI scaffold.",
-      "This is not yet full Fig. 7 parity. Full-natural-manifold headless "
-      "evidence exists (52 contacts on this geometry, clean at 1e-6 "
-      "residual); this GUI uses the reduced 48-contact cap for interactive "
-      "frame rates. Long-run post-impact outcome, timing, and paper-matched "
+      "The Scene tab can drop a reconstructed row of twelve small cubes over "
+      "the crown, matching the source video's visible projectile shape and "
+      "direction while keeping unpublished numerical values explicit.",
+      "This is not literal-wedge or full Fig. 7 parity. The oriented-box "
+      "reconstruction has measured 96-contact natural-manifold evidence, "
+      "while this GUI uses the reduced 48-contact cap for interactive frame "
+      "rates. The separate collision audit owns the literal wedges and exact "
+      "uniform-prism inertia; long-run outcome, timing, and source-matched "
       "snapshots remain missing.",
       true,
       SolverMode::ExactFbf,
@@ -1345,7 +2127,7 @@ DemoScene makeFbfPaperMasonryArch25Scene()
          const WorldPtr& world,
          const std::shared_ptr<FbfPaperState>& state) {
         setup.keyActions.push_back(
-            KeyAction{'p', "Launch projectile", [world, state] {
+            KeyAction{'p', "Drop projectile row", [world, state] {
                         launchMasonryArchProjectile(world, state);
                       }});
       });
@@ -1370,17 +2152,19 @@ DemoScene makeFbfPaperMasonryArch101Scene()
       kArch101ReducedMaxContactsPerPair,
       false,
       true,
-      "Author-faithful 101-stone masonry arch using the Rigid-IPC "
-      "weighted-catenary generator (MIT, commit 23b6ba6): tapering voussoir "
-      "stones, uniform friction 0.5, and the source boundary condition where "
-      "only the ground is fixed and all 101 stones are dynamic.",
+      "DART reconstruction of the 101-stone masonry arch using source-derived "
+      "Rigid-IPC weighted-catenary placement (MIT, commit 23b6ba6), an "
+      "oriented-box approximation of each tapered voussoir, uniform friction "
+      "0.8, and both endpoint stones pinned by inference from Fig. 8's "
+      "same-setup caption.",
       "The current exact-FBF smoke runs one bounded step with a 38-contact, "
       "two-contacts-per-pair cap and should report zero boxed-LCP fallback.",
-      "This is not yet full Fig. 8 parity. Full-natural-manifold headless "
-      "evidence exists (204 contacts on this geometry, clean at 1e-6 "
-      "residual); this GUI uses the reduced 38-contact cap for interactive "
-      "frame rates. Long-run balance outcome, timing, traces, and snapshots "
-      "remain missing.");
+      "This is not literal-wedge or full Fig. 8 parity. The oriented-box "
+      "reconstruction reaches the 512-contact audit cap, so its natural "
+      "manifold count is not established; this GUI uses the reduced "
+      "38-contact cap for interactive frame rates. The separate collision "
+      "audit owns literal wedges and exact inertia. Long-run balance, timing, "
+      "traces, and source-matched snapshots remain missing.");
 }
 
 } // namespace dart_demos

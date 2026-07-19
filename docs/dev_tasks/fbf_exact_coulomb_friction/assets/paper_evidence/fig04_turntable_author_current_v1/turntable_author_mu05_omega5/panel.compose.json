@@ -1,0 +1,23 @@
+{
+  "height": 538,
+  "inputs": [
+    "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega5/panel_frames/step_000000.png",
+    "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega5/panel_frames/step_000030.png",
+    "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega5/panel_frames/step_000060.png",
+    "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega5/panel_frames/step_000180.png",
+    "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega5/panel_frames/step_000360.png"
+  ],
+  "labels": [
+    "t=0s",
+    "settled t=.5s",
+    "ramped t=1s",
+    "t=3s",
+    "t=6s"
+  ],
+  "mode": "side-by-side",
+  "out": "/home/js/dev/dartsim/dart/task_6/docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig04_turntable_author_current_v1/turntable_author_mu05_omega5/panel.png",
+  "pass": true,
+  "schema_version": "dart.image_compose/v1",
+  "stats": {},
+  "width": 3348
+}

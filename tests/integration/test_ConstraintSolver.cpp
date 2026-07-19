@@ -65,6 +65,8 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <limits>
@@ -73,8 +75,11 @@
 #include <set>
 #include <string>
 #include <thread>
+#include <type_traits>
 #include <typeinfo>
 #include <vector>
+
+#include <cmath>
 
 using namespace dart;
 
@@ -526,6 +531,36 @@ private:
   std::set<std::thread::id> mReserveThreadIds;
 };
 
+class ExposedExactCoulombParallelEligibilitySolver final
+  : public constraint::ExactCoulombFbfConstraintSolver
+{
+public:
+  using ExactCoulombFbfConstraintSolver::solveConstrainedGroup;
+
+  void addFakeConstrainedGroups(std::size_t numGroups, std::size_t dimension)
+  {
+    for (std::size_t i = 0; i < numGroups; ++i) {
+      constraint::ConstrainedGroup group;
+      group.addConstraint(std::make_shared<FakeConstraint>(dimension));
+      mConstrainedGroups.push_back(group);
+    }
+  }
+
+  bool canSolveConstrainedGroupsInParallelForTest() const
+  {
+    return canSolveConstrainedGroupsInParallel();
+  }
+
+  template <typename Work>
+  std::size_t parallelForConstraintWorkForTest(std::size_t count, Work& work)
+  {
+    return parallelForConstraintWork(
+        count, std::addressof(work), [](void* context, std::size_t index) {
+          (*static_cast<Work*>(context))(index);
+        });
+  }
+};
+
 class ExposedBoxedLcpConstraintSolver final
   : public constraint::BoxedLcpConstraintSolver
 {
@@ -795,6 +830,65 @@ std::shared_ptr<World> createManySingleFreeBodyContactWorld(
 }
 
 //==============================================================================
+std::shared_ptr<World> createExactCoulombParallelContactStackWorld(
+    std::size_t solverThreads,
+    std::size_t numBoxes = 40u,
+    bool assembleDenseContactRowSnapshot = false,
+    bool useContactRowDelassusOperator = true)
+{
+  auto world = createWorld();
+  world->setTimeStep(0.001);
+
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+  world->setNumSimulationThreads(1u);
+
+  constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.fallbackToBoxedLcp = false;
+  options.assembleDenseContactRowSnapshot = assembleDenseContactRowSnapshot;
+  options.useContactRowDelassusOperator = useContactRowDelassusOperator;
+  options.useMatrixFreeDelassusSeed = true;
+  options.enableWarmStart = false;
+  options.enableProjectedGradientRetry = false;
+  options.enableDenseResidualPolish = false;
+  options.maxOuterIterations = 0;
+  options.tolerance = 1e12;
+
+  auto solverOwned
+      = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(options);
+  auto* solver = solverOwned.get();
+  world->setConstraintSolver(std::move(solverOwned));
+  solver->setSplitImpulseEnabled(false);
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+  solver->getCollisionOption().maxNumContacts = numBoxes * 4u;
+  solver->getCollisionOption().maxNumContactsPerPair = 4u;
+  solver->setNumSimulationThreads(solverThreads);
+
+  // Keep collision and all non-solver World work serial. Only the exact
+  // contact-row W*x kernel receives `solverThreads` in this fixture.
+  auto dartDetector
+      = std::dynamic_pointer_cast<collision::DARTCollisionDetector>(
+          solver->getCollisionDetector());
+  EXPECT_NE(nullptr, dartDetector);
+  if (dartDetector != nullptr)
+    dartDetector->setNumCollisionThreads(1u);
+
+  world->addSkeleton(createSolverTestPlane("ground"));
+  for (std::size_t i = 0u; i < numBoxes; ++i) {
+    const Eigen::Vector3d position(
+        0.0, 0.0, 0.49 + 0.98 * static_cast<double>(i));
+    world->addSkeleton(createSolverTestBox(
+        "stack_box_" + std::to_string(i),
+        Eigen::Vector3d::Ones(),
+        position,
+        true));
+  }
+
+  return world;
+}
+
+//==============================================================================
 void setManySingleFreeBodyContactSurfaceParams(
     const std::shared_ptr<World>& world, std::size_t numBoxes)
 {
@@ -1038,8 +1132,10 @@ TEST(ConstraintSolver, ExactCoulombFbfWorldSmokeCanUseMatrixFreeDelassus)
 TEST(ConstraintSolver, ExactCoulombFbfWorldSmokeUsesContactRowOperator)
 {
   auto rowOperatorWorld = createSingleFreeBodyContactWorld(false);
+  auto noSnapshotWorld = createSingleFreeBodyContactWorld(false);
   auto impulseTestWorld = createSingleFreeBodyContactWorld(false);
   limitWorldToSingleContact(rowOperatorWorld);
+  limitWorldToSingleContact(noSnapshotWorld);
   limitWorldToSingleContact(impulseTestWorld);
 
   constraint::ExactCoulombFbfConstraintSolverOptions options;
@@ -1055,6 +1151,17 @@ TEST(ConstraintSolver, ExactCoulombFbfWorldSmokeUsesContactRowOperator)
   rowOperatorWorld->setConstraintSolver(std::move(rowSolverOwned));
   limitWorldToSingleContact(rowOperatorWorld);
 
+  auto noSnapshotOptions = options;
+  noSnapshotOptions.assembleDenseContactRowSnapshot = false;
+  noSnapshotOptions.useMatrixFreeDelassusSeed = true;
+  noSnapshotOptions.enableDenseResidualPolish = false;
+  auto noSnapshotSolverOwned
+      = std::make_unique<constraint::ExactCoulombFbfConstraintSolver>(
+          noSnapshotOptions);
+  auto* noSnapshotSolver = noSnapshotSolverOwned.get();
+  noSnapshotWorld->setConstraintSolver(std::move(noSnapshotSolverOwned));
+  limitWorldToSingleContact(noSnapshotWorld);
+
   auto impulseOptions = options;
   impulseOptions.useContactRowDelassusOperator = false;
   auto impulseSolverOwned
@@ -1065,15 +1172,30 @@ TEST(ConstraintSolver, ExactCoulombFbfWorldSmokeUsesContactRowOperator)
   limitWorldToSingleContact(impulseTestWorld);
 
   rowOperatorWorld->step();
+  noSnapshotWorld->step();
   impulseTestWorld->step();
 
   EXPECT_EQ(
       rowSolver->getLastExactCoulombStatus(),
       constraint::ExactCoulombFbfConstraintSolverStatus::Success);
   EXPECT_TRUE(rowSolver->getLastExactCoulombContactRowOperatorUsed());
+  EXPECT_TRUE(rowSolver->getLastExactCoulombDenseContactRowSnapshotAssembled());
   EXPECT_FALSE(rowSolver->getLastExactCoulombMatrixFreeDelassusOperatorUsed());
   EXPECT_EQ(rowSolver->getNumBoxedLcpFallbacks(), 0u);
   EXPECT_LE(rowSolver->getLastExactCoulombResidual(), options.tolerance);
+
+  EXPECT_EQ(
+      noSnapshotSolver->getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_TRUE(noSnapshotSolver->getLastExactCoulombContactRowOperatorUsed());
+  EXPECT_FALSE(
+      noSnapshotSolver->getLastExactCoulombDenseContactRowSnapshotAssembled());
+  EXPECT_TRUE(
+      noSnapshotSolver->getLastExactCoulombMatrixFreeDelassusSeedUsed());
+  EXPECT_EQ(noSnapshotSolver->getNumBoxedLcpFallbacks(), 0u);
+  EXPECT_LE(
+      noSnapshotSolver->getLastExactCoulombResidual(),
+      noSnapshotOptions.tolerance);
 
   EXPECT_EQ(
       impulseSolver->getLastExactCoulombStatus(),
@@ -1081,11 +1203,15 @@ TEST(ConstraintSolver, ExactCoulombFbfWorldSmokeUsesContactRowOperator)
   EXPECT_FALSE(impulseSolver->getLastExactCoulombContactRowOperatorUsed());
 
   const auto rowBox = rowOperatorWorld->getSkeleton("box");
+  const auto noSnapshotBox = noSnapshotWorld->getSkeleton("box");
   const auto impulseBox = impulseTestWorld->getSkeleton("box");
   ASSERT_NE(nullptr, rowBox);
+  ASSERT_NE(nullptr, noSnapshotBox);
   ASSERT_NE(nullptr, impulseBox);
   EXPECT_TRUE(rowBox->getPositions().allFinite());
   EXPECT_TRUE(rowBox->getVelocities().allFinite());
+  EXPECT_TRUE(noSnapshotBox->getPositions().allFinite());
+  EXPECT_TRUE(noSnapshotBox->getVelocities().allFinite());
   // The row-assembled snapshot equals the impulse-test snapshot to solver
   // precision, so the one-step states must agree far below contact scales.
   EXPECT_LE((rowBox->getPositions() - impulseBox->getPositions()).norm(), 1e-9)
@@ -1095,6 +1221,274 @@ TEST(ConstraintSolver, ExactCoulombFbfWorldSmokeUsesContactRowOperator)
       (rowBox->getVelocities() - impulseBox->getVelocities()).norm(), 1e-7)
       << "row=" << rowBox->getVelocities().transpose()
       << " impulse=" << impulseBox->getVelocities().transpose();
+  EXPECT_LE(
+      (noSnapshotBox->getPositions() - impulseBox->getPositions()).norm(), 1e-9)
+      << "no_snapshot=" << noSnapshotBox->getPositions().transpose()
+      << " impulse=" << impulseBox->getPositions().transpose();
+  EXPECT_LE(
+      (noSnapshotBox->getVelocities() - impulseBox->getVelocities()).norm(),
+      1e-7)
+      << "no_snapshot=" << noSnapshotBox->getVelocities().transpose()
+      << " impulse=" << impulseBox->getVelocities().transpose();
+}
+
+//==============================================================================
+TEST(
+    ConstraintSolver,
+    ExactCoulombParallelContactRowMatchesSerialWorldStateBitExactly)
+{
+  auto defaultWorld = createWorld();
+  ASSERT_NE(nullptr, defaultWorld->getConstraintSolver());
+  EXPECT_EQ(
+      typeid(constraint::BoxedLcpConstraintSolver),
+      typeid(*defaultWorld->getConstraintSolver()));
+
+  auto serialWorld = createExactCoulombParallelContactStackWorld(1u);
+  auto parallelWorld = createExactCoulombParallelContactStackWorld(4u);
+  auto* serialSolver
+      = dynamic_cast<constraint::ExactCoulombFbfConstraintSolver*>(
+          serialWorld->getConstraintSolver());
+  auto* parallelSolver
+      = dynamic_cast<constraint::ExactCoulombFbfConstraintSolver*>(
+          parallelWorld->getConstraintSolver());
+  ASSERT_NE(nullptr, serialSolver);
+  ASSERT_NE(nullptr, parallelSolver);
+
+  serialWorld->step();
+  parallelWorld->step();
+
+  const auto& serialContacts = serialSolver->getLastCollisionResult();
+  const auto& parallelContacts = parallelSolver->getLastCollisionResult();
+  ASSERT_GE(serialContacts.getNumContacts(), 128u);
+  ASSERT_EQ(serialContacts.getNumContacts(), parallelContacts.getNumContacts());
+  ASSERT_EQ(
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success,
+      serialSolver->getLastExactCoulombStatus());
+  EXPECT_EQ(
+      serialSolver->getLastExactCoulombStatus(),
+      parallelSolver->getLastExactCoulombStatus());
+  EXPECT_EQ(
+      serialSolver->getLastExactCoulombFbfStatus(),
+      parallelSolver->getLastExactCoulombFbfStatus());
+  EXPECT_DOUBLE_EQ(
+      serialSolver->getLastExactCoulombResidual(),
+      parallelSolver->getLastExactCoulombResidual());
+  EXPECT_DOUBLE_EQ(
+      serialSolver->getLastExactCoulombStepSize(),
+      parallelSolver->getLastExactCoulombStepSize());
+  EXPECT_EQ(
+      serialSolver->getLastExactCoulombIterations(),
+      parallelSolver->getLastExactCoulombIterations());
+
+  EXPECT_GT(serialSolver->getLastExactCoulombContactRowDelassusProducts(), 0u);
+  EXPECT_EQ(
+      serialSolver->getLastExactCoulombContactRowDelassusProducts(),
+      parallelSolver->getLastExactCoulombContactRowDelassusProducts());
+  EXPECT_EQ(
+      serialSolver->getLastExactCoulombContactRowDelassusProducts(),
+      serialSolver->getNumExactCoulombContactRowDelassusProducts());
+  EXPECT_EQ(
+      parallelSolver->getLastExactCoulombContactRowDelassusProducts(),
+      parallelSolver->getNumExactCoulombContactRowDelassusProducts());
+  EXPECT_EQ(
+      serialSolver->getLastExactCoulombParallelContactRowDelassusProducts(),
+      0u);
+  EXPECT_EQ(serialSolver->getLastExactCoulombMaxContactRowParticipants(), 1u);
+  EXPECT_GT(
+      parallelSolver->getLastExactCoulombParallelContactRowDelassusProducts(),
+      0u);
+  EXPECT_GT(parallelSolver->getLastExactCoulombMaxContactRowParticipants(), 1u);
+  EXPECT_EQ(
+      parallelSolver->getLastExactCoulombParallelContactRowDelassusProducts(),
+      parallelSolver->getNumExactCoulombParallelContactRowDelassusProducts());
+  EXPECT_EQ(
+      parallelSolver->getLastExactCoulombMaxContactRowParticipants(),
+      parallelSolver->getMaxExactCoulombContactRowParticipants());
+
+  EXPECT_TRUE(
+      serialSolver->getLastExactCoulombContactRowLogicalCpuIds().empty());
+  EXPECT_TRUE(serialSolver->getExactCoulombContactRowLogicalCpuIds().empty());
+  EXPECT_TRUE(serialSolver->getLastExactCoulombMaxPhaseContactRowLogicalCpuIds()
+                  .empty());
+  EXPECT_TRUE(
+      serialSolver->getMaxExactCoulombPhaseContactRowLogicalCpuIds().empty());
+  const auto lastLogicalCpuIds
+      = parallelSolver->getLastExactCoulombContactRowLogicalCpuIds();
+  const auto logicalCpuIds
+      = parallelSolver->getExactCoulombContactRowLogicalCpuIds();
+  const auto lastMaxPhaseLogicalCpuIds
+      = parallelSolver->getLastExactCoulombMaxPhaseContactRowLogicalCpuIds();
+  const auto maxPhaseLogicalCpuIds
+      = parallelSolver->getMaxExactCoulombPhaseContactRowLogicalCpuIds();
+#if defined(__linux__)
+  ASSERT_FALSE(lastLogicalCpuIds.empty());
+  EXPECT_TRUE(
+      std::is_sorted(lastLogicalCpuIds.begin(), lastLogicalCpuIds.end()));
+  EXPECT_EQ(
+      std::adjacent_find(lastLogicalCpuIds.begin(), lastLogicalCpuIds.end()),
+      lastLogicalCpuIds.end());
+  for (const int logicalCpu : lastLogicalCpuIds)
+    EXPECT_GE(logicalCpu, 0);
+
+  // One CPU observation is made per participating thread in each of the two
+  // row-product phases. This bound remains valid when a thread migrates across
+  // phases; the IDs intentionally do not claim simultaneous execution.
+  EXPECT_LE(
+      lastLogicalCpuIds.size(),
+      2u * parallelSolver->getLastExactCoulombContactRowDelassusProducts()
+          * parallelSolver->getLastExactCoulombMaxContactRowParticipants());
+  EXPECT_TRUE(std::includes(
+      logicalCpuIds.begin(),
+      logicalCpuIds.end(),
+      lastLogicalCpuIds.begin(),
+      lastLogicalCpuIds.end()));
+  EXPECT_TRUE(std::is_sorted(logicalCpuIds.begin(), logicalCpuIds.end()));
+  EXPECT_EQ(
+      std::adjacent_find(logicalCpuIds.begin(), logicalCpuIds.end()),
+      logicalCpuIds.end());
+  for (const int logicalCpu : logicalCpuIds)
+    EXPECT_GE(logicalCpu, 0);
+
+  ASSERT_FALSE(lastMaxPhaseLogicalCpuIds.empty());
+  EXPECT_TRUE(std::is_sorted(
+      lastMaxPhaseLogicalCpuIds.begin(), lastMaxPhaseLogicalCpuIds.end()));
+  EXPECT_EQ(
+      std::adjacent_find(
+          lastMaxPhaseLogicalCpuIds.begin(), lastMaxPhaseLogicalCpuIds.end()),
+      lastMaxPhaseLogicalCpuIds.end());
+  for (const int logicalCpu : lastMaxPhaseLogicalCpuIds)
+    EXPECT_GE(logicalCpu, 0);
+  EXPECT_LE(
+      lastMaxPhaseLogicalCpuIds.size(),
+      parallelSolver->getLastExactCoulombMaxContactRowParticipants());
+  EXPECT_TRUE(std::includes(
+      lastLogicalCpuIds.begin(),
+      lastLogicalCpuIds.end(),
+      lastMaxPhaseLogicalCpuIds.begin(),
+      lastMaxPhaseLogicalCpuIds.end()));
+  EXPECT_EQ(lastMaxPhaseLogicalCpuIds, maxPhaseLogicalCpuIds);
+#else
+  EXPECT_TRUE(lastLogicalCpuIds.empty());
+  EXPECT_TRUE(logicalCpuIds.empty());
+  EXPECT_TRUE(lastMaxPhaseLogicalCpuIds.empty());
+  EXPECT_TRUE(maxPhaseLogicalCpuIds.empty());
+#endif
+
+  ASSERT_EQ(serialWorld->getNumSkeletons(), parallelWorld->getNumSkeletons());
+  for (std::size_t i = 0u; i < serialWorld->getNumSkeletons(); ++i) {
+    const auto serialSkeleton = serialWorld->getSkeleton(i);
+    const auto parallelSkeleton = parallelWorld->getSkeleton(i);
+    ASSERT_NE(nullptr, serialSkeleton);
+    ASSERT_NE(nullptr, parallelSkeleton);
+    EXPECT_TRUE((serialSkeleton->getPositions().array()
+                 == parallelSkeleton->getPositions().array())
+                    .all())
+        << serialSkeleton->getName();
+    EXPECT_TRUE((serialSkeleton->getVelocities().array()
+                 == parallelSkeleton->getVelocities().array())
+                    .all())
+        << serialSkeleton->getName();
+
+    ASSERT_EQ(
+        serialSkeleton->getNumBodyNodes(), parallelSkeleton->getNumBodyNodes());
+    for (std::size_t body = 0u; body < serialSkeleton->getNumBodyNodes();
+         ++body) {
+      const auto* serialBody = serialSkeleton->getBodyNode(body);
+      const auto* parallelBody = parallelSkeleton->getBodyNode(body);
+      ASSERT_NE(nullptr, serialBody);
+      ASSERT_NE(nullptr, parallelBody);
+      EXPECT_TRUE((serialBody->getWorldTransform().matrix().array()
+                   == parallelBody->getWorldTransform().matrix().array())
+                      .all())
+          << serialSkeleton->getName();
+      EXPECT_TRUE((serialBody->getSpatialVelocity().array()
+                   == parallelBody->getSpatialVelocity().array())
+                      .all())
+          << serialSkeleton->getName();
+    }
+  }
+
+  // The last-attempt set resets when the exact row products execute serially,
+  // while the lifetime-to-date union remains available to a trace spanning
+  // multiple World steps.
+  parallelSolver->setNumSimulationThreads(1u);
+  parallelWorld->step();
+  EXPECT_TRUE(
+      parallelSolver->getLastExactCoulombContactRowLogicalCpuIds().empty());
+  EXPECT_TRUE(
+      parallelSolver->getLastExactCoulombMaxPhaseContactRowLogicalCpuIds()
+          .empty());
+  EXPECT_EQ(
+      logicalCpuIds, parallelSolver->getExactCoulombContactRowLogicalCpuIds());
+  EXPECT_EQ(
+      maxPhaseLogicalCpuIds,
+      parallelSolver->getMaxExactCoulombPhaseContactRowLogicalCpuIds());
+}
+
+//==============================================================================
+TEST(
+    ConstraintSolver,
+    ExactCoulombParallelContactRowEligibilityKeepsOtherRoutesSerial)
+{
+  auto smallWorld = createExactCoulombParallelContactStackWorld(4u, 20u);
+  auto denseWorld
+      = createExactCoulombParallelContactStackWorld(4u, 40u, true, true);
+  auto impulseWorld
+      = createExactCoulombParallelContactStackWorld(4u, 40u, false, false);
+
+  smallWorld->step();
+  denseWorld->step();
+  impulseWorld->step();
+
+  auto* smallSolver
+      = dynamic_cast<constraint::ExactCoulombFbfConstraintSolver*>(
+          smallWorld->getConstraintSolver());
+  auto* denseSolver
+      = dynamic_cast<constraint::ExactCoulombFbfConstraintSolver*>(
+          denseWorld->getConstraintSolver());
+  auto* impulseSolver
+      = dynamic_cast<constraint::ExactCoulombFbfConstraintSolver*>(
+          impulseWorld->getConstraintSolver());
+  ASSERT_NE(nullptr, smallSolver);
+  ASSERT_NE(nullptr, denseSolver);
+  ASSERT_NE(nullptr, impulseSolver);
+
+  ASSERT_LT(smallSolver->getLastCollisionResult().getNumContacts(), 128u);
+  ASSERT_GE(denseSolver->getLastCollisionResult().getNumContacts(), 128u);
+  ASSERT_GE(impulseSolver->getLastCollisionResult().getNumContacts(), 128u);
+  EXPECT_TRUE(smallSolver->getLastExactCoulombContactRowOperatorUsed());
+  EXPECT_TRUE(denseSolver->getLastExactCoulombContactRowOperatorUsed());
+  EXPECT_FALSE(impulseSolver->getLastExactCoulombContactRowOperatorUsed());
+  EXPECT_FALSE(
+      smallSolver->getLastExactCoulombDenseContactRowSnapshotAssembled());
+  EXPECT_TRUE(
+      denseSolver->getLastExactCoulombDenseContactRowSnapshotAssembled());
+
+  for (const auto* solver : {smallSolver, denseSolver}) {
+    EXPECT_GT(solver->getLastExactCoulombContactRowDelassusProducts(), 0u);
+    EXPECT_EQ(
+        solver->getLastExactCoulombParallelContactRowDelassusProducts(), 0u);
+    EXPECT_EQ(solver->getLastExactCoulombMaxContactRowParticipants(), 1u);
+    EXPECT_TRUE(solver->getLastExactCoulombContactRowLogicalCpuIds().empty());
+    EXPECT_TRUE(solver->getExactCoulombContactRowLogicalCpuIds().empty());
+    EXPECT_TRUE(
+        solver->getLastExactCoulombMaxPhaseContactRowLogicalCpuIds().empty());
+    EXPECT_TRUE(
+        solver->getMaxExactCoulombPhaseContactRowLogicalCpuIds().empty());
+  }
+  EXPECT_EQ(impulseSolver->getLastExactCoulombContactRowDelassusProducts(), 0u);
+  EXPECT_EQ(
+      impulseSolver->getLastExactCoulombParallelContactRowDelassusProducts(),
+      0u);
+  EXPECT_EQ(impulseSolver->getLastExactCoulombMaxContactRowParticipants(), 0u);
+  EXPECT_TRUE(
+      impulseSolver->getLastExactCoulombContactRowLogicalCpuIds().empty());
+  EXPECT_TRUE(impulseSolver->getExactCoulombContactRowLogicalCpuIds().empty());
+  EXPECT_TRUE(
+      impulseSolver->getLastExactCoulombMaxPhaseContactRowLogicalCpuIds()
+          .empty());
+  EXPECT_TRUE(
+      impulseSolver->getMaxExactCoulombPhaseContactRowLogicalCpuIds().empty());
 }
 
 //==============================================================================
@@ -1170,6 +1564,143 @@ TEST(ConstraintSolver, ExactCoulombFbfWorldSmokeManifoldWarmStartAcrossSteps)
 }
 
 //==============================================================================
+TEST(
+    ConstraintSolver,
+    ExactCoulombFbfPooledContactPointerStillRequiresManifoldIdentity)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* dynamicBody = createFreeBody("dynamic", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShape = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShape = dynamicBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShape);
+  FakeCollisionObject dynamicObject(&detector, dynamicShape);
+  auto contact = createContact(&dynamicObject, &fixedObject);
+  contact.penetrationDepth = 0.0;
+  auto constraint
+      = createContactConstraint<constraint::ContactConstraint>(contact);
+  constraint::ConstrainedGroup group;
+  group.addConstraint(constraint);
+
+  constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.maxOuterIterations = 0;
+  options.tolerance = 0.0;
+  options.seedNormalImpulseFromDiagonal = false;
+  options.enableProjectedGradientRetry = false;
+  options.enableDenseResidualPolish = false;
+  options.fallbackToBoxedLcp = false;
+  ExposedExactCoulombParallelEligibilitySolver solver;
+  solver.setExactCoulombOptions(options);
+  solver.setTimeStep(0.001);
+
+  solver.solveConstrainedGroup(group);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_FALSE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_FALSE(solver.getLastExactCoulombPersistentStepSizeUsed());
+
+  // An unchanged physical frame is a valid manifold match even when the
+  // ContactConstraint pointer is reused.
+  solver.solveConstrainedGroup(group);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_TRUE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_EQ(solver.getLastExactCoulombWarmStartMatchedContacts(), 1u);
+
+  // ConstraintSolver pools ContactConstraint objects and resets their contact
+  // data. Mutating the referenced frame models that reuse while preserving the
+  // exact same pointer sequence. A contact outside the manifold tolerance must
+  // not inherit either the prior reaction or its persisted gamma.
+  contact.point += Eigen::Vector3d(1.0, 0.0, 0.0);
+  solver.solveConstrainedGroup(group);
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_FALSE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_FALSE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_EQ(solver.getLastExactCoulombWarmStartMatchedContacts(), 0u);
+}
+
+//==============================================================================
+TEST(
+    ConstraintSolver,
+    ExactCoulombFbfPooledContactReorderMatchesReactionByManifold)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBody = createFreeBody("fixed", false, skeletons);
+  auto* dynamicBody = createFreeBody("dynamic", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShape = fixedBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShape = dynamicBody->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObject(&detector, fixedShape);
+  FakeCollisionObject dynamicObject(&detector, dynamicShape);
+  auto contactA = createContact(&dynamicObject, &fixedObject);
+  auto contactB = createContact(&dynamicObject, &fixedObject);
+  contactA.point = Eigen::Vector3d(-0.2, 0.0, 0.0);
+  contactB.point = Eigen::Vector3d(0.2, 0.0, 0.0);
+  contactA.penetrationDepth = 0.0;
+  contactB.penetrationDepth = 0.01;
+  auto constraintA
+      = createContactConstraint<constraint::ContactConstraint>(contactA);
+  auto constraintB
+      = createContactConstraint<constraint::ContactConstraint>(contactB);
+  constraint::ConstrainedGroup group;
+  group.addConstraint(constraintA);
+  group.addConstraint(constraintB);
+
+  constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.maxOuterIterations = 0;
+  options.tolerance = 0.0;
+  options.acceptOuterMaxIterations = true;
+  options.enableProjectedGradientRetry = false;
+  options.enableDenseResidualPolish = false;
+  options.fallbackToBoxedLcp = false;
+  ExposedExactCoulombParallelEligibilitySolver solver;
+  solver.setExactCoulombOptions(options);
+  solver.setTimeStep(0.001);
+
+  solver.solveConstrainedGroup(group);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  const Eigen::Vector3d impulseAtA = 0.001 * contactA.force;
+  const Eigen::Vector3d impulseAtB = 0.001 * contactB.force;
+  ASSERT_GT((impulseAtA - impulseAtB).norm(), 1e-8);
+
+  // Keep the pointer order fixed while exchanging the world-space frames they
+  // reference. A pointer fast path would leave the two reactions in their old
+  // slots; manifold matching must follow the points instead.
+  std::swap(contactA.point, contactB.point);
+  solver.solveConstrainedGroup(group);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::MaxIterationsAccepted);
+  EXPECT_TRUE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_EQ(solver.getLastExactCoulombWarmStartMatchedContacts(), 2u);
+  EXPECT_TRUE((0.001 * contactA.force).isApprox(impulseAtB, 1e-10));
+  EXPECT_TRUE((0.001 * contactB.force).isApprox(impulseAtA, 1e-10));
+}
+
+//==============================================================================
 TEST(ConstraintSolver, ExactCoulombFbfManifoldWarmStartMatchesMultipleContacts)
 {
   // A two-box stack forms one constrained group with two persistent
@@ -1209,6 +1740,106 @@ TEST(ConstraintSolver, ExactCoulombFbfManifoldWarmStartMatchesMultipleContacts)
   EXPECT_GE(solver->getLastExactCoulombWarmStartMatchedContacts(), 2u);
   EXPECT_EQ(solver->getNumBoxedLcpFallbacks(), 0u);
   EXPECT_LE(solver->getLastExactCoulombResidual(), options.tolerance);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ExactCoulombFailureInvalidatesOnlyItsManifoldGammaToken)
+{
+  std::vector<dynamics::SkeletonPtr> skeletons;
+  auto* fixedBodyA = createFreeBody("fixed_a", false, skeletons);
+  auto* dynamicBodyA = createFreeBody("dynamic_a", true, skeletons);
+  auto* fixedBodyB = createFreeBody("fixed_b", false, skeletons);
+  auto* dynamicBodyB = createFreeBody("dynamic_b", true, skeletons);
+
+  auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+  auto* fixedShapeA = fixedBodyA->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeA = dynamicBodyA->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* fixedShapeB = fixedBodyB->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeB = dynamicBodyB->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+
+  FakeCollisionDetector detector;
+  FakeCollisionObject fixedObjectA(&detector, fixedShapeA);
+  FakeCollisionObject dynamicObjectA(&detector, dynamicShapeA);
+  FakeCollisionObject fixedObjectB(&detector, fixedShapeB);
+  FakeCollisionObject dynamicObjectB(&detector, dynamicShapeB);
+
+  const auto makeGroup = [](collision::Contact& contact) {
+    constraint::ConstrainedGroup group;
+    group.addConstraint(
+        createContactConstraint<constraint::ContactConstraint>(contact));
+    return group;
+  };
+
+  constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.maxOuterIterations = 0;
+  options.tolerance = 0.0;
+  options.seedNormalImpulseFromDiagonal = false;
+  options.enableProjectedGradientRetry = false;
+  options.enableDenseResidualPolish = false;
+  options.fallbackToBoxedLcp = false;
+  ExposedExactCoulombParallelEligibilitySolver solver;
+  solver.setExactCoulombOptions(options);
+  solver.setTimeStep(0.001);
+
+  auto firstContactA = createContact(&dynamicObjectA, &fixedObjectA);
+  firstContactA.penetrationDepth = 0.0;
+  auto firstGroupA = makeGroup(firstContactA);
+  solver.solveConstrainedGroup(firstGroupA);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+
+  auto firstContactB = createContact(&dynamicObjectB, &fixedObjectB);
+  firstContactB.penetrationDepth = 0.0;
+  auto firstGroupB = makeGroup(firstContactB);
+  solver.solveConstrainedGroup(firstGroupB);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+
+  // Recreate island A's constraint at the same manifold point, but make the
+  // contact require a nonzero reaction. With a zero outer budget this fails
+  // after matching A's prior reaction and gamma records.
+  auto failingContactA = createContact(&dynamicObjectA, &fixedObjectA);
+  failingContactA.penetrationDepth = 0.01;
+  auto failingGroupA = makeGroup(failingContactA);
+  solver.solveConstrainedGroup(failingGroupA);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::FbfFailed);
+  EXPECT_TRUE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+
+  // Island B's independent persisted gamma survives A's failure.
+  auto secondContactB = createContact(&dynamicObjectB, &fixedObjectB);
+  secondContactB.penetrationDepth = 0.0;
+  auto secondGroupB = makeGroup(secondContactB);
+  solver.solveConstrainedGroup(secondGroupB);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_TRUE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+
+  // A's world-space reaction record is retained as a warm start, but its gamma
+  // token is gone after the failed solve.
+  auto recoveryContactA = createContact(&dynamicObjectA, &fixedObjectA);
+  recoveryContactA.penetrationDepth = 0.0;
+  auto recoveryGroupA = makeGroup(recoveryContactA);
+  solver.solveConstrainedGroup(recoveryGroupA);
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_TRUE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_FALSE(solver.getLastExactCoulombPersistentStepSizeUsed());
 }
 
 //==============================================================================
@@ -2333,6 +2964,7 @@ TEST(ConstraintSolver, ExactCoulombContactRowOperatorMatchesImpulseTests)
   auto* fixedBody = createFreeBody("fixed", false, skeletons);
   auto* dynamicBodyA = createFreeBody("dynamicA", true, skeletons);
   auto* dynamicBodyB = createFreeBody("dynamicB", true, skeletons);
+  auto* dynamicBodyC = createFreeBody("dynamicC", true, skeletons);
 
   auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
   auto* fixedShapeNode = fixedBody->createShapeNodeWith<
@@ -2344,17 +2976,28 @@ TEST(ConstraintSolver, ExactCoulombContactRowOperatorMatchesImpulseTests)
   auto* dynamicShapeNodeB = dynamicBodyB->createShapeNodeWith<
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(shape);
+  auto* dynamicShapeNodeC = dynamicBodyC->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
 
   FakeCollisionDetector detector;
   FakeCollisionObject fixedObject(&detector, fixedShapeNode);
   FakeCollisionObject dynamicObjectA(&detector, dynamicShapeNodeA);
   FakeCollisionObject dynamicObjectB(&detector, dynamicShapeNodeB);
+  FakeCollisionObject dynamicObjectC(&detector, dynamicShapeNodeC);
 
   // Mix fixed-dynamic and dynamic-dynamic contacts so the row operator has
   // to reproduce shared-body Delassus coupling, not only diagonal blocks.
   auto contactAFixed = createContact(&dynamicObjectA, &fixedObject);
   auto contactBFixed = createContact(&dynamicObjectB, &fixedObject);
   auto contactAB = createContact(&dynamicObjectA, &dynamicObjectB);
+  auto contactAFixedOffset = createContact(&dynamicObjectA, &fixedObject);
+  contactAFixedOffset.point = Eigen::Vector3d(0.2, -0.3, 0.1);
+  contactAFixedOffset.normal = Eigen::Vector3d(0.1, -0.2, 1.0).normalized();
+  auto contactABOffset = createContact(&dynamicObjectA, &dynamicObjectB);
+  contactABOffset.point = Eigen::Vector3d(-0.15, 0.25, -0.05);
+  contactABOffset.normal = Eigen::Vector3d(-0.2, 0.15, 1.0).normalized();
+  auto contactCFixed = createContact(&dynamicObjectC, &fixedObject);
 
   auto constraintAFixed
       = createContactConstraint<constraint::ContactConstraint>(contactAFixed);
@@ -2362,9 +3005,21 @@ TEST(ConstraintSolver, ExactCoulombContactRowOperatorMatchesImpulseTests)
       = createContactConstraint<constraint::ContactConstraint>(contactBFixed);
   auto constraintAB
       = createContactConstraint<constraint::ContactConstraint>(contactAB);
+  auto constraintAFixedOffset
+      = createContactConstraint<constraint::ContactConstraint>(
+          contactAFixedOffset);
+  auto constraintABOffset
+      = createContactConstraint<constraint::ContactConstraint>(contactABOffset);
+  auto constraintCFixed
+      = createContactConstraint<constraint::ContactConstraint>(contactCFixed);
 
   const std::vector<constraint::ConstraintBase*> constraints{
-      constraintAFixed.get(), constraintBFixed.get(), constraintAB.get()};
+      constraintAFixed.get(),
+      constraintBFixed.get(),
+      constraintAB.get(),
+      constraintAFixedOffset.get(),
+      constraintABOffset.get(),
+      constraintCFixed.get()};
 
   constraint::detail::ExactCoulombConstraintBuildOptions buildOptions;
   buildOptions.invTimeStep = 1000.0;
@@ -2374,12 +3029,89 @@ TEST(ConstraintSolver, ExactCoulombContactRowOperatorMatchesImpulseTests)
       problem.status,
       constraint::detail::ExactCoulombConstraintBuildStatus::Success);
   const Eigen::Index dimension = problem.contactProblem.getDimension();
-  ASSERT_EQ(dimension, 9);
+  ASSERT_EQ(dimension, 18);
   ASSERT_TRUE(problem.delassus.allFinite());
 
   constraint::detail::ExactCoulombContactRowOperator rowOperator;
   ASSERT_TRUE(rowOperator.build(constraints));
   ASSERT_EQ(rowOperator.getDimension(), dimension);
+
+  const auto& schedule = rowOperator.getColoredBlockGaussSeidelSchedule();
+  ASSERT_EQ(schedule.manifolds.size(), 4u);
+  ASSERT_EQ(schedule.colors.size(), 3u);
+  EXPECT_TRUE(schedule.hasUsableParallelism());
+  EXPECT_EQ(
+      schedule.manifolds[0].canonicalBodyPair, (std::array<int, 2>{-1, 0}));
+  EXPECT_EQ(
+      schedule.manifolds[1].canonicalBodyPair, (std::array<int, 2>{-1, 1}));
+  EXPECT_EQ(
+      schedule.manifolds[2].canonicalBodyPair, (std::array<int, 2>{0, 1}));
+  EXPECT_EQ(
+      schedule.manifolds[3].canonicalBodyPair, (std::array<int, 2>{-1, 2}));
+  EXPECT_EQ(schedule.manifolds[0].contacts, (std::vector<Eigen::Index>{0, 3}));
+  EXPECT_EQ(schedule.manifolds[1].contacts, (std::vector<Eigen::Index>{1}));
+  EXPECT_EQ(schedule.manifolds[2].contacts, (std::vector<Eigen::Index>{2, 4}));
+  EXPECT_EQ(schedule.manifolds[3].contacts, (std::vector<Eigen::Index>{5}));
+  EXPECT_EQ(
+      schedule.manifolds[0].writeContacts,
+      (std::vector<Eigen::Index>{0, 2, 3, 4}));
+  EXPECT_EQ(
+      schedule.manifolds[1].writeContacts,
+      (std::vector<Eigen::Index>{1, 2, 4}));
+  EXPECT_EQ(
+      schedule.manifolds[2].writeContacts,
+      (std::vector<Eigen::Index>{0, 1, 2, 3, 4}));
+  EXPECT_EQ(
+      schedule.manifolds[3].writeContacts, (std::vector<Eigen::Index>{5}));
+  EXPECT_EQ(schedule.colors[0], (std::vector<std::size_t>{0u, 3u}));
+  EXPECT_EQ(schedule.colors[1], (std::vector<std::size_t>{1u}));
+  EXPECT_EQ(schedule.colors[2], (std::vector<std::size_t>{2u}));
+
+  for (const auto& color : schedule.colors) {
+    for (std::size_t first = 0u; first < color.size(); ++first) {
+      for (std::size_t second = 0u; second < first; ++second) {
+        const auto& firstWrites
+            = schedule.manifolds[color[first]].writeContacts;
+        const auto& secondWrites
+            = schedule.manifolds[color[second]].writeContacts;
+        std::vector<Eigen::Index> intersection;
+        std::set_intersection(
+            firstWrites.begin(),
+            firstWrites.end(),
+            secondWrites.begin(),
+            secondWrites.end(),
+            std::back_inserter(intersection));
+        EXPECT_TRUE(intersection.empty());
+      }
+    }
+  }
+
+  constraint::detail::ExactCoulombContactRowOperator rebuiltRowOperator;
+  ASSERT_TRUE(rebuiltRowOperator.build(constraints));
+  const auto& rebuiltSchedule
+      = rebuiltRowOperator.getColoredBlockGaussSeidelSchedule();
+  ASSERT_EQ(rebuiltSchedule.manifolds.size(), schedule.manifolds.size());
+  EXPECT_EQ(rebuiltSchedule.colors, schedule.colors);
+  for (std::size_t manifold = 0u; manifold < schedule.manifolds.size();
+       ++manifold) {
+    EXPECT_EQ(
+        rebuiltSchedule.manifolds[manifold].canonicalBodyPair,
+        schedule.manifolds[manifold].canonicalBodyPair);
+    EXPECT_EQ(
+        rebuiltSchedule.manifolds[manifold].contacts,
+        schedule.manifolds[manifold].contacts);
+    EXPECT_EQ(
+        rebuiltSchedule.manifolds[manifold].writeContacts,
+        schedule.manifolds[manifold].writeContacts);
+  }
+  const std::vector<constraint::ConstraintBase*> emptyConstraints;
+  EXPECT_FALSE(rebuiltRowOperator.build(emptyConstraints));
+  EXPECT_FALSE(rebuiltRowOperator.isBuilt());
+  EXPECT_EQ(rebuiltRowOperator.getDimension(), 0);
+  EXPECT_TRUE(rebuiltRowOperator.getColoredBlockGaussSeidelSchedule()
+                  .manifolds.empty());
+  EXPECT_TRUE(
+      rebuiltRowOperator.getColoredBlockGaussSeidelSchedule().colors.empty());
 
   Eigen::MatrixXd rowDelassus;
   rowOperator.assembleDense(rowDelassus);
@@ -2390,27 +3122,348 @@ TEST(ConstraintSolver, ExactCoulombContactRowOperatorMatchesImpulseTests)
       << (rowDelassus - problem.delassus);
 
   Eigen::VectorXd input(dimension);
-  input << 0.75, -0.25, 0.5, 1.25, 0.0, -0.75, 0.375, 0.625, -0.125;
-  Eigen::VectorXd rowProduct(dimension);
-  rowOperator.apply(input, rowProduct);
-  const Eigen::VectorXd denseProduct = problem.delassus * input;
-  EXPECT_TRUE(rowProduct.isApprox(denseProduct, 1e-9))
-      << "row product deviates: " << (rowProduct - denseProduct).transpose();
+  for (Eigen::Index row = 0; row < dimension; ++row)
+    input[row] = std::sin(0.37 * static_cast<double>(row + 1));
+
+  ExposedExactCoulombParallelEligibilitySolver parallelSolver;
+  parallelSolver.setNumSimulationThreads(4u);
+
+  // Five indices split across four requested participants form three
+  // nonempty ceiling-sized chunks. Prove the bridge reports the threads that
+  // actually execute callbacks, not the configured thread limit.
+  std::array<int, 5> callCounts{};
+  std::mutex fiveWayMutex;
+  std::set<std::thread::id> fiveWayThreads;
+  auto fiveWayWork = [&](std::size_t index) {
+    std::lock_guard<std::mutex> lock(fiveWayMutex);
+    ++callCounts[index];
+    fiveWayThreads.insert(std::this_thread::get_id());
+  };
+  EXPECT_EQ(
+      parallelSolver.parallelForConstraintWorkForTest(5u, fiveWayWork), 3u);
+  EXPECT_EQ(fiveWayThreads.size(), 3u);
+  for (int callCount : callCounts)
+    EXPECT_EQ(callCount, 1);
+
+  std::size_t maxParticipants = 0u;
+  auto parallelFor = [&](std::size_t count, auto& work) -> std::size_t {
+    // Keep evidence local to this one scatter or gather phase. This makes the
+    // reported count directly comparable to distinct executing threads.
+    std::mutex participantMutex;
+    std::set<std::thread::id> participantThreads;
+    auto recordedWork = [&](std::size_t index) {
+      {
+        std::lock_guard<std::mutex> lock(participantMutex);
+        participantThreads.insert(std::this_thread::get_id());
+      }
+      work(index);
+    };
+    const std::size_t participants
+        = parallelSolver.parallelForConstraintWorkForTest(count, recordedWork);
+    EXPECT_EQ(participants, participantThreads.size());
+    maxParticipants = std::max(maxParticipants, participants);
+    return participants;
+  };
+
+  for (int sample = 0; sample < 3; ++sample) {
+    Eigen::VectorXd rowProduct(dimension);
+    rowOperator.apply(input, rowProduct);
+
+    // Lock the pre-colored scalar row arithmetic: scatter rows in input order,
+    // then gather rows in output order. Coloring is metadata-only until the
+    // explicit inner-BGS opt-in is selected.
+    std::vector<Eigen::Vector6d> referenceVelocityChanges(
+        rowOperator.bodies.size(), Eigen::Vector6d::Zero());
+    for (std::size_t rowIndex = 0u; rowIndex < rowOperator.rows.size();
+         ++rowIndex) {
+      const double impulse = input[static_cast<Eigen::Index>(rowIndex)];
+      if (impulse == 0.0)
+        continue;
+      const auto& row = rowOperator.rows[rowIndex];
+      for (int side = 0; side < 2; ++side) {
+        const int bodyIndex = row.bodyIndices[side];
+        if (bodyIndex < 0)
+          continue;
+        referenceVelocityChanges[static_cast<std::size_t>(bodyIndex)].noalias()
+            += row.unitVelocityChanges[side] * impulse;
+      }
+    }
+    Eigen::VectorXd scalarReference(dimension);
+    for (std::size_t rowIndex = 0u; rowIndex < rowOperator.rows.size();
+         ++rowIndex) {
+      const auto& row = rowOperator.rows[rowIndex];
+      double value = 0.0;
+      for (int side = 0; side < 2; ++side) {
+        const int bodyIndex = row.bodyIndices[side];
+        if (bodyIndex < 0)
+          continue;
+        value += row.jacobians[side].dot(
+            referenceVelocityChanges[static_cast<std::size_t>(bodyIndex)]);
+      }
+      scalarReference[static_cast<Eigen::Index>(rowIndex)] = value;
+    }
+    EXPECT_TRUE((rowProduct.array() == scalarReference.array()).all())
+        << "contact-row arithmetic changed from the scalar reference for "
+           "sample "
+        << sample;
+
+    Eigen::VectorXd parallelRowProduct(dimension);
+    rowOperator.applyParallel(input, parallelRowProduct, parallelFor);
+    EXPECT_TRUE((parallelRowProduct.array() == rowProduct.array()).all())
+        << "parallel row product is not bit-identical for sample " << sample;
+
+    const Eigen::VectorXd denseProduct = problem.delassus * input;
+    EXPECT_TRUE(rowProduct.isApprox(denseProduct, 1e-9))
+        << "row product deviates for sample " << sample << ": "
+        << (rowProduct - denseProduct).transpose();
+    input = input.reverse().eval() * -0.625;
+  }
+  EXPECT_GT(maxParticipants, 1u);
 
   for (Eigen::Index contact = 0; contact < dimension / 3; ++contact) {
     const Eigen::Matrix3d denseBlock
         = problem.delassus.block<3, 3>(3 * contact, 3 * contact);
     EXPECT_TRUE(rowOperator.diagonalBlock(contact).isApprox(denseBlock, 1e-9));
 
-    const Eigen::Vector3d delta(0.5, -0.25, 0.125);
-    Eigen::VectorXd accumulator = Eigen::VectorXd::Zero(dimension);
+    const Eigen::Vector3d delta
+        = static_cast<double>(contact + 1) * Eigen::Vector3d(0.5, -0.25, 0.125);
+    Eigen::VectorXd accumulator
+        = Eigen::VectorXd::LinSpaced(dimension, -0.125, 0.375);
+    const Eigen::VectorXd initialAccumulator = accumulator;
     rowOperator.accumulateBlockColumns(contact, delta, accumulator);
     const Eigen::VectorXd denseColumns
-        = problem.delassus.middleCols<3>(3 * contact) * delta;
+        = initialAccumulator
+          + problem.delassus.middleCols<3>(3 * contact) * delta;
     EXPECT_TRUE(accumulator.isApprox(denseColumns, 1e-9))
         << "block columns deviate for contact " << contact << ": "
         << (accumulator - denseColumns).transpose();
   }
+}
+
+//==============================================================================
+TEST(
+    ConstraintSolver,
+    ExactCoulombColoredBlockGaussSeidelIsDeterministicAcrossThreadCounts)
+{
+  struct SolveRecord
+  {
+    constraint::ExactCoulombFbfConstraintSolverStatus status;
+    math::detail::ExactCoulombFbfStatus fbfStatus;
+    math::detail::CoulombConeResidual residual;
+    double stepSize = std::numeric_limits<double>::quiet_NaN();
+    int iterations = 0;
+    std::vector<Eigen::Vector3d> reactions;
+    bool contactRowOperatorUsed = false;
+    bool coloredUsed = false;
+    std::size_t coloredSolves = 0u;
+    std::size_t coloredDispatches = 0u;
+    std::size_t coloredParticipants = 0u;
+    std::size_t coloredManifolds = 0u;
+    std::size_t coloredColors = 0u;
+    std::size_t coloredMaxManifoldsPerColor = 0u;
+    std::vector<int> coloredLogicalCpuIds;
+    std::vector<int> coloredMaxPhaseLogicalCpuIds;
+  };
+
+  const auto runSolve = [](std::size_t requestedThreads, bool coloredEnabled) {
+    std::vector<dynamics::SkeletonPtr> skeletons;
+    auto* fixedBody = createFreeBody("colored_fixed", false, skeletons);
+    auto shape = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones());
+    auto* fixedShapeNode = fixedBody->createShapeNodeWith<
+        dynamics::CollisionAspect,
+        dynamics::DynamicsAspect>(shape);
+
+    FakeCollisionDetector detector;
+    FakeCollisionObject fixedObject(&detector, fixedShapeNode);
+    std::vector<std::unique_ptr<FakeCollisionObject>> dynamicObjects;
+    dynamicObjects.reserve(4u);
+    for (std::size_t body = 0u; body < 4u; ++body) {
+      auto* dynamicBody = createFreeBody(
+          "colored_dynamic_" + std::to_string(body), true, skeletons);
+      auto* joint
+          = static_cast<dynamics::FreeJoint*>(dynamicBody->getParentJoint());
+      joint->setLinearVelocity(Eigen::Vector3d(
+          0.025 * static_cast<double>(body + 1u),
+          -0.01 * static_cast<double>(body),
+          -0.2 - 0.01 * static_cast<double>(body)));
+      auto* dynamicShapeNode = dynamicBody->createShapeNodeWith<
+          dynamics::CollisionAspect,
+          dynamics::DynamicsAspect>(shape);
+      dynamicObjects.push_back(
+          std::make_unique<FakeCollisionObject>(&detector, dynamicShapeNode));
+    }
+
+    std::array<collision::Contact, 12> contacts;
+    constexpr std::array<std::size_t, 4> kFixedManifoldBodyOrder{
+        {0u, 2u, 1u, 3u}};
+    for (std::size_t manifold = 0u; manifold < 4u; ++manifold) {
+      const std::size_t body = kFixedManifoldBodyOrder[manifold];
+      for (std::size_t point = 0u; point < 2u; ++point) {
+        const std::size_t contact = 2u * manifold + point;
+        contacts[contact]
+            = createContact(dynamicObjects[body].get(), &fixedObject);
+        contacts[contact].point = Eigen::Vector3d(
+            point == 0u ? -0.2 : 0.2, 0.1 * static_cast<double>(body), 0.0);
+      }
+    }
+    for (std::size_t pair = 0u; pair < 2u; ++pair) {
+      const std::size_t firstBody = 2u * pair;
+      const std::size_t secondBody = firstBody + 1u;
+      for (std::size_t point = 0u; point < 2u; ++point) {
+        const std::size_t contact = 8u + 2u * pair + point;
+        contacts[contact] = createContact(
+            dynamicObjects[firstBody].get(), dynamicObjects[secondBody].get());
+        contacts[contact].point = Eigen::Vector3d(
+            point == 0u ? -0.1 : 0.1, 0.2 * static_cast<double>(pair), 0.15);
+        contacts[contact].normal = Eigen::Vector3d::UnitX();
+      }
+    }
+
+    constraint::ConstrainedGroup group;
+    std::vector<std::shared_ptr<constraint::ContactConstraint>> constraints;
+    constraints.reserve(contacts.size());
+    for (auto& contact : contacts) {
+      auto contactConstraint
+          = createContactConstraint<constraint::ContactConstraint>(contact);
+      group.addConstraint(contactConstraint);
+      constraints.push_back(std::move(contactConstraint));
+    }
+
+    constraint::ExactCoulombFbfConstraintSolverOptions options;
+    options.fallbackToBoxedLcp = false;
+    options.assembleDenseContactRowSnapshot = false;
+    options.enableWarmStart = false;
+    options.seedNormalImpulseFromDiagonal = false;
+    options.enableProjectedGradientRetry = false;
+    options.enableDenseResidualPolish = false;
+    options.maxOuterIterations = 2;
+    options.acceptOuterMaxIterations = true;
+    options.tolerance = 0.0;
+    options.initialStepSize = 0.1;
+    options.capInitialStepSizeAtSafeBound = false;
+    options.enableAdaptiveStepSize = false;
+    options.innerMaxSweeps = 3;
+    options.runFixedInnerSweeps = true;
+
+    ExposedExactCoulombParallelEligibilitySolver solver;
+    solver.setExactCoulombOptions(options);
+    solver.setTimeStep(0.001);
+    solver.setNumSimulationThreads(requestedThreads);
+    solver.setExactCoulombColoredBlockGaussSeidelEnabled(coloredEnabled);
+    solver.solveConstrainedGroup(group);
+
+    SolveRecord record;
+    record.status = solver.getLastExactCoulombStatus();
+    record.fbfStatus = solver.getLastExactCoulombFbfStatus();
+    record.residual = solver.getLastExactCoulombResidualDetails();
+    record.stepSize = solver.getLastExactCoulombStepSize();
+    record.iterations = solver.getLastExactCoulombIterations();
+    record.contactRowOperatorUsed
+        = solver.getLastExactCoulombContactRowOperatorUsed();
+    record.coloredUsed
+        = solver.getLastExactCoulombColoredBlockGaussSeidelUsed();
+    record.coloredSolves
+        = solver.getLastExactCoulombColoredBlockGaussSeidelSolves();
+    record.coloredDispatches
+        = solver.getLastExactCoulombColoredBlockGaussSeidelDispatches();
+    record.coloredParticipants
+        = solver.getLastExactCoulombColoredBlockGaussSeidelParticipants();
+    record.coloredManifolds
+        = solver.getLastExactCoulombColoredBlockGaussSeidelManifolds();
+    record.coloredColors
+        = solver.getLastExactCoulombColoredBlockGaussSeidelColors();
+    record.coloredMaxManifoldsPerColor
+        = solver
+              .getLastExactCoulombColoredBlockGaussSeidelMaxManifoldsPerColor();
+    record.coloredLogicalCpuIds
+        = solver.getLastExactCoulombColoredBlockGaussSeidelLogicalCpuIds();
+    record.coloredMaxPhaseLogicalCpuIds
+        = solver
+              .getLastExactCoulombColoredBlockGaussSeidelMaxPhaseLogicalCpuIds();
+    record.reactions.reserve(contacts.size());
+    for (const auto& contact : contacts)
+      record.reactions.push_back(0.001 * contact.force);
+    return record;
+  };
+
+  const SolveRecord legacy = runSolve(1u, false);
+  const SolveRecord colored1 = runSolve(1u, true);
+  const SolveRecord colored2 = runSolve(2u, true);
+  const SolveRecord colored4 = runSolve(4u, true);
+  const SolveRecord repeated4 = runSolve(4u, true);
+
+  ASSERT_TRUE(legacy.contactRowOperatorUsed);
+  EXPECT_FALSE(legacy.coloredUsed);
+  EXPECT_EQ(legacy.coloredSolves, 0u);
+  EXPECT_EQ(legacy.coloredDispatches, 0u);
+  EXPECT_EQ(legacy.coloredParticipants, 0u);
+  EXPECT_EQ(legacy.coloredManifolds, 0u);
+  EXPECT_EQ(legacy.coloredColors, 0u);
+  EXPECT_EQ(legacy.coloredMaxManifoldsPerColor, 0u);
+  EXPECT_TRUE(legacy.coloredLogicalCpuIds.empty());
+  EXPECT_TRUE(legacy.coloredMaxPhaseLogicalCpuIds.empty());
+  for (const auto* record : {&colored1, &colored2, &colored4, &repeated4}) {
+    ASSERT_TRUE(record->contactRowOperatorUsed);
+    EXPECT_TRUE(record->coloredUsed);
+    EXPECT_GT(record->coloredSolves, 0u);
+    EXPECT_EQ(record->coloredManifolds, 6u);
+    EXPECT_EQ(record->coloredColors, 3u);
+    EXPECT_EQ(record->coloredMaxManifoldsPerColor, 2u);
+  }
+  EXPECT_EQ(colored1.coloredDispatches, 0u);
+  EXPECT_EQ(colored2.coloredDispatches, 1u);
+  EXPECT_EQ(colored4.coloredDispatches, 1u);
+  EXPECT_EQ(repeated4.coloredDispatches, 1u);
+  EXPECT_LT(colored2.coloredDispatches, colored2.coloredSolves);
+  EXPECT_LT(colored4.coloredDispatches, colored4.coloredSolves);
+  EXPECT_EQ(colored1.coloredParticipants, 1u);
+  EXPECT_EQ(colored2.coloredParticipants, 2u);
+  EXPECT_EQ(colored4.coloredParticipants, 4u);
+  EXPECT_EQ(repeated4.coloredParticipants, 4u);
+  EXPECT_TRUE(colored1.coloredLogicalCpuIds.empty());
+  EXPECT_TRUE(colored1.coloredMaxPhaseLogicalCpuIds.empty());
+  for (const auto* record : {&colored2, &colored4, &repeated4}) {
+    EXPECT_TRUE(std::is_sorted(
+        record->coloredLogicalCpuIds.begin(),
+        record->coloredLogicalCpuIds.end()));
+    EXPECT_TRUE(std::is_sorted(
+        record->coloredMaxPhaseLogicalCpuIds.begin(),
+        record->coloredMaxPhaseLogicalCpuIds.end()));
+    EXPECT_LE(
+        record->coloredMaxPhaseLogicalCpuIds.size(),
+        record->coloredParticipants);
+  }
+
+  const auto expectBitIdentical = [](const SolveRecord& expected,
+                                     const SolveRecord& actual) {
+    EXPECT_EQ(expected.status, actual.status);
+    EXPECT_EQ(expected.fbfStatus, actual.fbfStatus);
+    EXPECT_DOUBLE_EQ(expected.residual.value, actual.residual.value);
+    EXPECT_DOUBLE_EQ(
+        expected.residual.primalFeasibility, actual.residual.primalFeasibility);
+    EXPECT_DOUBLE_EQ(
+        expected.residual.dualFeasibility, actual.residual.dualFeasibility);
+    EXPECT_DOUBLE_EQ(
+        expected.residual.complementarity, actual.residual.complementarity);
+    EXPECT_DOUBLE_EQ(expected.stepSize, actual.stepSize);
+    EXPECT_EQ(expected.iterations, actual.iterations);
+    ASSERT_EQ(expected.reactions.size(), actual.reactions.size());
+    for (std::size_t contact = 0u; contact < expected.reactions.size();
+         ++contact) {
+      EXPECT_TRUE((expected.reactions[contact].array()
+                   == actual.reactions[contact].array())
+                      .all())
+          << "contact " << contact;
+    }
+  };
+
+  // The shared-body manifolds force three colors. They are stored
+  // contiguously in eventual color order, so the explicit one-thread colored
+  // traversal also matches the disabled legacy order.
+  expectBitIdentical(legacy, colored1);
+  expectBitIdentical(colored1, colored2);
+  expectBitIdentical(colored1, colored4);
+  expectBitIdentical(colored4, repeated4);
 }
 
 //==============================================================================
@@ -2503,6 +3556,11 @@ TEST(ConstraintSolver, ParallelGroupSolveRequiresExactBuiltInSolvers)
   ExposedThreadedConstraintSolver noSecondarySolver(
       std::make_shared<constraint::DantzigBoxedLcpSolver>(), nullptr);
   EXPECT_TRUE(solvesInParallel(noSecondarySolver));
+
+  ExposedExactCoulombParallelEligibilitySolver exactCoulombSolver;
+  exactCoulombSolver.setNumSimulationThreads(4);
+  exactCoulombSolver.addFakeConstrainedGroups(130, 100);
+  EXPECT_FALSE(exactCoulombSolver.canSolveConstrainedGroupsInParallelForTest());
 
   ExposedThreadedConstraintSolver pgsPrimarySolver(
       std::make_shared<constraint::PgsBoxedLcpSolver>(), nullptr);
@@ -3022,6 +4080,37 @@ TEST(ConstraintSolver, SplitImpulseFlagIsCopiedFromOtherSolver)
   sourceOff.setSplitImpulseEnabled(false);
   target.setFromOtherConstraintSolver(sourceOff);
   EXPECT_FALSE(target.isSplitImpulseEnabled());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ExactColoredOptionsAreDefaultOffAndCopiedExplicitly)
+{
+  constraint::ExactCoulombFbfConstraintSolver source;
+  EXPECT_FALSE(source.getExactCoulombColoredBlockGaussSeidelEnabled());
+  EXPECT_FALSE(
+      source
+          .getExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled());
+
+  auto options = source.getExactCoulombOptions();
+  options.maxOuterIterations = 17;
+  source.setExactCoulombOptions(options);
+  source.setExactCoulombColoredBlockGaussSeidelEnabled(true);
+  source.setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled(true);
+
+  constraint::ExactCoulombFbfConstraintSolver target;
+  target.setFromOtherConstraintSolver(source);
+  EXPECT_EQ(target.getExactCoulombOptions().maxOuterIterations, 17);
+  EXPECT_TRUE(target.getExactCoulombColoredBlockGaussSeidelEnabled());
+  EXPECT_TRUE(
+      target
+          .getExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled());
+
+  constraint::BoxedLcpConstraintSolver ordinary;
+  target.setFromOtherConstraintSolver(ordinary);
+  EXPECT_FALSE(target.getExactCoulombColoredBlockGaussSeidelEnabled());
+  EXPECT_FALSE(
+      target
+          .getExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled());
 }
 
 //==============================================================================

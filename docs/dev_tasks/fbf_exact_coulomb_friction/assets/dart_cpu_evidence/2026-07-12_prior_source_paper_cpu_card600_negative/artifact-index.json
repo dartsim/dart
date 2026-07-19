@@ -1,0 +1,41 @@
+{
+  "files": {
+    "ARCHIVE_NOTE.md": {
+      "sha256": "69f74e05a79f6ea05b4782bf6c9d81bcaaa5fe5547bcbda41988b58864cd3ed6",
+      "size_bytes": 1080
+    },
+    "REPORT.md": {
+      "sha256": "d621b6848384106b1ff0b97f11b27c3a3640afb8d39c2b1b880c5a21710496a6",
+      "size_bytes": 1769
+    },
+    "invocations.json": {
+      "sha256": "d36117e3974ceaff96b80118ab7db711826eac39b813d0cf6bf4242894f05e4b",
+      "size_bytes": 1354
+    },
+    "metadata.json": {
+      "sha256": "402d6df7377ce06a1c260e45fdf7189813876a006a5babab99434c0524b2c774",
+      "size_bytes": 16407
+    },
+    "raw.csv": {
+      "sha256": "ddd4b4db83932eedb7424e180955c0b2ffb4e431139c1e98c908daf20896a326",
+      "size_bytes": 101636
+    },
+    "raw/card_house_26_settle_projectile_full-n600-t1-rep001.csv": {
+      "sha256": "997862c2544a6d8391bb34ccb73ecaf654a0b00cc0f3f22d50742f0ae761284a",
+      "size_bytes": 95122
+    },
+    "raw/card_house_26_settle_projectile_full-n600-t1-rep001.stderr.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0
+    },
+    "summary.csv": {
+      "sha256": "ef023c3cf913af9bff00066c6b5e87acb9de6731446440b27c72819c3f9276d9",
+      "size_bytes": 5863
+    },
+    "summary.json": {
+      "sha256": "794b2b0340b5a6057bf5ee25dfb4eabbc9217b9255096c85ff850bb38ca152f5",
+      "size_bytes": 6970
+    }
+  },
+  "schema_version": "dart.fbf_prior_source_archive/v1"
+}

@@ -221,7 +221,34 @@ double estimateLargestExactCoulombDelassusEigenvalue(
 
     const double norm = product.norm();
     if (norm == 0.0) {
-      return 0.0;
+      // The deterministic all-ones seed can lie in the nullspace of a nonzero
+      // PSD operator (for example, a graph Laplacian). Fall back to canonical
+      // basis columns so a nonzero operator cannot be mistaken for the zero
+      // operator. This path leaves the historical estimate unchanged whenever
+      // the original seed has a nonzero image.
+      bool foundNonzeroColumn = false;
+      for (Eigen::Index column = 0; column < dimension; ++column) {
+        vector.setZero();
+        vector[column] = 1.0;
+        applyDelassus(vector, product);
+        if (!product.allFinite()) {
+          DART_ASSERT(
+              false
+              && "Exact-Coulomb Delassus operator returned non-finite values.");
+          return std::numeric_limits<double>::infinity();
+        }
+
+        const double columnNorm = product.norm();
+        if (columnNorm > 0.0) {
+          vector = product / columnNorm;
+          foundNonzeroColumn = true;
+          break;
+        }
+      }
+      if (!foundNonzeroColumn) {
+        return 0.0;
+      }
+      continue;
     }
     vector = product / norm;
   }
