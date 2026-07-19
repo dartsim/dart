@@ -179,7 +179,8 @@ def test_gh_release_yes_uploads_each_artifact(
     assert verbs[1] == ["release", "create"]
     uploads = [call for call in calls if call[:2] == ["release", "upload"]]
     assert len(uploads) == 2  # one per selected artifact
-    assert all("--clobber" not in call for call in uploads)
+    # Uploads clobber so regenerated evidence keeps a stable download URL.
+    assert all("--clobber" in call for call in uploads)
     assert manifest["urls"]["shot.png"] == (
         "https://github.com/dartsim/dart/releases/download/"
         "verification-media/shot.png"

@@ -144,7 +144,35 @@ def test_trajectory_tracker_grows_polyline():
     assert all(s[2] == ado.TRAJECTORY_RGB for s in scene.segments)
 
 
-def test_velocities_layer_skips_static_bodies():
+def test_trajectory_histories_stay_separate_per_body():
+    # Two skeletons whose bodies share the name "box" must record separate
+    # histories — a name-keyed merge would draw polyline segments jumping
+    # between the two COMs, fabricating motion evidence.
+    world = dart.simulation.World()
+    world.setGravity([0.0, 0.0, 0.0])
+    for skeleton_name, x in (("skel_a", -0.5), ("skel_b", 0.5)):
+        skeleton = dart.dynamics.Skeleton(skeleton_name)
+        joint, body = skeleton.createFreeJointAndBodyNodePair()
+        body.setName("box")
+        shape_node = body.createShapeNode(dart.dynamics.BoxShape([0.1, 0.1, 0.1]))
+        shape_node.createVisualAspect()
+        shape_node.createCollisionAspect()
+        shape_node.createDynamicsAspect()
+        joint.setPositions(np.array([0.0, 0.0, 0.0, x, 0.0, 0.2]))
+        world.addSkeleton(skeleton)
+
+    tracker = ado.TrajectoryTracker(world, bodies=["box"])
+    for _ in range(3):
+        world.step()
+        tracker.sample()
+
+    assert set(tracker.history) == {"skel_a:box", "skel_b:box"}
+    # Each history stays on its own side of the world: no cross-body jumps.
+    for key, positions in tracker.history.items():
+        assert len(positions) == 3
+        xs = [float(p[0]) for p in positions]
+        expected = -0.5 if key == "skel_a:box" else 0.5
+        assert xs == pytest.approx([expected] * 3, abs=1e-6)
     world = _settled_world()  # settled: box at rest, ground static
     scene = ado.build_overlay(world, layers=("velocities",))
     # Neither body moves; no arrows should be drawn for the static ground.
@@ -278,6 +306,29 @@ def test_collision_bounds_layer_matches_known_box():
     assert np.allclose(center, [0.0, 0.0, 0.6], atol=1e-9)
 
 
+def test_collision_bounds_layer_skips_visual_only_shapes():
+    # A visual-only helper shape is invisible to the collision detector, so
+    # the collision_bounds layer must not draw its bounds: only the shape
+    # node with a CollisionAspect gets a 12-edge wireframe.
+    world = dart.simulation.World()
+    skeleton = dart.dynamics.Skeleton("box")
+    joint, body = skeleton.createFreeJointAndBodyNodePair()
+    body.setName("box")
+    collision_node = body.createShapeNode(dart.dynamics.BoxShape([0.4, 0.7, 1.0]))
+    collision_node.createVisualAspect()
+    collision_node.createCollisionAspect()
+    marker_node = body.createShapeNode(dart.dynamics.BoxShape([3.0, 3.0, 3.0]))
+    marker_node.createVisualAspect()  # visual-only: no CollisionAspect
+    joint.setPositions(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.6]))
+    world.addSkeleton(skeleton)
+
+    scene = ado.build_overlay(world, layers=("collision_bounds",))
+    assert len(scene.segments) == 12  # only the collision shape's wireframe
+    points = np.array([p for segment in scene.segments for p in segment[:2]])
+    extent = points.max(axis=0) - points.min(axis=0)
+    assert np.allclose(extent, [0.4, 0.7, 1.0], atol=1e-9)
+
+
 @pytest.mark.skipif(not _HAS_OSG, reason="dartpy built without gui.osg")
 def test_populate_overlay_loads_lines_and_labels():
     world = _settled_world()
@@ -334,7 +385,7 @@ def test_engine_rendered_overlay_changes_pixels(tmp_path):
             warmupFrames=10,
         )
         if not ok:
-            pytest.skip("no off-screen GL context (needs a usable DISPLAY)")
+            pytest.fail("no off-screen GL context despite a configured DISPLAY")
         return path.read_bytes()
 
     base = shoot("base.png")
