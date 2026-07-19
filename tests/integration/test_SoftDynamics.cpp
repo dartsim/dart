@@ -2188,11 +2188,14 @@ TEST_F(SoftDynamicsTest, restingSoftContactForceAndCenterOfPressureAreSmooth)
       ASSERT_GT(sampledContacts, 0u) << context;
       // Smoothness is judged on the 5th/95th percentile of per-step vertical
       // force: the native manifold is held to +/-25% of weight and 2 cm CoP
-      // motion, while legacy FCL needs a 0.25x-3x band and 11 cm CoP bound
-      // for its larger contact-point churn. Raw extrema only carry wide
-      // spike caps because isolated one-step impulsive corrections are
-      // platform-scheduling-sensitive (FreeBSD CI observed a single 3.8x
-      // spike in the FCL+adaptive lane that Linux never reproduces): support
+      // motion, while legacy FCL needs a 0.25x-3x band and 13 cm CoP bound
+      // for its larger contact-point churn. The FCL cap stays just above one
+      // 12.5 cm surface-mesh interval in this scene, admitting one manifold
+      // handoff while rejecting a two-cell, footprint-scale jump. Raw extrema
+      // only carry wide spike caps because isolated one-step impulsive
+      // corrections are platform-scheduling-sensitive (FreeBSD CI observed a
+      // single 3.8x spike in the FCL+adaptive lane that Linux never
+      // reproduces): support
       // must never be lost entirely and transients stay bounded, but a lone
       // spike does not fail the smoothness claim. Each backend uses the same
       // bounds with adaptive activation on and off.
@@ -2207,7 +2210,7 @@ TEST_F(SoftDynamicsTest, restingSoftContactForceAndCenterOfPressureAreSmooth)
       const double maxForceFactor = detector.useNativeDetector ? 1.25 : 3.0;
       const double spikeForceFactor = detector.useNativeDetector ? 2.0 : 5.0;
       const double copDisplacementBound
-          = detector.useNativeDetector ? 0.02 : 0.11;
+          = detector.useNativeDetector ? 0.02 : 0.13;
       EXPECT_GE(lowPercentileForce, minForceFactor * weight) << context;
       EXPECT_LE(highPercentileForce, maxForceFactor * weight) << context;
       EXPECT_GT(verticalForces.front(), 0.0) << context << " lost support";
