@@ -33,6 +33,7 @@ ledger. [RESUME.md](RESUME.md) is the concise next-session checkpoint, and
 | Current small CPU matrix | Current-source `paper_cpu`/Native bundle has 60 indexed artifacts, 27 complete pinned invocations, and 5,220 raw rows: all 9 physical classifiers pass, while 7/9 scenarios pass the strict solver and local real-time contracts | Valid current-source reconstructed evidence; zero warmups and unmatched paper contracts make every paper timing verdict null |
 | Literal 25-stone visual evidence | Finalized current-source bundle has 19 indexed artifacts / 21 physical files, five durable stills, a 61-frame decoded clip schedule, 600 zero-difference trace rows, and bound manual inspection | Valid reconstructed no-projectile, non-paper visual evidence; the 6.1 s clip is a 1.639344x time-lapse |
 | Incline visual evidence | Finalized `fig01_02_incline_current_v1` has 21 indexed artifacts / 23 physical files, five durable stills, a 61-frame decoded clip schedule, two independent 121-row traces, a passing manual inspection, and byte-identical aggregate exact-solve/fallback projections | Valid current-source DART threshold evidence only; capture contacts are 8 while the traces report 6 in aggregate, and `fig.01`, `fig.02`, and `video.03` remain partial |
+| Pinned-author incline sweep | `author_incline_sweep_reference_v1` preserves independent current-source FBF, MuJoCo, and Kamino CPU runs over `mu=.3,.4,.45,.5,.55,.6,.8`; each lane has seven 120-step cells with four contacts per step | Numeric current-source scientific-negative/reference evidence only; FBF has 839/840 configured convergence flags, every timing field is diagnostic-only, and no DART, historical-paper, full-state, golden, media, timing, performance, or parity claim follows |
 | Painleve proxy visual evidence | Finalized `current_v1` repository bundle has 27 indexed artifacts / 29 physical files, two 151-row tracked traces, fully decoded paired media, and bound manual inspection | Valid DART-side nonpaper proxy evidence only; rendered demos and tracked fixtures are not trace-equivalent, and no paper, external-solver, golden, timing, real-time, or strict-rest claim follows |
 | Backspin visual evidence | Finalized `fig03_backspin_current_v3` has 18 indexed artifacts / 20 physical files, three durable stills, MP4/GIF media, 129 exact attempts/solves, zero caps/failures/fallbacks, a corroborating translational trace, and a passing manual inspection of the renderer-applied high-contrast 6x4 ivory/charcoal checker texture and coral registration tile | Valid current-source DART evidence only; `fig.03` and `video.02_backspin` both remain partial |
 | Author-pinned turntable visual evidence | Finalized `fig04_turntable_author_current_v1` has 58 indexed artifacts / 60 physical files, four timeline-bound outcome stills, and all four 360-step author-configured cells; the current visual lane records three ejections and `mu=.5, omega=2` retained on support through 6 s | Valid author-source-pinned non-paper finite-horizon DART evidence only; zero slip, co-rotation, full-state equivalence, paper timing, approved-golden, and paper-parity claims remain unproven |
@@ -264,6 +265,35 @@ failed. Fig. 1, Fig. 2, and video.03 remain `partial`: the full friction sweep
 and plot, matched external-solver rows, approved source golden/diff, paper
 contact-count match, full 11 s semantic edit, paper timing, and real-time
 parity remain unproven.
+
+## Pinned-Author Incline Sweep Scientific Negative
+
+The numeric current-source packet is
+[`assets/paper_evidence/author_incline_sweep_reference_v1/`](assets/paper_evidence/author_incline_sweep_reference_v1/).
+It preserves three independent CPU invocations of the pinned public runner at
+commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`: FBF, MuJoCo, and Kamino each
+use the exact Figure 1 grid `mu=.3,.4,.45,.5,.55,.6,.8`. Every cell emits 120
+steps with four contacts per step, so each lane has seven cells and 840 rows.
+
+FBF records 839/840 configured convergence flags. The only false flag is
+`mu=.55`, step 1, after the 200-outer cap, giving that cell 119/120 true
+flags. Of the 839 true flags, 235 use the initial natural-residual shortcut
+and 604 use the configured outer nonnegative `coulomb_rel < 1e-6` gate. The
+projected natural `final_residual` is a distinct metric: only 456 of those
+true flags are also at or below `1e-6`, while 383 are above it. Conversely,
+the sole configured-false row has natural residual
+`3.273267262002487e-8` but configured terminal
+`r_coulomb=1.5311460572898186e-6`. Never substitute the natural residual for
+the configured convergence decision.
+
+The normalized displacement data show close FBF/Kamino values and a
+nonmonotone MuJoCo curve in this current public runner. That observation is
+not full-state or cross-solver parity. First-use JIT work, always-on history
+collection, ineffective warmup exclusion, and scene-dependent timer
+boundaries make the source timing fields diagnostic-only. The packet is not a
+historical paper run, a DART/source trajectory comparison, an approved
+golden, media evidence, or timing/performance evidence, and it does not add a
+seventh visual bundle. Fig. 1, Fig. 2, and video.03 remain partial.
 
 ## Finalized Painleve Proxy Visual Evidence
 
@@ -658,8 +688,11 @@ The latest recorded focused results on the current source are:
 - finalized incline finalizer unit tests: 62/62; clean-checkout verify-only
   passes with status `valid_current_source_nonpaper_incline`, 21 indexed
   artifacts, and no ignored staging dependency;
-- focused manifest/backspin/incline/author-masonry evidence suite: 715 passed
-  in 149.88 s;
+- author-incline reference finalizer unit tests: 12/12; verify-only passes with
+  status `valid_current_source_scientific_negative`, 37 indexed artifacts, and
+  39 physical files;
+- focused manifest/backspin/incline/author-masonry/author-incline evidence
+  suite: 777 passed in 164.41 s;
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - author masonry-arch C++ specification: 1/1 focused CTest passed;
 - manifest validation: live mode performed 102 file-identity rechecks with
@@ -671,8 +704,9 @@ The latest recorded focused results on the current source are:
 1. Preserve the authoritative P-core, standing-visual, frozen impact-v1, and
    frozen 101-v1 negative bundles. The 101 reconstruction is now precisely
    blocked at step 1, and card-manifold v2 is complete as non-strict diagnostic
-   evidence. Preserve the finalized incline, current-source Painleve
-   proxy, and finalized backspin bundles, then continue with the other
+   evidence. Preserve the finalized incline, the pinned-author numeric
+   incline sweep, current-source Painleve proxy, and finalized backspin
+   bundles, then continue with the other
    smaller-figure recaptures,
    strict card/media work, and source-equivalent impact work without tuning
    either frozen v1

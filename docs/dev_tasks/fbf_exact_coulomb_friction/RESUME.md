@@ -17,10 +17,12 @@ Do not retire the task folder. Do not commit, push, update a PR, rerun remote
 CI, or mutate GitHub without explicit user approval. Never add AI or tool
 attribution to a commit or PR.
 
-The newest sealed scientific addition is the pinned-author masonry-arch
-negative. It records a 500-frame author run but proves neither all-substep
-solver success nor DART parity. It does not change the overall 29-row audit:
-24 partial, 5 blocked, 0 complete.
+The newest numeric scientific addition is the pinned-author incline sweep.
+It preserves all three current public runner lanes over the Figure 1 friction
+grid, but proves neither DART/source parity nor historical paper parity. The
+separate sealed author masonry-arch negative also remains current. Neither
+packet changes the overall 29-row audit: 24 partial, 5 blocked, 0 complete,
+and the visual bundle count remains six.
 
 ## Read First
 
@@ -261,6 +263,33 @@ displacement, but one accepted cap per repetition yields maximum residual
 failed. Fig. 1, Fig. 2, and video.03 remain `partial` pending the full friction
 sweep/plot, matched external rows, approved source golden/diff, paper contact
 count, full 11 s semantic edit, paper timing, and real-time parity.
+
+### Pinned-Author Incline Sweep Scientific Negative
+
+Preserve
+[`assets/paper_evidence/author_incline_sweep_reference_v1/`](assets/paper_evidence/author_incline_sweep_reference_v1/).
+It is a numeric packet from three independent current-source CPU invocations
+at pinned author commit `b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0`, not a
+new visual bundle. FBF, MuJoCo, and Kamino each run the exact grid
+`mu=.3,.4,.45,.5,.55,.6,.8`, with 120 steps per cell and four contacts per
+step: seven cells and 840 rows in each lane.
+
+FBF has 839/840 configured convergence flags. Its sole false row is
+`mu=.55`, step 1, after 200 outer iterations, so that cell is 119/120. Of the
+839 true flags, 235 are initial natural-residual shortcuts and 604 satisfy the
+configured outer nonnegative `coulomb_rel < 1e-6` gate. Natural
+`final_residual` is separate: 456 configured-true rows are at or below
+`1e-6`, 383 configured-true rows are above it, and the configured-false row
+has natural residual `3.273267262002487e-8` while its terminal
+`r_coulomb` is `1.5311460572898186e-6`.
+
+The current-run displacement projection places FBF and Kamino close together
+and shows a nonmonotone MuJoCo result, but this is not full-state equivalence
+or a parity verdict. First-use JIT work, always-on history collection,
+ineffective warmup exclusion, and lane-dependent timer boundaries exclude all
+recorded timings. No DART match, historical invocation, approved golden,
+media, paper timing, or performance claim follows; Fig. 1, Fig. 2, and
+video.03 remain partial.
 
 ### Finalized Painleve Proxy Visual Evidence
 
@@ -577,6 +606,10 @@ fail-closed negative, repository-archived at
   scientific negative. A source-equivalent DART dynamics port and matched
   trajectory/outcome remain missing; the configuration-only spec is not that
   port.
+- The pinned-author incline sweep is complete only as numeric current-source
+  scientific-negative/reference evidence. Matched DART trajectories,
+  historical invocation/timing attestation, full-state external-solver
+  equivalence, approved goldens, and media remain missing.
 - The 101-stone exact-inertia reconstruction is precisely blocked at step 1;
   a source-pinned DART scene and matched trajectory, valid
   long-run/media/external baselines, the 10-level card house, remaining smaller
@@ -596,7 +629,8 @@ fail-closed negative, repository-archived at
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
   rejects promotion-boundary drift.
 - Final local validation completed the focused
-  manifest/backspin/incline/author-masonry suite with 715 passed in 149.88 s
+  manifest/backspin/incline/author-masonry/author-incline suite with 777 passed
+  in 164.41 s
   and the full no-cache dartpy suite with 1,555 passed in 165.09 s. The author
   masonry-arch focused CTest passed 1/1, all four current sealed bundles passed
   verify-only, and the manifest validator covered all 29 canonical
@@ -639,8 +673,10 @@ explicit DART reconstruction choices, not author parameters.
 - literal 101-stone trace/probe/runner tests: 35/35;
 - finalized incline finalizer unit tests: 62/62; clean-checkout verify-only
   passes with 21 indexed artifacts and no ignored staging dependency;
-- focused manifest/backspin/incline/author-masonry evidence suite: 715 passed
-  in 149.88 s;
+- author-incline reference finalizer unit tests: 12/12; verify-only passes with
+  37 indexed artifacts and 39 physical files;
+- focused manifest/backspin/incline/author-masonry/author-incline evidence
+  suite: 777 passed in 164.41 s;
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - author masonry-arch C++ specification: 1/1 focused CTest passed;
 - manifest live mode: 102 file-identity rechecks, zero skipped; explicit
@@ -652,7 +688,8 @@ explicit DART reconstruction choices, not author parameters.
 1. Reinspect current diffs and active agents before taking file or shared-build
    ownership.
 2. Preserve the P-core, standing-visual, finalized current-source Painleve-proxy,
-   finalized incline and backspin, and frozen impact-v1 negative bundles
+   finalized incline and backspin, pinned-author numeric incline sweep, and
+   frozen impact-v1 negative bundles
    alongside the arch101-v6 and card-v2 blockers. Continue strict card/media,
    remaining
    smaller-figure, and
@@ -714,6 +751,12 @@ Revalidate the sealed incline bundle without modifying it:
   --bundle \
     docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 \
   --verify-only
+```
+
+Verify the pinned-author numeric incline sweep without rewriting it:
+
+```bash
+python3 scripts/finalize_fbf_author_incline_reference.py --verify-only
 ```
 
 ## Guardrails

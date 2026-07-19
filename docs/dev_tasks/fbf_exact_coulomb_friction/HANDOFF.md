@@ -51,6 +51,12 @@ External truth:
   paper.
 - The sealed author masonry-arch run is a current-source scientific negative,
   not a historical paper invocation or DART parity evidence.
+- The numeric author_incline_sweep_reference_v1 packet preserves independent
+  current-source FBF, MuJoCo, and Kamino CPU runs on
+  mu=.3,.4,.45,.5,.55,.6,.8. Each lane has seven 120-step cells and four
+  contacts per step. It is scientific-negative/reference evidence, not a
+  DART match, historical run, golden, media, timing, performance, or parity
+  result, and it does not change the six-bundle visual inventory.
 
 PR truth:
 
@@ -270,9 +276,31 @@ Finalized Fig. 01/02 and video.03 incline truth:
   repetition raises the maximum residual to 1.4392081500753078e-6, so strict
   solver/local-real-time remains failed.
 - Fig. 1, Fig. 2, and video.03 remain partial. Missing proof includes the full
-  friction sweep/plot, matched external rows, approved source golden/diff,
-  paper contact-count match, full 11 s semantic edit, paper timing, and
-  real-time parity.
+  matched DART sweep, full-state external equivalence, approved source
+  golden/diff, paper contact-count match, full 11 s semantic edit, historical
+  paper timing, and real-time parity.
+
+Pinned-author incline sweep truth:
+
+- Preserve
+  assets/paper_evidence/author_incline_sweep_reference_v1/.
+- FBF, MuJoCo, and Kamino each use the exact seven-cell grid
+  mu=.3,.4,.45,.5,.55,.6,.8, 120 steps per cell, and four contacts per step.
+- FBF records 839/840 configured convergence flags; mu=.55 is 119/120 and
+  step 1 is the sole false flag after the 200-outer cap.
+- Of the 839 true flags, 235 use the initial natural-residual shortcut and
+  604 satisfy the configured outer nonnegative coulomb_rel < 1e-6 gate.
+- Natural final_residual is a separate metric: 456 configured-true rows are
+  <=1e-6 and 383 are above it. The sole configured-false row has natural
+  residual 3.273267262002487e-8 but terminal
+  r_coulomb=1.5311460572898186e-6. Never substitute one metric for the other.
+- Current displacements place FBF and Kamino close and show a nonmonotone
+  MuJoCo curve. This is not full-state or cross-solver parity.
+- First-use JIT, always-on history collection, ineffective warmup exclusion,
+  and lane-dependent timer boundaries exclude all timing claims.
+- This packet is numeric only. It establishes no DART/source trajectory
+  match, historical paper invocation, approved golden, media, paper timing,
+  performance, or parity claim. Fig. 1, Fig. 2, and video.03 remain partial.
 
 Finalized Painleve proxy visual truth:
 
@@ -618,6 +646,9 @@ Evidence truth:
 - The finalized incline `current_v1` bundle passes within its tracked
   stick/slide threshold boundary. Preserve the capture-8 versus trace-6
   contact mismatch and the separate strict `paper_cpu` mu=.5 negative.
+- The pinned-author incline sweep preserves the current seven-cell FBF,
+  MuJoCo, and Kamino source-run projection within its numeric
+  scientific-negative boundary. It is not another visual bundle.
 - The Painleve `current_v1` bundle is repository-finalized and verified
   current-source within its DART-side proxy boundary. Its separate visual and
   trace contracts must not be conflated with the current small paper_cpu
@@ -648,8 +679,10 @@ Latest recorded focused gates:
 - finalized incline finalizer unit tests passed 62/62; clean-checkout
   verify-only passed with 21 indexed artifacts and no ignored staging
   dependency;
-- focused manifest/backspin/incline/author-masonry evidence suite: 715 passed
-  in 149.88 s;
+- author-incline reference finalizer unit tests passed 12/12; verify-only
+  reports 37 indexed artifacts and 39 physical files;
+- focused manifest/backspin/incline/author-masonry/author-incline evidence
+  suite: 777 passed in 164.41 s;
 - full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
 - author masonry-arch focused CTest: 1/1 passed;
 - all four current sealed bundles pass verify-only; the manifest validator
@@ -661,9 +694,9 @@ Latest recorded focused gates:
 Immediate order:
 
 1. Inspect current diffs and active agents before taking file/build ownership.
-2. Preserve the P-core, standing-visual, finalized incline, verified
-   current-source Painleve-proxy, finalized backspin, and frozen impact-v1
-   negative bundles alongside the
+2. Preserve the P-core, standing-visual, finalized incline, pinned-author
+   numeric incline sweep, verified current-source Painleve-proxy, finalized
+   backspin, and frozen impact-v1 negative bundles alongside the
    arch101-v6 and card-v2
    blockers. Continue strict card/media, remaining smaller-figure, and
    separately declared source-equivalent impact work; inspect decoded media
@@ -699,6 +732,10 @@ Finalized incline clean-checkout verify-only:
     --bundle \
       docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/fig01_02_incline_current_v1 \
     --verify-only
+
+Pinned-author numeric incline sweep verify-only:
+
+  python3 scripts/finalize_fbf_author_incline_reference.py --verify-only
 
 Never convert a capped or finite solve into convergence, never infer physics
 from decoded media, never turn mean throughput into a worst-case deadline,

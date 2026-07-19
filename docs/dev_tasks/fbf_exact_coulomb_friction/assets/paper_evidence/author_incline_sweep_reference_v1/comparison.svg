@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="620" viewBox="0 0 1000 620">
+<rect width="100%" height="100%" fill="#fbfaf6"/>
+<text x="500" y="34" text-anchor="middle" font-family="sans-serif" font-size="22" font-weight="700">Pinned current-author incline sweep</text>
+<text x="500" y="58" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#555">numeric diagnostic — not historical paper, DART, timing, or cross-solver parity</text>
+<line x1="105.0" y1="520.000" x2="955.0" y2="520.000" stroke="#ddd" stroke-width="1"/>
+<text x="91.0" y="525.000" text-anchor="end" font-family="sans-serif" font-size="13">0</text>
+<line x1="105.0" y1="410.000" x2="955.0" y2="410.000" stroke="#ddd" stroke-width="1"/>
+<text x="91.0" y="415.000" text-anchor="end" font-family="sans-serif" font-size="13">1</text>
+<line x1="105.0" y1="300.000" x2="955.0" y2="300.000" stroke="#ddd" stroke-width="1"/>
+<text x="91.0" y="305.000" text-anchor="end" font-family="sans-serif" font-size="13">2</text>
+<line x1="105.0" y1="190.000" x2="955.0" y2="190.000" stroke="#ddd" stroke-width="1"/>
+<text x="91.0" y="195.000" text-anchor="end" font-family="sans-serif" font-size="13">3</text>
+<line x1="105.0" y1="80.000" x2="955.0" y2="80.000" stroke="#ddd" stroke-width="1"/>
+<text x="91.0" y="85.000" text-anchor="end" font-family="sans-serif" font-size="13">4</text>
+<line x1="175.833" y1="80.0" x2="175.833" y2="520.0" stroke="#eee" stroke-width="1"/>
+<text x="175.833" y="545.0" text-anchor="middle" font-family="sans-serif" font-size="13">0.3</text>
+<line x1="317.500" y1="80.0" x2="317.500" y2="520.0" stroke="#eee" stroke-width="1"/>
+<text x="317.500" y="545.0" text-anchor="middle" font-family="sans-serif" font-size="13">0.4</text>
+<line x1="388.333" y1="80.0" x2="388.333" y2="520.0" stroke="#eee" stroke-width="1"/>
+<text x="388.333" y="545.0" text-anchor="middle" font-family="sans-serif" font-size="13">0.45</text>
+<line x1="459.167" y1="80.0" x2="459.167" y2="520.0" stroke="#eee" stroke-width="1"/>
+<text x="459.167" y="545.0" text-anchor="middle" font-family="sans-serif" font-size="13">0.5</text>
+<line x1="530.000" y1="80.0" x2="530.000" y2="520.0" stroke="#eee" stroke-width="1"/>
+<text x="530.000" y="545.0" text-anchor="middle" font-family="sans-serif" font-size="13">0.55</text>
+<line x1="600.833" y1="80.0" x2="600.833" y2="520.0" stroke="#eee" stroke-width="1"/>
+<text x="600.833" y="545.0" text-anchor="middle" font-family="sans-serif" font-size="13">0.6</text>
+<line x1="884.167" y1="80.0" x2="884.167" y2="520.0" stroke="#eee" stroke-width="1"/>
+<text x="884.167" y="545.0" text-anchor="middle" font-family="sans-serif" font-size="13">0.8</text>
+<line x1="105.0" y1="520.0" x2="955.0" y2="520.0" stroke="#222" stroke-width="2"/>
+<line x1="105.0" y1="80.0" x2="105.0" y2="520.0" stroke="#222" stroke-width="2"/>
+<text x="530.000" y="575" text-anchor="middle" font-family="sans-serif" font-size="16">friction coefficient μ</text>
+<text x="30" y="300.000" transform="rotate(-90 30 300.000)" text-anchor="middle" font-family="sans-serif" font-size="16">downslope displacement (m)</text>
+<polyline fill="none" stroke="#444" stroke-width="2" stroke-dasharray="8 6" points="175.833,133.929 317.500,326.965 388.333,423.482 459.167,520.000 530.000,520.000 600.833,520.000 884.167,520.000"/>
+<polyline fill="none" stroke="#3465a4" stroke-width="2.5" points="175.833,126.262 317.500,287.700 388.333,318.150 459.167,480.477 530.000,320.511 600.833,382.230 884.167,500.079"/>
+<rect x="170.833" y="121.262" width="10" height="10" fill="#3465a4" stroke="#fff" stroke-width="1.5"/>
+<rect x="312.500" y="282.700" width="10" height="10" fill="#3465a4" stroke="#fff" stroke-width="1.5"/>
+<rect x="383.333" y="313.150" width="10" height="10" fill="#3465a4" stroke="#fff" stroke-width="1.5"/>
+<rect x="454.167" y="475.477" width="10" height="10" fill="#3465a4" stroke="#fff" stroke-width="1.5"/>
+<rect x="525.000" y="315.511" width="10" height="10" fill="#3465a4" stroke="#fff" stroke-width="1.5"/>
+<rect x="595.833" y="377.230" width="10" height="10" fill="#3465a4" stroke="#fff" stroke-width="1.5"/>
+<rect x="879.167" y="495.079" width="10" height="10" fill="#3465a4" stroke="#fff" stroke-width="1.5"/>
+<polyline fill="none" stroke="#3f8f55" stroke-width="2.5" points="175.833,130.679 317.500,325.312 388.333,422.628 459.167,519.945 530.000,519.953 600.833,519.961 884.167,519.992"/>
+<path d="M 175.833 124.679 L 169.833 135.679 L 181.833 135.679 Z" fill="#3f8f55" stroke="#fff" stroke-width="1.5"/>
+<path d="M 317.500 319.312 L 311.500 330.312 L 323.500 330.312 Z" fill="#3f8f55" stroke="#fff" stroke-width="1.5"/>
+<path d="M 388.333 416.628 L 382.333 427.628 L 394.333 427.628 Z" fill="#3f8f55" stroke="#fff" stroke-width="1.5"/>
+<path d="M 459.167 513.945 L 453.167 524.945 L 465.167 524.945 Z" fill="#3f8f55" stroke="#fff" stroke-width="1.5"/>
+<path d="M 530.000 513.953 L 524.000 524.953 L 536.000 524.953 Z" fill="#3f8f55" stroke="#fff" stroke-width="1.5"/>
+<path d="M 600.833 513.961 L 594.833 524.961 L 606.833 524.961 Z" fill="#3f8f55" stroke="#fff" stroke-width="1.5"/>
+<path d="M 884.167 513.992 L 878.167 524.992 L 890.167 524.992 Z" fill="#3f8f55" stroke="#fff" stroke-width="1.5"/>
+<polyline fill="none" stroke="#c94747" stroke-width="2.5" points="175.833,130.679 317.500,325.312 388.333,422.628 459.167,519.945 530.000,519.953 600.833,519.961 884.167,519.992"/>
+<circle cx="175.833" cy="130.679" r="6" fill="none" stroke="#c94747" stroke-width="2.5"/>
+<circle cx="317.500" cy="325.312" r="6" fill="none" stroke="#c94747" stroke-width="2.5"/>
+<circle cx="388.333" cy="422.628" r="6" fill="none" stroke="#c94747" stroke-width="2.5"/>
+<circle cx="459.167" cy="519.945" r="6" fill="none" stroke="#c94747" stroke-width="2.5"/>
+<circle cx="530.000" cy="519.953" r="6" fill="none" stroke="#c94747" stroke-width="2.5"/>
+<circle cx="600.833" cy="519.961" r="6" fill="none" stroke="#c94747" stroke-width="2.5"/>
+<circle cx="884.167" cy="519.992" r="6" fill="none" stroke="#c94747" stroke-width="2.5"/>
+<rect x="690.0" y="105.0" width="245" height="112" rx="6" fill="#fff" stroke="#bbb"/>
+<line x1="706.0" y1="129.0" x2="746.0" y2="129.0" stroke="#444" stroke-width="2" stroke-dasharray="8 6"/>
+<text x="758.0" y="134.0" font-family="sans-serif" font-size="13">analytic threshold</text>
+<line x1="706.0" y1="153.0" x2="746.0" y2="153.0" stroke="#c94747" stroke-width="3"/>
+<text x="758.0" y="158.0" font-family="sans-serif" font-size="13">FBF</text>
+<line x1="706.0" y1="177.0" x2="746.0" y2="177.0" stroke="#3465a4" stroke-width="3"/>
+<text x="758.0" y="182.0" font-family="sans-serif" font-size="13">MuJoCo</text>
+<line x1="706.0" y1="201.0" x2="746.0" y2="201.0" stroke="#3f8f55" stroke-width="3"/>
+<text x="758.0" y="206.0" font-family="sans-serif" font-size="13">Kamino</text>
+</svg>

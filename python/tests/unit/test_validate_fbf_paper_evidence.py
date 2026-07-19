@@ -423,6 +423,46 @@ def _patch_author_masonry_arch_bundle_json(
     monkeypatch.setattr(validator, "_read_bundle_json", read_bundle)
 
 
+def _patch_author_incline_sweep_bundle_json(
+    monkeypatch: pytest.MonkeyPatch, name: str, mutate
+) -> None:
+    original = validator._read_bundle_json
+
+    def read_bundle(bundle, requested_name, location, errors):
+        payload = original(bundle, requested_name, location, errors)
+        if (
+            payload is not None
+            and requested_name == name
+            and bundle is not None
+            and bundle.as_posix().endswith(validator.AUTHOR_INCLINE_SWEEP_V1_BUNDLE)
+        ):
+            payload = copy.deepcopy(payload)
+            mutate(payload)
+        return payload
+
+    monkeypatch.setattr(validator, "_read_bundle_json", read_bundle)
+
+
+def _patch_author_incline_sweep_history_json(
+    monkeypatch: pytest.MonkeyPatch, mutate
+) -> None:
+    original = validator._read_bundle_gzip_json
+
+    def read_bundle(bundle, requested_name, location, errors):
+        payload = original(bundle, requested_name, location, errors)
+        if (
+            payload is not None
+            and requested_name.endswith("mu0.5500_fbf/history.json.gz")
+            and bundle is not None
+            and bundle.as_posix().endswith(validator.AUTHOR_INCLINE_SWEEP_V1_BUNDLE)
+        ):
+            payload = copy.deepcopy(payload)
+            mutate(payload)
+        return payload
+
+    monkeypatch.setattr(validator, "_read_bundle_gzip_json", read_bundle)
+
+
 def _author_card_house_truth(manifest: dict) -> dict:
     return _truth(manifest, "author_card_house_5_construction_only_v1")
 
@@ -439,6 +479,10 @@ def _author_masonry_arch_truth(manifest: dict) -> dict:
     return _truth(manifest, "author_masonry_arch_reference_v1")
 
 
+def _author_incline_sweep_truth(manifest: dict) -> dict:
+    return _truth(manifest, "author_incline_sweep_reference_v1")
+
+
 def _author_masonry_history_record(payload: dict) -> dict:
     return next(
         item
@@ -452,6 +496,14 @@ def _author_masonry_arch_requirement_map(manifest: dict) -> dict[str, dict]:
         requirement["id"]: copy.deepcopy(requirement)
         for requirement in manifest["requirements"]
         if requirement["id"] in {"fig.07", "fig.09", "video.07_arch_25"}
+    }
+
+
+def _author_incline_sweep_requirement_map(manifest: dict) -> dict[str, dict]:
+    return {
+        requirement["id"]: copy.deepcopy(requirement)
+        for requirement in manifest["requirements"]
+        if requirement["id"] in {"fig.01", "fig.02", "video.03_incline"}
     }
 
 
@@ -4488,6 +4540,222 @@ def test_author_card_house_truth_profile_and_boundaries_accept_sealed_bundle(
     }
 
 
+def test_author_incline_sweep_truth_and_boundaries_accept_scientific_negative(
+    manifest: dict,
+) -> None:
+    truth_errors: list[str] = []
+    validator._validate_author_incline_sweep_v1_truth(
+        manifest["current_truth"], ROOT, truth_errors
+    )
+    boundary_errors: list[str] = []
+    validator._validate_author_incline_sweep_requirement_boundaries(
+        _author_incline_sweep_requirement_map(manifest), boundary_errors
+    )
+
+    assert truth_errors == []
+    assert boundary_errors == []
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    [
+        ("status", "valid_current_source_parity"),
+        ("source_grid_mu_values", [0.4, 0.5]),
+        ("source_grid_cell_count", 2),
+        ("total_cell_count", 20),
+        ("steps_per_cell", 119),
+        ("contacts_per_step", 3),
+        ("fbf_configured_converged_flag_count", 840),
+        ("fbf_configured_nonconverged_flag_count", 0),
+        ("fbf_initial_natural_residual_shortcut_converged_count", 0),
+        ("fbf_configured_coulomb_rel_outer_gate_converged_count", 839),
+        ("mu_0_55_configured_converged_count", 120),
+        ("mu_0_55_nonconverged_step", 0),
+        ("configured_termination_residual", "final_residual"),
+        ("natural_final_residual_is_distinct", False),
+        ("timing_evidence_eligible", True),
+        ("timing_verdict", "pass"),
+        ("paper_timing_valid", True),
+        ("paper_comparable", True),
+        ("dart_dynamics_parity_valid", True),
+        ("cross_solver_full_state_parity_valid", True),
+        ("fig01_parity", True),
+        ("fig02_parity", True),
+        ("video03_incline_parity", True),
+        ("approved_source_golden_valid", True),
+        ("renderer_or_media_evidence_valid", True),
+    ],
+)
+def test_author_incline_sweep_truth_promotions_fail_closed(
+    manifest: dict, field: str, replacement
+) -> None:
+    _author_incline_sweep_truth(manifest)[field] = replacement
+    errors: list[str] = []
+
+    validator._validate_author_incline_sweep_v1_truth(
+        manifest["current_truth"], ROOT, errors
+    )
+
+    assert any(f".{field}:" in error for error in errors)
+
+
+def test_author_incline_sweep_artifact_hash_mutation_fails_closed(
+    manifest: dict,
+) -> None:
+    _author_incline_sweep_truth(manifest)["artifact_hashes"][
+        "runs/20260719T151337Z/mu0.5500_fbf/history.json.gz"
+    ] = ("0" * 64)
+    errors: list[str] = []
+
+    validator._validate_author_incline_sweep_v1_truth(
+        manifest["current_truth"], ROOT, errors
+    )
+
+    assert any(
+        "mu0.5500_fbf/history.json.gz" in error and "digest mismatch" in error
+        for error in errors
+    )
+
+
+@pytest.mark.parametrize(
+    ("name", "mutate", "message"),
+    [
+        (
+            "manifest.json",
+            lambda payload: payload.__setitem__("paper_parity", True),
+            "unexpected keys ['paper_parity']",
+        ),
+        (
+            "manifest.json",
+            lambda payload: payload["source"].__setitem__("commit", "0" * 40),
+            ".manifest.source.commit:",
+        ),
+        (
+            "manifest.json",
+            lambda payload: payload["workload"].__setitem__("mu_values", [0.4, 0.5]),
+            ".manifest.workload.mu_values:",
+        ),
+        (
+            "manifest.json",
+            lambda payload: payload["workload"].__setitem__("contacts_per_step", 3),
+            ".manifest.workload.contacts_per_step:",
+        ),
+        (
+            "manifest.json",
+            lambda payload: payload["runs"][0].__setitem__(
+                "timing_evidence_eligible", True
+            ),
+            ".manifest.runs:",
+        ),
+        (
+            "manifest.json",
+            lambda payload: payload["metrics"].__setitem__("cell_count", 20),
+            ".manifest.metrics.cell_count:",
+        ),
+        (
+            "manifest.json",
+            lambda payload: payload["metrics"]["fbf"].__setitem__(
+                "converged_flags", 840
+            ),
+            ".manifest.metrics.fbf.converged_flags:",
+        ),
+        (
+            "manifest.json",
+            lambda payload: payload["metrics"]["fbf"]["per_mu"][4].__setitem__(
+                "converged_flags", 120
+            ),
+            ".manifest.metrics.fbf.per_mu:",
+        ),
+        (
+            "manifest.json",
+            lambda payload: payload["predicates"].__setitem__(
+                "dart_dynamics_parity_valid", True
+            ),
+            ".manifest.predicates.dart_dynamics_parity_valid:",
+        ),
+        (
+            "manifest.json",
+            lambda payload: payload["predicates"].__setitem__(
+                "paper_timing_valid", True
+            ),
+            ".manifest.predicates.paper_timing_valid:",
+        ),
+        (
+            "runs/20260719T151337Z/mu0.5500_fbf/result.json",
+            lambda payload: payload["config"].__setitem__(
+                "termination_residual", "final_residual"
+            ),
+            ".mu_0_55_result.config.termination_residual:",
+        ),
+        (
+            "verification.json",
+            lambda payload: payload["checks"].pop(),
+            ".verification.checks:",
+        ),
+    ],
+)
+def test_author_incline_sweep_bundle_semantic_mutations_fail_closed(
+    manifest: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    name: str,
+    mutate,
+    message: str,
+) -> None:
+    _patch_author_incline_sweep_bundle_json(monkeypatch, name, mutate)
+    errors: list[str] = []
+
+    validator._validate_author_incline_sweep_v1_truth(
+        manifest["current_truth"], ROOT, errors
+    )
+
+    assert any(message in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (
+            lambda payload: payload["steps"][0].__setitem__("num_contacts", 3),
+            ".num_contacts: expected 4",
+        ),
+        (
+            lambda payload: payload["steps"][1].__setitem__("converged", True),
+            "expected 119 configured true flags",
+        ),
+        (
+            lambda payload: payload["steps"][1].__setitem__("final_residual", 1.0e-3),
+            ".configured_false_step.final_residual:",
+        ),
+        (
+            lambda payload: payload["steps"][1]["outer"][-1].__setitem__(
+                "r_coulomb", 5.0e-7
+            ),
+            ".configured_false_step.terminal.r_coulomb:",
+        ),
+        (
+            lambda payload: payload["meta"]["config"].__setitem__(
+                "termination_residual", "natural"
+            ),
+            ".mu_0_55_history.meta.config.termination_residual:",
+        ),
+    ],
+)
+def test_author_incline_sweep_history_semantic_mutations_fail_closed(
+    manifest: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    mutate,
+    message: str,
+) -> None:
+    _patch_author_incline_sweep_history_json(monkeypatch, mutate)
+    errors: list[str] = []
+
+    validator._validate_author_incline_sweep_v1_truth(
+        manifest["current_truth"], ROOT, errors
+    )
+
+    assert any(message in error for error in errors)
+
+
 def test_author_masonry_arch_truth_and_boundaries_accept_scientific_negative(
     manifest: dict,
 ) -> None:
@@ -4684,6 +4952,66 @@ def test_author_masonry_arch_requirement_boundary_mutations_fail_closed(
     errors: list[str] = []
 
     validator._validate_author_masonry_arch_requirement_boundaries(by_id, errors)
+
+    assert any(message in error for error in errors)
+
+
+def test_author_incline_sweep_requirement_boundaries_accept_scientific_negative(
+    manifest: dict,
+) -> None:
+    errors: list[str] = []
+
+    validator._validate_author_incline_sweep_requirement_boundaries(
+        _author_incline_sweep_requirement_map(manifest), errors
+    )
+
+    assert errors == []
+
+
+@pytest.mark.parametrize(
+    ("requirement_id", "mutation", "message"),
+    [
+        ("fig.01", "status", ".status"),
+        ("fig.02", "evidence", "missing scientific-negative evidence"),
+        ("video.03_incline", "command", "missing bundle verification command"),
+        ("fig.01", "deliverable", "cannot be promoted"),
+        ("fig.02", "support", "report support must retain"),
+    ],
+)
+def test_author_incline_sweep_requirement_boundary_mutations_fail_closed(
+    manifest: dict, requirement_id: str, mutation: str, message: str
+) -> None:
+    by_id = _author_incline_sweep_requirement_map(manifest)
+    requirement = by_id[requirement_id]
+    if mutation == "status":
+        requirement["status"] = "complete"
+    elif mutation == "evidence":
+        requirement["current_evidence"] = [
+            item
+            for item in requirement["current_evidence"]
+            if "author_incline_sweep_reference_v1" not in item["path"]
+        ]
+    elif mutation == "command":
+        requirement["commands"] = []
+        requirement["capture_plan"]["commands"] = []
+    elif mutation == "deliverable":
+        requirement["deliverables"].append(
+            {
+                "kind": "raw_data",
+                "path": f"{validator.AUTHOR_INCLINE_SWEEP_V1_BUNDLE}/summary.json",
+                "validated": True,
+            }
+        )
+    elif mutation == "support":
+        report = next(
+            item
+            for item in requirement["current_evidence"]
+            if "author_incline_sweep_reference_v1" in item["path"]
+        )
+        report["supports"] = "This proves paper parity."
+    errors: list[str] = []
+
+    validator._validate_author_incline_sweep_requirement_boundaries(by_id, errors)
 
     assert any(message in error for error in errors)
 

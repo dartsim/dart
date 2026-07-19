@@ -10,6 +10,9 @@ rows in both modes, but neither trajectory is strict and its physical, timing,
 and paper verdicts remain null. A separate durable bundle establishes a
 positive 600-step exact result for a non-paper literal-wedge arch; neither
 current bundle provides the paper's Figure 9 per-outer residual history.
+The separate pinned-author incline packet preserves the current Figure 1
+seven-cell FBF/MuJoCo/Kamino numeric sweep, including a configured FBF
+convergence negative; it is not a Figure 9 curve or timing evidence.
 The enclosing task remains active and incomplete at 24 partial, 5 blocked, and
 0 complete across 29 requirements; six local visual bundles are finalized,
 and the visual workflow declares 17 schedules.
@@ -308,6 +311,31 @@ but is explicitly configuration-only. It implements no source
 collision/contact-gap/backend/float32 dynamics semantics and executes no DART
 dynamics. The bundle establishes no DART or cross-solver dynamics, trajectory,
 physical-outcome, Fig. 7/video.07, timing, repeatability, or media parity.
+
+## Pinned-Author Incline Sweep Scientific Negative
+
+The numeric current-source packet is
+`assets/paper_evidence/author_incline_sweep_reference_v1/`. Independent FBF,
+MuJoCo, and Kamino CPU invocations each use
+`mu=.3,.4,.45,.5,.55,.6,.8`, 120 steps per cell, and four contacts per step,
+for 840 rows per lane.
+
+| Field | Observation |
+| --- | --- |
+| FBF configured convergence | 839/840 true; `mu=.55` is 119/120 |
+| Sole false flag | `mu=.55`, step 1, after 200 outer iterations |
+| True-flag mechanism | 235 initial natural-residual shortcuts; 604 configured outer nonnegative `coulomb_rel < 1e-6` accepts |
+| Natural residual among true flags | 456 at or below `1e-6`; 383 above `1e-6` |
+| False-row metric split | Natural `final_residual=3.273267262002487e-8`; configured terminal `r_coulomb=1.5311460572898186e-6` |
+
+The natural residual and configured decision are different metrics and must
+not be substituted. The normalized displacement projection places FBF and
+Kamino close while the current MuJoCo curve is nonmonotone, but no full-state
+or cross-solver parity follows. JIT, history collection, warmup handling, and
+timer-boundary differences make all timing values diagnostic-only. This
+packet establishes no DART match, historical paper invocation, approved
+golden, media, timing, performance, or parity result, and it does not change
+the six-bundle visual inventory.
 
 ## Rank-Deficiency Diagnosis
 
@@ -632,6 +660,12 @@ Verify the sealed author masonry-arch diagnostic without modifying it:
 ```bash
 .pixi/envs/default/bin/python \
   scripts/finalize_fbf_author_masonry_arch_reference.py --verify-only
+```
+
+Verify the pinned-author incline sweep without modifying it:
+
+```bash
+python3 scripts/finalize_fbf_author_incline_reference.py --verify-only
 ```
 
 Reproduce the frozen current-source card-manifold comparison with a fresh

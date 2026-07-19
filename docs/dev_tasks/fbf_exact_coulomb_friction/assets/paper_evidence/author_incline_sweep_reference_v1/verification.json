@@ -1,0 +1,19 @@
+{
+  "artifact_count": 37,
+  "checks": [
+    "exact_bundle_membership",
+    "no_symlinks_or_nonregular_entries",
+    "source_identity_and_operator_recorded_invocations",
+    "all_21_result_cells_and_7_fbf_histories",
+    "four_contacts_for_all_840_fbf_steps",
+    "configured_coulomb_rel_distinct_from_natural_final_residual",
+    "sole_mu_0_55_step_1_configured_nonconvergence",
+    "deterministic_comparison_csv_svg_report",
+    "timing_and_all_parity_promotions_rejected"
+  ],
+  "finalizer_sha256": "4a83ab25ade188f12a7cf8eac78155a321ecc5f00570898fc354426938a13e2b",
+  "manifest_sha256": "f5cf6eb4f560064b5deeb17c60610c1032d73f43515adc8018e145ec4ac3c740",
+  "physical_file_count": 39,
+  "schema_version": "dart.fbf_author_incline_sweep_validation/v1",
+  "status": "valid_current_source_scientific_negative"
+}

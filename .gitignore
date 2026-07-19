@@ -1,5 +1,5 @@
 # Coverage files
-*.info
+/coverage.info
 *.gcda
 *.gcno
 *.gcov
@@ -42,6 +42,7 @@ TAGS
 # Backup & temporary files
 *.orig
 *.bak
+*.tmp
 *~
 *.temp
 
@@ -52,7 +53,6 @@ TAGS
 *.suo
 *.user
 *.dep
-*.manifest
 *.rsp
 
 # Python bytecode
@@ -60,9 +60,6 @@ TAGS
 __pycache__/
 .pytest_cache/
 .ruff_cache/
-
-# Web files
-*.htm
 
 # JetBrains IDE
 .idea/*

@@ -13,6 +13,7 @@ import argparse
 import contextlib
 import contextvars
 import csv
+import gzip
 import hashlib
 import json
 import math
@@ -187,6 +188,7 @@ SOURCE_AUDIT_KEYS = {
 }
 CURRENT_TRUTH_KEYS = {
     "author_card_house_5_construction_only_v1",
+    "author_incline_sweep_reference_v1",
     "author_masonry_arch_reference_v1",
     "backspin_visual_v3_nonpaper",
     "card_house_manifold_sensitivity_v2_nonpaper",
@@ -277,6 +279,38 @@ CURRENT_TRUTH_RECORD_KEYS = {
         "paper_timing_valid physical_outcome_valid requirement_ids solver_valid "
         "source_identity_sha256 status total_steps trajectory_valid "
         "video06_parity".split()
+    ),
+    "author_incline_sweep_reference_v1": set(
+        "approved_source_golden_valid artifact_count artifact_hashes "
+        "artifact_valid author_commit author_repository author_run_ids "
+        "author_runner_git_blob author_runner_sha256 author_tree bundle "
+        "claim_boundary claim_scope configured_termination_residual "
+        "configured_termination_tolerance contacts_per_step "
+        "cross_solver_full_state_parity_valid current_source_diagnostic_valid "
+        "dart_dynamics_parity_valid fbf_configured_converged_flag_count "
+        "fbf_configured_coulomb_rel_outer_gate_converged_count "
+        "fbf_configured_nonconverged_flag_count fbf_configured_solver_valid "
+        "fbf_contact_records fbf_history_steps "
+        "fbf_initial_natural_residual_shortcut_converged_count "
+        "fbf_kamino_displacement_close_all_cells fbf_outer_cap_hit_count "
+        "fbf_true_flags_natural_final_residual_above_tolerance_count "
+        "fbf_true_flags_natural_final_residual_at_or_below_tolerance_count "
+        "fig01_parity fig02_parity full_published_sweep_valid "
+        "historical_or_paper_invocation_valid independent_solver_runs "
+        "manual_visual_inspection_valid mu_0_55_configured_converged_count "
+        "mu_0_55_nonconverged_natural_final_residual "
+        "mu_0_55_nonconverged_outer_iterations "
+        "mu_0_55_nonconverged_step "
+        "mu_0_55_nonconverged_terminal_r_coulomb mu_0_55_total_steps "
+        "mujoco_displacement_monotone_nonincreasing "
+        "natural_final_residual_is_distinct paper_comparable "
+        "paper_timing_valid physical_file_count "
+        "qualitative_source_grid_outcome_valid realtime_verdict "
+        "renderer_or_media_evidence_valid requirement_ids "
+        "runtime_attestation_complete scientific_negative solver_lanes "
+        "source_equivalent_dart_dynamics_executed source_grid_cell_count "
+        "source_grid_mu_values status steps_per_cell timing_evidence_eligible "
+        "timing_verdict total_cell_count video03_incline_parity".split()
     ),
     "author_masonry_arch_reference_v1": set(
         "all_substeps_solver_contract_valid artifact_count artifact_hashes "
@@ -1012,6 +1046,178 @@ AUTHOR_MASONRY_ARCH_V1_BUNDLE = (
     "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/"
     "author_masonry_arch_reference_v1"
 )
+AUTHOR_INCLINE_SWEEP_V1_BUNDLE = (
+    "docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/"
+    "author_incline_sweep_reference_v1"
+)
+AUTHOR_INCLINE_SWEEP_V1_SEALED_ARTIFACTS = {
+    "REPORT.md": (
+        "9efc13e843c68c046de3207d7ee28952a37176b1e241acd798aea53b3be943bc",
+        2926,
+    ),
+    "comparison.csv": (
+        "feeed057519603cd46e8385ab1028dcfaa876895b6d71ff45a717f7893b80d63",
+        1397,
+    ),
+    "comparison.svg": (
+        "f3fb69c024c1c88c99e772fee26a10ca1efdfe6d9b1cfe4706648c1c193000a8",
+        6840,
+    ),
+    "manifest.json": (
+        "f5cf6eb4f560064b5deeb17c60610c1032d73f43515adc8018e145ec4ac3c740",
+        28037,
+    ),
+    "runs/20260719T151337Z/metadata.json": (
+        "656b950f35ddfcada8f190223a9ab722b584a793b93bf18f643f1132f79d60a4",
+        455,
+    ),
+    "runs/20260719T151337Z/mu0.3000_fbf/history.json.gz": (
+        "cb3e02c0803c00ab25d91e59e25f7c625a437fba909b03ed1babf81fad37f95b",
+        63237,
+    ),
+    "runs/20260719T151337Z/mu0.3000_fbf/result.json": (
+        "b09ca386f64ff5596eb65ced850af1804ad31a2349f374bd2490fb2b2549e321",
+        4472,
+    ),
+    "runs/20260719T151337Z/mu0.4000_fbf/history.json.gz": (
+        "e9ce6a8b65fe1b969814b9f98c861ccbec0e75fc3aee4b9fed80cca6006e5213",
+        69337,
+    ),
+    "runs/20260719T151337Z/mu0.4000_fbf/result.json": (
+        "52d75478a7c955fbc3062e6b1fce49f926dea4d91552a057e0c724838b577bb0",
+        4431,
+    ),
+    "runs/20260719T151337Z/mu0.4500_fbf/history.json.gz": (
+        "ee119bdf71d6d3f8c4e91bdbf6a79e3ed9f2468982bcc868dda13479740d190e",
+        69160,
+    ),
+    "runs/20260719T151337Z/mu0.4500_fbf/result.json": (
+        "b0295a998b27068baf975ba98b3a217dedb3eefc58eb5db30813cc8c04b4a186",
+        4351,
+    ),
+    "runs/20260719T151337Z/mu0.5000_fbf/history.json.gz": (
+        "dd740327875da466193f8cadc611f63073930551110f4baebcc3db7eefaae71e",
+        76818,
+    ),
+    "runs/20260719T151337Z/mu0.5000_fbf/result.json": (
+        "4f61dcbe4126c0ac4a860c7542693ce3b3af8f3486e46da9205acbe8531bcca2",
+        4393,
+    ),
+    "runs/20260719T151337Z/mu0.5500_fbf/history.json.gz": (
+        "c0aa2d65cbbee24447e7ece9aa97bf83da4cc666ccf16da7edd6874abc22422f",
+        68367,
+    ),
+    "runs/20260719T151337Z/mu0.5500_fbf/result.json": (
+        "6073b66a7fd875e8dc787b6bdea6f1dc867cbec82748843220abc14bc0bfb524",
+        4387,
+    ),
+    "runs/20260719T151337Z/mu0.6000_fbf/history.json.gz": (
+        "de121a963ac0b25b5268266079ccc5dd95af33deea4f178b9cd101db357f2052",
+        62849,
+    ),
+    "runs/20260719T151337Z/mu0.6000_fbf/result.json": (
+        "de973eac9f50c0abc274a9934f5ced58512d203e6e6182d7c403e7b76f122dcc",
+        4403,
+    ),
+    "runs/20260719T151337Z/mu0.8000_fbf/history.json.gz": (
+        "648ff725fcc842d6a9a77bfa1b7eeb9eaae1f33447dc71a5c144525c7ea9dc4b",
+        91435,
+    ),
+    "runs/20260719T151337Z/mu0.8000_fbf/result.json": (
+        "cb8e891ffbfeb4b604bec552773907d58da15f03aa10ec00408a8dedeb975815",
+        4409,
+    ),
+    "runs/20260719T151337Z/sweep_results.json": (
+        "f5cc26d2b0ca542b2b98f7fe94a8e2f7f7c9b7cccb3d23c35234ebe45d0d9d12",
+        33312,
+    ),
+    "runs/20260719T151857Z/metadata.json": (
+        "abb401a66fd8a0714880c7da34028fdce36f414b10103bd68982adde86270a91",
+        458,
+    ),
+    "runs/20260719T151857Z/mu0.3000_mujoco/result.json": (
+        "953b5c5716a095034b7620924cede762aac5271e171e9b39c15efae93c6d445b",
+        3215,
+    ),
+    "runs/20260719T151857Z/mu0.4000_mujoco/result.json": (
+        "a7cd4cbcd827fda98ac306a21acf9dd41059ce7782f6703bf3d113d4cccfa7f8",
+        3218,
+    ),
+    "runs/20260719T151857Z/mu0.4500_mujoco/result.json": (
+        "42c081921785ea2df630c47c269e4c9756c0194df9243d361dd0a857b22ab4a0",
+        3193,
+    ),
+    "runs/20260719T151857Z/mu0.5000_mujoco/result.json": (
+        "1af74bc4e23ffaafb8b14ef96d17daab49b20674fed3b0b32b60c9c21ccfe550",
+        3211,
+    ),
+    "runs/20260719T151857Z/mu0.5500_mujoco/result.json": (
+        "0fa380d3978aaf0843e63a1ac97cc2209690617be9c37a390218dcf793a30ecb",
+        3201,
+    ),
+    "runs/20260719T151857Z/mu0.6000_mujoco/result.json": (
+        "88262b3bd6c668704ea5ec7cf344a10fda0f1fc9967ea8eb1f9d4d351539c388",
+        3158,
+    ),
+    "runs/20260719T151857Z/mu0.8000_mujoco/result.json": (
+        "a8ecb69553b0daed34d7ff6bcad77ed60e7a3b979e959cb0206409ffb36ea274",
+        3151,
+    ),
+    "runs/20260719T151857Z/sweep_results.json": (
+        "f594b9890f8c98cedcdbdcde646cf2cec6497e6af90b6da181072dc73e4268e9",
+        24281,
+    ),
+    "runs/20260719T152022Z/metadata.json": (
+        "731b53bbd975dd7e034e199a5676756295aae173914f0cf3bc700c8f533797ba",
+        458,
+    ),
+    "runs/20260719T152022Z/mu0.3000_kamino/result.json": (
+        "268c9eabefa01ab93e51cc180ad47091786cc6d441923214d97c8fa10cf82562",
+        3197,
+    ),
+    "runs/20260719T152022Z/mu0.4000_kamino/result.json": (
+        "211e30f6a9d4c0e5cb97129f02246a7af392364002761549147d20b1d4319204",
+        3174,
+    ),
+    "runs/20260719T152022Z/mu0.4500_kamino/result.json": (
+        "0ec70d1dd9192dc9ae7cfc37047306805056e822919dca0b34ffb390c1b12a90",
+        3184,
+    ),
+    "runs/20260719T152022Z/mu0.5000_kamino/result.json": (
+        "b85cce59cda3d8ad63599cd8a838f2e314d5f0a19defe1d7e485dc19f6e14554",
+        3196,
+    ),
+    "runs/20260719T152022Z/mu0.5500_kamino/result.json": (
+        "582e23176828d176e346623120bd93f46eb891b7d52c70269113d9e1b0dadceb",
+        3161,
+    ),
+    "runs/20260719T152022Z/mu0.6000_kamino/result.json": (
+        "b6ada2862da9d934126685198c29d94e3e654a6e397f2e4a898b751d8df64ff0",
+        3183,
+    ),
+    "runs/20260719T152022Z/mu0.8000_kamino/result.json": (
+        "a70b129eb7b53228e43b3906e156e7121de6d3006ef1fbc53eb0ca1ac1ba60e3",
+        3153,
+    ),
+    "runs/20260719T152022Z/sweep_results.json": (
+        "707786eb13a5906661d163662ba945625563bf53d49d54962b2a31bd91a47204",
+        24182,
+    ),
+    "verification.json": (
+        "40d7a176107a056710878d4050b4ff27b34ad746e81add567275f8700792eeba",
+        811,
+    ),
+}
+AUTHOR_INCLINE_SWEEP_V1_ARTIFACT_TARGETS = {
+    "finalizer": "scripts/finalize_fbf_author_incline_reference.py",
+    "finalizer_test": (
+        "python/tests/unit/test_finalize_fbf_author_incline_reference.py"
+    ),
+    **{
+        relative: f"{AUTHOR_INCLINE_SWEEP_V1_BUNDLE}/{relative}"
+        for relative in AUTHOR_INCLINE_SWEEP_V1_SEALED_ARTIFACTS
+    },
+}
 AUTHOR_MASONRY_ARCH_V1_ARTIFACT_TARGETS = {
     "finalizer": "scripts/finalize_fbf_author_masonry_arch_reference.py",
     "finalizer_test": (
@@ -2858,6 +3064,27 @@ def _read_bundle_json(
         errors.append(f"{location}: current bundle JSON does not exist: {name}")
         return None
     return _read_json_object(path, location, errors)
+
+
+def _read_bundle_gzip_json(
+    bundle: Path | None, name: str, location: str, errors: list[str]
+) -> dict[str, Any] | None:
+    if bundle is None:
+        return None
+    path = bundle / name
+    if not path.is_file():
+        errors.append(f"{location}: current bundle gzip JSON does not exist: {name}")
+        return None
+    try:
+        with gzip.open(path, "rt", encoding="utf-8") as stream:
+            data = json.load(stream)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        errors.append(f"{location}: invalid gzip JSON: {error}")
+        return None
+    if not isinstance(data, dict):
+        errors.append(f"{location}: structured deliverable must be a JSON object")
+        return None
+    return data
 
 
 def _validate_pruned_staging(
@@ -14885,6 +15112,808 @@ def _validate_author_card_house_v1_truth(
         errors.append(f"{location}.durable_still_sha256: artifact hash differs")
 
 
+def _validate_author_incline_sweep_v1_truth(
+    current_truth: dict[str, Any], repo_root: Path, errors: list[str]
+) -> None:
+    location = "current_truth.author_incline_sweep_reference_v1"
+    data = _object(
+        current_truth.get("author_incline_sweep_reference_v1"), location, errors
+    )
+    if data is None:
+        return
+    bundle = _validate_current_path(
+        data,
+        "bundle",
+        AUTHOR_INCLINE_SWEEP_V1_BUNDLE,
+        location,
+        repo_root,
+        errors,
+        directory=True,
+    )
+    hashes = _validate_artifact_hashes(
+        data,
+        AUTHOR_INCLINE_SWEEP_V1_ARTIFACT_TARGETS,
+        location,
+        repo_root,
+        errors,
+    )
+    mu_values = [0.3, 0.4, 0.45, 0.5, 0.55, 0.6, 0.8]
+    run_ids = ["20260719T151337Z", "20260719T151857Z", "20260719T152022Z"]
+    claim_scope = (
+        "Pinned current-author CPU diagnostic over all seven friction cells "
+        "exposed by the public cube-on-incline runner, preserving independent "
+        "FBF, MuJoCo, and Kamino results plus every FBF residual-history step."
+    )
+    claim_boundary = (
+        "The three solver lanes are independent current-source runs. FBF has "
+        "one configured nonconvergence at mu=.55 step 1; natural final_residual "
+        "and the configured nonnegative coulomb_rel gate are distinct. Source "
+        "step times include uncontrolled first-use/JIT and instrumentation "
+        "effects and are diagnostic only. This is not a historical paper "
+        "invocation, full published sweep, DART comparison, full-state or "
+        "cross-solver parity result, approved golden, renderer/media evidence, "
+        "paper timing, real-time, or performance evidence."
+    )
+    _expect_fields(
+        data,
+        {
+            "status": "valid_current_source_scientific_negative",
+            "requirement_ids": ["fig.01", "fig.02", "video.03_incline"],
+            "artifact_valid": True,
+            "current_source_diagnostic_valid": True,
+            "scientific_negative": True,
+            "qualitative_source_grid_outcome_valid": True,
+            "fbf_configured_solver_valid": False,
+            "author_repository": "https://github.com/matthcsong/fbf-sca-2026.git",
+            "author_commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+            "author_tree": "ffcdafb61adeda2239c8366d054b548b50d26685",
+            "author_runner_git_blob": "63cfc28dca1f6c65ce4a27dbfa239cba154580c6",
+            "author_runner_sha256": (
+                "881d486f25d85f9ae197bf4164e110b6bc39775c498433f27ec4407ca09ebf82"
+            ),
+            "author_run_ids": run_ids,
+            "solver_lanes": ["fbf", "mujoco", "kamino"],
+            "source_grid_mu_values": mu_values,
+            "source_grid_cell_count": 7,
+            "total_cell_count": 21,
+            "steps_per_cell": 120,
+            "contacts_per_step": 4,
+            "independent_solver_runs": True,
+            "fbf_history_steps": 840,
+            "fbf_contact_records": 3360,
+            "fbf_configured_converged_flag_count": 839,
+            "fbf_configured_nonconverged_flag_count": 1,
+            "fbf_initial_natural_residual_shortcut_converged_count": 235,
+            "fbf_configured_coulomb_rel_outer_gate_converged_count": 604,
+            "fbf_true_flags_natural_final_residual_at_or_below_tolerance_count": 456,
+            "fbf_true_flags_natural_final_residual_above_tolerance_count": 383,
+            "fbf_outer_cap_hit_count": 1,
+            "mu_0_55_configured_converged_count": 119,
+            "mu_0_55_total_steps": 120,
+            "mu_0_55_nonconverged_step": 1,
+            "mu_0_55_nonconverged_outer_iterations": 200,
+            "mu_0_55_nonconverged_natural_final_residual": (3.273267262002487e-8),
+            "mu_0_55_nonconverged_terminal_r_coulomb": (1.5311460572898186e-6),
+            "configured_termination_residual": "coulomb_rel",
+            "configured_termination_tolerance": 1.0e-6,
+            "natural_final_residual_is_distinct": True,
+            "fbf_kamino_displacement_close_all_cells": True,
+            "mujoco_displacement_monotone_nonincreasing": False,
+            "historical_or_paper_invocation_valid": False,
+            "full_published_sweep_valid": False,
+            "runtime_attestation_complete": False,
+            "source_equivalent_dart_dynamics_executed": False,
+            "dart_dynamics_parity_valid": False,
+            "cross_solver_full_state_parity_valid": False,
+            "paper_comparable": False,
+            "paper_timing_valid": False,
+            "timing_evidence_eligible": False,
+            "timing_verdict": None,
+            "realtime_verdict": None,
+            "fig01_parity": False,
+            "fig02_parity": False,
+            "video03_incline_parity": False,
+            "renderer_or_media_evidence_valid": False,
+            "manual_visual_inspection_valid": False,
+            "approved_source_golden_valid": False,
+            "artifact_count": 37,
+            "physical_file_count": 39,
+            "claim_scope": claim_scope,
+            "claim_boundary": claim_boundary,
+        },
+        location,
+        errors,
+    )
+    if bundle is None:
+        return
+
+    for relative, (
+        expected_sha256,
+        expected_bytes,
+    ) in AUTHOR_INCLINE_SWEEP_V1_SEALED_ARTIFACTS.items():
+        hash_location = f"{location}.artifact_hashes[{relative!r}]"
+        if hashes.get(relative) != expected_sha256:
+            errors.append(
+                f"{hash_location}: sealed v1 digest changed; expected "
+                f"{expected_sha256}, got {hashes.get(relative)!r}"
+            )
+        target = bundle / relative
+        if target.is_file() and target.stat().st_size != expected_bytes:
+            errors.append(
+                f"{location}.bundle[{relative!r}]: sealed v1 size changed; "
+                f"expected {expected_bytes}, got {target.stat().st_size}"
+            )
+
+    expected_files = set(AUTHOR_INCLINE_SWEEP_V1_SEALED_ARTIFACTS)
+    actual_files: set[str] = set()
+    for path in bundle.rglob("*"):
+        relative = path.relative_to(bundle).as_posix()
+        if path.is_symlink():
+            errors.append(f"{location}.bundle: contains symlink {relative!r}")
+        elif path.is_file():
+            actual_files.add(relative)
+        elif not path.is_dir():
+            errors.append(f"{location}.bundle: contains non-regular entry {relative!r}")
+    if actual_files != expected_files:
+        errors.append(
+            f"{location}.bundle: exact file membership changed; "
+            f"missing={sorted(expected_files - actual_files)}, "
+            f"extra={sorted(actual_files - expected_files)}"
+        )
+
+    manifest = _read_bundle_json(
+        bundle, "manifest.json", f"{location}.manifest", errors
+    )
+    verification = _read_bundle_json(
+        bundle, "verification.json", f"{location}.verification", errors
+    )
+    if manifest is not None:
+        _expect_exact_keys(
+            manifest,
+            {
+                "claim_boundary",
+                "claim_scope",
+                "derived_artifacts",
+                "exact_bundle_members",
+                "metrics",
+                "predicates",
+                "retained_source_artifacts",
+                "runs",
+                "schema_version",
+                "source",
+                "status",
+                "timing_boundary",
+                "workload",
+            },
+            f"{location}.manifest",
+            errors,
+        )
+        _expect_fields(
+            manifest,
+            {
+                "schema_version": "dart.fbf_author_incline_sweep_reference/v1",
+                "status": "valid_current_source_scientific_negative",
+                "claim_scope": claim_scope,
+                "claim_boundary": claim_boundary,
+                "exact_bundle_members": sorted(expected_files),
+            },
+            f"{location}.manifest",
+            errors,
+        )
+        source = _object(manifest.get("source"), f"{location}.manifest.source", errors)
+        if source is not None:
+            _expect_exact_keys(
+                source,
+                {
+                    "commit",
+                    "recorded_python_path",
+                    "recorded_python_resolved_path",
+                    "recorded_python_sha256",
+                    "recorded_runtime_probe",
+                    "repository",
+                    "requirements_path",
+                    "requirements_sha256",
+                    "runner_git_blob",
+                    "runner_path",
+                    "runner_sha256",
+                    "runtime_attestation_complete",
+                    "tracked_clean_after",
+                    "tracked_clean_before",
+                    "tree",
+                },
+                f"{location}.manifest.source",
+                errors,
+            )
+            _expect_fields(
+                source,
+                {
+                    "repository": data.get("author_repository"),
+                    "commit": data.get("author_commit"),
+                    "tree": data.get("author_tree"),
+                    "runner_path": "paper_examples/cube-on-incline/run.py",
+                    "runner_sha256": data.get("author_runner_sha256"),
+                    "runner_git_blob": data.get("author_runner_git_blob"),
+                    "requirements_path": "requirements.txt",
+                    "requirements_sha256": (
+                        "436d6a280e62f0cf5b670bf0475cbed6e95fa87e2fb011bc30334355a3ed9688"
+                    ),
+                    "runtime_attestation_complete": False,
+                    "tracked_clean_before": True,
+                    "tracked_clean_after": True,
+                },
+                f"{location}.manifest.source",
+                errors,
+            )
+        workload = _object(
+            manifest.get("workload"), f"{location}.manifest.workload", errors
+        )
+        if workload is not None:
+            _expect_exact_keys(
+                workload,
+                {
+                    "contacts_per_step",
+                    "device",
+                    "dt_seconds",
+                    "independent_solver_runs",
+                    "mu_values",
+                    "scene",
+                    "steps_per_cell",
+                },
+                f"{location}.manifest.workload",
+                errors,
+            )
+            _expect_fields(
+                workload,
+                {
+                    "contacts_per_step": 4,
+                    "device": "cpu",
+                    "dt_seconds": 1.0 / 60.0,
+                    "independent_solver_runs": True,
+                    "mu_values": mu_values,
+                    "scene": "cube-on-incline",
+                    "steps_per_cell": 120,
+                },
+                f"{location}.manifest.workload",
+                errors,
+            )
+        timing_boundary = _object(
+            manifest.get("timing_boundary"),
+            f"{location}.manifest.timing_boundary",
+            errors,
+        )
+        if timing_boundary is not None:
+            _expect_exact_keys(
+                timing_boundary,
+                {"eligible_for_verdict", "reason"},
+                f"{location}.manifest.timing_boundary",
+                errors,
+            )
+            _expect_fields(
+                timing_boundary,
+                {
+                    "eligible_for_verdict": False,
+                    "reason": (
+                        "First-use/JIT work, always-on history instrumentation, "
+                        "ineffective warmup exclusion, and scene-dependent source "
+                        "timer boundaries are uncontrolled."
+                    ),
+                },
+                f"{location}.manifest.timing_boundary",
+                errors,
+            )
+        predicates = _object(
+            manifest.get("predicates"), f"{location}.manifest.predicates", errors
+        )
+        expected_predicates = {
+            "approved_source_golden_valid": False,
+            "artifact_integrity_valid": True,
+            "cross_solver_full_state_parity_valid": False,
+            "current_source_scientific_negative": True,
+            "dart_dynamics_parity_valid": False,
+            "fbf_configured_solver_valid": False,
+            "fbf_kamino_displacement_close_all_cells": True,
+            "fig01_parity": False,
+            "fig02_parity": False,
+            "full_published_sweep_valid": False,
+            "historical_or_paper_invocation_valid": False,
+            "manual_visual_inspection_valid": False,
+            "mujoco_displacement_monotone_nonincreasing": False,
+            "paper_comparable": False,
+            "paper_timing_valid": False,
+            "qualitative_source_grid_outcome_valid": True,
+            "realtime_verdict": None,
+            "renderer_or_media_evidence_valid": False,
+            "source_equivalent_dart_dynamics_executed": False,
+            "timing_verdict": None,
+            "video03_incline_parity": False,
+        }
+        if predicates is not None:
+            _expect_exact_keys(
+                predicates,
+                set(expected_predicates),
+                f"{location}.manifest.predicates",
+                errors,
+            )
+            _expect_fields(
+                predicates,
+                expected_predicates,
+                f"{location}.manifest.predicates",
+                errors,
+            )
+
+        expected_runs = []
+        for solver, run_id, profile in zip(
+            ("fbf", "mujoco", "kamino"), run_ids, (True, False, False)
+        ):
+            argv = [
+                "/tmp/fbf-author-venv/bin/python",
+                "paper_examples/cube-on-incline/run.py",
+                "--solvers",
+                solver,
+                "--mu",
+                "0.3",
+                "0.4",
+                "0.45",
+                "0.5",
+                "0.55",
+                "0.6",
+                "0.8",
+                "--device",
+                "cpu",
+            ]
+            if profile:
+                argv.append("--profile")
+            expected_runs.append(
+                {
+                    "argv": argv,
+                    "argv_provenance": (
+                        "operator_recorded_not_embedded_by_source_runner"
+                    ),
+                    "cwd": "/tmp/fbf-sca-2026-author",
+                    "device": "cpu",
+                    "profile_flag": profile,
+                    "run_id": run_id,
+                    "solver": solver,
+                    "timing_evidence_eligible": False,
+                }
+            )
+        _expect_fields(
+            manifest, {"runs": expected_runs}, f"{location}.manifest", errors
+        )
+
+        metrics = _object(
+            manifest.get("metrics"), f"{location}.manifest.metrics", errors
+        )
+        expected_per_mu = [
+            {
+                "configured_outer_gate_accepts": 114,
+                "converged_flags": 120,
+                "initial_natural_shortcut_accepts": 6,
+                "max_outer_iterations": 45,
+                "mu": 0.3,
+                "nonconverged_flags": 0,
+                "nonconverged_steps": [],
+                "outer_cap_hits": 0,
+                "true_flags_natural_residual_above_tolerance": 100,
+                "true_flags_natural_residual_at_or_below_tolerance": 20,
+            },
+            {
+                "configured_outer_gate_accepts": 120,
+                "converged_flags": 120,
+                "initial_natural_shortcut_accepts": 0,
+                "max_outer_iterations": 60,
+                "mu": 0.4,
+                "nonconverged_flags": 0,
+                "nonconverged_steps": [],
+                "outer_cap_hits": 0,
+                "true_flags_natural_residual_above_tolerance": 112,
+                "true_flags_natural_residual_at_or_below_tolerance": 8,
+            },
+            {
+                "configured_outer_gate_accepts": 110,
+                "converged_flags": 120,
+                "initial_natural_shortcut_accepts": 10,
+                "max_outer_iterations": 70,
+                "mu": 0.45,
+                "nonconverged_flags": 0,
+                "nonconverged_steps": [],
+                "outer_cap_hits": 0,
+                "true_flags_natural_residual_above_tolerance": 85,
+                "true_flags_natural_residual_at_or_below_tolerance": 35,
+            },
+            {
+                "configured_outer_gate_accepts": 107,
+                "converged_flags": 120,
+                "initial_natural_shortcut_accepts": 13,
+                "max_outer_iterations": 180,
+                "mu": 0.5,
+                "nonconverged_flags": 0,
+                "nonconverged_steps": [],
+                "outer_cap_hits": 0,
+                "true_flags_natural_residual_above_tolerance": 85,
+                "true_flags_natural_residual_at_or_below_tolerance": 35,
+            },
+            {
+                "configured_outer_gate_accepts": 55,
+                "converged_flags": 119,
+                "initial_natural_shortcut_accepts": 64,
+                "max_outer_iterations": 200,
+                "mu": 0.55,
+                "nonconverged_flags": 1,
+                "nonconverged_steps": [1],
+                "outer_cap_hits": 1,
+                "true_flags_natural_residual_above_tolerance": 0,
+                "true_flags_natural_residual_at_or_below_tolerance": 119,
+            },
+            {
+                "configured_outer_gate_accepts": 50,
+                "converged_flags": 120,
+                "initial_natural_shortcut_accepts": 70,
+                "max_outer_iterations": 130,
+                "mu": 0.6,
+                "nonconverged_flags": 0,
+                "nonconverged_steps": [],
+                "outer_cap_hits": 0,
+                "true_flags_natural_residual_above_tolerance": 0,
+                "true_flags_natural_residual_at_or_below_tolerance": 120,
+            },
+            {
+                "configured_outer_gate_accepts": 48,
+                "converged_flags": 120,
+                "initial_natural_shortcut_accepts": 72,
+                "max_outer_iterations": 180,
+                "mu": 0.8,
+                "nonconverged_flags": 0,
+                "nonconverged_steps": [],
+                "outer_cap_hits": 0,
+                "true_flags_natural_residual_above_tolerance": 1,
+                "true_flags_natural_residual_at_or_below_tolerance": 119,
+            },
+        ]
+        if metrics is not None:
+            _expect_exact_keys(
+                metrics,
+                {
+                    "cell_count",
+                    "contacts_per_step",
+                    "displacements_m",
+                    "fbf",
+                    "fbf_kamino_max_absolute_delta_m",
+                    "fbf_kamino_max_absolute_delta_mu",
+                    "fbf_mujoco_max_absolute_delta_m",
+                    "fbf_mujoco_max_absolute_delta_mu",
+                    "mu_values",
+                    "mujoco_displacement_monotone_nonincreasing",
+                    "steps_per_cell",
+                },
+                f"{location}.manifest.metrics",
+                errors,
+            )
+            _expect_fields(
+                metrics,
+                {
+                    "cell_count": 21,
+                    "contacts_per_step": 4,
+                    "mu_values": mu_values,
+                    "steps_per_cell": 120,
+                    "mujoco_displacement_monotone_nonincreasing": False,
+                    "fbf_kamino_max_absolute_delta_m": 9.86272277444535e-7,
+                    "fbf_kamino_max_absolute_delta_mu": 0.5,
+                    "fbf_mujoco_max_absolute_delta_m": 1.813103738533326,
+                    "fbf_mujoco_max_absolute_delta_mu": 0.55,
+                    "displacements_m": {
+                        "fbf": [
+                            3.5392831695743054,
+                            1.7698922978656797,
+                            0.8851976117115778,
+                            0.0005018926371855115,
+                            0.0004281487924409106,
+                            0.00035627086822120473,
+                            0.00006883913936487685,
+                        ],
+                        "mujoco": [
+                            3.5794330878127263,
+                            2.1118162364510042,
+                            1.8350010889171866,
+                            0.35929869745695187,
+                            1.8135318873257669,
+                            1.2524510782262557,
+                            0.18109838262409816,
+                        ],
+                        "kamino": [
+                            3.5392822099580354,
+                            1.7698918846975635,
+                            0.8851977916396285,
+                            0.0005009063649080669,
+                            0.0004281487924409106,
+                            0.0003563241802362017,
+                            0.00006887912337612457,
+                        ],
+                    },
+                },
+                f"{location}.manifest.metrics",
+                errors,
+            )
+            fbf = _object(
+                metrics.get("fbf"), f"{location}.manifest.metrics.fbf", errors
+            )
+            if fbf is not None:
+                expected_fbf = {
+                    "configured_outer_gate_accepts": 604,
+                    "contact_records": 3360,
+                    "converged_flags": 839,
+                    "history_steps": 840,
+                    "initial_natural_shortcut_accepts": 235,
+                    "nonconverged_flags": 1,
+                    "outer_cap_hits": 1,
+                    "per_mu": expected_per_mu,
+                    "true_flags_natural_residual_above_tolerance": 383,
+                    "true_flags_natural_residual_at_or_below_tolerance": 456,
+                }
+                _expect_exact_keys(
+                    fbf,
+                    set(expected_fbf),
+                    f"{location}.manifest.metrics.fbf",
+                    errors,
+                )
+                _expect_fields(
+                    fbf,
+                    expected_fbf,
+                    f"{location}.manifest.metrics.fbf",
+                    errors,
+                )
+
+        derived = manifest.get("derived_artifacts")
+        expected_derived = [
+            {
+                "bytes": AUTHOR_INCLINE_SWEEP_V1_SEALED_ARTIFACTS["comparison.csv"][1],
+                "path": "comparison.csv",
+                "sha256": AUTHOR_INCLINE_SWEEP_V1_SEALED_ARTIFACTS["comparison.csv"][0],
+            },
+            {
+                "bytes": AUTHOR_INCLINE_SWEEP_V1_SEALED_ARTIFACTS["comparison.svg"][1],
+                "path": "comparison.svg",
+                "sha256": AUTHOR_INCLINE_SWEEP_V1_SEALED_ARTIFACTS["comparison.svg"][0],
+            },
+            {
+                "bytes": AUTHOR_INCLINE_SWEEP_V1_SEALED_ARTIFACTS["REPORT.md"][1],
+                "path": "REPORT.md",
+                "sha256": AUTHOR_INCLINE_SWEEP_V1_SEALED_ARTIFACTS["REPORT.md"][0],
+            },
+        ]
+        if derived != expected_derived:
+            errors.append(
+                f"{location}.manifest.derived_artifacts: exact derived-artifact "
+                "contract changed"
+            )
+
+        retained = manifest.get("retained_source_artifacts")
+        expected_retained_paths = {
+            path for path in expected_files if path.startswith("runs/")
+        }
+        if not isinstance(retained, list) or len(retained) != 34:
+            errors.append(
+                f"{location}.manifest.retained_source_artifacts: expected 34 records"
+            )
+        else:
+            retained_paths: set[str] = set()
+            for index, record in enumerate(retained):
+                record_location = (
+                    f"{location}.manifest.retained_source_artifacts[{index}]"
+                )
+                if not isinstance(record, dict):
+                    errors.append(f"{record_location}: expected an object")
+                    continue
+                _expect_exact_keys(
+                    record,
+                    {
+                        "bundle_path",
+                        "compression",
+                        "source_bytes",
+                        "source_path",
+                        "source_sha256",
+                        "stored_bytes",
+                        "stored_sha256",
+                    },
+                    record_location,
+                    errors,
+                )
+                path = record.get("bundle_path")
+                if not isinstance(path, str):
+                    errors.append(f"{record_location}.bundle_path: expected a string")
+                    continue
+                retained_paths.add(path)
+                sealed = AUTHOR_INCLINE_SWEEP_V1_SEALED_ARTIFACTS.get(path)
+                if sealed is None:
+                    errors.append(f"{record_location}.bundle_path: unexpected {path!r}")
+                    continue
+                _expect_fields(
+                    record,
+                    {
+                        "compression": (
+                            "gzip-mtime0-level9" if path.endswith(".gz") else None
+                        ),
+                        "stored_bytes": sealed[1],
+                        "stored_sha256": sealed[0],
+                    },
+                    record_location,
+                    errors,
+                )
+            if retained_paths != expected_retained_paths:
+                errors.append(
+                    f"{location}.manifest.retained_source_artifacts: exact source "
+                    "membership changed"
+                )
+
+    if verification is not None:
+        expected_checks = [
+            "exact_bundle_membership",
+            "no_symlinks_or_nonregular_entries",
+            "source_identity_and_operator_recorded_invocations",
+            "all_21_result_cells_and_7_fbf_histories",
+            "four_contacts_for_all_840_fbf_steps",
+            "configured_coulomb_rel_distinct_from_natural_final_residual",
+            "sole_mu_0_55_step_1_configured_nonconvergence",
+            "deterministic_comparison_csv_svg_report",
+            "timing_and_all_parity_promotions_rejected",
+        ]
+        _expect_exact_keys(
+            verification,
+            {
+                "artifact_count",
+                "checks",
+                "finalizer_sha256",
+                "manifest_sha256",
+                "physical_file_count",
+                "schema_version",
+                "status",
+            },
+            f"{location}.verification",
+            errors,
+        )
+        _expect_fields(
+            verification,
+            {
+                "artifact_count": 37,
+                "checks": expected_checks,
+                "finalizer_sha256": hashes.get("finalizer"),
+                "manifest_sha256": AUTHOR_INCLINE_SWEEP_V1_SEALED_ARTIFACTS[
+                    "manifest.json"
+                ][0],
+                "physical_file_count": 39,
+                "schema_version": "dart.fbf_author_incline_sweep_validation/v1",
+                "status": "valid_current_source_scientific_negative",
+            },
+            f"{location}.verification",
+            errors,
+        )
+
+    result_relative = "runs/20260719T151337Z/mu0.5500_fbf/result.json"
+    result = _read_bundle_json(
+        bundle, result_relative, f"{location}.mu_0_55_result", errors
+    )
+    if result is not None:
+        _expect_fields(
+            result,
+            {"solver": "fbf", "mu": 0.55, "num_steps": 120},
+            f"{location}.mu_0_55_result",
+            errors,
+        )
+        config = _object(
+            result.get("config"), f"{location}.mu_0_55_result.config", errors
+        )
+        if config is not None:
+            _expect_fields(
+                config,
+                {
+                    "max_outer": 200,
+                    "termination_residual": "coulomb_rel",
+                    "termination_tol": 1.0e-6,
+                },
+                f"{location}.mu_0_55_result.config",
+                errors,
+            )
+        step_times = result.get("step_times_ms")
+        if not isinstance(step_times, list) or len(step_times) != 120:
+            errors.append(
+                f"{location}.mu_0_55_result.step_times_ms: expected 120 "
+                "diagnostic samples"
+            )
+
+    history_relative = "runs/20260719T151337Z/mu0.5500_fbf/history.json.gz"
+    history = _read_bundle_gzip_json(
+        bundle, history_relative, f"{location}.mu_0_55_history", errors
+    )
+    if history is not None:
+        _expect_exact_keys(
+            history,
+            {"meta", "steps"},
+            f"{location}.mu_0_55_history",
+            errors,
+        )
+        meta = _object(history.get("meta"), f"{location}.mu_0_55_history.meta", errors)
+        if meta is not None:
+            config = _object(
+                meta.get("config"),
+                f"{location}.mu_0_55_history.meta.config",
+                errors,
+            )
+            if config is not None:
+                _expect_fields(
+                    config,
+                    {
+                        "max_outer": 200,
+                        "termination_residual": "coulomb_rel",
+                        "termination_tol": 1.0e-6,
+                    },
+                    f"{location}.mu_0_55_history.meta.config",
+                    errors,
+                )
+        steps = history.get("steps")
+        if not isinstance(steps, list) or len(steps) != 120:
+            errors.append(f"{location}.mu_0_55_history.steps: expected 120 steps")
+        else:
+            contact_records = 0
+            configured_true = 0
+            nonconverged: list[dict[str, Any]] = []
+            for index, step in enumerate(steps):
+                step_location = f"{location}.mu_0_55_history.steps[{index}]"
+                if not isinstance(step, dict):
+                    errors.append(f"{step_location}: expected an object")
+                    continue
+                if step.get("step_idx") != index:
+                    errors.append(f"{step_location}.step_idx: expected {index}")
+                if step.get("num_contacts") != 4:
+                    errors.append(f"{step_location}.num_contacts: expected 4")
+                else:
+                    contact_records += 4
+                converged = step.get("converged")
+                if converged is True:
+                    configured_true += 1
+                elif converged is False:
+                    nonconverged.append(step)
+                else:
+                    errors.append(f"{step_location}.converged: expected a boolean")
+            if contact_records != 480:
+                errors.append(
+                    f"{location}.mu_0_55_history: expected 480 contact records"
+                )
+            if configured_true != 119:
+                errors.append(
+                    f"{location}.mu_0_55_history: expected 119 configured true flags"
+                )
+            if len(nonconverged) != 1:
+                errors.append(
+                    f"{location}.mu_0_55_history: expected one configured false flag"
+                )
+            else:
+                false_step = nonconverged[0]
+                _expect_fields(
+                    false_step,
+                    {
+                        "step_idx": 1,
+                        "num_contacts": 4,
+                        "converged": False,
+                        "outer_iters": 200,
+                        "final_residual": 3.273267262002487e-8,
+                    },
+                    f"{location}.mu_0_55_history.configured_false_step",
+                    errors,
+                )
+                outer = false_step.get("outer")
+                terminal = outer[-1] if isinstance(outer, list) and outer else None
+                _expect_fields(
+                    terminal,
+                    {
+                        "k": 199,
+                        "residual": 3.273267262002487e-8,
+                        "r_coulomb": 1.5311460572898186e-6,
+                    },
+                    f"{location}.mu_0_55_history.configured_false_step.terminal",
+                    errors,
+                )
+
+
 def _validate_author_masonry_arch_v1_truth(
     current_truth: dict[str, Any], repo_root: Path, errors: list[str]
 ) -> None:
@@ -15636,6 +16665,7 @@ def _validate_current_truth(value: Any, repo_root: Path, errors: list[str]) -> N
     _validate_cpu_evidence_truth(current_truth, repo_root, errors)
     _validate_current_small_cpu_truth(current_truth, repo_root, errors)
     _validate_author_card_house_v1_truth(current_truth, repo_root, errors)
+    _validate_author_incline_sweep_v1_truth(current_truth, repo_root, errors)
     _validate_author_masonry_arch_v1_truth(current_truth, repo_root, errors)
     _validate_backspin_v3_truth(current_truth, repo_root, errors)
     _validate_turntable_v1_truth(current_truth, repo_root, errors)
@@ -15892,6 +16922,89 @@ def _validate_author_masonry_arch_requirement_boundaries(
             and (
                 item["path"] == AUTHOR_MASONRY_ARCH_V1_BUNDLE
                 or item["path"].startswith(f"{AUTHOR_MASONRY_ARCH_V1_BUNDLE}/")
+            )
+        ]
+        if promoted:
+            errors.append(
+                f"{location}.deliverables: scientific-negative bundle cannot be "
+                f"promoted as a canonical deliverable: {promoted}"
+            )
+
+
+def _validate_author_incline_sweep_requirement_boundaries(
+    by_id: dict[str, dict[str, Any]], errors: list[str]
+) -> None:
+    report_path = f"{AUTHOR_INCLINE_SWEEP_V1_BUNDLE}/REPORT.md"
+    verification_command = (
+        "python3 scripts/finalize_fbf_author_incline_reference.py --verify-only"
+    )
+    for requirement_id in ("fig.01", "fig.02", "video.03_incline"):
+        requirement = by_id.get(requirement_id)
+        if not isinstance(requirement, dict):
+            continue
+        location = f"{requirement_id}.author_incline_sweep_current_boundary"
+        if requirement.get("status") != "partial":
+            errors.append(f"{location}.status: expected 'partial'")
+
+        evidence = requirement.get("current_evidence")
+        evidence_by_path = (
+            {
+                item.get("path"): item
+                for item in evidence
+                if isinstance(item, dict) and isinstance(item.get("path"), str)
+            }
+            if isinstance(evidence, list)
+            else {}
+        )
+        report = evidence_by_path.get(report_path)
+        if not isinstance(report, dict):
+            errors.append(
+                f"{location}.current_evidence: missing scientific-negative "
+                f"evidence {report_path!r}"
+            )
+        else:
+            support = report.get("supports", "")
+            support = support.lower() if isinstance(support, str) else ""
+            for phrase in (
+                "seven",
+                "four contacts",
+                "119/120",
+                "coulomb_rel",
+                "final_residual",
+                "diagnostic only",
+                "parity",
+            ):
+                if phrase not in support:
+                    errors.append(
+                        f"{location}.current_evidence: report support must retain "
+                        f"scientific-negative boundary {phrase!r}"
+                    )
+
+        capture_plan = requirement.get("capture_plan")
+        command_lists = [requirement.get("commands")]
+        if isinstance(capture_plan, dict):
+            command_lists.append(capture_plan.get("commands"))
+        commands = {
+            command
+            for command_list in command_lists
+            if isinstance(command_list, list)
+            for command in command_list
+            if isinstance(command, str)
+        }
+        if verification_command not in commands:
+            errors.append(f"{location}.commands: missing bundle verification command")
+
+        deliverables = requirement.get("deliverables")
+        if not isinstance(deliverables, list):
+            continue
+        promoted = [
+            item.get("path")
+            for item in deliverables
+            if isinstance(item, dict)
+            and isinstance(item.get("path"), str)
+            and (
+                item["path"] == AUTHOR_INCLINE_SWEEP_V1_BUNDLE
+                or item["path"].startswith(f"{AUTHOR_INCLINE_SWEEP_V1_BUNDLE}/")
             )
         ]
         if promoted:
@@ -16702,6 +17815,10 @@ def _validate_manifest_impl(data: Any, repo_root: Path = REPO_ROOT) -> list[str]
         "author_masonry_arch_reference_v1" in current_truth
     ):
         _validate_author_masonry_arch_requirement_boundaries(by_id, errors)
+    if isinstance(current_truth, dict) and (
+        "author_incline_sweep_reference_v1" in current_truth
+    ):
+        _validate_author_incline_sweep_requirement_boundaries(by_id, errors)
 
     for requirement_id, expected_range in VIDEO_SEGMENTS.items():
         requirement = by_id.get(requirement_id)

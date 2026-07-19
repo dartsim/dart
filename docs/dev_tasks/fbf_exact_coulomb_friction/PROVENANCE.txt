@@ -3,6 +3,7 @@ FBF exact-Coulomb paper-parity provenance
 
 Original paper/media snapshot date: 2026-07-12
 Public-source availability addendum: 2026-07-18
+Current-source incline sweep addendum: 2026-07-19
 Task home: docs/dev_tasks/fbf_exact_coulomb_friction/
 
 1. Paper and project page
@@ -847,6 +848,47 @@ substeps and establishes no release, standing, trajectory, solver behavior,
 contact dynamics, physical outcome, historical four-level/26-card trajectory,
 Fig. 6 or video parity, source-renderer color parity, paper timing, or
 performance claim.
+
+7l. Public-author incline sweep reference
+-------------------------------------------
+
+The numeric current-source packet is:
+
+docs/dev_tasks/fbf_exact_coulomb_friction/assets/paper_evidence/
+author_incline_sweep_reference_v1/
+
+It pins public author commit
+b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0 and preserves three independent
+CPU invocations of paper_examples/cube-on-incline/run.py. FBF run
+20260719T151337Z, MuJoCo run 20260719T151857Z, and Kamino run
+20260719T152022Z each use the exact grid mu=0.3,0.4,0.45,0.5,0.55,0.6,0.8,
+120 steps per cell, and four contacts per step. Each lane therefore contains
+seven cells and 840 emitted rows. The FBF invocation includes --profile; the
+other two are independent solver-specific invocations. All use --device cpu.
+
+FBF records 839/840 configured convergence flags. The mu=0.55 cell is
+119/120: step 1 is the sole false flag after the 200-outer cap. Of the 839
+true flags, 235 use the initial natural-residual shortcut and 604 use the
+configured outer nonnegative coulomb_rel < 1e-6 gate. The projected natural
+final_residual is separate: 456 configured-true rows are <=1e-6 and 383 are
+>1e-6. The configured-false row has natural residual
+3.273267262002487e-8 but configured terminal
+r_coulomb=1.5311460572898186e-6. Neither residual may be substituted for the
+other convergence predicate.
+
+The normalized displacement projection places FBF and Kamino close while the
+current MuJoCo curve is nonmonotone. This is an observation about the current
+public runner, not full-state equivalence or cross-solver parity. First-use
+JIT, always-on history collection, ineffective warmup exclusion, and
+lane-dependent timer boundaries make every timing value diagnostic-only.
+The packet is numeric scientific-negative/reference evidence, not a
+historical paper run, DART/source trajectory match, approved golden, media,
+timing, performance, or parity result. It does not add to the six finalized
+visual bundles; Fig. 1, Fig. 2, and video.03 remain partial.
+
+Verify the packet without rewriting it:
+
+python3 scripts/finalize_fbf_author_incline_reference.py --verify-only
 
 8. Integrity rule
 ------------------

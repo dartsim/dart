@@ -25,6 +25,12 @@ bundles, and the visual workflow declares 17 schedules.
   is scientific-negative evidence, not a historical paper invocation or a
   DART-parity result. The source default is 400 frames with release also at
   frame 400, so it never releases the cubes.
+- The numeric `author_incline_sweep_reference_v1` packet preserves independent
+  current-source FBF, MuJoCo, and Kamino CPU runs on the full Figure 1 grid
+  `mu=.3,.4,.45,.5,.55,.6,.8`. Each lane contains seven 120-step cells with
+  four contacts per step. This is source-run scientific-negative/reference
+  evidence, not historical, DART-matched, golden, media, timing, performance,
+  or parity evidence; the visual bundle count remains six.
 - The repository does not contain the historical paper renderer
   cameras/materials/goldens, exact Apple-silicon model, or original timing-run
   and warmup/aggregation attestation. Only masonry-arch meshes are shipped.
@@ -34,6 +40,24 @@ bundles, and the visual workflow declares 17 schedules.
 
 Therefore every paper timing verdict is null. A raw time below a source table
 value would not be an apples-to-apples result.
+
+The author incline packet records 839/840 configured FBF convergence flags;
+`mu=.55` is 119/120, with step 1 false at the 200-outer cap. Of the 839 true
+flags, 235 use the initial natural-residual shortcut and 604 use the
+configured outer nonnegative `coulomb_rel < 1e-6` gate. Natural
+`final_residual` is separate: 456 configured-true rows are at or below
+`1e-6`, 383 configured-true rows are above it, and the sole configured-false
+row has natural residual `3.273267262002487e-8` but terminal
+`r_coulomb=1.5311460572898186e-6`. The close FBF/Kamino displacement
+projection and nonmonotone current MuJoCo projection are observations, not
+full-state equivalence. First-use JIT, history collection, warmup handling,
+and timer-boundary differences exclude every timing field.
+
+Verify the packet without rewriting it:
+
+```bash
+python3 scripts/finalize_fbf_author_incline_reference.py --verify-only
+```
 
 ## Evidence Predicates
 
@@ -192,7 +216,7 @@ colored-inner-BGS contract validated above.
 
 | ID | Paper fixture/result | Current evidence | Current status and missing proof |
 | --- | --- | --- | --- |
-| Fig. 1/2 | Incline `mu=0.4` slides and `mu=0.5` sticks | Finalized 21-indexed/23-physical current-source bundle with five durable stills, a 61-frame decoded schedule, two independent 121-row traces, bound manual inspection, and aggregate exact-solve/fallback projection equivalence | Partial: DART threshold separation passes, but capture contacts 8 do not match aggregate trace contacts 6; the separate strict `mu=.5` row still has three accepted caps at residual `1.439e-6`, and full sweep/external/golden/paper-contact/timing/real-time proof remains missing |
+| Fig. 1/2 | Incline `mu=0.4` slides and `mu=0.5` sticks | Finalized 21-indexed/23-physical DART visual/trace bundle plus numeric author-pinned FBF/MuJoCo/Kamino runs over `mu=.3,.4,.45,.5,.55,.6,.8` | Partial: DART threshold separation passes, but capture contacts 8 do not match aggregate trace contacts 6; author FBF has 839/840 configured convergence flags, the separate strict DART `mu=.5` row has three accepted caps, and matched DART/full-state external/golden/paper-contact/history/timing/real-time proof remains missing |
 | Fig. 3 | Backspin sphere reverses toward analytical terminal state | Finalized `fig03_backspin_current_v3` trace, high-contrast 6x4 checker-textured panel, MP4/GIF, exact-membership index, and manual inspection | Partial: translational advance/reversal plus checker-texture and coral-registration-tile legibility pass for the DART reconstruction; signed angular direction, continuous contact, rest, landing, full-state trace equivalence, and external/paper/golden/timing/real-time parity remain unproven |
 | Fig. 4 | Four author-configured turntable cells classify finite-horizon support retention/ejection | Finalized author-pinned 58-indexed/60-physical four-cell repository bundle with four outcome stills, synchronized media, manual inspection, and separate visual/strict lanes | Partial: the current visual lane proves three ejections and `mu=.5, omega=2` retained through 6 s; it does not prove zero slip/co-rotation, full-state equivalence, approved-golden parity, paper timing, real-time performance, or behavior beyond 6 s, while the separate strict lane fails that retained cell at step 40 |
 | Fig. 5 | Painleve coefficients produce distinct slide/tumble outcomes | Finalized 27-indexed/29-physical DART-only paired proxy clip/panel plus separate tracked traces and manual inspection | Local proxy outcome only; the author geometry/configuration is public, but the rendered demo and trace are not source-matched or equivalent, faithful external/golden proof is missing, and historical paper timing is unattested |
@@ -492,8 +516,9 @@ No local row may be labeled as meeting or beating these targets.
 The last recorded focused gates report 47/47 exact-math tests, 25/25 exact
 constraint-solver tests, 64/64 `ConstraintSolver` tests, 42/42 Native-collision
 tests, 3/3 masonry-geometry tests, 19 passing paper fixtures with 3 skipped,
-9/9 focused CTests in both Release and Debug, 715/715 focused
-manifest/backspin/incline/author-masonry evidence tests, and 1,555/1,555 full
+9/9 focused CTests in both Release and Debug, 12/12 author-incline finalizer
+tests, 777/777 focused manifest/backspin/incline/author-masonry/author-incline
+evidence tests, and 1,555/1,555 full
 no-cache dartpy Python tests. A clean-checkout finalized-incline verify-only pass also
 succeeds with 21 indexed artifacts and no ignored staging dependency, its
 focused finalizer suite passes 62/62, and 1,000
