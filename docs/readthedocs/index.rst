@@ -36,7 +36,7 @@ Articulated Body Algorithm to compute motion dynamics.
 Updates
 -------
 
-* 2026-06-27: DART version 6.19.3 released. See the
+* 2026-07-18: DART version 6.19.4 released. See the
   `CHANGELOG <https://github.com/dartsim/dart/blob/release-6.20/CHANGELOG.md>`_.
 * DART 6.20.0 is in progress on the
   `release-6.20 branch <https://github.com/dartsim/dart/tree/release-6.20>`_.

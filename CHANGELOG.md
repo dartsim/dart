@@ -626,9 +626,9 @@
 
 * Tests
 
-  * Force the ASan build to run without OpenSceneGraph and require
-    exact-candidate optional-dependency and Gazebo integration evidence before
-    DART 6 patch releases:
+  * Force the ASan and required assertions-enabled builds to run without
+    OpenSceneGraph, and require exact-candidate optional-dependency and Gazebo
+    integration evidence before DART 6 releases:
     [#3393](https://github.com/dartsim/dart/pull/3393)
 
   * Preserve every protected `release-*` post-merge CI run by giving
