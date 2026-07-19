@@ -2,7 +2,7 @@
 
 ## Current Checkpoint
 
-This task is active and incomplete as of 2026-07-18. Start with
+This task is active and incomplete as of 2026-07-19. Start with
 [AGENT_CONTINUATION.md](AGENT_CONTINUATION.md); it is the authoritative truth
 ledger.
 
@@ -17,9 +17,10 @@ Do not retire the task folder. Do not commit, push, update a PR, rerun remote
 CI, or mutate GitHub without explicit user approval. Never add AI or tool
 attribution to a commit or PR.
 
-The newest finalized addition is the current-source Fig. 1/2 and video.03
-incline bundle. It raises the finalized visual inventory from four to five but
-does not change the overall 29-row audit: 24 partial, 5 blocked, 0 complete.
+The newest sealed scientific addition is the pinned-author masonry-arch
+negative. It records a 500-frame author run but proves neither all-substep
+solver success nor DART parity. It does not change the overall 29-row audit:
+24 partial, 5 blocked, 0 complete.
 
 ## Read First
 
@@ -32,17 +33,17 @@ does not change the overall 29-row audit: 24 partial, 5 blocked, 0 complete.
 7. `docs/dev_tasks/fbf_exact_coulomb_friction/residual-history-report.md`
 8. `docs/dev_tasks/fbf_exact_coulomb_friction/paper-evidence-manifest.json`
 
-Preserve the broad dirty worktree. The last recorded local state was:
+Inspect and preserve any existing worktree changes. The durable branch state is:
 
 ```text
 branch: research/fbf-friction-release620
-HEAD: 2ddd9f56a454
-origin/release-6.20: 75306efe770
-divergence observed 2026-07-18: 34 topic-only, 5 target-only commits
+target synchronization verified through: 75306efe770
+topic HEAD/divergence/PR/CI/review state: verify live
 ```
 
-Recheck before acting. Do not assume a clean branch or silently switch
-checkouts.
+Run `git fetch origin`, verify `origin/release-6.20` is an ancestor of the
+topic, and query PR #3377 before reporting mutable state. Do not assume a clean
+branch or silently switch checkouts.
 
 ## Source And Historical Comparison Boundary
 
@@ -428,6 +429,35 @@ standing, trajectory, solver, contact-dynamics, physical-outcome, historical
 four-level/26-card trajectory, Fig. 6/video, timing, performance, or parity
 claim.
 
+### Pinned-Author Masonry-Arch Scientific Negative
+
+Preserve
+[`assets/paper_evidence/author_masonry_arch_reference_v1/`](assets/paper_evidence/author_masonry_arch_reference_v1/).
+The pinned author run uses 500 frames, four substeps per frame, and releases
+three cubes at frame 400 / substep 1,600. The source default is 400 frames with
+`drop_frame=400`, which never releases the cubes; this is a newly declared
+current-source diagnostic, not a historical or paper invocation.
+
+A deterministic projection represents every one of the 2,000 substeps and is
+lossless with respect to the declared claim fields. The 382,753,953-byte raw
+source history (SHA-256 `cec0e4b86837e7542c498c7ddad40538983ec023332b88ebddee7766997e3ac1`)
+is size/hash-bound but omitted. In the projection, 40 author convergence flags
+are true through the initial natural-residual shortcut, 117 are true through
+the configured outer nonnegative `coulomb_rel < 1e-6` gate, and 1,843 outer
+solves are false. The separate `final_residual` field is a natural residual;
+only 47 values are at or below `1e-6`. Release substep 1,600 is
+nonconverged with 100 contacts and natural residual
+`0.017456069692858667`; final substep 1,999 is nonconverged with 108 contacts
+and residual `0.5161195175386001`. Contact-count growth after release is not
+pair-identified contact evidence because the projection contains no pair
+identities.
+
+Exit zero proves only that the author diagnostic completed and its artifacts
+were preserved. The DART shared spec is configuration-only and executes no
+dynamics; source collision/contact-gap/backend/float32 semantics are not
+implemented. Do not infer DART or cross-solver dynamics, trajectory, outcome,
+Fig. 7/video.07, timing, repeatability, contact-pair, or media parity.
+
 The separate frozen crown-impact v1 contract and result are in
 [LITERAL_CROWN_IMPACT_V1.md](LITERAL_CROWN_IMPACT_V1.md) and
 [`assets/paper_evidence/fig07_arch25_literal_impact_v1_negative_final_v9/`](assets/paper_evidence/fig07_arch25_literal_impact_v1_negative_final_v9/).
@@ -543,6 +573,10 @@ fail-closed negative, repository-archived at
 - The reconstructed impact-v1 numeric trajectory is complete only as a
   preregistered negative. A passing source-equivalent impact outcome and
   inspected impact media remain missing; do not tune or relabel v1.
+- The pinned-author masonry-arch run is complete only as a current-source
+  scientific negative. A source-equivalent DART dynamics port and matched
+  trajectory/outcome remain missing; the configuration-only spec is not that
+  port.
 - The 101-stone exact-inertia reconstruction is precisely blocked at step 1;
   a source-pinned DART scene and matched trajectory, valid
   long-run/media/external baselines, the 10-level card house, remaining smaller
@@ -561,11 +595,14 @@ fail-closed negative, repository-archived at
   the current bundle indexes, binds process/taskset/topology/residency and
   archived-prior-source provenance, recomputes CPU claims from raw rows, and
   rejects promotion-boundary drift.
-- Final local validation completed the integrated 17-file evidence suite with
-  638 passed in 81.95 s. After the behavior-neutral finalizer isort
-  correction, focused finalizer tests had 9 passed in 0.04 s, Painleve
-  verify-only and the manifest validator both passed; the latter covered all
-  29 canonical requirements with the intentional overall status `partial`. A
+- Final local validation completed the focused
+  manifest/backspin/incline/author-masonry suite with 715 passed in 149.88 s
+  and the full no-cache dartpy suite with 1,555 passed in 165.09 s. The author
+  masonry-arch focused CTest passed 1/1, all four current sealed bundles passed
+  verify-only, and the manifest validator covered all 29 canonical
+  requirements with intentional status `partial`. Live mode performed 102
+  file-identity rechecks with none skipped; explicit archive mode reported all
+  102 as skipped. A
   final full build/test closeout, two clean independent final-state reviews,
   current-head PR wording, and CI remain pending.
 
@@ -602,8 +639,12 @@ explicit DART reconstruction choices, not author parameters.
 - literal 101-stone trace/probe/runner tests: 35/35;
 - finalized incline finalizer unit tests: 62/62; clean-checkout verify-only
   passes with 21 indexed artifacts and no ignored staging dependency;
-- integrated 17-file CPU/visual/impact/101/card/manifest/publication evidence
-  suite: 638 passed in 81.95 s; and
+- focused manifest/backspin/incline/author-masonry evidence suite: 715 passed
+  in 149.88 s;
+- full no-cache dartpy Python suite: 1,555 passed in 165.09 s;
+- author masonry-arch C++ specification: 1/1 focused CTest passed;
+- manifest live mode: 102 file-identity rechecks, zero skipped; explicit
+  archive mode: zero live rechecks, 102 skipped; and
 - deterministic colored-scheduler stress: 1,000 runs passed.
 
 ## Immediate Work Order

@@ -1,0 +1,29 @@
+{
+  "artifact_count": 7,
+  "artifact_index_sha256": "247b4dab371ad5c52c5a7018304051cbf19340bf15cf88447fac35c70178c055",
+  "checks": [
+    "exact_bundle_membership",
+    "no_symlinks_or_nonregular_entries",
+    "raw_source_history_hash_and_size_bound",
+    "single_member_deterministic_gzip",
+    "bounded_streaming_claim_projection_validation",
+    "claim_projection_exact_field_boundary",
+    "bounded_pickle_disabled_npz_validation",
+    "result_trajectory_metric_recomputation",
+    "author_convergence_and_natural_residual_semantics_separated",
+    "fail_closed_claim_boundary",
+    "artifact_index_current",
+    "no_reserved_transient_directories"
+  ],
+  "finalizer": {
+    "path": "scripts/finalize_fbf_author_masonry_arch_reference.py",
+    "sha256": "1a753153a1d4211168eda0d2d6c749649b7f67963ee65fb061f502a3e0a7b538"
+  },
+  "manifest_sha256": "ed07589a19f13d0266a396b19f78c6302b862e2634115748e1c969335a384a50",
+  "pass": true,
+  "schema_version": "dart.fbf_author_masonry_arch_reference_validation/v1",
+  "source_commit": "b3f3c5ca646b39a1bc4fbd8c3ebfb6810fee4bd0",
+  "status": "valid_current_source_scientific_negative",
+  "stored_bytes": 8117829,
+  "summary_sha256": "5395c7e24203ed7c163700399db7b4514a5059712b441accd8be8b438dc1af55"
+}

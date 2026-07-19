@@ -21,7 +21,7 @@
   "capture_returncode": 0,
   "capture_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "capture_stdout_ends_with_run_summary": true,
-  "capture_stdout_sha256": "1b1ecb280ba09193a2b20a8f51dc2f73a8395215078881b8dbe16daabed804b5",
+  "capture_stdout_sha256": "052a9e480a702f47784c4b90c8d651f845be954716c4879f2004bcbe4cd0f604",
   "contract_path": "contract.json",
   "contract_payload_sha256_after": "8cd9e29c52f840705bbb111b932a32a717d840a84340ffb4124a5383b332044c",
   "contract_payload_sha256_before": "8cd9e29c52f840705bbb111b932a32a717d840a84340ffb4124a5383b332044c",
@@ -38,9 +38,9 @@
   "contract_stdout_sha256_after": "bf9db1bb2ad3db1721c6e7ee8c86c4762cacc4094dcadf27e16875a288a0b4ad",
   "contract_stdout_sha256_before": "bf9db1bb2ad3db1721c6e7ee8c86c4762cacc4094dcadf27e16875a288a0b4ad",
   "durable_still_path": "card_house_author_5_construction/construction-step-0.png",
-  "durable_still_sha256": "7b7000307da9a467b3b6d28d627f75897a17de8d6ee3f9192183d4bcf47f3a16",
+  "durable_still_sha256": "9f4b1c3540418390fb934b30e0a57820146343566dd96092bd9c9d8e5e262e6f",
   "run_summary_path": "run-summary.json",
-  "run_summary_sha256": "ccce4b213181682893a913a75cfcd36723537a89c1308e3729fa05012ecd73bc",
+  "run_summary_sha256": "a467aea6f57ae5c5398bfb3e2916f15ea95490076bf33e83e34ca8f509a49d15",
   "run_summary_validated": true,
   "source_identity_after": {
     "configuration_spec": {
@@ -121,7 +121,7 @@
     },
     "fixture_cmake": {
       "path": "/home/js/dev/dartsim/dart/task_6/tests/integration/CMakeLists.txt",
-      "sha256": "846ddae3a1f9dd86f4fd5c0e4e6ce0d817f5f2536612e94f42f1b0c550d229d5"
+      "sha256": "a1df97f5c2ab1f2132cdeafab733edab9632919040c74511f6fc468990f76a38"
     },
     "fixture_test": {
       "path": "/home/js/dev/dartsim/dart/task_6/tests/integration/test_ExactCoulombFbfPaperFixtures.cpp",
@@ -239,7 +239,7 @@
     },
     "fixture_cmake": {
       "path": "/home/js/dev/dartsim/dart/task_6/tests/integration/CMakeLists.txt",
-      "sha256": "846ddae3a1f9dd86f4fd5c0e4e6ce0d817f5f2536612e94f42f1b0c550d229d5"
+      "sha256": "a1df97f5c2ab1f2132cdeafab733edab9632919040c74511f6fc468990f76a38"
     },
     "fixture_test": {
       "path": "/home/js/dev/dartsim/dart/task_6/tests/integration/test_ExactCoulombFbfPaperFixtures.cpp",
@@ -295,9 +295,9 @@
     "/home/js/dev/dartsim/dart/task_6/.pixi/envs/gazebo/bin/ffprobe"
   ],
   "verification_path": "verification.json",
-  "verification_payload_sha256": "30431e5fcee64d68155d8e90a3726fb8652def5f42a1e0848f1ea05fcc190bb9",
+  "verification_payload_sha256": "ad05e9ec445dff9d23583e60a1dc5fa9fcf6bcad8325dc506d1e6629311cbb27",
   "verification_returncode": 0,
-  "verification_sha256": "c9135a6360e8703dfe1a586defcbc52b36f1c90db7c90d35fee08676aeeb0394",
+  "verification_sha256": "dc3b1f101012075cbb81458cd4f5698a65169eb21a7aebe7490bda8c753b5838",
   "verification_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "verification_stdout_sha256": "c9135a6360e8703dfe1a586defcbc52b36f1c90db7c90d35fee08676aeeb0394"
+  "verification_stdout_sha256": "dc3b1f101012075cbb81458cd4f5698a65169eb21a7aebe7490bda8c753b5838"
 }

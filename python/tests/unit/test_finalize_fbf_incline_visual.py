@@ -14,6 +14,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / "scripts/finalize_fbf_incline_visual.py"
+TEST_EXECUTABLE = Path(sys.executable).resolve()
 
 
 def _load_module():
@@ -577,7 +578,7 @@ def test_sealed_capture_provenance_binds_pruned_staging_and_stills(
             path.write_bytes(relative.encode())
     manifest = module._build_staging_manifest(tmp_path)
     staging = {item["path"]: item for item in manifest["artifacts"]}
-    executable = Path("/bin/true")
+    executable = TEST_EXECUTABLE
     payload = {
         "argv": module._capture_argv(
             executable,
@@ -907,7 +908,7 @@ def test_capture_provenance_binds_source_and_all_runtime_inputs(tmp_path, monkey
         encoding="utf-8",
     )
     (bundle / "capture.stderr.txt").write_text("", encoding="utf-8")
-    executable = Path("/bin/true")
+    executable = TEST_EXECUTABLE
     identity = module._capture_runtime_identity(
         python=executable,
         runner=executable,
@@ -1021,7 +1022,7 @@ def test_source_identity_binds_finalizer_tests_sources_and_binaries(monkeypatch)
         "_binary_source_binding_identity",
         lambda **kwargs: copy.deepcopy(binary_source_bindings),
     )
-    executable = Path("/bin/true")
+    executable = TEST_EXECUTABLE
     sources = module._source_identity(
         trace_binary=executable,
         demo=executable,

@@ -83,12 +83,10 @@ docs/python_api/_build/
 # Data files
 data/screencap/*
 !data/screencap/.KEEP
-*.ppm
-# Repository source textures under data/obj are durable inputs, not captures.
-!/data/obj/**/*.ppm
 
 # Headless rendering artifacts
 /*.png
+/*.ppm
 headless_frames*/
 rigid_frames/
 
@@ -152,7 +150,6 @@ compile_flags.txt
 .omc/
 .omo/
 .omx/
-.omo/
 .sisyphus/
 
 # AI agent project files

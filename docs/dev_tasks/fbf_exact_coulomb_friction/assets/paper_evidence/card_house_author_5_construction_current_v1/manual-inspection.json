@@ -5,7 +5,7 @@
     {
       "observation": "The full DART view shows five stacked card-house levels and four suspended cubes at frame 0 and time 0.00 s; the construction is fully inside the viewport.",
       "path": "card_house_author_5_construction/construction-step-0.png",
-      "sha256": "7b7000307da9a467b3b6d28d627f75897a17de8d6ee3f9192183d4bcf47f3a16"
+      "sha256": "9f4b1c3540418390fb934b30e0a57820146343566dd96092bd9c9d8e5e262e6f"
     },
     {
       "observation": "The cropped configuration-only panel clearly shows all five levels and all four cubes, and its substep-0 label preserves the no-trajectory boundary.",

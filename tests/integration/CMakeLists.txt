@@ -46,6 +46,10 @@ set(
   fbf_author_card_house_spec_source
   "${DART_SOURCE_DIR}/examples/demos/scenes/FbfAuthorCardHouseSpec.hpp"
 )
+set(
+  fbf_author_masonry_arch_spec_source
+  "${DART_SOURCE_DIR}/examples/demos/scenes/FbfAuthorMasonryArchSpec.hpp"
+)
 set_property(
   DIRECTORY
   APPEND
@@ -53,6 +57,7 @@ set_property(
     CMAKE_CONFIGURE_DEPENDS
       "${fbf_author_turntable_spec_source}"
       "${fbf_author_card_house_spec_source}"
+      "${fbf_author_masonry_arch_spec_source}"
 )
 file(
   SHA256 "${fbf_author_turntable_spec_source}"
@@ -62,12 +67,22 @@ file(
   SHA256 "${fbf_author_card_house_spec_source}"
   fbf_author_card_house_spec_sha256
 )
+file(
+  SHA256 "${fbf_author_masonry_arch_spec_source}"
+  fbf_author_masonry_arch_spec_sha256
+)
 dart_add_test("integration" test_ExactCoulombFbfPaperFixtures)
 target_compile_definitions(
   test_ExactCoulombFbfPaperFixtures
   PRIVATE
     DART_FBF_AUTHOR_TURNTABLE_SPEC_SHA256="${fbf_author_turntable_spec_sha256}"
     DART_FBF_AUTHOR_CARD_HOUSE_SPEC_SHA256="${fbf_author_card_house_spec_sha256}"
+)
+dart_add_test("integration" test_FbfAuthorMasonryArchSpec)
+target_compile_definitions(
+  test_FbfAuthorMasonryArchSpec
+  PRIVATE
+    DART_FBF_AUTHOR_MASONRY_ARCH_SPEC_SHA256="${fbf_author_masonry_arch_spec_sha256}"
 )
 dart_add_test("integration" test_ContactConstraint)
 dart_add_test("integration" test_SplitImpulse)
