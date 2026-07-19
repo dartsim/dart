@@ -13,32 +13,37 @@ published real-time or near-real-time targets from the reference papers on CPU.
 
 The representative release slice is open as
 [#3382](https://github.com/dartsim/dart/pull/3382), from
-`wp-db-native-soft-fallback` into `release-6.20`. The pre-follow-up published PR
-head is `b172b2ee1db`; it has a clean current-head Codex review and no unresolved
-review threads. At that head, 21 checks passed, one was skipped, and Windows
-Release was the only failure. Codecov passed: patch coverage was `94.34783%`
-with 143 uncovered changed lines, while project coverage was `75.17%` versus
-`73.90%` (reported as `+1.26` percentage points).
+`wp-db-native-soft-fallback` into `release-6.20`. Published head `05d9de6e3fb`
+contains the base merge, Windows calibration, and evidence refresh. Its fresh
+Codex review identified an inherited but real ABI regression in
+`DARTCollisionDetector`; local commit `9a6796596bc` addresses it. At the last
+refresh, API docs, Windows Release, gz-physics, AVX, and both Read the Docs
+checks had passed on `05d9de6e3fb`; additional hosted matrix jobs were still
+running or queued, with no CI failure reported.
 
-The local publication candidate includes test calibration `50a254e7e56` and
-merges `origin/release-6.20@75306efe770` at `834a2548fd9`; the merge applied
-cleanly.
+The local publication candidate includes test calibration `50a254e7e56`, ABI
+repair `9a6796596bc`, and the clean merge of
+`origin/release-6.20@75306efe770` at `834a2548fd9`.
 
-The only product signal from the published-head suite was a Windows failure in
-`SoftDynamicsTest.restingSoftContactForceAndCenterOfPressureAreSmooth`: legacy
-FCL's `default adaptive` lane measured `0.12115883267368355` m maximum per-step
-center-of-pressure displacement against the former `0.11` m bound. The
+The only product signal from the earlier `b172b2ee1db` suite was a Windows
+failure in `SoftDynamicsTest.restingSoftContactForceAndCenterOfPressureAreSmooth`:
+legacy FCL's `default adaptive` lane measured `0.12115883267368355` m maximum
+per-step center-of-pressure displacement against the former `0.11` m bound. The
 test-only calibration raises that legacy-FCL bound to `0.13` m, just above one
 `0.125` m surface-mesh interval, while retaining the native `0.02` m bound and
 all force, support, spike, finite-state, and per-step guards.
 
-The candidate passes 20/20 focused repeats, the complete 25/25
-`test_SoftDynamics` binary, a 292/292 no-cache Release build, the full 154/154
-C++ suite, gz-physics 199/199 functional and 4/4 performance checks, gz-sim's
-1/1 source-built-DART integration test, lint, `git diff --check`, and two clean
-independent reviews. The test calibration changes no runtime behavior, API,
-ABI, or default simulation semantics. Exact new-head hosted CI remains required
-after publication.
+The calibrated runtime candidate passes 20/20 focused repeats, the complete
+25/25 `test_SoftDynamics` binary, a 292/292 no-cache Release build, the full
+154/154 C++ suite, gz-physics 199/199 functional and 4/4 performance checks,
+and gz-sim's 1/1 source-built-DART integration test. The ABI follow-up passes a
+fresh no-cache focused build, 22/22 detector tests, 52/52 collision integration
+tests, 4/4 derived-detector tests, a 20/20 exact-v6.19.4-header ABI canary, lint,
+`git diff --check`, and two clean independent reviews. The canary reports both
+legacy and current detector size as 32 bytes and verifies thread/soft-option
+configuration, cloning, and active-pool destruction without corrupting a
+legacy-layout derived object. Exact new-head hosted CI remains required after
+publication.
 
 No valid final paired timing artifact exists: every attempted directory lacks
 `COMPLETE.json` because this shared host never passed the runner's admission
@@ -222,7 +227,7 @@ below.
 | Packet | Current disposition | Acceptance evidence |
 | --- | --- | --- |
 | WP-DB.01 baseline harness | Complete. | Headless benchmark rows cover representative soft scenes, point-mass/body counts, and thread settings (`01-baseline-evidence.md`). |
-| WP-DB.02 stability gate | Implemented for the release slice; exact-head Windows confirmation pending. | Finite-state, thread-determinism, energy, contact-force/CoP smoothness, LCP robustness, and equation gates run in `test_SoftDynamics`. Commit `50a254e7e56` calibrates only the legacy-FCL CoP bound to just above one `0.125` m scene mesh interval; native and all other guards remain unchanged (`03-stability-gate.md`, `07-equation-correctness.md`, `verification.md`). |
+| WP-DB.02 stability gate | Implemented for the release slice; Windows confirmed the calibration on `05d9de6e3fb`, while final ABI-fix-head CI remains pending. | Finite-state, thread-determinism, energy, contact-force/CoP smoothness, LCP robustness, and equation gates run in `test_SoftDynamics`. Commit `50a254e7e56` calibrates only the legacy-FCL CoP bound to just above one `0.125` m scene mesh interval; native and all other guards remain unchanged (`03-stability-gate.md`, `07-equation-correctness.md`, `verification.md`). |
 | WP-DB.03 paper parity matrix | Ledger complete; parity closeout still conditional. | Static paper targets now live in `docs/background/deformable_body_paper_targets.md`, and approved scope decisions live in `docs/design/dart6_deformable_body.md`. The four-link flexible-rigid-foot versus deformable-foot row remains neither implemented nor deferred (`02-paper-parity-matrix.md`, `decisions.md`). |
 | WP-DB.04 coupled equation correctness | Review fix published and thread resolved. | Matrix/vector projection and inverse-identity gates plus the retained-acceleration independence regression pass on published commit `2ad156e7b82` (`07-equation-correctness.md`). |
 | WP-DB.05 adaptive contact activation | Complete. | Opt-in ABI-safe activation is default-off bit-identical, deterministic when enabled, allocation-gated, and covered by two recorded review rounds (`08-adaptive-contact-activation.md`). |

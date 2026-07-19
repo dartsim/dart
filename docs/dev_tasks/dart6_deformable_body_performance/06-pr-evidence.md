@@ -1,24 +1,29 @@
 # WP-DB PR evidence packet
 
-## 2026-07-18 current PR stabilization evidence
+## 2026-07-19 current PR stabilization evidence
 
 PR [#3382](https://github.com/dartsim/dart/pull/3382) remains open from
-`wp-db-native-soft-fallback` to `release-6.20`. The pre-follow-up published head
-is `b172b2ee1db`; the local publication candidate merges
-`origin/release-6.20@75306efe770` at `834a2548fd9` and includes test-only
-Windows calibration `50a254e7e56`. This paragraph is the pre-publication
-baseline; after the additive push, use the live PR head and exact-head checks as
-the authority.
+`wp-db-native-soft-fallback` to `release-6.20`. Published head `05d9de6e3fb`
+contains the clean merge of `origin/release-6.20@75306efe770` at `834a2548fd9`,
+test-only Windows calibration `50a254e7e56`, and the evidence refresh. Local
+commit `9a6796596bc` adds the detector ABI review fix. After the next additive
+push, use the live PR head and exact-head checks as the authority.
 
-Published-head review is clean with zero unresolved threads. Its terminal check
-snapshot is 21 passed, one failed, and one skipped. Both Codecov checks passed:
-patch coverage `94.34783%` with 143 uncovered changed lines, and project
-coverage `75.17%` versus `73.90%` (reported `+1.26` percentage points). The
-comment's red patch marker is informational because `codecov.yml` does not make
-patch status a required threshold.
+At the last refresh, exact-head API docs, Windows Release, gz-physics, AVX, and
+both Read the Docs checks had passed on `05d9de6e3fb`; additional hosted matrix
+jobs were running or queued, with no CI failure reported. Fresh top-level Codex
+review identified the `DARTCollisionDetector` layout issue addressed by
+`9a6796596bc`. There is no inline thread to resolve and no bot reply should be
+posted.
 
-Windows Release completed 150/151 tests and was the sole failure. The only
-failing test was
+Both Codecov checks passed on the earlier `b172b2ee1db` baseline: patch coverage
+`94.34783%` with 143 uncovered changed lines, and project coverage `75.17%`
+versus `73.90%` (reported `+1.26` percentage points). The comment's red patch
+marker is informational because `codecov.yml` does not make patch status a
+required threshold.
+
+At `b172b2ee1db`, Windows Release completed 150/151 tests and was the sole
+failure. The only failing test was
 `SoftDynamicsTest.restingSoftContactForceAndCenterOfPressureAreSmooth`; the
 legacy-FCL `default adaptive` lane measured `0.12115883267368355` m maximum
 per-step center-of-pressure displacement against the former `0.11` m cap. This
@@ -44,8 +49,41 @@ independent post-fix reviews                      CLEAN x2
 
 The correction changes test calibration only, so it requires neither a new
 benchmark nor a new visual capture. Text evidence is the correct oracle for the
-numeric per-step CoP limit. Exact new-head hosted Windows CI remains required.
-No new changelog entry is needed for this test-only change.
+numeric per-step CoP limit. No new changelog entry is needed for this test-only
+change.
+
+The ABI review finding points at private thread-pool fields inherited from
+release commit `3e13581f67d`. They are not new relative to the current target
+base, but released tag `v6.19.4` has no derived `DARTCollisionDetector` storage;
+on x86-64 the inherited fields enlarge that installed, derivable class from 32
+to 48 bytes. Commit `9a6796596bc` restores the released header layout and
+implicit-destructor surface, owns the thread pool/count and soft-contact option
+in a forwarding manager behind the base class's existing
+`mCollisionObjectManager` pointer, and adds size/alignment assertions. A stable
+pool object, serialized resize, and atomic thread-count/soft-option publication
+preserve configuration safety without changing default serial behavior.
+
+```text
+no-cache focused dependency build                 PASS
+test_DARTCollisionDetector                         PASS (22/22)
+test_Collision                                     PASS (52/52)
+test_NonFiniteContact                              PASS (4/4)
+exact v6.19.4-header ABI canary                    PASS (20/20 processes)
+legacy/current DARTCollisionDetector size          32 / 32 bytes
+legacy derived canary offset                       32 bytes
+pixi run lint                                      PASS
+git diff --check                                   PASS
+independent post-race-fix reviews                  CLEAN x2
+```
+
+The ABI canary used the exact tag header (SHA-256
+`767e69630bdb7b912bbf1707e9d6dd2e7b487100d24974267addcf90c6b0064f`) in one
+translation unit and current headers in another. It configured four collision
+participants and soft-face contacts on the legacy-layout derived object,
+cloned it, and destroyed it with an active worker pool while preserving the
+inner canary and surrounding guards. This compatibility repair has its own
+DART 6.20 changelog entry. Exact new-head hosted CI and a fresh clean review
+remain required after push.
 
 The flagship examples are already migrated into `dart-demos` as the
 `adaptive_soft_contact` and `soft_worm` scenes under `examples/demos`; the old
