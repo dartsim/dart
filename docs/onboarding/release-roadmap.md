@@ -44,10 +44,9 @@ remote; this checkout currently sees `release-6.20`.
 This packet is the published support window for the DART 6 LTS compatibility
 line. It exists so downstream users — primarily Gazebo via `gz-physics` — know
 which branch to track, what fixes to expect, and when the line will close. The
-companion CI lane split (keeping required gz-physics validation on the active
-DART 6 LTS branch while main's gz-physics workflow stays a manual migration
-canary) is a separate maintainer-gated branch-protection change and is **not**
-in scope for this document update.
+companion CI lane split is active: required Gazebo validation runs on the active
+DART 6 LTS branch, while main's gz-physics workflow remains a manual DART 7
+migration canary.
 
 **Gazebo support window**
 
@@ -101,11 +100,8 @@ The DART 6 LTS support line sunsets on a trigger, not a fixed calendar date:
 - Until DART 7.0.0 is published and N is decided, the active DART 6 LTS branch
   remains the compatibility line and the sunset clock has not started.
 
-> Maintainer sign-off needed: (1) the value of **N** (support-tail length after
-> DART 7.0.0 publication) and the tail's fix scope; (2) the Gazebo CI lane split
-> (required gz-physics validation pinned to the active DART 6 LTS branch; main's
-> gz-physics workflow demoted to a manual canary), which is a separate
-> branch-protection change outside this PR.
+> Maintainer sign-off needed: the value of **N** (support-tail length after DART
+> 7.0.0 publication) and the tail's fix scope.
 
 ## DART 7: Clean-Break Release
 
