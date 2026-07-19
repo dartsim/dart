@@ -215,6 +215,27 @@ if(MSVC)
     "Force /MD (Release DLL runtime) for all configurations to match pre-built packages (conda-forge, vcpkg, etc.)" ON
     CATEGORY msvc
   )
+  # Whole-program optimization (/GL + link-time /LTCG) roughly triples the MSVC
+  # Release build time and cannot be cached by sccache. Keep it ON by default so
+  # shipped wheels stay optimized, but let the CI C++ test build disable it to
+  # keep the Windows job fast (the wheel jobs still exercise an optimized build).
+  dart_option(DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION
+    "Disable MSVC whole-program optimization (/GL, /LTCG) in Release builds" OFF
+    CATEGORY msvc
+  )
+  # Honor the environment so CI can toggle this for every cmake configure in the
+  # job (the C++ and dartpy builds use different pixi config tasks) without
+  # editing each task. An explicit -D on the command line still applies when the
+  # environment variable is unset.
+  if(DEFINED ENV{DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION})
+    set(
+      DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION
+      "$ENV{DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION}"
+      CACHE BOOL
+      "Disable MSVC whole-program optimization (/GL, /LTCG) in Release builds"
+      FORCE
+    )
+  endif()
   dart_configure_msvc_runtime_library()
 else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON CATEGORY build)
