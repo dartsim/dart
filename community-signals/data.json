@@ -1,12 +1,12 @@
 {
   "citations": {
-    "crossref": 189,
-    "google_scholar": 395,
-    "google_scholar_checked": "2026-07-05",
+    "crossref": 190,
+    "google_scholar": 396,
+    "google_scholar_checked": "2026-07-20",
     "google_scholar_manual_fallback": false,
     "indexed_max": 306,
-    "indexed_min": 189,
-    "openalex": 272,
+    "indexed_min": 190,
+    "openalex": 273,
     "semantic_scholar": 306,
     "semantic_scholar_influential": 9
   },
@@ -15,15 +15,15 @@
       "age": "within 1 year",
       "freshness": "current",
       "label": "Gazebo gz-sim",
-      "pushed_at": "2026-07-02T09:10:05Z",
+      "pushed_at": "2026-07-18T02:47:28Z",
       "repo": "gazebosim/gz-sim",
-      "stars": 1404
+      "stars": 1417
     },
     {
       "age": "within 1 year",
       "freshness": "current",
       "label": "Gazebo gz-physics",
-      "pushed_at": "2026-07-02T03:08:40Z",
+      "pushed_at": "2026-07-15T19:33:27Z",
       "repo": "gazebosim/gz-physics",
       "stars": 89
     },
@@ -44,7 +44,7 @@
       "stars": 26
     },
     {
-      "age": "3.3 years ago",
+      "age": "3.4 years ago",
       "freshness": "3y+ historical",
       "label": "Aikido",
       "pushed_at": "2023-03-10T20:08:11Z",
@@ -57,7 +57,7 @@
       "label": "Nimble Physics",
       "pushed_at": "2025-09-14T18:37:46Z",
       "repo": "keenon/nimblephysics",
-      "stars": 482
+      "stars": 488
     },
     {
       "age": "2.8 years ago",
@@ -65,10 +65,10 @@
       "label": "MASS",
       "pushed_at": "2023-09-19T22:42:33Z",
       "repo": "lsw9021/MASS",
-      "stars": 630
+      "stars": 629
     },
     {
-      "age": "4.8 years ago",
+      "age": "4.9 years ago",
       "freshness": "3y+ historical",
       "label": "SimBenchmark",
       "pushed_at": "2021-09-05T19:45:51Z",
@@ -94,29 +94,29 @@
     "package_depends_dart": true,
     "requires_dart_610": true
   },
-  "generated_at": "2026-07-05T19:55:20.479264Z",
+  "generated_at": "2026-07-20T07:33:24.010048Z",
   "packages": {
     "conda": {
-      "combined_gross": 1007975,
-      "dartpy": 241858,
-      "dartsim": 641884,
-      "dartsim-cpp": 124233
+      "combined_gross": 1047815,
+      "dartpy": 255881,
+      "dartsim": 662194,
+      "dartsim-cpp": 129740
     },
-    "homebrew_installs_365d": 18009,
-    "homebrew_on_request_365d": 1445,
-    "pepy_dartpy_all_time": 258524
+    "homebrew_installs_365d": 18245,
+    "homebrew_on_request_365d": 1442,
+    "pepy_dartpy_all_time": 260838
   },
-  "since": "2025-07-05",
+  "since": "2025-07-20",
   "sources": {
     "anaconda_dartpy": "https://api.anaconda.org/package/conda-forge/dartpy",
     "anaconda_dartsim": "https://api.anaconda.org/package/conda-forge/dartsim",
     "anaconda_dartsim_cpp": "https://api.anaconda.org/package/conda-forge/dartsim-cpp",
     "crossref": "https://api.crossref.org/works/10.21105/joss.00500",
     "gazebo_physics": "https://gazebosim.org/api/sim/9/physics.html",
-    "github_created_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+created%3A%3E%3D2025-07-05",
+    "github_created_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+created%3A%3E%3D2025-07-20",
     "github_issues": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Aissue+state%3Aopen",
     "github_latest_release": "https://api.github.com/repos/dartsim/dart/releases/latest",
-    "github_merged_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+merged%3A%3E%3D2025-07-05",
+    "github_merged_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+merged%3A%3E%3D2025-07-20",
     "github_prs": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+state%3Aopen",
     "github_repo": "https://api.github.com/repos/dartsim/dart",
     "github_traffic_docs": "https://docs.github.com/en/rest/metrics/traffic",
@@ -133,17 +133,17 @@
   "summary": {
     "contributors_login": 54,
     "contributors_with_anon": 78,
-    "created_issues_12m": 28,
-    "created_prs_12m": 1280,
-    "forks": 301,
-    "latest_push": "2026-07-05",
-    "latest_release": "v6.19.3",
-    "latest_release_date": "2026-06-27",
-    "merged_prs_12m": 1197,
+    "created_issues_12m": 29,
+    "created_prs_12m": 1374,
+    "forks": 300,
+    "latest_push": "2026-07-19",
+    "latest_release": "v6.19.4",
+    "latest_release_date": "2026-07-19",
+    "merged_prs_12m": 1284,
     "open_issues": 1,
-    "open_prs": 6,
-    "releases_12m": 16,
-    "stars": 1161,
+    "open_prs": 7,
+    "releases_12m": 20,
+    "stars": 1160,
     "watchers": 50
   },
   "traffic": {
