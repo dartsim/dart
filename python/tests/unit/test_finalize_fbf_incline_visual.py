@@ -1378,6 +1378,122 @@ def test_fresh_capture_cleanup_removes_stale_manual_record(tmp_path):
     assert generated.read_bytes() == b"generated\n"
 
 
+def test_timeout_cleanup_does_not_repeat_force_kill_after_interrupt(monkeypatch):
+    module = _load_module()
+
+    class TimedOutProcess:
+        pid = 12345
+        returncode = -15
+
+        def communicate(self, *, timeout):
+            raise subprocess.TimeoutExpired(["capture"], timeout)
+
+    process = TimedOutProcess()
+    force_kills = []
+
+    def force_kill(process_group_id, signal_number):
+        assert process_group_id == process.pid
+        assert signal_number == module.signal.SIGKILL
+        force_kills.append(signal_number)
+        if len(force_kills) > 1:
+            raise PermissionError("redundant force kill")
+
+    def terminate(owned_process):
+        assert owned_process is process
+        module._kill_process_group(process.pid, module.signal.SIGKILL)
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(module.subprocess, "Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr(module, "_kill_process_group", force_kill)
+    monkeypatch.setattr(module, "_terminate_process_group", terminate)
+
+    with pytest.raises(KeyboardInterrupt):
+        module._run_command(["capture"], timeout=0.5)
+    assert force_kills == [module.signal.SIGKILL]
+
+
+def test_timeout_cleanup_sends_only_one_force_kill_after_grace_timeout(
+    monkeypatch,
+):
+    module = _load_module()
+
+    class UnresponsiveProcess:
+        pid = 12345
+
+        def __init__(self):
+            self.communications = 0
+
+        def communicate(self, *, timeout=None):
+            self.communications += 1
+            if self.communications == 1:
+                raise subprocess.TimeoutExpired(["capture"], timeout)
+            return "stdout", "stderr"
+
+    signals = []
+    monkeypatch.setattr(
+        module.os,
+        "killpg",
+        lambda process_group_id, signal_number: signals.append(
+            (process_group_id, signal_number)
+        ),
+    )
+
+    assert module._terminate_process_group(UnresponsiveProcess()) == (
+        "stdout",
+        "stderr",
+    )
+    assert signals == [
+        (12345, module.signal.SIGTERM),
+        (12345, module.signal.SIGKILL),
+    ]
+
+
+def test_timeout_cleanup_force_kills_if_initial_signal_is_interrupted(monkeypatch):
+    module = _load_module()
+
+    class Process:
+        pid = 12345
+
+    signals = []
+
+    def signal_group(process_group_id, signal_number):
+        assert process_group_id == 12345
+        signals.append(signal_number)
+        if signal_number == module.signal.SIGTERM:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(module.os, "killpg", signal_group)
+
+    with pytest.raises(KeyboardInterrupt):
+        module._terminate_process_group(Process())
+    assert signals == [module.signal.SIGTERM, module.signal.SIGKILL]
+
+
+def test_timeout_cleanup_propagates_force_kill_permission_error(monkeypatch):
+    module = _load_module()
+
+    class UnresponsiveProcess:
+        pid = 12345
+
+        def communicate(self, *, timeout=None):
+            raise subprocess.TimeoutExpired(["capture"], timeout)
+
+    signals = []
+
+    def signal_group(process_group_id, signal_number):
+        assert process_group_id == 12345
+        signals.append(signal_number)
+        if signal_number == module.signal.SIGKILL:
+            raise PermissionError("force kill denied")
+
+    monkeypatch.setattr(module.os, "killpg", signal_group)
+
+    with pytest.raises(PermissionError, match="force kill denied"):
+        module._terminate_process_group(UnresponsiveProcess())
+    assert signals[0] == module.signal.SIGTERM
+    assert signals.count(module.signal.SIGKILL) >= 1
+
+
 def test_run_command_timeout_terminates_the_descendant_process_group(tmp_path):
     module = _load_module()
     child_pid_path = tmp_path / "child.pid"
@@ -1418,19 +1534,41 @@ def test_interrupt_during_timeout_cleanup_still_kills_descendants(
 ):
     module = _load_module()
     child_pid_path = tmp_path / "timeout-interrupt-child.pid"
+    late_write_path = tmp_path / "timeout-interrupt-late-write.txt"
     child_code = (
-        "import os, signal, time; "
+        "import os, pathlib, signal, time; "
         "signal.signal(signal.SIGTERM, signal.SIG_IGN); "
-        "os.close(1); os.close(2); time.sleep(60)"
+        f"pathlib.Path({str(child_pid_path)!r}).write_text(str(os.getpid())); "
+        "os.close(1); os.close(2); time.sleep(1.0); "
+        f"pathlib.Path({str(late_write_path)!r}).write_text('survived')"
     )
     parent_code = (
-        "import pathlib, subprocess, sys, time; "
+        "import subprocess, sys, time; "
         f"child = subprocess.Popen([sys.executable, '-c', {child_code!r}]); "
-        f"pathlib.Path({str(child_pid_path)!r}).write_text(str(child.pid)); "
         "time.sleep(60)"
     )
     real_sleep = time.sleep
+    real_popen = subprocess.Popen
     interrupted = False
+
+    class ReadyPopen:
+        def __init__(self, *args, **kwargs):
+            self._process = real_popen(*args, **kwargs)
+            deadline = time.monotonic() + 5.0
+            while not child_pid_path.is_file() and time.monotonic() < deadline:
+                real_sleep(0.01)
+            assert child_pid_path.is_file()
+
+        @property
+        def pid(self):
+            return self._process.pid
+
+        @property
+        def returncode(self):
+            return self._process.returncode
+
+        def communicate(self, *args, **kwargs):
+            return self._process.communicate(*args, **kwargs)
 
     def interrupt_cleanup_sleep(duration):
         nonlocal interrupted
@@ -1439,11 +1577,14 @@ def test_interrupt_during_timeout_cleanup_still_kills_descendants(
             raise KeyboardInterrupt
         real_sleep(duration)
 
+    monkeypatch.setattr(module.subprocess, "Popen", ReadyPopen)
     monkeypatch.setattr(module.time, "sleep", interrupt_cleanup_sleep)
     with pytest.raises(KeyboardInterrupt):
         module._run_command([sys.executable, "-c", parent_code], timeout=0.5)
 
     child_pid = int(child_pid_path.read_text(encoding="utf-8"))
+    real_sleep(1.1)
+    assert not late_write_path.exists()
     for _ in range(20):
         stat_path = Path(f"/proc/{child_pid}/stat")
         if not stat_path.is_file():

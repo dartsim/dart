@@ -1688,14 +1688,16 @@ def _terminate_process_group(
     process: subprocess.Popen[str],
 ) -> tuple[str, str]:
     termination_started = time.monotonic()
-    _kill_process_group(process.pid, signal.SIGTERM)
+    force_kill_sent = False
     try:
+        _kill_process_group(process.pid, signal.SIGTERM)
         try:
             stdout, stderr = process.communicate(
                 timeout=PROCESS_TERMINATION_GRACE_SECONDS
             )
         except subprocess.TimeoutExpired:
             _kill_process_group(process.pid, signal.SIGKILL)
+            force_kill_sent = True
             return process.communicate()
 
         deadline = termination_started + PROCESS_TERMINATION_GRACE_SECONDS
@@ -1703,7 +1705,8 @@ def _terminate_process_group(
             time.sleep(min(0.01, max(0.0, deadline - time.monotonic())))
         return stdout, stderr
     finally:
-        _kill_process_group(process.pid, signal.SIGKILL)
+        if not force_kill_sent:
+            _kill_process_group(process.pid, signal.SIGKILL)
 
 
 def _run_command(
@@ -1721,11 +1724,7 @@ def _run_command(
     try:
         stdout, stderr = process.communicate(timeout=timeout)
     except subprocess.TimeoutExpired as error:
-        try:
-            stdout, stderr = _terminate_process_group(process)
-        except BaseException:
-            _kill_process_group(process.pid, signal.SIGKILL)
-            raise
+        stdout, stderr = _terminate_process_group(process)
         raise subprocess.TimeoutExpired(
             command,
             timeout,
@@ -1733,10 +1732,7 @@ def _run_command(
             stderr=stderr,
         ) from error
     except BaseException:
-        try:
-            _terminate_process_group(process)
-        except BaseException:
-            _kill_process_group(process.pid, signal.SIGKILL)
+        _terminate_process_group(process)
         raise
     if _process_group_exists(process.pid):
         _kill_process_group(process.pid, signal.SIGKILL)
