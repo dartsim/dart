@@ -110,6 +110,14 @@
     across Pixi, CI, and source builds.
     ([#3348](https://github.com/dartsim/dart/pull/3348))
 
+  * Disable MSVC whole-program optimization (`/GL` plus link-time `/LTCG`) in the
+    Windows CI C++/dartpy test build so the MSVC Release build stays under the
+    job timeout. `/GL`'s link-time `/LTCG` codegen pass forced a multi-hour
+    rebuild every run and intermittently overran the 300-minute limit; the
+    published wheels keep whole-program optimization and are still tested. Add
+    the `DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION` CMake option (also honored
+    through the environment) to control it.
+
   * Keep Pixi DartPy and GUI demo configuration warning-free on CMake 4.3 by
     using the Pixi `pybind11` package with modern Python discovery, updating
     the FetchContent fallback to the same pybind11 release, and resolving GLVND
