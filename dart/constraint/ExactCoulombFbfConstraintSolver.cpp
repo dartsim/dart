@@ -389,6 +389,15 @@ struct ExactCoulombCrossStepPolicyState
   std::size_t unconvergedCacheSkips = 0u;
 };
 
+struct ExactCoulombLastFailureState
+{
+  ExactCoulombFbfConstraintSolverStatus status
+      = ExactCoulombFbfConstraintSolverStatus::NotRun;
+  detail::ExactCoulombConstraintBuildStatus buildStatus
+      = detail::ExactCoulombConstraintBuildStatus::EmptyInput;
+  std::size_t contactCount = 0u;
+};
+
 bool isPreferredExactCoulombCpuPhaseSet(
     const std::vector<int>& candidate, const std::vector<int>& current)
 {
@@ -733,6 +742,60 @@ void eraseExactCoulombColoredBlockGaussSeidelState(
   std::lock_guard<std::mutex> lock(
       exactCoulombColoredBlockGaussSeidelStateMutex());
   exactCoulombColoredBlockGaussSeidelStateBySolver().erase(solver);
+}
+
+std::mutex& exactCoulombLastFailureStateMutex()
+{
+  static auto* mutex = new std::mutex;
+  return *mutex;
+}
+
+std::unordered_map<
+    const ExactCoulombFbfConstraintSolver*,
+    ExactCoulombLastFailureState>&
+exactCoulombLastFailureStateBySolver()
+{
+  static auto* states = new std::unordered_map<
+      const ExactCoulombFbfConstraintSolver*,
+      ExactCoulombLastFailureState>;
+  return *states;
+}
+
+ExactCoulombLastFailureState getExactCoulombLastFailureState(
+    const ExactCoulombFbfConstraintSolver* solver)
+{
+  std::lock_guard<std::mutex> lock(exactCoulombLastFailureStateMutex());
+  const auto& states = exactCoulombLastFailureStateBySolver();
+  const auto state = states.find(solver);
+  return state == states.end() ? ExactCoulombLastFailureState{} : state->second;
+}
+
+void resetExactCoulombLastFailureState(
+    const ExactCoulombFbfConstraintSolver* solver)
+{
+  std::lock_guard<std::mutex> lock(exactCoulombLastFailureStateMutex());
+  exactCoulombLastFailureStateBySolver()[solver]
+      = ExactCoulombLastFailureState{};
+}
+
+void recordExactCoulombLastFailureState(
+    const ExactCoulombFbfConstraintSolver* solver,
+    ExactCoulombFbfConstraintSolverStatus status,
+    detail::ExactCoulombConstraintBuildStatus buildStatus,
+    std::size_t contactCount)
+{
+  std::lock_guard<std::mutex> lock(exactCoulombLastFailureStateMutex());
+  auto& state = exactCoulombLastFailureStateBySolver()[solver];
+  state.status = status;
+  state.buildStatus = buildStatus;
+  state.contactCount = contactCount;
+}
+
+void eraseExactCoulombLastFailureState(
+    const ExactCoulombFbfConstraintSolver* solver)
+{
+  std::lock_guard<std::mutex> lock(exactCoulombLastFailureStateMutex());
+  exactCoulombLastFailureStateBySolver().erase(solver);
 }
 
 std::mutex& exactCoulombCrossStepPolicyStateMutex()
@@ -1541,6 +1604,7 @@ ExactCoulombFbfConstraintSolver::ExactCoulombFbfConstraintSolver()
 {
   resetLastContactRowParallelEvidence(this);
   resetLastExactCoulombColoredBlockGaussSeidelState(this);
+  resetExactCoulombLastFailureState(this);
   resetExactCoulombCrossStepPolicyState(this);
 }
 
@@ -1551,6 +1615,7 @@ ExactCoulombFbfConstraintSolver::ExactCoulombFbfConstraintSolver(
 {
   resetLastContactRowParallelEvidence(this);
   resetLastExactCoulombColoredBlockGaussSeidelState(this);
+  resetExactCoulombLastFailureState(this);
   resetExactCoulombCrossStepPolicyState(this);
 }
 
@@ -1559,6 +1624,7 @@ ExactCoulombFbfConstraintSolver::~ExactCoulombFbfConstraintSolver()
 {
   eraseContactRowParallelEvidence(this);
   eraseExactCoulombColoredBlockGaussSeidelState(this);
+  eraseExactCoulombLastFailureState(this);
   eraseExactCoulombCrossStepPolicyState(this);
 }
 
@@ -1798,6 +1864,20 @@ void ExactCoulombFbfConstraintSolver::clearExactCoulombResidualHistoryRecords()
 }
 
 //==============================================================================
+ExactCoulombFbfConstraintSolverStatus
+ExactCoulombFbfConstraintSolver::getLastFailedExactCoulombStatus() const
+{
+  return getExactCoulombLastFailureState(this).status;
+}
+
+//==============================================================================
+detail::ExactCoulombConstraintBuildStatus
+ExactCoulombFbfConstraintSolver::getLastFailedExactCoulombBuildStatus() const
+{
+  return getExactCoulombLastFailureState(this).buildStatus;
+}
+
+//==============================================================================
 math::detail::ExactCoulombFbfStatus
 ExactCoulombFbfConstraintSolver::getLastFailedExactCoulombFbfStatus() const
 {
@@ -1831,6 +1911,13 @@ ExactCoulombFbfConstraintSolver::getLastFailedExactCoulombResidualDetails()
     const
 {
   return mLastFailedExactCoulombResidualDetails;
+}
+
+//==============================================================================
+std::size_t
+ExactCoulombFbfConstraintSolver::getLastFailedExactCoulombContactCount() const
+{
+  return getExactCoulombLastFailureState(this).contactCount;
 }
 
 //==============================================================================
@@ -2969,6 +3056,11 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         solution.shrinkIterations,
         solution.bestResidual.value,
         solution.bestIteration);
+    recordExactCoulombLastFailureState(
+        this,
+        mLastExactCoulombStatus,
+        mLastExactCoulombBuildStatus,
+        static_cast<std::size_t>(problem.contactProblem.getContactCount()));
     recordExactCoulombCrossStepPolicyAttempt(this, solution, false);
     ++mNumExactCoulombFailures;
     return false;
@@ -2993,6 +3085,11 @@ bool ExactCoulombFbfConstraintSolver::trySolveExactCoulombConstrainedGroup(
         solution.shrinkIterations,
         solution.bestResidual.value,
         solution.bestIteration);
+    recordExactCoulombLastFailureState(
+        this,
+        mLastExactCoulombStatus,
+        mLastExactCoulombBuildStatus,
+        static_cast<std::size_t>(problem.contactProblem.getContactCount()));
     recordExactCoulombCrossStepPolicyAttempt(this, solution, false);
     ++mNumExactCoulombFailures;
     return false;
@@ -3275,6 +3372,8 @@ void ExactCoulombFbfConstraintSolver::recordLastFailedExactCoulombAttempt(
   mLastFailedExactCoulombSafeStepSize = safeStepSize;
   mLastFailedExactCoulombCouplingVariationRatio = couplingVariationRatio;
   mLastFailedExactCoulombShrinkIterations = shrinkIterations;
+  recordExactCoulombLastFailureState(
+      this, mLastExactCoulombStatus, mLastExactCoulombBuildStatus, 0u);
 }
 
 //==============================================================================

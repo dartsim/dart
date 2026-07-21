@@ -1693,6 +1693,8 @@ def _validate_diagnostics(
             raise ValueError(f"{label}: {name} is unavailable/invalid")
         counters[name] = value
 
+    _validate_last_failure_diagnostics(diagnostics, label=label)
+
     if counters["exact_attempts"] != (
         counters["exact_solves"] + counters["exact_failures"]
     ):
@@ -1745,6 +1747,143 @@ def _validate_diagnostics(
         raise ValueError(
             f"{label}: trajectory worst residual {worst_residual} exceeds 1e-6"
         )
+
+
+def _validate_last_failure_diagnostics(
+    diagnostics: dict[str, Any], *, label: str
+) -> None:
+    exact_failures = diagnostics.get("exact_failures")
+    if (
+        isinstance(exact_failures, bool)
+        or not isinstance(exact_failures, int)
+        or exact_failures < 0
+    ):
+        raise ValueError(f"{label}: exact_failures is unavailable/invalid")
+
+    last_failure = diagnostics.get("last_failure")
+    if exact_failures == 0:
+        if last_failure is not None:
+            raise ValueError(f"{label}: last_failure exists without a failure")
+        return
+    if not isinstance(last_failure, dict):
+        raise ValueError(f"{label}: last_failure is unavailable/invalid")
+
+    status = last_failure.get("status")
+    build_status = last_failure.get("build_status")
+    fbf_status = last_failure.get("fbf_status")
+    if status not in {"invalid_options", "unsupported_problem", "fbf_failed"}:
+        raise ValueError(f"{label}: last_failure.status is unavailable/invalid")
+    if build_status not in {
+        "success",
+        "empty_input",
+        "null_constraint",
+        "invalid_options",
+        "unsupported_dimension",
+        "unsupported_bounds",
+        "unsupported_friction_coupling",
+        "unsupported_anisotropic_friction",
+        "non_finite_data",
+    }:
+        raise ValueError(f"{label}: last_failure.build_status is unavailable/invalid")
+    if fbf_status not in {
+        "success",
+        "max_iterations",
+        "invalid_input",
+        "inner_solver_failed",
+        "step_size_underflow",
+    }:
+        raise ValueError(f"{label}: last_failure.fbf_status is unavailable/invalid")
+    for name in (
+        "contact_count",
+        "best_iteration",
+        "iterations",
+        "shrink_iterations",
+    ):
+        value = last_failure.get(name)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f"{label}: last_failure.{name} is unavailable/invalid")
+    contact_count = last_failure["contact_count"]
+    best_iteration = last_failure["best_iteration"]
+    iterations = last_failure["iterations"]
+    if best_iteration > iterations:
+        raise ValueError(f"{label}: last_failure best iteration exceeds iterations")
+    if status == "fbf_failed":
+        if build_status != "success" or contact_count == 0:
+            raise ValueError(f"{label}: last_failure FBF failure is inconsistent")
+    elif contact_count != 0 or fbf_status != "invalid_input":
+        raise ValueError(f"{label}: last_failure adapter failure is inconsistent")
+    if status == "invalid_options" and build_status != "empty_input":
+        raise ValueError(f"{label}: last_failure invalid-options state is inconsistent")
+    if status == "unsupported_problem" and build_status == "success":
+        raise ValueError(f"{label}: last_failure unsupported state is inconsistent")
+
+    worst_contact_fields = (
+        "worst_primal_contact",
+        "worst_dual_contact",
+        "worst_complementarity_contact",
+    )
+    for name in worst_contact_fields:
+        value = last_failure.get(name)
+        if isinstance(value, bool) or not isinstance(value, int) or value < -1:
+            raise ValueError(f"{label}: last_failure.{name} is unavailable/invalid")
+        if value >= contact_count and value != -1:
+            raise ValueError(f"{label}: last_failure.{name} is out of range")
+
+    residual_fields = (
+        "residual",
+        "primal_feasibility",
+        "dual_feasibility",
+        "complementarity",
+    )
+    numeric_fields = residual_fields + (
+        "best_residual",
+        "step_size",
+        "safe_step_size",
+        "coupling_variation_ratio",
+    )
+    for name in numeric_fields:
+        value = last_failure.get(name)
+        if value is not None and (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            or value < 0.0
+        ):
+            raise ValueError(f"{label}: last_failure.{name} is invalid")
+    residual_values = [last_failure.get(name) for name in residual_fields]
+    if any(value is None for value in residual_values) and not all(
+        value is None for value in residual_values
+    ):
+        raise ValueError(f"{label}: last_failure residual terms are inconsistent")
+    if fbf_status != "invalid_input" and any(
+        value is None for value in residual_values
+    ):
+        raise ValueError(f"{label}: last_failure residual terms are unavailable")
+    if not any(value is None for value in residual_values) and not math.isclose(
+        last_failure["residual"],
+        max(
+            last_failure["primal_feasibility"],
+            last_failure["dual_feasibility"],
+            last_failure["complementarity"],
+        ),
+        rel_tol=1e-12,
+        abs_tol=1e-15,
+    ):
+        raise ValueError(f"{label}: last_failure residual aggregate is inconsistent")
+    step_size = last_failure.get("step_size")
+    if step_size is not None and (
+        step_size < 0.0 or (step_size == 0.0 and fbf_status != "step_size_underflow")
+    ):
+        raise ValueError(f"{label}: last_failure.step_size is invalid")
+    safe_step_size = last_failure.get("safe_step_size")
+    if safe_step_size is not None and safe_step_size <= 0.0:
+        raise ValueError(f"{label}: last_failure.safe_step_size is invalid")
+    if status != "fbf_failed":
+        if any(
+            last_failure[name] != 0
+            for name in ("best_iteration", "iterations", "shrink_iterations")
+        ) or any(last_failure.get(name) is not None for name in numeric_fields):
+            raise ValueError(f"{label}: last_failure adapter failure is inconsistent")
 
 
 def _legacy_demo_command(command: Sequence[str]) -> list[str]:
@@ -2978,6 +3117,9 @@ def _validate_failed_exact_fbf_sidecar(
                     f"{sidecar_path}: step {step}: cumulative {name} regressed"
                 )
             current_counters[name] = value
+        _validate_last_failure_diagnostics(
+            diagnostics, label=f"{sidecar_path}: step {step}"
+        )
         prior_counters = current_counters
         diagnostics_by_step[step] = diagnostics
         reason_by_step[step] = reason

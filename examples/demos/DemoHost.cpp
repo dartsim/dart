@@ -60,6 +60,7 @@
 #include <cctype>
 #include <cerrno>
 #include <cmath>
+#include <cstddef>
 #include <cstdio>
 #include <cstring>
 
@@ -164,6 +165,34 @@ const char* exactFbfStatusLabel(
 }
 
 //==============================================================================
+const char* exactBuildStatusLabel(
+    dart::constraint::detail::ExactCoulombConstraintBuildStatus status)
+{
+  using dart::constraint::detail::ExactCoulombConstraintBuildStatus;
+  switch (status) {
+    case ExactCoulombConstraintBuildStatus::Success:
+      return "success";
+    case ExactCoulombConstraintBuildStatus::EmptyInput:
+      return "empty_input";
+    case ExactCoulombConstraintBuildStatus::NullConstraint:
+      return "null_constraint";
+    case ExactCoulombConstraintBuildStatus::InvalidOptions:
+      return "invalid_options";
+    case ExactCoulombConstraintBuildStatus::UnsupportedDimension:
+      return "unsupported_dimension";
+    case ExactCoulombConstraintBuildStatus::UnsupportedBounds:
+      return "unsupported_bounds";
+    case ExactCoulombConstraintBuildStatus::UnsupportedFrictionCoupling:
+      return "unsupported_friction_coupling";
+    case ExactCoulombConstraintBuildStatus::UnsupportedAnisotropicFriction:
+      return "unsupported_anisotropic_friction";
+    case ExactCoulombConstraintBuildStatus::NonFiniteData:
+      return "non_finite_data";
+  }
+  return "unknown";
+}
+
+//==============================================================================
 void writeJsonString(std::ostream& out, const std::string& value)
 {
   static constexpr char kHex[] = "0123456789abcdef";
@@ -215,6 +244,29 @@ void writeJsonNumber(std::ostream& out, double value)
 //==============================================================================
 struct SolverDiagnosticsSnapshot
 {
+  struct LastFailure
+  {
+    bool available = false;
+    std::size_t contacts = 0u;
+    std::string status;
+    std::string buildStatus;
+    std::string fbfStatus;
+    double residual = std::numeric_limits<double>::quiet_NaN();
+    double primalFeasibility = std::numeric_limits<double>::quiet_NaN();
+    double dualFeasibility = std::numeric_limits<double>::quiet_NaN();
+    double complementarity = std::numeric_limits<double>::quiet_NaN();
+    std::ptrdiff_t worstPrimalContact = -1;
+    std::ptrdiff_t worstDualContact = -1;
+    std::ptrdiff_t worstComplementarityContact = -1;
+    double bestResidual = std::numeric_limits<double>::quiet_NaN();
+    int bestIteration = 0;
+    int iterations = 0;
+    double stepSize = std::numeric_limits<double>::quiet_NaN();
+    double safeStepSize = std::numeric_limits<double>::quiet_NaN();
+    double couplingVariationRatio = std::numeric_limits<double>::quiet_NaN();
+    int shrinkIterations = 0;
+  };
+
   std::string solver = "UnknownConstraintSolver";
   bool available = false;
   std::string gap;
@@ -232,6 +284,7 @@ struct SolverDiagnosticsSnapshot
   std::size_t boxedLcpFallbacks = 0u;
   std::size_t warmStarts = 0u;
   std::size_t contacts = 0u;
+  LastFailure lastFailure;
 };
 
 //==============================================================================
@@ -282,6 +335,39 @@ SolverDiagnosticsSnapshot captureSolverDiagnostics(
   snapshot.exactFailures = solver->getNumExactCoulombFailures();
   snapshot.boxedLcpFallbacks = solver->getNumBoxedLcpFallbacks();
   snapshot.warmStarts = solver->getNumExactCoulombWarmStarts();
+  if (snapshot.exactFailures > 0u) {
+    const auto& residual = solver->getLastFailedExactCoulombResidualDetails();
+    snapshot.lastFailure.available = true;
+    snapshot.lastFailure.contacts
+        = solver->getLastFailedExactCoulombContactCount();
+    snapshot.lastFailure.status
+        = exactSolverStatusLabel(solver->getLastFailedExactCoulombStatus());
+    snapshot.lastFailure.buildStatus
+        = exactBuildStatusLabel(solver->getLastFailedExactCoulombBuildStatus());
+    snapshot.lastFailure.fbfStatus
+        = exactFbfStatusLabel(solver->getLastFailedExactCoulombFbfStatus());
+    snapshot.lastFailure.residual = solver->getLastFailedExactCoulombResidual();
+    snapshot.lastFailure.primalFeasibility = residual.primalFeasibility;
+    snapshot.lastFailure.dualFeasibility = residual.dualFeasibility;
+    snapshot.lastFailure.complementarity = residual.complementarity;
+    snapshot.lastFailure.worstPrimalContact = residual.worstPrimalContact;
+    snapshot.lastFailure.worstDualContact = residual.worstDualContact;
+    snapshot.lastFailure.worstComplementarityContact
+        = residual.worstComplementarityContact;
+    snapshot.lastFailure.bestResidual
+        = solver->getLastFailedExactCoulombBestResidual();
+    snapshot.lastFailure.bestIteration
+        = solver->getLastFailedExactCoulombBestIteration();
+    snapshot.lastFailure.iterations
+        = solver->getLastFailedExactCoulombIterations();
+    snapshot.lastFailure.stepSize = solver->getLastFailedExactCoulombStepSize();
+    snapshot.lastFailure.safeStepSize
+        = solver->getLastFailedExactCoulombSafeStepSize();
+    snapshot.lastFailure.couplingVariationRatio
+        = solver->getLastFailedExactCoulombCouplingVariationRatio();
+    snapshot.lastFailure.shrinkIterations
+        = solver->getLastFailedExactCoulombShrinkIterations();
+  }
   return snapshot;
 }
 
@@ -317,7 +403,45 @@ void writeSolverDiagnosticsJson(
   out << ",\n      \"exact_failures\": " << snapshot.exactFailures
       << ",\n      \"boxed_lcp_fallbacks\": " << snapshot.boxedLcpFallbacks
       << ",\n      \"warm_starts\": " << snapshot.warmStarts
-      << ",\n      \"contacts\": " << snapshot.contacts << "\n    }";
+      << ",\n      \"contacts\": " << snapshot.contacts
+      << ",\n      \"last_failure\": ";
+  if (!snapshot.lastFailure.available) {
+    out << "null\n    }";
+    return;
+  }
+
+  const auto& failure = snapshot.lastFailure;
+  out << "{\n        \"contact_count\": " << failure.contacts
+      << ",\n        \"status\": ";
+  writeJsonString(out, failure.status);
+  out << ",\n        \"build_status\": ";
+  writeJsonString(out, failure.buildStatus);
+  out << ",\n        \"fbf_status\": ";
+  writeJsonString(out, failure.fbfStatus);
+  out << ",\n        \"residual\": ";
+  writeJsonNumber(out, failure.residual);
+  out << ",\n        \"primal_feasibility\": ";
+  writeJsonNumber(out, failure.primalFeasibility);
+  out << ",\n        \"dual_feasibility\": ";
+  writeJsonNumber(out, failure.dualFeasibility);
+  out << ",\n        \"complementarity\": ";
+  writeJsonNumber(out, failure.complementarity);
+  out << ",\n        \"worst_primal_contact\": " << failure.worstPrimalContact
+      << ",\n        \"worst_dual_contact\": " << failure.worstDualContact
+      << ",\n        \"worst_complementarity_contact\": "
+      << failure.worstComplementarityContact
+      << ",\n        \"best_residual\": ";
+  writeJsonNumber(out, failure.bestResidual);
+  out << ",\n        \"best_iteration\": " << failure.bestIteration
+      << ",\n        \"iterations\": " << failure.iterations
+      << ",\n        \"step_size\": ";
+  writeJsonNumber(out, failure.stepSize);
+  out << ",\n        \"safe_step_size\": ";
+  writeJsonNumber(out, failure.safeStepSize);
+  out << ",\n        \"coupling_variation_ratio\": ";
+  writeJsonNumber(out, failure.couplingVariationRatio);
+  out << ",\n        \"shrink_iterations\": " << failure.shrinkIterations
+      << "\n      }\n    }";
 }
 
 //==============================================================================

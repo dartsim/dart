@@ -1055,6 +1055,7 @@ TEST(ExactCoulombFbfConstraintSolver, WarmStartRequiresSameConstraintSequence)
   EXPECT_EQ(
       solver.getLastFailedExactCoulombResidualDetails().value,
       solver.getLastExactCoulombResidualDetails().value);
+  EXPECT_EQ(solver.getLastFailedExactCoulombContactCount(), 1u);
   EXPECT_EQ(
       solver.getLastFailedExactCoulombBestResidual(),
       solver.getLastExactCoulombBestResidual());
@@ -1066,6 +1067,84 @@ TEST(ExactCoulombFbfConstraintSolver, WarmStartRequiresSameConstraintSequence)
   EXPECT_EQ(solver.getNumExactCoulombSolves(), 1u);
   EXPECT_EQ(solver.getNumBoxedLcpFallbacks(), 0u);
   EXPECT_NEAR(second->getAppliedImpulse().norm(), 0.0, 1e-12);
+
+  const auto failedStatus = solver.getLastFailedExactCoulombStatus();
+  const auto failedBuildStatus = solver.getLastFailedExactCoulombBuildStatus();
+  const auto failedFbfStatus = solver.getLastFailedExactCoulombFbfStatus();
+  const auto failedContactCount
+      = solver.getLastFailedExactCoulombContactCount();
+  const auto failedResidual = solver.getLastFailedExactCoulombResidual();
+  const auto failedResidualDetails
+      = solver.getLastFailedExactCoulombResidualDetails();
+  const auto failedBestResidual
+      = solver.getLastFailedExactCoulombBestResidual();
+  const auto failedBestIteration
+      = solver.getLastFailedExactCoulombBestIteration();
+  const auto failedIterations = solver.getLastFailedExactCoulombIterations();
+  const auto failedStepSize = solver.getLastFailedExactCoulombStepSize();
+  const auto failedSafeStepSize
+      = solver.getLastFailedExactCoulombSafeStepSize();
+  const auto failedCouplingVariation
+      = solver.getLastFailedExactCoulombCouplingVariationRatio();
+  const auto failedShrinkIterations
+      = solver.getLastFailedExactCoulombShrinkIterations();
+  EXPECT_EQ(
+      failedStatus,
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::FbfFailed);
+  EXPECT_EQ(
+      failedBuildStatus,
+      dart::constraint::detail::ExactCoulombConstraintBuildStatus::Success);
+
+  auto zeroRhs = std::make_shared<ContactLikeConstraint>(
+      0,
+      delassus,
+      Eigen::Vector3d::Zero(),
+      0.5,
+      0.5,
+      std::make_shared<Eigen::Index>(-1));
+  auto successfulGroup = makeGroup(zeroRhs);
+  options.maxOuterIterations = 80;
+  solver.setExactCoulombOptions(options);
+  solver.solveConstrainedGroup(successfulGroup);
+
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+  EXPECT_EQ(solver.getLastFailedExactCoulombStatus(), failedStatus);
+  EXPECT_EQ(solver.getLastFailedExactCoulombBuildStatus(), failedBuildStatus);
+  EXPECT_EQ(solver.getLastFailedExactCoulombFbfStatus(), failedFbfStatus);
+  EXPECT_EQ(solver.getLastFailedExactCoulombContactCount(), failedContactCount);
+  EXPECT_EQ(solver.getLastFailedExactCoulombResidual(), failedResidual);
+  const auto& retainedResidual
+      = solver.getLastFailedExactCoulombResidualDetails();
+  EXPECT_EQ(
+      retainedResidual.primalFeasibility,
+      failedResidualDetails.primalFeasibility);
+  EXPECT_EQ(
+      retainedResidual.dualFeasibility, failedResidualDetails.dualFeasibility);
+  EXPECT_EQ(
+      retainedResidual.complementarity, failedResidualDetails.complementarity);
+  EXPECT_EQ(
+      retainedResidual.worstPrimalContact,
+      failedResidualDetails.worstPrimalContact);
+  EXPECT_EQ(
+      retainedResidual.worstDualContact,
+      failedResidualDetails.worstDualContact);
+  EXPECT_EQ(
+      retainedResidual.worstComplementarityContact,
+      failedResidualDetails.worstComplementarityContact);
+  EXPECT_EQ(solver.getLastFailedExactCoulombBestResidual(), failedBestResidual);
+  EXPECT_EQ(
+      solver.getLastFailedExactCoulombBestIteration(), failedBestIteration);
+  EXPECT_EQ(solver.getLastFailedExactCoulombIterations(), failedIterations);
+  EXPECT_EQ(solver.getLastFailedExactCoulombStepSize(), failedStepSize);
+  EXPECT_EQ(solver.getLastFailedExactCoulombSafeStepSize(), failedSafeStepSize);
+  EXPECT_EQ(
+      solver.getLastFailedExactCoulombCouplingVariationRatio(),
+      failedCouplingVariation);
+  EXPECT_EQ(
+      solver.getLastFailedExactCoulombShrinkIterations(),
+      failedShrinkIterations);
 }
 
 TEST(ExactCoulombFbfConstraintSolver, DenseResidualPolishCanRecoverFailedSolve)

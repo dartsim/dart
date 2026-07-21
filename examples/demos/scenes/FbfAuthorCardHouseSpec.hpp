@@ -986,11 +986,12 @@ inline DynamicsAdapterContract inspectDynamicsAdapterContract(
   const auto bodyNodeFilter = std::dynamic_pointer_cast<
       const dart::collision::BodyNodeCollisionFilter>(
       collisionOption.collisionFilter);
+  const auto* const collisionFilter = collisionOption.collisionFilter.get();
   const dart::collision::BodyNodeCollisionFilter emptyBodyNodeFilter;
   if (!collisionOption.enableContact
       || collisionOption.allowNegativePenetrationDepthContacts
-      || !bodyNodeFilter
-      || typeid(*collisionOption.collisionFilter)
+      || !bodyNodeFilter || collisionFilter == nullptr
+      || typeid(*collisionFilter)
              != typeid(dart::collision::BodyNodeCollisionFilter)
       || bodyNodeFilter->getRevision() != emptyBodyNodeFilter.getRevision()) {
     throw std::runtime_error(
