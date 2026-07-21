@@ -1528,7 +1528,9 @@ def test_forceful_cleanup_kills_group_before_darwin_orphan_eperm(monkeypatch):
     assert descendant_alive is False
 
 
-def test_run_command_timeout_terminates_the_descendant_process_group(tmp_path):
+def test_run_command_timeout_terminates_the_descendant_process_group(
+    tmp_path, monkeypatch
+):
     module = _load_module()
     child_pid_path = tmp_path / "child.pid"
     child_code = (
@@ -1542,6 +1544,38 @@ def test_run_command_timeout_terminates_the_descendant_process_group(tmp_path):
         f"pathlib.Path({str(child_pid_path)!r}).write_text(str(child.pid)); "
         "time.sleep(60)"
     )
+
+    # Start the timeout only after the parent has created the descendant and
+    # published its pid. Loaded macOS runners can otherwise spend the entire
+    # short timeout starting Python, leaving no descendant for this test to
+    # observe even though the production cleanup behaved correctly.
+    real_popen = subprocess.Popen
+    real_sleep = time.sleep
+
+    class ReadyPopen:
+        def __init__(self, *args, **kwargs):
+            self._process = real_popen(*args, **kwargs)
+            try:
+                deadline = time.monotonic() + 5.0
+                while not child_pid_path.is_file() and time.monotonic() < deadline:
+                    real_sleep(0.01)
+                assert child_pid_path.is_file()
+            except BaseException:
+                module._terminate_process_group(self._process, graceful=False)
+                raise
+
+        @property
+        def pid(self):
+            return self._process.pid
+
+        @property
+        def returncode(self):
+            return self._process.returncode
+
+        def communicate(self, *args, **kwargs):
+            return self._process.communicate(*args, **kwargs)
+
+    monkeypatch.setattr(module.subprocess, "Popen", ReadyPopen)
 
     with pytest.raises(subprocess.TimeoutExpired):
         module._run_command([sys.executable, "-c", parent_code], timeout=0.5)
@@ -1588,10 +1622,14 @@ def test_interrupt_during_timeout_cleanup_still_kills_descendants(
     class ReadyPopen:
         def __init__(self, *args, **kwargs):
             self._process = real_popen(*args, **kwargs)
-            deadline = time.monotonic() + 5.0
-            while not child_pid_path.is_file() and time.monotonic() < deadline:
-                real_sleep(0.01)
-            assert child_pid_path.is_file()
+            try:
+                deadline = time.monotonic() + 5.0
+                while not child_pid_path.is_file() and time.monotonic() < deadline:
+                    real_sleep(0.01)
+                assert child_pid_path.is_file()
+            except BaseException:
+                module._terminate_process_group(self._process, graceful=False)
+                raise
 
         @property
         def pid(self):
