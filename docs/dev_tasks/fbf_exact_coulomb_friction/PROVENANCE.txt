@@ -18,8 +18,9 @@ Paper PDF: https://www.cs.ubc.ca/research/fbf-friction/paper.pdf
 Video: https://youtu.be/5THad4PAGmI
 
 The paper, project page, 82-second video, figures, tables, and appendix were
-inspected through 2026-07-12. The machine-readable requirement ledger is
-paper-evidence-manifest.json. No paper image, video frame, or author code is
+inspected through 2026-07-12. The machine-readable visual coverage contract is
+implemented by scripts/run_fbf_visual_evidence.py; the human review ledger is
+PAPER_DEMO_VIDEO_MATRIX.md. No paper image, video frame, or author code is
 vendored by this task folder.
 
 2. Paper implementation availability
@@ -895,50 +896,21 @@ python3 scripts/finalize_fbf_author_incline_reference.py --verify-only
 8. Integrity rule
 ------------------
 
-Only artifacts listed in paper-evidence-manifest.json with existing paths and
-validated metadata count as evidence. Malformed, interrupted, concatenated,
-fallback-contaminated, or unverifiable runs remain explicitly invalid or
-partial and must never be used for completion or performance claims. Timing
-and real-time claims additionally require a validated physical outcome and a
-controlled affinity contract. Pre-hardening visual artifacts lack the
-every-step/all-group diagnostic contract and are stale until recaptured.
+Generated captures, videos, raw traces, metadata, and run logs live under the
+ignored docs/dev_tasks/<task>/assets/ working directory. They are not source
+artifacts and are not required in a clean checkout. Reusable runtime inputs
+remain under data/, and intentionally selected durable documentation media
+belongs under docs/assets/.
 
-The validator hashes repository artifacts, materializes the CPU,
-standing-visual, incline, and prior-source indexes, and binds recorded process results,
-taskset commands, per-CPU topology aggregates, worker-residency identities,
-and archived-prior-source provenance without requiring ignored local build
-products. It independently recomputes the CPU timing, thread-residency,
-colored-dispatch, physical, and solver-option claims from the 3,600-row scale
-bundle and 5,220-row current-small bundle, then cross-checks the card-v2-r3,
-impact-v8, and arch101-v6 semantic
-fields and promotion boundaries.
+A result can be promoted into the task Markdown or pull-request description
+only when its reproducer completes, its sidecar and media checks pass, and the
+claim boundary records solver failures, fallback counts, physical outcome, and
+source mismatches. Malformed, interrupted, concatenated, fallback-contaminated,
+or unverifiable runs remain explicitly invalid or partial. Timing and real-time
+claims additionally require a validated physical outcome and controlled CPU
+affinity.
 
-The finalized Painleve proxy bundle is independently validated as an exact
-27-artifact membership set in a 29-file physical directory. Validation
-recomputes every indexed byte size and
-hash; binds source/test/binary identities; checks both member sidecars, media
-streams, paired composition, full decode, manual panel verdicts, and separate
-151-row tracked traces; and recomputes the first-tumble and shorter pre-tumble
-contracts. Paper/external/golden/timing/real-time promotion and rendered-demo
-to tracked-trace equivalence remain explicitly false or null.
-
-The finalized incline bundle is independently validated as an exact
-21-artifact membership set in a 23-file physical directory. Validation
-recomputes indexed sizes and hashes, binds source/test/binary/runtime
-identities, checks five durable stills and the decoded clip/panel/manual
-verdict, replays both 121-row traces, and recomputes
-the tracked threshold separation. Only aggregate exact-solve/fallback counts
-are equivalent; capture contacts 8 versus trace contacts 6 remain explicitly
-excluded, and the strict paper_cpu mu=.5 failure remains authoritative for
-that lane.
-
-The repository contains six finalized durable visual bundles: literal wedge,
-incline threshold, checker backspin, author-configuration turntable, Painleve
-proxy, and public-author card-house construction. Clean-checkout verify-only
-uses durable artifacts and provenance without ignored raw capture staging. The
-manifest remains 29 requirements = 24 partial + 5 blocked + 0
-complete, the visual workflow remains 17 schedules, and the overall task
-remains incomplete.
-The generic DemoHost capture-sidecar completion attestation remains
-unavailable, and no bundle is promoted beyond the explicit scope recorded
-above.
+Review videos are encoded locally as H.264 MP4, checked with ffprobe, and
+attached through the pull-request editor. The resulting GitHub-hosted URL is
+recorded in PAPER_DEMO_VIDEO_MATRIX.md. A local file or historical capture does
+not satisfy the review-video gate by itself.

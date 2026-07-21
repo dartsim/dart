@@ -23,6 +23,11 @@ pixi run demos -- --scene fbf_paper_turntable
 pixi run demos -- --scene fbf_paper_turntable_mu_0_2_omega_2
 pixi run demos -- --scene fbf_paper_turntable_mu_0_2_omega_5
 pixi run demos -- --scene fbf_paper_turntable_mu_0_5_omega_5
+pixi run demos -- --scene fbf_author_turntable_mu_0_2_omega_2
+pixi run demos -- --scene fbf_author_turntable_mu_0_2_omega_5
+pixi run demos -- --scene fbf_author_turntable_mu_0_5_omega_2
+pixi run demos -- --scene fbf_author_turntable_mu_0_5_omega_5
+pixi run demos -- --scene fbf_author_card_house_5_construction
 pixi run demos -- --scene fbf_paper_painleve
 pixi run demos -- --scene fbf_paper_painleve_mu_0_55
 pixi run demos -- --scene fbf_paper_card_aframe

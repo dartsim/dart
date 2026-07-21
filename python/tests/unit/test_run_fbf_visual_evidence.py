@@ -62,6 +62,7 @@ def _write_sidecar(module, schedule, output_dir, *, action_before_shot=False):
     for step in range(schedule.total_steps + 1):
         diagnostics = (
             {
+                "solver": module.EXACT_SOLVER_NAME,
                 "available": True,
                 "status": "not_run" if step == 0 else "success",
                 "fbf_status": "not_run" if step == 0 else "success",
@@ -75,7 +76,19 @@ def _write_sidecar(module, schedule, output_dir, *, action_before_shot=False):
                 "boxed_lcp_fallbacks": 0,
             }
             if schedule.exact_fbf_required
-            else {"available": False, "gap": "not an exact-FBF schedule"}
+            else (
+                {
+                    "solver": module.BOXED_SOLVER_NAME,
+                    "available": False,
+                    "gap": module.BOXED_DIAGNOSTICS_GAP,
+                }
+                if schedule.solver_lane == "boxed"
+                else {
+                    "solver": module.EXACT_SOLVER_NAME,
+                    "available": False,
+                    "gap": "exact diagnostics are not required by this test",
+                }
+            )
         )
         step_records.append(
             {
@@ -207,6 +220,134 @@ def test_schedule_matrix_covers_every_requested_visual_case():
         "turntable_author_mu05_omega5",
     )
     assert module.PAINLEVE_MEMBERS == ("painleve_mu05", "painleve_mu055")
+
+
+def test_solver_lane_resolution_derives_boxed_and_records_static_skips():
+    module = _load_module()
+    source = [
+        module.SCHEDULES["backspin"],
+        module.SCHEDULES["turntable_author_mu02_omega2"],
+        module.SCHEDULES["card_house_10_construction"],
+    ]
+
+    resolved, skips = module._resolve_solver_lanes(source, "both")
+
+    assert [schedule.id for schedule in resolved] == [
+        "backspin",
+        "turntable_author_mu02_omega2",
+        "backspin__boxed",
+        "card_house_10_construction",
+    ]
+    assert {
+        (skip["schedule_id"], skip["requested_solver_lane"], skip["reason"])
+        for skip in skips
+    } == {
+        ("card_house_10_construction", "exact", "scene is boxed-only"),
+        ("turntable_author_mu02_omega2", "boxed", "scene is exact-only"),
+    }
+
+
+def test_boxed_schedule_command_and_plan_bind_pre_run_toggle(tmp_path):
+    module = _load_module()
+    schedule = module._derive_boxed_schedule(module.SCHEDULES["backspin"])
+    output_dir = tmp_path / schedule.id
+
+    command = module.build_demo_command(schedule, Path("dart-demos"), output_dir)
+    plan = module.schedule_plan(schedule, Path("dart-demos"), tmp_path)
+
+    action_index = command.index("--headless-action")
+    shot_index = command.index("--headless-shot-at")
+    assert command[action_index : action_index + 2] == ["--headless-action", "e"]
+    assert action_index < shot_index
+    assert plan["solver_lane"] == "boxed"
+    assert plan["source_schedule_id"] == "backspin"
+    assert plan["expected_solver"] == module.BOXED_SOLVER_NAME
+    assert plan["comparison_capture"] is True
+    assert plan["evidence_ready"] is False
+    assert plan["output"]["directory"].endswith("backspin__boxed")
+
+
+def test_boxed_sidecar_binds_solver_and_unavailable_exact_diagnostics(tmp_path):
+    module = _load_module()
+    schedule = module._derive_boxed_schedule(
+        _test_schedule(module, exact_required=True)
+    )
+    output_dir = tmp_path / schedule.id
+    _write_frames(module, schedule, output_dir)
+    _write_sidecar(module, schedule, output_dir)
+
+    report = module.validate_sidecar(schedule, output_dir)
+
+    assert report["final_solver_diagnostics"] == {
+        "solver": module.BOXED_SOLVER_NAME,
+        "available": False,
+        "gap": module.BOXED_DIAGNOSTICS_GAP,
+    }
+    assert report["pass"] is True
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("solver", "ExactCoulombFbfConstraintSolver", "active solver"),
+        ("available", True, "exposes exact-FBF diagnostics"),
+        ("gap", "unknown solver", "diagnostic gap"),
+    ],
+)
+def test_boxed_sidecar_rejects_unbound_solver_contract(tmp_path, field, value, message):
+    module = _load_module()
+    schedule = module._derive_boxed_schedule(
+        _test_schedule(module, exact_required=True)
+    )
+    output_dir = tmp_path / schedule.id
+    _write_frames(module, schedule, output_dir)
+    _write_sidecar(module, schedule, output_dir)
+    sidecar_path = output_dir / "timeline.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    for item in sidecar["steps"]:
+        item["solver_diagnostics"][field] = value
+    for shot in sidecar["shots"]:
+        shot["solver_diagnostics"][field] = value
+    sidecar["solver_diagnostics"][field] = value
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=message):
+        module.validate_sidecar(schedule, output_dir)
+
+
+def test_main_plan_both_emits_lane_separated_schedule_ids(tmp_path, capsys):
+    module = _load_module()
+
+    result = module.main(
+        [
+            "plan",
+            "--scenario",
+            "backspin",
+            "--solver-lane",
+            "both",
+            "--output-root",
+            str(tmp_path),
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert result == 0
+    assert payload["requested_solver_lane"] == "both"
+    assert [schedule["id"] for schedule in payload["schedules"]] == [
+        "backspin",
+        "backspin__boxed",
+    ]
+    assert payload["group_outputs"] == {}
+    assert payload["solver_lane_skips"] == []
+
+
+def test_demo_sidecar_records_exact_and_boxed_solver_identity():
+    source = (ROOT / "examples/demos/DemoHost.cpp").read_text(encoding="utf-8")
+
+    assert "#include <dart/constraint/BoxedLcpConstraintSolver.hpp>" in source
+    assert 'snapshot.solver = "BoxedLcpConstraintSolver"' in source
+    assert 'snapshot.solver = "ExactCoulombFbfConstraintSolver"' in source
+    assert "writeJsonString(out, snapshot.solver);" in source
 
 
 def test_demo_parameter_scene_factories_are_declared_and_registered():
@@ -1186,6 +1327,8 @@ def test_existing_verification_rejects_claim_boundary_mutations(
     ("key", "mutated"),
     [
         ("source_segment", "different-segment"),
+        ("solver_lane", "boxed"),
+        ("source_group_id", "different-group"),
         ("actual_simulator", False),
         ("generated_imagery", True),
         ("paper_comparable", True),
@@ -1205,6 +1348,8 @@ def test_existing_group_verification_rejects_claim_boundary_mutations(
         "kind": "group_capture_result",
         "group_id": group.id,
         "source_segment": group.source_segment,
+        "solver_lane": group.solver_lane,
+        "source_group_id": group.source_group_id,
         "layout": group.layout,
         "member_order": list(group.members),
         "labels": list(group.labels),
@@ -1554,6 +1699,7 @@ def test_exact_sidecar_rejects_unavailable_post_solve_diagnostics(tmp_path):
     sidecar_path = output_dir / "timeline.json"
     sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
     unavailable = {
+        "solver": module.EXACT_SOLVER_NAME,
         "available": False,
         "gap": "unexpected post-solve gap",
     }
@@ -1574,6 +1720,7 @@ def test_exact_sidecar_rejects_contact_free_noop_mislabeled_as_evidence(tmp_path
     sidecar_path = output_dir / "timeline.json"
     sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
     never_run = {
+        "solver": module.EXACT_SOLVER_NAME,
         "available": True,
         "status": "not_run",
         "fbf_status": "not_run",
@@ -1606,6 +1753,7 @@ def test_exact_sidecar_allows_airborne_not_run_prefix(tmp_path):
     sidecar_path = output_dir / "timeline.json"
     sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
     airborne = {
+        "solver": module.EXACT_SOLVER_NAME,
         "available": True,
         "status": "not_run",
         "fbf_status": "not_run",
@@ -1920,15 +2068,18 @@ def test_media_validation_rejects_wrong_size_rate_or_stretched_frame(
         )
 
 
-def test_manifest_audit_checks_visual_requirements_and_source_segments():
+def test_coverage_audit_checks_visual_schedules_and_source_segments():
     module = _load_module()
 
-    report = module.audit_manifest()
+    report = module.audit_coverage_contract()
 
     assert report["pass"] is True
-    assert report["overall_status"] == "partial"
+    assert report["capture_path_complete"] is True
+    assert report["evidence_complete"] is False
     assert report["video_segments"]["video.04_turntable"] == (35, 50)
-    assert report["status_counts"]["partial"] > 0
+    assert "card_house_26" in report["known_gate_blocked_schedules"]
+    assert "masonry_arch_25" in report["known_gate_blocked_schedules"]
+    assert "masonry_arch_101" in report["known_gate_blocked_schedules"]
 
 
 def test_audited_local_source_hashes_are_pinned():

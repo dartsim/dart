@@ -1,0 +1,4 @@
+# Generated task evidence is local working state. Commit compact summaries and
+# reproduction commands in the task folder; promote reusable media to
+# ../../assets/ instead of committing captures, raw traces, or run logs here.
+**/assets/

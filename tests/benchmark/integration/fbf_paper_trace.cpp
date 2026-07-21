@@ -47,6 +47,8 @@
 //                   [post_bootstrap_outer_iterations=0]
 //                   [native_manifold_sensitivity=default|compact|
 //                                                four_point_planar]
+//                   [cross_step_policy=default|dart_current|
+//                                      author_policy_inspired_b3f3c5c]
 //
 // Scenarios:
 //   incline_mu_0_5, incline_mu_0_4, backspin,
@@ -330,9 +332,18 @@ enum class NativeManifoldSensitivitySelector
   FourPointPlanar,
 };
 
+enum class CrossStepPolicySelector
+{
+  Default,
+  DartCurrent,
+  AuthorPolicyInspiredB3f3c5c,
+};
+
 bool gAppendLiteralCrownImpactColumns = false;
 NativeManifoldSensitivitySelector gNativeManifoldSensitivitySelector
     = NativeManifoldSensitivitySelector::Default;
+CrossStepPolicySelector gCrossStepPolicySelector
+    = CrossStepPolicySelector::Default;
 
 struct PhaseSummaryMetrics
 {
@@ -388,11 +399,14 @@ struct TrackedBodyMetrics
 
 struct ExactCounterSnapshot
 {
+  std::size_t exactAttempts = 0u;
   std::size_t exactSolves = 0u;
   std::size_t warmStarts = 0u;
   std::size_t exactFailures = 0u;
   std::size_t boxedFallbacks = 0u;
   std::size_t maxIterationsAccepted = 0u;
+  std::size_t warmStartStepSizeCaps = 0u;
+  std::size_t unconvergedCacheSkips = 0u;
   std::size_t fbfIterations = 0u;
   std::size_t contactRowDelassusProducts = 0u;
   std::size_t parallelContactRowDelassusProducts = 0u;
@@ -554,6 +568,11 @@ bool nativeManifoldSensitivityEnabled()
          != NativeManifoldSensitivitySelector::Default;
 }
 
+bool crossStepPolicyEvidenceEnabled()
+{
+  return gCrossStepPolicySelector != CrossStepPolicySelector::Default;
+}
+
 const char* nativeManifoldSensitivitySelectorName(
     NativeManifoldSensitivitySelector selector)
 {
@@ -564,6 +583,20 @@ const char* nativeManifoldSensitivitySelectorName(
       return "compact";
     case NativeManifoldSensitivitySelector::FourPointPlanar:
       return "four_point_planar";
+  }
+
+  return "unknown";
+}
+
+const char* crossStepPolicySelectorName(CrossStepPolicySelector selector)
+{
+  switch (selector) {
+    case CrossStepPolicySelector::Default:
+      return "default";
+    case CrossStepPolicySelector::DartCurrent:
+      return "dart_current";
+    case CrossStepPolicySelector::AuthorPolicyInspiredB3f3c5c:
+      return "author_policy_inspired_b3f3c5c";
   }
 
   return "unknown";
@@ -594,6 +627,20 @@ const char* localSolverName(
       return "inverse_euclidean";
     case LocalSolver::ProjectedGradient:
       return "projected_gradient";
+  }
+
+  return "unknown";
+}
+
+const char* warmStartMatchModeName(
+    dart::constraint::ExactCoulombFbfWarmStartMatchMode mode)
+{
+  using Mode = dart::constraint::ExactCoulombFbfWarmStartMatchMode;
+  switch (mode) {
+    case Mode::EitherBodyLocalFeature:
+      return "either_body_local_feature";
+    case Mode::OrderedBodyBLocalFeature:
+      return "ordered_body_b_local_feature";
   }
 
   return "unknown";
@@ -796,6 +843,27 @@ bool parseNativeManifoldSensitivitySelector(
   }
   if (name == "four_point_planar") {
     selector = NativeManifoldSensitivitySelector::FourPointPlanar;
+    return true;
+  }
+
+  return false;
+}
+
+bool parseCrossStepPolicySelector(
+    const char* value, CrossStepPolicySelector& selector)
+{
+  if (value == nullptr || std::string(value) == "default") {
+    selector = CrossStepPolicySelector::Default;
+    return true;
+  }
+
+  const std::string name(value);
+  if (name == "dart_current") {
+    selector = CrossStepPolicySelector::DartCurrent;
+    return true;
+  }
+  if (name == "author_policy_inspired_b3f3c5c") {
+    selector = CrossStepPolicySelector::AuthorPolicyInspiredB3f3c5c;
     return true;
   }
 
@@ -1280,6 +1348,121 @@ dart::constraint::ExactCoulombFbfConstraintSolverOptions makeFbfOptions(
   if (usesDartBestParameters(contract) && gLocalSolverOverrideSet)
     options.innerLocalSolver = gLocalSolverOverride;
   return options;
+}
+
+bool equalPolicyValue(double lhs, double rhs)
+{
+  return lhs == rhs || (std::isnan(lhs) && std::isnan(rhs));
+}
+
+bool matchesCrossStepPolicyOptions(
+    const dart::constraint::ExactCoulombFbfCrossStepPolicyOptions& actual,
+    const dart::constraint::ExactCoulombFbfCrossStepPolicyOptions& expected)
+{
+  return actual.warmStartMatchMode == expected.warmStartMatchMode
+         && equalPolicyValue(
+             actual.warmStartNormalCosine, expected.warmStartNormalCosine)
+         && actual.useStrictWarmStartMatchDistance
+                == expected.useStrictWarmStartMatchDistance
+         && actual.warmStartMaxAge == expected.warmStartMaxAge
+         && equalPolicyValue(
+             actual.persistentStepSizeSafeBoundScale,
+             expected.persistentStepSizeSafeBoundScale)
+         && equalPolicyValue(actual.minimumStepSize, expected.minimumStepSize)
+         && equalPolicyValue(actual.maximumStepSize, expected.maximumStepSize)
+         && equalPolicyValue(
+             actual.warmStartResidualThreshold,
+             expected.warmStartResidualThreshold)
+         && equalPolicyValue(
+             actual.warmStartStepSizeCap, expected.warmStartStepSizeCap)
+         && actual.persistUncappedStepSizeOnWarmStartCap
+                == expected.persistUncappedStepSizeOnWarmStartCap
+         && actual.requireResidualImprovementForUnconvergedCacheSave
+                == expected.requireResidualImprovementForUnconvergedCacheSave;
+}
+
+bool matchesDartCurrentCrossStepPolicy(
+    const dart::constraint::ExactCoulombFbfConstraintSolverOptions& options,
+    const dart::constraint::ExactCoulombFbfCrossStepPolicyOptions& policy)
+{
+  const dart::constraint::ExactCoulombFbfCrossStepPolicyOptions expected;
+  return options.enableWarmStart && options.enableStepSizePersistence
+         && equalPolicyValue(options.warmStartMatchDistance, 0.025)
+         && equalPolicyValue(options.stepSizeRecoveryGrowthFactor, 1.05)
+         && equalPolicyValue(options.stepSizeScale, 1.0)
+         && equalPolicyValue(options.couplingVariationTolerance, 0.9)
+         && equalPolicyValue(options.shrinkFactor, 0.7)
+         && options.maxStepShrinkIterations == 20
+         && matchesCrossStepPolicyOptions(policy, expected);
+}
+
+dart::constraint::ExactCoulombFbfCrossStepPolicyOptions
+authorPolicyInspiredCrossStepOptions()
+{
+  using MatchMode = dart::constraint::ExactCoulombFbfWarmStartMatchMode;
+  dart::constraint::ExactCoulombFbfCrossStepPolicyOptions policy;
+  policy.warmStartMatchMode = MatchMode::OrderedBodyBLocalFeature;
+  policy.warmStartNormalCosine = 0.9;
+  policy.useStrictWarmStartMatchDistance = true;
+  policy.warmStartMaxAge = 3;
+  policy.persistentStepSizeSafeBoundScale = 10.0;
+  policy.minimumStepSize = 1e-6;
+  policy.maximumStepSize = 1e6;
+  policy.warmStartResidualThreshold = 1e-4;
+  policy.warmStartStepSizeCap = 1e4;
+  policy.persistUncappedStepSizeOnWarmStartCap = true;
+  policy.requireResidualImprovementForUnconvergedCacheSave = true;
+  return policy;
+}
+
+bool matchesAuthorPolicyInspiredCrossStepPolicy(
+    const dart::constraint::ExactCoulombFbfConstraintSolverOptions& options,
+    const dart::constraint::ExactCoulombFbfCrossStepPolicyOptions& policy)
+{
+  return options.enableWarmStart && options.enableStepSizePersistence
+         && equalPolicyValue(options.warmStartMatchDistance, 0.02)
+         && equalPolicyValue(options.stepSizeRecoveryGrowthFactor, 1.0 / 0.7)
+         && equalPolicyValue(options.stepSizeScale, 10.0)
+         && equalPolicyValue(options.couplingVariationTolerance, 0.9)
+         && equalPolicyValue(options.shrinkFactor, 0.7)
+         && options.maxStepShrinkIterations == 8
+         && matchesCrossStepPolicyOptions(
+             policy, authorPolicyInspiredCrossStepOptions());
+}
+
+const char* classifyCrossStepPolicy(
+    const dart::constraint::ExactCoulombFbfConstraintSolver& solver)
+{
+  const auto& options = solver.getExactCoulombOptions();
+  const auto policy = solver.getExactCoulombCrossStepPolicyOptions();
+  if (matchesDartCurrentCrossStepPolicy(options, policy))
+    return "dart_current";
+  if (matchesAuthorPolicyInspiredCrossStepPolicy(options, policy))
+    return "author_policy_inspired_b3f3c5c";
+  return "unclassified";
+}
+
+void installCrossStepPolicy(
+    dart::constraint::ExactCoulombFbfConstraintSolver& solver)
+{
+  if (gCrossStepPolicySelector == CrossStepPolicySelector::Default)
+    return;
+
+  if (gCrossStepPolicySelector == CrossStepPolicySelector::DartCurrent) {
+    solver.setExactCoulombCrossStepPolicyOptions({});
+    return;
+  }
+
+  auto options = solver.getExactCoulombOptions();
+  options.warmStartMatchDistance = 0.02;
+  options.stepSizeRecoveryGrowthFactor = 1.0 / 0.7;
+  options.stepSizeScale = 10.0;
+  options.couplingVariationTolerance = 0.9;
+  options.shrinkFactor = 0.7;
+  options.maxStepShrinkIterations = 8;
+  solver.setExactCoulombOptions(options);
+  solver.setExactCoulombCrossStepPolicyOptions(
+      authorPolicyInspiredCrossStepOptions());
 }
 
 std::shared_ptr<dart::collision::NativeCollisionDetector>
@@ -2463,6 +2646,28 @@ void printPerformanceHeader(SolverContract contract)
         "step_internal_fbf_best_iteration,step_internal_fbf_best_residual,"
         "colliding_body_pair_labels,contact_multiplicity_by_body_pair");
   }
+  if (crossStepPolicyEvidenceEnabled()) {
+    std::printf(
+        ",cross_step_policy_contract,requested_cross_step_policy,"
+        "actual_cross_step_policy,requested_native_contact_manifold_mode,"
+        "actual_native_contact_manifold_mode,collision_max_contacts,"
+        "collision_max_contacts_per_pair,step_exact_attempts,"
+        "step_exact_max_iterations_accepted,step_warm_start_gamma_caps,"
+        "step_unconverged_warm_start_cache_skips,"
+        "worst_exact_residual_to_date,last_exact_diagnostics_contract,"
+        "last_exact_initial_natural_map_residual,"
+        "last_exact_final_natural_map_residual,"
+        "last_exact_uncapped_initial_gamma,"
+        "last_exact_warm_start_gamma_cap_applied,warm_start_match_mode,"
+        "warm_start_match_distance,warm_start_normal_cosine,"
+        "strict_warm_start_match_distance,warm_start_max_age,"
+        "persistent_gamma_safe_bound_scale,minimum_adaptive_gamma,"
+        "maximum_adaptive_gamma,warm_start_gamma_natural_residual_threshold,"
+        "warm_start_gamma_cap,persist_uncapped_gamma_after_warm_cap,"
+        "require_residual_improvement_for_unconverged_cache_save,"
+        "coupling_variation_tolerance,shrink_factor,"
+        "max_step_shrink_iterations");
+  }
   if (gAppendLiteralCrownImpactColumns) {
     std::printf(
         ",impact_contract,impact_phase,standing_prefix_reference_scenario,"
@@ -3040,12 +3245,17 @@ ExactCounterSnapshot readExactCounterSnapshot(
   if (exactSolver == nullptr)
     return snapshot;
 
+  snapshot.exactAttempts = exactSolver->getNumExactCoulombAttempts();
   snapshot.exactSolves = exactSolver->getNumExactCoulombSolves();
   snapshot.warmStarts = exactSolver->getNumExactCoulombWarmStarts();
   snapshot.exactFailures = exactSolver->getNumExactCoulombFailures();
   snapshot.boxedFallbacks = exactSolver->getNumBoxedLcpFallbacks();
   snapshot.maxIterationsAccepted
       = exactSolver->getNumExactCoulombMaxIterationsAccepted();
+  snapshot.warmStartStepSizeCaps
+      = exactSolver->getNumExactCoulombWarmStartStepSizeCaps();
+  snapshot.unconvergedCacheSkips
+      = exactSolver->getNumExactCoulombUnconvergedCacheSkips();
   snapshot.fbfIterations = exactSolver->getTotalExactCoulombIterations();
   snapshot.contactRowDelassusProducts
       = exactSolver->getNumExactCoulombContactRowDelassusProducts();
@@ -3383,6 +3593,76 @@ void printPerformanceRow(
         << bestIteration << ',' << safeValue(bestResidual) << ','
         << pairMetrics.pairLabels << ',' << pairMetrics.multiplicities;
   }
+  if (crossStepPolicyEvidenceEnabled()) {
+    const auto detector
+        = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
+            world->getConstraintSolver()->getCollisionDetector());
+    const char* actualMode = detector == nullptr
+                                 ? "unavailable"
+                                 : nativeContactManifoldModeName(
+                                     detector->getContactManifoldMode());
+    const auto& collisionOption
+        = world->getConstraintSolver()->getCollisionOption();
+    const auto stepExactAttempts = counterDelta(
+        currentCounters.exactAttempts, previousCounters.exactAttempts);
+    const auto stepWarmStartStepSizeCaps = counterDelta(
+        currentCounters.warmStartStepSizeCaps,
+        previousCounters.warmStartStepSizeCaps);
+    const auto stepUnconvergedCacheSkips = counterDelta(
+        currentCounters.unconvergedCacheSkips,
+        previousCounters.unconvergedCacheSkips);
+    const char* lastDiagnosticsContract
+        = stepExactAttempts > 1u
+              ? "last_exact_group_only_multi_group_noncomparable"
+          : stepExactAttempts == 1u ? "last_exact_group_only_single_group"
+                                    : "unavailable_no_exact_attempt_this_step";
+    double initialNaturalResidual = std::numeric_limits<double>::quiet_NaN();
+    double finalNaturalResidual = std::numeric_limits<double>::quiet_NaN();
+    double uncappedInitialGamma = std::numeric_limits<double>::quiet_NaN();
+    int warmStartGammaCapApplied = -1;
+    if (exactSolver != nullptr && stepExactAttempts > 0u) {
+      initialNaturalResidual
+          = exactSolver->getLastExactCoulombInitialNaturalMapResidual();
+      finalNaturalResidual
+          = exactSolver->getLastExactCoulombNaturalMapResidual();
+      uncappedInitialGamma
+          = exactSolver->getLastExactCoulombUncappedInitialStepSize();
+      warmStartGammaCapApplied
+          = exactSolver->getLastExactCoulombWarmStartStepSizeCapApplied() ? 1
+                                                                          : 0;
+    }
+    const double worstResidual
+        = exactSolver == nullptr ? std::numeric_limits<double>::quiet_NaN()
+                                 : exactSolver->getWorstExactCoulombResidual();
+    const auto& options = exactSolver->getExactCoulombOptions();
+    const auto policy = exactSolver->getExactCoulombCrossStepPolicyOptions();
+    row << ",card_house_cross_step_policy_ab_v1,"
+        << crossStepPolicySelectorName(gCrossStepPolicySelector) << ','
+        << classifyCrossStepPolicy(*exactSolver) << ",compact," << actualMode
+        << ',' << collisionOption.maxNumContacts << ','
+        << collisionOption.maxNumContactsPerPair << ',' << stepExactAttempts
+        << ',' << stepMaxIterationsAccepted << ',' << stepWarmStartStepSizeCaps
+        << ',' << stepUnconvergedCacheSkips << ',' << safeValue(worstResidual)
+        << ',' << lastDiagnosticsContract << ','
+        << safeValue(initialNaturalResidual) << ','
+        << safeValue(finalNaturalResidual) << ','
+        << safeValue(uncappedInitialGamma) << ',' << warmStartGammaCapApplied
+        << ',' << warmStartMatchModeName(policy.warmStartMatchMode) << ','
+        << safeValue(options.warmStartMatchDistance) << ','
+        << safeValue(policy.warmStartNormalCosine) << ','
+        << (policy.useStrictWarmStartMatchDistance ? 1 : 0) << ','
+        << policy.warmStartMaxAge << ','
+        << safeValue(policy.persistentStepSizeSafeBoundScale) << ','
+        << safeValue(policy.minimumStepSize) << ','
+        << safeValue(policy.maximumStepSize) << ','
+        << safeValue(policy.warmStartResidualThreshold) << ','
+        << safeValue(policy.warmStartStepSizeCap) << ','
+        << (policy.persistUncappedStepSizeOnWarmStartCap ? 1 : 0) << ','
+        << (policy.requireResidualImprovementForUnconvergedCacheSave ? 1 : 0)
+        << ',' << safeValue(options.couplingVariationTolerance) << ','
+        << safeValue(options.shrinkFactor) << ','
+        << options.maxStepShrinkIterations;
+  }
   if (literalCrownImpactState != nullptr) {
     const auto& impact = *literalCrownImpactState;
     const auto& pose = impact.poseMetrics;
@@ -3666,7 +3946,9 @@ void printUsage()
       "[local_solver=default|exact_metric|inverse_euclidean|"
       "projected_gradient] [bootstrap_outer_iterations=0] "
       "[post_bootstrap_outer_iterations=0] "
-      "[native_manifold_sensitivity=default|compact|four_point_planar]\n");
+      "[native_manifold_sensitivity=default|compact|four_point_planar] "
+      "[cross_step_policy=default|dart_current|"
+      "author_policy_inspired_b3f3c5c]\n");
 }
 
 int printAuthorTurntableContract(int argc, char** argv)
@@ -3725,7 +4007,7 @@ int main(int argc, char** argv)
   if (argc > 1 && std::string(argv[1]) == "--author-turntable-contract")
     return printAuthorTurntableContract(argc, argv);
 
-  if (argc > 16) {
+  if (argc > 17) {
     printUsage();
     return 2;
   }
@@ -3810,6 +4092,8 @@ int main(int argc, char** argv)
           argc > 14 ? argv[14] : nullptr, 0u, postBootstrapOuterIterations)
       || !parseNativeManifoldSensitivitySelector(
           argc > 15 ? argv[15] : nullptr, gNativeManifoldSensitivitySelector)
+      || !parseCrossStepPolicySelector(
+          argc > 16 ? argv[16] : nullptr, gCrossStepPolicySelector)
       || bootstrapOuterIterations
              > static_cast<std::size_t>(std::numeric_limits<int>::max())
       || postBootstrapOuterIterations
@@ -3834,7 +4118,7 @@ int main(int argc, char** argv)
   }
   if (nativeManifoldSensitivityEnabled()) {
     const bool frozenContract
-        = argc == 16
+        = (argc == 16 || (argc == 17 && std::string(argv[16]) == "default"))
           && std::string(argv[1]) == "card_house_26_settle_projectile_full"
           && std::string(argv[2]) == "exact_fbf" && std::string(argv[3]) == "1"
           && std::string(argv[4]) == "600" && std::string(argv[5]) == "nan"
@@ -3851,6 +4135,28 @@ int main(int argc, char** argv)
           "explicit native-manifold sensitivity requires the frozen "
           "card-house v1 scenario, solver, trace, step, thread, frontend, "
           "and bootstrap contract\n");
+      return 2;
+    }
+  }
+  if (crossStepPolicyEvidenceEnabled()) {
+    const bool frozenContract
+        = argc == 17
+          && std::string(argv[1]) == "card_house_26_settle_projectile_full"
+          && std::string(argv[2]) == "exact_fbf" && std::string(argv[3]) == "1"
+          && std::string(argv[4]) == "90" && std::string(argv[5]) == "nan"
+          && std::string(argv[6]) == "performance"
+          && std::string(argv[7]) == "default"
+          && std::string(argv[8]) == "default" && std::string(argv[9]) == "1"
+          && std::string(argv[10]) == "paper_cpu"
+          && std::string(argv[11]) == "native"
+          && std::string(argv[12]) == "default" && std::string(argv[13]) == "0"
+          && std::string(argv[14]) == "0" && std::string(argv[15]) == "default";
+    if (!frozenContract) {
+      std::fprintf(
+          stderr,
+          "explicit cross-step policy requires the frozen 90-step "
+          "card-house A/B v1 scenario, solver, trace, thread, frontend, "
+          "manifold, and bootstrap contract\n");
       return 2;
     }
   }
@@ -4008,6 +4314,29 @@ int main(int argc, char** argv)
   if (solverMode == SolverMode::ExactFbf && exactSolver == nullptr) {
     std::fprintf(stderr, "fbf_paper_trace could not install exact solver\n");
     return 1;
+  }
+  if (crossStepPolicyEvidenceEnabled()) {
+    installCrossStepPolicy(*exactSolver);
+    const auto detector
+        = std::dynamic_pointer_cast<dart::collision::NativeCollisionDetector>(
+            world->getConstraintSolver()->getCollisionDetector());
+    const auto& collisionOption
+        = world->getConstraintSolver()->getCollisionOption();
+    if (detector == nullptr
+        || detector->getContactManifoldMode()
+               != dart::collision::NativeCollisionDetector::
+                   ContactManifoldMode::Compact
+        || collisionOption.maxNumContacts != kCardHouseReducedMaxContacts
+        || collisionOption.maxNumContactsPerPair
+               != kCardHouseReducedMaxContactsPerPair
+        || std::string(classifyCrossStepPolicy(*exactSolver))
+               != crossStepPolicySelectorName(gCrossStepPolicySelector)) {
+      std::fprintf(
+          stderr,
+          "cross-step policy failed installed solver, detector, collision-"
+          "cap, or policy readback\n");
+      return 1;
+    }
   }
   if (bootstrapEnabled) {
     auto options = exactSolver->getExactCoulombOptions();

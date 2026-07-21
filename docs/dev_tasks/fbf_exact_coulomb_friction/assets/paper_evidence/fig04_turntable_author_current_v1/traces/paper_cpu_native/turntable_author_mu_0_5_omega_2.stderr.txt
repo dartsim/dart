@@ -1,1 +1,0 @@
-author turntable trace observed an intermediate exact-contract violation; preserve the complete trajectory as a scientific negative

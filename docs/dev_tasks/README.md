@@ -33,6 +33,18 @@ Add these sidecars when they improve resumability or evidence:
   passes, GUI/demo evidence when relevant, results, known gaps, and follow-up.
 - `progress-log.md`: chronological record of meaningful completed work.
 
+## Generated Evidence
+
+Keep generated captures, videos, raw benchmark traces, run logs, and sealed
+evidence bundles under `docs/dev_tasks/<task>/assets/`. That directory is local
+working state and is ignored by Git. Commit compact result summaries,
+reproduction commands, and claim boundaries in the task Markdown files.
+
+If media is useful beyond the active task, promote a deliberately selected,
+reasonably sized artifact to `docs/assets/` under the documentation placement
+rules. Attach review-only videos through the pull-request editor instead of
+adding them to the repository.
+
 Before completing a task, move durable facts to the owner selected by
 `docs/information-architecture.md`: published docs, onboarding docs, AI policy,
 living plans, design rationale, theory/reference background, reusable docs
