@@ -263,6 +263,9 @@ const char* exactStatusName(
         MaxIterationsAccepted:
       return "max_iterations_accepted";
     case dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+        PlateauAccepted:
+      return "plateau_accepted";
+    case dart::constraint::ExactCoulombFbfConstraintSolverStatus::
         InvalidOptions:
       return "invalid_options";
     case dart::constraint::ExactCoulombFbfConstraintSolverStatus::

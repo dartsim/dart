@@ -58,6 +58,8 @@ enum class ExactCoulombFbfStatus
   InvalidInput,
   InnerSolverFailed,
   StepSizeUnderflow,
+  Plateau,
+  NonFiniteValue,
 };
 
 /// Exit status for the internal frozen cone-QP approximation.
@@ -76,6 +78,39 @@ struct ExactCoulombFbfOptions
 
   /// Stop when the dimensionless exact-Coulomb residual is at or below this.
   double tolerance = 1e-6;
+
+  /// Accepted-iteration interval for residual and termination checks.
+  ///
+  /// The final configured outer iteration is always checked. One preserves the
+  /// established DART behavior of checking every accepted iteration.
+  int residualCheckInterval = 1;
+
+  /// Number of sampled natural-map residuals separating a plateau comparison.
+  ///
+  /// Zero disables plateau termination. With interval five and patience five,
+  /// the first possible plateau is at accepted iteration 30, matching the
+  /// pinned author implementation.
+  int plateauPatience = 0;
+
+  /// Plateau when sampled relative improvement is below this value.
+  double plateauRelativeTolerance = 0.01;
+
+  /// Use a strict `< tolerance` convergence comparison.
+  ///
+  /// Disabled by default to preserve DART's established `<=` comparison.
+  bool useStrictToleranceComparison = false;
+
+  /// Use the unscaled natural-map residual for the iteration-zero gate.
+  ///
+  /// Later sampled convergence checks continue to use the dimensionless
+  /// exact-Coulomb residual. This is disabled by default.
+  bool useNaturalMapResidualForInitialConvergence = false;
+
+  /// Report nonfinite runtime values through `NonFiniteValue`.
+  ///
+  /// Disabled by default to preserve the established legacy status ordering.
+  /// Source-continuation policy enables the distinct fail-closed diagnostic.
+  bool reportNonFiniteValuesSeparately = false;
 
   /// Optional initial gamma. NaN means use the safe spectral estimate.
   double initialStepSize = std::numeric_limits<double>::quiet_NaN();
@@ -146,11 +181,27 @@ struct ExactCoulombFbfOptions
   /// Accept a trial when gamma * ||B(y) - B(x)|| / ||y - x|| <= this value.
   double couplingVariationTolerance = 0.9;
 
+  /// Accept without the coupling-variation ratio when `||y - x||` is no
+  /// larger than this threshold.
+  ///
+  /// Zero preserves DART's exact-zero special case. The pinned source uses
+  /// `1e-10`.
+  double couplingVariationSkipThreshold = 0.0;
+
   /// Shrink factor applied to gamma when the local coupling test fails.
   double shrinkFactor = 0.7;
 
   /// Maximum shrink/retry attempts per outer iteration.
   int maxStepShrinkIterations = 20;
+
+  /// Accept the final inner result after applying one last unsolved shrink.
+  ///
+  /// Disabled by default, so a budget of N permits trials at gamma_0 through
+  /// gamma_N and fails closed if all N+1 trials are rejected. When enabled, a
+  /// budget of N permits trials through gamma_(N-1), then accepts that inner
+  /// result while applying the correction with gamma_N. This reproduces the
+  /// pinned source's shrink-cap behavior without changing the default path.
+  bool acceptStepSizeAfterFinalShrink = false;
 
   /// Adapt gamma when the local coupling-variation test rejects a trial.
   ///
@@ -280,9 +331,12 @@ struct ExactCoulombFbfResidualSample
 {
   int iteration = 0;
   int shrinkIterations = 0;
+  int lineSearchShrinkCapCount = 0;
   double stepSize = std::numeric_limits<double>::quiet_NaN();
+  double innerSolveStepSize = std::numeric_limits<double>::quiet_NaN();
   double safeStepSize = std::numeric_limits<double>::quiet_NaN();
   double couplingVariationRatio = std::numeric_limits<double>::quiet_NaN();
+  double naturalMapResidual = std::numeric_limits<double>::quiet_NaN();
   CoulombConeResidual residual = makeInvalidCoulombConeResidual();
 };
 
@@ -292,13 +346,19 @@ struct ExactCoulombFbfResult
   ExactCoulombFbfStatus status = ExactCoulombFbfStatus::InvalidInput;
   int iterations = 0;
   int shrinkIterations = 0;
+  int lineSearchShrinkCapCount = 0;
+  bool lineSearchShrinkCapReached = false;
   double stepSize = std::numeric_limits<double>::quiet_NaN();
+  double lastInnerSolveStepSize = std::numeric_limits<double>::quiet_NaN();
   double uncappedInitialStepSize = std::numeric_limits<double>::quiet_NaN();
   bool initialStepSizeCapApplied = false;
   double safeStepSize = std::numeric_limits<double>::quiet_NaN();
   double couplingVariationRatio = 0.0;
   double initialNaturalMapResidual = std::numeric_limits<double>::quiet_NaN();
   double naturalMapResidual = std::numeric_limits<double>::quiet_NaN();
+  double plateauReferenceNaturalMapResidual
+      = std::numeric_limits<double>::quiet_NaN();
+  double plateauRelativeImprovement = std::numeric_limits<double>::quiet_NaN();
   CoulombConeResidual initialResidual = makeInvalidCoulombConeResidual();
   CoulombConeResidual residual = makeInvalidCoulombConeResidual();
   int bestIteration = 0;
@@ -347,7 +407,10 @@ inline bool isValidExactCoulombFbfOptions(const ExactCoulombFbfOptions& options)
             || options.minimumStepSize <= options.maximumStepSize);
 
   return options.maxOuterIterations >= 0 && std::isfinite(options.tolerance)
-         && options.tolerance >= 0.0 && validInitialStep
+         && options.tolerance >= 0.0 && options.residualCheckInterval > 0
+         && options.plateauPatience >= 0
+         && std::isfinite(options.plateauRelativeTolerance)
+         && options.plateauRelativeTolerance >= 0.0 && validInitialStep
          && std::isfinite(options.stepSizeScale) && options.stepSizeScale > 0.0
          && std::isfinite(options.explicitStepSizeSafeBoundScale)
          && options.explicitStepSizeSafeBoundScale > 0.0 && validStepSizeRange
@@ -356,8 +419,12 @@ inline bool isValidExactCoulombFbfOptions(const ExactCoulombFbfOptions& options)
          && options.outerRelaxation > 0.0
          && std::isfinite(options.couplingVariationTolerance)
          && options.couplingVariationTolerance > 0.0
+         && std::isfinite(options.couplingVariationSkipThreshold)
+         && options.couplingVariationSkipThreshold >= 0.0
          && std::isfinite(options.shrinkFactor) && options.shrinkFactor > 0.0
          && options.shrinkFactor < 1.0 && options.maxStepShrinkIterations >= 0
+         && (!options.acceptStepSizeAfterFinalShrink
+             || options.maxStepShrinkIterations > 0)
          && options.spectralIterations > 0
          && options.maxResidualHistorySamples >= 0
          && isValidCoulombConeResidualScale(
@@ -382,9 +449,12 @@ inline void appendExactCoulombFbfResidualHistorySample(
   ExactCoulombFbfResidualSample sample;
   sample.iteration = iteration;
   sample.shrinkIterations = result.shrinkIterations;
+  sample.lineSearchShrinkCapCount = result.lineSearchShrinkCapCount;
   sample.stepSize = result.stepSize;
+  sample.innerSolveStepSize = result.lastInnerSolveStepSize;
   sample.safeStepSize = result.safeStepSize;
   sample.couplingVariationRatio = result.couplingVariationRatio;
+  sample.naturalMapResidual = result.naturalMapResidual;
   sample.residual = result.residual;
   result.residualHistory.push_back(sample);
 }
@@ -592,6 +662,22 @@ double computeExactCoulombFbfSafeStepSize(
       problem, spectralRadius);
 }
 
+inline double computeExactCoulombFbfCouplingVariationRatioFromNorms(
+    double reactionChange, double couplingChange, double stepSize)
+{
+  if (reactionChange < 0.0 || couplingChange < 0.0 || !std::isfinite(stepSize)
+      || stepSize <= 0.0) {
+    DART_ASSERT(false && "Invalid exact-Coulomb FBF ratio input.");
+    return std::numeric_limits<double>::infinity();
+  }
+
+  if (reactionChange == 0.0) {
+    return couplingChange == 0.0 ? 0.0
+                                 : std::numeric_limits<double>::infinity();
+  }
+  return stepSize * couplingChange / reactionChange;
+}
+
 inline double computeExactCoulombFbfCouplingVariationRatio(
     const Eigen::Ref<const Eigen::VectorXd>& previousReaction,
     const Eigen::Ref<const Eigen::VectorXd>& trialReaction,
@@ -611,11 +697,8 @@ inline double computeExactCoulombFbfCouplingVariationRatio(
 
   const double reactionChange = (trialReaction - previousReaction).norm();
   const double couplingChange = (trialCoupling - previousCoupling).norm();
-  if (reactionChange == 0.0) {
-    return couplingChange == 0.0 ? 0.0
-                                 : std::numeric_limits<double>::infinity();
-  }
-  return stepSize * couplingChange / reactionChange;
+  return computeExactCoulombFbfCouplingVariationRatioFromNorms(
+      reactionChange, couplingChange, stepSize);
 }
 
 /// Extract 3x3 diagonal Delassus blocks using only matrix-free products.
@@ -2042,13 +2125,24 @@ ExactCoulombFbfResult solveExactCoulombFbf(
   result.residual = computeExactCoulombContactResidualNormalFirst(
       problem, result.reaction, applyDelassus, residualScales);
   result.initialResidual = result.residual;
-  if (options.useNaturalMapResidualForInitialStepSizeCap) {
+  if (options.reportNonFiniteValuesSeparately
+      && !isFiniteCoulombConeResidual(result.residual)) {
+    result.status = ExactCoulombFbfStatus::NonFiniteValue;
+    return result;
+  }
+  const bool needsInitialNaturalMapResidual
+      = options.useNaturalMapResidualForInitialStepSizeCap
+        || options.useNaturalMapResidualForInitialConvergence
+        || options.plateauPatience > 0;
+  if (needsInitialNaturalMapResidual) {
     result.initialNaturalMapResidual
         = computeExactCoulombNaturalMapResidualNormalFirst(
             problem, result.reaction, applyDelassus);
     result.naturalMapResidual = result.initialNaturalMapResidual;
     if (!std::isfinite(result.initialNaturalMapResidual)) {
-      result.status = ExactCoulombFbfStatus::InvalidInput;
+      result.status = options.reportNonFiniteValuesSeparately
+                          ? ExactCoulombFbfStatus::NonFiniteValue
+                          : ExactCoulombFbfStatus::InvalidInput;
       return result;
     }
   }
@@ -2072,7 +2166,15 @@ ExactCoulombFbfResult solveExactCoulombFbf(
   result.bestResidual = result.residual;
   result.bestReaction = result.reaction;
   appendExactCoulombFbfResidualHistorySample(result, options, 0);
-  if (result.residual.value <= options.tolerance) {
+  const auto satisfiesTolerance = [&options](double residual) {
+    return options.useStrictToleranceComparison ? residual < options.tolerance
+                                                : residual <= options.tolerance;
+  };
+  const double initialConvergenceResidual
+      = options.useNaturalMapResidualForInitialConvergence
+            ? result.initialNaturalMapResidual
+            : result.residual.value;
+  if (satisfiesTolerance(initialConvergenceResidual)) {
     result.status = ExactCoulombFbfStatus::Success;
     return result;
   }
@@ -2087,6 +2189,34 @@ ExactCoulombFbfResult solveExactCoulombFbf(
   Eigen::VectorXd projectedCorrection(dimension);
   Eigen::VectorXd relaxedReaction(dimension);
   Eigen::VectorXd previousInnerReaction = result.reaction;
+  const bool sampleNaturalMapResidual
+      = options.plateauPatience > 0
+        || options.useNaturalMapResidualForInitialConvergence;
+  std::vector<double> plateauResidualHistory;
+  if (options.plateauPatience > 0) {
+    plateauResidualHistory.reserve(
+        static_cast<std::size_t>(options.plateauPatience + 1));
+  }
+  const auto setFailureStatus = [&](ExactCoulombFbfStatus status) {
+    result.status = status;
+    if (result.iterations <= 0
+        || result.iterations % options.residualCheckInterval == 0
+        || !result.reaction.allFinite()) {
+      return;
+    }
+
+    // A failure can follow one or more accepted iterations that were not
+    // residual-sampling points. Refresh the returned telemetry so it describes
+    // the current reaction instead of the last sampled (possibly initial)
+    // iterate. This runs only on a terminating failure path.
+    result.residual = computeExactCoulombContactResidualNormalFirst(
+        problem, result.reaction, applyDelassus, residualScales);
+    if (sampleNaturalMapResidual) {
+      result.naturalMapResidual
+          = computeExactCoulombNaturalMapResidualNormalFirst(
+              problem, result.reaction, applyDelassus);
+    }
+  };
 
   for (int iteration = 0; iteration < options.maxOuterIterations; ++iteration) {
     double stepSize = baseStepSize;
@@ -2095,7 +2225,10 @@ ExactCoulombFbfResult solveExactCoulombFbf(
             problem, result.reaction, applyDelassus, velocity)
         || !computeExactCoulombFbfCouplingNormalFirst(
             velocity, problem.coefficients, coupling)) {
-      result.status = ExactCoulombFbfStatus::InvalidInput;
+      setFailureStatus(
+          options.reportNonFiniteValuesSeparately
+              ? ExactCoulombFbfStatus::NonFiniteValue
+              : ExactCoulombFbfStatus::InvalidInput);
       return result;
     }
 
@@ -2104,6 +2237,7 @@ ExactCoulombFbfResult solveExactCoulombFbf(
         = options.enableAdaptiveStepSize ? options.maxStepShrinkIterations : 0;
     for (int shrink = 0; shrink <= maxShrinkIterations; ++shrink) {
       bool innerSolved = false;
+      result.lastInnerSolveStepSize = stepSize;
       if constexpr (std::is_invocable_r_v<
                         bool,
                         const FrozenConeSolver&,
@@ -2128,8 +2262,15 @@ ExactCoulombFbfResult solveExactCoulombFbf(
         innerSolved = solveFrozenConeProblem(
             problem, result.reaction, coupling, stepSize, trialReaction);
       }
-      if (!innerSolved || !trialReaction.allFinite()) {
-        result.status = ExactCoulombFbfStatus::InnerSolverFailed;
+      if (!innerSolved
+          || (!options.reportNonFiniteValuesSeparately
+              && !trialReaction.allFinite())) {
+        setFailureStatus(ExactCoulombFbfStatus::InnerSolverFailed);
+        return result;
+      }
+      if (options.reportNonFiniteValuesSeparately
+          && !trialReaction.allFinite()) {
+        setFailureStatus(ExactCoulombFbfStatus::NonFiniteValue);
         return result;
       }
 
@@ -2137,22 +2278,78 @@ ExactCoulombFbfResult solveExactCoulombFbf(
               problem, trialReaction, applyDelassus, trialVelocity)
           || !computeExactCoulombFbfCouplingNormalFirst(
               trialVelocity, problem.coefficients, trialCoupling)) {
-        result.status = ExactCoulombFbfStatus::InvalidInput;
+        setFailureStatus(
+            options.reportNonFiniteValuesSeparately
+                ? ExactCoulombFbfStatus::NonFiniteValue
+                : ExactCoulombFbfStatus::InvalidInput);
         return result;
       }
 
+      double reactionChange = std::numeric_limits<double>::quiet_NaN();
+      double couplingChange = std::numeric_limits<double>::quiet_NaN();
+      if (options.reportNonFiniteValuesSeparately
+          || options.couplingVariationSkipThreshold > 0.0) {
+        reactionChange = (trialReaction - result.reaction).norm();
+        couplingChange = (trialCoupling - coupling).norm();
+        if (options.reportNonFiniteValuesSeparately) {
+          if (!std::isfinite(reactionChange)
+              || !std::isfinite(couplingChange)) {
+            setFailureStatus(ExactCoulombFbfStatus::NonFiniteValue);
+            return result;
+          }
+        }
+        if (options.couplingVariationSkipThreshold > 0.0
+            && reactionChange <= options.couplingVariationSkipThreshold) {
+          result.couplingVariationRatio = -1.0;
+          accepted = true;
+          break;
+        }
+      }
+
       result.couplingVariationRatio
-          = computeExactCoulombFbfCouplingVariationRatio(
-              result.reaction,
-              trialReaction,
-              coupling,
-              trialCoupling,
-              stepSize);
+          = std::isnan(reactionChange)
+                ? computeExactCoulombFbfCouplingVariationRatio(
+                    result.reaction,
+                    trialReaction,
+                    coupling,
+                    trialCoupling,
+                    stepSize)
+                : computeExactCoulombFbfCouplingVariationRatioFromNorms(
+                    reactionChange, couplingChange, stepSize);
+      if (options.reportNonFiniteValuesSeparately
+          && (std::isnan(result.couplingVariationRatio)
+              || (std::isinf(result.couplingVariationRatio)
+                  && reactionChange != 0.0))) {
+        setFailureStatus(ExactCoulombFbfStatus::NonFiniteValue);
+        return result;
+      }
       if (!options.enableAdaptiveStepSize
           || result.couplingVariationRatio
                  <= options.couplingVariationTolerance) {
         accepted = true;
         break;
+      }
+
+      if (options.acceptStepSizeAfterFinalShrink) {
+        double shrunkenStepSize = stepSize * options.shrinkFactor;
+        if (std::isfinite(options.minimumStepSize))
+          shrunkenStepSize
+              = (std::max)(shrunkenStepSize, options.minimumStepSize);
+        if (!std::isfinite(shrunkenStepSize) || shrunkenStepSize <= 0.0) {
+          setFailureStatus(ExactCoulombFbfStatus::StepSizeUnderflow);
+          return result;
+        }
+        const bool sourceShrinkCapReached
+            = shrunkenStepSize == stepSize || shrink + 1 == maxShrinkIterations;
+        if (sourceShrinkCapReached) {
+          stepSize = shrunkenStepSize;
+          ++result.shrinkIterations;
+          result.stepSize = stepSize;
+          ++result.lineSearchShrinkCapCount;
+          result.lineSearchShrinkCapReached = true;
+          accepted = true;
+          break;
+        }
       }
 
       // The current gamma was the final permitted trial. Do not report a
@@ -2166,13 +2363,13 @@ ExactCoulombFbfResult solveExactCoulombFbf(
       ++result.shrinkIterations;
       result.stepSize = stepSize;
       if (!std::isfinite(stepSize) || stepSize <= 0.0) {
-        result.status = ExactCoulombFbfStatus::StepSizeUnderflow;
+        setFailureStatus(ExactCoulombFbfStatus::StepSizeUnderflow);
         return result;
       }
     }
 
     if (!accepted) {
-      result.status = ExactCoulombFbfStatus::StepSizeUnderflow;
+      setFailureStatus(ExactCoulombFbfStatus::StepSizeUnderflow);
       return result;
     }
 
@@ -2184,10 +2381,18 @@ ExactCoulombFbfResult solveExactCoulombFbf(
     previousInnerReaction = trialReaction;
 
     correctedReaction = trialReaction - stepSize * (trialCoupling - coupling);
+    if (options.reportNonFiniteValuesSeparately
+        && !correctedReaction.allFinite()) {
+      setFailureStatus(ExactCoulombFbfStatus::NonFiniteValue);
+      return result;
+    }
     if (options.projectAfterCorrection) {
       if (!projectExactCoulombReactionNormalFirst(
               correctedReaction, problem.coefficients, projectedCorrection)) {
-        result.status = ExactCoulombFbfStatus::InvalidInput;
+        setFailureStatus(
+            options.reportNonFiniteValuesSeparately
+                ? ExactCoulombFbfStatus::NonFiniteValue
+                : ExactCoulombFbfStatus::InvalidInput);
         return result;
       }
       if (options.outerRelaxation == 1.0) {
@@ -2198,7 +2403,10 @@ ExactCoulombFbfResult solveExactCoulombFbf(
                                 * (projectedCorrection - result.reaction);
         if (!projectExactCoulombReactionNormalFirst(
                 relaxedReaction, problem.coefficients, result.reaction)) {
-          result.status = ExactCoulombFbfStatus::InvalidInput;
+          setFailureStatus(
+              options.reportNonFiniteValuesSeparately
+                  ? ExactCoulombFbfStatus::NonFiniteValue
+                  : ExactCoulombFbfStatus::InvalidInput);
           return result;
         }
       }
@@ -2208,23 +2416,68 @@ ExactCoulombFbfResult solveExactCoulombFbf(
       result.reaction
           += options.outerRelaxation * (correctedReaction - result.reaction);
     }
+    if (options.reportNonFiniteValuesSeparately
+        && !result.reaction.allFinite()) {
+      setFailureStatus(ExactCoulombFbfStatus::NonFiniteValue);
+      return result;
+    }
 
     result.stepSize = stepSize;
     result.iterations = iteration + 1;
-    result.residual = computeExactCoulombContactResidualNormalFirst(
-        problem, result.reaction, applyDelassus, residualScales);
-    if (std::isfinite(result.residual.value)
-        && (!std::isfinite(result.bestResidual.value)
-            || result.residual.value < result.bestResidual.value)) {
-      result.bestIteration = result.iterations;
-      result.bestResidual = result.residual;
-      result.bestReaction = result.reaction;
-    }
-    appendExactCoulombFbfResidualHistorySample(
-        result, options, result.iterations);
-    if (result.residual.value <= options.tolerance) {
-      result.status = ExactCoulombFbfStatus::Success;
-      return result;
+    const bool sampleResidual
+        = result.iterations % options.residualCheckInterval == 0
+          || result.iterations == options.maxOuterIterations;
+    if (sampleResidual) {
+      result.residual = computeExactCoulombContactResidualNormalFirst(
+          problem, result.reaction, applyDelassus, residualScales);
+      if (options.reportNonFiniteValuesSeparately
+          && !isFiniteCoulombConeResidual(result.residual)) {
+        result.status = ExactCoulombFbfStatus::NonFiniteValue;
+        return result;
+      }
+      if (std::isfinite(result.residual.value)
+          && (!std::isfinite(result.bestResidual.value)
+              || result.residual.value < result.bestResidual.value)) {
+        result.bestIteration = result.iterations;
+        result.bestResidual = result.residual;
+        result.bestReaction = result.reaction;
+      }
+
+      if (sampleNaturalMapResidual) {
+        result.naturalMapResidual
+            = computeExactCoulombNaturalMapResidualNormalFirst(
+                problem, result.reaction, applyDelassus);
+        if (!std::isfinite(result.naturalMapResidual)) {
+          result.status = ExactCoulombFbfStatus::NonFiniteValue;
+          return result;
+        }
+      }
+      appendExactCoulombFbfResidualHistorySample(
+          result, options, result.iterations);
+      if (satisfiesTolerance(result.residual.value)) {
+        result.status = ExactCoulombFbfStatus::Success;
+        return result;
+      }
+
+      if (options.plateauPatience > 0) {
+        plateauResidualHistory.push_back(result.naturalMapResidual);
+        const std::size_t patience
+            = static_cast<std::size_t>(options.plateauPatience);
+        if (plateauResidualHistory.size() > patience) {
+          const double oldResidual = plateauResidualHistory
+              [plateauResidualHistory.size() - 1u - patience];
+          if (oldResidual > 0.0) {
+            const double relativeImprovement
+                = (oldResidual - result.naturalMapResidual) / oldResidual;
+            if (relativeImprovement < options.plateauRelativeTolerance) {
+              result.plateauReferenceNaturalMapResidual = oldResidual;
+              result.plateauRelativeImprovement = relativeImprovement;
+              result.status = ExactCoulombFbfStatus::Plateau;
+              return result;
+            }
+          }
+        }
+      }
     }
   }
 

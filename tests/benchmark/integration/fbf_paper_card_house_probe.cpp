@@ -198,6 +198,9 @@ const char* exactStatusName(
         MaxIterationsAccepted:
       return "max_iterations_accepted";
     case dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+        PlateauAccepted:
+      return "plateau_accepted";
+    case dart::constraint::ExactCoulombFbfConstraintSolverStatus::
         InvalidOptions:
       return "invalid_options";
     case dart::constraint::ExactCoulombFbfConstraintSolverStatus::
@@ -226,6 +229,10 @@ const char* fbfStatusName(dart::math::detail::ExactCoulombFbfStatus status)
       return "inner_solver_failed";
     case dart::math::detail::ExactCoulombFbfStatus::StepSizeUnderflow:
       return "step_size_underflow";
+    case dart::math::detail::ExactCoulombFbfStatus::Plateau:
+      return "plateau";
+    case dart::math::detail::ExactCoulombFbfStatus::NonFiniteValue:
+      return "non_finite_value";
   }
 
   return "unknown";

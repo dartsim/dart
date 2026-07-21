@@ -51,6 +51,7 @@
 #include <array>
 #include <limits>
 #include <memory>
+#include <new>
 #include <string>
 
 #include <cmath>
@@ -1798,4 +1799,332 @@ TEST(
   EXPECT_FALSE(solver.getLastExactCoulombPersistentStepSizeUsed());
   EXPECT_TRUE(solver.getLastExactCoulombWarmStartUsed());
   EXPECT_EQ(solver.getNumExactCoulombPersistentStepSizeRetries(), 1u);
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    SourceContinuationDefaultsOffValidatesCopiesAndCleansLifecycleState)
+{
+  using Solver = dart::constraint::ExactCoulombFbfConstraintSolver;
+  using Status = dart::constraint::ExactCoulombFbfConstraintSolverStatus;
+  EXPECT_EQ(static_cast<int>(Status::NotRun), 0);
+  EXPECT_EQ(static_cast<int>(Status::Success), 1);
+  EXPECT_EQ(static_cast<int>(Status::MaxIterationsAccepted), 2);
+  EXPECT_EQ(static_cast<int>(Status::InvalidOptions), 3);
+  EXPECT_EQ(static_cast<int>(Status::UnsupportedProblem), 4);
+  EXPECT_EQ(static_cast<int>(Status::FbfFailed), 5);
+  EXPECT_EQ(static_cast<int>(Status::BoxedLcpFallback), 6);
+  EXPECT_EQ(static_cast<int>(Status::PlateauAccepted), 7);
+
+  ExposedExactCoulombFbfConstraintSolver source;
+  EXPECT_FALSE(source.getExactCoulombSourceContinuationOptions().enabled);
+  EXPECT_FALSE(source.getLastExactCoulombSourceContinuationActive());
+  EXPECT_EQ(source.getNumExactCoulombPlateausAccepted(), 0u);
+  EXPECT_EQ(source.getNumExactCoulombLineSearchShrinkCaps(), 0u);
+
+  dart::constraint::ExactCoulombFbfSourceContinuationOptions policy;
+  policy.enabled = true;
+  policy.residualCheckInterval = 3;
+  policy.plateauPatience = 2;
+  policy.plateauRelativeTolerance = 0.02;
+  policy.stepSizeBacktrackLimit = 4;
+  policy.couplingVariationSkipThreshold = 2e-10;
+  source.setExactCoulombSourceContinuationOptions(policy);
+  dart::constraint::ExactCoulombFbfCrossStepPolicyOptions crossStepPolicy;
+  crossStepPolicy.warmStartMaxAge = 3;
+  source.setExactCoulombCrossStepPolicyOptions(crossStepPolicy);
+  EXPECT_TRUE(source.getExactCoulombSourceContinuationOptions().enabled);
+  EXPECT_EQ(
+      source.getExactCoulombSourceContinuationOptions().plateauPatience, 2);
+
+  ExposedExactCoulombFbfConstraintSolver copy;
+  copy.setFromOtherConstraintSolver(source);
+  const auto copied = copy.getExactCoulombSourceContinuationOptions();
+  EXPECT_TRUE(copied.enabled);
+  EXPECT_EQ(copied.residualCheckInterval, 3);
+  EXPECT_EQ(copied.plateauPatience, 2);
+  EXPECT_EQ(copied.plateauRelativeTolerance, 0.02);
+  EXPECT_EQ(copied.stepSizeBacktrackLimit, 4);
+  EXPECT_EQ(copied.couplingVariationSkipThreshold, 2e-10);
+  EXPECT_EQ(copy.getExactCoulombCrossStepPolicyOptions().warmStartMaxAge, 3);
+
+  auto invalid = policy;
+  invalid.residualCheckInterval = 0;
+  copy.setExactCoulombSourceContinuationOptions(invalid);
+  EXPECT_EQ(
+      copy.getExactCoulombSourceContinuationOptions().residualCheckInterval,
+      policy.residualCheckInterval);
+
+  dart::constraint::BoxedLcpConstraintSolver boxed;
+  copy.setFromOtherConstraintSolver(boxed);
+  EXPECT_FALSE(copy.getExactCoulombSourceContinuationOptions().enabled);
+
+  alignas(Solver) unsigned char storage[sizeof(Solver)];
+  auto* first = new (storage) Solver;
+  first->setExactCoulombSourceContinuationOptions(policy);
+  ASSERT_TRUE(first->getExactCoulombSourceContinuationOptions().enabled);
+  first->~Solver();
+  auto* second = new (storage) Solver;
+  EXPECT_FALSE(second->getExactCoulombSourceContinuationOptions().enabled);
+  EXPECT_FALSE(second->getLastExactCoulombSourceContinuationActive());
+  EXPECT_EQ(second->getNumExactCoulombPlateausAccepted(), 0u);
+  EXPECT_EQ(second->getNumExactCoulombLineSearchShrinkCaps(), 0u);
+  second->~Solver();
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    SourceContinuationAcceptsFiniteMaxAndRecordsPerGroupOutcome)
+{
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0,
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      0.5,
+      0.5,
+      activeRow);
+  auto group = makeGroup(contact);
+
+  auto options = makeZeroBudgetWarmStartOptions();
+  options.maxResidualHistorySamples = 4;
+  options.maxResidualHistoryRecords = 2;
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  dart::constraint::ExactCoulombFbfSourceContinuationOptions sourcePolicy;
+  sourcePolicy.enabled = true;
+  sourcePolicy.plateauPatience = 0;
+  solver.setExactCoulombSourceContinuationOptions(sourcePolicy);
+  solver.setTimeStep(0.001);
+
+  solver.solveConstrainedGroup(group);
+
+  EXPECT_TRUE(solver.getExactCoulombSourceContinuationOptions().enabled);
+  EXPECT_EQ(
+      solver.getExactCoulombSourceContinuationOptions().plateauPatience, 0);
+  EXPECT_TRUE(solver.getLastExactCoulombSourceContinuationActive());
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+          MaxIterationsAccepted);
+  EXPECT_EQ(
+      solver.getLastExactCoulombFbfStatus(),
+      dart::math::detail::ExactCoulombFbfStatus::MaxIterations);
+  EXPECT_EQ(solver.getNumExactCoulombMaxIterationsAccepted(), 1u);
+  EXPECT_EQ(solver.getNumExactCoulombPlateausAccepted(), 0u);
+  EXPECT_EQ(solver.getNumExactCoulombFailures(), 0u);
+  EXPECT_FALSE(solver.getLastExactCoulombLineSearchShrinkCapReached());
+  EXPECT_EQ(solver.getLastExactCoulombLineSearchShrinkCapCount(), 0);
+  EXPECT_TRUE(std::isnan(solver.getLastExactCoulombInnerSolveStepSize()));
+
+  const auto& records = solver.getExactCoulombResidualHistoryRecords();
+  ASSERT_EQ(records.size(), 1u);
+  EXPECT_TRUE(records[0].sourceContinuationActive);
+  EXPECT_EQ(
+      records[0].status,
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+          MaxIterationsAccepted);
+  EXPECT_EQ(
+      records[0].fbfStatus,
+      dart::math::detail::ExactCoulombFbfStatus::MaxIterations);
+  EXPECT_EQ(records[0].finalResidual, solver.getLastExactCoulombResidual());
+  EXPECT_EQ(
+      records[0].finalNaturalMapResidual,
+      solver.getLastExactCoulombNaturalMapResidual());
+  EXPECT_EQ(records[0].shrinkIterations, 0);
+  EXPECT_EQ(records[0].lineSearchShrinkCapCount, 0);
+  EXPECT_TRUE(std::isnan(records[0].lastInnerSolveStepSize));
+  EXPECT_TRUE(std::isnan(records[0].plateauReferenceNaturalMapResidual));
+  EXPECT_TRUE(std::isnan(records[0].plateauRelativeImprovement));
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    SourceContinuationRequestedButInactiveForUnsupportedGroup)
+{
+  auto scalar = std::make_shared<ScalarConstraint>();
+  auto group = makeGroup(scalar);
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.fallbackToBoxedLcp = false;
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  dart::constraint::ExactCoulombFbfSourceContinuationOptions sourcePolicy;
+  sourcePolicy.enabled = true;
+  solver.setExactCoulombSourceContinuationOptions(sourcePolicy);
+  solver.setTimeStep(0.001);
+
+  solver.solveConstrainedGroup(group);
+
+  EXPECT_TRUE(solver.getExactCoulombSourceContinuationOptions().enabled);
+  EXPECT_FALSE(solver.getLastExactCoulombSourceContinuationActive());
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+          UnsupportedProblem);
+  EXPECT_EQ(solver.getNumExactCoulombSolves(), 0u);
+  EXPECT_EQ(solver.getNumExactCoulombFailures(), 1u);
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver,
+    SourcePolicyChangeInvalidatesCacheAndSkippedReactionStillPersistsGamma)
+{
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0,
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      0.5,
+      0.5,
+      activeRow);
+  auto group = makeGroup(contact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.seedNormalImpulseFromDiagonal = false;
+  options.enableProjectedGradientRetry = false;
+  options.enableDenseResidualPolish = false;
+  options.fallbackToBoxedLcp = false;
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  dart::constraint::ExactCoulombFbfCrossStepPolicyOptions crossStepPolicy;
+  crossStepPolicy.requireResidualImprovementForUnconvergedCacheSave = true;
+  solver.setExactCoulombCrossStepPolicyOptions(crossStepPolicy);
+  solver.setTimeStep(0.001);
+  solver.solveConstrainedGroup(group);
+  solver.solveConstrainedGroup(group);
+  ASSERT_TRUE(solver.getLastExactCoulombWarmStartUsed());
+  ASSERT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+
+  dart::constraint::ExactCoulombFbfSourceContinuationOptions sourcePolicy;
+  sourcePolicy.enabled = true;
+  sourcePolicy.residualCheckInterval = 1;
+  solver.setExactCoulombSourceContinuationOptions(sourcePolicy);
+  solver.solveConstrainedGroup(group);
+  ASSERT_FALSE(solver.getLastExactCoulombWarmStartUsed());
+  ASSERT_FALSE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::Success);
+
+  contact->setRhs(Eigen::Vector3d(0.2, 1.0, 0.0));
+  options.maxOuterIterations = 0;
+  options.tolerance = 0.0;
+  solver.setExactCoulombOptions(options);
+  solver.solveConstrainedGroup(group);
+  ASSERT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::
+          MaxIterationsAccepted);
+  EXPECT_TRUE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_EQ(solver.getNumExactCoulombUnconvergedCacheSkips(), 1u);
+
+  solver.solveConstrainedGroup(group);
+  EXPECT_TRUE(solver.getLastExactCoulombWarmStartUsed());
+  EXPECT_TRUE(solver.getLastExactCoulombPersistentStepSizeUsed());
+  EXPECT_EQ(solver.getNumExactCoulombUnconvergedCacheSkips(), 2u);
+}
+
+TEST(
+    ExactCoulombFbfConstraintSolver, SourceContinuationAcceptsPlateauDistinctly)
+{
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0,
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1.0, 1.0, 0.0),
+      0.5,
+      0.5,
+      activeRow);
+  auto group = makeGroup(contact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.maxOuterIterations = 10;
+  options.tolerance = 0.0;
+  options.seedNormalImpulseFromDiagonal = false;
+  options.enableProjectedGradientRetry = false;
+  options.enableDenseResidualPolish = false;
+  options.fallbackToBoxedLcp = false;
+  options.maxResidualHistorySamples = 16;
+  options.maxResidualHistoryRecords = 1;
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  dart::constraint::ExactCoulombFbfSourceContinuationOptions sourcePolicy;
+  sourcePolicy.enabled = true;
+  sourcePolicy.residualCheckInterval = 1;
+  sourcePolicy.plateauPatience = 1;
+  sourcePolicy.plateauRelativeTolerance = std::numeric_limits<double>::max();
+  solver.setExactCoulombSourceContinuationOptions(sourcePolicy);
+  solver.setTimeStep(0.001);
+
+  solver.solveConstrainedGroup(group);
+
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::PlateauAccepted);
+  EXPECT_EQ(
+      solver.getLastExactCoulombFbfStatus(),
+      dart::math::detail::ExactCoulombFbfStatus::Plateau);
+  EXPECT_EQ(solver.getLastExactCoulombIterations(), 2);
+  EXPECT_EQ(solver.getNumExactCoulombPlateausAccepted(), 1u);
+  EXPECT_EQ(solver.getNumExactCoulombMaxIterationsAccepted(), 0u);
+  EXPECT_EQ(solver.getNumExactCoulombFailures(), 0u);
+
+  const auto& records = solver.getExactCoulombResidualHistoryRecords();
+  ASSERT_EQ(records.size(), 1u);
+  EXPECT_EQ(
+      records[0].status,
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::PlateauAccepted);
+  EXPECT_TRUE(std::isfinite(records[0].plateauReferenceNaturalMapResidual));
+  EXPECT_GT(records[0].plateauReferenceNaturalMapResidual, 0.0);
+  EXPECT_TRUE(std::isfinite(records[0].plateauRelativeImprovement));
+  EXPECT_NEAR(
+      records[0].plateauRelativeImprovement,
+      (records[0].plateauReferenceNaturalMapResidual
+       - records[0].finalNaturalMapResidual)
+          / records[0].plateauReferenceNaturalMapResidual,
+      1e-15);
+  EXPECT_LT(
+      records[0].plateauRelativeImprovement,
+      sourcePolicy.plateauRelativeTolerance);
+}
+
+TEST(ExactCoulombFbfConstraintSolver, SourceContinuationKeepsInnerFailureFatal)
+{
+  const auto activeRow = std::make_shared<Eigen::Index>(-1);
+  auto contact = std::make_shared<ContactLikeConstraint>(
+      0,
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      0.5,
+      0.5,
+      activeRow);
+  auto group = makeGroup(contact);
+
+  dart::constraint::ExactCoulombFbfConstraintSolverOptions options;
+  options.initialStepSize = 1.0;
+  options.maxOuterIterations = 80;
+  options.tolerance = 1e-10;
+  options.innerMaxSweeps = 1;
+  options.innerLocalIterations = 1;
+  options.innerTolerance = 0.0;
+  options.acceptInnerMaxIterations = false;
+  options.seedNormalImpulseFromDiagonal = false;
+  options.enableProjectedGradientRetry = true;
+  options.enableDenseResidualPolish = true;
+  options.fallbackToBoxedLcp = false;
+  ExposedExactCoulombFbfConstraintSolver solver(options);
+  dart::constraint::ExactCoulombFbfSourceContinuationOptions sourcePolicy;
+  sourcePolicy.enabled = true;
+  solver.setExactCoulombSourceContinuationOptions(sourcePolicy);
+  solver.setTimeStep(0.001);
+
+  solver.solveConstrainedGroup(group);
+
+  EXPECT_TRUE(solver.getLastExactCoulombSourceContinuationActive());
+  EXPECT_EQ(
+      solver.getLastExactCoulombStatus(),
+      dart::constraint::ExactCoulombFbfConstraintSolverStatus::FbfFailed);
+  EXPECT_EQ(
+      solver.getLastExactCoulombFbfStatus(),
+      dart::math::detail::ExactCoulombFbfStatus::InnerSolverFailed);
+  EXPECT_EQ(solver.getNumExactCoulombSolves(), 0u);
+  EXPECT_EQ(solver.getNumExactCoulombFailures(), 1u);
+  EXPECT_FALSE(solver.getLastExactCoulombProjectedGradientRetryUsed());
+  EXPECT_FALSE(solver.getLastExactCoulombDenseResidualPolishUsed());
 }
