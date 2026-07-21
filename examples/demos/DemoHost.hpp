@@ -166,6 +166,7 @@ struct HeadlessTimeline
   std::vector<HeadlessActionSchedule> actions;
   std::string sidecarPath;
   std::string runtimeCommand;
+  bool exactFbfFailFast = false;
 };
 
 //==============================================================================
@@ -221,9 +222,10 @@ public:
       int height);
 
   /// Runs one deterministic headless world timeline. At each completed step,
-  /// all requested shots are captured first, then all actions scheduled for
-  /// that step are invoked. Step zero is the freshly installed scene. The
-  /// optional JSON sidecar records ordered events and solver diagnostics.
+  /// the opt-in exact-FBF gate is evaluated before any same-step events, then
+  /// all requested shots are captured before all scheduled actions. Step zero
+  /// is the freshly installed scene. The optional JSON sidecar records ordered
+  /// events and solver diagnostics.
   int runHeadlessTimeline(
       const HeadlessTimeline& timeline,
       int totalSteps,

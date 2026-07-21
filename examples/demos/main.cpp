@@ -136,6 +136,9 @@ void printUsage(const char* prog)
       << "  --headless-sidecar <path>\n"
          "                  Write the headless timeline and solver "
          "diagnostics as JSON.\n"
+      << "  --headless-exact-fbf-fail-fast\n"
+         "                  Stop before same-step events when strict exact-FBF "
+         "diagnostics fail; requires --headless and --headless-sidecar.\n"
       << "  --shot <path>   Output PNG path for --headless (default "
          "dart-demos.png).\n"
       << "  --steps <n>     Sim steps to settle before the --headless shot "
@@ -328,6 +331,8 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
         std::cerr << "--headless-sidecar expects a nonempty path.\n";
         return ParseResult::Error;
       }
+    } else if (std::strcmp(a, "--headless-exact-fbf-fail-fast") == 0) {
+      opt.headlessTimeline.exactFbfFailFast = true;
     } else if (std::strcmp(a, "--shot") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
@@ -377,7 +382,18 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
 
   const bool timelineRequested = !opt.headlessTimeline.shots.empty()
                                  || !opt.headlessTimeline.actions.empty()
-                                 || !opt.headlessTimeline.sidecarPath.empty();
+                                 || !opt.headlessTimeline.sidecarPath.empty()
+                                 || opt.headlessTimeline.exactFbfFailFast;
+  if (opt.headlessTimeline.exactFbfFailFast && !opt.headless) {
+    std::cerr << "--headless-exact-fbf-fail-fast requires --headless.\n";
+    return ParseResult::Error;
+  }
+  if (opt.headlessTimeline.exactFbfFailFast
+      && opt.headlessTimeline.sidecarPath.empty()) {
+    std::cerr
+        << "--headless-exact-fbf-fail-fast requires --headless-sidecar.\n";
+    return ParseResult::Error;
+  }
   if (timelineRequested && !opt.headless) {
     std::cerr << "--headless-shot-at, --headless-action-at, and "
                  "--headless-sidecar require --headless.\n";
@@ -469,7 +485,8 @@ int main(int argc, char** argv)
   if (opt.headless) {
     const bool timelineRequested = !opt.headlessTimeline.shots.empty()
                                    || !opt.headlessTimeline.actions.empty()
-                                   || !opt.headlessTimeline.sidecarPath.empty();
+                                   || !opt.headlessTimeline.sidecarPath.empty()
+                                   || opt.headlessTimeline.exactFbfFailFast;
     if (timelineRequested) {
       opt.headlessTimeline.runtimeCommand = buildRuntimeCommand(argc, argv);
       if (opt.shotPathExplicit || opt.headlessTimeline.shots.empty()) {

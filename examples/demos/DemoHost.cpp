@@ -32,6 +32,7 @@
 
 #include "DemoHost.hpp"
 
+#include "HeadlessExactFbfFailFast.hpp"
 #include "Theme.hpp"
 
 #include <dart/config.hpp>
@@ -348,6 +349,14 @@ struct HeadlessActionResult
 };
 
 //==============================================================================
+struct HeadlessExactFbfFailFastState
+{
+  bool triggered = false;
+  std::size_t step = 0u;
+  const char* reason = nullptr;
+};
+
+//==============================================================================
 const char* buildModeLabel()
 {
 #if DART_BUILD_MODE_DEBUG
@@ -374,7 +383,8 @@ bool writeHeadlessSidecar(
     const std::vector<HeadlessStepResult>& steps,
     const std::vector<HeadlessShotResult>& shots,
     const std::vector<HeadlessActionResult>& actions,
-    const SolverDiagnosticsSnapshot& finalDiagnostics)
+    const SolverDiagnosticsSnapshot& finalDiagnostics,
+    const HeadlessExactFbfFailFastState* failFast)
 {
   std::ofstream out(path);
   if (!out) {
@@ -407,6 +417,23 @@ bool writeHeadlessSidecar(
     out << physicsContractJson;
   out << ",\n  \"event_order\": ";
   writeJsonString(out, "captures_before_actions_at_each_completed_step");
+  if (failFast) {
+    out << ",\n  \"headless_exact_fbf_fail_fast\": {\n"
+        << "    \"enabled\": true,\n    \"residual_tolerance\": ";
+    writeJsonNumber(out, detail::kHeadlessExactFbfResidualTolerance);
+    out << ",\n    \"triggered\": " << (failFast->triggered ? "true" : "false")
+        << ",\n    \"step\": ";
+    if (failFast->triggered)
+      out << failFast->step;
+    else
+      out << "null";
+    out << ",\n    \"reason\": ";
+    if (failFast->triggered)
+      writeJsonString(out, failFast->reason);
+    else
+      out << "null";
+    out << "\n  }";
+  }
 
   out << ",\n  \"steps\": [";
   for (std::size_t i = 0u; i < steps.size(); ++i) {
@@ -1702,6 +1729,7 @@ int DemoHost::runHeadlessTimeline(
   std::vector<HeadlessShotResult> shotResults;
   std::vector<HeadlessStepResult> stepResults;
   std::vector<HeadlessActionResult> actionResults;
+  HeadlessExactFbfFailFastState failFast;
   shotResults.reserve(timeline.shots.size());
   stepResults.reserve(requestedSteps + 1u);
   actionResults.reserve(timeline.actions.size());
@@ -1714,6 +1742,28 @@ int DemoHost::runHeadlessTimeline(
     stepResult.simTime = mCurrentWorld ? mCurrentWorld->getTime() : 0.0;
     stepResult.diagnostics = captureSolverDiagnostics(mCurrentWorld);
     stepResults.push_back(stepResult);
+
+    if (timeline.exactFbfFailFast) {
+      detail::HeadlessExactFbfFailFastDiagnostics diagnostics;
+      diagnostics.exactAttempts = stepResult.diagnostics.exactAttempts;
+      diagnostics.acceptedAtCap = stepResult.diagnostics.maxIterationsAccepted;
+      diagnostics.exactFailures = stepResult.diagnostics.exactFailures;
+      diagnostics.boxedFallbacks = stepResult.diagnostics.boxedLcpFallbacks;
+      diagnostics.residual = stepResult.diagnostics.residual;
+      diagnostics.worstResidual = stepResult.diagnostics.worstResidual;
+
+      const auto decision
+          = detail::evaluateHeadlessExactFbfFailFast(diagnostics);
+      if (decision.triggered) {
+        failFast.triggered = true;
+        failFast.step = step;
+        failFast.reason = decision.reason;
+        std::cerr << "[headless] exact-FBF fail-fast triggered at completed "
+                     "step "
+                  << step << ": " << decision.reason << ".\n";
+        break;
+      }
+    }
 
     // A completed-step state belongs to the simulation before any action at
     // that step. Capture every same-step request first, in CLI order.
@@ -1785,14 +1835,15 @@ int DemoHost::runHeadlessTimeline(
         stepResults,
         shotResults,
         actionResults,
-        finalDiagnostics);
+        finalDiagnostics,
+        timeline.exactFbfFailFast ? &failFast : nullptr);
     eventFailed |= !sidecarWritten;
     if (sidecarWritten)
       std::cout << "[headless] wrote timeline sidecar " << timeline.sidecarPath
                 << "\n";
   }
 
-  return sceneFailed || eventFailed ? 1 : 0;
+  return sceneFailed || eventFailed || failFast.triggered ? 1 : 0;
 }
 
 //==============================================================================
