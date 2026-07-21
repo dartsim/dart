@@ -77,6 +77,7 @@
 //   performance
 
 #include "../../../examples/demos/scenes/FbfAuthorTurntableSpec.hpp"
+#include "../../../examples/demos/scenes/FbfLiteralMasonryArchSpec.hpp"
 
 #include <dart/simulation/DeactivationOptions.hpp>
 #include <dart/simulation/World.hpp>
@@ -2226,6 +2227,70 @@ void addLiteralMasonryArch25(
   addLiteralMasonryArch(world, kArchStoneCount);
 }
 
+//==============================================================================
+bool usesSharedLiteralMasonryArch25StandingContract(
+    Scenario scenario,
+    SolverMode solverMode,
+    SolverContract contract,
+    CollisionFrontend collisionFrontend)
+{
+  return scenario == Scenario::MasonryArch25LiteralWedge
+         && solverMode == SolverMode::ExactFbf
+         && contract == SolverContract::DartBestColoredBgs
+         && collisionFrontend == CollisionFrontend::Native
+         && gNativeManifoldSensitivitySelector
+                == NativeManifoldSensitivitySelector::Default;
+}
+
+//==============================================================================
+std::shared_ptr<dart::simulation::World>
+createSharedLiteralMasonryArch25StandingWorld(
+    TraceScope traceScope,
+    double initialStepSize,
+    std::size_t simulationThreads)
+{
+  namespace shared = fbf_literal_masonry_arch;
+
+  auto world = shared::createWorld(
+      shared::SolverLane::ExactFbf,
+      shared::VisualMode::None,
+      simulationThreads);
+  world->setName(
+      std::string("exact_coulomb_trace_")
+      + scenarioName(Scenario::MasonryArch25LiteralWedge));
+
+  auto* exactSolver
+      = static_cast<dart::constraint::ExactCoulombFbfConstraintSolver*>(
+          world->getConstraintSolver());
+  auto options = exactSolver->getExactCoulombOptions();
+  options.initialStepSize = initialStepSize;
+  if (traceScope == TraceScope::ResidualHistory) {
+    options.maxResidualHistorySamples = kResidualHistoryMaxSamples;
+    options.maxResidualHistoryRecords = 256;
+  }
+  if (gWarmStartOverride == 0) {
+    options.enableWarmStart = false;
+  } else if (gWarmStartOverride == 1) {
+    options.enableWarmStart = true;
+  }
+  if (gLocalSolverOverrideSet)
+    options.innerLocalSolver = gLocalSolverOverride;
+  exactSolver->setExactCoulombOptions(options);
+
+  if (gSplitImpulseOverride == 0) {
+    exactSolver->setSplitImpulseEnabled(false);
+  } else if (gSplitImpulseOverride == 1) {
+    exactSolver->setSplitImpulseEnabled(true);
+  }
+
+  // fbf_paper_trace owns its process for the full trajectory. Preserve the
+  // existing literal-wedge lifecycle: ERP becomes zero before the first step
+  // and remains zero until process exit.
+  dart::constraint::ContactConstraint::setErrorReductionParameter(
+      shared::kDesiredContactErrorReductionParameter);
+  return world;
+}
+
 std::shared_ptr<dart::simulation::World> createTraceWorld(
     Scenario scenario,
     SolverMode solverMode,
@@ -2235,6 +2300,12 @@ std::shared_ptr<dart::simulation::World> createTraceWorld(
     SolverContract contract,
     CollisionFrontend collisionFrontend)
 {
+  if (usesSharedLiteralMasonryArch25StandingContract(
+          scenario, solverMode, contract, collisionFrontend)) {
+    return createSharedLiteralMasonryArch25StandingWorld(
+        traceScope, initialStepSize, simulationThreads);
+  }
+
   const double frictionCoeff = scenarioFriction(scenario);
   const std::size_t maxContacts
       = scenario == Scenario::Backspin ? 1u

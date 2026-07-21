@@ -11,7 +11,7 @@ repository-finalized: literal-wedge standing, the two-cell incline threshold,
 the two-cell Painleve proxy, backspin, and the author-pinned four-cell
 turntable matrix. They remain bounded
 DART evidence, not paper-golden or paper-timing evidence. The current visual
-workflow inventory declares 17 schedules. The task-wide manifest remains 29
+workflow inventory declares 19 schedules. The task-wide manifest remains 29
 requirements = 24 partial + 5 blocked + 0 complete, so the overall task is
 still incomplete.
 

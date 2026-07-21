@@ -51,10 +51,18 @@ DEFAULT_OUTPUT = (
     "fig07_arch25_literal"
 )
 
+CAPTURE_SOURCE_RELATIVE = (
+    "tests/benchmark/integration/fbf_literal_wedge_visual_capture.cpp"
+)
+LITERAL_ARCH_SPEC_SOURCE_RELATIVE = (
+    "examples/demos/scenes/FbfLiteralMasonryArchSpec.hpp"
+)
+TRACE_SOURCE_RELATIVE = "tests/benchmark/integration/fbf_paper_trace.cpp"
 SOURCE_FILES = (
     "tests/benchmark/integration/CMakeLists.txt",
-    "tests/benchmark/integration/fbf_literal_wedge_visual_capture.cpp",
-    "tests/benchmark/integration/fbf_paper_trace.cpp",
+    CAPTURE_SOURCE_RELATIVE,
+    TRACE_SOURCE_RELATIVE,
+    LITERAL_ARCH_SPEC_SOURCE_RELATIVE,
     "dart/math/detail/MasonryArchGeometry.hpp",
     "dart/collision/native/NativeCollisionDetector.cpp",
     "dart/collision/native/NativeCollisionDetector.hpp",
@@ -530,7 +538,8 @@ def validate_runtime(
             "pinned_springers",
             "end_face_expansion_m",
             "downward_shift_m",
-            "exact_options",
+            "initial_physical_geometry_fingerprint",
+            "exact_options_summary",
             "steps_completed",
             "frame_stride",
             "simulation_threads",
@@ -542,7 +551,7 @@ def validate_runtime(
         "capture runtime",
     )
     expected = {
-        "schema_version": "dart.fbf_literal_wedge_visual_runtime/v1",
+        "schema_version": "dart.fbf_literal_wedge_visual_runtime/v2",
         "scenario": "masonry_arch_25_literal_wedge",
         "scene_contract": (
             "reconstructed_literal_wedge_arch_nonpaper_native_collision_frontend"
@@ -595,7 +604,21 @@ def validate_runtime(
         "enable_step_size_persistence": False,
         "fallback_to_boxed_lcp": False,
     }
-    exact_options = runtime["exact_options"]
+    fingerprint = runtime["initial_physical_geometry_fingerprint"]
+    if fingerprint != {
+        "algorithm": "fnv1a64_q1e-10_le_v1",
+        "value": "1ff65f2a99ec96d1",
+    }:
+        raise ValueError(
+            f"capture runtime initial physical geometry changed: {fingerprint}"
+        )
+    exact_options = runtime["exact_options_summary"]
+    expected_scope = (
+        "selected evidence controls only; the shared "
+        "FbfLiteralMasonryArchSpec.hpp contract is authoritative"
+    )
+    if exact_options.get("scope") != expected_scope:
+        raise ValueError("capture exact-option summary scope changed")
     option_mismatches = {
         key: {"expected": value, "actual": exact_options.get(key)}
         for key, value in expected_exact_options.items()
@@ -831,53 +854,106 @@ def trace_command(trace: Path, steps: int, threads: int) -> list[str]:
 
 
 def validate_capture_source_contract() -> dict[str, Any]:
-    source_path = (
-        ROOT / "tests/benchmark/integration/fbf_literal_wedge_visual_capture.cpp"
-    )
+    source_path = ROOT / CAPTURE_SOURCE_RELATIVE
+    shared_header_path = ROOT / LITERAL_ARCH_SPEC_SOURCE_RELATIVE
+    trace_path = ROOT / TRACE_SOURCE_RELATIVE
     source = " ".join(source_path.read_text(encoding="utf-8").split())
-    required_fragments = {
-        "dt": "world->setTimeStep(kDt);",
-        "gravity": "world->setGravity(Eigen::Vector3d(0.0, 0.0, -kGravity));",
-        "threads": "world->setNumSimulationThreads(simulationThreads);",
-        "deactivation_disabled": "deactivation.mEnabled = false;",
-        "native_frontend": "dart::collision::NativeCollisionDetector::create();",
-        "four_point_planar": "ContactManifoldMode::FourPointPlanar",
-        "colored_bgs_enabled": (
-            "installed->setExactCoulombColoredBlockGaussSeidelEnabled(true);"
+    shared_header = " ".join(shared_header_path.read_text(encoding="utf-8").split())
+    trace = " ".join(trace_path.read_text(encoding="utf-8").split())
+
+    consumer_required_fragments = {
+        "shared_header_include": (
+            '#include "../../../examples/demos/scenes/' 'FbfLiteralMasonryArchSpec.hpp"'
         ),
-        "participant_affinity_enabled": (
-            "installed->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled( true);"
+        "shared_namespace": "namespace literalArch = fbf_literal_masonry_arch;",
+        "shared_dt": "constexpr double kDt = literalArch::kTimeStep;",
+        "shared_friction": "constexpr double kFriction = literalArch::kFriction;",
+        "shared_density": "constexpr double kDensity = literalArch::kDensity;",
+        "shared_stone_count": (
+            "constexpr std::size_t kStoneCount = literalArch::kStoneCount;"
         ),
-        "split_impulse": "installed->setSplitImpulseEnabled(true);",
-        "erp_zero": (
-            "dart::constraint::ContactConstraint::setErrorReductionParameter(0.0);"
+        "shared_end_face_expansion": (
+            "constexpr double kEndFaceExpansion = literalArch::kEndFaceExpansion;"
         ),
-        "max_contacts": "collisionOption.maxNumContacts = kMaxContacts;",
+        "shared_downward_shift": (
+            "constexpr double kDownwardShift = literalArch::kDownwardShift;"
+        ),
+        "shared_tolerance": (
+            "constexpr double kTolerance = literalArch::kResidualTolerance;"
+        ),
+        "exact_fbf_demo_palette_world": (
+            "literalArch::createWorld( literalArch::SolverLane::ExactFbf, "
+            "literalArch::VisualMode::DemoPalette, simulationThreads);"
+        ),
+        "legacy_world_name": ('world->setName("fbf_literal_wedge_visual_capture");'),
+        "scoped_erp_owns_run": (
+            "literalArch::ScopedContactErrorReductionParameter scopedContactErp; "
+            "auto world = createCaptureWorld(config.simulationThreads);"
+        ),
+        "observed_initial_fingerprint": (
+            "literalArch::physicalGeometryFingerprint( "
+            "literalArch::inspectPhysicsContract(world));"
+        ),
+        "exact_options_are_labeled_summary": '\\"exact_options_summary\\"',
+    }
+    consumer_forbidden_fragments = {
+        "duplicate_contact_erp_mutation": (
+            "dart::constraint::ContactConstraint::setErrorReductionParameter("
+        ),
+        "duplicate_exact_options": "ExactCoulombFbfConstraintSolverOptions options;",
+        "duplicate_literal_wedge_generator": "generateMasonryArchStoneWedges(",
+        "duplicate_native_detector": "NativeCollisionDetector::create()",
+        "duplicate_ground_builder": "SkeletonPtr createGround(",
+        "duplicate_stone_builder": "SkeletonPtr createStone(",
+    }
+    shared_required_fragments = {
+        "dt": "inline constexpr double kTimeStep = 1.0 / 60.0;",
+        "gravity": "inline constexpr double kGravity = 9.81;",
+        "friction": "inline constexpr double kFriction = 0.8;",
+        "density": "inline constexpr double kDensity = 1000.0;",
+        "stone_count": "inline constexpr std::size_t kStoneCount = 25u;",
+        "max_contacts": "inline constexpr std::size_t kMaxContacts = 400u;",
         "max_contacts_per_pair": (
-            "collisionOption.maxNumContactsPerPair = kMaxContactsPerPair;"
+            "inline constexpr std::size_t kMaxContactsPerPair = 8u;"
         ),
-        "literal_wedges": "generateMasonryArchStoneWedges( kStoneCount, {},",
-        "barrier_offsets_omitted": ("MasonryArchBarrierGapPolicy::OmitSourceOffsets"),
-        "end_face_expansion": "kEndFaceExpansion);",
-        "pinned_springers": "if (springer) skeleton->setMobile(false);",
-        "exact_prism_mass": "const double mass = kDensity * geometry.volume;",
-        "exact_prism_inertia": (
-            "inertia.setMoment(mass * geometry.momentPerUnitMass);"
+        "end_face_expansion": ("inline constexpr double kEndFaceExpansion = 1e-6;"),
+        "downward_shift": "inline constexpr double kDownwardShift = 0.001001;",
+        "erp_zero": (
+            "inline constexpr double kDesiredContactErrorReductionParameter = 0.0;"
         ),
-        "downward_shift": (
-            "geometry.centroid - kDownwardShift * Eigen::Vector3d::UnitZ();"
+        "barrier_offsets_omitted": ("MasonryArchBarrierGapPolicy::OmitSourceOffsets;"),
+        "scoped_erp_type": "class ScopedContactErrorReductionParameter",
+        "scoped_erp_capture": (
+            "mPreviousValue( dart::constraint::ContactConstraint::"
+            "getErrorReductionParameter())"
         ),
-        "max_outer_iterations": "options.maxOuterIterations = 5000;",
+        "scoped_erp_apply": (
+            "dart::constraint::ContactConstraint::setErrorReductionParameter( "
+            "kDesiredContactErrorReductionParameter);"
+        ),
+        "scoped_erp_restore": (
+            "~ScopedContactErrorReductionParameter() { "
+            "dart::constraint::ContactConstraint::setErrorReductionParameter( "
+            "mPreviousValue); }"
+        ),
+        "scoped_erp_noncopyable": (
+            "ScopedContactErrorReductionParameter( const "
+            "ScopedContactErrorReductionParameter&) = delete;"
+        ),
+        "max_outer_iterations": ("options.maxOuterIterations = kMaxOuterIterations;"),
         "accept_outer_cap": "options.acceptOuterMaxIterations = true;",
-        "tolerance": "options.tolerance = kTolerance;",
+        "tolerance": "options.tolerance = kResidualTolerance;",
+        "inner_sweeps": "options.innerMaxSweeps = kInnerMaxSweeps;",
         "fixed_inner_sweeps": "options.runFixedInnerSweeps = true;",
         "exact_metric_local_solver": (
             "ExactCoulombFbfLocalBlockSolver:: ExactMetricProjection;"
         ),
-        "one_local_iteration": "options.innerLocalIterations = 1;",
-        "step_size_scale": "options.stepSizeScale = 35.0;",
+        "one_local_iteration": (
+            "options.innerLocalIterations = kInnerLocalIterations;"
+        ),
+        "step_size_scale": "options.stepSizeScale = kStepSizeScale;",
         "adaptive_step_size": "options.enableAdaptiveStepSize = true;",
-        "outer_relaxation": "options.outerRelaxation = 1.1;",
+        "outer_relaxation": "options.outerRelaxation = kOuterRelaxation;",
         "warm_start": "options.enableWarmStart = true;",
         "no_projected_gradient_retry": (
             "options.enableProjectedGradientRetry = false;"
@@ -885,24 +961,204 @@ def validate_capture_source_contract() -> dict[str, Any]:
         "no_dense_polish": "options.enableDenseResidualPolish = false;",
         "no_boxed_fallback": "options.fallbackToBoxedLcp = false;",
         "zero_normal_seed": "options.seedNormalImpulseFromDiagonal = false;",
+        "contact_row_operator": "options.useContactRowDelassusOperator = true;",
+        "zero_matrix_free_operator": ("options.useMatrixFreeDelassusOperator = false;"),
         "zero_matrix_free_seed": "options.useMatrixFreeDelassusSeed = false;",
         "no_dense_snapshot": "options.assembleDenseContactRowSnapshot = false;",
         "fresh_step_size": "options.enableStepSizePersistence = false;",
+        "cross_step_policy_installed": (
+            "installed->setExactCoulombCrossStepPolicyOptions( "
+            "makeExactCrossStepPolicyOptions());"
+        ),
+        "contact_dynamics_explicit": (
+            "dynamics->setFrictionCoeff(kFriction); "
+            "dynamics->setRestitutionCoeff(0.0); "
+            "dynamics->setPrimarySlipCompliance(-1.0); "
+            "dynamics->setSecondarySlipCompliance(-1.0); "
+            "dynamics->setFirstFrictionDirection(Eigen::Vector3d::Zero());"
+        ),
+        "physical_geometry_fingerprint": (
+            "inline std::string physicalGeometryFingerprint("
+            "const PhysicsContract& contract)"
+        ),
+        "literal_wedges": (
+            "generateMasonryArchStoneWedges( kStoneCount, {}, kBarrierGapPolicy, "
+            "kEndFaceExpansion);"
+        ),
+        "centroid_relative_mesh": "vertices.push_back(vertex - geometry.centroid);",
+        "visual_only_ground": (
+            "body->createShapeNodeWith<dart::dynamics::VisualAspect>( "
+            "std::make_shared<dart::dynamics::BoxShape>("
+        ),
+        "palette_collision_mesh": (
+            "dart::dynamics::VisualAspect, dart::dynamics::CollisionAspect, "
+            "dart::dynamics::DynamicsAspect>(shape);"
+        ),
+        "exact_prism_mass": "const double mass = kDensity * geometry.volume;",
+        "exact_prism_inertia": (
+            "inertia.setMoment(mass * geometry.momentPerUnitMass);"
+        ),
+        "initial_transform": (
+            "geometry.centroid - kDownwardShift * Eigen::Vector3d::UnitZ();"
+        ),
+        "pinned_springers": (
+            "if (index == 0u || index + 1u == kStoneCount) "
+            "skeleton->setMobile(false);"
+        ),
+        "native_frontend": "NativeCollisionDetector::create();",
+        "four_point_planar": "ContactManifoldMode::FourPointPlanar",
+        "colored_bgs_enabled": (
+            "installed->setExactCoulombColoredBlockGaussSeidelEnabled(true);"
+        ),
+        "participant_affinity_enabled": (
+            "installed->setExactCoulombColoredBlockGaussSeidelParticipantAffinityEnabled( "
+            "true);"
+        ),
+        "split_impulse": "installed->setSplitImpulseEnabled(true);",
+        "installed_max_contacts": ("collisionOption.maxNumContacts = kMaxContacts;"),
+        "installed_max_contacts_per_pair": (
+            "collisionOption.maxNumContactsPerPair = kMaxContactsPerPair;"
+        ),
+        "world_dt": "world->setTimeStep(kTimeStep);",
+        "world_gravity": ("world->setGravity(Eigen::Vector3d(0.0, 0.0, -kGravity));"),
+        "world_threads": "world->setNumSimulationThreads(simulationThreads);",
+        "deactivation_disabled": "deactivation.mEnabled = false;",
+        "world_solver": "installSolver(world, lane, simulationThreads);",
+        "world_ground": "world->addSkeleton(createGround(visualMode));",
+        "world_stones": (
+            "world->addSkeleton(createStone(index, geometries[index], visualMode));"
+        ),
     }
+    trace_required_fragments = {
+        "shared_header_include": (
+            '#include "../../../examples/demos/scenes/' 'FbfLiteralMasonryArchSpec.hpp"'
+        ),
+        "exact_25_native_colored_predicate": (
+            "scenario == Scenario::MasonryArch25LiteralWedge && solverMode == "
+            "SolverMode::ExactFbf && contract == "
+            "SolverContract::DartBestColoredBgs && collisionFrontend == "
+            "CollisionFrontend::Native && gNativeManifoldSensitivitySelector "
+            "== NativeManifoldSensitivitySelector::Default"
+        ),
+        "shared_physical_world": (
+            "auto world = shared::createWorld( shared::SolverLane::ExactFbf, "
+            "shared::VisualMode::None, simulationThreads);"
+        ),
+        "preserved_trace_identity": (
+            'std::string("exact_coulomb_trace_") + '
+            "scenarioName(Scenario::MasonryArch25LiteralWedge)"
+        ),
+        "shared_path_dispatch": (
+            "return createSharedLiteralMasonryArch25StandingWorld( traceScope, "
+            "initialStepSize, simulationThreads);"
+        ),
+        "process_owned_erp": (
+            "dart::constraint::ContactConstraint::setErrorReductionParameter( "
+            "shared::kDesiredContactErrorReductionParameter);"
+        ),
+    }
+    trace_forbidden_fragments = {
+        "duplicate_literal_builder": "addLiteralMasonryArch25(",
+        "duplicate_wedge_generator": "generateMasonryArchStoneWedges(",
+        "duplicate_exact_solver": (
+            "std::make_unique<dart::constraint::" "ExactCoulombFbfConstraintSolver>"
+        ),
+        "duplicate_native_detector": "NativeCollisionDetector::create()",
+    }
+
+    consumer_missing = [
+        name
+        for name, fragment in consumer_required_fragments.items()
+        if fragment not in source
+    ]
+    shared_missing = [
+        name
+        for name, fragment in shared_required_fragments.items()
+        if fragment not in shared_header
+    ]
+    trace_missing = [
+        name
+        for name, fragment in trace_required_fragments.items()
+        if fragment not in trace
+    ]
+    consumer_forbidden = [
+        name
+        for name, fragment in consumer_forbidden_fragments.items()
+        if fragment in source
+    ]
+    world_builder = shared_header.split(
+        "inline dart::simulation::WorldPtr createWorld(", 1
+    )[-1].split("struct StonePhysicsContract", 1)[0]
+    shared_forbidden = []
+    if "ContactConstraint::setErrorReductionParameter(" in world_builder:
+        shared_forbidden.append("world_builder_mutates_process_erp")
+    trace_shared_builder = trace.split(
+        "createSharedLiteralMasonryArch25StandingWorld(", 1
+    )[-1].split("std::shared_ptr<dart::simulation::World> createTraceWorld(", 1)[0]
+    trace_forbidden = [
+        name
+        for name, fragment in trace_forbidden_fragments.items()
+        if fragment in trace_shared_builder
+    ]
     missing = [
-        name for name, fragment in required_fragments.items() if fragment not in source
+        *(f"capture_consumer:{name}" for name in consumer_missing),
+        *(f"shared_header:{name}" for name in shared_missing),
+        *(f"trace_consumer:{name}" for name in trace_missing),
+    ]
+    forbidden = [
+        *(f"capture_consumer:{name}" for name in consumer_forbidden),
+        *(f"shared_header:{name}" for name in shared_forbidden),
+        *(f"trace_consumer:{name}" for name in trace_forbidden),
     ]
     return {
-        "pass": not missing,
+        "pass": not missing and not forbidden,
         "source_path": str(source_path.relative_to(ROOT)),
         "source_sha256": sha256(source_path),
-        "required_fragments": required_fragments,
+        "shared_header_path": str(shared_header_path.relative_to(ROOT)),
+        "shared_header_sha256": sha256(shared_header_path),
+        "trace_path": str(trace_path.relative_to(ROOT)),
+        "trace_sha256": sha256(trace_path),
+        "required_fragments": {
+            "capture_consumer": consumer_required_fragments,
+            "shared_header": shared_required_fragments,
+            "trace_consumer": trace_required_fragments,
+        },
+        "forbidden_fragments": {
+            "capture_consumer": consumer_forbidden_fragments,
+            "shared_header": {
+                "world_builder_mutates_process_erp": (
+                    "ContactConstraint::setErrorReductionParameter("
+                )
+            },
+            "trace_consumer": trace_forbidden_fragments,
+        },
         "missing": missing,
+        "forbidden": forbidden,
+        "capture_consumer_binding": {
+            "pass": not consumer_missing and not consumer_forbidden,
+            "missing": consumer_missing,
+            "forbidden": consumer_forbidden,
+        },
+        "shared_header_contract": {
+            "pass": not shared_missing and not shared_forbidden,
+            "missing": shared_missing,
+            "forbidden": shared_forbidden,
+        },
+        "trace_consumer_binding": {
+            "pass": not trace_missing and not trace_forbidden,
+            "missing": trace_missing,
+            "forbidden": trace_forbidden,
+        },
         "asserted_contract": {
             "dt": 1.0 / 60.0,
             "gravity": [0.0, 0.0, -9.81],
             "deactivation_enabled": False,
             "friction": 0.8,
+            "primary_friction": 0.8,
+            "secondary_friction": 0.8,
+            "restitution": 0.0,
+            "slip_compliance": [-1.0, -1.0],
+            "first_friction_direction": [0.0, 0.0, 0.0],
             "density": 1000.0,
             "stone_count": 25,
             "pinned_springers": [0, 24],
@@ -913,6 +1169,7 @@ def validate_capture_source_contract() -> dict[str, Any]:
             "max_contacts_per_pair": 8,
             "split_impulse": True,
             "contact_erp": 0.0,
+            "physical_geometry_fingerprint": "1ff65f2a99ec96d1",
             "colored_bgs": True,
             "participant_affinity": True,
             "max_outer_iterations": 5000,

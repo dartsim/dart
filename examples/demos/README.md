@@ -34,6 +34,7 @@ pixi run demos -- --scene fbf_paper_card_aframe
 pixi run demos -- --scene fbf_paper_card_house_26
 pixi run demos -- --scene fbf_paper_card_house_10
 pixi run demos -- --scene fbf_paper_card_house_10_dynamic
+pixi run demos -- --scene fbf_paper_masonry_arch_25_literal_standing
 pixi run demos -- --scene fbf_paper_masonry_arch_25
 pixi run demos -- --scene fbf_paper_masonry_arch_101
 ```
@@ -50,6 +51,12 @@ adapter. Its 512-contact, eight-per-pair budget is already known to saturate in
 the boxed-LCP construction probe, so the dynamic scene is not full-natural-
 manifold or performance evidence. Accept a timed capture only when its sidecar
 reports exact-FBF solves with zero exact failures and zero boxed-LCP fallbacks.
+
+The literal 25-stone masonry scene is a separate no-projectile standing
+contract using convex voussoir wedges, exact prism inertia, Native
+FourPointPlanar contacts, and scoped ERP restoration; the older
+`fbf_paper_masonry_arch_25` scene remains the reduced oriented-box projectile
+proxy.
 
 For a bounded off-screen GUI smoke of one scene, use the same app through the
 Pixi capture task. The final argument is the number of deterministic simulation

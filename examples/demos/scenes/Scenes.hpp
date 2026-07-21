@@ -149,6 +149,9 @@ namespace dart_demos {
 /// Research > FBF masonry arch: reduced-contact 25-stone Fig. 7 scaffold.
 [[nodiscard]] DemoScene makeFbfPaperMasonryArch25Scene();
 
+/// Research > FBF masonry arch: literal-wedge 25-stone standing contract.
+[[nodiscard]] DemoScene makeFbfPaperMasonryArch25LiteralStandingScene();
+
 /// Research > FBF masonry arch: reduced-contact 101-stone Fig. 8 scaffold.
 [[nodiscard]] DemoScene makeFbfPaperMasonryArch101Scene();
 

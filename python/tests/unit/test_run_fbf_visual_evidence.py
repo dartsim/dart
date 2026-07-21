@@ -296,6 +296,193 @@ def _write_failed_sidecar(module, schedule, output_dir, demo, *, step=1):
     (output_dir / "timeline.json").write_text(json.dumps(sidecar), encoding="utf-8")
 
 
+def _literal_arch_physics_contract(module, *, solver_lane="exact"):
+    identity_pose = {
+        "translation": [0.0, 0.0, 0.0],
+        "rotation": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+    }
+    exact_options = {
+        "fallback_to_boxed_lcp_enabled": False,
+        "constraint_regularization_enabled": False,
+        "matrix_free_operator_enabled": False,
+        "contact_row_operator_enabled": True,
+        "dense_contact_row_snapshot_enabled": False,
+        "warm_start_enabled": True,
+        "step_size_persistence_enabled": False,
+        "step_size_recovery_growth_factor": 1.05,
+        "warm_start_match_distance": 0.025,
+        "diagonal_seed_enabled": False,
+        "matrix_free_seed_enabled": False,
+        "projected_gradient_retry_enabled": False,
+        "dense_residual_polish_enabled": False,
+        "max_outer_iterations": 5000,
+        "accept_outer_max_iterations": True,
+        "tolerance": 1e-6,
+        "initial_step_size": None,
+        "cap_initial_step_size_at_safe_bound": True,
+        "step_size_scale": 35.0,
+        "outer_relaxation": 1.1,
+        "coupling_variation_tolerance": 0.9,
+        "shrink_factor": 0.7,
+        "max_step_shrink_iterations": 20,
+        "adaptive_step_size_enabled": True,
+        "spectral_iterations": 10,
+        "inner_max_sweeps": 30,
+        "inner_local_solver": "exact_metric_projection",
+        "run_fixed_inner_sweeps": True,
+        "accept_inner_max_iterations": True,
+        "inner_local_iterations": 1,
+        "inner_tolerance": 1e-10,
+        "inner_local_tolerance": 1e-12,
+        "inner_diagonal_regularization": 0.0,
+        "projected_gradient_max_iterations": 400,
+        "projected_gradient_tolerance": 1e-12,
+        "dense_residual_polish_iterations": 8,
+        "dense_residual_polish_line_search_iterations": 8,
+        "dense_residual_polish_regularization": 1e-9,
+        "max_residual_history_samples": 0,
+        "max_residual_history_records": 0,
+    }
+    cross_step_options = {
+        "warm_start_match_mode": "either_body_local_feature",
+        "warm_start_normal_cosine": 0.9,
+        "strict_warm_start_match_distance": False,
+        "warm_start_max_age": -1,
+        "persistent_step_size_safe_bound_scale": 1.0,
+        "minimum_step_size": None,
+        "maximum_step_size": None,
+        "warm_start_residual_threshold": None,
+        "warm_start_step_size_cap": None,
+        "persist_uncapped_step_size_on_warm_start_cap": False,
+        "require_residual_improvement_for_unconverged_cache_save": False,
+    }
+    triangles = [
+        [0, 1, 2],
+        [0, 2, 3],
+        [4, 6, 5],
+        [4, 7, 6],
+        [0, 4, 5],
+        [0, 5, 1],
+        [1, 5, 6],
+        [1, 6, 2],
+        [2, 6, 7],
+        [2, 7, 3],
+        [3, 7, 4],
+        [3, 4, 0],
+    ]
+    stones = []
+    for index in range(25):
+        stones.append(
+            {
+                "name": f"masonry_arch_stone_{index}",
+                "mobile": index not in (0, 24),
+                "friction": 0.8,
+                "primary_friction": 0.8,
+                "secondary_friction": 0.8,
+                "restitution": 0.0,
+                "primary_slip_compliance": -1.0,
+                "secondary_slip_compliance": -1.0,
+                "first_friction_direction": [0.0, 0.0, 0.0],
+                "default_friction_direction_frame": True,
+                "mass_kg": 1.0 + index,
+                "local_center_of_mass": [0.0, 0.0, 0.0],
+                "moment_kg_m2": [
+                    [1.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                ],
+                "body_pose": identity_pose,
+                "linear_velocity": [0.0, 0.0, 0.0],
+                "angular_velocity": [0.0, 0.0, 0.0],
+                "collision_shape_count": 1,
+                "collision_shape_local_pose": identity_pose,
+                "vertices": [
+                    [float(vertex & 1), float((vertex >> 1) & 1), float(vertex >> 2)]
+                    for vertex in range(8)
+                ],
+                "triangles": triangles,
+            }
+        )
+    exact = solver_lane == "exact"
+    contract = {
+        "schema_version": "dart.fbf_literal_masonry_arch_physics_contract/v1",
+        "kind": "physics_control",
+        "source_binding": {
+            "spec_sha256": module._sha256(
+                ROOT / "examples/demos/scenes/FbfLiteralMasonryArchSpec.hpp"
+            ),
+            "implementation_sha256": module._sha256(
+                ROOT / "examples/demos/scenes/FbfPaperFrictionScene.cpp"
+            ),
+            "geometry_sha256": module._sha256(
+                ROOT / "dart/math/detail/MasonryArchGeometry.hpp"
+            ),
+            "solver_options_sha256": module._sha256(
+                ROOT / "dart/constraint/ExactCoulombFbfConstraintSolver.hpp"
+            ),
+        },
+        "world": {
+            "name": "fbf_literal_masonry_arch_25",
+            "time_step_seconds": 1.0 / 60.0,
+            "gravity_m_s2": [0.0, 0.0, -9.81],
+            "simulation_threads": 1,
+            "deactivation_enabled": False,
+            "skeleton_count": 26,
+        },
+        "declared_spec": {
+            "density_kg_m3": 1000.0,
+            "friction": 0.8,
+            "barrier_gap_policy": "omit_source_offsets",
+            "end_face_expansion_m": 1e-6,
+            "downward_shift_m": 0.001001,
+            "contact_erp": 0.0,
+        },
+        "collision": {
+            "detector": "native",
+            "contact_manifold": "four_point_planar",
+            "native_detector_observed": True,
+            "max_contacts": 400,
+            "max_contacts_per_pair": 8,
+        },
+        "solver": {
+            "lane": "exact_fbf" if exact else "boxed_lcp",
+            "split_impulse_enabled": True,
+            "colored_block_gauss_seidel_enabled": exact,
+            "participant_affinity_enabled": exact,
+            "exact_options": exact_options if exact else None,
+            "cross_step_options": cross_step_options if exact else None,
+        },
+        "process_state": {"observed_contact_erp": 0.0},
+        "ground": {
+            "mobile": False,
+            "plane_shape_observed": True,
+            "friction": 0.8,
+            "primary_friction": 0.8,
+            "secondary_friction": 0.8,
+            "restitution": 0.0,
+            "primary_slip_compliance": -1.0,
+            "secondary_slip_compliance": -1.0,
+            "first_friction_direction": [0.0, 0.0, 0.0],
+            "default_friction_direction_frame": True,
+            "local_center_of_mass": [0.0, 0.0, 0.0],
+            "body_pose": identity_pose,
+            "linear_velocity": [0.0, 0.0, 0.0],
+            "angular_velocity": [0.0, 0.0, 0.0],
+            "collision_shape_count": 1,
+            "collision_shape_local_pose": identity_pose,
+            "plane_normal": [0.0, 0.0, 1.0],
+            "plane_offset": 0.0,
+        },
+        "stones": stones,
+    }
+    fingerprint = module._literal_masonry_arch_geometry_fingerprint(contract)
+    contract["physical_geometry_fingerprint"] = {
+        "algorithm": "fnv1a64_q1e-10_le_v1",
+        "value": fingerprint,
+    }
+    return contract
+
+
 def test_schedule_matrix_covers_every_requested_visual_case():
     module = _load_module()
 
@@ -313,6 +500,7 @@ def test_schedule_matrix_covers_every_requested_visual_case():
         "painleve_mu05",
         "painleve_mu055",
         "card_house_26",
+        "masonry_arch_25_literal_standing",
         "masonry_arch_25",
         "masonry_arch_101",
         "card_house_10_construction",
@@ -773,6 +961,9 @@ def test_demo_parameter_scene_factories_are_declared_and_registered():
         ),
         "makeFbfPaperPainleveMu055Scene": "fbf_paper_painleve_mu_0_55",
         "makeFbfPaperCardHouse10DynamicScene": ("fbf_paper_card_house_10_dynamic"),
+        "makeFbfPaperMasonryArch25LiteralStandingScene": (
+            "fbf_paper_masonry_arch_25_literal_standing"
+        ),
     }
 
     for factory, scene_id in factories.items():
@@ -917,6 +1108,7 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
             "card_house_10_construction",
             "card_house_author_5_construction",
             "card_house_10_dynamics",
+            "masonry_arch_25_literal_standing",
         )
     } == {
         "turntable_mu02_omega2": "fbf_paper_turntable_mu_0_2_omega_2",
@@ -932,6 +1124,9 @@ def test_parameterized_schedules_use_stable_runnable_scene_ids():
         "card_house_10_construction": "fbf_paper_card_house_10",
         "card_house_author_5_construction": ("fbf_author_card_house_5_construction"),
         "card_house_10_dynamics": "fbf_paper_card_house_10_dynamic",
+        "masonry_arch_25_literal_standing": (
+            "fbf_paper_masonry_arch_25_literal_standing"
+        ),
     }
     command = module.build_demo_command(
         module.SCHEDULES["turntable_mu02_omega2"],
@@ -948,7 +1143,8 @@ def test_capture_schedules_select_the_required_collision_frontend():
     output_root = Path("/tmp/out")
 
     native_members = set(module.AUTHOR_TURN_TABLE_MEMBERS) | {
-        "card_house_author_5_construction"
+        "card_house_author_5_construction",
+        "masonry_arch_25_literal_standing",
     }
     legacy_members = set(module.SCHEDULES) - native_members
     assert {
@@ -977,6 +1173,81 @@ def test_capture_schedules_select_the_required_collision_frontend():
         assert plan["collision_detector_override"] is False
 
 
+def test_literal_arch_contract_binds_exact_and_boxed_physics(tmp_path, monkeypatch):
+    module = _load_module()
+    exact = module.SCHEDULES["masonry_arch_25_literal_standing"]
+    boxed = module._derive_boxed_schedule(exact)
+    exact_contract = _literal_arch_physics_contract(module)
+    monkeypatch.setattr(
+        module,
+        "LITERAL_MASONRY_ARCH_GEOMETRY_FINGERPRINT",
+        exact_contract["physical_geometry_fingerprint"]["value"],
+    )
+
+    exact_report = module._validate_literal_masonry_arch_contract(
+        exact,
+        {"physics_contract": exact_contract},
+        sidecar_path=tmp_path / "exact.json",
+    )
+    boxed_report = module._validate_literal_masonry_arch_contract(
+        boxed,
+        {
+            "physics_contract": _literal_arch_physics_contract(
+                module, solver_lane="boxed"
+            )
+        },
+        sidecar_path=tmp_path / "boxed.json",
+    )
+
+    assert exact_report["solver_lane"] == "exact_fbf"
+    assert boxed_report["solver_lane"] == "boxed_lcp"
+    assert exact_report["stone_count"] == boxed_report["stone_count"] == 25
+    assert exact_report["scoped_erp"] == boxed_report["scoped_erp"] == 0.0
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        (("source_binding", "spec_sha256"), "0" * 64, "source hashes"),
+        (("process_state", "observed_contact_erp"), 0.01, "scoped ERP"),
+        (("collision", "contact_manifold"), "compact", "collision contract"),
+        (("stones", 0, "mobile"), True, "physical properties"),
+        (("stones", 1, "vertices"), [], "wedge vertices"),
+        (("stones", 1, "mass_kg"), 123.0, "physical geometry"),
+        (("stones", 1, "body_pose", "translation", 0), 0.25, "physical geometry"),
+        (("stones", 1, "vertices", 0, 0), 0.25, "physical geometry"),
+        (("stones", 1, "triangles", 0, 0), 1, "physical geometry"),
+        (
+            ("physical_geometry_fingerprint", "value"),
+            "0" * 16,
+            "geometry fingerprint",
+        ),
+    ],
+)
+def test_literal_arch_contract_rejects_mutated_runtime_physics(
+    tmp_path, monkeypatch, field, value, message
+):
+    module = _load_module()
+    schedule = module.SCHEDULES["masonry_arch_25_literal_standing"]
+    contract = json.loads(json.dumps(_literal_arch_physics_contract(module)))
+    monkeypatch.setattr(
+        module,
+        "LITERAL_MASONRY_ARCH_GEOMETRY_FINGERPRINT",
+        contract["physical_geometry_fingerprint"]["value"],
+    )
+    target = contract
+    for key in field[:-1]:
+        target = target[key]
+    target[field[-1]] = value
+
+    with pytest.raises(ValueError, match=message):
+        module._validate_literal_masonry_arch_contract(
+            schedule,
+            {"physics_contract": contract},
+            sidecar_path=tmp_path / "timeline.json",
+        )
+
+
 def test_published_panel_instants_and_completed_step_actions_are_fixed():
     module = _load_module()
 
@@ -989,6 +1260,11 @@ def test_published_panel_instants_and_completed_step_actions_are_fixed():
     )
     arch = module.SCHEDULES["masonry_arch_25"]
     assert arch.actions[0].step == 240
+    literal_arch = module.SCHEDULES["masonry_arch_25_literal_standing"]
+    assert literal_arch.total_steps == 600
+    assert literal_arch.frame_stride == 10
+    assert literal_arch.panel_steps == (0, 120, 300, 600)
+    assert literal_arch.actions == ()
 
 
 def test_demo_command_requests_shots_before_same_step_actions():
@@ -2644,6 +2920,34 @@ def test_expected_media_contract_pins_dimensions_rate_and_frame_count():
     assert (gif["width"], gif["height"]) == (960, 374)
     assert gif["frame_rate_rational"] == "15/1"
     assert gif["frame_count"] == 33
+
+    literal = module.SCHEDULES["masonry_arch_25_literal_standing"]
+    assert module._expected_media_stream(literal, "mp4")["frame_count"] == 301
+    assert module._expected_media_stream(literal, "gif")["frame_count"] == 151
+
+
+def test_media_encoder_caps_endpoint_inclusive_ffmpeg_streams(tmp_path, monkeypatch):
+    module = _load_module()
+    schedule = module.dataclasses.replace(
+        module.SCHEDULES["masonry_arch_25_literal_standing"], encode_gif=True
+    )
+    output_dir = tmp_path / schedule.id
+    output_dir.mkdir()
+    calls = []
+    monkeypatch.setattr(
+        module,
+        "_run",
+        lambda command, **_kwargs: calls.append([str(item) for item in command]),
+    )
+
+    outputs = module._encode_media(schedule, output_dir, Path("ffmpeg"))
+
+    assert [output["kind"] for output in outputs] == ["mp4", "gif"]
+    assert len(calls) == 2
+    mp4_cap = calls[0].index("-frames:v")
+    gif_cap = calls[1].index("-frames:v")
+    assert calls[0][mp4_cap + 1] == "301"
+    assert calls[1][gif_cap + 1] == "151"
 
 
 def test_expected_media_contract_uses_the_explicit_schedule_time_step():

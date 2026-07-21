@@ -4,7 +4,7 @@ This matrix maps the SCA 2026 paper, project page, and video to DART-facing
 requirements. Statuses describe current evidence, not aspirations. The task is
 active and incomplete. The manifest remains 24 partial, 5 blocked, and 0
 complete across 29 requirements. The local visual inventory has six finalized
-bundles, and the visual workflow declares 17 schedules.
+bundles, and the visual workflow declares 19 schedules.
 
 ## Source And Comparability Boundary
 

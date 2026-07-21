@@ -71,6 +71,7 @@ std::vector<DemoScene> makeDemoScenes()
   scenes.push_back(makeFbfPaperCardHouse26Scene());
   scenes.push_back(makeFbfPaperCardHouse10Scene());
   scenes.push_back(makeFbfPaperCardHouse10DynamicScene());
+  scenes.push_back(makeFbfPaperMasonryArch25LiteralStandingScene());
   scenes.push_back(makeFbfPaperMasonryArch25Scene());
   scenes.push_back(makeFbfPaperMasonryArch101Scene());
 

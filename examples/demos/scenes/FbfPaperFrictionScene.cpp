@@ -38,6 +38,7 @@
 
 #include "FbfAuthorCardHouseSpec.hpp"
 #include "FbfAuthorTurntableSpec.hpp"
+#include "FbfLiteralMasonryArchSpec.hpp"
 #include "Scenes.hpp"
 
 #include <dart/gui/osg/osg.hpp>
@@ -59,6 +60,7 @@
 
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -166,6 +168,17 @@ enum class SolverMode
   ExactFbf,
   BoxedLcp,
 };
+
+using SolverInstaller = std::function<void(const WorldPtr&, SolverMode)>;
+
+//==============================================================================
+fbf_literal_masonry_arch::SolverLane literalMasonryArchSolverLane(
+    SolverMode mode)
+{
+  return mode == SolverMode::ExactFbf
+             ? fbf_literal_masonry_arch::SolverLane::ExactFbf
+             : fbf_literal_masonry_arch::SolverLane::BoxedLcp;
+}
 
 struct FbfPaperState
 {
@@ -1195,7 +1208,8 @@ void renderSolverControls(
     bool cardBudget = false,
     bool archBudget = false,
     bool exactFbfAvailable = true,
-    bool solverSelectionEnabled = true)
+    bool solverSelectionEnabled = true,
+    const SolverInstaller& solverInstaller = nullptr)
 {
   ImGui::TextDisabled("Solver");
   int solverIndex = exactFbfAvailable
@@ -1220,14 +1234,18 @@ void renderSolverControls(
               : SolverMode::BoxedLcp;
     if (newMode != state->solverMode) {
       state->solverMode = newMode;
-      configureSolver(
-          world,
-          state->solverMode,
-          maxContacts,
-          maxContactsPerPair,
-          cardBudget,
-          archBudget,
-          getConfiguredContactManifoldMode(world));
+      if (solverInstaller) {
+        solverInstaller(world, state->solverMode);
+      } else {
+        configureSolver(
+            world,
+            state->solverMode,
+            maxContacts,
+            maxContactsPerPair,
+            cardBudget,
+            archBudget,
+            getConfiguredContactManifoldMode(world));
+      }
     }
   }
 
@@ -1362,7 +1380,8 @@ DemoScene makeFbfPaperScene(
         DemoSceneSetup&,
         const WorldPtr&,
         const std::shared_ptr<FbfPaperState>&)>& configureExtraSetup
-    = nullptr)
+    = nullptr,
+    const SolverInstaller& solverInstaller = nullptr)
 {
   DemoScene scene;
   scene.id = id;
@@ -1390,7 +1409,8 @@ DemoScene makeFbfPaperScene(
                          cardBudget,
                          archBudget,
                          exactFbfAvailable,
-                         renderExtraPanel] {
+                         renderExtraPanel,
+                         solverInstaller] {
       renderSolverControls(
           world,
           state,
@@ -1398,7 +1418,9 @@ DemoScene makeFbfPaperScene(
           maxContactsPerPair,
           cardBudget,
           archBudget,
-          exactFbfAvailable);
+          exactFbfAvailable,
+          true,
+          solverInstaller);
       if (renderExtraPanel)
         renderExtraPanel(world, state);
     };
@@ -1411,18 +1433,23 @@ DemoScene makeFbfPaperScene(
            maxContacts,
            maxContactsPerPair,
            cardBudget,
-           archBudget] {
+           archBudget,
+           solverInstaller] {
             state->solverMode = state->solverMode == SolverMode::ExactFbf
                                     ? SolverMode::BoxedLcp
                                     : SolverMode::ExactFbf;
-            configureSolver(
-                world,
-                state->solverMode,
-                maxContacts,
-                maxContactsPerPair,
-                cardBudget,
-                archBudget,
-                getConfiguredContactManifoldMode(world));
+            if (solverInstaller) {
+              solverInstaller(world, state->solverMode);
+            } else {
+              configureSolver(
+                  world,
+                  state->solverMode,
+                  maxContacts,
+                  maxContactsPerPair,
+                  cardBudget,
+                  archBudget,
+                  getConfiguredContactManifoldMode(world));
+            }
           }});
     }
     if (configureExtraSetup)
@@ -2083,6 +2110,68 @@ DemoScene makeFbfPaperCardHouse10DynamicScene()
       "authors' full asset recipe and duration are unavailable; full-manifold "
       "stability, paper timing, realtime performance, and external-solver "
       "parity remain unproven.");
+}
+
+//==============================================================================
+DemoScene makeFbfPaperMasonryArch25LiteralStandingScene()
+{
+  return makeFbfPaperScene(
+      "fbf_paper_masonry_arch_25_literal_standing",
+      "FBF Paper: Masonry Arch 25 (Literal Standing)",
+      "Literal-wedge 25-stone standing reconstruction with the shared strict "
+      "trace and capture contract.",
+      CameraHome{
+          ::osg::Vec3d(3.0, -4.0, 2.2),
+          ::osg::Vec3d(0.0, 0.0, 0.7),
+          ::osg::Vec3d(0.0, 0.0, 1.0)},
+      [](const auto& state) {
+        return fbf_literal_masonry_arch::createWorld(
+            literalMasonryArchSolverLane(state->solverMode),
+            fbf_literal_masonry_arch::VisualMode::DemoPalette,
+            1u);
+      },
+      fbf_literal_masonry_arch::kMaxContacts,
+      fbf_literal_masonry_arch::kMaxContactsPerPair,
+      false,
+      false,
+      "Literal 25-voussoir reconstruction shared with the text oracle and "
+      "off-screen capture: exact convex wedges and uniform-prism inertia, "
+      "mu=.8, dt=1/60 s, pinned springers, Native FourPointPlanar contacts, "
+      "split impulse, and process-scoped contact ERP=0.",
+      "The no-projectile arch should remain standing through the declared "
+      "observation window in both exact-FBF and existing boxed-LCP lanes. "
+      "Every new exact evidence run fails fast on fallback, solver failure, "
+      "an accepted iteration cap, or residual above 1e-6.",
+      "This closes a literal standing reconstruction only. It does not add "
+      "the paper video's crown impact, prove its unpublished 100-contact "
+      "timing scene, reproduce author-code traces, or establish full Fig. 7 "
+      "parity.",
+      true,
+      SolverMode::ExactFbf,
+      nullptr,
+      [](DemoSceneSetup& setup,
+         const WorldPtr& world,
+         const std::shared_ptr<FbfPaperState>&) {
+        setup.physicsContractProvider = [world] {
+          return fbf_literal_masonry_arch::physicsContractJson(
+              fbf_literal_masonry_arch::inspectPhysicsContract(world),
+              DART_FBF_LITERAL_MASONRY_ARCH_SPEC_SHA256,
+              DART_FBF_LITERAL_MASONRY_ARCH_IMPLEMENTATION_SHA256,
+              DART_FBF_LITERAL_MASONRY_ARCH_GEOMETRY_SHA256,
+              DART_FBF_EXACT_SOLVER_OPTIONS_SHA256);
+        };
+        setup.onActivate = [](DemoHostContext& context) {
+          auto scopedErp = std::make_shared<
+              fbf_literal_masonry_arch::ScopedContactErrorReductionParameter>();
+          context.addTeardown([scopedErp]() mutable { scopedErp.reset(); });
+        };
+      },
+      [](const WorldPtr& world, SolverMode mode) {
+        fbf_literal_masonry_arch::installSolver(
+            world,
+            literalMasonryArchSolverLane(mode),
+            world->getNumSimulationThreads());
+      });
 }
 
 //==============================================================================
